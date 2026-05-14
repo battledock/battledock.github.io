@@ -5513,12 +5513,12 @@ body.phase-night-disabled .dock-area::before{
   content:''; position:absolute;
   left:0; top:0; bottom:0; width:3px;
 }
-.lb-card-top.p1{ background:#fffaec; }
-.lb-card-top.p1::before{ background:#d4a843; }
-.lb-card-top.p2{ background:#f4f6f8; }
-.lb-card-top.p2::before{ background:#8a9aaa; }
-.lb-card-top.p3{ background:#faf4ec; }
-.lb-card-top.p3::before{ background:#a07040; }
+.lb-card-top.p1{ background:linear-gradient(135deg,#2a1a00,#4a3000); border-left:4px solid #f4b13c; }
+.lb-card-top.p1::before{ background:#f4b13c; width:4px; }
+.lb-card-top.p2{ background:linear-gradient(135deg,#1a1e22,#2a3038); border-left:4px solid #a0b0c0; }
+.lb-card-top.p2::before{ background:#a0b0c0; }
+.lb-card-top.p3{ background:linear-gradient(135deg,#1a1008,#2a1a08); border-left:4px solid #c07030; }
+.lb-card-top.p3::before{ background:#c07030; }
 .lb-card-top.me-card{ box-shadow:inset 0 0 0 2px #c8861a; }
 
 .lb-card-medal{
@@ -5530,9 +5530,9 @@ body.phase-night-disabled .dock-area::before{
   font-family:'Pirata One',serif; line-height:1.1; margin-bottom:3px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.lb-card-top.p1 .lb-card-name{ font-size:19px; color:#8a6010; }
-.lb-card-top.p2 .lb-card-name{ font-size:17px; color:#3a5a7a; }
-.lb-card-top.p3 .lb-card-name{ font-size:16px; color:#7a5030; }
+.lb-card-top.p1 .lb-card-name{ font-size:19px; color:#f4d060; }
+.lb-card-top.p2 .lb-card-name{ font-size:17px; color:#c0d0e0; }
+.lb-card-top.p3 .lb-card-name{ font-size:16px; color:#e0a050; }
 .lb-card-sub{
   font-family:'Special Elite',monospace; font-size:9px;
   color:#9a8a7a; display:flex; align-items:center; gap:5px;
@@ -6043,6 +6043,22 @@ body.phase-night-disabled .dock-area::before{
   font-size:16px; letter-spacing:2px; cursor:pointer;
 }
 
+
+/* ── PARTICULES #1 CLASSEMENT ── */
+.lb-p1-particles{
+  position:absolute; inset:0; pointer-events:none; overflow:hidden; z-index:0;
+}
+.lb-p1-particle{
+  position:absolute; width:4px; height:4px;
+  border-radius:50%; opacity:.7;
+  animation:p1float linear infinite;
+}
+@keyframes p1float{
+  0%{ transform:translateY(100%) scale(0); opacity:.7; }
+  100%{ transform:translateY(-200%) scale(1.5); opacity:0; }
+}
+.lb-card-top.p1 > *:not(.lb-p1-particles){ position:relative; z-index:1; }
+
 </style>
 </head>
 <body>
@@ -6424,9 +6440,7 @@ body.phase-night-disabled .dock-area::before{
         Classement
         <span class="lb-screen-sub">PORT DE MARSEILLE · MONDIAL</span>
       </div>
-      <div class="lb-live-indicator">
-        <div class="lb-live-dot"></div>LIVE
-      </div>
+
     </div>
 
     <!-- Liste -->
@@ -6566,7 +6580,7 @@ body.phase-night-disabled .dock-area::before{
 
       <!-- Boutons -->
       <div class="section-title small" style="margin-top:14px">💒 Vie Civile</div>
-      <button class="mariage-btn" id="btnMariage">💍 Se marier sur le quai</button>
+      <button class="mariage-btn" id="btnMariage">💍 Se marier (10 Md€)</button>
       <button class="action-btn green" id="btnShare">📲 Défier mes potes (WhatsApp)</button>
       <a href="http://t.me/DockerMarseille_bot" target="_blank" rel="noopener" class="action-btn" style="display:block;text-align:center;text-decoration:none;background:#0a2d6e;color:#fff;border-color:#06194a">🤖 cccp13 automatique</a>
 
@@ -12675,6 +12689,7 @@ async function refreshGlobalLeaderboard(){
       const avaSize = [44,38,34][i];
       const bStyle = p.banner_id ? (()=>{ const b=BANNERS.find(x=>x.id===p.banner_id); return b&&b.style?';'+b.style:''; })() : '';
       return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}" style="position:relative${bStyle}">
+        ${i===0?'<div class="lb-p1-particles" id="lbP1Particles"></div>':''}
         <div class="lb-card-medal">${medals[i]}</div>
         <div class="lb-card-ava">${avatarSvg(p.avatar_id||'marius',{size:avaSize})}</div>
         <div class="lb-card-info">
@@ -12709,6 +12724,21 @@ async function refreshGlobalLeaderboard(){
     }).join('') : '';
 
   wrap.innerHTML = top3Html + restHtml;
+  // Particules #1
+  const p1p = document.getElementById('lbP1Particles');
+  if(p1p){
+    const colors=['#f4d060','#f4b13c','#fff','#ffeaa0'];
+    let pHTML='';
+    for(let i=0;i<12;i++){
+      const c=colors[i%colors.length];
+      const left=5+Math.random()*90;
+      const dur=1.5+Math.random()*2;
+      const delay=Math.random()*2;
+      pHTML+=`<div class="lb-p1-particle" style="left:${left}%;background:${c};animation-duration:${dur}s;animation-delay:${delay}s"></div>`;
+    }
+    p1p.innerHTML=pHTML;
+  }
+
   wrap.onclick = e=>{
     const r = e.target.closest('[data-pseudo]');
     if(r) openPlayerView(r.dataset.pseudo);
@@ -14305,6 +14335,10 @@ function init(){
   if($('cardCafe')) $('cardCafe').addEventListener('click', openCafe);
   if($('startupClose')) $('startupClose').addEventListener('click', closeStartupPopup);
   if($('btnMariage')) $('btnMariage').addEventListener('click', openMariage);
+  if($('btnMariaProf')) $('btnMariaProf').addEventListener('click', openMariage);
+  if($('btnDivorceProf')) $('btnDivorceProf').addEventListener('click', openDivorce);
+  if(typeof updateMariageUI==='function') updateMariageUI();
+  if(typeof checkMariageReproches==='function') setTimeout(checkMariageReproches, 1500);
   if($('btnMensuel')) $('btnMensuel').addEventListener('click', openMensuelModal);
   if($('cardMafia')) $('cardMafia').addEventListener('click', openMafiaMode);
   if($('cardTruck')) $('cardTruck').addEventListener('click', openTruckMode);
@@ -15741,64 +15775,6 @@ const MARIAGE_SCENARIOS = [
   },
 ];
 
-function openMariage(){
-  const sc = MARIAGE_SCENARIOS[Math.floor(Math.random() * MARIAGE_SCENARIOS.length)];
-  const blaze = S.blaze || 'Docker';
-  const scene = $('mariageScene');
-  if(!scene) return;
-
-  // Apply bonus
-  let bonusMsg = '';
-  if(sc.spouse === 'Rosa'){
-    S.flags.mariageBonus = Date.now() + 24*3600*1000;
-    bonusMsg = '\n+10% gains activé !';
-  } else if(sc.spouse === 'Momo'){
-    S.flags.momoBonusUntil = Date.now() + 7*24*3600*1000;
-  } else if(sc.spouse.includes('crabe')){
-    S.flags.crabBonus = true;
-  } else if(sc.spouse === 'personne'){
-    S.cash = Math.max(0, S.cash - Math.floor(S.cash * 0.05));
-  } else if(sc.spouse.includes('conteneur')){
-    S.flags.boxBonus30 = Date.now() + 30*60*1000;
-  }
-  save();
-
-  $('mariageTitle').textContent = sc.title;
-  $('mariageText').textContent = sc.text(blaze) + bonusMsg;
-  scene.querySelector('.mariage-emoji').textContent = sc.emoji;
-  scene.style.display = 'flex';
-
-  // Confetti
-  const canvas = $('mariageConfetti');
-  if(canvas){
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const ctx = canvas.getContext('2d');
-    const particles = Array.from({length:80}, ()=>({
-      x: Math.random()*canvas.width, y: Math.random()*-canvas.height,
-      vy: 2+Math.random()*4, vx: (Math.random()-.5)*3,
-      size: 6+Math.random()*8,
-      color: ['#f4b13c','#ff8ab0','#80e8a0','#80c0ff','#e080ff'][Math.floor(Math.random()*5)],
-      rot: Math.random()*360, vrot: (Math.random()-.5)*10
-    }));
-    let animId;
-    const loop = () => {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      particles.forEach(p => {
-        p.y+=p.vy; p.x+=p.vx; p.rot+=p.vrot;
-        if(p.y>canvas.height){ p.y=-10; p.x=Math.random()*canvas.width; }
-        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
-        ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
-        ctx.restore();
-      });
-      animId = requestAnimationFrame(loop);
-    };
-    loop();
-    $('mariageClose').onclick = () => { cancelAnimationFrame(animId); scene.style.display='none'; refresh(); };
-  } else {
-    $('mariageClose').onclick = () => { scene.style.display='none'; refresh(); };
-  }
-}
 
 
 /* ════════════════════════════════════════════════════════════
@@ -18371,6 +18347,253 @@ function scheduleNextCall(){
   // Boutons profil → déléguer aux vrais boutons
   const profBtns = {btnMariaProf:'btnMariage',btnShareProf:'btnShare',btnChangeAvatarProf:'btnChangeAvatar',btnMensuelProf:'btnMensuel',btnRetireProf:'btnRetire',btnExportProf:'btnExport',btnImportProf:'btnImport',btnResetProf:'btnReset'};
   Object.entries(profBtns).forEach(([src,dst])=>{ const el=$(src); if(el) el.onclick=()=>{ const t=$(dst); if(t) t.click(); }; });
+
+
+/* ════════════════════════════════════════════
+   MARIAGE — nouveau système
+   ════════════════════════════════════════════ */
+
+const MARIAGE_COST    = 10_000_000_000; // 10 milliards
+const DIVORCE_COST    = 50_000_000_000; // 50 milliards
+const MARIAGE_REWARD  = 50_000_000_000; // bouquet 50 milliards
+
+function updateMariageUI(){
+  // Mettre à jour les boutons dans le profil
+  const marie = S.flags && S.flags.marie;
+  const mauvauxMariage = S.flags && S.flags.mauvauxMariage;
+
+  const btnM = $('btnMariage');
+  const btnMP = $('btnMariaProf');
+  const btnDiv = $('btnDivorce');
+  const btnDivP = $('btnDivorceProf');
+  const mariageStatus = $('mariageStatus');
+  const divorceSection = $('divorceSection');
+
+  if(btnM){
+    if(marie){ btnM.disabled=true; btnM.textContent='💍 Déjà marié(e)'; }
+    else { btnM.disabled=false; btnM.textContent='💍 Se marier (10 Md€)'; }
+  }
+  if(btnMP){
+    if(marie){ btnMP.disabled=true; btnMP.textContent='💍 Déjà marié(e)'; }
+    else { btnMP.disabled=false; btnMP.textContent='💍 Se marier (10 Md€)'; }
+  }
+  if(mariageStatus){
+    if(marie && !mauvauxMariage) mariageStatus.textContent = '💑 Jeune marié — bénédiction du curé Keany';
+    else if(marie && mauvauxMariage) mariageStatus.textContent = '😤 Marié(e) — mais ta femme est pas contente';
+    else mariageStatus.textContent = '';
+  }
+  if(divorceSection){
+    divorceSection.style.display = marie ? 'block' : 'none';
+  }
+}
+
+function openMariage(){
+  if(S.flags && S.flags.marie){ toast('Tu es déjà marié(e) !'); return; }
+  if((S.cash||0) < MARIAGE_COST){ toast('Il te faut 10 milliards pour te marier !'); return; }
+
+  // Créer la modal de demande
+  const modal = document.createElement('div');
+  modal.className = 'modal-back on';
+  modal.style.zIndex = '350';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:320px;text-align:center;padding:0;overflow:hidden">
+      <div style="background:linear-gradient(135deg,#0a2540,#0d5c7a);padding:20px 16px">
+        <div style="font-size:48px;margin-bottom:8px">💒</div>
+        <div style="font-family:'Pirata One',serif;font-size:22px;color:#f4b13c">Le Mariage du Port</div>
+      </div>
+      <div style="padding:16px;background:var(--paper)">
+        <div style="font-family:'Special Elite',monospace;font-size:11px;color:#3a2a10;line-height:1.6;margin-bottom:14px">
+          Le curé <b>Keany</b> t'attend à l'église du Vieux-Port.<br><br>
+          <b>Coût :</b> 10 milliards €<br>
+          <b>1 chance sur 5</b> d'avoir un beau mariage.<br>
+          <b>Si réussi :</b> 💐 bouquet de 50 Md€ du curé Keany + mention "Jeune marié"<br>
+          <b>Si raté :</b> Ta femme te fait des reproches pendant 2 minutes à chaque connexion…
+        </div>
+        <button onclick="confirmMariage(this)" style="width:100%;padding:13px;background:#c0392b;color:#fff;border:3px solid #000;box-shadow:3px 3px 0 #000;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;margin-bottom:8px">
+          💍 DIRE OUI (10 Md€)
+        </button>
+        <button onclick="this.closest('.modal-back').remove()" style="width:100%;padding:10px;background:var(--paper);border:2px solid #000;font-family:'Bebas Neue',sans-serif;font-size:14px;cursor:pointer">
+          ANNULER
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function confirmMariage(btn){
+  const modal = btn.closest('.modal-back');
+  if((S.cash||0) < MARIAGE_COST){ toast('Pas assez !'); return; }
+  S.cash -= MARIAGE_COST;
+  S.flags = S.flags || {};
+  S.flags.marie = true;
+
+  // 1 chance sur 5 = 20% de succès
+  const success = Math.random() < 0.2;
+
+  if(success){
+    S.cash += MARIAGE_REWARD;
+    S.totalEarned += MARIAGE_REWARD;
+    S.flags.mauvauxMariage = false;
+    save(); refresh();
+    if(modal) modal.remove();
+    // Scène de mariage réussie
+    showMariageScene(true);
+  } else {
+    S.flags.mauvauxMariage = true;
+    save(); refresh();
+    if(modal) modal.remove();
+    showMariageScene(false);
+  }
+  updateMariageUI();
+}
+
+function showMariageScene(success){
+  const scene = $('mariageScene');
+  if(!scene) return;
+  $('mariageTitle').textContent = success ? '🎊 QUEL BEAU MARIAGE !' : '😭 CATASTROPHE AU MARIAGE';
+  $('mariageText').textContent = success
+    ? 'Le curé Keany rayonne de bonheur !\n\n"Mes enfants, je vous déclare unis pour la vie sur ce quai !"\n\nFernand pleure. Momo fait le DJ. Le port entier crie. Le curé Keany te glisse discrètement une enveloppe avec 50 milliards d\'€.\n\n💑 Tu es officiellement "Jeune marié(e)" !'
+    : 'Catastrophe au mariage...\n\n"TU TRAVAILLES TROP, TU RENTRES JAMAIS, LE QUAI C\'EST PLUS IMPORTANT QUE MOI !!!"\n\n— Ta femme, à chaque fois que tu ouvres le jeu.\n\nFernand dit : "Bienvenue dans le club."\nMomo dit rien. Il sourit juste.\n\n😤 Désormais ta femme te fera des reproches pendant 2 min à chaque connexion. Divorce disponible pour 50 Md€.';
+  scene.querySelector('.mariage-emoji').textContent = success ? '💑🎊' : '😭💔';
+  scene.style.display = 'flex';
+
+  // Confettis si succès
+  const canvas = $('mariageConfetti');
+  if(canvas && success){
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const particles = Array.from({length:80}, ()=>({
+      x:Math.random()*canvas.width, y:Math.random()*-canvas.height,
+      vy:2+Math.random()*4, vx:(Math.random()-.5)*3,
+      size:6+Math.random()*8,
+      color:['#f4b13c','#ff8ab0','#80e8a0','#80c0ff','#e080ff'][Math.floor(Math.random()*5)],
+      rot:Math.random()*360, vrot:(Math.random()-.5)*10
+    }));
+    let animId;
+    const loop = ()=>{
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      particles.forEach(p=>{
+        p.y+=p.vy; p.x+=p.vx; p.rot+=p.vrot;
+        if(p.y>canvas.height){ p.y=-10; p.x=Math.random()*canvas.width; }
+        ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+        ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2);
+        ctx.restore();
+      });
+      animId = requestAnimationFrame(loop);
+    };
+    loop();
+    $('mariageClose').onclick = ()=>{ cancelAnimationFrame(animId); scene.style.display='none'; refresh(); };
+  } else {
+    $('mariageClose').onclick = ()=>{ scene.style.display='none'; refresh(); };
+  }
+}
+
+function openDivorce(){
+  if(!S.flags || !S.flags.marie){ toast("T'es même pas marié(e) !"); return; }
+  if((S.cash||0) < DIVORCE_COST){ toast('Il te faut 50 milliards pour divorcer !'); return; }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-back on';
+  modal.style.zIndex = '350';
+  modal.innerHTML = `
+    <div class="modal" style="max-width:320px;text-align:center;padding:0;overflow:hidden">
+      <div style="background:#1a0808;padding:16px">
+        <div style="font-size:40px">⚖️</div>
+        <div style="font-family:'Pirata One',serif;font-size:20px;color:#ff8070">Le Cabinet Yannick</div>
+      </div>
+      <div style="padding:16px;background:var(--paper)">
+        <div style="font-family:'Special Elite',monospace;font-size:11px;color:#3a2a10;line-height:1.6;margin-bottom:14px">
+          <b>Maître Yannick</b>, notaire du port, t'accueille :<br><br>
+          "Conformément à l'article 13 du Code Maritime Marseillais, la dissolution du mariage entraîne le partage à parts égales de l'actif net."<br><br>
+          <b>Coût :</b> 50 milliards €<br>
+          <b>Conséquence :</b> Tu repars avec la moitié de tout ce que tu as (cash, total gagné).
+        </div>
+        <button onclick="confirmDivorce(this)" style="width:100%;padding:13px;background:#8a1010;color:#fff;border:3px solid #000;box-shadow:3px 3px 0 #000;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;margin-bottom:8px">
+          ✍️ SIGNER LE PAPIER (50 Md€)
+        </button>
+        <button onclick="this.closest('.modal-back').remove()" style="width:100%;padding:10px;background:var(--paper);border:2px solid #000;font-family:'Bebas Neue',sans-serif;font-size:14px;cursor:pointer">
+          ANNULER
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function confirmDivorce(btn){
+  const modal = btn.closest('.modal-back');
+  if((S.cash||0) < DIVORCE_COST){ toast('Pas assez !'); return; }
+  S.cash = Math.floor((S.cash - DIVORCE_COST) / 2);
+  S.totalEarned = Math.floor(S.totalEarned / 2);
+  S.flags.marie = false;
+  S.flags.mauvauxMariage = false;
+  save(); refresh();
+  if(modal) modal.remove();
+  updateMariageUI();
+  // Scène divorce
+  const scene = $('mariageScene');
+  if(scene){
+    $('mariageTitle').textContent = 'DIVORCE PRONONCÉ';
+    $('mariageText').textContent = 'Maître Yannick range ses lunettes.\n\n"Voilà. C\'est signé. Votre épouse repart avec la moitié de votre patrimoine. C\'est la loi."\n\nFernand : "C\'est dur. Mais bon. Le port reste."\nMomo : "Je te paye une Valstar ?"\n\nTu repars avec la moitié de ce que tu avais.';
+    scene.querySelector('.mariage-emoji').textContent = '💔⚖️';
+    scene.style.display = 'flex';
+    $('mariageClose').onclick = ()=>{ scene.style.display='none'; refresh(); };
+  }
+  toast('Divorce prononcé. Maître Yannick a fait son travail.');
+}
+
+/* Reproches au login si mauvais mariage */
+function checkMariageReproches(){
+  if(!S.flags || !S.flags.marie || !S.flags.mauvauxMariage) return;
+  const reproches = [
+    "T'es encore sur ce quai ?! J'ai cuisiné pour RIEN !",
+    "Les voisins m'ont demandé si j'étais veuve. VEUVE !",
+    "Fernand m'a appelée pour savoir si tu allais bien. Même Fernand s'inquiète !",
+    "Je t'ai laissé un message il y a 3 heures. TROIS HEURES.",
+    "Le chien te reconnaît plus. MÊME LE CHIEN.",
+  ];
+  const msg = reproches[Math.floor(Math.random()*reproches.length)];
+  showReprochesModal(msg);
+}
+
+function showReprochesModal(msg){
+  const modal = document.createElement('div');
+  modal.className = 'modal-back on';
+  modal.style.zIndex = '400';
+  let secs = 120;
+  modal.innerHTML = `
+    <div class="modal" style="max-width:320px;text-align:center;padding:0;overflow:hidden">
+      <div style="background:#8a0010;padding:16px">
+        <div style="font-size:40px">😤</div>
+        <div style="font-family:'Pirata One',serif;font-size:18px;color:#fff">TA FEMME A DEUX MOTS À TE DIRE</div>
+      </div>
+      <div style="padding:16px;background:var(--paper)">
+        <div style="font-family:'Special Elite',monospace;font-size:13px;color:#3a2a10;line-height:1.6;margin-bottom:16px;font-style:italic">
+          "${msg}"
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:#c0392b" id="reprochesTimer">2:00</div>
+        <div style="font-family:'Special Elite',monospace;font-size:10px;color:#7a6a4a">Avant de pouvoir jouer</div>
+        <div style="margin-top:10px;font-size:10px;font-family:'Special Elite',monospace;color:#9a8a7a">
+          (Divorce disponible dans le Profil pour 50 Md€)
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const tick = setInterval(()=>{
+    secs--;
+    const m = Math.floor(secs/60);
+    const s = secs%60;
+    const t = modal.querySelector('#reprochesTimer');
+    if(t) t.textContent = m+':'+(s<10?'0':'')+s;
+    if(secs <= 0){
+      clearInterval(tick);
+      modal.remove();
+    }
+  }, 1000);
+}
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
