@@ -6598,11 +6598,6 @@ body.phase-night-disabled .dock-area::before{
       <!-- Missions -->
       <div style="padding:14px">
 
-        <!-- Bouton Plus -->
-        <button onclick="showTab('more')" style="width:100%;padding:12px;background:var(--paper);border:3px solid #000;box-shadow:3px 3px 0 #000;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--port-blue-deep);cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px">
-          <span>•••</span> <span>PLUS D'OPTIONS</span>
-        </button>
-
         <!-- Mission du jour -->
         <div class="prof-mission-card" id="missionCard">
           <div class="prof-mission-head">
@@ -6634,6 +6629,20 @@ body.phase-night-disabled .dock-area::before{
         <div class="stats-grid" id="statsGrid"></div>
 
         <div id="npcChronicle" style="display:none"></div>
+
+        <!-- Boutons (contenu de "Plus d'options") -->
+        <div class="section-title small" style="margin-top:16px">💒 Vie Civile</div>
+        <button class="mariage-btn" id="btnMariage">💍 Se marier sur le quai</button>
+        <button class="action-btn green" id="btnShare">📲 Défier mes potes (WhatsApp)</button>
+        <a href="http://t.me/DockerMarseille_bot" target="_blank" rel="noopener" class="action-btn" style="display:block;text-align:center;text-decoration:none;background:#0a2d6e;color:#fff;border-color:#06194a">🤖 cccp13 automatique</a>
+
+        <div class="section-title small" style="margin-top:14px">⚙️ Mon Compte</div>
+        <button class="action-btn" id="btnChangeAvatar">🎭 Changer d'avatar</button>
+        <button class="action-btn" id="btnMensuel2" style="background:linear-gradient(135deg,#062030,#041520);color:#60c8ff;border:2px solid rgba(96,200,255,.4)">📑 Contrats Premium</button>
+        <button class="action-btn pastaga" id="btnRetire2">⭐ Le Prestige</button>
+        <button class="action-btn crane" id="btnExport2">💾 Sauvegarder mon compte</button>
+        <button class="action-btn crane" id="btnImport2">🔑 Récupérer un compte</button>
+        <button class="action-btn red" id="btnReset2">💀 Tout effacer</button>
 
       </div>
 
@@ -6930,7 +6939,7 @@ async function onlinePushState(force){
       port_buildings:   portBuildings,
       zone:             S.zone || 'vieux-port',
       title_id:         S.titleId || 'occasionnel',
-      banner_id:        (S.banners && S.banners.current) || 'default',
+      banner_id:        (S.banners && S.banners.current) || 'default', // déjà présent
       last_seen:        new Date().toISOString(),
       save_data:        JSON.stringify(S),
       is_mensuel:       !!(S.flags && S.flags.mensuel),
@@ -6948,7 +6957,7 @@ async function onlinePushState(force){
 
 async function onlineFetchLeaderboard(){
   try {
-    const data = await sbFetch('players?select=pseudo,blaze,avatar_id,title_id,grade,total_earned,last_seen,retirements,is_mensuel&order=total_earned.desc&limit=100');
+    const data = await sbFetch('players?select=pseudo,blaze,avatar_id,title_id,grade,total_earned,last_seen,retirements,is_mensuel,banner_id&order=total_earned.desc&limit=100');
     _onlineLastError = null;
     _onlineGlobalLb = data || [];
     return _onlineGlobalLb;
@@ -12664,7 +12673,8 @@ async function refreshGlobalLeaderboard(){
       const ls = p.last_seen ? new Date(p.last_seen) : null;
       const online = ls && (now-ls.getTime())<5*60*1000;
       const avaSize = [44,38,34][i];
-      return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}">
+      const bStyle = p.banner_id ? (()=>{ const b=BANNERS.find(x=>x.id===p.banner_id); return b&&b.style?';'+b.style:''; })() : '';
+      return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}" style="position:relative${bStyle}">
         <div class="lb-card-medal">${medals[i]}</div>
         <div class="lb-card-ava">${avatarSvg(p.avatar_id||'marius',{size:avaSize})}</div>
         <div class="lb-card-info">
@@ -18001,6 +18011,7 @@ function openLookModal(type){
       +preview
       +'<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:var(--port-blue-deep)">'+item.name+'</div>'
       +'<div style="font-family:Special Elite,monospace;font-size:9px;color:#7a6a4a">'+label+'</div>'
+      +(item.desc?'<div style="font-family:Special Elite,monospace;font-size:9px;color:#50a840;margin-top:2px">'+item.desc+'</div>':'');
       +'</div>';
   }
 
