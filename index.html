@@ -1259,7 +1259,7 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
 
 /* ===== TOAST ===== */
 .toast{
-  position:absolute; left:50%; bottom:80px; transform:translateX(-50%);
+  position:fixed; left:50%; top:70px; transform:translateX(-50%);
   z-index:200;
   background:var(--ink); color:var(--paper);
   border:2px solid var(--crane);
@@ -7098,7 +7098,7 @@ function _showToast2(item){
 
   const el = document.createElement('div');
   el.className = 'toast2';
-  el.innerHTML = `<span class="toast2-icon">${icon}</span><span class="toast2-msg">${escapeHtml(msg)}</span><span class="toast2-close">✕</span>`;
+  el.innerHTML = `<span class="toast2-icon">${icon}</span><span class="toast2-msg">${escapeHtml(msg)}</span>`;
   stack.appendChild(el);
   _toastActive.push({el, id: item.id});
 
@@ -7967,6 +7967,19 @@ function buyAccessory(id){
   recomputePerSec();
   save();
   return true;
+}
+function equipAccessory(id){
+  if(!S.accessories) S.accessories = { owned:[], equipped:[] };
+  const idx = S.accessories.equipped.indexOf(id);
+  if(idx >= 0){
+    S.accessories.equipped = []; // désquiper
+    toast('Accessoire retiré');
+  } else {
+    S.accessories.equipped = [id]; // un seul à la fois
+    const a = ACCESSORIES.find(x=>x.id===id);
+    if(a) toast(a.icon+' '+a.name+' équipé !');
+  }
+  recomputePerSec(); save(); refresh(); refreshProfLook();
 }
 function toggleAccessory(id){
   if(!isAccessoryOwned(id)){ toast('Pas encore acheté'); return; }
@@ -10718,6 +10731,17 @@ function refreshProfile(){
     if($('weeklyCard')) $('weeklyCard').style.display='';
   } else {
     if($('weeklyCard')) $('weeklyCard').style.display='none';
+  }
+
+  // ── Bannière dans le header profil ──
+  const heroEl = $('profileHero');
+  if(heroEl){
+    const banner = currentBanner ? currentBanner() : null;
+    if(banner && banner.style){
+      // Appliquer la bannière comme fond du hero
+      heroEl.style.cssText = heroEl.style.cssText || '';
+      heroEl.setAttribute('style', 'display:flex;align-items:center;gap:14px;padding:18px 16px 16px;border-bottom:3px solid var(--crane);' + banner.style + ';');
+    }
   }
 
   // ── Mon Look ──
