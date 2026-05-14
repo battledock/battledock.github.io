@@ -5513,11 +5513,11 @@ body.phase-night-disabled .dock-area::before{
   content:''; position:absolute;
   left:0; top:0; bottom:0; width:3px;
 }
-.lb-card-top.p1{ background:linear-gradient(135deg,#2a1a00,#4a3000); border-left:4px solid #f4b13c; }
+.lb-card-top.p1{ background:#fffaec; border-left:4px solid #f4b13c; }
 .lb-card-top.p1::before{ background:#f4b13c; width:4px; }
-.lb-card-top.p2{ background:linear-gradient(135deg,#1a1e22,#2a3038); border-left:4px solid #a0b0c0; }
+.lb-card-top.p2{ background:#f4f6f8; border-left:4px solid #a0b0c0; }
 .lb-card-top.p2::before{ background:#a0b0c0; }
-.lb-card-top.p3{ background:linear-gradient(135deg,#1a1008,#2a1a08); border-left:4px solid #c07030; }
+.lb-card-top.p3{ background:#faf4ec; border-left:4px solid #c07030; }
 .lb-card-top.p3::before{ background:#c07030; }
 .lb-card-top.me-card{ box-shadow:inset 0 0 0 2px #c8861a; }
 
@@ -5530,9 +5530,9 @@ body.phase-night-disabled .dock-area::before{
   font-family:'Pirata One',serif; line-height:1.1; margin-bottom:3px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
-.lb-card-top.p1 .lb-card-name{ font-size:19px; color:#f4d060; }
-.lb-card-top.p2 .lb-card-name{ font-size:17px; color:#c0d0e0; }
-.lb-card-top.p3 .lb-card-name{ font-size:16px; color:#e0a050; }
+.lb-card-top.p1 .lb-card-name{ font-size:19px; color:#8a6010; }
+.lb-card-top.p2 .lb-card-name{ font-size:17px; color:#3a5a7a; }
+.lb-card-top.p3 .lb-card-name{ font-size:16px; color:#7a5030; }
 .lb-card-sub{
   font-family:'Special Elite',monospace; font-size:9px;
   color:#9a8a7a; display:flex; align-items:center; gap:5px;
@@ -6646,7 +6646,11 @@ body.phase-night-disabled .dock-area::before{
 
         <!-- Boutons (contenu de "Plus d'options") -->
         <div class="section-title small" style="margin-top:16px">💒 Vie Civile</div>
-        <button class="mariage-btn" id="btnMariage">💍 Se marier sur le quai</button>
+        <div id="mariageStatus" style="font-family:'Special Elite',monospace;font-size:11px;color:#50a840;margin-bottom:6px;padding:4px 0"></div>
+        <button class="mariage-btn" id="btnMariage">💍 Se marier (10 Md€)</button>
+        <div id="divorceSection" style="display:none;margin-top:6px">
+          <button class="action-btn red" id="btnDivorce" style="background:#8a1010">⚖️ Divorcer — Maître Yannick (50 Md€)</button>
+        </div>
         <button class="action-btn green" id="btnShare">📲 Défier mes potes (WhatsApp)</button>
         <a href="http://t.me/DockerMarseille_bot" target="_blank" rel="noopener" class="action-btn" style="display:block;text-align:center;text-decoration:none;background:#0a2d6e;color:#fff;border-color:#06194a">🤖 cccp13 automatique</a>
 
@@ -12689,7 +12693,6 @@ async function refreshGlobalLeaderboard(){
       const avaSize = [44,38,34][i];
       const bStyle = p.banner_id ? (()=>{ const b=BANNERS.find(x=>x.id===p.banner_id); return b&&b.style?';'+b.style:''; })() : '';
       return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}" style="position:relative${bStyle}">
-        ${i===0?'<div class="lb-p1-particles" id="lbP1Particles"></div>':''}
         <div class="lb-card-medal">${medals[i]}</div>
         <div class="lb-card-ava">${avatarSvg(p.avatar_id||'marius',{size:avaSize})}</div>
         <div class="lb-card-info">
@@ -12724,21 +12727,6 @@ async function refreshGlobalLeaderboard(){
     }).join('') : '';
 
   wrap.innerHTML = top3Html + restHtml;
-  // Particules #1
-  const p1p = document.getElementById('lbP1Particles');
-  if(p1p){
-    const colors=['#f4d060','#f4b13c','#fff','#ffeaa0'];
-    let pHTML='';
-    for(let i=0;i<12;i++){
-      const c=colors[i%colors.length];
-      const left=5+Math.random()*90;
-      const dur=1.5+Math.random()*2;
-      const delay=Math.random()*2;
-      pHTML+=`<div class="lb-p1-particle" style="left:${left}%;background:${c};animation-duration:${dur}s;animation-delay:${delay}s"></div>`;
-    }
-    p1p.innerHTML=pHTML;
-  }
-
   wrap.onclick = e=>{
     const r = e.target.closest('[data-pseudo]');
     if(r) openPlayerView(r.dataset.pseudo);
@@ -14335,6 +14323,7 @@ function init(){
   if($('cardCafe')) $('cardCafe').addEventListener('click', openCafe);
   if($('startupClose')) $('startupClose').addEventListener('click', closeStartupPopup);
   if($('btnMariage')) $('btnMariage').addEventListener('click', openMariage);
+  if($('btnDivorce')) $('btnDivorce').addEventListener('click', openDivorce);
   if($('btnMariaProf')) $('btnMariaProf').addEventListener('click', openMariage);
   if($('btnDivorceProf')) $('btnDivorceProf').addEventListener('click', openDivorce);
   if(typeof updateMariageUI==='function') updateMariageUI();
@@ -18345,8 +18334,7 @@ function scheduleNextCall(){
 
 
   // Boutons profil → déléguer aux vrais boutons
-  const profBtns = {btnMariaProf:'btnMariage',btnShareProf:'btnShare',btnChangeAvatarProf:'btnChangeAvatar',btnMensuelProf:'btnMensuel',btnRetireProf:'btnRetire',btnExportProf:'btnExport',btnImportProf:'btnImport',btnResetProf:'btnReset'};
-  Object.entries(profBtns).forEach(([src,dst])=>{ const el=$(src); if(el) el.onclick=()=>{ const t=$(dst); if(t) t.click(); }; });
+  // profBtns binding removed
 
 
 /* ════════════════════════════════════════════
@@ -18363,9 +18351,7 @@ function updateMariageUI(){
   const mauvauxMariage = S.flags && S.flags.mauvauxMariage;
 
   const btnM = $('btnMariage');
-  const btnMP = $('btnMariaProf');
   const btnDiv = $('btnDivorce');
-  const btnDivP = $('btnDivorceProf');
   const mariageStatus = $('mariageStatus');
   const divorceSection = $('divorceSection');
 
@@ -18373,10 +18359,7 @@ function updateMariageUI(){
     if(marie){ btnM.disabled=true; btnM.textContent='💍 Déjà marié(e)'; }
     else { btnM.disabled=false; btnM.textContent='💍 Se marier (10 Md€)'; }
   }
-  if(btnMP){
-    if(marie){ btnMP.disabled=true; btnMP.textContent='💍 Déjà marié(e)'; }
-    else { btnMP.disabled=false; btnMP.textContent='💍 Se marier (10 Md€)'; }
-  }
+
   if(mariageStatus){
     if(marie && !mauvauxMariage) mariageStatus.textContent = '💑 Jeune marié — bénédiction du curé Keany';
     else if(marie && mauvauxMariage) mariageStatus.textContent = '😤 Marié(e) — mais ta femme est pas contente';
