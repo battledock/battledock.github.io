@@ -5504,6 +5504,7 @@ body.phase-night-disabled .dock-area::before{
   display:flex; align-items:center; gap:12px;
   padding:14px 16px; cursor:pointer;
   border-radius:2px; position:relative;
+  overflow:hidden;
   transition:opacity .1s;
 }
 .lb-card-top:active{ opacity:.8; }
@@ -12809,10 +12810,7 @@ async function refreshGlobalLeaderboard(){
       const ls = p.last_seen ? new Date(p.last_seen) : null;
       const online = ls && (now-ls.getTime())<5*60*1000;
       const avaSize = [44,38,34][i];
-      const bBanner = p.banner_id ? BANNERS.find(x=>x.id===p.banner_id) : null;
-      const bStripe = bBanner&&bBanner.style ? `<div style="height:6px;${bBanner.style};margin:-14px -16px 10px;"></div>` : '';
       return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}">
-        ${bStripe}
         <div class="lb-card-medal">${medals[i]}</div>
         <div class="lb-card-ava">${avatarSvg(p.avatar_id||'marius',{size:avaSize})}</div>
         <div class="lb-card-info">
@@ -18468,29 +18466,28 @@ const DIVORCE_COST    = 50_000_000_000; // 50 milliards
 const MARIAGE_REWARD  = 50_000_000_000; // bouquet 50 milliards
 
 function updateMariageUI(){
-  // Mettre à jour les boutons dans le profil
   const marie = S.flags && S.flags.marie;
-  const mauvauxMariage = S.flags && S.flags.mauvauxMariage;
+  const mauvais = S.flags && S.flags.mauvauxMariage;
 
-  const btnM = $('btnMariage');
-  const btnMMore = $('btnMariageMore');
-  const btnDiv = $('btnDivorce');
-  const mariageStatus = $('mariageStatus');
-  const divorceSection = $('divorceSection');
-
-  [btnM, btnMMore].forEach(b=>{ if(!b) return;
-    if(marie){ b.disabled=true; b.textContent='💍 Déjà marié(e)'; }
-    else { b.disabled=false; b.textContent='💍 Se marier (10 Md€)'; }
+  // Tous les boutons mariage
+  ['btnMariage','btnMariageMore'].forEach(id=>{
+    const btn = $(id);
+    if(!btn) return;
+    btn.disabled = !!marie;
+    btn.textContent = marie ? '💍 Déjà marié(e)' : '💍 Se marier (10 Md€)';
   });
 
-  if(mariageStatus){
-    if(marie && !mauvauxMariage) mariageStatus.textContent = '💑 Jeune marié — bénédiction du curé Keany';
-    else if(marie && mauvauxMariage) mariageStatus.textContent = '😤 Marié(e) — mais ta femme est pas contente';
-    else mariageStatus.textContent = '';
+  // Status
+  const ms = $('mariageStatus');
+  if(ms){
+    if(marie && !mauvais) ms.textContent = '💑 Jeune marié — bénédiction du curé Keany';
+    else if(marie && mauvais) ms.textContent = '😤 Marié(e) — ta femme est pas contente';
+    else ms.textContent = '';
   }
-  if(divorceSection){
-    divorceSection.style.display = marie ? 'block' : 'none';
-  }
+
+  // Section divorce
+  const ds = $('divorceSection');
+  if(ds) ds.style.display = marie ? 'block' : 'none';
 }
 
 function openMariage(){
