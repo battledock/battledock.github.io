@@ -16771,11 +16771,7 @@ async function loadStartupLb(){
 }
 
 function showStartupPopup(){
-  // Afficher seulement si version a changé depuis la dernière fois
-  const lastSeen = localStorage.getItem('battle_dock_popup_ver');
-  if(lastSeen === STARTUP_VERSION) return;
-  const popup = document.getElementById('startupPopup');
-  if(popup) popup.style.display = 'flex';
+  return; // DÉSACTIVÉ DÉFINITIVEMENT
 }
 
 function closeStartupPopup(){
@@ -17991,14 +17987,17 @@ function openLookModal(type){
     const border = active ? 'var(--crane)' : '#000';
     const bg = active ? '#fffbe8' : 'var(--paper)';
     const label = active ? '✓ Équipé' : (owned ? 'Équiper' : fmtEur(item.price||0));
-    itemsHtml += '<div onclick="selectLookItem(\''+item.id+'\','+isBanner+')" style="padding:12px;border:3px solid '+border+';background:'+bg+';cursor:pointer;text-align:center;box-shadow:2px 2px 0 #000">'
-      +'<div style="font-size:26px;margin-bottom:4px">'+(item.icon||'🏳️')+'</div>'
+    var preview = isBanner && item.style
+      ? '<div style="height:28px;margin-bottom:6px;'+item.style+';"></div>'
+      : '<div style="font-size:26px;margin-bottom:4px">'+(item.icon||'🧢')+'</div>';
+    itemsHtml += '<div onclick="selectLookItem(\''+item.id+'\','+isBanner+')" style="padding:10px;border:3px solid '+border+';background:'+bg+';cursor:pointer;text-align:center;box-shadow:2px 2px 0 #000">'
+      +preview
       +'<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:var(--port-blue-deep)">'+item.name+'</div>'
       +'<div style="font-family:Special Elite,monospace;font-size:9px;color:#7a6a4a">'+label+'</div>'
       +'</div>';
   }
 
-  modal.innerHTML = '<div style="background:var(--paper);width:100%;max-height:70vh;overflow-y:auto;border-top:3px solid #000;padding:16px;padding-bottom:40px">'
+  modal.innerHTML = '<div style="background:#ffffff;width:100%;max-height:75vh;overflow-y:auto;border-top:3px solid #000;padding:16px;padding-bottom:40px">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--port-blue-deep);letter-spacing:1px">'+(isBanner?'🏳️ Bannières':'🧢 Accessoires')+'</div>'
     +'<button onclick="document.getElementById(\'lookPickerModal\').remove()" style="background:#000;color:#fff;border:none;padding:6px 12px;font-family:Bebas Neue,sans-serif;font-size:14px;cursor:pointer">FERMER</button>'
@@ -18010,16 +18009,24 @@ function openLookModal(type){
 
 function selectLookItem(id, isBanner){
   if(isBanner){
-    if(!isBannerOwned(id)){ buyBanner(id); }
-    else { equipBanner(id); }
+    if(!isBannerOwned(id)){
+      var ok = buyBanner(id);
+      if(!ok) return; // pas assez de sous
+    } else {
+      setBanner(id);
+      toast('Bannière équipée !');
+    }
   } else {
-    if(!isAccessoryOwned(id)){ buyAccessory(id); }
-    else { equipAccessory(id); }
+    if(!isAccessoryOwned(id)){
+      var ok2 = buyAccessory(id);
+      if(!ok2) return;
+    } else {
+      equipAccessory(id);
+    }
   }
-  refreshProfLook();
-  // Fermer la modal
-  const modal = document.getElementById('lookPickerModal');
-  if(modal) modal.remove();
+  save(); refresh(); refreshProfLook();
+  // Réouvrir la modal pour voir le changement
+  openLookModal(isBanner);
 }
 
 function openBannerPicker(){ openLookModal(true); }
