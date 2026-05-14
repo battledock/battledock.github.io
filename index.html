@@ -6059,6 +6059,65 @@ body.phase-night-disabled .dock-area::before{
 }
 .lb-card-top.p1 > *:not(.lb-p1-particles){ position:relative; z-index:1; }
 
+
+/* ── COFFRE QUOTIDIEN ── */
+.chest-card{
+  background:var(--paper); border:3px solid #000;
+  box-shadow:3px 3px 0 #000; padding:14px;
+  display:flex; align-items:center; gap:12px;
+  cursor:pointer; margin-bottom:14px;
+  transition:transform .08s, box-shadow .08s;
+}
+.chest-card:active{ transform:translate(2px,2px); box-shadow:none; }
+.chest-card.claimed{ opacity:.5; cursor:default; }
+.chest-icon{ font-size:40px; flex-shrink:0; }
+.chest-info{ flex:1; }
+.chest-title{ font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:1px; color:var(--port-blue-deep); }
+.chest-sub{ font-family:'Special Elite',monospace; font-size:10px; color:#7a6a4a; margin-top:2px; }
+.chest-btn{ font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; padding:8px 14px; background:var(--crane); border:2px solid #000; color:#0a1820; cursor:pointer; }
+
+/* ── MÉDAILLES ÉPINGLÉES ── */
+.medals-grid{ display:flex; gap:8px; margin-bottom:14px; }
+.medal-slot{
+  flex:1; aspect-ratio:1; max-width:90px;
+  background:var(--paper); border:3px solid #000;
+  box-shadow:2px 2px 0 #000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer; text-align:center; padding:6px;
+  transition:transform .08s;
+}
+.medal-slot:active{ transform:translate(1px,1px); box-shadow:none; }
+.medal-slot.empty{ border:3px dashed #ccc; box-shadow:none; color:#ccc; font-size:22px; }
+.medal-slot-icon{ font-size:28px; }
+.medal-slot-name{ font-family:'Special Elite',monospace; font-size:8px; color:var(--port-blue-deep); margin-top:3px; line-height:1.2; }
+
+/* Modal sélection médaille */
+.medal-picker{
+  position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,.7);
+  display:flex; align-items:flex-end;
+}
+.medal-picker-card{
+  background:var(--paper); width:100%;
+  max-height:70vh; overflow-y:auto;
+  border-top:3px solid #000; padding:16px;
+}
+.medal-picker-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+  margin-top:12px;
+}
+.medal-pick-item{
+  padding:8px 4px; border:2px solid #000; text-align:center;
+  cursor:pointer; background:#fff;
+  transition:background .1s;
+}
+.medal-pick-item:active{ background:#f0ebe0; }
+.medal-pick-item.pinned{ background:#fffbe8; border-color:var(--crane); }
+.medal-pick-item.locked{ opacity:.35; cursor:default; filter:grayscale(1); }
+.medal-pick-icon{ font-size:24px; }
+.medal-pick-name{ font-family:'Special Elite',monospace; font-size:8px; color:var(--port-blue-deep); margin-top:2px; line-height:1.2; }
+
 </style>
 </head>
 <body>
@@ -6597,7 +6656,7 @@ body.phase-night-disabled .dock-area::before{
   </main>
 
   <main class="screen" id="screen-profile" style="background:#eef4f0;">
-    <div class="screen-pad" style="padding:0 0 100px">
+    <div class="screen-pad" style="padding:0 0 70px">
 
       <!-- Hero header -->
       <div class="profile-hero" id="profileHero">
@@ -6611,6 +6670,19 @@ body.phase-night-disabled .dock-area::before{
 
       <!-- Missions -->
       <div style="padding:14px">
+
+        <!-- Coffre quotidien -->
+        <div id="dailyChestWrap"></div>
+
+        <!-- Médailles épinglées -->
+        <div class="section-title small">🏅 Mes Médailles</div>
+        <div class="medals-grid" id="pinnedMedalsGrid"></div>
+
+        <!-- Accès rapides -->
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button id="btnRetireTop" class="action-btn pastaga" style="flex:1;margin:0;font-size:12px;padding:10px 6px">⭐ Prestige</button>
+          <button id="btnMensuelTop" style="flex:1;margin:0;padding:10px 6px;background:linear-gradient(135deg,#062030,#041520);color:#60c8ff;border:2px solid rgba(96,200,255,.4);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer">📑 Contrats Premium</button>
+        </div>
 
         <!-- Mission du jour -->
         <div class="prof-mission-card" id="missionCard">
@@ -6656,8 +6728,7 @@ body.phase-night-disabled .dock-area::before{
 
         <div class="section-title small" style="margin-top:14px">⚙️ Mon Compte</div>
         <button class="action-btn" id="btnChangeAvatar">🎭 Changer d'avatar</button>
-        <button class="action-btn" id="btnMensuel2" style="background:linear-gradient(135deg,#062030,#041520);color:#60c8ff;border:2px solid rgba(96,200,255,.4)">📑 Contrats Premium</button>
-        <button class="action-btn pastaga" id="btnRetire2">⭐ Le Prestige</button>
+
         <button class="action-btn crane" id="btnExport2">💾 Sauvegarder mon compte</button>
         <button class="action-btn crane" id="btnImport2">🔑 Récupérer un compte</button>
         <button class="action-btn red" id="btnReset2">💀 Tout effacer</button>
@@ -8756,7 +8827,36 @@ function bumpWeekly(type, n){
   S.weekly.score = (S.weekly.score||0) + n;
 }
 
-const BADGES = [];
+const BADGES = [
+  // Progression cash
+  { id:'first_k',    icon:'💰', name:'Premier Millier',   desc:'Gagner 1 000€',           cond: s => s.totalEarned >= 1000 },
+  { id:'first_100k', icon:'💵', name:'Cent Mille',         desc:'Gagner 100 000€',          cond: s => s.totalEarned >= 100000 },
+  { id:'first_1m',   icon:'🤑', name:'Le Million',         desc:'Gagner 1 000 000€',        cond: s => s.totalEarned >= 1000000 },
+  { id:'first_1md',  icon:'💎', name:'Milliardaire',       desc:'Gagner 1 milliard€',       cond: s => s.totalEarned >= 1e9 },
+  { id:'first_10md', icon:'👑', name:'Roi du Port',        desc:'Gagner 10 milliards€',     cond: s => s.totalEarned >= 10e9 },
+  // Clics
+  { id:'clics_100',  icon:'👊', name:'Premiers Coups',     desc:'100 clics',                cond: s => s.totalClicks >= 100 },
+  { id:'clics_1k',   icon:'🥊', name:'Bosseur',            desc:'1 000 clics',              cond: s => s.totalClicks >= 1000 },
+  { id:'clics_10k',  icon:'⚡', name:'Machine à Coups',    desc:'10 000 clics',             cond: s => s.totalClicks >= 10000 },
+  // Boîtes
+  { id:'boxes_100',  icon:'📦', name:'Dockers Rookie',     desc:'100 boîtes déchargées',    cond: s => s.totalBoxes >= 100 },
+  { id:'boxes_1k',   icon:'🏗️', name:'Débardeur Sérieux',  desc:'1 000 boîtes',             cond: s => s.totalBoxes >= 1000 },
+  // Combo
+  { id:'combo_3',    icon:'🔥', name:'Chaud Devant',       desc:'Combo ×3 atteint',         cond: s => s.maxCombo >= 3 },
+  { id:'combo_5',    icon:'💥', name:'COMBO MAX',          desc:'Combo ×5 atteint',         cond: s => s.maxCombo >= 5 },
+  // Grades
+  { id:'grade_1',    icon:'⚓', name:'Docker',             desc:'Atteindre grade 1',        cond: s => s.grade >= 1 },
+  { id:'grade_3',    icon:'🔧', name:'Maître Quaieur',     desc:'Atteindre grade 3',        cond: s => s.grade >= 3 },
+  { id:'grade_5',    icon:'🦁', name:'Capitaine du Quai',  desc:'Atteindre grade 5',        cond: s => s.grade >= 5 },
+  // Prestige
+  { id:'prestige_1', icon:'⭐', name:'Retraité du Port',   desc:'Prestige 1 atteint',       cond: s => (s.retirements||0) >= 1 },
+  // Mariage
+  { id:'marie',      icon:'💑', name:'Jeune Marié',        desc:'Se marier sur le quai',    cond: s => s.flags && s.flags.marie },
+  { id:'divorce',    icon:'💔', name:'Divorcé du Quai',    desc:'Divorcer',                 cond: s => s.flags && s.flags.exMarie },
+  // Spéciaux
+  { id:'nuit',       icon:'🌙', name:'Travailleur de Nuit', desc:'Jouer après minuit',      cond: s => { const h=new Date().getHours(); return h>=0&&h<5; } },
+  { id:'marathon',   icon:'🏃', name:'Marathon du Quai',   desc:'15 min de jeu consécutives', cond: s => (Date.now()-(s.startedAt||Date.now()))>15*60*1000 && s.totalClicks>500 },
+];
 
 /* ============== EVENTS ============== */
 /* Triggered randomly while playing on the hub. Each ~2-3 minutes. */
@@ -9158,6 +9258,11 @@ function perClick(){
   return m;
 }
 function recomputePerSec(){
+  // Expirer le bonus coffre
+  if(S.flags && S.flags.chestBonusUntil && Date.now() > S.flags.chestBonusUntil){
+    delete S.flags.chestBonusMult;
+    delete S.flags.chestBonusUntil;
+  }
   let v = 0;
   for(const u of UPGRADES){
     if(u.kind === 'auto') v += (S.upgrades[u.id]||0) * u.amount;
@@ -9174,7 +9279,14 @@ function upgradeCost(u){
 }
 
 /* ============== BADGES ============== */
-function checkBadges(){ }
+function checkBadges(){
+  if(!S.unlockedBadges) S.unlockedBadges = [];
+  BADGES.forEach(b => {
+    if(!S.unlockedBadges.includes(b.id) && b.cond(S)){
+      S.unlockedBadges.push(b.id); // pas de notif
+    }
+  });
+}
 
 /* ============== DAILY MISSION ============== */
 const DAILY_TYPES = [
@@ -10705,7 +10817,12 @@ function togglePinBadge(id){ }
 function refreshProfile(){
   ensureDaily();
   ensureWeekly();
+  checkBadges();
+  refreshDailyChest();
+  refreshPinnedMedals();
   if(typeof updateMariageUI==='function') updateMariageUI();
+  if($('btnRetireTop')) $('btnRetireTop').onclick=()=>{ const b=$('btnRetire'); if(b) b.click(); };
+  if($('btnMensuelTop')) $('btnMensuelTop').onclick=()=>{ const b=$('btnMensuel'); if(b) b.click(); };
   // Carte de joueur
   const ava = $('profileAva');
   if(ava) ava.innerHTML = avatarSvg(S.avatarId || 'marius');
@@ -12692,8 +12809,10 @@ async function refreshGlobalLeaderboard(){
       const ls = p.last_seen ? new Date(p.last_seen) : null;
       const online = ls && (now-ls.getTime())<5*60*1000;
       const avaSize = [44,38,34][i];
-      const bStyle = p.banner_id ? (()=>{ const b=BANNERS.find(x=>x.id===p.banner_id); return b&&b.style?';'+b.style:''; })() : '';
-      return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}" style="position:relative${bStyle}">
+      const bBanner = p.banner_id ? BANNERS.find(x=>x.id===p.banner_id) : null;
+      const bStripe = bBanner&&bBanner.style ? `<div style="height:6px;${bBanner.style};margin:-14px -16px 10px;"></div>` : '';
+      return `<div class="lb-card-top ${topClass[i]} ${isMe?'me-card':''}" data-pseudo="${p.pseudo}">
+        ${bStripe}
         <div class="lb-card-medal">${medals[i]}</div>
         <div class="lb-card-ava">${avatarSvg(p.avatar_id||'marius',{size:avaSize})}</div>
         <div class="lb-card-info">
@@ -18580,6 +18699,143 @@ function showReprochesModal(msg){
       modal.remove();
     }
   }, 1000);
+}
+
+
+/* ════════════════════════════════════════════════════
+   COFFRE QUOTIDIEN
+   ════════════════════════════════════════════════════ */
+
+function getDailyChestReward(){
+  const g = S.grade || 0;
+  const r = Math.random();
+  if(g >= 6){
+    if(r < 0.15) return { type:'pastaga', amount:3, label:'3 Pastagas 🍶', icon:'🍶' };
+    if(r < 0.40) return { type:'cash', amount:Math.floor(S.perSec*3600), label:'+'+fmtEur(Math.floor(S.perSec*3600))+' €', icon:'💰' };
+    return { type:'bonus', mult:2, dur:30*60, label:'×2 sur tout pendant 30 min', icon:'⚡' };
+  } else if(g >= 3){
+    if(r < 0.10) return { type:'pastaga', amount:1, label:'1 Pastaga 🍶', icon:'🍶' };
+    if(r < 0.40) return { type:'cash', amount:Math.floor(S.perSec*1800), label:'+'+fmtEur(Math.floor(S.perSec*1800))+' €', icon:'💰' };
+    return { type:'bonus', mult:1.5, dur:15*60, label:'×1.5 sur tout pendant 15 min', icon:'✨' };
+  } else {
+    if(r < 0.50) return { type:'cash', amount:Math.max(500, Math.floor(S.perSec*900)), label:'+'+fmtEur(Math.max(500,Math.floor(S.perSec*900)))+' €', icon:'💵' };
+    return { type:'bonus', mult:2, dur:10*60, label:'×2 clics pendant 10 min', icon:'🔥' };
+  }
+}
+
+function refreshDailyChest(){
+  const wrap = document.getElementById('dailyChestWrap');
+  if(!wrap) return;
+  const today = new Date().toDateString();
+  const claimed = S.flags && S.flags.chestDate === today;
+  const reward = getDailyChestReward();
+
+  if(claimed){
+    wrap.innerHTML = "<div class=\"chest-card claimed\"><div class=\"chest-icon\">🎁</div><div class=\"chest-info\"><div class=\"chest-title\">Coffre du Jour</div><div class=\"chest-sub\">Deja recupere. Reviens demain !</div></div></div>";
+    return;
+  }
+  wrap.innerHTML = '<div class="chest-card" onclick="claimDailyChest()">'
+    +'<div class="chest-icon">🎁</div>'
+    +'<div class="chest-info">'
+    +'<div class="chest-title">Coffre du Jour</div>'
+    +'<div class="chest-sub">Contenu : '+reward.icon+' '+reward.label+'</div>'
+    +'</div>'
+    +'<button class="chest-btn">OUVRIR</button>'
+    +'</div>';
+}
+
+function claimDailyChest(){
+  const today = new Date().toDateString();
+  if(S.flags && S.flags.chestDate === today){ toast('Déjà récupéré !'); return; }
+  if(!S.flags) S.flags = {};
+  S.flags.chestDate = today;
+  const reward = getDailyChestReward();
+  if(reward.type === 'cash'){
+    S.cash += reward.amount; S.totalEarned += reward.amount;
+    toast('🎁 Coffre : '+reward.label);
+  } else if(reward.type === 'pastaga'){
+    S.pastagas = (S.pastagas||0) + reward.amount;
+    toast('🎁 Coffre : '+reward.label);
+  } else if(reward.type === 'bonus'){
+    S.flags.chestBonusMult = reward.mult;
+    S.flags.chestBonusUntil = Date.now() + reward.dur*1000;
+    toast('🎁 Coffre : '+reward.label);
+  }
+  save(); refresh(); refreshDailyChest();
+}
+
+/* ════════════════════════════════════════════════════
+   MÉDAILLES ÉPINGLÉES
+   ════════════════════════════════════════════════════ */
+
+function refreshPinnedMedals(){
+  const grid = document.getElementById('pinnedMedalsGrid');
+  if(!grid) return;
+  if(!S.pinnedBadges) S.pinnedBadges = [];
+  const slots = 3;
+  let out = '';
+  for(let i=0;i<slots;i++){
+    const bid = S.pinnedBadges[i];
+    const badge = bid ? BADGES.find(b=>b.id===bid) : null;
+    if(badge){
+      out += '<div class="medal-slot" onclick="openMedalPicker('+i+')">'
+        +'<div class="medal-slot-icon">'+badge.icon+'</div>'
+        +'<div class="medal-slot-name">'+badge.name+'</div>'
+        +'</div>';
+    } else {
+      out += '<div class="medal-slot empty" onclick="openMedalPicker('+i+')">＋</div>';
+    }
+  }
+  grid.innerHTML = out;
+}
+
+function openMedalPicker(slotIdx){
+  const existing = document.getElementById('medalPickerModal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'medalPickerModal';
+  modal.className = 'medal-picker';
+  const unlocked = BADGES.filter(b => (S.unlockedBadges||[]).includes(b.id));
+  const locked   = BADGES.filter(b => !(S.unlockedBadges||[]).includes(b.id));
+  const all = [...unlocked, ...locked];
+  let itemsHtml = all.map(b => {
+    const isUnlocked = (S.unlockedBadges||[]).includes(b.id);
+    const isPinned   = (S.pinnedBadges||[]).includes(b.id);
+    return `<div class="medal-pick-item${isPinned?" pinned":""}${isUnlocked?"":" locked"}" onclick="pinMedal('${b.id}',${slotIdx})">`
+      +`<div class="medal-pick-icon">${b.icon}</div>`
+      +`<div class="medal-pick-name">${b.name}</div>`
+      +`</div>`;
+  }).join('');
+  modal.innerHTML = '<div class="medal-picker-card">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:var(--port-blue-deep)">Choisir une médaille</div>'
+    +'<button onclick="document.getElementById(\'medalPickerModal\').remove()" style="background:#000;color:#fff;border:none;padding:6px 12px;font-family:Bebas Neue,sans-serif;cursor:pointer">FERMER</button>'
+    +'</div>'
+    +'<div style="font-family:Special Elite,monospace;font-size:9px;color:#9a8a7a;margin-top:4px">Les médailles grisées ne sont pas encore débloquées</div>'
+    +'<div class="medal-picker-grid">'+itemsHtml+'</div>'
+    +'<div style="margin-top:12px;text-align:center">'
+    +'<button onclick="pinMedal(null,'+slotIdx+')" style="background:var(--paper);border:2px solid #000;padding:8px 16px;font-family:Bebas Neue,sans-serif;font-size:13px;cursor:pointer">✕ Retirer</button>'
+    +'</div>'
+    +'</div>';
+  modal.onclick = e=>{ if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+
+function pinMedal(badgeId, slotIdx){
+  if(!S.pinnedBadges) S.pinnedBadges = [];
+  while(S.pinnedBadges.length < 3) S.pinnedBadges.push(null);
+  if(!badgeId){
+    S.pinnedBadges[slotIdx] = null;
+  } else {
+    if(!(S.unlockedBadges||[]).includes(badgeId)){ toast('Médaille pas encore débloquée !'); return; }
+    // Retirer si déjà dans un autre slot
+    S.pinnedBadges = S.pinnedBadges.map(id => id===badgeId ? null : id);
+    S.pinnedBadges[slotIdx] = badgeId;
+  }
+  save();
+  const modal = document.getElementById('medalPickerModal');
+  if(modal) modal.remove();
+  refreshPinnedMedals();
 }
 
 document.addEventListener('DOMContentLoaded', init);
