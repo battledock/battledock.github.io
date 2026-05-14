@@ -294,11 +294,12 @@ button{ font-family:inherit; cursor:pointer; border:none; background:none; color
 
 /* The container — the click target — sits ON the dock */
 .container-target{
-  position:absolute; left:50%; bottom:8%;
-  transform:translateX(-50%);
+  position:absolute !important; left:50% !important; bottom:8% !important;
+  transform:translateX(-50%) !important;
   width:52%; max-width:210px; aspect-ratio: 100/80;
   cursor:pointer;
   z-index:8;
+  opacity:1 !important;
   filter:drop-shadow(4px 6px 0 rgba(0,0,0,.45));
   touch-action:manipulation;
   -webkit-tap-highlight-color:transparent;
@@ -1918,24 +1919,8 @@ body.phase-night-disabled .dock-area::before{
   display:flex; flex-direction:column;
   gap:10px;
 }
-.bd-auth-form{
-  width:100%; display:flex; flex-direction:column; gap:0;
-  border:1px solid rgba(0,0,0,.15);
-  border-radius:2px;
-  overflow:hidden;
-  background:#ffffff;
-}
-.bd-auth-input{
-  width:100%;
-  padding:14px 16px;
-  border:none;
-  border-bottom:1px solid rgba(0,0,0,.1);
-  background:#ffffff;
-  font-family:'Special Elite', monospace;
-  font-size:14px; color:#1a1a1a;
-  box-sizing:border-box; outline:none;
-  transition:background .15s;
-}
+.bd-auth-form{ width:100%; display:flex; flex-direction:column; gap:0; border:1px solid rgba(0,0,0,.15); border-radius:2px; overflow:hidden; background:#ffffff; }
+.bd-auth-input{ width:100%; padding:14px 16px; border:none; border-bottom:1px solid rgba(0,0,0,.1); background:#ffffff; font-family:'Special Elite',monospace; font-size:14px; color:#1a1a1a; box-sizing:border-box; outline:none; }
 .bd-auth-input:last-of-type{ border-bottom:none; }
 .bd-auth-input::placeholder{ color:#aaaaaa; }
 .bd-auth-input:focus{ background:#f8f8f8; }
@@ -16770,9 +16755,7 @@ async function loadStartupLb(){
   }
 }
 
-function showStartupPopup(){
-  return; // DÉSACTIVÉ DÉFINITIVEMENT
-}
+function showStartupPopup(){ return; /* désactivé */ }
 
 function closeStartupPopup(){
   localStorage.setItem('battle_dock_popup_ver', STARTUP_VERSION);
@@ -18029,8 +18012,74 @@ function selectLookItem(id, isBanner){
   openLookModal(isBanner);
 }
 
-function openBannerPicker(){ openLookModal(true); }
-function openAccessoryPicker(){ openLookModal(false); }
+function openLookModal(type){
+  var isBanner = (type==='banner' || type===true);
+  var modal = document.getElementById('lookPickerModal');
+  if(modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'lookPickerModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;';
+  document.body.appendChild(modal);
+
+  var items = isBanner ? BANNERS : ACCESSORIES;
+  var currentId = isBanner
+    ? ((S.banners && S.banners.current) || 'default')
+    : ((S.accessories && S.accessories.equipped && S.accessories.equipped[0]) || null);
+
+  var itemsHtml = '';
+  for(var i=0;i<items.length;i++){
+    var item = items[i];
+    var owned = isBanner ? isBannerOwned(item.id) : isAccessoryOwned(item.id);
+    var active = item.id === currentId;
+    var border = active ? 'var(--crane)' : '#000';
+    var bg = active ? '#fffbe8' : '#fff';
+    var cost = item.cost || item.price || 0;
+    var label = active ? '✓ Équipé' : (owned ? 'Équiper' : (cost>0 ? fmtEur(cost) : 'GRATUIT'));
+    var preview = '';
+    if(isBanner && item.style){
+      preview = '<div style="height:32px;margin-bottom:6px;border:1px solid rgba(0,0,0,.1);'+item.style+'"></div>';
+    } else {
+      preview = '<div style="font-size:28px;margin-bottom:4px">'+(item.icon||'🏳️')+'</div>';
+    }
+    itemsHtml += '<div onclick="selectLookItem(\''+item.id+'\','+isBanner+')" style="padding:10px;border:3px solid '+border+';background:'+bg+';cursor:pointer;text-align:center;box-shadow:2px 2px 0 #000">'
+      +preview
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:var(--port-blue-deep)">'+escapeHtml(item.name)+'</div>'
+      +'<div style="font-family:Special Elite,monospace;font-size:9px;color:#7a6a4a">'+label+'</div>'
+      +'</div>';
+  }
+
+  modal.innerHTML = '<div style="background:#ffffff;width:100%;max-height:75vh;overflow-y:auto;border-top:3px solid #000;padding:16px;padding-bottom:40px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:var(--port-blue-deep);letter-spacing:1px">'+(isBanner?'🏳️ Bannières':'🧢 Accessoires')+'</div>'
+    +'<button onclick="document.getElementById(\'lookPickerModal\').remove()" style="background:#000;color:#fff;border:none;padding:6px 14px;font-family:Bebas Neue,sans-serif;font-size:14px;cursor:pointer">FERMER</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+itemsHtml+'</div>'
+    +'</div>';
+  modal.onclick = function(e){ if(e.target===modal) modal.remove(); };
+}
+
+function selectLookItem(id, isBanner){
+  if(isBanner){
+    if(!isBannerOwned(id)){
+      if(!buyBanner(id)) return;
+    } else {
+      setBanner(id);
+      toast('Bannière équipée !');
+    }
+  } else {
+    if(!isAccessoryOwned(id)){
+      if(!buyAccessory(id)) return;
+    } else {
+      equipAccessory(id);
+    }
+  }
+  save(); refresh(); refreshProfLook();
+  openLookModal(isBanner ? 'banner' : 'accessory');
+}
+
+function openBannerPicker(){ openLookModal('banner'); }
+function openAccessoryPicker(){ openLookModal('accessory'); }
+
 
 /* ── Journal du Port (chroniques améliorées) ── */
 const JOURNAL_NPC = [
