@@ -16,48 +16,68 @@
       justify-content: center;
       min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
     h1 {
-      font-size: 32px;
+      font-size: 28px;
       margin-bottom: 20px;
+      text-align: center;
+      color: #f4b13c;
     }
     .container {
       text-align: center;
+      max-width: 100%;
     }
     .logo {
-      width: 150px;
-      height: 150px;
+      width: 120px;
+      height: 120px;
       margin-bottom: 20px;
+      font-size: 100px;
     }
     .buttons {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 15px;
+      margin-bottom: 30px;
     }
     .button {
       display: inline-block;
-      padding: 10px 20px;
+      padding: 12px 24px;
       background-color: #f4b13c;
       color: #0a0e14;
       text-decoration: none;
       font-size: 18px;
       border-radius: 5px;
       cursor: pointer;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      font-weight: bold;
     }
     .button:hover {
       background-color: #d69b35;
     }
     .profile {
-      margin-top: 40px;
+      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    .profile img {
-      width: 80px;
-      height: 80px;
+    .profile .avatar {
+      width: 100px;
+      height: 100px;
       border-radius: 50%;
       margin-bottom: 10px;
+      background-color: #1e2e40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      box-shadow: 0 0 10px rgba(244, 177, 60, 0.3);
     }
     .profile p {
-      font-size: 16px;
+      font-size: 18px;
+      margin-bottom: 5px;
     }
     .logout {
       margin-top: 20px;
@@ -66,7 +86,7 @@
 </head>
 <body>
   <div class="container">
-    <img src="logo.png" alt="Battle Dock Logo" class="logo">
+    <div class="logo">⚓</div>
     <h1>Bienvenue sur Battle Dock</h1>
     <div class="buttons">
       <a href="play.html" class="button">Jouer</a>
@@ -74,7 +94,7 @@
       <a href="shop.html" class="button">Boutique</a>
     </div>
     <div class="profile">
-      <img src="" alt="Avatar" id="avatar">
+      <div class="avatar" id="avatar">👤</div>
       <p id="username"></p>
     </div>
     <div class="logout">
@@ -83,38 +103,25 @@
   </div>
 
   <script>
-    // Initialisation du client Supabase
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Récupérer les informations de l'utilisateur connecté
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
-    const avatarUrl = localStorage.getItem('avatarUrl');
 
-    // Afficher les informations de l'utilisateur
-    document.getElementById('username').textContent = username;
-    document.getElementById('avatar').src = avatarUrl;
+    document.getElementById('username').textContent = username || 'Utilisateur';
 
-    // Gérer la déconnexion
     document.getElementById('logout').addEventListener('click', async () => {
-      // Supprimer les informations de l'utilisateur du stockage local
       localStorage.removeItem('userId');
       localStorage.removeItem('username');
-      localStorage.removeItem('avatarUrl');
-
-      // Déconnecter l'utilisateur de Supabase
-      await supabase.auth.signOut();
-
-      // Rediriger vers la page de connexion
+      await supabaseClient.auth.signOut();
       window.location.href = 'index.html';
     });
 
-    // Vérifier si l'utilisateur est connecté
-    supabase.auth.onAuthStateChange((event, session) => {
+    supabaseClient.auth.onAuthStateChange((event, session) => {
       if (!session) {
-        // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
         window.location.href = 'index.html';
       }
     });
