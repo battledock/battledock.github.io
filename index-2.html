@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock — LE JEU</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cinzel:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(180deg, #0a0e14 0%, #1a2332 30%, #2c4a5e 60%, #3d6a82 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Special Elite', monospace;
+      overflow: hidden;
+      margin: 0;
+      padding: 10px;
+      position: relative;
+    }
+    .container {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      padding: 60px 50px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    .icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      margin-bottom: 8px;
+      letter-spacing: 6px;
+      word-spacing: 20px;
+      filter: drop-shadow(3px 3px 0 #000);
+      white-space: nowrap;
+    }
+    .sub {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: #ffffff;
+      margin-bottom: 50px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: transparent;
+      color: #ffffff;
+      text-decoration: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 3px;
+      border: 2px solid #ffffff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .button:hover {
+      background: #ffffff;
+      color: #1a1a1a;
+    }
+    .line {
+      width: 100px;
+      height: 2px;
+      background: #ffffff;
+      margin: 24px auto;
+    }
+    .dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 24px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff6b6b;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: .2s; background: #ffd93d; }
+    .dot:nth-child(3) { animation-delay: .4s; background: #6bcf7f; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+    .version {
+      margin-top: 10px;
+      font-size: 10px;
+      color: #1a1a1a;
+      letter-spacing: 3px;
+      font-family: 'Bebas Neue', sans-serif;
+      background: #ffffff;
+      padding: 6px 12px;
+      display: inline-block;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(15px);
+    }
+    .modal-content {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      margin: auto;
+      padding: 35px 30px;
+      width: 90%;
+      max-width: 320px;
+      border-radius: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      max-height: 80vh;
+      overflow-y: auto;
+      border: none;
+    }
+    .modal-content h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      color: #ffffff;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+    }
+    .close {
+      color: rgba(255, 255, 255, 0.6);
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 24px;
+      font-weight: 300;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+    .close:hover {
+      color: #ffffff;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    input {
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-radius: 0;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      font-family: 'Special Elite', monospace;
+    }
+    input:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    }
+    input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+    button[type="submit"] {
+      padding: 14px;
+      border: none;
+      background: #ffffff;
+      color: #1a1a1a;
+      cursor: pointer;
+      border-radius: 0;
+      font-weight: bold;
+      font-size: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 3px;
+      transition: all 0.3s ease;
+      margin-top: 5px;
+    }
+    button[type="submit"]:hover {
+      background: rgba(255, 255, 255, 0.9);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(255, 255, 255, 0.2);
+    }
+    a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.3s ease;
+    }
+    a:hover {
+      color: #ffffff;
+    }
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 32px;
+      }
+      .icon {
+        font-size: 50px;
+      }
+      .modal-content {
+        margin: 5vh auto;
+        max-height: 90vh;
+        padding: 15px;
+      }
+      .modal-content h2 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>BATTLE DOCK</h1>
+    <div class="sub">LA Simulation de Docker</div>
+    <div class="buttons">
+      <button class="button" onclick="openModal('login-modal')">Connexion</button>  
+      <button class="button" onclick="openModal('signup-modal')">Inscription</button>
+    </div>
+    <div class="version">Version 1.0.4</div>
+  </div>
+
+  <div id="signup-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('signup-modal')">&times;</span>
+      <h2>Inscription</h2>
+      <form id="signup-form">
+        <input type="text" id="signup-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="signup-password" placeholder="Mot de passe" required>
+        <button type="submit">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="login-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('login-modal')">&times;</span>
+      <h2>Connexion</h2>
+      <form id="login-form">
+        <input type="text" id="login-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="login-password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+      </form>
+      <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="closeModal('login-modal'); openModal('forgot-password-modal')">Mot de passe oublié ?</a></p>
+    </div>
+  </div>
+
+  <div id="forgot-password-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('forgot-password-modal')">&times;</span>
+      <h2>Mot de passe oublié</h2>
+      <form id="forgot-password-form">
+        <input type="text" id="forgot-password-username" placeholder="Nom d'utilisateur" required>
+        <button type="submit">Réinitialiser le mot de passe</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="reset-password-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('reset-password-modal')">&times;</span>
+      <h2>Réinitialiser le mot de passe</h2>
+      <form id="reset-password-form">
+        <input type="text" id="reset-password-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="reset-password-new-password" placeholder="Nouveau mot de passe" required>
+        <input type="password" id="reset-password-confirm-password" placeholder="Confirmez le mot de passe" required>
+        <button type="submit">Réinitialiser le mot de passe</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = "block";
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = "none";
+      document.body.style.overflow = "auto";
+    }
+
+    document.getElementById('signup-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('signup-username').value;
+      const password = document.getElementById('signup-password').value;
+
+      const { data: { user }, error } = await supabaseClient.auth.signUp({
+        email: `${username}@battledock.com`,
+        password: password,
+      });
+
+      if (error) {
+        alert('Erreur lors de l\'inscription : ' + error.message);
+      } else {
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('profiles')
+          .insert({ user_id: user.id, username: username });
+
+        if (profileError) {
+          alert('Erreur lors de l\'enregistrement du profil : ' + profileError.message);
+        } else {
+          alert('Inscription réussie !');
+          closeModal('signup-modal');
+          openModal('login-modal');
+        }
+      }
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: `${username}@battledock.com`,
+        password: password,
+      });
+
+      if (error) {
+        alert('Erreur lors de la connexion : ' + error.message);
+      } else {
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('username', username);
+        alert('Connexion réussie !');
+        closeModal('login-modal');
+        window.location.href = 'game.html';
+      }
+    });
+
+    document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('forgot-password-username').value;
+
+      const { data: users, error } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('username', username);
+
+      if (error || users.length === 0) {
+        alert('Nom d\'utilisateur non trouvé.');
+      } else {
+        alert('Un e-mail de réinitialisation de mot de passe a été envoyé à votre adresse e-mail.');
+        closeModal('forgot-password-modal');
+        openModal('reset-password-modal');
+      }
+    });
+
+    document.getElementById('reset-password-form').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = document.getElementById('reset-password-username').value;
+      const newPassword = document.getElementById('reset-password-new-password').value;
+      const confirmPassword = document.getElementById('reset-password-confirm-password').value;
+
+      if (newPassword !== confirmPassword) {
+        alert('Les mots de passe ne correspondent pas.');
+        return;
+      }
+
+      const { data: users, error: userError } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('username', username);
+
+      if (userError || users.length === 0) {
+        alert('Nom d\'utilisateur non trouvé.');
+      } else {
+        const userId = users[0].user_id;
+
+        const { data, error } = await supabaseClient.auth.admin.updateUserById(
+          userId,
+          { password: newPassword }
+        );
+
+        if (error) {
+          alert('Erreur lors de la réinitialisation du mot de passe : ' + error.message);
+        } else {
+          alert('Mot de passe réinitialisé avec succès !');
+          closeModal('reset-password-modal');
+          openModal('login-modal');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
