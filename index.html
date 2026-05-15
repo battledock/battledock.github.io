@@ -93,11 +93,34 @@
       color: #1e3a5a;
       letter-spacing: 3px;
     }
-    .auth-container {
+    .modal {
       display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.8);
     }
-    .auth-container.active {
-      display: block;
+    .modal-content {
+      background-color: #0a0e14;
+      margin: 15% auto;
+      padding: 20px;
+      width: 80%;
+      max-width: 400px;
+      border-radius: 5px;
+      position: relative;
+    }
+    .close {
+      color: #fff;
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
     }
     form {
       display: flex;
@@ -118,7 +141,7 @@
       color: #0a0e14;
       cursor: pointer;
     }
-    #signup-container h2 {
+    #signup-modal h2, #login-modal h2 {
       color: #fff;
     }
   </style>
@@ -129,8 +152,8 @@
     <h1>BATTLE DOCK</h1>
     <div class="sub">LA Simulation de Docker</div>
     <div class="buttons">
-      <button class="button" onclick="showAuthContainer('signup')">Inscription</button>
-      <button class="button" onclick="showAuthContainer('login')">Connexion</button>
+      <button class="button" onclick="openModal('signup-modal')">Inscription</button>
+      <button class="button" onclick="openModal('login-modal')">Connexion</button>
     </div>
     <div class="dots">
       <div class="dot"></div>
@@ -140,41 +163,53 @@
     <div class="version">Version 1.0.1</div>
   </div>
 
-  <div id="signup-container" class="auth-container">
-    <h2>Inscription</h2>
-    <form id="signup-form">
-      <input type="text" id="signup-username" placeholder="Nom d'utilisateur" required>
-      <input type="password" id="signup-password" placeholder="Mot de passe" required>
-      <button type="submit">S'inscrire</button>
-    </form>
+  <div id="signup-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('signup-modal')">&times;</span>
+      <h2>Inscription</h2>
+      <form id="signup-form">
+        <input type="text" id="signup-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="signup-password" placeholder="Mot de passe" required>
+        <button type="submit">S'inscrire</button>
+      </form>
+    </div>
   </div>
 
-  <div id="login-container" class="auth-container">
-    <h2>Connexion</h2>
-    <form id="login-form">
-      <input type="text" id="login-username" placeholder="Nom d'utilisateur" required>
-      <input type="password" id="login-password" placeholder="Mot de passe" required>
-      <button type="submit">Se connecter</button>
-    </form>
-    <p><a href="#" onclick="showAuthContainer('forgot-password')">Mot de passe oublié ?</a></p>
+  <div id="login-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('login-modal')">&times;</span>
+      <h2>Connexion</h2>
+      <form id="login-form">
+        <input type="text" id="login-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="login-password" placeholder="Mot de passe" required>
+        <button type="submit">Se connecter</button>
+      </form>
+      <p><a href="#" onclick="openModal('forgot-password-modal')">Mot de passe oublié ?</a></p>
+    </div>
   </div>
 
-  <div id="forgot-password-container" class="auth-container">
-    <h2>Mot de passe oublié</h2>
-    <form id="forgot-password-form">
-      <input type="text" id="forgot-password-username" placeholder="Nom d'utilisateur" required>
-      <button type="submit">Réinitialiser le mot de passe</button>
-    </form>
+  <div id="forgot-password-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('forgot-password-modal')">&times;</span>
+      <h2>Mot de passe oublié</h2>
+      <form id="forgot-password-form">
+        <input type="text" id="forgot-password-username" placeholder="Nom d'utilisateur" required>
+        <button type="submit">Réinitialiser le mot de passe</button>
+      </form>
+    </div>
   </div>
 
-  <div id="reset-password-container" class="auth-container">
-    <h2>Réinitialiser le mot de passe</h2>
-    <form id="reset-password-form">
-      <input type="text" id="reset-password-username" placeholder="Nom d'utilisateur" required>
-      <input type="password" id="reset-password-new-password" placeholder="Nouveau mot de passe" required>
-      <input type="password" id="reset-password-confirm-password" placeholder="Confirmez le mot de passe" required>
-      <button type="submit">Réinitialiser le mot de passe</button>
-    </form>
+  <div id="reset-password-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal('reset-password-modal')">&times;</span>
+      <h2>Réinitialiser le mot de passe</h2>
+      <form id="reset-password-form">
+        <input type="text" id="reset-password-username" placeholder="Nom d'utilisateur" required>
+        <input type="password" id="reset-password-new-password" placeholder="Nouveau mot de passe" required>
+        <input type="password" id="reset-password-confirm-password" placeholder="Confirmez le mot de passe" required>
+        <button type="submit">Réinitialiser le mot de passe</button>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -184,17 +219,13 @@
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Fonction pour afficher/masquer les conteneurs d'authentification
-    function showAuthContainer(containerId) {
-      const authContainers = document.querySelectorAll('.auth-container');
-      authContainers.forEach(container => {
-        container.classList.remove('active');
-      });
+    // Fonctions pour ouvrir et fermer les modales
+    function openModal(modalId) {
+      document.getElementById(modalId).style.display = "block";
+    }
 
-      const container = document.getElementById(`${containerId}-container`);
-      if (container) {
-        container.classList.add('active');
-      }
+    function closeModal(modalId) {
+      document.getElementById(modalId).style.display = "none";
     }
 
     // Inscription
@@ -213,13 +244,14 @@
       } else {
         const { data, error: insertError } = await supabaseClient
           .from('users')
-          .insert({ username, user_id: user.id });
+          .insert({ username, id: user.id });
 
         if (insertError) {
           alert('Erreur lors de l\'enregistrement du nom d\'utilisateur : ' + insertError.message);
         } else {
           alert('Inscription réussie !');
-          showAuthContainer('login');
+          closeModal('signup-modal');
+          openModal('login-modal');
         }
       }
     });
@@ -241,6 +273,7 @@
         alert('Erreur lors de la connexion : ' + error.message);
       } else {
         alert('Connexion réussie !');
+        closeModal('login-modal');
         // Rediriger vers la page d'accueil ou effectuer d'autres actions
       }
     });
@@ -263,7 +296,8 @@
         // Envoyer un e-mail de réinitialisation de mot de passe à l'utilisateur
         // Vous pouvez utiliser un service d'e-mail tiers ou une API de messagerie pour envoyer l'e-mail
         alert('Un e-mail de réinitialisation de mot de passe a été envoyé à votre adresse e-mail.');
-        showAuthContainer('reset-password');
+        closeModal('forgot-password-modal');
+        openModal('reset-password-modal');
       }
     });
 
@@ -300,7 +334,8 @@
           alert('Erreur lors de la réinitialisation du mot de passe : ' + error.message);
         } else {
           alert('Mot de passe réinitialisé avec succès !');
-          showAuthContainer('login');
+          closeModal('reset-password-modal');
+          openModal('login-modal');
         }
       }
     });
