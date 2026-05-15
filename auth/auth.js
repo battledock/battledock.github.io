@@ -4,23 +4,28 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Inscription
-document.getElementById('signup-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
+   document.getElementById('signup-form').addEventListener('submit', async (event) => {
+     event.preventDefault();
+     console.log("Formulaire d'inscription soumis");
 
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+     const username = document.getElementById('username').value;
+     const password = document.getElementById('password').value;
+     console.log("Nom d'utilisateur :", username);
+     console.log("Mot de passe :", password);
 
-  const { data, error } = await supabase
-  .from('users')
-  .insert({ username: username, password: password });
-  
-  if (error) {
-    alert("Erreur lors de l'inscription : " + error.message);
-  } else {
-    alert('Inscription réussie !');
-    window.location.href = 'connexion.html';
-  }
-});
+     const { data, error } = await supabase
+       .from('users')
+       .insert({ username: username, password: password });
+
+     if (error) {
+       console.error("Erreur lors de l'inscription :", error);
+       alert("Erreur lors de l'inscription : " + error.message);
+     } else {
+       console.log("Inscription réussie :", data);
+       alert('Inscription réussie !');
+       window.location.href = 'connexion.html';
+     }
+   });
 
 // Connexion
 document.getElementById('login-form').addEventListener('submit', async (event) => {
