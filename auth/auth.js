@@ -39,8 +39,9 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
         alert('Erreur lors de la connexion : ' + error.message);
     } else {
         alert('Connexion réussie !');
-        window.location.href = '..game/home.html';
-    }
+        setTimeout(() => {
+        window.location.href = '../home.html';
+    }, 1000); // Délai de 1 seconde avant la redirection
 });
 // Mot de passe oublié
 document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
