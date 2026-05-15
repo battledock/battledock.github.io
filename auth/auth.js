@@ -69,31 +69,65 @@ document.getElementById('forgot-password-form').addEventListener('submit', async
     }
 });
 // Réinitialisation du mot de passe
+document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+
+    // Recherchez l'utilisateur dans la base de données en fonction du nom d'utilisateur
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('username', username);
+
+    if (error || users.length === 0) {
+        alert("Nom d'utilisateur non trouvé.");
+    } else {
+        const userId = users[0].user_id;
+        
+        // Envoyez un e-mail de réinitialisation de mot de passe à l'utilisateur
+        const { data, error } = await supabase.auth.api.resetPasswordForEmail(`${username}@votredomaine.com`);
+
+        if (error) {
+            alert("Erreur lors de l'envoi de l'e-mail de réinitialisation du mot de passe : " + error.message);
+        } else {
+            alert("Un e-mail de réinitialisation du mot de passe a été envoyé à votre adresse e-mail.");
+        }
+    }
+});
+
+// Réinitialisation du mot de passe (après avoir cliqué sur le lien dans l'e-mail)
 document.getElementById('reset-password-form').addEventListener('submit', async (event) => {
     event.preventDefault();
 
+    const username = document.getElementById('username').value;
     const newPassword = document.getElementById('new-password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
 
     if (newPassword !== confirmPassword) {
-        alert('Les mots de passe ne correspondent pas.');
+        alert("Les mots de passe ne correspondent pas.");
         return;
     }
 
-    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    // Recherchez l'utilisateur dans la base de données en fonction du nom d'utilisateur
+    const { data: users, error } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('username', username);
 
-    if (error) {
-        alert('Erreur lors de la réinitialisation du mot de passe : ' + error.message);
+    if (error || users.length === 0) {
+        alert("Nom d'utilisateur non trouvé.");
     } else {
-        alert('Mot de passe réinitialisé avec succès !');
-        window.location.href = 'connexion.html';
+        const userId = users[0].user_id;
+        
+        // Mettez à jour le mot de passe de l'utilisateur
+        const { user, error } = await supabase.auth.update({ password: newPassword });
+
+        if (error) {
+            alert("Erreur lors de la réinitialisation du mot de passe : " + error.message);
+        } else {
+            alert("Mot de passe réinitialisé avec succès !");
+            window.location.href = 'connexion.html';
+        }
     }
 });
-console.log("Avant l'appel à signUp");
-const { data, error } = await supabase.auth.signUp({
-    email: email,
-    password: password,
-});
-console.log("Après l'appel à signUp");
-console.log("Data:", data);
-console.log("Error:", error);
