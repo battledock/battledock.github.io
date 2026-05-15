@@ -49,7 +49,7 @@ document.getElementById('forgot-password-form').addEventListener('submit', async
     const email = document.getElementById('email').value;
 
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'https://votresite.com/auth/reset_password.html',
+        redirectTo: 'https://battledock.github.io/auth/reset_password.html',
     });
 
     if (error) {
