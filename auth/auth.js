@@ -39,7 +39,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
         alert('Erreur lors de la connexion : ' + error.message);
     } else {
         alert('Connexion réussie !');
-        window.location.href = '../index.html';
+        window.location.href = '../home.html';
     }
 });
 // Mot de passe oublié
