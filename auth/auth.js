@@ -14,7 +14,7 @@ document.getElementById('signup-form').addEventListener('submit', async (event) 
   console.log("Mot de passe :", password);
   
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('users')
       .insert({ username: username, password: password });
     
@@ -40,7 +40,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
   const password = document.getElementById('password').value;
   
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('users')
       .select('*')
       .eq('username', username)
