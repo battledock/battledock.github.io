@@ -10,27 +10,18 @@ document.getElementById('signup-form').addEventListener('submit', async (event) 
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
 
-  const { user, error } = await supabase.auth.signUp({
-    email: `${username}@votredomaine.com`,
-    password: password,
-  });
+  const { data, error } = await supabase
+    .from('users')
+    .insert({ username: username, password: password });
 
   if (error) {
     alert("Erreur lors de l'inscription : " + error.message);
   } else {
-    // Stocker le nom d'utilisateur dans la base de données Supabase
-    const { data, error } = await supabase
-      .from('users')
-      .insert({ username: username, user_id: user.id });
-
-    if (error) {
-      console.error("Erreur lors de l'enregistrement du nom d'utilisateur :", error);
-    } else {
-      alert('Inscription réussie !');
-      window.location.href = 'connexion.html';
-    }
+    alert('Inscription réussie !');
+    window.location.href = 'connexion.html';
   }
 });
+
 // Connexion
 document.getElementById('login-form').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -38,10 +29,12 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
 
-  const { user, error } = await supabase.auth.signIn({
-    email: `${username}@votredomaine.com`,
-    password: password,
-  });
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .eq('password', password)
+    .single();
 
   if (error) {
     alert('Erreur lors de la connexion : ' + error.message);
@@ -49,6 +42,7 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
     alert('Connexion réussie !');
     window.location.href = 'home.html';
   }
+}
     }, 1000); // Délai de 1 seconde avant la redirection
 });
 // Mot de passe oublié
