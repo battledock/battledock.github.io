@@ -11,9 +11,9 @@ document.getElementById('signup-form').addEventListener('submit', async (event) 
   const password = document.getElementById('password').value;
 
   const { data, error } = await supabase
-    .from('users')
-    .insert({ username: username, password: password });
-
+  .from('users')
+  .insert({ username: username, password: password });
+  
   if (error) {
     alert("Erreur lors de l'inscription : " + error.message);
   } else {
@@ -30,11 +30,11 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
   const password = document.getElementById('password').value;
 
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('username', username)
-    .eq('password', password)
-    .single();
+  .from('users')
+  .select('*')
+  .eq('username', username)
+  .eq('password', password)
+  .single();
 
   if (error) {
     alert('Erreur lors de la connexion : ' + error.message);
