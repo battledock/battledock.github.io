@@ -81,3 +81,11 @@ document.getElementById('reset-password-form').addEventListener('submit', async 
         window.location.href = 'connexion.html';
     }
 });
+console.log("Avant l'appel à signUp");
+const { data, error } = await supabase.auth.signUp({
+    email: email,
+    password: password,
+});
+console.log("Après l'appel à signUp");
+console.log("Data:", data);
+console.log("Error:", error);
