@@ -42,3 +42,20 @@ document.getElementById('login-form').addEventListener('submit', async (event) =
         window.location.href = '../index.html';
     }
 });
+// Mot de passe oublié
+document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById('email').value;
+
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://votresite.com/auth/reset_password.html',
+    });
+
+    if (error) {
+        alert('Erreur lors de la réinitialisation du mot de passe : ' + error.message);
+    } else {
+        alert('Un e-mail de réinitialisation de mot de passe a été envoyé à ' + email);
+        window.location.href = 'connexion.html';
+    }
+});
