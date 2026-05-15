@@ -1,3 +1,8 @@
+// Initialisation du client Supabase
+const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
 // Inscription
 document.getElementById('signup-form').addEventListener('submit', async (event) => {
   event.preventDefault();
