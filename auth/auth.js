@@ -5,42 +5,50 @@ const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
 // Inscription
 document.getElementById('signup-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
 
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-    });
+  const { user, error } = await supabase.auth.signUp({
+    email: `${username}@votredomaine.com`,
+    password: password,
+  });
+
+  if (error) {
+    alert("Erreur lors de l'inscription : " + error.message);
+  } else {
+    // Stocker le nom d'utilisateur dans la base de données Supabase
+    const { data, error } = await supabase
+      .from('users')
+      .insert({ username: username, user_id: user.id });
 
     if (error) {
-        alert('Erreur lors de l\'inscription : ' + error.message);
+      console.error("Erreur lors de l'enregistrement du nom d'utilisateur :", error);
     } else {
-        alert('Inscription réussie ! Veuillez vérifier votre e-mail pour confirmer votre compte.');
-        window.location.href = 'connexion.html';
+      alert('Inscription réussie !');
+      window.location.href = 'connexion.html';
     }
+  }
 });
-
 // Connexion
 document.getElementById('login-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
+  event.preventDefault();
 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-    });
+  const { user, error } = await supabase.auth.signIn({
+    email: `${username}@votredomaine.com`,
+    password: password,
+  });
 
-    if (error) {
-        alert('Erreur lors de la connexion : ' + error.message);
-    } else {
-        alert('Connexion réussie !');
-        setTimeout(() => {
-        window.location.href = '../home.html';
+  if (error) {
+    alert('Erreur lors de la connexion : ' + error.message);
+  } else {
+    alert('Connexion réussie !');
+    window.location.href = 'home.html';
+  }
     }, 1000); // Délai de 1 seconde avant la redirection
 });
 // Mot de passe oublié
