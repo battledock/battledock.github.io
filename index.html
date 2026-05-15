@@ -118,6 +118,9 @@
       color: #0a0e14;
       cursor: pointer;
     }
+    #signup-container h2 {
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -200,15 +203,24 @@
       const username = document.getElementById('signup-username').value;
       const password = document.getElementById('signup-password').value;
 
-      const { data, error } = await supabaseClient
-        .from('users')
-        .insert({ username, password });
+      const { data: { user }, error } = await supabaseClient.auth.signUp({
+        email: `${username}@battledock.com`,
+        password: password,
+      });
 
       if (error) {
         alert('Erreur lors de l\'inscription : ' + error.message);
       } else {
-        alert('Inscription réussie !');
-        showAuthContainer('login');
+        const { data, error: insertError } = await supabaseClient
+          .from('users')
+          .insert({ username, user_id: user.id });
+
+        if (insertError) {
+          alert('Erreur lors de l\'enregistrement du nom d\'utilisateur : ' + insertError.message);
+        } else {
+          alert('Inscription réussie !');
+          showAuthContainer('login');
+        }
       }
     });
 
