@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Pirata+One&family=Special+Elite&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <style>
-    /* Vos styles CSS */
     body {
       background: #0a0e14;
       display: flex;
@@ -16,6 +15,7 @@
       min-height: 100vh;
       font-family: 'Special Elite', monospace;
       overflow: hidden;
+      margin: 0;
     }
     .container {
       width: 340px;
@@ -108,10 +108,18 @@
       background-color: #0a0e14;
       margin: 15% auto;
       padding: 20px;
-      width: 80%;
+      width: 90%;
       max-width: 400px;
       border-radius: 5px;
       position: relative;
+      box-shadow: 0 0 20px rgba(244, 177, 60, 0.3);
+    }
+    .modal-content h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #f4b13c;
+      font-family: 'Pirata One', serif;
+      font-size: 28px;
     }
     .close {
       color: #fff;
@@ -125,24 +133,34 @@
     form {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 15px;
       margin-top: 20px;
     }
     input {
-      padding: 10px;
+      padding: 12px;
       border: none;
       background-color: #1e2e40;
       color: #fff;
+      border-radius: 5px;
     }
     button[type="submit"] {
-      padding: 10px;
+      padding: 12px;
       border: none;
       background-color: #f4b13c;
       color: #0a0e14;
       cursor: pointer;
+      border-radius: 5px;
+      font-weight: bold;
     }
-    #signup-modal h2, #login-modal h2 {
-      color: #fff;
+    button[type="submit"]:hover {
+      background-color: #d69b35;
+    }
+    a {
+      color: #f4b13c;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
@@ -160,7 +178,7 @@
       <div class="dot"></div>
       <div class="dot"></div>
     </div>
-    <div class="version">Version 1.0.2</div>
+    <div class="version">Version 1.0.1</div>
   </div>
 
   <div id="signup-modal" class="modal">
@@ -184,7 +202,7 @@
         <input type="password" id="login-password" placeholder="Mot de passe" required>
         <button type="submit">Se connecter</button>
       </form>
-      <p><a href="#" onclick="openModal('forgot-password-modal')">Mot de passe oublié ?</a></p>
+      <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="openModal('forgot-password-modal')">Mot de passe oublié ?</a></p>
     </div>
   </div>
 
@@ -213,13 +231,11 @@
   </div>
 
   <script>
-    // Initialisation du client Supabase
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // Fonctions pour ouvrir et fermer les modales
     function openModal(modalId) {
       document.getElementById(modalId).style.display = "block";
     }
@@ -228,7 +244,6 @@
       document.getElementById(modalId).style.display = "none";
     }
 
-    // Inscription
     document.getElementById('signup-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const username = document.getElementById('signup-username').value;
@@ -242,12 +257,12 @@
       if (error) {
         alert('Erreur lors de l\'inscription : ' + error.message);
       } else {
-        const { data, error: insertError } = await supabaseClient
-          .from('users')
-          .insert({ username, id: user.id });
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('profiles')
+          .insert({ user_id: user.id, username: username });
 
-        if (insertError) {
-          alert('Erreur lors de l\'enregistrement du nom d\'utilisateur : ' + insertError.message);
+        if (profileError) {
+          alert('Erreur lors de l\'enregistrement du profil : ' + profileError.message);
         } else {
           alert('Inscription réussie !');
           closeModal('signup-modal');
@@ -256,13 +271,12 @@
       }
     });
 
-    // Connexion
     document.getElementById('login-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const username = document.getElementById('login-username').value;
       const password = document.getElementById('login-password').value;
 
-      const { data: { user }, error } = await supabaseClient.auth.signInWithPassword({
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email: `${username}@battledock.com`,
         password: password,
       });
@@ -270,37 +284,32 @@
       if (error) {
         alert('Erreur lors de la connexion : ' + error.message);
       } else {
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('username', username);
         alert('Connexion réussie !');
         closeModal('login-modal');
-        // Rediriger vers la page d'accueil du jeu
         window.location.href = 'game.html';
       }
     });
 
-    // Mot de passe oublié
     document.getElementById('forgot-password-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const username = document.getElementById('forgot-password-username').value;
 
-      // Rechercher l'utilisateur dans la base de données
       const { data: users, error } = await supabaseClient
-        .from('users')
-        .select('id')
+        .from('profiles')
+        .select('user_id')
         .eq('username', username);
 
       if (error || users.length === 0) {
         alert('Nom d\'utilisateur non trouvé.');
       } else {
-        const userId = users[0].id;
-        // Envoyer un e-mail de réinitialisation de mot de passe à l'utilisateur
-        // Vous pouvez utiliser un service d'e-mail tiers ou une API de messagerie pour envoyer l'e-mail
         alert('Un e-mail de réinitialisation de mot de passe a été envoyé à votre adresse e-mail.');
         closeModal('forgot-password-modal');
         openModal('reset-password-modal');
       }
     });
 
-    // Réinitialisation du mot de passe
     document.getElementById('reset-password-form').addEventListener('submit', async (event) => {
       event.preventDefault();
       const username = document.getElementById('reset-password-username').value;
@@ -312,22 +321,20 @@
         return;
       }
 
-      // Rechercher l'utilisateur dans la base de données
       const { data: users, error: userError } = await supabaseClient
-        .from('users')
-        .select('id')
+        .from('profiles')
+        .select('user_id')
         .eq('username', username);
 
       if (userError || users.length === 0) {
         alert('Nom d\'utilisateur non trouvé.');
       } else {
-        const userId = users[0].id;
+        const userId = users[0].user_id;
 
-        // Mettre à jour le mot de passe de l'utilisateur
-        const { data, error } = await supabaseClient
-          .from('users')
-          .update({ password: newPassword })
-          .eq('id', userId);
+        const { data, error } = await supabaseClient.auth.admin.updateUserById(
+          userId,
+          { password: newPassword }
+        );
 
         if (error) {
           alert('Erreur lors de la réinitialisation du mot de passe : ' + error.message);
