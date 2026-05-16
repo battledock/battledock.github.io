@@ -300,6 +300,16 @@
       background: #2563eb;
     }
 
+    .action-btn.success {
+      background: #10b981;
+      border-color: #10b981;
+      color: #ffffff;
+    }
+
+    .action-btn.success:active {
+      background: #059669;
+    }
+
     /* Bottom Actions */
     .bottom-actions {
       display: flex;
@@ -587,6 +597,10 @@
         <span>❓</span>
         <span>Comment jouer</span>
       </button>
+      <button class="action-btn success" onclick="shareGame()">
+        <span>🚀</span>
+        <span>Partager le jeu</span>
+      </button>
     </div>
 
     <!-- Bottom -->
@@ -759,6 +773,58 @@
         localStorage.clear();
         window.location.href = 'index.html';
       }
+    }
+
+    async function shareGame() {
+      const gameUrl = 'https://battledock.github.io';
+      const shareText = '🚢 Rejoins-moi sur Battle Dock ! Le jeu de docker marseillais 🏆';
+
+      // Si l'API Web Share est disponible (mobile)
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Battle Dock',
+            text: shareText,
+            url: gameUrl
+          });
+        } catch (err) {
+          // Erreur ou annulation du partage
+          if (err.name !== 'AbortError') {
+            copyToClipboard(gameUrl);
+          }
+        }
+      } else {
+        // Fallback : copier dans le presse-papiers
+        copyToClipboard(gameUrl);
+      }
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('✅ Lien copié !\n\n' + text + '\n\nPartage-le avec tes amis !');
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        alert('✅ Lien copié !\n\n' + text + '\n\nPartage-le avec tes amis !');
+      } catch (err) {
+        alert('📋 Copie ce lien :\n\n' + text);
+      }
+      document.body.removeChild(textarea);
     }
 
     loadProfile();
