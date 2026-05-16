@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Progression</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: #f8f9fa;
+      min-height: 100vh;
+      color: #1a1a1a;
+      overflow-x: hidden;
+      padding-bottom: 60px;
+    }
+
+    /* Header with Current Progress */
+    .header {
+      background: linear-gradient(135deg, #1a1a1a, #374151);
+      color: white;
+      padding: 24px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-content {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .current-level {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .level-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      letter-spacing: 2px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .current-grade {
+      font-size: 20px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    .xp-container {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .xp-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .xp-bar {
+      height: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      border-radius: 6px;
+      transition: width 0.5s ease;
+    }
+
+    .next-level-info {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* Content */
+    .content {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Section Title */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Next Unlock Card */
+    .next-unlock {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 32px;
+      color: #1a1a1a;
+    }
+
+    .unlock-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .unlock-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+    }
+
+    .unlock-level {
+      background: rgba(0, 0, 0, 0.2);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .unlock-items {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .unlock-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.3);
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .unlock-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+
+    .unlock-desc {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Roadmap */
+    .roadmap {
+      position: relative;
+      padding-left: 40px;
+    }
+
+    .roadmap::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #10b981, #e8e8e8);
+    }
+
+    .milestone {
+      position: relative;
+      margin-bottom: 32px;
+    }
+
+    .milestone-dot {
+      position: absolute;
+      left: -28px;
+      top: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #e8e8e8;
+      z-index: 1;
+    }
+
+    .milestone-dot.completed {
+      background: #10b981;
+      border-color: #10b981;
+    }
+
+    .milestone-dot.current {
+      background: #fbbf24;
+      border-color: #fbbf24;
+      box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.2);
+    }
+
+    .milestone-card {
+      background: white;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+    }
+
+    .milestone-card.completed {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+
+    .milestone-card.current {
+      border-color: #fbbf24;
+      border-width: 2px;
+    }
+
+    .milestone-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .milestone-level {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+    }
+
+    .milestone-badge {
+      background: #e8e8e8;
+      color: #6b7280;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .milestone-badge.completed {
+      background: #10b981;
+      color: white;
+    }
+
+    .milestone-badge.current {
+      background: #fbbf24;
+      color: #1a1a1a;
+    }
+
+    .milestone-unlocks {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .unlock-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .unlock-line.completed {
+      color: #059669;
+    }
+
+    /* Grades Section */
+    .grades-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .grade-card {
+      background: white;
+      border: 1px solid #e8e8e8;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .grade-card.unlocked {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+
+    .grade-card.current {
+      border-color: #fbbf24;
+      border-width: 2px;
+      background: #fffbeb;
+    }
+
+    .grade-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .grade-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .grade-level {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e8e8e8;
+      padding: 0;
+      z-index: 100;
+      height: 60px;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 600px;
+      margin: 0 auto;
+      height: 100%;
+      padding: 0 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      color: #999;
+      transition: all 0.2s;
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .nav-item:active {
+      background: #f5f5f5;
+    }
+
+    .nav-item.active {
+      color: #1a1a1a;
+    }
+
+    .nav-icon {
+      font-size: 22px;
+    }
+
+    .nav-label {
+      font-size: 9px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .nav-item.nav-fab {
+      position: relative;
+      margin-top: 0;
+    }
+
+    .nav-fab .nav-icon {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div class="current-level">
+        <div class="level-number">NIVEAU <span id="currentLevel">1</span></div>
+        <div class="current-grade" id="currentGrade">Docker Débutant</div>
+      </div>
+      
+      <div class="xp-container">
+        <div class="xp-header">
+          <span>Progression</span>
+          <span id="xpText">0 / 1000 XP</span>
+        </div>
+        <div class="xp-bar">
+          <div class="xp-fill" id="xpFill" style="width: 0%"></div>
+        </div>
+        <div class="next-level-info" id="xpRemaining">1000 XP restants jusqu'au niveau 2</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Next Unlock -->
+    <div id="nextUnlockSection"></div>
+
+    <!-- Grades -->
+    <div class="section-title">🏆 Grades</div>
+    <div class="grades-grid">
+      <div class="grade-card unlocked current">
+        <div class="grade-icon">🔰</div>
+        <div class="grade-name">Débutant</div>
+        <div class="grade-level">Niveau 1-5</div>
+      </div>
+      
+      <div class="grade-card" id="grade-occasionnel">
+        <div class="grade-icon">⚓</div>
+        <div class="grade-name">Occasionnel</div>
+        <div class="grade-level">Niveau 6-10</div>
+      </div>
+      
+      <div class="grade-card" id="grade-regulier">
+        <div class="grade-icon">🚢</div>
+        <div class="grade-name">Régulier</div>
+        <div class="grade-level">Niveau 11-15</div>
+      </div>
+      
+      <div class="grade-card" id="grade-experimente">
+        <div class="grade-icon">⚙️</div>
+        <div class="grade-name">Expérimenté</div>
+        <div class="grade-level">Niveau 16-20</div>
+      </div>
+      
+      <div class="grade-card" id="grade-veterane">
+        <div class="grade-icon">🎖️</div>
+        <div class="grade-name">Vétéran</div>
+        <div class="grade-level">Niveau 21-30</div>
+      </div>
+      
+      <div class="grade-card" id="grade-chef">
+        <div class="grade-icon">👔</div>
+        <div class="grade-name">Chef de Quai</div>
+        <div class="grade-level">Niveau 31-40</div>
+      </div>
+      
+      <div class="grade-card" id="grade-maitre">
+        <div class="grade-icon">⭐</div>
+        <div class="grade-name">Maître Docker</div>
+        <div class="grade-level">Niveau 41-50</div>
+      </div>
+      
+      <div class="grade-card" id="grade-legende">
+        <div class="grade-icon">👑</div>
+        <div class="grade-name">Légende</div>
+        <div class="grade-level">Niveau 51+</div>
+      </div>
+    </div>
+
+    <!-- Roadmap -->
+    <div class="section-title">🗺️ Feuille de Route</div>
+    <div class="roadmap" id="roadmap"></div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-content">
+      <a href="social.html" class="nav-item">
+        <div class="nav-icon">👥</div>
+        <div class="nav-label">SOCIAL</div>
+      </a>
+      <a href="missions.html" class="nav-item">
+        <div class="nav-icon">📋</div>
+        <div class="nav-label">MISSIONS</div>
+      </a>
+      <a href="game.html" class="nav-item nav-fab">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-label">ACCUEIL</div>
+      </a>
+      <a href="shop.html" class="nav-item">
+        <div class="nav-icon">🛒</div>
+        <div class="nav-label">SHOP</div>
+      </a>
+      <a href="progression.html" class="nav-item active">
+        <div class="nav-icon">📊</div>
+        <div class="nav-label">PROGRESSION</div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    // Grade system
+    const grades = [
+      { name: 'Docker Débutant', min: 1, max: 5, id: 'debutant' },
+      { name: 'Docker Occasionnel', min: 6, max: 10, id: 'occasionnel' },
+      { name: 'Docker Régulier', min: 11, max: 15, id: 'regulier' },
+      { name: 'Docker Expérimenté', min: 16, max: 20, id: 'experimente' },
+      { name: 'Docker Vétéran', min: 21, max: 30, id: 'veterane' },
+      { name: 'Chef de Quai', min: 31, max: 40, id: 'chef' },
+      { name: 'Maître Docker', min: 41, max: 50, id: 'maitre' },
+      { name: 'Légende du Port', min: 51, max: 999, id: 'legende' }
+    ];
+
+    // Milestones
+    const milestones = [
+      { level: 1, unlocks: ['🎮 Accès au jeu de base', '💼 Premiers jobs disponibles'] },
+      { level: 3, unlocks: ['⚡ Job "Arrimage" débloqué', '📈 +10% de gains'] },
+      { level: 5, unlocks: ['🏗️ Job "Inspection" débloqué', '🎖️ Grade "Occasionnel"'] },
+      { level: 10, unlocks: ['🌟 Missions hebdomadaires', '🛒 Shop améliorations niveau 2'] },
+      { level: 11, unlocks: ['👥 Recrutement de dockers NPC', '💰 Revenus passifs actifs'] },
+      { level: 15, unlocks: ['🏆 Tournois hebdomadaires', '👔 Skin "Tenue de Boss"'] },
+      { level: 20, unlocks: ['🚀 Système de compagnie', '💎 Items premium'] },
+      { level: 25, unlocks: ['⚔️ Batailles de compagnies', '🌍 Conquête de territoires'] },
+      { level: 30, unlocks: ['👑 Grade "Vétéran"', '🎰 Événements spéciaux'] },
+      { level: 40, unlocks: ['💼 Devenir Chef de Quai', '🏢 Gestion multi-sites'] },
+      { level: 50, unlocks: ['⭐ Maître Docker', '🌟 Contenu exclusif'] }
+    ];
+
+    let currentLevel = 1;
+    let currentXP = 0;
+
+    async function loadProgress() {
+      try {
+        const { data } = await supabaseClient
+          .from('game_progress')
+          .select('level, xp, rank')
+          .eq('user_id', userId)
+          .single();
+
+        if (data) {
+          currentLevel = data.level || 1;
+          currentXP = data.xp || 0;
+          
+          updateUI();
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    function updateUI() {
+      // Update header
+      document.getElementById('currentLevel').textContent = currentLevel;
+      
+      // Find current grade
+      const grade = grades.find(g => currentLevel >= g.min && currentLevel <= g.max);
+      document.getElementById('currentGrade').textContent = grade.name;
+      
+      // Update XP bar
+      const xpNeeded = currentLevel * 1000;
+      const percent = (currentXP / xpNeeded) * 100;
+      document.getElementById('xpFill').style.width = percent + '%';
+      document.getElementById('xpText').textContent = `${currentXP} / ${xpNeeded} XP`;
+      
+      const remaining = xpNeeded - currentXP;
+      document.getElementById('xpRemaining').textContent = 
+        `${remaining} XP restants jusqu'au niveau ${currentLevel + 1}`;
+      
+      // Update grades
+      grades.forEach((g, i) => {
+        const el = document.getElementById(`grade-${g.id}`);
+        if (!el) return;
+        
+        el.classList.remove('unlocked', 'current');
+        
+        if (currentLevel >= g.min && currentLevel <= g.max) {
+          el.classList.add('unlocked', 'current');
+        } else if (currentLevel > g.max) {
+          el.classList.add('unlocked');
+        }
+      });
+      
+      // Generate next unlock
+      generateNextUnlock();
+      
+      // Generate roadmap
+      generateRoadmap();
+    }
+
+    function generateNextUnlock() {
+      const nextMilestone = milestones.find(m => m.level > currentLevel);
+      
+      if (!nextMilestone) {
+        document.getElementById('nextUnlockSection').innerHTML = '';
+        return;
+      }
+      
+      const html = `
+        <div class="next-unlock">
+          <div class="unlock-header">
+            <div class="unlock-title">🎯 Prochain Déblocage</div>
+            <div class="unlock-level">NIVEAU ${nextMilestone.level}</div>
+          </div>
+          <div class="unlock-items">
+            ${nextMilestone.unlocks.map(unlock => `
+              <div class="unlock-item">
+                <div class="unlock-icon">${unlock.split(' ')[0]}</div>
+                <div class="unlock-desc">${unlock.substring(unlock.indexOf(' ') + 1)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('nextUnlockSection').innerHTML = html;
+    }
+
+    function generateRoadmap() {
+      const roadmapHTML = milestones.map(milestone => {
+        const isCompleted = currentLevel > milestone.level;
+        const isCurrent = currentLevel === milestone.level;
+        const dotClass = isCompleted ? 'completed' : (isCurrent ? 'current' : '');
+        const cardClass = isCompleted ? 'completed' : (isCurrent ? 'current' : '');
+        const badgeClass = isCompleted ? 'completed' : (isCurrent ? 'current' : '');
+        const badgeText = isCompleted ? 'Débloqué' : (isCurrent ? 'En cours' : 'Verrouillé');
+        
+        return `
+          <div class="milestone">
+            <div class="milestone-dot ${dotClass}"></div>
+            <div class="milestone-card ${cardClass}">
+              <div class="milestone-header">
+                <div class="milestone-level">Niveau ${milestone.level}</div>
+                <div class="milestone-badge ${badgeClass}">${badgeText}</div>
+              </div>
+              <div class="milestone-unlocks">
+                ${milestone.unlocks.map(unlock => `
+                  <div class="unlock-line ${isCompleted ? 'completed' : ''}">
+                    ${isCompleted ? '✓' : '🔒'} ${unlock}
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('roadmap').innerHTML = roadmapHTML;
+    }
+
+    loadProgress();
+  </script>
+</body>
+</html>
