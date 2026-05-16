@@ -307,6 +307,25 @@
         if (profileError) {
           alert('Erreur lors de l\'enregistrement du profil : ' + profileError.message);
         } else {
+          // Initialiser le leaderboard
+          await supabaseClient
+            .from('leaderboard')
+            .insert({ user_id: user.id, score: 0 });
+          
+          // Initialiser game_progress
+          await supabaseClient
+            .from('game_progress')
+            .insert({ 
+              user_id: user.id,
+              level: 1,
+              score: 0,
+              rank: 'Docker Occasionnel',
+              money: 1250,
+              energy: 45,
+              energy_max: 50,
+              xp: 0
+            });
+          
           alert('Inscription réussie !');
           closeModal('signup-modal');
           openModal('login-modal');
@@ -329,6 +348,42 @@
       } else {
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('username', username);
+        
+        // Initialiser le score dans le leaderboard si absent
+        const { data: existingScore } = await supabaseClient
+          .from('leaderboard')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        if (!existingScore) {
+          await supabaseClient
+            .from('leaderboard')
+            .insert({ user_id: data.user.id, score: 0 });
+        }
+        
+        // Initialiser game_progress si absent
+        const { data: existingProgress } = await supabaseClient
+          .from('game_progress')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .single();
+        
+        if (!existingProgress) {
+          await supabaseClient
+            .from('game_progress')
+            .insert({ 
+              user_id: data.user.id,
+              level: 1,
+              score: 0,
+              rank: 'Docker Occasionnel',
+              money: 1250,
+              energy: 45,
+              energy_max: 50,
+              xp: 0
+            });
+        }
+        
         window.location.href = 'game.html';
       }
     });
