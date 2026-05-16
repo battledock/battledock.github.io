@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Modifier le profil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    .header {
+      background: white;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #0f172a;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: #64748b;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    /* Avatar Selector */
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .avatar-option {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 3px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 32px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-option:hover {
+      border-color: #cbd5e1;
+      transform: scale(1.05);
+    }
+
+    .avatar-option.selected {
+      border-color: #667eea;
+      background: #f0f4ff;
+      transform: scale(1.1);
+    }
+
+    /* Color Selector */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .color-option {
+      width: 100%;
+      aspect-ratio: 1;
+      border: 3px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .color-option:hover {
+      transform: scale(1.05);
+    }
+
+    .color-option.selected {
+      border-color: #0f172a;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* Preview */
+    .preview {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .preview-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 12px;
+      border: 4px solid rgba(255,255,255,0.3);
+    }
+
+    .preview-username {
+      font-size: 24px;
+      font-weight: 700;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .preview-bio {
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+      font-style: italic;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .success-message {
+      background: #10b981;
+      color: white;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px;
+      }
+      .card {
+        padding: 24px 20px;
+      }
+      .avatar-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .color-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='profile.html'">← Retour</button>
+    <div class="title">Modifier mon profil</div>
+    <div style="width: 60px;"></div>
+  </div>
+
+  <div class="container">
+    <div class="success-message" id="successMessage">
+      ✅ Profil mis à jour avec succès !
+    </div>
+
+    <!-- Preview -->
+    <div class="preview" id="preview">
+      <div class="preview-avatar" id="previewAvatar">👤</div>
+      <div class="preview-username" id="previewUsername">Username</div>
+      <div class="preview-bio" id="previewBio">Votre bio apparaîtra ici</div>
+    </div>
+
+    <!-- Form -->
+    <div class="card">
+      <div class="section-title">👤 Avatar</div>
+      <div class="avatar-grid" id="avatarGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">✍️ Biographie</div>
+      <div class="form-group">
+        <label class="form-label">Parlez de vous (150 caractères max)</label>
+        <textarea class="form-input" id="bioInput" maxlength="150" placeholder="Le meilleur docker de Marseille 💪"></textarea>
+        <div class="char-count"><span id="charCount">0</span>/150</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">🎨 Couleur du profil</div>
+      <div class="color-grid" id="colorGrid"></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveProfile()">💾 Enregistrer les modifications</button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+
+    let selectedAvatar = '👤';
+    let selectedColor = '#667eea';
+
+    const avatars = ['👤', '😎', '🤠', '👨‍💼', '👨‍🔧', '🧑‍🏭', '👷', '🚢', '⚓', '🏗️', '💪', '🔥', '⭐', '👑', '💎', '🎯', '🏆', '⚡', '🌊', '🦁'];
+    
+    const colors = [
+      '#667eea', '#764ba2', '#f093fb', '#4facfe',
+      '#43e97b', '#38f9d7', '#fa709a', '#fee140',
+      '#30cfd0', '#330867', '#a8edea', '#fed6e3'
+    ];
+
+    function initAvatarGrid() {
+      const grid = document.getElementById('avatarGrid');
+      avatars.forEach(emoji => {
+        const btn = document.createElement('button');
+        btn.className = 'avatar-option';
+        btn.textContent = emoji;
+        btn.onclick = () => selectAvatar(emoji);
+        grid.appendChild(btn);
+      });
+    }
+
+    function initColorGrid() {
+      const grid = document.getElementById('colorGrid');
+      colors.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = 'color-option';
+        btn.style.background = color;
+        btn.onclick = () => selectColor(color);
+        grid.appendChild(btn);
+      });
+    }
+
+    function selectAvatar(emoji) {
+      selectedAvatar = emoji;
+      document.querySelectorAll('.avatar-option').forEach(el => {
+        el.classList.remove('selected');
+        if (el.textContent === emoji) el.classList.add('selected');
+      });
+      updatePreview();
+    }
+
+    function selectColor(color) {
+      selectedColor = color;
+      document.querySelectorAll('.color-option').forEach(el => {
+        el.classList.remove('selected');
+        if (el.style.background === color) el.classList.add('selected');
+      });
+      updatePreview();
+    }
+
+    function updatePreview() {
+      document.getElementById('previewAvatar').textContent = selectedAvatar;
+      document.getElementById('previewAvatar').style.background = selectedColor;
+      document.getElementById('preview').style.background = selectedColor;
+      
+      const bio = document.getElementById('bioInput').value || 'Votre bio apparaîtra ici';
+      document.getElementById('previewBio').textContent = bio;
+    }
+
+    document.getElementById('bioInput').addEventListener('input', (e) => {
+      const count = e.target.value.length;
+      document.getElementById('charCount').textContent = count;
+      updatePreview();
+    });
+
+    async function loadCurrentProfile() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (data) {
+          selectedAvatar = data.avatar_emoji || '👤';
+          selectedColor = data.profile_color || '#667eea';
+          
+          document.getElementById('bioInput').value = data.bio || '';
+          document.getElementById('charCount').textContent = (data.bio || '').length;
+          document.getElementById('previewUsername').textContent = data.username || username;
+          
+          selectAvatar(selectedAvatar);
+          selectColor(selectedColor);
+          updatePreview();
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    }
+
+    async function saveProfile() {
+      const bio = document.getElementById('bioInput').value;
+
+      try {
+        const { error } = await supabaseClient
+          .from('profiles')
+          .update({
+            avatar_emoji: selectedAvatar,
+            bio: bio,
+            profile_color: selectedColor
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        const successMsg = document.getElementById('successMessage');
+        successMsg.style.display = 'block';
+        setTimeout(() => {
+          successMsg.style.display = 'none';
+          window.location.href = 'profile.html';
+        }, 1500);
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la sauvegarde : ' + error.message);
+      }
+    }
+
+    // Init
+    document.getElementById('previewUsername').textContent = username;
+    initAvatarGrid();
+    initColorGrid();
+    loadCurrentProfile();
+  </script>
+</body>
+</html>
