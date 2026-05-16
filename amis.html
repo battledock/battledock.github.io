@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Amis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #E0F4FF 70%, #FFFFFF 100%);
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+    .header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.95));
+      backdrop-filter: blur(10px);
+      padding: 16px 20px;
+      border-bottom: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .back-btn { font-size: 24px; cursor: pointer; text-decoration: none; }
+    .header-title { font-family: 'Fredoka', sans-serif; font-size: 20px; font-weight: 700; }
+    .container { max-width: 480px; margin: 0 auto; padding: 0 16px; }
+    .search-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.95));
+      border: 3px solid white;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .section-title { font-family: 'Fredoka', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; }
+    .friend-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.95));
+      border: 3px solid white;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    .friend-avatar {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #4A9BC7, #3182ce);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid white;
+      position: relative;
+      image-rendering: pixelated;
+    }
+    .friend-avatar canvas { width: 40px; height: 40px; }
+    .online-dot {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 12px;
+      height: 12px;
+      background: #10b981;
+      border: 2px solid white;
+      border-radius: 50%;
+    }
+    .offline-dot { background: #94a3b8; }
+    .friend-info { flex: 1; }
+    .friend-name { font-family: 'Fredoka', sans-serif; font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+    .friend-status { font-size: 12px; color: #64748b; }
+    .action-btns { display: flex; gap: 8px; }
+    .action-btn {
+      width: 36px;
+      height: 36px;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="social.html" class="back-btn">←</a>
+    <div class="header-title">👫 Amis</div>
+  </div>
+  <div class="container">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Rechercher un ami...">
+    <div class="section-title">Mes Amis (<span id="friendCount">0</span>)</div>
+    <div id="friendsList"></div>
+  </div>
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    const dockerAvatars = [
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,7,7,7,7,0,0],[0,7,7,7,7,7,7,0],[7,7,7,7,7,7,7,7],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,8,8,8,8,0,0],[0,8,8,8,8,8,8,0],[8,8,8,8,8,8,8,8],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,10,10,10,10,0,0],[0,10,10,10,10,10,10,0],[10,10,10,10,10,10,10,10],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]]
+    ];
+    const colors = { 0: 'transparent', 1: '#ffd7a8', 2: '#000000', 3: '#fbbf24', 4: '#8b4513', 7: '#dc2626', 8: '#3b82f6', 10: '#22c55e' };
+
+    function drawAvatar(canvas, data) {
+      const ctx = canvas.getContext('2d');
+      const s = 5;
+      ctx.clearRect(0, 0, 40, 40);
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          const c = data[y][x];
+          if (c !== 0) {
+            ctx.fillStyle = colors[c];
+            ctx.fillRect(x * s, y * s, s, s);
+          }
+        }
+      }
+    }
+
+    async function loadFriends() {
+      const { data: players } = await supabaseClient.from('profiles').select('user_id, username, avatar_emoji').neq('user_id', userId).limit(5);
+      document.getElementById('friendCount').textContent = players.length;
+      const html = players.map((p, i) => {
+        const online = Math.random() > 0.5;
+        return `
+          <div class="friend-card">
+            <div class="friend-avatar">
+              <canvas id="av-${p.user_id}" width="40" height="40"></canvas>
+              <div class="${online ? 'online-dot' : 'online-dot offline-dot'}"></div>
+            </div>
+            <div class="friend-info">
+              <div class="friend-name">${p.username}</div>
+              <div class="friend-status">${online ? 'En ligne' : 'Hors ligne'}</div>
+            </div>
+            <div class="action-btns">
+              <div class="action-btn" onclick="sendMessage('${p.username}')">💬</div>
+              <div class="action-btn" onclick="viewProfile('${p.username}')">👤</div>
+              <div class="action-btn" onclick="removeFriend('${p.username}')">❌</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('friendsList').innerHTML = html;
+      players.forEach(p => {
+        const canvas = document.getElementById(`av-${p.user_id}`);
+        const idx = parseInt(p.avatar_emoji) || 0;
+        if (canvas && dockerAvatars[idx]) drawAvatar(canvas, dockerAvatars[idx]);
+      });
+    }
+
+    function sendMessage(name) { alert(`💬 Envoyer un message à ${name}`); }
+    function viewProfile(name) { alert(`👤 Profil de ${name}`); }
+    function removeFriend(name) { if(confirm(`Supprimer ${name} de vos amis ?`)) alert('Ami supprimé'); }
+
+    loadFriends();
+  </script>
+</body>
+</html>
