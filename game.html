@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Battle Dock - Port</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * {
@@ -15,44 +15,81 @@
     }
 
     :root {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-card: #ffffff;
-      --text-primary: #0f172a;
-      --text-secondary: #64748b;
-      --accent: #667eea;
-      --accent-dark: #764ba2;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --border: #e2e8f0;
-      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-      --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.08);
-      --radius-sm: 12px;
-      --radius-md: 16px;
-      --radius-lg: 20px;
-      --radius-xl: 24px;
+      --primary: #667eea;
+      --primary-dark: #5568d3;
+      --secondary: #764ba2;
+      --gold: #fbbf24;
+      --gold-dark: #f59e0b;
+      --text-dark: #0f172a;
+      --text-light: #64748b;
+      --bg-light: #f8fafc;
+      --white: #ffffff;
     }
 
     body {
       font-family: 'Outfit', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
       min-height: 100vh;
-      color: var(--text-primary);
+      color: var(--white);
       overflow-x: hidden;
+      position: relative;
     }
 
-    /* Header optimisé mobile */
-    .top-header {
-      background: white;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      position: sticky;
+    /* Animated Background */
+    .background-animation {
+      position: fixed;
       top: 0;
-      z-index: 100;
-      animation: slideDown 0.5s ease;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      opacity: 0.15;
     }
 
-    @keyframes slideDown {
+    .wave {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 200px;
+      background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+      animation: wave 8s linear infinite;
+    }
+
+    .wave:nth-child(2) {
+      bottom: 50px;
+      animation: wave 10s linear infinite reverse;
+      opacity: 0.5;
+    }
+
+    @keyframes wave {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      padding: 24px 16px 100px;
+    }
+
+    /* Profile Card Floating */
+    .profile-float {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: all 0.3s;
+      animation: fadeInDown 0.6s ease;
+    }
+
+    @keyframes fadeInDown {
       from {
         opacity: 0;
         transform: translateY(-20px);
@@ -63,126 +100,188 @@
       }
     }
 
-    .header-main {
-      padding: 12px 16px;
+    .profile-float:active {
+      transform: scale(0.98);
     }
 
-    .header-content {
+    .profile-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      margin-bottom: 16px;
     }
 
-    /* Section utilisateur */
-    .user-profile {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      cursor: pointer;
-      flex: 1;
-      min-width: 0;
-    }
-
-    .user-name-row {
+    .profile-left {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 14px;
     }
 
-    .user-name {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--text-primary);
+    .avatar-circle {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+      border: 3px solid rgba(255, 255, 255, 0.3);
     }
 
-    .level-badge {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: white;
-      font-size: 10px;
+    .profile-info h2 {
+      font-size: 20px;
       font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 8px;
-      font-family: 'Space Mono', monospace;
-      flex-shrink: 0;
+      margin-bottom: 4px;
+      color: var(--white);
     }
 
-    .user-rank {
+    .rank-tag {
       font-size: 12px;
-      color: var(--text-secondary);
+      color: rgba(255, 255, 255, 0.8);
       font-weight: 500;
     }
 
-    /* Barre de progression XP */
-    .xp-bar-wrapper {
+    .level-circle {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.4);
+      border: 3px solid rgba(255, 255, 255, 0.3);
     }
 
-    .xp-bar-container {
-      flex: 1;
-      height: 4px;
-      background: #e2e8f0;
-      border-radius: 2px;
+    .level-number {
+      font-size: 18px;
+      font-weight: 900;
+      font-family: 'Space Mono', monospace;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .level-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.9);
+      letter-spacing: 0.5px;
+    }
+
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 16px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .stat-content h3 {
+      font-size: 18px;
+      font-weight: 700;
+      font-family: 'Space Mono', monospace;
+      margin-bottom: 2px;
+      color: var(--white);
+    }
+
+    .stat-content p {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* XP Bar */
+    .xp-section {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .xp-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .xp-label span {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .xp-value {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .xp-bar-bg {
+      height: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 4px;
       overflow: hidden;
       position: relative;
     }
 
     .xp-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      background: linear-gradient(90deg, var(--gold), var(--gold-dark), var(--gold));
+      background-size: 200% 100%;
+      animation: shimmer 2s linear infinite;
+      border-radius: 4px;
       transition: width 0.5s ease;
-      border-radius: 2px;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
     }
 
-    .xp-text {
-      font-size: 9px;
-      color: var(--text-secondary);
-      font-weight: 600;
-      font-family: 'Space Mono', monospace;
-      white-space: nowrap;
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
 
-    /* Argent à droite */
-    .money-display {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      padding: 8px 16px;
-      border-radius: 20px;
-      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
-    }
-
-    .money-value {
-      font-family: 'Space Mono', monospace;
+    /* Quick Actions Grid */
+    .actions-title {
+      font-size: 14px;
       font-weight: 700;
-      font-size: 15px;
-      color: white;
-    }
-
-    /* Container */
-    .container {
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 24px 16px 100px;
-    }
-
-    /* Hero Card */
-    .hero-card {
-      background: white;
-      border-radius: 20px;
-      padding: 32px 24px;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-lg);
-      border: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-      animation: fadeInUp 0.6s ease 0.1s backwards;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      color: rgba(255, 255, 255, 0.9);
+      animation: fadeInUp 0.6s ease 0.2s backwards;
     }
 
     @keyframes fadeInUp {
       from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
       }
       to {
         opacity: 1;
@@ -190,204 +289,137 @@
       }
     }
 
-    .hero-card::before {
-      content: '⚓';
-      position: absolute;
-      top: -30px;
-      right: -30px;
-      font-size: 160px;
-      opacity: 0.03;
-      transform: rotate(-15deg);
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .hero-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
-      display: inline-block;
-      padding: 6px 14px;
-      background: #f8fafc;
-      border-radius: 16px;
-    }
-
-    .hero-main {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 12px;
-      line-height: 1.1;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-subtitle {
-      font-size: 15px;
-      color: var(--text-secondary);
-      font-weight: 400;
-      margin-bottom: 24px;
-      line-height: 1.6;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 16px 24px;
-      border-radius: 12px;
-      border: none;
-      font-family: 'Outfit', sans-serif;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-      color: white;
-      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-primary:active {
-      transform: scale(0.98);
-    }
-
-    .btn-secondary {
-      background: #f8fafc;
-      color: var(--text-primary);
-      border: 2px solid var(--border);
-    }
-
-    .btn-secondary:active {
-      background: white;
-      transform: scale(0.98);
-    }
-
-    /* Cards Grid */
-    .cards-grid {
+    .actions-grid {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
       margin-bottom: 24px;
     }
 
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: var(--shadow-md);
-      border: 1px solid var(--border);
+    .action-card {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 24px 20px;
+      text-align: center;
+      cursor: pointer;
       transition: all 0.3s;
       position: relative;
       overflow: hidden;
     }
 
-    .card::before {
+    .action-card::before {
       content: '';
       position: absolute;
       top: 0;
       left: 0;
       right: 0;
       height: 3px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-dark));
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
       transform: scaleX(0);
-      transition: transform 0.4s;
+      transition: transform 0.3s;
     }
 
-    .card:active::before {
+    .action-card:active {
+      transform: scale(0.95);
+    }
+
+    .action-card:active::before {
       transform: scaleX(1);
     }
 
-    .card:active {
-      transform: scale(0.98);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .card:nth-child(1) {
-      animation: fadeInUp 0.6s ease 0.2s backwards;
-    }
-
-    .card:nth-child(2) {
+    .action-card:nth-child(1) {
       animation: fadeInUp 0.6s ease 0.3s backwards;
     }
 
-    .card:nth-child(3) {
+    .action-card:nth-child(2) {
       animation: fadeInUp 0.6s ease 0.4s backwards;
     }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 16px;
+    .action-card:nth-child(3) {
+      animation: fadeInUp 0.6s ease 0.5s backwards;
     }
 
-    .card-icon {
-      width: 52px;
-      height: 52px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    .action-card:nth-child(4) {
+      animation: fadeInUp 0.6s ease 0.6s backwards;
+    }
+
+    .action-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 12px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.25);
+      font-size: 36px;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
       transition: transform 0.3s;
-      flex-shrink: 0;
     }
 
-    .card:active .card-icon {
+    .action-card:active .action-icon {
       transform: scale(1.1) rotate(5deg);
     }
 
-    .card-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--text-primary);
+    .action-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 6px;
     }
 
-    .card-description {
-      font-size: 14px;
-      color: var(--text-secondary);
-      line-height: 1.6;
-      margin-bottom: 20px;
+    .action-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      line-height: 1.4;
     }
 
-    .card-action {
-      width: 100%;
-      padding: 14px;
-      background: #f8fafc;
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      font-family: 'Outfit', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
+    /* Big Action Button */
+    .big-action {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
       cursor: pointer;
-      transition: all 0.2s;
-      color: var(--text-primary);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5);
+      transition: all 0.3s;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.6s ease 0.7s backwards;
+      position: relative;
+      overflow: hidden;
     }
 
-    .card-action:active {
-      background: white;
+    .big-action::before {
+      content: '🚢';
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      font-size: 120px;
+      opacity: 0.1;
+      transform: rotate(-15deg);
+    }
+
+    .big-action:active {
       transform: scale(0.98);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.4);
+    }
+
+    .big-action h3 {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--white);
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .big-action p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      position: relative;
+      z-index: 1;
     }
 
     /* Bottom Navigation */
@@ -396,11 +428,11 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(255, 255, 255, 0.98);
+      background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border);
-      padding: 16px 0;
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 8px 20px;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
       z-index: 100;
     }
 
@@ -416,22 +448,22 @@
       flex-direction: column;
       align-items: center;
       gap: 6px;
-      padding: 10px 24px;
+      padding: 8px 16px;
       cursor: pointer;
-      border-radius: var(--radius-sm);
+      border-radius: 12px;
       transition: all 0.3s;
       text-decoration: none;
-      color: var(--text-secondary);
+      color: rgba(255, 255, 255, 0.6);
+      flex: 1;
     }
 
-    .nav-item:hover {
-      background: #f8fafc;
-      transform: translateY(-2px);
+    .nav-item:active {
+      transform: scale(0.95);
     }
 
     .nav-item.active {
-      color: var(--accent);
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      color: var(--white);
+      background: rgba(102, 126, 234, 0.2);
     }
 
     .nav-icon {
@@ -439,12 +471,12 @@
       transition: transform 0.3s;
     }
 
-    .nav-item:hover .nav-icon {
-      transform: scale(1.15);
+    .nav-item:active .nav-icon {
+      transform: scale(1.2);
     }
 
     .nav-label {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
       letter-spacing: 0.3px;
     }
@@ -463,7 +495,7 @@
       width: 56px;
       height: 56px;
       border: 5px solid rgba(255, 255, 255, 0.2);
-      border-top-color: white;
+      border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
@@ -473,38 +505,17 @@
     }
 
     .loading-text {
-      color: white;
+      color: rgba(255, 255, 255, 0.9);
       font-weight: 500;
       font-size: 16px;
     }
   </style>
 </head>
 <body>
-  <!-- Top Header -->
-  <div class="top-header">
-    <div class="header-main">
-      <div class="header-content">
-        <!-- User Profile -->
-        <div class="user-profile" onclick="window.location.href='profile.html'">
-          <div class="user-name-row">
-            <span class="user-name" id="username">Docker</span>
-            <span class="level-badge" id="levelBadge">Niv. 1</span>
-          </div>
-          <div class="user-rank" id="rank">Docker Occasionnel</div>
-          <div class="xp-bar-wrapper">
-            <div class="xp-bar-container">
-              <div class="xp-bar-fill" id="xpBar" style="width: 45%;"></div>
-            </div>
-            <span class="xp-text" id="xpText">450/1000</span>
-          </div>
-        </div>
-
-        <!-- Argent -->
-        <div class="money-display">
-          <span class="money-value" id="money">100€</span>
-        </div>
-      </div>
-    </div>
+  <!-- Background Animation -->
+  <div class="background-animation">
+    <div class="wave"></div>
+    <div class="wave"></div>
   </div>
 
   <!-- Main Container -->
@@ -515,52 +526,83 @@
     </div>
 
     <div id="content" style="display: none;">
-      <!-- Hero Card -->
-      <div class="hero-card">
-        <div class="hero-content">
-          <div class="hero-title">⚓ Votre Port</div>
-          <h1 class="hero-main">Quai Principal</h1>
-          <p class="hero-subtitle">Bienvenue sur votre zone de travail. Gérez vos opérations et développez votre empire portuaire de Marseille.</p>
-          <div class="hero-actions">
-            <button class="btn btn-primary" onclick="alert('Zone de travail à venir !')">
-              <span>🚢</span>
-              <span>Commencer à Travailler</span>
-            </button>
-            <button class="btn btn-secondary" onclick="alert('Statistiques à venir !')">
-              <span>📊</span>
-              <span>Voir les Stats</span>
-            </button>
+      <!-- Profile Card -->
+      <div class="profile-float" onclick="window.location.href='profile.html'">
+        <div class="profile-top">
+          <div class="profile-left">
+            <div class="avatar-circle">👤</div>
+            <div class="profile-info">
+              <h2 id="username">Docker</h2>
+              <div class="rank-tag" id="rank">Docker Occasionnel</div>
+            </div>
+          </div>
+          <div class="level-circle">
+            <div class="level-number" id="levelBadge">1</div>
+            <div class="level-label">NIV</div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-icon-circle">💰</div>
+            <div class="stat-content">
+              <h3 id="money">100€</h3>
+              <p>Argent</p>
+            </div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-icon-circle">🏆</div>
+            <div class="stat-content">
+              <h3 id="missions">0/3</h3>
+              <p>Missions</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="xp-section">
+          <div class="xp-label">
+            <span>EXPÉRIENCE</span>
+            <span class="xp-value" id="xpText">450/1000</span>
+          </div>
+          <div class="xp-bar-bg">
+            <div class="xp-bar-fill" id="xpBar" style="width: 45%;"></div>
           </div>
         </div>
       </div>
 
-      <!-- Cards Grid -->
-      <div class="cards-grid">
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon">📋</div>
-            <div class="card-title">Missions</div>
-          </div>
-          <p class="card-description">Accomplissez des missions quotidiennes pour gagner des récompenses et de l'expérience. Progressez dans votre carrière de docker.</p>
-          <button class="card-action" onclick="alert('Missions à venir !')">Voir les missions</button>
+      <!-- Big Action -->
+      <div class="big-action" onclick="alert('Zone de travail à venir !')">
+        <h3>⚓ Commencer à Travailler</h3>
+        <p>Gagnez de l'argent et de l'expérience</p>
+      </div>
+
+      <!-- Actions Title -->
+      <div class="actions-title">🎯 Actions Rapides</div>
+
+      <!-- Actions Grid -->
+      <div class="actions-grid">
+        <div class="action-card" onclick="alert('Missions à venir !')">
+          <div class="action-icon">📋</div>
+          <div class="action-title">Missions</div>
+          <div class="action-desc">Complétez vos missions quotidiennes</div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon">🛒</div>
-            <div class="card-title">Boutique</div>
-          </div>
-          <p class="card-description">Achetez des équipements et des améliorations pour progresser plus rapidement. Investissez dans votre avenir.</p>
-          <button class="card-action" onclick="alert('Boutique à venir !')">Explorer la boutique</button>
+        <div class="action-card" onclick="alert('Boutique à venir !')">
+          <div class="action-icon">🛒</div>
+          <div class="action-title">Boutique</div>
+          <div class="action-desc">Achetez des équipements</div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon">👥</div>
-            <div class="card-title">Mon Équipe</div>
-          </div>
-          <p class="card-description">Recrutez et gérez votre équipe de dockers pour optimiser vos opérations. L'union fait la force.</p>
-          <button class="card-action" onclick="alert('Équipe à venir !')">Gérer l'équipe</button>
+        <div class="action-card" onclick="alert('Équipe à venir !')">
+          <div class="action-icon">👥</div>
+          <div class="action-title">Mon Équipe</div>
+          <div class="action-desc">Gérez vos dockers</div>
+        </div>
+
+        <div class="action-card" onclick="alert('Événements à venir !')">
+          <div class="action-icon">🎪</div>
+          <div class="action-title">Événements</div>
+          <div class="action-desc">Participez aux défis</div>
         </div>
       </div>
     </div>
@@ -627,7 +669,7 @@
           const nextLevelXP = level * 1000;
           const xpPercent = (currentXP / nextLevelXP) * 100;
           
-          document.getElementById('levelBadge').textContent = `Niv. ${level}`;
+          document.getElementById('levelBadge').textContent = level;
           document.getElementById('xpText').textContent = `${currentXP}/${nextLevelXP}`;
           document.getElementById('xpBar').style.width = `${xpPercent}%`;
           
