@@ -46,6 +46,7 @@
       font-size: 28px;
       border: 3px solid white;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      image-rendering: pixelated;
     }
 
     .header-info {
@@ -223,29 +224,6 @@
       font-family: 'Bebas Neue', sans-serif;
     }
 
-    .profile-stat {
-      background: #f5f5f5;
-      padding: 15px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .profile-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1px;
-      color: #1a2332;
-    }
-
-    .profile-value {
-      font-size: 16px;
-      color: #4CAF50;
-      font-family: 'Bebas Neue', sans-serif;
-    }
-
     #company-locked {
       text-align: center;
       padding: 40px 20px;
@@ -363,34 +341,6 @@
         </div>
       </div>
     </div>
-
-    <div id="profile-content" class="tab-content">
-      <h2 class="section-title">👤 Mon Profil</h2>
-      <div class="profile-stat">
-        <div class="profile-label">Pseudo</div>
-        <div class="profile-value" id="profile-username">Joueur</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-label">Rang</div>
-        <div class="profile-value" id="profile-rank">Docker Occasionnel</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-label">Niveau</div>
-        <div class="profile-value" id="profile-level">1</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-label">Expérience</div>
-        <div class="profile-value"><span id="profile-xp">0</span> XP</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-label">Budget</div>
-        <div class="profile-value"><span id="profile-money">0</span> €</div>
-      </div>
-      <div class="profile-stat">
-        <div class="profile-label">Contrats Complétés</div>
-        <div class="profile-value" id="profile-contracts">0</div>
-      </div>
-    </div>
   </main>
 
   <nav>
@@ -406,7 +356,7 @@
       🏢
       <span>La Joliette</span>
     </button>
-    <button class="nav-btn" data-tab="profile-content">
+    <button class="nav-btn" data-tab="profile">
       👤
       <span>Profil</span>
     </button>
@@ -466,31 +416,37 @@
       document.getElementById('xp-text').textContent = `${playerData.xp} / ${xpMax}`;
       document.getElementById('money').textContent = playerData.money;
 
-      document.getElementById('profile-username').textContent = username;
-      document.getElementById('profile-rank').textContent = rank;
-      document.getElementById('profile-level').textContent = playerData.level;
-      document.getElementById('profile-xp').textContent = playerData.xp;
-      document.getElementById('profile-money').textContent = playerData.money;
-      document.getElementById('profile-contracts').textContent = playerData.contracts_completed;
-
       if (playerData.level >= 100) {
         document.getElementById('company-locked').innerHTML = '<h2 class="section-title">🏢 La Joliette</h2><p style="color: #666;">Contenu en développement...</p>';
       }
     }
 
     async function loadPlayerData() {
-      const { data, error } = await supabaseClient
+      const { data: progress, error: progressError } = await supabaseClient
         .from('game_progress')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (error) {
-        console.error('❌ Erreur:', error);
+      if (progressError) {
+        console.error('❌ Erreur:', progressError);
         return;
       }
 
-      playerData = data;
+      const { data: profile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (profileError) {
+        console.error('❌ Erreur:', profileError);
+        return;
+      }
+
+      playerData = progress;
+      document.getElementById('avatar').textContent = profile.avatar_url || '🚢';
+
       updateUI();
       console.log('✅ Données chargées');
     }
@@ -596,6 +552,11 @@
     navButtons.forEach(button => {
       button.addEventListener('click', () => {
         const targetTab = button.getAttribute('data-tab');
+
+        if (targetTab === 'profile') {
+          window.location.href = 'profil.html';
+          return;
+        }
 
         navButtons.forEach(btn => btn.classList.remove('active'));
         tabContents.forEach(tab => tab.classList.remove('active'));
