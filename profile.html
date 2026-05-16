@@ -468,16 +468,18 @@
 
         if (profileError) throw profileError;
 
-        // Charger progression
-        let { data: progressData } = await supabaseClient
+        // Charger progression (sans .single() pour éviter l'erreur)
+        const { data: progressArray, error: progressError } = await supabaseClient
           .from('game_progress')
           .select('*')
-          .eq('user_id', userId)
-          .single();
+          .eq('user_id', userId);
+
+        let progressData = progressArray && progressArray.length > 0 ? progressArray[0] : null;
 
         // Créer si inexistant
         if (!progressData) {
-          const { data: newProgress } = await supabaseClient
+          console.log('Création de game_progress...');
+          const { data: newProgress, error: createError } = await supabaseClient
             .from('game_progress')
             .insert({
               user_id: userId,
@@ -491,7 +493,22 @@
             })
             .select()
             .single();
-          progressData = newProgress || { level: 1, score: 0, rank: 'Docker Occasionnel', money: 1250, energy: 45, energy_max: 50, xp: 0 };
+          
+          if (createError) {
+            console.error('Erreur création:', createError);
+            // Valeurs par défaut si échec
+            progressData = { 
+              level: 1, 
+              score: 0, 
+              rank: 'Docker Occasionnel', 
+              money: 1250, 
+              energy: 45, 
+              energy_max: 50, 
+              xp: 0 
+            };
+          } else {
+            progressData = newProgress;
+          }
         }
 
         // Charger classement
@@ -500,16 +517,21 @@
           .select('user_id, score')
           .order('score', { ascending: false });
 
-        const userRank = leaderboardData?.findIndex(item => item.user_id === userId) + 1 || '-';
+        const userRank = leaderboardData?.findIndex(item => item.user_id === userId) + 1 || 0;
+        const rankPosition = userRank > 0 ? userRank : '-';
 
-        displayProfile(profileData, progressData, userRank);
+        displayProfile(profileData, progressData, rankPosition);
         
       } catch (error) {
-        console.error('Erreur:', error);
+        console.error('Erreur complète:', error);
         document.getElementById('loading').innerHTML = `
           <div style="color: #ef4444;">
             ❌ Erreur de chargement<br>
-            <small style="font-size: 14px; color: #cbd5e0;">${error.message}</small>
+            <small style="font-size: 14px; color: #cbd5e0; font-family: monospace;">${error.message}</small><br><br>
+            <button onclick="window.location.href='game.html'" 
+              style="padding: 12px 24px; background: linear-gradient(135deg, #1f2937, #374151); color: white; border: 2px solid #4b5563; border-radius: 20px; cursor: pointer; font-family: 'Bebas Neue'; letter-spacing: 2px; font-size: 14px;">
+              RETOUR AU JEU
+            </button>
           </div>
         `;
       }
