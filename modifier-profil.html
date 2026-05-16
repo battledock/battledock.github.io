@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Modifier Profil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #E0F4FF 70%, #FFFFFF 100%);
+      min-height: 100vh;
+      color: #2c3e50;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.95));
+      backdrop-filter: blur(10px);
+      padding: 16px 20px;
+      border-bottom: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      font-size: 24px;
+      cursor: pointer;
+      text-decoration: none;
+      color: #2c3e50;
+    }
+
+    .header-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    .section {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 248, 255, 0.95));
+      backdrop-filter: blur(10px);
+      border: 3px solid white;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .section-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #2c3e50;
+    }
+
+    .current-avatar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .current-avatar-canvas {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #4A9BC7, #3182ce);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid white;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      image-rendering: pixelated;
+    }
+
+    .current-avatar-info {
+      flex: 1;
+    }
+
+    .current-avatar-name {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .current-avatar-unlock {
+      font-size: 12px;
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 12px;
+    }
+
+    .avatar-card {
+      background: white;
+      border: 3px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      position: relative;
+    }
+
+    .avatar-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .avatar-card.selected {
+      border-color: #3b82f6;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+
+    .avatar-card.locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    .avatar-canvas-container {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 8px;
+      background: linear-gradient(135deg, #4A9BC7, #3182ce);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid white;
+      image-rendering: pixelated;
+    }
+
+    .avatar-name {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+
+    .avatar-unlock-level {
+      font-size: 10px;
+      color: #10b981;
+      font-weight: 600;
+    }
+
+    .locked-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #ef4444;
+      color: white;
+      font-size: 16px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: 3px solid white;
+      border-radius: 12px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      transition: transform 0.2s;
+    }
+
+    .save-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a href="game.html" class="back-btn">←</a>
+    <div class="header-title">👤 Modifier Profil</div>
+  </div>
+
+  <div class="container">
+    <!-- Avatar actuel -->
+    <div class="section">
+      <div class="section-title">Avatar Actuel</div>
+      <div class="current-avatar">
+        <div class="current-avatar-canvas">
+          <canvas id="currentAvatar" width="60" height="60"></canvas>
+        </div>
+        <div class="current-avatar-info">
+          <div class="current-avatar-name" id="currentAvatarName">Docker Classique</div>
+          <div class="current-avatar-unlock">✓ Débloqué</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sélection avatar -->
+    <div class="section">
+      <div class="section-title">Choisir un Avatar</div>
+      <div class="avatar-grid" id="avatarGrid">
+        <!-- Avatars chargés ici -->
+      </div>
+    </div>
+
+    <!-- Bouton sauvegarder -->
+    <button class="save-btn" onclick="saveAvatar()">💾 Sauvegarder</button>
+  </div>
+
+  <script src="avatars.js"></script>
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    let currentAvatarIndex = 0;
+    let selectedAvatarIndex = 0;
+    let userLevel = 1;
+
+    async function init() {
+      await loadProfile();
+      renderAvatarGrid();
+    }
+
+    async function loadProfile() {
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('avatar_emoji')
+        .eq('user_id', userId)
+        .single();
+
+      const { data: progress } = await supabaseClient
+        .from('game_progress')
+        .select('level')
+        .eq('user_id', userId)
+        .single();
+
+      if (profile) {
+        currentAvatarIndex = parseInt(profile.avatar_emoji) || 0;
+        selectedAvatarIndex = currentAvatarIndex;
+      }
+
+      if (progress) {
+        userLevel = progress.level || 1;
+      }
+
+      // Afficher l'avatar actuel
+      drawDockerAvatar('currentAvatar', currentAvatarIndex, 60);
+      document.getElementById('currentAvatarName').textContent = AVATAR_NAMES[currentAvatarIndex];
+    }
+
+    function renderAvatarGrid() {
+      const grid = document.getElementById('avatarGrid');
+      
+      const html = Object.keys(DOCKER_AVATARS).map(index => {
+        const idx = Number(index);
+        const isUnlocked = isAvatarUnlocked(idx, userLevel);
+        const isSelected = idx === selectedAvatarIndex;
+        const requiredLevel = AVATAR_UNLOCK_LEVELS[idx];
+
+        return `
+          <div class="avatar-card ${isSelected ? 'selected' : ''} ${!isUnlocked ? 'locked' : ''}" 
+               onclick="selectAvatar(${idx})">
+            ${!isUnlocked ? '<div class="locked-badge">🔒</div>' : ''}
+            <div class="avatar-canvas-container">
+              <canvas id="avatar-${idx}" width="60" height="60"></canvas>
+            </div>
+            <div class="avatar-name">${AVATAR_NAMES[idx]}</div>
+            <div class="avatar-unlock-level">
+              ${isUnlocked ? '✓ Débloqué' : `🔒 NIV ${requiredLevel}`}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      grid.innerHTML = html;
+
+      // Dessiner tous les avatars
+      Object.keys(DOCKER_AVATARS).forEach(index => {
+        drawDockerAvatar(`avatar-${index}`, Number(index), 60);
+      });
+    }
+
+    function selectAvatar(index) {
+      if (!isAvatarUnlocked(index, userLevel)) {
+        alert(`🔒 Avatar verrouillé !\n\nRequis : Niveau ${AVATAR_UNLOCK_LEVELS[index]}`);
+        return;
+      }
+
+      selectedAvatarIndex = index;
+      
+      // Mettre à jour l'avatar actuel affiché
+      drawDockerAvatar('currentAvatar', index, 60);
+      document.getElementById('currentAvatarName').textContent = AVATAR_NAMES[index];
+      
+      // Re-render la grille pour montrer la sélection
+      renderAvatarGrid();
+    }
+
+    async function saveAvatar() {
+      try {
+        const { error } = await supabaseClient
+          .from('profiles')
+          .update({ avatar_emoji: selectedAvatarIndex.toString() })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        alert('✅ Avatar sauvegardé !\n\nVotre nouveau look est maintenant visible partout dans le jeu.');
+        
+        // Retour à l'accueil
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 1000);
+
+      } catch (err) {
+        console.error(err);
+        alert('❌ Erreur lors de la sauvegarde');
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
