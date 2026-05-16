@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Missions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: #f8f9fa;
+      min-height: 100vh;
+      color: #1a1a1a;
+      overflow-x: hidden;
+      padding-bottom: 60px;
+    }
+
+    /* Header */
+    .header {
+      background: white;
+      border-bottom: 1px solid #e8e8e8;
+      padding: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-content {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .header-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    /* Timer */
+    .reset-timer {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin: 16px 20px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .timer-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #856404;
+    }
+
+    .timer-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #856404;
+    }
+
+    /* Content */
+    .content {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+    }
+
+    .section-badge {
+      background: #10b981;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .section-badge.weekly {
+      background: #3b82f6;
+    }
+
+    .section-badge.event {
+      background: #f59e0b;
+    }
+
+    /* Mission Card */
+    .mission-card {
+      background: white;
+      border: 1px solid #e8e8e8;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      transition: all 0.2s;
+    }
+
+    .mission-card:active {
+      transform: scale(0.98);
+    }
+
+    .mission-card.completed {
+      background: #f0fdf4;
+      border-color: #10b981;
+    }
+
+    .mission-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .mission-icon {
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .mission-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .mission-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .mission-desc {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .mission-progress {
+      margin-bottom: 12px;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #e8e8e8;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .mission-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .mission-rewards {
+      display: flex;
+      gap: 12px;
+    }
+
+    .reward {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .reward.money {
+      color: #10b981;
+    }
+
+    .reward.xp {
+      color: #f59e0b;
+    }
+
+    .mission-btn {
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .mission-btn:active {
+      transform: scale(0.95);
+      background: #374151;
+    }
+
+    .mission-btn.completed {
+      background: #10b981;
+    }
+
+    .mission-btn:disabled {
+      background: #e8e8e8;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .empty-text {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e8e8e8;
+      padding: 0;
+      z-index: 100;
+      height: 60px;
+    }
+
+    .nav-content {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      max-width: 600px;
+      margin: 0 auto;
+      height: 100%;
+      padding: 0 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      text-decoration: none;
+      color: #999;
+      transition: all 0.2s;
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .nav-item:active {
+      background: #f5f5f5;
+    }
+
+    .nav-item.active {
+      color: #1a1a1a;
+    }
+
+    .nav-icon {
+      font-size: 22px;
+    }
+
+    .nav-label {
+      font-size: 9px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .nav-item.nav-fab {
+      position: relative;
+      margin-top: 0;
+    }
+
+    .nav-fab .nav-icon {
+      font-size: 24px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="header-content">
+      <div class="header-title">Missions</div>
+      <div class="header-subtitle">Complète des missions pour gagner des récompenses</div>
+    </div>
+  </div>
+
+  <!-- Reset Timer -->
+  <div class="reset-timer">
+    <div class="timer-label">⏱️ Réinitialisation dans</div>
+    <div class="timer-value" id="resetTimer">23:59:59</div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Daily Missions -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🌅 Missions Quotidiennes</div>
+        <div class="section-badge" id="dailyProgress">0/3</div>
+      </div>
+      
+      <div class="mission-card" id="mission-daily-1">
+        <div class="mission-header">
+          <div class="mission-icon">🚛</div>
+          <div class="mission-info">
+            <div class="mission-title">Premier Chargement</div>
+            <div class="mission-desc">Effectue ton premier travail de la journée</div>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">0 / 1</div>
+        </div>
+        <div class="mission-footer">
+          <div class="mission-rewards">
+            <div class="reward money">+100€</div>
+            <div class="reward xp">+50 XP</div>
+          </div>
+          <button class="mission-btn" disabled>Terminer</button>
+        </div>
+      </div>
+
+      <div class="mission-card" id="mission-daily-2">
+        <div class="mission-header">
+          <div class="mission-icon">💰</div>
+          <div class="mission-info">
+            <div class="mission-title">Objectif Financier</div>
+            <div class="mission-desc">Gagne 500€ aujourd'hui</div>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">0€ / 500€</div>
+        </div>
+        <div class="mission-footer">
+          <div class="mission-rewards">
+            <div class="reward money">+200€</div>
+            <div class="reward xp">+100 XP</div>
+          </div>
+          <button class="mission-btn" disabled>Terminer</button>
+        </div>
+      </div>
+
+      <div class="mission-card" id="mission-daily-3">
+        <div class="mission-header">
+          <div class="mission-icon">⚓</div>
+          <div class="mission-info">
+            <div class="mission-title">Docker Actif</div>
+            <div class="mission-desc">Travaille 10 fois aujourd'hui</div>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">0 / 10</div>
+        </div>
+        <div class="mission-footer">
+          <div class="mission-rewards">
+            <div class="reward money">+300€</div>
+            <div class="reward xp">+150 XP</div>
+          </div>
+          <button class="mission-btn" disabled>Terminer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Missions -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📅 Missions Hebdomadaires</div>
+        <div class="section-badge weekly" id="weeklyProgress">0/2</div>
+      </div>
+
+      <div class="mission-card" id="mission-weekly-1">
+        <div class="mission-header">
+          <div class="mission-icon">📈</div>
+          <div class="mission-info">
+            <div class="mission-title">Entrepreneur</div>
+            <div class="mission-desc">Gagne 5000€ cette semaine</div>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">0€ / 5000€</div>
+        </div>
+        <div class="mission-footer">
+          <div class="mission-rewards">
+            <div class="reward money">+1000€</div>
+            <div class="reward xp">+500 XP</div>
+          </div>
+          <button class="mission-btn" disabled>Terminer</button>
+        </div>
+      </div>
+
+      <div class="mission-card" id="mission-weekly-2">
+        <div class="mission-header">
+          <div class="mission-icon">🏆</div>
+          <div class="mission-info">
+            <div class="mission-title">Docker Assidu</div>
+            <div class="mission-desc">Travaille 50 fois cette semaine</div>
+          </div>
+        </div>
+        <div class="mission-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-text">0 / 50</div>
+        </div>
+        <div class="mission-footer">
+          <div class="mission-rewards">
+            <div class="reward money">+800€</div>
+            <div class="reward xp">+400 XP</div>
+          </div>
+          <button class="mission-btn" disabled>Terminer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Events -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🎉 Événements Spéciaux</div>
+        <div class="section-badge event">NOUVEAU</div>
+      </div>
+
+      <div class="empty-state">
+        <div class="empty-icon">🎪</div>
+        <div class="empty-title">Aucun événement actif</div>
+        <div class="empty-text">Reviens plus tard pour découvrir de nouveaux défis !</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <div class="nav-content">
+      <a href="social.html" class="nav-item">
+        <div class="nav-icon">👥</div>
+        <div class="nav-label">SOCIAL</div>
+      </a>
+      <a href="missions.html" class="nav-item active">
+        <div class="nav-icon">📋</div>
+        <div class="nav-label">MISSIONS</div>
+      </a>
+      <a href="game.html" class="nav-item nav-fab">
+        <div class="nav-icon">🏠</div>
+        <div class="nav-label">ACCUEIL</div>
+      </a>
+      <a href="#" class="nav-item" onclick="alert('Shop à venir !'); return false;">
+        <div class="nav-icon">🛒</div>
+        <div class="nav-label">SHOP</div>
+      </a>
+      <a href="leaderboard.html" class="nav-item">
+        <div class="nav-icon">🏆</div>
+        <div class="nav-label">CLASSEMENT</div>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    // Timer countdown
+    function updateTimer() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const diff = tomorrow - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      document.getElementById('resetTimer').textContent = 
+        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    updateTimer();
+    setInterval(updateTimer, 1000);
+
+    // Missions system (placeholder - à implémenter avec Supabase)
+    const missions = {
+      daily: [
+        { id: 1, current: 0, target: 1, type: 'work' },
+        { id: 2, current: 0, target: 500, type: 'money' },
+        { id: 3, current: 0, target: 10, type: 'work_count' }
+      ],
+      weekly: [
+        { id: 1, current: 0, target: 5000, type: 'money' },
+        { id: 2, current: 0, target: 50, type: 'work_count' }
+      ]
+    };
+
+    // Load mission progress (to be implemented)
+    async function loadMissions() {
+      // TODO: Charger les missions depuis Supabase
+      console.log('Missions chargées');
+    }
+
+    // Claim mission reward
+    async function claimMission(missionId, type) {
+      // TODO: Réclamer la récompense
+      console.log(`Mission ${type}-${missionId} réclamée`);
+    }
+
+    loadMissions();
+  </script>
+</body>
+</html>
