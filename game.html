@@ -111,6 +111,7 @@
       background: rgba(255,255,255,0.2);
       border-radius: 10px;
       overflow: hidden;
+      position: relative;
     }
 
     #xp-progress {
@@ -119,6 +120,18 @@
       border-radius: 10px;
       transition: width 0.5s ease;
       width: 0%;
+    }
+
+    #xp-text {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 9px;
+      line-height: 10px;
+      color: white;
+      text-shadow: 0 0 2px black;
     }
 
     main {
@@ -309,6 +322,7 @@
       <div id="xp-label">EXPÉRIENCE</div>
       <div id="xp-bar">
         <div id="xp-progress"></div>
+        <div id="xp-text">0 / 0</div>
       </div>
     </div>
 
@@ -327,21 +341,8 @@
   <main>
     <div id="dock-content" class="tab-content active">
       <h2 class="section-title">📋 Contrats Disponibles</h2>
-      <div class="contract-item">
-        <div class="contract-name">Fret Local Maersk</div>
-        <div class="contract-reward">+50€ • +10 XP</div>
-      </div>
-      <div class="contract-item">
-        <div class="contract-name">Ligne Transatlantique CMA CGM</div>
-        <div class="contract-reward">+120€ • +25 XP</div>
-      </div>
-      <div class="contract-item">
-        <div class="contract-name">Cargo Express Hapag-Lloyd</div>
-        <div class="contract-reward">+80€ • +15 XP</div>
-      </div>
-      <div class="contract-item">
-        <div class="contract-name">Import MSC Mediterranean</div>
-        <div class="contract-reward">+200€ • +40 XP</div>
+      <div id="contracts-list">
+        <p style="text-align: center; color: #666;">Chargement...</p>
       </div>
     </div>
 
@@ -387,7 +388,7 @@
       </div>
       <div class="profile-stat">
         <div class="profile-label">Contrats Complétés</div>
-        <div class="profile-value">0</div>
+        <div class="profile-value" id="profile-contracts">0</div>
       </div>
     </div>
   </main>
@@ -420,6 +421,8 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
 
+    let playerData = null;
+
     function getRank(level) {
       if (level < 15) return 'Docker Occasionnel';
       if (level < 30) return 'Docker';
@@ -429,8 +432,50 @@
       return 'Directeur de Compagnie';
     }
 
-    function getXpForNextLevel(level) {
-      return Math.floor(100 * Math.pow(level, 1.1));
+    function getRequiredXpForLevel(level) {
+      if (level <= 1) return 0;
+      return Math.round(1000 * Math.pow(1.1, level - 2));
+    }
+
+    function addXp(amount, currentXp, currentLevel) {
+      let newXp = currentXp + amount;
+      let newLevel = currentLevel;
+      let xpNeeded = getRequiredXpForLevel(newLevel + 1);
+
+      while (newXp >= xpNeeded && newLevel < 100) {
+        newXp -= xpNeeded;
+        newLevel++;
+        xpNeeded = getRequiredXpForLevel(newLevel + 1);
+        alert(`🎉 Félicitations ! Vous montez Niveau ${newLevel} : ${getRank(newLevel)} !`);
+      }
+
+      return { xp: newXp, level: newLevel };
+    }
+
+    function updateUI() {
+      if (!playerData) return;
+
+      const rank = getRank(playerData.level);
+      const xpMax = getRequiredXpForLevel(playerData.level + 1);
+      const xpPercent = (playerData.xp / xpMax) * 100;
+
+      document.getElementById('username').textContent = username;
+      document.getElementById('rank').textContent = rank;
+      document.getElementById('level').textContent = playerData.level;
+      document.getElementById('xp-progress').style.width = xpPercent + '%';
+      document.getElementById('xp-text').textContent = `${playerData.xp} / ${xpMax}`;
+      document.getElementById('money').textContent = playerData.money;
+
+      document.getElementById('profile-username').textContent = username;
+      document.getElementById('profile-rank').textContent = rank;
+      document.getElementById('profile-level').textContent = playerData.level;
+      document.getElementById('profile-xp').textContent = playerData.xp;
+      document.getElementById('profile-money').textContent = playerData.money;
+      document.getElementById('profile-contracts').textContent = playerData.contracts_completed;
+
+      if (playerData.level >= 100) {
+        document.getElementById('company-locked').innerHTML = '<h2 class="section-title">🏢 La Joliette</h2><p style="color: #666;">Contenu en développement...</p>';
+      }
     }
 
     async function loadPlayerData() {
@@ -445,27 +490,71 @@
         return;
       }
 
-      const rank = getRank(data.level);
-      const xpMax = getXpForNextLevel(data.level);
-      const xpPercent = (data.xp / xpMax) * 100;
+      playerData = data;
+      updateUI();
+      console.log('✅ Données chargées');
+    }
 
-      document.getElementById('username').textContent = username;
-      document.getElementById('rank').textContent = rank;
-      document.getElementById('level').textContent = data.level;
-      document.getElementById('xp-progress').style.width = xpPercent + '%';
-      document.getElementById('money').textContent = data.money;
+    async function loadContracts() {
+      const { data, error } = await supabaseClient
+        .from('contracts')
+        .select('*')
+        .order('required_level', { ascending: true });
 
-      document.getElementById('profile-username').textContent = username;
-      document.getElementById('profile-rank').textContent = rank;
-      document.getElementById('profile-level').textContent = data.level;
-      document.getElementById('profile-xp').textContent = data.xp;
-      document.getElementById('profile-money').textContent = data.money;
-
-      if (data.level >= 100) {
-        document.getElementById('company-locked').innerHTML = '<h2 class="section-title">🏢 La Joliette</h2><p style="color: #666;">Contenu en développement...</p>';
+      if (error) {
+        console.error('❌ Erreur:', error);
+        return;
       }
 
-      console.log('✅ Données chargées');
+      const list = document.getElementById('contracts-list');
+      list.innerHTML = '';
+
+      data.forEach(contract => {
+        const item = document.createElement('div');
+        item.className = 'contract-item';
+        item.innerHTML = `
+          <div class="contract-name">${contract.name}</div>
+          <div class="contract-reward">+${contract.reward_money}€ • +${contract.reward_xp} XP</div>
+        `;
+        item.onclick = () => completeContract(contract);
+        list.appendChild(item);
+      });
+
+      console.log('✅ Contrats chargés');
+    }
+
+    async function completeContract(contract) {
+      if (!playerData) return;
+
+      const result = addXp(contract.reward_xp, playerData.xp, playerData.level);
+      const newMoney = playerData.money + contract.reward_money;
+      const newContractsCompleted = playerData.contracts_completed + 1;
+
+      const { error } = await supabaseClient
+        .from('game_progress')
+        .update({
+          xp: result.xp,
+          level: result.level,
+          money: newMoney,
+          rank: getRank(result.level),
+          contracts_completed: newContractsCompleted
+        })
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('❌ Erreur:', error);
+        alert('Erreur lors de la complétion du contrat');
+        return;
+      }
+
+      playerData.xp = result.xp;
+      playerData.level = result.level;
+      playerData.money = newMoney;
+      playerData.contracts_completed = newContractsCompleted;
+      playerData.rank = getRank(result.level);
+
+      updateUI();
+      alert(`✅ Contrat complété ! +${contract.reward_money}€ • +${contract.reward_xp} XP`);
     }
 
     async function loadLeaderboard() {
@@ -525,6 +614,7 @@
       window.location.href = 'index.html';
     } else {
       loadPlayerData();
+      loadContracts();
     }
   </script>
 </body>
