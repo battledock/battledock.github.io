@@ -7,118 +7,448 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      background: #0a0e14;
+      background: linear-gradient(180deg, #0a0e14 0%, #1a2332 30%, #2c4a5e 60%, #3d6a82 100%);
       color: #FFF;
       font-family: 'Special Elite', monospace;
-      margin: 0;
-      padding: 20px;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
+      overflow-x: hidden;
     }
 
     header {
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding: 10px;
-      background: rgba(255,255,255,0.05);
+      justify-content: space-around;
+      align-items: center;
+      padding: 15px 20px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex-wrap: wrap;
+      gap: 10px;
     }
 
-    header div {
-      font-family: 'Bebas Neue', sans-serif;  
+    .header-stat {
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 2px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    #xp-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 150px;
+    }
+
+    #xp-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #xp-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #8BC34A);
+      border-radius: 10px;
+      transition: width 0.5s ease;
+      width: 0%;
     }
 
     main {
+      flex: 1;
       display: flex;
-      flex: 1;
-    }
-
-    #terminal {
-      flex: 1;
-      background: #000;
-      padding: 10px;
-      overflow-y: auto;
-      margin-right: 20px;
-    }
-
-    #terminal input {
-      width: 100%;
-      background: #000;
-      border: none; 
-      color: #0F0;
-      font-family: monospace;
-      font-size: 16px;
-      outline: none;
-    }
-
-    #display {
-      flex: 2;
-      background: rgba(255,255,255,0.1);
+      justify-content: center;
+      align-items: center;
       padding: 20px;
-      position: relative;
+      padding-bottom: 100px;
+      overflow-y: auto;
     }
 
-    .tab-links {
-      position: absolute;
-      top: -30px;
-      left: 0;
+    .tab-content {
+      display: none;
+      width: 100%;
+      max-width: 1200px;
+      animation: fadeIn 0.3s ease;
     }
 
-    .tab-links button {
-      background: rgba(255,255,255,0.2);
-      border: none;
-      color: white;
-      padding: 5px 10px;
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #dock-content {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 20px;
+      height: 100%;
+    }
+
+    #contracts {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #contracts h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+      margin-bottom: 15px;
+      color: #FFF;
+    }
+
+    .contract-item {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 5px;
       cursor: pointer;
+      transition: all 0.3s ease;
+      border-left: 3px solid transparent;
+    }
+
+    .contract-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-left-color: #4CAF50;
+    }
+
+    .contract-name {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
+      letter-spacing: 2px;
+      margin-bottom: 5px;
     }
 
-    .tab-links button.active {
-      background: rgba(255,255,255,0.1);
+    .contract-reward {
+      font-size: 14px;
+      color: #4CAF50;
     }
 
-    .tab {
-      display: none;
+    #dock-grid {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
     }
 
-    .tab.active {
-      display: block;
+    #dock-grid h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+      margin-bottom: 20px;
+    }
+
+    #leaderboard-content {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #leaderboard-content h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 10px;
+      border-radius: 5px;
+      align-items: center;
+    }
+
+    .leaderboard-rank {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      width: 40px;
+      text-align: center;
+    }
+
+    .leaderboard-username {
+      flex: 1;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+    }
+
+    .leaderboard-score {
+      font-size: 18px;
+      color: #4CAF50;
+    }
+
+    #company-content {
+      position: relative;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #company-content.locked::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 10px;
+      z-index: 1;
+    }
+
+    #lock-message {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      line-height: 1.6;
+    }
+
+    #lock-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      opacity: 0.5;
+    }
+
+    #profile-content {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 30px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    #profile-content h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .profile-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+
+    .profile-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    .profile-value {
+      font-size: 18px;
+      color: #4CAF50;
+    }
+
+    nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 10px 20px;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(15px);
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 1000;
+    }
+
+    nav button {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 28px;
+      cursor: pointer;
+      padding: 10px 15px;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.3s ease;
+    }
+
+    nav button span {
+      font-size: 11px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    nav button.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: #FFF;
+    }
+
+    nav button:hover {
+      color: #FFF;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      #dock-content {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        font-size: 14px;
+      }
+
+      nav button {
+        font-size: 24px;
+      }
+
+      nav button span {
+        font-size: 9px;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <div id="username"></div>
-    <div id="rank"></div>
-    <div>Niveau <span id="level"></span></div>
-    <div><span id="xp"></span> XP</div>
-    <div>Énergie <span id="energy"></span>/<span id="max_energy"></span></div>
-    <div><span id="money"></span> €</div>
+    <div class="header-stat"><span id="username">Joueur</span></div>
+    <div class="header-stat"><span id="rank">Docker Occasionnel</span></div>
+    <div class="header-stat">Niveau <span id="level">1</span></div>
+    <div id="xp-container">
+      <span style="font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px;">XP</span>
+      <div id="xp-bar">
+        <div id="xp-progress"></div>
+      </div>
+    </div>
+    <div class="header-stat"><span id="money">0</span> €</div>
   </header>
 
   <main>
-    <section id="terminal">
-      <div id="terminal-output"></div>
-      <input type="text" id="terminal-input" placeholder="Tapez ici..." />
-    </section>
+    <div id="dock-content" class="tab-content active">
+      <div id="contracts">
+        <h2>📋 Contrats Disponibles</h2>
+        <div class="contract-item">
+          <div class="contract-name">Fret Local Maersk</div>
+          <div class="contract-reward">+50€ • +10 XP</div>
+        </div>
+        <div class="contract-item">
+          <div class="contract-name">Ligne Transatlantique CMA CGM</div>
+          <div class="contract-reward">+120€ • +25 XP</div>
+        </div>
+        <div class="contract-item">
+          <div class="contract-name">Cargo Express Hapag-Lloyd</div>
+          <div class="contract-reward">+80€ • +15 XP</div>
+        </div>
+        <div class="contract-item">
+          <div class="contract-name">Import MSC Mediterranean</div>
+          <div class="contract-reward">+200€ • +40 XP</div>
+        </div>
+      </div>
 
-    <section id="display">
-      <div class="tab-links">
-        <button class="tab-link active" data-tab="dock">Mon Quai</button>
-        <button class="tab-link" data-tab="company">Compagnie Maritime (La Joliette)</button>
+      <div id="dock-grid">
+        <h2>🚢 Ma Zone de Dock</h2>
+        <p style="opacity: 0.6;">Les conteneurs apparaîtront ici pendant les livraisons</p>
       </div>
-      <div id="dock" class="tab active">
-        <!-- Affichage des conteneurs du joueur -->
+    </div>
+
+    <div id="leaderboard-content" class="tab-content">
+      <h2>🏆 Classement des Dockers</h2>
+      <div id="leaderboard-list">
+        <p style="text-align: center; opacity: 0.6;">Chargement du classement...</p>
       </div>
-      <div id="company" class="tab">
-        <!-- Affichage des fonctions de compagnie (débloqué au niveau 100) -->
+    </div>
+
+    <div id="company-content" class="tab-content locked">
+      <div id="lock-message">
+        <div id="lock-icon">🔒</div>
+        CONQUÊTE VERROUILLÉE<br>
+        Atteignez le Niveau 100 (Directeur de Compagnie)<br>
+        pour débloquer cet espace, acheter le port<br>
+        et affronter les autres.
       </div>
-    </section>
+    </div>
+
+    <div id="profile-content" class="tab-content">
+      <h2>👤 Mon Profil</h2>
+      <div class="profile-stat">
+        <div class="profile-label">Nom d'utilisateur</div>
+        <div class="profile-value" id="profile-username">Joueur</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-label">Rang</div>
+        <div class="profile-value" id="profile-rank">Docker Occasionnel</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-label">Niveau</div>
+        <div class="profile-value" id="profile-level">1</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-label">Expérience</div>
+        <div class="profile-value"><span id="profile-xp">0</span> XP</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-label">Budget Total</div>
+        <div class="profile-value"><span id="profile-money">0</span> €</div>
+      </div>
+      <div class="profile-stat">
+        <div class="profile-label">Contrats Complétés</div>
+        <div class="profile-value">0</div>
+      </div>
+    </div>
   </main>
+
+  <nav>
+    <button class="nav-btn active" data-tab="dock-content">
+      📦
+      <span>Mon Quai</span>
+    </button>
+    <button class="nav-btn" data-tab="leaderboard-content">
+      🏆
+      <span>Classement</span>
+    </button>
+    <button class="nav-btn" data-tab="company-content">
+      🏢
+      <span>La Joliette</span>
+    </button>
+    <button class="nav-btn" data-tab="profile-content">
+      👤
+      <span>Mon Profil</span>
+    </button>
+  </nav>
 
   <script>
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
@@ -129,19 +459,18 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
 
-    const usernameEl = document.getElementById('username');
-    const rankEl = document.getElementById('rank');
-    const levelEl = document.getElementById('level');
-    const xpEl = document.getElementById('xp');
-    const energyEl = document.getElementById('energy');
-    const maxEnergyEl = document.getElementById('max_energy');
-    const moneyEl = document.getElementById('money');
+    function getRank(level) {
+      if (level < 15) return 'Docker Occasionnel';
+      if (level < 30) return 'Docker';
+      if (level < 50) return 'Docker Mensuel';
+      if (level < 80) return 'Contre-Maître';
+      if (level < 100) return 'Chef de Quai';
+      return 'Directeur de Compagnie';
+    }
 
-    const terminalInput = document.getElementById('terminal-input');
-    const terminalOutput = document.getElementById('terminal-output');
-
-    const tabs = document.querySelectorAll('.tab-link');
-    const tabContents = document.querySelectorAll('.tab');
+    function getXpForNextLevel(level) {
+      return Math.floor(100 * Math.pow(level, 1.1));
+    }
 
     async function loadPlayerData() {
       const { data, error } = await supabaseClient
@@ -151,62 +480,92 @@
         .single();
 
       if (error) {
-        console.error('Erreur chargement données joueur:', error);
+        console.error('❌ Erreur chargement données:', error);
         return;
       }
 
-      usernameEl.textContent = username;
-      rankEl.textContent = getRank(data.level);
-      levelEl.textContent = data.level;
-      xpEl.textContent = data.xp;
-      energyEl.textContent = data.energy;
-      maxEnergyEl.textContent = data.energy_max;
-      moneyEl.textContent = data.money;
+      const rank = getRank(data.level);
+      const xpMax = getXpForNextLevel(data.level);
+      const xpPercent = (data.xp / xpMax) * 100;
+
+      document.getElementById('username').textContent = username;
+      document.getElementById('rank').textContent = rank;
+      document.getElementById('level').textContent = data.level;
+      document.getElementById('xp-progress').style.width = xpPercent + '%';
+      document.getElementById('money').textContent = data.money;
+
+      document.getElementById('profile-username').textContent = username;
+      document.getElementById('profile-rank').textContent = rank;
+      document.getElementById('profile-level').textContent = data.level;
+      document.getElementById('profile-xp').textContent = data.xp;
+      document.getElementById('profile-money').textContent = data.money;
 
       if (data.level >= 100) {
-        document.querySelector('[data-tab="company"]').disabled = false;
+        document.getElementById('company-content').classList.remove('locked');
+        document.getElementById('lock-message').innerHTML = '<h2>🏢 Bienvenue à La Joliette</h2><p>Contenu en développement...</p>';
       }
+
+      console.log('✅ Données joueur chargées');
     }
 
-    function getRank(level) {
-      if (level < 15) return 'Docker Occasionnel';
-      if (level < 30) return 'Docker';
-      if (level < 50) return 'Docker Mensuel'; 
-      if (level < 80) return 'Contre-Maître';
-      if (level < 100) return 'Chef de Quai';
-      return 'Directeur de Compagnie';
-    }
+    async function loadLeaderboard() {
+      const { data, error } = await supabaseClient
+        .from('leaderboard')
+        .select(`
+          score,
+          user_id,
+          profiles(username)
+        `)
+        .order('score', { ascending: false })
+        .limit(10);
 
-    function handleTerminalInput(event) {
-      if (event.key === 'Enter') {
-        const input = terminalInput.value;
-        terminalInput.value = '';
-
-        const output = handleCommand(input);
-        terminalOutput.innerHTML += `<br />&gt; ${input}<br />${output}`;
-        terminalOutput.scrollTop = terminalOutput.scrollHeight;
+      if (error) {
+        console.error('❌ Erreur chargement classement:', error);
+        return;
       }
+
+      const leaderboardList = document.getElementById('leaderboard-list');
+      leaderboardList.innerHTML = '';
+
+      data.forEach((entry, index) => {
+        const item = document.createElement('div');
+        item.className = 'leaderboard-item';
+        item.innerHTML = `
+          <div class="leaderboard-rank">${index + 1}</div>
+          <div class="leaderboard-username">${entry.profiles.username}</div>
+          <div class="leaderboard-score">${entry.score} €</div>
+        `;
+        leaderboardList.appendChild(item);
+      });
+
+      console.log('✅ Classement chargé');
     }
 
-    function handleCommand(input) {
-      // Gérer les commandes du terminal ici
-      // Retourner la sortie à afficher
-      return 'Commande non reconnue';
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const targetTab = button.getAttribute('data-tab');
+
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        tabContents.forEach(tab => tab.classList.remove('active'));
+
+        button.classList.add('active');
+        document.getElementById(targetTab).classList.add('active');
+
+        if (targetTab === 'leaderboard-content') {
+          loadLeaderboard();
+        }
+      });
+    });
+
+    if (!userId || !username) {
+      alert('Session expirée. Veuillez vous reconnecter.');
+      window.location.href = 'index.html';
+    } else {
+      loadPlayerData();
     }
-
-    function switchTab(event) {
-      const tabId = event.target.getAttribute('data-tab');
-
-      tabs.forEach(tab => tab.classList.remove('active'));
-      tabContents.forEach(content => content.classList.remove('active'));
-
-      event.target.classList.add('active');
-      document.getElementById(tabId).classList.add('active');
-    }
-
-    loadPlayerData();
-    terminalInput.addEventListener('keydown', handleTerminalInput);
-    tabs.forEach(tab => tab.addEventListener('click', switchTab));
   </script>
 </body>
 </html>
