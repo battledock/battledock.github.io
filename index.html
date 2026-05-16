@@ -292,44 +292,81 @@
       const username = document.getElementById('signup-username').value;
       const password = document.getElementById('signup-password').value;
 
-      const { data: { user }, error } = await supabaseClient.auth.signUp({
-        email: `${username}@battledock.com`,
-        password: password,
-      });
+      console.log('🚀 Début inscription pour:', username);
 
-      if (error) {
-        alert('Erreur lors de l\'inscription : ' + error.message);
-      } else {
+      try {
+        const { data: { user }, error } = await supabaseClient.auth.signUp({
+          email: `${username}@battledock.com`,
+          password: password,
+        });
+
+        if (error) {
+          console.error('❌ Erreur Auth:', error);
+          alert('Erreur lors de l\'inscription : ' + error.message);
+          return;
+        }
+
+        console.log('✅ Auth créée, user_id:', user.id);
+
+        // Créer le profil
         const { data: profileData, error: profileError } = await supabaseClient
           .from('profiles')
-          .insert({ user_id: user.id, username: username });
+          .insert({ user_id: user.id, username: username })
+          .select();
 
         if (profileError) {
-          alert('Erreur lors de l\'enregistrement du profil : ' + profileError.message);
-        } else {
-          // Initialiser le leaderboard
-          await supabaseClient
-            .from('leaderboard')
-            .insert({ user_id: user.id, score: 0 });
-          
-          // Initialiser game_progress
-          await supabaseClient
-            .from('game_progress')
-            .insert({ 
-              user_id: user.id,
-              level: 1,
-              score: 0,
-              rank: 'Docker Occasionnel',
-              money: 1250,
-              energy: 45,
-              energy_max: 50,
-              xp: 0
-            });
-          
-          alert('Inscription réussie !');
-          closeModal('signup-modal');
-          openModal('login-modal');
+          console.error('❌ Erreur profil:', profileError);
+          alert('Erreur profil : ' + profileError.message);
+          return;
         }
+
+        console.log('✅ Profil créé:', profileData);
+
+        // Créer game_progress avec 100€ de départ
+        const { data: progressData, error: progressError } = await supabaseClient
+          .from('game_progress')
+          .insert({ 
+            user_id: user.id,
+            level: 1,
+            score: 0,
+            rank: 'Docker Occasionnel',
+            money: 100,
+            energy: 50,
+            energy_max: 50,
+            xp: 0
+          })
+          .select();
+
+        if (progressError) {
+          console.error('❌ Erreur game_progress:', progressError);
+          alert('Erreur progression : ' + progressError.message);
+          return;
+        }
+
+        console.log('✅ Game progress créé:', progressData);
+
+        // Créer leaderboard avec 100€
+        const { data: leaderboardData, error: leaderboardError } = await supabaseClient
+          .from('leaderboard')
+          .insert({ user_id: user.id, score: 100 })
+          .select();
+
+        if (leaderboardError) {
+          console.error('❌ Erreur leaderboard:', leaderboardError);
+          alert('Erreur classement : ' + leaderboardError.message);
+          return;
+        }
+
+        console.log('✅ Leaderboard créé:', leaderboardData);
+        console.log('🎉 Inscription complète !');
+
+        alert('Inscription réussie ! Vous commencez avec 100€ 💰');
+        closeModal('signup-modal');
+        openModal('login-modal');
+
+      } catch (err) {
+        console.error('❌ Erreur globale:', err);
+        alert('Erreur inattendue : ' + err.message);
       }
     });
 
@@ -338,38 +375,33 @@
       const username = document.getElementById('login-username').value;
       const password = document.getElementById('login-password').value;
 
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: `${username}@battledock.com`,
-        password: password,
-      });
+      console.log('🔐 Tentative connexion:', username);
 
-      if (error) {
-        alert('Erreur lors de la connexion : ' + error.message);
-      } else {
+      try {
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
+          email: `${username}@battledock.com`,
+          password: password,
+        });
+
+        if (error) {
+          console.error('❌ Erreur connexion:', error);
+          alert('Erreur lors de la connexion : ' + error.message);
+          return;
+        }
+
+        console.log('✅ Connexion réussie, user_id:', data.user.id);
+
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('username', username);
         
-        // Initialiser le score dans le leaderboard si absent
-        const { data: existingScore } = await supabaseClient
-          .from('leaderboard')
-          .select('*')
-          .eq('user_id', data.user.id)
-          .single();
-        
-        if (!existingScore) {
-          await supabaseClient
-            .from('leaderboard')
-            .insert({ user_id: data.user.id, score: 0 });
-        }
-        
-        // Initialiser game_progress si absent
-        const { data: existingProgress } = await supabaseClient
+        // Vérifier et créer game_progress si manquant
+        const { data: progressArray } = await supabaseClient
           .from('game_progress')
           .select('*')
-          .eq('user_id', data.user.id)
-          .single();
-        
-        if (!existingProgress) {
+          .eq('user_id', data.user.id);
+
+        if (!progressArray || progressArray.length === 0) {
+          console.log('⚠️ Game progress manquant, création...');
           await supabaseClient
             .from('game_progress')
             .insert({ 
@@ -377,14 +409,34 @@
               level: 1,
               score: 0,
               rank: 'Docker Occasionnel',
-              money: 1250,
-              energy: 45,
+              money: 100,
+              energy: 50,
               energy_max: 50,
               xp: 0
             });
+          console.log('✅ Game progress créé');
         }
         
+        // Vérifier et créer leaderboard si manquant
+        const { data: scoreArray } = await supabaseClient
+          .from('leaderboard')
+          .select('*')
+          .eq('user_id', data.user.id);
+        
+        if (!scoreArray || scoreArray.length === 0) {
+          console.log('⚠️ Leaderboard manquant, création...');
+          await supabaseClient
+            .from('leaderboard')
+            .insert({ user_id: data.user.id, score: 100 });
+          console.log('✅ Leaderboard créé');
+        }
+
+        console.log('🎮 Redirection vers le jeu...');
         window.location.href = 'game.html';
+
+      } catch (err) {
+        console.error('❌ Erreur globale:', err);
+        alert('Erreur inattendue : ' + err.message);
       }
     });
 
