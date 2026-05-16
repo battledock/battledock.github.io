@@ -815,6 +815,9 @@
         return;
       }
 
+      console.log('🔍 userId:', userId);
+      console.log('🔍 username:', username);
+
       try {
         const { data: profileData, error: profileError } = await supabaseClient
           .from('profiles')
@@ -822,21 +825,37 @@
           .eq('user_id', userId)
           .single();
 
+        console.log('📋 Profile data:', profileData);
+        console.log('❌ Profile error:', profileError);
+
         const { data: progressArray, error: progressError } = await supabaseClient
           .from('game_progress')
           .select('*')
           .eq('user_id', userId);
 
+        console.log('📊 Progress data:', progressArray);
+        console.log('❌ Progress error:', progressError);
+
         if (profileError || progressError) {
           console.error('Erreur chargement:', profileError || progressError);
+          alert('Erreur: ' + (profileError?.message || progressError?.message));
           return;
         }
 
         playerData = progressArray?.[0];
 
+        if (!playerData) {
+          console.error('❌ Pas de données de progression trouvées');
+          alert('Aucune donnée de progression trouvée');
+          return;
+        }
+
         if (profileData && playerData) {
           selectedAvatar = profileData.avatar_url || '🚢';
           collectorOwned = selectedAvatar === '👑';
+
+          console.log('✅ Avatar:', selectedAvatar);
+          console.log('✅ Username:', profileData.username);
 
           document.getElementById('avatarCircle').textContent = selectedAvatar;
           document.getElementById('username').textContent = profileData.username;
