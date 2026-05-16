@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Profil</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #0f172a;
+      padding-bottom: 80px;
+    }
+
+    .header {
+      background: white;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #f1f5f9;
+      color: #0f172a;
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 24px 20px;
+    }
+
+    .profile-hero {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+    }
+
+    .profile-hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100px;
+      background: var(--profile-color, linear-gradient(135deg, #667eea, #764ba2));
+      border-radius: 20px 20px 0 0;
+      opacity: 0.1;
+    }
+
+    .avatar-large {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: var(--profile-color, linear-gradient(135deg, #667eea, #764ba2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 50px;
+      margin: 0 auto 16px;
+      border: 4px solid white;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      position: relative;
+      z-index: 1;
+    }
+
+    .username-large {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #0f172a;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: #fbbf24;
+      color: #0f172a;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .bio {
+      font-size: 15px;
+      color: #64748b;
+      font-style: italic;
+      margin-bottom: 20px;
+      min-height: 20px;
+    }
+
+    .rank-display {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #0f172a;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .combat-stats {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .combat-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      color: #0f172a;
+    }
+
+    .combat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .combat-label {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .combat-value {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .win-rate {
+      width: 100%;
+      height: 8px;
+      background: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .win-rate-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #059669);
+      transition: width 0.5s;
+    }
+
+    .actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #0f172a;
+    }
+
+    .action-btn:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .action-btn.primary {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+    }
+
+    .action-btn.primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .action-icon {
+      font-size: 20px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: white;
+    }
+
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      text-align: center;
+      padding: 60px 20px;
+      color: white;
+    }
+
+    .error-message h2 {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 16px;
+      }
+      .profile-hero {
+        padding: 24px 16px;
+      }
+      .avatar-large {
+        width: 80px;
+        height: 80px;
+        font-size: 40px;
+      }
+      .username-large {
+        font-size: 24px;
+      }
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="goBack()">← Retour</button>
+    <div style="font-weight: 700; font-size: 16px;">Profil Joueur</div>
+    <div style="width: 80px;"></div>
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>Chargement du profil...</p>
+    </div>
+
+    <div id="error" class="error-message" style="display: none;">
+      <h2>😕</h2>
+      <p>Joueur introuvable</p>
+    </div>
+
+    <div id="content" style="display: none;">
+      <div class="profile-hero" id="profileHero">
+        <div class="avatar-large" id="avatar">👤</div>
+        <h1 class="username-large" id="username">Docker</h1>
+        <div class="badge" id="badge">⭐ Docker Occasionnel</div>
+        <p class="bio" id="bio">Pas de bio</p>
+        <div class="rank-display" id="rankDisplay">Niveau 1</div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="money">100€</div>
+          <div class="stat-label">Argent actuel</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💎</div>
+          <div class="stat-value" id="totalEarned">100€</div>
+          <div class="stat-label">Total gagné</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-value" id="energy">50/50</div>
+          <div class="stat-label">Énergie</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-value" id="level">1</div>
+          <div class="stat-label">Niveau</div>
+        </div>
+      </div>
+
+      <div class="combat-stats">
+        <div class="combat-title">⚔️ Statistiques de Combat</div>
+        <div class="combat-row">
+          <span class="combat-label">Victoires</span>
+          <span class="combat-value" id="wins">0</span>
+        </div>
+        <div class="combat-row">
+          <span class="combat-label">Défaites</span>
+          <span class="combat-value" id="losses">0</span>
+        </div>
+        <div class="combat-row">
+          <span class="combat-label">Ratio</span>
+          <span class="combat-value" id="ratio">-</span>
+        </div>
+        <div class="win-rate">
+          <div class="win-rate-fill" id="winRateFill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn primary" onclick="alert('Système de défi à venir !')">
+          <span class="action-icon">⚔️</span>
+          <span>Défier ce joueur</span>
+        </button>
+        <button class="action-btn" onclick="alert('Système de message à venir !')">
+          <span class="action-icon">💬</span>
+          <span>Envoyer un message</span>
+        </button>
+        <button class="action-btn" onclick="alert('Système d\'amis à venir !')">
+          <span class="action-icon">👥</span>
+          <span>Ajouter en ami</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    // Récupérer le username depuis l'URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUsername = urlParams.get('user');
+
+    function goBack() {
+      window.history.back();
+    }
+
+    async function loadPublicProfile() {
+      if (!targetUsername) {
+        showError();
+        return;
+      }
+
+      try {
+        // Charger le profil par username
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('username', targetUsername)
+          .single();
+
+        if (profileError || !profileData) {
+          showError();
+          return;
+        }
+
+        // Charger la progression
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('*')
+          .eq('user_id', profileData.user_id);
+
+        const progressData = progressArray && progressArray.length > 0 ? progressArray[0] : null;
+
+        if (!progressData) {
+          showError();
+          return;
+        }
+
+        displayProfile(profileData, progressData);
+
+      } catch (error) {
+        console.error('Erreur:', error);
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+    }
+
+    function displayProfile(profile, progress) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+
+      // Avatar et couleur
+      const avatarEmoji = profile.avatar_emoji || '👤';
+      const profileColor = profile.profile_color || '#667eea';
+      
+      document.getElementById('avatar').textContent = avatarEmoji;
+      document.getElementById('username').textContent = profile.username;
+      
+      // Badge
+      const titleBadge = profile.title_badge || progress.rank || 'Docker Occasionnel';
+      document.getElementById('badge').textContent = `⭐ ${titleBadge}`;
+
+      // Bio
+      const bio = profile.bio || 'Ce joueur n\'a pas encore de bio';
+      document.getElementById('bio').textContent = bio;
+
+      // Rank display
+      const createdDate = new Date(profile.created_at).toLocaleDateString('fr-FR');
+      document.getElementById('rankDisplay').textContent = `Niveau ${progress.level || 1} • Membre depuis ${createdDate}`;
+
+      // Couleur personnalisée
+      document.documentElement.style.setProperty('--profile-color', profileColor);
+
+      // Stats
+      document.getElementById('money').textContent = `${progress.money || 0}€`;
+      document.getElementById('totalEarned').textContent = `${progress.total_earned || 100}€`;
+      document.getElementById('energy').textContent = `${progress.energy || 0}/${progress.energy_max || 50}`;
+      document.getElementById('level').textContent = progress.level || 1;
+
+      // Combat stats
+      const wins = progress.combat_wins || 0;
+      const losses = progress.combat_losses || 0;
+      const total = wins + losses;
+      
+      document.getElementById('wins').textContent = wins;
+      document.getElementById('losses').textContent = losses;
+      
+      if (total > 0) {
+        const winRate = (wins / total * 100).toFixed(1);
+        document.getElementById('ratio').textContent = `${winRate}%`;
+        document.getElementById('winRateFill').style.width = `${winRate}%`;
+      } else {
+        document.getElementById('ratio').textContent = '-';
+      }
+    }
+
+    loadPublicProfile();
+  </script>
+</body>
+</html>
