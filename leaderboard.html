@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Battle Dock - Classement</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: linear-gradient(180deg, #0a0e14 0%, #1a2332 30%, #2c4a5e 60%, #3d6a82 100%);
+      font-family: 'Bebas Neue', sans-serif;
+      overflow-x: hidden;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      border-bottom: 3px solid #e5e7eb;
+    }
+    .back-btn {
+      background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      border: 2px solid #4b5563;
+    }
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+    .title {
+      font-size: 24px;
+      letter-spacing: 3px;
+      color: #1f2937;
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .podium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 10px;
+      margin: 30px 0 40px;
+      height: 200px;
+    }
+    .podium-place {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .podium-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      border: 3px solid;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    .podium-platform {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+      border-radius: 10px 10px 0 0;
+      padding: 15px 30px;
+      text-align: center;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+    }
+    .podium-rank {
+      font-size: 32px;
+      margin-bottom: 5px;
+    }
+    .podium-username {
+      font-size: 16px;
+      letter-spacing: 1px;
+      margin-bottom: 5px;
+    }
+    .podium-score {
+      font-size: 20px;
+      color: #fbbf24;
+      letter-spacing: 1px;
+    }
+    .place-1 {
+      order: 2;
+    }
+    .place-1 .podium-avatar {
+      width: 80px;
+      height: 80px;
+      font-size: 36px;
+      border-color: #fbbf24;
+    }
+    .place-1 .podium-platform {
+      height: 140px;
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.3) 0%, rgba(245, 158, 11, 0.2) 100%);
+      border-color: #fbbf24;
+    }
+    .place-2 {
+      order: 1;
+    }
+    .place-2 .podium-avatar {
+      border-color: #e5e7eb;
+    }
+    .place-2 .podium-platform {
+      height: 100px;
+      background: linear-gradient(135deg, rgba(229, 231, 235, 0.2) 0%, rgba(209, 213, 219, 0.1) 100%);
+      border-color: #e5e7eb;
+    }
+    .place-3 {
+      order: 3;
+    }
+    .place-3 .podium-avatar {
+      border-color: #d97706;
+    }
+    .place-3 .podium-platform {
+      height: 70px;
+      background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(180, 83, 9, 0.1) 100%);
+      border-color: #d97706;
+    }
+
+    .leaderboard-list {
+      background: rgba(30, 41, 59, 0.9);
+      border-radius: 15px;
+      padding: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    .list-title {
+      font-size: 20px;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      text-align: center;
+      color: #fbbf24;
+    }
+    .leaderboard-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 15px;
+      background: rgba(51, 65, 85, 0.5);
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .leaderboard-item.current-user {
+      background: rgba(79, 70, 229, 0.3);
+      border: 2px solid #4f46e5;
+    }
+    .item-rank {
+      font-size: 24px;
+      letter-spacing: 1px;
+      min-width: 40px;
+      text-align: center;
+      color: #cbd5e0;
+    }
+    .item-avatar {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      border: 2px solid #4f46e5;
+    }
+    .item-info {
+      flex: 1;
+    }
+    .item-username {
+      font-size: 18px;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+    .item-rank-text {
+      font-size: 12px;
+      color: #cbd5e0;
+      letter-spacing: 1px;
+    }
+    .item-score {
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #fbbf24;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+
+    @media (max-width: 480px) {
+      .podium {
+        height: 180px;
+        gap: 5px;
+      }
+      .podium-platform {
+        padding: 10px 15px;
+      }
+      .podium-username {
+        font-size: 14px;
+      }
+      .place-1 .podium-platform {
+        height: 120px;
+      }
+      .place-2 .podium-platform {
+        height: 80px;
+      }
+      .place-3 .podium-platform {
+        height: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='game.html'">← RETOUR</button>
+    <div class="title">🏆 CLASSEMENT</div>
+    <div style="width: 100px;"></div>
+  </div>
+
+  <div class="container">
+    <div id="loading" class="loading">Chargement du classement...</div>
+    
+    <div id="podium" class="podium" style="display: none;">
+      <!-- Top 3 will be inserted here -->
+    </div>
+
+    <div id="leaderboard" class="leaderboard-list" style="display: none;">
+      <div class="list-title">CLASSEMENT GÉNÉRAL</div>
+      <div id="leaderboard-items"></div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const currentUserId = localStorage.getItem('userId');
+
+    async function loadLeaderboard() {
+      try {
+        // Récupérer le classement avec les profils
+        const { data: leaderboardData, error } = await supabaseClient
+          .from('leaderboard')
+          .select(`
+            score,
+            user_id,
+            profiles (username)
+          `)
+          .order('score', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+
+        // Créer un classement unique par utilisateur (meilleur score)
+        const userScores = {};
+        leaderboardData.forEach(entry => {
+          const userId = entry.user_id;
+          if (!userScores[userId] || userScores[userId].score < entry.score) {
+            userScores[userId] = {
+              user_id: userId,
+              username: entry.profiles?.username || 'Joueur',
+              score: entry.score
+            };
+          }
+        });
+
+        // Convertir en tableau et trier
+        const rankings = Object.values(userScores)
+          .sort((a, b) => b.score - a.score);
+
+        displayLeaderboard(rankings);
+        
+      } catch (error) {
+        console.error('Erreur:', error);
+        document.getElementById('loading').textContent = 'Erreur de chargement...';
+      }
+    }
+
+    function displayLeaderboard(rankings) {
+      document.getElementById('loading').style.display = 'none';
+
+      // Afficher le podium (top 3)
+      if (rankings.length >= 3) {
+        const podiumDiv = document.getElementById('podium');
+        podiumDiv.style.display = 'flex';
+
+        const medals = ['🥇', '🥈', '🥉'];
+        [1, 0, 2].forEach((index, position) => {
+          if (rankings[index]) {
+            const place = document.createElement('div');
+            place.className = `podium-place place-${index + 1}`;
+            place.innerHTML = `
+              <div class="podium-avatar">👤</div>
+              <div class="podium-platform">
+                <div class="podium-rank">${medals[index]}</div>
+                <div class="podium-username">${rankings[index].username}</div>
+                <div class="podium-score">${rankings[index].score.toLocaleString()} pts</div>
+              </div>
+            `;
+            podiumDiv.appendChild(place);
+          }
+        });
+      }
+
+      // Afficher la liste complète
+      const leaderboardDiv = document.getElementById('leaderboard');
+      const itemsDiv = document.getElementById('leaderboard-items');
+      leaderboardDiv.style.display = 'block';
+
+      rankings.forEach((player, index) => {
+        const item = document.createElement('div');
+        item.className = 'leaderboard-item' + (player.user_id === currentUserId ? ' current-user' : '');
+        
+        let rankDisplay = `#${index + 1}`;
+        if (index === 0) rankDisplay = '🥇';
+        if (index === 1) rankDisplay = '🥈';
+        if (index === 2) rankDisplay = '🥉';
+
+        item.innerHTML = `
+          <div class="item-rank">${rankDisplay}</div>
+          <div class="item-avatar">👤</div>
+          <div class="item-info">
+            <div class="item-username">${player.username}</div>
+            <div class="item-rank-text">Docker Occasionnel</div>
+          </div>
+          <div class="item-score">${player.score.toLocaleString()}</div>
+        `;
+        itemsDiv.appendChild(item);
+      });
+    }
+
+    // Charger au démarrage
+    loadLeaderboard();
+  </script>
+</body>
+</html>
