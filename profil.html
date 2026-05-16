@@ -701,14 +701,29 @@
     }
 
     async function loadProfile() {
-      if (!userId) {
+      if (!userId || !username) {
+        alert('Session expirée');
         window.location.href = 'index.html';
         return;
       }
 
       try {
-        const { data: profileData } = await supabaseClient.from('profiles').select('*').eq('user_id', userId).single();
-        const { data: progressArray } = await supabaseClient.from('game_progress').select('*').eq('user_id', userId);
+        const { data: profileData, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        const { data: progressArray, error: progressError } = await supabaseClient
+          .from('game_progress')
+          .select('*')
+          .eq('user_id', userId);
+
+        if (profileError || progressError) {
+          console.error('Erreur chargement:', profileError || progressError);
+          return;
+        }
+
         playerData = progressArray?.[0];
 
         if (profileData && playerData) {
@@ -716,7 +731,7 @@
           collectorOwned = selectedAvatar === '👑';
 
           document.getElementById('avatarCircle').textContent = selectedAvatar;
-          document.getElementById('username').textContent = profileData.username || username;
+          document.getElementById('username').textContent = profileData.username;
           document.getElementById('role').textContent = playerData.rank || 'Docker Occasionnel';
           
           const level = playerData.level || 1;
