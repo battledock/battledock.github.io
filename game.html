@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Battle Dock - Jeu</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -589,6 +590,103 @@
     const username = localStorage.getItem('username') || 'Docker';
     document.getElementById('username').textContent = username;
     document.body.style.overflow = 'hidden';
+
+    // Configuration Supabase
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+
+    // Charger les ressources de l'utilisateur
+    async function loadUserResources() {
+      if (!userId) {
+        console.warn('Pas de userId, redirection...');
+        window.location.href = 'index.html';
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('game_progress')
+          .select('money, energy, energy_max, level, rank')
+          .eq('user_id', userId)
+          .single();
+
+        if (error) throw error;
+
+        if (data) {
+          // Mettre à jour l'affichage
+          document.getElementById('money').textContent = `${data.money}€`;
+          document.getElementById('energy').textContent = `${data.energy}/${data.energy_max}`;
+          
+          // Stocker en mémoire pour usage futur
+          window.userResources = data;
+          console.log('💰 Ressources chargées:', data);
+        }
+      } catch (error) {
+        console.error('Erreur chargement ressources:', error);
+        // Valeurs par défaut en cas d'erreur
+        document.getElementById('money').textContent = '0€';
+        document.getElementById('energy').textContent = '0/50';
+      }
+    }
+
+    // Fonction pour mettre à jour l'argent
+    async function updateMoney(newAmount) {
+      try {
+        const { error } = await supabaseClient
+          .from('game_progress')
+          .update({ money: newAmount })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        // Mettre à jour l'affichage
+        document.getElementById('money').textContent = `${newAmount}€`;
+        window.userResources.money = newAmount;
+
+        // Mettre à jour aussi le leaderboard
+        await supabaseClient
+          .from('leaderboard')
+          .update({ score: newAmount })
+          .eq('user_id', userId);
+
+        console.log('💰 Argent mis à jour:', newAmount);
+      } catch (error) {
+        console.error('Erreur mise à jour argent:', error);
+      }
+    }
+
+    // Fonction pour mettre à jour l'énergie
+    async function updateEnergy(newEnergy) {
+      try {
+        const { error } = await supabaseClient
+          .from('game_progress')
+          .update({ energy: newEnergy })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        // Mettre à jour l'affichage
+        const energyMax = window.userResources?.energy_max || 50;
+        document.getElementById('energy').textContent = `${newEnergy}/${energyMax}`;
+        if (window.userResources) {
+          window.userResources.energy = newEnergy;
+        }
+
+        console.log('⚡ Énergie mise à jour:', newEnergy);
+      } catch (error) {
+        console.error('Erreur mise à jour énergie:', error);
+      }
+    }
+
+    // Charger les ressources au démarrage
+    loadUserResources();
+
+    // Rafraîchir toutes les 30 secondes
+    setInterval(loadUserResources, 30000);
 
     function toggleNews() {
       const dropdown = document.getElementById('newsDropdown');
