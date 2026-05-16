@@ -97,6 +97,14 @@
       justify-content: center;
       font-size: 50px;
       margin: 0 auto 16px;
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+    }
+
+    .avatar-large canvas {
+      width: 80px;
+      height: 80px;
     }
 
     .username-large {
@@ -264,7 +272,9 @@
 <body>
   <div class="container">
     <div class="profile-hero">
-      <div class="avatar-large" id="avatar">👤</div>
+      <div class="avatar-large" id="avatar">
+        <canvas id="avatarCanvas" width="64" height="64"></canvas>
+      </div>
       <h1 class="username-large" id="username">DOCKER</h1>
       <div class="badge" id="badge">⭐ DOCKER OCCASIONNEL</div>
       <p class="bio" id="bio">Pas de bio</p>
@@ -339,6 +349,44 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
 
+    // Avatars pixelisés
+    const dockerAvatars = [
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,5,4,4,5,1,0],[0,0,5,5,5,5,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,4,1,1,4,1,0],[0,0,1,4,4,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,6,2,1,1,2,6,0],[0,1,6,1,1,6,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,5,3,3,3,3,5,0],[5,3,3,3,3,3,3,5],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,7,7,7,7,0,0],[0,7,7,7,7,7,7,0],[7,7,7,7,7,7,7,7],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,6,6,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,5,1,1,1,1,5,0],[0,1,5,4,4,5,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,8,8,8,8,0,0],[0,8,8,8,8,8,8,0],[8,8,8,8,8,8,8,8],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,1,1,7,1,1,1,0],[0,1,2,7,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,9,9,9,9,0,0],[0,9,9,9,9,9,9,0],[9,9,9,9,9,9,9,9],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,3,3,3,3,0,0],[0,3,3,3,3,3,3,0],[3,3,3,3,3,3,3,3],[0,5,1,1,1,1,5,0],[5,5,2,1,1,2,5,5],[0,5,1,1,1,1,5,0],[0,5,5,4,4,5,5,0],[0,0,5,5,5,5,0,0]],
+      [[0,7,7,7,7,7,7,0],[7,7,7,7,7,7,7,7],[0,7,7,7,7,7,7,0],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,5,5,5,5,5,5,0],[5,5,3,3,3,3,5,5],[3,3,3,3,3,3,3,3],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]],
+      [[0,0,10,10,10,10,0,0],[0,10,10,10,10,10,10,0],[10,10,10,10,10,10,10,10],[0,1,1,1,1,1,1,0],[0,1,2,1,1,2,1,0],[0,1,1,1,1,1,1,0],[0,1,1,4,4,1,1,0],[0,0,1,1,1,1,0,0]]
+    ];
+
+    const colors = {
+      0: 'transparent', 1: '#ffd7a8', 2: '#000000', 3: '#fbbf24', 4: '#8b4513',
+      5: '#654321', 6: '#333333', 7: '#dc2626', 8: '#3b82f6', 9: '#f97316', 10: '#22c55e'
+    };
+
+    function drawAvatar(canvas, avatarData) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, 64, 64);
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          const colorIndex = avatarData[y][x];
+          ctx.fillStyle = colors[colorIndex];
+          if (colorIndex !== 0) {
+            ctx.fillRect(x * 8, y * 8, 8, 8);
+          }
+        }
+      }
+    }
+
     async function loadProfile() {
       if (!userId) {
         window.location.href = 'index.html';
@@ -360,7 +408,13 @@
         let progressData = progressArray?.[0];
 
         if (profileData && progressData) {
-          document.getElementById('avatar').textContent = profileData.avatar_emoji || '👤';
+          // Avatar pixelisé
+          const avatarIndex = profileData.avatar_emoji ? parseInt(profileData.avatar_emoji) || 0 : 0;
+          const canvas = document.getElementById('avatarCanvas');
+          if (dockerAvatars[avatarIndex]) {
+            drawAvatar(canvas, dockerAvatars[avatarIndex]);
+          }
+          
           document.getElementById('username').textContent = (profileData.username || username).toUpperCase();
           document.getElementById('badge').textContent = `⭐ ${(progressData.rank || 'Docker Occasionnel').toUpperCase()}`;
           document.getElementById('bio').textContent = profileData.bio || 'Pas de bio';
