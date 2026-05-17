@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Paramètres - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -26,6 +27,14 @@
       background: radial-gradient(circle at 85% 15%, rgba(255, 220, 150, 0.8) 0%, rgba(255, 220, 150, 0) 120px);
       pointer-events: none;
       z-index: 0;
+    }
+
+    body.battery-saver {
+      background: #2c4a5e;
+    }
+
+    body.battery-saver::before {
+      display: none;
     }
 
     .container {
@@ -56,6 +65,11 @@
       padding: 20px;
       margin-bottom: 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s;
+    }
+
+    body.battery-saver .section {
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .section-title {
@@ -73,6 +87,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 0;
+      cursor: pointer;
     }
 
     .setting-item:not(:last-child) {
@@ -169,12 +184,6 @@
       transform: scale(0.98);
     }
 
-    .action-btn.primary {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: white;
-      border-color: #3b82f6;
-    }
-
     .action-btn.danger {
       background: linear-gradient(135deg, #dc2626, #991b1b);
       color: white;
@@ -247,8 +256,10 @@
       background: white;
       border-radius: 16px;
       padding: 24px;
-      max-width: 400px;
+      max-width: 500px;
       width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
@@ -292,6 +303,11 @@
       color: white;
     }
 
+    .modal-btn.primary {
+      background: #3b82f6;
+      color: white;
+    }
+
     .modal-btn:active {
       transform: scale(0.98);
     }
@@ -312,6 +328,41 @@
     textarea:focus {
       border-color: #3b82f6;
     }
+
+    /* TUTORIAL STEPS */
+    .tutorial-step {
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .tutorial-step-title {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .tutorial-step-content {
+      color: #4b5563;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .tutorial-nav {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .tutorial-progress {
+      text-align: center;
+      color: #6b7280;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
 <body>
@@ -325,36 +376,36 @@
     <div class="section">
       <div class="section-title">🎮 Préférences de Jeu</div>
       
-      <div class="setting-item">
+      <div class="setting-item" onclick="testAndToggle('vibration')">
         <div class="setting-info">
           <div class="setting-label">Vibrations</div>
           <div class="setting-description">Vibre au clic (mobile uniquement)</div>
         </div>
-        <div class="toggle" id="toggleVibration" onclick="toggleSetting('vibration')"></div>
+        <div class="toggle" id="toggleVibration"></div>
       </div>
 
-      <div class="setting-item">
+      <div class="setting-item" onclick="toggleSetting('sound')">
         <div class="setting-info">
           <div class="setting-label">Sons</div>
           <div class="setting-description">Effets sonores dans le jeu</div>
         </div>
-        <div class="toggle" id="toggleSound" onclick="toggleSetting('sound')"></div>
+        <div class="toggle" id="toggleSound"></div>
       </div>
 
-      <div class="setting-item">
+      <div class="setting-item" onclick="toggleSetting('batterySaver')">
         <div class="setting-info">
           <div class="setting-label">Mode économie de batterie</div>
           <div class="setting-description">Réduit les animations et effets visuels</div>
         </div>
-        <div class="toggle" id="toggleBatterySaver" onclick="toggleSetting('batterySaver')"></div>
+        <div class="toggle" id="toggleBatterySaver"></div>
       </div>
 
-      <div class="setting-item">
+      <div class="setting-item" onclick="toggleSetting('dataSaver')">
         <div class="setting-info">
           <div class="setting-label">Mode données réduites</div>
-          <div class="setting-description">Limite l'utilisation de données mobiles</div>
+          <div class="setting-description">Désactive les images lourdes et vidéos</div>
         </div>
-        <div class="toggle" id="toggleDataSaver" onclick="toggleSetting('dataSaver')"></div>
+        <div class="toggle" id="toggleDataSaver"></div>
       </div>
     </div>
 
@@ -362,6 +413,14 @@
     <div class="section">
       <div class="section-title">📚 Aide & Tutoriels</div>
       
+      <div class="setting-item" onclick="startTutorial()">
+        <div class="setting-info">
+          <div class="setting-label">Tutoriel interactif</div>
+          <div class="setting-description">Apprends à jouer étape par étape</div>
+        </div>
+        <div style="color: #3b82f6; font-size: 18px;">▶</div>
+      </div>
+
       <div class="setting-item" onclick="showGuide('beginner')">
         <div class="setting-info">
           <div class="setting-label">Guide du débutant</div>
@@ -374,14 +433,6 @@
         <div class="setting-info">
           <div class="setting-label">Astuces et stratégies</div>
           <div class="setting-description">Optimise tes gains et ta progression</div>
-        </div>
-        <div style="color: #3b82f6; font-size: 18px;">›</div>
-      </div>
-
-      <div class="setting-item" onclick="showGuide('tutorials')">
-        <div class="setting-info">
-          <div class="setting-label">Tutoriels vidéo</div>
-          <div class="setting-description">Regarde les tutoriels détaillés</div>
         </div>
         <div style="color: #3b82f6; font-size: 18px;">›</div>
       </div>
@@ -459,7 +510,7 @@
       <textarea id="bugDescription" placeholder="Exemple : Le bouton clicker ne fonctionne pas sur la page..."></textarea>
       <div class="modal-buttons">
         <button class="modal-btn cancel" onclick="closeModal('bugModal')">Annuler</button>
-        <button class="modal-btn confirm" style="background: #10b981;" onclick="submitBug()">Envoyer</button>
+        <button class="modal-btn primary" onclick="submitBug()">Envoyer</button>
       </div>
     </div>
   </div>
@@ -472,7 +523,7 @@
       <textarea id="suggestionDescription" placeholder="Exemple : J'aimerais pouvoir personnaliser la couleur du container..."></textarea>
       <div class="modal-buttons">
         <button class="modal-btn cancel" onclick="closeModal('suggestionModal')">Annuler</button>
-        <button class="modal-btn confirm" style="background: #10b981;" onclick="submitSuggestion()">Envoyer</button>
+        <button class="modal-btn primary" onclick="submitSuggestion()">Envoyer</button>
       </div>
     </div>
   </div>
@@ -505,7 +556,20 @@
       <div class="modal-text" id="guideContent" style="max-height: 400px; overflow-y: auto;">
       </div>
       <div class="modal-buttons">
-        <button class="modal-btn confirm" style="background: #3b82f6; width: 100%;" onclick="closeModal('guideModal')">Fermer</button>
+        <button class="modal-btn primary" style="width: 100%;" onclick="closeModal('guideModal')">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TUTORIAL -->
+  <div class="modal" id="tutorialModal">
+    <div class="modal-content">
+      <div class="modal-title">🎮 Tutoriel Interactif</div>
+      <div class="tutorial-progress" id="tutorialProgress">Étape 1/5</div>
+      <div id="tutorialContent"></div>
+      <div class="tutorial-nav">
+        <button class="modal-btn cancel" id="tutorialPrev" onclick="prevTutorialStep()" style="display:none;">← Précédent</button>
+        <button class="modal-btn primary" id="tutorialNext" onclick="nextTutorialStep()">Suivant →</button>
       </div>
     </div>
   </div>
@@ -513,12 +577,19 @@
   <script>
     console.log('⚙️ [PARAMETRES] Initialisation page paramètres');
     
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     
+    console.log('👤 [PARAMETRES] userId:', userId);
     console.log('👤 [PARAMETRES] username:', username);
     
-    if (!username) {
-      console.error('❌ [PARAMETRES] Pas de username, redirection');
+    if (!username || !userId) {
+      console.error('❌ [PARAMETRES] Pas de session, redirection');
       window.location.href = 'index.html';
     }
 
@@ -537,8 +608,25 @@
     // Appliquer l'état initial
     if (settings.vibration) document.getElementById('toggleVibration').classList.add('active');
     if (settings.sound) document.getElementById('toggleSound').classList.add('active');
-    if (settings.batterySaver) document.getElementById('toggleBatterySaver').classList.add('active');
+    if (settings.batterySaver) {
+      document.getElementById('toggleBatterySaver').classList.add('active');
+      document.body.classList.add('battery-saver');
+    }
     if (settings.dataSaver) document.getElementById('toggleDataSaver').classList.add('active');
+
+    function testAndToggle(setting) {
+      console.log('📳 [PARAMETRES] Test vibration');
+      
+      // Tester la vibration
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+        console.log('✅ [PARAMETRES] Vibration testée');
+      } else {
+        console.warn('⚠️ [PARAMETRES] Vibration non supportée sur cet appareil');
+      }
+      
+      toggleSetting(setting);
+    }
 
     function toggleSetting(setting) {
       console.log('🔄 [PARAMETRES] Toggle paramètre:', setting);
@@ -549,6 +637,17 @@
       const isActive = toggle.classList.contains('active');
       localStorage.setItem('setting_' + setting, isActive);
       settings[setting] = isActive;
+      
+      // Appliquer le mode économie de batterie
+      if (setting === 'batterySaver') {
+        if (isActive) {
+          document.body.classList.add('battery-saver');
+          console.log('🔋 [PARAMETRES] Mode économie activé');
+        } else {
+          document.body.classList.remove('battery-saver');
+          console.log('🔋 [PARAMETRES] Mode économie désactivé');
+        }
+      }
       
       console.log('✅ [PARAMETRES] Paramètre sauvegardé:', setting, '=', isActive);
     }
@@ -576,7 +675,7 @@
       document.getElementById(modalId).classList.remove('show');
     }
 
-    function submitBug() {
+    async function submitBug() {
       const description = document.getElementById('bugDescription').value.trim();
       
       if (!description) {
@@ -586,13 +685,32 @@
       
       console.log('🐛 [PARAMETRES] Bug signalé:', description);
       
-      // Ici tu pourrais envoyer à Supabase ou par email
-      alert('Merci ! Ton rapport de bug a été envoyé. 🐛');
-      closeModal('bugModal');
-      document.getElementById('bugDescription').value = '';
+      try {
+        const { error } = await supabaseClient
+          .from('feedback')
+          .insert({
+            user_id: userId,
+            username: username,
+            type: 'bug',
+            message: description
+          });
+
+        if (error) {
+          console.error('❌ [PARAMETRES] Erreur envoi bug:', error);
+          alert('Erreur lors de l\'envoi. Réessaye plus tard.');
+        } else {
+          console.log('✅ [PARAMETRES] Bug envoyé à Supabase');
+          alert('Merci ! Ton rapport de bug a été envoyé. 🐛');
+          closeModal('bugModal');
+          document.getElementById('bugDescription').value = '';
+        }
+      } catch (err) {
+        console.error('💥 [PARAMETRES] Exception:', err);
+        alert('Erreur lors de l\'envoi.');
+      }
     }
 
-    function submitSuggestion() {
+    async function submitSuggestion() {
       const description = document.getElementById('suggestionDescription').value.trim();
       
       if (!description) {
@@ -602,13 +720,32 @@
       
       console.log('💡 [PARAMETRES] Suggestion envoyée:', description);
       
-      // Ici tu pourrais envoyer à Supabase ou par email
-      alert('Merci ! Ta suggestion a été envoyée. 💡');
-      closeModal('suggestionModal');
-      document.getElementById('suggestionDescription').value = '';
+      try {
+        const { error } = await supabaseClient
+          .from('feedback')
+          .insert({
+            user_id: userId,
+            username: username,
+            type: 'suggestion',
+            message: description
+          });
+
+        if (error) {
+          console.error('❌ [PARAMETRES] Erreur envoi suggestion:', error);
+          alert('Erreur lors de l\'envoi. Réessaye plus tard.');
+        } else {
+          console.log('✅ [PARAMETRES] Suggestion envoyée à Supabase');
+          alert('Merci ! Ta suggestion a été envoyée. 💡');
+          closeModal('suggestionModal');
+          document.getElementById('suggestionDescription').value = '';
+        }
+      } catch (err) {
+        console.error('💥 [PARAMETRES] Exception:', err);
+        alert('Erreur lors de l\'envoi.');
+      }
     }
 
-    function deleteAccount() {
+    async function deleteAccount() {
       console.log('🗑️ [PARAMETRES] Suppression de compte demandée');
       
       const confirmation = prompt('Pour confirmer, tape "SUPPRIMER" en majuscules :');
@@ -616,14 +753,38 @@
       if (confirmation === 'SUPPRIMER') {
         console.log('✅ [PARAMETRES] Confirmation reçue, suppression...');
         
-        // Ici tu devrais supprimer dans Supabase
-        alert('Ton compte a été supprimé. Au revoir ! 👋');
-        
-        localStorage.clear();
-        window.location.href = 'index.html';
+        try {
+          // Supprimer de toutes les tables
+          const deleteOperations = [
+            supabaseClient.from('profiles').delete().eq('user_id', userId),
+            supabaseClient.from('game_progress').delete().eq('user_id', userId),
+            supabaseClient.from('leaderboard').delete().eq('user_id', userId),
+            supabaseClient.from('messages').delete().eq('user_id', userId),
+            supabaseClient.from('feedback').delete().eq('user_id', userId)
+          ];
+
+          await Promise.all(deleteOperations);
+          
+          console.log('✅ [PARAMETRES] Données supprimées de Supabase');
+          
+          // Supprimer le compte auth
+          const { error } = await supabaseClient.auth.admin.deleteUser(userId);
+          
+          if (error) {
+            console.error('⚠️ [PARAMETRES] Impossible de supprimer l\'auth:', error);
+          }
+          
+          alert('Ton compte a été supprimé. Au revoir ! 👋');
+          
+          localStorage.clear();
+          window.location.href = 'index.html';
+          
+        } catch (err) {
+          console.error('💥 [PARAMETRES] Erreur suppression:', err);
+          alert('Erreur lors de la suppression. Contacte le support.');
+        }
       } else {
         console.log('❌ [PARAMETRES] Suppression annulée');
-        alert('Suppression annulée.');
         closeModal('deleteModal');
       }
     }
@@ -675,26 +836,6 @@
             <strong>5. Participe au chat</strong><br>
             Échange avec les autres joueurs pour découvrir leurs stratégies.
           `
-        },
-        tutorials: {
-          title: '🎥 Tutoriels',
-          content: `
-            <strong>Tutoriels vidéo disponibles :</strong><br><br>
-            
-            📹 <strong>Comment bien démarrer</strong><br>
-            Les bases du jeu pour nouveaux joueurs<br>
-            <em>À venir prochainement</em><br><br>
-            
-            📹 <strong>Optimiser son combo</strong><br>
-            Techniques avancées de clicker<br>
-            <em>À venir prochainement</em><br><br>
-            
-            📹 <strong>Les différentes zones</strong><br>
-            Tour d'horizon des métiers disponibles<br>
-            <em>À venir prochainement</em><br><br>
-            
-            <em>Les tutoriels vidéo seront ajoutés dans les prochaines mises à jour !</em>
-          `
         }
       };
 
@@ -703,6 +844,86 @@
         document.getElementById('guideTitle').textContent = guide.title;
         document.getElementById('guideContent').innerHTML = guide.content;
         openModal('guideModal');
+      }
+    }
+
+    // TUTORIEL INTERACTIF
+    let currentTutorialStep = 0;
+    const tutorialSteps = [
+      {
+        title: 'Bienvenue sur Battle Dock ! 🚢',
+        content: 'Ce tutoriel va t\'apprendre à jouer en 5 étapes simples. Prêt à devenir le meilleur docker du port ?'
+      },
+      {
+        title: 'Étape 1 : Le Clicker 📦',
+        content: '<strong>Comment jouer :</strong><br>• Va dans "Travailler" puis "Déchargement de Conteneurs"<br>• Clique sur le container rouge pour gagner de l\'argent<br>• Chaque clic te rapporte de l\'XP pour monter de niveau<br><br><strong>Astuce :</strong> Clique rapidement pour créer des combos !'
+      },
+      {
+        title: 'Étape 2 : Les Combos 🔥',
+        content: '<strong>Le système de combos :</strong><br>• Si tu cliques en moins de 600ms après le clic précédent, ton combo augmente<br>• Le combo peut monter jusqu\'à x5.0<br>• Plus ton combo est élevé, plus tu gagnes d\'argent par clic<br><br><strong>Le combo apparaît en haut de l\'écran quand il dépasse x1.5</strong>'
+      },
+      {
+        title: 'Étape 3 : Progression 📊',
+        content: '<strong>Monter de niveau :</strong><br>• Accumule de l\'XP pour monter de niveau<br>• À chaque niveau, tu débloques de nouvelles zones<br>• Niveau 15 → Docker<br>• Niveau 30 → Docker Mensuel<br>• Niveau 50 → Contre-Maître<br>• Niveau 100 → Directeur !<br><br><strong>Consulte ta progression dans l\'onglet "Progression"</strong>'
+      },
+      {
+        title: 'Étape 4 : Social & Classement 🏆',
+        content: '<strong>Interagis avec les autres :</strong><br>• <strong>Chat :</strong> Parle avec les autres joueurs<br>• <strong>Classement :</strong> Vois ta position dans le top 50<br>• <strong>Profil :</strong> Personnalise ton avatar<br><br><strong>Astuce :</strong> Le classement est basé sur ton argent total !'
+      },
+      {
+        title: 'C\'est parti ! 🎉',
+        content: '<strong>Tu es prêt !</strong><br><br>Tu connais maintenant les bases de Battle Dock.<br><br>Active les sons et vibrations dans Paramètres pour une meilleure expérience !<br><br><strong>Bon jeu et deviens le meilleur docker du port ! ⚓</strong>'
+      }
+    ];
+
+    function startTutorial() {
+      console.log('🎓 [PARAMETRES] Démarrage tutoriel');
+      currentTutorialStep = 0;
+      renderTutorialStep();
+      openModal('tutorialModal');
+    }
+
+    function renderTutorialStep() {
+      const step = tutorialSteps[currentTutorialStep];
+      document.getElementById('tutorialProgress').textContent = `Étape ${currentTutorialStep + 1}/${tutorialSteps.length}`;
+      document.getElementById('tutorialContent').innerHTML = `
+        <div class="tutorial-step">
+          <div class="tutorial-step-title">${step.title}</div>
+          <div class="tutorial-step-content">${step.content}</div>
+        </div>
+      `;
+
+      // Boutons
+      const prevBtn = document.getElementById('tutorialPrev');
+      const nextBtn = document.getElementById('tutorialNext');
+
+      if (currentTutorialStep === 0) {
+        prevBtn.style.display = 'none';
+      } else {
+        prevBtn.style.display = 'block';
+      }
+
+      if (currentTutorialStep === tutorialSteps.length - 1) {
+        nextBtn.textContent = 'Terminer ✓';
+      } else {
+        nextBtn.textContent = 'Suivant →';
+      }
+    }
+
+    function nextTutorialStep() {
+      if (currentTutorialStep < tutorialSteps.length - 1) {
+        currentTutorialStep++;
+        renderTutorialStep();
+      } else {
+        console.log('✅ [PARAMETRES] Tutoriel terminé');
+        closeModal('tutorialModal');
+      }
+    }
+
+    function prevTutorialStep() {
+      if (currentTutorialStep > 0) {
+        currentTutorialStep--;
+        renderTutorialStep();
       }
     }
 
