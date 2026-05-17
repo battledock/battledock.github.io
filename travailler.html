@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Travailler - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #87ceeb 0%, #c8e6f0 30%, #2b8aa6 100%);
+      min-height: 100vh;
+      overflow: hidden;
+      position: fixed;
+      inset: 0;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      position: relative;
+      z-index: 100;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      font-size: 24px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .topbar-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+    }
+
+    .topbar-money {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #10b981;
+    }
+
+    /* STATS BAR */
+    .stats-bar {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-around;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 0.5px;
+      color: #1a1a1a;
+      margin-top: 2px;
+    }
+
+    /* CLICKER AREA */
+    .clicker-area {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container-target {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      cursor: pointer;
+      user-select: none;
+      box-shadow: 
+        0 10px 30px rgba(249, 115, 22, 0.4),
+        0 0 0 4px rgba(255, 255, 255, 0.3);
+      transition: transform 0.1s;
+      position: relative;
+      z-index: 10;
+    }
+
+    .container-target:active {
+      transform: scale(0.95);
+    }
+
+    /* COMBO INDICATOR */
+    .combo-indicator {
+      position: absolute;
+      top: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: #fbbf24;
+      text-shadow: 
+        3px 3px 0 #000,
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        0 0 20px rgba(251, 191, 36, 0.8);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .combo-indicator.show {
+      opacity: 1;
+    }
+
+    /* FX OVERLAY */
+    .fx-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+    }
+
+    .float-num {
+      position: absolute;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #fbbf24;
+      text-shadow: 2px 2px 0 #000;
+      pointer-events: none;
+      user-select: none;
+      transform: translateX(-50%);
+      animation: floatup 0.9s ease-out forwards;
+      white-space: nowrap;
+    }
+
+    @keyframes floatup {
+      0% { 
+        opacity: 0;
+        transform: translateX(-50%) translateY(0) scale(0.7);
+      }
+      15% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-10px) scale(1.1);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-60px) scale(0.9);
+      }
+    }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      border: 3px solid #fbbf24;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: rip 0.5s ease-out forwards;
+    }
+
+    @keyframes rip {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 0.8;
+      }
+      100% {
+        width: 140px;
+        height: 140px;
+        opacity: 0;
+      }
+    }
+
+    /* LAYOUT */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="back-btn" onclick="window.location.href='game.html'">←</button>
+        <div class="topbar-title">💼 Travailler</div>
+      </div>
+      <div class="topbar-money"><span id="moneyDisplay">100</span>€</div>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-label">Par Clic</div>
+        <div class="stat-value"><span id="perClickDisplay">1</span>€</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Combo</div>
+        <div class="stat-value">x<span id="comboDisplay">1.0</span></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total Clics</div>
+        <div class="stat-value" id="totalClicksDisplay">0</div>
+      </div>
+    </div>
+
+    <!-- CLICKER AREA -->
+    <div class="clicker-area">
+      <div class="combo-indicator" id="comboIndicator">COMBO!</div>
+      <div class="fx-overlay" id="fxOverlay"></div>
+      <div class="container-target" id="container">📦</div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      window.location.href = 'index.html';
+    }
+
+    // State
+    let money = 100;
+    let combo = 1;
+    let lastClickTime = 0;
+    let totalClicks = 0;
+    let perClick = 1;
+    let maxCombo = 1;
+    let saveTimeout = null;
+
+    // Load player data
+    loadPlayerData();
+
+    async function loadPlayerData() {
+      const { data: progressArray } = await supabaseClient
+        .from('game_progress')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (progressArray && progressArray[0]) {
+        const progress = progressArray[0];
+        money = progress.money || 100;
+        totalClicks = progress.total_clicks || 0;
+        maxCombo = progress.max_combo || 1;
+        
+        updateDisplay();
+      }
+    }
+
+    // Click handler
+    document.getElementById('container').addEventListener('click', clickContainer);
+    document.getElementById('container').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      clickContainer({ clientX: touch.clientX, clientY: touch.clientY });
+    }, { passive: false });
+
+    function clickContainer(e) {
+      const now = Date.now();
+
+      // Combo system: if < 600ms between clicks, increase combo
+      if (now - lastClickTime < 600) {
+        combo = Math.min(5, combo + 0.05);
+      } else {
+        combo = 1;
+      }
+      lastClickTime = now;
+
+      if (combo > maxCombo) {
+        maxCombo = combo;
+      }
+
+      // Calculate gain
+      const gain = Math.floor(perClick * combo);
+      money += gain;
+      totalClicks += 1;
+
+      // Show combo indicator if combo > 1.5
+      const comboIndicator = document.getElementById('comboIndicator');
+      if (combo > 1.5) {
+        comboIndicator.classList.add('show');
+        setTimeout(() => comboIndicator.classList.remove('show'), 300);
+      }
+
+      // Visual feedback
+      showFloatNum(e, gain);
+      showRipple(e);
+
+      updateDisplay();
+      scheduleSave();
+    }
+
+    function showFloatNum(e, gain) {
+      const overlay = document.getElementById('fxOverlay');
+      const rect = overlay.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const floatNum = document.createElement('div');
+      floatNum.className = 'float-num';
+      floatNum.textContent = '+' + gain + '€';
+      floatNum.style.left = x + 'px';
+      floatNum.style.top = y + 'px';
+      overlay.appendChild(floatNum);
+
+      setTimeout(() => floatNum.remove(), 950);
+    }
+
+    function showRipple(e) {
+      const overlay = document.getElementById('fxOverlay');
+      const rect = overlay.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const ripple = document.createElement('div');
+      ripple.className = 'ripple';
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      overlay.appendChild(ripple);
+
+      setTimeout(() => ripple.remove(), 550);
+    }
+
+    function updateDisplay() {
+      document.getElementById('moneyDisplay').textContent = money.toLocaleString('fr-FR');
+      document.getElementById('perClickDisplay').textContent = perClick;
+      document.getElementById('comboDisplay').textContent = combo.toFixed(1);
+      document.getElementById('totalClicksDisplay').textContent = totalClicks.toLocaleString('fr-FR');
+    }
+
+    function scheduleSave() {
+      if (saveTimeout) clearTimeout(saveTimeout);
+      
+      saveTimeout = setTimeout(async () => {
+        await supabaseClient
+          .from('game_progress')
+          .update({
+            money: money,
+            total_clicks: totalClicks,
+            max_combo: maxCombo
+          })
+          .eq('user_id', userId);
+      }, 2000); // Sauvegarde toutes les 2 secondes après le dernier clic
+    }
+
+    // Sauvegarde avant de quitter la page
+    window.addEventListener('beforeunload', async () => {
+      if (saveTimeout) {
+        clearTimeout(saveTimeout);
+        await supabaseClient
+          .from('game_progress')
+          .update({
+            money: money,
+            total_clicks: totalClicks,
+            max_combo: maxCombo
+          })
+          .eq('user_id', userId);
+      }
+    });
+  </script>
+</body>
+</html>
