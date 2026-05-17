@@ -289,6 +289,63 @@
       margin-bottom: 20px;
     }
 
+    .scratch-result {
+      text-align: center;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 12px;
+      animation: resultPop 0.5s ease;
+    }
+
+    @keyframes resultPop {
+      0% { transform: scale(0.8); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .scratch-result.win {
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+      border: 2px solid #10b981;
+    }
+
+    .scratch-result.loss {
+      background: linear-gradient(135deg, #fee2e2, #fecaca);
+      border: 2px solid #ef4444;
+    }
+
+    .result-emoji {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .result-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .result-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .result-amount.win {
+      color: #10b981;
+    }
+
+    .result-amount.loss {
+      color: #ef4444;
+    }
+
+    .result-details {
+      font-size: 14px;
+      color: #374151;
+      font-weight: 600;
+    }
+
     .scratch-close-btn {
       background: linear-gradient(135deg, #f59e0b, #d97706);
       color: white;
@@ -425,6 +482,7 @@
       <div class="scratch-canvas-wrapper">
         <canvas id="scratchCanvas"></canvas>
       </div>
+      <div class="scratch-result" id="scratchResult" style="display: none;"></div>
       <button class="scratch-close-btn" onclick="closeScratch()">Fermer</button>
     </div>
   </div>
@@ -703,17 +761,45 @@
     }
 
     async function showResult() {
+      const resultDiv = document.getElementById('scratchResult');
+      resultDiv.style.display = 'block';
+
       if (prize === 0) {
-        alert(`😔 Perdu !\n\nAucun symbole gagnant.\nTu as perdu ${currentCost}€`);
+        resultDiv.className = 'scratch-result loss';
+        resultDiv.innerHTML = `
+          <div class="result-emoji">😔</div>
+          <div class="result-text">Perdu !</div>
+          <div class="result-amount loss">-${currentCost}€</div>
+          <div class="result-details">Aucun symbole gagnant</div>
+        `;
       } else {
         const profit = prize - currentCost;
-        const message = profit > 0 
-          ? `🎉 GAGNÉ ${prize.toLocaleString('fr-FR')}€ !\n\nProfit : +${profit.toLocaleString('fr-FR')}€`
-          : profit === 0
-          ? `😐 Remboursé !\n\nTu récupères ${prize.toLocaleString('fr-FR')}€`
-          : `😔 ${prize.toLocaleString('fr-FR')}€ gagnés\n\nPerte : ${profit.toLocaleString('fr-FR')}€`;
-
-        alert(message);
+        
+        if (profit > 0) {
+          resultDiv.className = 'scratch-result win';
+          resultDiv.innerHTML = `
+            <div class="result-emoji">🎉</div>
+            <div class="result-text">Gagné !</div>
+            <div class="result-amount win">+${prize.toLocaleString('fr-FR')}€</div>
+            <div class="result-details">Profit : +${profit.toLocaleString('fr-FR')}€</div>
+          `;
+        } else if (profit === 0) {
+          resultDiv.className = 'scratch-result win';
+          resultDiv.innerHTML = `
+            <div class="result-emoji">😐</div>
+            <div class="result-text">Remboursé !</div>
+            <div class="result-amount win">${prize.toLocaleString('fr-FR')}€</div>
+            <div class="result-details">Tu récupères ta mise</div>
+          `;
+        } else {
+          resultDiv.className = 'scratch-result loss';
+          resultDiv.innerHTML = `
+            <div class="result-emoji">😔</div>
+            <div class="result-text">Petit gain</div>
+            <div class="result-amount loss">${prize.toLocaleString('fr-FR')}€</div>
+            <div class="result-details">Perte : ${profit.toLocaleString('fr-FR')}€</div>
+          `;
+        }
 
         // Add prize
         currentMoney += prize;
@@ -729,6 +815,7 @@
 
     function closeScratch() {
       document.getElementById('scratchOverlay').classList.remove('show');
+      document.getElementById('scratchResult').style.display = 'none';
     }
 
     function goBack() {
