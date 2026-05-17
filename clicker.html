@@ -393,6 +393,18 @@ body{
         level += 1;
       }
 
+      // VIBRATION (si activée)
+      const vibrationEnabled = localStorage.getItem('setting_vibration') === 'true';
+      if (vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate(10);
+      }
+
+      // SON (si activé)
+      const soundEnabled = localStorage.getItem('setting_sound') === 'true';
+      if (soundEnabled) {
+        playClickSound();
+      }
+
       // Visual feedback
       const overlay = document.getElementById('fxOverlay');
       if(overlay){
@@ -418,6 +430,29 @@ body{
 
       updateDisplay();
       scheduleSave();
+    }
+
+    // SON DE CLIC
+    let audioContext = null;
+    function playClickSound() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
     }
 
     function updateDisplay() {

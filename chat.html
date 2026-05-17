@@ -108,6 +108,11 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
     }
 
+    .message.me .message-content {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
     .message-header {
       display: flex;
       justify-content: space-between;
@@ -118,6 +123,13 @@
       font-weight: 700;
       color: #1a1a1a;
       font-size: 14px;
+    }
+
+    .message.me .message-username::after {
+      content: ' (Moi)';
+      font-weight: 400;
+      color: #3b82f6;
+      font-size: 12px;
     }
 
     .message-time {
@@ -172,6 +184,11 @@
       transform: scale(0.95);
     }
 
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     .loading {
       text-align: center;
       padding: 20px;
@@ -207,7 +224,7 @@
         placeholder="Écris ton message..."
         maxlength="200"
       >
-      <button class="send-btn" onclick="sendMessage()">Envoyer</button>
+      <button class="send-btn" id="sendBtn" onclick="sendMessage()">Envoyer</button>
     </div>
   </div>
 
@@ -224,10 +241,6 @@
       window.location.href = 'index.html';
     }
 
-    // Pour cette version simplifiée, on va utiliser localStorage comme "chat"
-    // Dans une vraie version, il faudrait créer une table 'messages' dans Supabase
-    
-    let messages = [];
     let currentUserAvatar = '⚓';
 
     loadMessages();
@@ -245,91 +258,107 @@
       }
     }
 
-    function loadMessages() {
-      const storedMessages = localStorage.getItem('battle_dock_messages');
-      if (storedMessages) {
-        messages = JSON.parse(storedMessages);
-      } else {
-        // Messages par défaut
-        messages = [
-          {
-            id: 1,
-            username: 'Le Capitaine',
-            avatar: '🧑‍✈️',
-            text: 'Bienvenue sur Battle Dock ! 🚢',
-            timestamp: Date.now() - 3600000
-          },
-          {
-            id: 2,
-            username: 'Docker Pro',
-            avatar: '👷',
-            text: 'Qui veut faire une course de clics ?',
-            timestamp: Date.now() - 1800000
-          }
-        ];
+    async function loadMessages() {
+      const { data: messages, error } = await supabaseClient
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true })
+        .limit(50);
+
+      if (error) {
+        console.error('Erreur chargement messages:', error);
+        document.getElementById('messagesContainer').innerHTML = 
+          '<div class="empty-state">Erreur de chargement des messages</div>';
+        return;
       }
-      renderMessages();
+
+      renderMessages(messages || []);
+
+      // S'abonner aux nouveaux messages en temps réel
+      supabaseClient
+        .channel('public:messages')
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'messages' },
+          (payload) => {
+            appendMessage(payload.new);
+          }
+        )
+        .subscribe();
     }
 
-    function renderMessages() {
+    function renderMessages(messages) {
       const container = document.getElementById('messagesContainer');
       
       if (messages.length === 0) {
-        container.innerHTML = '<div class="empty-state">Aucun message. Sois le premier à parler !</div>';
+        container.innerHTML = '<div class="empty-state">💬 Aucun message. Sois le premier à parler !</div>';
         return;
       }
 
       container.innerHTML = '';
       
       messages.forEach(msg => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message';
-        
-        const timeAgo = getTimeAgo(msg.timestamp);
-        
-        messageDiv.innerHTML = `
-          <div class="message-avatar">${msg.avatar}</div>
-          <div class="message-content">
-            <div class="message-header">
-              <div class="message-username">${msg.username}</div>
-              <div class="message-time">${timeAgo}</div>
-            </div>
-            <div class="message-text">${escapeHtml(msg.text)}</div>
-          </div>
-        `;
-        
-        container.appendChild(messageDiv);
+        appendMessage(msg);
       });
 
-      // Scroll vers le bas
-      container.scrollTop = container.scrollHeight;
+      scrollToBottom();
     }
 
-    function sendMessage() {
+    function appendMessage(msg) {
+      const container = document.getElementById('messagesContainer');
+      
+      // Vérifier si le message existe déjà
+      if (document.getElementById('msg-' + msg.id)) {
+        return;
+      }
+
+      const messageDiv = document.createElement('div');
+      messageDiv.id = 'msg-' + msg.id;
+      messageDiv.className = 'message' + (msg.user_id === userId ? ' me' : '');
+      
+      const timeAgo = getTimeAgo(new Date(msg.created_at).getTime());
+      
+      messageDiv.innerHTML = `
+        <div class="message-avatar">${msg.avatar_url || '⚓'}</div>
+        <div class="message-content">
+          <div class="message-header">
+            <div class="message-username">${escapeHtml(msg.username)}</div>
+            <div class="message-time">${timeAgo}</div>
+          </div>
+          <div class="message-text">${escapeHtml(msg.message)}</div>
+        </div>
+      `;
+      
+      container.appendChild(messageDiv);
+      scrollToBottom();
+    }
+
+    async function sendMessage() {
       const input = document.getElementById('messageInput');
+      const sendBtn = document.getElementById('sendBtn');
       const text = input.value.trim();
       
       if (!text) return;
       
-      const newMessage = {
-        id: Date.now(),
-        username: username || 'Joueur',
-        avatar: currentUserAvatar,
-        text: text,
-        timestamp: Date.now()
-      };
+      sendBtn.disabled = true;
       
-      messages.push(newMessage);
-      
-      // Garder seulement les 50 derniers messages
-      if (messages.length > 50) {
-        messages = messages.slice(-50);
+      const { error } = await supabaseClient
+        .from('messages')
+        .insert({
+          user_id: userId,
+          username: username || 'Joueur',
+          avatar_url: currentUserAvatar,
+          message: text
+        });
+
+      if (error) {
+        console.error('Erreur envoi message:', error);
+        alert('Erreur lors de l\'envoi du message');
+      } else {
+        input.value = '';
       }
       
-      localStorage.setItem('battle_dock_messages', JSON.stringify(messages));
-      
-      input.value = '';
-      renderMessages();
+      sendBtn.disabled = false;
+      input.focus();
     }
 
     // Envoyer avec Enter
@@ -338,6 +367,11 @@
         sendMessage();
       }
     });
+
+    function scrollToBottom() {
+      const container = document.getElementById('messagesContainer');
+      container.scrollTop = container.scrollHeight;
+    }
 
     function getTimeAgo(timestamp) {
       const seconds = Math.floor((Date.now() - timestamp) / 1000);
@@ -353,18 +387,6 @@
       div.textContent = text;
       return div.innerHTML;
     }
-
-    // Rafraîchir toutes les 5 secondes
-    setInterval(() => {
-      const storedMessages = localStorage.getItem('battle_dock_messages');
-      if (storedMessages) {
-        const newMessages = JSON.parse(storedMessages);
-        if (newMessages.length !== messages.length) {
-          messages = newMessages;
-          renderMessages();
-        }
-      }
-    }, 5000);
   </script>
 </body>
 </html>
