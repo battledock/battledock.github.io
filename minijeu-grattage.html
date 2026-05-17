@@ -628,38 +628,53 @@
 
       const maxMatch = Math.max(...Object.values(symbolCounts));
 
-      // Prize logic based on card type
+      // Prize logic based on card type - TRÈS DIFFICILE DE GAGNER
       prize = 0;
 
       if (cardType === 'docker_basic') {
-        // 3 symbols = win
+        // 3 symbols = win - RARE
         if (maxMatch >= 3) {
-          const prizes = [100, 200, 500];
-          prize = prizes[Math.min(maxMatch - 3, 2)];
+          // 30% de chance de gagner quelque chose si 3+ match
+          if (Math.random() < 0.3) {
+            const prizes = [50, 75, 100];
+            prize = prizes[Math.min(maxMatch - 3, 2)];
+          }
         }
       } else if (cardType === 'cargo_king') {
-        // 3 symbols = small win, 4+ = big win
+        // 3 symbols = small win, 4+ = big win - RARE
         if (maxMatch >= 3) {
-          const basePrizes = [300, 1000, 2500, 5000];
-          prize = basePrizes[Math.min(maxMatch - 3, 3)];
+          // 25% de chance de gagner
+          if (Math.random() < 0.25) {
+            const basePrizes = [200, 500, 1000, 2500];
+            prize = basePrizes[Math.min(maxMatch - 3, 3)];
+          }
         }
       } else if (cardType === 'port_legend') {
-        // 3 = win, 5 = jackpot
+        // 3 = win, 5 = jackpot - TRÈS RARE
         if (maxMatch >= 3) {
-          const basePrizes = [1500, 5000, 10000, 15000, 25000];
-          prize = basePrizes[Math.min(maxMatch - 3, 4)];
+          // 20% de chance de gagner
+          if (Math.random() < 0.2) {
+            const basePrizes = [1000, 2500, 5000, 10000, 25000];
+            prize = basePrizes[Math.min(maxMatch - 3, 4)];
+          }
         }
       } else if (cardType === 'captain_fortune') {
-        // 3 = win, 6 = mega
+        // 3 = win, 6 = mega - ULTRA RARE
         if (maxMatch >= 3) {
-          const basePrizes = [7500, 15000, 30000, 50000, 75000, 100000];
-          prize = basePrizes[Math.min(maxMatch - 3, 5)];
+          // 15% de chance de gagner
+          if (Math.random() < 0.15) {
+            const basePrizes = [5000, 10000, 20000, 35000, 50000, 100000];
+            prize = basePrizes[Math.min(maxMatch - 3, 5)];
+          }
         }
       } else if (cardType === 'million_docker') {
-        // 3 = win, 9 = MILLION
+        // 3 = win, 9 = MILLION - EXTRÊMEMENT RARE
         if (maxMatch >= 3) {
-          const basePrizes = [15000, 30000, 50000, 100000, 250000, 500000, 750000, 1000000];
-          prize = basePrizes[Math.min(maxMatch - 3, 7)];
+          // 10% de chance de gagner
+          if (Math.random() < 0.1) {
+            const basePrizes = [10000, 20000, 40000, 75000, 150000, 300000, 500000, 1000000];
+            prize = basePrizes[Math.min(maxMatch - 3, 7)];
+          }
         }
       }
 
@@ -679,7 +694,7 @@
       canvas.width = width;
       canvas.height = height;
 
-      // Draw symbols underneath
+      // Draw symbols underneath FIRST
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
@@ -692,6 +707,7 @@
       ctx.font = 'bold 48px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#1a1a1a';
 
       symbols.forEach((symbol, i) => {
         const col = i % cols;
@@ -702,7 +718,8 @@
         ctx.fillText(symbol, x, y);
       });
 
-      // Draw scratch layer on top
+      // NOW draw scratch layer on top
+      ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#cccccc';
       ctx.fillRect(0, 0, width, height);
 
@@ -728,42 +745,67 @@
     }
 
     function setupScratchEvents() {
-      canvas.addEventListener('mousedown', startScratch);
-      canvas.addEventListener('mousemove', scratch);
-      canvas.addEventListener('mouseup', stopScratch);
-      canvas.addEventListener('mouseleave', stopScratch);
+      let isDrawing = false;
 
-      canvas.addEventListener('touchstart', startScratch);
-      canvas.addEventListener('touchmove', scratch);
-      canvas.addEventListener('touchend', stopScratch);
+      // Mouse events
+      canvas.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        scratchAt(e);
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+        if (isDrawing) {
+          e.preventDefault();
+          scratchAt(e);
+        }
+      });
+
+      canvas.addEventListener('mouseup', () => {
+        isDrawing = false;
+      });
+
+      canvas.addEventListener('mouseleave', () => {
+        isDrawing = false;
+      });
+
+      // Touch events - CORRIGÉ pour mobile
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        isDrawing = true;
+        scratchAt(e.touches[0]);
+      });
+
+      canvas.addEventListener('touchmove', (e) => {
+        if (isDrawing) {
+          e.preventDefault();
+          scratchAt(e.touches[0]);
+        }
+      });
+
+      canvas.addEventListener('touchend', () => {
+        isDrawing = false;
+      });
+
+      canvas.addEventListener('touchcancel', () => {
+        isDrawing = false;
+      });
     }
 
-    function startScratch(e) {
-      e.preventDefault();
-      isScratching = true;
-    }
-
-    function scratch(e) {
-      if (!isScratching) return;
-      e.preventDefault();
-
+    function scratchAt(e) {
       const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX || e.touches[0].clientX) - rect.left;
-      const y = (e.clientY || e.touches[0].clientY) - rect.top;
+      const x = (e.clientX || e.pageX) - rect.left;
+      const y = (e.clientY || e.pageY) - rect.top;
 
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(x * scaleX, y * scaleY, 20, 0, Math.PI * 2);
+      ctx.arc(x * scaleX, y * scaleY, 25, 0, Math.PI * 2);
       ctx.fill();
 
       checkScratchProgress();
-    }
-
-    function stopScratch() {
-      isScratching = false;
     }
 
     function checkScratchProgress() {
