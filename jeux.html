@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Mini-Jeux - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -263,6 +264,21 @@
 
     .bourse-card:active {
       transform: scale(0.98);
+    }
+
+    .bourse-card.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .bourse-card.locked:hover {
+      transform: none;
+    }
+
+    .bourse-lock {
+      text-align: center;
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 600;
     }
 
     @media (hover: hover) {
@@ -695,12 +711,12 @@
     </div>
 
     <!-- CARRÉ BLEU BOURSE -->
-    <div class="bourse-card" onclick="playGame('minijeu-bourse.html')">
+    <div class="bourse-card" id="bourseCard" onclick="checkBourseAccess()">
       <div class="bourse-icon">📊</div>
       <div class="bourse-content">
         <div class="bourse-title">La Bourse</div>
         <div class="bourse-subtitle">Port de Marseille</div>
-        <div class="bourse-stats">
+        <div class="bourse-stats" id="bourseStats">
           <div class="bourse-stat">
             <span class="stat-label">CMA CGM</span>
             <span class="stat-value green">+2.4%</span>
@@ -709,6 +725,10 @@
             <span class="stat-label">GPMM</span>
             <span class="stat-value red">-1.2%</span>
           </div>
+        </div>
+        <div class="bourse-lock" id="bourseLock" style="display: none;">
+          <span style="font-size: 32px;">🔒</span>
+          <div style="font-size: 14px; margin-top: 4px;">Niveau 30</div>
         </div>
       </div>
     </div>
@@ -736,10 +756,54 @@
   <script>
     console.log('🎮 [MINI-JEUX] Initialisation');
 
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
     const userId = localStorage.getItem('userId');
     if (!userId) {
       console.error('❌ [MINI-JEUX] Pas de userId');
       window.location.href = 'index.html';
+    }
+
+    let userLevel = 0;
+
+    checkUserLevel();
+
+    async function checkUserLevel() {
+      try {
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('level')
+          .eq('user_id', userId);
+
+        if (progressArray && progressArray[0]) {
+          userLevel = progressArray[0].level || 0;
+          console.log('📊 [NIVEAU] Niveau utilisateur:', userLevel);
+          
+          // Bloquer la bourse si niveau < 30
+          if (userLevel < 30) {
+            const bourseCard = document.getElementById('bourseCard');
+            const bourseStats = document.getElementById('bourseStats');
+            const bourseLock = document.getElementById('bourseLock');
+            
+            bourseCard.classList.add('locked');
+            bourseStats.style.display = 'none';
+            bourseLock.style.display = 'block';
+          }
+        }
+      } catch (err) {
+        console.error('❌ [MINI-JEUX] Erreur niveau:', err);
+      }
+    }
+
+    function checkBourseAccess() {
+      if (userLevel < 30) {
+        alert('🔒 La Bourse est débloquée au niveau 30 !\n\nTon niveau actuel : ' + userLevel);
+        return;
+      }
+      playGame('minijeu-bourse.html');
     }
 
     function playGame(gameFile) {
