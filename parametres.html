@@ -29,14 +29,6 @@
       z-index: 0;
     }
 
-    body.battery-saver {
-      background: #2c4a5e;
-    }
-
-    body.battery-saver::before {
-      display: none;
-    }
-
     .container {
       position: relative;
       z-index: 10;
@@ -65,11 +57,6 @@
       padding: 20px;
       margin-bottom: 16px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s;
-    }
-
-    body.battery-saver .section {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     .section-title {
@@ -391,22 +378,6 @@
         </div>
         <div class="toggle" id="toggleSound"></div>
       </div>
-
-      <div class="setting-item" onclick="toggleSetting('batterySaver')">
-        <div class="setting-info">
-          <div class="setting-label">Mode économie de batterie</div>
-          <div class="setting-description">Réduit les animations et effets visuels</div>
-        </div>
-        <div class="toggle" id="toggleBatterySaver"></div>
-      </div>
-
-      <div class="setting-item" onclick="toggleSetting('dataSaver')">
-        <div class="setting-info">
-          <div class="setting-label">Mode données réduites</div>
-          <div class="setting-description">Désactive les images lourdes et vidéos</div>
-        </div>
-        <div class="toggle" id="toggleDataSaver"></div>
-      </div>
     </div>
 
     <!-- AIDE & TUTORIELS -->
@@ -565,7 +536,7 @@
   <div class="modal" id="tutorialModal">
     <div class="modal-content">
       <div class="modal-title">🎮 Tutoriel Interactif</div>
-      <div class="tutorial-progress" id="tutorialProgress">Étape 1/5</div>
+      <div class="tutorial-progress" id="tutorialProgress">Étape 1/6</div>
       <div id="tutorialContent"></div>
       <div class="tutorial-nav">
         <button class="modal-btn cancel" id="tutorialPrev" onclick="prevTutorialStep()" style="display:none;">← Précédent</button>
@@ -598,9 +569,7 @@
     // Charger les paramètres sauvegardés
     const settings = {
       vibration: localStorage.getItem('setting_vibration') === 'true',
-      sound: localStorage.getItem('setting_sound') === 'true',
-      batterySaver: localStorage.getItem('setting_batterySaver') === 'true',
-      dataSaver: localStorage.getItem('setting_dataSaver') === 'true'
+      sound: localStorage.getItem('setting_sound') === 'true'
     };
 
     console.log('📋 [PARAMETRES] Paramètres chargés:', settings);
@@ -608,11 +577,6 @@
     // Appliquer l'état initial
     if (settings.vibration) document.getElementById('toggleVibration').classList.add('active');
     if (settings.sound) document.getElementById('toggleSound').classList.add('active');
-    if (settings.batterySaver) {
-      document.getElementById('toggleBatterySaver').classList.add('active');
-      document.body.classList.add('battery-saver');
-    }
-    if (settings.dataSaver) document.getElementById('toggleDataSaver').classList.add('active');
 
     function testAndToggle(setting) {
       console.log('📳 [PARAMETRES] Test vibration');
@@ -637,17 +601,6 @@
       const isActive = toggle.classList.contains('active');
       localStorage.setItem('setting_' + setting, isActive);
       settings[setting] = isActive;
-      
-      // Appliquer le mode économie de batterie
-      if (setting === 'batterySaver') {
-        if (isActive) {
-          document.body.classList.add('battery-saver');
-          console.log('🔋 [PARAMETRES] Mode économie activé');
-        } else {
-          document.body.classList.remove('battery-saver');
-          console.log('🔋 [PARAMETRES] Mode économie désactivé');
-        }
-      }
       
       console.log('✅ [PARAMETRES] Paramètre sauvegardé:', setting, '=', isActive);
     }
@@ -750,42 +703,40 @@
       
       const confirmation = prompt('Pour confirmer, tape "SUPPRIMER" en majuscules :');
       
-      if (confirmation === 'SUPPRIMER') {
-        console.log('✅ [PARAMETRES] Confirmation reçue, suppression...');
-        
-        try {
-          // Supprimer de toutes les tables
-          const deleteOperations = [
-            supabaseClient.from('profiles').delete().eq('user_id', userId),
-            supabaseClient.from('game_progress').delete().eq('user_id', userId),
-            supabaseClient.from('leaderboard').delete().eq('user_id', userId),
-            supabaseClient.from('messages').delete().eq('user_id', userId),
-            supabaseClient.from('feedback').delete().eq('user_id', userId)
-          ];
-
-          await Promise.all(deleteOperations);
-          
-          console.log('✅ [PARAMETRES] Données supprimées de Supabase');
-          
-          // Supprimer le compte auth
-          const { error } = await supabaseClient.auth.admin.deleteUser(userId);
-          
-          if (error) {
-            console.error('⚠️ [PARAMETRES] Impossible de supprimer l\'auth:', error);
-          }
-          
-          alert('Ton compte a été supprimé. Au revoir ! 👋');
-          
-          localStorage.clear();
-          window.location.href = 'index.html';
-          
-        } catch (err) {
-          console.error('💥 [PARAMETRES] Erreur suppression:', err);
-          alert('Erreur lors de la suppression. Contacte le support.');
-        }
-      } else {
+      if (confirmation !== 'SUPPRIMER') {
         console.log('❌ [PARAMETRES] Suppression annulée');
         closeModal('deleteModal');
+        return;
+      }
+
+      console.log('✅ [PARAMETRES] Confirmation reçue, suppression...');
+      
+      try {
+        // Supprimer de toutes les tables
+        console.log('🗑️ [PARAMETRES] Suppression des données...');
+        
+        await Promise.all([
+          supabaseClient.from('profiles').delete().eq('user_id', userId),
+          supabaseClient.from('game_progress').delete().eq('user_id', userId),
+          supabaseClient.from('leaderboard').delete().eq('user_id', userId),
+          supabaseClient.from('messages').delete().eq('user_id', userId)
+        ]);
+        
+        console.log('✅ [PARAMETRES] Données supprimées de Supabase');
+        
+        // Se déconnecter (ça empêchera de se reconnecter avec le même compte)
+        await supabaseClient.auth.signOut();
+        
+        console.log('✅ [PARAMETRES] Session déconnectée');
+        
+        alert('Ton compte a été supprimé. Au revoir ! 👋');
+        
+        localStorage.clear();
+        window.location.href = 'index.html';
+        
+      } catch (err) {
+        console.error('💥 [PARAMETRES] Erreur suppression:', err);
+        alert('Erreur lors de la suppression : ' + err.message);
       }
     }
 
