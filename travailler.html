@@ -1,224 +1,189 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Travailler - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a4d68">
+<title>Travailler — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Special+Elite&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --port-blue: #0a4d68;
+  --port-blue-deep: #062c3e;
+  --crane: #f4b13c;
+  --gold: #e8c547;
+  --ink: #1a1a1a;
+  --paper: #f4ead0;
+}
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #87ceeb 0%, #c8e6f0 30%, #2b8aa6 100%);
-      min-height: 100vh;
-      overflow: hidden;
-      position: fixed;
-      inset: 0;
-    }
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent}
+html, body{height:100%; overflow:hidden; overscroll-behavior:none}
+body{
+  font-family:'Special Elite', 'Courier New', monospace;
+  color:var(--ink);
+  background:var(--port-blue-deep);
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
 
-    /* TOPBAR */
-    .topbar {
-      background: #ffffff;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      position: relative;
-      z-index: 100;
-    }
+#app{
+  position:fixed; inset:0;
+  display:flex; flex-direction:column;
+  max-width:520px; margin:0 auto;
+  overflow:hidden;
+}
 
-    .topbar-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+/* TOPBAR */
+.topbar{
+  position:relative; z-index:10;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px;
+  background:linear-gradient(180deg, rgba(6,44,62,.95), rgba(6,44,62,.85));
+  border-bottom:3px solid var(--crane);
+  box-shadow:0 2px 0 var(--ink), 0 4px 12px rgba(0,0,0,.4);
+}
+.topbar-left{
+  display:flex; align-items:center; gap:12px;
+}
+.back-btn{
+  background:transparent; border:none;
+  color:var(--paper); font-size:28px;
+  cursor:pointer; padding:0;
+  line-height:1;
+}
+.topbar-title{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:20px; letter-spacing:2px;
+  color:var(--paper); text-shadow:1px 1px 0 #000;
+}
+.topbar-money{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:22px; color:var(--gold);
+  text-shadow:2px 2px 0 #000;
+}
 
-    .back-btn {
-      font-size: 24px;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      padding: 4px;
-    }
+/* STATS BAR */
+.stats-bar{
+  position:relative; z-index:9;
+  display:flex; justify-content:space-around;
+  padding:10px 8px;
+  background:rgba(6,44,62,.85);
+  border-bottom:2px solid rgba(244,177,60,.3);
+}
+.stat-item{
+  text-align:center; flex:1;
+}
+.stat-label{
+  font-size:8px; color:rgba(255,255,255,.5);
+  letter-spacing:1px; text-transform:uppercase;
+}
+.stat-value{
+  font-family:'Bebas Neue', sans-serif;
+  font-size:16px; color:var(--paper);
+  letter-spacing:.5px; margin-top:2px;
+}
 
-    .topbar-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-    }
+/* DOCK AREA */
+.dock-area{
+  --sky1:#b9dceb; --sky2:#e0eef5;
+  --sea1:#2b8aa6; --sea2:#0a4d68;
+  --dock-floor:#8a8275; --dock-floor-dk:#6a6258;
+  --mtn:rgba(60,80,100,.55);
+  position:relative;
+  flex:1; min-height:0;
+  background:
+    linear-gradient(180deg,
+      transparent 0%, transparent 70%,
+      #4a4238 70%, #4a4238 70.5%,
+      var(--dock-floor) 70.5%, var(--dock-floor-dk) 100%
+    ),
+    linear-gradient(180deg,
+      transparent 0%, transparent 35%,
+      var(--sea1) 35%, var(--sea2) 70%,
+      transparent 70%
+    ),
+    radial-gradient(circle at 82% 18%, rgba(255,220,150,.95) 0, rgba(255,220,150,0) 80px),
+    linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 35%, var(--sky2) 35%);
+  overflow:hidden;
+}
+.dock-area::before{
+  content:''; position:absolute; left:0; right:0;
+  top:35%; height:35%;
+  background:repeating-linear-gradient(180deg, transparent 0 8px, rgba(255,255,255,.08) 8px 9px);
+  pointer-events:none;
+}
+.dock-area::after{
+  content:''; position:absolute; left:0; right:0;
+  top:35%; height:35%;
+  background-image:
+    radial-gradient(ellipse 40px 3px at 20% 30%, rgba(255,255,255,.5), transparent),
+    radial-gradient(ellipse 30px 2px at 60% 50%, rgba(255,255,255,.4), transparent),
+    radial-gradient(ellipse 50px 3px at 80% 70%, rgba(255,255,255,.5), transparent);
+  animation:waves 8s linear infinite;
+  pointer-events:none;
+}
+@keyframes waves{
+  0%{transform:translateX(0)}
+  100%{transform:translateX(-30px)}
+}
 
-    .topbar-money {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      letter-spacing: 1px;
-      color: #10b981;
-    }
+.mountains-deco{
+  position:absolute; left:0; right:0;
+  top:30%; height:6%;
+  background:var(--mtn);
+  clip-path:polygon(0 100%, 8% 60%, 14% 75%, 22% 40%, 30% 65%, 40% 30%, 48% 55%, 58% 35%, 68% 60%, 78% 25%, 88% 55%, 100% 40%, 100% 100%);
+  pointer-events:none; z-index:1;
+}
 
-    /* STATS BAR */
-    .stats-bar {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-around;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    }
+/* CONTAINER */
+.container-target{
+  position:absolute; left:50%; bottom:10%;
+  transform:translateX(-50%);
+  width:52%; max-width:200px; aspect-ratio:100/80;
+  cursor:pointer; z-index:8;
+  filter:drop-shadow(4px 6px 0 rgba(0,0,0,.45));
+  touch-action:manipulation;
+}
+.container-target:active{ opacity:.9; transform:translateX(-50%) scale(0.95); }
+.container-target svg{ width:100%; height:100%; display:block }
 
-    .stat-item {
-      text-align: center;
-    }
-
-    .stat-label {
-      font-size: 10px;
-      color: #6b7280;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .stat-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 0.5px;
-      color: #1a1a1a;
-      margin-top: 2px;
-    }
-
-    /* CLICKER AREA */
-    .clicker-area {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .container-target {
-      width: 200px;
-      height: 200px;
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      border-radius: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 80px;
-      cursor: pointer;
-      user-select: none;
-      box-shadow: 
-        0 10px 30px rgba(249, 115, 22, 0.4),
-        0 0 0 4px rgba(255, 255, 255, 0.3);
-      transition: transform 0.1s;
-      position: relative;
-      z-index: 10;
-    }
-
-    .container-target:active {
-      transform: scale(0.95);
-    }
-
-    /* COMBO INDICATOR */
-    .combo-indicator {
-      position: absolute;
-      top: 100px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 48px;
-      color: #fbbf24;
-      text-shadow: 
-        3px 3px 0 #000,
-        -2px -2px 0 #000,
-        2px -2px 0 #000,
-        -2px 2px 0 #000,
-        0 0 20px rgba(251, 191, 36, 0.8);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .combo-indicator.show {
-      opacity: 1;
-    }
-
-    /* FX OVERLAY */
-    .fx-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 50;
-    }
-
-    .float-num {
-      position: absolute;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      color: #fbbf24;
-      text-shadow: 2px 2px 0 #000;
-      pointer-events: none;
-      user-select: none;
-      transform: translateX(-50%);
-      animation: floatup 0.9s ease-out forwards;
-      white-space: nowrap;
-    }
-
-    @keyframes floatup {
-      0% { 
-        opacity: 0;
-        transform: translateX(-50%) translateY(0) scale(0.7);
-      }
-      15% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(-10px) scale(1.1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-60px) scale(0.9);
-      }
-    }
-
-    .ripple {
-      position: absolute;
-      border-radius: 50%;
-      border: 3px solid #fbbf24;
-      pointer-events: none;
-      transform: translate(-50%, -50%);
-      animation: rip 0.5s ease-out forwards;
-    }
-
-    @keyframes rip {
-      0% {
-        width: 0;
-        height: 0;
-        opacity: 0.8;
-      }
-      100% {
-        width: 140px;
-        height: 140px;
-        opacity: 0;
-      }
-    }
-
-    /* LAYOUT */
-    .app-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-  </style>
+/* FX OVERLAY */
+.fx-overlay{
+  position:absolute; inset:0;
+  pointer-events:none; z-index:9;
+}
+.float-num{
+  position:absolute;
+  font-family:'Bebas Neue', sans-serif;
+  font-size:22px; color:var(--gold);
+  text-shadow:2px 2px 0 #000;
+  pointer-events:none; user-select:none;
+  transform:translateX(-50%);
+  animation:floatup .9s ease-out forwards;
+  white-space:nowrap;
+}
+@keyframes floatup{
+  0%  { opacity:0; transform:translateX(-50%) translateY(0) scale(.7); }
+  15% { opacity:1; transform:translateX(-50%) translateY(-10px) scale(1.1); }
+  100%{ opacity:0; transform:translateX(-50%) translateY(-55px) scale(.9); }
+}
+.ripple{
+  position:absolute; border-radius:50%;
+  border:2px solid var(--crane);
+  pointer-events:none;
+  transform:translate(-50%,-50%);
+  animation:rip .5s ease-out forwards;
+}
+@keyframes rip{
+  0%  { width:0; height:0; opacity:.8; }
+  100%{ width:120px; height:120px; opacity:0; }
+}
+</style>
 </head>
 <body>
-  <div class="app-container">
-    <!-- TOPBAR -->
+  <div id="app">
     <div class="topbar">
       <div class="topbar-left">
         <button class="back-btn" onclick="window.location.href='game.html'">←</button>
@@ -227,7 +192,6 @@
       <div class="topbar-money"><span id="moneyDisplay">100</span>€</div>
     </div>
 
-    <!-- STATS BAR -->
     <div class="stats-bar">
       <div class="stat-item">
         <div class="stat-label">Par Clic</div>
@@ -238,16 +202,24 @@
         <div class="stat-value">x<span id="comboDisplay">1.0</span></div>
       </div>
       <div class="stat-item">
-        <div class="stat-label">Total Clics</div>
+        <div class="stat-label">Total</div>
         <div class="stat-value" id="totalClicksDisplay">0</div>
       </div>
     </div>
 
-    <!-- CLICKER AREA -->
-    <div class="clicker-area">
-      <div class="combo-indicator" id="comboIndicator">COMBO!</div>
+    <div class="dock-area">
+      <div class="mountains-deco"></div>
       <div class="fx-overlay" id="fxOverlay"></div>
-      <div class="container-target" id="container">📦</div>
+      <div class="container-target" id="container">
+        <svg viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="20" width="80" height="50" fill="#c0392b" stroke="#000" stroke-width="2"/>
+          <rect x="15" y="25" width="70" height="40" fill="#d35400" stroke="#000" stroke-width="1.5"/>
+          <line x1="50" y1="25" x2="50" y2="65" stroke="#000" stroke-width="2"/>
+          <line x1="15" y1="45" x2="85" y2="45" stroke="#000" stroke-width="2"/>
+          <rect x="40" y="35" width="20" height="20" fill="#2c3e50" stroke="#000" stroke-width="1.5"/>
+          <text x="50" y="48" font-family="Arial" font-size="10" fill="#fff" text-anchor="middle" font-weight="bold">CMA</text>
+        </svg>
+      </div>
     </div>
   </div>
 
@@ -262,7 +234,6 @@
       window.location.href = 'index.html';
     }
 
-    // State
     let money = 100;
     let combo = 1;
     let lastClickTime = 0;
@@ -271,7 +242,6 @@
     let maxCombo = 1;
     let saveTimeout = null;
 
-    // Load player data
     loadPlayerData();
 
     async function loadPlayerData() {
@@ -285,83 +255,57 @@
         money = progress.money || 100;
         totalClicks = progress.total_clicks || 0;
         maxCombo = progress.max_combo || 1;
-        
         updateDisplay();
       }
     }
 
-    // Click handler
-    document.getElementById('container').addEventListener('click', clickContainer);
-    document.getElementById('container').addEventListener('touchstart', (e) => {
+    const container = document.getElementById('container');
+    container.addEventListener('click', clickContainer);
+    container.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const touch = e.touches[0];
       clickContainer({ clientX: touch.clientX, clientY: touch.clientY });
     }, { passive: false });
 
-    function clickContainer(e) {
+    function clickContainer(e){
       const now = Date.now();
 
-      // Combo system: if < 600ms between clicks, increase combo
-      if (now - lastClickTime < 600) {
+      if(now - lastClickTime < 600){
         combo = Math.min(5, combo + 0.05);
       } else {
         combo = 1;
       }
       lastClickTime = now;
+      if(combo > maxCombo) maxCombo = combo;
 
-      if (combo > maxCombo) {
-        maxCombo = combo;
-      }
-
-      // Calculate gain
       const gain = Math.floor(perClick * combo);
       money += gain;
       totalClicks += 1;
 
-      // Show combo indicator if combo > 1.5
-      const comboIndicator = document.getElementById('comboIndicator');
-      if (combo > 1.5) {
-        comboIndicator.classList.add('show');
-        setTimeout(() => comboIndicator.classList.remove('show'), 300);
-      }
+      const overlay = document.getElementById('fxOverlay');
+      if(overlay){
+        const oRect = overlay.getBoundingClientRect();
+        const cx = e.clientX - oRect.left;
+        const cy = e.clientY - oRect.top;
 
-      // Visual feedback
-      showFloatNum(e, gain);
-      showRipple(e);
+        const f = document.createElement('div');
+        f.className = 'float-num';
+        f.textContent = '+' + gain + '€';
+        f.style.left = cx + 'px';
+        f.style.top  = cy + 'px';
+        overlay.appendChild(f);
+        setTimeout(()=>f.remove(), 950);
+
+        const r = document.createElement('div');
+        r.className = 'ripple';
+        r.style.left = cx + 'px';
+        r.style.top  = cy + 'px';
+        overlay.appendChild(r);
+        setTimeout(()=>r.remove(), 550);
+      }
 
       updateDisplay();
       scheduleSave();
-    }
-
-    function showFloatNum(e, gain) {
-      const overlay = document.getElementById('fxOverlay');
-      const rect = overlay.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const floatNum = document.createElement('div');
-      floatNum.className = 'float-num';
-      floatNum.textContent = '+' + gain + '€';
-      floatNum.style.left = x + 'px';
-      floatNum.style.top = y + 'px';
-      overlay.appendChild(floatNum);
-
-      setTimeout(() => floatNum.remove(), 950);
-    }
-
-    function showRipple(e) {
-      const overlay = document.getElementById('fxOverlay');
-      const rect = overlay.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-
-      const ripple = document.createElement('div');
-      ripple.className = 'ripple';
-      ripple.style.left = x + 'px';
-      ripple.style.top = y + 'px';
-      overlay.appendChild(ripple);
-
-      setTimeout(() => ripple.remove(), 550);
     }
 
     function updateDisplay() {
@@ -383,10 +327,9 @@
             max_combo: maxCombo
           })
           .eq('user_id', userId);
-      }, 2000); // Sauvegarde toutes les 2 secondes après le dernier clic
+      }, 2000);
     }
 
-    // Sauvegarde avant de quitter la page
     window.addEventListener('beforeunload', async () => {
       if (saveTimeout) {
         clearTimeout(saveTimeout);
