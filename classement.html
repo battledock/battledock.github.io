@@ -329,20 +329,15 @@
 
     async function loadLeaderboard() {
       try {
-        // Récupérer le top du leaderboard avec les infos des profils
-        const { data: leaderboardData, error } = await supabaseClient
+        // Récupérer le leaderboard
+        const { data: leaderboardData, error: leaderboardError } = await supabaseClient
           .from('leaderboard')
-          .select(`
-            user_id,
-            score,
-            profiles (username, avatar_url),
-            game_progress (level)
-          `)
+          .select('user_id, score')
           .order('score', { ascending: false })
           .limit(50);
 
-        if (error) {
-          console.error('Erreur chargement leaderboard:', error);
+        if (leaderboardError) {
+          console.error('Erreur chargement leaderboard:', leaderboardError);
           document.getElementById('leaderboardList').innerHTML = 
             '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Erreur de chargement</div></div>';
           return;
@@ -354,8 +349,34 @@
           return;
         }
 
-        renderPodium(leaderboardData.slice(0, 3));
-        renderLeaderboard(leaderboardData);
+        // Enrichir avec les données des profils et progression
+        const enrichedData = await Promise.all(
+          leaderboardData.map(async (entry) => {
+            // Récupérer le profil
+            const { data: profile } = await supabaseClient
+              .from('profiles')
+              .select('username, avatar_url')
+              .eq('user_id', entry.user_id)
+              .single();
+
+            // Récupérer la progression
+            const { data: progress } = await supabaseClient
+              .from('game_progress')
+              .select('level')
+              .eq('user_id', entry.user_id)
+              .single();
+
+            return {
+              ...entry,
+              username: profile?.username || 'Joueur',
+              avatar_url: profile?.avatar_url || '⚓',
+              level: progress?.level || 1
+            };
+          })
+        );
+
+        renderPodium(enrichedData.slice(0, 3));
+        renderLeaderboard(enrichedData);
 
       } catch (err) {
         console.error('Erreur:', err);
@@ -382,8 +403,8 @@
       positions.forEach(({ index, class: className }) => {
         if (top3[index]) {
           const player = top3[index];
-          const username = player.profiles?.username || 'Joueur';
-          const avatar = player.profiles?.avatar_url || '⚓';
+          const username = player.username || 'Joueur';
+          const avatar = player.avatar_url || '⚓';
           const score = player.score || 0;
           const rank = index + 1;
 
@@ -405,10 +426,10 @@
       list.innerHTML = '';
 
       players.forEach((player, index) => {
-        const username = player.profiles?.username || 'Joueur';
-        const avatar = player.profiles?.avatar_url || '⚓';
+        const username = player.username || 'Joueur';
+        const avatar = player.avatar_url || '⚓';
         const score = player.score || 0;
-        const level = player.game_progress?.level || 1;
+        const level = player.level || 1;
         const rank = index + 1;
         const isMe = player.user_id === userId;
 
