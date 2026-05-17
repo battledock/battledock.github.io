@@ -174,6 +174,39 @@
       transform: scale(0.95);
     }
 
+    .square-card.locked {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .square-card.locked:hover {
+      transform: none;
+    }
+
+    .square-lock-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      z-index: 10;
+    }
+
+    .lock-icon-small {
+      font-size: 36px;
+    }
+
+    .lock-text-small {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
     @media (hover: hover) {
       .square-card:hover {
         transform: translateY(-4px);
@@ -728,11 +761,15 @@
         <div class="square-description">1 partie gratuite/jour !</div>
       </div>
 
-      <div class="square-card" onclick="playGame('minijeu-higherlower.html')">
+      <div class="square-card" id="higherLowerCard" onclick="checkHigherLowerAccess()">
         <span class="square-badge badge-new">NEW</span>
         <div class="square-icon">📈</div>
         <div class="square-title">Higher or Lower</div>
         <div class="square-description">Plus haut ou bas ?</div>
+        <div class="square-lock-overlay" id="higherLowerLock" style="display: none;">
+          <div class="lock-icon-small">🔒</div>
+          <div class="lock-text-small">Niv. 25</div>
+        </div>
       </div>
     </div>
 
@@ -808,6 +845,15 @@
           userLevel = progressArray[0].level || 0;
           console.log('📊 [NIVEAU] Niveau utilisateur:', userLevel);
           
+          // Bloquer Higher or Lower si niveau < 25
+          if (userLevel < 25) {
+            const higherLowerCard = document.getElementById('higherLowerCard');
+            const higherLowerLock = document.getElementById('higherLowerLock');
+            
+            higherLowerCard.classList.add('locked');
+            higherLowerLock.style.display = 'flex';
+          }
+
           // Bloquer la bourse si niveau < 30
           if (userLevel < 30) {
             const bourseCard = document.getElementById('bourseCard');
@@ -820,6 +866,14 @@
       } catch (err) {
         console.error('❌ [MINI-JEUX] Erreur niveau:', err);
       }
+    }
+
+    function checkHigherLowerAccess() {
+      if (userLevel < 25) {
+        alert('🔒 Higher or Lower est débloqué au niveau 25 !\n\nTon niveau actuel : ' + userLevel);
+        return;
+      }
+      playGame('minijeu-higherlower.html');
     }
 
     function checkBourseAccess() {
