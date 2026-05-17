@@ -432,27 +432,48 @@ body{
     let rank = 'Docker Occasionnel';
     let isLoading = true;
 
+    console.log('🎯 [SELECTION] Initialisation sélection travail');
+    console.log('👤 [SELECTION] userId:', userId);
+    console.log('👤 [SELECTION] username:', username);
+
     loadPlayerData();
 
     async function loadPlayerData() {
+      console.log('📥 [SELECTION] Chargement des données joueur...');
+      
       // Afficher le loader
       document.getElementById('zonesContainer').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">⏳ Chargement...</div>';
       
-      const { data: progressArray } = await supabaseClient
-        .from('game_progress')
-        .select('*')
-        .eq('user_id', userId);
+      try {
+        const { data: progressArray, error } = await supabaseClient
+          .from('game_progress')
+          .select('*')
+          .eq('user_id', userId);
 
-      if (progressArray && progressArray[0]) {
-        const progress = progressArray[0];
-        money = progress.money || 100;
-        level = progress.level || 1;
-        rank = getRank(level);
+        if (error) {
+          console.error('❌ [SELECTION] Erreur chargement:', error);
+          return;
+        }
+
+        if (progressArray && progressArray[0]) {
+          const progress = progressArray[0];
+          money = progress.money || 100;
+          level = progress.level || 1;
+          rank = getRank(level);
+          
+          console.log('✅ [SELECTION] Données chargées:', { money, level, rank });
+        } else {
+          console.warn('⚠️ [SELECTION] Aucune progression trouvée');
+        }
+      } catch (err) {
+        console.error('💥 [SELECTION] Exception:', err);
       }
       
       isLoading = false;
       updateDisplay();
       renderZones();
+      
+      console.log('✅ [SELECTION] Rendu terminé');
     }
 
     function getRank(level) {

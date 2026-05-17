@@ -250,31 +250,48 @@
     let currentAvatar = '⚓';
     let playerData = {};
 
+    console.log('👤 [PROFIL] Initialisation page profil');
+    console.log('👤 [PROFIL] userId:', userId);
+    console.log('👤 [PROFIL] username:', username);
+
     loadPlayerData();
 
     async function loadPlayerData() {
-      // Charger les données du profil
-      const { data: profileArray } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId);
+      console.log('📥 [PROFIL] Chargement des données...');
+      
+      try {
+        // Charger les données du profil
+        const { data: profileArray, error: profileError } = await supabaseClient
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId);
 
-      if (profileArray && profileArray[0]) {
-        currentAvatar = profileArray[0].avatar_url || '⚓';
+        if (profileError) {
+          console.error('❌ [PROFIL] Erreur chargement profil:', profileError);
+        } else if (profileArray && profileArray[0]) {
+          currentAvatar = profileArray[0].avatar_url || '⚓';
+          console.log('✅ [PROFIL] Avatar chargé:', currentAvatar);
+        }
+
+        // Charger les données de progression
+        const { data: progressArray, error: progressError } = await supabaseClient
+          .from('game_progress')
+          .select('*')
+          .eq('user_id', userId);
+
+        if (progressError) {
+          console.error('❌ [PROFIL] Erreur chargement progression:', progressError);
+        } else if (progressArray && progressArray[0]) {
+          playerData = progressArray[0];
+          console.log('✅ [PROFIL] Progression chargée:', playerData);
+        }
+
+        updateDisplay();
+        renderAvatars();
+        
+      } catch (err) {
+        console.error('💥 [PROFIL] Exception:', err);
       }
-
-      // Charger les données de progression
-      const { data: progressArray } = await supabaseClient
-        .from('game_progress')
-        .select('*')
-        .eq('user_id', userId);
-
-      if (progressArray && progressArray[0]) {
-        playerData = progressArray[0];
-      }
-
-      updateDisplay();
-      renderAvatars();
     }
 
     function getRank(level) {
@@ -312,6 +329,8 @@
     }
 
     async function selectAvatar(avatar, element) {
+      console.log('🎨 [PROFIL] Sélection avatar:', avatar);
+      
       currentAvatar = avatar;
       
       // Mise à jour visuelle
@@ -319,18 +338,29 @@
       element.classList.add('selected');
       document.getElementById('currentAvatar').textContent = avatar;
 
-      // Sauvegarde dans Supabase
-      await supabaseClient
-        .from('profiles')
-        .update({ avatar_url: avatar })
-        .eq('user_id', userId);
+      try {
+        // Sauvegarde dans Supabase
+        const { error } = await supabaseClient
+          .from('profiles')
+          .update({ avatar_url: avatar })
+          .eq('user_id', userId);
 
-      // Afficher l'indicateur de sauvegarde
-      const indicator = document.getElementById('saveIndicator');
-      indicator.classList.add('show');
-      setTimeout(() => {
-        indicator.classList.remove('show');
-      }, 2000);
+        if (error) {
+          console.error('❌ [PROFIL] Erreur sauvegarde avatar:', error);
+        } else {
+          console.log('✅ [PROFIL] Avatar sauvegardé');
+        }
+
+        // Afficher l'indicateur de sauvegarde
+        const indicator = document.getElementById('saveIndicator');
+        indicator.classList.add('show');
+        setTimeout(() => {
+          indicator.classList.remove('show');
+        }, 2000);
+        
+      } catch (err) {
+        console.error('💥 [PROFIL] Exception sauvegarde:', err);
+      }
     }
   </script>
 </body>

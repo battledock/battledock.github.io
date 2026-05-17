@@ -321,13 +321,19 @@
 
     const userId = localStorage.getItem('userId');
     
+    console.log('🏆 [CLASSEMENT] Initialisation page classement');
+    console.log('👤 [CLASSEMENT] userId:', userId);
+    
     if (!userId) {
+      console.error('❌ [CLASSEMENT] Pas de userId, redirection');
       window.location.href = 'index.html';
     }
 
     loadLeaderboard();
 
     async function loadLeaderboard() {
+      console.log('📥 [CLASSEMENT] Chargement du leaderboard...');
+      
       try {
         // Récupérer le leaderboard
         const { data: leaderboardData, error: leaderboardError } = await supabaseClient
@@ -337,17 +343,20 @@
           .limit(50);
 
         if (leaderboardError) {
-          console.error('Erreur chargement leaderboard:', leaderboardError);
+          console.error('❌ [CLASSEMENT] Erreur chargement leaderboard:', leaderboardError);
           document.getElementById('leaderboardList').innerHTML = 
             '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Erreur de chargement</div></div>';
           return;
         }
 
         if (!leaderboardData || leaderboardData.length === 0) {
+          console.warn('⚠️ [CLASSEMENT] Aucun joueur dans le classement');
           document.getElementById('leaderboardList').innerHTML = 
             '<div class="empty-state"><div class="empty-state-icon">😔</div><div>Aucun joueur dans le classement</div></div>';
           return;
         }
+
+        console.log('✅ [CLASSEMENT] ' + leaderboardData.length + ' joueurs trouvés');
 
         // Enrichir avec les données des profils et progression
         const enrichedData = await Promise.all(
@@ -375,11 +384,13 @@
           })
         );
 
+        console.log('✅ [CLASSEMENT] Données enrichies, affichage...');
+
         renderPodium(enrichedData.slice(0, 3));
         renderLeaderboard(enrichedData);
 
       } catch (err) {
-        console.error('Erreur:', err);
+        console.error('💥 [CLASSEMENT] Exception:', err);
         document.getElementById('leaderboardList').innerHTML = 
           '<div class="empty-state"><div class="empty-state-icon">❌</div><div>Erreur inattendue</div></div>';
       }

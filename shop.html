@@ -140,20 +140,32 @@
 
     const userId = localStorage.getItem('userId');
     
+    console.log('🛒 [SHOP] Initialisation page shop');
+    console.log('👤 [SHOP] userId:', userId);
+    
     if (!userId) {
+      console.error('❌ [SHOP] Pas de userId, redirection');
       window.location.href = 'index.html';
     }
 
     loadMoney();
 
     async function loadMoney() {
-      const { data: progressArray } = await supabaseClient
+      console.log('📥 [SHOP] Chargement de l\'argent...');
+      
+      const { data: progressArray, error } = await supabaseClient
         .from('game_progress')
         .select('money')
         .eq('user_id', userId);
 
+      if (error) {
+        console.error('❌ [SHOP] Erreur chargement:', error);
+        return;
+      }
+
       if (progressArray && progressArray[0]) {
         const money = progressArray[0].money || 100;
+        console.log('✅ [SHOP] Argent chargé:', money + '€');
         document.getElementById('moneyDisplay').textContent = money.toLocaleString('fr-FR');
       }
     }

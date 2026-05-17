@@ -237,7 +237,12 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username');
     
+    console.log('💬 [CHAT] Initialisation page chat');
+    console.log('👤 [CHAT] userId:', userId);
+    console.log('👤 [CHAT] username:', username);
+    
     if (!userId) {
+      console.error('❌ [CHAT] Pas de userId, redirection');
       window.location.href = 'index.html';
     }
 
@@ -247,18 +252,25 @@
     loadUserAvatar();
 
     async function loadUserAvatar() {
-      const { data: profile } = await supabaseClient
+      console.log('📥 [CHAT] Chargement avatar...');
+      
+      const { data: profile, error } = await supabaseClient
         .from('profiles')
         .select('avatar_url')
         .eq('user_id', userId)
         .single();
       
-      if (profile) {
+      if (error) {
+        console.error('❌ [CHAT] Erreur chargement avatar:', error);
+      } else if (profile) {
         currentUserAvatar = profile.avatar_url || '⚓';
+        console.log('✅ [CHAT] Avatar chargé:', currentUserAvatar);
       }
     }
 
     async function loadMessages() {
+      console.log('📥 [CHAT] Chargement des messages...');
+      
       const { data: messages, error } = await supabaseClient
         .from('messages')
         .select('*')
@@ -266,20 +278,24 @@
         .limit(50);
 
       if (error) {
-        console.error('Erreur chargement messages:', error);
+        console.error('❌ [CHAT] Erreur chargement messages:', error);
         document.getElementById('messagesContainer').innerHTML = 
           '<div class="empty-state">Erreur de chargement des messages</div>';
         return;
       }
 
+      console.log('✅ [CHAT] ' + (messages?.length || 0) + ' messages chargés');
+
       renderMessages(messages || []);
 
       // S'abonner aux nouveaux messages en temps réel
+      console.log('📡 [CHAT] Abonnement au temps réel...');
       supabaseClient
         .channel('public:messages')
         .on('postgres_changes', 
           { event: 'INSERT', schema: 'public', table: 'messages' },
           (payload) => {
+            console.log('📨 [CHAT] Nouveau message reçu:', payload.new);
             appendMessage(payload.new);
           }
         )
@@ -339,6 +355,7 @@
       
       if (!text) return;
       
+      console.log('📤 [CHAT] Envoi message:', text);
       sendBtn.disabled = true;
       
       const { error } = await supabaseClient
@@ -351,9 +368,10 @@
         });
 
       if (error) {
-        console.error('Erreur envoi message:', error);
+        console.error('❌ [CHAT] Erreur envoi message:', error);
         alert('Erreur lors de l\'envoi du message');
       } else {
+        console.log('✅ [CHAT] Message envoyé');
         input.value = '';
       }
       

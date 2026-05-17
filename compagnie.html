@@ -231,20 +231,33 @@
 
     const userId = localStorage.getItem('userId');
     
+    console.log('🏢 [COMPAGNIE] Initialisation page compagnie');
+    console.log('👤 [COMPAGNIE] userId:', userId);
+    
     if (!userId) {
+      console.error('❌ [COMPAGNIE] Pas de userId, redirection');
       window.location.href = 'index.html';
     }
 
     checkLevel();
 
     async function checkLevel() {
-      const { data: progressArray } = await supabaseClient
+      console.log('📥 [COMPAGNIE] Vérification du niveau...');
+      
+      const { data: progressArray, error } = await supabaseClient
         .from('game_progress')
         .select('level')
         .eq('user_id', userId);
 
+      if (error) {
+        console.error('❌ [COMPAGNIE] Erreur chargement:', error);
+        return;
+      }
+
       if (progressArray && progressArray[0]) {
         const level = progressArray[0].level || 1;
+        
+        console.log('✅ [COMPAGNIE] Niveau actuel:', level);
         
         document.getElementById('currentLevel').textContent = level;
         
@@ -252,8 +265,11 @@
         document.getElementById('progressFill').style.width = progress + '%';
 
         if (level >= 100) {
+          console.log('🎉 [COMPAGNIE] Niveau 100+ atteint, fonction débloquée !');
           document.getElementById('lockedState').style.display = 'none';
           document.getElementById('unlockedContent').classList.add('show');
+        } else {
+          console.log('🔒 [COMPAGNIE] Niveau insuffisant, encore', (100 - level), 'niveaux');
         }
       }
     }
