@@ -538,6 +538,7 @@
 
     let currentMoney = 0;
     let canvas, ctx;
+    let symbolsImageData; // Stocker l'image des symboles
     let isScratching = false;
     let scratchedPercent = 0;
     let currentCard = null;
@@ -716,32 +717,27 @@
 
     function initCanvas() {
       canvas = document.getElementById('scratchCanvas');
-      ctx = canvas.getContext('2d');
+      ctx = canvas.getContext('2d', { willReadFrequently: true });
 
       const width = 400;
       const height = 300;
-      
-      // Reset canvas dimensions (clears everything)
       canvas.width = width;
       canvas.height = height;
 
-      console.log('🎨 [CANVAS] Initialisation - Symboles:', symbols);
+      console.log('🎨 Dessin symboles:', symbols);
 
-      // LAYER 1: White background + symbols (this stays underneath)
-      ctx.globalCompositeOperation = 'source-over';
+      // 1. Dessiner fond blanc + symboles
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
-      // Calculate grid
       const cols = currentCard === 'docker_basic' ? 3 :
                    currentCard === 'cargo_king' ? 4 :
                    currentCard === 'port_legend' ? 3 :
                    currentCard === 'captain_fortune' ? 4 : 5;
       const rows = Math.ceil(symbols.length / cols);
 
-      // Draw symbols in BLACK
       ctx.fillStyle = '#000000';
-      ctx.font = 'bold 56px Arial';
+      ctx.font = 'bold 60px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -750,43 +746,40 @@
         const row = Math.floor(i / cols);
         const x = (width / cols) * col + (width / cols / 2);
         const y = (height / rows) * row + (height / rows / 2);
-        
         ctx.fillText(symbol, x, y);
-        console.log('  ✓ Symbole', symbol, 'dessiné à', x, y);
       });
 
-      // LAYER 2: Gray scratch coating on top
-      ctx.fillStyle = '#a8a8a8';
+      // 2. SAUVEGARDER cette image
+      symbolsImageData = ctx.getImageData(0, 0, width, height);
+      console.log('✅ Symboles sauvegardés');
+
+      // 3. Maintenant dessiner la couche grise
+      ctx.fillStyle = '#999999';
       ctx.fillRect(0, 0, width, height);
 
-      // Add pattern to scratch layer
-      ctx.strokeStyle = '#8c8c8c';
+      // Texture
+      ctx.strokeStyle = '#777777';
       ctx.lineWidth = 2;
       for (let i = 0; i < width; i += 15) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
-        ctx.lineTo(i + height, height);
+        ctx.lineTo(i, height);
         ctx.stroke();
-      }
-      for (let i = 0; i < width; i += 15) {
-        ctx.beginPath();
         ctx.moveTo(0, i);
-        ctx.lineTo(width, i + height);
+        ctx.lineTo(width, i);
         ctx.stroke();
       }
 
-      // Text on scratch layer
+      // Texte
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 42px Arial';
+      ctx.font = 'bold 50px Arial';
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 6;
-      ctx.fillText('GRATTE ICI', width / 2, height / 2);
+      ctx.fillText('GRATTE ICI !', width / 2, height / 2);
       ctx.shadowBlur = 0;
 
       scratchedPercent = 0;
       setupScratchEvents();
-      
-      console.log('✅ [CANVAS] Initialisé avec', symbols.length, 'symboles');
     }
 
     function setupScratchEvents() {
@@ -845,10 +838,18 @@
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
 
+      const canvasX = x * scaleX;
+      const canvasY = y * scaleY;
+
+      // Effacer la zone grattée
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(x * scaleX, y * scaleY, 25, 0, Math.PI * 2);
+      ctx.arc(canvasX, canvasY, 30, 0, Math.PI * 2);
       ctx.fill();
+
+      // Redessiner les symboles dans cette zone
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.putImageData(symbolsImageData, 0, 0);
 
       checkScratchProgress();
     }
