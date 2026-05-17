@@ -371,15 +371,16 @@
       </div>
 
       <div class="cost-banner">
-        <div class="cost-banner-title">Prix par partie</div>
-        <div class="cost-banner-value">150€</div>
+        <div class="cost-banner-title">🎉 Partie quotidienne</div>
+        <div class="cost-banner-value">GRATUIT</div>
       </div>
 
       <div class="boxes-grid" id="boxesContainer"></div>
 
       <div class="result-display" id="resultDisplay"></div>
 
-      <button class="play-btn" id="playBtn" onclick="startGame()">Jouer (150€)</button>
+      <button class="play-btn" id="playBtn" onclick="startGame()">Jouer Gratuit 🎁</button>
+      <div id="countdown" style="font-size: 14px; color: #6b7280; margin-top: 12px;"></div>
     </div>
 
     <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
@@ -396,12 +397,21 @@
     const userId = localStorage.getItem('userId');
     if (!userId) window.location.href = 'index.html';
 
-    const cost = 150;
+    const cost = 0; // GRATUIT !
     let currentMoney = 0;
     let played = parseInt(localStorage.getItem('lucky_dip_played') || 0);
     let totalWon = parseInt(localStorage.getItem('lucky_dip_total_won') || 0);
     let gameActive = false;
     let prizes = [];
+    let canPlay = true;
+
+    // Check last play date
+    const lastPlayDate = localStorage.getItem('lucky_dip_last_play');
+    const today = new Date().toDateString();
+
+    if (lastPlayDate === today) {
+      canPlay = false;
+    }
 
     // Probabilités pondérées (total = 100)
     const prizePool = [
@@ -415,6 +425,7 @@
 
     loadMoney();
     updateDisplay();
+    checkCanPlay();
 
     async function loadMoney() {
       try {
@@ -426,15 +437,33 @@
         if (progressArray && progressArray[0]) {
           currentMoney = progressArray[0].money || 0;
           document.getElementById('money').textContent = currentMoney + '€';
-
-          if (currentMoney < cost) {
-            document.getElementById('playBtn').disabled = true;
-            document.getElementById('playBtn').textContent = 'Pas assez d\'argent';
-          }
         }
       } catch (err) {
         console.error('❌ [LUCKY DIP] Erreur:', err);
       }
+    }
+
+    function checkCanPlay() {
+      if (!canPlay) {
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('playBtn').textContent = 'Déjà joué aujourd\'hui';
+        updateCountdown();
+        setInterval(updateCountdown, 60000); // Update every minute
+      }
+    }
+
+    function updateCountdown() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const diff = tomorrow - now;
+      const hours = Math.floor(diff / 1000 / 60 / 60);
+      const minutes = Math.floor((diff / 1000 / 60) % 60);
+
+      document.getElementById('countdown').innerHTML = 
+        `Prochaine partie dans <strong style="color: #667eea; font-family: 'Bebas Neue'; font-size: 18px;">${hours}h ${minutes}min</strong>`;
     }
 
     function updateDisplay() {
@@ -457,25 +486,19 @@
     }
 
     async function startGame() {
-      if (currentMoney < cost) {
-        alert('Pas assez d\'argent ! Il te faut 150€');
+      if (!canPlay) {
+        alert('Tu as déjà joué aujourd\'hui ! Reviens demain 🎁');
         return;
       }
 
       if (gameActive) return;
 
-      console.log('🎮 [LUCKY DIP] Nouvelle partie');
-
-      // Deduct cost
-      currentMoney -= cost;
+      console.log('🎮 [LUCKY DIP] Nouvelle partie GRATUITE');
 
       try {
-        await supabaseClient
-          .from('game_progress')
-          .update({ money: currentMoney })
-          .eq('user_id', userId);
-
-        document.getElementById('money').textContent = currentMoney + '€';
+        // Save last play date
+        localStorage.setItem('lucky_dip_last_play', today);
+        canPlay = false;
 
         played++;
         localStorage.setItem('lucky_dip_played', played);
@@ -552,24 +575,12 @@
       }, 1000);
 
       // Show result
-      const profit = prize - cost;
-      
       setTimeout(() => {
         const resultDisplay = document.getElementById('resultDisplay');
-        let className = 'neutral';
-        let text = 'Remboursé !';
-
-        if (profit > 0) {
-          className = 'profit';
-          text = `+${profit}€`;
-        } else if (profit < 0) {
-          className = 'loss';
-          text = `${profit}€`;
-        }
 
         resultDisplay.innerHTML = `
-          <div class="result-title">${profit > 0 ? '🎉 Félicitations !' : profit < 0 ? '😔 Perdu' : '😐 Égalité'}</div>
-          <div class="result-value ${className}">${text}</div>
+          <div class="result-title">🎉 Tu as gagné !</div>
+          <div class="result-value profit">+${prize}€</div>
         `;
       }, 1800);
 
@@ -591,10 +602,13 @@
         console.error('❌ [LUCKY DIP] Erreur:', err);
       }
 
-      // Show play button again
+      // Show play button again (disabled) with countdown
       setTimeout(() => {
         document.getElementById('playBtn').style.display = 'block';
-        loadMoney();
+        document.getElementById('playBtn').disabled = true;
+        document.getElementById('playBtn').textContent = 'Déjà joué aujourd\'hui';
+        updateCountdown();
+        setInterval(updateCountdown, 60000);
       }, 4000);
     }
 
