@@ -92,6 +92,15 @@
       transform: scale(0.98);
     }
 
+    .scratch-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .scratch-card.disabled:hover {
+      transform: none;
+    }
+
     @media (hover: hover) {
       .scratch-card:hover {
         transform: translateY(-4px);
@@ -535,25 +544,40 @@
         if (progressArray && progressArray[0]) {
           currentMoney = progressArray[0].money || 0;
           document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+          updateCardStates();
         }
       } catch (err) {
         console.error('❌ [GRATTAGE] Erreur:', err);
       }
     }
 
+    function updateCardStates() {
+      // Disable cards if not enough money
+      const cards = [
+        { selector: '.docker-basic', cost: 50 },
+        { selector: '.cargo-king', cost: 200 },
+        { selector: '.port-legend', cost: 1000 },
+        { selector: '.captain-fortune', cost: 5000 },
+        { selector: '.million-docker', cost: 10000 }
+      ];
+
+      cards.forEach(card => {
+        const element = document.querySelector(card.selector);
+        if (currentMoney < card.cost) {
+          element.classList.add('disabled');
+        } else {
+          element.classList.remove('disabled');
+        }
+      });
+    }
+
     async function selectCard(cardType, cost) {
       console.log('🎰 [GRATTAGE] Carte sélectionnée:', cardType, '- Prix:', cost + '€');
 
       if (currentMoney < cost) {
-        alert(`Pas assez d'argent ! Il te faut ${cost}€`);
+        // Pas assez d'argent, on ne fait rien
         return;
       }
-
-      const confirm = window.confirm(
-        `🎰 Acheter "${cardNames[cardType]}" pour ${cost}€ ?`
-      );
-
-      if (!confirm) return;
 
       // Deduct cost
       currentMoney -= cost;
@@ -567,6 +591,9 @@
           .eq('user_id', userId);
 
         document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+
+        // Update card states
+        updateCardStates();
 
         // Generate symbols and prize
         generateScratchCard(cardType, cost);
