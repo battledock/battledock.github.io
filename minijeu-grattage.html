@@ -369,13 +369,18 @@
       const width = 400;
       const height = 300;
 
-      // Dessiner le résultat en dessous (fond blanc)
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, width, height);
+      // Reset le canvas complètement
+      canvas.width = width;
+      canvas.height = height;
 
-      // Afficher le résultat directement
+      // Reset composition mode
+      ctx.globalCompositeOperation = 'source-over';
+
+      console.log('🎰 [GRATTAGE] Init - Gain:', winAmount, '€');
+
+      // LAYER 1: Dessiner le résultat au fond
       if (winAmount === 0) {
-        // PERDU
+        // PERDU - fond rouge
         ctx.fillStyle = '#ef4444';
         ctx.fillRect(0, 0, width, height);
         
@@ -388,7 +393,7 @@
         ctx.font = 'bold 60px Arial';
         ctx.fillText('PERDU', width / 2, height / 2 + 50);
       } else {
-        // GAGNÉ
+        // GAGNÉ - fond vert
         ctx.fillStyle = '#10b981';
         ctx.fillRect(0, 0, width, height);
         
@@ -397,7 +402,6 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        // Emoji selon montant
         const emoji = winAmount >= 1000000 ? '🏆' : winAmount >= 1000 ? '🤑' : winAmount >= 100 ? '💰' : '🎉';
         ctx.fillText(emoji, width / 2, height / 2 - 70);
         
@@ -408,7 +412,9 @@
         ctx.fillText(winAmount.toLocaleString('fr-FR') + '€', width / 2, height / 2 + 70);
       }
 
-      // Dessiner la couche à gratter PAR-DESSUS
+      console.log('✅ Fond dessiné');
+
+      // LAYER 2: Dessiner la couche grise PAR-DESSUS
       ctx.fillStyle = '#999999';
       ctx.fillRect(0, 0, width, height);
 
@@ -422,13 +428,15 @@
         ctx.stroke();
       }
 
-      // Texte
+      // Texte sur la couche grise
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 50px Arial';
       ctx.shadowColor = 'rgba(0,0,0,0.5)';
       ctx.shadowBlur = 8;
       ctx.fillText('GRATTE ICI !', width / 2, height / 2);
       ctx.shadowBlur = 0;
+
+      console.log('✅ Couche grise dessinée');
 
       scratchedPixels = 0;
       totalPixels = width * height;
@@ -473,6 +481,7 @@
       const x = (e.clientX - rect.left) * (canvas.width / rect.width);
       const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
+      // IMPORTANT: enlever la couche grise pour révéler le fond
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
       ctx.arc(x, y, 30, 0, Math.PI * 2);
@@ -530,6 +539,12 @@
     function closeOverlay() {
       document.getElementById('scratchOverlay').classList.remove('show');
       document.getElementById('result').classList.remove('show');
+      document.getElementById('result').innerHTML = '';
+      
+      // Clear canvas
+      if (ctx) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     }
 
     function goBack() {
