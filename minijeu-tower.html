@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tower Defense - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #434343 0%, #000000 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #ef4444;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .game-container {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    #gameCanvas {
+      width: 100%;
+      max-width: 400px;
+      height: 600px;
+      background: #2c3e50;
+      border-radius: 12px;
+      display: block;
+      margin: 0 auto;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: #f9fafb;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #ef4444;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .towers {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .tower-btn {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+      flex: 1;
+    }
+
+    .tower-btn:active {
+      transform: scale(0.95);
+    }
+
+    .tower-btn.selected {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .tower-cost {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .back-btn {
+      background: white;
+      color: #ef4444;
+      border: 2px solid #ef4444;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">🗼 Tower Defense Maritime</div>
+      <div class="subtitle">Défends le port ! Clique pour placer des tours</div>
+    </div>
+
+    <div class="game-container">
+      <canvas id="gameCanvas" width="400" height="600"></canvas>
+      
+      <div class="stats-bar">
+        <div class="stat">
+          <div class="stat-value" id="wave">1</div>
+          <div class="stat-label">Vague</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="health">100</div>
+          <div class="stat-label">Vie du Port</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="money">200</div>
+          <div class="stat-label">Budget</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="kills">0</div>
+          <div class="stat-label">Kills</div>
+        </div>
+      </div>
+
+      <div class="towers">
+        <button class="tower-btn selected" onclick="selectTower('basic')">
+          🔫 Basic<br><span class="tower-cost">50€</span>
+        </button>
+        <button class="tower-btn" onclick="selectTower('cannon')">
+          💣 Canon<br><span class="tower-cost">100€</span>
+        </button>
+        <button class="tower-btn" onclick="selectTower('laser')">
+          ⚡ Laser<br><span class="tower-cost">150€</span>
+        </button>
+      </div>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
+  </div>
+
+  <script>
+    console.log('🗼 [TOWER] Initialisation');
+
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let gameRunning = true;
+    let wave = 1;
+    let health = 100;
+    let money = 200;
+    let kills = 0;
+    let enemies = [];
+    let towers = [];
+    let projectiles = [];
+    let selectedTowerType = 'basic';
+    let frameCount = 0;
+
+    const path = [
+      {x: 0, y: 100},
+      {x: 200, y: 100},
+      {x: 200, y: 300},
+      {x: 100, y: 300},
+      {x: 100, y: 500},
+      {x: 400, y: 500}
+    ];
+
+    const towerTypes = {
+      basic: { cost: 50, damage: 10, range: 80, speed: 30, color: '#3b82f6', emoji: '🔫' },
+      cannon: { cost: 100, damage: 30, range: 100, speed: 60, color: '#ef4444', emoji: '💣' },
+      laser: { cost: 150, damage: 5, range: 120, speed: 5, color: '#8b5cf6', emoji: '⚡' }
+    };
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      placeTower(x, y);
+    });
+
+    function selectTower(type) {
+      selectedTowerType = type;
+      document.querySelectorAll('.tower-btn').forEach(btn => btn.classList.remove('selected'));
+      event.target.closest('.tower-btn').classList.add('selected');
+    }
+
+    function placeTower(x, y) {
+      const towerDef = towerTypes[selectedTowerType];
+      
+      if (money < towerDef.cost) {
+        console.log('⚠️ [TOWER] Pas assez d\'argent');
+        return;
+      }
+
+      // Check if not on path and not too close to other towers
+      const onPath = checkIfOnPath(x, y);
+      const tooClose = towers.some(t => Math.hypot(t.x - x, t.y - y) < 40);
+
+      if (onPath || tooClose) {
+        console.log('⚠️ [TOWER] Position invalide');
+        return;
+      }
+
+      towers.push({
+        x, y,
+        type: selectedTowerType,
+        ...towerDef,
+        cooldown: 0
+      });
+
+      money -= towerDef.cost;
+      updateStats();
+      
+      console.log('🗼 [TOWER] Tour placée:', selectedTowerType);
+    }
+
+    function checkIfOnPath(x, y) {
+      for (let i = 0; i < path.length - 1; i++) {
+        const p1 = path[i];
+        const p2 = path[i + 1];
+        const dist = distanceToSegment(x, y, p1.x, p1.y, p2.x, p2.y);
+        if (dist < 30) return true;
+      }
+      return false;
+    }
+
+    function distanceToSegment(px, py, x1, y1, x2, y2) {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
+      const nearestX = x1 + t * dx;
+      const nearestY = y1 + t * dy;
+      return Math.hypot(px - nearestX, py - nearestY);
+    }
+
+    function spawnEnemy() {
+      enemies.push({
+        x: path[0].x,
+        y: path[0].y,
+        pathIndex: 0,
+        health: wave * 20,
+        maxHealth: wave * 20,
+        speed: 1,
+        reward: 10 + wave * 5
+      });
+    }
+
+    function gameLoop() {
+      if (!gameRunning) return;
+
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw path
+      ctx.strokeStyle = '#34495e';
+      ctx.lineWidth = 40;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(path[0].x, path[0].y);
+      for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i].x, path[i].y);
+      }
+      ctx.stroke();
+
+      // Spawn enemies
+      if (frameCount % (120 - wave * 5) === 0 && enemies.length < wave * 3) {
+        spawnEnemy();
+      }
+
+      // Update enemies
+      enemies.forEach((enemy, index) => {
+        if (enemy.pathIndex < path.length - 1) {
+          const target = path[enemy.pathIndex + 1];
+          const dx = target.x - enemy.x;
+          const dy = target.y - enemy.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < 5) {
+            enemy.pathIndex++;
+          } else {
+            enemy.x += (dx / dist) * enemy.speed;
+            enemy.y += (dy / dist) * enemy.speed;
+          }
+        } else {
+          // Enemy reached end
+          health -= 10;
+          enemies.splice(index, 1);
+          updateStats();
+          
+          if (health <= 0) {
+            endGame();
+          }
+        }
+
+        // Draw enemy
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(enemy.x, enemy.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Health bar
+        ctx.fillStyle = '#ff0000';
+        ctx.fillRect(enemy.x - 12, enemy.y - 20, 24, 4);
+        ctx.fillStyle = '#00ff00';
+        ctx.fillRect(enemy.x - 12, enemy.y - 20, 24 * (enemy.health / enemy.maxHealth), 4);
+      });
+
+      // Update towers
+      towers.forEach(tower => {
+        // Draw tower
+        ctx.fillStyle = tower.color;
+        ctx.fillRect(tower.x - 15, tower.y - 15, 30, 30);
+        ctx.font = '20px Arial';
+        ctx.fillText(tower.emoji, tower.x - 10, tower.y + 8);
+
+        // Range indicator (when selected)
+        if (tower.type === selectedTowerType) {
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Shooting
+        tower.cooldown--;
+        if (tower.cooldown <= 0) {
+          const target = enemies.find(e => Math.hypot(e.x - tower.x, e.y - tower.y) < tower.range);
+          if (target) {
+            projectiles.push({
+              x: tower.x,
+              y: tower.y,
+              targetX: target.x,
+              targetY: target.y,
+              damage: tower.damage,
+              speed: 5,
+              color: tower.color
+            });
+            tower.cooldown = tower.speed;
+          }
+        }
+      });
+
+      // Update projectiles
+      projectiles.forEach((proj, index) => {
+        const dx = proj.targetX - proj.x;
+        const dy = proj.targetY - proj.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < proj.speed) {
+          // Hit
+          const enemy = enemies.find(e => Math.hypot(e.x - proj.targetX, e.y - proj.targetY) < 15);
+          if (enemy) {
+            enemy.health -= proj.damage;
+            if (enemy.health <= 0) {
+              money += enemy.reward;
+              kills++;
+              enemies.splice(enemies.indexOf(enemy), 1);
+              updateStats();
+            }
+          }
+          projectiles.splice(index, 1);
+        } else {
+          proj.x += (dx / dist) * proj.speed;
+          proj.y += (dy / dist) * proj.speed;
+
+          // Draw projectile
+          ctx.fillStyle = proj.color;
+          ctx.beginPath();
+          ctx.arc(proj.x, proj.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // Check wave completion
+      if (enemies.length === 0 && frameCount % 120 === 0) {
+        wave++;
+        money += wave * 50;
+        updateStats();
+      }
+
+      frameCount++;
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updateStats() {
+      document.getElementById('wave').textContent = wave;
+      document.getElementById('health').textContent = health;
+      document.getElementById('money').textContent = money;
+      document.getElementById('kills').textContent = kills;
+    }
+
+    async function endGame() {
+      console.log('🏁 [TOWER] Game Over, vague:', wave);
+      gameRunning = false;
+
+      const reward = wave * 50 + kills * 10;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 48px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 60);
+
+      ctx.font = 'bold 32px "Bebas Neue"';
+      ctx.fillText('Vague ' + wave, canvas.width / 2, canvas.height / 2);
+
+      ctx.fillStyle = '#10b981';
+      ctx.fillText('+' + reward + '€', canvas.width / 2, canvas.height / 2 + 50);
+
+      // Save reward
+      try {
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('money')
+          .eq('user_id', userId);
+
+        if (progressArray && progressArray[0]) {
+          const newMoney = (progressArray[0].money || 0) + reward;
+
+          await supabaseClient
+            .from('game_progress')
+            .update({ money: newMoney })
+            .eq('user_id', userId);
+
+          console.log('✅ [TOWER] Argent ajouté');
+        }
+      } catch (err) {
+        console.error('❌ [TOWER] Erreur:', err);
+      }
+    }
+
+    function goBack() {
+      window.location.href = 'jeux.html';
+    }
+
+    gameLoop();
+  </script>
+</body>
+</html>

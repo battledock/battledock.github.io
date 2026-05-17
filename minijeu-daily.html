@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Daily Challenge - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #ffa751 0%, #ffe259 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #ffa751;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .game-area {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 40px 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      margin-bottom: 20px;
+      min-height: 500px;
+    }
+
+    .challenge-date {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+
+    .challenge-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+
+    .challenge-description {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 30px;
+      line-height: 1.6;
+    }
+
+    .timer {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      color: #ffa751;
+      margin-bottom: 20px;
+    }
+
+    .click-zone {
+      width: 280px;
+      height: 280px;
+      background: linear-gradient(135deg, #ffa751, #ffe259);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin: 0 auto 30px;
+      box-shadow: 0 8px 24px rgba(255, 167, 81, 0.4);
+      transition: all 0.1s;
+    }
+
+    .click-zone:active {
+      transform: scale(0.95);
+    }
+
+    .click-zone-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: white;
+    }
+
+    .leaderboard {
+      margin-top: 30px;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .leaderboard-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .leaderboard-item {
+      background: #f9fafb;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .leaderboard-item.me {
+      background: linear-gradient(135deg, rgba(255, 167, 81, 0.2), rgba(255, 226, 89, 0.2));
+      border: 2px solid #ffa751;
+    }
+
+    .leaderboard-rank {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #ffa751;
+      margin-right: 12px;
+    }
+
+    .leaderboard-name {
+      flex: 1;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .leaderboard-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #6b7280;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #ffa751, #ffe259);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 167, 81, 0.4);
+      transition: all 0.2s;
+    }
+
+    .start-btn:active {
+      transform: scale(0.95);
+    }
+
+    .back-btn {
+      background: white;
+      color: #ffa751;
+      border: 2px solid #ffa751;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.98);
+    }
+
+    .countdown {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">📅 Daily Challenge</div>
+      <div class="subtitle">Défi quotidien unique !</div>
+    </div>
+
+    <div class="game-area">
+      <div class="challenge-date" id="challengeDate">Challenge du jour</div>
+
+      <div id="waitingState">
+        <div class="challenge-title">Speed Click 15s</div>
+        <div class="challenge-description">
+          Clique le plus vite possible en 15 secondes !<br>
+          Ton score sera comparé à celui des autres joueurs.
+        </div>
+        <button class="start-btn" onclick="startChallenge()">Commencer</button>
+        <div class="countdown" id="countdown"></div>
+      </div>
+
+      <div id="playingState" style="display: none;">
+        <div class="timer" id="timer">15</div>
+        <div class="click-zone" id="clickZone">
+          <div class="click-zone-text" id="score">0</div>
+        </div>
+      </div>
+
+      <div id="resultsState" style="display: none;">
+        <div class="challenge-title">Résultat</div>
+        <div style="font-family: 'Bebas Neue'; font-size: 80px; color: #ffa751; margin: 20px 0;" id="finalScore">0</div>
+        <div style="font-size: 18px; color: #6b7280; margin-bottom: 20px;" id="rankText">Classement: -</div>
+        <button class="start-btn" onclick="showLeaderboard()">Voir le classement</button>
+      </div>
+
+      <div class="leaderboard" id="leaderboard" style="display: none;">
+        <div class="leaderboard-title">🏆 Classement du jour</div>
+        <div id="leaderboardList"></div>
+      </div>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
+  </div>
+
+  <script>
+    console.log('📅 [DAILY] Initialisation');
+
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username');
+    if (!userId) window.location.href = 'index.html';
+
+    const today = new Date().toDateString();
+    document.getElementById('challengeDate').textContent = 'Challenge du ' + new Date().toLocaleDateString('fr-FR');
+
+    let clicks = 0;
+    let timeLeft = 15;
+    let gameInterval = null;
+    let hasPlayed = localStorage.getItem('daily_challenge_' + today) === 'true';
+
+    checkIfPlayed();
+
+    function checkIfPlayed() {
+      if (hasPlayed) {
+        const score = parseInt(localStorage.getItem('daily_score_' + today) || 0);
+        showResults(score);
+      } else {
+        updateCountdown();
+      }
+    }
+
+    function updateCountdown() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+
+      const hours = Math.floor((tomorrow - new Date()) / 1000 / 60 / 60);
+      const minutes = Math.floor(((tomorrow - new Date()) / 1000 / 60) % 60);
+
+      document.getElementById('countdown').textContent = 
+        `Prochain challenge dans ${hours}h ${minutes}min`;
+    }
+
+    function startChallenge() {
+      if (hasPlayed) {
+        alert('Tu as déjà fait le challenge aujourd\'hui !');
+        return;
+      }
+
+      console.log('🎮 [DAILY] Démarrage du challenge');
+
+      clicks = 0;
+      timeLeft = 15;
+
+      document.getElementById('waitingState').style.display = 'none';
+      document.getElementById('playingState').style.display = 'block';
+      document.getElementById('score').textContent = clicks;
+
+      gameInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+          endChallenge();
+        }
+      }, 1000);
+
+      document.getElementById('clickZone').onclick = () => {
+        clicks++;
+        document.getElementById('score').textContent = clicks;
+      };
+    }
+
+    async function endChallenge() {
+      clearInterval(gameInterval);
+      document.getElementById('clickZone').onclick = null;
+
+      console.log('🏁 [DAILY] Fin du challenge, score:', clicks);
+
+      localStorage.setItem('daily_challenge_' + today, 'true');
+      localStorage.setItem('daily_score_' + today, clicks);
+      hasPlayed = true;
+
+      // Save score to leaderboard (stored in localStorage for demo)
+      const leaderboard = JSON.parse(localStorage.getItem('daily_leaderboard_' + today) || '[]');
+      leaderboard.push({ userId, username, score: clicks });
+      leaderboard.sort((a, b) => b.score - a.score);
+      localStorage.setItem('daily_leaderboard_' + today, JSON.stringify(leaderboard));
+
+      showResults(clicks);
+    }
+
+    function showResults(score) {
+      document.getElementById('playingState').style.display = 'none';
+      document.getElementById('waitingState').style.display = 'none';
+      document.getElementById('resultsState').style.display = 'block';
+
+      document.getElementById('finalScore').textContent = score;
+
+      // Calculate rank
+      const leaderboard = JSON.parse(localStorage.getItem('daily_leaderboard_' + today) || '[]');
+      const rank = leaderboard.findIndex(entry => entry.userId === userId) + 1;
+
+      if (rank > 0) {
+        document.getElementById('rankText').textContent = `Tu es ${rank}${rank === 1 ? 'er' : 'ème'} / ${leaderboard.length}`;
+      }
+
+      // Reward based on rank
+      let reward = 0;
+      if (rank === 1) reward = 500;
+      else if (rank === 2) reward = 300;
+      else if (rank === 3) reward = 200;
+      else if (rank <= 10) reward = 100;
+      else reward = 50;
+
+      if (reward > 0) {
+        saveReward(reward);
+      }
+    }
+
+    async function showLeaderboard() {
+      document.getElementById('resultsState').style.display = 'none';
+      document.getElementById('leaderboard').style.display = 'block';
+
+      const leaderboard = JSON.parse(localStorage.getItem('daily_leaderboard_' + today) || '[]');
+      const listDiv = document.getElementById('leaderboardList');
+      listDiv.innerHTML = '';
+
+      leaderboard.slice(0, 10).forEach((entry, index) => {
+        const div = document.createElement('div');
+        div.className = 'leaderboard-item' + (entry.userId === userId ? ' me' : '');
+        div.innerHTML = `
+          <span class="leaderboard-rank">#${index + 1}</span>
+          <span class="leaderboard-name">${entry.username}${entry.userId === userId ? ' (Toi)' : ''}</span>
+          <span class="leaderboard-score">${entry.score}</span>
+        `;
+        listDiv.appendChild(div);
+      });
+    }
+
+    async function saveReward(amount) {
+      console.log('💰 [DAILY] Récompense:', amount);
+
+      try {
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('money')
+          .eq('user_id', userId);
+
+        if (progressArray && progressArray[0]) {
+          const newMoney = (progressArray[0].money || 0) + amount;
+
+          await supabaseClient
+            .from('game_progress')
+            .update({ money: newMoney })
+            .eq('user_id', userId);
+
+          console.log('✅ [DAILY] Argent ajouté');
+        }
+      } catch (err) {
+        console.error('❌ [DAILY] Erreur:', err);
+      }
+    }
+
+    function goBack() {
+      window.location.href = 'jeux.html';
+    }
+  </script>
+</body>
+</html>

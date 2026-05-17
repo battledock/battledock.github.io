@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>La Bourse - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #1e3c72;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .game-area {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .stock-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #f9fafb;
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .stock-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+    }
+
+    .stock-price {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1e3c72;
+    }
+
+    .stock-change {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .stock-change.up {
+      color: #10b981;
+    }
+
+    .stock-change.down {
+      color: #ef4444;
+    }
+
+    #chartCanvas {
+      width: 100%;
+      height: 250px;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+
+    .portfolio {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .portfolio-stat {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .portfolio-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+    }
+
+    .portfolio-label {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-btn.buy {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .action-btn.sell {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .action-btn:active {
+      transform: scale(0.95);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .timer {
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: #1e3c72;
+      margin-bottom: 12px;
+    }
+
+    .timer.warning {
+      color: #f59e0b;
+    }
+
+    .timer.danger {
+      color: #ef4444;
+    }
+
+    .back-btn {
+      background: white;
+      color: #1e3c72;
+      border: 2px solid #1e3c72;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">📊 La Bourse</div>
+      <div class="subtitle">Achète bas, vends haut !</div>
+    </div>
+
+    <div class="game-area">
+      <div class="timer" id="timer">60</div>
+
+      <div class="stock-info">
+        <div>
+          <div class="stock-name">DOCK Corp.</div>
+          <div class="stock-change" id="stockChange">+0.00%</div>
+        </div>
+        <div class="stock-price" id="stockPrice">100€</div>
+      </div>
+
+      <canvas id="chartCanvas" width="400" height="250"></canvas>
+
+      <div class="portfolio">
+        <div class="portfolio-stat">
+          <div class="portfolio-value" id="cash">1000€</div>
+          <div class="portfolio-label">Cash</div>
+        </div>
+        <div class="portfolio-stat">
+          <div class="portfolio-value" id="shares">0</div>
+          <div class="portfolio-label">Actions</div>
+        </div>
+        <div class="portfolio-stat">
+          <div class="portfolio-value" id="total">1000€</div>
+          <div class="portfolio-label">Total</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="action-btn buy" id="buyBtn" onclick="buyStock()">
+          📈 Acheter (100€)
+        </button>
+        <button class="action-btn sell" id="sellBtn" onclick="sellStock()" disabled>
+          📉 Vendre
+        </button>
+      </div>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
+  </div>
+
+  <script>
+    console.log('📊 [BOURSE] Initialisation');
+
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    const canvas = document.getElementById('chartCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let cash = 1000;
+    let shares = 0;
+    let stockPrice = 100;
+    let priceHistory = [100];
+    let timeLeft = 60;
+    let gameInterval = null;
+    let initialPrice = 100;
+
+    startGame();
+
+    function startGame() {
+      console.log('🎮 [BOURSE] Démarrage');
+      
+      gameInterval = setInterval(() => {
+        timeLeft--;
+        updatePrice();
+        updateDisplay();
+        
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function updatePrice() {
+      // Random walk
+      const change = (Math.random() - 0.5) * 20;
+      stockPrice = Math.max(20, Math.min(200, stockPrice + change));
+      priceHistory.push(stockPrice);
+      
+      if (priceHistory.length > 60) {
+        priceHistory.shift();
+      }
+      
+      drawChart();
+    }
+
+    function drawChart() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Background
+      ctx.fillStyle = '#f9fafb';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Grid
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 5; i++) {
+        const y = (canvas.height / 5) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+      
+      // Chart line
+      ctx.strokeStyle = stockPrice > priceHistory[0] ? '#10b981' : '#ef4444';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      
+      priceHistory.forEach((price, index) => {
+        const x = (canvas.width / (priceHistory.length - 1)) * index;
+        const y = canvas.height - ((price - 20) / 180) * canvas.height;
+        
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.stroke();
+      
+      // Current price marker
+      const lastX = canvas.width;
+      const lastY = canvas.height - ((stockPrice - 20) / 180) * canvas.height;
+      ctx.fillStyle = '#1e3c72';
+      ctx.beginPath();
+      ctx.arc(lastX - 5, lastY, 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function updateDisplay() {
+      // Timer
+      const timerEl = document.getElementById('timer');
+      timerEl.textContent = timeLeft + 's';
+      
+      if (timeLeft <= 10) {
+        timerEl.classList.add('danger');
+      } else if (timeLeft <= 20) {
+        timerEl.classList.add('warning');
+      }
+      
+      // Stock price
+      document.getElementById('stockPrice').textContent = stockPrice.toFixed(0) + '€';
+      
+      const changePercent = ((stockPrice - initialPrice) / initialPrice) * 100;
+      const changeEl = document.getElementById('stockChange');
+      changeEl.textContent = (changePercent >= 0 ? '+' : '') + changePercent.toFixed(2) + '%';
+      changeEl.className = 'stock-change ' + (changePercent >= 0 ? 'up' : 'down');
+      
+      // Portfolio
+      document.getElementById('cash').textContent = cash.toFixed(0) + '€';
+      document.getElementById('shares').textContent = shares;
+      const total = cash + (shares * stockPrice);
+      document.getElementById('total').textContent = total.toFixed(0) + '€';
+      
+      // Buttons
+      document.getElementById('buyBtn').disabled = cash < stockPrice;
+      document.getElementById('buyBtn').textContent = '📈 Acheter (' + stockPrice.toFixed(0) + '€)';
+      document.getElementById('sellBtn').disabled = shares === 0;
+    }
+
+    function buyStock() {
+      if (cash >= stockPrice) {
+        cash -= stockPrice;
+        shares++;
+        console.log('💰 [BOURSE] Achat à', stockPrice.toFixed(0) + '€');
+        updateDisplay();
+      }
+    }
+
+    function sellStock() {
+      if (shares > 0) {
+        cash += stockPrice;
+        shares--;
+        console.log('💸 [BOURSE] Vente à', stockPrice.toFixed(0) + '€');
+        updateDisplay();
+      }
+    }
+
+    async function endGame() {
+      clearInterval(gameInterval);
+      
+      const finalTotal = cash + (shares * stockPrice);
+      const profit = finalTotal - 1000;
+      
+      console.log('🏁 [BOURSE] Fin, profit:', profit);
+      
+      // Sell remaining shares
+      if (shares > 0) {
+        cash += shares * stockPrice;
+        shares = 0;
+        updateDisplay();
+      }
+      
+      alert(`Partie terminée !\n\nCapital final : ${finalTotal.toFixed(0)}€\nProfit : ${profit >= 0 ? '+' : ''}${profit.toFixed(0)}€`);
+      
+      // Save profit (only if positive)
+      if (profit > 0) {
+        try {
+          const { data: progressArray } = await supabaseClient
+            .from('game_progress')
+            .select('money')
+            .eq('user_id', userId);
+
+          if (progressArray && progressArray[0]) {
+            const newMoney = (progressArray[0].money || 0) + Math.floor(profit);
+
+            await supabaseClient
+              .from('game_progress')
+              .update({ money: newMoney })
+              .eq('user_id', userId);
+
+            console.log('✅ [BOURSE] Profit ajouté');
+          }
+        } catch (err) {
+          console.error('❌ [BOURSE] Erreur:', err);
+        }
+      }
+      
+      setTimeout(() => {
+        window.location.href = 'jeux.html';
+      }, 2000);
+    }
+
+    function goBack() {
+      clearInterval(gameInterval);
+      window.location.href = 'jeux.html';
+    }
+
+    // Initial display
+    updateDisplay();
+    drawChart();
+  </script>
+</body>
+</html>

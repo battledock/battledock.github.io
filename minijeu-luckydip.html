@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Lucky Dip - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #ec4899;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .game-area {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 40px 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      margin-bottom: 20px;
+      min-height: 500px;
+    }
+
+    .cost-info {
+      font-size: 18px;
+      color: #6b7280;
+      margin-bottom: 30px;
+    }
+
+    .cost-info strong {
+      color: #ec4899;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+    }
+
+    .boxes-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 20px;
+      max-width: 500px;
+      margin: 0 auto 30px;
+    }
+
+    .mystery-box {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, #ec4899, #f472b6);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(236, 72, 153, 0.4);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mystery-box:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 32px rgba(236, 72, 153, 0.6);
+    }
+
+    .mystery-box:active {
+      transform: translateY(-2px);
+    }
+
+    .mystery-box.opened {
+      background: white;
+      border: 3px solid #ec4899;
+      cursor: default;
+    }
+
+    .mystery-box.opened:hover {
+      transform: none;
+    }
+
+    .box-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .box-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .mystery-box.opened .box-label {
+      color: #1a1a1a;
+    }
+
+    .box-prize {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #ec4899;
+      margin-top: 8px;
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-bottom: 30px;
+    }
+
+    .stat {
+      background: #f9fafb;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #ec4899;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #ec4899, #f472b6);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.4);
+      transition: all 0.2s;
+    }
+
+    .play-btn:active {
+      transform: scale(0.95);
+    }
+
+    .play-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .result-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: #ec4899;
+      margin: 20px 0;
+      min-height: 60px;
+    }
+
+    .back-btn {
+      background: white;
+      color: #ec4899;
+      border: 2px solid #ec4899;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">🎁 Lucky Dip</div>
+      <div class="subtitle">Choisis une boîte mystère !</div>
+    </div>
+
+    <div class="game-area">
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" id="money">0€</div>
+          <div class="stat-label">Ton argent</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="played">0</div>
+          <div class="stat-label">Parties jouées</div>
+        </div>
+      </div>
+
+      <div class="cost-info">
+        Coût par partie : <strong>100€</strong>
+      </div>
+
+      <div class="boxes-container" id="boxesContainer"></div>
+
+      <div class="result-text" id="resultText"></div>
+
+      <button class="play-btn" id="playBtn" onclick="startGame()">Jouer (100€)</button>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
+  </div>
+
+  <script>
+    console.log('🎁 [LUCKY DIP] Initialisation');
+
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    const cost = 100;
+    let currentMoney = 0;
+    let played = parseInt(localStorage.getItem('lucky_dip_played') || 0);
+    let gameActive = false;
+    let prizes = [];
+
+    loadMoney();
+    updateDisplay();
+
+    async function loadMoney() {
+      try {
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('money')
+          .eq('user_id', userId);
+
+        if (progressArray && progressArray[0]) {
+          currentMoney = progressArray[0].money || 0;
+          document.getElementById('money').textContent = currentMoney + '€';
+
+          if (currentMoney < cost) {
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('playBtn').textContent = 'Pas assez d\'argent';
+          }
+        }
+      } catch (err) {
+        console.error('❌ [LUCKY DIP] Erreur:', err);
+      }
+    }
+
+    function updateDisplay() {
+      document.getElementById('played').textContent = played;
+    }
+
+    async function startGame() {
+      if (currentMoney < cost) {
+        alert('Pas assez d\'argent ! Il te faut 100€');
+        return;
+      }
+
+      if (gameActive) return;
+
+      console.log('🎮 [LUCKY DIP] Nouvelle partie');
+
+      // Deduct cost
+      currentMoney -= cost;
+
+      try {
+        await supabaseClient
+          .from('game_progress')
+          .update({ money: currentMoney })
+          .eq('user_id', userId);
+
+        document.getElementById('money').textContent = currentMoney + '€';
+
+        played++;
+        localStorage.setItem('lucky_dip_played', played);
+        updateDisplay();
+
+        gameActive = true;
+        document.getElementById('playBtn').style.display = 'none';
+        document.getElementById('resultText').textContent = '';
+
+        // Generate random prizes
+        const possiblePrizes = [
+          { amount: 50, weight: 30 },   // 30% - Perte
+          { amount: 100, weight: 25 },  // 25% - Neutre
+          { amount: 150, weight: 20 },  // 20% - Petit gain
+          { amount: 250, weight: 15 },  // 15% - Moyen gain
+          { amount: 500, weight: 8 },   // 8% - Gros gain
+          { amount: 1000, weight: 2 }   // 2% - JACKPOT
+        ];
+
+        prizes = [];
+        for (let i = 0; i < 5; i++) {
+          const prize = weightedRandom(possiblePrizes);
+          prizes.push(prize);
+        }
+
+        renderBoxes();
+      } catch (err) {
+        console.error('❌ [LUCKY DIP] Erreur:', err);
+      }
+    }
+
+    function weightedRandom(items) {
+      const totalWeight = items.reduce((sum, item) => sum + item.weight, 0);
+      let random = Math.random() * totalWeight;
+
+      for (const item of items) {
+        random -= item.weight;
+        if (random <= 0) {
+          return item.amount;
+        }
+      }
+
+      return items[0].amount;
+    }
+
+    function renderBoxes() {
+      const container = document.getElementById('boxesContainer');
+      container.innerHTML = '';
+
+      prizes.forEach((prize, index) => {
+        const box = document.createElement('div');
+        box.className = 'mystery-box';
+        box.innerHTML = `
+          <div class="box-icon">🎁</div>
+          <div class="box-label">Box ${index + 1}</div>
+        `;
+
+        box.onclick = () => openBox(box, prize, index);
+        container.appendChild(box);
+      });
+    }
+
+    async function openBox(boxElement, prize, index) {
+      if (!gameActive) return;
+
+      console.log('🎁 [LUCKY DIP] Ouverture box', index + 1, '- Prix:', prize + '€');
+
+      gameActive = false;
+
+      // Open selected box
+      boxElement.classList.add('opened');
+      boxElement.innerHTML = `
+        <div class="box-icon">🎉</div>
+        <div class="box-prize">${prize}€</div>
+      `;
+
+      // Reveal all boxes
+      setTimeout(() => {
+        const boxes = document.querySelectorAll('.mystery-box');
+        boxes.forEach((box, i) => {
+          if (i !== index) {
+            box.classList.add('opened');
+            box.innerHTML = `
+              <div class="box-icon">📦</div>
+              <div class="box-prize">${prizes[i]}€</div>
+            `;
+          }
+        });
+      }, 1000);
+
+      // Show result
+      const profit = prize - cost;
+      const resultText = document.getElementById('resultText');
+
+      if (profit > 0) {
+        resultText.textContent = `+${profit}€ de profit !`;
+        resultText.style.color = '#10b981';
+      } else if (profit === 0) {
+        resultText.textContent = 'Remboursé !';
+        resultText.style.color = '#3b82f6';
+      } else {
+        resultText.textContent = `${profit}€ de perte`;
+        resultText.style.color = '#ef4444';
+      }
+
+      // Add prize to money
+      currentMoney += prize;
+
+      try {
+        await supabaseClient
+          .from('game_progress')
+          .update({ money: currentMoney })
+          .eq('user_id', userId);
+
+        document.getElementById('money').textContent = currentMoney + '€';
+        console.log('✅ [LUCKY DIP] Gain ajouté');
+      } catch (err) {
+        console.error('❌ [LUCKY DIP] Erreur:', err);
+      }
+
+      // Show play button again
+      setTimeout(() => {
+        document.getElementById('playBtn').style.display = 'block';
+        loadMoney();
+      }, 3000);
+    }
+
+    function goBack() {
+      window.location.href = 'jeux.html';
+    }
+  </script>
+</body>
+</html>

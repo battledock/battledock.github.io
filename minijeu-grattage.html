@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Grattage de Conteneurs - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: fixed;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      width: 100%;
+      padding: 20px;
+    }
+
+    .header {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    .title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #fa709a;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .game-area {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 40px 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      margin-bottom: 20px;
+      min-height: 500px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .scratch-card {
+      position: relative;
+      width: 100%;
+      max-width: 350px;
+      height: 400px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      overflow: hidden;
+      margin: 20px auto;
+    }
+
+    .scratch-symbols {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      padding: 20px;
+    }
+
+    .symbol {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      background: linear-gradient(135deg, #f9fafb, #e5e7eb);
+      border-radius: 12px;
+    }
+
+    #scratchCanvas {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+    }
+
+    .info-text {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 20px;
+    }
+
+    .buy-btn {
+      background: linear-gradient(135deg, #fa709a, #fee140);
+      color: white;
+      border: none;
+      padding: 16px 48px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(250, 112, 154, 0.4);
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .buy-btn:active {
+      transform: scale(0.95);
+    }
+
+    .buy-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .result-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      animation: fadeIn 0.3s;
+    }
+
+    .result-popup.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .result-content {
+      background: white;
+      padding: 40px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 400px;
+      animation: popIn 0.5s;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .result-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+
+    .result-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #fa709a;
+      margin-bottom: 12px;
+    }
+
+    .result-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 64px;
+      color: #10b981;
+      margin-bottom: 20px;
+    }
+
+    .close-btn {
+      background: #fa709a;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .close-btn:active {
+      transform: scale(0.95);
+    }
+
+    .back-btn {
+      background: white;
+      color: #fa709a;
+      border: 2px solid #fa709a;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.98);
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .stat-card {
+      background: #f9fafb;
+      padding: 12px 20px;
+      border-radius: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">📦 Grattage de Conteneurs</div>
+      <div class="subtitle">3 symboles identiques = Jackpot !</div>
+    </div>
+
+    <div class="game-area">
+      <div class="info-text">Gratte la carte pour révéler les symboles</div>
+      
+      <div class="scratch-card" id="scratchCard">
+        <div class="scratch-symbols" id="symbols"></div>
+        <canvas id="scratchCanvas"></canvas>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="moneyDisplay">0€</div>
+          <div class="stat-label">Ton argent</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="cardsPlayed">0</div>
+          <div class="stat-label">Cartes jouées</div>
+        </div>
+      </div>
+
+      <button class="buy-btn" id="buyBtn" onclick="buyNewCard()">Acheter (50€)</button>
+    </div>
+
+    <button class="back-btn" onclick="goBack()">← Retour aux mini-jeux</button>
+  </div>
+
+  <div class="result-popup" id="resultPopup">
+    <div class="result-content">
+      <div class="result-icon" id="resultIcon">🎉</div>
+      <div class="result-title" id="resultTitle">Gagné !</div>
+      <div class="result-value" id="resultValue">+0€</div>
+      <button class="close-btn" onclick="closeResult()">Continuer</button>
+    </div>
+  </div>
+
+  <script>
+    console.log('📦 [GRATTAGE] Initialisation');
+
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    const symbols = ['⚓', '🚢', '📦', '⚙️', '💰', '🎯'];
+    const cardCost = 50;
+    let currentMoney = 0;
+    let cardsPlayed = parseInt(localStorage.getItem('scratch_cards_played') || 0);
+    let isScratching = false;
+    let scratchedPercent = 0;
+    let currentPrize = 0;
+    let canvas, ctx;
+
+    loadMoney();
+    updateDisplay();
+
+    function updateDisplay() {
+      document.getElementById('cardsPlayed').textContent = cardsPlayed;
+    }
+
+    async function loadMoney() {
+      try {
+        const { data: progressArray } = await supabaseClient
+          .from('game_progress')
+          .select('money')
+          .eq('user_id', userId);
+        
+        if (progressArray && progressArray[0]) {
+          currentMoney = progressArray[0].money || 0;
+          document.getElementById('moneyDisplay').textContent = currentMoney + '€';
+          
+          if (currentMoney < cardCost) {
+            document.getElementById('buyBtn').disabled = true;
+            document.getElementById('buyBtn').textContent = 'Pas assez d\'argent';
+          }
+        }
+      } catch (err) {
+        console.error('❌ [GRATTAGE] Erreur chargement argent:', err);
+      }
+    }
+
+    async function buyNewCard() {
+      if (currentMoney < cardCost) {
+        alert('Pas assez d\'argent ! Tu as besoin de ' + cardCost + '€');
+        return;
+      }
+
+      console.log('💳 [GRATTAGE] Achat d\'une carte');
+
+      // Deduct money
+      currentMoney -= cardCost;
+      
+      try {
+        await supabaseClient
+          .from('game_progress')
+          .update({ money: currentMoney })
+          .eq('user_id', userId);
+        
+        document.getElementById('moneyDisplay').textContent = currentMoney + '€';
+        
+        cardsPlayed++;
+        localStorage.setItem('scratch_cards_played', cardsPlayed);
+        updateDisplay();
+        
+        startNewCard();
+      } catch (err) {
+        console.error('❌ [GRATTAGE] Erreur achat:', err);
+      }
+    }
+
+    function startNewCard() {
+      document.getElementById('buyBtn').style.display = 'none';
+      isScratching = true;
+      scratchedPercent = 0;
+      
+      // Generate random symbols
+      const cardSymbols = [];
+      const winChance = Math.random();
+      
+      if (winChance < 0.3) { // 30% chance to win
+        const winningSymbol = symbols[Math.floor(Math.random() * symbols.length)];
+        cardSymbols.push(winningSymbol, winningSymbol, winningSymbol);
+        
+        // Fill remaining slots
+        for (let i = 0; i < 6; i++) {
+          cardSymbols.push(symbols[Math.floor(Math.random() * symbols.length)]);
+        }
+        
+        // Determine prize
+        if (winningSymbol === '💰') currentPrize = 500;
+        else if (winningSymbol === '🎯') currentPrize = 300;
+        else if (winningSymbol === '🚢') currentPrize = 200;
+        else if (winningSymbol === '📦') currentPrize = 150;
+        else if (winningSymbol === '⚙️') currentPrize = 100;
+        else currentPrize = 75;
+        
+      } else { // Losing card
+        currentPrize = 0;
+        for (let i = 0; i < 9; i++) {
+          cardSymbols.push(symbols[Math.floor(Math.random() * symbols.length)]);
+        }
+      }
+      
+      // Shuffle
+      cardSymbols.sort(() => Math.random() - 0.5);
+      
+      // Display symbols
+      const symbolsContainer = document.getElementById('symbols');
+      symbolsContainer.innerHTML = '';
+      cardSymbols.forEach(symbol => {
+        const div = document.createElement('div');
+        div.className = 'symbol';
+        div.textContent = symbol;
+        symbolsContainer.appendChild(div);
+      });
+      
+      // Setup canvas
+      setupCanvas();
+    }
+
+    function setupCanvas() {
+      canvas = document.getElementById('scratchCanvas');
+      const card = document.getElementById('scratchCard');
+      canvas.width = card.offsetWidth;
+      canvas.height = card.offsetHeight;
+      
+      ctx = canvas.getContext('2d');
+      
+      // Draw scratch layer
+      const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#fa709a');
+      gradient.addColorStop(1, '#fee140');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Add text
+      ctx.fillStyle = 'white';
+      ctx.font = 'bold 24px "Bebas Neue"';
+      ctx.textAlign = 'center';
+      ctx.fillText('GRATTE ICI', canvas.width / 2, canvas.height / 2);
+      
+      // Setup scratch events
+      canvas.addEventListener('mousedown', startScratch);
+      canvas.addEventListener('mousemove', scratch);
+      canvas.addEventListener('mouseup', stopScratch);
+      canvas.addEventListener('touchstart', startScratch);
+      canvas.addEventListener('touchmove', scratch);
+      canvas.addEventListener('touchend', stopScratch);
+    }
+
+    let scratching = false;
+
+    function startScratch(e) {
+      e.preventDefault();
+      scratching = true;
+    }
+
+    function scratch(e) {
+      if (!scratching) return;
+      e.preventDefault();
+      
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+      const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+      
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Check scratched percentage
+      checkScratchProgress();
+    }
+
+    function stopScratch() {
+      scratching = false;
+    }
+
+    function checkScratchProgress() {
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let transparent = 0;
+      
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] < 128) transparent++;
+      }
+      
+      scratchedPercent = (transparent / (imageData.data.length / 4)) * 100;
+      
+      if (scratchedPercent > 60) {
+        revealCard();
+      }
+    }
+
+    async function revealCard() {
+      if (!isScratching) return;
+      isScratching = false;
+      
+      console.log('🎁 [GRATTAGE] Carte révélée, gain:', currentPrize);
+      
+      // Clear canvas
+      canvas.style.display = 'none';
+      
+      setTimeout(() => {
+        showResult(currentPrize);
+      }, 500);
+    }
+
+    async function showResult(prize) {
+      if (prize > 0) {
+        document.getElementById('resultIcon').textContent = '🎉';
+        document.getElementById('resultTitle').textContent = 'Gagné !';
+        document.getElementById('resultValue').textContent = '+' + prize + '€';
+        
+        // Add money
+        currentMoney += prize;
+        
+        try {
+          await supabaseClient
+            .from('game_progress')
+            .update({ money: currentMoney })
+            .eq('user_id', userId);
+          
+          console.log('✅ [GRATTAGE] Argent ajouté');
+        } catch (err) {
+          console.error('❌ [GRATTAGE] Erreur:', err);
+        }
+      } else {
+        document.getElementById('resultIcon').textContent = '😔';
+        document.getElementById('resultTitle').textContent = 'Perdu...';
+        document.getElementById('resultValue').textContent = '0€';
+      }
+      
+      document.getElementById('resultPopup').classList.add('show');
+    }
+
+    function closeResult() {
+      document.getElementById('resultPopup').classList.remove('show');
+      document.getElementById('buyBtn').style.display = 'block';
+      loadMoney();
+      
+      // Reset card
+      canvas.style.display = 'block';
+      document.getElementById('symbols').innerHTML = '';
+    }
+
+    function goBack() {
+      window.location.href = 'jeux.html';
+    }
+  </script>
+</body>
+</html>
