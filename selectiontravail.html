@@ -430,10 +430,14 @@ body{
     let money = 100;
     let level = 1;
     let rank = 'Docker Occasionnel';
+    let isLoading = true;
 
     loadPlayerData();
 
     async function loadPlayerData() {
+      // Afficher le loader
+      document.getElementById('zonesContainer').innerHTML = '<div style="text-align:center;padding:40px;color:#9ca3af;">⏳ Chargement...</div>';
+      
       const { data: progressArray } = await supabaseClient
         .from('game_progress')
         .select('*')
@@ -444,10 +448,11 @@ body{
         money = progress.money || 100;
         level = progress.level || 1;
         rank = getRank(level);
-        
-        updateDisplay();
-        renderZones();
       }
+      
+      isLoading = false;
+      updateDisplay();
+      renderZones();
     }
 
     function getRank(level) {
@@ -466,19 +471,20 @@ body{
     function updateTips() {
       const tipsText = document.getElementById('tipsText');
       const unlockedCount = zones.filter(z => level >= z.minLevel).length;
+      const nextZone = zones.find(z => level < z.minLevel);
       
-      if (unlockedCount === 1) {
-        const nextZone = zones.find(z => level < z.minLevel);
-        if (nextZone) {
-          const levelsNeeded = nextZone.minLevel - level;
-          tipsText.innerHTML = `Plus que <strong>${levelsNeeded} niveau${levelsNeeded > 1 ? 'x' : ''}</strong> avant de débloquer <strong>${nextZone.name}</strong> !`;
-        }
-      } else if (unlockedCount === zones.length) {
+      // Si toutes les zones sont débloquées
+      if (unlockedCount === zones.length) {
         tipsText.innerHTML = `🎉 Toutes les zones sont <strong>débloquées</strong> ! Tu es devenu <strong>Directeur de Compagnie</strong> !`;
-      } else {
-        const nextZone = zones.find(z => level < z.minLevel);
-        if (nextZone) {
-          const levelsNeeded = nextZone.minLevel - level;
+        return;
+      }
+      
+      // Sinon, afficher le prochain objectif
+      if (nextZone) {
+        const levelsNeeded = nextZone.minLevel - level;
+        if (levelsNeeded === 1) {
+          tipsText.innerHTML = `Plus qu'<strong>1 niveau</strong> avant de débloquer <strong>${nextZone.name}</strong> !`;
+        } else {
           tipsText.innerHTML = `Prochain objectif : <strong>Niveau ${nextZone.minLevel}</strong> pour débloquer <strong>${nextZone.name}</strong> (encore ${levelsNeeded} niveaux)`;
         }
       }
