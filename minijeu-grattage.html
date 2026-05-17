@@ -356,8 +356,8 @@
     }
 
     .scratch-close-btn {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
+      background: white;
+      color: #f59e0b;
       border: none;
       padding: 14px 32px;
       border-radius: 12px;
@@ -366,7 +366,7 @@
       letter-spacing: 2px;
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     .scratch-close-btn:active {
@@ -492,7 +492,7 @@
         <canvas id="scratchCanvas"></canvas>
       </div>
       <div class="scratch-result" id="scratchResult" style="display: none;"></div>
-      <button class="scratch-close-btn" onclick="closeScratch()">Fermer</button>
+      <button class="scratch-close-btn" onclick="closeScratch()">← Retour</button>
     </div>
   </div>
 
@@ -590,7 +590,8 @@
           .update({ money: currentMoney })
           .eq('user_id', userId);
 
-        document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+        // Ne PAS mettre à jour l'affichage ici pour ne pas spoiler
+        // document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
 
         // Update card states
         updateCardStates();
@@ -694,20 +695,24 @@
       canvas.width = width;
       canvas.height = height;
 
-      // Draw symbols underneath FIRST
+      // IMPORTANT: Reset composition mode
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Draw white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
+      // Draw symbols
       const cols = currentCard === 'docker_basic' ? 3 :
                    currentCard === 'cargo_king' ? 4 :
                    currentCard === 'port_legend' ? 3 :
                    currentCard === 'captain_fortune' ? 4 : 5;
       const rows = Math.ceil(symbols.length / cols);
 
+      ctx.fillStyle = '#1a1a1a';
       ctx.font = 'bold 48px Arial';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = '#1a1a1a';
 
       symbols.forEach((symbol, i) => {
         const col = i % cols;
@@ -718,8 +723,9 @@
         ctx.fillText(symbol, x, y);
       });
 
+      console.log('🎨 [GRATTAGE] Symboles dessinés:', symbols);
+
       // NOW draw scratch layer on top
-      ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = '#cccccc';
       ctx.fillRect(0, 0, width, height);
 
@@ -733,7 +739,7 @@
         ctx.stroke();
       }
 
-      // Add "GRATTE ICI"
+      // Add text on scratch layer
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 36px Bebas Neue, Arial';
       ctx.textAlign = 'center';
@@ -877,9 +883,11 @@
           .from('game_progress')
           .update({ money: currentMoney })
           .eq('user_id', userId);
-
-        document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
       }
+
+      // Maintenant on peut afficher l'argent final
+      document.getElementById('money').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+      updateCardStates();
     }
 
     function closeScratch() {
