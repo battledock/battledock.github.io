@@ -695,24 +695,31 @@
       canvas.width = width;
       canvas.height = height;
 
-      // IMPORTANT: Reset composition mode
+      // FORCE clear everything
+      ctx.clearRect(0, 0, width, height);
+      
+      // Reset ALL properties
       ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
 
-      // Draw white background
+      // 1. Draw white background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
 
-      // Draw symbols
+      // 2. Draw symbols FIRST
       const cols = currentCard === 'docker_basic' ? 3 :
                    currentCard === 'cargo_king' ? 4 :
                    currentCard === 'port_legend' ? 3 :
                    currentCard === 'captain_fortune' ? 4 : 5;
       const rows = Math.ceil(symbols.length / cols);
 
-      ctx.fillStyle = '#1a1a1a';
-      ctx.font = 'bold 48px Arial';
+      ctx.save();
+      ctx.fillStyle = '#000000'; // Noir pur
+      ctx.font = '600 52px Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
+
+      console.log('🎨 [GRATTAGE] Dessin de', symbols.length, 'symboles');
 
       symbols.forEach((symbol, i) => {
         const col = i % cols;
@@ -721,17 +728,18 @@
         const y = (height / rows) * row + (height / rows / 2);
 
         ctx.fillText(symbol, x, y);
+        console.log('  →', symbol, 'à position', x, y);
       });
 
-      console.log('🎨 [GRATTAGE] Symboles dessinés:', symbols);
+      ctx.restore();
 
-      // NOW draw scratch layer on top
-      ctx.fillStyle = '#cccccc';
+      // 3. NOW draw gray scratch layer ON TOP
+      ctx.fillStyle = '#b0b0b0';
       ctx.fillRect(0, 0, width, height);
 
-      // Add pattern
-      ctx.strokeStyle = '#999999';
-      ctx.lineWidth = 2;
+      // 4. Add diagonal pattern
+      ctx.strokeStyle = '#8a8a8a';
+      ctx.lineWidth = 3;
       for (let i = 0; i < width; i += 20) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
@@ -739,15 +747,20 @@
         ctx.stroke();
       }
 
-      // Add text on scratch layer
+      // 5. Add text on scratch layer
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px Bebas Neue, Arial';
+      ctx.font = 'bold 40px Bebas Neue, Arial';
       ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(0,0,0,0.3)';
+      ctx.shadowBlur = 4;
       ctx.fillText('GRATTE ICI !', width / 2, height / 2);
+      ctx.shadowBlur = 0;
 
       // Setup scratch events
       scratchedPercent = 0;
       setupScratchEvents();
+
+      console.log('✅ [GRATTAGE] Canvas initialisé');
     }
 
     function setupScratchEvents() {
