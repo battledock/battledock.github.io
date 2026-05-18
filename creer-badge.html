@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Photomaton Syndical - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Special+Elite&family=Permanent+Marker&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="fullscreen.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier Prime', monospace;
+      background: linear-gradient(to bottom, #87ceeb 0%, #ffffff 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Dossier en tôle */
+    .dossier-container {
+      position: relative;
+      width: 100%;
+      max-width: 700px;
+      background: #d4d1c8;
+      padding: 50px 40px;
+      border-radius: 8px;
+      box-shadow: 
+        0 0 0 2px #a8a59a,
+        inset 0 0 20px rgba(0, 0, 0, 0.1),
+        0 20px 50px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    /* Texture tôle */
+    .dossier-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.02) 3px, rgba(0, 0, 0, 0.02) 6px),
+        repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0, 0, 0, 0.02) 3px, rgba(0, 0, 0, 0.02) 6px);
+      pointer-events: none;
+      border-radius: 8px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px double #2d3436;
+    }
+
+    .title {
+      font-family: 'Special Elite', cursive;
+      font-size: 32px;
+      color: #2d3436;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #636e72;
+      letter-spacing: 1px;
+    }
+
+    /* Sections de choix */
+    .choice-section {
+      background: rgba(255, 255, 255, 0.6);
+      border: 2px solid #2d3436;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+    }
+
+    .section-title {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 20px;
+      color: #2d3436;
+      margin-bottom: 15px;
+      text-decoration: underline;
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: #636e72;
+      margin-bottom: 15px;
+      font-style: italic;
+    }
+
+    /* Grid de choix */
+    .choices-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 12px;
+    }
+
+    .choice-btn {
+      background: white;
+      border: 3px solid #2d3436;
+      padding: 15px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+      position: relative;
+    }
+
+    .choice-btn:hover {
+      background: #f0f0f0;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .choice-btn.selected {
+      background: #ffeaa7;
+      border-color: #fdcb6e;
+      box-shadow: 
+        0 0 0 3px #f39c12,
+        0 4px 12px rgba(243, 156, 18, 0.4);
+      transform: scale(1.05);
+    }
+
+    .choice-icon {
+      font-size: 40px;
+      margin-bottom: 5px;
+    }
+
+    .choice-label {
+      font-size: 11px;
+      color: #2d3436;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    /* Bouton valider */
+    .submit-btn {
+      width: 100%;
+      padding: 20px;
+      background: #2d3436;
+      color: white;
+      border: none;
+      font-family: 'Special Elite', cursive;
+      font-size: 20px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      box-shadow: 0 6px 0 #1a1a1a;
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .submit-btn:hover {
+      background: #636e72;
+    }
+
+    .submit-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1a1a1a;
+    }
+
+    .submit-btn:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Message d'erreur */
+    .error-msg {
+      background: #e74c3c;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      display: none;
+      border: 2px solid #c0392b;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .dossier-container {
+        padding: 30px 20px;
+      }
+
+      .title {
+        font-size: 26px;
+      }
+
+      .choices-grid {
+        grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+        gap: 10px;
+      }
+
+      .choice-icon {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dossier-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="title">📸 Photomaton Syndical 📸</div>
+      <div class="subtitle">Création de ton Badge Officiel - Dernière Étape !</div>
+    </div>
+
+    <!-- Message erreur -->
+    <div class="error-msg" id="errorMsg"></div>
+
+    <!-- Choix Avatar -->
+    <div class="choice-section">
+      <div class="section-title">1. Choisis Ton Avatar</div>
+      <div class="section-desc">La tête qui va apparaître sur ton badge et ton profil</div>
+      <div class="choices-grid" id="avatarChoices">
+        <div class="choice-btn" onclick="selectAvatar('⚡')">
+          <div class="choice-icon">⚡</div>
+          <div class="choice-label">Éclair</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('🔥')">
+          <div class="choice-icon">🔥</div>
+          <div class="choice-label">Flamme</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('💪')">
+          <div class="choice-icon">💪</div>
+          <div class="choice-label">Muscle</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('🎯')">
+          <div class="choice-icon">🎯</div>
+          <div class="choice-label">Cible</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('⚙️')">
+          <div class="choice-icon">⚙️</div>
+          <div class="choice-label">Engrenage</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('🚢')">
+          <div class="choice-icon">🚢</div>
+          <div class="choice-label">Cargo</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('⚓')">
+          <div class="choice-icon">⚓</div>
+          <div class="choice-label">Ancre</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('🎰')">
+          <div class="choice-icon">🎰</div>
+          <div class="choice-label">Jackpot</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('👑')">
+          <div class="choice-icon">👑</div>
+          <div class="choice-label">Couronne</div>
+        </div>
+        <div class="choice-btn" onclick="selectAvatar('🦅')">
+          <div class="choice-icon">🦅</div>
+          <div class="choice-label">Aigle</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Choix Fond QG -->
+    <div class="choice-section">
+      <div class="section-title">2. Choisis Ton Fond de QG</div>
+      <div class="section-desc">L'ambiance de ton bureau dans le port</div>
+      <div class="choices-grid">
+        <div class="choice-btn" onclick="selectBgQG('hangar')">
+          <div class="choice-icon">🏭</div>
+          <div class="choice-label">Hangar</div>
+        </div>
+        <div class="choice-btn" onclick="selectBgQG('conteneur')">
+          <div class="choice-icon">📦</div>
+          <div class="choice-label">Conteneur</div>
+        </div>
+        <div class="choice-btn" onclick="selectBgQG('bureau')">
+          <div class="choice-icon">🪑</div>
+          <div class="choice-label">Bureau</div>
+        </div>
+        <div class="choice-btn" onclick="selectBgQG('quai')">
+          <div class="choice-icon">🌊</div>
+          <div class="choice-label">Quai</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Choix Combine -->
+    <div class="choice-section">
+      <div class="section-title">3. Choisis Ta Combine Secrète</div>
+      <div class="section-desc">Ton arme pour grimper dans la hiérarchie</div>
+      <div class="choices-grid">
+        <div class="choice-btn" onclick="selectCombine('piston')">
+          <div class="choice-icon">🤝</div>
+          <div class="choice-label">Piston</div>
+        </div>
+        <div class="choice-btn" onclick="selectCombine('syndicat')">
+          <div class="choice-icon">✊</div>
+          <div class="choice-label">Syndicat</div>
+        </div>
+        <div class="choice-btn" onclick="selectCombine('charme')">
+          <div class="choice-icon">😎</div>
+          <div class="choice-label">Charme</div>
+        </div>
+        <div class="choice-btn" onclick="selectCombine('intimidation')">
+          <div class="choice-icon">😠</div>
+          <div class="choice-label">Force</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bouton Valider -->
+    <button class="submit-btn" id="submitBtn" onclick="validateBadge()">
+      ✓ Valider Mon Badge
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      window.location.href = 'index.html';
+    }
+
+    let selectedAvatar = null;
+    let selectedBgQG = null;
+    let selectedCombine = null;
+
+    function selectAvatar(emoji) {
+      selectedAvatar = emoji;
+      document.querySelectorAll('#avatarChoices .choice-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+      checkCanSubmit();
+    }
+
+    function selectBgQG(bg) {
+      selectedBgQG = bg;
+      document.querySelectorAll('.choice-section:nth-child(3) .choice-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+      checkCanSubmit();
+    }
+
+    function selectCombine(combine) {
+      selectedCombine = combine;
+      document.querySelectorAll('.choice-section:nth-child(4) .choice-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+      checkCanSubmit();
+    }
+
+    function checkCanSubmit() {
+      const btn = document.getElementById('submitBtn');
+      if (selectedAvatar && selectedBgQG && selectedCombine) {
+        btn.disabled = false;
+      } else {
+        btn.disabled = true;
+      }
+    }
+
+    function showError(msg) {
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function validateBadge() {
+      if (!selectedAvatar || !selectedBgQG || !selectedCombine) {
+        showError('⚠️ Tu dois faire les 3 choix avant de valider !');
+        return;
+      }
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Création du badge...';
+
+      try {
+        // UPDATE profiles avec les choix
+        const { error: profileError } = await supabaseClient
+          .from('profiles')
+          .update({
+            avatar: selectedAvatar,
+            bg_qg: selectedBgQG,
+            combine: selectedCombine
+          })
+          .eq('user_id', userId);
+
+        if (profileError) throw profileError;
+
+        btn.textContent = 'Accès au port...';
+        
+        // Redirection vers le hub
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 800);
+
+      } catch (err) {
+        console.error('Erreur:', err);
+        showError('❌ Erreur lors de la création du badge : ' + err.message);
+        btn.disabled = false;
+        btn.textContent = '✓ Valider Mon Badge';
+      }
+    }
+
+    // Disable button au départ
+    document.getElementById('submitBtn').disabled = true;
+  </script>
+</body>
+</html>
