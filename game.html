@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Battle Dock - Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="fullscreen.js"></script>
   <style>
     * {
       margin: 0;
@@ -17,608 +17,483 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #87ceeb 0%, #b9dceb 30%, #2b8aa6 70%, #1a5870 100%);
+      background: #0a0e27;
       min-height: 100vh;
-      position: relative;
       overflow-x: hidden;
-    }
-
-    /* Vagues animées en fond */
-    body::before {
-      content: '';
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 200px;
-      background: linear-gradient(180deg, transparent, rgba(26, 88, 112, 0.3));
-      animation: wave 8s ease-in-out infinite;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    @keyframes wave {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
-
-    /* Nuages */
-    body::after {
-      content: '☁️';
-      position: fixed;
-      top: 60px;
-      left: -50px;
-      font-size: 60px;
-      animation: clouds 40s linear infinite;
-      pointer-events: none;
-      z-index: 0;
-      opacity: 0.5;
-    }
-
-    @keyframes clouds {
-      0% { left: -100px; }
-      100% { left: calc(100% + 100px); }
-    }
-
-    /* BANDEAU LANCEMENT - SOUS TOPBAR */
-    .launch-banner {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      padding: 16px;
-      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
-      position: relative;
-      overflow: hidden;
-      z-index: 99;
-    }
-
-    .launch-banner::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        90deg,
-        transparent 0%,
-        rgba(255, 255, 255, 0.1) 50%,
-        transparent 100%
-      );
-      animation: shine 3s ease-in-out infinite;
-    }
-
-    @keyframes shine {
-      0%, 100% { transform: translateX(-100%); }
-      50% { transform: translateX(100%); }
-    }
-
-    .launch-banner-content {
-      position: relative;
-      z-index: 1;
-      text-align: center;
-    }
-
-    .launch-icon {
-      font-size: 28px;
-      margin-bottom: 4px;
-      animation: bounce 1s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-
-    .launch-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      letter-spacing: 2px;
-      color: #ffffff;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      margin-bottom: 8px;
-    }
-
-    .countdown {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    .countdown-item {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-      padding: 8px 12px;
-      min-width: 60px;
-    }
-
-    .countdown-number {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      color: #fbbf24;
-      text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-      line-height: 1;
-    }
-
-    .countdown-label {
-      font-size: 10px;
-      color: rgba(255, 255, 255, 0.8);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    .updates-btn {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      background: rgba(255, 255, 255, 0.2);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      z-index: 2;
-    }
-
-    .updates-btn:active {
-      transform: scale(0.95);
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    /* MODAL MISES À JOUR */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    .modal-overlay.show {
-      display: flex;
-    }
-
-    .modal {
-      background: white;
-      border-radius: 16px;
-      max-width: 500px;
-      width: 100%;
-      max-height: 80vh;
-      overflow: hidden;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      padding: 20px;
       color: white;
     }
 
-    .modal-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .modal-subtitle {
-      font-size: 12px;
-      opacity: 0.9;
-    }
-
-    .modal-content {
-      padding: 20px;
-      overflow-y: auto;
-      max-height: 60vh;
-    }
-
-    .update-item {
-      margin-bottom: 24px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .update-item:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-    }
-
-    .update-version {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      color: #3b82f6;
-      margin-bottom: 4px;
-    }
-
-    .update-date {
-      font-size: 12px;
-      color: #9ca3af;
-      margin-bottom: 12px;
-    }
-
-    .update-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .update-list li {
-      padding: 6px 0;
-      padding-left: 20px;
-      position: relative;
-      font-size: 14px;
-      color: #4b5563;
-      line-height: 1.5;
-    }
-
-    .update-list li::before {
-      content: '✓';
-      position: absolute;
-      left: 0;
-      color: #10b981;
-      font-weight: 700;
-    }
-
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid #e5e7eb;
-    }
-
-    .close-modal-btn {
-      background: #3b82f6;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      width: 100%;
-      transition: all 0.2s;
-    }
-
-    .close-modal-btn:active {
-      transform: scale(0.98);
-    }
-
-    /* FOND MARITIME */
-    body::before {
-      content: '';
+    /* BACKGROUND ANIMÉ AVEC ÉTOILES */
+    .stars {
       position: fixed;
       inset: 0;
       background: 
-        /* Soleil */
-        radial-gradient(circle at 85% 15%, rgba(255, 220, 150, 0.8) 0%, rgba(255, 220, 150, 0) 120px);
-      pointer-events: none;
+        radial-gradient(2px 2px at 20% 30%, white, transparent),
+        radial-gradient(2px 2px at 60% 70%, white, transparent),
+        radial-gradient(1px 1px at 50% 50%, white, transparent),
+        radial-gradient(1px 1px at 80% 10%, white, transparent),
+        radial-gradient(2px 2px at 90% 60%, white, transparent);
+      background-size: 200% 200%;
+      animation: twinkle 8s ease-in-out infinite;
       z-index: 0;
+      opacity: 0.6;
     }
 
-    /* CONTENU PAR-DESSUS */
-    .content-wrapper {
-      position: relative;
-      z-index: 10;
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
     }
 
-    /* TOPBAR */
-    .topbar {
-      background: #ffffff;
-      padding: 16px;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    .avatar {
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border: 3px solid #e5e7eb;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      flex-shrink: 0;
-    }
-
-    .player-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .player-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-      line-height: 1.2;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .player-grade {
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-
-    .player-level {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
-    }
-
-    .xp-bar {
-      width: 100%;
-      height: 6px;
-      background: #e5e7eb;
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 6px;
-    }
-
-    .xp-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #3b82f6, #2563eb);
-      border-radius: 3px;
-      transition: width 0.5s ease;
-    }
-
-    .money {
-      text-align: right;
-      flex-shrink: 0;
-    }
-
-    .money-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      letter-spacing: 1px;
-      color: #10b981;
-      line-height: 1;
-    }
-
-    .money-label {
-      font-size: 10px;
-      color: #6b7280;
-      margin-top: 2px;
+    /* GRADIENT OVERLAY */
+    .gradient-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 50% 0%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
+                  radial-gradient(circle at 0% 100%, rgba(240, 147, 251, 0.15) 0%, transparent 50%);
+      z-index: 0;
+      pointer-events: none;
     }
 
     /* CONTAINER */
     .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
       position: relative;
       z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      padding-bottom: 100px;
     }
 
-    /* BUTTONS */
-    .buttons-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .action-btn {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 24px 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-    }
-
-    .action-btn:active {
-      transform: scale(0.95);
-    }
-
-    .action-btn:hover {
-      border-color: #3b82f6;
-      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
-    }
-
-    .btn-icon {
-      font-size: 40px;
-    }
-
-    .btn-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-    }
-
-    .btn-subtitle {
-      font-size: 11px;
-      color: #6b7280;
+    /* HEADER ÉPIQUE */
+    .hero {
       text-align: center;
+      padding: 40px 0 30px;
+      position: relative;
     }
 
-    /* BIG BUTTON */
-    .big-btn {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border: none;
-      border-radius: 16px;
-      padding: 28px 24px;
-      width: 100%;
-      margin-top: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    .big-btn:active {
-      transform: scale(0.98);
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-    }
-
-    .big-btn-icon {
+    .logo {
+      font-family: 'Orbitron', sans-serif;
       font-size: 48px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 30px rgba(102, 126, 234, 0.5);
+      animation: glow 3s ease-in-out infinite;
     }
 
-    .big-btn-content {
-      text-align: left;
+    @keyframes glow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.3); }
     }
 
-    .big-btn-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
+    .tagline {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
       letter-spacing: 2px;
-      color: white;
-      line-height: 1;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .stat::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .stat:active::before {
+      left: 100%;
+    }
+
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: #667eea;
+      letter-spacing: 1px;
       margin-bottom: 4px;
     }
 
-    .big-btn-subtitle {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.9);
+    .stat-label {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
     }
 
-    /* SECOND GRID */
-    .second-grid {
+    /* CARDS GRID - LE WOW FACTOR */
+    .cards-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 24px;
+      padding: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+
+    /* GRADIENT ANIMÉ PAR CARD */
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:active::before {
+      opacity: 1;
+    }
+
+    /* GLOW EFFECT */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(102, 126, 234, 0.4);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .card:active::after {
+      width: 300px;
+      height: 300px;
+    }
+
+    .card:active {
+      transform: scale(0.95);
+      box-shadow: 0 0 40px rgba(102, 126, 234, 0.6);
+      border-color: rgba(102, 126, 234, 0.5);
+    }
+
+    .card-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .card-icon {
+      font-size: 56px;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .card:nth-child(2) .card-icon { animation-delay: 0.2s; }
+    .card:nth-child(3) .card-icon { animation-delay: 0.4s; }
+    .card:nth-child(4) .card-icon { animation-delay: 0.6s; }
+
+    .card-info {
+      flex: 1;
+    }
+
+    .card-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.4;
+    }
+
+    .card-arrow {
+      font-size: 24px;
+      color: #667eea;
+      transition: transform 0.3s;
+    }
+
+    .card:active .card-arrow {
+      transform: translateX(8px);
+    }
+
+    /* CARDS SPÉCIALES */
+    .card.featured {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      border: 2px solid rgba(102, 126, 234, 0.3);
+    }
+
+    .card.special {
+      background: linear-gradient(135deg, rgba(255, 107, 157, 0.15), rgba(196, 69, 105, 0.15));
+      border: 2px solid rgba(255, 107, 157, 0.3);
+    }
+
+    /* BOTTOM NAV FLOTTANTE */
+    .bottom-nav {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 14, 39, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 30px;
+      padding: 12px 20px;
+      display: flex;
       gap: 12px;
-      margin-top: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 
+                  0 0 0 1px rgba(102, 126, 234, 0.1);
+      z-index: 1000;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 28px;
+      cursor: pointer;
+      padding: 10px 16px;
+      border-radius: 20px;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.9);
+      color: #667eea;
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    /* BADGE NOTIFICATION */
+    .badge {
+      position: absolute;
+      top: 6px;
+      right: 10px;
+      background: #ef4444;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* BANDEAU MAJ */
+    .update-banner {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.3);
+      animation: slideIn 0.5s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .update-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .update-icon {
+      font-size: 32px;
+      animation: spin 3s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .update-text {
+      flex: 1;
+      font-size: 13px;
+      line-height: 1.5;
+      color: white;
+    }
+
+    /* PARTICLES CANVAS */
+    #particles {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 400px) {
+      .logo {
+        font-size: 38px;
+      }
+
+      .card-title {
+        font-size: 20px;
+      }
+
+      .card-icon {
+        font-size: 48px;
+      }
     }
   </style>
-  
-  <!-- PWA Meta Tags -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#667eea">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Battle Dock">
-  <script src="fullscreen.js"></script>
 </head>
 <body>
-  <!-- CONTENU -->
-  <div class="content-wrapper">
-    <!-- TOPBAR -->
-    <div class="topbar">
-      <div class="avatar" id="avatar">⚓</div>
-      <div class="player-info">
-        <div class="player-name" id="playerName">Docker</div>
-        <div class="player-grade" id="playerGrade">Docker Occasionnel</div>
-        <div class="player-level" id="playerLevel">Niveau 1</div>
-        <div class="xp-bar">
-          <div class="xp-fill" id="xpFill" style="width: 0%"></div>
-        </div>
-      </div>
-      <div class="money">
-        <div class="money-amount"><span id="moneyAmount">100</span>€</div>
-        <div class="money-label">Budget</div>
-      </div>
-    </div>
+  <canvas id="particles"></canvas>
+  <div class="stars"></div>
+  <div class="gradient-overlay"></div>
 
-    <!-- BANDEAU LANCEMENT -->
-    <div class="launch-banner">
-      <button class="updates-btn" onclick="showUpdates()">📋 MAJ</button>
-      <div class="launch-banner-content">
-        <div class="launch-icon">🚀</div>
-        <div class="launch-title">Lancement Officiel du Jeu Dimanche 25/05 à 20h00 !</div>
-        <div class="countdown" id="countdown">
-          <div class="countdown-item">
-            <div class="countdown-number" id="days">00</div>
-            <div class="countdown-label">Jours</div>
-          </div>
-          <div class="countdown-item">
-            <div class="countdown-number" id="hours">00</div>
-            <div class="countdown-label">Heures</div>
-          </div>
-          <div class="countdown-item">
-            <div class="countdown-number" id="minutes">00</div>
-            <div class="countdown-label">Minutes</div>
-          </div>
-          <div class="countdown-item">
-            <div class="countdown-number" id="seconds">00</div>
-            <div class="countdown-label">Secondes</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  <!-- CONTAINER -->
   <div class="container">
-    <div class="buttons-grid">
-      <button class="action-btn" onclick="window.location.href='selectiontravail.html'">
-        <div class="btn-icon">💼</div>
-        <div class="btn-label">Travailler</div>
-        <div class="btn-subtitle">Compléter des contrats</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='progression.html'">
-        <div class="btn-icon">📊</div>
-        <div class="btn-label">Progression</div>
-        <div class="btn-subtitle">Voir ta carrière</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='classement.html'">
-        <div class="btn-icon">🏆</div>
-        <div class="btn-label">Classement</div>
-        <div class="btn-subtitle">Top dockers</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='shop.html'">
-        <div class="btn-icon">🛒</div>
-        <div class="btn-label">Shop</div>
-        <div class="btn-subtitle">Acheter des bonus</div>
-      </button>
+    <!-- HERO -->
+    <div class="hero">
+      <div class="logo">BATTLE DOCK</div>
+      <div class="tagline">Port de Marseille</div>
     </div>
 
-    <!-- GRAND BOUTON -->
-    <button class="big-btn" onclick="window.location.href='compagnie.html'">
-      <div class="big-btn-icon">🏢</div>
-      <div class="big-btn-content">
-        <div class="big-btn-label">Créer sa Compagnie</div>
-        <div class="big-btn-subtitle">Deviens directeur du port</div>
+    <!-- STATS -->
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-value" id="moneyDisplay">0€</div>
+        <div class="stat-label">Argent</div>
       </div>
-    </button>
-
-    <!-- DEUXIÈME GRILLE -->
-    <div class="second-grid">
-      <button class="action-btn" onclick="window.location.href='profil.html'">
-        <div class="btn-icon">👤</div>
-        <div class="btn-label">Profil</div>
-        <div class="btn-subtitle">Ton compte</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='chat.html'">
-        <div class="btn-icon">💬</div>
-        <div class="btn-label">Chat</div>
-        <div class="btn-subtitle">Discute avec les autres</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='jeux.html'">
-        <div class="btn-icon">🎮</div>
-        <div class="btn-label">Jeux</div>
-        <div class="btn-subtitle">Mini-jeux bonus</div>
-      </button>
-
-      <button class="action-btn" onclick="window.location.href='parametres.html'">
-        <div class="btn-icon">⚙️</div>
-        <div class="btn-label">Paramètres</div>
-        <div class="btn-subtitle">Configuration</div>
-      </button>
+      <div class="stat">
+        <div class="stat-value" id="levelDisplay">Niv. 1</div>
+        <div class="stat-label">Niveau</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="xpDisplay">0</div>
+        <div class="stat-label">XP</div>
+      </div>
     </div>
+
+    <!-- BANDEAU MAJ -->
+    <div class="update-banner">
+      <div class="update-content">
+        <div class="update-icon">🎮</div>
+        <div class="update-text" id="updateText">
+          v0.7.0 - Mini-Jeux Refaits ! 🎰 Grattage 1M€ jackpot | 📊 Bourse niveau 30 | 📈 Higher/Lower niveau 25
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CARDS -->
+    <div class="cards-grid">
+      <div class="card featured" onclick="window.location.href='travailler.html'">
+        <div class="card-content">
+          <div class="card-icon">💼</div>
+          <div class="card-info">
+            <div class="card-title">Travailler</div>
+            <div class="card-desc">Déplace des conteneurs et gagne de l'argent</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.location.href='jeux.html'">
+        <div class="card-content">
+          <div class="card-icon">🎰</div>
+          <div class="card-info">
+            <div class="card-title">Mini-Jeux</div>
+            <div class="card-desc">Roue, Grattage, Bourse et plus encore</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="card special" onclick="window.location.href='shop.html'">
+        <div class="card-content">
+          <div class="card-icon">👽</div>
+          <div class="card-info">
+            <div class="card-title">Boutique Ferretti</div>
+            <div class="card-desc">Articles cosmiques & beauté</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.location.href='progression.html'">
+        <div class="card-content">
+          <div class="card-icon">📊</div>
+          <div class="card-info">
+            <div class="card-title">Progression</div>
+            <div class="card-desc">Déblocages et objectifs</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="window.location.href='classement.html'">
+        <div class="card-content">
+          <div class="card-icon">🏆</div>
+          <div class="card-info">
+            <div class="card-title">Classement</div>
+            <div class="card-desc">Top joueurs du port</div>
+          </div>
+          <div class="card-arrow">→</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='profil.html'">
+      👤
+    </button>
+    <button class="nav-btn" onclick="window.location.href='jeux.html'">
+      🎮
+      <span class="badge">NEW</span>
+    </button>
+    <button class="nav-btn" onclick="window.location.href='shop.html'">
+      🛒
+    </button>
+    <button class="nav-btn" onclick="window.location.href='parametres.html'">
+      ⚙️
+    </button>
   </div>
 
   <script>
@@ -628,174 +503,94 @@
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     const userId = localStorage.getItem('userId');
-    const username = localStorage.getItem('username');
+    if (!userId) window.location.href = 'index.html';
 
-    if (!userId) {
-      window.location.href = 'index.html';
-    }
+    // PARTICLES CANVAS
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    // Chargement des données
-    loadPlayerData();
+    const particles = [];
+    const particleCount = 50;
 
-    function getRank(level) {
-      if (level < 15) return 'Docker Occasionnel';
-      if (level < 30) return 'Docker';
-      if (level < 50) return 'Docker Mensuel';
-      if (level < 80) return 'Contre-Maître';
-      if (level < 100) return 'Chef de Quai';
-      return 'Directeur de Compagnie';
-    }
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 0.5 - 0.25;
+        this.speedY = Math.random() * 0.5 - 0.25;
+        this.opacity = Math.random() * 0.5 + 0.2;
+      }
 
-    async function loadPlayerData() {
-      const { data: progressArray } = await supabaseClient
-        .from('game_progress')
-        .select('*')
-        .eq('user_id', userId);
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
 
-      const { data: profileArray } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId);
+        if (this.x > canvas.width) this.x = 0;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.y > canvas.height) this.y = 0;
+        if (this.y < 0) this.y = canvas.height;
+      }
 
-      if (progressArray && progressArray[0] && profileArray && profileArray[0]) {
-        const progress = progressArray[0];
-        const profile = profileArray[0];
-
-        const currentLevel = progress.level || 1;
-
-        // Avatar
-        document.getElementById('avatar').textContent = profile.avatar_url || '⚓';
-
-        // Nom
-        document.getElementById('playerName').textContent = profile.username || username;
-
-        // Grade calculé dynamiquement
-        document.getElementById('playerGrade').textContent = getRank(currentLevel);
-
-        // Niveau
-        document.getElementById('playerLevel').textContent = `Niveau ${currentLevel}`;
-
-        // Argent
-        document.getElementById('moneyAmount').textContent = (progress.money || 100).toLocaleString('fr-FR');
-
-        // XP Bar
-        const currentXP = progress.xp || 0;
-        const requiredXP = Math.round(1000 * Math.pow(1.1, currentLevel - 1));
-        const xpPercent = (currentXP / requiredXP) * 100;
-        document.getElementById('xpFill').style.width = xpPercent + '%';
+      draw() {
+        ctx.fillStyle = `rgba(102, 126, 234, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
-    // COMPTE À REBOURS
-    const launchDate = new Date('2026-05-25T20:00:00').getTime();
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
 
-    function updateCountdown() {
-      const now = new Date().getTime();
-      const distance = launchDate - now;
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+      requestAnimationFrame(animateParticles);
+    }
 
-      if (distance < 0) {
-        document.querySelector('.launch-banner').innerHTML = 
-          '<div class="launch-banner-content"><div class="launch-icon">🎮</div><div class="launch-title">v0.7.0 - Mini-Jeux Refaits ! 🎰 Grattage 1M€ jackpot | 📊 Bourse niveau 30 | 📈 Higher/Lower niveau 25 | 🎡 Roue + Lucky Dip gratuits</div></div>';
-        return;
+    animateParticles();
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // LOAD USER DATA
+    loadUserData();
+
+    async function loadUserData() {
+      try {
+        const { data } = await supabaseClient
+          .from('game_progress')
+          .select('money, level, xp')
+          .eq('user_id', userId)
+          .single();
+
+        if (data) {
+          document.getElementById('moneyDisplay').textContent = (data.money || 0).toLocaleString('fr-FR') + '€';
+          document.getElementById('levelDisplay').textContent = 'Niv. ' + (data.level || 1);
+          document.getElementById('xpDisplay').textContent = (data.xp || 0).toLocaleString('fr-FR');
+        }
+      } catch (err) {
+        console.error('Erreur chargement:', err);
       }
-
-      const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-      document.getElementById('days').textContent = String(days).padStart(2, '0');
-      document.getElementById('hours').textContent = String(hours).padStart(2, '0');
-      document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
-      document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
     }
 
-    updateCountdown();
-    setInterval(updateCountdown, 1000);
-
-    // MODAL MISES À JOUR
-    function showUpdates() {
-      document.getElementById('updatesModal').classList.add('show');
-    }
-
-    function hideUpdates() {
-      document.getElementById('updatesModal').classList.remove('show');
-    }
+    // VIBRATION AU CLIC (mobile)
+    document.querySelectorAll('.card, .nav-btn').forEach(el => {
+      el.addEventListener('click', () => {
+        if ('vibrate' in navigator) {
+          navigator.vibrate(10);
+        }
+      });
+    });
   </script>
-  </div> <!-- Fermeture content-wrapper -->
-
-  <!-- MODAL MISES À JOUR -->
-  <div class="modal-overlay" id="updatesModal" onclick="if(event.target === this) hideUpdates()">
-    <div class="modal">
-      <div class="modal-header">
-        <div class="modal-title">📋 Mises à Jour</div>
-        <div class="modal-subtitle">Nouveautés de Battle Dock</div>
-      </div>
-      <div class="modal-content">
-        
-        <div class="update-item">
-          <div class="update-version">Version 0.6.0 - Beta</div>
-          <div class="update-date">18 Mai 2026</div>
-          <ul class="update-list">
-            <li>🔊 Sons et vibrations fonctionnels dans le clicker</li>
-            <li>📱 Optimisation mobile complète (touch events, responsive)</li>
-            <li>🎨 Clicker refait : nouveau design épuré avec dock maritime</li>
-            <li>💬 Chat en temps réel avec Supabase (table messages)</li>
-            <li>🎮 Page Jeux créée (mini-jeux à venir)</li>
-            <li>🏢 Page Compagnie créée (niveau 100+ requis)</li>
-            <li>🔍 Console.log ajoutés partout pour debug</li>
-            <li>🎯 Combo display apparaît au-dessus du clicker</li>
-            <li>📊 Stats bar refaite en bas du clicker</li>
-            <li>🐛 Corrections multiples de bugs</li>
-            <li>⚡ Performances améliorées (sauvegarde auto optimisée)</li>
-            <li>🎭 Avatar récupéré du profil dans toutes les pages</li>
-          </ul>
-        </div>
-        
-        <div class="update-item">
-          <div class="update-version">Version 0.5.1 - Beta</div>
-          <div class="update-date">17 Mai 2026</div>
-          <ul class="update-list">
-            <li>Système de clicker avec combo (zone Docker Occasionnel)</li>
-            <li>Sélection de travail par grade avec 6 zones</li>
-            <li>Page Profil avec sélection d'avatar (16 avatars disponibles)</li>
-            <li>Classement avec podium Top 3 et leaderboard Top 50</li>
-            <li>Chat global avec stockage localStorage</li>
-            <li>Shop (à venir) et Paramètres avec toggles</li>
-            <li>Optimisation de la connexion (requêtes parallèles)</li>
-            <li>Fond maritime animé sur toutes les pages</li>
-            <li>Bandeau de lancement avec compte à rebours</li>
-          </ul>
-        </div>
-
-        <div class="update-item">
-          <div class="update-version">Version 0.4.3</div>
-          <div class="update-date">16 Mai 2026</div>
-          <ul class="update-list">
-            <li>Création de la topbar avec avatar et XP</li>
-            <li>Système de grades dynamique (Docker à Directeur)</li>
-            <li>Intégration Supabase complète</li>
-            <li>Page de progression avec statistiques</li>
-            <li>Design mobile-first optimisé</li>
-          </ul>
-        </div>
-
-        <div class="update-item">
-          <div class="update-version">Version 0.1.0 - Alpha</div>
-          <div class="update-date">15 Mai 2026</div>
-          <ul class="update-list">
-            <li>Lancement du projet Battle Dock</li>
-            <li>Système d'inscription et connexion</li>
-            <li>Base de données Supabase initialisée</li>
-            <li>Design initial du jeu</li>
-          </ul>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="close-modal-btn" onclick="hideUpdates()">Fermer</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
