@@ -731,6 +731,93 @@
         grid-template-columns: repeat(3, 1fr);
       }
     }
+
+    /* Notification immersive */
+    .notif-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .notif-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .immersive-notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 350px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      z-index: 10000;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .immersive-notification.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .notif-icon {
+      font-size: 64px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .notif-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: white;
+      text-align: center;
+      margin-bottom: 12px;
+      letter-spacing: 2px;
+    }
+
+    .notif-message {
+      font-size: 16px;
+      color: #cbd5e1;
+      text-align: center;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .notif-level {
+      font-size: 20px;
+      color: #f59e0b;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .notif-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      width: 100%;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .notif-btn:active {
+      transform: scale(0.98);
+    }
   </style>
 </head>
 <body>
@@ -870,7 +957,12 @@
 
     function checkHigherLowerAccess() {
       if (userLevel < 25) {
-        alert('🔒 Higher or Lower est débloqué au niveau 25 !\n\nTon niveau actuel : ' + userLevel);
+        showImmersiveNotif(
+          '📈',
+          'Higher or Lower',
+          'Ce mini-jeu sera débloqué au niveau 25',
+          userLevel
+        );
         return;
       }
       playGame('minijeu-higherlower.html');
@@ -878,7 +970,12 @@
 
     function checkBourseAccess() {
       if (userLevel < 30) {
-        alert('🔒 La Bourse est débloquée au niveau 30 !\n\nTon niveau actuel : ' + userLevel);
+        showImmersiveNotif(
+          '📊',
+          'La Bourse',
+          'Ce mini-jeu sera débloqué au niveau 30',
+          userLevel
+        );
         return;
       }
       playGame('minijeu-bourse.html');
@@ -888,6 +985,37 @@
       console.log('🎯 [MINI-JEUX] Lancement:', gameFile);
       window.location.href = gameFile;
     }
+
+    function showImmersiveNotif(icon, title, message, level) {
+      const overlay = document.getElementById('notifOverlay');
+      const notif = document.getElementById('immersiveNotif');
+      
+      document.getElementById('notifIcon').textContent = icon;
+      document.getElementById('notifTitle').textContent = title;
+      document.getElementById('notifMessage').textContent = message;
+      document.getElementById('notifLevel').textContent = 'Ton niveau : ' + level;
+      
+      overlay.classList.add('show');
+      setTimeout(() => notif.classList.add('show'), 10);
+    }
+
+    function closeNotif() {
+      const overlay = document.getElementById('notifOverlay');
+      const notif = document.getElementById('immersiveNotif');
+      
+      notif.classList.remove('show');
+      setTimeout(() => overlay.classList.remove('show'), 300);
+    }
   </script>
+
+  <!-- Notification immersive -->
+  <div class="notif-overlay" id="notifOverlay" onclick="closeNotif()"></div>
+  <div class="immersive-notification" id="immersiveNotif">
+    <div class="notif-icon" id="notifIcon">🔒</div>
+    <div class="notif-title" id="notifTitle">Contenu Verrouillé</div>
+    <div class="notif-message" id="notifMessage">Ce mini-jeu sera débloqué plus tard</div>
+    <div class="notif-level" id="notifLevel">Ton niveau : 0</div>
+    <button class="notif-btn" onclick="closeNotif()">Compris !</button>
+  </div>
 </body>
 </html>
