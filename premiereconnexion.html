@@ -3,156 +3,499 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Recrutement</title>
+  <title>Battle Dock — Bureau des Badges</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --paper-cream: #fefce8;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 8px 8px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
+      
+      /* Couleurs de fond pour le badge */
+      --bg-goudes: linear-gradient(to bottom, #f97316, #a855f7);
+      --bg-containers: repeating-linear-gradient(45deg, #334155, #334155 10px, #475569 10px, #475569 20px);
+      --bg-marine: radial-gradient(circle, #fef08a 0%, #ca8a04 100%);
+      --bg-mistral: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
-      min-height: 100vh; height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; padding: 0; overflow: hidden; margin: 0;
+      background: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
     }
-    .header-container { text-align: center; margin-bottom: 16px; z-index: 10; width: 100%; padding: 0 16px; flex-shrink: 0; }
+
+    .header-container {
+      text-align: center;
+      margin-bottom: 24px;
+      width: 100%;
+      max-width: 540px;
+    }
+
     .main-title {
-      font-family: 'Bangers', cursive; font-size: clamp(2.5rem, 10vw, 4rem); color: #facc15;
-      letter-spacing: 4px; text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
-      line-height: 0.9; transform: rotate(-2deg); display: inline-block; margin-bottom: 4px;
+      font-family: 'Bangers', cursive;
+      font-size: clamp(3.5rem, 11vw, 5rem);
+      color: var(--comic-yellow);
+      letter-spacing: 4px;
+      text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
+      line-height: 0.9;
+      transform: rotate(-1.5deg);
+      display: inline-block;
+      margin-bottom: 8px;
     }
-    .subtitle { font-family: 'Permanent Marker', cursive; font-size: clamp(0.8rem, 2.5vw, 0.95rem); 
-      color: #fff; text-shadow: 3px 3px 0px #0f172a; letter-spacing: 1px; }
-    .container {
-      width: 100%; max-width: 540px; background: #e2e8f0; border: 4px solid #000;
-      border-radius: 20px; box-shadow: 8px 8px 0px #000; height: 420px;
-      display: flex; flex-direction: column; margin: 0 16px; flex-shrink: 0; overflow: hidden;
+
+    .subtitle {
+      font-family: 'Permanent Marker', cursive;
+      font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+      color: #ffffff;
+      text-shadow: 3px 3px 0px var(--port-dark);
     }
-    .content { background: #f3f4f6; padding: 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
-    .section { display: none; }
-    .section.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease-out; }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .section-title { font-family: 'Bangers', cursive; font-size: 20px; color: #0f172a; margin-bottom: 16px; text-transform: uppercase; }
-    .avatars-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    .avatar-btn { width: 100%; aspect-ratio: 1; border: 4px solid #000; border-radius: 12px; background: white;
-      cursor: pointer; transition: all 0.15s ease; padding: 0; display: flex; align-items: center; justify-content: center; }
-    .avatar-btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
-    .avatar-btn.selected { background: #facc15; box-shadow: 8px 8px 0px #000; }
-    .input-group { margin-bottom: 14px; }
-    .input-group label { display: block; font-weight: 900; font-size: 12px; color: #0f172a; margin-bottom: 6px; text-transform: uppercase; }
-    .input-group input, .input-group select {
-      width: 100%; padding: 10px 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
-      color: #0f172a; background: #fff; border: 4px solid #000; border-radius: 8px; box-shadow: 3px 3px 0px #000;
+
+    .dock-container {
+      width: 100%;
+      max-width: 540px;
+      background: #e2e8f0;
+      border: var(--border-thick);
+      border-radius: 20px;
+      box-shadow: var(--shadow-comic);
+      overflow: hidden;
     }
-    .game-area {
-      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      background: white; border: 4px solid #000; border-radius: 12px; padding: 16px; position: relative; overflow: hidden;
+
+    .tabs-wrapper {
+      display: flex;
+      background: var(--port-dark);
+      border-bottom: var(--border-thick);
     }
-    .game-title { font-family: 'Bungee', sans-serif; font-size: 16px; color: #ef4444; text-transform: uppercase; margin-bottom: 12px; text-align: center; }
-    .game-canvas { width: 100%; height: 100%; position: relative; }
-    .clickable { position: absolute; cursor: pointer; transition: all 0.1s ease; }
-    .clickable:hover { transform: scale(1.1); }
-    .progress-bar { width: 100%; height: 20px; background: #cbd5e1; border: 2px solid #000; border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
-    .progress-fill { height: 100%; background: linear-gradient(90deg, #22c55e, #facc15); transition: width 0.3s ease; }
-    .button {
-      background: #ef4444; color: white; border: 4px solid #000; border-radius: 10px; padding: 12px 24px;
-      font-family: 'Bungee', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase;
-      cursor: pointer; box-shadow: 6px 6px 0px #000; transition: all 0.15s ease; width: 100%; margin-top: auto; border-bottom: none;
+
+    .tab-badge {
+      flex: 1;
+      background: var(--comic-yellow);
+      color: var(--port-dark);
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      padding: 14px 8px;
+      text-align: center;
+      letter-spacing: 0.5px;
     }
-    .button:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #000; }
-    .button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
-    .footer-stamp { margin-top: 12px; font-size: 9px; color: #fff; text-align: center; max-width: 540px; line-height: 1.3; padding: 0 16px; flex-shrink: 0; }
-    .error-popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-      background: #e2e8f0; border: 4px solid #000; border-radius: 20px; padding: 32px 28px; max-width: 420px;
-      width: 90%; box-shadow: 8px 8px 0px #000; z-index: 1000; animation: popupAppear 0.3s ease-out; }
-    .error-popup.show { display: block; }
-    @keyframes popupAppear { from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
-    .error-popup-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); z-index: 999; }
-    .error-popup-overlay.show { display: block; }
-    .error-popup-title { font-family: 'Bangers', cursive; font-size: 28px; color: #ef4444; margin-bottom: 12px; text-transform: uppercase; }
-    .error-popup-message { font-family: 'Space Grotesk', sans-serif; font-size: 15px; color: #0f172a; margin-bottom: 24px; line-height: 1.6; font-weight: 600; }
-    .error-popup-btn { background: #ef4444; color: white; border: 4px solid #000; border-radius: 12px; padding: 14px 28px;
-      font-family: 'Bungee', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; cursor: pointer;
-      box-shadow: 8px 8px 0px #000; transition: all 0.15s ease; width: 100%; border-bottom: none; }
-    .error-popup-btn:hover { transform: translate(-2px, -2px); box-shadow: 8px 8px 0px #000; }
-    .score-display { font-family: 'Bungee', sans-serif; font-size: 18px; color: #ef4444; text-align: center; margin-bottom: 12px; }
-    .quote-display { font-family: 'Permanent Marker', cursive; font-size: 13px; color: #0f172a; text-align: center; line-height: 1.5; margin-bottom: 16px; font-style: italic; }
+
+    .form-content {
+      background: var(--paper-cream);
+      padding: 24px;
+    }
+
+    .section-headline {
+      font-family: 'Bangers', cursive;
+      font-size: 26px;
+      color: var(--port-dark);
+      margin-bottom: 18px;
+      text-transform: uppercase;
+    }
+
+    .input-group { 
+      margin-bottom: 18px; 
+    }
+
+    .input-group label {
+      display: block;
+      font-weight: 900;
+      font-size: 13px;
+      color: var(--port-dark);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .custom-field {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--port-dark);
+      background: #ffffff;
+      border: var(--border-thick);
+      border-radius: 10px;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .color-btn {
+      aspect-ratio: 1;
+      width: 100%;
+      border: var(--border-thick);
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+      transition: transform 0.1s;
+    }
+
+    .color-btn.active {
+      transform: scale(0.9) translate(2px, 2px);
+      box-shadow: 0px 0px 0px #000;
+    }
+
+    /* MINI-JEUX COMPACTS */
+    .game-box {
+      background: #cbd5e1;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: var(--shadow-comic-sm);
+      display: none;
+      text-align: center;
+    }
+
+    .game-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      color: var(--port-dark);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      background: white;
+      padding: 4px 8px;
+      border: 2px solid #000;
+      display: inline-block;
+    }
+
+    .mini-game-btn {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Bangers', cursive;
+      font-size: 20px;
+      color: white;
+      background: var(--comic-red);
+      border: 3px solid #000;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    /* MINI-JEU 2 : TRI DE FRET */
+    .cargo-card {
+      background: white;
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      font-size: 16px;
+      font-weight: 900;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+    }
+    .btn-split-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* MINI-JEU 3 : PÉTANQUE JAUGE VIBRANTE */
+    .petanque-track {
+      width: 100%;
+      height: 30px;
+      background: #94a3b8;
+      border: 3px solid #000;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .petanque-target {
+      position: absolute;
+      left: 42%;
+      width: 16%;
+      height: 100%;
+      background: var(--comic-yellow);
+      border-left: 2px dashed #000;
+      border-right: 2px dashed #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: black;
+    }
+    .petanque-cursor {
+      position: absolute;
+      top: 0;
+      left: 0%;
+      width: 12px;
+      height: 100%;
+      background: var(--comic-red);
+      border: 1px solid #fff;
+      box-shadow: 0 0 8px #000;
+    }
+
+    /* FINALE & SUPER APERÇU IMMERSIF */
+    .badge-preview-card {
+      border: var(--border-thick);
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 18px;
+      background: var(--bg-goudes);
+      color: white;
+      text-shadow: 2px 2px 0 #000;
+      font-family: 'Bungee', sans-serif;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .badge-info {
+      flex: 1;
+      text-align: left;
+    }
+    .badge-title-tag {
+      font-size: 10px;
+      background: #000;
+      color: var(--comic-yellow);
+      padding: 2px 6px;
+      display: inline-block;
+      margin-bottom: 4px;
+      border-radius: 4px;
+    }
+    .badge-name {
+      font-size: 16px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+    .badge-status-sub {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      opacity: 0.9;
+    }
+
+    .action-zone {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 4px dashed rgba(0,0,0,0.1);
+    }
+
+    .suit-avatar {
+      position: relative;
+      width: 76px;
+      height: 76px;
+      background: #f97316;
+      border: 3px solid #000;
+      border-radius: 50%;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    
+    .suit-visor {
+      position: absolute;
+      top: 25%; left: 50%;
+      transform: translateX(-50%);
+      width: 32px; height: 32px;
+      background: var(--port-light-blue);
+      border: 3px solid #000;
+      border-radius: 50%;
+      box-shadow: inset 3px 3px 0 #fff;
+      z-index: 5;
+    }
+
+    .texture-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      display: none;
+    }
+    .texture-algues { background: linear-gradient(transparent, rgba(22, 163, 74, 0.7)); }
+    .texture-tuning { background: repeating-linear-gradient(45deg, rgba(168, 85, 247, 0.4), rgba(168, 85, 247, 0.4) 5px, rgba(56, 189, 248, 0.4) 5px, rgba(56, 189, 248, 0.4) 10px); }
+    .texture-soleil { background: radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, transparent 70%); }
+    .texture-bricole { background: linear-gradient(45deg, transparent 40%, #000 40%, #000 50%, transparent 50%); background-size: 20px 20px; opacity: 0.3; }
+
+    .lever-wrapper { flex: 1; }
+    
+    .submit-lever-btn {
+      width: 100%;
+      padding: 14px;
+      font-family: 'Bangers', cursive;
+      font-size: 22px;
+      color: white;
+      background: #94a3b8;
+      border: var(--border-thick);
+      border-radius: 12px;
+      cursor: not-allowed;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .submit-lever-btn.unlocked {
+      background: var(--comic-green);
+      cursor: pointer;
+    }
+
+    .submit-lever-btn.unlocked:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000;
+    }
+
+    .speech-bubble {
+      background: white;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--comic-red);
+      margin-top: 16px;
+      box-shadow: var(--shadow-comic-sm);
+      display: none;
+    }
   </style>
 </head>
 <body>
+
   <div class="header-container">
-    <div class="main-title">BATTLE DOCK</div>
-    <div class="subtitle">Recrutement en cours...</div>
+    <h1 class="main-title">BATTLE DOCK</h1>
+    <p class="subtitle">Atelier d'Homologation des Badges</p>
   </div>
 
-  <div class="container">
-    <div class="content">
-      <div class="section active" id="secPresentation">
-        <div class="section-title">Bienvenue Docker!</div>
-        <p style="font-size: 13px; color: #0f172a; line-height: 1.5; margin-bottom: 12px;">
-          Vous venez de postuler, veuillez remplir les informations et réussir notre nouvelle session de tests !
-        </p>
-        <button class="button" onclick="nextSection()">COMMENCER</button>
-      </div>
+  <div class="dock-container">
+    <div class="tabs-wrapper">
+      <div class="tab-badge" id="playerTabMatricule">PROFIL DE DOCKER</div>
+    </div>
 
-      <div class="section" id="secAvatar">
-        <div class="section-title">Choisir votre look</div>
-        <div class="avatars-grid" id="avatarsGrid"></div>
-        <button class="button" onclick="nextSection()" id="btnAvatar" disabled>SUIVANT</button>
-      </div>
-
-      <div class="section" id="secInfos">
-        <div class="section-title">Vos infos</div>
-        <div class="input-group">
-          <label>⚓ Nom du bateau</label>
-          <input type="text" id="shipName" placeholder="ex: La Sardine" required>
+    <div class="form-content">
+      
+      <div class="badge-preview-card" id="badgeCardBg">
+        <div class="suit-avatar" id="diverSuit">
+          <div class="suit-visor"></div>
+          <div class="texture-overlay texture-algues" id="t-algues"></div>
+          <div class="texture-overlay texture-tuning" id="t-tuning"></div>
+          <div class="texture-overlay texture-soleil" id="t-soleil"></div>
+          <div class="texture-overlay texture-bricole" id="t-bricole"></div>
         </div>
+        <div class="badge-info">
+          <span class="badge-title-tag">PASS DOCKER ACCÈS PROVISOIRE</span>
+          <div class="badge-name" id="badgeUserName">DOCKER</div>
+          <div class="badge-status-sub" id="badgeSubLook">Style: GOUDES</div>
+        </div>
+      </div>
+
+      <h2 class="section-headline" id="stepTitle">1. Style de ton pass</h2>
+
+      <div id="configSection">
+        
         <div class="input-group">
-          <label>🏋️ Spécialité</label>
-          <select id="specialty" required>
-            <option value="">-- Choisir --</option>
-            <option value="manutention">Manutention</option>
-            <option value="pilotage">Pilotage</option>
-            <option value="chargement">Chargement</option>
-            <option value="dechargement">Déchargement</option>
-            <option value="surveillance">Surveillance</option>
+          <label>🌅 Panorama de fond du Badge</label>
+          <select class="custom-field" id="badgeBackground" onchange="updateBadgeStyle()">
+            <option value="goudes">Coucher de soleil sur les Goudes</option>
+            <option value="containers">Mur de Containers en vrac (Tagué)</option>
+            <option value="marine">Le Bar de la Marine (Ambiance Jaune)</option>
+            <option value="mistral">Avis de Tempête (Grand Mistral)</option>
           </select>
         </div>
-        <button class="button" onclick="startGames()">COMMENCER LES TESTS</button>
+
+        <div class="input-group">
+          <label>🛠️ État d'usure de la Combinaison</label>
+          <select class="custom-field" id="badgeState" onchange="updateBadgeStyle()">
+            <option value="neuf">Peinture Neuve d'Usine</option>
+            <option value="algues">Sortie de l'eau (Plein d'algues gluantes)</option>
+            <option value="tuning">Finition Tuning (Chrome Violet/Bleu)</option>
+            <option value="soleil">Coup de soleil (Métal surchauffé)</option>
+            <option value="bricole">Bricolé (Fissures colmatées au Scotch)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label>🎨 Peinture de base du Métal</label>
+          <div class="color-picker-grid">
+            <button class="color-btn active" style="background: #f97316;" onclick="selectSuitColor('#f97316', this)"></button>
+            <button class="color-btn" style="background: #ef4444;" onclick="selectSuitColor('#ef4444', this)"></button>
+            <button class="color-btn" style="background: #2563eb;" onclick="selectSuitColor('#2563eb', this)"></button>
+            <button class="color-btn" style="background: #a855f7;" onclick="selectSuitColor('#a855f7', this)"></button>
+            <button class="color-btn" style="background: #22c55e;" onclick="selectSuitColor('#22c55e', this)"></button>
+            <button class="color-btn" style="background: #06b6d4;" onclick="selectSuitColor('#06b6d4', this)"></button>
+            <button class="color-btn" style="background: #ec4899;" onclick="selectSuitColor('#ec4899', this)"></button>
+            <button class="color-btn" style="background: #eab308;" onclick="selectSuitColor('#eab308', this)"></button>
+            <button class="color-btn" style="background: #475569;" onclick="selectSuitColor('#475569', this)"></button>
+            <button class="color-btn" style="background: #78350f;" onclick="selectSuitColor('#78350f', this)"></button>
+          </div>
+        </div>
+
+        <button class="mini-game-btn" style="background:var(--port-blue); margin-top: 10px;" onclick="startQualificationTests()">Lancer la sécurité portuaire !</button>
       </div>
 
-      <div class="section" id="secGame">
-        <div style="width: 100%; flex: 1; display: flex; flex-direction: column;">
-          <div class="progress-bar">
-            <div class="progress-fill" id="progressFill"></div>
-          </div>
-          <div class="game-area" id="gameArea">
-            <div class="game-title" id="gameTitle">Jeu 1/5</div>
-            <div class="game-canvas" id="gameCanvas"></div>
-          </div>
-          <div style="font-size: 12px; color: #0f172a; text-align: center; margin-top: 8px;">
-            Score: <span id="currentScore" style="font-weight: 900;">0</span>/100
-          </div>
+      <div class="game-box" id="game1Box">
+        <div class="game-title">Épreuve 1: Esquive les Douanes</div>
+        <p style="font-size:13px; margin-bottom:10px; font-weight:700;">Clique sur FRAUDER uniquement quand le gyrophare passe au VERT flash !</p>
+        <div class="radar-screen" style="width: 100%; height: 70px; background: #020617; border: 3px solid #000; border-radius: 8px; margin-bottom: 12px; display: flex; align-items: center; justify-content: center;">
+          <div class="radar-light" id="douaneLight" style="width: 36px; height: 36px; border-radius: 50%; background: #ef4444;"></div>
+        </div>
+        <button class="mini-game-btn" style="background:var(--port-dark);" onclick="clickFraudeDouane()">FRAUDER MAINTENANT !</button>
+      </div>
+
+      <div class="game-box" id="game2Box">
+        <div class="game-title">Épreuve 2: Tri sélectif des Docks</div>
+        <p style="font-size:13px; margin-bottom:8px; font-weight:700;">Valide le fret légal et rejette la contrebande louche ! Score requis : <span id="cargoScoreText">0</span>/3</p>
+        <div class="cargo-card" id="cargoItemDisplay">Chargement en cours...</div>
+        <div class="btn-split-grid">
+          <button class="mini-game-btn" style="background: var(--comic-red);" onclick="handleCargoDecision(false)">❌ REJETER</button>
+          <button class="mini-game-btn" style="background: var(--comic-green);" onclick="handleCargoDecision(true)">✅ ACCEPTER</button>
         </div>
       </div>
 
-      <div class="section" id="secResult">
-        <div class="section-title">Recrutement Réussi!</div>
-        <div class="score-display" id="finalScore"></div>
-        <div class="quote-display" id="finalQuote"></div>
-        <button class="button" onclick="goToGame()">ALLER AU JEU</button>
+      <div class="game-box" id="game3Box">
+        <div class="game-title">Épreuve 3: Tir au fer Portuaire</div>
+        <p style="font-size:13px; margin-bottom:8px; font-weight:700;">Bloque le curseur pile poil au centre sur le cochonnet jaune !</p>
+        <div class="petanque-track">
+          <div class="petanque-target">🎯</div>
+          <div class="petanque-cursor" id="pCursor"></div>
+        </div>
+        <button class="mini-game-btn" style="background: #eab308;" onclick="shootPetanque()">💥 TIRER AU FER !</button>
       </div>
+
+      <div class="action-zone">
+        <div class="lever-wrapper">
+          <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">Sécurité en attente</button>
+        </div>
+      </div>
+
+      <div class="speech-bubble" id="errorBubble"></div>
+
     </div>
-  </div>
-
-  <div class="footer-stamp">Battle Dock — Recrutement des Dockers de Marseille</div>
-
-  <div class="error-popup-overlay" id="errorOverlay"></div>
-  <div class="error-popup" id="errorPopup">
-    <div class="error-popup-title">ERREUR</div>
-    <div class="error-popup-message" id="errorMessage"></div>
-    <button class="error-popup-btn" onclick="closeErrorPopup()">OK</button>
   </div>
 
   <script>
@@ -162,164 +505,200 @@
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     const userId = localStorage.getItem('userId');
-    if (!userId) window.location.href = 'index-5.html';
+    const username = localStorage.getItem('username') || 'Docker';
+    
+    let chosenColor = '#f97316';
+    let currentStep = 0; 
 
-    let currentSection = 0, selectedAvatar = null, totalScore = 0, currentGameIndex = 0, gameScores = [0, 0, 0, 0, 0];
-    const sections = ['secPresentation', 'secAvatar', 'secInfos', 'secGame', 'secResult'];
-    const dockerQuotes = ["T'es pas un docker, t'es une légende!", "Même les sardines te font peur maintenant!", "Le port te reconnaît déjà...", "Tu gères mieux que Cousteau!", "Les conteneurs t'obéissent!", "T'es trop fort pour le port!", "Les mouettes te saluent!", "Le Vieux-Port tremble sous tes pieds!", "T'es un vrai docker marseillais!", "Les cordes tremblent à ton approche!", "Tu dis adios aux conteneurs!", "Même la Méditerranée te respecte!", "T'es la légende du quai!", "Les autres dockers te demandent des conseils!", "Tu cartonnes trop fort!", "T'es un superdocker!", "Les conteneurs ont peur de toi!", "Tu gouvernes le port!", "T'es inarrêtable!", "Les cordes te chantent des hymnes!", "T'es un génie du chargement!", "Les cargos te font signe!", "T'es la star du port!", "Les dockers parlent de toi!", "T'es irrésistible!", "Même Cousteau t'admirait!", "T'es le roi du Vieux-Port!", "Les conteneurs te saluent!", "T'es un champion docker!", "Tu es l'enfant chéri du port!"];
+    if (!userId) window.location.href = 'index.html';
 
-    function createAvatars() {
-      const grid = document.getElementById('avatarsGrid');
-      for (let i = 1; i <= 6; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'avatar-btn';
-        btn.innerHTML = createDockerSVG(i);
-        btn.onclick = () => selectAvatar(i, btn);
-        grid.appendChild(btn);
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('playerTabMatricule').textContent = `ACCÈS DE : ${username.toUpperCase()}`;
+      document.getElementById('badgeUserName').textContent = username.toUpperCase();
+      updateBadgeStyle();
+    });
+
+    function selectSuitColor(color, btn) {
+      chosenColor = color;
+      document.getElementById('diverSuit').style.background = color;
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function updateBadgeStyle() {
+      const bgType = document.getElementById('badgeBackground').value;
+      const stateType = document.getElementById('badgeState').value;
+      const card = document.getElementById('badgeCardBg');
+
+      card.style.background = `var(--bg-${bgType})`;
+      document.getElementById('badgeSubLook').textContent = `Look: ${bgType.toUpperCase()}`;
+
+      document.querySelectorAll('.texture-overlay').forEach(el => el.style.display = 'none');
+      if (stateType !== 'neuf') {
+        document.getElementById(`t-${stateType}`).style.display = 'block';
       }
     }
 
-    function createDockerSVG(n) {
-      const c = ['#ef4444', '#3b82f6', '#22c55e', '#facc15', '#ec4899', '#f97316'][n-1];
-      const d = [{h:'8',b:'y'},{h:'12',b:'n'},{h:'10',b:'y'},{h:'6',b:'n'},{h:'14',b:'y'},{h:'8',b:'n'}][n-1];
-      return `<svg width="100%" height="100%" viewBox="0 0 64 80"><circle cx="32" cy="24" r="14" fill="${c}"/><rect x="${32-d.h}" y="8" width="${d.h*2}" height="6" fill="#1a1a1a" rx="1"/><circle cx="27" cy="22" r="2" fill="#000"/><circle cx="37" cy="22" r="2" fill="#000"/>${d.b==='y'?'<rect x="26" y="30" width="12" height="3" fill="#1a1a1a" rx="1"/>':''}<rect x="24" y="40" width="16" height="20" fill="${c}"/><rect x="14" y="44" width="10" height="4" fill="${c}" rx="2"/><rect x="40" y="44" width="10" height="4" fill="${c}" rx="2"/><rect x="26" y="62" width="4" height="10" fill="#1a1a1a"/><rect x="34" y="62" width="4" height="10" fill="#1a1a1a"/></svg>`;
+    function startQualificationTests() {
+      document.getElementById('configSection').style.display = 'none';
+      setupDouaneGame();
     }
 
-    function selectAvatar(n, b) {
-      document.querySelectorAll('.avatar-btn').forEach(x => x.classList.remove('selected'));
-      b.classList.add('selected');
-      selectedAvatar = n;
-      document.getElementById('btnAvatar').disabled = false;
+    // --- MINI JEU 1 : LES DOUANES ---
+    let douaneInterval;
+    let isLightGreen = false;
+    function setupDouaneGame() {
+      currentStep = 1;
+      document.getElementById('stepTitle').textContent = "Épreuve 1 / 3";
+      document.getElementById('game1Box').style.display = 'block';
+      changeLightLoop();
     }
 
-    function showSection(i) {
-      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-      document.getElementById(sections[i]).classList.add('active');
-      currentSection = i;
+    function changeLightLoop() {
+      if (currentStep !== 1) return;
+      const light = document.getElementById('douaneLight');
+      isLightGreen = Math.random() > 0.65;
+      if (isLightGreen) {
+        light.style.background = '#22c55e';
+        light.style.boxShadow = '0 0 25px #22c55e';
+      } else {
+        light.style.background = '#ef4444';
+        light.style.boxShadow = '0 0 25px #ef4444';
+      }
+      douaneInterval = setTimeout(changeLightLoop, Math.random() * 800 + 700);
     }
 
-    function nextSection() {
-      if (currentSection === 2) {
-        if (!document.getElementById('shipName').value || !document.getElementById('specialty').value) {
-          showError('Remplis tous les champs!');
-          return;
+    function clickFraudeDouane() {
+      clearTimeout(douaneInterval);
+      if (isLightGreen) {
+        document.getElementById('game1Box').style.display = 'none';
+        setupCargoGame();
+      } else {
+        alert("🚨 Alerte ! Pris par la patrouille ! Les douaniers confisquent tes panisses. Retente !");
+        setupDouaneGame();
+      }
+    }
+
+    // --- NOUVEAU MINI JEU 2 : LE TRI DU FRET ---
+    const cargoItemsPool = [
+      { text: "📦 Caisse de Navettes de Marseille authentiques", isLegal: true },
+      { text: "🛢️ Conteneur d'Huile d'olive coupée à l'eau de mer", isLegal: false },
+      { text: "📦 Claquettes-Chaussettes de contrebande suspectes", isLegal: false },
+      { text: "🐟 Cargaison de Sardines fraîches du Vieux-Port", isLegal: true },
+      { text: "🧼 Vrais cubes de Savon de Marseille (72% Huile)", isLegal: true },
+      { text: "👟 Baskets de marque 'Air Max Panisse' contrefaites", isLegal: false },
+      { text: "🍉 Pastèques explosives chargées au gaz de klaxon", isLegal: false }
+    ];
+    let cargoScore = 0;
+    let currentCargoItem = null;
+
+    function setupCargoGame() {
+      currentStep = 2;
+      cargoScore = 0;
+      document.getElementById('stepTitle').textContent = "Épreuve 2 / 3";
+      document.getElementById('game2Box').style.display = 'block';
+      document.getElementById('cargoScoreText').textContent = cargoScore;
+      nextCargoItem();
+    }
+
+    function nextCargoItem() {
+      const randomIndex = Math.floor(Math.random() * cargoItemsPool.length);
+      currentCargoItem = cargoItemsPool[randomIndex];
+      document.getElementById('cargoItemDisplay').textContent = currentCargoItem.text;
+    }
+
+    function handleCargoDecision(accepted) {
+      if ((accepted && currentCargoItem.isLegal) || (!accepted && !currentCargoItem.isLegal)) {
+        cargoScore++;
+        document.getElementById('cargoScoreText').textContent = cargoScore;
+        if (cargoScore >= 3) {
+          document.getElementById('game2Box').style.display = 'none';
+          setupPetanqueGame();
+        } else {
+          nextCargoItem();
         }
+      } else {
+        alert("💥 Faute professionnelle ! Le contremaître t'envoie au piquet. On recommence à zéro !");
+        cargoScore = 0;
+        document.getElementById('cargoScoreText').textContent = cargoScore;
+        nextCargoItem();
       }
-      if (currentSection < sections.length - 1) showSection(currentSection + 1);
     }
 
-    function startGames() {
-      showSection(3);
-      currentGameIndex = 0;
-      totalScore = 0;
-      gameScores = [0, 0, 0, 0, 0];
-      loadGame(0);
+    // --- NOUVEAU MINI JEU 3 : LA PÉTANQUE JAUGE MOBILE ---
+    let petanquePos = 0;
+    let petanqueDir = 2.5; // Vitesse du curseur
+    let petanqueInterval;
+
+    function setupPetanqueGame() {
+      currentStep = 3;
+      petanquePos = 0;
+      document.getElementById('stepTitle').textContent = "Épreuve 3 / 3";
+      document.getElementById('game3Box').style.display = 'block';
+      
+      petanqueInterval = setInterval(() => {
+        petanquePos += petanqueDir;
+        if (petanquePos >= 96 || petanquePos <= 0) {
+          petanqueDir = -petanqueDir; // Rebondit sur les bords
+        }
+        document.getElementById('pCursor').style.left = petanquePos + '%';
+      }, 20);
     }
 
-    function loadGame(i) {
-      currentGameIndex = i;
-      const p = (i / 5) * 100;
-      document.getElementById('progressFill').style.width = p + '%';
-      document.getElementById('gameTitle').textContent = `Jeu ${i + 1}/5`;
-      const c = document.getElementById('gameCanvas');
-      c.innerHTML = '';
-      if (i === 0) game1(c); else if (i === 1) game2(c); else if (i === 2) game3(c); else if (i === 3) game4(c); else game5(c);
-    }
-
-    function game1(c) {
-      let s = 0, t = 10;
-      document.getElementById('gameArea').innerHTML += `<div style="font-size: 18px; font-weight: 900; color: #ef4444;">Temps: <span id="timer">10</span>s | Colis: <span id="coils">0</span></div>`;
-      const ti = setInterval(() => {
-        t--; document.getElementById('timer').textContent = t;
-        if (t <= 0) { clearInterval(ti); gameScores[0] = Math.min(20, s * 2); document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(1), 1500); }
-      }, 1000);
-      const cr = () => {
-        const co = document.createElement('div');
-        co.style.cssText = `position:absolute;width:40px;height:40px;background:#facc15;border:3px solid #000;border-radius:8px;cursor:pointer;left:${Math.random()*200}px;top:${Math.random()*100}px;font-size:24px;display:flex;align-items:center;justify-content:center;`;
-        co.textContent = '📦'; co.onclick = (e) => { e.stopPropagation(); s++; document.getElementById('coils').textContent = s; co.remove(); };
-        c.appendChild(co); setTimeout(() => co.remove(), 2000);
-      };
-      setInterval(() => { if (t > 0) cr(); }, 600);
-    }
-
-    function game2(c) {
-      let seq = [], pSeq = [], r = 0;
-      const col = ['#ef4444', '#22c55e', '#facc15', '#2563eb'];
-      const btn = [];
-      for (let i = 0; i < 4; i++) {
-        const b = document.createElement('button');
-        b.style.cssText = `width:60px;height:60px;background:${col[i]};border:4px solid #000;border-radius:10px;cursor:pointer;margin:4px;font-size:24px;`;
-        b.textContent = ['🔴','🟢','🟡','🔵'][i];
-        b.onclick = () => pc(i); btn.push(b); c.appendChild(b);
+    function shootPetanque() {
+      clearInterval(petanqueInterval);
+      // La zone cible se situe entre 42% et 58% de la jauge
+      if (petanquePos >= 40 && petanquePos <= 58) {
+        document.getElementById('game3Box').style.display = 'none';
+        unlockFinalValidation();
+      } else {
+        alert("💨 Tu as tiré à côté du cochonnet ! Manqué ! Reprends ton élan.");
+        setupPetanqueGame();
       }
-      function pc(i) {
-        pSeq.push(i); btn[i].style.transform = 'scale(0.9)'; setTimeout(() => btn[i].style.transform = '', 100);
-        if (pSeq[pSeq.length-1] !== seq[pSeq.length-1]) { gameScores[1] = Math.min(20, r*3); document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(2), 1000); return; }
-        if (pSeq.length === seq.length) { r++; pSeq = []; setTimeout(() => { seq.push(Math.floor(Math.random()*4)); ps(); }, 500); }
-      }
-      function ps() {
-        let i = 0; const iv = setInterval(() => { btn[seq[i]].style.transform = 'scale(1.2)'; setTimeout(() => btn[seq[i]].style.transform = '', 400); i++; if (i >= seq.length) clearInterval(iv); }, 600);
-      }
-      seq.push(Math.floor(Math.random()*4)); ps();
     }
 
-    function game3(c) {
-      let can = false;
-      const msg = document.createElement('div');
-      msg.style.cssText = 'font-size:20px;text-align:center;color:#0f172a;';
-      msg.textContent = 'Attends le signal...'; c.appendChild(msg);
-      const sar = document.createElement('button');
-      sar.textContent = '🐟'; sar.style.cssText = 'font-size:64px;border:none;background:transparent;cursor:pointer;margin-top:20px;';
-      sar.onclick = () => { if (!can) { gameScores[2] = 0; msg.textContent = 'Trop tôt! 💥'; document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(3), 1500); } else { gameScores[2] = 20; msg.textContent = 'Parfait! ⭐'; document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(3), 1500); } };
-      c.appendChild(sar);
-      setTimeout(() => { msg.textContent = 'GO! Clique!'; msg.style.color = '#ef4444'; can = true; setTimeout(() => { if (can) { gameScores[2] = 0; msg.textContent = 'Trop lent! ⏱️'; can = false; document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(3), 1500); } }, 2000); }, Math.random()*3*1000+1000);
+    // --- VALIDATION FINALE ---
+    function unlockFinalValidation() {
+      currentStep = 4;
+      document.getElementById('stepTitle').textContent = "Badge validé !";
+      
+      const mainBtn = document.getElementById('btnMainAction');
+      mainBtn.classList.add('unlocked');
+      mainBtn.textContent = "ACCÉDER AUX DOCKS 🏗️";
     }
 
-    function game4(c) {
-      const qs = [{q:'Combien de sardines dans le Vieux-Port?',a:'Toutes!'},{q:'Qui est le vrai patron du port?',a:'Toi maintenant!'},{q:'Quel est le cri du docker?',a:'ALLEEEEEZ!'}];
-      const q = qs[Math.floor(Math.random()*qs.length)];
-      const qDiv = document.createElement('div');
-      qDiv.style.cssText = 'font-size:16px;font-weight:900;text-align:center;margin-bottom:16px;color:#0f172a;'; qDiv.textContent = q.q; c.appendChild(qDiv);
-      const aDiv = document.createElement('div');
-      aDiv.style.cssText = 'font-size:14px;text-align:center;padding:12px;background:#facc15;border:4px solid #000;border-radius:8px;margin-bottom:12px;color:#0f172a;'; aDiv.textContent = '?'; c.appendChild(aDiv);
-      const bDiv = document.createElement('button'); bDiv.className = 'button'; bDiv.style.margin = '0'; bDiv.textContent = 'Réponse'; bDiv.onclick = () => { aDiv.textContent = q.a; gameScores[3] = 20; document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => loadGame(4), 1500); }; c.appendChild(bDiv);
-    }
+    async function validateAndPrintBadge() {
+      if (currentStep < 4) return;
 
-    function game5(c) {
-      let seq = [], pSeq = [], r = 0;
-      const mov = ['🤛','🤜','🙌','🤷'];
-      const dis = document.createElement('div'); dis.style.cssText = 'font-size:48px;text-align:center;margin-bottom:12px;'; c.appendChild(dis);
-      const btn = [];
-      for (let i = 0; i < 4; i++) {
-        const b = document.createElement('button');
-        b.style.cssText = `width:50px;height:50px;margin:4px;font-size:24px;border:4px solid #000;background:#fff;cursor:pointer;border-radius:8px;`;
-        b.textContent = mov[i]; b.onclick = () => pm(i); btn.push(b); c.appendChild(b);
+      const bgChosen = document.getElementById('badgeBackground').value;
+      const stateChosen = document.getElementById('badgeState').value;
+      const errorBubble = document.getElementById('errorBubble');
+
+      try {
+        const { error } = await supabaseClient
+          .from('game_progress')
+          .update({ rank: `Docker (${stateChosen.toUpperCase()})` })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        localStorage.setItem('userBg', bgChosen);
+        localStorage.setItem('userState', stateChosen);
+        localStorage.setItem('userColor', chosenColor);
+
+        const mainBtn = document.getElementById('btnMainAction');
+        mainBtn.textContent = "OUVERTURE DES PORTES...";
+        mainBtn.style.background = 'var(--port-blue)';
+        
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 1000);
+
+      } catch (err) {
+        errorBubble.innerHTML = `🚨 ERREUR IMPRIMANTE :<br>"${err.message}"`;
+        errorBubble.style.display = 'block';
       }
-      function pm(i) {
-        pSeq.push(i); btn[i].style.transform = 'scale(0.8)'; setTimeout(() => btn[i].style.transform = '', 100);
-        if (pSeq[pSeq.length-1] !== seq[pSeq.length-1]) { gameScores[4] = Math.min(20, r*2); document.getElementById('currentScore').textContent = gameScores.reduce((a,b)=>a+b,0); setTimeout(() => end(), 1000); return; }
-        if (pSeq.length === seq.length) { r++; pSeq = []; setTimeout(() => { seq.push(Math.floor(Math.random()*4)); play(); }, 500); }
-      }
-      function play() {
-        let i = 0; const iv = setInterval(() => { dis.textContent = mov[seq[i]]; btn[seq[i]].style.background = '#facc15'; setTimeout(() => btn[seq[i]].style.background = '#fff', 400); i++; if (i >= seq.length) clearInterval(iv); }, 600);
-      }
-      seq.push(Math.floor(Math.random()*4)); play();
     }
-
-    function end() {
-      totalScore = gameScores.reduce((a,b)=>a+b,0);
-      const qI = Math.floor(totalScore / 3.33);
-      const q = dockerQuotes[Math.min(qI, dockerQuotes.length-1)];
-      document.getElementById('finalScore').textContent = `${totalScore}/100`;
-      document.getElementById('finalQuote').textContent = `"${q}"`;
-      supabaseClient.from('profiles').update({docker_quote:q, avatar:selectedAvatar, ship_name:document.getElementById('shipName').value, specialty:document.getElementById('specialty').value}).eq('user_id',userId).then(() => { showSection(4); });
-    }
-
-    function goToGame() { window.location.href = 'game.html'; }
-    function showError(m) { document.getElementById('errorMessage').textContent = m; document.getElementById('errorPopup').classList.add('show'); document.getElementById('errorOverlay').classList.add('show'); }
-    function closeErrorPopup() { document.getElementById('errorPopup').classList.remove('show'); document.getElementById('errorOverlay').classList.remove('show'); }
-    document.getElementById('errorOverlay').addEventListener('click', closeErrorPopup);
-    createAvatars();
   </script>
 </body>
 </html>
