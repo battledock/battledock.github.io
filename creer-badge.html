@@ -2,22 +2,24 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Entretien d'Embauche Saboté - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Boogaloo&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Les Quais de la Joliette</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <script src="fullscreen.js"></script>
+  
   <style>
     :root {
-      --bg-comic: #f3f4f6;
-      --border-thick: 4px solid #000;
-      --border-thin: 2px solid #000;
-      --panel-bg: #fffbf0; /* Papier rétro jauni */
-      --accent-yellow: #fde047;
-      --accent-red: #ef4444;
-      --accent-blue: #3b82f6;
-      --accent-green: #10b981;
-      --text: #000;
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --paper-cream: #fefce8;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 6px 6px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
     }
 
     * {
@@ -25,524 +27,426 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background-color: #111827;
-      background-image: radial-gradient(#374151 1px, transparent 1px);
-      background-size: 16px 16px;
-      color: var(--text);
+      background: linear-gradient(135deg, #0f172a 0%, #1e1e38 100%);
       min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      color: #fff;
       padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
-    /* Ambiance match en fond sonore */
-    .tv-noise {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      background: var(--accent-blue);
-      color: white;
-      padding: 6px 12px;
-      border: var(--border-thin);
-      border-radius: 8px;
-      font-size: 11px;
-      font-weight: bold;
-      z-index: 100;
-      box-shadow: 3px 3px 0 #000;
-      pointer-events: none;
-    }
-
-    .comic-board {
+    /* BARRE DE STATUTS TOP STYLE COMPACT MOBILE */
+    .top-bar {
       width: 100%;
-      max-width: 550px;
-      background: #000;
-      padding: 10px;
-      border-radius: 16px;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.6);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    /* Titre de la planche */
-    .board-title {
-      background: var(--accent-yellow);
+      max-width: 500px;
+      background: var(--port-dark);
       border: var(--border-thick);
-      padding: 12px;
-      text-align: center;
-      transform: rotate(-1deg);
-      box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
-    }
-
-    .board-title h1 {
-      font-family: 'Bangers', cursive;
-      font-size: 28px;
-      letter-spacing: 2px;
-    }
-
-    .board-subtitle {
-      font-family: 'Permanent Marker', cursive;
-      font-size: 13px;
-      color: var(--accent-red);
-      margin-top: 4px;
-    }
-
-    /* Case de BD (Panel) */
-    .comic-panel {
-      background: var(--panel-bg);
-      border: var(--border-thick);
-      padding: 24px 16px 16px 16px;
-      position: relative;
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.05);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .comic-panel.hidden { display: none; }
-
-    /* Bulle narrative d'étape */
-    .panel-label {
-      position: absolute;
-      top: -12px;
-      left: 15px;
-      background: var(--accent-red);
-      color: white;
-      padding: 2px 14px;
-      font-family: 'Bangers', cursive;
-      font-size: 16px;
-      border: var(--border-thin);
-      border-radius: 20px;
-      letter-spacing: 1px;
-      box-shadow: 2px 2px 0 #000;
-      z-index: 10;
-    }
-
-    /* Bulle de dialogue du Patron */
-    .speech-bubble {
-      background: white;
-      border: var(--border-thin);
-      border-radius: 16px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-comic-sm);
       padding: 10px 14px;
-      position: relative;
-      font-family: 'Boogaloo', cursive;
-      font-size: 16px;
-      line-height: 1.4;
-      box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
-      margin-bottom: 5px;
-    }
-
-    .speech-bubble::after {
-      content: '';
-      position: absolute;
-      bottom: -10px;
-      left: 25px;
-      width: 0; height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-top: 10px solid #000;
-    }
-
-    /* ========================================================
-       LES 10 AVATARS VECTORIELS BD (ZÉRO ÉMOJI, PUR CSS) 
-       ======================================================== */
-    .avatars-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 8px;
-    }
-
-    .avatar-box {
-      cursor: pointer;
-      border: var(--border-thin);
-      border-radius: 10px;
-      padding: 6px 4px;
-      background: #fff;
-      transition: all 0.15s ease;
-      text-align: center;
       display: flex;
-      flex-direction: column;
       align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
     }
 
-    .avatar-box:active, .avatar-box.selected {
-      background: #fef08a;
-      border-color: #f59e0b;
-      transform: scale(1.05) rotate(-2deg);
-      box-shadow: 3px 3px 0 #000;
-    }
-
-    .avatar-draw {
-      width: 52px;
-      height: 52px;
-      border-radius: 50%;
-      border: var(--border-thin);
-      position: relative;
+    .player-avatar-mini {
+      width: 48px;
+      height: 48px;
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 8px;
+      flex-shrink: 0;
       overflow: hidden;
-      background: #ffcc99; /* Base couleur peau */
+    }
+    .player-avatar-mini svg {
+      width: 100%; height: 100%;
+      image-rendering: pixelated;
     }
 
-    .avatar-name {
-      font-family: 'Bangers', cursive;
-      font-size: 11px;
-      margin-top: 4px;
+    .player-info-meta {
+      flex: 1;
+    }
+    .player-name {
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      color: var(--comic-yellow);
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-rank {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 11px;
+      color: var(--port-light-blue);
     }
 
-    /* 1. Le Capitaine (Barbe rousse + Casquette bleue) */
-    .av-capitaine { background: #ffd0a1; }
-    .av-capitaine::before { content: ''; position: absolute; top: 0; left: 6px; width: 40px; height: 16px; background: #1e3a8a; border-radius: 10px 10px 0 0; border-bottom: 2px solid #000; }
-    .av-capitaine::after { content: ''; position: absolute; bottom: 0; left: 4px; width: 44px; height: 26px; background: #d97706; border-radius: 50%; border-top: 2px solid #000; }
-
-    /* 2. Le Balafré (Oeil borgne + Balafre) */
-    .av-balafre { background: #e0a970; }
-    .av-balafre::before { content: ''; position: absolute; top: 20px; left: 10px; width: 14px; height: 14px; background: #000; border-radius: 50%; } /* Cache oeil */
-    .av-balafre::after { content: ''; position: absolute; top: 12px; left: 8px; width: 35px; height: 3px; background: #000; transform: rotate(-20deg); }
-
-    /* 3. Le Moussaillon (Jeune, Petit bachi blanc à pompon) */
-    .av-moussaillon { background: #ffe0bd; }
-    .av-moussaillon::before { content: ''; position: absolute; top: 2px; left: 11px; width: 30px; height: 12px; background: #fff; border-radius: 6px 6px 0 0; border: 1px solid #000; }
-    .av-moussaillon::after { content: ''; position: absolute; top: -1px; left: 23px; width: 6px; height: 6px; background: #ef4444; border-radius: 50%; }
-
-    /* 4. L'Ancien (Grosse barbe blanche + Bonnet gris) */
-    .av-ancien { background: #ffd2a8; }
-    .av-ancien::before { content: ''; position: absolute; top: 0; left: 10px; width: 32px; height: 14px; background: #4b5563; border-radius: 8px 8px 0 0; }
-    .av-ancien::after { content: ''; position: absolute; bottom: -4px; left: 4px; width: 44px; height: 30px; background: #f3f4f6; border-radius: 50%; border: 1px solid #9ca3af; }
-
-    /* 5. Le Pirate (Bandana Rouge + Anneau oreille) */
-    .av-pirate { background: #e5b080; }
-    .av-pirate::before { content: ''; position: absolute; top: 0; left: 4px; width: 44px; height: 16px; background: #dc2626; border-radius: 20px 20px 4px 4px; }
-    .av-pirate::after { content: ''; position: absolute; top: 22px; left: 2px; width: 8px; height: 8px; border: 2px solid #fbbf24; border-radius: 50%; }
-
-    /* 6. Le Gringo (Grosses lunettes de soleil noires) */
-    .av-cool { background: #ffd0a1; }
-    .av-cool::before { content: ''; position: absolute; top: 16px; left: 6px; width: 18px; height: 14px; background: #111827; border-radius: 4px; box-shadow: 20px 0 0 #111827; }
-    .av-cool::after { content: ''; position: absolute; top: 20px; left: 22px; width: 10px; height: 3px; background: #111827; }
-
-    /* 7. Le Sécu (Casque de chantier orange de profil) */
-    .av-casque { background: #ffdca8; }
-    .av-casque::before { content: ''; position: absolute; top: -2px; left: 6px; width: 40px; height: 20px; background: #ea580c; border-radius: 30px 30px 5px 5px; }
-
-    /* 8. Le Barbu (Grosse barbe noire hipster + Pipe) */
-    .av-barbu { background: #fca5a5; }
-    .av-barbu::before { content: ''; position: absolute; bottom: -5px; left: 6px; width: 40px; height: 28px; background: #1f2937; border-radius: 40%; }
-    .av-barbu::after { content: ''; position: absolute; bottom: 12px; right: 4px; width: 12px; height: 6px; background: #b45309; border-radius: 2px; } /* Pipe */
-
-    /* 9. Le Cuistot (Grand chapeau blanc + Grosse moustache noire) */
-    .av-roux { background: #ffe4e6; }
-    .av-roux::before { content: ''; position: absolute; top: -10px; left: 11px; width: 30px; height: 26px; background: #ffffff; border-radius: 10px 10px 5px 5px; border: 1px solid #ccc; }
-    .av-roux::after { content: ''; position: absolute; top: 28px; left: 11px; width: 30px; height: 6px; background: #000; border-radius: 999px; }
-
-    /* 10. Le Mastodonte (Teint bronzé + Cicatrice en croix) */
-    .av-muscle { background: #c29260; }
-    .av-muscle::before { content: ''; position: absolute; top: 12px; left: 16px; width: 20px; height: 2px; background: #7f1d1d; transform: rotate(45deg); box-shadow: 0 0 0 1px #7f1d1d; }
-    .av-muscle::after { content: ''; position: absolute; top: 30px; left: 16px; width: 20px; height: 5px; background: #000; border-radius: 50%; }
-
-    /* ========================================================
-       MINI-JEUX & SECTIONS QCM
-       ======================================================== */
-    /* Étape 2 : Le Sac de sable */
-    .force-test { text-align: center; }
-    .sac-visual {
-      width: 90px; height: 110px; margin: 0 auto 10px;
-      background: #78350f; border: var(--border-thick);
-      border-radius: 12px 12px 40% 40%; position: relative;
-      box-shadow: inset 0 -15px 0 rgba(0,0,0,0.15);
-      transition: transform 0.08s ease;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .sac-visual::before {
-      content: 'SABLE'; font-family: 'Bangers', cursive; font-size: 18px; color: rgba(255,255,255,0.2); transform: rotate(-10deg);
-    }
-    .progress-bar-container {
-      width: 100%; height: 20px; background: white; border: var(--border-thin); border-radius: 999px; overflow: hidden; margin-bottom: 8px;
-    }
-    .progress-bar { height: 100%; width: 0%; background: var(--accent-red); transition: width 0.1s linear; }
-
-    /* Options des formulaires */
-    .qcm-options { display: flex; flex-direction: column; gap: 8px; }
-    .qcm-option {
-      padding: 12px; background: #fff; border: var(--border-thin); border-radius: 10px;
-      cursor: pointer; font-family: 'Boogaloo', cursive; font-size: 15px; transition: all 0.15s ease;
-    }
-    .qcm-option:active { background: #f3f4f6; transform: translateX(4px); }
-    .qcm-option.correct { background: #a7f3d0; border-color: var(--accent-green); font-weight: bold; }
-    .qcm-option.wrong { background: #fca5a5; border-color: var(--accent-red); animation: shake 0.3s; }
-
-    /* Étape 4 : Test de vue Pastaga */
-    .eye-chart {
-      background: white; border: var(--border-thin); padding: 12px; text-align: center; font-family: monospace; line-height: 1.5; margin-bottom: 10px;
-    }
-    .vision-input {
-      width: 100%; padding: 10px; font-size: 16px; border: var(--border-thin); border-radius: 8px; text-align: center; text-transform: uppercase; font-weight: bold;
+    .currency-badge {
+      background: var(--comic-green);
+      border: 2px solid #000;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 12px;
+      color: #000;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
-    /* Boutons de contrôle */
-    .action-button {
-      width: 100%; padding: 14px; background: var(--accent-green); color: white;
-      border: var(--border-thick); font-family: 'Bangers', cursive; font-size: 18px; letter-spacing: 1px; border-radius: 10px;
-      cursor: pointer; box-shadow: 0 5px 0 #000; transition: all 0.1s ease;
+    /* ENCADRÉ PRINCIPAL DES INFOS ET DES JAUGES */
+    .dashboard-panel {
+      width: 100%;
+      max-width: 500px;
+      background: var(--paper-cream);
+      border: var(--border-thick);
+      border-radius: 16px;
+      box-shadow: var(--shadow-comic);
+      padding: 14px;
+      color: #000;
+      margin-bottom: 14px;
     }
-    .action-button:active:not(:disabled) { transform: translateY(5px); box-shadow: none; }
-    .action-button:disabled { background: #9ca3af; box-shadow: 0 5px 0 #4b5563; cursor: not-allowed; }
-    .final-button { background: var(--accent-red); font-size: 22px; }
 
-    /* Tampon de validation BD */
-    .success-stamp {
-      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-15deg) scale(3);
-      font-family: 'Permanent Marker', cursive; font-size: 36px; color: var(--accent-green);
-      border: 5px double var(--accent-green); background: rgba(255,255,255,0.95); padding: 4px 20px; border-radius: 8px;
-      opacity: 0; pointer-events: none; z-index: 100; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    .stat-row {
+      margin-bottom: 8px;
     }
-    .success-stamp.show { transform: translate(-50%, -50%) rotate(-15deg) scale(1); opacity: 1; }
+    .stat-row:last-child { margin-bottom: 0; }
 
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-6px); }
-      75% { transform: translateX(6px); }
+    .stat-label {
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px;
+      color: var(--port-dark);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .bar-outer {
+      width: 100%;
+      height: 18px;
+      background: #cbd5e1;
+      border: 2.5px solid #000;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar-inner {
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .bar-energy { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+    .bar-xp { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+
+    /* ZONE DES MISSIONS / ACTIONS */
+    .title-section {
+      font-family: 'Bangers', cursive;
+      font-size: 24px;
+      color: var(--port-dark);
+      margin: 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .mission-card {
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .mission-details {
+      flex: 1;
+    }
+    .mission-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      color: var(--port-dark);
+    }
+    .mission-rewards {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--comic-green);
+      margin-top: 2px;
+    }
+    .mission-cost {
+      font-size: 10px;
+      font-weight: 900;
+      color: var(--comic-red);
+    }
+
+    .btn-work {
+      font-family: 'Bangers', cursive;
+      font-size: 18px;
+      padding: 8px 14px;
+      background: var(--port-blue);
+      color: #fff;
+      border: 2.5px solid #000;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0px #000;
+    }
+    .btn-work:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px #000;
+    }
+
+    /* DECONNEXION / FLOTTANT EN BAS */
+    .btn-logout {
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    /* EFFETS D'ONOMATOPÉES VOLANTES DÉCLENCHÉES AU CLIC */
+    .floating-pop {
+      position: fixed;
+      font-family: 'Bangers', cursive;
+      font-size: 26px;
+      color: var(--comic-yellow);
+      text-shadow: 2px 2px 0px #000;
+      -webkit-text-stroke: 0.5px #000;
+      pointer-events: none;
+      z-index: 100;
+      animation: flyOut 0.5s forwards ease-out;
+    }
+
+    @keyframes flyOut {
+      0% { opacity: 1; transform: scale(0.5) translateY(0); }
+      100% { opacity: 0; transform: scale(1.3) translateY(-40px) rotate(10deg); }
     }
   </style>
 </head>
 <body>
 
-  <div class="tv-noise">📺 DIRECT: OM 2 - 0 PSG (84')</div>
-
-  <div class="comic-board">
-    <div class="board-title">
-      <h1>ENTRETIEN D'EMBAUCHE SABOTÉ</h1>
-      <div class="board-subtitle">Le patron regarde le match, signe ta propre fiche !</div>
-    </div>
-
-    <div class="comic-panel" id="panel1">
-      <div class="panel-label">ÉTAPE 1/5</div>
-      <div class="speech-bubble">"Choisis la tronche que tu veux imprimer sur ton pass d'accès..."</div>
-      
-      <div class="avatars-grid">
-        <div class="avatar-box" onclick="selectAvatar('Le Capitaine', 'av-capitaine')">
-          <div class="avatar-draw av-capitaine"></div>
-          <div class="avatar-name">Capitaine</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Balafré', 'av-balafre')">
-          <div class="avatar-draw av-balafre"></div>
-          <div class="avatar-name">Balafré</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Moussaillon', 'av-moussaillon')">
-          <div class="avatar-draw av-moussaillon"></div>
-          <div class="avatar-name">Jeune</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('L\'Ancien', 'av-ancien')">
-          <div class="avatar-draw av-ancien"></div>
-          <div class="avatar-name">L'Ancien</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Pirate', 'av-pirate')">
-          <div class="avatar-draw av-pirate"></div>
-          <div class="avatar-name">Pirate</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Gringo', 'av-cool')">
-          <div class="avatar-draw av-cool"></div>
-          <div class="avatar-name">Le Gringo</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Sécu', 'av-casque')">
-          <div class="avatar-draw av-casque"></div>
-          <div class="avatar-name">Sécu</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Barbu', 'av-barbu')">
-          <div class="avatar-draw av-barbu"></div>
-          <div class="avatar-name">Le Barbu</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Cuistot', 'av-roux')">
-          <div class="avatar-draw av-roux"></div>
-          <div class="avatar-name">Le Cuistot</div>
-        </div>
-        <div class="avatar-box" onclick="selectAvatar('Le Masto', 'av-muscle')">
-          <div class="avatar-draw av-muscle"></div>
-          <div class="avatar-name">Masto</div>
-        </div>
+  <div class="top-bar">
+    <div class="player-avatar-mini" id="miniAvatarBox">
       </div>
-      
-      <button class="action-button" onclick="nextStep(2)" id="btn1" disabled>VALIDER LA PHOTO →</button>
+    <div class="player-info-meta">
+      <div class="player-name" id="labelUsername">DOCKER...</div>
+      <div class="player-rank" id="labelRank">Chargement...</div>
     </div>
-
-    <div class="comic-panel hidden" id="panel2">
-      <div class="panel-label">ÉTAPE 2/5</div>
-      <div class="speech-bubble">"Prouve que t'as des bras. Soulève ce sac de lestage mécanique !"</div>
-      
-      <div class="force-test">
-        <div class="sac-visual" id="sacSable"></div>
-        <div class="progress-bar-container">
-          <div class="progress-bar" id="forceBar"></div>
-        </div>
-        <button class="action-button" onclick="mashClick()" style="background: var(--accent-blue);">MARTELER POUR SOULEVER !</button>
-      </div>
-      
-      <div class="success-stamp" id="stamp2">CONSTITUÉ APTE !</div>
-      <button class="action-button hidden" onclick="nextStep(3)" id="btn2">PASSER À L'ANALYSE →</button>
-    </div>
-
-    <div class="comic-panel hidden" id="panel3">
-      <div class="panel-label">ÉTAPE 3/5</div>
-      <div class="speech-bubble">"Question de sécurité : Quelle est la meilleure méthode pour déplacer un conteneur ?"</div>
-      
-      <div class="qcm-options">
-        <div class="qcm-option" onclick="checkAnswer(this, false)">A) Lui rentrer dedans avec la tête en courant très vite.</div>
-        <div class="qcm-option" onclick="checkAnswer(this, false)">B) Attendre qu'une tempête de mistral le pousse sur le quai.</div>
-        <div class="qcm-option" onclick="checkAnswer(this, true)">C) Utiliser le chariot élévateur Fenwick réglementaire.</div>
-        <div class="qcm-option" onclick="checkAnswer(this, false)">D) Hurler dessus jusqu'à ce qu'il prenne peur et recule.</div>
-      </div>
-      
-      <div class="success-stamp" id="stamp3">LOGIQUE OK !</div>
-      <button class="action-button hidden" onclick="nextStep(4)" id="btn3">PASSER AU TEST VISUEL →</button>
-    </div>
-
-    <div class="comic-panel hidden" id="panel4">
-      <div class="panel-label">ÉTAPE 4/5</div>
-      <div class="speech-bubble">"Test optique obligatoire. Déchiffre la dernière ligne en bas du tableau :"</div>
-      
-      <div class="eye-chart">
-        <div style="font-size: 26px; font-weight: bold;">C O N T E N E U R</div>
-        <div style="font-size: 18px; letter-spacing: 2px;">C A R G O S . M A R I N S</div>
-        <div style="font-size: 9px; letter-spacing: 4px; color: #555;">P A S T A G A</div>
-      </div>
-      
-      <input type="text" class="vision-input" id="visionInput" placeholder="Écris le mot secret ici..." maxlength="7">
-      <button class="action-button" onclick="checkVision()" style="margin-top: 8px;">VÉRIFIER MA VUE</button>
-      
-      <div class="success-stamp" id="stamp4">10/10 AUX DEUX YEUX !</div>
-      <button class="action-button hidden" onclick="nextStep(5)" id="btn4">DERNIÈRE ÉTAPE →</button>
-    </div>
-
-    <div class="comic-panel hidden" id="panel5">
-      <div class="panel-label">ÉTAPE 5/5</div>
-      <div class="speech-bubble">"Dernier point : C'est quoi ta combine préférée pour esquiver le travail ?"</div>
-      
-      <div class="qcm-options">
-        <div class="qcm-option" onclick="selectCombine('piston', this)">🤝 Le Piston familial (Mon oncle gère les plannings)</div>
-        <div class="qcm-option" onclick="selectCombine('syndicat', this)">✊ La Grève préventive (Débrayage tous les mardis matins)</div>
-        <div class="qcm-option" onclick="selectCombine('charme', this)">😎 Le Baratineur des docks (Vendre du vent aux douaniers)</div>
-        <div class="qcm-option" onclick="selectCombine('intimidation', this)">😠 Les Gros Bras (Regarder méchamment pour qu'on te laisse tranquille)</div>
-      </div>
-      
-      <button class="action-button final-button" onclick="finishOnboarding()" id="btnFinal" disabled>
-        🎯 TAMPONNER MON ENRÔLEMENT !
-      </button>
+    <div class="currency-badge">
+      💵 <span id="labelMoney">0</span>€
     </div>
   </div>
 
+  <div class="dashboard-panel">
+    <div class="stat-row">
+      <div class="stat-label">
+        <span>Énergie de Docker</span>
+        <span id="textEnergy">0 / 0</span>
+      </div>
+      <div class="bar-outer">
+        <div class="bar-inner bar-energy" id="fillEnergy"></div>
+      </div>
+    </div>
+
+    <div class="stat-row" style="margin-top: 12px;">
+      <div class="stat-label">
+        <span id="textLevel">Niveau 1</span>
+        <span id="textXp">XP: 0 / 100</span>
+      </div>
+      <div class="bar-outer">
+        <div class="bar-inner bar-xp" id="fillXp"></div>
+      </div>
+    </div>
+
+    <h2 class="title-section" style="margin-top: 18px; border-top: 3px dashed #000; padding-top: 12px;">Missions sur le quai</h2>
+    
+    <div id="missionsContainer">
+      </div>
+
+    <center><button class="btn-logout" onclick="logoutSession()">Quitter le Hangar (Déconnexion)</button></center>
+  </div>
+
   <script>
-    // Config Supabase
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
+    // Banque de modèles d'avatars SVG identiques à creer-badge.html
+    const avatarsSVG = {
+      marius: { hat: '#ef4444', hair: '#7c2d12', feat: `<rect x="3" y="8" width="6" height="3" fill="#7c2d12"/><rect x="5" y="9" width="2" height="1" fill="#fbcfe8"/>` },
+      raymond: { hat: '#2563eb', hair: '#4b5563', feat: `<rect x="3" y="9" width="6" height="1" fill="#4b5563"/>` },
+      titou: { hat: '#1e293b', hair: '#1e293b', feat: `<rect x="5" y="9" width="2" height="3" fill="#1e293b"/>` },
+      dane: { hat: '#16a34a', hair: '#000000', feat: `<rect x="3" y="8" width="6" height="3" fill="#000000"/><rect x="5" y="9" width="2" height="1" fill="#fbcfe8"/>` },
+      baltha: { hat: '#f97316', hair: '#b45309', feat: `<rect x="2" y="6" width="8" height="1" fill="#000"/><rect x="3" y="7" width="2" height="1" fill="#000"/><rect x="7" y="7" width="2" height="1" fill="#000"/>` },
+      gaby: { hat: '#7c3aed', hair: '#78350f', feat: `<rect x="3" y="9" width="6" height="1" fill="#78350f"/>` },
+      marcel: { hat: '#db2777', hair: '#1c1917', feat: `<rect x="3" y="8" width="6" height="3" fill="#1c1917"/><rect x="5" y="9" width="2" height="1" fill="#fbcfe8"/>` },
+      fredo: { hat: '#059669', hair: '#451a03', feat: `<rect x="5" y="9" width="2" height="3" fill="#451a03"/>` },
+      aziz: { hat: '#eab308', hair: '#0f172a', feat: `<rect x="2" y="6" width="8" height="1" fill="#000"/><rect x="3" y="7" width="2" height="1" fill="#000"/><rect x="7" y="7" width="2" height="1" fill="#000"/>` },
+      yvan: { hat: '#475569', hair: '#6b7280', feat: `<rect x="3" y="8" width="6" height="3" fill="#6b7280"/><rect x="5" y="9" width="2" height="1" fill="#fbcfe8"/>` }
+    };
+
+    // Configuration des missions disponibles
+    const listeMissions = [
+      { id: 'cafe', title: "☕ Servir la tournée de cafés aux syndicats", energy: 5, xp: 15, money: 10, onoma: "CAFEÏNE!" },
+      { id: 'decharger', title: "📦 Décharger les palettes de thon frais", energy: 12, xp: 40, money: 35, onoma: "💥 BAM !" },
+      { id: 'grue', title: "🏗️ Piloter la grue géante Panamax", energy: 25, xp: 90, money: 85, onoma: "🏗️ CLAC !" }
+    ];
+
+    let playerStats = {};
     const userId = localStorage.getItem('userId');
-    if (!userId) window.location.href = 'index.html';
 
-    let selectedAvatar = null;
-    let selectedCombine = null;
-    let clickCount = 0;
+    // Vérification de sécurité de connexion
+    if (!userId) { window.location.href = 'index.html'; }
 
-    function selectAvatar(name, cssClass) {
-      selectedAvatar = name;
-      document.querySelectorAll('.avatar-box').forEach(b => b.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
-      document.getElementById('btn1').disabled = false;
-    }
-
-    function mashClick() {
-      if (clickCount >= 20) return;
-      clickCount++;
-      
-      const percent = (clickCount / 20) * 100;
-      document.getElementById('forceBar').style.width = percent + '%';
-      
-      // Animation d'impact sur le sac
-      const sac = document.getElementById('sacSable');
-      sac.style.transform = `scale(1.1) translateY(-${clickCount}px)`;
-      setTimeout(() => sac.style.transform = `translateY(-${clickCount}px)`, 50);
-
-      if (clickCount >= 20) {
-        document.getElementById('stamp2').classList.add('show');
-        setTimeout(() => {
-          document.getElementById('btn2').classList.remove('hidden');
-        }, 600);
-      }
-    }
-
-    function checkAnswer(el, isCorrect) {
-      if (isCorrect) {
-        el.classList.add('correct');
-        document.getElementById('stamp3').classList.add('show');
-        setTimeout(() => {
-          document.getElementById('btn3').classList.remove('hidden');
-        }, 600);
-      } else {
-        el.classList.add('wrong');
-        setTimeout(() => el.classList.remove('wrong'), 400);
-      }
-    }
-
-    function checkVision() {
-      const input = document.getElementById('visionInput').value.toUpperCase().trim();
-      if (input === 'PASTAGA') {
-        document.getElementById('stamp4').classList.add('show');
-        setTimeout(() => {
-          document.getElementById('btn4').classList.remove('hidden');
-        }, 600);
-      } else {
-        const vi = document.getElementById('visionInput');
-        vi.classList.add('wrong');
-        setTimeout(() => vi.classList.remove('wrong'), 400);
-      }
-    }
-
-    function selectCombine(type, el) {
-      selectedCombine = type;
-      document.querySelectorAll('#panel5 .qcm-option').forEach(o => o.style.background = '#fff');
-      el.style.background = '#fef08a';
-      document.getElementById('btnFinal').disabled = false;
-    }
-
-    function nextStep(step) {
-      document.querySelectorAll('.comic-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById('panel' + step).classList.remove('hidden');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    async function finishOnboarding() {
-      if (!selectedAvatar || !selectedCombine) return;
-
-      const btn = document.getElementById('btnFinal');
-      btn.disabled = true;
-      btn.textContent = 'SIGNATURE DES DOSSIERS...';
-
+    // Démarrage et chargement des données depuis Supabase
+    async function initGameData() {
       try {
-        const { error } = await supabaseClient
-          .from('profiles')
-          .update({
-            avatar: selectedAvatar,
-            bg_qg: 'quai',
-            combine: selectedCombine
-          })
-          .eq('user_id', userId);
+        // 1. Récupération du pseudo et de l'avatar_id
+        const { data: profile, error: pErr } = await supabaseClient.from('profiles').select('username, avatar_id').eq('user_id', userId).single();
+        if (pErr) throw pErr;
 
-        if (error) throw error;
+        document.getElementById('labelUsername').textContent = profile.username.toUpperCase();
+        renderMiniAvatar(profile.avatar_id);
 
-        btn.textContent = 'EMBAUCHÉ ! BIENVENUE AU PORT';
-        setTimeout(() => { window.location.href = 'game.html'; }, 1000);
+        // 2. Récupération de la progression de jeu
+        const { data: progress, error: gErr } = await supabaseClient.from('game_progress').select('*').eq('user_id', userId).single();
+        if (gErr) throw gErr;
 
-      } catch (err) {
-        console.error(err);
-        alert('Erreur réseau Supabase : ' + err.message);
-        btn.disabled = false;
-        btn.textContent = '🎯 TAMPONNER MON ENRÔLEMENT !';
-      }
+        playerStats = progress;
+        updateUserInterface();
+        buildMissionsList();
+
+      } catch (err) { alert("Erreur BDD : " + err.message); }
     }
+
+    // Dessin vectoriel immédiat de l'avatar mini
+    function renderMiniAvatar(avatarId) {
+      const target = document.getElementById('miniAvatarBox');
+      const cfg = avatarsSVG[avatarId] || avatarsSVG['marius']; // Backup marius au cas où
+      
+      target.innerHTML = `
+        <svg viewBox="0 0 12 12" shape-rendering="crispEdges">
+          <rect width="12" height="12" fill="#bae6fd"/>
+          <rect x="3" y="5" width="6" height="6" fill="#fdba74"/>
+          <rect x="4" y="6" width="1" height="1" fill="#000"/>
+          <rect x="7" y="6" width="1" height="1" fill="#000"/>
+          <rect x="5" y="8" width="2" height="1" fill="#f43f5e"/>
+          ${cfg.feat}
+          <rect x="2" y="2" width="8" height="3" fill="${cfg.hat}"/>
+          <rect x="1" y="4" width="3" height="1" fill="${cfg.hat}"/>
+        </svg>
+      `;
+    }
+
+    // Mise à jour visuelle des labels et barres d'énergie/XP
+    function updateUserInterface() {
+      document.getElementById('labelRank').textContent = playerStats.rank;
+      document.getElementById('labelMoney').textContent = playerStats.money;
+      
+      // Jauge d'énergie
+      document.getElementById('textEnergy').textContent = `${playerStats.energy} / ${playerStats.energy_max}`;
+      const pctEnergy = (playerStats.energy / playerStats.energy_max) * 100;
+      document.getElementById('fillEnergy').style.width = pctEnergy + '%';
+
+      // Jauge d'XP (Palier standard de 100 XP par niveau pour la démo)
+      const nextLevelXpRequired = 100; 
+      document.getElementById('textLevel').textContent = `NIVEAU ${playerStats.level}`;
+      document.getElementById('textXp').textContent = `XP: ${playerStats.xp} / ${nextLevelXpRequired}`;
+      const pctXp = (playerStats.xp / nextLevelXpRequired) * 100;
+      document.getElementById('fillXp').style.width = pctXp + '%';
+    }
+
+    // Génération dynamique des boutons de missions
+    function buildMissionsList() {
+      const container = document.getElementById('missionsContainer');
+      container.innerHTML = '';
+
+      listeMissions.forEach(m => {
+        const card = document.createElement('div');
+        card.className = 'mission-card';
+        card.innerHTML = `
+          <div class="mission-details">
+            <div class="mission-title">${m.title}</div>
+            <div class="mission-rewards">💰 +${m.money}€ &nbsp;⭐ +${m.xp} XP</div>
+            <div class="mission-cost">⚡ Coûte ${m.energy} Énergie</div>
+          </div>
+          <button class="btn-work" id="btn-${m.id}" onpointerdown="triggerMission('${m.id}', event)">Bosser</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Logique lors du clic sur une mission (Dépense d'énergie et récompense)
+    async function triggerMission(id, event) {
+      const mission = listeMissions.find(m => m.id === id);
+      if (!mission) return;
+
+      if (playerStats.energy < mission.energy) {
+        spawnFloatingText(event.clientX, event.clientY, "FATIGUÉ ! 💤");
+        return;
+      }
+
+      // Calcul des nouvelles valeurs locales
+      playerStats.energy -= mission.energy;
+      playerStats.money += mission.money;
+      playerStats.xp += mission.xp;
+
+      // Logique simple de montée de niveau (Level up tous les 100 XP)
+      if (playerStats.xp >= 100) {
+        playerStats.xp -= 100;
+        playerStats.level += 100; // Passage au palier suivant
+        playerStats.energy_max += 5; // Augmentation de l'énergie max
+        playerStats.energy = playerStats.energy_max; // Remplissage complet
+        spawnFloatingText(event.clientX, event.clientY, "PROMOTION ! 🎉");
+      } else {
+        spawnFloatingText(event.clientX, event.clientY, mission.onoma);
+      }
+
+      // Rafraîchissement direct de l'UI pour un effet instantané sans latence
+      updateUserInterface();
+
+      // Envoi asynchrone des modifications vers Supabase en arrière-plan
+      try {
+        await supabaseClient.from('game_progress').update({
+          energy: playerStats.energy,
+          money: playerStats.money,
+          xp: playerStats.xp,
+          level: playerStats.level,
+          energy_max: playerStats.energy_max
+        }).eq('user_id', userId);
+      } catch (err) { console.error("Erreur de sauvegarde sync : ", err); }
+    }
+
+    // Effet d'onomatopée flottante au point d'impact du doigt/souris
+    function spawnFloatingText(x, y, text) {
+      const pop = document.createElement('div');
+      pop.className = 'floating-pop';
+      pop.style.left = (x - 20) + 'px';
+      pop.style.top = (y - 20) + 'px';
+      pop.textContent = text;
+      document.body.appendChild(pop);
+      setTimeout(() => pop.remove(), 500);
+    }
+
+    // Déconnexion propre
+    function logoutSession() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    // Lancement automatique
+    initGameData();
   </script>
 </body>
 </html>
