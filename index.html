@@ -3,17 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Battle Dock — Le Poste de Contrôle</title>
+  <title>Battle Dock — Poste de Contrôle</title>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Boogaloo&family=Permanent+Marker&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --guerite-border: #000;
-      --guerite-bg: #e2e8f0;
+      --bg-dark: #0b0f19;
+      --guerite-bg: #f8fafc;
       --accent-yellow: #fde047;
       --accent-red: #ef4444;
+      --accent-blue: #2563eb;
       --accent-green: #10b981;
+      --skin-color: #fbcfe8; /* Rose cartoon brique */
+      --beard-color: #f97316; /* Roux marin */
     }
 
     * {
@@ -26,167 +28,269 @@
     body {
       font-family: 'Space Grotesk', sans-serif;
       background-color: var(--bg-dark);
-      /* Motif de tôle froissée / hangar */
-      background-image: radial-gradient(#1e293b 2px, transparent 2px);
-      background-size: 20px 20px;
+      /* Fond effet Comics Trame de points de couleur */
+      background-image: 
+        radial-gradient(rgba(37, 99, 235, 0.2) 15%, transparent 16%),
+        radial-gradient(rgba(239, 68, 68, 0.1) 15%, transparent 16%);
+      background-size: 30px 30px;
+      background-position: 0 0, 15px 15px;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 12px;
+      padding: 16px;
       overflow-x: hidden;
     }
 
-    /* --- LE GARDIEN DU PORT (Dessiné en pur CSS) --- */
-    .guardian-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: -15px;
-      z-index: 2;
+    /* ========================================================
+       LE GARDIEN DU PORT EN PUR CSS (DESSIN ANIMÉ)
+       ======================================================== */
+    .char-container {
       position: relative;
-    }
-
-    .guardian-cap {
-      width: 90px;
-      height: 24px;
-      background: #1e3a8a;
-      border: 4px solid #000;
-      border-radius: 20px 20px 0 0;
-      position: relative;
-    }
-    .guardian-cap::after {
-      content: 'POLICE DU PORT';
-      position: absolute;
-      font-family: 'Bangers', cursive;
-      font-size: 10px;
-      color: var(--accent-yellow);
-      top: 1px;
-      width: 100%;
-      text-align: center;
-    }
-
-    .guardian-head {
-      width: 110px;
-      height: 90px;
-      background: #ffedd5;
-      border: 4px solid #000;
-      border-radius: 0 0 40px 40px;
+      width: 220px;
+      height: 190px;
+      margin-bottom: -20px;
+      z-index: 3;
       display: flex;
-      flex-direction: column;
-      align-items: center;
       justify-content: center;
-      position: relative;
-      box-shadow: 8px 0 0 rgba(0,0,0,0.2);
+      align-items: flex-end;
     }
 
-    /* Grosse barbe de vieux loup de mer */
-    .guardian-beard {
+    /* Bulles de symboles fâchés (Apparaissent si erreur) */
+    .angry-symbols {
+      position: absolute;
+      top: 0;
+      left: 10px;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 24px;
+      color: var(--accent-red);
+      background: #fff;
+      border: 3px solid #000;
+      padding: 5px 10px;
+      border-radius: 12px;
+      transform: rotate(-15deg) scale(0);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .angry-symbols::after {
+      content: '';
       position: absolute;
       bottom: -10px;
-      width: 120px;
-      height: 35px;
-      background: #64748b;
+      right: 20px;
+      border-width: 10px 10px 0;
+      border-style: solid;
+      border-color: #fff transparent;
+    }
+
+    .g-head {
+      position: relative;
+      width: 130px;
+      height: 120px;
+      background: #fed7aa;
+      border: 5px solid #000;
+      border-radius: 40px 40px 50px 50px;
+      box-shadow: 8px 8px 0 rgba(0,0,0,0.15);
+      transition: background 0.3s;
+    }
+
+    /* Casquette de capitaine du port */
+    .g-cap {
+      position: absolute;
+      top: -38px;
+      left: -10px;
+      width: 150px;
+      height: 45px;
+      background: #1e3a8a;
+      border: 5px solid #000;
+      border-radius: 30px 30px 5px 5px;
+    }
+    .g-cap-visor {
+      position: absolute;
+      bottom: -10px;
+      right: -15px;
+      width: 80px;
+      height: 15px;
+      background: #000;
+      border-radius: 0 10px 10px 0;
+      transform: rotate(5deg);
+    }
+    .g-cap-badge {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 22px;
+      height: 22px;
+      background: var(--accent-yellow);
+      border: 3px solid #000;
+      border-radius: 50%;
+    }
+
+    /* Les yeux interactifs */
+    .g-eye-left, .g-eye-right {
+      position: absolute;
+      top: 30px;
+      width: 26px;
+      height: 32px;
+      background: #fff;
       border: 4px solid #000;
-      border-radius: 0 0 50px 50px;
-      z-index: 1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .g-eye-left { left: 20px; }
+    .g-eye-right { right: 20px; }
+
+    .g-pupil {
+      width: 10px;
+      height: 10px;
+      background: #000;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
     }
 
-    .guardian-eyes {
-      font-size: 22px;
-      margin-top: -10px;
-      letter-spacing: 10px;
+    /* Sourcils froncés de BD */
+    .g-brow {
+      position: absolute;
+      top: 18px;
+      width: 35px;
+      height: 10px;
+      background: #000;
+      transform: rotate(10deg);
+    }
+    .g-brow-left { left: 15px; transform: rotate(15deg); }
+    .g-brow-right { right: 15px; transform: rotate(-15deg); }
+
+    /* Nez imposant */
+    .g-nose {
+      position: absolute;
+      top: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 24px;
+      background: #fdba74;
+      border: 4px solid #000;
+      border-radius: 50%;
+    }
+
+    /* Grosse moustache de marin breton/marseillais */
+    .g-mustache {
+      position: absolute;
+      top: 65px;
+      left: -15px;
+      width: 160px;
+      height: 30px;
+      background: var(--beard-color);
+      border: 5px solid #000;
+      border-radius: 40px;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
       z-index: 2;
-      animation: blink-eyes 3s infinite;
     }
 
-    /* --- LA GUÉRITE (FENÊTRE DE SÉCURITÉ) --- */
+    /* Les mains cachant les yeux (Animation Mot de Passe) */
+    .g-hand-left, .g-hand-right {
+      position: absolute;
+      bottom: -10px;
+      width: 40px;
+      height: 40px;
+      background: #fed7aa;
+      border: 5px solid #000;
+      border-radius: 50%;
+      z-index: 5;
+      transform: translateY(120px);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
+    }
+    .g-hand-left { left: 10px; }
+    .g-hand-right { right: 10px; }
+
+
+    /* ========================================================
+       LA GUÉRITE (POSTE DE RECRUTEMENT BLINDÉ)
+       ======================================================== */
     .paper-container {
       position: relative;
       z-index: 10;
       width: 100%;
-      max-width: 440px;
+      max-width: 450px;
       background: var(--guerite-bg);
-      border: 5px solid #000;
-      border-radius: 24px;
-      padding: 20px 16px 16px 16px;
+      border: 6px solid #000;
+      border-radius: 28px;
+      padding: 24px 20px 20px 20px;
       box-shadow: 
-        0px 15px 0px #000,
-        0px 25px 50px rgba(0,0,0,0.5);
+        0px 20px 0px #000,
+        0px 35px 60px rgba(0,0,0,0.6);
     }
 
-    /* Projecteur lumineux sur la vitre */
-    .paper-container::before {
+    /* Rivets métalliques de la carrosserie de la guérite */
+    .paper-container::after {
       content: '';
       position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at top, rgba(253, 224, 71, 0.15) 0%, transparent 75%);
-      border-radius: 18px;
+      top: 10px; left: 10px; right: 10px; bottom: 10px;
+      border: 2px dashed rgba(0,0,0,0.15);
+      border-radius: 20px;
       pointer-events: none;
     }
 
     .form-header {
       text-align: center;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       background: #000;
-      color: #fff;
-      padding: 10px;
-      border-radius: 12px;
-      border: 2px solid #475569;
+      border-radius: 16px;
+      padding: 12px;
+      transform: rotate(-1deg);
     }
-
     .form-header h1 {
       font-family: 'Bangers', cursive;
-      font-size: 28px;
-      letter-spacing: 1px;
+      font-size: 34px;
+      letter-spacing: 2px;
       color: var(--accent-yellow);
+      text-shadow: 3px 3px 0 #1e3a8a;
     }
-
     .form-header p {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 11px;
-      color: #94a3b8;
-      text-transform: uppercase;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 13px;
+      color: #cbd5e1;
       margin-top: 2px;
     }
 
-    /* Onglets / Boutons Radio Interphone */
+    /* Sélection par boutons radios / interphones géants */
     .form-tabs {
       display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+      gap: 12px;
+      margin-bottom: 20px;
     }
-
     .tab-btn {
       flex: 1;
       background: #334155;
-      color: #cbd5e1;
-      border: 4px solid #000;
-      border-radius: 14px;
-      padding: 12px 6px;
+      color: #94a3b8;
+      border: 5px solid #000;
+      border-radius: 18px;
+      padding: 14px 10px;
       font-family: 'Bangers', cursive;
-      font-size: 16px;
-      letter-spacing: 0.5px;
+      font-size: 18px;
+      letter-spacing: 1px;
       cursor: pointer;
-      box-shadow: 0 4px 0 #000;
-      transition: all 0.05s ease;
+      box-shadow: 0 6px 0 #000;
+      transition: all 0.1s ease;
     }
-
     .tab-btn.active {
       background: var(--accent-yellow);
       color: #000;
-      transform: translateY(4px);
+      transform: translateY(6px);
       box-shadow: none;
     }
 
-    /* Formulaires */
+    /* États des formulaires */
     .form-section {
       display: none;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
     }
-
     .form-section.active {
       display: flex;
     }
@@ -194,189 +298,235 @@
     .form-group {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
-
     .form-group label {
       font-family: 'Boogaloo', cursive;
-      font-size: 20px;
+      font-size: 22px;
       color: #000;
-      padding-left: 2px;
+      letter-spacing: 0.5px;
     }
 
-    /* Inputs gros boutons spécial Mobile (pas de zoom forcé) */
+    /* Entrées type pop-art grosses bordures épaisses tactiles */
     .typewriter-input {
       width: 100%;
-      padding: 14px;
-      font-size: 16px; /* Idéal pour éviter le zoom automatique iOS */
+      padding: 16px;
+      font-size: 16px; /* Évite les zooms automatiques d'écran sur mobile */
       font-family: 'Space Grotesk', sans-serif;
       font-weight: 700;
-      border: 4px solid #000;
-      border-radius: 12px;
+      border: 5px solid #000;
+      border-radius: 16px;
       background: #fff;
       color: #000;
       outline: none;
-      box-shadow: 4px 4px 0px #000;
+      box-shadow: 5px 5px 0px #000;
+      transition: all 0.15s ease;
     }
-
     .typewriter-input:focus {
       background: #fffde7;
-      border-color: #000;
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0px var(--accent-blue);
     }
 
-    /* Bulle de Dialogue du Gardien (Erreurs) */
+    /* Grosse bulle d'erreur en cas de rejet */
     .admin-error {
       display: none;
       position: relative;
       background: #fff;
-      border: 4px solid #000;
+      border: 5px solid #000;
       color: #000;
-      padding: 12px;
-      border-radius: 16px;
+      padding: 16px;
+      border-radius: 20px;
       font-family: 'Permanent Marker', cursive;
-      font-size: 13px;
+      font-size: 14px;
       text-align: center;
-      margin-bottom: 16px;
-      box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
     }
-    /* Flèche de la bulle pointant vers le haut (vers le gardien) */
     .admin-error::before {
       content: '';
       position: absolute;
-      top: -14px;
-      left: 50%;
+      top: -16px; left: 50%;
       transform: translateX(-50%);
-      border-width: 0 12px 14px 12px;
+      border-width: 0 14px 16px 14px;
       border-style: solid;
       border-color: transparent transparent #000 transparent;
     }
     .admin-error::after {
       content: '';
       position: absolute;
-      top: -8px;
-      left: 50%;
+      top: -9px; left: 50%;
       transform: translateX(-50%);
-      border-width: 0 10px 11px 10px;
+      border-width: 0 11px 13px 11px;
       border-style: solid;
       border-color: transparent transparent #fff transparent;
     }
 
-    /* Gros Bouton Poussoir d'Alarme Mobile */
+    /* Le levier d'alarme / Bouton pressoir */
     .stamp-btn {
       width: 100%;
-      padding: 16px;
+      padding: 18px;
       background: var(--accent-red);
       color: white;
-      border: 4px solid #000;
+      border: 5px solid #000;
       font-family: 'Bangers', cursive;
-      font-size: 24px;
-      letter-spacing: 1px;
-      border-radius: 16px;
+      font-size: 26px;
+      letter-spacing: 2px;
+      border-radius: 20px;
       cursor: pointer;
-      box-shadow: 0 6px 0 #000;
+      box-shadow: 0 8px 0 #000;
       transition: all 0.05s ease;
-      margin-top: 6px;
+      margin-top: 8px;
       text-shadow: 2px 2px 0 #000;
     }
-
     .stamp-btn:active {
-      transform: translateY(6px);
+      transform: translateY(8px);
       box-shadow: none;
     }
 
-    /* Animations */
-    @keyframes blink-eyes {
-      0%, 90%, 100% { transform: scaleY(1); }
-      95% { transform: scaleY(0.1); }
-    }
+    /* Classes dynamiques déclenchées par JS */
+    .look-down { transform: translateY(6px) scaleY(0.8); }
+    .angry-state { background: var(--accent-red) !important; }
 
-    .shake-head {
-      animation: angry 0.4s ease-in-out;
+    /* Animations de vibrations */
+    @keyframes shake-guerite {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-10px) rotate(-1deg); }
+      40% { transform: translateX(10px) rotate(1deg); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
     }
-    @keyframes angry {
-      0%, 100% { transform: translateX(0) rotate(0); }
-      20% { transform: translateX(-8px) rotate(-5deg); }
-      60% { transform: translateX(8px) rotate(5deg); }
-    }
+    .apply-shake { animation: shake-guerite 0.4s ease-in-out; }
   </style>
 </head>
 <body>
 
-  <div class="guardian-container" id="guardianFace">
-    <div class="guardian-cap"></div>
-    <div class="guardian-head">
-      <div class="guardian-eyes">👀</div>
-      <div class="guardian-beard"></div>
+  <div class="char-container">
+    <div class="angry-symbols" id="angryIcon">#@*⚡!!</div>
+    <div class="g-hand-left" id="handL"></div>
+    <div class="g-hand-right" id="handR"></div>
+    
+    <div class="g-head" id="gHead">
+      <div class="g-cap">
+        <div class="g-cap-badge"></div>
+        <div class="g-cap-visor"></div>
+      </div>
+      <div class="g-brow g-brow-left"></div>
+      <div class="g-brow g-brow-right"></div>
+      <div class="g-eye-left"><div class="g-pupil" id="pupilL"></div></div>
+      <div class="g-eye-right"><div class="g-pupil" id="pupilR"></div></div>
+      <div class="g-nose"></div>
+      <div class="g-mustache"></div>
     </div>
   </div>
 
-  <div class="paper-container">
+  <div class="paper-container" id="mainBox">
     
     <div class="form-header">
-      <h1>POSTE DE SÉCURITÉ</h1>
-      <p>Hangar de Recrutement — Battle Dock</p>
+      <h1>BATTLE DOCK CONTROL</h1>
+      <p>🔒 ZONE SOUS SÉCURITÉ SYNDICALE</p>
     </div>
 
     <div class="form-tabs">
-      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">🔓 J'ai mon Pass</button>
-      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">📝 Nouveau Dossier</button>
+      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">🔑 badges d'accès</button>
+      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">📝 postuler ici</button>
     </div>
 
-    <div class="admin-error" id="errorBox">HÉ ! Circulez y'a rien à voir !</div>
+    <div class="admin-error" id="errorBox">HALTE ! FICHIER REJETÉ PAR LE CAPITAINE !</div>
 
     <div class="form-section active" id="loginSection">
       <div class="form-group">
-        <label>Matricule de liaison (Email) :</label>
-        <input type="email" id="loginEmail" class="typewriter-input" placeholder="jojo@port.fr" autocomplete="email">
+        <label>Matricule Unique (Email) :</label>
+        <input type="email" id="loginEmail" class="typewriter-input" placeholder="ex: jojo@quai-sud.com" onfocus="eyesLook('down')" onblur="eyesLook('center')">
       </div>
 
       <div class="form-group">
-        <label>Clé d'accès secrète (Password) :</label>
-        <input type="password" id="loginPassword" class="typewriter-input" placeholder="••••••••">
+        <label>Code Secret (Password) :</label>
+        <input type="password" id="loginPassword" class="typewriter-input" placeholder="••••••••" onfocus="coverEyes(true)" onblur="coverEyes(false)">
       </div>
 
-      <button class="stamp-btn" onclick="login()">🚨 ENFONCER POUR ENTRER 🚨</button>
+      <button class="stamp-btn" onclick="login()">🚨 ABATRE LE LEVIER D'ACCÈS 🚨</button>
     </div>
 
     <div class="form-section" id="signupSection">
       <div class="form-group">
-        <label>Blase sur les Quais (Username) :</label>
-        <input type="text" id="signupUsername" class="typewriter-input" placeholder="Gégé_Les_Gros_Bras" maxlength="20">
+        <label>Nom de guerre sur les Docks (Username) :</label>
+        <input type="text" id="signupUsername" class="typewriter-input" placeholder="ex: Gégé_Casse_Briques" maxlength="20" onfocus="eyesLook('down')" onblur="eyesLook('center')">
       </div>
 
       <div class="form-group">
-        <label>Courrier électronique (Email) :</label>
-        <input type="email" id="signupEmail" class="typewriter-input" placeholder="nom@exemple.com">
+        <label>Courrier de Liaison (Email) :</label>
+        <input type="email" id="signupEmail" class="typewriter-input" placeholder="ton-mail@exemple.fr" onfocus="eyesLook('down')" onblur="eyesLook('center')">
       </div>
 
       <div class="form-group">
-        <label>Créer un code blindé (Password) :</label>
-        <input type="password" id="signupPassword" class="typewriter-input" placeholder="6 caractères min.">
+        <label>Créer un mot de passe blindé :</label>
+        <input type="password" id="signupPassword" class="typewriter-input" placeholder="Minimum 6 caractères" onfocus="coverEyes(true)" onblur="coverEyes(false)">
       </div>
 
       <button class="stamp-btn" style="background: var(--accent-green);" onclick="signup()">
-        🪵 TAMPONNER MON ENGAGEMENT
+        ✍️ TAMPONNER L'ENRÔLEMENT REGLÉMENTAIRE
       </button>
     </div>
 
   </div>
 
   <script>
-    // Configuration Supabase d'origine préservée à 100%
+    // Configuration inchangée de ton architecture d'origine
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    function triggerGuardianAngry() {
-      const face = document.getElementById('guardianFace');
-      face.classList.remove('shake-head');
-      void face.offsetWidth; // Force le reset de l'animation mobile
-      face.classList.add('shake-head');
+    // --- ANIMATIONS GRAPHIQUES DU GARDIEN ---
+    function eyesLook(direction) {
+      const pL = document.getElementById('pupilL');
+      const pR = document.getElementById('pupilR');
+      if(direction === 'down') {
+        pL.classList.add('look-down');
+        pR.classList.add('look-down');
+      } else {
+        pL.classList.remove('look-down');
+        pR.classList.remove('look-down');
+      }
     }
 
-    function switchTab(type) {
+    function coverEyes(hide) {
+      const hL = document.getElementById('handL');
+      const hR = document.getElementById('handR');
+      if(hide) {
+        hL.style.transform = 'translateY(-65px)';
+        hR.style.transform = 'translateY(-65px)';
+      } else {
+        hL.style.transform = 'translateY(120px)';
+        hR.style.transform = 'translateY(120px)';
+      }
+    }
+
+    function triggerMadGuardian(msg) {
+      // Tête rouge, tremblements et symboles d'insultes de BD
+      document.getElementById('gHead').classList.add('angry-state');
+      document.getElementById('angryIcon').style.transform = 'rotate(-15deg) scale(1.2)';
+      
+      const box = document.getElementById('mainBox');
+      box.classList.remove('apply-shake');
+      void box.offsetWidth;
+      box.classList.add('apply-shake');
+
+      const errBox = document.getElementById('errorBox');
+      errBox.innerHTML = `🤬 LE CAPITAINE GUEULE :<br>"${msg.toUpperCase()}"`;
+      errBox.style.display = 'block';
+    }
+
+    function resetGuardianState() {
+      document.getElementById('gHead').classList.remove('angry-state');
+      document.getElementById('angryIcon').style.transform = 'rotate(-15deg) scale(0)';
       document.getElementById('errorBox').style.display = 'none';
+    }
+
+    // --- LOGIQUE DE NAVIGATION DES ENSTREMENTS ---
+    function switchTab(type) {
+      resetGuardianState();
       if (type === 'login') {
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('tabSignup').classList.remove('active');
@@ -390,20 +540,14 @@
       }
     }
 
-    function showError(msg) {
-      triggerGuardianAngry();
-      const box = document.getElementById('errorBox');
-      box.innerHTML = `⚓ "${msg.toUpperCase()}"`;
-      box.style.display = 'block';
-    }
-
+    // --- SCRIPT SUPABASE AUTH D'ORIGINE CONSERVÉ À 100% ---
     async function login() {
-      document.getElementById('errorBox').style.display = 'none';
+      resetGuardianState();
       const email = document.getElementById('loginEmail').value.trim();
       const password = document.getElementById('loginPassword').value;
 
       if (!email || !password) {
-        showError('Espèce de mouette ! Remplis les cases !');
+        triggerMadGuardian('Moule à gaufres ! Remplis tout ton dossier !');
         return;
       }
 
@@ -422,24 +566,24 @@
 
         window.location.href = 'creer-badge.html';
       } catch (err) {
-        console.error('Erreur:', err);
-        showError('Faux pass ! Reste dehors ou je lâche les chiens !');
+        console.error(err);
+        triggerMadGuardian('Faux Pass ! Fiche-moi le camp de mon quai !');
       }
     }
 
     async function signup() {
-      document.getElementById('errorBox').style.display = 'none';
+      resetGuardianState();
       const username = document.getElementById('signupUsername').value.trim();
       const email = document.getElementById('signupEmail').value.trim();
       const password = document.getElementById('signupPassword').value;
 
       if (!username || !email || !password) {
-        showError('Dossier vide ! Remplis tout l\'engagement !');
+        triggerMadGuardian('Sac à vin ! Remplis tout le registre de sécurité !');
         return;
       }
 
       if (password.length < 6) {
-        showError('Ton code est trop mou ! 6 caractères min !');
+        triggerMadGuardian('Ton code secret est trop minuscule ! 6 lettres minimum !');
         return;
       }
 
@@ -475,8 +619,8 @@
         localStorage.setItem('username', username);
         window.location.href = 'creer-badge.html';
       } catch (err) {
-        console.error('Erreur:', err);
-        showError('Dossier refusé par le port : ' + err.message);
+        console.error(err);
+        triggerMadGuardian('Erreur administrative du port : ' + err.message);
       }
     }
 
