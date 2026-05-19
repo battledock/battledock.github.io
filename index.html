@@ -33,7 +33,9 @@
 
     body {
       font-family: 'Space Grotesk', sans-serif;
+      /* Ajout d'une transition pour que le changement de fond soit fluide */
       background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e1b4b 100%);
+      transition: background 0.5s ease;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -44,6 +46,11 @@
       position: relative;
     }
 
+    /* Classe dynamique pour changer le fond en mode inscription */
+    body.signup-mode {
+      background: linear-gradient(135deg, #1e1b4b 0%, #7c2d12 50%, #451a03 100%);
+    }
+
     /* EN-TÊTE DU SITE */
     .header-container {
       text-align: center;
@@ -52,6 +59,12 @@
       z-index: 10;
       width: 100%;
       max-width: 540px;
+      transition: max-width 0.4s ease;
+    }
+
+    /* Élargissement de la zone si on est en mode inscription */
+    body.signup-mode .header-container {
+      max-width: 800px;
     }
 
     .main-title {
@@ -85,6 +98,12 @@
       position: relative;
       z-index: 5;
       overflow: hidden;
+      transition: max-width 0.4s ease; /* Transition pour l'élargissement */
+    }
+
+    /* Élargit le conteneur en mode inscription pour la nouvelle disposition */
+    body.signup-mode .dock-container {
+      max-width: 800px;
     }
 
     /* ONGLETS */
@@ -132,6 +151,21 @@
       animation: fadeIn 0.3s ease-out forwards;
     }
 
+    /* Nouvelle disposition en deux colonnes pour la section Inscription sur ordinateur/tablette */
+    @media (min-width: 640px) {
+      #secSignup .signup-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        align-items: start;
+      }
+      
+      #secSignup .section-headline {
+        grid-column: span 2;
+        margin-bottom: 12px;
+      }
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
@@ -150,6 +184,10 @@
       margin-bottom: 20px; 
     }
     
+    .input-group:last-of-type {
+      margin-bottom: 0;
+    }
+
     .input-group label {
       display: block;
       font-family: 'Space Grotesk', sans-serif;
@@ -188,6 +226,14 @@
       border-radius: 12px;
       padding: 16px;
       margin: 24px 0 12px 0;
+    }
+
+    /* Ajustement de la marge haute du contrat en mode grille */
+    @media (min-width: 640px) {
+      #secSignup .contract-paper {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
     }
 
     .contract-title {
@@ -413,29 +459,34 @@
       </div>
 
       <div class="form-section" id="secSignup">
-        <h2 class="section-headline">Inscription limitée aux 500 premiers !</h2>
-        <div class="input-group">
-          <label>👤 Ton meilleur pseudo</label>
-          <input type="text" class="custom-field" id="signUser" placeholder="ex: LeGagaDesGoudes">
-        </div>
-        <div class="input-group">
-          <label>🔒 Mot de passe</label>
-          <input type="password" class="custom-field" id="signPass" placeholder="6 verrous minimum pour calmer les voleurs !">
-        </div>
+        <div class="signup-grid">
+          <h2 class="section-headline">Inscription limitée aux 500 premiers !</h2>
+          
+          <div class="fields-column">
+            <div class="input-group">
+              <label>👤 Ton meilleur pseudo</label>
+              <input type="text" class="custom-field" id="signUser" placeholder="ex: LeGagaDesGoudes">
+            </div>
+            <div class="input-group">
+              <label>🔒 Mot de passe</label>
+              <input type="password" class="custom-field" id="signPass" placeholder="6 verrous minimum pour calmer les voleurs !">
+            </div>
+          </div>
 
-        <div class="contract-paper">
-          <h3 class="contract-title">📜 CONDITIONS POUR RENTRER</h3>
-          <div class="rule-row" onclick="toggleMarseilleCheck(1)">
-            <div class="custom-checkbox" id="chk1"></div>
-            <div>Je jure devant la Bonne Mère de ne jamais toucher un conteneur avant mon troisième café.</div>
-          </div>
-          <div class="rule-row" onclick="toggleMarseilleCheck(2)">
-            <div class="custom-checkbox" id="chk2"></div>
-            <div>J'accepte de propager le mythe disant que la sardine a VRAIMENT bouché le Vieux-Port.</div>
-          </div>
-          <div class="rule-row" onclick="toggleMarseilleCheck(3)">
-            <div class="custom-checkbox" id="chk3"></div>
-            <div>Je partage mon sandwitch avec les mouettes du coin.</div>
+          <div class="contract-paper">
+            <h3 class="contract-title">📜 CONDITIONS POUR RENTRER</h3>
+            <div class="rule-row" onclick="toggleMarseilleCheck(1)">
+              <div class="custom-checkbox" id="chk1"></div>
+              <div>Je jure devant la Bonne Mère de ne jamais toucher un conteneur avant mon troisième café.</div>
+            </div>
+            <div class="rule-row" onclick="toggleMarseilleCheck(2)">
+              <div class="custom-checkbox" id="chk2"></div>
+              <div>J'accepte de propager le mythe disant que la sardine a VRAIMENT bouché le Vieux-Port.</div>
+            </div>
+            <div class="rule-row" onclick="toggleMarseilleCheck(3)">
+              <div class="custom-checkbox" id="chk3"></div>
+              <div>Je partage mon sandwitch avec les mouettes du coin.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -480,11 +531,13 @@
       const actionBtn = document.getElementById('btnActionLever');
 
       if(target === 'login') {
+        document.body.classList.remove('signup-mode'); // Retire la couleur de fond d'inscription
         document.getElementById('tabLogin').classList.add('active');
         document.getElementById('secLogin').classList.add('active');
         actionBtn.textContent = 'S\'INFILTRER EN DOUCE !';
         actionBtn.style.background = 'var(--comic-red)';
       } else {
+        document.body.classList.add('signup-mode'); // Ajoute la couleur de fond d'inscription
         document.getElementById('tabSignup').classList.add('active');
         document.getElementById('secSignup').classList.add('active');
         actionBtn.textContent = 'JE VEUX RENTRER';
