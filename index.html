@@ -2,20 +2,22 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Battle Dock — Poste de Contrôle</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Boogaloo&family=Permanent+Marker&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Inscription</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@700;900&family=Bungee&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     :root {
-      --bg-dark: #0b0f19;
-      --guerite-bg: #f8fafc;
-      --accent-yellow: #fde047;
-      --accent-red: #ef4444;
-      --accent-blue: #2563eb;
-      --accent-green: #10b981;
-      --skin-color: #fbcfe8; /* Rose cartoon brique */
-      --beard-color: #f97316; /* Roux marin */
+      --wood-dark: #1e0f07;
+      --wood-light: #613517;
+      --wood-base: #3b1e0b;
+      --wood-grain: #271305;
+      --paper-cream: #ffffff;
+      --comic-yellow: #fff200;
+      --comic-red: #ff2a5f;
+      --comic-blue: #1d4ed8;
+      --comic-green: #059669;
+      --border-black: #0d0703;
     }
 
     * {
@@ -23,621 +25,570 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      user-select: none;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background-color: var(--bg-dark);
-      /* Fond effet Comics Trame de points de couleur */
-      background-image: 
-        radial-gradient(rgba(37, 99, 235, 0.2) 15%, transparent 16%),
-        radial-gradient(rgba(239, 68, 68, 0.1) 15%, transparent 16%);
-      background-size: 30px 30px;
-      background-position: 0 0, 15px 15px;
+      background: linear-gradient(135deg, #2e1065 0%, #7c2d12 40%, #ea580c 75%, var(--comic-yellow) 100%);
+      background-attachment: fixed;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 16px;
-      overflow-x: hidden;
-    }
-
-    /* ========================================================
-       LE GARDIEN DU PORT EN PUR CSS (DESSIN ANIMÉ)
-       ======================================================== */
-    .char-container {
-      position: relative;
-      width: 220px;
-      height: 190px;
-      margin-bottom: -20px;
-      z-index: 3;
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-    }
-
-    /* Bulles de symboles fâchés (Apparaissent si erreur) */
-    .angry-symbols {
-      position: absolute;
-      top: 0;
-      left: 10px;
-      font-family: 'Permanent Marker', cursive;
-      font-size: 24px;
-      color: var(--accent-red);
-      background: #fff;
-      border: 3px solid #000;
-      padding: 5px 10px;
-      border-radius: 12px;
-      transform: rotate(-15deg) scale(0);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      pointer-events: none;
-      box-shadow: 4px 4px 0 #000;
-    }
-    .angry-symbols::after {
-      content: '';
-      position: absolute;
-      bottom: -10px;
-      right: 20px;
-      border-width: 10px 10px 0;
-      border-style: solid;
-      border-color: #fff transparent;
-    }
-
-    .g-head {
-      position: relative;
-      width: 130px;
-      height: 120px;
-      background: #fed7aa;
-      border: 5px solid #000;
-      border-radius: 40px 40px 50px 50px;
-      box-shadow: 8px 8px 0 rgba(0,0,0,0.15);
-      transition: background 0.3s;
-    }
-
-    /* Casquette de capitaine du port */
-    .g-cap {
-      position: absolute;
-      top: -38px;
-      left: -10px;
-      width: 150px;
-      height: 45px;
-      background: #1e3a8a;
-      border: 5px solid #000;
-      border-radius: 30px 30px 5px 5px;
-    }
-    .g-cap-visor {
-      position: absolute;
-      bottom: -10px;
-      right: -15px;
-      width: 80px;
-      height: 15px;
-      background: #000;
-      border-radius: 0 10px 10px 0;
-      transform: rotate(5deg);
-    }
-    .g-cap-badge {
-      position: absolute;
-      top: 8px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 22px;
-      height: 22px;
-      background: var(--accent-yellow);
-      border: 3px solid #000;
-      border-radius: 50%;
-    }
-
-    /* Les yeux interactifs */
-    .g-eye-left, .g-eye-right {
-      position: absolute;
-      top: 30px;
-      width: 26px;
-      height: 32px;
-      background: #fff;
-      border: 4px solid #000;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .g-eye-left { left: 20px; }
-    .g-eye-right { right: 20px; }
-
-    .g-pupil {
-      width: 10px;
-      height: 10px;
-      background: #000;
-      border-radius: 50%;
-      transition: transform 0.2s ease;
-    }
-
-    /* Sourcils froncés de BD */
-    .g-brow {
-      position: absolute;
-      top: 18px;
-      width: 35px;
-      height: 10px;
-      background: #000;
-      transform: rotate(10deg);
-    }
-    .g-brow-left { left: 15px; transform: rotate(15deg); }
-    .g-brow-right { right: 15px; transform: rotate(-15deg); }
-
-    /* Nez imposant */
-    .g-nose {
-      position: absolute;
-      top: 48px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 24px;
-      height: 24px;
-      background: #fdba74;
-      border: 4px solid #000;
-      border-radius: 50%;
-    }
-
-    /* Grosse moustache de marin breton/marseillais */
-    .g-mustache {
-      position: absolute;
-      top: 65px;
-      left: -15px;
-      width: 160px;
-      height: 30px;
-      background: var(--beard-color);
-      border: 5px solid #000;
-      border-radius: 40px;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.1);
-      z-index: 2;
-    }
-
-    /* Les mains cachant les yeux (Animation Mot de Passe) */
-    .g-hand-left, .g-hand-right {
-      position: absolute;
-      bottom: -10px;
-      width: 40px;
-      height: 40px;
-      background: #fed7aa;
-      border: 5px solid #000;
-      border-radius: 50%;
-      z-index: 5;
-      transform: translateY(120px);
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 4px 4px 0 rgba(0,0,0,0.2);
-    }
-    .g-hand-left { left: 10px; }
-    .g-hand-right { right: 10px; }
-
-
-    /* ========================================================
-       LA GUÉRITE (POSTE DE RECRUTEMENT BLINDÉ)
-       ======================================================== */
-    .paper-container {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 450px;
-      background: var(--guerite-bg);
-      border: 6px solid #000;
-      border-radius: 28px;
-      padding: 24px 20px 20px 20px;
-      box-shadow: 
-        0px 20px 0px #000,
-        0px 35px 60px rgba(0,0,0,0.6);
-    }
-
-    /* Rivets métalliques de la carrosserie de la guérite */
-    .paper-container::after {
-      content: '';
-      position: absolute;
-      top: 10px; left: 10px; right: 10px; bottom: 10px;
-      border: 2px dashed rgba(0,0,0,0.15);
-      border-radius: 20px;
-      pointer-events: none;
-    }
-
-    .form-header {
-      text-align: center;
-      margin-bottom: 20px;
-      background: #000;
-      border-radius: 16px;
+      justify-content: flex-start;
       padding: 12px;
-      transform: rotate(-1deg);
-    }
-    .form-header h1 {
-      font-family: 'Bangers', cursive;
-      font-size: 34px;
-      letter-spacing: 2px;
-      color: var(--accent-yellow);
-      text-shadow: 3px 3px 0 #1e3a8a;
-    }
-    .form-header p {
-      font-family: 'Permanent Marker', cursive;
-      font-size: 13px;
-      color: #cbd5e1;
-      margin-top: 2px;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    /* Sélection par boutons radios / interphones géants */
-    .form-tabs {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 20px;
+    body::before {
+      content: ""; position: fixed; inset: 0;
+      background-image: radial-gradient(rgba(0, 0, 0, 0.15) 2.5px, transparent 2.5px);
+      background-size: 20px 20px; pointer-events: none; z-index: 1;
     }
-    .tab-btn {
-      flex: 1;
-      background: #334155;
-      color: #94a3b8;
-      border: 5px solid #000;
-      border-radius: 18px;
-      padding: 14px 10px;
-      font-family: 'Bangers', cursive;
-      font-size: 18px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      box-shadow: 0 6px 0 #000;
+
+    .wood-headline-board {
+      background: var(--wood-light);
+      background-image: repeating-linear-gradient(180deg, transparent, transparent 12px, var(--wood-grain) 12px, var(--wood-grain) 15px);
+      border: 6px solid var(--border-black);
+      border-radius: 14px;
+      padding: 20px 15px;
+      box-shadow: inset 0 5px 0 rgba(255,255,255,0.25), 0 10px 0 rgba(0, 0, 0, 0.5);
+      transform: rotate(-1.5deg);
+      margin: 25px 0 20px 0;
+      text-align: center;
+      width: 100%; max-width: 480px;
+      z-index: 10;
+    }
+    .wood-headline-board h1 {
+      font-family: 'Bangers', cursive; font-size: 52px;
+      color: var(--comic-yellow); letter-spacing: 3px;
+      text-shadow: 5px 5px 0 var(--border-black); line-height: 0.95;
+    }
+    .wood-headline-board p {
+      font-family: 'Permanent Marker', cursive; font-size: 16px;
+      color: #fff7ed; text-shadow: 2px 2px 0 var(--border-black); margin-top: 6px;
+    }
+
+    .cabane-box {
+      width: 100%; max-width: 480px;
+      background: var(--wood-base);
+      background-image: repeating-linear-gradient(90deg, transparent, transparent 45px, var(--wood-grain) 45px, var(--wood-grain) 50px);
+      border: 7px solid var(--border-black);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 16px 16px 0 rgba(0,0,0,0.5);
+      position: relative; z-index: 5;
+      margin-bottom: 40px;
+    }
+
+    .plank-tabs { display: flex; gap: 10px; margin-bottom: 18px; }
+    .plank-btn {
+      flex: 1; background: #b45309;
+      border: 5px solid var(--border-black); border-radius: 10px;
+      font-family: 'Bangers', cursive; font-size: 20px; color: #fff;
+      padding: 12px 4px; cursor: pointer;
+      box-shadow: 0 6px 0 var(--border-black);
+      text-shadow: 2px 2px 0 var(--border-black);
       transition: all 0.1s ease;
     }
-    .tab-btn.active {
-      background: var(--accent-yellow);
-      color: #000;
-      transform: translateY(6px);
-      box-shadow: none;
+    .plank-btn.active {
+      background: var(--comic-yellow); color: var(--border-black);
+      text-shadow: none; box-shadow: none; transform: translateY(6px);
     }
 
-    /* États des formulaires */
-    .form-section {
-      display: none;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .form-section.active {
-      display: flex;
+    .grimoire {
+      background: var(--paper-cream);
+      border: 5px solid var(--border-black); border-radius: 14px;
+      padding: 20px; box-shadow: inset 0 0 25px rgba(0,0,0,0.15), 4px 4px 0 rgba(0,0,0,0.1);
     }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .form-group label {
-      font-family: 'Boogaloo', cursive;
-      font-size: 22px;
-      color: #000;
-      letter-spacing: 0.5px;
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    .section-title {
+      font-family: 'Bangers', cursive; font-size: 24px; color: #1e1b4b;
+      text-align: center; margin-bottom: 18px; padding-bottom: 8px;
+      border-bottom: 4px dashed #cbd5e1;
     }
 
-    /* Entrées type pop-art grosses bordures épaisses tactiles */
-    .typewriter-input {
-      width: 100%;
-      padding: 16px;
-      font-size: 16px; /* Évite les zooms automatiques d'écran sur mobile */
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 700;
-      border: 5px solid #000;
-      border-radius: 16px;
-      background: #fff;
-      color: #000;
-      outline: none;
-      box-shadow: 5px 5px 0px #000;
-      transition: all 0.15s ease;
+    .input-row { margin-bottom: 16px; }
+    .input-row label {
+      display: block; font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900; font-size: 14px; color: #0f172a; margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.5px;
     }
-    .typewriter-input:focus {
-      background: #fffde7;
-      transform: translate(-2px, -2px);
-      box-shadow: 7px 7px 0px var(--accent-blue);
+    .heavy-input {
+      width: 100%; padding: 16px;
+      font-weight: 900; font-size: 17px; color: #000;
+      border: 4px solid var(--border-black); border-radius: 12px;
+      box-shadow: 4px 4px 0 var(--border-black);
+      background: #f8fafc; -webkit-appearance: none;
+      transition: all 0.1s;
+    }
+    .heavy-input:focus {
+      outline: none; background: #fff; border-color: var(--comic-blue);
+      box-shadow: 6px 6px 0 var(--border-black); transform: translate(-2px, -2px);
     }
 
-    /* Grosse bulle d'erreur en cas de rejet */
-    .admin-error {
-      display: none;
-      position: relative;
-      background: #fff;
-      border: 5px solid #000;
-      color: #000;
-      padding: 16px;
-      border-radius: 20px;
-      font-family: 'Permanent Marker', cursive;
-      font-size: 14px;
-      text-align: center;
-      margin-bottom: 20px;
-      box-shadow: 6px 6px 0px rgba(0,0,0,0.1);
+    /* INNO : MINI-JEU SIMON MEMORY VAULT 🧰 */
+    .vault-game-container {
+      background: #334155; border: 4px solid var(--border-black);
+      border-radius: 12px; padding: 12px; margin: 18px 0; text-align: center;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.6);
     }
-    .admin-error::before {
-      content: '';
-      position: absolute;
-      top: -16px; left: 50%;
-      transform: translateX(-50%);
-      border-width: 0 14px 16px 14px;
-      border-style: solid;
-      border-color: transparent transparent #000 transparent;
+    .vault-instruction {
+      font-family: 'Bangers', cursive; font-size: 16px; color: var(--comic-yellow);
+      margin-bottom: 4px; letter-spacing: 0.5px;
     }
-    .admin-error::after {
-      content: '';
-      position: absolute;
-      top: -9px; left: 50%;
-      transform: translateX(-50%);
-      border-width: 0 11px 13px 11px;
-      border-style: solid;
-      border-color: transparent transparent #fff transparent;
+    .vault-status-light {
+      background: #1e293b; border: 3px solid var(--border-black);
+      border-radius: 8px; padding: 6px; font-family: 'Bungee', sans-serif;
+      font-size: 12px; color: #94a3b8; margin-bottom: 12px; min-height: 32px;
+    }
+    .vault-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+      max-width: 180px; margin: 0 auto 12px auto;
+    }
+    .vault-pad {
+      height: 65px; border: 4px solid var(--border-black); border-radius: 10px;
+      cursor: pointer; position: relative; opacity: 0.6; transition: opacity 0.1s;
+      box-shadow: 0 4px 0 var(--border-black);
+    }
+    .vault-pad:active { transform: translateY(4px); box-shadow: none; }
+    .vault-pad.lit { opacity: 1 !important; filter: brightness(1.3); transform: scale(1.05); }
+    
+    #pad-0 { background: #ef4444; } /* Rouge */
+    #pad-1 { background: #3b82f6; } /* Bleu */
+    #pad-2 { background: #eab308; } /* Jaune */
+    #pad-3 { background: #22c55e; } /* Vert */
+
+    .vault-master-btn {
+      background: #64748b; border: 3px solid var(--border-black);
+      border-radius: 8px; padding: 6px 14px; font-family: 'Bangers', cursive;
+      font-size: 15px; color: white; cursor: pointer; box-shadow: 0 4px 0 var(--border-black);
+    }
+    .vault-master-btn:active { transform: translateY(4px); box-shadow: none; }
+
+    /* LES 5 CONDITIONS RIGOLOTES */
+    .funny-conditions-box {
+      background: #ffe4e6; border: 3px dashed var(--border-black);
+      border-radius: 10px; padding: 12px; margin-top: 15px;
+    }
+    .funny-conditions-box h4 {
+      font-family: 'Bangers', cursive; font-size: 16px; color: #9f1239;
+      margin-bottom: 8px; text-align: center;
+    }
+    .condition-row {
+      display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;
+      font-size: 12px; font-weight: 800; color: #9f1239; text-align: left;
+    }
+    .condition-row input[type="checkbox"] {
+      width: 18px; height: 18px; accent-color: var(--comic-red);
+      border: 2px solid #000; cursor: pointer; flex-shrink: 0; margin-top: 1px;
     }
 
-    /* Le levier d'alarme / Bouton pressoir */
-    .stamp-btn {
-      width: 100%;
-      padding: 18px;
-      background: var(--accent-red);
-      color: white;
-      border: 5px solid #000;
-      font-family: 'Bangers', cursive;
-      font-size: 26px;
-      letter-spacing: 2px;
-      border-radius: 20px;
-      cursor: pointer;
-      box-shadow: 0 8px 0 #000;
-      transition: all 0.05s ease;
-      margin-top: 8px;
-      text-shadow: 2px 2px 0 #000;
-    }
-    .stamp-btn:active {
-      transform: translateY(8px);
-      box-shadow: none;
+    .shack-machinery {
+      display: flex; align-items: center; gap: 15px;
+      margin-top: 20px; padding-top: 18px;
+      border-top: 4px dashed #cbd5e1;
     }
 
-    /* Classes dynamiques déclenchées par JS */
-    .look-down { transform: translateY(6px) scaleY(0.8); }
-    .angry-state { background: var(--accent-red) !important; }
-
-    /* Animations de vibrations */
-    @keyframes shake-guerite {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-10px) rotate(-1deg); }
-      40% { transform: translateX(10px) rotate(1deg); }
-      60% { transform: translateX(-6px); }
-      80% { transform: translateX(6px); }
+    .steampunk-diver {
+      position: relative; width: 85px; height: 85px;
+      background: #ea580c; border: 5px solid var(--border-black);
+      border-radius: 50% 50% 40% 40%; box-shadow: 5px 5px 0 var(--border-black);
+      flex-shrink: 0;
     }
-    .apply-shake { animation: shake-guerite 0.4s ease-in-out; }
+    .diver-window {
+      position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
+      width: 36px; height: 36px; background: #38bdf8;
+      border: 4px solid var(--border-black); border-radius: 50%;
+      box-shadow: inset 3px 3px 0 white;
+    }
+
+    .lever-control-bay { flex: 1; }
+    .heavy-lever-btn {
+      width: 100%; padding: 18px 10px;
+      font-family: 'Bangers', cursive; font-size: 26px;
+      color: white; background: var(--comic-red);
+      border: 5px solid var(--border-black); border-radius: 12px;
+      box-shadow: 0 7px 0 var(--border-black);
+      text-shadow: 3px 3px 0 var(--border-black); cursor: pointer;
+    }
+    .heavy-lever-btn:active { transform: translateY(7px); box-shadow: none; }
+
+    .marseille-speech-bubble {
+      background: #fff; border: 4px solid var(--border-black);
+      border-radius: 14px; padding: 12px; font-family: 'Permanent Marker', cursive;
+      font-size: 14px; color: var(--comic-red); text-align: center;
+      margin-top: 15px; display: none; box-shadow: 5px 5px 0 rgba(0,0,0,0.15);
+    }
+
+    .blast-onomatopoeia {
+      position: fixed; font-family: 'Bungee', sans-serif; font-size: 38px;
+      color: var(--comic-yellow); text-shadow: 4px 4px 0 #000;
+      transform: scale(0); opacity: 0; pointer-events: none; z-index: 100;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+      padding: 12px 24px; background: var(--comic-red);
+      clip-path: polygon(0% 15%, 25% 0%, 50% 20%, 75% 0%, 100% 15%, 85% 60%, 100% 85%, 50% 100%, 0% 75%);
+      border: 4px solid black; left: 35%; top: 45%;
+    }
+    .blast-onomatopoeia.visible { transform: scale(1.1) rotate(-6deg); opacity: 1; }
+
+    @keyframes quake {
+      0%, 100% { transform: translate(0,0); }
+      25% { transform: translate(-5px, 5px); }
+      75% { transform: translate(5px, -5px); }
+    }
+    .quake-on { animation: quake 0.15s linear infinite; }
+
+    .dock-signature {
+      font-size: 10px; text-align: center; color: #1e0f07; margin-top: 18px; font-weight: 700;
+      max-width: 440px; line-height: 1.4;
+      background: rgba(255, 255, 255, 0.85); padding: 10px; border-radius: 10px;
+      border: 3px solid var(--border-black); box-shadow: 3px 3px 0 var(--border-black);
+    }
   </style>
 </head>
 <body>
 
-  <div class="char-container">
-    <div class="angry-symbols" id="angryIcon">#@*⚡!!</div>
-    <div class="g-hand-left" id="handL"></div>
-    <div class="g-hand-right" id="handR"></div>
-    
-    <div class="g-head" id="gHead">
-      <div class="g-cap">
-        <div class="g-cap-badge"></div>
-        <div class="g-cap-visor"></div>
-      </div>
-      <div class="g-brow g-brow-left"></div>
-      <div class="g-brow g-brow-right"></div>
-      <div class="g-eye-left"><div class="g-pupil" id="pupilL"></div></div>
-      <div class="g-eye-right"><div class="g-pupil" id="pupilR"></div></div>
-      <div class="g-nose"></div>
-      <div class="g-mustache"></div>
-    </div>
+  <div class="blast-onomatopoeia" id="explosionPop">💥 DISPOSITIF ACTIF !</div>
+
+  <div class="wood-headline-board">
+    <h1>BATTLE DOCK</h1>
+    <p>POSTE D'ACCÈS CHANTIER</p>
   </div>
 
-  <div class="paper-container" id="mainBox">
+  <div class="cabane-box" id="shackContainer">
     
-    <div class="form-header">
-      <h1>BATTLE DOCK CONTROL</h1>
-      <p>🔒 ZONE SOUS SÉCURITÉ SYNDICALE</p>
+    <div class="plank-tabs">
+      <button class="plank-btn active" id="tabLogin" onclick="swapPlankDeck('login')">EMBAUCHE</button>
+      <button class="plank-btn" id="tabSignup" onclick="swapPlankDeck('signup')">INSCRIPTION</button>
     </div>
 
-    <div class="form-tabs">
-      <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">🔑 badges d'accès</button>
-      <button class="tab-btn" id="tabSignup" onclick="switchTab('signup')">📝 postuler ici</button>
+    <div class="grimoire">
+      
+      <div class="form-section active" id="secLogin">
+        <div class="section-title">Heureux de vous revoir sur les quais !</div>
+        <div class="input-row">
+          <label>👤 Nom d'utilisateur</label>
+          <input type="text" class="heavy-input" id="logUser" placeholder="Entrez votre nom d'utilisateur">
+        </div>
+        <div class="input-row">
+          <label>🔑 Clef du Casier Secrète (Password)</label>
+          <input type="password" class="heavy-input" id="logPass" placeholder="••••••••">
+        </div>
+      </div>
+
+      <div class="form-section" id="secSignup">
+        <div class="section-title">Créez votre profil en quelques clics</div>
+        <div class="input-row">
+          <label>👤 Nom d'utilisateur</label>
+          <input type="text" class="heavy-input" id="signUser" placeholder="Choisissez un nom d'utilisateur">
+        </div>
+        <div class="input-row">
+          <label>🔒 Cadenas numérique de sécurité</label>
+          <input type="password" class="heavy-input" id="signPass" placeholder="6 caractères min.">
+        </div>
+
+        <div class="vault-game-container">
+          <div class="vault-instruction">🧄 SÉCURITÉ : LE CODE SECRET DU COFFRE</div>
+          <div class="vault-status-light" id="vaultStatusText">CLIQUEZ SUR REPRODUIRE LE CODE</div>
+          
+          <div class="vault-grid">
+            <div class="vault-pad" id="pad-0" onclick="pressVaultPad(0)"></div>
+            <div class="vault-pad" id="pad-1" onclick="pressVaultPad(1)"></div>
+            <div class="vault-pad" id="pad-2" onclick="pressVaultPad(2)"></div>
+            <div class="vault-pad" id="pad-3" onclick="pressVaultPad(3)"></div>
+          </div>
+          
+          <button type="button" class="vault-master-btn" id="btnVaultStart" onclick="generateVaultSequence()">🔄 REPRODUIRE LE CODE</button>
+          <input type="hidden" id="vaultGameSuccess" value="0">
+        </div>
+
+        <div class="funny-conditions-box">
+          <h4>📋 ENGAGEMENTS SOLENNELS DE SÉCURITÉ</h4>
+          <div class="condition-row">
+            <input type="checkbox" class="funny-check">
+            <label>Je promets de ne pas nourrir les gabians avec mes sandwichs à la merguez.</label>
+          </div>
+          <div class="condition-row">
+            <input type="checkbox" class="funny-check">
+            <label>Je certifie savoir préparer un café ultra-serré en moins de 12 secondes.</label>
+          </div>
+          <div class="condition-row">
+            <input type="checkbox" class="funny-check">
+            <label>Je m'engage à ne jamais utiliser les grues géantes pour faire des tractions.</label>
+          </div>
+          <div class="condition-row">
+            <input type="checkbox" class="funny-check">
+            <label>Je jure que mon chat ne connaît pas le mot de passe de mon terminal.</label>
+          </div>
+          <div class="condition-row">
+            <input type="checkbox" class="funny-check">
+            <label>J'accepte de porter des chaussettes assorties les jours de grande tempête.</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="shack-machinery">
+        <div class="steampunk-diver" id="diverSuit">
+          <div class="diver-window" id="diverWindow"></div>
+        </div>
+        <div class="lever-control-bay">
+          <button class="heavy-lever-btn" id="btnActionLever" onclick="pullIndustrialLever()">ON Y VA !</button>
+        </div>
+      </div>
+
+      <div class="marseille-speech-bubble" id="marseilleRageBubble"></div>
+
     </div>
 
-    <div class="admin-error" id="errorBox">HALTE ! FICHIER REJETÉ PAR LE CAPITAINE !</div>
-
-    <div class="form-section active" id="loginSection">
-      <div class="form-group">
-        <label>Matricule Unique (Email) :</label>
-        <input type="email" id="loginEmail" class="typewriter-input" placeholder="ex: jojo@quai-sud.com" onfocus="eyesLook('down')" onblur="eyesLook('center')">
-      </div>
-
-      <div class="form-group">
-        <label>Code Secret (Password) :</label>
-        <input type="password" id="loginPassword" class="typewriter-input" placeholder="••••••••" onfocus="coverEyes(true)" onblur="coverEyes(false)">
-      </div>
-
-      <button class="stamp-btn" onclick="login()">🚨 ABATRE LE LEVIER D'ACCÈS 🚨</button>
+    <div class="dock-signature">
+      ⚠️ <strong>Parodie Fictive :</strong> Ce site est un divertissement pop-art autonome et indépendant. Aucun lien ou partenariat avec le Grand Port Maritime de Marseille (GPMM) ni aucune autorité réelle.
     </div>
-
-    <div class="form-section" id="signupSection">
-      <div class="form-group">
-        <label>Nom de guerre sur les Docks (Username) :</label>
-        <input type="text" id="signupUsername" class="typewriter-input" placeholder="ex: Gégé_Casse_Briques" maxlength="20" onfocus="eyesLook('down')" onblur="eyesLook('center')">
-      </div>
-
-      <div class="form-group">
-        <label>Courrier de Liaison (Email) :</label>
-        <input type="email" id="signupEmail" class="typewriter-input" placeholder="ton-mail@exemple.fr" onfocus="eyesLook('down')" onblur="eyesLook('center')">
-      </div>
-
-      <div class="form-group">
-        <label>Créer un mot de passe blindé :</label>
-        <input type="password" id="signupPassword" class="typewriter-input" placeholder="Minimum 6 caractères" onfocus="coverEyes(true)" onblur="coverEyes(false)">
-      </div>
-
-      <button class="stamp-btn" style="background: var(--accent-green);" onclick="signup()">
-        ✍️ TAMPONNER L'ENRÔLEMENT REGLÉMENTAIRE
-      </button>
-    </div>
-
   </div>
 
   <script>
-    // Configuration inchangée de ton architecture d'origine
+    const DICTIONNAIRE_CONSEILS = [
+      "Mettez un peu plus de cœur à l'ouvrage, voyons !", "Erreur de mémoire ! Concentrez-vous sur les flashs !",
+      "Un petit effort de concentration !", "La grue attend les bons composants !",
+      "Ne confondez pas vitesse et précipitation !", "Le mistral efface vos souvenirs ?",
+      "Prenez un bon café et mémorisez la séquence !", "Attention aux doigts sur le levier !",
+      "Un bon équipier n'abandonne jamais si près du but !"
+    ];
+
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmamliykapIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // --- ANIMATIONS GRAPHIQUES DU GARDIEN ---
-    function eyesLook(direction) {
-      const pL = document.getElementById('pupilL');
-      const pR = document.getElementById('pupilR');
-      if(direction === 'down') {
-        pL.classList.add('look-down');
-        pR.classList.add('look-down');
-      } else {
-        pL.classList.remove('look-down');
-        pR.classList.remove('look-down');
-      }
-    }
+    let activeDeckMode = 'login';
+    
+    // VARIABLES DU NOUVEAU JEU SÉQUENTIEL
+    let secretSequence = [];
+    let userSequence = [];
+    let isPlayingSequence = false;
 
-    function coverEyes(hide) {
-      const hL = document.getElementById('handL');
-      const hR = document.getElementById('handR');
-      if(hide) {
-        hL.style.transform = 'translateY(-65px)';
-        hR.style.transform = 'translateY(-65px)';
-      } else {
-        hL.style.transform = 'translateY(120px)';
-        hR.style.transform = 'translateY(120px)';
-      }
-    }
+    if (localStorage.getItem('userId')) window.location.href = 'game.html';
 
-    function triggerMadGuardian(msg) {
-      // Tête rouge, tremblements et symboles d'insultes de BD
-      document.getElementById('gHead').classList.add('angry-state');
-      document.getElementById('angryIcon').style.transform = 'rotate(-15deg) scale(1.2)';
+    // REINITIALISATION ET FLASH DU CODE DETECTEUR
+    function generateVaultSequence() {
+      if (isPlayingSequence) return;
+      isPlayingSequence = true;
+      userSequence = [];
+      secretSequence = [];
+      document.getElementById('vaultGameSuccess').value = "0";
       
-      const box = document.getElementById('mainBox');
-      box.classList.remove('apply-shake');
-      void box.offsetWidth;
-      box.classList.add('apply-shake');
+      const statusText = document.getElementById('vaultStatusText');
+      statusText.style.color = "#fbbf24";
+      statusText.textContent = "⚙️ TRANSMISSION DU CODE...";
 
-      const errBox = document.getElementById('errorBox');
-      errBox.innerHTML = `🤬 LE CAPITAINE GUEULE :<br>"${msg.toUpperCase()}"`;
-      errBox.style.display = 'block';
+      // Générer 3 étapes de couleurs uniques aléatoires
+      for (let i = 0; i < 3; i++) {
+        secretSequence.push(Math.floor(Math.random() * 4));
+      }
+
+      // Lancement de l'affichage lumineux de la séquence
+      let index = 0;
+      const interval = setInterval(() => {
+        const currentPadNum = secretSequence[index];
+        flashPadElement(currentPadNum);
+        index++;
+        if (index >= secretSequence.length) {
+          clearInterval(interval);
+          setTimeout(() => {
+            isPlayingSequence = false;
+            statusText.style.color = "#38bdf8";
+            statusText.textContent = "👉 À VOUS ! REPRODUISEZ LE CODE";
+          }, 600);
+        }
+      }, 700);
     }
 
-    function resetGuardianState() {
-      document.getElementById('gHead').classList.remove('angry-state');
-      document.getElementById('angryIcon').style.transform = 'rotate(-15deg) scale(0)';
-      document.getElementById('errorBox').style.display = 'none';
+    function flashPadElement(id) {
+      const pad = document.getElementById(`pad-${id}`);
+      if (pad) {
+        pad.classList.add('lit');
+        setTimeout(() => pad.classList.remove('lit'), 400);
+      }
     }
 
-    // --- LOGIQUE DE NAVIGATION DES ENSTREMENTS ---
-    function switchTab(type) {
-      resetGuardianState();
-      if (type === 'login') {
+    function pressVaultPad(id) {
+      if (isPlayingSequence || secretSequence.length === 0) return;
+      
+      flashPadElement(id);
+      userSequence.push(id);
+      
+      const currentStep = userSequence.length - 1;
+      const statusText = document.getElementById('vaultStatusText');
+
+      // Vérification immédiate de la couleur cliquée
+      if (userSequence[currentStep] !== secretSequence[currentStep]) {
+        statusText.style.color = "var(--comic-red)";
+        statusText.textContent = "❌ CODE FAUX ! SÉCURITÉ BLOQUÉE";
+        document.getElementById('vaultGameSuccess').value = "0";
+        secretSequence = [];
+        return;
+      }
+
+      // Si le joueur a complété la séquence entière sans erreur
+      if (userSequence.length === secretSequence.length) {
+        statusText.style.color = "var(--comic-green)";
+        statusText.textContent = "🔓 COFFRE OUVERT ! PRÊT À VALIDER";
+        document.getElementById('vaultGameSuccess').value = "1";
+        createExplosionSplash('🔓 COFFRE OUVERT !');
+      }
+    }
+
+    function swapPlankDeck(target) {
+      activeDeckMode = target;
+      document.getElementById('tabLogin').classList.remove('active');
+      document.getElementById('tabSignup').classList.remove('active');
+      document.getElementById('secLogin').classList.remove('active');
+      document.getElementById('secSignup').classList.remove('active');
+
+      const actionBtn = document.getElementById('btnActionLever');
+      if(target === 'login') {
         document.getElementById('tabLogin').classList.add('active');
-        document.getElementById('tabSignup').classList.remove('active');
-        document.getElementById('loginSection').classList.add('active');
-        document.getElementById('signupSection').classList.remove('active');
+        document.getElementById('secLogin').classList.add('active');
+        actionBtn.textContent = 'ON Y VA !';
       } else {
         document.getElementById('tabSignup').classList.add('active');
-        document.getElementById('tabLogin').classList.remove('active');
-        document.getElementById('signupSection').classList.add('active');
-        document.getElementById('loginSection').classList.remove('active');
+        document.getElementById('secSignup').classList.add('active');
+        actionBtn.textContent = 'ACTIONNER LE LEVIER !';
+        document.getElementById('vaultGameSuccess').value = "0";
+        document.getElementById('vaultStatusText').textContent = "CLIQUEZ SUR REPRODUIRE LE CODE";
+        secretSequence = [];
+      }
+      stopMarseillePanic();
+    }
+
+    function createExplosionSplash(word) {
+      const exp = document.getElementById('explosionPop');
+      exp.textContent = word;
+      exp.classList.add('visible');
+      setTimeout(() => exp.classList.remove('visible'), 1200);
+    }
+
+    function triggerMarseillePanic(customText) {
+      createExplosionSplash('OUPSS ⚙️');
+      document.getElementById('shackContainer').classList.add('quake-on');
+      document.getElementById('diverWindow').style.background = 'var(--comic-red)';
+      
+      const randomConseil = DICTIONNAIRE_CONSEILS[Math.floor(Math.random() * DICTIONNAIRE_CONSEILS.length)];
+
+      const textBubble = document.getElementById('marseilleRageBubble');
+      textBubble.innerHTML = `📢 LE CONTREMAÎTRE INDIQUE :<br>"${customText} <strong>${randomConseil}</strong>"`;
+      textBubble.style.display = 'block';
+      setTimeout(stopMarseillePanic, 5000);
+    }
+
+    function stopMarseillePanic() {
+      document.getElementById('shackContainer').classList.remove('quake-on');
+      document.getElementById('diverWindow').style.background = '#38bdf8';
+      document.getElementById('marseilleRageBubble').style.display = 'none';
+    }
+
+    function pullIndustrialLever() {
+      if(activeDeckMode === 'login') {
+        runMarseilleLoginBackend();
+      } else {
+        runMarseilleSignupBackend();
       }
     }
 
-    // --- SCRIPT SUPABASE AUTH D'ORIGINE CONSERVÉ À 100% ---
-    async function login() {
-      resetGuardianState();
-      const email = document.getElementById('loginEmail').value.trim();
-      const password = document.getElementById('loginPassword').value;
+    async function runMarseilleLoginBackend() {
+      const username = document.getElementById('logUser').value.trim();
+      const password = document.getElementById('logPass').value;
 
-      if (!email || !password) {
-        triggerMadGuardian('Moule à gaufres ! Remplis tout ton dossier !');
+      if (!username || !password) {
+        triggerMarseillePanic('Veuillez remplir vos informations de connexion.');
         return;
       }
 
       try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        const { data: profile, error: pError } = await supabaseClient.from('profiles').select('user_id').eq('username', username).single();
+        if (pError || !profile) {
+          triggerMarseillePanic('Nom d\'utilisateur introuvable sur le registre.');
+          return;
+        }
 
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('username')
-          .eq('user_id', data.user.id)
-          .single();
+        const email = username + '@battledock.local';
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+          triggerMarseillePanic('Clé de sécurité incorrecte. Mot de passe invalide !');
+          return;
+        }
 
         localStorage.setItem('userId', data.user.id);
-        if (profile) localStorage.setItem('username', profile.username);
-
-        window.location.href = 'creer-badge.html';
+        localStorage.setItem('username', username);
+        createExplosionSplash('ACCÈS ACCORDÉ 🚀');
+        setTimeout(() => window.location.href = 'game.html', 800);
       } catch (err) {
-        console.error(err);
-        triggerMadGuardian('Faux Pass ! Fiche-moi le camp de mon quai !');
+        triggerMarseillePanic('Le système de transmission radio est indisponible : ' + err.message);
       }
     }
 
-    async function signup() {
-      resetGuardianState();
-      const username = document.getElementById('signupUsername').value.trim();
-      const email = document.getElementById('signupEmail').value.trim();
-      const password = document.getElementById('signupPassword').value;
+    async function runMarseilleSignupBackend() {
+      const username = document.getElementById('signUser').value.trim();
+      const password = document.getElementById('signPass').value;
+      const vaultStatus = document.getElementById('vaultGameSuccess').value;
 
-      if (!username || !email || !password) {
-        triggerMadGuardian('Sac à vin ! Remplis tout le registre de sécurité !');
+      if (!username || !password) {
+        triggerMarseillePanic('Merci d\'indiquer un nom d\'utilisateur et un mot de passe.');
+        return;
+      }
+      if (password.length < 6) {
+        triggerMarseillePanic('Le mot de passe choisi doit faire au moins 6 caractères.');
+        return;
+      }
+      
+      // Blocage si le mini-jeu Simon n'est pas validé (égal à "1")
+      if (vaultStatus !== "1") {
+        triggerMarseillePanic('Le coffre est verrouillé ! Entrez la bonne combinaison de couleurs.');
         return;
       }
 
-      if (password.length < 6) {
-        triggerMadGuardian('Ton code secret est trop minuscule ! 6 lettres minimum !');
+      const checkboxes = document.querySelectorAll('.funny-check');
+      let allChecked = true;
+      checkboxes.forEach(box => { if(!box.checked) allChecked = false; });
+
+      if(!allChecked) {
+        triggerMarseillePanic('Vous devez accepter toutes nos conditions de sécurité loufoques !');
         return;
       }
 
       try {
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
-        if (authError) throw authError;
+        const { data: checkUser } = await supabaseClient.from('profiles').select('username').eq('username', username).single();
+        if (checkUser) {
+          triggerMarseillePanic('Ce nom d\'utilisateur est déjà enregistré par un autre équipier.');
+          return;
+        }
 
+        const email = username + '@battledock.local';
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+          email: email, password: password, options: { data: { username: username } }
+        });
+
+        if (authError) throw authError;
         const userId = authData.user.id;
 
-        await supabaseClient.from('profiles').insert([{
-          user_id: userId,
-          username: username,
-          email: email
-        }]);
-
+        await supabaseClient.from('profiles').insert([{ user_id: userId, username: username, email: email }]);
         await supabaseClient.from('game_progress').insert([{
-          user_id: userId,
-          level: 1,
-          score: 0,
-          rank: 'Docker Occasionnel',
-          money: 100,
-          energy: 50,
-          energy_max: 50,
-          xp: 0
+          user_id: userId, level: 1, score: 0, rank: 'Docker Occasionnel', money: 100, energy: 50, energy_max: 50, xp: 0
         }]);
-
-        await supabaseClient.from('leaderboard').insert([{
-          user_id: userId,
-          score: 100
-        }]);
+        await supabaseClient.from('leaderboard').insert([{ user_id: userId, score: 100 }]);
 
         localStorage.setItem('userId', userId);
         localStorage.setItem('username', username);
-        window.location.href = 'creer-badge.html';
+        createExplosionSplash('INSCRIPTION VALIDE ! 🎉');
+        setTimeout(() => window.location.href = 'creer-badge.html', 800);
       } catch (err) {
-        console.error(err);
-        triggerMadGuardian('Erreur administrative du port : ' + err.message);
+        triggerMarseillePanic('Erreur d\'enregistrement sur les listes : ' + err.message);
       }
-    }
-
-    document.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const loginActive = document.getElementById('loginSection').classList.contains('active');
-        if (loginActive) {
-          login();
-        } else {
-          signup();
-        }
-      }
-    });
-
-    const userId = localStorage.getItem('userId');
-    if (userId) {
-      window.location.href = 'creer-badge.html';
     }
   </script>
 </body>
