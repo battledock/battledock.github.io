@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Recrutement Bureaucratique</title>
+  <title>Battle Dock — Recrutement Bureaucratique Suprême</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
@@ -39,6 +39,7 @@
       justify-content: center;
       padding: 24px 16px;
       overflow-x: hidden;
+      transition: transform 0.1s ease;
     }
 
     .dock-container {
@@ -79,6 +80,7 @@
       flex-direction: column;
       align-items: center;
       margin-bottom: 20px;
+      position: relative;
     }
 
     .suit-avatar {
@@ -95,6 +97,7 @@
       position: relative;
       cursor: pointer;
       user-select: none;
+      transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .suit-avatar img {
@@ -113,6 +116,7 @@
       color: #64748b;
       text-align: center;
       font-style: italic;
+      min-height: 16px;
     }
 
     .color-tag-display {
@@ -127,6 +131,19 @@
       text-transform: uppercase;
     }
 
+    /* ONOMATOPÉE POP-UP EFFECT */
+    .fx-pop {
+      position: absolute;
+      font-family: 'Bangers', cursive;
+      font-size: 28px;
+      color: var(--comic-red);
+      -webkit-text-stroke: 1px #000;
+      text-shadow: 2px 2px 0px #000;
+      pointer-events: none;
+      z-index: 10;
+      animation: popOut 0.4s ease-out forwards;
+    }
+
     /* MODULES ET ÉTAPES */
     .input-group { 
       margin-bottom: 16px; 
@@ -134,6 +151,7 @@
       border: 2px solid #000000;
       padding: 16px;
       border-radius: 16px;
+      transition: all 0.2s ease;
     }
 
     .step-title {
@@ -181,6 +199,7 @@
       align-items: center;
       justify-content: center;
       font-size: 24px;
+      user-select: none;
     }
     .scan-laser {
       position: absolute;
@@ -243,8 +262,10 @@
       font-size: 12px;
       text-align: left;
       cursor: pointer;
+      transition: background-color 0.1s;
     }
     .qcm-btn.selected { background: var(--port-dark); color: white; }
+    .qcm-btn.lie { background: #fee2e2; border-color: var(--comic-red); color: var(--comic-red); }
 
     /* GROS TAMPON VISUEL DE FIN */
     .stamp-overlay {
@@ -262,8 +283,8 @@
       opacity: 0;
       pointer-events: none;
       z-index: 99;
-      background: rgba(255,255,255,0.9);
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+      background: rgba(255,255,255,0.95);
+      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.6);
     }
     .stamp-overlay.stamped { opacity: 1; transform: rotate(-12deg) scale(1); }
 
@@ -287,10 +308,10 @@
     /* ANIMATIONS CSS */
     @keyframes glitch {
       0% { transform: translate(0) skew(0deg); }
-      20% { transform: translate(-4px, 2px) skew(-5deg); }
-      40% { transform: translate(4px, -2px) skew(5deg); }
-      60% { transform: translate(-2px, -2px) skew(-2deg); }
-      80% { transform: translate(3px, 2px) skew(0deg); }
+      20% { transform: translate(-3px, 2px) skew(-3deg); }
+      40% { transform: translate(3px, -2px) skew(3deg); }
+      60% { transform: translate(-1px, -1px) skew(-1deg); }
+      80% { transform: translate(2px, 1px) skew(0deg); }
       100% { transform: translate(0) skew(0deg); }
     }
     @keyframes laserMove {
@@ -298,7 +319,12 @@
       50% { top: 100%; }
       100% { top: 0; }
     }
-    .glitch-effect { animation: glitch 0.3s linear infinite; }
+    @keyframes popOut {
+      0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: scale(1.1) translateY(-30px) rotate(15deg); opacity: 0; }
+    }
+    .glitch-effect { animation: glitch 0.2s linear infinite; }
   </style>
 </head>
 <body>
@@ -307,55 +333,55 @@
     <div class="stamp-overlay" id="finalStamp">ADMIS DE JUSTESSE</div>
 
     <div class="tabs-wrapper">
-      <div class="tab-badge" id="playerTabMatricule">DOSSIER D'ENRÔLEMENT</div>
+      <div class="tab-badge" id="playerTabMatricule">PROFIL DE HAUTE SÉCURITÉ</div>
     </div>
 
     <div class="form-content">
       
-      <div class="avatar-preview-zone">
-        <div class="suit-avatar" id="diverSuit" onclick="pokeAvatar()">
+      <div class="avatar-preview-zone" id="avatarArea">
+        <div class="suit-avatar" id="diverSuit" onclick="pokeAvatar(event)">
           <img id="badgeAvatarImg" src="notionists-1779298466584.png" alt="Avatar Docker">
         </div>
-        <div class="avatar-comment" id="avatarSpeech">💡 Cliquez sur la recrue pour tester ses réflexes faciaux.</div>
+        <div class="avatar-comment" id="avatarSpeech">💡 Cliquez pour calibrer la photo d'identité.</div>
         <div class="color-tag-display" id="colorNameTag" style="display:none;">Inconnu</div>
       </div>
 
       <div class="input-group" id="groupColor">
         <div class="step-title">🎰 Étape 1 : Nuance d'Accréditation Obligatoire</div>
-        <button class="btn-action-block" id="btnSpin" onclick="spinQuantumColor()">🎲 ACTIVER LE COLLIMATEUR CHROMATIQUE</button>
+        <button class="btn-action-block" id="btnSpin" onclick="spinQuantumColor(event)">🎲 DÉMARRER LA CENTRIFUGEUSE CHROMATIQUE</button>
       </div>
 
-      <div class="input-group" id="groupScan" style="opacity:0.4; pointer-events:none;">
-        <div class="step-title">🖐️ Étape 2 : Biométrie Digitale (Lecteur instable)</div>
+      <div class="input-group" id="groupScan" style="opacity:0.3; pointer-events:none;">
+        <div class="step-title">🖐️ Étape 2 : Analyse Capillaire du Pouce</div>
         <div class="fingerprint-zone">
           <div class="scan-pad" id="scanPad" onmousedown="startScan()" onmouseup="stopScan()" ontouchstart="startScan()" ontouchend="stopScan()">
             <div class="scan-laser" id="laser"></div>
             <span>👍</span>
           </div>
-          <div class="scan-text" id="scanStatusText">MAINTENEZ LE DOIGT SUR LE CAPTEUR POUR LANCER L'ANALYSE...</div>
+          <div class="scan-text" id="scanStatusText">RESTEZ APPUYÉ POUR FORCER LE CAPTEUR CRASSEUX...</div>
         </div>
       </div>
 
-      <div class="input-group" id="groupCoffee" style="opacity:0.4; pointer-events:none;">
-        <div class="step-title">☕ Étape 3 : Équilibre Moléculaire du Sang</div>
+      <div class="input-group" id="groupCoffee" style="opacity:0.3; pointer-events:none;">
+        <div class="step-title">☕ Étape 3 : Homologation du Taux de Caféine</div>
         <div class="slider-container">
-          <input type="range" min="0" max="100" value="10" class="custom-slider" id="coffeeSlider" oninput="updateCoffeeRatio(this.value)">
+          <input type="range" min="0" max="100" value="5" class="custom-slider" id="coffeeSlider" oninput="updateCoffeeRatio(this.value)">
           <div class="slider-status" id="coffeeStatus">Léthargie totale (Non réglementaire)</div>
         </div>
       </div>
 
-      <div class="input-group" id="groupQcm" style="opacity:0.4; pointer-events:none;">
-        <div class="step-title">⚖️ Étape 4 : Cas de Crise Portuaire</div>
-        <p style="font-size:12px; font-weight:700; color:#475569; line-height:1.3;">Une caisse de homards bretons tombe du cargo et s'écrase. Le contremaître regarde ailleurs. Que faites-vous ?</p>
+      <div class="input-group" id="groupQcm" style="opacity:0.3; pointer-events:none;">
+        <div class="step-title">⚖️ Étape 4 : Détecteur d'Éthique Portuaire</div>
+        <p style="font-size:12px; font-weight:700; color:#475569; line-height:1.3; margin-bottom: 8px;" id="qcmPrompt">Une caisse de homards bretons s'écrase au sol. Le contremaître regarde ailleurs. Votre action ?</p>
         <div class="qcm-options">
-          <button class="qcm-btn" onclick="selectQcm(1, this)">A) Je sécurise la cargaison et je préviens la douane.</button>
-          <button class="qcm-btn" onclick="selectQcm(2, this)">B) J'allume un barbecue de fortune derrière le conteneur 4.</button>
-          <button class="qcm-btn" onclick="selectQcm(3, this)">C) Je feins une amnésie foudroyante liée aux embruns.</button>
+          <button class="qcm-btn" id="qcmOptA" onclick="selectQcm(1, this)">A) Je sécurise la cargaison et je loge un rapport écrit.</button>
+          <button class="qcm-btn" onclick="selectQcm(2, this)">B) J'allume un barbecue de fortune derrière le hangar C.</button>
+          <button class="qcm-btn" onclick="selectQcm(3, this)">C) Je feins une perte subite de la vision périphérique.</button>
         </div>
       </div>
 
       <div class="action-zone">
-        <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">CONTRAT EN ATTENTE D'HOMOLOGUATION</button>
+        <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">ADMINISTRATION BLOQUÉE</button>
       </div>
 
       <div class="speech-bubble" id="errorBubble"></div>
@@ -372,17 +398,13 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username') || 'Recrue';
     
-    // 50 nuances absurdes
     const quantumColors = [
-      { hex: '#3A4750', name: 'Acier Galvanisé' }, { hex: '#D4AF37', name: 'Or Brut' }, { hex: '#B87333', name: 'Cuivre Oxydé' }, { hex: '#848482', name: 'Plomb Argenté' }, { hex: '#A5A5A5', name: 'Alu Brossé' },
       { hex: '#FF0055', name: 'Rose Fusion' }, { hex: '#00FF99', name: 'Vert Radioactif' }, { hex: '#00E5FF', name: 'Bleu Plasma' }, { hex: '#BF55EC', name: 'Violet Néon' }, { hex: '#FF00AA', name: 'Cyber Néon' },
-      { hex: '#222831', name: 'Noir Carbone' }, { hex: '#1A1A2E', name: 'Abysse Spatial' }, { hex: '#0B132B', name: 'Bleu Minuit' }, { hex: '#162447', name: 'Fond Marin' }, { hex: '#2D4059', name: 'Bleu Pétrole' },
-      { hex: '#99CC00', name: 'Poison Vert' }, { hex: '#FFCC00', name: 'Jaune Toxique' }, { hex: '#8338EC', name: 'Venin Violet' }, { hex: '#4ECDC4', name: 'Menthe Polaire' }, { hex: '#FFBE0B', name: 'Soufre Vif' },
-      { hex: '#FF9900', name: 'Ambre Industriel' }, { hex: '#FF5500', name: 'Magma Éruptif' }, { hex: '#FF9F1C', name: 'Mandarine Vintage' }, { hex: '#E0115F', name: 'Rubis Feu' }, { hex: '#FF4500', name: 'Rouge Alerte' }
+      { hex: '#3A4750', name: 'Acier Galvanisé' }, { hex: '#D4AF37', name: 'Or Brut' }, { hex: '#222831', name: 'Noir Carbone' }, { hex: '#FF9900', name: 'Ambre Industriel' }, { hex: '#FF5500', name: 'Magma Éruptif' }
     ];
 
     let chosenColor = null;
-    let stepProgress = 0; // 0:Rien, 1:Couleur, 2:Scan, 3:Coffee, 4:QCM, 5:Tamponné
+    let stepProgress = 0; 
     let pokeCount = 0;
 
     if (!userId) window.location.href = 'index.html';
@@ -391,31 +413,50 @@
       document.getElementById('playerTabMatricule').textContent = `RECRUE : ${username.toUpperCase()}`;
     });
 
-    // POKE INTERACTIF DE L'AVATAR
-    function pokeAvatar() {
-      const img = document.getElementById('diverSuit');
-      const text = document.getElementById('avatarSpeech');
-      pokeCount++;
-      
-      img.style.transform = 'scale(1.15) rotate(10deg)';
-      setTimeout(() => img.style.transform = 'none', 150);
-
-      const speeches = [
-        "💥 Aïe ! Ça altère la photo d'identité réglementaire !",
-        "👀 Le regard d'acier reste impassible.",
-        "🛑 Arrêtez, le flash de la caméra retentit tout seul !",
-        "🧬 Ajustement structurel de la mâchoire du docker terminé.",
-        "🤖 Erreur 404 : Sens de l'humour introuvable chez le sujet."
-      ];
-      text.textContent = speeches[pokeCount % speeches.length];
+    // EFFET VISUEL ONOMATOPÉE COMIC
+    function spawnFx(text, x, y, parent) {
+      const fx = document.createElement('div');
+      fx.className = 'fx-pop';
+      fx.textContent = text;
+      fx.style.left = `${x}px`;
+      fx.style.top = `${y}px`;
+      parent.appendChild(fx);
+      setTimeout(() => fx.remove(), 400);
     }
 
-    // ETAPE 1 : TIRAGE CHROMATIQUE
-    function spinQuantumColor() {
+    // INTERACTION AVATAR RIGOLOTE
+    function pokeAvatar(e) {
+      const img = document.getElementById('diverSuit');
+      const text = document.getElementById('avatarSpeech');
+      const area = document.getElementById('avatarArea');
+      pokeCount++;
+      
+      spawnFx("*POKE*", e.offsetX + 20, e.offsetY, area);
+
+      // Animation dynamique aléatoire
+      if (pokeCount % 3 === 0) {
+        img.style.transform = 'scale(0.8) rotate(-45deg)';
+        text.textContent = "🥴 Arrêtez ! Vous décentrez les capteurs rétiniens !";
+      } else {
+        img.style.transform = `translate(${Math.random()*10 - 5}px, ${Math.random()*10 - 5}px) scale(1.1)`;
+        text.textContent = "💥 Flash de calibration simulé avec succès.";
+      }
+      setTimeout(() => img.style.transform = 'none', 150);
+    }
+
+    // ETAPE 1 : TOURNIQUET COULEUR + SECOUSSE ECRAN
+    function spinQuantumColor(e) {
       if (stepProgress > 0) return;
       const btn = document.getElementById('btnSpin');
       const tag = document.getElementById('colorNameTag');
-      btn.textContent = "ALCHIMIE CHROMATIQUE...";
+      
+      spawnFx("*CLANK*", btn.offsetLeft + 50, btn.offsetTop, document.getElementById('groupColor'));
+      
+      // Secousse d'écran rétro
+      document.body.style.transform = 'translateY(6px)';
+      setTimeout(() => document.body.style.transform = 'none', 100);
+
+      btn.textContent = "CENTRIFUGATION CHROMATIQUE...";
 
       let duration = 0;
       let interval = setInterval(() => {
@@ -423,54 +464,53 @@
         document.getElementById('diverSuit').style.backgroundColor = rand.hex;
         tag.textContent = rand.name;
         tag.style.display = 'inline-block';
-        duration += 60;
+        duration += 50;
         
-        if (duration > 1200) {
+        if (duration > 1500) {
           clearInterval(interval);
           chosenColor = rand.hex;
-          btn.textContent = "TEINTE VERROUILLÉE À VIE";
+          btn.textContent = "ACCIDÉNT CHROMATIQUE VALIDÉ ✅";
           btn.classList.add('done');
           stepProgress = 1;
           
-          // Activer étape suivante
+          // Débloquer l'étape 2
           document.getElementById('groupScan').style.opacity = '1';
           document.getElementById('groupScan').style.pointerEvents = 'auto';
         }
-      }, 60);
+      }, 50);
     }
 
-    // ETAPE 2 : SCANNER D'EMPREINTE UNIQUE
+    // ETAPE 2 : SCANNER BIOMÉTRIQUE CAPRICIEUX
     let scanTimeout;
     let scanPercent = 0;
     function startScan() {
       if (stepProgress !== 1) return;
       document.getElementById('laser').style.display = 'block';
-      document.getElementById('laser').style.animation = 'laserMove 0.6s linear infinite';
+      document.getElementById('laser').style.animation = 'laserMove 0.4s linear infinite';
       document.getElementById('diverSuit').classList.add('glitch-effect');
       
       const phrases = [
-        "Analyse de la pilosité palmaire...",
-        "Calcul de la résistance aux palettes...",
-        "Détection de traces de gras de jambon...",
-        "Validation de la force du poignet...",
-        "Synchronisation avec la capitainerie..."
+        "Vérification de la pilosité...",
+        "Extraction du taux de flemme...",
+        "Nettoyage de la lentille du capteur...",
+        "Calcul des heures sup virtuelles..."
       ];
 
       scanTimeout = setInterval(() => {
-        scanPercent += 8;
+        scanPercent += 10;
         if(scanPercent > 100) scanPercent = 100;
-        document.getElementById('scanStatusText').textContent = `[${scanPercent}%] — ${phrases[Math.floor(scanPercent/25) % phrases.length]}`;
+        document.getElementById('scanStatusText').textContent = `[${scanPercent}%] — ${phrases[Math.floor(scanPercent/30) % phrases.length]}`;
         
         if(scanPercent >= 100) {
           clearInterval(scanTimeout);
           document.getElementById('laser').style.display = 'none';
           document.getElementById('diverSuit').classList.remove('glitch-effect');
           document.getElementById('scanPad').style.background = 'var(--comic-green)';
-          document.getElementById('scanStatusText').textContent = "🧬 EMPREINTE IDENTIFIÉE : SUJET BIOLOGIQUEMENT ADAPTÉ AU TRAVAIL LOURD.";
+          document.getElementById('scanStatusText').textContent = "🧬 ADN VALIDÉ : TRACES DE CAFÉ ET DE SUEUR CONFORMES.";
           document.getElementById('groupScan').style.pointerEvents = 'none';
           stepProgress = 2;
           
-          // Activer étape 3
+          // Débloquer l'étape 3
           document.getElementById('groupCoffee').style.opacity = '1';
           document.getElementById('groupCoffee').style.pointerEvents = 'auto';
         }
@@ -483,54 +523,63 @@
         scanPercent = 0;
         document.getElementById('laser').style.display = 'none';
         document.getElementById('diverSuit').classList.remove('glitch-effect');
-        document.getElementById('scanStatusText').textContent = "⚠️ SCAN INTERROMPU ! Restez appuyé jusqu'au bout.";
+        document.getElementById('scanStatusText').textContent = "🚨 ALERTE : Le capteur a perdu le gras du pouce. Recommencez !";
       }
     }
 
-    // ETAPE 3 : SLIDER CAFEINE
+    // ETAPE 3 : CURSEUR MOLÉCULAIRE
     function updateCoffeeRatio(val) {
       if (stepProgress !== 2) return;
       const status = document.getElementById('coffeeStatus');
       
-      if(val < 35) {
-        status.textContent = `💤 Niveau (${val}%) : Risque de somnolence sur grue.`;
+      if(val < 40) {
+        status.textContent = `💤 (${val}%) Danger de sieste instantanée sur les rails.`;
         status.style.color = 'var(--comic-red)';
-      } else if (val >= 35 && val <= 75) {
-        status.textContent = `⚡ Niveau (${val}%) : Zone optimale. Esprit syndical éveillé !`;
+      } else if (val >= 40 && val <= 75) {
+        status.textContent = `⚡ (${val}%) Équilibre validé. Prêt à soulever l'équivalent d'un poney.`;
         status.style.color = 'var(--comic-green)';
         
-        // Bloquer l'étape et passer au QCM
         setTimeout(() => {
           document.getElementById('groupCoffee').style.pointerEvents = 'none';
           stepProgress = 3;
+          // Débloquer l'étape 4
           document.getElementById('groupQcm').style.opacity = '1';
           document.getElementById('groupQcm').style.pointerEvents = 'auto';
         }, 800);
       } else {
-        status.textContent = `🤪 Niveau (${val}%) : Tachycardie majeure. Vision quantique active.`;
+        status.textContent = `🤪 (${val}%) Vibration moléculaire extrême. Vision infrarouge active.`;
         status.style.color = 'var(--comic-red)';
       }
     }
 
-    // ETAPE 4 : LE QCM
+    // ETAPE 4 : DÉTECTEUR DE MENSONGE ABSURDE
     function selectQcm(option, btn) {
       if (stepProgress !== 3) return;
-      document.querySelectorAll('.qcm-btn').forEach(b => b.classList.remove('selected'));
+      
+      // Si le joueur essaie de faire le lèche-bottes (Option A)
+      if (option === 1) {
+        btn.classList.add('lie');
+        document.getElementById('qcmPrompt').innerHTML = "🚨 <b>MENSONGE SYSTÉMIQUE !</b> Le règlement interdit d'ennuyer la douane pour si peu. Refaites votre choix conscient :";
+        return;
+      }
+
+      document.querySelectorAll('.qcm-btn').forEach(b => b.classList.remove('selected', 'lie'));
       btn.classList.add('selected');
       
       stepProgress = 4;
       document.getElementById('groupQcm').style.pointerEvents = 'none';
       
-      // DECLENCHER LE TAMPON DE FIN !
+      // SMASH DU TAMPON FINAL
       setTimeout(() => {
         document.getElementById('finalStamp').classList.add('stamped');
+        spawnFx("*TAMPON*", window.innerWidth/2 - 40, window.innerHeight/3, document.body);
         stepProgress = 5;
         
-        // Activer le bouton de validation final
+        // Libérer le bouton d'envoi final
         const mainBtn = document.getElementById('btnMainAction');
         mainBtn.classList.add('unlocked');
-        mainBtn.textContent = "SIGNER LE CONTRAT ET ENTRER SUR LE PORT 🏗️";
-      }, 600);
+        mainBtn.textContent = "VALIDER ET EMBAUCHER LA RECRUE 🏗️";
+      }, 500);
     }
 
     async function validateAndPrintBadge() {
@@ -550,15 +599,15 @@
         localStorage.setItem('userColor', chosenColor);
         localStorage.setItem('userFace', 'notionists-1779298466584.png');
 
-        mainBtn.textContent = "RECRUTEMENT ENREGISTRÉ ! EMBAUCHE IMMÉDIATE...";
+        mainBtn.textContent = "MUTATION EFFECTIVE, EN ROUTE...";
         mainBtn.style.background = 'var(--port-blue)';
         
         setTimeout(() => {
           window.location.href = 'game.html';
-        }, 1200);
+        }, 1100);
 
       } catch (err) {
-        errorBubble.innerHTML = `🚨 SYSTÈME REJETÉ :<br>"${err.message}"`;
+        errorBubble.innerHTML = `🚨 REFUS ACCRÉDITATION :<br>"${err.message}"`;
         errorBubble.style.display = 'block';
       }
     }
