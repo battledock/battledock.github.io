@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Attribution Chromatique</title>
+  <title>Battle Dock — Attribution Chromatique Unique</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
@@ -72,7 +72,7 @@
       padding: 24px;
     }
 
-    /* ZONE AVATAR : TAILLE CARRÉ PARFAITE */
+    /* ZONE AVATAR : CARRÉ D'ORIGINE PARFAIT */
     .avatar-preview-zone {
       display: flex;
       flex-direction: column;
@@ -118,7 +118,7 @@
       text-align: center;
     }
 
-    /* SECTION MINI-JEU ROULETTE */
+    /* SECTION MINI-JEU GÉNÉRATEUR */
     .input-group { 
       margin-bottom: 24px; 
       background: #f8fafc;
@@ -162,6 +162,15 @@
       transform: translate(4px, 4px);
     }
 
+    .roulette-btn.used {
+      background: #cbd5e1 !important;
+      color: #64748b !important;
+      cursor: not-allowed;
+      box-shadow: 0px 0px 0px #000;
+      transform: none;
+      border-color: #94a3b8;
+    }
+
     /* VALIDATION */
     .action-zone {
       margin-top: 16px;
@@ -173,14 +182,19 @@
       font-family: 'Bangers', cursive;
       font-size: 24px;
       color: white;
-      background: var(--comic-green);
+      background: #94a3b8; /* Désactivé par défaut */
       border: var(--border-thick);
       border-radius: 14px;
-      cursor: pointer;
+      cursor: not-allowed;
       box-shadow: var(--shadow-comic-sm);
     }
 
-    .submit-lever-btn:hover {
+    .submit-lever-btn.unlocked {
+      background: var(--comic-green);
+      cursor: pointer;
+    }
+
+    .submit-lever-btn.unlocked:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0px #000;
     }
@@ -212,16 +226,16 @@
         <div class="suit-avatar" id="diverSuit">
           <img id="badgeAvatarImg" src="notionists-1779298466584.png" alt="Avatar Docker">
         </div>
-        <div class="color-tag-display" id="colorNameTag">Inconnu</div>
       </div>
 
       <div class="input-group">
-        <p class="game-instruction">🎰 Les régulations du port exigent une attribution de secteur aléatoire. Lance le générateur pour obtenir ta nuance d'accréditation unique !</p>
-        <button class="roulette-btn" id="btnSpin" onclick="spinQuantumColor()">🎲 LANCER LE GÉNÉRATEUR</button>
+        <p class="game-instruction">🎰 Ta nuance d'accréditation est déterminée par le Grand Ordinateur du Port. Clique pour lancer l'attribution unique !</p>
+        <button class="roulette-btn" id="btnSpin" onclick="spinQuantumColor()">🎲 TIRER MA COULEUR</button>
+        <div class="color-tag-display" id="colorNameTag" style="display:none;">Inconnu</div>
       </div>
 
       <div class="action-zone">
-        <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">VALIDER MON PROFIL ET EMBAUCHER 🏗️</button>
+        <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">EMBAUCHER AVEC CETTE COULEUR 🏗️</button>
       </div>
 
       <div class="speech-bubble" id="errorBubble"></div>
@@ -238,29 +252,33 @@
     const userId = localStorage.getItem('userId');
     const username = localStorage.getItem('username') || 'Recrue';
     
-    // Tableau des 10 teintes originales
+    // Tableau massif de 50 teintes originales et stylées
     const quantumColors = [
-      { hex: '#FF0055', name: 'Rose Fusion' },
-      { hex: '#00FF99', name: 'Vert Radioactif' },
-      { hex: '#00E5FF', name: 'Bleu Plasma' },
-      { hex: '#FF9900', name: 'Ambre Industriel' },
-      { hex: '#7000FF', name: 'Violet Proton' },
-      { hex: '#FF00AA', name: 'Cyber Néon' },
-      { hex: '#3A4750', name: 'Acier Galvanisé' },
-      { hex: '#EAEAFF', name: 'Blanc Banquise' },
-      { hex: '#222831', name: 'Noir Carbone' },
-      { hex: '#D4AF37', name: 'Or Brut' }
+      // Métaux & Industriel (10)
+      { hex: '#3A4750', name: 'Acier Galvanisé' }, { hex: '#D4AF37', name: 'Or Brut' }, { hex: '#B87333', name: 'Cuivre Oxydé' }, { hex: '#848482', name: 'Plomb Argenté' }, { hex: '#A5A5A5', name: 'Alu Brossé' },
+      { hex: '#E6E6E6', name: 'Platine Pur' }, { hex: '#7F7F7F', name: 'Fonte Grise' }, { hex: '#6C7A86', name: 'Titane Sombre' }, { hex: '#91A3B0', name: 'Ardoise Bleue' }, { hex: '#536878', name: 'Fer Forgé' },
+      // Éons Néons & Cyber (10)
+      { hex: '#FF0055', name: 'Rose Fusion' }, { hex: '#00FF99', name: 'Vert Radioactif' }, { hex: '#00E5FF', name: 'Bleu Plasma' }, { hex: '#BF55EC', name: 'Violet Néon' }, { hex: '#FF00AA', name: 'Cyber Néon' },
+      { hex: '#CCFF00', name: 'Limon Acide' }, { hex: '#00FFFF', name: 'Cyan Électrique' }, { hex: '#FF6EFF', name: 'Rose Laser' }, { hex: '#9D00FF', name: 'Ultraviolet' }, { hex: '#00FF00', name: 'Vert Matrice' },
+      // Abysses & Fret (10)
+      { hex: '#222831', name: 'Noir Carbone' }, { hex: '#1A1A2E', name: 'Abysse Spatial' }, { hex: '#0B132B', name: 'Bleu Minuit' }, { hex: '#162447', name: 'Fond Marin' }, { hex: '#1B262C', name: 'Cargaison Noire' },
+      { hex: '#2D4059', name: 'Bleu Pétrole' }, { hex: '#0F4C75', name: 'Fret Maritime' }, { hex: '#3282B8', name: 'Vague Électrique' }, { hex: '#003366', name: 'Bleu Marine' }, { hex: '#101820', name: 'Noir Absolu' },
+      // Toxiques & Acides (10)
+      { hex: '#99CC00', name: 'Poison Vert' }, { hex: '#FFCC00', name: 'Jaune Toxique' }, { hex: '#8338EC', name: 'Venin Violet' }, { hex: '#3A0CA3', name: 'Acide Sombre' }, { hex: '#4ECDC4', name: 'Menthe Polaire' },
+      { hex: '#FFBE0b', name: 'Soufre Vif' }, { hex: '#2ECC71', name: 'Émeraude Chimique' }, { hex: '#E056FD', name: 'Brume Pourpre' }, { hex: '#20BF6B', name: 'Reptile Vert' }, { hex: '#8854D0', name: 'Chimère Violette' },
+      // Terres de Feu & Vapeurs (10)
+      { hex: '#FF9900', name: 'Ambre Industriel' }, { hex: '#FF5500', name: 'Magma Éruptif' }, { hex: '#FF9F1C', name: 'Mandarine Vintage' }, { hex: '#E0115F', name: 'Rubis Feu' }, { hex: '#FF4500', name: 'Rouge Alerte' },
+      { hex: '#D35400', name: 'Rouille Vive' }, { hex: '#C0392B', name: 'Sang Industriel' }, { hex: '#B33771', name: 'Vapeur Rose' }, { hex: '#FC5C65', name: 'Corail Explosif' }, { hex: '#E74C3C', name: 'Asphalte Rouge' }
     ];
 
-    let chosenColor = '#3A4750';
+    let chosenColor = null;
     let isSpinning = false;
+    let hasSpun = false;
 
     if (!userId) window.location.href = 'index.html';
 
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('playerTabMatricule').textContent = `RECRUE : ${username.toUpperCase()}`;
-      // Assigner une couleur par défaut propre au chargement
-      applyColor(quantumColors[6]);
     });
 
     function applyColor(colorObj) {
@@ -272,51 +290,69 @@
       tag.textContent = colorObj.name;
       
       // Ajustement de la lisibilité du texte du tag selon la couleur de fond
-      if(colorObj.hex === '#EAEAFF' || colorObj.hex === '#00FF99' || colorObj.hex === '#00E5FF' || colorObj.hex === '#ccff00') {
+      // Tableau des couleurs claires nécessitant du texte noir
+      const lightColors = ['#EAEAFF', '#CCFF00', '#A5A5A5', '#E6E6E6', '#00FFFF', '#FF6EFF', '#00FF00', '#FFCC00', '#4ECDC4', '#FFBE0B'];
+      if(lightColors.includes(colorObj.hex.toUpperCase())) {
         tag.style.color = '#000000';
       } else {
         tag.style.color = '#ffffff';
       }
     }
 
-    // LE MINI-JEU ROULETTE / GÉNÉRATEUR
+    // LE MINI-JEU GÉNÉRATEUR QUANTIQUE
     function spinQuantumColor() {
-      if (isSpinning) return;
+      if (isSpinning || hasSpun) return;
       isSpinning = true;
 
       const btn = document.getElementById('btnSpin');
+      const tag = document.getElementById('colorNameTag');
+      
       btn.classList.add('spinning');
-      btn.textContent = "GÉNÉRATION EN COURS...";
+      btn.textContent = "ATTRIBUTION EN COURS...";
+      tag.style.display = 'none';
 
       let speed = 40; // Vitesse initiale de défilement (ms)
       let duration = 0;
       let currentIndex = 0;
 
       function cycle() {
+        // Sélection aléatoire parmi les 50 couleurs
         currentIndex = Math.floor(Math.random() * quantumColors.length);
         applyColor(quantumColors[currentIndex]);
 
         duration += speed;
-        if (duration < 1500) {
-          // Pendant les 1,5 premières secondes, on boucle vite
+        if (duration < 1800) {
+          // Pendant les 1,8 premières secondes, on boucle vite
           setTimeout(cycle, speed);
-        } else if (speed < 250) {
+        } else if (speed < 300) {
           // Décélération progressive pour l'effet de suspense
-          speed += 40;
+          speed += 50;
           setTimeout(cycle, speed);
         } else {
           // Arrêt final
           isSpinning = false;
+          hasSpun = true;
+          
           btn.classList.remove('spinning');
-          btn.textContent = "🎰 RELANCER LE GÉNÉRATEUR";
+          btn.classList.add('used');
+          btn.textContent = "COULEUR ATTRIBUÉE (UNIQUE)";
+          tag.style.display = 'inline-block';
+          
+          // Débloquer la validation
+          unlockValidation();
         }
       }
       
       cycle();
     }
 
+    function unlockValidation() {
+      const mainBtn = document.getElementById('btnMainAction');
+      mainBtn.classList.add('unlocked');
+    }
+
     async function validateAndPrintBadge() {
-      if (isSpinning) return; // Empêche de valider pendant le tirage
+      if (isSpinning || !hasSpun) return; // Empêche de valider avant le tirage ou pendant
 
       const errorBubble = document.getElementById('errorBubble');
       const mainBtn = document.getElementById('btnMainAction');
