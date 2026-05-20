@@ -3,17 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Le Quai</title>
+  <title>Battle Dock — Le Port Chelou</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="fullscreen.js"></script>
   
   <style>
     :root {
       --port-dark: #0f172a;
       --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
       --comic-yellow: #facc15;
       --comic-red: #ef4444;
       --comic-green: #22c55e;
+      --paper-cream: #fefce8;
       --border-thick: 4px solid #000000;
       --shadow-comic: 8px 8px 0px #000000;
       --shadow-comic-sm: 4px 4px 0px #000000;
@@ -24,118 +29,239 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: var(--comic-yellow); 
+      background: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #0f172a 100%);
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px 16px 90px 16px; /* Espace en bas pour la nav bar */
       overflow-x: hidden;
+      position: relative;
+      padding: 24px 16px 140px 16px;
     }
 
-    .hub-container {
-      width: 100%;
-      max-width: 440px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+    /* --- DÉCORS STYLE BD --- */
+    .smoke {
+      position: fixed;
+      bottom: 30%;
+      right: 10%;
+      width: 100px;
+      height: 150px;
+      z-index: 0;
+      pointer-events: none;
     }
 
-    /* BARRE DE STATUT SUPÉRIEURE (BADGE DOCKER) */
-    .docker-badge-card {
-      background: #ffffff;
-      border: var(--border-thick);
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: var(--shadow-comic);
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .badge-avatar-box {
-      width: 75px;
-      height: 85px;
-      background: #3A4750; /* Dynamique via JS */
+    .smoke-cloud {
+      position: absolute;
+      background: #334155;
       border: 3px solid #000;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: var(--shadow-comic-sm);
+      border-radius: 50%;
+      opacity: 0.8;
+      animation: smoke-rise 4s ease-out infinite;
     }
 
-    .badge-avatar-box img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .smoke-cloud:nth-child(1) { width: 60px; height: 60px; bottom: 0; left: 20px; animation-delay: 0s; }
+    .smoke-cloud:nth-child(2) { width: 50px; height: 50px; bottom: 40px; left: 10px; animation-delay: 0.8s; }
+    .smoke-cloud:nth-child(3) { width: 70px; height: 70px; bottom: 80px; left: 30px; animation-delay: 1.6s; }
+
+    @keyframes smoke-rise {
+      0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
+      100% { transform: translateY(-120px) scale(1.3); opacity: 0; }
     }
 
-    .badge-info {
-      flex: 1;
+    .seagulls {
+      position: fixed;
+      top: 18%;
+      left: 12%;
+      z-index: 1;
+      pointer-events: none;
     }
 
-    .badge-name {
-      font-family: 'Bungee', sans-serif;
-      font-size: 16px;
-      color: var(--port-dark);
-      line-height: 1.2;
+    .seagull {
+      position: absolute;
+      font-size: 44px;
+      animation: seagull-fight 2s ease-in-out infinite;
+      filter: drop-shadow(4px 4px 0px #000000);
     }
 
-    .badge-rank {
-      font-family: 'Bangers', cursive;
+    .seagull:nth-child(1) { left: 0; animation-delay: 0s; }
+    .seagull:nth-child(2) { left: 55px; animation-delay: 1s; transform: scaleX(-1); }
+
+    @keyframes seagull-fight {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(-8px) rotate(-12deg); }
+      75% { transform: translateX(8px) rotate(12deg); }
+    }
+
+    .chichi {
+      position: fixed;
+      bottom: 22%;
+      left: 18%;
+      font-size: 36px;
+      z-index: 0;
+      animation: wiggle 3s ease-in-out infinite;
+      filter: drop-shadow(3px 3px 0px #000000);
+      pointer-events: none;
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-6deg); }
+      50% { transform: rotate(6deg); }
+    }
+
+    .containers {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 180px;
+      z-index: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      padding: 0 16px;
+      pointer-events: none;
+    }
+
+    .container-stack {
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 2px;
+    }
+
+    .container-box {
+      width: 75px;
+      height: 42px;
+      background: var(--color);
+      border: 3px solid #000000;
+      border-radius: 6px;
+      position: relative;
+      box-shadow: 4px 4px 0px #000000;
+      transform: rotate(var(--rotation));
+    }
+
+    .container-box::after {
+      content: '⚓';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
       font-size: 18px;
-      color: var(--comic-red);
-      letter-spacing: 0.5px;
+      opacity: 0.3;
+      color: #000;
+    }
+
+    /* --- INTERFACE PRINCIPALE --- */
+    .ui-container {
+      position: relative;
+      z-index: 10;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(4rem, 12vw, 5.5rem);
+      color: var(--comic-yellow);
+      letter-spacing: 4px;
+      text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
+      line-height: 0.9;
+      transform: rotate(-2deg);
+      display: inline-block;
       margin-bottom: 6px;
     }
 
-    .xp-bar-bg {
-      width: 100%;
-      height: 12px;
-      background: #e2e8f0;
-      border: 2px solid #000;
-      border-radius: 4px;
-      overflow: hidden;
+    .subtitle {
+      font-family: 'Permanent Marker', cursive;
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      color: #ffffff;
+      text-shadow: 3px 3px 0px var(--port-dark);
     }
 
-    .xp-bar-fill {
-      width: 35%; /* Exemple */
-      height: 100%;
-      background: var(--comic-green);
+    /* BLOC DES STATS EN "PAPIER CRÈME" */
+    .stats-crate {
+      background: var(--paper-cream);
+      border: var(--border-thick);
+      border-radius: 20px;
+      padding: 16px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-comic);
     }
 
-    /* CONTENU DES ONGLETS (SECTIONS AFFICHÉES/CACHÉES) */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      text-align: center;
+      background: #ffffff;
+      padding: 10px 4px;
+      border-radius: 12px;
+      border: 3px solid #000;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 2px;
+      animation: bounce-stat 2s ease-in-out infinite;
+    }
+    .stat:nth-child(1) .stat-icon { animation-delay: 0s; }
+    .stat:nth-child(2) .stat-icon { animation-delay: 0.3s; }
+    .stat:nth-child(3) .stat-icon { animation-delay: 0.6s; }
+
+    @keyframes bounce-stat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .stat-value {
+      font-family: 'Bungee', sans-serif;
+      font-size: 16px;
+      color: var(--port-dark);
+      margin-bottom: 2px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* --- SYSTÈME D'ONGLETS / SPA --- */
     .app-screen {
       display: none;
-      width: 100%;
     }
-
     .app-screen.active {
       display: block;
     }
 
-    /* MODULES STANDARD */
-    .content-box {
-      background: white;
+    /* BLOCS DE CONTENU INTÉRIEUR */
+    .view-card {
+      background: #ffffff;
       border: var(--border-thick);
       border-radius: 20px;
-      padding: 16px;
+      padding: 20px;
       box-shadow: var(--shadow-comic);
       margin-bottom: 16px;
     }
 
-    .box-title {
+    .view-title {
       font-family: 'Bungee', sans-serif;
-      font-size: 13px;
-      margin-bottom: 12px;
+      font-size: 18px;
       color: var(--port-dark);
+      margin-bottom: 12px;
     }
 
-    /* COMPOSANTS ZONE DE JEU / CONTRATS */
-    .job-card {
+    /* CONTENU INTERNE EXEMPLES */
+    .list-item {
       background: #f8fafc;
       border: 2px solid #000;
       border-radius: 12px;
@@ -146,225 +272,304 @@
       align-items: center;
     }
 
-    .job-details h4 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 900;
-      font-size: 14px;
-    }
-
-    .job-details p {
-      font-size: 11px;
-      color: #64748b;
-    }
-
-    .btn-play-job {
-      padding: 8px 12px;
+    .action-btn-sm {
+      padding: 8px 14px;
       font-family: 'Bungee', sans-serif;
-      font-size: 11px;
+      font-size: 12px;
       background: var(--comic-yellow);
       border: 2px solid #000;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
     }
 
-    .job-card.locked {
-      opacity: 0.5;
-    }
-
-    /* BARRE DE NAVIGATION INFÉRIEURE RÉTRO */
-    .bottom-nav-bar {
+    /* --- NAVIGATION INFÉRIEURE STYLE BD (5 BOUTONS) --- */
+    .bottom-nav {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-0.5deg);
       background: var(--port-dark);
-      border-top: var(--border-thick);
+      border: var(--border-thick);
+      border-radius: 24px;
+      padding: 12px 14px;
       display: flex;
-      justify-content: space-around;
-      padding: 10px 6px calc(10px + env(safe-area-inset-bottom)) 6px;
-      z-index: 999;
+      gap: 10px;
+      box-shadow: var(--shadow-comic);
+      z-index: 100;
+      width: calc(100% - 24px);
+      max-width: 480px;
+      justify-content: space-between;
     }
 
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      background: none;
-      border: none;
-      color: #94a3b8;
+    .nav-btn {
+      flex: 1;
+      height: 56px;
+      max-width: 75px;
+      background: #cbd5e1; /* Couleur par défaut inactive */
+      border: 3px solid #000;
+      border-radius: 16px;
+      font-size: 24px;
       cursor: pointer;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 800;
-      font-size: 10px;
-      gap: 2px;
-      transition: color 0.1s;
+      transition: all 0.1s;
+      position: relative;
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .nav-item span:first-child {
-      font-size: 20px;
+    /* Attribution des couleurs pop lorsqu'ils sont actifs */
+    .nav-btn.active:nth-child(1) { background: var(--port-light-blue); }
+    .nav-btn.active:nth-child(2) { background: var(--comic-yellow); }
+    .nav-btn.active:nth-child(3) { background: var(--comic-red); }
+    .nav-btn.active:nth-child(4) { background: #a855f7; }
+    .nav-btn.active:nth-child(5) { background: var(--comic-green); }
+
+    .nav-btn.active {
+      transform: scale(1.08) translateY(-4px);
     }
 
-    .nav-item.active {
-      color: var(--comic-yellow);
-      transform: scale(1.1);
+    .nav-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 5px 5px 0px #000;
     }
 
-    /* BOUTIQUE D'AVATARS CARDOON */
-    .shop-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
+    .nav-btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: 1px 1px 0px #000;
     }
 
-    .shop-item {
-      background: #f1f5f9;
-      border: 2px solid #000;
-      border-radius: 12px;
-      padding: 8px;
-      text-align: center;
-    }
-
-    .shop-item-preview {
-      width: 60px;
-      height: 60px;
-      background: #cbd5e1;
-      border: 2px solid #000;
+    .nav-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: var(--comic-red);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 2px 6px;
       border-radius: 6px;
-      margin: 0 auto 8px auto;
+      border: 2px solid #000;
+      font-family: 'Bangers', cursive;
+    }
+
+    @media (max-width: 400px) {
+      .logo { font-size: 3.2rem; }
+      .seagulls { left: 4%; top: 12%; }
+      .seagull { font-size: 34px; }
+      .bottom-nav { padding: 10px 8px; gap: 6px; }
+      .nav-btn { height: 50px; font-size: 20px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="hub-container">
+  <div class="smoke">
+    <div class="smoke-cloud"></div>
+    <div class="smoke-cloud"></div>
+    <div class="smoke-cloud"></div>
+  </div>
+
+  <div class="seagulls">
+    <div class="seagull">🐦</div>
+    <div class="seagull">🐦</div>
+  </div>
+
+  <div class="chichi">🥖</div>
+
+  <div class="containers">
+    <div class="container-stack">
+      <div class="container-box" style="--color: var(--comic-red); --rotation: -3deg;"></div>
+      <div class="container-box" style="--color: var(--port-blue); --rotation: 2deg;"></div>
+      <div class="container-box" style="--color: var(--comic-yellow); --rotation: -1deg;"></div>
+    </div>
+    <div class="container-stack">
+      <div class="container-box" style="--color: var(--comic-green); --rotation: 4deg;"></div>
+      <div class="container-box" style="--color: var(--comic-red); --rotation: -2deg;"></div>
+    </div>
+    <div class="container-stack">
+      <div class="container-box" style="--color: #a855f7; --rotation: 1deg;"></div>
+      <div class="container-box" style="--color: var(--comic-yellow); --rotation: -4deg;"></div>
+      <div class="container-box" style="--color: var(--port-blue); --rotation: 2deg;"></div>
+    </div>
+  </div>
+
+  <div class="ui-container">
     
-    <div class="docker-badge-card">
-      <div class="badge-avatar-box" id="globalBadgeAvatar">
-        <img src="notionists-1779298466584.png" alt="Sujet">
-      </div>
-      <div class="badge-info">
-        <div class="badge-name" id="globalBadgeName">RECRUE</div>
-        <div class="badge-rank">Docker Occasionnel</div>
-        <div class="xp-bar-bg">
-          <div class="xp-bar-fill"></div>
-        </div>
-      </div>
+    <div class="header">
+      <div class="logo">BATTLE DOCK</div>
+      <div class="subtitle">⚓ Le Port Chelou ⚓</div>
     </div>
 
-    <div class="app-screen active" id="screen-jeux">
-      <div class="content-box">
-        <div class="box-title">🎮 Cargos Disponibles (Niveaux)</div>
-        
-        <div class="job-card">
-          <div class="job-details">
-            <h4>Navire "Le Cargo Vert"</h4>
-            <p>Difficulté : Facile • Récompense : 50$</p>
-          </div>
-          <button class="btn-play-job">MONTER 🏗️</button>
+    <div class="stats-crate">
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="moneyDisplay">0€</div>
+          <div class="stat-label">Thunes</div>
         </div>
-
-        <div class="job-card locked">
-          <div class="job-details">
-            <h4>Super-Panamax "Abyssal"</h4>
-            <p>🔒 Requis : Grade Docker Certifié</p>
-          </div>
-          <button class="btn-play-job" style="background:#cbd5e1; cursor:not-allowed;">BLOQUÉ</button>
+        <div class="stat">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-value" id="levelDisplay">1</div>
+          <div class="stat-label">Niveau</div>
+        </div>
+        <div class="stat">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-value" id="xpDisplay">0</div>
+          <div class="stat-label">XP</div>
         </div>
       </div>
     </div>
 
     <div class="app-screen" id="screen-profil">
-      <div class="content-box">
-        <div class="box-title">📋 Statistiques de Service</div>
-        <p style="font-weight: 700; margin-bottom: 6px;">Conteneurs déplacés : <span style="color:var(--port-blue);">0</span></p>
-        <p style="font-weight: 700; margin-bottom: 6px;">Cafés consommés : <span style="color:var(--comic-red);">12</span></p>
-        <p style="font-weight: 700;">Syndicat : <span style="color:var(--comic-green);">Homologué</span></p>
+      <div class="view-card">
+        <div class="view-title">👤 Fiche du Syndicat</div>
+        <p style="font-weight:700; margin-bottom:8px;">Matricule : <span id="profileUser" style="color:var(--port-blue);">Chargement...</span></p>
+        <p style="font-weight:700; margin-bottom:8px;">Caisse déplacées : <b>42</b></p>
+        <p style="font-weight:700;">Réputation : <span style="color:var(--comic-green);">Honnête Contrebandier</span></p>
+      </div>
+    </div>
+
+    <div class="app-screen active" id="screen-jeux">
+      <div class="view-card">
+        <div class="view-title">🎮 Jeux & Paris clandestins</div>
+        
+        <div class="list-item">
+          <div>
+            <h4 style="font-weight:900; font-size:14px;">Machine à sous Ferretti</h4>
+            <p style="font-size:11px; color:#64748b;">Mise : 10€ • Gain max : 500€</p>
+          </div>
+          <button class="action-btn-sm">LANCER 🎰</button>
+        </div>
+
+        <div class="list-item">
+          <div>
+            <h4 style="font-weight:900; font-size:14px;">Le Bonneteau du Quai</h4>
+            <p style="font-size:11px; color:#64748b;">Trouve l'ancre sous les gobelets</p>
+          </div>
+          <button class="action-btn-sm">MISER 🃏</button>
+        </div>
       </div>
     </div>
 
     <div class="app-screen" id="screen-travail">
-      <div class="content-box">
-        <div class="box-title">🛠️ Heures Supplémentaires</div>
-        <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#475569;">Gagnez de l'argent passivement en balayant le quai numéro 4.</p>
-        <button class="btn-play-job" style="width:100%; padding:12px;">COMMENCER LE SERVICE (3h)</button>
+      <div class="view-card">
+        <div class="view-title">💼 Les Contrats de Labeur</div>
+        
+        <div class="list-item">
+          <div>
+            <h4 style="font-weight:900; font-size:14px;">Décharger le Cargo Bananier</h4>
+            <p style="font-size:11px; color:#64748b;">Gain : +15€ • Énergie : -5</p>
+          </div>
+          <button class="action-btn-sm" style="background:var(--comic-green);">BOSSER 🍌</button>
+        </div>
+        
+        <div class="list-item">
+          <div>
+            <h4 style="font-weight:900; font-size:14px;">Nettoyer les Algues du Bassin</h4>
+            <p style="font-size:11px; color:#64748b;">Gain : +40€ • Énergie : -12</p>
+          </div>
+          <button class="action-btn-sm" style="background:var(--comic-green);">BOSSER 🧼</button>
+        </div>
       </div>
     </div>
 
     <div class="app-screen" id="screen-shop">
-      <div class="content-box">
-        <div class="box-title">💰 Vestiaire de Contrebande (Avatars)</div>
-        <div class="shop-grid">
-          <div class="shop-item">
-            <div class="shop-item-preview"></div>
-            <p style="font-size:11px; font-weight:900;">Casque Renforcé</p>
-            <button class="btn-play-job" style="margin-top:4px; padding:4px 8px;">200$</button>
+      <div class="view-card">
+        <div class="view-title">🛒 Boutique de Contrebande</div>
+        <p style="font-size:12px; margin-bottom:12px; font-weight:700; color:#64748b;">Objets bizarres vendus sous le manteau.</p>
+        
+        <div class="list-item">
+          <div>
+            <h4 style="font-weight:900; font-size:14px;">Pied-de-biche doré</h4>
+            <p style="font-size:11px; color:#64748b;">Ouvre les caisses de niveau 2</p>
           </div>
-          <div class="shop-item">
-            <div class="shop-item-preview"></div>
-            <p style="font-size:11px; font-weight:900;">Veste Fluo Gold</p>
-            <button class="btn-play-job" style="margin-top:4px; padding:4px 8px;">500$</button>
-          </div>
+          <button class="action-btn-sm" style="background:#a855f7; color:white;">150€ 🔑</button>
         </div>
       </div>
     </div>
 
     <div class="app-screen" id="screen-classement">
-      <div class="content-box">
-        <div class="box-title">🏆 Tableau d'Honneur du Port</div>
-        <ol style="padding-left:16px; font-weight:700; font-size:13px; display:flex; flex-direction:column; gap:6px;">
-          <li>GrosBill99 — 4500 tonnes</li>
-          <li>DockerFou — 3900 tonnes</li>
-          <li>LaGrueMecanique — 3100 tonnes</li>
+      <div class="view-card">
+        <div class="view-title">🏅 Les Caïds du Port</div>
+        <ol style="padding-left:18px; font-weight:700; font-size:14px; display:flex; flex-direction:column; gap:8px;">
+          <li>🥇 Don Ferretti — 1 500 000€</li>
+          <li>🥈 Capitaine Crochet — 450 000€</li>
+          <li>🥉 Toi — <span id="leaderboardYourScore" style="color:var(--port-blue);">0€</span></li>
         </ol>
       </div>
     </div>
 
   </div>
 
-  <nav class="bottom-nav-bar">
-    <button class="nav-item" onclick="switchTab('profil', this)">
-      <span>👤</span><span>PROFIL</span>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="switchTab('profil', this)">👤</button>
+    <button class="nav-btn active" onclick="switchTab('jeux', this)">
+      🎮
+      <span class="nav-badge">NEW</span>
     </button>
-    <button class="nav-item active" onclick="switchTab('jeux', this)">
-      <span>🎮</span><span>JEUX</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('travail', this)">
-      <span>🛠️</span><span>TRAVAIL</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('shop', this)">
-      <span>💰</span><span>SHOP</span>
-    </button>
-    <button class="nav-item" onclick="switchTab('classement', this)">
-      <span>🏆</span><span>SCORES</span>
-    </button>
-  </nav>
+    <button class="nav-btn" onclick="switchTab('travail', this)">💼</button>
+    <button class="nav-btn" onclick="switchTab('shop', this)">🛒</button>
+    <button class="nav-btn" onclick="switchTab('classement', this)">🏆</button>
+  </div>
 
   <script>
-    // RECUPERATION UNIQUE DES INFOS SECURISEES PRÉCÉDEMMENT
-    document.addEventListener("DOMContentLoaded", () => {
-      const savedColor = localStorage.getItem('userColor') || '#3A4750';
-      const savedName = localStorage.getItem('username') || 'Recrue Anonyme';
-      
-      // Injection de la couleur unique dans le fond du carré avatar
-      document.getElementById('globalBadgeAvatar').style.backgroundColor = savedColor;
-      document.getElementById('globalBadgeName').textContent = savedName.toUpperCase();
-    });
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // NAVIGATION SANS RECHARGEMENT (ONGLETS FLUIDES)
-    function switchTab(tabId, buttonElement) {
-      // 1. Masquer tous les écrans
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    // Remplir le nom d'utilisateur dans l'onglet profil s'il existe
+    const username = localStorage.getItem('username') || 'Docker Inconnu';
+    document.getElementById('profileUser').textContent = username.toUpperCase();
+
+    loadUserData();
+
+    async function loadUserData() {
+      try {
+        const { data } = await supabaseClient
+          .from('game_progress')
+          .select('money, level, xp')
+          .eq('user_id', userId)
+          .single();
+
+        if (data) {
+          const moneyFormatted = formatNumber(data.money || 0);
+          document.getElementById('moneyDisplay').textContent = moneyFormatted + '€';
+          document.getElementById('leaderboardYourScore').textContent = moneyFormatted + '€';
+          document.getElementById('levelDisplay').textContent = data.level || 1;
+          document.getElementById('xpDisplay').textContent = formatNumber(data.xp || 0);
+        }
+      } catch (err) {
+        console.error('Erreur Supabase:', err);
+      }
+    }
+
+    // FONCTION DE NAVIGATION FLUIDE ENTRE ONGLETS
+    function switchTab(tabId, btnElement) {
+      // 1. Cacher tous les écrans de jeu
       document.querySelectorAll('.app-screen').forEach(screen => {
         screen.classList.remove('active');
       });
-      
-      // 2. Désactiver tous les boutons de la nav bar
-      document.querySelectorAll('.nav-item').forEach(item => {
-        item.classList.remove('active');
+
+      // 2. Remettre à plat tous les boutons de navigation (Inactifs)
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('active');
       });
 
-      // 3. Activer la cible
+      // 3. Activer l'écran demandé et appliquer le style coloré au bouton cliqué
       document.getElementById(`screen-${tabId}`).classList.add('active');
-      buttonElement.classList.add('active');
+      btnElement.classList.add('active');
+    }
+
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
     }
   </script>
 </body>
