@@ -3,22 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Le Port Chelou</title>
+  <title>Battle Dock — Le Quai</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <script src="fullscreen.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
   <style>
     :root {
       --port-dark: #0f172a;
       --port-blue: #2563eb;
-      --port-light-blue: #38bdf8;
       --comic-yellow: #facc15;
       --comic-red: #ef4444;
       --comic-green: #22c55e;
-      --paper-cream: #fefce8;
       --border-thick: 4px solid #000000;
       --shadow-comic: 8px 8px 0px #000000;
       --shadow-comic-sm: 4px 4px 0px #000000;
@@ -29,516 +24,347 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: linear-gradient(135deg, #1e1b4b 0%, #311042 50%, #0f172a 100%);
+      background: var(--comic-yellow); 
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 16px 90px 16px; /* Espace en bas pour la nav bar */
       overflow-x: hidden;
-      position: relative;
-      padding: 24px 16px 140px 16px;
     }
 
-    /* --- DÉCORS STYLE BD --- */
-    .smoke {
-      position: fixed;
-      bottom: 30%;
-      right: 10%;
-      width: 100px;
-      height: 150px;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .smoke-cloud {
-      position: absolute;
-      background: #334155;
-      border: 3px solid #000;
-      border-radius: 50%;
-      opacity: 0.8;
-      animation: smoke-rise 4s ease-out infinite;
-    }
-
-    .smoke-cloud:nth-child(1) { width: 60px; height: 60px; bottom: 0; left: 20px; animation-delay: 0s; }
-    .smoke-cloud:nth-child(2) { width: 50px; height: 50px; bottom: 40px; left: 10px; animation-delay: 0.8s; }
-    .smoke-cloud:nth-child(3) { width: 70px; height: 70px; bottom: 80px; left: 30px; animation-delay: 1.6s; }
-
-    @keyframes smoke-rise {
-      0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
-      100% { transform: translateY(-120px) scale(1.3); opacity: 0; }
-    }
-
-    .seagulls {
-      position: fixed;
-      top: 18%;
-      left: 12%;
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    .seagull {
-      position: absolute;
-      font-size: 44px;
-      animation: seagull-fight 2s ease-in-out infinite;
-      filter: drop-shadow(4px 4px 0px #000000);
-    }
-
-    .seagull:nth-child(1) { left: 0; animation-delay: 0s; }
-    .seagull:nth-child(2) { left: 55px; animation-delay: 1s; transform: scaleX(-1); }
-
-    @keyframes seagull-fight {
-      0%, 100% { transform: translateX(0) rotate(0deg); }
-      25% { transform: translateX(-8px) rotate(-12deg); }
-      75% { transform: translateX(8px) rotate(12deg); }
-    }
-
-    .chichi {
-      position: fixed;
-      bottom: 22%;
-      left: 18%;
-      font-size: 36px;
-      z-index: 0;
-      animation: wiggle 3s ease-in-out infinite;
-      filter: drop-shadow(3px 3px 0px #000000);
-      pointer-events: none;
-    }
-
-    @keyframes wiggle {
-      0%, 100% { transform: rotate(-6deg); }
-      50% { transform: rotate(6deg); }
-    }
-
-    .containers {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 180px;
-      z-index: 0;
+    .hub-container {
+      width: 100%;
+      max-width: 440px;
       display: flex;
-      justify-content: space-around;
-      align-items: flex-end;
-      padding: 0 16px;
-      pointer-events: none;
+      flex-direction: column;
+      gap: 16px;
     }
 
-    .container-stack {
-      display: flex;
-      flex-direction: column-reverse;
-      gap: 2px;
-    }
-
-    .container-box {
-      width: 75px;
-      height: 42px;
-      background: var(--color);
-      border: 3px solid #000000;
-      border-radius: 6px;
-      position: relative;
-      box-shadow: 4px 4px 0px #000000;
-      transform: rotate(var(--rotation));
-    }
-
-    .container-box::after {
-      content: '⚓';
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 18px;
-      opacity: 0.3;
-      color: #000;
-    }
-
-    /* --- INTERFACE PRINCIPALE --- */
-    .ui-container {
-      position: relative;
-      z-index: 10;
-      max-width: 540px;
-      margin: 0 auto;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 24px;
-    }
-
-    .logo {
-      font-family: 'Bangers', cursive;
-      font-size: clamp(4rem, 12vw, 5.5rem);
-      color: var(--comic-yellow);
-      letter-spacing: 4px;
-      text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
-      line-height: 0.9;
-      transform: rotate(-2deg);
-      display: inline-block;
-      margin-bottom: 6px;
-    }
-
-    .subtitle {
-      font-family: 'Permanent Marker', cursive;
-      font-size: clamp(1rem, 4vw, 1.3rem);
-      color: #ffffff;
-      text-shadow: 3px 3px 0px var(--port-dark);
-    }
-
-    /* BLOC DES STATS EN "PAPIER CRÈME COMMERCIAL" */
-    .stats-crate {
-      background: var(--paper-cream);
+    /* BARRE DE STATUT SUPÉRIEURE (BADGE DOCKER) */
+    .docker-badge-card {
+      background: #ffffff;
       border: var(--border-thick);
       border-radius: 20px;
       padding: 16px;
-      margin-bottom: 24px;
       box-shadow: var(--shadow-comic);
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .stat {
-      text-align: center;
-      background: #ffffff;
-      padding: 10px 4px;
-      border-radius: 12px;
+    .badge-avatar-box {
+      width: 75px;
+      height: 85px;
+      background: #3A4750; /* Dynamique via JS */
       border: 3px solid #000;
+      border-radius: 10px;
+      overflow: hidden;
       box-shadow: var(--shadow-comic-sm);
     }
 
-    .stat-icon {
-      font-size: 28px;
-      margin-bottom: 2px;
-      animation: bounce-stat 2s ease-in-out infinite;
-    }
-    .stat:nth-child(1) .stat-icon { animation-delay: 0s; }
-    .stat:nth-child(2) .stat-icon { animation-delay: 0.3s; }
-    .stat:nth-child(3) .stat-icon { animation-delay: 0.6s; }
-
-    @keyframes bounce-stat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
+    .badge-avatar-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
 
-    .stat-value {
+    .badge-info {
+      flex: 1;
+    }
+
+    .badge-name {
       font-family: 'Bungee', sans-serif;
       font-size: 16px;
       color: var(--port-dark);
-      margin-bottom: 2px;
+      line-height: 1.2;
     }
 
-    .stat-label {
+    .badge-rank {
+      font-family: 'Bangers', cursive;
+      font-size: 18px;
+      color: var(--comic-red);
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .xp-bar-bg {
+      width: 100%;
+      height: 12px;
+      background: #e2e8f0;
+      border: 2px solid #000;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      width: 35%; /* Exemple */
+      height: 100%;
+      background: var(--comic-green);
+    }
+
+    /* CONTENU DES ONGLETS (SECTIONS AFFICHÉES/CACHÉES) */
+    .app-screen {
+      display: none;
+      width: 100%;
+    }
+
+    .app-screen.active {
+      display: block;
+    }
+
+    /* MODULES STANDARD */
+    .content-box {
+      background: white;
+      border: var(--border-thick);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--shadow-comic);
+      margin-bottom: 16px;
+    }
+
+    .box-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      margin-bottom: 12px;
+      color: var(--port-dark);
+    }
+
+    /* COMPOSANTS ZONE DE JEU / CONTRATS */
+    .job-card {
+      background: #f8fafc;
+      border: 2px solid #000;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .job-details h4 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+    }
+
+    .job-details p {
       font-size: 11px;
       color: #64748b;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
-    /* PALETTE DE BOUTONS STYLE BD POP */
-    .menu-buttons {
-      display: grid;
-      gap: 16px;
-    }
-
-    .wood-btn {
-      background: #ffffff;
-      border: var(--border-thick);
-      border-radius: 16px;
-      padding: 16px;
-      cursor: pointer;
-      position: relative;
-      box-shadow: var(--shadow-comic);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    /* Assignation des couleurs fortes style BD sur les boutons */
-    .menu-buttons .wood-btn:nth-child(1) { background: var(--comic-yellow); }
-    .menu-buttons .wood-btn:nth-child(2) { background: var(--port-blue); }
-    .menu-buttons .wood-btn:nth-child(3) { background: #a855f7; } /* Violet Boutique */
-    .menu-buttons .wood-btn:nth-child(4) { background: var(--comic-green); }
-    .menu-buttons .wood-btn:nth-child(5) { background: #e2e8f0; }
-
-    .wood-btn:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 10px 10px 0px #000000;
-    }
-
-    .wood-btn:active {
-      transform: translate(6px, 6px);
-      box-shadow: 2px 2px 0px #000000;
-    }
-
-    .btn-icon {
-      width: 54px;
-      height: 54px;
-      background: #ffffff;
-      border: 3px solid #000;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      flex-shrink: 0;
-      box-shadow: var(--shadow-comic-sm);
-    }
-
-    .btn-content {
-      flex: 1;
-      text-align: left;
-    }
-
-    .btn-title {
+    .btn-play-job {
+      padding: 8px 12px;
       font-family: 'Bungee', sans-serif;
-      font-size: 16px;
-      color: var(--port-dark);
-      text-shadow: 2px 2px 0px #ffffff;
-      margin-bottom: 2px;
-    }
-
-    /* Couleurs de texte adaptées si le fond est sombre */
-    .menu-buttons .wood-btn:nth-child(2) .btn-title { text-shadow: 2px 2px 0px var(--port-dark); color: #fff; }
-
-    .btn-desc {
-      font-size: 13px;
-      color: var(--port-dark);
-      font-weight: 700;
-      opacity: 0.9;
-    }
-    .menu-buttons .wood-btn:nth-child(2) .btn-desc { color: #f8fafc; }
-
-    /* BADGE UNIVERSEL FLASHY */
-    .btn-badge {
-      position: absolute;
-      top: -10px;
-      right: -6px;
-      background: var(--comic-red);
-      color: white;
-      font-family: 'Bangers', cursive;
-      font-size: 16px;
-      letter-spacing: 1px;
-      padding: 4px 12px;
-      border-radius: 8px;
-      border: 3px solid #000;
-      transform: rotate(12deg);
-      box-shadow: var(--shadow-comic-sm);
-    }
-
-    /* --- NAVIGATION INFERIEURE STYLE BD --- */
-    .bottom-nav {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) rotate(-1deg);
-      background: var(--port-dark);
-      border: var(--border-thick);
-      border-radius: 24px;
-      padding: 12px 16px;
-      display: flex;
-      gap: 12px;
-      box-shadow: var(--shadow-comic);
-      z-index: 100;
-    }
-
-    .nav-btn {
-      width: 56px;
-      height: 56px;
-      background: var(--comic-yellow);
-      border: 3px solid #000;
-      border-radius: 16px;
-      font-size: 26px;
-      cursor: pointer;
-      transition: all 0.1s;
-      position: relative;
-      box-shadow: var(--shadow-comic-sm);
-    }
-
-    .nav-btn:nth-child(2) { background: var(--port-light-blue); }
-    .nav-btn:nth-child(3) { background: var(--comic-green); }
-    .nav-btn:nth-child(4) { background: #cbd5e1; }
-
-    .nav-btn:hover {
-      transform: translate(-1px, -1px);
-      box-shadow: 5px 5px 0px #000;
-    }
-
-    .nav-btn:active {
-      transform: translate(3px, 3px);
-      box-shadow: 1px 1px 0px #000;
-    }
-
-    .nav-badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: var(--comic-red);
-      color: white;
       font-size: 11px;
-      font-weight: 900;
-      padding: 2px 6px;
-      border-radius: 6px;
+      background: var(--comic-yellow);
       border: 2px solid #000;
-      font-family: 'Bangers', cursive;
+      border-radius: 6px;
+      cursor: pointer;
     }
 
-    @media (max-width: 400px) {
-      .logo { font-size: 3.2rem; }
-      .seagulls { left: 4%; top: 12%; }
-      .seagull { font-size: 34px; }
+    .job-card.locked {
+      opacity: 0.5;
+    }
+
+    /* BARRE DE NAVIGATION INFÉRIEURE RÉTRO */
+    .bottom-nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: var(--port-dark);
+      border-top: var(--border-thick);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 6px calc(10px + env(safe-area-inset-bottom)) 6px;
+      z-index: 999;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 800;
+      font-size: 10px;
+      gap: 2px;
+      transition: color 0.1s;
+    }
+
+    .nav-item span:first-child {
+      font-size: 20px;
+    }
+
+    .nav-item.active {
+      color: var(--comic-yellow);
+      transform: scale(1.1);
+    }
+
+    /* BOUTIQUE D'AVATARS CARDOON */
+    .shop-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .shop-item {
+      background: #f1f5f9;
+      border: 2px solid #000;
+      border-radius: 12px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .shop-item-preview {
+      width: 60px;
+      height: 60px;
+      background: #cbd5e1;
+      border: 2px solid #000;
+      border-radius: 6px;
+      margin: 0 auto 8px auto;
     }
   </style>
 </head>
 <body>
 
-  <div class="smoke">
-    <div class="smoke-cloud"></div>
-    <div class="smoke-cloud"></div>
-    <div class="smoke-cloud"></div>
-  </div>
-
-  <div class="seagulls">
-    <div class="seagull">🐦</div>
-    <div class="seagull">🐦</div>
-  </div>
-
-  <div class="chichi">🥖</div>
-
-  <div class="containers">
-    <div class="container-stack">
-      <div class="container-box" style="--color: var(--comic-red); --rotation: -3deg;"></div>
-      <div class="container-box" style="--color: var(--port-blue); --rotation: 2deg;"></div>
-      <div class="container-box" style="--color: var(--comic-yellow); --rotation: -1deg;"></div>
-    </div>
-    <div class="container-stack">
-      <div class="container-box" style="--color: var(--comic-green); --rotation: 4deg;"></div>
-      <div class="container-box" style="--color: var(--comic-red); --rotation: -2deg;"></div>
-    </div>
-    <div class="container-stack">
-      <div class="container-box" style="--color: #a855f7; --rotation: 1deg;"></div>
-      <div class="container-box" style="--color: var(--comic-yellow); --rotation: -4deg;"></div>
-      <div class="container-box" style="--color: var(--port-blue); --rotation: 2deg;"></div>
-    </div>
-  </div>
-
-  <div class="ui-container">
+  <div class="hub-container">
     
-    <div class="header">
-      <div class="logo">BATTLE DOCK</div>
-      <div class="subtitle">⚓ Le Port Chelou ⚓</div>
-    </div>
-
-    <div class="stats-crate">
-      <div class="stats-grid">
-        <div class="stat">
-          <div class="stat-icon">💰</div>
-          <div class="stat-value" id="moneyDisplay">0€</div>
-          <div class="stat-label">Thunes</div>
-        </div>
-        <div class="stat">
-          <div class="stat-icon">⭐</div>
-          <div class="stat-value" id="levelDisplay">1</div>
-          <div class="stat-label">Niveau</div>
-        </div>
-        <div class="stat">
-          <div class="stat-icon">🏆</div>
-          <div class="stat-value" id="xpDisplay">0</div>
-          <div class="stat-label">XP</div>
+    <div class="docker-badge-card">
+      <div class="badge-avatar-box" id="globalBadgeAvatar">
+        <img src="notionists-1779298466584.png" alt="Sujet">
+      </div>
+      <div class="badge-info">
+        <div class="badge-name" id="globalBadgeName">RECRUE</div>
+        <div class="badge-rank">Docker Occasionnel</div>
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill"></div>
         </div>
       </div>
     </div>
 
-    <div class="menu-buttons">
-      
-      <div class="wood-btn" onclick="window.location.href='travailler.html'">
-        <div class="btn-icon">💼</div>
-        <div class="btn-content">
-          <div class="btn-title">Bosser</div>
-          <div class="btn-desc">Déplace des caisses</div>
+    <div class="app-screen active" id="screen-jeux">
+      <div class="content-box">
+        <div class="box-title">🎮 Cargos Disponibles (Niveaux)</div>
+        
+        <div class="job-card">
+          <div class="job-details">
+            <h4>Navire "Le Cargo Vert"</h4>
+            <p>Difficulté : Facile • Récompense : 50$</p>
+          </div>
+          <button class="btn-play-job">MONTER 🏗️</button>
+        </div>
+
+        <div class="job-card locked">
+          <div class="job-details">
+            <h4>Super-Panamax "Abyssal"</h4>
+            <p>🔒 Requis : Grade Docker Certifié</p>
+          </div>
+          <button class="btn-play-job" style="background:#cbd5e1; cursor:not-allowed;">BLOQUÉ</button>
         </div>
       </div>
-
-      <div class="wood-btn" onclick="window.location.href='jeux.html'">
-        <div class="btn-icon">🎰</div>
-        <div class="btn-content">
-          <div class="btn-title">Mini-Jeux</div>
-          <div class="btn-desc">Tente ta chance</div>
-        </div>
-        <div class="btn-badge">HOT</div>
-      </div>
-
-      <div class="wood-btn" onclick="window.location.href='shop.html'">
-        <div class="btn-icon">👽</div>
-        <div class="btn-content">
-          <div class="btn-title">Boutique Ferretti</div>
-          <div class="btn-desc">Trucs bizarres</div>
-        </div>
-      </div>
-
-      <div class="wood-btn" onclick="window.location.href='progression.html'">
-        <div class="btn-icon">📊</div>
-        <div class="btn-content">
-          <div class="btn-title">Progression</div>
-          <div class="btn-desc">Tes objectifs</div>
-        </div>
-      </div>
-
-      <div class="wood-btn" onclick="window.location.href='classement.html'">
-        <div class="btn-icon">🏅</div>
-        <div class="btn-content">
-          <div class="btn-title">Classement</div>
-          <div class="btn-desc">Les meilleurs</div>
-        </div>
-      </div>
-
     </div>
+
+    <div class="app-screen" id="screen-profil">
+      <div class="content-box">
+        <div class="box-title">📋 Statistiques de Service</div>
+        <p style="font-weight: 700; margin-bottom: 6px;">Conteneurs déplacés : <span style="color:var(--port-blue);">0</span></p>
+        <p style="font-weight: 700; margin-bottom: 6px;">Cafés consommés : <span style="color:var(--comic-red);">12</span></p>
+        <p style="font-weight: 700;">Syndicat : <span style="color:var(--comic-green);">Homologué</span></p>
+      </div>
+    </div>
+
+    <div class="app-screen" id="screen-travail">
+      <div class="content-box">
+        <div class="box-title">🛠️ Heures Supplémentaires</div>
+        <p style="font-size:13px; font-weight:700; margin-bottom:12px; color:#475569;">Gagnez de l'argent passivement en balayant le quai numéro 4.</p>
+        <button class="btn-play-job" style="width:100%; padding:12px;">COMMENCER LE SERVICE (3h)</button>
+      </div>
+    </div>
+
+    <div class="app-screen" id="screen-shop">
+      <div class="content-box">
+        <div class="box-title">💰 Vestiaire de Contrebande (Avatars)</div>
+        <div class="shop-grid">
+          <div class="shop-item">
+            <div class="shop-item-preview"></div>
+            <p style="font-size:11px; font-weight:900;">Casque Renforcé</p>
+            <button class="btn-play-job" style="margin-top:4px; padding:4px 8px;">200$</button>
+          </div>
+          <div class="shop-item">
+            <div class="shop-item-preview"></div>
+            <p style="font-size:11px; font-weight:900;">Veste Fluo Gold</p>
+            <button class="btn-play-job" style="margin-top:4px; padding:4px 8px;">500$</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-screen" id="screen-classement">
+      <div class="content-box">
+        <div class="box-title">🏆 Tableau d'Honneur du Port</div>
+        <ol style="padding-left:16px; font-weight:700; font-size:13px; display:flex; flex-direction:column; gap:6px;">
+          <li>GrosBill99 — 4500 tonnes</li>
+          <li>DockerFou — 3900 tonnes</li>
+          <li>LaGrueMecanique — 3100 tonnes</li>
+        </ol>
+      </div>
+    </div>
+
   </div>
 
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='profil.html'">👤</button>
-    <button class="nav-btn" onclick="window.location.href='jeux.html'">
-      🎮
-      <span class="nav-badge">NEW</span>
+  <nav class="bottom-nav-bar">
+    <button class="nav-item" onclick="switchTab('profil', this)">
+      <span>👤</span><span>PROFIL</span>
     </button>
-    <button class="nav-btn" onclick="window.location.href='shop.html'">🛒</button>
-    <button class="nav-btn" onclick="window.location.href='parametres.html'">⚙️</button>
-  </div>
+    <button class="nav-item active" onclick="switchTab('jeux', this)">
+      <span>🎮</span><span>JEUX</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('travail', this)">
+      <span>🛠️</span><span>TRAVAIL</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('shop', this)">
+      <span>💰</span><span>SHOP</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('classement', this)">
+      <span>🏆</span><span>SCORES</span>
+    </button>
+  </nav>
 
   <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    // RECUPERATION UNIQUE DES INFOS SECURISEES PRÉCÉDEMMENT
+    document.addEventListener("DOMContentLoaded", () => {
+      const savedColor = localStorage.getItem('userColor') || '#3A4750';
+      const savedName = localStorage.getItem('username') || 'Recrue Anonyme';
+      
+      // Injection de la couleur unique dans le fond du carré avatar
+      document.getElementById('globalBadgeAvatar').style.backgroundColor = savedColor;
+      document.getElementById('globalBadgeName').textContent = savedName.toUpperCase();
+    });
 
-    const userId = localStorage.getItem('userId');
-    if (!userId) window.location.href = 'index.html';
+    // NAVIGATION SANS RECHARGEMENT (ONGLETS FLUIDES)
+    function switchTab(tabId, buttonElement) {
+      // 1. Masquer tous les écrans
+      document.querySelectorAll('.app-screen').forEach(screen => {
+        screen.classList.remove('active');
+      });
+      
+      // 2. Désactiver tous les boutons de la nav bar
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+      });
 
-    loadUserData();
-
-    async function loadUserData() {
-      try {
-        const { data } = await supabaseClient
-          .from('game_progress')
-          .select('money, level, xp')
-          .eq('user_id', userId)
-          .single();
-
-        if (data) {
-          document.getElementById('moneyDisplay').textContent = formatNumber(data.money || 0) + '€';
-          document.getElementById('levelDisplay').textContent = data.level || 1;
-          document.getElementById('xpDisplay').textContent = formatNumber(data.xp || 0);
-        }
-      } catch (err) {
-        console.error('Erreur:', err);
-      }
-    }
-
-    function formatNumber(num) {
-      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-      return num.toString();
+      // 3. Activer la cible
+      document.getElementById(`screen-${tabId}`).classList.add('active');
+      buttonElement.classList.add('active');
     }
   </script>
 </body>
