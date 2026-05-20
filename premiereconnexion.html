@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Recrutement</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  
+  <style>
+    :root {
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --paper-cream: #fefce8;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 8px 8px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      overscroll-behavior: none;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 16px;
+    }
+
+    .header-container {
+      text-align: center;
+      margin-bottom: 16px;
+      width: 100%;
+      max-width: 540px;
+      flex-shrink: 0;
+    }
+
+    .main-title {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2.5rem, 10vw, 4rem);
+      color: var(--comic-yellow);
+      letter-spacing: 4px;
+      text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
+      line-height: 0.9;
+      transform: rotate(-2deg);
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-family: 'Permanent Marker', cursive;
+      font-size: clamp(0.8rem, 2.5vw, 0.95rem);
+      color: #ffffff;
+      text-shadow: 3px 3px 0px var(--port-dark);
+      letter-spacing: 1px;
+    }
+
+    .dock-container {
+      width: 100%;
+      max-width: 540px;
+      background: #e2e8f0;
+      border: var(--border-thick);
+      border-radius: 20px;
+      box-shadow: var(--shadow-comic);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .tabs-wrapper {
+      background: var(--port-dark);
+      border-bottom: var(--border-thick);
+      flex-shrink: 0;
+    }
+
+    .tab-badge {
+      background: var(--comic-yellow);
+      color: var(--port-dark);
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      padding: 14px 8px;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .form-content {
+      background: var(--paper-cream);
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .section {
+      display: none;
+    }
+
+    .section.active {
+      display: block;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .section-headline {
+      font-family: 'Bangers', cursive;
+      font-size: 24px;
+      color: var(--port-dark);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .avatars-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .avatar-btn {
+      aspect-ratio: 1;
+      border: var(--border-thick);
+      border-radius: 12px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .avatar-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .avatar-btn.selected {
+      background: var(--comic-yellow);
+      transform: scale(0.95);
+    }
+
+    .input-group {
+      margin-bottom: 14px;
+    }
+
+    .input-group label {
+      display: block;
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--port-dark);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .custom-field {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--port-dark);
+      background: #ffffff;
+      border: var(--border-thick);
+      border-radius: 10px;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .game-box {
+      background: #cbd5e1;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-comic-sm);
+      text-align: center;
+    }
+
+    .game-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 12px;
+      color: var(--port-dark);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      background: white;
+      padding: 4px 8px;
+      border: 2px solid #000;
+      display: inline-block;
+    }
+
+    .game-instruction {
+      font-size: 11px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      color: var(--port-dark);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #ffffff;
+      border: 3px solid #000;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--comic-green), var(--comic-yellow));
+      transition: width 0.3s ease;
+    }
+
+    .clickable-zone {
+      width: 100%;
+      height: 100px;
+      background: #1e293b;
+      border: 3px solid #000;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .clickable-item {
+      position: absolute;
+      font-size: 32px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .clickable-item:active {
+      transform: scale(0.9);
+    }
+
+    .button {
+      background: var(--comic-red);
+      color: white;
+      border: var(--border-thick);
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+      transition: all 0.15s ease;
+      width: 100%;
+      border-bottom: none;
+    }
+
+    .button:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .button:disabled {
+      background: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .score-display {
+      font-family: 'Bungee', sans-serif;
+      font-size: 16px;
+      color: var(--comic-red);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .quote-display {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 12px;
+      color: var(--port-dark);
+      text-align: center;
+      line-height: 1.4;
+      margin-bottom: 12px;
+      font-style: italic;
+      padding: 8px;
+      background: white;
+      border: 2px solid #000;
+      border-radius: 8px;
+    }
+
+    @media (max-width: 540px) {
+      .dock-container {
+        border-radius: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header-container">
+    <div class="main-title">BATTLE DOCK</div>
+    <div class="subtitle">Recrutement en cours...</div>
+  </div>
+
+  <div class="dock-container">
+    <div class="tabs-wrapper">
+      <div class="tab-badge" id="stepTitle">ÉTAPE 1 / 4</div>
+    </div>
+
+    <div class="form-content">
+      <!-- SECTION 1: CHOIX AVATAR -->
+      <div class="section active" id="sec1">
+        <div class="section-headline">Ton Avatar</div>
+        <div class="avatars-grid" id="avatarsGrid"></div>
+        <button class="button" onclick="nextSection()" id="btn1" disabled>SUIVANT</button>
+      </div>
+
+      <!-- SECTION 2: INFOS JOUEUR -->
+      <div class="section" id="sec2">
+        <div class="section-headline">Tes Infos</div>
+        <div class="input-group">
+          <label>⚓ Nom du bateau</label>
+          <input type="text" class="custom-field" id="shipName" placeholder="ex: La Sardine">
+        </div>
+        <div class="input-group">
+          <label>🏋️ Spécialité</label>
+          <select class="custom-field" id="specialty">
+            <option value="">-- Choisir --</option>
+            <option value="Manutention">Manutention</option>
+            <option value="Grues">Grues</option>
+            <option value="Conteneurs">Conteneurs</option>
+            <option value="Palettisation">Palettisation</option>
+          </select>
+        </div>
+        <button class="button" onclick="nextSection()">SUIVANT</button>
+      </div>
+
+      <!-- SECTION 3: MINI-JEUX -->
+      <div class="section" id="sec3">
+        <div class="section-headline">Tests Pratiques</div>
+        <div class="score-display">Score: <span id="currentScore">0</span> / 100</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="overallProgress"></div>
+        </div>
+
+        <!-- JEU 1 -->
+        <div class="game-box" id="game1" style="display: none;">
+          <div class="game-title">Jeu 1/5: Collecte rapide</div>
+          <div class="game-instruction">Clique sur les colis ! Temps: <span id="timer1">10</span>s | Colis: <span id="colis1">0</span></div>
+          <div class="clickable-zone" id="zone1"></div>
+        </div>
+
+        <!-- JEU 2 -->
+        <div class="game-box" id="game2" style="display: none;">
+          <div class="game-title">Jeu 2/5: Mémoire</div>
+          <div class="game-instruction">Répète la séquence ! Niveau: <span id="level2">0</span></div>
+          <div id="zone2" style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;"></div>
+        </div>
+
+        <!-- JEU 3 -->
+        <div class="game-box" id="game3" style="display: none;">
+          <div class="game-title">Jeu 3/5: Réflexes</div>
+          <div class="game-instruction" id="msg3">Attends le signal...</div>
+          <button class="button" id="btn3" style="font-size: 48px; height: 100px;">🐟</button>
+        </div>
+
+        <!-- JEU 4 -->
+        <div class="game-box" id="game4" style="display: none;">
+          <div class="game-title">Jeu 4/5: Culture Docker</div>
+          <div class="game-instruction" id="q4"></div>
+          <div style="padding: 12px; background: var(--comic-yellow); border: 3px solid #000; border-radius: 8px; margin-bottom: 8px; font-weight: 900; min-height: 40px;" id="a4">?</div>
+          <button class="button" id="btn4">Réponse</button>
+        </div>
+
+        <!-- JEU 5 -->
+        <div class="game-box" id="game5" style="display: none;">
+          <div class="game-title">Jeu 5/5: Chorégraphie</div>
+          <div class="game-instruction">Répète les gestes ! Niveau: <span id="level5">0</span></div>
+          <div style="font-size: 40px; text-align: center; margin-bottom: 8px; min-height: 50px;" id="display5"></div>
+          <div id="zone5" style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;"></div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: RÉSULTAT -->
+      <div class="section" id="sec4">
+        <div class="section-headline">Félicitations !</div>
+        <div class="score-display" id="finalScore"></div>
+        <div class="quote-display" id="finalQuote"></div>
+        <button class="button" style="background: var(--comic-green);" onclick="goToGame()">ACCÉDER AUX DOCKS</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username') || 'Docker';
+
+    if (!userId) window.location.href = 'index.html';
+
+    let currentSection = 1;
+    let selectedAvatar = '';
+    let gameScores = [0, 0, 0, 0, 0];
+    let currentGameIndex = 0;
+
+    const dockerQuotes = [
+      "Débutant, mais on fait avec.",
+      "Pas mal, t'as du potentiel.",
+      "Solide ! T'es un vrai docker.",
+      "Impressionnant ! Le port est à toi.",
+      "LÉGENDE ! Le Vieux-Port t'appartient !"
+    ];
+
+    // Création des avatars
+    const avatars = ['👷', '🧑‍🔧', '👨‍🏭', '🧑‍✈️', '🧑‍🚀', '🥷'];
+    const grid = document.getElementById('avatarsGrid');
+    avatars.forEach(av => {
+      const btn = document.createElement('button');
+      btn.className = 'avatar-btn';
+      btn.textContent = av;
+      btn.onclick = () => selectAvatar(av, btn);
+      grid.appendChild(btn);
+    });
+
+    function selectAvatar(av, btn) {
+      selectedAvatar = av;
+      document.querySelectorAll('.avatar-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('btn1').disabled = false;
+    }
+
+    function nextSection() {
+      if (currentSection === 2) {
+        const shipName = document.getElementById('shipName').value.trim();
+        const specialty = document.getElementById('specialty').value;
+        if (!shipName || !specialty) {
+          alert('Remplis tous les champs !');
+          return;
+        }
+      }
+
+      document.getElementById(`sec${currentSection}`).classList.remove('active');
+      currentSection++;
+      document.getElementById(`sec${currentSection}`).classList.add('active');
+      document.getElementById('stepTitle').textContent = `ÉTAPE ${currentSection} / 4`;
+
+      if (currentSection === 3) {
+        startGames();
+      }
+    }
+
+    function startGames() {
+      currentGameIndex = 0;
+      gameScores = [0, 0, 0, 0, 0];
+      loadGame(0);
+    }
+
+    function loadGame(i) {
+      currentGameIndex = i;
+      const progress = (i / 5) * 100;
+      document.getElementById('overallProgress').style.width = progress + '%';
+
+      for (let j = 1; j <= 5; j++) {
+        document.getElementById(`game${j}`).style.display = 'none';
+      }
+      document.getElementById(`game${i + 1}`).style.display = 'block';
+
+      if (i === 0) game1();
+      else if (i === 1) game2();
+      else if (i === 2) game3();
+      else if (i === 3) game4();
+      else game5();
+    }
+
+    function updateScore() {
+      const total = gameScores.reduce((a, b) => a + b, 0);
+      document.getElementById('currentScore').textContent = total;
+    }
+
+    // JEU 1: Collecte rapide
+    function game1() {
+      let score = 0;
+      let time = 10;
+      const zone = document.getElementById('zone1');
+      zone.innerHTML = '';
+
+      const interval = setInterval(() => {
+        time--;
+        document.getElementById('timer1').textContent = time;
+        if (time <= 0) {
+          clearInterval(interval);
+          clearInterval(spawnInterval);
+          gameScores[0] = Math.min(20, score * 2);
+          updateScore();
+          setTimeout(() => loadGame(1), 1500);
+        }
+      }, 1000);
+
+      const spawnInterval = setInterval(() => {
+        if (time > 0) {
+          const item = document.createElement('div');
+          item.className = 'clickable-item';
+          item.textContent = '📦';
+          item.style.left = Math.random() * 85 + '%';
+          item.style.top = Math.random() * 65 + '%';
+          item.onclick = () => {
+            score++;
+            document.getElementById('colis1').textContent = score;
+            item.remove();
+          };
+          zone.appendChild(item);
+          setTimeout(() => item.remove(), 2000);
+        }
+      }, 600);
+    }
+
+    // JEU 2: Mémoire
+    function game2() {
+      let seq = [];
+      let playerSeq = [];
+      let round = 0;
+      const colors = ['#ef4444', '#22c55e', '#facc15', '#2563eb'];
+      const emojis = ['🔴', '🟢', '🟡', '🔵'];
+      const zone = document.getElementById('zone2');
+      zone.innerHTML = '';
+
+      const buttons = [];
+      for (let i = 0; i < 4; i++) {
+        const btn = document.createElement('button');
+        btn.style.cssText = `width: 60px; height: 60px; background: ${colors[i]}; border: 4px solid #000; border-radius: 10px; cursor: pointer; font-size: 24px;`;
+        btn.textContent = emojis[i];
+        btn.onclick = () => playerClick(i);
+        buttons.push(btn);
+        zone.appendChild(btn);
+      }
+
+      function playerClick(i) {
+        playerSeq.push(i);
+        buttons[i].style.transform = 'scale(0.9)';
+        setTimeout(() => buttons[i].style.transform = '', 100);
+
+        if (playerSeq[playerSeq.length - 1] !== seq[playerSeq.length - 1]) {
+          gameScores[1] = Math.min(20, round * 3);
+          updateScore();
+          setTimeout(() => loadGame(2), 1000);
+          return;
+        }
+
+        if (playerSeq.length === seq.length) {
+          round++;
+          document.getElementById('level2').textContent = round;
+          playerSeq = [];
+          setTimeout(() => {
+            seq.push(Math.floor(Math.random() * 4));
+            playSeq();
+          }, 500);
+        }
+      }
+
+      function playSeq() {
+        let i = 0;
+        const interval = setInterval(() => {
+          buttons[seq[i]].style.transform = 'scale(1.2)';
+          setTimeout(() => buttons[seq[i]].style.transform = '', 400);
+          i++;
+          if (i >= seq.length) clearInterval(interval);
+        }, 600);
+      }
+
+      seq.push(Math.floor(Math.random() * 4));
+      playSeq();
+    }
+
+    // JEU 3: Réflexes
+    function game3() {
+      let canClick = false;
+      const msg = document.getElementById('msg3');
+      const btn = document.getElementById('btn3');
+
+      btn.onclick = () => {
+        if (!canClick) {
+          gameScores[2] = 0;
+          msg.textContent = 'Trop tôt! 💥';
+          updateScore();
+          setTimeout(() => loadGame(3), 1500);
+        } else {
+          gameScores[2] = 20;
+          msg.textContent = 'Parfait! ⭐';
+          updateScore();
+          setTimeout(() => loadGame(3), 1500);
+        }
+      };
+
+      setTimeout(() => {
+        msg.textContent = 'GO! Clique!';
+        msg.style.color = 'var(--comic-red)';
+        canClick = true;
+        setTimeout(() => {
+          if (canClick) {
+            gameScores[2] = 0;
+            msg.textContent = 'Trop lent! ⏱️';
+            canClick = false;
+            updateScore();
+            setTimeout(() => loadGame(3), 1500);
+          }
+        }, 2000);
+      }, Math.random() * 3000 + 1000);
+    }
+
+    // JEU 4: Culture Docker
+    function game4() {
+      const questions = [
+        { q: 'Combien de sardines dans le Vieux-Port?', a: 'Toutes!' },
+        { q: 'Qui est le vrai patron du port?', a: 'Toi maintenant!' },
+        { q: 'Quel est le cri du docker?', a: 'ALLEEEEEZ!' }
+      ];
+      const q = questions[Math.floor(Math.random() * questions.length)];
+
+      document.getElementById('q4').textContent = q.q;
+      document.getElementById('a4').textContent = '?';
+      document.getElementById('btn4').onclick = () => {
+        document.getElementById('a4').textContent = q.a;
+        gameScores[3] = 20;
+        updateScore();
+        setTimeout(() => loadGame(4), 1500);
+      };
+    }
+
+    // JEU 5: Chorégraphie
+    function game5() {
+      let seq = [];
+      let playerSeq = [];
+      let round = 0;
+      const moves = ['🤛', '🤜', '🙌', '🤷'];
+      const display = document.getElementById('display5');
+      const zone = document.getElementById('zone5');
+      zone.innerHTML = '';
+
+      const buttons = [];
+      for (let i = 0; i < 4; i++) {
+        const btn = document.createElement('button');
+        btn.style.cssText = `width: 50px; height: 50px; font-size: 24px; border: 4px solid #000; background: #fff; cursor: pointer; border-radius: 8px;`;
+        btn.textContent = moves[i];
+        btn.onclick = () => playerMove(i);
+        buttons.push(btn);
+        zone.appendChild(btn);
+      }
+
+      function playerMove(i) {
+        playerSeq.push(i);
+        buttons[i].style.transform = 'scale(0.8)';
+        setTimeout(() => buttons[i].style.transform = '', 100);
+
+        if (playerSeq[playerSeq.length - 1] !== seq[playerSeq.length - 1]) {
+          gameScores[4] = Math.min(20, round * 2);
+          updateScore();
+          setTimeout(() => endGames(), 1000);
+          return;
+        }
+
+        if (playerSeq.length === seq.length) {
+          round++;
+          document.getElementById('level5').textContent = round;
+          playerSeq = [];
+          setTimeout(() => {
+            seq.push(Math.floor(Math.random() * 4));
+            playMoves();
+          }, 500);
+        }
+      }
+
+      function playMoves() {
+        let i = 0;
+        const interval = setInterval(() => {
+          display.textContent = moves[seq[i]];
+          buttons[seq[i]].style.background = 'var(--comic-yellow)';
+          setTimeout(() => buttons[seq[i]].style.background = '#fff', 400);
+          i++;
+          if (i >= seq.length) clearInterval(interval);
+        }, 600);
+      }
+
+      seq.push(Math.floor(Math.random() * 4));
+      playMoves();
+    }
+
+    async function endGames() {
+      const totalScore = gameScores.reduce((a, b) => a + b, 0);
+      const quoteIndex = Math.floor(totalScore / 25);
+      const quote = dockerQuotes[Math.min(quoteIndex, dockerQuotes.length - 1)];
+
+      document.getElementById('finalScore').textContent = `Score Final: ${totalScore} / 100`;
+      document.getElementById('finalQuote').textContent = `"${quote}"`;
+
+      await supabaseClient
+        .from('profiles')
+        .update({
+          docker_quote: quote,
+          avatar: selectedAvatar,
+          ship_name: document.getElementById('shipName').value,
+          specialty: document.getElementById('specialty').value
+        })
+        .eq('user_id', userId);
+
+      document.getElementById('sec3').classList.remove('active');
+      document.getElementById('sec4').classList.add('active');
+      document.getElementById('stepTitle').textContent = 'TERMINÉ !';
+    }
+
+    function goToGame() {
+      window.location.href = 'game.html';
+    }
+  </script>
+</body>
+</html>
