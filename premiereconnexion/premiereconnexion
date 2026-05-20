@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Bureau de Recrutement</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  
+  <style>
+    :root {
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 8px 8px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: #facc15; 
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    .dock-container {
+      width: 100%;
+      max-width: 540px;
+      background: #e2e8f0;
+      border: var(--border-thick);
+      border-radius: 20px;
+      box-shadow: var(--shadow-comic);
+      overflow: hidden;
+    }
+
+    .tabs-wrapper {
+      display: flex;
+      background: var(--port-dark);
+      border-bottom: var(--border-thick);
+    }
+
+    .tab-badge {
+      flex: 1;
+      background: #ef4444; 
+      color: #ffffff; 
+      font-family: 'Bangers', cursive; 
+      font-size: 24px;
+      padding: 12px 8px;
+      text-align: center;
+      letter-spacing: 1.5px;
+    }
+
+    .form-content {
+      background: #ffffff; 
+      padding: 24px;
+    }
+
+    .recruitment-notice {
+      background: #f8fafc;
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 22px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      line-height: 1.4;
+    }
+
+    /* BADGE D'ACCRÉDITATION INDUSTRIEL */
+    .badge-preview-card {
+      border: var(--border-thick);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #1e293b, #475569);
+      color: #ffffff;
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .badge-preview-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 12px 12px;
+      pointer-events: none;
+    }
+
+    .badge-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 3px solid #ffffff;
+      padding-bottom: 8px;
+      z-index: 2;
+    }
+
+    .badge-header-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+    }
+
+    .badge-header-security {
+      display: flex;
+      gap: 4px;
+    }
+
+    .sec-dot {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border: 1px solid #000;
+      border-radius: 50%;
+    }
+    .sec-dot.active { background: #22c55e; }
+
+    .badge-card-body {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      gap: 18px;
+      align-items: start;
+      z-index: 2;
+    }
+
+    .suit-avatar {
+      width: 100px;
+      height: 115px;
+      background: #2563eb; /* Couleur de fond (Bleu Électrique par défaut) */
+      border: var(--border-thick);
+      border-radius: 10px;
+      box-shadow: 4px 4px 0px #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s ease;
+    }
+
+    .suit-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain; /* S'assure que tout l'avatar reste visible sans être tronqué */
+      display: block;
+    }
+
+    .badge-meta-info {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .smart-chip {
+      width: 28px;
+      height: 22px;
+      background: linear-gradient(135deg, #ffe066, #f59e0b);
+      border: 2px solid #000;
+      border-radius: 4px;
+      position: relative;
+      margin-bottom: 2px;
+    }
+    .smart-chip::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 0; right: 0; height: 2px; background: #000;
+    }
+
+    .badge-identity-name {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: -0.3px;
+    }
+
+    .badge-signature-block {
+      margin-top: 14px;
+      border-bottom: 2px dashed rgba(255,255,255,0.4);
+      padding-bottom: 2px;
+      font-family: 'Permanent Marker', cursive;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .badge-card-footer {
+      border-top: 3px solid #ffffff;
+      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 2;
+    }
+
+    .badge-barcode-art {
+      font-size: 16px;
+      font-weight: normal;
+      letter-spacing: 1px;
+    }
+
+    .badge-id-badge {
+      background: #ffffff;
+      color: #0f172a;
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .input-group { 
+      margin-bottom: 18px; 
+    }
+
+    .input-group label {
+      display: block;
+      font-weight: 900;
+      font-size: 12px;
+      color: var(--port-dark);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .color-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .color-btn {
+      aspect-ratio: 1;
+      width: 100%;
+      border: var(--border-thick);
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+      transition: transform 0.1s;
+    }
+
+    .color-btn.active {
+      transform: scale(0.9) translate(2px, 2px);
+      box-shadow: 0px 0px 0px #000;
+    }
+
+    /* MINI-JEUX APTITUDE */
+    .game-box {
+      background: #cbd5e1;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: var(--shadow-comic-sm);
+      display: none;
+      text-align: center;
+    }
+
+    .game-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 12px;
+      color: var(--port-dark);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      background: white;
+      padding: 4px 8px;
+      border: 2px solid #000;
+      display: inline-block;
+    }
+
+    .mini-game-btn {
+      width: 100%;
+      padding: 12px;
+      font-family: 'Bangers', cursive;
+      font-size: 20px;
+      color: white;
+      background: var(--comic-red);
+      border: 3px solid #000;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .game-progress-bg {
+      width: 100%;
+      height: 24px;
+      background: #ffffff;
+      border: 3px solid #000;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .game-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--comic-yellow);
+      transition: width 0.1s linear;
+    }
+
+    .radar-screen {
+      width: 100%;
+      height: 70px;
+      background: #020617;
+      border: 3px solid #000;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .radar-light {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ef4444;
+    }
+
+    .drop-zone {
+      width: 100%;
+      height: 140px;
+      background: #1e293b;
+      border: 3px solid #000;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .falling-container {
+      position: absolute;
+      font-size: 36px;
+      cursor: pointer;
+      user-select: none;
+      top: -50px;
+      left: 45%;
+      width: 50px;
+      text-align: center;
+    }
+
+    .action-zone {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 4px dashed rgba(0,0,0,0.1);
+    }
+
+    .lever-wrapper { flex: 1; }
+    
+    .submit-lever-btn {
+      width: 100%;
+      padding: 14px;
+      font-family: 'Bangers', cursive;
+      font-size: 22px;
+      color: white;
+      background: #94a3b8;
+      border: var(--border-thick);
+      border-radius: 12px;
+      cursor: not-allowed;
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .submit-lever-btn.unlocked {
+      background: var(--comic-green);
+      cursor: pointer;
+    }
+
+    .submit-lever-btn.unlocked:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000;
+    }
+
+    .speech-bubble {
+      background: white;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--comic-red);
+      margin-top: 16px;
+      box-shadow: var(--shadow-comic-sm);
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="dock-container">
+    <div class="tabs-wrapper">
+      <div class="tab-badge" id="playerTabMatricule">ACCÈS CANDIDAT : ENREGISTREMENT</div>
+    </div>
+
+    <div class="form-content">
+      
+      <div class="recruitment-notice">
+        🗄️ <strong>Dossier d'embauche portuaire — Grade : Occasionnel</strong><br>
+        Personnalise la couleur de fond de ton identité numérique, puis passe avec succès l'évaluation physique pour valider ton badge.
+      </div>
+      
+      <div class="badge-preview-card" id="badgeCardBg">
+        <div class="badge-card-header">
+          <div class="badge-header-title" id="badgeTopStatus">CARD SECURITY: PROVISIONAL ACCESS</div>
+          <div class="badge-header-security">
+            <div class="sec-dot" id="dot1"></div>
+            <div class="sec-dot" id="dot2"></div>
+            <div class="sec-dot" id="dot3"></div>
+          </div>
+        </div>
+        
+        <div class="badge-card-body">
+          <div class="suit-avatar" id="diverSuit">
+            <img id="badgeAvatarImg" src="notionists-1779298466584.png" alt="Avatar Docker">
+          </div>
+          
+          <div class="badge-meta-info">
+            <div class="smart-chip"></div>
+            <div class="badge-identity-name" id="badgeNameDisplay">ID: CANDIDAT</div>
+            <div class="badge-signature-block" id="badgeSignature">Signature du Docker</div>
+          </div>
+        </div>
+        
+        <div class="badge-card-footer">
+          <div class="badge-barcode-art">|||| | ||||| || ||||</div>
+          <div class="badge-id-badge" id="badgeIdDisplay">PENDING EVAL</div>
+        </div>
+      </div>
+
+      <div id="configSection">
+        <div class="input-group">
+          <label>🎨 Couleur d'arrière-plan de la photo d'identité</label>
+          <div class="color-picker-grid">
+            <button class="color-btn active" style="background: #2563eb;" onclick="selectSuitColor('#2563eb', this)"></button>
+            <button class="color-btn" style="background: #22c55e;" onclick="selectSuitColor('#22c55e', this)"></button>
+            <button class="color-btn" style="background: #ef4444;" onclick="selectSuitColor('#ef4444', this)"></button>
+            <button class="color-btn" style="background: #facc15;" onclick="selectSuitColor('#facc15', this)"></button>
+            <button class="color-btn" style="background: #7c3aed;" onclick="selectSuitColor('#7c3aed', this)"></button>
+          </div>
+        </div>
+
+        <button class="mini-game-btn" style="background:var(--port-blue); margin-top: 10px;" onclick="startQualificationTests()">Valider et démarrer les épreuves</button>
+      </div>
+
+      <div class="game-box" id="game1Box">
+        <div class="game-title">Épreuve 1 : Test de Réflexe douanier</div>
+        <p style="font-size:13px; margin-bottom:10px; font-weight:700;">Force le passage uniquement lorsque le voyant passe au VERT !</p>
+        <div class="radar-screen">
+          <div class="radar-light" id="douaneLight"></div>
+        </div>
+        <button class="mini-game-btn" style="background:var(--port-dark);" onclick="clickFraudeDouane()">FRANCHIR LA ZONE</button>
+      </div>
+
+      <div class="game-box" id="game2Box">
+        <div class="game-title">Épreuve 2 : Coordination radio d'équipe</div>
+        <p style="font-size:13px; margin-bottom:8px; font-weight:700;">Alerte le grutier distrait ! Réduis sa jauge de sieste à 0 en klaxonnant !</p>
+        <div class="game-progress-bg">
+          <div class="game-progress-fill" id="p2Fill" style="background: var(--comic-red); width: 50%;"></div>
+        </div>
+        <button class="mini-game-btn" style="background: #eab308;" onclick="honkGrutier()">📯 ENVOYER UN SIGNAL RADIO</button>
+      </div>
+
+      <div class="game-box" id="game3Box">
+        <div class="game-title">Épreuve 3 : Rattrapage de Fret d'Urgence</div>
+        <p style="font-size:13px; margin-bottom:8px; font-weight:700;">Sécurise le conteneur en vol en cliquant dessus avant l'impact au sol !</p>
+        <div class="drop-zone">
+          <div class="falling-container" id="boxTarget" onclick="catchContainer()">📦</div>
+        </div>
+      </div>
+
+      <div class="action-zone">
+        <div class="lever-wrapper">
+          <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">Épreuves requises</button>
+        </div>
+      </div>
+
+      <div class="speech-bubble" id="errorBubble"></div>
+
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    const username = localStorage.getItem('username') || 'Recrue';
+    
+    let chosenColor = '#2563eb';
+    let currentStep = 0; 
+
+    if (!userId) window.location.href = 'index.html';
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('playerTabMatricule').textContent = `ACCÈS CANDIDAT : ${username.toUpperCase()}`;
+      document.getElementById('badgeNameDisplay').textContent = `ID: ${username.toUpperCase()}`;
+      document.getElementById('badgeSignature').textContent = username;
+    });
+
+    function selectSuitColor(color, btn) {
+      chosenColor = color;
+      document.getElementById('diverSuit').style.backgroundColor = color;
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+
+    function startQualificationTests() {
+      document.getElementById('configSection').style.display = 'none';
+      setupDouaneGame();
+    }
+
+    // --- MINI JEU 1 : LES DOUANES ---
+    let douaneInterval;
+    let isLightGreen = false;
+    function setupDouaneGame() {
+      currentStep = 1;
+      document.getElementById('game1Box').style.display = 'block';
+      changeLightLoop();
+    }
+
+    function changeLightLoop() {
+      if (currentStep !== 1) return;
+      const light = document.getElementById('douaneLight');
+      isLightGreen = Math.random() > 0.65;
+      if (isLightGreen) {
+        light.style.background = '#22c55e';
+        light.style.boxShadow = '0 0 25px #22c55e';
+      } else {
+        light.style.background = '#ef4444';
+        light.style.boxShadow = '0 0 25px #ef4444';
+      }
+      douaneInterval = setTimeout(changeLightLoop, Math.random() * 800 + 700);
+    }
+
+    function clickFraudeDouane() {
+      clearTimeout(douaneInterval);
+      if (isLightGreen) {
+        document.getElementById('dot1').classList.add('active');
+        document.getElementById('game1Box').style.display = 'none';
+        setupGrutierGame();
+      } else {
+        alert("🚨 Signalement détecté ! Le poste de contrôle a rejeté ta tentative. Recommence !");
+        setupDouaneGame();
+      }
+    }
+
+    // --- MINI JEU 2 : REVEIL DU GRUTIER ---
+    let grutierSleepScore = 50;
+    let grutierInterval;
+    function setupGrutierGame() {
+      currentStep = 2;
+      grutierSleepScore = 50;
+      document.getElementById('game2Box').style.display = 'block';
+      
+      grutierInterval = setInterval(() => {
+        grutierSleepScore += 5;
+        document.getElementById('p2Fill').style.width = grutierSleepScore + '%';
+        
+        if (grutierSleepScore >= 100) {
+          clearInterval(grutierInterval);
+          alert("😴 Délai dépassé ! Le conducteur s'est endormi. Réessaie !");
+          setupGrutierGame();
+        }
+      }, 100);
+    }
+
+    function honkGrutier() {
+      grutierSleepScore -= 15;
+      if (grutierSleepScore < 0) grutierSleepScore = 0;
+      document.getElementById('p2Fill').style.width = grutierSleepScore + '%';
+      
+      if (grutierSleepScore <= 0) {
+        clearInterval(grutierInterval);
+        document.getElementById('dot2').classList.add('active');
+        document.getElementById('game2Box').style.display = 'none';
+        setupContainerGame();
+      }
+    }
+
+    // --- MINI JEU 3 : ATTRAPE LE CONTENEUR ---
+    let containerY = -50;
+    let containerInterval;
+    function setupContainerGame() {
+      currentStep = 3;
+      containerY = -50;
+      document.getElementById('game3Box').style.display = 'block';
+      
+      const target = document.getElementById('boxTarget');
+      target.style.left = Math.floor(Math.random() * 75) + '%';
+      target.style.top = containerY + 'px';
+
+      containerInterval = setInterval(() => {
+        containerY += 7;
+        target.style.top = containerY + 'px';
+
+        if (containerY >= 140) {
+          clearInterval(containerInterval);
+          alert("💥 Le conteneur s'est écrasé ! Ajuste ton timing !");
+          setupContainerGame();
+        }
+      }, 30);
+    }
+
+    function catchContainer() {
+      clearInterval(containerInterval);
+      document.getElementById('dot3').classList.add('active');
+      document.getElementById('game3Box').style.display = 'none';
+      unlockFinalValidation();
+    }
+
+    // --- ACCRÉDITATION FINALE ---
+    function unlockFinalValidation() {
+      currentStep = 4;
+      document.getElementById('badgeTopStatus').textContent = "CARD SECURITY: ACTIVE ACCREDITATION";
+      document.getElementById('badgeIdDisplay').textContent = `DOCK-${userId ? userId.substring(0,4).toUpperCase() : 'OK9'}`;
+
+      const mainBtn = document.getElementById('btnMainAction');
+      mainBtn.classList.add('unlocked');
+      mainBtn.textContent = "SIGNER MON ENGAGEMENT ET ENTRER SUR LE PORT 🏗️";
+    }
+
+    async function validateAndPrintBadge() {
+      if (currentStep < 4) return;
+
+      const errorBubble = document.getElementById('errorBubble');
+
+      try {
+        const { error } = await supabaseClient
+          .from('game_progress')
+          .update({ rank: `Docker Occasionnel` })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        localStorage.setItem('userColor', chosenColor);
+        localStorage.setItem('userFace', 'notionists-1779298466584.png');
+
+        const mainBtn = document.getElementById('btnMainAction');
+        mainBtn.textContent = "EMBAUCHE ENREGISTRÉE, REDIRECTION...";
+        mainBtn.style.background = 'var(--port-blue)';
+        
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 1100);
+
+      } catch (err) {
+        errorBubble.innerHTML = `🚨 IMPOSSIBLE DE VALIDER LE CONTRAT :<br>"${err.message}"`;
+        errorBubble.style.display = 'block';
+      }
+    }
+  </script>
+</body>
+</html>
