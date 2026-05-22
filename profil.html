@@ -1,305 +1,407 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mon Profil — Battle Dock</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Profil de l'Opérateur</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+
+  <style>
+    :root {
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 8px 8px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
+    }
+
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+
+    body { 
+      font-family: 'Space Grotesk', sans-serif; 
+      background: var(--comic-yellow); 
+      padding-top: 70px; 
+      display: flex; 
+      justify-content: center; 
+      min-height: 100vh; 
+    }
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    .app-viewport { 
+      width: 100%; 
+      max-width: 440px; 
+      background: #ffffff;
+      border: var(--border-thick);
+      border-radius: 24px;
+      box-shadow: var(--shadow-comic);
+      padding: 24px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 20px; 
+    }
 
-    <style>
-        :root {
-            --bg-white: #ffffff;
-            --surface-light: #f8fafc;
-            --border-color: #e2e8f0;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --accent-green: #bef264;
-            --border-radius-xl: 20px;
-            --border-radius-lg: 16px;
-            --border-radius-md: 12px;
-        }
+    /* BOUTON RETRO RETOUR */
+    .btn-back { 
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      background: #ffffff; 
+      border-bottom: var(--border-thick); 
+      color: var(--port-dark); 
+      padding: 14px 16px; 
+      cursor: pointer; 
+      font-family: 'Bungee', sans-serif; 
+      font-size: 11px; 
+      text-align: left; 
+      z-index: 100; 
+    }
 
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body { 
-            background-color: #ffffff; 
-            color: var(--text-main);
-            font-family: 'Urbanist', sans-serif;
-            padding-top: 60px;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
-        
-        .app-viewport {
-            width: 100%;
-            max-width: 480px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
+    /* HEADER PROFIL STYLE BD */
+    .profile-hero { 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      text-align: center; 
+      gap: 12px; 
+    }
 
-        .btn-back { 
-            position: fixed; 
-            top: 0; left: 0; right: 0;
-            background: #ffffff; 
-            border-bottom: 1px solid var(--border-color);
-            color: var(--text-main); 
-            padding: 14px 16px; 
-            cursor: pointer; 
-            font-family: 'Inter', sans-serif; 
-            font-size: 14px; 
-            font-weight: 700;
-            text-align: left;
-            z-index: 100;
-            border: none;
-        }
+    .avatar-container { 
+      width: 100px; 
+      height: 115px; 
+      background: #3A4750; /* Changé dynamiquement par le script */
+      border: var(--border-thick); 
+      border-radius: 14px; 
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
 
-        .profile-hero {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 12px;
-            padding-top: 10px;
-        }
+    .avatar-container img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+    }
 
-        .avatar-container {
-            width: 100px;
-            height: 100px;
-            border-radius: var(--border-radius-xl);
-            background-color: #f1f5f9;
-            border: 1px solid var(--border-color);
-        }
+    .profile-hero h1 { 
+      font-family: 'Bangers', cursive;
+      font-size: 36px; 
+      letter-spacing: 1px;
+      color: var(--port-dark);
+      line-height: 1;
+    }
 
-        .avatar-container img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            border-radius: 18px;
-        }
+    .rank-badge { 
+      background: var(--port-dark); 
+      color: #ffffff; 
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px; 
+      padding: 4px 12px; 
+      border: 2px solid #000;
+      border-radius: 20px; 
+      text-transform: uppercase; 
+    }
 
-        .profile-hero h1 { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+    /* GRILLE CHOIX APPARENCE */
+    .avatar-selection-box { 
+      background-color: #f8fafc; 
+      border: 2px solid #000; 
+      border-radius: 16px; 
+      padding: 16px; 
+      box-shadow: var(--shadow-comic-sm);
+    }
 
-        .rank-badge {
-            background: var(--text-main); color: #ffffff;
-            font-size: 11px; font-weight: 800;
-            padding: 4px 12px; border-radius: 20px;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
+    .avatar-selection-box h3 { 
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px; 
+      color: #64748b; 
+      margin-bottom: 12px; 
+    }
 
-        /* GALERIE D'AVATARS */
-        .avatar-selection-box {
-            background-color: var(--surface-light);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-lg);
-            padding: 20px;
-        }
+    .avatar-grid { 
+      display: grid; 
+      grid-template-columns: repeat(4, 1fr); 
+      gap: 12px; 
+    }
 
-        .avatar-selection-box h3 {
-            font-size: 14px; font-weight: 800; text-transform: uppercase;
-            color: var(--text-muted); margin-bottom: 14px;
-        }
+    .avatar-option { 
+      aspect-ratio: 1; 
+      border-radius: 10px; 
+      background: #ffffff; 
+      border: 2px solid #000; 
+      cursor: pointer; 
+      position: relative; 
+      overflow: hidden; 
+    }
 
-        .avatar-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-        }
+    .avatar-option img { 
+      width: 100%; 
+      height: 100%; 
+      object-fit: cover; 
+    }
 
-        .avatar-option {
-            aspect-ratio: 1;
-            border-radius: var(--border-radius-md);
-            background: #ffffff;
-            border: 2px solid var(--border-color);
-            cursor: pointer;
-            position: relative;
-            overflow: hidden;
-        }
+    .avatar-option.selected { 
+      border-color: var(--port-dark); 
+      background-color: var(--comic-yellow); 
+    }
 
-        .avatar-option img {
-            width: 100%; height: 100%; object-fit: cover;
-        }
+    .avatar-option.locked { 
+      cursor: not-allowed; 
+    }
 
-        .avatar-option.selected {
-            border-color: var(--text-main);
-            background-color: var(--accent-green);
-        }
+    .avatar-option.locked::after { 
+      content: "🔒"; 
+      position: absolute; 
+      inset: 0; 
+      background: rgba(15, 23, 42, 0.7); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 14px; 
+    }
 
-        /* Styles verrouillés */
-        .avatar-option.locked {
-            cursor: not-allowed;
-        }
+    /* FORMULAIRE PARAMÈTRES */
+    .settings-box { 
+      background-color: #f8fafc; 
+      border: 2px solid #000; 
+      border-radius: 16px; 
+      padding: 16px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px; 
+      box-shadow: var(--shadow-comic-sm);
+    }
 
-        .avatar-option.locked::after {
-            content: "🔒";
-            position: absolute;
-            inset: 0;
-            background: rgba(15, 23, 42, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
+    .input-group { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 6px; 
+    }
 
-        .settings-box {
-            background-color: var(--surface-light);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-lg);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
+    .input-group label { 
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px; 
+      color: #64748b; 
+    }
 
-        .input-group { display: flex; flex-direction: column; gap: 6px; }
-        .input-group label { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; color: var(--text-muted); }
-        .input-group input {
-            width: 100%; padding: 14px; border: 1px solid var(--border-color);
-            border-radius: var(--border-radius-md); font-family: 'Inter', sans-serif; font-size: 14px;
-        }
+    .input-group input { 
+      width: 100%; 
+      padding: 12px; 
+      border: 2px solid #000; 
+      border-radius: 10px; 
+      font-family: 'Space Grotesk', sans-serif; 
+      font-size: 14px; 
+      font-weight: 700;
+    }
 
-        .btn-save {
-            background-color: var(--text-main); color: var(--accent-green);
-            border: none; border-radius: var(--border-radius-md); padding: 16px;
-            font-size: 16px; font-weight: 900; text-transform: uppercase; cursor: pointer;
-            width: 100%;
-        }
+    /* BOUTONS D'ACTION ACTIONNABLES */
+    .btn-save { 
+      background-color: var(--comic-green); 
+      color: #000; 
+      border: 3px solid #000; 
+      border-radius: 10px; 
+      padding: 14px; 
+      font-family: 'Bungee', sans-serif;
+      font-size: 12px; 
+      cursor: pointer; 
+      width: 100%; 
+      box-shadow: var(--shadow-comic-sm);
+    }
+    .btn-save:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
 
-        .btn-logout {
-            background: none; border: 1px solid #ef4444; color: #ef4444;
-            border-radius: var(--border-radius-md); padding: 14px; font-weight: 800;
-            text-transform: uppercase; cursor: pointer; width: 100%; text-align: center;
-        }
+    .btn-logout { 
+      background: none; 
+      border: 2px solid var(--comic-red); 
+      color: var(--comic-red); 
+      border-radius: 10px; 
+      padding: 12px; 
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px; 
+      cursor: pointer; 
+      width: 100%; 
+      text-align: center; 
+    }
 
-        .status-message { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; text-align: center; display: none; }
-    </style>
+    .status-message { 
+      font-family: 'Bungee', sans-serif; 
+      font-size: 10px; 
+      text-align: center; 
+      display: none; 
+      margin-top: 4px;
+    }
+  </style>
 </head>
 <body>
 
-    <button class="btn-back" onclick="window.location.href='game.html'">← RETOUR AU DASHBOARD</button>
+  <button class="btn-back" onclick="window.location.href='game.html'">← RETOUR AU QUAI</button>
 
-    <div class="app-viewport">
-        
-        <div class="profile-hero">
-            <div class="avatar-container">
-                <img id="currentAvatarDisplay" src="notionists-1779298466584.png" alt="Avatar">
-            </div>
-            <h1 id="heroUsername">Chargement...</h1>
-            <div class="rank-badge" id="heroLevel">Niveau --</div>
-        </div>
-
-        <div class="avatar-selection-box">
-            <h3>Choisir votre apparence</h3>
-            <div class="avatar-grid">
-                <div class="avatar-option selected" id="av1" onclick="selectAvatar('notionists-1779298466584.png', 'av1')">
-                    <img src="notionists-1779298466584.png" alt="Base">
-                </div>
-                <div class="avatar-option locked" id="av2" onclick="selectAvatar('notionists-1779469032385.png', 'av2', 2)">
-                    <img src="notionists-1779469032385.png" alt="Niveau 2">
-                </div>
-            </div>
-        </div>
-
-        <div class="settings-box">
-            <div class="input-group">
-                <label for="usernameInput">Nom d'opérateur (Pseudo)</label>
-                <input type="text" id="usernameInput" placeholder="Entrez votre pseudo">
-            </div>
-            <button class="btn-save" onclick="updateProfile()">Enregistrer les modifications</button>
-            <div class="status-message" id="statusMsg"></div>
-        </div>
-
-        <button class="btn-logout" onclick="logout()">Déconnexion</button>
-
+  <div class="app-viewport">
+    
+    <div class="profile-hero">
+      <div class="avatar-container" id="profileAvatarFrame">
+        <img id="currentAvatarDisplay" src="notionists-1779298466584.png" alt="Avatar">
+      </div>
+      <h1 id="heroUsername">CHARGEMENT...</h1>
+      <div class="rank-badge" id="heroLevel">NIVEAU --</div>
     </div>
 
-    <script>
-        const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    <div class="avatar-selection-box">
+      <h3>CHOISIR UNE APPARENCE</h3>
+      <div class="avatar-grid">
+        <div class="avatar-option selected" id="av1" onclick="selectAvatar('notionists-1779298466584.png', 'av1')">
+          <img src="notionists-1779298466584.png" alt="Matricule Initial">
+        </div>
+        <div class="avatar-option locked" id="av2" onclick="selectAvatar('notionists-1779469032385.png', 'av2', 2)">
+          <img src="notionists-1779469032385.png" alt="Grade Supérieur">
+        </div>
+      </div>
+    </div>
 
-        const userId = localStorage.getItem('userId');
-        let currentLevel = 1;
+    <div class="settings-box">
+      <div class="input-group">
+        <label for="usernameInput">NOM D'OPÉRATEUR (PSEUDONYME)</label>
+        <input type="text" id="usernameInput" placeholder="Entrez votre pseudo">
+      </div>
+      <button class="btn-save" onclick="updateProfile()">METTRE À JOUR LE CONTRAT</button>
+      <div class="status-message" id="statusMsg"></div>
+    </div>
 
-        // Charger l'avatar actif
-        const savedAvatar = localStorage.getItem('selectedAvatar');
-        if(savedAvatar) document.getElementById('currentAvatarDisplay').src = savedAvatar;
+    <button class="btn-logout" onclick="logout()">RÉSILIATION (DÉCONNEXION)</button>
+  </div>
 
-        loadProfileData();
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-        async function loadProfileData() {
-            try {
-                let currentUsername = "Opérateur Provisoire";
-                const { data: profile } = await supabaseClient.from('profiles').select('username').eq('user_id', userId).single();
-                if (profile && profile.username) currentUsername = profile.username;
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
 
-                document.getElementById('heroUsername').textContent = currentUsername;
-                document.getElementById('usernameInput').value = currentUsername;
+    let currentLevel = 1;
 
-                const { data: progress } = await supabaseClient.from('game_progress').select('xp').eq('user_id', userId).single();
-                if (progress) {
-                    currentLevel = Math.floor((progress.xp || 0) / 50) + 1;
-                    document.getElementById('heroLevel').textContent = `Niveau ${currentLevel}`;
-                    
-                    // Vérification du déblocage de l'avatar Niveau 2
-                    if (currentLevel >= 2) {
-                        document.getElementById('av2').classList.remove('locked');
-                    }
-                }
-                
-                // Mettre la bordure sur le bon élément chargé
-                if(savedAvatar && savedAvatar.includes('notionists-1779469032385.png')) {
-                    document.getElementById('av1').classList.remove('selected');
-                    document.getElementById('av2').classList.add('selected');
-                }
-            } catch (e) { console.error(e); }
+    // 1. Chargement synchrone immédiat depuis la mémoire locale (Cache)
+    const savedAvatar = localStorage.getItem('selectedAvatar');
+    if (savedAvatar) document.getElementById('currentAvatarDisplay').src = savedAvatar;
+
+    const cachedColor = localStorage.getItem('avatarBgColor');
+    if (cachedColor) document.getElementById('profileAvatarFrame').style.backgroundColor = cachedColor;
+
+    const cachedName = localStorage.getItem('username');
+    if (cachedName) {
+      document.getElementById('heroUsername').textContent = cachedName.toUpperCase();
+      document.getElementById('usernameInput').value = cachedName;
+    }
+
+    // 2. Lancement du chargement de la base de données
+    loadProfileData();
+
+    async function loadProfileData() {
+      try {
+        // CORRECTION : Sélection du champ correct 'avatar_color'
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('username, avatar_color')
+          .eq('user_id', userId)
+          .single();
+          
+        if (profile) {
+          if (profile.username) {
+            document.getElementById('heroUsername').textContent = profile.username.toUpperCase();
+            document.getElementById('usernameInput').value = profile.username;
+            localStorage.setItem('username', profile.username);
+          }
+          if (profile.avatar_color) {
+            // Mise à jour visuelle immédiate de la couleur trouvée sur Supabase
+            document.getElementById('profileAvatarFrame').style.backgroundColor = profile.avatar_color;
+            localStorage.setItem('avatarBgColor', profile.avatar_color);
+          }
         }
 
-        function selectAvatar(imgSrc, elementId, requiredLevel = 1) {
-            if (currentLevel < requiredLevel) {
-                showStatus(`Cet avatar requiert le Niveau ${requiredLevel}.`, "#ef4444");
-                return;
-            }
+        // Récupération de l'XP pour débloquer les avatars
+        const { data: progress } = await supabaseClient
+          .from('game_progress')
+          .select('xp')
+          .eq('user_id', userId)
+          .single();
 
-            document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
-            document.getElementById(elementId).classList.add('selected');
-            
-            document.getElementById('currentAvatarDisplay').src = imgSrc;
-            localStorage.setItem('selectedAvatar', imgSrc);
-            showStatus("Avatar sélectionné !", "#10b981");
+        if (progress) {
+          currentLevel = Math.floor((progress.xp || 0) / 50) + 1;
+          document.getElementById('heroLevel').textContent = `NIVEAU ${currentLevel}`;
+          
+          // Débloquer l'avatar Premium si niveau suffisant
+          if (currentLevel >= 2) {
+            document.getElementById('av2').classList.remove('locked');
+          }
         }
-
-        async function updateProfile() {
-            const newUsername = document.getElementById('usernameInput').value.trim();
-            if (!newUsername) return;
-            try {
-                await supabaseClient.from('profiles').update({ username: newUsername }).eq('user_id', userId);
-                await supabaseClient.from('game_progress').update({ username: newUsername }).eq('user_id', userId);
-                localStorage.setItem('username', newUsername);
-                document.getElementById('heroUsername').textContent = newUsername;
-                showStatus("Modifications enregistrées !", "#10b981");
-            } catch (e) { showStatus("Erreur réseau.", "#ef4444"); }
+        
+        // Sélection de la vignette correspondante
+        const currentAvatar = localStorage.getItem('selectedAvatar') || 'notionists-1779298466584.png';
+        if (currentAvatar.includes('notionists-1779469032385.png')) {
+          document.getElementById('av1').classList.remove('selected');
+          document.getElementById('av2').classList.add('selected');
         }
+      } catch (e) { 
+        console.error("Erreur de synchronisation du profil :", e); 
+      }
+    }
 
-        function showStatus(text, color) {
-            const msg = document.getElementById('statusMsg');
-            msg.textContent = text; msg.style.color = color; msg.style.display = 'block';
-            setTimeout(() => { msg.style.display = 'none'; }, 3000);
-        }
+    function selectAvatar(imgSrc, elementId, requiredLevel = 1) {
+      if (currentLevel < requiredLevel) {
+        showStatus(`REQUIS : NIVEAU ${requiredLevel} POUR CETTE APPARENCE !`, "var(--comic-red)");
+        return;
+      }
+      document.querySelectorAll('.avatar-option').forEach(el => el.classList.remove('selected'));
+      document.getElementById(elementId).classList.add('selected');
+      document.getElementById('currentAvatarDisplay').src = imgSrc;
+      
+      localStorage.setItem('selectedAvatar', imgSrc);
+      showStatus("APPARENCE MODIFIÉE ✅", "var(--comic-green)");
+    }
 
-        function logout() { localStorage.clear(); window.location.href = 'index.html'; }
-    </script>
+    async function updateProfile() {
+      const newUsername = document.getElementById('usernameInput').value.trim();
+      if (!newUsername) return;
+      
+      try {
+        await supabaseClient.from('profiles').update({ username: newUsername }).eq('user_id', userId);
+        await supabaseClient.from('game_progress').update({ username: newUsername }).eq('user_id', userId);
+        
+        localStorage.setItem('username', newUsername);
+        document.getElementById('heroUsername').textContent = newUsername.toUpperCase();
+        showStatus("MATRICULE CONTRAT ENREGISTRÉ !", "var(--comic-green)");
+      } catch (e) { 
+        showStatus("ERREUR DE LIAISON CAPITAINERIE.", "var(--comic-red)"); 
+      }
+    }
+
+    function showStatus(text, color) {
+      const msg = document.getElementById('statusMsg');
+      msg.textContent = text; 
+      msg.style.color = color; 
+      msg.style.display = 'block';
+      setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+
+    function logout() { 
+      localStorage.clear(); 
+      window.location.href = 'index.html'; 
+    }
+  </script>
 </body>
 </html>
