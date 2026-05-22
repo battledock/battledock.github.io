@@ -1,577 +1,418 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — L'Accueil Légendaire</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&family=Luckiest+Guy&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  
-  <style>
-    :root {
-      /* Palette Portuaire Cyber-Punk / Comic */
-      --port-dark-bg: #090d16;      /* Profondeur océanique */
-      --port-panel: #151f32;       /* Blocs de commande */
-      --port-panel-border: #22314d;/* Métal brossé */
-      
-      --comic-black: #000000;
-      --comic-yellow: #facc15;     /* Or pur */
-      --comic-orange: #f97316;     /* Ambre vif */
-      --comic-red: #ef4444;        /* Alerte / Urgent */
-      --comic-green: #10b981;      /* Énergie positive / Acide */
-      --comic-blue: #3b82f6;       /* Néon portuaire */
-      --comic-purple: #8b5cf6;     /* Marché noir */
-      
-      /* Paramètres d'interface */
-      --border-thick: 4px solid #000000;
-      --border-thin: 2px solid #000000;
-      --3d-shadow: 0 8px 0px #000000;
-      --3d-shadow-small: 0 4px 0px #000000;
-    }
-
-    /* --- RESET & OPTIMISATIONS --- */
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-
-    body {
-      font-family: 'Space Grotesk', sans-serif;
-      background-color: var(--port-dark-bg);
-      color: #ffffff;
-      min-height: 100vh;
-      overflow-x: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      position: relative;
-    }
-
-    /* Arrière-plan */
-    body::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: 
-        radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(249, 115, 22, 0.05) 0%, transparent 50%);
-      z-index: 1;
-      pointer-events: none;
-    }
-
-    /* --- CONTAINER MOBILE CENTRALISÉ --- */
-    .app-viewport {
-      width: 100%;
-      max-width: 480px;
-      min-height: 100vh;
-      background: linear-gradient(180deg, #0e1726 0%, var(--port-dark-bg) 100%);
-      border-left: var(--border-thick);
-      border-right: var(--border-thick);
-      box-shadow: 0 0 40px rgba(0,0,0,0.8);
-      position: relative;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 24px;
-    }
-
-    /* --- HEADER AVEC DÉGRADÉ DESIGN --- */
-    .premium-header {
-      background: linear-gradient(135deg, #111c30 0%, #090d16 100%);
-      border-bottom: var(--border-thick);
-      padding: 20px 16px 16px 16px;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-
-    .header-main-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .docker-profile-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .avatar-container {
-      width: 76px;
-      height: 76px;
-      background: #243249;
-      border: var(--border-thick);
-      position: relative;
-      box-shadow: var(--3d-shadow-small);
-      transform: rotate(-1deg);
-    }
-
-    .avatar-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .level-badge {
-      position: absolute;
-      bottom: -6px;
-      right: -6px;
-      background: var(--comic-blue);
-      border: var(--border-thin);
-      color: #fff;
-      font-family: 'Bungee', sans-serif;
-      font-size: 11px;
-      padding: 1px 5px;
-      box-shadow: 2px 2px 0 #000;
-    }
-
-    .docker-meta-details {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .docker-name {
-      font-family: 'Luckiest Guy', cursive;
-      font-size: 19px;
-      letter-spacing: 0.5px;
-      color: #ffffff;
-      text-shadow: 2px 2px 0px #000;
-      max-width: 140px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .docker-rank-title {
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--comic-orange);
-      background: rgba(249, 115, 22, 0.1);
-      padding: 2px 6px;
-      align-self: flex-start;
-    }
-
-    .arcade-counters {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 125px;
-    }
-
-    .counter-slot {
-      border: var(--border-thick);
-      padding: 6px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 900;
-      font-size: 14px;
-      box-shadow: inset 0 4px 0 rgba(255,255,255,0.2), var(--3d-shadow-small);
-      position: relative;
-    }
-
-    .counter-slot.money {
-      background: linear-gradient(180deg, var(--comic-yellow) 0%, #ca8a04 100%);
-      color: #000000;
-    }
-
-    .counter-slot.energy {
-      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
-      color: var(--port-dark-bg);
-    }
-
-    .counter-icon-box {
-      font-size: 16px;
-    }
-
-    /* Barre d'XP épurée */
-    .xp-milestone-bar {
-      width: 100%;
-      background: #060910;
-      border: var(--border-thin);
-      height: 12px;
-      position: relative;
-    }
-
-    .xp-fill-stream {
-      width: 45%; 
-      height: 100%;
-      background: linear-gradient(90deg, var(--comic-green) 0%, #059669 100%);
-      position: relative;
-      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    /* --- CONTENEUR DES BOUTONS --- */
-    .menu-stack {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-    }
-
-    .menu-stack > * {
-      border-bottom: var(--border-thick) !important;
-    }
-
-    /* --- BOUTON TRAVAILLER ULTRA IMPOSANT (LIEN DIRECT) --- */
-    .hero-button-work {
-      background: linear-gradient(135deg, #ffe066 0%, #facc15 50%, #ea580c 100%);
-      padding: 44px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-      box-shadow: inset 0 8px 0 rgba(255, 255, 255, 0.45);
-      transition: transform 0.05s ease;
-    }
-
-    .hero-button-work:active {
-      transform: scale(0.97);
-      filter: brightness(0.95);
-    }
-
-    .work-left-content {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      z-index: 3;
-    }
-
-    .work-main-title {
-      font-family: 'Bangers', cursive;
-      font-size: 72px;
-      color: #ffffff;
-      line-height: 0.85;
-      letter-spacing: 4px;
-      text-shadow: 5px 5px 0px #000000, -2px -2px 0px #000000, 2px -2px 0px #000000, -2px 2px 0px #000000;
-      transform: skewX(-6deg);
-    }
-
-    .work-description {
-      font-size: 14px;
-      color: #000000;
-      font-weight: 900;
-      letter-spacing: -0.1px;
-    }
-
-    .work-giga-avatar {
-      width: 90px;
-      height: 90px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 64px;
-      z-index: 3;
-      transform: rotate(6deg);
-      transition: transform 0.2s ease;
-      filter: drop-shadow(3px 3px 0px #000000);
-    }
-
-    /* --- BOUTONS NAVIGATION --- */
-    .premium-row-node {
-      background: var(--port-panel);
-      padding: 20px 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      border-top: none; border-left: none; border-right: none;
-      transition: background 0.15s ease, padding-left 0.15s ease;
-    }
-
-    .premium-row-node:hover {
-      background: #1c2a44;
-      padding-left: 24px;
-    }
-
-    .premium-row-node:active {
-      background: #111b2c;
-    }
-
-    .premium-row-node::after {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 6px;
-      background: transparent;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Battle Dock — Dashboard Global</title>
     
-    .node-jeux::after { background: var(--comic-red); }
-    .node-shop::after { background: var(--comic-purple); }
-    .node-social::after { background: var(--comic-blue); }
-    .node-rank::after { background: var(--comic-green); }
-
-    .node-left-side {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .node-title-group {
-      font-family: 'Bungee', sans-serif;
-      font-size: 16px;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
-
-    .node-subtitle {
-      font-size: 12px;
-      color: #64748b;
-      font-weight: 600;
-      transition: color 0.15s ease;
-    }
-    .premium-row-node:hover .node-subtitle {
-      color: #94a3b8;
-    }
-
-    .node-right-icon {
-      font-size: 28px;
-      filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.4));
-      transition: transform 0.2s ease;
-    }
-
-    .live-alert-badge {
-      background: var(--comic-red);
-      color: #ffffff;
-      font-family: 'Bangers', cursive;
-      font-size: 13px;
-      padding: 2px 8px;
-      border: var(--border-thin);
-      box-shadow: 2px 2px 0 #000;
-      transform: rotate(3deg);
-    }
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    .count-indicator {
-      font-size: 11px;
-      background: rgba(255,255,255,0.1);
-      padding: 1px 6px;
-      color: var(--comic-yellow);
-      border-radius: 4px;
-    }
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-white: #ffffff;
+            --surface-light: #f8fafc;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --accent-green: #bef264;
+            --border-radius-xl: 20px;
+            --border-radius-lg: 16px;
+            --border-radius-md: 12px;
+        }
 
-    /* --- BLOC PROMOTIONS / DASHBOARD --- */
-    .progression-card-dashboard {
-      background: #111927;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      border-bottom: var(--border-thick);
-      cursor: pointer;
-    }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    .dashboard-meta-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Urbanist', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-    .dashboard-title {
-      font-family: 'Bungee', sans-serif;
-      font-size: 13px;
-      color: #94a3b8;
-      letter-spacing: 0.5px;
-    }
+        /* CONTAINER CENTRAL MOBILE */
+        .app-viewport {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--bg-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 50px rgba(0,0,0,0.03);
+        }
 
-    .dashboard-gauge-shell {
-      width: 100%;
-      height: 16px;
-      background: #060910;
-      border: var(--border-thick);
-      position: relative;
-    }
+        /* HEADER */
+        .main-header {
+            padding: 30px 20px 20px 20px;
+            background-color: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-    .dashboard-gauge-core {
-      height: 100%;
-      width: 35%;
-      background: linear-gradient(180deg, var(--comic-yellow) 0%, #d97706 100%);
-      box-shadow: inset 0 2px 0 rgba(255,255,255,0.3);
-    }
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
 
-    .dashboard-footer-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      font-weight: 800;
-      color: #64748b;
-    }
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-    @media (max-width: 420px) {
-      .work-main-title { font-size: 54px; }
-      .work-giga-avatar { font-size: 48px; }
-    }
-  </style>
+        .avatar-frame {
+            width: 52px;
+            height: 52px;
+            border-radius: var(--border-radius-md);
+            background: var(--surface-light);
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .level-pill {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background: var(--text-main);
+            color: white;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .user-meta h2 {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+        }
+
+        .user-meta p {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        /* STATS COUNTERS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: var(--surface-light);
+            padding: 12px;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        /* JAUGE XP */
+        .xp-container {
+            margin-top: 15px;
+        }
+
+        .xp-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background: var(--text-main);
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+
+        /* ZONE NAVIGATION / MENU */
+        .menu-scroll-area {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex-grow: 1;
+        }
+
+        /* BOUTON TRAVAILLER (ACTION PRINCIPALE) */
+        .hero-work-card {
+            background-color: var(--text-main);
+            border-radius: var(--border-radius-xl);
+            padding: 26px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            text-decoration: none;
+        }
+
+        .hero-work-card:active { 
+            transform: scale(0.98); 
+            background-color: #1e293b;
+        }
+
+        .hero-text h3 {
+            color: var(--accent-green);
+            font-size: 28px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+
+        .hero-text p {
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 500;
+            margin-top: 6px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .hero-icon {
+            font-size: 36px;
+        }
+
+        /* COMPOSANTS VERROUILLÉS */
+        .nav-item {
+            background-color: var(--surface-light);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .nav-info h4 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .nav-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .nav-icon-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* PIED DE PAGE PROGRESSION */
+        .progression-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: var(--surface-light);
+            margin-top: auto;
+        }
+
+        .progression-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .gauge-container {
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            background: var(--text-main);
+            width: 15%;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="app-viewport">
-    
-    <div class="premium-header">
-      <div class="header-main-row">
+    <div class="app-viewport">
         
-        <div class="docker-profile-card">
-          <div class="avatar-container" id="profileAvatarBg">
-            <img id="profileAvatarImg" src="notionists-1779298466584.png" alt="Docker Avatar">
-            <div class="level-badge">NIV.1</div>
-          </div>
-          <div class="docker-meta-details">
-            <div class="docker-name" id="profileUsername">—</div>
-            <div class="docker-rank-title" id="profileRank">Docker Occasionnel</div>
-          </div>
-        </div>
-        
-        <div class="arcade-counters">
-          <div class="counter-slot money">
-            <span id="profileMoney">0 €</span>
-            <span class="counter-icon-box">💶</span>
-          </div>
-          <div class="counter-slot energy">
-            <span>100%</span>
-            <span class="counter-icon-box">⚡</span>
-          </div>
-        </div>
-        
-      </div>
-      
-      <div class="xp-milestone-bar">
-        <div class="xp-fill-stream"></div>
-      </div>
+        <header class="main-header">
+            <div class="header-top">
+                <div class="profile-section">
+                    <div class="avatar-frame">
+                        <img src="notionists-1779298466584.png" alt="Profil">
+                        <div class="level-pill" id="lvlText">NIV.1</div>
+                    </div>
+                    <div class="user-meta">
+                        <h2 id="usernameDisplay">Chargement...</h2>
+                        <p>Opérateur de Terminal</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Actifs Disponibles</span>
+                    <span class="stat-value" id="moneyDisplay">0.00 €</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Énergie Dispo</span>
+                    <span class="stat-value" id="energyDisplay">100%</span>
+                </div>
+            </div>
+
+            <div class="xp-container">
+                <div class="xp-bar-bg">
+                    <div class="xp-bar-fill" id="xpBar"></div>
+                </div>
+            </div>
+        </header>
+
+        <main class="menu-scroll-area">
+            
+            <a href="travailler.html" class="hero-work-card">
+                <div class="hero-text">
+                    <h3>Travailler</h3>
+                    <p>Déploiement opérationnel sur les quais</p>
+                </div>
+                <div class="hero-icon">💼</div>
+            </a>
+
+            <div class="nav-item">
+                <div class="nav-info">
+                    <h4>Boutique Logistique</h4>
+                    <p>Équipements et licences d'exploitation</p>
+                </div>
+                <div class="nav-icon-circle">🛒</div>
+            </div>
+
+            <div class="nav-item">
+                <div class="nav-info">
+                    <h4>Mini-Jeux Zone B</h4>
+                    <p>Divertissements clandestins du hangar</p>
+                </div>
+                <div class="nav-icon-circle">🎰</div>
+            </div>
+
+            <div class="nav-item">
+                <div class="nav-info">
+                    <h4>Cercle Social</h4>
+                    <p>Négociations et syndicats portuaires</p>
+                </div>
+                <div class="nav-icon-circle">🥂</div>
+            </div>
+
+        </main>
+
+        <footer class="progression-footer">
+            <div class="progression-header">
+                <span>Objectif Prochaine Promotion</span>
+                <span id="rankGoal">Niveau 3</span>
+            </div>
+            <div class="gauge-container">
+                <div class="gauge-fill" id="footerGauge"></div>
+            </div>
+        </footer>
+
     </div>
 
-    <div class="menu-stack">
+    <script>
+        const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-      <a href="travailler.html" style="text-decoration: none; display: block; color: inherit;">
-        <div class="hero-button-work">
-          <div class="work-left-content">
-            <div class="work-main-title">TRAVAILLER</div>
-            <div class="work-description">Récupère ta paie immédiate !</div>
-          </div>
-          <div class="work-giga-avatar">💼</div>
-        </div>
-      </a>
+        const userId = localStorage.getItem('userId');
+        if (!userId) window.location.href = 'index.html';
 
-      <div class="premium-row-node node-jeux" onclick="window.location.href='jeux.html'">
-        <div class="node-left-side">
-          <div class="node-title-group">
-            <span>Mini-Jeux</span> 
-            <span class="live-alert-badge">JACKPOT</span>
-          </div>
-          <div class="node-subtitle">Flambe tes gains et tente ta chance aux dés</div>
-        </div>
-        <div class="node-right-icon">🎰</div>
-      </div>
+        // Lancement de la synchronisation au démarrage de la page
+        syncUserData();
 
-      <div class="premium-row-node node-shop" onclick="window.location.href='shop.html'">
-        <div class="node-left-side">
-          <div class="node-title-group">
-            <span>Boutique</span>
-            <span class="count-indicator">Nouveautés 👽</span>
-          </div>
-          <div class="node-subtitle">Trouve des objets étranges de contrebande</div>
-        </div>
-        <div class="node-right-icon">🛒</div>
-      </div>
+        async function syncUserData() {
+            try {
+                const { data: profile } = await supabaseClient.from('profiles').select('username').eq('user_id', userId).single();
+                const { data: progress } = await supabaseClient.from('game_progress').select('money, xp').eq('user_id', userId).single();
 
-      <div class="premium-row-node node-social" onclick="window.location.href='social.html'">
-        <div class="node-left-side">
-          <div class="node-title-group">Vie Privée</div>
-          <div class="node-subtitle">Gère ton statut amoureux, tes mariages & fêtes</div>
-        </div>
-        <div class="node-right-icon">🥂</div>
-      </div>
+                if (profile) document.getElementById('usernameDisplay').textContent = profile.username;
+                
+                if (progress) {
+                    const money = progress.money || 0;
+                    const xp = progress.xp || 0;
+                    
+                    document.getElementById('moneyDisplay').textContent = money.toFixed(2) + ' €';
+                    
+                    // Calcul mathématique du niveau par palier de 50 XP
+                    const level = Math.floor(xp / 50) + 1;
+                    const xpInLevel = xp % 50;
+                    const xpPercent = (xpInLevel / 50) * 100;
 
-      <div class="premium-row-node node-rank" onclick="window.location.href='classement.html'">
-        <div class="node-left-side">
-          <div class="node-title-group">Classement global</div>
-          <div class="node-subtitle">Observe l'élite des Dockers syndiqués du port</div>
-        </div>
-        <div class="node-right-icon">🏆</div>
-      </div>
-
-      <div class="progression-card-dashboard" onclick="window.location.href='progression.html'">
-        <div class="dashboard-meta-top">
-          <div class="dashboard-title">Progression de promotion professionnelle</div>
-          <span style="font-size:18px;">📊</span>
-        </div>
-        <div class="dashboard-gauge-shell">
-          <div class="dashboard-gauge-core"></div>
-        </div>
-        <div class="dashboard-footer-labels">
-          <span>RANG ACTUEL : DOCKER</span>
-          <span>EFFORT FOURNI : 35%</span>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    const userId = localStorage.getItem('userId');
-    if (!userId) window.location.href = 'index.html';
-
-    loadUserData();
-
-    async function loadUserData() {
-      try {
-        const { data: profile } = await supabaseClient
-          .from('profiles')
-          .select('username, color, avatar')
-          .eq('user_id', userId)
-          .single();
-
-        const { data: progress } = await supabaseClient
-          .from('game_progress')
-          .select('money, rank')
-          .eq('user_id', userId)
-          .single();
-
-        if (profile) {
-          document.getElementById('profileUsername').textContent = profile.username || localStorage.getItem('username') || '—';
-          const color = profile.color || '#3A4750';
-          document.getElementById('profileAvatarBg').style.backgroundColor = color;
-          if (profile.avatar) document.getElementById('profileAvatarImg').src = profile.avatar;
-          localStorage.setItem('userColor', color);
+                    document.getElementById('lvlText').textContent = 'NIV.' + level;
+                    document.getElementById('xpBar').style.width = xpPercent + '%';
+                    
+                    // Calcul de la jauge globale du bas vers le niveau 3 (150 XP au total)
+                    const globalPercent = Math.min((xp / 150) * 100, 100);
+                    document.getElementById('footerGauge').style.width = globalPercent + '%';
+                }
+            } catch (e) {
+                console.error("Échec de la récupération des données utilisateur :", e);
+            }
         }
-
-        if (progress) {
-          document.getElementById('profileRank').textContent = progress.rank || 'Docker Occasionnel';
-          document.getElementById('profileMoney').textContent = formatNumber(progress.money || 0) + ' €';
-        }
-      } catch (err) {
-        console.error('Erreur de chargement:', err);
-      }
-    }
-
-    function formatNumber(num) {
-      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
-      return num.toString();
-    }
-  </script>
+    </script>
 </body>
 </html>
