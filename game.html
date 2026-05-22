@@ -68,20 +68,20 @@
             margin-bottom: 20px;
         }
 
-        /* LIEN PROFIL ENVELOPPANT CLIQUABLE */
-        .profile-link {
+        .profile-section {
             display: flex;
             align-items: center;
             gap: 12px;
-            text-decoration: none;
-            color: inherit;
-            transition: opacity 0.2s, transform 0.1s;
-            cursor: pointer;
         }
 
-        .profile-link:active {
-            opacity: 0.8;
-            transform: scale(0.98);
+        /* UNIQUEMENT L'AVATAR EST CLIQUABLE ET REBONDIT */
+        .avatar-link {
+            text-decoration: none;
+            display: block;
+            transition: transform 0.1s;
+        }
+        .avatar-link:active {
+            transform: scale(0.95);
         }
 
         .avatar-frame {
@@ -315,18 +315,18 @@
         
         <header class="main-header">
             <div class="header-top">
-                <a href="profil.html" class="profile-link">
-                    <div class="profile-section">
+                <div class="profile-section">
+                    <a href="profil.html" class="avatar-link">
                         <div class="avatar-frame">
-                            <img src="notionists-1779298466584.png" alt="Profil">
+                            <img id="globalAvatar" src="notionists-1779298466584.png" alt="Profil">
                             <div class="level-pill" id="lvlText">NIV.1</div>
                         </div>
-                        <div class="user-meta">
-                            <h2 id="usernameDisplay">Chargement...</h2>
-                            <p>Opérateur de Terminal ➔</p>
-                        </div>
+                    </a>
+                    <div class="user-meta">
+                        <h2 id="usernameDisplay">Chargement...</h2>
+                        <p>Opérateur de Terminal</p>
                     </div>
-                </a>
+                </div>
             </div>
 
             <div class="stats-grid">
@@ -404,11 +404,16 @@
         const userId = localStorage.getItem('userId');
         if (!userId) window.location.href = 'index.html';
 
+        // Charger l'avatar sauvegardé
+        const savedAvatar = localStorage.getItem('selectedAvatar');
+        if (savedAvatar) {
+            document.getElementById('globalAvatar').src = savedAvatar;
+        }
+
         syncUserData();
 
         async function syncUserData() {
             try {
-                // 1. Détection du pseudo
                 const { data: profile } = await supabaseClient
                     .from('profiles')
                     .select('username')
@@ -432,7 +437,6 @@
                     }
                 }
                 
-                // 2. Chargement des statistiques
                 const { data: progress } = await supabaseClient
                     .from('game_progress')
                     .select('money, xp')
