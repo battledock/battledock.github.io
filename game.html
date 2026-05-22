@@ -284,7 +284,8 @@
         .gauge-fill {
             height: 100%;
             background: var(--text-main);
-            width: 15%;
+            width: 0%;
+            transition: width 0.4s ease;
         }
     </style>
 </head>
@@ -381,15 +382,40 @@
         const userId = localStorage.getItem('userId');
         if (!userId) window.location.href = 'index.html';
 
-        // Lancement de la synchronisation au démarrage de la page
+        // Lancement automatique au chargement
         syncUserData();
 
         async function syncUserData() {
             try {
-                const { data: profile } = await supabaseClient.from('profiles').select('username').eq('user_id', userId).single();
-                const { data: progress } = await supabaseClient.from('game_progress').select('money, xp').eq('user_id', userId).single();
+                // 1. Récupération sécurisée du pseudo (Tentative sur 'profiles' puis repli)
+                const { data: profile } = await supabaseClient
+                    .from('profiles')
+                    .select('username')
+                    .eq('user_id', userId)
+                    .single();
 
-                if (profile) document.getElementById('usernameDisplay').textContent = profile.username;
+                if (profile && profile.username) {
+                    document.getElementById('usernameDisplay').textContent = profile.username;
+                } else {
+                    const { data: altProgress } = await supabaseClient
+                        .from('game_progress')
+                        .select('username')
+                        .eq('user_id', userId)
+                        .single();
+                        
+                    if (altProgress && altProgress.username) {
+                        document.getElementById('usernameDisplay').textContent = altProgress.username;
+                    } else {
+                        document.getElementById('usernameDisplay').textContent = "Docker Anonyme";
+                    }
+                }
+                
+                // 2. Récupération et calcul des statistiques de jeu (Argent, XP, Niveaux)
+                const { data: progress } = await supabaseClient
+                    .from('game_progress')
+                    .select('money, xp')
+                    .eq('user_id', userId)
+                    .single();
                 
                 if (progress) {
                     const money = progress.money || 0;
@@ -397,7 +423,6 @@
                     
                     document.getElementById('moneyDisplay').textContent = money.toFixed(2) + ' €';
                     
-                    // Calcul mathématique du niveau par palier de 50 XP
                     const level = Math.floor(xp / 50) + 1;
                     const xpInLevel = xp % 50;
                     const xpPercent = (xpInLevel / 50) * 100;
@@ -405,12 +430,13 @@
                     document.getElementById('lvlText').textContent = 'NIV.' + level;
                     document.getElementById('xpBar').style.width = xpPercent + '%';
                     
-                    // Calcul de la jauge globale du bas vers le niveau 3 (150 XP au total)
+                    // Jauge globale du bas calibrée sur 150 XP max (Niveau 3)
                     const globalPercent = Math.min((xp / 150) * 100, 100);
                     document.getElementById('footerGauge').style.width = globalPercent + '%';
                 }
             } catch (e) {
-                console.error("Échec de la récupération des données utilisateur :", e);
+                console.error("Échec de la synchronisation :", e);
+                document.getElementById('usernameDisplay').textContent = "Erreur Réseau";
             }
         }
     </script>
