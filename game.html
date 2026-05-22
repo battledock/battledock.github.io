@@ -5,24 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Battle Dock — Le Port Chelou</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <script src="fullscreen.js"></script>
   
   <style>
     :root {
-      --port-dark: #0f172a;
-      --port-blue: #2563eb;
-      --port-light-blue: #38bdf8;
-      --comic-yellow: #facc15;
-      --comic-orange: #f97316;
-      --comic-red: #ef4444;
-      --comic-green: #22c55e;
-      --panel-bg: #1e293b;
-      --border-thick: 3px solid #000000;
-      --shadow-comic: 6px 6px 0px #000000;
-      --shadow-comic-sm: 4px 4px 0px #000000;
+      --port-dark: #0f172a;       /* Fond principal de l'application ultra moderne */
+      --port-panel: #1e293b;      /* Fond des blocs */
+      --port-panel-hover: #26344d;
+      --comic-yellow: #facc15;    /* Couleur d'accentuation principale (Bouton d'or) */
+      --comic-orange: #f97316;    /* Pour le dégradé du bouton d'action */
+      --comic-green: #22c55e;     /* Pour la jauge d'XP */
+      --comic-red: #ef4444;       /* Pour le badge HOT */
+      --border-main: 3px solid #000000;
     }
 
     * {
@@ -35,274 +32,340 @@
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: #ef4444;
+      background: var(--port-dark);
+      color: #ffffff;
       min-height: 100vh;
-      overflow-x: hidden;
-      position: relative;
-      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
 
+    /* Le conteneur simule un écran d'application mobile parfait */
     .ui-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      background: var(--port-dark);
+      display: flex;
+      flex-direction: column;
       position: relative;
-      z-index: 10;
-      max-width: 540px;
-      margin: 0 auto;
     }
 
-    /* --- HEADER RPG --- */
+    /* --- EN-TÊTE COMPACT ET PREMIUM --- */
     .rpg-header {
       background: var(--port-dark);
-      border-bottom: 3px solid #000;
-      padding: 16px 16px;
-      display: grid;
-      grid-template-columns: 1fr 125px;
-      gap: 10px;
-      align-items: center;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-bottom: var(--border-main);
     }
 
-    .profile-card {
+    /* Ligne supérieure : Infos joueur */
+    .header-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .profile-meta {
       display: flex;
       align-items: center;
       gap: 12px;
-      background: var(--panel-bg);
-      border: var(--border-thick);
-      border-radius: 0px;
-      padding: 10px;
     }
 
-    .avatar-holder {
-      width: 84px;
-      height: 84px;
-      background: #3A4750;
-      border: 3px solid #000;
-      border-radius: 0px;
+    .avatar-wrapper {
+      width: 64px;
+      height: 64px;
+      background: #3a4750;
+      border: var(--border-main);
       overflow: hidden;
       flex-shrink: 0;
-      box-shadow: var(--shadow-comic-sm);
     }
 
-    .avatar-holder img {
+    .avatar-wrapper img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
     }
 
-    .profile-details {
-      flex: 1;
+    .profile-text {
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
     }
 
     .username-txt {
       font-family: 'Bungee', sans-serif;
-      font-size: 15px;
-      color: #fff;
+      font-size: 16px;
+      color: #ffffff;
+      max-width: 160px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .rank-txt {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 900;
       color: #94a3b8;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    .xp-container {
-      margin-top: 4px;
-    }
-    .xp-bar-bg {
-      width: 100%;
-      height: 8px;
-      background: #0f172a;
-      border: 2px solid #000;
-      border-radius: 0px;
-      overflow: hidden;
-    }
-    .xp-bar-fill {
-      width: 0%;
-      height: 100%;
-      background: var(--comic-green);
-    }
-
-    .header-counters {
+    /* Compteurs d'argent et d'énergie empilés à droite */
+    .header-stats {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
+      min-width: 110px;
     }
 
-    .counter-box {
-      background: #0f172a;
-      border: var(--border-thick);
-      border-radius: 0px;
-      padding: 8px 10px;
+    .stat-badge {
+      border: var(--border-main);
+      padding: 6px 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-family: 'Space Grotesk', sans-serif;
       font-weight: 900;
-      font-size: 14px;
+      font-size: 13px;
     }
 
-    .counter-box.money { 
-      background: var(--comic-yellow); 
-      color: #000;
-      box-shadow: 3px 3px 0 #000;
+    .stat-badge.money {
+      background: var(--comic-yellow);
+      color: #000000;
     }
-    .counter-box.energy { 
+
+    .stat-badge.energy {
       background: #ffffff;
-      color: var(--port-dark); 
-      box-shadow: 3px 3px 0 #000;
+      color: var(--port-dark);
     }
 
-    /* --- CONTENEUR DES BLOCS : TOUT COLLÉ ET SANS INTERVALLE --- */
-    .cards-wrapper {
-      padding: 0 16px 40px 16px;
+    /* Ligne inférieure de l'en-tête : Barre d'XP */
+    .xp-section {
+      width: 100%;
+    }
+
+    .xp-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #090d16;
+      border: 2px solid #000000;
+      position: relative;
+    }
+
+    .xp-bar-fill {
+      width: 0%; /* Initialisé proprement à 0% */
+      height: 100%;
+      background: var(--comic-green);
+      transition: width 0.4s ease;
+    }
+
+    /* --- ZONE DES ACTIVITÉS EN BLOCS COLLÉS --- */
+    .menu-content {
       display: flex;
       flex-direction: column;
-      margin-top: 0px;
+      width: 100%;
     }
 
-    /* Supprime les doubles bordures du haut lors de la superposition */
-    .cards-wrapper > * {
-      border-top: none !important;
+    /* Règle de liaison pour fusionner parfaitement les bordures des lignes */
+    .menu-content > * {
+      border-bottom: var(--border-main) !important;
     }
 
-    /* --- COMPORTEMENT COMMUN DES BLOCS (MÊME DIMENSION / PLEINE LARGEUR) --- */
-    .rpg-block-row {
-      border: var(--border-thick);
-      border-radius: 0px;
-      padding: 20px 20px;
+    /* --- L'ACTION ULTRA STYLISÉE : TRAVAILLER --- */
+    .action-work-hero {
+      background: linear-gradient(135deg, var(--comic-yellow) 0%, var(--comic-orange) 100%);
+      padding: 26px 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: var(--shadow-comic);
       position: relative;
       overflow: hidden;
-      transition: transform 0.1s, box-shadow 0.1s;
-    }
-    .rpg-block-row:active {
-      transform: translate(2px, 2px);
-      box-shadow: var(--shadow-comic-sm);
+      border-left: none;
+      border-right: none;
+      border-top: none;
     }
 
-    .rpg-block-row .content-left {
+    /* Effet de lueur animé en arrière-plan pour le rendre vivant */
+    .action-work-hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 60%);
+      animation: pulseGlow 3s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    .action-work-hero:active {
+      filter: brightness(0.95);
+    }
+
+    .work-info-block {
       display: flex;
       flex-direction: column;
       gap: 2px;
       z-index: 2;
     }
-    .rpg-block-row .content-right {
+
+    .work-tag {
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 8px;
+      align-self: flex-start;
+      margin-bottom: 4px;
+    }
+
+    .work-title {
+      font-family: 'Bangers', cursive;
+      font-size: 52px;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px 0px #000000;
+    }
+
+    .work-sub {
+      font-size: 13px;
+      color: #000000;
+      font-weight: 800;
+    }
+
+    .work-icon-badge {
+      background: var(--port-dark);
+      border: 3px solid #000000;
+      width: 68px;
+      height: 68px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-size: 34px;
+      flex-shrink: 0;
       z-index: 2;
     }
 
-    /* --- STYLE SPECIFIQUE : BLOC DE TRAVAIL XXL --- */
-    .card-bosser-xxl {
-      background: linear-gradient(135deg, var(--comic-yellow) 0%, var(--comic-orange) 100%);
-      padding: 24px 20px; /* Un peu plus épais pour le côté XXL */
-    }
-    .card-bosser-xxl .card-tag {
-      font-family: 'Bungee', sans-serif;
-      font-size: 11px;
-      color: #ffffff;
-      background: rgba(0, 0, 0, 0.3);
-      padding: 2px 10px;
-      display: inline-block;
-      align-self: flex-start;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      animation: pulse 1.5s infinite ease-in-out;
-      margin-bottom: 2px;
-    }
-    .card-bosser-xxl .card-title {
-      font-family: 'Bangers', cursive;
-      font-size: 54px;
-      color: #fff;
-      line-height: 1;
-      letter-spacing: 3px;
-      text-shadow: 4px 4px 0px #000;
-    }
-    .card-bosser-xxl .card-sub {
-      font-size: 14px;
-      color: #000;
-      font-weight: 900;
-    }
-    .card-bosser-xxl .content-right-badge {
-      background: var(--port-dark);
-      border: 3px solid #000;
-      width: 72px;
-      height: 72px;
+    /* --- STYLE PREMIUM DES AUTRES BOUTONS STANDARD --- */
+    .standard-row-btn {
+      background: var(--port-panel);
+      padding: 18px 20px;
+      cursor: pointer;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 38px;
-      box-shadow: var(--shadow-comic-sm);
+      justify-content: space-between;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      transition: background 0.1s ease;
     }
 
-    /* --- STYLE STANDARD UNIFORME POUR LES AUTRES BLOCS SOMBRES --- */
-    .card-standard-rpg {
-      background: var(--panel-bg);
+    .standard-row-btn:hover {
+      background: var(--port-panel-hover);
     }
-    .card-standard-rpg .card-title {
+
+    .standard-row-btn:active {
+      background: #151f2e;
+    }
+
+    .row-left {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .row-title {
       font-family: 'Bungee', sans-serif;
-      font-size: 16px;
+      font-size: 15px;
       color: #ffffff;
-    }
-    .card-standard-rpg .card-sub {
-      font-size: 12px;
-      font-weight: 700;
-      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    /* Badge HOT spécifique aux Mini-jeux */
-    .card-standard-rpg .card-hot {
+    .row-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .row-icon {
+      font-size: 26px;
+      opacity: 0.9;
+    }
+
+    /* Badge "HOT" pour les mini-jeux */
+    .hot-badge {
       background: var(--comic-red);
-      color: #fff;
+      color: #ffffff;
       font-family: 'Bangers', cursive;
       font-size: 12px;
-      padding: 2px 8px;
-      border: 2px solid #000;
-      display: inline-block;
-      margin-left: 10px;
-      transform: rotate(5deg);
-      vertical-align: middle;
+      padding: 1px 6px;
+      border: 2px solid #000000;
+      transform: rotate(4deg);
+      letter-spacing: 0.5px;
     }
 
-    /* Style spécifique au bloc de progression (contient la jauge d'effort) */
-    .prog-container {
-      width: 100%;
-      margin-top: 6px;
+    /* --- BLOC ET JAUGE DE PROGRESSION ASSORTIS --- */
+    .progression-row-block {
+      background: var(--port-panel);
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      cursor: pointer;
     }
-    .prog-container .prog-bar-bg {
+    
+    .progression-row-block:hover {
+      background: var(--port-panel-hover);
+    }
+
+    .prog-header-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .prog-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 14px;
+      color: #ffffff;
+    }
+
+    .prog-track-bg {
       width: 100%;
       height: 12px;
-      background: #0f172a;
-      border: 2px solid #000;
-      overflow: hidden;
+      background: #090d16;
+      border: 2px solid #000000;
     }
-    .prog-container .prog-bar-fill {
+
+    .prog-track-fill {
       height: 100%;
-      width: 30%;
+      width: 30%; /* Modifiable dynamiquement par le script si besoin */
       background: var(--comic-yellow);
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.85; transform: scale(0.95); }
+    .prog-sub-label {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 700;
     }
 
-    @media (max-width: 400px) {
-      .card-bosser-xxl .card-title { font-size: 40px; }
-      .card-bosser-xxl .content-right-badge { width: 56px; height: 56px; font-size: 28px; }
+    /* Animations */
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.25; }
+      50% { transform: scale(1.1); opacity: 0.4; }
+    }
+
+    @media (max-width: 420px) {
+      .work-title { font-size: 44px; }
+      .work-icon-badge { width: 58px; height: 58px; font-size: 28px; }
     }
   </style>
 </head>
@@ -311,83 +374,86 @@
   <div class="ui-container">
     
     <div class="rpg-header">
-      <div class="profile-card">
-        <div class="avatar-holder" id="profileAvatarBg">
-          <img id="profileAvatarImg" src="notionists-1779298466584.png" alt="Avatar">
+      <div class="header-top-row">
+        <div class="profile-meta">
+          <div class="avatar-wrapper" id="profileAvatarBg">
+            <img id="profileAvatarImg" src="notionists-1779298466584.png" alt="Avatar">
+          </div>
+          <div class="profile-text">
+            <div class="username-txt" id="profileUsername">—</div>
+            <div class="rank-txt" id="profileRank">Docker Occasionnel</div>
+          </div>
         </div>
-        <div class="profile-details">
-          <div class="username-txt" id="profileUsername">—</div>
-          <div class="rank-txt" id="profileRank">Docker Occasionnel</div>
-          <div class="xp-container">
-            <div class="xp-bar-bg"><div class="xp-bar-fill"></div></div>
+        
+        <div class="header-stats">
+          <div class="stat-badge money">
+            <span id="profileMoney">0 €</span> 💶
+          </div>
+          <div class="stat-badge energy">
+            <span>100%</span> ⚡
           </div>
         </div>
       </div>
       
-      <div class="header-counters">
-        <div class="counter-box money">
-          <span id="profileMoney">0 €</span> <span class="counter-icon">💶</span>
-        </div>
-        <div class="counter-box energy">
-          <span>100%</span> <span class="counter-icon">⚡</span>
+      <div class="xp-section">
+        <div class="xp-bar-bg">
+          <div class="xp-bar-fill"></div>
         </div>
       </div>
     </div>
 
-    <div class="cards-wrapper">
+    <div class="menu-content">
 
-      <div class="rpg-block-row card-bosser-xxl" onclick="window.location.href='travailler.html'">
-        <div class="content-left">
-          <div class="card-tag">Quart Disponible</div>
-          <div class="card-title">TRAVAILLER</div>
-          <div class="card-sub">Déplace des caisses · Récupère ton cash</div>
+      <div class="action-work-hero" onclick="window.location.href='travailler.html'">
+        <div class="work-info-block">
+          <div class="work-tag">Quart Actif</div>
+          <div class="work-title">TRAVAILLER</div>
+          <div class="work-sub">Déplace des caisses · Encaisse tes €</div>
         </div>
-        <div class="content-right">
-          <div class="content-right-badge">💼</div>
-        </div>
+        <div class="work-icon-badge">💼</div>
       </div>
 
-      <div class="rpg-block-row card-standard-rpg" onclick="window.location.href='jeux.html'">
-        <div class="content-left">
-          <div class="card-title">Mini-Jeux <span class="card-hot">HOT</span></div>
-          <div class="card-sub">Tente ta chance et flambe au casino</div>
+      <div class="standard-row-btn" onclick="window.location.href='jeux.html'">
+        <div class="row-left">
+          <div class="row-title">Mini-Jeux <span class="hot-badge">HOT</span></div>
+          <div class="row-sub">Tente ta chance et flambe au casino</div>
         </div>
-        <div class="content-right">🎰</div>
+        <div class="row-icon">🎰</div>
       </div>
 
-      <div class="rpg-block-row card-standard-rpg" onclick="window.location.href='shop.html'">
-        <div class="content-left">
-          <div class="card-title">Boutique</div>
-          <div class="card-sub">Accède au marché noir du port</div>
+      <div class="standard-row-btn" onclick="window.location.href='shop.html'">
+        <div class="row-left">
+          <div class="row-title">Boutique</div>
+          <div class="row-sub">Accède au marché noir du port</div>
         </div>
-        <div class="content-right">🛒</div>
+        <div class="row-icon">🛒</div>
       </div>
 
-      <div class="rpg-block-row card-standard-rpg" onclick="window.location.href='social.html'">
-        <div class="content-left">
-          <div class="card-title">Vie Privée</div>
-          <div class="card-sub">Gère tes relations, mariages & amour</div>
+      <div class="standard-row-btn" onclick="window.location.href='social.html'">
+        <div class="row-left">
+          <div class="row-title">Vie Privée</div>
+          <div class="row-sub">Gère tes relations, mariages & amour</div>
         </div>
-        <div class="content-right">🥂</div>
+        <div class="row-icon">🥂</div>
       </div>
 
-      <div class="rpg-block-row card-standard-rpg" onclick="window.location.href='classement.html'">
-        <div class="content-left">
-          <div class="card-title">Classement</div>
-          <div class="card-sub">Regarde le top des meilleurs Dockers</div>
+      <div class="standard-row-btn" onclick="window.location.href='classement.html'">
+        <div class="row-left">
+          <div class="row-title">Classement</div>
+          <div class="row-sub">Regarde le top des meilleurs Dockers</div>
         </div>
-        <div class="content-right">🏆</div>
+        <div class="row-icon">🏆</div>
       </div>
 
-      <div class="rpg-block-row card-standard-rpg" onclick="window.location.href='progression.html'">
-        <div class="content-left" style="width: 80%;">
-          <div class="card-title">Niveau & Rang</div>
-          <div class="prog-container">
-            <div class="prog-bar-bg"><div class="prog-bar-fill"></div></div>
-          </div>
-          <div class="card-sub" style="margin-top: 4px;">Niveau 1 · 30% d'effort requis</div>
+      <div class="progression-row-block" onclick="window.location.href='progression.html'">
+        <div class="prog-header-meta">
+          <div class="prog-title">Niveau & Grade</div>
+          <div class="row-icon" style="font-size:22px;">📊</div>
         </div>
-        <div class="content-right">📊</div>
+        <div class="prog-track-bg">
+          <div class="prog-track-fill"></div>
+        </div>
+        <div class="prog-sub-label">Niveau 1 · 30% d'effort avant la promotion</div>
       </div>
 
     </div>
