@@ -1,536 +1,353 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — L'Accueil Légendaire</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&family=Luckiest+Guy&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  
-  <style>
-    :root {
-      --port-dark-bg: #090d16;
-      --port-panel: #151f32;
-      --port-panel-border: #22314d;
-      
-      --comic-black: #000000;
-      --comic-yellow: #facc15;
-      --comic-orange: #f97316;
-      --comic-red: #ef4444;
-      --comic-green: #10b981;
-      --comic-blue: #3b82f6;
-      
-      --border-thick: 4px solid #000000;
-      --border-thin: 2px solid #000000;
-      --3d-shadow: 0 8px 0px #000000;
-      --3d-shadow-small: 0 4px 0px #000000;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hiérarchie Portuaire - Battle Dock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700;900&family=Inter:wght@400;700&family=Bungee&family=Bangers&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            background-color: #020617; 
+            color: #f8fafc;
+            font-family: 'Urbanist', sans-serif;
+            padding-bottom: 60px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-    body {
-      font-family: 'Space Grotesk', sans-serif;
-      background-color: var(--port-dark-bg);
-      color: #ffffff;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-    }
+        /* TITRE CORPORATE ET PRO */
+        .page-title-area {
+            padding: 60px 0 40px 0;
+            text-align: center;
+        }
+        h1 { font-size: 54px; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; }
+        .subtitle { font-size: 18px; color: #94a3b8; font-family: 'Inter', sans-serif; margin-top: 10px; }
 
-    .app-viewport {
-      width: 100%;
-      max-width: 480px;
-      min-height: 100vh;
-      background: linear-gradient(180deg, #0e1726 0%, var(--port-dark-bg) 100%);
-      border-left: var(--border-thick);
-      border-right: var(--border-thick);
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      padding-bottom: 24px;
-    }
+        /* LES CARTES DE POSTE STYLE MCKINSEY */
+        .job-card {
+            background-color: #0f172a;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 250px;
+            gap: 30px;
+            align-items: center;
+        }
+        .job-card.locked { opacity: 0.4; }
 
-    /* --- HEADER --- */
-    .premium-header {
-      background: linear-gradient(135deg, #111c30 0%, #090d16 100%);
-      border-bottom: var(--border-thick);
-      padding: 20px 16px 16px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+        .level-tag { background: #bef264; color: #020617; padding: 4px 12px; font-weight: 900; font-size: 13px; border-radius: 4px; display: inline-block; margin-bottom: 15px; text-transform: uppercase; }
+        .locked .level-tag { background: #475569; color: #94a3b8; }
 
-    .header-main-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
+        h2 { font-size: 32px; font-weight: 800; margin-bottom: 10px; color: #ffffff; }
+        p { font-size: 16px; line-height: 1.6; color: #94a3b8; font-family: 'Inter', sans-serif; }
+        .highlight { color: #bef264; font-weight: 700; }
 
-    .docker-profile-card {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex: 1;
-    }
+        /* TABLE DES STATS INTÉGRÉE */
+        .stats-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .stats-table td { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; font-family: 'Inter', sans-serif; }
+        .stats-table td:first-child { color: #64748b; }
+        .stats-table td:last-child { color: #ffffff; font-weight: 700; text-align: right; }
 
-    .avatar-container {
-      width: 76px;
-      height: 76px;
-      background: #243249;
-      border: var(--border-thick);
-      position: relative;
-    }
+        /* BOUTONS STRATÉGIQUES */
+        .btn-action { background: #bef264; color: #020617; padding: 14px 28px; font-weight: 900; font-size: 16px; text-transform: uppercase; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s; text-align: center; width: 100%; display: block; }
+        .btn-action:hover { background: #d9f99d; transform: translateY(-1px); }
+        .btn-action:active { transform: translateY(1px); }
+        .btn-locked { background: #1e293b; color: #64748b; padding: 14px 28px; font-weight: 700; font-size: 16px; text-transform: uppercase; border-radius: 6px; text-align: center; cursor: not-allowed; }
 
-    .avatar-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+        /* BOUTON RETOUR DISCRET */
+        .btn-back { position: absolute; top: 20px; left: 20px; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #94a3b8; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; }
+        .btn-back:hover { color: white; border-color: white; }
 
-    .level-badge {
-      position: absolute;
-      bottom: -6px;
-      right: -6px;
-      background: var(--comic-blue);
-      border: var(--border-thin);
-      color: #fff;
-      font-family: 'Bungee', sans-serif;
-      font-size: 11px;
-      padding: 1px 5px;
-      box-shadow: 2px 2px 0 #000;
-    }
+        /* ------------------------------------------------------------- */
+        /* ZONE ARCADE - INTERFACE INTERNE DU MINI JEU (POPUP) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(2, 6, 23, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
 
-    .docker-name {
-      font-family: 'Luckiest Guy', cursive;
-      font-size: 19px;
-      color: #ffffff;
-      text-shadow: 2px 2px 0px #000;
-    }
+        .modal-content {
+            background: #0f172a;
+            border: 2px solid #bef264;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 460px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: relative;
+        }
 
-    .docker-rank-title {
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-      color: var(--comic-orange);
-    }
+        .modal-close { position: absolute; top: 15px; right: 15px; background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-    .arcade-counters {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 125px;
-    }
+        .game-title { font-family: 'Bangers', cursive; font-size: 36px; text-align: center; color: #bef264; letter-spacing: 1px; }
 
-    .counter-slot {
-      border: var(--border-thick);
-      padding: 6px 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-weight: 900;
-      font-size: 14px;
-      box-shadow: var(--3d-shadow-small);
-    }
+        .round-stats {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Bungee', sans-serif;
+            font-size: 14px;
+            background: rgba(0,0,0,0.3);
+            padding: 12px;
+            border-radius: 8px;
+        }
 
-    .counter-slot.money { background: linear-gradient(180deg, var(--comic-yellow) 0%, #ca8a04 100%); color: #000; }
-    .counter-slot.energy { background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%); color: #000; }
+        /* Fenêtre de rendu physique 2D */
+        .game-viewport {
+            width: 100%;
+            height: 180px;
+            background: #020617;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
 
-    .xp-milestone-bar {
-      width: 100%;
-      background: #060910;
-      border: var(--border-thin);
-      height: 12px;
-    }
+        .target-zone {
+            position: absolute;
+            left: 120px;
+            width: 60px;
+            height: 100%;
+            background: rgba(190, 242, 100, 0.15);
+            border-left: 2px dashed #bef264;
+            border-right: 2px dashed #bef264;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #bef264;
+        }
 
-    .xp-fill-stream {
-      width: 0%; 
-      height: 100%;
-      background: linear-gradient(90deg, var(--comic-green) 0%, #059669 100%);
-    }
+        .scrolling-item {
+            position: absolute;
+            top: 55px;
+            left: 460px;
+            font-size: 46px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-    /* --- MENU --- */
-    .menu-stack {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-    }
-    .menu-stack > * { border-bottom: var(--border-thick); }
-
-    /* --- BOUTON PRINCIPAL TRAVAILLER --- */
-    .hero-button-work {
-      background: linear-gradient(135deg, #ffe066 0%, #facc15 50%, #ea580c 100%);
-      padding: 44px 24px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: inset 0 8px 0 rgba(255, 255, 255, 0.45);
-    }
-    .hero-button-work:active { transform: scale(0.98); }
-
-    .work-main-title {
-      font-family: 'Bangers', cursive;
-      font-size: 72px;
-      color: #ffffff;
-      text-shadow: 5px 5px 0px #000;
-    }
-    .work-description { font-size: 14px; color: #000; font-weight: 900; }
-    .work-giga-avatar { font-size: 64px; filter: drop-shadow(3px 3px 0px #000); }
-
-    .premium-row-node {
-      background: var(--port-panel);
-      padding: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      opacity: 0.4;
-    }
-
-    /* --- MODAL DE JEU (POPUP INTERNE) --- */
-    .modal-overlay {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.9);
-      z-index: 999;
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-    }
-
-    .modal-content {
-      background: var(--port-panel);
-      border: var(--border-thick);
-      box-shadow: var(--3d-shadow);
-      width: 100%;
-      max-width: 420px;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: relative;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: -12px;
-      right: -12px;
-      background: var(--comic-red);
-      color: white;
-      border: var(--border-thick);
-      font-family: 'Bungee', sans-serif;
-      padding: 4px 10px;
-      cursor: pointer;
-      box-shadow: 3px 3px 0 #000;
-      z-index: 10;
-    }
-
-    .modal-title {
-      font-family: 'Bangers', cursive;
-      font-size: 32px;
-      text-align: center;
-      text-shadow: 2px 2px 0 #000;
-      color: var(--comic-yellow);
-    }
-
-    /* --- ZONE ARCADE MINI-JEU --- */
-    .game-viewport {
-      width: 100%;
-      height: 200px;
-      background: #090d16;
-      border: var(--border-thick);
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* La ligne de tri ciblée (Le Scanner) */
-    .target-zone {
-      position: absolute;
-      left: 110px;
-      width: 60px;
-      height: 100%;
-      background: rgba(16, 185, 129, 0.2);
-      border-left: 2px dashed var(--comic-green);
-      border-right: 2px dashed var(--comic-green);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding-bottom: 5px;
-      font-family: 'Bungee', sans-serif;
-      font-size: 10px;
-      color: var(--comic-green);
-    }
-
-    /* L'objet qui défile (Le Poisson) */
-    .scrolling-item {
-      position: absolute;
-      top: 60px;
-      left: 420px; /* Commence hors écran à droite */
-      font-size: 44px;
-      width: 50px;
-      height: 50px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    /* Tableau des scores internes au round */
-    .round-stats {
-      display: flex;
-      justify-content: space-between;
-      font-family: 'Bungee', sans-serif;
-      font-size: 14px;
-      background: rgba(0,0,0,0.4);
-      padding: 8px 12px;
-      border: var(--border-thin);
-    }
-
-    .btn-game-hit {
-      background: linear-gradient(180deg, var(--comic-orange) 0%, #c2410c 100%);
-      border: var(--border-thick);
-      font-family: 'Bungee', sans-serif;
-      color: white;
-      padding: 16px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: var(--3d-shadow-small);
-      text-align: center;
-    }
-    .btn-game-hit:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 #000;
-    }
-  </style>
+        .btn-hit-trigger {
+            background: #bef264;
+            color: #020617;
+            border: none;
+            font-family: 'Bungee', sans-serif;
+            padding: 16px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px 0px #84cc16;
+        }
+        .btn-hit-trigger:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+    </style>
 </head>
 <body>
 
-  <div class="app-viewport">
-    
-    <div class="premium-header">
-      <div class="header-main-row">
-        <div class="docker-profile-card">
-          <div class="avatar-container">
-            <img src="notionists-1779298466584.png" alt="Avatar">
-            <div class="level-badge" id="lvlIndicator">NIV.1</div>
-          </div>
-          <div class="docker-meta-details">
-            <div class="docker-name" id="profileUsername">Chargement...</div>
-            <div class="docker-rank-title">Docker Occasionnel</div>
-          </div>
-        </div>
+    <button class="btn-back" onclick="window.location.href='game.html'">← Plan de contrôle</button>
+
+    <div class="container">
         
-        <div class="arcade-counters">
-          <div class="counter-slot money"><span id="profileMoney">0 €</span> 💶</div>
-          <div class="counter-slot energy"><span id="profileEnergy">100%</span> ⚡</div>
+        <div class="page-title-area">
+            <h1>Architecture des Carrières</h1>
+            <div class="subtitle">Optimisation des flux et répartition de la force de travail au sol.</div>
         </div>
-      </div>
-      
-      <div class="xp-milestone-bar">
-        <div class="xp-fill-stream" id="xpBarFill"></div>
-      </div>
+
+        <div class="job-card">
+            <div>
+                <div class="level-tag">Rang 01 — Recrue</div>
+                <h2>Docker Occasionnel</h2>
+                <p>La porte d'entrée opérationnelle. Focalisé sur la <span class="highlight">manutention de fret congelé</span>. Une phase critique pour prouver sa réactivité.</p>
+                <table class="stats-table">
+                    <tr><td>Condition requise</td><td>Niveau 01</td></tr>
+                    <tr><td>Rémunération brute</td><td>+15.00 €</td></tr>
+                    <tr><td>Indice de fatigue</td><td>-10% Énergie</td></tr>
+                </table>
+            </div>
+            <div>
+                <button class="btn-action" onclick="openGameScreen()">Lancer le quart</button>
+            </div>
+        </div>
+
+        <div class="job-card locked">
+            <div>
+                <div class="level-tag">Rang 02 — Qualifié</div>
+                <h2>Docker Syndiqué</h2>
+                <p>Tri réglementaire des conteneurs industriels standards et gestion de zone sécurisée.</p>
+                <table class="stats-table">
+                    <tr><td>Condition requise</td><td>Niveau 03</td></tr>
+                    <tr><td>Rémunération brute</td><td>+45.00 €</td></tr>
+                    <tr><td>Indice de fatigue</td><td>-15% Énergie</td></tr>
+                </table>
+            </div>
+            <div>
+                <div class="btn-locked">Niv. 3 Requis</div>
+            </div>
+        </div>
+
     </div>
 
-    <div class="menu-stack">
-      <div class="hero-button-work" onclick="openWorkModal()">
-        <div class="work-left-content">
-          <div class="work-main-title">TRAVAILLER</div>
-          <div class="work-description">Lance le mini-jeu de tri portuaire !</div>
-        </div>
-        <div class="work-giga-avatar">💼</div>
-      </div>
+    <div class="modal-overlay" id="arcadeModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeGameScreen()">X</button>
+            <div class="game-title">QUART DE TRAVAIL : TRI 🐟</div>
+            
+            <div class="round-stats">
+                <span>CAISSES : <span id="uiScore" style="color:#bef264;">0/5</span></span>
+                <span id="uiAlert" style="color:#bef264;">VISE LE SCANNER !</span>
+            </div>
 
-      <div class="premium-row-node">🎰 Mini-Jeux (Niveau supérieur requis)</div>
-      <div class="premium-row-node">🛒 Boutique (Niveau supérieur requis)</div>
+            <div class="game-viewport">
+                <div class="target-zone">SCANNER</div>
+                <div class="scrolling-item" id="movingFish">🐟</div>
+            </div>
+
+            <button class="btn-hit-trigger" onclick="catchFishTiming()">EMPAQUETER (ESPACE)</button>
+        </div>
     </div>
 
-    <div class="modal-overlay" id="workModal">
-      <div class="modal-content">
-        <button class="modal-close" onclick="closeWorkModal()">X</button>
-        <div class="modal-title">TRI DES POISSONS 🐟</div>
-        
-        <div class="round-stats">
-          <span>CAISSES TRIIÉES : <span id="roundScore" style="color:var(--comic-yellow);">0/5</span></span>
-          <span id="gameAlert" style="color:var(--comic-green);">APPUIE AU BON MOMENT !</span>
-        </div>
+    <script>
+        const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-        <div class="game-viewport">
-          <div class="target-zone">ZONE DE TRI</div>
-          <div class="scrolling-item" id="fishItem">🐟</div>
-        </div>
+        const userId = localStorage.getItem('userId');
+        if (!userId) window.location.href = 'index.html';
 
-        <button class="btn-game-hit" id="btnAction" onclick="checkSortingTiming()">EMPAQUETER (ESPACE)</button>
-      </div>
-    </div>
+        // Profil data synchronisé
+        let currentMoney = 0;
+        let currentXp = 0;
 
-  </div>
+        // Données du moteur de jeu
+        let currentScore = 0;
+        let objectX = 460;
+        let objectSpeed = 4.5;
+        let loopId = null;
+        let liveGame = false;
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    const userId = localStorage.getItem('userId');
-    if (!userId) window.location.href = 'index.html';
-
-    let currentMoney = 0;
-    let currentEnergy = 100;
-    let currentXp = 0;
-    
-    // Moteur d'animation interne du mini-jeu
-    let scoreInRound = 0;
-    let fishX = 420;
-    let fishSpeed = 4;
-    let animationFrameId = null;
-    let isGameRunning = false;
-
-    loadUserData();
-
-    async function loadUserData() {
-      try {
-        const { data: profile } = await supabaseClient.from('profiles').select('username').eq('user_id', userId).single();
-        const { data: progress } = await supabaseClient.from('game_progress').select('money, xp').eq('user_id', userId).single();
-
-        if (profile) document.getElementById('profileUsername').textContent = profile.username;
-        if (progress) {
-          currentMoney = progress.money || 0;
-          currentXp = progress.xp || 0;
-          updateInterfaceElements();
+        // Charger données
+        initDataLoad();
+        async function initDataLoad() {
+            const { data } = await supabaseClient.from('game_progress').select('money, xp').eq('user_id', userId).single();
+            if (data) {
+                currentMoney = data.money || 0;
+                currentXp = data.xp || 0;
+            }
         }
-      } catch (err) { console.error(err); }
-    }
 
-    function updateInterfaceElements() {
-      document.getElementById('profileMoney').textContent = currentMoney + ' €';
-      document.getElementById('profileEnergy').textContent = currentEnergy + '%';
-      
-      let calculatedLevel = Math.floor(currentXp / 50) + 1;
-      let currentLevelProgress = currentXp % 50;
-      let progressPercentage = (currentLevelProgress / 50) * 100;
-
-      document.getElementById('lvlIndicator').textContent = 'NIV.' + calculatedLevel;
-      document.getElementById('xpBarFill').style.width = progressPercentage + '%';
-    }
-
-    function openWorkModal() {
-      if (currentEnergy < 10) {
-        alert("Prends une pause ! Tu n'as plus l'énergie pour manipuler les charges.");
-        return;
-      }
-      document.getElementById('workModal').style.display = 'flex';
-      startMiniGameRound();
-    }
-
-    function closeWorkModal() {
-      document.getElementById('workModal').style.display = 'none';
-      stopMiniGameRound();
-    }
-
-    // Boucle physique du jeu (Défilement horizontal continu)
-    function startMiniGameRound() {
-      isGameRunning = true;
-      scoreInRound = 0;
-      fishX = 420;
-      fishSpeed = 4; // Vitesse de départ
-      document.getElementById('roundScore').textContent = "0/5";
-      document.getElementById('gameAlert').textContent = "PRÊT ? PARTEZ !";
-      document.getElementById('gameAlert').style.color = "white";
-      
-      animateFish();
-    }
-
-    function stopMiniGameRound() {
-      isGameRunning = false;
-      cancelAnimationFrame(animationFrameId);
-    }
-
-    function animateFish() {
-      if (!isGameRunning) return;
-
-      fishX -= fishSpeed;
-      // Si l'objet dépasse l'écran à gauche sans être trié, il réapparaît à droite
-      if (fishX < -50) {
-        fishX = 420;
-        document.getElementById('gameAlert').textContent = "RATÉ ! MANQUÉ !";
-        document.getElementById('gameAlert').style.color = "var(--comic-red)";
-      }
-
-      document.getElementById('fishItem').style.left = fishX + "px";
-      animationFrameId = requestAnimationFrame(animateFish);
-    }
-
-    // VÉRIFICATION DU TIMING LORS DU CLIC / APPUIS TOUCHE
-    function checkSortingTiming() {
-      if (!isGameRunning) return;
-
-      // La zone cible est située entre X = 110px et X = 170px
-      if (fishX >= 95 && fishX <= 165) {
-        scoreInRound++;
-        fishX = 420; // Recommence une course à droite
-        fishSpeed += 0.6; // Augmente la difficulté à chaque point réussi !
-        
-        document.getElementById('roundScore').textContent = scoreInRound + "/5";
-        document.getElementById('gameAlert').textContent = "PARFAIT ! +1";
-        document.getElementById('gameAlert').style.color = "var(--comic-green)";
-
-        // Victoire totale : Fin de la session de travail
-        if (scoreInRound >= 5) {
-          endWorkShiftWithSuccess();
+        function openGameScreen() {
+            document.getElementById('arcadeModal').style.display = 'flex';
+            liveGame = true;
+            currentScore = 0;
+            objectX = 460;
+            objectSpeed = 4.5;
+            document.getElementById('uiScore').textContent = "0/5";
+            document.getElementById('uiAlert').textContent = "PRÊT ?";
+            document.getElementById('uiAlert').style.color = "#bef264";
+            runEngine();
         }
-      } else {
-        document.getElementById('gameAlert').textContent = "MAUVAIS TIMING !";
-        document.getElementById('gameAlert').style.color = "var(--comic-red)";
-      }
-    }
 
-    // Envoi des récompenses réelles à la BDD Supabase une fois le jeu validé
-    async function endWorkShiftWithSuccess() {
-      stopMiniGameRound();
-      document.getElementById('gameAlert').textContent = "QUART TERMINÉ ! 💰";
-      
-      const targetMoney = currentMoney + 15;
-      const targetXp = currentXp + 5;
-      currentEnergy -= 10;
+        function closeGameScreen() {
+            document.getElementById('arcadeModal').style.display = 'none';
+            liveGame = false;
+            cancelAnimationFrame(loopId);
+        }
 
-      try {
-        const { error } = await supabaseClient
-          .from('game_progress')
-          .update({ money: targetMoney, xp: targetXp })
-          .eq('user_id', userId);
+        function runEngine() {
+            if (!liveGame) return;
+            objectX -= objectSpeed;
 
-        if (error) throw error;
+            if (objectX < -50) {
+                objectX = 460;
+                document.getElementById('uiAlert').textContent = "RATÉ !";
+                document.getElementById('uiAlert').style.color = "#ef4444";
+            }
 
-        currentMoney = targetMoney;
-        currentXp = targetXp;
-        updateInterfaceElements();
-        alert("Félicitations ! Tu as correctement trié la livraison. Tu gagnes +15 € et +5 XP !");
-      } catch (err) {
-        console.error(err);
-        currentEnergy += 10;
-      } finally {
-        closeWorkModal();
-      }
-    }
+            document.getElementById('movingFish').style.left = objectX + "px";
+            loopId = requestAnimationFrame(runEngine);
+        }
 
-    // Raccourci clavier : Permet de jouer avec la barre d'espace pour plus de réactivité !
-    window.addEventListener('keydown', function(e) {
-      if (e.code === 'Space' && isGameRunning) {
-        e.preventDefault();
-        checkSortingTiming();
-      }
-    });
-  </script>
+        function catchFishTiming() {
+            if (!liveGame) return;
+
+            // Vérifie si le poisson est bien positionné dans la zone du Scanner (X entre 105 et 175)
+            if (objectX >= 105 && objectX <= 175) {
+                currentScore++;
+                objectX = 460;
+                objectSpeed += 0.8; // Le jeu accélère à chaque caisse validée !
+                
+                document.getElementById('uiScore').textContent = currentScore + "/5";
+                document.getElementById('uiAlert').textContent = "BIEN JOUÉ !";
+                document.getElementById('uiAlert').style.color = "#22c55e";
+
+                if (currentScore >= 5) {
+                    saveGameRewards();
+                }
+            } else {
+                document.getElementById('uiAlert').textContent = "MAUVAIS TIMING !";
+                document.getElementById('uiAlert').style.color = "#ef4444";
+            }
+        }
+
+        async function saveGameRewards() {
+            liveGame = false;
+            cancelAnimationFrame(loopId);
+            
+            const upMoney = currentMoney + 15;
+            const upXp = currentXp + 5;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('game_progress')
+                    .update({ money: upMoney, xp: upXp })
+                    .eq('user_id', userId);
+
+                if (error) throw error;
+                
+                currentMoney = upMoney;
+                currentXp = upXp;
+                alert("Quart validé ! Vous obtenez +15 € et +5 XP.");
+            } catch(e) {
+                alert("Erreur réseau lors de la validation du salaire.");
+            } finally {
+                closeGameScreen();
+            }
+        }
+
+        // Jouer au clavier avec la barre d'espace
+        window.addEventListener('keydown', function(e) {
+            if (e.code === 'Space' && liveGame) {
+                e.preventDefault();
+                catchFishTiming();
+            }
+        });
+    </script>
 </body>
 </html>
