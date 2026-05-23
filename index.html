@@ -41,7 +41,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px; /* Ajout d'un espace global pour voir le fond même sur petit écran */
+      padding: 24px;
       overflow: hidden;
       position: relative;
     }
@@ -52,7 +52,7 @@
       position: relative;
       z-index: 10;
       width: 100%;
-      max-width: 380px; /* Aligné sur la largeur de la boîte */
+      max-width: 380px;
       flex-shrink: 0;
     }
 
@@ -76,10 +76,10 @@
       letter-spacing: 1px;
     }
 
-    /* CONTENEUR PRINCIPAL AFFINÉ */
+    /* CONTENEUR PRINCIPAL */
     .dock-container {
       width: 100%;
-      max-width: 380px; /* Réduit à 380px pour laisser voir le fond sur les côtés */
+      max-width: 380px;
       background: #e2e8f0;
       border: var(--border-thick);
       border-radius: 20px;
@@ -89,7 +89,7 @@
       height: 420px;
       display: flex;
       flex-direction: column;
-      margin: 28px 0; /* Équilibre parfait par rapport au footer */
+      margin: 28px 0;
       flex-shrink: 0;
     }
 
@@ -218,7 +218,7 @@
       box-shadow: 2px 2px 0px #000000;
     }
 
-    /* FOOTER SOULEVÉ ET ALIGNÉ */
+    /* FOOTER */
     .footer-stamp {
       margin-top: 0;
       font-size: 9px;
@@ -351,7 +351,7 @@
 
   <div class="error-popup-overlay" id="errorOverlay"></div>
   <div class="error-popup" id="errorPopup">
-    <div class="error-popup-title">ERREUR</div>
+    <div class="error-popup-title">ALERTE DU QUAI</div>
     <div class="error-popup-message" id="errorMessage"></div>
     <button class="error-popup-btn" onclick="closeErrorPopup()">OK</button>
   </div>
@@ -366,8 +366,29 @@
       window.location.href = 'game.html';
     }
 
+    // Traducteur automatique des erreurs Supabase en Français
+    function translateError(msg) {
+      if (!msg) return "Une erreur inconnue est survenue.";
+      const lower = msg.toLowerCase();
+      
+      if (lower.includes("invalid login credentials")) {
+        return "Pseudo ou Code Secret incorrect ! Vérifie tes identifiants.";
+      }
+      if (lower.includes("password should be at least")) {
+        return "Sécurité insuffisante ! Ton mot de passe doit contenir au moins 6 caractères.";
+      }
+      if (lower.includes("user already exists")) {
+        return "Ce nom d'opérateur est déjà pris par un autre docker !";
+      }
+      if (lower.includes("email rate limit exceeded")) {
+        return "Trop de tentatives ! Patiente quelques instants avant de réessayer.";
+      }
+      
+      return msg; // Renvoie l'erreur brute si aucun pattern ne correspond
+    }
+
     function showErrorPopup(message) {
-      document.getElementById('errorMessage').textContent = message;
+      document.getElementById('errorMessage').textContent = translateError(message);
       document.getElementById('errorPopup').classList.add('show');
       document.getElementById('errorOverlay').classList.add('show');
     }
@@ -421,7 +442,7 @@
         const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
         if (error) {
-          showErrorPopup('Code erroné !');
+          showErrorPopup(error.message);
           return;
         }
 
@@ -429,7 +450,7 @@
         localStorage.setItem('username', username);
         window.location.href = 'game.html';
       } catch (err) {
-        showErrorPopup('Erreur : ' + err.message);
+        showErrorPopup(err.message);
       }
     });
 
@@ -443,11 +464,6 @@
         return;
       }
 
-      if (password.length < 6) {
-        showErrorPopup('Minimum 6 caractères pour le mot de passe !');
-        return;
-      }
-
       try {
         const { data: checkUser } = await supabaseClient
           .from('profiles')
@@ -456,7 +472,7 @@
           .single();
 
         if (checkUser) {
-          showErrorPopup('Ce pseudo est déjà pris !');
+          showErrorPopup("User already exists"); // Passé à la fonction pour être traduit proprement
           return;
         }
 
@@ -467,7 +483,11 @@
           options: { data: { username: username } }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          showErrorPopup(authError.message);
+          return;
+        }
+        
         const userId = authData.user.id;
 
         await supabaseClient.from('profiles').insert([{ user_id: userId, username: username, email: email }]);
@@ -480,7 +500,7 @@
         localStorage.setItem('username', username);
         window.location.href = 'premiereconnexion.html';
       } catch (err) {
-        showErrorPopup('Erreur : ' + err.message);
+        showErrorPopup(err.message);
       }
     });
   </script>
