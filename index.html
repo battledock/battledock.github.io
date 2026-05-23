@@ -75,7 +75,7 @@
       letter-spacing: 1px;
     }
 
-    /* CONTENEUR PRINCIPAL RESPONSIVE */
+    /* CONTENEUR PRINCIPAL */
     .dock-container {
       width: 100%;
       max-width: 380px;
@@ -86,7 +86,7 @@
       z-index: 5;
       overflow: hidden;
       min-height: 380px;
-      height: auto; /* Hauteur adaptative pour éviter les bugs d'affichage sur mobile */
+      height: auto;
       display: flex;
       flex-direction: column;
       margin: 20px 0;
@@ -206,13 +206,12 @@
       margin-top: 12px;
     }
 
-    /* Couleurs distinctes pour les boutons de validation */
     #login-submit {
       background: var(--comic-red);
     }
 
     #register-submit {
-      background: var(--port-blue); /* Devient bleu comme le fond */
+      background: var(--port-blue);
     }
 
     .submit-lever-btn:hover {
@@ -373,7 +372,6 @@
       window.location.href = 'game.html';
     }
 
-    // Traducteur automatique global en Français
     function translateError(msg) {
       if (!msg) return "Une erreur inconnue est survenue.";
       const lower = msg.toLowerCase();
@@ -475,17 +473,18 @@
       }
 
       try {
+        // 1. Vérification en temps réel dans la table profiles
         const { data: checkUser } = await supabaseClient
           .from('profiles')
           .select('username')
-          .eq('username', username)
-          .single();
+          .eq('username', username);
 
-        if (checkUser) {
-          showErrorPopup("User already registered"); // Corrigé : Sera proprement traduit en français par la popup
+        if (checkUser && checkUser.length > 0) {
+          showErrorPopup("user already registered");
           return;
         }
 
+        // 2. Création de l'authentification Supabase
         const email = username + '@battledock.local';
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
           email: email,
@@ -500,6 +499,7 @@
         
         const userId = authData.user.id;
 
+        // 3. Insertion des données utilisateur de manière synchrone
         await supabaseClient.from('profiles').insert([{ user_id: userId, username: username, email: email }]);
         await supabaseClient.from('game_progress').insert([{
           user_id: userId, level: 1, score: 0, rank: 'Docker Occasionnel', money: 100, energy: 50, energy_max: 50, xp: 0
