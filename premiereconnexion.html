@@ -15,7 +15,6 @@
       --comic-yellow: #facc15;
       --comic-red: #ef4444;
       --comic-green: #22c55e;
-      --paper-cream: #fefce8;
       --border-thick: 4px solid #000000;
     }
 
@@ -28,7 +27,6 @@
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      /* Nouveau fond dégradé beaucoup plus beau (Bleu nuit / Violet néon cyclonique) */
       background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
       min-height: 100vh;
       display: flex;
@@ -48,8 +46,7 @@
       padding: 24px;
       text-align: center;
       position: relative;
-      /* OMBRE COMPLÈTEMENT SUPPRIMÉE ICI */
-      box-shadow: none; 
+      box-shadow: none; /* Pas d'ombre */
     }
 
     .title {
@@ -66,15 +63,48 @@
       font-weight: 700;
       color: #64748b;
       text-transform: uppercase;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
+    }
+
+    /* ZONE AVATAR DU DOCKER */
+    .avatar-wrapper {
+      width: 90px;
+      height: 90px;
+      margin: 0 auto 20px auto;
+      background: #e2e8f0;
+      border: 3px solid #000;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 3px 3px 0px #000;
+    }
+
+    .avatar-scanner {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--comic-red);
+      animation: scan 2s linear infinite;
+    }
+
+    @keyframes scan {
+      0% { top: 0%; opacity: 1; }
+      50% { top: 100%; opacity: 1; }
+      100% { top: 0%; opacity: 0.3; }
     }
 
     .step-box {
       background: #f8fafc;
       border: 3px solid #000000;
       border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 16px;
+      padding: 14px;
+      margin-bottom: 12px;
       text-align: left;
       position: relative;
       transition: all 0.3s ease;
@@ -89,7 +119,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .step-title {
@@ -104,7 +134,7 @@
 
     .step-status {
       font-family: 'Bungee', sans-serif;
-      font-size: 11px;
+      font-size: 10px;
       padding: 2px 8px;
       border: 2px solid #000000;
       border-radius: 20px;
@@ -117,7 +147,7 @@
     }
 
     .step-desc {
-      font-size: 13px;
+      font-size: 12px;
       color: #475569;
       font-weight: 600;
       line-height: 1.4;
@@ -129,7 +159,7 @@
       background: #e2e8f0;
       border: 3px solid #000000;
       border-radius: 10px;
-      margin: 24px 0;
+      margin: 20px 0;
       overflow: hidden;
     }
 
@@ -137,7 +167,7 @@
       height: 100%;
       width: 0%;
       background: linear-gradient(90deg, var(--comic-yellow) 0%, #eab308 100%);
-      transition: width 0.4s ease;
+      transition: width 0.1s linear;
     }
 
     .status-terminal {
@@ -148,7 +178,7 @@
       border-radius: 10px;
       font-size: 11px;
       text-align: left;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       border: 2px solid #000;
       min-height: 54px;
     }
@@ -165,10 +195,12 @@
       width: 100%;
       transition: all 0.15s ease;
       display: none;
+      box-shadow: 4px 4px 0px #000;
     }
 
     .action-btn:active {
       transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0px #000;
     }
   </style>
 </head>
@@ -177,6 +209,11 @@
   <div class="setup-container">
     <div class="title">EMBAUCHE RÉUSSIE !</div>
     <div class="subtitle">Création de ton badge d'accès...</div>
+
+    <div class="avatar-wrapper">
+      <div class="avatar-scanner"></div>
+      👤
+    </div>
 
     <div class="step-box" id="step1">
       <div class="step-header">
@@ -212,7 +249,6 @@
   </div>
 
   <script>
-    // Sécurité : Si aucun utilisateur n'est connecté, retour à l'index
     if (!localStorage.getItem('userId')) {
       window.location.href = 'index.html';
     }
@@ -234,10 +270,12 @@
 
     function updateSimulation() {
       if (currentProgress < 100) {
-        currentProgress += 1.25; // Environ 8 à 10 secondes au total
+        currentProgress += 1.5; // Vitesse de chargement fluide
+        if (currentProgress > 100) currentProgress = 100;
+        
         progressFill.style.width = currentProgress + '%';
 
-        // Évolution des étapes visuelles
+        // Gestion des états visuels des étapes
         if (currentProgress >= 30) {
           setStepActive(1, 'Terminé');
           setStepCurrent(2, 'En cours');
@@ -250,18 +288,30 @@
           setStepActive(3, 'Terminé');
         }
 
-        // Changement des logs du mini-terminal en fonction de l'avancement
-        const logIndex = Math.floor((currentProgress / 100) * terminalLogs.length);
+        // Logs du terminal synchronisés
+        const logIndex = Math.min(Math.floor((currentProgress / 100) * terminalLogs.length), terminalLogs.length - 1);
         if (terminalLogs[logIndex] && terminalText.textContent !== terminalLogs[logIndex]) {
           terminalText.textContent = terminalLogs[logIndex];
         }
 
         setTimeout(updateSimulation, 100);
       } else {
-        // Fin de l'animation, affichage du gros bouton final
+        // Arrivée à 100% : Libération de l'accès au jeu
         progressFill.style.background = 'var(--comic-green)';
         terminalText.textContent = "> Badge d'accès activé. Cliquez ci-dessous pour commencer !";
         terminalText.style.color = 'var(--comic-green)';
+        
+        // Arrêt de l'effet "laser" rouge sur l'avatar et passage au vert
+        const scanner = document.querySelector('.avatar-scanner');
+        if(scanner) {
+          scanner.style.animation = 'none';
+          scanner.style.background = 'var(--comic-green)';
+          scanner.style.top = 'auto';
+          scanner.style.bottom = '0';
+          scanner.style.height = '100%';
+          scanner.style.opacity = '0.15';
+        }
+        
         document.getElementById('nextBtn').style.display = 'block';
       }
     }
@@ -269,22 +319,27 @@
     function setStepActive(num, text) {
       const box = document.getElementById('step' + num);
       const status = document.getElementById('status' + num);
-      box.classList.add('active');
-      status.textContent = text;
+      if (box && status) {
+        box.classList.add('active');
+        status.textContent = text;
+        status.style.background = 'var(--comic-green)';
+        status.style.color = 'white';
+      }
     }
 
     function setStepCurrent(num, text) {
       const status = document.getElementById('status' + num);
-      status.textContent = text;
-      status.style.background = 'var(--comic-yellow)';
-      status.style.color = '#000';
+      if (status && !document.getElementById('step' + num).classList.contains('active')) {
+        status.textContent = text;
+        status.style.background = 'var(--comic-yellow)';
+        status.style.color = '#000';
+      }
     }
 
     function goToGame() {
       window.location.href = 'game.html';
     }
 
-    // Lancement automatique du faux chargement au chargement de la page
     window.onload = () => {
       setTimeout(updateSimulation, 500);
     };
