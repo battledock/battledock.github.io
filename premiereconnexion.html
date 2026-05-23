@@ -3,22 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Recrutement</title>
+  <title>Battle Dock — Initialisation</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   
   <style>
     :root {
       --port-dark: #0f172a;
       --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
       --comic-yellow: #facc15;
       --comic-red: #ef4444;
       --comic-green: #22c55e;
+      --paper-cream: #fefce8;
       --border-thick: 4px solid #000000;
-      --shadow-comic: 8px 8px 0px #000000;
-      --shadow-comic-sm: 4px 4px 0px #000000;
     }
 
     * {
@@ -26,472 +24,270 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: var(--comic-yellow); 
+      /* Nouveau fond dégradé beaucoup plus beau (Bleu nuit / Violet néon cyclonique) */
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px 16px;
+      padding: 16px;
       overflow-x: hidden;
     }
 
-    .dock-container {
+    .setup-container {
       width: 100%;
-      max-width: 440px;
+      max-width: 420px;
       background: #ffffff;
       border: var(--border-thick);
       border-radius: 24px;
-      box-shadow: var(--shadow-comic);
-      overflow: hidden;
-      position: relative;
-    }
-
-    .tabs-wrapper {
-      display: flex;
-      background: var(--port-dark);
-      border-bottom: var(--border-thick);
-    }
-
-    .tab-badge {
-      flex: 1;
-      background: var(--comic-red); 
-      color: #ffffff; 
-      font-family: 'Bangers', cursive; 
-      font-size: 24px;
-      padding: 14px 8px;
-      text-align: center;
-      letter-spacing: 1.5px;
-    }
-
-    .form-content {
       padding: 24px;
+      text-align: center;
+      position: relative;
+      /* OMBRE COMPLÈTEMENT SUPPRIMÉE ICI */
+      box-shadow: none; 
     }
 
-    /* ZONE AVATAR CARRÉ RESPECTÉ */
-    .avatar-preview-zone {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-bottom: 20px;
+    .title {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(2.2rem, 8vw, 3rem);
+      color: var(--port-dark);
+      letter-spacing: 2px;
+      line-height: 1;
+      margin-bottom: 8px;
     }
 
-    .suit-avatar {
-      width: 100px;
-      height: 115px;
-      background: #3A4750;
-      border: var(--border-thick);
-      border-radius: 10px;
-      box-shadow: var(--shadow-comic-sm);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .suit-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-
-    .color-tag-display {
-      margin-top: 8px;
-      font-family: 'Bungee', sans-serif;
-      font-size: 12px;
-      color: #ffffff;
-      background: var(--port-dark);
-      padding: 4px 12px;
-      border: 2px solid #000;
-      border-radius: 20px;
+    .subtitle {
+      font-size: 14px;
+      font-weight: 700;
+      color: #64748b;
       text-transform: uppercase;
+      margin-bottom: 24px;
     }
 
-    /* BLOCS D'ENTRÉE */
-    .input-group { 
-      margin-bottom: 16px; 
+    .step-box {
       background: #f8fafc;
-      border: 2px solid #000000;
-      padding: 16px;
+      border: 3px solid #000000;
       border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      text-align: left;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .step-box.active {
+      background: #f0fdf4;
+      border-color: var(--comic-green);
+    }
+
+    .step-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
     }
 
     .step-title {
       font-family: 'Bungee', sans-serif;
-      font-size: 11px;
-      color: var(--port-dark);
-      margin-bottom: 12px;
-    }
-
-    .btn-action-block {
-      width: 100%;
-      padding: 14px;
-      font-family: 'Bungee', sans-serif;
-      font-size: 13px;
-      color: #000;
-      background: #e2e8f0;
-      border: 3px solid #000;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: var(--shadow-comic-sm);
-    }
-    .btn-action-block.done { background: #cbd5e1!important; color:#94a3b8!important; cursor:not-allowed; box-shadow:none; border-color:#cbd5e1; }
-
-    /* INTERFACE POUCE DESIGN FORMAT XXL */
-    .fingerprint-zone-xxl {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    .scan-pad-xxl {
-      width: 90px;
-      height: 90px;
-      background: #1e293b;
-      border: 4px solid #000;
-      border-radius: 18px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 44px;
-      user-select: none;
-      box-shadow: var(--shadow-comic-sm);
-    }
-
-    .scan-laser {
-      position: absolute;
-      width: 100%;
-      height: 6px;
-      background: #00ffcc;
-      top: 0;
-      left: 0;
-      display: none;
-      box-shadow: 0 0 8px #00ffcc;
-    }
-
-    .scan-text-big {
       font-size: 12px;
-      font-weight: 800;
-      color: #334155;
-      text-align: center;
+      color: var(--port-dark);
+    }
+
+    .step-box.active .step-title {
+      color: #166534;
+    }
+
+    .step-status {
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      padding: 2px 8px;
+      border: 2px solid #000000;
+      border-radius: 20px;
+      background: #e2e8f0;
+    }
+
+    .step-box.active .step-status {
+      background: var(--comic-green);
+      color: white;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: #475569;
+      font-weight: 600;
       line-height: 1.4;
     }
 
-    /* MINI-JEU : LE CALIBRATEUR DE CHARGE */
-    .gauge-bar-bg {
+    .progress-bar-container {
       width: 100%;
       height: 20px;
       background: #e2e8f0;
-      border: 2px solid #000;
-      border-radius: 6px;
+      border: 3px solid #000000;
+      border-radius: 10px;
+      margin: 24px 0;
       overflow: hidden;
-      position: relative;
-      margin-bottom: 12px;
     }
 
-    .gauge-bar-fill {
+    .progress-bar-fill {
       height: 100%;
       width: 0%;
-      background: var(--comic-red);
-      transition: width 0.05s linear;
+      background: linear-gradient(90deg, var(--comic-yellow) 0%, #eab308 100%);
+      transition: width 0.4s ease;
     }
 
-    .gauge-target-zone {
-      position: absolute;
-      left: 65%;
-      width: 20%;
-      height: 100%;
-      background: rgba(34, 197, 94, 0.4);
-      border-left: 2px dashed #16a34a;
-      border-right: 2px dashed #16a34a;
+    .status-terminal {
+      font-family: monospace;
+      background: #0f172a;
+      color: #38bdf8;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 11px;
+      text-align: left;
+      margin-bottom: 24px;
+      border: 2px solid #000;
+      min-height: 54px;
     }
 
-    /* VALIDATION */
-    .action-zone { margin-top: 16px; }
-    .submit-lever-btn {
-      width: 100%;
-      padding: 16px;
-      font-family: 'Bangers', cursive;
-      font-size: 24px;
+    .action-btn {
+      background: var(--port-blue);
       color: white;
-      background: #94a3b8;
-      border: var(--border-thick);
-      border-radius: 14px;
-      cursor: not-allowed;
-      box-shadow: var(--shadow-comic-sm);
-    }
-    .submit-lever-btn.unlocked { background: var(--comic-green); cursor: pointer; }
-
-    /* TAMPON */
-    .stamp-overlay {
-      position: absolute;
-      top: 30%;
-      left: 10%;
-      width: 80%;
-      border: 6px dashed var(--comic-red);
-      color: var(--comic-red);
+      border: 4px solid #000000;
+      border-radius: 12px;
+      padding: 14px;
       font-family: 'Bungee', sans-serif;
-      font-size: 32px;
-      text-align: center;
-      padding: 8px;
-      transform: rotate(-12deg) scale(3);
-      opacity: 0;
-      pointer-events: none;
-      z-index: 99;
-      background: rgba(255,255,255,0.95);
-      transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+      font-size: 15px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.15s ease;
+      display: none;
     }
-    .stamp-overlay.stamped { opacity: 1; transform: rotate(-10deg) scale(1); }
 
-    @keyframes laserMove {
-      0% { top: 0; }
-      50% { top: 100%; }
-      100% { top: 0; }
+    .action-btn:active {
+      transform: translate(2px, 2px);
     }
-    @keyframes shake {
-      0% { transform: translate(0); }
-      25% { transform: translate(-2px, 2px); }
-      50% { transform: translate(2px, -2px); }
-      75% { transform: translate(-1px, -1px); }
-      100% { transform: translate(0); }
-    }
-    .shake-effect { animation: shake 0.15s infinite; }
   </style>
 </head>
 <body>
 
-  <div class="dock-container">
-    <div class="stamp-overlay" id="finalStamp">DOCKER HOMOLOGUÉ</div>
+  <div class="setup-container">
+    <div class="title">EMBAUCHE RÉUSSIE !</div>
+    <div class="subtitle">Création de ton badge d'accès...</div>
 
-    <div class="tabs-wrapper">
-      <div class="tab-badge" id="playerTabMatricule">CONTRAT DE QUAI</div>
+    <div class="step-box" id="step1">
+      <div class="step-header">
+        <span class="step-title">Étape 1 : Signature du contrat</span>
+        <span class="step-status" id="status1">En cours</span>
+      </div>
+      <div class="step-desc">Génération des clauses abusives et impression du livret de sécurité de 400 pages.</div>
     </div>
 
-    <div class="form-content">
-      
-      <div class="avatar-preview-zone">
-        <div class="suit-avatar" id="diverSuit">
-          <img id="badgeAvatarImg" src="notionists-1779298466584.png" alt="Avatar Docker">
-        </div>
-        <div class="color-tag-display" id="colorNameTag" style="display:none;">Inconnu</div>
+    <div class="step-box" id="step2">
+      <div class="step-header">
+        <span class="step-title">Étape 2 : Validation de la pause café</span>
+        <span class="step-status" id="status2">En attente</span>
       </div>
-
-      <div class="input-group" id="groupColor">
-        <div class="step-title">🎰 Étape 1 : Couleur d'Accréditation</div>
-        <button class="btn-action-block" id="btnSpin" onclick="spinQuantumColor()">🎲 CHOISIR UNE NUANCE UNIQUE</button>
-      </div>
-
-      <div class="input-group" id="groupScan" style="opacity:0.3; pointer-events:none;">
-        <div class="step-title">🖐️ Étape 2 : Scanner Biométrique</div>
-        <div class="fingerprint-zone-xxl">
-          <div class="scan-pad-xxl" id="scanPad" onmousedown="startScan()" onmouseup="stopScan()" ontouchstart="startScan()" ontouchend="stopScan()">
-            <div class="scan-laser" id="laser"></div>
-            <span>👍</span>
-          </div>
-          <div class="scan-text-big" id="scanStatusText">MAINTENEZ VOTRE POUCE ENFONCÉ POUR SCELLER VOTRE EMPREINTE...</div>
-        </div>
-      </div>
-
-      <div class="input-group" id="groupLoad" style="opacity:0.3; pointer-events:none;">
-        <div class="step-title">🏋️ Étape 3 : Calibrateur de Force de Levage</div>
-        <div class="gauge-bar-bg">
-          <div class="gauge-target-zone"></div>
-          <div class="gauge-bar-fill" id="loadFill"></div>
-        </div>
-        <button class="btn-action-block" id="btnLoad" onclick="stopGauge()">🔴 STOP AU MAXIMUM !</button>
-      </div>
-
-      <div class="action-zone">
-        <button class="submit-lever-btn" id="btnMainAction" onclick="validateAndPrintBadge()">DOSSIER INCOMPLET</button>
-      </div>
-
+      <div class="step-desc">Test d'aptitude réglementaire à boire un café tiède dans un gobelet en plastique froissé.</div>
     </div>
+
+    <div class="step-box" id="step3">
+      <div class="step-header">
+        <span class="step-title">Étape 3 : Attribution du Quai</span>
+        <span class="step-status" id="status3">En attente</span>
+      </div>
+      <div class="step-desc">Configuration de votre premier terminal et graissage manuel des poulies de levage.</div>
+    </div>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <div class="status-terminal" id="terminalText">> Initialisation du protocole d'embauche...</div>
+
+    <button class="action-btn" id="nextBtn" onclick="goToGame()">REJOINDRE LE QUAI ⚓</button>
   </div>
 
   <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+    // Sécurité : Si aucun utilisateur n'est connecté, retour à l'index
+    if (!localStorage.getItem('userId')) {
+      window.location.href = 'index.html';
+    }
 
-    const userId = localStorage.getItem('userId');
-    const username = localStorage.getItem('username') || 'Recrue';
-    
-    const quantumColors = [
-      { hex: '#FF0055', name: 'Rose Fusion' }, { hex: '#00FF99', name: 'Vert Radioactif' }, { hex: '#00E5FF', name: 'Bleu Plasma' }, { hex: '#BF55EC', name: 'Violet Néon' }, { hex: '#FF00AA', name: 'Cyber Néon' },
-      { hex: '#3A4750', name: 'Acier Galvanisé' }, { hex: '#D4AF37', name: 'Or Brut' }, { hex: '#222831', name: 'Noir Carbone' }, { hex: '#FF9900', name: 'Ambre Industriel' }, { hex: '#FF5500', name: 'Magma Éruptif' }
+    const terminalLogs = [
+      "> Vérification des antécédents capillaires...",
+      "> Impression du livret de sécurité... [OK]",
+      "> Signature numérique des clauses de non-responsabilité... [OK]",
+      "> Chauffage de la machine à café réglementaire...",
+      "> Validation de la pause syndicale... [OK]",
+      "> Distribution des gants de protection troués...",
+      "> Allocation du conteneur radioactif de bienvenue...",
+      "> Tout est prêt. Bienvenue à bord, Docker !",
     ];
 
-    let chosenColor = null;
-    let stepProgress = 0; 
-    let scanTimeout;
-    let scanPercent = 0;
-    let gaugeInterval;
-    let gaugeVal = 0;
-    let gaugeDirection = 1;
+    let currentProgress = 0;
+    const progressFill = document.getElementById('progressFill');
+    const terminalText = document.getElementById('terminalText');
 
-    document.addEventListener("DOMContentLoaded", () => {
-      document.getElementById('playerTabMatricule').textContent = `RECRUE : ${username.toUpperCase()}`;
-    });
+    function updateSimulation() {
+      if (currentProgress < 100) {
+        currentProgress += 1.25; // Environ 8 à 10 secondes au total
+        progressFill.style.width = currentProgress + '%';
 
-    // 1. COULEUR
-    function spinQuantumColor() {
-      if (stepProgress > 0) return;
-      const btn = document.getElementById('btnSpin');
-      const tag = document.getElementById('colorNameTag');
-      btn.textContent = "ATTRIBUTION...";
-
-      let duration = 0;
-      let interval = setInterval(() => {
-        let rand = quantumColors[Math.floor(Math.random() * quantumColors.length)];
-        document.getElementById('diverSuit').style.backgroundColor = rand.hex;
-        tag.textContent = rand.name;
-        tag.style.display = 'inline-block';
-        duration += 50;
-        
-        if (duration > 1200) {
-          clearInterval(interval);
-          chosenColor = rand.hex;
-          btn.textContent = "NUANCE FIXÉE ✅";
-          btn.classList.add('done');
-          stepProgress = 1;
-          
-          document.getElementById('groupScan').style.opacity = '1';
-          document.getElementById('groupScan').style.pointerEvents = 'auto';
+        // Évolution des étapes visuelles
+        if (currentProgress >= 30) {
+          setStepActive(1, 'Terminé');
+          setStepCurrent(2, 'En cours');
         }
-      }, 50);
-    }
-
-    // 2. ÉNORME POUCE
-    function startScan() {
-      if (stepProgress !== 1) return;
-      document.getElementById('laser').style.display = 'block';
-      document.getElementById('laser').style.animation = 'laserMove 0.4s linear infinite';
-      document.getElementById('scanPad').classList.add('shake-effect');
-      
-      const details = ["Calcul de la rugosité...", "Nettoyage de la vitre...", "Analyse des phalanges...", "Extraction du potentiel..."];
-
-      scanTimeout = setInterval(() => {
-        scanPercent += 10;
-        if(scanPercent > 100) scanPercent = 100;
-        document.getElementById('scanStatusText').innerHTML = `⚙️ ANALYSE : ${scanPercent}%<br><span style="font-size:10px;color:#64748b;">${details[Math.floor(scanPercent/30) % details.length]}</span>`;
-        
-        if(scanPercent >= 100) {
-          clearInterval(scanTimeout);
-          document.getElementById('laser').style.display = 'none';
-          document.getElementById('scanPad').classList.remove('shake-effect');
-          document.getElementById('scanPad').style.background = 'var(--comic-green)';
-          document.getElementById('scanStatusText').textContent = "✅ POUCE RECONNU. IDENTITÉ SCELLÉE DANS LE MARBRE.";
-          document.getElementById('groupScan').style.pointerEvents = 'none';
-          stepProgress = 2;
-          
-          // Lancer le jeu de la jauge directement
-          initGauge();
+        if (currentProgress >= 65) {
+          setStepActive(2, 'Terminé');
+          setStepCurrent(3, 'En cours');
         }
-      }, 150);
-    }
+        if (currentProgress >= 95) {
+          setStepActive(3, 'Terminé');
+        }
 
-    function stopScan() {
-      if(stepProgress === 1) {
-        clearInterval(scanTimeout);
-        scanPercent = 0;
-        document.getElementById('laser').style.display = 'none';
-        document.getElementById('scanPad').classList.remove('shake-effect');
-        document.getElementById('scanStatusText').textContent = "❌ NUMÉRISATION COMPROMISE. Gardez la pression !";
-      }
-    }
+        // Changement des logs du mini-terminal en fonction de l'avancement
+        const logIndex = Math.floor((currentProgress / 100) * terminalLogs.length);
+        if (terminalLogs[logIndex] && terminalText.textContent !== terminalLogs[logIndex]) {
+          terminalText.textContent = terminalLogs[logIndex];
+        }
 
-    // 3. MINI JEU JAUGE DE FORCE
-    function initGauge() {
-      document.getElementById('groupLoad').style.opacity = '1';
-      document.getElementById('groupLoad').style.pointerEvents = 'auto';
-      
-      gaugeInterval = setInterval(() => {
-        gaugeVal += 4 * gaugeDirection;
-        if(gaugeVal >= 100 || gaugeVal <= 0) gaugeDirection *= -1;
-        document.getElementById('loadFill').style.width = `${gaugeVal}%`;
-      }, 25);
-    }
-
-    function stopGauge() {
-      if (stepProgress !== 2) return;
-      clearInterval(gaugeInterval);
-      
-      const btn = document.getElementById('btnLoad');
-      btn.classList.add('done');
-      document.getElementById('groupLoad').style.pointerEvents = 'none';
-      
-      // Verdict selon le score (Zone verte entre 65% et 85%)
-      if(gaugeVal >= 65 && gaugeVal <= 85) {
-        btn.textContent = "🏋️ CAPACITÉ : GRUE HUMAINE (PARFAIT)";
-      } else if (gaugeVal > 85) {
-        btn.textContent = "💥 CAPACITÉ : FORCE HULK (DÉCHIRURE MUSCULAIRE)";
+        setTimeout(updateSimulation, 100);
       } else {
-        btn.textContent = "🪵 CAPACITÉ : BRAS EN MOUSSE (LÉGALE)";
-      }
-
-      stepProgress = 3;
-
-      // SMASH DU TAMPON RETRO
-      setTimeout(() => {
-        document.getElementById('finalStamp').classList.add('stamped');
-        
-        const mainBtn = document.getElementById('btnMainAction');
-        mainBtn.classList.add('unlocked');
-        mainBtn.textContent = "COMMENCER L'AVENTURE";
-      }, 400);
-    }
-
-    async function validateAndPrintBadge() {
-      if (stepProgress < 3) return;
-      const mainBtn = document.getElementById('btnMainAction');
-
-      try {
-        // CORRECTION ICI : Insertion de avatar_color et du bon nom d'image
-        const { error: profileError } = await supabaseClient
-          .from('profiles')
-          .update({
-            avatar_color: chosenColor,
-            avatar: 'notionists-1779298466584.png'
-          })
-          .eq('user_id', userId);
-
-        if (profileError) throw profileError;
-
-        const { error: progressError } = await supabaseClient
-          .from('game_progress')
-          .update({ 
-            rank: 'Docker Occasionnel',
-            avatar_color: chosenColor 
-          })
-          .eq('user_id', userId);
-
-        if (progressError) throw progressError;
-
-        // CORRECTION ICI : Alignement des clés localStorage avec game.html et profil.html
-        localStorage.setItem('avatarBgColor', chosenColor);
-        localStorage.setItem('selectedAvatar', 'notionists-1779298466584.png');
-        localStorage.setItem('username', username);
-
-        mainBtn.textContent = "RECRUTEMENT ENREGISTRÉ...";
-        mainBtn.style.background = 'var(--port-blue)';
-        
-        setTimeout(() => { window.location.href = 'game.html'; }, 1000);
-      } catch (err) {
-        alert("Erreur réseau capitainerie.");
+        // Fin de l'animation, affichage du gros bouton final
+        progressFill.style.background = 'var(--comic-green)';
+        terminalText.textContent = "> Badge d'accès activé. Cliquez ci-dessous pour commencer !";
+        terminalText.style.color = 'var(--comic-green)';
+        document.getElementById('nextBtn').style.display = 'block';
       }
     }
+
+    function setStepActive(num, text) {
+      const box = document.getElementById('step' + num);
+      const status = document.getElementById('status' + num);
+      box.classList.add('active');
+      status.textContent = text;
+    }
+
+    function setStepCurrent(num, text) {
+      const status = document.getElementById('status' + num);
+      status.textContent = text;
+      status.style.background = 'var(--comic-yellow)';
+      status.style.color = '#000';
+    }
+
+    function goToGame() {
+      window.location.href = 'game.html';
+    }
+
+    // Lancement automatique du faux chargement au chargement de la page
+    window.onload = () => {
+      setTimeout(updateSimulation, 500);
+    };
   </script>
 </body>
 </html>
