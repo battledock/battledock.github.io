@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Battle Dock — Zone de Fret</title>
   
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght=500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   
@@ -27,7 +27,7 @@
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: #1e293b; /* Fond par défaut avant chargement de la couleur du joueur */
+      background: #1e293b; /* Couleur de fond par défaut de l'application */
       min-height: 100vh;
       padding: 16px;
       display: flex;
@@ -36,7 +36,7 @@
       color: #ffffff;
     }
 
-    /* TOP BAR : ZONE DU PROFIL DU JOUEUR */
+    /* BARRE DE PROFIL DU JOUEUR (TOP BAR) */
     .top-bar {
       width: 100%;
       max-width: 500px;
@@ -44,7 +44,7 @@
     }
 
     #player-badge {
-      background: #3A4750; /* Changé dynamiquement par le script */
+      background: #0f172a; /* Fond sombre du badge global pour faire ressortir la couleur */
       border: var(--border-thick);
       border-radius: 16px;
       padding: 12px 16px;
@@ -52,20 +52,22 @@
       display: flex;
       align-items: center;
       gap: 16px;
-      transition: background-color 0.4s ease;
     }
 
+    /* CONTENEUR DE L'AVATAR (Prend la couleur aléatoire générée) */
     #avatar-container {
-      width: 64px;
-      height: 64px;
-      border: 3px solid #000000;
-      border-radius: 12px;
-      background: #ffffff;
+      width: 68px;
+      height: 68px;
+      border: var(--border-thick);
+      border-radius: 14px;
+      background-color: #3A4750; /* Couleur temporaire avant injection du script */
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
       flex-shrink: 0;
+      transition: background-color 0.3s ease;
+      box-shadow: 2px 2px 0px #000000;
     }
 
     #player-avatar-img {
@@ -95,7 +97,7 @@
       margin-top: 2px;
     }
 
-    /* ZONE PRINCIPALE DE JEU */
+    /* ZONE DE JEU PRINCIPALE */
     .game-container {
       width: 100%;
       max-width: 500px;
@@ -116,17 +118,18 @@
       margin-bottom: 16px;
     }
 
-    /* Place tes éléments de gameplay ici (boutons, conteneurs de fret, etc.) */
+    /* Écran de simulation */
     .game-screen {
       background: #cbd5e1;
       border: 3px solid #000000;
       border-radius: 12px;
-      padding: 40px 20px;
+      padding: 50px 20px;
       font-weight: 700;
       font-size: 16px;
       margin-bottom: 20px;
     }
 
+    /* Bouton d'action rétro */
     .btn-action {
       background: var(--comic-red);
       color: white;
@@ -165,27 +168,27 @@
     <h2 class="game-title">🕹️ POSTE DE COMMANDES</h2>
     
     <div class="game-screen">
-      [ Insère ici tes boutons de clic, tes grues ou tes cargaisons ]
+      [ Zone de chargement des cargaisons ]
     </div>
 
-    <button class="btn-action" onclick="actionExemple()">CHARGER LE CONTENEUR</button>
+    <button class="btn-action" onclick="clicJoueur()">DÉPLACER LE CONTENEUR</button>
   </div>
 
   <script>
-    // 1. CONFIGURATION ET INITIALISATION SUPABASE
+    // 1. LIEN DU QUAI CENTRAL AVEC SUPABASE
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. SÉCURITÉ : Blocage immédiat si pas connecté
+    // 2. BARRIÈRE DE SÉCURITÉ : Kick immédiat vers index si pas connecté
     const userId = localStorage.getItem('userId');
     if (!userId) {
       window.location.href = 'index.html';
     }
 
-    // 3. FONCTION DE CHARGEMENT DU DESIGN DU PROFIL
+    // 3. RECUPERATION ET APPLICATION AUTOMATIQUE DU PROFIL
     async function chargerProfilJoueur() {
-      // Étape A : Lecture immédiate depuis le LocalStorage pour éviter l'attente réseau
+      // Étape A : On lit instantanément le cache local (Évite le chargement blanc à l'écran)
       const localUsername = localStorage.getItem('username') || 'Recrue';
       const localAvatar = localStorage.getItem('userAvatar') || 'notionists-1779298466584.png';
       const localBg = localStorage.getItem('userBg') || '#3A4750';
@@ -193,7 +196,7 @@
       appliquerDesignInterface(localUsername, localAvatar, localBg);
 
       try {
-        // Étape B : Double vérification de sécurité en temps réel avec Supabase
+        // Étape B : On synchronise en direct avec la base Supabase pour la sécurité
         const { data: user, error } = await supabaseClient
           .from('users')
           .select('username, avatar, bg_color')
@@ -203,16 +206,16 @@
         if (error) throw error;
 
         if (user) {
-          // Si l'utilisateur change d'appareil ou d'avatar ultérieurement, on actualise le cache local
+          // Si le profil a bougé (ex: nouvel avatar débloqué), on met à jour la session locale
           localStorage.setItem('username', user.username);
           localStorage.setItem('userAvatar', user.avatar);
           localStorage.setItem('userBg', user.bg_color);
 
-          // On applique les données fraîches de la base de données
+          // On applique le design actualisé
           appliquerDesignInterface(user.username, user.avatar, user.bg_color);
         }
 
-        // Étape C : Récupération du grade actuel dans la table "game_progress"
+        // Étape C : Récupération du Grade du joueur dans "game_progress"
         const { data: progress } = await supabaseClient
           .from('game_progress')
           .select('rank')
@@ -224,31 +227,34 @@
         }
 
       } catch (err) {
-        console.error("Problème de liaison avec le quai central :", err.message);
+        console.error("Liaison interrompue avec la capitainerie :", err.message);
       }
     }
 
-    // 4. FONCTION INJECTRICE DE STYLE HTML
+    // 4. INJECTEUR DE STYLES ET COULEURS DANS L'INTERFACE HTML
     function appliquerDesignInterface(username, avatarUrl, bgColor) {
+      // Met à jour le pseudo en lettres capitales
       if (document.getElementById('player-username-display')) {
         document.getElementById('player-username-display').textContent = username.toUpperCase();
       }
       
+      // Injecte le chemin de l'avatar transparent actuel ou futur
       if (document.getElementById('player-avatar-img')) {
         document.getElementById('player-avatar-img').src = avatarUrl;
       }
       
-      if (document.getElementById('player-badge')) {
-        document.getElementById('player-badge').style.backgroundColor = bgColor;
+      // APPLIQUE LA COULEUR ALÉATOIRE UNIQUEMENT DERRIÈRE L'AVATAR TRANSPARENT
+      if (document.getElementById('avatar-container')) {
+        document.getElementById('avatar-container').style.backgroundColor = bgColor;
       }
     }
 
-    // Exemple d'action pour ton jeu
-    function actionExemple() {
-      console.log("Action effectuée par le joueur connecté !");
+    // Exemple de fonction de clic de jeu pour tester
+    function clicJoueur() {
+      console.log("Le docker a cliqué sur le bouton !");
     }
 
-    // Déclenchement automatique au chargement complet de l'interface
+    // Lancement automatique dès que le document graphique est prêt
     document.addEventListener('DOMContentLoaded', chargerProfilJoueur);
   </script>
 </body>
