@@ -424,6 +424,7 @@
       }
     }
 
+    /* FORMULAIRE DE CONNEXION CORRIGÉ */
     document.getElementById('quick-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('quick-username').value.trim();
@@ -435,14 +436,14 @@
       }
 
       try {
-        const { data: profile, error: pError } = await supabaseClient
+        // Remplacement de .single() par un select classique pour éviter de faire planter le script si la ligne n'existe pas
+        const { data: profiles, error: pError } = await supabaseClient
           .from('profiles')
           .select('user_id')
-          .eq('username', username)
-          .single();
+          .eq('username', username);
 
-        if (pError || !profile) {
-          showErrorPopup('Utilisateur introuvable !');
+        if (pError || !profiles || profiles.length === 0) {
+          showErrorPopup('Utilisateur introuvable ! Vérifie ton pseudo ou inscris-toi.');
           return;
         }
 
@@ -462,6 +463,7 @@
       }
     });
 
+    /* FORMULAIRE D'INSCRIPTION ULTRA SECURISE */
     document.getElementById('application-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('app-username').value.trim();
@@ -473,8 +475,7 @@
       }
 
       try {
-        // 1. Vérification en temps réel dans la table profiles
-        const { data: checkUser } = await supabaseClient
+        const { data: checkUser, error: cError } = await supabaseClient
           .from('profiles')
           .select('username')
           .eq('username', username);
@@ -484,7 +485,6 @@
           return;
         }
 
-        // 2. Création de l'authentification Supabase
         const email = username + '@battledock.local';
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
           email: email,
@@ -499,7 +499,6 @@
         
         const userId = authData.user.id;
 
-        // 3. Insertion des données utilisateur de manière synchrone
         await supabaseClient.from('profiles').insert([{ user_id: userId, username: username, email: email }]);
         await supabaseClient.from('game_progress').insert([{
           user_id: userId, level: 1, score: 0, rank: 'Docker Occasionnel', money: 100, energy: 50, energy_max: 50, xp: 0
