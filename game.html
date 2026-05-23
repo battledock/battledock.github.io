@@ -8,2266 +8,512 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     :root {
-      --dark: #0f172a;
+      --dark: #0d1117;
       --yellow: #facc15;
       --red: #ef4444;
       --green: #22c55e;
-      --blue: #3b82f6;
+      --blue: #2563eb;
       --purple: #a855f7;
       --orange: #f97316;
-      --border: 3px solid #000;
-      --border-thick: 4px solid #000;
-      --shadow: 6px 6px 0px #000;
-      --shadow-sm: 3px 3px 0px #000;
-      --gold: #facc15;
-      --panel: #ffffff;
-      --muted: #64748b;
-      --foam: #0f172a;
-      --deep: #f1f5f9;
-      --mid: #e2e8f0;
+      
+      /* Style brut calqué sur l'image */
+      --bg-paper: #f9f6ef; /* Fond de page type papier/journal rétro */
+      --bg-card: #fefdfa;  /* Fond de carton légèrement plus clair */
+      --border-comic: 4px solid #000000;
+      --shadow-comic: 6px 6px 0px #000000;
+      --shadow-comic-sm: 3px 3px 0px #000000;
     }
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
-    body { font-family:'Space Grotesk',sans-serif; background:#dc2626; min-height:100vh; overflow-x:hidden; padding-bottom:80px; }
 
-    /* ÉCRANS */
-    .screen { display:none; min-height:100vh; padding-bottom:80px; padding-top:env(safe-area-inset-top,0); }
-    .screen.active { display:block; }
-    .screen-anim { animation:screenIn .25s ease both; }
-    @keyframes screenIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
 
-    /* TOP BAR */
-    .top-bar { background:var(--dark); border-bottom:var(--border-thick); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:50; }
-    .top-left { display:flex; align-items:center; gap:10px; }
-    .avatar { width:40px; height:40px; border-radius:8px; background:#1e293b; border:3px solid #000; box-shadow:var(--shadow-sm); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
-    .top-name { font-family:'Bungee',sans-serif; font-size:14px; color:#fff; line-height:1; }
-    .top-rank { font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:.5px; margin-top:2px; }
-    .money-badge { background:var(--yellow); border:var(--border-thick); border-radius:8px; padding:7px 14px; font-family:'Bungee',sans-serif; font-size:14px; color:#000; box-shadow:var(--shadow-sm); transition:transform .1s; }
-    .money-badge:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background-color: var(--bg-paper);
+      color: var(--dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding: 16px;
+      padding-bottom: 90px; /* Sécurité pour la barre du bas */
+    }
 
-    /* HERO */
-    .hero { padding:20px 16px 12px; text-align:center; background:var(--dark); border-bottom:var(--border-thick); }
-    .hero-logo { font-family:'Bangers',cursive; font-size:clamp(3rem,12vw,4.5rem); color:var(--yellow); letter-spacing:6px; text-shadow:5px 5px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000; line-height:.9; display:inline-block; transform:rotate(-1deg); }
-    .hero-sub { font-family:'Permanent Marker',cursive; font-size:13px; color:#fff; margin-top:6px; text-shadow:2px 2px 0 #000; }
+    /* Ajustement conteneur central pour mobile */
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
 
-    /* STATS */
-    .quick-stats { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:var(--border-thick); }
-    .qstat { background:#fff; padding:12px 8px; text-align:center; border-right:3px solid #000; }
-    .qstat:last-child { border-right:none; }
-    .qstat-label { font-family:'Bungee',sans-serif; font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
-    .qstat-bar { height:8px; background:#e2e8f0; border:2px solid #000; border-radius:4px; overflow:hidden; margin-bottom:4px; }
-    .qstat-fill { height:100%; border-radius:2px; transition:width .5s; }
-    .fill-energy { background:var(--yellow); }
-    .fill-health { background:var(--red); }
-    .fill-mood { background:var(--purple); }
-    .qstat-val { font-family:'Bungee',sans-serif; font-size:13px; color:#000; }
+    /* ══════════════════════════════════════════════
+       HEADER PROFIL (Style Illustration BD)
+       ══════════════════════════════════════════════ */
+    .profile-card {
+      background: var(--bg-card);
+      border: var(--border-comic);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow-comic);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+    }
 
-    /* SEC TITLE */
-    .sec-title { font-family:'Bungee',sans-serif; font-size:11px; letter-spacing:2px; color:#fff; text-transform:uppercase; background:var(--dark); border-bottom:3px solid #000; padding:10px 16px; }
+    .avatar-frame {
+      width: 64px;
+      height: 64px;
+      border: var(--border-comic);
+      border-radius: 8px;
+      background: var(--yellow);
+      overflow: hidden;
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
 
-    /* CARDS */
-    .cards { display:flex; flex-direction:column; }
-    .card { background:#fff; border-bottom:var(--border-thick); cursor:pointer; position:relative; display:block; transition:background .1s; }
-    .card:active { background:#f1f5f9; }
-    .card-accent { position:absolute; left:0; top:0; bottom:0; width:6px; }
-    .accent-gold   { background:var(--yellow); }
-    .accent-purple { background:var(--purple); }
-    .accent-green  { background:var(--green); }
-    .accent-blue   { background:var(--blue); }
-    .accent-red    { background:var(--red); }
-    .accent-orange { background:var(--orange); }
-    .card-inner { padding:14px 14px 14px 20px; display:flex; align-items:center; gap:12px; }
-    .card-icon { width:48px; height:48px; border-radius:10px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:24px; border:3px solid #000; box-shadow:var(--shadow-sm); }
-    .card-body { flex:1; min-width:0; }
-    .card-title { font-family:'Bungee',sans-serif; font-size:16px; color:#000; line-height:1; }
-    .card-sub { font-size:11px; color:#64748b; font-weight:700; margin-top:3px; }
-    .card-arrow { font-size:20px; color:#000; font-weight:900; }
-    .card-badge { font-family:'Bungee',sans-serif; font-size:10px; padding:4px 8px; border:2px solid #000; border-radius:6px; text-transform:uppercase; box-shadow:2px 2px 0 #000; }
+    .avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
 
-    /* CARD WORK BIG */
-    .card-work-big { background:var(--dark); border-bottom:var(--border-thick); cursor:pointer; position:relative; overflow:hidden; }
-    .card-work-big .inner { padding:20px; display:flex; flex-direction:column; gap:8px; }
-    .card-work-big .inner::after { content:'⚓'; position:absolute; right:-10px; bottom:-10px; font-size:80px; opacity:.08; pointer-events:none; }
-    .card-work-big .tag { font-family:'Bungee',sans-serif; font-size:10px; color:var(--green); text-transform:uppercase; letter-spacing:1px; }
-    .card-work-big .wt { font-family:'Bangers',cursive; font-size:52px; letter-spacing:4px; color:#fff; line-height:1; text-shadow:3px 3px 0 var(--green); }
-    .card-work-big .ws { font-size:12px; color:#94a3b8; font-weight:700; }
-    .card-work-big .salary { display:inline-flex; align-items:center; gap:6px; background:var(--green); border:3px solid #000; border-radius:8px; padding:6px 12px; font-family:'Bungee',sans-serif; font-size:13px; color:#000; box-shadow:var(--shadow-sm); align-self:flex-start; margin-top:4px; }
+    .profile-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-    /* BOTTOM NAV */
-    .bottom-nav { position:fixed; bottom:0; left:0; right:0; z-index:100; background:var(--dark); border-top:var(--border-thick); display:flex; padding-bottom:env(safe-area-inset-bottom,0px); }
-    .nav-btn { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; padding:10px 4px 12px; cursor:pointer; border:none; background:none; color:#64748b; font-family:'Bungee',sans-serif; font-size:9px; text-transform:uppercase; letter-spacing:.3px; border-right:2px solid #1e293b; transition:background .15s,color .15s; }
-    .nav-btn:last-child { border-right:none; }
-    .nav-btn .ico { font-size:20px; transition:transform .15s; }
-    .nav-btn.active { background:#1e293b; color:var(--yellow); }
-    .nav-btn.active .ico { transform:translateY(-2px); }
+    .player-name {
+      font-family: 'Bungee', sans-serif;
+      font-size: 16px;
+      color: var(--dark);
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
 
-    /* MINI-JEU */
-    .game-overlay { position:fixed; inset:0; z-index:200; background:var(--dark); display:none; flex-direction:column; align-items:center; justify-content:center; padding:24px; }
-    .game-overlay.open { display:flex; }
-    .game-sub { font-family:'Bungee',sans-serif; font-size:11px; color:#94a3b8; text-align:center; margin-bottom:20px; text-transform:uppercase; letter-spacing:1px; }
-    .boxes-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:320px; margin-bottom:20px; }
-    .box-tile { aspect-ratio:1; border-radius:10px; background:#1e293b; border:3px solid #334155; display:flex; align-items:center; justify-content:center; font-size:26px; cursor:pointer; transition:transform .1s; user-select:none; }
-    .box-tile.active { background:#14532d; border-color:var(--green); }
-    .box-tile.hit { background:#713f12; border-color:var(--yellow); transform:scale(.88); }
-    .box-tile.miss { background:#450a0a; border-color:var(--red); }
-    .game-progress-bar { width:100%; max-width:320px; height:12px; background:#1e293b; border:3px solid #334155; border-radius:6px; overflow:hidden; margin-bottom:16px; }
-    .game-progress-fill { height:100%; background:var(--green); border-radius:3px; transition:width .3s; }
-    .game-stats-row { display:flex; gap:24px; margin-bottom:20px; }
-    .gstat { text-align:center; }
-    .gstat-val { font-family:'Bangers',cursive; font-size:32px; color:var(--yellow); letter-spacing:1px; }
-    .gstat-label { font-family:'Bungee',sans-serif; font-size:9px; color:#64748b; text-transform:uppercase; }
-    .game-timer { font-family:'Bangers',cursive; font-size:64px; color:#fff; letter-spacing:2px; margin-bottom:4px; }
-    .game-timer.urgent { color:var(--red); animation:blink .4s infinite; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .player-rank {
+      font-family: 'Permanent Marker', cursive;
+      font-size: 13px;
+      color: var(--red);
+    }
 
-    /* BOUTONS */
-    .btn { padding:13px 28px; border-radius:10px; border:var(--border-thick); cursor:pointer; font-family:'Bungee',sans-serif; font-size:14px; box-shadow:var(--shadow-sm); transition:transform .1s,box-shadow .1s; letter-spacing:.5px; }
-    .btn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
-    .btn-primary { background:var(--green); color:#000; }
-    .btn-secondary { background:#fff; color:#000; }
-    .btn-gold { background:var(--yellow); color:#000; }
+    .wallet-badge {
+      position: absolute;
+      top: -10px;
+      right: 12px;
+      background: var(--green);
+      border: var(--border-comic);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 14px;
+      transform: rotate(2deg);
+      box-shadow: var(--shadow-comic-sm);
+    }
 
-    /* CASINO */
-    .casino-wrap { display:flex; flex-direction:column; }
-    .slot-machine { background:var(--dark); border-bottom:var(--border-thick); padding:24px; text-align:center; }
-    .slot-reels { display:flex; gap:10px; justify-content:center; margin:16px 0; }
-    .reel { width:72px; height:72px; border-radius:10px; background:#1e293b; border:3px solid #000; display:flex; align-items:center; justify-content:center; font-size:36px; box-shadow:var(--shadow-sm); }
-    .reel.spinning { animation:spinreel .08s linear infinite; }
-    @keyframes spinreel { 0%{transform:scaleY(1)} 50%{transform:scaleY(0)} 100%{transform:scaleY(1)} }
-    .slot-result { min-height:22px; font-family:'Bungee',sans-serif; font-size:13px; margin-top:8px; color:#fff; }
-    .slot-bet-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:12px; }
-    .bet-control { display:flex; align-items:center; gap:8px; }
-    .bet-btn { width:34px; height:34px; border-radius:8px; border:var(--border); background:var(--yellow); color:#000; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:900; box-shadow:var(--shadow-sm); }
-    .bet-val { font-family:'Bangers',cursive; font-size:28px; color:var(--yellow); min-width:50px; text-align:center; }
+    /* ══════════════════════════════════════════════
+       JAUGES ET COMPTEURS (Style Écorché / Crayonné)
+       ══════════════════════════════════════════════ */
+    .vitals-box {
+      background: var(--bg-card);
+      border: var(--border-comic);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-comic);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-    /* SOCIAL */
-    .places-grid { display:flex; flex-direction:column; }
-    .place-card { background:#fff; border-bottom:var(--border-thick); cursor:pointer; transition:background .1s; }
-    .place-card:active { background:#f1f5f9; }
-    .place-banner { height:80px; display:flex; align-items:center; justify-content:center; font-size:44px; border-bottom:3px solid #000; }
-    .place-info { padding:12px 14px; }
-    .place-name { font-family:'Bungee',sans-serif; font-size:16px; color:#000; }
-    .place-desc { font-size:11px; color:#64748b; font-weight:700; margin-top:2px; }
-    .place-effects { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-    .effect-tag { font-family:'Bungee',sans-serif; font-size:9px; padding:3px 8px; border:2px solid #000; border-radius:5px; text-transform:uppercase; box-shadow:2px 2px 0 #000; }
-    .tag-green  { background:var(--green);  color:#000; }
-    .tag-red    { background:var(--red);    color:#fff; }
-    .tag-gold   { background:var(--yellow); color:#000; }
-    .tag-purple { background:var(--purple); color:#fff; }
-    .tag-blue   { background:var(--blue);   color:#fff; }
+    .gauge-container {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-    /* LOGEMENT */
-    .housing-card { background:#fff; border-bottom:var(--border-thick); }
-    .housing-banner { height:110px; display:flex; align-items:center; justify-content:center; font-size:56px; border-bottom:var(--border-thick); }
-    .housing-info { padding:16px; }
-    .housing-name { font-family:'Bangers',cursive; font-size:28px; letter-spacing:2px; color:#000; }
-    .housing-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
-    .hstat { background:#f1f5f9; border:3px solid #000; border-radius:8px; padding:10px 12px; box-shadow:var(--shadow-sm); }
-    .hstat-label { font-family:'Bungee',sans-serif; font-size:9px; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
-    .hstat-val { font-family:'Bungee',sans-serif; font-size:13px; color:#000; }
+    .gauge-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
 
-    /* NOTIFICATION */
-    .notif { position:fixed; bottom:90px; left:50%; transform:translateX(-50%) translateY(16px); background:#fff; border:var(--border-thick); border-radius:10px; padding:10px 18px; font-family:'Bungee',sans-serif; font-size:12px; z-index:300; pointer-events:none; opacity:0; transition:all .25s; white-space:nowrap; box-shadow:var(--shadow); }
-    .notif.show { opacity:1; transform:translateX(-50%) translateY(0); }
-    .notif.good { background:var(--green); color:#000; border-color:#000; }
-    .notif.bad  { background:var(--red);   color:#fff; border-color:#000; }
-    .notif.info { background:var(--yellow); color:#000; border-color:#000; }
+    .gauge-track {
+      width: 100%;
+      height: 20px;
+      background: #e5e5e0;
+      border: var(--border-comic);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
 
-    /* MODAL */
-    .modal-overlay { position:fixed; inset:0; z-index:150; background:rgba(0,0,0,.75); display:none; align-items:flex-end; justify-content:center; }
-    .modal-overlay.open { display:flex; }
-    .modal { background:#fff; border:var(--border-thick); border-top:none; border-radius:20px 20px 0 0; padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px)); width:100%; max-width:500px; animation:modalUp .25s ease both; box-shadow:0 -6px 0 #000; }
-    @keyframes modalUp { from{transform:translateY(100%)} to{transform:none} }
-    .modal-handle { width:40px; height:5px; background:#000; border-radius:3px; margin:0 auto 18px; opacity:.15; }
-    .modal-title { font-family:'Bangers',cursive; font-size:30px; letter-spacing:2px; color:#000; margin-bottom:8px; }
-    .modal-body { color:#64748b; font-size:13px; line-height:1.6; margin-bottom:18px; font-weight:700; }
-    .modal-actions { display:flex; gap:10px; }
-    .modal-actions .btn { flex:1; }
+    .gauge-bar {
+      height: 100%;
+      width: 0%; /* Animé par le JS */
+      transition: width 0.3s ease;
+      border-right: 3px solid #000;
+    }
 
-    /* MARCHÉ NOIR */
-    .market-items { display:flex; flex-direction:column; }
-    .market-item { background:#fff; border-bottom:var(--border-thick); padding:14px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:background .1s; }
-    .market-item:active { background:#f1f5f9; }
-    .market-icon { font-size:32px; }
-    .market-info { flex:1; }
-    .market-name { font-family:'Bungee',sans-serif; font-size:14px; color:#000; }
-    .market-desc { font-size:11px; color:#64748b; font-weight:700; margin-top:2px; }
-    .market-risk { font-family:'Bungee',sans-serif; font-size:9px; text-transform:uppercase; margin-top:4px; }
-    .market-price { font-family:'Bangers',cursive; font-size:24px; color:#000; text-align:right; }
+    .bar-energy { background: var(--blue); }
+    .bar-health { background: var(--red); }
 
-    /* SYNDICAT */
-    .union-card { background:var(--dark); border-bottom:var(--border-thick); padding:20px; }
-    .union-title { font-family:'Bangers',cursive; font-size:30px; letter-spacing:2px; color:var(--red); margin-bottom:6px; }
-    .union-power { display:flex; align-items:center; gap:10px; margin:14px 0; }
-    .union-fist { font-size:28px; }
-    .power-bar { flex:1; height:12px; background:#1e293b; border:3px solid #334155; border-radius:6px; overflow:hidden; }
-    .power-fill { height:100%; background:var(--red); border-radius:3px; transition:width .5s; }
-    .union-actions { display:flex; gap:8px; margin-top:12px; }
-    .union-btn { flex:1; padding:11px 6px; border-radius:8px; border:var(--border-thick); background:var(--red); color:#fff; font-family:'Bungee',sans-serif; font-size:11px; cursor:pointer; text-align:center; box-shadow:var(--shadow-sm); transition:transform .1s,box-shadow .1s; }
-    .union-btn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 #000; }
+    /* Sous-grille des stats d'influence/réputation */
+    .reputation-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+      border-top: 3px dashed #000;
+      padding-top: 12px;
+    }
 
-    /* PROGRESSION */
-    .prog-card { background:#fff; border-bottom:var(--border-thick); padding:20px; }
-    .prog-level { font-family:'Bangers',cursive; font-size:56px; color:#000; line-height:1; letter-spacing:2px; }
-    .prog-title { font-family:'Bungee',sans-serif; font-size:12px; color:#64748b; margin-bottom:14px; text-transform:uppercase; }
-    .prog-xp-bar { height:12px; background:#e2e8f0; border:3px solid #000; border-radius:6px; overflow:hidden; margin-bottom:6px; }
-    .prog-xp-fill { height:100%; background:var(--yellow); border-radius:3px; transition:width .5s; }
-    .prog-xp-label { font-family:'Bungee',sans-serif; font-size:10px; color:#64748b; }
-    .skills-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
-    .skill-item { background:#f1f5f9; border:3px solid #000; border-radius:8px; padding:10px; box-shadow:var(--shadow-sm); }
-    .skill-name { font-family:'Bungee',sans-serif; font-size:9px; color:#64748b; text-transform:uppercase; margin-bottom:6px; }
-    .skill-bar { height:8px; background:#e2e8f0; border:2px solid #000; border-radius:4px; overflow:hidden; }
-    .skill-fill { height:100%; border-radius:2px; }
-    .skill-val { font-family:'Bungee',sans-serif; font-size:11px; color:#000; margin-top:4px; }
+    .rep-card {
+      background: var(--bg-paper);
+      border: var(--border-comic);
+      border-radius: 8px;
+      padding: 6px 2px;
+      text-align: center;
+      box-shadow: var(--shadow-comic-sm);
+    }
 
-    /* RÉSULTAT */
-    .result-overlay { position:fixed; inset:0; z-index:250; background:var(--dark); display:none; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; }
-    .result-overlay.open { display:flex; }
-    .result-emoji { font-size:72px; margin-bottom:16px; animation:popIn .35s ease; }
-    @keyframes popIn { from{transform:scale(.4);opacity:0} to{transform:scale(1);opacity:1} }
-    .result-title { font-family:'Bangers',cursive; font-size:48px; letter-spacing:4px; color:#fff; text-shadow:4px 4px 0 var(--green); margin-bottom:6px; }
-    .result-earned { font-family:'Bangers',cursive; font-size:36px; color:var(--yellow); margin-bottom:4px; text-shadow:3px 3px 0 #000; }
-    .result-desc { font-size:13px; color:#94a3b8; font-weight:700; margin-bottom:24px; }
-    .result-bonuses { display:flex; flex-direction:column; gap:8px; width:100%; max-width:280px; margin-bottom:24px; }
-    .bonus-row { display:flex; justify-content:space-between; align-items:center; background:#1e293b; border:2px solid #334155; border-radius:8px; padding:10px 14px; }
-    .bonus-label { font-size:12px; color:#94a3b8; font-weight:700; }
-    .bonus-val { font-family:'Bungee',sans-serif; font-size:13px; color:#fff; }
+    .rep-icon { font-size: 18px; margin-bottom: 2px; }
+    .rep-label { font-size: 9px; font-weight: 900; text-transform: uppercase; opacity: 0.7; }
+    .rep-value { font-family: 'Bungee', sans-serif; font-size: 13px; }
+
+    /* ══════════════════════════════════════════════
+       BOUTONS ET CARTES D'ACTION (Asymétriques & Pop)
+       ══════════════════════════════════════════════ */
+    .action-card {
+      background: var(--bg-card);
+      border: var(--border-comic);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow-comic);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      position: relative;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .action-card:active {
+      transform: translate(3px, 3px);
+      box-shadow: var(--shadow-comic-sm);
+    }
+
+    .card-texts {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .card-category {
+      font-family: 'Bungee', sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .card-heading {
+      font-family: 'Bangers', cursive;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: 1px;
+      margin: 2px 0;
+    }
+
+    .card-description {
+      font-size: 11px;
+      font-weight: 700;
+      opacity: 0.8;
+    }
+
+    .card-illustration-box {
+      width: 52px;
+      height: 52px;
+      background: #ffffff;
+      border: var(--border-comic);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: var(--shadow-comic-sm);
+      flex-shrink: 0;
+    }
+
+    /* Variations chromatiques calquées sur la palette graphique */
+    .theme-dark { background: var(--dark); color: #fff; }
+    .theme-dark .card-category { color: var(--yellow); }
+    .theme-dark .card-illustration-box { background: #1e293b; color: #fff; }
+
+    .theme-purple { background: var(--purple); color: #fff; }
+    .theme-purple .card-category { color: var(--yellow); }
+
+    /* ══════════════════════════════════════════════
+       BARRE DE NAVIGATION FIXE (Sticky Bottom Nav)
+       ══════════════════════════════════════════════ */
+    .bottom-navbar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--dark);
+      border-top: var(--border-comic);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) 8px;
+      z-index: 1000;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 10px;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .nav-tab-icon {
+      font-size: 22px;
+      transition: transform 0.1s ease;
+    }
+
+    .nav-tab.active {
+      color: var(--yellow);
+    }
+
+    .nav-tab.active .nav-tab-icon {
+      transform: scale(1.25) rotate(-3deg);
+    }
+
+    /* Gestion des écrans de l'app */
+    .view-screen { display: none; }
+    .view-screen.active { display: flex; flex-direction: column; gap: 16px; }
+
+    .empty-state {
+      background: var(--bg-card);
+      border: var(--border-comic);
+      border-radius: 16px;
+      padding: 32px 16px;
+      text-align: center;
+      box-shadow: var(--shadow-comic);
+    }
+    .empty-state h3 { font-family: 'Bangers', cursive; font-size: 32px; margin-bottom: 8px; }
   </style>
 </head>
 <body>
 
-<!-- ── NOTIFICATION ── -->
-<div class="notif" id="notif"></div>
+  <div class="app-container">
 
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : ACCUEIL
-══════════════════════════════════════════════ -->
-<div class="screen active" id="screen-home">
-
-  <div class="top-bar">
-    <div class="top-left">
-      <div class="avatar" id="avatarEl" style="overflow:hidden;padding:0;">
-        <img id="avatarImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
-        <span id="avatarFallback" style="font-size:18px">👷</span>
+    <div class="profile-card">
+      <div class="wallet-badge" id="display-money">0 €</div>
+      <div class="avatar-frame" id="avatar-bg">
+        <img id="avatar-img" src="notionists-1779298466584.png" alt="Avatar">
       </div>
-      <div>
-        <div class="top-name" id="topName">Mon Docker</div>
-        <div class="top-rank" id="topRank">Docker Débutant</div>
-      </div>
-    </div>
-    <div class="money-badge" id="moneyDisplay">0 €</div>
-  </div>
-
-  <div class="hero">
-    <div class="hero-logo">BATTLE DOCK</div>
-  </div>
-
-  <div class="quick-stats">
-    <div class="qstat">
-      <div class="qstat-label">⚡ Énergie</div>
-      <div class="qstat-bar"><div class="qstat-fill fill-energy" id="barEnergy" style="width:100%"></div></div>
-      <div class="qstat-val" id="valEnergy">100</div>
-    </div>
-    <div class="qstat">
-      <div class="qstat-label">❤️ Santé</div>
-      <div class="qstat-bar"><div class="qstat-fill fill-health" id="barHealth" style="width:100%"></div></div>
-      <div class="qstat-val" id="valHealth">100</div>
-    </div>
-    <div class="qstat">
-      <div class="qstat-label">😄 Moral</div>
-      <div class="qstat-bar"><div class="qstat-fill fill-mood" id="barMood" style="width:80%"></div></div>
-      <div class="qstat-val" id="valMood">80</div>
-    </div>
-  </div>
-
-  <div class="sec-title">Activités</div>
-  <div class="cards">
-
-    <div class="card card-work-big" onclick="openWork()">
-      <div class="inner">
-        <div class="tag">✅ Mission disponible</div>
-        <div class="wt">BOSSER</div>
-        <div class="ws">Décharge des conteneurs au quai 7</div>
-        <div class="salary">💰 <span id="salaryLabel">35 € / mission</span></div>
+      <div class="profile-info">
+        <div class="player-name" id="display-username">DOCKER</div>
+        <div class="player-rank" id="display-rank">Docker Occasionnel</div>
       </div>
     </div>
 
-    <div class="card" onclick="nav('casino')">
-      <div class="card-accent accent-purple"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(139,111,212,.12);">🎰</div>
-        <div class="card-body">
-          <div class="card-title">Casino</div>
-          <div class="card-sub">Machine à sous · Poker · Courses de rats</div>
-        </div>
-        <span class="card-badge tag-purple">HOT</span>
-      </div>
-    </div>
-
-    <div class="card" onclick="nav('marche')">
-      <div class="card-accent accent-red"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(224,85,85,.1);">🕵️</div>
-        <div class="card-body">
-          <div class="card-title">Marché Noir</div>
-          <div class="card-sub">Deals risqués · Contrebande · Recel</div>
-        </div>
-        <span class="card-badge tag-red">RISQUÉ</span>
-      </div>
-    </div>
-
-    <div class="card" onclick="nav('social')">
-      <div class="card-accent accent-blue"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(74,159,212,.1);">🍺</div>
-        <div class="card-body">
-          <div class="card-title">Vie Sociale</div>
-          <div class="card-sub">Bars · Amis · Drague · Bagarres</div>
-        </div>
-        <div class="card-arrow">›</div>
-      </div>
-    </div>
-
-    <div class="card" onclick="nav('syndicat')">
-      <div class="card-accent accent-red"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(224,85,85,.1);">✊</div>
-        <div class="card-body">
-          <div class="card-title">Syndicat</div>
-          <div class="card-sub">Manifeste · Grèves · Négociations</div>
-        </div>
-        <div class="card-arrow">›</div>
-      </div>
-    </div>
-
-    <div class="card" onclick="nav('logement')">
-      <div class="card-accent accent-gold"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(201,168,76,.1);">🏠</div>
-        <div class="card-body">
-          <div class="card-title">Logement</div>
-          <div class="card-sub" id="housingPreview">Studio HLM · 320 €/mois</div>
-        </div>
-        <div class="card-arrow">›</div>
-      </div>
-    </div>
-
-    <div class="sec-title">Vie Personnelle</div>
-
-    <div class="card" onclick="nav('famille')"><div class="card-accent accent-purple"></div><div class="card-inner"><div class="card-icon" style="background:rgba(139,111,212,.1)">👨‍👩‍👧</div><div class="card-body"><div class="card-title">Famille</div><div class="card-sub" id="familleHomePreview">Célibataire · Pas d'enfant</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('amour')"><div class="card-accent" style="background:#e91e8c"></div><div class="card-inner"><div class="card-icon" style="background:rgba(233,30,140,.1)">💑</div><div class="card-body"><div class="card-title">Vie Amoureuse</div><div class="card-sub" id="amourHomePreview">Célibataire</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('sante')"><div class="card-accent accent-green"></div><div class="card-inner"><div class="card-icon" style="background:rgba(76,175,130,.1)">❤️</div><div class="card-body"><div class="card-title">Santé & Addictions</div><div class="card-sub" id="santeHomePreview">En bonne forme</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('bouffe')"><div class="card-accent accent-orange"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,136,64,.1)">🍽️</div><div class="card-body"><div class="card-title">Cuisine & Bouffe</div><div class="card-sub">Mange ou souffre</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('animaux')"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">🐾</div><div class="card-body"><div class="card-title">Animaux</div><div class="card-sub" id="petHomePreview">Pas d'animal</div></div><div class="card-arrow">›</div></div></div>
-
-    <div class="sec-title">Ville & Argent</div>
-
-    <div class="card" onclick="nav('shopping')"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">🛒</div><div class="card-body"><div class="card-title">Shopping</div><div class="card-sub" id="shoppingHomePreview">Pas de dettes</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('transport')"><div class="card-accent accent-orange"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,136,64,.1)">🚗</div><div class="card-body"><div class="card-title">Transport</div><div class="card-sub" id="transportHomePreview">À pied</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('deals')"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">🤝</div><div class="card-body"><div class="card-title">Deals & Combines</div><div class="card-sub">Petits boulots · Système D</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('justice')"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">⚖️</div><div class="card-body"><div class="card-title">Justice</div><div class="card-sub" id="justiceHomePreview">Casier vierge</div></div><div class="card-arrow">›</div></div></div>
-
-    <div class="sec-title">Évolution</div>
-
-    <div class="card" onclick="nav('formation')"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">🎓</div><div class="card-body"><div class="card-title">Formation</div><div class="card-sub" id="formationHomePreview">0 certif obtenue</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('medias')"><div class="card-accent accent-orange"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,136,64,.1)">📺</div><div class="card-body"><div class="card-title">Médias & Buzz</div><div class="card-sub" id="mediasHomePreview">Inconnu du grand public</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('vacances')"><div class="card-accent accent-green"></div><div class="card-inner"><div class="card-icon" style="background:rgba(76,175,130,.1)">✈️</div><div class="card-body"><div class="card-title">Vacances</div><div class="card-sub">Repos mérité · Recharge énergie</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('meteo')"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">🌤️</div><div class="card-body"><div class="card-title">Météo</div><div class="card-sub" id="meteoHomePreview">Beau temps</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('techno')"><div class="card-accent accent-purple"></div><div class="card-inner"><div class="card-icon" style="background:rgba(139,111,212,.1)">📱</div><div class="card-body"><div class="card-title">Technologies</div><div class="card-sub" id="technoHomePreview">Vieux Nokia</div></div><div class="card-arrow">›</div></div></div>
-    <div class="card" onclick="nav('retraite')"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">🏖️</div><div class="card-body"><div class="card-title">Retraite</div><div class="card-sub" id="retraiteHomePreview">0 € cotisés</div></div><div class="card-arrow">›</div></div></div>
-
-  </div>
-
-  <!-- Jour / temps -->
-  <div style="text-align:center; margin-top:20px; padding-bottom:10px; color:var(--muted); font-size:12px; font-weight:600; letter-spacing:.5px;">
-    JOUR <span id="dayDisplay">1</span> · <span id="timeDisplay">08:00</span>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : CASINO
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-casino">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Casino</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay2">0 €</div>
-  </div>
-
-  <div class="casino-wrap">
-
-    <!-- Machine à sous -->
-    <div class="slot-machine">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--purple)">🎰 MACHINE À SOUS</div>
-      <div class="slot-reels">
-        <div class="reel" id="reel0">🍋</div>
-        <div class="reel" id="reel1">🍒</div>
-        <div class="reel" id="reel2">⭐</div>
-      </div>
-      <div class="slot-bet-row">
-        <span style="font-size:12px;color:var(--muted);font-weight:600">MISE</span>
-        <div class="bet-control">
-          <button class="bet-btn" onclick="changeBet(-5)">−</button>
-          <div class="bet-val" id="betVal">10</div>
-          <button class="bet-btn" onclick="changeBet(5)">+</button>
-        </div>
-        <span style="font-size:12px;color:var(--gold)">€</span>
-      </div>
-      <div class="slot-result" id="slotResult"></div>
-      <button class="btn btn-primary" onclick="spinSlot()" id="spinBtn" style="width:100%;margin-top:10px">LANCER</button>
-    </div>
-
-    <!-- Courses de rats -->
-    <div class="card">
-      <div class="card-accent accent-orange"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(224,136,64,.1);font-size:28px">🐀</div>
-        <div class="card-body">
-          <div class="card-title">Courses de Rats</div>
-          <div class="card-sub">Le sport du port · Mise min. 20€</div>
-        </div>
-        <button class="btn btn-gold" onclick="ratRace()" style="padding:10px 16px;font-size:13px">PARIER</button>
-      </div>
-    </div>
-
-    <!-- Poker -->
-    <div class="card">
-      <div class="card-accent accent-purple"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(139,111,212,.1);font-size:28px">🃏</div>
-        <div class="card-body">
-          <div class="card-title">Poker Clandestin</div>
-          <div class="card-sub">Cave à 50€ · Ambiance louche</div>
-        </div>
-        <button class="btn" onclick="notify('Poker bientôt dispo !','info')" style="padding:10px 16px;font-size:13px;background:rgba(139,111,212,.15);border-color:rgba(139,111,212,.3);color:var(--purple)">BIENTÔT</button>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : MARCHÉ NOIR
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-marche">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Marché Noir</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay3">0 €</div>
-  </div>
-
-  <div class="sec-title">Marchandises disponibles</div>
-  <div class="market-items" id="marketItems"></div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : VIE SOCIALE
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-social">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Vie Sociale</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay4">0 €</div>
-  </div>
-
-  <div class="sec-title">Où aller ce soir ?</div>
-  <div class="places-grid" id="placesGrid"></div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : SYNDICAT
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-syndicat">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Syndicat</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay5">0 €</div>
-  </div>
-
-  <div style="padding:16px;display:flex;flex-direction:column;gap:14px;">
-    <div class="union-card">
-      <div class="union-title">CGT DU PORT</div>
-      <div style="font-size:13px;color:var(--muted)">Puissance syndicale</div>
-      <div class="union-power">
-        <div class="union-fist">✊</div>
-        <div class="power-bar"><div class="power-fill" id="powerFill" style="width:20%"></div></div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--red)" id="powerVal">20%</div>
-      </div>
-      <div class="union-actions">
-        <div class="union-btn" onclick="doStrike()">⚡ Grève</div>
-        <div class="union-btn" onclick="doManif()">🚩 Manif</div>
-        <div class="union-btn" onclick="doNego()">📋 Négo</div>
-      </div>
-    </div>
-
-    <div class="card" onclick="joinUnion()">
-      <div class="card-accent accent-red"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(224,85,85,.1)">📜</div>
-        <div class="card-body">
-          <div class="card-title">Adhésion</div>
-          <div class="card-sub">10 € / mois · Avantages collectifs</div>
-        </div>
-        <span class="card-badge tag-red" id="unionStatus">REJOINDRE</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-accent accent-red"></div>
-      <div class="card-inner">
-        <div class="card-icon" style="background:rgba(224,85,85,.1)">🗳️</div>
-        <div class="card-body">
-          <div class="card-title">Élections Délégué</div>
-          <div class="card-sub">Prochain vote dans <span id="electionDays">7</span> jours</div>
-        </div>
-        <button class="btn" onclick="runForElection()" style="padding:10px 14px;font-size:12px;background:rgba(224,85,85,.12);border-color:rgba(224,85,85,.3);color:var(--red)">SE PRÉSENTER</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : LOGEMENT
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-logement">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Logement</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay6">0 €</div>
-  </div>
-
-  <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
-    <div class="housing-card">
-      <div class="housing-banner" id="housingBanner" style="background:linear-gradient(135deg,#1a2030,#253045)">🏚️</div>
-      <div class="housing-info">
-        <div class="housing-name" id="housingName">Studio HLM</div>
-        <div style="font-size:13px;color:var(--muted);margin-top:3px" id="housingAddr">Rue du Port Vieux, n°12</div>
-        <div class="housing-stats">
-          <div class="hstat">
-            <div class="hstat-label">💰 Loyer</div>
-            <div class="hstat-val" id="housingRent">320 €/mois</div>
+    <div id="screen-home" class="view-screen active">
+      
+      <div class="vitals-box">
+        <div class="gauge-container">
+          <div class="gauge-header">
+            <span>⚡ Énergie</span>
+            <span id="text-energy">0 / 0</span>
           </div>
-          <div class="hstat">
-            <div class="hstat-label">😴 Confort</div>
-            <div class="hstat-val" id="housingComfort">★★☆☆☆</div>
+          <div class="gauge-track">
+            <div class="gauge-bar bar-energy" id="bar-energy"></div>
           </div>
-          <div class="hstat">
-            <div class="hstat-label">🐀 Voisins</div>
-            <div class="hstat-val" id="housingNeighbor">Bruyants</div>
+        </div>
+
+        <div class="gauge-container">
+          <div class="gauge-header">
+            <span>❤️ Santé physique & mentale</span>
+            <span id="text-health">0%</span>
           </div>
-          <div class="hstat">
-            <div class="hstat-label">📅 Prochain loyer</div>
-            <div class="hstat-val" id="housingNext">Dans 7j</div>
+          <div class="gauge-track">
+            <div class="gauge-bar bar-health" id="bar-health"></div>
+          </div>
+        </div>
+
+        <div class="reputation-grid">
+          <div class="rep-card">
+            <div class="rep-icon">👥</div>
+            <div class="rep-label">Collègues</div>
+            <div class="rep-value" id="rep-colleagues">0</div>
+          </div>
+          <div class="rep-card">
+            <div class="rep-icon">👔</div>
+            <div class="rep-label">Patron</div>
+            <div class="rep-value" id="rep-boss">0</div>
+          </div>
+          <div class="rep-card">
+            <div class="rep-icon">🏙️</div>
+            <div class="rep-label">Quartier</div>
+            <div class="rep-value" id="rep-street">0</div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="sec-title" style="padding:4px 0 6px">Changer de logement</div>
-
-    <div id="housingOptions"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     ÉCRAN : PROGRESSION
-══════════════════════════════════════════════ -->
-<div class="screen" id="screen-progression">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')">
-      <span style="font-size:20px;color:var(--muted)">‹</span>
-      <span style="font-size:14px;color:var(--muted);font-weight:600">Progression</span>
-    </div>
-    <div class="money-badge" id="moneyDisplay7">0 €</div>
-  </div>
-
-  <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
-    <div class="prog-card">
-      <div class="prog-level" id="progLevel">1</div>
-      <div class="prog-title" id="progRankTitle">Docker Débutant</div>
-      <div class="prog-xp-bar"><div class="prog-xp-fill" id="progXpFill" style="width:0%"></div></div>
-      <div class="prog-xp-label" id="progXpLabel">0 / 100 XP vers niveau 2</div>
-      <div class="skills-grid" id="skillsGrid"></div>
-    </div>
-
-    <div class="sec-title" style="padding:4px 0 6px">Déblocages</div>
-    <div id="unlocksList" style="display:flex;flex-direction:column;gap:10px;"></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     MINI-JEU : BOSSER
-══════════════════════════════════════════════ -->
-<div class="game-overlay" id="workOverlay">
-  <div class="game-timer" id="workTimer">30</div>
-  <div class="game-sub" id="workSubtitle">Tape les 📦 qui apparaissent !</div>
-  <div class="boxes-grid" id="boxesGrid"></div>
-  <div class="game-progress-bar">
-    <div class="game-progress-fill" id="workProgressFill" style="width:0%"></div>
-  </div>
-  <div class="game-stats-row">
-    <div class="gstat"><div class="gstat-val" id="workScore">0</div><div class="gstat-label">Caisses</div></div>
-    <div class="gstat"><div class="gstat-val" id="workEarned">0€</div><div class="gstat-label">Gagné</div></div>
-    <div class="gstat"><div class="gstat-val" id="workCombo">x1</div><div class="gstat-label">Combo</div></div>
-  </div>
-  <button class="btn btn-secondary" onclick="cancelWork()">Abandonner</button>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     RÉSULTAT TRAVAIL
-══════════════════════════════════════════════ -->
-<div class="result-overlay" id="resultOverlay">
-  <div class="result-emoji" id="resultEmoji">💰</div>
-  <div class="result-title" id="resultTitle">MISSION ACCOMPLIE</div>
-  <div class="result-earned" id="resultEarned">+35 €</div>
-  <div class="result-desc" id="resultDesc">Bon boulot, docker !</div>
-  <div class="result-bonuses" id="resultBonuses"></div>
-  <button class="btn btn-gold" onclick="closeResult()">Continuer</button>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     MODAL GÉNÉRIQUE
-══════════════════════════════════════════════ -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title" id="modalTitle">Titre</div>
-    <div class="modal-body" id="modalBody">Corps</div>
-    <div class="modal-actions" id="modalActions"></div>
-  </div>
-</div>
-
-<!-- ══ FAMILLE ══ -->
-<div class="screen" id="screen-famille">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Famille</span></div>
-    <div class="money-badge" id="moneyDisplayFamille">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="background:linear-gradient(135deg,#1a1025,var(--panel));border-color:rgba(139,111,212,.2)">
-      <div class="card-inner">
-        <div style="font-size:40px" id="familleEmoji">💑</div>
-        <div class="card-body">
-          <div class="card-title" id="familleStatus">Célibataire</div>
-          <div class="card-sub" id="familleSub">Pas de relation en cours</div>
+      <div class="action-card theme-dark" onclick="window.location.href='travailler.html'">
+        <div class="card-texts">
+          <span class="card-category">Missions Quotidiennes</span>
+          <h2 class="card-heading">ALLER BOSSER AU QUAI</h2>
+          <span class="card-description">Déplace des caisses · Gagne des euros</span>
         </div>
+        <div class="card-illustration-box">💼</div>
       </div>
-    </div>
-    <div class="card" onclick="doMariage()"><div class="card-accent accent-purple"></div><div class="card-inner"><div class="card-icon" style="background:rgba(139,111,212,.1)">💍</div><div class="card-body"><div class="card-title">Se Marier</div><div class="card-sub">Bonheur +30 · Coût 2000€ · Pension si divorce</div></div></div></div>
-    <div class="card" onclick="doDivorce()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">💔</div><div class="card-body"><div class="card-title">Divorcer</div><div class="card-sub">Pension alimentaire · Trauma · Liberté</div></div></div></div>
-    <div class="card" onclick="doEnfant()"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">👶</div><div class="card-body"><div class="card-title">Avoir un Enfant</div><div class="card-sub" id="enfantsCount">0 enfant · -200€/mois · Bonheur +20</div></div></div></div>
-    <div class="card" onclick="doReunion()"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">🍽️</div><div class="card-body"><div class="card-title">Réunion Famille</div><div class="card-sub">Corvée sociale mais moral +10</div></div></div></div>
-  </div>
-</div>
 
-<!-- ══ SANTÉ / ADDICTIONS ══ -->
-<div class="screen" id="screen-sante">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Santé</span></div>
-    <div class="money-badge" id="moneyDisplaySante">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="background:var(--panel);padding:18px">
-      <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Addictions actives</div>
-      <div id="addictionsDisplay" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-    </div>
-    <div class="card" onclick="doMedecin()"><div class="card-accent accent-green"></div><div class="card-inner"><div class="card-icon" style="background:rgba(76,175,130,.1)">🩺</div><div class="card-body"><div class="card-title">Médecin</div><div class="card-sub">Santé +30 · 50€ · Arrêt si besoin</div></div></div></div>
-    <div class="card" onclick="doFumer()"><div class="card-accent accent-orange"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,136,64,.1)">🚬</div><div class="card-body"><div class="card-title">Fumer une clope</div><div class="card-sub">Stress -10 · Santé -3 · Addiction possible</div></div></div></div>
-    <div class="card" onclick="doBoire()"><div class="card-accent accent-purple"></div><div class="card-inner"><div class="card-icon" style="background:rgba(139,111,212,.1)">🥃</div><div class="card-body"><div class="card-title">Picoler seul</div><div class="card-sub">Moral +20 · Santé -10 · Addiction possible</div></div></div></div>
-    <div class="card" onclick="doDesintox()"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">🏥</div><div class="card-body"><div class="card-title">Cure Désintox</div><div class="card-sub">Soigne addictions · 500€ · 7 jours</div></div></div></div>
-    <div class="card" onclick="doArretMaladie()"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">📋</div><div class="card-body"><div class="card-title">Arrêt Maladie</div><div class="card-sub">Repos · 60% salaire · 3 jours max</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ JUSTICE ══ -->
-<div class="screen" id="screen-justice">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Justice</span></div>
-    <div class="money-badge" id="moneyDisplayJustice">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="background:linear-gradient(135deg,#1a0505,var(--panel));border-color:rgba(224,85,85,.2);padding:18px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--red);margin-bottom:8px">CASIER JUDICIAIRE</div>
-      <div id="casierDisplay" style="font-size:13px;color:var(--muted)">Aucune mention — pour l'instant.</div>
-      <div style="margin-top:8px;font-size:12px;color:var(--muted)">Infractions : <span id="casierCount" style="color:var(--red);font-weight:700">0</span></div>
-    </div>
-    <div class="card" onclick="doAvocat()"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">⚖️</div><div class="card-body"><div class="card-title">Avocat Privé</div><div class="card-sub">Réduit les risques · 300€</div></div></div></div>
-    <div class="card" onclick="doPayer()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">🧾</div><div class="card-body"><div class="card-title">Payer une Amende</div><div class="card-sub" id="amendeLabel">Aucune amende en cours</div></div></div></div>
-    <div class="card" onclick="doPrison()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">🔒</div><div class="card-body"><div class="card-title">État Carcéral</div><div class="card-sub" id="prisonStatus">Tu es libre… pour l'instant</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ FORMATION ══ -->
-<div class="screen" id="screen-formation">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Formation</span></div>
-    <div class="money-badge" id="moneyDisplayFormation">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div id="formationList"></div>
-  </div>
-</div>
-
-<!-- ══ AMOUR ══ -->
-<div class="screen" id="screen-amour">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Vie Amoureuse</span></div>
-    <div class="money-badge" id="moneyDisplayAmour">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:20px;background:linear-gradient(135deg,#1a0a20,var(--panel));border-color:rgba(236,72,153,.2)">
-      <div style="font-size:32px;margin-bottom:8px" id="amourEmoji">💔</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px" id="amourStatus">Célibataire</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px" id="amourPartner">Personne en vue</div>
-    </div>
-    <div class="card" onclick="doTinder()"><div class="card-accent" style="background:#e91e8c"></div><div class="card-inner"><div class="card-icon" style="background:rgba(233,30,140,.1)">📱</div><div class="card-body"><div class="card-title">Docker Tinder</div><div class="card-sub">Rencontres du port · 10€/mois</div></div><span class="card-badge" style="background:rgba(233,30,140,.15);color:#e91e8c">HOT</span></div></div>
-    <div class="card" onclick="doDate()"><div class="card-accent accent-purple"></div><div class="card-inner"><div class="card-icon" style="background:rgba(139,111,212,.1)">🌹</div><div class="card-body"><div class="card-title">Sortie Romantique</div><div class="card-sub">Restaurant · 60€ · Chance +relation</div></div></div></div>
-    <div class="card" onclick="doRupture()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">💔</div><div class="card-body"><div class="card-title">Rompre</div><div class="card-sub">Moral -20 · Liberté retrouvée</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ SHOPPING ══ -->
-<div class="screen" id="screen-shopping">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Shopping</span></div>
-    <div class="money-badge" id="moneyDisplayShopping">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:14px;background:rgba(224,85,85,.05);border-color:rgba(224,85,85,.2)">
-      <div style="font-size:12px;color:var(--red);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Dette crédit revolving</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--red);margin-top:4px" id="creditDebt">0 €</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:2px">Intérêts 20%/mois</div>
-    </div>
-    <div id="shopItems"></div>
-  </div>
-</div>
-
-<!-- ══ ANIMAUX ══ -->
-<div class="screen" id="screen-animaux">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Animaux</span></div>
-    <div class="money-badge" id="moneyDisplayAnimaux">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:20px;text-align:center" id="petCard">
-      <div style="font-size:60px;margin-bottom:8px" id="petEmoji">🐾</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px" id="petName">Pas d'animal</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:4px" id="petDesc">Adopte un compagnon</div>
-    </div>
-    <div class="card" onclick="adoptAnimal('chien')"><div class="card-accent accent-gold"></div><div class="card-inner"><div style="font-size:32px">🐕</div><div class="card-body"><div class="card-title">Chien Errant</div><div class="card-sub">Fidèle · 30€/mois nourriture · Moral +15/jour</div></div></div></div>
-    <div class="card" onclick="adoptAnimal('chat')"><div class="card-accent accent-purple"></div><div class="card-inner"><div style="font-size:32px">🐈</div><div class="card-body"><div class="card-title">Chat du Port</div><div class="card-sub">Indépendant · 15€/mois · Moral +8/jour</div></div></div></div>
-    <div class="card" onclick="adoptAnimal('rat')"><div class="card-accent accent-red"></div><div class="card-inner"><div style="font-size:32px">🐀</div><div class="card-body"><div class="card-title">Rat de Course</div><div class="card-sub">Participe aux courses · Peut gagner des €</div></div></div></div>
-    <div class="card" onclick="feedPet()"><div class="card-accent accent-green"></div><div class="card-inner"><div style="font-size:32px">🦴</div><div class="card-body"><div class="card-title">Nourrir / Câliner</div><div class="card-sub">Bonheur animal · Moral +5</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ MÉDIAS ══ -->
-<div class="screen" id="screen-medias">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Médias</span></div>
-    <div class="money-badge" id="moneyDisplayMedias">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:14px">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Notoriété</div>
-      <div style="height:8px;background:rgba(255,255,255,.07);border-radius:8px;overflow:hidden;margin:8px 0"><div id="fameFill" style="height:100%;background:linear-gradient(90deg,var(--orange),#ffb347);border-radius:8px;transition:width .5s" ></div></div>
-      <div style="font-size:13px;font-weight:700" id="fameLabel">Inconnu du grand public</div>
-    </div>
-    <div class="card" onclick="doTikTok()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">📲</div><div class="card-body"><div class="card-title">Vidéo TikTok</div><div class="card-sub">Buzz possible · Haters possibles</div></div></div></div>
-    <div class="card" onclick="doInterview()"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">📰</div><div class="card-body"><div class="card-title">Interview Journal Local</div><div class="card-sub">Notoriété +10 · Histoire du port</div></div></div></div>
-    <div class="card" onclick="doTeleRealite()"><div class="card-accent accent-orange"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,136,64,.1)">📺</div><div class="card-body"><div class="card-title">Télé-Réalité Docker</div><div class="card-sub">500€ · Fame max · Vie privée = 0</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ VACANCES ══ -->
-<div class="screen" id="screen-vacances">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Vacances</span></div>
-    <div class="money-badge" id="moneyDisplayVacances">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" onclick="doVacance('camping',50,5)"><div class="card-accent accent-green"></div><div class="card-inner"><div style="font-size:36px">⛺</div><div class="card-body"><div class="card-title">Camping Vendée</div><div class="card-sub">50€ · 5 jours · Moral +20 · Énergie +40</div></div></div></div>
-    <div class="card" onclick="doVacance('city',200,3)"><div class="card-accent accent-blue"></div><div class="card-inner"><div style="font-size:36px">🏙️</div><div class="card-body"><div class="card-title">Week-end Ville</div><div class="card-sub">200€ · 3 jours · Moral +30</div></div></div></div>
-    <div class="card" onclick="doVacance('low',350,7)"><div class="card-accent accent-orange"></div><div class="card-inner"><div style="font-size:36px">✈️</div><div class="card-body"><div class="card-title">Low-cost Catastrophe</div><div class="card-sub">350€ · 7 jours · Galères garanties</div></div></div></div>
-    <div class="card" onclick="doVacance('chez',0,2)"><div class="card-accent accent-gold"></div><div class="card-inner"><div style="font-size:36px">🛋️</div><div class="card-body"><div class="card-title">Rester chez Soi</div><div class="card-sub">Gratuit · Énergie +30 · Flemme totale</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ RETRAITE ══ -->
-<div class="screen" id="screen-retraite">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Retraite</span></div>
-    <div class="money-badge" id="moneyDisplayRetraite">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:20px">
-      <div style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Cotisations accumulées</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--gold);margin:6px 0" id="cotisationsVal">0 €</div>
-      <div style="font-size:12px;color:var(--muted)">Pension estimée : <span id="pensionEstim" style="color:var(--green);font-weight:700">0 €/mois</span></div>
-      <div style="height:8px;background:rgba(255,255,255,.07);border-radius:8px;overflow:hidden;margin-top:10px"><div id="retraiteFill" style="height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:8px;width:0%;transition:width .5s"></div></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Jour <span id="retraiteDay">1</span> / 1825 (5 ans de carrière)</div>
-    </div>
-    <div class="card" onclick="doPreRetraite()"><div class="card-accent accent-gold"></div><div class="card-inner"><div class="card-icon" style="background:rgba(201,168,76,.1)">💰</div><div class="card-body"><div class="card-title">Épargne Volontaire</div><div class="card-sub">Investir 100€ dans les cotisations</div></div></div></div>
-    <div class="card" onclick="doPartirRetraite()"><div class="card-accent accent-green"></div><div class="card-inner"><div class="card-icon" style="background:rgba(76,175,130,.1)">🏖️</div><div class="card-body"><div class="card-title">Partir en Retraite</div><div class="card-sub" id="retraiteEligible">Disponible après 1825 jours de carrière</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ MÉTÉO ══ -->
-<div class="screen" id="screen-meteo">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Météo</span></div>
-    <div class="money-badge" id="moneyDisplayMeteo">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:24px;text-align:center">
-      <div style="font-size:64px;margin-bottom:8px" id="meteoEmoji">🌤️</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px" id="meteoLabel">Beau temps</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:4px" id="meteoDesc">Conditions normales au port</div>
-    </div>
-    <div class="card" onclick="checkMeteo()"><div class="card-accent accent-blue"></div><div class="card-inner"><div class="card-icon" style="background:rgba(74,159,212,.1)">📡</div><div class="card-body"><div class="card-title">Consulter la Météo</div><div class="card-sub">Anticipe les catastrophes</div></div></div></div>
-    <div class="card" onclick="doTempete()"><div class="card-accent accent-red"></div><div class="card-inner"><div class="card-icon" style="background:rgba(224,85,85,.1)">⛈️</div><div class="card-body"><div class="card-title">Déclencher Tempête</div><div class="card-sub">Événement aléatoire · Port fermé possible</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ TECHNOLOGIES ══ -->
-<div class="screen" id="screen-techno">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Technologies</span></div>
-    <div class="money-badge" id="moneyDisplayTechno">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:14px">
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:6px">Équipement actuel</div>
-      <div style="font-size:15px;font-weight:700" id="phoneLabel">📱 Vieux Nokia cassé</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px" id="addictionEcranLabel">Addiction écrans : non</div>
-    </div>
-    <div class="card" onclick="buyPhone()"><div class="card-accent accent-blue"></div><div class="card-inner"><div style="font-size:32px">📱</div><div class="card-body"><div class="card-title">Nouveau Smartphone</div><div class="card-sub">200€ · Accès apps · Risque addiction</div></div></div></div>
-    <div class="card" onclick="doScroll()"><div class="card-accent accent-purple"></div><div class="card-inner"><div style="font-size:32px">📲</div><div class="card-body"><div class="card-title">Scroller 2h</div><div class="card-sub">Moral ±5 · Énergie -10 · Temps perdu</div></div></div></div>
-    <div class="card" onclick="doArnaqueEnLigne()"><div class="card-accent accent-red"></div><div class="card-inner"><div style="font-size:32px">🎣</div><div class="card-body"><div class="card-title">Phishing Reçu</div><div class="card-sub">Ignore ou clique... au risque de tes €</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ TRANSPORT ══ -->
-<div class="screen" id="screen-transport">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Transport</span></div>
-    <div class="money-badge" id="moneyDisplayTransport">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" style="padding:14px">
-      <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Véhicule actuel</div>
-      <div style="font-size:22px;font-weight:700" id="vehicleLabel">🚶 À pied</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px" id="permisLabel">Permis : OK</div>
-    </div>
-    <div class="card" onclick="buyVehicle('velo',80)"><div class="card-accent accent-green"></div><div class="card-inner"><div style="font-size:32px">🚲</div><div class="card-body"><div class="card-title">Vélo d'Occasion</div><div class="card-sub">80€ · Gratuit à l'usage · Santé +2/trajet</div></div></div></div>
-    <div class="card" onclick="buyVehicle('scooter',300)"><div class="card-accent accent-orange"></div><div class="card-inner"><div style="font-size:32px">🛵</div><div class="card-body"><div class="card-title">Scooter Douteux</div><div class="card-sub">300€ · Rapide · Peut être volé</div></div></div></div>
-    <div class="card" onclick="buyVehicle('voiture',1200)"><div class="card-accent accent-blue"></div><div class="card-inner"><div style="font-size:32px">🚗</div><div class="card-body"><div class="card-title">Vieille Bagnole</div><div class="card-sub">1200€ · Pannes · Essence 80€/mois</div></div></div></div>
-    <div class="card" onclick="doPV()"><div class="card-accent accent-red"></div><div class="card-inner"><div style="font-size:32px">🧾</div><div class="card-body"><div class="card-title">Recevoir un PV</div><div class="card-sub">Le destin frappe... -45€</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ BOUFFE ══ -->
-<div class="screen" id="screen-bouffe">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Cuisine & Bouffe</span></div>
-    <div class="money-badge" id="moneyDisplayBouffe">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" onclick="doManger('cantine',5)"><div class="card-accent accent-orange"></div><div class="card-inner"><div style="font-size:32px">🍱</div><div class="card-body"><div class="card-title">Cantine du Port</div><div class="card-sub">5€ · Énergie +20 · Goût -20</div></div></div></div>
-    <div class="card" onclick="doManger('fastfood',10)"><div class="card-accent accent-red"></div><div class="card-inner"><div style="font-size:32px">🍔</div><div class="card-body"><div class="card-title">Fast-Food</div><div class="card-sub">10€ · Énergie +25 · Santé -5</div></div></div></div>
-    <div class="card" onclick="doManger('cuisiné',3)"><div class="card-accent accent-green"></div><div class="card-inner"><div style="font-size:32px">🍳</div><div class="card-body"><div class="card-title">Cuisiner à la Maison</div><div class="card-sub">3€ · Énergie +30 · Santé +5</div></div></div></div>
-    <div class="card" onclick="doManger('resto',40)"><div class="card-accent accent-gold"></div><div class="card-inner"><div style="font-size:32px">🍽️</div><div class="card-body"><div class="card-title">Restaurant</div><div class="card-sub">40€ · Moral +15 · Énergie +35</div></div></div></div>
-    <div class="card" onclick="doManger('skip',0)"><div class="card-accent" style="background:var(--muted)"></div><div class="card-inner"><div style="font-size:32px">💨</div><div class="card-body"><div class="card-title">Sauter le Repas</div><div class="card-sub">Gratuit · Énergie -15 · Santé -5</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══ DEALS / COMBINES ══ -->
-<div class="screen" id="screen-deals">
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="nav('home')"><span style="font-size:20px;color:var(--muted)">‹</span><span style="font-size:14px;color:var(--muted);font-weight:600">Deals & Combines</span></div>
-    <div class="money-badge" id="moneyDisplayDeals">0 €</div>
-  </div>
-  <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <div class="card" onclick="doCombine('boulot_black',0,80,.85)"><div class="card-accent accent-gold"></div><div class="card-inner"><div style="font-size:32px">🔨</div><div class="card-body"><div class="card-title">Boulot au Black</div><div class="card-sub">+80€ · Risque URSSAF faible</div></div></div></div>
-    <div class="card" onclick="doCombine('ticket_resto',5,25,.9)"><div class="card-accent accent-green"></div><div class="card-inner"><div style="font-size:32px">🎟️</div><div class="card-body"><div class="card-title">Revente Tickets Resto</div><div class="card-sub">Achat 5€ → Revente 25€</div></div></div></div>
-    <div class="card" onclick="doCombine('aide_sociale',0,150,.7)"><div class="card-accent accent-blue"></div><div class="card-inner"><div style="font-size:32px">📋</div><div class="card-body"><div class="card-title">Optimiser les Aides</div><div class="card-sub">RSA · APL · Prime activité</div></div></div></div>
-    <div class="card" onclick="doCombine('magouille_admin',20,200,.5)"><div class="card-accent accent-red"></div><div class="card-inner"><div style="font-size:32px">🖋️</div><div class="card-body"><div class="card-title">Magouille Administrative</div><div class="card-sub">20€ de frais · Gain 200€ · Risque élevé</div></div></div></div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     NAV BAS
-══════════════════════════════════════════════ -->
-<div class="bottom-nav">
-  <button class="nav-btn active" id="nav-home" onclick="nav('home')"><div class="ico">🏠</div>Accueil</button>
-  <button class="nav-btn" id="nav-casino" onclick="nav('casino')"><div class="ico">🎰</div>Casino</button>
-  <button class="nav-btn" id="nav-social" onclick="nav('social')"><div class="ico">🍺</div>Social</button>
-  <button class="nav-btn" id="nav-progression" onclick="nav('progression')"><div class="ico">📊</div>Stats</button>
-</div>
-
-<script>
-// ══════════════════════════════════════════════
-// ÉTAT DU JEU
-// ══════════════════════════════════════════════
-const STATE = {
-  money: 150,
-  energy: 100,
-  health: 100,
-  mood: 80,
-  xp: 0,
-  level: 1,
-  day: 1,
-  hour: 8,
-  min: 0,
-  unionMember: false,
-  unionPower: 20,
-  housing: 0, // index
-  skills: { force: 10, vitesse: 8, endurance: 5, combine: 2 },
-  electionDays: 7,
-  rank: 'Docker Débutant',
-  marié: false, enfants: 0, pension: 0,
-  addictions: [], casier: 0, amende: 0, enPrison: false,
-  certifs: [],
-  relation: false, partnerName: '',
-  creditDebt: 0, phone: false, vehicle: 'pied',
-  pet: null,
-  fame: 0,
-  cotisations: 0,
-};
-
-const RANKS = [
-  { level:1, name:'Docker Débutant', salary:35 },
-  { level:2, name:'Docker Occasionnel', salary:45 },
-  { level:3, name:'Docker Régulier', salary:55 },
-  { level:4, name:'Docker Qualifié', salary:70 },
-  { level:5, name:'Chef de Quai', salary:90 },
-  { level:6, name:'Contremaître', salary:120 },
-  { level:7, name:'Docker Légendaire', salary:160 },
-];
-
-const XP_PER_LEVEL = [0,100,250,450,700,1000,1400];
-
-const HOUSINGS = [
-  { name:'Squat Abandonné', emoji:'🏚️', addr:'Quai 0, sous le pont', rent:0, comfort:'☆☆☆☆☆', neighbor:'Rats', regen:0, bg:'linear-gradient(135deg,#0a0a0a,#1a1010)' },
-  { name:'Studio HLM', emoji:'🏠', addr:'Rue du Port Vieux, n°12', rent:320, comfort:'★★☆☆☆', neighbor:'Bruyants', regen:20, bg:'linear-gradient(135deg,#1a2030,#253045)' },
-  { name:'F2 Banlieue', emoji:'🏡', addr:'Allée des Grues, n°8', rent:550, comfort:'★★★☆☆', neighbor:'Corrects', regen:35, bg:'linear-gradient(135deg,#1a2a1a,#253530)' },
-  { name:'Appart Port Vue Mer', emoji:'🌊', addr:'Quai du Capitaine, n°1', rent:900, comfort:'★★★★☆', neighbor:'Calmes', regen:50, bg:'linear-gradient(135deg,#0a1a2a,#1a3050)' },
-  { name:'Penthouse du Docker', emoji:'🏙️', addr:'Tour Maritime, Dernier étage', rent:2000, comfort:'★★★★★', neighbor:'Silencieux', regen:70, bg:'linear-gradient(135deg,#0a0520,#1a1540)' },
-];
-
-const PLACES = [
-  { name:'Bar Le Mouillage', emoji:'🍺', color:'rgba(201,168,76,.15)', effects:[{l:'Moral +15',c:'tag-gold'},{l:'Santé -5',c:'tag-red'},{l:'Social',c:'tag-blue'}], cost:15, fn:()=>goBar() },
-  { name:'Bodega La Pesante', emoji:'🍷', color:'rgba(139,111,212,.15)', effects:[{l:'Moral +25',c:'tag-gold'},{l:'Santé -15',c:'tag-red'},{l:'Risque',c:'tag-red'}], cost:30, fn:()=>goBodega() },
-  { name:'Salle de Sport', emoji:'💪', color:'rgba(76,175,130,.15)', effects:[{l:'Santé +20',c:'tag-green'},{l:'Énergie -20',c:'tag-red'},{l:'Force +1',c:'tag-blue'}], cost:10, fn:()=>goGym() },
-  { name:'Bibliothèque', emoji:'📚', color:'rgba(74,159,212,.15)', effects:[{l:'Moral +10',c:'tag-purple'},{l:'XP +20',c:'tag-gold'},{l:'Gratis',c:'tag-green'}], cost:0, fn:()=>goLibrary() },
-  { name:'Pêche au Quai', emoji:'🎣', color:'rgba(74,159,212,.15)', effects:[{l:'Moral +12',c:'tag-purple'},{l:'Énergie +5',c:'tag-green'},{l:'Gratis',c:'tag-green'}], cost:0, fn:()=>goFishing() },
-];
-
-const MARKET_ITEMS = [
-  { name:'Colis Mystère', emoji:'📦', desc:'Contenu inconnu, valeur incertaine', risk:'Risque faible', riskCol:'tag-green', buy:20, earn:[30,80], chance:.9 },
-  { name:'Cigarettes de Contrebande', emoji:'🚬', desc:'Cartons entiers, pas de questions', risk:'Risque modéré', riskCol:'tag-gold', buy:50, earn:[100,200], chance:.75 },
-  { name:'Alcool Non Déclaré', emoji:'🥃', desc:'20 bouteilles, origine douteuse', risk:'Risque élevé', riskCol:'tag-red', buy:80, earn:[200,400], chance:.55 },
-  { name:'Pièces Auto Volées', emoji:'🔧', desc:'Marché spécialisé, clients discrets', risk:'Très risqué', riskCol:'tag-red', buy:150, earn:[350,600], chance:.4 },
-];
-
-// ══════════════════════════════════════════════
-// NAVIGATION
-// ══════════════════════════════════════════════
-const screens = ['home','casino','marche','social','syndicat','logement','progression','famille','sante','justice','formation','amour','shopping','animaux','medias','vacances','retraite','meteo','techno','transport','bouffe','deals'];
-
-function nav(id) {
-  screens.forEach(s => {
-    const el = document.getElementById('screen-'+s);
-    if(el) { el.classList.remove('active'); el.classList.remove('screen-anim'); }
-    const nb = document.getElementById('nav-'+s);
-    if(nb) nb.classList.remove('active');
-  });
-  const target = document.getElementById('screen-'+id);
-  if(target) { target.classList.add('active'); setTimeout(()=>target.classList.add('screen-anim'),10); }
-  const nb = document.getElementById('nav-'+id);
-  if(nb) nb.classList.add('active');
-  updateAllUI();
-}
-
-// ══════════════════════════════════════════════
-// INTERFACE
-// ══════════════════════════════════════════════
-function fmt(n) {
-  if(n>=1000000) return (n/1000000).toFixed(1)+'M';
-  if(n>=1000) return (n/1000).toFixed(1)+'K';
-  return Math.floor(n).toString();
-}
-
-function updateAllUI() {
-  // Money partout
-  ['moneyDisplay','moneyDisplay2','moneyDisplay3','moneyDisplay4','moneyDisplay5','moneyDisplay6','moneyDisplay7'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.textContent = fmt(STATE.money)+' €';
-  });
-
-  // Stats barres
-  setBar('barEnergy','valEnergy', STATE.energy);
-  setBar('barHealth','valHealth', STATE.health);
-  setBar('barMood','valMood', STATE.mood);
-
-  // Nom / rang
-  set('topName', STATE.name || 'Mon Docker');
-  set('topRank', STATE.rank);
-
-  // Temps
-  set('dayDisplay', STATE.day);
-  const h = String(STATE.hour).padStart(2,'0');
-  const m = String(STATE.min).padStart(2,'0');
-  set('timeDisplay', h+':'+m);
-
-  // Salaire
-  const rankData = RANKS.find(r=>r.level===STATE.level) || RANKS[0];
-  set('salaryLabel', rankData.salary+' € / mission');
-
-  // Logement preview
-  const h2 = HOUSINGS[STATE.housing];
-  set('housingPreview', h2.name+' · '+h2.rent+'€/mois');
-
-  // Syndicat
-  setBar2('powerFill', STATE.unionPower);
-  set('powerVal', STATE.unionPower+'%');
-  set('unionStatus', STATE.unionMember ? 'MEMBRE' : 'REJOINDRE');
-
-  // Logement screen
-  renderHousing();
-
-  // Progression
-  renderProgression();
-
-  // Lieux sociaux
-  renderSocial();
-
-  // Marché noir
-  renderMarket();
-
-  // Nouvelles catégories
-  updateNewScreens();
-}
-
-function setBar(barId, valId, val) {
-  const b = document.getElementById(barId);
-  const v = document.getElementById(valId);
-  if(b) b.style.width = Math.max(0,Math.min(100,val))+'%';
-  if(v) v.textContent = Math.round(val);
-}
-function setBar2(id, val) { const el=document.getElementById(id); if(el) el.style.width=val+'%'; }
-function set(id, val) { const el=document.getElementById(id); if(el) el.textContent=val; }
-
-// ══════════════════════════════════════════════
-// MINI-JEU : BOSSER
-// ══════════════════════════════════════════════
-let workTimer, workInterval, workScore, workCombo, workTimeLeft, workActive;
-const GRID_SIZE = 16;
-const EMOJIS_BOX = ['📦','📦','📦','📦','📦','🚫','💥','⭐'];
-
-function openWork() {
-  if(STATE.energy < 15) { notify('Trop fatigué ! Dors un peu.','bad'); return; }
-  workScore=0; workCombo=1; workTimeLeft=30; workActive=true;
-  document.getElementById('workOverlay').classList.add('open');
-  renderBoxGrid();
-  set('workScore','0'); set('workEarned','0€'); set('workCombo','x1');
-  document.getElementById('workProgressFill').style.width='0%';
-  updateWorkTimer();
-  workInterval = setInterval(gameLoop, 1000);
-}
-
-function renderBoxGrid() {
-  const grid = document.getElementById('boxesGrid');
-  grid.innerHTML='';
-  for(let i=0;i<GRID_SIZE;i++) {
-    const tile = document.createElement('div');
-    tile.className='box-tile';
-    tile.dataset.idx=i;
-    tile.innerHTML='&nbsp;';
-    tile.addEventListener('click', ()=>tapBox(i));
-    grid.appendChild(tile);
-  }
-  scheduleBoxes();
-}
-
-let activeBoxes = {};
-function scheduleBoxes() {
-  clearBoxes();
-  const count = Math.min(2+STATE.level, 5);
-  const indices = shuffled([...Array(GRID_SIZE).keys()]).slice(0,count);
-  indices.forEach(idx=>{
-    const tile = document.querySelector(`.box-tile[data-idx="${idx}"]`);
-    if(!tile) return;
-    const emoji = EMOJIS_BOX[Math.floor(Math.random()*EMOJIS_BOX.length)];
-    tile.textContent = emoji;
-    tile.className = 'box-tile active';
-    activeBoxes[idx] = emoji;
-  });
-}
-
-function clearBoxes() {
-  activeBoxes={};
-  document.querySelectorAll('.box-tile').forEach(t=>{t.className='box-tile';t.innerHTML='&nbsp;';});
-}
-
-function tapBox(idx) {
-  if(!workActive) return;
-  const tile = document.querySelector(`.box-tile[data-idx="${idx}"]`);
-  if(!tile || !activeBoxes[idx]) return;
-  const emoji = activeBoxes[idx];
-  delete activeBoxes[idx];
-
-  if(emoji==='📦') {
-    workScore++;
-    workCombo = Math.min(workCombo+1, 5);
-    tile.className='box-tile hit';
-    tile.textContent='✅';
-  } else if(emoji==='⭐') {
-    workScore+=3; workCombo=Math.min(workCombo+2,5);
-    tile.className='box-tile hit';
-    tile.textContent='🌟';
-  } else if(emoji==='💥') {
-    STATE.health = Math.max(0, STATE.health-8);
-    workCombo=1;
-    tile.className='box-tile miss';
-    tile.textContent='❌';
-    navigator.vibrate && navigator.vibrate(100);
-  } else if(emoji==='🚫') {
-    workCombo=1;
-    tile.className='box-tile miss';
-    tile.textContent='✋';
-  }
-
-  const rankData = RANKS.find(r=>r.level===STATE.level)||RANKS[0];
-  const earned = workScore * 2 * workCombo;
-  set('workScore', workScore);
-  set('workCombo','x'+workCombo);
-  set('workEarned', earned+'€');
-  const pct = Math.min((workScore/(15+STATE.level*3))*100,100);
-  document.getElementById('workProgressFill').style.width=pct+'%';
-
-  setTimeout(()=>{ tile.className='box-tile'; tile.innerHTML='&nbsp;'; }, 400);
-  setTimeout(scheduleBoxes, 600);
-}
-
-function gameLoop() {
-  workTimeLeft--;
-  updateWorkTimer();
-  if(workTimeLeft<=0) { clearInterval(workInterval); endWork(); }
-}
-
-function updateWorkTimer() {
-  const el = document.getElementById('workTimer');
-  el.textContent = workTimeLeft;
-  el.className = 'game-timer' + (workTimeLeft<=10?' urgent':'');
-}
-
-function cancelWork() {
-  clearInterval(workInterval);
-  workActive=false;
-  document.getElementById('workOverlay').classList.remove('open');
-}
-
-function endWork() {
-  workActive=false;
-  document.getElementById('workOverlay').classList.remove('open');
-  const rankData = RANKS.find(r=>r.level===STATE.level)||RANKS[0];
-  const baseEarn = workScore*2*workCombo;
-  const bonus = workScore>=10 ? Math.floor(baseEarn*.2) : 0;
-  const total = baseEarn + bonus;
-  const xpGained = Math.floor(workScore*3 + bonus*.5);
-
-  STATE.money += total;
-  STATE.energy = Math.max(0, STATE.energy - 25);
-  STATE.xp += xpGained;
-  advanceTime(2,30);
-  checkLevelUp();
-  logWorkSession(workScore, workCombo, total, xpGained);
-  logTransaction(total, 'travail', 'Mission quai · '+workScore+' caisses');
-
-  // Résultat
-  const overlay = document.getElementById('resultOverlay');
-  overlay.classList.add('open');
-  set('resultEmoji', workScore>=12?'🏆':workScore>=6?'💰':'😅');
-  set('resultTitle', workScore>=12?'EXCELLENT !':workScore>=6?'BONNE MISSION':'BOF...');
-  set('resultEarned', '+'+total+' €');
-  set('resultDesc', workScore>=12?'Tu déchires au quai !':workScore>=6?'Pas mal, docker.':'Tu peux faire mieux...');
-  const bonuses = document.getElementById('resultBonuses');
-  bonuses.innerHTML=`
-    <div class="bonus-row"><span class="bonus-label">Caisses déplacées</span><span class="bonus-val">${workScore}</span></div>
-    <div class="bonus-row"><span class="bonus-label">Salaire de base</span><span class="bonus-val" style="color:var(--gold)">${baseEarn} €</span></div>
-    ${bonus?`<div class="bonus-row"><span class="bonus-label">Bonus performance</span><span class="bonus-val" style="color:var(--green)">+${bonus} €</span></div>`:''}
-    <div class="bonus-row"><span class="bonus-label">XP gagnée</span><span class="bonus-val" style="color:var(--blue)">+${xpGained} XP</span></div>
-    <div class="bonus-row"><span class="bonus-label">Énergie perdue</span><span class="bonus-val" style="color:var(--red)">-25</span></div>
-  `;
-  save();
-}
-
-function closeResult() {
-  document.getElementById('resultOverlay').classList.remove('open');
-  updateAllUI();
-}
-
-// ══════════════════════════════════════════════
-// CASINO
-// ══════════════════════════════════════════════
-const SLOT_SYMBOLS = ['🍋','🍒','⭐','💎','7️⃣','🍀','🎰','🐀'];
-let betAmount = 10;
-let slotRunning = false;
-
-function changeBet(delta) {
-  betAmount = Math.max(5, Math.min(STATE.money, betAmount+delta));
-  set('betVal', betAmount);
-}
-
-function spinSlot() {
-  if(slotRunning) return;
-  if(STATE.money < betAmount) { notify('Pas assez de thunes !','bad'); return; }
-  slotRunning=true;
-  STATE.money -= betAmount;
-  document.getElementById('spinBtn').disabled=true;
-  document.getElementById('slotResult').textContent='';
-
-  const reels=[0,1,2];
-  let results=[];
-  reels.forEach(i=>document.getElementById('reel'+i).classList.add('spinning'));
-
-  setTimeout(()=>{
-    reels.forEach(i=>{
-      const sym=SLOT_SYMBOLS[Math.floor(Math.random()*SLOT_SYMBOLS.length)];
-      results.push(sym);
-      document.getElementById('reel'+i).textContent=sym;
-      document.getElementById('reel'+i).classList.remove('spinning');
-    });
-    evalSlot(results);
-  },1200);
-}
-
-function evalSlot(r) {
-  let win=0; let msg='';
-  if(r[0]===r[1]&&r[1]===r[2]) {
-    if(r[0]==='💎'){win=betAmount*50;msg='💎 JACKPOT DIAMANT !';}
-    else if(r[0]==='7️⃣'){win=betAmount*20;msg='7️⃣ TRIPLE SEPT !';}
-    else if(r[0]==='🎰'){win=betAmount*15;msg='🎰 JACKPOT !';}
-    else{win=betAmount*8;msg='🎉 TRIPLE '+r[0]+'!';}
-  } else if(r[0]===r[1]||r[1]===r[2]||r[0]===r[2]) {
-    win=betAmount*2; msg='Paire ! x2';
-  } else {
-    msg='Rien... Réessaie !';
-  }
-  STATE.money+=win;
-  const el=document.getElementById('slotResult');
-  if(win){ el.textContent=msg+' +'+win+'€'; el.style.color='var(--gold)'; notify('+'+win+' € !','good'); logCasino('slots', betAmount, win-betAmount); }
-  else { el.textContent=msg; el.style.color='var(--muted)'; logCasino('slots', betAmount, -betAmount); }
-  slotRunning=false;
-  document.getElementById('spinBtn').disabled=false;
-  updateAllUI(); save();
-}
-
-function ratRace() {
-  if(STATE.money<20){notify('Mise minimum 20€','bad');return;}
-  openModal('🐀 Course de Rats','Deux rats s\'affrontent : Ratatouille vs Le Gros Marcel. Sur qui tu mises ?',[
-    {label:'🐀 Ratatouille (x2.5)',fn:()=>betRat('Ratatouille',2.5)},
-    {label:'🐭 Le Gros Marcel (x1.8)',fn:()=>betRat('Marcel',1.8)},
-  ]);
-}
-
-function betRat(name,mult) {
-  closeModal();
-  const bet=Math.min(50,STATE.money);
-  STATE.money-=bet;
-  const win=Math.random()<.45;
-  setTimeout(()=>{
-    if(win){
-      const earned=Math.floor(bet*mult);
-      STATE.money+=earned;
-      notify('🏆 '+name+' gagne ! +'+earned+' €','good');
-    } else {
-      notify('😭 '+name+' s\'effondre... -'+bet+' €','bad');
-    }
-    updateAllUI(); save();
-  },2000);
-  notify('Course en cours...','info');
-}
-
-// ══════════════════════════════════════════════
-// MARCHÉ NOIR
-// ══════════════════════════════════════════════
-function renderMarket() {
-  const c = document.getElementById('marketItems');
-  if(!c) return;
-  c.innerHTML = MARKET_ITEMS.map((item,i)=>`
-    <div class="market-item" onclick="buyMarket(${i})">
-      <div class="market-icon">${item.emoji}</div>
-      <div class="market-info">
-        <div class="market-name">${item.name}</div>
-        <div class="market-desc">${item.desc}</div>
-        <div class="market-risk ${item.riskCol}">${item.risk}</div>
-      </div>
-      <div>
-        <div class="market-price">${item.buy}€</div>
-        <div style="font-size:10px;color:var(--muted);text-align:right">achat</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function buyMarket(idx) {
-  const item = MARKET_ITEMS[idx];
-  if(STATE.money<item.buy){notify('Pas assez d\'argent','bad');return;}
-  openModal(item.emoji+' '+item.name,'Acheter pour '+item.buy+' € et revendre ? '+item.desc+'\n\n⚠️ '+item.risk,[
-    {label:'Acheter '+item.buy+'€', fn:()=>doMarket(idx)},
-    {label:'Annuler', fn:closeModal},
-  ]);
-}
-
-function doMarket(idx) {
-  closeModal();
-  const item = MARKET_ITEMS[idx];
-  STATE.money -= item.buy;
-  const success = Math.random()<item.chance;
-  setTimeout(()=>{
-    if(success){
-      const earned = item.earn[0]+Math.floor(Math.random()*(item.earn[1]-item.earn[0]));
-      STATE.money += earned;
-      STATE.xp += 10;
-      notify('💰 Revendu ! +'+earned+' €','good');
-    } else {
-      notify('🚨 Douaniers ! Marchandise confisquée...','bad');
-      STATE.health = Math.max(0,STATE.health-10);
-    }
-    updateAllUI(); save();
-  },1500);
-  notify('Transaction en cours...','info');
-  updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// VIE SOCIALE
-// ══════════════════════════════════════════════
-function renderSocial() {
-  const c = document.getElementById('placesGrid');
-  if(!c) return;
-  c.innerHTML = PLACES.map((p,i)=>`
-    <div class="place-card" onclick="goPlace(${i})">
-      <div class="place-banner" style="background:${p.color}">${p.emoji}</div>
-      <div class="place-info">
-        <div class="place-name">${p.name}</div>
-        <div class="place-desc">${p.cost?p.cost+' € / soirée':'Gratuit'}</div>
-        <div class="place-effects">${p.effects.map(e=>`<span class="effect-tag ${e.c}">${e.l}</span>`).join('')}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function goPlace(idx) { PLACES[idx].fn(); }
-
-function goBar() {
-  if(STATE.money<15){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=15; STATE.mood=Math.min(100,STATE.mood+15); STATE.health=Math.max(0,STATE.health-5);
-  STATE.xp+=5; advanceTime(2,0);
-  notify('🍺 Bonne soirée au bar !','good'); updateAllUI(); save();
-}
-function goBodega() {
-  if(STATE.money<30){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=30; STATE.mood=Math.min(100,STATE.mood+25); STATE.health=Math.max(0,STATE.health-15);
-  if(Math.random()<.3){notify('🤢 Tu t\'es un peu trop lâché...','bad'); STATE.energy=Math.max(0,STATE.energy-20);}
-  else{notify('🍷 Excellente soirée !','good');}
-  advanceTime(3,0); updateAllUI(); save();
-}
-function goGym() {
-  if(STATE.energy<20){notify('Trop fatigué pour le sport','bad');return;}
-  if(STATE.money<10){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=10; STATE.health=Math.min(100,STATE.health+20); STATE.energy=Math.max(0,STATE.energy-20);
-  STATE.skills.force=Math.min(100,STATE.skills.force+1); STATE.xp+=15;
-  notify('💪 Excellent entraînement !','good'); advanceTime(1,30); updateAllUI(); save();
-}
-function goLibrary() {
-  STATE.mood=Math.min(100,STATE.mood+10); STATE.xp+=20;
-  notify('📚 Tu as appris des trucs utiles.','good'); advanceTime(2,0); updateAllUI(); save();
-}
-function goFishing() {
-  STATE.mood=Math.min(100,STATE.mood+12); STATE.energy=Math.min(100,STATE.energy+5);
-  if(Math.random()<.3){const fish=Math.floor(Math.random()*30+10);STATE.money+=fish;notify('🎣 Pris un poisson ! +'+fish+' €','good');}
-  else{notify('🎣 Rien... mais c\'était relaxant.','info');}
-  advanceTime(2,0); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// SYNDICAT
-// ══════════════════════════════════════════════
-function joinUnion() {
-  if(STATE.unionMember){notify('Tu es déjà membre','info');return;}
-  if(STATE.money<10){notify('Cotisation 10€ requise','bad');return;}
-  STATE.money-=10; STATE.unionMember=true; STATE.unionPower=Math.min(100,STATE.unionPower+10);
-  notify('✊ Bienvenue au syndicat !','good'); updateAllUI(); save();
-}
-function doStrike() {
-  if(!STATE.unionMember){notify('Rejoins le syndicat d\'abord !','bad');return;}
-  openModal('⚡ Grève Générale','Déclencher une grève ? Pas de salaire pendant 2 jours mais la direction cède souvent...',[
-    {label:'Déclencher la grève', fn:()=>{
-      closeModal();
-      STATE.unionPower=Math.min(100,STATE.unionPower+15);
-      advanceTime(48,0);
-      if(Math.random()<.6){
-        const bonus=Math.floor(50+Math.random()*100);
-        STATE.money+=bonus;
-        notify('🏆 Victoire ! Prime de '+bonus+' €','good');
-      } else {
-        notify('😤 Grève perdue. Le patron a tenu.','bad');
-      }
-      updateAllUI(); save();
-    }},
-    {label:'Annuler', fn:closeModal},
-  ]);
-}
-function doManif() {
-  STATE.unionPower=Math.min(100,STATE.unionPower+8); STATE.mood=Math.min(100,STATE.mood+10);
-  if(Math.random()<.2){notify('🚓 CRS ! Garde à vue...','bad');STATE.health=Math.max(0,STATE.health-15);}
-  else{notify('🚩 Manif réussie ! Pouvoir +8%','good');}
-  advanceTime(3,0); updateAllUI(); save();
-}
-function doNego() {
-  if(STATE.unionPower<40){notify('Pas assez de pouvoir syndical (40% requis)','bad');return;}
-  const raise=Math.floor(Math.random()*15+5);
-  notify('📋 Négociation réussie ! Salaire +'+raise+'%','good');
-  STATE.unionPower=Math.max(0,STATE.unionPower-10);
-  updateAllUI(); save();
-}
-function runForElection() {
-  if(!STATE.unionMember){notify('Rejoins le syndicat d\'abord !','bad');return;}
-  openModal('🗳️ Élections','Tu te présentes comme délégué. Campagne coûteuse mais influence massive si élu...',[
-    {label:'Se présenter (50€)', fn:()=>{
-      closeModal();
-      if(STATE.money<50){notify('Pas assez d\'argent','bad');return;}
-      STATE.money-=50;
-      if(Math.random()<.45){STATE.unionPower=Math.min(100,STATE.unionPower+30);notify('🏆 ÉELU DÉLÉGUÉ ! Influence +30%','good');}
-      else{notify('😞 Défaite aux élections...','bad');}
-      updateAllUI(); save();
-    }},
-    {label:'Annuler',fn:closeModal},
-  ]);
-}
-
-// ══════════════════════════════════════════════
-// LOGEMENT
-// ══════════════════════════════════════════════
-function renderHousing() {
-  const h = HOUSINGS[STATE.housing];
-  set('housingName', h.name);
-  set('housingAddr', h.addr);
-  set('housingRent', h.rent===0?'GRATUIT':h.rent+' €/mois');
-  set('housingComfort', h.comfort);
-  set('housingNeighbor', h.neighbor);
-  const banner=document.getElementById('housingBanner');
-  if(banner){banner.style.background=h.bg;banner.textContent=h.emoji;}
-
-  const opts=document.getElementById('housingOptions');
-  if(!opts)return;
-  opts.innerHTML=HOUSINGS.map((hh,i)=>`
-    <div class="card" style="margin-bottom:10px;${i===STATE.housing?'border-color:var(--gold);opacity:.6;pointer-events:none':''}" onclick="moveHousing(${i})">
-      <div class="card-accent" style="background:${i===STATE.housing?'var(--gold)':'var(--border)'}"></div>
-      <div class="card-inner">
-        <div style="font-size:30px">${hh.emoji}</div>
-        <div class="card-body">
-          <div class="card-title" style="font-size:16px">${hh.name}</div>
-          <div class="card-sub">${hh.rent===0?'Gratuit':hh.rent+' €/mois'} · ${hh.comfort}</div>
+      <div class="action-card" onclick="changeView('bar')">
+        <div class="card-left">
+          <span class="card-category" style="color: var(--purple);">Détente & Vice</span>
+          <h2 class="card-heading" style="color: var(--dark);">LE RADE DU PORT</h2>
+          <span class="card-description" style="color: #475569;">Bois un coup ou joue tes économies au comptoir</span>
         </div>
-        ${i===STATE.housing?'<span class="card-badge tag-gold">ACTUEL</span>':''}
+        <div class="card-illustration-box">🎰</div>
+      </div>
+
+      <div class="action-card theme-purple" onclick="window.location.href='shop.html'">
+        <div class="card-texts">
+          <span class="card-category">Marché Underground</span>
+          <h2 class="card-heading">LA BOUTIQUE SECRÈTE</h2>
+          <span class="card-description">Améliore ton équipement et soigne-toi</span>
+        </div>
+        <div class="card-illustration-box">Alien</div>
+      </div>
+
+    </div>
+
+    <div id="screen-bar" class="view-screen">
+      <div class="empty-state">
+        <h3>🎰 LE BISTROT</h3>
+        <p>Prends un verre pour évacuer le stress ou tente ta chance aux dés.</p>
       </div>
     </div>
-  `).join('');
-}
 
-function moveHousing(idx) {
-  const h=HOUSINGS[idx];
-  if(idx===STATE.housing){notify('Tu habites déjà ici','info');return;}
-  openModal(h.emoji+' '+h.name,'Déménager ici ? Loyer : '+(h.rent===0?'gratuit':h.rent+' €/mois')+'\nConfort : '+h.comfort,[
-    {label:'Déménager', fn:()=>{STATE.housing=idx;closeModal();notify('🚛 Déménagement effectué !','good');updateAllUI();save();}},
-    {label:'Annuler', fn:closeModal},
-  ]);
-}
-
-// ══════════════════════════════════════════════
-// PROGRESSION
-// ══════════════════════════════════════════════
-function renderProgression() {
-  set('progLevel', STATE.level);
-  const rankData=RANKS.find(r=>r.level===STATE.level)||RANKS[0];
-  set('progRankTitle', rankData.name);
-  const xpNeeded=XP_PER_LEVEL[Math.min(STATE.level,XP_PER_LEVEL.length-1)];
-  const prevXp=STATE.level>1?XP_PER_LEVEL[STATE.level-1]:0;
-  const pct=xpNeeded?Math.min(100,((STATE.xp-prevXp)/(xpNeeded-prevXp))*100):100;
-  const fill=document.getElementById('progXpFill');
-  if(fill)fill.style.width=pct+'%';
-  set('progXpLabel', STATE.xp+' / '+xpNeeded+' XP vers niveau '+(STATE.level+1));
-
-  const sg=document.getElementById('skillsGrid');
-  if(sg){
-    const SKILL_COLORS={'force':'var(--red)','vitesse':'var(--blue)','endurance':'var(--green)','combine':'var(--purple)'};
-    sg.innerHTML=Object.entries(STATE.skills).map(([k,v])=>`
-      <div class="skill-item">
-        <div class="skill-name">${k.toUpperCase()}</div>
-        <div class="skill-bar"><div class="skill-fill" style="width:${v}%;background:${SKILL_COLORS[k]||'var(--gold)'}"></div></div>
-        <div class="skill-val">${v}/100</div>
+    <div id="screen-career" class="view-screen">
+      <div class="empty-state">
+        <h3>📊 DOSSIER SYNDICAL</h3>
+        <p>Suis ton avancement dans les rangs de la capitainerie pour augmenter ton salaire horaire.</p>
       </div>
-    `).join('');
-  }
+    </div>
 
-  const ul=document.getElementById('unlocksList');
-  if(ul){
-    const UNLOCKS=[
-      {lvl:1,name:'Décharger les conteneurs',done:true},
-      {lvl:2,name:'Heures supplémentaires',done:STATE.level>=2},
-      {lvl:3,name:'Grue lourde',done:STATE.level>=3},
-      {lvl:4,name:'CACES avancé',done:STATE.level>=4},
-      {lvl:5,name:'Chef de quai',done:STATE.level>=5},
-    ];
-    ul.innerHTML=UNLOCKS.map(u=>`
-      <div class="card" style="opacity:${u.done?1:.5}">
-        <div class="card-inner">
-          <div style="font-size:24px">${u.done?'✅':'🔒'}</div>
-          <div class="card-body">
-            <div class="card-title" style="font-size:16px">${u.name}</div>
-            <div class="card-sub">Niveau ${u.lvl} requis</div>
-          </div>
-        </div>
-      </div>
-    `).join('');
-  }
-}
+  </div>
 
-function checkLevelUp() {
-  const next = XP_PER_LEVEL[Math.min(STATE.level, XP_PER_LEVEL.length-1)];
-  if(STATE.xp >= next && STATE.level < 7) {
-    STATE.level++;
-    const rd=RANKS.find(r=>r.level===STATE.level)||RANKS[RANKS.length-1];
-    STATE.rank=rd.name;
-    notify('🏆 NIVEAU '+STATE.level+' — '+rd.name+' !','good');
-  }
-}
+  <div class="bottom-navbar">
+    <button class="nav-tab active" id="tab-home" onclick="changeView('home')">
+      <span class="nav-tab-icon">⚓</span>
+      <span>Le Port</span>
+    </button>
+    <button class="nav-tab" id="tab-bar" onclick="changeView('bar')">
+      <span class="nav-tab-icon">🎰</span>
+      <span>Jeux</span>
+    </button>
+    <button class="nav-tab" id="tab-career" onclick="changeView('career')">
+      <span class="nav-tab-icon">📊</span>
+      <span>Syndicat</span>
+    </button>
+  </div>
 
-// ══════════════════════════════════════════════
-// TEMPS
-// ══════════════════════════════════════════════
-function advanceTime(hours, mins) {
-  STATE.min+=mins; STATE.hour+=hours;
-  while(STATE.min>=60){STATE.min-=60;STATE.hour++;}
-  while(STATE.hour>=24){STATE.hour-=24;STATE.day++;endOfDay();}
-}
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const sb = supabase.createClient(supabaseUrl, supabaseKey);
 
-function endOfDay() {
-  // Régénération énergie selon logement
-  const h=HOUSINGS[STATE.housing];
-  STATE.energy=Math.min(100,STATE.energy+h.regen+40);
-  STATE.health=Math.min(100,STATE.health+5);
-  // Loyer mensuel (tous les 30 jours)
-  if(STATE.day%30===0){
-    const rent=HOUSINGS[STATE.housing].rent;
-    if(rent>0){
-      STATE.money-=rent;
-      if(STATE.money<0){STATE.money=0;notify('🏚️ Loyer impayé ! Risque d\'expulsion','bad');}
-      else{notify('🏠 Loyer payé : -'+rent+' €','info');}
-    }
-  }
-  // Cotisation syndicat
-  if(STATE.unionMember&&STATE.day%30===0){
-    STATE.money=Math.max(0,STATE.money-10);
-  }
-  // Charges mensuelles
-  if(STATE.day%30===0){
-    const charges=STATE.pension+(STATE.enfants*200)+(STATE.pet?STATE.pet.cost:0)+(STATE.vehicle==='voiture'?80:0);
-    if(charges>0){ STATE.money=Math.max(0,STATE.money-charges); notify('📅 Charges mensuelles : -'+charges+'€','info'); }
-    // Intérêts crédit
-    if(STATE.creditDebt>0){ const int=Math.floor(STATE.creditDebt*.2); STATE.creditDebt+=int; notify('💳 Intérêts crédit +'+int+'€','bad'); }
-  }
-  save();
-}
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
 
-// ══════════════════════════════════════════════
-// NOTIFICATIONS
-// ══════════════════════════════════════════════
-let notifTimer;
-function notify(msg, type='info') {
-  const el=document.getElementById('notif');
-  clearTimeout(notifTimer);
-  el.textContent=msg;
-  el.className='notif show '+(type==='good'?'good':type==='bad'?'bad':'info');
-  notifTimer=setTimeout(()=>el.classList.remove('show'),2500);
-}
+    // État local du jeu
+    const STATE = {
+      money: 0, rank: 'Docker Occasionnel',
+      energy: 100, energy_max: 100, health: 100,
+      rep_colleagues: 0, rep_boss: 0, rep_street: 0,
+      addictions: [], certifs: []
+    };
 
-// ══════════════════════════════════════════════
-// MODAL
-// ══════════════════════════════════════════════
-function openModal(title, body, actions) {
-  set('modalTitle',title);
-  document.getElementById('modalBody').innerHTML=body.replace(/\n/g,'<br>');
-  const ac=document.getElementById('modalActions');
-  ac.innerHTML=actions.map((a,i)=>`<button class="btn ${i===0?'btn-primary':'btn-secondary'}" onclick="(${a.fn})()">${a.label}</button>`).join('');
-  document.getElementById('modal').classList.add('open');
-}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
+    // Lancement automatique
+    initGame();
 
-// ══════════════════════════════════════════════
-// FAMILLE
-// ══════════════════════════════════════════════
-function doMariage() {
-  if(STATE.marié){notify('Tu es déjà marié(e) !','info');return;}
-  if(STATE.money<2000){notify('Le mariage coûte 2000€','bad');return;}
-  STATE.money-=2000; STATE.marié=true; STATE.mood=Math.min(100,STATE.mood+30);
-  notify('💍 Félicitations ! Vous voilà mariés !','good'); updateAllUI(); save();
-}
-function doDivorce() {
-  if(!STATE.marié){notify('Tu n\'es pas marié(e)','info');return;}
-  STATE.marié=false; STATE.pension=200; STATE.mood=Math.max(0,STATE.mood-20);
-  notify('💔 Divorce prononcé. Pension : 200€/mois','bad'); updateAllUI(); save();
-}
-function doEnfant() {
-  if(!STATE.marié&&Math.random()<.6){notify('Fais-toi d\'abord une relation sérieuse...','info');return;}
-  STATE.enfants++; STATE.mood=Math.min(100,STATE.mood+20);
-  notify('👶 Bienvenue bébé ! +200€/mois de charges','good'); updateAllUI(); save();
-}
-function doReunion() {
-  STATE.mood=Math.min(100,STATE.mood+10); STATE.money=Math.max(0,STATE.money-30);
-  notify('🍽️ Réunion de famille... tonton soûl comme d\'hab','info'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// SANTÉ / ADDICTIONS
-// ══════════════════════════════════════════════
-function doMedecin() {
-  if(STATE.money<50){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=50; STATE.health=Math.min(100,STATE.health+30);
-  notify('🩺 Le médecin t\'a retapé !','good'); updateAllUI(); save();
-}
-function doFumer() {
-  STATE.mood=Math.min(100,STATE.mood+8); STATE.health=Math.max(0,STATE.health-3);
-  if(!STATE.addictions.includes('tabac')&&Math.random()<.3){
-    STATE.addictions.push('tabac'); notify('🚬 Accroché... tu fumes maintenant.','bad');
-  } else { notify('🚬 Bouffée de stress...','info'); }
-  updateAllUI(); save();
-}
-function doBoire() {
-  STATE.mood=Math.min(100,STATE.mood+20); STATE.health=Math.max(0,STATE.health-10);
-  if(!STATE.addictions.includes('alcool')&&Math.random()<.25){
-    STATE.addictions.push('alcool'); notify('🥃 Tu te mets à picoler régulièrement...','bad');
-  } else { notify('🥃 Un verre pour oublier...','info'); }
-  updateAllUI(); save();
-}
-function doDesintox() {
-  if(STATE.money<500){notify('La désintox coûte 500€','bad');return;}
-  if(STATE.addictions.length===0){notify('T\'as pas d\'addiction !','info');return;}
-  STATE.money-=500; STATE.addictions=[]; advanceTime(168,0);
-  notify('🏥 Cure terminée ! Tu es clean !','good'); updateAllUI(); save();
-}
-function doArretMaladie() {
-  if(STATE.health>60){notify('T\'as l\'air en forme... le médecin refuse','bad');return;}
-  const gain=Math.floor((RANKS.find(r=>r.level===STATE.level)||RANKS[0]).salary*0.6);
-  STATE.money+=gain; advanceTime(72,0); STATE.energy=Math.min(100,STATE.energy+60);
-  notify('📋 Arrêt maladie 3j ! +'+gain+'€','good'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// JUSTICE
-// ══════════════════════════════════════════════
-function doAvocat() {
-  if(STATE.money<300){notify('Avocat privé = 300€','bad');return;}
-  STATE.money-=300; STATE.casier=Math.max(0,STATE.casier-1);
-  notify('⚖️ L\'avocat a effacé une mention','good'); updateAllUI(); save();
-}
-function doPayer() {
-  if(STATE.amende===0){notify('Pas d\'amende en cours','info');return;}
-  if(STATE.money<STATE.amende){notify('Pas assez pour payer l\'amende','bad');return;}
-  STATE.money-=STATE.amende; STATE.amende=0;
-  notify('🧾 Amende payée !','good'); updateAllUI(); save();
-}
-function doPrison() {
-  if(!STATE.enPrison){notify('Tu es libre... profites-en !','info');return;}
-  // Sortie possible
-  openModal('🔒 En Prison','Tu purges ta peine. Payer une caution pour sortir ?',[
-    {label:'Payer caution 500€',fn:()=>{
-      closeModal();
-      if(STATE.money<500){notify('Pas assez','bad');return;}
-      STATE.money-=500; STATE.enPrison=false;
-      notify('🔓 Liberté ! Mais le casier reste...','info'); updateAllUI(); save();
-    }},
-    {label:'Attendre (7j)',fn:()=>{closeModal();advanceTime(168,0);STATE.enPrison=false;notify('🔓 Peine purgée','info');updateAllUI();save();}},
-  ]);
-}
-function addCasier(raison) {
-  STATE.casier++; STATE.amende=Math.floor(100+Math.random()*300);
-  if(STATE.casier>=3&&Math.random()<.4){ STATE.enPrison=true; notify('🚨 ARRÊTÉ ! Gardes à vue...','bad'); }
-  else { notify('🚨 '+raison+' · Amende '+STATE.amende+'€','bad'); }
-}
-
-// ══════════════════════════════════════════════
-// FORMATION
-// ══════════════════════════════════════════════
-const FORMATIONS = [
-  {id:'caces1',name:'CACES R489 Cat.1',emoji:'🚜',cost:300,days:3,xp:80,desc:'Chariot élévateur basique'},
-  {id:'caces3',name:'CACES R489 Cat.3',emoji:'🏗️',cost:500,days:5,xp:120,desc:'Grue et chariots lourds'},
-  {id:'secours',name:'Premiers Secours',emoji:'🏥',cost:80,days:1,xp:40,desc:'Obligatoire sur le port'},
-  {id:'gestion',name:'Gestion d\'Équipe',emoji:'📊',cost:400,days:4,xp:100,desc:'Déblocage poste chef'},
-  {id:'anglais',name:'Anglais Professionnel',emoji:'🇬🇧',cost:200,days:7,xp:60,desc:'Communication internationale'},
-];
-function renderFormation() {
-  const c=document.getElementById('formationList');
-  if(!c)return;
-  c.innerHTML=FORMATIONS.map(f=>{
-    const done=STATE.certifs.includes(f.id);
-    return `<div class="card" style="margin-bottom:10px;${done?'opacity:.5;pointer-events:none':''}" onclick="doFormation('${f.id}')">
-      <div class="card-accent ${done?'accent-green':'accent-blue'}"></div>
-      <div class="card-inner">
-        <div style="font-size:32px">${f.emoji}</div>
-        <div class="card-body">
-          <div class="card-title" style="font-size:16px">${f.name}</div>
-          <div class="card-sub">${f.desc} · ${f.cost}€ · ${f.days}j · +${f.xp}XP</div>
-        </div>
-        ${done?'<span class="card-badge tag-green">OBTENU</span>':''}
-      </div>
-    </div>`;
-  }).join('');
-}
-function doFormation(id) {
-  const f=FORMATIONS.find(x=>x.id===id);
-  if(!f||STATE.certifs.includes(id))return;
-  if(STATE.money<f.cost){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=f.cost; STATE.certifs.push(id); STATE.xp+=f.xp;
-  advanceTime(f.days*8,0); checkLevelUp();
-  notify('🎓 Certif obtenue : '+f.name,'good'); renderFormation(); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// AMOUR
-// ══════════════════════════════════════════════
-const PARTENAIRES=['Alex','Morgan','Sam','Jordan','Charlie','Lou','Remy','Kim'];
-function doTinder() {
-  if(STATE.money<10){notify('Abonnement 10€','bad');return;}
-  STATE.money-=10;
-  if(Math.random()<.5){
-    STATE.relation=true; STATE.partnerName=PARTENAIRES[Math.floor(Math.random()*PARTENAIRES.length)];
-    notify('💘 Match avec '+STATE.partnerName+' !','good');
-  } else { notify('💨 Aucun match... snif','bad'); }
-  updateAllUI(); save();
-}
-function doDate() {
-  if(STATE.money<60){notify('Un resto ça coûte 60€','bad');return;}
-  STATE.money-=60;
-  if(STATE.relation){STATE.mood=Math.min(100,STATE.mood+20);notify('🌹 Soirée parfaite avec '+STATE.partnerName+'!','good');}
-  else if(Math.random()<.4){STATE.relation=true;STATE.partnerName=PARTENAIRES[Math.floor(Math.random()*PARTENAIRES.length)];notify('💑 Coup de foudre avec '+STATE.partnerName+'!','good');}
-  else{notify('😅 Soirée sympa mais pas plus...','info');}
-  updateAllUI(); save();
-}
-function doRupture() {
-  if(!STATE.relation){notify('Tu es déjà célibataire...','info');return;}
-  const name=STATE.partnerName; STATE.relation=false; STATE.partnerName='';
-  STATE.mood=Math.max(0,STATE.mood-20);
-  notify('💔 Fin avec '+name+'... moral en berne','bad'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// SHOPPING
-// ══════════════════════════════════════════════
-const SHOP_ITEMS=[
-  {name:'Fringues Marché',emoji:'👕',cost:30,credit:false,desc:'Apparence +1'},
-  {name:'Télé 4K',emoji:'📺',cost:600,credit:true,desc:'Moral +15 à la maison'},
-  {name:'Chaîne Hi-Fi',emoji:'🔊',cost:300,credit:true,desc:'Ambiance logement ++'},
-  {name:'Canapé Cuir',emoji:'🛋️',cost:800,credit:true,desc:'Confort +20'},
-  {name:'Console de Jeux',emoji:'🎮',cost:400,credit:true,desc:'Moral +20 · Temps tué'},
-];
-function renderShop() {
-  const c=document.getElementById('shopItems');
-  if(!c)return;
-  c.innerHTML=SHOP_ITEMS.map((it,i)=>`
-    <div class="card" style="margin-bottom:10px" onclick="buyShopItem(${i})">
-      <div class="card-accent ${it.credit?'accent-red':'accent-green'}"></div>
-      <div class="card-inner">
-        <div style="font-size:32px">${it.emoji}</div>
-        <div class="card-body">
-          <div class="card-title" style="font-size:16px">${it.name}</div>
-          <div class="card-sub">${it.cost}€${it.credit?' (crédit dispo)':''} · ${it.desc}</div>
-        </div>
-      </div>
-    </div>`).join('');
-}
-function buyShopItem(i) {
-  const it=SHOP_ITEMS[i];
-  if(STATE.money>=it.cost){STATE.money-=it.cost;notify('🛒 Acheté : '+it.name,'good');}
-  else if(it.credit){STATE.creditDebt+=it.cost;notify('💳 Acheté à crédit ! Dette +'+it.cost+'€','bad');}
-  else{notify('Pas assez d\'argent','bad');return;}
-  STATE.mood=Math.min(100,STATE.mood+10); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// ANIMAUX
-// ══════════════════════════════════════════════
-function adoptAnimal(type) {
-  if(STATE.pet){notify('Tu as déjà un animal !','info');return;}
-  const animals={
-    chien:{name:'Rex',emoji:'🐕',cost:30,moral:15},
-    chat:{name:'Minou',emoji:'🐈',cost:15,moral:8},
-    rat:{name:'Ratatouille',emoji:'🐀',cost:5,moral:5},
-  };
-  const a=animals[type];
-  STATE.pet={type,name:a.name,emoji:a.emoji,cost:a.cost,moral:a.moral,happiness:100};
-  notify(a.emoji+' '+a.name+' adopté !','good'); updateAllUI(); save();
-}
-function feedPet() {
-  if(!STATE.pet){notify('T\'as pas d\'animal !','info');return;}
-  STATE.pet.happiness=Math.min(100,STATE.pet.happiness+20);
-  STATE.mood=Math.min(100,STATE.mood+5);
-  notify(STATE.pet.emoji+' '+STATE.pet.name+' est ravi(e) !','good'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// MÉDIAS
-// ══════════════════════════════════════════════
-function doTikTok() {
-  const r=Math.random();
-  if(r<.3){STATE.fame=Math.min(100,STATE.fame+20);notify('🔥 Viral ! +20 notoriété','good');}
-  else if(r<.6){STATE.fame=Math.min(100,STATE.fame+5);notify('📲 Quelques vues... +5 notoriété','info');}
-  else{STATE.mood=Math.max(0,STATE.mood-10);notify('😤 Flood de haters...','bad');}
-  updateAllUI(); save();
-}
-function doInterview() {
-  STATE.fame=Math.min(100,STATE.fame+10); STATE.mood=Math.min(100,STATE.mood+8);
-  notify('📰 Ton histoire dans le journal local !','good'); updateAllUI(); save();
-}
-function doTeleRealite() {
-  if(STATE.fame<30){notify('Pas assez connu pour la télé (30 notoriété requis)','bad');return;}
-  STATE.money+=500; STATE.fame=Math.min(100,STATE.fame+30); STATE.mood=Math.max(0,STATE.mood-10);
-  notify('📺 Tourné ! +500€ mais vie privée à 0','info'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// VACANCES
-// ══════════════════════════════════════════════
-function doVacance(type,cost,days) {
-  if(STATE.money<cost){notify('Pas assez d\'argent','bad');return;}
-  const results={
-    camping:{msg:'⛺ Camping sympa ! Énergie +40 Moral +20',e:40,m:20},
-    city:{msg:'🏙️ Week-end city ! Moral +30',e:20,m:30},
-    low:{msg:Math.random()<.5?'✈️ Vol annulé, hôtel nul... Moral -5':'✈️ Vacances chaotiques mais mémorables ! Moral +15',e:30,m:Math.random()<.5?-5:15},
-    chez:{msg:'🛋️ Bulle à la maison. Énergie +30',e:30,m:5},
-  };
-  const r=results[type];
-  STATE.money-=cost; STATE.energy=Math.min(100,STATE.energy+r.e);
-  STATE.mood=Math.min(100,Math.max(0,STATE.mood+r.m));
-  advanceTime(days*24,0); notify(r.msg,'good'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// RETRAITE
-// ══════════════════════════════════════════════
-function doPreRetraite() {
-  if(STATE.money<100){notify('Investis 100€','bad');return;}
-  STATE.money-=100; STATE.cotisations+=100;
-  notify('💰 +100€ cotisés ! Total : '+STATE.cotisations+'€','good'); updateAllUI(); save();
-}
-function doPartirRetraite() {
-  if(STATE.day<1825){notify('Il te faut '+1825+' jours de carrière','bad');return;}
-  const pension=Math.floor(STATE.cotisations/50+200);
-  openModal('🏖️ RETRAITE !','Félicitations ! Tu pars à la retraite avec une pension de '+pension+'€/mois.\n\nScore final : '+STATE.money+'€ en poche · Niveau '+STATE.level,[
-    {label:'Profiter !',fn:()=>{closeModal();notify('🏖️ Bonne retraite, Docker !','good');}},
-  ]);
-}
-
-// ══════════════════════════════════════════════
-// MÉTÉO
-// ══════════════════════════════════════════════
-const METEOS=[
-  {emoji:'☀️',label:'Beau Temps',desc:'Conditions parfaites',effect:0},
-  {emoji:'🌤️',label:'Nuageux',desc:'Correct',effect:0},
-  {emoji:'🌧️',label:'Pluie',desc:'Travail ralenti -10% salaire',effect:-10},
-  {emoji:'⛈️',label:'Tempête',desc:'Port fermé ! Pas de travail',effect:-100},
-  {emoji:'🌪️',label:'Tempête Violente',desc:'Dégâts matériels -100€',effect:-100},
-  {emoji:'☃️',label:'Neige',desc:'Glissades et accidents',effect:-20},
-];
-let meteoActuelle=0;
-function checkMeteo() {
-  meteoActuelle=Math.floor(Math.random()*METEOS.length);
-  const m=METEOS[meteoActuelle];
-  document.getElementById('meteoEmoji').textContent=m.emoji;
-  document.getElementById('meteoLabel').textContent=m.label;
-  document.getElementById('meteoDesc').textContent=m.desc;
-  set('meteoHomePreview',m.emoji+' '+m.label);
-  notify(m.emoji+' '+m.label,'info'); save();
-}
-function doTempete() {
-  meteoActuelle=Math.floor(3+Math.random()*3);
-  const m=METEOS[meteoActuelle];
-  document.getElementById('meteoEmoji').textContent=m.emoji;
-  document.getElementById('meteoLabel').textContent=m.label;
-  document.getElementById('meteoDesc').textContent=m.desc;
-  if(m.effect===-100){notify('⛈️ Port fermé demain !','bad');}
-  else{STATE.money=Math.max(0,STATE.money+m.effect);notify('🌪️ Dégâts ! '+m.effect+'€','bad');}
-  updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// TECHNOLOGIES
-// ══════════════════════════════════════════════
-function buyPhone() {
-  if(STATE.money<200){notify('Smartphone = 200€','bad');return;}
-  STATE.money-=200; STATE.phone=true;
-  notify('📱 Nouveau smartphone ! Attention à l\'addiction...','good'); updateAllUI(); save();
-}
-function doScroll() {
-  if(!STATE.phone){notify('T\'as même pas de smartphone !','bad');return;}
-  const r=Math.random();
-  STATE.energy=Math.max(0,STATE.energy-10);
-  if(r<.4){STATE.mood=Math.min(100,STATE.mood+5);notify('😄 Vidéo marrante... 2h passées','info');}
-  else{STATE.mood=Math.max(0,STATE.mood-5);notify('😤 Trolls et mauvaises news...','bad');}
-  advanceTime(2,0); updateAllUI(); save();
-}
-function doArnaqueEnLigne() {
-  if(Math.random()<.5){notify('🛡️ Tu as ignoré l\'arnaque. Bien joué.','good');}
-  else{const perte=Math.floor(50+Math.random()*200);STATE.money=Math.max(0,STATE.money-perte);notify('🎣 Arnaqué ! -'+perte+'€','bad');addCasier('Victime phishing');}
-  updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// TRANSPORT
-// ══════════════════════════════════════════════
-function buyVehicle(type,cost) {
-  if(STATE.money<cost){notify('Pas assez d\'argent','bad');return;}
-  STATE.money-=cost; STATE.vehicle=type;
-  const names={velo:'🚲 Vélo',scooter:'🛵 Scooter',voiture:'🚗 Bagnole'};
-  notify(names[type]+' acheté !','good'); updateAllUI(); save();
-}
-function doPV() {
-  if(STATE.vehicle==='pied'||STATE.vehicle==='velo'){notify('T\'as pas de moteur, pas de PV !','info');return;}
-  STATE.money=Math.max(0,STATE.money-45); STATE.amende=45;
-  notify('🧾 PV ! -45€ · Bonne journée !','bad'); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// BOUFFE
-// ══════════════════════════════════════════════
-function doManger(type,cost) {
-  if(STATE.money<cost){notify('Pas assez d\'argent pour manger','bad');return;}
-  const effects={
-    cantine:{e:20,s:0,m:0},fastfood:{e:25,s:-5,m:0},cuisiné:{e:30,s:5,m:0},
-    resto:{e:35,s:0,m:15},skip:{e:-15,s:-5,m:0},
-  };
-  const ef=effects[type];
-  STATE.money-=cost;
-  STATE.energy=Math.min(100,Math.max(0,STATE.energy+ef.e));
-  STATE.health=Math.min(100,Math.max(0,STATE.health+ef.s));
-  STATE.mood=Math.min(100,Math.max(0,STATE.mood+ef.m));
-  const msgs={cantine:'🍱 Cantine mangée... c\'était... correct',fastfood:'🍔 Délicieux mais douteux',cuisiné:'🍳 Bon repas maison !',resto:'🍽️ Excellent repas !',skip:'💨 T\'as sauté le repas...'};
-  notify(msgs[type],'info'); advanceTime(0,30); updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// DEALS / COMBINES
-// ══════════════════════════════════════════════
-function doCombine(type,cost,gain,chance) {
-  if(STATE.money<cost){notify('Pas assez d\'argent pour lancer la combine','bad');return;}
-  STATE.money-=cost;
-  if(Math.random()<chance){
-    STATE.money+=gain; STATE.xp+=15;
-    notify('✅ Combine réussie ! +'+gain+'€','good');
-  } else {
-    addCasier('Combine ratée');
-    notify('🚨 Raté... les flics ont eu vent','bad');
-  }
-  updateAllUI(); save();
-}
-
-// ══════════════════════════════════════════════
-// UPDATE UI — NOUVELLES SECTIONS
-// ══════════════════════════════════════════════
-function updateNewScreens() {
-  // Famille
-  set('familleStatus', STATE.marié?'Marié(e)':'Célibataire');
-  set('familleSub', STATE.enfants+' enfant(s)'+( STATE.pension?' · Pension '+STATE.pension+'€/mois':''));
-  set('familleEmoji', STATE.marié?'💑':'💔');
-  set('familleHomePreview', (STATE.marié?'Marié(e)':'Célibataire')+' · '+STATE.enfants+' enfant(s)');
-  set('enfantsCount', STATE.enfants+' enfant(s) · -'+(STATE.enfants*200)+'€/mois · Bonheur +20');
-  // Addictions
-  const ad=document.getElementById('addictionsDisplay');
-  if(ad) ad.innerHTML=STATE.addictions.length?STATE.addictions.map(a=>`<span class="effect-tag tag-red">${a==='alcool'?'🥃 Alcool':'🚬 Tabac'}</span>`).join(''):'<span style="color:var(--muted);font-size:13px">Aucune addiction — continue comme ça !</span>';
-  // Justice
-  set('casierCount', STATE.casier);
-  set('casierDisplay', STATE.casier===0?'Casier vierge — pour l\'instant.':'⚠️ '+STATE.casier+' mention(s) au casier');
-  set('amendeLabel', STATE.amende?'Amende en cours : '+STATE.amende+'€':'Aucune amende en cours');
-  set('prisonStatus', STATE.enPrison?'🔒 TU ES EN PRISON':'Tu es libre… pour l\'instant');
-  set('justiceHomePreview', STATE.casier?STATE.casier+' mention(s)':'Casier vierge');
-  // Formation
-  renderFormation(); renderShop();
-  set('formationHomePreview', STATE.certifs.length+' certif(s) obtenue(s)');
-  // Amour
-  set('amourStatus', STATE.relation?'En couple avec '+STATE.partnerName:'Célibataire');
-  set('amourPartner', STATE.relation?'💑 Relation en cours':'Personne en vue');
-  set('amourEmoji', STATE.relation?'💑':'💔');
-  set('amourHomePreview', STATE.relation?'Avec '+STATE.partnerName:'Célibataire');
-  // Shopping
-  set('creditDebt', STATE.creditDebt+' €');
-  set('shoppingHomePreview', STATE.creditDebt?'Dette : '+STATE.creditDebt+'€':'Pas de dettes');
-  // Animaux
-  set('petEmoji', STATE.pet?STATE.pet.emoji:'🐾');
-  set('petName', STATE.pet?STATE.pet.name+' ('+STATE.pet.type+')':'Pas d\'animal');
-  set('petDesc', STATE.pet?'Bonheur : '+STATE.pet.happiness+'% · Coût : '+STATE.pet.cost+'€/mois':'Adopte un compagnon');
-  set('petHomePreview', STATE.pet?STATE.pet.emoji+' '+STATE.pet.name:'Pas d\'animal');
-  // Médias
-  const fameFill=document.getElementById('fameFill');
-  if(fameFill) fameFill.style.width=STATE.fame+'%';
-  const fameLabels=['Inconnu du grand public','Un peu connu au port','Célébrité locale','Star du quartier','Influenceur docker','Docker Star Nationale !'];
-  const fl=fameLabels[Math.min(Math.floor(STATE.fame/20),5)];
-  set('fameLabel',fl); set('mediasHomePreview',fl);
-  // Retraite
-  set('cotisationsVal', STATE.cotisations+' €');
-  set('pensionEstim', Math.floor(STATE.cotisations/50+200)+' €/mois');
-  const retPct=Math.min(100,(STATE.day/1825)*100);
-  const retFill=document.getElementById('retraiteFill');
-  if(retFill) retFill.style.width=retPct+'%';
-  set('retraiteDay', STATE.day);
-  set('retraiteHomePreview', STATE.cotisations+'€ cotisés');
-  set('retraiteEligible', STATE.day>=1825?'✅ Tu peux partir !':'Disponible après 1825 jours (jour '+STATE.day+')');
-  // Transport
-  const vnames={pied:'🚶 À pied',velo:'🚲 Vélo',scooter:'🛵 Scooter',voiture:'🚗 Bagnole'};
-  set('vehicleLabel', vnames[STATE.vehicle]||'🚶 À pied');
-  set('transportHomePreview', vnames[STATE.vehicle]||'À pied');
-  // Techno
-  set('phoneLabel', STATE.phone?'📱 Smartphone récent':'📟 Vieux Nokia cassé');
-  set('technoHomePreview', STATE.phone?'Smartphone':'Vieux Nokia');
-  // Santé home preview
-  set('santeHomePreview', STATE.addictions.length?'⚠️ '+STATE.addictions.join(', '):'En bonne forme');
-}
-
-
-// ══════════════════════════════════════════════
-// SUPABASE
-// ══════════════════════════════════════════════
-const SUPA_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-let currentUserId = null;
-let saveTimeout = null;
-
-// ── SAVE (debounced 3s) ──
-function save() {
-  // Sauvegarde locale immédiate en fallback
-  localStorage.setItem('battleDockState', JSON.stringify(STATE));
-  // Debounce Supabase pour éviter trop d'appels
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveToSupabase, 3000);
-}
-
-async function saveToSupabase() {
-  if (!currentUserId) return;
-  try {
-    // 1. Upsert game_state
-    const { error: gsErr } = await sb.from('game_state').upsert({
-      user_id:      currentUserId,
-      money:        STATE.money,
-      credit_debt:  STATE.creditDebt,
-      cotisations:  STATE.cotisations,
-      energy:       STATE.energy,
-      health:       STATE.health,
-      mood:         STATE.mood,
-      xp:           STATE.xp,
-      level:        STATE.level,
-      rank:         STATE.rank,
-      day:          STATE.day,
-      hour:         STATE.hour,
-      minute:       STATE.min,
-      housing:      STATE.housing,
-      vehicle:      STATE.vehicle,
-      has_phone:    STATE.phone,
-      fame:         STATE.fame,
-      union_member: STATE.unionMember,
-      union_power:  STATE.unionPower,
-      marie:        STATE.marié,
-      enfants:      STATE.enfants,
-      pension:      STATE.pension,
-      en_relation:  STATE.relation,
-      partner_name: STATE.partnerName,
-      casier:       STATE.casier,
-      amende:       STATE.amende,
-      en_prison:    STATE.enPrison,
-      skills:       STATE.skills,
-      pet:          STATE.pet,
-      updated_at:   new Date().toISOString(),
-    }, { onConflict: 'user_id' });
-    if (gsErr) console.error('game_state save error:', gsErr);
-
-    // 2. Sync addictions
-    if (STATE.addictions.length > 0) {
-      const rows = STATE.addictions.map(type => ({
-        user_id: currentUserId, type, level: 1, since_day: STATE.day
-      }));
-      await sb.from('addictions').upsert(rows, { onConflict: 'user_id,type', ignoreDuplicates: true });
+    // Gestion du basculement d'onglets mobiles
+    function changeView(viewId) {
+      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      
+      document.getElementById(`screen-${viewId}`).classList.add('active');
+      document.getElementById(`tab-${viewId}`).classList.add('active');
     }
 
-    // 3. Sync certifications
-    if (STATE.certifs.length > 0) {
-      const CERT_NAMES = { caces1:'CACES R489 Cat.1', caces3:'CACES R489 Cat.3', secours:'Premiers Secours', gestion:'Gestion d\'Équipe', anglais:'Anglais Pro' };
-      const rows = STATE.certifs.map(id => ({
-        user_id: currentUserId, certif_id: id,
-        name: CERT_NAMES[id] || id, obtained_day: STATE.day
-      }));
-      await sb.from('certifications').upsert(rows, { onConflict: 'user_id,certif_id', ignoreDuplicates: true });
-    }
+    async function initGame() {
+      // Chargement instantané depuis Supabase
+      try {
+        const { data: profile } = await sb.from('profiles').select('username, color, avatar').eq('user_id', userId).single();
+        const { data: progress } = await sb.from('game_progress').select('*').eq('user_id', userId).single();
 
-    // 4. Leaderboard
-    await sb.from('leaderboard').upsert({
-      user_id:     currentUserId,
-      username:    STATE.name,
-      money:       STATE.money,
-      level:       STATE.level,
-      rank:        STATE.rank,
-      days_played: STATE.day,
-      casier:      STATE.casier,
-      fame:        STATE.fame,
-      score:       Math.floor(STATE.money) + (STATE.xp * 10) + (STATE.fame * 50) - (STATE.casier * 100),
-      updated_at:  new Date().toISOString(),
-    }, { onConflict: 'user_id' });
+        if (profile) {
+          document.getElementById('display-username').textContent = (profile.username || 'RECRUE').toUpperCase();
+          document.getElementById('avatar-bg').style.backgroundColor = profile.color || '#facc15';
+          if (profile.avatar) document.getElementById('avatar-img').src = profile.avatar;
+        }
 
-  } catch(e) {
-    console.error('Supabase save failed:', e);
-  }
-}
-
-// ── LOG TRANSACTION ──
-async function logTransaction(amount, category, description) {
-  if (!currentUserId) return;
-  try {
-    await sb.from('transactions').insert({
-      user_id: currentUserId, amount, category, description, day_ingame: STATE.day
-    });
-  } catch(e) {}
-}
-
-// ── LOG WORK SESSION ──
-async function logWorkSession(boxes, combo, earned, xp) {
-  if (!currentUserId) return;
-  try {
-    await sb.from('work_sessions').insert({
-      user_id: currentUserId, boxes_hit: boxes, max_combo: combo,
-      earned, xp_gained: xp, duration_sec: 30, day_ingame: STATE.day
-    });
-  } catch(e) {}
-}
-
-// ── LOG CASINO ──
-async function logCasino(game, bet, result) {
-  if (!currentUserId) return;
-  try {
-    await sb.from('casino_sessions').insert({
-      user_id: currentUserId, game, bet, result, day_ingame: STATE.day
-    });
-  } catch(e) {}
-}
-
-// ── LOAD depuis Supabase ──
-async function loadFromSupabase(userId) {
-  try {
-    // Profil
-    const { data: profile } = await sb.from('profiles')
-      .select('username, avatar, color')
-      .eq('user_id', userId).single();
-    if (profile) {
-      STATE.name = profile.username || 'Mon Docker';
-      if (profile.avatar) {
-        const img = document.getElementById('avatarImg');
-        const fb = document.getElementById('avatarFallback');
-        if (img) { img.src = profile.avatar; img.style.display = 'block'; }
-        if (fb) fb.style.display = 'none';
+        if (progress) {
+          Object.assign(STATE, progress);
+          renderUI();
+        }
+      } catch (err) {
+        console.error('Erreur de synchronisation :', err);
       }
     }
 
-    // Game state
-    const { data: gs } = await sb.from('game_state')
-      .select('*').eq('user_id', userId).single();
-    if (gs) {
-      STATE.money       = Number(gs.money) || 150;
-      STATE.creditDebt  = Number(gs.credit_debt) || 0;
-      STATE.cotisations = Number(gs.cotisations) || 0;
-      STATE.energy      = gs.energy ?? 100;
-      STATE.health      = gs.health ?? 100;
-      STATE.mood        = gs.mood ?? 80;
-      STATE.xp          = gs.xp || 0;
-      STATE.level       = gs.level || 1;
-      STATE.rank        = gs.rank || 'Docker Débutant';
-      STATE.day         = gs.day || 1;
-      STATE.hour        = gs.hour || 8;
-      STATE.min         = gs.minute || 0;
-      STATE.housing     = gs.housing ?? 1;
-      STATE.vehicle     = gs.vehicle || 'pied';
-      STATE.phone       = gs.has_phone || false;
-      STATE.fame        = gs.fame || 0;
-      STATE.unionMember = gs.union_member || false;
-      STATE.unionPower  = gs.union_power || 20;
-      STATE.marié       = gs.marie || false;
-      STATE.enfants     = gs.enfants || 0;
-      STATE.pension     = Number(gs.pension) || 0;
-      STATE.relation    = gs.en_relation || false;
-      STATE.partnerName = gs.partner_name || '';
-      STATE.casier      = gs.casier || 0;
-      STATE.amende      = Number(gs.amende) || 0;
-      STATE.enPrison    = gs.en_prison || false;
-      STATE.skills      = gs.skills || { force:10, vitesse:8, endurance:5, combine:2 };
-      STATE.pet         = gs.pet || null;
+    function renderUI() {
+      document.getElementById('display-money').textContent = formatNumber(STATE.money) + ' €';
+      document.getElementById('display-rank').textContent = STATE.rank.toUpperCase();
+      
+      // Jauge Énergie
+      const energyPct = Math.min(100, Math.max(0, (STATE.energy / STATE.energy_max) * 100));
+      document.getElementById('text-energy').textContent = `${STATE.energy} / ${STATE.energy_max}`;
+      document.getElementById('bar-energy').style.width = `${energyPct}%`;
+
+      // Jauge Santé
+      document.getElementById('text-health').textContent = `${STATE.health}%`;
+      document.getElementById('bar-health').style.width = `${STATE.health}%`;
+
+      // Réputations
+      document.getElementById('rep-colleagues').textContent = STATE.rep_colleagues;
+      document.getElementById('rep-boss').textContent = STATE.rep_boss;
+      document.getElementById('rep-street').textContent = STATE.rep_street;
     }
 
-    // Addictions
-    const { data: addData } = await sb.from('addictions')
-      .select('type').eq('user_id', userId);
-    if (addData) STATE.addictions = addData.map(a => a.type);
-
-    // Certifications
-    const { data: certData } = await sb.from('certifications')
-      .select('certif_id').eq('user_id', userId);
-    if (certData) STATE.certifs = certData.map(c => c.certif_id);
-
-  } catch(e) {
-    console.error('Load error:', e);
-    // Fallback localStorage
-    const saved = localStorage.getItem('battleDockState');
-    if (saved) { try { Object.assign(STATE, JSON.parse(saved)); } catch(e2) {} }
-  }
-}
-
-// ══════════════════════════════════════════════
-// UTILITAIRES
-// ══════════════════════════════════════════════
-function shuffled(arr){return arr.sort(()=>Math.random()-.5);}
-
-// ══════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════
-async function init() {
-  // Récupère la session Supabase
-  const { data: { session } } = await sb.auth.getSession();
-
-  if (!session) {
-    // Pas connecté → fallback localStorage pour tester
-    const saved = localStorage.getItem('battleDockState');
-    if (saved) { try { Object.assign(STATE, JSON.parse(saved)); } catch(e) {} }
-    if (!STATE.name) STATE.name = 'Mon Docker';
-    updateAllUI();
-    return;
-  }
-
-  currentUserId = session.user.id;
-  await loadFromSupabase(currentUserId);
-  if (!STATE.name) STATE.name = 'Mon Docker';
-  updateAllUI();
-}
-
-init();
-</script>
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
+    }
+  </script>
 </body>
 </html>
