@@ -1,480 +1,457 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hiérarchie Portuaire - Battle Dock</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Battle Dock — Zone de Fret</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght=500;700;900&family=Bungee&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="fullscreen.js"></script>
+  
+  <style>
+    :root {
+      --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
+      --comic-yellow: #facc15;
+      --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --paper-cream: #fefce8;
+      --border-thick: 4px solid #000000;
+      --shadow-comic: 6px 6px 0px #000000;
+      --shadow-comic-sm: 3px 3px 0px #000000;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: #ef4444; /* Fond rouge dynamique pour la zone d'effort */
+      min-height: 100vh;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- TOP BAR DE RETOUR --- */
+    .work-header {
+      background: var(--port-dark);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: var(--border-thick);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .btn-back {
+      background: var(--comic-yellow);
+      border: 2px solid #000;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      color: #000;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+    }
+    .btn-back:active { transform: translate(1px, 1px); box-shadow: none; }
+
+    .header-title {
+      font-family: 'Bangers', cursive;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: var(--comic-yellow);
+    }
+
+    /* --- CONTENEUR GLOBAL APP --- */
+    .main-container {
+      flex: 1;
+      padding: 16px;
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    /* --- PANNEAU DE SYNDICAT / STATS RAPIDES --- */
+    .status-crate {
+      background: var(--paper-cream);
+      border: var(--border-thick);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-comic);
+      color: var(--port-dark);
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .status-box {
+      background: #fff;
+      border: 2px solid #000;
+      border-radius: 8px;
+      padding: 6px 2px;
+      text-align: center;
+      box-shadow: var(--shadow-comic-sm);
+    }
+    .status-val { font-family: 'Bungee', sans-serif; font-size: 12px; }
+    .status-lbl { font-size: 9px; font-weight: 900; text-transform: uppercase; color: #64748b; }
+
+    /* --- CONTAINER DES CARTES DE MISSIONS --- */
+    .section-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 14px;
+      margin-bottom: 12px;
+      text-shadow: 2px 2px 0 #000;
+      color: #fff;
+    }
+
+    .job-card {
+      background: #fff;
+      color: var(--port-dark);
+      border: var(--border-thick);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-comic);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .job-badge-caces {
+      position: absolute;
+      top: 12px; right: 12px;
+      background: var(--port-blue);
+      color: #fff;
+      font-family: 'Bungee', sans-serif;
+      font-size: 9px;
+      padding: 2px 6px;
+      border: 2px solid #000;
+      border-radius: 4px;
+    }
+
+    .job-title {
+      font-family: 'Bangers', cursive;
+      font-size: 26px;
+      line-height: 1.1;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .job-desc {
+      font-size: 12px;
+      color: #475569;
+      font-weight: 500;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    /* Grille de rentabilité de la tâche */
+    .job-stats-row {
+      display: flex;
+      gap: 12px;
+      border-top: 2px dashed #cbd5e1;
+      padding-top: 10px;
+      margin-bottom: 14px;
+    }
+    .job-stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .pill-green { color: #15803d; }
+    .pill-red { color: #b91c1c; }
+    .pill-blue { color: #1d4ed8; }
+
+    /* Bouton d'embauche immédiat */
+    .btn-work {
+      width: 100%;
+      background: var(--comic-green);
+      color: #000;
+      border: 3px solid #000;
+      border-radius: 10px;
+      padding: 10px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      box-shadow: var(--shadow-comic-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-work:active { transform: translate(2px, 2px); box-shadow: none; }
+    .btn-work:disabled { background: #94a3b8; cursor: not-allowed; transform: none; box-shadow: none; opacity: 0.6; }
+
+    /* --- POPUP DE RAPPORT DE FIN DE SÉANCE --- */
+    .report-overlay {
+      position: fixed;
+      top: 0; bottom: 0; left: 0; right: 0;
+      background: rgba(15, 23, 42, 0.85);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .report-box {
+      background: var(--paper-cream);
+      border: var(--border-thick);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      color: var(--port-dark);
+      text-align: center;
+      box-shadow: 10px 10px 0px #000;
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;700;900&family=Inter:wght@400;700&family=Bungee&family=Bangers&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-
-    <style>
-        /* BASE SETUP MOBILE & FOND BLANC */
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        body { 
-            background-color: #ffffff; 
-            color: #0f172a;
-            font-family: 'Urbanist', sans-serif;
-            padding-bottom: 40px;
-            padding-top: 60px; /* Espace pour le bouton retour */
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 480px; /* Calibré sur la largeur d'un smartphone */
-            margin: 0 auto;
-            padding: 16px;
-        }
-
-        /* TITRE ÉPURÉ */
-        .page-title-area {
-            padding: 20px 0 30px 0;
-            text-align: left;
-        }
-        h1 { 
-            font-size: 32px; 
-            font-weight: 900; 
-            text-transform: uppercase; 
-            letter-spacing: -0.5px;
-            color: #0f172a;
-            line-height: 1.1;
-        }
-        .subtitle { 
-            font-size: 15px; 
-            color: #64748b; 
-            font-family: 'Inter', sans-serif; 
-            margin-top: 8px; 
-            line-height: 1.4;
-        }
-
-        /* CARTES DE POSTE ADAPTÉES MOBILE */
-        .job-card {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column; /* Aligné verticalement pour écran tactile */
-            gap: 20px;
-        }
-        .job-card.locked { 
-            opacity: 0.5; 
-            background-color: #f1f5f9;
-        }
-
-        .level-tag { 
-            background: #0f172a; 
-            color: #ffffff; 
-            padding: 4px 10px; 
-            font-weight: 700; 
-            font-size: 11px; 
-            border-radius: 6px; 
-            display: inline-block; 
-            margin-bottom: 8px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-        .locked .level-tag { 
-            background: #cbd5e1; 
-            color: #64748b; 
-        }
-
-        h2 { 
-            font-size: 24px; 
-            font-weight: 800; 
-            margin-bottom: 6px; 
-            color: #0f172a; 
-        }
-        p { 
-            font-size: 14px; 
-            line-height: 1.5; 
-            color: #475569; 
-            font-family: 'Inter', sans-serif; 
-        }
-        .highlight { 
-            color: #0f172a; 
-            font-weight: 700; 
-            text-decoration: underline;
-            text-underline-offset: 3px;
-        }
-
-        /* TABLE DES STATS SANS BORDS INUTILES */
-        .stats-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 10px; 
-        }
-        .stats-table td { 
-            padding: 8px 0; 
-            border-bottom: 1px solid #e2e8f0; 
-            font-size: 14px; 
-            font-family: 'Inter', sans-serif; 
-        }
-        .stats-table td:first-child { 
-            color: #64748b; 
-        }
-        .stats-table td:last-child { 
-            color: #0f172a; 
-            font-weight: 700; 
-            text-align: right; 
-        }
-
-        /* BOUTONS COMPACTS ET TACTILES */
-        .btn-action { 
-            background: #0f172a; 
-            color: #ffffff; 
-            padding: 16px; 
-            font-weight: 700; 
-            font-size: 15px; 
-            text-transform: uppercase; 
-            border-radius: 12px; 
-            border: none; 
-            cursor: pointer; 
-            text-align: center; 
-            width: 100%; 
-            display: block; 
-            letter-spacing: 0.5px;
-        }
-        .btn-action:active { 
-            background: #334155; 
-            transform: scale(0.98); 
-        }
-        .btn-locked { 
-            background: #e2e8f0; 
-            color: #94a3b8; 
-            padding: 16px; 
-            font-weight: 700; 
-            font-size: 15px; 
-            text-transform: uppercase; 
-            border-radius: 12px; 
-            text-align: center; 
-            cursor: not-allowed; 
-        }
-
-        /* BOUTON RETOUR FIXE */
-        .btn-back { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            right: 0;
-            background: #ffffff; 
-            border-bottom: 1px solid #e2e8f0; 
-            color: #0f172a; 
-            padding: 14px 16px; 
-            cursor: pointer; 
-            font-family: 'Inter', sans-serif; 
-            font-size: 14px; 
-            font-weight: 700;
-            text-align: left;
-            z-index: 100;
-        }
-
-        /* ------------------------------------------------------------- */
-        /* ZONE ARCADE CONVERTIE EN STYLE MODAL LIGHT MOBILE */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.98);
-            z-index: 9999;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
-
-        .modal-content {
-            background: #ffffff;
-            border-radius: 24px;
-            width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            position: relative;
-        }
-
-        .modal-close { 
-            position: absolute; 
-            top: -15px; 
-            right: 10px; 
-            background: #ef4444; 
-            color: white; 
-            border: none; 
-            padding: 8px 14px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-weight: bold; 
-            font-size: 14px;
-        }
-
-        .game-title { 
-            font-family: 'Bangers', cursive; 
-            font-size: 28px; 
-            text-align: center; 
-            color: #0f172a; 
-            letter-spacing: 0.5px; 
-        }
-
-        .round-stats {
-            display: flex;
-            justify-content: space-between;
-            font-family: 'Bungee', sans-serif;
-            font-size: 12px;
-            background: #f8fafc;
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid #e2e8f0;
-            color: #0f172a;
-        }
-
-        /* Fenêtre de rendu physique Mobile */
-        .game-viewport {
-            width: 100%;
-            height: 140px;
-            background: #0f172a;
-            border-radius: 16px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .target-zone {
-            position: absolute;
-            left: 25%; /* Aligné proportionnellement sur mobile */
-            width: 60px;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.1);
-            border-left: 2px dashed #ffffff;
-            border-right: 2px dashed #ffffff;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 8px;
-            font-size: 9px;
-            font-weight: bold;
-            color: #ffffff;
-            letter-spacing: 0.5px;
-        }
-
-        .scrolling-item {
-            position: absolute;
-            top: 40px;
-            left: 100%;
-            font-size: 38px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .btn-hit-trigger {
-            background: #0f172a;
-            color: #ffffff;
-            border: none;
-            font-family: 'Bungee', sans-serif;
-            padding: 18px;
-            font-size: 16px;
-            border-radius: 14px;
-            cursor: pointer;
-            text-align: center;
-        }
-        .btn-hit-trigger:active {
-            background: #334155;
-        }
-    </style>
+    .report-title { font-family: 'Bangers', cursive; font-size: 36px; margin-bottom: 12px; color: var(--comic-red); text-shadow: 2px 2px 0 #000; letter-spacing: 1px; }
+    .report-txt { font-size: 14px; font-weight: 700; margin-bottom: 16px; line-height: 1.5; }
+    .report-gains { background: #fff; border: 2px solid #000; border-radius: 12px; padding: 12px; margin-bottom: 20px; text-align: left; }
+    .gain-item { display: flex; justify-content: space-between; font-family: 'Bungee', sans-serif; font-size: 13px; margin-bottom: 6px; }
+    .gain-item:last-child { margin-bottom: 0; }
+    .btn-close-report { background: var(--port-dark); color: #fff; font-family: 'Bungee', sans-serif; border: 3px solid #000; border-radius: 10px; padding: 10px 24px; cursor: pointer; box-shadow: var(--shadow-comic-sm); }
+  </style>
 </head>
 <body>
 
-    <button class="btn-back" onclick="window.location.href='game.html'">← PLAN DE CONTRÔLE</button>
+  <div class="work-header">
+    <button class="btn-back" onclick="window.location.href='game.html'">⚓ Quitter</button>
+    <h1 class="header-title">LES QUAIS DE CHARGEMENT</h1>
+    <div></div>
+  </div>
 
-    <div class="container">
+  <div class="main-container">
+
+    <div class="status-crate">
+      <div class="status-grid">
+        <div class="status-box">
+          <div class="status-val" id="userEnergy">100/100</div>
+          <div class="status-lbl">⚡ Énergie</div>
+        </div>
+        <div class="status-box">
+          <div class="status-val" id="userHealth">100%</div>
+          <div class="status-lbl">❤️ Santé</div>
+        </div>
+        <div class="status-box">
+          <div class="status-val" id="userXp">0 XP</div>
+          <div class="status-lbl">🛠️ Expérience</div>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="section-title">💼 CONTRATS ACCESSIBLES</h2>
+    <div id="jobs-wrapper">
+      
+      <div class="job-card">
+        <h3 class="job-title">🧹 BALAYAGE DES HANGARS</h3>
+        <p class="job-desc">Ramasse les débris de palettes cassées et nettoie les traces de fioul sur le Quai 4. C'est crevant mais sans risque.</p>
+        <div class="job-stats-row">
+          <div class="job-stat-pill pill-green">➕ 12 €</div>
+          <div class="job-stat-pill pill-red">➖ 10 ⚡</div>
+          <div class="job-stat-pill pill-blue">➕ 5 XP</div>
+        </div>
+        <button class="btn-work" onclick="executerMission('balayage', 10, 12, 5, 1, 0, 0)">
+          <span>Prendre le balai</span>
+        </button>
+      </div>
+
+      <div class="job-card">
+        <h3 class="job-title">📦 DÉCHARGEMENT DE FRIGOS</h3>
+        <p class="job-desc">Ouvre les conteneurs maritimes et sors les cartons à la chaîne. Attention au lumbago et aux chutes de palettes.</p>
+        <div class="job-stats-row">
+          <div class="job-stat-pill pill-green">➕ 28 €</div>
+          <div class="job-stat-pill pill-red">➖ 25 ⚡</div>
+          <div class="job-stat-pill pill-blue">➕ 15 XP</div>
+        </div>
+        <button class="btn-work" onclick="executerMission('dechargement', 25, 28, 15, 4, 1, 0)">
+          <span>Vider le Cargo</span>
+        </button>
+      </div>
+
+      <div class="job-card">
+        <span class="job-badge-caces">RANG : DOCKER</span>
+        <h3 class="job-title">🚜 PILOTAGE FENWICK 4000</h3>
+        <p class="job-desc">Déplace des caisses lourdes de produits manufacturés. Demande de la concentration. Risque de collision élevé.</p>
+        <div class="job-stats-row">
+          <div class="job-stat-pill pill-green">➕ 45 €</div>
+          <div class="job-stat-pill pill-red">➖ 35 ⚡</div>
+          <div class="job-stat-pill pill-blue">➕ 25 XP</div>
+        </div>
+        <button class="btn-work" id="btn-fenwick" onclick="executerMission('fenwick', 35, 45, 25, 8, 2, 1)" disabled>
+          <span>Démarrer le moteur</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="report-overlay" id="reportOverlay">
+    <div class="report-box">
+      <h2 class="report-title" id="repTitle">RAPPORT DE QUAI</h2>
+      <p class="report-txt" id="repText">La corvée s'est terminée avec succès sous la surveillance du contremaître.</p>
+      
+      <div class="report-gains">
+        <div class="gain-item" style="color:#16a34a;"><span>Paye reçue :</span><span id="repGainMoney">+0 €</span></div>
+        <div class="gain-item" style="color:#2563eb;"><span>Fatigue accumulée :</span><span id="repLossEnergy">-0 ⚡</span></div>
+        <div class="gain-item" style="color:#e11d48; display:none;" id="repRowHealth"><span>Dégâts physiques :</span><span id="repLossHealth">-0% ❤️</span></div>
+        <div class="gain-item" style="color:#0284c7;"><span>Savoir-faire syndical :</span><span id="repGainXp">+0 XP</span></div>
+      </div>
+
+      <button class="btn-close-report" onclick="fermerRapport()">Reprendre le boulot</button>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+    const userId = localStorage.getItem('userId');
+    if (!userId) window.location.href = 'index.html';
+
+    // Variables de cache local pour éviter les requêtes inutiles
+    let playerProgress = null;
+
+    // Lancement
+    loadWorkData();
+
+    async function loadWorkData() {
+      try {
+        const { data: progress, error } = await supabaseClient
+          .from('game_progress')
+          .select('money, rank, energy, energy_max, health, xp, rep_colleagues, rep_boss')
+          .eq('user_id', userId)
+          .single();
+
+        if (error) throw error;
+        playerProgress = progress;
+
+        // Mise à jour graphique
+        document.getElementById('userEnergy').textContent = `${progress.energy} / ${progress.energy_max}`;
+        document.getElementById('userHealth').textContent = `${progress.health}%`;
+        document.getElementById('userXp').textContent = `${progress.xp || 0} XP`;
+
+        // Barrière de Grade pour les tâches spéciales (Débloquer le Fenwick si le joueur n'est plus Occasionnel)
+        if (progress.rank && progress.rank.toUpperCase() !== 'DOCKER OCCASIONNEL') {
+          document.getElementById('btn-fenwick').disabled = false;
+        }
+
+      } catch (err) {
+        console.error('Erreur Capitainerie au travail:', err);
+      }
+    }
+
+    // MOTEUR D'EXÉCUTION DES MISSIONS
+    async function executerMission(type, costEnergy, gainMoney, gainXp, riskPct, repCollBonus, repBossBonus) {
+      if (!playerProgress) return;
+
+      // 1. Vérification de l'Énergie suffisante
+      if (playerProgress.energy < costEnergy) {
+        alert("💥 ÉNERGIE INSUFFISANTE ! Va dormir ou prends un café au bistrot !");
+        return;
+      }
+
+      // 2. Calcul aléatoire de l'accident du travail (Risque de perte de santé)
+      let healthDamage = 0;
+      let accidentSurvenu = false;
+      const jetDeDes = Math.floor(Math.random() * 100);
+      
+      if (jetDeDes < riskPct) {
+        accidentSurvenu = true;
+        // Dégâts variables entre 15% et 35% de santé perdue
+        healthDamage = Math.floor(Math.random() * 20) + 15;
+      }
+
+      // 3. Calcul de la nouvelle configuration
+      const nouvelleEnergy = Math.max(0, playerProgress.energy - costEnergy);
+      const nouvelleHealth = Math.max(0, playerProgress.health - healthDamage);
+      
+      // Si accident, pénalité de paye (frais médicaux / moitié salaire)
+      const payeFinale = accidentSurvenu ? Math.floor(gainMoney / 2) : gainMoney;
+      const nouveauMoney = playerProgress.money + payeFinale;
+      const nouvelXp = (playerProgress.xp || 0) + gainXp;
+      
+      // Réputations modifiées selon la performance
+      const nouvelleRepColleagues = (playerProgress.rep_colleagues || 0) + (accidentSurvenu ? -2 : repCollBonus);
+      const nouvelleRepBoss = (playerProgress.rep_boss || 0) + (accidentSurvenu ? -5 : repBossBonus);
+
+      try {
+        // 4. Écriture immédiate sécurisée sur Supabase
+        const { error } = await supabaseClient
+          .from('game_progress')
+          .update({
+            energy: nouvelleEnergy,
+            health: nouvelleHealth,
+            money: nouveauMoney,
+            xp: nouvelXp,
+            rep_colleagues: nouvelleRepColleagues,
+            rep_boss: nouvelleRepBoss
+          })
+          .eq('user_id', userId);
+
+        if (error) throw error;
+
+        // 5. Affichage du compte rendu
+        preparerRapportPopup(accidentSurvenu, payeFinale, costEnergy, healthDamage, gainXp);
         
-        <div class="page-title-area">
-            <h1>Carrières</h1>
-            <div class="subtitle">Répartition de la force de travail au sol.</div>
-        </div>
+        // 6. Rechargement des jauges
+        await loadWorkData();
 
-        <div class="job-card">
-            <div>
-                <div class="level-tag">Rang 01 — Recrue</div>
-                <h2>Docker Occasionnel</h2>
-                <p>Focalisé sur la <span class="highlight">manutention de fret congelé</span>. Une phase critique pour prouver sa réactivité.</p>
-                <table class="stats-table">
-                    <tr><td>Condition requise</td><td>Niveau 01</td></tr>
-                    <tr><td>Rémunération brute</td><td>+15.00 €</td></tr>
-                    <tr><td>Indice de fatigue</td><td>-10% Énergie</td></tr>
-                </table>
-            </div>
-            <button class="btn-action" onclick="openGameScreen()">Lancer le quart</button>
-        </div>
+      } catch (err) {
+        console.error('Accident de transmission avec Supabase:', err.message);
+      }
+    }
 
-        <div class="job-card locked">
-            <div>
-                <div class="level-tag">Rang 02 — Qualifié</div>
-                <h2>Docker Syndiqué</h2>
-                <p>Tri réglementaire des conteneurs industriels standards et gestion de zone sécurisée.</p>
-                <table class="stats-table">
-                    <tr><td>Condition requise</td><td>Niveau 03</td></tr>
-                    <tr><td>Rémunération brute</td><td>+45.00 €</td></tr>
-                    <tr><td>Indice de fatigue</td><td>-15% Énergie</td></tr>
-                </table>
-            </div>
-            <div class="btn-locked">Niv. 3 Requis</div>
-        </div>
+    // AFFICHAGE RECTIFICATIF DU MODAL
+    function preparerRapportPopup(accident, money, energy, health, xp) {
+      const title = document.getElementById('repTitle');
+      const text = document.getElementById('repText');
+      const healthRow = document.getElementById('repRowHealth');
 
-    </div>
+      if (accident) {
+        title.textContent = "💥 ACCIDENT DE TRAVAIL !";
+        title.style.color = "var(--comic-red)";
+        text.textContent = "Une charge a glissé ! Tu as été blessé pendant ton service. La paye est amputée de moitié pour couvrir les frais médicaux du port.";
+        healthRow.style.display = "flex";
+        document.getElementById('repLossHealth').textContent = `-${health}% ❤️`;
+      } else {
+        title.textContent = "⚙️ TOUR DE GARDE FINI";
+        title.style.color = "var(--comic-green)";
+        text.textContent = "Beau boulot ! Tes caisses sont enregistrées, le Syndicat est satisfait de ta cadence.";
+        healthRow.style.display = "none";
+      }
 
-    <div class="modal-overlay" id="arcadeModal">
-        <div class="modal-content">
-            <button class="modal-close" onclick="closeGameScreen()">FERMER</button>
-            <div class="game-title">QUART : TRI FISCAL 🐟</div>
-            
-            <div class="round-stats">
-                <span>SCORE : <span id="uiScore" style="color:#ef4444;">0/5</span></span>
-                <span id="uiAlert">CAPTURE LES LIVRAISONS !</span>
-            </div>
+      document.getElementById('repGainMoney').textContent = `+${money} €`;
+      document.getElementById('repLossEnergy').textContent = `-${energy} ⚡`;
+      document.getElementById('repGainXp').textContent = `+${xp} XP`;
 
-            <div class="game-viewport" id="viewportRef">
-                <div class="target-zone" id="targetZoneRef">SCANNER</div>
-                <div class="scrolling-item" id="movingFish">🐟</div>
-            </div>
+      document.getElementById('reportOverlay').style.display = "flex";
+    }
 
-            <button class="btn-hit-trigger" onclick="catchFishTiming()">EMPAQUETER</button>
-        </div>
-    </div>
-
-    <script>
-        const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-        const { createClient } = supabase;
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-        const userId = localStorage.getItem('userId');
-        if (!userId) window.location.href = 'index.html';
-
-        let currentMoney = 0;
-        let currentXp = 0;
-
-        let currentScore = 0;
-        let objectX = 0;
-        let objectSpeed = 3.5; // Légèrement réduit pour compenser la taille des écrans mobiles
-        let loopId = null;
-        let liveGame = false;
-        let containerWidth = 0;
-
-        initDataLoad();
-        async function initDataLoad() {
-            const { data } = await supabaseClient.from('game_progress').select('money, xp').eq('user_id', userId).single();
-            if (data) {
-                currentMoney = data.money || 0;
-                currentXp = data.xp || 0;
-            }
-        }
-
-        function openGameScreen() {
-            document.getElementById('arcadeModal').style.display = 'flex';
-            containerWidth = document.getElementById('viewportRef').offsetWidth;
-            
-            liveGame = true;
-            currentScore = 0;
-            objectX = containerWidth;
-            objectSpeed = 3.5;
-            
-            document.getElementById('uiScore').textContent = "0/5";
-            document.getElementById('uiAlert').textContent = "PRÊT ?";
-            document.getElementById('uiAlert').style.color = "#0f172a";
-            runEngine();
-        }
-
-        function closeGameScreen() {
-            document.getElementById('arcadeModal').style.display = 'none';
-            liveGame = false;
-            cancelAnimationFrame(loopId);
-        }
-
-        function runEngine() {
-            if (!liveGame) return;
-            objectX -= objectSpeed;
-
-            if (objectX < -40) {
-                objectX = containerWidth;
-                document.getElementById('uiAlert').textContent = "RATÉ !";
-                document.getElementById('uiAlert').style.color = "#ef4444";
-            }
-
-            document.getElementById('movingFish').style.left = objectX + "px";
-            loopId = requestAnimationFrame(runEngine);
-        }
-
-        function catchFishTiming() {
-            if (!liveGame) return;
-
-            // Détection dynamique basée sur la taille réelle de la zone sur l'écran du mobile
-            const targetLeft = document.getElementById('targetZoneRef').offsetLeft;
-            const targetRight = targetLeft + 60;
-
-            // Marge de tolérance ajustée pour le tactile mobile
-            if (objectX >= (targetLeft - 15) && objectX <= (targetRight + 5)) {
-                currentScore++;
-                objectX = containerWidth;
-                objectSpeed += 0.6; // Accélération progressive
-                
-                document.getElementById('uiScore').textContent = currentScore + "/5";
-                document.getElementById('uiAlert').textContent = "VALIDE !";
-                document.getElementById('uiAlert').style.color = "#22c55e";
-
-                if (currentScore >= 5) {
-                    saveGameRewards();
-                }
-            } else {
-                document.getElementById('uiAlert').textContent = "MAUVAIS MOMENT !";
-                document.getElementById('uiAlert').style.color = "#ef4444";
-            }
-        }
-
-        async function saveGameRewards() {
-            liveGame = false;
-            cancelAnimationFrame(loopId);
-            
-            const upMoney = currentMoney + 15;
-            const upXp = currentXp + 5;
-
-            try {
-                const { error } = await supabaseClient
-                    .from('game_progress')
-                    .update({ money: upMoney, xp: upXp })
-                    .eq('user_id', userId);
-
-                if (error) throw error;
-                
-                currentMoney = upMoney;
-                currentXp = upXp;
-                alert("Quart validé ! Vous obtenez +15 € et +5 XP.");
-            } catch(e) {
-                alert("Erreur de synchronisation.");
-            } finally {
-                closeGameScreen();
-            }
-        }
-
-        // Garde la compatibilité clavier Espace au cas où
-        window.addEventListener('keydown', function(e) {
-            if (e.code === 'Space' && liveGame) {
-                e.preventDefault();
-                catchFishTiming();
-            }
-        });
-    </script>
+    function fermerRapport() {
+      document.getElementById('reportOverlay').style.display = "none";
+    }
+  </script>
 </body>
 </html>
