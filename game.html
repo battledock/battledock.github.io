@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — Zone de Fret</title>
+  <title>Battle Dock — Le Port Chelou</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Space+Grotesk:wght=500;700;900&family=Bungee&display=swap" rel="stylesheet">
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="fullscreen.js"></script>
   
   <style>
     :root {
       --port-dark: #0f172a;
+      --port-blue: #2563eb;
+      --port-light-blue: #38bdf8;
       --comic-yellow: #facc15;
       --comic-red: #ef4444;
+      --comic-green: #22c55e;
+      --paper-cream: #fefce8;
       --border-thick: 4px solid #000000;
-      --shadow-comic: 6px 6px 0px #000000;
+      --shadow-comic: 8px 8px 0px #000000;
+      --shadow-comic-sm: 4px 4px 0px #000000;
     }
 
     * {
@@ -23,239 +29,458 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     body {
       font-family: 'Space Grotesk', sans-serif;
-      background: #1e293b; /* Couleur de fond par défaut de l'application */
+      background: #ef4444;
       min-height: 100vh;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: #ffffff;
+      overflow-x: hidden;
+      position: relative;
+      padding: 0;
     }
 
-    /* BARRE DE PROFIL DU JOUEUR (TOP BAR) */
-    .top-bar {
-      width: 100%;
-      max-width: 500px;
-      margin-bottom: 24px;
-    }
-
-    #player-badge {
-      background: #0f172a; /* Fond sombre du badge global pour faire ressortir la couleur */
-      border: var(--border-thick);
-      border-radius: 16px;
-      padding: 12px 16px;
-      box-shadow: var(--shadow-comic);
+    /* --- HEADER PROFIL --- */
+    .profile-header {
+      background: #0f172a;
+      padding: 14px 20px;
       display: flex;
       align-items: center;
-      gap: 16px;
+      justify-content: space-between;
+      border-bottom: 3px solid #000;
     }
 
-    /* CONTENEUR DE L'AVATAR (Prend la couleur aléatoire générée) */
-    #avatar-container {
-      width: 68px;
-      height: 68px;
-      border: var(--border-thick);
-      border-radius: 14px;
-      background-color: #3A4750; /* Couleur temporaire avant injection du script */
+    .cards-wrapper {
+      padding: 0 0 40px 0;
+    }
+
+    .profile-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* CONTENEUR DE L'AVATAR (Prend la couleur d'accréditation du joueur) */
+    .profile-avatar {
+      width: 44px;
+      height: 44px;
+      border: 3px solid #000;
+      border-radius: 10px;
+      background-color: #3A4750; /* Couleur par défaut */
+      overflow: hidden;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
       transition: background-color 0.3s ease;
-      box-shadow: 2px 2px 0px #000000;
     }
 
-    #player-avatar-img {
+    .profile-avatar img {
       width: 90%;
       height: 90%;
       object-fit: contain;
+      display: block;
     }
 
-    .profile-info {
-      flex: 1;
-    }
-
-    #player-username-display {
+    .profile-username {
       font-family: 'Bungee', sans-serif;
-      font-size: 18px;
+      font-size: 15px;
       color: #ffffff;
-      text-shadow: 2px 2px 0px #000000;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+
+    .profile-rank {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    #player-rank-display {
-      font-family: 'Permanent Marker', cursive;
-      font-size: 13px;
-      color: var(--comic-yellow);
-      text-shadow: 2px 2px 0px #000000;
-      display: block;
-      margin-top: 2px;
-    }
-
-    /* ZONE DE JEU PRINCIPALE */
-    .game-container {
-      width: 100%;
-      max-width: 500px;
-      background: #f8fafc;
-      border: var(--border-thick);
-      border-radius: 24px;
-      box-shadow: var(--shadow-comic);
-      color: var(--port-dark);
-      padding: 24px;
-      text-align: center;
-    }
-
-    .game-title {
-      font-family: 'Bangers', cursive;
-      font-size: 32px;
-      letter-spacing: 1px;
-      color: var(--port-dark);
-      margin-bottom: 16px;
-    }
-
-    /* Écran de simulation */
-    .game-screen {
-      background: #cbd5e1;
-      border: 3px solid #000000;
-      border-radius: 12px;
-      padding: 50px 20px;
-      font-weight: 700;
-      font-size: 16px;
-      margin-bottom: 20px;
-    }
-
-    /* Bouton d'action rétro */
-    .btn-action {
-      background: var(--comic-red);
-      color: white;
-      border: 4px solid #000000;
-      border-radius: 12px;
-      padding: 14px;
+    .profile-money {
+      background: var(--comic-yellow);
+      border: 3px solid #000;
+      border-radius: 8px;
+      padding: 6px 14px;
       font-family: 'Bungee', sans-serif;
-      font-size: 14px;
-      cursor: pointer;
-      box-shadow: 4px 4px 0px #000000;
-      width: 100%;
-      transition: all 0.1s ease;
+      font-size: 15px;
+      color: #000;
+      box-shadow: 3px 3px 0 #000;
     }
 
-    .btn-action:active {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0px #000000;
+    /* --- INTERFACE PRINCIPALE --- */
+    .ui-container {
+      position: relative;
+      z-index: 10;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      font-family: 'Bangers', cursive;
+      font-size: clamp(4rem, 12vw, 5.5rem);
+      color: var(--comic-yellow);
+      letter-spacing: 4px;
+      text-shadow: 6px 6px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000;
+      line-height: 0.9;
+      transform: rotate(-2deg);
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-family: 'Permanent Marker', cursive;
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      color: #ffffff;
+      text-shadow: 3px 3px 0px var(--port-dark);
+    }
+
+    /* --- CARDS --- */
+    .menu-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* CARD 1 — Bosser */
+    .card-bosser {
+      background: #0f172a;
+      border: none;
+      border-bottom: 3px solid #000;
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: opacity 0.1s;
+    }
+    .card-bosser:active { opacity: 0.8; }
+    .card-bosser .card-left { display: flex; flex-direction: column; gap: 6px; }
+    .card-bosser .card-tag {
+      font-family: 'Bungee', sans-serif;
+      font-size: 11px;
+      color: var(--comic-yellow);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .card-bosser .card-title {
+      font-family: 'Bangers', cursive;
+      font-size: 36px;
+      color: #fff;
+      line-height: 1;
+      letter-spacing: 2px;
+    }
+    .card-bosser .card-sub {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 700;
+    }
+    .card-bosser .card-right {
+      background: var(--comic-yellow);
+      border: 3px solid #000;
+      border-radius: 14px;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      box-shadow: 4px 4px 0 #000;
+      flex-shrink: 0;
+    }
+
+    /* CARD 2 — Mini-Jeux */
+    .card-jeux {
+      background: #ffffff;
+      border: none;
+      border-bottom: 3px solid #000;
+      padding: 18px 18px 18px 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.1s;
+    }
+    .card-jeux:active { opacity: 0.8; }
+    .card-jeux::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 8px;
+      background: #a855f7;
+    }
+    .card-jeux .card-emoji { font-size: 40px; }
+    .card-jeux .card-info { flex: 1; }
+    .card-jeux .card-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 18px;
+      color: #0f172a;
+      margin-bottom: 3px;
+    }
+    .card-jeux .card-sub { font-size: 12px; color: #64748b; font-weight: 700; }
+    .card-jeux .card-hot {
+      background: #a855f7;
+      color: #fff;
+      font-family: 'Bangers', cursive;
+      font-size: 14px;
+      padding: 4px 10px;
+      border: 2px solid #000;
+      border-radius: 6px;
+      transform: rotate(6deg);
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    /* CARD 3 — Boutique */
+    .card-shop {
+      background: var(--comic-green);
+      border: none;
+      border-bottom: 3px solid #000;
+      padding: 20px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: opacity 0.1s;
+    }
+    .card-shop:active { opacity: 0.8; }
+    .card-shop::after {
+      content: '👽';
+      position: absolute;
+      right: -10px; bottom: -10px;
+      font-size: 80px;
+      opacity: 0.15;
+    }
+    .card-shop .card-tag {
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #166534;
+      margin-bottom: 4px;
+    }
+    .card-shop .card-title {
+      font-family: 'Bangers', cursive;
+      font-size: 30px;
+      color: #000;
+      letter-spacing: 1px;
+    }
+    .card-shop .card-sub { font-size: 12px; color: #166534; font-weight: 700; margin-top: 4px; }
+
+    /* CARD 4 — Progression */
+    .card-progression {
+      background: #f1f5f9;
+      border: none;
+      border-bottom: 3px solid #000;
+      padding: 18px;
+      cursor: pointer;
+      transition: opacity 0.1s;
+    }
+    .card-progression:active { opacity: 0.8; }
+    .card-progression .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .card-progression .card-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 16px;
+      color: #0f172a;
+    }
+    .card-progression .card-emoji { font-size: 28px; }
+    .card-progression .prog-bar-bg {
+      width: 100%;
+      height: 10px;
+      background: #cbd5e1;
+      border: 2px solid #000;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card-progression .prog-bar-fill {
+      height: 100%;
+      width: 30%;
+      background: #0f172a;
+      border-radius: 4px;
+    }
+    .card-progression .card-sub {
+      font-size: 11px;
+      color: #64748b;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    /* CARD 5 — Classement */
+    .card-classement {
+      background: var(--port-blue);
+      border: none;
+      padding: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: opacity 0.1s;
+    }
+    .card-classement:active { opacity: 0.8; }
+    .card-classement .card-title {
+      font-family: 'Bungee', sans-serif;
+      font-size: 18px;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    .card-classement .card-sub { font-size: 12px; color: #93c5fd; font-weight: 700; }
+    .card-classement .card-rank-num {
+      font-family: 'Bangers', cursive;
+      font-size: 52px;
+      color: var(--comic-yellow);
+      text-shadow: 3px 3px 0 #000;
+      line-height: 1;
+    }
+
+    @media (max-width: 400px) {
+      .card-bosser .card-title { font-size: 28px; }
     }
   </style>
 </head>
 <body>
 
-  <div class="top-bar">
-    <div id="player-badge">
-      <div id="avatar-container">
-        <img id="player-avatar-img" src="notionists-1779298466584.png" alt="Avatar Docker">
-      </div>
-      <div class="profile-info">
-        <h3 id="player-username-display">CHARGEMENT...</h3>
-        <span id="player-rank-display">DOCKER OCCASIONNEL</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="game-container">
-    <h2 class="game-title">🕹️ POSTE DE COMMANDES</h2>
+  <div class="ui-container">
     
-    <div class="game-screen">
-      [ Zone de chargement des cargaisons ]
+    <div class="profile-header">
+      <div class="profile-left">
+        <div class="profile-avatar" id="profileAvatarBg">
+          <img id="profileAvatarImg" src="notionists-1779298466584.png" alt="Avatar">
+        </div>
+        <div>
+          <div class="profile-username" id="profileUsername">—</div>
+          <div class="profile-rank" id="profileRank">Docker Occasionnel</div>
+        </div>
+      </div>
+      <div class="profile-money" id="profileMoney">0 €</div>
     </div>
 
-    <button class="btn-action" onclick="clicJoueur()">DÉPLACER LE CONTENEUR</button>
+    <div class="cards-wrapper">
+    <div class="menu-buttons">
+
+      <div class="card-bosser" onclick="window.location.href='travailler.html'">
+        <div class="card-left">
+          <div class="card-tag">Mission du jour</div>
+          <div class="card-title">BOSSER</div>
+          <div class="card-sub">Déplace des caisses · Gagne des €</div>
+        </div>
+        <div class="card-right">💼</div>
+      </div>
+
+      <div class="card-jeux" onclick="window.location.href='jeux.html'">
+        <div class="card-emoji">🎰</div>
+        <div class="card-info">
+          <div class="card-title">Mini-Jeux</div>
+          <div class="card-sub">Tente ta chance au port</div>
+        </div>
+        <div class="card-hot">HOT</div>
+      </div>
+
+      <div class="card-shop" onclick="window.location.href='shop.html'">
+        <div class="card-tag">Ferretti & Co.</div>
+        <div class="card-title">BOUTIQUE</div>
+        <div class="card-sub">Trucs bizarres à acheter</div>
+      </div>
+
+      <div class="card-progression" onclick="window.location.href='progression.html'">
+        <div class="card-top">
+          <div class="card-title">Progression</div>
+          <div class="card-emoji">📊</div>
+        </div>
+        <div class="prog-bar-bg"><div class="prog-bar-fill"></div></div>
+        <div class="card-sub">Niveau 1 · 30% vers le prochain rang</div>
+      </div>
+
+      <div class="card-classement" onclick="window.location.href='classement.html'">
+        <div>
+          <div class="card-title">Classement</div>
+          <div class="card-sub">Voir les meilleurs dockers</div>
+        </div>
+        <div class="card-rank-num">#?</div>
+      </div>
+
+    </div>
+    </div>
   </div>
 
   <script>
-    // 1. LIEN DU QUAI CENTRAL AVEC SUPABASE
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const { createClient } = supabase;
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
-    // 2. BARRIÈRE DE SÉCURITÉ : Kick immédiat vers index si pas connecté
     const userId = localStorage.getItem('userId');
-    if (!userId) {
-      window.location.href = 'index.html';
-    }
+    if (!userId) window.location.href = 'index.html';
 
-    // 3. RECUPERATION ET APPLICATION AUTOMATIQUE DU PROFIL
-    async function chargerProfilJoueur() {
-      // Étape A : On lit instantanément le cache local (Évite le chargement blanc à l'écran)
-      const localUsername = localStorage.getItem('username') || 'Recrue';
-      const localAvatar = localStorage.getItem('userAvatar') || 'notionists-1779298466584.png';
-      const localBg = localStorage.getItem('userBg') || '#3A4750';
+    // Lancement de la synchronisation globale
+    loadUserData();
 
-      appliquerDesignInterface(localUsername, localAvatar, localBg);
+    async function loadUserData() {
+      // Étape Éclair : On injecte d'abord les données locales pour éviter l'écran blanc
+      const cachedUsername = localStorage.getItem('username') || 'Recrue';
+      const cachedColor = localStorage.getItem('userColor') || '#3A4750';
+      const cachedAvatar = localStorage.getItem('userAvatar') || 'notionists-1779298466584.png';
+
+      document.getElementById('profileUsername').textContent = cachedUsername.toUpperCase();
+      document.getElementById('profileAvatarBg').style.backgroundColor = cachedColor;
+      document.getElementById('profileAvatarImg').src = cachedAvatar;
 
       try {
-        // Étape B : On synchronise en direct avec la base Supabase pour la sécurité
-        const { data: user, error } = await supabaseClient
-          .from('users')
-          .select('username, avatar, bg_color')
-          .eq('id', userId)
-          .single();
-
-        if (error) throw error;
-
-        if (user) {
-          // Si le profil a bougé (ex: nouvel avatar débloqué), on met à jour la session locale
-          localStorage.setItem('username', user.username);
-          localStorage.setItem('userAvatar', user.avatar);
-          localStorage.setItem('userBg', user.bg_color);
-
-          // On applique le design actualisé
-          appliquerDesignInterface(user.username, user.avatar, user.bg_color);
-        }
-
-        // Étape C : Récupération du Grade du joueur dans "game_progress"
-        const { data: progress } = await supabaseClient
-          .from('game_progress')
-          .select('rank')
+        // Étape B : Récupération des données réelles depuis la table 'profiles' (color, avatar, username)
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('username, color, avatar')
           .eq('user_id', userId)
           .single();
-          
-        if (progress && document.getElementById('player-rank-display')) {
-          document.getElementById('player-rank-display').textContent = progress.rank.toUpperCase();
+
+        // Étape C : Récupération de l'argent et du grade depuis 'game_progress'
+        const { data: progress } = await supabaseClient
+          .from('game_progress')
+          .select('money, rank')
+          .eq('user_id', userId)
+          .single();
+
+        if (profile) {
+          const finalUsername = profile.username || cachedUsername;
+          const finalColor = profile.color || cachedColor;
+          const finalAvatar = profile.avatar || cachedAvatar;
+
+          // Injection dynamique des styles officiels
+          document.getElementById('profileUsername').textContent = finalUsername.toUpperCase();
+          document.getElementById('profileAvatarBg').style.backgroundColor = finalColor;
+          document.getElementById('profileAvatarImg').src = finalAvatar;
+
+          // Sauvegarde locale de secours
+          localStorage.setItem('username', finalUsername);
+          localStorage.setItem('userColor', finalColor);
+          localStorage.setItem('userAvatar', finalAvatar);
         }
 
+        if (progress) {
+          document.getElementById('profileRank').textContent = progress.rank || 'Docker Occasionnel';
+          document.getElementById('profileMoney').textContent = formatNumber(progress.money || 0) + ' €';
+        }
       } catch (err) {
-        console.error("Liaison interrompue avec la capitainerie :", err.message);
+        console.error('Erreur de liaison Capitainerie:', err);
       }
     }
 
-    // 4. INJECTEUR DE STYLES ET COULEURS DANS L'INTERFACE HTML
-    function appliquerDesignInterface(username, avatarUrl, bgColor) {
-      // Met à jour le pseudo en lettres capitales
-      if (document.getElementById('player-username-display')) {
-        document.getElementById('player-username-display').textContent = username.toUpperCase();
-      }
-      
-      // Injecte le chemin de l'avatar transparent actuel ou futur
-      if (document.getElementById('player-avatar-img')) {
-        document.getElementById('player-avatar-img').src = avatarUrl;
-      }
-      
-      // APPLIQUE LA COULEUR ALÉATOIRE UNIQUEMENT DERRIÈRE L'AVATAR TRANSPARENT
-      if (document.getElementById('avatar-container')) {
-        document.getElementById('avatar-container').style.backgroundColor = bgColor;
-      }
+    function formatNumber(num) {
+      if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+      if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+      return num.toString();
     }
-
-    // Exemple de fonction de clic de jeu pour tester
-    function clicJoueur() {
-      console.log("Le docker a cliqué sur le bouton !");
-    }
-
-    // Lancement automatique dès que le document graphique est prêt
-    document.addEventListener('DOMContentLoaded', chargerProfilJoueur);
   </script>
 </body>
 </html>
