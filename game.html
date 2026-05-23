@@ -1383,6 +1383,8 @@ function endWork() {
   STATE.xp += xpGained;
   advanceTime(2,30);
   checkLevelUp();
+  logWorkSession(workScore, workCombo, total, xpGained);
+  logTransaction(total, 'travail', 'Mission quai · '+workScore+' caisses');
 
   // Résultat
   const overlay = document.getElementById('resultOverlay');
@@ -1456,8 +1458,8 @@ function evalSlot(r) {
   }
   STATE.money+=win;
   const el=document.getElementById('slotResult');
-  if(win){ el.textContent=msg+' +'+win+'€'; el.style.color='var(--gold)'; notify('+'+win+' € !','good'); }
-  else { el.textContent=msg; el.style.color='var(--muted)'; }
+  if(win){ el.textContent=msg+' +'+win+'€'; el.style.color='var(--gold)'; notify('+'+win+' € !','good'); logCasino('slots', betAmount, win-betAmount); }
+  else { el.textContent=msg; el.style.color='var(--muted)'; logCasino('slots', betAmount, -betAmount); }
   slotRunning=false;
   document.getElementById('spinBtn').disabled=false;
   updateAllUI(); save();
@@ -2236,16 +2238,194 @@ function updateNewScreens() {
 }
 
 
+// ══════════════════════════════════════════════
+// SUPABASE
+// ══════════════════════════════════════════════
+const SUPA_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+let currentUserId = null;
+let saveTimeout = null;
+
+// ── SAVE (debounced 3s) ──
 function save() {
+  // Sauvegarde locale immédiate en fallback
   localStorage.setItem('battleDockState', JSON.stringify(STATE));
+  // Debounce Supabase pour éviter trop d'appels
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(saveToSupabase, 3000);
 }
-function load() {
-  const saved=localStorage.getItem('battleDockState');
-  if(saved){
-    try{
-      const parsed=JSON.parse(saved);
-      Object.assign(STATE,parsed);
-    }catch(e){}
+
+async function saveToSupabase() {
+  if (!currentUserId) return;
+  try {
+    // 1. Upsert game_state
+    const { error: gsErr } = await sb.from('game_state').upsert({
+      user_id:      currentUserId,
+      money:        STATE.money,
+      credit_debt:  STATE.creditDebt,
+      cotisations:  STATE.cotisations,
+      energy:       STATE.energy,
+      health:       STATE.health,
+      mood:         STATE.mood,
+      xp:           STATE.xp,
+      level:        STATE.level,
+      rank:         STATE.rank,
+      day:          STATE.day,
+      hour:         STATE.hour,
+      minute:       STATE.min,
+      housing:      STATE.housing,
+      vehicle:      STATE.vehicle,
+      has_phone:    STATE.phone,
+      fame:         STATE.fame,
+      union_member: STATE.unionMember,
+      union_power:  STATE.unionPower,
+      marie:        STATE.marié,
+      enfants:      STATE.enfants,
+      pension:      STATE.pension,
+      en_relation:  STATE.relation,
+      partner_name: STATE.partnerName,
+      casier:       STATE.casier,
+      amende:       STATE.amende,
+      en_prison:    STATE.enPrison,
+      skills:       STATE.skills,
+      pet:          STATE.pet,
+      updated_at:   new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    if (gsErr) console.error('game_state save error:', gsErr);
+
+    // 2. Sync addictions
+    if (STATE.addictions.length > 0) {
+      const rows = STATE.addictions.map(type => ({
+        user_id: currentUserId, type, level: 1, since_day: STATE.day
+      }));
+      await sb.from('addictions').upsert(rows, { onConflict: 'user_id,type', ignoreDuplicates: true });
+    }
+
+    // 3. Sync certifications
+    if (STATE.certifs.length > 0) {
+      const CERT_NAMES = { caces1:'CACES R489 Cat.1', caces3:'CACES R489 Cat.3', secours:'Premiers Secours', gestion:'Gestion d\'Équipe', anglais:'Anglais Pro' };
+      const rows = STATE.certifs.map(id => ({
+        user_id: currentUserId, certif_id: id,
+        name: CERT_NAMES[id] || id, obtained_day: STATE.day
+      }));
+      await sb.from('certifications').upsert(rows, { onConflict: 'user_id,certif_id', ignoreDuplicates: true });
+    }
+
+    // 4. Leaderboard
+    await sb.from('leaderboard').upsert({
+      user_id:     currentUserId,
+      username:    STATE.name,
+      money:       STATE.money,
+      level:       STATE.level,
+      rank:        STATE.rank,
+      days_played: STATE.day,
+      casier:      STATE.casier,
+      fame:        STATE.fame,
+      score:       Math.floor(STATE.money) + (STATE.xp * 10) + (STATE.fame * 50) - (STATE.casier * 100),
+      updated_at:  new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+
+  } catch(e) {
+    console.error('Supabase save failed:', e);
+  }
+}
+
+// ── LOG TRANSACTION ──
+async function logTransaction(amount, category, description) {
+  if (!currentUserId) return;
+  try {
+    await sb.from('transactions').insert({
+      user_id: currentUserId, amount, category, description, day_ingame: STATE.day
+    });
+  } catch(e) {}
+}
+
+// ── LOG WORK SESSION ──
+async function logWorkSession(boxes, combo, earned, xp) {
+  if (!currentUserId) return;
+  try {
+    await sb.from('work_sessions').insert({
+      user_id: currentUserId, boxes_hit: boxes, max_combo: combo,
+      earned, xp_gained: xp, duration_sec: 30, day_ingame: STATE.day
+    });
+  } catch(e) {}
+}
+
+// ── LOG CASINO ──
+async function logCasino(game, bet, result) {
+  if (!currentUserId) return;
+  try {
+    await sb.from('casino_sessions').insert({
+      user_id: currentUserId, game, bet, result, day_ingame: STATE.day
+    });
+  } catch(e) {}
+}
+
+// ── LOAD depuis Supabase ──
+async function loadFromSupabase(userId) {
+  try {
+    // Profil
+    const { data: profile } = await sb.from('profiles')
+      .select('username, avatar, color')
+      .eq('user_id', userId).single();
+    if (profile) {
+      STATE.name = profile.username || 'Mon Docker';
+      STATE.avatar = profile.avatar || '';
+      const avatarEl = document.getElementById('avatarEmoji');
+      if (avatarEl && profile.avatar) avatarEl.style.backgroundImage = `url(${profile.avatar})`;
+    }
+
+    // Game state
+    const { data: gs } = await sb.from('game_state')
+      .select('*').eq('user_id', userId).single();
+    if (gs) {
+      STATE.money       = Number(gs.money) || 150;
+      STATE.creditDebt  = Number(gs.credit_debt) || 0;
+      STATE.cotisations = Number(gs.cotisations) || 0;
+      STATE.energy      = gs.energy ?? 100;
+      STATE.health      = gs.health ?? 100;
+      STATE.mood        = gs.mood ?? 80;
+      STATE.xp          = gs.xp || 0;
+      STATE.level       = gs.level || 1;
+      STATE.rank        = gs.rank || 'Docker Débutant';
+      STATE.day         = gs.day || 1;
+      STATE.hour        = gs.hour || 8;
+      STATE.min         = gs.minute || 0;
+      STATE.housing     = gs.housing ?? 1;
+      STATE.vehicle     = gs.vehicle || 'pied';
+      STATE.phone       = gs.has_phone || false;
+      STATE.fame        = gs.fame || 0;
+      STATE.unionMember = gs.union_member || false;
+      STATE.unionPower  = gs.union_power || 20;
+      STATE.marié       = gs.marie || false;
+      STATE.enfants     = gs.enfants || 0;
+      STATE.pension     = Number(gs.pension) || 0;
+      STATE.relation    = gs.en_relation || false;
+      STATE.partnerName = gs.partner_name || '';
+      STATE.casier      = gs.casier || 0;
+      STATE.amende      = Number(gs.amende) || 0;
+      STATE.enPrison    = gs.en_prison || false;
+      STATE.skills      = gs.skills || { force:10, vitesse:8, endurance:5, combine:2 };
+      STATE.pet         = gs.pet || null;
+    }
+
+    // Addictions
+    const { data: addData } = await sb.from('addictions')
+      .select('type').eq('user_id', userId);
+    if (addData) STATE.addictions = addData.map(a => a.type);
+
+    // Certifications
+    const { data: certData } = await sb.from('certifications')
+      .select('certif_id').eq('user_id', userId);
+    if (certData) STATE.certifs = certData.map(c => c.certif_id);
+
+  } catch(e) {
+    console.error('Load error:', e);
+    // Fallback localStorage
+    const saved = localStorage.getItem('battleDockState');
+    if (saved) { try { Object.assign(STATE, JSON.parse(saved)); } catch(e2) {} }
   }
 }
 
@@ -2257,9 +2437,26 @@ function shuffled(arr){return arr.sort(()=>Math.random()-.5);}
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
-load();
-if(!STATE.name) STATE.name='Mon Docker';
-updateAllUI();
+async function init() {
+  // Récupère la session Supabase
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (!session) {
+    // Pas connecté → fallback localStorage pour tester
+    const saved = localStorage.getItem('battleDockState');
+    if (saved) { try { Object.assign(STATE, JSON.parse(saved)); } catch(e) {} }
+    if (!STATE.name) STATE.name = 'Mon Docker';
+    updateAllUI();
+    return;
+  }
+
+  currentUserId = session.user.id;
+  await loadFromSupabase(currentUserId);
+  if (!STATE.name) STATE.name = 'Mon Docker';
+  updateAllUI();
+}
+
+init();
 </script>
 </body>
 </html>
