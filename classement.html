@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Classement - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .back-btn {
+      width: 40px;
+      height: 40px;
+      background: #f3f4f6;
+      border: none;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+      background: #e5e7eb;
+    }
+
+    .topbar-title {
+      flex: 1;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      text-align: center;
+    }
+
+    .topbar-icon {
+      font-size: 28px;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: #f3f4f6;
+      padding: 4px;
+      border-radius: 12px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      color: #6b7280;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #ffffff;
+      color: #1a1a1a;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    /* PODIUM */
+    .podium {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 30px;
+      padding: 20px 0;
+    }
+
+    .podium-item {
+      flex: 1;
+      max-width: 110px;
+      text-align: center;
+    }
+
+    .podium-item.second { order: 1; }
+    .podium-item.first { order: 2; }
+    .podium-item.third { order: 3; }
+
+    .podium-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: 3px solid #e5e7eb;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .podium-item.first .podium-avatar {
+      width: 80px;
+      height: 80px;
+      border-color: #fbbf24;
+      border-width: 4px;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    }
+
+    .podium-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .podium-medal {
+      position: absolute;
+      bottom: -8px;
+      right: -8px;
+      font-size: 28px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .podium-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .podium-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      color: #3b82f6;
+    }
+
+    .podium-item.first .podium-score {
+      font-size: 22px;
+      color: #fbbf24;
+    }
+
+    .podium-rank {
+      font-size: 12px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    /* RANKING LIST */
+    .ranking-list {
+      background: #ffffff;
+      border-radius: 12px;
+    }
+
+    .ranking-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .ranking-item:last-child {
+      border-bottom: none;
+    }
+
+    .ranking-item.me {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.05), transparent);
+      border-radius: 8px;
+    }
+
+    .rank-number {
+      width: 32px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #6b7280;
+      text-align: center;
+    }
+
+    .ranking-item.me .rank-number {
+      color: #3b82f6;
+    }
+
+    .ranking-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: 2px solid #e5e7eb;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .ranking-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .ranking-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .ranking-name {
+      font-weight: 600;
+      font-size: 15px;
+      color: #1a1a1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ranking-grade {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    .ranking-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #3b82f6;
+      text-align: right;
+    }
+
+    .ranking-item.me .ranking-score {
+      color: #10b981;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-text {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    /* LOADER */
+    .loader {
+      text-align: center;
+      padding: 40px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f4f6;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="topbar-title">Classement</div>
+    <div class="topbar-icon">🏆</div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="container">
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('level')">Par Niveau</button>
+      <button class="tab" onclick="switchTab('money')">Par Argent</button>
+    </div>
+
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- PODIUM -->
+    <div class="podium" id="podium" style="display: none;">
+      <!-- Rempli dynamiquement -->
+    </div>
+
+    <!-- RANKING LIST -->
+    <div class="ranking-list" id="rankingList" style="display: none;">
+      <!-- Rempli dynamiquement -->
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-icon">🏆</div>
+      <div class="empty-text">Aucun joueur pour le moment</div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let currentTab = 'level';
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      currentUser = session.user;
+      loadRanking();
+    }
+
+    async function loadRanking() {
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('podium').style.display = 'none';
+      document.getElementById('rankingList').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'none';
+
+      // Récupérer les données
+      const orderBy = currentTab === 'level' ? 'level' : 'money';
+      
+      const { data: rankings, error } = await sb
+        .from('game_stats')
+        .select(`
+          user_id,
+          level,
+          xp,
+          money,
+          grade,
+          profiles:user_id (username, avatar_url)
+        `)
+        .order(orderBy, { ascending: false })
+        .limit(50);
+
+      document.getElementById('loader').style.display = 'none';
+
+      if (error || !rankings || rankings.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      // Afficher podium (top 3)
+      if (rankings.length >= 3) {
+        displayPodium(rankings.slice(0, 3));
+      }
+
+      // Afficher liste complète
+      displayRankingList(rankings);
+    }
+
+    function displayPodium(top3) {
+      const podium = document.getElementById('podium');
+      podium.innerHTML = '';
+
+      const positions = [
+        { data: top3[1], class: 'second', medal: '🥈' },
+        { data: top3[0], class: 'first', medal: '🥇' },
+        { data: top3[2], class: 'third', medal: '🥈' }
+      ];
+
+      positions.forEach((pos, index) => {
+        if (!pos.data) return;
+        
+        const profile = pos.data.profiles;
+        const score = currentTab === 'level' 
+          ? `Niv. ${pos.data.level}` 
+          : `${pos.data.money.toLocaleString('fr-FR')}€`;
+
+        const item = document.createElement('div');
+        item.className = `podium-item ${pos.class}`;
+        item.innerHTML = `
+          <div class="podium-rank">#${index === 1 ? 1 : (index === 0 ? 2 : 3)}</div>
+          <div class="podium-avatar">
+            <img src="${profile.avatar_url}" alt="${profile.username}">
+            <div class="podium-medal">${pos.medal}</div>
+          </div>
+          <div class="podium-name">${profile.username}</div>
+          <div class="podium-score">${score}</div>
+        `;
+        podium.appendChild(item);
+      });
+
+      podium.style.display = 'flex';
+    }
+
+    function displayRankingList(rankings) {
+      const list = document.getElementById('rankingList');
+      list.innerHTML = '';
+
+      rankings.forEach((player, index) => {
+        const profile = player.profiles;
+        const isMe = player.user_id === currentUser.id;
+        const score = currentTab === 'level' 
+          ? `Niv. ${player.level}` 
+          : `${player.money.toLocaleString('fr-FR')}€`;
+
+        const item = document.createElement('div');
+        item.className = `ranking-item ${isMe ? 'me' : ''}`;
+        item.innerHTML = `
+          <div class="rank-number">#${index + 1}</div>
+          <div class="ranking-avatar">
+            <img src="${profile.avatar_url}" alt="${profile.username}">
+          </div>
+          <div class="ranking-info">
+            <div class="ranking-name">${profile.username}${isMe ? ' (Toi)' : ''}</div>
+            <div class="ranking-grade">${player.grade}</div>
+          </div>
+          <div class="ranking-score">${score}</div>
+        `;
+        list.appendChild(item);
+      });
+
+      list.style.display = 'block';
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      
+      // Update UI
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      // Reload data
+      loadRanking();
+    }
+
+    function goBack() {
+      window.location.href = 'game.html';
+    }
+
+    init();
+  </script>
+</body>
+</html>
