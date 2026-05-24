@@ -334,19 +334,26 @@
 
     .reward-item {
       background: #f9fafb;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 8px;
       font-size: 14px;
       font-weight: 600;
       color: #1a1a1a;
       border: 1px solid #e5e7eb;
+      display: inline-block;
     }
 
     .reward-avatar {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 12px 8px 8px;
+      background: #f9fafb;
+      padding: 8px 14px 8px 8px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
     }
 
     .reward-avatar-preview {
@@ -507,11 +514,16 @@
     }
 
     async function loadEventProgress() {
-      const { data: stats } = await sb
+      const { data: stats, error } = await sb
         .from('game_stats')
         .select('level, events_claimed')
         .eq('user_id', currentUser.id)
         .single();
+
+      if (error) {
+        console.error('Erreur chargement stats:', error);
+        return;
+      }
 
       if (stats) {
         const currentLevel = Math.min(stats.level, 5);
@@ -520,7 +532,7 @@
         document.getElementById('currentLevel').textContent = currentLevel;
         document.getElementById('eventProgress').style.width = progress + '%';
         
-        // Vérifier si déjà claimed
+        // Vérifier si déjà claimed (gérer le cas où la colonne n'existe pas encore)
         const eventsClaimed = stats.events_claimed || [];
         hasClaimed = eventsClaimed.includes('launch-week');
         
@@ -536,6 +548,8 @@
         // Afficher le bouton ou message selon progression
         const claimSection = document.getElementById('claimSection');
         
+        console.log('Debug - Niveau:', currentLevel, 'hasClaimed:', hasClaimed, 'isExpired:', isExpired);
+        
         if (isExpired && !hasClaimed) {
           // Événement expiré, pas récupéré
           progressText.innerHTML = '<span style="color: #ef4444; font-weight: 700;">❌ Événement terminé</span>';
@@ -544,6 +558,7 @@
           // Mission complétée, afficher bouton
           progressText.innerHTML = '<span style="color: #10b981; font-weight: 700;">✓ Mission complétée !</span>';
           claimSection.innerHTML = '<button class="claim-btn" onclick="claimRewards()">🎁 Récupérer mes récompenses</button>';
+          console.log('Bouton récupérer affiché !');
         } else if (hasClaimed) {
           // Déjà récupéré
           progressText.innerHTML = '<span style="color: #10b981; font-weight: 700;">✓ Mission complétée !</span>';
@@ -563,23 +578,40 @@
 
       try {
         // Récupérer les stats actuelles
-        const { data: stats } = await sb
+        const { data: stats, error: fetchError } = await sb
           .from('game_stats')
           .select('money, events_claimed')
           .eq('user_id', currentUser.id)
           .single();
 
-        // Ajouter 5,000€ + ajouter l'événement au tableau
+        if (fetchError) {
+          console.error('Erreur fetch:', fetchError);
+          throw fetchError;
+        }
+
+        // Préparer les données à mettre à jour
         const eventsArray = stats.events_claimed || [];
-        const { error } = await sb
+        const updateData = { 
+          money: stats.money + 5000
+        };
+        
+        // Ajouter events_claimed seulement si la colonne existe
+        if (stats.events_claimed !== undefined) {
+          updateData.events_claimed = [...eventsArray, 'launch-week'];
+        }
+
+        console.log('Update data:', updateData);
+
+        // Mettre à jour
+        const { error: updateError } = await sb
           .from('game_stats')
-          .update({ 
-            money: stats.money + 5000,
-            events_claimed: [...eventsArray, 'launch-week']
-          })
+          .update(updateData)
           .eq('user_id', currentUser.id);
 
-        if (error) throw error;
+        if (updateError) {
+          console.error('Erreur update:', updateError);
+          throw updateError;
+        }
 
         // Marquer comme récupéré
         hasClaimed = true;
@@ -589,13 +621,15 @@
         claimSection.innerHTML = '<div class="claim-message">✓ Récompenses récupérées ! +5,000€ ajoutés à ton compte</div>';
 
         // Notification
-        alert('🎉 Félicitations !\n\n+5,000€ ajoutés à ton compte !\nAvatar "Lancement" débloqué dans ton profil !');
+        alert('🎉 Félicitations !\n\n+5,000€ ajoutés à ton compte !\n' + 
+              (stats.events_claimed !== undefined ? 'Avatar "Lancement" débloqué dans ton profil !' : 
+               'Note : Exécute le script SQL pour activer l\'avatar exclusif.'));
 
       } catch (error) {
         console.error('Erreur claim:', error);
         btn.disabled = false;
         btn.textContent = '🎁 Récupérer mes récompenses';
-        alert('Erreur lors de la récupération. Réessaye.');
+        alert('Erreur lors de la récupération. Réessaye.\n\nDétails: ' + error.message);
       }
     }
 
