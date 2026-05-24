@@ -253,6 +253,78 @@
       padding: 40px;
       color: #6b7280;
     }
+
+    /* AVATARS SECTION */
+    .avatars-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .avatar-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 3px solid #e5e7eb;
+      transition: all 0.2s;
+    }
+
+    .avatar-item.locked {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .avatar-item.active {
+      border-color: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+
+    .avatar-item:not(.locked):hover {
+      transform: scale(1.05);
+      border-color: #3b82f6;
+    }
+
+    .avatar-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .avatar-lock {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 32px;
+      filter: grayscale(100%);
+    }
+
+    .avatar-badge {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      background: #10b981;
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .avatar-label {
+      font-size: 11px;
+      text-align: center;
+      color: #6b7280;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    .avatar-item.locked .avatar-label {
+      opacity: 0.5;
+    }
   </style>
 </head>
 <body>
@@ -317,18 +389,15 @@
       </div>
     </div>
 
+    <!-- AVATARS -->
+    <div class="section-title">Avatars disponibles</div>
+    <div class="avatars-grid" id="avatarsGrid">
+      <div class="loading">Chargement...</div>
+    </div>
+
     <!-- ACTIONS -->
     <div class="section-title">Actions</div>
     <div class="action-list">
-      <button class="action-btn" onclick="changeAvatar()">
-        <div class="action-icon">🖼️</div>
-        <div class="action-info">
-          <div class="action-title">Changer d'avatar</div>
-          <div class="action-desc">Personnalise ton profil</div>
-        </div>
-        <div class="action-arrow">›</div>
-      </button>
-
       <button class="action-btn" onclick="changePassword()">
         <div class="action-icon">🔐</div>
         <div class="action-info">
@@ -365,6 +434,22 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
+    let playerLevel = 1;
+    let playerMoney = 0;
+    let achievementsUnlocked = 0;
+    let currentAvatar = 'avatar-default.png';
+
+    // Liste des avatars
+    const avatars = [
+      { id: 'default', file: 'avatar-default.png', label: 'Défaut', condition: () => true },
+      { id: 'level5', file: 'avatar-level-5.png', label: 'Niv. 5', condition: () => playerLevel >= 5 },
+      { id: 'level10', file: 'avatar-level-10.png', label: 'Niv. 10', condition: () => playerLevel >= 10 },
+      { id: 'level15', file: 'avatar-level-15.png', label: 'Niv. 15', condition: () => playerLevel >= 15 },
+      { id: 'level30', file: 'avatar-level-30.png', label: 'Niv. 30', condition: () => playerLevel >= 30 },
+      { id: 'level50', file: 'avatar-level-50.png', label: 'Niv. 50', condition: () => playerLevel >= 50 },
+      { id: 'millionaire', file: 'avatar-millionaire.png', label: '1M€', condition: () => playerMoney >= 1000000 },
+      { id: 'completionist', file: 'avatar-completionist.png', label: 'Tous succès', condition: () => achievementsUnlocked >= 14 }
+    ];
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -395,6 +480,22 @@
 
       if (!profile || !stats) return;
 
+      // Stocker les données
+      playerLevel = stats.level;
+      playerMoney = stats.money;
+      currentAvatar = profile.avatar_url;
+
+      // Calculer XP total pour les succès
+      let totalXp = 0;
+      for (let i = 1; i < stats.level; i++) {
+        totalXp += i * i * 50;
+      }
+      totalXp += stats.xp;
+
+      // Calculer succès débloqués (approximation)
+      const gamesPlayed = Math.floor(totalXp / 30);
+      achievementsUnlocked = countUnlockedAchievements(stats.level, stats.money, totalXp, gamesPlayed);
+
       // Header
       document.getElementById('profileAvatar').src = profile.avatar_url;
       document.getElementById('profileUsername').textContent = profile.username;
@@ -414,14 +515,84 @@
       document.getElementById('statLevel').textContent = stats.level;
       document.getElementById('statGrade').textContent = stats.grade;
       document.getElementById('statXp').textContent = stats.xp.toLocaleString('fr-FR');
+
+      // Render avatars
+      renderAvatars();
+    }
+
+    function countUnlockedAchievements(level, money, totalXp, gamesPlayed) {
+      let count = 0;
+      if (gamesPlayed >= 10) count++;
+      if (level >= 15) count++;
+      if (level >= 25) count++;
+      if (level >= 40) count++;
+      if (money >= 1000) count++;
+      if (money >= 5000) count++;
+      if (money >= 25000) count++;
+      if (totalXp >= 5000) count++;
+      if (totalXp >= 15000) count++;
+      if (totalXp >= 50000) count++;
+      if (gamesPlayed >= 100) count++;
+      if (gamesPlayed >= 500) count++;
+      if (gamesPlayed >= 1000) count++;
+      if (level >= 50) count++;
+      return count;
+    }
+
+    function renderAvatars() {
+      const grid = document.getElementById('avatarsGrid');
+      grid.innerHTML = '';
+
+      avatars.forEach(avatar => {
+        const unlocked = avatar.condition();
+        const isActive = currentAvatar === avatar.file;
+
+        const div = document.createElement('div');
+        div.className = `avatar-item ${unlocked ? '' : 'locked'} ${isActive ? 'active' : ''}`;
+        
+        if (unlocked) {
+          div.onclick = () => selectAvatar(avatar.file);
+        }
+
+        div.innerHTML = `
+          <img src="${avatar.file}" alt="${avatar.label}">
+          ${!unlocked ? '<div class="avatar-lock">🔒</div>' : ''}
+          ${isActive ? '<div class="avatar-badge">✓</div>' : ''}
+        `;
+
+        const label = document.createElement('div');
+        label.className = 'avatar-label';
+        label.textContent = avatar.label;
+
+        const wrapper = document.createElement('div');
+        wrapper.appendChild(div);
+        wrapper.appendChild(label);
+
+        grid.appendChild(wrapper);
+      });
+    }
+
+    async function selectAvatar(avatarFile) {
+      if (avatarFile === currentAvatar) return;
+
+      // Mettre à jour en base
+      const { error } = await sb
+        .from('profiles')
+        .update({ avatar_url: avatarFile })
+        .eq('user_id', currentUser.id);
+
+      if (error) {
+        alert('Erreur lors du changement d\'avatar');
+        return;
+      }
+
+      currentAvatar = avatarFile;
+      document.getElementById('profileAvatar').src = avatarFile;
+      renderAvatars();
     }
 
     function goBack() {
       window.location.href = 'game.html';
-    }
-
-    function changeAvatar() {
-      alert('Changement d\'avatar à venir ! 🖼️\n\nBientôt tu pourras personnaliser ton avatar.');
     }
 
     function changePassword() {
