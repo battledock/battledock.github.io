@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Charger Camions - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, 
+        #0369a1 0%,
+        #0284c7 20%,
+        #0ea5e9 40%,
+        #38bdf8 55%,
+        #7dd3fc 70%,
+        #94a3b8 85%,
+        #64748b 100%
+      );
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Sol du quai */
+    body::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 150px;
+      background: linear-gradient(180deg, 
+        #94a3b8 0%,
+        #64748b 50%,
+        #475569 100%
+      );
+      z-index: 1;
+    }
+
+    #game-container {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* HUD */
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.85) 100%);
+      color: white;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
+    }
+
+    .stat.center {
+      align-items: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      opacity: 0.7;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #10b981;
+      letter-spacing: 1px;
+    }
+
+    #xp-count {
+      color: #3b82f6;
+    }
+
+    #timer-count {
+      color: #f59e0b;
+      font-size: 36px;
+    }
+
+    #timer-count.warning {
+      color: #ef4444;
+      animation: timerPulse 0.5s ease-in-out infinite;
+    }
+
+    @keyframes timerPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* ZONE DE JEU */
+    #game-area {
+      position: absolute;
+      top: 100px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 250px);
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* DESTINATIONS */
+    #destinations {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 60px;
+    }
+
+    .destination {
+      text-align: center;
+    }
+
+    .destination-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .destination-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+
+    /* CONTAINER EN MOUVEMENT */
+    #container-zone {
+      position: relative;
+      width: 80%;
+      max-width: 400px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container-card {
+      background: white;
+      border: 4px solid #1a1a1a;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      text-align: center;
+      min-width: 200px;
+    }
+
+    .container-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .container-destination {
+      font-size: 16px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    /* STREAK */
+    #streak-display {
+      position: absolute;
+      top: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 12;
+      display: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #fff;
+      letter-spacing: 2px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      padding: 8px 20px;
+      border-radius: 12px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+    }
+
+    /* FEEDBACK */
+    #feedback-bubble {
+      position: absolute;
+      bottom: 180px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+      background: white;
+      border-radius: 16px;
+      padding: 16px 24px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      display: none;
+      animation: fadeInOut 1s ease-out;
+      border-left: 5px solid #10b981;
+    }
+
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    .feedback-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .feedback-gain {
+      font-size: 14px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    /* GAME OVER */
+    #game-over {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-over.show {
+      display: flex;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .game-over-card {
+      background: white;
+      border-radius: 24px;
+      padding: 40px 32px;
+      text-align: center;
+      max-width: 90%;
+      width: 400px;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    }
+
+    .game-over-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+      letter-spacing: 2px;
+    }
+
+    .final-stats {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .final-stat {
+      background: #f3f4f6;
+      padding: 16px;
+      border-radius: 12px;
+    }
+
+    .final-stat-label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .final-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+
+    .finish-btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+    }
+
+    .finish-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <header id="hud">
+      <div class="stat">
+        <div class="stat-label">Argent</div>
+        <div class="stat-value" id="euro-count">0.00€</div>
+      </div>
+      
+      <div class="stat center">
+        <div class="stat-label">Temps</div>
+        <div class="stat-value" id="timer-count">45</div>
+      </div>
+      
+      <div class="stat" style="align-items: flex-end;">
+        <div class="stat-label">XP</div>
+        <div class="stat-value" id="xp-count">0</div>
+      </div>
+    </header>
+
+    <div id="streak-display">STREAK ×1 🔥</div>
+
+    <main id="game-area">
+      <div id="destinations">
+        <div class="destination">
+          <div class="destination-icon">👈</div>
+          <div class="destination-label" id="left-city">PARIS</div>
+        </div>
+        
+        <div class="destination">
+          <div class="destination-icon">👉</div>
+          <div class="destination-label" id="right-city">LYON</div>
+        </div>
+      </div>
+
+      <div id="container-zone">
+        <div class="container-card" id="current-container">
+          <div class="container-name" id="container-name">CMA CGM</div>
+          <div class="container-destination" id="container-dest">→ LYON</div>
+        </div>
+      </div>
+    </main>
+
+    <div id="feedback-bubble">
+      <div class="feedback-text" id="feedback-text">PARFAIT ! 🎯</div>
+      <div class="feedback-gain" id="feedback-gain">+0.70€ (+2 XP)</div>
+    </div>
+  </div>
+
+  <div id="game-over">
+    <div class="game-over-card">
+      <div class="game-over-title">Temps écoulé ! ⏱️</div>
+      <div class="final-stats">
+        <div class="final-stat">
+          <div class="final-stat-label">Argent gagné</div>
+          <div class="final-stat-value" id="final-money">0.00€</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">XP gagné</div>
+          <div class="final-stat-value" id="final-xp">0</div>
+        </div>
+        <div class="final-stat">
+          <div class="final-stat-label">Meilleur streak</div>
+          <div class="final-stat-value" id="final-streak">×0</div>
+        </div>
+      </div>
+      <button class="finish-btn" onclick="finishGame()">Sauvegarder & Retour</button>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let gameActive = false;
+    let sessionArgent = 0;
+    let sessionXp = 0;
+    let timeRemaining = 60;
+    let streak = 0;
+    let maxStreak = 0;
+
+    const compagnies = ['CMA CGM', 'MARSEILLE FOS', 'MED CARGO', 'JOLIETTE PORT', 'SUD MARITIME', 'PHOCÉEN', 'MUCEM DOCK'];
+    const villes = ['PARIS', 'LYON', 'MARSEILLE', 'BORDEAUX', 'TOULOUSE', 'NICE', 'NANTES'];
+
+    const euroDisplay = document.getElementById('euro-count');
+    const xpDisplay = document.getElementById('xp-count');
+    const timerDisplay = document.getElementById('timer-count');
+    const streakDisplay = document.getElementById('streak-display');
+    const feedbackBubble = document.getElementById('feedback-bubble');
+    const gameOverScreen = document.getElementById('game-over');
+
+    let leftCity = '';
+    let rightCity = '';
+    let currentDestination = '';
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      startGame();
+    }
+
+    function startGame() {
+      gameActive = true;
+      sessionArgent = 0;
+      sessionXp = 0;
+      timeRemaining = 45;
+      streak = 0;
+      maxStreak = 0;
+
+      pickCities();
+      spawnContainer();
+      startTimer();
+    }
+
+    function pickCities() {
+      const shuffled = [...villes].sort(() => Math.random() - 0.5);
+      leftCity = shuffled[0];
+      rightCity = shuffled[1];
+      
+      document.getElementById('left-city').textContent = leftCity;
+      document.getElementById('right-city').textContent = rightCity;
+    }
+
+    function spawnContainer() {
+      if (!gameActive) return;
+
+      const compagnie = compagnies[Math.floor(Math.random() * compagnies.length)];
+      currentDestination = Math.random() < 0.5 ? leftCity : rightCity;
+
+      document.getElementById('container-name').textContent = compagnie;
+      document.getElementById('container-dest').textContent = `→ ${currentDestination}`;
+    }
+
+    function startTimer() {
+      const interval = setInterval(() => {
+        if (!gameActive) {
+          clearInterval(interval);
+          return;
+        }
+
+        timeRemaining--;
+        timerDisplay.textContent = timeRemaining;
+
+        if (timeRemaining <= 10) {
+          timerDisplay.classList.add('warning');
+        }
+
+        if (timeRemaining <= 0) {
+          clearInterval(interval);
+          endGame();
+        }
+      }, 1000);
+    }
+
+    function handleSwipe(direction) {
+      if (!gameActive) return;
+
+      const correctDirection = (currentDestination === leftCity && direction === 'left') ||
+                              (currentDestination === rightCity && direction === 'right');
+
+      if (correctDirection) {
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+
+        // GAINS AUGMENTÉS (meilleurs que Docker Occasionnel)
+        const multiplier = Math.min(streak, 5); // Cap à ×5
+        const gainArgent = 0.70 * multiplier; // Base 0.70€ (vs 0.50€)
+        const gainXp = 2 * multiplier; // Base 2 XP (vs 1 XP)
+
+        sessionArgent += gainArgent;
+        sessionXp += gainXp;
+
+        euroDisplay.textContent = sessionArgent.toFixed(2) + '€';
+        xpDisplay.textContent = sessionXp;
+
+        // Feedback
+        feedbackBubble.style.borderLeft = "5px solid #10b981";
+        document.getElementById('feedback-text').textContent = streak > 1 ? `STREAK ×${streak} ! 🔥` : "PARFAIT ! 🎯";
+        document.getElementById('feedback-gain').textContent = `+${gainArgent.toFixed(2)}€ (+${gainXp} XP)`;
+        feedbackBubble.style.display = 'block';
+
+        if (streak > 1) {
+          streakDisplay.textContent = `STREAK ×${streak} 🔥`;
+          streakDisplay.style.display = 'block';
+        }
+
+        setTimeout(() => {
+          feedbackBubble.style.display = 'none';
+          if (streak <= 1) streakDisplay.style.display = 'none';
+        }, 1000);
+
+      } else {
+        // Mauvais tri
+        streak = 0;
+        streakDisplay.style.display = 'none';
+
+        // Petite pénalité
+        const penalite = 0.10;
+        sessionArgent = Math.max(0, sessionArgent - penalite);
+        euroDisplay.textContent = sessionArgent.toFixed(2) + '€';
+
+        feedbackBubble.style.borderLeft = "5px solid #ef4444";
+        document.getElementById('feedback-text').textContent = "ERREUR ! ❌";
+        document.getElementById('feedback-gain').textContent = `-${penalite.toFixed(2)}€`;
+        feedbackBubble.style.display = 'block';
+
+        setTimeout(() => {
+          feedbackBubble.style.display = 'none';
+        }, 1000);
+
+        triggerVibration();
+      }
+
+      spawnContainer();
+    }
+
+    function triggerVibration() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(100);
+      }
+    }
+
+    // TOUCH CONTROLS
+    document.getElementById('container-zone').addEventListener('touchstart', (e) => {
+      if (!gameActive) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.getElementById('container-zone').addEventListener('touchend', (e) => {
+      if (!gameActive) return;
+      
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+      
+      const deltaX = touchEndX - touchStartX;
+      const deltaY = touchEndY - touchStartY;
+
+      // Seuil minimum et priorité horizontale
+      if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+        if (deltaX > 0) {
+          handleSwipe('right');
+        } else {
+          handleSwipe('left');
+        }
+      }
+    }, { passive: true });
+
+    // KEYBOARD CONTROLS (pour desktop)
+    document.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      if (e.key === 'ArrowLeft') handleSwipe('left');
+      if (e.key === 'ArrowRight') handleSwipe('right');
+    });
+
+    function endGame() {
+      gameActive = false;
+      saveProgress();
+      
+      document.getElementById('final-money').innerText = sessionArgent.toFixed(2) + '€';
+      document.getElementById('final-xp').innerText = sessionXp;
+      document.getElementById('final-streak').innerText = '×' + maxStreak;
+      
+      gameOverScreen.classList.add('show');
+    }
+
+    async function saveProgress() {
+      if (!currentUser || (sessionArgent === 0 && sessionXp === 0)) return;
+
+      const { data: currentStats } = await sb
+        .from('game_stats')
+        .select('money, xp, level, grade')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (currentStats) {
+        const newMoney = currentStats.money + Math.floor(sessionArgent);
+        const newXp = currentStats.xp + sessionXp;
+        
+        let newLevel = currentStats.level;
+        let remainingXp = newXp;
+        
+        while (remainingXp >= (newLevel * newLevel * 50)) {
+          remainingXp -= (newLevel * newLevel * 50);
+          newLevel++;
+          
+          if (newLevel > 50) {
+            newLevel = 50;
+            remainingXp = 0;
+            break;
+          }
+        }
+
+        let newGrade = 'Docker Occasionnel';
+        if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+        else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+        else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+        else if (newLevel >= 50) newGrade = 'Contremaître';
+
+        await sb
+          .from('game_stats')
+          .update({
+            money: newMoney,
+            xp: remainingXp,
+            level: newLevel,
+            grade: newGrade
+          })
+          .eq('user_id', currentUser.id);
+      }
+    }
+
+    async function finishGame() {
+      await saveProgress();
+      alert(`Session terminée !\n+${Math.floor(sessionArgent)}€ et +${sessionXp} XP sauvegardés !`);
+      window.location.href = 'menutravailler.html';
+    }
+
+    // Auto-save si on quitte
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+        saveProgressNow();
+      }
+    });
+
+    window.addEventListener('pagehide', () => {
+      if (gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+        saveProgressNow();
+      }
+    });
+
+    function saveProgressNow() {
+      if (!currentUser || (sessionArgent === 0 && sessionXp === 0)) return;
+
+      const updateData = async () => {
+        const { data: currentStats } = await sb
+          .from('game_stats')
+          .select('money, xp, level, grade')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (!currentStats) return;
+
+        const newMoney = currentStats.money + Math.floor(sessionArgent);
+        const newXp = currentStats.xp + sessionXp;
+        
+        let newLevel = currentStats.level;
+        let remainingXp = newXp;
+        
+        while (remainingXp >= (newLevel * newLevel * 50)) {
+          remainingXp -= (newLevel * newLevel * 50);
+          newLevel++;
+          
+          if (newLevel > 50) {
+            newLevel = 50;
+            remainingXp = 0;
+            break;
+          }
+        }
+
+        let newGrade = 'Docker Occasionnel';
+        if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+        else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+        else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+        else if (newLevel >= 50) newGrade = 'Contremaître';
+
+        await sb
+          .from('game_stats')
+          .update({
+            money: newMoney,
+            xp: remainingXp,
+            level: newLevel,
+            grade: newGrade
+          })
+          .eq('user_id', currentUser.id);
+        
+        sessionArgent = 0;
+        sessionXp = 0;
+      };
+
+      updateData();
+    }
+
+    init();
+  </script>
+</body>
+</html>
