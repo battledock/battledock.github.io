@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Profil - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 20px;
+      color: #1a1a1a;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .back-btn:hover {
+      background: linear-gradient(135deg, #f1f5f9, #e5e7eb);
+      border-color: #d1d5db;
+      transform: translateX(-2px);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95) translateX(0);
+    }
+
+    .topbar-title {
+      flex: 1;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      text-align: center;
+    }
+
+    .topbar-icon {
+      font-size: 28px;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      padding-bottom: 40px;
+    }
+
+    /* PROFILE HEADER */
+    .profile-header {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      border-radius: 16px;
+      padding: 32px 24px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+      margin: 0 auto 16px;
+    }
+
+    .profile-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-username {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .profile-grade {
+      font-size: 16px;
+      opacity: 0.9;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .profile-level {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    /* SECTION */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    .section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    /* INFO CARDS */
+    .info-card {
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .info-row:first-child {
+      padding-top: 0;
+    }
+
+    .info-label {
+      font-size: 14px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 16px;
+      color: #1a1a1a;
+      font-weight: 700;
+    }
+
+    /* ACTIONS */
+    .action-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .action-btn {
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .action-btn:hover {
+      border-color: #d1d5db;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .action-btn:active {
+      transform: scale(0.98);
+    }
+
+    .action-btn.danger {
+      border-color: #fca5a5;
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent);
+    }
+
+    .action-btn.danger:hover {
+      border-color: #ef4444;
+    }
+
+    .action-icon {
+      font-size: 32px;
+    }
+
+    .action-info {
+      flex: 1;
+    }
+
+    .action-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .action-btn.danger .action-title {
+      color: #ef4444;
+    }
+
+    .action-desc {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .action-arrow {
+      font-size: 20px;
+      color: #9ca3af;
+    }
+
+    /* LOADING */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div class="topbar-title">Mon Profil</div>
+    <div class="topbar-icon">👤</div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="container">
+    <!-- PROFILE HEADER -->
+    <div class="profile-header">
+      <div class="profile-avatar">
+        <img src="avatar-default.png" alt="Avatar" id="profileAvatar">
+      </div>
+      <div class="profile-username" id="profileUsername">Docker</div>
+      <div class="profile-grade" id="profileGrade">Docker Occasionnel</div>
+      <div class="profile-level" id="profileLevel">Niveau 1</div>
+    </div>
+
+    <!-- ACCOUNT INFO -->
+    <div class="section-title">Informations du compte</div>
+    <div class="info-card">
+      <div class="info-row">
+        <div class="info-label">Pseudo</div>
+        <div class="info-value" id="infoUsername">-</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Email</div>
+        <div class="info-value" id="infoEmail">-</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">Membre depuis</div>
+        <div class="info-value" id="infoMemberSince">-</div>
+      </div>
+    </div>
+
+    <!-- GAME STATS -->
+    <div class="section-title">Statistiques</div>
+    <div class="info-card">
+      <div class="info-row">
+        <div class="info-label">💰 Argent possédé</div>
+        <div class="info-value" id="statMoney">0€</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">⭐ Niveau actuel</div>
+        <div class="info-value" id="statLevel">1</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">🏅 Grade</div>
+        <div class="info-value" id="statGrade">Docker Occasionnel</div>
+      </div>
+      <div class="info-row">
+        <div class="info-label">🔥 XP actuel</div>
+        <div class="info-value" id="statXp">0</div>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="section-title">Actions</div>
+    <div class="action-list">
+      <button class="action-btn" onclick="changeAvatar()">
+        <div class="action-icon">🖼️</div>
+        <div class="action-info">
+          <div class="action-title">Changer d'avatar</div>
+          <div class="action-desc">Personnalise ton profil</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+
+      <button class="action-btn" onclick="changePassword()">
+        <div class="action-icon">🔐</div>
+        <div class="action-info">
+          <div class="action-title">Modifier le mot de passe</div>
+          <div class="action-desc">Sécurise ton compte</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+
+      <button class="action-btn danger" onclick="deleteAccount()">
+        <div class="action-icon">🗑️</div>
+        <div class="action-info">
+          <div class="action-title">Supprimer le compte</div>
+          <div class="action-desc">Action irréversible</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+
+      <button class="action-btn danger" onclick="logout()">
+        <div class="action-icon">🚪</div>
+        <div class="action-info">
+          <div class="action-title">Se déconnecter</div>
+          <div class="action-desc">Quitter Battle Dock</div>
+        </div>
+        <div class="action-arrow">›</div>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      currentUser = session.user;
+      await loadProfile();
+    }
+
+    async function loadProfile() {
+      // Charger profil
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      // Charger stats
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (!profile || !stats) return;
+
+      // Header
+      document.getElementById('profileAvatar').src = profile.avatar_url;
+      document.getElementById('profileUsername').textContent = profile.username;
+      document.getElementById('profileGrade').textContent = stats.grade;
+      document.getElementById('profileLevel').textContent = `Niveau ${stats.level}`;
+
+      // Account info
+      document.getElementById('infoUsername').textContent = profile.username;
+      document.getElementById('infoEmail').textContent = currentUser.email;
+      
+      const createdAt = new Date(currentUser.created_at);
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('infoMemberSince').textContent = createdAt.toLocaleDateString('fr-FR', options);
+
+      // Stats
+      document.getElementById('statMoney').textContent = stats.money.toLocaleString('fr-FR') + '€';
+      document.getElementById('statLevel').textContent = stats.level;
+      document.getElementById('statGrade').textContent = stats.grade;
+      document.getElementById('statXp').textContent = stats.xp.toLocaleString('fr-FR');
+    }
+
+    function goBack() {
+      window.location.href = 'game.html';
+    }
+
+    function changeAvatar() {
+      alert('Changement d\'avatar à venir ! 🖼️\n\nBientôt tu pourras personnaliser ton avatar.');
+    }
+
+    function changePassword() {
+      alert('Modification du mot de passe à venir ! 🔐\n\nFonctionnalité en développement.');
+    }
+
+    async function deleteAccount() {
+      const confirm1 = window.confirm('⚠️ ATTENTION ⚠️\n\nSupprimer ton compte effacera TOUTES tes données :\n- Progression\n- Argent\n- Succès\n- Classement\n\nCette action est IRRÉVERSIBLE.\n\nEs-tu sûr de vouloir continuer ?');
+      
+      if (!confirm1) return;
+
+      const confirm2 = window.confirm('🚨 DERNIÈRE CONFIRMATION 🚨\n\nTu es sur le point de TOUT perdre.\n\nConfirmes-tu DÉFINITIVEMENT la suppression ?');
+      
+      if (!confirm2) return;
+
+      try {
+        // Supprimer les données
+        await sb.from('game_stats').delete().eq('user_id', currentUser.id);
+        await sb.from('profiles').delete().eq('user_id', currentUser.id);
+        
+        // Supprimer le compte auth
+        const { error } = await sb.auth.admin.deleteUser(currentUser.id);
+        
+        if (error) {
+          alert('Erreur lors de la suppression : ' + error.message);
+          return;
+        }
+
+        alert('✅ Compte supprimé avec succès.\n\nÀ bientôt sur Battle Dock !');
+        window.location.href = 'index.html';
+      } catch (err) {
+        alert('Erreur : ' + err.message);
+      }
+    }
+
+    async function logout() {
+      const confirm = window.confirm('Veux-tu vraiment te déconnecter ?');
+      if (confirm) {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
