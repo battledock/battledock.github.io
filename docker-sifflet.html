@@ -61,40 +61,6 @@
             z-index: 1;
         }
 
-        /* Grue portuaire en silhouette (gauche) */
-        #crane {
-            position: absolute;
-            left: -20px;
-            bottom: 120px;
-            width: 180px;
-            height: 250px;
-            opacity: 0.15;
-            z-index: 2;
-            pointer-events: none;
-        }
-
-        /* Mouette animée */
-        #seagull {
-            position: absolute;
-            top: 15%;
-            right: -50px;
-            font-size: 24px;
-            z-index: 2;
-            animation: seagullFly 15s linear infinite;
-            pointer-events: none;
-        }
-
-        @keyframes seagullFly {
-            0% {
-                right: -50px;
-                top: 15%;
-            }
-            100% {
-                right: 110%;
-                top: 25%;
-            }
-        }
-
         /* --- HUD PREMIUM --- */
         #hud {
             position: absolute;
@@ -358,19 +324,6 @@
                 <div class="stat-value" id="xp-count">0</div>
             </div>
         </header>
-
-        <!-- Grue portuaire (silhouette SVG) -->
-        <svg id="crane" viewBox="0 0 200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="85" y="200" width="30" height="100" fill="#1e293b"/>
-            <rect x="50" y="180" width="100" height="25" fill="#1e293b"/>
-            <line x1="100" y1="180" x2="20" y2="20" stroke="#1e293b" stroke-width="8"/>
-            <line x1="100" y1="180" x2="180" y2="80" stroke="#1e293b" stroke-width="8"/>
-            <rect x="15" y="15" width="20" height="15" fill="#1e293b"/>
-            <line x1="25" y1="30" x2="25" y2="100" stroke="#1e293b" stroke-width="3" stroke-dasharray="5,5"/>
-        </svg>
-
-        <!-- Mouette -->
-        <div id="seagull">🕊️</div>
 
         <main id="port-area">
             <div id="container-box">CMA</div>
@@ -701,26 +654,54 @@
             }, 1000);
         }
 
-        // TOUCH CONTROLS
+        // TOUCH CONTROLS AMÉLIORÉS
+        let activeTouch = null;
+
         gameContainer.addEventListener('touchstart', (e) => {
             if (!isDropping || !gameActive) return;
+            e.preventDefault(); // Empêche le scroll
+            
+            activeTouch = e.touches[0].identifier;
             touchStartX = e.touches[0].clientX;
             containerStartPercent = parseFloat(container.style.left) || 50;
-        }, { passive: true });
+        }, { passive: false });
 
         gameContainer.addEventListener('touchmove', (e) => {
-            if (!isDropping || !gameActive) return;
+            if (!isDropping || !gameActive || activeTouch === null) return;
+            e.preventDefault(); // Empêche le scroll et le zoom
             
-            const touchCurrentX = e.touches[0].clientX;
+            // Trouver le touch actif
+            let currentTouch = null;
+            for (let i = 0; i < e.touches.length; i++) {
+                if (e.touches[i].identifier === activeTouch) {
+                    currentTouch = e.touches[i];
+                    break;
+                }
+            }
+            
+            if (!currentTouch) return;
+            
+            const touchCurrentX = currentTouch.clientX;
             const deltaX = touchCurrentX - touchStartX;
+            
+            // Facteur de sensibilité augmenté pour meilleure réactivité
             const deltaPercent = (deltaX / gameContainer.clientWidth) * 100;
             let newPercent = containerStartPercent + deltaPercent;
 
-            if (newPercent < 10) newPercent = 10;
-            if (newPercent > 90) newPercent = 90;
+            // Limites avec marge de sécurité
+            if (newPercent < 5) newPercent = 5;
+            if (newPercent > 95) newPercent = 95;
 
             containerX = newPercent;
             container.style.left = containerX + '%';
+        }, { passive: false });
+
+        gameContainer.addEventListener('touchend', (e) => {
+            activeTouch = null;
+        }, { passive: true });
+
+        gameContainer.addEventListener('touchcancel', (e) => {
+            activeTouch = null;
         }, { passive: true });
 
         // MOUSE CONTROLS (PC)
