@@ -48,7 +48,6 @@
       margin: 0;
     }
 
-    /* EN-TÊTE */
     .header-container {
       text-align: center;
       margin-bottom: 16px;
@@ -80,7 +79,6 @@
       letter-spacing: 1px;
     }
 
-    /* CONTENEUR PRINCIPAL */
     .dock-container {
       width: 100%;
       max-width: 540px;
@@ -98,7 +96,6 @@
       flex-shrink: 0;
     }
 
-    /* ONGLETS */
     .tabs-wrapper {
       display: flex;
       background: var(--port-dark);
@@ -136,7 +133,6 @@
       color: #ffffff;
     }
 
-    /* CONTENU */
     .form-content {
       background: #f3f4f6;
       padding: 24px 22px;
@@ -157,15 +153,6 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    .section-headline {
-      font-family: 'Bangers', cursive;
-      font-size: 24px;
-      color: var(--port-dark);
-      margin-bottom: 24px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
 
     .input-group { 
@@ -236,11 +223,6 @@
       box-shadow: 2px 2px 0px #000000;
     }
 
-    .submit-lever-btn.success {
-      background: var(--comic-green);
-    }
-
-    /* FOOTER */
     .footer-stamp {
       margin-top: 12px;
       font-size: 9px;
@@ -252,7 +234,6 @@
       flex-shrink: 0;
     }
 
-    /* POPUP D'ERREUR */
     .error-popup {
       display: none;
       position: fixed;
@@ -263,18 +244,18 @@
       border: 4px solid #000000;
       border-radius: 20px;
       padding: 32px 28px;
-      max-width: 420px;
-      width: 90%;
-      box-shadow: 12px 12px 0px #000000;
+      box-shadow: var(--shadow-comic);
       z-index: 1000;
-      animation: popupAppear 0.3s ease-out;
+      max-width: 90%;
+      width: 400px;
     }
 
     .error-popup.show {
       display: block;
+      animation: popupShow 0.3s ease-out forwards;
     }
 
-    @keyframes popupAppear {
+    @keyframes popupShow {
       from {
         opacity: 0;
         transform: translate(-50%, -50%) scale(0.8);
@@ -346,7 +327,6 @@
       box-shadow: 2px 2px 0px #000000;
     }
 
-    /* RESPONSIF */
     @media (max-width: 540px) {
       .dock-container {
         border-radius: 12px;
@@ -366,8 +346,8 @@
 
   <div class="dock-container">
     <div class="tabs-wrapper">
-      <button class="tab-btn active" id="tabHome" onclick="swapTab('home')">👔 EMBAUCHE</button>
-      <button class="tab-btn" id="tabScores" onclick="swapTab('scores')">📝 POSTULER</button>
+      <button class="tab-btn active" id="tabHome" onclick="swapTab('home')">👔 CONNEXION</button>
+      <button class="tab-btn" id="tabScores" onclick="swapTab('scores')">📝 INSCRIPTION</button>
     </div>
 
     <div class="form-content">
@@ -378,10 +358,10 @@
             <input type="text" class="custom-field" id="quick-username" placeholder="Ton pseudo" required>
           </div>
           <div class="input-group">
-            <label>🔑 Code Secret</label>
+            <label>🔑 Mot de passe</label>
             <input type="password" class="custom-field" id="quick-password" placeholder="••••••••" required>
           </div>
-          <button type="submit" class="submit-lever-btn" style="background: var(--comic-red); margin-top: 10px; border-bottom: none;">SE CONNECTER</button>
+          <button type="submit" class="submit-lever-btn">SE CONNECTER</button>
         </form>
       </div>
 
@@ -395,7 +375,7 @@
             <label>🔒 Mot de passe</label>
             <input type="password" class="custom-field" id="app-password" placeholder="Minimum 6 caractères" required>
           </div>
-          <button type="submit" class="submit-lever-btn" style="margin-top: 10px; background: var(--comic-red);">S'INSCRIRE</button>
+          <button type="submit" class="submit-lever-btn">S'INSCRIRE</button>
         </form>
       </div>
     </div>
@@ -403,7 +383,6 @@
 
   <div class="footer-stamp">Battle Dock est une œuvre de fiction et de divertissement.<br>Tous les éléments sont purement imaginaires.</div>
 
-  <!-- POPUP D'ERREUR -->
   <div class="error-popup-overlay" id="errorOverlay"></div>
   <div class="error-popup" id="errorPopup">
     <div class="error-popup-title">ERREUR</div>
@@ -417,7 +396,6 @@
     const { createClient } = supabase;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    // Si session active → direct game.html
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) window.location.href = 'game.html';
     });
@@ -434,7 +412,6 @@
     }
 
     document.getElementById('errorOverlay').addEventListener('click', closeErrorPopup);
-    document.body.style.background = 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%)';
 
     function swapTab(target) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -446,7 +423,6 @@
         : 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%)';
     }
 
-    // ── CONNEXION ──
     document.getElementById('quick-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('quick-username').value.trim();
@@ -457,25 +433,34 @@
       btn.textContent = 'CONNEXION...'; btn.disabled = true;
 
       try {
-        // Vérifie que le pseudo existe
         const { data: profile, error: pErr } = await sb
           .from('profiles').select('user_id').eq('username', username).single();
 
-        if (pErr || !profile) { showErrorPopup('Pseudo introuvable !'); btn.textContent='SE CONNECTER'; btn.disabled=false; return; }
+        if (pErr || !profile) { 
+          showErrorPopup('Pseudo introuvable !'); 
+          btn.textContent='SE CONNECTER'; 
+          btn.disabled=false; 
+          return; 
+        }
 
         const email = username + '@battledock.local';
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
-        if (error) { showErrorPopup('Mot de passe incorrect !'); btn.textContent='SE CONNECTER'; btn.disabled=false; return; }
+        if (error) { 
+          showErrorPopup('Mot de passe incorrect !'); 
+          btn.textContent='SE CONNECTER'; 
+          btn.disabled=false; 
+          return; 
+        }
 
         window.location.href = 'game.html';
       } catch (err) {
         showErrorPopup('Erreur : ' + err.message);
-        btn.textContent='SE CONNECTER'; btn.disabled=false;
+        btn.textContent='SE CONNECTER'; 
+        btn.disabled=false;
       }
     });
 
-    // ── INSCRIPTION ──
     document.getElementById('application-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const username = document.getElementById('app-username').value.trim();
@@ -489,47 +474,30 @@
       btn.textContent = 'INSCRIPTION...'; btn.disabled = true;
 
       try {
-        // Vérifie que le pseudo n'est pas déjà pris
         const { data: existing } = await sb
           .from('profiles').select('username').eq('username', username).single();
-        if (existing) { showErrorPopup('Ce pseudo est déjà pris !'); btn.textContent="S'INSCRIRE"; btn.disabled=false; return; }
+        if (existing) { 
+          showErrorPopup('Ce pseudo est déjà pris !'); 
+          btn.textContent="S'INSCRIRE"; 
+          btn.disabled=false; 
+          return; 
+        }
 
         const email = username + '@battledock.local';
 
-        // Crée le compte auth
         const { data: authData, error: authErr } = await sb.auth.signUp({
-          email, password,
+          email, 
+          password,
           options: { data: { username } }
         });
         if (authErr) throw authErr;
 
         const userId = authData.user.id;
 
-        // Crée le profil
-        await sb.from('profiles').insert({ user_id: userId, username });
-
-        // Crée le game_state initial
-        await sb.from('game_state').insert({
-          user_id:  userId,
-          money:    150,
-          energy:   100,
-          health:   100,
-          mood:     80,
-          xp:       0,
-          level:    1,
-          rank:     'Docker Débutant',
-          day:      1,
-          hour:     8,
-          minute:   0,
-          housing:  1,
-          vehicle:  'pied',
-          skills:   { force:10, vitesse:8, endurance:5, combine:2 },
-        });
-
-        // Crée l'entrée leaderboard
-        await sb.from('leaderboard').insert({
-          user_id: userId, username, money: 150, level: 1,
-          rank: 'Docker Débutant', days_played: 1, casier: 0, fame: 0, score: 150,
+        await sb.from('profiles').insert({ 
+          user_id: userId, 
+          username,
+          avatar_url: 'avatar-default.png'
         });
 
         btn.textContent = '✅ BIENVENUE !';
@@ -537,7 +505,8 @@
 
       } catch (err) {
         showErrorPopup('Erreur : ' + err.message);
-        btn.textContent = "S'INSCRIRE"; btn.disabled = false;
+        btn.textContent = "S'INSCRIRE"; 
+        btn.disabled = false;
       }
     });
   </script>
