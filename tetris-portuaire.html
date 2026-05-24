@@ -444,15 +444,23 @@
     ];
 
     async function init() {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) {
+      try {
+        const { data: { session }, error } = await sb.auth.getSession();
+        
+        if (error || !session) {
+          console.error('Session error:', error);
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        currentUser = session.user;
+        createGrid();
+        attachButtonListeners();
+        startGame();
+      } catch (err) {
+        console.error('Init error:', err);
         window.location.href = 'index.html';
-        return;
       }
-      currentUser = user;
-      createGrid();
-      startGame();
-      attachButtonListeners();
     }
 
     function createGrid() {
