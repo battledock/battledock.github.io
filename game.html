@@ -2,517 +2,305 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock - Jeu</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Space+Grotesk:wght@500;700;900&family=Bungee&display=swap" rel="stylesheet">
-  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  
   <style>
-    :root {
-      --port-dark: #0f172a;
-      --comic-yellow: #facc15;
-      --comic-red: #ef4444;
-      --comic-green: #22c55e;
-      --comic-blue: #3b82f6;
-    }
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
-      user-select: none;
     }
 
     body {
-      font-family: 'Space Grotesk', sans-serif;
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%);
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
       min-height: 100vh;
-      padding: 0;
-      overflow-x: hidden;
     }
 
-    .game-container {
-      width: 100%;
-      height: 100vh;
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 16px;
       display: flex;
-      flex-direction: column;
-      padding: 0;
+      align-items: flex-start;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid #e5e7eb;
     }
 
-    /* CARTE HERO AGRANDIE */
-    .hero-card {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border-bottom: 4px solid #000;
-      padding: 20px 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    .hero-avatar {
-      width: 70px;
-      height: 70px;
-      border: 4px solid #000;
-      border-radius: 50%;
+    .avatar {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: 3px solid #e5e7eb;
+      border-radius: 8px;
       overflow: hidden;
-      background: white;
       flex-shrink: 0;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.2);
     }
 
-    .hero-avatar img {
+    .avatar img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .hero-info {
+    .player-info {
       flex: 1;
       min-width: 0;
     }
 
-    .hero-welcome {
-      font-family: 'Bangers', cursive;
+    .player-name {
+      font-family: 'Bebas Neue', sans-serif;
       font-size: 22px;
-      color: var(--port-dark);
-      text-transform: uppercase;
       letter-spacing: 1px;
+      color: #1a1a1a;
       line-height: 1.2;
-      margin-bottom: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .hero-username {
-      color: var(--comic-blue);
+    .player-grade {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+      margin-top: 2px;
     }
 
-    .hero-grade {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 13px;
-      color: #64748b;
-      font-weight: 700;
-      line-height: 1;
+    .player-level {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
     }
 
-    .hero-stats {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: flex-end;
+    .xp-bar {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+
+    .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .money {
+      text-align: right;
       flex-shrink: 0;
     }
 
-    .hero-stat {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .hero-stat-icon {
-      font-size: 16px;
-      line-height: 1;
-    }
-
-    .hero-stat-value {
-      font-family: 'Bungee', sans-serif;
-      font-size: 14px;
-      line-height: 1;
-    }
-
-    .hero-stat-value.money {
-      color: var(--comic-green);
-    }
-
-    .hero-stat-value.level {
-      color: var(--comic-blue);
-    }
-
-    /* CONTENU SCROLLABLE */
-    .content-area {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-
-    /* BOUTON TRAVAILLER UNIQUE */
-    .work-button {
-      width: 100%;
-      background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
-      border: 4px solid #000;
-      border-radius: 24px;
-      padding: 32px 20px;
-      margin-bottom: 20px;
-      cursor: pointer;
-      box-shadow: 
-        0 10px 0 #b45309,
-        0 15px 25px rgba(0,0,0,0.3);
-      transition: all 0.15s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .work-button::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(
-        45deg,
-        transparent 30%,
-        rgba(255,255,255,0.3) 50%,
-        transparent 70%
-      );
-      animation: shine 3s infinite;
-    }
-
-    @keyframes shine {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
-
-    .work-button:active {
-      transform: translateY(8px);
-      box-shadow: 
-        0 2px 0 #b45309,
-        0 5px 12px rgba(0,0,0,0.3);
-    }
-
-    .work-button-content {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .work-button-icon {
-      font-size: 48px;
-      line-height: 1;
-      animation: bounce 2s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .work-button-text {
-      font-family: 'Bangers', cursive;
-      font-size: 36px;
-      color: #000;
-      text-transform: uppercase;
-      letter-spacing: 3px;
-      text-shadow: 2px 2px 0 rgba(255,255,255,0.5);
-      line-height: 1;
-    }
-
-    /* CARTES */
-    .card {
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border: 3px solid #000;
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.15);
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-
-    .card-title {
-      font-family: 'Bangers', cursive;
-      font-size: 20px;
-      color: var(--port-dark);
-      text-transform: uppercase;
+    .money-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
       letter-spacing: 1px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      color: #10b981;
+      line-height: 1;
     }
 
-    .card-icon {
-      font-size: 22px;
+    .money-label {
+      font-size: 10px;
+      color: #6b7280;
+      margin-top: 2px;
     }
 
-    .card-reward {
-      font-family: 'Bungee', sans-serif;
-      font-size: 11px;
-      color: var(--comic-yellow);
-      background: rgba(250, 204, 21, 0.2);
-      padding: 5px 10px;
-      border-radius: 8px;
-      border: 2px solid var(--comic-yellow);
-    }
-
-    .objective-text {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 15px;
-      color: #475569;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-
-    .progress-container {
-      background: #cbd5e1;
-      border: 3px solid #000;
-      border-radius: 12px;
-      height: 36px;
-      overflow: hidden;
-      position: relative;
-      margin-bottom: 10px;
-    }
-
-    .progress-bar {
-      background: linear-gradient(90deg, var(--comic-green) 0%, #16a34a 100%);
-      height: 100%;
-      transition: width 0.3s ease;
-      box-shadow: inset 0 2px 8px rgba(255,255,255,0.3);
-    }
-
-    .progress-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Bungee', sans-serif;
-      font-size: 13px;
-      color: var(--port-dark);
-      font-weight: 700;
-      text-shadow: 1px 1px 0px #fff;
-      z-index: 1;
-    }
-
-    .progress-label {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 13px;
-      color: #64748b;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    .level-progress-container {
-      background: #cbd5e1;
-      border: 3px solid #000;
-      border-radius: 12px;
-      height: 36px;
-      overflow: hidden;
-      position: relative;
-      margin-bottom: 10px;
-    }
-
-    .level-progress-bar {
-      background: linear-gradient(90deg, var(--comic-yellow) 0%, #fb923c 100%);
-      height: 100%;
-      transition: width 0.3s ease;
-      box-shadow: inset 0 2px 8px rgba(255,255,255,0.3);
-    }
-
-    .next-level-text {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 14px;
-      color: #475569;
-      font-weight: 600;
-      text-align: center;
-    }
-
-    /* FOOTER STICKY */
-    .player-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-      border-top: 4px solid #000;
-      padding: 14px 16px;
-      z-index: 1000;
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
-    }
-
-    .footer-nav {
-      display: flex;
-      gap: 10px;
-      max-width: 100%;
+    /* CONTAINER */
+    .container {
+      max-width: 600px;
       margin: 0 auto;
+      padding: 20px;
     }
 
-    .nav-btn {
-      flex: 1;
-      background: white;
-      border: 3px solid #000;
-      border-radius: 14px;
-      padding: 12px 10px;
-      cursor: pointer;
-      box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-      transition: all 0.1s ease;
+    /* BUTTONS */
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .action-btn {
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 24px 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     }
 
-    .nav-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+    .action-btn:active {
+      transform: scale(0.95);
     }
 
-    .nav-btn.active {
-      background: linear-gradient(135deg, var(--comic-blue) 0%, #2563eb 100%);
-      box-shadow: 0 4px 0 #1e40af;
+    .action-btn:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 8px rgba(59, 130, 246, 0.15);
     }
 
-    .nav-btn.active:active {
-      box-shadow: 0 2px 0 #1e40af;
+    .btn-icon {
+      font-size: 40px;
     }
 
-    .nav-icon {
-      font-size: 24px;
-      line-height: 1;
+    .btn-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
     }
 
-    .nav-label {
-      font-family: 'Bungee', sans-serif;
-      font-size: 10px;
-      color: #64748b;
-      text-transform: uppercase;
-      line-height: 1;
+    .btn-subtitle {
+      font-size: 11px;
+      color: #6b7280;
+      text-align: center;
     }
 
-    .nav-btn.active .nav-label {
+    /* BIG BUTTON */
+    .big-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 100%;
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .big-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+
+    .big-btn-icon {
+      font-size: 48px;
+    }
+
+    .big-btn-content {
+      text-align: left;
+    }
+
+    .big-btn-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 2px;
       color: white;
+      line-height: 1;
+      margin-bottom: 4px;
     }
 
-    @media (max-width: 380px) {
-      .hero-card {
-        padding: 16px 14px;
-      }
+    .big-btn-subtitle {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.9);
+    }
 
-      .hero-avatar {
-        width: 65px;
-        height: 65px;
-      }
-
-      .hero-welcome {
-        font-size: 20px;
-      }
-
-      .work-button {
-        padding: 28px 18px;
-      }
-
-      .work-button-icon {
-        font-size: 42px;
-      }
-
-      .work-button-text {
-        font-size: 32px;
-      }
-
-      .nav-icon {
-        font-size: 22px;
-      }
-
-      .nav-label {
-        font-size: 9px;
-      }
+    /* SECOND GRID */
+    .second-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 12px;
     }
   </style>
 </head>
 <body>
-  <div class="game-container">
-    <!-- CARTE HERO AGRANDIE -->
-    <div class="hero-card">
-      <div class="hero-avatar">
-        <img src="avatar-default.png" alt="Avatar" id="heroAvatar">
-      </div>
-      <div class="hero-info">
-        <div class="hero-welcome">Bienvenue, <span class="hero-username" id="heroUsername">Docker</span></div>
-        <div class="hero-grade" id="heroGrade">Docker Occasionnel</div>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="hero-stat-icon">💰</span>
-          <span class="hero-stat-value money" id="heroMoney">0 €</span>
-        </div>
-        <div class="hero-stat">
-          <span class="hero-stat-icon">⭐</span>
-          <span class="hero-stat-value level" id="heroLevel">Niv. 1</span>
-        </div>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="avatar">
+      <img src="avatar-default.png" alt="Avatar" id="avatarImage">
+    </div>
+    <div class="player-info">
+      <div class="player-name" id="playerName">Docker</div>
+      <div class="player-grade" id="playerGrade">Docker Occasionnel</div>
+      <div class="player-level" id="playerLevel">Niveau 1</div>
+      <div class="xp-bar">
+        <div class="xp-fill" id="xpFill" style="width: 0%"></div>
       </div>
     </div>
-
-    <!-- CONTENU SCROLLABLE -->
-    <div class="content-area">
-      <!-- BOUTON TRAVAILLER UNIQUE -->
-      <button class="work-button" onclick="startWorking()">
-        <div class="work-button-content">
-          <span class="work-button-icon">⚡</span>
-          <span class="work-button-text">COMMENCER</span>
-        </div>
-      </button>
-
-      <!-- OBJECTIF DU JOUR -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="card-icon">🎯</span>
-            Objectif du jour
-          </div>
-          <div class="card-reward">+100 XP</div>
-        </div>
-        <div class="objective-text">Gagne 500€ aujourd'hui</div>
-        <div class="progress-container">
-          <div class="progress-bar" id="dailyProgressBar" style="width: 0%"></div>
-          <div class="progress-text" id="dailyProgressText">0 / 500 €</div>
-        </div>
-        <div class="progress-label" id="dailyProgressLabel">Continue comme ça !</div>
-      </div>
-
-      <!-- PROGRESSION NIVEAU -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">
-            <span class="card-icon">⭐</span>
-            Prochain niveau
-          </div>
-        </div>
-        <div class="level-progress-container">
-          <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
-          <div class="progress-text" id="levelProgressText">0 / 100 XP</div>
-        </div>
-        <div class="next-level-text" id="nextLevelText">Plus que 100 XP !</div>
-      </div>
+    <div class="money">
+      <div class="money-amount"><span id="moneyAmount">0</span>€</div>
+      <div class="money-label">Budget</div>
     </div>
   </div>
 
-  <!-- FOOTER STICKY -->
-  <div class="player-footer">
-    <div class="footer-nav">
-      <button class="nav-btn active">
-        <div class="nav-icon">🏠</div>
-        <div class="nav-label">Accueil</div>
+  <!-- CONTAINER -->
+  <div class="container">
+    <div class="buttons-grid">
+      <button class="action-btn" onclick="startWorking()">
+        <div class="btn-icon">💼</div>
+        <div class="btn-label">Travailler</div>
+        <div class="btn-subtitle">Compléter des contrats</div>
       </button>
-      <button class="nav-btn">
-        <div class="nav-icon">💼</div>
-        <div class="nav-label">Travail</div>
+
+      <button class="action-btn" onclick="showProgression()">
+        <div class="btn-icon">📊</div>
+        <div class="btn-label">Progression</div>
+        <div class="btn-subtitle">Voir ta carrière</div>
       </button>
-      <button class="nav-btn">
-        <div class="nav-icon">📊</div>
-        <div class="nav-label">Stats</div>
+
+      <button class="action-btn" onclick="showRanking()">
+        <div class="btn-icon">🏆</div>
+        <div class="btn-label">Classement</div>
+        <div class="btn-subtitle">Top dockers</div>
       </button>
-      <button class="nav-btn">
-        <div class="nav-icon">👤</div>
-        <div class="nav-label">Profil</div>
+
+      <button class="action-btn" onclick="showShop()">
+        <div class="btn-icon">🛒</div>
+        <div class="btn-label">Shop</div>
+        <div class="btn-subtitle">Acheter des bonus</div>
+      </button>
+    </div>
+
+    <!-- GRAND BOUTON -->
+    <button class="big-btn" onclick="createCompany()">
+      <div class="big-btn-icon">🏢</div>
+      <div class="big-btn-content">
+        <div class="big-btn-label">Créer sa Compagnie</div>
+        <div class="big-btn-subtitle">Deviens directeur du port</div>
+      </div>
+    </button>
+
+    <!-- DEUXIÈME GRILLE -->
+    <div class="second-grid">
+      <button class="action-btn" onclick="showProfile()">
+        <div class="btn-icon">👤</div>
+        <div class="btn-label">Profil</div>
+        <div class="btn-subtitle">Ton compte</div>
+      </button>
+
+      <button class="action-btn" onclick="showChat()">
+        <div class="btn-icon">💬</div>
+        <div class="btn-label">Chat</div>
+        <div class="btn-subtitle">Discute avec les autres</div>
+      </button>
+
+      <button class="action-btn" onclick="showGames()">
+        <div class="btn-icon">🎮</div>
+        <div class="btn-label">Jeux</div>
+        <div class="btn-subtitle">Mini-jeux bonus</div>
+      </button>
+
+      <button class="action-btn" onclick="logout()">
+        <div class="btn-icon">⚙️</div>
+        <div class="btn-label">Paramètres</div>
+        <div class="btn-subtitle">Déconnexion</div>
       </button>
     </div>
   </div>
@@ -535,6 +323,7 @@
 
       currentUser = session.user;
 
+      // Charger profil
       const { data: profile } = await sb
         .from('profiles')
         .select('username, avatar_url')
@@ -542,10 +331,11 @@
         .single();
 
       if (profile) {
-        document.getElementById('heroUsername').textContent = profile.username;
-        document.getElementById('heroAvatar').src = profile.avatar_url;
+        document.getElementById('playerName').textContent = profile.username;
+        document.getElementById('avatarImage').src = profile.avatar_url;
       }
 
+      // Charger stats
       const { data: stats } = await sb
         .from('game_stats')
         .select('money, level, xp, grade')
@@ -553,45 +343,61 @@
         .single();
 
       if (stats) {
-        // Hero header
-        document.getElementById('heroMoney').textContent = stats.money + ' €';
-        document.getElementById('heroLevel').textContent = 'Niv. ' + stats.level;
-        document.getElementById('heroGrade').textContent = stats.grade;
+        // Argent
+        document.getElementById('moneyAmount').textContent = stats.money.toLocaleString('fr-FR');
         
-        // Objectif du jour
-        const dailyGoal = 500;
-        const dailyProgress = Math.min(stats.money, dailyGoal);
-        const dailyPercent = (dailyProgress / dailyGoal) * 100;
+        // Grade
+        document.getElementById('playerGrade').textContent = stats.grade;
         
-        document.getElementById('dailyProgressBar').style.width = dailyPercent + '%';
-        document.getElementById('dailyProgressText').textContent = dailyProgress + ' / ' + dailyGoal + ' €';
+        // Niveau
+        document.getElementById('playerLevel').textContent = 'Niveau ' + stats.level;
         
-        if (dailyPercent >= 100) {
-          document.getElementById('dailyProgressLabel').textContent = '🎉 Objectif complété !';
-        } else if (dailyPercent >= 50) {
-          document.getElementById('dailyProgressLabel').textContent = 'Plus que ' + (dailyGoal - dailyProgress) + '€ !';
-        } else {
-          document.getElementById('dailyProgressLabel').textContent = 'Continue comme ça !';
-        }
-        
-        // Progression niveau
+        // Barre XP
         const xpNeeded = stats.level * 100;
-        const levelPercent = (stats.xp / xpNeeded) * 100;
-        
-        document.getElementById('levelProgressBar').style.width = levelPercent + '%';
-        document.getElementById('levelProgressText').textContent = stats.xp + ' / ' + xpNeeded + ' XP';
-        
-        const xpRemaining = xpNeeded - stats.xp;
-        if (xpRemaining <= 10) {
-          document.getElementById('nextLevelText').textContent = '🔥 Presque niveau ' + (stats.level + 1) + ' !';
-        } else {
-          document.getElementById('nextLevelText').textContent = 'Plus que ' + xpRemaining + ' XP !';
-        }
+        const xpPercent = Math.min((stats.xp / xpNeeded) * 100, 100);
+        document.getElementById('xpFill').style.width = xpPercent + '%';
       }
     }
 
+    // Fonctions des boutons
     function startWorking() {
       alert('Fonctionnalité à venir ! Les mini-jeux arrivent bientôt 🎮');
+    }
+
+    function showProgression() {
+      alert('Progression à venir ! 📊');
+    }
+
+    function showRanking() {
+      alert('Classement à venir ! 🏆');
+    }
+
+    function showShop() {
+      alert('Shop à venir ! 🛒');
+    }
+
+    function createCompany() {
+      alert('Créer sa compagnie à venir ! 🏢');
+    }
+
+    function showProfile() {
+      alert('Profil à venir ! 👤');
+    }
+
+    function showChat() {
+      alert('Chat à venir ! 💬');
+    }
+
+    function showGames() {
+      alert('Mini-jeux à venir ! 🎮');
+    }
+
+    async function logout() {
+      const confirm = window.confirm('Voulez-vous vraiment vous déconnecter ?');
+      if (confirm) {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+      }
     }
 
     loadProfile();
