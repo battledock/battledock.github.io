@@ -430,6 +430,95 @@
       border-color: #fcd34d;
       color: #92400e;
     }
+
+    /* CUSTOM NOTIFICATION */
+    .custom-notification {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      z-index: 10000;
+      max-width: 90%;
+      width: 320px;
+      text-align: center;
+      animation: notifAppear 0.3s ease-out;
+    }
+
+    @keyframes notifAppear {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    .notification-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .notif-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .notif-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+
+    .notif-text {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    .notif-text.highlight {
+      color: #10b981;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .notif-close-btn {
+      margin-top: 24px;
+      width: 100%;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .notif-close-btn:active {
+      transform: scale(0.98);
+    }
   </style>
 </head>
 <body>
@@ -620,17 +709,54 @@
         const claimSection = document.getElementById('claimSection');
         claimSection.innerHTML = '<div class="claim-message">✓ Récompenses récupérées ! +5,000€ ajoutés à ton compte</div>';
 
-        // Notification
-        alert('🎉 Félicitations !\n\n+5,000€ ajoutés à ton compte !\n' + 
-              (stats.events_claimed !== undefined ? 'Avatar "Lancement" débloqué dans ton profil !' : 
-               'Note : Exécute le script SQL pour activer l\'avatar exclusif.'));
+        // Notification custom (sans préfixe navigateur)
+        showNotification(
+          '🎉',
+          'Félicitations !',
+          [
+            '+5,000€ ajoutés à ton compte !',
+            stats.events_claimed !== undefined ? 
+              'Avatar "Lancement" débloqué dans ton profil !' : 
+              'Note : Exécute le script SQL pour activer l\'avatar exclusif.'
+          ]
+        );
 
       } catch (error) {
         console.error('Erreur claim:', error);
         btn.disabled = false;
         btn.textContent = '🎁 Récupérer mes récompenses';
-        alert('Erreur lors de la récupération. Réessaye.\n\nDétails: ' + error.message);
+        showNotification('❌', 'Erreur', ['Erreur lors de la récupération.', 'Réessaye dans quelques instants.']);
       }
+    }
+
+    function showNotification(icon, title, messages) {
+      // Créer overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'notification-overlay';
+      
+      // Créer notification
+      const notif = document.createElement('div');
+      notif.className = 'custom-notification';
+      notif.innerHTML = `
+        <div class="notif-icon">${icon}</div>
+        <div class="notif-title">${title}</div>
+        ${messages.map(msg => `<div class="notif-text ${msg.includes('+') ? 'highlight' : ''}">${msg}</div>`).join('')}
+        <button class="notif-close-btn" onclick="closeNotification()">Compris !</button>
+      `;
+      
+      // Ajouter au body
+      document.body.appendChild(overlay);
+      document.body.appendChild(notif);
+      
+      // Fermer au clic sur overlay
+      overlay.onclick = closeNotification;
+    }
+
+    function closeNotification() {
+      const overlay = document.querySelector('.notification-overlay');
+      const notif = document.querySelector('.custom-notification');
+      if (overlay) overlay.remove();
+      if (notif) notif.remove();
     }
 
     function goBack() {
