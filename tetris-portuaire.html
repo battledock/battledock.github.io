@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Docker Mensuel - Battle Dock</title>
+  <title>Tetris Portuaire - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
@@ -15,44 +15,46 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
-
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
-      touch-action: manipulation;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
     }
 
     .header {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
       padding: 12px 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      flex-shrink: 0;
     }
 
     .back-btn {
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.15);
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 20px;
       width: 40px;
       height: 40px;
       border-radius: 8px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
     .back-btn:active {
-      background: rgba(255, 255, 255, 0.3);
+      transform: scale(0.95);
     }
 
     .timer {
@@ -68,116 +70,152 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px 16px;
-      gap: 20px;
+      padding: 16px;
+      gap: 16px;
       overflow: hidden;
     }
 
     .game-board {
       background: rgba(0, 0, 0, 0.4);
-      border: 3px solid rgba(255, 255, 255, 0.3);
+      border: 3px solid rgba(59, 130, 246, 0.3);
       border-radius: 12px;
       padding: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      touch-action: none;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(10, 26px);
-      grid-template-rows: repeat(16, 26px);
+      grid-template-columns: repeat(10, 1fr);
+      grid-template-rows: repeat(16, 1fr);
       gap: 2px;
       background: rgba(0, 0, 0, 0.6);
       border-radius: 6px;
       padding: 4px;
+      width: 280px;
+      height: 448px;
     }
 
     .cell {
-      width: 26px;
-      height: 26px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      transition: all 0.1s;
     }
 
     .cell.filled {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
       border-color: #60a5fa;
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
     }
 
     .cell.active {
       background: linear-gradient(135deg, #10b981, #059669);
       border-color: #34d399;
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+      animation: pulse 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.8; }
+      to { opacity: 1; }
     }
 
     .stats {
       display: flex;
-      gap: 20px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 16px 24px;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
       border-radius: 12px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
     .stat {
       text-align: center;
+      flex: 1;
     }
 
     .stat-label {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.6);
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       margin-bottom: 4px;
-      font-weight: 600;
     }
 
     .stat-value {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
+      font-size: 20px;
       color: white;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
 
     .controls {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
       width: 100%;
       max-width: 400px;
-      padding: 16px;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 12px 12px 0 0;
+      padding: 0 16px 16px;
     }
 
     .control-btn {
-      background: rgba(255, 255, 255, 0.25);
-      border: 2px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.3);
       color: white;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
+      font-size: 16px;
       letter-spacing: 1px;
-      padding: 28px 16px;
+      padding: 16px;
       border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      cursor: pointer;
+      transition: all 0.1s;
       user-select: none;
     }
 
     .control-btn:active {
-      background: rgba(255, 255, 255, 0.4);
-      transform: scale(0.97);
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .control-btn.rotate {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-color: #fbbf24;
     }
 
     .control-btn.drop {
       grid-column: 1 / -1;
       background: linear-gradient(135deg, #10b981, #059669);
       border-color: #34d399;
-      font-size: 22px;
-      padding: 24px;
+      font-size: 18px;
+      padding: 14px;
+    }
+
+    @media (max-height: 700px) {
+      .grid {
+        width: 250px;
+        height: 400px;
+      }
+      .control-btn {
+        padding: 12px;
+        font-size: 14px;
+      }
+      .control-btn.drop {
+        padding: 10px;
+        font-size: 16px;
+      }
+    }
+
+    @media (max-height: 650px) {
+      .control-btn {
+        padding: 10px;
+        font-size: 13px;
+      }
+      .control-btn.drop {
+        padding: 8px;
+        font-size: 15px;
+      }
     }
 
     .game-over-overlay {
@@ -186,11 +224,13 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
+      background: rgba(0, 0, 0, 0.9);
+      backdrop-filter: blur(10px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 1000;
+      padding: 20px;
     }
 
     .game-over-overlay.active {
@@ -199,11 +239,12 @@
 
     .game-over-card {
       background: white;
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 32px 24px;
       max-width: 90%;
       width: 340px;
       text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
     }
 
     .game-over-title {
@@ -214,6 +255,10 @@
       margin-bottom: 20px;
     }
 
+    .game-over-stats {
+      margin-bottom: 28px;
+    }
+
     .game-over-stat {
       margin-bottom: 16px;
     }
@@ -221,7 +266,7 @@
     .game-over-stat-label {
       font-size: 13px;
       color: #6b7280;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
 
     .game-over-stat-value {
@@ -239,7 +284,6 @@
     .game-over-buttons {
       display: flex;
       gap: 12px;
-      margin-top: 24px;
     }
 
     .game-over-btn {
@@ -250,6 +294,8 @@
       font-family: 'Bebas Neue', sans-serif;
       font-size: 18px;
       letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
     .game-over-btn.primary {
@@ -258,18 +304,22 @@
     }
 
     .game-over-btn.secondary {
-      background: #e5e7eb;
+      background: #f3f4f6;
       color: #1a1a1a;
     }
 
-    @media (max-width: 380px) {
+    .game-over-btn:active {
+      transform: scale(0.98);
+    }
+
+    @media (max-height: 700px) {
       .grid {
-        grid-template-columns: repeat(10, 24px);
-        grid-template-rows: repeat(16, 24px);
+        width: 250px;
+        height: 400px;
       }
-      .cell {
-        width: 24px;
-        height: 24px;
+      .control-btn {
+        padding: 16px;
+        font-size: 16px;
       }
     }
   </style>
@@ -281,7 +331,7 @@
   </div>
 
   <div class="game-container">
-    <div class="game-board" id="gameBoard">
+    <div class="game-board">
       <div class="grid" id="grid"></div>
     </div>
 
@@ -302,26 +352,28 @@
   </div>
 
   <div class="controls">
-    <button class="control-btn" id="btnLeft">◀ Gauche</button>
-    <button class="control-btn" id="btnRight">Droite ▶</button>
-    <button class="control-btn" id="btnRotate">🔄 Rotation</button>
-    <button class="control-btn drop" id="btnDrop">⬇ DROP</button>
+    <button class="control-btn" id="btnLeft">← </button>
+    <button class="control-btn rotate" id="btnRotate">↻</button>
+    <button class="control-btn" id="btnRight">→</button>
+    <button class="control-btn drop" id="btnDrop">↓ DÉPOSER</button>
   </div>
 
   <div class="game-over-overlay" id="gameOverOverlay">
     <div class="game-over-card">
-      <div class="game-over-title">Terminé !</div>
-      <div class="game-over-stat">
-        <div class="game-over-stat-label">Tu as gagné</div>
-        <div class="game-over-stat-value highlight" id="finalMoney">0€</div>
-      </div>
-      <div class="game-over-stat">
-        <div class="game-over-stat-label">XP gagnée</div>
-        <div class="game-over-stat-value" id="finalXP">0</div>
-      </div>
-      <div class="game-over-stat">
-        <div class="game-over-stat-label">Lignes complétées</div>
-        <div class="game-over-stat-value" id="finalLines">0</div>
+      <div class="game-over-title">TEMPS ÉCOULÉ</div>
+      <div class="game-over-stats">
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">Gains</div>
+          <div class="game-over-stat-value highlight" id="finalMoney">0€</div>
+        </div>
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">Expérience</div>
+          <div class="game-over-stat-value" id="finalXP">0</div>
+        </div>
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">Lignes complétées</div>
+          <div class="game-over-stat-value" id="finalLines">0</div>
+        </div>
       </div>
       <div class="game-over-buttons">
         <button class="game-over-btn secondary" onclick="goBack()">Menu</button>
@@ -336,20 +388,25 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1aG10emRma3p2ZmZic2FmaGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzE4NjAsImV4cCI6MjA1MjYwNzg2MH0.MBhkqxEpxVTVA51zWNKr_9bVYHLcPGg9EqGfvOjpU0s'
     );
 
+    // GAME STATE
     let currentUser = null;
     let gameActive = false;
     let timeLeft = 50;
     let score = 0;
     let linesCleared = 0;
     let currentCombo = 1;
+    let gameLoopInterval = null;
+    let timerInterval = null;
 
+    // GRID
     const ROWS = 16;
     const COLS = 10;
-    let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+    let grid = [];
     let currentPiece = null;
     let currentX = 0;
     let currentY = 0;
 
+    // SHAPES
     const SHAPES = [
       [[1,1,1,1]], // I
       [[1,1],[1,1]], // O
@@ -360,20 +417,34 @@
       [[0,1,1],[1,1,0]]  // Z
     ];
 
+    // INIT
     async function init() {
+      console.log('🎮 Init start...');
+      
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
+        console.log('❌ No session');
         window.location.href = 'index.html';
         return;
       }
+
       currentUser = session.user;
-      
-      createGrid();
+      console.log('✅ User:', currentUser.email);
+
+      initGrid();
+      createGridDOM();
       attachControls();
       startGame();
     }
 
-    function createGrid() {
+    function initGrid() {
+      grid = [];
+      for (let i = 0; i < ROWS; i++) {
+        grid.push(Array(COLS).fill(0));
+      }
+    }
+
+    function createGridDOM() {
       const gridEl = document.getElementById('grid');
       gridEl.innerHTML = '';
       
@@ -390,118 +461,119 @@
 
     function attachControls() {
       // Boutons
-      document.getElementById('btnLeft').onclick = () => {
+      const btnLeft = document.getElementById('btnLeft');
+      const btnRight = document.getElementById('btnRight');
+      const btnRotate = document.getElementById('btnRotate');
+      const btnDrop = document.getElementById('btnDrop');
+
+      btnLeft.onclick = () => {
         if (gameActive) moveLeft();
       };
 
-      document.getElementById('btnRight').onclick = () => {
+      btnRight.onclick = () => {
         if (gameActive) moveRight();
       };
 
-      document.getElementById('btnRotate').onclick = () => {
+      btnRotate.onclick = () => {
         if (gameActive) rotate();
       };
 
-      document.getElementById('btnDrop').onclick = () => {
+      btnDrop.onclick = () => {
         if (gameActive) drop();
       };
 
-      // Touch swipe ISOLÉ sur game-board
+      // Bloquer propagation touch depuis boutons
+      [btnLeft, btnRight, btnRotate, btnDrop].forEach(btn => {
+        btn.addEventListener('touchstart', (e) => {
+          e.stopPropagation();
+        });
+        btn.addEventListener('touchend', (e) => {
+          e.stopPropagation();
+        });
+      });
+
+      // Touch swipe UNIQUEMENT sur game-board
       let touchStartX = 0;
       let touchStartY = 0;
-      const gameBoard = document.getElementById('gameBoard');
+      const board = document.querySelector('.game-board');
 
-      gameBoard.addEventListener('touchstart', (e) => {
+      board.addEventListener('touchstart', (e) => {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-      }, { passive: true });
+      });
 
-      gameBoard.addEventListener('touchend', (e) => {
+      board.addEventListener('touchend', (e) => {
         if (!gameActive) return;
-        
+
         const touchEndX = e.changedTouches[0].clientX;
         const touchEndY = e.changedTouches[0].clientY;
-        const diffX = touchEndX - touchStartX;
-        const diffY = touchEndY - touchStartY;
-        const absDiffX = Math.abs(diffX);
-        const absDiffY = Math.abs(diffY);
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
 
-        if (absDiffX < 30 && absDiffY < 30) {
+        if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
           rotate();
-          return;
+        } else if (Math.abs(dx) > Math.abs(dy)) {
+          dx > 0 ? moveRight() : moveLeft();
+        } else if (dy > 0) {
+          drop();
         }
-
-        if (absDiffX > absDiffY) {
-          diffX > 0 ? moveRight() : moveLeft();
-        } else {
-          if (diffY > 0) drop();
-        }
-      }, { passive: true });
+      });
 
       // Keyboard
       document.addEventListener('keydown', (e) => {
         if (!gameActive) return;
         
-        switch(e.key) {
-          case 'ArrowLeft':
-            e.preventDefault();
-            moveLeft();
-            break;
-          case 'ArrowRight':
-            e.preventDefault();
-            moveRight();
-            break;
-          case 'ArrowDown':
-            e.preventDefault();
-            drop();
-            break;
-          case 'ArrowUp':
-          case ' ':
-            e.preventDefault();
-            rotate();
-            break;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          moveLeft();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          moveRight();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          drop();
+        } else if (e.key === 'ArrowUp' || e.key === ' ') {
+          e.preventDefault();
+          rotate();
         }
       });
     }
 
     function startGame() {
+      console.log('🚀 Starting game...');
       gameActive = true;
       spawnPiece();
-      
-      const timerInterval = setInterval(() => {
-        if (!gameActive) {
-          clearInterval(timerInterval);
-          return;
-        }
+
+      // Timer
+      timerInterval = setInterval(() => {
+        if (!gameActive) return;
         
         timeLeft--;
         document.getElementById('timer').textContent = timeLeft;
         
-        if (timeLeft === 0) {
-          clearInterval(timerInterval);
+        if (timeLeft <= 0) {
           endGame();
         }
       }, 1000);
 
-      const dropInterval = setInterval(() => {
-        if (!gameActive) {
-          clearInterval(dropInterval);
-          return;
-        }
-        
+      // Game loop
+      gameLoopInterval = setInterval(() => {
+        if (!gameActive) return;
+
         if (!moveDown()) {
           placePiece();
-          checkLines();
+          clearLines();
           spawnPiece();
         }
       }, 800);
     }
 
     function spawnPiece() {
-      currentPiece = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+      const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+      currentPiece = shape.map(row => [...row]);
       currentX = Math.floor(COLS / 2) - Math.floor(currentPiece[0].length / 2);
       currentY = 0;
-      
+
       if (!canPlace(currentX, currentY, currentPiece)) {
         endGame();
       } else {
@@ -513,11 +585,11 @@
       for (let row = 0; row < piece.length; row++) {
         for (let col = 0; col < piece[row].length; col++) {
           if (piece[row][col]) {
-            const newX = x + col;
-            const newY = y + row;
+            const gridX = x + col;
+            const gridY = y + row;
             
-            if (newX < 0 || newX >= COLS || newY >= ROWS) return false;
-            if (newY >= 0 && grid[newY][newX]) return false;
+            if (gridX < 0 || gridX >= COLS || gridY >= ROWS) return false;
+            if (gridY >= 0 && grid[gridY][gridX]) return false;
           }
         }
       }
@@ -561,7 +633,7 @@
     function drop() {
       while (moveDown()) {}
       placePiece();
-      checkLines();
+      clearLines();
       spawnPiece();
     }
 
@@ -569,39 +641,38 @@
       for (let row = 0; row < currentPiece.length; row++) {
         for (let col = 0; col < currentPiece[row].length; col++) {
           if (currentPiece[row][col]) {
-            const newY = currentY + row;
-            const newX = currentX + col;
-            if (newY >= 0) {
-              grid[newY][newX] = 1;
+            const gridY = currentY + row;
+            const gridX = currentX + col;
+            if (gridY >= 0) {
+              grid[gridY][gridX] = 1;
             }
           }
         }
       }
     }
 
-    function checkLines() {
-      let linesThisCheck = 0;
+    function clearLines() {
+      let cleared = 0;
       
       for (let row = ROWS - 1; row >= 0; row--) {
         if (grid[row].every(cell => cell === 1)) {
           grid.splice(row, 1);
           grid.unshift(Array(COLS).fill(0));
-          linesThisCheck++;
+          cleared++;
           row++;
         }
       }
       
-      if (linesThisCheck > 0) {
-        linesCleared += linesThisCheck;
+      if (cleared > 0) {
+        linesCleared += cleared;
         
-        if (linesThisCheck > 1) {
+        if (cleared > 1) {
           currentCombo = Math.min(currentCombo + 1, 5);
         } else {
           currentCombo = 1;
         }
         
-        const lineScore = linesThisCheck * 100 * currentCombo;
-        score += lineScore;
+        score += cleared * 100 * currentCombo;
         
         document.getElementById('lines').textContent = linesCleared;
         document.getElementById('combo').textContent = '×' + currentCombo;
@@ -615,10 +686,12 @@
     }
 
     function render() {
-      document.querySelectorAll('.cell.active').forEach(cell => {
-        cell.classList.remove('active');
+      // Clear active
+      document.querySelectorAll('.cell.active').forEach(c => {
+        c.classList.remove('active');
       });
       
+      // Render grid
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
           const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
@@ -630,14 +703,15 @@
         }
       }
       
+      // Render current piece
       if (currentPiece) {
         for (let row = 0; row < currentPiece.length; row++) {
           for (let col = 0; col < currentPiece[row].length; col++) {
             if (currentPiece[row][col]) {
-              const newY = currentY + row;
-              const newX = currentX + col;
-              if (newY >= 0) {
-                const cell = document.querySelector(`[data-row="${newY}"][data-col="${newX}"]`);
+              const gridY = currentY + row;
+              const gridX = currentX + col;
+              if (gridY >= 0) {
+                const cell = document.querySelector(`[data-row="${gridY}"][data-col="${gridX}"]`);
                 if (cell) cell.classList.add('active');
               }
             }
@@ -648,11 +722,15 @@
 
     async function endGame() {
       gameActive = false;
-      
-      // Gains : 3.90€ / 7.1 XP par ligne
-      const moneyEarned = Math.floor(linesCleared * 3.90 * 100);
-      const xpEarned = Math.floor(linesCleared * 7.1 * 100);
-      
+      clearInterval(timerInterval);
+      clearInterval(gameLoopInterval);
+
+      // Gains : 2.50€ / 6 XP par ligne
+      const moneyEarned = Math.floor(linesCleared * 250);
+      const xpEarned = Math.floor(linesCleared * 600);
+
+      console.log('💰 Money:', moneyEarned, 'XP:', xpEarned);
+
       try {
         const { data: stats } = await sb
           .from('game_stats')
@@ -664,7 +742,6 @@
           let newXP = stats.xp + xpEarned;
           let newLevel = stats.level;
 
-          // FIX: utiliser newLevel dans la boucle
           while (newXP >= newLevel * newLevel * 50) {
             newXP -= newLevel * newLevel * 50;
             newLevel++;
@@ -678,12 +755,13 @@
               level: newLevel
             })
             .eq('user_id', currentUser.id);
+
+          console.log('✅ Stats updated');
         }
       } catch (error) {
-        console.error('Erreur sauvegarde:', error);
+        console.error('❌ Save error:', error);
       }
-      
-      // Affichage en euros (diviser par 100)
+
       document.getElementById('finalMoney').textContent = (moneyEarned / 100).toFixed(2) + '€';
       document.getElementById('finalXP').textContent = (xpEarned / 100).toLocaleString('fr-FR');
       document.getElementById('finalLines').textContent = linesCleared;
