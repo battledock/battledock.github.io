@@ -79,6 +79,7 @@
       border-radius: 12px;
       padding: 12px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      touch-action: none;
     }
 
     .grid {
@@ -280,7 +281,7 @@
   </div>
 
   <div class="game-container">
-    <div class="game-board">
+    <div class="game-board" id="gameBoard">
       <div class="grid" id="grid"></div>
     </div>
 
@@ -301,10 +302,10 @@
   </div>
 
   <div class="controls">
-    <button class="control-btn" onclick="moveLeft()">◀ Gauche</button>
-    <button class="control-btn" onclick="moveRight()">Droite ▶</button>
-    <button class="control-btn" onclick="rotate()">🔄 Rotation</button>
-    <button class="control-btn drop" onclick="drop()">⬇ DROP</button>
+    <button class="control-btn" id="btnLeft">◀ Gauche</button>
+    <button class="control-btn" id="btnRight">Droite ▶</button>
+    <button class="control-btn" id="btnRotate">🔄 Rotation</button>
+    <button class="control-btn drop" id="btnDrop">⬇ DROP</button>
   </div>
 
   <div class="game-over-overlay" id="gameOverOverlay">
@@ -323,41 +324,40 @@
         <div class="game-over-stat-value" id="finalLines">0</div>
       </div>
       <div class="game-over-buttons">
-        <button class="game-over-btn secondary" onclick="goBack()">Quitter</button>
+        <button class="game-over-btn secondary" onclick="goBack()">Menu</button>
         <button class="game-over-btn primary" onclick="location.reload()">Rejouer</button>
       </div>
     </div>
   </div>
 
   <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
+    const sb = supabase.createClient(
+      'https://iuhmtzdfkzvffbsafhjy.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1aG10emRma3p2ZmZic2FmaGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzE4NjAsImV4cCI6MjA1MjYwNzg2MH0.MBhkqxEpxVTVA51zWNKr_9bVYHLcPGg9EqGfvOjpU0s'
+    );
 
     let currentUser = null;
     let gameActive = false;
     let timeLeft = 50;
+    let score = 0;
     let linesCleared = 0;
     let currentCombo = 1;
-    let score = 0;
 
-    const COLS = 10;
     const ROWS = 16;
+    const COLS = 10;
     let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
-    
     let currentPiece = null;
     let currentX = 0;
     let currentY = 0;
 
     const SHAPES = [
-      [[1, 1, 1, 1]],
-      [[1, 1], [1, 1]],
-      [[1, 1, 1], [0, 1, 0]],
-      [[1, 1, 1], [1, 0, 0]],
-      [[1, 1, 1], [0, 0, 1]],
-      [[1, 1, 0], [0, 1, 1]],
-      [[0, 1, 1], [1, 1, 0]]
+      [[1,1,1,1]], // I
+      [[1,1],[1,1]], // O
+      [[1,1,1],[0,1,0]], // T
+      [[1,1,1],[1,0,0]], // L
+      [[1,1,1],[0,0,1]], // J
+      [[1,1,0],[0,1,1]], // S
+      [[0,1,1],[1,1,0]]  // Z
     ];
 
     async function init() {
@@ -369,6 +369,7 @@
       currentUser = session.user;
       
       createGrid();
+      attachControls();
       startGame();
     }
 
@@ -385,6 +386,82 @@
           gridEl.appendChild(cell);
         }
       }
+    }
+
+    function attachControls() {
+      // Boutons
+      document.getElementById('btnLeft').onclick = () => {
+        if (gameActive) moveLeft();
+      };
+
+      document.getElementById('btnRight').onclick = () => {
+        if (gameActive) moveRight();
+      };
+
+      document.getElementById('btnRotate').onclick = () => {
+        if (gameActive) rotate();
+      };
+
+      document.getElementById('btnDrop').onclick = () => {
+        if (gameActive) drop();
+      };
+
+      // Touch swipe ISOLÉ sur game-board
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const gameBoard = document.getElementById('gameBoard');
+
+      gameBoard.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true });
+
+      gameBoard.addEventListener('touchend', (e) => {
+        if (!gameActive) return;
+        
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+        const absDiffX = Math.abs(diffX);
+        const absDiffY = Math.abs(diffY);
+
+        if (absDiffX < 30 && absDiffY < 30) {
+          rotate();
+          return;
+        }
+
+        if (absDiffX > absDiffY) {
+          diffX > 0 ? moveRight() : moveLeft();
+        } else {
+          if (diffY > 0) drop();
+        }
+      }, { passive: true });
+
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        if (!gameActive) return;
+        
+        switch(e.key) {
+          case 'ArrowLeft':
+            e.preventDefault();
+            moveLeft();
+            break;
+          case 'ArrowRight':
+            e.preventDefault();
+            moveRight();
+            break;
+          case 'ArrowDown':
+            e.preventDefault();
+            drop();
+            break;
+          case 'ArrowUp':
+          case ' ':
+            e.preventDefault();
+            rotate();
+            break;
+        }
+      });
     }
 
     function startGame() {
@@ -572,6 +649,7 @@
     async function endGame() {
       gameActive = false;
       
+      // Gains : 3.90€ / 7.1 XP par ligne
       const moneyEarned = Math.floor(linesCleared * 3.90 * 100);
       const xpEarned = Math.floor(linesCleared * 7.1 * 100);
       
@@ -583,12 +661,12 @@
           .single();
 
         if (stats) {
-          const newXP = stats.xp + xpEarned;
+          let newXP = stats.xp + xpEarned;
           let newLevel = stats.level;
-          let remainingXP = newXP;
 
-          while (remainingXP >= newLevel * newLevel * 50) {
-            remainingXP -= newLevel * newLevel * 50;
+          // FIX: utiliser newLevel dans la boucle
+          while (newXP >= newLevel * newLevel * 50) {
+            newXP -= newLevel * newLevel * 50;
             newLevel++;
           }
 
@@ -596,7 +674,7 @@
             .from('game_stats')
             .update({
               money: stats.money + moneyEarned,
-              xp: remainingXP,
+              xp: newXP,
               level: newLevel
             })
             .eq('user_id', currentUser.id);
@@ -605,8 +683,9 @@
         console.error('Erreur sauvegarde:', error);
       }
       
-      document.getElementById('finalMoney').textContent = moneyEarned.toLocaleString('fr-FR') + '€';
-      document.getElementById('finalXP').textContent = xpEarned.toLocaleString('fr-FR');
+      // Affichage en euros (diviser par 100)
+      document.getElementById('finalMoney').textContent = (moneyEarned / 100).toFixed(2) + '€';
+      document.getElementById('finalXP').textContent = (xpEarned / 100).toLocaleString('fr-FR');
       document.getElementById('finalLines').textContent = linesCleared;
       document.getElementById('gameOverOverlay').classList.add('active');
     }
@@ -614,74 +693,6 @@
     function goBack() {
       window.location.href = 'menutravailler.html';
     }
-
-    // Touch controls
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
-    const minSwipeDistance = 30;
-
-    document.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-      touchStartY = e.changedTouches[0].screenY;
-    }, { passive: true });
-
-    document.addEventListener('touchend', (e) => {
-      if (!gameActive) return;
-      
-      touchEndX = e.changedTouches[0].screenX;
-      touchEndY = e.changedTouches[0].screenY;
-      handleSwipe();
-    }, { passive: true });
-
-    function handleSwipe() {
-      const diffX = touchEndX - touchStartX;
-      const diffY = touchEndY - touchStartY;
-      const absDiffX = Math.abs(diffX);
-      const absDiffY = Math.abs(diffY);
-
-      if (absDiffX < minSwipeDistance && absDiffY < minSwipeDistance) {
-        rotate();
-        return;
-      }
-
-      if (absDiffX > absDiffY) {
-        if (diffX > 0) {
-          moveRight();
-        } else {
-          moveLeft();
-        }
-      } else {
-        if (diffY > 0) {
-          drop();
-        }
-      }
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (!gameActive) return;
-      
-      switch(e.key) {
-        case 'ArrowLeft':
-          e.preventDefault();
-          moveLeft();
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          moveRight();
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          drop();
-          break;
-        case 'ArrowUp':
-        case ' ':
-          e.preventDefault();
-          rotate();
-          break;
-      }
-    });
 
     init();
   </script>
