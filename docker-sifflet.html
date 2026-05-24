@@ -4,11 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Docker au Sifflet - Battle Dock</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-fullscreen">
+    <title>Docker Occasionnel - Battle Dock</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
     <style>
-        /* --- RESET & CONFIG MOBILE --- */
+        /* --- RESET & FULLSCREEN --- */
         * {
             box-sizing: border-box;
             user-select: none;
@@ -23,87 +24,76 @@
             overflow: hidden;
             background-color: #1a1a1a;
             font-family: 'Inter', sans-serif;
+            position: fixed;
         }
 
-        /* --- TOPBAR BATTLE DOCK --- */
-        .topbar {
-            background: #ffffff;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border-bottom: 1px solid #e5e7eb;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .back-btn {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-            border: 2px solid #e5e7eb;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 20px;
-            color: #1a1a1a;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
-        }
-
-        .back-btn:active {
-            transform: scale(0.95);
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
-        }
-
-        .topbar-title {
-            flex: 1;
-            font-family: 'Bebas Neue', sans-serif;
-            font-size: 24px;
-            letter-spacing: 1px;
-            color: #1a1a1a;
-            text-align: center;
-        }
-
-        .topbar-icon {
-            font-size: 28px;
-        }
-
-        /* --- CONTENEUR PRINCIPAL (ECRAN VERTICAL) --- */
+        /* --- CONTENEUR PRINCIPAL FULLSCREEN --- */
         #game-container {
             width: 100%;
-            height: calc(100vh - 72px);
+            height: 100vh;
+            height: 100dvh; /* Pour mobiles modernes */
             position: relative;
             background: linear-gradient(to bottom, #1a8cff 0%, #e6f2ff 60%, #ffcc80 100%);
             overflow: hidden;
         }
 
-        /* --- HUD (BARRE DE SCORE) --- */
+        /* --- HUD COMPACT --- */
         #hud {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            padding: 10px 15px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
-            background: rgba(0, 0, 0, 0.4);
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
             color: white;
-            font-weight: bold;
-            font-size: 0.95rem;
+            font-weight: 700;
+            font-size: 0.9rem;
             z-index: 10;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
         }
 
-        .stat span {
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stat.center {
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            opacity: 0.8;
+            margin-bottom: 2px;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
             color: #4cd137;
         }
+
         #xp-count {
             color: #00a8ff;
+        }
+
+        #timer-count {
+            color: #f39c12;
+            font-size: 1.3rem;
+        }
+
+        #combo-display {
+            color: #e74c3c;
+            font-size: 1.2rem;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
         }
 
         /* --- ZONE DE JEU --- */
@@ -116,18 +106,18 @@
         /* Le Conteneur Maritime */
         #container-box {
             position: absolute;
-            width: 90px;
-            height: 50px;
+            width: 80px;
+            height: 45px;
             background-color: #d63031;
             color: white;
             font-weight: 900;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 3px solid #2d3436;
             border-radius: 4px;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
             left: 50%;
             transform: translateX(-50%);
             top: -60px;
@@ -140,58 +130,59 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent 50%, rgba(0,0,0,0.1) 50%);
-            background-size: 10px 100%;
+            background-size: 8px 100%;
         }
 
-        /* --- LE QUAI & LA TARGET --- */
+        /* --- LE QUAI & LA TARGET (PLUS PETITE) --- */
         #quai {
             position: absolute;
             bottom: 60px;
             width: 100%;
-            height: 60px;
+            height: 50px;
             background-color: #747d8c;
-            border-top: 8px solid #57606f;
+            border-top: 6px solid #57606f;
         }
 
         #target-zone {
             position: absolute;
-            bottom: 120px;
+            bottom: 110px;
             left: 50%;
             transform: translateX(-50%);
-            width: 110px;
-            height: 12px;
+            width: 70px; /* PLUS PETITE */
+            height: 10px;
             border: 3px dashed #f1c40f;
-            background: rgba(241, 196, 15, 0.2);
+            background: rgba(241, 196, 15, 0.3);
             border-bottom: none;
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
         }
 
         #target-zone::after {
             content: '▲';
             position: absolute;
-            bottom: -22px;
+            bottom: -20px;
             left: 50%;
             transform: translateX(-50%);
             color: #f1c40f;
-            font-size: 0.8rem;
+            font-size: 0.9rem;
         }
 
         /* --- FEEDBACK POPUP --- */
         #feedback-bubble {
             position: absolute;
-            top: 40%;
+            top: 35%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0);
             background: white;
-            padding: 12px 20px;
+            padding: 16px 24px;
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             font-weight: bold;
             text-align: center;
-            z-index: 8;
+            z-index: 15;
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
             opacity: 0;
             pointer-events: none;
-            min-width: 200px;
+            min-width: 220px;
         }
 
         #feedback-bubble.show {
@@ -201,33 +192,92 @@
 
         .feedback-money {
             display: block;
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: #4cd137;
-            margin-top: 4px;
+            margin-top: 6px;
         }
 
-        /* --- BOUTON TERMINER --- */
-        .finish-btn {
+        /* --- BOUTONS --- */
+        .game-btn {
             position: absolute;
-            bottom: 8px;
-            left: 50%;
-            transform: translateX(-50%);
             background: linear-gradient(135deg, #3b82f6, #2563eb);
             color: white;
             border: none;
-            border-radius: 10px;
-            padding: 10px 24px;
+            border-radius: 12px;
+            padding: 14px 28px;
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 15px;
+            font-size: 16px;
             letter-spacing: 1px;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
             transition: all 0.2s;
             z-index: 20;
         }
 
-        .finish-btn:active {
-            transform: translateX(-50%) scale(0.95);
+        .game-btn:active {
+            transform: scale(0.95);
+        }
+
+        #quit-btn {
+            top: 16px;
+            left: 16px;
+            padding: 10px 16px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+        }
+
+        #finish-btn {
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* --- GAME OVER OVERLAY --- */
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            backdrop-filter: blur(10px);
+        }
+
+        #game-over.show {
+            display: flex;
+        }
+
+        .game-over-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .game-over-stats {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .game-over-stat {
+            margin: 8px 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .game-over-stat span {
+            color: #3b82f6;
+            font-size: 1.3rem;
         }
 
         @keyframes shake {
@@ -242,22 +292,25 @@
 </head>
 <body>
 
-    <!-- TOPBAR BATTLE DOCK -->
-    <div class="topbar">
-        <button class="back-btn" onclick="goBack()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 12H5M12 19l-7-7 7-7"/>
-            </svg>
-        </button>
-        <div class="topbar-title">Docker Occasionnel</div>
-        <div class="topbar-icon">⚓</div>
-    </div>
-
     <div id="game-container">
         <header id="hud">
-            <div class="stat">Session: <span id="euro-count">0.00</span> €</div>
-            <div class="stat">XP: <span id="xp-count">0</span></div>
+            <div class="stat">
+                <div class="stat-label">Argent</div>
+                <div class="stat-value" id="euro-count">0.00€</div>
+            </div>
+            <div class="stat center">
+                <div class="stat-label">Timer</div>
+                <div class="stat-value" id="timer-count">60</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">XP</div>
+                <div class="stat-value" id="xp-count">0</div>
+            </div>
         </header>
+
+        <div id="combo-display" style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); z-index: 12; display: none; font-family: 'Bebas Neue'; font-size: 2rem; color: #e74c3c; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">COMBO x1</div>
+
+        <button id="quit-btn" class="game-btn" onclick="quitGame()">Quitter</button>
 
         <main id="port-area">
             <div id="container-box">CMA</div>
@@ -270,7 +323,18 @@
         
         <div id="quai"></div>
 
-        <button class="finish-btn" onclick="finishGame()">Terminer & Sauvegarder</button>
+        <button id="finish-btn" class="game-btn" onclick="finishGame()">Terminer & Sauvegarder</button>
+
+        <!-- GAME OVER SCREEN -->
+        <div id="game-over">
+            <div class="game-over-title">TEMPS ÉCOULÉ !</div>
+            <div class="game-over-stats">
+                <div class="game-over-stat">Argent gagné : <span id="final-money">0.00€</span></div>
+                <div class="game-over-stat">XP gagné : <span id="final-xp">0</span></div>
+                <div class="game-over-stat">Meilleur combo : <span id="final-combo">0</span></div>
+            </div>
+            <button class="game-btn" onclick="finishGame()" style="position: relative;">Sauvegarder & Retour</button>
+        </div>
     </div>
 
     <script>
@@ -281,7 +345,6 @@
 
         let currentUser = null;
 
-        // Vérifier auth
         async function init() {
             const { data: { session } } = await sb.auth.getSession();
             if (!session) {
@@ -289,35 +352,80 @@
                 return;
             }
             currentUser = session.user;
+            startTimer();
         }
 
         init();
 
-        // --- CONFIGURATION & VARIABLES ---
+        // --- VARIABLES DE JEU ---
         const container = document.getElementById('container-box');
         const targetZone = document.getElementById('target-zone');
         const gameContainer = document.getElementById('game-container');
         const euroDisplay = document.getElementById('euro-count');
         const xpDisplay = document.getElementById('xp-count');
+        const timerDisplay = document.getElementById('timer-count');
+        const comboDisplay = document.getElementById('combo-display');
         const feedbackBubble = document.getElementById('feedback-bubble');
         const feedbackText = document.getElementById('feedback-text');
         const feedbackMoney = document.getElementById('feedback-money');
+        const gameOverScreen = document.getElementById('game-over');
 
         let sessionArgent = 0.00;
         let sessionXp = 0;
+        let timeRemaining = 60;
+        let combo = 0;
+        let maxCombo = 0;
+        let dropsCount = 0;
+        let gameActive = true;
         
-        let speed = 3.5;
+        let speed = 4; // Vitesse de base augmentée
         let containerY = -60;
         let containerX = 50;
         let isDropping = true;
-        let screenWidth = gameContainer.clientWidth;
         let touchStartX = 0;
         let containerStartPercent = 50;
 
         const compagnies = ['CMA CGM', 'MARSEILLE', 'SUD CARGO', 'JOLIETTE', 'MED SHIP'];
         const couleurs = ['#d63031', '#0652dd', '#ff9f43', '#009432', '#12cb99'];
 
+        // --- TIMER ---
+        function startTimer() {
+            const timerInterval = setInterval(() => {
+                if (!gameActive) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                timeRemaining--;
+                timerDisplay.innerText = timeRemaining;
+
+                if (timeRemaining <= 10) {
+                    timerDisplay.style.color = '#e74c3c';
+                    timerDisplay.style.animation = 'pulse 0.5s infinite';
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            isDropping = false;
+            
+            document.getElementById('final-money').innerText = sessionArgent.toFixed(2) + '€';
+            document.getElementById('final-xp').innerText = sessionXp;
+            document.getElementById('final-combo').innerText = maxCombo;
+            
+            gameOverScreen.classList.add('show');
+        }
+
         function initContainer() {
+            if (!gameActive) return;
+
+            dropsCount++;
             containerY = -60;
             containerX = Math.floor(Math.random() * 40) + 30; 
             container.style.left = containerX + '%';
@@ -327,14 +435,17 @@
             container.innerText = compagnies[randomIndex];
             container.style.backgroundColor = couleurs[randomIndex];
             
+            // VITESSE PROGRESSIVE
+            speed = 4 + (dropsCount * 0.08); // Accélération
+            
             isDropping = true;
             requestAnimationFrame(updatePhysics);
         }
 
         function updatePhysics() {
-            if (!isDropping) return;
+            if (!isDropping || !gameActive) return;
 
-            const limitY = gameContainer.clientHeight - 170;
+            const limitY = gameContainer.clientHeight - 160;
             
             if (containerY < limitY) {
                 containerY += speed;
@@ -360,56 +471,73 @@
             let gainXp = 0;
             let phrase = "";
 
-            if (distance <= 12) {
-                gainArgent = 2.00;
-                gainXp = 5;
-                phrase = "Mégot de l'espace ! 🌟";
+            // BARÈME PLUS STRICT (zone plus petite)
+            if (distance <= 8) {
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+                
+                gainArgent = 2.50 * combo; // BONUS COMBO
+                gainXp = 5 * combo;
+                phrase = combo > 1 ? `COMBO x${combo} ! 🔥` : "PERFECT ! 🌟";
                 feedbackBubble.style.borderLeft = "5px solid #4cd137";
-            } else if (distance <= 35) {
+                
+                // Afficher combo
+                comboDisplay.innerText = `COMBO x${combo}`;
+                comboDisplay.style.display = 'block';
+                
+            } else if (distance <= 20) {
+                combo = 0;
+                comboDisplay.style.display = 'none';
                 gainArgent = 1.00;
                 gainXp = 2;
-                phrase = "C'est bon, ça passe ! 👍";
+                phrase = "Bien ! 👍";
                 feedbackBubble.style.borderLeft = "5px solid #00a8ff";
-            } else if (distance <= 65) {
-                gainArgent = 0.20;
+                
+            } else if (distance <= 40) {
+                combo = 0;
+                comboDisplay.style.display = 'none';
+                gainArgent = 0.30;
                 gainXp = 1;
-                phrase = "Un peu de traviole, non ? 🤨";
+                phrase = "Moyen... 🤨";
                 feedbackBubble.style.borderLeft = "5px solid #ffaa00";
+                
             } else {
+                combo = 0;
+                comboDisplay.style.display = 'none';
                 gainArgent = 0.00;
                 gainXp = 0;
-                phrase = "T'es fada ou quoi ?! 🤬";
+                phrase = "Raté ! 🤬";
                 feedbackBubble.style.borderLeft = "5px solid #d63031";
                 triggerVibration();
             }
 
             sessionArgent += gainArgent;
             sessionXp += gainXp;
-            euroDisplay.innerText = sessionArgent.toFixed(2);
+            euroDisplay.innerText = sessionArgent.toFixed(2) + '€';
             xpDisplay.innerText = sessionXp;
 
             feedbackText.innerText = phrase;
-            feedbackMoney.innerText = gainArgent > 0 ? `+${gainArgent.toFixed(2)} € (+${gainXp} XP)` : "0.00 € (Pas d'XP)";
+            feedbackMoney.innerText = gainArgent > 0 ? `+${gainArgent.toFixed(2)} € (+${gainXp} XP)` : "0.00 € (0 XP)";
             feedbackBubble.classList.add('show');
 
             setTimeout(() => {
                 feedbackBubble.classList.remove('show');
-                initContainer();
-            }, 1400);
+                if (gameActive) initContainer();
+            }, 1000);
         }
 
+        // TOUCH CONTROLS
         gameContainer.addEventListener('touchstart', (e) => {
-            if (!isDropping) return;
+            if (!isDropping || !gameActive) return;
             touchStartX = e.touches[0].clientX;
             containerStartPercent = parseFloat(container.style.left) || 50;
         }, { passive: true });
 
         gameContainer.addEventListener('touchmove', (e) => {
-            if (!isDropping) return;
+            if (!isDropping || !gameActive) return;
             
             const touchCurrentX = e.touches[0].clientX;
             const deltaX = touchCurrentX - touchStartX;
-            
             const deltaPercent = (deltaX / gameContainer.clientWidth) * 100;
             let newPercent = containerStartPercent + deltaPercent;
 
@@ -420,16 +548,17 @@
             container.style.left = containerX + '%';
         }, { passive: true });
 
+        // MOUSE CONTROLS (PC)
         let isDragging = false;
         gameContainer.addEventListener('mousedown', (e) => {
-            if (!isDropping) return;
+            if (!isDropping || !gameActive) return;
             isDragging = true;
             touchStartX = e.clientX;
             containerStartPercent = parseFloat(container.style.left) || 50;
         });
 
         window.addEventListener('mousemove', (e) => {
-            if (!isDragging || !isDropping) return;
+            if (!isDragging || !isDropping || !gameActive) return;
             const deltaX = e.clientX - touchStartX;
             const deltaPercent = (deltaX / gameContainer.clientWidth) * 100;
             let newPercent = containerStartPercent + deltaPercent;
@@ -447,11 +576,9 @@
             if (navigator.vibrate) navigator.vibrate(150);
         }
 
-        // --- SAUVEGARDER ET RETOUR ---
         async function finishGame() {
             if (!currentUser) return;
 
-            // Récupérer stats actuelles
             const { data: currentStats } = await sb
                 .from('game_stats')
                 .select('money, xp, level, grade')
@@ -462,7 +589,6 @@
                 const newMoney = currentStats.money + Math.floor(sessionArgent);
                 const newXp = currentStats.xp + sessionXp;
                 
-                // Calcul du nouveau niveau
                 let newLevel = currentStats.level;
                 let remainingXp = newXp;
                 
@@ -471,14 +597,12 @@
                     newLevel++;
                 }
 
-                // Calcul du nouveau grade
                 let newGrade = 'Docker Occasionnel';
                 if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
                 else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
                 else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
                 else if (newLevel >= 50) newGrade = 'Contremaître';
 
-                // Mise à jour
                 await sb
                     .from('game_stats')
                     .update({
@@ -494,7 +618,7 @@
             }
         }
 
-        function goBack() {
+        function quitGame() {
             if (sessionArgent > 0 || sessionXp > 0) {
                 const confirm = window.confirm(`Tu as gagné ${sessionArgent.toFixed(2)}€ et ${sessionXp} XP.\nSauvegarder avant de quitter ?`);
                 if (confirm) {
@@ -507,7 +631,6 @@
             }
         }
 
-        window.addEventListener('resize', () => { screenWidth = gameContainer.clientWidth; });
         initContainer();
     </script>
 </body>
