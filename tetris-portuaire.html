@@ -299,7 +299,7 @@
 <body>
   <div class="header">
     <button class="back-btn" onclick="goBack()">←</button>
-    <div class="timer" id="timer">90</div>
+    <div class="timer" id="timer">50</div>
   </div>
 
   <div class="game-container">
@@ -362,7 +362,7 @@
 
     let currentUser = null;
     let gameActive = false;
-    let timeLeft = 90;
+    let timeLeft = 50;
     let linesCleared = 0;
     let currentCombo = 1;
     let score = 0;
@@ -429,7 +429,8 @@
         timeLeft--;
         document.getElementById('timer').textContent = timeLeft;
         
-        if (timeLeft <= 0) {
+        if (timeLeft === 0) {
+          clearInterval(timerInterval);
           endGame();
         }
       }, 1000);
@@ -654,6 +655,79 @@
     function goBack() {
       window.location.href = 'menutravailler.html';
     }
+
+    // Touch controls pour mobile
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+    const minSwipeDistance = 30;
+
+    document.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      if (!gameActive) return;
+      
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const diffX = touchEndX - touchStartX;
+      const diffY = touchEndY - touchStartY;
+      const absDiffX = Math.abs(diffX);
+      const absDiffY = Math.abs(diffY);
+
+      // Ignore petits mouvements
+      if (absDiffX < minSwipeDistance && absDiffY < minSwipeDistance) {
+        // Tap = rotation
+        rotate();
+        return;
+      }
+
+      // Swipe horizontal prioritaire
+      if (absDiffX > absDiffY) {
+        if (diffX > 0) {
+          moveRight();
+        } else {
+          moveLeft();
+        }
+      } else {
+        // Swipe vertical
+        if (diffY > 0) {
+          drop();
+        }
+      }
+    }
+
+    // Keyboard controls pour desktop
+    document.addEventListener('keydown', (e) => {
+      if (!gameActive) return;
+      
+      switch(e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          moveLeft();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          moveRight();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          drop();
+          break;
+        case 'ArrowUp':
+        case ' ':
+          e.preventDefault();
+          rotate();
+          break;
+      }
+    });
 
     init();
   </script>
