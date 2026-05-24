@@ -339,6 +339,143 @@
       font-size: 12px;
       color: rgba(255, 255, 255, 0.8);
     }
+
+    /* EVENTS SPLIT CARD */
+    .events-split-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: flex;
+      height: 140px;
+    }
+
+    .events-split-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .events-split-card:active {
+      transform: scale(0.99);
+    }
+
+    .events-avatar-side {
+      width: 140px;
+      background: linear-gradient(135deg, #fbbf24 0%, #ec4899 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .events-avatar-side::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+    }
+
+    .events-avatar-preview {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .events-avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .events-info-side {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .events-header-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .events-icon {
+      font-size: 24px;
+    }
+
+    .events-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+    }
+
+    .events-progress-row {
+      margin-bottom: 8px;
+    }
+
+    .events-progress-bar {
+      background: #e5e7eb;
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .events-progress-fill {
+      background: linear-gradient(90deg, #3b82f6, #2563eb);
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .events-progress-text {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .events-countdown {
+      font-size: 13px;
+      color: #f59e0b;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .events-rewards {
+      font-size: 13px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .events-cta {
+      font-size: 13px;
+      color: #3b82f6;
+      font-weight: 700;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -372,14 +509,32 @@
 
   <!-- CONTAINER -->
   <div class="container">
-    <!-- ÉVÉNEMENTS (avec badge NOUVEAU) -->
-    <div class="events-card" onclick="showEvents()">
-      <div class="events-card-icon">🎉</div>
-      <div class="events-card-content">
-        <div class="events-card-title">Événements</div>
-        <div class="events-card-subtitle">Missions exclusives à temps limité</div>
+    <!-- ÉVÉNEMENTS (Split Card avec Avatar) -->
+    <div class="events-split-card" onclick="showEvents()">
+      <div class="events-avatar-side">
+        <div class="events-avatar-preview">
+          <img src="avatar-launch-event.png" alt="Avatar événement">
+        </div>
       </div>
-      <div class="new-badge">NOUVEAU !</div>
+      <div class="events-info-side">
+        <div>
+          <div class="events-header-row">
+            <div class="events-icon">🎊</div>
+            <div class="events-title">Semaine de Lancement</div>
+          </div>
+          <div class="events-progress-row">
+            <div class="events-progress-bar">
+              <div class="events-progress-fill" id="eventProgressBar" style="width: 0%"></div>
+            </div>
+            <div class="events-progress-text">Niveau <span id="eventLevel">1</span>/5</div>
+          </div>
+        </div>
+        <div>
+          <div class="events-countdown">⏰ 7 jours restants</div>
+          <div class="events-rewards">💰 5,000€ + Avatar exclusif</div>
+          <div class="events-cta">Participer →</div>
+        </div>
+      </div>
     </div>
 
     <!-- ACTIONS RAPIDES -->
@@ -499,10 +654,21 @@
         // Charger le rang
         loadRank(stats.money);
 
+        // Charger progression événement
+        loadEventProgress(stats.level);
+
         // Afficher l'interface avec fade-in
         document.querySelector('.topbar').classList.add('loaded');
         document.querySelector('.container').classList.add('loaded');
       }
+    }
+
+    function loadEventProgress(level) {
+      const currentLevel = Math.min(level, 5);
+      const progress = (currentLevel / 5) * 100;
+      
+      document.getElementById('eventLevel').textContent = currentLevel;
+      document.getElementById('eventProgressBar').style.width = progress + '%';
     }
 
     async function loadRank(playerMoney) {
