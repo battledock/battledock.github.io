@@ -341,6 +341,30 @@
       color: #1a1a1a;
       border: 1px solid #e5e7eb;
     }
+
+    .reward-avatar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px 8px 8px;
+    }
+
+    .reward-avatar-preview {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      background: linear-gradient(135deg, #fbbf24 0%, #ec4899 100%);
+      padding: 2px;
+      flex-shrink: 0;
+    }
+
+    .reward-avatar-preview img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
   </style>
 </head>
 <body>
@@ -354,45 +378,37 @@
   </div>
 
   <div class="container">
-    <!-- LANCEMENT OFFICIEL -->
-    <div class="launch-banner">
-      <div class="launch-icon">🚢</div>
-      <div class="launch-title">Lancement Officiel</div>
-      <div class="launch-date">Dimanche 24 Mai 2026 • 21h00</div>
-      <div class="launch-desc">
-        Battle Dock lance officiellement aujourd'hui !<br>
-        Soyez parmi les premiers dockers du port. 🎊
-      </div>
-    </div>
-
-    <!-- ÉVÉNEMENTS EN COURS -->
-    <div class="section-wrapper">
-      <div class="section-header">⚡ Événements en cours</div>
-      <div class="no-events">
-        <div class="no-events-icon">📭</div>
-        <div class="no-events-title">Aucun événement actif</div>
-        <div class="no-events-desc">
-          Aucun événement n'est en cours pour le moment.<br>
-          Revenez bientôt pour participer à des missions exclusives !
+    <!-- ÉVÉNEMENT ACTIF -->
+    <div class="event-card">
+      <div class="event-header">
+        <div class="event-icon">🎊</div>
+        <div class="event-info">
+          <div class="event-name">Semaine de Lancement</div>
+          <div class="event-timer">⏰ Se termine le 31 Mai 2026</div>
         </div>
       </div>
-    </div>
 
-    <!-- INFO ÉVÉNEMENTS -->
-    <div class="info-box">
-      <div class="info-box-header">
-        <div class="info-box-icon">💡</div>
-        <div class="info-box-title">Qu'est-ce qu'un événement ?</div>
+      <div class="event-mission">
+        <div class="mission-title">Mission</div>
+        <div class="mission-desc">Atteindre le niveau 5</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="eventProgress" style="width: 0%"></div>
+        </div>
+        <div class="progress-text"><span id="currentLevel">1</span>/5 (0%)</div>
       </div>
-      <div class="info-box-text">
-        Les événements sont des missions temporaires qui te permettent de gagner des récompenses exclusives !
+
+      <div class="event-rewards">
+        <div class="rewards-title">Récompenses</div>
+        <div class="rewards-list">
+          <div class="reward-item">💰 5,000€</div>
+          <div class="reward-item reward-avatar">
+            <div class="reward-avatar-preview">
+              <img src="avatar-launch-event.png" alt="Avatar exclusif">
+            </div>
+            Avatar exclusif
+          </div>
+        </div>
       </div>
-      <ul class="info-list">
-        <li>Événements saisonniers (Noël, Halloween, Été...)</li>
-        <li>Missions hebdomadaires avec objectifs variés</li>
-        <li>Événements flash (durée limitée, 1-2h)</li>
-        <li>Récompenses : Avatars exclusifs, XP, argent, badges</li>
-      </ul>
     </div>
 
     <!-- ÉVÉNEMENTS PASSÉS -->
@@ -414,11 +430,41 @@
     const { createClient } = supabase;
     const sb = createClient(supabaseUrl, supabaseKey);
 
+    let currentUser = null;
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         window.location.href = 'index.html';
         return;
+      }
+      
+      currentUser = session.user;
+      await loadEventProgress();
+    }
+
+    async function loadEventProgress() {
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('level')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (stats) {
+        const currentLevel = Math.min(stats.level, 5);
+        const progress = (currentLevel / 5) * 100;
+        
+        document.getElementById('currentLevel').textContent = currentLevel;
+        document.getElementById('eventProgress').style.width = progress + '%';
+        
+        // Mettre à jour le texte de progression
+        const progressText = document.querySelector('.progress-text');
+        progressText.innerHTML = `<span id="currentLevel">${currentLevel}</span>/5 (${Math.floor(progress)}%)`;
+        
+        // Si mission complétée
+        if (currentLevel >= 5) {
+          progressText.innerHTML = '<span style="color: #10b981; font-weight: 700;">✓ Mission complétée !</span>';
+        }
       }
     }
 
