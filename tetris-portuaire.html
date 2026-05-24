@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Docker Mensuel - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    /* HEADER */
+    .header {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .back-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: white;
+      font-size: 20px;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .timer {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    /* GAME AREA */
+    .game-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    .game-board {
+      background: rgba(0, 0, 0, 0.3);
+      border: 3px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 28px);
+      grid-template-rows: repeat(16, 28px);
+      gap: 2px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .cell {
+      width: 28px;
+      height: 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      transition: all 0.1s;
+    }
+
+    .cell.filled {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border-color: #60a5fa;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+
+    .cell.active {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-color: #34d399;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    /* STATS */
+    .stats {
+      display: flex;
+      gap: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    /* CONTROLS */
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 320px;
+      margin-top: auto;
+      padding: 20px;
+    }
+
+    .control-btn {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      padding: 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .control-btn:active {
+      transform: scale(0.95);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .control-btn.rotate {
+      grid-column: 2;
+    }
+
+    .control-btn.drop {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-color: #34d399;
+    }
+
+    /* GAME OVER */
+    .game-over-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .game-over-overlay.active {
+      display: flex;
+    }
+
+    .game-over-card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 90%;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-over-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      letter-spacing: 2px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+
+    .game-over-stats {
+      margin-bottom: 24px;
+    }
+
+    .game-over-stat {
+      margin-bottom: 12px;
+    }
+
+    .game-over-stat-label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .game-over-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+
+    .game-over-stat-value.highlight {
+      color: #10b981;
+      font-size: 28px;
+    }
+
+    .game-over-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .game-over-btn {
+      flex: 1;
+      padding: 14px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .game-over-btn.primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+
+    .game-over-btn.secondary {
+      background: #f3f4f6;
+      color: #1a1a1a;
+    }
+
+    .game-over-btn:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <div class="timer" id="timer">90</div>
+  </div>
+
+  <div class="game-container">
+    <div class="game-board">
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Lignes</div>
+        <div class="stat-value" id="lines">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Combo</div>
+        <div class="stat-value" id="combo">×1</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Score</div>
+        <div class="stat-value" id="score">0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="control-btn" onclick="moveLeft()">◀ Gauche</button>
+    <button class="control-btn rotate" onclick="rotate()">🔄 Tourner</button>
+    <button class="control-btn" onclick="moveRight()">Droite ▶</button>
+    <button class="control-btn drop" onclick="drop()">⬇ Descendre</button>
+  </div>
+
+  <div class="game-over-overlay" id="gameOverOverlay">
+    <div class="game-over-card">
+      <div class="game-over-title">Terminé !</div>
+      <div class="game-over-stats">
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">Tu as gagné</div>
+          <div class="game-over-stat-value highlight" id="finalMoney">0€</div>
+        </div>
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">XP gagnée</div>
+          <div class="game-over-stat-value" id="finalXP">0</div>
+        </div>
+        <div class="game-over-stat">
+          <div class="game-over-stat-label">Lignes complétées</div>
+          <div class="game-over-stat-value" id="finalLines">0</div>
+        </div>
+      </div>
+      <div class="game-over-buttons">
+        <button class="game-over-btn secondary" onclick="goBack()">Quitter</button>
+        <button class="game-over-btn primary" onclick="location.reload()">Rejouer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let gameActive = false;
+    let timeLeft = 90;
+    let linesCleared = 0;
+    let currentCombo = 1;
+    let score = 0;
+
+    // Grid 10x16
+    const COLS = 10;
+    const ROWS = 16;
+    let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+    
+    // Pièce actuelle
+    let currentPiece = null;
+    let currentX = 0;
+    let currentY = 0;
+
+    // Formes des conteneurs (Tetris)
+    const SHAPES = [
+      [[1, 1, 1, 1]], // I
+      [[1, 1], [1, 1]], // O
+      [[1, 1, 1], [0, 1, 0]], // T
+      [[1, 1, 1], [1, 0, 0]], // L
+      [[1, 1, 1], [0, 0, 1]], // J
+      [[1, 1, 0], [0, 1, 1]], // S
+      [[0, 1, 1], [1, 1, 0]]  // Z
+    ];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      
+      createGrid();
+      startGame();
+    }
+
+    function createGrid() {
+      const gridEl = document.getElementById('grid');
+      gridEl.innerHTML = '';
+      
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = row;
+          cell.dataset.col = col;
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function startGame() {
+      gameActive = true;
+      spawnPiece();
+      
+      // Timer
+      const timerInterval = setInterval(() => {
+        if (!gameActive) {
+          clearInterval(timerInterval);
+          return;
+        }
+        
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        
+        if (timeLeft <= 0) {
+          endGame();
+        }
+      }, 1000);
+
+      // Descente automatique
+      const dropInterval = setInterval(() => {
+        if (!gameActive) {
+          clearInterval(dropInterval);
+          return;
+        }
+        
+        if (!moveDown()) {
+          placePiece();
+          checkLines();
+          spawnPiece();
+        }
+      }, 800);
+    }
+
+    function spawnPiece() {
+      currentPiece = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+      currentX = Math.floor(COLS / 2) - Math.floor(currentPiece[0].length / 2);
+      currentY = 0;
+      
+      // Check game over
+      if (!canPlace(currentX, currentY, currentPiece)) {
+        endGame();
+      } else {
+        render();
+      }
+    }
+
+    function canPlace(x, y, piece) {
+      for (let row = 0; row < piece.length; row++) {
+        for (let col = 0; col < piece[row].length; col++) {
+          if (piece[row][col]) {
+            const newX = x + col;
+            const newY = y + row;
+            
+            if (newX < 0 || newX >= COLS || newY >= ROWS) return false;
+            if (newY >= 0 && grid[newY][newX]) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function moveLeft() {
+      if (canPlace(currentX - 1, currentY, currentPiece)) {
+        currentX--;
+        render();
+      }
+    }
+
+    function moveRight() {
+      if (canPlace(currentX + 1, currentY, currentPiece)) {
+        currentX++;
+        render();
+      }
+    }
+
+    function moveDown() {
+      if (canPlace(currentX, currentY + 1, currentPiece)) {
+        currentY++;
+        render();
+        return true;
+      }
+      return false;
+    }
+
+    function rotate() {
+      const rotated = currentPiece[0].map((_, i) => 
+        currentPiece.map(row => row[i]).reverse()
+      );
+      
+      if (canPlace(currentX, currentY, rotated)) {
+        currentPiece = rotated;
+        render();
+      }
+    }
+
+    function drop() {
+      while (moveDown()) {}
+      placePiece();
+      checkLines();
+      spawnPiece();
+    }
+
+    function placePiece() {
+      for (let row = 0; row < currentPiece.length; row++) {
+        for (let col = 0; col < currentPiece[row].length; col++) {
+          if (currentPiece[row][col]) {
+            const newY = currentY + row;
+            const newX = currentX + col;
+            if (newY >= 0) {
+              grid[newY][newX] = 1;
+            }
+          }
+        }
+      }
+    }
+
+    function checkLines() {
+      let linesThisCheck = 0;
+      
+      for (let row = ROWS - 1; row >= 0; row--) {
+        if (grid[row].every(cell => cell === 1)) {
+          grid.splice(row, 1);
+          grid.unshift(Array(COLS).fill(0));
+          linesThisCheck++;
+          row++; // Revérifier cette ligne
+        }
+      }
+      
+      if (linesThisCheck > 0) {
+        linesCleared += linesThisCheck;
+        
+        // Combo
+        if (linesThisCheck > 1) {
+          currentCombo = Math.min(currentCombo + 1, 5);
+        } else {
+          currentCombo = 1;
+        }
+        
+        // Score
+        const lineScore = linesThisCheck * 100 * currentCombo;
+        score += lineScore;
+        
+        // Update UI
+        document.getElementById('lines').textContent = linesCleared;
+        document.getElementById('combo').textContent = '×' + currentCombo;
+        document.getElementById('score').textContent = score;
+      } else {
+        currentCombo = 1;
+        document.getElementById('combo').textContent = '×1';
+      }
+      
+      render();
+    }
+
+    function render() {
+      // Clear active cells
+      document.querySelectorAll('.cell.active').forEach(cell => {
+        cell.classList.remove('active');
+      });
+      
+      // Render grid
+      for (let row = 0; row < ROWS; row++) {
+        for (let col = 0; col < COLS; col++) {
+          const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+          if (grid[row][col]) {
+            cell.classList.add('filled');
+          } else {
+            cell.classList.remove('filled');
+          }
+        }
+      }
+      
+      // Render current piece
+      if (currentPiece) {
+        for (let row = 0; row < currentPiece.length; row++) {
+          for (let col = 0; col < currentPiece[row].length; col++) {
+            if (currentPiece[row][col]) {
+              const newY = currentY + row;
+              const newX = currentX + col;
+              if (newY >= 0) {
+                const cell = document.querySelector(`[data-row="${newY}"][data-col="${newX}"]`);
+                if (cell) cell.classList.add('active');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    async function endGame() {
+      gameActive = false;
+      
+      // Calculate rewards : 3.90€ / 7.1 XP par ligne
+      const moneyEarned = Math.floor(linesCleared * 3.90 * 100);
+      const xpEarned = Math.floor(linesCleared * 7.1 * 100);
+      
+      // Update DB
+      try {
+        const { data: stats } = await sb
+          .from('game_stats')
+          .select('money, xp, level')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (stats) {
+          const newXP = stats.xp + xpEarned;
+          const xpNeeded = stats.level * stats.level * 50;
+          let newLevel = stats.level;
+          let remainingXP = newXP;
+
+          while (remainingXP >= stats.level * stats.level * 50) {
+            remainingXP -= stats.level * stats.level * 50;
+            newLevel++;
+          }
+
+          await sb
+            .from('game_stats')
+            .update({
+              money: stats.money + moneyEarned,
+              xp: remainingXP,
+              level: newLevel
+            })
+            .eq('user_id', currentUser.id);
+        }
+      } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+      }
+      
+      // Show game over
+      document.getElementById('finalMoney').textContent = moneyEarned.toLocaleString('fr-FR') + '€';
+      document.getElementById('finalXP').textContent = xpEarned.toLocaleString('fr-FR');
+      document.getElementById('finalLines').textContent = linesCleared;
+      document.getElementById('gameOverOverlay').classList.add('active');
+    }
+
+    function goBack() {
+      window.location.href = 'menutravailler.html';
+    }
+
+    init();
+  </script>
+</body>
+</html>
