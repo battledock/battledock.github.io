@@ -39,7 +39,6 @@
       margin: 0 auto;
     }
 
-    /* EN-TÊTE JOUEUR */
     .player-header {
       background: #e2e8f0;
       border: var(--border-thick);
@@ -91,7 +90,6 @@
       margin-bottom: 2px;
     }
 
-    /* CARTE GRADE */
     .grade-card {
       background: #e2e8f0;
       border: var(--border-thick);
@@ -129,7 +127,6 @@
       margin-bottom: 12px;
     }
 
-    /* BARRE DE PROGRESSION */
     .progress-container {
       background: #cbd5e1;
       border: var(--border-thick);
@@ -143,7 +140,6 @@
       background: linear-gradient(90deg, var(--comic-yellow) 0%, #fb923c 100%);
       height: 100%;
       transition: width 0.3s ease;
-      position: relative;
     }
 
     .progress-text {
@@ -159,7 +155,93 @@
       z-index: 1;
     }
 
-    /* BOUTON DÉCONNEXION */
+    .work-zone {
+      background: #e2e8f0;
+      border: var(--border-thick);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .work-title {
+      font-family: 'Bangers', cursive;
+      font-size: 22px;
+      color: var(--port-dark);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .cleaning-game {
+      background: #94a3b8;
+      border: var(--border-thick);
+      border-radius: 12px;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .cleaning-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .game-stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 14px;
+    }
+
+    .stat-item {
+      color: var(--port-dark);
+    }
+
+    .stat-value {
+      color: #3b82f6;
+      margin-left: 4px;
+    }
+
+    .start-btn {
+      background: var(--comic-green);
+      color: white;
+      border: var(--border-thick);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-family: 'Bungee', sans-serif;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      box-shadow: 6px 6px 0px #000000;
+      transition: all 0.15s ease;
+      width: 100%;
+      border-bottom: none;
+      margin-top: 12px;
+    }
+
+    .start-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 8px 8px 0px #000000;
+    }
+
+    .start-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000000;
+    }
+
+    .start-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .logout-btn {
       background: var(--comic-red);
       color: white;
@@ -188,32 +270,14 @@
     }
 
     @media (max-width: 400px) {
-      .player-header {
-        padding: 16px;
-      }
-
-      .avatar-container {
-        width: 70px;
-        height: 70px;
-      }
-
-      .player-username {
-        font-size: 20px;
-      }
-
-      .player-money {
-        font-size: 18px;
-      }
-
-      .grade-title {
-        font-size: 18px;
+      .cleaning-game {
+        height: 350px;
       }
     }
   </style>
 </head>
 <body>
   <div class="game-container">
-    <!-- EN-TÊTE JOUEUR -->
     <div class="player-header">
       <div class="avatar-container">
         <img src="avatar-default.png" alt="Avatar" id="avatarImage">
@@ -224,7 +288,6 @@
       </div>
     </div>
 
-    <!-- CARTE GRADE -->
     <div class="grade-card">
       <div class="grade-header">
         <div class="grade-title">GRADE</div>
@@ -237,7 +300,28 @@
       </div>
     </div>
 
-    <!-- DÉCONNEXION -->
+    <div class="work-zone">
+      <div class="work-title">🧹 NETTOYER L'ENTREPÔT</div>
+      
+      <div class="cleaning-game" id="cleaningGame">
+        <canvas id="cleaningCanvas" class="cleaning-canvas"></canvas>
+      </div>
+
+      <div class="game-stats">
+        <div class="stat-item">
+          Propre: <span class="stat-value" id="cleanPercent">0%</span>
+        </div>
+        <div class="stat-item">
+          Temps: <span class="stat-value" id="timeLeft">60s</span>
+        </div>
+        <div class="stat-item">
+          XP: <span class="stat-value" id="xpEarned">0</span>
+        </div>
+      </div>
+
+      <button class="start-btn" id="startBtn" onclick="startGame()">COMMENCER</button>
+    </div>
+
     <button class="logout-btn" onclick="logout()">DÉCONNEXION</button>
   </div>
 
@@ -248,6 +332,155 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
+    let gameActive = false;
+    let gameTimer = null;
+    let timeRemaining = 60;
+    let cleanedPixels = new Set();
+    let totalPixels = 0;
+
+    const canvas = document.getElementById('cleaningCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function setupCanvas() {
+      const container = document.getElementById('cleaningGame');
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+      totalPixels = Math.floor((canvas.width * canvas.height) / 100);
+      drawDirt();
+    }
+
+    function drawDirt() {
+      ctx.fillStyle = '#475569';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      for (let i = 0; i < 100; i++) {
+        ctx.fillStyle = `rgba(30, 41, 59, ${Math.random() * 0.5 + 0.3})`;
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const size = Math.random() * 40 + 20;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function cleanArea(x, y) {
+      if (!gameActive) return;
+      
+      const brushSize = 30;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, brushSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      
+      const gridX = Math.floor(x / 10);
+      const gridY = Math.floor(y / 10);
+      cleanedPixels.add(`${gridX},${gridY}`);
+      
+      updateCleanPercent();
+    }
+
+    function updateCleanPercent() {
+      const percent = Math.min(Math.floor((cleanedPixels.size / totalPixels) * 100), 100);
+      document.getElementById('cleanPercent').textContent = percent + '%';
+      document.getElementById('xpEarned').textContent = percent;
+      
+      if (percent >= 100) {
+        endGame(true);
+      }
+    }
+
+    let isDrawing = false;
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      cleanArea(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      cleanArea(touch.clientX - rect.left, touch.clientY - rect.top);
+    });
+
+    canvas.addEventListener('touchend', () => {
+      isDrawing = false;
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+      isDrawing = true;
+      const rect = canvas.getBoundingClientRect();
+      cleanArea(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!isDrawing) return;
+      const rect = canvas.getBoundingClientRect();
+      cleanArea(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      isDrawing = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      isDrawing = false;
+    });
+
+    function startGame() {
+      gameActive = true;
+      timeRemaining = 60;
+      cleanedPixels.clear();
+      document.getElementById('startBtn').disabled = true;
+      document.getElementById('startBtn').textContent = 'EN COURS...';
+      document.getElementById('cleanPercent').textContent = '0%';
+      document.getElementById('xpEarned').textContent = '0';
+      
+      setupCanvas();
+      
+      gameTimer = setInterval(() => {
+        timeRemaining--;
+        document.getElementById('timeLeft').textContent = timeRemaining + 's';
+        
+        if (timeRemaining <= 0) {
+          endGame(false);
+        }
+      }, 1000);
+    }
+
+    async function endGame(success) {
+      gameActive = false;
+      clearInterval(gameTimer);
+      
+      const xpGained = Math.min(cleanedPixels.size, totalPixels);
+      
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('startBtn').textContent = success ? '✅ TERMINÉ ! REJOUER' : '⏱️ TEMPS ÉCOULÉ ! REJOUER';
+      
+      if (currentUser && xpGained > 0) {
+        const { data: stats } = await sb
+          .from('game_stats')
+          .select('xp')
+          .eq('user_id', currentUser.id)
+          .single();
+        
+        if (stats) {
+          const newXp = stats.xp + xpGained;
+          await sb
+            .from('game_stats')
+            .update({ xp: newXp })
+            .eq('user_id', currentUser.id);
+          
+          loadProfile();
+        }
+      }
+    }
 
     async function loadProfile() {
       const { data: { session } } = await sb.auth.getSession();
@@ -259,7 +492,6 @@
 
       currentUser = session.user;
 
-      // Charger profil
       const { data: profile } = await sb
         .from('profiles')
         .select('username, avatar_url')
@@ -271,7 +503,6 @@
         document.getElementById('avatarImage').src = profile.avatar_url;
       }
 
-      // Charger game_stats
       const { data: stats } = await sb
         .from('game_stats')
         .select('money, level, xp, grade')
@@ -279,8 +510,7 @@
         .single();
 
       if (stats) {
-        // Calculer XP nécessaire pour level up
-        const xpNeeded = stats.level * 100; // Simple formule pour l'instant
+        const xpNeeded = stats.level * 100;
         
         updatePlayerStats({
           money: stats.money,
@@ -307,7 +537,12 @@
       window.location.href = 'index.html';
     }
 
+    setupCanvas();
     loadProfile();
+    
+    window.addEventListener('resize', () => {
+      if (!gameActive) setupCanvas();
+    });
   </script>
 </body>
 </html>
