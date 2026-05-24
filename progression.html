@@ -446,16 +446,25 @@
 
     let currentUser = null;
 
-    // Liste des déblocages par grade
+    // Liste des déblocages par grade/niveau
     const unlocks = [
       { id: 'docker_occasionnel', icon: '💼', title: 'Docker Occasionnel', requirement: 'Niveau 1', level: 1 },
-      { id: 'charger_camions', icon: '🚚', title: 'Charger Camions (métier)', requirement: 'Niveau 5 - Grade Docker', level: 5 },
-      { id: 'docker_mensuel', icon: '📅', title: 'Docker Mensuel', requirement: 'Niveau 15', level: 15 },
-      { id: 'organiser_quai', icon: '🏗️', title: 'Organiser Quai (métier)', requirement: 'Niveau 10 - Grade Docker', level: 10 },
-      { id: 'chef_equipe', icon: '👔', title: 'Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
-      { id: 'compagnie', icon: '🏢', title: 'Créer sa Compagnie', requirement: 'Niveau 30 - Grade Chef d\'Équipe', level: 30 },
-      { id: 'contremaitre', icon: '👑', title: 'Contremaître', requirement: 'Niveau 50', level: 50 },
-      { id: 'exclusive_features', icon: '⚡', title: 'Fonctionnalités exclusives', requirement: 'Niveau 50 - Grade Contremaître', level: 50 }
+      { id: 'avatar_default', icon: '👤', title: 'Avatar Défaut', requirement: 'Niveau 1', level: 1 },
+      { id: 'docker_grade', icon: '⚓', title: 'Grade Docker', requirement: 'Niveau 5', level: 5 },
+      { id: 'avatar_level5', icon: '🖼️', title: 'Avatar Docker', requirement: 'Niveau 5', level: 5 },
+      { id: 'charger_camions', icon: '🚚', title: 'Métier : Docker', requirement: 'Niveau 5 - Grade Docker', level: 5 },
+      { id: 'avatar_level10', icon: '🖼️', title: 'Avatar Expérimenté', requirement: 'Niveau 10', level: 10 },
+      { id: 'organiser_quai', icon: '🏗️', title: 'Métier : Organiser Quai', requirement: 'Niveau 10', level: 10 },
+      { id: 'docker_mensuel', icon: '📅', title: 'Grade Docker Mensuel', requirement: 'Niveau 15', level: 15 },
+      { id: 'avatar_level15', icon: '🖼️', title: 'Avatar Docker Mensuel', requirement: 'Niveau 15', level: 15 },
+      { id: 'chef_equipe', icon: '👔', title: 'Grade Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
+      { id: 'avatar_level30', icon: '🖼️', title: 'Avatar Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
+      { id: 'compagnie', icon: '🏢', title: 'Créer sa Compagnie', requirement: 'Niveau 30', level: 30 },
+      { id: 'contremaitre', icon: '👑', title: 'Grade Contremaître', requirement: 'Niveau 50', level: 50 },
+      { id: 'avatar_level50', icon: '🖼️', title: 'Avatar Contremaître', requirement: 'Niveau 50', level: 50 },
+      { id: 'exclusive_features', icon: '⚡', title: 'Fonctionnalités exclusives', requirement: 'Niveau 50', level: 50 },
+      { id: 'avatar_millionaire', icon: '💰', title: 'Avatar Millionnaire', requirement: '1,000,000€ possédés', level: 0, special: 'money' },
+      { id: 'avatar_completionist', icon: '🏆', title: 'Avatar Perfectionniste', requirement: 'Tous les succès débloqués', level: 0, special: 'achievements' }
     ];
 
     // Liste des succès (ULTRA-DIFFICILES)
@@ -538,7 +547,8 @@
         level: stats.level,
         money: stats.money,
         totalXp: totalXp,
-        gamesPlayed: Math.floor(totalXp / 30)
+        gamesPlayed: Math.floor(totalXp / 30),
+        allOtherAchievements: 0
       };
 
       const unlockedCount = achievements.filter(a => {
@@ -562,7 +572,15 @@
       list.innerHTML = '';
 
       unlocks.forEach(unlock => {
-        const unlocked = playerStats.level >= unlock.level;
+        let unlocked = false;
+        
+        if (unlock.special === 'money') {
+          unlocked = playerStats.money >= 1000000;
+        } else if (unlock.special === 'achievements') {
+          unlocked = playerStats.allOtherAchievements >= 14;
+        } else {
+          unlocked = playerStats.level >= unlock.level;
+        }
         
         const div = document.createElement('div');
         div.className = `unlock-card ${unlocked ? 'unlocked' : 'locked'}`;
