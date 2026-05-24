@@ -271,15 +271,25 @@
         document.getElementById('avatarImage').src = profile.avatar_url;
       }
 
-      // TODO: Charger les stats du joueur (argent, niveau, XP, grade)
-      // Pour l'instant, valeurs par défaut
-      updatePlayerStats({
-        money: 0,
-        level: 1,
-        xp: 0,
-        xpNeeded: 100,
-        grade: 'Docker Occasionnel'
-      });
+      // Charger game_stats
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('money, level, xp, grade')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (stats) {
+        // Calculer XP nécessaire pour level up
+        const xpNeeded = stats.level * 100; // Simple formule pour l'instant
+        
+        updatePlayerStats({
+          money: stats.money,
+          level: stats.level,
+          xp: stats.xp,
+          xpNeeded: xpNeeded,
+          grade: stats.grade
+        });
+      }
     }
 
     function updatePlayerStats(stats) {
