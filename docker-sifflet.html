@@ -103,19 +103,19 @@
         /* --- COMBO DISPLAY SIMPLE --- */
         #combo-display {
             position: absolute;
-            top: 100px;
+            top: 110px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 12;
             display: none;
             font-family: 'Bebas Neue', sans-serif;
-            font-size: 48px;
+            font-size: 28px;
             color: #ef4444;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             background: white;
-            padding: 12px 28px;
-            border-radius: 16px;
-            border: 3px solid #ef4444;
+            padding: 8px 20px;
+            border-radius: 12px;
+            border: 2px solid #ef4444;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             animation: comboFloat 0.3s ease-out;
         }
@@ -497,18 +497,75 @@
         }
 
         // Sauvegarder automatiquement si on quitte la page
-        window.addEventListener('beforeunload', async (e) => {
-            if (gameActive && (sessionArgent > 0 || sessionXp > 0)) {
-                await saveProgress();
+        let isSaving = false;
+        
+        window.addEventListener('beforeunload', (e) => {
+            if (!isSaving && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+                isSaving = true;
+                // Utiliser sendBeacon pour garantir l'envoi même si la page se ferme
+                saveProgressSync();
             }
         });
 
-        // Sauvegarder si on revient en arrière
-        window.addEventListener('pagehide', async () => {
-            if (gameActive && (sessionArgent > 0 || sessionXp > 0)) {
-                await saveProgress();
+        // Sauvegarder si on revient en arrière (mobile)
+        window.addEventListener('pagehide', () => {
+            if (!isSaving && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+                isSaving = true;
+                saveProgressSync();
             }
         });
+
+        // Version synchrone de la sauvegarde (pour beforeunload)
+        function saveProgressSync() {
+            if (!currentUser || (sessionArgent === 0 && sessionXp === 0)) return;
+
+            // Faire la requête de manière synchrone avec fetch + keepalive
+            const saveData = async () => {
+                const { data: currentStats } = await sb
+                    .from('game_stats')
+                    .select('money, xp, level, grade')
+                    .eq('user_id', currentUser.id)
+                    .single();
+
+                if (currentStats) {
+                    const newMoney = currentStats.money + Math.floor(sessionArgent);
+                    const newXp = currentStats.xp + sessionXp;
+                    
+                    let newLevel = currentStats.level;
+                    let remainingXp = newXp;
+                    
+                    while (remainingXp >= (newLevel * newLevel * 50)) {
+                        remainingXp -= (newLevel * newLevel * 50);
+                        newLevel++;
+                        
+                        if (newLevel > 50) {
+                            newLevel = 50;
+                            remainingXp = 0;
+                            break;
+                        }
+                    }
+
+                    let newGrade = 'Docker Occasionnel';
+                    if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+                    else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+                    else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+                    else if (newLevel >= 50) newGrade = 'Contremaître';
+
+                    await sb
+                        .from('game_stats')
+                        .update({
+                            money: newMoney,
+                            xp: remainingXp,
+                            level: newLevel,
+                            grade: newGrade
+                        })
+                        .eq('user_id', currentUser.id);
+                }
+            };
+            
+            // Exécuter immédiatement
+            saveData();
+        }
 
         function initContainer() {
             if (!gameActive) return;
