@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Shop - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+    }
+
+    /* TOPBAR */
+    .topbar {
+      background: #ffffff;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: all 0.3s ease;
+    }
+
+    .topbar.scrolled {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+      padding: 12px 16px;
+    }
+
+    .back-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 20px;
+      color: #1a1a1a;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .back-btn:hover {
+      background: linear-gradient(135deg, #f1f5f9, #e5e7eb);
+      border-color: #d1d5db;
+      transform: translateX(-2px);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95) translateX(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    .topbar-title {
+      flex: 1;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      text-align: center;
+    }
+
+    .topbar-icon {
+      font-size: 28px;
+    }
+
+    /* CONTAINER */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    /* BALANCE CARD */
+    .balance-card {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .balance-label {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .balance-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 2px;
+    }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+    }
+
+    /* SHOP ITEMS */
+    .shop-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .shop-item {
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shop-item:hover {
+      border-color: #10b981;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .shop-item:active {
+      transform: translateY(0);
+    }
+
+    .item-info {
+      flex: 1;
+    }
+
+    .item-badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .item-badge.best {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .item-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+
+    .item-description {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+
+    .item-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #10b981;
+    }
+
+    .item-price {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .price-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      color: #1a1a1a;
+    }
+
+    .price-label {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+
+    /* LOADING */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div class="topbar-title">Shop</div>
+    <div class="topbar-icon">🛒</div>
+  </div>
+
+  <!-- CONTAINER -->
+  <div class="container">
+    <!-- BALANCE -->
+    <div class="balance-card">
+      <div class="balance-label">Ton argent disponible</div>
+      <div class="balance-amount" id="playerMoney">0 €</div>
+    </div>
+
+    <!-- SHOP ITEMS -->
+    <div class="section-title">Acheter de l'XP</div>
+
+    <div class="shop-grid" id="shopGrid">
+      <div class="loading">Chargement...</div>
+    </div>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let playerMoney = 0;
+
+    // Offres XP
+    const xpOffers = [
+      { xp: 100, price: 50, badge: 'Starter', desc: 'Parfait pour commencer' },
+      { xp: 500, price: 200, badge: 'Populaire', desc: 'Le plus vendu' },
+      { xp: 1000, price: 350, badge: 'Meilleure offre', desc: 'Économise 12%', best: true },
+      { xp: 2500, price: 800, badge: 'Premium', desc: 'Économise 20%', best: true },
+      { xp: 5000, price: 1500, badge: 'Mega', desc: 'Économise 25%', best: true }
+    ];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      currentUser = session.user;
+      await loadPlayerData();
+      renderShop();
+    }
+
+    async function loadPlayerData() {
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('money')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (stats) {
+        playerMoney = stats.money;
+        document.getElementById('playerMoney').textContent = playerMoney.toLocaleString('fr-FR') + ' €';
+      }
+    }
+
+    function renderShop() {
+      const grid = document.getElementById('shopGrid');
+      grid.innerHTML = '';
+
+      xpOffers.forEach(offer => {
+        const canAfford = playerMoney >= offer.price;
+        
+        const item = document.createElement('div');
+        item.className = 'shop-item';
+        if (!canAfford) {
+          item.style.opacity = '0.6';
+          item.style.cursor = 'not-allowed';
+        }
+        
+        item.innerHTML = `
+          <div class="item-info">
+            <div class="item-badge ${offer.best ? 'best' : ''}">${offer.badge}</div>
+            <div class="item-title">+${offer.xp.toLocaleString('fr-FR')} XP</div>
+            <div class="item-description">${offer.desc}</div>
+            <div class="item-value">Niveau up garanti !</div>
+          </div>
+          <div class="item-price">
+            <div class="price-amount">${offer.price}€</div>
+            <div class="price-label">${canAfford ? 'Disponible' : 'Pas assez'}</div>
+          </div>
+        `;
+
+        if (canAfford) {
+          item.onclick = () => buyXP(offer.xp, offer.price);
+        }
+
+        grid.appendChild(item);
+      });
+    }
+
+    async function buyXP(xpAmount, price) {
+      const confirm = window.confirm(`Acheter ${xpAmount.toLocaleString('fr-FR')} XP pour ${price}€ ?`);
+      if (!confirm) return;
+
+      // Récupérer stats actuelles
+      const { data: currentStats } = await sb
+        .from('game_stats')
+        .select('money, xp, level, grade')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (!currentStats) return;
+
+      // Vérifier l'argent
+      if (currentStats.money < price) {
+        alert('Pas assez d\'argent !');
+        return;
+      }
+
+      // Calculer nouveaux stats
+      const newMoney = currentStats.money - price;
+      const newXp = currentStats.xp + xpAmount;
+
+      // Calcul niveau (SYSTÈME EXPONENTIEL)
+      let newLevel = currentStats.level;
+      let remainingXp = newXp;
+
+      while (remainingXp >= (newLevel * newLevel * 50)) {
+        remainingXp -= (newLevel * newLevel * 50);
+        newLevel++;
+
+        if (newLevel > 50) {
+          newLevel = 50;
+          remainingXp = 0;
+          break;
+        }
+      }
+
+      // Calcul grade
+      let newGrade = 'Docker Occasionnel';
+      if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+      else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+      else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+      else if (newLevel >= 50) newGrade = 'Contremaître';
+
+      // Mise à jour
+      const { error } = await sb
+        .from('game_stats')
+        .update({
+          money: newMoney,
+          xp: remainingXp,
+          level: newLevel,
+          grade: newGrade
+        })
+        .eq('user_id', currentUser.id);
+
+      if (error) {
+        alert('Erreur lors de l\'achat !');
+        return;
+      }
+
+      const leveledUp = newLevel > currentStats.level;
+      
+      if (leveledUp) {
+        alert(`✅ Achat réussi !\n\n🎉 LEVEL UP ! Tu es maintenant niveau ${newLevel} !\nGrade : ${newGrade}\n\n+${xpAmount} XP\n-${price}€`);
+      } else {
+        alert(`✅ Achat réussi !\n\n+${xpAmount} XP\n-${price}€\n\nPlus que ${(newLevel * newLevel * 50) - remainingXp} XP pour le niveau ${newLevel + 1} !`);
+      }
+
+      // Reload
+      await loadPlayerData();
+      renderShop();
+    }
+
+    function goBack() {
+      window.location.href = 'game.html';
+    }
+
+    // Effet scroll
+    window.addEventListener('scroll', () => {
+      const topbar = document.querySelector('.topbar');
+      if (window.pageYOffset > 10) {
+        topbar.classList.add('scrolled');
+      } else {
+        topbar.classList.remove('scrolled');
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
