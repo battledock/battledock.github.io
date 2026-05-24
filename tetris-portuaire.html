@@ -19,7 +19,7 @@
       font-family: 'Inter', sans-serif;
       background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
       height: 100vh;
-      height: 100dvh;
+      height: 100dvh; /* Dynamic viewport height pour mobile */
       display: flex;
       flex-direction: column;
       touch-action: manipulation;
@@ -217,7 +217,6 @@
       justify-content: center;
       z-index: 1000;
       padding: 20px;
-      overflow: hidden;
     }
 
     .game-over-overlay.active {
@@ -336,6 +335,10 @@
         height: 18px;
       }
 
+      .stats {
+        padding: 6px 10px;
+      }
+
       .control-btn {
         padding: 14px 8px;
         font-size: 14px;
@@ -343,14 +346,6 @@
 
       .control-btn.drop {
         padding: 12px 8px;
-      }
-
-      .stat-value {
-        font-size: 15px;
-      }
-
-      .timer {
-        font-size: 24px;
       }
     }
   </style>
@@ -383,22 +378,22 @@
   </div>
 
   <div class="controls">
-    <button class="control-btn" id="btnLeft">← GAUCHE</button>
-    <button class="control-btn" id="btnRight">DROITE →</button>
-    <button class="control-btn" id="btnRotate">↻ ROTATION</button>
-    <button class="control-btn drop" id="btnDrop">↓ DÉPOSER</button>
+    <button class="control-btn" onclick="moveLeft()">◀ Gauche</button>
+    <button class="control-btn" onclick="moveRight()">Droite ▶</button>
+    <button class="control-btn" onclick="rotate()">🔄 Rotation</button>
+    <button class="control-btn drop" onclick="drop()">⬇ DROP</button>
   </div>
 
   <div class="game-over-overlay" id="gameOverOverlay">
     <div class="game-over-card">
-      <div class="game-over-title">TEMPS ÉCOULÉ</div>
+      <div class="game-over-title">Terminé !</div>
       <div class="game-over-stats">
         <div class="game-over-stat">
-          <div class="game-over-stat-label">Gains</div>
+          <div class="game-over-stat-label">Tu as gagné</div>
           <div class="game-over-stat-value highlight" id="finalMoney">0€</div>
         </div>
         <div class="game-over-stat">
-          <div class="game-over-stat-label">Expérience</div>
+          <div class="game-over-stat-label">XP gagnée</div>
           <div class="game-over-stat-value" id="finalXP">0</div>
         </div>
         <div class="game-over-stat">
@@ -407,83 +402,75 @@
         </div>
       </div>
       <div class="game-over-buttons">
-        <button class="game-over-btn secondary" onclick="goBack()">Menu</button>
+        <button class="game-over-btn secondary" onclick="goBack()">Quitter</button>
         <button class="game-over-btn primary" onclick="location.reload()">Rejouer</button>
       </div>
     </div>
   </div>
 
   <script>
-    const sb = supabase.createClient(
-      'https://iuhmtzdfkzvffbsafhjy.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml1aG10emRma3p2ZmZic2FmaGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzcwMzE4NjAsImV4cCI6MjA1MjYwNzg2MH0.MBhkqxEpxVTVA51zWNKr_9bVYHLcPGg9EqGfvOjpU0s'
-    );
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
     let gameActive = false;
     let timeLeft = 50;
-    let score = 0;
     let linesCleared = 0;
     let currentCombo = 1;
+    let score = 0;
 
-    const ROWS = 16;
+    // Grid 10x16
     const COLS = 10;
+    const ROWS = 16;
     let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
+    
+    // Pièce actuelle
     let currentPiece = null;
     let currentX = 0;
     let currentY = 0;
 
+    // Formes des conteneurs (Tetris)
     const SHAPES = [
-      [[1,1,1,1]], // I
-      [[1,1],[1,1]], // O
-      [[1,1,1],[0,1,0]], // T
-      [[1,1,1],[1,0,0]], // L
-      [[1,1,1],[0,0,1]], // J
-      [[1,1,0],[0,1,1]], // S
-      [[0,1,1],[1,1,0]]  // Z
+      [[1, 1, 1, 1]], // I
+      [[1, 1], [1, 1]], // O
+      [[1, 1, 1], [0, 1, 0]], // T
+      [[1, 1, 1], [1, 0, 0]], // L
+      [[1, 1, 1], [0, 0, 1]], // J
+      [[1, 1, 0], [0, 1, 1]], // S
+      [[0, 1, 1], [1, 1, 0]]  // Z
     ];
 
     async function init() {
-      console.log('🎮 INIT START');
-      
-      try {
-        console.log('📡 Checking session...');
-        const { data: { session }, error } = await sb.auth.getSession();
-        
-        console.log('Session:', session);
-        console.log('Error:', error);
-        
-        if (error) {
-          console.error('❌ Session error:', error);
-          alert('Erreur session: ' + error.message);
-          window.location.href = 'index.html';
-          return;
-        }
-        
-        if (!session) {
-          console.error('❌ No session');
-          alert('Pas de session active');
-          window.location.href = 'index.html';
-          return;
-        }
-        
-        console.log('✅ Session OK, user:', session.user.email);
-        currentUser = session.user;
-        
-        console.log('🎨 Creating grid...');
-        createGrid();
-        
-        console.log('🎛️ Attaching buttons...');
-        attachButtonListeners();
-        
-        console.log('🚀 Starting game...');
-        startGame();
-        
-        console.log('✅ GAME READY');
-      } catch (err) {
-        console.error('💥 Init error:', err);
-        alert('Erreur init: ' + err.message);
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
       }
+      currentUser = session.user;
+      
+      createGrid();
+      attachButtonListeners();
+      startGame();
+    }
+
+    function attachButtonListeners() {
+      document.getElementById('btnLeft').addEventListener('click', () => {
+        if (gameActive) moveLeft();
+      });
+
+      document.getElementById('btnRight').addEventListener('click', () => {
+        if (gameActive) moveRight();
+      });
+
+      document.getElementById('btnRotate').addEventListener('click', () => {
+        if (gameActive) rotate();
+      });
+
+      document.getElementById('btnDrop').addEventListener('click', () => {
+        if (gameActive) drop();
+      });
     }
 
     function createGrid() {
@@ -499,28 +486,6 @@
           gridEl.appendChild(cell);
         }
       }
-    }
-
-    function attachButtonListeners() {
-      document.getElementById('btnLeft').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (gameActive) moveLeft();
-      });
-
-      document.getElementById('btnRight').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (gameActive) moveRight();
-      });
-
-      document.getElementById('btnRotate').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (gameActive) rotate();
-      });
-
-      document.getElementById('btnDrop').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (gameActive) drop();
-      });
     }
 
     function startGame() {
@@ -563,6 +528,7 @@
       currentX = Math.floor(COLS / 2) - Math.floor(currentPiece[0].length / 2);
       currentY = 0;
       
+      // Check game over
       if (!canPlace(currentX, currentY, currentPiece)) {
         endGame();
       } else {
@@ -648,22 +614,25 @@
           grid.splice(row, 1);
           grid.unshift(Array(COLS).fill(0));
           linesThisCheck++;
-          row++;
+          row++; // Revérifier cette ligne
         }
       }
       
       if (linesThisCheck > 0) {
         linesCleared += linesThisCheck;
         
+        // Combo
         if (linesThisCheck > 1) {
           currentCombo = Math.min(currentCombo + 1, 5);
         } else {
           currentCombo = 1;
         }
         
+        // Score
         const lineScore = linesThisCheck * 100 * currentCombo;
         score += lineScore;
         
+        // Update UI
         document.getElementById('lines').textContent = linesCleared;
         document.getElementById('combo').textContent = '×' + currentCombo;
         document.getElementById('score').textContent = score;
@@ -676,10 +645,12 @@
     }
 
     function render() {
+      // Clear active cells
       document.querySelectorAll('.cell.active').forEach(cell => {
         cell.classList.remove('active');
       });
       
+      // Render grid
       for (let row = 0; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
           const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
@@ -691,6 +662,7 @@
         }
       }
       
+      // Render current piece
       if (currentPiece) {
         for (let row = 0; row < currentPiece.length; row++) {
           for (let col = 0; col < currentPiece[row].length; col++) {
@@ -710,9 +682,11 @@
     async function endGame() {
       gameActive = false;
       
+      // Calculate rewards : 3.90€ / 7.1 XP par ligne
       const moneyEarned = Math.floor(linesCleared * 3.90 * 100);
       const xpEarned = Math.floor(linesCleared * 7.1 * 100);
       
+      // Update DB
       try {
         const { data: stats } = await sb
           .from('game_stats')
@@ -724,7 +698,6 @@
           let newXP = stats.xp + xpEarned;
           let newLevel = stats.level;
 
-          // FIX: utiliser newLevel dans la boucle
           while (newXP >= newLevel * newLevel * 50) {
             newXP -= newLevel * newLevel * 50;
             newLevel++;
@@ -743,6 +716,7 @@
         console.error('Erreur sauvegarde:', error);
       }
       
+      // Show game over
       document.getElementById('finalMoney').textContent = moneyEarned.toLocaleString('fr-FR') + '€';
       document.getElementById('finalXP').textContent = xpEarned.toLocaleString('fr-FR');
       document.getElementById('finalLines').textContent = linesCleared;
@@ -753,9 +727,11 @@
       window.location.href = 'menutravailler.html';
     }
 
-    // Touch swipe isolé sur grille
+    // Touch controls isolés sur la grille
     let touchStartX = 0;
     let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
     const minSwipeDistance = 30;
 
     const gameBoard = document.querySelector('.game-board');
@@ -768,19 +744,25 @@
     gameBoard.addEventListener('touchend', (e) => {
       if (!gameActive) return;
       
-      const touchEndX = e.changedTouches[0].screenX;
-      const touchEndY = e.changedTouches[0].screenY;
-      
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
       const diffX = touchEndX - touchStartX;
       const diffY = touchEndY - touchStartY;
       const absDiffX = Math.abs(diffX);
       const absDiffY = Math.abs(diffY);
 
+      // Ignore petits mouvements
       if (absDiffX < minSwipeDistance && absDiffY < minSwipeDistance) {
+        // Tap = rotation
         rotate();
         return;
       }
 
+      // Swipe horizontal prioritaire
       if (absDiffX > absDiffY) {
         if (diffX > 0) {
           moveRight();
@@ -788,13 +770,14 @@
           moveLeft();
         }
       } else {
+        // Swipe vertical
         if (diffY > 0) {
           drop();
         }
       }
-    }, { passive: true });
+    }
 
-    // Keyboard pour desktop
+    // Keyboard controls pour desktop
     document.addEventListener('keydown', (e) => {
       if (!gameActive) return;
       
