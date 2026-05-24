@@ -371,25 +371,47 @@
       // Récupérer les données
       const orderBy = currentTab === 'level' ? 'level' : 'money';
       
-      const { data: rankings, error } = await sb
+      // Méthode 1 : Récupérer game_stats puis profiles séparément
+      const { data: stats, error: statsError } = await sb
         .from('game_stats')
-        .select(`
-          user_id,
-          level,
-          xp,
-          money,
-          grade,
-          profiles:user_id (username, avatar_url)
-        `)
+        .select('*')
         .order(orderBy, { ascending: false })
         .limit(50);
 
-      document.getElementById('loader').style.display = 'none';
-
-      if (error || !rankings || rankings.length === 0) {
+      if (statsError) {
+        console.error('Error fetching stats:', statsError);
+        document.getElementById('loader').style.display = 'none';
         document.getElementById('emptyState').style.display = 'block';
         return;
       }
+
+      if (!stats || stats.length === 0) {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+
+      // Récupérer tous les profils en une seule requête
+      const userIds = stats.map(s => s.user_id);
+      const { data: profiles, error: profilesError } = await sb
+        .from('profiles')
+        .select('*')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Combiner les données
+      const rankings = stats.map(stat => {
+        const profile = profiles?.find(p => p.user_id === stat.user_id);
+        return {
+          ...stat,
+          profiles: profile || { username: 'Inconnu', avatar_url: 'avatar-default.png' }
+        };
+      });
+
+      document.getElementById('loader').style.display = 'none';
 
       // Afficher podium (top 3)
       if (rankings.length >= 3) {
