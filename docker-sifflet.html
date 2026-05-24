@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>Docker au Sifflet - Battle Dock</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <style>
+        /* --- RESET & CONFIG MOBILE --- */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* --- TOPBAR BATTLE DOCK --- */
+        .topbar {
+            background: #ffffff;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .back-btn {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 20px;
+            color: #1a1a1a;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        .back-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+        }
+
+        .topbar-title {
+            flex: 1;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 1px;
+            color: #1a1a1a;
+            text-align: center;
+        }
+
+        .topbar-icon {
+            font-size: 28px;
+        }
+
+        /* --- CONTENEUR PRINCIPAL (ECRAN VERTICAL) --- */
+        #game-container {
+            width: 100%;
+            height: calc(100vh - 72px);
+            position: relative;
+            background: linear-gradient(to bottom, #1a8cff 0%, #e6f2ff 60%, #ffcc80 100%);
+            overflow: hidden;
+        }
+
+        /* --- HUD (BARRE DE SCORE) --- */
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+
+        .stat span {
+            color: #4cd137;
+        }
+        #xp-count {
+            color: #00a8ff;
+        }
+
+        /* --- ZONE DE JEU --- */
+        #port-area {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Le Conteneur Maritime */
+        #container-box {
+            position: absolute;
+            width: 90px;
+            height: 50px;
+            background-color: #d63031;
+            color: white;
+            font-weight: 900;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #2d3436;
+            border-radius: 4px;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.3);
+            left: 50%;
+            transform: translateX(-50%);
+            top: -60px;
+            z-index: 5;
+        }
+
+        #container-box::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 50%, rgba(0,0,0,0.1) 50%);
+            background-size: 10px 100%;
+        }
+
+        /* --- LE QUAI & LA TARGET --- */
+        #quai {
+            position: absolute;
+            bottom: 80px;
+            width: 100%;
+            height: 80px;
+            background-color: #747d8c;
+            border-top: 8px solid #57606f;
+        }
+
+        #target-zone {
+            position: absolute;
+            bottom: 160px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 110px;
+            height: 12px;
+            border: 3px dashed #f1c40f;
+            background: rgba(241, 196, 15, 0.2);
+            border-bottom: none;
+        }
+
+        #target-zone::after {
+            content: '▲';
+            position: absolute;
+            bottom: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #f1c40f;
+            font-size: 0.8rem;
+        }
+
+        /* --- FEEDBACK POPUP --- */
+        #feedback-bubble {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: white;
+            padding: 12px 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            font-weight: bold;
+            text-align: center;
+            z-index: 8;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
+            opacity: 0;
+            pointer-events: none;
+            min-width: 200px;
+        }
+
+        #feedback-bubble.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .feedback-money {
+            display: block;
+            font-size: 0.9rem;
+            color: #4cd137;
+            margin-top: 4px;
+        }
+
+        /* --- BOUTON TERMINER --- */
+        .finish-btn {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 32px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+        .finish-btn:active {
+            transform: translateX(-50%) scale(0.95);
+        }
+
+        @keyframes shake {
+            0% { transform: translate(2px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            30% { transform: translate(0px, 2px) rotate(0deg); }
+            50% { transform: translate(1px, -1px) rotate(1deg); }
+            70% { transform: translate(-1px, 2px) rotate(-1deg); }
+            100% { transform: translate(1px, -2px) rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOPBAR BATTLE DOCK -->
+    <div class="topbar">
+        <button class="back-btn" onclick="goBack()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </button>
+        <div class="topbar-title">Docker au Sifflet</div>
+        <div class="topbar-icon">📦</div>
+    </div>
+
+    <div id="game-container">
+        <header id="hud">
+            <div class="stat">Session: <span id="euro-count">0.00</span> €</div>
+            <div class="stat">XP: <span id="xp-count">0</span></div>
+        </header>
+
+        <main id="port-area">
+            <div id="container-box">CMA</div>
+            <div id="target-zone"></div>
+            <div id="feedback-bubble">
+                <span id="feedback-text">Mégot de l'espace !</span>
+                <span id="feedback-money" class="feedback-money">+2.00 €</span>
+            </div>
+        </main>
+        
+        <div id="quai"></div>
+
+        <button class="finish-btn" onclick="finishGame()">Terminer & Sauvegarder</button>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+        const { createClient } = supabase;
+        const sb = createClient(supabaseUrl, supabaseKey);
+
+        let currentUser = null;
+
+        // Vérifier auth
+        async function init() {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) {
+                window.location.href = 'index.html';
+                return;
+            }
+            currentUser = session.user;
+        }
+
+        init();
+
+        // --- CONFIGURATION & VARIABLES ---
+        const container = document.getElementById('container-box');
+        const targetZone = document.getElementById('target-zone');
+        const gameContainer = document.getElementById('game-container');
+        const euroDisplay = document.getElementById('euro-count');
+        const xpDisplay = document.getElementById('xp-count');
+        const feedbackBubble = document.getElementById('feedback-bubble');
+        const feedbackText = document.getElementById('feedback-text');
+        const feedbackMoney = document.getElementById('feedback-money');
+
+        let sessionArgent = 0.00;
+        let sessionXp = 0;
+        
+        let speed = 3.5;
+        let containerY = -60;
+        let containerX = 50;
+        let isDropping = true;
+        let screenWidth = gameContainer.clientWidth;
+        let touchStartX = 0;
+        let containerStartPercent = 50;
+
+        const compagnies = ['CMA CGM', 'MARSEILLE', 'SUD CARGO', 'JOLIETTE', 'MED SHIP'];
+        const couleurs = ['#d63031', '#0652dd', '#ff9f43', '#009432', '#12cb99'];
+
+        function initContainer() {
+            containerY = -60;
+            containerX = Math.floor(Math.random() * 40) + 30; 
+            container.style.left = containerX + '%';
+            container.style.top = containerY + 'px';
+            
+            const randomIndex = Math.floor(Math.random() * compagnies.length);
+            container.innerText = compagnies[randomIndex];
+            container.style.backgroundColor = couleurs[randomIndex];
+            
+            isDropping = true;
+            requestAnimationFrame(updatePhysics);
+        }
+
+        function updatePhysics() {
+            if (!isDropping) return;
+
+            const limitY = gameContainer.clientHeight - 210;
+            
+            if (containerY < limitY) {
+                containerY += speed;
+                container.style.top = containerY + 'px';
+                requestAnimationFrame(updatePhysics);
+            } else {
+                checkLanding();
+            }
+        }
+
+        function checkLanding() {
+            isDropping = false;
+
+            const containerRect = container.getBoundingClientRect();
+            const targetRect = targetZone.getBoundingClientRect();
+
+            const containerCenter = containerRect.left + (containerRect.width / 2);
+            const targetCenter = targetRect.left + (targetRect.width / 2);
+
+            const distance = Math.abs(containerCenter - targetCenter);
+
+            let gainArgent = 0;
+            let gainXp = 0;
+            let phrase = "";
+
+            if (distance <= 12) {
+                gainArgent = 2.00;
+                gainXp = 5;
+                phrase = "Mégot de l'espace ! 🌟";
+                feedbackBubble.style.borderLeft = "5px solid #4cd137";
+            } else if (distance <= 35) {
+                gainArgent = 1.00;
+                gainXp = 2;
+                phrase = "C'est bon, ça passe ! 👍";
+                feedbackBubble.style.borderLeft = "5px solid #00a8ff";
+            } else if (distance <= 65) {
+                gainArgent = 0.20;
+                gainXp = 1;
+                phrase = "Un peu de traviole, non ? 🤨";
+                feedbackBubble.style.borderLeft = "5px solid #ffaa00";
+            } else {
+                gainArgent = 0.00;
+                gainXp = 0;
+                phrase = "T'es fada ou quoi ?! 🤬";
+                feedbackBubble.style.borderLeft = "5px solid #d63031";
+                triggerVibration();
+            }
+
+            sessionArgent += gainArgent;
+            sessionXp += gainXp;
+            euroDisplay.innerText = sessionArgent.toFixed(2);
+            xpDisplay.innerText = sessionXp;
+
+            feedbackText.innerText = phrase;
+            feedbackMoney.innerText = gainArgent > 0 ? `+${gainArgent.toFixed(2)} € (+${gainXp} XP)` : "0.00 € (Pas d'XP)";
+            feedbackBubble.classList.add('show');
+
+            setTimeout(() => {
+                feedbackBubble.classList.remove('show');
+                initContainer();
+            }, 1400);
+        }
+
+        gameContainer.addEventListener('touchstart', (e) => {
+            if (!isDropping) return;
+            touchStartX = e.touches[0].clientX;
+            containerStartPercent = parseFloat(container.style.left) || 50;
+        }, { passive: true });
+
+        gameContainer.addEventListener('touchmove', (e) => {
+            if (!isDropping) return;
+            
+            const touchCurrentX = e.touches[0].clientX;
+            const deltaX = touchCurrentX - touchStartX;
+            
+            const deltaPercent = (deltaX / gameContainer.clientWidth) * 100;
+            let newPercent = containerStartPercent + deltaPercent;
+
+            if (newPercent < 10) newPercent = 10;
+            if (newPercent > 90) newPercent = 90;
+
+            containerX = newPercent;
+            container.style.left = containerX + '%';
+        }, { passive: true });
+
+        let isDragging = false;
+        gameContainer.addEventListener('mousedown', (e) => {
+            if (!isDropping) return;
+            isDragging = true;
+            touchStartX = e.clientX;
+            containerStartPercent = parseFloat(container.style.left) || 50;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || !isDropping) return;
+            const deltaX = e.clientX - touchStartX;
+            const deltaPercent = (deltaX / gameContainer.clientWidth) * 100;
+            let newPercent = containerStartPercent + deltaPercent;
+            if (newPercent < 10) newPercent = 10;
+            if (newPercent > 90) newPercent = 90;
+            containerX = newPercent;
+            container.style.left = containerX + '%';
+        });
+
+        window.addEventListener('mouseup', () => { isDragging = false; });
+
+        function triggerVibration() {
+            gameContainer.style.animation = 'shake 0.2s';
+            setTimeout(() => { gameContainer.style.animation = ''; }, 200);
+            if (navigator.vibrate) navigator.vibrate(150);
+        }
+
+        // --- SAUVEGARDER ET RETOUR ---
+        async function finishGame() {
+            if (!currentUser) return;
+
+            // Récupérer stats actuelles
+            const { data: currentStats } = await sb
+                .from('game_stats')
+                .select('money, xp, level, grade')
+                .eq('user_id', currentUser.id)
+                .single();
+
+            if (currentStats) {
+                const newMoney = currentStats.money + Math.floor(sessionArgent);
+                const newXp = currentStats.xp + sessionXp;
+                
+                // Calcul du nouveau niveau
+                let newLevel = currentStats.level;
+                let remainingXp = newXp;
+                
+                while (remainingXp >= (newLevel * 100)) {
+                    remainingXp -= (newLevel * 100);
+                    newLevel++;
+                }
+
+                // Calcul du nouveau grade
+                let newGrade = 'Docker Occasionnel';
+                if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+                else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+                else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+                else if (newLevel >= 50) newGrade = 'Contremaître';
+
+                // Mise à jour
+                await sb
+                    .from('game_stats')
+                    .update({
+                        money: newMoney,
+                        xp: remainingXp,
+                        level: newLevel,
+                        grade: newGrade
+                    })
+                    .eq('user_id', currentUser.id);
+
+                alert(`Session terminée !\n+${Math.floor(sessionArgent)}€ et +${sessionXp} XP sauvegardés !`);
+                window.location.href = 'menutravailler.html';
+            }
+        }
+
+        function goBack() {
+            if (sessionArgent > 0 || sessionXp > 0) {
+                const confirm = window.confirm(`Tu as gagné ${sessionArgent.toFixed(2)}€ et ${sessionXp} XP.\nSauvegarder avant de quitter ?`);
+                if (confirm) {
+                    finishGame();
+                } else {
+                    window.location.href = 'menutravailler.html';
+                }
+            } else {
+                window.location.href = 'menutravailler.html';
+            }
+        }
+
+        window.addEventListener('resize', () => { screenWidth = gameContainer.clientWidth; });
+        initContainer();
+    </script>
+</body>
+</html>
