@@ -81,16 +81,16 @@
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(8, 28px);
-      grid-template-rows: repeat(10, 28px);
+      grid-template-columns: repeat(8, 24px);
+      grid-template-rows: repeat(14, 24px);
       gap: 1px;
       background: rgba(0,0,0,0.6);
       padding: 2px;
     }
 
     .cell {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       background: rgba(255,255,255,0.1);
       border: 1px solid rgba(255,255,255,0.1);
     }
@@ -247,15 +247,15 @@
     }
 
     @media (min-height: 580px) {
-      .grid { grid-template-columns: repeat(8, 30px); grid-template-rows: repeat(10, 30px); }
-      .cell { width: 30px; height: 30px; }
+      .grid { grid-template-columns: repeat(8, 26px); grid-template-rows: repeat(14, 26px); }
+      .cell { width: 26px; height: 26px; }
       .stat-value { font-size: 17px; }
       .control-btn { padding: 13px; font-size: 14px; }
     }
 
     @media (min-height: 640px) {
-      .grid { grid-template-columns: repeat(8, 32px); grid-template-rows: repeat(10, 32px); }
-      .cell { width: 32px; height: 32px; }
+      .grid { grid-template-columns: repeat(8, 28px); grid-template-rows: repeat(14, 28px); }
+      .cell { width: 28px; height: 28px; }
       .stat-label { font-size: 9px; }
       .stat-value { font-size: 18px; }
       .controls { padding: 10px; }
@@ -263,24 +263,24 @@
     }
 
     @media (min-height: 750px) {
-      .grid { grid-template-columns: repeat(8, 36px); grid-template-rows: repeat(10, 36px); }
-      .cell { width: 36px; height: 36px; }
+      .grid { grid-template-columns: repeat(8, 30px); grid-template-rows: repeat(14, 30px); }
+      .cell { width: 30px; height: 30px; }
       .stats { padding: 8px 15px; }
       .stat-value { font-size: 20px; }
       .control-btn { padding: 16px; font-size: 16px; }
     }
 
     @media (min-height: 820px) {
-      .grid { grid-template-columns: repeat(8, 40px); grid-template-rows: repeat(10, 40px); }
-      .cell { width: 40px; height: 40px; }
+      .grid { grid-template-columns: repeat(8, 32px); grid-template-rows: repeat(14, 32px); }
+      .cell { width: 32px; height: 32px; }
       .stat-label { font-size: 10px; }
       .stat-value { font-size: 22px; }
       .control-btn { padding: 18px; font-size: 17px; }
     }
 
     @media (min-height: 900px) {
-      .grid { grid-template-columns: repeat(8, 44px); grid-template-rows: repeat(10, 44px); }
-      .cell { width: 44px; height: 44px; }
+      .grid { grid-template-columns: repeat(8, 34px); grid-template-rows: repeat(14, 34px); }
+      .cell { width: 34px; height: 34px; }
       .stats { padding: 10px 20px; }
       .stat-value { font-size: 24px; }
       .control-btn { padding: 20px; font-size: 18px; }
@@ -357,7 +357,7 @@
     let score = 0;
 
     const COLS = 8;
-    const ROWS = 10;
+    const ROWS = 14;
     let grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
     
     let currentPiece = null;
@@ -535,10 +535,15 @@
       if (linesThisCheck > 0) {
         linesCleared += linesThisCheck;
         
-        if (linesThisCheck > 1) {
-          currentCombo = Math.min(currentCombo + 1, 5);
-        } else {
-          currentCombo = 1;
+        // Nouveau système de combo basé sur lignes simultanées
+        if (linesThisCheck === 1) {
+          currentCombo = 1; // ×1 (pas de bonus)
+        } else if (linesThisCheck === 2) {
+          currentCombo = 2; // ×2 (double)
+        } else if (linesThisCheck === 3) {
+          currentCombo = 3; // ×3 (triple)
+        } else if (linesThisCheck >= 4) {
+          currentCombo = 5; // ×5 (tetris!)
         }
         
         const lineScore = linesThisCheck * 100 * currentCombo;
@@ -548,8 +553,7 @@
         document.getElementById('combo').textContent = '×' + currentCombo;
         document.getElementById('score').textContent = score;
       } else {
-        currentCombo = 1;
-        document.getElementById('combo').textContent = '×1';
+        // Pas de reset si pas de ligne (garde le combo précédent visible)
       }
       
       render();
@@ -590,8 +594,8 @@
     async function endGame() {
       gameActive = false;
       
-      const moneyEarned = Math.floor(linesCleared * 3.90 * 100);
-      const xpEarned = Math.floor(linesCleared * 7.1 * 100);
+      const moneyEarned = Math.floor(linesCleared * 3.90);
+      const xpEarned = Math.floor(linesCleared * 7.1);
       
       try {
         const { data: stats } = await sb
