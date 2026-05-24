@@ -37,11 +37,62 @@
                 #0369a1 0%,
                 #0284c7 20%,
                 #0ea5e9 40%,
-                #38bdf8 60%,
-                #7dd3fc 80%,
-                #bae6fd 100%
+                #38bdf8 55%,
+                #7dd3fc 70%,
+                #94a3b8 85%,
+                #64748b 100%
             );
             overflow: hidden;
+        }
+
+        /* Sol du quai en béton */
+        #game-container::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(180deg, 
+                #94a3b8 0%,
+                #64748b 50%,
+                #475569 100%
+            );
+            z-index: 1;
+        }
+
+        /* Grue portuaire en silhouette (gauche) */
+        #crane {
+            position: absolute;
+            left: -20px;
+            bottom: 120px;
+            width: 180px;
+            height: 250px;
+            opacity: 0.15;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Mouette animée */
+        #seagull {
+            position: absolute;
+            top: 15%;
+            right: -50px;
+            font-size: 24px;
+            z-index: 2;
+            animation: seagullFly 15s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes seagullFly {
+            0% {
+                right: -50px;
+                top: 15%;
+            }
+            100% {
+                right: 110%;
+                top: 25%;
+            }
         }
 
         /* --- HUD PREMIUM --- */
@@ -162,13 +213,13 @@
             bottom: 110px;
             left: 50%;
             transform: translateX(-50%);
-            width: 70px; /* PLUS PETITE */
+            width: 70px;
             height: 10px;
             border: 3px dashed #f1c40f;
             background: rgba(241, 196, 15, 0.4);
             border-bottom: none;
             box-shadow: 0 0 15px rgba(241, 196, 15, 0.8), 0 0 30px rgba(241, 196, 15, 0.4);
-            z-index: 6;
+            z-index: 7;
         }
 
         #target-zone::after {
@@ -307,6 +358,19 @@
                 <div class="stat-value" id="xp-count">0</div>
             </div>
         </header>
+
+        <!-- Grue portuaire (silhouette SVG) -->
+        <svg id="crane" viewBox="0 0 200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="85" y="200" width="30" height="100" fill="#1e293b"/>
+            <rect x="50" y="180" width="100" height="25" fill="#1e293b"/>
+            <line x1="100" y1="180" x2="20" y2="20" stroke="#1e293b" stroke-width="8"/>
+            <line x1="100" y1="180" x2="180" y2="80" stroke="#1e293b" stroke-width="8"/>
+            <rect x="15" y="15" width="20" height="15" fill="#1e293b"/>
+            <line x1="25" y1="30" x2="25" y2="100" stroke="#1e293b" stroke-width="3" stroke-dasharray="5,5"/>
+        </svg>
+
+        <!-- Mouette -->
+        <div id="seagull">🕊️</div>
 
         <main id="port-area">
             <div id="container-box">CMA</div>
@@ -469,75 +533,75 @@
             window.location.href = 'menutravailler.html';
         }
 
-        // Sauvegarder automatiquement si on quitte la page
-        let isSaving = false;
-        
-        window.addEventListener('beforeunload', (e) => {
-            if (!isSaving && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
-                isSaving = true;
-                // Utiliser sendBeacon pour garantir l'envoi même si la page se ferme
-                saveProgressSync();
+        // Sauvegarder automatiquement quand on quitte ou change d'onglet
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+                // Sauvegarde synchrone garantie
+                saveProgressNow();
             }
         });
 
-        // Sauvegarder si on revient en arrière (mobile)
+        // Également sur pagehide pour iOS
         window.addEventListener('pagehide', () => {
-            if (!isSaving && gameActive && (sessionArgent > 0 || sessionXp > 0)) {
-                isSaving = true;
-                saveProgressSync();
+            if (gameActive && (sessionArgent > 0 || sessionXp > 0)) {
+                saveProgressNow();
             }
         });
 
-        // Version synchrone de la sauvegarde (pour beforeunload)
-        function saveProgressSync() {
+        // Sauvegarde immédiate et synchrone
+        function saveProgressNow() {
             if (!currentUser || (sessionArgent === 0 && sessionXp === 0)) return;
 
-            // Faire la requête de manière synchrone avec fetch + keepalive
-            const saveData = async () => {
+            // Utiliser fetch synchrone avec keepalive pour garantir l'envoi
+            const updateData = async () => {
                 const { data: currentStats } = await sb
                     .from('game_stats')
                     .select('money, xp, level, grade')
                     .eq('user_id', currentUser.id)
                     .single();
 
-                if (currentStats) {
-                    const newMoney = currentStats.money + Math.floor(sessionArgent);
-                    const newXp = currentStats.xp + sessionXp;
+                if (!currentStats) return;
+
+                const newMoney = currentStats.money + Math.floor(sessionArgent);
+                const newXp = currentStats.xp + sessionXp;
+                
+                let newLevel = currentStats.level;
+                let remainingXp = newXp;
+                
+                while (remainingXp >= (newLevel * newLevel * 50)) {
+                    remainingXp -= (newLevel * newLevel * 50);
+                    newLevel++;
                     
-                    let newLevel = currentStats.level;
-                    let remainingXp = newXp;
-                    
-                    while (remainingXp >= (newLevel * newLevel * 50)) {
-                        remainingXp -= (newLevel * newLevel * 50);
-                        newLevel++;
-                        
-                        if (newLevel > 50) {
-                            newLevel = 50;
-                            remainingXp = 0;
-                            break;
-                        }
+                    if (newLevel > 50) {
+                        newLevel = 50;
+                        remainingXp = 0;
+                        break;
                     }
-
-                    let newGrade = 'Docker Occasionnel';
-                    if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
-                    else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
-                    else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
-                    else if (newLevel >= 50) newGrade = 'Contremaître';
-
-                    await sb
-                        .from('game_stats')
-                        .update({
-                            money: newMoney,
-                            xp: remainingXp,
-                            level: newLevel,
-                            grade: newGrade
-                        })
-                        .eq('user_id', currentUser.id);
                 }
+
+                let newGrade = 'Docker Occasionnel';
+                if (newLevel >= 5 && newLevel < 15) newGrade = 'Docker';
+                else if (newLevel >= 15 && newLevel < 30) newGrade = 'Docker Mensuel';
+                else if (newLevel >= 30 && newLevel < 50) newGrade = 'Chef d\'Équipe';
+                else if (newLevel >= 50) newGrade = 'Contremaître';
+
+                await sb
+                    .from('game_stats')
+                    .update({
+                        money: newMoney,
+                        xp: remainingXp,
+                        level: newLevel,
+                        grade: newGrade
+                    })
+                    .eq('user_id', currentUser.id);
+                
+                // Marquer comme sauvegardé
+                sessionArgent = 0;
+                sessionXp = 0;
             };
-            
+
             // Exécuter immédiatement
-            saveData();
+            updateData();
         }
 
         function initContainer() {
