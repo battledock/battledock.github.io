@@ -213,6 +213,78 @@
       letter-spacing: 1px;
       color: #1a1a1a;
       margin-bottom: 12px;
+      margin-top: 24px;
+    }
+
+    .section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    /* UNLOCKS */
+    .unlocks-list {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .unlock-card {
+      background: #ffffff;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .unlock-card.unlocked {
+      border-color: #10b981;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), transparent);
+    }
+
+    .unlock-card.locked {
+      opacity: 0.5;
+    }
+
+    .unlock-icon {
+      font-size: 36px;
+      filter: grayscale(100%);
+    }
+
+    .unlock-card.unlocked .unlock-icon {
+      filter: grayscale(0%);
+    }
+
+    .unlock-info {
+      flex: 1;
+    }
+
+    .unlock-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .unlock-requirement {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    .unlock-status {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #10b981;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .unlock-card.locked .unlock-status {
+      background: #9ca3af;
     }
 
     /* ACHIEVEMENTS */
@@ -353,6 +425,12 @@
       </div>
     </div>
 
+    <!-- UNLOCKS BY GRADE -->
+    <div class="section-title">Déblocages par grade</div>
+    <div class="unlocks-list" id="unlocksList">
+      <div class="loading">Chargement...</div>
+    </div>
+
     <!-- ACHIEVEMENTS -->
     <div class="section-title">Succès</div>
     <div class="achievements-list" id="achievementsList">
@@ -368,19 +446,35 @@
 
     let currentUser = null;
 
-    // Liste des succès
+    // Liste des déblocages par grade
+    const unlocks = [
+      { id: 'docker_occasionnel', icon: '💼', title: 'Docker Occasionnel', requirement: 'Niveau 1', level: 1 },
+      { id: 'charger_camions', icon: '🚚', title: 'Charger Camions (métier)', requirement: 'Niveau 5 - Grade Docker', level: 5 },
+      { id: 'docker_mensuel', icon: '📅', title: 'Docker Mensuel', requirement: 'Niveau 15', level: 15 },
+      { id: 'organiser_quai', icon: '🏗️', title: 'Organiser Quai (métier)', requirement: 'Niveau 10 - Grade Docker', level: 10 },
+      { id: 'chef_equipe', icon: '👔', title: 'Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
+      { id: 'compagnie', icon: '🏢', title: 'Créer sa Compagnie', requirement: 'Niveau 30 - Grade Chef d\'Équipe', level: 30 },
+      { id: 'contremaitre', icon: '👑', title: 'Contremaître', requirement: 'Niveau 50', level: 50 },
+      { id: 'exclusive_features', icon: '⚡', title: 'Fonctionnalités exclusives', requirement: 'Niveau 50 - Grade Contremaître', level: 50 }
+    ];
+
+    // Liste des succès (BEAUCOUP PLUS DIFFICILES)
     const achievements = [
-      { id: 'first_game', icon: '🎮', title: 'Premier pas', desc: 'Joue ta première partie', condition: (stats) => stats.gamesPlayed >= 1 },
-      { id: 'level_5', icon: '⭐', title: 'Docker confirmé', desc: 'Atteins le niveau 5', condition: (stats) => stats.level >= 5 },
-      { id: 'level_10', icon: '🌟', title: 'Docker expérimenté', desc: 'Atteins le niveau 10', condition: (stats) => stats.level >= 10 },
-      { id: 'rich_100', icon: '💰', title: 'Capitaliste', desc: 'Possède 100€', condition: (stats) => stats.money >= 100 },
-      { id: 'rich_500', icon: '💎', title: 'Riche docker', desc: 'Possède 500€', condition: (stats) => stats.money >= 500 },
-      { id: 'xp_500', icon: '🔥', title: 'Grindeur', desc: 'Accumule 500 XP total', condition: (stats) => stats.totalXp >= 500 },
-      { id: 'xp_1000', icon: '⚡', title: 'Travailleur acharné', desc: 'Accumule 1000 XP total', condition: (stats) => stats.totalXp >= 1000 },
-      { id: 'games_10', icon: '🎯', title: 'Régulier', desc: 'Joue 10 parties', condition: (stats) => stats.gamesPlayed >= 10 },
-      { id: 'games_50', icon: '🔄', title: 'Accro', desc: 'Joue 50 parties', condition: (stats) => stats.gamesPlayed >= 50 },
-      { id: 'level_30', icon: '👑', title: 'Chef d\'équipe', desc: 'Atteins le niveau 30', condition: (stats) => stats.level >= 30 },
-      { id: 'level_50', icon: '🏅', title: 'Contremaître légendaire', desc: 'Atteins le niveau 50', condition: (stats) => stats.level >= 50 }
+      { id: 'first_game', icon: '🎮', title: 'Première expérience', desc: 'Joue 5 parties', condition: (stats) => stats.gamesPlayed >= 5 },
+      { id: 'level_10', icon: '⭐', title: 'Docker confirmé', desc: 'Atteins le niveau 10', condition: (stats) => stats.level >= 10 },
+      { id: 'level_20', icon: '🌟', title: 'Docker expérimenté', desc: 'Atteins le niveau 20', condition: (stats) => stats.level >= 20 },
+      { id: 'level_35', icon: '💫', title: 'Chef respecté', desc: 'Atteins le niveau 35', condition: (stats) => stats.level >= 35 },
+      { id: 'rich_500', icon: '💰', title: 'Capitaliste', desc: 'Possède 500€', condition: (stats) => stats.money >= 500 },
+      { id: 'rich_2000', icon: '💎', title: 'Riche docker', desc: 'Possède 2,000€', condition: (stats) => stats.money >= 2000 },
+      { id: 'rich_10000', icon: '👑', title: 'Magnat du port', desc: 'Possède 10,000€', condition: (stats) => stats.money >= 10000 },
+      { id: 'xp_2000', icon: '🔥', title: 'Grindeur', desc: 'Accumule 2,000 XP total', condition: (stats) => stats.totalXp >= 2000 },
+      { id: 'xp_5000', icon: '⚡', title: 'Travailleur acharné', desc: 'Accumule 5,000 XP total', condition: (stats) => stats.totalXp >= 5000 },
+      { id: 'xp_20000', icon: '💥', title: 'Légende du dock', desc: 'Accumule 20,000 XP total', condition: (stats) => stats.totalXp >= 20000 },
+      { id: 'games_50', icon: '🎯', title: 'Régulier', desc: 'Joue 50 parties', condition: (stats) => stats.gamesPlayed >= 50 },
+      { id: 'games_200', icon: '🔄', title: 'Accro', desc: 'Joue 200 parties', condition: (stats) => stats.gamesPlayed >= 200 },
+      { id: 'games_500', icon: '🏅', title: 'Vétéran du port', desc: 'Joue 500 parties', condition: (stats) => stats.gamesPlayed >= 500 },
+      { id: 'level_50', icon: '👑', title: 'Contremaître ultime', desc: 'Atteins le niveau MAX (50)', condition: (stats) => stats.level >= 50 },
+      { id: 'completionist', icon: '🌟', title: 'Perfectionniste', desc: 'Débloque tous les autres succès', condition: (stats) => stats.allOtherAchievements >= 13 }
     ];
 
     async function init() {
@@ -447,10 +541,42 @@
         gamesPlayed: Math.floor(totalXp / 30)
       };
 
-      const unlockedCount = achievements.filter(a => a.condition(playerStats)).length;
+      const unlockedCount = achievements.filter(a => {
+        if (a.id === 'completionist') {
+          // Pour le succès completionist, compter tous les autres succès
+          playerStats.allOtherAchievements = achievements.filter(ach => 
+            ach.id !== 'completionist' && ach.condition(playerStats)
+          ).length;
+        }
+        return a.condition(playerStats);
+      }).length;
+      
       document.getElementById('achievements').textContent = `${unlockedCount}/${achievements.length}`;
 
+      renderUnlocks(playerStats);
       renderAchievements(playerStats);
+    }
+
+    function renderUnlocks(playerStats) {
+      const list = document.getElementById('unlocksList');
+      list.innerHTML = '';
+
+      unlocks.forEach(unlock => {
+        const unlocked = playerStats.level >= unlock.level;
+        
+        const div = document.createElement('div');
+        div.className = `unlock-card ${unlocked ? 'unlocked' : 'locked'}`;
+        div.innerHTML = `
+          <div class="unlock-icon">${unlock.icon}</div>
+          <div class="unlock-info">
+            <div class="unlock-title">${unlock.title}</div>
+            <div class="unlock-requirement">${unlock.requirement}</div>
+          </div>
+          <div class="unlock-status">${unlocked ? '✓' : '🔒'}</div>
+        `;
+        
+        list.appendChild(div);
+      });
     }
 
     function renderAchievements(playerStats) {
