@@ -460,8 +460,8 @@
                 combo++;
                 if (combo > maxCombo) maxCombo = combo;
                 
-                gainArgent = 2.50 * combo; // BONUS COMBO
-                gainXp = 5 * combo;
+                gainArgent = 0.50 * Math.min(combo, 3); // MAX 1.50€ (cap combo à x3)
+                gainXp = 1 * Math.min(combo, 3); // MAX 3 XP
                 phrase = combo > 1 ? `COMBO x${combo} ! 🔥` : "PERFECT ! 🌟";
                 feedbackBubble.style.borderLeft = "5px solid #4cd137";
                 
@@ -472,16 +472,16 @@
             } else if (distance <= 20) {
                 combo = 0;
                 comboDisplay.style.display = 'none';
-                gainArgent = 1.00;
-                gainXp = 2;
+                gainArgent = 0.25;
+                gainXp = 1;
                 phrase = "Bien ! 👍";
                 feedbackBubble.style.borderLeft = "5px solid #00a8ff";
                 
             } else if (distance <= 40) {
                 combo = 0;
                 comboDisplay.style.display = 'none';
-                gainArgent = 0.30;
-                gainXp = 1;
+                gainArgent = 0.10;
+                gainXp = 0;
                 phrase = "Moyen... 🤨";
                 feedbackBubble.style.borderLeft = "5px solid #ffaa00";
                 
@@ -573,12 +573,20 @@
                 const newMoney = currentStats.money + Math.floor(sessionArgent);
                 const newXp = currentStats.xp + sessionXp;
                 
+                // SYSTÈME EXPONENTIEL : Niveau² × 50
                 let newLevel = currentStats.level;
                 let remainingXp = newXp;
                 
-                while (remainingXp >= (newLevel * 100)) {
-                    remainingXp -= (newLevel * 100);
+                while (remainingXp >= (newLevel * newLevel * 50)) {
+                    remainingXp -= (newLevel * newLevel * 50);
                     newLevel++;
+                    
+                    // Limite niveau 50 (pour l'instant)
+                    if (newLevel > 50) {
+                        newLevel = 50;
+                        remainingXp = 0;
+                        break;
+                    }
                 }
 
                 let newGrade = 'Docker Occasionnel';
