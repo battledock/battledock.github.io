@@ -497,22 +497,26 @@
     </div>
 
     <!-- BACKGROUND COLOR CUSTOMIZATION -->
-    <div class="section-title">Personnalisation</div>
+    <div class="section-title">Couleur fond</div>
     <div class="colors-grid">
       <button class="color-item" id="colorBlue" onclick="selectBackgroundColor('blue')">
         <div class="color-preview-avatar blue"></div>
+        <div class="avatar-badge">Défaut</div>
         <div class="avatar-label">Bleu</div>
       </button>
       <button class="color-item" id="colorGreen" onclick="selectBackgroundColor('green')">
         <div class="color-preview-avatar green"></div>
+        <div class="avatar-badge">Niv. 5</div>
         <div class="avatar-label">Vert</div>
       </button>
       <button class="color-item" id="colorYellow" onclick="selectBackgroundColor('yellow')">
         <div class="color-preview-avatar yellow"></div>
+        <div class="avatar-badge">Niv. 10</div>
         <div class="avatar-label">Jaune</div>
       </button>
       <button class="color-item" id="colorRed" onclick="selectBackgroundColor('red')">
         <div class="color-preview-avatar red"></div>
+        <div class="avatar-badge">Niv. 30</div>
         <div class="avatar-label">Rouge</div>
       </button>
     </div>
@@ -727,41 +731,19 @@
       document.getElementById('statGrade').textContent = stats.grade;
       document.getElementById('statXp').textContent = stats.xp.toLocaleString('fr-FR');
 
-      // Favorite Game Stats (RÉELS)
-      try {
-        const { data: favoriteGame } = await sb
-          .from('user_favorite_game')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .single();
+      // Favorite Game Stats - TEMPORAIRE (affiche des stats basées sur le niveau)
+      // En attendant la création de la table user_favorite_game
+      const gamesPlayed = Math.floor(stats.level * 3.5); // Approximation
+      const totalMoney = stats.money; // Argent actuel
+      const avgMoney = gamesPlayed > 0 ? Math.floor(totalMoney / gamesPlayed) : 0;
+      const winRate = Math.min(50 + stats.level * 2, 95); // Augmente avec le niveau
 
-        if (favoriteGame) {
-          let gameName = 'Docker Occasionnel';
-          if (favoriteGame.favorite_game === 'docker2') gameName = 'Docker';
-          else if (favoriteGame.favorite_game === 'tetris') gameName = 'Tetris Portuaire';
+      document.getElementById('favoriteGameName').textContent = 'Docker Occasionnel';
+      document.getElementById('favoriteGamesPlayed').textContent = gamesPlayed;
+      document.getElementById('favoriteTotalMoney').textContent = totalMoney.toLocaleString('fr-FR') + '€';
+      document.getElementById('favoriteAverage').textContent = avgMoney.toLocaleString('fr-FR') + '€';
+      document.getElementById('favoriteWinRate').textContent = winRate + '%';
 
-          const winRate = Math.min(65 + stats.level, 95);
-
-          document.getElementById('favoriteGameName').textContent = gameName;
-          document.getElementById('favoriteGamesPlayed').textContent = favoriteGame.total_games || 0;
-          document.getElementById('favoriteTotalMoney').textContent = (favoriteGame.total_money || 0).toLocaleString('fr-FR') + '€';
-          document.getElementById('favoriteAverage').textContent = (favoriteGame.avg_money || 0) + '€';
-          document.getElementById('favoriteWinRate').textContent = winRate + '%';
-        } else {
-          document.getElementById('favoriteGameName').textContent = 'Aucun jeu joué';
-          document.getElementById('favoriteGamesPlayed').textContent = 0;
-          document.getElementById('favoriteTotalMoney').textContent = '0€';
-          document.getElementById('favoriteAverage').textContent = '0€';
-          document.getElementById('favoriteWinRate').textContent = '0%';
-        }
-      } catch (error) {
-        console.log('Jeu préféré non disponible:', error);
-        document.getElementById('favoriteGameName').textContent = 'Données en cours de chargement';
-        document.getElementById('favoriteGamesPlayed').textContent = '-';
-        document.getElementById('favoriteTotalMoney').textContent = '-';
-        document.getElementById('favoriteAverage').textContent = '-';
-        document.getElementById('favoriteWinRate').textContent = '-';
-      }
 
       // Background color
       updateBackgroundUI(backgroundColor, stats.level);
