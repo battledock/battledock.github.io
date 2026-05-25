@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casino du Port - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #7c2d12 0%, #991b1b 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '💎';
+      position: absolute;
+      font-size: 120px;
+      opacity: 0.1;
+      top: -20px;
+      right: -20px;
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: white;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+    }
+
+    .header-subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .balance {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 12px;
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .balance-amount {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .games-grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .game-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s;
+      cursor: pointer;
+      border: 3px solid transparent;
+    }
+
+    .game-card:hover {
+      transform: translateY(-4px);
+      border-color: #fbbf24;
+      box-shadow: 0 12px 32px rgba(251, 191, 36, 0.4);
+    }
+
+    .game-icon {
+      font-size: 64px;
+      text-align: center;
+      margin-bottom: 16px;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+    }
+
+    .game-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    .game-desc {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .game-min-bet {
+      text-align: center;
+      font-size: 13px;
+      color: #059669;
+      font-weight: 700;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+      margin-bottom: 24px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* SLOTS */
+    .slots-container {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0;
+    }
+
+    .slot-reel {
+      width: 80px;
+      height: 100px;
+      background: #f3f4f6;
+      border: 4px solid #1a1a1a;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 56px;
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .slot-reel.spinning {
+      animation: spin 0.1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-20px); }
+    }
+
+    /* BET INPUT */
+    .bet-section {
+      margin: 24px 0;
+    }
+
+    .bet-label {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .bet-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 18px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    .bet-presets {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .preset-btn {
+      padding: 8px;
+      background: #f3f4f6;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .preset-btn:hover {
+      background: #fbbf24;
+      border-color: #f59e0b;
+      color: white;
+    }
+
+    /* ACTION BUTTON */
+    .action-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.5);
+    }
+
+    .action-btn:active {
+      transform: translateY(0);
+    }
+
+    .action-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* RESULT */
+    .result {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 16px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .result.win {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .result.lose {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    /* ROULETTE */
+    .roulette-wheel {
+      width: 300px;
+      height: 300px;
+      margin: 24px auto;
+      border-radius: 50%;
+      background: conic-gradient(
+        #fbbf24 0deg 45deg,
+        #3b82f6 45deg 90deg,
+        #ef4444 90deg 135deg,
+        #10b981 135deg 180deg,
+        #a855f7 180deg 225deg,
+        #f59e0b 225deg 270deg,
+        #06b6d4 270deg 315deg,
+        #ec4899 315deg 360deg
+      );
+      position: relative;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+    }
+
+    .roulette-wheel::after {
+      content: '🎯';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 48px;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .roulette-pointer {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 30px solid white;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #7c2d12, #991b1b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 400px) {
+      .slots-container {
+        gap: 8px;
+      }
+      .slot-reel {
+        width: 70px;
+        height: 90px;
+        font-size: 48px;
+      }
+      .roulette-wheel {
+        width: 250px;
+        height: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">🎰 CASINO DU PORT</div>
+      <div class="header-subtitle">Tentez votre chance !</div>
+      <div class="balance">
+        <span>💰</span>
+        <span class="balance-amount" id="userMoney">0€</span>
+      </div>
+    </div>
+
+    <div class="games-grid">
+      <div class="game-card" onclick="openGame('slots')">
+        <div class="game-icon">🎰</div>
+        <div class="game-name">Machine à Sous</div>
+        <div class="game-desc">3 symboles identiques = JACKPOT !</div>
+        <div class="game-min-bet">Mise min: 100€</div>
+      </div>
+
+      <div class="game-card" onclick="openGame('roulette')">
+        <div class="game-icon">🎡</div>
+        <div class="game-name">Roue de la Fortune</div>
+        <div class="game-desc">Tourne et gagne jusqu'à x10 !</div>
+        <div class="game-min-bet">Mise min: 50€</div>
+      </div>
+
+      <div class="game-card" onclick="openGame('coinflip')">
+        <div class="game-icon">🪙</div>
+        <div class="game-name">Pile ou Face</div>
+        <div class="game-desc">50/50 - Double ta mise !</div>
+        <div class="game-min-bet">Mise min: 100€</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SLOTS -->
+  <div id="slotsModal" class="modal">
+    <div class="modal-content" style="position: relative;">
+      <button class="close-modal" onclick="closeModal('slotsModal')">×</button>
+      <div class="modal-header">🎰 MACHINE À SOUS</div>
+      
+      <div class="slots-container">
+        <div class="slot-reel" id="slot1">🍒</div>
+        <div class="slot-reel" id="slot2">💎</div>
+        <div class="slot-reel" id="slot3">🍒</div>
+      </div>
+
+      <div class="bet-section">
+        <label class="bet-label">Mise:</label>
+        <input type="number" id="slotsBet" class="bet-input" value="100" min="100" step="50">
+        <div class="bet-presets">
+          <button class="preset-btn" onclick="setBet('slotsBet', 100)">100€</button>
+          <button class="preset-btn" onclick="setBet('slotsBet', 500)">500€</button>
+          <button class="preset-btn" onclick="setBet('slotsBet', 1000)">1K€</button>
+          <button class="preset-btn" onclick="setBet('slotsBet', 5000)">5K€</button>
+        </div>
+      </div>
+
+      <button class="action-btn" id="slotsBtn" onclick="playSlots()">TOURNER</button>
+      <div id="slotsResult" class="result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL ROULETTE -->
+  <div id="rouletteModal" class="modal">
+    <div class="modal-content" style="position: relative;">
+      <button class="close-modal" onclick="closeModal('rouletteModal')">×</button>
+      <div class="modal-header">🎡 ROUE DE LA FORTUNE</div>
+      
+      <div style="position: relative; width: 300px; margin: 0 auto;">
+        <div class="roulette-pointer"></div>
+        <div class="roulette-wheel" id="rouletteWheel"></div>
+      </div>
+
+      <div class="bet-section">
+        <label class="bet-label">Mise:</label>
+        <input type="number" id="rouletteBet" class="bet-input" value="50" min="50" step="50">
+        <div class="bet-presets">
+          <button class="preset-btn" onclick="setBet('rouletteBet', 50)">50€</button>
+          <button class="preset-btn" onclick="setBet('rouletteBet', 200)">200€</button>
+          <button class="preset-btn" onclick="setBet('rouletteBet', 500)">500€</button>
+          <button class="preset-btn" onclick="setBet('rouletteBet', 1000)">1K€</button>
+        </div>
+      </div>
+
+      <button class="action-btn" id="rouletteBtn" onclick="playRoulette()">TOURNER</button>
+      <div id="rouletteResult" class="result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- MODAL COINFLIP -->
+  <div id="coinflipModal" class="modal">
+    <div class="modal-content" style="position: relative;">
+      <button class="close-modal" onclick="closeModal('coinflipModal')">×</button>
+      <div class="modal-header">🪙 PILE OU FACE</div>
+      
+      <div style="text-align: center; margin: 32px 0;">
+        <div id="coinDisplay" style="font-size: 120px;">🪙</div>
+      </div>
+
+      <div class="bet-section">
+        <label class="bet-label">Mise:</label>
+        <input type="number" id="coinflipBet" class="bet-input" value="100" min="100" step="100">
+        <div class="bet-presets">
+          <button class="preset-btn" onclick="setBet('coinflipBet', 100)">100€</button>
+          <button class="preset-btn" onclick="setBet('coinflipBet', 500)">500€</button>
+          <button class="preset-btn" onclick="setBet('coinflipBet', 1000)">1K€</button>
+          <button class="preset-btn" onclick="setBet('coinflipBet', 2000)">2K€</button>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+        <button class="action-btn" onclick="playCoinflip('pile')">PILE 👑</button>
+        <button class="action-btn" onclick="playCoinflip('face')">FACE 🦅</button>
+      </div>
+
+      <div id="coinflipResult" class="result" style="display: none;"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='game.html'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Retour</span>
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let userMoney = 0;
+
+    const slotSymbols = ['🍒', '💎', '🍋', '⭐', '🔔', '7️⃣'];
+    const rouletteMultipliers = [2, 0.5, 3, 0, 5, 1, 10, 0.5];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      await loadMoney();
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      userMoney = data?.money || 0;
+      document.getElementById('userMoney').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function updateMoney(amount) {
+      const { error } = await sb.from('game_stats').update({ money: userMoney + amount }).eq('user_id', currentUser.id);
+      if (!error) {
+        userMoney += amount;
+        document.getElementById('userMoney').textContent = userMoney.toLocaleString('fr-FR') + '€';
+      }
+    }
+
+    function openGame(game) {
+      document.getElementById(game + 'Modal').classList.add('active');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+
+    function setBet(inputId, amount) {
+      document.getElementById(inputId).value = amount;
+    }
+
+    async function playSlots() {
+      const bet = parseInt(document.getElementById('slotsBet').value);
+      if (bet < 100) { alert('Mise minimum: 100€'); return; }
+      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+
+      const btn = document.getElementById('slotsBtn');
+      btn.disabled = true;
+      document.getElementById('slotsResult').style.display = 'none';
+
+      await updateMoney(-bet);
+
+      const reels = [document.getElementById('slot1'), document.getElementById('slot2'), document.getElementById('slot3')];
+      reels.forEach(r => r.classList.add('spinning'));
+
+      setTimeout(() => {
+        const results = [
+          slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+          slotSymbols[Math.floor(Math.random() * slotSymbols.length)],
+          slotSymbols[Math.floor(Math.random() * slotSymbols.length)]
+        ];
+
+        reels.forEach((r, i) => {
+          r.classList.remove('spinning');
+          r.textContent = results[i];
+        });
+
+        let win = 0;
+        const resultDiv = document.getElementById('slotsResult');
+
+        if (results[0] === results[1] && results[1] === results[2]) {
+          if (results[0] === '7️⃣') win = bet * 50;
+          else if (results[0] === '💎') win = bet * 20;
+          else if (results[0] === '⭐') win = bet * 10;
+          else win = bet * 5;
+          
+          resultDiv.className = 'result win';
+          resultDiv.textContent = `🎉 JACKPOT ! +${win.toLocaleString('fr-FR')}€`;
+          updateMoney(win);
+        } else if (results[0] === results[1] || results[1] === results[2] || results[0] === results[2]) {
+          win = bet * 2;
+          resultDiv.className = 'result win';
+          resultDiv.textContent = `✨ Paire ! +${win.toLocaleString('fr-FR')}€`;
+          updateMoney(win);
+        } else {
+          resultDiv.className = 'result lose';
+          resultDiv.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+
+        resultDiv.style.display = 'block';
+        btn.disabled = false;
+      }, 2000);
+    }
+
+    async function playRoulette() {
+      const bet = parseInt(document.getElementById('rouletteBet').value);
+      if (bet < 50) { alert('Mise minimum: 50€'); return; }
+      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+
+      const btn = document.getElementById('rouletteBtn');
+      btn.disabled = true;
+      document.getElementById('rouletteResult').style.display = 'none';
+
+      await updateMoney(-bet);
+
+      const wheel = document.getElementById('rouletteWheel');
+      const spins = 5 + Math.random() * 3;
+      const finalAngle = spins * 360 + Math.random() * 360;
+      
+      wheel.style.transform = `rotate(${finalAngle}deg)`;
+
+      setTimeout(() => {
+        const segment = Math.floor(((finalAngle % 360) / 360) * 8);
+        const multiplier = rouletteMultipliers[segment];
+        const win = Math.floor(bet * multiplier);
+        const resultDiv = document.getElementById('rouletteResult');
+
+        if (win > bet) {
+          resultDiv.className = 'result win';
+          resultDiv.textContent = `🎉 x${multiplier} ! +${win.toLocaleString('fr-FR')}€`;
+          updateMoney(win);
+        } else if (win === bet) {
+          resultDiv.className = 'result';
+          resultDiv.textContent = `↔️ Remboursé ${bet.toLocaleString('fr-FR')}€`;
+          updateMoney(win);
+        } else if (win > 0) {
+          resultDiv.className = 'result lose';
+          resultDiv.textContent = `📉 x${multiplier} = ${win.toLocaleString('fr-FR')}€ (perte: ${bet - win}€)`;
+          updateMoney(win);
+        } else {
+          resultDiv.className = 'result lose';
+          resultDiv.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+
+        resultDiv.style.display = 'block';
+        btn.disabled = false;
+        wheel.style.transform = 'rotate(0deg)';
+        wheel.style.transition = 'none';
+        setTimeout(() => { wheel.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)'; }, 100);
+      }, 3000);
+    }
+
+    async function playCoinflip(choice) {
+      const bet = parseInt(document.getElementById('coinflipBet').value);
+      if (bet < 100) { alert('Mise minimum: 100€'); return; }
+      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+
+      document.getElementById('coinflipResult').style.display = 'none';
+      await updateMoney(-bet);
+
+      const coin = document.getElementById('coinDisplay');
+      const result = Math.random() < 0.5 ? 'pile' : 'face';
+      
+      coin.textContent = '🌀';
+      setTimeout(() => {
+        coin.textContent = result === 'pile' ? '👑' : '🦅';
+        const resultDiv = document.getElementById('coinflipResult');
+
+        if (result === choice) {
+          const win = bet * 2;
+          resultDiv.className = 'result win';
+          resultDiv.textContent = `🎉 GAGNÉ ! +${win.toLocaleString('fr-FR')}€`;
+          updateMoney(win);
+        } else {
+          resultDiv.className = 'result lose';
+          resultDiv.textContent = `💔 C'était ${result === 'pile' ? 'PILE 👑' : 'FACE 🦅'} ! Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+
+        resultDiv.style.display = 'block';
+      }, 1500);
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bourse Maritime - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '📈';
+      position: absolute;
+      font-size: 150px;
+      opacity: 0.1;
+      top: -30px;
+      right: -30px;
+      animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: white;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+
+    .header-subtitle {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .portfolio {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .portfolio-item {
+      text-align: center;
+    }
+
+    .portfolio-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .portfolio-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .stocks-list {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stock-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stock-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .stock-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .stock-card.up::before {
+      background: #10b981;
+    }
+
+    .stock-card.down::before {
+      background: #ef4444;
+    }
+
+    .stock-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .stock-info {
+      flex: 1;
+    }
+
+    .stock-symbol {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stock-name {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .stock-price {
+      text-align: right;
+    }
+
+    .stock-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+
+    .stock-change {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .stock-change.up {
+      color: #10b981;
+    }
+
+    .stock-change.down {
+      color: #ef4444;
+    }
+
+    .stock-chart {
+      height: 60px;
+      margin-top: 12px;
+    }
+
+    .stock-owned {
+      background: #f3f4f6;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .stock-owned-qty {
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: 2px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 24px;
+    }
+
+    .trade-section {
+      margin: 20px 0;
+    }
+
+    .trade-label {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .trade-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 18px;
+      font-family: 'Bebas Neue', sans-serif;
+      letter-spacing: 1px;
+    }
+
+    .trade-summary {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+    }
+
+    .trade-summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .trade-summary-row:last-child {
+      margin-bottom: 0;
+      padding-top: 8px;
+      border-top: 2px solid #e5e7eb;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .trade-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .trade-btn {
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .trade-btn.buy {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+
+    .trade-btn.sell {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .trade-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .trade-btn:active {
+      transform: translateY(0);
+    }
+
+    .trade-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .news-ticker {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .news-content {
+      font-size: 13px;
+      color: #1a1a1a;
+      font-weight: 600;
+      animation: scroll 15s linear infinite;
+      white-space: nowrap;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">📈 BOURSE MARITIME</div>
+      <div class="header-subtitle">Wall Street du Port</div>
+      <div class="portfolio">
+        <div class="portfolio-item">
+          <div class="portfolio-label">Cash</div>
+          <div class="portfolio-value" id="userCash">0€</div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-label">Portefeuille</div>
+          <div class="portfolio-value" id="portfolioValue">0€</div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-label">Total</div>
+          <div class="portfolio-value" id="totalValue">0€</div>
+        </div>
+        <div class="portfolio-item">
+          <div class="portfolio-label">Profit/Perte</div>
+          <div class="portfolio-value" id="profitLoss">+0€</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="news-ticker">
+      <div class="news-content" id="newsTicker">📰 Chargement des actualités...</div>
+    </div>
+
+    <div class="stocks-list" id="stocksList"></div>
+  </div>
+
+  <!-- MODAL TRADE -->
+  <div id="tradeModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal()">×</button>
+      <div class="modal-header" id="tradeStockSymbol">MAERSK</div>
+      <div class="modal-subtitle" id="tradeStockName">A.P. Moller-Maersk</div>
+
+      <div class="trade-section">
+        <label class="trade-label">Prix actuel:</label>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: #1a1a1a;" id="tradeCurrentPrice">0€</div>
+      </div>
+
+      <div class="trade-section">
+        <label class="trade-label">Quantité:</label>
+        <input type="number" id="tradeQuantity" class="trade-input" value="1" min="1" step="1">
+      </div>
+
+      <div class="trade-summary">
+        <div class="trade-summary-row">
+          <span>Actions possédées:</span>
+          <span id="tradeOwned">0</span>
+        </div>
+        <div class="trade-summary-row">
+          <span>Prix unitaire:</span>
+          <span id="tradePriceUnit">0€</span>
+        </div>
+        <div class="trade-summary-row">
+          <span>Quantité:</span>
+          <span id="tradeQty">0</span>
+        </div>
+        <div class="trade-summary-row">
+          <span>Total:</span>
+          <span id="tradeTotal">0€</span>
+        </div>
+      </div>
+
+      <div class="trade-buttons">
+        <button class="trade-btn buy" onclick="executeTrade('buy')">ACHETER</button>
+        <button class="trade-btn sell" onclick="executeTrade('sell')">VENDRE</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='game.html'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Retour</span>
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let userMoney = 0;
+    let selectedStock = null;
+    let stocks = [];
+    let portfolio = {};
+
+    const stocksData = [
+      { symbol: 'MAERSK', name: 'A.P. Moller-Maersk', basePrice: 1500, volatility: 0.08 },
+      { symbol: 'CMA-CGM', name: 'CMA CGM Group', basePrice: 800, volatility: 0.12 },
+      { symbol: 'MSC', name: 'Mediterranean Shipping', basePrice: 1200, volatility: 0.10 },
+      { symbol: 'COSCO', name: 'COSCO Shipping', basePrice: 600, volatility: 0.15 },
+      { symbol: 'HAPAG', name: 'Hapag-Lloyd', basePrice: 950, volatility: 0.09 }
+    ];
+
+    const newsTemplates = [
+      '🌊 Nouvelle route maritime ouverte en Asie',
+      '📦 Les containers atteignent des prix records',
+      '⚓ Grève portuaire évitée à Rotterdam',
+      '🚢 Maersk annonce de nouveaux navires écologiques',
+      '💰 Les bénéfices du shipping explosent ce trimestre',
+      '🌍 Demande mondiale en hausse de 15%',
+      '⛽ Prix du carburant marin en baisse'
+    ];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      
+      await loadMoney();
+      loadPortfolio();
+      initStocks();
+      updateNewsTicker();
+      setInterval(updateStockPrices, 5000);
+      setInterval(updateNewsTicker, 10000);
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      userMoney = data?.money || 0;
+      updateUI();
+    }
+
+    function loadPortfolio() {
+      const saved = localStorage.getItem('stock_portfolio_' + currentUser.id);
+      portfolio = saved ? JSON.parse(saved) : {};
+    }
+
+    function savePortfolio() {
+      localStorage.setItem('stock_portfolio_' + currentUser.id, JSON.stringify(portfolio));
+    }
+
+    function initStocks() {
+      stocks = stocksData.map(s => ({
+        ...s,
+        price: s.basePrice,
+        history: [s.basePrice],
+        change: 0,
+        changePercent: 0
+      }));
+      renderStocks();
+    }
+
+    function updateStockPrices() {
+      stocks.forEach(stock => {
+        const change = (Math.random() - 0.5) * 2 * stock.volatility;
+        const newPrice = Math.max(stock.price * (1 + change), stock.basePrice * 0.3);
+        
+        stock.change = newPrice - stock.price;
+        stock.changePercent = (stock.change / stock.price) * 100;
+        stock.price = Math.round(newPrice);
+        
+        stock.history.push(stock.price);
+        if (stock.history.length > 20) stock.history.shift();
+      });
+      
+      renderStocks();
+      updateUI();
+    }
+
+    function renderStocks() {
+      const container = document.getElementById('stocksList');
+      container.innerHTML = stocks.map((stock, idx) => {
+        const owned = portfolio[stock.symbol] || 0;
+        const direction = stock.change >= 0 ? 'up' : 'down';
+        
+        return `
+          <div class="stock-card ${direction}" onclick="openTrade('${stock.symbol}')">
+            <div class="stock-header">
+              <div class="stock-info">
+                <div class="stock-symbol">${stock.symbol}</div>
+                <div class="stock-name">${stock.name}</div>
+              </div>
+              <div class="stock-price">
+                <div class="stock-value">${stock.price.toLocaleString('fr-FR')}€</div>
+                <div class="stock-change ${direction}">
+                  <span>${direction === 'up' ? '▲' : '▼'}</span>
+                  <span>${Math.abs(stock.changePercent).toFixed(2)}%</span>
+                </div>
+              </div>
+            </div>
+            ${owned > 0 ? `
+              <div class="stock-owned">
+                <span>Vous possédez:</span>
+                <span class="stock-owned-qty">${owned} actions (${(owned * stock.price).toLocaleString('fr-FR')}€)</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateUI() {
+      document.getElementById('userCash').textContent = userMoney.toLocaleString('fr-FR') + '€';
+      
+      let portfolioVal = 0;
+      for (const [symbol, qty] of Object.entries(portfolio)) {
+        const stock = stocks.find(s => s.symbol === symbol);
+        if (stock) portfolioVal += stock.price * qty;
+      }
+      
+      document.getElementById('portfolioValue').textContent = portfolioVal.toLocaleString('fr-FR') + '€';
+      document.getElementById('totalValue').textContent = (userMoney + portfolioVal).toLocaleString('fr-FR') + '€';
+      
+      const savedInitial = localStorage.getItem('initial_money_' + currentUser.id);
+      if (!savedInitial) {
+        localStorage.setItem('initial_money_' + currentUser.id, userMoney);
+      }
+      const initial = parseInt(savedInitial || userMoney);
+      const profit = (userMoney + portfolioVal) - initial;
+      const profitEl = document.getElementById('profitLoss');
+      profitEl.textContent = (profit >= 0 ? '+' : '') + profit.toLocaleString('fr-FR') + '€';
+      profitEl.style.color = profit >= 0 ? '#10b981' : '#ef4444';
+    }
+
+    function updateNewsTicker() {
+      const news = newsTemplates[Math.floor(Math.random() * newsTemplates.length)];
+      document.getElementById('newsTicker').textContent = news;
+    }
+
+    function openTrade(symbol) {
+      selectedStock = stocks.find(s => s.symbol === symbol);
+      if (!selectedStock) return;
+      
+      document.getElementById('tradeStockSymbol').textContent = selectedStock.symbol;
+      document.getElementById('tradeStockName').textContent = selectedStock.name;
+      document.getElementById('tradeCurrentPrice').textContent = selectedStock.price.toLocaleString('fr-FR') + '€';
+      document.getElementById('tradeOwned').textContent = portfolio[symbol] || 0;
+      document.getElementById('tradeQuantity').value = 1;
+      
+      updateTradeSummary();
+      document.getElementById('tradeModal').classList.add('active');
+      
+      document.getElementById('tradeQuantity').oninput = updateTradeSummary;
+    }
+
+    function updateTradeSummary() {
+      const qty = parseInt(document.getElementById('tradeQuantity').value) || 0;
+      const total = selectedStock.price * qty;
+      
+      document.getElementById('tradePriceUnit').textContent = selectedStock.price.toLocaleString('fr-FR') + '€';
+      document.getElementById('tradeQty').textContent = qty;
+      document.getElementById('tradeTotal').textContent = total.toLocaleString('fr-FR') + '€';
+    }
+
+    function closeModal() {
+      document.getElementById('tradeModal').classList.remove('active');
+    }
+
+    async function executeTrade(action) {
+      const qty = parseInt(document.getElementById('tradeQuantity').value) || 0;
+      if (qty <= 0) {
+        alert('Quantité invalide');
+        return;
+      }
+      
+      const total = selectedStock.price * qty;
+      
+      if (action === 'buy') {
+        if (total > userMoney) {
+          alert('Pas assez d\'argent !');
+          return;
+        }
+        
+        await sb.from('game_stats').update({ money: userMoney - total }).eq('user_id', currentUser.id);
+        userMoney -= total;
+        
+        portfolio[selectedStock.symbol] = (portfolio[selectedStock.symbol] || 0) + qty;
+        savePortfolio();
+        
+        alert(`✅ Acheté ${qty} actions ${selectedStock.symbol} pour ${total.toLocaleString('fr-FR')}€`);
+      } else {
+        const owned = portfolio[selectedStock.symbol] || 0;
+        if (qty > owned) {
+          alert('Vous ne possédez pas assez d\'actions !');
+          return;
+        }
+        
+        await sb.from('game_stats').update({ money: userMoney + total }).eq('user_id', currentUser.id);
+        userMoney += total;
+        
+        portfolio[selectedStock.symbol] -= qty;
+        if (portfolio[selectedStock.symbol] === 0) delete portfolio[selectedStock.symbol];
+        savePortfolio();
+        
+        alert(`✅ Vendu ${qty} actions ${selectedStock.symbol} pour ${total.toLocaleString('fr-FR')}€`);
+      }
+      
+      updateUI();
+      renderStocks();
+      closeModal();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ma Compagnie - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '🏢';
+      position: absolute;
+      font-size: 150px;
+      opacity: 0.1;
+      top: -30px;
+      right: -30px;
+    }
+
+    .company-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: white;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      letter-spacing: 3px;
+      margin-bottom: 8px;
+    }
+
+    .company-tagline {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .company-stats {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-desc {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .buildings-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .building-card {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .building-card.owned {
+      border-color: #10b981;
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    }
+
+    .building-card.can-buy:hover {
+      border-color: #6366f1;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+      cursor: pointer;
+    }
+
+    .building-card.locked {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .building-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .building-info {
+      flex: 1;
+    }
+
+    .building-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .building-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .building-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+
+    .building-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .building-stat {
+      font-size: 13px;
+      color: #374151;
+    }
+
+    .building-stat strong {
+      color: #1a1a1a;
+    }
+
+    .building-price {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #10b981;
+      letter-spacing: 1px;
+      text-align: right;
+    }
+
+    .building-price.owned {
+      color: #6b7280;
+    }
+
+    .building-btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .building-btn.buy {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+    }
+
+    .building-btn.buy:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .building-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    .building-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #10b981;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .building-badge.locked {
+      background: #ef4444;
+    }
+
+    .employees-section {
+      display: grid;
+      gap: 12px;
+    }
+
+    .employee-card {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .employee-info {
+      flex: 1;
+    }
+
+    .employee-role {
+      font-weight: 700;
+      font-size: 16px;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+
+    .employee-desc {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .employee-qty {
+      text-align: center;
+      margin: 0 16px;
+    }
+
+    .employee-count {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+    }
+
+    .employee-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .employee-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .employee-btn.hire {
+      background: #10b981;
+      color: white;
+    }
+
+    .employee-btn.fire {
+      background: #ef4444;
+      color: white;
+    }
+
+    .employee-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .employee-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .income-display {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .income-label {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 14px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .income-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: white;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .income-subtitle {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .collect-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+      transition: all 0.2s;
+      margin-bottom: 16px;
+    }
+
+    .collect-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(251, 191, 36, 0.5);
+    }
+
+    .collect-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 400px) {
+      .company-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .building-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="company-name" id="companyName">Docker Corp</div>
+      <div class="company-tagline">Votre empire portuaire</div>
+      <div class="company-stats">
+        <div class="stat-item">
+          <div class="stat-label">Trésorerie</div>
+          <div class="stat-value" id="companyCash">0€</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Valeur totale</div>
+          <div class="stat-value" id="companyValue">0€</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Employés</div>
+          <div class="stat-value" id="totalEmployees">0</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">Revenus/h</div>
+          <div class="stat-value" id="incomePerHour">0€</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="income-display">
+      <div class="income-label">💰 Revenus disponibles</div>
+      <div class="income-value" id="pendingIncome">0€</div>
+      <div class="income-subtitle" id="incomeTimer">Dernière collecte: jamais</div>
+    </div>
+
+    <button class="collect-btn" id="collectBtn" onclick="collectIncome()">COLLECTER LES REVENUS</button>
+
+    <div class="section">
+      <div class="section-title">🏢 Infrastructures</div>
+      <div class="section-desc">Construis et améliore tes installations portuaires</div>
+      <div class="buildings-grid" id="buildingsList"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">👥 Personnel</div>
+      <div class="section-desc">Recrute des employés pour augmenter tes revenus</div>
+      <div class="employees-section" id="employeesList"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='game.html'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Retour</span>
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let userMoney = 0;
+    let company = {
+      buildings: {},
+      employees: {},
+      lastCollect: Date.now()
+    };
+
+    const buildings = [
+      { 
+        id: 'warehouse', 
+        name: 'Entrepôt', 
+        icon: '🏭', 
+        desc: 'Stockage de base pour containers',
+        price: 5000,
+        income: 50,
+        level: 1
+      },
+      { 
+        id: 'crane', 
+        name: 'Grue Portuaire', 
+        icon: '🏗️', 
+        desc: 'Accélère le chargement',
+        price: 15000,
+        income: 150,
+        level: 1,
+        requires: 'warehouse'
+      },
+      { 
+        id: 'terminal', 
+        name: 'Terminal Conteneurs', 
+        icon: '🚢', 
+        desc: 'Zone d\'amarrage pour navires',
+        price: 50000,
+        income: 500,
+        level: 1,
+        requires: 'crane'
+      },
+      { 
+        id: 'port', 
+        name: 'Port International', 
+        icon: '⚓', 
+        desc: 'Hub maritime global',
+        price: 200000,
+        income: 2000,
+        level: 1,
+        requires: 'terminal'
+      },
+      { 
+        id: 'empire', 
+        name: 'Empire Maritime', 
+        icon: '🌍', 
+        desc: 'Domination mondiale',
+        price: 1000000,
+        income: 10000,
+        level: 1,
+        requires: 'port'
+      }
+    ];
+
+    const employees = [
+      { id: 'docker', name: 'Docker', icon: '👷', desc: 'Charge les containers', cost: 500, income: 10 },
+      { id: 'supervisor', name: 'Superviseur', icon: '👔', desc: 'Gère les équipes', cost: 2000, income: 50 },
+      { id: 'manager', name: 'Manager', icon: '💼', desc: 'Optimise les opérations', cost: 10000, income: 200 }
+    ];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      
+      await loadMoney();
+      loadCompany();
+      render();
+      updateIncome();
+      setInterval(updateIncome, 1000);
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      userMoney = data?.money || 0;
+      updateUI();
+    }
+
+    function loadCompany() {
+      const saved = localStorage.getItem('company_' + currentUser.id);
+      if (saved) {
+        company = JSON.parse(saved);
+      }
+    }
+
+    function saveCompany() {
+      localStorage.setItem('company_' + currentUser.id, JSON.stringify(company));
+    }
+
+    function render() {
+      renderBuildings();
+      renderEmployees();
+      updateUI();
+    }
+
+    function renderBuildings() {
+      const container = document.getElementById('buildingsList');
+      container.innerHTML = buildings.map(b => {
+        const owned = company.buildings[b.id] || false;
+        const canBuy = !owned && (!b.requires || company.buildings[b.requires]);
+        const locked = !owned && b.requires && !company.buildings[b.requires];
+        
+        return `
+          <div class="building-card ${owned ? 'owned' : ''} ${canBuy ? 'can-buy' : ''} ${locked ? 'locked' : ''}"
+               ${canBuy ? `onclick="buyBuilding('${b.id}')"` : ''}>
+            ${owned ? '<div class="building-badge">POSSÉDÉ</div>' : ''}
+            ${locked ? '<div class="building-badge locked">VERROUILLÉ</div>' : ''}
+            
+            <div class="building-header">
+              <div class="building-info">
+                <div class="building-icon">${b.icon}</div>
+                <div class="building-name">${b.name}</div>
+              </div>
+              <div class="building-price ${owned ? 'owned' : ''}">
+                ${owned ? '✓' : b.price.toLocaleString('fr-FR') + '€'}
+              </div>
+            </div>
+            
+            <div class="building-desc">${b.desc}</div>
+            
+            <div class="building-stats">
+              <div class="building-stat"><strong>Revenus:</strong> +${b.income}€/h</div>
+              ${b.requires ? `<div class="building-stat"><strong>Nécessite:</strong> ${buildings.find(x => x.id === b.requires).name}</div>` : ''}
+            </div>
+            
+            ${canBuy ? `<button class="building-btn buy">ACHETER</button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderEmployees() {
+      const container = document.getElementById('employeesList');
+      container.innerHTML = employees.map(e => {
+        const count = company.employees[e.id] || 0;
+        
+        return `
+          <div class="employee-card">
+            <div class="employee-info">
+              <div class="employee-role">${e.icon} ${e.name}</div>
+              <div class="employee-desc">${e.desc} • +${e.income}€/h • Coût: ${e.cost}€</div>
+            </div>
+            <div class="employee-qty">
+              <div class="employee-count">${count}</div>
+            </div>
+            <div class="employee-actions">
+              <button class="employee-btn hire" onclick="hireEmployee('${e.id}')">+</button>
+              <button class="employee-btn fire" onclick="fireEmployee('${e.id}')" ${count === 0 ? 'disabled' : ''}>−</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateUI() {
+      document.getElementById('companyCash').textContent = userMoney.toLocaleString('fr-FR') + '€';
+      
+      let totalValue = userMoney;
+      for (const [id, owned] of Object.entries(company.buildings)) {
+        if (owned) {
+          const b = buildings.find(x => x.id === id);
+          totalValue += b.price;
+        }
+      }
+      document.getElementById('companyValue').textContent = totalValue.toLocaleString('fr-FR') + '€';
+      
+      let totalEmp = 0;
+      for (const count of Object.values(company.employees)) {
+        totalEmp += count;
+      }
+      document.getElementById('totalEmployees').textContent = totalEmp;
+      
+      const income = calculateHourlyIncome();
+      document.getElementById('incomePerHour').textContent = income.toLocaleString('fr-FR') + '€';
+    }
+
+    function calculateHourlyIncome() {
+      let income = 0;
+      
+      for (const [id, owned] of Object.entries(company.buildings)) {
+        if (owned) {
+          const b = buildings.find(x => x.id === id);
+          income += b.income;
+        }
+      }
+      
+      for (const [id, count] of Object.entries(company.employees)) {
+        const e = employees.find(x => x.id === id);
+        income += e.income * count;
+      }
+      
+      return income;
+    }
+
+    function updateIncome() {
+      const now = Date.now();
+      const elapsed = (now - company.lastCollect) / 1000 / 3600; // heures
+      const hourlyIncome = calculateHourlyIncome();
+      const pending = Math.floor(hourlyIncome * elapsed);
+      
+      document.getElementById('pendingIncome').textContent = pending.toLocaleString('fr-FR') + '€';
+      
+      const lastCollectDate = new Date(company.lastCollect);
+      const timeSince = Math.floor((now - company.lastCollect) / 1000 / 60); // minutes
+      
+      if (timeSince < 1) {
+        document.getElementById('incomeTimer').textContent = 'Dernière collecte: à l\'instant';
+      } else if (timeSince < 60) {
+        document.getElementById('incomeTimer').textContent = `Dernière collecte: il y a ${timeSince} min`;
+      } else {
+        const hours = Math.floor(timeSince / 60);
+        document.getElementById('incomeTimer').textContent = `Dernière collecte: il y a ${hours}h`;
+      }
+    }
+
+    async function collectIncome() {
+      const now = Date.now();
+      const elapsed = (now - company.lastCollect) / 1000 / 3600;
+      const hourlyIncome = calculateHourlyIncome();
+      const pending = Math.floor(hourlyIncome * elapsed);
+      
+      if (pending === 0) {
+        alert('Rien à collecter !');
+        return;
+      }
+      
+      await sb.from('game_stats').update({ money: userMoney + pending }).eq('user_id', currentUser.id);
+      userMoney += pending;
+      
+      company.lastCollect = now;
+      saveCompany();
+      
+      alert(`💰 Collecté ${pending.toLocaleString('fr-FR')}€ !`);
+      updateUI();
+      updateIncome();
+    }
+
+    async function buyBuilding(id) {
+      const building = buildings.find(b => b.id === id);
+      if (!building) return;
+      
+      if (building.price > userMoney) {
+        alert('Pas assez d\'argent !');
+        return;
+      }
+      
+      await sb.from('game_stats').update({ money: userMoney - building.price }).eq('user_id', currentUser.id);
+      userMoney -= building.price;
+      
+      company.buildings[id] = true;
+      saveCompany();
+      
+      alert(`✅ ${building.name} acheté !\n+${building.income}€/h de revenus`);
+      render();
+    }
+
+    async function hireEmployee(id) {
+      const employee = employees.find(e => e.id === id);
+      if (!employee) return;
+      
+      if (employee.cost > userMoney) {
+        alert('Pas assez d\'argent !');
+        return;
+      }
+      
+      await sb.from('game_stats').update({ money: userMoney - employee.cost }).eq('user_id', currentUser.id);
+      userMoney -= employee.cost;
+      
+      company.employees[id] = (company.employees[id] || 0) + 1;
+      saveCompany();
+      
+      render();
+    }
+
+    async function fireEmployee(id) {
+      if (!company.employees[id] || company.employees[id] === 0) return;
+      
+      const employee = employees.find(e => e.id === id);
+      const refund = Math.floor(employee.cost * 0.5);
+      
+      await sb.from('game_stats').update({ money: userMoney + refund }).eq('user_id', currentUser.id);
+      userMoney += refund;
+      
+      company.employees[id]--;
+      saveCompany();
+      
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>
