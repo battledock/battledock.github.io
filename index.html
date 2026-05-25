@@ -522,7 +522,34 @@
         });
         if (authErr) throw authErr;
 
-        // Le trigger handle_new_user() crée automatiquement profiles et game_stats !
+        const userId = authData.user.id;
+
+        // Attendre un peu que l'auth se propage
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Créer profiles (avec retry si le trigger l'a déjà fait)
+        const { error: profileErr } = await sb.from('profiles').upsert({ 
+          user_id: userId, 
+          username,
+          avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + userId,
+          background_color: 'blue',
+          diamonds: 0,
+          trophies: 0
+        }, { onConflict: 'user_id' });
+
+        if (profileErr && profileErr.code !== '23505') throw profileErr;
+
+        // Créer game_stats (avec retry si le trigger l'a déjà fait)
+        const { error: statsErr } = await sb.from('game_stats').upsert({
+          user_id: userId,
+          money: 0,
+          level: 1,
+          xp: 0,
+          grade: 'Docker Occasionnel',
+          last_level_rewarded: 0
+        }, { onConflict: 'user_id' });
+
+        if (statsErr && statsErr.code !== '23505') throw statsErr;
         
         btn.textContent = '✅ BIENVENUE !';
         setTimeout(() => { window.location.href = 'game.html'; }, 800);
