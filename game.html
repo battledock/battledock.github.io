@@ -552,6 +552,14 @@
         <div class="stat-label">Argent</div>
       </div>
       <div class="stat-item">
+        <div class="stat-value" id="diamondsAmount"></div>
+        <div class="stat-label">Diamants</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="trophiesAmount"></div>
+        <div class="stat-label">Trophées</div>
+      </div>
+      <div class="stat-item">
         <div class="stat-value" id="rankValue"></div>
         <div class="stat-label">Rang</div>
       </div>
@@ -680,30 +688,28 @@
     async function loadUserData() {
       try {
         console.log('Loading user data for:', currentUser.id);
-        const { data: profile, error: profileError } = await sb
-          .from('profiles')
-          .select('username, avatar_url, background_color')
-          .eq('user_id', currentUser.id)
-          .single();
+        
+        // Charger profile et stats en parallèle
+        const [profileResult, statsResult] = await Promise.all([
+          sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).single(),
+          sb.from('game_stats').select('*').eq('user_id', currentUser.id).single()
+        ]);
 
-        if (profileError) {
-          console.error('Profile error:', profileError);
-          throw profileError;
+        if (profileResult.error) {
+          console.error('Profile error:', profileResult.error);
+          throw profileResult.error;
         }
 
-        const { data: stats, error: statsError } = await sb
-          .from('game_stats')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .single();
-
-        if (statsError) {
+        if (statsResult.error) {
           console.error('Stats error:', statsError);
           throw statsError;
         }
 
-        console.log('Profile:', profile);
-        console.log('Stats:', stats);
+        console.log('Profile:', profileResult.data);
+        console.log('Stats:', statsResult.data);
+
+        const profile = profileResult.data;
+        const stats = statsResult.data;
 
         if (profile && stats) {
         // Appliquer la couleur au topbar
@@ -723,6 +729,8 @@
         document.getElementById('playerGrade').textContent = stats.grade;
         document.getElementById('playerLevel').textContent = `Niveau ${stats.level}`;
         document.getElementById('moneyAmount').textContent = stats.money.toLocaleString('fr-FR') + '€';
+        document.getElementById('diamondsAmount').textContent = '💎 ' + (profile.diamonds || 0);
+        document.getElementById('trophiesAmount').textContent = '🏆 ' + (profile.trophies || 0);
 
         // XP Bar
         const xpNeeded = stats.level * stats.level * 50;
