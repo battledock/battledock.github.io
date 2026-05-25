@@ -499,8 +499,13 @@
       btn.textContent = 'INSCRIPTION...'; btn.disabled = true;
 
       try {
-        const { data: existing } = await sb
-          .from('profiles').select('username').eq('username', username).single();
+        const { data: existing, error: checkError } = await sb
+          .from('profiles').select('username').eq('username', username).maybeSingle();
+        
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw new Error('Erreur de vérification du pseudo');
+        }
+        
         if (existing) { 
           showErrorPopup('Ce pseudo est déjà pris !'); 
           btn.textContent="S'INSCRIRE"; 
