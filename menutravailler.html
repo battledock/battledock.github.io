@@ -181,47 +181,6 @@
       font-weight: 600;
     }
 
-    /* JOB BADGES */
-    .job-badge {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      z-index: 2;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .badge-hot {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: white;
-      animation: pulse-badge 2s ease-in-out infinite;
-    }
-
-    .badge-new {
-      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
-      color: white;
-    }
-
-    .badge-bonus {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      color: white;
-      animation: glow 2s ease-in-out infinite;
-    }
-
-    @keyframes pulse-badge {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
-
-    @keyframes glow {
-      0%, 100% { box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4); }
-      50% { box-shadow: 0 4px 16px rgba(245, 158, 11, 0.8); }
-    }
-
     /* INFO CARD */
     .info-card {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
@@ -453,7 +412,6 @@
     <div class="jobs-grid">
       <!-- JOB 1 - Docker Occasionnel -->
       <div class="job-card" onclick="startJob(1)">
-        <div class="job-badge badge-hot">🔥 HOT!</div>
         <div class="job-header">
           <div class="job-level">Niv. 1+</div>
         </div>
@@ -479,7 +437,6 @@
 
       <!-- JOB 2 - Niveau 5 -->
       <div class="job-card locked" id="job2">
-        <div class="job-badge badge-new">✨ NEW!</div>
         <div class="lock-overlay">🔒</div>
         <div class="job-header">
           <div class="job-level">Niv. 5+</div>
@@ -506,7 +463,6 @@
 
       <!-- JOB 3 - Niveau 15 -->
       <div class="job-card locked" id="job3">
-        <div class="job-badge badge-bonus">⚡ 2X XP</div>
         <div class="lock-overlay">🔒</div>
         <div class="job-header">
           <div class="job-level">Niv. 15+</div>
@@ -606,41 +562,58 @@
     }
 
     async function loadDailyObjective() {
-      // Récupérer le nombre de contrats complétés aujourd'hui
-      const today = new Date().toISOString().split('T')[0];
-      
-      const { data: sessions, error } = await sb
-        .from('game_sessions')
-        .select('id')
-        .eq('user_id', currentUser.id)
-        .gte('created_at', today + 'T00:00:00')
-        .lte('created_at', today + 'T23:59:59');
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Récupérer les données de progression quotidienne
+        const { data: profile, error } = await sb
+          .from('profiles')
+          .select('daily_contracts_count, daily_contracts_date, daily_objectives_claimed')
+          .eq('id', currentUser.id)
+          .single();
 
-      const count = sessions ? sessions.length : 0;
-      const progress = Math.min((count / 3) * 100, 100);
+        if (error) {
+          console.error('Error loading daily objective:', error);
+          return;
+        }
 
-      document.getElementById('objectiveCount').textContent = count;
-      document.getElementById('objectivePercent').textContent = Math.floor(progress) + '%';
-      document.getElementById('objectiveFill').style.width = progress + '%';
+        let count = 0;
+        
+        // Si même jour, garder le compteur
+        if (profile?.daily_contracts_date === today) {
+          count = profile.daily_contracts_count || 0;
+        } else {
+          // Nouveau jour, reset
+          await sb
+            .from('profiles')
+            .update({ 
+              daily_contracts_count: 0,
+              daily_contracts_date: today
+            })
+            .eq('id', currentUser.id);
+        }
 
-      // Si objectif complété, donner le bonus
-      if (count >= 3) {
-        await checkDailyBonus(today);
+        const progress = Math.min((count / 3) * 100, 100);
+
+        document.getElementById('objectiveCount').textContent = count;
+        document.getElementById('objectivePercent').textContent = Math.floor(progress) + '%';
+        document.getElementById('objectiveFill').style.width = progress + '%';
+
+        // Si objectif complété, vérifier bonus
+        if (count >= 3) {
+          const claimed = profile?.daily_objectives_claimed || [];
+          if (!claimed.includes(today)) {
+            await giveDailyBonus(today);
+          }
+        }
+      } catch (error) {
+        console.error('Error in loadDailyObjective:', error);
       }
     }
 
-    async function checkDailyBonus(today) {
-      // Vérifier si le bonus a déjà été réclamé aujourd'hui
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('daily_objectives_claimed')
-        .eq('id', currentUser.id)
-        .single();
-
-      const claimed = profile?.daily_objectives_claimed || [];
-      
-      if (!claimed.includes(today)) {
-        // Donner le bonus
+    async function giveDailyBonus(today) {
+      try {
+        // Récupérer l'argent actuel
         const { data: stats } = await sb
           .from('game_stats')
           .select('money')
@@ -649,11 +622,21 @@
 
         const newMoney = (stats?.money || 0) + 500;
 
+        // Update money
         await sb
           .from('game_stats')
           .update({ money: newMoney })
           .eq('user_id', currentUser.id);
 
+        // Marquer comme réclamé
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('daily_objectives_claimed')
+          .eq('id', currentUser.id)
+          .single();
+
+        const claimed = profile?.daily_objectives_claimed || [];
+        
         await sb
           .from('profiles')
           .update({ 
@@ -661,9 +644,42 @@
           })
           .eq('id', currentUser.id);
 
-        alert('🎉 Objectif complété ! +500€ bonus ajouté !');
+        alert('🎉 Objectif du jour complété !\n+500€ bonus ajouté à ton compte !');
+      } catch (error) {
+        console.error('Error giving daily bonus:', error);
       }
     }
+
+    // Fonction appelée depuis les mini-jeux pour incrémenter
+    window.incrementDailyContracts = async function() {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('daily_contracts_count, daily_contracts_date')
+          .eq('id', currentUser.id)
+          .single();
+
+        let newCount = 1;
+        
+        if (profile?.daily_contracts_date === today) {
+          newCount = (profile.daily_contracts_count || 0) + 1;
+        }
+
+        await sb
+          .from('profiles')
+          .update({ 
+            daily_contracts_count: newCount,
+            daily_contracts_date: today
+          })
+          .eq('id', currentUser.id);
+
+        console.log('Daily contracts incremented:', newCount);
+      } catch (error) {
+        console.error('Error incrementing daily contracts:', error);
+      }
+    };
 
     function unlockJobs() {
       // Débloquer job 2 si niveau >= 5
@@ -695,14 +711,6 @@
     }
 
     function startJob(jobId) {
-      // Vérifier les badges actifs et stocker les bonus
-      if (jobId === 3) {
-        // Job 3 a le badge 2X XP
-        localStorage.setItem('activeBonus', 'doubleXP');
-      } else {
-        localStorage.removeItem('activeBonus');
-      }
-
       if (jobId === 1) {
         window.location.href = 'docker-sifflet.html';
       } else if (jobId === 2) {
