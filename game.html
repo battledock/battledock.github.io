@@ -657,30 +657,55 @@
     let currentUser = null;
 
     async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
+      try {
+        console.log('Init started');
+        const { data: { session } } = await sb.auth.getSession();
+        console.log('Session:', session);
+        
+        if (!session) {
+          window.location.href = 'index.html';
+          return;
+        }
 
-      currentUser = session.user;
-      await loadUserData();
+        currentUser = session.user;
+        console.log('Current user:', currentUser);
+        await loadUserData();
+        console.log('User data loaded');
+      } catch (error) {
+        console.error('Error in init:', error);
+        alert('Erreur de chargement: ' + error.message);
+      }
     }
 
     async function loadUserData() {
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('username, avatar_url, background_color')
-        .eq('user_id', currentUser.id)
-        .single();
+      try {
+        console.log('Loading user data for:', currentUser.id);
+        const { data: profile, error: profileError } = await sb
+          .from('profiles')
+          .select('username, avatar_url, background_color')
+          .eq('user_id', currentUser.id)
+          .single();
 
-      const { data: stats } = await sb
-        .from('game_stats')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          throw profileError;
+        }
 
-      if (profile && stats) {
+        const { data: stats, error: statsError } = await sb
+          .from('game_stats')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (statsError) {
+          console.error('Stats error:', statsError);
+          throw statsError;
+        }
+
+        console.log('Profile:', profile);
+        console.log('Stats:', stats);
+
+        if (profile && stats) {
         // Appliquer la couleur au topbar
         const topbar = document.querySelector('.topbar');
         const color = profile.background_color || 'blue';
@@ -708,28 +733,17 @@
 
         // Charger le rang
         loadRank(stats.money);
-        
-        // Mettre à jour le timer de l'événement
-        updateEventTimer();
 
         // Afficher l'interface avec fade-in
         document.body.classList.add('loaded');
-      }
-    }
-
-    function updateEventTimer() {
-      // Date de fin de l'événement : 31 mai 2026 23:59:59
-      const eventEndDate = new Date('2026-05-31T23:59:59');
-      const now = new Date();
-      const timeLeft = eventEndDate - now;
-      
-      if (timeLeft > 0) {
-        const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
-        document.getElementById('eventDaysLeft').textContent = daysLeft + 'j';
       } else {
-        document.getElementById('eventDaysLeft').textContent = 'Terminé';
+        console.error('Missing profile or stats');
       }
+    } catch (error) {
+      console.error('Error loading user data:', error);
+      throw error;
     }
+  }
 
     async function loadRank(playerMoney) {
       const { data: allPlayers } = await sb
