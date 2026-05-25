@@ -323,6 +323,146 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+    /* PLAYER MODAL */
+    .player-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      animation: fadeIn 0.2s;
+    }
+
+    .player-modal.show {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .player-modal-content {
+      background: white;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 400px;
+      padding: 0;
+      position: relative;
+      animation: slideUp 0.3s;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0, 0, 0, 0.1);
+      color: #666;
+      font-size: 28px;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+
+    .modal-close:hover {
+      background: rgba(0, 0, 0, 0.2);
+      color: #333;
+    }
+
+    .modal-header {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      padding: 32px 24px;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: white;
+    }
+
+    .modal-avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: 4px solid rgba(255, 255, 255, 0.3);
+      overflow: hidden;
+      background: white;
+      flex-shrink: 0;
+    }
+
+    .modal-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-info {
+      flex: 1;
+    }
+
+    .modal-username {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .modal-grade {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    .modal-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      padding: 24px;
+    }
+
+    .modal-stat {
+      text-align: center;
+      padding: 16px 8px;
+    }
+
+    .modal-stat:not(:last-child) {
+      border-right: 1px solid #e5e7eb;
+    }
+
+    .modal-stat-label {
+      font-size: 12px;
+      color: #9ca3af;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .modal-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #3b82f6;
+      letter-spacing: 1px;
+    }
   </style>
 </head>
 <body>
@@ -364,6 +504,36 @@
     <div class="empty-state" id="emptyState" style="display: none;">
       <div class="empty-icon">🏆</div>
       <div class="empty-text">Aucun joueur pour le moment</div>
+    </div>
+  </div>
+
+  <!-- PLAYER MODAL -->
+  <div class="player-modal" id="playerModal" onclick="closePlayerModal(event)">
+    <div class="player-modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closePlayerModal()">×</button>
+      <div class="modal-header">
+        <div class="modal-avatar">
+          <img src="avatar-default.png" alt="Avatar" id="modalAvatar">
+        </div>
+        <div class="modal-info">
+          <div class="modal-username" id="modalUsername">Joueur</div>
+          <div class="modal-grade" id="modalGrade">Grade</div>
+        </div>
+      </div>
+      <div class="modal-stats">
+        <div class="modal-stat">
+          <div class="modal-stat-label">Niveau</div>
+          <div class="modal-stat-value" id="modalLevel">1</div>
+        </div>
+        <div class="modal-stat">
+          <div class="modal-stat-label">Argent</div>
+          <div class="modal-stat-value" id="modalMoney">0€</div>
+        </div>
+        <div class="modal-stat">
+          <div class="modal-stat-label">Rang</div>
+          <div class="modal-stat-value" id="modalRank">#1</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -501,6 +671,8 @@
 
         const item = document.createElement('div');
         item.className = `ranking-item ${isMe ? 'me' : ''}`;
+        item.style.cursor = 'pointer';
+        item.onclick = () => showPlayerModal(player, index + 1);
         item.innerHTML = `
           <div class="rank-number">#${index + 1}</div>
           <div class="ranking-avatar">
@@ -527,6 +699,25 @@
       
       // Reload data
       loadRanking();
+    }
+
+    function showPlayerModal(player, rank) {
+      const profile = player.profiles;
+      
+      document.getElementById('modalAvatar').src = profile.avatar_url;
+      document.getElementById('modalUsername').textContent = profile.username;
+      document.getElementById('modalGrade').textContent = player.grade;
+      document.getElementById('modalLevel').textContent = player.level;
+      document.getElementById('modalMoney').textContent = player.money.toLocaleString('fr-FR') + '€';
+      document.getElementById('modalRank').textContent = `#${rank}`;
+      
+      document.getElementById('playerModal').classList.add('show');
+    }
+
+    function closePlayerModal(event) {
+      if (!event || event.target === event.currentTarget) {
+        document.getElementById('playerModal').classList.remove('show');
+      }
     }
 
     function goBack() {
