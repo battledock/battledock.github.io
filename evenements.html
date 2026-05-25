@@ -47,7 +47,6 @@
       font-weight: 600;
     }
 
-    /* ÉVÉNEMENTS */
     .events-grid {
       display: grid;
       gap: 16px;
@@ -74,6 +73,10 @@
       background: linear-gradient(90deg, #667eea, #764ba2);
     }
 
+    .event-card.exclusive::before {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    }
+
     .event-card.claimed {
       opacity: 0.6;
       background: #f9fafb;
@@ -81,6 +84,21 @@
 
     .event-card.claimed::before {
       background: #9ca3af;
+    }
+
+    .exclusive-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
     }
 
     .event-header {
@@ -144,6 +162,11 @@
       box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
+    .event-card.exclusive .reward-badge {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+    }
+
     .event-card.claimed .reward-badge {
       background: #e5e7eb;
       color: #6b7280;
@@ -186,6 +209,10 @@
       height: 100%;
       border-radius: 8px;
       transition: width 0.5s ease;
+    }
+
+    .event-card.exclusive .progress-bar-fill {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
     }
 
     .event-card.claimed .progress-bar-fill {
@@ -250,7 +277,6 @@
       gap: 8px;
     }
 
-    /* BOTTOM NAV */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -284,16 +310,6 @@
       transition: all 0.2s;
     }
 
-    .nav-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-    }
-
-    .nav-btn:active {
-      transform: translateY(0);
-    }
-
-    /* LOADING */
     .loading {
       text-align: center;
       padding: 40px 20px;
@@ -315,7 +331,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* MOBILE OPTIMIZATIONS */
     @media (max-width: 400px) {
       body {
         padding: 12px;
@@ -324,10 +339,6 @@
 
       .header-title {
         font-size: 32px;
-      }
-
-      .header-subtitle {
-        font-size: 13px;
       }
 
       .event-card {
@@ -355,11 +366,6 @@
         padding: 12px 16px;
         font-size: 16px;
       }
-
-      .nav-btn {
-        padding: 12px 20px;
-        font-size: 16px;
-      }
     }
   </style>
 </head>
@@ -367,7 +373,7 @@
   <div class="container">
     <div class="header">
       <div class="header-title">🎉 ÉVÉNEMENTS</div>
-      <div class="header-subtitle">Récompenses quotidiennes et hebdomadaires</div>
+      <div class="header-subtitle">Récompenses quotidiennes et exclusives</div>
     </div>
 
     <div id="eventsContainer" class="events-grid">
@@ -397,13 +403,32 @@
 
     const events = [
       {
+        id: 'exclusive_launch_avatar',
+        name: 'Avatar Exclusif Lancement',
+        description: 'Atteins le niveau 5 pour débloquer',
+        icon: '⭐',
+        type: 'exclusive',
+        rewards: [
+          { icon: '👑', value: 1, label: 'Avatar Exclusif', type: 'avatar' }
+        ],
+        target: 5,
+        getProgress: async (userId) => {
+          const { data } = await sb
+            .from('game_stats')
+            .select('level')
+            .eq('user_id', userId)
+            .single();
+          return data?.level || 0;
+        }
+      },
+      {
         id: 'daily_login',
         name: 'Connexion Quotidienne',
         description: 'Connecte-toi chaque jour',
         icon: '📅',
         type: 'daily',
         rewards: [
-          { icon: '💰', value: 100, label: '100€' }
+          { icon: '💰', value: 100, label: '100€', type: 'money' }
         ],
         target: 1,
         getProgress: async (userId) => {
@@ -423,8 +448,8 @@
         icon: '🎮',
         type: 'daily',
         rewards: [
-          { icon: '💰', value: 250, label: '250€' },
-          { icon: '💎', value: 2, label: '2' }
+          { icon: '💰', value: 250, label: '250€', type: 'money' },
+          { icon: '💎', value: 2, label: '2', type: 'diamonds' }
         ],
         target: 3,
         getProgress: async (userId) => {
@@ -447,34 +472,41 @@
         icon: '💵',
         type: 'daily',
         rewards: [
-          { icon: '💰', value: 200, label: '200€' },
-          { icon: '💎', value: 3, label: '3' }
+          { icon: '💰', value: 200, label: '200€', type: 'money' },
+          { icon: '💎', value: 3, label: '3', type: 'diamonds' }
         ],
         target: 500,
         getProgress: async (userId) => {
-          const { data } = await sb.rpc('get_today_money_earned', { p_user_id: userId });
-          return data || 0;
+          const today = new Date().toISOString().split('T')[0];
+          const { data } = await sb
+            .from('game_sessions')
+            .select('money_earned')
+            .eq('user_id', userId)
+            .gte('created_at', today + 'T00:00:00');
+          
+          if (!data) return 0;
+          return data.reduce((sum, session) => sum + (session.money_earned || 0), 0);
         }
       },
       {
-        id: 'weekly_champion',
-        name: 'Champion Hebdomadaire',
-        description: 'Joue 15 parties cette semaine',
+        id: 'weekly_millionaire',
+        name: 'Millionnaire',
+        description: 'Gagne 10 000€ au total',
         icon: '🏆',
-        type: 'weekly',
+        type: 'milestone',
         rewards: [
-          { icon: '💰', value: 1000, label: '1000€' },
-          { icon: '💎', value: 10, label: '10' },
-          { icon: '🏆', value: 2, label: '2' }
+          { icon: '💰', value: 1000, label: '1000€', type: 'money' },
+          { icon: '💎', value: 10, label: '10', type: 'diamonds' },
+          { icon: '🏆', value: 2, label: '2', type: 'trophies' }
         ],
-        target: 15,
+        target: 10000,
         getProgress: async (userId) => {
           const { data } = await sb
-            .from('game_sessions')
-            .select('id')
+            .from('game_stats')
+            .select('money')
             .eq('user_id', userId)
-            .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
-          return data ? data.length : 0;
+            .single();
+          return data?.money || 0;
         }
       }
     ];
@@ -503,16 +535,22 @@
       const today = new Date().toISOString().split('T')[0];
 
       for (const event of events) {
-        const eventId = `${event.id}_${today}`;
+        let eventId = event.id;
+        if (event.type === 'daily') {
+          eventId = `${event.id}_${today}`;
+        }
+        
         const isClaimed = claimedEvents.includes(eventId);
         const progress = await event.getProgress(currentUser.id);
         const isComplete = progress >= event.target;
         const percentage = Math.min((progress / event.target) * 100, 100);
 
         const card = document.createElement('div');
-        card.className = `event-card ${isClaimed ? 'claimed' : ''}`;
+        card.className = `event-card ${isClaimed ? 'claimed' : ''} ${event.type === 'exclusive' ? 'exclusive' : ''}`;
         
         card.innerHTML = `
+          ${event.type === 'exclusive' ? '<div class="exclusive-badge">Exclusif</div>' : ''}
+          
           <div class="event-header">
             <div class="event-icon">${event.icon}</div>
             <div class="event-info">
@@ -532,8 +570,8 @@
 
           <div class="event-progress">
             <div class="progress-label">
-              <span class="progress-current">${progress}</span>
-              <span class="progress-target">/ ${event.target}</span>
+              <span class="progress-current">${progress.toLocaleString('fr-FR')}</span>
+              <span class="progress-target">/ ${event.target.toLocaleString('fr-FR')}</span>
             </div>
             <div class="progress-bar-bg">
               <div class="progress-bar-fill" style="width: ${percentage}%"></div>
@@ -547,7 +585,7 @@
                 <span>Récupéré</span>
               </div>
             ` : `
-              <button class="claim-btn" onclick="claimEvent('${event.id}')" ${!isComplete ? 'disabled' : ''}>
+              <button class="claim-btn" onclick="claimEvent('${event.id}', '${event.type}')" ${!isComplete ? 'disabled' : ''}>
                 ${isComplete ? '<span>🎁</span><span>Récupérer</span>' : '<span>🔒</span><span>Incomplet</span>'}
               </button>
             `}
@@ -558,13 +596,16 @@
       }
     }
 
-    async function claimEvent(eventId) {
+    async function claimEvent(eventId, eventType) {
       const event = events.find(e => e.id === eventId);
       if (!event) return;
 
       try {
         const today = new Date().toISOString().split('T')[0];
-        const fullEventId = `${eventId}_${today}`;
+        let fullEventId = eventId;
+        if (eventType === 'daily') {
+          fullEventId = `${eventId}_${today}`;
+        }
 
         const { data: profile } = await sb
           .from('profiles')
@@ -578,40 +619,74 @@
           return;
         }
 
+        const progress = await event.getProgress(currentUser.id);
+        if (progress < event.target) {
+          alert('Objectif pas encore atteint !');
+          return;
+        }
+
         let moneyReward = 0;
         let diamondsReward = 0;
         let trophiesReward = 0;
+        let hasAvatar = false;
 
         event.rewards.forEach(r => {
-          if (r.icon === '💰') moneyReward = r.value;
-          if (r.icon === '💎') diamondsReward = r.value;
-          if (r.icon === '🏆') trophiesReward = r.value;
+          if (r.type === 'money') moneyReward = r.value;
+          if (r.type === 'diamonds') diamondsReward = r.value;
+          if (r.type === 'trophies') trophiesReward = r.value;
+          if (r.type === 'avatar') hasAvatar = true;
         });
 
-        const { data: stats } = await sb
-          .from('game_stats')
-          .select('money')
-          .eq('user_id', currentUser.id)
-          .single();
+        const updates = [];
 
-        await Promise.all([
-          sb.from('game_stats').update({
-            money: (stats.money || 0) + moneyReward
-          }).eq('user_id', currentUser.id),
+        if (moneyReward > 0) {
+          const { data: stats } = await sb
+            .from('game_stats')
+            .select('money')
+            .eq('user_id', currentUser.id)
+            .single();
 
-          sb.from('profiles').update({
-            diamonds: (profile.diamonds || 0) + diamondsReward,
-            trophies: (profile.trophies || 0) + trophiesReward,
-            events_claimed: [...claimedEvents, fullEventId]
-          }).eq('user_id', currentUser.id)
-        ]);
+          updates.push(
+            sb.from('game_stats').update({
+              money: (stats.money || 0) + moneyReward
+            }).eq('user_id', currentUser.id)
+          );
+        }
 
-        alert(`Récompense récupérée !\n+${moneyReward}€${diamondsReward ? `, +${diamondsReward}💎` : ''}${trophiesReward ? `, +${trophiesReward}🏆` : ''}`);
+        const profileUpdates = {
+          events_claimed: [...claimedEvents, fullEventId]
+        };
+
+        if (diamondsReward > 0) {
+          profileUpdates.diamonds = (profile.diamonds || 0) + diamondsReward;
+        }
+
+        if (trophiesReward > 0) {
+          profileUpdates.trophies = (profile.trophies || 0) + trophiesReward;
+        }
+
+        if (hasAvatar) {
+          profileUpdates.avatar_url = 'avatar-exclusif-lancement.png';
+        }
+
+        updates.push(
+          sb.from('profiles').update(profileUpdates).eq('user_id', currentUser.id)
+        );
+
+        await Promise.all(updates);
+
+        let message = 'Récompense récupérée !';
+        if (moneyReward > 0) message += `\n+${moneyReward.toLocaleString('fr-FR')}€`;
+        if (diamondsReward > 0) message += `\n+${diamondsReward}💎`;
+        if (trophiesReward > 0) message += `\n+${trophiesReward}🏆`;
+        if (hasAvatar) message += `\n👑 Avatar Exclusif débloqué !`;
+
+        alert(message);
         await loadEvents();
 
       } catch (error) {
         console.error('Erreur:', error);
-        alert('Erreur lors de la récupération');
+        alert('Erreur lors de la récupération : ' + error.message);
       }
     }
 
