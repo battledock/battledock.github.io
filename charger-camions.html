@@ -13,6 +13,10 @@
       padding: 0;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
 
     body {
@@ -645,6 +649,29 @@
             grade: newGrade
           })
           .eq('user_id', currentUser.id);
+
+        // Enregistrer la session
+        const trucksDelivered = Math.floor(sessionArgent / 0.30); // Approximation
+        await sb.from('game_sessions').insert({
+          user_id: currentUser.id,
+          game_type: 'docker2',
+          money_earned: Math.floor(sessionArgent),
+          xp_earned: Math.floor(sessionXp),
+          score: trucksDelivered,
+          duration: 45
+        });
+
+        // Objectifs et streaks
+        await sb.rpc('update_daily_objectives', {
+          p_user_id: currentUser.id,
+          p_money: Math.floor(sessionArgent),
+          p_xp: Math.floor(sessionXp)
+        });
+
+        await sb.rpc('update_user_streaks', {
+          p_user_id: currentUser.id,
+          p_money: Math.floor(sessionArgent)
+        });
       }
     }
 
