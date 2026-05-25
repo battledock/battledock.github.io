@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paramètres - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .header-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .header-subtitle {
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .section {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .section:hover {
+      transform: translateY(-2px);
+      border-color: #3b82f6;
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .section-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 32px;
+    }
+
+    .section-text {
+      flex: 1;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .section-desc {
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .section-arrow {
+      color: #9ca3af;
+      font-size: 20px;
+    }
+
+    .section.danger {
+      border-color: #fee2e2;
+      background: linear-gradient(135deg, #fff5f5, #fef2f2);
+    }
+
+    .section.danger:hover {
+      border-color: #ef4444;
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s;
+      margin-top: 20px;
+    }
+
+    .logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .modal-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .settings-group {
+      margin-bottom: 24px;
+    }
+
+    .settings-label {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 12px;
+      display: block;
+      font-size: 14px;
+    }
+
+    .settings-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .settings-item-text {
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 24px;
+      background: #d1d5db;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .toggle.active {
+      background: #10b981;
+    }
+
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s;
+    }
+
+    .toggle.active::after {
+      left: 26px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px;
+      background: #f9fafb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+
+    .info-label {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .info-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .promo-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .promo-input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+
+    .promo-used {
+      background: #f0fdf4;
+      border: 2px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .promo-code {
+      font-weight: 700;
+      color: #15803d;
+    }
+
+    .referral-box {
+      background: #f0f9ff;
+      border: 2px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .referral-link {
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin: 12px 0;
+      word-break: break-all;
+      color: #3b82f6;
+      font-weight: 700;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-box {
+      background: #f9fafb;
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    .warning-box {
+      background: #fef2f2;
+      border: 2px solid #fecaca;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      color: #991b1b;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #374151, #1f2937);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 24px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-title">⚙️ PARAMÈTRES</div>
+      <div class="header-subtitle">Configure ton expérience</div>
+    </div>
+
+    <div class="section" onclick="openModal('profil')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">👤</div>
+          <div class="section-text">
+            <div class="section-title">Profil</div>
+            <div class="section-desc">Email, Pseudo, Avatar</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('personnalisation')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">🎨</div>
+          <div class="section-text">
+            <div class="section-title">Personnalisation</div>
+            <div class="section-desc">Apparence, Couleurs</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('audio')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">🔊</div>
+          <div class="section-text">
+            <div class="section-title">Audio & Affichage</div>
+            <div class="section-desc">Sons, Animations</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('notifications')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">🔔</div>
+          <div class="section-text">
+            <div class="section-title">Notifications</div>
+            <div class="section-desc">Alertes, Rappels</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('confidentialite')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">🔒</div>
+          <div class="section-text">
+            <div class="section-title">Confidentialité</div>
+            <div class="section-desc">Profil, Données</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('codes')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">🎟️</div>
+          <div class="section-text">
+            <div class="section-title">Codes & Parrainage</div>
+            <div class="section-desc">Promos, Inviter amis</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('stats')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">📊</div>
+          <div class="section-text">
+            <div class="section-title">Statistiques</div>
+            <div class="section-desc">Détails, Graphiques</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section" onclick="openModal('aide')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">❓</div>
+          <div class="section-text">
+            <div class="section-title">Aide</div>
+            <div class="section-desc">Support, FAQ, Bugs</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <div class="section danger" onclick="openModal('danger')">
+      <div class="section-header">
+        <div class="section-info">
+          <div class="section-icon">⚠️</div>
+          <div class="section-text">
+            <div class="section-title">Danger Zone</div>
+            <div class="section-desc">Reset, Suppression</div>
+          </div>
+        </div>
+        <div class="section-arrow">›</div>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">
+      <span>🚪 DÉCONNEXION</span>
+    </button>
+  </div>
+
+  <!-- MODALS -->
+  <div id="profilModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('profilModal')">×</button>
+      <div class="modal-header">👤 Profil</div>
+      
+      <div class="settings-group">
+        <div class="info-row">
+          <span class="info-label">Email</span>
+          <span class="info-value" id="userEmail">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Pseudo</span>
+          <span class="info-value" id="userPseudo">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Membre depuis</span>
+          <span class="info-value" id="memberSince">-</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">ID Joueur</span>
+          <span class="info-value" id="userId">-</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="alert('Fonctionnalité bientôt disponible !')">Modifier le pseudo</button>
+    </div>
+  </div>
+
+  <div id="personnalisationModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('personnalisationModal')">×</button>
+      <div class="modal-header">🎨 Personnalisation</div>
+      
+      <div class="settings-group">
+        <label class="settings-label">Avatar actuel</label>
+        <div class="info-row">
+          <span class="info-label">Avatar</span>
+          <span class="info-value" id="currentAvatar" style="font-size: 32px;">👷</span>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Couleur de l'interface</label>
+        <div class="info-row">
+          <span class="info-label">Thème actuel</span>
+          <span class="info-value">Bleu (défaut)</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="window.location.href='shop.html'">Gérer mes items</button>
+    </div>
+  </div>
+
+  <div id="audioModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('audioModal')">×</button>
+      <div class="modal-header">🔊 Audio & Affichage</div>
+      
+      <div class="settings-group">
+        <label class="settings-label">Sons</label>
+        <div class="settings-item">
+          <span class="settings-item-text">Sons de victoire</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Effets de clic</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Affichage</label>
+        <div class="settings-item">
+          <span class="settings-item-text">Animations</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Particules</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Mode sombre</span>
+          <div class="toggle" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="notificationsModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('notificationsModal')">×</button>
+      <div class="modal-header">🔔 Notifications</div>
+      
+      <div class="settings-group">
+        <div class="settings-item">
+          <span class="settings-item-text">Level-up</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Nouveau record</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Événements disponibles</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Revenus de compagnie</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Défis quotidiens</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confidentialiteModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('confidentialiteModal')">×</button>
+      <div class="modal-header">🔒 Confidentialité</div>
+      
+      <div class="settings-group">
+        <label class="settings-label">Visibilité du profil</label>
+        <div class="settings-item">
+          <span class="settings-item-text">Profil public</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Apparaître dans le classement</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+        <div class="settings-item">
+          <span class="settings-item-text">Autoriser les défis</span>
+          <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Données</label>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 8px;" onclick="alert('Export en cours...')">Télécharger mes données</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="codesModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('codesModal')">×</button>
+      <div class="modal-header">🎟️ Codes & Parrainage</div>
+      
+      <div class="settings-group">
+        <label class="settings-label">Code promo</label>
+        <div class="promo-input-group">
+          <input type="text" class="promo-input" id="promoCode" placeholder="ENTRER UN CODE">
+          <button class="btn btn-primary" onclick="validatePromo()">VALIDER</button>
+        </div>
+
+        <label class="settings-label">Codes utilisés</label>
+        <div id="usedPromos">
+          <div class="promo-used">
+            <span>✅</span>
+            <span class="promo-code">LAUNCH2025</span>
+            <span style="margin-left: auto; color: #15803d;">+1000€</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Parrainage</label>
+        <div class="referral-box">
+          <div style="font-size: 13px; color: #1e40af; margin-bottom: 8px;">Ton lien de parrainage :</div>
+          <div class="referral-link" id="referralLink">battledock.io/ref/USER123</div>
+          <button class="btn btn-primary" style="width: 100%;" onclick="copyReferral()">Copier le lien</button>
+        </div>
+
+        <div style="background: #f0f9ff; border-radius: 8px; padding: 12px; font-size: 13px; color: #1e40af;">
+          <div style="font-weight: 700; margin-bottom: 8px;">Avantages :</div>
+          <div>• Toi : 100💎 par ami</div>
+          <div>• Ton ami : 50💎 au démarrage</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('statsModal')">×</button>
+      <div class="modal-header">📊 Statistiques</div>
+      
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-value" id="totalGames">0</div>
+          <div class="stat-label">Parties</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="totalTime">0h</div>
+          <div class="stat-label">Temps de jeu</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="totalEarned">0€</div>
+          <div class="stat-label">Argent gagné</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="bestStreak">0</div>
+          <div class="stat-label">Meilleur streak</div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="width: 100%; margin-top: 16px;" onclick="window.location.href='progression.html'">Voir détails</button>
+    </div>
+  </div>
+
+  <div id="aideModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('aideModal')">×</button>
+      <div class="modal-header">❓ Aide</div>
+      
+      <div class="settings-group">
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="alert('Guide à venir !')">📖 Guide du jeu</button>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="alert('FAQ à venir !')">💬 FAQ</button>
+        <button class="btn btn-primary" style="width: 100%; margin-bottom: 12px;" onclick="alert('Merci ! Bug signalé.')">🐛 Signaler un bug</button>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">Version</span>
+        <span class="info-value">1.0.0</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Dernière MAJ</span>
+        <span class="info-value">25 mai 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="dangerModal" class="modal">
+    <div class="modal-content">
+      <button class="close-modal" onclick="closeModal('dangerModal')">×</button>
+      <div class="modal-header">⚠️ Danger Zone</div>
+      
+      <div class="warning-box">
+        <strong>⚠️ ATTENTION</strong><br>
+        Ces actions sont irréversibles. Sois sûr avant de continuer !
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Réinitialiser la progression</label>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Efface ton argent, niveau, XP. Garde les cosmétiques.</p>
+        <button class="btn btn-danger" onclick="resetProgress()">Réinitialiser</button>
+      </div>
+
+      <div class="settings-group">
+        <label class="settings-label">Supprimer le compte</label>
+        <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">Supprime TOUT. Impossible de récupérer.</p>
+        <button class="btn btn-danger" onclick="deleteAccount()">Supprimer le compte</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='game.html'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Retour</span>
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      loadUserInfo();
+    }
+
+    async function loadUserInfo() {
+      const { data: profile } = await sb.from('profiles').select('username, avatar_url').eq('user_id', currentUser.id).single();
+      
+      document.getElementById('userEmail').textContent = currentUser.email || 'Non renseigné';
+      document.getElementById('userPseudo').textContent = profile?.username || 'Joueur';
+      document.getElementById('userId').textContent = '#' + currentUser.id.substring(0, 8);
+      document.getElementById('currentAvatar').textContent = profile?.avatar_url || '👷';
+      
+      const created = new Date(currentUser.created_at);
+      document.getElementById('memberSince').textContent = created.toLocaleDateString('fr-FR');
+      
+      document.getElementById('referralLink').textContent = `battledock.io/ref/${currentUser.id.substring(0, 8).toUpperCase()}`;
+    }
+
+    function openModal(type) {
+      document.getElementById(type + 'Modal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function validatePromo() {
+      const code = document.getElementById('promoCode').value.toUpperCase();
+      if (code === 'WELCOME') {
+        alert('✅ Code WELCOME validé !\n+500€ + 5💎');
+      } else {
+        alert('❌ Code invalide');
+      }
+    }
+
+    function copyReferral() {
+      const link = document.getElementById('referralLink').textContent;
+      navigator.clipboard.writeText(link);
+      alert('✅ Lien copié !');
+    }
+
+    async function logout() {
+      if (confirm('Veux-tu vraiment te déconnecter ?')) {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+      }
+    }
+
+    async function resetProgress() {
+      if (confirm('⚠️ ATTENTION\n\nCela va effacer :\n- Ton argent\n- Ton niveau\n- Ton XP\n\nTu gardes tes cosmétiques.\n\nContinuer ?')) {
+        const confirmation = prompt('Tape "RESET" pour confirmer');
+        if (confirmation === 'RESET') {
+          await sb.from('game_stats').update({ 
+            money: 0, 
+            level: 1, 
+            xp: 0 
+          }).eq('user_id', currentUser.id);
+          
+          alert('✅ Progression réinitialisée');
+          window.location.href = 'game.html';
+        }
+      }
+    }
+
+    async function deleteAccount() {
+      if (confirm('⚠️ DANGER\n\nCela va SUPPRIMER définitivement ton compte.\n\nImpossible de récupérer.\n\nContinuer ?')) {
+        const confirmation = prompt('Tape "DELETE" pour confirmer');
+        if (confirmation === 'DELETE') {
+          alert('Fonctionnalité désactivée pour ta sécurité.\nContacte le support pour supprimer ton compte.');
+        }
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
