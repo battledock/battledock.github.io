@@ -610,27 +610,30 @@
             })
             .eq('user_id', currentUser.id);
 
-          // Enregistrer la session
-          await sb.from('game_sessions').insert({
-            user_id: currentUser.id,
-            game_type: 'tetris',
-            money_earned: moneyEarned,
-            xp_earned: xpEarned,
-            score: linesCleared, // Nombre de lignes
-            duration: 60
-          });
+          // Tracking (optionnel)
+          try {
+            await sb.from('game_sessions').insert({
+              user_id: currentUser.id,
+              game_type: 'tetris',
+              money_earned: moneyEarned,
+              xp_earned: xpEarned,
+              score: linesCleared,
+              duration: 60
+            });
 
-          // Objectifs et streaks
-          await sb.rpc('update_daily_objectives', {
-            p_user_id: currentUser.id,
-            p_money: moneyEarned,
-            p_xp: xpEarned
-          });
+            await sb.rpc('update_daily_objectives', {
+              p_user_id: currentUser.id,
+              p_money: moneyEarned,
+              p_xp: xpEarned
+            });
 
-          await sb.rpc('update_user_streaks', {
-            p_user_id: currentUser.id,
-            p_money: moneyEarned
-          });
+            await sb.rpc('update_user_streaks', {
+              p_user_id: currentUser.id,
+              p_money: moneyEarned
+            });
+          } catch (trackError) {
+            console.log('Tracking non disponible:', trackError);
+          }
         }
       } catch (error) {
         console.error('Erreur sauvegarde:', error);

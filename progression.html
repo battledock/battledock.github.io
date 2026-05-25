@@ -783,72 +783,89 @@
       document.getElementById('gamesPlayed').textContent = Math.floor(totalXp / 30); // Estimation
       
       // Best Scores (RÉELS depuis game_sessions)
-      const { data: bestScores } = await sb
-        .from('user_best_scores')
-        .select('*')
-        .eq('user_id', currentUser.id);
+      try {
+        const { data: bestScores } = await sb
+          .from('user_best_scores')
+          .select('*')
+          .eq('user_id', currentUser.id);
 
-      if (bestScores && bestScores.length > 0) {
-        const docker1 = bestScores.find(s => s.game_type === 'docker1');
-        const docker2 = bestScores.find(s => s.game_type === 'docker2');
-        const tetris = bestScores.find(s => s.game_type === 'tetris');
+        if (bestScores && bestScores.length > 0) {
+          const docker1 = bestScores.find(s => s.game_type === 'docker1');
+          const docker2 = bestScores.find(s => s.game_type === 'docker2');
+          const tetris = bestScores.find(s => s.game_type === 'tetris');
 
-        document.getElementById('bestDocker1').textContent = (docker1?.best_money || 0) + '€';
-        document.getElementById('bestDocker2').textContent = (docker2?.best_money || 0) + '€';
-        document.getElementById('bestTetris').textContent = (tetris?.best_money || 0) + '€';
-      } else {
-        // Pas encore de parties jouées
+          document.getElementById('bestDocker1').textContent = (docker1?.best_money || 0) + '€';
+          document.getElementById('bestDocker2').textContent = (docker2?.best_money || 0) + '€';
+          document.getElementById('bestTetris').textContent = (tetris?.best_money || 0) + '€';
+        } else {
+          document.getElementById('bestDocker1').textContent = '0€';
+          document.getElementById('bestDocker2').textContent = '0€';
+          document.getElementById('bestTetris').textContent = '0€';
+        }
+      } catch (error) {
+        console.log('Best scores non disponibles:', error);
         document.getElementById('bestDocker1').textContent = '0€';
         document.getElementById('bestDocker2').textContent = '0€';
         document.getElementById('bestTetris').textContent = '0€';
       }
 
       // Daily Objectives (RÉELS)
-      const { data: dailyObj } = await sb
-        .from('daily_objectives')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .eq('date', new Date().toISOString().split('T')[0])
-        .single();
+      try {
+        const { data: dailyObj } = await sb
+          .from('daily_objectives')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('date', new Date().toISOString().split('T')[0])
+          .single();
 
-      if (dailyObj) {
-        document.getElementById('objMoneyProgress').textContent = `${dailyObj.money_earned_today}/500€`;
-        document.getElementById('objXpProgress').textContent = `${dailyObj.xp_earned_today}/1000 XP`;
-        
-        // Update objective states
-        if (dailyObj.games_played >= 5) {
-          document.getElementById('obj1').classList.remove('incomplete');
-          document.getElementById('obj1').querySelector('.objective-progress').textContent = '5/5';
+        if (dailyObj) {
+          document.getElementById('objMoneyProgress').textContent = `${dailyObj.money_earned_today}/500€`;
+          document.getElementById('objXpProgress').textContent = `${dailyObj.xp_earned_today}/1000 XP`;
+          
+          if (dailyObj.games_played >= 5) {
+            document.getElementById('obj1').classList.remove('incomplete');
+            document.getElementById('obj1').querySelector('.objective-progress').textContent = '5/5';
+          } else {
+            document.getElementById('obj1').querySelector('.objective-progress').textContent = `${dailyObj.games_played}/5`;
+          }
+
+          if (dailyObj.money_earned_today >= 500) {
+            document.getElementById('obj2').classList.remove('incomplete');
+          }
+          if (dailyObj.xp_earned_today >= 1000) {
+            document.getElementById('obj3').classList.remove('incomplete');
+          }
         } else {
-          document.getElementById('obj1').querySelector('.objective-progress').textContent = `${dailyObj.games_played}/5`;
+          document.getElementById('obj1').querySelector('.objective-progress').textContent = '0/5';
+          document.getElementById('objMoneyProgress').textContent = '0/500€';
+          document.getElementById('objXpProgress').textContent = '0/1000 XP';
         }
-
-        if (dailyObj.money_earned_today >= 500) {
-          document.getElementById('obj2').classList.remove('incomplete');
-        }
-        if (dailyObj.xp_earned_today >= 1000) {
-          document.getElementById('obj3').classList.remove('incomplete');
-        }
-      } else {
-        // Pas encore joué aujourd'hui
+      } catch (error) {
+        console.log('Objectifs non disponibles:', error);
         document.getElementById('obj1').querySelector('.objective-progress').textContent = '0/5';
         document.getElementById('objMoneyProgress').textContent = '0/500€';
         document.getElementById('objXpProgress').textContent = '0/1000 XP';
       }
 
       // Streaks (RÉELS)
-      const { data: streaks } = await sb
-        .from('user_streaks')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
+      try {
+        const { data: streaks } = await sb
+          .from('user_streaks')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .single();
 
-      if (streaks) {
-        document.getElementById('dailyStreak').textContent = streaks.daily_login_streak || 0;
-        document.getElementById('winStreak').textContent = streaks.win_streak || 0;
-        document.getElementById('moneyStreak').textContent = streaks.money_streak || 0;
-      } else {
-        // Pas encore de streaks
+        if (streaks) {
+          document.getElementById('dailyStreak').textContent = streaks.daily_login_streak || 0;
+          document.getElementById('winStreak').textContent = streaks.win_streak || 0;
+          document.getElementById('moneyStreak').textContent = streaks.money_streak || 0;
+        } else {
+          document.getElementById('dailyStreak').textContent = 0;
+          document.getElementById('winStreak').textContent = 0;
+          document.getElementById('moneyStreak').textContent = 0;
+        }
+      } catch (error) {
+        console.log('Streaks non disponibles:', error);
         document.getElementById('dailyStreak').textContent = 0;
         document.getElementById('winStreak').textContent = 0;
         document.getElementById('moneyStreak').textContent = 0;

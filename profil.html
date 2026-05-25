@@ -715,28 +715,34 @@
       document.getElementById('statXp').textContent = stats.xp.toLocaleString('fr-FR');
 
       // Favorite Game Stats (RÉELS)
-      const { data: favoriteGame } = await sb
-        .from('user_favorite_game')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
+      try {
+        const { data: favoriteGame } = await sb
+          .from('user_favorite_game')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .single();
 
-      if (favoriteGame) {
-        // Mapper le nom du jeu
-        let gameName = 'Docker Occasionnel';
-        if (favoriteGame.favorite_game === 'docker2') gameName = 'Docker';
-        else if (favoriteGame.favorite_game === 'tetris') gameName = 'Tetris Portuaire';
+        if (favoriteGame) {
+          let gameName = 'Docker Occasionnel';
+          if (favoriteGame.favorite_game === 'docker2') gameName = 'Docker';
+          else if (favoriteGame.favorite_game === 'tetris') gameName = 'Tetris Portuaire';
 
-        // Calculer le taux de réussite (on va simuler basé sur le niveau pour l'instant)
-        const winRate = Math.min(65 + stats.level, 95);
+          const winRate = Math.min(65 + stats.level, 95);
 
-        document.getElementById('favoriteGameName').textContent = gameName;
-        document.getElementById('favoriteGamesPlayed').textContent = favoriteGame.total_games || 0;
-        document.getElementById('favoriteTotalMoney').textContent = (favoriteGame.total_money || 0).toLocaleString('fr-FR') + '€';
-        document.getElementById('favoriteAverage').textContent = (favoriteGame.avg_money || 0) + '€';
-        document.getElementById('favoriteWinRate').textContent = winRate + '%';
-      } else {
-        // Pas encore joué
+          document.getElementById('favoriteGameName').textContent = gameName;
+          document.getElementById('favoriteGamesPlayed').textContent = favoriteGame.total_games || 0;
+          document.getElementById('favoriteTotalMoney').textContent = (favoriteGame.total_money || 0).toLocaleString('fr-FR') + '€';
+          document.getElementById('favoriteAverage').textContent = (favoriteGame.avg_money || 0) + '€';
+          document.getElementById('favoriteWinRate').textContent = winRate + '%';
+        } else {
+          document.getElementById('favoriteGameName').textContent = 'Aucun jeu joué';
+          document.getElementById('favoriteGamesPlayed').textContent = 0;
+          document.getElementById('favoriteTotalMoney').textContent = '0€';
+          document.getElementById('favoriteAverage').textContent = '0€';
+          document.getElementById('favoriteWinRate').textContent = '0%';
+        }
+      } catch (error) {
+        console.log('Jeu préféré non disponible:', error);
         document.getElementById('favoriteGameName').textContent = 'Aucun jeu joué';
         document.getElementById('favoriteGamesPlayed').textContent = 0;
         document.getElementById('favoriteTotalMoney').textContent = '0€';
