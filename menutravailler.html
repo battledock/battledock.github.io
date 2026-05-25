@@ -563,7 +563,9 @@
 
     async function loadDailyObjective() {
       try {
+        console.log('🔍 Loading daily objective...');
         const today = new Date().toISOString().split('T')[0];
+        console.log('📅 Today:', today);
         
         // Récupérer les données de progression quotidienne
         const { data: profile, error } = await sb
@@ -573,17 +575,21 @@
           .single();
 
         if (error) {
-          console.error('Error loading daily objective:', error);
+          console.error('❌ Error loading daily objective:', error);
           return;
         }
+
+        console.log('📊 Profile data:', profile);
 
         let count = 0;
         
         // Si même jour, garder le compteur
         if (profile?.daily_contracts_date === today) {
           count = profile.daily_contracts_count || 0;
+          console.log('✅ Same day, count:', count);
         } else {
           // Nouveau jour, reset
+          console.log('🔄 New day, resetting...');
           await sb
             .from('profiles')
             .update({ 
@@ -594,6 +600,7 @@
         }
 
         const progress = Math.min((count / 3) * 100, 100);
+        console.log('📈 Progress:', progress + '%');
 
         document.getElementById('objectiveCount').textContent = count;
         document.getElementById('objectivePercent').textContent = Math.floor(progress) + '%';
@@ -607,7 +614,7 @@
           }
         }
       } catch (error) {
-        console.error('Error in loadDailyObjective:', error);
+        console.error('❌ Error in loadDailyObjective:', error);
       }
     }
 
