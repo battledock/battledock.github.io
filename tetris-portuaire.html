@@ -645,7 +645,36 @@
       document.getElementById('gameOverOverlay').classList.add('active');
     }
 
-    function goBack() {
+    async function goBack() {
+      // Incrémenter l'objectif quotidien
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('daily_contracts_count, daily_contracts_date')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        let newCount = 1;
+        
+        if (profile?.daily_contracts_date === today) {
+          newCount = (profile.daily_contracts_count || 0) + 1;
+        }
+
+        await sb
+          .from('profiles')
+          .update({ 
+            daily_contracts_count: newCount,
+            daily_contracts_date: today
+          })
+          .eq('user_id', currentUser.id);
+
+        console.log('✅ Objectif quotidien mis à jour:', newCount, '/3');
+      } catch (error) {
+        console.error('❌ Erreur objectif quotidien:', error);
+      }
+      
       window.location.href = 'menutravailler.html';
     }
 
