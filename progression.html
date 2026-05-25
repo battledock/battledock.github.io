@@ -698,6 +698,12 @@
       </div>
       
       <div class="score-card">
+        <div class="score-game">Charger Camions</div>
+        <div class="score-value" id="bestChargerCamions">0€</div>
+        <div class="score-label">Record personnel</div>
+      </div>
+      
+      <div class="score-card">
         <div class="score-game">Tetris Portuaire</div>
         <div class="score-value" id="bestTetris">0€</div>
         <div class="score-label">Record personnel</div>
@@ -876,59 +882,25 @@
         if (bestScores && bestScores.length > 0) {
           const docker1 = bestScores.find(s => s.game_type === 'docker1');
           const docker2 = bestScores.find(s => s.game_type === 'docker2');
+          const chargerCamions = bestScores.find(s => s.game_type === 'charger_camions');
           const tetris = bestScores.find(s => s.game_type === 'tetris');
 
-          document.getElementById('bestDocker1').textContent = (docker1?.best_money || 0) + '€';
-          document.getElementById('bestDocker2').textContent = (docker2?.best_money || 0) + '€';
-          document.getElementById('bestTetris').textContent = (tetris?.best_money || 0) + '€';
+          document.getElementById('bestDocker1').textContent = (docker1?.best_money || 0).toLocaleString('fr-FR') + '€';
+          document.getElementById('bestDocker2').textContent = (docker2?.best_money || 0).toLocaleString('fr-FR') + '€';
+          document.getElementById('bestChargerCamions').textContent = (chargerCamions?.best_money || 0).toLocaleString('fr-FR') + '€';
+          document.getElementById('bestTetris').textContent = (tetris?.best_money || 0).toLocaleString('fr-FR') + '€';
         } else {
           document.getElementById('bestDocker1').textContent = '0€';
           document.getElementById('bestDocker2').textContent = '0€';
+          document.getElementById('bestChargerCamions').textContent = '0€';
           document.getElementById('bestTetris').textContent = '0€';
         }
       } catch (error) {
         console.log('Best scores non disponibles:', error);
         document.getElementById('bestDocker1').textContent = '0€';
         document.getElementById('bestDocker2').textContent = '0€';
+        document.getElementById('bestChargerCamions').textContent = '0€';
         document.getElementById('bestTetris').textContent = '0€';
-      }
-
-      // Daily Objectives (RÉELS)
-      try {
-        const { data: dailyObj } = await sb
-          .from('daily_objectives')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .eq('date', new Date().toISOString().split('T')[0])
-          .single();
-
-        if (dailyObj) {
-          document.getElementById('objMoneyProgress').textContent = `${dailyObj.money_earned_today}/500€`;
-          document.getElementById('objXpProgress').textContent = `${dailyObj.xp_earned_today}/1000 XP`;
-          
-          if (dailyObj.games_played >= 5) {
-            document.getElementById('obj1').classList.remove('incomplete');
-            document.getElementById('obj1').querySelector('.objective-progress').textContent = '5/5';
-          } else {
-            document.getElementById('obj1').querySelector('.objective-progress').textContent = `${dailyObj.games_played}/5`;
-          }
-
-          if (dailyObj.money_earned_today >= 500) {
-            document.getElementById('obj2').classList.remove('incomplete');
-          }
-          if (dailyObj.xp_earned_today >= 1000) {
-            document.getElementById('obj3').classList.remove('incomplete');
-          }
-        } else {
-          document.getElementById('obj1').querySelector('.objective-progress').textContent = '0/5';
-          document.getElementById('objMoneyProgress').textContent = '0/500€';
-          document.getElementById('objXpProgress').textContent = '0/1000 XP';
-        }
-      } catch (error) {
-        console.log('Objectifs non disponibles:', error);
-        document.getElementById('obj1').querySelector('.objective-progress').textContent = '0/5';
-        document.getElementById('objMoneyProgress').textContent = '0/500€';
-        document.getElementById('objXpProgress').textContent = '0/1000 XP';
       }
 
       // Streaks (RÉELS)
