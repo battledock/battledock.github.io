@@ -916,12 +916,34 @@
           // Afficher popup pour chaque level-up manqué
           for (let i = (stats.last_levelup_shown || 0) + 1; i <= stats.level; i++) {
             console.log(`📊 Showing popup for level ${i}`);
+            
+            // Donner les récompenses : 5 diamants + 1 trophée par level-up
+            const diamondsGained = 5;
+            const trophiesGained = 1;
+            const newDiamonds = (profile?.diamonds || 0) + diamondsGained;
+            const newTrophies = (profile?.trophies || 0) + trophiesGained;
+            
+            // Mettre à jour le profil
+            await sb
+              .from('profiles')
+              .update({
+                diamonds: newDiamonds,
+                trophies: newTrophies
+              })
+              .eq('id', user.id);
+            
+            console.log(`💎 +${diamondsGained} diamants, 🏆 +${trophiesGained} trophée`);
+            
+            // Mettre à jour les variables locales pour le popup
+            profile.diamonds = newDiamonds;
+            profile.trophies = newTrophies;
+            
             await new Promise(resolve => {
               showLevelUpPopup(
                 i,
                 stats.money || 0,
-                profile?.diamonds || 0,
-                profile?.trophies || 0
+                newDiamonds,
+                newTrophies
               );
               // Attendre que le popup se ferme (6 secondes pour l'animation)
               setTimeout(resolve, 6000);
@@ -934,6 +956,9 @@
             .from('game_stats')
             .update({ last_levelup_shown: stats.level })
             .eq('user_id', user.id);
+          
+          // Recharger la page pour afficher les nouvelles données
+          window.location.reload();
         } else {
           console.log('✔️ No level-ups to show');
         }
