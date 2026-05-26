@@ -79,7 +79,7 @@
       border-radius: 50%;
       position: relative;
       border: 6px solid #fbbf24;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
       overflow: hidden;
     }
 
@@ -488,9 +488,10 @@
       // Déduire la mise
       await updateMoney(currentMoney - bet);
 
-      // Obtenir la rotation actuelle
+      // Obtenir la rotation actuelle et normaliser entre 0-360
       const currentTransform = wheel.style.transform;
-      const currentRotation = currentTransform ? parseInt(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
+      let currentRotation = currentTransform ? parseFloat(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
+      currentRotation = currentRotation % 360; // Normaliser entre 0-360
 
       // Choisir segment gagnant
       const winIndex = Math.floor(Math.random() * 10);
@@ -506,12 +507,20 @@
       wheel.style.transform = `rotate(${finalRotation}deg)`;
 
       setTimeout(async () => {
+        // Normaliser la rotation finale
+        const normalizedRotation = finalRotation % 360;
+        wheel.style.transition = 'none';
+        wheel.style.transform = `rotate(${normalizedRotation}deg)`;
+        setTimeout(() => {
+          wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+        }, 50);
+
         const win = Math.floor(bet * segment.mult);
         
         if (win > 0) {
           res.className = 'result win';
           if (segment.mult >= 5) {
-            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700; text-shadow: 0 0 10px ${segment.bgColor};">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€ 💰`;
+            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700;">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€ 💰`;
           } else {
             res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`;
           }
