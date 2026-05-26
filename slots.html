@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Slots - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%); min-height: 100vh; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+    .game-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #dc2626; letter-spacing: 2px; }
+    .back-btn { background: #6b7280; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    
+    .game-area { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+    
+    .slots-payouts { background: white; border-radius: 12px; padding: 12px; margin-bottom: 16px; }
+    .slots-payouts-title { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #dc2626; margin-bottom: 8px; text-align: center; }
+    .payout-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: #f9fafb; border-radius: 6px; margin-bottom: 4px; }
+    .payout-symbols { font-size: 20px; }
+    .payout-value { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #10b981; }
+    
+    .slots-display { display: flex; justify-content: center; gap: clamp(6px, 2vw, 12px); margin-bottom: 16px; }
+    .slot-reel { width: min(75px, 26vw); height: min(110px, 38vw); background: white; border: 4px solid #dc2626; border-radius: 12px; overflow: hidden; position: relative; box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.2); }
+    .reel-strip { position: absolute; width: 100%; transition: top 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+    .slot-symbol { width: 100%; height: min(110px, 38vw); display: flex; align-items: center; justify-content: center; font-size: clamp(30px, 8vw, 44px); }
+    
+    .game-controls { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .bet-control { display: flex; align-items: center; gap: 10px; }
+    .bet-control label { font-weight: 700; font-size: 13px; color: #7f1d1d; }
+    .bet-control input { width: 130px; padding: 10px; border: 3px solid #dc2626; border-radius: 10px; font-size: 15px; font-weight: 700; text-align: center; }
+    .play-btn { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; border-radius: 12px; padding: 12px 36px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); }
+    .play-btn:active { transform: scale(0.95); }
+    .play-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    
+    .game-result { display: none; margin-top: 14px; padding: 14px; border-radius: 12px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; }
+    .game-result.win { background: #d1fae5; color: #065f46; border: 3px solid #10b981; }
+    .game-result.lose { background: #fee2e2; color: #991b1b; border: 3px solid #dc2626; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; padding: 12px 16px; box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1); z-index: 100; }
+    .nav-btn { width: 100%; max-width: 500px; margin: 0 auto; display: flex; background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; border: none; border-radius: 12px; padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer; align-items: center; justify-content: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="game-header">
+      <div class="game-title">🎰 SLOTS</div>
+      <button class="back-btn" onclick="window.location.href='casino.html'">← CASINO</button>
+    </div>
+    
+    <div class="game-area">
+      <div class="slots-payouts">
+        <div class="slots-payouts-title">💰 GAINS</div>
+        <div class="payout-row"><span class="payout-symbols">7️⃣ 7️⃣ 7️⃣</span><span class="payout-value">×100</span></div>
+        <div class="payout-row"><span class="payout-symbols">💎 💎 💎</span><span class="payout-value">×50</span></div>
+        <div class="payout-row"><span class="payout-symbols">⭐ ⭐ ⭐</span><span class="payout-value">×20</span></div>
+        <div class="payout-row"><span class="payout-symbols">🔔 🔔 🔔</span><span class="payout-value">×10</span></div>
+        <div class="payout-row"><span class="payout-symbols">🍒/🍋 ×3</span><span class="payout-value">×5</span></div>
+      </div>
+      
+      <div class="slots-display">
+        <div class="slot-reel" id="reel1"><div class="reel-strip" id="strip1"></div></div>
+        <div class="slot-reel" id="reel2"><div class="reel-strip" id="strip2"></div></div>
+        <div class="slot-reel" id="reel3"><div class="reel-strip" id="strip3"></div></div>
+      </div>
+      
+      <div class="game-controls">
+        <div class="bet-control"><label>MISE:</label><input type="number" id="slotsBet" value="100" min="100" step="50"></div>
+        <button class="play-btn" id="slotsBtn" onclick="playSlots()">JOUER</button>
+      </div>
+      <div class="game-result" id="slotsResult"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser, userMoney = 0;
+    
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+
+    const slotsSymbols = {
+      '7️⃣': { mult: 100, weight: 1 },
+      '💎': { mult: 50, weight: 2 },
+      '⭐': { mult: 20, weight: 3 },
+      '🔔': { mult: 10, weight: 4 },
+      '🍒': { mult: 5, weight: 15 },
+      '🍋': { mult: 5, weight: 25 }
+    };
+    
+    function getWeightedSymbol() {
+      const totalWeight = Object.values(slotsSymbols).reduce((sum, s) => sum + s.weight, 0);
+      let random = Math.random() * totalWeight;
+      for (let [symbol, data] of Object.entries(slotsSymbols)) {
+        random -= data.weight;
+        if (random <= 0) return symbol;
+      }
+      return '🍋';
+    }
+
+    function initSlots() {
+      for (let i = 1; i <= 3; i++) {
+        const strip = document.getElementById('strip' + i);
+        strip.innerHTML = '';
+        for (let j = 0; j < 60; j++) {
+          const div = document.createElement('div');
+          div.className = 'slot-symbol';
+          div.textContent = getWeightedSymbol();
+          strip.appendChild(div);
+        }
+      }
+    }
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      await loadMoney();
+      initSlots();
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
+      userMoney = data?.money || 0;
+    }
+
+    async function updateMoney(amount) {
+      userMoney += amount;
+      await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
+    }
+
+    async function playSlots() {
+      const bet = parseInt(document.getElementById('slotsBet').value);
+      if (bet < 100 || bet > userMoney) { alert('Mise invalide !'); return; }
+      const btn = document.getElementById('slotsBtn');
+      btn.disabled = true;
+      await updateMoney(-bet);
+      
+      const results = [getWeightedSymbol(), getWeightedSymbol(), getWeightedSymbol()];
+
+      for (let i = 1; i <= 3; i++) {
+        const strip = document.getElementById('strip' + i);
+        const symbolHeight = strip.querySelector('.slot-symbol').offsetHeight;
+        const spins = 20 + i * 5;
+        const finalPosition = spins;
+        const duration = 1500 + i * 300;
+        
+        strip.style.transition = `top ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+        strip.style.top = `-${symbolHeight * finalPosition}px`;
+        
+        setTimeout(() => {
+          const syms = strip.querySelectorAll('.slot-symbol');
+          if (syms[finalPosition]) syms[finalPosition].textContent = results[i - 1];
+        }, duration - 100);
+      }
+
+      setTimeout(async () => {
+        for (let i = 1; i <= 3; i++) {
+          const strip = document.getElementById('strip' + i);
+          strip.style.transition = 'none';
+          strip.style.top = '0px';
+        }
+
+        const res = document.getElementById('slotsResult');
+        if (results[0] === results[1] && results[1] === results[2]) {
+          const mult = slotsSymbols[results[0]].mult;
+          const win = bet * mult;
+          res.className = 'game-result win';
+          res.textContent = `🎉 ${results[0]} ${results[0]} ${results[0]} ! ×${mult} = +${win.toLocaleString('fr-FR')}€`;
+          await updateMoney(win);
+        } else {
+          res.className = 'game-result lose';
+          res.textContent = `💔 ${results[0]} ${results[1]} ${results[2]} - Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+        
+        res.style.display = 'block';
+        btn.disabled = false;
+      }, 2700);
+    }
+
+    init();
+  </script>
+</body>
+</html>

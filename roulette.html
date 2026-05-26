@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Roulette - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%); min-height: 100vh; padding: 16px; padding-bottom: 80px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    
+    .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: white; border-radius: 16px; padding: 16px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+    .game-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(20px, 5vw, 28px); color: #dc2626; letter-spacing: 2px; }
+    .back-btn { background: #6b7280; color: white; border: none; border-radius: 8px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    
+    .game-area { background: linear-gradient(135deg, #fef3c7, #fde68a); border-radius: 16px; padding: 20px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+    
+    .roulette-legend { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+    .legend-item { background: white; border-radius: 10px; padding: 6px 10px; display: flex; align-items: center; gap: 6px; border: 2px solid #e5e7eb; flex-shrink: 0; min-width: fit-content; }
+    .legend-color { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); flex-shrink: 0; }
+    .legend-mult { font-family: 'Bebas Neue', sans-serif; font-size: 14px; color: #dc2626; white-space: nowrap; }
+    .color-black { background: #1f2937; }
+    .color-red { background: #ef4444; }
+    .color-blue { background: #3b82f6; }
+    .color-green { background: #10b981; }
+    .color-gold { background: #fbbf24; }
+    
+    .roulette-wheel { width: min(280px, 90vw); height: min(280px, 90vw); margin: 0 auto 20px; position: relative; border-radius: 50%; box-shadow: 0 0 0 12px #7f1d1d, 0 8px 32px rgba(0, 0, 0, 0.4); transition: transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99); overflow: hidden; }
+    .wheel-segment { position: absolute; width: 100%; height: 100%; clip-path: polygon(50% 50%, 50% 0%, 100% 0%); transform-origin: center; }
+    .seg-0 { background: #1f2937; transform: rotate(0deg); }
+    .seg-1 { background: #ef4444; transform: rotate(45deg); }
+    .seg-2 { background: #1f2937; transform: rotate(90deg); }
+    .seg-3 { background: #fbbf24; transform: rotate(135deg); }
+    .seg-4 { background: #1f2937; transform: rotate(180deg); }
+    .seg-5 { background: #10b981; transform: rotate(225deg); }
+    .seg-6 { background: #1f2937; transform: rotate(270deg); }
+    .seg-7 { background: #3b82f6; transform: rotate(315deg); }
+    .wheel-pointer { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 20px solid #dc2626; z-index: 20; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5)); }
+    .wheel-center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: clamp(50px, 15vw, 80px); height: clamp(50px, 15vw, 80px); background: linear-gradient(135deg, #fbbf24, #f59e0b); border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; font-size: clamp(24px, 6vw, 32px); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); z-index: 10; }
+    
+    .game-controls { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+    .bet-control { display: flex; align-items: center; gap: 10px; }
+    .bet-control label { font-weight: 700; font-size: 13px; color: #7f1d1d; }
+    .bet-control input { width: 130px; padding: 10px; border: 3px solid #dc2626; border-radius: 10px; font-size: 15px; font-weight: 700; text-align: center; }
+    .play-btn { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; border: none; border-radius: 12px; padding: 12px 36px; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 2px; cursor: pointer; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4); }
+    .play-btn:active { transform: scale(0.95); }
+    .play-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    
+    .game-result { display: none; margin-top: 14px; padding: 14px; border-radius: 12px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; }
+    .game-result.win { background: #d1fae5; color: #065f46; border: 3px solid #10b981; }
+    .game-result.lose { background: #fee2e2; color: #991b1b; border: 3px solid #dc2626; }
+    .game-result.push { background: #dbeafe; color: #1e40af; border: 3px solid #3b82f6; }
+    
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e5e7eb; padding: 12px 16px; box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1); z-index: 100; }
+    .nav-btn { width: 100%; max-width: 500px; margin: 0 auto; display: flex; background: linear-gradient(135deg, #7f1d1d, #991b1b); color: white; border: none; border-radius: 12px; padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer; align-items: center; justify-content: center; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="game-header">
+      <div class="game-title">🎡 ROULETTE</div>
+      <button class="back-btn" onclick="window.location.href='casino.html'">← CASINO</button>
+    </div>
+    
+    <div class="game-area">
+      <div class="roulette-legend">
+        <div class="legend-item"><div class="legend-color color-black"></div><div class="legend-mult">×0</div></div>
+        <div class="legend-item"><div class="legend-color color-red"></div><div class="legend-mult">×0.5</div></div>
+        <div class="legend-item"><div class="legend-color color-blue"></div><div class="legend-mult">×1</div></div>
+        <div class="legend-item"><div class="legend-color color-green"></div><div class="legend-mult">×1.5</div></div>
+        <div class="legend-item"><div class="legend-color color-gold"></div><div class="legend-mult">×2 🏆</div></div>
+      </div>
+      
+      <div style="position: relative;">
+        <div class="wheel-pointer"></div>
+        <div class="roulette-wheel" id="wheel">
+          <div class="wheel-segment seg-0"></div>
+          <div class="wheel-segment seg-1"></div>
+          <div class="wheel-segment seg-2"></div>
+          <div class="wheel-segment seg-3"></div>
+          <div class="wheel-segment seg-4"></div>
+          <div class="wheel-segment seg-5"></div>
+          <div class="wheel-segment seg-6"></div>
+          <div class="wheel-segment seg-7"></div>
+          <div class="wheel-center">🎯</div>
+        </div>
+      </div>
+      
+      <div class="game-controls">
+        <div class="bet-control"><label>MISE:</label><input type="number" id="rouletteBet" value="50" min="50" step="10"></div>
+        <button class="play-btn" id="rouletteBtn" onclick="playRoulette()">TOURNER</button>
+      </div>
+      <div class="game-result" id="rouletteResult"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser, userMoney = 0;
+    
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      await loadMoney();
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
+      userMoney = data?.money || 0;
+    }
+
+    async function updateMoney(amount) {
+      userMoney += amount;
+      await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
+    }
+
+    const rouletteSegments = [
+      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
+      { color: 'Rouge', mult: 0.5, bgColor: '#ef4444' },
+      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
+      { color: 'Or', mult: 2, bgColor: '#fbbf24' },
+      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
+      { color: 'Vert', mult: 1.5, bgColor: '#10b981' },
+      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
+      { color: 'Bleu', mult: 1, bgColor: '#3b82f6' }
+    ];
+
+    async function playRoulette() {
+      const bet = parseInt(document.getElementById('rouletteBet').value);
+      if (bet < 50 || bet > userMoney) { alert('Mise invalide !'); return; }
+      const btn = document.getElementById('rouletteBtn');
+      btn.disabled = true;
+      await updateMoney(-bet);
+      
+      const wheel = document.getElementById('wheel');
+      const spins = 5 + Math.random() * 3;
+      const segmentIndex = Math.floor(Math.random() * 8);
+      const segmentAngle = segmentIndex * 45;
+      const offsetInSegment = 22.5;
+      const finalAngle = (spins * 360) + segmentAngle + offsetInSegment;
+      
+      wheel.style.transform = `rotate(${finalAngle}deg)`;
+      
+      setTimeout(async () => {
+        const normalizedAngle = finalAngle % 360;
+        const pointerAngle = (360 - normalizedAngle) % 360;
+        const hitSegment = Math.floor(pointerAngle / 45);
+        
+        const segment = rouletteSegments[hitSegment];
+        const win = Math.floor(bet * segment.mult);
+        const res = document.getElementById('rouletteResult');
+        
+        if (win > bet) { 
+          res.className = 'game-result win'; 
+          res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ! ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`; 
+          await updateMoney(win); 
+        } else if (win === bet) { 
+          res.className = 'game-result push'; 
+          res.innerHTML = `↔️ <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> - Remboursé ${bet.toLocaleString('fr-FR')}€`; 
+          await updateMoney(win); 
+        } else if (win > 0) { 
+          res.className = 'game-result lose'; 
+          res.innerHTML = `📉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} = ${win.toLocaleString('fr-FR')}€ (perte: ${(bet - win).toLocaleString('fr-FR')}€)`; 
+          await updateMoney(win); 
+        } else { 
+          res.className = 'game-result lose'; 
+          res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> - Perdu ${bet.toLocaleString('fr-FR')}€`; 
+        }
+        
+        res.style.display = 'block';
+        btn.disabled = false;
+        
+        setTimeout(() => {
+          wheel.style.transition = 'none';
+          wheel.style.transform = 'rotate(0deg)';
+          setTimeout(() => {
+            wheel.style.transition = 'transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+          }, 50);
+        }, 100);
+      }, 3000);
+    }
+
+    init();
+  </script>
+</body>
+</html>
