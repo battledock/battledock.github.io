@@ -1,111 +1,136 @@
-const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const SUPABASE_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 const { createClient } = supabase;
-const sb = createClient(supabaseUrl, supabaseKey);
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let currentUser = null;
-let currentTab = 'lootboxes';
-let userInventory = [];
+let userProfile = null;
 
 // DONNÉES DU SHOP
-const shopData = {
+const SHOP_DATA = {
   lootboxes: [
     {
-      id: 'lootbox_bronze',
+      id: 'bronze',
       name: 'Coffre Bronze',
       icon: '📦',
-      price: 1000,
-      currency: 'money',
-      class: 'lootbox-bronze',
-      odds: {
-        common: 70,
-        rare: 25,
-        epic: 5,
-        legendary: 0
-      }
+      price: { money: 100 },
+      rarity: 'common',
+      odds: '🎰 1-5 Diamants'
     },
     {
-      id: 'lootbox_silver',
-      name: 'Coffre Diamant',
-      icon: '💎',
-      price: 30,
-      currency: 'diamonds',
-      class: 'lootbox-silver',
-      odds: {
-        common: 0,
-        rare: 50,
-        epic: 40,
-        legendary: 10
-      }
+      id: 'silver',
+      name: 'Coffre Argent',
+      icon: '🎁',
+      price: { money: 500 },
+      rarity: 'rare',
+      odds: '🎰 5-15 Diamants'
     },
     {
-      id: 'lootbox_gold',
-      name: 'Coffre Légendaire',
-      icon: '👑',
-      price: 5,
-      currency: 'trophies',
-      class: 'lootbox-gold',
-      odds: {
-        common: 0,
-        rare: 0,
-        epic: 0,
-        legendary: 100
-      }
+      id: 'gold',
+      name: 'Coffre Or',
+      icon: '⭐',
+      price: { diamonds: 50 },
+      rarity: 'legendary',
+      odds: '🎰 20-50 Diamants'
     }
   ],
-
   frames: [
-    // COMMUNS
-    { id: 'frame_simple', name: 'Cadre Simple', price: 500, currency: 'money', rarity: 'common', color: '#9ca3af' },
-    { id: 'frame_wood', name: 'Cadre Bois', price: 800, currency: 'money', rarity: 'common', color: '#92400e' },
-    
-    // RARES
-    { id: 'frame_blue', name: 'Cadre Bleu', price: 15, currency: 'diamonds', rarity: 'rare', color: '#3b82f6' },
-    { id: 'frame_green', name: 'Cadre Vert', price: 15, currency: 'diamonds', rarity: 'rare', color: '#10b981' },
-    { id: 'frame_purple', name: 'Cadre Violet', price: 20, currency: 'diamonds', rarity: 'rare', color: '#a855f7' },
-    
-    // ÉPIQUES
-    { id: 'frame_diamond', name: 'Cadre Diamant', price: 40, currency: 'diamonds', rarity: 'epic', color: '#06b6d4', style: 'double' },
-    { id: 'frame_fire', name: 'Cadre Flammes', price: 45, currency: 'diamonds', rarity: 'epic', color: '#ef4444', animated: true },
-    
-    // LÉGENDAIRES
-    { id: 'frame_gold', name: 'Cadre Royal', price: 8, currency: 'trophies', rarity: 'legendary', color: '#fbbf24', style: 'double', animated: true },
-    { id: 'frame_rainbow', name: 'Cadre Arc-en-ciel', price: 12, currency: 'trophies', rarity: 'legendary', color: 'rainbow', animated: true }
+    {
+      id: 'frame_gold',
+      name: 'Cadre Or',
+      icon: '🟨',
+      color: '#fbbf24',
+      price: { diamonds: 25 },
+      rarity: 'rare'
+    },
+    {
+      id: 'frame_purple',
+      name: 'Cadre Violet',
+      icon: '🟪',
+      color: '#a855f7',
+      price: { diamonds: 35 },
+      rarity: 'epic'
+    },
+    {
+      id: 'frame_rainbow',
+      name: 'Cadre Arc-en-ciel',
+      icon: '🌈',
+      color: 'linear-gradient(90deg, #ff0000, #00ff00, #0000ff)',
+      price: { diamonds: 100 },
+      rarity: 'legendary'
+    }
   ],
-
   titles: [
-    // COMMUNS
-    { id: 'title_docker', name: 'Le Docker', price: 500, currency: 'money', rarity: 'common' },
-    { id: 'title_worker', name: 'Le Travailleur', price: 800, currency: 'money', rarity: 'common' },
-    { id: 'title_fast', name: 'Le Rapide', price: 1000, currency: 'money', rarity: 'common' },
-    
-    // RARES
-    { id: 'title_captain', name: 'Capitaine du Port', price: 18, currency: 'diamonds', rarity: 'rare' },
-    { id: 'title_expert', name: 'Expert Docker', price: 20, currency: 'diamonds', rarity: 'rare' },
-    { id: 'title_master', name: 'Maître Docker', price: 25, currency: 'diamonds', rarity: 'rare' },
-    
-    // ÉPIQUES
-    { id: 'title_lord', name: 'Seigneur des Docks', price: 45, currency: 'diamonds', rarity: 'epic' },
-    { id: 'title_legend', name: 'Légende Portuaire', price: 50, currency: 'diamonds', rarity: 'epic' },
-    
-    // LÉGENDAIRES
-    { id: 'title_king', name: 'Roi du Port', price: 10, currency: 'trophies', rarity: 'legendary' },
-    { id: 'title_god', name: 'Dieu du Docker', price: 15, currency: 'trophies', rarity: 'legendary' }
+    {
+      id: 'title_docker',
+      name: 'Docker Elite',
+      icon: '⚓',
+      price: { trophies: 10 },
+      rarity: 'rare'
+    },
+    {
+      id: 'title_captain',
+      name: 'Capitaine',
+      icon: '🧑‍✈️',
+      price: { trophies: 25 },
+      rarity: 'epic'
+    },
+    {
+      id: 'title_legend',
+      name: 'Légende du Port',
+      icon: '👑',
+      price: { trophies: 50 },
+      rarity: 'legendary'
+    }
   ],
-
   avatars: [
-    { id: 'avatar_1', icon: '👷', name: 'Docker Casque', price: 500, currency: 'money', rarity: 'common' },
-    { id: 'avatar_2', icon: '👨‍🔧', name: 'Docker Pro', price: 800, currency: 'money', rarity: 'common' },
-    { id: 'avatar_5', icon: '🌊', name: 'Docker Océan', price: 15, currency: 'diamonds', rarity: 'rare' },
-    { id: 'avatar_9', icon: '🌟', name: 'Docker Étoile', price: 40, currency: 'diamonds', rarity: 'epic' },
-    { id: 'avatar_11', icon: '👑', name: 'Roi du Dock', price: 5, currency: 'trophies', rarity: 'legendary' }
+    {
+      id: 'avatar_pirate',
+      name: 'Pirate',
+      icon: '🏴‍☠️',
+      price: { diamonds: 20 },
+      rarity: 'rare'
+    },
+    {
+      id: 'avatar_sailor',
+      name: 'Marin',
+      icon: '⛵',
+      price: { diamonds: 20 },
+      rarity: 'rare'
+    },
+    {
+      id: 'avatar_captain',
+      name: 'Commandant',
+      icon: '👨‍⚓',
+      price: { diamonds: 50 },
+      rarity: 'epic'
+    }
   ],
-
   couleurs: [
-    { id: 'color_green', name: 'Vert', price: 800, currency: 'money', rarity: 'common', color: '#10b981' },
-    { id: 'color_purple', name: 'Violet', price: 12, currency: 'diamonds', rarity: 'rare', color: '#a855f7' },
-    { id: 'color_black', name: 'Noir', price: 35, currency: 'diamonds', rarity: 'epic', color: '#1a1a1a' },
-    { id: 'color_gold', name: 'Or', price: 8, currency: 'trophies', rarity: 'legendary', color: '#fbbf24' }
+    {
+      id: 'color_blue',
+      name: 'Bleu',
+      icon: '🔵',
+      color: '#3b82f6',
+      price: { money: 50 },
+      rarity: 'common'
+    },
+    {
+      id: 'color_purple',
+      name: 'Violet',
+      icon: '🟣',
+      color: '#a855f7',
+      price: { money: 100 },
+      rarity: 'rare'
+    },
+    {
+      id: 'color_gold',
+      name: 'Or',
+      icon: '🟨',
+      color: '#fbbf24',
+      price: { diamonds: 25 },
+      rarity: 'epic'
+    }
   ]
 };
 
@@ -117,273 +142,129 @@ async function init() {
   }
   
   currentUser = session.user;
-  await loadCurrencies();
-  await loadInventory();
-  renderShop();
-}
-
-async function loadCurrencies() {
+  
+  // Charger le profil
   const { data: profile } = await sb
     .from('profiles')
-    .select('diamonds, trophies')
-    .eq('user_id', currentUser.id)
+    .select('*')
+    .eq('id', currentUser.id)
     .single();
-
-  const { data: stats } = await sb
-    .from('game_stats')
-    .select('money')
-    .eq('user_id', currentUser.id)
-    .single();
-
-  document.getElementById('userMoney').textContent = (stats?.money || 0).toLocaleString('fr-FR') + '€';
-  document.getElementById('userDiamonds').textContent = profile?.diamonds || 0;
-  document.getElementById('userTrophies').textContent = profile?.trophies || 0;
-}
-
-async function loadInventory() {
-  const { data } = await sb
-    .from('user_inventory')
-    .select('item_id, item_type')
-    .eq('user_id', currentUser.id);
   
-  userInventory = data || [];
+  userProfile = profile;
+  
+  updateDisplay();
+  switchTab(null, 'lootboxes');
 }
 
-function switchTab(e, tab) {
-  currentTab = tab;
+function updateDisplay() {
+  document.getElementById('userMoney').textContent = (userProfile?.money || 0).toLocaleString('fr-FR') + '€';
+  document.getElementById('userDiamonds').textContent = userProfile?.diamonds || 0;
+  document.getElementById('userTrophies').textContent = userProfile?.trophies || 0;
+}
+
+function switchTab(event, tab) {
+  // Mettre à jour les boutons
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  e.target.classList.add('active');
-  renderShop();
-}
-
-function renderShop() {
+  if (event) event.target.classList.add('active');
+  else document.querySelector(`.tab[onclick*="'${tab}'"]`)?.classList.add('active');
+  
+  // Afficher le contenu
   const content = document.getElementById('shopContent');
+  const items = SHOP_DATA[tab] || [];
   
-  if (currentTab === 'lootboxes') {
-    renderLootboxes(content);
-  } else {
-    renderItems(content);
-  }
-}
-
-function renderLootboxes(content) {
-  const items = shopData.lootboxes;
-  
-  content.innerHTML = `
-    <div class="section-title">🎰 Coffres Mystères</div>
-    <div class="shop-grid">
-      ${items.map(box => `
-        <div class="lootbox-item ${box.class}" onclick="openLootbox('${box.id}', ${box.price}, '${box.currency}')">
-          <div class="lootbox-icon">${box.icon}</div>
-          <div class="lootbox-name">${box.name}</div>
-          <div class="lootbox-odds">
-            ${box.odds.common > 0 ? `Commun: ${box.odds.common}%<br>` : ''}
-            ${box.odds.rare > 0 ? `Rare: ${box.odds.rare}%<br>` : ''}
-            ${box.odds.epic > 0 ? `Épique: ${box.odds.epic}%<br>` : ''}
-            ${box.odds.legendary > 0 ? `Légendaire: ${box.odds.legendary}%` : ''}
-          </div>
-          <div class="shop-item-price ${box.currency === 'money' ? 'price-money' : box.currency === 'diamonds' ? 'price-diamonds' : 'price-trophies'}">
-            <span>${box.currency === 'money' ? '💰' : box.currency === 'diamonds' ? '💎' : '🏆'}</span>
-            <span>${box.price.toLocaleString('fr-FR')}</span>
-          </div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-function renderItems(content) {
-  const items = shopData[currentTab];
-  const rarityGroups = {
-    legendary: items.filter(i => i.rarity === 'legendary'),
-    epic: items.filter(i => i.rarity === 'epic'),
-    rare: items.filter(i => i.rarity === 'rare'),
-    common: items.filter(i => i.rarity === 'common')
-  };
-
-  let html = '';
-  
-  const rarityLabels = {
-    legendary: { title: '✨ Légendaire', badge: 'Ultra Rare' },
-    epic: { title: '💜 Épique', badge: 'Rare' },
-    rare: { title: '💎 Rare', badge: 'Peu Commun' },
-    common: { title: '⚪ Commun', badge: '' }
-  };
-
-  for (const [rarity, items] of Object.entries(rarityGroups)) {
-    if (items.length === 0) continue;
-    
-    const label = rarityLabels[rarity];
-    html += `
-      <div class="section-title">
-        ${label.title}
-        ${label.badge ? `<span class="rarity-badge rarity-${rarity}">${label.badge}</span>` : ''}
-      </div>
+  if (tab === 'lootboxes') {
+    content.innerHTML = `
+      <div class="section-title">🎰 Coffres à Ouvrir</div>
       <div class="shop-grid">
-        ${items.map(item => renderItem(item)).join('')}
+        ${items.map(item => `
+          <div class="lootbox-item lootbox-${item.id.split('_')[1]}">
+            <div class="lootbox-icon">${item.icon}</div>
+            <div class="lootbox-name">${item.name}</div>
+            <div class="lootbox-odds">${item.odds}</div>
+            <div class="shop-item-price">
+              ${item.price.money ? `<span class="price-money">${item.price.money}€</span>` : ''}
+              ${item.price.diamonds ? `<span class="price-diamonds">💎${item.price.diamonds}</span>` : ''}
+            </div>
+            <button onclick="buyItem('${item.id}', '${tab}')" style="width: 100%; margin-top: 12px; padding: 8px; border: none; border-radius: 8px; background: #10b981; color: white; cursor: pointer; font-weight: 600;">Acheter</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    content.innerHTML = `
+      <div class="section-title">${['🖼️ Cadres', '📛 Titres', '👤 Avatars', '🎨 Couleurs'][['frames', 'titles', 'avatars', 'couleurs'].indexOf(tab)]}</div>
+      <div class="shop-grid">
+        ${items.map(item => `
+          <div class="shop-item ${item.rarity} ${isOwned(item.id) ? 'owned' : ''}" onclick="buyItem('${item.id}', '${tab}')">
+            <div class="shop-item-icon">${item.icon}</div>
+            <div class="shop-item-name">${item.name}</div>
+            <span class="rarity-badge rarity-${item.rarity}"></span>
+            <div class="shop-item-price" style="margin-top: 8px;">
+              ${item.price.money ? `<span class="price-money">${item.price.money}€</span>` : ''}
+              ${item.price.diamonds ? `<span class="price-diamonds">💎${item.price.diamonds}</span>` : ''}
+              ${item.price.trophies ? `<span class="price-trophies">🏆${item.price.trophies}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
       </div>
     `;
   }
-
-  content.innerHTML = html;
 }
 
-function renderItem(item) {
-  const owned = userInventory.some(i => i.item_id === item.id);
-  const priceIcon = item.currency === 'money' ? '💰' : item.currency === 'diamonds' ? '💎' : '🏆';
-  const priceClass = item.currency === 'money' ? 'price-money' : item.currency === 'diamonds' ? 'price-diamonds' : 'price-trophies';
+function isOwned(itemId) {
+  // À implémenter : vérifier si l'utilisateur possède l'item
+  return false;
+}
+
+async function buyItem(itemId, category) {
+  const item = SHOP_DATA[category].find(i => i.id === itemId);
+  if (!item) return;
   
-  if (currentTab === 'frames') {
-    return `
-      <div class="shop-item ${item.rarity} ${owned ? 'owned' : ''}" onclick="${owned ? '' : `buyItem('${item.id}', ${item.price}, '${item.currency}', 'frame')`}">
-        <div class="frame-preview">
-          <div class="frame-border" style="border-color: ${item.color}; ${item.style === 'double' ? 'border-width: 6px;' : ''}"></div>
-          <div class="frame-avatar">👤</div>
-        </div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-price ${priceClass}">
-          <span>${priceIcon}</span>
-          <span>${item.price.toLocaleString('fr-FR')}</span>
-        </div>
-      </div>
-    `;
+  const price = item.price;
+  
+  // Vérifier si on a assez de ressources
+  if (price.money && userProfile.money < price.money) {
+    alert('❌ Pas assez d\'argent!');
+    return;
   }
-
-  if (currentTab === 'titles') {
-    return `
-      <div class="shop-item ${item.rarity} ${owned ? 'owned' : ''}" onclick="${owned ? '' : `buyItem('${item.id}', ${item.price}, '${item.currency}', 'title')`}">
-        <div class="shop-item-icon">📛</div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-price ${priceClass}">
-          <span>${priceIcon}</span>
-          <span>${item.price.toLocaleString('fr-FR')}</span>
-        </div>
-      </div>
-    `;
+  if (price.diamonds && userProfile.diamonds < price.diamonds) {
+    alert('❌ Pas assez de diamants!');
+    return;
   }
-
-  if (currentTab === 'couleurs') {
-    return `
-      <div class="shop-item ${item.rarity} ${owned ? 'owned' : ''}" onclick="${owned ? '' : `buyItem('${item.id}', ${item.price}, '${item.currency}', 'color')`}">
-        <div class="shop-item-icon" style="color: ${item.color}">⬤</div>
-        <div class="shop-item-name">${item.name}</div>
-        <div class="shop-item-price ${priceClass}">
-          <span>${priceIcon}</span>
-          <span>${item.price.toLocaleString('fr-FR')}</span>
-        </div>
-      </div>
-    `;
+  if (price.trophies && userProfile.trophies < price.trophies) {
+    alert('❌ Pas assez de trophées!');
+    return;
   }
-
-  return `
-    <div class="shop-item ${item.rarity} ${owned ? 'owned' : ''}" onclick="${owned ? '' : `buyItem('${item.id}', ${item.price}, '${item.currency}', 'avatar')`}">
-      <div class="shop-item-icon">${item.icon}</div>
-      <div class="shop-item-name">${item.name}</div>
-      <div class="shop-item-price ${priceClass}">
-        <span>${priceIcon}</span>
-        <span>${item.price.toLocaleString('fr-FR')}</span>
-      </div>
-    </div>
-  `;
-}
-
-async function buyItem(itemId, price, currency, itemType) {
+  
   try {
-    // Vérifier monnaie
-    const { data: profile } = await sb.from('profiles').select('diamonds, trophies').eq('user_id', currentUser.id).single();
-    const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-
-    const userMoney = currency === 'money' ? stats.money : currency === 'diamonds' ? profile.diamonds : profile.trophies;
-
-    if (userMoney < price) {
-      alert('Pas assez de ' + (currency === 'money' ? 'euros' : currency === 'diamonds' ? 'diamants' : 'trophées') + ' !');
-      return;
-    }
-
-    // Déduire le prix
-    if (currency === 'money') {
-      await sb.from('game_stats').update({ money: stats.money - price }).eq('user_id', currentUser.id);
-    } else if (currency === 'diamonds') {
-      await sb.from('profiles').update({ diamonds: profile.diamonds - price }).eq('user_id', currentUser.id);
-    } else {
-      await sb.from('profiles').update({ trophies: profile.trophies - price }).eq('user_id', currentUser.id);
-    }
-
-    // Ajouter à l'inventaire
-    await sb.from('user_inventory').insert({
-      user_id: currentUser.id,
-      item_id: itemId,
-      item_type: itemType
-    });
-
-    alert('✅ Acheté avec succès !');
-    await loadCurrencies();
-    await loadInventory();
-    renderShop();
-  } catch (error) {
-    console.error(error);
-    alert('Erreur lors de l\'achat');
-  }
-}
-
-async function openLootbox(boxId, price, currency) {
-  const box = shopData.lootboxes.find(b => b.id === boxId);
-  if (!box) return;
-
-  try {
-    // Vérifier monnaie
-    const { data: profile } = await sb.from('profiles').select('diamonds, trophies').eq('user_id', currentUser.id).single();
-    const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-
-    const userMoney = currency === 'money' ? stats.money : currency === 'diamonds' ? profile.diamonds : profile.trophies;
-
-    if (userMoney < price) {
-      alert('Pas assez de ' + (currency === 'money' ? 'euros' : currency === 'diamonds' ? 'diamants' : 'trophées') + ' !');
-      return;
-    }
-
-    // Déduire le prix
-    if (currency === 'money') {
-      await sb.from('game_stats').update({ money: stats.money - price }).eq('user_id', currentUser.id);
-    } else if (currency === 'diamonds') {
-      await sb.from('profiles').update({ diamonds: profile.diamonds - price }).eq('user_id', currentUser.id);
-    } else {
-      await sb.from('profiles').update({ trophies: profile.trophies - price }).eq('user_id', currentUser.id);
-    }
-
-    // Tirer au sort
-    const rarity = rollRarity(box.odds);
-    const allItems = [...shopData.frames, ...shopData.titles, ...shopData.avatars].filter(i => i.rarity === rarity);
-    const wonItem = allItems[Math.floor(Math.random() * allItems.length)];
-
-    // Ajouter à l'inventaire
-    await sb.from('user_inventory').insert({
-      user_id: currentUser.id,
-      item_id: wonItem.id,
-      item_type: wonItem.icon ? 'avatar' : wonItem.color ? 'frame' : 'title'
-    });
-
-    alert(`🎉 Vous avez gagné :\n${wonItem.name} (${rarity.toUpperCase()}) !`);
+    // Déduire les ressources
+    const newMoney = userProfile.money - (price.money || 0);
+    const newDiamonds = userProfile.diamonds - (price.diamonds || 0);
+    const newTrophies = userProfile.trophies - (price.trophies || 0);
     
-    await loadCurrencies();
-    await loadInventory();
-    renderShop();
+    // Mettre à jour le profil
+    await sb
+      .from('profiles')
+      .update({
+        money: newMoney,
+        diamonds: newDiamonds,
+        trophies: newTrophies
+      })
+      .eq('id', currentUser.id);
+    
+    // Mettre à jour localement
+    userProfile.money = newMoney;
+    userProfile.diamonds = newDiamonds;
+    userProfile.trophies = newTrophies;
+    
+    updateDisplay();
+    alert(`✅ Achat réussi! ${item.name}`);
+    
   } catch (error) {
-    console.error(error);
-    alert('Erreur : ' + error.message);
+    console.error('Erreur achat:', error);
+    alert('❌ Erreur lors de l\'achat');
   }
 }
 
-function rollRarity(odds) {
-  const roll = Math.random() * 100;
-  let cumulative = 0;
-  
-  for (const [rarity, chance] of Object.entries(odds)) {
-    cumulative += chance;
-    if (roll < cumulative) return rarity;
-  }
-  
-  return 'common';
-}
-
+// Initialiser au chargement
 init();
