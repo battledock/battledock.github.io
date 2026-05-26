@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stats & Classements - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    
+    button, a { touch-action: manipulation; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-bottom: 100px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .container { max-width: 500px; margin: 0 auto; padding: 16px; }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 2px solid rgba(251, 191, 36, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .back-btn {
+      background: rgba(251, 191, 36, 0.2);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .page-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(20px, 5vw, 28px);
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: 2px;
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 6px;
+      border-radius: 12px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: rgba(251, 191, 36, 0.6);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #0f172a;
+    }
+
+    /* PROFIL CARD */
+    .profile-card {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 2px solid rgba(251, 191, 36, 0.3);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .profile-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    }
+
+    .profile-info h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .profile-rank {
+      font-size: 13px;
+      color: rgba(251, 191, 36, 0.9);
+      font-weight: 600;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      letter-spacing: 1px;
+    }
+
+    .stat-value.positive { color: #10b981; }
+    .stat-value.negative { color: #ef4444; }
+
+    .games-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .game-stat {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .game-stat-icon {
+      font-size: 24px;
+      margin-bottom: 4px;
+    }
+
+    .game-stat-name {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 4px;
+    }
+
+    .game-stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #fbbf24;
+    }
+
+    /* LEADERBOARD */
+    .leaderboard-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+
+    .leaderboard-tab {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: 20px;
+      color: rgba(251, 191, 36, 0.7);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .leaderboard-tab.active {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: #fbbf24;
+      color: #fbbf24;
+    }
+
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .leaderboard-item {
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .leaderboard-item.top1 { border-color: #fbbf24; background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1)); }
+    .leaderboard-item.top2 { border-color: #94a3b8; }
+    .leaderboard-item.top3 { border-color: #cd7f32; }
+
+    .rank-badge {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .rank-badge.top1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; }
+    .rank-badge.top2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: white; }
+    .rank-badge.top3 { background: linear-gradient(135deg, #cd7f32, #a0522d); color: white; }
+    .rank-badge.other { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.7); font-size: 14px; }
+
+    .player-info {
+      flex: 1;
+    }
+
+    .player-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: white;
+      margin-bottom: 2px;
+    }
+
+    .player-games {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .player-winnings {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      color: #10b981;
+      letter-spacing: 1px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #1e293b, #334155);
+      border-top: 2px solid rgba(251, 191, 36, 0.3);
+      padding: 12px 16px;
+      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 500px;
+      margin: 0 auto;
+      display: flex;
+      background: rgba(251, 191, 36, 0.2);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+      border-radius: 12px;
+      padding: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:active { transform: scale(0.98); background: rgba(251, 191, 36, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
+      <div class="page-title">📊 STATS & CLASSEMENTS</div>
+      <div style="width: 80px;"></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('profil')">👤 Profil</button>
+      <button class="tab" onclick="showTab('leaderboard')">🏆 Classements</button>
+    </div>
+
+    <!-- PROFIL TAB -->
+    <div id="profilTab">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar">🎰</div>
+          <div class="profile-info">
+            <h2 id="profileName">Chargement...</h2>
+            <div class="profile-rank" id="profileRank">Docker Débutant</div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Parties jouées</div>
+            <div class="stat-value" id="totalGames">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value" id="winRate">0%</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Gains totaux</div>
+            <div class="stat-value positive" id="totalWon">0€</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Pertes totales</div>
+            <div class="stat-value negative" id="totalLost">0€</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Profit net</div>
+            <div class="stat-value" id="netProfit">0€</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Plus gros gain</div>
+            <div class="stat-value positive" id="biggestWin">0€</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Streak actuel</div>
+            <div class="stat-value" id="currentStreak">0 🔥</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Meilleur streak</div>
+            <div class="stat-value" id="bestStreak">0 🔥</div>
+          </div>
+        </div>
+
+        <div style="margin: 20px 0 12px; font-size: 14px; color: rgba(251, 191, 36, 0.9); font-weight: 700; text-align: center;">
+          📊 STATISTIQUES PAR JEU
+        </div>
+
+        <div class="games-stats">
+          <div class="game-stat">
+            <div class="game-stat-icon">🎡</div>
+            <div class="game-stat-name">Roulette</div>
+            <div class="game-stat-value" id="rouletteGames">0</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-icon">🎰</div>
+            <div class="game-stat-name">Slots</div>
+            <div class="game-stat-value" id="slotsGames">0</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-icon">🔴</div>
+            <div class="game-stat-name">Plinko</div>
+            <div class="game-stat-value" id="plinkoGames">0</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-icon">🚀</div>
+            <div class="game-stat-name">Crash</div>
+            <div class="game-stat-value" id="crashGames">0</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-icon">🃏</div>
+            <div class="game-stat-name">H/L</div>
+            <div class="game-stat-value" id="higherLowerGames">0</div>
+          </div>
+          <div class="game-stat">
+            <div class="game-stat-icon">♠️</div>
+            <div class="game-stat-name">Blackjack</div>
+            <div class="game-stat-value" id="blackjackGames">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div id="leaderboardTab" style="display: none;">
+      <div class="leaderboard-tabs">
+        <button class="leaderboard-tab active" onclick="showLeaderboard('today')">📅 Aujourd'hui</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('week')">📊 Cette semaine</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('alltime')">🏆 All-time</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('roulette')">🎡 Roulette</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('slots')">🎰 Slots</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('crash')">🚀 Crash</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('plinko')">🔴 Plinko</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('higher_lower')">🃏 H/L</button>
+        <button class="leaderboard-tab" onclick="showLeaderboard('blackjack')">♠️ Blackjack</button>
+      </div>
+
+      <div id="leaderboardContent">
+        <div class="loading">⏳ Chargement du classement...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    let currentLeaderboard = 'today';
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+
+      await loadProfile();
+      await showLeaderboard('today');
+    }
+
+    async function loadProfile() {
+      try {
+        // Charger le username
+        const { data: profile } = await sb
+          .from('profiles')
+          .select('username')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        document.getElementById('profileName').textContent = profile?.username || 'Joueur';
+
+        // Charger les stats casino
+        const { data: stats } = await sb
+          .from('casino_stats')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        if (!stats) {
+          // Pas encore de stats
+          document.getElementById('profileRank').textContent = 'Nouveau joueur';
+          return;
+        }
+
+        // Remplir les stats
+        document.getElementById('totalGames').textContent = stats.total_games_played.toLocaleString('fr-FR');
+        document.getElementById('totalWon').textContent = (stats.total_won || 0).toLocaleString('fr-FR') + '€';
+        document.getElementById('totalLost').textContent = (stats.total_lost || 0).toLocaleString('fr-FR') + '€';
+        
+        const netProfit = (stats.total_won || 0) - (stats.total_lost || 0);
+        const netElem = document.getElementById('netProfit');
+        netElem.textContent = (netProfit >= 0 ? '+' : '') + netProfit.toLocaleString('fr-FR') + '€';
+        netElem.className = 'stat-value ' + (netProfit >= 0 ? 'positive' : 'negative');
+
+        document.getElementById('biggestWin').textContent = (stats.biggest_win || 0).toLocaleString('fr-FR') + '€';
+        document.getElementById('currentStreak').textContent = (stats.current_streak || 0) + ' 🔥';
+        document.getElementById('bestStreak').textContent = (stats.best_streak || 0) + ' 🔥';
+
+        // Win rate
+        const winRate = stats.total_games_played > 0 
+          ? ((stats.total_won / (stats.total_won + stats.total_lost)) * 100).toFixed(1)
+          : 0;
+        document.getElementById('winRate').textContent = winRate + '%';
+
+        // Stats par jeu
+        document.getElementById('rouletteGames').textContent = stats.roulette_played || 0;
+        document.getElementById('slotsGames').textContent = stats.slots_played || 0;
+        document.getElementById('plinkoGames').textContent = stats.plinko_played || 0;
+        document.getElementById('crashGames').textContent = stats.crash_played || 0;
+        document.getElementById('higherLowerGames').textContent = stats.higher_lower_played || 0;
+        document.getElementById('blackjackGames').textContent = stats.blackjack_played || 0;
+
+      } catch (err) {
+        console.error('Error loading profile:', err);
+      }
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (tab === 'profil') {
+        document.getElementById('profilTab').style.display = 'block';
+        document.getElementById('leaderboardTab').style.display = 'none';
+      } else {
+        document.getElementById('profilTab').style.display = 'none';
+        document.getElementById('leaderboardTab').style.display = 'block';
+        showLeaderboard(currentLeaderboard);
+      }
+    }
+
+    async function showLeaderboard(type) {
+      currentLeaderboard = type;
+      
+      // Update tabs
+      document.querySelectorAll('.leaderboard-tab').forEach(t => t.classList.remove('active'));
+      event?.target?.classList.add('active');
+
+      const content = document.getElementById('leaderboardContent');
+      content.innerHTML = '<div class="loading">⏳ Chargement du classement...</div>';
+
+      try {
+        let data, error;
+        
+        // Classements globaux (temporels)
+        if (type === 'today') {
+          const today = new Date().toISOString().split('T')[0];
+          ({ data, error } = await sb.from('casino_leaderboard_daily')
+            .select('*')
+            .eq('date', today)
+            .order('total_won', { ascending: false })
+            .limit(50));
+        } else if (type === 'week') {
+          const weekStart = getWeekStart();
+          ({ data, error } = await sb.from('casino_leaderboard_weekly')
+            .select('*')
+            .eq('week_start', weekStart)
+            .order('total_won', { ascending: false })
+            .limit(50));
+        } else if (type === 'alltime') {
+          ({ data, error } = await sb.from('casino_leaderboard_alltime')
+            .select('*')
+            .order('total_won', { ascending: false })
+            .limit(50));
+        } 
+        // Classements par jeu
+        else {
+          const gameColumn = `${type}_won`;
+          ({ data, error } = await sb
+            .from('casino_stats')
+            .select(`
+              user_id,
+              ${type}_played,
+              ${gameColumn}
+            `)
+            .gt(gameColumn, 0)
+            .order(gameColumn, { ascending: false })
+            .limit(50));
+
+          // Récupérer les usernames
+          if (data && data.length > 0) {
+            const userIds = data.map(d => d.user_id);
+            const { data: profiles } = await sb
+              .from('profiles')
+              .select('user_id, username')
+              .in('user_id', userIds);
+
+            // Mapper usernames
+            data = data.map(player => {
+              const profile = profiles?.find(p => p.user_id === player.user_id);
+              return {
+                ...player,
+                username: profile?.username || 'Joueur',
+                games_played: player[`${type}_played`],
+                total_won: player[gameColumn]
+              };
+            });
+          }
+        }
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          const gameNames = {
+            roulette: 'à la Roulette',
+            slots: 'aux Slots',
+            crash: 'au Crash',
+            plinko: 'au Plinko',
+            higher_lower: 'au Higher/Lower',
+            blackjack: 'au Blackjack'
+          };
+          const gameName = gameNames[type] || '';
+          
+          content.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">🎰</div>
+              <div>Aucun joueur dans le classement ${gameName} pour le moment.</div>
+              <div style="font-size: 12px; margin-top: 8px;">Sois le premier à jouer !</div>
+            </div>
+          `;
+          return;
+        }
+
+        // Render leaderboard
+        let html = '<div class="leaderboard-list">';
+        
+        data.forEach((player, index) => {
+          const rank = index + 1;
+          const rankClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : 'other';
+          const badgeClass = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : 'other';
+          const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+
+          html += `
+            <div class="leaderboard-item ${rankClass}">
+              <div class="rank-badge ${badgeClass}">${medal}</div>
+              <div class="player-info">
+                <div class="player-name">${player.username}</div>
+                <div class="player-games">${player.games_played || 0} parties</div>
+              </div>
+              <div class="player-winnings">+${(player.total_won || 0).toLocaleString('fr-FR')}€</div>
+            </div>
+          `;
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (err) {
+        console.error('Error loading leaderboard:', err);
+        content.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">⚠️</div>
+            <div>Erreur lors du chargement du classement.</div>
+          </div>
+        `;
+      }
+    }
+
+    function getWeekStart() {
+      const now = new Date();
+      const day = now.getDay();
+      const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(now.setDate(diff));
+      return monday.toISOString().split('T')[0];
+    }
+
+    init();
+  </script>
+</body>
+</html>
