@@ -2,7 +2,8 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Container Clicker - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
@@ -13,16 +14,49 @@
       box-sizing: border-box;
       -webkit-user-select: none;
       user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      touch-action: manipulation;
     }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+      position: relative;
+    }
+
+    .bg-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
+      z-index: 0;
+    }
+
+    .crane {
+      position: absolute;
+      font-size: 80px;
+      opacity: 0.1;
+      animation: crane-move 20s linear infinite;
+    }
+
+    @keyframes crane-move {
+      0% { left: -100px; }
+      100% { left: 100%; }
     }
 
     .container {
+      position: relative;
+      z-index: 1;
       max-width: 600px;
       margin: 0 auto;
       padding: 20px;
@@ -31,19 +65,20 @@
       flex-direction: column;
     }
 
-    /* HEADER STATS */
     .stats-header {
-      background: white;
+      background: rgba(255, 255, 255, 0.95);
       border-radius: 20px;
       padding: 20px;
       margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(10px);
     }
 
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
+      margin-bottom: 16px;
     }
 
     .stat-box {
@@ -57,157 +92,218 @@
 
     .stat-value {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
+      font-size: 24px;
       color: #1a1a1a;
       letter-spacing: 1px;
       margin-bottom: 4px;
     }
 
     .stat-label {
-      font-size: 12px;
+      font-size: 11px;
       color: #6b7280;
       text-transform: uppercase;
       font-weight: 600;
     }
 
-    /* CLICKER ZONE */
+    .combo-display {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      transition: transform 0.2s;
+    }
+
+    .combo-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .combo-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: white;
+      letter-spacing: 2px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .combo-bar {
+      background: rgba(0, 0, 0, 0.3);
+      height: 6px;
+      border-radius: 3px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .combo-fill {
+      background: linear-gradient(90deg, #fbbf24, #f59e0b);
+      height: 100%;
+      transition: width 0.3s;
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+    }
+
     .clicker-zone {
       flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
+      padding: 20px 0;
     }
 
-    .container-btn {
-      width: 300px;
-      height: 300px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border: 8px solid #fff;
-      border-radius: 30px;
+    .container-3d {
+      position: relative;
+      width: 320px;
+      height: 320px;
       cursor: pointer;
-      transition: all 0.1s;
-      box-shadow: 0 20px 60px rgba(251, 191, 36, 0.5);
+      transform-style: preserve-3d;
+      transition: transform 0.1s;
+    }
+
+    .container-3d:active {
+      transform: scale(0.95) rotateX(5deg);
+    }
+
+    .container-box {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotateY(0deg); }
+      50% { transform: translateY(-10px) rotateY(5deg); }
+    }
+
+    .container-face {
+      position: absolute;
+      width: 320px;
+      height: 320px;
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border: 8px solid #7f1d1d;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 120px;
-      position: relative;
-      user-select: none;
+      font-size: 80px;
+      box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.3);
     }
 
-    .container-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 25px 70px rgba(251, 191, 36, 0.6);
+    .container-face.front { transform: translateZ(160px); }
+    .container-face.back { transform: translateZ(-160px) rotateY(180deg); }
+    .container-face.right { transform: rotateY(90deg) translateZ(160px); }
+    .container-face.left { transform: rotateY(-90deg) translateZ(160px); }
+    .container-face.top {
+      transform: rotateX(90deg) translateZ(160px);
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+    .container-face.bottom {
+      transform: rotateX(-90deg) translateZ(160px);
+      background: linear-gradient(135deg, #991b1b, #7f1d1d);
     }
 
-    .container-btn:active {
-      transform: scale(0.95);
-    }
-
-    .container-btn.clicked {
-      animation: bounce 0.3s ease;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-
-    /* CLICK EFFECT */
-    .click-effect {
-      position: absolute;
+    .container-label {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 32px;
-      color: #10b981;
+      font-size: 48px;
+      color: white;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      letter-spacing: 3px;
+    }
+
+    .click-effect {
+      position: fixed;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
       font-weight: 700;
       pointer-events: none;
+      z-index: 9999;
       animation: floatUp 1s ease-out forwards;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
     }
+
+    .click-effect.x1 { color: #10b981; }
+    .click-effect.x2 { color: #3b82f6; }
+    .click-effect.x3 { color: #8b5cf6; }
+    .click-effect.x4 { color: #f59e0b; }
+    .click-effect.x5 { color: #ef4444; font-size: 56px; }
 
     @keyframes floatUp {
-      0% {
-        opacity: 1;
-        transform: translateY(0);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-100px);
-      }
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
     }
 
-    /* PER CLICK DISPLAY */
     .per-click {
       text-align: center;
       margin-top: 20px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
+      font-size: 28px;
       color: white;
-      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      letter-spacing: 1px;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      letter-spacing: 2px;
     }
 
-    /* BOTTOM NAV */
+    .per-click .multiplier {
+      color: #fbbf24;
+      font-size: 36px;
+    }
+
     .bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: white;
+      background: rgba(255, 255, 255, 0.95);
       padding: 12px 16px;
-      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-      display: flex;
-      gap: 12px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      z-index: 100;
     }
 
     .nav-btn {
-      flex: 1;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
       background: linear-gradient(135deg, #667eea, #764ba2);
       color: white;
       border: none;
       border-radius: 12px;
-      padding: 14px;
+      padding: 16px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
+      font-size: 18px;
       letter-spacing: 1px;
       cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
     }
 
-    .nav-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .nav-btn.save {
-      background: linear-gradient(135deg, #10b981, #059669);
-    }
-
     @media (max-width: 400px) {
-      .container-btn {
-        width: 250px;
-        height: 250px;
-        font-size: 100px;
-      }
-
-      .stat-icon {
-        font-size: 28px;
-      }
-
-      .stat-value {
-        font-size: 24px;
-      }
+      .container-3d { width: 260px; height: 260px; }
+      .container-face { width: 260px; height: 260px; font-size: 64px; }
+      .container-face.front { transform: translateZ(130px); }
+      .container-face.back { transform: translateZ(-130px) rotateY(180deg); }
+      .container-face.right { transform: rotateY(90deg) translateZ(130px); }
+      .container-face.left { transform: rotateY(-90deg) translateZ(130px); }
+      .container-face.top { transform: rotateX(90deg) translateZ(130px); }
+      .container-face.bottom { transform: rotateX(-90deg) translateZ(130px); }
+      .container-label { font-size: 36px; }
+      .stat-icon { font-size: 28px; }
+      .stat-value { font-size: 20px; }
     }
   </style>
 </head>
 <body>
+  <div class="bg-container">
+    <div class="crane" style="top: 10%; animation-delay: 0s;">🏗️</div>
+    <div class="crane" style="top: 40%; animation-delay: 7s;">🚢</div>
+    <div class="crane" style="top: 70%; animation-delay: 14s;">🏗️</div>
+  </div>
+
   <div class="container">
-    <!-- STATS -->
     <div class="stats-header">
       <div class="stats-grid">
         <div class="stat-box">
@@ -226,28 +322,41 @@
           <div class="stat-label">Clics</div>
         </div>
       </div>
+
+      <div class="combo-display">
+        <div class="combo-label">🔥 COMBO MULTIPLIER</div>
+        <div class="combo-value">x<span id="comboMultiplier">1</span></div>
+        <div class="combo-bar">
+          <div class="combo-fill" id="comboBar" style="width: 0%"></div>
+        </div>
+      </div>
     </div>
 
-    <!-- CLICKER -->
     <div class="clicker-zone">
-      <div class="container-btn" id="containerBtn">
-        📦
+      <div class="container-3d" id="containerBtn">
+        <div class="container-box">
+          <div class="container-face front">
+            <span class="container-label">DOCK</span>
+          </div>
+          <div class="container-face back">
+            <span class="container-label">SHIP</span>
+          </div>
+          <div class="container-face right">📦</div>
+          <div class="container-face left">📦</div>
+          <div class="container-face top">⚓</div>
+          <div class="container-face bottom">🌊</div>
+        </div>
       </div>
     </div>
 
     <div class="per-click">
-      +<span id="perClickMoney">1</span>€ / clic
+      +<span id="perClickMoney">1</span>€ 
+      <span class="multiplier">× <span id="displayMultiplier">1</span></span>
     </div>
   </div>
 
-  <!-- NAV -->
   <div class="bottom-nav">
-    <button class="nav-btn save" onclick="saveProgress()">
-      💾 SAUVEGARDER
-    </button>
-    <button class="nav-btn" onclick="window.location.href='game.html'">
-      🏠 RETOUR
-    </button>
+    <button class="nav-btn" onclick="window.location.href='game.html'">🏠 RETOUR</button>
   </div>
 
   <script>
@@ -256,69 +365,64 @@
     const { createClient } = supabase;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    let currentUser = null;
-    
-    // Game state
-    let money = 0;
-    let xp = 0;
-    let totalClicks = 0;
-    let moneyPerClick = 1;
-    let xpPerClick = 1;
-
-    // Initial stats from DB
-    let initialMoney = 0;
-    let initialXp = 0;
+    let currentUser = null, money = 0, xp = 0, totalClicks = 0, moneyPerClick = 1, xpPerClick = 1;
+    let comboMultiplier = 1, comboProgress = 0, lastClickTime = 0;
+    const COMBO_TIMEOUT = 2000, CLICKS_PER_COMBO_LEVEL = 10;
+    let initialMoney = 0, initialXp = 0;
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
+      if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-      
-      // Load from DB
       const { data: stats } = await sb.from('game_stats').select('money, xp').eq('user_id', currentUser.id).single();
-      if (stats) {
-        initialMoney = stats.money || 0;
-        initialXp = stats.xp || 0;
-        money = initialMoney;
-        xp = initialXp;
-      }
-      
-      updateDisplay();
-      setupClicker();
+      if (stats) { initialMoney = stats.money || 0; initialXp = stats.xp || 0; money = initialMoney; xp = initialXp; }
+      updateDisplay(); setupClicker(); startComboTimer();
     }
 
     function setupClicker() {
       const btn = document.getElementById('containerBtn');
-      
-      btn.addEventListener('click', (e) => {
-        // Add money and XP
-        money += moneyPerClick;
-        xp += xpPerClick;
-        totalClicks++;
-        
-        // Update display
-        updateDisplay();
-        
-        // Visual effect
-        btn.classList.add('clicked');
-        setTimeout(() => btn.classList.remove('clicked'), 300);
-        
-        // Floating text
-        createFloatingText(e.clientX, e.clientY, `+${moneyPerClick}€`);
-      });
+      btn.addEventListener('click', handleClick);
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); handleClick(e.touches[0]); });
     }
 
-    function createFloatingText(x, y, text) {
+    function handleClick(e) {
+      const now = Date.now();
+      if (now - lastClickTime > COMBO_TIMEOUT) resetCombo();
+      lastClickTime = now; comboProgress++;
+      const newMultiplier = Math.min(5, Math.floor(comboProgress / CLICKS_PER_COMBO_LEVEL) + 1);
+      if (newMultiplier > comboMultiplier) { comboMultiplier = newMultiplier; playComboSound(); }
+      const earnedMoney = moneyPerClick * comboMultiplier, earnedXp = xpPerClick * comboMultiplier;
+      money += earnedMoney; xp += earnedXp; totalClicks++;
+      updateDisplay(); updateComboBar();
+      createFloatingText(e.clientX, e.clientY, `+${earnedMoney}€`, `x${comboMultiplier}`);
+    }
+
+    function updateComboBar() {
+      const percentage = ((comboProgress % CLICKS_PER_COMBO_LEVEL) / CLICKS_PER_COMBO_LEVEL) * 100;
+      document.getElementById('comboBar').style.width = percentage + '%';
+      document.getElementById('comboMultiplier').textContent = comboMultiplier;
+      document.getElementById('displayMultiplier').textContent = comboMultiplier;
+    }
+
+    function startComboTimer() {
+      setInterval(() => { if (Date.now() - lastClickTime > COMBO_TIMEOUT && comboMultiplier > 1) resetCombo(); }, 100);
+    }
+
+    function resetCombo() { comboMultiplier = 1; comboProgress = 0; updateComboBar(); }
+
+    function playComboSound() {
+      const el = document.querySelector('.combo-display');
+      el.style.transform = 'scale(1.1)';
+      setTimeout(() => el.style.transform = 'scale(1)', 200);
+    }
+
+    function createFloatingText(x, y, text, className) {
       const effect = document.createElement('div');
-      effect.className = 'click-effect';
+      effect.className = 'click-effect ' + className;
       effect.textContent = text;
       effect.style.left = x + 'px';
       effect.style.top = y + 'px';
       document.body.appendChild(effect);
-      
       setTimeout(() => effect.remove(), 1000);
     }
 
@@ -331,39 +435,16 @@
 
     async function saveProgress() {
       if (!currentUser) return;
-      
       try {
-        // Calculate gains
-        const moneyGained = money - initialMoney;
-        const xpGained = xp - initialXp;
-        
-        // Update DB
-        await sb.from('game_stats').update({
-          money: money,
-          xp: xp
-        }).eq('user_id', currentUser.id);
-        
-        // Update initial values
-        initialMoney = money;
-        initialXp = xp;
-        
-        alert(`✅ Progression sauvegardée !\n\n💰 +${moneyGained.toLocaleString('fr-FR')}€\n⭐ +${xpGained.toLocaleString('fr-FR')} XP\n👆 ${totalClicks.toLocaleString('fr-FR')} clics`);
-      } catch (error) {
-        console.error(error);
-        alert('❌ Erreur lors de la sauvegarde');
-      }
+        await sb.from('game_stats').update({ money, xp }).eq('user_id', currentUser.id);
+        initialMoney = money; initialXp = xp;
+      } catch (error) { console.error('Save error:', error); }
     }
 
-    // Auto-save every 30 seconds
     setInterval(saveProgress, 30000);
-
-    // Save on page unload
-    window.addEventListener('beforeunload', (e) => {
-      if (money > initialMoney || xp > initialXp) {
-        saveProgress();
-      }
-    });
-
+    window.addEventListener('beforeunload', () => { if (money > initialMoney || xp > initialXp) saveProgress(); });
+    document.addEventListener('gesturestart', (e) => e.preventDefault());
+    document.addEventListener('gesturechange', (e) => e.preventDefault());
     init();
   </script>
 </body>
