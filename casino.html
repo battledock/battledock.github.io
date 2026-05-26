@@ -2,12 +2,18 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Casino - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
     
     body {
       font-family: 'Inter', sans-serif;
@@ -17,7 +23,7 @@
       padding-bottom: 80px;
     }
 
-    .container { max-width: 700px; margin: 0 auto; }
+    .container { max-width: 800px; margin: 0 auto; }
 
     .header {
       background: linear-gradient(135deg, #fbbf24, #f59e0b);
@@ -58,12 +64,78 @@
       letter-spacing: 2px;
     }
 
+    /* MENU JEUX */
+    .games-menu {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .game-card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      text-decoration: none;
+      display: block;
+      position: relative;
+    }
+
+    .game-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+    }
+
+    .game-icon {
+      font-size: 64px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .game-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: #dc2626;
+      text-align: center;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .game-desc {
+      text-align: center;
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .game-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #ef4444;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+
+    /* SECTIONS JEUX */
     .game-section {
       background: white;
       border-radius: 20px;
       padding: 28px;
       margin-bottom: 20px;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      display: none;
+    }
+
+    .game-section.active {
+      display: block;
     }
 
     .game-title-bar {
@@ -82,8 +154,8 @@
       letter-spacing: 2px;
     }
 
-    .info-btn {
-      background: #3b82f6;
+    .back-btn {
+      background: #6b7280;
       color: white;
       border: none;
       border-radius: 10px;
@@ -91,12 +163,6 @@
       font-weight: 700;
       cursor: pointer;
       font-size: 14px;
-      transition: all 0.2s;
-    }
-
-    .info-btn:hover {
-      background: #2563eb;
-      transform: translateY(-2px);
     }
 
     .game-area {
@@ -143,23 +209,6 @@
       justify-content: center;
       font-size: 32px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .wheel-labels {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      max-width: 350px;
-      margin: 0 auto 24px;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .wheel-label {
-      text-align: center;
-      padding: 8px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.5);
     }
 
     /* SLOTS */
@@ -340,74 +389,11 @@
       border: 3px solid #dc2626;
     }
 
-    /* MODAL */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .modal.show { display: flex; }
-
-    .modal-box {
-      background: white;
-      border-radius: 20px;
-      padding: 32px;
-      max-width: 500px;
-      width: 100%;
-      max-height: 80vh;
-      overflow-y: auto;
-      position: relative;
-    }
-
-    .modal-close {
-      position: absolute;
-      top: 16px; right: 16px;
-      background: #ef4444;
-      color: white;
-      border: none;
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      font-size: 24px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .modal-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 32px;
-      color: #dc2626;
-      letter-spacing: 2px;
-      margin-bottom: 20px;
-    }
-
-    .prob-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0;
-    }
-
-    .prob-table th,
-    .prob-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 2px solid #e5e7eb;
-    }
-
-    .prob-table th {
-      background: #fef3c7;
-      font-weight: 700;
-      color: #7f1d1d;
-    }
-
     .bottom-nav {
       position: fixed;
-      bottom: 0; left: 0; right: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
       background: white;
       border-top: 1px solid #e5e7eb;
       padding: 12px 16px;
@@ -417,7 +403,7 @@
 
     .nav-btn {
       width: 100%;
-      max-width: 700px;
+      max-width: 800px;
       margin: 0 auto;
       display: flex;
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
@@ -433,6 +419,12 @@
       justify-content: center;
       gap: 8px;
     }
+
+    @media (max-width: 600px) {
+      .games-menu {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -445,25 +437,66 @@
       </div>
     </div>
 
+    <!-- MENU -->
+    <div id="menuSection">
+      <div class="games-menu">
+        <div class="game-card" onclick="showGame('roulette')">
+          <div class="game-icon">🎡</div>
+          <div class="game-name">Roulette</div>
+          <div class="game-desc">Tente ta chance sur la roue</div>
+        </div>
+
+        <div class="game-card" onclick="showGame('slots')">
+          <div class="game-icon">🎰</div>
+          <div class="game-name">Slots</div>
+          <div class="game-desc">Triple symboles = jackpot</div>
+        </div>
+
+        <div class="game-card" onclick="showGame('coin')">
+          <div class="game-icon">🪙</div>
+          <div class="game-name">Pile ou Face</div>
+          <div class="game-desc">50/50 de doubler ta mise</div>
+        </div>
+
+        <a href="higher-lower.html" class="game-card">
+          <div class="game-badge">NOUVEAU</div>
+          <div class="game-icon">🃏</div>
+          <div class="game-name">Higher or Lower</div>
+          <div class="game-desc">Enchaine les bonnes réponses</div>
+        </a>
+
+        <a href="plinko.html" class="game-card">
+          <div class="game-badge">NOUVEAU</div>
+          <div class="game-icon">🔴</div>
+          <div class="game-name">Plinko</div>
+          <div class="game-desc">Lâche la bille et espère ×10</div>
+        </a>
+
+        <a href="blackjack.html" class="game-card">
+          <div class="game-badge">NOUVEAU</div>
+          <div class="game-icon">🃏</div>
+          <div class="game-name">Blackjack</div>
+          <div class="game-desc">Approche 21 sans dépasser</div>
+        </a>
+
+        <a href="crash.html" class="game-card">
+          <div class="game-badge">NOUVEAU</div>
+          <div class="game-icon">🚀</div>
+          <div class="game-name">Crash</div>
+          <div class="game-desc">Encaisse avant le crash !</div>
+        </a>
+      </div>
+    </div>
+
     <!-- ROULETTE -->
-    <div class="game-section">
+    <div class="game-section" id="rouletteSection">
       <div class="game-title-bar">
         <div class="game-title">🎡 ROULETTE</div>
-        <button class="info-btn" onclick="showModal('roulette')">📊 PROBABILITÉS</button>
+        <button class="back-btn" onclick="showMenu()">← RETOUR</button>
       </div>
       <div class="game-area">
         <div class="roulette-wheel" id="wheel">
           <div class="wheel-center">🎯</div>
-        </div>
-        <div class="wheel-labels">
-          <div class="wheel-label">Noir: 0x</div>
-          <div class="wheel-label">Rouge: 0.5x</div>
-          <div class="wheel-label">Or: 2x</div>
-          <div class="wheel-label">Bleu: 1x</div>
-          <div class="wheel-label">Noir: 0x</div>
-          <div class="wheel-label">Vert: 1.5x</div>
-          <div class="wheel-label">Noir: 0x</div>
-          <div class="wheel-label">Noir: 0x</div>
         </div>
         <div class="game-controls">
           <div class="bet-control">
@@ -477,10 +510,10 @@
     </div>
 
     <!-- SLOTS -->
-    <div class="game-section">
+    <div class="game-section" id="slotsSection">
       <div class="game-title-bar">
         <div class="game-title">🎰 MACHINE À SOUS</div>
-        <button class="info-btn" onclick="showModal('slots')">📊 PROBABILITÉS</button>
+        <button class="back-btn" onclick="showMenu()">← RETOUR</button>
       </div>
       <div class="game-area">
         <div class="slots-display">
@@ -506,10 +539,10 @@
     </div>
 
     <!-- COINFLIP -->
-    <div class="game-section">
+    <div class="game-section" id="coinSection">
       <div class="game-title-bar">
         <div class="game-title">🪙 PILE OU FACE</div>
-        <button class="info-btn" onclick="showModal('coinflip')">📊 PROBABILITÉS</button>
+        <button class="back-btn" onclick="showMenu()">← RETOUR</button>
       </div>
       <div class="game-area">
         <div class="coin-display" id="coin">🪙</div>
@@ -529,60 +562,6 @@
     </div>
   </div>
 
-  <!-- MODALS -->
-  <div id="modalRoulette" class="modal">
-    <div class="modal-box">
-      <button class="modal-close" onclick="hideModal('roulette')">×</button>
-      <div class="modal-title">🎡 ROULETTE</div>
-      <p><strong>Mise minimum:</strong> 50€</p>
-      <table class="prob-table">
-        <tr><th>Résultat</th><th>Multiplicateur</th><th>Probabilité</th></tr>
-        <tr><td>Noir (4 segments)</td><td>0x - Tout perdu</td><td>50%</td></tr>
-        <tr><td>Rouge</td><td>0.5x - Perds 50%</td><td>12.5%</td></tr>
-        <tr><td>Bleu</td><td>1x - Remboursé</td><td>12.5%</td></tr>
-        <tr><td>Vert</td><td>1.5x - Gagne 50%</td><td>12.5%</td></tr>
-        <tr><td>Or</td><td>2x - Double</td><td>12.5%</td></tr>
-      </table>
-      <p style="margin-top: 16px; font-size: 14px; color: #6b7280;">
-        <strong>Avantage maison:</strong> 37.5%
-      </p>
-    </div>
-  </div>
-
-  <div id="modalSlots" class="modal">
-    <div class="modal-box">
-      <button class="modal-close" onclick="hideModal('slots')">×</button>
-      <div class="modal-title">🎰 SLOTS</div>
-      <p><strong>Mise minimum:</strong> 100€</p>
-      <p style="margin: 12px 0;">Seuls les triples gagnent:</p>
-      <table class="prob-table">
-        <tr><th>Triple</th><th>Multiplicateur</th><th>Probabilité</th></tr>
-        <tr><td>7️⃣ 7️⃣ 7️⃣</td><td>×100</td><td>0.46%</td></tr>
-        <tr><td>💎 💎 💎</td><td>×50</td><td>0.46%</td></tr>
-        <tr><td>⭐ ⭐ ⭐</td><td>×20</td><td>0.46%</td></tr>
-        <tr><td>🔔 🔔 🔔</td><td>×10</td><td>0.46%</td></tr>
-        <tr><td>🍒 / 🍋</td><td>×5</td><td>0.93%</td></tr>
-        <tr><td>Aucun gain</td><td>-</td><td>97.2%</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <div id="modalCoinflip" class="modal">
-    <div class="modal-box">
-      <button class="modal-close" onclick="hideModal('coinflip')">×</button>
-      <div class="modal-title">🪙 PILE OU FACE</div>
-      <p><strong>Mise minimum:</strong> 100€</p>
-      <table class="prob-table">
-        <tr><th>Résultat</th><th>Gain</th><th>Probabilité</th></tr>
-        <tr><td>Victoire</td><td>×2 (double)</td><td>50%</td></tr>
-        <tr><td>Défaite</td><td>Perte totale</td><td>50%</td></tr>
-      </table>
-      <p style="margin-top: 16px; font-size: 14px; color: #6b7280;">
-        <strong>Jeu équitable:</strong> 0% d'avantage maison
-      </p>
-    </div>
-  </div>
-
   <div class="bottom-nav">
     <button class="nav-btn" onclick="window.location.href='game.html'">
       ← RETOUR
@@ -595,7 +574,7 @@
     const { createClient } = supabase;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    let currentUser = null, userMoney = 0, coinChoice = null;
+    let currentUser, userMoney = 0, coinChoice = null;
     const symbols = ['🍒', '💎', '🍋', '⭐', '🔔', '7️⃣'];
     const multipliers = [0, 0.5, 1, 0, 1.5, 0, 2, 0];
 
@@ -606,29 +585,33 @@
       await loadMoney();
       initSlots();
       
-      // Actualiser l'argent toutes les 5 secondes
-      setInterval(loadMoney, 5000);
+      // Désactiver le zoom
+      document.addEventListener('gesturestart', (e) => e.preventDefault());
+      document.addEventListener('gesturechange', (e) => e.preventDefault());
     }
 
     async function loadMoney() {
       const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
-      if (!data) {
-        await sb.auth.signOut();
-        window.location.href = 'index.html';
-        return;
-      }
+      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
       userMoney = data?.money || 0;
-      updateBalance();
-    }
-
-    function updateBalance() {
       document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
     }
 
     async function updateMoney(amount) {
       userMoney += amount;
       await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
-      updateBalance();
+      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    function showMenu() {
+      document.getElementById('menuSection').style.display = 'block';
+      document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+    }
+
+    function showGame(game) {
+      document.getElementById('menuSection').style.display = 'none';
+      document.querySelectorAll('.game-section').forEach(s => s.classList.remove('active'));
+      document.getElementById(game + 'Section').classList.add('active');
     }
 
     function initSlots() {
@@ -794,14 +777,6 @@
         res.style.display = 'block';
         btn.disabled = false;
       }, 1000);
-    }
-
-    function showModal(id) {
-      document.getElementById('modal' + id.charAt(0).toUpperCase() + id.slice(1)).classList.add('show');
-    }
-
-    function hideModal(id) {
-      document.getElementById('modal' + id.charAt(0).toUpperCase() + id.slice(1)).classList.remove('show');
     }
 
     init();
