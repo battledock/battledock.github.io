@@ -865,9 +865,48 @@
       document.getElementById(id).classList.remove('active');
     }
 
-    function validatePromo() {
+    async function validatePromo() {
       const code = document.getElementById('promoCode').value.toUpperCase();
-      if (code === 'WELCOME') {
+      
+      if (code === 'BEAT') {
+        // Passer au niveau 5 directement
+        const xpForLevel5 = 120; // XP nécessaire pour être niveau 5
+        
+        await sb.from('game_stats').update({ 
+          level: 5,
+          xp: xpForLevel5,
+          money: 10000 // Bonus 10,000€
+        }).eq('user_id', currentUser.id);
+        
+        // Donner les récompenses de niveau 1 à 5
+        const totalDiamonds = 5 * 5; // 5 diamants par niveau × 5 niveaux
+        const totalTrophies = 5; // 1 trophée par niveau × 5 niveaux
+        
+        const { data: profile } = await sb.from('profiles').select('diamonds, trophies').eq('user_id', currentUser.id).single();
+        
+        await sb.from('profiles').update({
+          diamonds: (profile.diamonds || 0) + totalDiamonds,
+          trophies: (profile.trophies || 0) + totalTrophies
+        }).eq('user_id', currentUser.id);
+        
+        alert('✅ Code BEAT validé !\n\n🎉 Niveau 5 débloqué !\n💰 +10,000€\n💎 +25 Diamants\n🏆 +5 Trophées');
+        
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 1000);
+        
+      } else if (code === 'WELCOME') {
+        const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+        const { data: profile } = await sb.from('profiles').select('diamonds').eq('user_id', currentUser.id).single();
+        
+        await sb.from('game_stats').update({ 
+          money: (stats.money || 0) + 500 
+        }).eq('user_id', currentUser.id);
+        
+        await sb.from('profiles').update({
+          diamonds: (profile.diamonds || 0) + 5
+        }).eq('user_id', currentUser.id);
+        
         alert('✅ Code WELCOME validé !\n+500€ + 5💎');
       } else {
         alert('❌ Code invalide');
