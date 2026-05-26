@@ -14,6 +14,7 @@
       -webkit-tap-highlight-color: transparent;
       user-select: none;
       -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     body {
@@ -22,6 +23,7 @@
       position: fixed;
       inset: 0;
       touch-action: none;
+      -webkit-user-select: none;
     }
 
     /* HEADER */
@@ -358,9 +360,9 @@
       const now = Date.now();
       const timeSinceLastClick = now - lastClickTime;
 
-      // Combo system
-      if (timeSinceLastClick < 600) {
-        combo = Math.min(5, combo + 0.05);
+      // Combo system - très lent
+      if (timeSinceLastClick < 800) {
+        combo = Math.min(2, combo + 0.01);  // Très lent : +0.01 au lieu de +0.05
       } else {
         combo = 1;
       }
@@ -372,7 +374,7 @@
       comboResetTimeout = setTimeout(() => {
         let tempCombo = combo;
         const decayInterval = setInterval(() => {
-          tempCombo = Math.max(1, tempCombo - 0.2);
+          tempCombo = Math.max(1, tempCombo - 0.05);  // Descend plus lentement
           combo = tempCombo;
           updateDisplay();
           
@@ -382,7 +384,7 @@
             updateDisplay();
           }
         }, 50);
-      }, 600);
+      }, 800);  // Plus long délai avant reset
 
       const gain = Math.floor(1 * combo);
       sessionMoney += gain;
@@ -469,6 +471,25 @@
     window.addEventListener('beforeunload', () => {
       saveProgress();
     });
+
+    // Anti-zoom
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', e => {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+
+    // Anti-copie/cut/paste
+    document.addEventListener('copy', e => e.preventDefault());
+    document.addEventListener('cut', e => e.preventDefault());
+    document.addEventListener('paste', e => e.preventDefault());
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
     init();
   </script>
