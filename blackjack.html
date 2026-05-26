@@ -31,7 +31,7 @@
       max-width: 500px;
       margin: 0 auto;
       padding: 6px;
-      padding-bottom: 120px; /* GROS ESPACE pour barre téléphone */
+      padding-bottom: 120px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -39,7 +39,6 @@
       overflow: hidden;
     }
 
-    /* GAME AREA */
     .game-area {
       flex: 1;
       display: flex;
@@ -52,7 +51,6 @@
       width: 100%;
     }
 
-    /* TABLE */
     .table {
       background: linear-gradient(135deg, #10b981, #059669);
       border-radius: 12px;
@@ -146,7 +144,6 @@
       font-size: 28px;
     }
 
-    /* CONTROLS */
     .controls {
       display: flex;
       flex-direction: column;
@@ -221,7 +218,6 @@
       color: #fbbf24;
     }
 
-    /* RESULT */
     .result {
       display: none;
       padding: 6px 12px;
@@ -251,7 +247,6 @@
       box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
     }
 
-    /* BOTTOM BAR */
     .bottom-bar {
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
       border: 2px solid rgba(251, 191, 36, 0.5);
@@ -309,9 +304,14 @@
     }
 
     @media (max-width: 400px) {
+      .container {
+        padding: 4px;
+        padding-bottom: 100px;
+      }
+
       .bottom-bar {
-        padding: 5px 8px;
         bottom: 15px;
+        padding: 5px 8px;
       }
 
       .back-btn {
@@ -321,27 +321,12 @@
 
       .game-title {
         font-size: 14px;
+        letter-spacing: 1px;
       }
 
       .balance {
-        padding: 3px 8px;
         font-size: 12px;
-      }
-
-      .table {
-        padding: 10px;
-        max-height: 300px;
-      }
-
-      .card, .card-back {
-        width: 46px;
-        height: 64px;
-        font-size: 18px;
-      }
-
-      .cards {
-        min-height: 65px;
-        gap: 5px;
+        padding: 3px 8px;
       }
     }
 
@@ -370,9 +355,7 @@
 <body>
   <div class="container">
     <div class="game-area">
-      <!-- TABLE -->
       <div class="table">
-        <!-- DEALER HAND -->
         <div class="hand">
           <div class="hand-label">
             <span>🎩 CROUPIER</span>
@@ -381,7 +364,6 @@
           <div class="cards" id="dealerCards"></div>
         </div>
 
-        <!-- PLAYER HAND -->
         <div class="hand">
           <div class="hand-label">
             <span>👤 VOUS</span>
@@ -391,7 +373,6 @@
         </div>
       </div>
 
-      <!-- CONTROLS -->
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
@@ -406,7 +387,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
       <div class="game-title">♠️ BLACKJACK</div>
@@ -429,6 +409,42 @@
 
     const suits = ['♠', '♥', '♦', '♣'];
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    // ========== JACKPOT PROGRESSIF ==========
+    async function incrementJackpot(bet, gameMultiplier = 0.01) {
+      const contribution = Math.floor(bet * gameMultiplier);
+      try {
+        const { data, error } = await sb.rpc('increment_jackpot', {
+          increment_amount: contribution
+        });
+        if (!error) {
+          console.log('Jackpot +' + contribution + '€ → Total: ' + data + '€');
+        }
+      } catch (e) {
+        console.log('Erreur jackpot:', e);
+      }
+    }
+
+    async function checkJackpotWin(probability = 0.00001) {
+      if (Math.random() > probability) return false;
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        const userName = user.email.split('@')[0];
+        const { data: jackpotAmount, error } = await sb.rpc('claim_jackpot', {
+          user_id: user.id,
+          user_name: userName
+        });
+        if (!error && jackpotAmount) {
+          alert(`🎯 JACKPOT PROGRESSIF GAGNÉ ! 🎯\n\n${jackpotAmount.toLocaleString('fr-FR')}€`);
+          await loadMoney();
+          return true;
+        }
+      } catch (e) {
+        console.log('Erreur claim jackpot:', e);
+      }
+      return false;
+    }
+    // ========== FIN JACKPOT ==========
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -463,7 +479,7 @@
 
     function createDeck() {
       deck = [];
-      for (let i = 0; i < 6; i++) { // 6 decks
+      for (let i = 0; i < 6; i++) {
         for (let suit of suits) {
           for (let value of values) {
             deck.push({ value, suit, color: (suit === '♥' || suit === '♦') ? 'red' : 'black' });
@@ -525,7 +541,6 @@
         return;
       }
 
-      // Déduire la mise
       await updateMoney(currentMoney - bet);
 
       createDeck();
@@ -537,24 +552,20 @@
       document.getElementById('dealerCards').innerHTML = '';
       document.getElementById('playerCards').innerHTML = '';
 
-      // Show dealer first card only
       displayCard(dealerHand[0], document.getElementById('dealerCards'));
       displayHiddenCard(document.getElementById('dealerCards'));
 
-      // Show player cards
       for (let card of playerHand) {
         displayCard(card, document.getElementById('playerCards'));
       }
 
       updateScores();
 
-      // Check for blackjack
       if (calculateScore(playerHand) === 21) {
         await stand();
         return;
       }
 
-      // Show hit/stand buttons
       document.getElementById('actions').innerHTML = `
         <button class="btn btn-secondary" onclick="hit()">TIRER 🃏</button>
         <button class="btn btn-secondary" onclick="stand()">RESTER ✋</button>
@@ -587,13 +598,11 @@
     async function stand() {
       gameActive = false;
 
-      // Reveal dealer's hidden card
       document.getElementById('dealerCards').innerHTML = '';
       for (let card of dealerHand) {
         displayCard(card, document.getElementById('dealerCards'));
       }
 
-      // Dealer draws until 17+
       while (calculateScore(dealerHand) < 17) {
         const card = deck.pop();
         dealerHand.push(card);
@@ -602,7 +611,6 @@
 
       updateScores();
 
-      // Determine winner
       const betInput = document.getElementById('betAmount');
       const bet = parseInt(betInput.value);
       const playerScore = calculateScore(playerHand);
@@ -612,34 +620,40 @@
       if (playerScore > 21) {
         result.className = 'result lose';
         result.innerHTML = `💔 BUST ! Vous avez dépassé 21 (-${bet.toLocaleString('fr-FR')}€)`;
+        // Jackpot contribution même en perte
+        await incrementJackpot(bet, 0.01);
       } else if (dealerScore > 21) {
         result.className = 'result win';
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎉 LE CROUPIER A BUST ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
+        await incrementJackpot(bet, 0.01);
+        await checkJackpotWin(0.00001);
       } else if (playerScore > dealerScore) {
         result.className = 'result win';
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎊 VICTOIRE ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
+        await incrementJackpot(bet, 0.01);
+        await checkJackpotWin(0.00001);
       } else if (playerScore < dealerScore) {
         result.className = 'result lose';
         result.innerHTML = `💔 DÉFAITE ! Le croupier gagne (-${bet.toLocaleString('fr-FR')}€)`;
+        await incrementJackpot(bet, 0.01);
       } else {
         result.className = 'result push';
         result.innerHTML = `🤝 ÉGALITÉ ! Mise remboursée`;
         await updateMoney(currentMoney + bet);
+        await incrementJackpot(bet, 0.01);
       }
 
       result.style.display = 'block';
 
-      // Reset to deal button
       document.getElementById('actions').innerHTML = `
         <button class="btn btn-primary" onclick="deal()">NOUVELLE PARTIE 🃏</button>
       `;
     }
 
-    // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
 

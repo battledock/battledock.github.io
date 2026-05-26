@@ -31,7 +31,7 @@
       max-width: 500px;
       margin: 0 auto;
       padding: 6px;
-      padding-bottom: 120px; /* GROS ESPACE pour barre téléphone */
+      padding-bottom: 120px;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -39,7 +39,6 @@
       overflow: hidden;
     }
 
-    /* GAME AREA */
     .game-area {
       flex: 1;
       display: flex;
@@ -51,7 +50,6 @@
       min-height: 0;
     }
 
-    /* WHEEL */
     .wheel-container {
       position: relative;
       width: clamp(240px, 70vw, 300px);
@@ -90,20 +88,16 @@
       transform-origin: center;
     }
 
-    /* 10 segments - 4 couleurs - RTP 88% */
-    /* Noir 20%, Rouge 30%, Bleu 40%, Or 10% */
-    /* RTP: (0×0.2 + 0.5×0.3 + 1×0.4 + 5×0.1) = 0 + 0.15 + 0.4 + 0.5 = 1.05 = 105% */
-    /* Ajusté: Noir 20%, Rouge 30%, Bleu 40%, Or 10% avec multiplicateurs réduits */
-    .seg-0 { background: #1f2937; transform: rotate(0deg); }      /* Noir ×0 */
-    .seg-1 { background: #ef4444; transform: rotate(36deg); }     /* Rouge ×0.5 */
-    .seg-2 { background: #3b82f6; transform: rotate(72deg); }     /* Bleu ×0.8 */
-    .seg-3 { background: #ef4444; transform: rotate(108deg); }    /* Rouge ×0.5 */
-    .seg-4 { background: #3b82f6; transform: rotate(144deg); }    /* Bleu ×0.8 */
-    .seg-5 { background: #1f2937; transform: rotate(180deg); }    /* Noir ×0 */
-    .seg-6 { background: #3b82f6; transform: rotate(216deg); }    /* Bleu ×0.8 */
-    .seg-7 { background: #ef4444; transform: rotate(252deg); }    /* Rouge ×0.5 */
-    .seg-8 { background: #3b82f6; transform: rotate(288deg); }    /* Bleu ×0.8 */
-    .seg-9 { background: #fbbf24; transform: rotate(324deg); }    /* Or ×5 JACKPOT */
+    .seg-0 { background: #1f2937; transform: rotate(0deg); }
+    .seg-1 { background: #ef4444; transform: rotate(36deg); }
+    .seg-2 { background: #3b82f6; transform: rotate(72deg); }
+    .seg-3 { background: #ef4444; transform: rotate(108deg); }
+    .seg-4 { background: #3b82f6; transform: rotate(144deg); }
+    .seg-5 { background: #1f2937; transform: rotate(180deg); }
+    .seg-6 { background: #3b82f6; transform: rotate(216deg); }
+    .seg-7 { background: #ef4444; transform: rotate(252deg); }
+    .seg-8 { background: #3b82f6; transform: rotate(288deg); }
+    .seg-9 { background: #fbbf24; transform: rotate(324deg); }
 
     .wheel-center {
       position: absolute;
@@ -123,7 +117,6 @@
       z-index: 10;
     }
 
-    /* LEGEND - SOUS LA ROUE */
     .legend {
       display: flex;
       justify-content: center;
@@ -155,7 +148,6 @@
       font-size: 11px;
     }
 
-    /* CONTROLS */
     .controls {
       display: flex;
       flex-direction: column;
@@ -217,7 +209,6 @@
       cursor: not-allowed;
     }
 
-    /* RESULT */
     .result {
       display: none;
       padding: 8px 14px;
@@ -242,7 +233,6 @@
       box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5);
     }
 
-    /* BOTTOM BAR */
     .bottom-bar {
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
       border: 2px solid rgba(251, 191, 36, 0.5);
@@ -351,7 +341,6 @@
 <body>
   <div class="container">
     <div class="game-area">
-      <!-- WHEEL -->
       <div class="wheel-container">
         <div class="wheel-pointer"></div>
         <div class="wheel" id="wheel">
@@ -369,7 +358,6 @@
         </div>
       </div>
 
-      <!-- LEGEND -->
       <div class="legend">
         <div class="legend-item">
           <div class="legend-color" style="background: #1f2937;"></div>
@@ -389,7 +377,6 @@
         </div>
       </div>
 
-      <!-- CONTROLS -->
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
@@ -400,7 +387,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
       <div class="game-title">🎡 ROULETTE</div>
@@ -417,9 +403,6 @@
     let currentUser = null;
     let currentMoney = 0;
 
-    // Configuration: 10 segments - 4 couleurs - RTP 88%
-    // Noir 20%, Rouge 30%, Bleu 40%, Or 10%
-    // RTP: (0×0.2 + 0.5×0.3 + 0.6×0.4 + 5×0.1) = 0 + 0.15 + 0.24 + 0.5 = 0.89 = 89% ✅
     const segments = [
       { color: 'Noir', mult: 0, bgColor: '#1f2937' },
       { color: 'Rouge', mult: 0.5, bgColor: '#ef4444' },
@@ -432,6 +415,42 @@
       { color: 'Bleu', mult: 0.6, bgColor: '#3b82f6' },
       { color: 'Or', mult: 5, bgColor: '#fbbf24' }
     ];
+
+    // ========== JACKPOT PROGRESSIF ==========
+    async function incrementJackpot(bet, gameMultiplier = 0.01) {
+      const contribution = Math.floor(bet * gameMultiplier);
+      try {
+        const { data, error } = await sb.rpc('increment_jackpot', {
+          increment_amount: contribution
+        });
+        if (!error) {
+          console.log('Jackpot +' + contribution + '€ → Total: ' + data + '€');
+        }
+      } catch (e) {
+        console.log('Erreur jackpot:', e);
+      }
+    }
+
+    async function checkJackpotWin(probability = 0.00001) {
+      if (Math.random() > probability) return false;
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        const userName = user.email.split('@')[0];
+        const { data: jackpotAmount, error } = await sb.rpc('claim_jackpot', {
+          user_id: user.id,
+          user_name: userName
+        });
+        if (!error && jackpotAmount) {
+          alert(`🎯 JACKPOT PROGRESSIF GAGNÉ ! 🎯\n\n${jackpotAmount.toLocaleString('fr-FR')}€`);
+          await loadMoney();
+          return true;
+        }
+      } catch (e) {
+        console.log('Erreur claim jackpot:', e);
+      }
+      return false;
+    }
+    // ========== FIN JACKPOT ==========
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -484,28 +503,23 @@
       btn.disabled = true;
       res.style.display = 'none';
 
-      // Déduire la mise
       await updateMoney(currentMoney - bet);
 
-      // Obtenir la rotation actuelle et normaliser entre 0-360
       const currentTransform = wheel.style.transform;
       let currentRotation = currentTransform ? parseFloat(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
-      currentRotation = currentRotation % 360; // Normaliser entre 0-360
+      currentRotation = currentRotation % 360;
 
-      // Choisir segment gagnant
       const winIndex = Math.floor(Math.random() * 10);
 
-      // Calculer rotation (pointeur en haut = 0°)
-      const segmentAngle = 36; // 360° / 10 segments
+      const segmentAngle = 36;
       const targetAngle = winIndex * segmentAngle + (segmentAngle / 2);
-      const spins = 5; // 5 tours complets
+      const spins = 5;
       const finalRotation = currentRotation + (spins * 360) + (360 - targetAngle);
 
       wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
       wheel.style.transform = `rotate(${finalRotation}deg)`;
 
       setTimeout(async () => {
-        // Normaliser la rotation finale
         const normalizedRotation = finalRotation % 360;
         wheel.style.transition = 'none';
         wheel.style.transform = `rotate(${normalizedRotation}deg)`;
@@ -513,8 +527,6 @@
           wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
         }, 50);
 
-        // CALCULER LE SEGMENT RÉEL où la roue s'est arrêtée
-        // Le pointeur est en haut (0°), donc on calcule quel segment est sous le pointeur
         const actualSegmentIndex = Math.floor(((360 - normalizedRotation) % 360) / segmentAngle) % 10;
         const segment = segments[actualSegmentIndex];
 
@@ -528,9 +540,12 @@
             res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`;
           }
           await updateMoney(currentMoney + win);
+          await incrementJackpot(bet, 0.01);
+          await checkJackpotWin(0.00001);
         } else {
           res.className = 'result lose';
           res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> - Perdu ${bet.toLocaleString('fr-FR')}€`;
+          await incrementJackpot(bet, 0.01);
         }
 
         res.style.display = 'block';
@@ -538,7 +553,6 @@
       }, 4000);
     }
 
-    // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
 

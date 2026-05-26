@@ -39,7 +39,6 @@
       overflow: hidden;
     }
 
-    /* GAME AREA */
     .game-area {
       flex: 1;
       display: flex;
@@ -51,7 +50,6 @@
       min-height: 0;
     }
 
-    /* CRASH DISPLAY */
     .crash-display {
       width: 100%;
       height: clamp(200px, 50vh, 280px);
@@ -100,7 +98,6 @@
       letter-spacing: 1px;
     }
 
-    /* CONTROLS */
     .controls {
       display: flex;
       flex-direction: column;
@@ -176,7 +173,6 @@
       color: white;
     }
 
-    /* RESULT */
     .result {
       display: none;
       padding: 8px 14px;
@@ -198,7 +194,6 @@
       color: white;
     }
 
-    /* BOTTOM BAR */
     .bottom-bar {
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
       border: 2px solid rgba(251, 191, 36, 0.5);
@@ -309,14 +304,12 @@
 <body>
   <div class="container">
     <div class="game-area">
-      <!-- CRASH DISPLAY -->
       <div class="crash-display">
         <div class="status-text" id="statusText">Prêt à décoller</div>
         <div class="rocket" id="rocket">🚀</div>
         <div class="multiplier-display" id="multiplier">1.00×</div>
       </div>
 
-      <!-- CONTROLS -->
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
@@ -330,7 +323,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
       <div class="game-title">🚀 CRASH</div>
@@ -351,6 +343,42 @@
     let crashPoint = 1.0;
     let interval = null;
     let currentBet = 0;
+
+    // ========== JACKPOT PROGRESSIF ==========
+    async function incrementJackpot(bet, gameMultiplier = 0.01) {
+      const contribution = Math.floor(bet * gameMultiplier);
+      try {
+        const { data, error } = await sb.rpc('increment_jackpot', {
+          increment_amount: contribution
+        });
+        if (!error) {
+          console.log('Jackpot +' + contribution + '€ → Total: ' + data + '€');
+        }
+      } catch (e) {
+        console.log('Erreur jackpot:', e);
+      }
+    }
+
+    async function checkJackpotWin(probability = 0.00001) {
+      if (Math.random() > probability) return false;
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        const userName = user.email.split('@')[0];
+        const { data: jackpotAmount, error } = await sb.rpc('claim_jackpot', {
+          user_id: user.id,
+          user_name: userName
+        });
+        if (!error && jackpotAmount) {
+          alert(`🎯 JACKPOT PROGRESSIF GAGNÉ ! 🎯\n\n${jackpotAmount.toLocaleString('fr-FR')}€`);
+          await loadMoney();
+          return true;
+        }
+      } catch (e) {
+        console.log('Erreur claim jackpot:', e);
+      }
+      return false;
+    }
+    // ========== FIN JACKPOT ==========
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -401,15 +429,13 @@
       gameActive = true;
       currentMultiplier = 1.0;
 
-      // Déduire la mise
       await updateMoney(currentMoney - bet);
 
-      // Déterminer crash point (RTP 90%)
       const rand = Math.random();
-      if (rand < 0.4) crashPoint = 1.0 + Math.random() * 0.5; // 40% entre 1.0-1.5x
-      else if (rand < 0.7) crashPoint = 1.5 + Math.random() * 1.5; // 30% entre 1.5-3x
-      else if (rand < 0.9) crashPoint = 3.0 + Math.random() * 4.0; // 20% entre 3-7x
-      else crashPoint = 7.0 + Math.random() * 8.0; // 10% entre 7-15x
+      if (rand < 0.4) crashPoint = 1.0 + Math.random() * 0.5;
+      else if (rand < 0.7) crashPoint = 1.5 + Math.random() * 1.5;
+      else if (rand < 0.9) crashPoint = 3.0 + Math.random() * 4.0;
+      else crashPoint = 7.0 + Math.random() * 8.0;
 
       document.getElementById('startBtn').style.display = 'none';
       document.getElementById('cashoutBtn').style.display = 'block';
@@ -436,7 +462,7 @@
       }, 100);
     }
 
-    function crash() {
+    async function crash() {
       clearInterval(interval);
       gameActive = false;
 
@@ -450,7 +476,8 @@
       res.innerHTML = `💥 CRASH à ${crashPoint.toFixed(2)}× - Perdu ${currentBet.toLocaleString('fr-FR')}€`;
       res.style.display = 'block';
 
-      // Reset rocket
+      await incrementJackpot(currentBet, 0.01);
+
       setTimeout(() => {
         document.getElementById('rocket').style.bottom = '20px';
         document.getElementById('rocket').style.left = '20px';
@@ -479,8 +506,9 @@
       res.style.display = 'block';
 
       await updateMoney(currentMoney + win);
+      await incrementJackpot(currentBet, 0.01);
+      await checkJackpotWin(0.00001);
 
-      // Reset rocket
       setTimeout(() => {
         document.getElementById('rocket').style.bottom = '20px';
         document.getElementById('rocket').style.left = '20px';
@@ -490,7 +518,6 @@
       }, 2000);
     }
 
-    // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
 

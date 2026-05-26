@@ -50,7 +50,6 @@
       min-height: 0;
     }
 
-    /* CARDS */
     .cards-display {
       display: flex;
       gap: 12px;
@@ -93,7 +92,6 @@
       font-size: clamp(40px, 12vw, 56px);
     }
 
-    /* CONTROLS */
     .controls {
       display: flex;
       flex-direction: column;
@@ -196,7 +194,6 @@
       color: white;
     }
 
-    /* BOTTOM BAR */
     .bottom-bar {
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
       border: 2px solid rgba(251, 191, 36, 0.5);
@@ -303,7 +300,6 @@
 <body>
   <div class="container">
     <div class="game-area">
-      <!-- CARDS -->
       <div class="cards-display">
         <div class="card-container">
           <div class="card-label">ACTUELLE</div>
@@ -315,7 +311,6 @@
         </div>
       </div>
 
-      <!-- CONTROLS -->
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
@@ -328,7 +323,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
       <div class="game-title">🎯 HIGHER/LOWER</div>
@@ -347,6 +341,42 @@
     let currentCardValue = 0;
     let nextCardValue = 0;
     let currentBet = 0;
+
+    // ========== JACKPOT PROGRESSIF ==========
+    async function incrementJackpot(bet, gameMultiplier = 0.01) {
+      const contribution = Math.floor(bet * gameMultiplier);
+      try {
+        const { data, error } = await sb.rpc('increment_jackpot', {
+          increment_amount: contribution
+        });
+        if (!error) {
+          console.log('Jackpot +' + contribution + '€ → Total: ' + data + '€');
+        }
+      } catch (e) {
+        console.log('Erreur jackpot:', e);
+      }
+    }
+
+    async function checkJackpotWin(probability = 0.00001) {
+      if (Math.random() > probability) return false;
+      try {
+        const { data: { user } } = await sb.auth.getUser();
+        const userName = user.email.split('@')[0];
+        const { data: jackpotAmount, error } = await sb.rpc('claim_jackpot', {
+          user_id: user.id,
+          user_name: userName
+        });
+        if (!error && jackpotAmount) {
+          alert(`🎯 JACKPOT PROGRESSIF GAGNÉ ! 🎯\n\n${jackpotAmount.toLocaleString('fr-FR')}€`);
+          await loadMoney();
+          return true;
+        }
+      } catch (e) {
+        console.log('Erreur claim jackpot:', e);
+      }
+      return false;
+    }
+    // ========== FIN JACKPOT ==========
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -395,7 +425,6 @@
 
       currentBet = bet;
 
-      // Déduire la mise
       await updateMoney(currentMoney - bet);
 
       currentCardValue = Math.floor(Math.random() * 13) + 1;
@@ -426,14 +455,18 @@
         res.className = 'result win';
         res.innerHTML = `🤝 ÉGALITÉ ! Mise remboursée`;
         await updateMoney(currentMoney + currentBet);
+        await incrementJackpot(currentBet, 0.01);
       } else if (won) {
         const win = currentBet * 2;
         res.className = 'result win';
         res.innerHTML = `🎉 GAGNÉ ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
+        await incrementJackpot(currentBet, 0.01);
+        await checkJackpotWin(0.00001);
       } else {
         res.className = 'result lose';
         res.innerHTML = `💔 PERDU ! -${currentBet.toLocaleString('fr-FR')}€`;
+        await incrementJackpot(currentBet, 0.01);
       }
 
       res.style.display = 'block';
@@ -443,7 +476,6 @@
       `;
     }
 
-    // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
 
