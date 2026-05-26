@@ -691,8 +691,8 @@
         
         // Charger profile et stats en parallèle
         const [profileResult, statsResult] = await Promise.all([
-          sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).single(),
-          sb.from('game_stats').select('*').eq('user_id', currentUser.id).single()
+          sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle(),
+          sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
         ]);
 
         if (profileResult.error) {
@@ -701,15 +701,23 @@
         }
 
         if (statsResult.error) {
-          console.error('Stats error:', statsError);
-          throw statsError;
+          console.error('Stats error:', statsResult.error);
+          throw statsResult.error;
         }
-
-        console.log('Profile:', profileResult.data);
-        console.log('Stats:', statsResult.data);
 
         const profile = profileResult.data;
         const stats = statsResult.data;
+
+        // Si pas de données, compte supprimé → redirect
+        if (!profile || !stats) {
+          console.warn('Account deleted or missing data');
+          await sb.auth.signOut();
+          window.location.href = 'index.html';
+          return;
+        }
+
+        console.log('Profile:', profile);
+        console.log('Stats:', stats);
 
         if (profile && stats) {
         // Appliquer la couleur au topbar

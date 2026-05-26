@@ -374,7 +374,12 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-      const { data: stats } = await sb.from('game_stats').select('money, xp').eq('user_id', currentUser.id).single();
+      const { data: stats } = await sb.from('game_stats').select('money, xp').eq('user_id', currentUser.id).maybeSingle();
+      if (!stats) {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+        return;
+      }
       if (stats) { initialMoney = stats.money || 0; initialXp = stats.xp || 0; money = initialMoney; xp = initialXp; }
       updateDisplay(); setupClicker(); startComboTimer();
     }

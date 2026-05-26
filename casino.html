@@ -608,7 +608,12 @@
     }
 
     async function loadMoney() {
-      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!data) {
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+        return;
+      }
       userMoney = data?.money || 0;
       updateBalance();
     }
