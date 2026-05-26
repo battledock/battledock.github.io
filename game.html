@@ -899,12 +899,53 @@
     }
   }
 
-    function checkPendingLevelUp() {
-      const pending = localStorage.getItem('pendingLevelUp');
-      if (pending) {
-        const data = JSON.parse(pending);
-        localStorage.removeItem('pendingLevelUp');
-        setTimeout(() => showLevelUpPopup(data.level, data.money, data.diamonds, data.trophies), 500);
+    async function checkPendingLevelUp() {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const { data: stats } = await supabaseClient
+          .from('game_stats')
+          .select('level, last_levelup_shown')
+          .eq('user_id', user.id)
+          .single();
+
+        if (!stats) return;
+
+        // Si le niveau actuel n'a pas été annoncé
+        if (stats.level > (stats.last_levelup_shown || 0)) {
+          const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('diamonds, trophies')
+            .eq('id', user.id)
+            .single();
+
+          // Afficher popup pour chaque level-up manqué
+          for (let i = (stats.last_levelup_shown || 0) + 1; i <= stats.level; i++) {
+            await new Promise(resolve => {
+              setTimeout(() => {
+                showLevelUpPopup(
+                  i,
+                  stats.money || 0,
+                  profile?.diamonds || 0,
+                  profile?.trophies || 0
+                );
+                resolve();
+              }, 500);
+            });
+            
+            // Attendre la fermeture du popup
+            await new Promise(resolve => setTimeout(resolve, 3000));
+          }
+
+          // Marquer les level-ups comme affichés
+          await supabaseClient
+            .from('game_stats')
+            .update({ last_levelup_shown: stats.level })
+            .eq('user_id', user.id);
+        }
+      } catch (error) {
+        console.error('Erreur vérification level-up:', error);
       }
     }
 
