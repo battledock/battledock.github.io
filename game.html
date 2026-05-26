@@ -902,12 +902,20 @@
     async function checkPendingLevelUp(stats, profile) {
       try {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user || !stats) return;
+        if (!user || !stats) {
+          console.log('❌ No user or stats:', { user, stats });
+          return;
+        }
+
+        console.log('✅ Checking level-up:', { level: stats.level, last_shown: stats.last_levelup_shown });
 
         // Si le niveau actuel n'a pas été annoncé
         if (stats.level > (stats.last_levelup_shown || 0)) {
+          console.log('🎉 Level-up detected! Showing popups...');
+          
           // Afficher popup pour chaque level-up manqué
           for (let i = (stats.last_levelup_shown || 0) + 1; i <= stats.level; i++) {
+            console.log(`📊 Showing popup for level ${i}`);
             await new Promise(resolve => {
               showLevelUpPopup(
                 i,
@@ -921,13 +929,16 @@
           }
 
           // Marquer les level-ups comme affichés
+          console.log('💾 Updating last_levelup_shown to', stats.level);
           await supabaseClient
             .from('game_stats')
             .update({ last_levelup_shown: stats.level })
             .eq('user_id', user.id);
+        } else {
+          console.log('✔️ No level-ups to show');
         }
       } catch (error) {
-        console.error('Erreur vérification level-up:', error);
+        console.error('💥 Erreur vérification level-up:', error);
       }
     }
 
