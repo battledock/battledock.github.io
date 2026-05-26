@@ -605,6 +605,9 @@
       currentUser = session.user;
       await loadMoney();
       initSlots();
+      
+      // Actualiser l'argent toutes les 5 secondes
+      setInterval(loadMoney, 5000);
     }
 
     async function loadMoney() {
@@ -656,7 +659,7 @@
       const angle = spins * 360 + Math.random() * 360;
       wheel.style.transform = `rotate(${angle}deg)`;
 
-      setTimeout(() => {
+      setTimeout(async () => {
         const seg = Math.floor(((angle % 360) / 360) * 8);
         const mult = multipliers[seg];
         const win = Math.floor(bet * mult);
@@ -665,18 +668,18 @@
         if (win > bet) {
           res.className = 'game-result win';
           res.textContent = `🎉 ×${mult} ! +${win.toLocaleString('fr-FR')}€`;
-          updateMoney(win);
+          await updateMoney(win);
         } else if (win === bet) {
           res.className = 'game-result';
           res.style.background = '#dbeafe';
           res.style.color = '#1e40af';
           res.style.border = '3px solid #3b82f6';
           res.textContent = `↔️ Remboursé ${bet.toLocaleString('fr-FR')}€`;
-          updateMoney(win);
+          await updateMoney(win);
         } else if (win > 0) {
           res.className = 'game-result lose';
           res.textContent = `📉 ×${mult} = ${win.toLocaleString('fr-FR')}€ (perte: ${bet - win}€)`;
-          updateMoney(win);
+          await updateMoney(win);
         } else {
           res.className = 'game-result lose';
           res.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
@@ -725,7 +728,7 @@
           }, 500);
         });
 
-        setTimeout(() => {
+        setTimeout(async () => {
           let win = 0;
           const res = document.getElementById('slotsResult');
 
@@ -738,7 +741,7 @@
             
             res.className = 'game-result win';
             res.textContent = `🎉 JACKPOT ! +${win.toLocaleString('fr-FR')}€`;
-            updateMoney(win);
+            await updateMoney(win);
           } else {
             res.className = 'game-result lose';
             res.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
@@ -772,7 +775,7 @@
       const coin = document.getElementById('coin');
       coin.classList.add('flip');
 
-      setTimeout(() => {
+      setTimeout(async () => {
         coin.classList.remove('flip');
         const result = Math.random() < 0.5 ? 'pile' : 'face';
         coin.textContent = result === 'pile' ? '👑' : '🦅';
@@ -782,7 +785,7 @@
           const win = bet * 2;
           res.className = 'game-result win';
           res.textContent = `🎉 Gagné ! +${win.toLocaleString('fr-FR')}€`;
-          updateMoney(win);
+          await updateMoney(win);
         } else {
           res.className = 'game-result lose';
           res.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
