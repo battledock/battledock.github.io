@@ -2,61 +2,35 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crash - Casino</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Crash - Battle Dock Casino</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
     
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
       min-height: 100vh;
-      padding: 16px;
       padding-bottom: 80px;
+      overflow-x: hidden;
     }
 
-    .container { max-width: 700px; margin: 0 auto; }
+    .container { max-width: 500px; margin: 0 auto; padding: 16px; }
+    .header { background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+    .back-btn { background: rgba(251, 191, 36, 0.2); border: 2px solid rgba(251, 191, 36, 0.5); color: #fbbf24; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .game-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(20px, 5vw, 28px); background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
+    .balance { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; padding: 6px 12px; border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; }
 
-    .header {
-      background: white;
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      text-align: center;
-    }
+    .game-area { background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid rgba(251, 191, 36, 0.2); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
 
-    .game-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      color: #4f46e5;
-      letter-spacing: 3px;
-      margin-bottom: 16px;
-    }
-
-    .balance {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      color: #1a1a1a;
-      letter-spacing: 1px;
-    }
-
-    .game-area {
-      background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%);
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .graph-area {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 12px;
-      height: 250px;
+    .crash-display {
+      width: 100%;
+      height: 300px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border: 3px solid rgba(251, 191, 36, 0.3);
+      border-radius: 16px;
       margin-bottom: 20px;
       position: relative;
       overflow: hidden;
@@ -64,10 +38,11 @@
 
     .rocket {
       position: absolute;
-      font-size: 48px;
       bottom: 20px;
       left: 20px;
+      font-size: 48px;
       transition: all 0.1s linear;
+      filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.8));
     }
 
     .multiplier-display {
@@ -76,231 +51,120 @@
       left: 50%;
       transform: translate(-50%, -50%);
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 72px;
-      color: white;
-      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
-      letter-spacing: 3px;
+      font-size: clamp(48px, 12vw, 72px);
+      color: #10b981;
+      text-shadow: 0 0 30px rgba(16, 185, 129, 0.8);
+      letter-spacing: 4px;
+      animation: pulse-mult 0.5s infinite;
+    }
+
+    @keyframes pulse-mult {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.05); }
     }
 
     .multiplier-display.crashed {
-      color: #ef4444;
-      animation: pulse-crash 0.5s;
+      color: #dc2626;
+      text-shadow: 0 0 30px rgba(220, 38, 38, 0.8);
+      animation: none;
     }
 
-    @keyframes pulse-crash {
-      0%, 100% { transform: translate(-50%, -50%) scale(1); }
-      50% { transform: translate(-50%, -50%) scale(1.2); }
-    }
-
-    .controls {
-      text-align: center;
-    }
-
-    .bet-input {
-      margin-bottom: 20px;
-    }
-
-    .bet-input input {
-      width: 200px;
-      padding: 14px;
-      border: 3px solid #818cf8;
-      border-radius: 12px;
-      font-size: 18px;
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .btn {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      padding: 18px 48px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      letter-spacing: 2px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
-    }
-
-    .btn:disabled {
-      background: #6b7280;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .btn-cashout {
-      background: linear-gradient(135deg, #10b981, #059669);
-      display: none;
-    }
-
-    .result {
-      margin-top: 20px;
-      padding: 20px;
-      border-radius: 12px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      display: none;
-    }
-
-    .result.win {
-      background: #d1fae5;
-      color: #065f46;
-      border: 3px solid #10b981;
-    }
-
-    .result.lose {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 3px solid #dc2626;
-    }
-
-    /* LEADERBOARD */
-    .leaderboard {
-      background: white;
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-
-    .leaderboard-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      color: #4f46e5;
-      letter-spacing: 2px;
-      margin-bottom: 16px;
-      text-align: center;
-    }
-
-    .leaderboard-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .leaderboard-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      background: #f3f4f6;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-
-    .leaderboard-item.top-1 {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: white;
-    }
-
-    .leaderboard-item.top-2 {
-      background: linear-gradient(135deg, #d1d5db, #9ca3af);
-      color: white;
-    }
-
-    .leaderboard-item.top-3 {
-      background: linear-gradient(135deg, #fb923c, #f97316);
-      color: white;
-    }
-
-    .rank {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      min-width: 40px;
-    }
-
-    .username {
-      flex: 1;
-      padding-left: 12px;
-    }
-
-    .mult {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      letter-spacing: 1px;
-    }
-
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      padding: 12px 16px;
-      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
-      z-index: 100;
-    }
-
-    .nav-btn {
+    .trail {
+      position: absolute;
       width: 100%;
-      max-width: 700px;
-      margin: 0 auto;
-      display: flex;
-      background: linear-gradient(135deg, #1e1b4b, #312e81);
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .trail-line {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      width: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, #10b981);
+      transition: all 0.1s linear;
+    }
+
+    .bet-screen, .play-screen { display: none; }
+    .bet-screen.active, .play-screen.active { display: block; }
+
+    .controls { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+    .bet-control { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: 12px; border: 2px solid rgba(251, 191, 36, 0.2); width: 100%; max-width: 300px; }
+    .bet-control label { font-weight: 700; font-size: 14px; color: #fbbf24; }
+    .bet-control input { flex: 1; padding: 10px; border: 2px solid #fbbf24; border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.1); color: white; }
+    
+    .play-btn { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; border: none; border-radius: 14px; padding: 14px 48px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; cursor: pointer; box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4); transition: all 0.2s; }
+    .play-btn:active { transform: scale(0.95); }
+    .play-btn:disabled { background: #475569; cursor: not-allowed; box-shadow: none; }
+
+    .cashout-btn {
+      background: linear-gradient(135deg, #10b981, #059669);
       color: white;
       border: none;
-      border-radius: 12px;
-      padding: 14px;
+      border-radius: 14px;
+      padding: 16px 56px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
+      font-size: 24px;
+      letter-spacing: 2px;
       cursor: pointer;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5);
+      animation: pulse-cashout 1s infinite;
     }
+
+    @keyframes pulse-cashout {
+      0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(16, 185, 129, 0.5); }
+      50% { transform: scale(1.05); box-shadow: 0 12px 32px rgba(16, 185, 129, 0.7); }
+    }
+
+    .result { display: none; margin-top: 16px; padding: 16px; border-radius: 12px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; animation: slideUp 0.3s; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .result.win { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5); }
+    .result.lose { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5); }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1e293b, #334155); border-top: 2px solid rgba(251, 191, 36, 0.3); padding: 12px 16px; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5); z-index: 100; }
+    .nav-btn { width: 100%; max-width: 500px; margin: 0 auto; display: flex; background: rgba(251, 191, 36, 0.2); border: 2px solid rgba(251, 191, 36, 0.5); color: #fbbf24; border-radius: 12px; padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer; justify-content: center; align-items: center; gap: 8px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
+      <button class="back-btn" onclick="window.location.href='casino-new.html'">← Casino</button>
       <div class="game-title">🚀 CRASH</div>
       <div class="balance" id="balance">0€</div>
     </div>
 
     <div class="game-area">
-      <div class="graph-area" id="graphArea">
+      <div class="crash-display">
+        <div class="trail">
+          <div class="trail-line" id="trail"></div>
+        </div>
         <div class="rocket" id="rocket">🚀</div>
         <div class="multiplier-display" id="multiplier">×1.00</div>
       </div>
 
-      <div class="controls">
-        <div id="betScreen">
-          <div class="bet-input">
-            <input type="number" id="betAmount" value="100" min="100" step="50" placeholder="Mise">
+      <div class="bet-screen active" id="betScreen">
+        <div class="controls">
+          <div class="bet-control">
+            <label>MISE:</label>
+            <input type="number" id="betInput" value="100" min="100" step="50">
           </div>
-          <button class="btn" onclick="launch()">🚀 LANCER</button>
-        </div>
-
-        <div id="playScreen" style="display: none;">
-          <button class="btn btn-cashout" id="cashoutBtn" onclick="cashout()">
-            💰 ENCAISSER <span id="cashoutAmount">0€</span>
-          </button>
-        </div>
-
-        <div class="result" id="result"></div>
-      </div>
-    </div>
-
-    <!-- LEADERBOARD -->
-    <div class="leaderboard">
-      <div class="leaderboard-title">🏆 TOP MULTIPLICATEURS</div>
-      <div class="leaderboard-list" id="leaderboard">
-        <div style="text-align: center; color: #6b7280; padding: 20px;">
-          Chargement...
+          <button class="play-btn" onclick="launch()">LANCER LA FUSÉE</button>
         </div>
       </div>
+
+      <div class="play-screen" id="playScreen">
+        <div class="controls">
+          <button class="cashout-btn" id="cashoutBtn" onclick="cashout()">ENCAISSER</button>
+        </div>
+      </div>
+
+      <div class="result" id="result"></div>
     </div>
   </div>
 
   <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='casino-menu.html'">
-      ← RETOUR CASINO
-    </button>
+    <button class="nav-btn" onclick="window.location.href='casino-new.html'">← RETOUR AU CASINO</button>
   </div>
 
   <script>
@@ -311,20 +175,31 @@
 
     let currentUser, userMoney = 0, bet = 0, mult = 1.00, interval, crashPoint, hasCashedOut = false;
 
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+
+    // Distribution ajustée pour RTP 90%
+    function generateCrashPoint() {
+      const rand = Math.random();
+      if (rand < 0.40) return 1.00 + Math.random() * 0.5;  // 40%: 1.0-1.5
+      if (rand < 0.75) return 1.50 + Math.random() * 2;    // 35%: 1.5-3.5
+      if (rand < 0.92) return 3.50 + Math.random() * 4.5;  // 17%: 3.5-8.0
+      return 8 + Math.random() * 42;                       // 8%: 8-50
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
       await loadMoney();
-      await loadLeaderboard();
-      setInterval(loadLeaderboard, 10000);
     }
 
     async function loadMoney() {
-      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
-      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
-      userMoney = data?.money || 0;
-      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      if (data) {
+        userMoney = data.money || 0;
+        document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+      }
     }
 
     async function updateMoney(amount) {
@@ -333,71 +208,32 @@
       document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
     }
 
-    async function loadLeaderboard() {
-      const { data, error } = await sb
-        .from('game_crashes')
-        .select('multiplier, profiles(username)')
-        .order('multiplier', { ascending: false })
-        .limit(10);
-
-      if (error) { console.error('Leaderboard error:', error); return; }
-
-      const list = document.getElementById('leaderboard');
-      if (!data || data.length === 0) {
-        list.innerHTML = '<div style="text-align: center; color: #6b7280; padding: 20px;">Aucun record encore !</div>';
-        return;
-      }
-
-      list.innerHTML = data.map((record, i) => {
-        const rank = i + 1;
-        const className = rank === 1 ? 'top-1' : rank === 2 ? 'top-2' : rank === 3 ? 'top-3' : '';
-        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
-        return `
-          <div class="leaderboard-item ${className}">
-            <div class="rank">${medal} #${rank}</div>
-            <div class="username">${record.profiles?.username || 'Anonyme'}</div>
-            <div class="mult">×${parseFloat(record.multiplier).toFixed(2)}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function generateCrashPoint() {
-      const rand = Math.random();
-      if (rand < 0.33) return 1.00 + Math.random() * 0.5;
-      if (rand < 0.66) return 1.50 + Math.random() * 2;
-      if (rand < 0.90) return 3.50 + Math.random() * 6.5;
-      return 10 + Math.random() * 90;
-    }
-
     async function launch() {
-      bet = parseInt(document.getElementById('betAmount').value);
-      if (bet < 100) { alert('Mise minimum: 100€'); return; }
-      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+      bet = parseInt(document.getElementById('betInput').value);
+      if (bet < 100 || bet > userMoney) { alert('Mise invalide !'); return; }
 
       await updateMoney(-bet);
       mult = 1.00;
       hasCashedOut = false;
       crashPoint = generateCrashPoint();
 
-      document.getElementById('betScreen').style.display = 'none';
-      document.getElementById('playScreen').style.display = 'block';
-      document.getElementById('cashoutBtn').style.display = 'inline-block';
+      document.getElementById('betScreen').classList.remove('active');
+      document.getElementById('playScreen').classList.add('active');
       document.getElementById('result').style.display = 'none';
-      document.getElementById('multiplier').classList.remove('crashed');
 
       const rocket = document.getElementById('rocket');
-      rocket.style.bottom = '20px';
-      rocket.style.left = '20px';
+      const trail = document.getElementById('trail');
+      const multDisplay = document.getElementById('multiplier');
+      multDisplay.classList.remove('crashed');
 
       interval = setInterval(() => {
         mult += 0.01;
-        document.getElementById('multiplier').textContent = '×' + mult.toFixed(2);
-        document.getElementById('cashoutAmount').textContent = Math.floor(bet * mult).toLocaleString('fr-FR') + '€';
+        multDisplay.textContent = `×${mult.toFixed(2)}`;
 
-        const progress = Math.min(mult / 10, 1);
+        const progress = Math.min((mult - 1) / 10, 1);
         rocket.style.bottom = (20 + progress * 200) + 'px';
         rocket.style.left = (20 + progress * 300) + 'px';
+        trail.style.width = (progress * 100) + '%';
 
         if (mult >= crashPoint) {
           crash();
@@ -413,43 +249,37 @@
       const win = Math.floor(bet * mult);
       await updateMoney(win);
 
-      await sb.from('game_crashes').insert({
-        user_id: currentUser.id,
-        multiplier: mult.toFixed(2),
-        bet_amount: bet,
-        win_amount: win
-      });
-
       const res = document.getElementById('result');
       res.className = 'result win';
-      res.textContent = `✅ ENCAISSÉ À ×${mult.toFixed(2)} ! +${win.toLocaleString('fr-FR')}€`;
+      res.textContent = `✅ ENCAISSÉ à ×${mult.toFixed(2)} ! +${win.toLocaleString('fr-FR')}€`;
       res.style.display = 'block';
 
-      await loadLeaderboard();
       setTimeout(reset, 3000);
     }
 
-    async function crash() {
+    function crash() {
       clearInterval(interval);
       document.getElementById('multiplier').classList.add('crashed');
       document.getElementById('multiplier').textContent = '💥 CRASH !';
       document.getElementById('rocket').textContent = '💥';
 
-      const res = document.getElementById('result');
       if (!hasCashedOut) {
+        const res = document.getElementById('result');
         res.className = 'result lose';
         res.textContent = `💥 CRASH à ×${mult.toFixed(2)} ! Perdu ${bet.toLocaleString('fr-FR')}€`;
+        res.style.display = 'block';
       }
-      res.style.display = 'block';
 
       setTimeout(reset, 3000);
     }
 
     function reset() {
-      document.getElementById('betScreen').style.display = 'block';
-      document.getElementById('playScreen').style.display = 'none';
-      document.getElementById('cashoutBtn').style.display = 'none';
+      document.getElementById('betScreen').classList.add('active');
+      document.getElementById('playScreen').classList.remove('active');
       document.getElementById('rocket').textContent = '🚀';
+      document.getElementById('rocket').style.bottom = '20px';
+      document.getElementById('rocket').style.left = '20px';
+      document.getElementById('trail').style.width = '0';
       document.getElementById('multiplier').textContent = '×1.00';
       document.getElementById('result').style.display = 'none';
     }
