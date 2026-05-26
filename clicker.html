@@ -26,14 +26,7 @@
 
     /* TOPBAR */
     .topbar {
-      background: #ffffff;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      position: relative;
-      z-index: 100;
+      display: none;
     }
 
     .avatar {
@@ -96,7 +89,7 @@
     .dock-scene {
       position: relative;
       width: 100%;
-      height: calc(100vh - 72px - 80px);
+      height: 100vh;
       overflow: hidden;
       background: linear-gradient(180deg, #87ceeb 0%, #b9dceb 50%, #2b8aa6 100%);
     }
@@ -151,8 +144,8 @@
       bottom: 15%;
       left: 50%;
       transform: translateX(-50%);
-      width: 200px;
-      height: 160px;
+      width: 280px;
+      height: 220px;
       cursor: pointer;
       transition: transform 0.1s ease;
       z-index: 10;
@@ -286,11 +279,14 @@
       z-index: 60;
     }
 
-    .back-btn:active {
-      transform: scale(0.95);
+    .back-btn {
+      display: none;
     }
 
-    /* RESPONSIVE */
+    /* COMBO MULTIPLIER */
+    .combo-display {
+      display: none;
+    }
     @media (max-width: 400px) {
       #container {
         width: 160px;
@@ -401,6 +397,7 @@
     const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
+    let comboResetTimeout = null;
     
     async function init() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -515,11 +512,29 @@
         console.log('🔥 [CLICKER] Nouveau record de combo:', maxCombo.toFixed(2));
       }
 
+      // Réinitialiser le timeout de réduction du combo
+      clearTimeout(comboResetTimeout);
+      comboResetTimeout = setTimeout(() => {
+        // Réduire le combo progressivement jusqu'à 1
+        let tempCombo = combo;
+        const decayInterval = setInterval(() => {
+          tempCombo = Math.max(1, tempCombo - 0.2);
+          combo = tempCombo;
+          updateDisplay();
+          
+          if (tempCombo <= 1) {
+            combo = 1;
+            clearInterval(decayInterval);
+            updateDisplay();
+          }
+        }, 50);
+      }, 600);
+
       const gain = Math.floor(perClick * combo);
       money += gain;
       totalClicks += 1;
 
-      // XP gain
+      // XP gain - TOUJOURS 1 XP par clic
       const oldLevel = level;
       xp += 1;
       const xpRequired = getXpRequired(level);
@@ -549,7 +564,7 @@
         const cx = e.clientX - oRect.left;
         const cy = e.clientY - oRect.top;
 
-        // Float number
+        // Float number - affiche juste l'argent gagné par ce clic
         const f = document.createElement('div');
         f.className = 'float-num';
         f.textContent = '+' + gain + '€';
@@ -606,19 +621,7 @@
       document.getElementById('levelDisplay').textContent = level;
       document.getElementById('moneyDisplay').textContent = money.toLocaleString('fr-FR');
       document.getElementById('perClickDisplay').textContent = perClick;
-      document.getElementById('comboDisplay2').textContent = combo.toFixed(1);
       document.getElementById('totalClicksDisplay').textContent = totalClicks.toLocaleString('fr-FR');
-
-      // Combo display
-      const comboDisplayEl = document.getElementById('comboDisplay');
-      const comboValueEl = document.getElementById('comboValue');
-      
-      if (combo > 1.5) {
-        comboDisplayEl.classList.add('show');
-        comboValueEl.textContent = combo.toFixed(1);
-      } else {
-        comboDisplayEl.classList.remove('show');
-      }
     }
 
     function scheduleSave() {
