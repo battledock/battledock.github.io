@@ -229,6 +229,83 @@
       flex-shrink: 0;
     }
 
+    /* DAILY CONTAINER */
+    .daily-container {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+      cursor: pointer;
+      transition: transform 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .daily-container:active {
+      transform: scale(0.98);
+    }
+
+    .daily-container.claimed {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .daily-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #fbbf24;
+      color: #0f172a;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .daily-badge.claimed-badge {
+      background: #10b981;
+      color: white;
+    }
+
+    .daily-content {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .daily-icon {
+      font-size: 48px;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .daily-text h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+
+    .daily-text p {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .daily-timer {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
     .events-card-content {
       flex: 1;
     }
@@ -594,6 +671,19 @@
       </div>
     </div>
 
+    <!-- DAILY CONTAINER -->
+    <div class="daily-container" id="dailyContainer" onclick="claimDailyBonus()">
+      <div class="daily-badge" id="dailyBadge">DISPONIBLE</div>
+      <div class="daily-content">
+        <div class="daily-icon">🎁</div>
+        <div class="daily-text">
+          <h3>CONTAINER QUOTIDIEN</h3>
+          <p id="dailyDesc">Récupère ton bonus !</p>
+          <div class="daily-timer" id="dailyTimer"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ACTIONS RAPIDES -->
     <div class="section-wrapper">
       <div class="section-header">⚡ Actions Rapides</div>
@@ -800,6 +890,9 @@
         // Vérifier s'il y a un level-up en attente
         checkPendingLevelUp();
 
+        // Vérifier le bonus quotidien
+        checkDailyBonus();
+
         // Afficher l'interface avec fade-in
         document.body.classList.add('loaded');
       } else {
@@ -994,6 +1087,199 @@
         await sb.auth.signOut();
         window.location.href = 'index.html';
       }
+    }
+
+    // ========== DAILY CONTAINER SYSTEM ==========
+    let canClaimDaily = false;
+
+    async function checkDailyBonus() {
+      try {
+        const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+        
+        // Vérifier si bonus déjà réclamé aujourd'hui
+        const { data, error } = await sb
+          .from('daily_bonuses')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('last_claim_date', today)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking daily bonus:', error);
+          return;
+        }
+
+        const container = document.getElementById('dailyContainer');
+        const badge = document.getElementById('dailyBadge');
+        const desc = document.getElementById('dailyDesc');
+        const timer = document.getElementById('dailyTimer');
+
+        if (data) {
+          // Déjà réclamé aujourd'hui
+          canClaimDaily = false;
+          container.classList.add('claimed');
+          badge.textContent = '✓ RÉCLAMÉ';
+          badge.classList.add('claimed-badge');
+          desc.textContent = 'Reviens demain !';
+          
+          // Calculer temps avant minuit
+          updateTimer();
+        } else {
+          // Disponible !
+          canClaimDaily = true;
+          container.classList.remove('claimed');
+          badge.textContent = 'DISPONIBLE';
+          badge.classList.remove('claimed-badge');
+          desc.textContent = 'Récupère ton bonus !';
+          timer.textContent = '';
+        }
+      } catch (err) {
+        console.error('checkDailyBonus error:', err);
+      }
+    }
+
+    function updateTimer() {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(0, 0, 0, 0);
+      
+      const diff = tomorrow - now;
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      
+      const timer = document.getElementById('dailyTimer');
+      if (timer) {
+        timer.textContent = `Prochain dans ${hours}h ${minutes}m ${seconds}s`;
+      }
+      
+      // Refresh toutes les secondes
+      setTimeout(updateTimer, 1000);
+    }
+
+    async function claimDailyBonus() {
+      if (!canClaimDaily) {
+        return;
+      }
+
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Calculer le streak
+        const { data: lastClaim } = await sb
+          .from('daily_bonuses')
+          .select('last_claim_date, streak')
+          .eq('user_id', currentUser.id)
+          .order('last_claim_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        let streak = 1;
+        if (lastClaim) {
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          
+          if (lastClaim.last_claim_date === yesterdayStr) {
+            // Continuité du streak
+            streak = (lastClaim.streak || 0) + 1;
+          }
+        }
+
+        // Calculer le reward basé sur le streak
+        const baseReward = 100;
+        const streakBonus = Math.min(streak - 1, 6) * 50; // Max +300€ à 7 jours
+        const totalReward = baseReward + streakBonus + Math.floor(Math.random() * 100);
+
+        // Insérer le claim
+        const { error: insertError } = await sb
+          .from('daily_bonuses')
+          .insert({
+            user_id: currentUser.id,
+            last_claim_date: today,
+            streak: streak
+          });
+
+        if (insertError) {
+          console.error('Error inserting daily bonus:', insertError);
+          alert('Erreur lors de la réclamation. Réessaye !');
+          return;
+        }
+
+        // Ajouter l'argent
+        const { data: stats } = await sb
+          .from('game_stats')
+          .select('money')
+          .eq('user_id', currentUser.id)
+          .single();
+
+        const newMoney = (stats?.money || 0) + totalReward;
+
+        await sb
+          .from('game_stats')
+          .update({ money: newMoney })
+          .eq('user_id', currentUser.id);
+
+        // Afficher popup de récompense
+        showDailyReward(totalReward, streak);
+
+        // Refresh l'état
+        await loadUserData();
+        await checkDailyBonus();
+
+      } catch (err) {
+        console.error('claimDailyBonus error:', err);
+        alert('Erreur lors de la réclamation !');
+      }
+    }
+
+    function showDailyReward(reward, streak) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10000; animation: fadeIn 0.3s;
+      `;
+
+      const popup = document.createElement('div');
+      popup.style.cssText = `
+        background: linear-gradient(135deg, #dc2626, #991b1b);
+        border-radius: 20px; padding: 40px 30px; max-width: 400px;
+        text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      `;
+
+      popup.innerHTML = `
+        <div style="font-size: 80px; margin-bottom: 20px; animation: bounce 1s ease-in-out infinite;">🎁</div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 40px; color: white; margin-bottom: 16px; letter-spacing: 2px;">
+          CONTAINER QUOTIDIEN !
+        </div>
+        <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+          <div style="font-size: 16px; color: rgba(255,255,255,0.9); margin-bottom: 12px;">
+            Tu as gagné
+          </div>
+          <div style="font-family: 'Bebas Neue', sans-serif; font-size: 56px; color: #fbbf24; text-shadow: 0 4px 12px rgba(251,191,36,0.5);">
+            +${reward.toLocaleString('fr-FR')}€
+          </div>
+        </div>
+        <div style="background: rgba(251,191,36,0.2); border: 2px solid rgba(251,191,36,0.5); border-radius: 12px; padding: 12px; margin-bottom: 24px;">
+          <div style="font-size: 14px; color: white; font-weight: 600;">
+            🔥 Streak : ${streak} jour${streak > 1 ? 's' : ''} consécutif${streak > 1 ? 's' : ''} !
+          </div>
+          ${streak >= 7 ? '<div style="font-size: 12px; color: #fbbf24; margin-top: 4px;">⭐ Streak MAX atteint !</div>' : '<div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">Continue demain pour plus de récompenses !</div>'}
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" style="
+          background: white; color: #dc2626; border: none; border-radius: 12px;
+          padding: 14px 40px; font-family: 'Bebas Neue', sans-serif; font-size: 18px;
+          cursor: pointer; letter-spacing: 1px; transition: all 0.2s; width: 100%;
+        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          SUPER !
+        </button>
+      `;
+
+      overlay.appendChild(popup);
+      document.body.appendChild(overlay);
     }
 
     init();
