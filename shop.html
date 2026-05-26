@@ -530,47 +530,212 @@
       welcome: [
         "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?",
         "Ah, un client ! Les affaires tournent 😄",
-        "Salut ! J'ai ce qu'il te faut pour bosser mieux"
+        "Salut ! J'ai ce qu'il te faut pour bosser mieux",
+        "Re-bonjour ! Toujours pas riche ?",
+        "C'est quoi encore ? Besoin de muscler tes bras ?",
+        "Tiens, un nouveau visage... ou c'est toi encore ?",
+        "Je vend de la qualité ici, pas du toc !",
+        "Alors ? On upgrade ou on regarde juste ?"
       ],
       poor: [
         "Pas beaucoup de sous hein ? Reviens quand tu auras du cash",
         "Les gants t'attendent, faut que tu travailles plus ! 😂",
-        "Pauvre petit, faut farmer davantage"
+        "Pauvre petit, faut farmer davantage",
+        "T'as combien ? 3 euros ? 😂",
+        "Mon gars, t'es plus fauché que mon compte en banque",
+        "Viens me voir quand tu seras milliardaire",
+        "T'as pas les moyens d'être ici franchement",
+        "Passe ton temps à travailler au lieu de venir flâner",
+        "Je te prête rien hein, c'est du comptant !",
+        "Dépense l'argent que tu as au casino, c'est plus sympa",
+        "Reviens quand tu auras bossé un peu",
+        "T'as oublié ton portefeuille ou quoi ?"
+      ],
+      middle: [
+        "Pas mal comme argent ! T'avances bien",
+        "Allez, dépense un peu, ça va te servir",
+        "T'as du bon goût, je vois que tu achètes chez moi",
+        "Continue comme ça, tu vas être riche",
+        "T'es pas mal pour un pauvre ! 😄",
+        "Encore toi ? Tu dépenses mes bénéfices haha"
       ],
       rich: [
         "Ah richou ! T'as bien bossé au port ?",
         "T'es plein aux as ! Dépense un peu ici",
-        "Le millionnaire est de retour ! 💰"
+        "Le millionnaire est de retour ! 💰",
+        "Wow, t'as vraiment l'pognon hein !",
+        "Alors tu rachètes le magasin ? 😂",
+        "T'es riche maintenant ? Fais-moi un chèque !",
+        "Mon client VIP ! Vas-y, dépense sans compter",
+        "Franchement t'es trop riche, c'est pas normal",
+        "J'aimerais bien être à ta place mec",
+        "T'as tout acheté ou quoi ? Laisse-moi un peu !",
+        "C'est pas normal d'avoir autant d'argent",
+        "Hé hé, je reconnais un bon client quand j'en vois un !"
+      ],
+      veryrich: [
+        "PUTAIN ! T'es riche ouf !",
+        "T'es un magnat maintenant !",
+        "Je peux te demander un truc... tu m'embauches ? 😂",
+        "T'as plus d'argent que moi... c'est déprimant",
+        "Comment tu fais pour avoir autant ?? 😨",
+        "Je suis jaloux là... vraiment jaloux",
+        "Fais attention à toi, les arnaqueurs vont te viser",
+        "T'as cassé l'économie du port ! 💸",
+        "Je vais augmenter mes prix rien que pour toi 😂",
+        "C'est fou, tu achètes juste pour décorer ?"
       ],
       buy: [
         "Bon choix ! Ça va t'aider",
         "T'as fait un bon investissement",
-        "Voilà, maintenant tu vas bosser comme un chef !"
+        "Voilà, maintenant tu vas bosser comme un chef !",
+        "Excellent, ça va changer ta vie",
+        "C'est pas le meilleur choix mais c'est pas mal",
+        "T'as raison d'acheter ça, tu vas voir la différence",
+        "Ha ha, je savais que tu vas prendre celui-là",
+        "Bravo, t'es malin ce coup-ci !",
+        "Voilà du vrai matériel de travail !",
+        "Ça va marcher dur maintenant !",
+        "J'aurais fait pareil à ta place",
+        "Bien joué, tu investis dans le bon truc"
       ],
       maxed: [
         "Tout est au max ! T'es un vrai professionnel",
-        "C'est bon, t'as tout déverrouillé !"
+        "C'est bon, t'as tout déverrouillé !",
+        "Wow, t'as tout acheté ! Tu m'impressionnes",
+        "Je crois que tu m'as ruiné 😂",
+        "Y'a plus rien à vendre ici pour toi",
+        "Tu es le ROI du magasin maintenant",
+        "Je vais fermer le shop, tu as tout acheté",
+        "C'est dingue, tu as dépensé une fortune ici",
+        "Même moi j'ai pas tout ce que t'as ! 😅"
       ]
     };
 
-    function getMarcelMessage() {
+    function getMarcelMessage(forceCategory = null) {
       if (!profile) return MARCEL_MESSAGES.welcome[0];
+      
+      if (forceCategory) {
+        const messages = MARCEL_MESSAGES[forceCategory];
+        if (messages) {
+          return messages[Math.floor(Math.random() * messages.length)];
+        }
+      }
       
       const money = profile.money || 0;
       
       if (money < 1000) {
         return MARCEL_MESSAGES.poor[Math.floor(Math.random() * MARCEL_MESSAGES.poor.length)];
+      } else if (money > 500000) {
+        return MARCEL_MESSAGES.veryrich[Math.floor(Math.random() * MARCEL_MESSAGES.veryrich.length)];
       } else if (money > 50000) {
         return MARCEL_MESSAGES.rich[Math.floor(Math.random() * MARCEL_MESSAGES.rich.length)];
+      } else if (money > 5000) {
+        return MARCEL_MESSAGES.middle[Math.floor(Math.random() * MARCEL_MESSAGES.middle.length)];
       } else {
         return MARCEL_MESSAGES.welcome[Math.floor(Math.random() * MARCEL_MESSAGES.welcome.length)];
       }
+    }
+
+    async function checkShopOpen() {
+      const now = new Date();
+      const hour = now.getHours();
+      // Ouvert de 10h à 22h (fermé 22h-10h)
+      return hour >= 10 && hour < 22;
+    }
+
+    function showShopClosed() {
+      const now = new Date();
+      const hour = now.getHours();
+      
+      // Calculer l'heure d'ouverture
+      let nextOpen = new Date();
+      if (hour < 10) {
+        nextOpen.setHours(10, 0, 0, 0);
+      } else {
+        nextOpen.setDate(nextOpen.getDate() + 1);
+        nextOpen.setHours(10, 0, 0, 0);
+      }
+      
+      const timeUntilOpen = Math.floor((nextOpen - now) / 1000);
+      const hoursLeft = Math.floor(timeUntilOpen / 3600);
+      const minutesLeft = Math.floor((timeUntilOpen % 3600) / 60);
+      
+      document.body.innerHTML = `
+        <div style="
+          min-height: 100vh;
+          background: linear-gradient(180deg, #d4a574 0%, #a0876d 50%, #8b7355 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          font-family: 'Bebas Neue', sans-serif;
+        ">
+          <div style="
+            text-align: center;
+            background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
+            border: 3px solid #5a4a35;
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 500px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+          ">
+            <div style="font-size: 80px; margin-bottom: 20px;">🔐</div>
+            <div style="font-size: 48px; color: #f5f5dc; letter-spacing: 2px; margin-bottom: 16px; text-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
+              MAGASIN FERMÉ
+            </div>
+            <div style="font-size: 18px; color: #d4a574; margin-bottom: 32px; letter-spacing: 1px;">
+              Horaires : 10h00 - 22h00
+            </div>
+            
+            <div style="
+              background: rgba(212, 165, 116, 0.1);
+              border: 2px dashed #d4a574;
+              border-radius: 8px;
+              padding: 24px;
+              margin-bottom: 32px;
+            ">
+              <div style="font-size: 14px; color: #aaa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">⏰ Réouverture</div>
+              <div style="font-size: 42px; color: #f5f5dc; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.4);">
+                ${hoursLeft.toString().padStart(2, '0')}:${minutesLeft.toString().padStart(2, '0')}
+              </div>
+              <div style="font-size: 12px; color: #888; margin-top: 12px;">
+                ${nextOpen.toLocaleString('fr-FR')}
+              </div>
+            </div>
+            
+            <button onclick="window.location.href='game.html'" style="
+              width: 100%;
+              background: linear-gradient(135deg, #228b22 0%, #1a6b1a 100%);
+              border: 2px solid #1a6b1a;
+              color: white;
+              padding: 16px;
+              border-radius: 4px;
+              font-family: 'Bebas Neue', sans-serif;
+              font-size: 18px;
+              letter-spacing: 1px;
+              cursor: pointer;
+              transition: all 0.3s;
+              font-weight: 600;
+            " onmouseover="this.style.transform='scale(1.02)'; this.style.background='linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';" onmouseout="this.style.transform='scale(1)'; this.style.background='linear-gradient(135deg, #228b22 0%, #1a6b1a 100%)';">
+              ← RETOUR AU LOBBY
+            </button>
+          </div>
+        </div>
+      `;
     }
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
         window.location.href = 'index.html';
+        return;
+      }
+
+      // Vérifier si le shop est ouvert (10h-22h)
+      const isOpen = await checkShopOpen();
+      if (!isOpen) {
+        showShopClosed();
         return;
       }
 
@@ -664,7 +829,14 @@
 
         profile = { ...profile, ...updateObj };
         updateDisplay();
-        updateMarcelMessage();
+        
+        // Message spécifique selon l'upgrade
+        let marcelReaction = MARCEL_MESSAGES.buy[Math.floor(Math.random() * MARCEL_MESSAGES.buy.length)];
+        if (updates[upgradeId] >= upgrade.maxLevel) {
+          marcelReaction = MARCEL_MESSAGES.maxed[Math.floor(Math.random() * MARCEL_MESSAGES.maxed.length)];
+        }
+        document.getElementById('marcelMessage').textContent = `"${marcelReaction}"`;
+        
         renderUpgrades();
         showAlert(`✅ ${upgrade.name} achetée!`);
       } catch (error) {
