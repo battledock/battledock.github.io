@@ -7,34 +7,69 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
     
-    body { font-family: 'Inter', sans-serif; background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%); min-height: 100vh; padding-bottom: 80px; overflow-x: hidden; }
-    .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-    .header { background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid rgba(251, 191, 36, 0.3); border-radius: 16px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-    .back-btn { background: rgba(251, 191, 36, 0.2); border: 2px solid rgba(251, 191, 36, 0.5); color: #fbbf24; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 13px; cursor: pointer; }
-    .game-title { font-family: 'Bebas Neue', sans-serif; font-size: clamp(20px, 5vw, 28px); background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 2px; }
-    .balance { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; padding: 6px 12px; border-radius: 10px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
 
-    .game-area { background: linear-gradient(135deg, #1e293b, #334155); border: 2px solid rgba(251, 191, 36, 0.2); border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 10px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
 
+    /* GAME AREA */
+    .game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      gap: 10px;
+    }
+
+    /* TABLE */
     .table {
       background: linear-gradient(135deg, #10b981, #059669);
       border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      min-height: 300px;
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: hidden;
     }
 
     .hand {
-      margin-bottom: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .hand-label {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -42,168 +77,263 @@
 
     .score {
       background: rgba(0, 0, 0, 0.3);
-      padding: 4px 12px;
+      padding: 3px 10px;
       border-radius: 8px;
-      font-size: 18px;
-      display: none;
+      font-size: 16px;
     }
 
     .cards {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: wrap;
-      justify-content: center;
+      min-height: 80px;
+      align-items: center;
     }
 
     .card {
-      width: 60px;
-      height: 90px;
+      width: 50px;
+      height: 70px;
       background: white;
-      border-radius: 8px;
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      position: relative;
+      font-size: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      animation: cardDeal 0.3s;
+    }
+
+    @keyframes cardDeal {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .card.red {
-      color: #dc2626;
+      color: #ef4444;
     }
 
     .card.black {
-      color: #0f172a;
+      color: #1f2937;
     }
 
-    .card.hidden {
+    .card-back {
+      width: 50px;
+      height: 70px;
       background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: transparent;
-    }
-
-    .card-suit {
-      position: absolute;
-      top: 4px;
-      right: 6px;
-      font-size: 16px;
-    }
-
-    .bet-screen, .play-screen { display: none; }
-    .bet-screen.active, .play-screen.active { display: block; }
-
-    .controls { display: flex; flex-direction: column; gap: 12px; align-items: center; }
-    .bet-control { display: flex; align-items: center; gap: 12px; background: rgba(255, 255, 255, 0.05); padding: 12px 20px; border-radius: 12px; border: 2px solid rgba(251, 191, 36, 0.2); width: 100%; max-width: 300px; }
-    .bet-control label { font-weight: 700; font-size: 14px; color: #fbbf24; }
-    .bet-control input { flex: 1; padding: 10px; border: 2px solid #fbbf24; border-radius: 10px; font-size: 16px; font-weight: 700; text-align: center; background: rgba(255, 255, 255, 0.1); color: white; }
-
-    .action-btns {
+      border-radius: 6px;
       display: flex;
-      gap: 12px;
-      width: 100%;
-      max-width: 350px;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     }
 
-    .action-btn {
+    /* CONTROLS */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .bet-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 2px solid rgba(251, 191, 36, 0.3);
+    }
+
+    .bet-control label {
+      font-weight: 700;
+      font-size: 12px;
+      color: #fbbf24;
+    }
+
+    .bet-control input {
       flex: 1;
-      padding: 14px;
+      padding: 8px;
+      border: 2px solid #fbbf24;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      max-width: 120px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 10px;
       border: none;
-      border-radius: 12px;
+      border-radius: 10px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
+      font-size: 16px;
       letter-spacing: 1px;
       cursor: pointer;
       transition: all 0.2s;
     }
 
-    .action-btn.hit {
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #0f172a;
+      grid-column: span 2;
+      box-shadow: 0 4px 16px rgba(251, 191, 36, 0.5);
+    }
+
+    .btn-secondary {
+      background: rgba(251, 191, 36, 0.2);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+    }
+
+    /* RESULT */
+    .result {
+      display: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      margin-top: 8px;
+    }
+
+    .result.win {
       background: linear-gradient(135deg, #10b981, #059669);
       color: white;
-      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
     }
 
-    .action-btn.stand {
+    .result.lose {
       background: linear-gradient(135deg, #dc2626, #991b1b);
       color: white;
-      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+      box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5);
     }
 
-    .action-btn:active {
+    .result.push {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+    }
+
+    /* BOTTOM BAR */
+    .bottom-bar {
+      background: linear-gradient(135deg, #7f1d1d, #991b1b);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      border-radius: 12px;
+      padding: 8px 12px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .back-btn {
+      background: rgba(251, 191, 36, 0.2);
+      border: 2px solid rgba(251, 191, 36, 0.5);
+      color: #fbbf24;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:active {
       transform: scale(0.95);
     }
 
-    .action-btn:disabled {
-      background: #475569;
-      cursor: not-allowed;
-      box-shadow: none;
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      color: #fbbf24;
+      letter-spacing: 2px;
     }
 
-    .play-btn { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #0f172a; border: none; border-radius: 14px; padding: 14px 48px; font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; cursor: pointer; box-shadow: 0 8px 24px rgba(251, 191, 36, 0.4); transition: all 0.2s; }
-    .play-btn:active { transform: scale(0.95); }
-
-    .result { display: none; margin-top: 16px; padding: 16px; border-radius: 12px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 1px; animation: slideUp 0.3s; }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    .result.win { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5); }
-    .result.lose { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; box-shadow: 0 4px 16px rgba(220, 38, 38, 0.5); }
-    .result.push { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5); }
-
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: linear-gradient(135deg, #1e293b, #334155); border-top: 2px solid rgba(251, 191, 36, 0.3); padding: 12px 16px; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5); z-index: 100; }
-    .nav-btn { width: 100%; max-width: 500px; margin: 0 auto; display: flex; background: rgba(251, 191, 36, 0.2); border: 2px solid rgba(251, 191, 36, 0.5); color: #fbbf24; border-radius: 12px; padding: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 16px; letter-spacing: 1px; cursor: pointer; justify-content: center; align-items: center; gap: 8px; }
+    .balance {
+      background: white;
+      color: #0f172a;
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-      <div class="game-title">♠️ BLACKJACK</div>
-      <div class="balance" id="balance">0€</div>
-    </div>
-
     <div class="game-area">
+      <!-- TABLE -->
       <div class="table">
+        <!-- DEALER HAND -->
         <div class="hand">
           <div class="hand-label">
-            <span>🎩 DEALER</span>
+            <span>🎩 CROUPIER</span>
             <span class="score" id="dealerScore">0</span>
           </div>
           <div class="cards" id="dealerCards"></div>
         </div>
 
+        <!-- PLAYER HAND -->
         <div class="hand">
           <div class="hand-label">
             <span>👤 VOUS</span>
-            <span class="score" id="playerScore" style="display: inline-block;">0</span>
+            <span class="score" id="playerScore">0</span>
           </div>
           <div class="cards" id="playerCards"></div>
         </div>
       </div>
 
-      <div class="bet-screen active" id="betScreen">
-        <div class="controls">
-          <div class="bet-control">
-            <label>MISE:</label>
-            <input type="number" id="betInput" value="100" min="100" step="50">
-          </div>
-          <button class="play-btn" onclick="deal()">DISTRIBUER</button>
+      <!-- CONTROLS -->
+      <div class="controls">
+        <div class="bet-control">
+          <label>MISE:</label>
+          <input type="number" id="betAmount" value="100" min="10" step="10">
         </div>
-      </div>
-
-      <div class="play-screen" id="playScreen">
-        <div class="controls">
-          <div class="action-btns">
-            <button class="action-btn hit" id="hitBtn" onclick="hit()">👊 HIT</button>
-            <button class="action-btn stand" id="standBtn" onclick="stand()">✋ STAND</button>
-          </div>
+        
+        <div class="actions" id="actions">
+          <button class="btn btn-primary" id="dealBtn" onclick="deal()">DISTRIBUER 🃏</button>
         </div>
+        
+        <div class="result" id="result"></div>
       </div>
-
-      <div class="result" id="result"></div>
     </div>
-  </div>
 
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</button>
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <button class="back-btn" onclick="window.location.href='casino-simple.html'">← Casino</button>
+      <div class="game-title">♠️ BLACKJACK</div>
+      <div class="balance" id="balance">0€</div>
+    </div>
   </div>
 
   <script>
@@ -212,25 +342,57 @@
     const { createClient } = supabase;
     const sb = createClient(supabaseUrl, supabaseKey);
 
-    let currentUser, userMoney = 0, bet = 0, deck = [], playerHand = [], dealerHand = [];
-    const suits = ['♠️', '♥️', '♦️', '♣️'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    let currentUser = null;
+    let currentMoney = 0;
+    let deck = [];
+    let playerHand = [];
+    let dealerHand = [];
+    let gameActive = false;
 
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
+    const suits = ['♠', '♥', '♦', '♣'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      await loadMoney();
+    }
+
+    async function loadMoney() {
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('money')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      currentMoney = stats?.money || 0;
+      document.getElementById('balance').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function updateMoney(newAmount) {
+      await sb
+        .from('game_stats')
+        .update({ money: newAmount })
+        .eq('user_id', currentUser.id);
+      
+      currentMoney = newAmount;
+      document.getElementById('balance').textContent = newAmount.toLocaleString('fr-FR') + '€';
+    }
 
     function createDeck() {
       deck = [];
-      for (let suit of suits) {
-        for (let value of values) {
-          deck.push({ value, suit });
+      for (let i = 0; i < 6; i++) { // 6 decks
+        for (let suit of suits) {
+          for (let value of values) {
+            deck.push({ value, suit, color: (suit === '♥' || suit === '♦') ? 'red' : 'black' });
+          }
         }
       }
       deck.sort(() => Math.random() - 0.5);
-    }
-
-    function drawCard() {
-      return deck.pop();
     }
 
     function getCardValue(card) {
@@ -240,156 +402,168 @@
     }
 
     function calculateScore(hand) {
-      let score = 0, aces = 0;
+      let score = 0;
+      let aces = 0;
+
       for (let card of hand) {
-        let val = getCardValue(card);
-        if (val === 11) aces++;
-        score += val;
+        let value = getCardValue(card);
+        if (value === 11) aces++;
+        score += value;
       }
+
       while (score > 21 && aces > 0) {
         score -= 10;
         aces--;
       }
+
       return score;
     }
 
-    function displayCards(hand, elementId, hideFirst = false) {
-      const container = document.getElementById(elementId);
-      container.innerHTML = '';
-      hand.forEach((card, i) => {
-        const div = document.createElement('div');
-        div.className = `card ${['♥️', '♦️'].includes(card.suit) ? 'red' : 'black'}`;
-        if (hideFirst && i === 0) {
-          div.classList.add('hidden');
-          div.innerHTML = '?';
-        } else {
-          div.innerHTML = `${card.value}<span class="card-suit">${card.suit}</span>`;
-        }
-        container.appendChild(div);
-      });
+    function displayCard(card, container) {
+      const cardEl = document.createElement('div');
+      cardEl.className = `card ${card.color}`;
+      cardEl.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
+      container.appendChild(cardEl);
     }
 
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
-      await loadMoney();
+    function displayHiddenCard(container) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card-back';
+      cardEl.innerHTML = '🎰';
+      container.appendChild(cardEl);
     }
 
-    async function loadMoney() {
-      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-      if (data) {
-        userMoney = data.money || 0;
-        document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    async function deal() {
+      const betInput = document.getElementById('betAmount');
+      const bet = parseInt(betInput.value);
+
+      if (bet < 10) {
+        alert('Mise minimum : 10€');
+        return;
       }
-    }
 
-    async function updateMoney(amount) {
-      userMoney += amount;
-      await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
-      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
-    }
+      if (bet > currentMoney) {
+        alert('Solde insuffisant !');
+        return;
+      }
 
-    function deal() {
-      bet = parseInt(document.getElementById('betInput').value);
-      if (bet < 100 || bet > userMoney) { alert('Mise invalide !'); return; }
+      // Déduire la mise
+      await updateMoney(currentMoney - bet);
 
-      updateMoney(-bet);
       createDeck();
-      playerHand = [drawCard(), drawCard()];
-      dealerHand = [drawCard(), drawCard()];
+      playerHand = [deck.pop(), deck.pop()];
+      dealerHand = [deck.pop(), deck.pop()];
+      gameActive = true;
 
-      displayCards(playerHand, 'playerCards');
-      displayCards(dealerHand, 'dealerCards', true);
-      document.getElementById('playerScore').textContent = calculateScore(playerHand);
-
-      document.getElementById('betScreen').classList.remove('active');
-      document.getElementById('playScreen').classList.add('active');
       document.getElementById('result').style.display = 'none';
+      document.getElementById('dealerCards').innerHTML = '';
+      document.getElementById('playerCards').innerHTML = '';
 
+      // Show dealer first card only
+      displayCard(dealerHand[0], document.getElementById('dealerCards'));
+      displayHiddenCard(document.getElementById('dealerCards'));
+
+      // Show player cards
+      for (let card of playerHand) {
+        displayCard(card, document.getElementById('playerCards'));
+      }
+
+      updateScores();
+
+      // Check for blackjack
       if (calculateScore(playerHand) === 21) {
-        setTimeout(stand, 500);
+        await stand();
+        return;
+      }
+
+      // Show hit/stand buttons
+      document.getElementById('actions').innerHTML = `
+        <button class="btn btn-secondary" onclick="hit()">TIRER 🃏</button>
+        <button class="btn btn-secondary" onclick="stand()">RESTER ✋</button>
+      `;
+    }
+
+    function updateScores() {
+      document.getElementById('playerScore').textContent = calculateScore(playerHand);
+      document.getElementById('playerScore').style.display = 'block';
+      
+      if (!gameActive) {
+        document.getElementById('dealerScore').textContent = calculateScore(dealerHand);
+        document.getElementById('dealerScore').style.display = 'block';
+      } else {
+        document.getElementById('dealerScore').style.display = 'none';
       }
     }
 
     function hit() {
-      playerHand.push(drawCard());
-      displayCards(playerHand, 'playerCards');
-      document.getElementById('playerScore').textContent = calculateScore(playerHand);
+      const card = deck.pop();
+      playerHand.push(card);
+      displayCard(card, document.getElementById('playerCards'));
+      updateScores();
 
       if (calculateScore(playerHand) > 21) {
-        setTimeout(endGame, 500);
+        stand();
       }
     }
 
-    function stand() {
-      document.getElementById('hitBtn').disabled = true;
-      document.getElementById('standBtn').disabled = true;
+    async function stand() {
+      gameActive = false;
 
-      displayCards(dealerHand, 'dealerCards');
-      document.getElementById('dealerScore').style.display = 'inline-block';
-      document.getElementById('dealerScore').textContent = calculateScore(dealerHand);
+      // Reveal dealer's hidden card
+      document.getElementById('dealerCards').innerHTML = '';
+      for (let card of dealerHand) {
+        displayCard(card, document.getElementById('dealerCards'));
+      }
 
-      const dealerInterval = setInterval(() => {
-        const dealerScore = calculateScore(dealerHand);
-        if (dealerScore < 17) {
-          dealerHand.push(drawCard());
-          displayCards(dealerHand, 'dealerCards');
-          document.getElementById('dealerScore').textContent = calculateScore(dealerHand);
-        } else {
-          clearInterval(dealerInterval);
-          setTimeout(endGame, 500);
-        }
-      }, 1000);
-    }
+      // Dealer draws until 17+
+      while (calculateScore(dealerHand) < 17) {
+        const card = deck.pop();
+        dealerHand.push(card);
+        displayCard(card, document.getElementById('dealerCards'));
+      }
 
-    async function endGame() {
+      updateScores();
+
+      // Determine winner
+      const betInput = document.getElementById('betAmount');
+      const bet = parseInt(betInput.value);
       const playerScore = calculateScore(playerHand);
       const dealerScore = calculateScore(dealerHand);
-      const res = document.getElementById('result');
+      const result = document.getElementById('result');
 
-      let win = 0;
       if (playerScore > 21) {
-        res.className = 'result lose';
-        res.textContent = `💔 BUST ! Perdu ${bet.toLocaleString('fr-FR')}€`;
+        result.className = 'result lose';
+        result.innerHTML = `💔 BUST ! Vous avez dépassé 21 (-${bet.toLocaleString('fr-FR')}€)`;
       } else if (dealerScore > 21) {
-        win = bet * 2;
-        res.className = 'result win';
-        res.textContent = `🎉 DEALER BUST ! +${win.toLocaleString('fr-FR')}€`;
-        await updateMoney(win);
-      } else if (playerScore === 21 && playerHand.length === 2) {
-        win = Math.floor(bet * 2.0);  // Blackjack paie ×2 (au lieu de ×2.5)
-        res.className = 'result win';
-        res.textContent = `🃏 BLACKJACK ! +${win.toLocaleString('fr-FR')}€`;
-        await updateMoney(win);
+        result.className = 'result win';
+        const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
+        result.innerHTML = `🎉 LE CROUPIER A BUST ! +${win.toLocaleString('fr-FR')}€`;
+        await updateMoney(currentMoney + win);
       } else if (playerScore > dealerScore) {
-        win = bet * 2;
-        res.className = 'result win';
-        res.textContent = `✅ GAGNÉ ! ${playerScore} vs ${dealerScore} - +${win.toLocaleString('fr-FR')}€`;
-        await updateMoney(win);
-      } else if (playerScore === dealerScore) {
-        win = bet;
-        res.className = 'result push';
-        res.textContent = `🤝 ÉGALITÉ ! ${playerScore} vs ${dealerScore} - Remboursé ${bet.toLocaleString('fr-FR')}€`;
-        await updateMoney(win);
+        result.className = 'result win';
+        const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
+        result.innerHTML = `🎊 VICTOIRE ! +${win.toLocaleString('fr-FR')}€`;
+        await updateMoney(currentMoney + win);
+      } else if (playerScore < dealerScore) {
+        result.className = 'result lose';
+        result.innerHTML = `💔 DÉFAITE ! Le croupier gagne (-${bet.toLocaleString('fr-FR')}€)`;
       } else {
-        res.className = 'result lose';
-        res.textContent = `💔 PERDU ! ${playerScore} vs ${dealerScore} - ${bet.toLocaleString('fr-FR')}€`;
+        result.className = 'result push';
+        result.innerHTML = `🤝 ÉGALITÉ ! Mise remboursée`;
+        await updateMoney(currentMoney + bet);
       }
 
-      res.style.display = 'block';
+      result.style.display = 'block';
 
-      setTimeout(() => {
-        document.getElementById('betScreen').classList.add('active');
-        document.getElementById('playScreen').classList.remove('active');
-        document.getElementById('dealerScore').style.display = 'none';
-        document.getElementById('hitBtn').disabled = false;
-        document.getElementById('standBtn').disabled = false;
-        document.getElementById('playerCards').innerHTML = '';
-        document.getElementById('dealerCards').innerHTML = '';
-        document.getElementById('playerScore').textContent = '0';
-      }, 3000);
+      // Reset to deal button
+      document.getElementById('actions').innerHTML = `
+        <button class="btn btn-primary" onclick="deal()">NOUVELLE PARTIE 🃏</button>
+      `;
     }
+
+    // Anti-zoom
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
 
     init();
   </script>
