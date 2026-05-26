@@ -868,15 +868,31 @@
     async function validatePromo() {
       const code = document.getElementById('promoCode').value.toUpperCase();
       
-      if (code === 'TOMATE') {
-        alert('✅ Code TOMATE validé !\n\n🍅 Prépare-toi aux insultes... 😈');
-        localStorage.setItem('tomate_activated', 'true');
-        startInsults();
+      if (code === 'POMME') {
+        const xpForLevel25 = 3000; // XP pour niveau 25
         
-      } else if (code === 'CHIPS') {
-        alert('✅ Code CHIPS validé !\n\n🍟 Pranks activés ! Ahah ! 😂');
-        localStorage.setItem('chips_activated', 'true');
-        startPranks();
+        await sb.from('game_stats').update({ 
+          level: 25,
+          xp: xpForLevel25,
+          money: 2000000 // 2 millions €
+        }).eq('user_id', currentUser.id);
+        
+        // Récompenses pour les niveaux 1-25
+        const totalDiamonds = 25 * 5; // 5 diamants par niveau
+        const totalTrophies = 25; // 1 trophée par niveau
+        
+        const { data: profile } = await sb.from('profiles').select('diamonds, trophies').eq('user_id', currentUser.id).single();
+        
+        await sb.from('profiles').update({
+          diamonds: (profile.diamonds || 0) + totalDiamonds,
+          trophies: (profile.trophies || 0) + totalTrophies
+        }).eq('user_id', currentUser.id);
+        
+        alert('✅ Code POMME validé !\n\n🍎 NIVEAU 25 DÉBLOQUÉ !\n💰 +2,000,000€\n💎 +125 Diamants\n🏆 +25 Trophées');
+        
+        setTimeout(() => {
+          window.location.href = 'game.html';
+        }, 1000);
         
       } else if (code === 'BEAT') {
         const xpForLevel5 = 120;
@@ -920,132 +936,6 @@
         alert('❌ Code invalide');
       }
     }
-
-    let insultInterval = null;
-    let prankInterval = null;
-
-    function startInsults() {
-      if (insultInterval) return; // Éviter les doublons
-      
-      const insults = [
-        "🍅 Espèce de noob !",
-        "🍅 T'es vraiment nul au docker !",
-        "🍅 Même mon grand-père charge plus vite !",
-        "🍅 Tu confonds un container et une poubelle ?",
-        "🍅 Retourne à l'école des dockers !",
-        "🍅 Ma grand-mère docker mieux que toi !",
-        "🍅 T'as les mains en compote ou quoi ?",
-        "🍅 Bravo champion... du PIRE docker !",
-        "🍅 Arrête le docker, essaie le tricot !",
-        "🍅 Tu sais même pas différencier gauche et droite !",
-        "🍅 C'est une blague ton niveau ?",
-        "🍅 Je crois que t'as oublié ton cerveau au port !",
-        "🍅 Même un stagiaire fait mieux !",
-        "🍅 T'as appris chez les clowns ?",
-        "🍅 Attention, champion du monde... de la loose !",
-        "🍅 Tu veux un tutoriel pour les -5 ans ?",
-        "🍅 Bravo, tu bats des records... de nullité !",
-        "🍅 T'es sûr que c'est ton métier ?",
-        "🍅 Ma souris d'ordinateur docker mieux !",
-        "🍅 Franchement... fais autre chose de ta vie !",
-      ];
-      
-      // Première insulte immédiatement
-      const firstInsult = insults[Math.floor(Math.random() * insults.length)];
-      alert(firstInsult);
-      
-      // Puis toutes les 15 secondes
-      insultInterval = setInterval(() => {
-        const randomInsult = insults[Math.floor(Math.random() * insults.length)];
-        alert(randomInsult);
-      }, 15000);
-    }
-
-    function startPranks() {
-      if (prankInterval) return; // Éviter les doublons
-      
-      const pranks = [
-        () => {
-          alert("🍟 Tu croyais gagner de l'argent ? RATÉ ! 😂");
-        },
-        () => {
-          alert("🍟 ALERTE : Ton PC va exploser dans 3... 2... 1... 😱\n\n...FAUX ! Ahah ! 😂");
-        },
-        () => {
-          alert("🍟 Quelqu'un vient de voler 10,000€ sur ton compte !\n\n...Mais non gros ! C'est une blague ! 😂");
-        },
-        () => {
-          if (confirm("🍟 Tu veux 1,000,000€ GRATUIT ?\n\nClique OUI !")) {
-            alert("AHAH ! Tu pensais vraiment ? 😂🍟");
-          } else {
-            alert("Bien joué, tu apprends ! 😏");
-          }
-        },
-        () => {
-          alert("🍟 MESSAGE IMPORTANT :\n\nTon niveau a été RESET à 1 !\n\n...Mais non c'est faux ! 😂");
-        },
-        () => {
-          const name = prompt("🍟 Question très importante :\n\nC'est quoi ton prénom ?");
-          if (name) {
-            alert(`${name} ? Quel prénom pourri ! 😂🍟`);
-          }
-        },
-        () => {
-          alert("🍟 INFO : Battle Dock va fermer dans 5 minutes !\n\nSauvegarde vite !\n\n...LOL c'est une blague ! 😂");
-        },
-        () => {
-          alert("🍟 Félicitations !\n\nTu viens de gagner... RIEN DU TOUT ! 😂");
-        },
-        () => {
-          alert("🍟 URGENT : Ton compte a été piraté !\n\nChange ton mot de passe maintenant !\n\n...Ahah non je déconne ! 😂");
-        },
-        () => {
-          alert("🍟 Breaking News :\n\nTu es officiellement le PIRE joueur du jeu ! 😂🍟");
-        },
-        () => {
-          const result = confirm("🍟 Ce message est-il un prank ?\n\nOUI ou NON ?");
-          alert(result ? "Bonne réponse ! 🍟" : "Raté ! C'en était un ! 😂");
-        },
-        () => {
-          alert("🍟 Erreur 404 :\n\nTon talent introuvable ! 😂");
-        },
-      ];
-      
-      // Premier prank immédiatement
-      const firstPrank = pranks[Math.floor(Math.random() * pranks.length)];
-      setTimeout(firstPrank, 2000);
-      
-      // Puis toutes les 20 secondes
-      prankInterval = setInterval(() => {
-        const randomPrank = pranks[Math.floor(Math.random() * pranks.length)];
-        randomPrank();
-      }, 20000);
-    }
-
-    function stopAllCodes() {
-      if (insultInterval) {
-        clearInterval(insultInterval);
-        insultInterval = null;
-      }
-      if (prankInterval) {
-        clearInterval(prankInterval);
-        prankInterval = null;
-      }
-      localStorage.removeItem('tomate_activated');
-      localStorage.removeItem('chips_activated');
-    }
-
-    // Vérifier au chargement si les codes ont été activés
-    window.addEventListener('load', () => {
-      if (localStorage.getItem('tomate_activated') === 'true') {
-        console.log('🍅 TOMATE activé - démarrage des insultes');
-        startInsults();
-      }
-      if (localStorage.getItem('chips_activated') === 'true') {
-        console.log('🍟 CHIPS activé - démarrage des pranks');
-        startPranks();
-      }
-    });
 
     function copyReferral() {
       const link = document.getElementById('referralLink').textContent;
