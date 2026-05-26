@@ -2,619 +2,70 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>Battle Dock Casino</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Scroll Casino</title>
   <style>
-    html {
-      overflow-y: scroll; /* Force scroll sur html aussi */
-      height: 100%;
-    }
-
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-
-    /* Touch action seulement sur les éléments cliquables */
-    button, a, .game-card {
-      touch-action: manipulation;
     }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-      background-attachment: fixed; /* Fix le gradient pendant le scroll */
-      min-height: 100vh;
-      height: auto; /* Permet au body de grandir */
-      overflow-x: hidden;
-      overflow-y: scroll; /* Force TOUJOURS le scroll */
-      position: relative;
-      padding-bottom: 120px; /* Plus d'espace pour la bottom nav */
-      -webkit-overflow-scrolling: touch; /* Scroll fluide iOS */
-    }
-
-    /* ANIMATED BACKGROUND */
-    .dock-scene {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      overflow: hidden;
-      opacity: 0.3;
-      pointer-events: none; /* Ne bloque pas les interactions */
-    }
-
-    .crane {
-      position: absolute;
-      width: 200px;
-      height: 400px;
-      right: 10%;
-      top: -50px;
-      opacity: 0.5;
-    }
-
-    .crane-arm {
-      width: 4px;
-      height: 300px;
-      background: linear-gradient(180deg, #475569, #334155);
-      margin: 0 auto;
-      position: relative;
-    }
-
-    .crane-hook {
-      position: absolute;
-      bottom: -20px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 20px;
-      height: 20px;
-      background: #fbbf24;
-      border-radius: 50%;
-      animation: swing 3s ease-in-out infinite;
-    }
-
-    @keyframes swing {
-      0%, 100% { transform: translateX(-50%) rotate(-5deg); }
-      50% { transform: translateX(-50%) rotate(5deg); }
-    }
-
-    .water-reflection {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 150px;
-      background: linear-gradient(0deg, 
-        rgba(6, 182, 212, 0.1) 0%, 
-        transparent 100%
-      );
-      animation: water-wave 4s ease-in-out infinite;
-    }
-
-    @keyframes water-wave {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 0.5; }
-    }
-
-    /* CONTAINER */
-    .container {
-      position: relative;
-      z-index: 1;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 16px;
-      padding-bottom: 120px; /* Plus d'espace pour bottom nav */
-      min-height: calc(100vh + 200px); /* Force le container à être plus grand */
-    }
-
-    /* HEADER - NOUVEAU DESIGN */
-    .header {
-      background: linear-gradient(135deg, #1e293b, #334155);
-      border: 2px solid rgba(251, 191, 36, 0.3);
-      border-radius: 20px;
-      padding: 24px 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: linear-gradient(45deg, 
-        transparent, 
-        rgba(251, 191, 36, 0.1), 
-        transparent
-      );
-      animation: shine 3s infinite;
-    }
-
-    @keyframes shine {
-      0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-      100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-    }
-
-    .header-content {
-      position: relative;
-      z-index: 1;
-    }
-
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .casino-logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .casino-icon {
-      font-size: clamp(48px, 12vw, 56px);
-      filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.4));
-    }
-
-    .casino-name {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .casino-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(28px, 7vw, 36px);
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: 2px;
-      line-height: 1;
-    }
-
-    .casino-tagline {
-      font-size: clamp(11px, 3vw, 13px);
-      color: rgba(251, 191, 36, 0.7);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-top: 4px;
-    }
-
-    .balance-box {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border-radius: 14px;
-      padding: 12px 20px;
-      box-shadow: 0 4px 16px rgba(251, 191, 36, 0.4);
-      min-width: clamp(90px, 22vw, 130px);
-      text-align: center;
-    }
-
-    .balance-label {
-      font-size: 10px;
-      color: rgba(15, 23, 42, 0.7);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-      font-weight: 700;
-    }
-
-    .balance-amount {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(20px, 5vw, 26px);
-      color: #0f172a;
-      letter-spacing: 1px;
-      line-height: 1;
-    }
-
-    /* DAILY CONTAINER */
-    .daily-container {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
-      cursor: pointer;
-      transition: transform 0.2s;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .daily-container:active {
-      transform: scale(0.98);
-    }
-
-    .daily-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #fbbf24;
-      color: #0f172a;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .daily-content {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .daily-icon {
-      font-size: 48px;
-      animation: float 2s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
-    .daily-text h3 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
+      font-family: Arial, sans-serif;
+      background: #0f172a;
       color: white;
-      margin-bottom: 4px;
-      letter-spacing: 1px;
+      padding: 20px;
+      padding-bottom: 120px;
     }
 
-    .daily-text p {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
+    .header {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
     }
 
-    /* SECTION TITLE */
-    .section-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      color: #fbbf24;
-      margin-bottom: 12px;
-      letter-spacing: 2px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* GAMES GRID */
-    .games-grid {
+    .games {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 12px;
-      margin-bottom: 20px;
     }
 
-    .game-card {
-      background: linear-gradient(135deg, #1e293b, #334155);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-      border-radius: 16px;
-      padding: 20px 12px;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    }
-
-    .game-card::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, 
-        transparent, 
-        rgba(251, 191, 36, 0.1), 
-        transparent
-      );
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    .game-card:hover::before {
-      opacity: 1;
-    }
-
-    .game-card:active {
-      transform: scale(0.95);
-    }
-
-    .game-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #ef4444;
-      color: white;
-      font-size: 9px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 8px;
-      text-transform: uppercase;
-    }
-
-    .game-badge.hot {
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      animation: pulse-badge 2s infinite;
-    }
-
-    @keyframes pulse-badge {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.1); }
-    }
-
-    .game-icon {
-      font-size: 48px;
+    .game {
+      background: #334155;
+      padding: 40px 20px;
+      border-radius: 12px;
       text-align: center;
-      margin-bottom: 12px;
-      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+      font-size: 18px;
     }
 
-    .game-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: white;
-      text-align: center;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .game-desc {
-      font-size: 11px;
-      color: rgba(255, 255, 255, 0.6);
-      text-align: center;
-    }
-
-    .game-rtp {
-      font-size: 10px;
-      color: #10b981;
-      text-align: center;
-      margin-top: 4px;
-      font-weight: 600;
-    }
-
-    /* LIVE FEED */
-    .live-feed {
-      background: linear-gradient(135deg, #1e293b, #334155);
-      border: 2px solid rgba(251, 191, 36, 0.2);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 20px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-
-    .feed-item {
-      background: rgba(251, 191, 36, 0.1);
-      border-left: 3px solid #fbbf24;
-      padding: 8px 12px;
-      margin-bottom: 8px;
-      border-radius: 8px;
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.9);
-      animation: slideInRight 0.5s;
-    }
-
-    @keyframes slideInRight {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .feed-item b {
-      color: #fbbf24;
-    }
-
-    /* BOTTOM NAV */
-    .bottom-nav {
+    .bottom {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: linear-gradient(135deg, #1e293b, #334155);
-      border-top: 2px solid rgba(251, 191, 36, 0.3);
-      padding: 12px 16px;
-      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
-      z-index: 100;
-    }
-
-    .nav-btn {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      display: flex;
-      background: rgba(251, 191, 36, 0.2);
-      border: 2px solid rgba(251, 191, 36, 0.5);
-      color: #fbbf24;
-      border-radius: 12px;
-      padding: 12px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-
-    .nav-btn:active {
-      transform: scale(0.98);
-      background: rgba(251, 191, 36, 0.3);
-    }
-
-    @media (max-width: 400px) {
-      .games-grid {
-        gap: 10px;
-      }
-      .game-card {
-        padding: 16px 8px;
-      }
-      .game-icon {
-        font-size: 40px;
-      }
+      background: #1e293b;
+      padding: 20px;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="dock-scene">
-    <div class="crane">
-      <div class="crane-arm">
-        <div class="crane-hook"></div>
-      </div>
-    </div>
-    <div class="water-reflection"></div>
+  <div class="header">
+    <h1>CASINO TEST SCROLL</h1>
+    <p>Si tu vois les 6 jeux, le scroll fonctionne !</p>
   </div>
 
-  <div class="container">
-    <!-- HEADER -->
-    <div class="header">
-      <div class="header-content">
-        <div class="header-row">
-          <div class="casino-logo">
-            <div class="casino-icon">🎰</div>
-            <div class="casino-name">
-              <div class="casino-title">BATTLE DOCK</div>
-              <div class="casino-tagline">Casino • Dock Night</div>
-            </div>
-          </div>
-          <div class="balance-box">
-            <div class="balance-label">Solde</div>
-            <div class="balance-amount" id="balance">0€</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- STATS & CLASSEMENTS BUTTON -->
-    <a href="casino-stats.html" class="stats-cta" style="display: block; background: linear-gradient(135deg, #10b981, #059669); border: 2px solid rgba(16, 185, 129, 0.5); border-radius: 16px; padding: 16px; margin-bottom: 20px; text-decoration: none; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="font-size: 32px;">📊</div>
-        <div>
-          <div style="font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: white; letter-spacing: 1px;">STATS & CLASSEMENTS</div>
-          <div style="font-size: 12px; color: rgba(255, 255, 255, 0.9);">Profil détaillé • Leaderboards • Par jeu</div>
-        </div>
-      </div>
-      <div style="font-size: 24px; color: white;">→</div>
-    </a>
-
-    <!-- HOT GAMES -->
-    <div class="section-title">🔥 JEUX POPULAIRES</div>
-    <div class="games-grid">
-      <a href="roulette.html" class="game-card">
-        <div class="game-badge hot">HOT</div>
-        <div class="game-icon">🎡</div>
-        <div class="game-name">ROULETTE</div>
-        <div class="game-desc">La roue du capitaine</div>
-        <div class="game-rtp">RTP 88%</div>
-      </a>
-
-      <a href="slots.html" class="game-card">
-        <div class="game-badge hot">HOT</div>
-        <div class="game-icon">🎰</div>
-        <div class="game-name">SLOTS</div>
-        <div class="game-desc">Machines du dock</div>
-        <div class="game-rtp">RTP 88%</div>
-      </a>
-
-      <a href="crash.html" class="game-card">
-        <div class="game-badge hot">HOT</div>
-        <div class="game-icon">🚀</div>
-        <div class="game-name">CRASH</div>
-        <div class="game-desc">Fusée portuaire</div>
-        <div class="game-rtp">RTP 90%</div>
-      </a>
-
-      <a href="plinko.html" class="game-card">
-        <div class="game-icon">🔴</div>
-        <div class="game-name">PLINKO</div>
-        <div class="game-desc">Chute du container</div>
-        <div class="game-rtp">RTP 88%</div>
-      </a>
-    </div>
-
-    <!-- ALL GAMES -->
-    <div class="section-title">🎮 TOUS LES JEUX</div>
-    <div class="games-grid">
-      <a href="higher-lower.html" class="game-card">
-        <div class="game-icon">🃏</div>
-        <div class="game-name">HIGHER/LOWER</div>
-        <div class="game-desc">Pari du marin</div>
-        <div class="game-rtp">RTP 88%</div>
-      </a>
-
-      <a href="blackjack.html" class="game-card">
-        <div class="game-icon">♠️</div>
-        <div class="game-name">BLACKJACK</div>
-        <div class="game-desc">Le 21 classique</div>
-        <div class="game-rtp">RTP 97%</div>
-      </a>
-    </div>
-
-    <!-- LIVE FEED -->
-    <div class="section-title">📊 DERNIERS GAINS</div>
-    <div class="live-feed" id="liveFeed">
-      <div class="feed-item">🎉 <b>Marc</b> vient de gagner <b>2,500€</b> au Crash !</div>
-      <div class="feed-item">💎 <b>Sophie</b> a touché les Slots : <b>8,000€</b> !</div>
-      <div class="feed-item">🎡 <b>Lucas</b> a fait tourner la Roulette : <b>1,200€</b></div>
-    </div>
+  <div class="games">
+    <div class="game">🎡 Jeu 1</div>
+    <div class="game">🎰 Jeu 2</div>
+    <div class="game">🚀 Jeu 3</div>
+    <div class="game">🔴 Jeu 4</div>
+    <div class="game">🃏 Jeu 5</div>
+    <div class="game">♠️ Jeu 6</div>
   </div>
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='game.html'">
-      ← RETOUR AU JEU PRINCIPAL
-    </button>
-  </div>
-
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
-
-    let currentUser = null;
-
-    // Anti-zoom
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    document.addEventListener('touchmove', e => {
-      if (e.scale !== 1) e.preventDefault();
-    }, { passive: false });
-
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-      currentUser = session.user;
-
-      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-      if (data) {
-        document.getElementById('balance').textContent = (data.money || 0).toLocaleString('fr-FR') + '€';
-      }
-    }
-
-    init();
-  </script>
+  <div class="bottom">BOTTOM NAV</div>
 </body>
 </html>
