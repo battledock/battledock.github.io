@@ -46,7 +46,7 @@
     .roulette-wheel { 
       width: min(280px, 90vw); 
       height: min(280px, 90vw); 
-      margin: 0 auto 16px; 
+      margin: 0 auto 20px; 
       position: relative; 
       border-radius: 50%; 
       box-shadow: 0 0 0 12px #7f1d1d, 0 8px 32px rgba(0, 0, 0, 0.4); 
@@ -99,40 +99,35 @@
       z-index: 10;
     }
     .roulette-legend { 
-      display: grid; 
-      grid-template-columns: repeat(2, 1fr); 
-      gap: 8px; 
-      margin-bottom: 16px; 
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      padding-bottom: 4px;
     }
     .legend-item {
       background: white;
-      border-radius: 8px;
-      padding: 8px;
+      border-radius: 10px;
+      padding: 6px 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       border: 2px solid #e5e7eb;
+      flex-shrink: 0;
+      min-width: fit-content;
     }
     .legend-color {
-      width: 28px;
-      height: 28px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
       border: 2px solid rgba(0,0,0,0.2);
       flex-shrink: 0;
     }
-    .legend-info {
-      flex: 1;
-      min-width: 0;
-    }
     .legend-mult {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
+      font-size: 14px;
       color: #dc2626;
-      line-height: 1;
-    }
-    .legend-odds {
-      font-size: 10px;
-      color: #6b7280;
+      white-space: nowrap;
     }
     .color-black { background: #1f2937; }
     .color-red { background: #ef4444; }
@@ -297,48 +292,33 @@
     </div>
 
     <!-- ROULETTE -->
-    <div class="game-section" id="rouletteSection">
+    <div class="game-section fullscreen" id="rouletteSection">
       <div class="game-header">
         <div class="game-title">🎡 ROULETTE</div>
-        <button class="back-btn" onclick="showMenu()">← RETOUR</button>
+        <button class="back-btn" onclick="showMenu()">← CASINO</button>
       </div>
       <div class="game-area">
         <div class="roulette-container">
           <div class="roulette-legend">
             <div class="legend-item">
               <div class="legend-color color-black"></div>
-              <div class="legend-info">
-                <div class="legend-mult">×0</div>
-                <div class="legend-odds">4 cases (50%)</div>
-              </div>
+              <div class="legend-mult">×0</div>
             </div>
             <div class="legend-item">
               <div class="legend-color color-red"></div>
-              <div class="legend-info">
-                <div class="legend-mult">×0.5</div>
-                <div class="legend-odds">1 case (12.5%)</div>
-              </div>
+              <div class="legend-mult">×0.5</div>
             </div>
             <div class="legend-item">
               <div class="legend-color color-blue"></div>
-              <div class="legend-info">
-                <div class="legend-mult">×1</div>
-                <div class="legend-odds">1 case (12.5%)</div>
-              </div>
+              <div class="legend-mult">×1</div>
             </div>
             <div class="legend-item">
               <div class="legend-color color-green"></div>
-              <div class="legend-info">
-                <div class="legend-mult">×1.5</div>
-                <div class="legend-odds">1 case (12.5%)</div>
-              </div>
+              <div class="legend-mult">×1.5</div>
             </div>
-          </div>
-          <div class="legend-item" style="margin-bottom: 16px;">
-            <div class="legend-color color-gold"></div>
-            <div class="legend-info">
-              <div class="legend-mult">×2 JACKPOT</div>
-              <div class="legend-odds">1 case (12.5%)</div>
+            <div class="legend-item">
+              <div class="legend-color color-gold"></div>
+              <div class="legend-mult">×2 🏆</div>
             </div>
           </div>
           <div style="position: relative;">
@@ -365,10 +345,10 @@
     </div>
 
     <!-- SLOTS -->
-    <div class="game-section" id="slotsSection">
+    <div class="game-section fullscreen" id="slotsSection">
       <div class="game-header">
         <div class="game-title">🎰 SLOTS</div>
-        <button class="back-btn" onclick="showMenu()">← RETOUR</button>
+        <button class="back-btn" onclick="showMenu()">← CASINO</button>
       </div>
       <div class="game-area">
         <div class="slots-container">
@@ -571,7 +551,6 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser, userMoney = 0, coinChoice = null;
-    const symbols = ['🍒', '💎', '🍋', '⭐', '🔔', '7️⃣'];
     const suits = ['♠️', '♥️', '♦️', '♣️'];
     const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
     const hlMultipliers = [1, 1.5, 2, 3, 5, 8, 10, 15, 20, 30, 50, 75, 100];
@@ -623,16 +602,99 @@
     }
 
     // SLOTS INIT
+    const slotsSymbols = {
+      '7️⃣': { mult: 100, weight: 1 },
+      '💎': { mult: 50, weight: 2 },
+      '⭐': { mult: 20, weight: 3 },
+      '🔔': { mult: 10, weight: 4 },
+      '🍒': { mult: 5, weight: 15 },
+      '🍋': { mult: 5, weight: 25 }
+    };
+    
+    function getWeightedSymbol() {
+      const totalWeight = Object.values(slotsSymbols).reduce((sum, s) => sum + s.weight, 0);
+      let random = Math.random() * totalWeight;
+      for (let [symbol, data] of Object.entries(slotsSymbols)) {
+        random -= data.weight;
+        if (random <= 0) return symbol;
+      }
+      return '🍋';
+    }
+
     function initSlots() {
       for (let i = 1; i <= 3; i++) {
         const strip = document.getElementById('strip' + i);
-        for (let j = 0; j < 50; j++) {
+        strip.innerHTML = '';
+        for (let j = 0; j < 60; j++) {
           const div = document.createElement('div');
           div.className = 'slot-symbol';
-          div.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+          div.textContent = getWeightedSymbol();
           strip.appendChild(div);
         }
       }
+    }
+
+    // SLOTS
+    async function playSlots() {
+      const bet = parseInt(document.getElementById('slotsBet').value);
+      if (bet < 100 || bet > userMoney) { alert('Mise invalide !'); return; }
+      const btn = document.getElementById('slotsBtn');
+      btn.disabled = true;
+      await updateMoney(-bet);
+      
+      // Choisir les symboles finaux avec probabilités pondérées
+      const results = [
+        getWeightedSymbol(),
+        getWeightedSymbol(),
+        getWeightedSymbol()
+      ];
+
+      // Animation pour chaque rouleau avec timing différent
+      for (let i = 1; i <= 3; i++) {
+        const strip = document.getElementById('strip' + i);
+        const symbolHeight = strip.querySelector('.slot-symbol').offsetHeight;
+        
+        // Calculer combien de symboles faire défiler
+        const spins = 20 + i * 5; // Rouleau 1: 25, 2: 30, 3: 35 symboles
+        const finalPosition = spins;
+        
+        // Animer le scroll
+        const duration = 1500 + i * 300; // Rouleau 1: 1.8s, 2: 2.1s, 3: 2.4s
+        strip.style.transition = `top ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+        strip.style.top = `-${symbolHeight * finalPosition}px`;
+        
+        // Placer le bon symbole à la position finale
+        setTimeout(() => {
+          const syms = strip.querySelectorAll('.slot-symbol');
+          if (syms[finalPosition]) syms[finalPosition].textContent = results[i - 1];
+        }, duration - 100);
+      }
+
+      // Attendre la fin de toutes les animations
+      setTimeout(async () => {
+        // Reset positions
+        for (let i = 1; i <= 3; i++) {
+          const strip = document.getElementById('strip' + i);
+          strip.style.transition = 'none';
+          strip.style.top = '0px';
+        }
+
+        // Calculer gains
+        const res = document.getElementById('slotsResult');
+        if (results[0] === results[1] && results[1] === results[2]) {
+          const mult = slotsSymbols[results[0]].mult;
+          const win = bet * mult;
+          res.className = 'game-result win';
+          res.textContent = `🎉 ${results[0]} ${results[0]} ${results[0]} ! ×${mult} = +${win.toLocaleString('fr-FR')}€`;
+          await updateMoney(win);
+        } else {
+          res.className = 'game-result lose';
+          res.textContent = `💔 ${results[0]} ${results[1]} ${results[2]} - Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+        
+        res.style.display = 'block';
+        btn.disabled = false;
+      }, 2700); // Temps total = dernier rouleau (2400) + marge (300)
     }
 
     // ROULETTE
@@ -655,21 +717,16 @@
       await updateMoney(-bet);
       
       const wheel = document.getElementById('wheel');
-      const spins = 5 + Math.random() * 3; // 5-8 tours
-      const segmentIndex = Math.floor(Math.random() * 8); // 0-7
-      const segmentAngle = segmentIndex * 45; // Angle du segment
-      const offsetInSegment = 22.5 + Math.random() * 0; // Centre du segment
-      
-      // Angle final = tours complets + segment choisi + offset dans segment
+      const spins = 5 + Math.random() * 3;
+      const segmentIndex = Math.floor(Math.random() * 8);
+      const segmentAngle = segmentIndex * 45;
+      const offsetInSegment = 22.5;
       const finalAngle = (spins * 360) + segmentAngle + offsetInSegment;
       
       wheel.style.transform = `rotate(${finalAngle}deg)`;
       
       setTimeout(async () => {
-        // Calculer quel segment est sous la flèche (en haut)
-        // La roue a tourné, donc on inverse : le segment qui arrive en haut
         const normalizedAngle = finalAngle % 360;
-        // La flèche pointe vers le haut (0°), on calcule quel segment est là
         const pointerAngle = (360 - normalizedAngle) % 360;
         const hitSegment = Math.floor(pointerAngle / 45);
         
@@ -677,7 +734,6 @@
         const win = Math.floor(bet * segment.mult);
         const res = document.getElementById('rouletteResult');
         
-        // Afficher le résultat avec la couleur
         if (win > bet) { 
           res.className = 'game-result win'; 
           res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ! ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`; 
@@ -698,7 +754,6 @@
         res.style.display = 'block';
         btn.disabled = false;
         
-        // Reset pour prochain tour
         setTimeout(() => {
           wheel.style.transition = 'none';
           wheel.style.transform = 'rotate(0deg)';
@@ -707,60 +762,6 @@
           }, 50);
         }, 100);
       }, 3000);
-    }
-
-    // SLOTS
-    async function playSlots() {
-      const bet = parseInt(document.getElementById('slotsBet').value);
-      if (bet < 100 || bet > userMoney) { alert('Mise invalide !'); return; }
-      const btn = document.getElementById('slotsBtn');
-      btn.disabled = true;
-      await updateMoney(-bet);
-      
-      const results = [
-        symbols[Math.floor(Math.random() * symbols.length)],
-        symbols[Math.floor(Math.random() * symbols.length)],
-        symbols[Math.floor(Math.random() * symbols.length)]
-      ];
-
-      for (let i = 1; i <= 3; i++) {
-        const strip = document.getElementById('strip' + i);
-        const symbolHeight = strip.querySelector('.slot-symbol').offsetHeight;
-        const finalPos = -symbolHeight * 25;
-        strip.style.transition = 'top 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-        strip.style.top = finalPos + 'px';
-        
-        setTimeout(() => {
-          const syms = strip.querySelectorAll('.slot-symbol');
-          if (syms[25]) syms[25].textContent = results[i - 1];
-        }, 1500);
-      }
-
-      setTimeout(async () => {
-        for (let i = 1; i <= 3; i++) {
-          const strip = document.getElementById('strip' + i);
-          strip.style.transition = 'none';
-          strip.style.top = '0px';
-        }
-
-        const res = document.getElementById('slotsResult');
-        if (results[0] === results[1] && results[1] === results[2]) {
-          let mult = 5;
-          if (results[0] === '7️⃣') mult = 100;
-          else if (results[0] === '💎') mult = 50;
-          else if (results[0] === '⭐') mult = 20;
-          else if (results[0] === '🔔') mult = 10;
-          const win = bet * mult;
-          res.className = 'game-result win';
-          res.textContent = `🎉 ${results[0]} ${results[0]} ${results[0]} ! ×${mult} = +${win.toLocaleString('fr-FR')}€`;
-          await updateMoney(win);
-        } else {
-          res.className = 'game-result lose';
-          res.textContent = `💔 ${results[0]} ${results[1]} ${results[2]} - Perdu ${bet.toLocaleString('fr-FR')}€`;
-        }
-        res.style.display = 'block';
-        btn.disabled = false;
-      }, 2500);
     }
 
     // COINFLIP
