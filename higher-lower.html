@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Higher or Lower - Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container { max-width: 600px; margin: 0 auto; }
+
+    .header {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #1e40af;
+      letter-spacing: 3px;
+      margin-bottom: 16px;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      gap: 16px;
+    }
+
+    .stat-box {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .game-area {
+      background: white;
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      text-align: center;
+    }
+
+    .card-display {
+      width: 200px;
+      height: 280px;
+      margin: 0 auto 32px;
+      background: white;
+      border: 4px solid #1e40af;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+      box-shadow: 0 8px 24px rgba(30, 64, 175, 0.3);
+      position: relative;
+    }
+
+    .card-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 80px;
+      color: #1e40af;
+    }
+
+    .card-suit {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      font-size: 48px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      flex: 1;
+      max-width: 200px;
+      padding: 20px;
+      border: none;
+      border-radius: 16px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-higher {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+
+    .btn-lower {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+    }
+
+    .btn:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .cashout-btn {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white;
+      padding: 16px 40px;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    .streak-display {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+
+    .streak-label {
+      font-size: 14px;
+      opacity: 0.9;
+      margin-bottom: 4px;
+    }
+
+    .streak-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 2px;
+    }
+
+    .multiplier {
+      color: #fbbf24;
+    }
+
+    .bet-input {
+      margin-bottom: 20px;
+    }
+
+    .bet-input input {
+      width: 200px;
+      padding: 14px;
+      border: 3px solid #1e40af;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .result {
+      padding: 20px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .result.win {
+      background: #d1fae5;
+      color: #065f46;
+      border: 3px solid #10b981;
+    }
+
+    .result.lose {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 3px solid #dc2626;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      background: linear-gradient(135deg, #1e40af, #3b82f6);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="game-title">🃏 HIGHER OR LOWER</div>
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value" id="balance">0€</div>
+          <div class="stat-label">Solde</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value" id="bestStreak">0</div>
+          <div class="stat-label">Meilleur Streak</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-area">
+      <div id="startScreen">
+        <p style="margin-bottom: 20px; color: #6b7280;">
+          La carte suivante sera-t-elle PLUS haute ou PLUS basse ?<br>
+          Plus tu enchaines, plus tu gagnes !
+        </p>
+        <div class="bet-input">
+          <input type="number" id="betAmount" value="100" min="100" step="50" placeholder="Mise">
+        </div>
+        <button class="btn btn-higher" onclick="startGame()">COMMENCER</button>
+      </div>
+
+      <div id="gameScreen" style="display: none;">
+        <div class="streak-display">
+          <div class="streak-label">STREAK</div>
+          <div class="streak-value">
+            <span id="streak">0</span> 
+            <span class="multiplier">×<span id="multiplier">1</span></span>
+          </div>
+        </div>
+
+        <div class="card-display">
+          <div class="card-value" id="cardValue">?</div>
+          <div class="card-suit" id="cardSuit"></div>
+        </div>
+
+        <div class="buttons">
+          <button class="btn btn-lower" id="lowerBtn" onclick="guess('lower')">
+            ⬇️ PLUS BAS
+          </button>
+          <button class="btn btn-higher" id="higherBtn" onclick="guess('higher')">
+            ⬆️ PLUS HAUT
+          </button>
+        </div>
+
+        <button class="btn cashout-btn" id="cashoutBtn" onclick="cashout()" style="display: none;">
+          💰 ENCAISSER <span id="cashoutAmount">0€</span>
+        </button>
+
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='casino-menu.html'">
+      ← RETOUR CASINO
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser, userMoney = 0, bet = 0, streak = 0, bestStreak = 0;
+    let currentCard = null;
+    const suits = ['♠️', '♥️', '♦️', '♣️'];
+    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const multipliers = [1, 1.5, 2, 3, 5, 8, 10, 15, 20, 30, 50, 75, 100];
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      await loadMoney();
+      bestStreak = parseInt(localStorage.getItem('hl_best_streak_' + currentUser.id) || '0');
+      document.getElementById('bestStreak').textContent = bestStreak;
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
+      userMoney = data?.money || 0;
+      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function updateMoney(amount) {
+      userMoney += amount;
+      await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
+      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    function drawCard() {
+      return {
+        value: values[Math.floor(Math.random() * values.length)],
+        suit: suits[Math.floor(Math.random() * suits.length)]
+      };
+    }
+
+    function cardToNumber(card) {
+      const idx = values.indexOf(card.value);
+      return idx;
+    }
+
+    async function startGame() {
+      bet = parseInt(document.getElementById('betAmount').value);
+      if (bet < 100) { alert('Mise minimum: 100€'); return; }
+      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+
+      await updateMoney(-bet);
+      streak = 0;
+      currentCard = drawCard();
+      
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+      document.getElementById('result').style.display = 'none';
+      
+      showCard(currentCard);
+      updateStreak();
+    }
+
+    function showCard(card) {
+      document.getElementById('cardValue').textContent = card.value;
+      document.getElementById('cardSuit').textContent = card.suit;
+    }
+
+    function updateStreak() {
+      document.getElementById('streak').textContent = streak;
+      const mult = multipliers[Math.min(streak, multipliers.length - 1)];
+      document.getElementById('multiplier').textContent = mult;
+      
+      if (streak > 0) {
+        document.getElementById('cashoutBtn').style.display = 'inline-block';
+        document.getElementById('cashoutAmount').textContent = Math.floor(bet * mult).toLocaleString('fr-FR') + '€';
+      } else {
+        document.getElementById('cashoutBtn').style.display = 'none';
+      }
+    }
+
+    async function guess(direction) {
+      document.getElementById('lowerBtn').disabled = true;
+      document.getElementById('higherBtn').disabled = true;
+
+      const nextCard = drawCard();
+      const currentNum = cardToNumber(currentCard);
+      const nextNum = cardToNumber(nextCard);
+
+      setTimeout(async () => {
+        showCard(nextCard);
+
+        let correct = false;
+        if (direction === 'higher' && nextNum > currentNum) correct = true;
+        if (direction === 'lower' && nextNum < currentNum) correct = true;
+        if (nextNum === currentNum) correct = Math.random() < 0.5; // Égalité = 50/50
+
+        const res = document.getElementById('result');
+
+        if (correct) {
+          streak++;
+          if (streak > bestStreak) {
+            bestStreak = streak;
+            localStorage.setItem('hl_best_streak_' + currentUser.id, bestStreak);
+            document.getElementById('bestStreak').textContent = bestStreak;
+          }
+          updateStreak();
+          res.className = 'result win';
+          res.textContent = `✅ CORRECT ! Streak: ${streak}`;
+          currentCard = nextCard;
+        } else {
+          res.className = 'result lose';
+          res.textContent = `❌ RATÉ ! Tu as perdu ${bet.toLocaleString('fr-FR')}€`;
+          setTimeout(reset, 2000);
+        }
+
+        res.style.display = 'block';
+        document.getElementById('lowerBtn').disabled = false;
+        document.getElementById('higherBtn').disabled = false;
+      }, 500);
+    }
+
+    async function cashout() {
+      const mult = multipliers[Math.min(streak, multipliers.length - 1)];
+      const win = Math.floor(bet * mult);
+      await updateMoney(win);
+      
+      const res = document.getElementById('result');
+      res.className = 'result win';
+      res.textContent = `💰 ENCAISSÉ ! +${win.toLocaleString('fr-FR')}€`;
+      res.style.display = 'block';
+      
+      setTimeout(reset, 2000);
+    }
+
+    function reset() {
+      document.getElementById('startScreen').style.display = 'block';
+      document.getElementById('gameScreen').style.display = 'none';
+    }
+
+    init();
+  </script>
+</body>
+</html>
