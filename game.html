@@ -883,7 +883,7 @@
         loadRank(stats.money);
 
         // Vérifier s'il y a un level-up en attente
-        checkPendingLevelUp();
+        await checkPendingLevelUp(stats, profile);
 
         // Vérifier le bonus quotidien
         checkDailyBonus();
@@ -899,27 +899,13 @@
     }
   }
 
-    async function checkPendingLevelUp() {
+    async function checkPendingLevelUp(stats, profile) {
       try {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) return;
-
-        const { data: stats } = await supabaseClient
-          .from('game_stats')
-          .select('level, last_levelup_shown, money')
-          .eq('user_id', user.id)
-          .single();
-
-        if (!stats) return;
+        if (!user || !stats) return;
 
         // Si le niveau actuel n'a pas été annoncé
         if (stats.level > (stats.last_levelup_shown || 0)) {
-          const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('diamonds, trophies')
-            .eq('id', user.id)
-            .single();
-
           // Afficher popup pour chaque level-up manqué
           for (let i = (stats.last_levelup_shown || 0) + 1; i <= stats.level; i++) {
             await new Promise(resolve => {
