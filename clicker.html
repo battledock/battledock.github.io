@@ -388,7 +388,13 @@
     }
 
     function getXpRequired(level) {
-      return level * level * 50;
+      if (level <= 10) {
+        return level * 100;
+      } else if (level <= 20) {
+        return level * 150;
+      } else {
+        return level * 200;
+      }
     }
 
     async function init() {
@@ -477,10 +483,10 @@
       const oldLevel = currentLevel;
       let totalXp = initialXp + sessionXp;
       let checkLevel = initialLevel;
-      let remainingXp = totalXp;
       
-      while (remainingXp >= getXpRequired(checkLevel)) {
-        remainingXp -= getXpRequired(checkLevel);
+      // Tant qu'on a assez d'XP pour passer au level suivant
+      while (totalXp >= getXpRequired(checkLevel)) {
+        totalXp -= getXpRequired(checkLevel);
         checkLevel += 1;
       }
       
@@ -530,10 +536,14 @@
       document.getElementById('levelupGrade').textContent = grade;
       
       popup.classList.remove('hide');
+      popup.style.animation = 'none';
+      
+      // Force reflow pour relancer l'animation
+      void popup.offsetWidth;
       popup.style.animation = 'levelupAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
       
       setTimeout(() => {
-        popup.classList.add('hide');
+        popup.style.animation = 'levelupDisappear 0.4s ease-out forwards';
       }, 2000);
     }
 
