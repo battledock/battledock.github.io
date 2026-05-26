@@ -909,6 +909,17 @@
 
         console.log('✅ Checking level-up:', { level: stats.level, last_shown: stats.last_levelup_shown });
 
+        // Ne pas afficher si c'est le premier chargement (last_levelup_shown = 0 et level = 1)
+        if (stats.level === 1 && (stats.last_levelup_shown || 0) === 0) {
+          console.log('✔️ Nouveau compte, pas de popup niveau 1');
+          // Marquer le niveau 1 comme affiché
+          await sb
+            .from('game_stats')
+            .update({ last_levelup_shown: 1 })
+            .eq('user_id', user.id);
+          return;
+        }
+
         // Si le niveau actuel n'a pas été annoncé
         if (stats.level > (stats.last_levelup_shown || 0)) {
           console.log('🎉 Level-up detected! Showing popups...');
@@ -985,7 +996,8 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.85);
+        background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(15,23,42,0.95));
+        backdrop-filter: blur(4px);
         z-index: 99999;
         display: flex;
         align-items: center;
@@ -995,15 +1007,19 @@
 
       const popup = document.createElement('div');
       popup.style.cssText = `
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        border-radius: 20px;
-        padding: 40px 32px;
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+        border-radius: 24px;
+        padding: 48px 40px;
         max-width: 90%;
-        width: 400px;
+        width: 450px;
         text-align: center;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        box-shadow: 
+          0 25px 80px rgba(251, 191, 36, 0.4),
+          0 0 40px rgba(251, 191, 36, 0.3),
+          inset 0 1px 0px rgba(255, 255, 255, 0.3);
+        animation: popIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         position: relative;
+        border: 3px solid rgba(255, 255, 255, 0.2);
       `;
 
       popup.innerHTML = `
@@ -1013,87 +1029,111 @@
             to { opacity: 1; }
           }
           @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
+            0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+            50% { transform: scale(1.05) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
           }
           @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.1); }
           }
           @keyframes shine {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
           }
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+          }
           .levelup-icon { animation: bounce 1s ease-in-out infinite; }
           .levelup-shine {
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             animation: shine 2s linear infinite;
-            border-radius: 20px;
+            border-radius: 24px;
             pointer-events: none;
           }
-          .reward-item { transition: transform 0.2s; }
-          .reward-item:hover { transform: scale(1.1); }
-          .close-btn { transition: all 0.2s; }
-          .close-btn:hover { transform: scale(1.05); background: white !important; }
-          .close-btn:active { transform: scale(0.95); }
+          .level-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 96px;
+            color: white;
+            text-shadow: 0 6px 16px rgba(0,0,0,0.4), 4px 4px 0px rgba(0,0,0,0.3);
+            letter-spacing: 3px;
+            margin: -16px 0 -8px 0;
+            animation: float 2s ease-in-out infinite;
+          }
+          .reward-item { 
+            animation: float 2s ease-in-out infinite;
+            animation-delay: 0.2s;
+          }
+          .reward-item:nth-child(2) { animation-delay: 0.4s; }
+          .reward-item:nth-child(3) { animation-delay: 0.6s; }
+          .close-btn { 
+            transition: all 0.3s;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.25), inset 0 1px 0px rgba(255,255,255,0.2);
+          }
+          .close-btn:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0px rgba(255,255,255,0.2);
+          }
+          .close-btn:active { transform: translateY(-1px); }
         </style>
 
         <div class="levelup-shine"></div>
-        <div class="levelup-icon" style="font-size: 80px; margin-bottom: 16px;">🎉</div>
-        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 48px; color: white; text-shadow: 0 4px 8px rgba(0,0,0,0.3); margin-bottom: 8px; letter-spacing: 2px;">
-          NIVEAU ${level} !
+        <div class="levelup-icon" style="font-size: 72px; margin-bottom: 8px;">🎉</div>
+        <div class="level-number">${level}</div>
+        <div style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); margin-bottom: 8px; letter-spacing: 2px;">
+          NIVEAU ATTEINT !
         </div>
-        <div style="font-size: 18px; color: rgba(255,255,255,0.9); margin-bottom: 32px; font-weight: 600;">
-          Félicitations pour ta progression !
+        <div style="font-size: 16px; color: rgba(255,255,255,0.95); margin-bottom: 32px; font-weight: 600; letter-spacing: 0.5px;">
+          Progression exceptionnelle 🚀
         </div>
-        <div style="background: rgba(0,0,0,0.15); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
-          <div style="font-size: 16px; color: white; margin-bottom: 16px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-            Récompenses débloquées
+        <div style="background: rgba(0,0,0,0.2); border-radius: 16px; padding: 28px; margin-bottom: 28px; border: 2px solid rgba(255,255,255,0.15);">
+          <div style="font-size: 15px; color: white; margin-bottom: 20px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;">
+            ⭐ Récompenses Débloquées ⭐
           </div>
           <div style="display: flex; justify-content: space-around; gap: 16px;">
             <div class="reward-item" style="flex: 1;">
-              <div style="font-size: 40px; margin-bottom: 8px;">💰</div>
-              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
+              <div style="font-size: 48px; margin-bottom: 10px; display: inline-block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">💰</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.3); letter-spacing: 1px;">
                 ${money.toLocaleString('fr-FR')}€
               </div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">
+              <div style="font-size: 12px; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; font-weight: 600;">
                 Argent
               </div>
             </div>
             <div class="reward-item" style="flex: 1;">
-              <div style="font-size: 40px; margin-bottom: 8px;">💎</div>
-              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                ${diamonds}
+              <div style="font-size: 48px; margin-bottom: 10px; display: inline-block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">💎</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.3); letter-spacing: 1px;">
+                +${diamonds}
               </div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">
+              <div style="font-size: 12px; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; font-weight: 600;">
                 Diamants
               </div>
             </div>
             <div class="reward-item" style="flex: 1;">
-              <div style="font-size: 40px; margin-bottom: 8px;">🏆</div>
-              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">
-                ${trophies}
+              <div style="font-size: 48px; margin-bottom: 10px; display: inline-block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">🏆</div>
+              <div style="font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: white; text-shadow: 0 2px 6px rgba(0,0,0,0.3); letter-spacing: 1px;">
+                +${trophies}
               </div>
-              <div style="font-size: 12px; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px;">
-                ${trophies > 1 ? 'Trophées' : 'Trophée'}
+              <div style="font-size: 12px; color: rgba(255,255,255,0.9); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 6px; font-weight: 600;">
+                Trophée
               </div>
             </div>
           </div>
         </div>
         <button class="close-btn" onclick="this.parentElement.parentElement.remove()" style="
           width: 100%;
-          background: rgba(255,255,255,0.9);
-          color: #f59e0b;
-          border: none;
+          background: linear-gradient(135deg, white, #f5f5f5);
+          color: #d97706;
+          border: 2px solid rgba(255,255,255,0.3);
           border-radius: 12px;
-          padding: 16px 32px;
+          padding: 18px 32px;
           font-family: 'Bebas Neue', sans-serif;
-          font-size: 20px;
-          letter-spacing: 1px;
+          font-size: 18px;
+          letter-spacing: 2px;
           cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-          font-weight: 600;
+          font-weight: 700;
         ">
           CONTINUER
         </button>
