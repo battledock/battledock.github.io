@@ -18,7 +18,6 @@
       background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
       color: white;
       padding: 16px;
-      padding-bottom: 100px;
       min-height: 100vh;
     }
 
@@ -166,16 +165,6 @@
       50% { transform: scale(1.03); }
     }
 
-    /* SECTION */
-    .section-title {
-      font-size: 14px;
-      color: rgba(251, 191, 36, 0.9);
-      font-weight: 700;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
     /* GAMES GRID */
     .games-grid {
       display: grid;
@@ -252,6 +241,7 @@
       border-radius: 12px;
       padding: 16px;
       margin-bottom: 20px;
+      min-height: 60px;
     }
 
     .feed-item {
@@ -269,33 +259,24 @@
       color: #fbbf24;
     }
 
-    /* BOTTOM NAV */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+    /* QUIT BUTTON */
+    .quit-btn {
       background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border-top: 2px solid rgba(251, 191, 36, 0.5);
-      padding: 12px 16px;
-      z-index: 100;
-      box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.5);
-    }
-
-    .nav-btn {
-      width: 100%;
-      max-width: 500px;
-      margin: 0 auto;
-      display: block;
-      background: rgba(251, 191, 36, 0.2);
       border: 2px solid rgba(251, 191, 36, 0.5);
       color: #fbbf24;
       border-radius: 12px;
-      padding: 12px;
+      padding: 12px 20px;
       font-family: 'Bebas Neue', sans-serif;
       font-size: 16px;
       letter-spacing: 1px;
       cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+    }
+
+    .quit-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
     }
   </style>
 </head>
@@ -360,16 +341,8 @@
       </a>
     </div>
 
-    <!-- LIVE FEED -->
-    <div class="section-title">📊 DERNIERS GAINS</div>
-    <div class="live-feed" id="liveFeed">
-      <div class="feed-item">Chargement des derniers gains...</div>
-    </div>
-  </div>
-
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='game.html'">← RETOUR AU JEU PRINCIPAL</button>
+    <!-- QUIT BUTTON -->
+    <button class="quit-btn" onclick="window.location.href='game.html'">← QUITTER LE CASINO</button>
   </div>
 
   <script>
@@ -393,13 +366,17 @@
 
       document.getElementById('balance').textContent = (stats?.money || 0).toLocaleString('fr-FR') + '€';
       
+      // Charger jackpot
       await loadJackpot();
+      
+      // Charger gains
       await loadRecentWins();
 
-      // REFRESH JACKPOT CHAQUE 1 SECONDE
+      // Rafraîchir jackpot chaque 1 seconde
       setInterval(loadJackpot, 1000);
-      // REFRESH GAINS CHAQUE 5 SECONDES
-      setInterval(loadRecentWins, 5000);
+      
+      // Rafraîchir gains chaque 2 secondes
+      setInterval(loadRecentWins, 2000);
     }
 
     async function loadJackpot() {
@@ -414,7 +391,7 @@
           document.getElementById('jackpot').textContent = amount.toLocaleString('fr-FR') + '€';
         }
       } catch (e) {
-        console.log('Erreur charge jackpot:', e);
+        console.log('Erreur jackpot:', e.message);
       }
     }
 
@@ -422,14 +399,20 @@
       try {
         const { data: wins, error } = await sb
           .from('casino_wins')
-          .select('user_name, game_name, amount_won, created_at')
+          .select('user_name, game_name, amount_won')
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(5);
 
         const feedEl = document.getElementById('liveFeed');
         
-        if (error || !wins || wins.length === 0) {
-          feedEl.innerHTML = '<div class="feed-item">Aucun gain récent pour le moment...</div>';
+        if (error) {
+          console.log('Erreur BD gains:', error.message);
+          feedEl.innerHTML = '<div class="feed-item">Erreur chargement gains</div>';
+          return;
+        }
+
+        if (!wins || wins.length === 0) {
+          feedEl.innerHTML = '<div class="feed-item">Aucun gain pour le moment...</div>';
           return;
         }
 
@@ -442,12 +425,13 @@
           'JACKPOT PROGRESSIF': '🎯'
         };
 
-        feedEl.innerHTML = wins.slice(0, 3).map(win => {
+        feedEl.innerHTML = wins.map(win => {
           const emoji = gameEmojis[win.game_name] || '🎉';
-          return `<div class="feed-item">${emoji} <b>${win.user_name}</b> a gagné <b>${win.amount_won.toLocaleString('fr-FR')}€</b> ${win.game_name === 'Roulette' ? 'à la' : 'au'} ${win.game_name} !</div>`;
+          const preposition = (win.game_name === 'Roulette' || win.game_name === 'Higher/Lower') ? 'à la' : 'au';
+          return `<div class="feed-item">${emoji} <b>${win.user_name}</b> a gagné <b>${win.amount_won.toLocaleString('fr-FR')}€</b> ${preposition} ${win.game_name}</div>`;
         }).join('');
       } catch (e) {
-        console.log('Erreur charge gains:', e);
+        console.log('Erreur fetch gains:', e.message);
       }
     }
 
