@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plinko - Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #7c2d12 0%, #991b1b 50%, #dc2626 100%);
+      min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 80px;
+    }
+
+    .container { max-width: 600px; margin: 0 auto; }
+
+    .header {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: #dc2626;
+      letter-spacing: 3px;
+      margin-bottom: 16px;
+    }
+
+    .balance {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+
+    .game-area {
+      background: white;
+      border-radius: 20px;
+      padding: 32px 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .plinko-board {
+      width: 100%;
+      max-width: 400px;
+      height: 500px;
+      margin: 0 auto 20px;
+      background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+      border: 4px solid #dc2626;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .peg {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #7f1d1d;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .ball {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: radial-gradient(circle at 30% 30%, #ef4444, #dc2626);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+      z-index: 10;
+      transition: all 0.1s linear;
+    }
+
+    .multipliers {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      height: 60px;
+    }
+
+    .mult-box {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: white;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+    }
+
+    .mult-0 { background: #1f2937; }
+    .mult-05 { background: #ef4444; }
+    .mult-1 { background: #f97316; }
+    .mult-2 { background: #eab308; }
+    .mult-5 { background: #22c55e; }
+    .mult-10 { background: #10b981; }
+
+    .controls {
+      text-align: center;
+    }
+
+    .bet-input {
+      margin-bottom: 20px;
+    }
+
+    .bet-input input {
+      width: 200px;
+      padding: 14px;
+      border: 3px solid #dc2626;
+      border-radius: 12px;
+      font-size: 18px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .drop-btn {
+      background: linear-gradient(135deg, #dc2626, #991b1b);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      padding: 18px 48px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .drop-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+    }
+
+    .drop-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 12px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      display: none;
+    }
+
+    .result.win {
+      background: #d1fae5;
+      color: #065f46;
+      border: 3px solid #10b981;
+    }
+
+    .result.lose {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 3px solid #dc2626;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      display: flex;
+      background: linear-gradient(135deg, #7c2d12, #991b1b);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="game-title">🔴 PLINKO</div>
+      <div class="balance" id="balance">0€</div>
+    </div>
+
+    <div class="game-area">
+      <div class="plinko-board" id="board">
+        <div class="multipliers">
+          <div class="mult-box mult-0">×0</div>
+          <div class="mult-box mult-05">×0.5</div>
+          <div class="mult-box mult-1">×1</div>
+          <div class="mult-box mult-2">×2</div>
+          <div class="mult-box mult-5">×5</div>
+          <div class="mult-box mult-10">×10</div>
+          <div class="mult-box mult-5">×5</div>
+          <div class="mult-box mult-2">×2</div>
+          <div class="mult-box mult-1">×1</div>
+          <div class="mult-box mult-05">×0.5</div>
+          <div class="mult-box mult-0">×0</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div class="bet-input">
+          <input type="number" id="betAmount" value="100" min="100" step="50" placeholder="Mise">
+        </div>
+        <button class="drop-btn" id="dropBtn" onclick="dropBall()">LÂCHER LA BILLE</button>
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="window.location.href='casino-menu.html'">
+      ← RETOUR CASINO
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser, userMoney = 0;
+    const multipliers = [0, 0.5, 1, 2, 5, 10, 5, 2, 1, 0.5, 0];
+    const ROWS = 10, COLS = 11;
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      await loadMoney();
+      createPegs();
+    }
+
+    async function loadMoney() {
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!data) { await sb.auth.signOut(); window.location.href = 'index.html'; return; }
+      userMoney = data?.money || 0;
+      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function updateMoney(amount) {
+      userMoney += amount;
+      await sb.from('game_stats').update({ money: userMoney }).eq('user_id', currentUser.id);
+      document.getElementById('balance').textContent = userMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    function createPegs() {
+      const board = document.getElementById('board');
+      const boardWidth = board.offsetWidth;
+      const boardHeight = board.offsetHeight - 60;
+
+      for (let row = 0; row < ROWS; row++) {
+        const pegsInRow = row + 2;
+        const spacing = boardWidth / (pegsInRow + 1);
+        const yPos = (boardHeight / ROWS) * row + 40;
+
+        for (let col = 0; col < pegsInRow; col++) {
+          const peg = document.createElement('div');
+          peg.className = 'peg';
+          peg.style.left = (spacing * (col + 1)) + 'px';
+          peg.style.top = yPos + 'px';
+          board.appendChild(peg);
+        }
+      }
+    }
+
+    async function dropBall() {
+      const bet = parseInt(document.getElementById('betAmount').value);
+      if (bet < 100) { alert('Mise minimum: 100€'); return; }
+      if (bet > userMoney) { alert('Pas assez d\'argent !'); return; }
+
+      const btn = document.getElementById('dropBtn');
+      btn.disabled = true;
+      document.getElementById('result').style.display = 'none';
+
+      await updateMoney(-bet);
+
+      const board = document.getElementById('board');
+      const ball = document.createElement('div');
+      ball.className = 'ball';
+      board.appendChild(ball);
+
+      const boardWidth = board.offsetWidth;
+      let xPos = boardWidth / 2;
+      let yPos = 10;
+      let column = 5;
+
+      ball.style.left = xPos + 'px';
+      ball.style.top = yPos + 'px';
+
+      const dropInterval = setInterval(() => {
+        yPos += 45;
+        const direction = Math.random() < 0.5 ? -1 : 1;
+        column += direction;
+        column = Math.max(0, Math.min(COLS - 1, column));
+        xPos = (boardWidth / COLS) * column + (boardWidth / COLS / 2);
+
+        ball.style.left = xPos + 'px';
+        ball.style.top = yPos + 'px';
+
+        if (yPos > board.offsetHeight - 80) {
+          clearInterval(dropInterval);
+          ball.remove();
+          
+          const mult = multipliers[column];
+          const win = Math.floor(bet * mult);
+          const res = document.getElementById('result');
+
+          if (win > bet) {
+            res.className = 'result win';
+            res.textContent = `🎉 ×${mult} ! +${win.toLocaleString('fr-FR')}€`;
+            updateMoney(win);
+          } else if (win === bet) {
+            res.className = 'result';
+            res.style.background = '#dbeafe';
+            res.style.color = '#1e40af';
+            res.style.border = '3px solid #3b82f6';
+            res.textContent = `↔️ Remboursé ${bet.toLocaleString('fr-FR')}€`;
+            updateMoney(win);
+          } else if (win > 0) {
+            res.className = 'result lose';
+            res.textContent = `📉 ×${mult} = ${win.toLocaleString('fr-FR')}€`;
+            updateMoney(win);
+          } else {
+            res.className = 'result lose';
+            res.textContent = `💔 Perdu ${bet.toLocaleString('fr-FR')}€`;
+          }
+
+          res.style.display = 'block';
+          btn.disabled = false;
+        }
+      }, 100);
+    }
+
+    init();
+  </script>
+</body>
+</html>
