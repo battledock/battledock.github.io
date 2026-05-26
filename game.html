@@ -524,6 +524,15 @@
   </style>
 </head>
 <body>
+  <script>
+    // MAINTENANCE MODE - Redirection automatique
+    // Mot de passe: "oui" dans maintenance.html
+    // Vérifier si l'utilisateur a déjà entré le mot de passe
+    const hasAccess = sessionStorage.getItem('maintenanceAccess');
+    if (!hasAccess) {
+      window.location.href = 'maintenance.html';
+    }
+  </script>
   <!-- TOPBAR HERO -->
   <div class="topbar">
     <div class="avatar">
@@ -705,12 +714,50 @@
           throw statsResult.error;
         }
 
-        const profile = profileResult.data;
-        const stats = statsResult.data;
+        let profile = profileResult.data;
+        let stats = statsResult.data;
 
-        // Si pas de données, compte supprimé → redirect
+        // Si pas de profile, le créer
+        if (!profile) {
+          console.log('Creating missing profile...');
+          const { data: newProfile, error: profileError } = await sb.from('profiles').insert({
+            user_id: currentUser.id,
+            username: currentUser.email.split('@')[0],
+            avatar_url: 'avatar-default.png',
+            background_color: 'blue',
+            diamonds: 0,
+            trophies: 0
+          }).select().single();
+          
+          if (profileError) {
+            console.error('Error creating profile:', profileError);
+          } else {
+            profile = newProfile;
+          }
+        }
+
+        // Si pas de stats, les créer
+        if (!stats) {
+          console.log('Creating missing game_stats...');
+          const { data: newStats, error: statsError } = await sb.from('game_stats').insert({
+            user_id: currentUser.id,
+            money: 1000,
+            xp: 0,
+            level: 1,
+            grade: 'Docker Débutant'
+          }).select().single();
+          
+          if (statsError) {
+            console.error('Error creating stats:', statsError);
+          } else {
+            stats = newStats;
+          }
+        }
+
+        // Si toujours pas de données après création, alors vraiment un problème
         if (!profile || !stats) {
-          console.warn('Account deleted or missing data');
+          console.error('Unable to create user data');
+          alert('Erreur lors de la création de votre profil. Veuillez réessayer.');
           await sb.auth.signOut();
           window.location.href = 'index.html';
           return;
@@ -912,7 +959,7 @@
     }
 
     function startWorking() {
-      window.location.href = 'menutravailler.html';
+      window.location.href = 'clicker.html';
     }
 
     function showRanking() {
