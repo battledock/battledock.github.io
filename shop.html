@@ -638,10 +638,17 @@
     }
 
     async function checkShopOpen() {
-      const now = new Date();
-      const hour = now.getHours();
-      // Ouvert de 10h à 22h (fermé 22h-10h)
-      return hour >= 10 && hour < 22;
+      try {
+        const { data, error } = await sb.rpc('is_shop_open');
+        if (error) throw error;
+        return data;
+      } catch (err) {
+        console.error('Erreur vérification shop:', err);
+        // Fallback: vérifier localement si erreur
+        const now = new Date();
+        const hour = now.getHours();
+        return hour >= 10 && hour < 22;
+      }
     }
 
     function showShopClosed() {
