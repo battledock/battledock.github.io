@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Container Clicker - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER STATS */
+    .stats-header {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .stat-box {
+      text-align: center;
+    }
+
+    .stat-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: #6b7280;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* CLICKER ZONE */
+    .clicker-zone {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .container-btn {
+      width: 300px;
+      height: 300px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border: 8px solid #fff;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.1s;
+      box-shadow: 0 20px 60px rgba(251, 191, 36, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 120px;
+      position: relative;
+      user-select: none;
+    }
+
+    .container-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 25px 70px rgba(251, 191, 36, 0.6);
+    }
+
+    .container-btn:active {
+      transform: scale(0.95);
+    }
+
+    .container-btn.clicked {
+      animation: bounce 0.3s ease;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    /* CLICK EFFECT */
+    .click-effect {
+      position: absolute;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: #10b981;
+      font-weight: 700;
+      pointer-events: none;
+      animation: floatUp 1s ease-out forwards;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    @keyframes floatUp {
+      0% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-100px);
+      }
+    }
+
+    /* PER CLICK DISPLAY */
+    .per-click {
+      text-align: center;
+      margin-top: 20px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      letter-spacing: 1px;
+    }
+
+    /* BOTTOM NAV */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+      display: flex;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .nav-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .nav-btn.save {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    @media (max-width: 400px) {
+      .container-btn {
+        width: 250px;
+        height: 250px;
+        font-size: 100px;
+      }
+
+      .stat-icon {
+        font-size: 28px;
+      }
+
+      .stat-value {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- STATS -->
+    <div class="stats-header">
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-icon">💰</div>
+          <div class="stat-value" id="moneyDisplay">0€</div>
+          <div class="stat-label">Argent</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-value" id="xpDisplay">0 XP</div>
+          <div class="stat-label">Expérience</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-icon">👆</div>
+          <div class="stat-value" id="clicksDisplay">0</div>
+          <div class="stat-label">Clics</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLICKER -->
+    <div class="clicker-zone">
+      <div class="container-btn" id="containerBtn">
+        📦
+      </div>
+    </div>
+
+    <div class="per-click">
+      +<span id="perClickMoney">1</span>€ / clic
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <div class="bottom-nav">
+    <button class="nav-btn save" onclick="saveProgress()">
+      💾 SAUVEGARDER
+    </button>
+    <button class="nav-btn" onclick="window.location.href='game.html'">
+      🏠 RETOUR
+    </button>
+  </div>
+
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
+
+    let currentUser = null;
+    
+    // Game state
+    let money = 0;
+    let xp = 0;
+    let totalClicks = 0;
+    let moneyPerClick = 1;
+    let xpPerClick = 1;
+
+    // Initial stats from DB
+    let initialMoney = 0;
+    let initialXp = 0;
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      
+      // Load from DB
+      const { data: stats } = await sb.from('game_stats').select('money, xp').eq('user_id', currentUser.id).single();
+      if (stats) {
+        initialMoney = stats.money || 0;
+        initialXp = stats.xp || 0;
+        money = initialMoney;
+        xp = initialXp;
+      }
+      
+      updateDisplay();
+      setupClicker();
+    }
+
+    function setupClicker() {
+      const btn = document.getElementById('containerBtn');
+      
+      btn.addEventListener('click', (e) => {
+        // Add money and XP
+        money += moneyPerClick;
+        xp += xpPerClick;
+        totalClicks++;
+        
+        // Update display
+        updateDisplay();
+        
+        // Visual effect
+        btn.classList.add('clicked');
+        setTimeout(() => btn.classList.remove('clicked'), 300);
+        
+        // Floating text
+        createFloatingText(e.clientX, e.clientY, `+${moneyPerClick}€`);
+      });
+    }
+
+    function createFloatingText(x, y, text) {
+      const effect = document.createElement('div');
+      effect.className = 'click-effect';
+      effect.textContent = text;
+      effect.style.left = x + 'px';
+      effect.style.top = y + 'px';
+      document.body.appendChild(effect);
+      
+      setTimeout(() => effect.remove(), 1000);
+    }
+
+    function updateDisplay() {
+      document.getElementById('moneyDisplay').textContent = money.toLocaleString('fr-FR') + '€';
+      document.getElementById('xpDisplay').textContent = xp.toLocaleString('fr-FR') + ' XP';
+      document.getElementById('clicksDisplay').textContent = totalClicks.toLocaleString('fr-FR');
+      document.getElementById('perClickMoney').textContent = moneyPerClick;
+    }
+
+    async function saveProgress() {
+      if (!currentUser) return;
+      
+      try {
+        // Calculate gains
+        const moneyGained = money - initialMoney;
+        const xpGained = xp - initialXp;
+        
+        // Update DB
+        await sb.from('game_stats').update({
+          money: money,
+          xp: xp
+        }).eq('user_id', currentUser.id);
+        
+        // Update initial values
+        initialMoney = money;
+        initialXp = xp;
+        
+        alert(`✅ Progression sauvegardée !\n\n💰 +${moneyGained.toLocaleString('fr-FR')}€\n⭐ +${xpGained.toLocaleString('fr-FR')} XP\n👆 ${totalClicks.toLocaleString('fr-FR')} clics`);
+      } catch (error) {
+        console.error(error);
+        alert('❌ Erreur lors de la sauvegarde');
+      }
+    }
+
+    // Auto-save every 30 seconds
+    setInterval(saveProgress, 30000);
+
+    // Save on page unload
+    window.addEventListener('beforeunload', (e) => {
+      if (money > initialMoney || xp > initialXp) {
+        saveProgress();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
