@@ -216,6 +216,61 @@
       letter-spacing: 0.5px;
       margin-top: 2px;
     }
+
+    /* MINI LEVEL-UP POPUP */
+    .levelup-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(251, 191, 36, 0.5);
+      z-index: 1000;
+      text-align: center;
+      animation: levelupAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      pointer-events: none;
+    }
+
+    @keyframes levelupAppear {
+      0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+
+    .levelup-popup.hide {
+      animation: levelupDisappear 0.4s ease-out forwards;
+    }
+
+    @keyframes levelupDisappear {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    }
+
+    .levelup-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(20px, 6vw, 32px);
+      color: white;
+      text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      letter-spacing: 1px;
+      margin: 0;
+    }
+
+    .levelup-level {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(24px, 8vw, 48px);
+      color: white;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      margin: 8px 0;
+    }
+
+    .levelup-grade {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(12px, 3vw, 16px);
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -294,6 +349,12 @@
     </div>
   </div>
 
+  <div class="levelup-popup" id="levelupPopup">
+    <div class="levelup-text">🎉 LEVEL UP 🎉</div>
+    <div class="levelup-level" id="levelupNumber">5</div>
+    <div class="levelup-grade" id="levelupGrade">Docker</div>
+  </div>
+
   <script>
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
@@ -303,15 +364,32 @@
     let currentUser = null;
     let initialMoney = 0;
     let initialXp = 0;
+    let initialLevel = 1;
+    let initialGrade = 'Docker Occasionnel';
     
     // État de session
     let sessionMoney = 0;
     let sessionXp = 0;
+    let currentLevel = 1;
+    let currentGrade = 'Docker Occasionnel';
     let totalClicks = 0;
     let combo = 1;
     let lastClickTime = 0;
     let comboResetTimeout = null;
     let saveTimeout = null;
+
+    function getGrade(level) {
+      if (level < 5) return 'Docker Occasionnel';
+      if (level < 15) return 'Docker';
+      if (level < 30) return 'Docker Mensuel';
+      if (level < 50) return 'Contre-Maître';
+      if (level < 80) return 'Chef de Quai';
+      return 'Directeur de Compagnie';
+    }
+
+    function getXpRequired(level) {
+      return level * level * 50;
+    }
 
     async function init() {
       const { data: { session } } = await supabaseClient.auth.getSession();
@@ -324,13 +402,17 @@
       // Charger les stats actuelles
       const { data: stats } = await supabaseClient
         .from('game_stats')
-        .select('money, xp')
+        .select('money, xp, level, grade')
         .eq('user_id', currentUser.id)
         .single();
 
       if (stats) {
         initialMoney = stats.money || 0;
         initialXp = stats.xp || 0;
+        initialLevel = stats.level || 1;
+        initialGrade = stats.grade || getGrade(initialLevel);
+        currentLevel = initialLevel;
+        currentGrade = initialGrade;
       }
       
       updateDisplay();
@@ -362,7 +444,7 @@
 
       // Combo system - très lent
       if (timeSinceLastClick < 800) {
-        combo = Math.min(2, combo + 0.01);  // Très lent : +0.01 au lieu de +0.05
+        combo = Math.min(2, combo + 0.01);
       } else {
         combo = 1;
       }
@@ -374,7 +456,7 @@
       comboResetTimeout = setTimeout(() => {
         let tempCombo = combo;
         const decayInterval = setInterval(() => {
-          tempCombo = Math.max(1, tempCombo - 0.05);  // Descend plus lentement
+          tempCombo = Math.max(1, tempCombo - 0.05);
           combo = tempCombo;
           updateDisplay();
           
@@ -384,12 +466,31 @@
             updateDisplay();
           }
         }, 50);
-      }, 800);  // Plus long délai avant reset
+      }, 800);
 
       const gain = Math.floor(1 * combo);
       sessionMoney += gain;
       sessionXp += 1;
       totalClicks += 1;
+
+      // Vérifier level-up
+      const oldLevel = currentLevel;
+      let totalXp = initialXp + sessionXp;
+      let checkLevel = initialLevel;
+      let remainingXp = totalXp;
+      
+      while (remainingXp >= getXpRequired(checkLevel)) {
+        remainingXp -= getXpRequired(checkLevel);
+        checkLevel += 1;
+      }
+      
+      currentLevel = checkLevel;
+      currentGrade = getGrade(currentLevel);
+
+      // Afficher popup si level-up
+      if (currentLevel > oldLevel) {
+        showLevelupPopup(currentLevel, currentGrade);
+      }
 
       // Vibration
       if (navigator.vibrate) {
@@ -423,6 +524,19 @@
       scheduleSave();
     }
 
+    function showLevelupPopup(level, grade) {
+      const popup = document.getElementById('levelupPopup');
+      document.getElementById('levelupNumber').textContent = level;
+      document.getElementById('levelupGrade').textContent = grade;
+      
+      popup.classList.remove('hide');
+      popup.style.animation = 'levelupAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+      
+      setTimeout(() => {
+        popup.classList.add('hide');
+      }, 2000);
+    }
+
     function updateDisplay() {
       // Header - argent total
       document.getElementById('moneyDisplay').textContent = (initialMoney + sessionMoney).toLocaleString('fr-FR') + '€';
@@ -452,11 +566,13 @@
           .from('game_stats')
           .update({
             money: initialMoney + sessionMoney,
-            xp: initialXp + sessionXp
+            xp: initialXp + sessionXp,
+            level: currentLevel,
+            grade: currentGrade
           })
           .eq('user_id', currentUser.id);
         
-        console.log('✅ Progression sauvegardée');
+        console.log('✅ Progression sauvegardée - Niveau:', currentLevel, 'Grade:', currentGrade);
       } catch (err) {
         console.error('❌ Erreur sauvegarde:', err);
       }
@@ -466,11 +582,6 @@
       await saveProgress();
       window.location.href = 'game.html';
     }
-
-    // Sauvegarde avant fermeture
-    window.addEventListener('beforeunload', () => {
-      saveProgress();
-    });
 
     // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
@@ -490,6 +601,11 @@
     document.addEventListener('cut', e => e.preventDefault());
     document.addEventListener('paste', e => e.preventDefault());
     document.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Sauvegarde avant fermeture
+    window.addEventListener('beforeunload', () => {
+      saveProgress();
+    });
 
     init();
   </script>
