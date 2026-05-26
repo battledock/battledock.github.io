@@ -366,6 +366,7 @@
     let initialXp = 0;
     let initialLevel = 1;
     let initialGrade = 'Docker Occasionnel';
+    let isFirstLoad = true;
     
     // État de session
     let sessionMoney = 0;
@@ -419,18 +420,19 @@
         initialGrade = stats.grade || getGrade(initialLevel);
         currentLevel = initialLevel;
         currentGrade = initialGrade;
-        
-        // Marquer le level-up comme affiché dès le démarrage
-        if ((stats.last_levelup_shown || 0) === 0) {
-          await supabaseClient
-            .from('game_stats')
-            .update({ last_levelup_shown: initialLevel })
-            .eq('user_id', currentUser.id);
-        }
+      }
+      
+      // Marquer le level-up comme affiché dès le démarrage
+      if ((stats?.last_levelup_shown || 0) === 0) {
+        await supabaseClient
+          .from('game_stats')
+          .update({ last_levelup_shown: initialLevel })
+          .eq('user_id', currentUser.id);
       }
       
       updateDisplay();
       setupClicker();
+      isFirstLoad = false;
     }
 
     function setupClicker() {
@@ -501,8 +503,8 @@
       currentLevel = checkLevel;
       currentGrade = getGrade(currentLevel);
 
-      // Afficher popup si level-up
-      if (currentLevel > oldLevel) {
+      // Afficher popup si level-up (et pas au chargement initial)
+      if (!isFirstLoad && currentLevel > oldLevel) {
         showLevelupPopup(currentLevel, currentGrade);
       }
 
