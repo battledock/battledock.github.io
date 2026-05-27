@@ -426,41 +426,28 @@
       '🔔🔔🔔': 5
     };
 
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-      currentUser = session.user;
-      await loadMoney();
-    }
-
+    
     async function loadMoney() {
       const { data: stats, error } = await sb
         .from('game_stats')
         .select('money')
         .eq('user_id', currentUser.id)
         .single();
-
-      if (error) {
-        console.error('loadMoney error:', error.message, error.code);
-        // Essayer de créer la ligne si elle n'existe pas
-        if (error.code === 'PGRST116') {
-          const { data: newStats } = await sb
-            .from('game_stats')
-            .insert({ user_id: currentUser.id, money: 1000, xp: 0, level: 1, grade: 'Docker Occasionnel' })
-            .select()
-            .single();
-          currentMoney = newStats?.money || 1000;
-        }
-      } else {
-        currentMoney = stats?.money || 0;
-      }
-      document.getElementById('balance').textContent = currentMoney.toLocaleString('fr-FR') + '€';
+      if (error) { console.error('loadMoney:', error.message); return; }
+      currentMoney = stats?.money || 0;
+      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
+      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
-
+    async function updateMoney(newAmount) {
+      const { error } = await sb
+        .from('game_stats')
+        .update({ money: newAmount })
+        .eq('user_id', currentUser.id);
+      if (error) { console.error('updateMoney:', error.message); return; }
+      currentMoney = newAmount;
+      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
+      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
     async function recordBet(gameName, amountBet) {
@@ -474,8 +461,8 @@
           amount_won: 0
         });
         const contrib = Math.max(1, Math.floor(amountBet * 0.01));
-        await sb.rpc('increment_jackpot', { amount: contrib }).then(() => {}).catch(() => {});
-      } catch(e) { console.log('recordBet error:', e); }
+        await sb.rpc('increment_jackpot', { amount: contrib }).catch(e => console.log('jackpot:', e.message));
+      } catch(e) { console.log('recordBet:', e.message); }
     }
 
     async function recordWin(gameName, amountWon) {
@@ -488,17 +475,20 @@
           amount_bet: 0,
           amount_won: amountWon
         });
-      } catch(e) { console.log('recordWin error:', e); }
+      } catch(e) { console.log('recordWin:', e.message); }
     }
-    async function updateMoney(newAmount) {
-      await sb
-        .from('game_stats')
-        .update({ money: newAmount })
-        .eq('user_id', currentUser.id);
-      
-      currentMoney = newAmount;
-      document.getElementById('balance').textContent = newAmount.toLocaleString('fr-FR') + '€';
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+      currentUser = session.user;
+      await loadMoney();
     }
+
+
 
     async function spin() {
       const betInput = document.getElementById('betAmount');
@@ -563,7 +553,7 @@
           res.className = 'result win';
           res.innerHTML = `🎉 ${combo} ×${mult} = +${win.toLocaleString('fr-FR')}€ 💰`;
           await updateMoney(currentMoney + win);
-          await recordWin('Slots', win);
+        await recordWin('Slots', win);
         } else {
           res.className = 'result lose';
           res.innerHTML = `💔 ${combo} - Perdu ${bet.toLocaleString('fr-FR')}€`;
