@@ -441,13 +441,26 @@
     }
 
     async function loadMoney() {
-      const { data: stats } = await sb
+      const { data: stats, error } = await sb
         .from('game_stats')
         .select('money')
         .eq('user_id', currentUser.id)
         .single();
 
-      currentMoney = stats?.money || 0;
+      if (error) {
+        console.error('loadMoney error:', error.message, error.code);
+        // Essayer de créer la ligne si elle n'existe pas
+        if (error.code === 'PGRST116') {
+          const { data: newStats } = await sb
+            .from('game_stats')
+            .insert({ user_id: currentUser.id, money: 1000, xp: 0, level: 1, grade: 'Docker Occasionnel' })
+            .select()
+            .single();
+          currentMoney = newStats?.money || 1000;
+        }
+      } else {
+        currentMoney = stats?.money || 0;
+      }
       document.getElementById('balance').textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
