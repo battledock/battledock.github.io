@@ -34,9 +34,10 @@
       content: '';
       position: fixed; inset: 0; z-index: 0;
       background-image:
-        linear-gradient(128deg, transparent 20%, rgba(200,195,190,0.12) 30%, transparent 40%),
-        linear-gradient(42deg,  transparent 35%, rgba(200,195,190,0.08) 45%, transparent 55%),
-        linear-gradient(85deg,  transparent 55%, rgba(210,175,55,0.04)  65%, transparent 75%);
+        linear-gradient(128deg, transparent 15%, rgba(170,165,160,0.28) 28%, transparent 42%),
+        linear-gradient(42deg,  transparent 30%, rgba(170,165,160,0.18) 44%, transparent 58%),
+        linear-gradient(85deg,  transparent 50%, rgba(210,175,55,0.12)  63%, transparent 78%),
+        linear-gradient(165deg, transparent 60%, rgba(150,145,140,0.15) 72%, transparent 84%);
       pointer-events: none;
     }
 
@@ -47,6 +48,70 @@
       animation: marbleShimmer 8s linear infinite;
     }
     @keyframes marbleShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100vw)} }
+
+    /* ===================== HALOS ANIMÉS ===================== */
+    .halo {
+      position: fixed; border-radius: 50%;
+      pointer-events: none; z-index: 0;
+      mix-blend-mode: multiply;
+    }
+    .halo-gold {
+      width: 600px; height: 500px;
+      background: radial-gradient(ellipse, rgba(212,175,55,0.18) 0%, transparent 65%);
+      filter: blur(80px);
+      top: -150px; left: -150px;
+      animation: haloDrift1 20s ease-in-out infinite;
+    }
+    .halo-blue {
+      width: 500px; height: 600px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 65%);
+      filter: blur(100px);
+      bottom: -100px; right: -100px;
+      animation: haloDrift2 26s ease-in-out infinite;
+    }
+    .halo-warm {
+      width: 450px; height: 450px;
+      background: radial-gradient(ellipse, rgba(234,179,8,0.08) 0%, transparent 65%);
+      filter: blur(90px);
+      top: 40%; left: 40%;
+      transform: translate(-50%, -50%);
+      animation: haloDrift3 18s ease-in-out infinite;
+    }
+    @keyframes haloDrift1 {
+      0%,100% { transform: translate(0,0); }
+      33%      { transform: translate(80px,100px); }
+      66%      { transform: translate(40px,-50px); }
+    }
+    @keyframes haloDrift2 {
+      0%,100% { transform: translate(0,0); }
+      33%      { transform: translate(-90px,-70px); }
+      66%      { transform: translate(-40px,60px); }
+    }
+    @keyframes haloDrift3 {
+      0%,100% { transform: translate(-50%,-50%) scale(1); }
+      50%      { transform: translate(-50%,-50%) scale(1.4); }
+    }
+
+    /* Second shimmer plus lent */
+    .shimmer-slow {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: linear-gradient(72deg, transparent 32%, rgba(255,255,255,0.35) 50%, transparent 68%);
+      animation: shimmerSlow 16s linear infinite 5s;
+    }
+    @keyframes shimmerSlow { 0%{transform:translateX(-100%)} 100%{transform:translateX(110vw)} }
+
+    /* Particules dorées */
+    .dust {
+      position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+      background: radial-gradient(circle, rgba(212,175,55,0.8), transparent 70%);
+      animation: dustFloat linear infinite;
+    }
+    @keyframes dustFloat {
+      0%   { transform: translateY(0) translateX(0);    opacity: 0; }
+      8%   { opacity: 0.7; }
+      92%  { opacity: 0.4; }
+      100% { transform: translateY(-100vh) translateX(var(--dx)); opacity: 0; }
+    }
 
     /* ===================== HEADER FIXE MARBRE ===================== */
     .topbar {
@@ -390,11 +455,7 @@
     }
 
     /* Bande dorée latérale */
-    .marble-gold-line {
-      position: absolute; left: 0; top: 0; bottom: 0;
-      width: 4px; z-index: 3;
-      background: linear-gradient(180deg, #d4af37, #f5d060, #d4af37);
-    }
+    .marble-gold-line { display: none; }
 
     /* Contenu */
     .company-content {
@@ -476,6 +537,14 @@
   </style>
 </head>
 <body>
+
+  <!-- FOND ANIMÉ -->
+  <div class="halo halo-gold"></div>
+  <div class="halo halo-blue"></div>
+  <div class="halo halo-warm"></div>
+  <div class="shimmer-slow"></div>
+  <div id="dustContainer"></div>
+
   <div class="marble-shimmer-global"></div>
 
   <!-- HEADER FIXE -->
@@ -814,6 +883,26 @@
       if (level <= 79) return 'Chef de Quai';
       return 'Magnat du Port';
     }
+
+    // Particules dorées
+    (function() {
+      const c = document.getElementById('dustContainer');
+      if (!c) return;
+      for (let i = 0; i < 20; i++) {
+        const d = document.createElement('div');
+        d.className = 'dust';
+        const s = 2 + Math.random() * 5;
+        d.style.cssText = `
+          width:${s}px; height:${s}px;
+          left:${Math.random()*100}%;
+          bottom:${Math.random()*20}%;
+          --dx:${(Math.random()-0.5)*60}px;
+          animation-duration:${14+Math.random()*22}s;
+          animation-delay:${Math.random()*20}s;
+        `;
+        c.appendChild(d);
+      }
+    })();
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
