@@ -269,7 +269,6 @@
         <div class="container-stripe" style="left:30px"></div>
         <div class="container-stripe" style="left:70px"></div>
         <div class="container-stripe" style="left:110px"></div>
-        <div class="container-text">CMA CGM</div>
         <div class="container-sub">CLIQUER POUR TRAVAILLER</div>
       </div>
     </div>
@@ -346,7 +345,7 @@
 
       const { data: profile } = await sb
         .from('profiles')
-        .select('upgrades')
+        .select('upgrades, skin_container')
         .eq('user_id', currentUser.id)
         .single();
 
@@ -357,6 +356,20 @@
       }
 
       upgrades = profile?.upgrades || {};
+
+      // Appliquer skin conteneur
+      const skin = profile?.skin_container || 'red';
+      const skinColors = {
+        red:    { bg: 'linear-gradient(135deg,#cc2200,#991100)', border: '#880000' },
+        blue:   { bg: 'linear-gradient(135deg,#1d4ed8,#1e3a8a)', border: '#1e3a8a' },
+        green:  { bg: 'linear-gradient(135deg,#15803d,#14532d)', border: '#14532d' },
+        gold:   { bg: 'linear-gradient(135deg,#b45309,#92400e)', border: '#92400e' },
+        black:  { bg: 'linear-gradient(135deg,#1a1a1a,#000000)', border: '#000000' },
+        purple: { bg: 'linear-gradient(135deg,#7c3aed,#5b21b6)', border: '#5b21b6' }
+      };
+      const sc = skinColors[skin] || skinColors.red;
+      const box = document.querySelector('.container-box');
+      if (box) { box.style.background = sc.bg; box.style.borderColor = sc.border; }
 
       updateDisplay();
       if (upgrades.auto_clicker) setInterval(autoClick, 1000);
@@ -380,8 +393,10 @@
 
     function doClick(x, y) {
       clicks++;
-      sessionXp++;
-      currentXp++;
+      // XP bonus selon upgrades
+      const xpGain = 1 + (upgrades.xp_bonus_1 ? 1 : 0) + (upgrades.xp_bonus_2 ? 2 : 0);
+      sessionXp += xpGain;
+      currentXp += xpGain;
 
       // Gain argent
       const baseGain = 1 + (upgrades.earn_per_click || 0);

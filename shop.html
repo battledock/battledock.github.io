@@ -236,7 +236,7 @@
       font-weight: 700;
     }
 
-    .product-bonus-tag {
+    .product-level {
       font-size: 11px;
       color: #8b4513;
       margin-bottom: 8px;
@@ -365,6 +365,21 @@
       .npc-section { flex-direction: column; align-items: center; text-align: center; }
       .store-sign { font-size: 32px; }
     }
+
+    .tab-btn.active {
+      background: rgba(255,255,255,0.25) !important;
+      border-color: rgba(255,255,255,0.6) !important;
+      color: white !important;
+    }
+
+    .product-box.locked {
+      opacity: 0.6;
+    }
+
+    .product-box.equipped {
+      border: 2px solid #fbbf24;
+      box-shadow: 0 0 12px rgba(251,191,36,0.3);
+    }
   </style>
 </head>
 <body>
@@ -467,328 +482,173 @@
 
     let currentUser = null;
     let profile = null;
-    let isFirstVisit = true;
+    let currentTab = 'upgrades';
 
+    // ===========================
+    // DÉFINITION DES UPGRADES
+    // ===========================
     const UPGRADES = [
       {
         id: 'earn_per_click',
         name: 'Gants de Travail',
         icon: '🧤',
+        desc: 'Augmente l\'argent gagné par clic',
         basePrice: 500,
         priceType: 'money',
         maxLevel: 10,
-        bonus: (level) => `+${level}€/clic`
-      },
-      {
-        id: 'combo_speed',
-        name: 'Caféine',
-        icon: '☕',
-        basePrice: 1000,
-        priceType: 'money',
-        maxLevel: 5,
-        bonus: (level) => `+${level * 10}% rapidité`
+        bonus: (lvl) => `+${lvl}€/clic`
       },
       {
         id: 'combo_max',
         name: 'Muscles',
         icon: '💪',
+        desc: 'Augmente le combo maximum',
         basePrice: 50,
         priceType: 'diamonds',
         maxLevel: 8,
-        bonus: (level) => `×${(2 + level * 0.5).toFixed(1)}`
+        bonus: (lvl) => `Combo max ×${(2 + lvl * 0.5).toFixed(1)}`
       },
-
       {
         id: 'auto_clicker',
-        name: 'Apprenti',
+        name: 'Apprenti Docker',
         icon: '👦',
+        desc: 'Génère de l\'argent automatiquement',
         basePrice: 200,
         priceType: 'diamonds',
-        maxLevel: 3,
-        bonus: (level) => `+${level}€/sec`
+        maxLevel: 5,
+        bonus: (lvl) => `+${lvl}€/sec auto`
       },
       {
-        id: 'prestige',
-        name: 'Rédemption',
-        icon: '🏅',
-        basePrice: 500,
-        priceType: 'trophies',
+        id: 'xp_bonus_1',
+        name: 'Formation Pro',
+        icon: '⭐',
+        desc: '+1 XP bonus par clic',
+        basePrice: 300,
+        priceType: 'diamonds',
         maxLevel: 1,
-        bonus: (level) => `Reset+bonus`
+        bonus: (lvl) => lvl >= 1 ? '+1 XP/clic' : 'Non acheté'
+      },
+      {
+        id: 'xp_bonus_2',
+        name: 'Maître Docker',
+        icon: '⭐⭐',
+        desc: '+2 XP bonus par clic (nécessite Formation Pro)',
+        basePrice: 800,
+        priceType: 'diamonds',
+        maxLevel: 1,
+        requires: 'xp_bonus_1',
+        bonus: (lvl) => lvl >= 1 ? '+2 XP/clic' : 'Non acheté'
       }
     ];
 
+    // ===========================
+    // SKINS CONTENEUR
+    // ===========================
+    const SKINS = [
+      { id: 'red',    name: 'Acier Rouge',   color: '#cc2200', border: '#880000', price: 0,    priceType: 'free' },
+      { id: 'blue',   name: 'Océan',         color: '#1d4ed8', border: '#1e3a8a', price: 500,  priceType: 'money' },
+      { id: 'green',  name: 'Forêt',         color: '#15803d', border: '#14532d', price: 1000, priceType: 'money' },
+      { id: 'gold',   name: 'Or Massif',     color: '#b45309', border: '#92400e', price: 200,  priceType: 'diamonds' },
+      { id: 'black',  name: 'Nuit Noire',    color: '#1a1a1a', border: '#000000', price: 500,  priceType: 'diamonds' },
+      { id: 'purple', name: 'Violet Royal',  color: '#7c3aed', border: '#5b21b6', price: 1000, priceType: 'diamonds' }
+    ];
+
+    // ===========================
+    // MESSAGES MARCEL
+    // ===========================
     const MARCEL_MESSAGES = {
-      welcome: [
-        "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?",
-        "Ah, un client ! Les affaires tournent 😄",
-        "Salut ! J'ai ce qu'il te faut pour bosser mieux",
-        "Re-bonjour ! Toujours pas riche ?",
-        "C'est quoi encore ? Besoin de muscler tes bras ?",
-        "Tiens, un nouveau visage... ou c'est toi encore ?",
-        "Je vend de la qualité ici, pas du toc !",
-        "Alors ? On upgrade ou on regarde juste ?"
-      ],
-      poor: [
-        "Pas beaucoup de sous hein ? Reviens quand tu auras du cash",
-        "Les gants t'attendent, faut que tu travailles plus ! 😂",
-        "Pauvre petit, faut farmer davantage",
-        "T'as combien ? 3 euros ? 😂",
-        "Mon gars, t'es plus fauché que mon compte en banque",
-        "Viens me voir quand tu seras milliardaire",
-        "T'as pas les moyens d'être ici franchement",
-        "Passe ton temps à travailler au lieu de venir flâner",
-        "Je te prête rien hein, c'est du comptant !",
-        "Dépense l'argent que tu as au casino, c'est plus sympa",
-        "Reviens quand tu auras bossé un peu",
-        "T'as oublié ton portefeuille ou quoi ?"
-      ],
-      middle: [
-        "Pas mal comme argent ! T'avances bien",
-        "Allez, dépense un peu, ça va te servir",
-        "T'as du bon goût, je vois que tu achètes chez moi",
-        "Continue comme ça, tu vas être riche",
-        "T'es pas mal pour un pauvre ! 😄",
-        "Encore toi ? Tu dépenses mes bénéfices haha"
-      ],
-      rich: [
-        "Ah richou ! T'as bien bossé au port ?",
-        "T'es plein aux as ! Dépense un peu ici",
-        "Le millionnaire est de retour ! 💰",
-        "Wow, t'as vraiment l'pognon hein !",
-        "Alors tu rachètes le magasin ? 😂",
-        "T'es riche maintenant ? Fais-moi un chèque !",
-        "Mon client VIP ! Vas-y, dépense sans compter",
-        "Franchement t'es trop riche, c'est pas normal",
-        "J'aimerais bien être à ta place mec",
-        "T'as tout acheté ou quoi ? Laisse-moi un peu !",
-        "C'est pas normal d'avoir autant d'argent",
-        "Hé hé, je reconnais un bon client quand j'en vois un !"
-      ],
-      veryrich: [
-        "PUTAIN ! T'es riche ouf !",
-        "T'es un magnat maintenant !",
-        "Je peux te demander un truc... tu m'embauches ? 😂",
-        "T'as plus d'argent que moi... c'est déprimant",
-        "Comment tu fais pour avoir autant ?? 😨",
-        "Je suis jaloux là... vraiment jaloux",
-        "Fais attention à toi, les arnaqueurs vont te viser",
-        "T'as cassé l'économie du port ! 💸",
-        "Je vais augmenter mes prix rien que pour toi 😂",
-        "C'est fou, tu achètes juste pour décorer ?"
-      ],
-      buy: [
-        "Bon choix ! Ça va t'aider",
-        "T'as fait un bon investissement",
-        "Voilà, maintenant tu vas bosser comme un chef !",
-        "Excellent, ça va changer ta vie",
-        "C'est pas le meilleur choix mais c'est pas mal",
-        "T'as raison d'acheter ça, tu vas voir la différence",
-        "Ha ha, je savais que tu vas prendre celui-là",
-        "Bravo, t'es malin ce coup-ci !",
-        "Voilà du vrai matériel de travail !",
-        "Ça va marcher dur maintenant !",
-        "J'aurais fait pareil à ta place",
-        "Bien joué, tu investis dans le bon truc"
-      ],
-      maxed: [
-        "Tout est au max ! T'es un vrai professionnel",
-        "C'est bon, t'as tout déverrouillé !",
-        "Wow, t'as tout acheté ! Tu m'impressionnes",
-        "Je crois que tu m'as ruiné 😂",
-        "Y'a plus rien à vendre ici pour toi",
-        "Tu es le ROI du magasin maintenant",
-        "Je vais fermer le shop, tu as tout acheté",
-        "C'est dingue, tu as dépensé une fortune ici",
-        "Même moi j'ai pas tout ce que t'as ! 😅"
-      ]
+      welcome: ["Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?","Ah, un client ! Les affaires tournent 😄","Salut ! J'ai ce qu'il te faut pour bosser mieux","Re-bonjour ! Toujours pas riche ?","C'est quoi encore ? Besoin de muscler tes bras ?","Je vend de la qualité ici, pas du toc !","Alors ? On upgrade ou on regarde juste ?"],
+      poor: ["Pas beaucoup de sous hein ? Reviens quand t'auras du cash","Les gants t'attendent, faut que tu travailles plus ! 😂","T'as combien ? 3 euros ? 😂","Mon gars, t'es plus fauché que mon compte en banque","Viens me voir quand tu seras milliardaire","Passe ton temps à travailler au lieu de venir flâner","Je te prête rien hein, c'est du comptant !","Dépense l'argent que tu as au casino, c'est plus sympa"],
+      middle: ["Pas mal comme argent ! T'avances bien","Allez, dépense un peu, ça va te servir","T'as du bon goût, je vois que tu achètes chez moi","Continue comme ça, tu vas être riche","T'es pas mal pour un pauvre ! 😄"],
+      rich: ["Ah richou ! T'as bien bossé au port ?","T'es plein aux as ! Dépense un peu ici","Le millionnaire est de retour ! 💰","Wow, t'as vraiment l'pognon hein !","Mon client VIP ! Vas-y, dépense sans compter","T'as tout acheté ou quoi ? Laisse-moi un peu !"],
+      veryrich: ["PUTAIN ! T'es riche ouf !","T'es un magnat maintenant !","Je peux te demander un truc... tu m'embauches ? 😂","T'as plus d'argent que moi... c'est déprimant","T'as cassé l'économie du port ! 💸","Je vais augmenter mes prix rien que pour toi 😂"],
+      buy: ["Bon choix ! Ça va t'aider","T'as fait un bon investissement","Voilà, maintenant tu vas bosser comme un chef !","Excellent, ça va changer ta vie","T'as raison d'acheter ça, tu vas voir la différence","Ha ha, je savais que tu allais prendre celui-là","Bravo, t'es malin ce coup-ci !"],
+      maxed: ["Tout est au max ! T'es un vrai professionnel","C'est bon, t'as tout déverrouillé !","Wow, t'as tout acheté ! Tu m'impressionnes","Je crois que tu m'as ruiné 😂","Y'a plus rien à vendre ici pour toi","Tu es le ROI du magasin maintenant"]
     };
 
-    function getMarcelMessage(forceCategory = null) {
-      if (!profile) return MARCEL_MESSAGES.welcome[0];
-      
-      if (forceCategory) {
-        const messages = MARCEL_MESSAGES[forceCategory];
-        if (messages) {
-          return messages[Math.floor(Math.random() * messages.length)];
-        }
+    function getMarcelMessage(category = null) {
+      if (!profile && !category) return MARCEL_MESSAGES.welcome[0];
+      if (category) {
+        const msgs = MARCEL_MESSAGES[category];
+        return msgs[Math.floor(Math.random() * msgs.length)];
       }
-      
-      const money = profile.money || 0;
-      
-      if (money < 1000) {
-        return MARCEL_MESSAGES.poor[Math.floor(Math.random() * MARCEL_MESSAGES.poor.length)];
-      } else if (money > 500000) {
-        return MARCEL_MESSAGES.veryrich[Math.floor(Math.random() * MARCEL_MESSAGES.veryrich.length)];
-      } else if (money > 50000) {
-        return MARCEL_MESSAGES.rich[Math.floor(Math.random() * MARCEL_MESSAGES.rich.length)];
-      } else if (money > 5000) {
-        return MARCEL_MESSAGES.middle[Math.floor(Math.random() * MARCEL_MESSAGES.middle.length)];
-      } else {
-        return MARCEL_MESSAGES.welcome[Math.floor(Math.random() * MARCEL_MESSAGES.welcome.length)];
-      }
+      const money = profile?.money || 0;
+      let cat = 'welcome';
+      if (money < 1000) cat = 'poor';
+      else if (money < 5000) cat = 'welcome';
+      else if (money < 50000) cat = 'middle';
+      else if (money < 500000) cat = 'rich';
+      else cat = 'veryrich';
+      const msgs = MARCEL_MESSAGES[cat];
+      return msgs[Math.floor(Math.random() * msgs.length)];
     }
 
+    // ===========================
+    // VÉRIFICATION HORAIRES
+    // ===========================
     async function checkShopOpen() {
       try {
         const { data, error } = await sb.rpc('is_shop_open');
         if (error) throw error;
         return data;
-      } catch (err) {
-        console.error('Erreur vérification shop:', err);
-        // Fallback: vérifier localement si erreur
-        const now = new Date();
-        const hour = now.getHours();
-        return hour >= 10 && hour < 22;
+      } catch {
+        const h = new Date().getHours();
+        return h >= 10 && h < 22;
       }
     }
 
     function showShopClosed() {
       const now = new Date();
-      const hour = now.getHours();
-      
+      const h = now.getHours();
       let nextOpen = new Date();
-      if (hour < 10) {
-        nextOpen.setHours(10, 0, 0, 0);
-      } else {
-        nextOpen.setDate(nextOpen.getDate() + 1);
-        nextOpen.setHours(10, 0, 0, 0);
-      }
-      
-      const timeUntilOpen = Math.floor((nextOpen - now) / 1000);
-      const hoursLeft = Math.floor(timeUntilOpen / 3600);
-      const minutesLeft = Math.floor((timeUntilOpen % 3600) / 60);
-      
+      if (h < 10) nextOpen.setHours(10, 0, 0, 0);
+      else { nextOpen.setDate(nextOpen.getDate() + 1); nextOpen.setHours(10, 0, 0, 0); }
+      const diff = Math.floor((nextOpen - now) / 1000);
+      const hLeft = Math.floor(diff / 3600);
+      const mLeft = Math.floor((diff % 3600) / 60);
       document.body.innerHTML = `
-        <div style="
-          min-height: 100vh;
-          background: linear-gradient(180deg, #d4a574 0%, #a0876d 50%, #8b7355 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 20px;
-          font-family: 'Bebas Neue', sans-serif;
-        ">
-          <div style="
-            text-align: center;
-            background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
-            border: 4px solid #5a4a35;
-            border-radius: 16px;
-            padding: 60px 40px;
-            max-width: 550px;
-            box-shadow: 0 0 40px rgba(0, 0, 0, 0.4), inset 0 1px 0px rgba(255, 255, 255, 0.1);
-          ">
-            <div style="font-size: 100px; margin-bottom: 24px; animation: swing 2s ease-in-out infinite;">🔐</div>
-            
-            <div style="
-              font-size: 56px;
-              color: #f5f5dc;
-              letter-spacing: 3px;
-              margin-bottom: 16px;
-              text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-            ">
-              MAGASIN FERMÉ
+        <div style="min-height:100vh;background:linear-gradient(180deg,#d4a574,#8b7355);display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Bebas Neue',sans-serif;">
+          <div style="text-align:center;background:linear-gradient(135deg,#8b7355,#6b5744);border:4px solid #5a4a35;border-radius:16px;padding:60px 40px;max-width:550px;box-shadow:0 0 40px rgba(0,0,0,0.4);">
+            <div style="font-size:100px;margin-bottom:24px;animation:swing 2s ease-in-out infinite;">🔐</div>
+            <div style="font-size:56px;color:#f5f5dc;letter-spacing:3px;margin-bottom:16px;text-shadow:2px 2px 8px rgba(0,0,0,0.5);">MAGASIN FERMÉ</div>
+            <div style="font-size:18px;color:#d4a574;margin-bottom:40px;">Horaires : 10h00 - 22h00</div>
+            <div style="background:rgba(212,165,116,0.15);border:2px dashed #d4a574;border-radius:12px;padding:32px;margin-bottom:32px;">
+              <div style="font-size:16px;color:#f5f5dc;margin-bottom:16px;text-transform:uppercase;letter-spacing:2px;">⏰ Réouverture dans</div>
+              <div style="font-size:54px;color:#f5f5dc;letter-spacing:2px;">${String(hLeft).padStart(2,'0')}:${String(mLeft).padStart(2,'0')}</div>
+              <div style="font-size:13px;color:#bbb;margin-top:12px;">${nextOpen.toLocaleString('fr-FR',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
             </div>
-            
-            <div style="
-              font-size: 18px;
-              color: #d4a574;
-              margin-bottom: 40px;
-              letter-spacing: 1px;
-            ">
-              Horaires : 10h00 - 22h00
-            </div>
-            
-            <div style="
-              background: rgba(212, 165, 116, 0.15);
-              border: 2px dashed #d4a574;
-              border-radius: 12px;
-              padding: 32px;
-              margin-bottom: 32px;
-            ">
-              <div style="
-                font-size: 16px;
-                color: #f5f5dc;
-                margin-bottom: 16px;
-                text-transform: uppercase;
-                letter-spacing: 2px;
-              ">⏰ Réouverture dans</div>
-              
-              <div style="
-                font-size: 54px;
-                color: #f5f5dc;
-                letter-spacing: 2px;
-                text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-                margin-bottom: 12px;
-              ">
-                ${hoursLeft.toString().padStart(2, '0')}:${minutesLeft.toString().padStart(2, '0')}
-              </div>
-              
-              <div style="
-                font-size: 13px;
-                color: #bbb;
-                margin-top: 12px;
-              ">
-                ${nextOpen.toLocaleString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-            
-            <button onclick="window.location.href='game.html'" style="
-              width: 100%;
-              background: linear-gradient(135deg, #228b22, #1a6b1a);
-              border: 2px solid #1a6b1a;
-              color: white;
-              padding: 18px;
-              border-radius: 8px;
-              font-family: 'Bebas Neue', sans-serif;
-              font-size: 18px;
-              letter-spacing: 1px;
-              cursor: pointer;
-              transition: all 0.3s;
-              font-weight: 700;
-              text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 0 25px rgba(34, 139, 34, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-              ← RETOUR AU LOBBY
-            </button>
+            <button onclick="window.location.href='game.html'" style="width:100%;background:linear-gradient(135deg,#228b22,#1a6b1a);border:none;color:white;padding:18px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:18px;cursor:pointer;">← RETOUR AU LOBBY</button>
           </div>
         </div>
-        
-        <style>
-          @keyframes swing {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-10deg); }
-            75% { transform: rotate(10deg); }
-          }
-        </style>
+        <style>@keyframes swing{0%,100%{transform:rotate(0)}25%{transform:rotate(-10deg)}75%{transform:rotate(10deg)}}</style>
       `;
     }
 
+    // ===========================
+    // INIT
+    // ===========================
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
+      if (!session) { window.location.href = 'index.html'; return; }
 
-      // Vérifier si le shop est ouvert (10h-22h)
       const isOpen = await checkShopOpen();
-      if (!isOpen) {
-        showShopClosed();
-        return;
-      }
+      if (!isOpen) { showShopClosed(); return; }
 
       currentUser = session.user;
 
-      const { data } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .single();
+      // Charger profil + money depuis game_stats
+      const [profileRes, statsRes] = await Promise.all([
+        sb.from('profiles').select('*').eq('user_id', currentUser.id).single(),
+        sb.from('game_stats').select('money').eq('user_id', currentUser.id).single()
+      ]);
 
-      profile = data;
+      profile = profileRes.data;
+      if (profile && statsRes.data) profile.money = statsRes.data.money || 0;
+      if (!profile) { window.location.href = 'index.html'; return; }
+
       updateDisplay();
       updateMarcelMessage();
-      renderUpgrades();
+      renderTab('upgrades');
     }
 
     function updateDisplay() {
@@ -797,38 +657,56 @@
       document.getElementById('trophiesDisplay').textContent = profile?.trophies || 0;
     }
 
-    function updateMarcelMessage() {
-      document.getElementById('marcelMessage').textContent = `"${getMarcelMessage()}"`;
+    function updateMarcelMessage(category = null) {
+      document.getElementById('marcelMessage').textContent = `"${getMarcelMessage(category)}"`;
     }
 
-    function renderUpgrades() {
+    // ===========================
+    // TABS
+    // ===========================
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      renderTab(tab);
+    }
+
+    function renderTab(tab) {
       const grid = document.getElementById('upgradesGrid');
+      if (tab === 'upgrades') renderUpgrades(grid);
+      else renderSkins(grid);
+    }
+
+    // ===========================
+    // UPGRADES
+    // ===========================
+    function renderUpgrades(grid) {
       grid.innerHTML = UPGRADES.map(upgrade => {
         const level = profile?.upgrades?.[upgrade.id] || 0;
         const price = upgrade.basePrice * (level + 1);
         const isMaxed = level >= upgrade.maxLevel;
-        const hasResources = 
-          (upgrade.priceType === 'money' && profile.money >= price) ||
-          (upgrade.priceType === 'diamonds' && profile.diamonds >= price) ||
-          (upgrade.priceType === 'trophies' && profile.trophies >= price);
+        const isLocked = upgrade.requires && !(profile?.upgrades?.[upgrade.requires] >= 1);
+
+        let canBuy = false;
+        if (!isMaxed && !isLocked) {
+          if (upgrade.priceType === 'money') canBuy = profile.money >= price;
+          else if (upgrade.priceType === 'diamonds') canBuy = profile.diamonds >= price;
+        }
+
+        const priceLabel = upgrade.priceType === 'money' ? `${price.toLocaleString('fr-FR')}€`
+          : upgrade.priceType === 'diamonds' ? `💎 ${price}` : `🏆 ${price}`;
 
         return `
-          <div class="product-box ${isMaxed ? 'unavailable' : ''}">
-            <span class="product-icon">${upgrade.icon}</span>
+          <div class="product-box ${isMaxed ? 'unavailable' : ''} ${isLocked ? 'locked' : ''}">
+            <span class="product-icon">${isLocked ? '🔒' : upgrade.icon}</span>
             <div class="product-name">${upgrade.name}</div>
-            <div class="product-bonus-tag">Niv ${level}/${upgrade.maxLevel}</div>
-            <div class="product-bonus">
-              <div class="bonus-text">${upgrade.bonus(level)}</div>
-            </div>
-            <div class="product-price">
-              ${upgrade.priceType === 'money' ? `${price}€` : 
-                upgrade.priceType === 'diamonds' ? `💎${price}` : 
-                `🏆${price}`}
-            </div>
-            <button class="buy-btn ${isMaxed ? 'maxed' : ''}" 
+            <div class="product-level">Niv ${level}/${upgrade.maxLevel}</div>
+            <div class="product-bonus"><div class="bonus-text">${upgrade.bonus(level)}</div></div>
+            <div class="product-price">${isLocked ? 'Nécessite Formation Pro' : isMaxed ? 'MAX' : priceLabel}</div>
+            <button class="buy-btn ${isMaxed ? 'maxed' : ''}"
               onclick="buyUpgrade('${upgrade.id}')"
-              ${isMaxed || !hasResources ? 'disabled' : ''}>
-              ${isMaxed ? 'MAX' : 'ACHETER'}
+              ${isMaxed || !canBuy || isLocked ? 'disabled' : ''}>
+              ${isMaxed ? 'MAX' : isLocked ? 'VERROUILLÉ' : 'ACHETER'}
             </button>
           </div>
         `;
@@ -837,63 +715,128 @@
 
     async function buyUpgrade(upgradeId) {
       const upgrade = UPGRADES.find(u => u.id === upgradeId);
-      const level = profile?.upgrades?.[upgrade.id] || 0;
+      const level = profile?.upgrades?.[upgradeId] || 0;
       const price = upgrade.basePrice * (level + 1);
 
+      if (upgrade.requires && !(profile?.upgrades?.[upgrade.requires] >= 1)) {
+        showAlert('Débloque Formation Pro d\'abord !', true); return;
+      }
+
       let canBuy = false;
+      if (upgrade.priceType === 'money') canBuy = profile.money >= price;
+      else if (upgrade.priceType === 'diamonds') canBuy = profile.diamonds >= price;
+
+      if (!canBuy) { showAlert('Pas assez de ressources !', true); return; }
+
+      const newUpgrades = { ...(profile.upgrades || {}) };
+      newUpgrades[upgradeId] = (newUpgrades[upgradeId] || 0) + 1;
+
+      const profileUpdate = { upgrades: newUpgrades };
+      if (upgrade.priceType === 'diamonds') profileUpdate.diamonds = profile.diamonds - price;
+
+      await sb.from('profiles').update(profileUpdate).eq('user_id', currentUser.id);
+
       if (upgrade.priceType === 'money') {
-        canBuy = profile.money >= price;
-      } else if (upgrade.priceType === 'diamonds') {
-        canBuy = profile.diamonds >= price;
-      } else if (upgrade.priceType === 'trophies') {
-        canBuy = profile.trophies >= price;
+        const newMoney = profile.money - price;
+        await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+        profile.money = newMoney;
+      } else {
+        profile.diamonds = profileUpdate.diamonds;
       }
 
-      if (!canBuy) {
-        showAlert('Pas assez de ressources!', true);
-        return;
+      profile.upgrades = newUpgrades;
+      updateDisplay();
+      const isNowMaxed = newUpgrades[upgradeId] >= upgrade.maxLevel;
+      updateMarcelMessage(isNowMaxed ? 'maxed' : 'buy');
+      renderTab('upgrades');
+      showAlert(`✅ ${upgrade.name} améliorée !`);
+    }
+
+    // ===========================
+    // SKINS
+    // ===========================
+    function renderSkins(grid) {
+      const currentSkin = profile?.skin_container || 'red';
+      const ownedSkins = profile?.upgrades?.owned_skins || [];
+
+      grid.innerHTML = SKINS.map(skin => {
+        const isOwned = skin.priceType === 'free' || ownedSkins.includes(skin.id);
+        const isEquipped = currentSkin === skin.id;
+        const canBuy = !isOwned && (
+          (skin.priceType === 'money' && profile.money >= skin.price) ||
+          (skin.priceType === 'diamonds' && profile.diamonds >= skin.price)
+        );
+
+        const priceLabel = skin.priceType === 'free' ? 'Gratuit'
+          : skin.priceType === 'money' ? `${skin.price.toLocaleString('fr-FR')}€`
+          : `💎 ${skin.price}`;
+
+        return `
+          <div class="product-box ${isEquipped ? 'equipped' : ''}">
+            <div style="width:60px;height:44px;background:${skin.color};border:3px solid ${skin.border};border-radius:6px;margin:0 auto 8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+            <div class="product-name">${skin.name}</div>
+            <div class="product-level">${isEquipped ? '✅ Équipé' : isOwned ? 'Possédé' : priceLabel}</div>
+            <button class="buy-btn ${isEquipped ? 'maxed' : ''}"
+              onclick="${isOwned ? `equipSkin('${skin.id}')` : `buySkin('${skin.id}')`}"
+              ${isEquipped ? 'disabled' : (!isOwned && !canBuy) ? 'disabled' : ''}>
+              ${isEquipped ? 'ÉQUIPÉ' : isOwned ? 'ÉQUIPER' : 'ACHETER'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function buySkin(skinId) {
+      const skin = SKINS.find(s => s.id === skinId);
+      const ownedSkins = profile?.upgrades?.owned_skins || [];
+
+      let canBuy = false;
+      if (skin.priceType === 'money') canBuy = profile.money >= skin.price;
+      else if (skin.priceType === 'diamonds') canBuy = profile.diamonds >= skin.price;
+
+      if (!canBuy) { showAlert('Pas assez de ressources !', true); return; }
+
+      const newUpgrades = { ...(profile.upgrades || {}) };
+      newUpgrades.owned_skins = [...ownedSkins, skinId];
+
+      const profileUpdate = { upgrades: newUpgrades, skin_container: skinId };
+      if (skin.priceType === 'diamonds') profileUpdate.diamonds = profile.diamonds - skin.price;
+
+      await sb.from('profiles').update(profileUpdate).eq('user_id', currentUser.id);
+
+      if (skin.priceType === 'money') {
+        const newMoney = profile.money - skin.price;
+        await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+        profile.money = newMoney;
+      } else {
+        profile.diamonds = profileUpdate.diamonds;
       }
 
-      try {
-        const updates = { ...profile.upgrades };
-        updates[upgradeId] = (updates[upgradeId] || 0) + 1;
+      profile.upgrades = newUpgrades;
+      profile.skin_container = skinId;
+      updateDisplay();
+      updateMarcelMessage('buy');
+      renderTab('skins');
+      showAlert(`✅ Skin "${skin.name}" acheté et équipé !`);
+    }
 
-        let updateObj = { upgrades: updates };
-        if (upgrade.priceType === 'money') updateObj.money = profile.money - price;
-        else if (upgrade.priceType === 'diamonds') updateObj.diamonds = profile.diamonds - price;
-        else if (upgrade.priceType === 'trophies') updateObj.trophies = profile.trophies - price;
-
-        await sb.from('profiles').update(updateObj).eq('id', currentUser.id);
-
-        profile = { ...profile, ...updateObj };
-        updateDisplay();
-        
-        // Message spécifique selon l'upgrade
-        let marcelReaction = MARCEL_MESSAGES.buy[Math.floor(Math.random() * MARCEL_MESSAGES.buy.length)];
-        if (updates[upgradeId] >= upgrade.maxLevel) {
-          marcelReaction = MARCEL_MESSAGES.maxed[Math.floor(Math.random() * MARCEL_MESSAGES.maxed.length)];
-        }
-        document.getElementById('marcelMessage').textContent = `"${marcelReaction}"`;
-        
-        renderUpgrades();
-        showAlert(`✅ ${upgrade.name} achetée!`);
-      } catch (error) {
-        console.error(error);
-        showAlert('Erreur lors de l\'achat', true);
-      }
+    async function equipSkin(skinId) {
+      await sb.from('profiles').update({ skin_container: skinId }).eq('user_id', currentUser.id);
+      profile.skin_container = skinId;
+      updateMarcelMessage('buy');
+      renderTab('skins');
+      showAlert(`✅ Skin équipé !`);
     }
 
     function showAlert(message, isError = false) {
-      const alert = document.createElement('div');
-      alert.className = `alert ${isError ? 'error' : ''}`;
-      alert.textContent = message;
-      document.body.appendChild(alert);
-      setTimeout(() => alert.remove(), 3000);
+      const el = document.createElement('div');
+      el.className = `alert ${isError ? 'error' : ''}`;
+      el.textContent = message;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
     }
 
-    function goBack() {
-      window.location.href = 'clicker.html';
-    }
+    function goBack() { window.location.href = 'game.html'; }
 
     init();
   </script>
