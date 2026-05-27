@@ -451,6 +451,34 @@
       document.getElementById('balance').textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
+
+    async function recordBet(gameName, amountBet) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({
+          user_id: currentUser.id,
+          user_name: username,
+          game_name: gameName,
+          amount_bet: amountBet,
+          amount_won: 0
+        });
+        const contrib = Math.max(1, Math.floor(amountBet * 0.01));
+        await sb.rpc('increment_jackpot', { amount: contrib }).then(() => {}).catch(() => {});
+      } catch(e) { console.log('recordBet error:', e); }
+    }
+
+    async function recordWin(gameName, amountWon) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({
+          user_id: currentUser.id,
+          user_name: username,
+          game_name: gameName,
+          amount_bet: 0,
+          amount_won: amountWon
+        });
+      } catch(e) { console.log('recordWin error:', e); }
+    }
     async function updateMoney(newAmount) {
       await sb
         .from('game_stats')
@@ -461,17 +489,6 @@
       document.getElementById('balance').textContent = newAmount.toLocaleString('fr-FR') + '€';
     }
 
-    async function recordWin(gameName, amountBet, amountWon) {
-      try {
-        const username = currentUser.email?.split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({
-          user_id: currentUser.id,
-          user_name: username,
-          game_name: gameName,
-          amount_bet: amountBet,
-          amount_won: amountWon
-        });
-      } catch(e) { console.log('recordWin error:', e); }
     }
 
 
@@ -541,6 +558,7 @@
 
       // Déduire la mise
       await updateMoney(currentMoney - bet);
+      await recordBet('Blackjack', bet);
 
       createDeck();
       playerHand = [deck.pop(), deck.pop()];
@@ -631,13 +649,13 @@
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎉 LE CROUPIER A BUST ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
-        await recordWin('Blackjack', bet, win);
+        await recordWin('Blackjack', win);
       } else if (playerScore > dealerScore) {
         result.className = 'result win';
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎊 VICTOIRE ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
-        await recordWin('Blackjack', bet, win);
+        await recordWin('Blackjack', win);
       } else if (playerScore < dealerScore) {
         result.className = 'result lose';
         result.innerHTML = `💔 DÉFAITE ! Le croupier gagne (-${bet.toLocaleString('fr-FR')}€)`;
