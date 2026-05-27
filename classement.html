@@ -3,256 +3,535 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Classement - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <title>Salle des Trophées - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: #060814;
+      background: #0a0a0a;
       min-height: 100vh;
       color: white;
       overflow-x: hidden;
-      padding-bottom: 40px;
+      padding-bottom: 60px;
     }
 
-    /* ===================== ÉTOILES ===================== */
-    .stars { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-    .star  {
-      position: absolute; background: white; border-radius: 50%;
-      animation: twinkle 3s ease-in-out infinite;
+    /* ===================== MARBRE FOND ===================== */
+    .marble-bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(212,175,55,0.06) 0%, transparent 60%),
+        linear-gradient(180deg, #0f0e0c 0%, #0a0a0a 40%, #080808 100%);
     }
-    @keyframes twinkle { 0%,100%{opacity:0.8} 50%{opacity:0.15} }
 
-    /* Nébuleuse bleue */
-    .nebula {
-      position: fixed; pointer-events: none; z-index: 0;
-      border-radius: 50%; filter: blur(90px);
+    .marble-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(128deg, transparent 20%, rgba(212,175,55,0.03) 30%, transparent 40%),
+        linear-gradient(42deg, transparent 45%, rgba(180,170,160,0.04) 55%, transparent 65%),
+        linear-gradient(85deg, transparent 60%, rgba(212,175,55,0.02) 70%, transparent 80%);
     }
-    .nebula1 { width:400px; height:400px; background:radial-gradient(ellipse, rgba(29,78,216,0.2) 0%, transparent 70%); top:-100px; left:-80px; animation:nebDrift1 20s ease-in-out infinite; }
-    .nebula2 { width:350px; height:350px; background:radial-gradient(ellipse, rgba(99,102,241,0.15) 0%, transparent 70%); bottom:-80px; right:-80px; animation:nebDrift2 24s ease-in-out infinite; }
-    .nebula3 { width:300px; height:300px; background:radial-gradient(ellipse, rgba(14,165,233,0.1) 0%, transparent 70%); top:40%; left:40%; animation:nebDrift3 18s ease-in-out infinite; }
-    @keyframes nebDrift1 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(40px,60px)} }
-    @keyframes nebDrift2 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-40px,-50px)} }
-    @keyframes nebDrift3 { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.3)} }
+
+    /* ===================== COLONNES ===================== */
+    .columns {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      overflow: hidden;
+    }
+
+    .column {
+      position: absolute; top: 0; bottom: 0;
+      width: 28px;
+      background: linear-gradient(90deg,
+        rgba(40,35,25,0) 0%,
+        rgba(212,175,55,0.08) 20%,
+        rgba(212,175,55,0.15) 50%,
+        rgba(212,175,55,0.08) 80%,
+        rgba(40,35,25,0) 100%
+      );
+    }
+
+    .column::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 28px; height: 28px;
+      background: radial-gradient(ellipse, rgba(212,175,55,0.3) 0%, transparent 70%);
+      border-radius: 50% 50% 0 0;
+    }
+
+    .column::after {
+      content: '';
+      position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 36px; height: 12px;
+      background: rgba(212,175,55,0.1);
+      border-radius: 2px;
+    }
+
+    .column.left  { left: 12px; }
+    .column.left2 { left: 48px; opacity: 0.4; }
+    .column.right  { right: 12px; }
+    .column.right2 { right: 48px; opacity: 0.4; }
+
+    /* ===================== RAYONS DE LUMIÈRE ===================== */
+    .light-beams {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 70vh; z-index: 1; pointer-events: none;
+      overflow: hidden;
+    }
+
+    .beam {
+      position: absolute; top: 0;
+      width: 2px;
+      background: linear-gradient(180deg,
+        rgba(212,175,55,0.25) 0%,
+        rgba(212,175,55,0.08) 50%,
+        transparent 100%
+      );
+      filter: blur(3px);
+      transform-origin: top center;
+      animation: beamSway 6s ease-in-out infinite;
+    }
+
+    .beam::after {
+      content: '';
+      position: absolute; top: 0; left: -6px;
+      width: 14px;
+      background: linear-gradient(180deg,
+        rgba(212,175,55,0.12) 0%,
+        rgba(212,175,55,0.04) 50%,
+        transparent 100%
+      );
+      filter: blur(8px);
+      height: 100%;
+    }
+
+    .beam1 { left: 25%; height: 65vh; animation-delay: 0s; }
+    .beam2 { left: 50%; height: 75vh; animation-delay: 1s; width: 3px; }
+    .beam3 { left: 75%; height: 60vh; animation-delay: 2s; }
+    .beam4 { left: 35%; height: 55vh; animation-delay: 3s; opacity: 0.5; }
+    .beam5 { left: 65%; height: 50vh; animation-delay: 4s; opacity: 0.5; }
+
+    @keyframes beamSway {
+      0%,100% { transform: rotate(-1deg) scaleX(1); opacity: 1; }
+      50%      { transform: rotate(1deg) scaleX(1.5); opacity: 0.7; }
+    }
+
+    /* ===================== POUSSIÈRE D'OR ===================== */
+    .dust-particle {
+      position: fixed; border-radius: 50%;
+      background: radial-gradient(circle, rgba(212,175,55,0.8), transparent 70%);
+      pointer-events: none; z-index: 1;
+      animation: dustRise linear infinite;
+    }
+
+    @keyframes dustRise {
+      0%   { transform: translateY(0) translateX(0); opacity: 0; }
+      10%  { opacity: 0.8; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-80vh) translateX(var(--dx)); opacity: 0; }
+    }
+
+    /* ===================== SOL MARBRE ===================== */
+    .marble-floor {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      height: 35vh; z-index: 1; pointer-events: none;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(212,175,55,0.02) 30%,
+        rgba(212,175,55,0.04) 100%
+      );
+    }
+
+    .floor-line {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), rgba(212,175,55,0.4), rgba(212,175,55,0.2), transparent);
+    }
 
     /* ===================== CONTAINER ===================== */
-    .container { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; padding: 16px; }
+    .container { position: relative; z-index: 10; max-width: 520px; margin: 0 auto; padding: 16px; }
 
     /* ===================== HEADER ===================== */
-    .header {
-      display: flex; align-items: center; justify-content: space-between;
+    .hall-header {
+      text-align: center;
+      padding: 24px 0 20px;
+      position: relative;
+    }
+
+    .hall-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 10px; letter-spacing: 5px;
+      color: rgba(212,175,55,0.5);
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+
+    .hall-title {
+      font-family: 'Cinzel', serif;
+      font-size: 28px; letter-spacing: 4px;
+      background: linear-gradient(135deg, #d4af37 0%, #f5d060 40%, #d4af37 70%, #b8962e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
+      line-height: 1;
+      filter: drop-shadow(0 0 20px rgba(212,175,55,0.3));
+    }
+
+    .hall-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 12px 0 0;
+    }
+
+    .hall-divider-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent);
+    }
+
+    .hall-divider-icon { font-size: 16px; opacity: 0.7; }
+
+    /* ===================== BACK + TABS ===================== */
+    .top-controls {
+      display: flex; align-items: center; gap: 8px;
       margin-bottom: 20px;
     }
 
     .back-btn {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px; padding: 10px 14px;
-      color: rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif;
-      font-size: 13px; letter-spacing: 1px; cursor: pointer; transition: all 0.2s;
-    }
-    .back-btn:hover { background: rgba(255,255,255,0.1); color: white; }
-
-    .header-title {
+      background: rgba(212,175,55,0.08);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 8px; padding: 9px 13px;
+      color: rgba(212,175,55,0.7);
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px; letter-spacing: 3px;
-      color: #60a5fa;
-      text-shadow: 0 0 20px rgba(96,165,250,0.5), 0 0 40px rgba(96,165,250,0.2);
-      animation: titleGlow 3s ease-in-out infinite;
+      font-size: 13px; letter-spacing: 1px;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
     }
-    @keyframes titleGlow {
-      0%,100% { text-shadow: 0 0 20px rgba(96,165,250,0.5), 0 0 40px rgba(96,165,250,0.2); }
-      50%      { text-shadow: 0 0 30px rgba(96,165,250,0.8), 0 0 60px rgba(96,165,250,0.3); }
-    }
+    .back-btn:hover { background: rgba(212,175,55,0.15); color: #d4af37; }
 
-    .header-icon { font-size: 28px; }
-
-    /* ===================== TABS ===================== */
     .tabs {
-      display: flex; gap: 8px; margin-bottom: 20px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 12px; padding: 4px;
+      flex: 1; display: flex; gap: 6px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(212,175,55,0.1);
+      border-radius: 8px; padding: 3px;
     }
 
     .tab {
-      flex: 1; padding: 10px;
+      flex: 1; padding: 8px;
       background: transparent; border: none;
-      border-radius: 8px;
+      border-radius: 5px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px; letter-spacing: 1px;
-      color: rgba(255,255,255,0.35);
+      font-size: 13px; letter-spacing: 1px;
+      color: rgba(255,255,255,0.3);
       cursor: pointer; transition: all 0.2s; text-align: center;
     }
     .tab.active {
-      background: linear-gradient(135deg, #1d4ed8, #2563eb);
-      color: white;
-      box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+      background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.1));
+      color: #d4af37;
+      border: 1px solid rgba(212,175,55,0.25);
     }
 
     /* ===================== MON RANG ===================== */
-    .my-rank {
-      background: linear-gradient(135deg, rgba(29,78,216,0.15), rgba(37,99,235,0.1));
-      border: 1px solid rgba(59,130,246,0.3);
-      border-radius: 14px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
+    .my-rank-card {
+      background: rgba(212,175,55,0.05);
+      border: 1px solid rgba(212,175,55,0.2);
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
       display: flex; align-items: center; gap: 14px;
+      position: relative; overflow: hidden;
     }
 
-    .my-rank-number {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 44px; color: #60a5fa; letter-spacing: 2px; line-height: 1;
-      text-shadow: 0 0 16px rgba(96,165,250,0.5);
-      min-width: 70px;
+    .my-rank-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: linear-gradient(180deg, #d4af37, #f5d060, #d4af37);
+    }
+
+    .my-rank-num {
+      font-family: 'Cinzel', serif;
+      font-size: 36px; color: #d4af37; letter-spacing: 2px; line-height: 1;
+      text-shadow: 0 0 20px rgba(212,175,55,0.4);
+      min-width: 64px;
     }
 
     .my-rank-info { flex: 1; }
-    .my-rank-label { font-size: 10px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-    .my-rank-score { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: white; letter-spacing: 1px; }
-    .my-rank-grade { font-size: 11px; color: #60a5fa; font-weight: 700; margin-top: 2px; }
+    .my-rank-lbl  { font-size: 9px; color: rgba(212,175,55,0.4); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 3px; }
+    .my-rank-score { font-family: 'Bebas Neue', sans-serif; font-size: 20px; color: white; letter-spacing: 1px; }
+    .my-rank-grade { font-size: 10px; color: rgba(212,175,55,0.6); font-weight: 700; margin-top: 2px; }
 
     /* ===================== PODIUM ===================== */
-    .podium {
-      display: flex; align-items: flex-end;
-      justify-content: center; gap: 8px;
+    .podium-section { margin-bottom: 32px; }
+
+    .podium-title {
+      font-family: 'Cinzel', serif;
+      font-size: 10px; letter-spacing: 4px;
+      color: rgba(212,175,55,0.4);
+      text-align: center; text-transform: uppercase;
       margin-bottom: 24px;
     }
 
-    .podium-item { flex: 1; max-width: 130px; text-align: center; }
-    .podium-item.second { order: 1; }
-    .podium-item.first  { order: 2; }
-    .podium-item.third  { order: 3; }
+    .podium {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0;
+      padding: 0 8px;
+    }
 
-    .podium-info { padding-bottom: 6px; }
+    /* Piédestal */
+    .pedestal-wrap {
+      display: flex; flex-direction: column; align-items: center;
+      flex: 1; max-width: 150px;
+    }
 
-    .podium-medal { font-size: 22px; margin-bottom: 6px; }
+    /* Infos joueur au-dessus */
+    .ped-player {
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: 12px; padding: 0 4px;
+    }
 
-    .podium-avatar {
-      width: 52px; height: 52px; border-radius: 50%;
-      margin: 0 auto 8px;
-      background: linear-gradient(135deg, #1d4ed8, #2563eb);
-      border: 2px solid rgba(255,255,255,0.15);
+    .ped-medal { font-size: 20px; margin-bottom: 6px; }
+
+    .ped-avatar {
+      border-radius: 50%;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      margin-bottom: 8px;
+      position: relative;
     }
-    .podium-item.first .podium-avatar {
-      width: 68px; height: 68px;
-      border-color: #60a5fa;
-      box-shadow: 0 0 24px rgba(96,165,250,0.5), 0 4px 12px rgba(0,0,0,0.4);
+
+    .ped-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .ped-avatar-glow {
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      animation: avatarGlow 2s ease-in-out infinite;
     }
-    .podium-avatar img { width:100%; height:100%; object-fit:cover; }
 
-    .podium-name { font-weight: 700; font-size: 11px; color: white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
-    .podium-score { font-family:'Bebas Neue',sans-serif; font-size: 14px; color: #60a5fa; }
-    .podium-grade { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 2px; }
-
-    .podium-base {
-      border-radius: 8px 8px 0 0;
-      display: flex; align-items: center; justify-content: center;
+    @keyframes avatarGlow {
+      0%,100% { opacity: 0.6; }
+      50%      { opacity: 1; }
     }
-    .podium-base-num { font-family:'Bebas Neue',sans-serif; font-size: 20px; color: rgba(255,255,255,0.6); }
-    .podium-item.first  .podium-base { background: linear-gradient(135deg, #1d4ed8, #1e40af); height: 70px; box-shadow: 0 0 20px rgba(29,78,216,0.4); }
-    .podium-item.second .podium-base { background: linear-gradient(135deg, #1e3a5f, #172a45); height: 52px; }
-    .podium-item.third  .podium-base { background: linear-gradient(135deg, #172544, #0f1a30); height: 38px; }
 
-    /* ===================== SECTION TITLE ===================== */
-    .section-title {
+    .ped-name {
+      font-family: 'Cinzel', serif;
+      font-size: 10px; color: white;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%; text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .ped-score {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 12px; letter-spacing: 2px;
-      color: rgba(255,255,255,0.25); text-transform: uppercase;
-      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+      font-size: 16px; letter-spacing: 1px;
+      margin-top: 2px; text-align: center;
     }
-    .section-title::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
 
-    /* ===================== LISTE COMPLÈTE ===================== */
-    .rank-list { display: flex; flex-direction: column; gap: 6px; }
+    .ped-grade {
+      font-size: 8px; color: rgba(255,255,255,0.3);
+      margin-top: 2px; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 100%;
+    }
 
-    .rank-item {
+    /* Piédestal 3D */
+    .pedestal {
+      width: 100%;
+      position: relative;
+      border-radius: 4px 4px 0 0;
+    }
+
+    .ped-face-top {
+      width: 100%;
+      height: 14px;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+    }
+
+    .ped-face-front {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 0;
+    }
+
+    .ped-rank-num {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+    }
+
+    /* Styles par position */
+    .pedestal-wrap.first .ped-avatar   { width: 70px; height: 70px; border: 2px solid rgba(212,175,55,0.6); box-shadow: 0 0 24px rgba(212,175,55,0.4); }
+    .pedestal-wrap.first .ped-avatar-glow { background: radial-gradient(circle, rgba(212,175,55,0.2), transparent); }
+    .pedestal-wrap.first .ped-score    { color: #f5d060; }
+    .pedestal-wrap.first .ped-face-top { background: linear-gradient(135deg, #d4af37, #f5d060, #c9972a); }
+    .pedestal-wrap.first .ped-face-front { background: linear-gradient(180deg, #b8962e 0%, #8b7122 100%); height: 80px; }
+    .pedestal-wrap.first .ped-rank-num { font-size: 22px; color: rgba(255,255,255,0.5); }
+
+    .pedestal-wrap.second .ped-avatar   { width: 56px; height: 56px; border: 2px solid rgba(180,180,200,0.4); box-shadow: 0 0 16px rgba(180,180,200,0.2); }
+    .pedestal-wrap.second .ped-avatar-glow { background: radial-gradient(circle, rgba(192,192,210,0.15), transparent); }
+    .pedestal-wrap.second .ped-score    { color: #c8c8d8; }
+    .pedestal-wrap.second .ped-face-top { background: linear-gradient(135deg, #9e9e9e, #c0c0c0, #909090); }
+    .pedestal-wrap.second .ped-face-front { background: linear-gradient(180deg, #757575 0%, #525252 100%); height: 58px; }
+    .pedestal-wrap.second .ped-rank-num { font-size: 18px; color: rgba(255,255,255,0.4); }
+
+    .pedestal-wrap.third .ped-avatar   { width: 48px; height: 48px; border: 2px solid rgba(180,120,60,0.4); box-shadow: 0 0 12px rgba(180,120,60,0.2); }
+    .pedestal-wrap.third .ped-avatar-glow { background: radial-gradient(circle, rgba(180,120,60,0.15), transparent); }
+    .pedestal-wrap.third .ped-score    { color: #cd9b6a; }
+    .pedestal-wrap.third .ped-face-top { background: linear-gradient(135deg, #cd7f32, #e8a96a, #a0611a); }
+    .pedestal-wrap.third .ped-face-front { background: linear-gradient(180deg, #8b5e3c 0%, #5d3a1a 100%); height: 42px; }
+    .pedestal-wrap.third .ped-rank-num { font-size: 16px; color: rgba(255,255,255,0.35); }
+
+    /* Reflet sol */
+    .ped-reflection {
+      width: 100%;
+      height: 20px;
+      background: inherit;
+      transform: scaleY(-1);
+      opacity: 0.08;
+      filter: blur(2px);
+    }
+
+    /* ===================== LISTE INSCRIPTIONS ===================== */
+    .inscriptions-title {
+      font-family: 'Cinzel', serif;
+      font-size: 10px; letter-spacing: 4px;
+      color: rgba(212,175,55,0.4);
+      text-transform: uppercase; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .inscriptions-title::before, .inscriptions-title::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent);
+    }
+
+    .inscription-list { display: flex; flex-direction: column; gap: 5px; }
+
+    .inscription {
       display: flex; align-items: center; gap: 12px;
-      padding: 11px 14px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
+      padding: 10px 14px;
+      background: rgba(212,175,55,0.03);
+      border: 1px solid rgba(212,175,55,0.08);
+      border-radius: 8px;
+      position: relative; overflow: hidden;
       transition: all 0.2s;
     }
-    .rank-item.me {
-      background: rgba(29,78,216,0.12);
-      border-color: rgba(59,130,246,0.25);
-    }
-    .rank-item:hover { background: rgba(255,255,255,0.06); }
 
-    .rank-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 17px; color: rgba(255,255,255,0.25);
-      min-width: 32px; text-align: center;
+    .inscription::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(212,175,55,0.15);
     }
-    .rank-item.me .rank-num { color: #60a5fa; }
 
-    .rank-avatar {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: linear-gradient(135deg, #1d4ed8, #2563eb);
-      border: 1.5px solid rgba(255,255,255,0.1);
+    .inscription.me {
+      background: rgba(212,175,55,0.07);
+      border-color: rgba(212,175,55,0.2);
+    }
+    .inscription.me::before { background: linear-gradient(180deg, #d4af37, #f5d060, #d4af37); }
+
+    .inscription:hover { background: rgba(212,175,55,0.06); }
+
+    .ins-rank {
+      font-family: 'Cinzel', serif;
+      font-size: 13px; color: rgba(212,175,55,0.35);
+      min-width: 28px; text-align: center;
+      font-weight: 600;
+    }
+    .inscription.me .ins-rank { color: #d4af37; }
+
+    .ins-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(212,175,55,0.15);
       overflow: hidden; flex-shrink: 0;
     }
-    .rank-avatar img { width:100%; height:100%; object-fit:cover; }
+    .inscription.me .ins-avatar { border-color: rgba(212,175,55,0.35); }
+    .ins-avatar img { width:100%; height:100%; object-fit:cover; }
 
-    .rank-info { flex: 1; min-width: 0; }
-    .rank-name { font-weight: 700; font-size: 13px; color: white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .rank-grade { font-size: 10px; color: rgba(255,255,255,0.35); margin-top: 1px; }
+    .ins-info { flex: 1; min-width: 0; }
+    .ins-name {
+      font-family: 'Cinzel', serif;
+      font-size: 11px; color: rgba(255,255,255,0.8);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-weight: 600; letter-spacing: 0.5px;
+    }
+    .inscription.me .ins-name { color: white; }
+    .ins-grade { font-size: 9px; color: rgba(255,255,255,0.25); margin-top: 2px; }
 
-    .rank-right { text-align: right; flex-shrink: 0; }
-    .rank-score { font-family:'Bebas Neue',sans-serif; font-size: 17px; color: #60a5fa; letter-spacing:0.5px; }
-    .rank-item.me .rank-score { color: #34d399; }
-    .rank-sub { font-size: 10px; color: rgba(255,255,255,0.25); margin-top: 1px; }
+    .ins-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px; color: rgba(212,175,55,0.6);
+      letter-spacing: 0.5px; text-align: right;
+      flex-shrink: 0;
+    }
+    .inscription.me .ins-score { color: #d4af37; }
 
     /* ===================== LOADER ===================== */
-    .loader { text-align:center; padding:60px 20px; }
-    .spinner { width:36px; height:36px; border:3px solid rgba(255,255,255,0.06); border-top-color:#3b82f6; border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px; }
-    @keyframes spin { to{transform:rotate(360deg)} }
-    .loader-txt { font-size:13px; color:rgba(255,255,255,0.25); }
-
-    /* EMPTY */
-    .empty { text-align:center; padding:60px 20px; }
-    .empty-icon { font-size:48px; margin-bottom:12px; opacity:0.3; }
-    .empty-txt { font-size:13px; color:rgba(255,255,255,0.25); }
+    .loader { text-align:center; padding:80px 20px; }
+    .loader-icon {
+      font-size: 40px; margin-bottom: 16px;
+      animation: loaderPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes loaderPulse { 0%,100%{opacity:0.3;transform:scale(0.9)} 50%{opacity:1;transform:scale(1.1)} }
+    .loader-txt { font-family:'Cinzel',serif; font-size:12px; color:rgba(212,175,55,0.4); letter-spacing:3px; text-transform:uppercase; }
   </style>
 </head>
 <body>
 
   <!-- FOND -->
-  <div class="stars" id="stars"></div>
-  <div class="nebula nebula1"></div>
-  <div class="nebula nebula2"></div>
-  <div class="nebula nebula3"></div>
+  <div class="marble-bg"></div>
+
+  <!-- COLONNES -->
+  <div class="columns">
+    <div class="column left"></div>
+    <div class="column left2"></div>
+    <div class="column right"></div>
+    <div class="column right2"></div>
+  </div>
+
+  <!-- RAYONS DE LUMIÈRE -->
+  <div class="light-beams">
+    <div class="beam beam1"></div>
+    <div class="beam beam2"></div>
+    <div class="beam beam3"></div>
+    <div class="beam beam4"></div>
+    <div class="beam beam5"></div>
+  </div>
+
+  <!-- POUSSIÈRE -->
+  <div id="dustContainer"></div>
+
+  <!-- SOL -->
+  <div class="marble-floor"><div class="floor-line"></div></div>
 
   <div class="container">
 
     <!-- HEADER -->
-    <div class="header">
-      <div class="back-btn" onclick="window.location.href='game.html'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        RETOUR
+    <div class="hall-header">
+      <div class="hall-subtitle">Battle Dock</div>
+      <div class="hall-title">SALLE DES TROPHÉES</div>
+      <div class="hall-divider">
+        <div class="hall-divider-line"></div>
+        <div class="hall-divider-icon">⚜️</div>
+        <div class="hall-divider-line"></div>
       </div>
-      <div class="header-title">CLASSEMENT</div>
-      <div class="header-icon">🏆</div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <div class="tab active" id="tab-level"  onclick="switchTab('level')">Par Niveau</div>
-      <div class="tab"        id="tab-money"  onclick="switchTab('money')">Par Argent</div>
+    <!-- CONTROLS -->
+    <div class="top-controls">
+      <div class="back-btn" onclick="window.location.href='game.html'">← Retour</div>
+      <div class="tabs">
+        <div class="tab active" id="tab-level" onclick="switchTab('level')">🏆 Niveau</div>
+        <div class="tab" id="tab-money" onclick="switchTab('money')">💰 Argent</div>
+      </div>
     </div>
 
     <!-- MON RANG -->
-    <div class="my-rank" id="myRank" style="display:none">
-      <div class="my-rank-number" id="myRankNum">#--</div>
+    <div class="my-rank-card" id="myRankCard" style="display:none">
+      <div class="my-rank-num" id="myRankNum">#--</div>
       <div class="my-rank-info">
-        <div class="my-rank-label">Ton classement</div>
+        <div class="my-rank-lbl">Ton rang dans la salle</div>
         <div class="my-rank-score" id="myRankScore">--</div>
         <div class="my-rank-grade" id="myRankGrade">--</div>
       </div>
@@ -260,21 +539,20 @@
 
     <!-- LOADER -->
     <div class="loader" id="loader">
-      <div class="spinner"></div>
-      <div class="loader-txt">Chargement...</div>
+      <div class="loader-icon">🏆</div>
+      <div class="loader-txt">Chargement de la salle...</div>
     </div>
 
     <!-- PODIUM -->
-    <div class="podium" id="podium" style="display:none"></div>
+    <div class="podium-section" id="podiumSection" style="display:none">
+      <div class="podium-title">⚜ Les Grands Champions ⚜</div>
+      <div class="podium" id="podium"></div>
+    </div>
 
-    <!-- LISTE -->
-    <div class="section-title" id="restTitle" style="display:none">Suite du classement</div>
-    <div class="rank-list" id="rankList"></div>
-
-    <!-- EMPTY -->
-    <div class="empty" id="empty" style="display:none">
-      <div class="empty-icon">🏆</div>
-      <div class="empty-txt">Aucun joueur pour le moment</div>
+    <!-- INSCRIPTIONS -->
+    <div id="inscriptionsSection" style="display:none">
+      <div class="inscriptions-title">Tableau d'Honneur</div>
+      <div class="inscription-list" id="inscriptionList"></div>
     </div>
 
   </div>
@@ -286,18 +564,31 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
-    let currentTab = 'level';
+    let currentTab  = 'level';
 
-    // Étoiles
-    const starsEl = document.getElementById('stars');
-    for (let i = 0; i < 80; i++) {
-      const s = document.createElement('div');
-      s.className = 'star';
-      const size = 0.5 + Math.random() * 2;
-      s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*5}s;animation-duration:${2+Math.random()*4}s;opacity:${0.2+Math.random()*0.6}`;
-      starsEl.appendChild(s);
+    // =====================
+    // POUSSIÈRE D'OR
+    // =====================
+    const dust = document.getElementById('dustContainer');
+    for (let i = 0; i < 25; i++) {
+      const d = document.createElement('div');
+      d.className = 'dust-particle';
+      const s = 1.5 + Math.random() * 3.5;
+      d.style.cssText = `
+        width:${s}px; height:${s}px;
+        left:${5 + Math.random() * 90}%;
+        bottom:${-5 + Math.random() * 15}%;
+        --dx:${(Math.random() - 0.5) * 80}px;
+        animation-duration:${16 + Math.random() * 24}s;
+        animation-delay:${Math.random() * 20}s;
+        z-index:2;
+      `;
+      dust.appendChild(d);
     }
 
+    // =====================
+    // GRADES
+    // =====================
     function getGrade(level) {
       if (!level || level <= 4)  return 'Docker Occasionnel';
       if (level <= 14) return 'Docker';
@@ -307,25 +598,29 @@
       return 'Magnat du Port';
     }
 
+    // =====================
+    // INIT
+    // =====================
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-      loadRanking();
+      await loadRanking();
     }
 
+    // =====================
+    // CHARGEMENT
+    // =====================
     async function loadRanking() {
-      // Reset
       document.getElementById('loader').style.display = 'block';
-      document.getElementById('podium').style.display = 'none';
-      document.getElementById('rankList').innerHTML = '';
-      document.getElementById('myRank').style.display = 'none';
-      document.getElementById('restTitle').style.display = 'none';
-      document.getElementById('empty').style.display = 'none';
+      document.getElementById('podiumSection').style.display = 'none';
+      document.getElementById('inscriptionsSection').style.display = 'none';
+      document.getElementById('myRankCard').style.display = 'none';
+      document.getElementById('podium').innerHTML = '';
+      document.getElementById('inscriptionList').innerHTML = '';
 
       const orderBy = currentTab === 'level' ? 'level' : 'money';
 
-      // Récupérer TOUS les joueurs
       const { data: stats } = await sb
         .from('game_stats')
         .select('*')
@@ -333,115 +628,120 @@
 
       if (!stats || stats.length === 0) {
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('empty').style.display = 'block';
         return;
       }
 
-      // Profils
       const userIds = stats.map(s => s.user_id);
       const { data: profiles } = await sb
         .from('profiles')
         .select('user_id, username, avatar_url')
         .in('user_id', userIds);
 
-      const rankings = stats.map(stat => ({
-        ...stat,
-        profile: profiles?.find(p => p.user_id === stat.user_id) || { username: 'Docker', avatar_url: 'avatar-default.png' }
+      const players = stats.map(s => ({
+        ...s,
+        profile: profiles?.find(p => p.user_id === s.user_id) || { username: 'Docker', avatar_url: 'avatar-default.png' }
       }));
 
       document.getElementById('loader').style.display = 'none';
 
       // Mon rang
-      const myIdx = rankings.findIndex(r => r.user_id === currentUser.id);
+      const myIdx = players.findIndex(p => p.user_id === currentUser.id);
       if (myIdx >= 0) {
-        const me = rankings[myIdx];
+        const me = players[myIdx];
         const score = currentTab === 'level'
-          ? `Niveau ${me.level || 1}`
-          : `${(me.money||0).toLocaleString('fr-FR')}€`;
+          ? `Niveau ${me.level || 1} — ${getGrade(me.level || 1)}`
+          : `${(me.money || 0).toLocaleString('fr-FR')} €`;
         document.getElementById('myRankNum').textContent   = '#' + (myIdx + 1);
         document.getElementById('myRankScore').textContent = score;
         document.getElementById('myRankGrade').textContent = getGrade(me.level || 1);
-        document.getElementById('myRank').style.display    = 'flex';
+        document.getElementById('myRankCard').style.display = 'flex';
       }
 
-      // Podium top 3
-      if (rankings.length >= 1) renderPodium(rankings.slice(0, Math.min(3, rankings.length)));
+      // Podium
+      renderPodium(players.slice(0, Math.min(3, players.length)));
 
-      // Liste complète (à partir du 4ème)
-      if (rankings.length > 3) {
-        renderList(rankings.slice(3), 4);
-        document.getElementById('restTitle').style.display = 'block';
-      } else if (rankings.length <= 3 && rankings.length > 0) {
-        // Moins de 4 joueurs — pas de liste séparée
+      // Liste
+      if (players.length > 3) {
+        renderInscriptions(players.slice(3), 4);
+        document.getElementById('inscriptionsSection').style.display = 'block';
       }
     }
 
+    // =====================
+    // PODIUM
+    // =====================
     function renderPodium(top) {
       const el = document.getElementById('podium');
-      el.innerHTML = '';
-      const medals  = ['🥇','🥈','🥉'];
-      const classes = ['first','second','third'];
-      // Ordre d'affichage : 2ème, 1er, 3ème
-      const displayOrder = top.length >= 3 ? [1,0,2] : top.length === 2 ? [1,0] : [0];
-      const classOrder   = top.length >= 3 ? ['second','first','third'] : top.length === 2 ? ['second','first'] : ['first'];
+      const medals  = ['🥇', '🥈', '🥉'];
+      const classes = ['first', 'second', 'third'];
+      // Ordre affichage : 2nd, 1er, 3ème
+      const order = top.length >= 3 ? [1,0,2] : top.length === 2 ? [1,0] : [0];
+      const cls   = top.length >= 3 ? ['second','first','third'] : top.length === 2 ? ['second','first'] : ['first'];
 
-      displayOrder.forEach((realIdx, dispIdx) => {
-        const player = top[realIdx];
-        if (!player) return;
+      order.forEach((ri, di) => {
+        const p = top[ri];
+        if (!p) return;
         const score = currentTab === 'level'
-          ? `Niv. ${player.level || 1}`
-          : `${(player.money||0).toLocaleString('fr-FR')}€`;
+          ? `Niv. ${p.level || 1}`
+          : `${(p.money || 0).toLocaleString('fr-FR')}€`;
 
-        const div = document.createElement('div');
-        div.className = `podium-item ${classOrder[dispIdx]}`;
-        div.innerHTML = `
-          <div class="podium-info">
-            <div class="podium-medal">${medals[realIdx]}</div>
-            <div class="podium-avatar">
-              <img src="${player.profile.avatar_url||'avatar-default.png'}" alt="${player.profile.username}">
+        const wrap = document.createElement('div');
+        wrap.className = `pedestal-wrap ${cls[di]}`;
+        wrap.innerHTML = `
+          <div class="ped-player">
+            <div class="ped-medal">${medals[ri]}</div>
+            <div class="ped-avatar">
+              <div class="ped-avatar-glow"></div>
+              <img src="${p.profile.avatar_url || 'avatar-default.png'}" alt="${p.profile.username}">
             </div>
-            <div class="podium-name">${player.profile.username}</div>
-            <div class="podium-score">${score}</div>
-            <div class="podium-grade">${getGrade(player.level||1)}</div>
+            <div class="ped-name">${p.profile.username}</div>
+            <div class="ped-score">${score}</div>
+            <div class="ped-grade">${getGrade(p.level || 1)}</div>
           </div>
-          <div class="podium-base">
-            <div class="podium-base-num">#${realIdx+1}</div>
-          </div>`;
-        el.appendChild(div);
+          <div class="pedestal">
+            <div class="ped-face-top"></div>
+            <div class="ped-face-front">
+              <div class="ped-rank-num">#${ri + 1}</div>
+            </div>
+          </div>
+          <div class="ped-reflection"></div>
+        `;
+        el.appendChild(wrap);
       });
-      el.style.display = 'flex';
+
+      document.getElementById('podiumSection').style.display = 'block';
     }
 
-    function renderList(rankings, startRank) {
-      const list = document.getElementById('rankList');
-      list.innerHTML = rankings.map((player, idx) => {
-        const rank   = startRank + idx;
-        const isMe   = player.user_id === currentUser.id;
-        const score  = currentTab === 'level'
-          ? `Niv. ${player.level || 1}`
-          : `${(player.money||0).toLocaleString('fr-FR')}€`;
-        const sub    = currentTab === 'level'
-          ? `${(player.money||0).toLocaleString('fr-FR')}€`
-          : `Niv. ${player.level || 1}`;
+    // =====================
+    // INSCRIPTIONS
+    // =====================
+    function renderInscriptions(players, startRank) {
+      const list = document.getElementById('inscriptionList');
+      list.innerHTML = players.map((p, i) => {
+        const rank  = startRank + i;
+        const isMe  = p.user_id === currentUser.id;
+        const score = currentTab === 'level'
+          ? `Niv. ${p.level || 1}`
+          : `${(p.money || 0).toLocaleString('fr-FR')}€`;
 
         return `
-          <div class="rank-item ${isMe?'me':''}">
-            <div class="rank-num">#${rank}</div>
-            <div class="rank-avatar">
-              <img src="${player.profile.avatar_url||'avatar-default.png'}" alt="${player.profile.username}">
+          <div class="inscription ${isMe ? 'me' : ''}">
+            <div class="ins-rank">${rank}</div>
+            <div class="ins-avatar">
+              <img src="${p.profile.avatar_url || 'avatar-default.png'}" alt="${p.profile.username}">
             </div>
-            <div class="rank-info">
-              <div class="rank-name">${player.profile.username}${isMe?' 👈':''}</div>
-              <div class="rank-grade">${getGrade(player.level||1)}</div>
+            <div class="ins-info">
+              <div class="ins-name">${p.profile.username}${isMe ? ' ←' : ''}</div>
+              <div class="ins-grade">${getGrade(p.level || 1)}</div>
             </div>
-            <div class="rank-right">
-              <div class="rank-score">${score}</div>
-              <div class="rank-sub">${sub}</div>
-            </div>
+            <div class="ins-score">${score}</div>
           </div>`;
       }).join('');
     }
 
+    // =====================
+    // TABS
+    // =====================
     function switchTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
