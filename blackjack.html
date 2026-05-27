@@ -395,7 +395,7 @@
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
-          <input type="number" id="betAmount" value="100" min="10" max="50000" step="10">
+          <input type="number" id="betAmount" value="100" min="10" step="10">
         </div>
         
         <div class="actions" id="actions">
@@ -461,6 +461,20 @@
       document.getElementById('balance').textContent = newAmount.toLocaleString('fr-FR') + '€';
     }
 
+    async function recordWin(gameName, amountBet, amountWon) {
+      try {
+        const username = currentUser.email?.split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({
+          user_id: currentUser.id,
+          user_name: username,
+          game_name: gameName,
+          amount_bet: amountBet,
+          amount_won: amountWon
+        });
+      } catch(e) { console.log('recordWin error:', e); }
+    }
+
+
     function createDeck() {
       deck = [];
       for (let i = 0; i < 6; i++) { // 6 decks
@@ -515,10 +529,6 @@
       const betInput = document.getElementById('betAmount');
       const bet = parseInt(betInput.value);
 
-      if (bet > 50000) {
-        alert('Mise maximum : 50 000€');
-        return;
-      }
       if (bet < 10) {
         alert('Mise minimum : 10€');
         return;
@@ -621,11 +631,13 @@
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎉 LE CROUPIER A BUST ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
+        await recordWin('Blackjack', bet, win);
       } else if (playerScore > dealerScore) {
         result.className = 'result win';
         const win = playerScore === 21 && playerHand.length === 2 ? bet * 2.5 : bet * 2;
         result.innerHTML = `🎊 VICTOIRE ! +${win.toLocaleString('fr-FR')}€`;
         await updateMoney(currentMoney + win);
+        await recordWin('Blackjack', bet, win);
       } else if (playerScore < dealerScore) {
         result.className = 'result lose';
         result.innerHTML = `💔 DÉFAITE ! Le croupier gagne (-${bet.toLocaleString('fr-FR')}€)`;

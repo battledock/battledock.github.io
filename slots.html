@@ -392,7 +392,7 @@
       <div class="controls">
         <div class="bet-control">
           <label>MISE:</label>
-          <input type="number" id="betAmount" value="50" min="10" max="50000" step="10">
+          <input type="number" id="betAmount" value="50" min="10" step="10">
         </div>
         <button class="spin-btn" id="spinBtn" onclick="spin()">TOURNER 🎰</button>
         <div class="result" id="result"></div>
@@ -418,12 +418,12 @@
 
     const symbols = ['🍒', '🍋', '🍊', '💎', '⭐', '🔔'];
     const payouts = {
-      '🍒🍒🍒': 4,
-      '🍋🍋🍋': 3,
-      '🍊🍊🍊': 2.5,
-      '💎💎💎': 8,
-      '⭐⭐⭐': 2,
-      '🔔🔔🔔': 3
+      '🍒🍒🍒': 10,
+      '🍋🍋🍋': 8,
+      '🍊🍊🍊': 6,
+      '💎💎💎': 15,
+      '⭐⭐⭐': 4,
+      '🔔🔔🔔': 5
     };
 
     async function init() {
@@ -447,6 +447,19 @@
       document.getElementById('balance').textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
+
+    async function recordWin(gameName, amountBet, amountWon) {
+      try {
+        const username = currentUser.email?.split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({
+          user_id: currentUser.id,
+          user_name: username,
+          game_name: gameName,
+          amount_bet: amountBet,
+          amount_won: amountWon
+        });
+      } catch(e) { console.log('recordWin error:', e); }
+    }
     async function updateMoney(newAmount) {
       await sb
         .from('game_stats')
@@ -463,10 +476,6 @@
       const btn = document.getElementById('spinBtn');
       const res = document.getElementById('result');
 
-      if (bet > 50000) {
-        alert('Mise maximum : 50 000€');
-        return;
-      }
       if (bet < 10) {
         alert('Mise minimum : 10€');
         return;
