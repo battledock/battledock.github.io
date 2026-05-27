@@ -332,9 +332,17 @@
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
 
-      const { data: stats } = await sb
+      const { data: stats, error: statsErr } = await sb
         .from('game_stats')
-        .select('money, xp, level, grade, upgrades')
+        .select('money, xp, level, grade')
+        .eq('user_id', currentUser.id)
+        .single();
+
+      if (statsErr) console.error('Stats error:', statsErr);
+
+      const { data: profile } = await sb
+        .from('profiles')
+        .select('upgrades')
         .eq('user_id', currentUser.id)
         .single();
 
@@ -342,8 +350,9 @@
         totalMoney = stats.money || 0;
         currentXp = stats.xp || 0;
         currentLevel = stats.level || 1;
-        upgrades = stats.upgrades || {};
       }
+
+      upgrades = profile?.upgrades || {};
 
       updateDisplay();
       if (upgrades.auto_clicker) setInterval(autoClick, 1000);
@@ -445,9 +454,26 @@
     }
 
     async function goBack() {
-      // Forcer la sauvegarde et attendre confirmation
-      document.querySelector('.header-btn').textContent = '💾 Sauvegarde...';
-      await save();
+      const btn = document.querySelector('.header-btn');
+      btn.textContent = '💾...';
+      btn.disabled = true;
+      try {
+        const { error } = await sb.from('game_stats').update({
+          money: Math.floor(totalMoney),
+          xp: Math.floor(currentXp),
+          level: currentLevel,
+          grade: getGrade(currentLevel)
+        }).eq('user_id', currentUser.id);
+        if (error) {
+          console.error('GoBack save error:', error);
+          alert('Erreur sauvegarde: ' + error.message);
+          btn.textContent = '← RETOUR';
+          btn.disabled = false;
+          return;
+        }
+      } catch(e) {
+        console.error(e);
+      }
       window.location.href = 'game.html';
     }
 
