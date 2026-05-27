@@ -597,6 +597,7 @@
     // ===========================
     // PRIX LOCAUX (animation)
     // ===========================
+    let priceUpdateCounter = 0;
     function updatePricesLocally() {
       stocks.forEach(stock => {
         const change = (Math.random() - 0.48) * 2 * stock.volatility;
@@ -610,6 +611,19 @@
       });
       renderStocks();
       updatePortfolioUI();
+      // Sauvegarder en BD toutes les 5 updates (30 secondes)
+      priceUpdateCounter++;
+      if (priceUpdateCounter % 5 === 0) savePricesToDB();
+    }
+
+    async function savePricesToDB() {
+      for (const stock of stocks) {
+        await sb.from('stock_prices').update({
+          previous_price: stock.previousPrice,
+          price: stock.price,
+          updated_at: new Date().toISOString()
+        }).eq('symbol', stock.symbol);
+      }
     }
 
     async function refreshPrices() {
@@ -740,10 +754,14 @@
     function updateSummary() {
       if (!selectedStock) return;
       const qty = parseInt(document.getElementById('tradeQty').value) || 0;
-      const total = selectedStock.price * qty;
+      const buyPrice = Math.round(selectedStock.price * 1.02);
+      const commission = Math.max(10, Math.round(selectedStock.price * qty * 0.01));
+      const totalBuy = buyPrice * qty + commission;
+      const sellPrice = Math.round(selectedStock.price * 0.99);
+      const totalSell = sellPrice * qty - Math.max(10, Math.round(sellPrice * qty * 0.01));
       document.getElementById('sUnit').textContent = selectedStock.price.toLocaleString('fr-FR') + '€';
       document.getElementById('sQty').textContent = qty;
-      document.getElementById('sTotal').textContent = total.toLocaleString('fr-FR') + '€';
+      document.getElementById('sTotal').textContent = `Achat: ${totalBuy.toLocaleString('fr-FR')}€ · Vente: ${totalSell.toLocaleString('fr-FR')}€`;
     }
 
     function adjustQty(delta) {
@@ -779,18 +797,21 @@
       const total = selectedStock.price * qty;
 
       if (action === 'buy') {
-        if (total > userMoney) { showToast('Pas assez d\'argent !', true); return; }
+        // Spread 2% à l'achat + commission 1%
+        const buyPrice = Math.round(selectedStock.price * 1.02);
+        const commission = Math.max(10, Math.round(total * 0.01));
+        const totalWithFees = (buyPrice * qty) + commission;
 
-        // Déduire argent
-        const newMoney = userMoney - total;
+        if (totalWithFees > userMoney) { showToast('Pas assez d\'argent (frais inclus) !', true); return; }
+
+        const newMoney = userMoney - totalWithFees;
         await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
 
-        // Mettre à jour portfolio
         const existing = portfolio[selectedStock.symbol];
         const newQty = (existing?.quantity || 0) + qty;
         const newAvg = existing
-          ? Math.round(((existing.avg_buy_price * existing.quantity) + total) / newQty)
-          : selectedStock.price;
+          ? Math.round(((existing.avg_buy_price * existing.quantity) + (buyPrice * qty)) / newQty)
+          : buyPrice;
 
         await sb.from('stock_portfolio').upsert({
           user_id: currentUser.id,
@@ -802,14 +823,23 @@
         userMoney = newMoney;
         portfolio[selectedStock.symbol] = { quantity: newQty, avg_buy_price: newAvg };
 
-        showToast(`✅ Acheté ${qty} × ${selectedStock.symbol} pour ${total.toLocaleString('fr-FR')}€`);
+        showToast(`✅ Acheté ${qty} × ${selectedStock.symbol} · Frais: ${commission.toLocaleString('fr-FR')}€`);
 
       } else {
         const owned = portfolio[selectedStock.symbol]?.quantity || 0;
         if (qty > owned) { showToast('Pas assez d\'actions !', true); return; }
 
-        const newMoney = userMoney + total;
+        // Prix de vente = -1% spread + commission 1%
+        const sellPrice = Math.round(selectedStock.price * 0.99);
+        const sellTotal = sellPrice * qty;
+        const commission = Math.max(10, Math.round(sellTotal * 0.01));
+        const netProceeds = sellTotal - commission;
+
+        const newMoney = userMoney + netProceeds;
         await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+
+        const avgBuy = portfolio[selectedStock.symbol]?.avg_buy_price || selectedStock.price;
+        const profit = netProceeds - (avgBuy * qty);
 
         const newQty = owned - qty;
         if (newQty === 0) {
@@ -821,8 +851,7 @@
         }
 
         userMoney = newMoney;
-        const profit = total - (portfolio[selectedStock.symbol]?.avg_buy_price || selectedStock.price) * qty;
-        showToast(`✅ Vendu ${qty} × ${selectedStock.symbol} · ${profit >= 0 ? '+' : ''}${profit.toLocaleString('fr-FR')}€`);
+        showToast(`✅ Vendu ${qty} × ${selectedStock.symbol} · ${profit >= 0 ? '+' : ''}${profit.toLocaleString('fr-FR')}€ net`);
       }
 
       updatePortfolioUI();
