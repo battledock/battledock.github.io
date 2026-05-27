@@ -475,11 +475,52 @@
     .container {
       padding-bottom: 80px;
     }
+
+    /* DAILY BONUS CARD */
+    .daily-bonus-card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer; position: relative; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: all 0.2s;
+    }
+    .daily-bonus-card::before {
+      content: ''; position: absolute; left:0; top:0; bottom:0;
+      width: 4px; background: #dc2626; border-radius: 4px 0 0 4px;
+    }
+    .daily-bonus-card.claimed::before { background: #10b981; }
+    .daily-bonus-card.claimed { opacity: 0.6; cursor: not-allowed; }
+    .daily-bonus-card:not(.claimed):active { transform: scale(0.98); }
+    .daily-bonus-icon { font-size: 36px; flex-shrink: 0; }
+    .daily-bonus-card.claimed .daily-bonus-icon { filter: grayscale(1) opacity(0.6); }
+    .daily-bonus-info { flex: 1; }
+    .daily-bonus-title { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px; color: #1a1a1a; margin-bottom: 2px; }
+    .daily-bonus-desc  { font-size: 12px; color: #6b7280; }
+    .daily-bonus-timer { font-size: 11px; color: #10b981; font-weight: 700; margin-top: 2px; }
+    .daily-bonus-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
+    .daily-bonus-badge.available { background: #fef3c7; color: #d97706; }
+    .daily-bonus-badge.claimed   { background: #d1fae5; color: #059669; }
   </style>
 </head>
 <body>
   <!-- CONTAINER -->
   <div class="container">
+
+    <!-- DAILY BONUS -->
+    <div class="daily-bonus-card" id="dailyBonusCard" onclick="claimDailyBonus()">
+      <div class="daily-bonus-icon" id="dailyBonusIcon">🎁</div>
+      <div class="daily-bonus-info">
+        <div class="daily-bonus-title">Container Quotidien</div>
+        <div class="daily-bonus-desc" id="dailyBonusDesc">Récupère ton bonus !</div>
+        <div class="daily-bonus-timer" id="dailyBonusTimer"></div>
+      </div>
+      <div class="daily-bonus-badge available" id="dailyBonusBadge">DISPO</div>
+    </div>
+
     <!-- PROFILE HEADER -->
     <div class="profile-header">
       <div class="profile-avatar">
@@ -671,6 +712,7 @@
 
       currentUser = session.user;
       await loadProfile();
+      await checkDailyBonus();
     }
 
     async function loadProfile() {
@@ -916,6 +958,74 @@
         await sb.auth.signOut();
         window.location.href = 'index.html';
       }
+    }
+
+    // ===== DAILY BONUS =====
+    let canClaimDaily = false;
+
+    async function checkDailyBonus() {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await sb.from('daily_bonuses').select('*')
+        .eq('user_id', currentUser.id).eq('last_claim_date', today).maybeSingle();
+      const card  = document.getElementById('dailyBonusCard');
+      const badge = document.getElementById('dailyBonusBadge');
+      const desc  = document.getElementById('dailyBonusDesc');
+      if (data) {
+        canClaimDaily = false;
+        card.classList.add('claimed');
+        badge.textContent = '✓'; badge.className = 'daily-bonus-badge claimed';
+        desc.textContent = 'Reviens demain !';
+        updateDailyTimer();
+      } else {
+        canClaimDaily = true;
+        card.classList.remove('claimed');
+        badge.textContent = 'DISPO'; badge.className = 'daily-bonus-badge available';
+        desc.textContent = 'Récupère ton bonus !';
+      }
+    }
+
+    function updateDailyTimer() {
+      const now = new Date(), tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0, 0, 0, 0);
+      const diff = tomorrow - now;
+      const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+      const timer = document.getElementById('dailyBonusTimer');
+      if (timer) timer.textContent = `Prochain dans ${h}h ${m}m ${s}s`;
+      setTimeout(updateDailyTimer, 1000);
+    }
+
+    async function claimDailyBonus() {
+      if (!canClaimDaily) return;
+      const today = new Date().toISOString().split('T')[0];
+      const { data: lastClaim } = await sb.from('daily_bonuses').select('last_claim_date, streak')
+        .eq('user_id', currentUser.id).order('last_claim_date', { ascending: false }).limit(1).maybeSingle();
+      let streak = 1;
+      if (lastClaim) {
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        if (lastClaim.last_claim_date === yesterday.toISOString().split('T')[0]) streak = (lastClaim.streak || 0) + 1;
+      }
+      const reward = 100 + Math.min(streak - 1, 6) * 50 + Math.floor(Math.random() * 100);
+      await sb.from('daily_bonuses').insert({ user_id: currentUser.id, last_claim_date: today, streak });
+      const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+      await sb.from('game_stats').update({ money: (stats?.money || 0) + reward }).eq('user_id', currentUser.id);
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;';
+      overlay.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+          <div style="font-size:64px;margin-bottom:12px;">🎁</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a1a;margin-bottom:16px;letter-spacing:1px;">Container du Jour !</div>
+          <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-bottom:16px;">
+            <div style="font-size:12px;color:#92400e;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Tu as gagné</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:44px;color:#d97706;">+${reward.toLocaleString('fr-FR')}€</div>
+          </div>
+          <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">🔥 ${streak} jour${streak>1?'s':''} consécutif${streak>1?'s':''} !</div>
+          <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;">SUPER !</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+      canClaimDaily = false;
+      await checkDailyBonus();
     }
 
     init();
