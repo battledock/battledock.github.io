@@ -3,667 +3,288 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Progression - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: #ffffff;
+      background: #060814;
+      background-image:
+        radial-gradient(ellipse at 30% 20%, rgba(99,102,241,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(79,70,229,0.06) 0%, transparent 50%);
       min-height: 100vh;
-    }
-
-    /* TOPBAR */
-    /* CONTAINER */
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 16px;
-      padding-bottom: 100px;
-    }
-
-    @media (max-width: 400px) {
-      .container {
-        padding: 12px;
-        padding-bottom: 100px;
-      }
-    }
-
-    /* BOTTOM NAV */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      padding: 12px 16px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-      z-index: 100;
-    }
-
-    .bottom-nav-btn {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      padding-bottom: 40px;
       color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 24px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
-    .bottom-nav-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+    /* ===================== ÉTOILES ===================== */
+    .stars-bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+    }
+    .star {
+      position: absolute; background: white; border-radius: 50%;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    @keyframes twinkle { 0%,100%{opacity:0.8} 50%{opacity:0.2} }
+
+    /* ===================== CONTAINER ===================== */
+    .container { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; padding: 16px; }
+
+    /* ===================== BACK ===================== */
+    .back-btn {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 10px 14px;
+      color: rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif;
+      font-size: 14px; letter-spacing: 1px; cursor: pointer;
+      margin-bottom: 16px; transition: all 0.2s; width: fit-content;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.08); color: white; }
+
+    /* ===================== HERO CARD ===================== */
+    .hero-card {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      border: 1px solid rgba(99,102,241,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 60px rgba(99,102,241,0.06);
     }
 
-    .bottom-nav-btn:active {
-      transform: translateY(0);
+    .hero-card-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, #0f0c29 0%, #1a1845 50%, #0c0b20 100%);
     }
 
-    /* HERO STATS */
-    .hero-stats {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border-radius: 16px;
-      padding: 24px;
-      margin-bottom: 20px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      transition: all 0.3s;
+    /* Nœuds décoratifs en fond */
+    .hero-nodes {
+      position: absolute; inset: 0; z-index: 1; overflow: hidden;
     }
 
-    .hero-stats.green {
-      background: linear-gradient(135deg, #ec4899, #db2777);
-      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+    .hero-content {
+      position: relative; z-index: 2;
+      padding: 20px;
     }
 
-    .hero-stats.yellow {
-      background: linear-gradient(135deg, #a855f7, #9333ea);
-      box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);
-    }
-
-    .hero-stats.red {
-      background: linear-gradient(135deg, #f97316, #ea580c);
-      box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
-    }
-
-    .hero-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
+    .hero-top {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
     }
 
     .hero-avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      overflow: hidden;
-      background: white;
+      width: 60px; height: 60px; border-radius: 50%;
+      border: 2px solid rgba(165,180,252,0.4);
+      overflow: hidden; flex-shrink: 0;
+      box-shadow: 0 0 20px rgba(99,102,241,0.3);
+    }
+    .hero-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .hero-info { flex: 1; }
+    .hero-name { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:white; }
+    .hero-grade { font-size:11px; color:#a5b4fc; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+
+    .hero-level-badge {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:42px; color:#a5b4fc; letter-spacing:2px; line-height:1;
+      text-shadow: 0 0 20px rgba(165,180,252,0.5);
+    }
+    .hero-level-lbl { font-size:9px; color:rgba(165,180,252,0.4); text-transform:uppercase; letter-spacing:2px; text-align:right; }
+
+    .hero-xp { margin-bottom: 0; }
+    .hero-xp-label { display:flex; justify-content:space-between; font-size:10px; color:rgba(255,255,255,0.35); margin-bottom:6px; font-weight:600; }
+    .hero-xp-track { height:5px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+    .hero-xp-fill { height:100%; background:linear-gradient(90deg,#4f46e5,#a5b4fc); border-radius:3px; transition:width 0.6s ease; box-shadow:0 0 10px rgba(99,102,241,0.6); }
+
+    /* ===================== SKILL TREE ===================== */
+    .skill-section {
+      margin-bottom: 16px;
     }
 
-    .hero-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .section-title {
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px;
+      color:rgba(255,255,255,0.25); text-transform:uppercase;
+      margin-bottom:12px; display:flex; align-items:center; gap:8px;
+    }
+    .section-title::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
+
+    .skill-tree-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 20px;
+      position: relative; overflow: hidden;
     }
 
-    .hero-info {
-      flex: 1;
-      margin-left: 16px;
-    }
-
-    .hero-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .hero-grade {
-      font-size: 14px;
-      opacity: 0.9;
-      font-weight: 600;
-    }
-
-    .hero-level {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      letter-spacing: 2px;
-    }
-
-    .xp-progress {
-      margin-top: 16px;
-    }
-
-    .xp-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      margin-bottom: 8px;
-      opacity: 0.9;
-    }
-
-    .xp-bar {
-      height: 12px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .xp-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #10b981, #059669);
-      border-radius: 6px;
-      transition: width 0.5s ease;
-    }
-
-    /* STATS GRID */
+    /* ===================== STATS GRID ===================== */
     .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
+      display: grid; grid-template-columns: repeat(2,1fr);
+      gap: 8px; margin-bottom: 16px;
     }
 
     .stat-card {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 20px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 16px 14px;
+      display: flex; flex-direction: column; gap: 4px;
+      position: relative; overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg, #4f46e5, #818cf8);
+      opacity: 0.5;
+    }
+
+    .stat-icon { font-size: 22px; margin-bottom: 2px; }
+    .stat-value { font-family:'Bebas Neue',sans-serif; font-size:22px; color:white; letter-spacing:1px; line-height:1; }
+    .stat-label { font-size:10px; color:rgba(255,255,255,0.3); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
+
+    /* ===================== STREAKS ===================== */
+    .streaks-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:16px; }
+
+    .streak-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 14px 10px;
       text-align: center;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
     }
+    .streak-icon { font-size:24px; margin-bottom:6px; }
+    .streak-value { font-family:'Bebas Neue',sans-serif; font-size:26px; color:#a5b4fc; letter-spacing:1px; }
+    .streak-label { font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; font-weight:700; }
 
-    .stat-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
+    /* ===================== UNLOCKS ===================== */
+    .unlock-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 
-    .stat-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 28px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-    }
-
-    .stat-label {
-      font-size: 13px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-
-    /* SECTION */
-    .section-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-      margin-bottom: 12px;
-      margin-top: 24px;
-    }
-
-    .section-title:first-of-type {
-      margin-top: 0;
-    }
-
-    /* UNLOCKS */
-    .unlocks-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    @media (max-width: 400px) {
-      .unlocks-list {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
-    }
-
-    .unlock-card {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
+    .unlock-item {
+      display:flex; align-items:center; gap:12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      transition: all 0.3s;
-      min-height: 140px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    @media (max-width: 400px) {
-      .unlock-card {
-        padding: 12px;
-        min-height: 120px;
-      }
-    }
-
-    .unlock-card.unlocked {
-      border-color: #10b981;
-      background: #f0fdf4;
-    }
-
-    .unlock-card.locked {
-      opacity: 0.6;
-    }
-
-    .unlock-icon {
-      font-size: 40px;
-      margin-bottom: 8px;
-    }
-
-    @media (max-width: 400px) {
-      .unlock-icon {
-        font-size: 32px;
-        margin-bottom: 6px;
-      }
-    }
-
-    .unlock-card.locked .unlock-icon {
-      filter: grayscale(100%);
-    }
-
-    .unlock-info {
-      width: 100%;
-    }
-
-    .unlock-title {
-      font-weight: 700;
-      font-size: 13px;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-      line-height: 1.2;
-    }
-
-    @media (max-width: 400px) {
-      .unlock-title {
-        font-size: 12px;
-      }
-    }
-
-    .unlock-requirement {
-      font-size: 10px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-
-    @media (max-width: 400px) {
-      .unlock-requirement {
-        font-size: 9px;
-      }
-    }
-
-    .unlock-status {
-      font-size: 16px;
-      margin-top: 8px;
-    }
-
-    /* ACHIEVEMENTS */
-    .achievements-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    @media (max-width: 400px) {
-      .achievements-list {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 8px;
-      }
-    }
-
-    .achievement {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      min-height: 140px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    @media (max-width: 400px) {
-      .achievement {
-        padding: 12px;
-        min-height: 120px;
-      }
-    }
-
-    .achievement.unlocked {
-      border-color: #10b981;
-      background: #f0fdf4;
-    }
-
-    .achievement.locked {
-      opacity: 0.6;
-    }
-
-    .achievement-icon {
-      font-size: 40px;
-      margin-bottom: 8px;
-    }
-
-    @media (max-width: 400px) {
-      .achievement-icon {
-        font-size: 32px;
-        margin-bottom: 6px;
-      }
-    }
-
-    .achievement.locked .achievement-icon {
-      filter: grayscale(100%);
-    }
-
-    .achievement-info {
-      width: 100%;
-    }
-
-    .achievement-title {
-      font-weight: 700;
-      font-size: 13px;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-      line-height: 1.2;
-    }
-
-    @media (max-width: 400px) {
-      .achievement-title {
-        font-size: 12px;
-      }
-    }
-
-    .achievement-desc {
-      font-size: 10px;
-      color: #6b7280;
-    }
-
-    @media (max-width: 400px) {
-      .achievement-desc {
-        font-size: 9px;
-      }
-    }
-
-    .achievement-status {
-      font-size: 16px;
-      margin-top: 8px;
-    }
-
-    /* LOADING */
-    /* OBJECTIVES */
-    .objectives-container {
-      background: white;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 24px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-    .objective-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      background: #f9fafb;
+      padding: 12px 14px;
       transition: all 0.2s;
     }
 
-    .objective-item.incomplete {
-      opacity: 0.6;
-    }
+    .unlock-item.unlocked { border-color: rgba(99,102,241,0.25); background: rgba(99,102,241,0.06); }
 
-    .objective-checkbox {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: #10b981;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      flex-shrink: 0;
-    }
+    .unlock-icon { font-size:22px; flex-shrink:0; }
+    .unlock-info { flex:1; }
+    .unlock-title { font-size:13px; font-weight:700; color:white; }
+    .unlock-req { font-size:11px; color:rgba(255,255,255,0.35); margin-top:2px; }
+    .unlock-status { font-size:16px; flex-shrink:0; }
 
-    .objective-item.incomplete .objective-checkbox {
-      background: #e5e7eb;
-      color: #9ca3af;
-    }
+    /* ===================== ACHIEVEMENTS ===================== */
+    .achieve-list { display:flex; flex-direction:column; gap:8px; }
 
-    .objective-info {
-      flex: 1;
-    }
-
-    .objective-name {
-      font-weight: 600;
-      font-size: 14px;
-      color: #1a1a1a;
-      margin-bottom: 2px;
-    }
-
-    .objective-progress {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .objectives-reward {
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .reward-icon {
-      font-size: 24px;
-    }
-
-    .reward-text {
-      font-size: 13px;
-      color: #6b7280;
-    }
-
-    .reward-value {
-      font-weight: 700;
-      color: #10b981;
-    }
-
-    /* STREAKS */
-    .streaks-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    @media (max-width: 400px) {
-      .streaks-grid {
-        gap: 8px;
-      }
-    }
-
-    .streak-card {
-      background: white;
+    .achieve-item {
+      display:flex; align-items:center; gap:12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 12px;
-      padding: 20px 16px;
-      text-align: center;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 12px 14px;
     }
 
-    @media (max-width: 400px) {
-      .streak-card {
-        padding: 16px 12px;
-      }
-    }
+    .achieve-item.unlocked { border-color: rgba(251,191,36,0.25); background: rgba(251,191,36,0.05); }
+    .achieve-item.locked { opacity: 0.5; }
 
-    .streak-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-    }
-
-    @media (max-width: 400px) {
-      .streak-icon {
-        font-size: 28px;
-        margin-bottom: 6px;
-      }
-    }
-
-    .streak-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 32px;
-      color: #3b82f6;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    @media (max-width: 400px) {
-      .streak-value {
-        font-size: 28px;
-      }
-    }
-
-    .streak-label {
-      font-size: 11px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-
-    @media (max-width: 400px) {
-      .streak-label {
-        font-size: 10px;
-      }
-    }
-
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #6b7280;
-    }
+    .achieve-icon { font-size:22px; flex-shrink:0; }
+    .achieve-info { flex:1; }
+    .achieve-title { font-size:13px; font-weight:700; color:white; }
+    .achieve-desc { font-size:11px; color:rgba(255,255,255,0.35); margin-top:2px; }
+    .achieve-status { font-size:16px; flex-shrink:0; }
   </style>
 </head>
 <body>
-  <!-- CONTAINER -->
+
+  <!-- Étoiles fond -->
+  <div class="stars-bg" id="starsBg"></div>
+
   <div class="container">
-    <!-- HERO STATS -->
-    <div class="hero-stats">
-      <div class="hero-row">
-        <div class="hero-avatar">
-          <img src="avatar-default.png" alt="Avatar" id="heroAvatar">
-        </div>
-        <div class="hero-info">
-          <div class="hero-name" id="heroName">Docker</div>
-          <div class="hero-grade" id="heroGrade">Docker Occasionnel</div>
-        </div>
-        <div class="hero-level" id="heroLevel">1</div>
+
+    <div class="back-btn" onclick="window.location.href='game.html'">← RETOUR</div>
+
+    <!-- HERO CARD -->
+    <div class="hero-card">
+      <div class="hero-card-bg"></div>
+      <div class="hero-nodes">
+        <svg id="heroNodesSvg" width="100%" height="100%" style="position:absolute;inset:0;opacity:0.25"></svg>
       </div>
-      
-      <div class="xp-progress">
-        <div class="xp-label">
-          <span>Progression vers niveau <span id="nextLevel">2</span></span>
-          <span id="xpProgress">0 / 50 XP</span>
+      <div class="hero-content">
+        <div class="hero-top">
+          <div class="hero-avatar"><img src="avatar-default.png" id="heroAvatar" alt="avatar"></div>
+          <div class="hero-info">
+            <div class="hero-name" id="heroName">...</div>
+            <div class="hero-grade" id="heroGrade">Docker Occasionnel</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="hero-level-badge" id="heroLevel">1</div>
+            <div class="hero-level-lbl">NIV</div>
+          </div>
         </div>
-        <div class="xp-bar">
-          <div class="xp-fill" id="xpFill" style="width: 0%"></div>
+        <div class="hero-xp">
+          <div class="hero-xp-label">
+            <span>Niveau <span id="heroCurrentLvl">1</span> → <span id="heroNextLvl">2</span></span>
+            <span id="heroXpText">0 / 500 XP</span>
+          </div>
+          <div class="hero-xp-track"><div class="hero-xp-fill" id="heroXpFill" style="width:0%"></div></div>
         </div>
       </div>
     </div>
 
-    <!-- STATS GRID -->
+    <!-- SKILL TREE -->
+    <div class="skill-section">
+      <div class="section-title">⚡ Arbre de compétences</div>
+      <div class="skill-tree-card">
+        <svg id="skillSvg" viewBox="0 0 440 160" width="100%" style="display:block;"></svg>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="section-title">📊 Statistiques</div>
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon">💰</div>
-        <div class="stat-value" id="totalMoney">0</div>
+        <div class="stat-value" id="totalMoney">0€</div>
         <div class="stat-label">Argent total</div>
       </div>
-      
       <div class="stat-card">
         <div class="stat-icon">⭐</div>
         <div class="stat-value" id="totalXp">0</div>
         <div class="stat-label">XP total</div>
       </div>
-      
       <div class="stat-card">
         <div class="stat-icon">🎮</div>
         <div class="stat-value" id="gamesPlayed">0</div>
         <div class="stat-label">Parties jouées</div>
       </div>
-      
       <div class="stat-card">
         <div class="stat-icon">🏆</div>
         <div class="stat-value" id="achievements">0</div>
-        <div class="stat-label">Succès débloqués</div>
+        <div class="stat-label">Succès</div>
       </div>
     </div>
 
     <!-- STREAKS -->
     <div class="section-title">🔥 Séries actives</div>
     <div class="streaks-grid">
-      <div class="streak-card">
-        <div class="streak-icon">🔥</div>
-        <div class="streak-value" id="dailyStreak">0</div>
-        <div class="streak-label">jours consécutifs</div>
-      </div>
-      
-      <div class="streak-card">
-        <div class="streak-icon">⭐</div>
-        <div class="streak-value" id="winStreak">0</div>
-        <div class="streak-label">parties réussies</div>
-      </div>
-      
-      <div class="streak-card">
-        <div class="streak-icon">💰</div>
-        <div class="streak-value" id="moneyStreak">0</div>
-        <div class="streak-label">sessions >100€</div>
-      </div>
+      <div class="streak-card"><div class="streak-icon">🔥</div><div class="streak-value" id="dailyStreak">0</div><div class="streak-label">jours consécutifs</div></div>
+      <div class="streak-card"><div class="streak-icon">⭐</div><div class="streak-value" id="winStreak">0</div><div class="streak-label">victoires</div></div>
+      <div class="streak-card"><div class="streak-icon">💰</div><div class="streak-value" id="moneyStreak">0</div><div class="streak-label">sessions +100€</div></div>
     </div>
 
-    <!-- UNLOCKS BY GRADE -->
-    <div class="section-title">Déblocages par grade</div>
-    <div class="unlocks-list" id="unlocksList">
-      <div class="loading">Chargement...</div>
-    </div>
+    <!-- DÉBLOCAGES -->
+    <div class="section-title">🔓 Déblocages par niveau</div>
+    <div class="unlock-list" id="unlockList"></div>
 
-    <!-- ACHIEVEMENTS -->
-    <div class="section-title">Succès</div>
-    <div class="achievements-list" id="achievementsList">
-      <div class="loading">Chargement...</div>
-    </div>
+    <!-- SUCCÈS -->
+    <div class="section-title">🏅 Succès</div>
+    <div class="achieve-list" id="achieveList"></div>
+
   </div>
 
   <script>
@@ -674,252 +295,283 @@
 
     let currentUser = null;
 
-    // Liste des déblocages par grade/niveau
+    // ===========================
+    // ÉTOILES
+    // ===========================
+    const starsBg = document.getElementById('starsBg');
+    for (let i = 0; i < 60; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      const size = 0.5 + Math.random() * 1.5;
+      s.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*4}s;animation-duration:${2+Math.random()*3}s;opacity:${0.3+Math.random()*0.5}`;
+      starsBg.appendChild(s);
+    }
+
+    // ===========================
+    // XP SYSTEM
+    // ===========================
+    function getXpRequired(level) {
+      if (level <= 10) return level * 500;
+      if (level <= 25) return level * 1000;
+      if (level <= 50) return level * 2000;
+      return level * 4000;
+    }
+
+    function getGrade(level) {
+      if (level <= 4)  return 'Docker Occasionnel';
+      if (level <= 14) return 'Docker';
+      if (level <= 29) return 'Docker Mensuel';
+      if (level <= 49) return 'Contre-Maître';
+      if (level <= 79) return 'Chef de Quai';
+      return 'Magnat du Port';
+    }
+
+    // ===========================
+    // SKILL TREE SVG
+    // ===========================
+    const NODES = [
+      { id:'n0', x:40,  y:80, minLevel:1,  icon:'⚓', label:'Docker Occasionnel', size:14 },
+      { id:'n1', x:110, y:40, minLevel:5,  icon:'⭐', label:'Docker',              size:12 },
+      { id:'n2', x:110, y:120,minLevel:5,  icon:'💪', label:'Gants Niv.1',         size:11 },
+      { id:'n3', x:190, y:40, minLevel:10, icon:'🔥', label:'Docker Mensuel',      size:12 },
+      { id:'n4', x:190, y:120,minLevel:10, icon:'👦', label:'Apprenti',            size:11 },
+      { id:'n5', x:270, y:60, minLevel:15, icon:'⚡', label:'Contre-Maître',       size:12 },
+      { id:'n6', x:270, y:120,minLevel:15, icon:'📊', label:'XP Bonus',            size:11 },
+      { id:'n7', x:350, y:80, minLevel:30, icon:'👑', label:'Chef de Quai',        size:13 },
+      { id:'n8', x:410, y:80, minLevel:50, icon:'🏆', label:'Magnat',              size:14 },
+    ];
+
+    const EDGES = [
+      ['n0','n1'],['n0','n2'],
+      ['n1','n3'],['n2','n4'],
+      ['n3','n5'],['n4','n6'],
+      ['n5','n7'],['n6','n7'],
+      ['n7','n8'],
+    ];
+
+    function renderSkillTree(level) {
+      const svg = document.getElementById('skillSvg');
+      svg.innerHTML = '';
+
+      // Defs
+      const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+      defs.innerHTML = `
+        <filter id="nodeGlow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="activeGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#818cf8"/><stop offset="100%" stop-color="#4f46e5"/></radialGradient>
+        <radialGradient id="lockedGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f0c29"/></radialGradient>
+      `;
+      svg.appendChild(defs);
+
+      // Edges
+      EDGES.forEach(([fromId, toId]) => {
+        const from = NODES.find(n=>n.id===fromId);
+        const to   = NODES.find(n=>n.id===toId);
+        const fromUnlocked = level >= from.minLevel;
+        const toUnlocked   = level >= to.minLevel;
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+        line.setAttribute('stroke', fromUnlocked && toUnlocked ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.06)');
+        line.setAttribute('stroke-width', fromUnlocked && toUnlocked ? '1.5' : '1');
+        if (fromUnlocked && toUnlocked) {
+          line.setAttribute('stroke-dasharray', '0');
+        } else {
+          line.setAttribute('stroke-dasharray', '4 4');
+        }
+        svg.appendChild(line);
+      });
+
+      // Nodes
+      NODES.forEach(node => {
+        const unlocked = level >= node.minLevel;
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+
+        // Glow ring si unlocked
+        if (unlocked) {
+          const ring = document.createElementNS('http://www.w3.org/2000/svg','circle');
+          ring.setAttribute('cx', node.x); ring.setAttribute('cy', node.y);
+          ring.setAttribute('r', node.size + 6);
+          ring.setAttribute('fill', 'rgba(99,102,241,0.1)');
+          g.appendChild(ring);
+        }
+
+        // Cercle principal
+        const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        circle.setAttribute('cx', node.x); circle.setAttribute('cy', node.y);
+        circle.setAttribute('r', node.size);
+        circle.setAttribute('fill', unlocked ? 'url(#activeGrad)' : 'url(#lockedGrad)');
+        circle.setAttribute('stroke', unlocked ? 'rgba(165,180,252,0.6)' : 'rgba(255,255,255,0.08)');
+        circle.setAttribute('stroke-width', unlocked ? '1.5' : '1');
+        if (unlocked) circle.setAttribute('filter', 'url(#nodeGlow)');
+        g.appendChild(circle);
+
+        // Icône
+        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+        text.setAttribute('x', node.x); text.setAttribute('y', node.y + 5);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', Math.round(node.size * 0.9));
+        text.setAttribute('fill', unlocked ? 'white' : 'rgba(255,255,255,0.2)');
+        text.textContent = unlocked ? node.icon : '🔒';
+        g.appendChild(text);
+
+        // Label
+        const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+        label.setAttribute('x', node.x); label.setAttribute('y', node.y + node.size + 12);
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('font-size', '7');
+        label.setAttribute('fill', unlocked ? 'rgba(165,180,252,0.7)' : 'rgba(255,255,255,0.12)');
+        label.setAttribute('font-family', 'Inter, sans-serif');
+        label.textContent = node.label;
+        g.appendChild(label);
+
+        svg.appendChild(g);
+      });
+    }
+
+    // ===========================
+    // UNLOCK & ACHIEVEMENTS
+    // ===========================
     const unlocks = [
-      { id: 'docker_occasionnel', icon: '💼', title: 'Docker Occasionnel', requirement: 'Niveau 1', level: 1 },
-      { id: 'avatar_default', icon: '👤', title: 'Avatar Défaut', requirement: 'Niveau 1', level: 1 },
-      { id: 'docker_grade', icon: '⚓', title: 'Grade Docker', requirement: 'Niveau 5', level: 5 },
-      { id: 'avatar_level5', icon: '🖼️', title: 'Avatar Docker', requirement: 'Niveau 5', level: 5 },
-      { id: 'charger_camions', icon: '🚚', title: 'Métier : Docker', requirement: 'Niveau 5 - Grade Docker', level: 5 },
-      { id: 'avatar_level10', icon: '🖼️', title: 'Avatar Expérimenté', requirement: 'Niveau 10', level: 10 },
-      { id: 'organiser_quai', icon: '🏗️', title: 'Métier : Organiser Quai', requirement: 'Niveau 10', level: 10 },
-      { id: 'docker_mensuel', icon: '📅', title: 'Grade Docker Mensuel', requirement: 'Niveau 15', level: 15 },
-      { id: 'avatar_level15', icon: '🖼️', title: 'Avatar Docker Mensuel', requirement: 'Niveau 15', level: 15 },
-      { id: 'chef_equipe', icon: '👔', title: 'Grade Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
-      { id: 'avatar_level30', icon: '🖼️', title: 'Avatar Chef d\'Équipe', requirement: 'Niveau 30', level: 30 },
-      { id: 'compagnie', icon: '🏢', title: 'Créer sa Compagnie', requirement: 'Niveau 30', level: 30 },
-      { id: 'contremaitre', icon: '👑', title: 'Grade Contremaître', requirement: 'Niveau 50', level: 50 },
-      { id: 'avatar_level50', icon: '🖼️', title: 'Avatar Contremaître', requirement: 'Niveau 50', level: 50 },
-      { id: 'exclusive_features', icon: '⚡', title: 'Fonctionnalités exclusives', requirement: 'Niveau 50', level: 50 },
-      { id: 'avatar_millionaire', icon: '💰', title: 'Avatar Millionnaire', requirement: '1,000,000€ possédés', level: 0, special: 'money' },
-      { id: 'avatar_completionist', icon: '🏆', title: 'Avatar Perfectionniste', requirement: 'Tous les succès débloqués', level: 0, special: 'achievements' }
+      { icon:'💼', title:'Docker Occasionnel', req:'Niveau 1', level:1 },
+      { icon:'⚓', title:'Grade Docker', req:'Niveau 5', level:5 },
+      { icon:'📅', title:'Grade Docker Mensuel', req:'Niveau 15', level:15 },
+      { icon:'🏗️', title:'Contre-Maître', req:'Niveau 30', level:30 },
+      { icon:'🏢', title:'Créer sa Compagnie', req:'Niveau 30', level:30 },
+      { icon:'👑', title:'Chef de Quai', req:'Niveau 50', level:50 },
+      { icon:'⚡', title:'Fonctionnalités exclusives', req:'Niveau 50', level:50 },
+      { icon:'💰', title:'Avatar Millionnaire', req:'1 000 000€ possédés', level:0, special:'money' },
     ];
 
-    // Liste des succès (ULTRA-DIFFICILES)
     const achievements = [
-      { id: 'first_10_games', icon: '🎮', title: 'Première expérience', desc: 'Joue 10 parties', condition: (stats) => stats.gamesPlayed >= 10 },
-      { id: 'level_15', icon: '⭐', title: 'Docker confirmé', desc: 'Atteins le niveau 15', condition: (stats) => stats.level >= 15 },
-      { id: 'level_25', icon: '🌟', title: 'Docker expérimenté', desc: 'Atteins le niveau 25', condition: (stats) => stats.level >= 25 },
-      { id: 'level_40', icon: '💫', title: 'Chef respecté', desc: 'Atteins le niveau 40', condition: (stats) => stats.level >= 40 },
-      { id: 'rich_1000', icon: '💰', title: 'Capitaliste', desc: 'Possède 1,000€', condition: (stats) => stats.money >= 1000 },
-      { id: 'rich_5000', icon: '💎', title: 'Riche docker', desc: 'Possède 5,000€', condition: (stats) => stats.money >= 5000 },
-      { id: 'rich_25000', icon: '👑', title: 'Magnat du port', desc: 'Possède 25,000€', condition: (stats) => stats.money >= 25000 },
-      { id: 'xp_5000', icon: '🔥', title: 'Grindeur', desc: 'Accumule 5,000 XP total', condition: (stats) => stats.totalXp >= 5000 },
-      { id: 'xp_15000', icon: '⚡', title: 'Travailleur acharné', desc: 'Accumule 15,000 XP total', condition: (stats) => stats.totalXp >= 15000 },
-      { id: 'xp_50000', icon: '💥', title: 'Légende du dock', desc: 'Accumule 50,000 XP total', condition: (stats) => stats.totalXp >= 50000 },
-      { id: 'games_100', icon: '🎯', title: 'Régulier', desc: 'Joue 100 parties', condition: (stats) => stats.gamesPlayed >= 100 },
-      { id: 'games_500', icon: '🔄', title: 'Accro', desc: 'Joue 500 parties', condition: (stats) => stats.gamesPlayed >= 500 },
-      { id: 'games_1000', icon: '🏅', title: 'Vétéran du port', desc: 'Joue 1,000 parties', condition: (stats) => stats.gamesPlayed >= 1000 },
-      { id: 'level_50', icon: '👑', title: 'Contremaître ultime', desc: 'Atteins le niveau MAX (50)', condition: (stats) => stats.level >= 50 },
-      { id: 'completionist', icon: '🌟', title: 'Perfectionniste', desc: 'Débloque tous les autres succès', condition: (stats) => stats.allOtherAchievements >= 14 }
+      { icon:'🎮', title:'Première expérience', desc:'Joue 10 parties', condition:(s)=>s.gamesPlayed>=10 },
+      { icon:'⭐', title:'Docker confirmé', desc:'Atteins le niveau 15', condition:(s)=>s.level>=15 },
+      { icon:'🌟', title:'Docker expérimenté', desc:'Atteins le niveau 25', condition:(s)=>s.level>=25 },
+      { icon:'💫', title:'Chef respecté', desc:'Atteins le niveau 40', condition:(s)=>s.level>=40 },
+      { icon:'💰', title:'Capitaliste', desc:'Possède 1 000€', condition:(s)=>s.money>=1000 },
+      { icon:'💎', title:'Riche docker', desc:'Possède 5 000€', condition:(s)=>s.money>=5000 },
+      { icon:'👑', title:'Magnat du port', desc:'Possède 25 000€', condition:(s)=>s.money>=25000 },
+      { icon:'🔥', title:'Grindeur', desc:'Accumule 5 000 XP', condition:(s)=>s.totalXp>=5000 },
+      { icon:'⚡', title:'Travailleur acharné', desc:'Accumule 15 000 XP', condition:(s)=>s.totalXp>=15000 },
+      { icon:'💥', title:'Légende du dock', desc:'Accumule 50 000 XP', condition:(s)=>s.totalXp>=50000 },
+      { icon:'🎯', title:'Régulier', desc:'Joue 100 parties', condition:(s)=>s.gamesPlayed>=100 },
+      { icon:'🏅', title:'Vétéran du port', desc:'Joue 500 parties', condition:(s)=>s.gamesPlayed>=500 },
+      { icon:'👑', title:'Contremaître ultime', desc:'Atteins le niveau 50', condition:(s)=>s.level>=50 },
     ];
 
+    // ===========================
+    // INIT
+    // ===========================
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-
+      if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
       await loadProgression();
     }
 
     async function loadProgression() {
-      // Charger profil
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('username, avatar_url, background_color')
-        .eq('user_id', currentUser.id)
-        .single();
+      const [profileRes, statsRes] = await Promise.all([
+        sb.from('profiles').select('username, avatar_url').eq('user_id', currentUser.id).single(),
+        sb.from('game_stats').select('*').eq('user_id', currentUser.id).single()
+      ]);
 
-      // Charger stats
-      const { data: stats } = await sb
-        .from('game_stats')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
-
+      const profile = profileRes.data;
+      const stats   = statsRes.data;
       if (!profile || !stats) return;
 
-      // Appliquer la couleur au header hero-stats
-      const heroStats = document.querySelector('.hero-stats');
-      const color = profile.background_color || 'blue';
-      
-      if (color === 'green') {
-        heroStats.classList.add('green');
-      } else if (color === 'yellow') {
-        heroStats.classList.add('yellow');
-      } else if (color === 'red') {
-        heroStats.classList.add('red');
-      }
+      const level = stats.level || 1;
+      const xp    = stats.xp   || 0;
+      const xpNeeded = getXpRequired(level);
+      const pct = Math.min((xp / xpNeeded) * 100, 100);
 
-      // Hero header
+      // Hero
       document.getElementById('heroAvatar').src = profile.avatar_url;
-      document.getElementById('heroName').textContent = profile.username;
-      document.getElementById('heroGrade').textContent = stats.grade;
-      document.getElementById('heroLevel').textContent = stats.level;
+      document.getElementById('heroName').textContent   = profile.username;
+      document.getElementById('heroGrade').textContent  = getGrade(level);
+      document.getElementById('heroLevel').textContent  = level;
+      document.getElementById('heroCurrentLvl').textContent = level;
+      document.getElementById('heroNextLvl').textContent    = level + 1;
+      document.getElementById('heroXpText').textContent = `${xp} / ${xpNeeded} XP`;
+      document.getElementById('heroXpFill').style.width = pct + '%';
 
-      // XP Progress
-      const xpNeeded = stats.level * stats.level * 50;
-      const xpPercent = Math.min((stats.xp / xpNeeded) * 100, 100);
-      document.getElementById('nextLevel').textContent = stats.level + 1;
-      document.getElementById('xpProgress').textContent = `${stats.xp} / ${xpNeeded.toLocaleString('fr-FR')} XP`;
-      document.getElementById('xpFill').style.width = xpPercent + '%';
+      // Nœuds héro en fond
+      renderHeroNodes(level);
+
+      // Skill tree
+      renderSkillTree(level);
 
       // Stats
-      document.getElementById('totalMoney').textContent = stats.money.toLocaleString('fr-FR') + '€';
-      
-      // Calcul XP total (approximatif basé sur niveau)
       let totalXp = 0;
-      for (let i = 1; i < stats.level; i++) {
-        totalXp += i * i * 50;
-      }
-      totalXp += stats.xp;
-      document.getElementById('totalXp').textContent = totalXp.toLocaleString('fr-FR');
+      for (let i = 1; i < level; i++) totalXp += getXpRequired(i);
+      totalXp += xp;
 
-      // Compter les vraies parties jouées depuis game_sessions
-      let gamesCount = 0;
+      document.getElementById('totalMoney').textContent = (stats.money||0).toLocaleString('fr-FR') + '€';
+      document.getElementById('totalXp').textContent    = totalXp.toLocaleString('fr-FR');
+
+      // Parties jouées
       try {
-        const { data: sessions, error } = await sb
-          .from('game_sessions')
-          .select('id', { count: 'exact', head: false })
-          .eq('user_id', currentUser.id);
-        
-        gamesCount = sessions ? sessions.length : 0;
-        document.getElementById('gamesPlayed').textContent = gamesCount;
-      } catch (error) {
-        console.error('Erreur comptage parties:', error);
-        document.getElementById('gamesPlayed').textContent = '0';
-      }
-      
-      // Streaks (RÉELS)
-      try {
-        const { data: streaks } = await sb
-          .from('user_streaks')
-          .select('*')
-          .eq('user_id', currentUser.id)
-          .single();
+        const { data: sessions } = await sb.from('game_sessions').select('id').eq('user_id', currentUser.id);
+        document.getElementById('gamesPlayed').textContent = sessions?.length || 0;
+      } catch { document.getElementById('gamesPlayed').textContent = '0'; }
 
-        if (streaks) {
-          document.getElementById('dailyStreak').textContent = streaks.daily_login_streak || 0;
-          document.getElementById('winStreak').textContent = streaks.win_streak || 0;
-          document.getElementById('moneyStreak').textContent = streaks.money_streak || 0;
-        } else {
-          document.getElementById('dailyStreak').textContent = 0;
-          document.getElementById('winStreak').textContent = 0;
-          document.getElementById('moneyStreak').textContent = 0;
-        }
-      } catch (error) {
-        console.log('Streaks non disponibles:', error);
-        document.getElementById('dailyStreak').textContent = 0;
-        document.getElementById('winStreak').textContent = 0;
-        document.getElementById('moneyStreak').textContent = 0;
-      }
-      
-      // Achievements
-      const playerStats = {
-        level: stats.level,
-        money: stats.money,
-        totalXp: totalXp,
-        gamesPlayed: gamesCount,
-        allOtherAchievements: 0
-      };
+      const playerStats = { level, money: stats.money||0, totalXp, gamesPlayed: parseInt(document.getElementById('gamesPlayed').textContent) };
 
-      const unlockedCount = achievements.filter(a => {
-        if (a.id === 'completionist') {
-          // Pour le succès completionist, compter tous les autres succès
-          playerStats.allOtherAchievements = achievements.filter(ach => 
-            ach.id !== 'completionist' && ach.condition(playerStats)
-          ).length;
-        }
-        return a.condition(playerStats);
-      }).length;
-      
+      const unlockedCount = achievements.filter(a => a.condition(playerStats)).length;
       document.getElementById('achievements').textContent = `${unlockedCount}/${achievements.length}`;
 
-      renderUnlocks(playerStats);
-      renderAchievements(playerStats);
+      // Streaks
+      try {
+        const { data: streaks } = await sb.from('user_streaks').select('*').eq('user_id', currentUser.id).single();
+        document.getElementById('dailyStreak').textContent = streaks?.daily_login_streak || 0;
+        document.getElementById('winStreak').textContent   = streaks?.win_streak || 0;
+        document.getElementById('moneyStreak').textContent = streaks?.money_streak || 0;
+      } catch { ['dailyStreak','winStreak','moneyStreak'].forEach(id => document.getElementById(id).textContent = '0'); }
+
+      // Unlocks
+      const ulList = document.getElementById('unlockList');
+      ulList.innerHTML = unlocks.map(u => {
+        const isUnlocked = u.special === 'money' ? playerStats.money >= 1000000 : playerStats.level >= u.level;
+        return `<div class="unlock-item ${isUnlocked?'unlocked':''}">
+          <div class="unlock-icon">${u.icon}</div>
+          <div class="unlock-info"><div class="unlock-title">${u.title}</div><div class="unlock-req">${u.req}</div></div>
+          <div class="unlock-status">${isUnlocked?'✅':'🔒'}</div>
+        </div>`;
+      }).join('');
+
+      // Achievements
+      const achList = document.getElementById('achieveList');
+      achList.innerHTML = achievements.map(a => {
+        const isUnlocked = a.condition(playerStats);
+        return `<div class="achieve-item ${isUnlocked?'unlocked':'locked'}">
+          <div class="achieve-icon">${a.icon}</div>
+          <div class="achieve-info"><div class="achieve-title">${a.title}</div><div class="achieve-desc">${a.desc}</div></div>
+          <div class="achieve-status">${isUnlocked?'🏅':'🔒'}</div>
+        </div>`;
+      }).join('');
     }
 
-    function renderUnlocks(playerStats) {
-      const list = document.getElementById('unlocksList');
-      list.innerHTML = '';
-
-      unlocks.forEach(unlock => {
-        let unlocked = false;
-        
-        if (unlock.special === 'money') {
-          unlocked = playerStats.money >= 1000000;
-        } else if (unlock.special === 'achievements') {
-          unlocked = playerStats.allOtherAchievements >= 14;
-        } else {
-          unlocked = playerStats.level >= unlock.level;
-        }
-        
-        const div = document.createElement('div');
-        div.className = `unlock-card ${unlocked ? 'unlocked' : 'locked'}`;
-        div.innerHTML = `
-          <div class="unlock-icon">${unlock.icon}</div>
-          <div class="unlock-info">
-            <div class="unlock-title">${unlock.title}</div>
-            <div class="unlock-requirement">${unlock.requirement}</div>
-          </div>
-          <div class="unlock-status">${unlocked ? '✓' : '🔒'}</div>
-        `;
-        
-        list.appendChild(div);
+    function renderHeroNodes(level) {
+      const svg = document.getElementById('heroNodesSvg');
+      const w = 500, h = 140;
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      const pts = [[60,70],[140,30],[140,110],[230,50],[230,90],[320,70],[400,40],[400,100]];
+      const edges = [[0,1],[0,2],[1,3],[2,4],[3,5],[4,5],[5,6],[5,7]];
+      edges.forEach(([a,b]) => {
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1',pts[a][0]); line.setAttribute('y1',pts[a][1]);
+        line.setAttribute('x2',pts[b][0]); line.setAttribute('y2',pts[b][1]);
+        line.setAttribute('stroke','rgba(99,102,241,0.3)'); line.setAttribute('stroke-width','1');
+        svg.appendChild(line);
+      });
+      pts.forEach((p,i) => {
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx',p[0]); c.setAttribute('cy',p[1]); c.setAttribute('r','5');
+        c.setAttribute('fill', i < Math.ceil(level/10) ? 'rgba(99,102,241,0.6)' : 'rgba(99,102,241,0.15)');
+        c.setAttribute('stroke','rgba(165,180,252,0.3)'); c.setAttribute('stroke-width','1');
+        svg.appendChild(c);
       });
     }
-
-    function renderAchievements(playerStats) {
-      const list = document.getElementById('achievementsList');
-      list.innerHTML = '';
-
-      achievements.forEach(achievement => {
-        const unlocked = achievement.condition(playerStats);
-        
-        const div = document.createElement('div');
-        div.className = `achievement ${unlocked ? 'unlocked' : 'locked'}`;
-        div.innerHTML = `
-          <div class="achievement-icon">${achievement.icon}</div>
-          <div class="achievement-info">
-            <div class="achievement-title">${achievement.title}</div>
-            <div class="achievement-desc">${achievement.desc}</div>
-          </div>
-          <div class="achievement-status">${unlocked ? '✓' : '🔒'}</div>
-        `;
-        
-        list.appendChild(div);
-      });
-    }
-
-    function goBack() {
-      window.location.href = 'game.html';
-    }
-
-    // Effet scroll
-    window.addEventListener('scroll', () => {
-      const topbar = document.querySelector('.topbar');
-      if (window.pageYOffset > 10) {
-        topbar.classList.add('scrolled');
-      } else {
-        topbar.classList.remove('scrolled');
-      }
-    });
 
     init();
   </script>
-
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="bottom-nav-btn" onclick="window.location.href='game.html'">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-      <span>Retour à l'accueil</span>
-    </button>
-  </div>
 </body>
 </html>
