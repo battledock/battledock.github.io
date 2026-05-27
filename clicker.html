@@ -373,7 +373,7 @@
       // Gain argent
       const baseGain = 1 + (upgrades.earn_per_click || 0);
       const xpMult = upgrades.xp_multiplier ? (1 + upgrades.xp_multiplier * 0.5) : 1;
-      const gain = baseGain * combo;
+      const gain = Math.floor(baseGain * combo);
 
       sessionMoney += gain;
       totalMoney += gain;
@@ -435,15 +435,18 @@
 
     async function save() {
       if (!currentUser) return;
-      await sb.from('game_stats').update({
-        money: totalMoney,
-        xp: currentXp,
+      const { error } = await sb.from('game_stats').update({
+        money: Math.floor(totalMoney),
+        xp: Math.floor(currentXp),
         level: currentLevel,
         grade: getGrade(currentLevel)
       }).eq('user_id', currentUser.id);
+      if (error) console.error('Save error:', error);
     }
 
     async function goBack() {
+      // Forcer la sauvegarde et attendre confirmation
+      document.querySelector('.header-btn').textContent = '💾 Sauvegarde...';
       await save();
       window.location.href = 'game.html';
     }

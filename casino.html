@@ -397,31 +397,31 @@
 
     <!-- GAMES GRID -->
     <div class="games-grid">
-      <a href="roulette.html" class="game-card dark">
+      <a href="javascript:void(0)" onclick="goToGame('roulette.html')" class="game-card dark">
         <div class="game-icon">🎡</div>
         <div class="game-name">ROULETTE</div>
         <div class="game-desc">La roue du capitaine</div>
       </a>
 
-      <a href="blackjack.html" class="game-card dark">
+      <a href="javascript:void(0)" onclick="goToGame('blackjack.html')" class="game-card dark">
         <div class="game-icon">♠️</div>
         <div class="game-name">BLACKJACK</div>
         <div class="game-desc">Le 21 classique</div>
       </a>
 
-      <a href="slots.html" class="game-card featured">
+      <a href="javascript:void(0)" onclick="goToGame('slots.html')" class="game-card featured">
         <div class="game-icon">🎰</div>
         <div class="game-name">SLOTS</div>
         <div class="game-desc">Machines du dock</div>
       </a>
 
-      <a href="crash.html" class="game-card">
+      <a href="javascript:void(0)" onclick="goToGame('crash.html')" class="game-card">
         <div class="game-icon">🚀</div>
         <div class="game-name">CRASH</div>
         <div class="game-desc">Fusée portuaire</div>
       </a>
 
-      <a href="higher-lower.html" class="game-card">
+      <a href="javascript:void(0)" onclick="goToGame('higher-lower.html')" class="game-card">
         <div class="game-icon">🃏</div>
         <div class="game-name">HIGHER/LOWER</div>
         <div class="game-desc">Cartes de la chance</div>
@@ -593,6 +593,41 @@
           }
         </style>
       `;
+    }
+
+
+    // ===== XP SYSTEM =====
+    function getXpRequiredCasino(level) {
+      if (level <= 10) return level * 200;
+      if (level <= 25) return level * 400;
+      if (level <= 50) return level * 700;
+      return level * 1200;
+    }
+
+    function getGradeCasino(level) {
+      if (level <= 4) return 'Docker Occasionnel';
+      if (level <= 14) return 'Docker';
+      if (level <= 29) return 'Docker Mensuel';
+      if (level <= 49) return 'Contre-Maître';
+      if (level <= 79) return 'Chef de Quai';
+      return 'Magnat du Port';
+    }
+
+    async function goToGame(url) {
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { window.location.href = url; return; }
+        const userId = session.user.id;
+        const { data: stats } = await sb.from('game_stats').select('xp, level').eq('user_id', userId).single();
+        if (stats) {
+          let xp = (stats.xp || 0) + 1;
+          let level = stats.level || 1;
+          const xpNeeded = getXpRequiredCasino(level);
+          if (xp >= xpNeeded) { xp -= xpNeeded; level++; }
+          await sb.from('game_stats').update({ xp, level, grade: getGradeCasino(level) }).eq('user_id', userId);
+        }
+      } catch(e) { console.error('XP casino error:', e); }
+      window.location.href = url;
     }
 
     async function init() {
