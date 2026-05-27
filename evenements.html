@@ -2,240 +2,195 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Événements - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(180deg, #0a0f1e 0%, #0d1b35 100%);
       min-height: 100vh;
+      color: white;
       padding: 16px;
-      padding-bottom: 80px;
+      padding-bottom: 90px;
     }
 
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-    }
+    .container { max-width: 500px; margin: 0 auto; }
 
+    /* HEADER */
     .header {
-      text-align: center;
-      margin-bottom: 24px;
-      padding-top: 8px;
+      background: linear-gradient(135deg, #0d2347, #1a3a6b);
+      border: 2px solid rgba(59,130,246,0.3);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
+
+    .back-btn {
+      width: 40px; height: 40px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: white; transition: all 0.2s;
+    }
+    .back-btn:hover { background: rgba(255,255,255,0.15); }
+
+    .header-center { text-align: center; flex: 1; }
 
     .header-title {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 36px;
-      color: white;
-      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      font-size: 28px;
       letter-spacing: 2px;
-      margin-bottom: 8px;
+      color: #60a5fa;
+      text-shadow: 0 0 20px rgba(96,165,250,0.4);
     }
 
-    .header-subtitle {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 14px;
-      font-weight: 600;
+    .header-subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 2px; letter-spacing: 1px; }
+
+    .header-icon { font-size: 36px; }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: rgba(255,255,255,0.3);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      margin-top: 4px;
     }
 
-    .events-grid {
-      display: grid;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
+    /* EVENT CARD */
     .event-card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      transition: all 0.3s;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
       position: relative;
       overflow: hidden;
+      transition: all 0.2s;
     }
+
+    .event-card:hover { background: rgba(255,255,255,0.06); }
 
     .event-card::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #667eea, #764ba2);
+      top: 0; left: 0; right: 0;
+      height: 3px;
     }
 
-    .event-card.exclusive::before {
-      background: linear-gradient(90deg, #fbbf24, #f59e0b);
-    }
+    .event-card.daily::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .event-card.milestone::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .event-card.exclusive::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .event-card.claimed { opacity: 0.5; }
 
-    .event-card.claimed {
-      opacity: 0.6;
-      background: #f9fafb;
-    }
-
-    .event-card.claimed::before {
-      background: #9ca3af;
-    }
-
-    .exclusive-badge {
+    .event-badge {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 11px;
+      top: 12px; right: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
     }
 
-    .event-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
+    .event-badge.daily { background: rgba(59,130,246,0.2); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .event-badge.milestone { background: rgba(245,158,11,0.2); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .event-badge.exclusive { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+
+    .event-top { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 
     .event-icon {
-      font-size: 48px;
+      font-size: 44px;
       flex-shrink: 0;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
     }
 
-    .event-card.claimed .event-icon {
-      filter: grayscale(100%) opacity(0.5);
-    }
+    .event-card.claimed .event-icon { filter: grayscale(1) opacity(0.5); }
 
-    .event-info {
-      flex: 1;
-      min-width: 0;
-    }
+    .event-info { flex: 1; min-width: 0; padding-right: 50px; }
 
     .event-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      color: #1a1a1a;
+      font-size: 20px;
       letter-spacing: 1px;
-      margin-bottom: 4px;
-      line-height: 1.2;
-    }
-
-    .event-card.claimed .event-name {
-      color: #6b7280;
-    }
-
-    .event-description {
-      font-size: 13px;
-      color: #6b7280;
-      line-height: 1.4;
-    }
-
-    .event-rewards {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
-    }
-
-    .reward-badge {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      padding: 8px 14px;
+      margin-bottom: 4px;
+      line-height: 1.1;
+    }
+
+    .event-desc { font-size: 12px; color: rgba(255,255,255,0.45); line-height: 1.4; }
+
+    /* REWARDS */
+    .event-rewards { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+    .reward-pill {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
       border-radius: 20px;
       font-size: 13px;
       font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
     }
 
-    .event-card.exclusive .reward-badge {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
-    }
+    .reward-pill.money { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .reward-pill.diamonds { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+    .reward-pill.trophies { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+    .reward-pill.special { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
 
-    .event-card.claimed .reward-badge {
-      background: #e5e7eb;
-      color: #6b7280;
-      box-shadow: none;
-    }
+    /* PROGRESS */
+    .event-progress { margin-bottom: 14px; }
 
-    .reward-icon {
-      font-size: 16px;
-    }
-
-    .event-progress {
-      margin-bottom: 16px;
-    }
-
-    .progress-label {
+    .progress-header {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 6px;
     }
 
-    .progress-current {
-      color: #667eea;
-    }
+    .progress-current { color: #60a5fa; font-weight: 700; }
+    .progress-target { color: rgba(255,255,255,0.3); }
 
-    .progress-target {
-      color: #6b7280;
-    }
-
-    .progress-bar-bg {
-      background: #e5e7eb;
-      height: 8px;
-      border-radius: 8px;
+    .progress-track {
+      height: 6px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 3px;
       overflow: hidden;
     }
 
-    .progress-bar-fill {
-      background: linear-gradient(90deg, #667eea, #764ba2);
+    .progress-fill {
       height: 100%;
-      border-radius: 8px;
-      transition: width 0.5s ease;
+      border-radius: 3px;
+      transition: width 0.6s ease;
     }
 
-    .event-card.exclusive .progress-bar-fill {
-      background: linear-gradient(90deg, #fbbf24, #f59e0b);
-    }
+    .event-card.daily .progress-fill { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+    .event-card.milestone .progress-fill { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .event-card.exclusive .progress-fill { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .event-card.claimed .progress-fill { background: rgba(255,255,255,0.2); }
 
-    .event-card.claimed .progress-bar-fill {
-      background: #9ca3af;
-    }
-
-    .event-actions {
-      display: flex;
-      gap: 8px;
-    }
-
+    /* BUTTON */
     .claim-btn {
-      flex: 1;
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
+      width: 100%;
+      padding: 13px;
       border: none;
-      border-radius: 12px;
-      padding: 14px 20px;
+      border-radius: 10px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
+      font-size: 17px;
       letter-spacing: 1px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
       transition: all 0.2s;
       display: flex;
       align-items: center;
@@ -243,53 +198,45 @@
       gap: 8px;
     }
 
-    .claim-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
-    }
+    .claim-btn.ready { background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+    .claim-btn.ready:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16,185,129,0.4); }
+    .claim-btn.locked { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.25); cursor: not-allowed; border: 1px solid rgba(255,255,255,0.08); }
+    .claim-btn.done { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); cursor: not-allowed; border: 1px solid rgba(255,255,255,0.08); }
 
-    .claim-btn:active {
-      transform: translateY(0);
-    }
+    /* LOADER */
+    .loader { text-align: center; padding: 60px 20px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-size: 13px; color: rgba(255,255,255,0.3); }
 
-    .claim-btn:disabled {
-      background: #e5e7eb;
-      color: #9ca3af;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .claimed-badge {
-      flex: 1;
-      background: #f3f4f6;
-      color: #6b7280;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 14px 20px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 1px;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .bottom-nav {
+    /* TOAST */
+    .toast {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #e5e7eb;
+      top: 20px; left: 50%;
+      transform: translateX(-50%);
+      background: #0d2347;
+      border: 1px solid rgba(59,130,246,0.4);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      z-index: 9999;
+      white-space: nowrap;
+      animation: toastIn 0.3s ease;
+    }
+    @keyframes toastIn { from { opacity:0; transform:translateX(-50%) translateY(-10px); } to { opacity:1; transform:translateX(-50%) translateY(0); } }
+
+    /* BOTTOM */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #1d4ed8;
       padding: 12px 16px;
-      box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.1);
       z-index: 100;
     }
 
-    .nav-btn {
+    .bottom-btn {
       width: 100%;
       max-width: 500px;
       margin: 0 auto;
@@ -297,99 +244,51 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 13px;
       color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 24px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
+      font-size: 16px;
       letter-spacing: 1px;
       cursor: pointer;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
       transition: all 0.2s;
     }
-
-    .loading {
-      text-align: center;
-      padding: 40px 20px;
-      color: white;
-      font-size: 16px;
-    }
-
-    .spinner {
-      width: 40px;
-      height: 40px;
-      margin: 0 auto 16px;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      border-top-color: white;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @media (max-width: 400px) {
-      body {
-        padding: 12px;
-        padding-bottom: 76px;
-      }
-
-      .header-title {
-        font-size: 32px;
-      }
-
-      .event-card {
-        padding: 16px;
-      }
-
-      .event-icon {
-        font-size: 40px;
-      }
-
-      .event-name {
-        font-size: 20px;
-      }
-
-      .event-description {
-        font-size: 12px;
-      }
-
-      .reward-badge {
-        padding: 6px 12px;
-        font-size: 12px;
-      }
-
-      .claim-btn, .claimed-badge {
-        padding: 12px 16px;
-        font-size: 16px;
-      }
-    }
+    .bottom-btn:hover { background: rgba(255,255,255,0.25); }
   </style>
 </head>
 <body>
   <div class="container">
+
+    <!-- HEADER -->
     <div class="header">
-      <div class="header-title">🎉 ÉVÉNEMENTS</div>
-      <div class="header-subtitle">Récompenses quotidiennes et exclusives</div>
+      <button class="back-btn" onclick="window.location.href='game.html'">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="header-center">
+        <div class="header-title">Événements</div>
+        <div class="header-subtitle">Récompenses & Objectifs</div>
+      </div>
+      <div class="header-icon">🎯</div>
     </div>
 
-    <div id="eventsContainer" class="events-grid">
-      <div class="loading">
-        <div class="spinner"></div>
-        <div>Chargement des événements...</div>
-      </div>
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div class="loader-text">Chargement...</div>
     </div>
+
+    <!-- EVENTS -->
+    <div id="eventsContainer"></div>
+
   </div>
 
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="window.location.href='game.html'">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-      <span>Retour</span>
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar">
+    <button class="bottom-btn" onclick="window.location.href='game.html'">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      RETOUR AU LOBBY
     </button>
   </div>
 
@@ -400,294 +299,255 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
+    let userProfile = null;
+    let userStats = null;
 
-    const events = [
-      {
-        id: 'exclusive_launch_avatar',
-        name: 'Avatar Exclusif Lancement',
-        description: 'Atteins le niveau 5 pour débloquer',
-        icon: '⭐',
-        type: 'exclusive',
-        rewards: [
-          { icon: '👑', value: 1, label: 'Avatar Exclusif', type: 'avatar' }
-        ],
-        target: 5,
-        getProgress: async (userId) => {
-          const { data } = await sb
-            .from('game_stats')
-            .select('level')
-            .eq('user_id', userId)
-            .single();
-          return data?.level || 0;
-        }
-      },
+    const EVENTS = [
+      // ===== QUOTIDIENS =====
       {
         id: 'daily_login',
-        name: 'Connexion Quotidienne',
-        description: 'Connecte-toi chaque jour',
+        type: 'daily',
+        name: 'Connexion du Jour',
+        desc: 'Connecte-toi une fois aujourd\'hui',
         icon: '📅',
-        type: 'daily',
-        rewards: [
-          { icon: '💰', value: 100, label: '100€', type: 'money' }
-        ],
+        rewards: [{ type: 'money', icon: '💰', label: '+100€', value: 100 }],
         target: 1,
-        getProgress: async (userId) => {
-          const today = new Date().toISOString().split('T')[0];
-          const { data } = await sb
-            .from('profiles')
-            .select('daily_contracts_date')
-            .eq('user_id', userId)
-            .single();
-          return data?.daily_contracts_date === today ? 1 : 0;
-        }
+        getProgress: async () => 1 // Toujours accompli si connecté
       },
       {
-        id: 'play_3_games',
-        name: 'Joueur Actif',
-        description: 'Joue 3 parties dans la journée',
-        icon: '🎮',
+        id: 'daily_clicker_100',
         type: 'daily',
-        rewards: [
-          { icon: '💰', value: 250, label: '250€', type: 'money' },
-          { icon: '💎', value: 2, label: '2', type: 'diamonds' }
-        ],
-        target: 3,
-        getProgress: async (userId) => {
-          const today = new Date().toISOString().split('T')[0];
-          const { data } = await sb
-            .from('profiles')
-            .select('daily_contracts_count, daily_contracts_date')
-            .eq('user_id', userId)
-            .single();
-          if (data?.daily_contracts_date === today) {
-            return Math.min(data.daily_contracts_count || 0, 3);
-          }
-          return 0;
+        name: 'Docker du Jour',
+        desc: 'Clique 100 fois sur le container',
+        icon: '📦',
+        rewards: [{ type: 'money', icon: '💰', label: '+500€', value: 500 }, { type: 'diamonds', icon: '💎', label: '+2', value: 2 }],
+        target: 100,
+        getProgress: async () => {
+          const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
+          // Proxy approximatif : on utilise les clics du jour via sessions
+          return Math.min(userStats?.daily_clicks || 0, 100);
         }
       },
       {
-        id: 'earn_500',
+        id: 'daily_casino',
+        type: 'daily',
+        name: 'Parieur du Port',
+        desc: 'Joue 5 parties au casino',
+        icon: '🎰',
+        rewards: [{ type: 'money', icon: '💰', label: '+250€', value: 250 }, { type: 'diamonds', icon: '💎', label: '+3', value: 3 }],
+        target: 5,
+        getProgress: async () => {
+          const today = new Date().toISOString().split('T')[0];
+          const { data } = await sb.from('casino_history').select('id').eq('user_id', currentUser.id).gte('created_at', today + 'T00:00:00');
+          return Math.min(data?.length || 0, 5);
+        }
+      },
+      {
+        id: 'daily_earn_1000',
+        type: 'daily',
         name: 'Entrepreneur',
-        description: 'Gagne 500€ en une journée',
+        desc: 'Gagne 1 000€ aujourd\'hui',
         icon: '💵',
-        type: 'daily',
-        rewards: [
-          { icon: '💰', value: 200, label: '200€', type: 'money' },
-          { icon: '💎', value: 3, label: '3', type: 'diamonds' }
-        ],
-        target: 500,
-        getProgress: async (userId) => {
-          const today = new Date().toISOString().split('T')[0];
-          const { data } = await sb
-            .from('game_sessions')
-            .select('money_earned')
-            .eq('user_id', userId)
-            .gte('created_at', today + 'T00:00:00');
-          
-          if (!data) return 0;
-          return data.reduce((sum, session) => sum + (session.money_earned || 0), 0);
+        rewards: [{ type: 'money', icon: '💰', label: '+300€', value: 300 }, { type: 'diamonds', icon: '💎', label: '+2', value: 2 }],
+        target: 1000,
+        getProgress: async () => {
+          return Math.min(userStats?.daily_earned || 0, 1000);
+        }
+      },
+
+      // ===== JALONS =====
+      {
+        id: 'milestone_10k',
+        type: 'milestone',
+        name: 'Premier Patron',
+        desc: 'Accumule 10 000€ au total',
+        icon: '💼',
+        rewards: [{ type: 'money', icon: '💰', label: '+1 000€', value: 1000 }, { type: 'diamonds', icon: '💎', label: '+10', value: 10 }, { type: 'trophies', icon: '🏆', label: '+1', value: 1 }],
+        target: 10000,
+        getProgress: async () => Math.min(userStats?.money || 0, 10000)
+      },
+      {
+        id: 'milestone_100k',
+        type: 'milestone',
+        name: 'Millionnaire',
+        desc: 'Accumule 100 000€ au total',
+        icon: '💰',
+        rewards: [{ type: 'money', icon: '💰', label: '+5 000€', value: 5000 }, { type: 'diamonds', icon: '💎', label: '+25', value: 25 }, { type: 'trophies', icon: '🏆', label: '+2', value: 2 }],
+        target: 100000,
+        getProgress: async () => Math.min(userStats?.money || 0, 100000)
+      },
+      {
+        id: 'milestone_1m',
+        type: 'milestone',
+        name: 'Magnat du Port',
+        desc: 'Accumule 1 000 000€ au total',
+        icon: '🏦',
+        rewards: [{ type: 'money', icon: '💰', label: '+50 000€', value: 50000 }, { type: 'diamonds', icon: '💎', label: '+100', value: 100 }, { type: 'trophies', icon: '🏆', label: '+5', value: 5 }],
+        target: 1000000,
+        getProgress: async () => Math.min(userStats?.money || 0, 1000000)
+      },
+
+      // ===== EXCLUSIFS LANCEMENT =====
+      {
+        id: 'exclusive_launch_week',
+        type: 'exclusive',
+        name: 'Semaine de Lancement',
+        desc: 'Exclusif joueurs fondateurs · Disponible jusqu\'au 31 mai 2026',
+        icon: '🚀',
+        rewards: [{ type: 'money', icon: '💰', label: '+2 000€', value: 2000 }, { type: 'diamonds', icon: '💎', label: '+20', value: 20 }, { type: 'trophies', icon: '🏆', label: '+3', value: 3 }],
+        target: 1,
+        getProgress: async () => {
+          const deadline = new Date('2026-05-31T23:59:59');
+          return new Date() <= deadline ? 1 : 0;
         }
       },
       {
-        id: 'weekly_millionaire',
-        name: 'Millionnaire',
-        description: 'Gagne 10 000€ au total',
-        icon: '🏆',
-        type: 'milestone',
-        rewards: [
-          { icon: '💰', value: 1000, label: '1000€', type: 'money' },
-          { icon: '💎', value: 10, label: '10', type: 'diamonds' },
-          { icon: '🏆', value: 2, label: '2', type: 'trophies' }
-        ],
-        target: 10000,
-        getProgress: async (userId) => {
-          const { data } = await sb
-            .from('game_stats')
-            .select('money')
-            .eq('user_id', userId)
-            .single();
-          return data?.money || 0;
+        id: 'exclusive_first_casino_win',
+        type: 'exclusive',
+        name: 'Première Victoire',
+        desc: 'Gagne ta première partie au casino',
+        icon: '🎲',
+        rewards: [{ type: 'diamonds', icon: '💎', label: '+5', value: 5 }, { type: 'special', icon: '⭐', label: 'Badge Chanceux', value: 0 }],
+        target: 1,
+        getProgress: async () => {
+          const { data } = await sb.from('casino_wins').select('id').eq('user_id', currentUser.id).limit(1);
+          return data?.length > 0 ? 1 : 0;
         }
       }
     ];
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
+      if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-      await loadEvents();
+
+      const [profileRes, statsRes] = await Promise.all([
+        sb.from('profiles').select('events_claimed, diamonds, trophies').eq('user_id', currentUser.id).single(),
+        sb.from('game_stats').select('money').eq('user_id', currentUser.id).single()
+      ]);
+
+      userProfile = profileRes.data;
+      userStats = statsRes.data;
+
+      await renderEvents();
+      document.getElementById('loader').style.display = 'none';
     }
 
-    async function loadEvents() {
+    async function renderEvents() {
       const container = document.getElementById('eventsContainer');
-      container.innerHTML = '';
-
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('events_claimed')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      const claimedEvents = profile?.events_claimed || [];
+      const claimedEvents = userProfile?.events_claimed || [];
       const today = new Date().toISOString().split('T')[0];
 
-      for (const event of events) {
-        let eventId = event.id;
-        if (event.type === 'daily') {
-          eventId = `${event.id}_${today}`;
-        }
-        
-        const isClaimed = claimedEvents.includes(eventId);
-        const progress = await event.getProgress(currentUser.id);
-        const isComplete = progress >= event.target;
-        const percentage = Math.min((progress / event.target) * 100, 100);
+      // Grouper par type
+      const groups = [
+        { label: '📅 Quotidiens', filter: e => e.type === 'daily' },
+        { label: '🏆 Jalons', filter: e => e.type === 'milestone' },
+        { label: '🚀 Exclusifs Lancement', filter: e => e.type === 'exclusive' }
+      ];
 
-        const card = document.createElement('div');
-        card.className = `event-card ${isClaimed ? 'claimed' : ''} ${event.type === 'exclusive' ? 'exclusive' : ''}`;
-        
-        card.innerHTML = `
-          ${event.type === 'exclusive' ? '<div class="exclusive-badge">Exclusif</div>' : ''}
-          
-          <div class="event-header">
-            <div class="event-icon">${event.icon}</div>
-            <div class="event-info">
-              <div class="event-name">${event.name}</div>
-              <div class="event-description">${event.description}</div>
-            </div>
-          </div>
+      let html = '';
 
-          <div class="event-rewards">
-            ${event.rewards.map(r => `
-              <div class="reward-badge">
-                <span class="reward-icon">${r.icon}</span>
-                <span>${r.label}</span>
+      for (const group of groups) {
+        const groupEvents = EVENTS.filter(group.filter);
+        html += `<div class="section-title">${group.label}</div>`;
+
+        for (const event of groupEvents) {
+          const eventId = event.type === 'daily' ? `${event.id}_${today}` : event.id;
+          const isClaimed = claimedEvents.includes(eventId);
+          const progress = await event.getProgress();
+          const isComplete = progress >= event.target;
+          const pct = Math.min((progress / event.target) * 100, 100);
+
+          const rewardPills = event.rewards.map(r =>
+            `<div class="reward-pill ${r.type}">${r.icon} ${r.label}</div>`
+          ).join('');
+
+          let btnClass = 'locked', btnContent = '🔒 Incomplet';
+          if (isClaimed) { btnClass = 'done'; btnContent = '✅ Récupéré'; }
+          else if (isComplete) { btnClass = 'ready'; btnContent = '🎁 Récupérer'; }
+
+          html += `
+            <div class="event-card ${event.type} ${isClaimed ? 'claimed' : ''}">
+              <div class="event-badge ${event.type}">${event.type === 'daily' ? 'Quotidien' : event.type === 'milestone' ? 'Jalon' : 'Exclusif'}</div>
+              <div class="event-top">
+                <div class="event-icon">${event.icon}</div>
+                <div class="event-info">
+                  <div class="event-name">${event.name}</div>
+                  <div class="event-desc">${event.desc}</div>
+                </div>
               </div>
-            `).join('')}
-          </div>
-
-          <div class="event-progress">
-            <div class="progress-label">
-              <span class="progress-current">${progress.toLocaleString('fr-FR')}</span>
-              <span class="progress-target">/ ${event.target.toLocaleString('fr-FR')}</span>
-            </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" style="width: ${percentage}%"></div>
-            </div>
-          </div>
-
-          <div class="event-actions">
-            ${isClaimed ? `
-              <div class="claimed-badge">
-                <span>✅</span>
-                <span>Récupéré</span>
+              <div class="event-rewards">${rewardPills}</div>
+              <div class="event-progress">
+                <div class="progress-header">
+                  <span class="progress-current">${progress.toLocaleString('fr-FR')}</span>
+                  <span class="progress-target">/ ${event.target.toLocaleString('fr-FR')}</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" style="width:${pct}%"></div>
+                </div>
               </div>
-            ` : `
-              <button class="claim-btn" onclick="claimEvent('${event.id}', '${event.type}')" ${!isComplete ? 'disabled' : ''}>
-                ${isComplete ? '<span>🎁</span><span>Récupérer</span>' : '<span>🔒</span><span>Incomplet</span>'}
+              <button class="claim-btn ${btnClass}" onclick="claimEvent('${event.id}', '${event.type}')" ${btnClass !== 'ready' ? 'disabled' : ''}>
+                ${btnContent}
               </button>
-            `}
-          </div>
-        `;
-
-        container.appendChild(card);
+            </div>
+          `;
+        }
       }
+
+      container.innerHTML = html;
     }
 
     async function claimEvent(eventId, eventType) {
-      const event = events.find(e => e.id === eventId);
+      const event = EVENTS.find(e => e.id === eventId);
       if (!event) return;
 
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        let fullEventId = eventId;
-        if (eventType === 'daily') {
-          fullEventId = `${eventId}_${today}`;
-        }
+      const today = new Date().toISOString().split('T')[0];
+      const fullId = eventType === 'daily' ? `${eventId}_${today}` : eventId;
+      const claimedEvents = userProfile?.events_claimed || [];
 
-        const { data: profile } = await sb
-          .from('profiles')
-          .select('events_claimed, diamonds, trophies')
-          .eq('user_id', currentUser.id)
-          .single();
+      if (claimedEvents.includes(fullId)) { showToast('Déjà récupéré !'); return; }
 
-        const claimedEvents = profile?.events_claimed || [];
-        if (claimedEvents.includes(fullEventId)) {
-          alert('Déjà récupéré !');
-          return;
-        }
+      const progress = await event.getProgress();
+      if (progress < event.target) { showToast('Objectif pas encore atteint !'); return; }
 
-        const progress = await event.getProgress(currentUser.id);
-        if (progress < event.target) {
-          alert('Objectif pas encore atteint !');
-          return;
-        }
+      // Distribuer récompenses
+      let moneyGain = 0, diamondsGain = 0, trophiesGain = 0;
+      event.rewards.forEach(r => {
+        if (r.type === 'money') moneyGain += r.value;
+        if (r.type === 'diamonds') diamondsGain += r.value;
+        if (r.type === 'trophies') trophiesGain += r.value;
+      });
 
-        let moneyReward = 0;
-        let diamondsReward = 0;
-        let trophiesReward = 0;
-        let hasAvatar = false;
+      const profileUpdate = {
+        events_claimed: [...claimedEvents, fullId],
+        diamonds: (userProfile.diamonds || 0) + diamondsGain,
+        trophies: (userProfile.trophies || 0) + trophiesGain
+      };
 
-        event.rewards.forEach(r => {
-          if (r.type === 'money') moneyReward = r.value;
-          if (r.type === 'diamonds') diamondsReward = r.value;
-          if (r.type === 'trophies') trophiesReward = r.value;
-          if (r.type === 'avatar') hasAvatar = true;
-        });
+      await sb.from('profiles').update(profileUpdate).eq('user_id', currentUser.id);
 
-        const updates = [];
-
-        if (moneyReward > 0) {
-          const { data: stats } = await sb
-            .from('game_stats')
-            .select('money')
-            .eq('user_id', currentUser.id)
-            .single();
-
-          updates.push(
-            sb.from('game_stats').update({
-              money: (stats.money || 0) + moneyReward
-            }).eq('user_id', currentUser.id)
-          );
-        }
-
-        const profileUpdates = {
-          events_claimed: [...claimedEvents, fullEventId]
-        };
-
-        if (diamondsReward > 0) {
-          profileUpdates.diamonds = (profile.diamonds || 0) + diamondsReward;
-        }
-
-        if (trophiesReward > 0) {
-          profileUpdates.trophies = (profile.trophies || 0) + trophiesReward;
-        }
-
-        if (hasAvatar) {
-          profileUpdates.avatar_url = 'avatar-launch-event.png';
-        }
-
-        updates.push(
-          sb.from('profiles').update(profileUpdates).eq('user_id', currentUser.id)
-        );
-
-        await Promise.all(updates);
-
-        let message = 'Récompense récupérée !';
-        if (moneyReward > 0) message += `\n+${moneyReward.toLocaleString('fr-FR')}€`;
-        if (diamondsReward > 0) message += `\n+${diamondsReward}💎`;
-        if (trophiesReward > 0) message += `\n+${trophiesReward}🏆`;
-        if (hasAvatar) message += `\n👑 Avatar Exclusif débloqué !`;
-
-        alert(message);
-        await loadEvents();
-
-      } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur lors de la récupération : ' + error.message);
+      if (moneyGain > 0) {
+        await sb.from('game_stats').update({ money: (userStats.money || 0) + moneyGain }).eq('user_id', currentUser.id);
+        userStats.money = (userStats.money || 0) + moneyGain;
       }
+
+      userProfile = { ...userProfile, ...profileUpdate };
+
+      let msg = `🎉 Récupéré !`;
+      if (moneyGain) msg += ` +${moneyGain.toLocaleString('fr-FR')}€`;
+      if (diamondsGain) msg += ` +${diamondsGain}💎`;
+      if (trophiesGain) msg += ` +${trophiesGain}🏆`;
+      showToast(msg);
+
+      await renderEvents();
+    }
+
+    function showToast(msg) {
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 3000);
     }
 
     init();
