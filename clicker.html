@@ -3,576 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Docker du Port - Battle Dock</title>
+  <title>Clicker - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      overflow: hidden;
-      position: fixed;
-      inset: 0;
-      touch-action: none;
-      -webkit-user-select: none;
-    }
-
-    /* HEADER */
-    .header {
-      background: white;
-      padding: 12px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      position: relative;
-      z-index: 100;
-    }
-
-    .back-btn {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .back-btn:active {
-      transform: scale(0.95);
-    }
-
-    .shop-btn {
-      background: linear-gradient(135deg, #10b981, #059669);
-      border: none;
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex-shrink: 0;
-    }
-
-    .shop-btn:active {
-      transform: scale(0.95);
-    }
-
-    .money-display {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(18px, 5vw, 28px);
-      color: #1a1a1a;
-      letter-spacing: 1px;
-      flex-shrink: 0;
-    }
-
-    /* DOCK SCENE */
-    .dock-scene {
-      position: relative;
-      width: 100%;
-      height: calc(100vh - 52px - 80px);
-      overflow: hidden;
-      background: linear-gradient(180deg, #87ceeb 0%, #b9dceb 50%, #2b8aa6 100%);
-    }
-
-    /* Sun */
-    .sun {
-      position: absolute;
-      top: 10%;
-      right: 10%;
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 220, 150, 1) 0%, rgba(255, 220, 150, 0.6) 70%, transparent 100%);
-      pointer-events: none;
-    }
-
-    /* Mountains background */
-    .mountains {
-      position: absolute;
-      bottom: 25%;
-      width: 100%;
-      height: 20%;
-      background: linear-gradient(to bottom, transparent, #5a7a8a);
-      clip-path: polygon(0% 100%, 15% 30%, 35% 65%, 50% 20%, 70% 55%, 85% 35%, 100% 70%, 100% 100%);
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    /* Quai */
-    .quai {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      height: 25%;
-      background: linear-gradient(to bottom, #8b7355 0%, #6b5744 100%);
-      pointer-events: none;
-    }
-
-    .quai::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 8px;
-      background: #a0826d;
-    }
-
-    /* Container cliquable */
-    #container {
-      position: absolute;
-      bottom: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: clamp(200px, 50vw, 300px);
-      height: clamp(160px, 40vw, 200px);
-      cursor: pointer;
-      transition: transform 0.1s ease;
-      z-index: 10;
-      filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
-    }
-
-    #container:active {
-      transform: translateX(-50%) scale(0.95);
-    }
-
-    /* FX Overlay */
-    #fxOverlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 20;
-    }
-
-    .float-num {
-      position: absolute;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(24px, 6vw, 36px);
-      color: #fbbf24;
-      font-weight: 700;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5), 0 0 10px rgba(251, 191, 36, 0.6);
-      pointer-events: none;
-      animation: floatup 0.9s ease-out forwards;
-      z-index: 30;
-    }
-
-    @keyframes floatup {
-      0% { opacity: 1; transform: translateY(0); }
-      100% { opacity: 0; transform: translateY(-80px); }
-    }
-
-    .ripple {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(251, 191, 36, 0.4), transparent);
-      transform: translate(-50%, -50%);
-      animation: ripple 0.5s ease-out forwards;
-      pointer-events: none;
-      z-index: 25;
-    }
-
-    @keyframes ripple {
-      0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-      100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-    }
-
-    /* STATS BAR */
-    .stats-bar {
-      background: #ffffff;
-      padding: clamp(10px, 2vw, 16px);
-      display: flex;
-      justify-content: space-around;
-      gap: 8px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-    }
-
-    .stat-item {
-      text-align: center;
-      flex: 1;
-    }
-
-    .stat-icon {
-      font-size: clamp(18px, 4vw, 24px);
-      margin-bottom: 4px;
-    }
-
-    .stat-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(14px, 3.5vw, 22px);
-      color: #1a1a1a;
-      letter-spacing: 0.5px;
-    }
-
-    .stat-label {
-      font-size: clamp(8px, 2vw, 11px);
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(180deg, #87ceeb 0%, #e0f6ff 100%); min-height: 100vh; overflow: hidden; }
+    .header { background: white; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .header-btn { background: #3b82f6; border: none; color: white; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-family: 'Bebas Neue', sans-serif; font-size: 14px; }
+    .header-money { font-family: 'Bebas Neue', sans-serif; font-size: 24px; color: #10b981; }
+    .scene { display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 140px); position: relative; }
+    .container-btn { width: 150px; height: 120px; background: linear-gradient(135deg, #cc3333, #990000); border: 3px solid #8b0000; border-radius: 8px; cursor: pointer; transition: all 0.1s; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: bold; }
+    .container-btn:hover { background: linear-gradient(135deg, #dd4444, #aa1111); }
+    .container-btn:active { transform: scale(0.95); }
+    .stats-bar { background: #1a1a1a; padding: 12px 16px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; color: white; text-align: center; }
+    .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #10b981; }
+    .stat-label { font-size: 10px; color: #888; text-transform: uppercase; }
   </style>
 </head>
 <body>
   <div class="header">
-    <button class="back-btn" onclick="goBack()">← RETOUR</button>
-    <div class="money-display" id="moneyDisplay">0€</div>
-    <button class="shop-btn" onclick="goShop()">⚙️ AMÉLIORER</button>
+    <button class="header-btn" onclick="goBack()">← RETOUR</button>
+    <div class="header-money" id="headerMoney">0€</div>
+    <button class="header-btn" onclick="goShop()">⚙️ AMÉLIORER</button>
   </div>
-
-  <div class="dock-scene">
-    <div class="sun"></div>
-    <div class="mountains"></div>
-    <div class="quai"></div>
-    <svg id="container" viewBox="0 0 100 80" xmlns="http://www.w3.org/2000/svg">
-      <!-- Container rouge CMA CGM -->
-      <defs>
-        <linearGradient id="containerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" style="stop-color:#e74c3c"/>
-          <stop offset="100%" style="stop-color:#c0392b"/>
-        </linearGradient>
-      </defs>
-      
-      <!-- Corps principal -->
-      <rect x="5" y="20" width="90" height="55" fill="url(#containerGrad)" stroke="#a93226" stroke-width="1.5"/>
-      
-      <!-- Détails -->
-      <rect x="10" y="25" width="80" height="7" fill="#c0392b" opacity="0.5"/>
-      <rect x="10" y="67" width="80" height="5" fill="#a93226"/>
-      
-      <!-- Logo CMA CGM -->
-      <text x="50" y="52" font-family="Arial" font-size="10" font-weight="bold" fill="#fff" text-anchor="middle">CMA CGM</text>
-      
-      <!-- Portes -->
-      <rect x="15" y="35" width="12" height="25" fill="#2c3e50" stroke="#1a252f" stroke-width="0.8"/>
-      <rect x="38" y="35" width="12" height="25" fill="#2c3e50" stroke="#1a252f" stroke-width="0.8"/>
-      <rect x="61" y="35" width="12" height="25" fill="#2c3e50" stroke="#1a252f" stroke-width="0.8"/>
-      
-      <!-- Poignées -->
-      <circle cx="21" cy="47" r="1.5" fill="#555"/>
-      <circle cx="44" cy="47" r="1.5" fill="#555"/>
-      <circle cx="67" cy="47" r="1.5" fill="#555"/>
-      
-      <!-- Verrous -->
-      <rect x="19" y="45" width="4" height="4" fill="#888" rx="0.5"/>
-      <rect x="42" y="45" width="4" height="4" fill="#888" rx="0.5"/>
-      <rect x="65" y="45" width="4" height="4" fill="#888" rx="0.5"/>
-      
-      <!-- Coins arrondis -->
-      <rect x="5" y="20" width="90" height="55" fill="none" stroke="#8b4513" stroke-width="2" rx="4"/>
-      
-      <!-- Ombre -->
-      <ellipse cx="50" cy="78" rx="45" ry="3" fill="rgba(0,0,0,0.2)"/>
-    </svg>
-    <div id="fxOverlay"></div>
+  <div class="scene">
+    <button class="container-btn" onclick="clickContainer()">CMA CGM</button>
   </div>
-
   <div class="stats-bar">
-    <div class="stat-item">
-      <div class="stat-icon">💰</div>
-      <div class="stat-value" id="sessionMoneyDisplay">0€</div>
-      <div class="stat-label">Session</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-icon">⭐</div>
-      <div class="stat-value" id="sessionXpDisplay">0</div>
-      <div class="stat-label">XP</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-icon">🔥</div>
-      <div class="stat-value" id="comboDisplay">×1</div>
-      <div class="stat-label">Combo</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-icon">👆</div>
-      <div class="stat-value" id="clicksDisplay">0</div>
-      <div class="stat-label">Clics</div>
-    </div>
+    <div><div class="stat-value" id="sessionMoneyDisplay">0€</div><div class="stat-label">Session</div></div>
+    <div><div class="stat-value" id="comboDisplay">1x</div><div class="stat-label">Combo</div></div>
+    <div><div class="stat-value" id="cpsDisplay">0€/s</div><div class="stat-label">Gain/sec</div></div>
+    <div><div class="stat-value" id="clicksDisplay">0</div><div class="stat-label">Clics</div></div>
   </div>
-
   <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const SUPABASE_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
-    const supabaseClient = createClient(supabaseUrl, supabaseKey);
-
-    let currentUser = null;
-    let initialMoney = 0;
-    let initialXp = 0;
-    let initialLevel = 1;
-    let initialGrade = 'Docker Occasionnel';
-    
-    // État de session
-    let sessionMoney = 0;
-    let sessionXp = 0;
-    let currentLevel = 1;
-    let currentGrade = 'Docker Occasionnel';
-    let totalClicks = 0;
-    let combo = 1;
-    let lastClickTime = 0;
-    let comboResetTimeout = null;
-    let saveTimeout = null;
-
-    function getGrade(level) {
-      if (level < 5) return 'Docker Occasionnel';
-      if (level < 15) return 'Docker';
-      if (level < 30) return 'Docker Mensuel';
-      if (level < 50) return 'Contre-Maître';
-      if (level < 80) return 'Chef de Quai';
-      return 'Directeur de Compagnie';
-    }
-
-    function getXpRequired(level) {
-      if (level <= 10) {
-        return level * 100;
-      } else if (level <= 20) {
-        return level * 150;
-      } else {
-        return level * 200;
-      }
-    }
-
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null, sessionMoney = 0, totalMoney = 0, combo = 1, clicks = 0, upgrades = {};
     async function init() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) window.location.href = 'index.html';
       currentUser = session.user;
-      
-      // Charger les stats actuelles
-      const { data: stats } = await supabaseClient
-        .from('game_stats')
-        .select('money, xp, level, grade')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      if (stats) {
-        initialMoney = stats.money || 0;
-        initialXp = stats.xp || 0;
-        initialLevel = stats.level || 1;
-        initialGrade = stats.grade || getGrade(initialLevel);
-        currentLevel = initialLevel;
-        currentGrade = initialGrade;
-      }
-      
-      // Marquer le level-up comme affiché dès le démarrage
-      if ((stats?.last_levelup_shown || 0) === 0) {
-        await supabaseClient
-          .from('game_stats')
-          .update({ last_levelup_shown: initialLevel })
-          .eq('user_id', currentUser.id);
-      }
-      
+      const { data: stats } = await sb.from('game_stats').select('money, upgrades').eq('user_id', currentUser.id).single();
+      totalMoney = stats?.money || 0;
+      upgrades = stats?.upgrades || {};
       updateDisplay();
-      setupClicker();
+      setInterval(autoClick, 1000);
+      setInterval(save, 2000);
     }
-
-    function setupClicker() {
-      const container = document.getElementById('container');
-      
-      container.addEventListener('click', (e) => {
-        clickContainer(e);
-      });
-      
-      container.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        const touches = e.touches;
-        for (let i = 0; i < touches.length; i++) {
-          clickContainer({
-            clientX: touches[i].clientX,
-            clientY: touches[i].clientY
-          });
-        }
-      }, { passive: false });
-    }
-
-    function clickContainer(e) {
-      const now = Date.now();
-      const timeSinceLastClick = now - lastClickTime;
-
-      // Combo system - très lent
-      if (timeSinceLastClick < 800) {
-        combo = Math.min(2, combo + 0.01);
-      } else {
-        combo = 1;
-      }
-      
-      lastClickTime = now;
-
-      // Réinitialiser le timeout de réduction du combo
-      clearTimeout(comboResetTimeout);
-      comboResetTimeout = setTimeout(() => {
-        let tempCombo = combo;
-        const decayInterval = setInterval(() => {
-          tempCombo = Math.max(1, tempCombo - 0.05);
-          combo = tempCombo;
-          updateDisplay();
-          
-          if (tempCombo <= 1) {
-            combo = 1;
-            clearInterval(decayInterval);
-            updateDisplay();
-          }
-        }, 50);
-      }, 800);
-
-      const gain = Math.floor(1 * combo);
+    function clickContainer() {
+      clicks++;
+      const gain = (1 + (upgrades.earn_per_click || 0)) * combo;
       sessionMoney += gain;
-      sessionXp += 1;
-      totalClicks += 1;
-
-      // Vérifier level-up
-      const oldLevel = currentLevel;
-      let totalXp = initialXp + sessionXp;
-      let checkLevel = initialLevel;
-      let remainingXp = totalXp;
-      
-      // Tant qu'on a assez d'XP pour passer au level suivant
-      while (remainingXp >= getXpRequired(checkLevel)) {
-        remainingXp -= getXpRequired(checkLevel);
-        checkLevel += 1;
-      }
-      
-      currentLevel = checkLevel;
-      currentGrade = getGrade(currentLevel);
-      
-      // Si level-up, actualiser sessionXp pour ne garder que le reste
-      if (currentLevel > oldLevel) {
-        sessionXp = remainingXp;
-      }
-
-      // Vibration
-      if (navigator.vibrate) {
-        navigator.vibrate(10);
-      }
-
-      // Visual feedback
-      const overlay = document.getElementById('fxOverlay');
-      if (overlay) {
-        const oRect = overlay.getBoundingClientRect();
-        const cx = e.clientX - oRect.left;
-        const cy = e.clientY - oRect.top;
-
-        const f = document.createElement('div');
-        f.className = 'float-num';
-        f.textContent = '+' + gain + '€';
-        f.style.left = cx + 'px';
-        f.style.top = cy + 'px';
-        overlay.appendChild(f);
-        setTimeout(() => f.remove(), 950);
-
-        const r = document.createElement('div');
-        r.className = 'ripple';
-        r.style.left = cx + 'px';
-        r.style.top = cy + 'px';
-        overlay.appendChild(r);
-        setTimeout(() => r.remove(), 550);
-      }
-
+      totalMoney += gain;
+      combo = Math.min(combo + 0.01, 2);
+      setTimeout(() => combo = 1, 800);
       updateDisplay();
-      scheduleSave();
     }
-
+    function autoClick() {
+      if (upgrades.auto_clicker) {
+        sessionMoney += upgrades.auto_clicker;
+        totalMoney += upgrades.auto_clicker;
+        updateDisplay();
+      }
+    }
+    function save() {
+      sb.from('game_stats').update({ money: totalMoney }).eq('user_id', currentUser.id);
+    }
     function updateDisplay() {
-      // Header - argent total
-      document.getElementById('moneyDisplay').textContent = (initialMoney + sessionMoney).toLocaleString('fr-FR') + '€';
-
-      // Stats bar - gains session + stats temps réel
+      document.getElementById('headerMoney').textContent = totalMoney.toLocaleString('fr-FR') + '€';
       document.getElementById('sessionMoneyDisplay').textContent = sessionMoney.toLocaleString('fr-FR') + '€';
-      document.getElementById('sessionXpDisplay').textContent = sessionXp.toLocaleString('fr-FR');
-      document.getElementById('comboDisplay').textContent = '×' + combo.toFixed(1);
-      document.getElementById('clicksDisplay').textContent = totalClicks.toLocaleString('fr-FR');
+      document.getElementById('comboDisplay').textContent = combo.toFixed(1) + 'x';
+      document.getElementById('clicksDisplay').textContent = clicks;
+      document.getElementById('cpsDisplay').textContent = (upgrades.auto_clicker || 0) + '€/s';
     }
-
-    function scheduleSave() {
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
-      
-      saveTimeout = setTimeout(() => {
-        saveProgress();
-      }, 1000);
-    }
-
-    async function saveProgress() {
-      if (!currentUser) return;
-      
-      try {
-        // Ne sauvegarder que le reste de l'XP après level-up
-        await supabaseClient
-          .from('game_stats')
-          .update({
-            money: initialMoney + sessionMoney,
-            xp: sessionXp,  // Juste le reste, pas initialXp + sessionXp
-            level: currentLevel,
-            grade: currentGrade
-          })
-          .eq('user_id', currentUser.id);
-        
-        console.log('✅ Progression sauvegardée - Niveau:', currentLevel, 'XP:', sessionXp, 'Grade:', currentGrade);
-      } catch (err) {
-        console.error('❌ Erreur sauvegarde:', err);
-      }
-    }
-
-    async function goBack() {
-      await saveProgress();
-      window.location.href = 'game.html';
-    }
-
-    async function goShop() {
-      await saveProgress();
-      window.location.href = 'shop.html';
-    }
-
-    // Anti-zoom
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-    
-    let lastTouchEnd = 0;
-    document.addEventListener('touchend', e => {
-      const now = Date.now();
-      if (now - lastTouchEnd <= 300) {
-        e.preventDefault();
-      }
-      lastTouchEnd = now;
-    }, false);
-
-    // Anti-copie/cut/paste
-    document.addEventListener('copy', e => e.preventDefault());
-    document.addEventListener('cut', e => e.preventDefault());
-    document.addEventListener('paste', e => e.preventDefault());
-    document.addEventListener('contextmenu', e => e.preventDefault());
-
-    // Sauvegarde avant fermeture
-    window.addEventListener('beforeunload', () => {
-      saveProgress();
-    });
-
+    function goBack() { window.location.href = 'game.html'; }
+    function goShop() { window.location.href = 'shop.html'; }
     init();
   </script>
 </body>
