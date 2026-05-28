@@ -3,678 +3,308 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Profil - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-touch-callout:none; }
+    input { -webkit-user-select:text; user-select:text; }
 
     body {
-
-    /* Permettre la sélection dans les inputs */
-    input, textarea {
-      -webkit-user-select: text;
-      -moz-user-select: text;
-      user-select: text;
-    }
       font-family: 'Inter', sans-serif;
-      background: #ffffff;
+      background: #f2f2f7;
       min-height: 100vh;
-    }
-
-    /* CONTAINER */
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
       padding-bottom: 40px;
     }
 
-    /* PROFILE HEADER */
-    .profile-header {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border-radius: 16px;
-      padding: 32px 24px;
-      margin-bottom: 20px;
+    /* ===================== HEADER CARD ===================== */
+    .profile-card {
+      margin: 0;
+      padding: 32px 20px 28px;
       text-align: center;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
       color: white;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      transition: all 0.3s;
+      box-shadow: 0 4px 20px rgba(59,130,246,0.3);
+      transition: background 0.4s, box-shadow 0.4s;
+      position: relative;
+    }
+    .profile-card.green  { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
+    .profile-card.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 20px rgba(245,158,11,0.3); }
+    .profile-card.red    { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+
+    .back-btn {
+      position: absolute; top: 16px; left: 16px;
+      background: rgba(255,255,255,0.2); border: none;
+      border-radius: 20px; padding: 6px 14px;
+      color: white; font-size: 13px; font-weight: 600;
+      cursor: pointer;
     }
 
-    .profile-header.green {
-      background: linear-gradient(135deg, #10b981, #059669);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    .profile-avatar-wrap {
+      position: relative; width: 90px; height: 90px;
+      margin: 0 auto 14px;
     }
-
-    .profile-header.yellow {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-
-    .profile-header.red {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
-
     .profile-avatar {
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-      border: 4px solid rgba(255, 255, 255, 0.3);
-      overflow: hidden;
-      margin: 0 auto 16px;
-      background: white;
+      width: 90px; height: 90px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.4);
+      overflow: hidden; background: white;
     }
-
-    .profile-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .profile-avatar img { width:100%; height:100%; object-fit:cover; }
 
     .profile-username {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 32px;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
+      font-size: 30px; letter-spacing: 2px; margin-bottom: 4px;
+    }
+    .profile-grade { font-size: 14px; opacity: 0.85; font-weight: 600; margin-bottom: 2px; }
+    .profile-level { font-size: 13px; opacity: 0.7; margin-bottom: 16px; }
+
+    /* XP Bar */
+    .xp-bar-wrap { padding: 0 32px; }
+    .xp-bar-label { display:flex; justify-content:space-between; font-size:10px; opacity:0.7; margin-bottom:5px; }
+    .xp-bar-track { height:4px; background:rgba(255,255,255,0.25); border-radius:2px; overflow:hidden; }
+    .xp-bar-fill  { height:100%; background:white; border-radius:2px; transition:width 0.5s ease; }
+
+    /* Stats rapides */
+    .quick-stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.15);
+      padding-top: 16px; gap: 4px;
+    }
+    .qs-item { text-align: center; }
+    .qs-val { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; }
+    .qs-lbl { font-size:9px; opacity:0.65; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:1px; }
+
+    /* ===================== SECTIONS ===================== */
+    .container { padding: 20px 16px; }
+
+    .section-label {
+      font-size: 12px; font-weight: 700; color: #6b7280;
+      text-transform: uppercase; letter-spacing: 1px;
+      margin-bottom: 8px; margin-top: 24px; padding: 0 4px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .section-card {
+      background: white; border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
     }
 
-    .profile-grade {
-      font-size: 16px;
-      opacity: 0.9;
-      font-weight: 600;
-      margin-bottom: 4px;
+    /* ===================== AVATARS ===================== */
+    .avatars-scroll {
+      display: flex; gap: 12px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
     }
-
-    .profile-level {
-      font-size: 14px;
-      opacity: 0.8;
-    }
-
-    /* SECTION */
-    .section-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      letter-spacing: 1px;
-      color: #1a1a1a;
-      margin-bottom: 12px;
-      margin-top: 24px;
-    }
-
-    .section-title:first-of-type {
-      margin-top: 0;
-    }
-
-    /* INFO CARDS */
-    .info-card {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-    }
-
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0;
-      border-bottom: 1px solid #f3f4f6;
-    }
-
-    .info-row:last-child {
-      border-bottom: none;
-      padding-bottom: 0;
-    }
-
-    .info-row:first-child {
-      padding-top: 0;
-    }
-
-    .info-label {
-      font-size: 14px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-
-    .info-value {
-      font-size: 16px;
-      color: #1a1a1a;
-      font-weight: 700;
-    }
-
-    /* ACTIONS */
-    /* FAVORITE GAME */
-    .favorite-game-header {
-      margin-bottom: 16px;
-    }
-
-    .favorite-label {
-      font-size: 12px;
-      color: #6b7280;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .favorite-game-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      color: #3b82f6;
-      letter-spacing: 1px;
-    }
-
-    .game-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    .game-stat {
-      text-align: center;
-      padding: 12px;
-      background: #f9fafb;
-      border-radius: 8px;
-    }
-
-    .game-stat-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
-      color: #1a1a1a;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .game-stat-label {
-      font-size: 11px;
-      color: #6b7280;
-      font-weight: 600;
-    }
-
-    .action-list {
-      display: grid;
-      gap: 12px;
-    }
-
-    .action-btn {
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-    }
-
-    .action-btn:hover {
-      border-color: #d1d5db;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-    }
-
-    .action-btn:active {
-      transform: scale(0.98);
-    }
-
-    .action-btn.danger {
-      border-color: #fca5a5;
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent);
-    }
-
-    .action-btn.danger:hover {
-      border-color: #ef4444;
-    }
-
-    .action-icon {
-      font-size: 32px;
-    }
-
-    .action-info {
-      flex: 1;
-    }
-
-    .action-title {
-      font-weight: 700;
-      font-size: 16px;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-    }
-
-    .action-btn.danger .action-title {
-      color: #ef4444;
-    }
-
-    .action-desc {
-      font-size: 13px;
-      color: #6b7280;
-    }
-
-    .action-arrow {
-      font-size: 20px;
-      color: #9ca3af;
-    }
-
-    /* LOADING */
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #6b7280;
-    }
-
-    /* AVATARS SECTION */
-    .avatars-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
+    .avatars-scroll::-webkit-scrollbar { display: none; }
 
     .avatar-item {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      border: 3px solid #e5e7eb;
-      transition: all 0.2s;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      flex-shrink: 0; cursor: pointer;
     }
-
-    .avatar-item.locked {
-      opacity: 0.4;
-      cursor: not-allowed;
+    .avatar-img-wrap {
+      width: 58px; height: 58px; border-radius: 50%;
+      overflow: hidden; position: relative;
+      border: 2.5px solid transparent;
+      transition: border-color 0.2s;
+      background: #f3f4f6;
     }
+    .avatar-item.active .avatar-img-wrap  { border-color: #3b82f6; }
+    .avatar-item.locked .avatar-img-wrap  { opacity: 0.4; filter: grayscale(1); cursor: default; }
+    .avatar-img-wrap img { width:100%; height:100%; object-fit:cover; }
 
-    .avatar-item.active {
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    .avatar-check {
+      position: absolute; bottom: 0; right: 0;
+      width: 18px; height: 18px; background: #3b82f6;
+      border-radius: 50%; border: 2px solid white;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: white;
     }
-
-    .avatar-item:not(.locked):hover {
-      transform: scale(1.05);
-      border-color: #3b82f6;
-    }
-
-    .avatar-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
     .avatar-lock {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
-      filter: grayscale(100%);
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; border-radius: 50%;
     }
+    .avatar-lbl { font-size: 10px; color: #6b7280; font-weight: 600; }
+    .avatar-item.active .avatar-lbl { color: #3b82f6; }
 
-    .avatar-badge {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      background: #10b981;
-      color: white;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
+    /* ===================== COULEURS ===================== */
+    .colors-row {
+      display: flex; gap: 10px; padding: 14px 16px;
     }
+    .color-btn {
+      flex: 1; padding: 10px 6px; border-radius: 12px; border: 2px solid transparent;
+      cursor: pointer; transition: all 0.2s; text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+    }
+    .color-btn:disabled { opacity: 0.4; cursor: default; }
+    .color-btn.active { border-color: #1a1a1a; }
 
-    .avatar-label {
-      font-size: 11px;
-      text-align: center;
-      color: #6b7280;
-      margin-top: 4px;
-      font-weight: 600;
-    }
+    .color-dot { width: 28px; height: 28px; border-radius: 50%; }
+    .color-btn[data-color="blue"]   .color-dot { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .color-btn[data-color="green"]  .color-dot { background: linear-gradient(135deg, #10b981, #059669); }
+    .color-btn[data-color="yellow"] .color-dot { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .color-btn[data-color="red"]    .color-dot { background: linear-gradient(135deg, #ef4444, #dc2626); }
 
-    .avatar-item.locked .avatar-label {
-      opacity: 0.5;
-    }
+    .color-name  { font-size: 11px; font-weight: 700; color: #1a1a1a; }
+    .color-badge { font-size: 9px; color: #9ca3af; font-weight: 600; }
 
-    /* COLORS GRID (4 colonnes sur mobile) */
-    .colors-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
+    /* ===================== ROWS ===================== */
+    .row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background 0.15s;
     }
+    .row:last-child { border-bottom: none; }
+    .row:active { background: #f9fafb; }
 
-    .color-item {
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      border: 3px solid #e5e7eb;
-      transition: all 0.2s;
+    .row-icon {
+      width: 34px; height: 34px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
     }
+    .row-icon.blue   { background: rgba(59,130,246,0.1); }
+    .row-icon.green  { background: rgba(16,185,129,0.1); }
+    .row-icon.orange { background: rgba(245,158,11,0.1); }
+    .row-icon.red    { background: rgba(239,68,68,0.1); }
+    .row-icon.purple { background: rgba(139,92,246,0.1); }
+    .row-icon.gray   { background: rgba(107,114,128,0.1); }
 
-    .color-item.active {
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-    }
+    .row-info { flex: 1; }
+    .row-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .row-val   { font-size: 12px; color: #6b7280; margin-top: 1px; }
 
-    .color-item:not(:disabled):hover {
-      transform: scale(1.05);
-      border-color: #3b82f6;
-    }
+    .row-right { font-size: 13px; color: #9ca3af; flex-shrink: 0; }
+    .row-arrow { color: #c7c7cc; font-size: 18px; }
 
-    .color-item:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .color-item:disabled::after {
-      content: '🔒';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 24px;
-    }
-
-    /* COLOR PREVIEWS IN AVATAR STYLE */
-    .color-preview-avatar {
-      width: 100%;
-      height: 100%;
-      border-radius: 9px;
-    }
-
-    .color-preview-avatar.blue {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-    }
-
-    .color-preview-avatar.green {
-      background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .color-preview-avatar.yellow {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .color-preview-avatar.red {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    /* Disabled colors (locked) */
-    .avatar-item:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      position: relative;
-    }
-
-    .avatar-item:disabled::after {
-      content: '🔒';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-size: 32px;
-    }
-
-    /* BOTTOM NAV */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      padding: 12px 16px;
-      box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
-      z-index: 100;
-    }
-
-    .bottom-nav-btn {
-      width: 100%;
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      padding: 14px 24px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    .bottom-nav-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-    }
-
-    .bottom-nav-btn:active {
-      transform: translateY(0);
-    }
-
-    /* Padding bottom pour éviter que le contenu soit caché */
-    .container {
-      padding-bottom: 80px;
-    }
-
-    /* DAILY BONUS CARD */
-    .daily-bonus-card {
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 20px;
-      display: flex; align-items: center; gap: 14px;
-      cursor: pointer; position: relative; overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      transition: all 0.2s;
-    }
-    .daily-bonus-card::before {
-      content: ''; position: absolute; left:0; top:0; bottom:0;
-      width: 4px; background: #dc2626; border-radius: 4px 0 0 4px;
-    }
-    .daily-bonus-card.claimed::before { background: #10b981; }
-    .daily-bonus-card.claimed { opacity: 0.6; cursor: not-allowed; }
-    .daily-bonus-card:not(.claimed):active { transform: scale(0.98); }
-    .daily-bonus-icon { font-size: 36px; flex-shrink: 0; }
-    .daily-bonus-card.claimed .daily-bonus-icon { filter: grayscale(1) opacity(0.6); }
-    .daily-bonus-info { flex: 1; }
-    .daily-bonus-title { font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 1px; color: #1a1a1a; margin-bottom: 2px; }
-    .daily-bonus-desc  { font-size: 12px; color: #6b7280; }
-    .daily-bonus-timer { font-size: 11px; color: #10b981; font-weight: 700; margin-top: 2px; }
-    .daily-bonus-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; flex-shrink: 0; }
-    .daily-bonus-badge.available { background: #fef3c7; color: #d97706; }
-    .daily-bonus-badge.claimed   { background: #d1fae5; color: #059669; }
+    .row-danger .row-title { color: #ef4444; }
   </style>
 </head>
 <body>
-  <!-- CONTAINER -->
+
+  <!-- CARD PROFIL -->
+  <div class="profile-card" id="profileCard">
+    <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar"><img src="avatar-default.png" id="profileAvatar"></div>
+    </div>
+    <div class="profile-username" id="profileUsername">...</div>
+    <div class="profile-grade"    id="profileGrade">Docker Occasionnel</div>
+    <div class="profile-level"    id="profileLevel">Niveau 1</div>
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-label">
+        <span id="xpLabel">0 XP</span>
+        <span id="xpNext">500 XP</span>
+      </div>
+      <div class="xp-bar-track"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="quick-stats">
+      <div class="qs-item">
+        <div class="qs-val" id="qsMoney">0€</div>
+        <div class="qs-lbl">Argent</div>
+      </div>
+      <div class="qs-item">
+        <div class="qs-val" id="qsLevel">1</div>
+        <div class="qs-lbl">Niveau</div>
+      </div>
+      <div class="qs-item">
+        <div class="qs-val" id="qsTrophies">0</div>
+        <div class="qs-lbl">Trophées</div>
+      </div>
+    </div>
+  </div>
+
   <div class="container">
 
-    <!-- DAILY BONUS -->
-    <div class="daily-bonus-card" id="dailyBonusCard" onclick="claimDailyBonus()">
-      <div class="daily-bonus-icon" id="dailyBonusIcon">🎁</div>
-      <div class="daily-bonus-info">
-        <div class="daily-bonus-title">Container Quotidien</div>
-        <div class="daily-bonus-desc" id="dailyBonusDesc">Récupère ton bonus !</div>
-        <div class="daily-bonus-timer" id="dailyBonusTimer"></div>
-      </div>
-      <div class="daily-bonus-badge available" id="dailyBonusBadge">DISPO</div>
-    </div>
-
-    <!-- PROFILE HEADER -->
-    <div class="profile-header">
-      <div class="profile-avatar">
-        <img src="avatar-default.png" alt="Avatar" id="profileAvatar">
-      </div>
-      <div class="profile-username" id="profileUsername">Docker</div>
-      <div class="profile-grade" id="profileGrade">Docker Occasionnel</div>
-      <div class="profile-level" id="profileLevel">Niveau 1</div>
-    </div>
-
     <!-- AVATARS -->
-    <div class="section-title">Avatars disponibles</div>
-    <div class="avatars-grid" id="avatarsGrid">
-      <div class="loading">Chargement...</div>
+    <div class="section-label">Avatars</div>
+    <div class="section-card">
+      <div class="avatars-scroll" id="avatarsGrid"></div>
     </div>
 
-    <!-- BACKGROUND COLOR CUSTOMIZATION -->
-    <div class="section-title">Couleur fond</div>
-    <div class="colors-grid">
-      <button class="color-item" id="colorBlue" onclick="selectBackgroundColor('blue')">
-        <div class="color-preview-avatar blue"></div>
-        <div class="avatar-badge">Défaut</div>
-        <div class="avatar-label">Bleu</div>
-      </button>
-      <button class="color-item" id="colorGreen" onclick="selectBackgroundColor('green')">
-        <div class="color-preview-avatar green"></div>
-        <div class="avatar-badge">Niv. 5</div>
-        <div class="avatar-label">Vert</div>
-      </button>
-      <button class="color-item" id="colorYellow" onclick="selectBackgroundColor('yellow')">
-        <div class="color-preview-avatar yellow"></div>
-        <div class="avatar-badge">Niv. 10</div>
-        <div class="avatar-label">Jaune</div>
-      </button>
-      <button class="color-item" id="colorRed" onclick="selectBackgroundColor('red')">
-        <div class="color-preview-avatar red"></div>
-        <div class="avatar-badge">Niv. 30</div>
-        <div class="avatar-label">Rouge</div>
-      </button>
-    </div>
-
-    <!-- FAVORITE GAME -->
-    <div class="section-title">Statistiques par jeu</div>
-    <div class="info-card">
-      <div class="favorite-game-header">
-        <div class="favorite-label">Ton jeu préféré</div>
-        <div class="favorite-game-name" id="favoriteGameName">Docker Occasionnel</div>
-      </div>
-      <div class="game-stats-grid">
-        <div class="game-stat">
-          <div class="game-stat-value" id="favoriteGamesPlayed">0</div>
-          <div class="game-stat-label">parties jouées</div>
-        </div>
-        <div class="game-stat">
-          <div class="game-stat-value" id="favoriteTotalMoney">0€</div>
-          <div class="game-stat-label">argent gagné</div>
-        </div>
-        <div class="game-stat">
-          <div class="game-stat-value" id="favoriteAverage">0€</div>
-          <div class="game-stat-label">moyenne/partie</div>
-        </div>
-        <div class="game-stat">
-          <div class="game-stat-value" id="favoriteWinRate">0%</div>
-          <div class="game-stat-label">taux de réussite</div>
-        </div>
+    <!-- COULEURS -->
+    <div class="section-label">Couleur du profil</div>
+    <div class="section-card">
+      <div class="colors-row">
+        <button class="color-btn active" data-color="blue" id="colorBlue" onclick="selectColor('blue')">
+          <div class="color-dot"></div>
+          <div class="color-name">Bleu</div>
+          <div class="color-badge">Défaut</div>
+        </button>
+        <button class="color-btn" data-color="green" id="colorGreen" onclick="selectColor('green')">
+          <div class="color-dot"></div>
+          <div class="color-name">Vert</div>
+          <div class="color-badge">Niv. 5</div>
+        </button>
+        <button class="color-btn" data-color="yellow" id="colorYellow" onclick="selectColor('yellow')">
+          <div class="color-dot"></div>
+          <div class="color-name">Jaune</div>
+          <div class="color-badge">Niv. 10</div>
+        </button>
+        <button class="color-btn" data-color="red" id="colorRed" onclick="selectColor('red')">
+          <div class="color-dot"></div>
+          <div class="color-name">Rouge</div>
+          <div class="color-badge">Niv. 30</div>
+        </button>
       </div>
     </div>
 
-    <!-- ACCOUNT INFO -->
-    <div class="section-title">Informations du compte</div>
-    <div class="info-card">
-      <div class="info-row">
-        <div class="info-label">Pseudo</div>
-        <div class="info-value" id="infoUsername">-</div>
+    <!-- STATS -->
+    <div class="section-label">Statistiques</div>
+    <div class="section-card">
+      <div class="row">
+        <div class="row-icon blue">💰</div>
+        <div class="row-info"><div class="row-title">Argent</div></div>
+        <div class="row-right" id="statMoney">0€</div>
       </div>
-      <div class="info-row">
-        <div class="info-label">Email</div>
-        <div class="info-value" id="infoEmail">-</div>
+      <div class="row">
+        <div class="row-icon purple">⭐</div>
+        <div class="row-info"><div class="row-title">XP total</div></div>
+        <div class="row-right" id="statXp">0</div>
       </div>
-      <div class="info-row">
-        <div class="info-label">ID Utilisateur</div>
-        <div class="info-value" id="infoUserId" style="font-size: 11px; color: #9ca3af;">-</div>
+      <div class="row">
+        <div class="row-icon orange">🏅</div>
+        <div class="row-info"><div class="row-title">Grade</div></div>
+        <div class="row-right" id="statGrade">-</div>
       </div>
-      <div class="info-row">
-        <div class="info-label">Membre depuis</div>
-        <div class="info-value" id="infoMemberSince">-</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">Statut du compte</div>
-        <div class="info-value" style="color: #10b981; font-weight: 600;">✓ Actif</div>
-      </div>
-    </div>
-
-    <!-- GAME STATS -->
-    <div class="section-title">Statistiques</div>
-    <div class="info-card">
-      <div class="info-row">
-        <div class="info-label">💰 Argent possédé</div>
-        <div class="info-value" id="statMoney">0€</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">⭐ Niveau actuel</div>
-        <div class="info-value" id="statLevel">1</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">🏅 Grade</div>
-        <div class="info-value" id="statGrade">Docker Occasionnel</div>
-      </div>
-      <div class="info-row">
-        <div class="info-label">🔥 XP actuel</div>
-        <div class="info-value" id="statXp">0</div>
+      <div class="row">
+        <div class="row-icon green">🏆</div>
+        <div class="row-info"><div class="row-title">Trophées</div></div>
+        <div class="row-right" id="statTrophies">0</div>
       </div>
     </div>
 
     <!-- ACTIONS -->
-    <div class="section-title">Actions</div>
-    <div class="action-list">
-      <button class="action-btn" onclick="changePassword()">
-        <div class="action-icon">🔐</div>
-        <div class="action-info">
-          <div class="action-title">Modifier le mot de passe</div>
-          <div class="action-desc">Sécurise ton compte</div>
+    <div class="section-label">Compte</div>
+    <div class="section-card">
+      <div class="row" onclick="changePassword()" style="cursor:pointer">
+        <div class="row-icon gray">🔐</div>
+        <div class="row-info">
+          <div class="row-title">Modifier le mot de passe</div>
+          <div class="row-val">Sécurise ton compte</div>
         </div>
-        <div class="action-arrow">›</div>
-      </button>
-
-      <button class="action-btn danger" onclick="deleteAccount()">
-        <div class="action-icon">🗑️</div>
-        <div class="action-info">
-          <div class="action-title">Supprimer le compte</div>
-          <div class="action-desc">Action irréversible</div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="row" onclick="logout()" style="cursor:pointer">
+        <div class="row-icon gray">🚪</div>
+        <div class="row-info">
+          <div class="row-title">Se déconnecter</div>
         </div>
-        <div class="action-arrow">›</div>
-      </button>
-
-      <button class="action-btn danger" onclick="logout()">
-        <div class="action-icon">🚪</div>
-        <div class="action-info">
-          <div class="action-title">Se déconnecter</div>
-          <div class="action-desc">Quitter Battle Dock</div>
+        <div class="row-arrow">›</div>
+      </div>
+      <div class="row row-danger" onclick="deleteAccount()" style="cursor:pointer">
+        <div class="row-icon red">🗑️</div>
+        <div class="row-info">
+          <div class="row-title">Supprimer le compte</div>
+          <div class="row-val" style="color:#9ca3af">Action irréversible</div>
         </div>
-        <div class="action-arrow">›</div>
-      </button>
+        <div class="row-arrow" style="color:#fca5a5">›</div>
+      </div>
     </div>
-  </div>
 
-  <!-- BOTTOM NAV -->
-  <div class="bottom-nav">
-    <button class="bottom-nav-btn" onclick="window.location.href='game.html'">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
-      <span>Retour à l'accueil</span>
-    </button>
   </div>
 
   <script>
@@ -687,345 +317,168 @@
     let playerLevel = 1;
     let playerMoney = 0;
     let achievementsUnlocked = 0;
+    let eventsClaimed = [];
     let currentAvatar = 'avatar-default.png';
     let backgroundColor = 'blue';
 
-    // Liste des avatars
     const avatars = [
-      { id: 'default', file: 'avatar-default.png', label: 'Défaut', condition: () => true },
-      { id: 'level5', file: 'avatar-level-5.png', label: 'Niv. 5', condition: () => playerLevel >= 5 },
-      { id: 'level10', file: 'avatar-level-10.png', label: 'Niv. 10', condition: () => playerLevel >= 10 },
-      { id: 'level15', file: 'avatar-level-15.png', label: 'Niv. 15', condition: () => playerLevel >= 15 },
-      { id: 'level30', file: 'avatar-level-30.png', label: 'Niv. 30', condition: () => playerLevel >= 30 },
-      { id: 'level50', file: 'avatar-level-50.png', label: 'Niv. 50', condition: () => playerLevel >= 50 },
-      { id: 'millionaire', file: 'avatar-millionaire.png', label: '1M€', condition: () => playerMoney >= 1000000 },
-      { id: 'completionist', file: 'avatar-completionist.png', label: 'Tous succès', condition: () => achievementsUnlocked >= 14 }
+      { id: 'default',       file: 'avatar-default.png',       label: 'Défaut',      condition: () => true },
+      { id: 'level5',        file: 'avatar-level-5.png',        label: 'Niv. 5',      condition: () => playerLevel >= 5 },
+      { id: 'level10',       file: 'avatar-level-10.png',       label: 'Niv. 10',     condition: () => playerLevel >= 10 },
+      { id: 'level15',       file: 'avatar-level-15.png',       label: 'Niv. 15',     condition: () => playerLevel >= 15 },
+      { id: 'level30',       file: 'avatar-level-30.png',       label: 'Niv. 30',     condition: () => playerLevel >= 30 },
+      { id: 'level50',       file: 'avatar-level-50.png',       label: 'Niv. 50',     condition: () => playerLevel >= 50 },
+      { id: 'millionaire',   file: 'avatar-millionaire.png',    label: '1M€',         condition: () => playerMoney >= 1000000 },
+      { id: 'completionist', file: 'avatar-completionist.png',  label: 'Tous succès', condition: () => achievementsUnlocked >= 14 },
+      { id: 'launch-event',  file: 'avatar-launch-event.png',   label: 'Lancement',   condition: () => eventsClaimed.includes('launch-week') },
     ];
+
+    function getXpRequired(level) {
+      if (level <= 10) return level * 500;
+      if (level <= 25) return level * 1000;
+      if (level <= 50) return level * 2000;
+      return level * 4000;
+    }
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-
+      if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
       await loadProfile();
-      await checkDailyBonus();
     }
 
     async function loadProfile() {
-      // Charger profil
-      const { data: profile } = await sb
-        .from('profiles')
-        .select('username, avatar_url, background_color')
-        .eq('user_id', currentUser.id)
-        .single();
-
-      // Charger stats
-      const { data: stats } = await sb
-        .from('game_stats')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .single();
-
+      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).single();
+      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).single();
       if (!profile || !stats) return;
 
-      // Stocker les données
-      playerLevel = stats.level;
-      playerMoney = stats.money;
-      currentAvatar = profile.avatar_url;
+      playerLevel  = stats.level  || 1;
+      playerMoney  = stats.money  || 0;
+      eventsClaimed = stats.events_claimed || [];
+      currentAvatar = profile.avatar_url || 'avatar-default.png';
       backgroundColor = profile.background_color || 'blue';
 
-      // Calculer XP total pour les succès
       let totalXp = 0;
-      for (let i = 1; i < stats.level; i++) {
-        totalXp += i * i * 50;
-      }
-      totalXp += stats.xp;
-
-      // Calculer succès débloqués (approximation)
-      const gamesPlayed = Math.floor(totalXp / 30);
-      achievementsUnlocked = countUnlockedAchievements(stats.level, stats.money, totalXp, gamesPlayed);
+      for (let i = 1; i < playerLevel; i++) totalXp += getXpRequired(i);
+      totalXp += stats.xp || 0;
+      achievementsUnlocked = countUnlockedAchievements(playerLevel, playerMoney, totalXp);
 
       // Header
-      document.getElementById('profileAvatar').src = profile.avatar_url;
+      document.getElementById('profileAvatar').src = currentAvatar;
       document.getElementById('profileUsername').textContent = profile.username;
-      document.getElementById('profileGrade').textContent = stats.grade;
-      document.getElementById('profileLevel').textContent = `Niveau ${stats.level}`;
+      document.getElementById('profileGrade').textContent    = stats.grade || 'Docker Occasionnel';
+      document.getElementById('profileLevel').textContent    = 'Niveau ' + playerLevel;
 
-      // Account info
-      document.getElementById('infoUsername').textContent = profile.username;
-      document.getElementById('infoEmail').textContent = currentUser.email;
-      document.getElementById('infoUserId').textContent = currentUser.id.substring(0, 8) + '...';
-      
-      const createdAt = new Date(currentUser.created_at);
-      const options = { year: 'numeric', month: 'long', day: 'numeric' };
-      document.getElementById('infoMemberSince').textContent = createdAt.toLocaleDateString('fr-FR', options);
+      // XP bar
+      const xpNeeded = getXpRequired(playerLevel);
+      const xpPct = Math.min(100, Math.round(((stats.xp||0) / xpNeeded) * 100));
+      document.getElementById('xpLabel').textContent = (stats.xp||0).toLocaleString('fr-FR') + ' XP';
+      document.getElementById('xpNext').textContent  = xpNeeded.toLocaleString('fr-FR') + ' XP';
+      document.getElementById('xpFill').style.width  = xpPct + '%';
 
-      // Stats
-      document.getElementById('statMoney').textContent = stats.money.toLocaleString('fr-FR') + '€';
-      document.getElementById('statLevel').textContent = stats.level;
-      document.getElementById('statGrade').textContent = stats.grade;
-      document.getElementById('statXp').textContent = stats.xp.toLocaleString('fr-FR');
+      // Quick stats
+      const money = playerMoney >= 1000000 ? (playerMoney/1000000).toFixed(1)+'M€' : playerMoney >= 1000 ? Math.floor(playerMoney/1000)+'k€' : playerMoney+'€';
+      document.getElementById('qsMoney').textContent   = money;
+      document.getElementById('qsLevel').textContent   = playerLevel;
+      document.getElementById('qsTrophies').textContent = stats.trophies || 0;
 
-      // Favorite Game Stats - TEMPORAIRE (affiche des stats basées sur le niveau)
-      // En attendant la création de la table user_favorite_game
-      const favoriteGamesPlayed = Math.floor(stats.level * 3.5); // Approximation
-      const totalMoney = stats.money; // Argent actuel
-      const avgMoney = favoriteGamesPlayed > 0 ? Math.floor(totalMoney / favoriteGamesPlayed) : 0;
-      const winRate = Math.min(50 + stats.level * 2, 95); // Augmente avec le niveau
+      // Stats section
+      document.getElementById('statMoney').textContent   = playerMoney.toLocaleString('fr-FR') + '€';
+      document.getElementById('statXp').textContent      = totalXp.toLocaleString('fr-FR') + ' XP';
+      document.getElementById('statGrade').textContent   = stats.grade || 'Docker Occasionnel';
+      document.getElementById('statTrophies').textContent = stats.trophies || 0;
 
-      document.getElementById('favoriteGameName').textContent = 'Docker Occasionnel';
-      document.getElementById('favoriteGamesPlayed').textContent = favoriteGamesPlayed;
-      document.getElementById('favoriteTotalMoney').textContent = totalMoney.toLocaleString('fr-FR') + '€';
-      document.getElementById('favoriteAverage').textContent = avgMoney.toLocaleString('fr-FR') + '€';
-      document.getElementById('favoriteWinRate').textContent = winRate + '%';
+      // Couleur
+      applyColor(backgroundColor);
+      updateColorButtons(backgroundColor, playerLevel);
 
-
-      // Background color
-      updateBackgroundUI(backgroundColor, stats.level);
-      applyBackgroundColor(backgroundColor);
-
-      // Render avatars
+      // Avatars
       renderAvatars();
     }
 
-    function countUnlockedAchievements(level, money, totalXp, gamesPlayed) {
-      let count = 0;
-      if (gamesPlayed >= 10) count++;
-      if (level >= 15) count++;
-      if (level >= 25) count++;
-      if (level >= 40) count++;
-      if (money >= 1000) count++;
-      if (money >= 5000) count++;
-      if (money >= 25000) count++;
-      if (totalXp >= 5000) count++;
-      if (totalXp >= 15000) count++;
-      if (totalXp >= 50000) count++;
-      if (gamesPlayed >= 100) count++;
-      if (gamesPlayed >= 500) count++;
-      if (gamesPlayed >= 1000) count++;
-      if (level >= 50) count++;
-      return count;
+    function countUnlockedAchievements(level, money, totalXp) {
+      let c = 0;
+      if (level >= 15) c++; if (level >= 25) c++; if (level >= 40) c++; if (level >= 50) c++;
+      if (money >= 1000) c++; if (money >= 5000) c++; if (money >= 25000) c++; if (money >= 1000000) c++;
+      if (totalXp >= 5000) c++; if (totalXp >= 15000) c++; if (totalXp >= 50000) c++;
+      return c;
     }
 
     function renderAvatars() {
       const grid = document.getElementById('avatarsGrid');
       grid.innerHTML = '';
-
-      avatars.forEach(avatar => {
-        const unlocked = avatar.condition();
-        const isActive = currentAvatar === avatar.file;
-
+      avatars.forEach(av => {
+        const unlocked = av.condition();
+        const isActive = currentAvatar === av.file;
         const div = document.createElement('div');
-        div.className = `avatar-item ${unlocked ? '' : 'locked'} ${isActive ? 'active' : ''}`;
-        
-        if (unlocked) {
-          div.onclick = () => selectAvatar(avatar.file);
-        }
-
+        div.className = `avatar-item ${unlocked?'':'locked'} ${isActive?'active':''}`;
+        if (unlocked) div.onclick = () => selectAvatar(av.file);
         div.innerHTML = `
-          <img src="${avatar.file}" alt="${avatar.label}">
-          ${!unlocked ? '<div class="avatar-lock">🔒</div>' : ''}
-          ${isActive ? '<div class="avatar-badge">✓</div>' : ''}
-        `;
-
-        const label = document.createElement('div');
-        label.className = 'avatar-label';
-        label.textContent = avatar.label;
-
-        const wrapper = document.createElement('div');
-        wrapper.appendChild(div);
-        wrapper.appendChild(label);
-
-        grid.appendChild(wrapper);
+          <div class="avatar-img-wrap">
+            <img src="${av.file}" alt="${av.label}">
+            ${isActive  ? '<div class="avatar-check">✓</div>' : ''}
+            ${!unlocked ? '<div class="avatar-lock">🔒</div>' : ''}
+          </div>
+          <div class="avatar-lbl">${av.label}</div>`;
+        grid.appendChild(div);
       });
     }
 
-    async function selectAvatar(avatarFile) {
-      if (avatarFile === currentAvatar) return;
-
-      // Mettre à jour en base
-      const { error } = await sb
-        .from('profiles')
-        .update({ avatar_url: avatarFile })
-        .eq('user_id', currentUser.id);
-
-      if (error) {
-        alert('Erreur lors du changement d\'avatar');
-        return;
-      }
-
-      currentAvatar = avatarFile;
-      document.getElementById('profileAvatar').src = avatarFile;
+    async function selectAvatar(file) {
+      if (file === currentAvatar) return;
+      const { error } = await sb.from('profiles').update({ avatar_url: file }).eq('user_id', currentUser.id);
+      if (error) { alert('Erreur lors du changement d\'avatar'); return; }
+      currentAvatar = file;
+      document.getElementById('profileAvatar').src = file;
       renderAvatars();
     }
 
-    function goBack() {
-      window.location.href = 'game.html';
+    function applyColor(color) {
+      const card = document.getElementById('profileCard');
+      card.className = 'profile-card' + (color !== 'blue' ? ' ' + color : '');
+    }
+
+    function updateColorButtons(color, level) {
+      document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.color === color);
+      });
+      document.getElementById('colorGreen').disabled  = level < 5;
+      document.getElementById('colorYellow').disabled = level < 10;
+      document.getElementById('colorRed').disabled    = level < 30;
+    }
+
+    async function selectColor(color) {
+      const req = { green:5, yellow:10, red:30 }[color];
+      if (req && playerLevel < req) {
+        alert(`🔒 Débloqué au niveau ${req} (tu es niveau ${playerLevel})`);
+        return;
+      }
+      backgroundColor = color;
+      applyColor(color);
+      updateColorButtons(color, playerLevel);
+      await sb.from('profiles').update({ background_color: color }).eq('user_id', currentUser.id);
     }
 
     function changePassword() {
-      alert('Modification du mot de passe à venir ! 🔐\n\nFonctionnalité en développement.');
-    }
-
-    async function deleteAccount() {
-      const confirm1 = window.confirm('⚠️ ATTENTION ⚠️\n\nSupprimer ton compte effacera TOUTES tes données :\n- Progression\n- Argent\n- Succès\n- Classement\n\nCette action est IRRÉVERSIBLE.\n\nEs-tu sûr de vouloir continuer ?');
-      
-      if (!confirm1) return;
-
-      const confirm2 = window.confirm('🚨 DERNIÈRE CONFIRMATION 🚨\n\nTu es sur le point de TOUT perdre.\n\nConfirmes-tu DÉFINITIVEMENT la suppression ?');
-      
-      if (!confirm2) return;
-
-      try {
-        // Supprimer les données
-        await sb.from('game_stats').delete().eq('user_id', currentUser.id);
-        await sb.from('profiles').delete().eq('user_id', currentUser.id);
-        
-        // Supprimer le compte auth
-        const { error } = await sb.auth.admin.deleteUser(currentUser.id);
-        
-        if (error) {
-          alert('Erreur lors de la suppression : ' + error.message);
-          return;
-        }
-
-        alert('✅ Compte supprimé avec succès.\n\nÀ bientôt sur Battle Dock !');
-        window.location.href = 'index.html';
-      } catch (err) {
-        alert('Erreur : ' + err.message);
-      }
-    }
-
-    function updateBackgroundUI(color, level) {
-      // Mettre à jour les boutons
-      document.getElementById('colorBlue').classList.toggle('active', color === 'blue');
-      document.getElementById('colorGreen').classList.toggle('active', color === 'green');
-      document.getElementById('colorYellow').classList.toggle('active', color === 'yellow');
-      document.getElementById('colorRed').classList.toggle('active', color === 'red');
-
-      // Débloquer/Bloquer selon niveau
-      document.getElementById('colorGreen').disabled = level < 5;
-      document.getElementById('colorYellow').disabled = level < 10;
-      document.getElementById('colorRed').disabled = level < 30;
-    }
-
-    function applyBackgroundColor(color) {
-      // Appliquer au header de profil
-      const header = document.querySelector('.profile-header');
-      header.classList.remove('green', 'yellow', 'red');
-      if (color === 'green') {
-        header.classList.add('green');
-      } else if (color === 'yellow') {
-        header.classList.add('yellow');
-      } else if (color === 'red') {
-        header.classList.add('red');
-      }
-    }
-
-    async function selectBackgroundColor(color) {
-      // Vérifier le niveau requis
-      if ((color === 'green' && playerLevel < 5) ||
-          (color === 'yellow' && playerLevel < 10) ||
-          (color === 'red' && playerLevel < 30)) {
-        const required = color === 'green' ? 5 : color === 'yellow' ? 10 : 30;
-        alert(`🔒 Couleur débloquée au niveau ${required} !\n\nTu es actuellement niveau ${playerLevel}.`);
-        return;
-      }
-
-      backgroundColor = color;
-      updateBackgroundUI(color, playerLevel);
-      applyBackgroundColor(color);
-
-      // Sauvegarder en base
-      const { error } = await sb
-        .from('profiles')
-        .update({ background_color: color })
-        .eq('user_id', currentUser.id);
-
-      if (error) {
-        console.error('Erreur sauvegarde couleur:', error);
-        alert('Erreur lors de la sauvegarde');
-      }
+      alert('Modification du mot de passe bientôt disponible 🔐');
     }
 
     async function logout() {
-      const confirm = window.confirm('Veux-tu vraiment te déconnecter ?');
-      if (confirm) {
+      if (confirm('Veux-tu vraiment te déconnecter ?')) {
         await sb.auth.signOut();
         window.location.href = 'index.html';
       }
     }
 
-    // ===== DAILY BONUS =====
-    let canClaimDaily = false;
-
-    async function checkDailyBonus() {
-      const today = new Date().toISOString().split('T')[0];
-      const { data } = await sb.from('daily_bonuses').select('*')
-        .eq('user_id', currentUser.id).eq('last_claim_date', today).maybeSingle();
-      const card  = document.getElementById('dailyBonusCard');
-      const badge = document.getElementById('dailyBonusBadge');
-      const desc  = document.getElementById('dailyBonusDesc');
-      if (data) {
-        canClaimDaily = false;
-        card.classList.add('claimed');
-        badge.textContent = '✓'; badge.className = 'daily-bonus-badge claimed';
-        desc.textContent = 'Reviens demain !';
-        updateDailyTimer();
-      } else {
-        canClaimDaily = true;
-        card.classList.remove('claimed');
-        badge.textContent = 'DISPO'; badge.className = 'daily-bonus-badge available';
-        desc.textContent = 'Récupère ton bonus !';
-      }
-    }
-
-    function updateDailyTimer() {
-      const now = new Date(), tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0, 0, 0, 0);
-      const diff = tomorrow - now;
-      const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
-      const timer = document.getElementById('dailyBonusTimer');
-      if (timer) timer.textContent = `Prochain dans ${h}h ${m}m ${s}s`;
-      setTimeout(updateDailyTimer, 1000);
-    }
-
-    async function claimDailyBonus() {
-      if (!canClaimDaily) return;
-      const today = new Date().toISOString().split('T')[0];
-      const { data: lastClaim } = await sb.from('daily_bonuses').select('last_claim_date, streak')
-        .eq('user_id', currentUser.id).order('last_claim_date', { ascending: false }).limit(1).maybeSingle();
-      let streak = 1;
-      if (lastClaim) {
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        if (lastClaim.last_claim_date === yesterday.toISOString().split('T')[0]) streak = (lastClaim.streak || 0) + 1;
-      }
-      const reward = 100 + Math.min(streak - 1, 6) * 50 + Math.floor(Math.random() * 100);
-      await sb.from('daily_bonuses').insert({ user_id: currentUser.id, last_claim_date: today, streak });
-      const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-      await sb.from('game_stats').update({ money: (stats?.money || 0) + reward }).eq('user_id', currentUser.id);
-
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;';
-      overlay.innerHTML = `
-        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-          <div style="font-size:64px;margin-bottom:12px;">🎁</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a1a;margin-bottom:16px;letter-spacing:1px;">Container du Jour !</div>
-          <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-bottom:16px;">
-            <div style="font-size:12px;color:#92400e;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Tu as gagné</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:44px;color:#d97706;">+${reward.toLocaleString('fr-FR')}€</div>
-          </div>
-          <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">🔥 ${streak} jour${streak>1?'s':''} consécutif${streak>1?'s':''} !</div>
-          <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;">SUPER !</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      canClaimDaily = false;
-      await checkDailyBonus();
+    async function deleteAccount() {
+      if (!confirm('⚠️ Supprimer ton compte effacera TOUTES tes données. Action IRRÉVERSIBLE.\n\nConfirmer ?')) return;
+      if (!confirm('🚨 DERNIÈRE CONFIRMATION — Tu vas TOUT perdre. Continuer ?')) return;
+      try {
+        await sb.from('game_stats').delete().eq('user_id', currentUser.id);
+        await sb.from('profiles').delete().eq('user_id', currentUser.id);
+        await sb.auth.signOut();
+        window.location.href = 'index.html';
+      } catch(e) { alert('Erreur : ' + e.message); }
     }
 
     init();
