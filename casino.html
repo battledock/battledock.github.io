@@ -299,6 +299,20 @@
       margin-bottom: 6px;
     }
 
+    .record-box {
+      background: linear-gradient(135deg, rgba(212,175,55,0.1), rgba(212,175,55,0.05));
+      border: 1px solid rgba(212,175,55,0.3);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .record-icon { font-size: 24px; flex-shrink: 0; }
+    .record-info { flex: 1; }
+    .record-label { font-size: 10px; color: rgba(212,175,55,0.6); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-bottom: 2px; }
+    .record-amount { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #d4af37; letter-spacing: 1px; }
+    .record-winner { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 1px; }
+
     .stat-value {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 26px;
@@ -436,6 +450,16 @@
       </div>
     </div>
 
+    <!-- RECORD -->
+    <div class="record-box" id="recordBox" style="display:none">
+      <div class="record-icon">🏆</div>
+      <div class="record-info">
+        <div class="record-label">Record du casino — Plus gros gain</div>
+        <div class="record-amount" id="recordAmount">0€</div>
+        <div class="record-winner" id="recordWinner">--</div>
+      </div>
+    </div>
+
     <!-- STATS -->
     <div class="stats-container">
       <div class="stat-box">
@@ -492,50 +516,33 @@
         ".cs-tbox { background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:20px 24px;margin-bottom:28px;position:relative;overflow:hidden; }",
         ".cs-tbox::before { content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(239,68,68,0.04),transparent);animation:csShimmer 3s linear infinite; }",
         "@keyframes csShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }",
-        ".cs-tlabel { display:none; }",
         ".cs-tdigits { font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:4px;background:linear-gradient(135deg,#ffffff,#d4af37,#ffffff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 16px rgba(212,175,55,0.5));line-height:1; }",
         ".cs-back { width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);padding:16px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer; }"
       ].join('');
       document.head.appendChild(style);
 
-      const scene = document.createElement('div');
-      scene.className = 'cs';
-
+      const scene = document.createElement('div'); scene.className = 'cs';
       [['25%','5s'],['50%','7s'],['75%','6s']].forEach(function(r) {
-        const el = document.createElement('div');
-        el.className = 'cs-ray';
-        el.style.cssText = 'left:'+r[0]+';animation-duration:'+r[1]+';';
-        scene.appendChild(el);
+        const el = document.createElement('div'); el.className = 'cs-ray';
+        el.style.cssText = 'left:'+r[0]+';animation-duration:'+r[1]+';'; scene.appendChild(el);
       });
-
-      const content = document.createElement('div');
-      content.className = 'cs-content';
-
+      const content = document.createElement('div'); content.className = 'cs-content';
       const lbl = document.createElement('div'); lbl.className = 'cs-label'; lbl.textContent = 'Battle Dock Casino';
       const title = document.createElement('div'); title.className = 'cs-title'; title.textContent = 'Portes Closes';
       const hours = document.createElement('div'); hours.className = 'cs-hours'; hours.textContent = 'Horaires : 12h00 – 00h00';
-
       const tbox = document.createElement('div'); tbox.className = 'cs-tbox';
-      const tlabel = document.createElement('div'); tlabel.className = 'cs-tlabel'; tlabel.textContent = 'Ouverture 12H00';
       const tdigits = document.createElement('div'); tdigits.className = 'cs-tdigits'; tdigits.id = 'csTimer';
-      tbox.appendChild(tlabel); tbox.appendChild(tdigits);
-
-      const back = document.createElement('button');
-      back.className = 'cs-back'; back.textContent = '← Retour au Lobby';
+      tbox.appendChild(tdigits);
+      const back = document.createElement('button'); back.className = 'cs-back'; back.textContent = '← Retour au Lobby';
       back.onclick = function() { window.location.href = 'game.html'; };
-
       content.appendChild(lbl); content.appendChild(title); content.appendChild(hours);
       content.appendChild(tbox); content.appendChild(back);
       scene.appendChild(content);
-      document.body.innerHTML = '';
-      document.body.appendChild(scene);
-
+      document.body.innerHTML = ''; document.body.appendChild(scene);
       function csTick() {
         const now = new Date(), next = new Date();
-        if (now.getHours() < 12) { next.setHours(12,0,0,0); }
-        else { next.setDate(next.getDate()+1); next.setHours(12,0,0,0); }
-        const d = Math.floor((next-now)/1000);
-        const h = Math.floor(d/3600), m = Math.floor((d%3600)/60), s = d%60;
+        if (now.getHours() < 12) { next.setHours(12,0,0,0); } else { next.setDate(next.getDate()+1); next.setHours(12,0,0,0); }
+        const d = Math.floor((next-now)/1000), h = Math.floor(d/3600), m = Math.floor((d%3600)/60), s = d%60;
         const el = document.getElementById('csTimer');
         if (el) el.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
         setTimeout(csTick, 1000);
@@ -569,10 +576,29 @@
       await loadJackpot();
       await loadStats();
       await loadRecentWins();
+      await loadRecord();
 
       setInterval(loadJackpot, 5000);
       setInterval(loadStats, 10000);
       setInterval(loadRecentWins, 8000);
+    }
+
+    async function loadRecord() {
+      try {
+        const { data } = await sb
+          .from('casino_wins')
+          .select('user_name, amount_won')
+          .gt('amount_won', 0)
+          .order('amount_won', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (data) {
+          document.getElementById('recordAmount').textContent = data.amount_won.toLocaleString('fr-FR') + '€';
+          document.getElementById('recordWinner').textContent = '🏅 ' + data.user_name;
+          document.getElementById('recordBox').style.display = 'flex';
+        }
+      } catch(e) {}
     }
 
     async function loadJackpot() {
@@ -649,10 +675,7 @@
         };
 
         const gains = wins.filter(w => w.amount_won > 0);
-        if (!gains.length) {
-          feedEl.innerHTML = '<div class="feed-item">Aucun gain pour le moment...</div>';
-          return;
-        }
+        if (!gains.length) { feedEl.innerHTML = '<div class="feed-item">Aucun gain pour le moment...</div>'; return; }
         feedEl.innerHTML = gains.map(win => {
           const emoji = gameEmojis[win.game_name] || '🎉';
           const preposition = (win.game_name === 'Roulette' || win.game_name === 'Higher/Lower') ? 'à la' : 'au';
