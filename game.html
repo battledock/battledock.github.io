@@ -565,42 +565,60 @@
     }
     .mini-card-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
 
-    /* CHAT — fond océan profond avec bulles */
+    /* CHAT — fond dégradé violet/bleu nuit */
     .mini-card.chat .mini-card-bg {
-      background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%);
+      background: linear-gradient(145deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     }
-    .mini-card.chat .mini-card-title { color: #34d399; }
-    .mini-card.chat .mini-card-sub   { color: rgba(52,211,153,0.7); }
+    .mini-card.chat .mini-card-title { color: #a78bfa; }
+    .mini-card.chat .mini-card-sub   { color: rgba(167,139,250,0.7); }
 
-    /* Bulles chat */
-    .chat-bubbles {
+    /* Étoiles fond chat */
+    .chat-stars {
       position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
     }
-    .bubble {
-      position: absolute;
-      background: rgba(52,211,153,0.12);
-      border: 1px solid rgba(52,211,153,0.2);
-      border-radius: 50% 50% 50% 0;
-      animation: bubbleFloat ease-in-out infinite;
+    .chat-star {
+      position: absolute; border-radius: 50%;
+      background: white;
+      animation: starTwinkle ease-in-out infinite;
     }
-    @keyframes bubbleFloat {
-      0%,100% { transform: translateY(0) scale(1); opacity: 0.6; }
-      50%      { transform: translateY(-8px) scale(1.05); opacity: 1; }
+    @keyframes starTwinkle {
+      0%,100% { opacity: 0.8; transform: scale(1); }
+      50%      { opacity: 0.2; transform: scale(0.5); }
+    }
+
+    /* Bulles de dialogue flottantes */
+    .chat-msg-bubble {
+      position: absolute; z-index: 2;
+      background: rgba(167,139,250,0.15);
+      border: 1px solid rgba(167,139,250,0.25);
+      border-radius: 12px 12px 12px 0;
+      animation: msgFloat ease-in-out infinite;
+    }
+    .chat-msg-bubble.right {
+      border-radius: 12px 12px 0 12px;
+    }
+    @keyframes msgFloat {
+      0%,100% { transform: translateY(0); opacity: 0.6; }
+      50%      { transform: translateY(-6px); opacity: 1; }
     }
 
     /* Badge notification */
     .chat-notif {
       position: absolute;
-      top: 10px; right: 10px; z-index: 3;
-      width: 10px; height: 10px;
-      background: #34d399;
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(52,211,153,0.9);
+      top: 10px; right: 10px; z-index: 5;
+      min-width: 18px; height: 18px;
+      background: #ef4444; color: white;
+      border-radius: 9px; padding: 0 5px;
+      font-size: 10px; font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 10px rgba(239,68,68,0.7);
       animation: notifPulse 2s ease-in-out infinite;
     }
+    .chat-notif.hidden { display: none; }
     @keyframes notifPulse {
-      0%,100% { transform: scale(1); box-shadow: 0 0 10px rgba(52,211,153,0.9); }
-      50%      { transform: scale(1.5); box-shadow: 0 0 16px rgba(52,211,153,0.6); }
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
     }
 
     /* PARAMÈTRES — engrenages mécaniques */
@@ -921,8 +939,11 @@
         <div class="mini-card chat" onclick="openChat()">
           <div class="mini-card-bg"></div>
           <div class="mini-card-overlay"></div>
-          <div class="chat-notif"></div>
-          <div class="chat-bubbles" id="chatBubbles"></div>
+          <div class="chat-notif hidden" id="chatNotif">0</div>
+          <div class="chat-stars" id="chatStars"></div>
+          <div class="chat-msg-bubble" style="width:36px;height:16px;bottom:55%;left:12%;animation-duration:3s;animation-delay:0s;"></div>
+          <div class="chat-msg-bubble right" style="width:28px;height:14px;bottom:45%;right:14%;animation-duration:2.5s;animation-delay:0.8s;"></div>
+          <div class="chat-msg-bubble" style="width:44px;height:16px;bottom:35%;left:18%;animation-duration:3.5s;animation-delay:1.5s;"></div>
           <div class="mini-card-content">
             <div class="mini-card-icon">💬</div>
             <div class="mini-card-title">Chat</div>
@@ -1133,6 +1154,8 @@
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
       await loadUserData();
+      loadChatBadge();
+      setInterval(loadChatBadge, 30000);
     }
 
     async function loadUserData() {
@@ -1198,6 +1221,8 @@
       }
       await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
       await loadUserData();
+      loadChatBadge();
+      setInterval(loadChatBadge, 30000);
     }
 
     function showLevelUpPopup(level, rewards, onClose) {
@@ -1233,7 +1258,26 @@
     }
 
     function createCompany() { alert('Bientôt disponible ! 🏢'); }
-    function openChat()     { alert('Chat bientôt disponible ! 💬'); }
+    function openChat() { window.location.href = 'chat.html'; }
+
+    async function loadChatBadge() {
+      try {
+        const { data } = await sb.from('private_messages')
+          .select('id', { count: 'exact' })
+          .eq('receiver_id', currentUser.id)
+          .eq('read', false);
+        const count = data?.length || 0;
+        const notif = document.getElementById('chatNotif');
+        if (notif) {
+          if (count > 0) {
+            notif.textContent = count > 9 ? '9+' : count;
+            notif.classList.remove('hidden');
+          } else {
+            notif.classList.add('hidden');
+          }
+        }
+      } catch(e) {}
+    }
     function openSettings() { window.location.href = 'profil.html'; }
 
     init();
