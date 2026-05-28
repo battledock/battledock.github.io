@@ -478,7 +478,7 @@
     function showCasinoClosed() {
       const now = new Date();
       const hour = now.getHours();
-      let nextOpen = new Date();
+      const nextOpen = new Date();
       if (hour < 12) {
         nextOpen.setHours(12, 0, 0, 0);
       } else {
@@ -486,219 +486,92 @@
         nextOpen.setHours(12, 0, 0, 0);
       }
 
-      document.body.innerHTML = `
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
-          * { margin:0; padding:0; box-sizing:border-box; }
-          body { font-family:'Inter',sans-serif; overflow:hidden; height:100vh; width:100vw; }
+      // Construire la page sans backticks imbriqués
+      const page = document.createElement('div');
+      page.id = 'casinoClosedPage';
+      page.style.cssText = 'position:fixed;inset:0;z-index:9999;font-family:Inter,sans-serif;overflow:hidden;';
+      page.innerHTML = \'<div id="closedInner"></div>\';
+      document.body.appendChild(page);
 
-          .closed-scene {
-            position:fixed; inset:0;
-            background: linear-gradient(180deg, #0a0005 0%, #1a0010 30%, #2d0020 60%, #0a0005 100%);
-            display:flex; flex-direction:column;
-            align-items:center; justify-content:center;
-            overflow:hidden;
-          }
-
-          /* Particules */
-          .c-particle {
-            position:absolute; border-radius:50%; pointer-events:none;
-            animation: cPartFloat linear infinite;
-          }
-          @keyframes cPartFloat {
-            0%   { transform:translateY(0) translateX(0); opacity:0; }
-            10%  { opacity:1; }
-            90%  { opacity:0.5; }
-            100% { transform:translateY(-100vh) translateX(var(--dx)); opacity:0; }
-          }
-
-          /* Lumières néon */
-          .neon-ring {
-            position:absolute;
-            border-radius:50%;
-            border: 1px solid rgba(239,68,68,0.15);
-            animation: ringPulse ease-in-out infinite;
-          }
-          @keyframes ringPulse {
-            0%,100% { transform:scale(1); opacity:0.3; }
-            50%      { transform:scale(1.05); opacity:0.7; }
-          }
-
-          /* Rayons de lumière */
-          .light-ray {
-            position:absolute; top:0;
-            width:2px; height:60vh;
-            background:linear-gradient(180deg, rgba(239,68,68,0.3), transparent);
-            filter:blur(4px);
-            transform-origin:top center;
-            animation:raySway ease-in-out infinite;
-          }
-          @keyframes raySway {
-            0%,100% { transform:rotate(-2deg); opacity:0.6; }
-            50%      { transform:rotate(2deg); opacity:1; }
-          }
-
-          .closed-content {
-            position:relative; z-index:10;
-            text-align:center;
-            padding:0 24px;
-            width:100%; max-width:420px;
-          }
-
-          .closed-icon {
-            font-size:72px; margin-bottom:16px;
-            filter:drop-shadow(0 0 20px rgba(239,68,68,0.6));
-            animation:iconFloat 3s ease-in-out infinite;
-          }
-          @keyframes iconFloat {
-            0%,100% { transform:translateY(0); }
-            50%      { transform:translateY(-10px); }
-          }
-
-          .closed-label {
-            font-size:11px; letter-spacing:5px;
-            color:rgba(239,68,68,0.5); font-weight:700;
-            text-transform:uppercase; margin-bottom:8px;
-          }
-
-          .closed-title {
-            font-family:'Bebas Neue',sans-serif;
-            font-size:52px; letter-spacing:4px;
-            background:linear-gradient(135deg, #ef4444, #fca5a5, #ef4444);
-            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-            background-clip:text;
-            filter:drop-shadow(0 0 16px rgba(239,68,68,0.4));
-            animation:titleGlow 2s ease-in-out infinite;
-            line-height:1; margin-bottom:6px;
-          }
-          @keyframes titleGlow {
-            0%,100% { filter:drop-shadow(0 0 16px rgba(239,68,68,0.4)); }
-            50%      { filter:drop-shadow(0 0 28px rgba(239,68,68,0.8)); }
-          }
-
-          .closed-hours {
-            font-size:12px; color:rgba(255,255,255,0.3);
-            letter-spacing:2px; margin-bottom:32px;
-          }
-
-          .timer-box {
-            background:rgba(239,68,68,0.06);
-            border:1px solid rgba(239,68,68,0.2);
-            border-radius:16px; padding:20px 24px;
-            margin-bottom:28px;
-            position:relative; overflow:hidden;
-          }
-
-          .timer-box::before {
-            content:'';
-            position:absolute; inset:0;
-            background:linear-gradient(90deg, transparent, rgba(239,68,68,0.04), transparent);
-            animation:timerShimmer 3s linear infinite;
-          }
-          @keyframes timerShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
-
-          .timer-label {
-            font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.3);
-            text-transform:uppercase; margin-bottom:10px; font-weight:700;
-          }
-
-          .timer-digits {
-            font-family:'Bebas Neue',sans-serif;
-            font-size:58px; letter-spacing:4px;
-            color:#ef4444;
-            text-shadow:0 0 20px rgba(239,68,68,0.6);
-            line-height:1;
-          }
-
-
-
-          .back-btn {
-            width:100%;
-            background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.1);
-            color:rgba(255,255,255,0.6);
-            padding:16px;
-            border-radius:12px;
-            font-family:'Bebas Neue',sans-serif;
-            font-size:16px; letter-spacing:2px;
-            cursor:pointer; transition:all 0.2s;
-          }
-          .back-btn:hover { background:rgba(255,255,255,0.1); color:white; }
-        </style>
-
-        <div class="closed-scene" id="closedScene">
-
-          <!-- Anneaux néon -->
-          <div class="neon-ring" style="width:300px;height:300px;animation-duration:4s;animation-delay:0s;"></div>
-          <div class="neon-ring" style="width:500px;height:500px;animation-duration:6s;animation-delay:1s;opacity:0.15;"></div>
-          <div class="neon-ring" style="width:700px;height:700px;animation-duration:8s;animation-delay:2s;opacity:0.08;"></div>
-
-          <!-- Rayons -->
-          <div class="light-ray" style="left:25%;animation-duration:5s;animation-delay:0s;"></div>
-          <div class="light-ray" style="left:50%;animation-duration:7s;animation-delay:1s;width:3px;"></div>
-          <div class="light-ray" style="left:75%;animation-duration:6s;animation-delay:2s;"></div>
-
-          <!-- Particules -->
-          <div id="closedParticles"></div>
-
-          <div class="closed-content">
-
-            <div class="closed-label">Battle Dock Casino</div>
-            <div class="closed-title">Portes Closes</div>
-            <div class="closed-hours">Horaires d'ouverture : 12h00 – 00h00</div>
-
-            <div class="timer-box">
-              <div class="timer-label">Ouverture 12H00</div>
-              <div class="timer-digits" id="closedTimer">--:--:--</div>
-            </div>
-
-            <button class="back-btn" onclick="window.location.href='game.html'">
-              ← Retour au Lobby
-            </button>
-          </div>
-        </div>
-
-        <script>
-          // Particules rouges
-          const pc = document.getElementById('closedParticles');
-          for (let i = 0; i < 20; i++) {
-            const p = document.createElement('div');
-            p.className = 'c-particle';
-            const s = 1.5 + Math.random() * 3;
-            p.style.cssText = \`
-              width:\${s}px; height:\${s}px;
-              background:rgba(239,68,68,\${0.4+Math.random()*0.4});
-              left:\${Math.random()*100}%;
-              bottom:\${Math.random()*20}%;
-              --dx:\${(Math.random()-0.5)*60}px;
-              animation-duration:\${12+Math.random()*18}s;
-              animation-delay:\${Math.random()*15}s;
-            \`;
-            pc.appendChild(p);
-          }
-
-          // Timer
-          function updateTimer() {
-            const now = new Date();
-            const nextOpen = new Date();
-            if (now.getHours() < 12) {
-              nextOpen.setHours(12, 0, 0, 0);
-            } else {
-              nextOpen.setDate(nextOpen.getDate() + 1);
-              nextOpen.setHours(12, 0, 0, 0);
-            }
-            const diff = Math.floor((nextOpen - now) / 1000);
-            const h = Math.floor(diff / 3600);
-            const m = Math.floor((diff % 3600) / 60);
-            const s = diff % 60;
-            document.getElementById('closedTimer').textContent =
-              String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-            setTimeout(updateTimer, 1000);
-          }
-          updateTimer();
-        </script>
+      // Injecter les styles
+      const style = document.createElement('style');
+      style.textContent = `
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');
+        #casinoClosedPage * { margin:0; padding:0; box-sizing:border-box; }
+        .closed-scene {
+          position:fixed; inset:0;
+          background: linear-gradient(180deg, #0a0005 0%, #1a0010 30%, #2d0020 60%, #0a0005 100%);
+          display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden;
+        }
+        .c-particle { position:absolute; border-radius:50%; pointer-events:none; animation:cPartFloat linear infinite; }
+        @keyframes cPartFloat { 0%{transform:translateY(0) translateX(0);opacity:0} 10%{opacity:1} 90%{opacity:0.5} 100%{transform:translateY(-100vh) translateX(var(--dx));opacity:0} }
+        .neon-ring { position:absolute; border-radius:50%; border:1px solid rgba(239,68,68,0.15); animation:ringPulse ease-in-out infinite; }
+        @keyframes ringPulse { 0%,100%{transform:scale(1);opacity:0.3} 50%{transform:scale(1.05);opacity:0.7} }
+        .light-ray { position:absolute; top:0; width:2px; height:60vh; background:linear-gradient(180deg,rgba(239,68,68,0.3),transparent); filter:blur(4px); transform-origin:top center; animation:raySway ease-in-out infinite; }
+        @keyframes raySway { 0%,100%{transform:rotate(-2deg);opacity:0.6} 50%{transform:rotate(2deg);opacity:1} }
+        .closed-content { position:relative; z-index:10; text-align:center; padding:0 24px; width:100%; max-width:420px; }
+        .closed-label { font-size:11px; letter-spacing:5px; color:rgba(239,68,68,0.5); font-weight:700; text-transform:uppercase; margin-bottom:8px; }
+        .closed-title { font-family:'Bebas Neue',sans-serif; font-size:52px; letter-spacing:4px; line-height:1; margin-bottom:6px; background:linear-gradient(135deg,#ef4444,#fca5a5,#ef4444); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; filter:drop-shadow(0 0 16px rgba(239,68,68,0.4)); animation:titleGlow 2s ease-in-out infinite; }
+        @keyframes titleGlow { 0%,100%{filter:drop-shadow(0 0 16px rgba(239,68,68,0.4))} 50%{filter:drop-shadow(0 0 28px rgba(239,68,68,0.8))} }
+        .closed-hours { font-size:12px; color:rgba(255,255,255,0.3); letter-spacing:2px; margin-bottom:32px; }
+        .timer-box { background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:16px; padding:20px 24px; margin-bottom:28px; position:relative; overflow:hidden; }
+        .timer-box::before { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(239,68,68,0.04),transparent); animation:timerShimmer 3s linear infinite; }
+        @keyframes timerShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+        .timer-label { font-size:9px; letter-spacing:3px; color:rgba(255,255,255,0.3); text-transform:uppercase; margin-bottom:10px; font-weight:700; }
+        .timer-digits { font-family:'Bebas Neue',sans-serif; font-size:58px; letter-spacing:4px; color:#ef4444; text-shadow:0 0 20px rgba(239,68,68,0.6); line-height:1; }
+        .closed-back { width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:16px; border-radius:12px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; }
       `;
+      document.head.appendChild(style);
+
+      // Construire le HTML
+      const scene = document.createElement('div');
+      scene.className = 'closed-scene';
+      scene.innerHTML = [
+        '<div class="neon-ring" style="width:300px;height:300px;animation-duration:4s"></div>',
+        '<div class="neon-ring" style="width:500px;height:500px;animation-duration:6s;animation-delay:1s;opacity:0.15"></div>',
+        '<div class="neon-ring" style="width:700px;height:700px;animation-duration:8s;animation-delay:2s;opacity:0.08"></div>',
+        '<div class="light-ray" style="left:25%;animation-duration:5s"></div>',
+        '<div class="light-ray" style="left:50%;animation-duration:7s;animation-delay:1s;width:3px"></div>',
+        '<div class="light-ray" style="left:75%;animation-duration:6s;animation-delay:2s"></div>',
+        '<div id="closedParticles"></div>',
+        '<div class="closed-content">',
+          '<div class="closed-label">Battle Dock Casino</div>',
+          '<div class="closed-title">Portes Closes</div>',
+          '<div class="closed-hours">Horaires : 12h00 – 00h00</div>',
+          '<div class="timer-box">',
+            '<div class="timer-label">Ouverture 12H00</div>',
+            '<div class="timer-digits" id="closedTimer">--:--:--</div>',
+          '</div>',
+          '<button class="closed-back" onclick="window.location.href=\'game.html\'">← Retour au Lobby</button>',
+        '</div>'
+      ].join('');
+
+      page.appendChild(scene);
+
+      // Particules
+      const pc = document.getElementById('closedParticles');
+      for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.className = 'c-particle';
+        const s = 1.5 + Math.random() * 3;
+        p.style.cssText = 'width:' + s + 'px;height:' + s + 'px;background:rgba(239,68,68,' + (0.4+Math.random()*0.4) + ');left:' + Math.random()*100 + '%;bottom:' + Math.random()*20 + '%;--dx:' + ((Math.random()-0.5)*60) + 'px;animation-duration:' + (12+Math.random()*18) + 's;animation-delay:' + (Math.random()*15) + 's;';
+        pc.appendChild(p);
+      }
+
+      // Timer
+      function updateTimer() {
+        const n = new Date(), nx = new Date();
+        if (n.getHours() < 12) { nx.setHours(12,0,0,0); }
+        else { nx.setDate(nx.getDate()+1); nx.setHours(12,0,0,0); }
+        const d = Math.floor((nx-n)/1000);
+        const h = Math.floor(d/3600), m = Math.floor((d%3600)/60), s = d%60;
+        const el = document.getElementById('closedTimer');
+        if (el) el.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+        setTimeout(updateTimer, 1000);
+      }
+      updateTimer();
     }
+
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
