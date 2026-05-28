@@ -352,62 +352,6 @@
     let interval = null;
     let currentBet = 0;
 
-async function loadMoney() {
-      let retries = 3;
-      while (retries > 0) {
-        const { data: stats, error } = await sb
-          .from('game_stats').select('money').eq('user_id', currentUser.id).single();
-        if (error) { retries--; if (retries > 0) await new Promise(r => setTimeout(r, 500)); continue; }
-        currentMoney = stats?.money || 0;
-        const el = document.getElementById('balance');
-        if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-        return;
-      }
-    }
-
-    async function updateMoney(newAmount) {
-      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
-      if (error) { console.error('updateMoney:', error.message); return; }
-      currentMoney = newAmount;
-      const el = document.getElementById('balance');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-    }
-
-    async function recordBet(gameName, amountBet) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: amountBet, amount_won: 0 });
-        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
-        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) {}
-      } catch(e) { console.log('recordBet:', e.message); }
-    }
-
-    async function recordWin(gameName, amountWon) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
-      } catch(e) { console.log('recordWin:', e.message); }
-    }
-
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        await new Promise(r => setTimeout(r, 1000));
-        const { data: { session: s2 } } = await sb.auth.getSession();
-        if (!s2) { window.location.href = 'index.html'; return; }
-        currentUser = s2.user;
-      } else {
-        currentUser = session.user;
-      }
-      await loadMoney();
-    } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-      currentUser = session.user;
-      await loadMoney();
-    }
 
 
 
@@ -523,6 +467,56 @@ async function loadMoney() {
     // Anti-zoom
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
+
+    async function loadMoney() {
+      let retries = 3;
+      while (retries > 0) {
+        const { data: stats, error } = await sb
+          .from('game_stats').select('money').eq('user_id', currentUser.id).single();
+        if (error) { retries--; if (retries > 0) await new Promise(r => setTimeout(r, 500)); continue; }
+        currentMoney = stats?.money || 0;
+        const el = document.getElementById('balance');
+        if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+        return;
+      }
+    }
+
+    async function updateMoney(newAmount) {
+      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
+      if (error) { console.error('updateMoney:', error.message); return; }
+      currentMoney = newAmount;
+      const el = document.getElementById('balance');
+      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function recordBet(gameName, amountBet) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: amountBet, amount_won: 0 });
+        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
+        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) {}
+      } catch(e) { console.log('recordBet:', e.message); }
+    }
+
+    async function recordWin(gameName, amountWon) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
+      } catch(e) { console.log('recordWin:', e.message); }
+    }
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        await new Promise(r => setTimeout(r, 1000));
+        const { data: { session: s2 } } = await sb.auth.getSession();
+        if (!s2) { window.location.href = 'index.html'; return; }
+        currentUser = s2.user;
+      } else {
+        currentUser = session.user;
+      }
+      await loadMoney();
+    }
 
     init();
   </script>
