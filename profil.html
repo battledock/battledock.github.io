@@ -151,6 +151,20 @@
     .color-name  { font-size: 11px; font-weight: 700; color: #1a1a1a; }
     .color-badge { font-size: 9px; color: #9ca3af; font-weight: 600; }
 
+    /* ===================== BIO ===================== */
+    .bio-wrap { padding: 12px 16px; }
+    .bio-input {
+      width: 100%; background: #f9fafb;
+      border: 1px solid #e5e7eb; border-radius: 10px;
+      padding: 10px 14px; font-size: 14px;
+      font-family: 'Inter', sans-serif; color: #1a1a1a;
+      resize: none; outline: none; min-height: 60px;
+      -webkit-user-select: text; user-select: text;
+      transition: border-color 0.2s;
+    }
+    .bio-input:focus { border-color: #3b82f6; background: white; }
+    .bio-count { font-size: 10px; color: #9ca3af; text-align: right; margin-top: 4px; }
+
     /* ===================== ROWS ===================== */
     .row {
       display: flex; align-items: center; gap: 12px;
@@ -252,6 +266,17 @@
       </div>
     </div>
 
+    <!-- BIO -->
+    <div class="section-label">Bio</div>
+    <div class="section-card">
+      <div class="bio-wrap">
+        <textarea class="bio-input" id="bioInput" maxlength="50"
+          placeholder="Présente-toi en quelques mots..."
+          oninput="onBioInput(this)"></textarea>
+        <div class="bio-count"><span id="bioCount">0</span>/50</div>
+      </div>
+    </div>
+
     <!-- STATS -->
     <div class="section-label">Statistiques</div>
     <div class="section-card">
@@ -274,6 +299,35 @@
         <div class="row-icon green">🏆</div>
         <div class="row-info"><div class="row-title">Trophées</div></div>
         <div class="row-right" id="statTrophies">0</div>
+      </div>
+    </div>
+
+    <!-- RECORDS -->
+    <div class="section-label">Records & Activité</div>
+    <div class="section-card">
+      <div class="row">
+        <div class="row-icon orange">🎰</div>
+        <div class="row-info">
+          <div class="row-title">Plus gros gain</div>
+          <div class="row-val">Record au casino</div>
+        </div>
+        <div class="row-right" id="statBiggestWin">0€</div>
+      </div>
+      <div class="row">
+        <div class="row-icon blue">⏱️</div>
+        <div class="row-info">
+          <div class="row-title">Temps de jeu</div>
+          <div class="row-val">Depuis le début</div>
+        </div>
+        <div class="row-right" id="statPlaytime">0h</div>
+      </div>
+      <div class="row">
+        <div class="row-icon green">🔥</div>
+        <div class="row-info">
+          <div class="row-title">Streak</div>
+          <div class="row-val">Jours consécutifs</div>
+        </div>
+        <div class="row-right" id="statStreak">0 jour</div>
       </div>
     </div>
 
@@ -330,7 +384,6 @@
       { id: 'level50',       file: 'avatar-level-50.png',       label: 'Niv. 50',     condition: () => playerLevel >= 50 },
       { id: 'millionaire',   file: 'avatar-millionaire.png',    label: '1M€',         condition: () => playerMoney >= 1000000 },
       { id: 'completionist', file: 'avatar-completionist.png',  label: 'Tous succès', condition: () => achievementsUnlocked >= 14 },
-      { id: 'launch-event',  file: 'avatar-launch-event.png',   label: 'Lancement',   condition: () => eventsClaimed.includes('launch-week') },
     ];
 
     function getXpRequired(level) {
@@ -345,10 +398,11 @@
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
       await loadProfile();
+      updateStreak();
     }
 
     async function loadProfile() {
-      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).single();
+      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).single();
       const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).single();
       if (!profile || !stats) return;
 
@@ -383,10 +437,27 @@
       document.getElementById('qsTrophies').textContent = stats.trophies || 0;
 
       // Stats section
-      document.getElementById('statMoney').textContent   = playerMoney.toLocaleString('fr-FR') + '€';
-      document.getElementById('statXp').textContent      = totalXp.toLocaleString('fr-FR') + ' XP';
-      document.getElementById('statGrade').textContent   = stats.grade || 'Docker Occasionnel';
-      document.getElementById('statTrophies').textContent = stats.trophies || 0;
+      document.getElementById('statMoney').textContent    = playerMoney.toLocaleString('fr-FR') + '€';
+      document.getElementById('statXp').textContent       = totalXp.toLocaleString('fr-FR') + ' XP';
+      document.getElementById('statGrade').textContent    = stats.grade || 'Docker Occasionnel';
+      document.getElementById('statTrophies').textContent  = stats.trophies || 0;
+
+      // Records
+      const bigWin = stats.biggest_win || 0;
+      document.getElementById('statBiggestWin').textContent = bigWin.toLocaleString('fr-FR') + '€';
+
+      const minutes = stats.playtime_minutes || 0;
+      const hours   = Math.floor(minutes / 60);
+      const mins    = minutes % 60;
+      document.getElementById('statPlaytime').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'min' : ''}` : `${mins}min`;
+
+      const streak = stats.streak_days || 0;
+      document.getElementById('statStreak').textContent = streak + (streak > 1 ? ' jours' : ' jour');
+
+      // Bio
+      const bio = profile.bio || '';
+      document.getElementById('bioInput').value = bio;
+      document.getElementById('bioCount').textContent = bio.length;
 
       // Couleur
       applyColor(backgroundColor);
@@ -394,6 +465,44 @@
 
       // Avatars
       renderAvatars();
+    }
+
+    // Bio
+    let bioSaveTimeout = null;
+    function onBioInput(el) {
+      document.getElementById('bioCount').textContent = el.value.length;
+      clearTimeout(bioSaveTimeout);
+      bioSaveTimeout = setTimeout(() => saveBio(el.value), 1000);
+    }
+    async function saveBio(bio) {
+      await sb.from('profiles').update({ bio }).eq('user_id', currentUser.id);
+    }
+
+    // Streak + playtime au chargement
+    async function updateStreak() {
+      const today = new Date().toISOString().split('T')[0];
+      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).single();
+      if (!stats) return;
+
+      const lastLogin = stats.last_login;
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      let newStreak = stats.streak_days || 0;
+      if (lastLogin === yesterdayStr) {
+        newStreak += 1;
+      } else if (lastLogin !== today) {
+        newStreak = 1;
+      }
+
+      // Incrémenter playtime (+1 min par visite)
+      const newPlaytime = (stats.playtime_minutes || 0) + 1;
+
+      await sb.from('game_stats').update({
+        streak_days: newStreak,
+        last_login: today,
+        playtime_minutes: newPlaytime
+      }).eq('user_id', currentUser.id);
     }
 
     function countUnlockedAchievements(level, money, totalXp) {

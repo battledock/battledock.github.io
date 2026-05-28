@@ -502,6 +502,11 @@
       try {
         const username = (currentUser.email || '').split('@')[0] || 'Docker';
         await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
+        // Mettre à jour biggest_win si record battu
+        const { data: stats } = await sb.from('game_stats').select('biggest_win').eq('user_id', currentUser.id).single();
+        if (!stats || amountWon > (stats.biggest_win || 0)) {
+          await sb.from('game_stats').update({ biggest_win: amountWon }).eq('user_id', currentUser.id);
+        }
       } catch(e) { console.log('recordWin:', e.message); }
     }
 
