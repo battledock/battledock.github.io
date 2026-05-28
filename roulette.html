@@ -434,56 +434,6 @@
     ];
 
     
-    async function loadMoney() {
-      const { data: stats, error } = await sb
-        .from('game_stats')
-        .select('money')
-        .eq('user_id', currentUser.id)
-        .single();
-      if (error) { console.error('loadMoney:', error.message); return; }
-      currentMoney = stats?.money || 0;
-      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-    }
-
-    async function updateMoney(newAmount) {
-      const { error } = await sb
-        .from('game_stats')
-        .update({ money: newAmount })
-        .eq('user_id', currentUser.id);
-      if (error) { console.error('updateMoney:', error.message); return; }
-      currentMoney = newAmount;
-      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-    }
-
-    async function recordBet(gameName, amountBet) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({
-          user_id: currentUser.id,
-          user_name: username,
-          game_name: gameName,
-          amount_bet: amountBet,
-          amount_won: 0
-        });
-        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
-        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) { console.log('jackpot:', e.message); }
-      } catch(e) { console.log('recordBet:', e.message); }
-    }
-
-    async function recordWin(gameName, amountWon) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({
-          user_id: currentUser.id,
-          user_name: username,
-          game_name: gameName,
-          amount_bet: 0,
-          amount_won: amountWon
-        });
-      } catch(e) { console.log('recordWin:', e.message); }
-    }
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
@@ -492,6 +442,129 @@
         return;
       }
       currentUser = session.user;
+      await loadMoney();
+    }
+
+
+
+    async function spin() {
+      const betInput = document.getElementById('betAmount');
+      const bet = parseInt(betInput.value);
+      const btn = document.getElementById('spinBtn');
+      const res = document.getElementById('result');
+      const wheel = document.getElementById('wheel');
+
+      if (bet < 10) {
+        alert('Mise minimum : 10€');
+        return;
+      }
+
+      if (bet > currentMoney) {
+        alert('Solde insuffisant !');
+        return;
+      }
+
+      btn.disabled = true;
+      res.style.display = 'none';
+
+      // Déduire la mise
+      await updateMoney(currentMoney - bet);
+      await recordBet('Roulette', bet);
+
+      // Obtenir la rotation actuelle et normaliser entre 0-360
+      const currentTransform = wheel.style.transform;
+      let currentRotation = currentTransform ? parseFloat(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
+      currentRotation = currentRotation % 360; // Normaliser entre 0-360
+
+      // Choisir segment gagnant
+      const winIndex = Math.floor(Math.random() * 10);
+
+      // Calculer rotation (pointeur en haut = 0°)
+      const segmentAngle = 36; // 360° / 10 segments
+      const targetAngle = winIndex * segmentAngle + (segmentAngle / 2);
+      const spins = 5; // 5 tours complets
+      const finalRotation = currentRotation + (spins * 360) + (360 - targetAngle);
+
+      wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+      wheel.style.transform = `rotate(${finalRotation}deg)`;
+
+      setTimeout(async () => {
+        // Normaliser la rotation finale
+        const normalizedRotation = finalRotation % 360;
+        wheel.style.transition = 'none';
+        wheel.style.transform = `rotate(${normalizedRotation}deg)`;
+        setTimeout(() => {
+          wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+        }, 50);
+
+        // CALCULER LE SEGMENT RÉEL où la roue s'est arrêtée
+        // Le pointeur est en haut (0°), donc on calcule quel segment est sous le pointeur
+        const actualSegmentIndex = Math.floor(((360 - normalizedRotation) % 360) / segmentAngle) % 10;
+        const segment = segments[actualSegmentIndex];
+
+        const win = Math.floor(bet * segment.mult);
+        
+        if (win > 0) {
+          res.className = 'result win';
+          if (segment.mult >= 5) {
+            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700;">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€ 💰`;
+          } else {
+            res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`;
+          }
+          await updateMoney(currentMoney + win);
+        await recordWin('Roulette', win);
+        } else {
+          res.className = 'result lose';
+          res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> - Perdu ${bet.toLocaleString('fr-FR')}€`;
+        }
+
+        res.style.display = 'block';
+        btn.disabled = false;
+      }, 4000);
+    }
+
+    // Anti-zoom
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+
+    init();
+  </script>
+</body>
+</html>
+    async function loadMoney() {
+      let retries = 3;
+      while (retries > 0) {
+        const { data: stats, error } = await sb
+          .from('game_stats')
+          .select('money')
+          .eq('user_id', currentUser.id)
+          .single();
+        if (error) { retries--; if (retries > 0) await new Promise(r => setTimeout(r, 500)); continue; }
+        currentMoney = stats?.money || 0;
+        const el = document.getElementById('balance');
+        if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+        return;
+      }
+    }
+
+    async function updateMoney(newAmount) {
+      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
+      if (error) { console.error('updateMoney:', error.message); return; }
+      currentMoney = newAmount;
+      const el = document.getElementById('balance');
+      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        await new Promise(r => setTimeout(r, 1000));
+        const { data: { session: s2 } } = await sb.auth.getSession();
+        if (!s2) { window.location.href = 'index.html'; return; }
+        currentUser = s2.user;
+      } else {
+        currentUser = session.user;
+      }
       await loadMoney();
     }
 

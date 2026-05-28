@@ -431,16 +431,30 @@
     const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
 
     
+
     async function loadMoney() {
-      const { data: stats, error } = await sb
-        .from('game_stats')
-        .select('money')
-        .eq('user_id', currentUser.id)
-        .single();
-      if (error) { console.error('loadMoney:', error.message); return; }
-      currentMoney = stats?.money || 0;
-      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+      let retries = 3;
+      while (retries > 0) {
+        const { data: stats, error } = await sb
+          .from('game_stats')
+          .select('money')
+          .eq('user_id', currentUser.id)
+          .single();
+        
+        if (error) {
+          console.error('loadMoney error:', error.message, error.code);
+          retries--;
+          if (retries > 0) await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        
+        currentMoney = stats?.money || 0;
+        const el = document.getElementById('balance');
+        if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+        console.log('loadMoney success:', currentMoney);
+        return;
+      }
+      console.error('loadMoney failed after 3 retries');
     }
 
     async function updateMoney(newAmount) {
@@ -450,48 +464,24 @@
         .eq('user_id', currentUser.id);
       if (error) { console.error('updateMoney:', error.message); return; }
       currentMoney = newAmount;
-      const el = document.getElementById('balance') || document.getElementById('playerMoney') || document.getElementById('money-display');
+      const el = document.getElementById('balance');
       if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
-    async function recordBet(gameName, amountBet) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({
-          user_id: currentUser.id,
-          user_name: username,
-          game_name: gameName,
-          amount_bet: amountBet,
-          amount_won: 0
-        });
-        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
-        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) { console.log('jackpot:', e.message); }
-      } catch(e) { console.log('recordBet:', e.message); }
-    }
-
-    async function recordWin(gameName, amountWon) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({
-          user_id: currentUser.id,
-          user_name: username,
-          game_name: gameName,
-          amount_bet: 0,
-          amount_won: amountWon
-        });
-      } catch(e) { console.log('recordWin:', e.message); }
-    }
-
     async function init() {
+      // Attendre que la session soit prête
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
-        window.location.href = 'index.html';
-        return;
+        // Retry une fois après 1s
+        await new Promise(r => setTimeout(r, 1000));
+        const { data: { session: s2 } } = await sb.auth.getSession();
+        if (!s2) { window.location.href = 'index.html'; return; }
+        currentUser = s2.user;
+      } else {
+        currentUser = session.user;
       }
-      currentUser = session.user;
       await loadMoney();
     }
-
 
 
     function createDeck() {
