@@ -1132,7 +1132,6 @@
       document.getElementById('trophiesAmount').textContent = '🏆 ' + (profile.trophies || 0);
 
       loadRank(stats.money || 0);
-      checkDailyBonus();
       await checkPendingLevelUp(stats, profile);
     }
 
@@ -1182,70 +1181,6 @@
         const rank = data.findIndex(p => p.money <= money) + 1;
         document.getElementById('rankValue').textContent = '#' + rank;
       }
-    }
-
-    async function checkDailyBonus() {
-      const today = new Date().toISOString().split('T')[0];
-      const { data } = await sb.from('daily_bonuses').select('*').eq('user_id', currentUser.id).eq('last_claim_date', today).maybeSingle();
-      const card = document.getElementById('dailyContainer');
-      const badge = document.getElementById('dailyBadge');
-      const desc  = document.getElementById('dailyDesc');
-      if (data) {
-        canClaimDaily = false;
-        card.classList.add('claimed');
-        badge.textContent = '✓'; badge.className = 'daily-badge-right claimed';
-        desc.textContent = 'Reviens demain !';
-        updateTimer();
-      } else {
-        canClaimDaily = true;
-        card.classList.remove('claimed');
-        badge.textContent = 'DISPO'; badge.className = 'daily-badge-right available';
-        desc.textContent = 'Récupère ton bonus !';
-      }
-    }
-
-    function updateTimer() {
-      const now = new Date(), tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(0, 0, 0, 0);
-      const diff = tomorrow - now;
-      const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
-      const timer = document.getElementById('dailyTimer');
-      if (timer) timer.textContent = `Prochain dans ${h}h ${m}m ${s}s`;
-      setTimeout(updateTimer, 1000);
-    }
-
-    async function claimDailyBonus() {
-      if (!canClaimDaily) return;
-      const today = new Date().toISOString().split('T')[0];
-      const { data: lastClaim } = await sb.from('daily_bonuses').select('last_claim_date, streak').eq('user_id', currentUser.id).order('last_claim_date', { ascending: false }).limit(1).maybeSingle();
-      let streak = 1;
-      if (lastClaim) {
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        if (lastClaim.last_claim_date === yesterday.toISOString().split('T')[0]) streak = (lastClaim.streak || 0) + 1;
-      }
-      const reward = 100 + Math.min(streak - 1, 6) * 50 + Math.floor(Math.random() * 100);
-      await sb.from('daily_bonuses').insert({ user_id: currentUser.id, last_claim_date: today, streak });
-      const { data: stats } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).single();
-      await sb.from('game_stats').update({ money: (stats?.money || 0) + reward }).eq('user_id', currentUser.id);
-
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;';
-      overlay.innerHTML = `
-        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-          <div style="font-size:64px;margin-bottom:12px;">🎁</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a1a;margin-bottom:16px;letter-spacing:1px;">Container du Jour !</div>
-          <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-bottom:16px;">
-            <div style="font-size:12px;color:#92400e;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Tu as gagné</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:44px;color:#d97706;">+${reward.toLocaleString('fr-FR')}€</div>
-          </div>
-          <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">🔥 ${streak} jour${streak>1?'s':''} consécutif${streak>1?'s':''} !</div>
-          <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;">SUPER !</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      canClaimDaily = false;
-      await loadUserData();
-      await checkDailyBonus();
     }
 
     function createCompany() { alert('Bientôt disponible ! 🏢'); }
