@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tournoi - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* HEADER */
+    .header {
+      background:rgba(10,10,10,0.95); backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+      position:sticky; top:0; z-index:50;
+    }
+    .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.6); cursor:pointer; }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:white; flex:1; }
+    .attempts-badge { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; font-weight:700; font-size:12px; padding:4px 10px; border-radius:20px; }
+
+    /* HERO */
+    .hero {
+      padding:28px 20px 24px; text-align:center;
+      background:linear-gradient(180deg,#1a0a0a,#0a0a0a);
+      border-bottom:1px solid rgba(255,255,255,0.06);
+      position:relative; overflow:hidden;
+    }
+    .hero::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 50% 0%, rgba(239,68,68,0.08), transparent 60%);
+    }
+    .hero-badge { display:inline-block; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; font-size:10px; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px; }
+    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:36px; letter-spacing:4px; color:white; margin-bottom:6px; }
+    .hero-sub { font-size:13px; color:rgba(255,255,255,0.4); }
+
+    /* STATS BAR */
+    .stats-bar {
+      display:flex; border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    .stat-item { flex:1; padding:14px 8px; text-align:center; border-right:1px solid rgba(255,255,255,0.06); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:0.5px; }
+    .stat-val.red { color:#ef4444; }
+    .stat-val.gold { color:#fbbf24; }
+    .stat-lbl { font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
+
+    /* ZONE DE JEU */
+    .game-zone {
+      padding:24px 16px;
+      display:flex; flex-direction:column; align-items:center; gap:20px;
+    }
+
+    /* PISTE */
+    .track-wrap {
+      width:100%; max-width:400px;
+      position:relative;
+    }
+    .track-label {
+      display:flex; justify-content:space-between;
+      font-size:10px; color:rgba(255,255,255,0.3); font-weight:700;
+      text-transform:uppercase; letter-spacing:1px; margin-bottom:8px;
+    }
+    .track {
+      width:100%; height:60px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:12px; overflow:hidden;
+      position:relative; cursor:pointer;
+    }
+
+    /* ZONE CIBLE */
+    .target-zone {
+      position:absolute; top:0; bottom:0;
+      background:linear-gradient(90deg, transparent, rgba(34,197,94,0.3), rgba(34,197,94,0.6), rgba(34,197,94,0.3), transparent);
+      border-left:1px solid rgba(34,197,94,0.5);
+      border-right:1px solid rgba(34,197,94,0.5);
+      width:40px; /* 10% de 400px */
+      transition:width 0.1s;
+    }
+    .target-zone.perfect {
+      background:linear-gradient(90deg, transparent, rgba(251,191,36,0.4), rgba(251,191,36,0.8), rgba(251,191,36,0.4), transparent);
+      border-color:rgba(251,191,36,0.8);
+      width:12px;
+    }
+
+    /* CURSEUR */
+    .cursor {
+      position:absolute; top:4px; bottom:4px;
+      width:6px; border-radius:3px;
+      background:white;
+      box-shadow:0 0 12px rgba(255,255,255,0.8);
+      transition:none;
+    }
+
+    /* SCORE FLASH */
+    .score-flash {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:2px;
+      pointer-events:none; opacity:0;
+      animation:none;
+    }
+    .score-flash.show {
+      animation:flashScore 0.8s ease-out forwards;
+    }
+    @keyframes flashScore {
+      0%   { opacity:1; transform:translate(-50%,-50%) scale(1); }
+      50%  { opacity:1; transform:translate(-50%,-70%) scale(1.3); }
+      100% { opacity:0; transform:translate(-50%,-100%) scale(0.8); }
+    }
+
+    /* BOUTON TAP */
+    .tap-btn {
+      width:100%; max-width:400px;
+      height:70px; border:none; border-radius:16px;
+      font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
+      cursor:pointer; transition:all 0.1s; position:relative; overflow:hidden;
+      background:linear-gradient(135deg,#dc2626,#ef4444);
+      color:white; box-shadow:0 4px 20px rgba(239,68,68,0.3);
+    }
+    .tap-btn:active { transform:scale(0.97); box-shadow:0 2px 10px rgba(239,68,68,0.2); }
+    .tap-btn:disabled { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.2); box-shadow:none; cursor:not-allowed; }
+    .tap-btn.waiting { background:linear-gradient(135deg,#16a34a,#22c55e); box-shadow:0 4px 20px rgba(34,197,94,0.3); }
+
+    /* PRÉCISION */
+    .precision-display {
+      text-align:center; width:100%; max-width:400px;
+    }
+    .precision-val { font-family:'Bebas Neue',sans-serif; font-size:52px; color:white; letter-spacing:2px; line-height:1; }
+    .precision-lbl { font-size:11px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:2px; margin-top:4px; }
+    .precision-grade { font-size:13px; font-weight:700; margin-top:6px; }
+
+    /* HISTORIQUE ESSAIS */
+    .attempts-row {
+      display:flex; gap:6px; flex-wrap:wrap; justify-content:center;
+      width:100%; max-width:400px;
+    }
+    .attempt-dot {
+      width:28px; height:28px; border-radius:8px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:10px; font-weight:700;
+    }
+    .attempt-dot.done-good { background:rgba(34,197,94,0.2); color:#22c55e; border:1px solid rgba(34,197,94,0.3); }
+    .attempt-dot.done-ok   { background:rgba(251,191,36,0.2); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); }
+    .attempt-dot.done-bad  { background:rgba(239,68,68,0.2); color:#ef4444; border:1px solid rgba(239,68,68,0.3); }
+    .attempt-dot.remaining { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:rgba(255,255,255,0.2); }
+    .attempt-dot.current   { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3); color:white; animation:currentPulse 1s ease-in-out infinite; }
+    @keyframes currentPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+    /* CLASSEMENT */
+    .section { padding:0 16px 24px; }
+    .section-lbl { font-size:11px; font-weight:700; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+    .rank-row {
+      display:flex; align-items:center; gap:12px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+      border-radius:12px; padding:12px 14px; margin-bottom:6px;
+    }
+    .rank-row.me { background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.2); }
+    .rank-num { font-family:'Bebas Neue',sans-serif; font-size:18px; color:rgba(255,255,255,0.4); width:28px; text-align:center; flex-shrink:0; }
+    .rank-num.gold   { color:#fbbf24; }
+    .rank-num.silver { color:#94a3b8; }
+    .rank-num.bronze { color:#cd7f32; }
+    .rank-avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+    .rank-info { flex:1; }
+    .rank-name { font-weight:700; font-size:14px; color:white; }
+    .rank-sub  { font-size:11px; color:rgba(255,255,255,0.3); margin-top:1px; }
+    .rank-score { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#ef4444; letter-spacing:0.5px; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a1a1a; border:1px solid rgba(255,255,255,0.1); color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; white-space:nowrap; }
+    .toast.show { opacity:1; }
+    .toast.success { background:#16a34a; border-color:rgba(34,197,94,0.3); }
+    .toast.error   { background:#ef4444; border-color:rgba(239,68,68,0.3); }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='casino.html'">← Retour</button>
+    <div class="header-title">🏆 Tournoi</div>
+    <div class="attempts-badge" id="attemptsLeft">15/15</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">⏳ Pas encore commencé</div>
+    <div class="hero-title">Timing Précis</div>
+    <div class="hero-sub">Arrête le curseur au centre. 15 essais/jour. Meilleur score gardé.</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-val gold" id="myBestScore">--</div><div class="stat-lbl">Mon meilleur</div></div>
+    <div class="stat-item"><div class="stat-val" id="myRank">#--</div><div class="stat-lbl">Mon rang</div></div>
+    <div class="stat-item"><div class="stat-val red" id="attemptsToday">15</div><div class="stat-lbl">Essais restants</div></div>
+  </div>
+
+  <!-- JEU -->
+  <div class="game-zone">
+
+    <!-- PISTE -->
+    <div class="track-wrap">
+      <div class="track-label">
+        <span>← Raté</span>
+        <span>🎯 Centre</span>
+        <span>Raté →</span>
+      </div>
+      <div class="track" id="track" onclick="handleTap()">
+        <div class="target-zone" id="targetZone"></div>
+        <div class="cursor" id="cursor"></div>
+        <div class="score-flash" id="scoreFlash"></div>
+      </div>
+    </div>
+
+    <!-- PRÉCISION -->
+    <div class="precision-display">
+      <div class="precision-val" id="precisionVal">--</div>
+      <div class="precision-lbl">Précision</div>
+      <div class="precision-grade" id="precisionGrade"></div>
+    </div>
+
+    <!-- ESSAIS -->
+    <div class="attempts-row" id="attemptsRow"></div>
+
+    <!-- BOUTON -->
+    <button class="tap-btn waiting" id="tapBtn" onclick="handleTap()">▶ COMMENCER</button>
+
+  </div>
+
+  <!-- CLASSEMENT -->
+  <div class="section">
+    <div class="section-lbl">🏅 Classement</div>
+    <div id="rankList"><div style="text-align:center;color:rgba(255,255,255,0.3);font-size:13px;padding:20px">Aucun score pour l'instant</div></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    const MAX_ATTEMPTS = 15;
+    const TRACK_WIDTH  = 400; // px référence
+    const TARGET_PCT   = 0.5; // centre = 50%
+    const PERFECT_PX   = 6;   // zone parfaite ±6px
+    const GOOD_PX      = 20;  // zone bonne ±20px
+
+    let currentUser = null;
+    let myRecord = null;
+    let attemptsLeft = MAX_ATTEMPTS;
+    let sessionAttempts = []; // scores de la session
+    let isRunning = false;
+    let cursorX = 0;
+    let direction = 1;
+    let speed = 3; // px par frame
+    let animFrame = null;
+    let trackWidthPx = 400;
+
+    // ===== INIT =====
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+
+      const { data } = await sb.from('tournament_scores')
+        .select('*').eq('user_id', currentUser.id).maybeSingle();
+
+      if (data) {
+        myRecord = data;
+        // Reset essais si nouveau jour
+        const today = new Date().toISOString().split('T')[0];
+        if (data.last_attempt_date !== today) {
+          await sb.from('tournament_scores').update({ attempts_today: 0, last_attempt_date: today }).eq('user_id', currentUser.id);
+          myRecord.attempts_today = 0;
+        }
+        attemptsLeft = MAX_ATTEMPTS - (myRecord.attempts_today || 0);
+      } else {
+        attemptsLeft = MAX_ATTEMPTS;
+      }
+
+      updateUI();
+      renderAttempts();
+      loadLeaderboard();
+
+      // Mesurer la piste
+      const track = document.getElementById('track');
+      trackWidthPx = track.offsetWidth || 400;
+    }
+
+    // ===== UI =====
+    function updateUI() {
+      document.getElementById('attemptsLeft').textContent = attemptsLeft + '/15';
+      document.getElementById('attemptsToday').textContent = attemptsLeft;
+      document.getElementById('myBestScore').textContent = myRecord?.score != null ? myRecord.score + '%' : '--';
+
+      const btn = document.getElementById('tapBtn');
+      if (attemptsLeft <= 0) {
+        btn.disabled = true;
+        btn.textContent = '🚫 Plus d\'essais aujourd\'hui';
+        btn.classList.remove('waiting');
+      } else if (!isRunning) {
+        btn.disabled = false;
+        btn.textContent = '▶ COMMENCER';
+        btn.classList.add('waiting');
+      }
+    }
+
+    function renderAttempts() {
+      const row = document.getElementById('attemptsRow');
+      const used = MAX_ATTEMPTS - attemptsLeft;
+      let html = '';
+      for (let i = 0; i < MAX_ATTEMPTS; i++) {
+        if (i < used - sessionAttempts.length) {
+          html += `<div class="attempt-dot done-ok">✓</div>`;
+        } else if (i < used) {
+          const s = sessionAttempts[i - (used - sessionAttempts.length)];
+          const cls = s >= 90 ? 'done-good' : s >= 60 ? 'done-ok' : 'done-bad';
+          html += `<div class="attempt-dot ${cls}">${s}%</div>`;
+        } else if (i === used && attemptsLeft > 0) {
+          html += `<div class="attempt-dot current">●</div>`;
+        } else {
+          html += `<div class="attempt-dot remaining">${i+1}</div>`;
+        }
+      }
+      row.innerHTML = html;
+    }
+
+    // ===== ANIMATION CURSEUR =====
+    function startCursor() {
+      isRunning = true;
+      cursorX = 0;
+      direction = 1;
+      speed = 2.5 + Math.random() * 1.5; // vitesse légèrement aléatoire
+
+      const btn = document.getElementById('tapBtn');
+      btn.classList.remove('waiting');
+      btn.textContent = '🎯 STOP !';
+
+      function animate() {
+        cursorX += direction * speed;
+        if (cursorX >= trackWidthPx - 6) { cursorX = trackWidthPx - 6; direction = -1; }
+        if (cursorX <= 0) { cursorX = 0; direction = 1; }
+
+        document.getElementById('cursor').style.left = cursorX + 'px';
+        animFrame = requestAnimationFrame(animate);
+      }
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    function stopCursor() {
+      cancelAnimationFrame(animFrame);
+      isRunning = false;
+    }
+
+    // ===== TAP =====
+    async function handleTap() {
+      if (attemptsLeft <= 0) return;
+
+      if (!isRunning) {
+        startCursor();
+        return;
+      }
+
+      stopCursor();
+
+      // Calculer la précision
+      const centerPx = trackWidthPx * TARGET_PCT;
+      const distance = Math.abs(cursorX - centerPx);
+      const maxDist  = trackWidthPx * 0.5;
+      const precision = Math.max(0, Math.round((1 - distance / maxDist) * 100));
+
+      // Grade
+      let grade, color;
+      if (distance <= PERFECT_PX) { grade = '🎯 PARFAIT !';  color = '#fbbf24'; }
+      else if (distance <= GOOD_PX) { grade = '✅ Excellent'; color = '#22c55e'; }
+      else if (precision >= 70)     { grade = '👍 Bien';      color = '#60a5fa'; }
+      else if (precision >= 40)     { grade = '😅 Passable';  color = '#f59e0b'; }
+      else                           { grade = '💀 Raté';      color = '#ef4444'; }
+
+      // Afficher
+      document.getElementById('precisionVal').textContent = precision + '%';
+      document.getElementById('precisionVal').style.color = color;
+      document.getElementById('precisionGrade').textContent = grade;
+      document.getElementById('precisionGrade').style.color = color;
+
+      // Flash sur la piste
+      const flash = document.getElementById('scoreFlash');
+      flash.textContent = precision + '%';
+      flash.style.color = color;
+      flash.className = 'score-flash show';
+      setTimeout(() => flash.className = 'score-flash', 800);
+
+      // Enregistrer
+      attemptsLeft--;
+      sessionAttempts.push(precision);
+      renderAttempts();
+
+      await saveScore(precision);
+      loadLeaderboard();
+
+      // Préparer prochain essai
+      const btn = document.getElementById('tapBtn');
+      if (attemptsLeft > 0) {
+        btn.textContent = '▶ REJOUER';
+        btn.classList.add('waiting');
+        btn.disabled = false;
+      }
+      updateUI();
+    }
+
+    // ===== SAUVEGARDER =====
+    async function saveScore(precision) {
+      const today = new Date().toISOString().split('T')[0];
+      const currentBest = myRecord?.score || 0;
+      const newBest = Math.max(currentBest, precision);
+      const newAttempts = (myRecord?.attempts_today || 0) + 1;
+
+      if (myRecord) {
+        await sb.from('tournament_scores').update({
+          score: newBest,
+          attempts_today: newAttempts,
+          last_attempt_date: today,
+          updated_at: new Date().toISOString()
+        }).eq('user_id', currentUser.id);
+      } else {
+        await sb.from('tournament_scores').insert({
+          user_id: currentUser.id,
+          score: precision,
+          attempts_today: 1,
+          last_attempt_date: today
+        });
+      }
+
+      if (!myRecord) myRecord = { score: precision, attempts_today: 1 };
+      else { myRecord.score = newBest; myRecord.attempts_today = newAttempts; }
+
+      document.getElementById('myBestScore').textContent = myRecord.score + '%';
+
+      if (precision > currentBest) {
+        showToast('🏆 Nouveau record : ' + precision + '%', 'success');
+      }
+    }
+
+    // ===== CLASSEMENT =====
+    async function loadLeaderboard() {
+      const { data: scores } = await sb.from('tournament_scores')
+        .select('user_id, score').order('score', { ascending: false }).limit(10);
+
+      if (!scores?.length) return;
+
+      const userIds = scores.map(s => s.user_id);
+      const { data: profiles } = await sb.from('profiles')
+        .select('user_id, username, avatar_url').in('user_id', userIds);
+
+      const profileMap = {};
+      (profiles || []).forEach(p => profileMap[p.user_id] = p);
+
+      // Mon rang
+      const myIdx = scores.findIndex(s => s.user_id === currentUser.id);
+      if (myIdx >= 0) document.getElementById('myRank').textContent = '#' + (myIdx + 1);
+
+      const medals = ['🥇','🥈','🥉'];
+      document.getElementById('rankList').innerHTML = scores.map((s, i) => {
+        const p = profileMap[s.user_id] || { username: 'Docker', avatar_url: 'avatar-default.png' };
+        const isMe = s.user_id === currentUser.id;
+        const numClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+        return `<div class="rank-row ${isMe?'me':''}">
+          <div class="rank-num ${numClass}">${medals[i] || (i+1)}</div>
+          <img class="rank-avatar" src="${p.avatar_url||'avatar-default.png'}">
+          <div class="rank-info">
+            <div class="rank-name">${p.username}${isMe?' 👈':''}</div>
+            <div class="rank-sub">${MAX_ATTEMPTS - (s.attempts_today||0)} essais restants</div>
+          </div>
+          <div class="rank-score">${s.score}%</div>
+        </div>`;
+      }).join('');
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = 'toast show ' + type;
+      setTimeout(() => t.className = 'toast', 2800);
+    }
+
+    init();
+  </script>
+</body>
+</html>
