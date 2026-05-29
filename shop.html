@@ -367,7 +367,7 @@
     }
   </style>
 </head>
-<body style="visibility:hidden">
+<body>
   <div class="storefront">
     <div class="store-sign">⚓ MAGASIN DU PORT ⚓</div>
     <div class="store-subtitle">Depuis 1952 - Équipements de Docker</div>
@@ -637,18 +637,9 @@
       }
     }
 
-    async function checkShopOpen() {
-      try {
-        const { data, error } = await sb.rpc('is_shop_open');
-        if (error) throw error;
-        return data;
-      } catch (err) {
-        console.error('Erreur vérification shop:', err);
-        // Fallback: vérifier localement si erreur
-        const now = new Date();
-        const hour = now.getHours();
-        return hour >= 10 && hour < 22;
-      }
+    function checkShopOpen() {
+      const hour = new Date().getHours();
+      return hour >= 10 && hour < 22;
     }
 
     function showShopClosed() {
@@ -716,13 +707,11 @@
       }
 
       // Vérifier si le shop est ouvert (10h-22h)
-      const isOpen = await checkShopOpen();
-      if (!isOpen) {
-        document.body.style.visibility = "visible";
-        showShopClosed();
+      if (!checkShopOpen()) {
+          showShopClosed();
         return;
       }
-      document.body.style.visibility = "visible";
+
 
       currentUser = session.user;
 
@@ -842,7 +831,9 @@
       window.location.href = 'clicker.html';
     }
 
-    init();
+    // Vérification synchrone immédiate
+    if (!checkShopOpen()) { showShopClosed(); }
+    else { init(); }
   </script>
 </body>
 </html>
