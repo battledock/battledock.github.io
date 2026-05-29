@@ -1184,8 +1184,8 @@
       document.getElementById('xpFill').style.width      = pct + '%';
 
       document.getElementById('moneyAmount').textContent    = (stats.money || 0).toLocaleString('fr-FR') + '€';
-      document.getElementById('diamondsAmount').textContent = '💎 ' + (profile.diamonds || 0);
-      document.getElementById('trophiesAmount').textContent = '🏆 ' + (profile.trophies || 0);
+      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
+      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
 
       loadRank(stats.money || 0);
       await checkPendingLevelUp(stats, profile);
@@ -1196,11 +1196,11 @@
       if (level <= lastShown) return;
       for (let i = lastShown + 1; i <= level; i++) {
         const rewards = { diamonds: 5, trophies: 1, money: i * 500 };
-        const newDiamonds = (profile.diamonds || 0) + rewards.diamonds;
-        const newTrophies = (profile.trophies || 0) + rewards.trophies;
-        await sb.from('profiles').update({ diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
+        const newDiamonds = (stats.diamonds || 0) + rewards.diamonds;
+        const newTrophies = (stats.trophies || 0) + rewards.trophies;
+        await sb.from('game_stats').update({ diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
         await sb.from('game_stats').update({ money: (stats.money || 0) + rewards.money }).eq('user_id', currentUser.id);
-        profile.diamonds = newDiamonds; profile.trophies = newTrophies;
+        stats.diamonds = newDiamonds; stats.trophies = newTrophies;
         await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
       }
       await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);

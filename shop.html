@@ -3,828 +3,396 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Magasin du Port - Battle Dock</title>
+  <title>Boutique - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #d4a574 0%, #a0876d 50%, #8b7355 100%);
-      min-height: 100vh;
-      padding-bottom: 100px;
+      font-family:'Inter',sans-serif;
+      background:#1a0f00;
+      min-height:100vh;
+      padding-bottom:40px;
     }
 
-    /* Texture bois */
+    /* FOND BOIS */
     body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-image: 
-        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
-      pointer-events: none;
-      z-index: -1;
+      content:'';
+      position:fixed; inset:0; z-index:0;
+      background:
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 2px, transparent 2px, transparent 24px),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 40px);
+      pointer-events:none;
     }
 
-    /* Storefront */
-    .storefront {
-      background: linear-gradient(180deg, #8b6f47 0%, #6b5d47 100%);
-      border-top: 8px solid #5a4a35;
-      border-bottom: 8px solid #5a4a35;
-      padding: 24px 16px;
-      margin-bottom: 20px;
-      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    /* HEADER */
+    .header {
+      position:relative; z-index:10;
+      background:rgba(26,15,0,0.9);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(212,165,116,0.2);
+      padding:14px 16px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .back-btn {
+      background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.2);
+      border-radius:8px; padding:8px 12px;
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
+      color:rgba(212,165,116,0.8); cursor:pointer;
+    }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#f5d060; flex:1; }
+
+    /* LANTERNE DÉCO */
+    .lantern-deco {
+      position:fixed; top:12px; right:16px; z-index:20;
+      font-size:32px;
+      filter:drop-shadow(0 0 12px rgba(251,191,36,0.8));
+      animation:lanternSwing 3s ease-in-out infinite;
+      transform-origin:top center;
+    }
+    @keyframes lanternSwing { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
+    .lantern-glow {
+      position:fixed; top:0; right:0; z-index:15;
+      width:120px; height:120px;
+      background:radial-gradient(circle at 70% 20%, rgba(251,191,36,0.15), transparent 60%);
+      pointer-events:none;
     }
 
-    .store-sign {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(32px, 8vw, 56px);
-      color: #fff8dc;
-      text-align: center;
-      letter-spacing: 3px;
-      text-shadow: 
-        3px 3px 0px rgba(0,0,0,0.4),
-        -1px -1px 0px rgba(255,255,255,0.2);
-      margin-bottom: 8px;
+    /* HERO */
+    .hero {
+      position:relative; z-index:1;
+      padding:24px 20px 20px;
+      text-align:center;
+      border-bottom:1px solid rgba(212,165,116,0.15);
     }
+    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:4px; color:#f5d060; text-shadow:0 0 20px rgba(245,208,96,0.4); }
+    .hero-sub { font-size:12px; color:rgba(212,165,116,0.5); letter-spacing:2px; margin-top:4px; text-transform:uppercase; }
 
-    .store-subtitle {
-      font-size: 14px;
-      color: #d4a574;
-      text-align: center;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      font-weight: 600;
+    /* STATS BAR */
+    .stats-bar {
+      position:relative; z-index:1;
+      display:flex; gap:0;
+      border-bottom:1px solid rgba(212,165,116,0.15);
     }
-
-    /* Container */
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 16px;
+    .stat-item {
+      flex:1; padding:12px 8px; text-align:center;
+      border-right:1px solid rgba(212,165,116,0.1);
     }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#f5d060; letter-spacing:0.5px; }
+    .stat-lbl { font-size:9px; color:rgba(212,165,116,0.5); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
 
-    /* NPC Section */
-    .npc-section {
-      background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
-      border: 3px solid #5a4a35;
-      border-radius: 4px;
-      padding: 24px;
-      margin-bottom: 24px;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-      display: flex;
-      gap: 24px;
-      align-items: flex-start;
+    /* CONTAINER */
+    .container { position:relative; z-index:1; padding:16px; }
+
+    .section-lbl {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:16px; letter-spacing:3px;
+      color:rgba(212,165,116,0.6);
+      margin:20px 0 10px 2px;
+      display:flex; align-items:center; gap:10px;
     }
+    .section-lbl::after { content:''; flex:1; height:1px; background:rgba(212,165,116,0.15); }
 
-    .npc-avatar {
-      flex-shrink: 0;
-      width: 140px;
-      height: 180px;
+    /* ITEM CARD */
+    .item-card {
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(212,165,116,0.15);
+      border-radius:16px; padding:16px;
+      margin-bottom:10px;
+      display:flex; align-items:center; gap:14px;
+      transition:all 0.2s;
+      position:relative; overflow:hidden;
     }
-
-    .npc-dialog {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
+    .item-card::before {
+      content:''; position:absolute; left:0; top:0; bottom:0;
+      width:3px; border-radius:3px 0 0 3px;
     }
+    .item-card.diamond::before { background:linear-gradient(180deg,#60a5fa,#93c5fd); }
+    .item-card.money::before   { background:linear-gradient(180deg,#d4af37,#f5d060); }
+    .item-card.trophy::before  { background:linear-gradient(180deg,#ef4444,#fca5a5); }
+    .item-card.owned { opacity:0.5; }
 
-    .npc-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      color: #f5f5dc;
-      letter-spacing: 1px;
-      margin-bottom: 12px;
+    .item-icon {
+      width:52px; height:52px; border-radius:14px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:26px; flex-shrink:0;
     }
+    .item-card.diamond .item-icon { background:rgba(96,165,250,0.12); }
+    .item-card.money   .item-icon { background:rgba(212,175,55,0.12); }
+    .item-card.trophy  .item-icon { background:rgba(239,68,68,0.12); }
 
-    .npc-message {
-      background: rgba(255, 255, 255, 0.1);
-      border: 2px solid #d4a574;
-      border-radius: 8px;
-      padding: 16px;
-      color: #f5f5dc;
-      font-size: 14px;
-      line-height: 1.6;
-      font-style: italic;
+    .item-info { flex:1; min-width:0; }
+    .item-name { font-weight:700; font-size:14px; color:white; margin-bottom:3px; }
+    .item-desc { font-size:11px; color:rgba(255,255,255,0.4); line-height:1.4; }
+    .item-effect { font-size:11px; font-weight:700; margin-top:4px; }
+    .item-card.diamond .item-effect { color:#93c5fd; }
+    .item-card.money   .item-effect { color:#f5d060; }
+    .item-card.trophy  .item-effect { color:#fca5a5; }
+
+    .item-buy {
+      flex-shrink:0;
     }
-
-    /* Cash register */
-    .cash-register {
-      background: linear-gradient(135deg, #cd853f 0%, #8b4513 100%);
-      border: 4px solid #654321;
-      border-radius: 8px;
-      padding: 20px;
-      max-width: 600px;
-      margin: 0 auto 20px;
-      box-shadow: 
-        0 8px 16px rgba(0,0,0,0.3),
-        inset 0 1px 0px rgba(255,255,255,0.2);
-    }
-
-    .register-display {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .register-item {
-      background: linear-gradient(135deg, #f5f5dc 0%, #fffacd 100%);
-      border: 2px solid #8b4513;
-      border-radius: 4px;
-      padding: 12px;
-      text-align: center;
-      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
-    }
-
-    .register-value {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(18px, 4vw, 28px);
-      color: #654321;
-      letter-spacing: 1px;
-      font-weight: 700;
-    }
-
-    .register-label {
-      font-size: 10px;
-      color: #654321;
-      text-transform: uppercase;
-      margin-top: 4px;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-
-    /* Shelf section */
-    .shelf-section {
-      background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
-      border: 3px solid #5a4a35;
-      border-radius: 4px;
-      padding: 20px;
-      margin-bottom: 24px;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-    }
-
-    .shelf-label {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px;
-      color: #f5f5dc;
-      letter-spacing: 2px;
-      margin-bottom: 16px;
-      text-transform: uppercase;
-      border-bottom: 2px dashed #d4a574;
-      padding-bottom: 8px;
-    }
-
-    /* Grid produits */
-    .products-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-    }
-
-    /* Product card */
-    .product-box {
-      background: linear-gradient(135deg, #f5f5dc 0%, #fffacd 100%);
-      border: 3px solid #8b4513;
-      border-radius: 0;
-      padding: 14px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
-      box-shadow: 
-        4px 4px 0px rgba(0,0,0,0.25),
-        inset 0 1px 0px rgba(255,255,255,0.5);
-    }
-
-    .product-box:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 
-        6px 6px 0px rgba(0,0,0,0.25),
-        inset 0 1px 0px rgba(255,255,255,0.5);
-    }
-
-    .product-box.unavailable {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .product-icon {
-      font-size: 48px;
-      margin-bottom: 8px;
-      display: block;
-    }
-
-    .product-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      color: #654321;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-      font-weight: 700;
-    }
-
-    .product-level {
-      font-size: 11px;
-      color: #8b4513;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    .product-bonus {
-      background: rgba(139, 69, 19, 0.1);
-      border: 1px solid #8b4513;
-      border-radius: 2px;
-      padding: 6px;
-      margin-bottom: 8px;
-    }
-
-    .bonus-text {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px;
-      color: #654321;
-      letter-spacing: 0.5px;
-    }
-
-    .product-price {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      color: #228b22;
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
     .buy-btn {
-      width: 100%;
-      background: linear-gradient(135deg, #228b22 0%, #1a6b1a 100%);
-      border: 2px solid #1a6b1a;
-      color: white;
-      padding: 8px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 12px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      font-weight: 600;
+      padding:9px 14px; border-radius:10px; border:none;
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
+      cursor:pointer; transition:all 0.2s; white-space:nowrap;
+      display:flex; flex-direction:column; align-items:center; gap:2px;
     }
+    .buy-btn:active { transform:scale(0.95); }
+    .buy-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
+    .item-card.diamond .buy-btn { background:rgba(96,165,250,0.15); color:#93c5fd; border:1px solid rgba(96,165,250,0.25); }
+    .item-card.money   .buy-btn { background:rgba(212,175,55,0.15); color:#f5d060; border:1px solid rgba(212,175,55,0.25); }
+    .item-card.trophy  .buy-btn { background:rgba(239,68,68,0.15); color:#fca5a5; border:1px solid rgba(239,68,68,0.25); }
+    .buy-price { font-size:14px; }
+    .buy-currency { font-size:9px; opacity:0.7; }
+    .owned-badge { font-size:11px; color:rgba(255,255,255,0.3); font-weight:600; }
 
-    .buy-btn:hover:not(:disabled) {
-      transform: scale(1.05);
-      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-    }
-
-    .buy-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .buy-btn.maxed {
-      background: #95a5a6;
-      border-color: #7f8c8d;
-    }
-
-    /* Bottom nav */
-    .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(180deg, #8b7355 0%, #6b5744 100%);
-      border-top: 4px solid #5a4a35;
-      padding: 12px 16px;
-      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
-      z-index: 100;
-    }
-
-    .nav-btn {
-      max-width: 600px;
-      margin: 0 auto;
-      width: 100%;
-      background: linear-gradient(135deg, #228b22 0%, #1a6b1a 100%);
-      border: 2px solid #1a6b1a;
-      color: white;
-      padding: 14px;
-      border-radius: 4px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-      font-weight: 600;
-    }
-
-    .nav-btn:hover {
-      transform: scale(1.02);
-      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-    }
-
-    /* Alert */
-    .alert {
-      position: fixed;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #228b22;
-      color: white;
-      padding: 14px 20px;
-      border: 2px solid #1a6b1a;
-      border-radius: 4px;
-      font-family: 'Bebas Neue', sans-serif;
-      z-index: 1000;
-      box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
-      animation: popIn 0.3s ease-out;
-    }
-
-    .alert.error {
-      background: #dc2626;
-      border-color: #b91c1c;
-    }
-
-    @keyframes popIn {
-      0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
-      100% { transform: translateX(-50%) scale(1); opacity: 1; }
-    }
-
-    @media (max-width: 700px) {
-      .products-grid { grid-template-columns: repeat(2, 1fr); }
-      .npc-section { flex-direction: column; align-items: center; text-align: center; }
-      .store-sign { font-size: 32px; }
-    }
+    /* TOAST */
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a0f00; border:1px solid rgba(212,165,116,0.3); color:#f5d060; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+    .toast.show { opacity:1; }
+    .toast.error { color:#fca5a5; border-color:rgba(239,68,68,0.3); }
   </style>
 </head>
 <body>
-  <div class="storefront">
-    <div class="store-sign">⚓ MAGASIN DU PORT ⚓</div>
-    <div class="store-subtitle">Depuis 1952 - Équipements de Docker</div>
+
+  <div class="lantern-glow"></div>
+  <div class="lantern-deco">🏮</div>
+
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='clicker.html'">← Retour</button>
+    <div class="header-title">🏮 Boutique</div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-val" id="statMoney">0€</div><div class="stat-lbl">Argent</div></div>
+    <div class="stat-item"><div class="stat-val" id="statDiamonds">0 💎</div><div class="stat-lbl">Diamants</div></div>
+    <div class="stat-item"><div class="stat-val" id="statTrophies">0 🏆</div><div class="stat-lbl">Trophées</div></div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-title">Améliorations</div>
+    <div class="hero-sub">Augmente tes gains au port</div>
   </div>
 
   <div class="container">
-    <!-- NPC MARCEL -->
-    <div class="npc-section">
-      <svg class="npc-avatar" viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
-        <!-- Tête -->
-        <circle cx="70" cy="50" r="35" fill="#f5deb3" stroke="#8b4513" stroke-width="2"/>
-        
-        <!-- Chapeau melon -->
-        <ellipse cx="70" cy="18" rx="40" ry="12" fill="#2c2c2c" stroke="#000" stroke-width="2"/>
-        <path d="M 35 20 Q 35 5 70 0 Q 105 5 105 20" fill="#3d3d3d" stroke="#000" stroke-width="2"/>
-        <ellipse cx="70" cy="18" rx="38" ry="10" fill="#1a1a1a"/>
-        
-        <!-- Yeux -->
-        <circle cx="55" cy="45" r="4" fill="#000"/>
-        <circle cx="85" cy="45" r="4" fill="#000"/>
-        <circle cx="56" cy="44" r="1.5" fill="#fff"/>
-        <circle cx="86" cy="44" r="1.5" fill="#fff"/>
-        
-        <!-- Nez -->
-        <polygon points="70,50 66,58 74,58" fill="#d4a574"/>
-        
-        <!-- Moustache -->
-        <path d="M 70 62 Q 55 60 45 63" stroke="#8b4513" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M 70 62 Q 85 60 95 63" stroke="#8b4513" stroke-width="3" fill="none" stroke-linecap="round"/>
-        
-        <!-- Bouche -->
-        <path d="M 60 70 Q 70 75 80 70" stroke="#654321" stroke-width="2" fill="none" stroke-linecap="round"/>
-        
-        <!-- Corps - Costume -->
-        <rect x="30" y="85" width="80" height="70" fill="#2c2c2c" stroke="#000" stroke-width="2" rx="4"/>
-        
-        <!-- Chemise -->
-        <rect x="38" y="88" width="64" height="40" fill="#f5f5dc" stroke="#8b4513" stroke-width="1"/>
-        
-        <!-- Cravate -->
-        <polygon points="70,88 65,100 75,100" fill="#d32f2f" stroke="#8b0000" stroke-width="1"/>
-        <rect x="65" y="100" width="10" height="20" fill="#d32f2f" stroke="#8b0000" stroke-width="1"/>
-        
-        <!-- Boutons costume -->
-        <circle cx="70" cy="110" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
-        <circle cx="70" cy="125" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
-        <circle cx="70" cy="140" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
-        
-        <!-- Mains -->
-        <circle cx="28" cy="105" r="8" fill="#f5deb3" stroke="#8b4513" stroke-width="1"/>
-        <circle cx="112" cy="105" r="8" fill="#f5deb3" stroke="#8b4513" stroke-width="1"/>
-      </svg>
 
-      <div class="npc-dialog">
-        <div class="npc-name">🛒 Marcel l'Ancien</div>
-        <div class="npc-message" id="marcelMessage">
-          "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?"
-        </div>
+    <!-- XP/CLIC — DIAMANTS -->
+    <div class="section-lbl">💎 XP par clic</div>
+
+    <div class="item-card diamond" id="item-xp-1">
+      <div class="item-icon">⚡</div>
+      <div class="item-info">
+        <div class="item-name">Boost XP I</div>
+        <div class="item-desc">Améliore ta productivité au port</div>
+        <div class="item-effect">+1 XP par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('xp',1,10,'diamonds')">
+          <span class="buy-price">10</span>
+          <span class="buy-currency">💎</span>
+        </button>
       </div>
     </div>
 
-    <!-- Cash register -->
-    <div class="cash-register">
-      <div class="register-display">
-        <div class="register-item">
-          <div class="register-value" id="moneyDisplay">0€</div>
-          <div class="register-label">Argent</div>
-        </div>
-        <div class="register-item">
-          <div class="register-value" id="diamondsDisplay">0</div>
-          <div class="register-label">Diamants</div>
-        </div>
-        <div class="register-item">
-          <div class="register-value" id="trophiesDisplay">0</div>
-          <div class="register-label">Trophées</div>
-        </div>
+    <div class="item-card diamond" id="item-xp-5">
+      <div class="item-icon">⚡</div>
+      <div class="item-info">
+        <div class="item-name">Boost XP II</div>
+        <div class="item-desc">Formation avancée des dockers</div>
+        <div class="item-effect">+5 XP par clic</div>
       </div>
-      <div style="text-align: center; font-size: 12px; color: #f5f5dc; font-style: italic;">💼 Caisse du Port - Depuis 1952</div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('xp',5,40,'diamonds')">
+          <span class="buy-price">40</span>
+          <span class="buy-currency">💎</span>
+        </button>
+      </div>
     </div>
 
-    <!-- Shelf section -->
-    <div class="shelf-section">
-      <div class="shelf-label">📦 Améliorations de Travail</div>
-      <div class="products-grid" id="upgradesGrid"></div>
+    <div class="item-card diamond" id="item-xp-10">
+      <div class="item-icon">💫</div>
+      <div class="item-info">
+        <div class="item-name">Boost XP III</div>
+        <div class="item-desc">Expertise maritime légendaire</div>
+        <div class="item-effect">+10 XP par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('xp',10,80,'diamonds')">
+          <span class="buy-price">80</span>
+          <span class="buy-currency">💎</span>
+        </button>
+      </div>
     </div>
+
+    <!-- ARGENT/CLIC — MONNAIE -->
+    <div class="section-lbl">💰 Argent par clic</div>
+
+    <div class="item-card money" id="item-money-1">
+      <div class="item-icon">💵</div>
+      <div class="item-info">
+        <div class="item-name">Salaire I</div>
+        <div class="item-desc">Améliore le salaire de tes dockers</div>
+        <div class="item-effect">+1€ par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('money',1,2000,'money')">
+          <span class="buy-price">2 000</span>
+          <span class="buy-currency">€</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="item-card money" id="item-money-5">
+      <div class="item-icon">💵</div>
+      <div class="item-info">
+        <div class="item-name">Salaire II</div>
+        <div class="item-desc">Grue automatisée au quai</div>
+        <div class="item-effect">+5€ par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('money',5,8000,'money')">
+          <span class="buy-price">8 000</span>
+          <span class="buy-currency">€</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="item-card money" id="item-money-20">
+      <div class="item-icon">🏭</div>
+      <div class="item-info">
+        <div class="item-name">Salaire III</div>
+        <div class="item-desc">Terminal à conteneurs dernière génération</div>
+        <div class="item-effect">+20€ par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('money',20,30000,'money')">
+          <span class="buy-price">30 000</span>
+          <span class="buy-currency">€</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TROPHÉES — RARE -->
+    <div class="section-lbl">🏆 Rare</div>
+
+    <div class="item-card trophy" id="item-xp-50">
+      <div class="item-icon">👑</div>
+      <div class="item-info">
+        <div class="item-name">Maître Docker</div>
+        <div class="item-desc">Un titre légendaire au port — extrêmement rare</div>
+        <div class="item-effect">+50 XP par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('xp',50,50,'trophies')">
+          <span class="buy-price">50</span>
+          <span class="buy-currency">🏆</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="item-card trophy" id="item-money-100">
+      <div class="item-icon">🚀</div>
+      <div class="item-info">
+        <div class="item-name">Magnat du Port</div>
+        <div class="item-desc">La flotte la plus rentable de l'histoire maritime</div>
+        <div class="item-effect">+100€ par clic</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyItem('money',100,100,'trophies')">
+          <span class="buy-price">100</span>
+          <span class="buy-currency">🏆</span>
+        </button>
+      </div>
+    </div>
+
   </div>
 
-  <div class="bottom-nav">
-    <button class="nav-btn" onclick="goBack()">← RETOUR AU TRAVAIL</button>
-  </div>
+  <div class="toast" id="toast"></div>
 
   <script>
-    const SUPABASE_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const sb = createClient(SB_URL, SB_KEY);
 
     let currentUser = null;
-    let profile = null;
-    let isFirstVisit = true;
-
-    const UPGRADES = [
-      {
-        id: 'earn_per_click',
-        name: 'Gants de Travail',
-        icon: '🧤',
-        basePrice: 500,
-        priceType: 'money',
-        maxLevel: 10,
-        bonus: (level) => `+${level}€/clic`
-      },
-      {
-        id: 'combo_speed',
-        name: 'Caféine',
-        icon: '☕',
-        basePrice: 1000,
-        priceType: 'money',
-        maxLevel: 5,
-        bonus: (level) => `+${level * 10}% rapidité`
-      },
-      {
-        id: 'combo_max',
-        name: 'Muscles',
-        icon: '💪',
-        basePrice: 50,
-        priceType: 'diamonds',
-        maxLevel: 8,
-        bonus: (level) => `×${(2 + level * 0.5).toFixed(1)}`
-      },
-      {
-        id: 'xp_multiplier',
-        name: 'Expérience',
-        icon: '📚',
-        basePrice: 100,
-        priceType: 'diamonds',
-        maxLevel: 5,
-        bonus: (level) => `×${level}`
-      },
-      {
-        id: 'auto_clicker',
-        name: 'Apprenti',
-        icon: '👦',
-        basePrice: 200,
-        priceType: 'diamonds',
-        maxLevel: 3,
-        bonus: (level) => `+${level}€/sec`
-      },
-      {
-        id: 'prestige',
-        name: 'Rédemption',
-        icon: '🏅',
-        basePrice: 500,
-        priceType: 'trophies',
-        maxLevel: 1,
-        bonus: (level) => `Reset+bonus`
-      }
-    ];
-
-    const MARCEL_MESSAGES = {
-      welcome: [
-        "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?",
-        "Ah, un client ! Les affaires tournent 😄",
-        "Salut ! J'ai ce qu'il te faut pour bosser mieux",
-        "Re-bonjour ! Toujours pas riche ?",
-        "C'est quoi encore ? Besoin de muscler tes bras ?",
-        "Tiens, un nouveau visage... ou c'est toi encore ?",
-        "Je vend de la qualité ici, pas du toc !",
-        "Alors ? On upgrade ou on regarde juste ?"
-      ],
-      poor: [
-        "Pas beaucoup de sous hein ? Reviens quand tu auras du cash",
-        "Les gants t'attendent, faut que tu travailles plus ! 😂",
-        "Pauvre petit, faut farmer davantage",
-        "T'as combien ? 3 euros ? 😂",
-        "Mon gars, t'es plus fauché que mon compte en banque",
-        "Viens me voir quand tu seras milliardaire",
-        "T'as pas les moyens d'être ici franchement",
-        "Passe ton temps à travailler au lieu de venir flâner",
-        "Je te prête rien hein, c'est du comptant !",
-        "Dépense l'argent que tu as au casino, c'est plus sympa",
-        "Reviens quand tu auras bossé un peu",
-        "T'as oublié ton portefeuille ou quoi ?"
-      ],
-      middle: [
-        "Pas mal comme argent ! T'avances bien",
-        "Allez, dépense un peu, ça va te servir",
-        "T'as du bon goût, je vois que tu achètes chez moi",
-        "Continue comme ça, tu vas être riche",
-        "T'es pas mal pour un pauvre ! 😄",
-        "Encore toi ? Tu dépenses mes bénéfices haha"
-      ],
-      rich: [
-        "Ah richou ! T'as bien bossé au port ?",
-        "T'es plein aux as ! Dépense un peu ici",
-        "Le millionnaire est de retour ! 💰",
-        "Wow, t'as vraiment l'pognon hein !",
-        "Alors tu rachètes le magasin ? 😂",
-        "T'es riche maintenant ? Fais-moi un chèque !",
-        "Mon client VIP ! Vas-y, dépense sans compter",
-        "Franchement t'es trop riche, c'est pas normal",
-        "J'aimerais bien être à ta place mec",
-        "T'as tout acheté ou quoi ? Laisse-moi un peu !",
-        "C'est pas normal d'avoir autant d'argent",
-        "Hé hé, je reconnais un bon client quand j'en vois un !"
-      ],
-      veryrich: [
-        "PUTAIN ! T'es riche ouf !",
-        "T'es un magnat maintenant !",
-        "Je peux te demander un truc... tu m'embauches ? 😂",
-        "T'as plus d'argent que moi... c'est déprimant",
-        "Comment tu fais pour avoir autant ?? 😨",
-        "Je suis jaloux là... vraiment jaloux",
-        "Fais attention à toi, les arnaqueurs vont te viser",
-        "T'as cassé l'économie du port ! 💸",
-        "Je vais augmenter mes prix rien que pour toi 😂",
-        "C'est fou, tu achètes juste pour décorer ?"
-      ],
-      buy: [
-        "Bon choix ! Ça va t'aider",
-        "T'as fait un bon investissement",
-        "Voilà, maintenant tu vas bosser comme un chef !",
-        "Excellent, ça va changer ta vie",
-        "C'est pas le meilleur choix mais c'est pas mal",
-        "T'as raison d'acheter ça, tu vas voir la différence",
-        "Ha ha, je savais que tu vas prendre celui-là",
-        "Bravo, t'es malin ce coup-ci !",
-        "Voilà du vrai matériel de travail !",
-        "Ça va marcher dur maintenant !",
-        "J'aurais fait pareil à ta place",
-        "Bien joué, tu investis dans le bon truc"
-      ],
-      maxed: [
-        "Tout est au max ! T'es un vrai professionnel",
-        "C'est bon, t'as tout déverrouillé !",
-        "Wow, t'as tout acheté ! Tu m'impressionnes",
-        "Je crois que tu m'as ruiné 😂",
-        "Y'a plus rien à vendre ici pour toi",
-        "Tu es le ROI du magasin maintenant",
-        "Je vais fermer le shop, tu as tout acheté",
-        "C'est dingue, tu as dépensé une fortune ici",
-        "Même moi j'ai pas tout ce que t'as ! 😅"
-      ]
-    };
-
-    function getMarcelMessage(forceCategory = null) {
-      if (!profile) return MARCEL_MESSAGES.welcome[0];
-      
-      if (forceCategory) {
-        const messages = MARCEL_MESSAGES[forceCategory];
-        if (messages) {
-          return messages[Math.floor(Math.random() * messages.length)];
-        }
-      }
-      
-      const money = profile.money || 0;
-      
-      if (money < 1000) {
-        return MARCEL_MESSAGES.poor[Math.floor(Math.random() * MARCEL_MESSAGES.poor.length)];
-      } else if (money > 500000) {
-        return MARCEL_MESSAGES.veryrich[Math.floor(Math.random() * MARCEL_MESSAGES.veryrich.length)];
-      } else if (money > 50000) {
-        return MARCEL_MESSAGES.rich[Math.floor(Math.random() * MARCEL_MESSAGES.rich.length)];
-      } else if (money > 5000) {
-        return MARCEL_MESSAGES.middle[Math.floor(Math.random() * MARCEL_MESSAGES.middle.length)];
-      } else {
-        return MARCEL_MESSAGES.welcome[Math.floor(Math.random() * MARCEL_MESSAGES.welcome.length)];
-      }
-    }
+    let stats = null;
 
     function checkShopOpen() {
       const hour = new Date().getHours();
       return hour >= 10 && hour < 22;
     }
 
-
     function showShopClosed() {
       const style = document.createElement('style');
-      style.textContent = [
-        "@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');",
-        "* { margin:0; padding:0; box-sizing:border-box; }",
-        "body { font-family:'Inter',sans-serif; overflow:hidden; height:100vh; background:#1a0f00; }",
-        ".sc { position:fixed;inset:0;background:linear-gradient(180deg,#1a0f00 0%,#2d1a00 30%,#3d2400 60%,#1a0f00 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }",
-        ".sc-ray { position:absolute;top:0;width:2px;height:60vh;background:linear-gradient(180deg,rgba(212,165,116,0.3),transparent);filter:blur(4px);transform-origin:top center;animation:scRay ease-in-out infinite; }",
-        "@keyframes scRay { 0%,100%{transform:rotate(-2deg);opacity:0.6} 50%{transform:rotate(2deg);opacity:1} }",
-        ".sc-lantern { position:absolute;top:20px;right:30px;font-size:40px;filter:drop-shadow(0 0 12px rgba(212,165,116,0.7));animation:scLantern 3s ease-in-out infinite; }",
-        "@keyframes scLantern { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }",
-        ".sc-content { position:relative;z-index:10;text-align:center;padding:0 24px;width:100%;max-width:420px; }",
-        ".sc-label { font-size:11px;letter-spacing:5px;color:rgba(212,165,116,0.5);font-weight:700;text-transform:uppercase;margin-bottom:8px; }",
-        ".sc-title { font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:scTGlow 2s ease-in-out infinite; }",
-        "@keyframes scTGlow { 0%,100%{filter:drop-shadow(0 0 16px rgba(212,165,116,0.4))} 50%{filter:drop-shadow(0 0 28px rgba(212,165,116,0.8))} }",
-        ".sc-hours { font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:32px; }",
-        ".sc-tbox { background:rgba(212,165,116,0.06);border:1px solid rgba(212,165,116,0.2);border-radius:16px;padding:20px 24px;margin-bottom:28px;position:relative;overflow:hidden; }",
-        ".sc-tbox::before { content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(212,165,116,0.04),transparent);animation:scShimmer 3s linear infinite; }",
-        "@keyframes scShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }",
-        ".sc-tdigits { font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:4px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 16px rgba(212,165,116,0.5));line-height:1; }",
-        ".sc-back { width:100%;background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.7);padding:16px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer; }"
-      ].join('');
+      style.textContent = ["@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');","* { margin:0; padding:0; box-sizing:border-box; }","body { font-family:'Inter',sans-serif; overflow:hidden; height:100vh; background:#1a0f00; }",".sc { position:fixed;inset:0;background:linear-gradient(180deg,#1a0f00 0%,#2d1a00 30%,#3d2400 60%,#1a0f00 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }",".sc-ray { position:absolute;top:0;width:2px;height:60vh;background:linear-gradient(180deg,rgba(212,165,116,0.3),transparent);filter:blur(4px);transform-origin:top center;animation:scRay ease-in-out infinite; }","@keyframes scRay { 0%,100%{transform:rotate(-2deg);opacity:0.6} 50%{transform:rotate(2deg);opacity:1} }",".sc-lantern { position:absolute;top:20px;right:30px;font-size:40px;filter:drop-shadow(0 0 12px rgba(212,165,116,0.7));animation:scLantern 3s ease-in-out infinite; }","@keyframes scLantern { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }",".sc-content { position:relative;z-index:10;text-align:center;padding:0 24px;width:100%;max-width:420px; }",".sc-label { font-size:11px;letter-spacing:5px;color:rgba(212,165,116,0.5);font-weight:700;text-transform:uppercase;margin-bottom:8px; }",".sc-title { font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }",".sc-hours { font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:32px; }",".sc-tbox { background:rgba(212,165,116,0.06);border:1px solid rgba(212,165,116,0.2);border-radius:16px;padding:20px 24px;margin-bottom:28px; }",".sc-tdigits { font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:4px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1; }",".sc-back { width:100%;background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.7);padding:16px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer; }"].join('');
       document.head.appendChild(style);
-
-      const scene = document.createElement('div'); scene.className = 'sc';
-      [['20%','5s'],['50%','7s'],['80%','6s']].forEach(function(r) {
-        const el = document.createElement('div'); el.className = 'sc-ray';
-        el.style.cssText = 'left:'+r[0]+';animation-duration:'+r[1]+';'; scene.appendChild(el);
-      });
-      const lantern = document.createElement('div'); lantern.className = 'sc-lantern'; lantern.textContent = '🏮'; scene.appendChild(lantern);
-      const content = document.createElement('div'); content.className = 'sc-content';
-      const lbl = document.createElement('div'); lbl.className = 'sc-label'; lbl.textContent = 'Battle Dock';
-      const title = document.createElement('div'); title.className = 'sc-title'; title.textContent = 'Boutique Fermée';
-      const hours = document.createElement('div'); hours.className = 'sc-hours'; hours.textContent = 'Horaires : 10h00 – 22h00';
-      const tbox = document.createElement('div'); tbox.className = 'sc-tbox';
-      const tdigits = document.createElement('div'); tdigits.className = 'sc-tdigits'; tdigits.id = 'scTimer';
-      tbox.appendChild(tdigits);
-      const back = document.createElement('button'); back.className = 'sc-back'; back.textContent = '← Retour au Lobby';
-      back.onclick = function() { window.location.href = 'game.html'; };
-      content.appendChild(lbl); content.appendChild(title); content.appendChild(hours);
-      content.appendChild(tbox); content.appendChild(back);
-      scene.appendChild(content);
-      document.body.innerHTML = ''; document.body.appendChild(scene);
-
-      function scTick() {
-        const now = new Date(), next = new Date();
-        if (now.getHours() < 10) { next.setHours(10,0,0,0); } else { next.setDate(next.getDate()+1); next.setHours(10,0,0,0); }
-        const d = Math.floor((next-now)/1000), h = Math.floor(d/3600), m = Math.floor((d%3600)/60), s = d%60;
-        const el = document.getElementById('scTimer');
-        if (el) el.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-        setTimeout(scTick, 1000);
-      }
-      scTick();
+      const scene = document.createElement('div'); scene.className='sc';
+      [['20%','5s'],['50%','7s'],['80%','6s']].forEach(r=>{const el=document.createElement('div');el.className='sc-ray';el.style.cssText='left:'+r[0]+';animation-duration:'+r[1]+';';scene.appendChild(el);});
+      const lantern=document.createElement('div');lantern.className='sc-lantern';lantern.textContent='🏮';scene.appendChild(lantern);
+      const content=document.createElement('div');content.className='sc-content';
+      content.innerHTML='<div class="sc-label">Battle Dock</div><div class="sc-title">Boutique Fermée</div><div class="sc-hours">Horaires : 10h00 – 22h00</div>';
+      const tbox=document.createElement('div');tbox.className='sc-tbox';
+      const tdigits=document.createElement('div');tdigits.className='sc-tdigits';tdigits.id='scTimer';tbox.appendChild(tdigits);
+      const back=document.createElement('button');back.className='sc-back';back.textContent='← Retour au Port';back.onclick=()=>window.location.href='clicker.html';
+      content.appendChild(tbox);content.appendChild(back);scene.appendChild(content);
+      document.body.innerHTML='';document.body.appendChild(scene);
+      function tick(){const now=new Date(),next=new Date();if(now.getHours()<10){next.setHours(10,0,0,0);}else{next.setDate(next.getDate()+1);next.setHours(10,0,0,0);}const d=Math.floor((next-now)/1000),h=Math.floor(d/3600),m=Math.floor((d%3600)/60),s=d%60;const el=document.getElementById('scTimer');if(el)el.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');setTimeout(tick,1000);}tick();
     }
-
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
-
-      // Vérifier si le shop est ouvert (10h-22h)
-
-
+      if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
 
-      const { data } = await sb
-        .from('profiles')
-        .select('*')
-        .eq('id', currentUser.id)
-        .single();
+      const { data } = await sb.from('game_stats')
+        .select('money, diamonds, trophies, xp_per_click, money_per_click')
+        .eq('user_id', currentUser.id).maybeSingle();
+      stats = data;
 
-      profile = data;
-      updateDisplay();
-      updateMarcelMessage();
-      renderUpgrades();
+      document.getElementById('statMoney').textContent    = (data?.money || 0).toLocaleString('fr-FR') + '€';
+      document.getElementById('statDiamonds').textContent = (data?.diamonds || 0) + ' 💎';
+      document.getElementById('statTrophies').textContent = (data?.trophies || 0) + ' 🏆';
     }
 
-    function updateDisplay() {
-      document.getElementById('moneyDisplay').textContent = (profile?.money || 0).toLocaleString('fr-FR') + '€';
-      document.getElementById('diamondsDisplay').textContent = profile?.diamonds || 0;
-      document.getElementById('trophiesDisplay').textContent = profile?.trophies || 0;
-    }
+    async function buyItem(type, amount, cost, currency) {
+      if (!stats) return;
 
-    function updateMarcelMessage() {
-      document.getElementById('marcelMessage').textContent = `"${getMarcelMessage()}"`;
-    }
+      const balance = {
+        money:    stats.money    || 0,
+        diamonds: stats.diamonds || 0,
+        trophies: stats.trophies || 0
+      };
 
-    function renderUpgrades() {
-      const grid = document.getElementById('upgradesGrid');
-      grid.innerHTML = UPGRADES.map(upgrade => {
-        const level = profile?.upgrades?.[upgrade.id] || 0;
-        const price = upgrade.basePrice * (level + 1);
-        const isMaxed = level >= upgrade.maxLevel;
-        const hasResources = 
-          (upgrade.priceType === 'money' && profile.money >= price) ||
-          (upgrade.priceType === 'diamonds' && profile.diamonds >= price) ||
-          (upgrade.priceType === 'trophies' && profile.trophies >= price);
-
-        return `
-          <div class="product-box ${isMaxed ? 'unavailable' : ''}">
-            <span class="product-icon">${upgrade.icon}</span>
-            <div class="product-name">${upgrade.name}</div>
-            <div class="product-level">Niv ${level}/${upgrade.maxLevel}</div>
-            <div class="product-bonus">
-              <div class="bonus-text">${upgrade.bonus(level)}</div>
-            </div>
-            <div class="product-price">
-              ${upgrade.priceType === 'money' ? `${price}€` : 
-                upgrade.priceType === 'diamonds' ? `💎${price}` : 
-                `🏆${price}`}
-            </div>
-            <button class="buy-btn ${isMaxed ? 'maxed' : ''}" 
-              onclick="buyUpgrade('${upgrade.id}')"
-              ${isMaxed || !hasResources ? 'disabled' : ''}>
-              ${isMaxed ? 'MAX' : 'ACHETER'}
-            </button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function buyUpgrade(upgradeId) {
-      const upgrade = UPGRADES.find(u => u.id === upgradeId);
-      const level = profile?.upgrades?.[upgrade.id] || 0;
-      const price = upgrade.basePrice * (level + 1);
-
-      let canBuy = false;
-      if (upgrade.priceType === 'money') {
-        canBuy = profile.money >= price;
-      } else if (upgrade.priceType === 'diamonds') {
-        canBuy = profile.diamonds >= price;
-      } else if (upgrade.priceType === 'trophies') {
-        canBuy = profile.trophies >= price;
-      }
-
-      if (!canBuy) {
-        showAlert('Pas assez de ressources!', true);
+      if (balance[currency] < cost) {
+        showToast(`Pas assez de ${currency === 'money' ? '€' : currency === 'diamonds' ? '💎' : '🏆'}`, 'error');
         return;
       }
 
-      try {
-        const updates = { ...profile.upgrades };
-        updates[upgradeId] = (updates[upgradeId] || 0) + 1;
+      const field = type === 'xp' ? 'xp_per_click' : 'money_per_click';
+      const current = stats[field] || 1;
+      const updates = { [field]: current + amount, [currency]: balance[currency] - cost };
 
-        let updateObj = { upgrades: updates };
-        if (upgrade.priceType === 'money') updateObj.money = profile.money - price;
-        else if (upgrade.priceType === 'diamonds') updateObj.diamonds = profile.diamonds - price;
-        else if (upgrade.priceType === 'trophies') updateObj.trophies = profile.trophies - price;
+      const { error } = await sb.from('game_stats').update(updates).eq('user_id', currentUser.id);
+      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
 
-        await sb.from('profiles').update(updateObj).eq('id', currentUser.id);
+      stats = { ...stats, ...updates };
+      document.getElementById('statMoney').textContent    = (stats.money || 0).toLocaleString('fr-FR') + '€';
+      document.getElementById('statDiamonds').textContent = (stats.diamonds || 0) + ' 💎';
+      document.getElementById('statTrophies').textContent = (stats.trophies || 0) + ' 🏆';
 
-        profile = { ...profile, ...updateObj };
-        updateDisplay();
-        
-        // Message spécifique selon l'upgrade
-        let marcelReaction = MARCEL_MESSAGES.buy[Math.floor(Math.random() * MARCEL_MESSAGES.buy.length)];
-        if (updates[upgradeId] >= upgrade.maxLevel) {
-          marcelReaction = MARCEL_MESSAGES.maxed[Math.floor(Math.random() * MARCEL_MESSAGES.maxed.length)];
-        }
-        document.getElementById('marcelMessage').textContent = `"${marcelReaction}"`;
-        
-        renderUpgrades();
-        showAlert(`✅ ${upgrade.name} achetée!`);
-      } catch (error) {
-        console.error(error);
-        showAlert('Erreur lors de l\'achat', true);
-      }
+      const label = type === 'xp' ? `+${amount} XP/clic` : `+${amount}€/clic`;
+      showToast(`✅ ${label} acheté !`);
     }
 
-    function showAlert(message, isError = false) {
-      const alert = document.createElement('div');
-      alert.className = `alert ${isError ? 'error' : ''}`;
-      alert.textContent = message;
-      document.body.appendChild(alert);
-      setTimeout(() => alert.remove(), 3000);
-    }
-
-    function goBack() {
-      window.location.href = 'clicker.html';
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = 'toast show ' + type;
+      setTimeout(() => t.className = 'toast', 2800);
     }
 
     if (!checkShopOpen()) { showShopClosed(); }
