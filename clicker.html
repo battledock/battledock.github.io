@@ -464,7 +464,9 @@
       
       // Si level-up, actualiser sessionXp pour ne garder que le reste
       if (currentLevel > oldLevel) {
+        initialXp = 0;
         sessionXp = remainingXp;
+        initialLevel = currentLevel;
       }
 
       // Vibration
@@ -524,18 +526,17 @@
       if (!currentUser) return;
       
       try {
-        // Ne sauvegarder que le reste de l'XP après level-up
         await supabaseClient
           .from('game_stats')
           .update({
             money: initialMoney + sessionMoney,
-            xp: sessionXp,  // Juste le reste, pas initialXp + sessionXp
+            xp: sessionXp,
             level: currentLevel,
             grade: currentGrade
           })
           .eq('user_id', currentUser.id);
         
-        console.log('✅ Progression sauvegardée - Niveau:', currentLevel, 'XP:', sessionXp, 'Grade:', currentGrade);
+        console.log('✅ Sauvegardé - Niveau:', currentLevel, 'XP:', sessionXp);
       } catch (err) {
         console.error('❌ Erreur sauvegarde:', err);
       }
@@ -574,6 +575,9 @@
     window.addEventListener('beforeunload', () => {
       saveProgress();
     });
+
+    // Auto-save toutes les 10 secondes
+    setInterval(saveProgress, 10000);
 
     init();
   </script>
