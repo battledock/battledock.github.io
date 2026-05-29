@@ -210,22 +210,7 @@
         </div>
         <div class="row-arrow">›</div>
       </div>
-      <div class="row" onclick="openModal('email')">
-        <div class="row-icon blue">📧</div>
-        <div class="row-info">
-          <div class="row-title">Changer l'email</div>
-          <div class="row-sub" id="rowEmail">...</div>
-        </div>
-        <div class="row-arrow">›</div>
-      </div>
-      <div class="row" onclick="openModal('password')">
-        <div class="row-icon orange">🔐</div>
-        <div class="row-info">
-          <div class="row-title">Changer le mot de passe</div>
-          <div class="row-sub">Directement dans l'app</div>
-        </div>
-        <div class="row-arrow">›</div>
-      </div>
+
     </div>
 
     <!-- SESSION -->
@@ -272,46 +257,6 @@
         <div class="field-hint">Entre 3 et 20 caractères, lettres et chiffres uniquement</div>
         <button class="btn-primary" id="pseudoBtn" onclick="changePseudo()">Confirmer</button>
         <button class="btn-cancel" onclick="closeModal('modalPseudo')">Annuler</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL EMAIL -->
-  <div class="modal-overlay" id="modalEmail" style="display:none" onclick="closeOnOverlay(event,'modalEmail')">
-    <div class="modal-card">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <div class="modal-title">Changer l'email</div>
-        <button class="modal-close" onclick="closeModal('modalEmail')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="field-lbl">Email actuel</div>
-        <input class="field-input" id="currentEmailDisplay" type="text" disabled style="opacity:0.5">
-        <div class="field-lbl">Nouvel email</div>
-        <input class="field-input" id="newEmailInput" type="email" placeholder="nouveau@email.com">
-        <div class="field-hint">Un email de confirmation sera envoyé à la nouvelle adresse</div>
-        <button class="btn-primary" onclick="changeEmail()">Confirmer</button>
-        <button class="btn-cancel" onclick="closeModal('modalEmail')">Annuler</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL MOT DE PASSE -->
-  <div class="modal-overlay" id="modalPassword" style="display:none" onclick="closeOnOverlay(event,'modalPassword')">
-    <div class="modal-card">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <div class="modal-title">Mot de passe</div>
-        <button class="modal-close" onclick="closeModal('modalPassword')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="field-lbl">Nouveau mot de passe</div>
-        <input class="field-input" id="newPasswordInput" type="password" placeholder="••••••••">
-        <div class="field-lbl">Confirmer</div>
-        <input class="field-input" id="confirmPasswordInput" type="password" placeholder="••••••••">
-        <div class="field-hint">Minimum 6 caractères</div>
-        <button class="btn-primary" onclick="changePassword()">Changer le mot de passe</button>
-        <button class="btn-cancel" onclick="closeModal('modalPassword')">Annuler</button>
       </div>
     </div>
   </div>
@@ -384,14 +329,7 @@
             document.getElementById('pseudoBtn').disabled = false;
           }
         }
-      } else if (type === 'email') {
-        document.getElementById('currentEmailDisplay').value = currentUser.email;
-        document.getElementById('newEmailInput').value = '';
-        document.getElementById('modalEmail').style.display = 'flex';
-      } else if (type === 'password') {
-        document.getElementById('newPasswordInput').value = '';
-        document.getElementById('confirmPasswordInput').value = '';
-        document.getElementById('modalPassword').style.display = 'flex';
+
       } else if (type === 'delete') {
         document.getElementById('deleteConfirm').value = '';
         document.getElementById('modalDelete').style.display = 'flex';
@@ -424,29 +362,6 @@
       showToast('✅ Pseudo mis à jour !', 'success');
     }
 
-    // ===== EMAIL =====
-    async function changeEmail() {
-      const newEmail = document.getElementById('newEmailInput').value.trim();
-      if (!newEmail || !newEmail.includes('@')) { showToast('Email invalide', 'error'); return; }
-      const { error } = await sb.auth.updateUser({ email: newEmail });
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
-      closeModal('modalEmail');
-      showToast('📧 Confirme ton nouvel email !', 'success');
-      document.getElementById('pmEmail').textContent = newEmail + ' (en attente)';
-    }
-
-    // ===== MOT DE PASSE =====
-    async function changePassword() {
-      const newPwd = document.getElementById('newPasswordInput').value;
-      const confirmPwd = document.getElementById('confirmPasswordInput').value;
-      if (newPwd.length < 6) { showToast('Minimum 6 caractères', 'error'); return; }
-      if (newPwd !== confirmPwd) { showToast('Les mots de passe ne correspondent pas', 'error'); return; }
-      const { error } = await sb.auth.updateUser({ password: newPwd });
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
-      closeModal('modalPassword');
-      showToast('✅ Mot de passe mis à jour !', 'success');
-    }
-
     // ===== DÉCONNEXION =====
     async function logout() {
       if (!confirm('Veux-tu vraiment te déconnecter ?')) return;
@@ -460,15 +375,18 @@
       if (confirm_txt !== 'SUPPRIMER') { showToast('Tape exactement "SUPPRIMER"', 'error'); return; }
 
       try {
-        // Supprimer toutes les données
-        await sb.from('stock_portfolio').delete().eq('user_id', currentUser.id);
-        await sb.from('stock_transactions').delete().eq('user_id', currentUser.id);
-        await sb.from('casino_wins').delete().eq('user_id', currentUser.id);
-        await sb.from('chat_messages').delete().eq('user_id', currentUser.id);
-        await sb.from('private_messages').delete().or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`);
-        await sb.from('dividend_claims').delete().eq('user_id', currentUser.id);
-        await sb.from('game_stats').delete().eq('user_id', currentUser.id);
-        await sb.from('profiles').delete().eq('user_id', currentUser.id);
+        const { data: { session } } = await sb.auth.getSession();
+        const res = await fetch('https://drtsuhnbclhmgfjiykap.supabase.co/functions/v1/delete-account', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + session.access_token,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await res.json();
+        if (!res.ok) { showToast('Erreur : ' + (result.error || 'inconnue'), 'error'); return; }
+
         await sb.auth.signOut();
         window.location.href = 'index.html';
       } catch(e) {
