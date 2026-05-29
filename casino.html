@@ -165,7 +165,6 @@
       font-weight: 700;
     }
 
-
     /* ONGLETS */
     .casino-tabs {
       display:flex; gap:0;
@@ -279,66 +278,7 @@
       color: rgba(255, 255, 255, 0.6);
     }
 
-    /* LIVE FEED */
-    .live-feed {
-      background: rgba(0, 0, 0, 0.3);
-      border: 2px solid rgba(251, 191, 36, 0.2);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-
-    .feed-title {
-      font-size: 13px;
-      color: rgba(251, 191, 36, 0.9);
-      font-weight: 700;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .feed-item {
-      font-size: 13px;
-      color: rgba(255, 255, 255, 0.8);
-      padding: 8px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .feed-item:last-child {
-      border-bottom: none;
-    }
-
-    .feed-item b {
-      color: #fbbf24;
-    }
-
     /* STATS CONTAINER */
-    .stats-container {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .stat-box {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border-radius: 14px;
-      padding: 18px;
-      text-align: center;
-      box-shadow: 0 6px 20px rgba(251, 191, 36, 0.3);
-      border: 2px solid rgba(251, 191, 36, 0.8);
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: #7f1d1d;
-      text-transform: uppercase;
-      font-weight: 700;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-
-
 
     .stat-value {
       font-family: 'Bebas Neue', sans-serif;
@@ -392,19 +332,11 @@
         padding: 18px 10px;
       }
 
-      .live-feed {
-        padding: 12px;
-        margin-bottom: 16px;
-      }
+  
 
-      .stats-container {
-        gap: 10px;
-        margin-bottom: 16px;
-      }
+  
 
-      .stat-box {
-        padding: 14px;
-      }
+  
     }
   
     /* FLUIDITÉ GLOBALE */
@@ -438,8 +370,6 @@
       </div>
     </div>
 
-
-
     <!-- JACKPOT BUTTON -->
     <!-- ONGLETS -->
     <div class="casino-tabs">
@@ -460,6 +390,19 @@
     </div>
 
     <!-- GAMES GRID -->
+    <!-- COURSE HIPPIQUE -->
+    <a href="horse-racing.html" style="display:block;text-decoration:none;margin-bottom:20px">
+      <div style="background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,0,0,0.4);transition:transform 0.15s" onpointerdown="this.style.transform='scale(0.98)'" onpointerup="this.style.transform='scale(1)'">
+        <div style="font-size:40px">🏇</div>
+        <div style="flex:1">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Grand Prix du Port</div>
+          <div style="font-size:12px;color:rgba(251,191,36,0.6);margin-top:2px">Course hippique · 4 chevaux · Cotes variables</div>
+        </div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;opacity:0.6">›</div>
+      </div>
+    </a>
+
+    <!-- GAMES GRID 2 -->
     <div class="games-grid">
       <a href="roulette.html" class="game-card dark">
         <div class="game-icon">🎡</div>
@@ -493,25 +436,9 @@
     </div>
 
     <!-- LIVE FEED -->
-    <div class="live-feed">
-      <div class="feed-title">📱 Derniers Gains</div>
-      <div id="liveFeed">
-        <div class="feed-item">Aucun gain pour le moment...</div>
-      </div>
     </div>
 
-
-
     <!-- STATS -->
-    <div class="stats-container">
-      <div class="stat-box">
-        <div class="stat-label">📊 Total Misé</div>
-        <div class="stat-value" id="totalBet">0€</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-label">💰 Gains Totaux</div>
-        <div class="stat-value" id="totalWins">0€</div>
-      </div>
     </div>
 
     <!-- QUIT BUTTON -->
@@ -617,7 +544,6 @@
       csTick();
     }
 
-
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
@@ -641,11 +567,9 @@
       document.getElementById('balance').textContent = (stats?.money || 0).toLocaleString('fr-FR') + '€';
       
       await loadJackpot();
-      await loadStats();
       await loadRecentWins();
 
       setInterval(loadJackpot, 5000);
-      setInterval(loadStats, 10000);
       setInterval(loadRecentWins, 8000);
     }
 
@@ -665,51 +589,19 @@
       }
     }
 
-    async function loadStats() {
-      try {
-        const { data: { session } } = await sb.auth.getSession();
-        const today = new Date().toISOString().split('T')[0];
-
-        const { data: allWins } = await sb
-          .from('casino_wins')
-          .select('amount_won, amount_bet')
-          .eq('user_id', session.user.id)
-          .gte('created_at', today + 'T00:00:00');
-
-        let totalBet = 0;
-        let totalWins = 0;
-
-        if (allWins) {
-          allWins.forEach(w => {
-            totalBet += w.amount_bet || 0;
-            if (w.amount_won > 0) totalWins += w.amount_won;
-          });
-        }
-
-        document.getElementById('totalBet').textContent = totalBet.toLocaleString('fr-FR') + '€';
-        document.getElementById('totalWins').textContent = totalWins.toLocaleString('fr-FR') + '€';
-      } catch (e) {
-        console.log('Erreur stats:', e.message);
-      }
-    }
-
     async function loadRecentWins() {
       try {
         const { data: wins, error } = await sb
           .from('casino_wins')
           .select('user_name, game_name, amount_won')
           .order('created_at', { ascending: false })
-          .limit(5);
-
-        const feedEl = document.getElementById('liveFeed');
-        
+          .limit(5);        
         if (error) {
           console.log('Erreur BD gains:', error.message);
           return;
         }
 
         if (!wins || wins.length === 0) {
-          feedEl.innerHTML = '<div class="feed-item">Aucun gain pour le moment...</div>';
           return;
         }
 
@@ -723,11 +615,8 @@
         };
 
         const gains = wins.filter(w => w.amount_won > 0);
-        if (!gains.length) { feedEl.innerHTML = '<div class="feed-item">Aucun gain pour le moment...</div>'; return; }
-        feedEl.innerHTML = gains.map(win => {
           const emoji = gameEmojis[win.game_name] || '🎉';
           const preposition = (win.game_name === 'Roulette' || win.game_name === 'Higher/Lower') ? 'à la' : 'au';
-          return `<div class="feed-item">${emoji} <b>${win.user_name}</b> a gagné <b>${win.amount_won.toLocaleString('fr-FR')}€</b> ${preposition} ${win.game_name}</div>`;
         }).join('');
       } catch (e) {
         console.log('Erreur fetch gains:', e.message);
