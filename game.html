@@ -1174,6 +1174,35 @@
     function createCompany() { alert('Bientôt disponible ! 🏢'); }
     function openChat() { window.location.href = 'chat.html'; }
 
+    async function loadCalendar() {
+      const today = new Date();
+      const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+      document.getElementById('calDayNum').textContent  = today.getDate();
+      document.getElementById('calDayName').textContent = days[today.getDay()];
+      try {
+        const todayStr = today.toISOString().split('T')[0];
+        const { data } = await sb.from('daily_objectives').select('objectives').eq('user_id', currentUser.id).eq('date', todayStr).maybeSingle();
+        if(data?.objectives) {
+          const objs = data.objectives;
+          const completed = objs.filter(o => o.completed || o.claimed).length;
+          const pct = Math.round((completed/3)*100);
+          document.getElementById('calSubtitle').textContent = completed===3 ? '🎉 Tous complétés !' : `${3-completed} objectif${3-completed>1?'s':''} restant${3-completed>1?'s':''}`;
+          document.getElementById('calProgLabel').textContent = `${completed}/3 complétés`;
+          document.getElementById('calProgPct').textContent   = pct+'%';
+          document.getElementById('calProgFill').style.width  = pct+'%';
+          document.getElementById('calObjs').innerHTML = objs.map(o => {
+            const done = o.completed||o.claimed;
+            return `<div class="cal-obj"><div class="cal-obj-dot ${done?'done':'todo'}"></div><span class="cal-obj-text ${done?'done':''}">${o.title}</span></div>`;
+          }).join('');
+        } else {
+          document.getElementById('calSubtitle').textContent = '3 objectifs t\'attendent';
+          document.getElementById('calObjs').innerHTML = ['🎰 Casino','📈 Bourse','🔥 Connexion'].map(t =>
+            `<div class="cal-obj"><div class="cal-obj-dot todo"></div><span>${t}</span></div>`
+          ).join('');
+        }
+      } catch(e) { console.log('calendar:', e.message); }
+    }
+
     async function loadChatBadge() {
       try {
         const { data } = await sb.from('private_messages')
