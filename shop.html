@@ -3,571 +3,460 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Shop - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+  <title>Magasin du Port - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    input { user-select:text; -webkit-user-select:text; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
 
     body {
       font-family: 'Inter', sans-serif;
-      background: #0a0a0f;
+      background: linear-gradient(180deg, #d4a574 0%, #a0876d 50%, #8b7355 100%);
       min-height: 100vh;
-      padding-bottom: 40px;
-      padding-top: 58px;
-      overflow-x: hidden;
+      padding-bottom: 100px;
     }
 
-    /* ===================== NEONS AMBIANCE ===================== */
-    .neon-bg {
-      position: fixed; inset: 0; z-index: 0;
+    /* Texture bois */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.05) 2px, rgba(0,0,0,.05) 4px),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
       pointer-events: none;
-      overflow: hidden;
+      z-index: -1;
     }
 
-    .neon-glow {
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.12;
-    }
-
-    .neon-glow.red   { width:300px; height:300px; background:#ff0040; top:-60px; left:-80px; animation: glowDrift 8s ease-in-out infinite; }
-    .neon-glow.blue  { width:250px; height:250px; background:#0040ff; top:100px; right:-60px; animation: glowDrift 10s ease-in-out infinite reverse; }
-    .neon-glow.gold  { width:200px; height:200px; background:#ffaa00; bottom:200px; left:50%; animation: glowDrift 7s ease-in-out infinite 2s; }
-
-    @keyframes glowDrift {
-      0%,100% { transform: translate(0,0) scale(1); }
-      33%      { transform: translate(20px,-15px) scale(1.1); }
-      66%      { transform: translate(-10px,20px) scale(0.9); }
-    }
-
-    /* Grille ville en fond */
-    .city-grid {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background-image:
-        linear-gradient(rgba(255,0,80,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,0,80,0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
-    }
-
-    /* ===================== CONTAINER ===================== */
-    .container {
-      position: relative; z-index: 1;
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-
-    /* ===================== HEADER ===================== */
-    .shop-header {
-      position: relative;
+    /* Storefront */
+    .storefront {
+      background: linear-gradient(180deg, #8b6f47 0%, #6b5d47 100%);
+      border-top: 8px solid #5a4a35;
+      border-bottom: 8px solid #5a4a35;
+      padding: 24px 16px;
       margin-bottom: 20px;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
     }
 
-    .header-bg {
-      position: absolute; inset: 0;
-      background: linear-gradient(160deg, #1a0a2e 0%, #0d0d1a 60%, #1a1010 100%);
-    }
-
-    /* Enseigne principale */
-    .shop-sign {
-      position: relative; z-index: 2;
-      text-align: center;
-      padding: 20px 16px 12px;
-    }
-
-    .sign-japanese {
-      font-family: 'Noto Sans JP', sans-serif;
-      font-size: 13px;
-      color: rgba(255,100,100,0.6);
-      letter-spacing: 4px;
-      margin-bottom: 4px;
-    }
-
-    .sign-title {
+    .store-sign {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 32px;
-      letter-spacing: 4px;
-      color: white;
-      text-shadow:
-        0 0 10px rgba(255,50,50,0.8),
-        0 0 30px rgba(255,50,50,0.4),
-        0 0 60px rgba(255,50,50,0.2);
-      position: relative;
-    }
-
-    .sign-title::after {
-      content: 'マルセル商店';
-      display: block;
-      font-family: 'Noto Sans JP', sans-serif;
-      font-size: 11px;
-      color: rgba(255,150,100,0.5);
+      font-size: clamp(32px, 8vw, 56px);
+      color: #fff8dc;
+      text-align: center;
       letter-spacing: 3px;
-      margin-top: 2px;
+      text-shadow: 
+        3px 3px 0px rgba(0,0,0,0.4),
+        -1px -1px 0px rgba(255,255,255,0.2);
+      margin-bottom: 8px;
     }
 
-    /* Lanternes */
-    .lanterns {
+    .store-subtitle {
+      font-size: 14px;
+      color: #d4a574;
+      text-align: center;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    /* Container */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* NPC Section */
+    .npc-section {
+      background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
+      border: 3px solid #5a4a35;
+      border-radius: 4px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
       display: flex;
-      justify-content: space-around;
-      padding: 0 20px 12px;
-      position: relative; z-index: 2;
+      gap: 24px;
+      align-items: flex-start;
     }
 
-    .lantern {
+    .npc-avatar {
+      flex-shrink: 0;
+      width: 140px;
+      height: 180px;
+    }
+
+    .npc-dialog {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 0;
+      justify-content: center;
     }
 
-    .lantern-string {
-      width: 1px; height: 12px;
-      background: rgba(255,200,100,0.4);
-    }
-
-    .lantern-body {
-      width: 22px; height: 28px;
-      background: radial-gradient(ellipse at 40% 40%, #ff6b35, #cc2200);
-      border-radius: 50% 50% 45% 45%;
-      box-shadow: 0 0 10px rgba(255,80,0,0.6), 0 0 20px rgba(255,80,0,0.3);
-      position: relative;
-      animation: lanternSwing 3s ease-in-out infinite;
-    }
-
-    .lantern-body::before {
-      content: '';
-      position: absolute; top: 4px; left: 4px; right: 4px;
-      height: 1px; background: rgba(255,200,100,0.3);
-    }
-
-    .lantern-body::after {
-      content: '福';
-      position: absolute; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-family: 'Noto Sans JP', sans-serif;
-      font-size: 9px; color: rgba(255,220,150,0.8);
-    }
-
-    .lantern-tassel {
-      width: 1px; height: 8px;
-      background: rgba(255,200,100,0.5);
-    }
-
-    @keyframes lanternSwing {
-      0%,100% { transform: rotate(-6deg); }
-      50%      { transform: rotate(6deg); }
-    }
-
-    /* Stats header */
-    .header-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      padding: 0 16px 16px;
-      position: relative; z-index: 2;
-    }
-
-    .hstat {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      padding: 10px 8px;
-      text-align: center;
-    }
-
-    .hstat-val {
+    .npc-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 1px;
-      color: white;
+      font-size: 20px;
+      color: #f5f5dc;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
     }
 
-    .hstat-lbl {
-      font-size: 9px; color: rgba(255,255,255,0.4);
-      text-transform: uppercase; letter-spacing: 1px;
-      font-weight: 700; margin-top: 2px;
-    }
-
-    /* ===================== MARCEL NPC ===================== */
-    .marcel-zone {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.07);
-      border-radius: 14px;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .marcel-zone::before {
-      content: '';
-      position: absolute; left:0; top:0; bottom:0;
-      width: 3px;
-      background: linear-gradient(180deg, #ff6b35, #cc2200);
-    }
-
-    .marcel-avatar {
-      font-size: 40px;
-      flex-shrink: 0;
-      filter: drop-shadow(0 0 8px rgba(255,100,50,0.4));
-    }
-
-    .marcel-bubble {
-      flex: 1; min-width: 0;
-    }
-
-    .marcel-name {
-      font-size: 10px; font-weight: 700;
-      color: #ff6b35;
-      text-transform: uppercase; letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .marcel-msg {
-      font-size: 13px;
-      color: rgba(255,255,255,0.8);
-      line-height: 1.4;
+    .npc-message {
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid #d4a574;
+      border-radius: 8px;
+      padding: 16px;
+      color: #f5f5dc;
+      font-size: 14px;
+      line-height: 1.6;
       font-style: italic;
     }
 
-    /* ===================== TABS ===================== */
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+    /* Cash register */
+    .cash-register {
+      background: linear-gradient(135deg, #cd853f 0%, #8b4513 100%);
+      border: 4px solid #654321;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto 20px;
+      box-shadow: 
+        0 8px 16px rgba(0,0,0,0.3),
+        inset 0 1px 0px rgba(255,255,255,0.2);
     }
 
-    .tab-btn {
-      flex: 1;
-      padding: 12px 8px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px; letter-spacing: 1px;
-      color: rgba(255,255,255,0.4);
-      cursor: pointer; transition: all 0.2s;
+    .register-display {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .register-item {
+      background: linear-gradient(135deg, #f5f5dc 0%, #fffacd 100%);
+      border: 2px solid #8b4513;
+      border-radius: 4px;
+      padding: 12px;
       text-align: center;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
     }
 
-    .tab-btn.active {
-      background: rgba(255,80,50,0.15);
-      border-color: rgba(255,80,50,0.4);
-      color: #ff6b35;
-      box-shadow: 0 0 12px rgba(255,80,50,0.15);
+    .register-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(18px, 4vw, 28px);
+      color: #654321;
+      letter-spacing: 1px;
+      font-weight: 700;
     }
 
-    /* ===================== SHELF LABEL ===================== */
+    .register-label {
+      font-size: 10px;
+      color: #654321;
+      text-transform: uppercase;
+      margin-top: 4px;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+
+    /* Shelf section */
+    .shelf-section {
+      background: linear-gradient(135deg, #8b7355 0%, #6b5744 100%);
+      border: 3px solid #5a4a35;
+      border-radius: 4px;
+      padding: 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+    }
+
     .shelf-label {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 2px;
-      color: rgba(255,255,255,0.3);
+      font-size: 20px;
+      color: #f5f5dc;
+      letter-spacing: 2px;
+      margin-bottom: 16px;
       text-transform: uppercase;
-      margin-bottom: 12px;
-      display: flex; align-items: center; gap: 8px;
+      border-bottom: 2px dashed #d4a574;
+      padding-bottom: 8px;
     }
 
-    .shelf-label::after {
-      content: '';
-      flex: 1; height: 1px;
-      background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
-    }
-
-    /* ===================== PRODUCT GRID ===================== */
+    /* Grid produits */
     .products-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
     }
 
-    /* ===================== PRODUCT BOX ===================== */
+    /* Product card */
     .product-box {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 16px 12px;
-      display: flex; flex-direction: column;
-      align-items: center;
-      gap: 6px;
+      background: linear-gradient(135deg, #f5f5dc 0%, #fffacd 100%);
+      border: 3px solid #8b4513;
+      border-radius: 0;
+      padding: 14px;
       text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
       position: relative;
-      overflow: hidden;
-      transition: all 0.2s;
+      box-shadow: 
+        4px 4px 0px rgba(0,0,0,0.25),
+        inset 0 1px 0px rgba(255,255,255,0.5);
     }
 
-    .product-box::before {
-      content: '';
-      position: absolute; top:0; left:0; right:0;
-      height: 2px;
-      background: linear-gradient(90deg, #ff6b35, #ffaa00);
-      opacity: 0;
-      transition: opacity 0.2s;
+    .product-box:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 
+        6px 6px 0px rgba(0,0,0,0.25),
+        inset 0 1px 0px rgba(255,255,255,0.5);
     }
 
-    .product-box:not(.unavailable):not(.locked):hover { background: rgba(255,255,255,0.07); }
-    .product-box:not(.unavailable):not(.locked):hover::before { opacity: 1; }
-    .product-box.unavailable { opacity: 0.5; }
-    .product-box.locked { opacity: 0.45; }
-    .product-box.equipped { border-color: rgba(255,170,0,0.4); box-shadow: 0 0 12px rgba(255,170,0,0.1); }
-    .product-box.equipped::before { opacity: 1; background: linear-gradient(90deg, #ffaa00, #ff6b35); }
+    .product-box.unavailable {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
 
-    .product-icon { font-size: 32px; }
+    .product-icon {
+      font-size: 48px;
+      margin-bottom: 8px;
+      display: block;
+    }
 
     .product-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px; letter-spacing: 1px;
-      color: white; line-height: 1;
+      font-size: 14px;
+      color: #654321;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      font-weight: 700;
     }
 
     .product-level {
-      font-size: 10px; color: rgba(255,255,255,0.4);
-      font-weight: 700;
+      font-size: 11px;
+      color: #8b4513;
+      margin-bottom: 8px;
+      text-transform: uppercase;
     }
 
     .product-bonus {
-      background: rgba(255,170,0,0.1);
-      border: 1px solid rgba(255,170,0,0.2);
-      border-radius: 6px;
-      padding: 4px 8px;
-      width: 100%;
+      background: rgba(139, 69, 19, 0.1);
+      border: 1px solid #8b4513;
+      border-radius: 2px;
+      padding: 6px;
+      margin-bottom: 8px;
     }
 
     .bonus-text {
-      font-size: 11px;
-      color: #ffaa00;
-      font-weight: 700;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px;
+      color: #654321;
+      letter-spacing: 0.5px;
     }
 
     .product-price {
-      font-size: 11px;
-      color: rgba(255,255,255,0.5);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      color: #228b22;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
       font-weight: 700;
     }
 
     .buy-btn {
       width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: 8px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px; letter-spacing: 1px;
-      cursor: pointer;
-      transition: all 0.2s;
-      background: linear-gradient(135deg, #ff6b35, #cc2200);
+      background: linear-gradient(135deg, #228b22 0%, #1a6b1a 100%);
+      border: 2px solid #1a6b1a;
       color: white;
-      box-shadow: 0 2px 8px rgba(255,80,50,0.3);
+      padding: 8px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      font-weight: 600;
     }
 
-    .buy-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(255,80,50,0.4); }
-    .buy-btn:active { transform: translateY(0); }
-    .buy-btn:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.25); cursor:not-allowed; box-shadow:none; transform:none; }
-    .buy-btn.maxed { background: rgba(255,170,0,0.15); color: #ffaa00; border: 1px solid rgba(255,170,0,0.3); box-shadow: none; }
+    .buy-btn:hover:not(:disabled) {
+      transform: scale(1.05);
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    }
 
-    /* ===================== BACK BTN ===================== */
-    /* NAV HEADER FIXE */
-    .nav-header {
+    .buy-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .buy-btn.maxed {
+      background: #95a5a6;
+      border-color: #7f8c8d;
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
       position: fixed;
-      top: 0; left: 0; right: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(180deg, #8b7355 0%, #6b5744 100%);
+      border-top: 4px solid #5a4a35;
+      padding: 12px 16px;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
       z-index: 100;
-      background: rgba(10,10,15,0.92);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255,80,50,0.15);
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      max-width: 100%;
     }
 
     .nav-btn {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      padding: 9px 13px;
-      color: rgba(255,255,255,0.7);
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      background: linear-gradient(135deg, #228b22 0%, #1a6b1a 100%);
+      border: 2px solid #1a6b1a;
+      color: white;
+      padding: 14px;
+      border-radius: 4px;
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 1px;
-      cursor: pointer; transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .nav-btn:hover { background: rgba(255,255,255,0.12); color: white; }
-    .nav-btn.work { border-color: rgba(255,80,50,0.3); }
-    .nav-btn.work:hover { background: rgba(255,80,50,0.12); color: #ff6b35; }
-
-    .nav-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px; letter-spacing: 2px;
-      color: rgba(255,100,80,0.8);
-      text-shadow: 0 0 10px rgba(255,80,50,0.3);
+      font-size: 16px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+      font-weight: 600;
     }
 
-    /* ===================== ALERTS ===================== */
+    .nav-btn:hover {
+      transform: scale(1.02);
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    }
+
+    /* Alert */
     .alert {
       position: fixed;
-      bottom: 24px; left: 50%;
+      top: 20px;
+      left: 50%;
       transform: translateX(-50%);
-      background: #1a1a2e;
-      border: 1px solid rgba(255,170,0,0.4);
+      background: #228b22;
       color: white;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 14px; font-weight: 600;
-      z-index: 9999;
-      white-space: nowrap;
-      animation: alertIn 0.3s ease;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      padding: 14px 20px;
+      border: 2px solid #1a6b1a;
+      border-radius: 4px;
+      font-family: 'Bebas Neue', sans-serif;
+      z-index: 1000;
+      box-shadow: 4px 4px 0px rgba(0,0,0,0.3);
+      animation: popIn 0.3s ease-out;
     }
 
-    .alert.error { border-color: rgba(255,80,50,0.5); color: #ff6b35; }
-
-    @keyframes alertIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
-
-    /* Néon clignotant sur l'enseigne */
-    @keyframes neonFlicker {
-      0%,19%,21%,23%,25%,54%,56%,100% { text-shadow: 0 0 10px rgba(255,50,50,0.8), 0 0 30px rgba(255,50,50,0.4), 0 0 60px rgba(255,50,50,0.2); opacity:1; }
-      20%,24%,55% { text-shadow: none; opacity:0.8; }
+    .alert.error {
+      background: #dc2626;
+      border-color: #b91c1c;
     }
 
-    .sign-title { animation: neonFlicker 8s infinite; }
-
-    /* Défilement enseigne néon */
-    .neon-ticker {
-      background: rgba(255,0,50,0.08);
-      border-top: 1px solid rgba(255,0,50,0.2);
-      border-bottom: 1px solid rgba(255,0,50,0.2);
-      padding: 6px 0;
-      overflow: hidden;
-      position: relative; z-index: 2;
-      margin-bottom: -1px;
+    @keyframes popIn {
+      0% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+      100% { transform: translateX(-50%) scale(1); opacity: 1; }
     }
 
-    .neon-ticker-text {
-      white-space: nowrap;
-      font-family: 'Noto Sans JP', sans-serif;
-      font-size: 11px;
-      color: rgba(255,100,80,0.7);
-      letter-spacing: 3px;
-      animation: tickerScroll 20s linear infinite;
+    @media (max-width: 700px) {
+      .products-grid { grid-template-columns: repeat(2, 1fr); }
+      .npc-section { flex-direction: column; align-items: center; text-align: center; }
+      .store-sign { font-size: 32px; }
     }
-
-    @keyframes tickerScroll { 0%{transform:translateX(100vw)} 100%{transform:translateX(-100%)} }
   </style>
 </head>
 <body>
-
-  <!-- AMBIANCE NÉON -->
-  <div class="neon-bg">
-    <div class="neon-glow red"></div>
-    <div class="neon-glow blue"></div>
-    <div class="neon-glow gold"></div>
-  </div>
-  <div class="city-grid"></div>
-
-  <!-- NAV HEADER FIXE -->
-  <div class="nav-header">
-    <div class="nav-btn" onclick="window.location.href='game.html'">← LOBBY</div>
-    <div class="nav-title">🏮 LE SHOP</div>
-    <div class="nav-btn work" onclick="window.location.href='clicker.html'">⚓ TRAVAIL →</div>
+  <div class="storefront">
+    <div class="store-sign">⚓ MAGASIN DU PORT ⚓</div>
+    <div class="store-subtitle">Depuis 1952 - Équipements de Docker</div>
   </div>
 
   <div class="container">
+    <!-- NPC MARCEL -->
+    <div class="npc-section">
+      <svg class="npc-avatar" viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- Tête -->
+        <circle cx="70" cy="50" r="35" fill="#f5deb3" stroke="#8b4513" stroke-width="2"/>
+        
+        <!-- Chapeau melon -->
+        <ellipse cx="70" cy="18" rx="40" ry="12" fill="#2c2c2c" stroke="#000" stroke-width="2"/>
+        <path d="M 35 20 Q 35 5 70 0 Q 105 5 105 20" fill="#3d3d3d" stroke="#000" stroke-width="2"/>
+        <ellipse cx="70" cy="18" rx="38" ry="10" fill="#1a1a1a"/>
+        
+        <!-- Yeux -->
+        <circle cx="55" cy="45" r="4" fill="#000"/>
+        <circle cx="85" cy="45" r="4" fill="#000"/>
+        <circle cx="56" cy="44" r="1.5" fill="#fff"/>
+        <circle cx="86" cy="44" r="1.5" fill="#fff"/>
+        
+        <!-- Nez -->
+        <polygon points="70,50 66,58 74,58" fill="#d4a574"/>
+        
+        <!-- Moustache -->
+        <path d="M 70 62 Q 55 60 45 63" stroke="#8b4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 70 62 Q 85 60 95 63" stroke="#8b4513" stroke-width="3" fill="none" stroke-linecap="round"/>
+        
+        <!-- Bouche -->
+        <path d="M 60 70 Q 70 75 80 70" stroke="#654321" stroke-width="2" fill="none" stroke-linecap="round"/>
+        
+        <!-- Corps - Costume -->
+        <rect x="30" y="85" width="80" height="70" fill="#2c2c2c" stroke="#000" stroke-width="2" rx="4"/>
+        
+        <!-- Chemise -->
+        <rect x="38" y="88" width="64" height="40" fill="#f5f5dc" stroke="#8b4513" stroke-width="1"/>
+        
+        <!-- Cravate -->
+        <polygon points="70,88 65,100 75,100" fill="#d32f2f" stroke="#8b0000" stroke-width="1"/>
+        <rect x="65" y="100" width="10" height="20" fill="#d32f2f" stroke="#8b0000" stroke-width="1"/>
+        
+        <!-- Boutons costume -->
+        <circle cx="70" cy="110" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
+        <circle cx="70" cy="125" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
+        <circle cx="70" cy="140" r="2.5" fill="#c0c0c0" stroke="#808080" stroke-width="1"/>
+        
+        <!-- Mains -->
+        <circle cx="28" cy="105" r="8" fill="#f5deb3" stroke="#8b4513" stroke-width="1"/>
+        <circle cx="112" cy="105" r="8" fill="#f5deb3" stroke="#8b4513" stroke-width="1"/>
+      </svg>
 
-    <!-- BACK -->
-
-
-    <!-- HEADER ENSEIGNE -->
-    <div class="shop-header">
-      <div class="header-bg"></div>
-
-      <!-- Ticker néon -->
-      <div class="neon-ticker">
-        <div class="neon-ticker-text">⛵ BIENVENUE AU SHOP DU PORT ⛵　　　✨ UPGRADES DISPONIBLES ✨　　　🎨 NOUVEAUX SKINS ⛵　　　💎 DIAMANTS REQUIS 💎　　　</div>
-      </div>
-
-      <!-- Enseigne -->
-      <div class="shop-sign">
-        <div class="sign-japanese">マルセル　の　みせ</div>
-        <div class="sign-title">LE SHOP</div>
-      </div>
-
-      <!-- Lanternes -->
-      <div class="lanterns">
-        <div class="lantern" style="animation-delay:0s">
-          <div class="lantern-string"></div>
-          <div class="lantern-body"></div>
-          <div class="lantern-tassel"></div>
-        </div>
-        <div class="lantern" style="animation-delay:0.5s">
-          <div class="lantern-string"></div>
-          <div class="lantern-body"></div>
-          <div class="lantern-tassel"></div>
-        </div>
-        <div class="lantern" style="animation-delay:1s">
-          <div class="lantern-string"></div>
-          <div class="lantern-body"></div>
-          <div class="lantern-tassel"></div>
-        </div>
-        <div class="lantern" style="animation-delay:1.5s">
-          <div class="lantern-string"></div>
-          <div class="lantern-body"></div>
-          <div class="lantern-tassel"></div>
-        </div>
-        <div class="lantern" style="animation-delay:2s">
-          <div class="lantern-string"></div>
-          <div class="lantern-body"></div>
-          <div class="lantern-tassel"></div>
-        </div>
-      </div>
-
-      <!-- Stats -->
-      <div class="header-stats">
-        <div class="hstat">
-          <div class="hstat-val" id="moneyDisplay">0€</div>
-          <div class="hstat-lbl">Argent</div>
-        </div>
-        <div class="hstat">
-          <div class="hstat-val">💎 <span id="diamondsDisplay">0</span></div>
-          <div class="hstat-lbl">Diamants</div>
-        </div>
-        <div class="hstat">
-          <div class="hstat-val">🏆 <span id="trophiesDisplay">0</span></div>
-          <div class="hstat-lbl">Trophées</div>
+      <div class="npc-dialog">
+        <div class="npc-name">🛒 Marcel l'Ancien</div>
+        <div class="npc-message" id="marcelMessage">
+          "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?"
         </div>
       </div>
     </div>
 
-    <!-- MARCEL -->
-    <div class="marcel-zone">
-      <div class="marcel-avatar">👴</div>
-      <div class="marcel-bubble">
-        <div class="marcel-name">Marcel l'Ancien</div>
-        <div class="marcel-msg" id="marcelMessage">"Bienvenue au Magasin du Port !"</div>
+    <!-- Cash register -->
+    <div class="cash-register">
+      <div class="register-display">
+        <div class="register-item">
+          <div class="register-value" id="moneyDisplay">0€</div>
+          <div class="register-label">Argent</div>
+        </div>
+        <div class="register-item">
+          <div class="register-value" id="diamondsDisplay">0</div>
+          <div class="register-label">Diamants</div>
+        </div>
+        <div class="register-item">
+          <div class="register-value" id="trophiesDisplay">0</div>
+          <div class="register-label">Trophées</div>
+        </div>
       </div>
+      <div style="text-align: center; font-size: 12px; color: #f5f5dc; font-style: italic;">💼 Caisse du Port - Depuis 1952</div>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab-btn active" id="tab-upgrades" onclick="switchTab('upgrades')">🔧 Améliorations</button>
-      <button class="tab-btn" id="tab-skins" onclick="switchTab('skins')">🎨 Skins</button>
+    <!-- Shelf section -->
+    <div class="shelf-section">
+      <div class="shelf-label">📦 Améliorations de Travail</div>
+      <div class="products-grid" id="upgradesGrid"></div>
     </div>
+  </div>
 
-    <!-- LABEL -->
-    <div class="shelf-label" id="shelfLabel">📦 Améliorations de Travail</div>
-
-    <!-- PRODUITS -->
-    <div class="products-grid" id="upgradesGrid"></div>
-
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="goBack()">← RETOUR AU TRAVAIL</button>
   </div>
 
   <script>
@@ -578,41 +467,174 @@
 
     let currentUser = null;
     let profile = null;
-    let currentTab = 'upgrades';
+    let isFirstVisit = true;
 
     const UPGRADES = [
-      { id:'earn_per_click', name:'Gants de Travail', icon:'🧤', desc:'Augmente l\'argent gagné par clic', basePrice:500, priceType:'money', maxLevel:10, bonus:(lvl)=>`+${lvl}€/clic` },
-      { id:'combo_max', name:'Muscles', icon:'💪', desc:'Augmente le combo maximum', basePrice:50, priceType:'diamonds', maxLevel:8, bonus:(lvl)=>`Combo ×${(2+lvl*0.5).toFixed(1)}` },
-      { id:'auto_clicker', name:'Apprenti Docker', icon:'👦', desc:'Génère de l\'argent automatiquement', basePrice:200, priceType:'diamonds', maxLevel:5, bonus:(lvl)=>`+${lvl}€/sec` },
-      { id:'xp_bonus_1', name:'Formation Pro', icon:'⭐', desc:'+1 XP bonus par clic', basePrice:300, priceType:'diamonds', maxLevel:1, bonus:(lvl)=>lvl>=1?'+1 XP/clic':'Non acheté' },
-      { id:'xp_bonus_2', name:'Maître Docker', icon:'⭐⭐', desc:'+2 XP/clic (nécessite Formation Pro)', basePrice:800, priceType:'diamonds', maxLevel:1, requires:'xp_bonus_1', bonus:(lvl)=>lvl>=1?'+2 XP/clic':'Non acheté' }
-    ];
-
-    const SKINS = [
-      { id:'red',    name:'Acier Rouge',  color:'#cc2200', border:'#880000', price:0,    priceType:'free' },
-      { id:'blue',   name:'Océan',        color:'#1d4ed8', border:'#1e3a8a', price:500,  priceType:'money' },
-      { id:'green',  name:'Forêt',        color:'#15803d', border:'#14532d', price:1000, priceType:'money' },
-      { id:'gold',   name:'Or Massif',    color:'#b45309', border:'#92400e', price:200,  priceType:'diamonds' },
-      { id:'black',  name:'Nuit Noire',   color:'#1a1a1a', border:'#000000', price:500,  priceType:'diamonds' },
-      { id:'purple', name:'Violet Royal', color:'#7c3aed', border:'#5b21b6', price:1000, priceType:'diamonds' }
+      {
+        id: 'earn_per_click',
+        name: 'Gants de Travail',
+        icon: '🧤',
+        basePrice: 500,
+        priceType: 'money',
+        maxLevel: 10,
+        bonus: (level) => `+${level}€/clic`
+      },
+      {
+        id: 'combo_speed',
+        name: 'Caféine',
+        icon: '☕',
+        basePrice: 1000,
+        priceType: 'money',
+        maxLevel: 5,
+        bonus: (level) => `+${level * 10}% rapidité`
+      },
+      {
+        id: 'combo_max',
+        name: 'Muscles',
+        icon: '💪',
+        basePrice: 50,
+        priceType: 'diamonds',
+        maxLevel: 8,
+        bonus: (level) => `×${(2 + level * 0.5).toFixed(1)}`
+      },
+      {
+        id: 'xp_multiplier',
+        name: 'Expérience',
+        icon: '📚',
+        basePrice: 100,
+        priceType: 'diamonds',
+        maxLevel: 5,
+        bonus: (level) => `×${level}`
+      },
+      {
+        id: 'auto_clicker',
+        name: 'Apprenti',
+        icon: '👦',
+        basePrice: 200,
+        priceType: 'diamonds',
+        maxLevel: 3,
+        bonus: (level) => `+${level}€/sec`
+      },
+      {
+        id: 'prestige',
+        name: 'Rédemption',
+        icon: '🏅',
+        basePrice: 500,
+        priceType: 'trophies',
+        maxLevel: 1,
+        bonus: (level) => `Reset+bonus`
+      }
     ];
 
     const MARCEL_MESSAGES = {
-      welcome: ["Bienvenue ! Tu cherches quoi ?","Ah, un client ! Les affaires tournent 😄","Salut ! J'ai ce qu'il te faut","Re-bonjour ! Toujours pas riche ?","On upgrade ou on regarde ?"],
-      poor:    ["Pas beaucoup de sous hein ?","T'as combien ? 3 euros ? 😂","Reviens quand t'auras du cash","Plus fauché que mon compte en banque 😂","Je te prête rien, c'est du comptant !"],
-      middle:  ["Pas mal ! T'avances bien","Allez, dépense un peu","T'as du bon goût","Continue, tu vas être riche !"],
-      rich:    ["Ah richou ! Dépense un peu ici 💰","Le millionnaire est de retour !","Mon client VIP ! Vas-y sans compter"],
-      veryrich:["PUTAIN ! T'es riche ouf !","T'as cassé l'économie du port 💸","Tu m'embauches ? 😂"],
-      buy:     ["Bon choix !","T'as fait un bon investissement","Voilà, bosser comme un chef !","Ha ha, je savais que tu prendrais ça !"],
-      maxed:   ["Tout au max ! Professionnel 💪","C'est bon, t'as tout !","Tu es le ROI du magasin 👑"]
+      welcome: [
+        "Bienvenue au Magasin du Port ! Tu cherches quoi aujourd'hui ?",
+        "Ah, un client ! Les affaires tournent 😄",
+        "Salut ! J'ai ce qu'il te faut pour bosser mieux",
+        "Re-bonjour ! Toujours pas riche ?",
+        "C'est quoi encore ? Besoin de muscler tes bras ?",
+        "Tiens, un nouveau visage... ou c'est toi encore ?",
+        "Je vend de la qualité ici, pas du toc !",
+        "Alors ? On upgrade ou on regarde juste ?"
+      ],
+      poor: [
+        "Pas beaucoup de sous hein ? Reviens quand tu auras du cash",
+        "Les gants t'attendent, faut que tu travailles plus ! 😂",
+        "Pauvre petit, faut farmer davantage",
+        "T'as combien ? 3 euros ? 😂",
+        "Mon gars, t'es plus fauché que mon compte en banque",
+        "Viens me voir quand tu seras milliardaire",
+        "T'as pas les moyens d'être ici franchement",
+        "Passe ton temps à travailler au lieu de venir flâner",
+        "Je te prête rien hein, c'est du comptant !",
+        "Dépense l'argent que tu as au casino, c'est plus sympa",
+        "Reviens quand tu auras bossé un peu",
+        "T'as oublié ton portefeuille ou quoi ?"
+      ],
+      middle: [
+        "Pas mal comme argent ! T'avances bien",
+        "Allez, dépense un peu, ça va te servir",
+        "T'as du bon goût, je vois que tu achètes chez moi",
+        "Continue comme ça, tu vas être riche",
+        "T'es pas mal pour un pauvre ! 😄",
+        "Encore toi ? Tu dépenses mes bénéfices haha"
+      ],
+      rich: [
+        "Ah richou ! T'as bien bossé au port ?",
+        "T'es plein aux as ! Dépense un peu ici",
+        "Le millionnaire est de retour ! 💰",
+        "Wow, t'as vraiment l'pognon hein !",
+        "Alors tu rachètes le magasin ? 😂",
+        "T'es riche maintenant ? Fais-moi un chèque !",
+        "Mon client VIP ! Vas-y, dépense sans compter",
+        "Franchement t'es trop riche, c'est pas normal",
+        "J'aimerais bien être à ta place mec",
+        "T'as tout acheté ou quoi ? Laisse-moi un peu !",
+        "C'est pas normal d'avoir autant d'argent",
+        "Hé hé, je reconnais un bon client quand j'en vois un !"
+      ],
+      veryrich: [
+        "PUTAIN ! T'es riche ouf !",
+        "T'es un magnat maintenant !",
+        "Je peux te demander un truc... tu m'embauches ? 😂",
+        "T'as plus d'argent que moi... c'est déprimant",
+        "Comment tu fais pour avoir autant ?? 😨",
+        "Je suis jaloux là... vraiment jaloux",
+        "Fais attention à toi, les arnaqueurs vont te viser",
+        "T'as cassé l'économie du port ! 💸",
+        "Je vais augmenter mes prix rien que pour toi 😂",
+        "C'est fou, tu achètes juste pour décorer ?"
+      ],
+      buy: [
+        "Bon choix ! Ça va t'aider",
+        "T'as fait un bon investissement",
+        "Voilà, maintenant tu vas bosser comme un chef !",
+        "Excellent, ça va changer ta vie",
+        "C'est pas le meilleur choix mais c'est pas mal",
+        "T'as raison d'acheter ça, tu vas voir la différence",
+        "Ha ha, je savais que tu vas prendre celui-là",
+        "Bravo, t'es malin ce coup-ci !",
+        "Voilà du vrai matériel de travail !",
+        "Ça va marcher dur maintenant !",
+        "J'aurais fait pareil à ta place",
+        "Bien joué, tu investis dans le bon truc"
+      ],
+      maxed: [
+        "Tout est au max ! T'es un vrai professionnel",
+        "C'est bon, t'as tout déverrouillé !",
+        "Wow, t'as tout acheté ! Tu m'impressionnes",
+        "Je crois que tu m'as ruiné 😂",
+        "Y'a plus rien à vendre ici pour toi",
+        "Tu es le ROI du magasin maintenant",
+        "Je vais fermer le shop, tu as tout acheté",
+        "C'est dingue, tu as dépensé une fortune ici",
+        "Même moi j'ai pas tout ce que t'as ! 😅"
+      ]
     };
 
-    function getMarcelMessage(category = null) {
-      if (category) { const m = MARCEL_MESSAGES[category]; return m[Math.floor(Math.random()*m.length)]; }
-      const money = profile?.money || 0;
-      let cat = money < 1000 ? 'poor' : money < 5000 ? 'welcome' : money < 50000 ? 'middle' : money < 500000 ? 'rich' : 'veryrich';
-      const m = MARCEL_MESSAGES[cat];
-      return m[Math.floor(Math.random()*m.length)];
+    function getMarcelMessage(forceCategory = null) {
+      if (!profile) return MARCEL_MESSAGES.welcome[0];
+      
+      if (forceCategory) {
+        const messages = MARCEL_MESSAGES[forceCategory];
+        if (messages) {
+          return messages[Math.floor(Math.random() * messages.length)];
+        }
+      }
+      
+      const money = profile.money || 0;
+      
+      if (money < 1000) {
+        return MARCEL_MESSAGES.poor[Math.floor(Math.random() * MARCEL_MESSAGES.poor.length)];
+      } else if (money > 500000) {
+        return MARCEL_MESSAGES.veryrich[Math.floor(Math.random() * MARCEL_MESSAGES.veryrich.length)];
+      } else if (money > 50000) {
+        return MARCEL_MESSAGES.rich[Math.floor(Math.random() * MARCEL_MESSAGES.rich.length)];
+      } else if (money > 5000) {
+        return MARCEL_MESSAGES.middle[Math.floor(Math.random() * MARCEL_MESSAGES.middle.length)];
+      } else {
+        return MARCEL_MESSAGES.welcome[Math.floor(Math.random() * MARCEL_MESSAGES.welcome.length)];
+      }
     }
 
     async function checkShopOpen() {
@@ -620,188 +642,203 @@
         const { data, error } = await sb.rpc('is_shop_open');
         if (error) throw error;
         return data;
-      } catch {
-        const h = new Date().getHours();
-        return h >= 10 && h < 22;
+      } catch (err) {
+        console.error('Erreur vérification shop:', err);
+        // Fallback: vérifier localement si erreur
+        const now = new Date();
+        const hour = now.getHours();
+        return hour >= 10 && hour < 22;
       }
     }
 
     function showShopClosed() {
-      const now = new Date(), h = now.getHours();
-      let nextOpen = new Date();
-      if (h < 10) nextOpen.setHours(10,0,0,0);
-      else { nextOpen.setDate(nextOpen.getDate()+1); nextOpen.setHours(10,0,0,0); }
-      const diff = Math.floor((nextOpen - now)/1000);
-      const hL = Math.floor(diff/3600), mL = Math.floor((diff%3600)/60);
-      document.body.innerHTML = `
-        <div style="min-height:100vh;background:#0a0a0f;display:flex;align-items:center;justify-content:center;padding:20px;font-family:'Bebas Neue',sans-serif;">
-          <div style="text-align:center;background:rgba(255,255,255,0.04);border:1px solid rgba(255,80,50,0.3);border-radius:16px;padding:48px 32px;max-width:400px;box-shadow:0 0 40px rgba(255,50,50,0.1);">
-            <div style="font-size:80px;margin-bottom:20px;">🏮</div>
-            <div style="font-size:40px;color:#ff6b35;letter-spacing:3px;margin-bottom:12px;text-shadow:0 0 20px rgba(255,80,50,0.6);">MAGASIN FERMÉ</div>
-            <div style="font-size:14px;color:rgba(255,255,255,0.4);margin-bottom:32px;">Horaires : 10h00 - 22h00</div>
-            <div style="background:rgba(255,80,50,0.08);border:1px solid rgba(255,80,50,0.2);border-radius:12px;padding:24px;margin-bottom:24px;">
-              <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:12px;letter-spacing:2px;">⏰ RÉOUVERTURE DANS</div>
-              <div style="font-size:48px;color:#ff6b35;letter-spacing:2px;">${String(hL).padStart(2,'0')}:${String(mL).padStart(2,'0')}</div>
-            </div>
-            <button onclick="window.location.href='game.html'" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:white;padding:14px;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:16px;cursor:pointer;letter-spacing:1px;">← RETOUR AU LOBBY</button>
-          </div>
-        </div>`;
+      const style = document.createElement('style');
+      style.textContent = [
+        "@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');",
+        "* { margin:0; padding:0; box-sizing:border-box; }",
+        "body { font-family:'Inter',sans-serif; overflow:hidden; height:100vh; background:#1a0f00; }",
+        ".sc { position:fixed;inset:0;background:linear-gradient(180deg,#1a0f00 0%,#2d1a00 30%,#3d2400 60%,#1a0f00 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }",
+        ".sc-ray { position:absolute;top:0;width:2px;height:60vh;background:linear-gradient(180deg,rgba(212,165,116,0.3),transparent);filter:blur(4px);transform-origin:top center;animation:scRay ease-in-out infinite; }",
+        "@keyframes scRay { 0%,100%{transform:rotate(-2deg);opacity:0.6} 50%{transform:rotate(2deg);opacity:1} }",
+        ".sc-lantern { position:absolute;top:20px;right:30px;font-size:40px;filter:drop-shadow(0 0 12px rgba(212,165,116,0.7));animation:scLantern 3s ease-in-out infinite; }",
+        "@keyframes scLantern { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }",
+        ".sc-content { position:relative;z-index:10;text-align:center;padding:0 24px;width:100%;max-width:420px; }",
+        ".sc-label { font-size:11px;letter-spacing:5px;color:rgba(212,165,116,0.5);font-weight:700;text-transform:uppercase;margin-bottom:8px; }",
+        ".sc-title { font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:scTGlow 2s ease-in-out infinite; }",
+        "@keyframes scTGlow { 0%,100%{filter:drop-shadow(0 0 16px rgba(212,165,116,0.4))} 50%{filter:drop-shadow(0 0 28px rgba(212,165,116,0.8))} }",
+        ".sc-hours { font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:32px; }",
+        ".sc-tbox { background:rgba(212,165,116,0.06);border:1px solid rgba(212,165,116,0.2);border-radius:16px;padding:20px 24px;margin-bottom:28px;position:relative;overflow:hidden; }",
+        ".sc-tbox::before { content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(212,165,116,0.04),transparent);animation:scShimmer 3s linear infinite; }",
+        "@keyframes scShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }",
+        ".sc-tdigits { font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:4px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 16px rgba(212,165,116,0.5));line-height:1; }",
+        ".sc-back { width:100%;background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.7);padding:16px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer; }"
+      ].join('');
+      document.head.appendChild(style);
+
+      const scene = document.createElement('div'); scene.className = 'sc';
+      [['20%','5s'],['50%','7s'],['80%','6s']].forEach(function(r) {
+        const el = document.createElement('div'); el.className = 'sc-ray';
+        el.style.cssText = 'left:'+r[0]+';animation-duration:'+r[1]+';'; scene.appendChild(el);
+      });
+      const lantern = document.createElement('div'); lantern.className = 'sc-lantern'; lantern.textContent = '🏮'; scene.appendChild(lantern);
+
+      const content = document.createElement('div'); content.className = 'sc-content';
+      const lbl = document.createElement('div'); lbl.className = 'sc-label'; lbl.textContent = 'Battle Dock';
+      const title = document.createElement('div'); title.className = 'sc-title'; title.textContent = 'Boutique Fermée';
+      const hours = document.createElement('div'); hours.className = 'sc-hours'; hours.textContent = 'Horaires : 10h00 – 22h00';
+      const tbox = document.createElement('div'); tbox.className = 'sc-tbox';
+      const tdigits = document.createElement('div'); tdigits.className = 'sc-tdigits'; tdigits.id = 'scTimer';
+      tbox.appendChild(tdigits);
+      const back = document.createElement('button'); back.className = 'sc-back'; back.textContent = '← Retour au Lobby';
+      back.onclick = function() { window.location.href = 'game.html'; };
+      content.appendChild(lbl); content.appendChild(title); content.appendChild(hours);
+      content.appendChild(tbox); content.appendChild(back);
+      scene.appendChild(content);
+      document.body.innerHTML = ''; document.body.appendChild(scene);
+
+      function scTick() {
+        const now = new Date(), next = new Date();
+        if (now.getHours() < 10) { next.setHours(10,0,0,0); } else { next.setDate(next.getDate()+1); next.setHours(10,0,0,0); }
+        const d = Math.floor((next-now)/1000), h = Math.floor(d/3600), m = Math.floor((d%3600)/60), s = d%60;
+        const el = document.getElementById('scTimer');
+        if (el) el.textContent = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+        setTimeout(scTick, 1000);
+      }
+      scTick();
     }
+
 
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
+      if (!session) {
+        window.location.href = 'index.html';
+        return;
+      }
+
+      // Vérifier si le shop est ouvert (10h-22h)
       const isOpen = await checkShopOpen();
-      if (!isOpen) { showShopClosed(); return; }
+      if (!isOpen) {
+        showShopClosed();
+        return;
+      }
+
       currentUser = session.user;
-      const [profileRes, statsRes] = await Promise.all([
-        sb.from('profiles').select('*').eq('user_id', currentUser.id).single(),
-        sb.from('game_stats').select('money').eq('user_id', currentUser.id).single()
-      ]);
-      profile = profileRes.data;
-      if (profile && statsRes.data) profile.money = statsRes.data.money || 0;
-      if (!profile) { window.location.href = 'index.html'; return; }
+
+      const { data } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+      profile = data;
       updateDisplay();
       updateMarcelMessage();
-      renderTab('upgrades');
+      renderUpgrades();
     }
 
     function updateDisplay() {
-      document.getElementById('moneyDisplay').textContent = (profile?.money||0).toLocaleString('fr-FR')+'€';
-      document.getElementById('diamondsDisplay').textContent = profile?.diamonds||0;
-      document.getElementById('trophiesDisplay').textContent = profile?.trophies||0;
+      document.getElementById('moneyDisplay').textContent = (profile?.money || 0).toLocaleString('fr-FR') + '€';
+      document.getElementById('diamondsDisplay').textContent = profile?.diamonds || 0;
+      document.getElementById('trophiesDisplay').textContent = profile?.trophies || 0;
     }
 
-    function updateMarcelMessage(cat=null) {
-      document.getElementById('marcelMessage').textContent = `"${getMarcelMessage(cat)}"`;
+    function updateMarcelMessage() {
+      document.getElementById('marcelMessage').textContent = `"${getMarcelMessage()}"`;
     }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.getElementById('tab-'+tab).classList.add('active');
-      const label = document.getElementById('shelfLabel');
-      if (label) label.textContent = tab==='upgrades' ? '📦 Améliorations de Travail' : '🎨 Skins du Conteneur';
-      renderTab(tab);
-    }
-
-    function renderTab(tab) {
+    function renderUpgrades() {
       const grid = document.getElementById('upgradesGrid');
-      if (tab==='upgrades') renderUpgrades(grid);
-      else renderSkins(grid);
-    }
-
-    function renderUpgrades(grid) {
       grid.innerHTML = UPGRADES.map(upgrade => {
         const level = profile?.upgrades?.[upgrade.id] || 0;
-        const price = upgrade.basePrice * (level+1);
+        const price = upgrade.basePrice * (level + 1);
         const isMaxed = level >= upgrade.maxLevel;
-        const isLocked = upgrade.requires && !(profile?.upgrades?.[upgrade.requires]>=1);
-        let canBuy = false;
-        if (!isMaxed && !isLocked) {
-          if (upgrade.priceType==='money') canBuy = profile.money >= price;
-          else if (upgrade.priceType==='diamonds') canBuy = profile.diamonds >= price;
-        }
-        const priceLabel = upgrade.priceType==='money' ? `${price.toLocaleString('fr-FR')}€`
-          : upgrade.priceType==='diamonds' ? `💎 ${price}` : `🏆 ${price}`;
+        const hasResources = 
+          (upgrade.priceType === 'money' && profile.money >= price) ||
+          (upgrade.priceType === 'diamonds' && profile.diamonds >= price) ||
+          (upgrade.priceType === 'trophies' && profile.trophies >= price);
+
         return `
-          <div class="product-box ${isMaxed?'unavailable':''} ${isLocked?'locked':''}">
-            <span class="product-icon">${isLocked?'🔒':upgrade.icon}</span>
+          <div class="product-box ${isMaxed ? 'unavailable' : ''}">
+            <span class="product-icon">${upgrade.icon}</span>
             <div class="product-name">${upgrade.name}</div>
             <div class="product-level">Niv ${level}/${upgrade.maxLevel}</div>
-            <div class="product-bonus"><div class="bonus-text">${upgrade.bonus(level)}</div></div>
-            <div class="product-price">${isLocked?'Nécessite Formation Pro':isMaxed?'MAX':priceLabel}</div>
-            <button class="buy-btn ${isMaxed?'maxed':''}" onclick="buyUpgrade('${upgrade.id}')" ${isMaxed||!canBuy||isLocked?'disabled':''}>
-              ${isMaxed?'MAX':isLocked?'VERROUILLÉ':'ACHETER'}
+            <div class="product-bonus">
+              <div class="bonus-text">${upgrade.bonus(level)}</div>
+            </div>
+            <div class="product-price">
+              ${upgrade.priceType === 'money' ? `${price}€` : 
+                upgrade.priceType === 'diamonds' ? `💎${price}` : 
+                `🏆${price}`}
+            </div>
+            <button class="buy-btn ${isMaxed ? 'maxed' : ''}" 
+              onclick="buyUpgrade('${upgrade.id}')"
+              ${isMaxed || !hasResources ? 'disabled' : ''}>
+              ${isMaxed ? 'MAX' : 'ACHETER'}
             </button>
-          </div>`;
+          </div>
+        `;
       }).join('');
     }
 
     async function buyUpgrade(upgradeId) {
-      const upgrade = UPGRADES.find(u=>u.id===upgradeId);
-      const level = profile?.upgrades?.[upgradeId] || 0;
-      const price = upgrade.basePrice * (level+1);
-      if (upgrade.requires && !(profile?.upgrades?.[upgrade.requires]>=1)) { showAlert('Débloque Formation Pro d\'abord !', true); return; }
-      let canBuy = upgrade.priceType==='money' ? profile.money>=price : profile.diamonds>=price;
-      if (!canBuy) { showAlert('Pas assez de ressources !', true); return; }
-      const newUpgrades = {...(profile.upgrades||{})};
-      newUpgrades[upgradeId] = (newUpgrades[upgradeId]||0)+1;
-      const profileUpdate = {upgrades:newUpgrades};
-      if (upgrade.priceType==='diamonds') profileUpdate.diamonds = profile.diamonds-price;
-      await sb.from('profiles').update(profileUpdate).eq('user_id',currentUser.id);
-      if (upgrade.priceType==='money') {
-        const newMoney = profile.money-price;
-        await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-        profile.money = newMoney;
-      } else { profile.diamonds = profileUpdate.diamonds; }
-      profile.upgrades = newUpgrades;
-      updateDisplay();
-      updateMarcelMessage(newUpgrades[upgradeId]>=upgrade.maxLevel?'maxed':'buy');
-      renderTab('upgrades');
-      showAlert(`✅ ${upgrade.name} améliorée !`);
+      const upgrade = UPGRADES.find(u => u.id === upgradeId);
+      const level = profile?.upgrades?.[upgrade.id] || 0;
+      const price = upgrade.basePrice * (level + 1);
+
+      let canBuy = false;
+      if (upgrade.priceType === 'money') {
+        canBuy = profile.money >= price;
+      } else if (upgrade.priceType === 'diamonds') {
+        canBuy = profile.diamonds >= price;
+      } else if (upgrade.priceType === 'trophies') {
+        canBuy = profile.trophies >= price;
+      }
+
+      if (!canBuy) {
+        showAlert('Pas assez de ressources!', true);
+        return;
+      }
+
+      try {
+        const updates = { ...profile.upgrades };
+        updates[upgradeId] = (updates[upgradeId] || 0) + 1;
+
+        let updateObj = { upgrades: updates };
+        if (upgrade.priceType === 'money') updateObj.money = profile.money - price;
+        else if (upgrade.priceType === 'diamonds') updateObj.diamonds = profile.diamonds - price;
+        else if (upgrade.priceType === 'trophies') updateObj.trophies = profile.trophies - price;
+
+        await sb.from('profiles').update(updateObj).eq('id', currentUser.id);
+
+        profile = { ...profile, ...updateObj };
+        updateDisplay();
+        
+        // Message spécifique selon l'upgrade
+        let marcelReaction = MARCEL_MESSAGES.buy[Math.floor(Math.random() * MARCEL_MESSAGES.buy.length)];
+        if (updates[upgradeId] >= upgrade.maxLevel) {
+          marcelReaction = MARCEL_MESSAGES.maxed[Math.floor(Math.random() * MARCEL_MESSAGES.maxed.length)];
+        }
+        document.getElementById('marcelMessage').textContent = `"${marcelReaction}"`;
+        
+        renderUpgrades();
+        showAlert(`✅ ${upgrade.name} achetée!`);
+      } catch (error) {
+        console.error(error);
+        showAlert('Erreur lors de l\'achat', true);
+      }
     }
 
-    function renderSkins(grid) {
-      const currentSkin = profile?.skin_container||'red';
-      const ownedSkins = profile?.upgrades?.owned_skins||[];
-      grid.innerHTML = SKINS.map(skin => {
-        const isOwned = skin.priceType==='free'||ownedSkins.includes(skin.id);
-        const isEquipped = currentSkin===skin.id;
-        const canBuy = !isOwned && ((skin.priceType==='money'&&profile.money>=skin.price)||(skin.priceType==='diamonds'&&profile.diamonds>=skin.price));
-        const priceLabel = skin.priceType==='free'?'Gratuit':skin.priceType==='money'?`${skin.price.toLocaleString('fr-FR')}€`:`💎 ${skin.price}`;
-        return `
-          <div class="product-box ${isEquipped?'equipped':''}">
-            <div style="width:60px;height:44px;background:${skin.color};border:3px solid ${skin.border};border-radius:6px;margin:0 auto 4px;box-shadow:0 4px 12px rgba(0,0,0,0.4),0 0 12px ${skin.color}44;"></div>
-            <div class="product-name">${skin.name}</div>
-            <div class="product-level">${isEquipped?'✅ Équipé':isOwned?'Possédé':priceLabel}</div>
-            <button class="buy-btn ${isEquipped?'maxed':''}" onclick="${isOwned?`equipSkin('${skin.id}')`:`buySkin('${skin.id}')`}" ${isEquipped?'disabled':(!isOwned&&!canBuy)?'disabled':''}>
-              ${isEquipped?'ÉQUIPÉ':isOwned?'ÉQUIPER':'ACHETER'}
-            </button>
-          </div>`;
-      }).join('');
+    function showAlert(message, isError = false) {
+      const alert = document.createElement('div');
+      alert.className = `alert ${isError ? 'error' : ''}`;
+      alert.textContent = message;
+      document.body.appendChild(alert);
+      setTimeout(() => alert.remove(), 3000);
     }
 
-    async function buySkin(skinId) {
-      const skin = SKINS.find(s=>s.id===skinId);
-      const ownedSkins = profile?.upgrades?.owned_skins||[];
-      let canBuy = skin.priceType==='money'?profile.money>=skin.price:profile.diamonds>=skin.price;
-      if (!canBuy) { showAlert('Pas assez de ressources !', true); return; }
-      const newUpgrades = {...(profile.upgrades||{})};
-      newUpgrades.owned_skins = [...ownedSkins, skinId];
-      const profileUpdate = {upgrades:newUpgrades, skin_container:skinId};
-      if (skin.priceType==='diamonds') profileUpdate.diamonds = profile.diamonds-skin.price;
-      await sb.from('profiles').update(profileUpdate).eq('user_id',currentUser.id);
-      if (skin.priceType==='money') {
-        const newMoney = profile.money-skin.price;
-        await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-        profile.money = newMoney;
-      } else { profile.diamonds = profileUpdate.diamonds; }
-      profile.upgrades = newUpgrades;
-      profile.skin_container = skinId;
-      updateDisplay();
-      updateMarcelMessage('buy');
-      renderTab('skins');
-      showAlert(`✅ Skin "${skin.name}" acheté !`);
+    function goBack() {
+      window.location.href = 'clicker.html';
     }
-
-    async function equipSkin(skinId) {
-      await sb.from('profiles').update({skin_container:skinId}).eq('user_id',currentUser.id);
-      profile.skin_container = skinId;
-      updateMarcelMessage('buy');
-      renderTab('skins');
-      showAlert('✅ Skin équipé !');
-    }
-
-    function showAlert(message, isError=false) {
-      const el = document.createElement('div');
-      el.className = `alert ${isError?'error':''}`;
-      el.textContent = message;
-      document.body.appendChild(el);
-      setTimeout(()=>el.remove(), 3000);
-    }
-
-    function goBack() { window.location.href = 'game.html'; }
 
     init();
   </script>
