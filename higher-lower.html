@@ -424,7 +424,7 @@
       let retries = 3;
       while (retries > 0) {
         const { data: stats, error } = await sb
-          .from('game_stats').select('money').eq('user_id', currentUser.id).single();
+          .from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
         if (error) { retries--; if (retries > 0) await new Promise(r => setTimeout(r, 500)); continue; }
         currentMoney = stats?.money || 0;
         const el = document.getElementById('balance');
@@ -455,7 +455,7 @@
         const username = (currentUser.email || '').split('@')[0] || 'Docker';
         await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
         // Mettre à jour biggest_win si record battu
-        const { data: stats } = await sb.from('game_stats').select('biggest_win').eq('user_id', currentUser.id).single();
+        const { data: stats } = await sb.from('game_stats').select('biggest_win').eq('user_id', currentUser.id).maybeSingle();
         if (!stats || amountWon > (stats.biggest_win || 0)) {
           await sb.from('game_stats').update({ biggest_win: amountWon }).eq('user_id', currentUser.id);
         }
