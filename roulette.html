@@ -95,15 +95,15 @@
     /* RTP: (0×0.2 + 0.5×0.3 + 1×0.4 + 5×0.1) = 0 + 0.15 + 0.4 + 0.5 = 1.05 = 105% */
     /* Ajusté: Noir 20%, Rouge 30%, Bleu 40%, Or 10% avec multiplicateurs réduits */
     .seg-0 { background: #1f2937; transform: rotate(0deg); }      /* Noir ×0 */
-    .seg-1 { background: #ef4444; transform: rotate(36deg); }     /* Rouge ×0.5 */
-    .seg-2 { background: #3b82f6; transform: rotate(72deg); }     /* Bleu ×0.8 */
-    .seg-3 { background: #ef4444; transform: rotate(108deg); }    /* Rouge ×0.5 */
-    .seg-4 { background: #3b82f6; transform: rotate(144deg); }    /* Bleu ×0.8 */
+    .seg-1 { background: #ef4444; transform: rotate(36deg); }     /* Rouge ×1.5 */
+    .seg-2 { background: #3b82f6; transform: rotate(72deg); }     /* Bleu ×1.3 */
+    .seg-3 { background: #ef4444; transform: rotate(108deg); }    /* Rouge ×1.5 */
+    .seg-4 { background: #3b82f6; transform: rotate(144deg); }    /* Bleu ×1.3 */
     .seg-5 { background: #1f2937; transform: rotate(180deg); }    /* Noir ×0 */
-    .seg-6 { background: #3b82f6; transform: rotate(216deg); }    /* Bleu ×0.8 */
-    .seg-7 { background: #ef4444; transform: rotate(252deg); }    /* Rouge ×0.5 */
-    .seg-8 { background: #3b82f6; transform: rotate(288deg); }    /* Bleu ×0.8 */
-    .seg-9 { background: #fbbf24; transform: rotate(324deg); }    /* Or ×5 JACKPOT */
+    .seg-6 { background: #3b82f6; transform: rotate(216deg); }    /* Bleu ×1.3 */
+    .seg-7 { background: #ef4444; transform: rotate(252deg); }    /* Rouge ×1.5 */
+    .seg-8 { background: #3b82f6; transform: rotate(288deg); }    /* Bleu ×1.3 */
+    .seg-9 { background: #fbbf24; transform: rotate(324deg); }    /* Or ×4 JACKPOT */
 
     .wheel-center {
       position: absolute;
@@ -377,7 +377,7 @@
         </div>
         <div class="legend-item">
           <div class="legend-color" style="background: #ef4444;"></div>
-          <div class="legend-mult">×0.5</div>
+          <div class="legend-mult">×1.5</div>
         </div>
         <div class="legend-item">
           <div class="legend-color" style="background: #3b82f6;"></div>
@@ -420,17 +420,19 @@
     // Configuration: 10 segments - 4 couleurs - RTP 88%
     // Noir 20%, Rouge 30%, Bleu 40%, Or 10%
     // RTP: (0×0.2 + 0.5×0.3 + 0.6×0.4 + 5×0.1) = 0 + 0.15 + 0.24 + 0.5 = 0.89 = 89% ✅
+    // RTP ~87%: (0×0.2 + 1.5×0.3 + 1.3×0.4 + 4×0.1) = 0.87
+    // mult = multiplicateur TOTAL du gain (mise × mult)
     const segments = [
-      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
-      { color: 'Rouge', mult: 0.5, bgColor: '#ef4444' },
-      { color: 'Bleu', mult: 0.6, bgColor: '#3b82f6' },
-      { color: 'Rouge', mult: 0.5, bgColor: '#ef4444' },
-      { color: 'Bleu', mult: 0.6, bgColor: '#3b82f6' },
-      { color: 'Noir', mult: 0, bgColor: '#1f2937' },
-      { color: 'Bleu', mult: 0.6, bgColor: '#3b82f6' },
-      { color: 'Rouge', mult: 0.5, bgColor: '#ef4444' },
-      { color: 'Bleu', mult: 0.6, bgColor: '#3b82f6' },
-      { color: 'Or', mult: 5, bgColor: '#fbbf24' }
+      { color: 'Noir',  mult: 0,   bgColor: '#1f2937' },  // perd tout
+      { color: 'Rouge', mult: 1.5, bgColor: '#ef4444' },  // gagne 1.5× la mise
+      { color: 'Bleu',  mult: 1.3, bgColor: '#3b82f6' },  // gagne 1.3× la mise
+      { color: 'Rouge', mult: 1.5, bgColor: '#ef4444' },
+      { color: 'Bleu',  mult: 1.3, bgColor: '#3b82f6' },
+      { color: 'Noir',  mult: 0,   bgColor: '#1f2937' },
+      { color: 'Bleu',  mult: 1.3, bgColor: '#3b82f6' },
+      { color: 'Rouge', mult: 1.5, bgColor: '#ef4444' },
+      { color: 'Bleu',  mult: 1.3, bgColor: '#3b82f6' },
+      { color: 'Or',    mult: 4,   bgColor: '#fbbf24' },  // jackpot × 4
     ];
 
 
@@ -488,21 +490,21 @@
 
         // Utiliser directement winIndex — plus fiable que le recalcul visuel
         const segment = segments[winIndex];
-
         const win = Math.floor(bet * segment.mult);
-        
+        const netGain = win - bet;
+
         if (win > 0) {
           res.className = 'result win';
-          if (segment.mult >= 5) {
-            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700;">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€ 💰`;
+          if (segment.mult >= 4) {
+            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700;">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} → +${netGain.toLocaleString('fr-FR')}€ 💰`;
           } else {
-            res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} = +${win.toLocaleString('fr-FR')}€`;
+            res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} → +${netGain.toLocaleString('fr-FR')}€`;
           }
           await updateMoney(currentMoney + win);
-      await recordWin('Roulette', win);
+          await recordWin('Roulette', netGain > 0 ? netGain : 0);
         } else {
           res.className = 'result lose';
-          res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> - Perdu ${bet.toLocaleString('fr-FR')}€`;
+          res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> — Perdu ${bet.toLocaleString('fr-FR')}€`;
         }
 
         res.style.display = 'block';
