@@ -14,7 +14,7 @@
     .header { background:white; border-bottom:1px solid #e5e7eb; padding:14px 16px; display:flex; align-items:center; gap:12px; }
     .back-btn { background:none; border:none; font-size:16px; color:#3b82f6; font-weight:600; cursor:pointer; padding:4px 0; }
     .header-title { font-size:17px; font-weight:700; color:#1a1a1a; flex:1; text-align:center; }
-    .header-right { width:60px; }
+    .header-refresh { background:none; border:none; font-size:13px; font-weight:700; color:#3b82f6; cursor:pointer; padding:4px 0; }
 
     /* HERO JUNGLE */
     .date-hero {
@@ -163,7 +163,7 @@
   <div class="header">
     <button class="back-btn" onclick="window.location.href='game.html'">‹ Retour</button>
     <div class="header-title">Objectifs du jour</div>
-    <div class="header-right"></div>
+    <button class="header-refresh" onclick="refreshObjectives()">↻ Actualiser</button>
   </div>
 
   <!-- HERO JUNGLE -->
@@ -432,6 +432,21 @@
       setTimeout(()=>t.className='toast',2800);
     }
 
+    async function refreshObjectives() {
+      const today=new Date().toISOString().split('T')[0];
+      // Recalculer la progression sans recréer les objectifs
+      for(let i=0;i<todayObjectives.length;i++) {
+        if(!todayObjectives[i].claimed) {
+          const prog=await getProgress(todayObjectives[i].metric);
+          todayObjectives[i].progress=Math.min(prog,todayObjectives[i].target);
+          todayObjectives[i].completed=todayObjectives[i].progress>=todayObjectives[i].target;
+        }
+      }
+      await sb.from('daily_objectives').update({objectives:todayObjectives}).eq('user_id',currentUser.id).eq('date',today);
+      renderAll();
+      showToast('✅ Mis à jour !');
+    }
+
     async function init() {
       const {data:{session}}=await sb.auth.getSession();
       if(!session){window.location.href='index.html';return;}
@@ -441,6 +456,7 @@
       const today=new Date();
       await loadObjectives();
       startCountdown();
+      setInterval(refreshObjectives, 60000);
     }
 
     init();
