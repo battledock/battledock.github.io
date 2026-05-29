@@ -180,9 +180,40 @@
     .toast.show { opacity:1; }
     .toast.success { background:rgba(22,163,74,0.9); }
     .toast.error   { background:rgba(239,68,68,0.9); }
+  
+    /* ANIMATEUR TV */
+    .animator {
+      position:fixed; bottom:0; right:0; z-index:50;
+      display:flex; flex-direction:column; align-items:flex-end;
+      pointer-events:none;
+    }
+    .animator-bubble {
+      background:white; color:#1a1a1a;
+      border-radius:18px 18px 4px 18px;
+      padding:10px 14px; margin-bottom:8px; margin-right:70px;
+      font-size:13px; font-weight:700; line-height:1.4;
+      box-shadow:0 4px 20px rgba(0,0,0,0.3);
+      max-width:200px; text-align:right;
+      animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events:none;
+    }
+    @keyframes bubblePop { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+    .animator-char {
+      font-size:52px; margin-right:8px; margin-bottom:4px;
+      filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+      animation:charIdle 2s ease-in-out infinite;
+    }
+    @keyframes charIdle { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
   </style>
 </head>
 <body>
+
+  <!-- ANIMATEUR -->
+  <div class="animator" id="animator">
+    <div class="animator-bubble" id="animatorBubble" style="display:none"></div>
+    <div class="animator-char">🎙️</div>
+  </div>
 
   <!-- CONFETTIS -->
   <div class="bg-confetti" id="bgConfetti"></div>
@@ -268,6 +299,72 @@
     let sessionScores = [];
     let usedItemIndices = [];
 
+
+    // ANIMATEUR TV
+    const ANIMATOR_LINES = {
+      welcome: [
+        "Bienvenue dans Le Juste Prix ! 🎉",
+        "Prêt à devenir millionnaire ?",
+        "Ici on blague, mais le score lui est vrai !",
+      ],
+      start: [
+        "Et c'est parti ! Concentrez-vous !",
+        "Votre prix, vos regrets, votre gloire !",
+        "Le public retient son souffle... ou pas.",
+        "Attention, question piège en vue !",
+      ],
+      perfect: [
+        "INCROYABLE ! Vous êtes un génie ou vous trichez ?!",
+        "LE PUBLIC EST EN DÉLIRE ! 🎊",
+        "Voilà quelqu'un qui connaît ses prix !",
+        "Je pleure de joie là... vraiment.",
+      ],
+      great: [
+        "Excellent ! Vous avez l'instinct du shopping !",
+        "Presque parfait ! Vous faites les courses vous-même ?",
+        "Le public applaudit poliment.",
+        "Bravo ! Votre femme serait fière.",
+      ],
+      good: [
+        "Pas mal... mais on peut faire mieux !",
+        "Hm. Le public reste sur sa faim.",
+        "C'est dans la bonne direction au moins !",
+        "On ne gagne pas Paris avec ça mais bon...",
+      ],
+      bad: [
+        "Aïe. C'était... audacieux comme prix.",
+        "Le public compatit. Enfin... presque.",
+        "Vous faites vos courses où exactement ?!",
+        "C'est pas grave, il reste des essais !",
+        "Mon chien aurait trouvé mieux. Je dis ça je dis rien.",
+      ],
+      done: [
+        "C'est terminé pour aujourd'hui ! On revient demain !",
+        "Revenez demain, on aura de nouveaux articles absurdes !",
+        "Bonne performance ! Le jury délibère... au bistrot.",
+      ],
+      attempts_left_1: [
+        "DERNIER ESSAI ! Tout se joue maintenant !",
+        "La pression est à son comble ! Respirez !",
+        "Un seul essai restant... pas de pression hein.",
+      ]
+    };
+
+    function showAnimatorLine(category) {
+      const lines = ANIMATOR_LINES[category];
+      if (!lines) return;
+      const line = lines[Math.floor(Math.random() * lines.length)];
+      const bubble = document.getElementById('animatorBubble');
+      if (!bubble) return;
+      bubble.textContent = line;
+      bubble.style.display = 'block';
+      bubble.style.animation = 'none';
+      bubble.offsetHeight;
+      bubble.style.animation = 'bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+      clearTimeout(window._animatorTimeout);
+      window._animatorTimeout = setTimeout(() => { bubble.style.display = 'none'; }, 4000);
+    }
+
     // CONFETTIS
     function initConfetti() {
       const colors = ['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#fbbf24'];
@@ -317,6 +414,7 @@
       renderMain();
       initConfetti();
       updateCountdown();
+      setTimeout(() => showAnimatorLine("welcome"), 1000);
     }
 
     function updateStatsBar() {
@@ -376,6 +474,7 @@
           <button class="validate-btn" onclick="validate()">🎯 Valider !</button>
         </div>`;
       setTimeout(() => { const el = document.getElementById('priceInput'); if(el) el.focus(); }, 150);
+      setTimeout(() => showAnimatorLine("start"), 800);
     }
 
     async function validate() {
@@ -399,10 +498,10 @@
 
     function renderResult(precision, real, guess) {
       let cls, emoji, grade;
-      if (precision >= 95)      { cls='perfect'; emoji='🎯'; grade='PARFAIT !'; }
-      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='EXCELLENT !'; }
-      else if (precision >= 40) { cls='good';    emoji='👍'; grade='PAS MAL !'; }
-      else                       { cls='bad';     emoji='💀'; grade='RATÉ !'; }
+      if (precision >= 95)      { cls='perfect'; emoji='🎯'; grade='PARFAIT !'; showAnimatorLine('perfect'); }
+      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='EXCELLENT !'; showAnimatorLine('great'); }
+      else if (precision >= 40) { cls='good';    emoji='👍'; grade='PAS MAL !'; showAnimatorLine('good'); }
+      else                       { cls='bad';     emoji='💀'; grade='RATÉ !'; showAnimatorLine('bad'); }
 
       const isRecord = precision > parseFloat(myRecord?.score || 0);
       const used = MAX_ATTEMPTS - attemptsLeft;
@@ -430,7 +529,7 @@
 
     function nextRound() { pickRandomItem(); renderGame(); }
 
-    function renderDone() {
+    function renderDone() { showAnimatorLine('done');
       const best = myRecord?.score != null ? parseFloat(myRecord.score).toFixed(4) : '--';
       document.getElementById('mainContent').innerHTML = `
         <div class="done-card">

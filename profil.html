@@ -208,6 +208,19 @@
     .row-arrow { color: #c7c7cc; font-size: 18px; }
 
     .row-danger .row-title { color: #ef4444; }
+  
+    /* FLUIDITÉ GLOBALE */
+    * { -webkit-font-smoothing:antialiased; }
+    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    button:active, .nav-card:active, .row:active {
+      transform: scale(0.97) !important;
+      opacity: 0.9 !important;
+    }
+    img { transition: opacity 0.3s ease; }
+    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
+
   </style>
 </head>
 <body>
@@ -388,13 +401,14 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
+      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
       await loadProfile();
       updateStreak();
     }
 
     async function loadProfile() {
-      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).single();
-      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).single();
+      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).maybeSingle();
+      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (!profile || !stats) return;
 
       playerLevel  = stats.level  || 1;
@@ -492,7 +506,7 @@
     // Streak + playtime au chargement
     async function updateStreak() {
       const today = new Date().toISOString().split('T')[0];
-      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).single();
+      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).maybeSingle();
       if (!stats) return;
 
       const lastLogin = stats.last_login;
