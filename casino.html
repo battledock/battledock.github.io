@@ -558,19 +558,28 @@
         return;
       }
 
-      const { data: stats } = await sb
+      const { data: stats, error: statsError } = await sb
         .from('game_stats')
         .select('money')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      document.getElementById('balance').textContent = (stats?.money || 0).toLocaleString('fr-FR') + '€';
-      
-      await loadJackpot();
-      await loadRecentWins();
+      if (!statsError && stats) {
+        document.getElementById('balance').textContent = (stats.money || 0).toLocaleString('fr-FR') + '€';
+      }
 
-      setInterval(loadJackpot, 5000);
-      setInterval(loadRecentWins, 8000);
+      // Jackpot — chargement initial + Realtime
+      await loadJackpot();
+      setInterval(loadJackpot, 3000);
+
+      // Realtime jackpot
+      sb.channel('jackpot-channel')
+        .on('postgres_changes', { event:'UPDATE', schema:'public', table:'progressive_jackpot' }, (payload) => {
+          const amount = payload.new.current_amount || 10000;
+          const el = document.getElementById('jackpot');
+          if(el) el.textContent = amount.toLocaleString('fr-FR') + '€';
+        })
+        .subscribe();
     }
 
     async function loadJackpot() {
