@@ -462,49 +462,49 @@
       await updateMoney(currentMoney - bet);
       await recordBet('Roulette', bet);
 
-      // Obtenir la rotation actuelle et normaliser entre 0-360
-      const currentTransform = wheel.style.transform;
-      let currentRotation = currentTransform ? parseFloat(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
-      currentRotation = currentRotation % 360; // Normaliser entre 0-360
-
       // Choisir segment gagnant
       const winIndex = Math.floor(Math.random() * 10);
 
-      // Calculer rotation (pointeur en haut = 0°)
-      const segmentAngle = 36; // 360° / 10 segments
-      const targetAngle = winIndex * segmentAngle + (segmentAngle / 2);
-      const spins = 5; // 5 tours complets
-      const finalRotation = currentRotation + (spins * 360) + (360 - targetAngle);
+      // Calculer rotation pour que le segment winIndex arrive sous le pointeur (haut)
+      // Segment 0 est à 0°, segment 1 à 36°, etc.
+      // Le pointeur est en haut (0°). Pour que le segment winIndex soit sous le pointeur :
+      // On veut que winIndex*36 + 18 (centre du segment) soit en haut = 0°
+      // Donc la roue doit tourner de : 360 - (winIndex*36 + 18) degrés supplémentaires
+      const segmentAngle = 36;
+      const segmentCenter = winIndex * segmentAngle + segmentAngle / 2;
+      const currentTransform = wheel.style.transform;
+      let currentRotation = currentTransform ? parseFloat(currentTransform.match(/rotate\((.+)deg\)/)?.[1] || 0) : 0;
+      const spins = 5;
+      const finalRotation = Math.ceil(currentRotation / 360) * 360 + spins * 360 + (360 - segmentCenter);
 
       wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
       wheel.style.transform = `rotate(${finalRotation}deg)`;
 
       setTimeout(async () => {
-        // Normaliser la rotation finale
-        const normalizedRotation = finalRotation % 360;
         wheel.style.transition = 'none';
-        wheel.style.transform = `rotate(${normalizedRotation}deg)`;
-        setTimeout(() => {
-          wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
-        }, 50);
+        wheel.style.transform = `rotate(${finalRotation % 360}deg)`;
+        setTimeout(() => { wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)'; }, 50);
 
-        // Utiliser directement winIndex — plus fiable que le recalcul visuel
         const segment = segments[winIndex];
-        const win = Math.floor(bet * segment.mult);
-        const netGain = win - bet;
 
-        if (win > 0) {
+        // GAIN : le joueur misait BET, il récupère BET * mult
+        // Si mult=1.5 et bet=100 → reçoit 150€ (la mise est récupérée + gain)
+        // Comme on a déjà déduit la mise : on ajoute bet*mult au solde actuel
+        const totalReturn = Math.floor(bet * segment.mult); // ce que le joueur reçoit
+        const netGain = totalReturn - bet; // gain net
+
+        if (totalReturn > 0) {
           res.className = 'result win';
           if (segment.mult >= 4) {
-            res.innerHTML = `🎊 <span style="color: ${segment.bgColor}; font-weight: 700;">JACKPOT ${segment.color.toUpperCase()}</span> ×${segment.mult} → +${netGain.toLocaleString('fr-FR')}€ 💰`;
+            res.innerHTML = `🎊 <span style="color:${segment.bgColor};font-weight:700">JACKPOT ${segment.color.toUpperCase()}</span> — Tu reçois ${totalReturn.toLocaleString('fr-FR')}€ (+${netGain.toLocaleString('fr-FR')}€) 💰`;
           } else {
-            res.innerHTML = `🎉 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> ×${segment.mult} → +${netGain.toLocaleString('fr-FR')}€`;
+            res.innerHTML = `🎉 <span style="color:${segment.bgColor};font-weight:700">${segment.color.toUpperCase()}</span> ×${segment.mult} — Tu reçois ${totalReturn.toLocaleString('fr-FR')}€ (+${netGain.toLocaleString('fr-FR')}€)`;
           }
-          await updateMoney(currentMoney + win);
-          await recordWin('Roulette', netGain > 0 ? netGain : 0);
+          await updateMoney(currentMoney + totalReturn);
+          await recordWin('Roulette', netGain);
         } else {
           res.className = 'result lose';
-          res.innerHTML = `💔 <span style="color: ${segment.bgColor}; font-weight: 700;">${segment.color.toUpperCase()}</span> — Perdu ${bet.toLocaleString('fr-FR')}€`;
+          res.innerHTML = `💔 <span style="color:${segment.bgColor};font-weight:700">${segment.color.toUpperCase()}</span> — Perdu ${bet.toLocaleString('fr-FR')}€`;
         }
 
         res.style.display = 'block';
