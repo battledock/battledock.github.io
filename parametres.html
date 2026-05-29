@@ -254,7 +254,7 @@
         <div class="row-icon red">🗑️</div>
         <div class="row-info">
           <div class="row-title">Supprimer le compte</div>
-          <div class="row-sub">Action irréversible — toutes tes données seront effacées</div>
+          <div class="row-sub">Envoyer une demande de suppression</div>
         </div>
         <div class="row-arrow" style="color:#fca5a5">›</div>
       </div>
@@ -295,13 +295,12 @@
         <button class="modal-close" onclick="closeModal('modalDelete')">✕</button>
       </div>
       <div class="modal-body">
-        <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:14px;margin-bottom:16px">
-          <p style="font-size:14px;color:#dc2626;font-weight:700;margin-bottom:6px">⚠️ Action irréversible</p>
-          <p style="font-size:13px;color:#6b7280;line-height:1.5">Ton argent, tes actions, ton historique, tes messages — tout sera effacé définitivement.</p>
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:14px;margin-bottom:16px">
+          <p style="font-size:13px;color:#6b7280;line-height:1.5">Ta demande sera transmise à l'administrateur qui supprimera ton compte manuellement. Tu seras déconnecté immédiatement.</p>
         </div>
-        <div class="field-lbl">Tape "SUPPRIMER" pour confirmer</div>
-        <input class="field-input" id="deleteConfirm" type="text" placeholder="SUPPRIMER">
-        <button class="btn-primary red" onclick="deleteAccount()">Supprimer définitivement</button>
+        <div class="field-lbl">Raison (optionnel)</div>
+        <input class="field-input" id="deleteReason" type="text" placeholder="Ex: je n'utilise plus le jeu...">
+        <button class="btn-primary red" onclick="requestDelete()">Envoyer la demande</button>
         <button class="btn-cancel" onclick="closeModal('modalDelete')">Annuler</button>
       </div>
     </div>
@@ -449,15 +448,21 @@
     }
 
     // ===== SUPPRESSION =====
-    async function deleteAccount() {
-      const confirm_txt = document.getElementById('deleteConfirm').value;
-      if (confirm_txt !== 'SUPPRIMER') { showToast('Tape exactement "SUPPRIMER"', 'error'); return; }
-
+    async function requestDelete() {
+      const reason = document.getElementById('deleteReason').value.trim() || 'Aucune raison précisée';
       try {
-        const { error } = await sb.rpc('delete_user_account');
-        if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
-        await sb.auth.signOut();
-        window.location.href = 'index.html';
+        await sb.from('reports').insert({
+          user_id: currentUser.id,
+          username: profile?.username || 'Docker',
+          type: 'autre',
+          message: '🗑️ DEMANDE SUPPRESSION COMPTE — ' + reason
+        });
+        closeModal('modalDelete');
+        showToast('Demande envoyée', 'success');
+        setTimeout(async () => {
+          await sb.auth.signOut();
+          window.location.href = 'index.html';
+        }, 1500);
       } catch(e) {
         showToast('Erreur : ' + e.message, 'error');
       }
