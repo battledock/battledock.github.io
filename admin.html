@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Admin - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif; background:#f2f2f7; min-height:100vh; padding-bottom:40px; }
+
+    /* HEADER */
+    .header { background:#1a1a1a; padding:16px; display:flex; align-items:center; gap:12px; }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; color:white; flex:1; }
+    .header-sub { font-size:11px; color:#9ca3af; }
+
+    /* STATS BAR */
+    .stats-bar { background:white; border-bottom:1px solid #e5e7eb; padding:12px 16px; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .sbar-item { text-align:center; }
+    .sbar-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-bottom:3px; }
+    .sbar-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#1a1a1a; }
+    .sbar-val.red { color:#ef4444; }
+    .sbar-val.green { color:#16a34a; }
+
+    /* TABS */
+    .tabs { display:flex; background:white; border-bottom:1px solid #e5e7eb; }
+    .tab { flex:1; padding:11px 8px; background:none; border:none; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:#9ca3af; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s; text-align:center; }
+    .tab.active { color:#1a1a1a; border-bottom-color:#1a1a1a; }
+
+    /* CONTAINER */
+    .container { padding:16px; }
+
+    /* REPORT CARD */
+    .report-list { display:flex; flex-direction:column; gap:10px; }
+
+    .report-card {
+      background:white; border:1px solid #e5e7eb; border-radius:14px;
+      padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,0.04);
+      border-left:4px solid #e5e7eb;
+    }
+    .report-card.bug  { border-left-color:#ef4444; }
+    .report-card.idee { border-left-color:#3b82f6; }
+    .report-card.autre { border-left-color:#6b7280; }
+    .report-card.resolu { opacity:0.5; }
+
+    .report-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .report-type {
+      font-size:10px; font-weight:700; padding:3px 8px; border-radius:20px;
+      text-transform:uppercase; letter-spacing:0.5px;
+    }
+    .report-type.bug   { background:rgba(239,68,68,0.1); color:#ef4444; }
+    .report-type.idee  { background:rgba(59,130,246,0.1); color:#3b82f6; }
+    .report-type.autre { background:rgba(107,114,128,0.1); color:#6b7280; }
+
+    .report-user { font-weight:700; font-size:13px; color:#1a1a1a; flex:1; }
+    .report-date { font-size:10px; color:#9ca3af; }
+
+    .report-msg { font-size:13px; color:#374151; line-height:1.5; margin-bottom:10px; }
+
+    .report-actions { display:flex; gap:8px; }
+    .btn-resolve {
+      flex:1; padding:8px; border-radius:8px; border:none;
+      background:#16a34a; color:white;
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
+      cursor:pointer;
+    }
+    .btn-resolve.resolved { background:#f3f4f6; color:#9ca3af; cursor:default; }
+    .btn-delete-report {
+      padding:8px 14px; border-radius:8px; border:1px solid #e5e7eb;
+      background:white; color:#ef4444;
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
+      cursor:pointer;
+    }
+
+    /* PLAYERS TAB */
+    .player-card { background:white; border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+    .player-av { width:40px; height:40px; border-radius:50%; overflow:hidden; border:1.5px solid #e5e7eb; flex-shrink:0; }
+    .player-av img { width:100%; height:100%; object-fit:cover; }
+    .player-info { flex:1; }
+    .player-name { font-weight:700; font-size:13px; color:#1a1a1a; }
+    .player-email { font-size:11px; color:#9ca3af; margin-top:1px; }
+    .player-stats { font-size:10px; color:#6b7280; margin-top:2px; }
+    .player-right { text-align:right; }
+    .player-money { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#1a1a1a; }
+    .player-level { font-size:10px; color:#9ca3af; }
+
+    .empty { text-align:center; padding:60px 20px; }
+    .empty-icon { font-size:36px; opacity:0.3; margin-bottom:10px; }
+    .empty-txt { font-size:13px; color:#9ca3af; }
+
+    /* ACCESS DENIED */
+    .denied { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; text-align:center; padding:20px; }
+    .denied-icon { font-size:60px; margin-bottom:16px; }
+    .denied-title { font-family:'Bebas Neue',sans-serif; font-size:28px; color:#1a1a1a; margin-bottom:8px; }
+    .denied-sub { font-size:14px; color:#9ca3af; }
+
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a1a1a; color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; }
+    .toast.show { opacity:1; }
+    .toast.success { background:#16a34a; }
+    .toast.error { background:#ef4444; }
+  </style>
+</head>
+<body>
+
+  <div id="accessDenied" style="display:none">
+    <div class="denied">
+      <div class="denied-icon">🔒</div>
+      <div class="denied-title">Accès refusé</div>
+      <div class="denied-sub">Tu n'as pas les droits pour accéder à cette page.</div>
+    </div>
+  </div>
+
+  <div id="adminContent" style="display:none">
+
+    <div class="header">
+      <div>
+        <div class="header-title">🛠️ Admin Battle Dock</div>
+        <div class="header-sub">Panneau de gestion</div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="sbar-item"><div class="sbar-lbl">Joueurs</div><div class="sbar-val" id="statPlayers">-</div></div>
+      <div class="sbar-item"><div class="sbar-lbl">Rapports</div><div class="sbar-val red" id="statReports">-</div></div>
+      <div class="sbar-item"><div class="sbar-lbl">Résolus</div><div class="sbar-val green" id="statResolved">-</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tab-reports"  onclick="switchTab('reports')">Rapports</button>
+      <button class="tab"        id="tab-players"  onclick="switchTab('players')">Joueurs</button>
+    </div>
+
+    <div class="container">
+      <div id="reportsView">
+        <div class="report-list" id="reportList">
+          <div class="empty"><div class="empty-icon">📋</div><div class="empty-txt">Chargement...</div></div>
+        </div>
+      </div>
+      <div id="playersView" style="display:none">
+        <div id="playerList">
+          <div class="empty"><div class="empty-icon">👥</div><div class="empty-txt">Chargement...</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const ADMIN_ID = 'fa7f60f6-57f6-4757-817f-52ef768dce1c';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    let currentTab = 'reports';
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session || session.user.id !== ADMIN_ID) {
+        document.getElementById('accessDenied').style.display = 'flex';
+        return;
+      }
+
+      document.getElementById('adminContent').style.display = 'block';
+      await Promise.all([loadStats(), loadReports()]);
+    }
+
+    async function loadStats() {
+      const { count: players } = await sb.from('profiles').select('*', { count:'exact', head:true });
+      const { count: total }   = await sb.from('reports').select('*', { count:'exact', head:true });
+      const { count: resolved } = await sb.from('reports').select('*', { count:'exact', head:true }).eq('status','resolu');
+
+      document.getElementById('statPlayers').textContent  = players || 0;
+      document.getElementById('statReports').textContent  = (total || 0) - (resolved || 0);
+      document.getElementById('statResolved').textContent = resolved || 0;
+    }
+
+    async function loadReports() {
+      const { data } = await sb.from('reports').select('*').order('created_at', { ascending: false });
+      const list = document.getElementById('reportList');
+
+      if (!data?.length) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">✅</div><div class="empty-txt">Aucun rapport pour le moment</div></div>';
+        return;
+      }
+
+      list.innerHTML = data.map(r => {
+        const date = new Date(r.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const typeLabel = r.type === 'bug' ? '🐛 Bug' : r.type === 'idee' ? '💡 Idée' : '💬 Autre';
+        const isResolved = r.status === 'resolu';
+        return `
+          <div class="report-card ${r.type} ${isResolved ? 'resolu' : ''}" id="report-${r.id}">
+            <div class="report-top">
+              <div class="report-type ${r.type}">${typeLabel}</div>
+              <div class="report-user">${r.username}</div>
+              <div class="report-date">${date}</div>
+            </div>
+            <div class="report-msg">${r.message}</div>
+            <div class="report-actions">
+              <button class="btn-resolve ${isResolved ? 'resolved' : ''}"
+                onclick="${isResolved ? '' : `resolveReport('${r.id}')`}">
+                ${isResolved ? '✅ Résolu' : 'Marquer résolu'}
+              </button>
+              <button class="btn-delete-report" onclick="deleteReport('${r.id}')">🗑️</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function resolveReport(id) {
+      await sb.from('reports').update({ status: 'resolu' }).eq('id', id);
+      await loadReports();
+      await loadStats();
+      showToast('✅ Marqué comme résolu', 'success');
+    }
+
+    async function deleteReport(id) {
+      if (!confirm('Supprimer ce rapport ?')) return;
+      await sb.from('reports').delete().eq('id', id);
+      document.getElementById('report-' + id)?.remove();
+      await loadStats();
+      showToast('🗑️ Rapport supprimé', 'success');
+    }
+
+    async function loadPlayers() {
+      const { data: profiles } = await sb.from('profiles').select('user_id, username, avatar_url');
+      const { data: stats }    = await sb.from('game_stats').select('user_id, money, level, grade');
+
+      const list = document.getElementById('playerList');
+      if (!profiles?.length) {
+        list.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-txt">Aucun joueur</div></div>';
+        return;
+      }
+
+      const players = profiles.map(p => ({
+        ...p, stats: stats?.find(s => s.user_id === p.user_id)
+      })).sort((a,b) => (b.stats?.money||0) - (a.stats?.money||0));
+
+      list.innerHTML = players.map((p, i) => `
+        <div class="player-card">
+          <div class="player-av"><img src="${p.avatar_url||'avatar-default.png'}"></div>
+          <div class="player-info">
+            <div class="player-name">#${i+1} ${p.username}</div>
+            <div class="player-stats">${p.stats?.grade||'Docker Occasionnel'}</div>
+          </div>
+          <div class="player-right">
+            <div class="player-money">${(p.stats?.money||0).toLocaleString('fr-FR')}€</div>
+            <div class="player-level">Niv. ${p.stats?.level||1}</div>
+          </div>
+        </div>`).join('');
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('reportsView').style.display = tab === 'reports' ? 'block' : 'none';
+      document.getElementById('playersView').style.display = tab === 'players' ? 'block' : 'none';
+      if (tab === 'players') loadPlayers();
+    }
+
+    function showToast(msg, type = '') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = 'toast show ' + type;
+      setTimeout(() => t.className = 'toast', 2500);
+    }
+
+    init();
+  </script>
+</body>
+</html>

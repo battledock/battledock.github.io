@@ -167,6 +167,15 @@
       font-size:13px; color:#b45309; font-weight:600;
     }
 
+    /* TYPE BUTTONS */
+    .type-btn {
+      flex:1; padding:9px; border-radius:10px;
+      border:1px solid #e5e7eb; background:#f9fafb;
+      font-size:12px; font-weight:700; cursor:pointer;
+      transition:all 0.2s; color:#6b7280;
+    }
+    .type-btn.active { background:#1a1a1a; color:white; border-color:#1a1a1a; }
+
     /* TOAST */
     .toast {
       position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -220,6 +229,19 @@
         <div class="row-icon gray">🚪</div>
         <div class="row-info">
           <div class="row-title">Se déconnecter</div>
+        </div>
+        <div class="row-arrow">›</div>
+      </div>
+    </div>
+
+    <!-- SUPPORT -->
+    <div class="section-lbl">Support</div>
+    <div class="section-card">
+      <div class="row" onclick="openModal('report')">
+        <div class="row-icon blue">💬</div>
+        <div class="row-info">
+          <div class="row-title">Signaler / Suggérer</div>
+          <div class="row-sub">Bug, idée, autre</div>
         </div>
         <div class="row-arrow">›</div>
       </div>
@@ -282,6 +304,30 @@
     </div>
   </div>
 
+  <!-- MODAL REPORT -->
+  <div class="modal-overlay" id="modalReport" style="display:none" onclick="closeOnOverlay(event,'modalReport')">
+    <div class="modal-card">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div class="modal-title">Signaler / Suggérer</div>
+        <button class="modal-close" onclick="closeModal('modalReport')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-lbl">Type</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <button class="type-btn active" id="typeBug"   onclick="setType('bug')">🐛 Bug</button>
+          <button class="type-btn"        id="typeIdee"  onclick="setType('idee')">💡 Idée</button>
+          <button class="type-btn"        id="typeAutre" onclick="setType('autre')">💬 Autre</button>
+        </div>
+        <div class="field-lbl">Message</div>
+        <textarea class="field-input" id="reportMsg" placeholder="Décris ton bug ou ton idée..." maxlength="500" rows="4" style="resize:none"></textarea>
+        <div style="text-align:right;font-size:10px;color:#9ca3af;margin-top:-10px;margin-bottom:14px"><span id="reportCount">0</span>/500</div>
+        <button class="btn-primary" onclick="submitReport()">Envoyer</button>
+        <button class="btn-cancel" onclick="closeModal('modalReport')">Annuler</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
 
   <script>
@@ -330,6 +376,14 @@
           }
         }
 
+      } else if (type === 'report') {
+        setType('bug');
+        document.getElementById('reportMsg').value = '';
+        document.getElementById('reportCount').textContent = '0';
+        document.getElementById('modalReport').style.display = 'flex';
+        document.getElementById('reportMsg').oninput = function() {
+          document.getElementById('reportCount').textContent = this.value.length;
+        };
       } else if (type === 'delete') {
         document.getElementById('deleteConfirm').value = '';
         document.getElementById('modalDelete').style.display = 'flex';
@@ -360,6 +414,29 @@
       document.getElementById('pmName').textContent = newPseudo;
       closeModal('modalPseudo');
       showToast('✅ Pseudo mis à jour !', 'success');
+    }
+
+    // ===== REPORT =====
+    let reportType = 'bug';
+    function setType(type) {
+      reportType = type;
+      ['bug','idee','autre'].forEach(t => {
+        document.getElementById('type' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active', t === type);
+      });
+    }
+
+    async function submitReport() {
+      const msg = document.getElementById('reportMsg').value.trim();
+      if (!msg || msg.length < 10) { showToast('Message trop court (min 10 caractères)', 'error'); return; }
+      const { error } = await sb.from('reports').insert({
+        user_id: currentUser.id,
+        username: profile?.username || 'Docker',
+        type: reportType,
+        message: msg
+      });
+      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
+      closeModal('modalReport');
+      showToast('✅ Envoyé ! Merci 🙏', 'success');
     }
 
     // ===== DÉCONNEXION =====
