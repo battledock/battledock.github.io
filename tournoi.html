@@ -134,7 +134,7 @@
   </div>
 
   <div class="hero">
-    <div class="hero-badge">⏳ Phase d'essais</div>
+    <div class="hero-badge" id="heroBadge">⏳ Phase d'essais</div>
     <div class="hero-title">Le Juste Prix</div>
     <div class="hero-sub">3 essais/jour · Meilleur score gardé · Précision maximale</div>
   </div>
@@ -148,7 +148,10 @@
   <div id="mainContent"></div>
 
   <div class="section" style="margin-top:8px">
-    <div class="section-lbl">🏅 Classement</div>
+    <div class="section-lbl" style="display:flex;align-items:center;justify-content:space-between">
+      <span>🏅 Classement</span>
+      <button onclick="loadLeaderboard()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;cursor:pointer">↻ Actualiser</button>
+    </div>
     <div id="rankList"><div style="text-align:center;color:rgba(255,255,255,0.3);font-size:13px;padding:20px">Aucun score pour l'instant</div></div>
   </div>
 
@@ -203,6 +206,7 @@
     let currentAttemptIdx = 0;
     let sessionScores = [];
     let isShowingResult = false;
+    let usedItemIndices = [];
 
     // ===== INIT =====
     async function init() {
@@ -250,7 +254,13 @@
     }
 
     function pickRandomItem() {
-      const idx = Math.floor(Math.random() * ITEMS.length);
+      let idx;
+      let tries = 0;
+      do {
+        idx = Math.floor(Math.random() * ITEMS.length);
+        tries++;
+      } while (usedItemIndices.includes(idx) && tries < 50);
+      usedItemIndices.push(idx);
       currentItem = ITEMS[idx];
     }
 
@@ -443,6 +453,26 @@
       t.textContent=msg; t.className='toast show '+type;
       setTimeout(()=>t.className='toast', 2800);
     }
+
+    // Countdown tournoi
+    const END_DATE = new Date('2026-05-31T21:30:00');
+    function updateTournamentCountdown() {
+      const now = new Date();
+      const diff = END_DATE - now;
+      const badge = document.getElementById('heroBadge');
+      if (!badge) return;
+      if (diff <= 0) {
+        badge.textContent = '🏁 Tournoi terminé';
+        badge.style.background = 'rgba(239,68,68,0.15)';
+        return;
+      }
+      const h = Math.floor(diff/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      badge.textContent = `⏱️ Fin dans ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+      setTimeout(updateTournamentCountdown, 1000);
+    }
+    updateTournamentCountdown();
 
     init();
   </script>
