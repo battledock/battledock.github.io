@@ -401,9 +401,15 @@
     async function claimReward(idx) {
       const obj=todayObjectives[idx];
       if(!obj||obj.claimed||!obj.completed) return;
+
+      // Lire les valeurs actuelles depuis la BD pour éviter d'écraser
+      const { data: current } = await sb.from('game_stats').select('xp,money').eq('user_id',currentUser.id).maybeSingle();
+      const currentXp    = current?.xp    || 0;
+      const currentMoney = current?.money || 0;
+
       const updates={};
-      if(obj.reward.xp)    updates.xp    =(userXp   ||0)+obj.reward.xp;
-      if(obj.reward.money) updates.money  =(userMoney||0)+obj.reward.money;
+      if(obj.reward.xp)    updates.xp    = currentXp    + obj.reward.xp;
+      if(obj.reward.money) updates.money = currentMoney + obj.reward.money;
       await sb.from('game_stats').update(updates).eq('user_id',currentUser.id);
       if(obj.reward.xp)    userXp   =updates.xp;
       if(obj.reward.money) userMoney=updates.money;
