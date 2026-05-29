@@ -4,153 +4,215 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Tournoi - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
     input { -webkit-user-select:text; user-select:text; }
 
-    body { font-family:'Inter',sans-serif; background:#0a0a0a; min-height:100vh; padding-bottom:40px; }
+    body {
+      font-family:'Inter',sans-serif;
+      background:linear-gradient(160deg,#1a0533 0%,#0d1a4a 40%,#003322 100%);
+      min-height:100vh; padding-bottom:40px;
+    }
 
-    .header { background:rgba(10,10,10,0.95); backdrop-filter:blur(10px); border-bottom:1px solid rgba(255,255,255,0.08); padding:14px 16px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:50; }
-    .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.6); cursor:pointer; }
+    /* CONFETTIS BG */
+    .bg-confetti { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .confetti-piece { position:absolute; width:8px; height:8px; border-radius:2px; opacity:0.4; animation:confettiFall linear infinite; }
+    @keyframes confettiFall {
+      0%   { transform:translateY(-20px) rotate(0deg); opacity:0.4; }
+      100% { transform:translateY(110vh) rotate(720deg); opacity:0; }
+    }
+
+    /* HEADER */
+    .header {
+      position:relative; z-index:10;
+      background:rgba(0,0,0,0.4); backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(255,255,255,0.1);
+      padding:14px 16px; display:flex; align-items:center; gap:12px;
+    }
+    .back-btn { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:8px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:white; cursor:pointer; }
     .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:white; flex:1; }
-    .attempts-badge { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; font-weight:700; font-size:12px; padding:4px 10px; border-radius:20px; }
+    .countdown-badge {
+      background:linear-gradient(135deg,#7c3aed,#a855f7);
+      color:white; font-weight:700; font-size:11px; padding:5px 12px; border-radius:20px;
+      font-family:'Bebas Neue',sans-serif; letter-spacing:1px;
+    }
 
     /* HERO */
-    .hero { padding:24px 20px; text-align:center; background:linear-gradient(180deg,#1a0a0a,#0a0a0a); border-bottom:1px solid rgba(255,255,255,0.06); position:relative; overflow:hidden; }
-    .hero::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%,rgba(239,68,68,0.08),transparent 60%); }
-    .hero-badge { display:inline-block; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#f87171; font-size:10px; font-weight:700; padding:3px 12px; border-radius:20px; letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; }
-    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:4px; color:white; margin-bottom:4px; }
-    .hero-sub { font-size:12px; color:rgba(255,255,255,0.4); }
+    .hero {
+      position:relative; z-index:1;
+      padding:24px 16px 20px; text-align:center;
+    }
+    .hero-logo { font-size:56px; margin-bottom:8px; filter:drop-shadow(0 0 20px rgba(251,191,36,0.6)); animation:logoFloat 3s ease-in-out infinite; }
+    @keyframes logoFloat { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-8px) rotate(3deg)} }
+    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:42px; letter-spacing:5px; color:white; text-shadow:0 0 30px rgba(251,191,36,0.4); line-height:1; }
+    .hero-sub { font-size:13px; color:rgba(255,255,255,0.5); margin-top:6px; }
 
     /* STATS BAR */
-    .stats-bar { display:flex; border-bottom:1px solid rgba(255,255,255,0.06); }
-    .stat-item { flex:1; padding:12px 8px; text-align:center; border-right:1px solid rgba(255,255,255,0.06); }
-    .stat-item:last-child { border-right:none; }
-    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:white; }
-    .stat-val.gold { color:#fbbf24; }
-    .stat-val.red  { color:#ef4444; }
-    .stat-lbl { font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
+    .stats-bar {
+      position:relative; z-index:1;
+      display:flex; gap:10px; padding:0 16px 16px;
+    }
+    .stat-card {
+      flex:1; border-radius:14px; padding:12px 8px; text-align:center;
+    }
+    .stat-card.s1 { background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.1)); border:1px solid rgba(251,191,36,0.3); }
+    .stat-card.s2 { background:linear-gradient(135deg,rgba(99,102,241,0.2),rgba(79,70,229,0.1)); border:1px solid rgba(99,102,241,0.3); }
+    .stat-card.s3 { background:linear-gradient(135deg,rgba(239,68,68,0.2),rgba(220,38,38,0.1)); border:1px solid rgba(239,68,68,0.3); }
+    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:0.5px; }
+    .stat-lbl { font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
 
     /* ZONE JEU */
-    .game-zone { padding:20px 16px; display:flex; flex-direction:column; align-items:center; gap:16px; }
+    .game-zone { position:relative; z-index:1; padding:0 16px 16px; display:flex; flex-direction:column; align-items:center; gap:14px; }
+
+    /* DOTS ESSAIS */
+    .attempts-row { display:flex; gap:10px; justify-content:center; }
+    .a-dot { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; flex-direction:column; gap:1px; }
+    .a-dot.pending  { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
+    .a-dot.active   { background:linear-gradient(135deg,#7c3aed,#a855f7); border:none; color:white; box-shadow:0 4px 16px rgba(168,85,247,0.4); animation:aPulse 1s ease-in-out infinite; }
+    .a-dot.done-great { background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:white; box-shadow:0 4px 12px rgba(34,197,94,0.3); }
+    .a-dot.done-ok    { background:linear-gradient(135deg,#d97706,#fbbf24); border:none; color:white; box-shadow:0 4px 12px rgba(251,191,36,0.3); }
+    .a-dot.done-bad   { background:linear-gradient(135deg,#dc2626,#ef4444); border:none; color:white; box-shadow:0 4px 12px rgba(239,68,68,0.3); }
+    @keyframes aPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
 
     /* ITEM CARD */
     .item-card {
-      width:100%; max-width:420px;
-      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
-      border-radius:18px; padding:24px 20px; text-align:center;
+      width:100%; max-width:440px;
+      background:rgba(255,255,255,0.08);
+      backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.15);
+      border-radius:24px; padding:28px 24px; text-align:center;
+      box-shadow:0 8px 32px rgba(0,0,0,0.3);
       position:relative; overflow:hidden;
     }
-    .item-card::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%,rgba(255,255,255,0.03),transparent 60%); }
-    .item-emoji { font-size:64px; margin-bottom:12px; filter:drop-shadow(0 0 16px rgba(255,255,255,0.2)); }
-    .item-name  { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:white; margin-bottom:6px; }
-    .item-desc  { font-size:12px; color:rgba(255,255,255,0.4); line-height:1.5; }
-    .item-hint  { font-size:11px; color:rgba(255,255,255,0.25); margin-top:8px; font-style:italic; }
+    .item-card::before {
+      content:''; position:absolute; inset:0;
+      background:radial-gradient(circle at 50% -20%, rgba(251,191,36,0.08), transparent 60%);
+    }
+    .item-num { position:absolute; top:12px; right:14px; font-size:10px; font-weight:700; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; }
+    .item-emoji { font-size:72px; margin-bottom:14px; filter:drop-shadow(0 4px 16px rgba(0,0,0,0.4)); animation:itemBob 2s ease-in-out infinite; }
+    @keyframes itemBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    .item-name { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:white; margin-bottom:8px; }
+    .item-desc { font-size:13px; color:rgba(255,255,255,0.55); line-height:1.6; margin-bottom:8px; }
+    .item-hint {
+      display:inline-block;
+      background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.25);
+      color:#fbbf24; font-size:11px; font-weight:600;
+      padding:4px 12px; border-radius:20px; margin-top:4px;
+    }
 
     /* INPUT PRIX */
-    .price-input-wrap { width:100%; max-width:420px; }
-    .price-label { font-size:11px; color:rgba(255,255,255,0.4); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; text-align:center; }
-    .price-field-wrap { display:flex; align-items:center; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:12px; overflow:hidden; }
-    .price-field { flex:1; background:none; border:none; padding:14px 16px; font-size:22px; font-weight:700; color:white; font-family:'Bebas Neue',sans-serif; letter-spacing:1px; outline:none; text-align:center; }
+    .price-wrap { width:100%; max-width:440px; }
+    .price-label { font-size:12px; color:rgba(255,255,255,0.5); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; text-align:center; }
+    .price-field-wrap {
+      display:flex; align-items:center;
+      background:rgba(255,255,255,0.1); backdrop-filter:blur(10px);
+      border:2px solid rgba(255,255,255,0.2);
+      border-radius:16px; overflow:hidden; transition:border 0.2s;
+    }
+    .price-field-wrap:focus-within { border-color:rgba(251,191,36,0.6); }
+    .price-field { flex:1; background:none; border:none; padding:16px 16px; font-size:28px; font-weight:800; color:white; font-family:'Bebas Neue',sans-serif; letter-spacing:2px; outline:none; text-align:center; }
     .price-field::placeholder { color:rgba(255,255,255,0.2); }
-    .price-euro { font-family:'Bebas Neue',sans-serif; font-size:22px; color:rgba(255,255,255,0.3); padding-right:16px; }
+    .price-euro { font-family:'Bebas Neue',sans-serif; font-size:28px; color:rgba(251,191,36,0.7); padding-right:16px; }
 
     /* BOUTON VALIDER */
     .validate-btn {
-      width:100%; max-width:420px; height:60px; border:none; border-radius:14px;
-      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px;
-      background:linear-gradient(135deg,#dc2626,#ef4444); color:white;
-      box-shadow:0 4px 20px rgba(239,68,68,0.3); cursor:pointer; transition:all 0.15s;
+      width:100%; max-width:440px; height:64px; border:none; border-radius:18px;
+      font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
+      cursor:pointer; transition:all 0.15s; position:relative; overflow:hidden;
+      background:linear-gradient(135deg,#f59e0b,#fbbf24,#f59e0b);
+      color:#1a0a00; box-shadow:0 6px 24px rgba(251,191,36,0.4);
+      font-weight:900;
     }
-    .validate-btn:active { transform:scale(0.98); }
-    .validate-btn:disabled { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.2); box-shadow:none; cursor:not-allowed; }
+    .validate-btn:active { transform:scale(0.97); }
+    .validate-btn:disabled { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.2); box-shadow:none; cursor:not-allowed; }
+    .validate-btn.green { background:linear-gradient(135deg,#16a34a,#22c55e); color:white; box-shadow:0 6px 24px rgba(34,197,94,0.4); }
 
     /* RÉSULTAT */
     .result-card {
-      width:100%; max-width:420px;
-      border-radius:16px; padding:20px; text-align:center;
-      animation:resultPop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      width:100%; max-width:440px;
+      border-radius:24px; padding:24px 20px; text-align:center;
+      backdrop-filter:blur(20px);
+      animation:resultPop 0.5s cubic-bezier(0.34,1.56,0.64,1);
     }
-    @keyframes resultPop { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
-    .result-card.perfect { background:rgba(251,191,36,0.1); border:1px solid rgba(251,191,36,0.3); }
-    .result-card.great   { background:rgba(34,197,94,0.1);  border:1px solid rgba(34,197,94,0.3); }
-    .result-card.good    { background:rgba(96,165,250,0.1);  border:1px solid rgba(96,165,250,0.3); }
-    .result-card.bad     { background:rgba(239,68,68,0.1);   border:1px solid rgba(239,68,68,0.3); }
-    .result-emoji  { font-size:36px; margin-bottom:8px; }
-    .result-grade  { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; margin-bottom:4px; }
-    .result-card.perfect .result-grade { color:#fbbf24; }
-    .result-card.great   .result-grade { color:#22c55e; }
-    .result-card.good    .result-grade { color:#60a5fa; }
-    .result-card.bad     .result-grade { color:#ef4444; }
-    .result-score  { font-family:'Bebas Neue',sans-serif; font-size:40px; color:white; letter-spacing:1px; margin-bottom:4px; }
-    .result-detail { font-size:12px; color:rgba(255,255,255,0.4); }
-
-    /* ESSAIS DOTS */
-    .attempts-row { display:flex; gap:8px; justify-content:center; }
-    .a-dot { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
-    .a-dot.pending  { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.3); }
-    .a-dot.active   { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#ef4444; animation:aPulse 1s ease-in-out infinite; }
-    .a-dot.done-great { background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:#22c55e; }
-    .a-dot.done-ok    { background:rgba(251,191,36,0.15); border:1px solid rgba(251,191,36,0.3); color:#fbbf24; }
-    .a-dot.done-bad   { background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; }
-    @keyframes aPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    @keyframes resultPop { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+    .result-card.perfect { background:linear-gradient(135deg,rgba(251,191,36,0.25),rgba(245,158,11,0.1)); border:2px solid rgba(251,191,36,0.5); box-shadow:0 8px 32px rgba(251,191,36,0.2); }
+    .result-card.great   { background:linear-gradient(135deg,rgba(34,197,94,0.25),rgba(22,163,74,0.1));  border:2px solid rgba(34,197,94,0.5);  box-shadow:0 8px 32px rgba(34,197,94,0.2); }
+    .result-card.good    { background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(79,70,229,0.1)); border:2px solid rgba(99,102,241,0.5); box-shadow:0 8px 32px rgba(99,102,241,0.2); }
+    .result-card.bad     { background:linear-gradient(135deg,rgba(239,68,68,0.25),rgba(220,38,38,0.1));  border:2px solid rgba(239,68,68,0.5);  box-shadow:0 8px 32px rgba(239,68,68,0.2); }
+    .result-emoji  { font-size:52px; margin-bottom:8px; }
+    .result-grade  { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:3px; margin-bottom:4px; color:white; }
+    .result-score  { font-family:'Bebas Neue',sans-serif; font-size:52px; color:white; letter-spacing:1px; margin-bottom:8px; line-height:1; }
+    .result-detail { font-size:13px; color:rgba(255,255,255,0.5); line-height:1.6; }
+    .result-record { color:#fbbf24; font-weight:800; font-size:14px; margin-top:6px; }
 
     /* CLASSEMENT */
-    .section { padding:0 16px 20px; }
-    .section-lbl { font-size:11px; font-weight:700; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-    .rank-row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px 14px; margin-bottom:6px; }
-    .rank-row.me { background:rgba(239,68,68,0.08); border-color:rgba(239,68,68,0.2); }
+    .section { position:relative; z-index:1; padding:0 16px 20px; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .section-lbl { font-size:11px; font-weight:700; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; }
+    .refresh-btn { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.5); font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; cursor:pointer; }
+    .rank-row { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.06); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:12px 14px; margin-bottom:8px; }
+    .rank-row.me { background:rgba(251,191,36,0.1); border-color:rgba(251,191,36,0.3); }
     .rank-num { font-family:'Bebas Neue',sans-serif; font-size:18px; color:rgba(255,255,255,0.4); width:28px; text-align:center; flex-shrink:0; }
     .rank-num.gold   { color:#fbbf24; }
     .rank-num.silver { color:#94a3b8; }
     .rank-num.bronze { color:#cd7f32; }
-    .rank-avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+    .rank-avatar { width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid rgba(255,255,255,0.1); }
     .rank-info { flex:1; }
     .rank-name  { font-weight:700; font-size:14px; color:white; }
     .rank-sub   { font-size:11px; color:rgba(255,255,255,0.3); margin-top:1px; }
-    .rank-score { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#fbbf24; }
+    .rank-score { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#fbbf24; letter-spacing:0.5px; }
 
     /* FINI */
-    .done-card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:28px 20px; text-align:center; margin:0 16px 20px; }
-    .done-icon  { font-size:48px; margin-bottom:10px; }
-    .done-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px; color:white; margin-bottom:6px; }
-    .done-sub   { font-size:13px; color:rgba(255,255,255,0.4); }
-    .done-score { font-family:'Bebas Neue',sans-serif; font-size:42px; color:#fbbf24; margin:10px 0 4px; }
+    .done-card {
+      position:relative; z-index:1; margin:0 16px 20px;
+      background:rgba(255,255,255,0.08); backdrop-filter:blur(20px);
+      border:1px solid rgba(255,255,255,0.15); border-radius:24px;
+      padding:32px 20px; text-align:center;
+    }
+    .done-icon  { font-size:56px; margin-bottom:10px; }
+    .done-title { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:2px; color:white; margin-bottom:6px; }
+    .done-score { font-family:'Bebas Neue',sans-serif; font-size:48px; color:#fbbf24; margin:8px 0 4px; filter:drop-shadow(0 0 16px rgba(251,191,36,0.4)); }
+    .done-sub   { font-size:13px; color:rgba(255,255,255,0.4); line-height:1.6; }
 
-    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a1a1a; border:1px solid rgba(255,255,255,0.1); color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; white-space:nowrap; }
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.1); color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; opacity:0; transition:opacity 0.3s; white-space:nowrap; }
     .toast.show { opacity:1; }
-    .toast.success { background:#16a34a; }
-    .toast.error   { background:#ef4444; }
+    .toast.success { background:rgba(22,163,74,0.9); }
+    .toast.error   { background:rgba(239,68,68,0.9); }
   </style>
 </head>
 <body>
 
+  <!-- CONFETTIS -->
+  <div class="bg-confetti" id="bgConfetti"></div>
+
   <div class="header">
     <button class="back-btn" onclick="window.location.href='casino.html'">← Retour</button>
-    <div class="header-title">🏆 Tournoi</div>
-    <div class="attempts-badge" id="attemptsLeft">3/3</div>
+    <div class="header-title">🎰 Le Juste Prix</div>
+    <div class="countdown-badge" id="heroBadge">⏳ Chargement...</div>
   </div>
 
+  <!-- HERO -->
   <div class="hero">
-    <div class="hero-badge" id="heroBadge">⏳ Phase d'essais</div>
+    <div class="hero-logo">💰</div>
     <div class="hero-title">Le Juste Prix</div>
-    <div class="hero-sub">3 essais/jour · Meilleur score gardé · Précision maximale</div>
+    <div class="hero-sub">3 essais · Précision maximale · Meilleur score gardé</div>
   </div>
 
+  <!-- STATS -->
   <div class="stats-bar">
-    <div class="stat-item"><div class="stat-val gold" id="myBestScore">--</div><div class="stat-lbl">Mon meilleur</div></div>
-    <div class="stat-item"><div class="stat-val" id="myRank">#--</div><div class="stat-lbl">Mon rang</div></div>
-    <div class="stat-item"><div class="stat-val red" id="attemptsRemain">3</div><div class="stat-lbl">Essais restants</div></div>
+    <div class="stat-card s1"><div class="stat-val" id="myBestScore">--</div><div class="stat-lbl">Mon record</div></div>
+    <div class="stat-card s2"><div class="stat-val" id="myRank">#--</div><div class="stat-lbl">Mon rang</div></div>
+    <div class="stat-card s3"><div class="stat-val" id="attemptsRemain">3</div><div class="stat-lbl">Essais restants</div></div>
   </div>
 
   <div id="mainContent"></div>
 
-  <div class="section" style="margin-top:8px">
-    <div class="section-lbl" style="display:flex;align-items:center;justify-content:space-between">
-      <span>🏅 Classement</span>
-      <button onclick="loadLeaderboard()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;cursor:pointer">↻ Actualiser</button>
+  <div class="section">
+    <div class="section-header">
+      <div class="section-lbl">🏅 Classement</div>
+      <button class="refresh-btn" onclick="loadLeaderboard()">↻ Actualiser</button>
     </div>
     <div id="rankList"><div style="text-align:center;color:rgba(255,255,255,0.3);font-size:13px;padding:20px">Aucun score pour l'instant</div></div>
   </div>
@@ -164,64 +226,85 @@
     const sb = createClient(SB_URL, SB_KEY);
 
     const MAX_ATTEMPTS = 3;
+    const END_DATE = new Date('2026-05-31T21:30:00');
 
-    // 30 ITEMS MARRANTS
     const ITEMS = [
-      { emoji:'🦈', name:'Requin en plastique gonflable', desc:'Pour faire peur aux touristes sur la plage. Taille réelle.', hint:'C\'est cher d\'être flippant', price:89 },
-      { emoji:'⚓', name:'Ancre de bateau de plaisance', desc:'Rouillée, trouvée au fond du port. Peut servir de presse-papier.', hint:'Lourde mais inutile', price:45 },
+      { emoji:'🦈', name:'Requin gonflable taille réelle', desc:'Pour faire peur aux touristes sur la plage. Très convaincant de loin.', hint:'C\'est cher d\'être flippant', price:89 },
+      { emoji:'⚓', name:'Ancre rouillée du port', desc:'Trouvée au fond. Peut servir de presse-papier XXL.', hint:'Lourde mais inutile', price:45 },
       { emoji:'🦀', name:'Crabe royal d\'Alaska vivant', desc:'2,3 kg, il s\'appelle Jean-Michel et il mord.', hint:'Plus cher que le poulet', price:340 },
-      { emoji:'🚢', name:'Ticket de croisière Méditerranée', desc:'7 jours, buffet à volonté, disco le jeudi soir.', hint:'Plus cher qu\'un vol Paris-New York', price:890 },
-      { emoji:'🐙', name:'Poulpe de 4 bras (spécial)', desc:'Il lui manque 4 bras. Vendu comme est.', hint:'Promotion du jour', price:12 },
-      { emoji:'🗺️', name:'Carte au trésor dessinée à la main', desc:'Trouvée dans une bouteille. Authenticité non garantie.', hint:'Vaut peut-être des millions... ou rien', price:3 },
-      { emoji:'🔭', name:'Longue-vue de capitaine', desc:'Années 1800. Vue jusqu\'à 200m si pas de brouillard.', hint:'Vintage donc cher', price:220 },
-      { emoji:'🐠', name:'Poisson clown nommé Nemo', desc:'Il refuse de répondre à ce prénom. Aquarium non inclus.', hint:'Moins cher que le film', price:28 },
+      { emoji:'🚢', name:'Ticket croisière Méditerranée 7j', desc:'Buffet à volonté, disco le jeudi soir.', hint:'Plus cher qu\'un Paris-New York', price:890 },
+      { emoji:'🐙', name:'Poulpe de 4 bras (spécial)', desc:'Il lui manque 4 bras. Vendu comme est. Fraîcheur douteuse.', hint:'Promotion du jour', price:12 },
+      { emoji:'🗺️', name:'Carte au trésor trouvée en bouteille', desc:'Authenticité non garantie. Peut valoir des millions... ou rien.', hint:'L\'aventure n\'a pas de prix', price:3 },
+      { emoji:'🔭', name:'Longue-vue de capitaine 1800s', desc:'Vue jusqu\'à 200m si pas de brouillard.', hint:'Vintage donc forcément cher', price:220 },
+      { emoji:'🐠', name:'Poisson clown nommé Nemo', desc:'Refuse de répondre à ce prénom. Aquarium non inclus.', hint:'Moins cher que le film', price:28 },
       { emoji:'🧲', name:'Aimant de pêche magnétique', desc:'Récupère vélos, portables et potentiellement des mines.', hint:'Sport dangereux et abordable', price:35 },
-      { emoji:'⛵', name:'Canot pneumatique 2 places', desc:'Gonflé à la main, une heure de travail. Couleur banane.', hint:'Pour fuir en cas d\'urgence', price:180 },
-      { emoji:'🦭', name:'Peluche otarie avec son', desc:'Fait "ouaf ouaf" toutes les 5 minutes. Pile non incluse.', hint:'Irritant mais mignon', price:22 },
-      { emoji:'🧜', name:'Statue sirène en résine', desc:'1m20, regard vide, parfaite pour le jardin.', hint:'Vos voisins vont adorer', price:159 },
-      { emoji:'🐡', name:'Poisson-globe séché encadré', desc:'Art contemporain maritime. Signé par le pêcheur.', hint:'Entre art et bizarre', price:67 },
-      { emoji:'🏴‍☠️', name:'Drapeau pirate authentique', desc:'Fabriqué à Toulouse. 100% polyester. Crâne souriant.', hint:'Pour les vrais pirates de canapé', price:14 },
-      { emoji:'🔔', name:'Cloche de bateau en laiton', desc:'Sonne très fort. Interdit dans les appartements HLM.', hint:'Vos voisins vont moins adorer', price:78 },
-      { emoji:'🦑', name:'Calamar géant en peluche', desc:'2 mètres de long. Tentacules velcro.', hint:'Pour les grandes maisons', price:145 },
-      { emoji:'🧊', name:'Iceberg miniature en verre soufflé', desc:'Fait à la main par un artisan islandais. Pas de Titanic inclus.', hint:'Objet de déco inutile mais beau', price:290 },
-      { emoji:'🎣', name:'Canne à pêche en carbone', desc:'Pro, 4m50, jamais sorti de sa housse. Cadeau de belle-mère.', hint:'Entre le débutant et le pro', price:125 },
-      { emoji:'🐬', name:'Dauphin en résine lumineuse', desc:'Change de couleur la nuit. Yeux légèrement inquiétants.', hint:'Pour les enfants ou les adultes bizarres', price:49 },
-      { emoji:'🗿', name:'Tête de Neptune en béton', desc:'40 cm, regard sévère, parfait pour le fond du jardin.', hint:'Art de jardin discutable', price:88 },
-      { emoji:'🌊', name:'Bouteille d\'eau de mer des Maldives', desc:'500ml d\'eau salée premium. Même formule que l\'Atlantique.', hint:'L\'arnaque la plus audacieuse', price:19 },
-      { emoji:'🦩', name:'Flamant rose gonflable XXL', desc:'2m de haut. Stabilité en cas de vent : nulle.', hint:'Instagram vs réalité', price:37 },
-      { emoji:'🪸', name:'Corail artificiel pour aquarium', desc:'Résine non toxique. Les poissons ne font pas la différence.', hint:'Tromper les poissons', price:24 },
-      { emoji:'🌡️', name:'Thermomètre marin antique', desc:'Cuivre et verre, années 1950. Indique une température au hasard.', hint:'Déco uniquement', price:165 },
-      { emoji:'🐳', name:'Son de baleine en bouteille', desc:'QR code vers 3h de chants de baleines bosse. Format WAV.', hint:'Détente ou cauchemar', price:8 },
-      { emoji:'🧭', name:'Boussole de poche rétro', desc:'Pointe vers le nord, sauf près du frigo.', hint:'Utile si vous vous perdez dans votre cuisine', price:31 },
-      { emoji:'⛓️', name:'Chaîne d\'ancre en miniature', desc:'50cm, acier chromé, pour collier ou usage mystérieux.', hint:'Fashion ou fonctionnel', price:55 },
-      { emoji:'🪸', name:'Aquarium de bureau 5 litres', desc:'Livré avec gravier et une plante en plastique. Poisson non inclus.', hint:'Zen mais vide', price:42 },
-      { emoji:'🦀', name:'Pince de homard géante empaillée', desc:'Trouvée sur une plage bretonne. Odeur garantie.', hint:'Souvenir de vacances original', price:16 },
-      { emoji:'🚤', name:'Hélice de hors-bord d\'occasion', desc:'3 pales, légèrement tordue, vendue comme pièce déco.', hint:'Art industriel maritime', price:73 },
+      { emoji:'⛵', name:'Canot pneumatique 2 places', desc:'Gonflé à la main, une heure de boulot. Couleur banane.', hint:'Pour fuir en cas d\'urgence', price:180 },
+      { emoji:'🦭', name:'Peluche otarie avec son', desc:'Fait "ouaf ouaf" toutes les 5 minutes. Pile non incluse.', hint:'Irritant mais attendrissant', price:22 },
+      { emoji:'🧜', name:'Statue sirène en résine 1m20', desc:'Regard vide, parfaite pour terrifier vos voisins.', hint:'Art ou horreur ?', price:159 },
+      { emoji:'🐡', name:'Poisson-globe séché encadré', desc:'Art contemporain maritime. Signé par le pêcheur breton.', hint:'Entre art et bizarre', price:67 },
+      { emoji:'🏴‍☠️', name:'Drapeau pirate "authentique"', desc:'Fabriqué à Toulouse. 100% polyester. Crâne souriant.', hint:'Pour les pirates de canapé', price:14 },
+      { emoji:'🔔', name:'Cloche de bateau en laiton', desc:'Sonne très fort. Interdit en copropriété.', hint:'Vos voisins vont moins adorer', price:78 },
+      { emoji:'🦑', name:'Calamar géant en peluche 2m', desc:'Tentacules velcro. Prend toute la place.', hint:'Pour les grandes maisons ou les grands enfants', price:145 },
+      { emoji:'🧊', name:'Iceberg miniature en verre soufflé', desc:'Fait main par un artisan islandais. Pas de Titanic inclus.', hint:'Inutile mais magnifique', price:290 },
+      { emoji:'🎣', name:'Canne à pêche carbone 4m50', desc:'Jamais sortie de sa housse. Cadeau de belle-mère mal ciblé.', hint:'Le luxe inutilisé', price:125 },
+      { emoji:'🌊', name:'Bouteille d\'eau de mer des Maldives', desc:'500ml d\'eau salée premium. Même formule que l\'Atlantique.', hint:'L\'arnaque la plus audacieuse de l\'année', price:19 },
+      { emoji:'🦩', name:'Flamant rose gonflable XXL 2m', desc:'Stabilité en cas de vent : nulle. Instagram : parfait.', hint:'Instagram vs réalité', price:37 },
+      { emoji:'🐳', name:'Son de baleine en bouteille', desc:'QR code vers 3h de chants de baleines bosse. Format WAV.', hint:'Détente ou cauchemar au choix', price:8 },
+      { emoji:'🧭', name:'Boussole de poche rétro', desc:'Pointe vers le nord, sauf près du frigo ou de la télé.', hint:'Utile si vous vous perdez chez vous', price:31 },
+      { emoji:'🪸', name:'Aquarium de bureau 5 litres', desc:'Livré avec gravier et plante plastique. Poisson non inclus.', hint:'Zen mais désespérément vide', price:42 },
+      { emoji:'🦀', name:'Pince de homard empaillée', desc:'Trouvée sur une plage bretonne. Odeur de souvenir garantie.', hint:'Original mais questionnable', price:16 },
+      { emoji:'🚤', name:'Hélice de hors-bord d\'occasion', desc:'3 pales, légèrement tordue. Vendue comme œuvre d\'art.', hint:'Art industriel maritime tendance', price:73 },
+      { emoji:'🐬', name:'Dauphin résine lumineuse', desc:'Change de couleur la nuit. Yeux légèrement inquiétants.', hint:'Pour les enfants ou les adultes bizarres', price:49 },
+      { emoji:'🗿', name:'Tête de Neptune en béton 40cm', desc:'Regard sévère, parfait pour surveiller le jardin la nuit.', hint:'Art de jardin discutable', price:88 },
+      { emoji:'🌡️', name:'Thermomètre marin antique cuivre', desc:'Années 1950. Indique une température approximative.', hint:'Vintage = cher même si inutile', price:165 },
+      { emoji:'⛓️', name:'Chaîne d\'ancre miniature acier', desc:'50cm, chromé. Pour collier ou usage mystérieux.', hint:'Fashion ou fonctionnel, à vous de choisir', price:55 },
+      { emoji:'🐋', name:'Squelette de poisson encadré', desc:'30cm, bois flotté, trouvé à Biarritz. Signé "M. le pêcheur".', hint:'Entre science et décoration', price:38 },
     ];
 
     let currentUser = null;
     let myRecord = null;
     let attemptsLeft = MAX_ATTEMPTS;
     let currentItem = null;
-    let currentAttemptIdx = 0;
     let sessionScores = [];
-    let isShowingResult = false;
     let usedItemIndices = [];
 
-    // ===== INIT =====
+    // CONFETTIS
+    function initConfetti() {
+      const colors = ['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#fbbf24'];
+      const container = document.getElementById('bgConfetti');
+      for(let i=0;i<25;i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `left:${Math.random()*100}%;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${6+Math.random()*8}s;animation-delay:${Math.random()*8}s;width:${4+Math.random()*8}px;height:${4+Math.random()*8}px;border-radius:${Math.random()>0.5?'50%':'2px'}`;
+        container.appendChild(el);
+      }
+    }
+
+    // COUNTDOWN
+    function updateCountdown() {
+      const now = new Date();
+      const diff = END_DATE - now;
+      const badge = document.getElementById('heroBadge');
+      if (!badge) return;
+      if (diff <= 0) { badge.textContent = '🏁 Tournoi terminé'; return; }
+      const h = Math.floor(diff/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      badge.textContent = `⏱ ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
+      setTimeout(updateCountdown, 1000);
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
 
-      const { data } = await sb.from('tournament_scores')
-        .select('*').eq('user_id', currentUser.id).maybeSingle();
-
+      const { data } = await sb.from('tournament_scores').select('*').eq('user_id', currentUser.id).maybeSingle();
       if (data) {
         myRecord = data;
         const today = new Date().toISOString().split('T')[0];
         if (data.last_attempt_date !== today) {
-          await sb.from('tournament_scores').update({ attempts_today: 0, last_attempt_date: today }).eq('user_id', currentUser.id);
+          await sb.from('tournament_scores').update({ attempts_today:0, last_attempt_date:today }).eq('user_id', currentUser.id);
           myRecord.attempts_today = 0;
         }
         attemptsLeft = MAX_ATTEMPTS - (myRecord.attempts_today || 0);
@@ -232,98 +315,82 @@
       updateStatsBar();
       loadLeaderboard();
       renderMain();
+      initConfetti();
+      updateCountdown();
     }
 
-    // ===== STATS BAR =====
     function updateStatsBar() {
-      document.getElementById('attemptsLeft').textContent = attemptsLeft + '/3';
-      document.getElementById('attemptsRemain').textContent = attemptsLeft;
-      document.getElementById('myBestScore').textContent = myRecord?.score != null
-        ? parseFloat(myRecord.score).toFixed(4) + '%'
-        : '--';
+      document.getElementById('attemptsRemain').textContent = Math.max(0, attemptsLeft);
+      document.getElementById('myBestScore').textContent = myRecord?.score != null ? parseFloat(myRecord.score).toFixed(4)+'%' : '--';
     }
 
-    // ===== RENDER MAIN =====
     function renderMain() {
-      if (attemptsLeft <= 0) {
-        renderDone();
-        return;
-      }
+      if (attemptsLeft <= 0) { renderDone(); return; }
       pickRandomItem();
       renderGame();
     }
 
     function pickRandomItem() {
-      let idx;
-      let tries = 0;
-      do {
-        idx = Math.floor(Math.random() * ITEMS.length);
-        tries++;
-      } while (usedItemIndices.includes(idx) && tries < 50);
+      let idx, tries = 0;
+      do { idx = Math.floor(Math.random()*ITEMS.length); tries++; }
+      while (usedItemIndices.includes(idx) && tries < 50);
       usedItemIndices.push(idx);
       currentItem = ITEMS[idx];
     }
 
+    function getDotsHtml(activeIdx) {
+      const used = MAX_ATTEMPTS - attemptsLeft;
+      return Array.from({length:MAX_ATTEMPTS},(_,i) => {
+        if (i < used) {
+          const s = sessionScores[i];
+          const cls = s != null ? (s >= 80 ? 'done-great' : s >= 50 ? 'done-ok' : 'done-bad') : 'done-ok';
+          const label = s != null ? s.toFixed(0)+'%' : '✓';
+          return `<div class="a-dot ${cls}">${label}</div>`;
+        } else if (i === used && attemptsLeft > 0) {
+          return `<div class="a-dot active">${i+1}</div>`;
+        } else {
+          return `<div class="a-dot pending">${i+1}</div>`;
+        }
+      }).join('');
+    }
+
     function renderGame() {
-      isShowingResult = false;
       const used = MAX_ATTEMPTS - attemptsLeft;
       document.getElementById('mainContent').innerHTML = `
         <div class="game-zone">
-          <!-- DOTS -->
-          <div class="attempts-row">
-            ${Array.from({length:MAX_ATTEMPTS}, (_,i) => {
-              if (i < used) {
-                const s = sessionScores[i];
-                const cls = s != null ? (s >= 80 ? 'done-great' : s >= 50 ? 'done-ok' : 'done-bad') : 'done-ok';
-                return `<div class="a-dot ${cls}">${s != null ? s.toFixed(0)+'%' : '✓'}</div>`;
-              } else if (i === used) {
-                return `<div class="a-dot active">●</div>`;
-              } else {
-                return `<div class="a-dot pending">${i+1}</div>`;
-              }
-            }).join('')}
-          </div>
-
-          <!-- ITEM -->
+          <div class="attempts-row">${getDotsHtml(used)}</div>
           <div class="item-card">
+            <div class="item-num">Item ${used+1}/${MAX_ATTEMPTS}</div>
             <div class="item-emoji">${currentItem.emoji}</div>
             <div class="item-name">${currentItem.name}</div>
             <div class="item-desc">${currentItem.desc}</div>
             <div class="item-hint">💡 ${currentItem.hint}</div>
           </div>
-
-          <!-- INPUT -->
-          <div class="price-input-wrap">
-            <div class="price-label">Quel est le vrai prix ?</div>
+          <div class="price-wrap">
+            <div class="price-label">💶 Quel est le vrai prix ?</div>
             <div class="price-field-wrap">
-              <input class="price-field" id="priceInput" type="number" placeholder="0" min="0" max="99999">
+              <input class="price-field" id="priceInput" type="number" placeholder="???" min="0" max="99999" onkeydown="if(event.key==='Enter')validate()">
               <div class="price-euro">€</div>
             </div>
           </div>
-
-          <button class="validate-btn" onclick="validate()">🎯 Valider mon prix</button>
+          <button class="validate-btn" onclick="validate()">🎯 Valider !</button>
         </div>`;
-
-      setTimeout(() => {
-        const input = document.getElementById('priceInput');
-        if (input) input.focus();
-      }, 100);
+      setTimeout(() => { const el = document.getElementById('priceInput'); if(el) el.focus(); }, 150);
     }
 
-    // ===== VALIDER =====
     async function validate() {
       const input = document.getElementById('priceInput');
       const guess = parseFloat(input?.value);
       if (!guess || guess <= 0) { showToast('Entre un prix !', 'error'); return; }
 
+      document.querySelector('.validate-btn').disabled = true;
+
       const real = currentItem.price;
       const diff = Math.abs(guess - real);
-      // Précision en % avec 4 décimales
       const precision = parseFloat(Math.max(0, (1 - diff / real) * 100).toFixed(4));
 
       sessionScores.push(precision);
       attemptsLeft--;
-
       await saveScore(precision);
       loadLeaderboard();
       updateStatsBar();
@@ -331,53 +398,37 @@
     }
 
     function renderResult(precision, real, guess) {
-      isShowingResult = true;
       let cls, emoji, grade;
       if (precision >= 95)      { cls='perfect'; emoji='🎯'; grade='PARFAIT !'; }
-      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='Excellent !'; }
-      else if (precision >= 40) { cls='good';    emoji='👍'; grade='Pas mal !'; }
-      else                       { cls='bad';     emoji='💀'; grade='Raté !'; }
+      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='EXCELLENT !'; }
+      else if (precision >= 40) { cls='good';    emoji='👍'; grade='PAS MAL !'; }
+      else                       { cls='bad';     emoji='💀'; grade='RATÉ !'; }
 
+      const isRecord = precision > parseFloat(myRecord?.score || 0);
       const used = MAX_ATTEMPTS - attemptsLeft;
-      const dotsHtml = Array.from({length:MAX_ATTEMPTS}, (_,i) => {
-        if (i < used) {
-          const s = sessionScores[i];
-          const dc = s != null ? (s >= 80 ? 'done-great' : s >= 50 ? 'done-ok' : 'done-bad') : 'done-ok';
-          return `<div class="a-dot ${dc}">${s != null ? s.toFixed(0)+'%' : '✓'}</div>`;
-        } else if (i === used && attemptsLeft > 0) {
-          return `<div class="a-dot active">●</div>`;
-        } else {
-          return `<div class="a-dot pending">${i+1}</div>`;
-        }
-      }).join('');
 
       document.getElementById('mainContent').innerHTML = `
         <div class="game-zone">
-          <div class="attempts-row">${dotsHtml}</div>
+          <div class="attempts-row">${getDotsHtml(used)}</div>
           <div class="result-card ${cls}">
             <div class="result-emoji">${emoji}</div>
             <div class="result-grade">${grade}</div>
             <div class="result-score">${precision.toFixed(4)}%</div>
             <div class="result-detail">
-              Vrai prix : <strong>${real}€</strong> · Ta réponse : <strong>${guess}€</strong>
-              ${precision > (parseFloat(myRecord?.score||0)) ? '<br><span style="color:#fbbf24;font-weight:700">🏆 Nouveau record !</span>' : ''}
+              Vrai prix : <strong style="color:white">${real}€</strong><br>
+              Ta réponse : <strong style="color:white">${guess}€</strong><br>
+              Écart : <strong style="color:white">${Math.abs(real-guess)}€</strong>
             </div>
+            ${isRecord ? '<div class="result-record">🏆 Nouveau record personnel !</div>' : ''}
           </div>
           ${attemptsLeft > 0
-            ? `<button class="validate-btn" onclick="nextRound()" style="background:linear-gradient(135deg,#16a34a,#22c55e);box-shadow:0 4px 20px rgba(34,197,94,0.3)">
-                ▶ Essai suivant (${attemptsLeft} restant${attemptsLeft>1?'s':''})
-               </button>`
-            : `<button class="validate-btn" onclick="renderDone()" style="background:rgba(255,255,255,0.06);color:white">
-                Voir mon résultat final
-               </button>`
+            ? `<button class="validate-btn green" onclick="nextRound()">▶ Essai suivant (${attemptsLeft} restant${attemptsLeft>1?'s':''})</button>`
+            : `<button class="validate-btn" onclick="renderDone()" style="background:rgba(255,255,255,0.1);color:white">Voir mon résultat final →</button>`
           }
         </div>`;
     }
 
-    function nextRound() {
-      pickRandomItem();
-      renderGame();
-    }
+    function nextRound() { pickRandomItem(); renderGame(); }
 
     function renderDone() {
       const best = myRecord?.score != null ? parseFloat(myRecord.score).toFixed(4) : '--';
@@ -386,62 +437,43 @@
           <div class="done-icon">🏁</div>
           <div class="done-title">Essais terminés !</div>
           <div class="done-score">${best}%</div>
-          <div class="done-sub">Meilleur score enregistré<br>Reviens demain pour 3 nouveaux essais</div>
+          <div class="done-sub">Ton meilleur score est enregistré<br>Reviens demain pour 3 nouveaux essais</div>
         </div>`;
     }
 
-    // ===== SAUVEGARDER =====
     async function saveScore(precision) {
       const today = new Date().toISOString().split('T')[0];
       const currentBest = parseFloat(myRecord?.score || 0);
       const newBest = Math.max(currentBest, precision);
       const newAttempts = (myRecord?.attempts_today || 0) + 1;
-
       if (myRecord) {
-        await sb.from('tournament_scores').update({
-          score: newBest,
-          attempts_today: newAttempts,
-          last_attempt_date: today,
-          updated_at: new Date().toISOString()
-        }).eq('user_id', currentUser.id);
-        myRecord.score = newBest;
-        myRecord.attempts_today = newAttempts;
+        await sb.from('tournament_scores').update({ score:newBest, attempts_today:newAttempts, last_attempt_date:today, updated_at:new Date().toISOString() }).eq('user_id', currentUser.id);
+        myRecord.score = newBest; myRecord.attempts_today = newAttempts;
       } else {
-        await sb.from('tournament_scores').insert({
-          user_id: currentUser.id, score: precision,
-          attempts_today: 1, last_attempt_date: today
-        });
-        myRecord = { score: precision, attempts_today: 1 };
+        await sb.from('tournament_scores').insert({ user_id:currentUser.id, score:precision, attempts_today:1, last_attempt_date:today });
+        myRecord = { score:precision, attempts_today:1 };
       }
-
       document.getElementById('myBestScore').textContent = parseFloat(myRecord.score).toFixed(4) + '%';
     }
 
-    // ===== CLASSEMENT =====
     async function loadLeaderboard() {
-      const { data: scores } = await sb.from('tournament_scores')
-        .select('user_id, score').order('score', { ascending: false }).limit(10);
+      const { data: scores } = await sb.from('tournament_scores').select('user_id, score').order('score', { ascending:false }).limit(10);
       if (!scores?.length) return;
-
-      const { data: profiles } = await sb.from('profiles')
-        .select('user_id, username, avatar_url').in('user_id', scores.map(s => s.user_id));
-      const pm = {};
-      (profiles||[]).forEach(p => pm[p.user_id] = p);
-
-      const myIdx = scores.findIndex(s => s.user_id === currentUser.id);
-      if (myIdx >= 0) document.getElementById('myRank').textContent = '#' + (myIdx+1);
-
+      const { data: profiles } = await sb.from('profiles').select('user_id, username, avatar_url').in('user_id', scores.map(s=>s.user_id));
+      const pm = {}; (profiles||[]).forEach(p => pm[p.user_id]=p);
+      const myIdx = scores.findIndex(s=>s.user_id===currentUser.id);
+      if (myIdx >= 0) document.getElementById('myRank').textContent = '#'+(myIdx+1);
       const medals = ['🥇','🥈','🥉'];
       document.getElementById('rankList').innerHTML = scores.map((s,i) => {
-        const p = pm[s.user_id] || { username:'Docker', avatar_url:'avatar-default.png' };
-        const isMe = s.user_id === currentUser.id;
+        const p = pm[s.user_id]||{username:'Docker',avatar_url:'avatar-default.png'};
+        const isMe = s.user_id===currentUser.id;
         const nc = i===0?'gold':i===1?'silver':i===2?'bronze':'';
         return `<div class="rank-row ${isMe?'me':''}">
           <div class="rank-num ${nc}">${medals[i]||(i+1)}</div>
           <img class="rank-avatar" src="${p.avatar_url||'avatar-default.png'}">
           <div class="rank-info">
             <div class="rank-name">${p.username}${isMe?' 👈':''}</div>
-            <div class="rank-sub">Score : ${parseFloat(s.score).toFixed(4)}%</div>
+            <div class="rank-sub">${parseFloat(s.score).toFixed(4)}%</div>
           </div>
           <div class="rank-score">${parseFloat(s.score).toFixed(2)}%</div>
         </div>`;
@@ -451,28 +483,8 @@
     function showToast(msg, type='') {
       const t = document.getElementById('toast');
       t.textContent=msg; t.className='toast show '+type;
-      setTimeout(()=>t.className='toast', 2800);
+      setTimeout(()=>t.className='toast',2800);
     }
-
-    // Countdown tournoi
-    const END_DATE = new Date('2026-05-31T21:30:00');
-    function updateTournamentCountdown() {
-      const now = new Date();
-      const diff = END_DATE - now;
-      const badge = document.getElementById('heroBadge');
-      if (!badge) return;
-      if (diff <= 0) {
-        badge.textContent = '🏁 Tournoi terminé';
-        badge.style.background = 'rgba(239,68,68,0.15)';
-        return;
-      }
-      const h = Math.floor(diff/3600000);
-      const m = Math.floor((diff%3600000)/60000);
-      const s = Math.floor((diff%60000)/1000);
-      badge.textContent = `⏱️ Fin dans ${h}h ${String(m).padStart(2,'0')}m ${String(s).padStart(2,'0')}s`;
-      setTimeout(updateTournamentCountdown, 1000);
-    }
-    updateTournamentCountdown();
 
     init();
   </script>
