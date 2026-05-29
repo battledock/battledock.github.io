@@ -468,6 +468,27 @@
       if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
+
+    async function recordBet(gameName, amountBet) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: amountBet, amount_won: 0 });
+        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
+        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) {}
+      } catch(e) { console.log('recordBet:', e.message); }
+    }
+
+    async function recordWin(gameName, amountWon) {
+      try {
+        const username = (currentUser.email || '').split('@')[0] || 'Docker';
+        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
+        const { data: stats } = await sb.from('game_stats').select('biggest_win').eq('user_id', currentUser.id).maybeSingle();
+        if (!stats || amountWon > (stats.biggest_win || 0)) {
+          await sb.from('game_stats').update({ biggest_win: amountWon }).eq('user_id', currentUser.id);
+        }
+      } catch(e) { console.log('recordWin:', e.message); }
+    }
+
     async function init() {
       // Attendre que la session soit prête
       const { data: { session } } = await sb.auth.getSession();
