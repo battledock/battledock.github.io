@@ -17,46 +17,6 @@
       min-height:100vh; padding-bottom:40px;
     }
 
-    /* ANIMATEUR TV */
-    .animator {
-      position:fixed; bottom:16px; right:12px; z-index:50;
-      display:flex; flex-direction:column; align-items:flex-end;
-      pointer-events:none; gap:8px;
-    }
-    .animator-bubble {
-      background:linear-gradient(135deg,#fbbf24,#f59e0b);
-      border-radius:20px 20px 6px 20px;
-      padding:12px 16px;
-      font-size:13px; font-weight:700; color:#7f1d1d;
-      line-height:1.4; max-width:220px; text-align:right;
-      box-shadow:0 8px 32px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.3);
-      border:2px solid rgba(251,191,36,0.8);
-      position:relative;
-      animation:bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    .animator-bubble::after {
-      content:'';
-      position:absolute; bottom:-9px; right:20px;
-      width:0; height:0;
-      border-left:8px solid transparent;
-      border-right:0px solid transparent;
-      border-top:9px solid #f59e0b;
-    }
-    @keyframes bubblePop { from{transform:scale(0.6) translateY(10px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
-    .animator-char {
-      width:72px; height:72px;
-      border-radius:50%; object-fit:cover;
-      border:3px solid white;
-      box-shadow:0 6px 20px rgba(0,0,0,0.4);
-      animation:charIdle 2.5s ease-in-out infinite;
-      background:white;
-    }
-    @keyframes charIdle {
-      0%,100%{transform:translateY(0) rotate(-2deg)}
-      50%{transform:translateY(-8px) rotate(2deg)}
-    }
-
-    /* ANIMATEUR TV */
     /* CONFETTIS BG */
     .bg-confetti { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
     .confetti-piece { position:absolute; width:8px; height:8px; border-radius:2px; opacity:0.4; animation:confettiFall linear infinite; }
@@ -256,13 +216,6 @@
   </style>
 </head>
 <body>
-
-  <!-- ANIMATEUR -->
-  <div class="animator" id="animator">
-    <div class="animator-bubble" id="animatorBubble" style="display:none"></div>
-    <img class="animator-char" src="avatar-animateur.png" alt="Animateur">
-  </div>
-
   <!-- CONFETTIS -->
   <div class="bg-confetti" id="bgConfetti"></div>
 
@@ -347,72 +300,6 @@
     let sessionScores = [];
     let usedItemIndices = [];
 
-
-    // ANIMATEUR TV
-    const ANIMATOR_LINES = {
-      welcome: [
-        "Bienvenue dans Le Juste Prix ! 🎉",
-        "Prêt à devenir millionnaire ?",
-        "Ici on blague, mais le score lui est vrai !",
-      ],
-      start: [
-        "Et c'est parti ! Concentrez-vous !",
-        "Votre prix, vos regrets, votre gloire !",
-        "Le public retient son souffle... ou pas.",
-        "Attention, question piège en vue !",
-      ],
-      perfect: [
-        "INCROYABLE ! Vous êtes un génie ou vous trichez ?!",
-        "LE PUBLIC EST EN DÉLIRE ! 🎊",
-        "Voilà quelqu'un qui connaît ses prix !",
-        "Je pleure de joie là... vraiment.",
-      ],
-      great: [
-        "Excellent ! Vous avez l'instinct du shopping !",
-        "Presque parfait ! Vous faites les courses vous-même ?",
-        "Le public applaudit poliment.",
-        "Bravo ! Votre femme serait fière.",
-      ],
-      good: [
-        "Pas mal... mais on peut faire mieux !",
-        "Hm. Le public reste sur sa faim.",
-        "C'est dans la bonne direction au moins !",
-        "On ne gagne pas Paris avec ça mais bon...",
-      ],
-      bad: [
-        "Aïe. C'était... audacieux comme prix.",
-        "Le public compatit. Enfin... presque.",
-        "Vous faites vos courses où exactement ?!",
-        "C'est pas grave, il reste des essais !",
-        "Mon chien aurait trouvé mieux. Je dis ça je dis rien.",
-      ],
-      done: [
-        "C'est terminé pour aujourd'hui ! On revient demain !",
-        "Revenez demain, on aura de nouveaux articles absurdes !",
-        "Bonne performance ! Le jury délibère... au bistrot.",
-      ],
-      attempts_left_1: [
-        "DERNIER ESSAI ! Tout se joue maintenant !",
-        "La pression est à son comble ! Respirez !",
-        "Un seul essai restant... pas de pression hein.",
-      ]
-    };
-
-    function showAnimatorLine(category) {
-      const lines = ANIMATOR_LINES[category];
-      if (!lines) return;
-      const line = lines[Math.floor(Math.random() * lines.length)];
-      const bubble = document.getElementById('animatorBubble');
-      if (!bubble) return;
-      bubble.textContent = line;
-      bubble.style.display = 'block';
-      bubble.style.animation = 'none';
-      bubble.offsetHeight;
-      bubble.style.animation = 'bubblePop 0.4s cubic-bezier(0.34,1.56,0.64,1)';
-      clearTimeout(window._animatorTimeout);
-      window._animatorTimeout = setTimeout(() => { bubble.style.display = 'none'; }, 4000);
-    }
-
     // CONFETTIS
     function initConfetti() {
       const colors = ['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#ec4899','#fbbf24'];
@@ -449,10 +336,13 @@
         myRecord = data;
         const today = new Date().toISOString().split('T')[0];
         if (data.last_attempt_date !== today) {
-          await sb.from('tournament_scores').update({ attempts_today:0, last_attempt_date:today }).eq('user_id', currentUser.id);
+          await sb.from('tournament_scores').update({ attempts_today:0, last_attempt_date:today, session_scores:'[]' }).eq('user_id', currentUser.id);
           myRecord.attempts_today = 0;
+          myRecord.session_scores = '[]';
         }
         attemptsLeft = MAX_ATTEMPTS - (myRecord.attempts_today || 0);
+        // Restaurer les scores de la session depuis la BD
+        try { sessionScores = JSON.parse(myRecord.session_scores || '[]'); } catch(e) { sessionScores = []; }
       } else {
         attemptsLeft = MAX_ATTEMPTS;
       }
@@ -462,7 +352,6 @@
       renderMain();
       initConfetti();
       updateCountdown();
-      setTimeout(() => showAnimatorLine("welcome"), 1000);
     }
 
     function updateStatsBar() {
@@ -522,7 +411,6 @@
           <button class="validate-btn" onclick="validate()">🎯 Valider !</button>
         </div>`;
       setTimeout(() => { const el = document.getElementById('priceInput'); if(el) el.focus(); }, 150);
-      setTimeout(() => showAnimatorLine("start"), 800);
     }
 
     async function validate() {
@@ -546,10 +434,10 @@
 
     function renderResult(precision, real, guess) {
       let cls, emoji, grade;
-      if (precision >= 95)      { cls='perfect'; emoji='🎯'; grade='PARFAIT !'; showAnimatorLine('perfect'); }
-      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='EXCELLENT !'; showAnimatorLine('great'); }
-      else if (precision >= 40) { cls='good';    emoji='👍'; grade='PAS MAL !'; showAnimatorLine('good'); }
-      else                       { cls='bad';     emoji='💀'; grade='RATÉ !'; showAnimatorLine('bad'); }
+      if (precision >= 95)      { cls='perfect'; emoji='🎯'; grade='PARFAIT !'; }
+      else if (precision >= 75) { cls='great';   emoji='🔥'; grade='EXCELLENT !'; }
+      else if (precision >= 40) { cls='good';    emoji='👍'; grade='PAS MAL !'; }
+      else                       { cls='bad';     emoji='💀'; grade='RATÉ !'; }
 
       const isRecord = precision > parseFloat(myRecord?.score || 0);
       const used = MAX_ATTEMPTS - attemptsLeft;
@@ -577,8 +465,7 @@
 
     function nextRound() { pickRandomItem(); renderGame(); }
 
-    function renderDone() { showAnimatorLine('done');
-      const best = myRecord?.score != null ? parseFloat(myRecord.score).toFixed(4) : '--';
+    function renderDone() { const best = myRecord?.score != null ? parseFloat(myRecord.score).toFixed(4) : '--';
       document.getElementById('mainContent').innerHTML = `
         <div class="done-card">
           <div class="done-icon">🏁</div>
@@ -594,11 +481,13 @@
       const newBest = Math.max(currentBest, precision);
       const newAttempts = (myRecord?.attempts_today || 0) + 1;
       if (myRecord) {
-        await sb.from('tournament_scores').update({ score:newBest, attempts_today:newAttempts, last_attempt_date:today, updated_at:new Date().toISOString() }).eq('user_id', currentUser.id);
-        myRecord.score = newBest; myRecord.attempts_today = newAttempts;
+        const newSessionScores = JSON.stringify(sessionScores);
+        await sb.from('tournament_scores').update({ score:newBest, attempts_today:newAttempts, last_attempt_date:today, updated_at:new Date().toISOString(), session_scores:newSessionScores }).eq('user_id', currentUser.id);
+        myRecord.score = newBest; myRecord.attempts_today = newAttempts; myRecord.session_scores = newSessionScores;
       } else {
-        await sb.from('tournament_scores').insert({ user_id:currentUser.id, score:precision, attempts_today:1, last_attempt_date:today });
-        myRecord = { score:precision, attempts_today:1 };
+        const initSessionScores = JSON.stringify(sessionScores);
+        await sb.from('tournament_scores').insert({ user_id:currentUser.id, score:precision, attempts_today:1, last_attempt_date:today, session_scores:initSessionScores });
+        myRecord = { score:precision, attempts_today:1, session_scores:initSessionScores };
       }
       document.getElementById('myBestScore').textContent = parseFloat(myRecord.score).toFixed(4) + '%';
     }
