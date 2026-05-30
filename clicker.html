@@ -11,7 +11,7 @@
 
     body {
       font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+      /* background défini dynamiquement par JS */
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -21,15 +21,18 @@
 
     /* HEADER */
     .header {
-      background: rgba(15,32,39,0.95);
       backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
       padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       z-index: 10;
     }
+    body.theme-day .header { background: rgba(255,255,255,0.85); }
+    body.theme-day .header-btn { background: #3b82f6; }
+    body.theme-day .header-money { color: #16a34a; }
+    body.theme-night .header { background: rgba(15,32,39,0.95); }
 
     .header-btn {
       background: #3b82f6;
@@ -103,21 +106,38 @@
     }
 
 
-    /* LUNE */
+    /* THÈMES JOUR/NUIT */
+    body.theme-day {
+      background: linear-gradient(180deg, #87ceeb 0%, #b8e4f7 55%, #d4a574 55%, #8b7355 100%);
+    }
+    body.theme-night {
+      background: linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    }
+
     .sun {
       position: absolute;
       top: 24px;
       right: 50px;
-      width: 52px;
-      height: 52px;
-      background: radial-gradient(circle at 35% 35%, #fef9c3, #fde68a);
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
-      box-shadow: 0 0 30px rgba(254,249,195,0.3), 0 0 60px rgba(254,249,195,0.1);
       animation: floatSun 6s ease-in-out infinite;
+    }
+    body.theme-day .sun {
+      background: radial-gradient(circle, #fde68a, #fbbf24);
+      box-shadow: 0 0 40px rgba(251,191,36,0.6), 0 0 80px rgba(251,191,36,0.2);
+    }
+    body.theme-night .sun {
+      background: radial-gradient(circle at 35% 35%, #fef9c3, #fde68a);
+      box-shadow: 0 0 30px rgba(254,249,195,0.25), 0 0 60px rgba(254,249,195,0.08);
+      width: 48px; height: 48px;
     }
     @keyframes floatSun { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 
     /* ÉTOILES */
+    body.theme-day .star-dot { display: none; }
+    body.theme-day .water { opacity: 0.3; }
+    body.theme-day .horizon { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); }
     .star-dot {
       position: absolute;
       border-radius: 50%;
@@ -538,6 +558,16 @@
     }
 
     window.addEventListener("beforeunload", save);
+    // THÈME JOUR/NUIT
+    function applyTheme() {
+      const h = new Date().getHours();
+      const isNight = h >= 18 || h < 7;
+      document.body.classList.toggle('theme-night', isNight);
+      document.body.classList.toggle('theme-day', !isNight);
+    }
+    applyTheme();
+    setInterval(applyTheme, 60000);
+
     // Étoiles
     (function() {
       const scene = document.getElementById('scene');
