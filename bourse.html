@@ -169,6 +169,19 @@
     .toast.success { background:#16a34a; }
     .toast.error { background:#dc2626; }
     .toast.info { background:#3b82f6; }
+  
+    /* FLUIDITÉ GLOBALE */
+    * { -webkit-font-smoothing:antialiased; }
+    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    button:active, .nav-card:active, .row:active {
+      transform: scale(0.97) !important;
+      opacity: 0.9 !important;
+    }
+    img { transition: opacity 0.3s ease; }
+    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
+
   </style>
 </head>
 <body>
@@ -325,6 +338,7 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
+      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
       await Promise.all([loadMoney(), loadStocks(), loadPortfolio(), loadEvents()]);
       checkDividends();
       subscribeAll();
@@ -634,7 +648,7 @@
           await sb.from('stock_portfolio').update({ quantity: newQty, avg_buy_price: newAvg, updated_at: new Date().toISOString() }).eq('user_id', currentUser.id).eq('symbol', selectedStock.symbol);
           portfolio[selectedStock.symbol] = { ...holding, quantity: newQty, avg_buy_price: newAvg };
         } else {
-          const { data } = await sb.from('stock_portfolio').insert({ user_id: currentUser.id, symbol: selectedStock.symbol, quantity: qty, avg_buy_price: selectedStock.price }).select().single();
+          const { data } = await sb.from('stock_portfolio').insert({ user_id: currentUser.id, symbol: selectedStock.symbol, quantity: qty, avg_buy_price: selectedStock.price }).select().maybeSingle();
           if (data) portfolio[selectedStock.symbol] = data;
         }
         await recordTransaction('buy', qty, selectedStock.price, fees, base + fees);
@@ -747,6 +761,10 @@
     }
 
     init();
+    setInterval(() => {
+      const h = new Date().getHours();
+      if (h < 7 || h >= 19) { window.location.reload(); }
+    }, 60000);
   </script>
 </body>
 </html>
