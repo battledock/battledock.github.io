@@ -8,84 +8,84 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    body { font-family:'Inter',sans-serif; overflow:hidden; height:100dvh; display:flex; flex-direction:column; background:#111; }
+    html, body { height:100%; overflow:hidden; }
 
-    /* ── ENTREPÔT ── */
-    .wh {
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0d0d0d;
+      display:flex; flex-direction:column;
+      height:100dvh;
+    }
+
+    /* ── SVG ENTREPÔT ── */
+    .wh-svg {
       position:fixed; inset:0; z-index:0; pointer-events:none;
-      background:linear-gradient(180deg,#0d0d0d 0%,#141414 60%,#1a1a1a 100%);
+      width:100%; height:100%;
     }
-    /* Mur du fond — briques */
-    .wh-wall {
-      position:absolute; top:0; left:0; right:0; bottom:70px;
-      background:
-        repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(255,255,255,0.025) 28px, rgba(255,255,255,0.025) 30px),
-        repeating-linear-gradient(90deg, transparent, transparent 58px, rgba(255,255,255,0.02) 58px, rgba(255,255,255,0.02) 60px);
-    }
-    /* Poutres plafond */
-    .wh-beam-h { position:absolute; left:0; right:0; height:10px; background:linear-gradient(180deg,#222,#1a1a1a); border-bottom:1px solid #2a2a2a; }
-    .wh-beam-v { position:absolute; top:0; bottom:70px; width:7px; background:linear-gradient(90deg,#1e1e1e,#282828,#1e1e1e); }
-    /* Sol */
-    .wh-floor { position:absolute; bottom:0; left:0; right:0; height:70px; background:linear-gradient(180deg,#222,#181818); border-top:3px solid #2d2d2d; }
-    .wh-floor-lines { position:absolute; bottom:0; left:0; right:0; height:70px; background:repeating-linear-gradient(90deg,transparent,transparent 59px,rgba(255,255,255,0.04) 59px,rgba(255,255,255,0.04) 60px); }
-    .wh-danger { position:absolute; bottom:0; left:0; right:0; height:10px; background:repeating-linear-gradient(90deg,#f59e0b,#f59e0b 18px,#1a1a1a 18px,#1a1a1a 36px); opacity:0.5; }
-    /* Lampes */
-    .lamp { position:absolute; top:0; display:flex; flex-direction:column; align-items:center; pointer-events:none; }
-    .lamp-body { width:24px; height:14px; background:linear-gradient(180deg,#333,#222); border-radius:3px 3px 0 0; border:1px solid #3a3a3a; }
-    .lamp-cone { width:0; height:0; border-left:50px solid transparent; border-right:50px solid transparent; border-top:70px solid rgba(255,215,60,0.07); margin-top:0; }
-    .lamp-spot { position:absolute; top:84px; width:100px; height:100px; background:radial-gradient(ellipse, rgba(255,215,60,0.1), transparent 70%); transform:translateX(-38px); }
 
     /* ── HEADER ── */
-    .header { position:relative; z-index:10; flex-shrink:0; padding:11px 14px; display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.75); backdrop-filter:blur(10px); border-bottom:1px solid #2a2a2a; }
-    .back-btn { background:#cc2200; border:none; color:white; padding:7px 12px; border-radius:6px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; transition:opacity .15s; }
-    .back-btn:active { opacity:.8; }
+    .header {
+      position:relative; z-index:10; flex-shrink:0;
+      padding:11px 14px; display:flex; align-items:center; gap:10px;
+      background:rgba(0,0,0,0.7); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,0.07);
+    }
+    .back-btn { background:rgba(204,34,0,0.15); border:1px solid rgba(204,34,0,0.3); color:#ef4444; padding:7px 12px; border-radius:6px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; transition:background .15s; }
+    .back-btn:active { background:rgba(204,34,0,0.3); }
     .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:#f59e0b; flex:1; text-align:center; }
     .header-score { font-family:'Bebas Neue',sans-serif; font-size:15px; color:#10b981; min-width:70px; text-align:right; }
 
     /* ── INFO BAR ── */
-    .info-bar { position:relative; z-index:10; flex-shrink:0; display:flex; background:rgba(0,0,0,0.6); border-bottom:1px solid #222; }
-    .info-item { flex:1; padding:7px 4px; text-align:center; border-right:1px solid #222; }
+    .info-bar { position:relative; z-index:10; flex-shrink:0; display:flex; background:rgba(0,0,0,0.5); border-bottom:1px solid rgba(255,255,255,0.05); }
+    .info-item { flex:1; padding:7px 4px; text-align:center; border-right:1px solid rgba(255,255,255,0.05); }
     .info-item:last-child { border-right:none; }
-    .info-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#f59e0b; }
-    .info-lbl { font-size:8px; color:#444; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+    .info-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#f59e0b; letter-spacing:0.5px; }
+    .info-lbl { font-size:8px; color:#3a3a3a; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
 
     /* ── CANVAS ── */
     .game-area { flex:1; position:relative; overflow:hidden; z-index:2; }
-    #towerCanvas { position:absolute; top:0; left:0; }
+    #towerCanvas { position:absolute; top:0; left:0; image-rendering:pixelated; }
 
-    /* ── BOUTON ROND CÔTÉ DROIT ── */
+    /* ── BOUTON POSER ── */
     .tap-btn {
       position:fixed; right:14px; top:50%; transform:translateY(-50%);
-      z-index:20; width:60px; height:60px; border-radius:50%; border:none;
-      cursor:pointer; transition:transform .1s;
-      display:flex; align-items:center; justify-content:center;
-      font-size:22px;
+      z-index:20; width:58px; height:58px; border-radius:50%; border:none;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      font-size:20px; font-family:'Bebas Neue',sans-serif; letter-spacing:1px;
+      transition:transform .08s;
+      will-change:transform;
     }
-    .tap-btn:active { transform:translateY(-50%) scale(0.9); }
+    .tap-btn:active { transform:translateY(-50%) scale(0.88) !important; }
     .tap-btn.go {
       background:linear-gradient(135deg,#10b981,#059669);
       box-shadow:0 4px 20px rgba(16,185,129,0.5), 0 0 0 3px rgba(16,185,129,0.15);
-      animation:goPulse 1.5s ease-in-out infinite;
+      animation:goPulse 1.8s ease-in-out infinite;
+      color:white;
     }
     .tap-btn.play {
       background:linear-gradient(135deg,#cc2200,#991100);
       box-shadow:0 4px 20px rgba(204,34,0,0.5);
+      color:white;
     }
-    @keyframes goPulse { 0%,100%{box-shadow:0 4px 20px rgba(16,185,129,0.5),0 0 0 3px rgba(16,185,129,0.15)} 50%{box-shadow:0 4px 28px rgba(16,185,129,0.8),0 0 0 8px rgba(16,185,129,0.08)} }
+    @keyframes goPulse {
+      0%,100% { box-shadow:0 4px 20px rgba(16,185,129,0.5),0 0 0 3px rgba(16,185,129,0.15); }
+      50%      { box-shadow:0 4px 28px rgba(16,185,129,0.8),0 0 0 8px rgba(16,185,129,0.08); }
+    }
 
     /* ── OVERLAYS ── */
-    .overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; }
-    .ocard { max-width:310px; width:90%; border-radius:20px; padding:26px 20px; text-align:center; background:#1c1c1c; border:1px solid #2d2d2d; animation:popIn .4s cubic-bezier(0.34,1.56,0.64,1); }
+    .overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.82); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; }
+    .ocard { max-width:310px; width:90%; border-radius:20px; padding:26px 20px; text-align:center; background:#161616; border:1px solid #2a2a2a; animation:popIn .4s cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
-    .ocard-icon  { font-size:54px; margin-bottom:10px; }
+    .ocard-icon  { font-size:52px; margin-bottom:10px; }
     .ocard-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px; color:#f59e0b; margin-bottom:4px; }
-    .ocard-sub   { font-size:12px; color:#555; margin-bottom:10px; }
+    .ocard-sub   { font-size:12px; color:#444; margin-bottom:10px; }
     .ocard-gain  { font-family:'Bebas Neue',sans-serif; font-size:42px; color:#10b981; text-shadow:0 0 16px rgba(16,185,129,0.4); margin-bottom:3px; }
-    .ocard-mult  { font-size:11px; color:#444; margin-bottom:18px; }
-    .ocard-rules { background:rgba(255,255,255,0.03); border:1px solid #2a2a2a; border-radius:10px; padding:12px; text-align:left; margin-bottom:14px; }
-    .ocard-rule  { font-size:11px; color:#666; padding:2px 0; display:flex; gap:8px; }
-    .btn-start { width:100%; height:52px; border:none; border-radius:12px; background:linear-gradient(135deg,#cc2200,#991100); color:white; font-family:'Bebas Neue',sans-serif; font-size:19px; letter-spacing:2px; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 16px rgba(204,34,0,0.4); }
-    .btn-back  { width:100%; height:40px; border-radius:12px; background:none; border:1px solid #2a2a2a; color:#444; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:1px; cursor:pointer; }
+    .ocard-mult  { font-size:11px; color:#333; margin-bottom:18px; }
+    .ocard-rules { background:rgba(255,255,255,0.02); border:1px solid #222; border-radius:10px; padding:12px; text-align:left; margin-bottom:14px; }
+    .ocard-rule  { font-size:11px; color:#555; padding:3px 0; display:flex; gap:8px; line-height:1.4; }
+    .btn-start   { width:100%; height:52px; border:none; border-radius:12px; background:linear-gradient(135deg,#cc2200,#991100); color:white; font-family:'Bebas Neue',sans-serif; font-size:19px; letter-spacing:2px; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 16px rgba(204,34,0,0.4); transition:opacity .15s; }
+    .btn-start:active { opacity:.85; }
+    .btn-back    { width:100%; height:40px; border-radius:12px; background:none; border:1px solid #222; color:#333; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:1px; cursor:pointer; }
 
     /* ── FLASH ── */
     .flash { position:fixed; top:22%; left:50%; transform:translateX(-50%); font-family:'Bebas Neue',sans-serif; font-size:26px; color:#f59e0b; text-shadow:0 0 14px rgba(245,158,11,0.9); pointer-events:none; z-index:30; white-space:nowrap; animation:flashUp .7s ease-out forwards; }
@@ -94,28 +94,114 @@
 </head>
 <body>
 
-  <!-- ENTREPÔT -->
-  <div class="wh">
-    <div class="wh-wall"></div>
-    <div class="wh-beam-h" style="top:0"></div>
-    <div class="wh-beam-h" style="top:10px;opacity:.5"></div>
-    <div class="wh-beam-v" style="left:0"></div>
-    <div class="wh-beam-v" style="left:25%;margin-left:-3px"></div>
-    <div class="wh-beam-v" style="left:50%;margin-left:-3px"></div>
-    <div class="wh-beam-v" style="left:75%;margin-left:-3px"></div>
-    <div class="wh-beam-v" style="right:0"></div>
-    <div class="lamp" style="left:calc(12.5% - 12px)"><div class="lamp-body"></div><div class="lamp-cone"></div><div class="lamp-spot"></div></div>
-    <div class="lamp" style="left:calc(37.5% - 12px)"><div class="lamp-body"></div><div class="lamp-cone"></div><div class="lamp-spot"></div></div>
-    <div class="lamp" style="left:calc(62.5% - 12px)"><div class="lamp-body"></div><div class="lamp-cone"></div><div class="lamp-spot"></div></div>
-    <div class="lamp" style="left:calc(87.5% - 12px)"><div class="lamp-body"></div><div class="lamp-cone"></div><div class="lamp-spot"></div></div>
-    <div class="wh-floor"></div>
-    <div class="wh-floor-lines"></div>
-    <div class="wh-danger"></div>
-  </div>
+  <!-- SVG ENTREPÔT -->
+  <svg class="wh-svg" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <!-- Fond mur -->
+    <rect width="400" height="700" fill="#0d0d0d"/>
+    <!-- Briques horizontales -->
+    <g stroke="rgba(255,255,255,0.025)" stroke-width="0.8" fill="none">
+      <line x1="0" y1="30" x2="400" y2="30"/>
+      <line x1="0" y1="60" x2="400" y2="60"/>
+      <line x1="0" y1="90" x2="400" y2="90"/>
+      <line x1="0" y1="120" x2="400" y2="120"/>
+      <line x1="0" y1="150" x2="400" y2="150"/>
+      <line x1="0" y1="180" x2="400" y2="180"/>
+      <line x1="0" y1="210" x2="400" y2="210"/>
+      <line x1="0" y1="240" x2="400" y2="240"/>
+      <line x1="0" y1="270" x2="400" y2="270"/>
+      <line x1="0" y1="300" x2="400" y2="300"/>
+      <line x1="0" y1="330" x2="400" y2="330"/>
+      <line x1="0" y1="360" x2="400" y2="360"/>
+      <line x1="0" y1="390" x2="400" y2="390"/>
+      <line x1="0" y1="420" x2="400" y2="420"/>
+      <line x1="0" y1="450" x2="400" y2="450"/>
+      <line x1="0" y1="480" x2="400" y2="480"/>
+      <line x1="0" y1="510" x2="400" y2="510"/>
+      <line x1="0" y1="540" x2="400" y2="540"/>
+      <line x1="0" y1="570" x2="400" y2="570"/>
+      <line x1="0" y1="600" x2="400" y2="600"/>
+      <line x1="0" y1="630" x2="400" y2="630"/>
+      <line x1="0" y1="660" x2="400" y2="660"/>
+    </g>
+    <!-- Briques verticales décalées -->
+    <g stroke="rgba(255,255,255,0.015)" stroke-width="0.8" fill="none">
+      <!-- rangées paires -->
+      <line x1="60" y1="0" x2="60" y2="700"/>
+      <line x1="120" y1="0" x2="120" y2="700"/>
+      <line x1="180" y1="0" x2="180" y2="700"/>
+      <line x1="240" y1="0" x2="240" y2="700"/>
+      <line x1="300" y1="0" x2="300" y2="700"/>
+      <line x1="360" y1="0" x2="360" y2="700"/>
+    </g>
+    <!-- Plafond -->
+    <rect x="0" y="0" width="400" height="14" fill="#1a1a1a"/>
+    <rect x="0" y="14" width="400" height="8" fill="#222" opacity="0.8"/>
+    <!-- Poutre principale horizontale -->
+    <rect x="0" y="22" width="400" height="6" fill="#1e1e1e" stroke="#2d2d2d" stroke-width="0.5"/>
+    <!-- Poutres verticales -->
+    <rect x="0" y="0" width="8" height="700" fill="url(#beamGrad)"/>
+    <rect x="392" y="0" width="8" height="700" fill="url(#beamGrad)"/>
+    <rect x="96" y="0" width="6" height="700" fill="url(#beamGrad2)"/>
+    <rect x="198" y="0" width="6" height="700" fill="url(#beamGrad2)"/>
+    <rect x="298" y="0" width="6" height="700" fill="url(#beamGrad2)"/>
+    <!-- Dégradés poutres -->
+    <defs>
+      <linearGradient id="beamGrad" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#111"/>
+        <stop offset="50%" stop-color="#252525"/>
+        <stop offset="100%" stop-color="#111"/>
+      </linearGradient>
+      <linearGradient id="beamGrad2" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stop-color="#181818"/>
+        <stop offset="50%" stop-color="#222"/>
+        <stop offset="100%" stop-color="#181818"/>
+      </linearGradient>
+      <!-- Halos lampes -->
+      <radialGradient id="lamp1" cx="50%" cy="0%" r="50%">
+        <stop offset="0%" stop-color="rgba(255,215,60,0.12)"/>
+        <stop offset="100%" stop-color="rgba(255,215,60,0)"/>
+      </radialGradient>
+      <radialGradient id="lamp2" cx="50%" cy="0%" r="50%">
+        <stop offset="0%" stop-color="rgba(255,215,60,0.09)"/>
+        <stop offset="100%" stop-color="rgba(255,215,60,0)"/>
+      </radialGradient>
+    </defs>
+    <!-- Halos lampes -->
+    <ellipse cx="52" cy="28" rx="70" ry="120" fill="url(#lamp1)" opacity="0.8"/>
+    <ellipse cx="200" cy="28" rx="80" ry="140" fill="url(#lamp1)"/>
+    <ellipse cx="348" cy="28" rx="70" ry="120" fill="url(#lamp2)" opacity="0.8"/>
+    <!-- Corps lampes -->
+    <rect x="42" y="14" width="20" height="12" rx="2" fill="#242424" stroke="#333" stroke-width="0.5"/>
+    <rect x="190" y="14" width="20" height="12" rx="2" fill="#242424" stroke="#333" stroke-width="0.5"/>
+    <rect x="338" y="14" width="20" height="12" rx="2" fill="#242424" stroke="#333" stroke-width="0.5"/>
+    <!-- Ampoules -->
+    <circle cx="52" cy="26" r="3" fill="#fde68a" opacity="0.9"/>
+    <circle cx="200" cy="26" r="3" fill="#fde68a" opacity="0.9"/>
+    <circle cx="348" cy="26" r="3" fill="#fde68a" opacity="0.9"/>
+    <!-- Sol béton -->
+    <rect x="0" y="670" width="400" height="30" fill="#1a1a1a"/>
+    <rect x="0" y="668" width="400" height="3" fill="#2d2d2d"/>
+    <!-- Rayures danger -->
+    <rect x="0" y="688" width="400" height="12" fill="#0d0d0d"/>
+    <g fill="#f59e0b" opacity="0.45">
+      <rect x="0" y="688" width="18" height="12"/>
+      <rect x="36" y="688" width="18" height="12"/>
+      <rect x="72" y="688" width="18" height="12"/>
+      <rect x="108" y="688" width="18" height="12"/>
+      <rect x="144" y="688" width="18" height="12"/>
+      <rect x="180" y="688" width="18" height="12"/>
+      <rect x="216" y="688" width="18" height="12"/>
+      <rect x="252" y="688" width="18" height="12"/>
+      <rect x="288" y="688" width="18" height="12"/>
+      <rect x="324" y="688" width="18" height="12"/>
+      <rect x="360" y="688" width="18" height="12"/>
+      <rect x="396" y="688" width="18" height="12"/>
+    </g>
+  </svg>
 
   <div class="header">
     <button class="back-btn" onclick="window.location.href='travail.html'">← RETOUR</button>
-    <div class="header-title">🏗️ TOWER</div>
+    <div class="header-title">TOWER</div>
     <div class="header-score" id="headerScore">--</div>
   </div>
 
@@ -136,8 +222,9 @@
       <div class="ocard-title">Tower of Containers</div>
       <div class="ocard-sub">Entrepôt du Port Maritime</div>
       <div class="ocard-rules">
-        <div class="ocard-rule"><span>📦</span><span>Conteneur qui oscille → bouton ▶ pour poser</span></div>
-        <div class="ocard-rule"><span>✂️</span><span>La partie qui dépasse tombe et rétrécit</span></div>
+        <div class="ocard-rule"><span>📦</span><span>Le conteneur oscille — bouton ▶ pour poser</span></div>
+        <div class="ocard-rule"><span>✂️</span><span>La partie qui dépasse est coupée</span></div>
+        <div class="ocard-rule"><span>🎯</span><span>Parfait si aligné à 92%+ — pas de perte</span></div>
         <div class="ocard-rule"><span>📈</span><span>Plus haut = multiplicateur + argent</span></div>
         <div class="ocard-rule"><span>💀</span><span>Game over si conteneur trop petit</span></div>
       </div>
@@ -167,7 +254,6 @@
 
     let currentUser = null;
 
-    // Conteneurs maritimes — style industriel
     const CONTAINERS = [
       { body:'#cc2200', hi:'#e63300', lo:'#881800', label:'MAERSK' },
       { body:'#1d4ed8', hi:'#2563eb', lo:'#1e3a8a', label:'MSC' },
@@ -177,7 +263,7 @@
       { body:'#be123c', hi:'#e11d48', lo:'#9f1239', label:'COSCO' },
     ];
 
-    const BH = 38, MIN_W = 22;
+    const BH = 36, MIN_W = 22;
     let canvas, ctx, W, H;
     let blocks = [], swinger = null, animId = null, running = false, floor = 0;
 
@@ -188,9 +274,6 @@
       currentUser = session.user;
       const { data } = await sb.from('game_stats').select('money,level').eq('user_id', currentUser.id).maybeSingle();
       document.getElementById('headerScore').textContent = (data?.money||0).toLocaleString('fr-FR') + '€';
-      if ((data?.level||1) < 10) {
-        document.getElementById('startOverlay').innerHTML = `<div class="ocard"><div class="ocard-icon">🔒</div><div class="ocard-title">Niveau 10 requis</div><div class="ocard-sub" style="margin-bottom:20px">Tu es niveau ${data?.level||1}. Continue au port !</div><button class="btn-start" onclick="window.location.href='travail.html'">← Retour</button></div>`;
-      }
       if ((data?.level||1) < 10) {
         document.getElementById('startOverlay').innerHTML = `<div class="ocard"><div class="ocard-icon">🔒</div><div class="ocard-title">Niveau 10 requis</div><div class="ocard-sub" style="margin-bottom:20px">Tu es niveau ${data?.level||1}. Continue au port !</div><button class="btn-start" onclick="window.location.href='travail.html'">← Retour</button></div>`;
       }
@@ -214,8 +297,8 @@
       btn.className = 'tap-btn play'; btn.textContent = '🎯';
       blocks = []; floor = 0;
       initCanvas();
-      const gW = Math.min(W * 0.55, 210);
-      blocks.push({ x:(W-gW)/2, y:H-80, w:gW, ci:-1, ground:true });
+      const gW = Math.min(W * 0.52, 200);
+      blocks.push({ x:(W-gW)/2, y:H-72, w:gW, ci:-1, ground:true });
       running = true;
       spawn();
       cancelAnimationFrame(animId);
@@ -226,20 +309,25 @@
     // ── SPAWN ──
     function spawn() {
       const last = blocks[blocks.length-1];
-      const speed = Math.min(1.8 + floor*0.18, 7.5);
+      // Vitesse plus douce au début, progressive
+      const speed = Math.min(1.5 + floor * 0.15, 7);
       let sy = last.y - BH - 5;
-      if (sy < H * 0.20) {
-        const shift = Math.round(H * 0.20 - sy) + BH + 10;
+      // Scroll si la tour monte trop haut
+      if (sy < H * 0.22) {
+        const shift = Math.round(H * 0.22 - sy) + BH + 8;
         blocks.forEach(b => b.y += shift);
         sy = blocks[blocks.length-1].y - BH - 5;
       }
-      swinger = { x:-last.w, y:sy, w:last.w, speed, dir:1, ci:floor % CONTAINERS.length };
+      swinger = { x: -last.w, y: sy, w: last.w, speed, dir: 1, ci: floor % CONTAINERS.length };
     }
 
-    // ── LOOP ──
-    function loop() {
+    // ── LOOP — requestAnimationFrame fluide ──
+    let lastTime = 0;
+    function loop(ts = 0) {
       if (!running) return;
-      swinger.x += swinger.speed * swinger.dir;
+      const dt = Math.min((ts - lastTime) / 16.67, 2); // delta normalisé 60fps
+      lastTime = ts;
+      swinger.x += swinger.speed * swinger.dir * dt;
       if (swinger.x + swinger.w > W + 20) swinger.dir = -1;
       if (swinger.x < -20)                swinger.dir = 1;
       draw();
@@ -249,51 +337,56 @@
     // ── DRAW ──
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      blocks.forEach(b => drawBlock(b));
+      blocks.forEach(b => drawBlock(b, false));
       if (swinger) drawBlock(swinger, true);
     }
 
     function drawBlock(b, moving) {
       const x = b.x, y = b.y, w = b.w, h = BH;
       if (b.ground) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x+4, y+4, w, h);
-        ctx.fillStyle = '#2d2d2d'; ctx.fillRect(x, y, w, h);
-        ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x, y, w, 4);
-        ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
-        ctx.font = 'bold 10px Inter'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fillText('SOL', x+w/2, y+h/2);
+        ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x+4, y+4, w, h);
+        ctx.fillStyle = '#262626'; ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(x, y, w, 4);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
         return;
       }
       const col = CONTAINERS[b.ci] || CONTAINERS[0];
-      // Ombre
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(x+5, y+5, w, h);
+      // Ombre douce
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = moving ? 10 : 6;
+      ctx.shadowOffsetY = 3;
       // Corps
       ctx.fillStyle = col.body; ctx.fillRect(x, y, w, h);
+      ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
       // Bande haute
       ctx.fillStyle = col.hi; ctx.fillRect(x, y, w, 5);
       // Bande basse
       ctx.fillStyle = col.lo; ctx.fillRect(x, y+h-5, w, 5);
-      // Rainures verticales
-      ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5;
-      const n = Math.max(2, Math.floor(w/26));
-      for (let i=1; i<n; i++) { const lx=x+(w/n)*i; ctx.beginPath(); ctx.moveTo(lx,y+6); ctx.lineTo(lx,y+h-6); ctx.stroke(); }
+      // Rainures
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1.5;
+      const n = Math.max(2, Math.floor(w/24));
+      for (let i=1; i<n; i++) {
+        const lx = x + (w/n)*i;
+        ctx.beginPath(); ctx.moveTo(lx, y+6); ctx.lineTo(lx, y+h-6); ctx.stroke();
+      }
       // Reflet
-      ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.fillRect(x+2, y+6, w-4, 3);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x+2, y+6, w-4, 3);
       // Contour
-      ctx.strokeStyle = moving ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.12)';
-      ctx.lineWidth = moving ? 2 : 1; ctx.strokeRect(x, y, w, h);
+      ctx.strokeStyle = moving ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = moving ? 2 : 0.8; ctx.strokeRect(x, y, w, h);
       // Label
       if (w > 55) {
-        ctx.font = `bold ${Math.min(9,Math.floor(h*0.26))}px Inter`;
+        ctx.font = `bold ${Math.min(9, Math.floor(h*0.26))}px Inter`;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
         ctx.fillText(col.label, x+w/2, y+h/2);
       }
-      // Coins
+      // Coins métalliques
       if (w > 40) {
-        [[x+3,y+3],[x+w-9,y+3],[x+3,y+h-9],[x+w-9,y+h-9]].forEach(([cx,cy])=>{
+        const corners = [[x+3,y+3],[x+w-9,y+3],[x+3,y+h-9],[x+w-9,y+h-9]];
+        corners.forEach(([cx,cy])=>{
           ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(cx,cy,6,6);
-          ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.fillRect(cx+1,cy+1,4,4);
+          ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(cx+1,cy+1,4,4);
         });
       }
     }
@@ -302,12 +395,17 @@
     function handleTap() {
       if (!running || !swinger) return;
       const last = blocks[blocks.length-1];
-      const left = Math.max(swinger.x, last.x);
-      const right = Math.min(swinger.x+swinger.w, last.x+last.w);
+      const left  = Math.max(swinger.x, last.x);
+      const right = Math.min(swinger.x + swinger.w, last.x + last.w);
       const overlap = right - left;
       if (overlap <= 0 || overlap < MIN_W) { gameOver(); return; }
       const perfect = overlap / last.w > 0.92;
-      blocks.push({ x:perfect?last.x:left, y:last.y-BH-5, w:perfect?last.w:overlap, ci:swinger.ci });
+      blocks.push({
+        x: perfect ? last.x : left,
+        y: last.y - BH - 5,
+        w: perfect ? last.w : overlap,
+        ci: swinger.ci
+      });
       floor++;
       if (perfect) showFlash('PARFAIT ! 🎯');
       if (navigator.vibrate) navigator.vibrate(perfect ? [40,20,40] : 15);
@@ -316,33 +414,30 @@
     }
 
     function updateBar() {
-      const mult = (1+floor*0.1).toFixed(1);
-      const gain = Math.floor(floor*20*parseFloat(mult));
+      const mult = (1 + floor*0.1).toFixed(1);
+      const gain = Math.floor(floor * 20 * parseFloat(mult));
       document.getElementById('infoFloors').textContent = floor;
-      document.getElementById('infoMult').textContent = '×'+mult;
-      document.getElementById('infoGain').textContent = gain.toLocaleString('fr-FR')+'€';
+      document.getElementById('infoMult').textContent = '×' + mult;
+      document.getElementById('infoGain').textContent = gain.toLocaleString('fr-FR') + '€';
     }
 
-    // ── GAME OVER — relit la BD avant de sauver ──
+    // ── GAME OVER ──
     async function gameOver() {
       running = false; cancelAnimationFrame(animId);
       if (navigator.vibrate) navigator.vibrate([80,40,150]);
-
       const mult = parseFloat((1+floor*0.1).toFixed(1));
-      const gain = Math.floor(floor*20*mult);
+      const gain = Math.floor(floor * 20 * mult);
       const t = floor===0?0:floor<5?1:floor<10?2:floor<20?3:4;
-      const titles = [['😅','Aïe !'],['📦','Pas mal !'],['🏗️','Belle tour !'],['⭐','Impressionnant !'],['🏆','LÉGENDAIRE !']];
-      document.getElementById('ocIcon').textContent = titles[t][0];
+      const titles=[['😅','Aïe !'],['📦','Pas mal !'],['🏗️','Belle tour !'],['⭐','Impressionnant !'],['🏆','LÉGENDAIRE !']];
+      document.getElementById('ocIcon').textContent  = titles[t][0];
       document.getElementById('ocTitle').textContent = titles[t][1];
-      document.getElementById('ocSub').textContent = `${floor} étage${floor>1?'s':''} construits`;
-      document.getElementById('ocGain').textContent = gain>0 ? `+${gain.toLocaleString('fr-FR')}€` : '0€';
-      document.getElementById('ocMult').textContent = `×${mult} multiplicateur`;
+      document.getElementById('ocSub').textContent   = `${floor} étage${floor>1?'s':''} construits`;
+      document.getElementById('ocGain').textContent  = gain>0 ? `+${gain.toLocaleString('fr-FR')}€` : '0€';
+      document.getElementById('ocMult').textContent  = `×${mult} multiplicateur`;
       document.getElementById('resultOverlay').style.display = 'flex';
-
       if (gain > 0 && currentUser) {
-        // Relire le solde depuis la BD avant d'ajouter
         const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
-        const newMoney = (fresh?.money || 0) + gain;
+        const newMoney = (fresh?.money||0) + gain;
         await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
         document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR') + '€';
       }
@@ -350,7 +445,7 @@
 
     function showFlash(txt) {
       const el = document.createElement('div'); el.className = 'flash'; el.textContent = txt;
-      document.body.appendChild(el); setTimeout(()=>el.remove(), 700);
+      document.body.appendChild(el); setTimeout(() => el.remove(), 700);
     }
 
     initAuth();
