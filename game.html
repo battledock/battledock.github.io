@@ -935,7 +935,7 @@
       </div>
 
   <!-- RUMEURS DU PORT -->
-  <div class="nav-card" style="grid-column:span 2;height:auto;min-height:80px;cursor:default;border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(135deg,#1a0f00,#2a1800,#1a0f00);border:1px solid rgba(212,165,116,0.2);">
+  <div class="nav-card" id="rumeurCard" style="grid-column:span 2;height:auto;min-height:80px;cursor:default;border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(135deg,#1a0f00,#2a1800,#1a0f00);border:1px solid rgba(212,165,116,0.2);">
     <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,0.01) 0px,rgba(255,255,255,0.01) 1px,transparent 1px,transparent 40px),repeating-linear-gradient(0deg,rgba(255,255,255,0.01) 0px,rgba(255,255,255,0.01) 1px,transparent 1px,transparent 40px);pointer-events:none"></div>
     <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(212,165,116,0.03),transparent);animation:bannerShimmer 5s linear infinite;pointer-events:none"></div>
     <div style="padding:14px 16px;position:relative;z-index:1">
@@ -943,8 +943,32 @@
         <span style="font-size:16px">📢</span>
         <span style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:rgba(212,165,116,0.7)">Rumeurs du Port</span>
         <div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;animation:dotPulse 2s ease-in-out infinite"></div>
+        <button onclick="openRumeurModal()" style="margin-left:auto;background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.25);color:rgba(212,165,116,0.8);font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:8px;cursor:pointer">📝 POSTER</button>
       </div>
       <div id="rumeurText" style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;font-style:italic">Chargement...</div>
+      <div id="rumeurMeta" style="font-size:10px;color:rgba(212,165,116,0.4);margin-top:6px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- MODAL POSTER UNE RUMEUR -->
+  <div id="rumeurModal" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+    <div style="background:#1a1200;border:1px solid rgba(212,165,116,0.3);border-radius:20px;padding:24px 20px;max-width:340px;width:90%">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#f5d060;margin-bottom:6px">📢 Poster une rumeur</div>
+      <div id="rumeurModalInfo" style="font-size:11px;color:rgba(212,165,116,0.5);margin-bottom:14px;line-height:1.5"></div>
+      <textarea id="rumeurInput" maxlength="200" placeholder="Ta rumeur du port..." style="-webkit-user-select:text;user-select:text;width:100%;height:80px;background:rgba(0,0,0,0.3);border:1px solid rgba(212,165,116,0.2);border-radius:10px;padding:10px;color:white;font-size:13px;resize:none;outline:none;font-family:Inter,sans-serif;line-height:1.5"></textarea>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:14px;text-align:right" id="rumeurCharCount">0/200</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <button onclick="postRumeur(10000, 60)" style="background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.8);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 10 000€ — 1 heure
+        </button>
+        <button onclick="postRumeur(50000, 360)" style="background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.3);color:#f5d060;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 50 000€ — 6 heures
+        </button>
+        <button onclick="postRumeur(100000, 1440)" style="background:linear-gradient(135deg,rgba(212,165,116,0.2),rgba(245,208,96,0.1));border:1px solid rgba(212,165,116,0.5);color:#f5d060;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 100 000€ — 24 heures ⭐
+        </button>
+      </div>
+      <button onclick="document.getElementById('rumeurModal').style.display='none'" style="width:100%;height:40px;background:none;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border-radius:10px;cursor:pointer">Annuler</button>
     </div>
   </div>
 
@@ -1403,6 +1427,104 @@ async function loadCalendar() {
     function openSettings() { window.location.href = 'parametres.html'; }
 
 
+
+    // ── RUMEURS PAYANTES ──
+    let activeRumeur = null;
+
+    async function loadActiveRumeur() {
+      try {
+        const { data } = await sb.from('port_rumeur')
+          .select('*')
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          activeRumeur = data;
+          document.getElementById('rumeurText').textContent = data.message;
+          document.getElementById('rumeurText').style.fontStyle = 'normal';
+          document.getElementById('rumeurText').style.color = '#f5d060';
+          const meta = document.getElementById('rumeurMeta');
+          meta.style.display = 'block';
+          const exp = new Date(data.expires_at);
+          meta.textContent = `💰 Posté par ${data.username} · Expire ${exp.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+        } else {
+          activeRumeur = null;
+          loadActiveRumeur();
+          document.getElementById('rumeurText').style.fontStyle = 'italic';
+          document.getElementById('rumeurText').style.color = 'rgba(255,255,255,0.75)';
+          document.getElementById('rumeurMeta').style.display = 'none';
+        }
+      } catch(e) { console.log('rumeur error:', e); }
+    }
+
+    function openRumeurModal() {
+      const minPrice = activeRumeur ? (activeRumeur.amount_paid * 2) : 10000;
+      const info = activeRumeur
+        ? `Une rumeur est active (payée ${activeRumeur.amount_paid.toLocaleString('fr-FR')}€). Pour la remplacer, tu dois payer au moins le double : ${(minPrice).toLocaleString('fr-FR')}€ minimum.`
+        : 'Aucune rumeur active. Choisis ta durée :';
+      document.getElementById('rumeurModalInfo').textContent = info;
+
+      // Désactiver les boutons insuffisants
+      const btns = document.querySelectorAll('#rumeurModal button[onclick*="postRumeur"]');
+      btns.forEach(btn => {
+        const price = parseInt(btn.getAttribute('onclick').match(/\d+/)[0]);
+        btn.disabled = price < minPrice;
+        btn.style.opacity = price < minPrice ? '0.3' : '1';
+      });
+
+      document.getElementById('rumeurModal').style.display = 'flex';
+    }
+
+    async function postRumeur(price, durationMinutes) {
+      const msg = document.getElementById('rumeurInput').value.trim();
+      if (!msg) { showToast('Écris ta rumeur !', 'error'); return; }
+      if (msg.length < 10) { showToast('Trop court !', 'error'); return; }
+
+      // Vérifier solde
+      const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      if (!fresh || fresh.money < price) { showToast('Pas assez d'argent !', 'error'); return; }
+
+      // Vérifier prix minimum
+      if (activeRumeur && price < activeRumeur.amount_paid * 2) {
+        showToast(`Minimum ${(activeRumeur.amount_paid*2).toLocaleString('fr-FR')}€ !`, 'error'); return;
+      }
+
+      // Déduire argent
+      await sb.from('game_stats').update({ money: fresh.money - price }).eq('user_id', currentUser.id);
+
+      // Poster la rumeur
+      const { data: profile } = await sb.from('profiles').select('username').eq('user_id', currentUser.id).maybeSingle();
+      const expires = new Date(Date.now() + durationMinutes * 60000).toISOString();
+      await sb.from('port_rumeur').insert({
+        message: msg,
+        posted_by: currentUser.id,
+        username: profile?.username || 'Docker',
+        amount_paid: price,
+        expires_at: expires
+      });
+
+      document.getElementById('rumeurModal').style.display = 'none';
+      document.getElementById('rumeurInput').value = '';
+      showToast(`✅ Rumeur postée pour ${price.toLocaleString('fr-FR')}€ !`);
+      await loadActiveRumeur();
+    }
+
+    // Compteur caractères
+    document.getElementById('rumeurInput')?.addEventListener('input', function() {
+      document.getElementById('rumeurCharCount').textContent = this.value.length + '/200';
+    });
+
+    // Realtime rumeurs
+    sb.channel('port-rumeur')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'port_rumeur' }, () => {
+        loadActiveRumeur();
+      })
+      .subscribe();
+
+    setInterval(loadActiveRumeur, 60000); // refresh toutes les minutes
+
     // ── RUMEURS DU PORT ──
     const RUMEURS_MATIN = [
       "Ferrotti affirme avoir été suivi par un drone extraterrestre entre le quai A et le vestiaire. Personne n'a rien vu.",
@@ -1478,7 +1600,7 @@ async function loadCalendar() {
       return arr[dayOfYear % arr.length];
     }
 
-    document.getElementById('rumeurText').textContent = getRumeur();
+    loadActiveRumeur();
 
     init();
   </script>
