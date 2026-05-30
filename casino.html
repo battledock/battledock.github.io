@@ -385,6 +385,7 @@
         <div class="jackpot-info">
           <div class="jackpot-title">JACKPOT PROGRESSIF</div>
           <div class="jackpot-amount" id="jackpot">10,000€</div>
+          <div id="jackpotWinner" style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:2px;font-weight:600;letter-spacing:0.5px"></div>
         </div>
       </div>
     </div>
@@ -574,12 +575,14 @@
       try {
         const { data, error } = await sb
           .from('progressive_jackpot')
-          .select('current_amount')
+          .select('current_amount, last_winner, last_win_amount')
           .maybeSingle();
-
         if (!error && data) {
-          const amount = data.current_amount || 10000;
-          document.getElementById('jackpot').textContent = amount.toLocaleString('fr-FR') + '€';
+          document.getElementById('jackpot').textContent = (data.current_amount || 10000).toLocaleString('fr-FR') + '€';
+          const winnerEl = document.getElementById('jackpotWinner');
+          if (winnerEl && data.last_winner) {
+            winnerEl.textContent = `🏆 Dernier gagnant : ${data.last_winner} (+${(data.last_win_amount||0).toLocaleString('fr-FR')}€)`;
+          }
         }
       } catch (e) {
         console.log('Erreur jackpot:', e.message);

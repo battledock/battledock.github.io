@@ -537,6 +537,36 @@
       if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
+
+    // ── JACKPOT PROGRESSIF ──
+    async function tryJackpot(betAmount) {
+      if (Math.random() > 1/1000) return;
+      try {
+        const { data: profile } = await sb.from('profiles').select('username').eq('user_id', currentUser.id).maybeSingle();
+        const username = profile?.username || 'Docker';
+        const { data: amount } = await sb.rpc('claim_jackpot', { p_user_id: currentUser.id, p_username: username });
+        if (amount > 0) {
+          showJackpotWin(username, amount);
+        }
+      } catch(e) { console.log('jackpot error:', e); }
+    }
+
+    function showJackpotWin(username, amount) {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;animation:fadeIn .3s ease`;
+      el.innerHTML = `
+        <div style="text-align:center;padding:40px 30px;max-width:320px">
+          <div style="font-size:72px;margin-bottom:16px;animation:bounce 0.5s ease infinite alternate">🎯</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">JACKPOT !</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:white;letter-spacing:2px;margin:8px 0">${username}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:52px;color:#fbbf24;text-shadow:0 0 30px rgba(251,191,36,0.6);margin:8px 0">+${amount.toLocaleString('fr-FR')}€</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.4);margin-top:8px">Le jackpot repart à 10 000€</div>
+          <button onclick="this.parentNode.parentNode.remove()" style="margin-top:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;color:#1a0a00;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;padding:12px 32px;border-radius:12px;cursor:pointer">🎉 INCROYABLE !</button>
+        </div>
+        <style>@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-10px)}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}</style>`;
+      document.body.appendChild(el);
+    }
+
     async function recordBet(gameName, amountBet) {
       try {
         const username = (currentUser.email || '').split('@')[0] || 'Docker';
