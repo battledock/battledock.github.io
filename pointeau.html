@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Le Pointeau - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body { height:100%; overflow:hidden; }
+    body { font-family:'Inter',sans-serif; background:#111; display:flex; flex-direction:column; height:100dvh; }
+
+    /* HEADER */
+    .header { flex-shrink:0; padding:11px 14px; display:flex; align-items:center; gap:10px; background:rgba(0,0,0,0.85); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.06); z-index:10; }
+    .back-btn { background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.25); color:#60a5fa; padding:7px 12px; border-radius:6px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; }
+    .back-btn:active { background:rgba(59,130,246,0.25); }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:#60a5fa; flex:1; text-align:center; }
+    .header-score { font-family:'Bebas Neue',sans-serif; font-size:15px; color:#10b981; min-width:70px; text-align:right; }
+
+    /* TIMER */
+    .timer-wrap { flex-shrink:0; height:5px; background:rgba(255,255,255,0.05); }
+    .timer-fill { height:100%; background:linear-gradient(90deg,#10b981,#3b82f6); transition:width 0.25s linear; width:100%; }
+
+    /* INFO BAR */
+    .info-bar { flex-shrink:0; display:flex; background:rgba(0,0,0,0.6); border-bottom:1px solid rgba(255,255,255,0.04); }
+    .info-item { flex:1; padding:7px 4px; text-align:center; border-right:1px solid rgba(255,255,255,0.04); }
+    .info-item:last-child { border-right:none; }
+    .info-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#60a5fa; }
+    .info-lbl { font-size:8px; color:#333; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+
+    /* ZONE DE JEU */
+    .game-zone { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; }
+
+    /* MANIFESTE (commande en haut) */
+    .manifest {
+      flex-shrink:0; margin:14px 14px 0;
+      background:linear-gradient(135deg,#1a2a1a,#0f1f0f);
+      border:1px solid rgba(74,222,128,0.2);
+      border-radius:14px; padding:14px 16px;
+      position:relative; overflow:hidden;
+    }
+    .manifest::before { content:'MANIFESTE'; position:absolute; top:8px; right:12px; font-family:'Bebas Neue',sans-serif; font-size:9px; letter-spacing:2px; color:rgba(74,222,128,0.3); }
+    .manifest-label { font-size:10px; color:rgba(74,222,128,0.6); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .manifest-content { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .manifest-tag {
+      display:flex; align-items:center; gap:6px;
+      background:rgba(0,0,0,0.3); border-radius:8px; padding:6px 10px;
+      border:1px solid rgba(255,255,255,0.08);
+    }
+    .manifest-tag-label { font-size:9px; color:rgba(255,255,255,0.3); text-transform:uppercase; letter-spacing:1px; margin-bottom:1px; }
+    .manifest-tag-val { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; line-height:1; }
+
+    /* TAPIS ROULANT */
+    .belt-wrap { flex:1; position:relative; display:flex; align-items:center; justify-content:center; padding:0 14px; }
+
+    /* SVG tapis roulant en fond */
+    .belt-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+
+    /* CONTENEUR SUR LE TAPIS */
+    .container-card {
+      position:relative; z-index:5;
+      width:100%; max-width:300px;
+      border-radius:16px; overflow:hidden;
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);
+      transition:transform 0.15s ease;
+    }
+    .container-card.shake { animation:shake 0.3s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+    .container-card.correct { animation:correctPop 0.3s ease; }
+    @keyframes correctPop { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+
+    /* Corps du conteneur */
+    .c-body { height:140px; position:relative; display:flex; align-items:center; justify-content:center; }
+    .c-top-stripe { position:absolute; top:0; left:0; right:0; height:10px; }
+    .c-bot-stripe { position:absolute; bottom:0; left:0; right:0; height:10px; }
+    .c-stripe { position:absolute; top:0; bottom:0; width:2.5px; background:rgba(0,0,0,0.25); }
+    .c-corner { position:absolute; width:10px; height:10px; background:rgba(0,0,0,0.5); }
+    .c-corner::after { content:''; position:absolute; inset:1px; background:rgba(255,255,255,0.2); }
+    .c-label { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:4px; color:rgba(255,255,255,0.85); text-shadow:0 2px 8px rgba(0,0,0,0.5); z-index:1; }
+    .c-sublabel { position:absolute; bottom:18px; left:0; right:0; text-align:center; font-size:11px; color:rgba(255,255,255,0.45); letter-spacing:2px; font-weight:700; }
+    .c-reflect { position:absolute; top:0; left:0; right:0; height:40%; background:linear-gradient(180deg,rgba(255,255,255,0.08),transparent); }
+
+    /* INFO BAS DU CONTENEUR */
+    .c-info { background:white; padding:12px 16px; display:flex; gap:10px; }
+    .c-info-tag { flex:1; text-align:center; }
+    .c-info-tag-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+    .c-info-tag-val { font-family:'Bebas Neue',sans-serif; font-size:15px; color:#1a1a1a; letter-spacing:0.5px; }
+
+    /* BOUTONS OUI/NON */
+    .action-row { flex-shrink:0; display:flex; gap:12px; padding:14px; }
+    .btn-no, .btn-yes {
+      flex:1; height:72px; border:none; border-radius:18px;
+      font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px;
+      cursor:pointer; transition:transform 0.1s, box-shadow 0.1s;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .btn-no  { background:linear-gradient(135deg,#dc2626,#ef4444); color:white; box-shadow:0 6px 20px rgba(239,68,68,0.4); }
+    .btn-yes { background:linear-gradient(135deg,#16a34a,#22c55e); color:white; box-shadow:0 6px 20px rgba(34,197,94,0.4); }
+    .btn-no:active  { transform:scale(0.95); box-shadow:0 2px 8px rgba(239,68,68,0.3); }
+    .btn-yes:active { transform:scale(0.95); box-shadow:0 2px 8px rgba(34,197,94,0.3); }
+
+    /* OVERLAYS */
+    .overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.88); backdrop-filter:blur(10px); display:flex; align-items:center; justify-content:center; }
+    .ocard { max-width:320px; width:90%; border-radius:20px; padding:28px 22px; text-align:center; background:#141414; border:1px solid #2a2a2a; animation:popIn .4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+    .ocard-icon  { font-size:54px; margin-bottom:10px; }
+    .ocard-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:2px; color:#60a5fa; margin-bottom:4px; }
+    .ocard-sub   { font-size:12px; color:#444; margin-bottom:12px; line-height:1.5; }
+    .ocard-gain  { font-family:'Bebas Neue',sans-serif; font-size:44px; color:#10b981; text-shadow:0 0 16px rgba(16,185,129,0.4); margin-bottom:4px; }
+    .ocard-stats { display:flex; gap:0; margin-bottom:16px; border:1px solid #222; border-radius:12px; overflow:hidden; }
+    .ocard-stat  { flex:1; padding:10px 4px; text-align:center; border-right:1px solid #222; }
+    .ocard-stat:last-child { border-right:none; }
+    .ocard-stat-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; }
+    .ocard-stat-lbl { font-size:9px; color:#444; text-transform:uppercase; letter-spacing:1px; }
+    .ocard-rules { background:rgba(255,255,255,0.02); border:1px solid #1e1e1e; border-radius:10px; padding:12px; text-align:left; margin-bottom:14px; }
+    .ocard-rule  { font-size:11px; color:#555; padding:3px 0; display:flex; gap:8px; line-height:1.4; }
+    .btn-start   { width:100%; height:52px; border:none; border-radius:12px; background:linear-gradient(135deg,#1d4ed8,#3b82f6); color:white; font-family:'Bebas Neue',sans-serif; font-size:19px; letter-spacing:2px; cursor:pointer; margin-bottom:8px; box-shadow:0 4px 16px rgba(59,130,246,0.4); }
+    .btn-back    { width:100%; height:40px; border-radius:12px; background:none; border:1px solid #222; color:#333; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:1px; cursor:pointer; }
+
+    /* FLASH */
+    .flash { position:fixed; top:35%; left:50%; transform:translateX(-50%); font-family:'Bebas Neue',sans-serif; font-size:32px; pointer-events:none; z-index:40; white-space:nowrap; animation:flashUp .6s ease-out forwards; }
+    .flash.good { color:#22c55e; text-shadow:0 0 14px rgba(34,197,94,0.9); }
+    .flash.bad  { color:#ef4444; text-shadow:0 0 14px rgba(239,68,68,0.9); }
+    @keyframes flashUp { 0%{opacity:1;transform:translateX(-50%) scale(1.2)} 100%{opacity:0;transform:translateX(-50%) translateY(-40px) scale(0.9)} }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='travail.html'">← RETOUR</button>
+    <div class="header-title">LE POINTEAU</div>
+    <div class="header-score" id="headerScore">--</div>
+  </div>
+
+  <div class="timer-wrap"><div class="timer-fill" id="timerFill"></div></div>
+
+  <div class="info-bar">
+    <div class="info-item"><div class="info-val" id="infoOk">0</div><div class="info-lbl">Corrects</div></div>
+    <div class="info-item"><div class="info-val" id="infoErr" style="color:#ef4444">0</div><div class="info-lbl">Erreurs</div></div>
+    <div class="info-item"><div class="info-val" id="infoGain">0€</div><div class="info-lbl">Gain</div></div>
+  </div>
+
+  <div class="game-zone">
+
+    <!-- MANIFESTE -->
+    <div class="manifest" id="manifest">
+      <div class="manifest-label">Commande à valider :</div>
+      <div class="manifest-content" id="manifestContent"></div>
+    </div>
+
+    <!-- TAPIS ROULANT -->
+    <div class="belt-wrap">
+      <!-- SVG tapis roulant -->
+      <svg class="belt-svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+        <!-- Fond sol entrepôt -->
+        <rect width="400" height="300" fill="#0d0d0d"/>
+        <rect width="400" height="300" fill="url(#gridPat)"/>
+        <!-- Tapis roulant -->
+        <rect x="20" y="80" width="360" height="140" rx="8" fill="#1a1a1a" stroke="#2d2d2d" stroke-width="1.5"/>
+        <!-- Rouleaux -->
+        <g fill="#222" stroke="#333" stroke-width="1">
+          <rect x="24" y="84" width="8" height="132" rx="4"/>
+          <rect x="50" y="84" width="8" height="132" rx="4"/>
+          <rect x="76" y="84" width="8" height="132" rx="4"/>
+          <rect x="102" y="84" width="8" height="132" rx="4"/>
+          <rect x="128" y="84" width="8" height="132" rx="4"/>
+          <rect x="154" y="84" width="8" height="132" rx="4"/>
+          <rect x="180" y="84" width="8" height="132" rx="4"/>
+          <rect x="206" y="84" width="8" height="132" rx="4"/>
+          <rect x="232" y="84" width="8" height="132" rx="4"/>
+          <rect x="258" y="84" width="8" height="132" rx="4"/>
+          <rect x="284" y="84" width="8" height="132" rx="4"/>
+          <rect x="310" y="84" width="8" height="132" rx="4"/>
+          <rect x="336" y="84" width="8" height="132" rx="4"/>
+          <rect x="362" y="84" width="8" height="132" rx="4"/>
+        </g>
+        <!-- Lignes tapis -->
+        <line x1="20" y1="96" x2="380" y2="96" stroke="#262626" stroke-width="1"/>
+        <line x1="20" y1="204" x2="380" y2="204" stroke="#262626" stroke-width="1"/>
+        <!-- Flèches direction -->
+        <g fill="rgba(255,255,255,0.06)" font-size="16">
+          <text x="60" y="155">→</text>
+          <text x="120" y="155">→</text>
+          <text x="180" y="155">→</text>
+          <text x="240" y="155">→</text>
+          <text x="300" y="155">→</text>
+        </g>
+        <!-- Structure entrepôt en fond -->
+        <g opacity="0.3">
+          <rect x="0" y="0" width="400" height="10" fill="#1a1a1a"/>
+          <rect x="0" y="0" width="8" height="300" fill="#1e1e1e"/>
+          <rect x="392" y="0" width="8" height="300" fill="#1e1e1e"/>
+          <!-- Lampes -->
+          <rect x="80" y="0" width="14" height="8" rx="1" fill="#2a2a2a"/>
+          <rect x="200" y="0" width="14" height="8" rx="1" fill="#2a2a2a"/>
+          <rect x="306" y="0" width="14" height="8" rx="1" fill="#2a2a2a"/>
+          <ellipse cx="87" cy="20" rx="50" ry="30" fill="rgba(255,215,60,0.05)"/>
+          <ellipse cx="207" cy="20" rx="60" ry="35" fill="rgba(255,215,60,0.06)"/>
+          <ellipse cx="313" cy="20" rx="50" ry="30" fill="rgba(255,215,60,0.05)"/>
+        </g>
+        <defs>
+          <pattern id="gridPat" x="0" y="0" width="28" height="28" patternUnits="userSpaceOnUse">
+            <path d="M 28 0 L 0 0 0 28" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+      </svg>
+
+      <!-- CONTENEUR CLIQUABLE -->
+      <div class="container-card" id="containerCard">
+        <div class="c-body" id="cBody">
+          <div class="c-top-stripe" id="cTop"></div>
+          <div class="c-bot-stripe" id="cBot"></div>
+          <div class="c-stripe" style="left:22%"></div>
+          <div class="c-stripe" style="left:44%"></div>
+          <div class="c-stripe" style="left:66%"></div>
+          <div class="c-stripe" style="left:88%"></div>
+          <div class="c-corner" style="top:8px;left:8px"></div>
+          <div class="c-corner" style="top:8px;right:8px"></div>
+          <div class="c-corner" style="bottom:8px;left:8px"></div>
+          <div class="c-corner" style="bottom:8px;right:8px"></div>
+          <div class="c-reflect"></div>
+          <div class="c-label" id="cLabel">MAERSK</div>
+          <div class="c-sublabel" id="cSublabel">20FT · ISO 668</div>
+        </div>
+        <div class="c-info" id="cInfo">
+          <div class="c-info-tag"><div class="c-info-tag-lbl">Compagnie</div><div class="c-info-tag-val" id="cCompany">--</div></div>
+          <div class="c-info-tag"><div class="c-info-tag-lbl">Couleur</div><div class="c-info-tag-val" id="cColor">--</div></div>
+          <div class="c-info-tag"><div class="c-info-tag-lbl">Quai</div><div class="c-info-tag-val" id="cQuai">--</div></div>
+          <div class="c-info-tag"><div class="c-info-tag-lbl">Taille</div><div class="c-info-tag-val" id="cSize">--</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOUTONS -->
+    <div class="action-row">
+      <button class="btn-no"  onclick="answer(false)">✕ NON</button>
+      <button class="btn-yes" onclick="answer(true)">✓ OUI</button>
+    </div>
+  </div>
+
+  <!-- START -->
+  <div class="overlay" id="startOverlay">
+    <div class="ocard">
+      <div class="ocard-icon">📋</div>
+      <div class="ocard-title">Le Pointeau</div>
+      <div class="ocard-sub">Vérifie si le conteneur sur le tapis correspond à la commande du manifeste !</div>
+      <div class="ocard-rules">
+        <div class="ocard-rule"><span>📋</span><span>Le manifeste indique ce qui est attendu</span></div>
+        <div class="ocard-rule"><span>📦</span><span>Le conteneur arrive sur le tapis roulant</span></div>
+        <div class="ocard-rule"><span>✓</span><span>OUI si tout correspond, NON sinon</span></div>
+        <div class="ocard-rule"><span>⚡</span><span>Enchaîne les bonnes réponses pour le combo</span></div>
+        <div class="ocard-rule"><span>⚠️</span><span>3 erreurs = game over !</span></div>
+      </div>
+      <button class="btn-start" onclick="startGame()">Au boulot !</button>
+      <button class="btn-back" onclick="window.location.href='travail.html'">← Retour</button>
+    </div>
+  </div>
+
+  <!-- RÉSULTAT -->
+  <div class="overlay" id="resultOverlay" style="display:none">
+    <div class="ocard">
+      <div class="ocard-icon" id="ocIcon">📋</div>
+      <div class="ocard-title" id="ocTitle">Terminé !</div>
+      <div class="ocard-gain" id="ocGain">+0€</div>
+      <div class="ocard-stats">
+        <div class="ocard-stat"><div class="ocard-stat-val" id="ocOk">0</div><div class="ocard-stat-lbl">Corrects</div></div>
+        <div class="ocard-stat"><div class="ocard-stat-val" id="ocErr">0</div><div class="ocard-stat-lbl">Erreurs</div></div>
+        <div class="ocard-stat"><div class="ocard-stat-val" id="ocCombo">×1</div><div class="ocard-stat-lbl">Combo max</div></div>
+      </div>
+      <button class="btn-start" onclick="startGame()">▶ Rejouer</button>
+      <button class="btn-back" onclick="window.location.href='travail.html'">← Retour</button>
+    </div>
+  </div>
+
+  <script>
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+    let currentUser = null;
+
+    // ── DATA ──
+    const COMPANIES = [
+      { name:'MAERSK',    color:'#1d4ed8', hi:'#2563eb', lo:'#1e3a8a' },
+      { name:'MSC',       color:'#7c3aed', hi:'#8b5cf6', lo:'#5b21b6' },
+      { name:'CMA CGM',   color:'#15803d', hi:'#16a34a', lo:'#14532d' },
+      { name:'EVERGREEN', color:'#15803d', hi:'#22c55e', lo:'#166534' },
+      { name:'HAPAG',     color:'#b45309', hi:'#d97706', lo:'#92400e' },
+      { name:'COSCO',     color:'#dc2626', hi:'#ef4444', lo:'#991b1b' },
+    ];
+    const COLORS_FR  = ['Rouge','Bleu','Vert','Orange','Violet','Gris'];
+    const COLORS_HEX = ['#cc2200','#1d4ed8','#15803d','#b45309','#7c3aed','#4b5563'];
+    const COLORS_HI  = ['#e63300','#2563eb','#16a34a','#d97706','#8b5cf6','#6b7280'];
+    const COLORS_LO  = ['#881800','#1e3a8a','#14532d','#92400e','#5b21b6','#374151'];
+    const QUAIS      = ['A1','A2','B1','B2','C1','C3','D4'];
+    const SIZES      = ['20FT','40FT','45FT'];
+
+    const GAME_DURATION = 60;
+    const MAX_ERRORS    = 3;
+    const GAIN_PER_OK   = 200;
+
+    let manifest  = {};  // ce qu'on attend
+    let container = {};  // ce qui arrive
+    let isMatch   = false;
+    let score = 0, errors = 0, combo = 1, maxCombo = 1, totalGain = 0;
+    let timeLeft  = GAME_DURATION;
+    let timerInt  = null;
+    let running   = false;
+    let canAnswer = true;
+
+    // ── AUTH ──
+    async function initAuth() {
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href='index.html'; return; }
+      currentUser = session.user;
+      const { data } = await sb.from('game_stats').select('money,level').eq('user_id', currentUser.id).maybeSingle();
+      document.getElementById('headerScore').textContent = (data?.money||0).toLocaleString('fr-FR')+'€';
+      if ((data?.level||1) < 15) {
+        document.getElementById('startOverlay').innerHTML = `<div class="ocard"><div class="ocard-icon">🔒</div><div class="ocard-title">Niveau 15 requis</div><div class="ocard-sub" style="margin-bottom:20px">Tu es niveau ${data?.level||1}. Continue à travailler !</div><button class="btn-start" onclick="window.location.href='travail.html'">← Retour</button></div>`;
+      }
+    }
+
+    function rand(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
+    // ── GÉNÉRER UNE PAIRE manifeste/conteneur ──
+    function generate() {
+      // Manifeste : ce qu'on attend
+      manifest = {
+        company: rand(COMPANIES),
+        colorIdx: Math.floor(Math.random()*COLORS_FR.length),
+        quai:     rand(QUAIS),
+        size:     rand(SIZES),
+      };
+
+      // Le conteneur correspond-il ? (50% de base, plus de "faux" en fin de partie)
+      const matchProb = Math.max(0.35, 0.65 - score*0.005);
+      isMatch = Math.random() < matchProb;
+
+      if (isMatch) {
+        container = { ...manifest };
+      } else {
+        // Changer 1 ou 2 attributs aléatoirement
+        container = { ...manifest };
+        const fields = ['company','colorIdx','quai','size'];
+        const numChanges = Math.random() < 0.5 ? 1 : 2;
+        const toChange = fields.sort(()=>Math.random()-0.5).slice(0, numChanges);
+        toChange.forEach(f => {
+          if (f === 'company') {
+            let c; do { c=rand(COMPANIES); } while(c.name===manifest.company.name);
+            container.company = c;
+          } else if (f === 'colorIdx') {
+            let i; do { i=Math.floor(Math.random()*COLORS_FR.length); } while(i===manifest.colorIdx);
+            container.colorIdx = i;
+          } else if (f === 'quai') {
+            let q; do { q=rand(QUAIS); } while(q===manifest.quai);
+            container.quai = q;
+          } else {
+            let s; do { s=rand(SIZES); } while(s===manifest.size);
+            container.size = s;
+          }
+        });
+      }
+    }
+
+    // ── AFFICHER ──
+    function render() {
+      // Manifeste
+      const mc = document.getElementById('manifestContent');
+      mc.innerHTML = `
+        <div class="manifest-tag">
+          <div><div class="manifest-tag-label">Compagnie</div><div class="manifest-tag-val" style="color:#4ade80">${manifest.company.name}</div></div>
+        </div>
+        <div class="manifest-tag">
+          <div><div class="manifest-tag-label">Couleur</div><div class="manifest-tag-val" style="color:${COLORS_HEX[manifest.colorIdx]}">${COLORS_FR[manifest.colorIdx]}</div></div>
+        </div>
+        <div class="manifest-tag">
+          <div><div class="manifest-tag-label">Quai</div><div class="manifest-tag-val" style="color:#60a5fa">QUAI ${manifest.quai}</div></div>
+        </div>
+        <div class="manifest-tag">
+          <div><div class="manifest-tag-label">Taille</div><div class="manifest-tag-val" style="color:#fbbf24">${manifest.size}</div></div>
+        </div>`;
+
+      // Conteneur
+      const ci = container.colorIdx;
+      document.getElementById('cBody').style.background = `linear-gradient(135deg,${COLORS_HEX[ci]},${COLORS_LO[ci]})`;
+      document.getElementById('cTop').style.background  = COLORS_HI[ci];
+      document.getElementById('cBot').style.background  = COLORS_LO[ci];
+      document.getElementById('cLabel').textContent     = container.company.name;
+      document.getElementById('cSublabel').textContent  = `${container.size} · ISO 668`;
+      document.getElementById('cCompany').textContent   = container.company.name;
+      document.getElementById('cColor').textContent     = COLORS_FR[ci];
+      document.getElementById('cQuai').textContent      = 'Q.' + container.quai;
+      document.getElementById('cSize').textContent      = container.size;
+    }
+
+    // ── RÉPONDRE ──
+    function answer(playerSaysYes) {
+      if (!running || !canAnswer) return;
+      canAnswer = false;
+
+      const correct = (playerSaysYes === isMatch);
+      const card = document.getElementById('containerCard');
+
+      if (correct) {
+        score++;
+        combo = Math.min(combo+1, 10);
+        maxCombo = Math.max(maxCombo, combo);
+        const gain = GAIN_PER_OK * combo;
+        totalGain += gain;
+        document.getElementById('infoOk').textContent   = score;
+        document.getElementById('infoGain').textContent = totalGain.toLocaleString('fr-FR')+'€';
+        showFlash(combo >= 3 ? `COMBO ×${combo} ! 🔥` : `+${gain}€`, 'good');
+        card.classList.add('correct');
+        if (navigator.vibrate) navigator.vibrate(combo>=3?[30,10,30]:15);
+        setTimeout(() => { card.classList.remove('correct'); }, 300);
+      } else {
+        errors++;
+        combo = 1;
+        document.getElementById('infoErr').textContent = errors;
+        showFlash('ERREUR !', 'bad');
+        card.classList.add('shake');
+        if (navigator.vibrate) navigator.vibrate([80,30,80]);
+        setTimeout(() => { card.classList.remove('shake'); }, 300);
+        if (errors >= MAX_ERRORS) { endGame(); return; }
+      }
+
+      setTimeout(() => {
+        generate();
+        render();
+        canAnswer = true;
+      }, 350);
+    }
+
+    // ── TIMER ──
+    function startTimer() {
+      timeLeft = GAME_DURATION;
+      document.getElementById('timerFill').style.width = '100%';
+      document.getElementById('timerFill').style.background = 'linear-gradient(90deg,#10b981,#3b82f6)';
+      timerInt = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timerFill').style.width = (timeLeft/GAME_DURATION*100)+'%';
+        if (timeLeft <= 10) document.getElementById('timerFill').style.background = '#ef4444';
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    // ── START ──
+    function startGame() {
+      document.getElementById('startOverlay').style.display  = 'none';
+      document.getElementById('resultOverlay').style.display = 'none';
+      score=0; errors=0; combo=1; maxCombo=1; totalGain=0; canAnswer=true;
+      document.getElementById('infoOk').textContent   = '0';
+      document.getElementById('infoErr').textContent  = '0';
+      document.getElementById('infoGain').textContent = '0€';
+      clearInterval(timerInt);
+      running = true;
+      generate(); render();
+      startTimer();
+    }
+
+    // ── END ──
+    async function endGame() {
+      running = false;
+      clearInterval(timerInt);
+      const t = score<3?0:score<10?1:score<20?2:score<35?3:4;
+      const titles=[['😅','Dur la vie !'],['📋','Pas mal !'],['💪','Bon pointeau !'],['⚡','Expert !'],['🏆','LÉGENDAIRE !']];
+      document.getElementById('ocIcon').textContent  = titles[t][0];
+      document.getElementById('ocTitle').textContent = titles[t][1];
+      document.getElementById('ocGain').textContent  = totalGain>0 ? `+${totalGain.toLocaleString('fr-FR')}€` : '0€';
+      document.getElementById('ocOk').textContent    = score;
+      document.getElementById('ocErr').textContent   = errors;
+      document.getElementById('ocCombo').textContent = '×'+maxCombo;
+      document.getElementById('resultOverlay').style.display = 'flex';
+      if (totalGain > 0 && currentUser) {
+        const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+        const newMoney = (fresh?.money||0) + totalGain;
+        await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+        document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR')+'€';
+      }
+    }
+
+    function showFlash(txt, type) {
+      const el=document.createElement('div'); el.className=`flash ${type}`; el.textContent=txt;
+      document.body.appendChild(el); setTimeout(()=>el.remove(),650);
+    }
+
+    // Swipe gauche/droite comme alternative
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive:true });
+    document.addEventListener('touchend', e => {
+      if (!running || !canAnswer) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 60) answer(dx > 0);
+    }, { passive:true });
+
+    initAuth();
+  </script>
+</body>
+</html>
