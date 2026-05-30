@@ -474,9 +474,11 @@
       document.getElementById('ocCombo').textContent = '×'+maxCombo;
       document.getElementById('resultOverlay').style.display = 'flex';
       if (totalGain > 0 && currentUser) {
-        const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('money,xp').eq('user_id', currentUser.id).maybeSingle();
         const newMoney = (fresh?.money||0) + totalGain;
-        await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+        const newXp = (fresh?.xp||0) + (window._sessionXp||0);
+        window._sessionXp = 0;
+        await sb.from('game_stats').update({ money: newMoney, xp: newXp }).eq('user_id', currentUser.id);
         document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR')+'€';
       }
     }
