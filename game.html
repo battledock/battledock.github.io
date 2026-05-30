@@ -902,7 +902,15 @@
       <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#f5d060;margin-bottom:6px">📢 Poster une rumeur</div>
       <div id="rumeurModalInfo" style="font-size:11px;color:rgba(212,165,116,0.5);margin-bottom:14px;line-height:1.5"></div>
       <textarea id="rumeurInput" maxlength="200" placeholder="Ta rumeur du port..." style="-webkit-user-select:text;user-select:text;width:100%;height:80px;background:rgba(0,0,0,0.3);border:1px solid rgba(212,165,116,0.2);border-radius:10px;padding:10px;color:white;font-size:13px;resize:none;outline:none;font-family:Inter,sans-serif;line-height:1.5"></textarea>
-      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:14px;text-align:right" id="rumeurCharCount">0/200</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:10px;text-align:right" id="rumeurCharCount">0/200</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;cursor:pointer" onclick="toggleAnon()">
+        <div id="anonCheck" style="width:20px;height:20px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+        </div>
+        <div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:600">Poster anonymement</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Coûte 5 🏆 supplémentaires — ton nom n'apparaît pas</div>
+        </div>
+      </div>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
         <button onclick="postRumeur(10000, 60)" style="background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.8);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
           💰 10 000€ — 1 heure
@@ -1379,6 +1387,7 @@ async function loadCalendar() {
 
     // ── RUMEURS PAYANTES ──
     let activeRumeur = null;
+    let isAnon = false;
 
     async function loadActiveRumeur() {
       try {
@@ -1412,6 +1421,14 @@ async function loadCalendar() {
       }
     }
 
+    function toggleAnon() {
+      isAnon = !isAnon;
+      const check = document.getElementById('anonCheck');
+      check.style.background = isAnon ? '#a78bfa' : 'rgba(255,255,255,0.05)';
+      check.style.borderColor = isAnon ? '#a78bfa' : 'rgba(255,255,255,0.2)';
+      check.innerHTML = isAnon ? '<span style="color:white;font-size:12px">✓</span>' : '';
+    }
+
     function openRumeurModal() {
       const minPrice = activeRumeur ? (activeRumeur.amount_paid * 2) : 10000;
       const info = activeRumeur
@@ -1435,31 +1452,36 @@ async function loadCalendar() {
       if (!msg) { showToast('Écris ta rumeur !', 'error'); return; }
       if (msg.length < 10) { showToast('Trop court !', 'error'); return; }
 
-      // Vérifier solde
-      const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      // Vérifier solde + trophées si anonyme
+      const { data: fresh } = await sb.from('game_stats').select('money, trophies').eq('user_id', currentUser.id).maybeSingle();
       if (!fresh || fresh.money < price) { showToast("Pas assez d'argent !", 'error'); return; }
+      if (isAnon && (fresh.trophies || 0) < 5) { showToast('Il te faut 5 🏆 pour poster anonymement !', 'error'); return; }
 
       // Vérifier prix minimum
       if (activeRumeur && price < activeRumeur.amount_paid * 2) {
         showToast(`Minimum ${(activeRumeur.amount_paid*2).toLocaleString('fr-FR')}€ !`, 'error'); return;
       }
 
-      // Déduire argent
-      await sb.from('game_stats').update({ money: fresh.money - price }).eq('user_id', currentUser.id);
+      // Déduire argent (et trophées si anonyme)
+      const updates = { money: fresh.money - price };
+      if (isAnon) updates.trophies = (fresh.trophies || 0) - 5;
+      await sb.from('game_stats').update(updates).eq('user_id', currentUser.id);
 
       // Poster la rumeur
       const { data: profile } = await sb.from('profiles').select('username').eq('user_id', currentUser.id).maybeSingle();
       const expires = new Date(Date.now() + durationMinutes * 60000).toISOString();
+      const username = isAnon ? 'Anonyme 🕵️' : (profile?.username || 'Docker');
       await sb.from('port_rumeur').insert({
         message: msg,
         posted_by: currentUser.id,
-        username: profile?.username || 'Docker',
+        username: username,
         amount_paid: price,
         expires_at: expires
       });
 
       document.getElementById('rumeurModal').style.display = 'none';
       document.getElementById('rumeurInput').value = '';
+      isAnon = false; toggleAnon();
       showToast(`✅ Rumeur postée pour ${price.toLocaleString('fr-FR')}€ !`);
       await loadActiveRumeur();
     }
