@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tower - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+
+    body {
+      font-family:'Inter',sans-serif;
+      overflow:hidden; height:100vh;
+      display:flex; flex-direction:column;
+    }
+    body.theme-day   { background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#d4a574 55%,#8b7355 100%); }
+    body.theme-night { background:linear-gradient(180deg,#0f2027 0%,#203a43 50%,#2c5364 100%); }
+
+    /* DÉCO */
+    .sun { position:fixed; top:24px; right:50px; z-index:1; width:52px; height:52px; border-radius:50%; animation:floatSun 6s ease-in-out infinite; pointer-events:none; }
+    body.theme-day .sun   { background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 40px rgba(251,191,36,0.6); }
+    body.theme-night .sun { background:radial-gradient(circle at 35% 35%,#fef9c3,#fde68a); box-shadow:0 0 20px rgba(254,249,195,0.2); width:44px; height:44px; }
+    @keyframes floatSun { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+
+    .cloud { position:fixed; z-index:1; animation:drift linear infinite; pointer-events:none; }
+    .cloud1 { font-size:44px; animation-duration:28s; top:8px; left:-80px; }
+    .cloud2 { font-size:28px; animation-duration:38s; animation-delay:-14s; top:26px; left:-60px; }
+    body.theme-day .cloud   { opacity:0.7; }
+    body.theme-night .cloud { color:rgba(255,255,255,0.1); }
+    @keyframes drift { 0%{transform:translateX(0)} 100%{transform:translateX(110vw)} }
+
+    .star-dot { position:fixed; border-radius:50%; background:white; animation:starTwinkle ease-in-out infinite; pointer-events:none; }
+    @keyframes starTwinkle { 0%,100%{opacity:0.9} 50%{opacity:0.2} }
+    body.theme-day .star-dot { display:none; }
+
+    /* HEADER */
+    .header {
+      position:relative; z-index:10;
+      padding:12px 16px; display:flex; align-items:center; gap:12px;
+      backdrop-filter:blur(10px); flex-shrink:0;
+    }
+    body.theme-day .header   { background:rgba(255,255,255,0.85); border-bottom:1px solid rgba(0,0,0,0.1); }
+    body.theme-night .header { background:rgba(15,32,39,0.95); border-bottom:1px solid rgba(255,255,255,0.08); }
+    .back-btn { background:#3b82f6; border:none; color:white; padding:7px 12px; border-radius:6px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; flex:1; text-align:center; }
+    body.theme-day .header-title   { color:#1a1a1a; }
+    body.theme-night .header-title { color:white; }
+    .header-score { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#10b981; }
+
+    /* INFO BAR */
+    .info-bar {
+      position:relative; z-index:10; flex-shrink:0;
+      display:flex; gap:0;
+      backdrop-filter:blur(8px);
+    }
+    body.theme-day .info-bar   { background:rgba(255,255,255,0.7); border-bottom:1px solid rgba(0,0,0,0.08); }
+    body.theme-night .info-bar { background:rgba(15,32,39,0.8); border-bottom:1px solid rgba(255,255,255,0.06); }
+    .info-item { flex:1; padding:8px; text-align:center; border-right:1px solid rgba(0,0,0,0.08); }
+    .info-item:last-child { border-right:none; }
+    .info-val { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:0.5px; }
+    body.theme-day .info-val   { color:#1a1a1a; }
+    body.theme-night .info-val { color:white; }
+    .info-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+
+    /* ZONE JEU */
+    .game-area { flex:1; position:relative; overflow:hidden; }
+    #towerCanvas { position:absolute; bottom:0; left:50%; transform:translateX(-50%); }
+
+    /* BOUTON TAP */
+    .tap-zone {
+      position:fixed; bottom:0; left:0; right:0; z-index:20;
+      height:120px; display:flex; align-items:center; justify-content:center;
+      background:linear-gradient(0deg,rgba(0,0,0,0.5) 0%,transparent 100%);
+    }
+    .tap-btn {
+      width:220px; height:64px; border:none; border-radius:16px;
+      font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:3px;
+      cursor:pointer; transition:all 0.1s;
+      background:linear-gradient(135deg,#cc2200,#991100);
+      color:white; font-weight:900;
+      box-shadow:0 6px 24px rgba(204,34,0,0.4), 0 0 0 3px rgba(204,34,0,0.2);
+      border:2px solid rgba(255,255,255,0.15);
+    }
+    .tap-btn:active { transform:scale(0.95); }
+    .tap-btn.ready { background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 6px 24px rgba(16,185,129,0.4); }
+
+    /* OVERLAY */
+    .overlay { position:fixed; inset:0; z-index:50; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
+    .overlay-card {
+      max-width:320px; width:90%; border-radius:20px; padding:32px 24px; text-align:center;
+      animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+    body.theme-day .overlay-card   { background:white; }
+    body.theme-night .overlay-card { background:rgba(30,40,50,0.95); border:1px solid rgba(255,255,255,0.1); }
+    .oc-icon  { font-size:60px; margin-bottom:12px; }
+    .oc-title { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:2px; margin-bottom:6px; }
+    body.theme-day .oc-title   { color:#1a1a1a; }
+    body.theme-night .oc-title { color:white; }
+    .oc-floors { font-size:13px; color:#9ca3af; margin-bottom:12px; }
+    .oc-gain  { font-family:'Bebas Neue',sans-serif; font-size:48px; color:#10b981; letter-spacing:1px; text-shadow:0 0 20px rgba(16,185,129,0.4); }
+    .oc-sub   { font-size:12px; color:#9ca3af; margin-bottom:20px; }
+    .oc-btn-replay { width:100%; height:54px; border:none; border-radius:12px; background:linear-gradient(135deg,#cc2200,#991100); color:white; font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; cursor:pointer; margin-bottom:10px; }
+    .oc-btn-back   { width:100%; height:44px; border-radius:12px; background:none; border:1px solid #e5e7eb; color:#6b7280; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; }
+
+    /* FLASH */
+    .flash { position:fixed; top:25%; left:50%; transform:translateX(-50%); font-family:'Bebas Neue',sans-serif; font-size:28px; color:#fbbf24; text-shadow:0 0 16px rgba(251,191,36,0.8); pointer-events:none; z-index:30; animation:flashUp 0.7s ease-out forwards; }
+    @keyframes flashUp { 0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} 100%{opacity:0;transform:translateX(-50%) translateY(-50px) scale(1.3)} }
+  </style>
+</head>
+<body>
+
+  <div class="sun"></div>
+  <div class="cloud cloud1">☁️</div>
+  <div class="cloud cloud2">☁️</div>
+
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='travail.html'">← RETOUR</button>
+    <div class="header-title">🏗️ Tower</div>
+    <div class="header-score" id="headerScore">0€</div>
+  </div>
+
+  <div class="info-bar">
+    <div class="info-item"><div class="info-val" id="infoFloors">0</div><div class="info-lbl">Étages</div></div>
+    <div class="info-item"><div class="info-val" id="infoMult">×1.0</div><div class="info-lbl">Multiplicateur</div></div>
+    <div class="info-item"><div class="info-val" id="infoGain">0€</div><div class="info-lbl">Gain estimé</div></div>
+  </div>
+
+  <div class="game-area" id="gameArea">
+    <canvas id="towerCanvas"></canvas>
+  </div>
+
+  <div class="tap-zone">
+    <button class="tap-btn ready" id="tapBtn" onclick="handleTap()">▶ COMMENCER</button>
+  </div>
+
+  <!-- OVERLAY START -->
+  <div class="overlay" id="startOverlay">
+    <div class="overlay-card">
+      <div class="oc-icon">📦</div>
+      <div class="oc-title">Tower of Containers</div>
+      <div class="oc-floors" style="margin-bottom:16px">Empile les conteneurs le plus haut possible !</div>
+      <div style="background:rgba(0,0,0,0.05);border-radius:12px;padding:12px;text-align:left;margin-bottom:20px">
+        <div style="font-size:12px;color:#6b7280;padding:3px 0;display:flex;gap:8px"><span>📦</span><span>Conteneur qui oscille → appuie pour poser</span></div>
+        <div style="font-size:12px;color:#6b7280;padding:3px 0;display:flex;gap:8px"><span>✂️</span><span>La partie qui dépasse tombe</span></div>
+        <div style="font-size:12px;color:#6b7280;padding:3px 0;display:flex;gap:8px"><span>📈</span><span>Plus tu montes haut, plus tu gagnes</span></div>
+        <div style="font-size:12px;color:#6b7280;padding:3px 0;display:flex;gap:8px"><span>💀</span><span>Game over si conteneur trop petit</span></div>
+      </div>
+      <button class="oc-btn-replay" onclick="startGame()">C'est parti !</button>
+      <button class="oc-btn-back" onclick="window.location.href='travail.html'">← Retour</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY RÉSULTAT -->
+  <div class="overlay" id="resultOverlay" style="display:none">
+    <div class="overlay-card">
+      <div class="oc-icon" id="ocEmoji">📦</div>
+      <div class="oc-title" id="ocTitle">Game Over</div>
+      <div class="oc-floors" id="ocFloors">0 étage</div>
+      <div class="oc-gain" id="ocGain">+0€</div>
+      <div class="oc-sub" id="ocSub"></div>
+      <button class="oc-btn-replay" onclick="startGame()">▶ Rejouer</button>
+      <button class="oc-btn-back" onclick="window.location.href='travail.html'">← Retour au Port</button>
+    </div>
+  </div>
+
+  <script>
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    // Thème
+    function applyTheme() {
+      const h = new Date().getHours();
+      const isNight = h >= 18 || h < 7;
+      document.body.classList.toggle('theme-night', isNight);
+      document.body.classList.toggle('theme-day', !isNight);
+    }
+    applyTheme();
+    setInterval(applyTheme, 60000);
+
+    // Étoiles
+    for(let i=0;i<20;i++){
+      const s=document.createElement('div'); s.className='star-dot';
+      const sz=0.5+Math.random()*1.5;
+      s.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*50}%;animation-duration:${2+Math.random()*4}s;animation-delay:${Math.random()*4}s`;
+      document.body.appendChild(s);
+    }
+
+    let currentUser=null, currentMoney=0;
+    let canvas, ctx, W, H;
+    let blocks=[], currentBlock=null;
+    let animFrame=null, gameRunning=false, floor=0, cameraY=0;
+    const BLOCK_H=28, MIN_W=18;
+    const COLORS=['#cc2200','#991100','#b91c1c','#dc2626','#ef4444','#f87171','#fca5a5'];
+
+    async function initAuth() {
+      const {data:{session}} = await sb.auth.getSession();
+      if(!session){window.location.href='index.html';return;}
+      currentUser=session.user;
+      const {data} = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+      currentMoney=data?.money||0;
+      document.getElementById('headerScore').textContent=currentMoney.toLocaleString('fr-FR')+'€';
+    }
+
+    function initCanvas(){
+      canvas=document.getElementById('towerCanvas');
+      const area=document.getElementById('gameArea');
+      W=area.offsetWidth; H=area.offsetHeight;
+      canvas.width=W; canvas.height=H;
+      canvas.style.width=W+'px'; canvas.style.height=H+'px';
+      ctx=canvas.getContext('2d');
+    }
+
+    function startGame(){
+      document.getElementById('startOverlay').style.display='none';
+      document.getElementById('resultOverlay').style.display='none';
+      blocks=[]; floor=0; cameraY=0; gameRunning=true;
+      initCanvas();
+      // Sol
+      blocks.push({x:W/2-120,y:H-60,w:240,h:BLOCK_H,color:'#6b7280',isGround:true});
+      spawnBlock();
+      cancelAnimationFrame(animFrame);
+      gameLoop();
+      const btn=document.getElementById('tapBtn');
+      btn.textContent='🎯 POSER !'; btn.className='tap-btn';
+      updateInfoBar();
+    }
+
+    function spawnBlock(){
+      const last=blocks[blocks.length-1];
+      const speed=Math.min(2.5+floor*0.18, 9);
+      currentBlock={
+        x:-last.w, y:last.y-BLOCK_H-4-cameraY,
+        w:last.w, h:BLOCK_H,
+        color:COLORS[floor%COLORS.length],
+        speed, dir:1,
+        refX:last.x, refW:last.w
+      };
+    }
+
+    function gameLoop(){
+      if(!gameRunning)return;
+      if(currentBlock){
+        currentBlock.x+=currentBlock.speed*currentBlock.dir;
+        if(currentBlock.x+currentBlock.w>W+20){currentBlock.dir=-1;}
+        if(currentBlock.x<-20){currentBlock.dir=1;}
+      }
+      render();
+      animFrame=requestAnimationFrame(gameLoop);
+    }
+
+    function render(){
+      ctx.clearRect(0,0,W,H);
+      // Grille légère
+      ctx.strokeStyle='rgba(0,0,0,0.05)'; ctx.lineWidth=1;
+      for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+
+      // Blocs posés
+      blocks.forEach(b=>{
+        const dy=b.y+cameraY;
+        if(dy>H+50||dy<-50)return;
+        // Ombre
+        ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(b.x+4,dy+4,b.w,b.h);
+        // Bloc
+        ctx.fillStyle=b.color; ctx.fillRect(b.x,dy,b.w,b.h);
+        // Reflet
+        ctx.fillStyle='rgba(255,255,255,0.12)'; ctx.fillRect(b.x,dy,b.w,5);
+        // Contour
+        ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=1; ctx.strokeRect(b.x,dy,b.w,b.h);
+        // Striping conteneur
+        if(!b.isGround){
+          ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
+          for(let i=1;i<4;i++){const lx=b.x+(b.w/4)*i;ctx.beginPath();ctx.moveTo(lx,dy+4);ctx.lineTo(lx,dy+b.h-2);ctx.stroke();}
+          if(b.w>50){ctx.font=`${Math.min(b.h-6,16)}px serif`;ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillText('📦',b.x+b.w/2,dy+b.h/2+5);}
+        }
+      });
+
+      // Bloc en mouvement
+      if(currentBlock){
+        const dy=currentBlock.y+cameraY;
+        ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(currentBlock.x+4,dy+4,currentBlock.w,currentBlock.h);
+        ctx.fillStyle=currentBlock.color; ctx.fillRect(currentBlock.x,dy,currentBlock.w,currentBlock.h);
+        ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(currentBlock.x,dy,currentBlock.w,5);
+        ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=2; ctx.strokeRect(currentBlock.x,dy,currentBlock.w,currentBlock.h);
+        // Striping
+        ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
+        for(let i=1;i<4;i++){const lx=currentBlock.x+(currentBlock.w/4)*i;ctx.beginPath();ctx.moveTo(lx,dy+4);ctx.lineTo(lx,dy+currentBlock.h-2);ctx.stroke();}
+        if(currentBlock.w>50){ctx.font=`${Math.min(currentBlock.h-6,16)}px serif`;ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText('📦',currentBlock.x+currentBlock.w/2,dy+currentBlock.h/2+5);}
+      }
+    }
+
+    function handleTap(){
+      if(!gameRunning||!currentBlock)return;
+      const last=blocks[blocks.length-1];
+      const left=Math.max(currentBlock.x,last.x);
+      const right=Math.min(currentBlock.x+currentBlock.w,last.x+last.w);
+      const overlap=right-left;
+
+      if(overlap<=0||overlap<MIN_W){gameOver();return;}
+
+      const isPerfect=overlap/last.w>0.92;
+      blocks.push({
+        x:isPerfect?last.x:left,
+        y:last.y-BLOCK_H-4,
+        w:isPerfect?last.w:overlap,
+        h:BLOCK_H,
+        color:currentBlock.color
+      });
+      floor++;
+      cameraY+=BLOCK_H+4;
+      if(isPerfect)showFlash('PARFAIT ! 🎯');
+      if(navigator.vibrate)navigator.vibrate(isPerfect?[50,30,50]:20);
+      spawnBlock();
+      updateInfoBar();
+    }
+
+    function updateInfoBar(){
+      const mult=(1+floor*0.1).toFixed(1);
+      const gain=floor*50*parseFloat(mult);
+      document.getElementById('infoFloors').textContent=floor;
+      document.getElementById('infoMult').textContent='×'+mult;
+      document.getElementById('infoGain').textContent=Math.floor(gain).toLocaleString('fr-FR')+'€';
+    }
+
+    async function gameOver(){
+      gameRunning=false; cancelAnimationFrame(animFrame);
+      const mult=1+floor*0.1;
+      const totalGain=Math.floor(floor*50*mult);
+      if(navigator.vibrate)navigator.vibrate([100,50,200]);
+
+      let emoji,title;
+      if(floor===0){emoji='😅';title='Aïe !';}
+      else if(floor<5){emoji='📦';title='Pas mal !';}
+      else if(floor<10){emoji='🏗️';title='Belle tour !';}
+      else if(floor<20){emoji='⭐';title='Impressionnant !';}
+      else{emoji='🏆';title='LÉGENDAIRE !';}
+
+      document.getElementById('ocEmoji').textContent=emoji;
+      document.getElementById('ocTitle').textContent=title;
+      document.getElementById('ocFloors').textContent=`${floor} étage${floor>1?'s':''} construits`;
+      document.getElementById('ocGain').textContent=totalGain>0?`+${totalGain.toLocaleString('fr-FR')}€`:'0€';
+      document.getElementById('ocSub').textContent=`×${mult.toFixed(1)} multiplicateur`;
+      document.getElementById('resultOverlay').style.display='flex';
+
+      if(totalGain>0){
+        currentMoney+=totalGain;
+        document.getElementById('headerScore').textContent=currentMoney.toLocaleString('fr-FR')+'€';
+        await sb.from('game_stats').update({money:currentMoney}).eq('user_id',currentUser.id);
+      }
+    }
+
+    function showFlash(txt){
+      const el=document.createElement('div'); el.className='flash'; el.textContent=txt;
+      document.body.appendChild(el); setTimeout(()=>el.remove(),700);
+    }
+
+    initAuth();
+  </script>
+</body>
+</html>
