@@ -299,6 +299,27 @@
       renderPurchaseCounts();
     }
 
+
+    async function buyAvatar() {
+      if (!stats) return;
+      const purchases = stats.shop_purchases || {};
+      if (purchases.millionaire_avatar >= 1) {
+        showToast('Avatar déjà acheté !', 'error'); return;
+      }
+      const { data: fresh } = await sb.from('game_stats').select('money, shop_purchases').eq('user_id', currentUser.id).maybeSingle();
+      if (!fresh || fresh.money < 1000000) {
+        showToast('Il te faut 1 000 000€ !', 'error'); return;
+      }
+      const newPurchases = { ...(fresh.shop_purchases||{}), millionaire_avatar: 1 };
+      await sb.from('game_stats').update({ money: fresh.money - 1000000, shop_purchases: newPurchases }).eq('user_id', currentUser.id);
+      stats = { ...stats, money: fresh.money - 1000000, shop_purchases: newPurchases };
+      document.getElementById('statMoney').textContent = (stats.money).toLocaleString('fr-FR') + '€';
+      // Marquer comme acheté
+      const btn = document.querySelector('#item-millionaire-avatar .buy-btn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="buy-price" style="font-size:10px">ACHETÉ</span>'; }
+      showToast('👑 Avatar Millionnaire débloqué !');
+    }
+
     async function buyItem(type, amount, cost, currency) {
       if (!stats) return;
 
@@ -346,6 +367,25 @@
       renderPurchaseCounts();
     }
 
+
+    <!-- AVATAR EXCLUSIF -->
+    <div class="section-lbl">🏆 Exclusif</div>
+
+    <div class="item-card trophy" id="item-millionaire-avatar" style="background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05));border-color:rgba(251,191,36,0.3)">
+      <div class="item-icon">👑</div>
+      <div class="item-info">
+        <div class="item-name" style="color:#fbbf24">Avatar Millionnaire</div>
+        <div class="item-desc">Avatar exclusif doré débloqué dans ton profil</div>
+        <div class="item-effect">Avatar 👑 permanent</div>
+      </div>
+      <div class="item-buy">
+        <button class="buy-btn" onclick="buyAvatar()" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0a00">
+          <span class="buy-price">1M</span>
+          <span class="buy-currency">€</span>
+        </button>
+      </div>
+    </div>
+
     function renderPurchaseCounts() {
       const purchases = stats.shop_purchases || {};
       const items = [
@@ -353,6 +393,12 @@
         { id:'item-money-1', key:'money_1' },
         { id:'item-money-2', key:'money_2' },
       ];
+      // Avatar millionnaire
+      const avatarBtn = document.querySelector('#item-millionaire-avatar .buy-btn');
+      if (avatarBtn && (purchases.millionaire_avatar >= 1)) {
+        avatarBtn.disabled = true;
+        avatarBtn.innerHTML = '<span class="buy-price" style="font-size:10px">ACHETÉ</span>';
+      }
       items.forEach(({ id, key }) => {
         const card = document.getElementById(id);
         if (!card) return;
