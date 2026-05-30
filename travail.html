@@ -5,69 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Travail - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
     body {
       font-family:'Inter',sans-serif;
-      min-height:100vh;
-      display:flex;
-      flex-direction:column;
+      min-height:100dvh;
+      display:flex; flex-direction:column;
       overflow:hidden;
     }
+    body.theme-day   { background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#d4a574 55%,#8b7355 100%); }
+    body.theme-night { background:linear-gradient(180deg,#0f2027 0%,#203a43 50%,#2c5364 100%); }
 
-    /* FOND JOUR/NUIT */
-    .bg {
-      position:fixed; inset:0; z-index:0;
-      transition:background 1s ease;
-    }
-    body.theme-day .bg   { background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#d4a574 55%,#8b7355 100%); }
-    body.theme-night .bg { background:linear-gradient(180deg,#0f2027 0%,#203a43 50%,#2c5364 100%); }
-
-    /* SOLEIL/LUNE */
-    .sun {
-      position:fixed; top:24px; right:50px; z-index:1;
-      width:56px; height:56px; border-radius:50%;
-      animation:floatSun 6s ease-in-out infinite;
-    }
-    body.theme-day .sun   { background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 40px rgba(251,191,36,0.6); }
-    body.theme-night .sun { background:radial-gradient(circle at 35% 35%,#fef9c3,#fde68a); box-shadow:0 0 30px rgba(254,249,195,0.25); width:48px; height:48px; }
+    /* DÉCO */
+    .sun { position:fixed; top:24px; right:50px; z-index:1; width:56px; height:56px; border-radius:50%; pointer-events:none; animation:floatSun 6s ease-in-out infinite; }
+    body.theme-day   .sun { background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 40px rgba(251,191,36,0.6); }
+    body.theme-night .sun { background:radial-gradient(circle at 35% 35%,#fef9c3,#fde68a); box-shadow:0 0 20px rgba(254,249,195,0.2); width:44px; height:44px; }
     @keyframes floatSun { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 
-    /* NUAGES */
-    .cloud { position:fixed; z-index:1; animation:drift linear infinite; }
+    .cloud { position:fixed; z-index:1; animation:drift linear infinite; pointer-events:none; }
     .cloud1 { font-size:50px; animation-duration:28s; top:8px; left:-80px; }
-    .cloud2 { font-size:32px; animation-duration:38s; animation-delay:-14s; top:28px; left:-60px; }
-    body.theme-day .cloud   { opacity:0.75; }
-    body.theme-night .cloud { color:rgba(255,255,255,0.12); opacity:1; }
+    .cloud2 { font-size:32px; animation-duration:38s; animation-delay:-14s; top:28px; left:-60px; opacity:0.6; }
+    body.theme-night .cloud { color:rgba(255,255,255,0.1); }
     @keyframes drift { 0%{transform:translateX(0)} 100%{transform:translateX(110vw)} }
 
-    /* ÉTOILES */
-    .star-dot { position:fixed; border-radius:50%; background:white; animation:starTwinkle ease-in-out infinite; }
+    .star-dot { position:fixed; border-radius:50%; background:white; animation:starTwinkle ease-in-out infinite; pointer-events:none; }
     @keyframes starTwinkle { 0%,100%{opacity:0.9} 50%{opacity:0.2} }
     body.theme-day .star-dot { display:none; }
 
-    /* HORIZON & EAU */
-    .horizon { position:fixed; bottom:80px; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent); z-index:1; }
-    .water { position:fixed; bottom:0; left:0; right:0; height:80px; background:linear-gradient(180deg,rgba(44,83,100,0.4),rgba(15,32,39,0.8)); z-index:1; }
-    body.theme-day .water { background:linear-gradient(180deg,rgba(139,115,85,0.4),rgba(101,84,60,0.8)); }
-
     /* HEADER */
     .header {
-      position:relative; z-index:10;
+      position:relative; z-index:10; flex-shrink:0;
       padding:14px 16px; display:flex; align-items:center; gap:12px;
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid rgba(255,255,255,0.1);
+      backdrop-filter:blur(12px);
     }
-    body.theme-day .header   { background:rgba(255,255,255,0.85); }
-    body.theme-night .header { background:rgba(15,32,39,0.95); }
-    .back-btn {
-      background:rgba(59,130,246,0.9); border:none; color:white;
-      padding:8px 14px; border-radius:6px; cursor:pointer;
-      font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px;
-    }
-    .header-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; flex:1; text-align:center; }
-    body.theme-day .header-title   { color:#1a1a1a; }
+    body.theme-day   .header { background:rgba(255,255,255,0.8); border-bottom:1px solid rgba(0,0,0,0.08); }
+    body.theme-night .header { background:rgba(15,32,39,0.9); border-bottom:1px solid rgba(255,255,255,0.08); }
+    .back-btn { background:#3b82f6; border:none; color:white; padding:8px 14px; border-radius:8px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; flex:1; text-align:center; }
+    body.theme-day   .header-title { color:#1a1a1a; }
     body.theme-night .header-title { color:white; }
 
     /* CONTENU */
@@ -75,96 +52,94 @@
       position:relative; z-index:5;
       flex:1; display:flex; flex-direction:column;
       align-items:center; justify-content:center;
-      padding:24px 20px 100px; gap:20px;
+      padding:20px 16px; gap:16px;
     }
+
+    /* TITRE SECTION */
+    .section-title {
+      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:3px;
+      text-align:center; opacity:0.5;
+    }
+    body.theme-day   .section-title { color:#1a1a1a; }
+    body.theme-night .section-title { color:white; }
 
     /* CARTE JEU */
     .game-card {
-      width:100%; max-width:380px;
+      width:100%; max-width:400px;
       border-radius:20px; overflow:hidden;
-      cursor:pointer; transition:transform 0.15s ease, box-shadow 0.15s ease;
-      box-shadow:0 8px 32px rgba(0,0,0,0.3);
+      cursor:pointer;
+      box-shadow:0 12px 40px rgba(0,0,0,0.25);
+      transition:transform 0.15s ease, box-shadow 0.15s ease;
+      text-decoration:none;
     }
-    .game-card:active { transform:scale(0.97); }
+    .game-card:active { transform:scale(0.97); box-shadow:0 4px 16px rgba(0,0,0,0.2); }
 
-    /* SCÈNE MINI CLICKER */
-    .card-scene {
-      height:160px; position:relative; overflow:hidden;
+    /* PREVIEW PORT */
+    .preview-port {
+      height:140px; position:relative; overflow:hidden;
     }
-    .card-scene-clicker {
-      background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#d4a574 55%,#8b7355 100%);
-    }
-    body.theme-night .card-scene-clicker {
-      background:linear-gradient(180deg,#0f2027 0%,#203a43 55%,#1a3a2a 55%,#0d2010 100%);
-    }
-    .card-scene-tower {
-      background:linear-gradient(180deg,#0a0a2e 0%,#1a1a4a 50%,#2c2c1a 50%,#1a1a0a 100%);
-    }
+    body.theme-day   .preview-port { background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#d4a574 55%,#8b7355 100%); }
+    body.theme-night .preview-port { background:linear-gradient(180deg,#0f2027 0%,#203a43 55%,#1a2a1a 55%,#0d1a0d 100%); }
 
-    /* MINI SOLEIL DANS CARTE */
-    .mini-sun {
-      position:absolute; top:12px; right:20px;
-      width:36px; height:36px; border-radius:50%;
-      background:radial-gradient(circle,#fde68a,#fbbf24);
-      box-shadow:0 0 20px rgba(251,191,36,0.5);
+    .preview-sun {
+      position:absolute; top:10px; right:16px;
+      width:32px; height:32px; border-radius:50%;
       animation:floatSun 4s ease-in-out infinite;
     }
-    body.theme-night .card-scene-clicker .mini-sun {
-      background:radial-gradient(circle at 35% 35%,#fef9c3,#fde68a);
-      box-shadow:0 0 16px rgba(254,249,195,0.3);
-      width:30px; height:30px;
-    }
+    body.theme-day   .preview-port .preview-sun { background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 20px rgba(251,191,36,0.5); }
+    body.theme-night .preview-port .preview-sun { background:radial-gradient(circle at 35% 35%,#fef9c3,#fde68a); box-shadow:0 0 12px rgba(254,249,195,0.2); width:26px; height:26px; }
 
-    /* MINI CONTENEUR DANS CARTE */
-    .mini-container {
-      position:absolute; bottom:30px; left:50%; transform:translateX(-50%);
-      width:100px; height:68px;
+    .preview-container {
+      position:absolute; bottom:22px; left:50%; transform:translateX(-50%);
+      width:90px; height:60px;
       background:linear-gradient(135deg,#cc2200,#991100);
       border-radius:6px; border:2px solid rgba(255,255,255,0.15);
-      box-shadow:0 6px 20px rgba(0,0,0,0.5), 0 0 20px rgba(204,34,0,0.3);
-      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 6px 20px rgba(0,0,0,0.5), 0 0 20px rgba(204,34,0,0.25);
       animation:containerBob 2s ease-in-out infinite;
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
     }
-    @keyframes containerBob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-6px)} }
-    .mini-container-stripe { position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.25); }
-    .mini-container-text { font-family:'Bebas Neue',sans-serif; font-size:13px; color:white; letter-spacing:2px; }
+    @keyframes containerBob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-8px)} }
+    .preview-container-stripe { position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.25); }
+    .preview-container-text { font-family:'Bebas Neue',sans-serif; font-size:11px; color:rgba(255,255,255,0.8); letter-spacing:2px; position:relative; z-index:1; }
 
-    /* MINI TOWER */
-    .mini-tower {
-      position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
-      display:flex; flex-direction:column-reverse; align-items:center; gap:2px;
+    /* PREVIEW TOWER */
+    .preview-tower {
+      height:140px; position:relative; overflow:hidden;
+      background:#1a1a1a;
     }
-    .mini-block {
-      height:16px; border-radius:3px;
-      border:1px solid rgba(255,255,255,0.2);
-      display:flex; align-items:center; justify-content:center;
-      font-size:8px;
+    .preview-tower-bg {
+      position:absolute; inset:0;
+      background:
+        linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px),
+        linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px);
+      background-size:30px 30px;
     }
+    .preview-lamp { position:absolute; top:0; }
+    .preview-lamp-body { width:20px; height:10px; background:#2a2a2a; border-radius:2px; margin:0 auto; }
+    .preview-lamp-glow { width:0; height:0; border-left:28px solid transparent; border-right:28px solid transparent; border-top:40px solid rgba(255,220,80,0.06); margin:0 auto; }
+    .preview-stack { position:absolute; bottom:15px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column-reverse; align-items:center; gap:2px; }
+    .preview-block { height:14px; border-radius:2px; border:1px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:7px; }
 
     /* INFO CARTE */
     .card-info {
-      background:white; padding:16px 20px;
-      display:flex; align-items:center; gap:14px;
+      padding:14px 18px; display:flex; align-items:center; gap:14px;
+      background:white;
     }
-    .card-icon { font-size:32px; flex-shrink:0; }
+    .card-icon { font-size:30px; flex-shrink:0; }
     .card-text { flex:1; }
-    .card-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1.5px; color:#1a1a1a; }
-    .card-desc  { font-size:12px; color:#6b7280; margin-top:2px; }
-    .card-badge {
-      font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; flex-shrink:0;
-    }
-    .card-badge.green  { background:rgba(22,163,74,0.1);  color:#16a34a; }
-    .card-badge.purple { background:rgba(124,58,237,0.1); color:#7c3aed; }
+    .card-title { font-family:'Bebas Neue',sans-serif; font-size:19px; letter-spacing:1.5px; color:#1a1a1a; }
+    .card-desc  { font-size:11px; color:#9ca3af; margin-top:2px; line-height:1.4; }
+    .card-badge { font-size:9px; font-weight:700; padding:3px 10px; border-radius:20px; flex-shrink:0; }
+    .badge-green  { background:rgba(22,163,74,0.1);  color:#16a34a; }
+    .badge-purple { background:rgba(124,58,237,0.1); color:#7c3aed; }
+    .badge-lock   { background:rgba(107,114,128,0.1); color:#6b7280; }
   </style>
 </head>
-<body>
+<body class="theme-day">
 
-  <div class="bg"></div>
   <div class="sun"></div>
   <div class="cloud cloud1">☁️</div>
   <div class="cloud cloud2">☁️</div>
-  <div class="horizon"></div>
-  <div class="water"></div>
 
   <div class="header">
     <button class="back-btn" onclick="window.location.href='game.html'">← RETOUR</button>
@@ -173,55 +148,63 @@
   </div>
 
   <div class="content">
+    <div class="section-title">CHOISIR UNE ACTIVITÉ</div>
 
-    <!-- CLICKER -->
+    <!-- PORT -->
     <div class="game-card" onclick="window.location.href='clicker.html'">
-      <div class="card-scene card-scene-clicker">
-        <div class="mini-sun"></div>
-        <div class="mini-container">
-          <div class="mini-container-stripe" style="left:22px"></div>
-          <div class="mini-container-stripe" style="left:44px"></div>
-          <div class="mini-container-stripe" style="left:66px"></div>
-          <div class="mini-container-text">PORT</div>
+      <div class="preview-port">
+        <div class="preview-sun"></div>
+        <div class="preview-container">
+          <div class="preview-container-stripe" style="left:22px"></div>
+          <div class="preview-container-stripe" style="left:44px"></div>
+          <div class="preview-container-stripe" style="left:66px"></div>
+          <div class="preview-container-text">PORT</div>
         </div>
       </div>
       <div class="card-info">
         <div class="card-icon">📦</div>
         <div class="card-text">
           <div class="card-title">Port Maritime</div>
-          <div class="card-desc">Clique sur le conteneur pour travailler et gagner de l'argent et XP</div>
+          <div class="card-desc">Clique sur le conteneur pour gagner de l'argent et de l'XP</div>
         </div>
-        <div class="card-badge green">Actif</div>
+        <div class="card-badge badge-green">Actif</div>
       </div>
     </div>
 
     <!-- TOWER -->
-    <div class="game-card" onclick="window.location.href='tower.html'">
-      <div class="card-scene card-scene-tower">
-        <div class="mini-tower" id="miniTower"></div>
+    <div class="game-card" id="towerCard" onclick="window.location.href='tower.html'">
+      <div class="preview-tower">
+        <div class="preview-tower-bg"></div>
+        <div class="preview-lamp" style="left:30%"><div class="preview-lamp-body"></div><div class="preview-lamp-glow"></div></div>
+        <div class="preview-lamp" style="left:65%"><div class="preview-lamp-body"></div><div class="preview-lamp-glow"></div></div>
+        <div class="preview-stack" id="previewStack"></div>
       </div>
-      <div class="card-info">
+      <div class="card-info" id="towerCardInfo">
         <div class="card-icon">🏗️</div>
         <div class="card-text">
           <div class="card-title">Tower of Containers</div>
-          <div class="card-desc">Empile les conteneurs le plus haut possible pour gagner de l'argent</div>
+          <div class="card-desc" id="towerDesc">Empile les conteneurs le plus haut possible</div>
         </div>
-        <div class="card-badge purple">Nouveau</div>
+        <div class="card-badge badge-purple" id="towerBadge">Nouveau</div>
       </div>
     </div>
 
   </div>
 
   <script>
-    // Thème jour/nuit
-    function applyTheme() {
-      const h = new Date().getHours();
-      const isNight = h >= 18 || h < 7;
-      document.body.classList.toggle('theme-night', isNight);
-      document.body.classList.toggle('theme-day', !isNight);
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    // Thème
+    function applyTheme(){
+      const h=new Date().getHours();
+      const night=h>=18||h<7;
+      document.body.classList.toggle('theme-night',night);
+      document.body.classList.toggle('theme-day',!night);
     }
-    applyTheme();
-    setInterval(applyTheme, 60000);
+    applyTheme(); setInterval(applyTheme,60000);
 
     // Étoiles
     for(let i=0;i<20;i++){
@@ -231,17 +214,32 @@
       document.body.appendChild(s);
     }
 
-    // Mini tower animée
-    const colors=['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'];
-    const tower = document.getElementById('miniTower');
-    const widths = [80,72,65,58,52,46,40];
+    // Mini tower preview
+    const colors=['#cc2200','#1d4ed8','#15803d','#b45309','#7c3aed'];
+    const widths=[80,68,58,50,44,38,32];
+    const stack=document.getElementById('previewStack');
     widths.forEach((w,i)=>{
       const b=document.createElement('div');
-      b.className='mini-block';
-      b.style.cssText=`width:${w}px;background:${colors[i%colors.length]};animation:containerBob ${2+i*0.3}s ease-in-out infinite;animation-delay:${i*0.1}s`;
-      b.textContent='📦';
-      tower.appendChild(b);
+      b.className='preview-block';
+      b.style.cssText=`width:${w}px;background:${colors[i%colors.length]};animation:containerBob ${2+i*0.4}s ease-in-out infinite;animation-delay:${i*0.15}s`;
+      stack.appendChild(b);
     });
+
+    // Vérifier niveau pour Tower
+    async function init(){
+      const {data:{session}} = await sb.auth.getSession();
+      if(!session) return;
+      const {data} = await sb.from('game_stats').select('level').eq('user_id',session.user.id).maybeSingle();
+      const level=data?.level||1;
+      if(level<10){
+        document.getElementById('towerCard').onclick=null;
+        document.getElementById('towerCard').style.opacity='0.6';
+        document.getElementById('towerDesc').textContent=`Débloqué au niveau 10 (tu es niveau ${level})`;
+        document.getElementById('towerBadge').textContent='🔒 Niv. 10';
+        document.getElementById('towerBadge').className='card-badge badge-lock';
+      }
+    }
+    init();
   </script>
 </body>
 </html>
