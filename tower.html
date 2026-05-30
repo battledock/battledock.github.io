@@ -191,23 +191,15 @@
 
     const BLOCK_H = 32;
     const MIN_W   = 20;
-    const COLORS  = [
-      '#cc2200','#991100', // rouge conteneur (début)
-      '#1d4ed8','#1e3a8a', // bleu
-      '#15803d','#14532d', // vert
-      '#b45309','#92400e', // or
-      '#7c3aed','#5b21b6', // violet
-    ];
+    const COLORS  = ['#cc2200','#1d4ed8','#15803d','#b45309','#7c3aed','#db2777'];
 
     let canvas, ctx, W, H;
-    let blocks   = [];   // tous les blocs en coordonnées monde
-    let swinger  = null; // bloc en mouvement
-    let animId   = null;
-    let running  = false;
-    let floor    = 0;
-    let camY     = 0;    // offset caméra : monde → écran = monde_y - camY
+    let blocks  = [];
+    let swinger = null;
+    let animId  = null;
+    let running = false;
+    let floor   = 0;
 
-    // ===== AUTH =====
     async function initAuth() {
       const {data:{session}} = await sb.auth.getSession();
       if(!session){window.location.href='index.html';return;}
@@ -216,20 +208,17 @@
       currentMoney=data?.money||0;
       userLevel=data?.level||1;
       document.getElementById('headerScore').textContent=currentMoney.toLocaleString('fr-FR')+'€';
-
       if(userLevel < 10){
-        document.getElementById('startOverlay').innerHTML='';
         document.getElementById('startOverlay').innerHTML=`
           <div class="locked-card">
             <div class="oc-icon">🔒</div>
             <div class="oc-title">Niveau 10 requis</div>
-            <div class="oc-sub" style="margin-bottom:20px">Tu es niveau ${userLevel}. Continue à travailler au port !</div>
+            <div class="oc-sub" style="margin-bottom:20px">Tu es niveau ${userLevel}. Continue au port !</div>
             <button class="btn-play" onclick="window.location.href='travail.html'">← Retour</button>
           </div>`;
       }
     }
 
-    // ===== CANVAS =====
     function initCanvas(){
       canvas=document.getElementById('towerCanvas');
       const area=document.querySelector('.game-area');
@@ -238,26 +227,15 @@
       ctx=canvas.getContext('2d');
     }
 
-    // ===== DÉMARRER =====
     function startGame(){
       document.getElementById('startOverlay').style.display='none';
       document.getElementById('resultOverlay').style.display='none';
       document.getElementById('tapBtn').className='tap-btn';
       document.getElementById('tapBtn').textContent='🎯 POSER !';
-
       blocks=[]; floor=0;
       initCanvas();
-
-      // Bloc sol au centre bas
-      const groundW=200;
-      const groundX=(W-groundW)/2;
-      const groundY=H-50; // coordonnée monde = coordonnée écran au départ
-
-      blocks.push({x:groundX, y:groundY, w:groundW, isGround:true});
-
-      // La caméra commence à 0 — monde_y = écran_y au départ
-      camY=0;
-
+      const gW=200, gX=(W-gW)/2, gY=H-70;
+      blocks.push({x:gX, y:gY, w:gW, color:'#6b7280', isGround:true});
       running=true;
       spawnSwinger();
       cancelAnimationFrame(animId);
@@ -265,121 +243,61 @@
       updateInfoBar();
     }
 
-    // ===== SPAWN SWINGER =====
     function spawnSwinger(){
       const last=blocks[blocks.length-1];
-      // Le swinger est positionné en coordonnées monde
-      const swingerWorldY = last.y - BLOCK_H - 6;
       const speed=Math.min(2+floor*0.2, 8);
-      swinger={
-        worldX:-last.w,          // démarre hors écran gauche
-        worldY:swingerWorldY,
-        w:last.w, h:BLOCK_H,
-        speed, dir:1,
-        colorIdx: floor % (COLORS.length/2)
-      };
+      let sy = last.y - BLOCK_H - 4;
+      // Si le swinger monte trop, descendre toute la pile
+      if(sy < H * 0.25){
+        const shift = Math.round(H * 0.25 - sy) + BLOCK_H;
+        blocks.forEach(b => b.y += shift);
+        sy = blocks[blocks.length-1].y - BLOCK_H - 4;
+      }
+      swinger={x:-last.w, y:sy, w:last.w, speed, dir:1, color:COLORS[floor%COLORS.length]};
     }
 
-    // ===== BOUCLE =====
     function loop(){
       if(!running) return;
-      swinger.worldX += swinger.speed * swinger.dir;
-      if(swinger.worldX + swinger.w > W+20) swinger.dir=-1;
-      if(swinger.worldX < -20)              swinger.dir=1;
+      swinger.x += swinger.speed * swinger.dir;
+      if(swinger.x+swinger.w > W+20) swinger.dir=-1;
+      if(swinger.x < -20)            swinger.dir=1;
       draw();
       animId=requestAnimationFrame(loop);
     }
 
-    // ===== DESSIN =====
     function draw(){
       ctx.clearRect(0,0,W,H);
-
-      // Tous les blocs
-      [...blocks, swinger].forEach(b => {
-        if(!b) return;
-        const screenY = b.worldY - camY;
-        if(screenY > H+50 || screenY < -BLOCK_H-50) return;
-        const screenX = b.x !== undefined ? b.x : b.worldX;
-        drawBlock(screenX, screenY, b.w, b.isGround ? '#6b7280' : getColor(b.colorIdx ?? floor), b===swinger);
-      });
+      blocks.forEach(b=>drawBlock(b.x,b.y,b.w,b.color,false));
+      if(swinger) drawBlock(swinger.x,swinger.y,swinger.w,swinger.color,true);
     }
 
-    function getColor(idx){
-      return COLORS[idx * 2] || COLORS[0];
-    }
-
-    function drawBlock(x, y, w, color, isMoving){
-      const h = BLOCK_H;
-      // Ombre
-      ctx.fillStyle='rgba(0,0,0,0.2)';
-      ctx.fillRect(x+4, y+4, w, h);
-      // Corps
-      ctx.fillStyle=color;
-      ctx.fillRect(x, y, w, h);
-      // Reflet haut
-      ctx.fillStyle='rgba(255,255,255,0.15)';
-      ctx.fillRect(x, y, w, 5);
-      // Contour
-      ctx.strokeStyle=isMoving?'rgba(255,255,255,0.5)':'rgba(255,255,255,0.2)';
-      ctx.lineWidth=isMoving?2:1;
-      ctx.strokeRect(x, y, w, h);
-      // Striping vertical
+    function drawBlock(x,y,w,color,moving){
+      const h=BLOCK_H;
+      ctx.fillStyle='rgba(0,0,0,0.2)'; ctx.fillRect(x+3,y+3,w,h);
+      ctx.fillStyle=color; ctx.fillRect(x,y,w,h);
+      ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.fillRect(x,y,w,5);
+      ctx.strokeStyle=moving?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.25)';
+      ctx.lineWidth=moving?2:1; ctx.strokeRect(x,y,w,h);
       ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
-      for(let i=1;i<4;i++){
-        const lx=x+(w/4)*i;
-        ctx.beginPath(); ctx.moveTo(lx,y+4); ctx.lineTo(lx,y+h-2); ctx.stroke();
-      }
-      // Emoji 📦
-      if(w>45){
-        ctx.font=`${Math.min(h-8,16)}px serif`;
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillStyle='rgba(255,255,255,0.7)';
-        ctx.fillText('📦', x+w/2, y+h/2);
-      }
+      for(let i=1;i<4;i++){const lx=x+(w/4)*i;ctx.beginPath();ctx.moveTo(lx,y+4);ctx.lineTo(lx,y+h-2);ctx.stroke();}
+      if(w>45){ctx.font=`${Math.min(h-8,16)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.fillText('📦',x+w/2,y+h/2);}
     }
 
-    // ===== TAP =====
     function handleTap(){
       if(!running||!swinger) return;
       const last=blocks[blocks.length-1];
-
-      const sL=swinger.worldX, sR=swinger.worldX+swinger.w;
-      const bL=last.x,         bR=last.x+last.w;
-      const left=Math.max(sL,bL), right=Math.min(sR,bR);
+      const left=Math.max(swinger.x,last.x), right=Math.min(swinger.x+swinger.w,last.x+last.w);
       const overlap=right-left;
-
-      if(overlap<=0||overlap<MIN_W){ gameOver(); return; }
-
-      const isPerfect=overlap/last.w > 0.92;
-      const newX=isPerfect ? last.x : left;
-      const newW=isPerfect ? last.w : overlap;
-
-      // Poser le bloc en coordonnées monde
-      const posedBlock={
-        x:newX,
-        worldY:swinger.worldY,
-        w:newW,
-        colorIdx:floor % (COLORS.length/2)
-      };
-      blocks.push(posedBlock);
+      if(overlap<=0||overlap<MIN_W){gameOver();return;}
+      const perfect=overlap/last.w>0.92;
+      blocks.push({x:perfect?last.x:left, y:last.y-BLOCK_H-4, w:perfect?last.w:overlap, color:swinger.color});
       floor++;
-
-      if(isPerfect) showFlash('PARFAIT ! 🎯');
-      if(navigator.vibrate) navigator.vibrate(isPerfect?[40,20,40]:15);
-
-      // Scroll caméra vers le haut pour garder la tour visible
-      // On veut que le dernier bloc soit à 40% du haut de l'écran
-      const targetScreenY = H * 0.4;
-      const currentScreenY = posedBlock.worldY - camY;
-      if(currentScreenY < targetScreenY + BLOCK_H*3){
-        camY += (BLOCK_H + 6);
-      }
-
+      if(perfect) showFlash('PARFAIT ! 🎯');
+      if(navigator.vibrate) navigator.vibrate(perfect?[40,20,40]:15);
       spawnSwinger();
       updateInfoBar();
     }
 
-    // ===== INFO BAR =====
     function updateInfoBar(){
       const mult=(1+floor*0.1).toFixed(1);
       const gain=Math.floor(floor*20*parseFloat(mult));
@@ -388,35 +306,26 @@
       document.getElementById('infoGain').textContent=gain.toLocaleString('fr-FR')+'€';
     }
 
-    // ===== GAME OVER =====
     async function gameOver(){
       running=false; cancelAnimationFrame(animId);
       const mult=parseFloat((1+floor*0.1).toFixed(1));
       const gain=Math.floor(floor*20*mult);
       if(navigator.vibrate) navigator.vibrate([80,40,150]);
-
-      let emoji,title;
-      if(floor===0)       {emoji='😅';title='Aïe !';}
-      else if(floor<5)    {emoji='📦';title='Pas mal !';}
-      else if(floor<10)   {emoji='🏗️';title='Belle tour !';}
-      else if(floor<20)   {emoji='⭐';title='Impressionnant !';}
-      else                {emoji='🏆';title='LÉGENDAIRE !';}
-
-      document.getElementById('ocEmoji').textContent=emoji;
-      document.getElementById('ocTitle').textContent=title;
+      const titles=[['😅','Aïe !'],['📦','Pas mal !'],['🏗️','Belle tour !'],['⭐','Impressionnant !'],['🏆','LÉGENDAIRE !']];
+      const t=floor===0?0:floor<5?1:floor<10?2:floor<20?3:4;
+      document.getElementById('ocEmoji').textContent=titles[t][0];
+      document.getElementById('ocTitle').textContent=titles[t][1];
       document.getElementById('ocSub').textContent=`${floor} étage${floor>1?'s':''} construits`;
       document.getElementById('ocGain').textContent=gain>0?`+${gain.toLocaleString('fr-FR')}€`:'0€';
       document.getElementById('ocMult').textContent=`×${mult} multiplicateur`;
       document.getElementById('resultOverlay').style.display='flex';
-
-      if(gain>0 && currentUser){
+      if(gain>0&&currentUser){
         currentMoney+=gain;
         document.getElementById('headerScore').textContent=currentMoney.toLocaleString('fr-FR')+'€';
         await sb.from('game_stats').update({money:currentMoney}).eq('user_id',currentUser.id);
       }
     }
 
-    // ===== FLASH =====
     function showFlash(txt){
       const el=document.createElement('div'); el.className='flash'; el.textContent=txt;
       document.body.appendChild(el); setTimeout(()=>el.remove(),700);
