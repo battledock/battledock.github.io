@@ -466,8 +466,11 @@
 
     async function save() {
       if (!currentUser) return;
+      // Relire la BD et ajouter seulement la session en cours pour éviter d'écraser d'autres jeux
+      const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      const baseMoney = fresh?.money ?? totalMoney;
       const { error } = await sb.from('game_stats').update({
-        money: Math.floor(totalMoney),
+        money: Math.max(baseMoney, Math.floor(totalMoney)),
         xp: Math.floor(currentXp),
         level: currentLevel,
         grade: getGrade(currentLevel)
