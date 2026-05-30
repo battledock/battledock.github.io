@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Histoire - Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    input, textarea { -webkit-user-select:text; user-select:text; }
+
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      min-height:100dvh;
+      display:flex; flex-direction:column;
+      color:white;
+      overflow-x:hidden;
+    }
+
+    /* FOND ANIMÉ PORT NUIT */
+    .bg {
+      position:fixed; inset:0; z-index:0;
+      background:linear-gradient(180deg,#0a0f1a 0%,#0d1520 60%,#0a1208 100%);
+    }
+    .bg-lights {
+      position:fixed; inset:0; z-index:0; pointer-events:none;
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(255,160,50,0.06), transparent 40%),
+        radial-gradient(ellipse at 80% 90%, rgba(255,160,50,0.04), transparent 40%),
+        radial-gradient(ellipse at 50% 100%, rgba(100,200,100,0.03), transparent 30%);
+    }
+
+    /* HEADER */
+    .header {
+      position:relative; z-index:10; flex-shrink:0;
+      padding:12px 16px; display:flex; align-items:center; gap:12px;
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(12px);
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:7px 12px; border-radius:8px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; }
+    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:3px; color:white; flex:1; text-align:center; }
+
+    /* ZONE PRINCIPALE */
+    .scene-wrap {
+      position:relative; z-index:2;
+      flex:1; display:flex; flex-direction:column;
+      max-width:500px; margin:0 auto; width:100%;
+      padding:24px 20px 40px;
+    }
+
+    /* LIEU ET HEURE */
+    .scene-location {
+      font-size:11px; color:rgba(255,255,255,0.3);
+      text-transform:uppercase; letter-spacing:2px;
+      font-weight:700; margin-bottom:20px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .scene-location::before, .scene-location::after {
+      content:''; flex:1; height:1px;
+      background:rgba(255,255,255,0.08);
+    }
+
+    /* TEXTE NARRATIF */
+    .narrative {
+      font-size:14px; color:rgba(255,255,255,0.65);
+      line-height:1.8; margin-bottom:20px;
+      font-style:italic;
+    }
+
+    /* BULLE DE DIALOGUE */
+    .dialogue-wrap { margin-bottom:20px; }
+    .dialogue-char {
+      font-size:10px; font-weight:700; text-transform:uppercase;
+      letter-spacing:1.5px; margin-bottom:6px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .dialogue-char::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.06); }
+    .dialogue-bubble {
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:4px 16px 16px 16px;
+      padding:14px 16px;
+      font-size:14px; line-height:1.7;
+      color:rgba(255,255,255,0.85);
+      position:relative;
+    }
+    .dialogue-bubble.pasturon {
+      border-color:rgba(251,191,36,0.2);
+      background:rgba(251,191,36,0.04);
+    }
+    .dialogue-bubble.vigile {
+      border-color:rgba(150,150,150,0.2);
+      background:rgba(150,150,150,0.03);
+    }
+    .char-pasturon { color:#fbbf24; }
+    .char-vigile   { color:#9ca3af; }
+
+    /* INPUT SURNOM */
+    .surnom-wrap {
+      background:rgba(255,255,255,0.04);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:16px; padding:20px;
+      margin-bottom:20px;
+    }
+    .surnom-label { font-size:12px; color:rgba(255,255,255,0.5); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+    .surnom-input {
+      width:100%; background:rgba(0,0,0,0.3);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:10px; padding:12px 14px;
+      font-size:18px; font-weight:700; color:white;
+      font-family:'Bebas Neue',sans-serif; letter-spacing:2px;
+      outline:none; transition:border .2s;
+    }
+    .surnom-input:focus { border-color:rgba(251,191,36,0.4); }
+    .surnom-input::placeholder { color:rgba(255,255,255,0.2); font-size:14px; letter-spacing:1px; }
+    .surnom-hint { font-size:11px; color:rgba(255,255,255,0.25); margin-top:8px; }
+
+    /* BOUTON CONTINUER */
+    .btn-continue {
+      width:100%; height:60px; border:none; border-radius:16px;
+      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px;
+      cursor:pointer; transition:all .15s; margin-top:8px;
+      background:linear-gradient(135deg,#fbbf24,#f59e0b);
+      color:#1a0a00; font-weight:900;
+      box-shadow:0 6px 24px rgba(251,191,36,0.3);
+    }
+    .btn-continue:active { transform:scale(0.97); }
+    .btn-continue:disabled { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.2); box-shadow:none; cursor:not-allowed; }
+
+    /* BADGE DÉBLOQUÉ */
+    .badge-unlock {
+      background:rgba(251,191,36,0.08);
+      border:1px solid rgba(251,191,36,0.2);
+      border-radius:14px; padding:16px;
+      text-align:center; margin-bottom:20px;
+      animation:badgePop .5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes badgePop { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+    .badge-icon { font-size:40px; margin-bottom:8px; }
+    .badge-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#fbbf24; margin-bottom:4px; }
+    .badge-desc  { font-size:12px; color:rgba(255,255,255,0.4); }
+
+    /* ÉCRAN DÉJÀ FAIT */
+    .done-screen {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      padding:40px 20px; text-align:center;
+    }
+    .done-icon  { font-size:64px; margin-bottom:16px; }
+    .done-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:2px; color:white; margin-bottom:8px; }
+    .done-sub   { font-size:14px; color:rgba(255,255,255,0.4); line-height:1.6; margin-bottom:24px; }
+    .done-surnom { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fbbf24; margin-bottom:4px; }
+
+    /* STEPS */
+    .step { display:none; }
+    .step.active { display:block; }
+
+    /* ANIMATION APPARITION */
+    .fade-in { animation:fadeIn .5s ease forwards; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid rgba(255,255,255,0.1); color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity .3s; white-space:nowrap; }
+    .toast.show { opacity:1; }
+    .toast.error { background:rgba(239,68,68,0.9); }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="bg-lights"></div>
+
+  <div class="header">
+    <button class="back-btn" onclick="window.location.href='game.html'">← RETOUR</button>
+    <div class="header-title">📖 Histoire</div>
+    <div style="width:80px"></div>
+  </div>
+
+  <div class="scene-wrap">
+
+    <!-- DÉJÀ FAIT -->
+    <div id="screenDone" style="display:none">
+      <div class="done-screen">
+        <div class="done-icon">🔵</div>
+        <div class="done-surnom" id="doneSurnom"></div>
+        <div class="done-title">Bleu du Port</div>
+        <div class="done-sub">Tu as déjà vécu ta première journée au port.<br>La suite arrive bientôt...</div>
+        <button class="btn-continue" onclick="window.location.href='game.html'" style="max-width:300px;margin:0 auto;display:block">← Retour au Port</button>
+      </div>
+    </div>
+
+    <!-- SCÈNE 1 -->
+    <div id="screenScene" style="display:none">
+
+      <!-- STEP 1 : Arrivée + vigile -->
+      <div class="step active" id="step1">
+        <div class="scene-location">Lundi 6h45 · Portail du Port de Marseille</div>
+        <div class="narrative fade-in">
+          Le soleil se lève à peine sur le port. L'odeur de gasoil et de mer salée t'accueille. Tu ajustes ta veste et tu t'approches du portail.
+        </div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-vigile">Le Vigile</div>
+          <div class="dialogue-bubble vigile">
+            T'es le nouveau ?<br>
+            <span style="color:rgba(255,255,255,0.5);font-size:13px">Il te regarde de haut en bas sans sourire.</span><br>
+            Troisième portail à gauche. Demande Pasturon. Bonne chance.
+          </div>
+        </div>
+        <div class="narrative fade-in">
+          Tu attends dix minutes. Puis quinze. Un homme arrive enfin en trottinant, thermos à moitié renversé sur sa veste, badge collé à l'envers.
+        </div>
+        <button class="btn-continue" onclick="nextStep(2)">Continuer →</button>
+      </div>
+
+      <!-- STEP 2 : Pasturon -->
+      <div class="step" id="step2">
+        <div class="scene-location">Portail · Quai B3</div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-pasturon">Pasturon</div>
+          <div class="dialogue-bubble pasturon">
+            Ah ! C'est toi le nouveau ! Excuse le retard, j'avais... un truc important. Enfin presque. Peu importe !
+          </div>
+        </div>
+        <div class="narrative fade-in">Il te serre la main avec beaucoup trop d'enthousiasme.</div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-pasturon">Pasturon</div>
+          <div class="dialogue-bubble pasturon">
+            Moi c'est Pasturon ! Docker — enfin occasionnel pour l'instant, mais je signe bientôt. C'est une question de jours. Ou de semaines. Bref ! Bienvenue au port de Marseille !
+          </div>
+        </div>
+        <div class="narrative fade-in">Il te tend un gilet réfléchissant trois tailles trop grand.</div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-pasturon">Pasturon</div>
+          <div class="dialogue-bubble pasturon">
+            Ah et... si tu vois un grand avec des ongles vernis qui regarde le ciel en prenant des notes — c'est Ferrotti. Tu fais semblant de rien. 👀
+          </div>
+        </div>
+        <button class="btn-continue" onclick="nextStep(3)">Continuer →</button>
+      </div>
+
+      <!-- STEP 3 : Surnom -->
+      <div class="step" id="step3">
+        <div class="scene-location">Quai B3 · 7h00</div>
+        <div class="narrative fade-in">
+          Vous marchez vers le quai. Pasturon parle sans s'arrêter. À un moment il se retourne vers toi.
+        </div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-pasturon">Pasturon</div>
+          <div class="dialogue-bubble pasturon">
+            Au fait — tout le monde a son surnom ici. Moi c'est Pasturon, Ferrotti c'est Ferrotti... Et toi, on t'appellera comment ?
+          </div>
+        </div>
+        <div class="surnom-wrap fade-in">
+          <div class="surnom-label">Ton surnom au port</div>
+          <input class="surnom-input" id="surnomInput" type="text" maxlength="20" placeholder="Ton surnom..." autocomplete="off" oninput="checkSurnom()">
+          <div class="surnom-hint">Visible sur ton profil et dans le classement · Max 20 caractères</div>
+        </div>
+        <button class="btn-continue" id="btnSurnom" onclick="validateSurnom()" disabled>C'est parti ! 🔵</button>
+      </div>
+
+      <!-- STEP 4 : Badge débloqué -->
+      <div class="step" id="step4">
+        <div class="scene-location">Quai B3 · Premier Jour</div>
+        <div class="dialogue-wrap fade-in">
+          <div class="dialogue-char char-pasturon">Pasturon</div>
+          <div class="dialogue-bubble pasturon" id="pasturonSurnom">
+            <!-- rempli dynamiquement -->
+          </div>
+        </div>
+        <div class="narrative fade-in">
+          Il te donne une grande claque dans le dos et repart vers les conteneurs en sifflotant. C'est parti.
+        </div>
+        <div class="badge-unlock fade-in">
+          <div class="badge-icon">🔵</div>
+          <div class="badge-title">Bleu du Port</div>
+          <div class="badge-desc">Titre débloqué · Visible sur ton profil et dans le classement</div>
+        </div>
+        <div class="narrative fade-in" style="text-align:center;color:rgba(255,255,255,0.4)">
+          La suite de l'histoire arrive bientôt...
+        </div>
+        <button class="btn-continue" onclick="finishScene()">← Retour au Port</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
+
+    let currentUser = null;
+    let surnom = '';
+
+    async function init() {
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+
+      const { data } = await sb.from('game_stats')
+        .select('story_progress')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      const progress = data?.story_progress || {};
+
+      if (progress.scene1_done) {
+        // Déjà fait
+        document.getElementById('screenDone').style.display = 'block';
+        document.getElementById('doneSurnom').textContent = progress.surnom || '';
+      } else {
+        document.getElementById('screenScene').style.display = 'block';
+      }
+    }
+
+    function nextStep(num) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + num).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function checkSurnom() {
+      const val = document.getElementById('surnomInput').value.trim();
+      document.getElementById('btnSurnom').disabled = val.length < 2;
+    }
+
+    function validateSurnom() {
+      surnom = document.getElementById('surnomInput').value.trim();
+      if (surnom.length < 2) { showToast('Minimum 2 caractères !', 'error'); return; }
+
+      // Réponse de Pasturon selon le surnom
+      const responses = [
+        `${surnom} ! J'aime bien. Ça sonne bien pour un docker.`,
+        `${surnom} ? Parfait. On t'appellera comme ça. Bienvenue au port !`,
+        `Ah, ${surnom} ! Original. Moi au début on m'appelait "le futur CDI". Enfin bref.`,
+        `${surnom} ! Nickel. Ferrotti va sûrement y voir un signe cosmique mais t'inquiète.`,
+      ];
+      const resp = responses[Math.floor(Math.random() * responses.length)];
+      document.getElementById('pasturonSurnom').textContent = resp;
+
+      nextStep(4);
+    }
+
+    async function finishScene() {
+      try {
+        // Sauvegarder la progression
+        const { data: fresh } = await sb.from('game_stats')
+          .select('story_progress')
+          .eq('user_id', currentUser.id)
+          .maybeSingle();
+
+        const progress = { ...(fresh?.story_progress || {}), scene1_done: true, surnom };
+        await sb.from('game_stats').update({ story_progress: progress }).eq('user_id', currentUser.id);
+
+        // Sauvegarder le surnom aussi dans profiles
+        await sb.from('profiles').update({ 
+          bio: `🔵 Bleu du Port · "${surnom}"` 
+        }).eq('user_id', currentUser.id);
+
+      } catch(e) { console.log('save error:', e); }
+
+      window.location.href = 'game.html';
+    }
+
+    function showToast(msg, type='') {
+      const t = document.getElementById('toast');
+      t.textContent = msg; t.className = 'toast show ' + type;
+      setTimeout(() => t.className = 'toast', 2800);
+    }
+
+    init();
+  </script>
+</body>
+</html>
