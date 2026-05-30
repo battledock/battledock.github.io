@@ -377,6 +377,15 @@
     async function buyItem(type, amount, cost, currency) {
       if (!stats) return;
 
+      // Vérifier la limite de 10 achats
+      const key = type + '_' + amount;
+      const purchases = stats.shop_purchases || {};
+      const count = purchases[key] || 0;
+      if (count >= 10) {
+        showToast('Maximum 10 achats par amélioration !', 'error');
+        return;
+      }
+
       const balance = {
         money:    stats.money    || 0,
         diamonds: stats.diamonds || 0,
@@ -390,7 +399,8 @@
 
       const field = type === 'xp' ? 'xp_per_click' : 'money_per_click';
       const current = stats[field] || 1;
-      const updates = { [field]: current + amount, [currency]: balance[currency] - cost };
+      const newPurchases = { ...purchases, [key]: count + 1 };
+      const updates = { [field]: current + amount, [currency]: balance[currency] - cost, shop_purchases: newPurchases };
 
       const { error } = await sb.from('game_stats').update(updates).eq('user_id', currentUser.id);
       if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
@@ -400,8 +410,44 @@
       document.getElementById('statDiamonds').textContent = (stats.diamonds || 0) + ' 💎';
       document.getElementById('statTrophies').textContent = (stats.trophies || 0) + ' 🏆';
 
+      const remaining = 10 - (count + 1);
       const label = type === 'xp' ? `+${amount} XP/clic` : `+${amount}€/clic`;
-      showToast(`✅ ${label} acheté !`);
+      showToast(`✅ ${label} ! (${remaining} restant${remaining > 1 ? 's' : ''})`);
+      renderPurchaseCounts();
+    }
+
+    function renderPurchaseCounts() {
+      const purchases = stats.shop_purchases || {};
+      const items = [
+        { id:'item-xp-1',      key:'xp_1' },
+        { id:'item-xp-5',      key:'xp_5' },
+        { id:'item-xp-10',     key:'xp_10' },
+        { id:'item-money-1',   key:'money_1' },
+        { id:'item-money-5',   key:'money_5' },
+        { id:'item-money-20',  key:'money_20' },
+        { id:'item-xp-50',     key:'xp_50' },
+        { id:'item-money-100', key:'money_100' },
+      ];
+      items.forEach(({ id, key }) => {
+        const card = document.getElementById(id);
+        if (!card) return;
+        const count = purchases[key] || 0;
+        const btn = card.querySelector('.buy-btn');
+        if (!btn) return;
+        if (count >= 10) {
+          btn.disabled = true;
+          btn.innerHTML = '<span class="buy-price" style="font-size:10px;letter-spacing:0">MAX</span>';
+        } else if (count > 0) {
+          let countEl = card.querySelector('.purchase-count');
+          if (!countEl) {
+            countEl = document.createElement('div');
+            countEl.className = 'purchase-count';
+            countEl.style.cssText = 'font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;font-weight:700;text-align:center;';
+            btn.parentNode.appendChild(countEl);
+          }
+          countEl.textContent = count + '/10';
+        }
+      });
     }
 
     function showToast(msg, type = '') {
