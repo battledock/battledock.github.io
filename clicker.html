@@ -112,6 +112,17 @@
 
     @keyframes floatSun { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
 
+    .cloud {
+      position: absolute;
+      font-size: 36px;
+      opacity: 0.75;
+      top: 15px;
+      animation: drift linear infinite;
+    }
+    .cloud1 { font-size: 44px; animation-duration: 22s; animation-delay: 0s; top: 10px; left: -80px; }
+    .cloud2 { font-size: 30px; animation-duration: 30s; animation-delay: -10s; top: 30px; left: -60px; opacity: 0.5; }
+    .cloud3 { font-size: 38px; animation-duration: 18s; animation-delay: -5s; top: 5px; left: -70px; }
+
     .clouds {
       position: absolute;
       top: 20px;
@@ -246,7 +257,6 @@
     <button class="header-btn" onclick="goBack()">← RETOUR</button>
     <div class="header-money" id="headerMoney">0€</div>
     <button class="header-btn green" onclick="window.location.href='shop.html'">⚙️ SHOP</button>
-    <button class="header-btn" onclick="window.location.href='tower.html'" style="background:#22c55e">🏗️</button>
   </div>
 
   <!-- XP BAR -->
@@ -263,7 +273,9 @@
   <!-- SCENE -->
   <div class="scene" id="scene">
     <div class="sun"></div>
-    <div class="clouds">☁️ ☁️</div>
+    <div class="cloud cloud1">☁️</div>
+    <div class="cloud cloud2">☁️</div>
+    <div class="cloud cloud3">⛅</div>
 
     <div class="container-wrap" id="containerBtn" ontouchstart="handleTouch(event)" onclick="handleClick(event)">
       <div class="container-box">
@@ -346,7 +358,7 @@
 
       const { data: profile } = await sb
         .from('profiles')
-        .select('upgrades, skin_container')
+        .select('skin_container')
         .eq('user_id', currentUser.id)
         .maybeSingle();
 
@@ -354,9 +366,11 @@
         totalMoney = stats.money || 0;
         currentXp = stats.xp || 0;
         currentLevel = stats.level || 1;
+        window.xpPerClick    = stats.xp_per_click    || 1;
+        window.moneyPerClick = stats.money_per_click  || 1;
       }
 
-      upgrades = profile?.upgrades || {};
+      // upgrades legacy supprimé — on utilise xp_per_click et money_per_click
 
       // Appliquer skin conteneur
       const skin = profile?.skin_container || 'red';
@@ -394,14 +408,13 @@
 
     function doClick(x, y) {
       clicks++;
-      // XP bonus selon upgrades
-      const xpGain = 1 + (upgrades.xp_bonus_1 ? 1 : 0) + (upgrades.xp_bonus_2 ? 2 : 0);
+      // XP par clic depuis game_stats (shop)
+      const xpGain = window.xpPerClick || 1;
       sessionXp += xpGain;
       currentXp += xpGain;
 
-      // Gain argent
-      const baseGain = 1 + (upgrades.earn_per_click || 0);
-      const xpMult = upgrades.xp_multiplier ? (1 + upgrades.xp_multiplier * 0.5) : 1;
+      // Argent par clic depuis game_stats (shop)
+      const baseGain = window.moneyPerClick || 1;
       const gain = Math.floor(baseGain * combo);
 
       sessionMoney += gain;
@@ -413,8 +426,8 @@
       comboTimeout = setTimeout(() => { combo = 1; updateDisplay(); }, 400);
 
       // Particules
-      spawnParticle(x, y, '+' + gain.toFixed(0) + '€', false);
-      if (clicks % 5 === 0) spawnParticle(x - 20, y - 20, '+1 XP', true);
+      spawnParticle(x, y, '+' + gain + '€', false);
+      if (clicks % 3 === 0) spawnParticle(x - 20, y - 20, '+' + xpGain + ' XP', true);
 
       // Check level up
       checkLevelUp();
