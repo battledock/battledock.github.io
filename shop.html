@@ -386,10 +386,15 @@
         return;
       }
 
+      // Relire depuis la BD pour éviter d'écraser une valeur obsolète
+      const { data: fresh } = await sb.from('game_stats')
+        .select('money, diamonds, trophies, xp_per_click, money_per_click')
+        .eq('user_id', currentUser.id).maybeSingle();
+
       const balance = {
-        money:    stats.money    || 0,
-        diamonds: stats.diamonds || 0,
-        trophies: stats.trophies || 0
+        money:    fresh?.money    || 0,
+        diamonds: fresh?.diamonds || 0,
+        trophies: fresh?.trophies || 0
       };
 
       if (balance[currency] < cost) {
@@ -398,7 +403,7 @@
       }
 
       const field = type === 'xp' ? 'xp_per_click' : 'money_per_click';
-      const current = stats[field] || 1;
+      const current = fresh?.[field] || 1;
       const newPurchases = { ...purchases, [key]: count + 1 };
       const updates = { [field]: current + amount, [currency]: balance[currency] - cost, shop_purchases: newPurchases };
 
