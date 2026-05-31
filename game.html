@@ -5,102 +5,194 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script>
+    (function() {
+      const PASS = 'froid';
+      if (sessionStorage.getItem('bd_pass') === PASS) return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        // Afficher le popup maintenance
+        const overlay = document.createElement('div');
+        overlay.id = 'maintenanceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        overlay.innerHTML = `
+          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🔒</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
+            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
+            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
+            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
+          </div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
+      }).catch(()=>{});
+    })();
+  </script>
+
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    html, body { height:100%; background:#f5f4f0; }
-    body { font-family:'Inter',sans-serif; display:flex; flex-direction:column; min-height:100dvh; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+    input, textarea { -webkit-user-select:text; user-select:text; }
 
-    /* ── PROFIL ── */
-    .profile-bar {
-      background:white;
-      border-bottom:1px solid rgba(0,0,0,0.07);
-      padding:12px 16px;
-      display:flex; align-items:center; gap:12px;
-      cursor:pointer; flex-shrink:0;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #efefef;
+      min-height: 100vh;
+      padding-top: 0;
+      padding-bottom: 0;
+      position: relative;
+      overflow-x: hidden;
     }
-    .profile-bar:active { background:#f9f9f9; }
-    .avatar { width:44px; height:44px; border-radius:50%; overflow:hidden; flex-shrink:0; background:#e5e7eb; border:2px solid #e5e7eb; }
+
+
+    /* Veines marbre CSS */
+
+
+
+
+    /* ===================== HALOS ANIMÉS ===================== */
+
+
+
+
+    @keyframes haloDrift1 {
+      0%,100% { transform: translate(0,0); }
+      33%      { transform: translate(80px,100px); }
+      66%      { transform: translate(40px,-50px); }
+    }
+    @keyframes haloDrift2 {
+      0%,100% { transform: translate(0,0); }
+      33%      { transform: translate(-90px,-70px); }
+      66%      { transform: translate(-40px,60px); }
+    }
+    @keyframes haloDrift3 {
+      0%,100% { transform: translate(-50%,-50%) scale(1); }
+      50%      { transform: translate(-50%,-50%) scale(1.4); }
+    }
+
+
+
+      8%   { opacity: 0.7; }
+      92%  { opacity: 0.4; }
+      100% { transform: translateY(-100vh) translateX(var(--dx)); opacity: 0; }
+    }
+
+    /* ===================== HEADER FIXE MARBRE ===================== */
+    .topbar {
+      position: relative;
+      padding: 0 0 10px;
+      overflow: hidden;
+    }
+
+    /* Fond marbre dans le header */
+    .topbar-bg {
+      position: absolute; inset: 0;
+      background: rgba(251,249,246,0.96);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    /* Veines marbre dans le header */
+    .topbar-bg::after {
+      content: '';
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(128deg, transparent 30%, rgba(190,185,180,0.15) 40%, transparent 50%),
+        linear-gradient(42deg,  transparent 45%, rgba(190,185,180,0.08) 55%, transparent 65%);
+    }
+
+    /* Bordure inférieure fine */
+    .topbar-line {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(180,175,170,0.4), rgba(212,175,55,0.3), rgba(180,175,170,0.4), transparent);
+    }
+
+    /* Shimmer doré qui glisse dans le header */
+    .topbar-glow {
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.6) 50%, transparent 65%);
+      animation: headerShimmer 6s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes headerShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+
+    .topbar-row {
+      display: flex; align-items: center; gap: 2px;
+      max-width: 600px; margin: 0 auto;
+      padding: 12px 16px 8px;
+      position: relative; z-index: 1;
+    }
+
+    .avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1.5px solid rgba(212,175,55,0.3);
+      overflow: hidden; flex-shrink: 0; cursor: pointer;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.08), 0 0 0 3px rgba(212,175,55,0.08);
+    }
     .avatar img { width:100%; height:100%; object-fit:cover; }
-    .profile-info { flex:1; min-width:0; }
-    .profile-name { font-weight:700; font-size:15px; color:#1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .profile-sub  { font-size:11px; color:#9ca3af; margin-top:1px; }
-    .profile-pills { display:flex; gap:6px; flex-shrink:0; }
-    .pill { border-radius:20px; padding:4px 10px; font-size:11px; font-weight:700; white-space:nowrap; }
-    .pill-gold { background:#fef3c7; color:#92400e; }
-    .pill-blue { background:#dbeafe; color:#1e40af; }
 
-    /* ── CARTES ── */
-    .cards-wrap { flex:1; display:flex; flex-direction:column; }
+    .player-info { flex:1; min-width:0; }
+    .player-name {
+      font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px;
+      color:#1a1a1a; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .player-grade {
+      font-size:10px; color:#b8962e; font-weight:700; margin-top:2px;
+      letter-spacing:0.5px; text-transform:uppercase;
+    }
 
-    /* MODE HISTOIRE */
-    .histoire-card {
-      position:relative; overflow:hidden;
-      height:180px; flex-shrink:0;
-      background:linear-gradient(135deg,#1e0a3c,#2d1060,#1a0845);
-      cursor:pointer;
-      transition:filter .15s;
+    .xp-wrap {
+      max-width:600px; margin:0 auto;
+      padding: 0 16px;
+      position: relative; z-index: 1;
     }
-    .histoire-card:active { filter:brightness(0.85); }
-    .histoire-card canvas { position:absolute; inset:0; width:100%; height:100%; opacity:0.5; pointer-events:none; }
-    .histoire-card .line-scan { position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent); animation:scan 3s linear infinite; pointer-events:none; }
-    .histoire-card .line-bot  { position:absolute; bottom:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(167,139,250,0.3),transparent); pointer-events:none; }
-    @keyframes scan { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
-    .histoire-inner { position:relative; z-index:2; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
-    .histoire-le    { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:7px; color:rgba(196,181,253,0.55); }
-    .histoire-mode  { font-family:'Bebas Neue',sans-serif; font-size:52px; letter-spacing:10px; color:white; line-height:1; text-shadow:0 0 40px rgba(167,139,250,0.8),0 0 80px rgba(124,58,237,0.4); }
-    .histoire-badge { font-size:10px; color:rgba(196,181,253,0.6); font-weight:700; letter-spacing:1.5px; display:none; margin-top:2px; }
+    .xp-label {
+      display:flex; justify-content:space-between;
+      font-size:9px; color:rgba(0,0,0,0.3); font-weight:700; margin-bottom:5px;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .xp-track {
+      height:3px;
+      background:rgba(0,0,0,0.06);
+      border-radius:2px; overflow:hidden;
+    }
+    .xp-fill {
+      height:100%;
+      background: linear-gradient(90deg, #b8962e, #d4af37, #f5d060);
+      border-radius:2px; transition:width 0.5s ease;
+      box-shadow: 0 0 6px rgba(212,175,55,0.5);
+    }
 
-    /* TRAVAILLER */
-    .travail-card {
-      position:relative; overflow:hidden;
-      flex:1; min-height:130px;
-      cursor:pointer;
-      transition:filter .15s;
-    }
-    .travail-card:active { filter:brightness(0.9); }
-    .travail-bg {
-      position:absolute; inset:0;
-      background:linear-gradient(135deg,#0c4a6e 0%,#0369a1 40%,#0284c7 70%,#0ea5e9 100%);
-    }
-    .travail-waves {
-      position:absolute; bottom:0; left:0; right:0; height:40px; pointer-events:none;
-    }
-    .travail-inner {
-      position:relative; z-index:2; height:100%;
-      display:flex; align-items:flex-end; padding:18px 20px;
-    }
-    .travail-content { flex:1; }
-    .travail-icon  { font-size:32px; margin-bottom:6px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-    .travail-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; color:white; text-shadow:0 2px 8px rgba(0,0,0,0.3); }
-    .travail-sub   { font-size:12px; color:rgba(255,255,255,0.6); margin-top:2px; }
+    /* ===================== CONTAINER ===================== */
+    .container { max-width:600px; margin:0 auto; padding:20px 14px 20px; position:relative; z-index:1; }
 
-    /* LOCK overlay */
-    .lock-overlay {
-      position:absolute; inset:0; z-index:10;
-      background:rgba(0,0,0,0.5);
-      display:flex; align-items:center; justify-content:center;
-      flex-direction:column; gap:6px;
-    }
-    .lock-overlay-icon  { font-size:32px; }
-    .lock-overlay-text  { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; color:rgba(255,255,255,0.7); }
+    /* ===================== DAILY ===================== */
 
-    /* TOAST */
-    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; white-space:nowrap; pointer-events:none; }
-    .toast.show { opacity:1; }
- PROFIL CARD ===================== */
+
+    /* ===================== SECTION LABEL ===================== */
+    .section-label { font-size:11px; font-weight:700; color:rgba(0,0,0,0.25); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
+
+    /* ===================== PROFIL CARD ===================== */
     .profile-card-btn {
+      grid-column: span 2;
+      border-radius: 0;
       background: white;
-      border-bottom: 1px solid #e5e7eb;
+      border-radius: 18px;
+      overflow: hidden;
       cursor: pointer;
-      transition: opacity 0.15s;
-      padding: 14px 16px;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      width: 100%;
-      box-sizing: border-box;
+      gap: 2px;
     }
     .profile-card-btn:active { transform: scale(0.98); }
 
@@ -144,115 +236,1084 @@
     .pcb-stat-val { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#1a1a1a; letter-spacing:0.5px; line-height:1; }
     .pcb-stat-lbl { font-size:8px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:2px; }
 
+    /* ===================== NAV CARDS IMMERSIVES ===================== */
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .nav-card {
+      border-radius: 0;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      height: 130px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      will-change: transform;
+    }
+
+    .nav-card:active { transform: scale(0.94); }
+
+    .nav-card-bg {
+      position: absolute; inset: 0;
+      z-index: 0;
+    }
+
+    .nav-card-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
+      z-index: 1;
+    }
+
+    .nav-card-content {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+
+    .nav-card-icon { font-size: 28px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+
+    .nav-card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 1.5px;
+      color: white; line-height: 1;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+
+    .nav-card-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
+
+    /* TRAVAILLER - Port de jour */
+    .nav-card.work { grid-column: span 2; height: 110px; }
+    .nav-card.work .nav-card-bg { background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #1d4ed8 100%); }
+    .work-waves {
+      position: absolute; bottom: 0; left: 0; right: 0; height: 30px; z-index: 2; overflow: hidden;
+    }
+    .work-waves svg { width: 200%; height: 100%; animation: wavesMove 3s linear infinite; }
+    @keyframes wavesMove { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    .nav-card.work::after {
+      content: '🚢';
+      position: absolute; right: 20px; bottom: 14px; font-size: 52px;
+      z-index: 2; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+      animation: float 3s ease-in-out infinite;
+    }
+    .nav-card.work .nav-card-overlay { background: linear-gradient(90deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 60%); }
+    .nav-card.work .nav-card-content { justify-content: center; }
+    .nav-card.work .nav-card-title { font-size: 26px; }
+
+    /* CASINO - Nuit rouge avec particules */
+    .nav-card.casino .nav-card-bg {
+      background: linear-gradient(135deg, #450a0a 0%, #7f1d1d 60%, #991b1b 100%);
+    }
+    .nav-card.casino .nav-card-title { color: #fbbf24; }
+    .casino-canvas {
+      position: absolute; inset: 0; z-index: 1;
+      width: 100%; height: 100%; pointer-events: none;
+    }
+    .casino-lights {
+      position: absolute; top: 10px; right: 10px; z-index: 2;
+      display: flex; gap: 5px;
+    }
+    .casino-light { width: 6px; height: 6px; border-radius: 50%; }
+    .casino-light:nth-child(1) { background: #fbbf24; animation: blink 1.2s infinite; }
+    .casino-light:nth-child(2) { background: #ef4444; animation: blink 1.2s 0.4s infinite; }
+    .casino-light:nth-child(3) { background: #fbbf24; animation: blink 1.2s 0.8s infinite; }
+    @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 6px currentColor} 50%{opacity:0.3} }
+
+    /* PARTICULES CASINO */
+    .casino-particles { position:absolute; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
+    .casino-particle {
+      position: absolute;
+      width: 4px; height: 4px;
+      border-radius: 1px;
+      animation: casinoFall linear infinite;
+      opacity: 0;
+    }
+    @keyframes casinoFall {
+      0%   { transform: translateY(-10px) rotate(0deg);   opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.8; }
+      100% { transform: translateY(130px) rotate(360deg); opacity: 0; }
+    }
+
+    
+    
+    
+    
+    
+    .nav-card.rank .nav-card-bg {
+      background: linear-gradient(135deg, #0a0a1a 0%, #0d2347 60%, #1a3a6b 100%);
+    }
+    .nav-card.rank .nav-card-title { color: #60a5fa; }
+    .rank-stars {
+      position: absolute; inset: 0; z-index: 1; overflow: hidden;
+    }
+    .rank-star {
+      position: absolute;
+      width: 2px; height: 2px;
+      background: white; border-radius: 50%;
+      animation: twinkle 2s infinite;
+    }
+    @keyframes twinkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.5)} }
+
+
+    /* BOURSE - Terminal avec gradient dynamique */
+    .nav-card.bourse .nav-card-bg {
+      background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #065f46 100%);
+    }
+    .nav-card.bourse .nav-card-title { color: #34d399; }
+    .nav-card.bourse .nav-card-sub   { color: rgba(52,211,153,0.6); }
+    .bourse-lines {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      height: 55px; z-index: 1;
+    }
+
+    /* PROGRESSION CARD */
+    /* PROGRESSION - Arbre de compétences */
+    /* BOUTON OBJECTIFS — Jungle */
+    .nav-card.progression-card {
+      grid-column: span 2;
+      height: 110px;
+      padding: 0;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+    }
+    .nav-card.progression-card .nav-card-bg {
+      background: linear-gradient(135deg, #0a1a0a 0%, #1a3a1a 40%, #2d5a1a 70%, #1a2e0a 100%);
+    }
+    .nav-card.progression-card .nav-card-overlay { display:none; }
+
+    /* SVG lianes */
+    .obj-jungle-svg {
+      position:absolute; inset:0; z-index:1; pointer-events:none;
+      width:100%; height:100%;
+    }
+
+    /* Lueur verte */
+    .obj-jungle-glow {
+      position:absolute; z-index:1; pointer-events:none;
+      width:200px; height:200px;
+      background:radial-gradient(circle, rgba(34,197,94,0.12), transparent 70%);
+      top:50%; left:30%; transform:translate(-50%,-50%);
+      animation:jGlow 4s ease-in-out infinite;
+    }
+    @keyframes jGlow { 0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} }
+
+    /* Badge */
+    .obj-count-badge {
+      position:absolute; z-index:4; top:12px; right:14px;
+      background:rgba(34,197,94,0.2); backdrop-filter:blur(8px);
+      border:1px solid rgba(34,197,94,0.3); color:#86efac;
+      font-weight:700; font-size:11px; padding:3px 10px;
+      border-radius:20px; letter-spacing:0.5px;
+    }
+
+    .cal-wrap {
+      position:absolute; inset:0; z-index:3;
+      display:flex; align-items:center; padding:0 20px; gap:16px;
+    }
+    .cal-left { display:none; }
+    .cal-day-num { display:none; }
+    .cal-day-name { display:none; }
+
+    .cal-right { display:flex; flex-direction:column; gap:6px; }
+    .cal-title {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:24px; letter-spacing:3px; color:white;
+      text-shadow:0 0 20px rgba(34,197,94,0.4);
+    }
+    .cal-subtitle { display:none; }
+    .cal-objs    { display:none; }
+    .cal-progress { width:120px; }
+    .cal-prog-row { display:none; }
+    .cal-prog-track { height:2px; background:rgba(255,255,255,0.1); border-radius:1px; overflow:hidden; }
+    .cal-prog-fill  { height:100%; background:linear-gradient(90deg,#22c55e,#86efac); border-radius:1px; transition:width 0.4s ease; box-shadow:0 0 6px rgba(34,197,94,0.5); }
+
+    /* Icône centrale */
+    .obj-jungle-icon {
+      position:absolute; z-index:2;
+      right:20px; top:50%; transform:translateY(-50%);
+      font-size:52px;
+      filter:drop-shadow(0 0 12px rgba(34,197,94,0.4));
+      animation:jIcon 4s ease-in-out infinite;
+    }
+    @keyframes jIcon { 0%,100%{transform:translateY(-50%) rotate(-3deg)} 50%{transform:translateY(-52%) rotate(3deg)} }
+
+    /* GRID SIMPLE POUR COMPANY */
+    .nav-grid-single {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2px;
+      margin-bottom: 0;
+    }
+
+    /* BOUTONS CHAT + PARAMÈTRES */
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-bottom: 12px;
+    }
+
+    .mini-card {
+      border-radius: 18px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.2s, box-shadow 0.2s;
+      height: 130px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .mini-card:active { transform: scale(0.94); }
+
+    .mini-card-bg { position: absolute; inset: 0; z-index: 0; }
+    .mini-card-overlay {
+      position: absolute; inset: 0; z-index: 1;
+      background: linear-gradient(160deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
+    }
+    .mini-card-content {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .mini-card-icon {
+      font-size: 28px; margin-bottom: 4px;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .mini-card-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 18px; letter-spacing: 1.5px;
+      color: white; line-height: 1;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .mini-card-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
+
+    /* CHAT — fond dégradé violet/bleu nuit */
+    .mini-card.chat .mini-card-bg {
+      background: linear-gradient(145deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    }
+    .mini-card.chat .mini-card-title { color: #a78bfa; }
+    .mini-card.chat .mini-card-sub   { color: rgba(167,139,250,0.7); }
+
+    /* Étoiles fond chat */
+    .chat-stars {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
+    }
+    .chat-star {
+      position: absolute; border-radius: 50%;
+      background: white;
+      animation: starTwinkle ease-in-out infinite;
+    }
+    @keyframes starTwinkle {
+      0%,100% { opacity: 0.8; transform: scale(1); }
+      50%      { opacity: 0.2; transform: scale(0.5); }
+    }
+
+    /* Bulles de dialogue flottantes */
+    .chat-msg-bubble {
+      position: absolute; z-index: 2;
+      background: rgba(167,139,250,0.15);
+      border: 1px solid rgba(167,139,250,0.25);
+      border-radius: 12px 12px 12px 0;
+      animation: msgFloat ease-in-out infinite;
+    }
+    .chat-msg-bubble.right {
+      border-radius: 12px 12px 0 12px;
+    }
+    @keyframes msgFloat {
+      0%,100% { transform: translateY(0); opacity: 0.6; }
+      50%      { transform: translateY(-6px); opacity: 1; }
+    }
+
+    /* Badge notification */
+    .chat-notif {
+      position: absolute;
+      top: 10px; right: 10px; z-index: 5;
+      min-width: 18px; height: 18px;
+      background: #ef4444; color: white;
+      border-radius: 9px; padding: 0 5px;
+      font-size: 10px; font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 10px rgba(239,68,68,0.7);
+      animation: notifPulse 2s ease-in-out infinite;
+    }
+    .chat-notif.hidden { display: none; }
+    @keyframes notifPulse {
+      0%,100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+
+    /* PARAMÈTRES — engrenages mécaniques */
+    .mini-card.settings .mini-card-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    }
+    .mini-card.settings .mini-card-title { color: #94a3b8; }
+    .mini-card.settings .mini-card-sub   { color: rgba(148,163,184,0.6); }
+
+    /* Grille mécanique fond */
+    .settings-grid {
+      position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
+      background-image:
+        linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    /* Engrenages */
+    .gear {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid rgba(148,163,184,0.15);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      animation: gearRotate linear infinite;
+      z-index: 1;
+    }
+    .gear.big   { width: 60px; height: 60px; top: -10px; right: -10px; animation-duration: 8s; }
+    .gear.small { width: 36px; height: 36px; top: 30px; right: 40px; animation-duration: 5s; animation-direction: reverse; }
+    @keyframes gearRotate { to { transform: rotate(360deg); } }
+
+    /* COMPANY CARD - Marbre blanc luxe */
+    .nav-card.company {
+      grid-column: span 2;
+      height: 120px;
+      padding: 0;
+      border: 1px solid #e5e7eb;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .nav-card.company .nav-card-bg {
+      background: #f0f0f0;
+    }
+
+    /* Texture marbre SVG */
+    .marble-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; z-index: 1;
+    }
+
+    /* Shimmer doré */
+    .marble-shimmer {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(105deg,
+        transparent 30%,
+        rgba(212,175,55,0.06) 45%,
+        rgba(255,255,255,0.3) 50%,
+        rgba(212,175,55,0.06) 55%,
+        transparent 70%
+      );
+      animation: shimmer 4s linear infinite;
+    }
+
+    /* Bande dorée latérale */
+    .marble-gold-line { display: none; }
+
+    /* Contenu */
+    .company-content {
+      position: absolute; inset: 0; z-index: 4;
+      display: flex;
+      align-items: center;
+      padding: 0 22px 0 20px;
+      gap: 16px;
+    }
+    .company-seal {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #d4af37, #f5d060, #b8962e);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px rgba(212,175,55,0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .company-text-wrap { flex: 1; min-width: 0; }
+    .company-badge {
+      font-size: 9px; font-weight: 700;
+      color: #b8962e;
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .company-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px; letter-spacing: 2px;
+      color: #1a1a1a; line-height: 1;
+    }
+    .company-sub {
+      font-size: 10px; color: #6b7280;
+      margin-top: 3px; font-weight: 600;
+    }
+    .company-arrow-wrap {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 1px solid #e5e7eb;
+      display: flex; align-items: center; justify-content: center;
+      color: #9ca3af; font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    /* BOUTON PROCHAINEMENT */
+    .nav-card.soon-card {
+      grid-column: span 2;
+      height: 80px;
+      padding: 0;
+      overflow: hidden;
+      border: 1px solid rgba(99,102,241,0.2);
+    }
+    .nav-card.soon-card .nav-card-bg {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    }
+    .nav-card.soon-card .nav-card-overlay { display:none; }
+    .soon-content {
+      position:absolute; inset:0; z-index:2;
+      display:flex; align-items:center; padding:0 20px; gap:14px;
+    }
+    .soon-icon { font-size:28px; filter:drop-shadow(0 0 8px rgba(165,180,252,0.5)); }
+    .soon-text { flex:1; }
+    .soon-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:white; }
+    .soon-sub { font-size:10px; color:rgba(255,255,255,0.4); font-weight:600; margin-top:1px; }
+    .soon-arrow { color:rgba(165,180,252,0.5); font-size:20px; }
+
+    /* ANIMATIONS GLOBALES */
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes shimmer { 0%{left:-100%} 40%{left:100%} 100%{left:100%} }
+    @keyframes popIn { 0%{transform:scale(0.5) rotate(-5deg);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
+    @keyframes bounceIcon { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+    @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+
+    /* COMPANY BANNER */
+    .company-banner {
+      background: #111827;
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px;
+      cursor: pointer; margin-bottom: 14px;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .company-banner:active { transform: scale(0.98); }
+    .company-banner-icon  { font-size: 32px; flex-shrink: 0; }
+    .company-banner-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; color:white; line-height:1.1; }
+    .company-banner-sub   { font-size:11px; color:rgba(255,255,255,0.35); margin-top:2px; }
+    .company-banner-arrow { margin-left:auto; color:rgba(255,255,255,0.2); font-size:20px; flex-shrink:0; }
+
+    /* BOTTOM BAR */
+
+  
+
+    /* RUMEURS DU PORT */
+    .rumeur-banner {
+      background:linear-gradient(135deg,rgba(30,20,10,0.95),rgba(20,15,5,0.95));
+      border:1px solid rgba(212,165,116,0.25);
+      border-radius:12px; margin:0 0 12px; padding:12px 14px;
+      position:relative; overflow:hidden; cursor:pointer;
+    }
+    .rumeur-banner::before {
+      content:''; position:absolute; inset:0;
+      background:linear-gradient(90deg,transparent,rgba(212,165,116,0.04),transparent);
+      animation:bannerShimmer 4s linear infinite;
+    }
+    .rumeur-header { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .rumeur-icon { font-size:16px; }
+    .rumeur-title { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:2px; color:rgba(212,165,116,0.7); }
+    .rumeur-dot { width:6px; height:6px; border-radius:50%; background:#f59e0b; margin-left:auto; animation:dotPulse 2s ease-in-out infinite; }
+    @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .rumeur-text { font-size:12px; color:rgba(255,255,255,0.7); line-height:1.5; font-style:italic; }
+
+
+    .nav-card.histoire { grid-column: span 2; height: 130px; }
+    @keyframes lineScan {
+      0%   { transform:translateX(-100%); }
+      100% { transform:translateX(100%); }
+    }
+
+
+    /* POPUP MESSAGE DIRECT */
+    .direct-msg-overlay {
+      position:fixed; inset:0; z-index:999;
+      background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
+      display:flex; align-items:center; justify-content:center;
+      animation:fadeIn .3s ease;
+    }
+    .direct-msg-card {
+      max-width:320px; width:90%;
+      background:#0f0f0f; border:1px solid #2a2a2a;
+      border-radius:20px; padding:28px 22px; text-align:center;
+      animation:popIn .4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .direct-msg-icon { font-size:52px; margin-bottom:12px; }
+    .direct-msg-title {
+      font-family:'Bebas Neue',sans-serif; font-size:18px;
+      letter-spacing:2px; color:#ef4444; margin-bottom:14px;
+    }
+    .direct-msg-body {
+      font-size:13px; color:rgba(255,255,255,0.6);
+      line-height:1.7; white-space:pre-line;
+      background:rgba(255,255,255,0.03); border:1px solid #1a1a1a;
+      border-radius:10px; padding:14px; margin-bottom:18px;
+      text-align:left;
+    }
+    .direct-msg-btn {
+      width:100%; height:48px; border:none; border-radius:12px;
+      background:#1a1a1a; border:1px solid #2a2a2a;
+      color:rgba(255,255,255,0.5); font-family:'Bebas Neue',sans-serif;
+      font-size:15px; letter-spacing:1px; cursor:pointer;
+    }
+    .direct-msg-btn:active { background:#222; }
+
+    /* FLUIDITÉ GLOBALE */
+    * { -webkit-font-smoothing:antialiased; }
+    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    button:active, .nav-card:active, .row:active {
+      transform: scale(0.97) !important;
+      opacity: 0.9 !important;
+    }
+    img { transition: opacity 0.3s ease; }
+    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
 
   </style>
 </head>
 <body>
+  <style>
+    @keyframes bannerShimmer { 0%{transform:translateX(-100%)} 100%{transform:translateX(200%)} }
+  </style>
 
-  <div class="profile-card-btn" id="profileCardBtn" onclick="window.location.href='profil.html'">
-    <div class="pcb-row">
-      <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
-      <div class="pcb-info">
-    <div class="pcb-name"  id="playerName">...</div>
-    <div class="pcb-grade" id="playerGrade">Docker Occasionnel</div>
-      </div>
-      <div class="pcb-level-wrap">
-    <div class="pcb-level-num" id="currentLevel">1</div>
-    <div class="pcb-level-lbl">Niv.</div>
-      </div>
-    </div>
-    <div class="pcb-xp-wrap">
-      <div class="pcb-xp-label">
-    <span id="xpCounter">0 / 500 XP</span>
-    <span>→ Niv. <span id="nextLevel">2</span></span>
-      </div>
-      <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
-    </div>
-    <div class="pcb-stats">
-      <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
-      <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
-      <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
-      <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
-    </div>
-  </div>
 
-  <div class="cards-wrap">
+  <!-- FOND ANIMÉ -->
 
-    <!-- MODE HISTOIRE -->
-    <div class="histoire-card" onclick="window.location.href='histoire.html'">
-      <canvas id="histoireCanvas"></canvas>
-      <div class="line-scan"></div>
-      <div class="line-bot"></div>
-      <div class="histoire-inner">
-        <div class="histoire-le">LE MODE</div>
-        <div class="histoire-mode">HISTOIRE</div>
-        <div class="histoire-badge" id="histoireBadge"></div>
-      </div>
-    </div>
 
-    <!-- TRAVAILLER -->
-    <div class="travail-card" id="travailCard" onclick="travailClick()">
-      <div class="travail-bg"></div>
-      <svg class="travail-waves" viewBox="0 0 400 40" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0,20 C80,5 160,35 240,20 C320,5 360,30 400,20 L400,40 L0,40 Z" fill="rgba(255,255,255,0.08)"/>
-        <path d="M0,28 C60,15 140,38 220,26 C300,14 360,34 400,26 L400,40 L0,40 Z" fill="rgba(255,255,255,0.05)"/>
-      </svg>
-      <div class="travail-inner">
-        <div class="travail-content">
-          <div class="travail-icon">⚓</div>
-          <div class="travail-title">Travailler</div>
-          <div class="travail-sub" id="travailSub">Clicker · Tower · Pointeau</div>
+  <!-- CONTENU -->
+  <div class="container">
+
+    <!-- PROFIL CARD -->
+    <div class="nav-grid" style="margin-bottom:12px;">
+      <div class="profile-card-btn" id="profileCardBtn" onclick="window.location.href='profil.html'">
+        <div class="pcb-row">
+          <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
+          <div class="pcb-info">
+            <div class="pcb-name"  id="playerName">...</div>
+            <div class="pcb-grade" id="playerGrade">Docker Occasionnel</div>
+          </div>
+          <div class="pcb-level-wrap">
+            <div class="pcb-level-num" id="currentLevel">1</div>
+            <div class="pcb-level-lbl">Niv.</div>
+          </div>
+        </div>
+        <div class="pcb-xp-wrap">
+          <div class="pcb-xp-label">
+            <span id="xpCounter">0 / 500 XP</span>
+            <span>→ Niv. <span id="nextLevel">2</span></span>
+          </div>
+          <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+        </div>
+        <div class="pcb-stats">
+          <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
         </div>
       </div>
-      <div class="lock-overlay" id="travailLock">
-        <div class="lock-overlay-icon">🔒</div>
-        <div class="lock-overlay-text">CHAPITRE 1</div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <div class="nav-grid">
+
+      <!-- TRAVAILLER -->
+      <!-- HISTOIRE -->
+      <div class="nav-card histoire" onclick="window.location.href='histoire.html'">
+        <!-- Fond dégradé animé -->
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1e0a3c,#2d1060,#1a0845);z-index:0"></div>
+        <!-- Particules lumineuses -->
+        <canvas id="histoireCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:0.6"></canvas>
+        <!-- Ligne dorée animée -->
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);z-index:2;animation:lineScan 3s linear infinite"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,0.3),transparent);z-index:2"></div>
+        <!-- Contenu centré -->
+        <div style="position:relative;z-index:3;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:6px;color:rgba(196,181,253,0.7);line-height:1;margin-bottom:2px">LE MODE</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:8px;color:white;line-height:1;text-shadow:0 0 30px rgba(167,139,250,0.8),0 0 60px rgba(124,58,237,0.4)">HISTOIRE</div>
+          <div id="histoireBadge" style="display:none;font-size:10px;color:rgba(196,181,253,0.7);font-weight:700;letter-spacing:2px"></div>
+        </div>
       </div>
+
+      <div class="nav-card work"  onclick="window.location.href='travail.html'">
+        <div class="nav-card-bg"></div>
+        <div class="nav-card-overlay"></div>
+        <div class="work-waves">
+          <svg viewBox="0 0 400 30" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,15 C50,5 100,25 150,15 C200,5 250,25 300,15 C350,5 400,25 400,15 L400,30 L0,30 Z" fill="rgba(255,255,255,0.12)"/>
+            <path d="M0,20 C40,10 90,28 140,18 C190,8 240,26 290,18 C340,10 380,24 400,18 L400,30 L0,30 Z" fill="rgba(255,255,255,0.08)"/>
+          </svg>
+        </div>
+        <div class="nav-card-content">
+          <div class="nav-card-icon">⚓</div>
+          <div class="nav-card-title">Travailler</div>
+          <div class="nav-card-sub">Gagner argent + XP</div>
+        </div>
+      </div>
+
+      <!-- CASINO -->
+      <div class="nav-card casino" onclick="window.location.href='casino.html'">
+        <div class="nav-card-bg"></div>
+        <div class="nav-card-overlay"></div>
+        <div class="casino-particles" id="casinoParticles"></div>
+        <div class="casino-lights">
+          <div class="casino-light"></div>
+          <div class="casino-light"></div>
+          <div class="casino-light"></div>
+        </div>
+        <div class="nav-card-content">
+          <div class="nav-card-icon">🎰</div>
+          <div class="nav-card-title">Casino</div>
+          <div class="nav-card-sub">Tenter sa chance</div>
+          <div class="nav-card-sub" style="font-size:9px;opacity:0.6;margin-top:1px;">🕐 12h00 - 02h00</div>
+        </div>
+      </div>
+      </div>
+
+      <!-- CLASSEMENT -->
+      <div class="nav-card rank" onclick="window.location.href='classement.html'">
+        <div class="nav-card-bg"></div>
+        <div class="nav-card-overlay"></div>
+        <div class="rank-stars" id="rankStars"></div>
+        <div class="rank-stars" id="shootingStars"></div>
+        <div class="nav-card-content">
+          <div class="nav-card-icon">🏆</div>
+          <div class="nav-card-title">Classement</div>
+          <div class="nav-card-sub">Top dockers</div>
+        </div>
+      </div>
+
+      <!-- BOURSE -->
+      <div class="nav-card bourse" onclick="window.location.href='bourse.html'">
+        <div class="nav-card-bg"></div>
+        <div class="nav-card-overlay"></div>
+        <svg class="bourse-lines" viewBox="0 0 200 50" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="bourseGradUp" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#34d399" stop-opacity="0.9"/>
+            </linearGradient>
+            <linearGradient id="bourseGradDown" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#f87171" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#f87171" stop-opacity="0.9"/>
+            </linearGradient>
+          </defs>
+          <polyline id="bourseLine" points="0,40 20,35 40,38 60,20 80,25 100,15 120,22 140,10 160,18 180,8 200,12"
+            fill="none" stroke="url(#bourseGradUp)" stroke-width="2" opacity="0.8"/>
+        </svg>
+        <div class="nav-card-content">
+          <div class="nav-card-icon">📈</div>
+          <div class="nav-card-title">Bourse</div>
+          <div class="nav-card-sub">Trading maritime</div>
+          <div class="nav-card-sub" style="font-size:9px;opacity:0.6;margin-top:1px;">🕐 07h00 - 19h00</div>
+        </div>
+      </div>
+
+  <!-- RUMEURS DU PORT -->
+  <div class="nav-card" id="rumeurCard" style="grid-column:span 2;height:auto;min-height:80px;cursor:default;border-radius:16px;overflow:hidden;position:relative;background:linear-gradient(135deg,#1a0f00,#2a1800,#1a0f00);border:1px solid rgba(212,165,116,0.2);">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,0.01) 0px,rgba(255,255,255,0.01) 1px,transparent 1px,transparent 40px),repeating-linear-gradient(0deg,rgba(255,255,255,0.01) 0px,rgba(255,255,255,0.01) 1px,transparent 1px,transparent 40px);pointer-events:none"></div>
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,rgba(212,165,116,0.03),transparent);animation:bannerShimmer 5s linear infinite;pointer-events:none"></div>
+    <div style="padding:14px 16px;position:relative;z-index:1">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:16px">📢</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:rgba(212,165,116,0.7)">Rumeurs du Port</span>
+        <div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;animation:dotPulse 2s ease-in-out infinite"></div>
+        <button onclick="openRumeurModal()" style="margin-left:auto;background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.25);color:rgba(212,165,116,0.8);font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:8px;cursor:pointer">📝 POSTER</button>
+      </div>
+      <div id="rumeurText" style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.6;font-style:italic">Chargement...</div>
+      <div id="rumeurMeta" style="font-size:10px;color:rgba(212,165,116,0.4);margin-top:6px;display:none"></div>
+    </div>
+  </div>
+
+  <!-- MODAL POSTER UNE RUMEUR -->
+  <div id="rumeurModal" onclick="closeRumeurModal(event)" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
+    <div style="background:#1a1200;border:1px solid rgba(212,165,116,0.3);border-radius:20px;padding:24px 20px;max-width:340px;width:90%">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#f5d060;margin-bottom:6px">📢 Poster une rumeur</div>
+      <div id="rumeurModalInfo" style="font-size:11px;color:rgba(212,165,116,0.5);margin-bottom:14px;line-height:1.5"></div>
+      <textarea id="rumeurInput" maxlength="200" placeholder="Ta rumeur du port..." style="-webkit-user-select:text;user-select:text;width:100%;height:80px;background:rgba(0,0,0,0.3);border:1px solid rgba(212,165,116,0.2);border-radius:10px;padding:10px;color:white;font-size:13px;resize:none;outline:none;font-family:Inter,sans-serif;line-height:1.5"></textarea>
+      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-bottom:10px;text-align:right" id="rumeurCharCount">0/200</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;cursor:pointer" onclick="toggleAnon()">
+        <div id="anonCheck" style="width:20px;height:20px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s">
+        </div>
+        <div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:600">Poster anonymement</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:1px">Coûte 5 🏆 supplémentaires — ton nom n'apparaît pas</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <button onclick="postRumeur(10000, 60)" style="background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.8);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 10 000€ — 1 heure
+        </button>
+        <button onclick="postRumeur(50000, 360)" style="background:rgba(212,165,116,0.12);border:1px solid rgba(212,165,116,0.3);color:#f5d060;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 50 000€ — 6 heures
+        </button>
+        <button onclick="postRumeur(100000, 1440)" style="background:linear-gradient(135deg,rgba(212,165,116,0.2),rgba(245,208,96,0.1));border:1px solid rgba(212,165,116,0.5);color:#f5d060;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:12px;border-radius:10px;cursor:pointer;text-align:left">
+          💰 100 000€ — 24 heures ⭐
+        </button>
+      </div>
+      <button onclick="closeRumeurModal()" style="width:100%;height:40px;background:none;border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.3);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border-radius:10px;cursor:pointer">Annuler</button>
+    </div>
+  </div>
+
+      <!-- OBJECTIFS -->
+      <div class="nav-card progression-card" onclick="window.location.href='objectifs.html'">
+        <div class="nav-card-bg"></div>
+        <svg class="obj-jungle-svg" viewBox="0 0 400 110" preserveAspectRatio="xMidYMid slice">
+          <!-- Lianes fond -->
+          <path d="M0 0 Q40 55 20 110" stroke="#166534" stroke-width="4" fill="none" opacity="0.9"/>
+          <path d="M400 0 Q360 55 380 110" stroke="#166534" stroke-width="4" fill="none" opacity="0.9"/>
+          <path d="M65 0 Q35 45 55 110" stroke="#15803d" stroke-width="2.5" fill="none" opacity="0.7"/>
+          <path d="M335 0 Q365 45 345 110" stroke="#15803d" stroke-width="2.5" fill="none" opacity="0.7"/>
+          <!-- Lianes animées -->
+          <path d="M18 0 Q55 30 32 65 Q12 88 38 110" stroke="#22c55e" stroke-width="3" fill="none" opacity="0.8">
+            <animate attributeName="d" values="M18 0 Q55 30 32 65 Q12 88 38 110;M18 0 Q65 25 40 60 Q20 83 45 110;M18 0 Q55 30 32 65 Q12 88 38 110" dur="5s" repeatCount="indefinite"/>
+          </path>
+          <path d="M382 0 Q345 35 365 70 Q382 92 355 110" stroke="#22c55e" stroke-width="3" fill="none" opacity="0.8">
+            <animate attributeName="d" values="M382 0 Q345 35 365 70 Q382 92 355 110;M382 0 Q338 30 358 65 Q375 88 348 110;M382 0 Q345 35 365 70 Q382 92 355 110" dur="6s" repeatCount="indefinite"/>
+          </path>
+          <!-- Grandes feuilles fond -->
+          <ellipse cx="8" cy="18" rx="26" ry="12" fill="#14532d" opacity="0.95" transform="rotate(-38 8 18)"/>
+          <ellipse cx="392" cy="22" rx="24" ry="11" fill="#14532d" opacity="0.95" transform="rotate(38 392 22)"/>
+          <ellipse cx="55" cy="4" rx="20" ry="9" fill="#166534" opacity="0.85" transform="rotate(-18 55 4)"/>
+          <ellipse cx="345" cy="6" rx="18" ry="8" fill="#166534" opacity="0.85" transform="rotate(22 345 6)"/>
+          <ellipse cx="8" cy="92" rx="22" ry="10" fill="#14532d" opacity="0.9" transform="rotate(28 8 92)"/>
+          <ellipse cx="392" cy="95" rx="20" ry="9" fill="#14532d" opacity="0.9" transform="rotate(-28 392 95)"/>
+          <ellipse cx="125" cy="0" rx="16" ry="7" fill="#166534" opacity="0.65" transform="rotate(-12 125 0)"/>
+          <ellipse cx="275" cy="110" rx="16" ry="7" fill="#166534" opacity="0.65" transform="rotate(12 275 110)"/>
+          <!-- Feuilles animées -->
+          <ellipse cx="32" cy="38" rx="18" ry="9" fill="#22c55e" opacity="0.65" transform="rotate(-33 32 38)">
+            <animateTransform attributeName="transform" type="rotate" values="-33 32 38;-20 32 38;-33 32 38" dur="4s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="22" cy="74" rx="16" ry="8" fill="#16a34a" opacity="0.6" transform="rotate(22 22 74)">
+            <animateTransform attributeName="transform" type="rotate" values="22 22 74;36 22 74;22 22 74" dur="5s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="368" cy="48" rx="17" ry="8" fill="#22c55e" opacity="0.6" transform="rotate(-18 368 48)">
+            <animateTransform attributeName="transform" type="rotate" values="-18 368 48;-30 368 48;-18 368 48" dur="4.5s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="62" cy="98" rx="19" ry="9" fill="#15803d" opacity="0.65" transform="rotate(-8 62 98)">
+            <animateTransform attributeName="transform" type="rotate" values="-8 62 98;6 62 98;-8 62 98" dur="6s" repeatCount="indefinite"/>
+          </ellipse>
+          <ellipse cx="352" cy="102" rx="17" ry="8" fill="#15803d" opacity="0.6" transform="rotate(12 352 102)">
+            <animateTransform attributeName="transform" type="rotate" values="12 352 102;26 352 102;12 352 102" dur="5.5s" repeatCount="indefinite"/>
+          </ellipse>
+          <!-- Lucioles -->
+          <circle cx="95" cy="38" r="3" fill="#bbf7d0"><animate attributeName="opacity" values="0.9;0.1;1;0.2;0.9" dur="2.5s" repeatCount="indefinite"/></circle>
+          <circle cx="155" cy="72" r="2.5" fill="#86efac"><animate attributeName="opacity" values="0.1;0.9;0.1;0.6;0.1" dur="3.5s" repeatCount="indefinite"/></circle>
+          <circle cx="205" cy="28" r="2.5" fill="#bbf7d0"><animate attributeName="opacity" values="0.5;0.1;0.9;0.1;0.5" dur="2s" repeatCount="indefinite"/></circle>
+          <circle cx="265" cy="82" r="2" fill="#86efac"><animate attributeName="opacity" values="0.1;0.8;0.2;0.9;0.1" dur="4s" repeatCount="indefinite"/></circle>
+          <circle cx="315" cy="42" r="2.5" fill="#bbf7d0"><animate attributeName="opacity" values="0.8;0.1;0.5;0.1;0.8" dur="3s" repeatCount="indefinite"/></circle>
+          <!-- Gouttes rosée -->
+          <circle cx="38" cy="45" r="2" fill="rgba(187,247,208,0.7)"><animate attributeName="cy" values="45;50;45" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0.3;0.7" dur="3s" repeatCount="indefinite"/></circle>
+          <circle cx="365" cy="60" r="2" fill="rgba(187,247,208,0.6)"><animate attributeName="cy" values="60;65;60" dur="4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0.2;0.6" dur="4s" repeatCount="indefinite"/></circle>
+        </svg>
+        <div class="obj-jungle-glow"></div>
+        <div class="obj-jungle-icon">🌿</div>
+        <div class="obj-count-badge" id="objCountBadge">0/3</div>
+        <div class="cal-wrap">
+          <div class="cal-left"></div>
+          <div class="cal-right">
+            <div class="cal-title">Objectifs</div>
+            <div class="cal-subtitle" id="calSubtitle"></div>
+            <div class="cal-objs" id="calObjs"></div>
+            <div class="cal-progress">
+              <div class="cal-prog-row"><span id="calProgLabel"></span><span id="calProgPct"></span></div>
+              <div class="cal-prog-track"><div class="cal-prog-fill" id="calProgFill" style="width:0%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHAT + PARAMÈTRES -->
+      </div><!-- fin nav-grid -->
+      <div class="mini-grid">
+
+        <!-- CHAT -->
+        <div class="mini-card chat" onclick="openChat()">
+          <div class="mini-card-bg"></div>
+          <div class="mini-card-overlay"></div>
+          <div class="chat-notif hidden" id="chatNotif">0</div>
+          <div class="chat-stars" id="chatStars"></div>
+          <div class="chat-msg-bubble" style="width:36px;height:16px;bottom:55%;left:12%;animation-duration:3s;animation-delay:0s;"></div>
+          <div class="chat-msg-bubble right" style="width:28px;height:14px;bottom:45%;right:14%;animation-duration:2.5s;animation-delay:0.8s;"></div>
+          <div class="chat-msg-bubble" style="width:44px;height:16px;bottom:35%;left:18%;animation-duration:3.5s;animation-delay:1.5s;"></div>
+          <div class="mini-card-content">
+            <div class="mini-card-icon">💬</div>
+            <div class="mini-card-title">Chat</div>
+            <div class="mini-card-sub">Joueurs en ligne</div>
+          </div>
+        </div>
+
+        <!-- PARAMÈTRES -->
+        <div class="mini-card settings" onclick="openSettings()">
+          <div class="mini-card-bg"></div>
+          <div class="mini-card-overlay"></div>
+          <div class="settings-grid"></div>
+          <div class="gear big">⚙️</div>
+          <div class="gear small">⚙️</div>
+          <div class="mini-card-content">
+            <div class="mini-card-icon">🔧</div>
+            <div class="mini-card-title">Paramètres</div>
+            <div class="mini-card-sub">Mon compte</div>
+          </div>
+        </div>
+
+      </div>
+      <div class="nav-grid-single">
+
+      <div class="nav-card company" onclick="createCompany()">
+        <div class="nav-card-bg"></div>
+
+        <!-- Texture marbre SVG -->
+        <svg class="marble-svg" viewBox="0 0 400 120" preserveAspectRatio="none">
+          <defs>
+            <filter id="marbleBlur">
+              <feTurbulence type="fractalNoise" baseFrequency="0.015 0.04" numOctaves="4" seed="2" result="noise"/>
+              <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+              <feBlend in="SourceGraphic" in2="grayNoise" mode="multiply" result="blend"/>
+              <feComponentTransfer in="blend">
+                <feFuncR type="linear" slope="0.15" intercept="0.85"/>
+                <feFuncG type="linear" slope="0.12" intercept="0.87"/>
+                <feFuncB type="linear" slope="0.10" intercept="0.90"/>
+              </feComponentTransfer>
+            </filter>
+          </defs>
+          <!-- Base marbre -->
+          <rect x="0" y="0" width="400" height="120" fill="#f8f6f2" filter="url(#marbleBlur)"/>
+          <!-- Veines grises principales -->
+          <path d="M0,30 C40,25 60,40 100,35 C140,30 160,20 200,28 C240,36 270,22 320,30 C360,36 380,28 400,25"
+            fill="none" stroke="rgba(180,175,170,0.35)" stroke-width="1.5"/>
+          <path d="M0,70 C30,65 70,80 110,72 C150,64 180,78 220,70 C260,62 300,75 350,68 C380,64 395,72 400,68"
+            fill="none" stroke="rgba(180,175,170,0.25)" stroke-width="1"/>
+          <path d="M50,0 C55,30 48,60 52,90 C56,110 50,115 48,120"
+            fill="none" stroke="rgba(180,175,170,0.2)" stroke-width="0.8"/>
+          <path d="M200,0 C208,25 195,55 202,85 C208,110 200,115 198,120"
+            fill="none" stroke="rgba(180,175,170,0.15)" stroke-width="0.8"/>
+          <path d="M320,0 C330,20 315,50 322,80 C328,105 320,112 318,120"
+            fill="none" stroke="rgba(180,175,170,0.18)" stroke-width="0.8"/>
+          <!-- Veine or subtile -->
+          <path d="M0,50 C60,45 100,58 160,48 C220,38 280,52 340,45 C370,42 390,50 400,47"
+            fill="none" stroke="rgba(212,175,55,0.12)" stroke-width="0.8"/>
+        </svg>
+
+        <div class="marble-shimmer"></div>
+        <div class="marble-gold-line"></div>
+
+        <div class="company-content">
+          <div class="company-seal">🏛️</div>
+          <div class="company-text-wrap">
+            <div class="company-badge">✦ Bientôt disponible ✦</div>
+            <div class="company-title">Créer ta Compagnie</div>
+            <div class="company-sub">Construis ton empire maritime</div>
+          </div>
+          <div class="company-arrow-wrap">›</div>
+        </div>
+      </div>
+      </div>
+
+      <!-- PROCHAINEMENT -->
+      <div class="nav-grid-single" style="margin-top:12px">
+        <div class="nav-card soon-card" onclick="window.location.href='prochainement.html'">
+          <div class="nav-card-bg"></div>
+          <div class="soon-content">
+            <div class="soon-icon">🔭</div>
+            <div class="soon-text">
+              <div class="soon-title">Prochainement</div>
+              <div class="soon-sub">Mariage · Compagnie · Tournois · et bien plus...</div>
+            </div>
+            <div class="soon-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
-  <div class="toast" id="toast"></div>
+  <!-- BOTTOM BAR -->
+
+  </div>
 
   <script>
-    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const supabaseUrl  = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
+    const sb = createClient(supabaseUrl, supabaseKey);
 
-    let travailUnlocked = false;
+    let currentUser = null;
+    let canClaimDaily = false;
 
-    function travailClick() {
-      if (travailUnlocked) window.location.href = 'travail.html';
-      else showToast('🔒 Débloque le Chapitre 1 du Mode Histoire !');
+    // =====================
+    // ARBRE COMPÉTENCES - Mise à jour selon niveau
+    // =====================
+    function updateSkillTree(level) {
+      // Nœuds débloqués selon niveau
+      const nodes = [
+        { id: 'n1', minLevel: 1,  cx: 60,  cy: 60 },
+        { id: 'n2', minLevel: 5,  cx: 130, cy: 30 },
+        { id: 'n3', minLevel: 10, cx: 210, cy: 30 },
+        { id: 'n4', minLevel: 15, cx: 210, cy: 90 },
+        { id: 'n5', minLevel: 30, cx: 290, cy: 60 },
+        { id: 'n6', minLevel: 50, cx: 360, cy: 60 },
+      ];
+      const icons = ['⚡','⭐','🔥','💪','🏆','👑'];
+
+      nodes.forEach((node, i) => {
+        const el = document.getElementById(node.id);
+        if (!el) return;
+        if (level >= node.minLevel) {
+          el.setAttribute('fill', '#4338ca');
+          el.setAttribute('stroke', '#a5b4fc');
+          el.setAttribute('opacity', '1');
+          // Enlever le 🔒 du text correspondant
+          const texts = document.querySelectorAll('#skillTreeSvg text');
+          texts.forEach(t => {
+            if (Math.abs(parseInt(t.getAttribute('x')) - node.cx) < 5) {
+              t.textContent = icons[i];
+              t.setAttribute('fill', 'white');
+            }
+          });
+        }
+      });
+
+      // Mettre à jour grade overlay
+
     }
 
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.className = 'toast show';
-      setTimeout(() => t.className = 'toast', 2800);
+    // =====================
+    // PARTICULES CASINO
+    // =====================
+    const casinoParticles = document.getElementById('casinoParticles');
+    const casinoColors = ['#fbbf24','#f59e0b','#fcd34d','#ef4444','#fff'];
+    for (let i = 0; i < 12; i++) {
+      const p = document.createElement('div');
+      p.className = 'casino-particle';
+      p.style.cssText = `
+        left: ${Math.random() * 100}%;
+        background: ${casinoColors[Math.floor(Math.random() * casinoColors.length)]};
+        width: ${2 + Math.random() * 4}px;
+        height: ${2 + Math.random() * 4}px;
+        animation-duration: ${2 + Math.random() * 2}s;
+        animation-delay: ${Math.random() * 3}s;
+      `;
+      casinoParticles.appendChild(p);
     }
 
-    // Canvas particules histoire
-    function initCanvas() {
-      const canvas = document.getElementById('histoireCanvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      const particles = Array.from({length:25}, () => ({
-        x: Math.random()*canvas.width, y: Math.random()*canvas.height,
-        r: Math.random()*1.4+0.3, speed: Math.random()*0.4+0.1, op: Math.random()*0.8+0.2
-      }));
-      (function draw() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        particles.forEach(p => {
-          ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-          ctx.fillStyle = `rgba(167,139,250,${p.op})`; ctx.fill();
-          p.y -= p.speed; p.op -= 0.002;
-          if (p.y<0||p.op<=0) { p.x=Math.random()*canvas.width; p.y=canvas.height; p.op=Math.random()*0.8+0.2; }
-        });
-        requestAnimationFrame(draw);
-      })();
+    // =====================
+    // ÉTOILES + FILANTES Classement
+    // =====================
+    const starsContainer = document.getElementById('rankStars');
+    for (let i = 0; i < 20; i++) {
+      const s = document.createElement('div');
+      s.className = 'rank-star';
+      s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.5+Math.random()*2}s;`;
+      starsContainer.appendChild(s);
+    }
+
+    // =====================
+    // BOURSE ANIMÉE + COULEUR DYNAMIQUE
+    // =====================
+    let bourseUp = true;
+    function animateBourse() {
+      const line = document.getElementById('bourseLine');
+      if (!line) return;
+      const pts = [];
+      let y = 30;
+      const prev = y;
+      for (let x = 0; x <= 200; x += 20) {
+        y = Math.max(5, Math.min(45, y + (Math.random() - 0.48) * 12));
+        pts.push(`${x},${y}`);
+      }
+      const lastY = parseFloat(pts[pts.length-1].split(',')[1]);
+      const firstY = parseFloat(pts[0].split(',')[1]);
+      bourseUp = lastY < firstY;
+      line.setAttribute('points', pts.join(' '));
+      line.setAttribute('stroke', `url(#${bourseUp ? 'bourseGradUp' : 'bourseGradDown'})`);
+    }
+    animateBourse();
+    setInterval(animateBourse, 2000);
+
+    function getXpRequired(level) {
+      if (level <= 10) return level * 500;
+      if (level <= 25) return level * 1000;
+      if (level <= 50) return level * 2000;
+      return level * 4000;
+    }
+
+    function getGrade(level) {
+      if (level <= 4)  return 'Docker Occasionnel';
+      if (level <= 14) return 'Docker';
+      if (level <= 29) return 'Docker Mensuel';
+      if (level <= 49) return 'Contre-Maître';
+      if (level <= 79) return 'Chef de Quai';
+      return 'Magnat du Port';
+    }
+
+
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      await loadUserData();
+      // Mettre à jour last_seen
+      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+
+      // Canvas particules histoire
+      const hCanvas = document.getElementById('histoireCanvas');
+      if (hCanvas) {
+        const hCtx = hCanvas.getContext('2d');
+        hCanvas.width = hCanvas.offsetWidth;
+        hCanvas.height = hCanvas.offsetHeight;
+        const particles = Array.from({length:28}, () => ({
+          x: Math.random() * hCanvas.width,
+          y: Math.random() * hCanvas.height,
+          r: Math.random() * 1.5 + 0.3,
+          speed: Math.random() * 0.4 + 0.1,
+          op: Math.random() * 0.8 + 0.2,
+        }));
+        (function drawP() {
+          hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+          particles.forEach(p => {
+            hCtx.beginPath(); hCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            hCtx.fillStyle = `rgba(167,139,250,${p.op})`; hCtx.fill();
+            p.y -= p.speed; p.op -= 0.002;
+            if (p.y < 0 || p.op <= 0) { p.x = Math.random()*hCanvas.width; p.y = hCanvas.height; p.op = Math.random()*0.8+0.2; }
+          });
+          requestAnimationFrame(drawP);
+        })();
+      }
+
+      loadChatBadge();
+      setInterval(loadChatBadge, 30000);
+      loadCalendar();
+      loadActiveRumeur();
+      setInterval(loadActiveRumeur, 60000);
+      checkDirectMessages();
+
+      // Statut histoire
+      const { data: storyData } = await sb.from('game_stats')
+        .select('story_progress').eq('user_id', currentUser.id).maybeSingle();
+      if (storyData?.story_progress?.scene3_done) {
+        document.getElementById('histoireBadge').style.display = 'block';
+        document.getElementById('histoireBadge').textContent = '🎰 CHAPITRE 3 TERMINÉ';
+      } else if (storyData?.story_progress?.scene2_done) {
+        document.getElementById('histoireBadge').style.display = 'block';
+        document.getElementById('histoireBadge').textContent = '⚡ CH.2 TERMINÉ · CH.3 DISPONIBLE';
+      } else if (storyData?.story_progress?.scene1_done) {
+        document.getElementById('histoireBadge').style.display = 'block';
+        document.getElementById('histoireBadge').textContent = '🔵 CH.1 TERMINÉ · CH.2 DISPONIBLE';
+      }
     }
 
     async function loadUserData() {
@@ -298,48 +1359,340 @@
       await checkPendingLevelUp(stats, profile);
     }
 
-
-    async function init() {
-      const { data:{ session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-
+    async function checkPendingLevelUp(stats, profile) {
+      const level = stats.level || 1, lastShown = stats.last_levelup_shown || 1;
+      if (level <= lastShown) return;
+      for (let i = lastShown + 1; i <= level; i++) {
+        const rewards = { diamonds: 5, trophies: 1, money: i * 500 };
+        const newDiamonds = (stats.diamonds || 0) + rewards.diamonds;
+        const newTrophies = (stats.trophies || 0) + rewards.trophies;
+        await sb.from('game_stats').update({ diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
+        await sb.from('game_stats').update({ money: (stats.money || 0) + rewards.money }).eq('user_id', currentUser.id);
+        stats.diamonds = newDiamonds; stats.trophies = newTrophies;
+        await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
+      }
+      await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
       await loadUserData();
+      // Mettre à jour last_seen
+      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+      loadChatBadge();
+      setInterval(loadChatBadge, 30000);
+      loadCalendar();
+      await loadActiveRumeur();
+    }
 
-      const [profRes, statsRes] = await Promise.all([
-        sb.from('profiles').select('username,avatar_url').eq('user_id', session.user.id).maybeSingle(),
-        sb.from('game_stats').select('money,level,story_progress').eq('user_id', session.user.id).maybeSingle(),
-      ]);
+    function showLevelUpPopup(level, rewards, onClose) {
+      const grade = getGrade(level);
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;animation:fadeInOverlay 0.2s ease;';
+      overlay.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.25);animation:popIn 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);">
+          <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Niveau atteint</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:80px;color:#1d4ed8;line-height:1;margin-bottom:4px;">${level}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#6b7280;letter-spacing:1.5px;margin-bottom:24px;">${grade}</div>
+          <div style="background:#f8faff;border:1px solid #dbeafe;border-radius:14px;padding:18px;margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Récompenses</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💰</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.money.toLocaleString('fr-FR')}€</div></div>
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💎</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#1d4ed8;">+${rewards.diamonds}</div></div>
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">🏆</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.trophies}</div></div>
+            </div>
+          </div>
+          <button onclick="this.closest('[style*=fixed]').remove(); if(typeof __lvlClose==='function')__lvlClose();" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;" onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1d4ed8'">CONTINUER 🚀</button>
+        </div>
+      `;
+      window.__lvlClose = onClose;
+      document.body.appendChild(overlay);
+    }
 
-      const profile  = profRes.data;
-      const stats    = statsRes.data;
-      const progress = stats?.story_progress || {};
+    async function loadRank(level) {
+      const { data } = await sb.from('game_stats').select('level').order('level', { ascending: false });
+      if (data) {
+        const rank = data.findIndex(p => p.level <= level) + 1;
+        document.getElementById('rankValue').textContent = '#' + rank;
+      }
+    }
 
-      // Profil
-      if (profile?.avatar_url) document.getElementById('profileAvatar').src = profile.avatar_url;
-      document.getElementById('profileName').textContent  = profile?.username || 'Docker';
-      document.getElementById('profileSub').textContent   = progress.surnom ? `🔵 ${progress.surnom}` : 'Port de Marseille';
-      document.getElementById('statMoney').textContent    = (stats?.money||0).toLocaleString('fr-FR') + '€';
-      document.getElementById('statLevel').textContent    = 'Niv.' + (stats?.level||1);
+    function createCompany() { window.location.href = 'compagnie.html'; }
+    function openChat() { window.location.href = 'chat.html'; }
 
-      // Déblocage travailler
-      if (progress.scene1_done) {
-        travailUnlocked = true;
-        document.getElementById('travailLock').style.display = 'none';
-        document.getElementById('travailSub').textContent = 'Clicker · Tower · Pointeau';
+async function loadCalendar() {
+      const today = new Date();
+      const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+      try {
+        const todayStr = today.toISOString().split('T')[0];
+        const { data } = await sb.from('daily_objectives').select('objectives').eq('user_id', currentUser.id).eq('date', todayStr).maybeSingle();
+        if(data?.objectives) {
+          const objs = data.objectives;
+          const completed = objs.filter(o => o.completed || o.claimed).length;
+          const pct = Math.round((completed/3)*100);
+          document.getElementById('calSubtitle').textContent = completed===3 ? '🎉 Tous complétés !' : `${3-completed} objectif${3-completed>1?'s':''} restant${3-completed>1?'s':''}`;
+          document.getElementById('calProgLabel').textContent = `${completed}/3 complétés`;
+          document.getElementById('calProgPct').textContent   = pct+'%';
+          document.getElementById('calProgFill').style.width  = pct+'%';
+          document.getElementById('calObjs').innerHTML = objs.map(o => {
+            const done = o.completed||o.claimed;
+            return `<div class="cal-obj"><div class="cal-obj-dot ${done?'done':'todo'}"></div><span class="cal-obj-text ${done?'done':''}">${o.title}</span></div>`;
+          }).join('');
+        } else {
+          document.getElementById('calSubtitle').textContent = '3 objectifs t\'attendent';
+          document.getElementById('calObjs').innerHTML = ['🎰 Casino','📈 Bourse','🔥 Connexion'].map(t =>
+            `<div class="cal-obj"><div class="cal-obj-dot todo"></div><span>${t}</span></div>`
+          ).join('');
+        }
+      } catch(e) { console.log('calendar:', e.message); }
+    }
+
+    async function loadChatBadge() {
+      try {
+        const { data } = await sb.from('private_messages')
+          .select('id', { count: 'exact' })
+          .eq('receiver_id', currentUser.id)
+          .eq('read', false);
+        const count = data?.length || 0;
+        const notif = document.getElementById('chatNotif');
+        if (notif) {
+          if (count > 0) {
+            notif.textContent = count > 9 ? '9+' : count;
+            notif.classList.remove('hidden');
+          } else {
+            notif.classList.add('hidden');
+          }
+        }
+      } catch(e) {}
+    }
+    function openSettings() { window.location.href = 'parametres.html'; }
+
+
+
+    // ── RUMEURS PAYANTES ──
+    let activeRumeur = null;
+    let isAnon = false;
+
+    async function loadActiveRumeur() {
+      try {
+        const { data } = await sb.from('port_rumeur')
+          .select('*')
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          activeRumeur = data;
+          document.getElementById('rumeurText').textContent = data.message;
+          document.getElementById('rumeurText').style.fontStyle = 'normal';
+          document.getElementById('rumeurText').style.color = '#f5d060';
+          const meta = document.getElementById('rumeurMeta');
+          meta.style.display = 'block';
+          const exp = new Date(data.expires_at);
+          meta.textContent = `💰 Posté par ${data.username} · Expire ${exp.toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'})}`;
+        } else {
+          activeRumeur = null;
+          document.getElementById('rumeurText').textContent = getRumeur();
+          document.getElementById('rumeurText').style.fontStyle = 'italic';
+          document.getElementById('rumeurText').style.color = 'rgba(255,255,255,0.75)';
+          document.getElementById('rumeurMeta').style.display = 'none';
+        }
+      } catch(e) {
+        // En cas d'erreur, afficher quand même la rumeur du jour
+        document.getElementById('rumeurText').textContent = getRumeur();
+        console.log('rumeur error:', e);
+      }
+    }
+
+    function toggleAnon() {
+      isAnon = !isAnon;
+      const check = document.getElementById('anonCheck');
+      check.style.background = isAnon ? '#a78bfa' : 'rgba(255,255,255,0.05)';
+      check.style.borderColor = isAnon ? '#a78bfa' : 'rgba(255,255,255,0.2)';
+      check.innerHTML = isAnon ? '<span style="color:white;font-size:12px">✓</span>' : '';
+    }
+
+    function closeRumeurModal(e) {
+      if (e && e.target !== e.currentTarget) return;
+      document.getElementById('rumeurModal').style.display = 'none';
+    }
+
+    function openRumeurModal() {
+      const minPrice = activeRumeur ? (activeRumeur.amount_paid * 2) : 10000;
+      const info = activeRumeur
+        ? `Une rumeur est active (payée ${activeRumeur.amount_paid.toLocaleString('fr-FR')}€). Pour la remplacer, tu dois payer au moins le double : ${(minPrice).toLocaleString('fr-FR')}€ minimum.`
+        : 'Aucune rumeur active. Choisis ta durée :';
+      document.getElementById('rumeurModalInfo').textContent = info;
+
+      // Désactiver les boutons insuffisants
+      const btns = document.querySelectorAll('#rumeurModal button[onclick*="postRumeur"]');
+      btns.forEach(btn => {
+        const price = parseInt(btn.getAttribute('onclick').match(/\d+/)[0]);
+        btn.disabled = price < minPrice;
+        btn.style.opacity = price < minPrice ? '0.3' : '1';
+      });
+
+      document.getElementById('rumeurModal').style.display = 'flex';
+    }
+
+    async function postRumeur(price, durationMinutes) {
+      const msg = document.getElementById('rumeurInput').value.trim();
+      if (!msg) { showToast('Écris ta rumeur !', 'error'); return; }
+      if (msg.length < 10) { showToast('Trop court !', 'error'); return; }
+
+      // Vérifier solde + trophées si anonyme
+      const { data: fresh } = await sb.from('game_stats').select('money, trophies').eq('user_id', currentUser.id).maybeSingle();
+      if (!fresh || fresh.money < price) { showToast("Pas assez d'argent !", 'error'); return; }
+      if (isAnon && (fresh.trophies || 0) < 5) { showToast('Il te faut 5 🏆 pour poster anonymement !', 'error'); return; }
+
+      // Vérifier prix minimum
+      if (activeRumeur && price < activeRumeur.amount_paid * 2) {
+        showToast(`Minimum ${(activeRumeur.amount_paid*2).toLocaleString('fr-FR')}€ !`, 'error'); return;
       }
 
-      // Badge histoire
-      const badge = document.getElementById('histoireBadge');
-      if (progress.scene1_done && !progress.scene2_done) {
-        badge.style.display = 'block';
-        badge.textContent = '🔵 CH.1 TERMINÉ · CH.2 DISPO';
-      } else if (progress.scene2_done) {
-        badge.style.display = 'block';
-        badge.textContent = '⚡ CH.2 TERMINÉ';
-      }
+      // Déduire argent (et trophées si anonyme)
+      const updates = { money: fresh.money - price };
+      if (isAnon) updates.trophies = (fresh.trophies || 0) - 5;
+      await sb.from('game_stats').update(updates).eq('user_id', currentUser.id);
 
-      initCanvas();
-      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', session.user.id);
+      // Poster la rumeur
+      const { data: profile } = await sb.from('profiles').select('username').eq('user_id', currentUser.id).maybeSingle();
+      const expires = new Date(Date.now() + durationMinutes * 60000).toISOString();
+      const username = isAnon ? 'Anonyme 🕵️' : (profile?.username || 'Docker');
+      await sb.from('port_rumeur').insert({
+        message: msg,
+        posted_by: currentUser.id,
+        username: username,
+        amount_paid: price,
+        expires_at: expires
+      });
+
+      document.getElementById('rumeurModal').style.display = 'none';
+      document.getElementById('rumeurInput').value = '';
+      isAnon = false; toggleAnon();
+      showToast(`✅ Rumeur postée pour ${price.toLocaleString('fr-FR')}€ !`);
+      await loadActiveRumeur();
+    }
+
+    // Compteur caractères
+    document.getElementById('rumeurInput')?.addEventListener('input', function() {
+      document.getElementById('rumeurCharCount').textContent = this.value.length + '/200';
+    });
+
+    // Realtime rumeurs
+    sb.channel('port-rumeur')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'port_rumeur' }, () => {
+        loadActiveRumeur();
+      })
+      .subscribe();
+
+
+
+    // ── MESSAGE DIRECT ──
+    async function checkDirectMessages() {
+      try {
+        const { data } = await sb.from('direct_messages')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('seen', false)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (!data) return;
+
+        // Afficher le popup
+        const overlay = document.createElement('div');
+        overlay.className = 'direct-msg-overlay';
+        overlay.innerHTML = `
+          <div class="direct-msg-card">
+            <div class="direct-msg-icon">🏛️</div>
+            <div class="direct-msg-title">Message officiel</div>
+            <div class="direct-msg-body">${data.message}</div>
+            <button class="direct-msg-btn" onclick="dismissDirectMessage('${data.id}', this.closest('.direct-msg-overlay'))">
+              J'ai compris
+            </button>
+          </div>`;
+        document.body.appendChild(overlay);
+      } catch(e) { console.log('direct msg error:', e); }
+    }
+
+    async function dismissDirectMessage(id, overlay) {
+      await sb.from('direct_messages').update({ seen: true }).eq('id', id);
+      overlay.remove();
+    }
+
+    // ── RUMEURS DU PORT ──
+    const RUMEURS_MATIN = [
+      "Ferrotti affirme avoir été suivi par un drone extraterrestre entre le quai A et le vestiaire. Personne n'a rien vu.",
+      "Pasturon est arrivé 25 minutes en retard ce matin. Il dit que c'est bientôt fini, il va signer.",
+      "Ferrotti a passé la matinée à observer le ciel avec ses jumelles depuis le toit du hangar B.",
+      "Pasturon a encore demandé à la RH si son CDI était prêt. La RH a raccroché.",
+      "Ferrotti refuse de travailler près du conteneur EVERGREEN. Il dit que les extraterrestres utilisent cette fréquence.",
+      "Pasturon a sorti une cravate ce matin. Il pense qu'on va lui proposer un poste d'encadrement.",
+      "Ferrotti s'est mis du vernis à ongles bleu ce matin. Il dit que c'est une couleur de protection cosmique.",
+      "Pasturon a préparé un CV ce matin. Il a mis 'Manager portuaire' comme titre de poste.",
+      "Ferrotti a apporté un cristal de quartz et l'a posé sur le tapis roulant pour 'purifier l'énergie du quai'.",
+      "Pasturon était au téléphone toute la matinée. Il dit que c'était son avocat pour négocier son contrat.",
+      "Ferrotti a regardé fixement le cargo MSC pendant 20 minutes. Il cherchait des inscriptions extraterrestres.",
+      "Pasturon est arrivé en costume ce matin. Il y a une réunion RH à 14h.",
+      "Ferrotti a demandé si on pouvait changer l'heure de la pause pour éviter 'l'alignement planétaire du midi'.",
+      "Pasturon a dit à tout le monde qu'il partait en vacances à Ibiza la semaine prochaine avec son CDI.",
+      "Ferrotti a refusé de descendre dans la cale. Il dit qu'il y a des vibrations anormales.",
+      "Pasturon a apporté des croissants ce matin. Il dit que c'est pour 'entretenir de bonnes relations avec la direction'.",
+      "Ferrotti portait des lunettes de soleil en arrivant. Il a dit que la lumière du matin était 'trop terrestre'.",
+      "Pasturon est convaincu que le chef de quai lui souriait ce matin. Ça fait 6 ans qu'il y croit.",
+      "Ferrotti a demandé si la cafétéria avait des aliments 'non contaminés par les ondes 5G'.",
+      "Pasturon a encore demandé une avance sur salaire. Pour son futur CDI.",
+      "Ferrotti a fait une demande officielle pour avoir un bureau face au nord. Pour 'aligner ses chakras avec le port'.",
+      "Pasturon a passé l'heure de pointe à rédiger un mail à la direction. Objet : 'Ma situation contractuelle urgente'.",
+      "Ferrotti est arrivé ce matin avec un carnet où il note les plaques des camions. 'Données pour les extraterrestres'.",
+      "Pasturon a encore expliqué à quelqu'un que son statut de docker occasionnel est 'temporaire depuis 2018'.",
+      "Ferrotti a regardé la lune à travers la fenêtre du bureau pendant le briefing de 8h. Personne n'a rien dit.",
+      "Pasturon a demandé si la prime de fin d'année s'appliquait aux occasionnels. La réponse était non.",
+      "Ferrotti a refusé de charger les conteneurs bleus aujourd'hui. 'Les bleus attirent les vaisseaux'.",
+      "Pasturon a expliqué à un stagiaire comment fonctionne 'la vraie vie en CDI'. Le stagiaire venait de signer.",
+      "Ferrotti a trouvé une plume de mouette et l'a gardée. 'Message des étoiles'.",
+      "Pasturon a pris rendez-vous avec les RH pour la 47ème fois. Cette fois c'est la bonne.",
+    ];
+
+    const RUMEURS_APREM = [
+      "Ferrotti a disparu pendant la pause déjeuner. Il est réapparu 40 minutes plus tard avec de la terre sur les genoux. Pas d'explication.",
+      "Pasturon a demandé si on pouvait lui rembourser ses frais de costume. 'Investissement professionnel'.",
+      "Ferrotti est convaincu que le brouillard de cet après-midi est 'artificiel'. Il a des photos.",
+      "Pasturon a refusé de faire des heures sup. Il attend d'avoir son CDI pour 'montrer son investissement'.",
+      "Ferrotti a passé l'heure du déjeuner à dessiner une carte du port avec des 'zones d'atterrissage probables'.",
+      "Pasturon a dit à sa femme qu'il rentrerait tard ce soir. Il a une réunion importante. Il n'y a pas de réunion.",
+      "Ferrotti a demandé à changer de binôme. Son collègue 'émet des ondes incompatibles avec sa fréquence vibratoire'.",
+      "Pasturon a imprimé son contrat d'intérim pour le montrer à quelqu'un. Il l'avait plastifié.",
+      "Ferrotti a regardé le lever de lune depuis le quai pendant 15 minutes. Il prenait des notes.",
+      "Pasturon explique à qui veut l'entendre que l'ancienneté en intérim devrait compter pour la retraite.",
+      "Ferrotti a refusé de manger à la cantine aujourd'hui. Il dit que la nourriture 'avait été modifiée'.",
+      "Pasturon a demandé si son préavis serait payé quand il partira pour son nouveau poste de chef.",
+      "Ferrotti portait une pierre autour du cou cet après-midi. 'Protection contre les rayonnements du terminal'.",
+      "Pasturon a passé l'après-midi à expliquer son plan de carrière à un docker qui dormait debout.",
+      "Ferrotti a demandé l'autorisation de poser un miroir dans le hangar pour 'dévier les mauvaises énergies'.",
+      "Pasturon est convaincu que le directeur lui a fait un clin d'œil en passant. Il n'y avait pas de directeur.",
+      "Ferrotti a refusé de pointer à 13h47. Ce nombre est 'significatif dans la numérologie extraterrestre'.",
+      "Pasturon a apporté son propre stylo pour signer son contrat. Il l'a dans sa poche depuis 3 ans.",
+      "Ferrotti a trouvé des 'symboles' sur un conteneur COSCO. Il les a photographiés et envoyés à un forum.",
+      "Pasturon a dit au chef de quai qu'il était disponible pour une mission longue durée. En CDI évidemment.",
+      "Ferrotti a demandé si on pouvait éteindre les néons du hangar. Ils 'perturbent sa communication intergalactique'.",
+      "Pasturon a encore calculé combien il gagnerait de plus avec un CDI. Résultat : beaucoup.",
+      "Ferrotti a refusé de signer le bon de livraison du cargo n°13. 'Chiffre codé extraterrestre'.",
+      "Pasturon a demandé un badge 'permanent' à la place de son badge 'occasionnel'. La RH a raccroché.",
+      "Ferrotti est arrivé à la réunion avec une feuille d'aluminium sous sa casquette. 'Protection préventive'.",
+      "Pasturon a préparé un PowerPoint sur pourquoi il mérite un CDI. Il cherche un projecteur.",
+      "Ferrotti a demandé si le port avait des archives de disparitions inexpliquées. 'Juste pour savoir'.",
+      "Pasturon a dit à quelqu'un que son prochain entretien se passerait très bien. Il n'a pas d'entretien prévu.",
+      "Ferrotti a organisé une 'veille nocturne' au port ce soir. Il cherche des volontaires. Pas de volontaires.",
+      "Pasturon vient d'apprendre qu'un collègue a eu son CDI. Il dit que c'est normal, il passe bientôt lui aussi.",
+    ];
+
+    function getRumeur() {
+      const now = new Date();
+      const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+      const isMatin = now.getHours() < 12;
+      const arr = isMatin ? RUMEURS_MATIN : RUMEURS_APREM;
+      return arr[dayOfYear % arr.length];
     }
 
     init();
