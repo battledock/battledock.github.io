@@ -1331,6 +1331,21 @@
       }
       if (!profile || !stats) return;
 
+      // Recalcul du niveau à partir de l'XP accumulée (clicker, tower, pointeau…)
+      let _lvl = stats.level || 1;
+      let _xp  = stats.xp || 0;
+      let _leveled = false;
+      while (_xp >= getXpRequired(_lvl)) {
+        _xp -= getXpRequired(_lvl);
+        _lvl++;
+        _leveled = true;
+      }
+      if (_leveled) {
+        stats.level = _lvl;
+        stats.xp = _xp;
+        await sb.from('game_stats').update({ level: _lvl, xp: _xp }).eq('user_id', currentUser.id);
+      }
+
 
 
       document.getElementById('avatarImage').src    = profile.avatar_url;
