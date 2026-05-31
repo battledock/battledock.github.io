@@ -445,11 +445,20 @@
         rec.tower_floor = Math.max(rec.tower_floor||0, floor);
         rec.tower_gain  = Math.max(rec.tower_gain||0, gain);
         await sb.from('game_stats').update({ money: newMoney, xp: nXp, level: nLvl, records: rec }).eq('user_id', currentUser.id);
+        await awardTrophies(nLvl - (fresh?.level||1));
         document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR') + '€';
       }
     }
 
     function getXpRequired(l){ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; }
+
+    async function awardTrophies(n){
+      if (!n || n<=0 || !currentUser) return;
+      try {
+        const { data:pr } = await sb.from('profiles').select('trophies').eq('user_id', currentUser.id).maybeSingle();
+        await sb.from('profiles').update({ trophies: (pr?.trophies||0) + n }).eq('user_id', currentUser.id);
+      } catch(e){ console.log('trophies:', e); }
+    }
 
     function showFlash(txt) {
       const el = document.createElement('div'); el.className = 'flash'; el.textContent = txt;

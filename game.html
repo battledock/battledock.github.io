@@ -1333,6 +1333,7 @@
 
       // Recalcul du niveau à partir de l'XP accumulée (clicker, tower, pointeau…)
       let _lvl = stats.level || 1;
+      const _startLvl = _lvl;
       let _xp  = stats.xp || 0;
       let _leveled = false;
       while (_xp >= getXpRequired(_lvl)) {
@@ -1344,6 +1345,10 @@
         stats.level = _lvl;
         stats.xp = _xp;
         await sb.from('game_stats').update({ level: _lvl, xp: _xp }).eq('user_id', currentUser.id);
+        try {
+          const { data:_pr } = await sb.from('profiles').select('trophies').eq('user_id', currentUser.id).maybeSingle();
+          await sb.from('profiles').update({ trophies: (_pr?.trophies||0) + (_lvl - _startLvl) }).eq('user_id', currentUser.id);
+        } catch(e){ console.log('trophies:', e); }
       }
 
 
