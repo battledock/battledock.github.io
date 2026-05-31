@@ -754,6 +754,40 @@
       z-index: 1;
     }
 
+
+    /* POPUP MESSAGE DIRECT */
+    .direct-msg-overlay {
+      position:fixed; inset:0; z-index:999;
+      background:rgba(0,0,0,0.92); backdrop-filter:blur(10px);
+      display:flex; align-items:center; justify-content:center;
+      animation:fadeIn .3s ease;
+    }
+    .direct-msg-card {
+      max-width:320px; width:90%;
+      background:#0f0f0f; border:1px solid #2a2a2a;
+      border-radius:20px; padding:28px 22px; text-align:center;
+      animation:popIn .4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .direct-msg-icon { font-size:52px; margin-bottom:12px; }
+    .direct-msg-title {
+      font-family:'Bebas Neue',sans-serif; font-size:18px;
+      letter-spacing:2px; color:#ef4444; margin-bottom:14px;
+    }
+    .direct-msg-body {
+      font-size:13px; color:rgba(255,255,255,0.6);
+      line-height:1.7; white-space:pre-line;
+      background:rgba(255,255,255,0.03); border:1px solid #1a1a1a;
+      border-radius:10px; padding:14px; margin-bottom:18px;
+      text-align:left;
+    }
+    .direct-msg-btn {
+      width:100%; height:48px; border:none; border-radius:12px;
+      background:#1a1a1a; border:1px solid #2a2a2a;
+      color:rgba(255,255,255,0.5); font-family:'Bebas Neue',sans-serif;
+      font-size:15px; letter-spacing:1px; cursor:pointer;
+    }
+    .direct-msg-btn:active { background:#222; }
+
     /* FLUIDITÉ GLOBALE */
     * { -webkit-font-smoothing:antialiased; }
     button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
@@ -1268,6 +1302,7 @@
       loadCalendar();
       loadActiveRumeur();
       setInterval(loadActiveRumeur, 60000);
+      checkDirectMessages();
 
       // Statut histoire
       const { data: storyData } = await sb.from('game_stats')
@@ -1542,6 +1577,41 @@ async function loadCalendar() {
       })
       .subscribe();
 
+
+
+    // ── MESSAGE DIRECT ──
+    async function checkDirectMessages() {
+      try {
+        const { data } = await sb.from('direct_messages')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .eq('seen', false)
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        if (!data) return;
+
+        // Afficher le popup
+        const overlay = document.createElement('div');
+        overlay.className = 'direct-msg-overlay';
+        overlay.innerHTML = `
+          <div class="direct-msg-card">
+            <div class="direct-msg-icon">🏛️</div>
+            <div class="direct-msg-title">Message officiel</div>
+            <div class="direct-msg-body">${data.message}</div>
+            <button class="direct-msg-btn" onclick="dismissDirectMessage('${data.id}', this.closest('.direct-msg-overlay'))">
+              J'ai compris
+            </button>
+          </div>`;
+        document.body.appendChild(overlay);
+      } catch(e) { console.log('direct msg error:', e); }
+    }
+
+    async function dismissDirectMessage(id, overlay) {
+      await sb.from('direct_messages').update({ seen: true }).eq('id', id);
+      overlay.remove();
+    }
 
     // ── RUMEURS DU PORT ──
     const RUMEURS_MATIN = [
