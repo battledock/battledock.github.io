@@ -6,6 +6,34 @@
   <title>Travail - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script>
+    (function() {
+      const PASS = 'froid';
+      if (sessionStorage.getItem('bd_pass') === PASS) return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        // Afficher le popup maintenance
+        const overlay = document.createElement('div');
+        overlay.id = 'maintenanceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        overlay.innerHTML = `
+          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🔒</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
+            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
+            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
+            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
+          </div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
+      }).catch(()=>{});
+    })();
+  </script>
+
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
@@ -335,31 +363,43 @@
     const { createClient } = supabase;
     const sb = createClient(SB_URL, SB_KEY);
 
-    // Vérifier niveau pour Tower
+    // Vérifier déblocage via histoire CH.2
     async function init() {
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
-      const { data } = await sb.from('game_stats').select('level').eq('user_id', session.user.id).maybeSingle();
-      const level = data?.level || 1;
-      if (level < 15) {
-        const tw = document.getElementById('pointeauCard');
-        if (tw) {
-          tw.onclick = null;
-          tw.style.opacity = '0.55';
+      const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', session.user.id).maybeSingle();
+      const progress = data?.story_progress || {};
+
+      if (!progress.scene2_done) {
+        // Tower verrouillé
+        const towerCard = document.getElementById('towerCard');
+        if (towerCard) {
+          towerCard.onclick = () => showToast('🔒 Débloque le Chapitre 2 du Mode Histoire !');
+          towerCard.style.opacity = '0.55';
+          document.getElementById('towerDesc').textContent = 'Débloqué au Chapitre 2';
+          const btn = document.getElementById('towerBtn');
+          if (btn) { btn.textContent = '🔒 CH.2'; btn.style.background='#9ca3af'; btn.style.boxShadow='none'; }
+        }
+        // Pointeau verrouillé
+        const pointeauCard = document.getElementById('pointeauCard');
+        if (pointeauCard) {
+          pointeauCard.onclick = () => showToast('🔒 Débloque le Chapitre 2 du Mode Histoire !');
+          pointeauCard.style.opacity = '0.55';
           const desc = document.getElementById('pointeauDesc');
-          if (desc) desc.textContent = `Débloqué au niveau 15 (tu es niveau ${level})`;
+          if (desc) desc.textContent = 'Débloqué au Chapitre 2';
           const btn = document.getElementById('pointeauBtn');
-          if (btn) { btn.textContent = '🔒 NIV.15'; btn.style.background='#9ca3af'; btn.style.boxShadow='none'; }
+          if (btn) { btn.textContent = '🔒 CH.2'; btn.style.background='#9ca3af'; btn.style.boxShadow='none'; }
         }
       }
-      if (level < 10) {
-        document.getElementById('towerCard').onclick = null;
-        document.getElementById('towerCard').style.opacity = '0.55';
-        document.getElementById('towerDesc').textContent = `Débloqué au niveau 10 (tu es niveau ${level})`;
-        const btn = document.getElementById('towerBtn');
-        if (btn) { btn.textContent = '🔒 NIV.10'; btn.style.background = '#9ca3af'; btn.style.boxShadow = 'none'; }
-      }
     }
+
+    function showToast(msg) {
+      let t = document.getElementById('toast');
+      if (!t) { t = document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap'; document.body.appendChild(t); }
+      t.textContent = msg; t.style.opacity = '1';
+      setTimeout(() => t.style.opacity = '0', 2800);
+    }
+
     init();
   </script>
 
