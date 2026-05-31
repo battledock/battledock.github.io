@@ -755,13 +755,26 @@
     }
 
     async function init() {
-      initBgCanvas();
-      const { data:{ session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
-      const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
-      progress = data?.story_progress || {};
-      showMenu();
+      try {
+        initBgCanvas();
+        const { data:{ session } } = await sb.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return; }
+        currentUser = session.user;
+        const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
+        progress = data?.story_progress || {};
+
+        // Retour depuis clicker après CH.2
+        if (sessionStorage.getItem('histoire_ch2_pending') === '1') {
+          sessionStorage.removeItem('histoire_ch2_pending');
+          if (!progress.scene2_done) { await showRewardCh2(); return; }
+        }
+
+        showMenu();
+      } catch(e) {
+        console.error('Erreur init histoire:', e);
+        // Afficher quand même le menu
+        showMenu();
+      }
     }
 
     init();
