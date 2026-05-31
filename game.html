@@ -89,24 +89,95 @@
     /* TOAST */
     .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); color:white; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:600; z-index:999; opacity:0; transition:opacity .3s; white-space:nowrap; pointer-events:none; }
     .toast.show { opacity:1; }
+ PROFIL CARD ===================== */
+    .profile-card-btn {
+      grid-column: span 2;
+      background: white;
+      border-radius: 18px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      border: 1px solid #e5e7eb;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .profile-card-btn:active { transform: scale(0.98); }
+
+    .pcb-row {
+      display: flex; align-items: center; gap: 14px;
+    }
+
+    .pcb-avatar {
+      width: 54px; height: 54px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0;
+      border: 2px solid #e5e7eb;
+    }
+    .pcb-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .pcb-info { flex: 1; min-width: 0; }
+    .pcb-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px; letter-spacing: 1.5px;
+      color: #1a1a1a; line-height: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pcb-grade { font-size: 11px; color: #b8962e; font-weight: 700; margin-top: 3px; }
+
+    .pcb-level-wrap { text-align: center; flex-shrink: 0; }
+    .pcb-level-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px; color: #1a1a1a; line-height: 1;
+    }
+    .pcb-level-lbl { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+
+    .pcb-xp-wrap { }
+    .pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
+    .pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
+    .pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
+
+    .pcb-stats {
+      display:grid; grid-template-columns:repeat(4,1fr);
+      border-top:1px solid #f3f4f6; margin-top:10px; padding-top:10px; gap:4px;
+    }
+    .pcb-stat { text-align:center; }
+    .pcb-stat-val { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#1a1a1a; letter-spacing:0.5px; line-height:1; }
+    .pcb-stat-lbl { font-size:8px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:2px; }
+
+
   </style>
 </head>
 <body>
 
-  <!-- PROFIL -->
-  <div class="profile-bar" onclick="window.location.href='profil.html'">
-    <div class="avatar"><img src="avatar-default.png" id="profileAvatar" onerror="this.style.display='none'"></div>
-    <div class="profile-info">
-      <div class="profile-name" id="profileName">Chargement...</div>
-      <div class="profile-sub" id="profileSub">Port de Marseille</div>
+  <div class="profile-card-btn" id="profileCardBtn" onclick="window.location.href='profil.html'">
+    <div class="pcb-row">
+      <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
+      <div class="pcb-info">
+    <div class="pcb-name"  id="playerName">...</div>
+    <div class="pcb-grade" id="playerGrade">Docker Occasionnel</div>
+      </div>
+      <div class="pcb-level-wrap">
+    <div class="pcb-level-num" id="currentLevel">1</div>
+    <div class="pcb-level-lbl">Niv.</div>
+      </div>
     </div>
-    <div class="profile-pills">
-      <div class="pill pill-gold" id="statMoney">0€</div>
-      <div class="pill pill-blue" id="statLevel">Niv.1</div>
+    <div class="pcb-xp-wrap">
+      <div class="pcb-xp-label">
+    <span id="xpCounter">0 / 500 XP</span>
+    <span>→ Niv. <span id="nextLevel">2</span></span>
+      </div>
+      <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+    <div class="pcb-stats">
+      <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
+      <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
+      <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
+      <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
     </div>
   </div>
 
-  <!-- CARTES -->
   <div class="cards-wrap">
 
     <!-- MODE HISTOIRE -->
@@ -186,9 +257,55 @@
       })();
     }
 
+    async function loadUserData() {
+      const [profileResult, statsResult] = await Promise.all([
+        sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle(),
+        sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
+      ]);
+
+      let profile = profileResult.data;
+      let stats   = statsResult.data;
+
+      if (!profile) {
+        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'blue', diamonds: 0, trophies: 0 }, { onConflict: 'user_id' }).select().maybeSingle();
+        profile = data;
+      }
+      if (!stats) {
+        const { data } = await sb.from('game_stats').upsert({ user_id: currentUser.id, money: 1000, xp: 0, level: 1, grade: 'Docker Occasionnel', last_levelup_shown: 1 }, { onConflict: 'user_id' }).select().maybeSingle();
+        stats = data;
+      }
+      if (!profile || !stats) return;
+
+
+
+      document.getElementById('avatarImage').src    = profile.avatar_url;
+
+      document.getElementById('playerName').textContent  = profile.username;
+      document.getElementById('playerGrade').textContent = getGrade(stats.level || 1);
+
+      const level = stats.level || 1, xp = stats.xp || 0;
+      const xpNeeded = getXpRequired(level);
+      const pct = Math.min((xp / xpNeeded) * 100, 100);
+      document.getElementById('currentLevel').textContent = level;
+      updateSkillTree(level);
+      document.getElementById('nextLevel').textContent    = level + 1;
+      document.getElementById('xpCounter').textContent   = `${xp} / ${xpNeeded} XP`;
+      document.getElementById('xpFill').style.width      = pct + '%';
+
+      document.getElementById('moneyAmount').textContent    = (stats.money || 0).toLocaleString('fr-FR') + '€';
+      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
+      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
+
+      loadRank(stats.level || 1);
+      await checkPendingLevelUp(stats, profile);
+    }
+
+
     async function init() {
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
+
+      await loadUserData();
 
       const [profRes, statsRes] = await Promise.all([
         sb.from('profiles').select('username,avatar_url').eq('user_id', session.user.id).maybeSingle(),
