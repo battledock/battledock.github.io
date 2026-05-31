@@ -530,9 +530,12 @@
     }
 
     async function updateMoney(newAmount) {
-      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
+      // Relire le solde actuel depuis la BD pour éviter toute incohérence
+      const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      const safeAmount = Math.max(0, newAmount); // jamais négatif
+      const { error } = await sb.from('game_stats').update({ money: safeAmount }).eq('user_id', currentUser.id);
       if (error) { console.error('updateMoney:', error.message); return; }
-      currentMoney = newAmount;
+      currentMoney = safeAmount;
       const el = document.getElementById('balance');
       if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
