@@ -537,6 +537,14 @@
         doneKey: 'scene6_done',
         requires: 'scene5_done',
       },
+      {
+        id: 7,
+        title: "L'Échoppe",
+        desc: "Un bazar coloré coincé entre deux hangars.",
+        reward: '🛒 Client fidèle · +1000€ · +250 XP · Shop débloqué',
+        doneKey: 'scene7_done',
+        requires: 'scene6_done',
+      },
     ];
 
     // ── MENU ──
@@ -591,6 +599,7 @@
       if (ch.id === 4) startChapter4();
       if (ch.id === 5) startChapter5();
       if (ch.id === 6) startChapter6();
+      if (ch.id === 7) startChapter7();
     }
 
 
@@ -1043,6 +1052,93 @@
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">🎰</div><div class="badge-title">Flambeur</div><div class="badge-desc">+1500€ · +300 XP · Casino débloqué</div>';
+      act.appendChild(badge);
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
+      btn.onclick = showMenu;
+      act.appendChild(btn);
+    }
+
+    // ── CHAPITRE 7 ──
+    function startChapter7() {
+      showNarrateur("Lendemain matin. En allant bosser, Doudou t'attrape par la manche devant un bazar coloré coincé entre deux hangars.", () => showCh7_1(), 'port_matin');
+    }
+
+    function showCh7_1() {
+      setChar('doudou', 'Doudou', 'port_matin');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "L'Échoppe de Fatou ! Ici tu trouves de TOUT. Des outils qui font gagner plus, des fringues de chef de quai... et des chips.";
+      showNext(() => showCh7_2());
+    }
+
+    function showCh7_2() {
+      showNarrateur("Derrière un comptoir croulant sous le bazar, une marchande au sourire malin t'observe par-dessus ses lunettes. « Un nouveau visage ! Entre, entre, touche pas mais regarde. »", () => showCh7_3(), 'port_matin');
+    }
+
+    function showCh7_3() {
+      setChar('jeff', 'Jeff', 'port_matin');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Moi je viens pour le style. Regarde-moi ce thème doré pour ma fiche. La classe, non ? Ça impressionne au classement.";
+      showNext(() => showCh7_4());
+    }
+
+    function showCh7_4() {
+      setChar('gegé', 'Gégé', 'port_matin');
+      document.getElementById('dialogueText').textContent = "Le style c'est bien, Jeff, mais Fatou vend surtout des vraies améliorations. Mieux affûter tes outils, ça te fait gagner plus à chaque clic. Ça, c'est utile.";
+      showNext(() => showCh7_choice());
+    }
+
+    function showCh7_choice() {
+      showNarrateur("Fatou écarte les bras sur tout son bazar. « Alors, qu'est-ce qui te fait envie en premier ? »", () => showCh7_react(), 'port_matin');
+    }
+
+    function showCh7_react() {
+      showChoices([
+        { icon:'🛠️', text:'"Des améliorations, du concret."', next: showCh7_titouan },
+        { icon:'🎨', text:'"Un beau thème pour ma fiche."', next: showCh7_titouan },
+        { icon:'🍟', text:'"...Vous avez des chips ?"', next: showCh7_titouan },
+      ]);
+    }
+
+    function showCh7_titouan() {
+      setChar('titouan', 'Titouan', 'port_matin');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Moi j'économise pour le thème 'Nuit du Port'. Ça coûte des diamants, ceux qu'on gagne en se connectant chaque jour.";
+      showNext(() => showCh7_gege2());
+    }
+
+    function showCh7_gege2() {
+      setChar('gegé', 'Gégé', 'port_matin');
+      document.getElementById('dialogueText').textContent = "Retiens ça : les outils, tu les paies en argent. Le look, c'est en diamants. Fatou, elle accepte les deux avec le sourire.";
+      showNext(() => finishChapter7());
+    }
+
+    async function finishChapter7() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene7_done: true };
+        let nXp = (fresh?.xp||0) + 250, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
+        await sb.from('game_stats').update({
+          money: (fresh?.money||0) + 1000,
+          xp: nXp, level: nLvl,
+          story_progress: newProgress
+        }).eq('user_id', currentUser.id);
+        await awardTrophies(nLvl - (fresh?.level||1));
+        progress = newProgress;
+      } catch(e) { console.log(e); }
+
+      setChar('doudou', 'Doudou', 'port_matin');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Et voilà, t'as tes entrées chez Fatou ! Le Shop est ouvert. (Elle m'a filé un paquet de chips. Je l'aime bien, cette dame.)";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const badge = document.createElement('div');
+      badge.className = 'badge-wrap';
+      badge.innerHTML = '<div class="badge-icon">🛒</div><div class="badge-title">Client fidèle</div><div class="badge-desc">+1000€ · +250 XP · Shop débloqué</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next';

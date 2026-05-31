@@ -1,430 +1,186 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Boutique - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Échoppe de Fatou - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#120c06; color:#f3ead9; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(217,119,6,0.22), transparent 60%),
+      radial-gradient(80% 50% at 50% 100%, rgba(13,148,136,0.15), transparent 70%),
+      linear-gradient(180deg,#1c1308,#120c06 55%,#0c0804); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
 
-    body {
-      font-family:'Inter',sans-serif;
-      background:#1a0f00;
-      min-height:100vh;
-      padding-bottom:40px;
-    }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#120c06,rgba(18,12,6,0.85)); backdrop-filter:blur(8px); }
+  .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:9px;
+    padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.7); cursor:pointer; }
+  .back-btn:active { transform:scale(0.95); }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
+    background:linear-gradient(135deg,#f59e0b,#fbbf24,#14b8a6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
-    /* FOND BOIS */
-    body::before {
-      content:'';
-      position:fixed; inset:0; z-index:0;
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0px, rgba(255,255,255,0.015) 2px, transparent 2px, transparent 24px),
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 40px);
-      pointer-events:none;
-    }
+  .sub { text-align:center; font-size:12px; color:rgba(255,220,170,0.6); font-style:italic; margin:4px 0 14px; }
+  .wallet { display:flex; gap:10px; margin-bottom:16px; }
+  .wbox { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(251,191,36,0.2); border-radius:14px; padding:11px 14px; }
+  .wlbl { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.4); margin-bottom:3px; }
+  .wval { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:0.5px; }
+  .wval.eur { color:#fbbf24; } .wval.dia { color:#7dd3fc; }
 
-    /* HEADER */
-    .header {
-      position:relative; z-index:10;
-      background:rgba(26,15,0,0.9);
-      backdrop-filter:blur(10px);
-      border-bottom:1px solid rgba(212,165,116,0.2);
-      padding:14px 16px;
-      display:flex; align-items:center; gap:12px;
-    }
-    .back-btn {
-      background:rgba(212,165,116,0.1); border:1px solid rgba(212,165,116,0.2);
-      border-radius:8px; padding:8px 12px;
-      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
-      color:rgba(212,165,116,0.8); cursor:pointer;
-    }
-    .header-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#f5d060; flex:1; }
+  .section-h { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:#fcd34d; margin:18px 4px 10px; display:flex; align-items:center; gap:8px; }
+  .section-h::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(251,191,36,0.3),transparent); }
 
-    /* LANTERNE DÉCO */
-    .lantern-deco {
-      position:fixed; top:12px; right:16px; z-index:20;
-      font-size:32px;
-      filter:drop-shadow(0 0 12px rgba(251,191,36,0.8));
-      animation:lanternSwing 3s ease-in-out infinite;
-      transform-origin:top center;
-    }
-    @keyframes lanternSwing { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }
-    .lantern-glow {
-      position:fixed; top:0; right:0; z-index:15;
-      width:120px; height:120px;
-      background:radial-gradient(circle at 70% 20%, rgba(251,191,36,0.15), transparent 60%);
-      pointer-events:none;
-    }
+  .item { display:flex; align-items:center; gap:13px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px; padding:13px; margin-bottom:10px; }
+  .item-ic { width:46px; height:46px; border-radius:12px; background:rgba(251,191,36,0.12); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .item-mid { flex:1; min-width:0; }
+  .item-name { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:0.5px; color:#fff; }
+  .item-desc { font-size:11px; color:rgba(255,255,255,0.5); margin-top:2px; }
+  .buy { border:none; border-radius:11px; padding:10px 14px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.5px; cursor:pointer; flex-shrink:0; min-width:90px; }
+  .buy.eur { background:linear-gradient(135deg,#d97706,#fbbf24); color:#3a1f00; }
+  .buy.dia { background:linear-gradient(135deg,#0284c7,#38bdf8); color:#04243a; }
+  .buy.equip { background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; }
+  .buy.equipped { background:rgba(52,211,153,0.15); border:1px solid rgba(52,211,153,0.4); color:#6ee7b7; }
+  .buy:disabled { opacity:0.4; cursor:default; }
 
-    /* HERO */
-    .hero {
-      position:relative; z-index:1;
-      padding:24px 20px 20px;
-      text-align:center;
-      border-bottom:1px solid rgba(212,165,116,0.15);
-    }
-    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:32px; letter-spacing:4px; color:#f5d060; text-shadow:0 0 20px rgba(245,208,96,0.4); }
-    .hero-sub { font-size:12px; color:rgba(212,165,116,0.5); letter-spacing:2px; margin-top:4px; text-transform:uppercase; }
+  .themes { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+  .theme { border-radius:14px; padding:14px; border:2px solid rgba(255,255,255,0.1); position:relative; overflow:hidden; }
+  .theme-name { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,0.5); margin-bottom:42px; }
+  .theme-btn { position:absolute; left:12px; right:12px; bottom:12px; border:none; border-radius:10px; padding:9px; cursor:pointer;
+    font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.5px; }
+  .theme-btn.buy { background:rgba(0,0,0,0.4); color:#7dd3fc; }
+  .theme-btn.equip { background:rgba(255,255,255,0.85); color:#1a1a1a; }
+  .theme-btn.equipped { background:rgba(52,211,153,0.9); color:#04231a; }
 
-    /* STATS BAR */
-    .stats-bar {
-      position:relative; z-index:1;
-      display:flex; gap:0;
-      border-bottom:1px solid rgba(212,165,116,0.15);
-    }
-    .stat-item {
-      flex:1; padding:12px 8px; text-align:center;
-      border-right:1px solid rgba(212,165,116,0.1);
-    }
-    .stat-item:last-child { border-right:none; }
-    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#f5d060; letter-spacing:0.5px; }
-    .stat-lbl { font-size:9px; color:rgba(212,165,116,0.5); text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
-
-    /* CONTAINER */
-    .container { position:relative; z-index:1; padding:16px; }
-
-    .section-lbl {
-      font-family:'Bebas Neue',sans-serif;
-      font-size:16px; letter-spacing:3px;
-      color:rgba(212,165,116,0.6);
-      margin:20px 0 10px 2px;
-      display:flex; align-items:center; gap:10px;
-    }
-    .section-lbl::after { content:''; flex:1; height:1px; background:rgba(212,165,116,0.15); }
-
-    /* ITEM CARD */
-    .item-card {
-      background:rgba(255,255,255,0.04);
-      border:1px solid rgba(212,165,116,0.15);
-      border-radius:16px; padding:16px;
-      margin-bottom:10px;
-      display:flex; align-items:center; gap:14px;
-      transition:all 0.2s;
-      position:relative; overflow:hidden;
-    }
-    .item-card::before {
-      content:''; position:absolute; left:0; top:0; bottom:0;
-      width:3px; border-radius:3px 0 0 3px;
-    }
-    .item-card.diamond::before { background:linear-gradient(180deg,#60a5fa,#93c5fd); }
-    .item-card.money::before   { background:linear-gradient(180deg,#d4af37,#f5d060); }
-    .item-card.trophy::before  { background:linear-gradient(180deg,#ef4444,#fca5a5); }
-    .item-card.owned { opacity:0.5; }
-
-    .item-icon {
-      width:52px; height:52px; border-radius:14px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:26px; flex-shrink:0;
-    }
-    .item-card.diamond .item-icon { background:rgba(96,165,250,0.12); }
-    .item-card.money   .item-icon { background:rgba(212,175,55,0.12); }
-    .item-card.trophy  .item-icon { background:rgba(239,68,68,0.12); }
-
-    .item-info { flex:1; min-width:0; }
-    .item-name { font-weight:700; font-size:14px; color:white; margin-bottom:3px; }
-    .item-desc { font-size:11px; color:rgba(255,255,255,0.4); line-height:1.4; }
-    .item-effect { font-size:11px; font-weight:700; margin-top:4px; }
-    .item-card.diamond .item-effect { color:#93c5fd; }
-    .item-card.money   .item-effect { color:#f5d060; }
-    .item-card.trophy  .item-effect { color:#fca5a5; }
-
-    .item-buy {
-      flex-shrink:0;
-    }
-    .buy-btn {
-      padding:9px 14px; border-radius:10px; border:none;
-      font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px;
-      cursor:pointer; transition:all 0.2s; white-space:nowrap;
-      display:flex; flex-direction:column; align-items:center; gap:2px;
-    }
-    .buy-btn:active { transform:scale(0.95); }
-    .buy-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
-    .item-card.diamond .buy-btn { background:rgba(96,165,250,0.15); color:#93c5fd; border:1px solid rgba(96,165,250,0.25); }
-    .item-card.money   .buy-btn { background:rgba(212,175,55,0.15); color:#f5d060; border:1px solid rgba(212,175,55,0.25); }
-    .item-card.trophy  .buy-btn { background:rgba(239,68,68,0.15); color:#fca5a5; border:1px solid rgba(239,68,68,0.25); }
-    .buy-price { font-size:14px; }
-    .buy-currency { font-size:9px; opacity:0.7; }
-    .owned-badge { font-size:11px; color:rgba(255,255,255,0.3); font-weight:600; }
-
-    /* TOAST */
-    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a0f00; border:1px solid rgba(212,165,116,0.3); color:#f5d060; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; white-space:nowrap; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
-    .toast.show { opacity:1; }
-    .toast.error { color:#fca5a5; border-color:rgba(239,68,68,0.3); }
-  
-    /* FLUIDITÉ GLOBALE */
-    * { -webkit-font-smoothing:antialiased; }
-    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
-      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    button:active, .nav-card:active, .row:active {
-      transform: scale(0.97) !important;
-      opacity: 0.9 !important;
-    }
-    img { transition: opacity 0.3s ease; }
-    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
-
-  </style>
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200;
+    background:rgba(30,20,8,0.97); border:1px solid rgba(251,191,36,0.4); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#fde68a; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.bad { border-color:rgba(248,113,113,0.5); color:#fca5a5; }
+  .toast.good { border-color:rgba(52,211,153,0.5); color:#86efac; }
+  .loader { text-align:center; padding:50px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:22px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+</style>
 </head>
 <body>
-
-  <div class="lantern-glow"></div>
-  <div class="lantern-deco">🏮</div>
-
-  <div class="header">
-    <button class="back-btn" onclick="window.location.href='clicker.html'">← Retour</button>
-    <div class="header-title">🏮 Boutique</div>
-  </div>
-
-  <!-- STATS -->
-  <div class="stats-bar">
-    <div class="stat-item"><div class="stat-val" id="statMoney">0€</div><div class="stat-lbl">Argent</div></div>
-    <div class="stat-item"><div class="stat-val" id="statDiamonds">0 💎</div><div class="stat-lbl">Diamants</div></div>
-    <div class="stat-item"><div class="stat-val" id="statTrophies">0 🏆</div><div class="stat-lbl">Trophées</div></div>
-  </div>
-
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-title">Améliorations</div>
-    <div class="hero-sub">Augmente tes gains au port</div>
-  </div>
-
-  <div class="container">
-
-    <!-- XP/CLIC — DIAMANTS -->
-    <div class="section-lbl">💎 XP par clic</div>
-
-    <div class="item-card diamond" id="item-xp-1">
-      <div class="item-icon">⚡</div>
-      <div class="item-info">
-        <div class="item-name">Boost XP</div>
-        <div class="item-desc">Améliore ta productivité au port</div>
-        <div class="item-effect">+1 XP par clic (max 10×)</div>
-      </div>
-      <div class="item-buy">
-        <button class="buy-btn" onclick="buyItem('xp',1,10,'diamonds')">
-          <span class="buy-price">10</span>
-          <span class="buy-currency">💎</span>
-        </button>
-      </div>
+  <div class="bg"></div>
+  <div class="wrap">
+    <div class="hdr">
+      <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
+      <div class="hdr-title">🛒 Échoppe de Fatou</div>
+    </div>
+    <div class="sub">« Touche pas, mais regarde… et sors ton porte-monnaie. »</div>
+    <div class="wallet">
+      <div class="wbox"><div class="wlbl">Argent</div><div class="wval eur" id="money">—</div></div>
+      <div class="wbox"><div class="wlbl">Diamants</div><div class="wval dia" id="diamonds">—</div></div>
     </div>
 
-    <!-- ARGENT/CLIC — MONNAIE -->
-    <div class="section-lbl">💰 Argent par clic</div>
+    <div class="section-h">🛠️ Améliorations</div>
+    <div id="upgrades"><div class="loader">…</div></div>
 
-    <div class="item-card money" id="item-money-1">
-      <div class="item-icon">💵</div>
-      <div class="item-info">
-        <div class="item-name">Salaire I</div>
-        <div class="item-desc">Augmentation de base au port</div>
-        <div class="item-effect">+1€ par clic (max 10×)</div>
-      </div>
-      <div class="item-buy">
-        <button class="buy-btn" onclick="buyItem('money',1,2000,'money')">
-          <span class="buy-price">2 000</span>
-          <span class="buy-currency">€</span>
-        </button>
-      </div>
-    </div>
+    <div class="section-h">🎨 Thèmes de fiche <span style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px">· en 💎</span></div>
+    <div class="themes" id="themes"></div>
 
-    <div class="item-card money" id="item-money-2">
-      <div class="item-icon">🏗️</div>
-      <div class="item-info">
-        <div class="item-name">Salaire II</div>
-        <div class="item-desc">Grue automatisée au quai</div>
-        <div class="item-effect">+2€ par clic (max 5×)</div>
-      </div>
-      <div class="item-buy">
-        <button class="buy-btn" onclick="buyItem('money',2,15000,'money')">
-          <span class="buy-price">15 000</span>
-          <span class="buy-currency">€</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- AVATAR EXCLUSIF -->
-    <div class="section-lbl">🏆 Exclusif</div>
-    <div class="item-card trophy" id="item-millionaire-avatar" style="background:linear-gradient(135deg,rgba(251,191,36,0.1),rgba(245,158,11,0.05));border-color:rgba(251,191,36,0.3)">
-      <div class="item-icon">👑</div>
-      <div class="item-info">
-        <div class="item-name" style="color:#fbbf24">Avatar Millionnaire</div>
-        <div class="item-desc">Avatar exclusif doré débloqué dans ton profil</div>
-        <div class="item-effect">Avatar 👑 permanent</div>
-      </div>
-      <div class="item-buy">
-        <button class="buy-btn" onclick="buyAvatar()" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0a00">
-          <span class="buy-price">1M</span>
-          <span class="buy-currency">€</span>
-        </button>
-      </div>
-    </div>
-
+    <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
   </div>
-
   <div class="toast" id="toast"></div>
 
-  <script>
-    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    let currentUser = null;
-    let stats = null;
+  const MPC_MAX=30, XPC_MAX=11;
+  const THEMES = [
+    { key:'blue',    name:'Bleu du Port', grad:'linear-gradient(135deg,#1d4ed8,#3b82f6)', cost:0 },
+    { key:'gold',    name:'Or des Quais', grad:'linear-gradient(135deg,#b45309,#f59e0b)', cost:20 },
+    { key:'emerald', name:'Émeraude',     grad:'linear-gradient(135deg,#047857,#10b981)', cost:20 },
+    { key:'purple',  name:'Pourpre',      grad:'linear-gradient(135deg,#6d28d9,#a855f7)', cost:25 },
+    { key:'night',   name:'Nuit du Port', grad:'linear-gradient(135deg,#0f172a,#334155)', cost:25 },
+    { key:'coral',   name:'Corail',       grad:'linear-gradient(135deg,#be123c,#fb7185)', cost:30 },
+  ];
 
-    function checkShopOpen() {
-      const hour = new Date().getHours();
-      return hour >= 10 && hour < 22;
-    }
+  let currentUser=null, money=0, diamonds=0, mpc=1, xpc=1, owned=['blue'], bgColor='blue';
+  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
 
-    function showShopClosed() {
-      const style = document.createElement('style');
-      style.textContent = ["@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap');","* { margin:0; padding:0; box-sizing:border-box; }","body { font-family:'Inter',sans-serif; overflow:hidden; height:100vh; background:#1a0f00; }",".sc { position:fixed;inset:0;background:linear-gradient(180deg,#1a0f00 0%,#2d1a00 30%,#3d2400 60%,#1a0f00 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden; }",".sc-ray { position:absolute;top:0;width:2px;height:60vh;background:linear-gradient(180deg,rgba(212,165,116,0.3),transparent);filter:blur(4px);transform-origin:top center;animation:scRay ease-in-out infinite; }","@keyframes scRay { 0%,100%{transform:rotate(-2deg);opacity:0.6} 50%{transform:rotate(2deg);opacity:1} }",".sc-lantern { position:absolute;top:20px;right:30px;font-size:40px;filter:drop-shadow(0 0 12px rgba(212,165,116,0.7));animation:scLantern 3s ease-in-out infinite; }","@keyframes scLantern { 0%,100%{transform:rotate(-8deg)} 50%{transform:rotate(8deg)} }",".sc-content { position:relative;z-index:10;text-align:center;padding:0 24px;width:100%;max-width:420px; }",".sc-label { font-size:11px;letter-spacing:5px;color:rgba(212,165,116,0.5);font-weight:700;text-transform:uppercase;margin-bottom:8px; }",".sc-title { font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:4px;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }",".sc-hours { font-size:12px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:32px; }",".sc-tbox { background:rgba(212,165,116,0.06);border:1px solid rgba(212,165,116,0.2);border-radius:16px;padding:20px 24px;margin-bottom:28px; }",".sc-tdigits { font-family:'Bebas Neue',sans-serif;font-size:58px;letter-spacing:4px;background:linear-gradient(135deg,#d4a574,#f5d060,#d4a574);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1; }",".sc-back { width:100%;background:rgba(212,165,116,0.08);border:1px solid rgba(212,165,116,0.2);color:rgba(212,165,116,0.7);padding:16px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer; }"].join('');
-      document.head.appendChild(style);
-      const scene = document.createElement('div'); scene.className='sc';
-      [['20%','5s'],['50%','7s'],['80%','6s']].forEach(r=>{const el=document.createElement('div');el.className='sc-ray';el.style.cssText='left:'+r[0]+';animation-duration:'+r[1]+';';scene.appendChild(el);});
-      const lantern=document.createElement('div');lantern.className='sc-lantern';lantern.textContent='🏮';scene.appendChild(lantern);
-      const content=document.createElement('div');content.className='sc-content';
-      content.innerHTML='<div class="sc-label">Battle Dock</div><div class="sc-title">Boutique Fermée</div><div class="sc-hours">Horaires : 10h00 – 22h00</div>';
-      const tbox=document.createElement('div');tbox.className='sc-tbox';
-      const tdigits=document.createElement('div');tdigits.className='sc-tdigits';tdigits.id='scTimer';tbox.appendChild(tdigits);
-      const back=document.createElement('button');back.className='sc-back';back.textContent='← Retour au Port';back.onclick=()=>window.location.href='clicker.html';
-      content.appendChild(tbox);content.appendChild(back);scene.appendChild(content);
-      document.body.innerHTML='';document.body.appendChild(scene);
-      function tick(){const now=new Date(),next=new Date();if(now.getHours()<10){next.setHours(10,0,0,0);}else{next.setDate(next.getDate()+1);next.setHours(10,0,0,0);}const d=Math.floor((next-now)/1000),h=Math.floor(d/3600),m=Math.floor((d%3600)/60),s=d%60;const el=document.getElementById('scTimer');if(el)el.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');setTimeout(tick,1000);}tick();
-    }
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser=session.user;
+    const [{ data:prof }, { data:gs }] = await Promise.all([
+      sb.from('profiles').select('diamonds,background_color').eq('user_id',currentUser.id).maybeSingle(),
+      sb.from('game_stats').select('money,money_per_click,xp_per_click,shop').eq('user_id',currentUser.id).maybeSingle()
+    ]);
+    diamonds = prof?.diamonds||0; bgColor = prof?.background_color||'blue';
+    money = gs?.money||0; mpc = gs?.money_per_click||1; xpc = gs?.xp_per_click||1;
+    const shop = (gs?.shop && typeof gs.shop==='object') ? gs.shop : {};
+    owned = Array.isArray(shop.themes) ? shop.themes : [];
+    if(!owned.includes('blue')) owned.push('blue');
+    render();
+  }
 
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
+  function render(){
+    document.getElementById('money').textContent = fmt(money)+'€';
+    document.getElementById('diamonds').textContent = diamonds+' 💎';
 
-      const { data } = await sb.from('game_stats')
-        .select('money, diamonds, trophies, xp_per_click, money_per_click, shop_purchases')
-        .eq('user_id', currentUser.id).maybeSingle();
-      stats = data;
-      stats.shop_purchases = data?.shop_purchases || {};
+    const eurPrice = mpc*3000, xpPrice = xpc*2500;
+    document.getElementById('upgrades').innerHTML = `
+      <div class="item">
+        <div class="item-ic">💰</div>
+        <div class="item-mid"><div class="item-name">Outils affûtés · +1 €/clic</div>
+          <div class="item-desc">Niveau actuel : ${mpc} €/clic${mpc>=MPC_MAX?' (max)':''}</div></div>
+        ${mpc>=MPC_MAX ? '<button class="buy" disabled>MAX</button>'
+          : `<button class="buy eur" id="buyMpc" ${money<eurPrice?'disabled':''} onclick="buyMpc()">${fmt(eurPrice)}€</button>`}
+      </div>
+      <div class="item">
+        <div class="item-ic">⭐</div>
+        <div class="item-mid"><div class="item-name">Méthode de pro · +1 XP/clic</div>
+          <div class="item-desc">Niveau actuel : ${xpc} XP/clic${xpc>=XPC_MAX?' (max)':''}</div></div>
+        ${xpc>=XPC_MAX ? '<button class="buy" disabled>MAX</button>'
+          : `<button class="buy eur" id="buyXpc" ${money<xpPrice?'disabled':''} onclick="buyXpc()">${fmt(xpPrice)}€</button>`}
+      </div>`;
 
-      document.getElementById('statMoney').textContent    = (data?.money || 0).toLocaleString('fr-FR') + '€';
-      document.getElementById('statDiamonds').textContent = (data?.diamonds || 0) + ' 💎';
-      document.getElementById('statTrophies').textContent = (data?.trophies || 0) + ' 🏆';
-      renderPurchaseCounts();
-    }
+    document.getElementById('themes').innerHTML = THEMES.map(t=>{
+      const isOwned = owned.includes(t.key);
+      const isEq = bgColor===t.key;
+      let btn;
+      if(isEq) btn = `<button class="theme-btn equipped" disabled>✓ Équipé</button>`;
+      else if(isOwned) btn = `<button class="theme-btn equip" onclick="equip('${t.key}')">Équiper</button>`;
+      else btn = `<button class="theme-btn buy" ${diamonds<t.cost?'disabled style="opacity:.45"':''} onclick="buyTheme('${t.key}')">${t.cost} 💎</button>`;
+      return `<div class="theme" style="background:${t.grad}"><div class="theme-name">${t.name}</div>${btn}</div>`;
+    }).join('');
+  }
 
+  async function saveStats(){ try{ await sb.from('game_stats').update({ money:Math.round(money), money_per_click:mpc, xp_per_click:xpc, shop:{ themes:owned } }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
+  async function saveProfile(){ try{ await sb.from('profiles').update({ diamonds, background_color:bgColor }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
 
-    async function buyAvatar() {
-      if (!stats) return;
-      const purchases = stats.shop_purchases || {};
-      if (purchases.millionaire_avatar >= 1) {
-        showToast('Avatar déjà acheté !', 'error'); return;
-      }
-      const { data: fresh } = await sb.from('game_stats').select('money, shop_purchases').eq('user_id', currentUser.id).maybeSingle();
-      if (!fresh || fresh.money < 1000000) {
-        showToast('Il te faut 1 000 000€ !', 'error'); return;
-      }
-      const newPurchases = { ...(fresh.shop_purchases||{}), millionaire_avatar: 1 };
-      await sb.from('game_stats').update({ money: fresh.money - 1000000, shop_purchases: newPurchases }).eq('user_id', currentUser.id);
-      stats = { ...stats, money: fresh.money - 1000000, shop_purchases: newPurchases };
-      document.getElementById('statMoney').textContent = (stats.money).toLocaleString('fr-FR') + '€';
-      // Marquer comme acheté
-      const btn = document.querySelector('#item-millionaire-avatar .buy-btn');
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="buy-price" style="font-size:10px">ACHETÉ</span>'; }
-      showToast('👑 Avatar Millionnaire débloqué !');
-    }
+  async function buyMpc(){
+    const price=mpc*3000; if(mpc>=MPC_MAX||money<price) return;
+    money-=price; mpc++; await saveStats(); render(); showToast(`Outils affûtés ! ${mpc} €/clic`, 'good');
+  }
+  async function buyXpc(){
+    const price=xpc*2500; if(xpc>=XPC_MAX||money<price) return;
+    money-=price; xpc++; await saveStats(); render(); showToast(`Méthode de pro ! ${xpc} XP/clic`, 'good');
+  }
+  async function buyTheme(key){
+    const t=THEMES.find(x=>x.key===key); if(!t||owned.includes(key)) return;
+    if(diamonds<t.cost){ showToast('Pas assez de diamants.', 'bad'); return; }
+    diamonds-=t.cost; owned.push(key); bgColor=key;
+    await Promise.all([saveStats(), saveProfile()]); render(); showToast(`${t.name} acheté et équipé !`, 'good');
+  }
+  async function equip(key){
+    if(!owned.includes(key)) return; bgColor=key; await saveProfile(); render(); showToast('Thème équipé !', 'good');
+  }
 
-    async function buyItem(type, amount, cost, currency) {
-      if (!stats) return;
+  let toastT=null;
+  function showToast(msg,type){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+(type||''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast '+(type||''),2400); }
 
-      // Vérifier la limite de 10 achats
-      const key = type + '_' + amount;
-      const purchases = stats.shop_purchases || {};
-      const count = purchases[key] || 0;
-      if (count >= 10) {
-        showToast('Maximum 10 achats par amélioration !', 'error');
-        return;
-      }
-
-      // Relire depuis la BD pour éviter d'écraser une valeur obsolète
-      const { data: fresh } = await sb.from('game_stats')
-        .select('money, diamonds, trophies, xp_per_click, money_per_click')
-        .eq('user_id', currentUser.id).maybeSingle();
-
-      const balance = {
-        money:    fresh?.money    || 0,
-        diamonds: fresh?.diamonds || 0,
-        trophies: fresh?.trophies || 0
-      };
-
-      if (balance[currency] < cost) {
-        showToast(`Pas assez de ${currency === 'money' ? '€' : currency === 'diamonds' ? '💎' : '🏆'}`, 'error');
-        return;
-      }
-
-      const field = type === 'xp' ? 'xp_per_click' : 'money_per_click';
-      const current = fresh?.[field] || 1;
-      const newPurchases = { ...purchases, [key]: count + 1 };
-      const updates = { [field]: current + amount, [currency]: balance[currency] - cost, shop_purchases: newPurchases };
-
-      const { error } = await sb.from('game_stats').update(updates).eq('user_id', currentUser.id);
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
-
-      stats = { ...stats, ...updates };
-      document.getElementById('statMoney').textContent    = (stats.money || 0).toLocaleString('fr-FR') + '€';
-      document.getElementById('statDiamonds').textContent = (stats.diamonds || 0) + ' 💎';
-      document.getElementById('statTrophies').textContent = (stats.trophies || 0) + ' 🏆';
-
-      const remaining = 10 - (count + 1);
-      const label = type === 'xp' ? `+${amount} XP/clic` : `+${amount}€/clic`;
-      showToast(`✅ ${label} ! (${remaining} restant${remaining > 1 ? 's' : ''})`);
-      renderPurchaseCounts();
-    }
-
-
-    function renderPurchaseCounts() {
-      const purchases = stats.shop_purchases || {};
-      const items = [
-        { id:'item-xp-1',    key:'xp_1' },
-        { id:'item-money-1', key:'money_1' },
-        { id:'item-money-2', key:'money_2' },
-      ];
-      // Avatar millionnaire
-      const avatarBtn = document.querySelector('#item-millionaire-avatar .buy-btn');
-      if (avatarBtn && (purchases.millionaire_avatar >= 1)) {
-        avatarBtn.disabled = true;
-        avatarBtn.innerHTML = '<span class="buy-price" style="font-size:10px">ACHETÉ</span>';
-      }
-      items.forEach(({ id, key }) => {
-        const card = document.getElementById(id);
-        if (!card) return;
-        const count = purchases[key] || 0;
-        const btn = card.querySelector('.buy-btn');
-        if (!btn) return;
-        if (count >= 10) {
-          btn.disabled = true;
-          btn.innerHTML = '<span class="buy-price" style="font-size:10px;letter-spacing:0">MAX</span>';
-        } else if (count > 0) {
-          let countEl = card.querySelector('.purchase-count');
-          if (!countEl) {
-            countEl = document.createElement('div');
-            countEl.className = 'purchase-count';
-            countEl.style.cssText = 'font-size:9px;color:rgba(255,255,255,0.35);margin-top:2px;font-weight:700;text-align:center;';
-            btn.parentNode.appendChild(countEl);
-          }
-          countEl.textContent = count + '/10';
-        }
-      });
-    }
-
-    function showToast(msg, type = '') {
-      const t = document.getElementById('toast');
-      t.textContent = msg; t.className = 'toast show ' + type;
-      setTimeout(() => t.className = 'toast', 2800);
-    }
-
-    if (!checkShopOpen()) { showShopClosed(); }
-    else { init(); setInterval(() => { if (!checkShopOpen()) showShopClosed(); }, 60000); }
-  </script>
+  init();
+</script>
 </body>
 </html>
