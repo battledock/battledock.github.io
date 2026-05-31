@@ -92,7 +92,7 @@
       position:relative; z-index:2;
       flex:1; display:flex; flex-direction:column;
       align-items:center; justify-content:center;
-      padding:10px 16px 100px; gap:16px;
+      padding:10px 16px 30px; gap:16px;
     }
 
     /* CARTE */
@@ -381,6 +381,9 @@
         <button id="pointeauBtn" style="background:linear-gradient(135deg,#1d4ed8,#3b82f6);border:none;color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;padding:10px 20px;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(59,130,246,0.4)">JOUER →</button>
       </div>
     </div>
+
+    <!-- REVENIR AU JEU -->
+    <button onclick="window.location.href='game.html'" style="width:100%;max-width:400px;margin-top:4px;padding:15px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:14px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;backdrop-filter:blur(8px);transition:background 0.2s,transform 0.12s">← Revenir au jeu</button>
   </div>
 
   <script>
@@ -396,6 +399,34 @@
       const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', session.user.id).maybeSingle();
       const progress = data?.story_progress || {};
 
+      if (!progress.scene2_done) {
+        lockGameCard('towerCard', 'towerBtn');
+        lockGameCard('pointeauCard', 'pointeauBtn');
+      }
+    }
+
+    function lockGameCard(cardId, btnId) {
+      const card = document.getElementById(cardId);
+      if (card) {
+        card.style.opacity = '0.5';
+        card.style.filter = 'grayscale(0.7)';
+        card.onclick = showCh2Lock;
+      }
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.textContent = '🔒 CH.2';
+        btn.style.background = '#6b7280';
+        btn.style.boxShadow = 'none';
+        btn.onclick = (e) => { e.stopPropagation(); showCh2Lock(); };
+      }
+    }
+
+    function showCh2Lock() {
+      const o = document.createElement('div');
+      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px';
+      o.onclick = (e) => { if (e.target === o) o.remove(); };
+      o.innerHTML = '<div style="max-width:300px;width:100%;background:#0e1f33;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:28px 22px;text-align:center"><div style="font-size:46px;margin-bottom:12px">🔒</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:8px">CHAPITRE 2 REQUIS</div><div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:20px">Joue le Chapitre 2 « Au Boulot » du Mode Histoire pour débloquer Tower et Pointeau.</div><button onclick="window.location.href=\'histoire.html\'" style="width:100%;height:46px;border:none;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#1d4ed8);color:#fff;font-family:\'Bebas Neue\',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer">▶ MODE HISTOIRE</button></div>';
+      document.body.appendChild(o);
     }
 
     function showToast(msg) {
@@ -407,12 +438,6 @@
 
     init();
   </script>
-
-  <!-- HEADER BAS -->
-  <!-- HEADER -->
-  <div class="header">
-    <button class="back-btn" onclick="window.location.href='game.html'">← RETOUR</button>
-    <div class="header-title">Travail</div>
 
 </body>
 </html>

@@ -314,8 +314,12 @@
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { window.location.href='index.html'; return; }
       currentUser = session.user;
-      const { data } = await sb.from('game_stats').select('money,level').eq('user_id', currentUser.id).maybeSingle();
+      const { data } = await sb.from('game_stats').select('money,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
       document.getElementById('headerScore').textContent = (data?.money||0).toLocaleString('fr-FR')+'€';
+      if (!data?.story_progress?.scene2_done) {
+        document.getElementById('startOverlay').innerHTML = '<div class="ocard"><div class="ocard-icon">🔒</div><div class="ocard-title">Chapitre 2 requis</div><div class="ocard-sub" style="margin-bottom:20px">Joue le Chapitre 2 du Mode Histoire pour débloquer.</div><button class="btn-start" onclick="window.location.href=\'histoire.html\'">▶ Mode Histoire</button></div>';
+        return;
+      }
       document.getElementById('startBtn').style.display = 'block';
     }
 
