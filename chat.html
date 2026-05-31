@@ -406,6 +406,7 @@
       subscribeGeneral();
       subscribePresence();
       loadUnreadCount();
+      setInterval(pollGeneral, 4000);
 
       // Anti-screenshot
       document.addEventListener('contextmenu', e => e.preventDefault());
@@ -502,6 +503,16 @@
       const { data: reactions } = await sb.from('message_reactions').select('*');
       buildReactionsMap(reactions || []);
       renderMessages(msgs || []);
+    }
+
+    // Filet de sécurité : récupère régulièrement les nouveaux messages (indépendant du realtime)
+    async function pollGeneral() {
+      if (!currentUser) return;
+      const { data: msgs } = await sb
+        .from('chat_messages').select('*')
+        .order('created_at', { ascending: true }).limit(50);
+      if (!msgs) return;
+      msgs.forEach(m => addMessage(m)); // addMessage ignore les doublons (même id)
     }
 
     function buildReactionsMap(reactions) {
