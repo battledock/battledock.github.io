@@ -513,6 +513,38 @@
         actions: 'surnom'
       },
       // 8 — Badge (géré dynamiquement)
+
+      // ── CHAPITRE 2 ──
+      // 9 — Pasturon gants
+      ,{
+        char: 'pasturon', charName: 'Pasturon',
+        text: "Allez, on commence. C'est simple — tu charges, tu pointes, tu rentres chez toi.",
+        actions: 'next', nextStep: 10
+      },
+      // 10 — Ferrotti apparaît (narrateur)
+      {
+        char: 'narrateur', charName: null,
+        text: "Un grand s'approche lentement d'un conteneur COSCO. Il sort un carnet.",
+        actions: 'next', nextStep: 11
+      },
+      // 11 — Ferrotti parle
+      {
+        char: 'ferrotti', charName: 'Ferrotti',
+        text: "Chhhut. Il communique.",
+        actions: 'next', nextStep: 12
+      },
+      // 12 — Pasturon chuchote
+      {
+        char: 'pasturon', charName: 'Pasturon',
+        text: "C'est Ferrotti. Laisse-le faire.",
+        actions: 'next', nextStep: 13
+      },
+      // 13 — Pasturon explique
+      {
+        char: 'pasturon', charName: 'Pasturon',
+        text: "Bon. Toi tu cliques sur le conteneur, tu travailles, tu gagnes ta paie. Simple non ?",
+        actions: 'ch2end'
+      },
     ];
 
     function showStep(idx) {
@@ -523,6 +555,8 @@
       const charZone = document.getElementById('charZone');
       if (s.char === 'vigile') {
         charZone.innerHTML = SVG_VIGILE;
+      } else if (s.char === 'ferrotti') {
+        charZone.innerHTML = SVG_FERROTTI;
       } else if (s.char === 'pasturon') {
         charZone.innerHTML = SVG_PASTURON;
       } else {
@@ -534,8 +568,14 @@
       if (s.char === 'narrateur') {
         nameEl.className = 'char-name narrateur';
         nameEl.textContent = '—';
+      } else if (s.char === 'ferrotti') {
+        charZone.innerHTML = SVG_FERROTTI;
       } else if (s.char === 'pasturon') {
         nameEl.className = 'char-name pasturon';
+        nameEl.textContent = s.charName;
+      } else if (s.char === 'ferrotti') {
+        nameEl.className = 'char-name';
+        nameEl.style.color = '#a78bfa';
         nameEl.textContent = s.charName;
       } else if (s.char === 'vigile') {
         nameEl.className = 'char-name vigile';
@@ -570,6 +610,22 @@
           div.appendChild(btn);
         });
         actEl.appendChild(div);
+      } else if (s.actions === 'ch2end') {
+        const btn = document.createElement('button');
+        btn.className = 'btn-next fade-in';
+        btn.innerHTML = '📦 Aller travailler →';
+        btn.style.background = 'linear-gradient(135deg,#cc2200,#991100)';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.style.fontFamily = "'Bebas Neue',sans-serif";
+        btn.style.fontSize = '18px';
+        btn.style.letterSpacing = '2px';
+        btn.onclick = () => {
+          // Sauvegarder qu'on a envoyé au clicker depuis ch2
+          sessionStorage.setItem('histoire_ch2_pending', '1');
+          window.location.href = 'clicker.html';
+        };
+        actEl.appendChild(btn);
       } else if (s.actions === 'surnom') {
         const input = document.createElement('input');
         input.className = 'surnom-input fade-in';
@@ -628,6 +684,42 @@
       actEl.appendChild(btn);
     }
 
+    async function showRewardCh2(progress) {
+      // Donner récompense ch2
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money, xp').eq('user_id', currentUser.id).maybeSingle();
+        const newMoney = (fresh?.money || 0) + 500;
+        const newXp   = (fresh?.xp   || 0) + 50;
+        const newProgress = { ...progress, scene2_done: true };
+        await sb.from('game_stats').update({ money: newMoney, xp: newXp, story_progress: newProgress }).eq('user_id', currentUser.id);
+
+        // Afficher récompense
+        document.getElementById('charZone').innerHTML = SVG_PASTURON;
+        document.getElementById('charName').className = 'char-name pasturon';
+        document.getElementById('charName').textContent = 'Pasturon';
+        document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+        document.getElementById('dialogueText').textContent = "Bien joué ! T'as l'instinct. Moi le premier jour j'avais failli signer mon CDI tellement j'étais bon.";
+
+        const actEl = document.getElementById('actionsZone');
+        actEl.innerHTML = '';
+
+        const badge = document.createElement('div');
+        badge.className = 'badge-wrap';
+        badge.innerHTML = `
+          <div class="badge-icon">⚡</div>
+          <div class="badge-title">Premier Jour</div>
+          <div class="badge-desc">+500€ · +50 XP · Badge débloqué</div>`;
+        actEl.appendChild(badge);
+
+        const btn = document.createElement('button');
+        btn.className = 'btn-next';
+        btn.style.marginTop = '8px';
+        btn.innerHTML = '← Retour au Port';
+        btn.onclick = () => window.location.href = 'game.html';
+        actEl.appendChild(btn);
+      } catch(e) { console.log(e); window.location.href = 'game.html'; }
+    }
+
     async function finishScene() {
       try {
         const { data: fresh } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
@@ -646,16 +738,27 @@
       const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
       const progress = data?.story_progress || {};
 
-      if (progress.scene1_done) {
-        // Écran déjà fait
+      // Retour du clicker après ch2 ?
+      if (sessionStorage.getItem('histoire_ch2_pending') === '1') {
+        sessionStorage.removeItem('histoire_ch2_pending');
+        if (!progress.scene2_done) {
+          showRewardCh2(progress);
+          return;
+        }
+      }
+
+      if (progress.scene2_done) {
         document.getElementById('mainContent').innerHTML = `
           <div class="done-screen fade-in">
-            <div style="font-size:52px">🔵</div>
+            <div style="font-size:52px">⚡</div>
             <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#fbbf24">${progress.surnom || ''}</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:rgba(255,255,255,0.5)">Bleu du Port</div>
-            <div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6">Tu as déjà vécu ton premier jour.<br>La suite arrive bientôt...</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:rgba(255,255,255,0.5)">Premier Jour terminé</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6">Tu as survécu à ton premier jour au port.<br>La suite arrive bientôt...</div>
             <button class="btn-next" onclick="window.location.href='game.html'" style="max-width:280px">← Retour au Port</button>
           </div>`;
+      } else if (progress.scene1_done) {
+        // Ch1 fait, ch2 disponible
+        showStep(9);
       } else {
         showStep(0);
       }
