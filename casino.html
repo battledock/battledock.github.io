@@ -359,10 +359,7 @@
           <div class="casino-tagline">Casino • Dock Night</div>
         </div>
       </div>
-      <div class="balance-box">
-        <div class="balance-label">Solde</div>
-        <div class="balance-amount" id="balance">0€</div>
-      </div>
+      
     </div>
 
     <!-- JACKPOT BUTTON -->
@@ -500,6 +497,10 @@
     }
 
     async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+
       // Vérifier déblocage casino via histoire ch3
       const { data: storyCheck } = await sb.from('game_stats')
         .select('story_progress, jetons')
@@ -519,32 +520,20 @@
           </div>`;
         return;
       }
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        window.location.href = 'index.html';
-        return;
-      }
 
-      const { data: stats, error: statsError } = await sb
-        .from('game_stats')
-        .select('money, jetons')
-        .eq('user_id', session.user.id)
+      const { data: stats } = await sb.from('game_stats')
+        .select('jetons')
+        .eq('user_id', currentUser.id)
         .maybeSingle();
 
-      if (!statsError && stats) {
-        document.getElementById('balance').textContent = (stats.money || 0).toLocaleString('fr-FR') + '€';
-        // Afficher jetons
-        const jetonsEl = document.getElementById('jetonsDisplay');
-        if (jetonsEl) jetonsEl.textContent = (stats.jetons || 0) + ' 🎟️';
-        window._currentJetons = stats.jetons || 0;
-        window._currentUserId = session.user.id;
-      }
+      const jetonsEl = document.getElementById('jetonsDisplay');
+      if (jetonsEl) jetonsEl.textContent = (stats?.jetons || 0) + ' 🎟️';
+      window._currentJetons = stats?.jetons || 0;
+      window._currentUserId = currentUser.id;
 
-      // Jackpot — chargement initial + Realtime
       await loadJackpot();
       setInterval(loadJackpot, 3000);
 
-      // Realtime jackpot
       sb.channel('jackpot-channel')
         .on('postgres_changes', { event:'UPDATE', schema:'public', table:'progressive_jackpot' }, (payload) => {
           const amount = payload.new.current_amount || 10000;
@@ -554,7 +543,7 @@
         .subscribe();
     }
 
-    async function loadJackpot() {
+        async function loadJackpot() {
       try {
         const { data, error } = await sb
           .from('progressive_jackpot')
