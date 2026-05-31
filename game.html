@@ -1282,14 +1282,15 @@
       const { data: storyData } = await sb.from('game_stats')
         .select('story_progress').eq('user_id', currentUser.id).maybeSingle();
       const hBadge = document.getElementById('histoireBadge');
-      if (hBadge && storyData?.story_progress?.scene4_done) {
-        hBadge.style.display = 'block'; hBadge.textContent = '💰 CHAPITRE 4 TERMINÉ';
-      } else if (hBadge && storyData?.story_progress?.scene3_done) {
-        hBadge.style.display = 'block'; hBadge.textContent = '👥 CH.3 TERMINÉ · CH.4 DISPONIBLE';
-      } else if (hBadge && storyData?.story_progress?.scene2_done) {
-        hBadge.style.display = 'block'; hBadge.textContent = '⚡ CH.2 TERMINÉ · CH.3 DISPONIBLE';
-      } else if (hBadge && storyData?.story_progress?.scene1_done) {
-        hBadge.style.display = 'block'; hBadge.textContent = '🔵 CH.1 TERMINÉ · CH.2 DISPONIBLE';
+      const _sp = storyData?.story_progress || {};
+      const MAX_CH = 7; // dernier chapitre publié
+      let _done = 0;
+      for (let i = 1; i <= MAX_CH; i++) { if (_sp['scene' + i + '_done']) _done = i; }
+      if (hBadge && _done > 0) {
+        hBadge.style.display = 'block';
+        hBadge.textContent = (_done < MAX_CH)
+          ? `📖 CH.${_done} TERMINÉ · CH.${_done + 1} DISPO`
+          : `📖 CH.${_done} TERMINÉ`;
       }
 
       // Verrous selon progression histoire
