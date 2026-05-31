@@ -529,6 +529,14 @@
         doneKey: 'scene5_done',
         requires: 'scene4_done',
       },
+      {
+        id: 6,
+        title: 'Le Casino',
+        desc: "Une porte sans enseigne, au fond du port. On t'y emmène.",
+        reward: '🎰 Flambeur · +1500€ · +300 XP · Casino débloqué',
+        doneKey: 'scene6_done',
+        requires: 'scene5_done',
+      },
     ];
 
     // ── MENU ──
@@ -582,6 +590,7 @@
       if (ch.id === 3) startChapter3();
       if (ch.id === 4) startChapter4();
       if (ch.id === 5) startChapter5();
+      if (ch.id === 6) startChapter6();
     }
 
 
@@ -944,6 +953,96 @@
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">🍺</div><div class="badge-title">Habitué du Port</div><div class="badge-desc">+2000€ · +4000 XP · Bar débloqué</div>';
+      act.appendChild(badge);
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
+      btn.onclick = showMenu;
+      act.appendChild(btn);
+    }
+
+    // ── CHAPITRE 6 ──
+    function startChapter6() {
+      showNarrateur("Minuit passé. Jeff t'entraîne dans une ruelle derrière les docks. Une porte en métal, pas d'enseigne.", () => showCh6_1(), 'port_nuit');
+    }
+
+    function showCh6_1() {
+      setChar('jeff', 'Jeff', 'port_nuit');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Ici, on peut multiplier sa paie en une nuit. Ou la perdre. Frappe trois coups et dis que tu viens de ma part.";
+      showNext(() => showCh6_2());
+    }
+
+    function showCh6_2() {
+      showNarrateur("À l'intérieur : lumière rouge, fumée, le cliquetis des jetons. Et au fond, un type qui te fixe sans cligner. Le type du fond. Du bar.", () => showCh6_type(), 'port_nuit');
+    }
+
+    function showCh6_type() {
+      setChar('jeff', 'Jeff', 'port_nuit');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "(à voix basse) Lui, c'est le patron de la salle. Pose pas de questions sur d'où vient son fric. Joue, c'est tout.";
+      showNext(() => showCh6_choice());
+    }
+
+    function showCh6_choice() {
+      showNarrateur("Le type au fond fait glisser une pile de jetons vers toi. « Premier soir. Cadeau de la maison. » Tu sens que rien n'est gratuit, ici.", () => showCh6_react(), 'port_nuit');
+    }
+
+    function showCh6_react() {
+      setChar('gegé', 'Gégé', 'port_nuit');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "(arrivé derrière toi) J'aime pas cet endroit. La maison gagne toujours, petit. Mais bon... t'es grand.";
+      showNext(() => showCh6_choice2());
+    }
+
+    function showCh6_choice2() {
+      setChar('gegé', 'Gégé', 'port_nuit');
+      document.getElementById('dialogueText').textContent = "Tu joues quoi en premier ?";
+      showChoices([
+        { icon:'🎰', text:'La machine à sous', next: showCh6_warn },
+        { icon:'🎡', text:'La roulette', next: showCh6_warn },
+        { icon:'🪙', text:'Pile ou face, vite fait', next: showCh6_warn },
+      ]);
+    }
+
+    function showCh6_warn() {
+      setChar('titouan', 'Titouan', 'port_nuit');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Moi je touche pas. La dernière fois, un gars a tout perdu... et on l'a plus revu au port. Façon de parler. J'espère.";
+      showNext(() => showCh6_doudou());
+    }
+
+    function showCh6_doudou() {
+      setChar('doudou', 'Doudou', 'port_nuit');
+      document.getElementById('dialogueText').textContent = "Moi je mise un petit billet pour voir. Et je garde un œil sur la sortie. Au cas où.";
+      showNext(() => finishChapter6());
+    }
+
+    async function finishChapter6() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene6_done: true };
+        let nXp = (fresh?.xp||0) + 300, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
+        await sb.from('game_stats').update({
+          money: (fresh?.money||0) + 1500,
+          xp: nXp, level: nLvl,
+          story_progress: newProgress
+        }).eq('user_id', currentUser.id);
+        await awardTrophies(nLvl - (fresh?.level||1));
+        progress = newProgress;
+      } catch(e) { console.log(e); }
+
+      setChar('jeff', 'Jeff', 'port_nuit');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Voilà, t'es dans la place. Le Casino t'attend quand tu veux. Mais souviens-toi : la maison gagne toujours... sauf si t'as du bol.";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const badge = document.createElement('div');
+      badge.className = 'badge-wrap';
+      badge.innerHTML = '<div class="badge-icon">🎰</div><div class="badge-title">Flambeur</div><div class="badge-desc">+1500€ · +300 XP · Casino débloqué</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next';
