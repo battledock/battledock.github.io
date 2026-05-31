@@ -161,7 +161,7 @@
   ];
 
   const TICK_MS=5000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
-  const IMPACT_LIQ=2500000, MEANREV=0.05, EVENT_PROB=0.03, KRACH_PROB=0.0015, KRACH_M=0.65;
+  const IMPACT_LIQ=2500000, MEANREV=0.05, EVENT_PROB=0.022, KRACH_PROB=0.0015, KRACH_M=0.65;
   const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36;
 
   let currentUser=null, username='Docker', cash=0;
@@ -204,6 +204,7 @@
     const now=Date.now();
     const krachNow = Math.random()<KRACH_PROB;
     const writes=[];
+    const stepped=[];
     COMPANIES.forEach(c=>{
       let row=map[c.sym];
       let p = row ? Number(row.price) : c.base;
@@ -211,18 +212,22 @@
       if (age >= TICK_MS-600 || !row) {
         const steps = Math.min(Math.max(1, Math.floor(age/TICK_MS)), 240);
         for(let i=0;i<steps;i++) p = stepPrice(c.sym,p);
-        if (!krachNow && Math.random()<EVENT_PROB){
-          const e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
-          p = clamp(p*(1+e.m), c);
-          showToast(`${e.t} — ${c.sym} ${e.m>0?'+':''}${Math.round(e.m*100)}%`, e.bad);
-        }
         if (krachNow) p = clamp(p*KRACH_M, c);
-        writes.push({ sym:c.sym, price:Number(p.toFixed(2)), updated_at:new Date(now).toISOString() });
+        stepped.push(c.sym);
       }
       prev[c.sym]=prices[c.sym];
       prices[c.sym]=p;
       hist[c.sym].push(p); if(hist[c.sym].length>HIST) hist[c.sym].shift();
     });
+    // Au plus UN événement par tick, sur une seule compagnie ayant bougé
+    if (!krachNow && stepped.length && Math.random()<EVENT_PROB){
+      const sym=stepped[Math.floor(Math.random()*stepped.length)];
+      const e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+      prices[sym]=clamp(prices[sym]*(1+e.m), CO[sym]);
+      hist[sym][hist[sym].length-1]=prices[sym];
+      showToast(`${e.t} — ${sym} ${e.m>0?'+':''}${Math.round(e.m*100)}%`, e.bad);
+    }
+    stepped.forEach(sym=>writes.push({ sym, price:Number(prices[sym].toFixed(2)), updated_at:new Date(now).toISOString() }));
     if (krachNow) showToast('🌪️ KRACH BOURSIER — tout le marché chute !', true);
     if (writes.length){ try { await sb.from('bourse_market').upsert(writes, { onConflict:'sym' }); } catch(e){} }
     if (currentTab==='market') refresh();
