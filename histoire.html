@@ -48,8 +48,10 @@
     .badge-locked    { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.25); }
 
     /* SCÈNE */
-    .scene-wrap { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; overflow:hidden; }
-    .char-zone { flex:1; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; position:relative; }
+    .scene-wrap { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0a1020; }
+    .scene-bg { position:absolute; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+    .scene-bg svg { width:100%; height:100%; display:block; }
+    .char-zone { flex:1; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; position:relative; z-index:1; }
     .char-svg { width:200px; height:280px; flex-shrink:0; }
 
     /* DIALOGUE */
@@ -135,6 +137,7 @@
 
   <!-- SCÈNE -->
   <div id="sceneView" class="scene-wrap" style="display:none">
+    <div class="scene-bg" id="sceneBg"></div>
     <div class="char-zone" id="charZone"></div>
     <div class="dialogue-box" id="dialogueBox">
       <div>
@@ -248,20 +251,14 @@
       </svg>`,
     };
 
+    let currentBg = null;
     function setBg(type) {
-      const zone = document.getElementById('charZone');
-      // Supprimer ancien fond
-      const old = zone.querySelector('.scene-background');
-      if (old) old.remove();
-      if (!type || !BGSV[type]) return;
-      const div = document.createElement('div');
-      div.className = 'scene-background';
-      div.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden';
-      div.innerHTML = BGSV[type];
-      zone.insertBefore(div, zone.firstChild);
-      // S'assurer que le SVG perso est au-dessus
-      const svg = zone.querySelector('.char-svg');
-      if (svg) { svg.style.position = 'relative'; svg.style.zIndex = '1'; }
+      if (type === currentBg) return;          // même décor → on ne touche à rien (zéro flash)
+      currentBg = type;
+      const bg = document.getElementById('sceneBg');
+      if (!bg) return;
+      if (!type || !BGSV[type]) { bg.innerHTML = ''; return; }
+      bg.innerHTML = BGSV[type];
     }
 
     // ── SVG PERSONNAGES ──
@@ -1078,8 +1075,8 @@
 
     // ── HELPERS ──
     function setChar(type, name, bg) {
+      if (bg) setBg(bg);
       document.getElementById('charZone').innerHTML = SVG[type] || '';
-      if (bg) setTimeout(() => setBg(bg), 0);
       const nameEl = document.getElementById('charName');
       nameEl.className = 'char-name ' + (type || '');
       nameEl.textContent = name || '';
@@ -1091,8 +1088,8 @@
     }
 
     function showNarrateur(text, next, bg) {
+      if (bg) setBg(bg);
       document.getElementById('charZone').innerHTML = '';
-      if (bg) setTimeout(() => setBg(bg), 0);
       document.getElementById('charName').className = 'char-name narrateur';
       document.getElementById('charName').textContent = '—';
       document.getElementById('dialogueText').className = 'dialogue-text narratif fade-in';
