@@ -8,14 +8,43 @@
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <script>
-    fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
-      headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg'
+    (function() {
+      const PASS = 'marseille2026';
+      if (sessionStorage.getItem('bd_pass') === PASS) return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        // Afficher le popup maintenance
+        const overlay = document.createElement('div');
+        overlay.id = 'maintenanceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        overlay.innerHTML = `
+          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🔒</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
+            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
+            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
+            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
+          </div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
+      }).catch(()=>{});
+    })();
+
+    function checkMaintenancePass() {
+      const val = document.getElementById('maintenanceInput')?.value;
+      if (val === 'marseille2026') {
+        sessionStorage.setItem('bd_pass', 'marseille2026');
+        document.getElementById('maintenanceOverlay')?.remove();
+        document.body.style.overflow = '';
+      } else {
+        document.getElementById('maintenanceError').style.display = 'block';
+        document.getElementById('maintenanceInput').value = '';
       }
-    }).then(r => r.json()).then(data => {
-      if (data?.[0]?.value === 'true') window.location.replace('maintenance.html');
-    }).catch(() => {});
+    }
   </script>
 
   <style>
@@ -321,45 +350,11 @@
       100% { transform: translateY(130px) rotate(360deg); opacity: 0; }
     }
 
-    /* SHOP - Bois chaud */
-    .nav-card.shop .nav-card-bg {
-      background: linear-gradient(135deg, #92400e 0%, #8b7355 50%, #6b5744 100%);
-    }
-    .shop-lantern-glow {
-      position: absolute; top: 8px; right: 12px; z-index: 2;
-      width: 40px; height: 40px;
-      background: radial-gradient(circle, rgba(251,191,36,0.6) 0%, rgba(245,158,11,0.3) 40%, transparent 70%);
-      border-radius: 50%;
-      animation: lanternPulse 2s ease-in-out infinite;
-    }
-    .shop-lantern-icon {
-      position: absolute; top: 10px; right: 18px; z-index: 3;
-      font-size: 22px;
-      animation: lanternSwing 3s ease-in-out infinite;
-      transform-origin: top center;
-      filter: drop-shadow(0 0 6px rgba(251,191,36,0.8));
-    }
-    @keyframes lanternPulse {
-      0%,100% { transform:scale(1);   opacity:0.7; }
-      50%      { transform:scale(1.4); opacity:1;   }
-    }
-    @keyframes lanternSwing {
-      0%,100% { transform:rotate(-8deg); }
-      50%      { transform:rotate(8deg);  }
-    }
-    .nav-card.shop::before {
-      content: '';
-      position: absolute; inset: 0; z-index: 1;
-      background-image: repeating-linear-gradient(
-        90deg,
-        rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px,
-        transparent 2px, transparent 20px
-      );
-    }
-    .nav-card.shop .nav-card-title { color: #fef3c7; }
-    .nav-card.shop .nav-card-sub   { color: rgba(254,243,199,0.6); }
-
-    /* CLASSEMENT - Podium nuit avec étoiles filantes */
+    
+    
+    
+    
+    
     .nav-card.rank .nav-card-bg {
       background: linear-gradient(135deg, #0a0a1a 0%, #0d2347 60%, #1a3a6b 100%);
     }
@@ -895,19 +890,6 @@
           <div class="nav-card-sub" style="font-size:9px;opacity:0.6;margin-top:1px;">🕐 12h00 - 02h00</div>
         </div>
       </div>
-
-      <!-- SHOP -->
-      <div class="nav-card shop" onclick="window.location.href='shop.html'">
-        <div class="nav-card-bg"></div>
-        <div class="nav-card-overlay"></div>
-        <div class="shop-lantern-glow"></div>
-        <div class="shop-lantern-icon">🏮</div>
-        <div class="nav-card-content">
-          <div class="nav-card-icon">🛒</div>
-          <div class="nav-card-title">Shop</div>
-          <div class="nav-card-sub">Améliorations</div>
-          <div class="nav-card-sub" style="font-size:9px;opacity:0.6;margin-top:1px;">🕐 10h00 - 22h00</div>
-        </div>
       </div>
 
       <!-- CLASSEMENT -->
