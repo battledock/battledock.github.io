@@ -506,6 +506,14 @@
         doneKey: 'scene3_done',
         requires: 'scene2_done',
       },
+      {
+        id: 4,
+        title: 'Premier Salaire',
+        desc: 'Fin de semaine. Jour de paie au port.',
+        reward: '💰 Premier Salaire · +1000€ · +100 XP · Bourse débloquée',
+        doneKey: 'scene4_done',
+        requires: 'scene3_done',
+      },
     ];
 
     // ── MENU ──
@@ -557,6 +565,7 @@
       if (ch.id === 1) startChapter1();
       if (ch.id === 2) startChapter2();
       if (ch.id === 3) startChapter3();
+      if (ch.id === 4) startChapter4();
     }
 
 
@@ -681,6 +690,92 @@
 
       const act = document.getElementById('actionsZone');
       act.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
+      btn.onclick = showMenu;
+      act.appendChild(btn);
+    }
+
+    // ── CHAPITRE 4 ──
+    function startChapter4() {
+      showNarrateur('Vendredi, fin de journée. Bureau de paie du port.', () => showCh4_1(), 'bureau');
+    }
+
+    function showCh4_1() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Première semaine bouclée. Tiens, ta paie. T'as bossé, t'as gagné.";
+      showNext(() => showCh4_2());
+    }
+
+    function showCh4_2() {
+      showNarrateur("Il te tend une enveloppe. C'est lourd. Plus lourd que prévu.", () => showCh4_choice(), 'bureau');
+    }
+
+    function showCh4_choice() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Alors, qu'est-ce que tu comptes en faire ?";
+      showChoices([
+        { icon:'💸', text:'"Je vais tout dépenser."', next: showCh4_reaction },
+        { icon:'🏦', text:'"Je vais économiser."', next: showCh4_reaction },
+        { icon:'📈', text:'"Je veux le faire fructifier."', next: showCh4_reaction },
+      ]);
+    }
+
+    function showCh4_reaction() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Marrant que tu dises ça. Y'a un truc que tous les dockers du port finissent par découvrir.";
+      showNext(() => showCh4_jeff());
+    }
+
+    function showCh4_jeff() {
+      setChar('jeff', 'Jeff', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "La grue 4 m'a dit d'acheter du fret ce matin. J'ai écouté. J'ai doublé ma mise.";
+      showNext(() => showCh4_gege2());
+    }
+
+    function showCh4_gege2() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Écoute pas Jeff. Mais il a pas tort sur un point : au port, on spécule sur le fret maritime. La Bourse.";
+      showNext(() => showCh4_gege3());
+    }
+
+    function showCh4_gege3() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').textContent = "Ça monte, ça descend. Tu peux tripler ta paie... ou tout perdre. À toi de voir.";
+      showNext(() => finishChapter4());
+    }
+
+    async function finishChapter4() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene4_done: true };
+        await sb.from('game_stats').update({
+          money: (fresh?.money||0) + 1000,
+          xp: (fresh?.xp||0) + 100,
+          story_progress: newProgress
+        }).eq('user_id', currentUser.id);
+        progress = newProgress;
+      } catch(e) { console.log(e); }
+
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "La Bourse du port t'est ouverte. Joue serré.";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+
+      const badge = document.createElement('div');
+      badge.className = 'badge-wrap';
+      badge.innerHTML = '<div class="badge-icon">💰</div><div class="badge-title">Premier Salaire</div><div class="badge-desc">+1000€ · +100 XP · Bourse débloquée</div>';
+      act.appendChild(badge);
+
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
