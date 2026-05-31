@@ -403,7 +403,7 @@
         ci: swinger.ci
       });
       floor++;
-      window._sessionXp = (window._sessionXp||0) + 5;
+      window._sessionXp = (window._sessionXp||0) + (4 + floor); // étage 1 = +5, étage 2 = +6, etc.
       if (perfect) { showFlash('PARFAIT ! 🎯'); window._sessionXp += 5; }
       if (navigator.vibrate) navigator.vibrate(perfect ? [40,20,40] : 15);
       spawn();
@@ -411,7 +411,7 @@
     }
 
     function updateBar() {
-      const mult = (1 + floor*0.1).toFixed(1);
+      const mult = (1 + floor*0.2).toFixed(1);
       const gain = Math.floor(floor * 20 * parseFloat(mult));
       document.getElementById('infoFloors').textContent = floor;
       document.getElementById('infoMult').textContent = '×' + mult;
@@ -422,7 +422,7 @@
     async function gameOver() {
       running = false; cancelAnimationFrame(animId);
       if (navigator.vibrate) navigator.vibrate([80,40,150]);
-      const mult = parseFloat((1+floor*0.1).toFixed(1));
+      const mult = parseFloat((1+floor*0.2).toFixed(1));
       const gain = Math.floor(floor * 20 * mult);
       const t = floor===0?0:floor<5?1:floor<10?2:floor<20?3:4;
       const titles=[['😅','Aïe !'],['📦','Pas mal !'],['🏗️','Belle tour !'],['⭐','Impressionnant !'],['🏆','LÉGENDAIRE !']];
@@ -435,7 +435,7 @@
       if (gain > 0 && currentUser) {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,records').eq('user_id', currentUser.id).maybeSingle();
         const newMoney = (fresh?.money||0) + gain;
-        let nXp = (fresh?.xp||0) + (window._sessionXp||0) + 20;
+        let nXp = (fresh?.xp||0) + (window._sessionXp||0);
         let nLvl = fresh?.level||1;
         while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         window._sessionXp = 0;
