@@ -255,6 +255,37 @@
         <rect x="270" y="342" width="4" height="20" fill="#4a5568"/>
       </g>
 
+      <!-- Nuit étoilée pour ch3 -->
+      <g id="nightSky" style="display:none">
+        <rect width="400" height="700" fill="#050a14" opacity="0.95"/>
+        <!-- Étoiles -->
+        <g fill="white" opacity="0.8">
+          <circle cx="30" cy="40" r="1"/><circle cx="80" cy="20" r="1.5"/>
+          <circle cx="150" cy="35" r="1"/><circle cx="200" cy="15" r="2"/>
+          <circle cx="260" cy="45" r="1"/><circle cx="310" cy="25" r="1.5"/>
+          <circle cx="370" cy="10" r="1"/><circle cx="50" cy="80" r="1"/>
+          <circle cx="120" cy="65" r="1.5"/><circle cx="180" cy="90" r="1"/>
+          <circle cx="340" cy="70" r="1.5"/><circle cx="390" cy="55" r="1"/>
+        </g>
+        <!-- OVNI caché, animé -->
+        <g id="ovniGroup" style="display:none">
+          <ellipse cx="200" cy="80" rx="45" ry="14" fill="#7c3aed" opacity="0.9"/>
+          <ellipse cx="200" cy="74" rx="22" ry="12" fill="#a78bfa"/>
+          <ellipse cx="200" cy="80" rx="45" ry="14" fill="none" stroke="#c4b5fd" stroke-width="1.5"/>
+          <!-- Hublots -->
+          <circle cx="180" cy="75" r="4" fill="#fbbf24" opacity="0.9"/>
+          <circle cx="200" cy="73" r="4" fill="#fbbf24" opacity="0.9"/>
+          <circle cx="220" cy="75" r="4" fill="#fbbf24" opacity="0.9"/>
+          <!-- Faisceau -->
+          <path d="M185,94 L155,160 M215,94 L245,160" stroke="rgba(167,139,250,0.2)" stroke-width="20" stroke-linecap="round"/>
+        </g>
+        <!-- Enseignes néon casino -->
+        <g font-family="'Bebas Neue',sans-serif" font-size="18" fill="#fbbf24" opacity="0.7">
+          <text x="280" y="200">🎰</text>
+          <text x="60" y="220">✨</text>
+        </g>
+      </g>
+
       <!-- Sol premier plan -->
       <rect x="0" y="395" width="400" height="305" fill="#141a1f"/>
       <rect x="0" y="393" width="400" height="4" fill="#1f2937"/>
@@ -514,6 +545,48 @@
       },
       // 8 — Badge (géré dynamiquement)
 
+      // ── CHAPITRE 3 ──
+      // 14 — Transition nuit
+      ,{
+        char: 'narrateur', charName: null,
+        text: "18h00. Fin de journée. Pasturon range son contrat d'intérim plastifié. Ferrotti regarde le ciel.",
+        actions: 'next', nextStep: 15, night: true
+      },
+      // 15 — Ferrotti apparaît
+      {
+        char: 'ferrotti', charName: 'Ferrotti',
+        text: "Les astres sont alignés ce soir. Le casino nous attend.",
+        actions: 'next', nextStep: 16, night: true
+      },
+      // 16 — Pasturon refuse
+      {
+        char: 'pasturon', charName: 'Pasturon',
+        text: "Moi je viens pas. Je garde mon argent pour fêter mon CDI.",
+        actions: 'next', nextStep: 17, night: true
+      },
+      // 17 — Ferrotti insiste
+      {
+        char: 'ferrotti', charName: 'Ferrotti',
+        text: "J'ai eu un signe. Un signal. Regarde le ciel.",
+        actions: 'ovni', nextStep: 18, night: true
+      },
+      // 18 — Choix joueur
+      {
+        char: 'narrateur', charName: null,
+        text: "Ferrotti te regarde. Pasturon hausse les épaules.",
+        actions: 'choices', night: true,
+        choices: [
+          { icon:'🎰', text:'Suivre Ferrotti au casino', next: 19 },
+          { icon:'😴', text:'"Je suis fatigué..."', next: 19 },
+        ]
+      },
+      // 19 — Ferrotti répond
+      {
+        char: 'ferrotti', charName: 'Ferrotti',
+        text: "Bien. Les étoiles ont choisi. Voici 5 jetons pour commencer. Ne les perds pas tous.",
+        actions: 'ch3end', night: true
+      },
+
       // ── CHAPITRE 2 ──
       // 9 — Pasturon gants
       ,{
@@ -550,6 +623,10 @@
     function showStep(idx) {
       const s = SCENES[idx];
       if (!s) return;
+
+      // Mode nuit pour ch3
+      const nightSky = document.getElementById('nightSky');
+      if (nightSky) nightSky.style.display = s.night ? 'block' : 'none';
 
       // Personnage
       const charZone = document.getElementById('charZone');
@@ -610,6 +687,30 @@
           div.appendChild(btn);
         });
         actEl.appendChild(div);
+      } else if (s.actions === 'ovni') {
+        // Afficher OVNI puis continuer
+        const ovni = document.getElementById('ovniGroup');
+        if (ovni) ovni.style.display = 'block';
+        const btn = document.createElement('button');
+        btn.className = 'btn-next fade-in';
+        btn.innerHTML = '👽 ...';
+        btn.onclick = () => {
+          if (ovni) ovni.style.display = 'none';
+          showStep(s.nextStep);
+        };
+        actEl.appendChild(btn);
+      } else if (s.actions === 'ch3end') {
+        const btn = document.createElement('button');
+        btn.className = 'btn-next fade-in';
+        btn.style.background = 'linear-gradient(135deg,#7c3aed,#a78bfa)';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.style.fontFamily = "'Bebas Neue',sans-serif";
+        btn.style.fontSize = '18px';
+        btn.style.letterSpacing = '2px';
+        btn.innerHTML = '🎰 Entrer au Casino';
+        btn.onclick = finishCh3;
+        actEl.appendChild(btn);
       } else if (s.actions === 'ch2end') {
         const btn = document.createElement('button');
         btn.className = 'btn-next fade-in';
@@ -684,6 +785,54 @@
       actEl.appendChild(btn);
     }
 
+    async function finishCh3() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('story_progress, jetons').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene3_done: true };
+        const newJetons = (fresh?.jetons || 0) + 5;
+        await sb.from('game_stats').update({ story_progress: newProgress, jetons: newJetons }).eq('user_id', currentUser.id);
+
+        document.getElementById('charZone').innerHTML = SVG_FERROTTI;
+        const nightSky = document.getElementById('nightSky');
+        if (nightSky) nightSky.style.display = 'block';
+        document.getElementById('charName').className = 'char-name';
+        document.getElementById('charName').style.color = '#a78bfa';
+        document.getElementById('charName').textContent = 'Ferrotti';
+        document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+        document.getElementById('dialogueText').textContent = "Les dés sont jetés. Bonne chance. Ou plutôt... les astres décideront.";
+
+        const actEl = document.getElementById('actionsZone');
+        actEl.innerHTML = '';
+
+        const badge = document.createElement('div');
+        badge.className = 'badge-wrap';
+        badge.style.borderColor = 'rgba(124,58,237,0.3)';
+        badge.style.background = 'rgba(124,58,237,0.08)';
+        badge.innerHTML = `
+          <div class="badge-icon">🎰</div>
+          <div class="badge-title" style="color:#a78bfa">Casino Débloqué</div>
+          <div class="badge-desc">+5 jetons offerts par Ferrotti</div>`;
+        actEl.appendChild(badge);
+
+        const btn = document.createElement('button');
+        btn.className = 'btn-next';
+        btn.style.marginTop = '8px';
+        btn.style.background = 'linear-gradient(135deg,#7c3aed,#a78bfa)';
+        btn.style.color = 'white';
+        btn.style.border = 'none';
+        btn.innerHTML = '🎰 Aller au Casino';
+        btn.onclick = () => window.location.href = 'casino.html';
+        actEl.appendChild(btn);
+
+        const btn2 = document.createElement('button');
+        btn2.className = 'btn-next';
+        btn2.style.marginTop = '8px';
+        btn2.innerHTML = '← Retour au Port';
+        btn2.onclick = () => window.location.href = 'game.html';
+        actEl.appendChild(btn2);
+      } catch(e) { console.log(e); window.location.href = 'game.html'; }
+    }
+
     async function showRewardCh2(progress) {
       // Donner récompense ch2
       try {
@@ -756,8 +905,18 @@
             <div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6">Tu as survécu à ton premier jour au port.<br>La suite arrive bientôt...</div>
             <button class="btn-next" onclick="window.location.href='game.html'" style="max-width:280px">← Retour au Port</button>
           </div>`;
+      } else if (progress.scene3_done) {
+        document.getElementById('mainContent').innerHTML = `
+          <div class="done-screen fade-in">
+            <div style="font-size:52px">🎰</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#a78bfa">${progress.surnom || ''}</div>
+            <div style="font-size:13px;color:rgba(255,255,255,0.35);line-height:1.6">Casino débloqué · La suite arrive bientôt...</div>
+            <button class="btn-next" onclick="window.location.href='casino.html'" style="max-width:280px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;border:none">🎰 Aller au Casino</button>
+            <button class="btn-next" onclick="window.location.href='game.html'" style="max-width:280px;margin-top:8px">← Retour au Port</button>
+          </div>`;
+      } else if (progress.scene2_done) {
+        showStep(14);
       } else if (progress.scene1_done) {
-        // Ch1 fait, ch2 disponible
         showStep(9);
       } else {
         showStep(0);
