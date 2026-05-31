@@ -467,13 +467,17 @@
       document.getElementById('ocCombo').textContent = '×'+maxCombo;
       document.getElementById('resultOverlay').style.display = 'flex';
       if (totalGain > 0 && currentUser) {
-        const { data: fresh } = await sb.from('game_stats').select('money,xp,level').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,records').eq('user_id', currentUser.id).maybeSingle();
         const newMoney = (fresh?.money||0) + totalGain;
         let nXp = (fresh?.xp||0) + (window._sessionXp||0);
         let nLvl = fresh?.level||1;
         while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         window._sessionXp = 0;
-        await sb.from('game_stats').update({ money: newMoney, xp: nXp, level: nLvl }).eq('user_id', currentUser.id);
+        const rec = (fresh?.records && typeof fresh.records==='object') ? fresh.records : {};
+        rec.pointeau_score = Math.max(rec.pointeau_score||0, score);
+        rec.pointeau_combo = Math.max(rec.pointeau_combo||0, maxCombo);
+        rec.pointeau_gain  = Math.max(rec.pointeau_gain||0, totalGain);
+        await sb.from('game_stats').update({ money: newMoney, xp: nXp, level: nLvl, records: rec }).eq('user_id', currentUser.id);
         document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR')+'€';
       }
     }
