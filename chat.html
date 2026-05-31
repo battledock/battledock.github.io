@@ -496,23 +496,43 @@
     // SALON GÉNÉRAL
     // ===========================
     async function loadGeneral() {
-      const { data: msgs } = await sb
+      const { data } = await sb
         .from('chat_messages').select('*')
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false }).limit(50);
+      const msgs = (data || []).reverse(); // 50 plus récents, du plus ancien au plus récent
 
       const { data: reactions } = await sb.from('message_reactions').select('*');
       buildReactionsMap(reactions || []);
-      renderMessages(msgs || []);
+      renderMessages(msgs);
+      cleanupOld();
     }
 
     // Filet de sécurité : récupère régulièrement les nouveaux messages (indépendant du realtime)
     async function pollGeneral() {
       if (!currentUser) return;
-      const { data: msgs } = await sb
+      const { data } = await sb
         .from('chat_messages').select('*')
-        .order('created_at', { ascending: true });
-      if (!msgs) return;
-      msgs.forEach(m => addMessage(m)); // addMessage ignore les doublons (même id)
+        .order('created_at', { ascending: false }).limit(50);
+      if (!data) return;
+      data.reverse().forEach(m => addMessage(m)); // addMessage ignore les doublons (même id)
+      trimMessages();
+    }
+
+    // Garde au plus 50 messages affichés
+    function trimMessages() {
+      const list = document.getElementById('messagesList');
+      while (list.children.length > 50) list.removeChild(list.firstElementChild);
+    }
+
+    // Efface automatiquement les messages au-delà des 50 plus récents
+    async function cleanupOld() {
+      try {
+        const { data } = await sb.from('chat_messages')
+          .select('created_at').order('created_at', { ascending: false }).limit(50);
+        if (data && data.length === 50) {
+          await sb.from('chat_messages').delete().lt('created_at', data[49].created_at);
+        }
+      } catch(e) { console.log('cleanup:', e); }
     }
 
     function buildReactionsMap(reactions) {
