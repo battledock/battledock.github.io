@@ -734,24 +734,10 @@
     .rumeur-text { font-size:12px; color:rgba(255,255,255,0.7); line-height:1.5; font-style:italic; }
 
 
-    .nav-card.histoire { grid-column: span 2; height: 110px; }
-    .nav-card.histoire .nav-card-bg {
-      background: linear-gradient(135deg, #1a0f00 0%, #2d1f00 40%, #1a1200 70%, #0d0a00 100%);
-    }
-    .histoire-glow {
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse at 30% 50%, rgba(251,191,36,0.08), transparent 60%);
-      z-index: 1;
-    }
-    .histoire-book {
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 48px;
-      opacity: 0.15;
-      z-index: 1;
+    .nav-card.histoire { grid-column: span 2; height: 130px; }
+    @keyframes lineScan {
+      0%   { transform:translateX(-100%); }
+      100% { transform:translateX(100%); }
     }
 
 
@@ -850,15 +836,18 @@
       <!-- TRAVAILLER -->
       <!-- HISTOIRE -->
       <div class="nav-card histoire" onclick="window.location.href='histoire.html'">
-        <div class="nav-card-bg"></div>
-        <div class="nav-card-overlay"></div>
-        <div class="histoire-glow"></div>
-        <div class="histoire-book">📖</div>
-        <div class="nav-card-content">
-          <div class="nav-card-icon">📖</div>
-          <div class="nav-card-title">Histoire</div>
-          <div class="nav-card-sub" id="histoireSub">Port de Marseille · Chapitre 1</div>
-          <div id="histoireBadge" style="display:none;margin-top:3px;font-size:9px;color:rgba(251,191,36,0.7);font-weight:700;letter-spacing:1px">🔵 CHAPITRE 1 TERMINÉ</div>
+        <!-- Fond dégradé animé -->
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1e0a3c,#2d1060,#1a0845);z-index:0"></div>
+        <!-- Particules lumineuses -->
+        <canvas id="histoireCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:0.6"></canvas>
+        <!-- Ligne dorée animée -->
+        <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);z-index:2;animation:lineScan 3s linear infinite"></div>
+        <div style="position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(167,139,250,0.3),transparent);z-index:2"></div>
+        <!-- Contenu centré -->
+        <div style="position:relative;z-index:3;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:6px;color:rgba(196,181,253,0.7);line-height:1;margin-bottom:2px">LE MODE</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:8px;color:white;line-height:1;text-shadow:0 0 30px rgba(167,139,250,0.8),0 0 60px rgba(124,58,237,0.4)">HISTOIRE</div>
+          <div id="histoireBadge" style="display:none;font-size:10px;color:rgba(196,181,253,0.7);font-weight:700;letter-spacing:2px"></div>
         </div>
       </div>
 
@@ -1297,6 +1286,32 @@
       await loadUserData();
       // Mettre à jour last_seen
       await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+
+      // Canvas particules histoire
+      const hCanvas = document.getElementById('histoireCanvas');
+      if (hCanvas) {
+        const hCtx = hCanvas.getContext('2d');
+        hCanvas.width = hCanvas.offsetWidth;
+        hCanvas.height = hCanvas.offsetHeight;
+        const particles = Array.from({length:28}, () => ({
+          x: Math.random() * hCanvas.width,
+          y: Math.random() * hCanvas.height,
+          r: Math.random() * 1.5 + 0.3,
+          speed: Math.random() * 0.4 + 0.1,
+          op: Math.random() * 0.8 + 0.2,
+        }));
+        (function drawP() {
+          hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+          particles.forEach(p => {
+            hCtx.beginPath(); hCtx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+            hCtx.fillStyle = `rgba(167,139,250,${p.op})`; hCtx.fill();
+            p.y -= p.speed; p.op -= 0.002;
+            if (p.y < 0 || p.op <= 0) { p.x = Math.random()*hCanvas.width; p.y = hCanvas.height; p.op = Math.random()*0.8+0.2; }
+          });
+          requestAnimationFrame(drawP);
+        })();
+      }
+
       loadChatBadge();
       setInterval(loadChatBadge, 30000);
       loadCalendar();
@@ -1310,15 +1325,12 @@
       if (storyData?.story_progress?.scene3_done) {
         document.getElementById('histoireBadge').style.display = 'block';
         document.getElementById('histoireBadge').textContent = '🎰 CHAPITRE 3 TERMINÉ';
-        document.getElementById('histoireSub').textContent = `🎰 ${storyData.story_progress.surnom || ''} · Casino débloqué`;
       } else if (storyData?.story_progress?.scene2_done) {
         document.getElementById('histoireBadge').style.display = 'block';
-        document.getElementById('histoireBadge').textContent = '⚡ CHAPITRE 2 TERMINÉ · Ch.3 disponible !';
-        document.getElementById('histoireSub').textContent = `⚡ ${storyData.story_progress.surnom || ''} · Chapitre 3 disponible`;
+        document.getElementById('histoireBadge').textContent = '⚡ CH.2 TERMINÉ · CH.3 DISPONIBLE';
       } else if (storyData?.story_progress?.scene1_done) {
         document.getElementById('histoireBadge').style.display = 'block';
-        document.getElementById('histoireBadge').textContent = '🔵 CHAPITRE 1 TERMINÉ · Ch.2 disponible !';
-        document.getElementById('histoireSub').textContent = `🔵 ${storyData.story_progress.surnom || ''} · Chapitre 2 disponible`;
+        document.getElementById('histoireBadge').textContent = '🔵 CH.1 TERMINÉ · CH.2 DISPONIBLE';
       }
       }
     }
