@@ -835,7 +835,7 @@
       </div>
 
       <!-- TRAVAILLER -->
-      <div class="nav-card work" onclick="window.location.href='travail.html'">
+      <div class="nav-card work" id="workCard" onclick="window.location.href='travail.html'">
         <div class="nav-card-bg"></div>
         <div class="nav-card-overlay"></div>
         <div class="work-waves">
@@ -852,7 +852,7 @@
       </div>
 
       <!-- CLASSEMENT -->
-      <div class="nav-card rank" onclick="window.location.href='classement.html'">
+      <div class="nav-card rank" id="rankCard" onclick="window.location.href='classement.html'">
         <div class="nav-card-bg"></div>
         <div class="nav-card-overlay"></div>
         <div class="rank-stars" id="rankStars"></div>
@@ -865,7 +865,7 @@
       </div>
 
       <!-- CHAT -->
-      <div class="nav-card rank" onclick="openChat()" style="position:relative">
+      <div class="nav-card rank" id="chatCard" onclick="openChat()" style="position:relative">
         <div class="nav-card-bg" style="background:linear-gradient(135deg,#312e81,#4338ca,#1e1b4b)"></div>
         <div class="nav-card-overlay"></div>
         <div class="chat-stars" id="chatStars"></div>
@@ -1264,6 +1264,30 @@
       } else if (hBadge && storyData?.story_progress?.scene1_done) {
         hBadge.style.display = 'block'; hBadge.textContent = '🔵 CH.1 TERMINÉ · CH.2 DISPONIBLE';
       }
+
+      // Verrous selon progression histoire
+      const sp = storyData?.story_progress || {};
+      if (!sp.scene1_done) lockCard('workCard', 1);
+      if (!sp.scene3_done) { lockCard('rankCard', 3); lockCard('chatCard', 3); }
+    }
+
+    function lockCard(id, chapter) {
+      const card = document.getElementById(id);
+      if (!card) return;
+      card.classList.add('locked');
+      card.onclick = (e) => { e.stopPropagation(); showLocked(chapter); };
+      const badge = document.createElement('div');
+      badge.className = 'lock-badge';
+      badge.innerHTML = '<div class="lock-badge-icon">🔒</div><div class="lock-badge-text">CHAPITRE ' + chapter + '</div>';
+      card.appendChild(badge);
+    }
+
+    function showLocked(chapter) {
+      const o = document.createElement('div');
+      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .25s ease';
+      o.onclick = (e) => { if (e.target === o) o.remove(); };
+      o.innerHTML = '<div style="max-width:300px;width:88%;background:#12121a;border:1px solid #2a2a2a;border-radius:18px;padding:28px 22px;text-align:center"><div style="font-size:46px;margin-bottom:12px">🔒</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:8px">VERROUILLÉ</div><div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:20px">Termine le Chapitre ' + chapter + ' du Mode Histoire pour débloquer.</div><button onclick="window.location.href=\'histoire.html\'" style="width:100%;height:46px;border:none;border-radius:12px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;font-family:\'Bebas Neue\',sans-serif;font-size:15px;letter-spacing:1.5px;cursor:pointer">▶ JOUER LE CHAPITRE ' + chapter + '</button></div>';
+      document.body.appendChild(o);
     }
 
     async function loadUserData() {
