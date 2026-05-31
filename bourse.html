@@ -162,19 +162,19 @@
 
   const TICK_MS=5000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
   const IMPACT_LIQ=2500000, MEANREV=0.05, EVENT_PROB=0.022, KRACH_PROB=0.0015, KRACH_M=0.65;
-  const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36;
+  const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36, RUMOR_BIAS=0.20;
 
   let currentUser=null, username='Docker', cash=0;
   let holdings={}, cooldowns={}, profit=0, best=0;
   let prices={}, hist={}, prev={}, tickInt=null, currentTab='market';
-  let modalSym=null, mode='buy';
+  let modalSym=null, mode='buy', biasMap={};
 
   const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
   const clamp=(p,c)=>Math.max(c.base*CLAMP_LO,Math.min(c.base*CLAMP_HI,p));
   const fmt=n=>Math.round(n).toLocaleString('fr-FR');
   const fmt2=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  function stepPrice(sym,p){ const c=CO[sym]; p += MEANREV*(c.base-p) + c.base*c.vol*gauss(); return clamp(p,c); }
+  function stepPrice(sym,p){ const c=CO[sym]; const target=c.base*(1+(biasMap[sym]||0)); p += MEANREV*(target-p) + c.base*c.vol*gauss(); return clamp(p,c); }
 
   async function init(){
     const { data:{ session } } = await sb.auth.getSession();
@@ -198,6 +198,12 @@
 
   // Lit le marché partagé, fait avancer les cours (1 pas / 5s, ou rattrapage), réécrit en base
   async function syncMarket(first){
+    // Biais du marché selon les rumeurs VRAIES encore actives (les tuyaux du Bar)
+    biasMap={};
+    try {
+      const { data:rum } = await sb.from('bourse_rumors').select('sym,dir,truth,expires_at').gt('expires_at', new Date().toISOString());
+      (rum||[]).forEach(r=>{ if(r.truth){ biasMap[r.sym]=Math.max(-0.26, Math.min(0.26, (biasMap[r.sym]||0)+r.dir*RUMOR_BIAS)); } });
+    } catch(e){}
     let rows=[];
     try { const { data } = await sb.from('bourse_market').select('*'); rows=data||[]; } catch(e){}
     const map={}; rows.forEach(r=>map[r.sym]=r);
