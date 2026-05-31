@@ -155,6 +155,8 @@
 
     let currentUser = null, progress = {}, surnom = '', activeChapter = null;
 
+    function getXpRequired(l){ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; }
+
 
     // ── FONDS DE SCÈNE ──
     const BGSV = {
@@ -668,10 +670,12 @@
 
     async function finishChapter3() {
       try {
-        const { data: fresh } = await sb.from('game_stats').select('xp,money,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('xp,money,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene3_done: true };
+        let nXp = (fresh?.xp||0) + 500, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         await sb.from('game_stats').update({
-          xp: (fresh?.xp||0) + 500,
+          xp: nXp, level: nLvl,
           money: (fresh?.money||0) + 100,
           story_progress: newProgress
         }).eq('user_id', currentUser.id);
@@ -754,11 +758,13 @@
 
     async function finishChapter4() {
       try {
-        const { data: fresh } = await sb.from('game_stats').select('money,xp,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene4_done: true };
+        let nXp = (fresh?.xp||0) + 100, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         await sb.from('game_stats').update({
           money: (fresh?.money||0) + 1000,
-          xp: (fresh?.xp||0) + 100,
+          xp: nXp, level: nLvl,
           story_progress: newProgress
         }).eq('user_id', currentUser.id);
         progress = newProgress;
@@ -865,11 +871,13 @@
 
       // Sauvegarder en BD
       try {
-        const { data: fresh } = await sb.from('game_stats').select('money,xp,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene2_done: true };
+        let nXp = (fresh?.xp||0) + 50, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         await sb.from('game_stats').update({
           money: (fresh?.money||0) + 500,
-          xp: (fresh?.xp||0) + 50,
+          xp: nXp, level: nLvl,
           story_progress: newProgress
         }).eq('user_id', currentUser.id);
         progress = newProgress;

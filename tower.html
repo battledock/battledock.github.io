@@ -220,7 +220,6 @@
     <div class="ocard">
       <div class="ocard-icon">📦</div>
       <div class="ocard-title">Tower of Containers</div>
-      <div class="ocard-sub">Empile les conteneurs le plus haut possible. Plus c'est haut, plus tu gagnes.</div>
       <button class="btn-start" id="startBtn" onclick="startGame()" style="display:none">C'est parti !</button>
       <button class="btn-back" onclick="window.location.href='travail.html'">← Retour</button>
     </div>
@@ -434,14 +433,18 @@
       document.getElementById('ocMult').textContent  = `×${mult} multiplicateur`;
       document.getElementById('resultOverlay').style.display = 'flex';
       if (gain > 0 && currentUser) {
-        const { data: fresh } = await sb.from('game_stats').select('money,xp').eq('user_id', currentUser.id).maybeSingle();
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level').eq('user_id', currentUser.id).maybeSingle();
         const newMoney = (fresh?.money||0) + gain;
-        const newXp = (fresh?.xp||0) + (window._sessionXp||0) + 20;
+        let nXp = (fresh?.xp||0) + (window._sessionXp||0) + 20;
+        let nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         window._sessionXp = 0;
-        await sb.from('game_stats').update({ money: newMoney, xp: newXp }).eq('user_id', currentUser.id);
+        await sb.from('game_stats').update({ money: newMoney, xp: nXp, level: nLvl }).eq('user_id', currentUser.id);
         document.getElementById('headerScore').textContent = newMoney.toLocaleString('fr-FR') + '€';
       }
     }
+
+    function getXpRequired(l){ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; }
 
     function showFlash(txt) {
       const el = document.createElement('div'); el.className = 'flash'; el.textContent = txt;

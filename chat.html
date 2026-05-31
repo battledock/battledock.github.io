@@ -631,11 +631,14 @@
         sessionStorage.removeItem('histoire_ch3_pending');
         try {
           const { data: fresh } = await sb.from('game_stats')
-            .select('xp,money,story_progress').eq('user_id', currentUser.id).maybeSingle();
+            .select('xp,money,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
           if (!fresh?.story_progress?.scene3_done) {
             const newProgress = { ...(fresh?.story_progress||{}), scene3_done: true };
+            let nXp = (fresh?.xp||0) + 500, nLvl = fresh?.level||1;
+            const xpReq = (l)=>{ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; };
+            while (nXp >= xpReq(nLvl)) { nXp -= xpReq(nLvl); nLvl++; }
             await sb.from('game_stats').update({
-              xp: (fresh?.xp||0) + 500,
+              xp: nXp, level: nLvl,
               money: (fresh?.money||0) + 100,
               story_progress: newProgress
             }).eq('user_id', currentUser.id);
