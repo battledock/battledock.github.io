@@ -6,6 +6,34 @@
   <title>Travailler - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script>
+    (function() {
+      const PASS = 'froid';
+      if (sessionStorage.getItem('bd_pass') === PASS) return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        // Afficher le popup maintenance
+        const overlay = document.createElement('div');
+        overlay.id = 'maintenanceOverlay';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        overlay.innerHTML = `
+          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
+            <div style="font-size:48px;margin-bottom:12px">🔒</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
+            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
+            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
+            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
+            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
+          </div>`;
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
+      }).catch(()=>{});
+    })();
+  </script>
+
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
@@ -249,7 +277,7 @@
   <div class="header">
     <button class="header-btn" onclick="goBack()">← RETOUR</button>
     <div class="header-money" id="headerMoney">0€</div>
-    <button class="header-btn green" onclick="window.location.href='shop.html'">⚙️ SHOP</button>
+    
   </div>
 
   <!-- XP BAR -->
@@ -331,7 +359,6 @@
     let combo = 1;
     let comboTimeout = null;
     let clicks = 0;
-    let upgrades = {};
     let lastTouchTime = 0;
 
     async function init() {
@@ -348,8 +375,7 @@
       if (statsErr) console.error('Stats error:', statsErr);
 
       const { data: profile } = await sb
-        .from('profiles')
-        .select('upgrades, skin_container')
+        .from('profiles').select('skin_container')
         .eq('user_id', currentUser.id)
         .maybeSingle();
 
@@ -360,8 +386,6 @@
         window.xpPerClick    = Math.min(stats.xp_per_click    || 1, 11);
         window.moneyPerClick = Math.min(stats.money_per_click || 1, 30);
       }
-
-      upgrades = profile?.upgrades || {};
 
       // Appliquer skin conteneur
       const skin = profile?.skin_container || 'red';
@@ -443,7 +467,6 @@
     }
 
     function autoClick() {
-      const gain = upgrades.auto_clicker;
       sessionMoney += gain;
       totalMoney += gain;
       updateDisplay();
