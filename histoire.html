@@ -6,9 +6,24 @@
   <title>Histoire - Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script>
+    (function() {
+      if (sessionStorage.getItem('bd_pass') === 'froid') return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        const o = document.createElement('div');
+        o.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        o.innerHTML = `<div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center"><div style="font-size:48px;margin-bottom:12px">🔒</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:20px">En Maintenance</div><input id="mi" type="password" placeholder="Code..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px"><button onclick="var v=document.getElementById('mi').value;if(v==='froid'){sessionStorage.setItem('bd_pass','froid');this.closest('div').parentNode.remove();document.body.style.overflow=''}else{this.nextSibling.style.display='block';document.getElementById('mi').value=''}" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;cursor:pointer">ENTRER</button><div style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div></div>`;
+        document.body.appendChild(o);
+        document.body.style.overflow = 'hidden';
+      }).catch(()=>{});
+    })();
+  </script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    input { -webkit-user-select:text; user-select:text; }
+    input { -webkit-user-select:text !important; user-select:text !important; }
     html, body { height:100%; overflow:hidden; }
     body { font-family:'Inter',sans-serif; background:#0a0f1a; height:100dvh; display:flex; flex-direction:column; color:white; }
 
@@ -19,79 +34,93 @@
     .header { position:relative; z-index:10; flex-shrink:0; padding:11px 16px; display:flex; align-items:center; gap:12px; background:rgba(0,0,0,0.5); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,255,255,0.06); }
     .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:7px 12px; border-radius:8px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; }
     .header-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; color:rgba(255,255,255,0.5); flex:1; text-align:center; }
+    .header-ch { font-size:11px; color:rgba(255,255,255,0.3); font-weight:700; letter-spacing:1px; }
 
     /* MENU CHAPITRES */
-    .menu-wrap { position:relative; z-index:2; flex:1; overflow-y:auto; padding:20px 16px 40px; display:flex; flex-direction:column; gap:12px; max-width:500px; margin:0 auto; width:100%; }
-    .menu-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:4px; color:rgba(196,181,253,0.9); text-align:center; margin-bottom:8px; text-shadow:0 0 20px rgba(167,139,250,0.5); }
-    .menu-sub { font-size:12px; color:rgba(255,255,255,0.3); text-align:center; letter-spacing:2px; text-transform:uppercase; margin-bottom:16px; }
+    .menu-wrap { position:relative; z-index:2; flex:1; overflow-y:auto; padding:16px 14px 40px; display:flex; flex-direction:column; gap:10px; max-width:500px; margin:0 auto; width:100%; }
 
-    .chapter-card {
-      border-radius:16px; overflow:hidden; cursor:pointer;
-      transition:transform .15s, box-shadow .15s;
-      position:relative;
-    }
-    .chapter-card:active { transform:scale(0.97); }
-    .chapter-card.locked { cursor:default; opacity:0.5; }
-    .chapter-card.locked:active { transform:none; }
-
-    .chapter-card.done { border:1px solid rgba(74,222,128,0.2); background:linear-gradient(135deg,#0a1f0a,#0d2a0d); }
-    .chapter-card.available { border:1px solid rgba(251,191,36,0.3); background:linear-gradient(135deg,#1a1200,#2a1800); box-shadow:0 4px 20px rgba(251,191,36,0.1); }
-    .chapter-card.locked { border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.03); }
+    .chapter-card { border-radius:16px; overflow:hidden; position:relative; transition:transform .15s; }
+    .chapter-card.available { cursor:pointer; border:1px solid rgba(251,191,36,0.3); background:linear-gradient(135deg,#1a1200,#2a1800); box-shadow:0 4px 20px rgba(251,191,36,0.1); }
+    .chapter-card.available:active { transform:scale(0.97); }
+    .chapter-card.done { border:1px solid rgba(74,222,128,0.2); background:linear-gradient(135deg,#0a1f0a,#0d2a0d); cursor:default; }
+    .chapter-card.locked { border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.03); opacity:0.5; cursor:default; }
 
     .chapter-inner { padding:16px 18px; display:flex; align-items:center; gap:14px; }
-    .chapter-num { font-family:'Bebas Neue',sans-serif; font-size:36px; color:rgba(255,255,255,0.15); min-width:36px; text-align:center; line-height:1; }
-    .chapter-card.done .chapter-num { color:rgba(74,222,128,0.4); }
-    .chapter-card.available .chapter-num { color:rgba(251,191,36,0.5); }
+    .chapter-num { font-family:'Bebas Neue',sans-serif; font-size:32px; min-width:32px; text-align:center; line-height:1; }
+    .chapter-card.done .chapter-num     { color:rgba(74,222,128,0.5); }
+    .chapter-card.available .chapter-num{ color:rgba(251,191,36,0.6); }
+    .chapter-card.locked .chapter-num   { color:rgba(255,255,255,0.2); }
 
     .chapter-info { flex:1; }
     .chapter-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; color:white; margin-bottom:3px; }
-    .chapter-desc { font-size:11px; color:rgba(255,255,255,0.35); line-height:1.4; }
+    .chapter-desc  { font-size:11px; color:rgba(255,255,255,0.35); line-height:1.4; }
     .chapter-card.done .chapter-desc { color:rgba(74,222,128,0.5); }
 
     .chapter-badge { font-size:10px; font-weight:700; padding:4px 10px; border-radius:20px; flex-shrink:0; letter-spacing:0.5px; }
     .badge-done      { background:rgba(74,222,128,0.12); color:#4ade80; }
     .badge-available { background:rgba(251,191,36,0.12); color:#fbbf24; }
-    .badge-locked    { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.3); }
+    .badge-locked    { background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.25); }
 
     /* SCÈNE */
-    .scene-wrap { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; max-width:500px; margin:0 auto; width:100%; overflow:hidden; }
-    .char-zone { flex:1; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+    .scene-wrap { position:relative; z-index:2; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+    .char-zone { flex:1; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; position:relative; }
     .char-svg { width:200px; height:280px; flex-shrink:0; }
 
-    .dialogue-box { position:relative; z-index:10; flex-shrink:0; background:rgba(10,15,26,0.95); backdrop-filter:blur(20px); border-top:1px solid rgba(255,255,255,0.08); padding:16px 16px 12px; min-height:180px; display:flex; flex-direction:column; gap:10px; }
-    .char-name { font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; margin-bottom:2px; }
-    .char-name.pasturon { color:#fbbf24; }
+    /* DIALOGUE */
+    .dialogue-box { position:relative; z-index:10; flex-shrink:0; background:rgba(8,12,20,0.97); backdrop-filter:blur(20px); border-top:1px solid rgba(255,255,255,0.07); padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px; }
+    .char-name { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; margin-bottom:2px; }
+    .char-name.gegé     { color:#fbbf24; }
     .char-name.vigile   { color:#9ca3af; }
-    .char-name.narrateur { color:rgba(255,255,255,0.35); font-style:italic; font-family:'Inter',sans-serif; font-size:11px; letter-spacing:1px; }
-    .dialogue-text { font-size:15px; color:rgba(255,255,255,0.88); line-height:1.65; min-height:50px; }
-    .dialogue-text.narratif { font-size:13px; color:rgba(255,255,255,0.5); font-style:italic; }
+    .char-name.lavagne  { color:#10b981; }
+    .char-name.narrateur{ color:rgba(255,255,255,0.3); font-style:italic; font-family:'Inter',sans-serif; font-size:11px; letter-spacing:1px; }
+    .dialogue-text { font-size:15px; color:rgba(255,255,255,0.88); line-height:1.65; min-height:44px; }
+    .dialogue-text.narratif { font-size:13px; color:rgba(255,255,255,0.45); font-style:italic; }
 
+    /* CHOIX */
     .choices { display:flex; flex-direction:column; gap:8px; }
-    .choice-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 14px; font-size:13px; color:rgba(255,255,255,0.8); cursor:pointer; text-align:left; transition:all .15s; display:flex; align-items:center; gap:10px; }
-    .choice-btn:active { background:rgba(255,255,255,0.12); transform:scale(0.98); }
+    .choice-btn { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:12px 14px; font-size:13px; color:rgba(255,255,255,0.8); cursor:pointer; text-align:left; display:flex; align-items:center; gap:10px; transition:background .1s; }
+    .choice-btn:active { background:rgba(255,255,255,0.12); }
     .choice-icon { font-size:16px; flex-shrink:0; }
 
-    .btn-next { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; width:100%; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:rgba(255,255,255,0.6); cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:8px; }
-    .btn-next:active { background:rgba(255,255,255,0.12); }
+    /* BOUTON SUITE */
+    .btn-next { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; width:100%; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:rgba(255,255,255,0.6); cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background .1s; }
+    .btn-next:active { background:rgba(255,255,255,0.14); }
 
-    .surnom-input { background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); border-radius:10px; padding:12px 14px; width:100%; font-size:18px; font-weight:700; color:white; font-family:'Bebas Neue',sans-serif; letter-spacing:2px; outline:none; transition:border .2s; }
-    .surnom-input:focus { border-color:rgba(251,191,36,0.5); }
-    .surnom-input::placeholder { color:rgba(255,255,255,0.2); font-size:14px; letter-spacing:1px; font-family:'Inter',sans-serif; }
+    /* INPUT SURNOM */
+    .surnom-wrap { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:14px; }
+    .surnom-label { font-size:10px; color:rgba(255,255,255,0.4); font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+    .surnom-input { width:100%; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:11px 14px; font-size:18px; font-weight:700; color:white; font-family:'Bebas Neue',sans-serif; letter-spacing:2px; outline:none; transition:border .2s; }
+    .surnom-input:focus { border-color:rgba(251,191,36,0.4); }
+    .surnom-input::placeholder { color:rgba(255,255,255,0.2); font-size:13px; letter-spacing:1px; font-family:'Inter',sans-serif; font-weight:400; }
 
-    .btn-valider { background:linear-gradient(135deg,#fbbf24,#f59e0b); border:none; border-radius:12px; padding:14px; width:100%; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#1a0a00; cursor:pointer; transition:all .15s; }
-    .btn-valider:active { transform:scale(0.97); }
-    .btn-valider:disabled { background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.2); cursor:not-allowed; }
-
-    .badge-wrap { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.2); border-radius:14px; padding:16px; text-align:center; margin-bottom:8px; animation:popIn .5s cubic-bezier(0.34,1.56,0.64,1); }
+    /* BADGE FINAL */
+    .badge-wrap { background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.2); border-radius:14px; padding:16px; text-align:center; animation:popIn .5s cubic-bezier(0.34,1.56,0.64,1); }
     @keyframes popIn { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
-    .badge-icon  { font-size:40px; margin-bottom:6px; }
+    .badge-icon  { font-size:38px; margin-bottom:6px; }
     .badge-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; color:#fbbf24; }
-    .badge-desc  { font-size:11px; color:rgba(255,255,255,0.35); margin-top:4px; }
+    .badge-desc  { font-size:11px; color:rgba(255,255,255,0.35); margin-top:3px; }
 
-    .fade-in { animation:fadeIn .4s ease forwards; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    /* BADGE TAMPONNE */
+    .badge-stamp-wrap { display:flex; justify-content:center; margin-bottom:8px; }
+    .badge-stamp { width:120px; height:80px; background:rgba(255,255,255,0.05); border:2px solid rgba(251,191,36,0.3); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; animation:stampIn .4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes stampIn { from{transform:scale(0) rotate(-20deg);opacity:0} to{transform:scale(1) rotate(-3deg);opacity:1} }
+    .badge-stamp-label { font-size:9px; color:rgba(251,191,36,0.6); font-weight:700; letter-spacing:2px; text-transform:uppercase; }
+    .badge-stamp-num { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; color:#fbbf24; }
+    .badge-stamp-sub { font-size:8px; color:rgba(255,255,255,0.3); letter-spacing:1px; }
 
-    .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); border:1px solid rgba(255,255,255,0.1); color:white; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity .3s; white-space:nowrap; }
+    .fade-in { animation:fadeIn .35s ease forwards; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+    /* CHOIX PASSÉ — cartes horizontales */
+    .past-choices { display:flex; flex-direction:column; gap:10px; }
+    .past-card { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:14px 16px; cursor:pointer; display:flex; align-items:center; gap:14px; transition:all .15s; }
+    .past-card:active { background:rgba(255,255,255,0.1); transform:scale(0.98); }
+    .past-card-icon { font-size:28px; flex-shrink:0; }
+    .past-card-text { flex:1; }
+    .past-card-title { font-weight:700; font-size:14px; color:white; margin-bottom:3px; }
+    .past-card-desc { font-size:12px; color:rgba(255,255,255,0.45); line-height:1.4; font-style:italic; }
+
+    .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.85); border:1px solid rgba(255,255,255,0.1); color:white; padding:10px 18px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity .3s; white-space:nowrap; }
     .toast.show { opacity:1; }
   </style>
 </head>
@@ -101,45 +130,43 @@
   <div class="scene-bg">
     <svg width="100%" height="100%" viewBox="0 0 400 700" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a0414"/><stop offset="50%" stop-color="#12062a"/><stop offset="100%" stop-color="#0d0a1a"/></linearGradient>
-        <radialGradient id="glow1" cx="30%" cy="30%" r="50%"><stop offset="0%" stop-color="rgba(124,58,237,0.15)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
-        <radialGradient id="glow2" cx="70%" cy="70%" r="50%"><stop offset="0%" stop-color="rgba(167,139,250,0.1)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0f1a2e"/><stop offset="40%" stop-color="#1a2d4a"/><stop offset="70%" stop-color="#2d4a6a"/><stop offset="100%" stop-color="#4a6a8a"/></linearGradient>
+        <linearGradient id="seaGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a3a5c"/><stop offset="100%" stop-color="#0a1a2a"/></linearGradient>
+        <radialGradient id="sunHalo" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(251,191,36,0.2)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <radialGradient id="sunGlow" cx="40%" cy="40%" r="60%"><stop offset="0%" stop-color="#fff7d6"/><stop offset="60%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f59e0b"/></radialGradient>
       </defs>
-      <rect width="400" height="700" fill="url(#bgGrad)"/>
-      <rect width="400" height="700" fill="url(#glow1)"/>
-      <rect width="400" height="700" fill="url(#glow2)"/>
-      <!-- Étoiles -->
-      <g fill="white">
-        <circle cx="20" cy="30" r="0.8" opacity="0.6"/><circle cx="60" cy="15" r="1.2" opacity="0.8"/><circle cx="110" cy="45" r="0.7" opacity="0.5"/><circle cx="170" cy="20" r="1" opacity="0.7"/><circle cx="230" cy="35" r="0.8" opacity="0.6"/><circle cx="290" cy="10" r="1.3" opacity="0.9"/><circle cx="350" cy="40" r="0.7" opacity="0.5"/><circle cx="380" cy="18" r="1" opacity="0.7"/><circle cx="40" cy="80" r="0.9" opacity="0.6"/><circle cx="130" cy="100" r="0.7" opacity="0.5"/><circle cx="200" cy="70" r="1.1" opacity="0.8"/><circle cx="320" cy="85" r="0.8" opacity="0.6"/><circle cx="370" cy="65" r="1" opacity="0.7"/><circle cx="80" cy="120" r="0.6" opacity="0.4"/><circle cx="250" cy="110" r="1.2" opacity="0.7"/><circle cx="160" cy="140" r="0.7" opacity="0.5"/>
+      <rect width="400" height="700" fill="url(#skyGrad)"/>
+      <ellipse cx="320" cy="120" rx="60" ry="60" fill="url(#sunHalo)"/>
+      <circle cx="320" cy="120" r="26" fill="url(#sunGlow)"/>
+      <g fill="rgba(255,255,255,0.1)"><ellipse cx="60" cy="90" rx="38" ry="13"/><ellipse cx="78" cy="82" rx="22" ry="14"/></g>
+      <rect x="0" y="380" width="400" height="320" fill="url(#seaGrad)"/>
+      <g stroke="rgba(255,255,255,0.07)" stroke-width="1.5" fill="none">
+        <path d="M0,400 Q50,395 100,400 Q150,405 200,400 Q250,395 300,400 Q350,405 400,400"/>
       </g>
-      <!-- Lignes de lumière violet -->
-      <line x1="0" y1="200" x2="400" y2="200" stroke="rgba(124,58,237,0.06)" stroke-width="1"/>
-      <line x1="0" y1="400" x2="400" y2="400" stroke="rgba(124,58,237,0.04)" stroke-width="1"/>
-      <line x1="100" y1="0" x2="100" y2="700" stroke="rgba(124,58,237,0.03)" stroke-width="1"/>
-      <line x1="300" y1="0" x2="300" y2="700" stroke="rgba(124,58,237,0.03)" stroke-width="1"/>
-      <!-- OVNI -->
-      <g id="ovni" opacity="0" style="transition:opacity 0.5s">
-        <ellipse cx="200" cy="75" rx="45" ry="14" fill="#7c3aed" opacity="0.9"/>
-        <ellipse cx="200" cy="69" rx="22" ry="12" fill="#a78bfa"/>
-        <ellipse cx="200" cy="75" rx="45" ry="14" fill="none" stroke="#c4b5fd" stroke-width="1.5"/>
-        <circle cx="182" cy="70" r="4" fill="#fbbf24" opacity="0.9"/>
-        <circle cx="200" cy="68" r="4" fill="#fbbf24" opacity="0.9"/>
-        <circle cx="218" cy="70" r="4" fill="#fbbf24" opacity="0.9"/>
-        <path d="M185,89 L155,160 M215,89 L245,160" stroke="rgba(167,139,250,0.2)" stroke-width="20" stroke-linecap="round"/>
+      <rect x="0" y="340" width="400" height="45" fill="#1a1f2a"/>
+      <rect x="0" y="338" width="400" height="4" fill="#2d3748"/>
+      <g fill="#2d3748" stroke="#374151" stroke-width="0.8">
+        <rect x="18" y="150" width="7" height="195"/>
+        <rect x="18" y="150" width="90" height="6"/>
+        <line x1="80" y1="156" x2="80" y2="330" stroke="#4a5568" stroke-width="1.5"/>
+        <rect x="14" y="200" width="18" height="12" rx="2" fill="#4b5563"/>
       </g>
+      <rect x="50" y="305" width="55" height="38" rx="2" fill="#cc2200" opacity="0.7"/>
+      <rect x="110" y="315" width="50" height="28" rx="2" fill="#1d4ed8" opacity="0.6"/>
+      <rect x="165" y="310" width="45" height="33" rx="2" fill="#15803d" opacity="0.6"/>
+      <rect x="0" y="382" width="400" height="318" fill="#141a1f"/>
+      <rect x="0" y="380" width="400" height="4" fill="#1f2937"/>
     </svg>
   </div>
 
   <div class="header">
     <button class="back-btn" id="backBtn" onclick="goBack()">← RETOUR</button>
     <div class="header-title" id="headerTitle">📖 HISTOIRE</div>
-    <div style="width:80px"></div>
+    <div class="header-ch" id="headerCh"></div>
   </div>
 
   <!-- MENU -->
   <div id="menuView" class="menu-wrap" style="display:none">
-    <div class="menu-title">Histoire du Port</div>
-    <div class="menu-sub" id="menuSub">Port de Marseille</div>
     <div id="chapterList"></div>
   </div>
 
@@ -147,7 +174,10 @@
   <div id="sceneView" class="scene-wrap" style="display:none">
     <div class="char-zone" id="charZone"></div>
     <div class="dialogue-box" id="dialogueBox">
-      <div><div class="char-name" id="charName"></div><div class="dialogue-text" id="dialogueText"></div></div>
+      <div>
+        <div class="char-name" id="charName"></div>
+        <div class="dialogue-text" id="dialogueText"></div>
+      </div>
       <div id="actionsZone"></div>
     </div>
   </div>
@@ -159,130 +189,53 @@
     const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
     const sb = createClient(SB_URL, SB_KEY);
-    let currentUser = null, progress = {}, surnom = '', activeChapter = null;
 
-    // ── CHAPITRES ──
-    const CHAPTERS = [
-      {
-        id: 1,
-        title: 'Premier Jour',
-        desc: 'Tu arrives au port de Marseille. Pasturon t\'accueille.',
-        reward: '🔵 Badge Bleu du Port',
-        scenes: [
-          { char:'vigile',   name:'Le Vigile',  text:"T'es le nouveau ?", actions:'choices', choices:[{icon:'😐',text:'Oui, bonjour.',next:1},{icon:'😤',text:'"Docker, pas stagiaire."',next:1}] },
-          { char:'vigile',   name:'Le Vigile',  text:"Demande Pasturon. Bonne chance.", actions:'next', next:2 },
-          { char:'narrateur',name:null,          text:"Un homme arrive en trottinant. Badge à l'envers. Thermos à moitié renversé.", actions:'next', next:3 },
-          { char:'pasturon', name:'Pasturon',    text:"T'es le nouveau ! Moi c'est Pasturon. Je signe bientôt.", actions:'choices', choices:[{icon:'🤔',text:'"Signe quoi ?"',next:4},{icon:'🤝',text:'"Enchanté."',next:5}] },
-          { char:'pasturon', name:'Pasturon',    text:"Mon CDI ! Je suis occasionnel depuis... peu importe. C'est temporaire.", actions:'next', next:6 },
-          { char:'pasturon', name:'Pasturon',    text:"Enchanté aussi ! Bon, je signe bientôt mon CDI. C'est une question de jours.", actions:'next', next:6 },
-          { char:'pasturon', name:'Pasturon',    text:"Si tu vois un grand avec des ongles vernis qui regarde le ciel... c'est Ferrotti. Tu fais semblant de rien.", actions:'next', next:7 },
-          { char:'pasturon', name:'Pasturon',    text:"Au fait — tout le monde a son surnom ici. Toi on t'appellera comment ?", actions:'surnom' },
-        ],
-        doneKey: 'scene1_done',
-        requires: null,
-      },
-      {
-        id: 2,
-        title: 'Au Boulot',
-        desc: 'Pasturon te montre comment travailler au port.',
-        reward: '⚡ Badge Premier Jour · +500€ · +50 XP',
-        scenes: [
-          { char:'pasturon', name:'Pasturon',   text:"Allez, on commence. C'est simple — tu charges, tu pointes, tu rentres chez toi.", actions:'next', next:1 },
-          { char:'narrateur',name:null,          text:"Un grand s'approche lentement d'un conteneur COSCO. Il sort un carnet.", actions:'next', next:2 },
-          { char:'ferrotti', name:'Ferrotti',    text:"Chhhut. Il communique.", actions:'next', next:3 },
-          { char:'pasturon', name:'Pasturon',    text:"C'est Ferrotti. Laisse-le faire.", actions:'next', next:4 },
-          { char:'pasturon', name:'Pasturon',    text:"Bon. Toi tu cliques sur le conteneur, tu travailles, tu gagnes ta paie. Simple non ?", actions:'ch2work' },
-        ],
-        doneKey: 'scene2_done',
-        requires: 'scene1_done',
-      },
-      {
-        id: 3,
-        title: 'La Nuit au Casino',
-        desc: 'Ferrotti t\'emmène découvrir le casino du port.',
-        reward: '🎰 Casino Débloqué · +5 Jetons',
-        scenes: [
-          { char:'narrateur',name:null,         text:"18h00. Fin de journée. Pasturon range son contrat. Ferrotti regarde le ciel.", actions:'next', next:1, night:true },
-          { char:'ferrotti', name:'Ferrotti',   text:"Les astres sont alignés ce soir. Le casino nous attend.", actions:'next', next:2, night:true },
-          { char:'pasturon', name:'Pasturon',   text:"Moi je viens pas. Je garde mon argent pour fêter mon CDI.", actions:'next', next:3, night:true },
-          { char:'ferrotti', name:'Ferrotti',   text:"J'ai eu un signe. Un signal. Regarde le ciel.", actions:'ovni', next:4, night:true },
-          { char:'narrateur',name:null,         text:"Ferrotti te regarde. Pasturon hausse les épaules.", actions:'choices', night:true, choices:[{icon:'🎰',text:'Suivre Ferrotti au casino',next:5},{icon:'😴',text:'"Je suis fatigué..."',next:5}] },
-          { char:'ferrotti', name:'Ferrotti',   text:"Bien. Les étoiles ont choisi. Voici 5 jetons pour commencer. Ne les perds pas tous.", actions:'ch3end', night:true },
-        ],
-        doneKey: 'scene3_done',
-        requires: 'scene2_done',
-      },
-    ];
+    let currentUser = null, progress = {}, surnom = '', activeChapter = null;
 
     // ── SVG PERSONNAGES ──
     const SVG = {
-      pasturon: `<svg class="char-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
-        <rect x="55" y="140" width="90" height="100" rx="8" fill="#d97706"/>
-        <rect x="55" y="140" width="90" height="14" rx="4" fill="#b45309"/>
-        <rect x="55" y="175" width="90" height="6" fill="#fbbf24" opacity="0.6"/>
-        <rect x="55" y="205" width="90" height="6" fill="#fbbf24" opacity="0.6"/>
+      gegé: `<svg class="char-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Corps veste de travail grise -->
+        <rect x="55" y="140" width="90" height="100" rx="8" fill="#4b5563"/>
+        <rect x="55" y="140" width="90" height="12" rx="4" fill="#374151"/>
+        <rect x="55" y="172" width="90" height="5" fill="#9ca3af" opacity="0.5"/>
+        <rect x="55" y="200" width="90" height="5" fill="#9ca3af" opacity="0.5"/>
         <rect x="65" y="235" width="28" height="45" rx="6" fill="#374151"/>
         <rect x="105" y="235" width="28" height="45" rx="6" fill="#374151"/>
         <rect x="58" y="272" width="38" height="12" rx="4" fill="#1f2937"/>
         <rect x="100" y="272" width="38" height="12" rx="4" fill="#1f2937"/>
-        <rect x="20" y="145" width="38" height="22" rx="8" fill="#d97706"/>
-        <rect x="10" y="160" width="20" height="36" rx="6" fill="#6b7280"/>
-        <rect x="10" y="160" width="20" height="8" rx="4" fill="#9ca3af"/>
-        <rect x="140" y="145" width="38" height="22" rx="8" fill="#d97706"/>
-        <rect x="90" y="118" width="22" height="26" rx="4" fill="#d4956a"/>
-        <ellipse cx="101" cy="92" rx="46" ry="42" fill="#d4956a"/>
-        <ellipse cx="135" cy="108" rx="16" ry="12" fill="#d4956a"/>
-        <ellipse cx="55" cy="92" rx="8" ry="10" fill="#c4855a"/>
-        <ellipse cx="147" cy="96" rx="9" ry="11" fill="#c4855a"/>
-        <ellipse cx="101" cy="56" rx="46" ry="20" fill="#4a3020"/>
-        <rect x="55" y="56" width="92" height="16" fill="#4a3020"/>
-        <rect x="62" y="82" width="32" height="20" rx="8" fill="#111" stroke="#333" stroke-width="1.5"/>
-        <rect x="106" y="82" width="32" height="20" rx="8" fill="#111" stroke="#333" stroke-width="1.5"/>
-        <rect x="94" y="88" width="12" height="4" rx="2" fill="#333"/>
-        <rect x="56" y="90" width="8" height="3" rx="1" fill="#333"/>
-        <rect x="136" y="90" width="10" height="3" rx="1" fill="#333"/>
-        <rect x="66" y="85" width="10" height="5" rx="3" fill="rgba(255,255,255,0.15)"/>
-        <rect x="110" y="85" width="10" height="5" rx="3" fill="rgba(255,255,255,0.15)"/>
-        <path d="M84,112 Q101,124 118,112" stroke="#8b5e3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <rect x="115" y="152" width="22" height="30" rx="3" fill="white" transform="rotate(180,126,167)"/>
-        <rect x="118" y="155" width="16" height="4" rx="1" fill="#3b82f6" transform="rotate(180,126,157)"/>
+        <!-- Bras -->
+        <rect x="20" y="145" width="38" height="22" rx="8" fill="#4b5563"/>
+        <rect x="140" y="145" width="38" height="22" rx="8" fill="#4b5563"/>
+        <!-- Cou -->
+        <rect x="90" y="118" width="22" height="26" rx="4" fill="#c4855a"/>
+        <!-- Tête -->
+        <ellipse cx="101" cy="90" rx="44" ry="40" fill="#c4855a"/>
+        <!-- Oreilles -->
+        <ellipse cx="57" cy="90" rx="8" ry="10" fill="#b4754a"/>
+        <ellipse cx="145" cy="90" rx="8" ry="10" fill="#b4754a"/>
+        <!-- Cheveux gris courts -->
+        <ellipse cx="101" cy="55" rx="44" ry="18" fill="#6b7280"/>
+        <rect x="57" y="55" width="88" height="14" fill="#6b7280"/>
+        <!-- Casque orange -->
+        <ellipse cx="101" cy="52" rx="48" ry="22" fill="#f59e0b"/>
+        <rect x="53" y="52" width="96" height="14" rx="2" fill="#f59e0b"/>
+        <rect x="53" y="64" width="96" height="5" rx="2" fill="#d97706"/>
+        <!-- Yeux -->
+        <ellipse cx="84" cy="85" rx="9" ry="8" fill="white"/>
+        <ellipse cx="118" cy="85" rx="9" ry="8" fill="white"/>
+        <circle cx="84" cy="86" r="5" fill="#1f2937"/>
+        <circle cx="118" cy="86" r="5" fill="#1f2937"/>
+        <circle cx="82" cy="84" r="2" fill="white"/>
+        <circle cx="116" cy="84" r="2" fill="white"/>
+        <!-- Sourcils épais -->
+        <path d="M76,76 Q84,73 92,76" stroke="#4a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M110,76 Q118,73 126,76" stroke="#4a3020" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- Moustache -->
+        <path d="M88,104 Q101,110 114,104" stroke="#6b7280" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <!-- Casque de travers (légèrement incliné) -->
       </svg>`,
-      ferrotti: `<svg class="char-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
-        <rect x="58" y="138" width="86" height="105" rx="8" fill="#7c3aed"/>
-        <rect x="50" y="138" width="102" height="16" rx="6" fill="#6d28d9"/>
-        <rect x="65" y="235" width="26" height="45" rx="6" fill="#1e1b4b"/>
-        <rect x="107" y="235" width="26" height="45" rx="6" fill="#1e1b4b"/>
-        <path d="M58,278 Q70,278 82,278 L82,284 Q70,286 58,284 Z" fill="#111"/>
-        <rect x="70" y="278" width="4" height="10" rx="1" fill="#333"/>
-        <path d="M100,278 Q112,278 124,278 L124,284 Q112,286 100,284 Z" fill="#111"/>
-        <rect x="112" y="278" width="4" height="10" rx="1" fill="#333"/>
-        <rect x="18" y="142" width="40" height="20" rx="8" fill="#7c3aed"/>
-        <ellipse cx="20" cy="164" rx="10" ry="8" fill="#d4956a"/>
-        <rect x="12" y="158" width="5" height="8" rx="2" fill="#ec4899"/>
-        <rect x="18" y="157" width="5" height="9" rx="2" fill="#ec4899"/>
-        <rect x="24" y="158" width="5" height="8" rx="2" fill="#ec4899"/>
-        <rect x="144" y="142" width="38" height="20" rx="8" fill="#7c3aed"/>
-        <rect x="88" y="116" width="26" height="26" rx="4" fill="#d4956a"/>
-        <ellipse cx="101" cy="88" rx="44" ry="40" fill="#d4956a"/>
-        <rect x="72" y="108" width="58" height="20" rx="8" fill="#d4956a"/>
-        <ellipse cx="57" cy="88" rx="8" ry="10" fill="#c4855a"/>
-        <ellipse cx="145" cy="88" rx="8" ry="10" fill="#c4855a"/>
-        <circle cx="57" cy="96" r="5" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
-        <circle cx="145" cy="96" r="5" fill="#fbbf24" stroke="#d97706" stroke-width="1"/>
-        <ellipse cx="101" cy="54" rx="44" ry="18" fill="#7c2d12"/>
-        <rect x="57" y="54" width="88" height="30" fill="#7c2d12"/>
-        <ellipse cx="62" cy="110" rx="10" ry="30" fill="#7c2d12"/>
-        <ellipse cx="140" cy="110" rx="10" ry="30" fill="#7c2d12"/>
-        <ellipse cx="84" cy="82" rx="10" ry="9" fill="white"/>
-        <ellipse cx="118" cy="82" rx="10" ry="9" fill="white"/>
-        <circle cx="84" cy="83" r="6" fill="#1f2937"/>
-        <circle cx="118" cy="83" r="6" fill="#1f2937"/>
-        <circle cx="82" cy="81" r="2" fill="white"/>
-        <circle cx="116" cy="81" r="2" fill="white"/>
-        <path d="M74,74 Q84,70 94,74" stroke="#111" stroke-width="2.5" fill="none"/>
-        <path d="M108,74 Q118,70 128,74" stroke="#111" stroke-width="2.5" fill="none"/>
-        <path d="M86,108 Q101,118 116,108" stroke="#ec4899" stroke-width="3" fill="none" stroke-linecap="round"/>
-      </svg>`,
+
       vigile: `<svg class="char-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
         <rect x="58" y="138" width="86" height="105" rx="6" fill="#1e3a5f"/>
         <rect x="58" y="138" width="86" height="16" rx="4" fill="#1a3354"/>
@@ -312,18 +265,76 @@
         <rect x="112" y="158" width="24" height="32" rx="3" fill="white"/>
         <rect x="115" y="162" width="18" height="4" rx="1" fill="#1e3a5f"/>
       </svg>`,
+
+      lavagne: `<svg class="char-svg" viewBox="0 0 200 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Costume gris élégant -->
+        <rect x="52" y="138" width="98" height="105" rx="8" fill="#374151"/>
+        <rect x="52" y="138" width="98" height="14" rx="4" fill="#1f2937"/>
+        <!-- Chemise blanche -->
+        <rect x="82" y="140" width="38" height="80" fill="white" opacity="0.9"/>
+        <!-- Cravate bleue -->
+        <rect x="95" y="145" width="12" height="55" rx="3" fill="#1d4ed8"/>
+        <polygon points="95,200 107,200 101,215" fill="#1d4ed8"/>
+        <!-- Veste revers -->
+        <path d="M82,140 L65,145 L65,240 L52,240 L52,138 Z" fill="#1f2937" opacity="0.5"/>
+        <path d="M120,140 L137,145 L137,240 L150,240 L150,138 Z" fill="#1f2937" opacity="0.5"/>
+        <rect x="65" y="237" width="26" height="43" rx="6" fill="#111827"/>
+        <rect x="107" y="237" width="26" height="43" rx="6" fill="#111827"/>
+        <rect x="58" y="272" width="38" height="12" rx="4" fill="#0f172a"/>
+        <rect x="100" y="272" width="38" height="12" rx="4" fill="#0f172a"/>
+        <!-- Bras -->
+        <rect x="16" y="142" width="40" height="20" rx="8" fill="#374151"/>
+        <rect x="146" y="142" width="40" height="20" rx="8" fill="#374151"/>
+        <!-- Manchettes blanches -->
+        <rect x="16" y="156" width="40" height="8" rx="4" fill="white" opacity="0.7"/>
+        <rect x="146" y="156" width="40" height="8" rx="4" fill="white" opacity="0.7"/>
+        <!-- Cou -->
+        <rect x="88" y="116" width="26" height="26" rx="4" fill="#d4956a"/>
+        <!-- Tête -->
+        <ellipse cx="101" cy="88" rx="42" ry="40" fill="#d4956a"/>
+        <ellipse cx="57" cy="88" rx="8" ry="10" fill="#c4855a"/>
+        <ellipse cx="145" cy="88" rx="8" ry="10" fill="#c4855a"/>
+        <!-- Cheveux noirs bien coiffés -->
+        <ellipse cx="101" cy="52" rx="42" ry="16" fill="#1f2937"/>
+        <rect x="59" y="52" width="84" height="18" fill="#1f2937"/>
+        <!-- Yeux souriants -->
+        <ellipse cx="84" cy="84" rx="9" ry="8" fill="white"/>
+        <ellipse cx="118" cy="84" rx="9" ry="8" fill="white"/>
+        <circle cx="84" cy="85" r="5" fill="#1f2937"/>
+        <circle cx="118" cy="85" r="5" fill="#1f2937"/>
+        <circle cx="82" cy="83" r="2" fill="white"/>
+        <circle cx="116" cy="83" r="2" fill="white"/>
+        <!-- Grand sourire -->
+        <path d="M82,106 Q101,120 120,106" stroke="#8b5e3c" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- Dents -->
+        <path d="M86,108 Q101,118 116,108 Q116,115 101,115 Q86,115 86,108 Z" fill="white" opacity="0.8"/>
+      </svg>`,
     };
+
+    // ── CHAPITRES ──
+    const CHAPTERS = [
+      {
+        id: 1,
+        title: 'Premier Jour',
+        desc: 'Tu arrives au port de la Joliette.',
+        reward: '🔵 Bleu du Port · Travailler débloqué',
+        doneKey: 'scene1_done',
+        requires: null,
+      },
+      {
+        id: 2, title: 'À venir...', desc: '', reward: '',
+        doneKey: 'scene2_done', requires: 'scene1_done',
+      },
+    ];
 
     // ── MENU ──
     function showMenu() {
       document.getElementById('menuView').style.display = 'flex';
       document.getElementById('sceneView').style.display = 'none';
       document.getElementById('headerTitle').textContent = '📖 HISTOIRE';
+      document.getElementById('headerCh').textContent = '';
       activeChapter = null;
       setNight(false);
-
-      const surnom = progress.surnom || '';
-      document.getElementById('menuSub').textContent = surnom ? `🔵 ${surnom} · Port de Marseille` : 'Port de Marseille';
 
       const list = document.getElementById('chapterList');
       list.innerHTML = '';
@@ -336,8 +347,8 @@
         const card = document.createElement('div');
         card.className = `chapter-card ${done ? 'done' : available ? 'available' : 'locked'}`;
 
-        let badgeText = done ? '✓ TERMINÉ' : available ? '▶ JOUER' : '🔒';
-        let badgeClass = done ? 'badge-done' : available ? 'badge-available' : 'badge-locked';
+        const badgeText  = done ? '✓ TERMINÉ' : available ? '▶ JOUER' : '🔒';
+        const badgeClass = done ? 'badge-done' : available ? 'badge-available' : 'badge-locked';
 
         card.innerHTML = `
           <div class="chapter-inner">
@@ -349,168 +360,201 @@
             <div class="chapter-badge ${badgeClass}">${badgeText}</div>
           </div>`;
 
-        if (available && !done) {
-          card.onclick = () => startChapter(ch);
-        } else if (done) {
-          card.style.cursor = 'default';
-        }
+        if (available && !done) card.onclick = () => startChapter(ch);
         list.appendChild(card);
       });
     }
 
-    // ── CHAPITRE ──
-    let currentScenes = [], currentSceneIdx = 0, currentChapter = null;
-
+    // ── LANCER UN CHAPITRE ──
     function startChapter(ch) {
-      currentChapter = ch;
-      currentScenes = ch.scenes;
-      currentSceneIdx = 0;
       activeChapter = ch;
       document.getElementById('menuView').style.display = 'none';
       document.getElementById('sceneView').style.display = 'flex';
-      document.getElementById('headerTitle').textContent = `CH.${ch.id} — ${ch.title.toUpperCase()}`;
-      showScene(0);
+      document.getElementById('headerTitle').textContent = ch.title.toUpperCase();
+      document.getElementById('headerCh').textContent = 'CH.' + ch.id;
+
+      if (ch.id === 1) startChapter1();
     }
 
-    function showScene(idx) {
-      const s = currentScenes[idx];
-      if (!s) return;
-      currentSceneIdx = idx;
-
-      // Nuit
-      setNight(!!s.night);
-
-      // Personnage
-      const charZone = document.getElementById('charZone');
-      charZone.innerHTML = SVG[s.char] || '';
-
-      // Nom
-      const nameEl = document.getElementById('charName');
-      if (s.char === 'narrateur') {
-        nameEl.className = 'char-name narrateur'; nameEl.textContent = '—';
-      } else if (s.char === 'pasturon') {
-        nameEl.className = 'char-name pasturon'; nameEl.textContent = s.name;
-      } else if (s.char === 'ferrotti') {
-        nameEl.className = 'char-name'; nameEl.style.color = '#a78bfa'; nameEl.textContent = s.name;
-      } else {
-        nameEl.className = 'char-name vigile'; nameEl.textContent = s.name;
-      }
-
-      // Texte
-      const textEl = document.getElementById('dialogueText');
-      textEl.className = s.char === 'narrateur' ? 'dialogue-text narratif fade-in' : 'dialogue-text fade-in';
-      textEl.textContent = s.text;
-
-      // Actions
-      const actEl = document.getElementById('actionsZone');
-      actEl.innerHTML = '';
-
-      if (s.actions === 'next') {
-        const btn = document.createElement('button');
-        btn.className = 'btn-next fade-in';
-        btn.innerHTML = '▶ Continuer';
-        btn.onclick = () => showScene(s.next);
-        actEl.appendChild(btn);
-
-      } else if (s.actions === 'choices') {
-        const div = document.createElement('div');
-        div.className = 'choices fade-in';
-        s.choices.forEach(ch => {
-          const btn = document.createElement('button');
-          btn.className = 'choice-btn';
-          btn.innerHTML = `<span class="choice-icon">${ch.icon}</span>${ch.text}`;
-          btn.onclick = () => showScene(ch.next);
-          div.appendChild(btn);
-        });
-        actEl.appendChild(div);
-
-      } else if (s.actions === 'surnom') {
-        const input = document.createElement('input');
-        input.className = 'surnom-input fade-in';
-        input.type = 'text'; input.maxLength = 20;
-        input.placeholder = 'Ton surnom au port...';
-        input.autocomplete = 'off';
-        actEl.appendChild(input);
-        const btn = document.createElement('button');
-        btn.className = 'btn-valider fade-in';
-        btn.textContent = "C'est parti !";
-        btn.disabled = true;
-        btn.style.marginTop = '8px';
-        input.addEventListener('input', () => { btn.disabled = input.value.trim().length < 2; });
-        btn.onclick = () => {
-          surnom = input.value.trim();
-          if (surnom.length < 2) return;
-          showSurnomReaction();
-        };
-        actEl.appendChild(btn);
-        setTimeout(() => input.focus(), 200);
-
-      } else if (s.actions === 'ch2work') {
-        const btn = document.createElement('button');
-        btn.className = 'btn-next fade-in';
-        btn.style.cssText = 'background:linear-gradient(135deg,#cc2200,#991100);color:white;border:none;font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:2px';
-        btn.innerHTML = '📦 Aller travailler →';
-        btn.onclick = () => {
-          sessionStorage.setItem('histoire_ch2_pending', '1');
-          window.location.href = 'clicker.html';
-        };
-        actEl.appendChild(btn);
-
-      } else if (s.actions === 'ovni') {
-        document.getElementById('ovni').style.opacity = '1';
-        const btn = document.createElement('button');
-        btn.className = 'btn-next fade-in';
-        btn.innerHTML = '👽 ...';
-        btn.onclick = () => {
-          document.getElementById('ovni').style.opacity = '0';
-          showScene(s.next);
-        };
-        actEl.appendChild(btn);
-
-      } else if (s.actions === 'ch3end') {
-        const btn = document.createElement('button');
-        btn.className = 'btn-next fade-in';
-        btn.style.cssText = 'background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;border:none;font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:2px';
-        btn.innerHTML = '🎰 Entrer au Casino';
-        btn.onclick = finishChapter3;
-        actEl.appendChild(btn);
-      }
+    // ── CHAPITRE 1 ──
+    function startChapter1() {
+      showNarrateur(
+        'Lundi matin. Port de la Joliette, Marseille. 2026.',
+        () => showPasseChoice()
+      );
     }
 
-    function setNight(on) {
-      const nb = document.getElementById('nightBg');
-      const st = document.getElementById('stars');
-      if (nb) nb.style.opacity = on ? '0.95' : '0';
-      if (st) st.style.opacity = on ? '1' : '0';
-      const ov = document.getElementById('ovni');
-      if (!on && ov) ov.style.opacity = '0';
-    }
+    function showPasseChoice() {
+      document.getElementById('charZone').innerHTML = '';
+      setChar('narrateur', null);
+      document.getElementById('dialogueText').className = 'dialogue-text narratif fade-in';
+      document.getElementById('dialogueText').textContent = "Avant de commencer... d'où tu viens ?";
 
-    // ── SURNOM CH1 ──
-    function showSurnomReaction() {
-      const responses = [
-        `${surnom} ! J'aime bien. Bienvenue au port !`,
-        `${surnom} ? Parfait. On t'appellera comme ça.`,
-        `${surnom} ! Ferrotti va sûrement y voir un signe cosmique.`,
-        `Ah, ${surnom} ! Moi au début on m'appelait "le futur CDI". Bref.`,
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'past-choices fade-in';
+      const choices = [
+        { icon:'🚗', title:'Chauffeur VTC', desc:'"Mon dernier client m\'a parlé de crypto pendant 2h. J\'ai raccroché ma vie."' },
+        { icon:'🏗️', title:'Maçon', desc:'"J\'ai construit un mur. Il est tombé. Je suis parti avant qu\'il tombe."' },
+        { icon:'📦', title:'Livreur', desc:'"J\'ai sonné 4000 fois à des portes. Un jour personne n\'a ouvert. J\'ai continué tout droit."' },
       ];
-      document.getElementById('charZone').innerHTML = SVG.pasturon;
-      document.getElementById('charName').className = 'char-name pasturon';
-      document.getElementById('charName').textContent = 'Pasturon';
+      choices.forEach(c => {
+        const btn = document.createElement('div');
+        btn.className = 'past-card';
+        btn.innerHTML = `<div class="past-card-icon">${c.icon}</div><div class="past-card-text"><div class="past-card-title">${c.title}</div><div class="past-card-desc">${c.desc}</div></div>`;
+        btn.onclick = () => showVigile();
+        div.appendChild(btn);
+      });
+      act.appendChild(div);
+    }
+
+    function showVigile() {
+      setChar('vigile', 'Le Vigile');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "T'es le nouveau ?";
+      showChoices([
+        { icon:'😐', text:'Oui, bonjour.', next: showBadgeStamp },
+        { icon:'😤', text:'"Docker. Pas stagiaire."', next: showBadgeStamp },
+        { icon:'🤷', text:'"J\'espère, sinon je me suis trompé d\'adresse."', next: showBadgeStamp },
+      ]);
+    }
+
+    function showBadgeStamp() {
+      setChar('vigile', 'Le Vigile');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Troisième portail à gauche. Demande Gégé.";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+
+      // Animation badge tamponné
+      const stampWrap = document.createElement('div');
+      stampWrap.className = 'badge-stamp-wrap fade-in';
+      stampWrap.innerHTML = `
+        <div class="badge-stamp">
+          <div class="badge-stamp-label">PORT DE LA JOLIETTE</div>
+          <div class="badge-stamp-num">BD-2026</div>
+          <div class="badge-stamp-sub">ACCÈS AUTORISÉ</div>
+        </div>`;
+      act.appendChild(stampWrap);
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.innerHTML = '▶ Continuer';
+      btn.style.marginTop = '8px';
+      btn.onclick = showGege1;
+      act.appendChild(btn);
+    }
+
+    function showGege1() {
+      setChar('gegé', 'Gégé');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "C'est toi le nouveau ? Moi c'est Gégé.";
+      showNext(() => showGege2());
+    }
+
+    function showGege2() {
+      setChar('gegé', 'Gégé');
+      document.getElementById('dialogueText').textContent = "Règle numéro un : si Lavagne te sourit, méfie-toi.";
+      showNext(() => showLavagne());
+    }
+
+    function showLavagne() {
+      showNarrateur(
+        'Gégé t\'explique quelque chose quand une silhouette en costume apparaît.',
+        () => {
+          setChar('lavagne', 'Patrick Lavagne');
+          document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+          document.getElementById('dialogueText').textContent = "Ah ! Le nouveau ! Bienvenue dans la famille.";
+          showNext(() => showLavagne2());
+        }
+      );
+    }
+
+    function showLavagne2() {
+      setChar('lavagne', 'Patrick Lavagne');
+      document.getElementById('dialogueText').textContent = "Mon bureau est toujours ouvert.";
+      showNext(() => showGege3());
+    }
+
+    function showGege3() {
+      showNarrateur(
+        'Lavagne repart sans attendre ta réponse. Gégé te chuchote :',
+        () => {
+          setChar('gegé', 'Gégé');
+          document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+          document.getElementById('dialogueText').textContent = "Son bureau est toujours fermé.";
+          showNext(() => showSurnom());
+        }
+      );
+    }
+
+    function showSurnom() {
+      setChar('gegé', 'Gégé');
+      document.getElementById('dialogueText').textContent = "Ici tout le monde a un surnom. Toi on t'appellera comment ?";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'surnom-wrap fade-in';
+      wrap.innerHTML = `<div class="surnom-label">Ton surnom au port</div>`;
+
+      const input = document.createElement('input');
+      input.className = 'surnom-input';
+      input.type = 'text';
+      input.maxLength = 20;
+      input.placeholder = 'Ton surnom...';
+      input.autocomplete = 'off';
+      wrap.appendChild(input);
+      act.appendChild(wrap);
+
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.style.background = 'linear-gradient(135deg,#fbbf24,#f59e0b)';
+      btn.style.color = '#1a0a00';
+      btn.style.border = 'none';
+      btn.innerHTML = "C'est parti !";
+      btn.disabled = true;
+
+      input.addEventListener('input', () => { btn.disabled = input.value.trim().length < 2; });
+      btn.onclick = () => {
+        surnom = input.value.trim();
+        showFinaleBadge();
+      };
+      act.appendChild(btn);
+      setTimeout(() => input.focus(), 200);
+    }
+
+    function showFinaleBadge() {
+      const responses = [
+        `${surnom} ! Ça sonne bien. Allez, au boulot.`,
+        `${surnom} ? Parfait. On t'appellera comme ça. Suis-moi.`,
+        `${surnom}... J'aime bien. Bienvenue au port.`,
+      ];
+      setChar('gegé', 'Gégé');
       document.getElementById('dialogueText').textContent = responses[Math.floor(Math.random()*responses.length)];
 
-      const actEl = document.getElementById('actionsZone');
-      actEl.innerHTML = '';
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+
+      // Badge
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
-      badge.innerHTML = '<div class="badge-icon">🔵</div><div class="badge-title">Bleu du Port</div><div class="badge-desc">Titre débloqué · Visible sur ton profil</div>';
-      actEl.appendChild(badge);
+      badge.innerHTML = `
+        <div class="badge-icon">🔵</div>
+        <div class="badge-title">Bleu du Port</div>
+        <div class="badge-desc">Surnom · Titre · Travailler débloqué</div>`;
+      act.appendChild(badge);
+
       const btn = document.createElement('button');
-      btn.className = 'btn-next'; btn.style.marginTop = '8px';
-      btn.innerHTML = '← Terminer le chapitre';
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
       btn.onclick = finishChapter1;
-      actEl.appendChild(btn);
+      act.appendChild(btn);
     }
 
     async function finishChapter1() {
@@ -524,70 +568,51 @@
       showMenu();
     }
 
-    // ── CH2 REWARD ──
-    async function showRewardCh2() {
-      document.getElementById('menuView').style.display = 'none';
-      document.getElementById('sceneView').style.display = 'flex';
-      document.getElementById('charZone').innerHTML = SVG.pasturon;
-      document.getElementById('charName').className = 'char-name pasturon';
-      document.getElementById('charName').textContent = 'Pasturon';
-      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-      document.getElementById('dialogueText').textContent = "Bien joué ! T'as l'instinct. Moi le premier jour j'avais failli signer mon CDI tellement j'étais bon.";
-
-      const actEl = document.getElementById('actionsZone');
-      actEl.innerHTML = '';
-      const badge = document.createElement('div');
-      badge.className = 'badge-wrap';
-      badge.innerHTML = '<div class="badge-icon">⚡</div><div class="badge-title">Premier Jour</div><div class="badge-desc">+500€ · +50 XP · Badge débloqué</div>';
-      actEl.appendChild(badge);
-      const btn = document.createElement('button');
-      btn.className = 'btn-next'; btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
-      actEl.appendChild(btn);
-
-      try {
-        const { data: fresh } = await sb.from('game_stats').select('money, xp, story_progress').eq('user_id', currentUser.id).maybeSingle();
-        const newProgress = { ...(fresh?.story_progress||{}), scene2_done:true };
-        await sb.from('game_stats').update({ money:(fresh?.money||0)+500, xp:(fresh?.xp||0)+50, story_progress:newProgress }).eq('user_id', currentUser.id);
-        progress = newProgress;
-      } catch(e) { console.log(e); }
+    // ── HELPERS ──
+    function setChar(type, name) {
+      document.getElementById('charZone').innerHTML = SVG[type] || '';
+      const nameEl = document.getElementById('charName');
+      nameEl.className = 'char-name ' + (type || '');
+      nameEl.textContent = name || '';
+      if (type === 'lavagne') { nameEl.style.color = '#10b981'; } else { nameEl.style.color = ''; }
     }
 
-    // ── CH3 FINISH ──
-    async function finishChapter3() {
-      try {
-        const { data: fresh } = await sb.from('game_stats').select('story_progress, jetons').eq('user_id', currentUser.id).maybeSingle();
-        const newProgress = { ...(fresh?.story_progress||{}), scene3_done:true };
-        await sb.from('game_stats').update({ story_progress:newProgress, jetons:(fresh?.jetons||0)+5 }).eq('user_id', currentUser.id);
-        progress = newProgress;
-      } catch(e) { console.log(e); }
+    function showNarrateur(text, next) {
+      document.getElementById('charZone').innerHTML = '';
+      document.getElementById('charName').className = 'char-name narrateur';
+      document.getElementById('charName').textContent = '—';
+      document.getElementById('dialogueText').className = 'dialogue-text narratif fade-in';
+      document.getElementById('dialogueText').textContent = text;
+      showNext(next);
+    }
 
-      document.getElementById('charZone').innerHTML = SVG.ferrotti;
-      setNight(true);
-      document.getElementById('charName').style.color = '#a78bfa';
-      document.getElementById('charName').textContent = 'Ferrotti';
-      document.getElementById('dialogueText').textContent = "Les dés sont jetés. Bonne chance. Ou plutôt... les astres décideront.";
+    function showNext(next) {
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'btn-next fade-in';
+      btn.innerHTML = '▶ Continuer';
+      btn.onclick = next;
+      act.appendChild(btn);
+    }
 
-      const actEl = document.getElementById('actionsZone');
-      actEl.innerHTML = '';
-      const badge = document.createElement('div');
-      badge.className = 'badge-wrap';
-      badge.style.cssText = 'border-color:rgba(124,58,237,0.3);background:rgba(124,58,237,0.08)';
-      badge.innerHTML = '<div class="badge-icon">🎰</div><div class="badge-title" style="color:#a78bfa">Casino Débloqué</div><div class="badge-desc">+5 jetons offerts par Ferrotti</div>';
-      actEl.appendChild(badge);
+    function showChoices(choices) {
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'choices fade-in';
+      choices.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerHTML = `<span class="choice-icon">${c.icon}</span>${c.text}`;
+        btn.onclick = c.next;
+        div.appendChild(btn);
+      });
+      act.appendChild(div);
+    }
 
-      const btn1 = document.createElement('button');
-      btn1.className = 'btn-next'; btn1.style.cssText = 'margin-top:8px;background:linear-gradient(135deg,#7c3aed,#a78bfa);color:white;border:none';
-      btn1.innerHTML = '🎰 Aller au Casino';
-      btn1.onclick = () => window.location.href = 'casino.html';
-      actEl.appendChild(btn1);
-
-      const btn2 = document.createElement('button');
-      btn2.className = 'btn-next'; btn2.style.marginTop = '8px';
-      btn2.innerHTML = '← Retour aux chapitres';
-      btn2.onclick = showMenu;
-      actEl.appendChild(btn2);
+    function setNight(on) {
+      // Pour les prochains chapitres
     }
 
     function goBack() {
@@ -601,20 +626,13 @@
       setTimeout(() => t.className = 'toast', 2800);
     }
 
+    // ── AUTH ──
     async function init() {
       const { data:{ session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-
       const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
       progress = data?.story_progress || {};
-
-      // Retour du clicker après ch2
-      if (sessionStorage.getItem('histoire_ch2_pending') === '1') {
-        sessionStorage.removeItem('histoire_ch2_pending');
-        if (!progress.scene2_done) { await showRewardCh2(); return; }
-      }
-
       showMenu();
     }
 
