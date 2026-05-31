@@ -601,6 +601,44 @@
 
     init();
     setInterval(() => { if (!checkCasinoOpen()) showCasinoClosed(); }, 60000);
+
+    // ── JETONS ──
+    function openGuichet() {
+      document.getElementById('guichetJetons').textContent = (window._currentJetons || 0) + ' 🎟️';
+      document.getElementById('guichetModal').style.display = 'flex';
+    }
+
+    async function lancerJeu(url) {
+      const ok = await consommerJeton();
+      if (ok) window.location.href = url;
+    }
+
+    async function acheterJetons(qty) {
+      const price = qty * 500;
+      const { data: fresh } = await sb.from('game_stats').select('money, jetons').eq('user_id', window._currentUserId).maybeSingle();
+      if (!fresh || fresh.money < price) {
+        alert("Pas assez d'argent ! Il te faut " + price.toLocaleString('fr-FR') + "€"); return;
+      }
+      const newMoney  = fresh.money  - price;
+      const newJetons = (fresh.jetons || 0) + qty;
+      await sb.from('game_stats').update({ money: newMoney, jetons: newJetons }).eq('user_id', window._currentUserId);
+      window._currentJetons = newJetons;
+      document.getElementById('jetonsDisplay').textContent = newJetons + ' 🎟️';
+      document.getElementById('guichetJetons').textContent = newJetons + ' 🎟️';
+      document.getElementById('balance').textContent = newMoney.toLocaleString('fr-FR') + '€';
+    }
+
+    async function consommerJeton() {
+      if ((window._currentJetons || 0) <= 0) { openGuichet(); return false; }
+      const { data: fresh } = await sb.from('game_stats').select('jetons').eq('user_id', window._currentUserId).maybeSingle();
+      if (!fresh || fresh.jetons <= 0) { openGuichet(); return false; }
+      const newJetons = fresh.jetons - 1;
+      await sb.from('game_stats').update({ jetons: newJetons }).eq('user_id', window._currentUserId);
+      window._currentJetons = newJetons;
+      document.getElementById('jetonsDisplay').textContent = newJetons + ' 🎟️';
+      return true;
+    }
+
   </script>
 
   <!-- GUICHET CASINO -->
