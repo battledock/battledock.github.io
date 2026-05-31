@@ -100,51 +100,49 @@
     .podium-item {
       background: white;
       border: 1px solid #e5e7eb;
-      border-radius: 16px;
-      padding: 18px 8px 14px;
+      border-radius: 14px;
+      padding: 14px 8px;
       text-align: center;
       cursor: pointer;
       transition: transform 0.15s;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
       position: relative;
       overflow: hidden;
     }
     .podium-item:active { transform: scale(0.96); }
 
-    .podium-item.rank-1 { border-color: rgba(212,175,55,0.5); box-shadow: 0 4px 16px rgba(212,175,55,0.2); background: linear-gradient(180deg,#fffdf0,white); }
-    .podium-item.rank-2 { border-color: rgba(160,160,175,0.4); background: linear-gradient(180deg,#f8f8fa,white); }
-    .podium-item.rank-3 { border-color: rgba(180,120,60,0.35); background: linear-gradient(180deg,#fdf6f0,white); }
+    .podium-item.rank-1 { border-color: rgba(212,175,55,0.4); box-shadow: 0 2px 12px rgba(212,175,55,0.15); }
+    .podium-item.rank-2 { border-color: rgba(160,160,175,0.4); }
+    .podium-item.rank-3 { border-color: rgba(180,120,60,0.3); }
 
     .podium-stripe {
-      position: absolute; top:0; left:0; right:0; height:4px;
+      position: absolute; top:0; left:0; right:0; height:3px;
     }
     .rank-1 .podium-stripe { background: linear-gradient(90deg, #d4af37, #f5d060, #d4af37); }
     .rank-2 .podium-stripe { background: linear-gradient(90deg, #9e9e9e, #c8c8c8, #9e9e9e); }
     .rank-3 .podium-stripe { background: linear-gradient(90deg, #cd7f32, #e8a96a, #cd7f32); }
 
-    .podium-medal { font-size: 22px; margin-bottom: 10px; }
+    .podium-medal { font-size: 18px; margin-bottom: 8px; }
 
     .podium-avatar {
-      width: 54px; height: 54px; border-radius: 50%;
-      overflow: hidden; margin: 0 auto 10px;
+      width: 46px; height: 46px; border-radius: 50%;
+      overflow: hidden; margin: 0 auto 8px;
       border: 2px solid #e5e7eb;
       background: #f3f4f6;
     }
-    .rank-1 .podium-avatar { border-color: rgba(212,175,55,0.6); border-width: 3px; }
-    .rank-2 .podium-avatar { border-color: rgba(160,160,175,0.5); }
-    .rank-3 .podium-avatar { border-color: rgba(180,120,60,0.4); }
+    .rank-1 .podium-avatar { border-color: rgba(212,175,55,0.5); }
     .podium-avatar img { width:100%; height:100%; object-fit:cover; }
 
     .podium-name {
-      font-weight: 700; font-size: 12px; color: #1a1a1a;
+      font-weight: 700; font-size: 11px; color: #1a1a1a;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .podium-score {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px; letter-spacing: 0.5px;
+      font-size: 13px; letter-spacing: 0.5px;
     }
-    .rank-1 .podium-score { color: #d4af37; font-size: 16px; }
+    .rank-1 .podium-score { color: #d4af37; }
     .rank-2 .podium-score { color: #9e9e9e; }
     .rank-3 .podium-score { color: #cd7f32; }
 
@@ -191,6 +189,18 @@
       text-align: right; flex-shrink: 0;
     }
     .rank-row.me .row-score { color: #d4af37; }
+
+    /* TOP 3 en ligne */
+    .rank-row.top-1 { border-color: rgba(212,175,55,0.45); background: linear-gradient(90deg, rgba(212,175,55,0.08), #ffffff 60%); box-shadow: 0 2px 12px rgba(212,175,55,0.15); }
+    .rank-row.top-2 { border-color: rgba(160,160,175,0.45); background: linear-gradient(90deg, rgba(160,160,175,0.10), #ffffff 60%); }
+    .rank-row.top-3 { border-color: rgba(205,127,50,0.4);  background: linear-gradient(90deg, rgba(205,127,50,0.10), #ffffff 60%); }
+    .rank-row.top-1 .row-num, .rank-row.top-2 .row-num, .rank-row.top-3 .row-num { font-size: 20px; }
+    .rank-row.top-1 .row-score { color: #d4af37; }
+    .rank-row.top-2 .row-score { color: #9e9e9e; }
+    .rank-row.top-3 .row-score { color: #cd7f32; }
+    .rank-row.top-1 .row-avatar { border-color: rgba(212,175,55,0.6); }
+    .rank-row.top-2 .row-avatar { border-color: rgba(160,160,175,0.6); }
+    .rank-row.top-3 .row-avatar { border-color: rgba(205,127,50,0.5); }
 
     /* ===================== LOADER ===================== */
     .loader { text-align:center; padding:60px 20px; }
@@ -410,8 +420,8 @@
         document.getElementById('myRankBanner').style.display = 'flex';
       }
 
-      renderPodium(allPlayers.slice(0, Math.min(3, allPlayers.length)));
-      renderRows(allPlayers.slice(3), 4);
+      document.getElementById('podium').style.display = 'none';
+      renderRows(allPlayers, 1);
       document.getElementById('listWrap').style.display = 'block';
     }
 
@@ -446,13 +456,16 @@
 
     function renderRows(players, startRank) {
       const el = document.getElementById('rankRows');
+      const medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
       el.innerHTML = players.map((p, i) => {
         const rank = startRank + i;
         const isMe = p.user_id === currentUser.id;
         const idx = rank - 1;
+        const topCls = rank <= 3 ? ' top-' + rank : '';
+        const numDisplay = medals[rank] || rank;
         return `
-          <div class="rank-row ${isMe?'me':''}" onclick="showProfile(${idx})">
-            <div class="row-num">${rank}</div>
+          <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})">
+            <div class="row-num">${numDisplay}</div>
             <div class="row-avatar"><img src="${p.profile.avatar_url||'avatar-default.png'}"></div>
             <div class="row-info">
               <div class="row-name" style="display:flex;align-items:center;gap:6px">
