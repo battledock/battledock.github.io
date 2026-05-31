@@ -788,6 +788,17 @@
       50%      { transform: rotate(8deg); }
     }
 
+
+    /* SKELETON */
+    .skeleton { background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 6px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+    .sk-avatar { width:54px; height:54px; border-radius:50%; }
+    .sk-name   { width:120px; height:16px; margin-bottom:4px; }
+    .sk-grade  { width:80px; height:11px; }
+    .sk-level  { width:32px; height:40px; border-radius:6px; }
+    .sk-xp     { width:100%; height:6px; border-radius:3px; }
+    .sk-stat   { width:40px; height:18px; }
+
     /* FLUIDITÉ GLOBALE */
     * { -webkit-font-smoothing:antialiased; }
     button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
@@ -818,28 +829,28 @@
     <div class="nav-grid" style="margin-bottom:12px;">
       <div class="profile-card-btn" id="profileCardBtn" onclick="window.location.href='profil.html'">
         <div class="pcb-row">
-          <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
+          <div class="pcb-avatar" id="avatarWrap"><img src="avatar-default.png" id="avatarImage" alt="avatar" style="display:none"><div class="skeleton sk-avatar" id="skAvatar"></div></div>
           <div class="pcb-info">
-            <div class="pcb-name"  id="playerName">...</div>
-            <div class="pcb-grade" id="playerGrade">Docker Occasionnel</div>
+            <div class="pcb-name"  id="playerName"><div class="skeleton sk-name"></div></div>
+            <div class="pcb-grade" id="playerGrade"><div class="skeleton sk-grade"></div></div>
           </div>
           <div class="pcb-level-wrap">
-            <div class="pcb-level-num" id="currentLevel">1</div>
-            <div class="pcb-level-lbl">Niv.</div>
+            <div class="pcb-level-num" id="currentLevel"><div class="skeleton sk-level"></div></div>
+            <div class="pcb-level-lbl" id="levelLbl" style="display:none">Niv.</div>
           </div>
         </div>
         <div class="pcb-xp-wrap">
           <div class="pcb-xp-label">
-            <span id="xpCounter">0 / 500 XP</span>
-            <span>→ Niv. <span id="nextLevel">2</span></span>
+            <span id="xpCounter"><span class="skeleton sk-stat" style="display:inline-block"></span></span>
+            <span><span id="nextLevelWrap" style="opacity:0">→ Niv. <span id="nextLevel">2</span></span></span>
           </div>
           <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
         </div>
         <div class="pcb-stats">
-          <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
-          <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
-          <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
-          <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount"><span class="skeleton sk-stat" style="display:inline-block"></span>0€</div><div class="pcb-stat-lbl">Argent</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount"><span class="skeleton sk-stat" style="display:inline-block"></span>0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount"><span class="skeleton sk-stat" style="display:inline-block"></span>0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
+          <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue"><span class="skeleton sk-stat" style="display:inline-block"></span>#--</div><div class="pcb-stat-lbl">Rang</div></div>
         </div>
       </div>
     </div>
@@ -1481,6 +1492,13 @@
     }
 
     async function loadUserData() {
+      // ── LOCALSTORAGE : affichage immédiat ──
+      const cached = localStorage.getItem('bd_profile_' + currentUser.id);
+      if (cached) {
+        try { applyProfileData(JSON.parse(cached)); } catch(e) {}
+      }
+
+      // ── SUPABASE : mise à jour en arrière-plan ──
       const [profileResult, statsResult] = await Promise.all([
         sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle(),
         sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
@@ -1521,6 +1539,78 @@
 
       loadRank(stats.level || 1);
       await checkPendingLevelUp(stats, profile);
+
+      // Sauvegarder en cache pour prochain chargement
+      const profileCache = {
+        username: profile.username, avatar_url: profile.avatar_url,
+        money: stats.money, level: stats.level, xp: stats.xp,
+        diamonds: stats.diamonds, trophies: stats.trophies,
+        story_progress: stats.story_progress
+      };
+      localStorage.setItem('bd_profile_' + currentUser.id, JSON.stringify(profileCache));
+    }
+
+
+    function applyStoryProgress(progress) {
+      if (!progress) return;
+      // Déblocage travailler
+      if (progress.scene1_done) {
+        const lock = document.getElementById('travailLock');
+        if (lock) lock.style.display = 'none';
+        const card = document.getElementById('travailCard');
+        if (card) card.onclick = () => window.location.href = 'travail.html';
+      }
+      // Badge histoire
+      const badge = document.getElementById('histoireBadge');
+      if (badge) {
+        if (progress.scene1_done) { badge.style.display='block'; badge.textContent='🔵 CH.1 TERMINÉ · CH.2 DISPO'; }
+      }
+      // Surnom
+      const sub = document.getElementById('profileSub');
+      if (sub && progress.surnom) sub.textContent = '🔵 ' + progress.surnom;
+    }
+
+    function applyProfileData(data) {
+      if (!data) return;
+      // Avatar
+      const img = document.getElementById('avatarImage');
+      const sk = document.getElementById('skAvatar');
+      if (img && data.avatar_url) {
+        img.src = data.avatar_url;
+        img.style.display = 'block';
+        if (sk) sk.style.display = 'none';
+      }
+      // Nom
+      const nameEl = document.getElementById('playerName');
+      if (nameEl && data.username) { nameEl.innerHTML = ''; nameEl.textContent = data.username; }
+      // Grade
+      const gradeEl = document.getElementById('playerGrade');
+      if (gradeEl) { gradeEl.innerHTML = ''; gradeEl.textContent = getGrade(data.level||1); }
+      // Niveau
+      const lvlEl = document.getElementById('currentLevel');
+      const lvlLbl = document.getElementById('levelLbl');
+      if (lvlEl) { lvlEl.innerHTML = ''; lvlEl.textContent = data.level||1; }
+      if (lvlLbl) lvlLbl.style.display = 'block';
+      // XP
+      const xpEl = document.getElementById('xpCounter');
+      const nextLvlWrap = document.getElementById('nextLevelWrap');
+      if (xpEl && data.xp !== undefined) {
+        const needed = getXpRequired(data.level||1);
+        xpEl.innerHTML = ''; xpEl.textContent = (data.xp||0).toLocaleString('fr-FR') + ' / ' + needed.toLocaleString('fr-FR') + ' XP';
+        document.getElementById('xpFill').style.width = Math.min(((data.xp||0)/needed)*100,100) + '%';
+        if (nextLvlWrap) { nextLvlWrap.style.opacity='1'; document.getElementById('nextLevel').textContent = (data.level||1)+1; }
+      }
+      // Stats
+      const moneyEl = document.getElementById('moneyAmount');
+      if (moneyEl) { moneyEl.innerHTML = ''; moneyEl.textContent = (data.money||0).toLocaleString('fr-FR') + '€'; }
+      const diaEl = document.getElementById('diamondsAmount');
+      if (diaEl) { diaEl.innerHTML = ''; diaEl.textContent = '💎 ' + (data.diamonds||0); }
+      const trophEl = document.getElementById('trophiesAmount');
+      if (trophEl) { trophEl.innerHTML = ''; trophEl.textContent = '🏆 ' + (data.trophies||0); }
+      // Story progress
+      if (data.story_progress) {
+        applyStoryProgress(data.story_progress);
+      }
     }
 
     async function checkPendingLevelUp(stats, profile) {
