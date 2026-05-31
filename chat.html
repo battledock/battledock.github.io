@@ -398,8 +398,9 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
+      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
 
-      const { data: prof } = await sb.from('profiles').select('username, avatar_url').eq('user_id', currentUser.id).single();
+      const { data: prof } = await sb.from('profiles').select('username, avatar_url').eq('user_id', currentUser.id).maybeSingle();
       currentProfile = prof;
 
       await loadGeneral();
@@ -553,6 +554,7 @@
           <div class="msg-body">
             <div class="msg-meta">
               <span class="msg-name" onclick="startPrivateChat('${m.user_id}','${m.username}','${m.avatar_url||'avatar-default.png'}')">${escapeHtml(m.username)}</span>
+              ${m.story_progress?.surnom ? `<span style="font-size:9px;color:#a78bfa;font-weight:700;letter-spacing:0.5px">🔵 ${escapeHtml(m.story_progress.surnom)}</span>` : ''}
               <span class="msg-time">${timeAgo(m.created_at)}</span>
             </div>
             <div class="msg-bubble-wrap">
