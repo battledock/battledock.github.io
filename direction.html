@@ -127,6 +127,7 @@
     if(claimable){
       html += `
         <div class="sal-amt">+${amount.toLocaleString('fr-FR')} €</div>
+        <div class="sal-meta" style="color:#a5b4fc;font-weight:700;margin-bottom:2px">⭐ +${SALARY_XP.toLocaleString('fr-FR')} XP</div>
         <div class="sal-meta">Jour ${projDays} consécutif${projDays>1?'s':''} · bonus série +${Math.min(Math.max(projDays-1,0),5)*10}%</div>
         <button class="btn" onclick="claimSalary()">💼 ENCAISSER LE SALAIRE</button>`;
     } else {
@@ -161,20 +162,24 @@
     }
   }
 
+  const SALARY_XP = 10000; // XP offerte avec le salaire quotidien
+  function getXpRequired(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
   async function claimSalary(){
     if(dir.lastSalaryDay === todayStr()) return;
     const days = (dir.lastSalaryDay===yesterdayStr()) ? (dir.days||0)+1 : 1;
     const amount = salaryFor(stats.level||1, days);
     try {
-      const { data:fresh } = await sb.from('game_stats').select('money,direction').eq('user_id',currentUser.id).maybeSingle();
+      const { data:fresh } = await sb.from('game_stats').select('money,xp,level,direction').eq('user_id',currentUser.id).maybeSingle();
       // re-vérifier côté frais pour éviter double encaissement
       const fdir = (fresh?.direction && typeof fresh.direction==='object') ? fresh.direction : {};
       if(fdir.lastSalaryDay === todayStr()){ dir=fdir; showToast('Déjà encaissé aujourd\'hui.'); render(); return; }
       const newMoney = (fresh?.money||0) + amount;
+      let nXp = (fresh?.xp||0) + SALARY_XP, nLvl = fresh?.level||1;
+      while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
       const newDir = { lastSalaryDay:todayStr(), days, totalClaimed:(fdir.totalClaimed||0)+amount };
-      await sb.from('game_stats').update({ money:newMoney, direction:newDir }).eq('user_id',currentUser.id);
-      stats.money = newMoney; dir = newDir;
-      showToast(`💼 +${amount.toLocaleString('fr-FR')} € encaissés !`);
+      await sb.from('game_stats').update({ money:newMoney, xp:nXp, level:nLvl, direction:newDir }).eq('user_id',currentUser.id);
+      stats.money = newMoney; stats.xp = nXp; stats.level = nLvl; dir = newDir;
+      showToast(`💼 +${amount.toLocaleString('fr-FR')} € · +${SALARY_XP.toLocaleString('fr-FR')} XP !`);
       render();
     } catch(e){ console.log('salary:', e); showToast('Erreur, réessaie.'); }
   }
