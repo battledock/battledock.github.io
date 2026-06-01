@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mes Commerces - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#100b04; color:#f3ead8; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(217,119,6,0.20), transparent 60%),
+      linear-gradient(180deg,#241704,#160f06 55%,#0c0803); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#160f06,rgba(22,15,6,0.85)); backdrop-filter:blur(8px); }
+  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:2px;
+    background:linear-gradient(135deg,#f59e0b,#fcd34d,#d97706); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin:18px 4px 10px; }
+
+  .foin { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(160deg,rgba(217,119,6,0.12),rgba(180,83,9,0.05)); border:1px solid rgba(217,119,6,0.25); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .foin-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#b45309,#f59e0b); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .foin-txt { font-family:'Caveat',cursive; font-weight:700; font-size:18px; line-height:1.3; color:#fcd34d; }
+
+  .collect { text-align:center; padding:20px 16px; border-radius:18px; margin-bottom:14px;
+    background:linear-gradient(160deg,rgba(245,158,11,0.16),rgba(217,119,6,0.06)); border:1px solid rgba(245,158,11,0.4); }
+  .collect-amt { font-family:'Bebas Neue',sans-serif; font-size:42px; color:#fcd34d; }
+  .collect-meta { font-size:12px; color:rgba(255,255,255,0.55); margin-bottom:12px; }
+
+  .shop { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .shop:last-child{ border-bottom:none; }
+  .shop-ic { width:46px; height:46px; border-radius:12px; background:rgba(245,158,11,0.14); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .shop-info { flex:1; min-width:0; }
+  .shop-name { font-weight:700; font-size:14px; }
+  .shop-meta { font-size:11.5px; color:rgba(255,255,255,0.5); margin-top:2px; }
+  .shop-lvl { font-family:'Bebas Neue',sans-serif; font-size:13px; color:#fcd34d; letter-spacing:1px; }
+  .mini-btn { border:none; border-radius:10px; padding:9px 12px; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.5px; cursor:pointer; flex-shrink:0;
+    background:linear-gradient(135deg,#b45309,#f59e0b); color:#1a1208; }
+  .mini-btn:disabled{ opacity:0.4; }
+
+  .btn { width:100%; border:none; border-radius:14px; padding:15px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; cursor:pointer;
+    background:linear-gradient(135deg,#d97706,#f59e0b); color:#1a1208; }
+  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.4; }
+
+  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
+  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300;
+    background:rgba(36,23,4,0.97); border:1px solid rgba(245,158,11,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:92%; text-align:center; color:#fcd34d; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="hdr">
+    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">🏪 MES COMMERCES</div>
+  </div>
+  <div id="content"><div class="loader">CHARGEMENT…</div></div>
+  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const CAP_HOURS = 8; // la recette s'accumule jusqu'à 8h hors-ligne
+  const COMMERCES = {
+    poisson:   { name:'Cabanon à poissons',   icon:'🐟', base:1200, up:8000  },
+    souvenirs: { name:'Boutique de souvenirs', icon:'🎁', base:1800, up:13000 },
+    pastis:    { name:'Bar à pastis',          icon:'🥃', base:2500, up:18000 },
+    entrepot:  { name:'Entrepôt du port',      icon:'🏭', base:5000, up:45000 },
+    poissonnerie:{ name:'Restaurant de la criée', icon:'🦞', base:9000, up:90000 },
+  };
+
+  let currentUser=null, money=0, com={}, tick=null;
+  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser = session.user;
+    const { data:gs } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+    money = gs?.money || 0;
+    com = (gs?.commerce && typeof gs.commerce==='object') ? gs.commerce : {};
+    if(!com.shops || typeof com.shops!=='object') com.shops = {};
+    if(!com.lastCollect) com.lastCollect = new Date().toISOString();
+    render();
+  }
+
+  function incomePerHour(){ let t=0; for(const k in com.shops){ const c=COMMERCES[k]; if(c) t += c.base*(com.shops[k]||0); } return t; }
+  function accrued(){ const elapsedH = Math.min(CAP_HOURS, (Date.now()-new Date(com.lastCollect).getTime())/3600000); return Math.floor(elapsedH * incomePerHour()); }
+  function capReached(){ return (Date.now()-new Date(com.lastCollect).getTime())/3600000 >= CAP_HOURS; }
+
+  function render(){
+    if(tick){ clearInterval(tick); tick=null; }
+    const iph = incomePerHour();
+    const owned = Object.keys(com.shops).filter(k=>com.shops[k]>0 && COMMERCES[k]);
+
+    let html = `
+      <div class="foin">
+        <div class="foin-ava">👴</div>
+        <div class="foin-txt">"Vé, tu te lances à ton compte ! Tes échoppes te rapportent même quand tu dors. Reviens encaisser la recette... mais traîne pas trop : au-delà de ${CAP_HOURS}h, la caisse déborde et tu perds le surplus, peuchère !"</div>
+      </div>`;
+
+    if(owned.length){
+      html += `
+        <div class="collect">
+          <div class="collect-meta">Recette accumulée</div>
+          <div class="collect-amt" id="accAmt">${fmt(accrued())} €</div>
+          <div class="collect-meta" id="rate">${fmt(iph)} €/h · plafond ${CAP_HOURS}h${capReached()?' · ⚠️ pleine !':''}</div>
+          <button class="btn" onclick="collect()" id="collectBtn">💰 ENCAISSER LA RECETTE</button>
+        </div>`;
+    }
+
+    html += `<div class="sect-lbl">Tes commerces</div><div class="card">`;
+    if(!owned.length){ html += `<div class="info">Tu n'as pas encore de commerce. Ouvre-en un ci-dessous !</div>`; }
+    else {
+      owned.forEach(k=>{
+        const c=COMMERCES[k], lvl=com.shops[k], upCost=c.up*lvl;
+        html += `
+          <div class="shop">
+            <div class="shop-ic">${c.icon}</div>
+            <div class="shop-info">
+              <div class="shop-name">${c.name} <span class="shop-lvl">· Niv ${lvl}</span></div>
+              <div class="shop-meta">${fmt(c.base*lvl)} €/h → améliorer : ${fmt(c.base*(lvl+1))} €/h</div>
+            </div>
+            <button class="mini-btn" onclick="upgrade('${k}')">⬆️ ${fmt(upCost)}€</button>
+          </div>`;
+      });
+    }
+    html += `</div>`;
+
+    const buyable = Object.keys(COMMERCES).filter(k=>!(com.shops[k]>0));
+    if(buyable.length){
+      html += `<div class="sect-lbl">Ouvrir un nouveau commerce</div><div class="card">`;
+      buyable.forEach(k=>{
+        const c=COMMERCES[k];
+        html += `
+          <div class="shop">
+            <div class="shop-ic">${c.icon}</div>
+            <div class="shop-info">
+              <div class="shop-name">${c.name}</div>
+              <div class="shop-meta">${fmt(c.base)} €/h dès l'ouverture</div>
+            </div>
+            <button class="mini-btn" onclick="buy('${k}')">🔓 ${fmt(c.up)}€</button>
+          </div>`;
+      });
+      html += `</div>`;
+    }
+
+    html += `<div class="sect-lbl">Ta caisse</div><div class="card info">💰 Argent disponible : <b>${fmt(money)} €</b><br>Améliorer un commerce augmente sa production horaire. La recette s'accumule en ton absence jusqu'à ${CAP_HOURS}h.</div>`;
+
+    document.getElementById('content').innerHTML = html;
+    if(owned.length && !capReached()){
+      tick = setInterval(()=>{
+        const a=document.getElementById('accAmt'); if(a) a.textContent = fmt(accrued())+' €';
+        const r=document.getElementById('rate'); if(r && capReached()){ r.textContent = fmt(incomePerHour())+' €/h · plafond '+CAP_HOURS+'h · ⚠️ pleine !'; }
+      }, 1000);
+    }
+  }
+
+  async function saveCom(){ try{ await sb.from('game_stats').update({ commerce:com }).eq('user_id',currentUser.id); }catch(e){ console.log('saveCom:',e); } }
+
+  async function collect(){
+    const amount = accrued();
+    if(amount<=0){ showToast('Rien à encaisser pour l\'instant.'); return; }
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+      const newMoney = (fresh?.money||0) + amount;
+      com.lastCollect = new Date().toISOString();
+      await sb.from('game_stats').update({ money:newMoney, commerce:com }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast(`💰 +${fmt(amount)} € de recette encaissés !`);
+      render();
+    } catch(e){ console.log('collect:',e); showToast('Erreur, réessaie.'); }
+  }
+
+  async function buy(k){
+    const c=COMMERCES[k]; if(!c) return;
+    if(money < c.up){ showToast('Pas assez d\'argent (il faut '+fmt(c.up)+'€).'); return; }
+    if(!confirm(`Ouvrir « ${c.name} » pour ${fmt(c.up)}€ ?`)) return;
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+      if((fresh?.money||0) < c.up){ showToast('Pas assez d\'argent.'); return; }
+      com = (fresh?.commerce && typeof fresh.commerce==='object') ? fresh.commerce : {};
+      if(!com.shops) com.shops={}; if(!com.lastCollect) com.lastCollect=new Date().toISOString();
+      com.shops[k] = 1;
+      const newMoney = (fresh?.money||0) - c.up;
+      await sb.from('game_stats').update({ money:newMoney, commerce:com }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast(`🔓 ${c.name} ouvert !`);
+      render();
+    } catch(e){ console.log('buy:',e); showToast('Erreur.'); }
+  }
+
+  async function upgrade(k){
+    const c=COMMERCES[k]; if(!c) return;
+    const lvl = com.shops[k]||0; const cost = c.up*lvl;
+    if(money < cost){ showToast('Pas assez d\'argent (il faut '+fmt(cost)+'€).'); return; }
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+      if((fresh?.money||0) < cost){ showToast('Pas assez d\'argent.'); return; }
+      com = (fresh?.commerce && typeof fresh.commerce==='object') ? fresh.commerce : {};
+      if(!com.shops) com.shops={}; if(!com.lastCollect) com.lastCollect=new Date().toISOString();
+      com.shops[k] = (com.shops[k]||0) + 1;
+      const newMoney = (fresh?.money||0) - cost;
+      await sb.from('game_stats').update({ money:newMoney, commerce:com }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast(`⬆️ ${c.name} amélioré au niveau ${com.shops[k]} !`);
+      render();
+    } catch(e){ console.log('upgrade:',e); showToast('Erreur.'); }
+  }
+
+  let toastT;
+  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2800); }
+
+  init();
+</script>
+</body>
+</html>
