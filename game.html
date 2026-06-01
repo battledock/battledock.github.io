@@ -158,9 +158,16 @@
     .bn-item .bn-ic { font-size:0; }
     .bn-item .bn-ic svg { width:23px; height:23px; display:block; }
     .tab-hidden { display:none !important; }
+    @keyframes tabIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .nav-card.tab-anim, .mini-grid.tab-anim { animation: tabIn .28s ease; }
     .bn-item .bn-lb { font-size:10px; font-weight:700; letter-spacing:0.2px; }
+    .bn-item::before { content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%) scale(0.5); width:48px; height:30px;
+      border-radius:15px; background:#1d4ed8; opacity:0; transition:opacity .22s ease, transform .22s ease; z-index:0; }
+    .bn-item.active::before { opacity:1; transform:translateX(-50%) scale(1); }
+    .bn-item .bn-ic { position:relative; z-index:1; }
     .bn-item.active { color:#1d4ed8; }
-    .bn-item.active .bn-ic { transform:translateY(-2px) scale(1.08); }
+    .bn-item.active .bn-ic { color:#fff; transform:translateY(-1px); }
+    .bn-item.active .bn-lb { color:#1d4ed8; }
     .bn-item:active { opacity:0.6; }
 
     /* ===================== DAILY ===================== */
@@ -1620,8 +1627,14 @@ async function loadCalendar() {
     };
     function setTab(key){
       document.querySelectorAll('.bottom-nav .bn-item').forEach(b => b.classList.toggle('active', b.dataset.tab === key));
-      for (const id in NAV_TABS){ const el = document.getElementById(id); if (el) el.style.display = (NAV_TABS[id] === key) ? '' : 'none'; }
-      const mg = document.getElementById('miniGridSettings'); if (mg) mg.style.display = (key === 'accueil') ? '' : 'none';
+      for (const id in NAV_TABS){
+        const el = document.getElementById(id); if (!el) continue;
+        const show = NAV_TABS[id] === key;
+        el.style.display = show ? '' : 'none';
+        if (show) { el.classList.remove('tab-anim'); void el.offsetWidth; el.classList.add('tab-anim'); }
+      }
+      const mg = document.getElementById('miniGridSettings');
+      if (mg) { const showMg = (key === 'accueil'); mg.style.display = showMg ? '' : 'none'; if (showMg) { mg.classList.remove('tab-anim'); void mg.offsetWidth; mg.classList.add('tab-anim'); } }
       const hideProf = (key === 'bosser');
       const pc = document.getElementById('profileCardBtn'); if (pc) pc.classList.toggle('tab-hidden', hideProf);
       const sk = document.getElementById('profileSkeleton'); if (sk) sk.classList.toggle('tab-hidden', hideProf);
