@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a0f1e">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Battle Dock">
+  <link rel="apple-touch-icon" href="icon-180.png">
   <title>Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Caveat:wght@700&family=Permanent+Marker&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
@@ -709,6 +714,31 @@
   </style>
 </head>
 <body>
+
+  <!-- BANNIÈRE INSTALLATION (PWA) -->
+  <div id="installBanner" style="display:none;position:fixed;left:0;right:0;bottom:0;z-index:500;
+       background:linear-gradient(180deg,#16233f,#0a0f1e);border-top:2px solid #fbbf24;
+       padding:12px 14px;align-items:center;gap:10px;box-shadow:0 -6px 20px rgba(0,0,0,0.4)">
+    <img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:9px;flex-shrink:0">
+    <div style="flex:1;min-width:0;color:#fff">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px">Installer Battle Dock</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6)">Ajoute le jeu sur ton écran d'accueil</div>
+    </div>
+    <button onclick="bdInstall()" style="border:none;border-radius:10px;padding:10px 14px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1208;cursor:pointer;flex-shrink:0">📲 Installer</button>
+    <button onclick="bdDismissInstall()" style="border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">✕</button>
+  </div>
+
+  <!-- INSTRUCTIONS iOS -->
+  <div id="iosInstall" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);
+       align-items:center;justify-content:center;padding:24px" onclick="document.getElementById('iosInstall').style.display='none'">
+    <div style="max-width:340px;background:#16233f;border:2px solid #fbbf24;border-radius:18px;padding:22px;text-align:center;color:#fff">
+      <div style="font-size:40px">📲</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin:6px 0">Installer sur iPhone</div>
+      <div style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.8)">1. Appuie sur le bouton <b>Partager</b> ⬆️ en bas de Safari.<br>2. Choisis <b>« Sur l'écran d'accueil »</b>.<br>3. Valide — l'icône Battle Dock apparaît !</div>
+      <button style="margin-top:16px;border:none;border-radius:11px;padding:11px 20px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1208;cursor:pointer">Compris</button>
+    </div>
+  </div>
+
 
   <!-- FOND ANIMÉ -->
 
@@ -1421,6 +1451,40 @@ async function loadCalendar() {
     }
 
     init();
+  </script>
+  <script>
+    // ===== PWA : installation sur l'écran d'accueil =====
+    (function () {
+      let bdDeferred = null;
+      function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+      function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
+      function dismissed(){ try { return localStorage.getItem('bd_install_dismiss') === '1'; } catch(_) { return false; } }
+      function showBanner(){ if (isStandalone() || dismissed()) return; const b = document.getElementById('installBanner'); if (b) b.style.display = 'flex'; }
+      function hideBanner(){ const b = document.getElementById('installBanner'); if (b) b.style.display = 'none'; }
+
+      window.bdDismissInstall = function(){ try { localStorage.setItem('bd_install_dismiss','1'); } catch(_){} hideBanner(); };
+      window.bdInstall = async function(){
+        if (bdDeferred) {
+          bdDeferred.prompt();
+          try { const { outcome } = await bdDeferred.userChoice; if (outcome === 'accepted') hideBanner(); } catch(_){}
+          bdDeferred = null;
+        } else if (isIOS()) {
+          const m = document.getElementById('iosInstall'); if (m) m.style.display = 'flex';
+        } else {
+          alert("Dans le menu de ton navigateur, choisis « Ajouter à l'écran d'accueil ».");
+        }
+      };
+
+      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); bdDeferred = e; showBanner(); });
+      window.addEventListener('appinstalled', () => { hideBanner(); });
+      // iOS n'a pas beforeinstallprompt : on propose quand même la bannière
+      if (isIOS() && !isStandalone()) showBanner();
+
+      // Service worker (rend le jeu installable + repli hors-ligne léger)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+      }
+    })();
   </script>
 </body>
 </html>
