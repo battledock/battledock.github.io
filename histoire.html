@@ -187,6 +187,8 @@
       background:linear-gradient(135deg,#fbbf24,#f59e0b); padding:8px 13px; border-radius:10px; box-shadow:0 4px 12px rgba(245,158,11,0.3); }
     .ch-tag { flex-shrink:0; font-size:10px; font-weight:700; letter-spacing:0.5px; color:#94a3b8; padding:7px 10px; border-radius:10px; background:#eef0f4; }
     .ch-tag.done { color:#15803d; background:rgba(34,197,94,0.14); }
+    .ch-row.coming { opacity:0.6; border-style:dashed; }
+    .ch-row.coming .ch-badge { background:#eef0f4; color:#94a3b8; }
 
     /* ===== Pagination des actes ===== */
     .act-pager { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:16px 4px 6px; }
@@ -1231,15 +1233,32 @@
         doneKey: 'scene22_done',
         requires: 'scene21_done',
       },
+      {
+        id: 23,
+        title: 'À venir',
+        desc: 'Bientôt disponible…',
+        doneKey: 'scene23_done',
+        requires: 'scene22_done',
+        coming: true,
+      },
+      {
+        id: 24,
+        title: 'À venir',
+        desc: 'Bientôt disponible…',
+        doneKey: 'scene24_done',
+        requires: 'scene23_done',
+        coming: true,
+      },
     ];
 
     // ── MENU ──
     function actOf(id) {
-      if (id <= 5)  return { n:'I',   name:'Le Nouveau' };
-      if (id <= 10) return { n:'II',  name:"L'Ascension" };
-      if (id <= 15) return { n:'III', name:'Les Coups bas' };
-      if (id <= 18) return { n:'IV',  name:"L'Empire" };
-      return { n:'V', name:'La Fin de Partie' };
+      if (id <= 4)  return { n:'I',   name:'Le Nouveau' };
+      if (id <= 8)  return { n:'II',  name:"L'Ascension" };
+      if (id <= 12) return { n:'III', name:'Les Coups bas' };
+      if (id <= 16) return { n:'IV',  name:"L'Empire" };
+      if (id <= 20) return { n:'V',   name:'La Fin de Partie' };
+      return { n:'VI', name:'La Légende' };
     }
 
     function buildScene(W, H) {
@@ -1296,10 +1315,10 @@
 
       const list = document.getElementById('chapterList');
       const chs = CHAPTERS.slice().sort((a,b) => a.id - b.id);
-      const total = chs.length;
+      const total = chs.filter(c => !c.coming).length;
       const doneCount = chs.filter(c => progress[c.doneKey]).length;
       const pct = Math.round(doneCount / total * 100);
-      const curId = (chs.find(c => (!c.requires || progress[c.requires]) && !progress[c.doneKey]) || chs[chs.length-1]).id;
+      const curId = (chs.find(c => !c.coming && (!c.requires || progress[c.requires]) && !progress[c.doneKey]) || chs.filter(c => !c.coming).slice(-1)[0] || chs[chs.length-1]).id;
 
       const hdr = document.querySelector('.header'); if (hdr) hdr.style.display = 'none';
       const xbtn = document.getElementById('mapClose'); if (xbtn) xbtn.style.display = 'flex';
@@ -1326,17 +1345,22 @@
 
       // Acte courant
       const aDone = grp.items.filter(c => progress[c.doneKey]).length;
-      html += `<div class="act-sec"><div class="act-head"><span class="act-rom">ACTE ${grp.n}</span><span class="act-name">${grp.name}</span><span class="act-prog">${aDone}/${grp.items.length}</span></div>`;
+      const aTotal = grp.items.filter(c => !c.coming).length;
+      html += `<div class="act-sec"><div class="act-head"><span class="act-rom">ACTE ${grp.n}</span><span class="act-name">${grp.name}</span><span class="act-prog">${aDone}/${aTotal}</span></div>`;
       grp.items.forEach(ch => {
         const done = !!progress[ch.doneKey];
-        const available = !ch.requires || !!progress[ch.requires];
-        const state = done ? 'done' : available ? 'available' : 'locked';
+        const coming = !!ch.coming;
+        const available = !coming && (!ch.requires || !!progress[ch.requires]);
+        const state = coming ? 'coming' : (done ? 'done' : available ? 'available' : 'locked');
         const isCur = (ch.id === curId) && available && !done;
-        const icon = done ? '✓' : (state === 'locked' ? '🔒' : '▶');
+        const icon = coming ? '🔜' : (done ? '✓' : (state === 'locked' ? '🔒' : '▶'));
+        const tag = coming ? '<div class="ch-tag">À venir</div>'
+                  : (available && !done ? '<div class="ch-go">JOUER</div>'
+                  : (done ? '<div class="ch-tag done">Terminé</div>' : '<div class="ch-tag">Verrouillé</div>'));
         html += `<div class="ch-row ${state} ${isCur ? 'current' : ''}" data-id="${ch.id}">
           <div class="ch-badge">${icon}</div>
           <div class="ch-mid"><div class="ch-name">Chapitre ${ch.id} · ${ch.title}</div>${ch.desc ? `<div class="ch-desc">${ch.desc}</div>` : ''}</div>
-          ${available && !done ? '<div class="ch-go">JOUER</div>' : (done ? '<div class="ch-tag done">Terminé</div>' : '<div class="ch-tag">Verrouillé</div>')}
+          ${tag}
         </div>`;
       });
       html += `</div>`;
@@ -1357,7 +1381,7 @@
       // Clics sur les chapitres jouables de l'acte affiché
       grp.items.forEach(ch => {
         const done = !!progress[ch.doneKey];
-        const available = !ch.requires || !!progress[ch.requires];
+        const available = !ch.coming && (!ch.requires || !!progress[ch.requires]);
         if (available && !done) {
           const el = list.querySelector('.ch-row[data-id="' + ch.id + '"]');
           if (el) el.onclick = () => startChapter(ch);
