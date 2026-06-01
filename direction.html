@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bureau de la Direction - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#0c0a06; color:#f3ecd8; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(212,175,55,0.18), transparent 60%),
+      linear-gradient(180deg,#1c160a,#120d05 55%,#08060300); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#120d05,rgba(18,13,5,0.85)); backdrop-filter:blur(8px); }
+  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(212,175,55,0.25); color:#f3ecd8; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
+    background:linear-gradient(135deg,#d4af37,#fde68a,#b8860b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.14); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(212,175,55,0.6); margin:18px 4px 10px; }
+
+  /* LAVAGNE */
+  .lav { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(160deg,rgba(16,185,129,0.1),rgba(212,175,55,0.05)); border:1px solid rgba(16,185,129,0.22); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .lav-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#059669,#34d399); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .lav-txt { font-size:14px; line-height:1.45; color:#a7f3d0; font-style:italic; }
+
+  /* PLAQUE DIRECTION */
+  .plaque { text-align:center; padding:24px 16px; border-radius:18px; margin-bottom:14px;
+    background:linear-gradient(160deg,rgba(212,175,55,0.16),rgba(184,134,11,0.06)); border:1px solid rgba(212,175,55,0.4);
+    box-shadow:0 0 0 1px rgba(212,175,55,0.15), 0 12px 36px rgba(0,0,0,0.4); }
+  .plaque-seal { font-size:46px; }
+  .plaque-name { font-family:'Playfair Display',serif; font-weight:900; font-size:24px; color:#fde68a; margin:4px 0; }
+  .plaque-grade { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:2px; color:#d4af37; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .kpi { background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.12); border-radius:13px; padding:14px; }
+  .kpi-val { font-family:'Bebas Neue',sans-serif; font-size:26px; color:#fde68a; }
+  .kpi-lbl { font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-top:2px; }
+
+  /* SALAIRE */
+  .sal { text-align:center; }
+  .sal-amt { font-family:'Bebas Neue',sans-serif; font-size:44px; color:#facc15; }
+  .sal-meta { font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:14px; }
+  .cd-time { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:1px; color:#d4af37; }
+  .btn { width:100%; border:none; border-radius:14px; padding:16px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; cursor:pointer;
+    background:linear-gradient(135deg,#b8860b,#facc15); color:#1a1208; }
+  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.45; }
+
+  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
+  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(212,175,55,0.18); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300;
+    background:rgba(28,22,10,0.97); border:1px solid rgba(212,175,55,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#fde68a; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="hdr">
+    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">🏛️ BUREAU DE LA DIRECTION</div>
+  </div>
+  <div id="content"><div class="loader">CHARGEMENT…</div></div>
+  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const LAVAGNE_QUOTES = [
+    "« Je te l'accorde : tu m'as surpris. Voilà ton bureau. Ne me déçois pas. »",
+    "« Un bon cadre arrive à l'heure et repart le dernier. Prends ta paie et bosse. »",
+    "« Le port récompense ceux qui durent. Reviens chaque jour, tu verras. »",
+    "« Ne crois pas que je t'ai à la bonne. Mais le travail, ça se respecte. »",
+  ];
+
+  let currentUser=null, stats=null, dir={}, cdTimer=null;
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
+  function salaryFor(level, days){ const mult = 1 + Math.min(Math.max(days-1,0),5)*0.1; return Math.round(level*2000*mult); }
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser = session.user;
+    const { data:gs } = await sb.from('game_stats').select('money,xp,level,grade,diamonds,trophies,direction').eq('user_id',currentUser.id).maybeSingle();
+    stats = gs || { money:0, level:1, grade:'Bleu', diamonds:0, trophies:0 };
+    dir = (gs?.direction && typeof gs.direction==='object') ? gs.direction : {};
+    render();
+  }
+
+  function msToMidnight(){ const n=new Date(); const m=new Date(n); m.setHours(24,0,0,0); return m-n; }
+
+  function render(){
+    if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+    const claimable = dir.lastSalaryDay !== todayStr();
+    // série de jours prévue si on réclame aujourd'hui
+    const projDays = (dir.lastSalaryDay===yesterdayStr()) ? (dir.days||0)+1 : 1;
+    const amount = salaryFor(stats.level||1, claimable ? projDays : (dir.days||1));
+    const quote = LAVAGNE_QUOTES[(stats.level||1) % LAVAGNE_QUOTES.length];
+
+    let html = `
+      <div class="lav">
+        <div class="lav-ava">🧐</div>
+        <div class="lav-txt">${quote}</div>
+      </div>
+      <div class="plaque">
+        <div class="plaque-seal">🏛️</div>
+        <div class="plaque-name">Direction du Port</div>
+        <div class="plaque-grade">${(stats.grade||'—').toUpperCase()} · NIVEAU ${stats.level||1}</div>
+      </div>
+
+      <div class="sect-lbl">Salaire de direction</div>
+      <div class="card sal">`;
+
+    if(claimable){
+      html += `
+        <div class="sal-amt">+${amount.toLocaleString('fr-FR')} €</div>
+        <div class="sal-meta">Jour ${projDays} consécutif${projDays>1?'s':''} · bonus série +${Math.min(Math.max(projDays-1,0),5)*10}%</div>
+        <button class="btn" onclick="claimSalary()">💼 ENCAISSER LE SALAIRE</button>`;
+    } else {
+      html += `
+        <div class="sal-meta" style="margin-bottom:6px">Salaire déjà encaissé aujourd'hui.</div>
+        <div class="cd-time" id="cdTime">--:--:--</div>
+        <div class="sal-meta" style="margin-top:6px">Série en cours : ${dir.days||1} jour${(dir.days||1)>1?'s':''} 🔥</div>`;
+    }
+
+    html += `</div>
+      <div class="sect-lbl">Carrière</div>
+      <div class="grid">
+        <div class="kpi"><div class="kpi-val">${(stats.money||0).toLocaleString('fr-FR')} €</div><div class="kpi-lbl">Trésorerie</div></div>
+        <div class="kpi"><div class="kpi-val">${(dir.totalClaimed||0).toLocaleString('fr-FR')} €</div><div class="kpi-lbl">Salaires perçus</div></div>
+        <div class="kpi"><div class="kpi-val">💎 ${stats.diamonds||0}</div><div class="kpi-lbl">Diamants</div></div>
+        <div class="kpi"><div class="kpi-val">🏆 ${stats.trophies||0}</div><div class="kpi-lbl">Trophées</div></div>
+      </div>
+      <div class="sect-lbl">Note de direction</div>
+      <div class="card info">Le salaire de direction s'encaisse <b>une fois par jour</b>. Il grimpe avec ton <b>niveau</b>, et venir chaque jour fait monter ton <b>bonus de série</b> (jusqu'à +50% au bout de 6 jours). Manquer un jour remet la série à 1.</div>`;
+
+    document.getElementById('content').innerHTML = html;
+
+    if(!claimable){
+      const upd = () => {
+        const l = msToMidnight();
+        if(l <= 0){ render(); return; }
+        const h=Math.floor(l/3600000), m=Math.floor(l%3600000/60000), s=Math.floor(l%60000/1000);
+        const el=document.getElementById('cdTime');
+        if(el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      };
+      upd(); cdTimer=setInterval(upd,1000);
+    }
+  }
+
+  async function claimSalary(){
+    if(dir.lastSalaryDay === todayStr()) return;
+    const days = (dir.lastSalaryDay===yesterdayStr()) ? (dir.days||0)+1 : 1;
+    const amount = salaryFor(stats.level||1, days);
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,direction').eq('user_id',currentUser.id).maybeSingle();
+      // re-vérifier côté frais pour éviter double encaissement
+      const fdir = (fresh?.direction && typeof fresh.direction==='object') ? fresh.direction : {};
+      if(fdir.lastSalaryDay === todayStr()){ dir=fdir; showToast('Déjà encaissé aujourd\'hui.'); render(); return; }
+      const newMoney = (fresh?.money||0) + amount;
+      const newDir = { lastSalaryDay:todayStr(), days, totalClaimed:(fdir.totalClaimed||0)+amount };
+      await sb.from('game_stats').update({ money:newMoney, direction:newDir }).eq('user_id',currentUser.id);
+      stats.money = newMoney; dir = newDir;
+      showToast(`💼 +${amount.toLocaleString('fr-FR')} € encaissés !`);
+      render();
+    } catch(e){ console.log('salary:', e); showToast('Erreur, réessaie.'); }
+  }
+
+  let toastT;
+  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2600); }
+
+  init();
+</script>
+</body>
+</html>
