@@ -547,6 +547,14 @@
         doneKey: 'scene8_done',
         requires: 'scene7_done',
       },
+      {
+        id: 9,
+        title: 'Le Service',
+        desc: "Titouan t'attrape, l'air gêné. Il a besoin de toi.",
+        reward: '⚔️ Bagarreur · +2000€ · +400 XP · Défis entre joueurs débloqués',
+        doneKey: 'scene9_done',
+        requires: 'scene8_done',
+      },
     ];
 
     // ── MENU ──
@@ -603,6 +611,7 @@
       if (ch.id === 6) startChapter6();
       if (ch.id === 7) startChapter7();
       if (ch.id === 8) startChapter8();
+      if (ch.id === 9) startChapter9();
     }
 
 
@@ -1297,6 +1306,79 @@
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">📋</div><div class="badge-title">Bosseur</div><div class="badge-desc">+1500€ · +350 XP · +5 💎 · Objectifs quotidiens débloqués</div>';
+      act.appendChild(badge);
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
+      btn.onclick = showMenu;
+      act.appendChild(btn);
+    }
+
+    // ── CHAPITRE 9 ── (ACT 3 — Les Emmerdes)
+    function startChapter9() {
+      showNarrateur("Pause déj'. Titouan te fait signe depuis le coin du réfectoire. Il triture sa casquette, mal à l'aise. C'est pas son genre.", () => showCh9_1(), 'refectoire');
+    }
+    function showCh9_1() {
+      setChar('titouan', 'Titouan', 'refectoire');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Faut que je te demande un service. Tu sais, sur le port, on règle pas mal de trucs par des DÉFIS. Un duel, une petite mise, le meilleur empoche tout.";
+      showNext(() => showCh9_2());
+    }
+    function showCh9_2() {
+      setChar('titouan', 'Titouan', 'refectoire');
+      document.getElementById('dialogueText').textContent = "Y'a un gars de l'équipe d'à côté qui me cherche depuis des semaines. Il défie tout le monde, il plume les nouveaux. Moi, seul, je tiens pas. Mais si toi aussi tu entres dans la danse...";
+      showNext(() => showCh9_choice());
+    }
+    function showCh9_choice() {
+      showChoices([
+        { icon:'🤝', text:'"Compte sur moi, je couvre tes arrières."', next: showCh9_jeff },
+        { icon:'💰', text:'"Et qu\'est-ce que j\'y gagne, moi ?"',     next: showCh9_jeff },
+        { icon:'😏', text:'"Un duel ? Ça tombe bien, j\'adore ça."',   next: showCh9_jeff },
+      ]);
+    }
+    function showCh9_jeff() {
+      setChar('jeff', 'Jeff', 'refectoire');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "(la bouche pleine) Les défis ? Tranquille. Tu mises ton fric, tu joues ton duel, le meilleur score rafle la mise des deux. Suffit d'être bon. Ou d'avoir du bol.";
+      showNext(() => showCh9_titouan2());
+    }
+    function showCh9_titouan2() {
+      setChar('titouan', 'Titouan', 'refectoire');
+      document.getElementById('dialogueText').textContent = "Voilà. Tu lances un défi avec ta mise, n'importe qui peut le relever. Ou tu relèves ceux des autres. Gagne, et tu doubles ta mise. Allez, montre-leur de quoi t'es capable.";
+      showNext(() => showCh9_lavagne());
+    }
+    function showCh9_lavagne() {
+      setChar('lavagne', 'Lavagne', 'refectoire');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "(de l'autre bout du réfectoire, sans te lâcher des yeux) ...Tiens. Le petit nouveau qui se fait un nom. Profite, va. Ça dure jamais bien longtemps, ces choses-là.";
+      showNext(() => finishChapter9());
+    }
+
+    async function finishChapter9() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene9_done: true };
+        let nXp = (fresh?.xp||0) + 400, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
+        await sb.from('game_stats').update({
+          money: (fresh?.money||0) + 2000,
+          xp: nXp, level: nLvl,
+          story_progress: newProgress
+        }).eq('user_id', currentUser.id);
+        await awardTrophies(nLvl - (fresh?.level||1));
+        progress = newProgress;
+      } catch(e) { console.log(e); }
+
+      setChar('titouan', 'Titouan', 'refectoire');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Merci, vraiment. T'as accès aux Défis maintenant. (T'occupe pas de Lavagne, il fait sa tête des mauvais jours... enfin j'espère.)";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const badge = document.createElement('div');
+      badge.className = 'badge-wrap';
+      badge.innerHTML = '<div class="badge-icon">⚔️</div><div class="badge-title">Bagarreur</div><div class="badge-desc">+2000€ · +400 XP · Défis entre joueurs débloqués</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next';
