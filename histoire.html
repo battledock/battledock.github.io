@@ -897,7 +897,7 @@
         id: 14,
         title: 'Ton Commerce',
         desc: "Gégé t'emmène voir un local vide. Et si tu montais ta propre affaire ?",
-        reward: '🏪 Commerçant · +2000€ · +1400 XP · Commerces débloqués',
+        reward: '🏢 Entrepreneur · +2000€ · +1400 XP · Mon Entreprise débloquée',
         doneKey: 'scene14_done',
         requires: 'scene13_done',
       },
@@ -2266,25 +2266,7 @@
 
     // ── CHAPITRE 14 ──
     let ch14Choice = 'poisson';
-    async function startChapter14() {
-      let lvl = 1;
-      try { const { data } = await sb.from('game_stats').select('level').eq('user_id', currentUser.id).maybeSingle(); lvl = data?.level || 1; } catch(e) {}
-      if (lvl < 30) {
-        setChar('gegé', 'Gégé', 'commerce_bg');
-        document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-        document.getElementById('dialogueText').textContent = "Doucement, gamin ! Un commerce, ça se mérite. Reviens me voir quand t'auras atteint le niveau 30 — pas avant.";
-        const act = document.getElementById('actionsZone');
-        act.innerHTML = '';
-        const note = document.createElement('div');
-        note.className = 'badge-wrap';
-        note.innerHTML = '<div class="badge-icon">🔒</div><div class="badge-title">Niveau 30 requis</div><div class="badge-desc">Tu es niveau ' + lvl + '. Reviens plus fort !</div>';
-        act.appendChild(note);
-        const btn = document.createElement('button');
-        btn.className = 'btn-next'; btn.style.marginTop = '8px';
-        btn.innerHTML = '← Retour aux chapitres'; btn.onclick = showMenu;
-        act.appendChild(btn);
-        return;
-      }
+    function startChapter14() {
       showNarrateur("Gégé t'emmène devant un local vide, rideau à moitié levé, en plein cœur du marché du port.", () => showCh14_1(), 'commerce_bg');
     }
     function showCh14_1() {
@@ -2312,7 +2294,7 @@
       const names = { poisson:'Le Cabanon à poissons', souvenirs:'La Boutique de souvenirs', pastis:'Le Bar à pastis' };
       setChar('gegé', 'Gégé', 'commerce_bg');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-      document.getElementById('dialogueText').textContent = names[ch14Choice] + ", excellent choix ! Je te file les clés. À toi de le faire tourner, patron.";
+      document.getElementById('dialogueText').textContent = names[ch14Choice] + ", bonne direction ! Maintenant file monter ta boîte : son nom, son logo, ses couleurs et son slogan.";
       showNext(() => finishChapter14());
     }
     async function finishChapter14() {
@@ -2322,9 +2304,9 @@
         let nXp = (fresh?.xp||0) + 1400, nLvl = fresh?.level||1;
         while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
         const com = (fresh?.commerce && typeof fresh.commerce==='object') ? fresh.commerce : {};
-        if (!com.shops || typeof com.shops!=='object') com.shops = {};
-        if (!com.shops[ch14Choice]) com.shops[ch14Choice] = 1;   // commerce de départ déjà possédé
-        com.lastCollect = new Date().toISOString();
+        const typeMap = { poisson:'Pêche', souvenirs:'Commerce', pastis:'Bar' };
+        com.companyTypePref = typeMap[ch14Choice] || 'Commerce';   // pré-remplit le secteur dans la création
+        if (!com.lastCollect) com.lastCollect = new Date().toISOString();
         await sb.from('game_stats').update({
           money: (fresh?.money||0) + 2000,
           xp: nXp, level: nLvl,
@@ -2337,12 +2319,12 @@
 
       setChar('gegé', 'Gégé', 'commerce_bg');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-      document.getElementById('dialogueText').textContent = "Et voilà, t'es ton propre patron. Va voir tes Commerces et encaisse ta première recette !";
+      document.getElementById('dialogueText').textContent = "Et voilà, t'es ton propre patron ! Va dans « Mon Entreprise » et crée ta boîte : nom, logo, couleur, slogan — tout le port va la connaître.";
       const act = document.getElementById('actionsZone');
       act.innerHTML = '';
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
-      badge.innerHTML = '<div class="badge-icon">🏪</div><div class="badge-title">Commerçant</div><div class="badge-desc">+2000€ · +1400 XP · Commerces débloqués</div>';
+      badge.innerHTML = '<div class="badge-icon">🏢</div><div class="badge-title">Entrepreneur</div><div class="badge-desc">+2000€ · +1400 XP · Mon Entreprise débloquée</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next'; btn.style.marginTop = '8px';

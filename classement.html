@@ -301,6 +301,11 @@
   </div>
 
   <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <div class="tab active" id="tab-level" onclick="switchTab('level')">Niveau</div>
+    <div class="tab" id="tab-money" onclick="switchTab('money')">Fortune</div>
+    <div class="tab" id="tab-entreprises" onclick="switchTab('entreprises')">Entreprises</div>
+  </div>
 
 
   <!-- MON RANG -->
@@ -334,6 +339,7 @@
           <div class="popup-name" id="ppName">--</div>
           <div class="popup-grade" id="ppGrade">--</div>
           <div class="popup-rank" id="ppRank">--</div>
+          <div id="ppCompany" style="display:none;margin:8px auto 0"></div>
         <div class="popup-bio" id="ppBio" style="display:none"></div>
         </div>
       </div>
@@ -365,7 +371,7 @@
     const sb = createClient(supabaseUrl, supabaseKey);
 
     let currentUser = null;
-    const currentTab = 'level';
+    let currentTab = 'level';
     let allPlayers = [];
 
     function getGrade(l) {
@@ -392,7 +398,7 @@
 
       const { data: stats } = await sb
         .from('game_stats')
-        .select('user_id, money, level, xp')
+        .select('user_id, money, level, xp, commerce')
         .order(currentTab === 'level' ? 'level' : 'money', { ascending: false });
 
       if (!stats?.length) { document.getElementById('loader').style.display = 'none'; return; }
@@ -407,6 +413,12 @@
         profile: profiles?.find(p => p.user_id === s.user_id) || { username: 'Docker', avatar_url: 'avatar-default.png', trophies: 0 }
       }));
 
+      if (currentTab === 'entreprises') {
+        allPlayers = allPlayers
+          .filter(p => p.commerce && p.commerce.company && p.commerce.company.name)
+          .sort((a, b) => bizValuation(b.commerce) - bizValuation(a.commerce));
+      }
+
       document.getElementById('loader').style.display = 'none';
 
       // Mon rang
@@ -414,8 +426,9 @@
       if (myIdx >= 0) {
         const me = allPlayers[myIdx];
         document.getElementById('myRankNum').textContent = '#' + (myIdx+1);
-        document.getElementById('myRankVal').textContent = currentTab === 'level'
-          ? `Niveau ${me.level||1} — ${getGrade(me.level||1)}`
+        document.getElementById('myRankVal').textContent =
+          currentTab === 'level' ? `Niveau ${me.level||1} — ${getGrade(me.level||1)}`
+          : currentTab === 'entreprises' ? `${bizValuation(me.commerce).toLocaleString('fr-FR')} € de valorisation`
           : `${(me.money||0).toLocaleString('fr-FR')}€`;
         document.getElementById('myRankBanner').style.display = 'flex';
       }
@@ -426,10 +439,13 @@
     }
 
     function score(p) {
+      if (currentTab === 'entreprises') return `${bizValuation(p.commerce).toLocaleString('fr-FR')}€`;
       return currentTab === 'level'
         ? `Niv. ${p.level||1}`
         : `${(p.money||0).toLocaleString('fr-FR')}€`;
     }
+    function bizValuation(com){ if(!com||!com.company||!com.company.name) return 0; const l=com.company.level||1; const iph=l*2000*(com.ipo?1.5:1); return iph*150; }
+    function escapeHtml(t){ return (t||'').replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
     function renderPodium(top) {
       const el = document.getElementById('podium');
@@ -456,6 +472,7 @@
 
     function renderRows(players, startRank) {
       const el = document.getElementById('rankRows');
+      if (!players.length) { el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#9ca3af">Aucune entreprise pour l\'instant.<br>Crée la tienne dans « Mon Entreprise » !</div>'; return; }
       const medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
       el.innerHTML = players.map((p, i) => {
         const rank = startRank + i;
@@ -463,6 +480,20 @@
         const idx = rank - 1;
         const topCls = rank <= 3 ? ' top-' + rank : '';
         const numDisplay = medals[rank] || rank;
+        if (currentTab === 'entreprises') {
+          const co = p.commerce.company;
+          return `
+          <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})">
+            <div class="row-num">${numDisplay}</div>
+            <div class="row-avatar" style="background:${co.color||'#d97706'};display:flex;align-items:center;justify-content:center;font-size:22px">${co.logo||'🏢'}</div>
+            <div class="row-info">
+              <div class="row-name" style="display:flex;align-items:center;gap:6px">${escapeHtml(co.name)}${co.ipo?' 📈':''}${isMe?' 👈':''}</div>
+              <div class="row-grade">${escapeHtml(co.type||'Entreprise')} · par ${escapeHtml(p.profile.username)}</div>
+            </div>
+            <div class="row-score">${score(p)}</div>
+          </div>`;
+        }
+        const _co = (p.commerce && p.commerce.company && p.commerce.company.name) ? p.commerce.company : null;
         return `
           <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})">
             <div class="row-num">${numDisplay}</div>
@@ -472,9 +503,10 @@
                 ${p.profile.username}${isMe?' 👈':''}
                 ${getOnlineStatus(p.profile.last_seen).online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite"></span>' : ''}
               </div>
-              <div class="row-grade" style="display:flex;align-items:center;gap:5px">
+              <div class="row-grade" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
                 ${getGrade(p.level||1)}
                 ${!getOnlineStatus(p.profile.last_seen).online && getOnlineStatus(p.profile.last_seen).text ? `<span style="font-size:10px;color:#9ca3af">${getOnlineStatus(p.profile.last_seen).text}</span>` : ''}
+                ${_co ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#fff;background:${_co.color||'#d97706'};padding:1px 7px;border-radius:10px">${_co.logo||'🏢'} ${escapeHtml(_co.name)}</span>` : ''}
               </div>
             </div>
             <div class="row-score">${score(p)}</div>
@@ -494,6 +526,17 @@
         ? Math.floor((p.money||0)/1000) + 'k€'
         : (p.money||0) + '€';
       document.getElementById('ppTrophies').textContent = p.profile.trophies || 0;
+      const _co = (p.commerce && p.commerce.company && p.commerce.company.name) ? p.commerce.company : null;
+      const _coEl = document.getElementById('ppCompany');
+      if (_coEl) {
+        if (_co) {
+          _coEl.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin:8px auto 0;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:'+(_co.color||'#d97706');
+          _coEl.innerHTML = '';
+          const s1=document.createElement('span'); s1.textContent=_co.logo||'🏢';
+          const s2=document.createElement('span'); s2.textContent=_co.name+(_co.ipo?' 📈':'');
+          _coEl.appendChild(s1); _coEl.appendChild(s2);
+        } else { _coEl.style.display='none'; }
+      }
       document.getElementById('popup').style.display = 'flex';
     }
 
@@ -502,7 +545,9 @@
     }
 
     function switchTab(tab) {
-      currentTab = 'level';
+      currentTab = tab;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      const a = document.getElementById('tab-' + tab); if (a) a.classList.add('active');
       loadRanking();
     }
 
