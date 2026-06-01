@@ -101,8 +101,21 @@
     { name:'Inspection Surprise', emoji:'🔦', desc:"Lavagne arrive. Boucle le boulot en vitesse pour la prime de zèle !" },
   ];
 
-  let currentUser=null, stats=null, flash={}, cdTimer=null;
+  let currentUser=null, stats=null, flash={}, cdTimer=null, malusUntil=0;
   function getXpRequired(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
+  function fmtLeft(ts){ const l=Math.max(0,ts-Date.now()); const h=Math.floor(l/3600000),m=Math.floor(l%3600000/60000); return (h>0?h+'h ':'')+m+'min'; }
+  async function checkSabotage(){
+    try {
+      const { data:pend } = await sb.from('sabotages').select('id,stolen').eq('target_id',currentUser.id).eq('processed',false);
+      if(pend && pend.length){
+        const total = pend.reduce((s,r)=>s+(r.stolen||0),0);
+        if(total>0){ const nm=Math.max(0,(stats.money||0)-total); await sb.from('game_stats').update({ money:nm }).eq('user_id',currentUser.id); stats.money=nm; }
+        await sb.from('sabotages').update({ processed:true }).eq('target_id',currentUser.id).eq('processed',false);
+      }
+      const { data:mz } = await sb.from('sabotages').select('malus_until').eq('target_id',currentUser.id).gt('malus_until', new Date().toISOString()).order('malus_until',{ascending:false}).limit(1);
+      malusUntil = (mz && mz.length && mz[0].malus_until) ? new Date(mz[0].malus_until).getTime() : 0;
+    } catch(e){ console.log('sabotage check:',e); }
+  }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
   function pickEvent(){ const seed = Math.floor(Date.now()/COOLDOWN_MS); return EVENTS[seed % EVENTS.length]; }
 
@@ -113,6 +126,7 @@
     const { data:gs } = await sb.from('game_stats').select('money,xp,level,diamonds,trophies,flash').eq('user_id',currentUser.id).maybeSingle();
     stats = gs || { money:0, xp:0, level:1, diamonds:0, trophies:0 };
     flash = (gs?.flash && typeof gs.flash==='object') ? gs.flash : {};
+    await checkSabotage();
     render();
   }
 
@@ -145,7 +159,7 @@
           <div class="flash-name">${ev.name}</div>
           <div class="flash-desc">${ev.desc}</div>
           <div class="flash-loot">RÉCOMPENSE : 💰 selon ta récolte · ⭐ +5000 XP · 💎 +${dia}</div>
-          <button class="btn" onclick="triggerFlash()">⚡ DÉCLENCHER L'ÉVÉNEMENT</button>
+          ${malusUntil>Date.now() ? '<div class="flash-loot" style="color:#fca5a5">⛔ Saboté ! Flash bloqué encore '+fmtLeft(malusUntil)+'.</div>' : '<button class="btn" onclick="triggerFlash()">⚡ DÉCLENCHER L\'ÉVÉNEMENT</button>'}
         </div>
         <div class="sect-lbl">Comment ça marche</div>
         <div class="card info">Tape le plus vite possible pendant 8 secondes. Plus tu enchaînes, plus le <b>combo</b> monte et plus la prime grossit. Reviens toutes les 3h : enchaîner les flashs fait grimper ta <b>série 🔥</b> (bonus de diamants à 3 et 7). Gain plafonné à <b>${FLASH_CAP.toLocaleString('fr-FR')} €</b> par flash.</div>`;
@@ -174,6 +188,7 @@
   }
 
   function triggerFlash(){
+    if(malusUntil>Date.now()){ showToast('Tu es saboté : plus de flash pour le moment.'); return; }
     const ev = pickEvent();
     const ov = document.createElement('div'); ov.className='ov';
     ov.innerHTML = `
