@@ -87,7 +87,8 @@
   let currentUser=null, stats=null, dir={}, cdTimer=null;
   function todayStr(){ return new Date().toISOString().slice(0,10); }
   function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
-  function salaryFor(level, days){ const mult = 1 + Math.min(Math.max(days-1,0),5)*0.1; return Math.round(level*2000*mult); }
+  const SALARY_CAP = 100000; // plafond du salaire quotidien (bonus de série inclus)
+  function salaryFor(level, days){ const mult = 1 + Math.min(Math.max(days-1,0),5)*0.1; return Math.min(Math.round(level*2000*mult), SALARY_CAP); }
 
   async function init(){
     const { data:{ session } } = await sb.auth.getSession();
@@ -144,7 +145,7 @@
         <div class="kpi"><div class="kpi-val">🏆 ${stats.trophies||0}</div><div class="kpi-lbl">Trophées</div></div>
       </div>
       <div class="sect-lbl">Note de direction</div>
-      <div class="card info">Le salaire de direction s'encaisse <b>une fois par jour</b>. Il grimpe avec ton <b>niveau</b>, et venir chaque jour fait monter ton <b>bonus de série</b> (jusqu'à +50% au bout de 6 jours). Manquer un jour remet la série à 1.</div>`;
+      <div class="card info">Le salaire de direction s'encaisse <b>une fois par jour</b>. Il grimpe avec ton <b>niveau</b>, et venir chaque jour fait monter ton <b>bonus de série</b> (jusqu'à +50% au bout de 6 jours). Manquer un jour remet la série à 1. Plafonné à <b>${SALARY_CAP.toLocaleString('fr-FR')} €/jour</b>.</div>`;
 
     document.getElementById('content').innerHTML = html;
 
