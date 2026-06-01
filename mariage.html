@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mariage - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#1a0a14; color:#fbe9f3; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(236,72,153,0.22), transparent 60%),
+      linear-gradient(180deg,#2e0f22,#1a0a14 60%,#100610); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#1a0a14,rgba(26,10,20,0.85)); backdrop-filter:blur(8px); }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
+    background:linear-gradient(135deg,#f472b6,#fbcfe8,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin:18px 4px 10px; }
+
+  /* MARIÉ */
+  .wed { text-align:center; padding:26px 16px; background:linear-gradient(160deg,rgba(236,72,153,0.16),rgba(168,85,247,0.1)); border:1px solid rgba(236,72,153,0.3); border-radius:20px; }
+  .wed-rings { font-size:54px; margin-bottom:6px; }
+  .wed-lbl { font-family:'Caveat',cursive; font-size:22px; color:#f9a8d4; }
+  .wed-names { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:1px; color:#fff; margin:6px 0; line-height:1.1; }
+  .wed-date { font-size:12px; color:rgba(255,255,255,0.5); margin-top:6px; }
+
+  .btn { width:100%; border:none; border-radius:13px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; cursor:pointer;
+    background:linear-gradient(135deg,#db2777,#f472b6); color:#fff; }
+  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.4; }
+  .btn-soft { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:rgba(255,255,255,0.7); margin-top:10px; }
+
+  .row { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+  .row:last-child{ border-bottom:none; }
+  .ava { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg,#db2777,#f472b6); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; color:#fff; font-family:'Bebas Neue',sans-serif; }
+  .row-name { flex:1; font-weight:700; font-size:14px; }
+  .row-btn { border:none; border-radius:9px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.5px; cursor:pointer; flex-shrink:0; }
+  .row-btn.pink{ background:linear-gradient(135deg,#db2777,#f472b6); color:#fff; }
+  .row-btn.green{ background:rgba(34,197,94,0.85); color:#fff; }
+  .row-btn.gray{ background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.7); }
+
+  .search { width:100%; padding:11px 13px; border-radius:11px; border:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.05); color:#fff; font-size:14px; margin-bottom:6px; }
+  .search::placeholder{ color:rgba(255,255,255,0.35); }
+  .list { max-height:300px; overflow-y:auto; }
+  .empty { text-align:center; padding:24px 14px; color:rgba(255,255,255,0.35); font-size:13px; }
+  .loader { text-align:center; padding:50px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200;
+    background:rgba(46,15,34,0.97); border:1px solid rgba(236,72,153,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#f9a8d4; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.good { border-color:rgba(34,197,94,0.5); color:#86efac; }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="wrap">
+    <div class="hdr"><div class="hdr-title">💍 Mariage</div></div>
+    <div id="content"><div class="loader">…</div></div>
+    <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const GIFT = 10; // diamants offerts à chaque marié
+
+  let currentUser=null, username='Docker', diamonds=0;
+  let married=null, incoming=[], outgoing=[], players=[], filter='';
+  const esc=t=>(t||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser=session.user;
+    const [{ data:prof }, { data:gs }] = await Promise.all([
+      sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle(),
+      sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle()
+    ]);
+    username = prof?.username || currentUser.email.split('@')[0];
+    diamonds = gs?.diamonds || 0;
+    await loadState();
+    render();
+  }
+
+  async function loadState(){
+    married=null; incoming=[]; outgoing=[];
+    try {
+      const { data:m } = await sb.from('mariages').select('*')
+        .eq('status','married').or(`proposer_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`).limit(1);
+      if(m && m.length){ married=m[0]; await claimGift(married); return; }
+      const { data:inc } = await sb.from('mariages').select('*').eq('status','pending').eq('target_id',currentUser.id).order('created_at',{ascending:false});
+      incoming = inc || [];
+      const { data:out } = await sb.from('mariages').select('*').eq('status','pending').eq('proposer_id',currentUser.id).order('created_at',{ascending:false});
+      outgoing = out || [];
+    } catch(e){ console.log('state:',e); }
+  }
+
+  async function claimGift(row){
+    const iAmProposer = row.proposer_id===currentUser.id;
+    const flag = iAmProposer ? row.proposer_gift_claimed : row.target_gift_claimed;
+    if(flag) return;
+    diamonds += GIFT;
+    try {
+      await sb.from('game_stats').update({ diamonds }).eq('user_id',currentUser.id);
+      const upd = iAmProposer ? { proposer_gift_claimed:true } : { target_gift_claimed:true };
+      await sb.from('mariages').update(upd).eq('id',row.id);
+      if(iAmProposer) row.proposer_gift_claimed=true; else row.target_gift_claimed=true;
+      showToast(`🎁 Cadeau de mariage : +${GIFT} 💎`, true);
+    } catch(e){ console.log('gift:',e); }
+  }
+
+  async function loadPlayers(){
+    try {
+      const { data } = await sb.from('profiles').select('user_id,username').neq('user_id',currentUser.id).limit(200);
+      players = (data||[]).filter(p=>p.username);
+    } catch(e){ console.log('players:',e); players=[]; }
+  }
+
+  function render(){
+    const c=document.getElementById('content');
+    if(married){
+      const partnerName = married.proposer_id===currentUser.id ? married.target_name : married.proposer_name;
+      const d = married.married_at ? new Date(married.married_at).toLocaleDateString('fr-FR') : '';
+      c.innerHTML = `
+        <div class="wed">
+          <div class="wed-rings">💍💕</div>
+          <div class="wed-lbl">Heureux mariage</div>
+          <div class="wed-names">${esc(username)}<br><span style="font-size:18px;color:#f9a8d4">&</span><br>${esc(partnerName)}</div>
+          <div class="wed-date">Unis depuis le ${d}</div>
+        </div>
+        <button class="btn btn-soft" onclick="divorce()">💔 Divorcer</button>`;
+      return;
+    }
+    let html='';
+    if(incoming.length){
+      html += `<div class="sect-lbl">💌 Demandes reçues</div><div class="card">` +
+        incoming.map(r=>`<div class="row">
+          <div class="ava">${esc((r.proposer_name||'?')[0]).toUpperCase()}</div>
+          <div class="row-name">${esc(r.proposer_name)}<div style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.5)">te demande en mariage</div></div>
+          <button class="row-btn green" onclick="accept('${r.id}')">Accepter</button>
+          <button class="row-btn gray" onclick="refuse('${r.id}')">Refuser</button>
+        </div>`).join('') + `</div>`;
+    }
+    if(outgoing.length){
+      html += `<div class="sect-lbl">⏳ Ta demande en cours</div><div class="card">` +
+        outgoing.map(r=>`<div class="row">
+          <div class="ava">${esc((r.target_name||'?')[0]).toUpperCase()}</div>
+          <div class="row-name">${esc(r.target_name)}<div style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.5)">en attente de réponse…</div></div>
+          <button class="row-btn gray" onclick="cancelReq('${r.id}')">Annuler</button>
+        </div>`).join('') + `</div>`;
+    }
+    if(!outgoing.length){
+      html += `<div class="sect-lbl">💍 Faire une demande</div>
+        <div class="card">
+          <input class="search" id="search" placeholder="Chercher un docker…" oninput="onFilter(this.value)" value="${esc(filter)}">
+          <div class="list" id="playerList"><div class="empty">Chargement des dockers…</div></div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-top:8px;text-align:center;line-height:1.5">En vous mariant, chacun reçoit ${GIFT} 💎 de cadeau de bienvenue.</div>
+        </div>`;
+    }
+    c.innerHTML = html || `<div class="empty">Rien pour l'instant.</div>`;
+    if(!outgoing.length){ renderPlayers(); if(!players.length) loadPlayers().then(renderPlayers); }
+  }
+
+  function renderPlayers(){
+    const el=document.getElementById('playerList'); if(!el) return;
+    const f=filter.trim().toLowerCase();
+    const list=players.filter(p=>p.username.toLowerCase().includes(f)).slice(0,40);
+    if(!list.length){ el.innerHTML=`<div class="empty">Aucun docker trouvé.</div>`; return; }
+    el.innerHTML=list.map(p=>`<div class="row">
+      <div class="ava">${esc(p.username[0]).toUpperCase()}</div>
+      <div class="row-name">${esc(p.username)}</div>
+      <button class="row-btn pink" onclick="propose('${p.user_id}','${esc(p.username).replace(/'/g,"\\'")}')">💍 Demander</button>
+    </div>`).join('');
+  }
+  function onFilter(v){ filter=v; renderPlayers(); }
+
+  async function propose(uid,name){
+    if(married || outgoing.length) return;
+    try {
+      await sb.from('mariages').insert({ proposer_id:currentUser.id, proposer_name:username, target_id:uid, target_name:name, status:'pending' });
+      showToast(`Demande envoyée à ${name} 💌`, true);
+      await loadState(); render();
+    } catch(e){ console.log('propose:',e); showToast('Erreur, réessaie.'); }
+  }
+  async function accept(id){
+    try {
+      await sb.from('mariages').update({ status:'married', married_at:new Date().toISOString() }).eq('id',id);
+      // annuler mes autres demandes en attente
+      await sb.from('mariages').delete().eq('status','pending').or(`proposer_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`);
+      showToast('Félicitations ! 💍', true);
+      await loadState(); render();
+    } catch(e){ console.log('accept:',e); showToast('Erreur, réessaie.'); }
+  }
+  async function refuse(id){
+    try { await sb.from('mariages').delete().eq('id',id); await loadState(); render(); showToast('Demande refusée.'); }
+    catch(e){ console.log(e); }
+  }
+  async function cancelReq(id){
+    try { await sb.from('mariages').delete().eq('id',id); await loadState(); render(); showToast('Demande annulée.'); }
+    catch(e){ console.log(e); }
+  }
+  async function divorce(){
+    if(!married) return;
+    if(!confirm('Divorcer ? Cette action est définitive.')) return;
+    try { await sb.from('mariages').delete().eq('id',married.id); showToast('Vous avez divorcé. 💔'); await loadState(); render(); }
+    catch(e){ console.log('divorce:',e); }
+  }
+
+  let toastT=null;
+  function showToast(msg,good){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(good?' good':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(good?' good':''),2600); }
+
+  init();
+</script>
+</body>
+</html>
