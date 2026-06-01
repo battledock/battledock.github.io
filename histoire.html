@@ -163,9 +163,9 @@
     async function awardTrophies(n){
       if (!n || n<=0 || !currentUser) return;
       try {
-        const { data:pr } = await sb.from('profiles').select('trophies').eq('user_id', currentUser.id).maybeSingle();
-        await sb.from('profiles').update({ trophies: (pr?.trophies||0) + n }).eq('user_id', currentUser.id);
-      } catch(e){ console.log('trophies:', e); }
+        const { data:pr } = await sb.from('profiles').select('trophies,diamonds').eq('user_id', currentUser.id).maybeSingle();
+        await sb.from('profiles').update({ trophies: (pr?.trophies||0) + n, diamonds: (pr?.diamonds||0) + n*5 }).eq('user_id', currentUser.id);
+      } catch(e){ console.log('rewards:', e); }
     }
 
 
@@ -1158,57 +1158,127 @@
     }
 
     // ── CHAPITRE 8 ──
+    let _ch8Viewed = new Set();
+    const CH8_TIPS = [
+      "🏗️ Records : bats tes scores à Tower ou au Pointeau → tu gagnes de l'argent.",
+      "📈 Bourse : encaisse un profit en revendant au bon moment → gros gain.",
+      "🔥 Régularité : connexion du jour et montées de niveau → diamants & trophées.",
+    ];
+
     function startChapter8() {
       showNarrateur("Lundi, 7h. Un type que tu connais pas est planté au milieu du hangar, casque vissé, classeur sous le bras. Il a l'air... organisé.", () => showCh8_1(), 'bureau');
     }
-
     function showCh8_1() {
       setChar('vigile', 'Mickaël', 'bureau');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
       document.getElementById('dialogueText').textContent = "Salut ! Mickaël, nouveau chef d'équipe. À partir d'aujourd'hui, on bosse avec des OBJECTIFS. Chaque jour, sa petite liste. C'est motivant, tu vas voir !";
       showNext(() => showCh8_2());
     }
-
     function showCh8_2() {
       setChar('gegé', 'Gégé', 'bureau');
       document.getElementById('dialogueText').textContent = "(soupir) Encore un qui aime les fiches. On en a vu passer, des Mickaël...";
       showNext(() => showCh8_3());
     }
-
     function showCh8_3() {
       setChar('vigile', 'Mickaël', 'bureau');
-      document.getElementById('dialogueText').textContent = "J'ai entendu, Gégé ! Mais ceux-là, ils récompensent. Tu remplis tes 3 objectifs du jour, tu touches de l'argent, des diamants, parfois un trophée. Tout le monde y gagne.";
-      showNext(() => showCh8_4());
+      document.getElementById('dialogueText').textContent = "J'ai entendu, Gégé ! Mais ceux-là, ils RÉCOMPENSENT. Argent, diamants, parfois un trophée. Allez, je t'explique le système.";
+      showNext(() => showCh8_tuto());
     }
 
-    function showCh8_4() {
-      setChar('doudou', 'Doudou', 'bureau');
-      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-      document.getElementById('dialogueText').textContent = "Des récompenses ? Tous les jours ? Bon, d'accord, je signe. Y'a un objectif 'manger un sandwich' ?";
-      showNext(() => showCh8_choice());
-    }
-
-    function showCh8_choice() {
+    // INTERACTION 1 — mini-tuto tapé
+    function showCh8_tuto() {
+      _ch8Viewed = new Set();
       setChar('vigile', 'Mickaël', 'bureau');
-      document.getElementById('dialogueText').textContent = "Pas encore, Doudou. Bon, tu joues le jeu ? Tu passes voir tes objectifs chaque matin ?";
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Tape chaque catégorie d'objectif pour voir ce que ça rapporte. Faut comprendre avant de foncer.";
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = `
+        <div class="fade-in" style="display:flex;flex-direction:column;gap:10px">
+          <div id="ch8tip" style="min-height:42px;font-size:13px;line-height:1.5;color:#cbd5e1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:11px;text-align:center">👆 Tape les 3 catégories pour découvrir</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="ch8Tip(0,this)" style="flex:1;padding:12px 4px;border-radius:11px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:0.5px;cursor:pointer">🏗️ Records</button>
+            <button onclick="ch8Tip(1,this)" style="flex:1;padding:12px 4px;border-radius:11px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:0.5px;cursor:pointer">📈 Bourse</button>
+            <button onclick="ch8Tip(2,this)" style="flex:1;padding:12px 4px;border-radius:11px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:0.5px;cursor:pointer">🔥 Régularité</button>
+          </div>
+          <button id="ch8cont" class="btn-next" style="opacity:0.4;pointer-events:none" onclick="showCh8_focus()">Continuer (0/3)</button>
+        </div>`;
+    }
+    function ch8Tip(i, el) {
+      document.getElementById('ch8tip').textContent = CH8_TIPS[i];
+      el.style.background = 'rgba(34,197,94,0.18)'; el.style.borderColor = 'rgba(34,197,94,0.5)';
+      _ch8Viewed.add(i);
+      const cont = document.getElementById('ch8cont');
+      if (_ch8Viewed.size >= 3) { cont.textContent = 'Continuer ✓'; cont.style.opacity = '1'; cont.style.pointerEvents = 'auto'; }
+      else { cont.textContent = `Continuer (${_ch8Viewed.size}/3)`; }
+    }
+
+    // INTERACTION 2 — choix qui oriente les objectifs du jour
+    function showCh8_focus() {
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Maintenant, choisis ton défi du jour. Je te le GARANTIS dans ta liste d'objectifs d'aujourd'hui.";
       showChoices([
-        { icon:'💪', text:'"À fond, j\'adore les défis !"', next: showCh8_react },
-        { icon:'😏', text:'"Si ça paie, pourquoi pas."', next: showCh8_react },
-        { icon:'🥪', text:'"Surtout pour le sandwich."', next: showCh8_react },
+        { icon:'🏗️', text:'Me concentrer sur la Tower', next:()=>chooseFocus('tower') },
+        { icon:'📋', text:'Viser le Pointeau',           next:()=>chooseFocus('pointeau') },
+        { icon:'📈', text:'Tenter la Bourse',            next:()=>chooseFocus('bourse') },
       ]);
     }
-
-    function showCh8_react() {
-      setChar('titouan', 'Titouan', 'bureau');
+    async function chooseFocus(f) {
+      await seedCh8Objectives(f);
+      const label = { tower:'les étages de la Tower', pointeau:'le Pointeau', bourse:'la Bourse' }[f] || 'ton défi';
+      setChar('vigile', 'Mickaël', 'bureau');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
-      document.getElementById('dialogueText').textContent = "Moi je fais mes objectifs tous les jours. Ça m'a payé la moitié de mon thème de fiche. Faut juste pas oublier de passer les chercher.";
-      showNext(() => showCh8_mickael2());
+      document.getElementById('dialogueText').textContent = `Parfait ! J'ai glissé un objectif sur ${label} dans ta liste du jour. Tu le verras dans tes Objectifs.`;
+      showNext(() => showCh8_bonus());
+    }
+    async function seedCh8Objectives(focusId) {
+      try {
+        const today = new Date().toISOString().split('T')[0];
+        const { data: existing } = await sb.from('daily_objectives').select('objectives').eq('user_id', currentUser.id).eq('date', today).maybeSingle();
+        if (existing) return; // ne pas écraser une liste déjà générée
+        const { data: gs } = await sb.from('game_stats').select('level,records,bourse_profit').eq('user_id', currentUser.id).maybeSingle();
+        const records = (gs?.records && typeof gs.records === 'object') ? gs.records : {};
+        const cur = (m) => m==='level' ? (gs?.level||1) : m==='bourse_profit' ? (gs?.bourse_profit||0) : (records[m]||0);
+        const TPL = {
+          tower:    { id:'tower',    title:"Bats ton record d'étages (Tower)",   icon:'🏗️', mode:'beat',     metric:'tower_floor',    reward:{type:'money',amount:6000} },
+          pointeau: { id:'pointeau', title:'Bats ton record de score (Pointeau)', icon:'📋', mode:'beat',     metric:'pointeau_score', reward:{type:'money',amount:6000} },
+          bourse:   { id:'bourse',   title:'Réalise un profit à la Bourse',       icon:'📈', mode:'increase', metric:'bourse_profit',  reward:{type:'money',amount:8000} },
+        };
+        const login   = { id:'login', title:'Connexion du jour', icon:'🔥', mode:'free', reward:{type:'diamonds',amount:2} };
+        const levelUp = { id:'level', title:'Gagne un niveau',    icon:'⭐', mode:'inc', metric:'level', amount:1, reward:{type:'diamonds',amount:3} };
+        const chosen = [login, TPL[focusId] || TPL.tower, levelUp];
+        const objectives = chosen.map(t => ({ id:t.id, title:t.title, icon:t.icon, mode:t.mode, metric:t.metric||null, amount:t.amount||null, baseline: t.mode==='free'?0:cur(t.metric), reward:t.reward, completed:t.mode==='free', claimed:false }));
+        await sb.from('daily_objectives').upsert({ user_id:currentUser.id, date:today, objectives }, { onConflict:'user_id,date' });
+      } catch(e) { console.log('seed obj:', e); }
     }
 
-    function showCh8_mickael2() {
+    // INTERACTION 3 — prime de bienvenue à réclamer (une seule fois)
+    function showCh8_bonus() {
       setChar('vigile', 'Mickaël', 'bureau');
-      document.getElementById('dialogueText').textContent = "Voilà l'esprit ! 3 objectifs neufs chaque jour. Tu les remplis en jouant, tu reviens les réclamer. Simple, carré, efficace. Allez, au boulot l'équipe !";
-      showNext(() => finishChapter8());
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Et tiens, prime de bienvenue pour le nouveau. Cadeau de la maison — la vraie, pas celle du Casino.";
+      const act = document.getElementById('actionsZone'); act.innerHTML = '';
+      const wrap = document.createElement('div'); wrap.className = 'choices fade-in';
+      const b = document.createElement('button'); b.className = 'btn-next'; b.innerHTML = '🎁 Réclamer +5 💎';
+      b.onclick = () => claimWelcome(b);
+      wrap.appendChild(b); act.appendChild(wrap);
+    }
+    async function claimWelcome(btn) {
+      btn.disabled = true; btn.textContent = '…';
+      try {
+        const { data: gs } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const sp = gs?.story_progress || {};
+        if (!sp.ch8_bonus) {
+          const { data: prof } = await sb.from('profiles').select('diamonds').eq('user_id', currentUser.id).maybeSingle();
+          await sb.from('profiles').update({ diamonds: (prof?.diamonds||0) + 5 }).eq('user_id', currentUser.id);
+          await sb.from('game_stats').update({ story_progress: { ...sp, ch8_bonus: true } }).eq('user_id', currentUser.id);
+        }
+      } catch(e) { console.log(e); }
+      document.getElementById('dialogueText').textContent = "Voilà 5 diamants pour bien démarrer. Garde-les pour un beau thème de fiche chez Foinfoin !";
+      const act = document.getElementById('actionsZone'); act.innerHTML = '';
+      const wrap = document.createElement('div'); wrap.className = 'choices fade-in';
+      const b = document.createElement('button'); b.className = 'btn-next'; b.innerHTML = 'Terminer le chapitre →'; b.onclick = finishChapter8;
+      wrap.appendChild(b); act.appendChild(wrap);
     }
 
     async function finishChapter8() {
@@ -1234,7 +1304,7 @@
       act.innerHTML = '';
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
-      badge.innerHTML = '<div class="badge-icon">📋</div><div class="badge-title">Bosseur</div><div class="badge-desc">+1500€ · +350 XP · Objectifs quotidiens débloqués</div>';
+      badge.innerHTML = '<div class="badge-icon">📋</div><div class="badge-title">Bosseur</div><div class="badge-desc">+1500€ · +350 XP · +5 💎 · Objectifs quotidiens débloqués</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next';
