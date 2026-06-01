@@ -128,6 +128,11 @@
       <div class="themes" id="themes"></div>
     </div>
 
+    <div class="rayon">
+      <div class="rayon-h">🎁 Cadeaux d'amour <span style="font-family:'Caveat';font-size:14px;color:#9a7b4f">(à offrir au Mariage)</span></div>
+      <div id="gifts"></div>
+    </div>
+
     <button class="back-bottom" onclick="window.location.href='game.html'">← Sortir de l'échoppe</button>
   </div>
   <div class="toast" id="toast"></div>
@@ -147,7 +152,14 @@
     { key:'coral',   name:'Corail',       grad:'linear-gradient(135deg,#be123c,#fb7185)', cost:30 },
   ];
 
-  let currentUser=null, money=0, diamonds=0, mpc=1, xpc=1, owned=['blue'], bgColor='blue';
+  const GIFTS = [
+    { key:'rose',    name:'Une rose',        icon:'🌹', cost:1500 },
+    { key:'choco',   name:'Des chocolats',   icon:'🍫', cost:4000 },
+    { key:'teddy',   name:'Une peluche',     icon:'🧸', cost:9000 },
+    { key:'bouquet', name:'Un gros bouquet', icon:'💐', cost:18000 },
+    { key:'jewel',   name:'Un bijou',        icon:'💍', cost:30000 },
+  ];
+  let currentUser=null, money=0, diamonds=0, mpc=1, xpc=1, owned=['blue'], bgColor='blue', shopObj={}, gifts={};
   const fmt=n=>Math.round(n).toLocaleString('fr-FR');
 
   async function init(){
@@ -160,9 +172,10 @@
     ]);
     bgColor = prof?.background_color||'blue';
     money = gs?.money||0; mpc = gs?.money_per_click||1; xpc = gs?.xp_per_click||1; diamonds = gs?.diamonds||0;
-    const shop = (gs?.shop && typeof gs.shop==='object') ? gs.shop : {};
-    owned = Array.isArray(shop.themes) ? shop.themes : [];
+    shopObj = (gs?.shop && typeof gs.shop==='object') ? gs.shop : {};
+    owned = Array.isArray(shopObj.themes) ? shopObj.themes : [];
     if(!owned.includes('blue')) owned.push('blue');
+    gifts = (shopObj.gifts && typeof shopObj.gifts==='object') ? shopObj.gifts : {};
     render();
   }
 
@@ -197,9 +210,25 @@
       else btn = `<button class="rug-btn buy" ${diamonds<t.cost?'disabled':''} onclick="buyTheme('${t.key}')">${t.cost} 💎</button>`;
       return `<div class="rug" style="background:${t.grad}"><div class="rug-name">${t.name}</div>${btn}</div>`;
     }).join('');
+
+    document.getElementById('gifts').innerHTML = GIFTS.map(g=>{
+      const have = gifts[g.key]||0;
+      return `<div class="shelf"><div class="ware">
+        <div class="ware-ic">${g.icon}</div>
+        <div class="ware-mid"><div class="ware-name">${g.name}</div><div class="ware-sub">Dans ton panier : ${have}</div></div>
+        <button class="tag eur" ${money<g.cost?'disabled':''} onclick="buyGift('${g.key}')">${fmt(g.cost)}€</button>
+      </div><div class="shelf-board"></div></div>`;
+    }).join('');
   }
 
-  async function saveStats(){ try{ await sb.from('game_stats').update({ money:Math.round(money), money_per_click:mpc, xp_per_click:xpc, shop:{ themes:owned }, diamonds }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
+  async function buyGift(key){
+    const g=GIFTS.find(x=>x.key===key); if(!g) return;
+    if(money<g.cost){ showToast('Pas assez d\'argent.','bad'); return; }
+    money-=g.cost; gifts[key]=(gifts[key]||0)+1;
+    await saveStats(); render(); say(`${g.icon} Ah, pour l'amour ! Emballé, c'est pesé.`); showToast(`${g.name} ajouté à ton panier`, 'good');
+  }
+
+  async function saveStats(){ try{ shopObj = { ...shopObj, themes:owned, gifts }; await sb.from('game_stats').update({ money:Math.round(money), money_per_click:mpc, xp_per_click:xpc, shop:shopObj, diamonds }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
   async function saveProfile(){ try{ await sb.from('profiles').update({ background_color:bgColor }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
   function say(t){ document.getElementById('foinfoinSay').textContent = t; }
 

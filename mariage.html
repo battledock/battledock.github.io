@@ -27,6 +27,11 @@
   .wed-lbl { font-family:'Caveat',cursive; font-size:22px; color:#f9a8d4; }
   .wed-names { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:1px; color:#fff; margin:6px 0; line-height:1.1; }
   .wed-date { font-size:12px; color:rgba(255,255,255,0.5); margin-top:6px; }
+  .tagline { text-align:center; font-family:'Caveat',cursive; font-weight:700; font-size:19px; color:#f9a8d4; margin:0 0 14px; }
+  .wed { box-shadow:0 0 0 1px rgba(251,191,36,0.25), 0 10px 30px rgba(236,72,153,0.15); }
+  .wed-floral { font-size:17px; letter-spacing:5px; margin-bottom:6px; }
+  .wed-amp { font-size:20px; color:#f9a8d4; margin:3px 0; }
+  .ava.gift { background:linear-gradient(135deg,#f472b6,#fbbf24) !important; }
 
   .btn { width:100%; border:none; border-radius:13px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; cursor:pointer;
     background:linear-gradient(135deg,#db2777,#f472b6); color:#fff; }
@@ -61,6 +66,7 @@
   <div class="bg"></div>
   <div class="wrap">
     <div class="hdr"><div class="hdr-title">💍 Mariage</div></div>
+    <div class="tagline">~ pour le meilleur et pour le pire, sur le port ~</div>
     <div id="content"><div class="loader">…</div></div>
     <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
   </div>
@@ -71,9 +77,17 @@
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const sb = supabase.createClient(SB_URL, SB_KEY);
   const GIFT = 10; // diamants offerts à chaque marié
+  const GIFTS = [
+    { key:'rose',    name:'Une rose',        icon:'🌹' },
+    { key:'choco',   name:'Des chocolats',   icon:'🍫' },
+    { key:'teddy',   name:'Une peluche',     icon:'🧸' },
+    { key:'bouquet', name:'Un gros bouquet', icon:'💐' },
+    { key:'jewel',   name:'Un bijou',        icon:'💍' },
+  ];
+  const today = () => new Date().toISOString().split('T')[0];
 
-  let currentUser=null, username='Docker', diamonds=0;
-  let married=null, incoming=[], outgoing=[], players=[], filter='';
+  let currentUser=null, username='Docker', diamonds=0, money=0;
+  let married=null, incoming=[], outgoing=[], players=[], filter='', giftsReceived=[], shopObj={}, inventory={}, giftDay=null;
   const esc=t=>(t||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
 
   async function init(){
@@ -82,10 +96,14 @@
     currentUser=session.user;
     const [{ data:prof }, { data:gs }] = await Promise.all([
       sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle(),
-      sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle()
+      sb.from('game_stats').select('diamonds,money,shop').eq('user_id',currentUser.id).maybeSingle()
     ]);
     username = prof?.username || currentUser.email.split('@')[0];
     diamonds = gs?.diamonds || 0;
+    money = gs?.money || 0;
+    shopObj = (gs?.shop && typeof gs.shop==='object') ? gs.shop : {};
+    inventory = (shopObj.gifts && typeof shopObj.gifts==='object') ? shopObj.gifts : {};
+    giftDay = shopObj.giftDay || null;
     await loadState();
     render();
   }
@@ -95,7 +113,7 @@
     try {
       const { data:m } = await sb.from('mariages').select('*')
         .eq('status','married').or(`proposer_id.eq.${currentUser.id},target_id.eq.${currentUser.id}`).limit(1);
-      if(m && m.length){ married=m[0]; await claimGift(married); return; }
+      if(m && m.length){ married=m[0]; await claimGift(married); await loadGifts(); return; }
       const { data:inc } = await sb.from('mariages').select('*').eq('status','pending').eq('target_id',currentUser.id).order('created_at',{ascending:false});
       incoming = inc || [];
       const { data:out } = await sb.from('mariages').select('*').eq('status','pending').eq('proposer_id',currentUser.id).order('created_at',{ascending:false});
@@ -129,12 +147,33 @@
     if(married){
       const partnerName = married.proposer_id===currentUser.id ? married.target_name : married.proposer_name;
       const d = married.married_at ? new Date(married.married_at).toLocaleDateString('fr-FR') : '';
+      const gaveToday = giftDay === today();
+      const recv = giftsReceived.map(g=>`
+        <div class="row">
+          <div class="ava gift">${g.icon||'🎁'}</div>
+          <div class="row-name">${esc(g.kind||'Cadeau')}<div style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.55)">${g.message?('« '+esc(g.message)+' »'):('de '+esc(g.from_name||partnerName))}${g.created_at?' · '+new Date(g.created_at).toLocaleDateString('fr-FR'):''}</div></div>
+        </div>`).join('');
+      const ownedGifts = GIFTS.filter(g=>(inventory[g.key]||0)>0);
+      const catalog = ownedGifts.length ? ownedGifts.map(g=>`
+        <div class="row">
+          <div class="ava gift">${g.icon}</div>
+          <div class="row-name">${g.name}<div style="font-weight:400;font-size:11px;color:rgba(255,255,255,0.55)">×${inventory[g.key]} dans ton panier</div></div>
+          <button class="row-btn pink" ${gaveToday?'disabled style="opacity:.4"':''} onclick="sendGift('${g.key}')">Offrir</button>
+        </div>`).join('')
+        : `<div class="empty">Ton panier est vide.<br>Achète des cadeaux chez Foinfoin 🛒</div>`;
       c.innerHTML = `
         <div class="wed">
-          <div class="wed-rings">💍💕</div>
+          <div class="wed-floral">🌸 🤍 🌸</div>
+          <div class="wed-rings">💍</div>
           <div class="wed-lbl">Heureux mariage</div>
-          <div class="wed-names">${esc(username)}<br><span style="font-size:18px;color:#f9a8d4">&</span><br>${esc(partnerName)}</div>
+          <div class="wed-names">${esc(username)}<div class="wed-amp">♡</div>${esc(partnerName)}</div>
           <div class="wed-date">Unis depuis le ${d}</div>
+        </div>
+        ${giftsReceived.length?`<div class="sect-lbl">💞 Souvenirs reçus</div><div class="card">${recv}</div>`:''}
+        <div class="sect-lbl">💝 Offrir à ${esc(partnerName)} ${gaveToday?"· déjà offert aujourd'hui ✓":'· 1 par jour'}</div>
+        <div class="card">
+          <input class="search" id="giftMsg" placeholder="Un petit mot doux (optionnel)…" maxlength="80">
+          ${catalog}
         </div>
         <button class="btn btn-soft" onclick="divorce()">💔 Divorcer</button>`;
       return;
@@ -212,6 +251,29 @@
     if(!confirm('Divorcer ? Cette action est définitive.')) return;
     try { await sb.from('mariages').delete().eq('id',married.id); showToast('Vous avez divorcé. 💔'); await loadState(); render(); }
     catch(e){ console.log('divorce:',e); }
+  }
+
+  async function loadGifts(){
+    giftsReceived=[];
+    try { const { data } = await sb.from('cadeaux_mariage').select('*').eq('to_id',currentUser.id).order('created_at',{ascending:false}).limit(30); giftsReceived=data||[]; }
+    catch(e){ console.log('gifts:',e); }
+  }
+  async function sendGift(key){
+    if(!married) return;
+    if(giftDay === today()){ showToast('Un seul cadeau par jour 💕'); return; }
+    if((inventory[key]||0) <= 0){ showToast('Tu n\'as pas ce cadeau. Achète-le au Shop.'); return; }
+    const g = GIFTS.find(x=>x.key===key); if(!g) return;
+    const partnerId = married.proposer_id===currentUser.id ? married.target_id : married.proposer_id;
+    const msg = ((document.getElementById('giftMsg')||{}).value||'').trim().slice(0,80);
+    inventory[key] = (inventory[key]||0) - 1;
+    giftDay = today();
+    shopObj = { ...shopObj, gifts:inventory, giftDay };
+    try {
+      await sb.from('game_stats').update({ shop:shopObj }).eq('user_id',currentUser.id);
+      await sb.from('cadeaux_mariage').insert({ from_id:currentUser.id, from_name:username, to_id:partnerId, kind:g.name, icon:g.icon, amount:0, message:msg });
+      showToast(`${g.icon} ${g.name} offert 💕`, true);
+    } catch(e){ console.log('send:',e); inventory[key]=(inventory[key]||0)+1; giftDay=null; showToast('Erreur (table cadeaux manquante ?).'); }
+    render();
   }
 
   let toastT=null;
