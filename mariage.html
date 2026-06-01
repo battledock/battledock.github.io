@@ -76,7 +76,7 @@
   const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const sb = supabase.createClient(SB_URL, SB_KEY);
-  const GIFT = 10; // diamants offerts à chaque marié
+  const GIFT = 1; // diamants offerts à chaque marié
   const GIFTS = [
     { key:'rose',    name:'Une rose',        icon:'🌹' },
     { key:'choco',   name:'Des chocolats',   icon:'🍫' },
@@ -248,8 +248,20 @@
   }
   async function divorce(){
     if(!married) return;
-    if(!confirm('Divorcer ? Cette action est définitive.')) return;
-    try { await sb.from('mariages').delete().eq('id',married.id); showToast('Vous avez divorcé. 💔'); await loadState(); render(); }
+    const estCost = Math.floor((money||0) * 0.5);
+    if(!confirm('Divorcer coûte 50% de ton argent (environ −'+estCost.toLocaleString('fr-FR')+'€). Cette action est définitive. Continuer ?')) return;
+    try {
+      await sb.from('mariages').delete().eq('id',married.id);
+      // Relire l'argent à jour pour un prélèvement exact
+      const { data:fresh } = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+      const cur = fresh?.money || 0;
+      const cost = Math.floor(cur * 0.5);
+      const newMoney = cur - cost;
+      await sb.from('game_stats').update({ money:newMoney }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast('Vous avez divorcé. 💔 −'+cost.toLocaleString('fr-FR')+'€');
+      await loadState(); render();
+    }
     catch(e){ console.log('divorce:',e); }
   }
 
