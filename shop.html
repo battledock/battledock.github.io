@@ -155,11 +155,11 @@
     if(!session){ window.location.href='index.html'; return; }
     currentUser=session.user;
     const [{ data:prof }, { data:gs }] = await Promise.all([
-      sb.from('profiles').select('diamonds,background_color').eq('user_id',currentUser.id).maybeSingle(),
-      sb.from('game_stats').select('money,money_per_click,xp_per_click,shop').eq('user_id',currentUser.id).maybeSingle()
+      sb.from('profiles').select('background_color').eq('user_id',currentUser.id).maybeSingle(),
+      sb.from('game_stats').select('money,money_per_click,xp_per_click,shop,diamonds').eq('user_id',currentUser.id).maybeSingle()
     ]);
-    diamonds = prof?.diamonds||0; bgColor = prof?.background_color||'blue';
-    money = gs?.money||0; mpc = gs?.money_per_click||1; xpc = gs?.xp_per_click||1;
+    bgColor = prof?.background_color||'blue';
+    money = gs?.money||0; mpc = gs?.money_per_click||1; xpc = gs?.xp_per_click||1; diamonds = gs?.diamonds||0;
     const shop = (gs?.shop && typeof gs.shop==='object') ? gs.shop : {};
     owned = Array.isArray(shop.themes) ? shop.themes : [];
     if(!owned.includes('blue')) owned.push('blue');
@@ -199,8 +199,8 @@
     }).join('');
   }
 
-  async function saveStats(){ try{ await sb.from('game_stats').update({ money:Math.round(money), money_per_click:mpc, xp_per_click:xpc, shop:{ themes:owned } }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
-  async function saveProfile(){ try{ await sb.from('profiles').update({ diamonds, background_color:bgColor }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
+  async function saveStats(){ try{ await sb.from('game_stats').update({ money:Math.round(money), money_per_click:mpc, xp_per_click:xpc, shop:{ themes:owned }, diamonds }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
+  async function saveProfile(){ try{ await sb.from('profiles').update({ background_color:bgColor }).eq('user_id',currentUser.id); }catch(e){console.log(e);} }
   function say(t){ document.getElementById('foinfoinSay').textContent = t; }
 
   async function buyMpc(){

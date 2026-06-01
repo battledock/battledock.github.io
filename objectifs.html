@@ -109,13 +109,10 @@
     if(!session){ window.location.href='index.html'; return; }
     currentUser=session.user;
     todayStr = new Date().toISOString().split('T')[0];
-    const [{ data:gs }, { data:prof }] = await Promise.all([
-      sb.from('game_stats').select('money,level,records,bourse_profit').eq('user_id',currentUser.id).maybeSingle(),
-      sb.from('profiles').select('diamonds,trophies').eq('user_id',currentUser.id).maybeSingle()
-    ]);
+    const { data:gs } = await sb.from('game_stats').select('money,level,records,bourse_profit,diamonds,trophies').eq('user_id',currentUser.id).maybeSingle();
     money=gs?.money||0; level=gs?.level||1; bourseProfit=gs?.bourse_profit||0;
     records=(gs?.records&&typeof gs.records==='object')?gs.records:{};
-    diamonds=prof?.diamonds||0; trophies=prof?.trophies||0;
+    diamonds=gs?.diamonds||0; trophies=gs?.trophies||0;
 
     const { data:row } = await sb.from('daily_objectives').select('objectives').eq('user_id',currentUser.id).eq('date',todayStr).maybeSingle();
     if(row?.objectives && Array.isArray(row.objectives) && row.objectives.length){ objectives=row.objectives; }
@@ -197,8 +194,8 @@
     const r=o.reward;
     try {
       if(r.type==='money'){ money+=r.amount; await sb.from('game_stats').update({ money:Math.round(money) }).eq('user_id',currentUser.id); }
-      else if(r.type==='diamonds'){ diamonds+=r.amount; await sb.from('profiles').update({ diamonds }).eq('user_id',currentUser.id); }
-      else if(r.type==='trophies'){ trophies+=r.amount; await sb.from('profiles').update({ trophies }).eq('user_id',currentUser.id); }
+      else if(r.type==='diamonds'){ diamonds+=r.amount; await sb.from('game_stats').update({ diamonds }).eq('user_id',currentUser.id); }
+      else if(r.type==='trophies'){ trophies+=r.amount; await sb.from('game_stats').update({ trophies }).eq('user_id',currentUser.id); }
       await saveObjectives();
     } catch(e){ console.log('claim:',e); }
     render();

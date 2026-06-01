@@ -160,13 +160,7 @@
 
     function getXpRequired(l){ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; }
 
-    async function awardTrophies(n){
-      if (!n || n<=0 || !currentUser) return;
-      try {
-        const { data:pr } = await sb.from('profiles').select('trophies,diamonds').eq('user_id', currentUser.id).maybeSingle();
-        await sb.from('profiles').update({ trophies: (pr?.trophies||0) + n, diamonds: (pr?.diamonds||0) + n*5 }).eq('user_id', currentUser.id);
-      } catch(e){ console.log('rewards:', e); }
-    }
+    async function awardTrophies(n){ /* récompenses de niveau (1 trophée + 5 diamants) gérées par le menu via checkPendingLevelUp sur game_stats */ }
 
 
     // ── FONDS DE SCÈNE ──
@@ -1266,12 +1260,10 @@
     async function claimWelcome(btn) {
       btn.disabled = true; btn.textContent = '…';
       try {
-        const { data: gs } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const { data: gs } = await sb.from('game_stats').select('story_progress,diamonds').eq('user_id', currentUser.id).maybeSingle();
         const sp = gs?.story_progress || {};
         if (!sp.ch8_bonus) {
-          const { data: prof } = await sb.from('profiles').select('diamonds').eq('user_id', currentUser.id).maybeSingle();
-          await sb.from('profiles').update({ diamonds: (prof?.diamonds||0) + 5 }).eq('user_id', currentUser.id);
-          await sb.from('game_stats').update({ story_progress: { ...sp, ch8_bonus: true } }).eq('user_id', currentUser.id);
+          await sb.from('game_stats').update({ diamonds: (gs?.diamonds||0) + 5, story_progress: { ...sp, ch8_bonus: true } }).eq('user_id', currentUser.id);
         }
       } catch(e) { console.log(e); }
       document.getElementById('dialogueText').textContent = "Voilà 5 diamants pour bien démarrer. Garde-les pour un beau thème de fiche chez Foinfoin !";
