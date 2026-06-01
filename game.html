@@ -154,21 +154,19 @@
       background:#ffffff; border-top:1px solid #e5e7eb; display:flex; align-items:stretch; box-shadow:0 -6px 20px rgba(15,23,42,0.07); }
     .bn-item { flex:1; border:none; background:transparent; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
       cursor:pointer; color:#9ca3af; font-family:'Inter',sans-serif; position:relative; transition:color .18s; -webkit-tap-highlight-color:transparent; }
-    .bn-item .bn-ic { font-size:21px; line-height:1; transition:transform .2s ease; }
-    .bn-item .bn-ic { font-size:0; }
+    .bn-item .bn-ic { font-size:0; line-height:1; transition:transform .2s ease; position:relative; z-index:1; }
     .bn-item .bn-ic svg { width:23px; height:23px; display:block; }
-    .tab-hidden { display:none !important; }
-    @keyframes tabIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    .nav-card.tab-anim, .mini-grid.tab-anim { animation: tabIn .28s ease; }
     .bn-item .bn-lb { font-size:10px; font-weight:700; letter-spacing:0.2px; }
     .bn-item::before { content:''; position:absolute; top:6px; left:50%; transform:translateX(-50%) scale(0.5); width:48px; height:30px;
       border-radius:15px; background:#1d4ed8; opacity:0; transition:opacity .22s ease, transform .22s ease; z-index:0; }
     .bn-item.active::before { opacity:1; transform:translateX(-50%) scale(1); }
-    .bn-item .bn-ic { position:relative; z-index:1; }
     .bn-item.active { color:#1d4ed8; }
     .bn-item.active .bn-ic { color:#fff; transform:translateY(-1px); }
     .bn-item.active .bn-lb { color:#1d4ed8; }
     .bn-item:active { opacity:0.6; }
+    .tab-hidden { display:none !important; }
+    @keyframes tabIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .nav-card.tab-anim, .mini-grid.tab-anim { animation: tabIn .28s ease; }
 
     /* ===================== DAILY ===================== */
 
@@ -339,7 +337,14 @@
       background: repeating-linear-gradient(45deg, #1a1208 0 9px, #f59e0b 9px 18px); opacity: 0.9; }
 
     /* HISTOIRE */
-    .nav-card.histoire { grid-column: span 2; height: 130px; }
+    .nav-card.histoire { grid-column: span 2; height: 196px; }
+    .hi-prog { width:82%; max-width:300px; margin-top:4px; }
+    .hi-bar { height:8px; border-radius:20px; background:rgba(255,255,255,0.18); overflow:hidden; }
+    .hi-fill { height:100%; width:0%; border-radius:20px; background:linear-gradient(90deg,#a78bfa,#7c3aed,#fbbf24); box-shadow:0 0 10px rgba(167,139,250,0.7); transition:width .6s ease; }
+    .hi-meta { font-size:10px; color:rgba(196,181,253,0.85); font-weight:700; letter-spacing:1.5px; margin-top:7px; }
+    .hi-cta { margin-top:10px; display:inline-block; background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff;
+      font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px; padding:9px 24px; border-radius:11px; box-shadow:0 5px 16px rgba(124,58,237,0.55); }
+    .home-label { grid-column: span 2; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px; color:#475569; margin:8px 2px -2px; }
     @keyframes lineScan {
       0%   { transform:translateX(-100%); }
       100% { transform:translateX(100%); }
@@ -837,6 +842,9 @@
           <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:6px;color:rgba(196,181,253,0.7);line-height:1;margin-bottom:2px">LE MODE</div>
           <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:8px;color:white;line-height:1;text-shadow:0 0 30px rgba(167,139,250,0.8),0 0 60px rgba(124,58,237,0.4)">HISTOIRE</div>
           <div id="histoireBadge" style="display:none;font-size:10px;color:rgba(196,181,253,0.7);font-weight:700;letter-spacing:2px"></div>
+          <div class="hi-prog"><div class="hi-bar"><div class="hi-fill" id="hiFill"></div></div></div>
+          <div class="hi-meta" id="hiMeta">Chapitre 1 · 0/22</div>
+          <div class="hi-cta" id="hiCta">▶ Commencer</div>
         </div>
       </div>
 
@@ -956,6 +964,7 @@
       </div>
 
       <!-- OBJECTIFS -->
+      <div class="home-label" id="dailyLabel">À faire aujourd'hui</div>
       <div class="nav-card objectifs gated" id="objectifsCard" onclick="window.location.href='objectifs.html'">
         <div class="nav-card-bg" style="background:linear-gradient(135deg,#15803d,#22c55e,#16a34a)"></div>
         <div class="nav-card-overlay"></div>
@@ -1310,6 +1319,12 @@
         if (sp[scene]) { const c = document.getElementById(id); if (c) c.classList.remove('gated'); }
         else lockCard(id, ch);
       });
+
+      let doneN = 0; for (let i = 1; i <= 22; i++) if (sp['scene' + i + '_done']) doneN++;
+      const cur = Math.min(doneN + 1, 22);
+      const hf = document.getElementById('hiFill'); if (hf) hf.style.width = Math.round(doneN / 22 * 100) + '%';
+      const hm = document.getElementById('hiMeta'); if (hm) hm.textContent = (doneN >= 22 ? 'Histoire terminée' : 'Chapitre ' + cur) + ' · ' + doneN + '/22';
+      const hc = document.getElementById('hiCta'); if (hc) hc.textContent = doneN === 0 ? '▶ Commencer' : (doneN >= 22 ? '👑 Terminé' : '▶ Continuer');
     }
 
     function lockCard(id, chapter) {
@@ -1607,8 +1622,7 @@ async function loadCalendar() {
       }
     })();
   </script>
-
-  <!-- ===== BOTTOM NAV — onglets ===== -->
+  <!-- ===== BOTTOM NAV ===== -->
   <nav class="bottom-nav">
     <button class="bn-item active" data-tab="accueil"    onclick="setTab('accueil')"><div class="bn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg></div><div class="bn-lb">Accueil</div></button>
     <button class="bn-item"        data-tab="bosser"     onclick="setTab('bosser')"><div class="bn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div><div class="bn-lb">Bosser</div></button>
@@ -1617,9 +1631,8 @@ async function loadCalendar() {
     <button class="bn-item"        data-tab="classement" onclick="setTab('classement')"><div class="bn-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div><div class="bn-lb">Classement</div></button>
   </nav>
   <script>
-    // Répartition des cartes par onglet
     const NAV_TABS = {
-      histoireCard:'accueil', objectifsCard:'accueil', defisCard:'accueil', evenementCard:'accueil',
+      histoireCard:'accueil', dailyLabel:'accueil', objectifsCard:'accueil', defisCard:'accueil', evenementCard:'accueil',
       workCard:'bosser', bourseCard:'bosser', commerceCard:'bosser',
       barCard:'port', casinoCard:'port', shopCard:'port', mariageCard:'port',
       directionCard:'rivalite', sabotageCard:'rivalite', syndicatCard:'rivalite', evspecialCard:'rivalite',
