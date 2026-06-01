@@ -877,6 +877,7 @@
       btn.innerHTML = '← Retour aux chapitres';
       btn.onclick = showMenu;
       act.appendChild(btn);
+      addBonusButton('ch3_bonus','☕ Sers la tournée', playMiniCh3);
     }
 
     // ── CHAPITRE 4 ──
@@ -1502,6 +1503,103 @@
       act.appendChild(btn);
     }
 
+    // ── BONUS MINI-JEUX DE CHAPITRE ──
+    async function grantChapterBonus(chKey, money, xp){
+      try {
+        const { data:fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id',currentUser.id).maybeSingle();
+        const sp = fresh?.story_progress || {};
+        if (sp[chKey]) return false; // déjà récupéré
+        let nXp=(fresh?.xp||0)+xp, nLvl=fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
+        sp[chKey]=true;
+        await sb.from('game_stats').update({ money:(fresh?.money||0)+money, xp:nXp, level:nLvl, story_progress:sp }).eq('user_id',currentUser.id);
+        await awardTrophies(nLvl-(fresh?.level||1));
+        progress = sp;
+        return true;
+      } catch(e){ console.log('bonus:',e); return false; }
+    }
+    function addBonusButton(chKey, label, miniFn){
+      const act=document.getElementById('actionsZone'); if(!act) return;
+      const done = !!(progress && progress[chKey]);
+      const b=document.createElement('button'); b.className='btn-next';
+      b.style.cssText="margin-top:8px;border:none;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#3a1f00"+(done?";opacity:0.65":"");
+      b.innerHTML = done ? ('✓ '+label+' (bonus gagné)') : ('🎮 '+label+' — défi bonus');
+      b.onclick = ()=> miniFn(chKey);
+      act.appendChild(b);
+    }
+    function makeMiniOverlay(title, sub, accent){
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;z-index:120;background:linear-gradient(180deg,#0f1a2e,#05080f);display:flex;flex-direction:column;align-items:center;padding:20px;color:#fff';
+      ov.innerHTML='<div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;letter-spacing:1px;color:'+(accent||'#fbbf24')+';margin-top:10px;text-align:center">'+title+'</div>'+
+        '<div style="font-size:13px;color:rgba(255,255,255,0.6);margin:6px 0 16px;text-align:center;max-width:400px;line-height:1.5">'+sub+'</div>'+
+        '<div class="mini-body" style="width:100%;max-width:440px;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center"></div>';
+      document.body.appendChild(ov);
+      return { ov, body: ov.querySelector('.mini-body') };
+    }
+    async function miniEnd(ov, success, money, xp, chKey){
+      let got=false;
+      if(success) got = await grantChapterBonus(chKey, money, xp);
+      const body=ov.querySelector('.mini-body'); body.innerHTML='';
+      const wrap=document.createElement('div'); wrap.style.cssText='text-align:center';
+      wrap.innerHTML = success
+        ? '<div style="font-size:46px">🎉</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;color:#34d399;letter-spacing:1px">Réussi !</div>'+
+          (got?('<div style="color:#fbbf24;font-family:\'Bebas Neue\',sans-serif;font-size:22px;margin-top:6px">+'+money.toLocaleString('fr-FR')+'€ · +'+xp+' XP</div>')
+              :'<div style="color:rgba(255,255,255,0.6);margin-top:8px;font-size:13px">Bonus déjà récupéré (1 fois par chapitre)</div>')
+        : '<div style="font-size:46px">😅</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:28px;color:#f87171;letter-spacing:1px">Raté !</div><div style="color:rgba(255,255,255,0.6);margin-top:8px;font-size:13px">Tu peux retenter quand tu veux.</div>';
+      body.appendChild(wrap);
+      const btn=document.createElement('button'); btn.textContent='Continuer →';
+      btn.style.cssText="margin-top:18px;border:none;border-radius:12px;padding:14px 26px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;background:linear-gradient(135deg,#3b82f6,#60a5fa);color:#fff;cursor:pointer";
+      btn.onclick=()=>{ if(ov.parentNode) document.body.removeChild(ov); };
+      body.appendChild(btn);
+    }
+
+    // CH.1 — Le Pointage (timing)
+    function playMiniCh1(chKey){
+      const { ov, body } = makeMiniOverlay('🕐 Le Pointage', "Premier jour : pointe à l'heure ! Arrête l'aiguille dans la zone verte. 3 essais — réussis-en au moins 2.", '#fbbf24');
+      body.innerHTML='<div id="pgRound" style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:#fcd34d;margin-bottom:14px">Pointage 1 / 3 · réussis : 0</div>'+
+        '<div style="position:relative;width:100%;max-width:420px;height:54px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:14px;overflow:hidden">'+
+        '<div id="pgZone" style="position:absolute;top:0;bottom:0;background:rgba(34,197,94,0.4);border-left:2px solid #4ade80;border-right:2px solid #4ade80"></div>'+
+        '<div id="pgMark" style="position:absolute;top:-4px;bottom:-4px;width:5px;background:#fff;box-shadow:0 0 10px #fff;border-radius:3px"></div></div>'+
+        '<button id="pgBtn" style="margin-top:20px;width:100%;max-width:420px;border:none;border-radius:14px;padding:16px;font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#3a1f00;cursor:pointer">POINTER</button>';
+      const mark=body.querySelector('#pgMark'), zone=body.querySelector('#pgZone'), btn=body.querySelector('#pgBtn'), roundEl=body.querySelector('#pgRound');
+      let round=0, hits=0, pos=0, dir=1, speed=1.6, timer=null, center=50, half=12, stopped=false;
+      function setup(){ stopped=false; pos=0; dir=1; center=20+Math.random()*60; half=13-round*1.5; speed=1.5+round*0.5;
+        zone.style.left=(center-half)+'%'; zone.style.width=(half*2)+'%'; roundEl.textContent='Pointage '+(round+1)+' / 3 · réussis : '+hits; btn.textContent='POINTER'; btn.disabled=false;
+        timer=setInterval(function(){ pos+=dir*speed; if(pos>=100){pos=100;dir=-1;} if(pos<=0){pos=0;dir=1;} mark.style.left=pos+'%'; },16); }
+      function stop(){ if(stopped) return; stopped=true; clearInterval(timer); btn.disabled=true;
+        const ok=Math.abs(pos-center)<=half; if(ok){ hits++; btn.textContent='✓ Dans les temps !'; } else { btn.textContent='✗ Raté'; }
+        roundEl.textContent='Pointage '+(round+1)+' / 3 · réussis : '+hits;
+        setTimeout(function(){ round++; if(round>=3){ miniEnd(ov, hits>=2, 1200, 200, chKey); } else setup(); }, 700); }
+      btn.onclick=stop; setup();
+    }
+
+    // CH.2 — Charge les caisses (tap)
+    function playMiniCh2(chKey){
+      const { ov, body } = makeMiniOverlay('📦 Charge les caisses', 'Tape le plus vite possible pendant 8 secondes pour charger le cargo ! Objectif : 35 caisses.', '#60a5fa');
+      body.innerHTML='<div id="ldCount" style="font-family:\'Bebas Neue\',sans-serif;font-size:46px;color:#fbbf24">0</div>'+
+        '<div id="ldTime" style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:16px">8.0 s · objectif 35</div>'+
+        '<button id="ldBtn" style="width:100%;max-width:420px;border:none;border-radius:18px;padding:42px 16px;font-family:\'Bebas Neue\',sans-serif;font-size:26px;letter-spacing:2px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;cursor:pointer">📦 CHARGER</button>';
+      const countEl=body.querySelector('#ldCount'), timeEl=body.querySelector('#ldTime'), btn=body.querySelector('#ldBtn');
+      let count=0, started=false, endT=0, raf=null;
+      function tick(){ const left=Math.max(0,endT-performance.now()); timeEl.textContent=(left/1000).toFixed(1)+' s · objectif 35'; if(left<=0){ btn.disabled=true; miniEnd(ov, count>=35, 1500, 200, chKey); return; } raf=requestAnimationFrame(tick); }
+      btn.onpointerdown=function(e){ e.preventDefault(); if(!started){ started=true; endT=performance.now()+8000; tick(); } count++; countEl.textContent=count; btn.style.transform='scale(0.97)'; setTimeout(function(){btn.style.transform='';},50); };
+    }
+
+    // CH.3 — Sers la tournée (whack)
+    function playMiniCh3(chKey){
+      const { ov, body } = makeMiniOverlay('☕ Sers la tournée', "Les collègues ont soif ! Tape les cafés avant qu'ils refroidissent. 12 secondes, objectif : 12 cafés.", '#a78bfa');
+      body.innerHTML='<div id="svCount" style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;color:#c4b5fd;margin-bottom:12px">Servis : 0 · 12.0 s</div>'+
+        '<div id="svGrid" style="position:relative;width:100%;max-width:360px;aspect-ratio:1/1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:16px"></div>';
+      const grid=body.querySelector('#svGrid'), label=body.querySelector('#svCount');
+      let served=0, endT=performance.now()+12000, raf=null, spawnT=0;
+      function spawn(){ const cup=document.createElement('div'); cup.textContent='☕'; cup.style.cssText='position:absolute;font-size:34px;cursor:pointer;transform:translate(-50%,-50%)'; cup.style.left=(12+Math.random()*76)+'%'; cup.style.top=(12+Math.random()*76)+'%';
+        let alive=true; const ttl=setTimeout(function(){ if(alive&&cup.parentNode){ alive=false; cup.parentNode.removeChild(cup); } }, 1050);
+        cup.onpointerdown=function(){ if(!alive) return; alive=false; clearTimeout(ttl); served++; cup.textContent='✅'; setTimeout(function(){ if(cup.parentNode) cup.parentNode.removeChild(cup); },150); };
+        grid.appendChild(cup); }
+      function tick(now){ const left=Math.max(0,endT-now); label.textContent='Servis : '+served+' · '+(left/1000).toFixed(1)+' s'; if(left<=0){ miniEnd(ov, served>=12, 1300, 200, chKey); return; } if(now-spawnT>620){ spawnT=now; spawn(); } raf=requestAnimationFrame(tick); }
+      requestAnimationFrame(function(t){ spawnT=t; tick(t); });
+    }
+
     // ── CHAPITRE 10 ──
     function startChapter10() {
       showNarrateur("Doudou tourne en rond depuis ce matin. Il a même pas touché à son sandwich. Là, c'est grave.", () => showCh10_1(), 'refectoire');
@@ -1808,6 +1906,7 @@
       btn.innerHTML = '← Retour aux chapitres';
       btn.onclick = showMenu;
       act.appendChild(btn);
+      addBonusButton('ch2_bonus','📦 Charge les caisses', playMiniCh2);
 
       // Sauvegarder en BD
       try {
@@ -2042,6 +2141,7 @@
       btn.innerHTML = '← Retour aux chapitres';
       btn.onclick = finishChapter1;
       act.appendChild(btn);
+      addBonusButton('ch1_bonus','🕐 Le Pointage', playMiniCh1);
     }
 
     async function finishChapter1() {
