@@ -158,7 +158,6 @@
     .bn-item .bn-lb { font-size:10px; font-weight:700; letter-spacing:0.2px; }
     .bn-item.active { color:#1d4ed8; }
     .bn-item.active .bn-ic { transform:translateY(-2px) scale(1.08); }
-    .bn-item.active::after { content:''; position:absolute; bottom:5px; width:5px; height:5px; border-radius:50%; background:#1d4ed8; }
     .bn-item:active { opacity:0.6; }
 
     /* ===================== DAILY ===================== */
@@ -819,7 +818,7 @@
       </div>
 
       <!-- HISTOIRE -->
-      <div class="nav-card histoire" onclick="window.location.href='histoire.html'">
+      <div class="nav-card histoire" id="histoireCard" onclick="window.location.href='histoire.html'">
         <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1e0a3c,#2d1060,#1a0845);z-index:0"></div>
         <canvas id="histoireCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:0.6"></canvas>
         <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);z-index:2;animation:lineScan 3s linear infinite"></div>
@@ -1077,7 +1076,7 @@
 
       <!-- CHAT + PARAMÈTRES -->
       </div><!-- fin nav-grid -->
-      <div class="mini-grid">
+      <div class="mini-grid" id="miniGridSettings">
 
         <!-- PARAMÈTRES -->
         <div class="mini-card settings" onclick="openSettings()" style="grid-column:span 2">
@@ -1599,28 +1598,31 @@ async function loadCalendar() {
     })();
   </script>
 
-  <!-- ===== BOTTOM NAV (FAB) — fictive pour l'instant ===== -->
+  <!-- ===== BOTTOM NAV — onglets ===== -->
   <nav class="bottom-nav">
-    <button class="bn-item active" onclick="navTo('home')"><div class="bn-ic">🏠</div><div class="bn-lb">Accueil</div></button>
-    <button class="bn-item" onclick="navTo('rank')"><div class="bn-ic">🏆</div><div class="bn-lb">Classement</div></button>
-    <button class="bn-item" onclick="navTo('port')"><div class="bn-ic">⚓</div><div class="bn-lb">Le Port</div></button>
-    <button class="bn-item" onclick="navTo('shop')"><div class="bn-ic">🛒</div><div class="bn-lb">Boutique</div></button>
-    <button class="bn-item" onclick="navTo('profile')"><div class="bn-ic">👤</div><div class="bn-lb">Profil</div></button>
+    <button class="bn-item active" data-tab="accueil"    onclick="setTab('accueil')"><div class="bn-ic">🏠</div><div class="bn-lb">Accueil</div></button>
+    <button class="bn-item"        data-tab="bosser"     onclick="setTab('bosser')"><div class="bn-ic">💼</div><div class="bn-lb">Bosser</div></button>
+    <button class="bn-item"        data-tab="port"       onclick="setTab('port')"><div class="bn-ic">⚓</div><div class="bn-lb">Le Port</div></button>
+    <button class="bn-item"        data-tab="rivalite"   onclick="setTab('rivalite')"><div class="bn-ic">⚔️</div><div class="bn-lb">Rivalité</div></button>
+    <button class="bn-item"        data-tab="classement" onclick="setTab('classement')"><div class="bn-ic">🏆</div><div class="bn-lb">Classement</div></button>
   </nav>
-  <div id="navToast" style="position:fixed;left:50%;bottom:84px;transform:translateX(-50%) translateY(10px);z-index:300;background:#111;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;border:2px solid #fff;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap"></div>
   <script>
-    // Barre fictive — pour l'activer plus tard, mets les destinations ici puis remplace le toast par window.location.href = dest[key];
-    function navTo(key){
-      if (key === 'rank') { window.location.href = 'classement.html'; return; }
-      // const dest = { home:'game.html', port:'travail.html', shop:'shop.html', profile:'profil.html' };
-      const labels = { home:'Accueil', rank:'Classement', port:'Le Port', shop:'Boutique', profile:'Profil' };
-      document.querySelectorAll('.bottom-nav .bn-item').forEach(b => b.classList.remove('active'));
-      if (event && event.currentTarget && event.currentTarget.classList.contains('bn-item')) event.currentTarget.classList.add('active');
-      const t = document.getElementById('navToast');
-      t.textContent = (labels[key] || key) + ' — bientôt disponible';
-      t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
-      clearTimeout(window._navT); window._navT = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(10px)'; }, 1600);
+    // Répartition des cartes par onglet
+    const NAV_TABS = {
+      histoireCard:'accueil', objectifsCard:'accueil', defisCard:'accueil', evenementCard:'accueil',
+      workCard:'bosser', bourseCard:'bosser', commerceCard:'bosser',
+      barCard:'port', casinoCard:'port', shopCard:'port', mariageCard:'port',
+      directionCard:'rivalite', sabotageCard:'rivalite', syndicatCard:'rivalite', evspecialCard:'rivalite',
+      rankCard:'classement', saisonCard:'classement', tournoiCard:'classement', chatCard:'classement'
+    };
+    function setTab(key){
+      document.querySelectorAll('.bottom-nav .bn-item').forEach(b => b.classList.toggle('active', b.dataset.tab === key));
+      for (const id in NAV_TABS){ const el = document.getElementById(id); if (el) el.style.display = (NAV_TABS[id] === key) ? '' : 'none'; }
+      const mg = document.getElementById('miniGridSettings'); if (mg) mg.style.display = (key === 'accueil') ? '' : 'none';
+      window.scrollTo({ top: 0, behavior: 'auto' });
     }
+    function setupTabs(){ for (const id in NAV_TABS){ const el = document.getElementById(id); if (el) el.dataset.tab = NAV_TABS[id]; } setTab('accueil'); }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setupTabs); else setupTabs();
   </script>
 </body>
 </html>
