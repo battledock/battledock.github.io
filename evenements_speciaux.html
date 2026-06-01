@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Événements Spéciaux - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
+  body { font-family:'Inter',sans-serif; background:#0a0613; color:#f3eaff; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:radial-gradient(120% 60% at 50% -5%, rgba(124,58,237,0.25), transparent 60%), linear-gradient(180deg,#1a0f2e,#120a22 55%,#0a0613); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px; background:linear-gradient(180deg,#120a22,rgba(18,10,34,0.85)); backdrop-filter:blur(8px); }
+  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:2px; background:linear-gradient(135deg,#a78bfa,#ec4899); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin:18px 4px 10px; }
+  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
+  .event { text-align:center; padding:22px 16px; border-radius:18px; margin-bottom:12px; background:linear-gradient(160deg,rgba(124,58,237,0.22),rgba(236,72,153,0.08)); border:1px solid rgba(167,139,250,0.45); }
+  .event-emoji { font-size:58px; line-height:1; }
+  .event-name { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:1px; color:#fff; margin:6px 0 2px; }
+  .event-desc { font-size:13.5px; color:rgba(255,255,255,0.7); margin-bottom:12px; }
+  .rewards { display:flex; justify-content:center; gap:14px; margin-bottom:14px; flex-wrap:wrap; }
+  .rw { background:rgba(0,0,0,0.25); border-radius:12px; padding:8px 12px; }
+  .rw-v { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#fcd34d; }
+  .rw-l { font-size:10px; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.5px; }
+  .btn { width:100%; border:none; border-radius:14px; padding:15px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; cursor:pointer; background:linear-gradient(135deg,#7c3aed,#a78bfa); color:#160a2e; margin-top:6px; }
+  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.5; }
+  .next { display:flex; align-items:center; gap:12px; }
+  .next-emoji { font-size:30px; opacity:0.7; }
+  .loader { text-align:center; padding:40px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300; background:rgba(26,15,46,0.97); border:1px solid rgba(167,139,250,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700; opacity:0; transition:all .35s; max-width:92%; text-align:center; color:#d8b4fe; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="hdr">
+    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">🎪 ÉVÉNEMENTS SPÉCIAUX</div>
+  </div>
+  <div id="content"><div class="loader">CHARGEMENT…</div></div>
+  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+  const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb=supabase.createClient(SB_URL,SB_KEY);
+  const PLAY_SECONDS=8, TAP_MONEY=120, TAP_MONEY_CAP=6000, TAP_XP=15, TAP_XP_CAP=600;
+  const EVENTS=[
+    { id:'criee',   emoji:'🐟', name:'La Grande Criée',     desc:'Vends un maximum de poisson frais avant la fermeture !', m:8000,  x:1200, d:3 },
+    { id:'pastaga', emoji:'🥃', name:'Festival du Pastaga',  desc:'Sers les tournées à toute vitesse, le port a soif !',     m:9000,  x:1300, d:3 },
+    { id:'cargo',   emoji:'🚢', name:'Cargo Mystère',        desc:'Décharge le conteneur surprise avant tout le monde !',   m:12000, x:1500, d:4 },
+    { id:'om',      emoji:'⚽', name:'Soir de Match OM',      desc:'Ambiance de feu sur le quai un soir de derby !',          m:10000, x:1400, d:4 },
+    { id:'mistral', emoji:'🌬️', name:'Alerte Mistral',        desc:'Arrime tout le matériel avant la grosse bourrasque !',    m:11000, x:1450, d:4 },
+  ];
+  let currentUser=null, ev={};
+  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+  const dayIndex=Math.floor(Date.now()/86400000);
+  const today=new Date().toISOString().slice(0,10);
+  function curEvent(){ return EVENTS[dayIndex % EVENTS.length]; }
+  function nextEvent(){ return EVENTS[(dayIndex+1) % EVENTS.length]; }
+  function eventKey(e){ return e.id+'@'+today; }
+  function msToMidnight(){ const n=new Date(); const m=new Date(n); m.setHours(24,0,0,0); return m-n; }
+
+  async function init(){
+    const { data:{ session } }=await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser=session.user;
+    const { data:gs }=await sb.from('game_stats').select('evspecial').eq('user_id',currentUser.id).maybeSingle();
+    ev=(gs?.evspecial&&typeof gs.evspecial==='object')?gs.evspecial:{};
+    render();
+  }
+
+  function render(){
+    const e=curEvent(), done=(ev.lastKey===eventKey(e));
+    const h=Math.floor(msToMidnight()/3600000), min=Math.floor((msToMidnight()%3600000)/60000);
+    const ne=nextEvent();
+    document.getElementById('content').innerHTML=`
+      <div class="event">
+        <div class="event-emoji">${e.emoji}</div>
+        <div class="event-name">${e.name}</div>
+        <div class="event-desc">${e.desc}</div>
+        <div class="rewards">
+          <div class="rw"><div class="rw-v">+${fmt(e.m)}€</div><div class="rw-l">jusqu'à</div></div>
+          <div class="rw"><div class="rw-v">+${fmt(e.x)} XP</div><div class="rw-l">jusqu'à</div></div>
+          <div class="rw"><div class="rw-v">+${e.d} 💎</div><div class="rw-l">bonus</div></div>
+        </div>
+        ${done
+          ? '<div class="info">✓ Événement déjà accompli aujourd\'hui. Reviens demain pour le suivant !</div>'
+          : `<button class="btn" onclick="participate()">${e.emoji} PARTICIPER (${PLAY_SECONDS}s)</button>`}
+      </div>
+      <div class="card info">Un nouvel événement spécial chaque jour. Plus tu te démènes pendant le défi, plus la prime grimpe (jusqu'au plafond) — et tu rafles le bonus de diamants. Prochaine rotation dans <b>${h}h${String(min).padStart(2,'0')}</b>.</div>
+      <div class="sect-lbl">Prochain événement</div>
+      <div class="card"><div class="next"><div class="next-emoji">${ne.emoji}</div><div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px">${ne.name}</div><div class="info">Disponible demain</div></div></div></div>`;
+  }
+
+  function participate(){
+    const e=curEvent();
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:300;background:linear-gradient(180deg,#1a0f2e,#0a0613);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:#fff';
+    ov.innerHTML=`<div style="font-size:46px">${e.emoji}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;color:#a78bfa">${e.name}</div>
+      <div id="ec" style="font-family:'Bebas Neue',sans-serif;font-size:50px;color:#fcd34d;margin:8px 0">0</div>
+      <div id="et" style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:18px">${PLAY_SECONDS}.0 s</div>
+      <button id="eb" style="width:100%;max-width:420px;border:none;border-radius:18px;padding:46px 16px;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;background:linear-gradient(135deg,#6d28d9,#a78bfa);color:#fff;cursor:pointer">APPUIE VITE !</button>`;
+    document.body.appendChild(ov);
+    const cEl=ov.querySelector('#ec'), tEl=ov.querySelector('#et'), b=ov.querySelector('#eb');
+    let taps=0, started=false, endT=0;
+    function tick(){ const left=Math.max(0,endT-performance.now()); tEl.textContent=(left/1000).toFixed(1)+' s'; if(left<=0){ b.disabled=true; if(ov.parentNode) document.body.removeChild(ov); claim(taps); return; } requestAnimationFrame(tick); }
+    b.onpointerdown=(ed)=>{ ed.preventDefault(); if(!started){ started=true; endT=performance.now()+PLAY_SECONDS*1000; tick(); } taps++; cEl.textContent=taps; b.style.transform='scale(0.97)'; setTimeout(()=>b.style.transform='',40); };
+  }
+
+  async function claim(taps){
+    const e=curEvent();
+    const money=e.m + Math.min(taps*TAP_MONEY, TAP_MONEY_CAP);
+    const xpGain=e.x + Math.min(taps*TAP_XP, TAP_XP_CAP);
+    try {
+      const { data:fresh }=await sb.from('game_stats').select('money,xp,level,diamonds,evspecial').eq('user_id',currentUser.id).maybeSingle();
+      let ee=(fresh?.evspecial&&typeof fresh.evspecial==='object')?fresh.evspecial:{};
+      if(ee.lastKey===eventKey(e)){ ev=ee; render(); showToast('Déjà fait aujourd\'hui.'); return; }
+      let nXp=(fresh?.xp||0)+xpGain, nLvl=fresh?.level||1;
+      function need(l){ if(l<=10)return l*500; if(l<=25)return l*1000; if(l<=50)return l*2000; return l*4000; }
+      while(nXp>=need(nLvl)){ nXp-=need(nLvl); nLvl++; }
+      ee.lastKey=eventKey(e);
+      await sb.from('game_stats').update({ money:(fresh?.money||0)+money, xp:nXp, level:nLvl, diamonds:(fresh?.diamonds||0)+e.d, evspecial:ee }).eq('user_id',currentUser.id);
+      ev=ee;
+      showToast(`+${fmt(money)}€ · +${fmt(xpGain)} XP · +${e.d} 💎 !`);
+      render();
+    } catch(err){ console.log(err); showToast('Erreur, réessaie.'); }
+  }
+
+  let toastT; function showToast(m){ const t=document.getElementById('toast'); t.textContent=m; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2800); }
+  init();
+</script>
+</body>
+</html>
