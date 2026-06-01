@@ -92,6 +92,7 @@
   const sb = supabase.createClient(SB_URL, SB_KEY);
 
   const COOLDOWN_MS = 3 * 3600 * 1000; // 3h entre 2 flashs
+  const FLASH_CAP = 30000; // gain max d'argent par flash
   const EVENTS = [
     { name:'Tempête de Containers', emoji:'📦', desc:"Une cargaison entière s'est renversée sur le quai. Ramasse tout avant les autres !" },
     { name:'Marée Haute', emoji:'🌊', desc:"La marée pousse des caisses à la dérive. Récupère-les tant qu'elles flottent !" },
@@ -143,11 +144,11 @@
           <div class="flash-bolt">${ev.emoji}</div>
           <div class="flash-name">${ev.name}</div>
           <div class="flash-desc">${ev.desc}</div>
-          <div class="flash-loot">RÉCOMPENSE : 💰 selon ta récolte · ⭐ +300 XP · 💎 +${dia}</div>
+          <div class="flash-loot">RÉCOMPENSE : 💰 selon ta récolte · ⭐ +5000 XP · 💎 +${dia}</div>
           <button class="btn" onclick="triggerFlash()">⚡ DÉCLENCHER L'ÉVÉNEMENT</button>
         </div>
         <div class="sect-lbl">Comment ça marche</div>
-        <div class="card info">Tape le plus vite possible pendant 8 secondes. Plus tu enchaînes, plus le <b>combo</b> monte et plus la prime grossit. Reviens toutes les 3h : enchaîner les flashs fait grimper ta <b>série 🔥</b> (bonus de diamants à 3 et 7).</div>`;
+        <div class="card info">Tape le plus vite possible pendant 8 secondes. Plus tu enchaînes, plus le <b>combo</b> monte et plus la prime grossit. Reviens toutes les 3h : enchaîner les flashs fait grimper ta <b>série 🔥</b> (bonus de diamants à 3 et 7). Gain plafonné à <b>${FLASH_CAP.toLocaleString('fr-FR')} €</b> par flash.</div>`;
     } else {
       html += `
         <div class="card cd">
@@ -184,7 +185,7 @@
       <button class="ov-btn" id="ovBtn">⚡ RÉCOLTER</button>`;
     document.body.appendChild(ov);
     const moneyEl=ov.querySelector('#ovMoney'), timeEl=ov.querySelector('#ovTime'), comboEl=ov.querySelector('#ovCombo'), btn=ov.querySelector('#ovBtn');
-    const base = Math.max(80, (stats.level||1)*45);
+    const base = Math.max(60, (stats.level||1)*12);
     let gained=0, combo=0, comboTimer=null, started=false, endT=0, raf=null;
     function tick(){
       const left = Math.max(0, endT - performance.now());
@@ -197,7 +198,7 @@
       if(!started){ started=true; endT=performance.now()+8000; tick(); }
       combo = Math.min(combo+1, 30);
       const mult = 1 + combo*0.07; // jusqu'à ~x3
-      gained += Math.round(base * mult);
+      gained = Math.min(gained + Math.round(base * mult), FLASH_CAP);
       moneyEl.textContent = gained.toLocaleString('fr-FR')+' €';
       comboEl.textContent = combo>3 ? ('COMBO x'+mult.toFixed(1)) : '';
       btn.style.transform='scale(0.97)'; setTimeout(()=>btn.style.transform='',50);
@@ -211,7 +212,7 @@
     const within = last && (Date.now() - last) < 36*3600*1000;
     const streak = within ? streakOld + 1 : 1;
     const dia = 1 + (streak>=3?1:0) + (streak>=7?1:0);
-    const bonusXp = 300;
+    const bonusXp = 5000;
     // Créditer (relecture fraîche)
     let credited = false;
     try {
