@@ -1706,9 +1706,17 @@
       if (level <= lastShown) return;
       _levelUpBusy = true;
       try {
-        // Marquer IMMÉDIATEMENT pour empêcher tout double-octroi (ré-entrée / concurrence)
-        await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
+        // RÉCLAMATION ATOMIQUE : on ne fait passer last_levelup_shown à `level`
+        // QUE s'il vaut ENCORE `lastShown`. Si une autre session/onglet/rechargement
+        // l'a déjà fait, 0 ligne n'est mise à jour => on n'octroie RIEN (anti double-octroi).
+        const { data: claimed } = await sb.from('game_stats')
+          .update({ last_levelup_shown: level })
+          .eq('user_id', currentUser.id)
+          .eq('last_levelup_shown', lastShown)
+          .select('user_id');
         stats.last_levelup_shown = level;
+        if (!claimed || claimed.length === 0) return; // déjà réclamé ailleurs
+
         // Cumuler les récompenses de TOUS les niveaux franchis
         let addMoney = 0, addDiamonds = 0, addTrophies = 0;
         for (let i = lastShown + 1; i <= level; i++) {
@@ -1716,9 +1724,13 @@
           addMoney += rewards.money; addDiamonds += rewards.diamonds; addTrophies += rewards.trophies;
           await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
         }
-        const newMoney    = (stats.money || 0)    + addMoney;
-        const newDiamonds = (stats.diamonds || 0) + addDiamonds;
-        const newTrophies = (stats.trophies || 0) + addTrophies;
+
+        // Relire les soldes FRAIS avant d'ajouter (évite d'écraser des gains récents)
+        const { data: fresh } = await sb.from('game_stats')
+          .select('money, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle();
+        const newMoney    = ((fresh && fresh.money)    != null ? fresh.money    : (stats.money || 0))    + addMoney;
+        const newDiamonds = ((fresh && fresh.diamonds) != null ? fresh.diamonds : (stats.diamonds || 0)) + addDiamonds;
+        const newTrophies = ((fresh && fresh.trophies) != null ? fresh.trophies : (stats.trophies || 0)) + addTrophies;
         await sb.from('game_stats').update({ money: newMoney, diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
         stats.money = newMoney; stats.diamonds = newDiamonds; stats.trophies = newTrophies;
         // Rafraîchir l'affichage sans relancer loadUserData (évite la ré-entrée)
