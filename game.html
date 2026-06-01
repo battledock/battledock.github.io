@@ -1386,25 +1386,35 @@
       document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
     }
 
+    let _levelUpBusy = false;
     async function checkPendingLevelUp(stats, profile) {
+      if (_levelUpBusy) return;
       const level = stats.level || 1, lastShown = stats.last_levelup_shown || 1;
       if (level <= lastShown) return;
-      for (let i = lastShown + 1; i <= level; i++) {
-        const rewards = { diamonds: 5, trophies: 1, money: i * 500 };
-        const newDiamonds = (stats.diamonds || 0) + rewards.diamonds;
-        const newTrophies = (stats.trophies || 0) + rewards.trophies;
-        await sb.from('game_stats').update({ diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
-        await sb.from('game_stats').update({ money: (stats.money || 0) + rewards.money }).eq('user_id', currentUser.id);
-        stats.diamonds = newDiamonds; stats.trophies = newTrophies;
-        await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
+      _levelUpBusy = true;
+      try {
+        // Marquer IMMÉDIATEMENT pour empêcher tout double-octroi (ré-entrée / concurrence)
+        await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
+        stats.last_levelup_shown = level;
+        // Cumuler les récompenses de TOUS les niveaux franchis
+        let addMoney = 0, addDiamonds = 0, addTrophies = 0;
+        for (let i = lastShown + 1; i <= level; i++) {
+          const rewards = { diamonds: 5, trophies: 1, money: i * 500 };
+          addMoney += rewards.money; addDiamonds += rewards.diamonds; addTrophies += rewards.trophies;
+          await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
+        }
+        const newMoney    = (stats.money || 0)    + addMoney;
+        const newDiamonds = (stats.diamonds || 0) + addDiamonds;
+        const newTrophies = (stats.trophies || 0) + addTrophies;
+        await sb.from('game_stats').update({ money: newMoney, diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
+        stats.money = newMoney; stats.diamonds = newDiamonds; stats.trophies = newTrophies;
+        // Rafraîchir l'affichage sans relancer loadUserData (évite la ré-entrée)
+        const mEl = document.getElementById('moneyAmount');    if (mEl) mEl.textContent = newMoney.toLocaleString('fr-FR') + '€';
+        const dEl = document.getElementById('diamondsAmount'); if (dEl) dEl.textContent = '💎 ' + newDiamonds;
+        const tEl = document.getElementById('trophiesAmount'); if (tEl) tEl.textContent = '🏆 ' + newTrophies;
+      } finally {
+        _levelUpBusy = false;
       }
-      await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
-      await loadUserData();
-      // Mettre à jour last_seen
-      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
-      loadChatBadge();
-      setInterval(loadChatBadge, 30000);
-      loadCalendar();
     }
 
     function showLevelUpPopup(level, rewards, onClose) {
