@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Syndicat - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#120606; color:#f6e7e0; min-height:100dvh; padding:0 14px 30px; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(220,38,38,0.20), transparent 60%),
+      linear-gradient(180deg,#2a0d08,#180806 55%,#0d0503); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#180806,rgba(24,8,6,0.85)); backdrop-filter:blur(8px); }
+  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:2px;
+    background:linear-gradient(135deg,#ef4444,#fca5a5,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px; margin-bottom:12px; }
+  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin:18px 4px 10px; }
+
+  .gege { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(160deg,rgba(220,38,38,0.1),rgba(245,158,11,0.05)); border:1px solid rgba(220,38,38,0.22); border-radius:16px; padding:14px; margin-bottom:14px; }
+  .gege-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#b45309,#f59e0b); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .gege-txt { font-size:14px; line-height:1.4; color:#fecaca; font-style:italic; }
+
+  .badge-mem { text-align:center; padding:18px; border-radius:16px; margin-bottom:12px;
+    background:linear-gradient(160deg,rgba(239,68,68,0.16),rgba(245,158,11,0.08)); border:1px solid rgba(239,68,68,0.4); }
+  .badge-mem .fist { font-size:40px; }
+  .badge-mem .t { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:#fca5a5; margin-top:4px; }
+  .badge-mem .s { font-size:12px; color:rgba(255,255,255,0.55); margin-top:2px; }
+
+  .bar-wrap { background:rgba(255,255,255,0.07); border-radius:10px; height:16px; overflow:hidden; margin:10px 0 6px; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,#dc2626,#f59e0b); border-radius:10px; transition:width .5s; }
+
+  .btn { width:100%; border:none; border-radius:13px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; cursor:pointer;
+    background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff; margin-top:8px; }
+  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.4; }
+  .btn-gold { background:linear-gradient(135deg,#b45309,#f59e0b); color:#1a1208; }
+
+  .coti-row { display:flex; gap:8px; margin-top:8px; }
+  .coti { flex:1; border:1px solid rgba(245,158,11,0.3); background:rgba(245,158,11,0.08); color:#fcd34d; border-radius:11px; padding:12px 4px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.5px; cursor:pointer; }
+  .coti:active{ transform:scale(0.97); }
+
+  .lb-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13.5px; }
+  .lb-row:last-child{ border-bottom:none; }
+  .lb-rank { width:24px; font-family:'Bebas Neue',sans-serif; color:#fca5a5; text-align:center; flex-shrink:0; }
+  .lb-name { flex:1; font-weight:700; }
+  .lb-amt { font-family:'Bebas Neue',sans-serif; color:#fcd34d; letter-spacing:0.5px; }
+
+  .kpi-row { display:flex; gap:10px; }
+  .kpi { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:13px; padding:12px 8px; text-align:center; }
+  .kpi-v { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fca5a5; }
+  .kpi-l { font-size:10px; letter-spacing:0.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-top:2px; }
+
+  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
+  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300;
+    background:rgba(42,13,8,0.97); border:1px solid rgba(239,68,68,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:92%; text-align:center; color:#fca5a5; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="wrap">
+  <div class="hdr">
+    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">✊ SYNDICAT</div>
+  </div>
+  <div id="content"><div class="loader">CHARGEMENT…</div></div>
+  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const SOLID_BASE = 5000;       // prime de solidarité de base / jour
+  const SOLID_RATE = 0.02;       // + 2% du total cotisé...
+  const SOLID_CAP  = 20000;      // ... plafonné
+  const PALIER_STEP = 500000;    // chaque palier de caisse commune
+  const PALIER_REWARD = 10000;   // prime par palier atteint
+  const COTI = [5000, 20000, 100000];
+
+  let currentUser=null, username='Docker', money=0, syn={}, communityTotal=0, leaderboard=[];
+  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser = session.user;
+    const [{ data:prof }, { data:gs }] = await Promise.all([
+      sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle(),
+      sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle()
+    ]);
+    username = prof?.username || currentUser.email.split('@')[0];
+    money = gs?.money || 0;
+    syn = (gs?.syndicat && typeof gs.syndicat==='object') ? gs.syndicat : {};
+    await loadFund();
+    render();
+  }
+
+  async function loadFund(){
+    communityTotal = 0; leaderboard = [];
+    try {
+      const { data } = await sb.from('syndicat').select('username,amount').limit(2000);
+      const map = {};
+      (data||[]).forEach(r=>{ communityTotal += (r.amount||0); const n=r.username||'?'; map[n]=(map[n]||0)+(r.amount||0); });
+      leaderboard = Object.entries(map).map(([n,a])=>({n,a})).sort((x,y)=>y.a-x.a).slice(0,8);
+    } catch(e){ console.log('fund:',e); }
+  }
+
+  function dailyAmount(){ return Math.round(SOLID_BASE + Math.min((syn.contributed||0)*SOLID_RATE, SOLID_CAP)); }
+  function palier(){ return Math.floor(communityTotal / PALIER_STEP); }
+
+  function render(){
+    const member = !!syn.member;
+    const canSolid = member && syn.lastSolidarity !== todayStr();
+    const pal = palier();
+    const pendingPaliers = member ? Math.max(0, pal - (syn.claimedPalier||0)) : 0;
+    const progress = ((communityTotal % PALIER_STEP) / PALIER_STEP) * 100;
+
+    let html = `
+      <div class="gege">
+        <div class="gege-ava">🧓</div>
+        <div class="gege-txt">"Le port, on l'a construit à la sueur. Le syndicat, c'est nous tous : on cotise à la caisse de grève, et quand on serre les rangs, personne nous marche dessus. Tu en es ?"</div>
+      </div>`;
+
+    if(member){
+      html += `<div class="badge-mem"><div class="fist">✊</div><div class="t">Membre du Syndicat</div><div class="s">Total cotisé : ${fmt(syn.contributed||0)} € · protégé à 50% contre le sabotage</div></div>`;
+    } else {
+      html += `<div class="card" style="text-align:center"><div class="info" style="margin-bottom:10px">Tu n'es pas encore syndiqué. Rejoins la caisse de grève pour la prime de solidarité, les paliers collectifs et la protection anti-sabotage.</div><button class="btn" onclick="joinUnion()">✊ Rejoindre le Syndicat</button></div>`;
+    }
+
+    if(member){
+      html += `
+        <div class="sect-lbl">Prime de solidarité</div>
+        <div class="card" style="text-align:center">
+          <div class="kpi-v" style="font-size:32px;color:#fcd34d">+${fmt(dailyAmount())} €</div>
+          <div class="info" style="margin:4px 0 10px">Une fois par jour · base ${fmt(SOLID_BASE)}€ + 2% de ton total cotisé (max ${fmt(SOLID_CAP)}€)</div>
+          ${canSolid ? '<button class="btn btn-gold" onclick="claimSolidarity()">🤝 TOUCHER LA PRIME</button>'
+                     : '<div class="info">✓ Déjà touchée aujourd\'hui. Reviens demain.</div>'}
+        </div>`;
+    }
+
+    html += `
+      <div class="sect-lbl">Caisse de grève commune</div>
+      <div class="card">
+        <div class="kpi-row" style="margin-bottom:6px">
+          <div class="kpi"><div class="kpi-v">${fmt(communityTotal)} €</div><div class="kpi-l">Cagnotte totale</div></div>
+          <div class="kpi"><div class="kpi-v">Palier ${pal}</div><div class="kpi-l">Niveau de grève</div></div>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${progress.toFixed(1)}%"></div></div>
+        <div class="info">Plus que ${fmt(PALIER_STEP - (communityTotal % PALIER_STEP))} € avant le palier ${pal+1}.</div>`;
+    if(pendingPaliers>0){
+      html += `<button class="btn" onclick="claimPalier()">🎉 Réclamer ${pendingPaliers} palier(s) — +${fmt(pendingPaliers*PALIER_REWARD)} €</button>`;
+    }
+    html += `</div>`;
+
+    if(member){
+      html += `
+        <div class="sect-lbl">Cotiser à la caisse</div>
+        <div class="card">
+          <div class="info">Renforce la cagnotte commune (et ta prime de solidarité monte avec ton total cotisé) :</div>
+          <div class="coti-row">${COTI.map(a=>`<button class="coti" onclick="cotiser(${a})">+${fmt(a)}€</button>`).join('')}</div>
+        </div>`;
+    }
+
+    html += `<div class="sect-lbl">Classement des cotisants</div><div class="card">`;
+    if(!leaderboard.length){ html += `<div class="info">Personne n'a encore cotisé. Sois le premier !</div>`; }
+    else { leaderboard.forEach((r,i)=>{ html += `<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${(r.n||'?').replace(/[<>&]/g,'')}</div><div class="lb-amt">${fmt(r.a)} €</div></div>`; }); }
+    html += `</div>
+      <div class="sect-lbl">Ta caisse</div><div class="card info">💰 Argent disponible : <b>${fmt(money)} €</b></div>`;
+
+    document.getElementById('content').innerHTML = html;
+  }
+
+  async function saveSyn(){ try{ await sb.from('game_stats').update({ syndicat:syn }).eq('user_id',currentUser.id); }catch(e){ console.log('saveSyn:',e); } }
+
+  async function joinUnion(){
+    syn.member = true;
+    if(syn.contributed==null) syn.contributed = 0;
+    if(syn.claimedPalier==null) syn.claimedPalier = palier(); // on n'hérite pas des paliers passés
+    await saveSyn();
+    showToast('✊ Bienvenue au Syndicat, camarade !');
+    render();
+  }
+
+  async function claimSolidarity(){
+    if(!syn.member || syn.lastSolidarity===todayStr()) return;
+    const amount = dailyAmount();
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
+      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
+      if(syn.lastSolidarity===todayStr()){ render(); return; }
+      const newMoney = (fresh?.money||0) + amount;
+      syn.lastSolidarity = todayStr();
+      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast(`🤝 +${fmt(amount)} € de solidarité !`);
+      render();
+    } catch(e){ console.log('solid:',e); showToast('Erreur, réessaie.'); }
+  }
+
+  async function claimPalier(){
+    const pending = Math.max(0, palier() - (syn.claimedPalier||0));
+    if(pending<=0) return;
+    const reward = pending*PALIER_REWARD;
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
+      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
+      const newMoney = (fresh?.money||0) + reward;
+      syn.claimedPalier = palier();
+      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast(`🎉 +${fmt(reward)} € (paliers de grève) !`);
+      render();
+    } catch(e){ console.log('palier:',e); showToast('Erreur.'); }
+  }
+
+  async function cotiser(amount){
+    if(!syn.member){ showToast('Rejoins d\'abord le syndicat.'); return; }
+    if(money < amount){ showToast('Pas assez d\'argent.'); return; }
+    if(!confirm(`Cotiser ${fmt(amount)}€ à la caisse de grève ?`)) return;
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
+      if((fresh?.money||0) < amount){ showToast('Pas assez d\'argent.'); return; }
+      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
+      const newMoney = (fresh?.money||0) - amount;
+      syn.contributed = (syn.contributed||0) + amount;
+      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
+      await sb.from('syndicat').insert({ user_id:currentUser.id, username, amount });
+      money = newMoney;
+      showToast(`✊ +${fmt(amount)}€ pour la caisse commune !`);
+      await loadFund();
+      render();
+    } catch(e){ console.log('cotiser:',e); showToast('Erreur, réessaie.'); }
+  }
+
+  let toastT;
+  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2800); }
+
+  init();
+</script>
+</body>
+</html>

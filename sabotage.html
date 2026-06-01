@@ -269,12 +269,14 @@
       if(recent && recent.length){ showToast('Tu as déjà saboté '+targetName+' récemment (24h).'); return; }
     } catch(e){ console.log(e); }
     // lecture de la cible
-    let tMoney=0, tProtected=false;
+    let tMoney=0, tProtected=false, tMember=false;
     try {
-      const { data:t } = await sb.from('game_stats').select('money,sabotage').eq('user_id',targetId).maybeSingle();
+      const { data:t } = await sb.from('game_stats').select('money,sabotage,syndicat').eq('user_id',targetId).maybeSingle();
       tMoney = t?.money || 0;
       const tSab = (t?.sabotage && typeof t.sabotage==='object') ? t.sabotage : {};
       tProtected = ms(tSab.protectUntil) > now();
+      const tSyn = (t?.syndicat && typeof t.syndicat==='object') ? t.syndicat : {};
+      tMember = !!tSyn.member;
     } catch(e){ console.log(e); }
 
     if(!confirm(`Saboter ${targetName} ?\n\n• Vol : jusqu'à ${STEAL_CAP.toLocaleString('fr-FR')}€ (5% de sa caisse)\n• Gêne : son Flash + Salaire bloqués ${MALUS_HOURS}h\n\nS'il a un vigile actif, le sabotage échoue.`)) return;
@@ -287,7 +289,8 @@
       await loadActivity(); render(); return;
     }
 
-    const steal = Math.min(Math.round(tMoney*STEAL_PCT), STEAL_CAP, tMoney);
+    const steal0 = Math.min(Math.round(tMoney*STEAL_PCT), STEAL_CAP, tMoney);
+    const steal = tMember ? Math.round(steal0*0.5) : steal0;
     const malusUntil = new Date(now()+MALUS_HOURS*3600*1000).toISOString();
     try {
       const { data:fresh } = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
