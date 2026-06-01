@@ -545,6 +545,14 @@
         doneKey: 'scene7_done',
         requires: 'scene6_done',
       },
+      {
+        id: 8,
+        title: 'Mickaël',
+        desc: "Le nouveau chef d'équipe débarque avec ses fiches.",
+        reward: '📋 Bosseur · +1500€ · +350 XP · Objectifs quotidiens débloqués',
+        doneKey: 'scene8_done',
+        requires: 'scene7_done',
+      },
     ];
 
     // ── MENU ──
@@ -600,6 +608,7 @@
       if (ch.id === 5) startChapter5();
       if (ch.id === 6) startChapter6();
       if (ch.id === 7) startChapter7();
+      if (ch.id === 8) startChapter8();
     }
 
 
@@ -1139,6 +1148,93 @@
       const badge = document.createElement('div');
       badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">🛒</div><div class="badge-title">Client fidèle</div><div class="badge-desc">+1000€ · +250 XP · Shop débloqué</div>';
+      act.appendChild(badge);
+      const btn = document.createElement('button');
+      btn.className = 'btn-next';
+      btn.style.marginTop = '8px';
+      btn.innerHTML = '← Retour aux chapitres';
+      btn.onclick = showMenu;
+      act.appendChild(btn);
+    }
+
+    // ── CHAPITRE 8 ──
+    function startChapter8() {
+      showNarrateur("Lundi, 7h. Un type que tu connais pas est planté au milieu du hangar, casque vissé, classeur sous le bras. Il a l'air... organisé.", () => showCh8_1(), 'bureau');
+    }
+
+    function showCh8_1() {
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Salut ! Mickaël, nouveau chef d'équipe. À partir d'aujourd'hui, on bosse avec des OBJECTIFS. Chaque jour, sa petite liste. C'est motivant, tu vas voir !";
+      showNext(() => showCh8_2());
+    }
+
+    function showCh8_2() {
+      setChar('gegé', 'Gégé', 'bureau');
+      document.getElementById('dialogueText').textContent = "(soupir) Encore un qui aime les fiches. On en a vu passer, des Mickaël...";
+      showNext(() => showCh8_3());
+    }
+
+    function showCh8_3() {
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').textContent = "J'ai entendu, Gégé ! Mais ceux-là, ils récompensent. Tu remplis tes 3 objectifs du jour, tu touches de l'argent, des diamants, parfois un trophée. Tout le monde y gagne.";
+      showNext(() => showCh8_4());
+    }
+
+    function showCh8_4() {
+      setChar('doudou', 'Doudou', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Des récompenses ? Tous les jours ? Bon, d'accord, je signe. Y'a un objectif 'manger un sandwich' ?";
+      showNext(() => showCh8_choice());
+    }
+
+    function showCh8_choice() {
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').textContent = "Pas encore, Doudou. Bon, tu joues le jeu ? Tu passes voir tes objectifs chaque matin ?";
+      showChoices([
+        { icon:'💪', text:'"À fond, j\'adore les défis !"', next: showCh8_react },
+        { icon:'😏', text:'"Si ça paie, pourquoi pas."', next: showCh8_react },
+        { icon:'🥪', text:'"Surtout pour le sandwich."', next: showCh8_react },
+      ]);
+    }
+
+    function showCh8_react() {
+      setChar('titouan', 'Titouan', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "Moi je fais mes objectifs tous les jours. Ça m'a payé la moitié de mon thème de fiche. Faut juste pas oublier de passer les chercher.";
+      showNext(() => showCh8_mickael2());
+    }
+
+    function showCh8_mickael2() {
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').textContent = "Voilà l'esprit ! 3 objectifs neufs chaque jour. Tu les remplis en jouant, tu reviens les réclamer. Simple, carré, efficace. Allez, au boulot l'équipe !";
+      showNext(() => finishChapter8());
+    }
+
+    async function finishChapter8() {
+      try {
+        const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
+        const newProgress = { ...(fresh?.story_progress||{}), scene8_done: true };
+        let nXp = (fresh?.xp||0) + 350, nLvl = fresh?.level||1;
+        while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
+        await sb.from('game_stats').update({
+          money: (fresh?.money||0) + 1500,
+          xp: nXp, level: nLvl,
+          story_progress: newProgress
+        }).eq('user_id', currentUser.id);
+        await awardTrophies(nLvl - (fresh?.level||1));
+        progress = newProgress;
+      } catch(e) { console.log(e); }
+
+      setChar('vigile', 'Mickaël', 'bureau');
+      document.getElementById('dialogueText').className = 'dialogue-text fade-in';
+      document.getElementById('dialogueText').textContent = "C'est parti ! Tes Objectifs quotidiens sont débloqués. Passe les voir chaque jour — la régularité, c'est la clé.";
+
+      const act = document.getElementById('actionsZone');
+      act.innerHTML = '';
+      const badge = document.createElement('div');
+      badge.className = 'badge-wrap';
+      badge.innerHTML = '<div class="badge-icon">📋</div><div class="badge-title">Bosseur</div><div class="badge-desc">+1500€ · +350 XP · Objectifs quotidiens débloqués</div>';
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next';

@@ -1,471 +1,219 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Objectifs - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    body { font-family:'Inter',sans-serif; background:#f2f2f7; min-height:100vh; padding-bottom:40px; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Objectifs du jour - Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
+  body { font-family:'Inter',sans-serif; background:#04140d; color:#e6f5ec; min-height:100dvh; padding:0 14px 30px; overflow-x:hidden; }
+  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
+      radial-gradient(120% 60% at 50% -5%, rgba(34,197,94,0.18), transparent 60%),
+      linear-gradient(180deg,#062315,#04140d 60%,#020d08); }
+  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
 
-    /* HEADER */
-    .header { background:white; border-bottom:1px solid #e5e7eb; padding:14px 16px; display:flex; align-items:center; gap:12px; }
-    .back-btn { background:none; border:none; font-size:16px; color:#3b82f6; font-weight:600; cursor:pointer; padding:4px 0; }
-    .header-title { font-size:17px; font-weight:700; color:#1a1a1a; flex:1; text-align:center; }
-    .header-refresh { background:none; border:none; font-size:13px; font-weight:700; color:#3b82f6; cursor:pointer; padding:4px 0; }
+  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
+    background:linear-gradient(180deg,#04140d,rgba(4,20,13,0.85)); backdrop-filter:blur(8px); }
+  .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:9px;
+    padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.7); cursor:pointer; }
+  .back-btn:active { transform:scale(0.95); }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
+    background:linear-gradient(135deg,#22c55e,#86efac,#22c55e); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
 
-    /* HERO JUNGLE */
-    .date-hero {
-      margin:16px 16px 0;
-      border-radius:18px; overflow:hidden;
-      box-shadow:0 4px 20px rgba(0,0,0,0.2);
-      border:none; position:relative;
-      background:linear-gradient(135deg,#0a1a0a 0%,#1a3a1a 40%,#2d5a1a 70%,#1a2e0a 100%);
-      height:160px;
-    }
-    .date-hero-svg {
-      position:absolute; inset:0; width:100%; height:100%;
-    }
-    .date-jungle-glow {
-      position:absolute; z-index:1; pointer-events:none;
-      width:250px; height:250px;
-      background:radial-gradient(circle,rgba(34,197,94,0.1),transparent 70%);
-      top:50%; left:40%; transform:translate(-50%,-50%);
-      animation:jGlow2 4s ease-in-out infinite;
-    }
-    @keyframes jGlow2 { 0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.2)} }
+  .mick { display:flex; align-items:center; gap:10px; margin:8px 2px 14px; }
+  .mick-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#16a34a,#22c55e); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
+  .mick-bubble { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(34,197,94,0.25); border-radius:12px; padding:9px 13px; font-size:13px; color:#d6f5e2; }
+  .mick-bubble b{ color:#86efac; }
 
-    .date-body {
-      position:absolute; inset:0; z-index:3;
-      padding:18px 20px;
-      display:flex; flex-direction:column; justify-content:space-between;
-      background:linear-gradient(135deg,rgba(0,0,0,0.3) 0%,transparent 60%);
-    }
-    .date-strip { display:none; }
-    .date-left { display:none; }
-    .date-right { display:none; }
+  .prog { background:rgba(255,255,255,0.04); border:1px solid rgba(34,197,94,0.2); border-radius:14px; padding:13px; margin-bottom:16px; }
+  .prog-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .prog-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.5); }
+  .prog-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#86efac; }
+  .prog-track { height:9px; background:rgba(255,255,255,0.1); border-radius:5px; overflow:hidden; }
+  .prog-fill { height:100%; background:linear-gradient(90deg,#16a34a,#4ade80); border-radius:5px; transition:width .4s; }
 
-    .date-top-row { display:flex; align-items:flex-start; justify-content:space-between; }
-    .date-hero-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; color:white; text-shadow:0 0 16px rgba(34,197,94,0.4); }
-    .date-hero-sub { font-size:11px; color:rgba(255,255,255,0.5); font-weight:600; margin-top:3px; }
+  .obj { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:14px; margin-bottom:12px; display:flex; gap:13px; align-items:center; }
+  .obj.done { border-color:rgba(34,197,94,0.4); background:rgba(34,197,94,0.06); }
+  .obj.claimed { opacity:0.7; }
+  .obj-ic { width:48px; height:48px; border-radius:13px; background:rgba(34,197,94,0.12); display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; }
+  .obj-mid { flex:1; min-width:0; }
+  .obj-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:0.5px; color:#fff; }
+  .obj-hint { font-size:11px; color:rgba(255,255,255,0.45); margin-top:2px; }
+  .obj-reward { font-size:12px; color:#fbbf24; font-weight:700; margin-top:4px; }
+  .obj-act { flex-shrink:0; }
+  .claim-btn { border:none; border-radius:11px; padding:11px 14px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.5px; cursor:pointer;
+    background:linear-gradient(135deg,#16a34a,#4ade80); color:#04230f; min-width:96px; }
+  .claim-btn:active{ transform:scale(0.95); }
+  .badge-st { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.5px; padding:9px 12px; border-radius:11px; min-width:96px; text-align:center; }
+  .st-todo { background:rgba(255,255,255,0.06); color:rgba(255,255,255,0.5); }
+  .st-claimed { background:rgba(34,197,94,0.15); color:#86efac; }
 
-    .date-prog-badge {
-      font-size:11px; font-weight:700; padding:4px 12px; border-radius:20px;
-      background:rgba(34,197,94,0.2); border:1px solid rgba(34,197,94,0.3); color:#86efac;
-    }
-    .date-prog-badge.done { background:rgba(34,197,94,0.3); color:#bbf7d0; }
-
-    .prog-track { height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; }
-    .prog-fill  { height:100%; background:linear-gradient(90deg,#22c55e,#86efac); border-radius:2px; transition:width 0.6s ease; box-shadow:0 0 6px rgba(34,197,94,0.5); }
-
-    .date-prog-title { font-weight:700; font-size:13px; color:rgba(255,255,255,0.7); margin-bottom:6px; }
-    .date-progress-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-
-    .mini-objs { display:flex; flex-direction:column; gap:5px; margin-top:10px; }
-    .mini-obj { display:flex; align-items:center; gap:10px; }
-    .mini-check {
-      width:18px; height:18px; border-radius:50%; flex-shrink:0;
-      display:flex; align-items:center; justify-content:center; font-size:9px;
-    }
-    .mini-check.done { background:#22c55e; color:white; }
-    .mini-check.todo { background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.2); }
-    .mini-obj-text { font-size:12px; color:rgba(255,255,255,0.6); }
-    .mini-obj-text.done { color:#86efac; font-weight:600; }
-
-    /* Countdown dans hero */
-    .date-countdown-wrap { display:flex; align-items:center; gap:6px; }
-    .date-cd-dot { width:5px; height:5px; background:#22c55e; border-radius:50%; animation:cdPulse 1s ease-in-out infinite; }
-    .date-cd-lbl { font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-    .date-cd-time { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#86efac; letter-spacing:2px; }
-
-    /* SECTION */
-    .container { padding:16px; }
-    .section-lbl { font-size:13px; font-weight:600; color:#6b7280; margin:16px 0 8px 4px; text-transform:uppercase; letter-spacing:0.5px; font-size:11px; }
-
-    /* OBJECTIF CARD — iOS style */
-    .obj-card {
-      background:white; border-radius:16px;
-      margin-bottom:10px;
-      box-shadow:0 1px 3px rgba(0,0,0,0.06);
-      overflow:hidden;
-    }
-
-    .obj-inner { padding:16px; }
-
-    .obj-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-    .obj-icon-wrap {
-      width:46px; height:46px; border-radius:12px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:24px; flex-shrink:0;
-    }
-    .obj-card.casino    .obj-icon-wrap { background:rgba(239,68,68,0.1); }
-    .obj-card.bourse    .obj-icon-wrap { background:rgba(22,163,74,0.1); }
-    .obj-card.connexion .obj-icon-wrap { background:rgba(59,130,246,0.1); }
-    .obj-card.argent    .obj-icon-wrap { background:rgba(245,158,11,0.1); }
-
-    .obj-text { flex:1; }
-    .obj-title { font-weight:700; font-size:15px; color:#1a1a1a; }
-    .obj-desc  { font-size:12px; color:#9ca3af; margin-top:2px; line-height:1.4; }
-
-    .obj-reward-wrap { text-align:right; flex-shrink:0; }
-    .obj-reward-line { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
-    .obj-reward-val { font-weight:700; font-size:13px; color:#1a1a1a; }
-    .obj-reward-lbl { font-size:10px; color:#9ca3af; }
-
-    /* PROGRESS */
-    .obj-prog-wrap { margin-bottom:14px; }
-    .obj-prog-row { display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px; }
-    .obj-prog-lbl { color:#9ca3af; font-weight:500; }
-    .obj-prog-val { font-weight:700; color:#1a1a1a; }
-    .obj-prog-track { height:4px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
-    .obj-prog-fill  { height:100%; border-radius:2px; transition:width 0.4s ease; }
-    .obj-card.casino    .obj-prog-fill { background:linear-gradient(90deg,#ef4444,#f87171); }
-    .obj-card.bourse    .obj-prog-fill { background:linear-gradient(90deg,#16a34a,#4ade80); }
-    .obj-card.connexion .obj-prog-fill { background:linear-gradient(90deg,#3b82f6,#60a5fa); }
-    .obj-card.argent    .obj-prog-fill { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
-
-    /* BOUTON */
-    .obj-btn {
-      width:100%; padding:13px; border:none; border-radius:10px;
-      font-weight:700; font-size:14px; cursor:pointer; transition:all 0.2s;
-    }
-    .obj-btn.claimable { background:#1a1a1a; color:white; }
-    .obj-btn.claimable:active { transform:scale(0.98); }
-    .obj-btn.progress  { background:#f3f4f6; color:#9ca3af; cursor:default; }
-    .obj-btn.claimed   { background:rgba(22,163,74,0.08); color:#16a34a; cursor:default; }
-
-    /* Barre couleur top */
-    .obj-top-bar { height:3px; }
-    .obj-card.casino    .obj-top-bar { background:linear-gradient(90deg,#ef4444,#f87171); }
-    .obj-card.bourse    .obj-top-bar { background:linear-gradient(90deg,#16a34a,#4ade80); }
-    .obj-card.connexion .obj-top-bar { background:linear-gradient(90deg,#3b82f6,#60a5fa); }
-    .obj-card.argent    .obj-top-bar { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
-
-    /* TOUT COMPLÉTÉ */
-    .all-done {
-      background:white; border-radius:16px; padding:40px 20px; text-align:center;
-      box-shadow:0 1px 3px rgba(0,0,0,0.06);
-    }
-    .all-done-icon  { font-size:56px; margin-bottom:14px; }
-    .all-done-title { font-family:'Bebas Neue',sans-serif; font-size:28px; color:#1a1a1a; letter-spacing:1px; margin-bottom:6px; }
-    .all-done-sub   { font-size:13px; color:#9ca3af; line-height:1.5; }
-    .all-done-badge { display:inline-block; margin-top:14px; background:rgba(22,163,74,0.1); color:#16a34a; font-weight:700; font-size:13px; padding:6px 16px; border-radius:20px; }
-
-    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); background:#1a1a1a; color:white; padding:12px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:100; opacity:0; transition:opacity 0.3s; white-space:nowrap; }
-    .toast.show { opacity:1; }
-    .toast.success { background:#16a34a; }
-  </style>
+  .note { text-align:center; font-size:11px; color:rgba(255,255,255,0.35); margin-top:8px; line-height:1.5; }
+  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .back-bottom { width:100%; margin-top:22px; padding:15px; border-radius:14px; cursor:pointer;
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
+    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
+  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200;
+    background:rgba(6,30,18,0.97); border:1px solid rgba(34,197,94,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
+    opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#86efac; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast.bad { border-color:rgba(248,113,113,0.5); color:#fca5a5; }
+</style>
 </head>
 <body>
-
-  <div class="header">
-    <button class="back-btn" onclick="window.location.href='game.html'">‹ Retour</button>
-    <div class="header-title">Objectifs du jour</div>
-    <button class="header-refresh" onclick="refreshObjectives()">↻ Actualiser</button>
-  </div>
-
-  <!-- HERO JUNGLE -->
-  <div class="date-hero">
-    <svg class="date-hero-svg" viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice">
-      <!-- Lianes fond -->
-      <path d="M0 0 Q45 80 25 160" stroke="#166534" stroke-width="4" fill="none" opacity="0.9"/>
-      <path d="M400 0 Q355 80 375 160" stroke="#166534" stroke-width="4" fill="none" opacity="0.9"/>
-      <path d="M70 0 Q40 65 60 160" stroke="#15803d" stroke-width="2.5" fill="none" opacity="0.7"/>
-      <path d="M330 0 Q360 65 340 160" stroke="#15803d" stroke-width="2.5" fill="none" opacity="0.7"/>
-      <!-- Lianes animées -->
-      <path d="M20 0 Q58 45 35 95 Q14 130 42 160" stroke="#22c55e" stroke-width="3" fill="none" opacity="0.8">
-        <animate attributeName="d" values="M20 0 Q58 45 35 95 Q14 130 42 160;M20 0 Q68 38 42 88 Q22 125 50 160;M20 0 Q58 45 35 95 Q14 130 42 160" dur="5s" repeatCount="indefinite"/>
-      </path>
-      <path d="M380 0 Q342 48 362 100 Q380 135 352 160" stroke="#22c55e" stroke-width="3" fill="none" opacity="0.8">
-        <animate attributeName="d" values="M380 0 Q342 48 362 100 Q380 135 352 160;M380 0 Q335 42 355 95 Q372 128 345 160;M380 0 Q342 48 362 100 Q380 135 352 160" dur="6s" repeatCount="indefinite"/>
-      </path>
-      <!-- Grandes feuilles fond -->
-      <ellipse cx="8" cy="25" rx="28" ry="13" fill="#14532d" opacity="0.95" transform="rotate(-38 8 25)"/>
-      <ellipse cx="392" cy="30" rx="26" ry="12" fill="#14532d" opacity="0.95" transform="rotate(38 392 30)"/>
-      <ellipse cx="58" cy="5" rx="22" ry="10" fill="#166534" opacity="0.85" transform="rotate(-18 58 5)"/>
-      <ellipse cx="342" cy="8" rx="20" ry="9" fill="#166534" opacity="0.85" transform="rotate(22 342 8)"/>
-      <ellipse cx="8" cy="135" rx="24" ry="11" fill="#14532d" opacity="0.9" transform="rotate(28 8 135)"/>
-      <ellipse cx="392" cy="140" rx="22" ry="10" fill="#14532d" opacity="0.9" transform="rotate(-28 392 140)"/>
-      <ellipse cx="130" cy="0" rx="18" ry="8" fill="#166534" opacity="0.65" transform="rotate(-12 130 0)"/>
-      <ellipse cx="270" cy="160" rx="18" ry="8" fill="#166534" opacity="0.65" transform="rotate(12 270 160)"/>
-      <!-- Feuilles animées -->
-      <ellipse cx="35" cy="55" rx="20" ry="10" fill="#22c55e" opacity="0.65" transform="rotate(-33 35 55)">
-        <animateTransform attributeName="transform" type="rotate" values="-33 35 55;-20 35 55;-33 35 55" dur="4s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="25" cy="108" rx="18" ry="9" fill="#16a34a" opacity="0.6" transform="rotate(22 25 108)">
-        <animateTransform attributeName="transform" type="rotate" values="22 25 108;36 25 108;22 25 108" dur="5s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="365" cy="70" rx="19" ry="9" fill="#22c55e" opacity="0.6" transform="rotate(-18 365 70)">
-        <animateTransform attributeName="transform" type="rotate" values="-18 365 70;-30 365 70;-18 365 70" dur="4.5s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="68" cy="148" rx="21" ry="10" fill="#15803d" opacity="0.65" transform="rotate(-8 68 148)">
-        <animateTransform attributeName="transform" type="rotate" values="-8 68 148;6 68 148;-8 68 148" dur="6s" repeatCount="indefinite"/>
-      </ellipse>
-      <ellipse cx="348" cy="150" rx="19" ry="9" fill="#15803d" opacity="0.6" transform="rotate(12 348 150)">
-        <animateTransform attributeName="transform" type="rotate" values="12 348 150;26 348 150;12 348 150" dur="5.5s" repeatCount="indefinite"/>
-      </ellipse>
-      <!-- Lucioles -->
-      <circle cx="95" cy="55" r="3" fill="#bbf7d0"><animate attributeName="opacity" values="0.9;0.1;1;0.2;0.9" dur="2.5s" repeatCount="indefinite"/></circle>
-      <circle cx="155" cy="110" r="2.5" fill="#86efac"><animate attributeName="opacity" values="0.1;0.9;0.1;0.6;0.1" dur="3.5s" repeatCount="indefinite"/></circle>
-      <circle cx="200" cy="40" r="2.5" fill="#bbf7d0"><animate attributeName="opacity" values="0.5;0.1;0.9;0.1;0.5" dur="2s" repeatCount="indefinite"/></circle>
-      <circle cx="260" cy="120" r="2" fill="#86efac"><animate attributeName="opacity" values="0.1;0.8;0.2;0.9;0.1" dur="4s" repeatCount="indefinite"/></circle>
-      <circle cx="310" cy="65" r="2.5" fill="#bbf7d0"><animate attributeName="opacity" values="0.8;0.1;0.5;0.1;0.8" dur="3s" repeatCount="indefinite"/></circle>
-      <!-- Gouttes rosée -->
-      <circle cx="40" cy="68" r="2" fill="rgba(187,247,208,0.7)"><animate attributeName="cy" values="68;74;68" dur="3s" repeatCount="indefinite"/></circle>
-      <circle cx="362" cy="88" r="2" fill="rgba(187,247,208,0.6)"><animate attributeName="cy" values="88;94;88" dur="4s" repeatCount="indefinite"/></circle>
-    </svg>
-    <div class="date-jungle-glow"></div>
-    <div class="date-body">
-      <div class="date-top-row">
-        <div>
-          <div class="date-hero-title">Objectifs du jour</div>
-          <div class="date-hero-sub" id="heroSubtitle">Chargement...</div>
-        </div>
-        <div class="date-prog-badge" id="heroBadge">0/3</div>
-      </div>
-      <div>
-        <div class="date-progress-row">
-          <div class="date-prog-title">Progression</div>
-          <div class="date-countdown-wrap">
-            <div class="date-cd-dot"></div>
-            <span class="date-cd-lbl">Reset</span>
-            <span class="date-cd-time" id="countdownTime">--:--:--</span>
-          </div>
-        </div>
-        <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
-        <div class="mini-objs" id="miniObjs"></div>
-      </div>
+  <div class="bg"></div>
+  <div class="wrap">
+    <div class="hdr">
+      <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
+      <div class="hdr-title">📋 Objectifs du jour</div>
     </div>
+    <div class="mick">
+      <div class="mick-ava">📋</div>
+      <div class="mick-bubble" id="mickSay">Mickaël : « Voici ta liste du jour. Remplis-les en jouant, reviens les <b>réclamer</b> ! »</div>
+    </div>
+    <div class="prog">
+      <div class="prog-top"><span class="prog-lbl">Progression</span><span class="prog-val" id="progVal">0/3</span></div>
+      <div class="prog-track"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+    <div id="list"><div class="loader">Mickaël prépare ta liste…</div></div>
+    <div class="note">🔄 3 nouveaux objectifs chaque jour à minuit. N'oublie pas de réclamer tes récompenses avant !</div>
+    <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
   </div>
-
-  <div class="container">
-    <div class="section-lbl">Mes objectifs</div>
-    <div id="objContainer"></div>
-  </div>
-
   <div class="toast" id="toast"></div>
 
-  <script>
-    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    let currentUser=null, userMoney=0, userXp=0;
-    let todayObjectives=[];
-    window._startTime=Date.now();
+  // Pool de modèles d'objectifs (hors "connexion" qui est toujours présent)
+  const POOL = [
+    { id:'tower',    title:"Bats ton record d'étages (Tower)", icon:'🏗️', mode:'beat',     metric:'tower_floor',    reward:{type:'money',    amount:6000} },
+    { id:'pointeau', title:'Bats ton record de score (Pointeau)', icon:'📋', mode:'beat',  metric:'pointeau_score', reward:{type:'money',    amount:6000} },
+    { id:'combo',    title:'Bats ton combo max (Pointeau)',   icon:'🔥', mode:'beat',     metric:'pointeau_combo', reward:{type:'trophies', amount:1} },
+    { id:'level',    title:'Gagne un niveau',                 icon:'⭐', mode:'inc',      metric:'level', amount:1, reward:{type:'diamonds', amount:3} },
+    { id:'bourse',   title:'Réalise un profit à la Bourse',   icon:'📈', mode:'increase', metric:'bourse_profit',  reward:{type:'money',    amount:8000} },
+  ];
+  const LOGIN = { id:'login', title:'Connexion du jour', icon:'🔥', mode:'free', reward:{type:'diamonds', amount:2} };
 
-    const DAYS   = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-    const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  let currentUser=null, todayStr='', objectives=[];
+  let money=0, level=1, diamonds=0, trophies=0, records={}, bourseProfit=0;
 
-    const TEMPLATES = [
-      { type:'casino',    icon:'🎰', title:'Bonne mise',         desc:'Mise au moins 500€ au casino',      target:500,  metric:'casino_bet',    reward:{xp:300} },
-      { type:'casino',    icon:'🃏', title:'Gagne au Blackjack', desc:'Remporte une partie de Blackjack',  target:1,    metric:'blackjack_win', reward:{xp:400,money:200} },
-      { type:'casino',    icon:'🎡', title:'Roulettiste',        desc:'Joue 3 fois à la Roulette',         target:3,    metric:'roulette_play', reward:{xp:250} },
-      { type:'casino',    icon:'💥', title:'Survivant',          desc:'Cash out au Crash avant 2.0x',      target:1,    metric:'crash_cashout', reward:{xp:350,money:300} },
-      { type:'casino',    icon:'🎯', title:'Jackpot Hunter',     desc:'Mise 1000€ en une seule partie',    target:1000, metric:'casino_big_bet',reward:{xp:500,money:500} },
-      { type:'bourse',    icon:'📈', title:'Investisseur',       desc:'Achète 3 actions en bourse',        target:3,    metric:'stock_buy',     reward:{xp:300,money:100} },
-      { type:'bourse',    icon:'💹', title:'Trader du jour',     desc:'Vends des actions avec bénéfice',   target:1,    metric:'stock_sell',    reward:{xp:400,money:400} },
-      { type:'bourse',    icon:'📊', title:'Portefeuille',       desc:'Possède 10 actions au total',       target:10,   metric:'stock_hold',    reward:{xp:350} },
-      { type:'connexion', icon:'🔥', title:'Présent !',          desc:'Connecte-toi aujourd\'hui',         target:1,    metric:'login',         reward:{xp:100} },
-      { type:'connexion', icon:'⭐', title:'Actif du jour',      desc:'Passe 5 minutes sur le jeu',        target:5,    metric:'playtime',      reward:{xp:200,money:100} },
-      { type:'argent',    icon:'💰', title:'Gros gain',          desc:'Gagne plus de 1000€ en une partie', target:1000, metric:'big_win',       reward:{xp:600,money:500} },
-      { type:'argent',    icon:'🏦', title:'Épargnant',          desc:'Accumule 5000€ sur ton compte',     target:5000, metric:'total_money',   reward:{xp:400} },
-    ];
+  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+  const rewardText=r=> r.type==='money' ? `+${fmt(r.amount)}€` : r.type==='diamonds' ? `+${r.amount} 💎` : `+${r.amount} 🏆`;
 
-    function pickObjectives() {
-      const today=new Date().toISOString().split('T')[0];
-      const seed=today.split('-').reduce((a,v,i)=>a+parseInt(v)*(i+1),0);
-      const rng=(n)=>{const x=Math.sin(seed+n)*10000;return x-Math.floor(x);};
-      const shuffled=[...TEMPLATES].map((t,i)=>({t,r:rng(i)})).sort((a,b)=>a.r-b.r).map(x=>x.t);
-      const types=['casino','bourse','connexion','argent'];
-      const picked=[];
-      types.forEach(type=>{const f=shuffled.find(t=>t.type===type&&!picked.includes(t));if(f&&picked.length<3)picked.push(f);});
-      while(picked.length<3){const e=shuffled.find(t=>!picked.includes(t));if(e)picked.push(e);else break;}
-      return picked.slice(0,3);
-    }
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser=session.user;
+    todayStr = new Date().toISOString().split('T')[0];
+    const [{ data:gs }, { data:prof }] = await Promise.all([
+      sb.from('game_stats').select('money,level,records,bourse_profit').eq('user_id',currentUser.id).maybeSingle(),
+      sb.from('profiles').select('diamonds,trophies').eq('user_id',currentUser.id).maybeSingle()
+    ]);
+    money=gs?.money||0; level=gs?.level||1; bourseProfit=gs?.bourse_profit||0;
+    records=(gs?.records&&typeof gs.records==='object')?gs.records:{};
+    diamonds=prof?.diamonds||0; trophies=prof?.trophies||0;
 
-    async function getProgress(metric) {
-      const today=new Date().toISOString().split('T')[0];
-      switch(metric) {
-        case 'login': return 1;
-        case 'total_money': return userMoney;
-        case 'playtime': return Math.floor((Date.now()-window._startTime)/60000);
-        case 'casino_bet': case 'casino_big_bet': {
-          const {data}=await sb.from('casino_wins').select('amount_bet').eq('user_id',currentUser.id).gte('created_at',today+'T00:00:00');
-          const total=(data||[]).reduce((s,w)=>s+(w.amount_bet||0),0);
-          return metric==='casino_big_bet'?Math.max(...(data||[]).map(w=>w.amount_bet||0),0):total;
-        }
-        case 'blackjack_win': { const {data}=await sb.from('casino_wins').select('id').eq('user_id',currentUser.id).eq('game_name','Blackjack').gt('amount_won',0).gte('created_at',today+'T00:00:00'); return (data||[]).length; }
-        case 'roulette_play': { const {data}=await sb.from('casino_wins').select('id').eq('user_id',currentUser.id).eq('game_name','Roulette').gte('created_at',today+'T00:00:00'); return (data||[]).length; }
-        case 'crash_cashout': { const {data}=await sb.from('casino_wins').select('id').eq('user_id',currentUser.id).eq('game_name','Crash').gt('amount_won',0).gte('created_at',today+'T00:00:00'); return (data||[]).length; }
-        case 'big_win': { const {data}=await sb.from('casino_wins').select('amount_won').eq('user_id',currentUser.id).gte('created_at',today+'T00:00:00'); return Math.max(...(data||[]).map(w=>w.amount_won||0),0); }
-        case 'stock_buy': { const {data}=await sb.from('stock_transactions').select('id').eq('user_id',currentUser.id).eq('type','buy').gte('created_at',today+'T00:00:00'); return (data||[]).length; }
-        case 'stock_sell': { const {data}=await sb.from('stock_transactions').select('id').eq('user_id',currentUser.id).eq('type','sell').gte('created_at',today+'T00:00:00'); return (data||[]).length; }
-        case 'stock_hold': { const {data}=await sb.from('stock_portfolio').select('quantity').eq('user_id',currentUser.id); return (data||[]).reduce((s,p)=>s+(p.quantity||0),0); }
-        default: return 0;
-      }
-    }
+    const { data:row } = await sb.from('daily_objectives').select('objectives').eq('user_id',currentUser.id).eq('date',todayStr).maybeSingle();
+    if(row?.objectives && Array.isArray(row.objectives) && row.objectives.length){ objectives=row.objectives; }
+    else { objectives=generate(); await saveObjectives(); }
+    refreshCompleted(true);
+    render();
+  }
 
-    async function loadObjectives() {
-      const today=new Date().toISOString().split('T')[0];
-      const templates=pickObjectives();
-      const {data:existing}=await sb.from('daily_objectives').select('*').eq('user_id',currentUser.id).eq('date',today).maybeSingle();
-      let objectives;
-      if(existing) { objectives=existing.objectives; }
-      else { objectives=templates.map(t=>({...t,progress:0,completed:false,claimed:false})); await sb.from('daily_objectives').insert({user_id:currentUser.id,date:today,objectives}); }
-      for(let i=0;i<objectives.length;i++) {
-        if(!objectives[i].claimed) {
-          const prog=await getProgress(objectives[i].metric);
-          objectives[i].progress=Math.min(prog,objectives[i].target);
-          objectives[i].completed=objectives[i].progress>=objectives[i].target;
-        }
-      }
-      await sb.from('daily_objectives').update({objectives}).eq('user_id',currentUser.id).eq('date',today);
-      todayObjectives=objectives;
-      renderAll();
-    }
+  function curMetric(m){
+    if(m==='level') return level;
+    if(m==='bourse_profit') return bourseProfit;
+    return records[m]||0;
+  }
+  function isMet(o){
+    if(o.mode==='free') return true;
+    const cur=curMetric(o.metric);
+    if(o.mode==='inc') return (cur-(o.baseline||0))>=(o.amount||1);
+    return cur > (o.baseline||0); // beat / increase
+  }
 
-    function renderAll() {
-      const completed=todayObjectives.filter(o=>o.completed||o.claimed).length;
-      const pct=Math.round((completed/3)*100);
+  function generate(){
+    const pool=[...POOL].sort(()=>Math.random()-0.5).slice(0,2);
+    const chosen=[LOGIN, ...pool];
+    return chosen.map(t=>({
+      id:t.id, title:t.title, icon:t.icon, mode:t.mode, metric:t.metric||null, amount:t.amount||null,
+      baseline: t.mode==='free'?0:curMetric(t.metric), reward:t.reward, completed:t.mode==='free', claimed:false
+    }));
+  }
 
-      // Hero
-      const badge=document.getElementById('heroBadge');
-      badge.textContent=`${completed}/3`;
-      badge.className=completed===3?'date-prog-badge done':'date-prog-badge';
-      const sub=document.getElementById('heroSubtitle');
-      if(sub) sub.textContent=completed===3?'🎉 Tout complété !': `${3-completed} objectif${3-completed>1?'s':''} restant${3-completed>1?'s':''}`;
-      document.getElementById('progFill').style.width=pct+'%';
-      document.getElementById('miniObjs').innerHTML=todayObjectives.map(o=>{
-        const done=o.completed||o.claimed;
-        return `<div class="mini-obj">
-          <div class="mini-check ${done?'done':'todo'}">${done?'✓':''}</div>
-          <span class="mini-obj-text ${done?'done':''}">${o.icon} ${o.title}</span>
-        </div>`;
-      }).join('');
+  function refreshCompleted(silentSave){
+    let changed=false;
+    objectives.forEach(o=>{ const m=isMet(o); if(m && !o.completed){ o.completed=true; changed=true; } });
+    if(changed && silentSave) saveObjectives();
+  }
 
-      // Cards
-      const container=document.getElementById('objContainer');
-      if(todayObjectives.filter(o=>o.claimed).length===3) {
-        container.innerHTML=`<div class="all-done">
-          <div class="all-done-icon">🎉</div>
-          <div class="all-done-title">Tout accompli !</div>
-          <div class="all-done-sub">Tu as complété tous tes objectifs du jour.<br>Reviens demain pour de nouveaux défis.</div>
-          <div class="all-done-badge">✅ Journée parfaite</div>
-        </div>`;
-        return;
-      }
+  function render(){
+    const claimedOrDone = objectives.filter(o=>o.completed||o.claimed).length;
+    document.getElementById('progVal').textContent = `${claimedOrDone}/3`;
+    document.getElementById('progFill').style.width = Math.round(claimedOrDone/3*100)+'%';
+    const allDone = objectives.every(o=>o.claimed);
+    document.getElementById('mickSay').innerHTML = allDone
+      ? 'Mickaël : « Tout est réclamé. Beau boulot ! Reviens demain. »'
+      : 'Mickaël : « Voici ta liste du jour. Remplis-les en jouant, reviens les <b>réclamer</b> ! »';
 
-      container.innerHTML=todayObjectives.map((obj,i)=>{
-        const prog=obj.progress||0;
-        const pct=Math.min(100,Math.round((prog/obj.target)*100));
-        const isComplete=obj.completed||prog>=obj.target;
-        const isClaimed=obj.claimed;
-        let btnClass=isClaimed?'claimed':isComplete?'claimable':'progress';
-        let btnText=isClaimed?'✅ Récompense réclamée':isComplete?'Réclamer la récompense →':'En cours...';
+    document.getElementById('list').innerHTML = objectives.map((o,i)=>{
+      const met=isMet(o);
+      let act;
+      if(o.claimed) act=`<div class="badge-st st-claimed">✓ Réclamé</div>`;
+      else if(met) act=`<button class="claim-btn" onclick="claim(${i})">Réclamer</button>`;
+      else act=`<div class="badge-st st-todo">À faire</div>`;
+      return `<div class="obj ${met?'done':''} ${o.claimed?'claimed':''}">
+        <div class="obj-ic">${o.icon}</div>
+        <div class="obj-mid">
+          <div class="obj-title">${o.title}</div>
+          <div class="obj-hint">${hint(o,met)}</div>
+          <div class="obj-reward">🎁 ${rewardText(o.reward)}</div>
+        </div>
+        <div class="obj-act">${act}</div>
+      </div>`;
+    }).join('');
+  }
 
-        const rewardLines=[
-          obj.reward.xp    ?`<div class="obj-reward-line"><span class="obj-reward-val">+${obj.reward.xp}</span><span class="obj-reward-lbl"> XP</span></div>`:'',
-          obj.reward.money ?`<div class="obj-reward-line"><span class="obj-reward-val">+${obj.reward.money}€</span><span class="obj-reward-lbl"> argent</span></div>`:'',
-        ].join('');
+  function hint(o,met){
+    if(o.mode==='free') return met?'Te voilà connecté ✓':'';
+    if(o.claimed) return 'Récompense empochée';
+    if(met) return 'Objectif atteint — réclame ta récompense !';
+    if(o.mode==='inc' && o.metric==='level') return `Niveau ${o.baseline} → atteins le niveau ${o.baseline+1}`;
+    if(o.metric==='tower_floor') return `Record actuel : ${o.baseline} étages — fais mieux aujourd'hui`;
+    if(o.metric==='pointeau_score') return `Record actuel : ${o.baseline} pts — fais mieux`;
+    if(o.metric==='pointeau_combo') return `Combo max : ×${o.baseline} — dépasse-le`;
+    if(o.metric==='bourse_profit') return 'Encaisse un gain à la Bourse';
+    return '';
+  }
 
-        return `<div class="obj-card ${obj.type}">
-          <div class="obj-top-bar"></div>
-          <div class="obj-inner">
-            <div class="obj-header">
-              <div class="obj-icon-wrap">${obj.icon}</div>
-              <div class="obj-text">
-                <div class="obj-title">${obj.title}</div>
-                <div class="obj-desc">${obj.desc}</div>
-              </div>
-              <div class="obj-reward-wrap">${rewardLines}</div>
-            </div>
-            <div class="obj-prog-wrap">
-              <div class="obj-prog-row">
-                <span class="obj-prog-lbl">Progression</span>
-                <span class="obj-prog-val">${prog.toLocaleString('fr-FR')} / ${obj.target.toLocaleString('fr-FR')}</span>
-              </div>
-              <div class="obj-prog-track"><div class="obj-prog-fill" style="width:${pct}%"></div></div>
-            </div>
-            <button class="obj-btn ${btnClass}" onclick="${isComplete&&!isClaimed?`claimReward(${i})`:''}">
-              ${btnText}
-            </button>
-          </div>
-        </div>`;
-      }).join('');
-    }
+  async function claim(i){
+    const o=objectives[i];
+    if(o.claimed || !isMet(o)) return;
+    o.claimed=true; o.completed=true;
+    const r=o.reward;
+    try {
+      if(r.type==='money'){ money+=r.amount; await sb.from('game_stats').update({ money:Math.round(money) }).eq('user_id',currentUser.id); }
+      else if(r.type==='diamonds'){ diamonds+=r.amount; await sb.from('profiles').update({ diamonds }).eq('user_id',currentUser.id); }
+      else if(r.type==='trophies'){ trophies+=r.amount; await sb.from('profiles').update({ trophies }).eq('user_id',currentUser.id); }
+      await saveObjectives();
+    } catch(e){ console.log('claim:',e); }
+    render();
+    showToast(`🎁 Récompense empochée : ${rewardText(r)}`, false);
+  }
 
-    async function claimReward(idx) {
-      const obj=todayObjectives[idx];
-      if(!obj||obj.claimed||!obj.completed) return;
+  async function saveObjectives(){
+    try { await sb.from('daily_objectives').upsert({ user_id:currentUser.id, date:todayStr, objectives }, { onConflict:'user_id,date' }); }
+    catch(e){ console.log('save obj:',e); }
+  }
 
-      // Lire les valeurs actuelles depuis la BD pour éviter d'écraser
-      const { data: current } = await sb.from('game_stats').select('xp,money').eq('user_id',currentUser.id).maybeSingle();
-      const currentXp    = current?.xp    || 0;
-      const currentMoney = current?.money || 0;
+  let toastT=null;
+  function showToast(msg,bad){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(bad?' bad':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(bad?' bad':''),2400); }
 
-      const updates={};
-      if(obj.reward.xp)    updates.xp    = currentXp    + obj.reward.xp;
-      if(obj.reward.money) updates.money = currentMoney + obj.reward.money;
-      await sb.from('game_stats').update(updates).eq('user_id',currentUser.id);
-      if(obj.reward.xp)    userXp   =updates.xp;
-      if(obj.reward.money) userMoney=updates.money;
-      todayObjectives[idx].claimed=true;
-      const today=new Date().toISOString().split('T')[0];
-      await sb.from('daily_objectives').update({objectives:todayObjectives}).eq('user_id',currentUser.id).eq('date',today);
-      renderAll();
-      const msg=[obj.reward.xp?`+${obj.reward.xp} XP`:'',obj.reward.money?`+${obj.reward.money}€`:''].filter(Boolean).join(' · ');
-      showToast('🎁 '+msg,'success');
-    }
-
-    function startCountdown() {
-      function tick() {
-        const now=new Date(),next=new Date();next.setHours(24,0,0,0);
-        const d=Math.floor((next-now)/1000),h=Math.floor(d/3600),m=Math.floor((d%3600)/60),s=d%60;
-        const el=document.getElementById('countdownTime');
-        if(el) el.textContent=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
-        setTimeout(tick,1000);
-      }
-      tick();
-    }
-
-    function showToast(msg,type='') {
-      const t=document.getElementById('toast');
-      t.textContent=msg;t.className='toast show '+type;
-      setTimeout(()=>t.className='toast',2800);
-    }
-
-    async function refreshObjectives() {
-      const today=new Date().toISOString().split('T')[0];
-      // Recalculer la progression sans recréer les objectifs
-      for(let i=0;i<todayObjectives.length;i++) {
-        if(!todayObjectives[i].claimed) {
-          const prog=await getProgress(todayObjectives[i].metric);
-          todayObjectives[i].progress=Math.min(prog,todayObjectives[i].target);
-          todayObjectives[i].completed=todayObjectives[i].progress>=todayObjectives[i].target;
-        }
-      }
-      await sb.from('daily_objectives').update({objectives:todayObjectives}).eq('user_id',currentUser.id).eq('date',today);
-      renderAll();
-      showToast('✅ Mis à jour !');
-    }
-
-    async function init() {
-      const {data:{session}}=await sb.auth.getSession();
-      if(!session){window.location.href='index.html';return;}
-      currentUser=session.user;
-      const {data:stats}=await sb.from('game_stats').select('money,xp').eq('user_id',currentUser.id).maybeSingle();
-      userMoney=stats?.money||0;userXp=stats?.xp||0;
-      const today=new Date();
-      await loadObjectives();
-      startCountdown();
-      setInterval(refreshObjectives, 60000);
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
