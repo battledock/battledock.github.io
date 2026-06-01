@@ -1230,7 +1230,10 @@
       const xbtn = document.getElementById('mapClose'); if (xbtn) xbtn.style.display = 'flex';
 
       const map = document.getElementById('roadMap');
-      const W = Math.max(280, map.clientWidth || list.clientWidth || 340);
+
+      const buildMap = () => {
+      const W = Math.round((map.getBoundingClientRect().width) || map.clientWidth || 0);
+      if (W < 140) { requestAnimationFrame(buildMap); return; }
       const STEP = 122, PAD_TOP = 178, PAD_BOTTOM = 150;
       const H = PAD_TOP + (total - 1) * STEP + PAD_BOTTOM;
       map.style.height = H + 'px';
@@ -1239,7 +1242,7 @@
       const pts = [];
       for (let i = 0; i < total; i++) {
         let x = cx + amp * Math.sin(i * 0.85 + 0.6);
-        x = Math.max(66, Math.min(W - 66, x));
+        x = Math.max(64, Math.min(W - 64, x));
         const y = H - PAD_BOTTOM - i * STEP;
         pts.push({ x, y });
       }
@@ -1282,7 +1285,7 @@
       });
 
       map.innerHTML = `
-        <svg class="scene" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <svg class="scene" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
           ${buildScene(W, H)}
           <path d="${roadAll}" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="${roadAll}" fill="none" stroke="#b8995f" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1306,6 +1309,8 @@
         const el = map.querySelector('.stop[data-id="' + cur.id + '"]');
         if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
       }, 40);
+      };
+      requestAnimationFrame(buildMap);
     }
 
     // ── LANCER UN CHAPITRE ──
