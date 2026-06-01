@@ -3745,6 +3745,8 @@
         currentUser = session.user;
         const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', currentUser.id).maybeSingle();
         progress = data?.story_progress || {};
+        try { localStorage.setItem('bd_story_progress', JSON.stringify(progress)); } catch(_) {}
+        currentActIdx = null;
 
         // Retour depuis clicker après CH.2
         if (sessionStorage.getItem('histoire_ch2_pending') === '1') {
@@ -3760,6 +3762,10 @@
       }
     }
 
+    // Affichage instantané : on rend le menu tout de suite avec la progression en cache,
+    // puis init() confirme/rafraîchit avec les données serveur.
+    try { const _c = localStorage.getItem('bd_story_progress'); if (_c) progress = JSON.parse(_c) || {}; } catch(_) {}
+    showMenu();
     init();
   </script>
   <!-- BARRE DE NAVIGATION (bas) -->
