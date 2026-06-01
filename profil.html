@@ -208,19 +208,6 @@
     .row-arrow { color: #c7c7cc; font-size: 18px; }
 
     .row-danger .row-title { color: #ef4444; }
-  
-    /* FLUIDITÉ GLOBALE */
-    * { -webkit-font-smoothing:antialiased; }
-    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
-      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    button:active, .nav-card:active, .row:active {
-      transform: scale(0.97) !important;
-      opacity: 0.9 !important;
-    }
-    img { transition: opacity 0.3s ease; }
-    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
-
   </style>
 </head>
 <body>
@@ -296,7 +283,10 @@
     <div class="section-label">Bio</div>
     <div class="section-card">
       <div class="bio-wrap">
-        <div id="bioDisplay" style="font-size:14px;color:#4b5563;line-height:1.6;padding:4px 0;min-height:24px">—</div>
+        <textarea class="bio-input" id="bioInput" maxlength="50"
+          placeholder="Présente-toi en quelques mots..."
+          oninput="onBioInput(this)"></textarea>
+        <div class="bio-count"><span id="bioCount">0</span>/50</div>
       </div>
     </div>
 
@@ -374,17 +364,22 @@
     let achievementsUnlocked = 0;
     let eventsClaimed = [];
     let currentAvatar = 'avatar-default.png';
-    let shopPurchases = {};
     let backgroundColor = 'blue';
 
     const avatars = [
       { id: 'default',       file: 'avatar-default.png',       label: 'Défaut',      condition: () => true },
+      { id: 'level2',        file: 'avatar-level-2.png',        label: 'Niv. 2',      condition: () => playerLevel >= 2 },
+      { id: 'level3',        file: 'avatar-level-3.png',        label: 'Niv. 3',      condition: () => playerLevel >= 3 },
+      { id: 'level4',        file: 'avatar-level-4.png',        label: 'Niv. 4',      condition: () => playerLevel >= 4 },
       { id: 'level5',        file: 'avatar-level-5.png',        label: 'Niv. 5',      condition: () => playerLevel >= 5 },
       { id: 'level10',       file: 'avatar-level-10.png',       label: 'Niv. 10',     condition: () => playerLevel >= 10 },
+      { id: 'level13',       file: 'avatar-level-13.png',       label: 'Niv. 13',     condition: () => playerLevel >= 13 },
       { id: 'level15',       file: 'avatar-level-15.png',       label: 'Niv. 15',     condition: () => playerLevel >= 15 },
+      { id: 'level17',       file: 'avatar-level-17.png',       label: 'Niv. 17',     condition: () => playerLevel >= 17 },
+      { id: 'level20',       file: 'avatar-level-20.png',       label: 'Niv. 20',     condition: () => playerLevel >= 20 },
       { id: 'level30',       file: 'avatar-level-30.png',       label: 'Niv. 30',     condition: () => playerLevel >= 30 },
       { id: 'level50',       file: 'avatar-level-50.png',       label: 'Niv. 50',     condition: () => playerLevel >= 50 },
-      { id: 'millionaire',   file: 'avatar-millionaire.png',    label: '1M€ 💰',      condition: () => shopPurchases?.millionaire_avatar >= 1 },
+      { id: 'millionaire',   file: 'avatar-millionaire.png',    label: '1M€',         condition: () => playerMoney >= 1000000 },
       { id: 'completionist', file: 'avatar-completionist.png',  label: 'Tous succès', condition: () => achievementsUnlocked >= 14 },
     ];
 
@@ -399,14 +394,13 @@
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
-      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
       await loadProfile();
       updateStreak();
     }
 
     async function loadProfile() {
-      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).maybeSingle();
-      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle();
+      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).single();
+      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).single();
       if (!profile || !stats) return;
 
       playerLevel  = stats.level  || 1;
@@ -459,7 +453,8 @@
 
       // Bio
       const bio = profile.bio || '';
-      document.getElementById('bioDisplay').textContent = bio || '—';
+      document.getElementById('bioInput').value = bio;
+      document.getElementById('bioCount').textContent = bio.length;
 
       // Succès
       const ACHIEVEMENTS = [
@@ -503,7 +498,7 @@
     // Streak + playtime au chargement
     async function updateStreak() {
       const today = new Date().toISOString().split('T')[0];
-      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).maybeSingle();
+      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).single();
       if (!stats) return;
 
       const lastLogin = stats.last_login;

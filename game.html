@@ -147,7 +147,7 @@
     }
 
     /* ===================== CONTAINER ===================== */
-    .container { max-width:600px; margin:0 auto; padding:20px 0 20px; position:relative; z-index:1; }
+    .container { max-width:600px; margin:0 auto; padding:0; position:relative; z-index:1; }
 
     /* ===================== DAILY ===================== */
 
@@ -778,7 +778,7 @@
           <div class="sk sk-stat"></div><div class="sk sk-stat"></div>
         </div>
       </div>
-      <div class="profile-card-btn" id="profileCardBtn" style="display:none" onclick="window.location.href='commerce.html'">
+      <div class="profile-card-btn" id="profileCardBtn" style="display:none">
         <div class="pcb-row">
           <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
           <div class="pcb-info">
@@ -1191,6 +1191,22 @@
     animateBourse();
     setInterval(animateBourse, 2000);
 
+    // Avatar automatique selon le niveau (mêmes paliers que profil.html)
+    function avatarForLevel(lvl) {
+      if (lvl >= 50) return 'avatar-level-50.png';
+      if (lvl >= 30) return 'avatar-level-30.png';
+      if (lvl >= 20) return 'avatar-level-20.png';
+      if (lvl >= 17) return 'avatar-level-17.png';
+      if (lvl >= 15) return 'avatar-level-15.png';
+      if (lvl >= 13) return 'avatar-level-13.png';
+      if (lvl >= 10) return 'avatar-level-10.png';
+      if (lvl >= 5)  return 'avatar-level-5.png';
+      if (lvl >= 4)  return 'avatar-level-4.png';
+      if (lvl >= 3)  return 'avatar-level-3.png';
+      if (lvl >= 2)  return 'avatar-level-2.png';
+      return 'avatar-default.png';
+    }
+
     function getXpRequired(level) {
       if (level <= 10) return level * 500;
       if (level <= 25) return level * 1000;
@@ -1332,7 +1348,19 @@
 
 
 
-      document.getElementById('avatarImage').src    = profile.avatar_url;
+      // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
+      // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
+      const _SPECIAL = ['avatar-millionaire.png', 'avatar-completionist.png'];
+      const _autoAvatar = avatarForLevel(stats.level || 1);
+      if (_SPECIAL.includes(profile.avatar_url)) {
+        document.getElementById('avatarImage').src = profile.avatar_url;
+      } else {
+        document.getElementById('avatarImage').src = _autoAvatar;
+        if (profile.avatar_url !== _autoAvatar) {
+          profile.avatar_url = _autoAvatar;
+          sb.from('profiles').update({ avatar_url: _autoAvatar }).eq('user_id', currentUser.id);
+        }
+      }
 
       // Thème de carte de profil (acheté au Shop)
       const PROFILE_THEMES = {
@@ -1368,6 +1396,11 @@
           const _nm = document.createElement('span'); _nm.textContent = _co.name;
           _coEl.appendChild(_ic); _coEl.appendChild(_nm);
         } else { _coEl.style.display = 'none'; }
+      }
+      const _pcBtn = document.getElementById('profileCardBtn');
+      if (_pcBtn) {
+        if (_co && _co.name) { _pcBtn.onclick = () => { window.location.href = 'commerce.html'; }; _pcBtn.style.cursor = 'pointer'; }
+        else { _pcBtn.onclick = null; _pcBtn.style.cursor = 'default'; }
       }
 
       const level = stats.level || 1, xp = stats.xp || 0;
