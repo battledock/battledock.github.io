@@ -156,6 +156,32 @@
     .hh-bar { height:8px; border-radius:20px; background:rgba(0,0,0,0.08); overflow:hidden; margin-top:11px; }
     .hh-fill { height:100%; border-radius:20px; background:linear-gradient(90deg,#a78bfa,#7c3aed,#fbbf24); box-shadow:0 0 10px rgba(167,139,250,0.6); transition:width .6s ease; }
     .hh-meta { font-size:11px; color:#6b7280; font-weight:700; letter-spacing:1px; margin-top:8px; }
+
+    /* ===== Mode Histoire : vue par actes ===== */
+    .act-sec { margin-bottom: 20px; }
+    .act-head { display:flex; align-items:center; gap:10px; padding:0 4px 11px; }
+    .act-rom { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:#fbbf24; text-shadow:0 0 14px rgba(251,191,36,0.4); }
+    .act-name { flex:1; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; color:rgba(255,255,255,0.85); }
+    .act-prog { font-size:11px; color:rgba(255,255,255,0.4); font-weight:700; letter-spacing:0.5px; }
+    .ch-row { display:flex; align-items:center; gap:13px; padding:14px 16px; border-radius:15px; margin-bottom:9px;
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); transition:transform .15s ease; }
+    .ch-row.available { cursor:pointer; }
+    .ch-row.available:active { transform:scale(0.98); }
+    .ch-row.done { border-color:rgba(74,222,128,0.22); }
+    .ch-row.locked { opacity:0.45; }
+    .ch-row.current { border-color:rgba(251,191,36,0.5); background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(124,58,237,0.12)); box-shadow:0 6px 22px rgba(251,191,36,0.12); }
+    .ch-badge { width:40px; height:40px; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      font-family:'Bebas Neue',sans-serif; font-size:18px; background:rgba(255,255,255,0.07); color:#fff; }
+    .ch-row.done .ch-badge { background:rgba(74,222,128,0.18); color:#4ade80; }
+    .ch-row.current .ch-badge { background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#3a2600; }
+    .ch-row.locked .ch-badge { color:rgba(255,255,255,0.4); }
+    .ch-mid { flex:1; min-width:0; }
+    .ch-name { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ch-desc { font-size:11px; color:rgba(255,255,255,0.45); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ch-go { flex-shrink:0; font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:1px; color:#3a2600;
+      background:linear-gradient(135deg,#fbbf24,#f59e0b); padding:8px 13px; border-radius:10px; box-shadow:0 4px 12px rgba(251,191,36,0.3); }
+    .ch-tag { flex-shrink:0; font-size:10px; font-weight:700; letter-spacing:0.5px; color:rgba(255,255,255,0.4); padding:7px 10px; border-radius:10px; background:rgba(255,255,255,0.05); }
+    .ch-tag.done { color:#4ade80; background:rgba(74,222,128,0.12); }
 </style>
 </head>
 <body>
@@ -1232,93 +1258,54 @@
       const total = chs.length;
       const doneCount = chs.filter(c => progress[c.doneKey]).length;
       const pct = Math.round(doneCount / total * 100);
+      const curId = (chs.find(c => (!c.requires || progress[c.requires]) && !progress[c.doneKey]) || chs[chs.length-1]).id;
 
-      list.innerHTML = `<div class="hist-hero"><div class="hh-title">MODE HISTOIRE</div><div class="hh-bar"><div class="hh-fill" style="width:${pct}%"></div></div><div class="hh-meta">${doneCount>=total ? 'Histoire terminée' : 'Chapitre ' + Math.min(doneCount+1,total)} · ${doneCount}/${total}</div></div><div class="road-map" id="roadMap"></div>`;
       const hdr = document.querySelector('.header'); if (hdr) hdr.style.display = 'none';
       const xbtn = document.getElementById('mapClose'); if (xbtn) xbtn.style.display = 'flex';
 
-      const map = document.getElementById('roadMap');
-
-      const buildMap = () => {
-      const W = Math.round((map.getBoundingClientRect().width) || map.clientWidth || 0);
-      if (W < 140) { requestAnimationFrame(buildMap); return; }
-      const STEP = 122, PAD_TOP = 178, PAD_BOTTOM = 150;
-      const H = PAD_TOP + (total - 1) * STEP + PAD_BOTTOM;
-      map.style.height = H + 'px';
-
-      const cx = W / 2, amp = Math.min(W * 0.30, 132);
-      const pts = [];
-      for (let i = 0; i < total; i++) {
-        let x = cx + amp * Math.sin(i * 0.85 + 0.6);
-        x = Math.max(64, Math.min(W - 64, x));
-        const y = H - PAD_BOTTOM - i * STEP;
-        pts.push({ x, y });
-      }
-
-      const path = (arr) => {
-        if (arr.length < 2) return arr.length ? `M ${arr[0].x} ${arr[0].y}` : '';
-        let d = `M ${arr[0].x.toFixed(1)} ${arr[0].y.toFixed(1)}`;
-        for (let i = 0; i < arr.length - 1; i++) {
-          const p0 = arr[i-1] || arr[i], p1 = arr[i], p2 = arr[i+1], p3 = arr[i+2] || arr[i+1];
-          const c1x = p1.x + (p2.x - p0.x)/6, c1y = p1.y + (p2.y - p0.y)/6;
-          const c2x = p2.x - (p3.x - p1.x)/6, c2y = p2.y - (p3.y - p1.y)/6;
-          d += ` C ${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-        }
-        return d;
-      };
-      const roadAll  = path(pts);
-      const goldPts  = pts.slice(0, Math.min(total, doneCount + 1));
-      const roadDone = path(goldPts);
-
-      let nodesHtml = '';
-      let lastAct = null;
-      chs.forEach((ch, i) => {
-        const p = pts[i];
-        const done = !!progress[ch.doneKey];
-        const available = !ch.requires || !!progress[ch.requires];
-        const state = done ? 'done' : available ? 'available' : 'locked';
-        const icon = done ? '✓' : (state === 'locked' ? '🔒' : '▶');
-        const act = actOf(ch.id);
-        if (act.n !== lastAct) {
-          lastAct = act.n;
-          nodesHtml += `<div class="act-flag" style="left:${p.x.toFixed(0)}px;top:${(p.y-66).toFixed(0)}px">ACTE ${act.n} · ${act.name}</div>`;
-        }
-        const t = ch.title.length > 24 ? ch.title.slice(0,23) + '…' : ch.title;
-        nodesHtml += `
-          <div class="stop ${state}" data-id="${ch.id}" style="left:${p.x.toFixed(0)}px;top:${p.y.toFixed(0)}px">
-            ${available && !done ? '<div class="play-flag">JOUER</div>' : ''}
-            <div class="stop-badge">${icon}<div class="stop-num">${ch.id}</div></div>
-            <div class="stop-label">${t}</div>
-          </div>`;
+      const acts = [];
+      chs.forEach(ch => {
+        const a = actOf(ch.id);
+        let grp = acts.find(g => g.n === a.n);
+        if (!grp) { grp = { n:a.n, name:a.name, items:[] }; acts.push(grp); }
+        grp.items.push(ch);
       });
 
-      map.innerHTML = `
-        <svg class="scene" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-          ${buildScene(W, H)}
-          <path d="${roadAll}" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="${roadAll}" fill="none" stroke="#b8995f" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="${roadAll}" fill="none" stroke="#e3c489" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="${roadAll}" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round"/>
-          ${doneCount > 0 ? `<path d="${roadDone}" fill="none" stroke="#fbbf24" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/><path d="${roadDone}" fill="none" stroke="#fff7d6" stroke-width="4" stroke-dasharray="2 12" stroke-linecap="round"/>` : ''}
-        </svg>
-        ${nodesHtml}`;
+      let html = `<div class="hist-hero"><div class="hh-title">MODE HISTOIRE</div><div class="hh-bar"><div class="hh-fill" style="width:${pct}%"></div></div><div class="hh-meta">${doneCount>=total ? 'Histoire terminée' : 'Chapitre ' + Math.min(doneCount+1,total)} · ${doneCount}/${total}</div></div>`;
+
+      acts.forEach(grp => {
+        const aDone = grp.items.filter(c => progress[c.doneKey]).length;
+        html += `<div class="act-sec"><div class="act-head"><span class="act-rom">ACTE ${grp.n}</span><span class="act-name">${grp.name}</span><span class="act-prog">${aDone}/${grp.items.length}</span></div>`;
+        grp.items.forEach(ch => {
+          const done = !!progress[ch.doneKey];
+          const available = !ch.requires || !!progress[ch.requires];
+          const state = done ? 'done' : available ? 'available' : 'locked';
+          const isCur = (ch.id === curId) && available && !done;
+          const icon = done ? '✓' : (state === 'locked' ? '🔒' : '▶');
+          html += `<div class="ch-row ${state} ${isCur ? 'current' : ''}" data-id="${ch.id}">
+            <div class="ch-badge">${icon}</div>
+            <div class="ch-mid"><div class="ch-name">Chapitre ${ch.id} · ${ch.title}</div>${ch.desc ? `<div class="ch-desc">${ch.desc}</div>` : ''}</div>
+            ${available && !done ? '<div class="ch-go">JOUER</div>' : (done ? '<div class="ch-tag done">Terminé</div>' : '<div class="ch-tag">Verrouillé</div>')}
+          </div>`;
+        });
+        html += `</div>`;
+      });
+
+      list.innerHTML = html;
 
       chs.forEach(ch => {
         const done = !!progress[ch.doneKey];
         const available = !ch.requires || !!progress[ch.requires];
         if (available && !done) {
-          const el = map.querySelector('.stop[data-id="' + ch.id + '"]');
+          const el = list.querySelector('.ch-row[data-id="' + ch.id + '"]');
           if (el) el.onclick = () => startChapter(ch);
         }
       });
 
-      const cur = chs.find(c => (!c.requires || progress[c.requires]) && !progress[c.doneKey]) || chs[chs.length-1];
       setTimeout(() => {
-        const el = map.querySelector('.stop[data-id="' + cur.id + '"]');
+        const el = list.querySelector('.ch-row[data-id="' + curId + '"]');
         if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
       }, 40);
-      };
-      requestAnimationFrame(buildMap);
     }
 
     // ── LANCER UN CHAPITRE ──
