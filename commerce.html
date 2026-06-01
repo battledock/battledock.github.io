@@ -75,6 +75,10 @@
   const sb = supabase.createClient(SB_URL, SB_KEY);
 
   const CAP_HOURS = 8; // la recette s'accumule jusqu'à 8h hors-ligne
+  const COMMERCE_MIN_LEVEL = 30; // niveau requis pour ouvrir un commerce
+  const IPO_COST = 1000000;      // coût de l'introduction en Bourse
+  const IPO_BOOST = 1.5;         // +50% de recette une fois coté
+  const IPO_DIV_RATE = 0.02;     // dividende quotidien = 2% de la valorisation
   const COMMERCES = {
     poisson:   { name:'Cabanon à poissons',   icon:'🐟', base:1200, up:8000  },
     souvenirs: { name:'Boutique de souvenirs', icon:'🎁', base:1800, up:13000 },
@@ -83,22 +87,25 @@
     poissonnerie:{ name:'Restaurant de la criée', icon:'🦞', base:9000, up:90000 },
   };
 
-  let currentUser=null, money=0, com={}, tick=null;
+  let currentUser=null, money=0, level=1, com={}, tick=null;
   const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function valuation(){ return incomePerHour()*150; }
 
   async function init(){
     const { data:{ session } } = await sb.auth.getSession();
     if(!session){ window.location.href='index.html'; return; }
     currentUser = session.user;
-    const { data:gs } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+    const { data:gs } = await sb.from('game_stats').select('money,level,commerce').eq('user_id',currentUser.id).maybeSingle();
     money = gs?.money || 0;
+    level = gs?.level || 1;
     com = (gs?.commerce && typeof gs.commerce==='object') ? gs.commerce : {};
     if(!com.shops || typeof com.shops!=='object') com.shops = {};
     if(!com.lastCollect) com.lastCollect = new Date().toISOString();
     render();
   }
 
-  function incomePerHour(){ let t=0; for(const k in com.shops){ const c=COMMERCES[k]; if(c) t += c.base*(com.shops[k]||0); } return t; }
+  function incomePerHour(){ let t=0; for(const k in com.shops){ const c=COMMERCES[k]; if(c) t += c.base*(com.shops[k]||0); } return Math.round(t * (com.ipo?IPO_BOOST:1)); }
   function accrued(){ const elapsedH = Math.min(CAP_HOURS, (Date.now()-new Date(com.lastCollect).getTime())/3600000); return Math.floor(elapsedH * incomePerHour()); }
   function capReached(){ return (Date.now()-new Date(com.lastCollect).getTime())/3600000 >= CAP_HOURS; }
 
@@ -142,7 +149,9 @@
     html += `</div>`;
 
     const buyable = Object.keys(COMMERCES).filter(k=>!(com.shops[k]>0));
-    if(buyable.length){
+    if(level < COMMERCE_MIN_LEVEL){
+      html += `<div class="sect-lbl">Ouvrir un nouveau commerce</div><div class="card info">🔒 Il faut être <b>niveau ${COMMERCE_MIN_LEVEL}</b> pour ouvrir un commerce. Tu es niveau ${level} — encore un effort, patron !</div>`;
+    } else if(buyable.length){
       html += `<div class="sect-lbl">Ouvrir un nouveau commerce</div><div class="card">`;
       buyable.forEach(k=>{
         const c=COMMERCES[k];
@@ -156,6 +165,24 @@
             <button class="mini-btn" onclick="buy('${k}')">🔓 ${fmt(c.up)}€</button>
           </div>`;
       });
+      html += `</div>`;
+    }
+
+    if(owned.length){
+      const val = valuation(), div = Math.round(val*IPO_DIV_RATE);
+      html += `<div class="sect-lbl">Introduction en Bourse</div><div class="card">`;
+      if(com.ipo){
+        const canDiv = com.lastDiv !== todayStr();
+        html += `<div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#86efac;text-align:center">📈 Société cotée en Bourse</div>
+          <div class="info" style="text-align:center;margin:6px 0 12px">Valorisation : <b>${fmt(val)} €</b> · recette boostée <b>+50%</b></div>
+          <div style="text-align:center"><div class="collect-amt" style="font-size:30px">+${fmt(div)} €</div><div class="collect-meta">dividende quotidien</div></div>
+          ${canDiv ? '<button class="btn" onclick="claimDividend()">💸 TOUCHER LE DIVIDENDE</button>' : '<div class="info" style="text-align:center">✓ Dividende déjà touché aujourd\'hui.</div>'}`;
+      } else {
+        const ready = (level>=COMMERCE_MIN_LEVEL && money>=IPO_COST);
+        html += `<div class="info">Lève des capitaux : introduis ta société en Bourse pour <b>+50% de recette à vie</b> et un <b>dividende quotidien</b> (2% de ta valorisation). Valorisation actuelle : <b>${fmt(val)} €</b>.</div>
+          <button class="btn" onclick="introduceIPO()" ${ready?'':'disabled'}>📈 Introduire en Bourse — ${fmt(IPO_COST)} €</button>
+          ${money<IPO_COST?`<div class="info" style="text-align:center;margin-top:6px">Il te manque ${fmt(IPO_COST-money)} €.</div>`:''}`;
+      }
       html += `</div>`;
     }
 
@@ -188,6 +215,7 @@
 
   async function buy(k){
     const c=COMMERCES[k]; if(!c) return;
+    if(level < COMMERCE_MIN_LEVEL){ showToast('Niveau '+COMMERCE_MIN_LEVEL+' requis pour ouvrir un commerce (tu es niveau '+level+').'); return; }
     if(money < c.up){ showToast('Pas assez d\'argent (il faut '+fmt(c.up)+'€).'); return; }
     if(!confirm(`Ouvrir « ${c.name} » pour ${fmt(c.up)}€ ?`)) return;
     try {
@@ -220,6 +248,41 @@
       showToast(`⬆️ ${c.name} amélioré au niveau ${com.shops[k]} !`);
       render();
     } catch(e){ console.log('upgrade:',e); showToast('Erreur.'); }
+  }
+
+  async function introduceIPO(){
+    if(level < COMMERCE_MIN_LEVEL){ showToast('Niveau '+COMMERCE_MIN_LEVEL+' requis.'); return; }
+    if(com.ipo){ showToast('Ta société est déjà cotée.'); return; }
+    if(money < IPO_COST){ showToast('Il faut '+fmt(IPO_COST)+'€ pour entrer en Bourse.'); return; }
+    if(!confirm('Introduire ta société en Bourse pour '+fmt(IPO_COST)+'€ ?\n\n• +50% de recette à vie\n• Dividende quotidien')) return;
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+      if((fresh?.money||0) < IPO_COST){ showToast('Pas assez d\'argent.'); return; }
+      com = (fresh?.commerce && typeof fresh.commerce==='object') ? fresh.commerce : com;
+      if(!com.shops) com.shops={}; if(!com.lastCollect) com.lastCollect=new Date().toISOString();
+      com.ipo = true; com.ipoDate = new Date().toISOString();
+      const newMoney = (fresh?.money||0) - IPO_COST;
+      await sb.from('game_stats').update({ money:newMoney, commerce:com }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast('📈 Ta société est cotée en Bourse ! Recette +50%.');
+      render();
+    } catch(e){ console.log('ipo:',e); showToast('Erreur, réessaie.'); }
+  }
+
+  async function claimDividend(){
+    if(!com.ipo || com.lastDiv===todayStr()) return;
+    const div = Math.round(valuation()*IPO_DIV_RATE);
+    try {
+      const { data:fresh } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+      com = (fresh?.commerce && typeof fresh.commerce==='object') ? fresh.commerce : com;
+      if(com.lastDiv===todayStr()){ render(); return; }
+      const newMoney = (fresh?.money||0) + div;
+      com.lastDiv = todayStr();
+      await sb.from('game_stats').update({ money:newMoney, commerce:com }).eq('user_id',currentUser.id);
+      money = newMoney;
+      showToast('💸 +'+fmt(div)+'€ de dividende !');
+      render();
+    } catch(e){ console.log('div:',e); showToast('Erreur.'); }
   }
 
   let toastT;
