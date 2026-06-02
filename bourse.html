@@ -8,91 +8,99 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; }
-  body { font-family:'Inter',sans-serif; background:#030a0f; color:#e8f0ee; min-height:100dvh; overflow-x:hidden; }
-  .bg-grid { position:fixed; inset:0; z-index:0; background:
-      linear-gradient(180deg,#020c14,#041520 55%,#020c14),
-      linear-gradient(rgba(52,211,153,0.035) 1px,transparent 1px),
-      linear-gradient(90deg,rgba(52,211,153,0.035) 1px,transparent 1px);
-    background-size:100% 100%, 32px 32px, 32px 32px; pointer-events:none; }
+  body { font-family:'Inter',sans-serif; background:#fff; color:#1a1a1a; min-height:100dvh; overflow-x:hidden; }
+  .bg-grid { display:none; }
   .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; padding:0 14px 40px; }
 
   .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px;
-    padding:14px 4px; background:linear-gradient(180deg,#030a0f,rgba(3,10,15,0.85)); backdrop-filter:blur(8px); }
-  .back-btn { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:9px;
-    padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.7); cursor:pointer; }
+    padding:14px 4px; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid rgba(0,0,0,0.06); }
+  .back-btn { background:#f8f8f8; border:1px solid rgba(0,0,0,0.08); border-radius:9px;
+    padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(0,0,0,0.5); cursor:pointer; }
   .back-btn:active { transform:scale(0.95); }
-  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
-    background:linear-gradient(135deg,#34d399,#6ee7b7,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; color:#1a1a1a; }
+  .hdr-profit { background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:3px 9px;
+    font-family:'Bebas Neue',sans-serif; font-size:13px; color:#16a34a; }
 
-  .wallet { display:flex; gap:10px; margin-bottom:12px; }
-  .wallet-box { flex:1; background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.15); border-radius:14px; padding:12px 14px; }
-  .wallet-lbl { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:4px; }
-  .wallet-val { font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:1px; color:#34d399; line-height:1; }
-  .wallet-val.cash { color:#fff; }
+  /* Mini portfolio chart */
+  .portfolio-chart { background:#f0fdf4; border:1px solid #bbf7d0; border-radius:14px; padding:12px 14px;
+    margin-bottom:12px; display:flex; align-items:center; gap:12px; }
+  .pc-info { flex:1; }
+  .pc-lbl { font-size:8px; color:rgba(0,0,0,0.3); font-weight:700; letter-spacing:1.5px; margin-bottom:3px; }
+  .pc-val { font-family:'Bebas Neue',sans-serif; font-size:21px; color:#16a34a; line-height:1; }
+  .pc-chg { font-size:10px; color:#16a34a; font-weight:700; margin-top:2px; }
+
+  .wallet { display:flex; gap:8px; margin-bottom:12px; }
+  .wallet-box { flex:1; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:12px; padding:10px 12px; }
+  .wallet-lbl { font-size:8px; letter-spacing:2px; text-transform:uppercase; color:rgba(0,0,0,0.3); margin-bottom:3px; }
+  .wallet-val { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:0.5px; color:#1a1a1a; line-height:1; }
+  .wallet-val.cash { color:#1a1a1a; }
 
   .tabs { display:flex; gap:6px; margin-bottom:12px; }
-  .tab { flex:1; padding:9px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03);
-    font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(255,255,255,0.5); cursor:pointer; }
-  .tab.act { background:rgba(52,211,153,0.12); border-color:rgba(52,211,153,0.4); color:#34d399; }
+  .tab { flex:1; padding:9px; border-radius:10px; border:1px solid rgba(0,0,0,0.07); background:#f8f8f8;
+    font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(0,0,0,0.3); cursor:pointer; }
+  .tab.act { background:#f0fdf4; border-color:#86efac; color:#16a34a; }
 
-  .stock { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:14px; margin-bottom:10px; transition:border-color .2s; }
-  .stock.holding { border-color:rgba(52,211,153,0.3); background:rgba(52,211,153,0.04); }
+  .stock { background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:16px; padding:14px; margin-bottom:10px;
+    transition:border-color .2s; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+  .stock.holding { border-color:#86efac; background:#f0fdf4; }
   .stock-top { display:flex; align-items:center; gap:12px; }
   .stock-badge { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-family:'Bebas Neue',sans-serif; font-size:13px; color:#fff; flex-shrink:0; letter-spacing:0.5px; }
   .stock-id { flex:1; min-width:0; }
-  .stock-sym { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:1px; color:#fff; }
-  .stock-name { font-size:10px; color:rgba(255,255,255,0.4); }
+  .stock-sym { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:1px; color:#1a1a1a; }
+  .stock-name { font-size:10px; color:rgba(0,0,0,0.35); }
   .stock-price-wrap { text-align:right; }
-  .stock-price { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:0.5px; color:#fff; line-height:1; }
+  .stock-price { font-family:'Bebas Neue',sans-serif; font-size:21px; letter-spacing:0.5px; color:#1a1a1a; line-height:1; }
   .stock-chg { font-size:11px; font-weight:700; margin-top:2px; }
-  .up { color:#34d399; } .down { color:#f87171; } .flat { color:rgba(255,255,255,0.4); }
+  .up { color:#16a34a; } .down { color:#dc2626; } .flat { color:rgba(0,0,0,0.25); }
   .spark { width:100%; height:42px; margin:10px 0 4px; display:block; }
-  .pos { display:flex; align-items:center; justify-content:space-between; gap:8px; background:rgba(0,0,0,0.25); border:1px solid rgba(52,211,153,0.12); border-radius:10px; padding:7px 11px; margin-top:6px; font-size:12px; }
-  .pos-lbl { color:rgba(255,255,255,0.45); } .pos-pl { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.5px; }
+  .pos { display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:7px 11px; margin-top:6px; font-size:12px; }
+  .pos-lbl { color:rgba(0,0,0,0.4); } .pos-pl { font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:0.5px; }
   .btns { display:flex; gap:8px; margin-top:9px; }
   .btn { flex:1; padding:10px; border:none; border-radius:11px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; transition:transform .1s; }
   .btn:active { transform:scale(0.96); }
-  .btn-buy  { background:linear-gradient(135deg,#059669,#34d399); color:#022; }
-  .btn-sell { background:rgba(248,113,113,0.12); border:1px solid rgba(248,113,113,0.4); color:#fca5a5; }
-  .btn:disabled { opacity:0.4; cursor:default; }
-  .cooldn { font-size:10px; color:rgba(255,255,255,0.4); text-align:center; margin-top:6px; }
+  .btn-buy  { background:#16a34a; color:#fff; }
+  .btn-sell { background:transparent; border:1px solid rgba(220,38,38,0.3); color:#dc2626; }
+  .btn:disabled { opacity:0.35; cursor:default; }
+  .cooldn { font-size:10px; color:rgba(0,0,0,0.3); text-align:center; margin-top:6px; }
 
-  .feed-line, .lb-line { display:flex; align-items:center; gap:8px; padding:8px 10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; margin-bottom:6px; font-size:12px; }
-  .lb-rank { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#34d399; min-width:26px; }
-  .lb-name { flex:1; color:#fff; font-weight:600; }
-  .lb-val { font-family:'Bebas Neue',sans-serif; color:#34d399; }
-  .lb-best { font-size:10px; color:rgba(255,255,255,0.4); }
-  .muted { color:rgba(255,255,255,0.35); text-align:center; padding:30px 10px; font-size:13px; }
+  .feed-line, .lb-line { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:10px; margin-bottom:6px; font-size:12px; }
+  .lb-rank { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#16a34a; min-width:26px; }
+  .lb-name { flex:1; color:#1a1a1a; font-weight:600; }
+  .lb-val { font-family:'Bebas Neue',sans-serif; color:#16a34a; }
+  .lb-best { font-size:10px; color:rgba(0,0,0,0.3); }
+  .muted { color:rgba(0,0,0,0.3); text-align:center; padding:30px 10px; font-size:13px; }
 
-  .ov { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px); display:none; align-items:flex-end; justify-content:center; }
+  .ov { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px); display:none; align-items:flex-end; justify-content:center; }
   .ov.show { display:flex; }
-  .sheet { width:100%; max-width:540px; background:#0a1620; border-top:1px solid rgba(52,211,153,0.2); border-radius:22px 22px 0 0; padding:22px 18px calc(22px + env(safe-area-inset-bottom)); animation:slideUp .25s ease; }
+  .sheet { width:100%; max-width:540px; background:#fff; border-top:2px solid #16a34a; border-radius:22px 22px 0 0; padding:22px 18px calc(22px + env(safe-area-inset-bottom)); animation:slideUp .25s ease; box-shadow:0 -10px 40px rgba(0,0,0,0.1); }
   @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
   .sheet-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
-  .sheet-sym { font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:1px; color:#fff; }
-  .sheet-price { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#34d399; }
-  .sheet-x { background:rgba(255,255,255,0.08); border:none; color:#fff; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; }
+  .sheet-sym { font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:1px; color:#1a1a1a; }
+  .sheet-price { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#16a34a; }
+  .sheet-x { background:#f8f8f8; border:1px solid rgba(0,0,0,0.08); color:#1a1a1a; width:30px; height:30px; border-radius:50%; font-size:15px; cursor:pointer; }
   .tt { display:flex; gap:8px; margin:14px 0; }
-  .tt-btn { flex:1; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:none; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; color:rgba(255,255,255,0.5); cursor:pointer; }
-  .tt-btn.act-buy  { background:rgba(52,211,153,0.15); border-color:rgba(52,211,153,0.5); color:#34d399; }
-  .tt-btn.act-sell { background:rgba(248,113,113,0.12); border-color:rgba(248,113,113,0.5); color:#fca5a5; }
-  .amt-row { display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:6px 10px; margin-bottom:10px; }
-  .amt-input { flex:1; background:none; border:none; outline:none; color:#fff; font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; text-align:center; -webkit-user-select:text; user-select:text; }
-  .amt-cur { font-family:'Bebas Neue',sans-serif; font-size:16px; color:rgba(255,255,255,0.4); }
+  .tt-btn { flex:1; padding:10px; border-radius:10px; border:1px solid rgba(0,0,0,0.08); background:#f8f8f8; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; color:rgba(0,0,0,0.35); cursor:pointer; }
+  .tt-btn.act-buy  { background:#f0fdf4; border-color:#86efac; color:#16a34a; }
+  .tt-btn.act-sell { background:#fef2f2; border-color:#fca5a5; color:#dc2626; }
+  .amt-row { display:flex; align-items:center; gap:8px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.08); border-radius:12px; padding:6px 10px; margin-bottom:10px; }
+  .amt-input { flex:1; background:none; border:none; outline:none; color:#1a1a1a; font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:1px; text-align:center; -webkit-user-select:text; user-select:text; }
+  .amt-cur { font-family:'Bebas Neue',sans-serif; font-size:16px; color:rgba(0,0,0,0.3); }
   .quick { display:flex; gap:6px; margin-bottom:12px; }
-  .quick-btn { flex:1; padding:8px; border-radius:9px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.6); font-size:12px; font-weight:700; cursor:pointer; }
-  .preview { font-size:12px; color:rgba(255,255,255,0.5); text-align:center; margin-bottom:14px; line-height:1.6; min-height:34px; }
-  .preview b { color:#fff; }
+  .quick-btn { flex:1; padding:8px; border-radius:9px; border:1px solid rgba(0,0,0,0.08); background:#f8f8f8; color:rgba(0,0,0,0.5); font-size:12px; font-weight:700; cursor:pointer; }
+  .preview { font-size:12px; color:rgba(0,0,0,0.4); text-align:center; margin-bottom:14px; line-height:1.6; min-height:34px; }
+  .preview b { color:#1a1a1a; }
   .exec { width:100%; padding:15px; border:none; border-radius:13px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; cursor:pointer; }
-  .exec.buy  { background:linear-gradient(135deg,#059669,#34d399); color:#022; }
-  .exec.sell { background:linear-gradient(135deg,#dc2626,#f87171); color:#fff; }
-  .exec:disabled { opacity:0.4; cursor:default; }
+  .exec.buy  { background:#16a34a; color:#fff; }
+  .exec.sell { background:#dc2626; color:#fff; }
+  .exec:disabled { opacity:0.35; cursor:default; }
 
-  .toast { position:fixed; top:64px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200; background:rgba(10,22,32,0.97); border:1px solid rgba(52,211,153,0.3); border-radius:12px; padding:11px 18px; font-size:12px; font-weight:600; opacity:0; transition:all .35s; max-width:90%; text-align:center; }
+  .toast { position:fixed; top:64px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200; background:#fff; border:1px solid #86efac; border-radius:12px; padding:11px 18px; font-size:12px; font-weight:600; opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#16a34a; box-shadow:0 8px 24px rgba(0,0,0,0.1); }
   .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.bad { border-color:rgba(248,113,113,0.5); color:#fca5a5; }
-  .hint { font-size:11px; color:rgba(255,255,255,0.3); text-align:center; margin:2px 0 12px; line-height:1.5; }
-  .loader { text-align:center; padding:70px 20px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
+  .toast.bad { border-color:#fca5a5; color:#dc2626; }
+  .hint { font-size:11px; color:rgba(0,0,0,0.25); text-align:center; margin:2px 0 12px; line-height:1.5; }
+  .loader { text-align:center; padding:70px 20px; color:rgba(0,0,0,0.2); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
 </style>
 </head>
 <body>
@@ -100,7 +108,24 @@
   <div class="wrap">
     <div class="hdr">
       <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
-      <div class="hdr-title">Bourse du Fret</div>
+      <div class="hdr-title">BOURSE DU FRET</div>
+      <div class="hdr-profit" id="hdrProfit">—</div>
+    </div>
+    <!-- Mini portfolio chart -->
+    <div class="portfolio-chart">
+      <div class="pc-info">
+        <div class="pc-lbl">VALEUR TOTALE</div>
+        <div class="pc-val" id="pcVal">—</div>
+        <div class="pc-chg" id="pcChg">—</div>
+      </div>
+      <svg width="120" height="48" viewBox="0 0 120 48" preserveAspectRatio="none" id="pcChart">
+        <defs><linearGradient id="pcGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#16a34a" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path id="pcFill" fill="url(#pcGrad)"/>
+        <path id="pcLine" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+      </svg>
     </div>
     <div class="wallet">
       <div class="wallet-box"><div class="wallet-lbl">Liquidités</div><div class="wallet-val cash" id="cash">—</div></div>
@@ -303,8 +328,50 @@
     sp.innerHTML=`<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>`;
   }
 
+  let portHistory = [];
   function portfolioValue(){ let v=0; COMPANIES.forEach(c=>{const h=holdings[c.sym]; if(h)v+=h.shares*prices[c.sym];}); return v; }
-  function updateWallet(){ document.getElementById('cash').textContent=fmt(cash)+'€'; document.getElementById('portfolio').textContent=fmt(portfolioValue())+'€'; }
+  function updateWallet(){
+    const pv = portfolioValue();
+    const total = cash + pv;
+    document.getElementById('cash').textContent=fmt(cash)+'€';
+    document.getElementById('portfolio').textContent=fmt(pv)+'€';
+
+    // Portfolio chart mini
+    portHistory.push(total);
+    if (portHistory.length > 20) portHistory.shift();
+    const pcVal = document.getElementById('pcVal');
+    const pcChg = document.getElementById('pcChg');
+    const pcLine = document.getElementById('pcLine');
+    const pcFill = document.getElementById('pcFill');
+    if (pcVal) pcVal.textContent = fmt(total)+'€';
+    if (pcChg && portHistory.length > 1) {
+      const diff = total - portHistory[0];
+      const sign = diff >= 0 ? '▲' : '▼';
+      const col = diff >= 0 ? '#16a34a' : '#dc2626';
+      pcChg.textContent = sign+' '+fmt(Math.abs(diff))+'€';
+      pcChg.style.color = col;
+      if (pcLine) pcLine.setAttribute('stroke', col);
+    }
+    if (pcLine && portHistory.length > 1) {
+      const mn = Math.min(...portHistory), mx = Math.max(...portHistory), rng = mx-mn || 1;
+      const pts = portHistory.map((v,i) => `${(i/(portHistory.length-1))*120},${48-((v-mn)/rng)*40-4}`).join(' ');
+      pcLine.setAttribute('d', 'M'+pts.split(' ').join(' L'));
+      if (pcFill) pcFill.setAttribute('d', 'M'+pts.split(' ').join(' L')+` L120,48 L0,48 Z`);
+    }
+
+    // Badge profit header
+    const hdrProfit = document.getElementById('hdrProfit');
+    if (hdrProfit) {
+      if (profit === 0) { hdrProfit.textContent = '—'; hdrProfit.style.color='rgba(0,0,0,0.3)'; hdrProfit.style.borderColor='rgba(0,0,0,0.1)'; hdrProfit.style.background='#f8f8f8'; }
+      else {
+        const sign = profit >= 0 ? '▲' : '▼';
+        hdrProfit.textContent = sign+' '+fmt(Math.abs(profit))+'€';
+        hdrProfit.style.color = profit >= 0 ? '#16a34a' : '#dc2626';
+        hdrProfit.style.borderColor = profit >= 0 ? '#86efac' : '#fca5a5';
+        hdrProfit.style.background = profit >= 0 ? '#f0fdf4' : '#fef2f2';
+      }
+    }
+  }
 
   // ── Modal ──
   function openModal(sym,m){ modalSym=sym; document.getElementById('ov').classList.add('show'); setMode(m); document.getElementById('amt').value=''; updateModal(); }
