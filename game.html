@@ -358,37 +358,45 @@
     /* TRAVAILLER - Port de jour */
     .nav-card.work {
       grid-column: span 1; height: 130px;
-      background: linear-gradient(160deg, #1a1208 0%, #3d1f02 40%, #0e2a4a 100%);
+      background: #0d0d10;
       position: relative; overflow: hidden;
     }
     .nav-card.work .nav-card-bg { display:none; }
     .nav-card.work .nav-card-overlay { display:none; }
-    .work-sun {
-      position:absolute; bottom:-10px; right:16px;
-      width:64px; height:64px; border-radius:50%;
-      background:radial-gradient(circle, #fde68a 0%, #f59e0b 40%, transparent 70%);
-      opacity:0.45; pointer-events:none;
-      animation:workSunPulse 4s ease-in-out infinite;
+    /* Colonne shift horaire */
+    .work-shifts {
+      position:absolute; right:0; top:0; bottom:0; width:52px;
+      display:flex; flex-direction:column;
+      border-left:1px solid rgba(255,255,255,0.05);
+      z-index:2;
     }
-    @keyframes workSunPulse { 0%,100%{opacity:0.4;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.06)} }
-    .work-sea {
-      position:absolute; bottom:0; left:0; right:0; height:32px;
-      background:linear-gradient(180deg,#0e3060 0%,#062040 100%);
-      pointer-events:none;
+    .work-shift {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      font-size:8px; font-weight:700; letter-spacing:1px; color:rgba(255,255,255,0.15);
+      transition: background .3s, color .3s;
     }
-    .work-wave {
-      position:absolute; top:-2px; left:0; width:200%; height:8px;
-      animation:workWaveScroll 10s linear infinite;
+    .work-shift.active {
+      background:rgba(245,158,11,0.15); color:#f59e0b;
     }
-    @keyframes workWaveScroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    .work-shift.past { color:rgba(255,255,255,0.1); }
+    /* Contenu texte */
     .nav-card.work .nav-card-content {
       position:relative; z-index:2; justify-content:center; gap:4px;
+      padding-right:60px;
     }
-    .nav-card.work .work-tag {
-      font-size:8px; color:rgba(253,230,138,0.6); font-weight:700; letter-spacing:2px;
+    .work-tag {
+      font-size:8px; color:rgba(245,158,11,0.5); font-weight:700; letter-spacing:2px;
     }
-    .nav-card.work .nav-card-title { font-size:26px; color:#fff; letter-spacing:2px; text-shadow:0 2px 8px rgba(0,0,0,0.6); }
-    .nav-card.work .nav-card-sub { color:rgba(255,255,255,0.35); }
+    .nav-card.work .nav-card-title { font-size:24px; color:#fff; letter-spacing:2px; }
+    .nav-card.work .nav-card-sub { color:rgba(255,255,255,0.3); }
+    /* Point "EN SERVICE" */
+    .work-status { display:flex; align-items:center; gap:5px; margin-top:3px; }
+    .work-dot {
+      width:5px; height:5px; border-radius:50%; background:#f59e0b;
+      animation:workDotBlink .9s ease-in-out infinite;
+    }
+    @keyframes workDotBlink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+    .work-status-label { font-size:9px; color:rgba(245,158,11,0.7); font-weight:700; letter-spacing:1px; }
 
     /* CASINO - Nuit rouge avec particules */
     .nav-card.casino .nav-card-bg {
@@ -932,16 +940,17 @@
       <div class="nav-card work gated" id="workCard" onclick="window.location.href='travail.html'">
         <div class="nav-card-bg"></div>
         <div class="nav-card-overlay"></div>
-        <div class="work-sun"></div>
-        <div class="work-sea">
-          <svg class="work-wave" height="8" viewBox="0 0 800 8" preserveAspectRatio="none">
-            <path d="M0,4 C50,0 100,8 150,4 C200,0 250,8 300,4 C350,0 400,8 450,4 C500,0 550,8 600,4 C650,0 700,8 750,4 C800,0 800,4 800,4" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1.2"/>
-          </svg>
-        </div>
+        <!-- Shifts horaires -->
+        <div class="work-shifts" id="workShifts"></div>
+        <!-- Contenu -->
         <div class="nav-card-content">
-          <div class="work-tag">⛅ MATIN — 6H00</div>
+          <div class="work-tag" id="workTimeTag">🕐 —</div>
           <div class="nav-card-title">TRAVAILLER</div>
           <div class="nav-card-sub">Gagner argent + XP</div>
+          <div class="work-status">
+            <div class="work-dot"></div>
+            <div class="work-status-label">EN SERVICE</div>
+          </div>
         </div>
       </div>
       <div class="nav-card bourse gated" id="bourseCard" onclick="window.location.href='bourse.html'">
@@ -1674,6 +1683,39 @@ async function loadCalendar() {
         });
         requestAnimationFrame(draw);
       })();
+    })();
+  </script>
+  <script>
+    // Shift horaire temps réel — bouton Travailler
+    (function updateWorkTime() {
+      const now = new Date();
+      const h = now.getHours();
+      const m = now.getMinutes();
+      const pad = n => String(n).padStart(2,'0');
+
+      // Tag heure courante
+      const tag = document.getElementById('workTimeTag');
+      if (tag) {
+        const period = h < 6 ? '🌙 NUIT' : h < 12 ? '⛅ MATIN' : h < 18 ? '☀️ APRÈS-MIDI' : '🌙 SOIR';
+        tag.textContent = period + ' — ' + pad(h) + 'H' + pad(m);
+      }
+
+      // Colonne de shifts : 5 tranches autour de l'heure courante
+      const shifts = document.getElementById('workShifts');
+      if (shifts) {
+        shifts.innerHTML = '';
+        for (let i = -2; i <= 2; i++) {
+          const sh = ((h + i) % 24 + 24) % 24;
+          const div = document.createElement('div');
+          div.className = 'work-shift' + (i === 0 ? ' active' : (i < 0 ? ' past' : ''));
+          div.textContent = pad(sh) + 'H' + (i === 0 ? ' ▶' : '');
+          shifts.appendChild(div);
+        }
+      }
+
+      // Relancer à la prochaine minute pile
+      const msToNextMin = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+      setTimeout(updateWorkTime, msToNextMin);
     })();
   </script>
 </body>
