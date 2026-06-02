@@ -61,8 +61,12 @@
   .btn { flex:1; padding:10px; border:none; border-radius:11px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; transition:transform .1s; }
   .btn:active { transform:scale(0.96); }
   .btn-buy  { background:#16a34a; color:#fff; }
+  .btn-info { background:#f8f8f8; border:1px solid rgba(0,0,0,0.1); color:rgba(0,0,0,0.5); flex:0.6; font-size:12px; }
+  .btn-info.open { background:#eff6ff; border-color:#93c5fd; color:#2563eb; }
   .btn-sell { background:transparent; border:1px solid rgba(220,38,38,0.3); color:#dc2626; }
   .btn:disabled { opacity:0.35; cursor:default; }
+  .stock-info-panel { margin-top:10px; background:#f8faff; border:1px solid #bfdbfe; border-radius:12px; padding:12px 14px; font-size:12px; line-height:1.6; color:rgba(0,0,0,0.65); }
+  .stock-info-panel b { color:#1a1a1a; }
   .cooldn { font-size:10px; color:rgba(0,0,0,0.3); text-align:center; margin-top:6px; }
 
   .feed-line { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:12px; margin-bottom:6px; }
@@ -391,8 +395,10 @@
         <div id="po-${c.sym}"></div>
         <div class="btns">
           <button class="btn btn-buy" onclick="openModal('${c.sym}','buy')">Acheter</button>
+          <button class="btn btn-info" onclick="toggleInfo('${c.sym}')">ℹ Info</button>
           <button class="btn btn-sell" id="sb-${c.sym}" onclick="openModal('${c.sym}','sell')">Vendre</button>
         </div>
+        <div id="info-${c.sym}" class="stock-info-panel" style="display:none"></div>
         <div class="cooldn" id="cd-${c.sym}"></div>
       </div>`).join('');
     refresh();
@@ -497,6 +503,30 @@
   // ── Modal ──
   function openModal(sym,m){ modalSym=sym; document.getElementById('ov').classList.add('show'); setMode(m); if(m!=='info'){ document.getElementById('amt').value=''; updateModal(); } }
   function closeModal(){ modalSym=null; document.getElementById('ov').classList.remove('show'); }
+
+  function toggleInfo(sym){
+    const panel = document.getElementById('info-'+sym);
+    const btn = document.querySelector(`#st-${sym} .btn-info`);
+    if (!panel) return;
+    const isOpen = panel.style.display !== 'none';
+    panel.style.display = isOpen ? 'none' : 'block';
+    if (btn) btn.classList.toggle('open', !isOpen);
+    if (!isOpen && !panel.innerHTML) {
+      const c = CO[sym];
+      if (!c) return;
+      const riskColor = {'Faible':'#16a34a','Moyen':'#d97706','Élevé':'#dc2626','Très élevé':'#dc2626'}[c.risk]||'#6b7280';
+      panel.innerHTML = `
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;color:#1a1a1a;margin-bottom:6px">${c.name}</div>
+        <p style="margin-bottom:8px">${c.desc}</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">🏭 ${c.sector}</span>
+          <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">📅 Fondée ${c.founded}</span>
+          <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">👥 ${c.employees}</span>
+          <span style="background:${riskColor}18;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:${riskColor}">⚠ ${c.risk}</span>
+          <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">📊 Vol. ${(c.vol*100).toFixed(1)}%/tick</span>
+        </div>`;
+    }
+  }
   document.getElementById('ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeModal(); });
 
   function setMode(m){
