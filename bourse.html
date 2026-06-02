@@ -65,11 +65,24 @@
   .btn:disabled { opacity:0.35; cursor:default; }
   .cooldn { font-size:10px; color:rgba(0,0,0,0.3); text-align:center; margin-top:6px; }
 
-  .feed-line, .lb-line { display:flex; align-items:center; gap:8px; padding:8px 10px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:10px; margin-bottom:6px; font-size:12px; }
-  .lb-rank { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#16a34a; min-width:26px; }
-  .lb-name { flex:1; color:#1a1a1a; font-weight:600; }
-  .lb-val { font-family:'Bebas Neue',sans-serif; color:#16a34a; }
-  .lb-best { font-size:10px; color:rgba(0,0,0,0.3); }
+  .feed-line { display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:12px; margin-bottom:6px; }
+  .feed-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+  .feed-dot.buy { background:#16a34a; }
+  .feed-dot.sell { background:#dc2626; }
+  .feed-body { flex:1;min-width:0; }
+  .feed-text { font-size:12px;color:#1a1a1a;line-height:1.4; }
+  .feed-meta { font-size:10px;color:rgba(0,0,0,0.3);margin-top:2px; }
+  .feed-badge { flex-shrink:0;font-family:'Bebas Neue',sans-serif;font-size:13px; }
+  .feed-badge.buy { color:#16a34a; }
+  .feed-badge.sell { color:#dc2626; }
+
+  .lb-line { display:flex; align-items:center; gap:12px; padding:12px 14px; background:#f8f8f8; border:1px solid rgba(0,0,0,0.06); border-radius:12px; margin-bottom:6px; }
+  .lb-rank { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#16a34a; min-width:28px; }
+  .lb-name { flex:1; color:#1a1a1a; font-weight:700; font-size:14px; }
+  .lb-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:#16a34a; }
+  .lb-best { font-size:10px; color:rgba(0,0,0,0.3); font-weight:500; margin-top:2px; }
+  .lb-me { background:#f0fdf4;border-color:#86efac; }
+
   .muted { color:rgba(0,0,0,0.3); text-align:center; padding:30px 10px; font-size:13px; }
 
   .ov { position:fixed; inset:0; z-index:100; background:rgba(0,0,0,0.5); backdrop-filter:blur(8px); display:none; align-items:flex-end; justify-content:center; }
@@ -107,7 +120,6 @@
   <div class="bg-grid"></div>
   <div class="wrap">
     <div class="hdr">
-      <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
       <div class="hdr-title">BOURSE DU FRET</div>
       <div class="hdr-profit" id="hdrProfit">—</div>
     </div>
@@ -140,6 +152,7 @@
     <div id="view-market"><div class="loader">Connexion au marché…</div></div>
     <div id="view-feed" style="display:none"></div>
     <div id="view-lb" style="display:none"></div>
+    <button onclick="window.location.href='game.html'" style="display:block;width:100%;margin-top:20px;padding:14px;background:#f8f8f8;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:rgba(0,0,0,0.4);cursor:pointer">← REVENIR AU JEU</button>
   </div>
 
   <div class="ov" id="ov">
@@ -150,9 +163,11 @@
       </div>
       <div class="tt">
         <button class="tt-btn" id="ttBuy" onclick="setMode('buy')">Acheter</button>
+        <button class="tt-btn" id="ttInfo" onclick="setMode('info')" style="flex:0.6;font-size:12px">ℹ Info</button>
         <button class="tt-btn" id="ttSell" onclick="setMode('sell')">Vendre</button>
       </div>
-      <div class="amt-row"><input class="amt-input" id="amt" type="number" inputmode="numeric" placeholder="0"><span class="amt-cur" id="amtCur">€</span></div>
+      <div id="infoPanel" style="display:none;background:#f8f8f8;border:1px solid rgba(0,0,0,0.08);border-radius:12px;padding:14px;margin-bottom:12px;font-size:13px;line-height:1.6;color:rgba(0,0,0,0.7)"></div>
+      <div class="amt-row" id="amt-row"><input class="amt-input" id="amt" type="number" inputmode="numeric" placeholder="0"><span class="amt-cur" id="amtCur">€</span></div>
       <div class="quick" id="quick"></div>
       <div class="preview" id="preview"></div>
       <button class="exec" id="exec" onclick="execTrade()">Confirmer</button>
@@ -167,14 +182,22 @@
 
   // ── 8 compagnies fictives (profils variés) ──
   const COMPANIES = [
-    { sym:'CALANCA',  name:'Calanca Lines',     base:120, vol:0.018, color:'#0ea5e9' },
-    { sym:'MISTRAL',  name:'Mistral Cargo',     base:90,  vol:0.028, color:'#f59e0b' },
-    { sym:'PHOCEA',   name:'Phocéa Maritime',   base:150, vol:0.022, color:'#a855f7' },
-    { sym:'STJEAN',   name:'Saint-Jean Shipping',base:60, vol:0.040, color:'#22c55e' },
-    { sym:'CAPVERT',  name:'Cap Vert Fret',     base:210, vol:0.015, color:'#14b8a6' },
-    { sym:'LACYDON',  name:'Lacydon Container',  base:75,  vol:0.045, color:'#ef4444' },
-    { sym:'BONNEMER', name:'Bonne-Mère Lines',  base:110, vol:0.026, color:'#eab308' },
-    { sym:'ESTAQUE',  name:'Estaque Maritime',  base:135, vol:0.030, color:'#06b6d4' },
+    { sym:'CALANCA',  name:'Calanca Lines',      base:120, vol:0.018, color:'#0ea5e9',
+      desc:'Armateur historique du port de Marseille. Spécialisée dans le fret méditerranéen depuis 1932. Flotte de 12 porte-conteneurs.', sector:'Fret', employees:'1 200', founded:'1932', risk:'Faible' },
+    { sym:'MISTRAL',  name:'Mistral Cargo',      base:90,  vol:0.028, color:'#f59e0b',
+      desc:'Transporteur de vrac sec et liquide. Acteur clé des échanges Marseille-Maghreb. Fort potentiel de croissance.', sector:'Vrac', employees:'680', founded:'1987', risk:'Moyen' },
+    { sym:'PHOCEA',   name:'Phocéa Maritime',    base:150, vol:0.022, color:'#a855f7',
+      desc:'Leader du transport de produits chimiques en Méditerranée. Normes de sécurité premium. Clientèle industrielle fidèle.', sector:'Chimie', employees:'950', founded:'1975', risk:'Moyen' },
+    { sym:'STJEAN',   name:'Saint-Jean Shipping', base:60, vol:0.040, color:'#22c55e',
+      desc:'Start-up du fret maritime fondée à Marseille. Modèle numérique disruptif. Haute volatilité, haut potentiel.', sector:'Tech-Fret', employees:'120', founded:'2019', risk:'Élevé' },
+    { sym:'CAPVERT',  name:'Cap Vert Fret',      base:210, vol:0.015, color:'#14b8a6',
+      desc:'Géant du conteneur, coté en bourse depuis 1998. Très stable. Dividendes réguliers. Peu de surprises.', sector:'Conteneur', employees:'4 800', founded:'1968', risk:'Faible' },
+    { sym:'LACYDON',  name:'Lacydon Container',  base:75,  vol:0.045, color:'#ef4444',
+      desc:'Spécialiste des liaisons port-entrepôt. En difficulté depuis la grève de 2023. Très volatile — à risque.', sector:'Logistique', employees:'430', founded:'2001', risk:'Très élevé' },
+    { sym:'BONNEMER', name:'Bonne-Mère Lines',   base:110, vol:0.026, color:'#eab308',
+      desc:'Compagnie familiale marseillaise, 3ème génération. Fret mixte passagers-cargo. Réputation solide sur le littoral.', sector:'Mixte', employees:'780', founded:'1954', risk:'Faible' },
+    { sym:'ESTAQUE',  name:'Estaque Maritime',   base:135, vol:0.030, color:'#06b6d4',
+      desc:'Nouveau venu agressif. Cible les routes transatlantiques. Financement par dette — potentiel élevé, risque modéré.', sector:'Trans-Atlantique', employees:'290', founded:'2015', risk:'Moyen' },
   ];
   const CO = {}; COMPANIES.forEach(c=>CO[c.sym]=c);
   const EVENTS = [
@@ -185,21 +208,93 @@
     { t:'⛔ Retard portuaire',       m:-0.08, bad:true },
   ];
 
-  const TICK_MS=5000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
+  const TICK_MS=3000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
   const IMPACT_LIQ=2500000, MEANREV=0.05, EVENT_PROB=0.022, KRACH_PROB=0.0015, KRACH_M=0.65;
   const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36, RUMOR_BIAS=0.20;
+  // Volume & Momentum
+  const VOL_WINDOW_MS = 5 * 60 * 1000;  // 5 minutes de fenêtre pour le volume
+  const VOL_BIAS_MAX  = 0.15;            // biais max ±15% depuis le volume
+  const MOMENTUM_THRESH = 3;             // ticks consécutifs pour déclencher le momentum
+  const MOMENTUM_BOOST  = 1.4;          // multiplicateur de volatilité en momentum
 
   let currentUser=null, username='Docker', cash=0;
   let holdings={}, cooldowns={}, profit=0, best=0;
   let prices={}, hist={}, prev={}, tickInt=null, currentTab='market';
   let modalSym=null, mode='buy', biasMap={};
+  let volBias={};      // biais volume par sym : positif=plus d'achats, négatif=plus de ventes
+  let momentum={};     // nb de ticks consécutifs haussiers (+) ou baissiers (-)
+  let lastVolFetch=0;  // timestamp dernier fetch volume (toutes les 30s)
 
   const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
   const clamp=(p,c)=>Math.max(c.base*CLAMP_LO,Math.min(c.base*CLAMP_HI,p));
   const fmt=n=>Math.round(n).toLocaleString('fr-FR');
   const fmt2=n=>n.toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  function stepPrice(sym,p){ const c=CO[sym]; const target=c.base*(1+(biasMap[sym]||0)); p += MEANREV*(target-p) + c.base*c.vol*gauss(); return clamp(p,c); }
+  function stepPrice(sym,p){
+    const c = CO[sym];
+    // Biais combiné : rumeurs + volume joueurs
+    const combinedBias = (biasMap[sym]||0) + (volBias[sym]||0);
+    const target = c.base * (1 + combinedBias);
+    // Momentum : amplifie la volatilité si tendance consécutive
+    const mom = momentum[sym]||0;
+    const momBoost = Math.abs(mom) >= MOMENTUM_THRESH ? MOMENTUM_BOOST : 1;
+    const noise = c.base * c.vol * gauss() * momBoost;
+    p += MEANREV * (target - p) + noise;
+    return clamp(p, c);
+  }
+
+  // Mise à jour du momentum après chaque tick
+  function updateMomentum(sym, oldP, newP){
+    const m = momentum[sym] || 0;
+    if (newP > oldP + 0.01) {
+      momentum[sym] = m >= 0 ? m + 1 : 1;  // haussier
+    } else if (newP < oldP - 0.01) {
+      momentum[sym] = m <= 0 ? m - 1 : -1; // baissier
+    } else {
+      momentum[sym] = 0; // flat = reset
+    }
+    // Toast momentum si seuil atteint
+    const nm = momentum[sym];
+    if (nm === MOMENTUM_THRESH) showToast(`📈 ${sym} en momentum haussier !`, false);
+    if (nm === -MOMENTUM_THRESH) showToast(`📉 ${sym} en momentum baissier !`, true);
+  }
+
+  // Calcul du biais volume depuis bourse_feed (dernières 5 min)
+  async function updateVolumeBias(){
+    const now = Date.now();
+    if (now - lastVolFetch < 30000) return; // max toutes les 30s
+    lastVolFetch = now;
+    try {
+      const since = new Date(now - VOL_WINDOW_MS).toISOString();
+      const { data } = await sb.from('bourse_feed')
+        .select('sym,action,amount')
+        .gt('created_at', since);
+      const agg = {}; // { sym: { buy: 0, sell: 0 } }
+      (data||[]).forEach(f=>{
+        if (!agg[f.sym]) agg[f.sym] = { buy:0, sell:0 };
+        if (f.action === 'a acheté') agg[f.sym].buy += (f.amount||0);
+        else agg[f.sym].sell += (f.amount||0);
+      });
+      COMPANIES.forEach(c=>{
+        const a = agg[c.sym];
+        if (!a || (a.buy + a.sell) < 1000) { volBias[c.sym] = 0; return; }
+        const total = a.buy + a.sell;
+        const ratio = (a.buy - a.sell) / total; // [-1, +1]
+        volBias[c.sym] = ratio * VOL_BIAS_MAX;
+        // Afficher indicateur dans le UI si fort déséquilibre
+        const el = document.getElementById('vol-'+c.sym);
+        if (el) {
+          if (Math.abs(ratio) > 0.3) {
+            const arrow = ratio > 0 ? '▲' : '▼';
+            const col   = ratio > 0 ? '#16a34a' : '#dc2626';
+            el.innerHTML = `<span style="color:${col};font-size:10px;font-weight:700">${arrow} Pression ${ratio>0?'acheteuse':'vendeuse'} (${Math.round(Math.abs(ratio)*100)}%)</span>`;
+          } else {
+            el.innerHTML = '';
+          }
+        }
+      });
+    } catch(e){ console.log('vol bias error:', e); }
+  }
 
   async function init(){
     const { data:{ session } } = await sb.auth.getSession();
@@ -225,6 +320,7 @@
   async function syncMarket(first){
     // Biais du marché selon les rumeurs VRAIES encore actives (les tuyaux du Bar)
     biasMap={};
+    await updateVolumeBias();
     try {
       const { data:rum } = await sb.from('bourse_rumors').select('sym,dir,truth,expires_at').gt('expires_at', new Date().toISOString());
       (rum||[]).forEach(r=>{ if(r.truth){ biasMap[r.sym]=Math.max(-0.26, Math.min(0.26, (biasMap[r.sym]||0)+r.dir*RUMOR_BIAS)); } });
@@ -246,9 +342,11 @@
         if (krachNow) p = clamp(p*KRACH_M, c);
         stepped.push(c.sym);
       }
+      const oldPrice = prices[c.sym];
       prev[c.sym]=prices[c.sym];
       prices[c.sym]=p;
       hist[c.sym].push(p); if(hist[c.sym].length>HIST) hist[c.sym].shift();
+      if (stepped.includes(c.sym)) updateMomentum(c.sym, oldPrice, p);
     });
     // Au plus UN événement par tick, sur une seule compagnie ayant bougé
     if (!krachNow && stepped.length && Math.random()<EVENT_PROB){
@@ -287,6 +385,7 @@
           <div class="stock-price-wrap"><div class="stock-price" id="pr-${c.sym}">—</div><div class="stock-chg" id="ch-${c.sym}">—</div></div>
         </div>
         <svg class="spark" id="sp-${c.sym}" viewBox="0 0 300 42" preserveAspectRatio="none"></svg>
+        <div id="vol-${c.sym}" style="min-height:14px;margin-bottom:2px"></div>
         <div id="po-${c.sym}"></div>
         <div class="btns">
           <button class="btn btn-buy" onclick="openModal('${c.sym}','buy')">Acheter</button>
@@ -306,6 +405,15 @@
       const ch=document.getElementById('ch-'+c.sym); const cls=diff>0.001?'up':diff<-0.001?'down':'flat';
       ch.className='stock-chg '+cls; ch.textContent=(diff>0?'▲ +':diff<0?'▼ ':'• ')+fmt2(Math.abs(pct))+'%';
       drawSpark(c);
+      // Badge momentum
+      const momEl = document.getElementById('ch-'+c.sym);
+      const mom = momentum[c.sym]||0;
+      if (momEl && Math.abs(mom) >= MOMENTUM_THRESH) {
+        const momTag = mom > 0
+          ? ' <span style="background:#dcfce7;color:#16a34a;font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;letter-spacing:0.5px">🚀 MOMENTUM</span>'
+          : ' <span style="background:#fee2e2;color:#dc2626;font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;letter-spacing:0.5px">📉 MOMENTUM</span>';
+        momEl.innerHTML = momEl.textContent + momTag;
+      }
       const h=holdings[c.sym]; const poEl=document.getElementById('po-'+c.sym);
       const stEl=document.getElementById('st-'+c.sym); const sellBtn=document.getElementById('sb-'+c.sym);
       if(h&&h.shares>0){
@@ -382,9 +490,44 @@
     mode=m;
     document.getElementById('ttBuy').className='tt-btn'+(m==='buy'?' act-buy':'');
     document.getElementById('ttSell').className='tt-btn'+(m==='sell'?' act-sell':'');
+    document.getElementById('ttInfo').className='tt-btn'+(m==='info'?' act-buy':'');
+    const ip=document.getElementById('infoPanel');
+    const ar=document.getElementById('amt-row')||document.querySelector('.amt-row');
+    const qk=document.getElementById('quick');
+    const pv=document.getElementById('preview');
+    const ex=document.getElementById('exec');
+    if(m==='info'){
+      if(ip) ip.style.display='block';
+      if(ar) ar.style.display='none';
+      if(qk) qk.style.display='none';
+      if(pv) pv.style.display='none';
+      if(ex) ex.style.display='none';
+      if(modalSym && ip){
+        const c=CO[modalSym];
+        const riskColor={'Faible':'#16a34a','Moyen':'#d97706','Élevé':'#dc2626','Très élevé':'#dc2626'}[c.risk]||'#6b7280';
+        ip.innerHTML=`
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:40px;height:40px;border-radius:10px;background:${c.color};display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fff;flex-shrink:0">${c.sym.slice(0,4)}</div>
+            <div><div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#1a1a1a;letter-spacing:1px">${c.name}</div>
+            <div style="font-size:10px;color:rgba(0,0,0,0.4)">${c.sector} · Fondée en ${c.founded}</div></div>
+          </div>
+          <p style="margin-bottom:10px;color:rgba(0,0,0,0.65)">${c.desc}</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">👥 ${c.employees} employés</span>
+            <span style="background:${riskColor}20;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:${riskColor}">⚠ Risque : ${c.risk}</span>
+            <span style="background:#f0f0f0;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:700;color:rgba(0,0,0,0.5)">📊 Vol. ${(c.vol*100).toFixed(1)}%/tick</span>
+          </div>`;
+      }
+      return;
+    }
+    // Mode trade : cacher le panel info, montrer les éléments
+    if(ip) ip.style.display='none';
+    if(ar) ar.style.display='flex';
+    if(qk) qk.style.display='flex';
+    if(pv) pv.style.display='block';
+    if(ex){ ex.style.display='block'; ex.className='exec '+m; ex.textContent=m==='buy'?'Acheter':'Vendre'; }
     document.getElementById('amtCur').textContent=m==='buy'?'€':'parts';
     document.getElementById('amt').value='';
-    const ex=document.getElementById('exec'); ex.className='exec '+m; ex.textContent=m==='buy'?'Acheter':'Vendre';
     buildQuick(); updateModal();
   }
   function buildQuick(){
@@ -486,12 +629,30 @@
     const el=document.getElementById('view-feed');
     el.innerHTML='<div class="muted">Chargement…</div>';
     try {
-      const { data } = await sb.from('bourse_feed').select('*').order('created_at',{ascending:false}).limit(10);
+      const { data } = await sb.from('bourse_feed').select('*').order('created_at',{ascending:false}).limit(20);
       if(!data||!data.length){ el.innerHTML='<div class="muted">Aucune transaction récente.</div>'; return; }
+      const now=Date.now();
+      function timeAgo(ts){
+        const s=Math.floor((now-new Date(ts).getTime())/1000);
+        if(s<60) return 'à l'instant';
+        if(s<3600) return 'il y a '+Math.floor(s/60)+'min';
+        if(s<86400) return 'il y a '+Math.floor(s/3600)+'h';
+        return 'il y a '+Math.floor(s/86400)+'j';
+      }
       el.innerHTML=data.map(f=>{
         const co=CO[f.sym]; const nm=co?co.name:f.sym;
-        const dot=f.action==='a acheté'?'🟢':'🔴';
-        return `<div class="feed-line">${dot} <span style="flex:1"><b style="color:#fff">${f.username}</b> ${f.action} <b style="color:#34d399">${fmt(f.amount)}€</b> de ${nm}</span></div>`;
+        const isBuy=f.action==='a acheté';
+        const cls=isBuy?'buy':'sell';
+        const verb=isBuy?'Achat':'Vente';
+        const me=f.user_id===currentUser?.id?' <span style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:1px 5px;font-size:9px;color:#16a34a;font-weight:700">MOI</span>':'';
+        return `<div class="feed-line">
+          <div class="feed-dot ${cls}"></div>
+          <div class="feed-body">
+            <div class="feed-text"><b>${f.username||'Docker'}</b>${me} ${f.action} <b>${nm}</b></div>
+            <div class="feed-meta">${timeAgo(f.created_at)} · ${verb}</div>
+          </div>
+          <div class="feed-badge ${cls}">${fmt(f.amount)}€</div>
+        </div>`;
       }).join('');
     } catch(e){ el.innerHTML='<div class="muted">Indisponible.</div>'; }
   }
@@ -501,20 +662,43 @@
     const el=document.getElementById('view-lb');
     el.innerHTML='<div class="muted">Chargement…</div>';
     try {
-      const { data } = await sb.from('game_stats').select('user_id,bourse_profit,bourse_best').order('bourse_profit',{ascending:false}).limit(10);
-      const rows=(data||[]).filter(r=>(r.bourse_profit||0)!==0);
-      if(!rows.length){ el.innerHTML='<div class="muted">Pas encore de traders classés.</div>'; return; }
+      // Récupérer game_stats + bourse_feed pour les noms (join via feed)
+      const { data } = await sb.from('game_stats')
+        .select('user_id,bourse_profit,bourse_best')
+        .order('bourse_profit',{ascending:false}).limit(15);
+      const rows=(data||[]).filter(r=>(r.bourse_profit||0)>0);
+      if(!rows.length){ el.innerHTML='<div class="muted">Pas encore de traders classés.<br><span style="font-size:11px">Fais un profit à la bourse pour apparaître !</span></div>'; return; }
       const ids=rows.map(r=>r.user_id);
-      const { data:profs } = await sb.from('profiles').select('user_id,username').in('user_id',ids);
-      const nameOf={}; (profs||[]).forEach(p=>nameOf[p.user_id]=p.username);
+      // Essai join profiles, fallback sur bourse_feed
+      let nameOf={};
+      try {
+        const { data:profs } = await sb.from('profiles').select('user_id,username').in('user_id',ids);
+        (profs||[]).forEach(p=>nameOf[p.user_id]=p.username);
+      } catch(_) {}
+      // Fallback : usernames depuis le feed
+      if(!Object.keys(nameOf).length){
+        try {
+          const { data:feedNames } = await sb.from('bourse_feed').select('user_id,username').in('user_id',ids).limit(50);
+          (feedNames||[]).forEach(f=>{ if(!nameOf[f.user_id]) nameOf[f.user_id]=f.username; });
+        } catch(_) {}
+      }
       const medals=['🥇','🥈','🥉'];
-      el.innerHTML=rows.map((r,i)=>`
-        <div class="lb-line">
-          <span class="lb-rank">${medals[i]||(i+1)}</span>
-          <span class="lb-name">${nameOf[r.user_id]||'Docker'}${r.user_id===currentUser.id?' 👈':''}<div class="lb-best">Meilleur trade : ${fmt(r.bourse_best||0)}€</div></span>
-          <span class="lb-val">${fmt(r.bourse_profit||0)}€</span>
-        </div>`).join('');
-    } catch(e){ el.innerHTML='<div class="muted">Indisponible.</div>'; }
+      el.innerHTML = rows.map((r,i)=>{
+        const isMe = r.user_id===currentUser?.id;
+        const name = nameOf[r.user_id]||'Docker';
+        return `<div class="lb-line${isMe?' lb-me':''}">
+          <div class="lb-rank">${medals[i]||('#'+(i+1))}</div>
+          <div class="lb-name" style="flex:1">
+            <div>${name}${isMe?' 👈':''}</div>
+            <div class="lb-best">Meilleur trade : +${fmt(r.bourse_best||0)}€</div>
+          </div>
+          <div>
+            <div class="lb-val">+${fmt(r.bourse_profit||0)}€</div>
+            ${isMe?'<div style="font-size:9px;color:#16a34a;text-align:right;font-weight:700">MON PROFIT</div>':''}
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e){ console.log('lb error:',e); el.innerHTML='<div class="muted">Indisponible.</div>'; }
   }
 
   let toastT=null;
