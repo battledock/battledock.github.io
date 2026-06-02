@@ -18,6 +18,7 @@
 
     body {
       padding-bottom:calc(64px + env(safe-area-inset-bottom));
+      padding-top:0;
       font-family: 'Inter', sans-serif;
       background-color: #efefef;
       min-height: 100vh;
@@ -158,7 +159,6 @@
 
     /* ===================== PROFIL CARD ===================== */
     .profile-card-btn {
-      grid-column: span 2;
       background: white;
       border-radius: 0;
       overflow: hidden;
@@ -166,12 +166,11 @@
       transition: transform 0.2s;
       box-shadow: none;
       border: 1px solid #e5e7eb;
-      border-bottom: none; /* Supprime la bordure du bas pour fusionner avec la carte juste en dessous */
+      border-bottom: 1px solid #e5e7eb;
       padding: 16px;
       display: flex;
       flex-direction: column;
       gap: 12px;
-      margin-bottom: 0; /* Force l'espacement à 0 pour coller le bloc suivant */
       box-sizing: border-box;
     }
     .profile-card-btn:active { transform: scale(0.98); }
@@ -473,7 +472,6 @@
     /* PROGRESSION - Arbre de compétences */
     /* BOUTON OBJECTIFS — Jungle */
     .nav-card.progression-card {
-      grid-column: span 2;
       height: 110px;
       padding: 0;
       overflow: hidden;
@@ -720,6 +718,24 @@
     .sk-stat { flex:1; height:42px; border-radius:12px; }
     #profileCardBtn { transition: opacity .3s ease; }
 
+    /* ===== Header fixe en haut ===== */
+    .profile-header {
+      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 600px; z-index: 200;
+      background: #fff;
+      border-bottom: 1px solid rgba(15,23,42,0.08);
+      box-shadow: 0 2px 16px rgba(15,23,42,0.07);
+    }
+    .profile-header .profile-card-btn {
+      border: none !important;
+      border-radius: 0 !important;
+    }
+    .profile-header .skeleton-card {
+      border: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+    }
   </style>
 </head>
 <body>
@@ -751,7 +767,7 @@
 
 
   <!-- CONTENU -->
-  <div class="container">
+  <div class="container" id="mainContainer">
 
     <!-- BANNIÈRE INSTALLATION (PWA) -->
     <div id="installBanner" style="display:none;align-items:center;gap:10px;margin:0 12px 12px;
@@ -766,43 +782,42 @@
       <button onclick="bdDismissInstall()" style="border:none;background:transparent;color:rgba(255,255,255,0.5);font-size:20px;cursor:pointer;flex-shrink:0;padding:0 4px">✕</button>
     </div>
 
-    <!-- PROFIL CARD + NAVIGATION (une seule grille) -->
-        <div class="nav-grid">
-      <div class="skeleton-card" id="profileSkeleton">
-        <div class="sk-row">
-          <div class="sk sk-avatar"></div>
-          <div style="flex:1">
-            <div class="sk sk-line" style="width:55%"></div>
-            <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
-          </div>
-          <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
+    <!-- PROFIL FIXE EN HAUT -->
+  <header class="profile-header">
+    <div class="skeleton-card" id="profileSkeleton">
+      <div class="sk-row">
+        <div class="sk sk-avatar"></div>
+        <div style="flex:1">
+          <div class="sk sk-line" style="width:55%"></div>
+          <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
         </div>
-        <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
-        <div class="sk-stats">
-          <div class="sk sk-stat"></div><div class="sk sk-stat"></div>
-          <div class="sk sk-stat"></div><div class="sk sk-stat"></div>
+        <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
+      </div>
+      <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
+    </div>
+    <div class="profile-card-btn" id="profileCardBtn" style="display:none">
+      <div class="pcb-row">
+        <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
+        <div class="pcb-info">
+          <div class="pcb-name" id="playerName">...</div>
+        </div>
+        <div class="pcb-level-wrap">
+          <div class="pcb-level-num" id="currentLevel">1</div>
+          <div class="pcb-level-lbl">Niv.</div>
         </div>
       </div>
-      <div class="profile-card-btn" id="profileCardBtn" style="display:none">
-        <div class="pcb-row">
-          <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
-          <div class="pcb-info">
-            <div class="pcb-name"  id="playerName">...</div>
-          </div>
-          <div class="pcb-level-wrap">
-            <div class="pcb-level-num" id="currentLevel">1</div>
-            <div class="pcb-level-lbl">Niv.</div>
-          </div>
+      <div class="pcb-xp-wrap">
+        <div class="pcb-xp-label">
+          <span id="xpCounter">0 / 500 XP</span>
+          <span>→ Niv. <span id="nextLevel">2</span></span>
         </div>
-        <div class="pcb-xp-wrap">
-          <div class="pcb-xp-label">
-            <span id="xpCounter">0 / 500 XP</span>
-            <span>→ Niv. <span id="nextLevel">2</span></span>
-          </div>
-          <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
-        </div>
+        <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </header>
 
-      </div>
+    <!-- NAVIGATION -->
+        <div class="nav-grid">
       <div class="nav-card histoire" onclick="window.location.href='histoire.html'">
         <div style="position:absolute;inset:0;background:linear-gradient(135deg,#1e0a3c,#2d1060,#1a0845);z-index:0"></div>
         <canvas id="histoireCanvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:0.6"></canvas>
@@ -1554,5 +1569,19 @@ async function loadCalendar() {
     <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
     <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
   </div>
+
+  <script>
+    // Ajuster le padding-top du container selon la hauteur du header fixe
+    function adjustPadding() {
+      const h = document.querySelector('.profile-header');
+      const c = document.getElementById('mainContainer');
+      if (h && c) c.style.paddingTop = h.offsetHeight + 'px';
+    }
+    window.addEventListener('load', adjustPadding);
+    window.addEventListener('resize', adjustPadding);
+    // Aussi après chargement du profil
+    const _origShow = window.showProfile;
+    document.addEventListener('DOMContentLoaded', () => { setTimeout(adjustPadding, 600); });
+  </script>
 </body>
 </html>
