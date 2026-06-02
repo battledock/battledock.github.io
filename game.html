@@ -989,14 +989,30 @@
       </div>
     </div>
     <div class="nav-grid-single" style="margin-top:0">
-      <div class="nav-card rank gated" id="rankCard" onclick="window.location.href='classement.html'">
-        <div class="nav-card-bg"></div>
-        <div class="nav-card-overlay"></div>
-        <div class="rank-stars" id="rankStars2"></div>
-        <div class="nav-card-content">
-          <div class="nav-card-icon">🏆</div>
-          <div class="nav-card-title">Classement</div>
-          <div class="nav-card-sub">Top dockers</div>
+      <div class="nav-card rank gated" id="rankCard" onclick="window.location.href='classement.html'" style="background:#fff">
+        <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0;z-index:2">
+          <!-- Col 1 : Leader -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#fbbf24;line-height:1" id="rankLeaderPos">1er</div>
+            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)" id="rankLeaderName">—</div>
+            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">LEADER</div>
+          </div>
+          <!-- Séparateur -->
+          <div style="width:1px;background:rgba(0,0,0,0.07);align-self:stretch;margin:16px 0"></div>
+          <!-- Col 2 : Ton rang -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#1a1a1a;line-height:1" id="rankMyPos">#—</div>
+            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)">Toi</div>
+            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TON RANG</div>
+          </div>
+          <!-- Séparateur -->
+          <div style="width:1px;background:rgba(0,0,0,0.07);align-self:stretch;margin:16px 0"></div>
+          <!-- Col 3 : Total joueurs -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#1a1a1a;line-height:1" id="rankTotal">—</div>
+            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)">joueurs</div>
+            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TOTAL</div>
+          </div>
         </div>
       </div>
     </div>
@@ -1421,11 +1437,25 @@
     }
 
     async function loadRank(level) {
-      const { data } = await sb.from('game_stats').select('level').order('level', { ascending: false });
-      if (data) {
+      try {
+        const { data } = await sb.from('game_stats').select('user_id,level').order('level', { ascending: false });
+        if (!data) return;
         const rank = data.findIndex(p => p.level <= level) + 1;
         document.getElementById('rankValue').textContent = '#' + rank;
-      }
+        const total = data.length;
+        const leaderRow = data[0];
+        let leaderName = '—';
+        try {
+          const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leaderRow.user_id).maybeSingle();
+          leaderName = prof?.username || '—';
+        } catch(_) {}
+        const elPos    = document.getElementById('rankMyPos');
+        const elLeader = document.getElementById('rankLeaderName');
+        const elTotal  = document.getElementById('rankTotal');
+        if (elPos)    elPos.textContent    = '#' + rank;
+        if (elLeader) elLeader.textContent = leaderName;
+        if (elTotal)  elTotal.textContent  = total;
+      } catch(e) { console.log('loadRank:', e); }
     }
 
     function openChat() { window.location.href = 'chat.html'; }
