@@ -224,6 +224,7 @@
   let volBias={};      // biais volume par sym : positif=plus d'achats, négatif=plus de ventes
   let momentum={};     // nb de ticks consécutifs haussiers (+) ou baissiers (-)
   let lastVolFetch=0;  // timestamp dernier fetch volume (toutes les 30s)
+  let momToasted={};   // { sym: 'up'|'dn'|null } - toast déjà envoyé pour éviter le spam
 
   const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);};
   const clamp=(p,c)=>Math.max(c.base*CLAMP_LO,Math.min(c.base*CLAMP_HI,p));
@@ -253,10 +254,11 @@
     } else {
       momentum[sym] = 0; // flat = reset
     }
-    // Toast momentum si seuil atteint
+    // Toast momentum — une seule fois par momentum (reset quand flat)
     const nm = momentum[sym];
-    if (nm === MOMENTUM_THRESH) showToast(`📈 ${sym} en momentum haussier !`, false);
-    if (nm === -MOMENTUM_THRESH) showToast(`📉 ${sym} en momentum baissier !`, true);
+    if (nm === 0) { momToasted[sym] = null; }
+    if (nm === MOMENTUM_THRESH  && momToasted[sym] !== 'up') { showToast(`📈 ${sym} momentum haussier !`, false); momToasted[sym]='up'; }
+    if (nm === -MOMENTUM_THRESH && momToasted[sym] !== 'dn') { showToast(`📉 ${sym} momentum baissier !`, true);  momToasted[sym]='dn'; }
   }
 
   // Calcul du biais volume depuis bourse_feed (dernières 5 min)
@@ -470,19 +472,30 @@
     // Badge profit header
     const hdrProfit = document.getElementById('hdrProfit');
     if (hdrProfit) {
-      if (profit === 0) { hdrProfit.textContent = '—'; hdrProfit.style.color='rgba(0,0,0,0.3)'; hdrProfit.style.borderColor='rgba(0,0,0,0.1)'; hdrProfit.style.background='#f8f8f8'; }
-      else {
-        const sign = profit >= 0 ? '▲' : '▼';
+      const pv = portfolioValue();
+      const sign  = profit >= 0 ? '▲' : '▼';
+      const col   = profit >= 0 ? '#16a34a' : '#dc2626';
+      const bg    = profit >= 0 ? '#f0fdf4' : '#fef2f2';
+      const brd   = profit >= 0 ? '#86efac' : '#fca5a5';
+      if (profit === 0 && pv === 0) {
+        hdrProfit.textContent = '—';
+        hdrProfit.style.cssText = 'color:rgba(0,0,0,0.3);border-color:rgba(0,0,0,0.1);background:#f8f8f8';
+      } else if (pv > 0) {
+        hdrProfit.innerHTML = `${sign} ${fmt(Math.abs(profit))}€ <span style="opacity:0.6;font-size:11px">· ${fmt(pv)}€</span>`;
+        hdrProfit.style.color = col;
+        hdrProfit.style.borderColor = brd;
+        hdrProfit.style.background = bg;
+      } else {
         hdrProfit.textContent = sign+' '+fmt(Math.abs(profit))+'€';
-        hdrProfit.style.color = profit >= 0 ? '#16a34a' : '#dc2626';
-        hdrProfit.style.borderColor = profit >= 0 ? '#86efac' : '#fca5a5';
-        hdrProfit.style.background = profit >= 0 ? '#f0fdf4' : '#fef2f2';
+        hdrProfit.style.color = col;
+        hdrProfit.style.borderColor = brd;
+        hdrProfit.style.background = bg;
       }
     }
   }
 
   // ── Modal ──
-  function openModal(sym,m){ modalSym=sym; document.getElementById('ov').classList.add('show'); setMode(m); document.getElementById('amt').value=''; updateModal(); }
+  function openModal(sym,m){ modalSym=sym; document.getElementById('ov').classList.add('show'); setMode(m); if(m!=='info'){ document.getElementById('amt').value=''; updateModal(); } }
   function closeModal(){ modalSym=null; document.getElementById('ov').classList.remove('show'); }
   document.getElementById('ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeModal(); });
 
