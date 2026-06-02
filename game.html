@@ -1616,114 +1616,187 @@ async function loadCalendar() {
 
 
   <script>
-    // Porte-conteneurs fixe flottant — bouton Histoire
+    // Porte-conteneurs HD fixe flottant — bouton Histoire
     (function(){
       const cv = document.getElementById('histCargoCanvas');
       if (!cv) return;
       const par = cv.parentElement;
       const ctx = cv.getContext('2d');
+      const DPR = window.devicePixelRatio || 1;
 
-      function resize(){ cv.width = par.offsetWidth; cv.height = par.offsetHeight; }
+      function resize(){
+        const w = par.offsetWidth, h = par.offsetHeight;
+        cv.width  = w * DPR; cv.height = h * DPR;
+        cv.style.width = w + 'px'; cv.style.height = h + 'px';
+        ctx.scale(DPR, DPR);
+      }
       resize();
-      window.addEventListener('resize', resize);
+      window.addEventListener('resize', () => { ctx.setTransform(1,0,0,1,0,0); resize(); });
 
-      const SW = 148;
       let t = 0;
 
-      function drawShip() {
-        const W = cv.width, H = cv.height;
-        // Positionné à droite, calé dans l'eau
-        const cx = W - SW - 10;
-        const wy = Math.floor(H * 0.38);
-        const bob = Math.sin(t * 0.018) * 1.8;
-        const y = wy - 12 + bob;
+      function rr(x, y, w, h, r) {
+        // Rectangle arrondi
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + w - r, y);
+        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+        ctx.lineTo(x + w, y + h - r);
+        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        ctx.lineTo(x + r, y + h);
+        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+        ctx.lineTo(x, y + r);
+        ctx.quadraticCurveTo(x, y, x + r, y);
+        ctx.closePath();
+      }
 
+      function drawShip() {
+        const W = par.offsetWidth, H = par.offsetHeight;
         ctx.clearRect(0, 0, W, H);
 
-        // COQUE rouge (partie submergée)
-        ctx.fillStyle = '#b22222';
+        const SW = 170; // largeur totale du bateau
+        const cx = W - SW - 6; // ancré à droite
+        const wy = H * 0.40; // waterline
+        const bob = Math.sin(t * 0.016) * 1.4 + Math.sin(t * 0.031) * 0.5; // flottement composé
+
+        // Références verticales (tout relatif à wy+bob)
+        const wb = wy + bob; // waterline avec bob
+        // Coque : -14 à +12 par rapport à wb
+        const hullTop    = wb - 14; // haut de la coque émergée
+        const deckTop    = wb - 15; // pont
+        const hullBot    = wb + 11; // bas coque immergée
+        const bowTip     = cx;       // pointe de l'étrave (x)
+        const bowBase    = cx + 18;  // base de l'étrave
+
+        // === ÉTRAVE (proue pointue) ===
+        // Rouge sous waterline
+        ctx.fillStyle = '#a81c1c';
         ctx.beginPath();
-        ctx.moveTo(cx,       y + 28);
-        ctx.lineTo(cx + 10,  y + 21);
-        ctx.lineTo(cx + SW,  y + 21);
-        ctx.lineTo(cx + SW,  y + 35);
-        ctx.lineTo(cx + 10,  y + 35);
+        ctx.moveTo(bowTip,  wb + 4);
+        ctx.lineTo(bowBase, wb);
+        ctx.lineTo(bowBase, hullBot);
+        ctx.lineTo(bowTip + 4, hullBot - 2);
+        ctx.closePath();
+        ctx.fill();
+        // Blanc au-dessus waterline
+        ctx.fillStyle = '#dcdcdc';
+        ctx.beginPath();
+        ctx.moveTo(bowTip,  wb - 4);
+        ctx.lineTo(bowBase, hullTop);
+        ctx.lineTo(bowBase, wb);
+        ctx.lineTo(bowTip,  wb + 4);
         ctx.closePath();
         ctx.fill();
 
-        // COQUE blanche (partie émergée)
-        ctx.fillStyle = '#e8e8e8';
-        ctx.beginPath();
-        ctx.moveTo(cx,       y + 22);
-        ctx.lineTo(cx + 10,  y + 16);
-        ctx.lineTo(cx + SW,  y + 16);
-        ctx.lineTo(cx + SW,  y + 22);
-        ctx.lineTo(cx + 10,  y + 22);
-        ctx.closePath();
-        ctx.fill();
+        // === COQUE ROUGE (submergée) ===
+        ctx.fillStyle = '#a81c1c';
+        ctx.fillRect(bowBase, wb, SW - 18, hullBot - wb);
+
+        // === COQUE BLANCHE (émergée) ===
+        ctx.fillStyle = '#dedede';
+        ctx.fillRect(bowBase, hullTop, SW - 18, wb - hullTop);
 
         // Liseré noir waterline
-        ctx.fillStyle = '#111';
-        ctx.fillRect(cx + 10, y + 21, SW - 10, 1);
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(bowBase, wb - 1, SW - 18, 2);
 
-        // Pont gris clair
-        ctx.fillStyle = '#c8c8c0';
-        ctx.fillRect(cx + 10, y + 11, SW - 10, 5);
+        // Liseré or (peinture de flottaison)
+        ctx.fillStyle = '#c8a84a';
+        ctx.fillRect(bowBase, wb - 3, SW - 18, 2);
 
-        // Superstructure blanche (à droite, cx+104 à cx+148)
-        // D'abord le corps principal
-        ctx.fillStyle = '#d0d0d0';
-        ctx.fillRect(cx + 104, y - 18, 44, 29);
-        ctx.fillStyle = '#e0e0e0';
-        ctx.fillRect(cx + 106, y - 16, 40, 12); // passerelle
-        // Hublots
-        ctx.fillStyle = '#1a3a5c';
-        ctx.beginPath(); ctx.arc(cx + 112, y - 11, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx + 120, y - 11, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx + 128, y - 11, 2, 0, Math.PI*2); ctx.fill();
-        // Conteneurs rangée 1 — 5 conteneurs max avant superstructure (cx+14 à cx+104)
-        const c1 = ['#1a2a4a','#162240','#1e3055','#12203c','#1a2a4a'];
-        for (let i = 0; i < 5; i++) {
-          const bx = cx + 14 + i * 18;
-          ctx.fillStyle = c1[i];
-          ctx.fillRect(bx, y - 1, 16, 12);
-          ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
-          ctx.strokeRect(bx, y - 1, 16, 12);
-          ctx.fillStyle = 'rgba(255,255,255,0.07)';
-          ctx.fillRect(bx, y - 1, 16, 3);
-        }
-        // Conteneurs rangée 2 — 4 conteneurs décalés
-        const c2 = ['#162240','#1e3055','#12203c','#1a2a4a'];
-        for (let i = 0; i < 4; i++) {
-          const bx = cx + 23 + i * 18;
-          ctx.fillStyle = c2[i];
-          ctx.fillRect(bx, y - 12, 16, 10);
-          ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 0.5;
-          ctx.strokeRect(bx, y - 12, 16, 10);
-          ctx.fillStyle = 'rgba(255,255,255,0.12)';
-          ctx.fillRect(bx, y - 12, 16, 3);
+        // === PONT ===
+        ctx.fillStyle = '#9a9890';
+        ctx.fillRect(bowBase, deckTop, SW - 18, 2);
+        // Texture pont (planches)
+        ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+        ctx.lineWidth = 0.5;
+        for (let px = bowBase + 10; px < cx + SW - 20; px += 8) {
+          ctx.beginPath(); ctx.moveTo(px, deckTop); ctx.lineTo(px, deckTop + 2); ctx.stroke();
         }
 
-        // Mât avant
-        ctx.strokeStyle = '#888'; ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(cx + 20, y + 11); ctx.lineTo(cx + 20, y - 10); ctx.stroke();
-
-        // Étrave blanche
+        // === SUPERSTRUCTURE (à droite, 50px) ===
+        const sx = cx + SW - 54; // x superstructure
+        const sW = 50;           // largeur
+        // Corps principal
+        ctx.fillStyle = '#d8d8d8';
+        ctx.fillRect(sx, hullTop - 22, sW, 37 + (wb - hullTop));
+        // Passerelle (niveau supérieur)
         ctx.fillStyle = '#e8e8e8';
+        ctx.fillRect(sx + 2, hullTop - 22, sW - 4, 16);
+        // Vitrages passerelle
+        ctx.fillStyle = 'rgba(100,160,220,0.35)';
+        ctx.fillRect(sx + 4, hullTop - 20, sW - 8, 8);
+        // Reflets vitrages
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillRect(sx + 4, hullTop - 20, sW - 8, 2);
+        // Séparations vitres
+        ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 0.8;
+        for (let vx = sx + 12; vx < sx + sW - 8; vx += 8) {
+          ctx.beginPath(); ctx.moveTo(vx, hullTop - 20); ctx.lineTo(vx, hullTop - 12); ctx.stroke();
+        }
+        // Niveau intermédiaire
+        ctx.fillStyle = '#cccccc';
+        ctx.fillRect(sx + 2, hullTop - 6, sW - 4, 6);
+        // Ombre portée superstructure
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillRect(sx, hullTop + 14, sW, 2);
+
+        // === CONTENEURS (zone cx+20 à sx-4) ===
+        const cStart = bowBase + 2;
+        const cEnd   = sx - 3;
+        const cZoneW = cEnd - cStart; // ≈ 96px
+        const cW = 16, cH = 12, cGap = 2; // conteneur 16×12, gap 2px
+        const nCols = Math.floor((cZoneW + cGap) / (cW + cGap)); // ~5
+        const blues = ['#0f2040','#162848','#1a3050','#0d1c38','#192e50','#0f2040'];
+
+        // 3 rangées de conteneurs
+        for (let row = 0; row < 3; row++) {
+          const cy_cont = deckTop - 2 - row * (cH + cGap) - cH;
+          const cols = (row === 2) ? nCols - 1 : nCols; // rangée haute = 1 de moins
+          const xOff = (row === 2) ? (cW + cGap) / 2 : 0;
+          for (let col = 0; col < cols; col++) {
+            const bx = cStart + xOff + col * (cW + cGap);
+            const col_i = (row * 3 + col) % blues.length;
+            // Corps conteneur
+            ctx.fillStyle = blues[col_i];
+            rr(bx, cy_cont, cW, cH, 1);
+            ctx.fill();
+            // Ombre droite du conteneur
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillRect(bx + cW - 2, cy_cont + 1, 2, cH - 2);
+            // Reflet haut
+            ctx.fillStyle = 'rgba(255,255,255,0.10)';
+            ctx.fillRect(bx + 1, cy_cont + 1, cW - 2, 3);
+            // Rainure centrale (détail)
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 0.5;
+            ctx.beginPath(); ctx.moveTo(bx + cW/2, cy_cont + 2); ctx.lineTo(bx + cW/2, cy_cont + cH - 2); ctx.stroke();
+          }
+        }
+
+        // === MÂT AVANT ===
+        ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(cx,      y + 22);
-        ctx.lineTo(cx + 10, y + 16);
-        ctx.lineTo(cx + 10, y + 22);
-        ctx.closePath();
-        ctx.fill();
-        // Étrave rouge
-        ctx.fillStyle = '#b22222';
+        ctx.moveTo(bowBase + 14, deckTop);
+        ctx.lineTo(bowBase + 14, deckTop - 18);
+        ctx.stroke();
+        // Vergue
         ctx.beginPath();
-        ctx.moveTo(cx,      y + 28);
-        ctx.lineTo(cx + 10, y + 21);
-        ctx.lineTo(cx + 10, y + 28);
-        ctx.closePath();
-        ctx.fill();
+        ctx.moveTo(bowBase + 8, deckTop - 15);
+        ctx.lineTo(bowBase + 22, deckTop - 15);
+        ctx.stroke();
+        // Hauban
+        ctx.strokeStyle = 'rgba(170,170,170,0.4)'; ctx.lineWidth = 0.6;
+        ctx.beginPath();
+        ctx.moveTo(bowBase + 14, deckTop - 18);
+        ctx.lineTo(bowBase + 30, deckTop);
+        ctx.stroke();
+
+        // Ombre sous coque dans l'eau
+        const shadowG = ctx.createLinearGradient(0, wb + 4, 0, wb + 14);
+        shadowG.addColorStop(0, 'rgba(0,0,0,0.18)');
+        shadowG.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadowG;
+        ctx.fillRect(bowBase, wb + 4, SW - 18, 10);
 
         t++;
         requestAnimationFrame(drawShip);
