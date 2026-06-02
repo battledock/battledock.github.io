@@ -799,18 +799,6 @@
   <div class="container" id="mainContainer">
 
     <!-- PROFIL FIXE EN HAUT -->
-    <!-- BANNIÈRE INSTALLATION (PWA) -->
-    <div id="installBanner" style="display:none;align-items:center;gap:10px;margin:0 12px 12px;
-         background:linear-gradient(135deg,#16233f,#0a0f1e);border:2px solid #fbbf24;border-radius:14px;
-         padding:12px 14px;box-shadow:0 4px 16px rgba(0,0,0,0.35)">
-      <img src="icon-192.png" alt="" style="width:40px;height:40px;border-radius:9px;flex-shrink:0">
-      <div style="flex:1;min-width:0;color:#fff">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px">Installer Battle Dock</div>
-        <div style="font-size:11px;color:rgba(255,255,255,0.6)">Ajoute le jeu sur ton écran d'accueil</div>
-      </div>
-      <button onclick="bdInstall()" style="border:none;border-radius:10px;padding:10px 14px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1208;cursor:pointer;flex-shrink:0">📲 Installer</button>
-    </div>
-
   <header class="profile-header">
     <div class="skeleton-card" id="profileSkeleton">
       <div class="sk-row">
@@ -1003,7 +991,7 @@
 
 
 
-    <div class="nav-grid" style="margin-top:8px">
+    <div class="nav-grid-single" style="margin-top:8px">
       <div class="nav-card rank gated" id="rankCard" onclick="window.location.href='classement.html'">
         <div class="nav-card-bg"></div>
         <div class="nav-card-overlay"></div>
@@ -1012,15 +1000,6 @@
           <div class="nav-card-icon">🏆</div>
           <div class="nav-card-title">Classement</div>
           <div class="nav-card-sub">Top dockers</div>
-        </div>
-      </div>
-      <div class="nav-card saison gated" id="saisonCard" onclick="window.location.href='classement_saisonnier.html'">
-        <div class="nav-card-bg" style="background:linear-gradient(140deg,#065f46,#10b981,#a3e635)"></div>
-        <div class="nav-card-overlay"></div>
-        <div class="nav-card-content">
-          <div class="nav-card-icon">🏅</div>
-          <div class="nav-card-title">Classement Saisonnier</div>
-          <div class="nav-card-sub">La gloire de la saison</div>
         </div>
       </div>
     </div>
@@ -1125,18 +1104,13 @@
     // =====================
     const casinoParticles = document.getElementById('casinoParticles');
     const casinoColors = ['#fbbf24','#f59e0b','#fcd34d','#ef4444','#fff'];
-    for (let i = 0; i < 12; i++) {
-      const p = document.createElement('div');
-      p.className = 'casino-particle';
-      p.style.cssText = `
-        left: ${Math.random() * 100}%;
-        background: ${casinoColors[Math.floor(Math.random() * casinoColors.length)]};
-        width: ${2 + Math.random() * 4}px;
-        height: ${2 + Math.random() * 4}px;
-        animation-duration: ${2 + Math.random() * 2}s;
-        animation-delay: ${Math.random() * 3}s;
-      `;
-      casinoParticles.appendChild(p);
+    if (casinoParticles) {
+      for (let i = 0; i < 12; i++) {
+        const p = document.createElement('div');
+        p.className = 'casino-particle';
+        p.style.cssText = `left:${Math.random()*100}%;background:${casinoColors[Math.floor(Math.random()*casinoColors.length)]};width:${2+Math.random()*4}px;height:${2+Math.random()*4}px;animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*3}s;`;
+        casinoParticles.appendChild(p);
+      }
     }
 
     // =====================
@@ -1526,34 +1500,8 @@ async function loadCalendar() {
     init();
   </script>
   <script>
-    // ===== PWA : installation sur l'écran d'accueil =====
+    // PWA service worker uniquement
     (function () {
-      let bdDeferred = null;
-      function isIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent); }
-      function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; }
-      function dismissed(){ try { return localStorage.getItem('bd_install_dismiss') === '1'; } catch(_) { return false; } }
-      function showBanner(){ if (isStandalone() || dismissed()) return; const b = document.getElementById('installBanner'); if (b) b.style.display = 'flex'; }
-      function hideBanner(){ const b = document.getElementById('installBanner'); if (b) b.style.display = 'none'; }
-
-      window.bdDismissInstall = function(){ try { localStorage.setItem('bd_install_dismiss','1'); } catch(_){} hideBanner(); };
-      window.bdInstall = async function(){
-        if (bdDeferred) {
-          bdDeferred.prompt();
-          try { const { outcome } = await bdDeferred.userChoice; if (outcome === 'accepted') hideBanner(); } catch(_){}
-          bdDeferred = null;
-        } else if (isIOS()) {
-          const m = document.getElementById('iosInstall'); if (m) m.style.display = 'flex';
-        } else {
-          const m = document.getElementById('otherInstall'); if (m) m.style.display = 'flex';
-        }
-      };
-
-      window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); bdDeferred = e; showBanner(); });
-      window.addEventListener('appinstalled', () => { hideBanner(); });
-      // iOS n'a pas beforeinstallprompt : on propose quand même la bannière
-      if (isIOS() && !isStandalone()) showBanner();
-      // Toujours proposer la bannière en haut du profil (sauf si déjà installé ou masquée)
-      window.addEventListener('load', () => { showBanner(); });
 
       // Service worker (rend le jeu installable + repli hors-ligne léger)
       if ('serviceWorker' in navigator) {
