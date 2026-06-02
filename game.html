@@ -1616,139 +1616,203 @@ async function loadCalendar() {
 
 
   <script>
-    // Porte-conteneurs + traînée — bouton Histoire
+    // Porte-conteneurs + sillage fluide — bouton Histoire
     (function(){
       const cv = document.getElementById('histCargoCanvas');
       if (!cv) return;
-      const parent = cv.parentElement; // hist-sea div
+      const par = cv.parentElement;
       const ctx = cv.getContext('2d');
 
-      function resize(){
-        cv.width  = parent.offsetWidth;
-        cv.height = parent.offsetHeight;
-      }
+      function resize(){ cv.width = par.offsetWidth; cv.height = par.offsetHeight; }
       resize();
       window.addEventListener('resize', resize);
 
-      // Ship dimensions (scaled to canvas)
-      const SW = 148, SH = 54; // ship width, height
-      const speed = 0.4; // px per frame
-      let x = -SW - 10;
+      const SW = 160; // largeur bateau
+      const speed = 0.35;
+      let x = -SW - 20;
 
-      function drawShip(cx, waterY) {
-        const y = waterY - 12; // waterline : coque à moitié submergée
+      // Points du sillage historiques pour interpolation fluide
+      const wakePoints = [];
+      const WAKE_LEN = 180;
 
-        // === TRAÎNÉE (sillage en V) ===
-        const sternX = cx; // arrière du bateau (gauche)
-        const spread = 18;
-        const len = 120;
+      function drawShip(cx) {
+        const W = cv.width, H = cv.height;
+        // Bateau bien dans l'eau : waterY = 60% de la hauteur de la mer
+        const wy = Math.floor(H * 0.52); // ligne d'eau
+        const by = wy; // base de la coque au niveau de l'eau
 
-        // Gradient qui s'efface vers l'arrière
-        const wakeGrad = ctx.createLinearGradient(sternX, waterY, sternX - len, waterY);
-        wakeGrad.addColorStop(0,   'rgba(180,220,255,0.25)');
-        wakeGrad.addColorStop(0.4, 'rgba(180,220,255,0.10)');
-        wakeGrad.addColorStop(1,   'rgba(180,220,255,0)');
+        // --- SILLAGE ---
+        // Enregistrer point de poupe
+        wakePoints.push({ x: cx, y: wy });
+        if (wakePoints.length > WAKE_LEN) wakePoints.shift();
 
-        ctx.beginPath();
-        ctx.moveTo(sternX, waterY);
-        ctx.lineTo(sternX - len, waterY - spread);
-        ctx.lineTo(sternX - len, waterY + spread);
-        ctx.closePath();
-        ctx.fillStyle = wakeGrad;
-        ctx.fill();
-
-        // Lignes de sillage fines
-        for (let i = 0; i < 3; i++) {
-          const offset = (i - 1) * 5;
-          const lineGrad = ctx.createLinearGradient(sternX, waterY + offset, sternX - len * 0.8, waterY + offset + (i - 1) * 8);
-          lineGrad.addColorStop(0, 'rgba(255,255,255,0.3)');
-          lineGrad.addColorStop(1, 'rgba(255,255,255,0)');
+        if (wakePoints.length > 4) {
+          // Sillage supérieur
           ctx.beginPath();
-          ctx.moveTo(sternX, waterY + offset);
-          ctx.lineTo(sternX - len * 0.8, waterY + offset + (i - 1) * 10);
-          ctx.strokeStyle = lineGrad;
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
+          ctx.moveTo(wakePoints[0].x, wakePoints[0].y - wakePoints.length * 0.08);
+          for (let i = 1; i < wakePoints.length; i++) {
+            const spread = (wakePoints.length - i) * 0.09;
+            ctx.lineTo(wakePoints[i].x, wakePoints[i].y - spread);
+          }
+          // Sillage inférieur (miroir)
+          for (let i = wakePoints.length - 1; i >= 0; i--) {
+            const spread = (wakePoints.length - i) * 0.09;
+            ctx.lineTo(wakePoints[i].x, wakePoints[i].y + spread);
+          }
+          ctx.closePath();
+          // Gradient horizontal : opaque à la poupe → transparent à la fin
+          const wx0 = wakePoints[0].x, wx1 = cx;
+          const wg = ctx.createLinearGradient(wx0, wy, wx1, wy);
+          wg.addColorStop(0,   'rgba(180,220,255,0)');
+          wg.addColorStop(0.6, 'rgba(180,220,255,0.08)');
+          wg.addColorStop(1,   'rgba(180,220,255,0.20)');
+          ctx.fillStyle = wg;
+          ctx.fill();
+
+          // Lignes fines de sillage
+          for (let line = -1; line <= 1; line++) {
+            ctx.beginPath();
+            for (let i = 0; i < wakePoints.length; i++) {
+              const spread = (wakePoints.length - i) * 0.07 * line;
+              const alpha = i / wakePoints.length;
+              if (i === 0) ctx.moveTo(wakePoints[i].x, wakePoints[i].y + spread);
+              else ctx.lineTo(wakePoints[i].x, wakePoints[i].y + spread);
+            }
+            const lg = ctx.createLinearGradient(wx0, wy, wx1, wy);
+            lg.addColorStop(0, 'rgba(255,255,255,0)');
+            lg.addColorStop(1, `rgba(255,255,255,${0.18 + Math.abs(line)*0.05})`);
+            ctx.strokeStyle = lg;
+            ctx.lineWidth = line === 0 ? 1.2 : 0.6;
+            ctx.stroke();
+          }
         }
 
-        // === COQUE ===
-        ctx.fillStyle = '#0e2035';
+        // --- REFLET DANS L'EAU (coque dupliquée, floutée) ---
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.scale(1, -0.4);
+        // dessin de la coque en miroir (sous waterY transformé)
+        ctx.fillStyle = '#112840';
+        ctx.fillRect(cx + 8, -by - 2, SW - 8, 10);
+        ctx.restore();
+
+        // --- COQUE ---
+        // Fond sombre (partie sous eau)
+        ctx.fillStyle = '#07111f';
         ctx.beginPath();
-        ctx.moveTo(cx,        y + 28);
-        ctx.lineTo(cx + 10,   y + 20);
-        ctx.lineTo(cx + SW,   y + 20);
-        ctx.lineTo(cx + SW,   y + 35);
-        ctx.lineTo(cx + 10,   y + 35);
+        ctx.moveTo(cx,        by + 6);
+        ctx.lineTo(cx + 12,   by);
+        ctx.lineTo(cx + SW,   by);
+        ctx.lineTo(cx + SW,   by + 10);
+        ctx.lineTo(cx + 12,   by + 10);
         ctx.closePath();
         ctx.fill();
 
-        // Partie submergée (plus sombre)
-        ctx.fillStyle = '#081520';
-        ctx.fillRect(cx + 10, waterY, SW - 10, 8);
+        // Coque principale (acier bleu nuit)
+        ctx.fillStyle = '#0f2540';
+        ctx.beginPath();
+        ctx.moveTo(cx,        by - 2);
+        ctx.lineTo(cx + 12,   by - 10);
+        ctx.lineTo(cx + SW,   by - 10);
+        ctx.lineTo(cx + SW,   by + 2);
+        ctx.lineTo(cx + 12,   by + 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // Liseré rouge waterline
+        ctx.fillStyle = '#8b1a1a';
+        ctx.fillRect(cx + 12, by - 11, SW - 12, 2);
 
         // Pont
-        ctx.fillStyle = '#1a3a5c';
-        ctx.fillRect(cx + 10, y + 16, SW - 10, 5);
+        ctx.fillStyle = '#1c3d60';
+        ctx.fillRect(cx + 10, by - 18, SW - 10, 8);
 
-        // === CONTENEURS rangée 1 ===
-        const colors = ['#c0392b','#2980b9','#27ae60','#e67e22','#c0392b','#2980b9'];
+        // --- CONTENEURS rangée basse ---
+        const c1 = ['#b83232','#1e6a9e','#1e7a45','#c17020','#b83232','#1e6a9e','#1e7a45'];
+        for (let i = 0; i < 7; i++) {
+          ctx.fillStyle = c1[i];
+          ctx.fillRect(cx + 12 + i * 20, by - 31, 18, 13);
+          // Séparation conteneur
+          ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(cx + 12 + i * 20, by - 31, 18, 13);
+          // Reflet léger sur le dessus
+          ctx.fillStyle = 'rgba(255,255,255,0.07)';
+          ctx.fillRect(cx + 12 + i * 20, by - 31, 18, 3);
+        }
+
+        // --- CONTENEURS rangée haute ---
+        const c2 = ['#1e6a9e','#1e7a45','#c17020','#b83232','#1e7a45','#1e6a9e'];
         for (let i = 0; i < 6; i++) {
-          ctx.fillStyle = colors[i];
-          ctx.fillRect(cx + 14 + i * 20, y + 4, 17, 12);
-          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillStyle = c2[i];
+          ctx.fillRect(cx + 22 + i * 20, by - 43, 18, 12);
+          ctx.strokeStyle = 'rgba(0,0,0,0.4)';
           ctx.lineWidth = 0.5;
-          ctx.strokeRect(cx + 14 + i * 20, y + 4, 17, 12);
-        }
-        // Rangée 2
-        const colors2 = ['#2980b9','#27ae60','#e67e22','#c0392b','#27ae60'];
-        for (let i = 0; i < 5; i++) {
-          ctx.fillStyle = colors2[i];
-          ctx.fillRect(cx + 14 + i * 20, y - 7, 17, 10);
-          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-          ctx.lineWidth = 0.5;
-          ctx.strokeRect(cx + 14 + i * 20, y - 7, 17, 10);
+          ctx.strokeRect(cx + 22 + i * 20, by - 43, 18, 12);
+          ctx.fillStyle = 'rgba(255,255,255,0.07)';
+          ctx.fillRect(cx + 22 + i * 20, by - 43, 18, 3);
         }
 
-        // === SUPERSTRUCTURE ===
-        ctx.fillStyle = '#1a3a5c';
-        ctx.fillRect(cx + 114, y - 16, 24, 36);
-        ctx.fillStyle = '#1e4470';
-        ctx.fillRect(cx + 116, y - 14, 20, 12);
+        // --- SUPERSTRUCTURE (droite) ---
+        // Corps
+        ctx.fillStyle = '#162e4a';
+        ctx.fillRect(cx + SW - 34, by - 52, 30, 42);
+        // Fenêtres passerelle
+        ctx.fillStyle = '#1d4a70';
+        ctx.fillRect(cx + SW - 32, by - 50, 26, 14);
         // Hublots
-        ctx.fillStyle = '#0a1628';
-        ctx.beginPath(); ctx.arc(cx + 121, y - 9, 2, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(cx + 129, y - 9, 2, 0, Math.PI*2); ctx.fill();
-
+        [cx + SW - 27, cx + SW - 19, cx + SW - 11].forEach(hx => {
+          ctx.fillStyle = 'rgba(120,200,255,0.4)';
+          ctx.beginPath(); ctx.arc(hx, by - 43, 2, 0, Math.PI*2); ctx.fill();
+        });
         // Cheminée
-        ctx.fillStyle = '#142840';
-        ctx.fillRect(cx + 124, y - 26, 8, 12);
-        ctx.fillStyle = '#0a1628';
-        ctx.fillRect(cx + 123, y - 28, 10, 4);
+        ctx.fillStyle = '#0f1f30';
+        ctx.fillRect(cx + SW - 26, by - 64, 10, 14);
+        ctx.fillStyle = '#0a1520';
+        ctx.fillRect(cx + SW - 27, by - 66, 12, 4);
+        // Fumée légère (cercle flou)
+        ctx.save();
+        ctx.globalAlpha = 0.06;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(cx + SW - 21, by - 72, 6, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
 
         // Mât avant
-        ctx.strokeStyle = '#1a3a5c';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#1c3d60';
+        ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.moveTo(cx + 22, y + 16);
-        ctx.lineTo(cx + 22, y - 8);
+        ctx.moveTo(cx + 20, by - 18);
+        ctx.lineTo(cx + 20, by - 50);
+        ctx.stroke();
+        // Antenne
+        ctx.beginPath();
+        ctx.moveTo(cx + 14, by - 46);
+        ctx.lineTo(cx + 26, by - 46);
+        ctx.lineWidth = 0.8;
         ctx.stroke();
 
-        // Étrave
-        ctx.fillStyle = '#0c1e30';
+        // Étrave pointue
+        ctx.fillStyle = '#081828';
         ctx.beginPath();
-        ctx.moveTo(cx, y + 28);
-        ctx.lineTo(cx + 10, y + 20);
-        ctx.lineTo(cx + 10, y + 35);
+        ctx.moveTo(cx,      by - 2);
+        ctx.lineTo(cx + 12, by - 10);
+        ctx.lineTo(cx + 12, by + 2);
         ctx.closePath();
         ctx.fill();
+
+        // Ombre sous coque dans l'eau
+        const shadowGrad = ctx.createLinearGradient(cx + 12, by, cx + 12, by + 14);
+        shadowGrad.addColorStop(0, 'rgba(0,0,0,0.25)');
+        shadowGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = shadowGrad;
+        ctx.fillRect(cx + 12, by, SW - 12, 14);
       }
 
       function loop(){
         ctx.clearRect(0, 0, cv.width, cv.height);
-        const waterY = 8; // haut de la mer = ligne d'eau
-        drawShip(x, waterY);
+        drawShip(x);
         x += speed;
-        if (x > cv.width + 10) x = -SW - 10;
+        if (x > cv.width + 20) { x = -SW - 20; wakePoints.length = 0; }
         requestAnimationFrame(loop);
       }
       loop();
