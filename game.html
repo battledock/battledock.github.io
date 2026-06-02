@@ -1302,6 +1302,56 @@
 
 
 
+    async function updateBourseBtn() {
+      try {
+        const { data:{ session } } = await sb.auth.getSession();
+        if (!session) return;
+        // Récupère profit + holdings + prix marché
+        const [gsRes, mktRes] = await Promise.all([
+          sb.from('game_stats').select('bourse_profit,bourse').eq('user_id', session.user.id).maybeSingle(),
+          sb.from('bourse_market').select('sym,price')
+        ]);
+        const gs = gsRes.data;
+        const mkt = mktRes.data || [];
+        const profit = gs?.bourse_profit || 0;
+
+        // Calcul valeur portefeuille live
+        const holdings = (gs?.bourse && gs.bourse.h) ? gs.bourse.h : {};
+        const priceMap = {};
+        mkt.forEach(r => priceMap[r.sym] = r.price);
+        let portVal = 0;
+        Object.entries(holdings).forEach(([sym, h]) => {
+          if (h && h.shares > 0) portVal += h.shares * (priceMap[sym] || 0);
+        });
+
+        const el = document.getElementById('bourseVariation');
+        if (!el) return;
+
+        // Afficher profit + portefeuille si positions ouvertes
+        const sign  = profit >= 0 ? '▲' : '▼';
+        const color = profit >= 0 ? '#4ade80' : '#f87171';
+        const fillId = profit >= 0 ? 'url(#brsGradUp)' : 'url(#brsGradDn)';
+
+        if (profit === 0 && portVal === 0) {
+          el.textContent = '— aucune activité';
+          el.style.color = 'rgba(255,255,255,0.2)';
+        } else if (portVal > 0) {
+          el.innerHTML = `${sign} ${Math.abs(profit).toLocaleString('fr-FR')}€<br><span style="font-size:8px;opacity:0.7">portef. ${Math.round(portVal).toLocaleString('fr-FR')}€</span>`;
+          el.style.color = color;
+        } else {
+          el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€ total';
+          el.style.color = color;
+        }
+
+        // Couleur ligne graphe
+        const line = document.getElementById('bourseLine');
+        const fill = document.getElementById('bourseChartFill');
+        if (line) line.setAttribute('stroke', color);
+        if (fill) fill.setAttribute('fill', fillId);
+
+      } catch(e) { console.log('bourseBtn:', e); }
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) { window.location.href = 'index.html'; return; }
@@ -1400,23 +1450,9 @@
 
 
 
-      // Variation Bourse depuis bourse_profit
-      (function updateBourseBtn() {
-        const profit = stats?.bourse_profit || 0;
-        const el = document.getElementById('bourseVariation');
-        if (!el) return;
-        if (profit === 0) { el.textContent = '— aucune activité'; el.style.color = 'rgba(255,255,255,0.2)'; return; }
-        const sign = profit >= 0 ? '▲' : '▼';
-        const color = profit >= 0 ? '#4ade80' : '#f87171';
-        const fillId = profit >= 0 ? 'url(#brsGradUp)' : 'url(#brsGradDn)';
-        el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€ total';
-        el.style.color = color;
-        // Couleur de la ligne graphe
-        const line = document.getElementById('bourseLine');
-        const fill = document.getElementById('bourseChartFill');
-        if (line) line.setAttribute('stroke', color);
-        if (fill) fill.setAttribute('fill', fillId);
-      })();
+      // Variation Bourse — appelée au chargement + polling toutes les 15s
+      updateBourseBtn();
+      setInterval(updateBourseBtn, 15000);
 
       // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
       // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
