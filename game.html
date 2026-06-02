@@ -327,8 +327,6 @@
     @keyframes histMoonPulse { 0%,100%{box-shadow:0 0 12px rgba(255,240,100,0.6),0 0 30px rgba(255,240,100,0.2)} 50%{box-shadow:0 0 18px rgba(255,240,100,0.9),0 0 50px rgba(255,240,100,0.3)} }
     .hist-skyline { position:absolute; bottom:45%; left:0; right:0; z-index:2; height:120px; }
     .hist-crane { transform-origin:bottom center; }
-    @keyframes histCargoPass { 0%{transform:translateX(-200px)} 100%{transform:translateX(400px)} }
-    .hist-cargo { animation:histCargoPass 22s linear infinite; }
     .hist-sea { position:absolute; bottom:0; left:0; right:0; height:45%; z-index:3; }
     .hist-sea-base { position:absolute; inset:0; background:linear-gradient(180deg,#0e4a7a 0%,#062040 100%); }
     @keyframes histWave1 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
@@ -882,44 +880,11 @@
             <line x1="108" y1="35" x2="108" y2="60" stroke="#2a5a80" stroke-width="1"/>
             <rect x="105" y="60" width="5" height="3" fill="#2a5a80"/>
           </g>
-          <!-- Porte-conteneurs qui traverse -->
-          <g class="hist-cargo">
-            <!-- Coque -->
-            <path d="M0,108 L8,100 L140,100 L148,108 L140,115 L8,115 Z" fill="#0e2035"/>
-            <rect x="8" y="100" width="132" height="15" fill="#112840"/>
-            <!-- Pont -->
-            <rect x="10" y="96" width="130" height="5" fill="#1a3a5c"/>
-            <!-- Conteneurs rangée 1 -->
-            <rect x="14" y="84" width="18" height="12" fill="#c0392b" rx="1"/>
-            <rect x="34" y="84" width="18" height="12" fill="#2980b9" rx="1"/>
-            <rect x="54" y="84" width="18" height="12" fill="#27ae60" rx="1"/>
-            <rect x="74" y="84" width="18" height="12" fill="#e67e22" rx="1"/>
-            <rect x="94" y="84" width="18" height="12" fill="#c0392b" rx="1"/>
-            <rect x="114" y="84" width="18" height="12" fill="#2980b9" rx="1"/>
-            <!-- Conteneurs rangée 2 -->
-            <rect x="14" y="73" width="18" height="10" fill="#2980b9" rx="1"/>
-            <rect x="34" y="73" width="18" height="10" fill="#27ae60" rx="1"/>
-            <rect x="54" y="73" width="18" height="10" fill="#e67e22" rx="1"/>
-            <rect x="74" y="73" width="18" height="10" fill="#c0392b" rx="1"/>
-            <rect x="94" y="73" width="18" height="10" fill="#27ae60" rx="1"/>
-            <!-- Superstructure (passerelle) -->
-            <rect x="118" y="62" width="22" height="22" fill="#1a3a5c" rx="1"/>
-            <rect x="120" y="64" width="18" height="10" fill="#1e4470" rx="1"/>
-            <!-- Hublots -->
-            <circle cx="125" cy="68" r="2" fill="#0a1628"/>
-            <circle cx="133" cy="68" r="2" fill="#0a1628"/>
-            <!-- Cheminée -->
-            <rect x="128" y="54" width="8" height="12" fill="#142840"/>
-            <rect x="127" y="52" width="10" height="4" fill="#0a1628"/>
-            <!-- Mât avant -->
-            <line x1="20" y1="96" x2="20" y2="70" stroke="#1a3a5c" stroke-width="1.5"/>
-            <!-- Étrave -->
-            <path d="M0,108 L8,100 L8,115 Z" fill="#0c1e30"/>
-          </g>
         </svg>
         <!-- Mer -->
         <div class="hist-sea">
           <div class="hist-sea-base"></div>
+          <canvas id="histCargoCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none"></canvas>
           <svg class="hist-wave1" height="14" viewBox="0 0 1200 14" preserveAspectRatio="none"><path d="M0,7 C75,1 150,13 225,7 C300,1 375,13 450,7 C525,1 600,13 675,7 C750,1 825,13 900,7 C975,1 1050,13 1125,7 C1200,1 1200,7 1200,7 L1200,14 L0,14 Z" fill="rgba(255,255,255,0.06)"/><path d="M0,7 C75,1 150,13 225,7 C300,1 375,13 450,7 C525,1 600,13 675,7 C750,1 825,13 900,7 C975,1 1050,13 1125,7 C1200,1 1200,7 1200,7" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.2"/></svg>
           <svg class="hist-wave2" height="10" viewBox="0 0 1200 10" preserveAspectRatio="none"><path d="M0,5 C100,0 200,10 300,5 C400,0 500,10 600,5 C700,0 800,10 900,5 C1000,0 1100,10 1200,5" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></svg>
           <svg class="hist-wave3" height="8" viewBox="0 0 1200 8" preserveAspectRatio="none"><path d="M0,4 C150,0 300,8 450,4 C600,0 750,8 900,4 C1050,0 1200,8 1200,4" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1"/></svg>
@@ -1649,6 +1614,146 @@ async function loadCalendar() {
     <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
   </div>
 
+
+  <script>
+    // Porte-conteneurs + traînée — bouton Histoire
+    (function(){
+      const cv = document.getElementById('histCargoCanvas');
+      if (!cv) return;
+      const parent = cv.parentElement; // hist-sea div
+      const ctx = cv.getContext('2d');
+
+      function resize(){
+        cv.width  = parent.offsetWidth;
+        cv.height = parent.offsetHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      // Ship dimensions (scaled to canvas)
+      const SW = 148, SH = 54; // ship width, height
+      const speed = 0.4; // px per frame
+      let x = -SW - 10;
+
+      function drawShip(cx, waterY) {
+        const y = waterY - 12; // waterline : coque à moitié submergée
+
+        // === TRAÎNÉE (sillage en V) ===
+        const sternX = cx; // arrière du bateau (gauche)
+        const spread = 18;
+        const len = 120;
+
+        // Gradient qui s'efface vers l'arrière
+        const wakeGrad = ctx.createLinearGradient(sternX, waterY, sternX - len, waterY);
+        wakeGrad.addColorStop(0,   'rgba(180,220,255,0.25)');
+        wakeGrad.addColorStop(0.4, 'rgba(180,220,255,0.10)');
+        wakeGrad.addColorStop(1,   'rgba(180,220,255,0)');
+
+        ctx.beginPath();
+        ctx.moveTo(sternX, waterY);
+        ctx.lineTo(sternX - len, waterY - spread);
+        ctx.lineTo(sternX - len, waterY + spread);
+        ctx.closePath();
+        ctx.fillStyle = wakeGrad;
+        ctx.fill();
+
+        // Lignes de sillage fines
+        for (let i = 0; i < 3; i++) {
+          const offset = (i - 1) * 5;
+          const lineGrad = ctx.createLinearGradient(sternX, waterY + offset, sternX - len * 0.8, waterY + offset + (i - 1) * 8);
+          lineGrad.addColorStop(0, 'rgba(255,255,255,0.3)');
+          lineGrad.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.beginPath();
+          ctx.moveTo(sternX, waterY + offset);
+          ctx.lineTo(sternX - len * 0.8, waterY + offset + (i - 1) * 10);
+          ctx.strokeStyle = lineGrad;
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+        }
+
+        // === COQUE ===
+        ctx.fillStyle = '#0e2035';
+        ctx.beginPath();
+        ctx.moveTo(cx,        y + 28);
+        ctx.lineTo(cx + 10,   y + 20);
+        ctx.lineTo(cx + SW,   y + 20);
+        ctx.lineTo(cx + SW,   y + 35);
+        ctx.lineTo(cx + 10,   y + 35);
+        ctx.closePath();
+        ctx.fill();
+
+        // Partie submergée (plus sombre)
+        ctx.fillStyle = '#081520';
+        ctx.fillRect(cx + 10, waterY, SW - 10, 8);
+
+        // Pont
+        ctx.fillStyle = '#1a3a5c';
+        ctx.fillRect(cx + 10, y + 16, SW - 10, 5);
+
+        // === CONTENEURS rangée 1 ===
+        const colors = ['#c0392b','#2980b9','#27ae60','#e67e22','#c0392b','#2980b9'];
+        for (let i = 0; i < 6; i++) {
+          ctx.fillStyle = colors[i];
+          ctx.fillRect(cx + 14 + i * 20, y + 4, 17, 12);
+          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(cx + 14 + i * 20, y + 4, 17, 12);
+        }
+        // Rangée 2
+        const colors2 = ['#2980b9','#27ae60','#e67e22','#c0392b','#27ae60'];
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle = colors2[i];
+          ctx.fillRect(cx + 14 + i * 20, y - 7, 17, 10);
+          ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(cx + 14 + i * 20, y - 7, 17, 10);
+        }
+
+        // === SUPERSTRUCTURE ===
+        ctx.fillStyle = '#1a3a5c';
+        ctx.fillRect(cx + 114, y - 16, 24, 36);
+        ctx.fillStyle = '#1e4470';
+        ctx.fillRect(cx + 116, y - 14, 20, 12);
+        // Hublots
+        ctx.fillStyle = '#0a1628';
+        ctx.beginPath(); ctx.arc(cx + 121, y - 9, 2, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + 129, y - 9, 2, 0, Math.PI*2); ctx.fill();
+
+        // Cheminée
+        ctx.fillStyle = '#142840';
+        ctx.fillRect(cx + 124, y - 26, 8, 12);
+        ctx.fillStyle = '#0a1628';
+        ctx.fillRect(cx + 123, y - 28, 10, 4);
+
+        // Mât avant
+        ctx.strokeStyle = '#1a3a5c';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx + 22, y + 16);
+        ctx.lineTo(cx + 22, y - 8);
+        ctx.stroke();
+
+        // Étrave
+        ctx.fillStyle = '#0c1e30';
+        ctx.beginPath();
+        ctx.moveTo(cx, y + 28);
+        ctx.lineTo(cx + 10, y + 20);
+        ctx.lineTo(cx + 10, y + 35);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function loop(){
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        const waterY = 8; // haut de la mer = ligne d'eau
+        drawShip(x, waterY);
+        x += speed;
+        if (x > cv.width + 10) x = -SW - 10;
+        requestAnimationFrame(loop);
+      }
+      loop();
+    })();
+  </script>
 
   <script>
     // Étoiles scintillantes — bouton Histoire
