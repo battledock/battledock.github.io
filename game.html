@@ -1616,7 +1616,7 @@ async function loadCalendar() {
 
 
   <script>
-    // Porte-conteneurs + sillage fluide — bouton Histoire
+    // Porte-conteneurs flottant — bouton Histoire
     (function(){
       const cv = document.getElementById('histCargoCanvas');
       if (!cv) return;
@@ -1630,99 +1630,14 @@ async function loadCalendar() {
       const SW = 148;
       const speed = 0.35;
       let x = -SW - 20;
-
-      // Sillage : tableau de segments {x, topSpread, botSpread, alpha}
-      // On accumule en fonction de la position du bateau
-      const trail = []; // [{x, half}]  half = demi-largeur du sillage à ce x
-
-      function drawWake(poupX, wy) {
-        // Ajouter le nouveau point (à la poupe)
-        trail.push({ x: poupX, half: 0 });
-        // Élargir tous les anciens points
-        for (let i = 0; i < trail.length - 1; i++) {
-          trail[i].half += 0.055; // spread progressif
-        }
-        // Supprimer les points trop loin ou trop étalés
-        while (trail.length > 0 && (trail[0].half > 14 || poupX - trail[0].x > 220)) {
-          trail.shift();
-        }
-        if (trail.length < 2) return;
-
-        // Dessiner la zone de sillage remplie avec gradient d'opacité
-        ctx.save();
-        ctx.beginPath();
-        // Bord supérieur gauche → droite
-        for (let i = 0; i < trail.length; i++) {
-          const t = trail[i];
-          const alpha = i / trail.length; // 0=vieux 1=récent
-          if (i === 0) ctx.moveTo(t.x, wy - t.half);
-          else ctx.lineTo(t.x, wy - t.half);
-        }
-        // Bord inférieur droite → gauche
-        for (let i = trail.length - 1; i >= 0; i--) {
-          ctx.lineTo(trail[i].x, wy + trail[i].half);
-        }
-        ctx.closePath();
-
-        // Gradient horizontal : transparent côté vieux, léger côté poupe
-        const x0 = trail[0].x, x1 = poupX;
-        const wg = ctx.createLinearGradient(x0, 0, x1, 0);
-        wg.addColorStop(0,   'rgba(160,210,255,0)');
-        wg.addColorStop(0.5, 'rgba(160,210,255,0.04)');
-        wg.addColorStop(1,   'rgba(160,210,255,0.13)');
-        ctx.fillStyle = wg;
-        ctx.fill();
-
-        // Deux lignes de crête de vague (kelvin)
-        [-1, 1].forEach(sign => {
-          ctx.beginPath();
-          let started = false;
-          for (let i = 0; i < trail.length; i++) {
-            const t = trail[i];
-            const px = t.x, py = wy + sign * t.half * 0.75;
-            if (!started) { ctx.moveTo(px, py); started = true; }
-            else {
-              // Interpolation catmull-rom simplifiée
-              const prev = trail[Math.max(0, i-1)];
-              const cpx = (prev.x + t.x) / 2;
-              const cpy = (wy + sign * prev.half * 0.75 + py) / 2;
-              ctx.quadraticCurveTo(cpx, cpy, px, py);
-            }
-          }
-          const lg = ctx.createLinearGradient(x0, 0, x1, 0);
-          lg.addColorStop(0,   'rgba(255,255,255,0)');
-          lg.addColorStop(0.6, 'rgba(255,255,255,0.06)');
-          lg.addColorStop(1,   'rgba(255,255,255,0.22)');
-          ctx.strokeStyle = lg;
-          ctx.lineWidth = 0.9;
-          ctx.stroke();
-        });
-
-        // Ligne centrale (écume de proue)
-        ctx.beginPath();
-        let s2 = false;
-        for (let i = 0; i < trail.length; i++) {
-          const t = trail[i];
-          if (!s2) { ctx.moveTo(t.x, wy); s2 = true; }
-          else ctx.lineTo(t.x, wy);
-        }
-        const cl = ctx.createLinearGradient(x0, 0, x1, 0);
-        cl.addColorStop(0, 'rgba(255,255,255,0)');
-        cl.addColorStop(1, 'rgba(255,255,255,0.15)');
-        ctx.strokeStyle = cl;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-
-        ctx.restore();
-      }
+      let t = 0;
 
       function drawShip(cx) {
         const H = cv.height;
         const wy = Math.floor(H * 0.38);
-        const y = wy - 12;
-
-        // Sillage d'abord (sous le bateau)
-        drawWake(cx, wy);
+        // Flottement doux
+        const bob = Math.sin(t * 0.018) * 1.8;
+        const y = wy - 12 + bob;
 
         // COQUE
         ctx.fillStyle = '#0e2035';
@@ -1737,7 +1652,7 @@ async function loadCalendar() {
 
         // Partie submergée
         ctx.fillStyle = '#081520';
-        ctx.fillRect(cx + 10, wy, SW - 10, 8);
+        ctx.fillRect(cx + 10, wy + bob, SW - 10, 8);
 
         // Pont
         ctx.fillStyle = '#1a3a5c';
@@ -1793,7 +1708,8 @@ async function loadCalendar() {
         ctx.clearRect(0, 0, cv.width, cv.height);
         drawShip(x);
         x += speed;
-        if (x > cv.width + 20) { x = -SW - 20; trail.length = 0; }
+        t++;
+        if (x > cv.width + 20) x = -SW - 20;
         requestAnimationFrame(loop);
       }
       loop();
