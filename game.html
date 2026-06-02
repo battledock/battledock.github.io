@@ -481,7 +481,7 @@
 
 
     /* BOURSE - Terminal avec gradient dynamique */
-    .nav-card.bourse { background:#f2efe7; position:relative; overflow:hidden; }
+    .nav-card.bourse { background:#000; position:relative; overflow:hidden; }
     .nav-card.bourse .nav-card-bg { display:none; }
     .nav-card.bourse .nav-card-overlay { display:none; }
     .nav-card.mariage .nav-card-title { color:#fff; text-shadow:0 1px 5px rgba(157,23,80,0.5); }
@@ -977,17 +977,27 @@
         </div>
       </div>
       <div class="nav-card bourse gated" id="bourseCard" onclick="window.location.href='bourse.html'">
-        <!-- Fond craie -->
-        <div style="position:absolute;inset:0;background:#f2efe7"></div>
+        <!-- Fond noir -->
+        <div style="position:absolute;inset:0;background:#000"></div>
+        <!-- Graphe SVG pleine hauteur -->
+        <svg id="bourseChartSvg" style="position:absolute;bottom:0;left:0;right:0;height:60%;width:100%" viewBox="0 0 187 78" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="brsGradUp" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#4ade80" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#4ade80" stop-opacity="0"/>
+            </linearGradient>
+            <linearGradient id="brsGradDn" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#f87171" stop-opacity="0.2"/>
+              <stop offset="100%" stop-color="#f87171" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path id="bourseChartFill" d="M0,70 L24,54 L48,62 L72,36 L96,44 L120,18 L150,26 L187,14 L187,78 L0,78 Z" fill="url(#brsGradUp)"/>
+          <path id="bourseLine" d="M0,70 L24,54 L48,62 L72,36 L96,44 L120,18 L150,26 L187,14" fill="none" stroke="#4ade80" stroke-width="1.8" opacity="0.9"/>
+        </svg>
         <!-- Contenu -->
-        <div style="position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:11px 12px;gap:3px">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:#1a1a1a;line-height:1">BOURSE</div>
-          <!-- Graphe SVG à main levée -->
-          <svg style="height:40px;width:100%;margin-top:4px" viewBox="0 0 163 40" preserveAspectRatio="none">
-            <path d="M0,32 L20,24 L40,28 L60,15 L80,19 L100,8 L120,12 L140,3 L163,6" fill="none" stroke="rgba(0,0,0,0.2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="163" cy="6" r="3" fill="rgba(0,0,0,0.25)"/>
-          </svg>
-          <div style="font-size:7px;color:rgba(0,0,0,0.3);font-weight:700;letter-spacing:1px">MARC · CONT · PORT</div>
+        <div style="position:absolute;top:0;left:0;right:0;bottom:45%;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:10px 11px;gap:2px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;color:#fff;line-height:1">BOURSE</div>
+          <div id="bourseVariation" style="font-size:9px;font-weight:700;letter-spacing:1px;color:#4ade80">▲ —</div>
         </div>
       </div>
     </div>
@@ -1256,28 +1266,7 @@
       starsContainer.appendChild(s);
     }
 
-    // =====================
-    // BOURSE ANIMÉE + COULEUR DYNAMIQUE
-    // =====================
-    let bourseUp = true;
-    function animateBourse() {
-      const line = document.getElementById('bourseLine');
-      if (!line) return;
-      const pts = [];
-      let y = 30;
-      const prev = y;
-      for (let x = 0; x <= 200; x += 20) {
-        y = Math.max(5, Math.min(45, y + (Math.random() - 0.48) * 12));
-        pts.push(`${x},${y}`);
-      }
-      const lastY = parseFloat(pts[pts.length-1].split(',')[1]);
-      const firstY = parseFloat(pts[0].split(',')[1]);
-      bourseUp = lastY < firstY;
-      line.setAttribute('points', pts.join(' '));
-      line.setAttribute('stroke', `url(#${bourseUp ? 'bourseGradUp' : 'bourseGradDown'})`);
-    }
-    animateBourse();
-    setInterval(animateBourse, 2000);
+    // Bourse : graphe statique, variation depuis Supabase
 
     // Avatar automatique selon le niveau (mêmes paliers que profil.html)
     function avatarForLevel(lvl) {
@@ -1410,6 +1399,24 @@
       }
 
 
+
+      // Variation Bourse depuis bourse_profit
+      (function updateBourseBtn() {
+        const profit = stats?.bourse_profit || 0;
+        const el = document.getElementById('bourseVariation');
+        if (!el) return;
+        if (profit === 0) { el.textContent = '— aucune activité'; el.style.color = 'rgba(255,255,255,0.2)'; return; }
+        const sign = profit >= 0 ? '▲' : '▼';
+        const color = profit >= 0 ? '#4ade80' : '#f87171';
+        const fillId = profit >= 0 ? 'url(#brsGradUp)' : 'url(#brsGradDn)';
+        el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€ total';
+        el.style.color = color;
+        // Couleur de la ligne graphe
+        const line = document.getElementById('bourseLine');
+        const fill = document.getElementById('bourseChartFill');
+        if (line) line.setAttribute('stroke', color);
+        if (fill) fill.setAttribute('fill', fillId);
+      })();
 
       // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
       // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
