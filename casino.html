@@ -1,305 +1,228 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Battle Dock Casino</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
-  body { font-family:'Inter',sans-serif; background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b); background-attachment:fixed; color:#fff; padding:16px 16px 24px; min-height:100vh; }
-  .container { max-width:500px; margin:0 auto; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Casino — Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html, body { height:100dvh; overflow:hidden; }
+    body { font-family:'Inter',sans-serif; background:#cc1a1a; display:flex; flex-direction:column; }
 
-  /* HEADER */
-  .header { background:linear-gradient(135deg,#7f1d1d,#991b1b); border:2px solid rgba(251,191,36,0.5); border-radius:20px;
-    padding:20px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
-  .casino-logo { display:flex; align-items:center; gap:12px; }
-  .casino-icon { font-size:44px; }
-  .casino-title { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:2px;
-    background:linear-gradient(135deg,#fbbf24,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1; }
-  .casino-tagline { font-size:10px; color:rgba(251,191,36,0.7); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
-  .balance-box { background:#fff; border-radius:14px; padding:10px 16px; text-align:center; box-shadow:0 4px 12px rgba(0,0,0,0.25); }
-  .balance-label { font-size:9px; color:rgba(0,0,0,0.55); text-transform:uppercase; font-weight:700; letter-spacing:1px; }
-  .balance-amount { font-family:'Bebas Neue',sans-serif; font-size:21px; color:#0f172a; letter-spacing:0.5px; }
+    .page { flex:1; display:flex; flex-direction:column; overflow:hidden; max-width:480px; width:100%; margin:0 auto; }
 
-  .louche { text-align:center; font-size:12px; color:rgba(251,191,36,0.65); font-style:italic; margin-bottom:18px; }
+    /* Header */
+    .hdr { padding:calc(env(safe-area-inset-top) + 40px) 22px 0; flex-shrink:0; }
+    .hdr-row { display:flex; justify-content:space-between; align-items:flex-end; }
+    .hdr-title { font-family:'Bebas Neue',sans-serif; font-size:52px; color:white; line-height:0.85; letter-spacing:2px; }
+    .hdr-balance { text-align:right; }
+    .hdr-balance-lbl { font-size:8px; font-weight:700; color:rgba(255,255,255,0.55); letter-spacing:2px; }
+    .hdr-balance-val { font-family:'Bebas Neue',sans-serif; font-size:24px; color:white; line-height:1; }
+    .hdr-line { height:1px; background:rgba(0,0,0,0.2); margin-top:14px; }
 
-  /* GRID */
-  .games-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-  .game-card { background:linear-gradient(135deg,#7f1d1d,#991b1b); border:2px solid rgba(251,191,36,0.4); border-radius:16px;
-    padding:22px 12px; text-align:center; cursor:pointer; box-shadow:0 4px 16px rgba(0,0,0,0.3); transition:transform .15s, box-shadow .15s; }
-  .game-card:active { transform:scale(0.97); }
-  .game-card.dark { background:linear-gradient(135deg,#0f172a,#1e293b); border:2px solid rgba(251,191,36,0.6); box-shadow:0 6px 20px rgba(0,0,0,0.5); }
-  .game-card.featured { grid-column:span 2; background:#fff; border:3px solid #fbbf24; box-shadow:0 8px 24px rgba(251,191,36,0.4); }
-  .game-card.featured .game-name { color:#991b1b; }
-  .game-card.featured .game-desc { color:rgba(0,0,0,0.6); }
-  .game-icon { font-size:46px; margin-bottom:8px; }
-  .game-name { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#fff; letter-spacing:1px; margin-bottom:3px; }
-  .game-desc { font-size:12px; color:rgba(255,255,255,0.6); }
+    /* Bloc jetons */
+    .jetons-bloc { margin:14px 22px 0; border:1px solid rgba(0,0,0,0.15); border-radius:14px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; flex-shrink:0; }
+    .jetons-lbl { font-size:8px; font-weight:700; color:rgba(255,255,255,0.55); letter-spacing:2px; margin-bottom:3px; }
+    .jetons-val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:white; line-height:1; }
+    .jetons-btn { background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.25); border-radius:10px; padding:8px 14px; color:white; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; flex-shrink:0; }
+    .jetons-btn:active { opacity:0.7; }
 
-  .quit-btn { margin-top:20px; background:linear-gradient(135deg,#7f1d1d,#991b1b); border:2px solid rgba(251,191,36,0.5);
-    color:#fbbf24; border-radius:12px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; cursor:pointer; width:100%; }
-  .quit-btn:active { transform:scale(0.98); }
+    /* Mise slider */
+    .mise-wrap { padding:14px 22px 0; flex-shrink:0; }
+    .mise-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .mise-lbl { font-size:8px; font-weight:700; color:rgba(255,255,255,0.55); letter-spacing:2px; }
+    .mise-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:white; }
+    .mise-track { height:3px; background:rgba(0,0,0,0.2); border-radius:2px; }
+    .mise-fill { height:100%; background:#0a0a0a; border-radius:2px; width:30%; transition:width .2s; }
+    .mise-labels { display:flex; justify-content:space-between; margin-top:4px; }
+    .mise-labels span { font-size:7px; color:rgba(255,255,255,0.35); }
+    /* Boutons mise -->
+    .mise-btns { display:flex; gap:8px; margin-top:10px; }
+    .mise-btn { flex:1; padding:8px; border-radius:10px; background:rgba(0,0,0,0.15); border:1px solid rgba(255,255,255,0.15); text-align:center; cursor:pointer; }
+    .mise-btn.active { background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.4); }
+    .mise-btn span { font-family:'Bebas Neue',sans-serif; font-size:14px; color:white; }
+    .mise-btn:active { opacity:0.7; }
 
-  /* GAME VIEW */
-  .gv-top { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:16px; }
-  .gv-back { background:rgba(0,0,0,0.25); border:2px solid rgba(251,191,36,0.4); color:#fbbf24; border-radius:11px; padding:9px 13px;
-    font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; }
-  .gv-back:active { transform:scale(0.96); }
-  .gv-title { flex:1; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:#fbbf24; }
-  .gv-bal { background:#fff; border-radius:11px; padding:7px 12px; text-align:center; }
-  .gv-bal .balance-label { font-size:8px; } .gv-bal .balance-amount { font-size:16px; }
+    /* Jeux */
+    .jeux-wrap { flex:1; overflow:hidden; padding:14px 22px 0; display:flex; flex-direction:column; gap:0; }
+    .jeux-lbl { font-size:8px; font-weight:700; color:rgba(255,255,255,0.4); letter-spacing:3px; margin-bottom:8px; }
+    .jeu-row { display:flex; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid rgba(0,0,0,0.12); cursor:pointer; }
+    .jeu-row:last-child { border-bottom:none; }
+    .jeu-row:active { opacity:0.7; }
+    .jeu-icon { width:40px; height:40px; background:rgba(0,0,0,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+    .jeu-name { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:1px; flex:1; }
+    .jeu-mult { font-family:'Bebas Neue',sans-serif; font-size:11px; color:rgba(255,255,255,0.4); }
+    .jeu-locked { font-size:9px; color:rgba(255,255,255,0.25); background:rgba(0,0,0,0.15); padding:3px 7px; border-radius:4px; }
 
-  .bet-box { background:linear-gradient(135deg,#7f1d1d,#991b1b); border:2px solid rgba(251,191,36,0.4); border-radius:16px; padding:13px; margin-bottom:16px; }
-  .bet-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .bet-lbl { font-size:11px; color:rgba(251,191,36,0.7); text-transform:uppercase; letter-spacing:1px; }
-  .bet-val { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fbbf24; }
-  .chips { display:flex; gap:6px; }
-  .chip { flex:1; padding:9px 4px; border-radius:9px; border:1px solid rgba(251,191,36,0.3); background:rgba(0,0,0,0.2);
-    color:#fde68a; font-size:12px; font-weight:700; cursor:pointer; text-align:center; }
-  .chip:active { background:rgba(251,191,36,0.25); }
-
-  .panel { background:linear-gradient(135deg,#5b1414,#7f1d1d); border:2px solid rgba(251,191,36,0.35); border-radius:18px; padding:18px 16px; text-align:center; box-shadow:0 8px 24px rgba(0,0,0,0.4); }
-
-  .reels { display:flex; gap:10px; justify-content:center; margin:6px 0 16px; }
-  .reel { width:80px; height:92px; border-radius:14px; background:linear-gradient(180deg,#1a0708,#2a0c0c); border:2px solid rgba(251,191,36,0.5);
-    display:flex; align-items:center; justify-content:center; font-size:46px; overflow:hidden; box-shadow:inset 0 0 20px rgba(0,0,0,0.7); }
-  .reel.spin { animation:reelShake .1s linear infinite; }
-  @keyframes reelShake { 0%,100%{transform:translateY(-2px)} 50%{transform:translateY(2px)} }
-  .paytable { font-size:10px; color:rgba(255,255,255,0.45); line-height:1.7; margin-top:10px; }
-
-  .roul-num { width:96px; height:96px; border-radius:50%; margin:6px auto 16px; display:flex; align-items:center; justify-content:center;
-    font-family:'Bebas Neue',sans-serif; font-size:42px; border:3px solid rgba(251,191,36,0.5); }
-  .r-red{background:#b91c1c} .r-black{background:#1f2937} .r-green{background:#047857}
-  .roul-bets { display:flex; gap:8px; margin-bottom:8px; }
-  .rbet { flex:1; padding:14px 4px; border-radius:11px; border:2px solid transparent; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; color:#fff; }
-  .rbet.red{background:rgba(185,28,28,0.55)} .rbet.black{background:rgba(31,41,55,0.7)} .rbet.green{background:rgba(4,120,87,0.5)}
-  .rbet.sel{ border-color:#fbbf24; }
-  .rbet small{ display:block; font-size:9px; opacity:0.8; font-family:'Inter',sans-serif; font-weight:400; }
-
-  .coin { width:120px; height:120px; border-radius:50%; margin:6px auto 16px; display:flex; align-items:center; justify-content:center;
-    font-size:60px; background:radial-gradient(circle at 35% 30%,#fde68a,#d97706); color:#5a3000; box-shadow:0 0 24px rgba(251,191,36,0.5); }
-  .coin.flip { animation:coinFlip .5s linear infinite; }
-  @keyframes coinFlip { 0%{transform:rotateY(0)} 100%{transform:rotateY(360deg)} }
-  .pf-bets { display:flex; gap:10px; margin-bottom:8px; }
-  .pf { flex:1; padding:16px; border-radius:12px; border:2px solid transparent; background:rgba(0,0,0,0.25); cursor:pointer; color:#fff;
-    font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1px; }
-  .pf.sel{ border-color:#fbbf24; background:rgba(251,191,36,0.15); }
-
-  .play-btn { width:100%; margin-top:14px; padding:16px; border:none; border-radius:14px; cursor:pointer;
-    background:linear-gradient(135deg,#fbbf24,#f59e0b); color:#5a1500; font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; transition:transform .1s; }
-  .play-btn:active { transform:scale(0.97); } .play-btn:disabled { opacity:0.45; cursor:default; }
-  .result { min-height:24px; margin-top:12px; font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; }
-  .win{ color:#fde047; } .lose{ color:#fca5a5; }
-
-  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200;
-    background:rgba(40,8,10,0.97); border:2px solid rgba(251,191,36,0.5); border-radius:12px; padding:11px 18px;
-    font-size:13px; font-weight:700; opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#fde68a; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.bad { border-color:rgba(248,113,113,0.6); color:#fca5a5; }
-  .toast.good { border-color:rgba(52,211,153,0.6); color:#86efac; }
-  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.4); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
-</style>
+    /* Retour */
+    .btn-retour { margin:10px 22px calc(env(safe-area-inset-bottom) + 14px); background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.2); border-radius:14px; padding:13px; color:rgba(255,255,255,0.7); font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
+    .btn-retour:active { opacity:0.7; }
+  </style>
 </head>
 <body>
-  <div class="container">
+<div class="page">
 
-    <!-- LOBBY -->
-    <div id="lobby">
-      <div class="header">
-        <div class="casino-logo">
-          <div class="casino-icon">🎰</div>
-          <div><div class="casino-title">BATTLE DOCK</div><div class="casino-tagline">Casino • Dock Night</div></div>
-        </div>
-        <div class="balance-box"><div class="balance-label">Liquidités</div><div class="balance-amount" id="balLobby">—</div></div>
-      </div>
-      <div class="louche">« La maison gagne toujours… sauf si t'as du bol. »</div>
-      <div class="games-grid">
-        <div class="game-card featured" onclick="openGame('slots')">
-          <div class="game-icon">🎰</div><div class="game-name">MACHINE À SOUS</div><div class="game-desc">Les rouleaux du dock · jusqu'à x60</div>
-        </div>
-        <div class="game-card dark" onclick="openGame('roul')">
-          <div class="game-icon">🎡</div><div class="game-name">ROULETTE</div><div class="game-desc">La roue du capitaine</div>
-        </div>
-        <div class="game-card" onclick="openGame('pf')">
-          <div class="game-icon">🪙</div><div class="game-name">PILE / FACE</div><div class="game-desc">Vite fait, x1,9</div>
-        </div>
-      </div>
-      <button class="quit-btn" onclick="window.location.href='game.html'">← QUITTER LE CASINO</button>
-    </div>
-
-    <!-- BET BOX (partagé, affiché dans les vues de jeu) -->
-    <template id="tpl-betbox"></template>
-
-    <!-- SLOTS -->
-    <div id="game-slots" style="display:none">
-      <div class="gv-top">
-        <button class="gv-back" onclick="backToLobby()">← Salle</button>
-        <div class="gv-title">🎰 Machine</div>
-        <div class="balance-box gv-bal"><div class="balance-label">€</div><div class="balance-amount balG">—</div></div>
-      </div>
-      <div class="bet-box">
-        <div class="bet-top"><span class="bet-lbl">Mise</span><span class="bet-val betG">1 000€</span></div>
-        <div class="chips"><div class="chip" onclick="setBet(1000)">1K</div><div class="chip" onclick="setBet(5000)">5K</div><div class="chip" onclick="setBet(10000)">10K</div><div class="chip" onclick="setBet(50000)">50K</div></div>
-      </div>
-      <div class="panel">
-        <div class="reels"><div class="reel" id="r0">🐟</div><div class="reel" id="r1">📦</div><div class="reel" id="r2">⚓</div></div>
-        <button class="play-btn" id="slotBtn" onclick="playSlots()">TOURNER</button>
-        <div class="result" id="slotRes"></div>
-        <div class="paytable">3× 7️⃣ = x60 · 3× 💰 = x30 · 3× 🦑 = x16 · 3× ⚓ = x10 · 3× 📦 = x6 · 3× 🐟 = x4 · paire 💰/7️⃣ = x1,2</div>
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-row">
+      <div class="hdr-title">CASINO</div>
+      <div class="hdr-balance">
+        <div class="hdr-balance-lbl">SOLDE</div>
+        <div class="hdr-balance-val" id="soldeDisplay">—</div>
       </div>
     </div>
-
-    <!-- ROULETTE -->
-    <div id="game-roul" style="display:none">
-      <div class="gv-top">
-        <button class="gv-back" onclick="backToLobby()">← Salle</button>
-        <div class="gv-title">🎡 Roulette</div>
-        <div class="balance-box gv-bal"><div class="balance-label">€</div><div class="balance-amount balG">—</div></div>
-      </div>
-      <div class="bet-box">
-        <div class="bet-top"><span class="bet-lbl">Mise</span><span class="bet-val betG">1 000€</span></div>
-        <div class="chips"><div class="chip" onclick="setBet(1000)">1K</div><div class="chip" onclick="setBet(5000)">5K</div><div class="chip" onclick="setBet(10000)">10K</div><div class="chip" onclick="setBet(50000)">50K</div></div>
-      </div>
-      <div class="panel">
-        <div class="roul-num r-green" id="roulNum">0</div>
-        <div class="roul-bets">
-          <div class="rbet red" id="rb-red" onclick="selRoul('red')">ROUGE<small>x2 · 1-7</small></div>
-          <div class="rbet green" id="rb-green" onclick="selRoul('green')">VERT<small>x14 · le 0</small></div>
-          <div class="rbet black" id="rb-black" onclick="selRoul('black')">NOIR<small>x2 · 8-14</small></div>
-        </div>
-        <button class="play-btn" id="roulBtn" onclick="playRoul()">LANCER LA BILLE</button>
-        <div class="result" id="roulRes"></div>
-        <div class="paytable">Numéros 0–14 · le 0 est vert (avantage de la maison)</div>
-      </div>
-    </div>
-
-    <!-- PILE / FACE -->
-    <div id="game-pf" style="display:none">
-      <div class="gv-top">
-        <button class="gv-back" onclick="backToLobby()">← Salle</button>
-        <div class="gv-title">🪙 Pile / Face</div>
-        <div class="balance-box gv-bal"><div class="balance-label">€</div><div class="balance-amount balG">—</div></div>
-      </div>
-      <div class="bet-box">
-        <div class="bet-top"><span class="bet-lbl">Mise</span><span class="bet-val betG">1 000€</span></div>
-        <div class="chips"><div class="chip" onclick="setBet(1000)">1K</div><div class="chip" onclick="setBet(5000)">5K</div><div class="chip" onclick="setBet(10000)">10K</div><div class="chip" onclick="setBet(50000)">50K</div></div>
-      </div>
-      <div class="panel">
-        <div class="coin" id="coin">🪙</div>
-        <div class="pf-bets"><div class="pf sel" id="pf-pile" onclick="selPf('pile')">PILE ⚓</div><div class="pf" id="pf-face" onclick="selPf('face')">FACE 🐟</div></div>
-        <button class="play-btn" id="pfBtn" onclick="playPf()">LANCER (x1,9)</button>
-        <div class="result" id="pfRes"></div>
-        <div class="paytable">50/50 · gain x1,9 la mise</div>
-      </div>
-    </div>
-
+    <div class="hdr-line"></div>
   </div>
-  <div class="toast" id="toast"></div>
+
+  <!-- Jetons -->
+  <div class="jetons-bloc">
+    <div>
+      <div class="jetons-lbl">JETONS</div>
+      <div class="jetons-val" id="jetonsDisplay">—</div>
+    </div>
+    <button class="jetons-btn" onclick="openGuichet()">+ ACHETER</button>
+  </div>
+
+  <!-- Mise -->
+  <div class="mise-wrap">
+    <div class="mise-row">
+      <div class="mise-lbl">MISE PAR PARTIE</div>
+      <div class="mise-val" id="miseVal">1 JETON</div>
+    </div>
+    <div class="mise-track"><div class="mise-fill" id="miseFill"></div></div>
+    <div class="mise-labels"><span>1</span><span>5</span><span>10</span><span>25</span></div>
+    <div class="mise-btns">
+      <div class="mise-btn active" onclick="setMise(1,0)" id="mb1"><span>×1</span></div>
+      <div class="mise-btn" onclick="setMise(5,33)" id="mb5"><span>×5</span></div>
+      <div class="mise-btn" onclick="setMise(10,66)" id="mb10"><span>×10</span></div>
+      <div class="mise-btn" onclick="setMise(25,100)" id="mb25"><span>×25</span></div>
+    </div>
+  </div>
+
+  <!-- Jeux -->
+  <div class="jeux-wrap">
+    <div class="jeux-lbl">LES JEUX</div>
+    <div class="jeu-row" onclick="lancerJeu('slots.html')">
+      <div class="jeu-icon">🎰</div>
+      <div class="jeu-name">MACHINE À SOUS</div>
+      <div class="jeu-mult">JACKPOT ×3</div>
+    </div>
+    <div class="jeu-row" onclick="lancerJeu('roulette.html')">
+      <div class="jeu-icon">🎡</div>
+      <div class="jeu-name">ROULETTE</div>
+      <div class="jeu-mult">ROUGE/NOIR ×2</div>
+    </div>
+    <div class="jeu-row" onclick="lancerJeu('blackjack.html')">
+      <div class="jeu-icon">🃏</div>
+      <div class="jeu-name">BLACKJACK</div>
+      <div class="jeu-mult">BEAT 21 ×2.5</div>
+    </div>
+    <div class="jeu-row" onclick="lancerJeu('crash.html')">
+      <div class="jeu-icon">🚀</div>
+      <div class="jeu-name">CRASH</div>
+      <div class="jeu-mult">FUSÉE ×?</div>
+    </div>
+    <div class="jeu-row" onclick="lancerJeu('higher-lower.html')">
+      <div class="jeu-icon">🎴</div>
+      <div class="jeu-name">HIGHER / LOWER</div>
+      <div class="jeu-mult">CARTES ×2</div>
+    </div>
+  </div>
+
+  <button class="btn-retour" onclick="window.location.href='game.html'">← RETOUR AU JEU</button>
+
+</div>
+
+<!-- Guichet modal -->
+<div id="guichetModal" onclick="fermerGuichet(event)" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);align-items:center;justify-content:center">
+  <div style="background:white;border-radius:22px;padding:24px 20px;max-width:320px;width:90%;text-align:center">
+    <div style="font-size:36px;margin-bottom:8px">🎟️</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:#cc1a1a;margin-bottom:2px">GUICHET</div>
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:6px">1 jeton = 500€</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#0a0a0a;margin-bottom:16px" id="guichetJetons">— 🎟️</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+      <button onclick="acheterJetons(10)" style="background:#f5f5f5;border:none;border-radius:12px;padding:13px;color:#0a0a0a;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer">10 jetons — 5 000€</button>
+      <button onclick="acheterJetons(25)" style="background:#f5f5f5;border:none;border-radius:12px;padding:13px;color:#0a0a0a;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer">25 jetons — 12 500€</button>
+      <button onclick="acheterJetons(50)" style="background:#cc1a1a;border:none;border-radius:12px;padding:13px;color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer">50 jetons — 25 000€ ⭐</button>
+    </div>
+    <button onclick="fermerGuichet()" style="width:100%;background:none;border:1px solid rgba(0,0,0,0.1);border-radius:12px;padding:11px;color:#9ca3af;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer">Fermer</button>
+  </div>
+</div>
 
 <script>
   const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const { createClient } = supabase;
+  const sb = createClient(SB_URL, SB_KEY);
 
-  const MIN_BET=1000, MAX_BET=50000;
-  let currentUser=null, money=0, bet=1000, busy=false, roulPick='red', pfPick='pile';
-  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
+  let currentUser = null;
+  let currentMise = 1;
 
-  async function init(){
+  function setMise(val, pct) {
+    currentMise = val;
+    document.getElementById('miseVal').textContent = val + ' JETON' + (val > 1 ? 'S' : '');
+    document.getElementById('miseFill').style.width = Math.max(10, pct) + '%';
+    ['mb1','mb5','mb10','mb25'].forEach(id => document.getElementById(id).classList.remove('active'));
+    document.getElementById('mb' + val).classList.add('active');
+  }
+
+  async function init() {
     const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser=session.user;
-    const { data } = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-    money=data?.money||0; updateBal();
-  }
-  function updateBal(){
-    document.getElementById('balLobby').textContent=fmt(money)+'€';
-    document.querySelectorAll('.balG').forEach(e=>e.textContent=fmt(money)+'€');
-  }
-  async function save(){ try{ await sb.from('game_stats').update({ money:Math.round(money) }).eq('user_id',currentUser.id); }catch(e){} }
+    if (!session) { window.location.href = 'index.html'; return; }
+    currentUser = session.user;
 
-  function openGame(g){
-    document.getElementById('lobby').style.display='none';
-    ['slots','roul','pf'].forEach(x=>document.getElementById('game-'+x).style.display = x===g?'block':'none');
-    window.scrollTo(0,0);
-  }
-  function backToLobby(){
-    if(busy) return;
-    ['slots','roul','pf'].forEach(x=>document.getElementById('game-'+x).style.display='none');
-    document.getElementById('lobby').style.display='block'; window.scrollTo(0,0);
-  }
+    // Vérif déblocage ch3
+    const { data: gs } = await sb.from('game_stats')
+      .select('money, jetons, story_progress')
+      .eq('user_id', currentUser.id).maybeSingle();
 
-  function setBet(v){ bet=Math.min(MAX_BET,v); document.querySelectorAll('.betG').forEach(e=>e.textContent=fmt(bet)+'€'); }
-  function canBet(){ if(busy) return false; if(bet<MIN_BET){ showToast('Mise min 1 000€','bad'); return false; } if(money<bet){ showToast('Liquidités insuffisantes','bad'); return false; } return true; }
-
-  // SLOTS
-  const SYM=['🐟','📦','⚓','🦑','💰','7️⃣'];
-  const PAY3={ '🐟':4,'📦':6,'⚓':10,'🦑':16,'💰':30,'7️⃣':60 };
-  function playSlots(){
-    if(!canBet()) return; busy=true; money-=bet; updateBal();
-    const btn=document.getElementById('slotBtn'); btn.disabled=true; document.getElementById('slotRes').textContent='';
-    const reels=[document.getElementById('r0'),document.getElementById('r1'),document.getElementById('r2')];
-    reels.forEach(r=>r.classList.add('spin'));
-    const final=[SYM[Math.floor(Math.random()*6)],SYM[Math.floor(Math.random()*6)],SYM[Math.floor(Math.random()*6)]];
-    const spinInt=setInterval(()=>reels.forEach(r=>r.textContent=SYM[Math.floor(Math.random()*6)]),80);
-    [700,1000,1300].forEach((t,i)=>setTimeout(()=>{ reels[i].textContent=final[i]; reels[i].classList.remove('spin'); },t));
-    setTimeout(()=>{ clearInterval(spinInt); settleSlots(final); busy=false; btn.disabled=false; },1400);
-  }
-  function settleSlots(f){
-    let mult=0,msg='';
-    if(f[0]===f[1]&&f[1]===f[2]){ mult=PAY3[f[0]]; msg=`3× ${f[0]} !`; }
-    else { const c={}; f.forEach(s=>c[s]=(c[s]||0)+1); if((c['💰']||0)>=2||(c['7️⃣']||0)>=2){ mult=1.2; msg='Petite paire !'; } }
-    finishRound(mult, document.getElementById('slotRes'), msg||'Raté');
-  }
-
-  // ROULETTE
-  function selRoul(c){ roulPick=c; ['red','green','black'].forEach(x=>document.getElementById('rb-'+x).classList.toggle('sel',x===c)); }
-  function colorOf(n){ return n===0?'green':(n>=1&&n<=7?'red':'black'); }
-  function playRoul(){
-    if(!canBet()) return; busy=true; money-=bet; updateBal();
-    const btn=document.getElementById('roulBtn'); btn.disabled=true; document.getElementById('roulRes').textContent='';
-    const el=document.getElementById('roulNum'); const result=Math.floor(Math.random()*15);
-    let n=0; const spin=setInterval(()=>{ n=Math.floor(Math.random()*15); el.textContent=n; el.className='roul-num r-'+colorOf(n); },70);
-    setTimeout(()=>{
-      clearInterval(spin); el.textContent=result; el.className='roul-num r-'+colorOf(result);
-      const col=colorOf(result); let mult=0;
-      if(roulPick==='green'){ if(col==='green') mult=14; } else if(roulPick===col){ mult=2; }
-      finishRound(mult, document.getElementById('roulRes'), `${result} ${col==='red'?'🔴':col==='black'?'⚫':'🟢'}`);
-      busy=false; btn.disabled=false;
-    },1500);
-  }
-
-  // PILE / FACE
-  function selPf(c){ pfPick=c; document.getElementById('pf-pile').classList.toggle('sel',c==='pile'); document.getElementById('pf-face').classList.toggle('sel',c==='face'); }
-  function playPf(){
-    if(!canBet()) return; busy=true; money-=bet; updateBal();
-    const btn=document.getElementById('pfBtn'); btn.disabled=true; document.getElementById('pfRes').textContent='';
-    const coin=document.getElementById('coin'); coin.classList.add('flip');
-    const res=Math.random()<0.5?'pile':'face';
-    setTimeout(()=>{
-      coin.classList.remove('flip'); coin.textContent=res==='pile'?'⚓':'🐟';
-      const mult=(res===pfPick)?1.9:0;
-      finishRound(mult, document.getElementById('pfRes'), res==='pile'?'PILE ⚓':'FACE 🐟');
-      busy=false; btn.disabled=false;
-    },1100);
-  }
-
-  function finishRound(mult,resEl,label){
-    if(mult>0){
-      const gain=Math.round(bet*mult); money+=gain;
-      resEl.className='result win'; resEl.textContent=`${label} · +${fmt(gain-bet)}€`;
-      showToast(`🎉 ${label} — tu gagnes ${fmt(gain)}€ !`,'good');
-    } else {
-      resEl.className='result lose'; resEl.textContent=`${label} · −${fmt(bet)}€`;
-      showToast(`Perdu… ${label}`,'bad');
+    if (!gs?.story_progress?.scene3_done) {
+      document.body.innerHTML = `<div style="min-height:100dvh;background:#cc1a1a;display:flex;align-items:center;justify-content:center;padding:20px"><div style="max-width:300px;text-align:center"><div style="font-size:64px;margin-bottom:16px">🔒</div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:white;margin-bottom:8px;letter-spacing:2px">CASINO FERMÉ</div><div style="font-size:13px;color:rgba(255,255,255,0.5);line-height:1.6;margin-bottom:24px">Se débloque au Chapitre 3 du mode Histoire</div><button onclick="window.location.href='histoire.html'" style="width:100%;padding:14px;border:none;border-radius:12px;background:white;color:#cc1a1a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;margin-bottom:8px">MODE HISTOIRE →</button><button onclick="window.location.href='game.html'" style="width:100%;padding:12px;border:1px solid rgba(255,255,255,0.25);border-radius:12px;background:transparent;color:rgba(255,255,255,0.5);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer">← Retour</button></div></div>`;
+      return;
     }
-    updateBal(); save();
+
+    window._currentUserId = currentUser.id;
+    window._currentJetons = gs?.jetons || 0;
+    document.getElementById('soldeDisplay').textContent = (gs?.money || 0).toLocaleString('fr-FR') + '€';
+    document.getElementById('jetonsDisplay').textContent = window._currentJetons + ' 🎟️';
   }
 
-  let toastT=null;
-  function showToast(msg,type){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+(type||''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast '+(type||''),2400); }
+  function openGuichet() {
+    document.getElementById('guichetJetons').textContent = (window._currentJetons || 0) + ' 🎟️';
+    document.getElementById('guichetModal').style.display = 'flex';
+  }
+
+  function fermerGuichet(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('guichetModal').style.display = 'none';
+  }
+
+  async function acheterJetons(qty) {
+    const price = qty * 500;
+    const { data: fresh } = await sb.from('game_stats').select('money,jetons').eq('user_id', window._currentUserId).maybeSingle();
+    if (!fresh || fresh.money < price) { alert('Pas assez d\'argent ! Il te faut ' + price.toLocaleString('fr-FR') + '€'); return; }
+    const newMoney  = fresh.money - price;
+    const newJetons = (fresh.jetons || 0) + qty;
+    await sb.from('game_stats').update({ money: newMoney, jetons: newJetons }).eq('user_id', window._currentUserId);
+    window._currentJetons = newJetons;
+    document.getElementById('jetonsDisplay').textContent  = newJetons + ' 🎟️';
+    document.getElementById('guichetJetons').textContent  = newJetons + ' 🎟️';
+    document.getElementById('soldeDisplay').textContent   = newMoney.toLocaleString('fr-FR') + '€';
+    fermerGuichet();
+  }
+
+  async function lancerJeu(url) {
+    if ((window._currentJetons || 0) < currentMise) { openGuichet(); return; }
+    const { data: fresh } = await sb.from('game_stats').select('jetons').eq('user_id', window._currentUserId).maybeSingle();
+    if (!fresh || fresh.jetons < currentMise) { openGuichet(); return; }
+    const newJetons = fresh.jetons - currentMise;
+    await sb.from('game_stats').update({ jetons: newJetons }).eq('user_id', window._currentUserId);
+    window._currentJetons = newJetons;
+    document.getElementById('jetonsDisplay').textContent = newJetons + ' 🎟️';
+    window.location.href = url;
+  }
 
   init();
 </script>
