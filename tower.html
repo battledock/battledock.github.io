@@ -194,12 +194,12 @@
   }
 
   const CONTAINERS = [
-    { body:'#cc2200', hi:'#e63300', lo:'#881800', label:'MAERSK' },
-    { body:'#1d4ed8', hi:'#2563eb', lo:'#1e3a8a', label:'MSC' },
-    { body:'#15803d', hi:'#16a34a', lo:'#14532d', label:'CMA CGM' },
-    { body:'#b45309', hi:'#d97706', lo:'#92400e', label:'EVERGREEN' },
-    { body:'#7c3aed', hi:'#8b5cf6', lo:'#5b21b6', label:'HAPAG' },
-    { body:'#be123c', hi:'#e11d48', lo:'#9f1239', label:'COSCO' },
+    { fill:'#E53935', shadow:'#7f1000', stripe:'#ff6659', label:'MAERSK' },
+    { fill:'#1565C0', shadow:'#003087', stripe:'#5e92f3', label:'MSC' },
+    { fill:'#2E7D32', shadow:'#005005', stripe:'#60ad5e', label:'CMA CGM' },
+    { fill:'#F57F17', shadow:'#bc5100', stripe:'#ffb04c', label:'EVERGREEN' },
+    { fill:'#7B1FA2', shadow:'#4a0072', stripe:'#ae52d4', label:'HAPAG' },
+    { fill:'#C62828', shadow:'#8e0000', stripe:'#ff5f52', label:'COSCO' },
   ];
 
   const BH = 38, MIN_W = 22;
@@ -282,43 +282,49 @@
     if (swinger) drawBlock(swinger, true);
   }
 
+  function rr(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y); ctx.arcTo(x+w, y, x+w, y+r, r);
+    ctx.lineTo(x+w, y+h-r); ctx.arcTo(x+w, y+h, x+w-r, y+h, r);
+    ctx.lineTo(x+r, y+h); ctx.arcTo(x, y+h, x, y+h-r, r);
+    ctx.lineTo(x, y+r); ctx.arcTo(x, y, x+r, y, r);
+    ctx.closePath();
+  }
+
   function drawBlock(b, moving) {
     const x = b.x, y = b.y, w = b.w, h = BH;
     if (b.ground) {
-      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x+4, y+4, w, h);
-      ctx.fillStyle = '#1a0810';         ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(x, y, w, 4);
-      ctx.strokeStyle = 'rgba(255,100,50,0.2)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = '#1a0810'; rr(ctx,x,y,w,h,4); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(x,y,w,4);
+      ctx.strokeStyle = 'rgba(255,100,50,0.15)'; ctx.lineWidth=2; rr(ctx,x,y,w,h,4); ctx.stroke();
+      // Texte sur la plateforme
+      ctx.font = 'bold 9px Inter'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillText('▼ POSE LE CONTENEUR ICI ▼', x+w/2, y+h/2);
       return;
     }
     const col = CONTAINERS[b.ci] || CONTAINERS[0];
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur  = moving ? 12 : 6;
-    ctx.shadowOffsetY = 3;
-    ctx.fillStyle = col.body; ctx.fillRect(x, y, w, h);
-    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
-    ctx.fillStyle = col.hi;               ctx.fillRect(x, y, w, 5);
-    ctx.fillStyle = col.lo;               ctx.fillRect(x, y+h-5, w, 5);
-    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1.5;
-    const n = Math.max(2, Math.floor(w/24));
+    // Corps
+    ctx.fillStyle = col.fill; rr(ctx,x,y,w,h,5); ctx.fill();
+    // Bande lumineuse haut
+    ctx.fillStyle = col.stripe; rr(ctx,x+2,y+2,w-4,10,3); ctx.fill();
+    // Rainures verticales
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 2;
+    const n = Math.max(2, Math.floor(w/28));
     for (let i=1; i<n; i++) {
-      const lx = x + (w/n)*i;
-      ctx.beginPath(); ctx.moveTo(lx, y+6); ctx.lineTo(lx, y+h-6); ctx.stroke();
+      const lx = x+(w/n)*i;
+      ctx.beginPath(); ctx.moveTo(lx,y+13); ctx.lineTo(lx,y+h-5); ctx.stroke();
     }
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x+2, y+6, w-4, 3);
-    ctx.strokeStyle = moving ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.12)';
-    ctx.lineWidth   = moving ? 2 : 0.8; ctx.strokeRect(x, y, w, h);
-    if (w > 55) {
-      ctx.font = 'bold ' + Math.min(9, Math.floor(h*0.26)) + 'px Inter';
+    // Contour BD épais
+    ctx.strokeStyle = '#0a0a0a'; ctx.lineWidth = moving ? 3.5 : 3;
+    rr(ctx,x,y,w,h,5); ctx.stroke();
+    // Label avec drop shadow
+    if (w > 50) {
+      ctx.font = 'bold 10px Inter';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = 'rgba(255,255,255,0.5)';
-      ctx.fillText(col.label, x+w/2, y+h/2);
-    }
-    if (w > 40) {
-      [[x+3,y+3],[x+w-9,y+3],[x+3,y+h-9],[x+w-9,y+h-9]].forEach(([cx,cy])=>{
-        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(cx,cy,6,6);
-        ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(cx+1,cy+1,4,4);
-      });
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText(col.label, x+w/2+1, y+h/2+1);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillText(col.label, x+w/2, y+h/2);
     }
   }
 
