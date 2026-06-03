@@ -3891,17 +3891,24 @@
     }
 
     // ── TYPEWRITER ──
-    function typewrite(el, text, speed=22, cb) {
+    let _twTimer = null;
+    function typewrite(el, text, speed, cb) {
+      if (_twTimer) { clearTimeout(_twTimer); _twTimer = null; }
       el.textContent = '';
-      el.classList.add('typewriter');
       let i = 0;
       const tick = () => {
         if (i < text.length) {
           el.textContent += text[i++];
-          setTimeout(tick, speed);
-        } else if (cb) cb();
+          _twTimer = setTimeout(tick, speed);
+        } else {
+          _twTimer = null;
+          if (cb) cb();
+        }
       };
       tick();
+    }
+    function cancelTypewrite() {
+      if (_twTimer) { clearTimeout(_twTimer); _twTimer = null; }
     }
 
     function showNarrateur(text, next, bg) {
@@ -3920,11 +3927,12 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next fade-in';
       btn.innerHTML = '▶ Continuer';
-      btn.onclick = next;
+      btn.onclick = () => { cancelTypewrite(); next(); };
       act.appendChild(btn);
     }
 
     function showChoices(choices) {
+      cancelTypewrite();
       const act = document.getElementById('actionsZone');
       act.innerHTML = '';
       const div = document.createElement('div');
