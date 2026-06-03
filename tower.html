@@ -139,7 +139,17 @@
       <div class="stat"><div class="stat-v xp" id="statXp">+0 XP</div><div class="stat-l">SESSION</div></div>
       <div class="stat"><div class="stat-v" id="statGain">0€</div><div class="stat-l">GAIN EST.</div></div>
     </div>
-    <button class="btn-poser" id="btnPoser" onclick="handleTap()" disabled>POSER</button>
+    <!-- Objectif -->
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <div id="objLabel" style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px">OBJECTIF : — ÉTAGES</div>
+        <div id="objFloor" style="font-size:8px;font-weight:700;color:rgba(255,255,255,0.25)"></div>
+      </div>
+      <div style="height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden">
+        <div id="objFill" style="height:100%;width:0%;background:#F9A825;border-radius:3px;transition:width .2s ease"></div>
+      </div>
+    </div>
+    <button class="btn-poser" id="btnPoser onclick="handleTap()" disabled>POSER</button>
     <button class="btn-back" onclick="goBack()">← RETOUR AU JEU</button>
   </div>
 </div>
@@ -206,7 +216,7 @@
   let canvas, ctx, W, H;
   let blocks = [], swinger = null, animId = null, running = false, floor = 0;
   let currentUser = null, totalMoney = 0, currentXp = 0, currentLevel = 1;
-  let sessionXp = 0, personalRecord = 0;
+  let sessionXp = 0, personalRecord = 0, objectif = 0, objectifReached = false;
 
   async function init() {
     const { data:{ session } } = await sb.auth.getSession();
@@ -218,6 +228,7 @@
     currentXp    = data?.xp     || 0;
     currentLevel = data?.level  || 1;
     personalRecord = data?.records?.tower || 0;
+    objectif = personalRecord <= 0 ? 30 : Math.ceil(personalRecord * 1.05);
     document.getElementById('hdrMoney').textContent  = totalMoney.toLocaleString('fr-FR') + '€';
     document.getElementById('hdrRecord').textContent = 'RECORD : ' + (personalRecord || '—');
     document.getElementById('ocRecord').textContent  = personalRecord || '—';
@@ -241,7 +252,7 @@
   function startGame() {
     document.getElementById('resultOverlay').style.display = 'none';
     document.getElementById('btnPoser').disabled = false;
-    blocks = []; floor = 0; sessionXp = 0;
+    blocks = []; floor = 0; sessionXp = 0; objectifReached = false;
     const gW = Math.min(W * 0.52, 200);
     blocks.push({ x:(W-gW)/2, y:H-72, w:gW, ci:-1, ground:true });
     running = true;
@@ -338,6 +349,14 @@
     blocks.push({ x: perfect ? last.x : left, y: last.y - BH - 4, w: perfect ? last.w : overlap, ci: swinger.ci });
     floor++;
     sessionXp += 5;
+    if (!objectifReached && objectif > 0 && floor >= objectif) {
+      objectifReached = true;
+      const xpBonus   = personalRecord <= 0 ? 1000 : Math.max(200, Math.ceil(personalRecord * 0.05) * 20);
+      const cashBonus = personalRecord <= 0 ? 1000 : Math.max(500, Math.ceil(personalRecord * 0.05) * 50);
+      sessionXp += xpBonus;
+      totalMoney += cashBonus;
+      showFlash('OBJECTIF BATTU ! +' + cashBonus + '€ +' + xpBonus + ' XP 🎯');
+    }
     if (perfect) { showFlash('PARFAIT ! 🎯'); sessionXp += 5; }
     if (navigator.vibrate) navigator.vibrate(perfect ? [40,20,40] : 15);
     spawn();
@@ -351,6 +370,12 @@
     document.getElementById('statMult').textContent = '×' + mult;
     document.getElementById('statXp').textContent   = '+' + sessionXp + ' XP';
     document.getElementById('statGain').textContent = gain.toLocaleString('fr-FR') + '€';
+    // Objectif
+    const objPct = objectif > 0 ? Math.min(floor / objectif * 100, 100) : 0;
+    document.getElementById('objFill').style.width = objPct + '%';
+    document.getElementById('objFill').style.background = objectifReached ? '#4ade80' : '#F9A825';
+    document.getElementById('objLabel').textContent = objectifReached ? '✓ OBJECTIF BATTU' : 'OBJECTIF : ' + objectif + ' ÉTAGES';
+    document.getElementById('objLabel').style.color = objectifReached ? '#4ade80' : 'rgba(255,255,255,0.4)';
   }
 
   async function gameOver() {

@@ -529,6 +529,8 @@
       checkLevelUp();
       updateDisplay();
       save();
+      // Sauvegarder meilleur shift dans records
+      saveClickRecord();
 
       overlay.querySelector('#popupEncaisser').onclick = () => {
         document.body.removeChild(overlay);
@@ -668,6 +670,16 @@
   }
 
   // ── Save ──
+  async function saveClickRecord() {
+    if (!currentUser || clicks === 0) return;
+    try {
+      const { data: fresh } = await sb.from('game_stats').select('records').eq('user_id', currentUser.id).maybeSingle();
+      const rec = fresh?.records || {};
+      rec.clicker_clicks = (rec.clicker_clicks || 0) + clicks;
+      await sb.from('game_stats').update({ records: rec }).eq('user_id', currentUser.id);
+    } catch(e) { console.error(e); }
+  }
+
   async function save() {
     if (!currentUser) return;
     const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
@@ -686,6 +698,7 @@
     const btn = document.getElementById('backBtn');
     btn.textContent = '💾...'; btn.disabled = true;
     try {
+      await saveClickRecord();
       await sb.from('game_stats').update({
         money: Math.floor(totalMoney),
         xp:    Math.floor(currentXp),
