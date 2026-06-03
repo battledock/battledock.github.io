@@ -1,43 +1,101 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tower — Combo</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#111; padding:24px; display:flex; justify-content:center; font-family:'Inter',sans-serif; }
-.phone { width:375px;height:720px;overflow:hidden;position:relative;border-radius:44px;box-shadow:0 32px 80px rgba(0,0,0,0.7); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>La Tour — Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script>
+    (function() {
+      if (sessionStorage.getItem('bd_pass') === 'froid') return;
+      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
+        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
+      }).then(r=>r.json()).then(d=>{
+        if (d?.[0]?.value !== 'true') return;
+        const ov = document.createElement('div');
+        ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
+        ov.innerHTML=`<div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center"><div style="font-size:48px;margin-bottom:12px">🔒</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div><input id="mInput" type="password" placeholder="Code d'accès..." style="width:100%;padding:12px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px"><button onclick="if(document.getElementById('mInput').value==='froid'){sessionStorage.setItem('bd_pass','froid');location.reload();}else{document.getElementById('mErr').style.display='block'}" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button><div id="mErr" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div></div>`;
+        document.body.appendChild(ov);
+      }).catch(()=>{});
+    })();
+  </script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+    html, body { height:100%; overflow:hidden; }
+    body { font-family:'Inter',sans-serif; height:100dvh; display:flex; flex-direction:column; position:relative; }
+
+    /* Fond SVG fixe */
+    #bg { position:fixed; inset:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+
+    /* Layout */
+    .page { position:relative; z-index:5; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+
+    /* Header TA style */
+    .hdr { padding:calc(env(safe-area-inset-top) + 44px) 22px 0; flex-shrink:0; display:flex; justify-content:space-between; align-items:flex-start; }
+    .hdr-left .hdr-label { font-family:'Bebas Neue',sans-serif; font-size:28px; color:rgba(255,255,255,0.65); letter-spacing:3px; line-height:1; }
+    .hdr-left .hdr-floor { font-family:'Bebas Neue',sans-serif; font-size:88px; color:white; line-height:0.9; margin-top:-4px; text-shadow:3px 3px 0 rgba(0,0,0,0.2); }
+    .hdr-right { text-align:right; padding-top:6px; }
+    .hdr-right .hdr-money { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#FDD835; line-height:1; text-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .hdr-right .hdr-session-lbl { font-size:9px; font-weight:700; color:rgba(255,255,255,0.4); letter-spacing:2px; margin-top:2px; }
+    .hdr-right .hdr-record { font-size:9px; font-weight:700; color:rgba(255,255,255,0.22); letter-spacing:1px; margin-top:4px; }
+
+    /* Canvas */
+    .game-area { flex:1; position:relative; overflow:hidden; }
+    #towerCanvas { position:absolute; top:0; left:0; }
+
+    /* Stats + bouton bas */
+    .bottom { padding:0 18px; flex-shrink:0; }
+    .stats-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+    .stat { background:rgba(0,0,0,0.22); border:2px solid rgba(0,0,0,0.2); border-radius:12px; padding:10px; text-align:center; }
+    .stat-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:white; }
+    .stat-v.xp { color:#FDD835; }
+    .stat-l { font-size:7px; font-weight:700; color:rgba(255,255,255,0.4); letter-spacing:1px; margin-top:1px; }
+
+    .btn-poser { width:100%; background:rgba(74,222,128,0.92); border:none; border-radius:16px; padding:18px; color:white; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px; cursor:pointer; box-shadow:0 4px 20px rgba(74,222,128,0.35); margin-bottom:calc(env(safe-area-inset-bottom) + 14px); }
+    .btn-poser:active { transform:scale(0.97); }
+    .btn-poser:disabled { opacity:0.4; }
+    .btn-back { width:100%; background:transparent; border:none; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; cursor:pointer; padding-bottom:calc(env(safe-area-inset-bottom) + 18px); display:block; }
+
+    /* Overlays */
+    .overlay { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; background:rgba(0,0,0,0.45); backdrop-filter:blur(4px); }
+    .ocard { background:white; border-radius:24px; padding:32px 24px; width:100%; max-width:320px; text-align:center; animation:popIn .4s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes popIn { from{transform:scale(0.8);opacity:0} to{transform:scale(1);opacity:1} }
+    .ocard-icon { font-size:52px; margin-bottom:8px; }
+    .ocard-title { font-family:'Bebas Neue',sans-serif; font-size:34px; color:#0a0a0a; letter-spacing:1px; line-height:1; margin-bottom:4px; }
+    .ocard-sub { font-size:13px; color:#6b7280; margin-bottom:20px; }
+    .ocard-reward { background:#f0f9f0; border-radius:16px; padding:16px; margin-bottom:16px; display:flex; justify-content:center; gap:24px; }
+    .reward-val { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#16a34a; line-height:1; }
+    .reward-lbl { font-size:9px; font-weight:700; color:#9ca3af; letter-spacing:1px; margin-top:3px; }
+    .reward-div { width:1px; background:#e5e7eb; }
+    .ocard-stats { display:flex; justify-content:space-between; margin-bottom:20px; padding:0 4px; }
+    .ostat-v { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#0a0a0a; }
+    .ostat-l { font-size:8px; font-weight:700; color:#9ca3af; letter-spacing:1px; }
+    .btn-start { width:100%; background:#0a0a0a; border:none; border-radius:14px; padding:14px; color:white; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; margin-bottom:10px; }
+    .btn-start.green { background:rgba(74,222,128,0.92); }
+    .btn-retour { width:100%; background:transparent; border:none; color:#9ca3af; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; }
+
+    /* Flash parfait */
+    .flash { position:fixed; top:40%; left:50%; transform:translate(-50%,-50%); font-family:'Bebas Neue',sans-serif; font-size:28px; color:#4ade80; letter-spacing:3px; pointer-events:none; z-index:100; animation:flashAnim .7s ease-out forwards; text-shadow:0 0 20px rgba(74,222,128,0.6); }
+    @keyframes flashAnim { 0%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-80%) scale(1.3)} }
+  </style>
 </head>
 <body>
-<div class="phone">
 
-<!-- Design 3 : Aube rosée méditerranée -->
-<svg style="position:absolute;inset:0;width:100%;height:100%" viewBox="0 0 375 720" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<!-- Fond Aube rosée -->
+<svg id="bg" viewBox="0 0 375 720" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0d0520"/><stop offset="35%" stop-color="#5c1a3a"/><stop offset="65%" stop-color="#c0306a"/><stop offset="100%" stop-color="#ff8c42"/></linearGradient>
     <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a0c18"/><stop offset="100%" stop-color="#1a0408"/></linearGradient>
     <filter id="glow"><feGaussianBlur stdDeviation="14"/></filter>
   </defs>
   <rect width="375" height="720" fill="url(#sky)"/>
-  <!-- Halo horizon -->
   <ellipse cx="188" cy="560" rx="240" ry="90" fill="rgba(255,140,66,0.28)" filter="url(#glow)"/>
-  <!-- Étoiles -->
   <g fill="white"><circle cx="30" cy="35" r="1" opacity="0.6"/><circle cx="80" cy="18" r="0.9" opacity="0.5"/><circle cx="140" cy="42" r="0.7" opacity="0.4"/><circle cx="310" cy="22" r="1" opacity="0.5"/><circle cx="350" cy="48" r="0.8" opacity="0.45"/><circle cx="200" cy="15" r="0.8" opacity="0.5"/></g>
-  <!-- Silhouettes bâtiments fond -->
-  <g fill="#060210">
-    <rect x="0" y="350" width="28" height="212"/><rect x="30" y="330" width="22" height="232"/>
-    <rect x="54" y="358" width="18" height="204"/>
-    <rect x="298" y="338" width="28" height="224"/><rect x="328" y="322" width="24" height="240"/><rect x="354" y="348" width="21" height="214"/>
-  </g>
-  <!-- Fenêtres bâtiments fond -->
+  <g fill="#060210"><rect x="0" y="350" width="28" height="212"/><rect x="30" y="330" width="22" height="232"/><rect x="54" y="358" width="18" height="204"/><rect x="298" y="338" width="28" height="224"/><rect x="328" y="322" width="24" height="240"/><rect x="354" y="348" width="21" height="214"/></g>
   <g fill="rgba(255,180,80,0.2)"><rect x="5" y="366" width="4" height="3"/><rect x="14" y="358" width="4" height="3"/><rect x="35" y="348" width="4" height="3"/><rect x="302" y="355" width="4" height="3"/><rect x="333" y="340" width="4" height="3"/></g>
-  <!-- Mer sombre -->
   <rect x="0" y="562" width="375" height="158" fill="url(#sea)"/>
   <path d="M0,566 Q47,556 94,566 Q141,576 188,566 Q235,556 282,566 Q329,576 375,566" fill="none" stroke="rgba(200,80,50,0.2)" stroke-width="1.5"/>
-  <!-- Quai sombre -->
   <rect x="0" y="530" width="375" height="34" fill="#080310"/>
   <line x1="0" y1="530" x2="375" y2="530" stroke="#1a0810" stroke-width="2.5"/>
   <!-- Containers quai colorés -->
@@ -48,67 +106,301 @@ body { background:#111; padding:24px; display:flex; justify-content:center; font
   <rect x="124" y="494" width="62" height="38" rx="3" fill="#2E7D32" stroke="#0a0a0a" stroke-width="2.5"/>
   <line x1="145" y1="494" x2="145" y2="532" stroke="#0a0a0a" stroke-width="1.5"/><line x1="165" y1="494" x2="165" y2="532" stroke="#0a0a0a" stroke-width="1.5"/>
   <rect x="270" y="497" width="58" height="34" rx="3" fill="#F57F17" stroke="#0a0a0a" stroke-width="2.5"/>
-  <!-- TOUR containers colorés -->
-  <rect x="150" y="454" width="88" height="42" rx="3" fill="#E53935" stroke="#0a0a0a" stroke-width="3"/>
+  <!-- Tour déco -->
+  <rect x="150" y="454" width="88" height="42" rx="3" fill="#E53935" stroke="#0a0a0a" stroke-width="2.5"/>
   <line x1="179" y1="454" x2="179" y2="496" stroke="#0a0a0a" stroke-width="1.5"/><line x1="208" y1="454" x2="208" y2="496" stroke="#0a0a0a" stroke-width="1.5"/>
-  <rect x="154" y="412" width="80" height="42" rx="3" fill="#1565C0" stroke="#0a0a0a" stroke-width="3"/>
-  <line x1="181" y1="412" x2="181" y2="454" stroke="#0a0a0a" stroke-width="1.5"/>
-  <rect x="158" y="370" width="72" height="42" rx="3" fill="#2E7D32" stroke="#0a0a0a" stroke-width="3"/>
-  <rect x="162" y="328" width="64" height="42" rx="3" fill="#F57F17" stroke="#0a0a0a" stroke-width="3"/>
-  <rect x="166" y="286" width="56" height="42" rx="3" fill="#E53935" stroke="#0a0a0a" stroke-width="3"/>
-  <!-- Container oscillant coloré -->
-  <rect x="46" y="232" width="80" height="38" rx="3" fill="#1565C0" stroke="#0a0a0a" stroke-width="3" opacity="0.92"/>
-  <line x1="68" y1="232" x2="68" y2="270" stroke="#0a0a0a" stroke-width="1.5"/>
-  <line x1="86" y1="30" x2="86" y2="232" stroke="#0a0a0a" stroke-width="2" stroke-dasharray="5,4"/>
-  <!-- Grue BD jaune -->
-  <rect x="72" y="20" width="12" height="512" fill="#F9C846" stroke="#0a0a0a" stroke-width="3"/>
-  <rect x="72" y="20" width="130" height="10" fill="#F9C846" stroke="#0a0a0a" stroke-width="3"/>
-  <rect x="198" y="30" width="7" height="38" fill="#F9C846" stroke="#0a0a0a" stroke-width="2.5"/>
-  <line x1="77" y1="20" x2="112" y2="60" stroke="#0a0a0a" stroke-width="2.5"/>
-  <rect x="88" y="68" width="28" height="20" rx="2" fill="#F9C846" stroke="#0a0a0a" stroke-width="2"/>
-  <rect x="58" y="528" width="24" height="8" rx="4" fill="#2a2a2a" stroke="#0a0a0a" stroke-width="2"/>
-  <rect x="0" y="0" width="375" height="280" fill="rgba(13,5,32,0.15)"/>
+  <rect x="154" y="412" width="80" height="42" rx="3" fill="#1565C0" stroke="#0a0a0a" stroke-width="2.5"/>
+  <rect x="158" y="370" width="72" height="42" rx="3" fill="#2E7D32" stroke="#0a0a0a" stroke-width="2.5"/>
 </svg>
 
-<!-- TA : Affichage étage + argent GRAND -->
-<div style="position:absolute;top:0;left:0;right:0;z-index:10;padding:52px 22px 0">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start">
-    <div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:32px;color:rgba(255,255,255,0.75);letter-spacing:3px;line-height:1">ÉTAGE</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:88px;color:white;line-height:0.9;margin-top:-4px;text-shadow:3px 3px 0 rgba(0,0,0,0.2)">5</div>
+<div class="page">
+  <!-- Header -->
+  <div class="hdr">
+    <div class="hdr-left">
+      <div class="hdr-label">ÉTAGE</div>
+      <div class="hdr-floor" id="hdrFloor">0</div>
     </div>
-    <div style="text-align:right;padding-top:6px">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:#FDD835;line-height:1;text-shadow:2px 2px 0 rgba(0,0,0,0.2)">2 200€</div>
-      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:2px;margin-top:2px">GAINS</div>
-      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-top:4px">RECORD : 12</div>
+    <div class="hdr-right">
+      <div class="hdr-money" id="hdrMoney">0€</div>
+      <div class="hdr-session-lbl">SESSION</div>
+      <div class="hdr-record" id="hdrRecord">RECORD : —</div>
     </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="game-area" id="gameArea">
+    <canvas id="towerCanvas"></canvas>
+  </div>
+
+  <!-- Stats + boutons -->
+  <div class="bottom">
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-v" id="statMult">×1.0</div><div class="stat-l">MULTIPLICATEUR</div></div>
+      <div class="stat"><div class="stat-v xp" id="statXp">+0 XP</div><div class="stat-l">SESSION</div></div>
+      <div class="stat"><div class="stat-v" id="statGain">0€</div><div class="stat-l">GAIN EST.</div></div>
+    </div>
+    <button class="btn-poser" id="btnPoser" onclick="handleTap()" disabled>POSER</button>
+    <button class="btn-back" onclick="goBack()">← RETOUR</button>
   </div>
 </div>
 
-<!-- Stats barre milieu -->
-<div style="position:absolute;bottom:130px;left:22px;right:22px;z-index:10">
-  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-    <div style="background:rgba(0,0,0,0.22);border:2px solid rgba(0,0,0,0.25);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:white">×1.5</div>
-      <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-top:1px">MULTIPLICATEUR</div>
-    </div>
-    <div style="background:rgba(0,0,0,0.22);border:2px solid rgba(0,0,0,0.25);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#FDD835">+35 XP</div>
-      <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-top:1px">SESSION</div>
-    </div>
-    <div style="background:rgba(0,0,0,0.22);border:2px solid rgba(0,0,0,0.25);border-radius:12px;padding:10px;text-align:center">
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:white">12</div>
-      <div style="font-size:7px;font-weight:700;color:rgba(255,255,255,0.45);letter-spacing:1px;margin-top:1px">RECORD</div>
-    </div>
+    <div class="ocard-title">LA TOUR</div>
+    <div class="ocard-sub">Empile les containers. Plus haut = plus d'argent.</div>
+    <button class="btn-start green" id="startBtn" style="display:none" onclick="startGame()">▶ C'EST PARTI</button>
+    <button class="btn-retour" onclick="goBack()">← Retour</button>
   </div>
 </div>
 
-<!-- Bouton POSER style Nuit Mistral -->
-<div style="position:absolute;bottom:0;left:0;right:0;z-index:10;padding:0 22px 36px">
-  <button style="width:100%;background:rgba(74,222,128,0.92);border:none;border-radius:16px;padding:18px;color:white;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;box-shadow:0 4px 20px rgba(74,222,128,0.35)">POSER</button>
-  <button style="width:100%;background:transparent;border:none;color:rgba(255,255,255,0.35);font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;margin-top:8px">← RETOUR</button>
+<!-- Overlay résultat -->
+<div class="overlay" id="resultOverlay" style="display:none">
+  <div class="ocard">
+    <div class="ocard-icon" id="ocIcon">😅</div>
+    <div class="ocard-title" id="ocTitle">Aïe !</div>
+    <div class="ocard-sub" id="ocSub">0 étage construit</div>
+    <div class="ocard-reward">
+      <div style="text-align:center"><div class="reward-val" id="ocGain">0€</div><div class="reward-lbl">GAGNÉ</div></div>
+      <div class="reward-div"></div>
+      <div style="text-align:center"><div class="reward-val" id="ocXp" style="color:#7c3aed">+0</div><div class="reward-lbl">XP</div></div>
+    </div>
+    <div class="ocard-stats">
+      <div style="text-align:center"><div class="ostat-v" id="ocFloors">0</div><div class="ostat-l">ÉTAGES</div></div>
+      <div style="text-align:center"><div class="ostat-v" id="ocMult">×1.0</div><div class="ostat-l">MULTIPLICATEUR</div></div>
+      <div style="text-align:center"><div class="ostat-v" id="ocRecord">—</div><div class="ostat-l">RECORD</div></div>
+    </div>
+    <button class="btn-start green" onclick="startGame()">▶ REJOUER</button>
+    <button class="btn-retour" onclick="goBack()" style="margin-top:8px">← Retour</button>
+  </div>
 </div>
 
-</div>
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const { createClient } = supabase;
+  const sb = createClient(SB_URL, SB_KEY);
+
+  function getXpRequired(lvl) {
+    if (lvl <= 10) return lvl * 500;
+    if (lvl <= 25) return lvl * 1000;
+    if (lvl <= 50) return lvl * 2000;
+    return lvl * 4000;
+  }
+  function getGrade(lvl) {
+    if (lvl <= 4)  return 'Docker Occasionnel';
+    if (lvl <= 14) return 'Docker';
+    if (lvl <= 29) return 'Docker Mensuel';
+    if (lvl <= 49) return 'Contre-Maître';
+    if (lvl <= 79) return 'Chef de Quai';
+    return 'Magnat du Port';
+  }
+
+  const CONTAINERS = [
+    { body:'#cc2200', hi:'#e63300', lo:'#881800', label:'MAERSK' },
+    { body:'#1d4ed8', hi:'#2563eb', lo:'#1e3a8a', label:'MSC' },
+    { body:'#15803d', hi:'#16a34a', lo:'#14532d', label:'CMA CGM' },
+    { body:'#b45309', hi:'#d97706', lo:'#92400e', label:'EVERGREEN' },
+    { body:'#7c3aed', hi:'#8b5cf6', lo:'#5b21b6', label:'HAPAG' },
+    { body:'#be123c', hi:'#e11d48', lo:'#9f1239', label:'COSCO' },
+  ];
+
+  const BH = 38, MIN_W = 22;
+  let canvas, ctx, W, H;
+  let blocks = [], swinger = null, animId = null, running = false, floor = 0;
+  let currentUser = null, totalMoney = 0, currentXp = 0, currentLevel = 1;
+  let sessionXp = 0, personalRecord = 0;
+
+  async function init() {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+    currentUser = session.user;
+    const { data } = await sb.from('game_stats')
+      .select('money,level,xp,records').eq('user_id', currentUser.id).maybeSingle();
+    totalMoney   = data?.money  || 0;
+    currentXp    = data?.xp     || 0;
+    currentLevel = data?.level  || 1;
+    personalRecord = data?.records?.tower || 0;
+    document.getElementById('hdrMoney').textContent  = totalMoney.toLocaleString('fr-FR') + '€';
+    document.getElementById('hdrRecord').textContent = 'RECORD : ' + (personalRecord || '—');
+    document.getElementById('ocRecord').textContent  = personalRecord || '—';
+    if (currentLevel >= 5) {
+      document.getElementById('startBtn').style.display = 'block';
+    } else {
+      document.getElementById('startOverlay').querySelector('.ocard').innerHTML =
+        '<div class="ocard-icon">🔒</div><div class="ocard-title">Niveau 5 requis</div><div class="ocard-sub" style="margin-bottom:20px">Tu es niveau ' + currentLevel + '. Continue au port !</div><button class="btn-retour" onclick="goBack()">← Retour</button>';
+    }
+  }
+
+  function initCanvas() {
+    canvas = document.getElementById('towerCanvas');
+    const a = document.getElementById('gameArea');
+    W = a.clientWidth; H = a.clientHeight;
+    canvas.width = W; canvas.height = H;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx = canvas.getContext('2d');
+  }
+
+  function startGame() {
+    document.getElementById('resultOverlay').style.display = 'none';
+    document.getElementById('btnPoser').disabled = false;
+    blocks = []; floor = 0; sessionXp = 0;
+    initCanvas();
+    const gW = Math.min(W * 0.52, 200);
+    blocks.push({ x:(W-gW)/2, y:H-72, w:gW, ci:-1, ground:true });
+    running = true;
+    spawn();
+    cancelAnimationFrame(animId);
+    loop();
+    updateBar();
+  }
+
+  function spawn() {
+    const last  = blocks[blocks.length-1];
+    const speed = Math.min(1.6 + floor * 0.14, 7);
+    let sy = last.y - BH - 4;
+    if (sy < H * 0.22) {
+      const shift = Math.round(H * 0.22 - sy) + BH + 8;
+      blocks.forEach(b => b.y += shift);
+      sy = blocks[blocks.length-1].y - BH - 4;
+    }
+    swinger = { x:-last.w, y:sy, w:last.w, speed, dir:1, ci: floor % CONTAINERS.length };
+  }
+
+  let lastTime = 0;
+  function loop(ts = 0) {
+    if (!running) return;
+    const dt = Math.min((ts - lastTime) / 16.67, 2);
+    lastTime = ts;
+    swinger.x += swinger.speed * swinger.dir * dt;
+    if (swinger.x + swinger.w > W + 20) swinger.dir = -1;
+    if (swinger.x < -20)                swinger.dir =  1;
+    draw();
+    animId = requestAnimationFrame(loop);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    blocks.forEach(b => drawBlock(b, false));
+    if (swinger) drawBlock(swinger, true);
+  }
+
+  function drawBlock(b, moving) {
+    const x = b.x, y = b.y, w = b.w, h = BH;
+    if (b.ground) {
+      ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x+4, y+4, w, h);
+      ctx.fillStyle = '#1a0810';         ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.03)'; ctx.fillRect(x, y, w, 4);
+      ctx.strokeStyle = 'rgba(255,100,50,0.2)'; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+      return;
+    }
+    const col = CONTAINERS[b.ci] || CONTAINERS[0];
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur  = moving ? 12 : 6;
+    ctx.shadowOffsetY = 3;
+    ctx.fillStyle = col.body; ctx.fillRect(x, y, w, h);
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    ctx.fillStyle = col.hi;               ctx.fillRect(x, y, w, 5);
+    ctx.fillStyle = col.lo;               ctx.fillRect(x, y+h-5, w, 5);
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 1.5;
+    const n = Math.max(2, Math.floor(w/24));
+    for (let i=1; i<n; i++) {
+      const lx = x + (w/n)*i;
+      ctx.beginPath(); ctx.moveTo(lx, y+6); ctx.lineTo(lx, y+h-6); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.fillRect(x+2, y+6, w-4, 3);
+    ctx.strokeStyle = moving ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.12)';
+    ctx.lineWidth   = moving ? 2 : 0.8; ctx.strokeRect(x, y, w, h);
+    if (w > 55) {
+      ctx.font = 'bold ' + Math.min(9, Math.floor(h*0.26)) + 'px Inter';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.fillText(col.label, x+w/2, y+h/2);
+    }
+    if (w > 40) {
+      [[x+3,y+3],[x+w-9,y+3],[x+3,y+h-9],[x+w-9,y+h-9]].forEach(([cx,cy])=>{
+        ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(cx,cy,6,6);
+        ctx.fillStyle='rgba(255,255,255,0.2)'; ctx.fillRect(cx+1,cy+1,4,4);
+      });
+    }
+  }
+
+  function handleTap() {
+    if (!running || !swinger) return;
+    const last    = blocks[blocks.length-1];
+    const left    = Math.max(swinger.x, last.x);
+    const right   = Math.min(swinger.x + swinger.w, last.x + last.w);
+    const overlap = right - left;
+    if (overlap <= 0 || overlap < MIN_W) { gameOver(); return; }
+    const perfect = overlap / last.w > 0.92;
+    blocks.push({ x: perfect ? last.x : left, y: last.y - BH - 4, w: perfect ? last.w : overlap, ci: swinger.ci });
+    floor++;
+    sessionXp += 5;
+    if (perfect) { showFlash('PARFAIT ! 🎯'); sessionXp += 5; }
+    if (navigator.vibrate) navigator.vibrate(perfect ? [40,20,40] : 15);
+    spawn();
+    updateBar();
+    document.getElementById('hdrFloor').textContent = floor;
+  }
+
+  function updateBar() {
+    const mult = (1 + floor * 0.1).toFixed(1);
+    const gain = Math.floor(floor * 20 * parseFloat(mult));
+    document.getElementById('statMult').textContent = '×' + mult;
+    document.getElementById('statXp').textContent   = '+' + sessionXp + ' XP';
+    document.getElementById('statGain').textContent = gain.toLocaleString('fr-FR') + '€';
+  }
+
+  async function gameOver() {
+    running = false;
+    cancelAnimationFrame(animId);
+    document.getElementById('btnPoser').disabled = true;
+    if (navigator.vibrate) navigator.vibrate([80,40,150]);
+    const mult = parseFloat((1 + floor * 0.1).toFixed(1));
+    const gain = Math.floor(floor * 20 * mult);
+    const xpGain = sessionXp + 20;
+    const titles = [['😅','Aïe !'],['📦','Pas mal !'],['🏗️','Belle tour !'],['⭐','Impressionnant !'],['🏆','LÉGENDAIRE !']];
+    const t = floor===0?0:floor<5?1:floor<10?2:floor<20?3:4;
+    document.getElementById('ocIcon').textContent  = titles[t][0];
+    document.getElementById('ocTitle').textContent = titles[t][1];
+    document.getElementById('ocSub').textContent   = floor + ' étage' + (floor>1?'s':'') + ' construits';
+    document.getElementById('ocGain').textContent  = gain > 0 ? '+' + gain.toLocaleString('fr-FR') + '€' : '0€';
+    document.getElementById('ocXp').textContent    = '+' + xpGain;
+    document.getElementById('ocFloors').textContent = floor;
+    document.getElementById('ocMult').textContent   = '×' + mult;
+    // Nouveau record ?
+    const newRecord = Math.max(personalRecord, floor);
+    if (floor > personalRecord) personalRecord = floor;
+    document.getElementById('ocRecord').textContent  = newRecord;
+    document.getElementById('hdrRecord').textContent = 'RECORD : ' + newRecord;
+    document.getElementById('resultOverlay').style.display = 'flex';
+    if (currentUser) {
+      const { data: fresh } = await sb.from('game_stats').select('money,xp,records').eq('user_id', currentUser.id).maybeSingle();
+      const newMoney = (fresh?.money||0) + gain;
+      totalMoney = newMoney;
+      let newXp   = (fresh?.xp||0) + xpGain;
+      let newLevel = currentLevel;
+      while (newXp >= getXpRequired(newLevel)) { newXp -= getXpRequired(newLevel); newLevel++; }
+      const records = fresh?.records || {};
+      records.tower = Math.max(records.tower||0, floor);
+      await sb.from('game_stats').update({
+        money: newMoney, xp: newXp, level: newLevel,
+        grade: getGrade(newLevel), records
+      }).eq('user_id', currentUser.id);
+      document.getElementById('hdrMoney').textContent = newMoney.toLocaleString('fr-FR') + '€';
+    }
+  }
+
+  function showFlash(txt) {
+    const el = document.createElement('div');
+    el.className = 'flash'; el.textContent = txt;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 700);
+  }
+
+  async function goBack() {
+    running = false; cancelAnimationFrame(animId);
+    window.location.href = 'travail.html';
+  }
+
+  init().then(() => startGame());
+</script>
 </body>
 </html>
