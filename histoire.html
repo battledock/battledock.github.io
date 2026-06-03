@@ -17,10 +17,7 @@
     .scene-bg { position:fixed; inset:0; z-index:0; overflow:hidden; }
 
     /* HEADER */
-    .header { position:relative; z-index:10; flex-shrink:0; padding:11px 16px; display:flex; align-items:center; gap:12px; background:rgba(30,10,60,0.7); backdrop-filter:blur(12px); border-bottom:1px solid rgba(167,139,250,0.15); }
-    .back-btn { background:rgba(167,139,250,0.1); border:1px solid rgba(167,139,250,0.25); color:rgba(196,181,253,0.8); padding:7px 12px; border-radius:8px; cursor:pointer; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; }
-    .header-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:3px; color:rgba(196,181,253,0.8); flex:1; text-align:center; text-shadow:0 0 16px rgba(167,139,250,0.5); }
-    .header-ch { font-size:11px; color:rgba(255,255,255,0.3); font-weight:700; letter-spacing:1px; }
+
 
     /* MENU CHAPITRES */
     .menu-wrap { position:relative; z-index:2; flex:1; overflow-y:auto; padding:16px 14px 40px; display:flex; flex-direction:column; gap:10px; max-width:500px; margin:0 auto; width:100%; overscroll-behavior:none; }
@@ -249,11 +246,7 @@
     <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#a78bfa,#7c3aed,transparent);animation:bgScan 3s linear infinite;pointer-events:none"></div>
   </div>
 
-  <div class="header" style="display:none">
-    <button class="back-btn" id="backBtn" onclick="goBack()">← RETOUR</button>
-    <div class="header-title" id="headerTitle">📖 HISTOIRE</div>
-    <div class="header-ch" id="headerCh"></div>
-  </div>
+
 
   <!-- MENU -->
   <div id="menuView" class="menu-wrap" style="display:none">
@@ -1323,8 +1316,6 @@
       document.body.classList.add('histoire-menu');
       document.getElementById('menuView').style.display = 'flex';
       document.getElementById('sceneView').style.display = 'none';
-      document.getElementById('headerTitle').textContent = '📖 HISTOIRE';
-      document.getElementById('headerCh').textContent = '';
       activeChapter = null;
       setNight(false);
 
@@ -1335,7 +1326,6 @@
       const pct = Math.round(doneCount / total * 100);
       const curId = (chs.find(c => !c.coming && (!c.requires || progress[c.requires]) && !progress[c.doneKey]) || chs.filter(c => !c.coming).slice(-1)[0] || chs[chs.length-1]).id;
 
-      const hdr = document.querySelector('.header'); if (hdr) hdr.style.display = 'none';
       const xbtn = document.getElementById('mapClose'); if (xbtn) xbtn.style.display = 'flex';
 
       // Regrouper par acte
@@ -1428,9 +1418,6 @@
       document.body.classList.remove('histoire-menu');
       document.getElementById('menuView').style.display = 'none';
       document.getElementById('sceneView').style.display = 'flex';
-      document.getElementById('headerTitle').textContent = ch.title.toUpperCase();
-      document.getElementById('headerCh').textContent = 'CH.' + ch.id;
-      const _hdr = document.querySelector('.header'); if (_hdr) _hdr.style.display = '';
       const _x = document.getElementById('mapClose'); if (_x) _x.style.display = 'none';
 
       if (ch.id === 1) startChapter1();
@@ -1574,6 +1561,7 @@
     }
 
     async function finishChapter3() {
+      if (progress['scene3_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('xp,money,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene3_done: true };
@@ -1591,8 +1579,6 @@
       // Afficher récompense
       document.getElementById('menuView').style.display = 'none';
       document.getElementById('sceneView').style.display = 'flex';
-      document.getElementById('headerTitle').textContent = 'LES COLLÈGUES';
-      document.getElementById('headerCh').textContent = 'CH.3';
 
       setChar('gegé', 'Gégé', 'refectoire');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
@@ -1603,8 +1589,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
       addBonusButton('ch3_bonus','☕ Sers la tournée', playMiniCh3);
     }
@@ -1678,6 +1662,7 @@
     }
 
     async function finishChapter4() {
+      if (progress['scene4_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene4_done: true };
@@ -1707,8 +1692,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -1795,6 +1778,7 @@
     }
 
     async function finishChapter5() {
+      if (progress['scene5_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene5_done: true };
@@ -1822,8 +1806,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -1885,6 +1867,7 @@
     }
 
     async function finishChapter6() {
+      if (progress['scene6_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene6_done: true };
@@ -1912,8 +1895,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -1972,6 +1953,7 @@
     }
 
     async function finishChapter7() {
+      if (progress['scene7_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene7_done: true };
@@ -1999,8 +1981,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2127,6 +2107,7 @@
     }
 
     async function finishChapter8() {
+      if (progress['scene8_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene8_done: true };
@@ -2154,8 +2135,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2200,6 +2179,7 @@
     }
 
     async function finishChapter9() {
+      if (progress['scene9_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene9_done: true };
@@ -2227,8 +2207,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2507,6 +2485,7 @@
     }
 
     async function finishChapter10() {
+      if (progress['scene10_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene10_done: true };
@@ -2534,8 +2513,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2579,6 +2556,7 @@
       showNext(() => finishChapter11());
     }
     async function finishChapter11() {
+      if (progress['scene11_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene11_done: true };
@@ -2605,8 +2583,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2644,6 +2620,7 @@
       showNarrateur("Tu refermes la main sur la clé du Bureau de la Direction. Derrière son sourire crispé, Lavagne te regarde monter... et ça ne lui plaît pas du tout.", () => finishChapter12(), 'direction_bg');
     }
     async function finishChapter12() {
+      if (progress['scene12_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,diamonds,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene12_done: true };
@@ -2671,8 +2648,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2716,6 +2691,7 @@
       showNarrateur("Gégé te glisse une pince et un sourire mauvais. Mickaël te fixe de loin : il a compris que tu venais d'entrer dans la cour des grands.", () => finishChapter13(), 'sabotage_bg');
     }
     async function finishChapter13() {
+      if (progress['scene13_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene13_done: true };
@@ -2742,8 +2718,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2781,6 +2755,7 @@
       showNext(() => finishChapter14());
     }
     async function finishChapter14() {
+      if (progress['scene14_done']) { showMenu(); return; }
       try {
         const { data: fresh } = await sb.from('game_stats').select('money,xp,level,commerce,story_progress').eq('user_id', currentUser.id).maybeSingle();
         const newProgress = { ...(fresh?.story_progress||{}), scene14_done: true };
@@ -2811,7 +2786,6 @@
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next'; btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres'; btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2901,7 +2875,6 @@
       act.appendChild(badge);
       const btn = document.createElement('button');
       btn.className = 'btn-next'; btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres'; btn.onclick = showMenu;
       act.appendChild(btn);
     }
 
@@ -2953,6 +2926,7 @@
       showNext(next);
     }
     async function finishChapter16() {
+      if (progress['scene16_done']) { showMenu(); return; }
       const money = 2000 + ch16Gain.m;
       const xpGain = 800 + ch16Gain.x;
       try {
@@ -2971,7 +2945,6 @@
       const badge = document.createElement('div'); badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">📺</div><div class="badge-title">Star du Port</div><div class="badge-desc">+' + money.toLocaleString('fr-FR') + '€ · +' + xpGain.toLocaleString('fr-FR') + ' XP (selon tes répliques)</div>';
       act.appendChild(badge);
-      const btn = document.createElement('button'); btn.className='btn-next'; btn.style.marginTop='8px'; btn.innerHTML='← Retour aux chapitres'; btn.onclick=showMenu; act.appendChild(btn);
     }
 
     // ── CHAPITRE 17 : Le Roi du Port ──
@@ -3052,7 +3025,6 @@
       const badge = document.createElement('div'); badge.className='badge-wrap';
       badge.innerHTML = '<div class="badge-icon">'+(elected?'👑':'🎉')+'</div><div class="badge-title">'+(elected?'Roi du Port':'Tribun du Port')+'</div><div class="badge-desc">+' + money.toLocaleString('fr-FR') + '€ · +' + xpGain.toLocaleString('fr-FR') + ' XP (selon tes choix + ton discours)</div>';
       act.appendChild(badge);
-      const btn = document.createElement('button'); btn.className='btn-next'; btn.style.marginTop='8px'; btn.innerHTML='← Retour aux chapitres'; btn.onclick=showMenu; act.appendChild(btn);
     }
 
     // ── CHAPITRE 18 : Le Coup de Mistral ──
@@ -3126,6 +3098,7 @@
       showNext(next);
     }
     async function finishChapter18() {
+      if (progress['scene18_done']) { showMenu(); return; }
       const money = 4000 + ch18Gain.m;
       const xpGain = 1200 + ch18Gain.x;
       try {
@@ -3144,7 +3117,6 @@
       const badge = document.createElement('div'); badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">⛈️</div><div class="badge-title">Héros de la Tempête</div><div class="badge-desc">+' + money.toLocaleString('fr-FR') + '€ · +' + xpGain.toLocaleString('fr-FR') + ' XP (selon tes choix)</div>';
       act.appendChild(badge);
-      const btn = document.createElement('button'); btn.className='btn-next'; btn.style.marginTop='8px'; btn.innerHTML='← Retour aux chapitres'; btn.onclick=showMenu; act.appendChild(btn);
     }
 
     // ===== Helper réaction (Gégé) =====
@@ -3328,7 +3300,6 @@
       const badge = document.createElement('div'); badge.className = 'badge-wrap';
       badge.innerHTML = '<div class="badge-icon">' + icon + '</div><div class="badge-title">' + title + '</div><div class="badge-desc">' + desc + '</div>';
       act.appendChild(badge);
-      const btn = document.createElement('button'); btn.className='btn-next'; btn.style.marginTop='8px'; btn.innerHTML='← Retour aux chapitres'; btn.onclick=showMenu; act.appendChild(btn);
     }
 
     // ── CHAPITRE 2 ──
@@ -3406,8 +3377,6 @@
     async function showRewardCh2() {
       document.getElementById('menuView').style.display = 'none';
       document.getElementById('sceneView').style.display = 'flex';
-      document.getElementById('headerTitle').textContent = 'AU BOULOT';
-      document.getElementById('headerCh').textContent = 'CH.2';
 
       setChar('gegé', 'Gégé', 'port_matin');
       document.getElementById('dialogueText').className = 'dialogue-text fade-in';
@@ -3424,8 +3393,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
-      btn.onclick = showMenu;
       act.appendChild(btn);
       addBonusButton('ch2_bonus','📦 Charge les caisses', playMiniCh2);
 
@@ -3659,7 +3626,6 @@
       const btn = document.createElement('button');
       btn.className = 'btn-next';
       btn.style.marginTop = '8px';
-      btn.innerHTML = '← Retour aux chapitres';
       btn.onclick = finishChapter1;
       act.appendChild(btn);
       addBonusButton('ch1_bonus','🕐 Le Pointage', playMiniCh1);
