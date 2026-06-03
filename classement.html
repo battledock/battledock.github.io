@@ -498,6 +498,29 @@
         ? `Niv. ${p.level||1}`
         : `${(p.money||0).toLocaleString('fr-FR')}€`;
     }
+    function getCompanyDesc(co, username) {
+      const level = co.level || 1;
+      const ipo = co.ipo;
+      const descs = [
+        [`Fondée dans un garage du Panier par ${username}. Le garage est toujours là.`,
+         `${username} a lancé ça entre deux pauses clope. Ça marche mieux qu'attendu.`,
+         `L'idée est venue à ${username} après un pastis. Plusieurs pastis, en fait.`],
+        [`Maintenant ${username} a des employés. Ils ne savent pas trop pourquoi.`,
+         `L'entreprise grandit. ${username} dort moins bien.`,
+         `Niveau ${level}, soit dit en passant. Les concurrents tremblent légèrement.`],
+        [`${username} a failli tout lâcher au niveau 8. Contenu(e) de ne pas l'avoir fait.`,
+         `Désormais incontournable sur le port. Au moins dans la tête de ${username}.`,
+         `Les rumeurs disent que même la Direction du Port les connaît maintenant.`],
+        [`Entreprise familiale, même si la famille ne le sait pas encore.`,
+         `${ipo ? `En bourse depuis peu. Les actionnaires sont ${username} et ses amis.` : `Pas encore en bourse. ${username} résiste à la pression.`}`,
+         `Niveau ${level} atteint après des semaines de labeur acharné.`],
+      ];
+      const seed = (co.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+      const tier = level <= 3 ? 0 : level <= 7 ? 1 : level <= 12 ? 2 : 3;
+      const list = descs[tier];
+      return list[seed % list.length];
+    }
+
     function bizValuation(com){ if(!com||!com.company||!com.company.name) return 0; const l=com.company.level||1; const iph=l*2000*(com.ipo?1.5:1); return iph*150; }
     function escapeHtml(t){ return (t||'').replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
@@ -536,15 +559,23 @@
         const numDisplay = medals[rank] || rank;
         if (currentTab === 'entreprises') {
           const co = p.commerce.company;
+          const slogan = co.slogan || '';
+          const desc   = getCompanyDesc(co, p.profile.username);
           return `
-          <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})">
-            <div class="row-num">${numDisplay}</div>
-            <div class="row-avatar" style="background:${co.color||'#d97706'};display:flex;align-items:center;justify-content:center;font-size:22px">${co.logo||'🏢'}</div>
-            <div class="row-info">
-              <div class="row-name" style="display:flex;align-items:center;gap:6px">${escapeHtml(co.name)}${co.ipo?' 📈':''}${isMe?' 👈':''}</div>
-              <div class="row-grade">${escapeHtml(co.type||'Entreprise')} · par ${escapeHtml(p.profile.username)}</div>
+          <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})" style="flex-direction:column;align-items:stretch;padding:10px 14px;gap:6px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="row-num" style="min-width:28px">${numDisplay}</div>
+              <div class="row-avatar" style="background:${co.color||'#d97706'};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">${co.logo||'🏢'}</div>
+              <div style="flex:1;min-width:0">
+                <div class="row-name" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${escapeHtml(co.name)}${co.ipo?'<span style=\"font-size:10px;background:#16a34a;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700\">📈 EN BOURSE</span>':''}${isMe?' 👈':''}</div>
+                <div style="font-size:10px;color:#9ca3af;margin-top:1px">${escapeHtml(co.type||'Entreprise')} · nv.${co.level||1} · par ${escapeHtml(p.profile.username)}</div>
+              </div>
+              <div class="row-score" style="flex-shrink:0">${score(p)}</div>
             </div>
-            <div class="row-score">${score(p)}</div>
+            <div style="margin-left:38px;padding:7px 10px;background:rgba(255,255,255,0.04);border-left:3px solid ${co.color||'#d97706'};border-radius:0 6px 6px 0">
+              ${slogan ? `<div style="font-size:11px;font-style:italic;color:rgba(255,255,255,0.75);margin-bottom:3px">"${escapeHtml(slogan)}"</div>` : ''}
+              <div style="font-size:10px;color:rgba(255,255,255,0.35)">${escapeHtml(desc)}</div>
+            </div>
           </div>`;
         }
         const _co = (p.commerce && p.commerce.company && p.commerce.company.name) ? p.commerce.company : null;
