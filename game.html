@@ -1423,9 +1423,17 @@
       if (_levelUpBusy) return;
       const level = stats.level || 1, lastShown = stats.last_levelup_shown || 1;
       if (level <= lastShown) return;
+
+      // Garde sessionStorage : empêche tout re-déclenchement dans la même session navigateur
+      // (protection contre lecture Supabase en retard ou navigation rapide)
+      const ssKey = 'bd_lvlup_' + (currentUser?.id || 'x');
+      const ssLevel = parseInt(sessionStorage.getItem(ssKey) || '0');
+      if (level <= ssLevel) return;
+      sessionStorage.setItem(ssKey, level); // marquer immédiatement côté client
+
       _levelUpBusy = true;
       try {
-        // Marquer IMMÉDIATEMENT pour empêcher tout double-octroi (ré-entrée / concurrence)
+        // Marquer IMMÉDIATEMENT en base pour empêcher le double-octroi multi-onglets
         await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
         stats.last_levelup_shown = level;
         // Cumuler les récompenses de TOUS les niveaux franchis
