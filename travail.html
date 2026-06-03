@@ -14,332 +14,176 @@
         headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
       }).then(r=>r.json()).then(d=>{
         if (d?.[0]?.value !== 'true') return;
-        // Afficher le popup maintenance
         const overlay = document.createElement('div');
-        overlay.id = 'maintenanceOverlay';
         overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
-        overlay.innerHTML = `
-          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
-            <div style="font-size:48px;margin-bottom:12px">🔒</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
-            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
-            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
-            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
-          </div>`;
+        overlay.innerHTML = `<div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center"><div style="font-size:48px;margin-bottom:12px">🔒</div><div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div><div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div><button onclick="document.body.removeChild(this.closest('[style*=fixed]'))" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">OK</button></div>`;
         document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
       }).catch(()=>{});
     })();
   </script>
 
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+    html, body { height:100%; overflow:hidden; }
     body {
       font-family:'Inter',sans-serif;
-      background:linear-gradient(180deg,#e8f4fb 0%,#c8e8f5 25%,#8ec8e8 55%,#2d91c2 75%,#1a6a9a 100%);
-      min-height:100dvh;
-      display:flex; flex-direction:column;
-      overflow-y:auto;
+      height:100dvh;
+      display:flex;
+      flex-direction:column;
       position:relative;
+      overflow:hidden;
     }
 
-    /* MER EN BAS */
-    body::after {
-      content:'';
-      position:fixed; bottom:0; left:0; right:0; height:70px; z-index:0; pointer-events:none;
-      background:linear-gradient(180deg,#1a7ab8,#0d4a70);
+    /* Fond dégradé bleu */
+    .bg {
+      position:fixed; inset:0; z-index:0;
+      background:linear-gradient(180deg, #0d2d6e 0%, #1565C0 100%);
     }
 
-    /* VAGUES */
-    .waves-wrap { display:none; }
-    @keyframes sunFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-
-    /* HEADER */
-    .header { display:none; }
-    .back-btn { display:none; }
-    .header-title { display:none; }
-    .header-anchor { display:none; }
-
-    /* HERO */
-    .hero {
-      position:relative; z-index:2;
-      padding:calc(28px + env(safe-area-inset-top)) 20px 14px;
-      text-align:center;
+    /* Soleil coin haut droit */
+    .bg-sun {
+      position:fixed; top:0; right:0; z-index:1; pointer-events:none;
     }
-    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:30px; letter-spacing:4px; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,0.15); }
-    .hero-sub { font-size:10px; color:#1a1a1a; letter-spacing:2px; margin-top:5px; font-weight:700; }
 
-    /* CONTENU */
-    .content {
-      position:relative; z-index:2;
+    /* Contenu scrollable */
+    .page {
+      position:relative; z-index:5;
       flex:1; display:flex; flex-direction:column;
-      align-items:stretch;
-      padding:16px 16px 90px; gap:12px;
+      overflow-y:auto; overflow-x:hidden;
+      padding-bottom:env(safe-area-inset-bottom);
     }
 
-    /* CARTE */
-    .game-card {
-      width:100%; max-width:400px;
-      border-radius:18px; overflow:hidden;
+    /* Header */
+    .header {
+      padding:calc(env(safe-area-inset-top) + 44px) 22px 0;
+      flex-shrink:0;
+    }
+    .header-title {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:48px; letter-spacing:3px;
+      color:white; line-height:0.95;
+    }
+    .header-sub {
+      font-size:10px; font-weight:700;
+      color:rgba(255,255,255,0.35);
+      letter-spacing:3px; margin-top:8px;
+    }
+
+    /* Cards zone */
+    .cards {
+      flex:1;
+      padding:22px 18px 0;
+      display:flex; flex-direction:column; gap:12px;
+    }
+
+    /* Card verre */
+    .card {
+      background:rgba(255,255,255,0.1);
+      border:1px solid rgba(255,255,255,0.18);
+      border-radius:20px;
+      padding:20px;
+      display:flex; align-items:center; gap:16px;
       cursor:pointer;
-      box-shadow:0 4px 24px rgba(0,0,0,0.18);
-      transition:transform 0.15s ease, box-shadow 0.15s ease;
-      background:#fff;
-    }
-    .game-card:active { transform:scale(0.97); box-shadow:0 2px 10px rgba(0,0,0,0.15); }
-
-    /* PREVIEW CLICKER */
-    .preview-clicker {
-      height:150px; position:relative; overflow:hidden;
-      background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#c8a882 55%,#8b7355 100%);
-    }
-    .pc-sun { position:absolute; top:12px; right:18px; width:38px; height:38px; border-radius:50%; background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 20px rgba(251,191,36,0.6); animation:pcFloat 4s ease-in-out infinite; }
-    .pc-cloud { position:absolute; top:16px; left:14px; font-size:24px; opacity:0.8; animation:pcFloat 5s ease-in-out infinite; animation-delay:-2s; }
-    .pc-grue { position:absolute; right:20px; top:18px; font-size:30px; opacity:0.6; }
-    .pc-container {
-      position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-      width:100px; height:66px;
-      background:linear-gradient(135deg,#cc2200,#991100);
-      border-radius:6px; border:2px solid rgba(255,255,255,0.2);
-      box-shadow:0 6px 20px rgba(0,0,0,0.5), 0 0 16px rgba(204,34,0,0.3);
-      overflow:hidden; display:flex; align-items:center; justify-content:center;
-      animation:pcFloat 2.5s ease-in-out infinite;
-    }
-    .pc-stripe { position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.25); }
-    .pc-label { font-family:'Bebas Neue',sans-serif; font-size:12px; color:rgba(255,255,255,0.85); letter-spacing:2px; position:relative; z-index:1; }
-    @keyframes pcFloat { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-7px)} }
-
-    /* PREVIEW TOWER */
-    .preview-tower {
-      height:150px; position:relative; overflow:hidden;
-      background:#111;
-    }
-    .pt-bg {
-      position:absolute; inset:0;
-      background:
-        repeating-linear-gradient(0deg,transparent,transparent 14px,rgba(255,255,255,0.02) 14px,rgba(255,255,255,0.02) 15px),
-        repeating-linear-gradient(90deg,transparent,transparent 29px,rgba(255,255,255,0.015) 29px,rgba(255,255,255,0.015) 30px);
-    }
-    .pt-beam-h { position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(180deg,#1e1e1e,#2a2a2a); border-bottom:1px solid #333; }
-    .pt-beam-v { position:absolute; top:0; bottom:0; width:6px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a,#1a1a1a); }
-    .pt-lamp { position:absolute; top:0; display:flex; flex-direction:column; align-items:center; }
-    .pt-lamp-body { width:18px; height:10px; background:#222; border-radius:2px; border:1px solid #333; }
-    .pt-lamp-cone { width:0; height:0; border-left:30px solid transparent; border-right:30px solid transparent; border-top:45px solid rgba(255,215,60,0.07); }
-    .pt-floor { position:absolute; bottom:0; left:0; right:0; height:12px; background:#222; border-top:2px solid #2d2d2d; }
-    .pt-danger { position:absolute; bottom:0; left:0; right:0; height:8px; background:repeating-linear-gradient(90deg,#f59e0b,#f59e0b 14px,#111 14px,#111 28px); opacity:0.45; }
-    .pt-stack { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column-reverse; align-items:center; gap:2px; }
-    .pt-block { height:14px; border-radius:2px; border:1px solid rgba(255,255,255,0.15); }
-
-    /* INFO BAS DE CARTE */
-    .card-info { background:white; padding:14px 16px; display:flex; align-items:center; gap:12px; }
-    .card-icon-wrap { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-    .card-icon-blue { background:linear-gradient(135deg,#0ea5e9,#1d4ed8); box-shadow:0 4px 12px rgba(14,165,233,0.3); }
-    .card-icon-amber { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 4px 12px rgba(245,158,11,0.3); }
-    .card-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; color:#1a1a1a; }
-    .card-desc  { font-size:11px; color:#9ca3af; margin-top:1px; }
-    .card-badge { font-size:9px; font-weight:700; padding:3px 10px; border-radius:20px; flex-shrink:0; }
-    .badge-green  { background:rgba(22,163,74,0.1);  color:#16a34a; }
-    .badge-purple { background:rgba(124,58,237,0.1); color:#7c3aed; }
-    .badge-lock   { background:rgba(107,114,128,0.1); color:#6b7280; }
-
-    /* POLISH CARTES */
-    .game-card {
-      border:1px solid rgba(255,255,255,0.14);
-      box-shadow:0 14px 44px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.18);
-    }
-    @media (hover:hover) {
-      .game-card:hover { transform:translateY(-3px); box-shadow:0 22px 56px rgba(0,0,0,0.5); }
-    }
-    /* dégradé d'ombre en bas de l'illustration pour la profondeur */
-    .game-card > div:first-child::after {
-      content:''; position:absolute; left:0; right:0; bottom:0; height:54px;
-      background:linear-gradient(180deg, transparent, rgba(0,0,0,0.28)); pointer-events:none;
-    }
-    /* barre info : fine séparation + léger dégradé */
-    .game-card > div:last-child {
-      border-top:1px solid rgba(0,0,0,0.05);
-      background:linear-gradient(180deg,#ffffff,#f7f8fa) !important;
-    }
-    .game-card button { transition:transform 0.12s ease, box-shadow 0.12s ease; }
-    .game-card button:active { transform:scale(0.93); }
-    /* accent sous le hero */
-    .hero-sub { position:relative; padding-bottom:10px; }
-    .hero-sub::after {
-      content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%);
-      width:46px; height:2px; border-radius:2px;
-      background:linear-gradient(90deg,transparent,rgba(37,99,235,0.5),transparent);
-    }
-    /* CARTES STATS — Design papier craie */
-    .scard {
-      position:relative; width:100%; background:#fff;
-      border-radius:12px; overflow:hidden;
-      border:none; box-shadow:0 4px 16px rgba(0,0,0,0.08);
-      cursor:pointer; transition:transform .12s ease;
-      animation:scardIn .5s cubic-bezier(.22,1,.36,1) both;
-    }
-    .scard.b1 { animation-delay:.04s; }
-    .scard.b2 { animation-delay:.10s; }
-    .scard.b3 { animation-delay:.16s; }
-    .scard:active { transform:scale(0.98); }
-    @keyframes scardIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
-    /* Miniature visuelle */
-    .scard-vis { height:80px; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-    .scard-vis-icon { font-size:50px; opacity:0.12; }
-    .scard-vis-label { position:absolute; bottom:8px; left:12px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:rgba(255,255,255,0.7); }
-    /* Info */
-    .scard-head { display:flex; align-items:center; gap:12px; padding:12px 14px; border-top:1px solid rgba(0,0,0,0.05); }
-    .scard-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; box-shadow:0 3px 10px rgba(0,0,0,0.15); }
-    .scard-id { flex:1; min-width:0; }
-    .scard-title { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:1px; color:#1a1a1a; line-height:1; }
-    .scard-sub { font-size:10px; color:rgba(0,0,0,0.3); margin-top:2px; }
-    .scard-play { border:none; border-radius:9px; color:#fff; font-family:'Bebas Neue',sans-serif;
-      font-size:12px; letter-spacing:1px; padding:9px 14px; cursor:pointer; flex-shrink:0; transition:transform .12s; }
-    .scard-play:active { transform:scale(0.92); }
-    .scard-play.blue  { background:linear-gradient(135deg,#0ea5e9,#1d4ed8); }
-    .scard-play.amber { background:linear-gradient(135deg,#f59e0b,#d97706); }
-    .scard-play.purple{ background:linear-gradient(135deg,#818cf8,#4338ca); }
-    .scard-stats { display:flex; gap:6px; padding:0 12px 12px; }
-    .stat { flex:1; background:#f7f5f0; border:1px solid rgba(0,0,0,0.06); border-radius:8px; padding:8px 6px; text-align:center; }
-    .stat-val { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:0.5px; color:#1a1a1a; }
-    .stat-lbl { font-size:8px; color:rgba(0,0,0,0.25); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
-  </style>
-  <style id="navRedesign" disabled>
-    /* ===== Barre de navigation — unifiée ===== */
-    .bottom-nav{ display:none !important;
-
-      position:fixed; left:50%; transform:translateX(-50%); bottom:0;
-      width:100%; max-width:600px; height:56px; z-index:200;
-      display:flex; align-items:stretch;
-      padding:0 4px env(safe-area-inset-bottom) 4px;
-      background:#fff;
-      border-top:1px solid rgba(15,23,42,0.07);
-      box-shadow:0 -2px 14px rgba(15,23,42,0.06);
-    }
-    .bottom-nav .bn-item{
-      flex:1; min-width:0; border:none; background:transparent; cursor:pointer;
-      display:flex; align-items:center; justify-content:center;
-      position:relative; padding:0;
       -webkit-tap-highlight-color:transparent;
+      transition:background .15s;
     }
-    /* pastille — toujours visible, teintée par section */
-    .bottom-nav .bn-item::before{
-      content:''; position:absolute; top:10px; left:50%;
-      width:44px; height:34px; border-radius:12px;
-      transform:translateX(-50%);
-      opacity:0; background:#94a3b8; background-size:220% 100%;
-      transition:opacity .22s ease;
-      z-index:0;
+    .card.featured {
+      background:rgba(255,255,255,0.14);
+      border-color:rgba(255,255,255,0.25);
     }
-    .bottom-nav .bn-item[data-tab="histoire"]::before{   background-image:linear-gradient(120deg,#a78bfa,#8b5cf6,#a78bfa); }
-    .bottom-nav .bn-item[data-tab="travail"]::before{    background-image:linear-gradient(120deg,#38bdf8,#0ea5e9,#38bdf8); }
-    .bottom-nav .bn-item[data-tab="jeux"]::before{       background-image:linear-gradient(120deg,#f472b6,#ec4899,#f472b6); }
-    .bottom-nav .bn-item[data-tab="boutique"]::before{   background-image:linear-gradient(120deg,#fbbf24,#f59e0b,#fbbf24); }
-    .bottom-nav .bn-item[data-tab="classement"]::before{ background-image:linear-gradient(120deg,#34d399,#10b981,#34d399); }
-    /* actif : pleine opacité + respiration douce */
-    .bottom-nav .bn-item.active::before{
-      opacity:1;
-      animation:pillBreath 2.8s ease-in-out infinite;
+    .card-text { flex:1; }
+    .card-title {
+      font-family:'Bebas Neue',sans-serif;
+      font-size:19px; letter-spacing:1px;
+      color:white; margin-bottom:4px;
     }
-    @keyframes pillBreath{
-      0%,100%{ transform:translateX(-50%) scale(1);     background-position:0%   50%; }
-      50%{     transform:translateX(-50%) scale(1.06); background-position:100% 50%; }
+    .card-sub {
+      font-size:10px;
+      color:rgba(255,255,255,0.4);
+      line-height:1.4;
     }
-    /* icône */
-    .bottom-nav .bn-item .bn-ic{
-      position:relative; z-index:1; font-size:22px; line-height:1;
-      transition:transform .26s cubic-bezier(.34,1.56,.5,1), opacity .22s ease;
-      opacity:.6;
+    .card-arrow {
+      width:36px; height:36px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      font-size:14px; font-weight:700; flex-shrink:0;
     }
-    .bottom-nav .bn-item .bn-ic svg{ display:none !important; }
-    .bottom-nav .bn-item .bn-lb{ display:none; }
-    .bottom-nav .bn-item.active .bn-ic{ transform:translateY(-2px) scale(1.18); opacity:1; }
-    .bottom-nav .bn-item:active{ opacity:.7; }
-    @media (prefers-reduced-motion:reduce){
-      .bottom-nav .bn-item.active::before{ animation:none; }
+    .card.featured .card-arrow {
+      background:white; color:#1565C0;
     }
-    /* ===== Histoire plein écran ===== */
-    body.histoire-full #installBanner{ display:none !important; }
-    body.histoire-full #histoireCard{
-      position:fixed; top:0; left:50%; transform:translateX(-50%);
-      bottom:calc(56px + env(safe-area-inset-bottom));
-      width:100%; max-width:600px; height:auto !important;
-      margin:0 !important; border-radius:0 !important; z-index:150;
+    .card:not(.featured) .card-arrow {
+      background:rgba(255,255,255,0.15); color:white;
+    }
+
+    /* Bouton retour bas */
+    .footer {
+      padding:16px 18px calc(env(safe-area-inset-bottom) + 28px);
+      flex-shrink:0;
+    }
+    .btn-back {
+      width:100%;
+      background:rgba(255,255,255,0.07);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:14px;
+      padding:14px;
+      color:rgba(255,255,255,0.4);
+      font-family:'Bebas Neue',sans-serif;
+      font-size:15px; letter-spacing:2px;
+      cursor:pointer;
     }
   </style>
 </head>
 <body>
 
-  <!-- VAGUES -->
-  <div class="waves-wrap">
-    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z" fill="rgba(8,30,52,0.55)"/>
-      <path d="M0,80 C360,40 720,110 1080,70 C1260,50 1350,90 1440,80 L1440,120 L0,120 Z" fill="rgba(4,18,36,0.6)"/>
-    </svg>
-  </div>
+  <div class="bg"></div>
 
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-title">Choisir une activité</div>
-    <div class="hero-sub">Port de Marseille · Battle Dock</div>
-  </div>
+  <!-- Soleil SVG -->
+  <svg class="bg-sun" width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="220" cy="0" r="200" fill="rgba(255,255,255,0.025)"/>
+    <circle cx="220" cy="0" r="150" fill="rgba(255,255,255,0.04)"/>
+    <circle cx="220" cy="0" r="105" fill="rgba(255,255,255,0.06)"/>
+    <circle cx="220" cy="0" r="68" fill="rgba(255,255,255,0.09)"/>
+    <circle cx="220" cy="0" r="38" fill="rgba(255,255,255,0.15)"/>
+    <circle cx="220" cy="0" r="16" fill="white"/>
+  </svg>
 
-  <div class="content">
+  <div class="page">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">TRAVAILLER</div>
+      <div class="header-sub">CHOISIR UN POSTE</div>
+    </div>
 
-    <!-- PORT MARITIME -->
-    <div class="scard b1" onclick="window.location.href='clicker.html'">
-      <div class="scard-vis" style="background:linear-gradient(135deg,#0a1628,#1e3a8a)">
-        <div class="scard-vis-icon">⚓</div>
-        <div class="scard-vis-label">PORT MARITIME</div>
+    <!-- Cards -->
+    <div class="cards">
+      <div class="card featured" onclick="window.location.href='clicker.html'">
+        <div class="card-text">
+          <div class="card-title">Cliquez sur le conteneur</div>
+          <div class="card-sub">Clique et gagne argent + XP</div>
+        </div>
+        <div class="card-arrow">▶</div>
       </div>
-      <div class="scard-head">
-        <div class="scard-icon" style="background:linear-gradient(135deg,#0ea5e9,#1d4ed8)">⚓</div>
-        <div class="scard-id"><div class="scard-title">Port Maritime</div><div class="scard-sub">Clique · gagne argent + XP</div></div>
-        <button class="scard-play blue">JOUER</button>
+
+      <div class="card" id="towerCard" onclick="window.location.href='tower.html'">
+        <div class="card-text">
+          <div class="card-title">La tour des conteneurs</div>
+          <div class="card-sub">Empile · plus haut = plus de gains</div>
+        </div>
+        <div class="card-arrow">▶</div>
       </div>
-      <div class="scard-stats">
-        <div class="stat"><div class="stat-val" id="clkMoney">—</div><div class="stat-lbl">€ / clic</div></div>
-        <div class="stat"><div class="stat-val" id="clkXp">—</div><div class="stat-lbl">XP / clic</div></div>
+
+      <div class="card" id="pointeauCard" onclick="window.location.href='pointeau.html'">
+        <div class="card-text">
+          <div class="card-title">Vérifiez les informations</div>
+          <div class="card-sub">Conforme au manifeste ? OUI / NON</div>
+        </div>
+        <div class="card-arrow">▶</div>
       </div>
     </div>
 
-    <!-- TOWER -->
-    <div class="scard b2" id="towerCard" onclick="window.location.href='tower.html'">
-      <div class="scard-vis" style="background:linear-gradient(135deg,#1a0e00,#92400e)">
-        <div class="scard-vis-icon">🏗️</div>
-        <div class="scard-vis-label">TOWER OF CONTAINERS</div>
-      </div>
-      <div class="scard-head">
-        <div class="scard-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">🏗️</div>
-        <div class="scard-id"><div class="scard-title">Tower of Containers</div><div class="scard-sub">Empile · plus haut = plus de gains</div></div>
-        <button class="scard-play amber" id="towerBtn">JOUER</button>
-      </div>
-      <div class="scard-stats">
-        <div class="stat"><div class="stat-val" id="twFloor">—</div><div class="stat-lbl">Record étages</div></div>
-        <div class="stat"><div class="stat-val" id="twGain">—</div><div class="stat-lbl">Meilleur gain</div></div>
-      </div>
+    <!-- Retour bas -->
+    <div class="footer">
+      <button class="btn-back" onclick="window.location.href='game.html'">← RETOUR AU JEU</button>
     </div>
-
-    <!-- POINTEAU -->
-    <div class="scard b3" id="pointeauCard" onclick="window.location.href='pointeau.html'">
-      <div class="scard-vis" style="background:linear-gradient(135deg,#0f0a2a,#3b0764)">
-        <div class="scard-vis-icon">📋</div>
-        <div class="scard-vis-label">LE POINTEAU</div>
-      </div>
-      <div class="scard-head">
-        <div class="scard-icon" style="background:linear-gradient(135deg,#818cf8,#4338ca)">📋</div>
-        <div class="scard-id"><div class="scard-title">Le Pointeau</div><div class="scard-sub">Conforme au manifeste ? OUI / NON</div></div>
-        <button class="scard-play purple" id="pointeauBtn">JOUER</button>
-      </div>
-      <div class="scard-stats">
-        <div class="stat"><div class="stat-val" id="ptScore">—</div><div class="stat-lbl">Record score</div></div>
-        <div class="stat"><div class="stat-val" id="ptCombo">—</div><div class="stat-lbl">Combo max</div></div>
-        <div class="stat"><div class="stat-val" id="ptGain">—</div><div class="stat-lbl">Meilleur gain</div></div>
-      </div>
-    </div>
-
   </div>
 
   <script>
@@ -348,72 +192,35 @@
     const { createClient } = supabase;
     const sb = createClient(SB_URL, SB_KEY);
 
-    // Vérifier déblocage via histoire CH.2
-    async function init() {
-      const { data:{ session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      const { data } = await sb.from('game_stats')
-        .select('story_progress, money_per_click, xp_per_click, records')
-        .eq('user_id', session.user.id).maybeSingle();
-      const progress = data?.story_progress || {};
-      const rec = (data?.records && typeof data.records==='object') ? data.records : {};
-      const fmt = n => (n||0).toLocaleString('fr-FR');
+    // Verrouiller tour et pointeau si pas encore débloqués
+    async function checkUnlocks() {
+      try {
+        const uid = JSON.parse(localStorage.getItem('bd_user') || 'null')?.id;
+        if (!uid) return;
+        const { data } = await sb.from('game_stats')
+          .select('story_progress')
+          .eq('user_id', uid)
+          .maybeSingle();
+        const sp = data?.story_progress || {};
 
-      // Stats clicker
-      setStat('clkMoney', fmt(Math.min(data?.money_per_click||1, 30)) + '€');
-      setStat('clkXp',    fmt(Math.min(data?.xp_per_click||1, 11)));
-      // Stats tower
-      setStat('twFloor', rec.tower_floor ? rec.tower_floor : '—');
-      setStat('twGain',  rec.tower_gain  ? fmt(rec.tower_gain)+'€' : '—');
-      // Stats pointeau
-      setStat('ptScore', rec.pointeau_score ? rec.pointeau_score : '—');
-      setStat('ptCombo', rec.pointeau_combo ? '×'+rec.pointeau_combo : '—');
-      setStat('ptGain',  rec.pointeau_gain  ? fmt(rec.pointeau_gain)+'€' : '—');
+        const towerCard = document.getElementById('towerCard');
+        const pointeauCard = document.getElementById('pointeauCard');
 
-      if (!progress.scene2_done) {
-        lockGameCard('towerCard', 'towerBtn');
-        lockGameCard('pointeauCard', 'pointeauBtn');
-      }
+        if (!sp.scene2_done) {
+          towerCard.style.opacity = '0.35';
+          towerCard.style.pointerEvents = 'none';
+          towerCard.querySelector('.card-sub').textContent = 'Débloque en terminant le chapitre 2';
+          towerCard.querySelector('.card-arrow').textContent = '🔒';
+        }
+        if (!sp.scene2_done) {
+          pointeauCard.style.opacity = '0.35';
+          pointeauCard.style.pointerEvents = 'none';
+          pointeauCard.querySelector('.card-sub').textContent = 'Débloque en terminant le chapitre 2';
+          pointeauCard.querySelector('.card-arrow').textContent = '🔒';
+        }
+      } catch(e) {}
     }
-
-    function setStat(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
-
-    function lockGameCard(cardId, btnId) {
-      const card = document.getElementById(cardId);
-      if (card) {
-        card.style.opacity = '0.5';
-        card.style.filter = 'grayscale(0.7)';
-        card.onclick = showCh2Lock;
-      }
-      const btn = document.getElementById(btnId);
-      if (btn) {
-        btn.textContent = '🔒 CH.2';
-        btn.style.background = '#6b7280';
-        btn.style.boxShadow = 'none';
-        btn.onclick = (e) => { e.stopPropagation(); showCh2Lock(); };
-      }
-    }
-
-    function showCh2Lock() {
-      const o = document.createElement('div');
-      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px';
-      o.onclick = (e) => { if (e.target === o) o.remove(); };
-      o.innerHTML = '<div style="max-width:300px;width:100%;background:#0e1f33;border:1px solid rgba(255,255,255,0.12);border-radius:18px;padding:28px 22px;text-align:center"><div style="font-size:46px;margin-bottom:12px">🔒</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:8px">CHAPITRE 2 REQUIS</div><div style="font-size:13px;color:rgba(255,255,255,0.6);line-height:1.6;margin-bottom:20px">Joue le Chapitre 2 « Au Boulot » du Mode Histoire pour débloquer Tower et Pointeau.</div><button onclick="window.location.href=\'histoire.html\'" style="width:100%;height:46px;border:none;border-radius:12px;background:linear-gradient(135deg,#0ea5e9,#1d4ed8);color:#fff;font-family:\'Bebas Neue\',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer">▶ MODE HISTOIRE</button></div>';
-      document.body.appendChild(o);
-    }
-
-    function showToast(msg) {
-      let t = document.getElementById('toast');
-      if (!t) { t = document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap'; document.body.appendChild(t); }
-      t.textContent = msg; t.style.opacity = '1';
-      setTimeout(() => t.style.opacity = '0', 2800);
-    }
-
-    init();
+    checkUnlocks();
   </script>
-
-  <div style="position:fixed;bottom:0;left:0;right:0;z-index:10;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:rgba(30,120,180,0.85);backdrop-filter:blur(8px)">
-    <button onclick="window.location.href='game.html'" style="width:100%;padding:13px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.15);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer">← RETOUR AU JEU</button>
-  </div>
 </body>
 </html>
