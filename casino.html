@@ -268,20 +268,48 @@
   // SLOTS
   const SYM=['🐟','📦','⚓','🦑','💰','7️⃣'];
   const PAY3={ '🐟':4,'📦':6,'⚓':10,'🦑':16,'💰':30,'7️⃣':60 };
+  // Tirage pondéré — RTP ~90%
+  // Poids : 🐟×35, 📦×28, ⚓×20, 🦑×10, 💰×5, 7️⃣×2
+  const WEIGHTS=[35,28,20,10,5,2]; // total 100
+  function pickSym(){
+    const r=Math.floor(Math.random()*100);
+    let acc=0;
+    for(let i=0;i<SYM.length;i++){ acc+=WEIGHTS[i]; if(r<acc) return SYM[i]; }
+    return SYM[0];
+  }
   function playSlots(){
     if(!canBet()) return; busy=true; money-=bet; updateBal();
     const btn=document.getElementById('slotBtn'); btn.disabled=true; document.getElementById('slotRes').textContent='';
     const reels=[document.getElementById('r0'),document.getElementById('r1'),document.getElementById('r2')];
     reels.forEach(r=>r.classList.add('spin'));
-    const final=[SYM[Math.floor(Math.random()*6)],SYM[Math.floor(Math.random()*6)],SYM[Math.floor(Math.random()*6)]];
-    const spinInt=setInterval(()=>reels.forEach(r=>r.textContent=SYM[Math.floor(Math.random()*6)]),80);
-    [700,1000,1300].forEach((t,i)=>setTimeout(()=>{ reels[i].textContent=final[i]; reels[i].classList.remove('spin'); },t));
-    setTimeout(()=>{ clearInterval(spinInt); settleSlots(final); busy=false; btn.disabled=false; },1400);
+    const final=[pickSym(),pickSym(),pickSym()];
+    // Spin visuel sur reels qui ne sont pas encore arrêtés
+    const stopped=[false,false,false];
+    const spinInt=setInterval(()=>{
+      reels.forEach((r,i)=>{ if(!stopped[i]) r.textContent=pickSym(); });
+    },80);
+    [700,1000,1300].forEach((t,i)=>setTimeout(()=>{
+      stopped[i]=true;
+      reels[i].textContent=final[i];
+      reels[i].classList.remove('spin');
+      if(i===2){ clearInterval(spinInt); setTimeout(()=>{ settleSlots(final); busy=false; btn.disabled=false; },100); }
+    },t));
   }
   function settleSlots(f){
     let mult=0,msg='';
-    if(f[0]===f[1]&&f[1]===f[2]){ mult=PAY3[f[0]]; msg=`3× ${f[0]} !`; }
-    else { const c={}; f.forEach(s=>c[s]=(c[s]||0)+1); if((c['💰']||0)>=2||(c['7️⃣']||0)>=2){ mult=1.2; msg='Petite paire !'; } }
+    if(f[0]===f[1]&&f[1]===f[2]){
+      mult=PAY3[f[0]]; msg=`3× ${f[0]} !`;
+    } else {
+      // Trouver le symbole de la paire avec le meilleur gain
+      const c={}; f.forEach(s=>c[s]=(c[s]||0)+1);
+      const pairSym=Object.keys(c)
+        .filter(k=>c[k]>=2)
+        .sort((a,b)=>PAY3[b]-PAY3[a])[0]; // meilleur symbole en paire
+      if(pairSym){
+        mult=PAY3[pairSym]*0.3;
+        msg='Paire '+pairSym+' !';
+      }
+    }
     finishRound(mult, document.getElementById('slotRes'), msg||'Raté');
   }
 
