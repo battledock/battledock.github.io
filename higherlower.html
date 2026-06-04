@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Higher Lower - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+    .table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:10px;flex-shrink:0; }
+
+    /* CARTE */
+    .card-wrap { position:relative; }
+    .card {
+      width:clamp(80px,22vw,100px);height:clamp(110px,30vw,140px);
+      background:white;border-radius:12px;border:3px solid #0f172a;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      box-shadow:4px 4px 0 rgba(0,0,0,0.3);position:relative;overflow:hidden;
+    }
+    .card-val { font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,10vw,52px);line-height:1; }
+    .card-suit { font-size:clamp(20px,6vw,28px);line-height:1; }
+    .card.red .card-val,.card.red .card-suit { color:#cc1a1a; }
+    .card.black .card-val,.card.black .card-suit { color:#0f172a; }
+    .card.hidden { background:linear-gradient(135deg,#cc1a1a,#7f1d1d);border-color:#fbbf24; }
+    .card.hidden::after { content:'?';font-family:'Bebas Neue',sans-serif;font-size:52px;color:rgba(255,255,255,0.3); }
+    @keyframes cardFlip { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
+    .card.flip { animation:cardFlip .2s ease-out; }
+
+    /* STREAK */
+    .streak-row { display:flex;gap:6px;align-items:center; }
+    .streak-dot { width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.15);transition:background .2s; }
+    .streak-dot.done { background:#4ade80; }
+    .streak-dot.fail { background:#f87171; }
+    .mult-label { font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24; }
+
+    /* BOUTONS H/L */
+    .hl-btns { display:flex;gap:8px;width:100%; }
+    .hl-btn { flex:1;padding:11px;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,0.3);transition:all .15s; }
+    .hl-btn:active { transform:scale(0.97); }
+    .hl-btn:disabled { opacity:0.35;cursor:default; }
+    .btn-higher { background:linear-gradient(135deg,#4ade80,#16a34a);color:white; }
+    .btn-lower  { background:linear-gradient(135deg,#f87171,#dc2626);color:white; }
+    .btn-cashout-hl { width:100%;padding:10px;border:none;border-radius:10px;background:rgba(255,255,255,0.1);border:2px solid rgba(255,255,255,0.2);color:white;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;transition:all .15s; }
+    .btn-cashout-hl:active { transform:scale(0.98); }
+    .btn-cashout-hl:disabled { opacity:0.3;cursor:default; }
+
+    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%; }
+    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
+
+    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
+    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
+    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
+    .chip.sel { background:#fbbf24;color:#0f172a; }
+    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
+    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
+    .spin-btn:active { transform:scale(0.98); }
+    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
+    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
+    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
+    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
+    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="game-area">
+    <div class="table">
+      <div class="card hidden" id="currentCard"></div>
+      <div class="streak-row" id="streakRow">
+        <div class="streak-dot" id="s0"></div><div class="streak-dot" id="s1"></div>
+        <div class="streak-dot" id="s2"></div><div class="streak-dot" id="s3"></div>
+        <div class="streak-dot" id="s4"></div>
+        <div class="mult-label" id="multLabel">×1</div>
+      </div>
+      <div class="hl-btns">
+        <button class="hl-btn btn-higher" id="btnH" onclick="guess('higher')" disabled>&#9650; PLUS HAUT</button>
+        <button class="hl-btn btn-lower"  id="btnL" onclick="guess('lower')"  disabled>&#9660; PLUS BAS</button>
+      </div>
+      <button class="btn-cashout-hl" id="btnCash" onclick="cashout()" disabled>ENCAISSER</button>
+    </div>
+    <div class="controls">
+      <div class="result" id="result"></div>
+      <div class="chips">
+        <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+        <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+        <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+        <div class="chip" id="c25000" onclick="setBet(25000,'c25000')">25K</div>
+      </div>
+      <button class="spin-btn" id="btnPlay" onclick="startGame()">JOUER — <span id="betLabel">1 000€</span></button>
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <button class="back-btn" onclick="window.location.href='casino.html'">&#8592; Casino</button>
+    <div class="game-title">&#9650;&#9660; HIGHER LOWER</div>
+    <div class="balance" id="balance">0&#8364;</div>
+  </div>
+</div>
+<script>
+  var sb = supabase.createClient('https://drtsuhnbclhmgfjiykap.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg');
+  var fmt=function(n){return Math.floor(n).toLocaleString('fr-FR');};
+  var el=function(id){return document.getElementById(id);};
+  var money=0,bet=1000,currentUser=null,busy=false;
+  var currentVal=0,streak=0,multiplier=1;
+  var MULTS=[1,1.8,3.2,5.8,10,20]; // mult à chaque palier
+  var SUITS=['&#9829;','&#9830;','&#9824;','&#9827;'];
+  var SUIT_COLORS=['red','red','black','black'];
+  var NAMES=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+
+  function randCard(){return Math.ceil(Math.random()*13);}
+
+  function showCard(val,hidden){
+    var c=el('currentCard');
+    if(hidden){c.className='card hidden';c.innerHTML='';return;}
+    var si=Math.floor(Math.random()*4);
+    var col=SUIT_COLORS[si]==='red'?'red':'black';
+    c.className='card '+col+' flip';
+    c.innerHTML='<div class="card-val">'+NAMES[val]+'</div><div class="card-suit">'+SUITS[si]+'</div>';
+  }
+
+  function updateStreak(){
+    for(var i=0;i<5;i++) el('s'+i).className='streak-dot'+(i<streak?' done':'');
+    var m=MULTS[Math.min(streak,MULTS.length-1)];
+    multiplier=m;
+    el('multLabel').textContent='x'+m.toFixed(1);
+    var gain=Math.floor(bet*m);
+    if(streak>0) el('btnCash').textContent='ENCAISSER +'+fmt(gain-bet)+'€';
+  }
+
+  function setBet(val,id){
+    bet=val;
+    ['c1000','c5000','c10000','c25000'].forEach(function(i){el(i).classList.toggle('sel',i===id);});
+    el('betLabel').textContent=fmt(val)+'€';
+  }
+  function updateBal(){el('balance').textContent=fmt(money)+'€';}
+
+  function startGame(){
+    if(busy||money<bet)return;
+    busy=false; money-=bet; updateBal();
+    streak=0; updateStreak();
+    currentVal=randCard();
+    showCard(currentVal,false);
+    el('btnH').disabled=false; el('btnL').disabled=false;
+    el('btnCash').disabled=true;
+    el('btnPlay').disabled=true;
+    el('result').style.display='none';
+    for(var i=0;i<5;i++) el('s'+i).className='streak-dot';
+  }
+
+  function guess(dir){
+    if(busy)return; busy=true;
+    el('btnH').disabled=true; el('btnL').disabled=true; el('btnCash').disabled=true;
+
+    var next=randCard();
+    // Tie = loss
+    var correct=(dir==='higher'&&next>currentVal)||(dir==='lower'&&next<currentVal);
+
+    setTimeout(function(){
+      showCard(next,false);
+      currentVal=next;
+      if(correct){
+        streak++;
+        el('s'+(streak-1)).className='streak-dot done';
+        updateStreak();
+        if(streak>=5){
+          // Max streak — auto encaisse
+          cashout();
+        } else {
+          el('btnH').disabled=false; el('btnL').disabled=false;
+          el('btnCash').disabled=false;
+          busy=false;
+        }
+      } else {
+        el('s'+streak).className='streak-dot fail';
+        var r=el('result');
+        r.textContent='MAUVAISE REPONSE — PERDU !'; r.className='result lose'; r.style.display='block';
+        endGame();
+      }
+    },300);
+  }
+
+  function cashout(){
+    busy=true;
+    var gain=Math.floor(bet*multiplier);
+    money+=gain; updateBal();
+    var r=el('result');
+    r.textContent='ENCAISSE ! +'+fmt(gain-bet)+'€'; r.className='result win'; r.style.display='block';
+    endGame();
+    if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+  }
+
+  function endGame(){
+    el('btnH').disabled=true; el('btnL').disabled=true; el('btnCash').disabled=true;
+    showCard(0,true);
+    setTimeout(function(){
+      el('btnPlay').disabled=false; streak=0; updateStreak(); busy=false;
+    },1800);
+  }
+
+  async function init(){
+    var res=await sb.auth.getSession();
+    var s=res.data&&res.data.session;
+    if(!s){await new Promise(function(r){setTimeout(r,1000);});res=await sb.auth.getSession();s=res.data&&res.data.session;if(!s){window.location.href='index.html';return;}}
+    currentUser=s.user;
+    var d=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+    money=(d.data&&d.data.money)||0; updateBal();
+  }
+  document.addEventListener('gesturestart',function(e){e.preventDefault();});
+  init();
+</script>
+</body>
+</html>

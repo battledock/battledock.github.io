@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Des Marseillais - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+    .table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0; }
+
+    /* DES */
+    .dice-row { display:flex;gap:12px;align-items:center;justify-content:center; }
+    .die {
+      width:clamp(54px,16vw,68px);height:clamp(54px,16vw,68px);
+      background:white;border-radius:12px;border:3px solid #0f172a;
+      display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr 1fr;
+      padding:8px;gap:4px;box-shadow:3px 3px 0 rgba(0,0,0,0.3);
+      transition:transform .1s;flex-shrink:0;
+    }
+    .die.rolling { animation:dieRoll .1s ease-in-out infinite alternate; }
+    @keyframes dieRoll { from{transform:rotate(-8deg) scale(0.95)} to{transform:rotate(8deg) scale(1.05)} }
+    .dot { border-radius:50%;background:#0f172a;width:100%;height:100%; }
+    .dot.empty { background:transparent; }
+
+    /* SOMME */
+    .sum-val { font-family:'Bebas Neue',sans-serif;font-size:42px;color:white;line-height:1; }
+    .sum-sub { font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:3px; }
+
+    /* PARIS */
+    .bet-row { display:flex;gap:8px;width:100%; }
+    .bet-opt {
+      flex:1;padding:9px 4px;border-radius:10px;text-align:center;cursor:pointer;
+      font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;
+      border:2.5px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);
+      background:rgba(255,255,255,0.05);transition:all .15s;
+    }
+    .bet-opt:active { transform:scale(0.97); }
+    .bet-opt.sel { background:#fbbf24;color:#0f172a;border-color:#0f172a; }
+    .bet-sub-text { font-size:8px;color:inherit;opacity:0.7;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:0; }
+
+    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%; }
+    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
+
+    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
+    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
+    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
+    .chip.sel { background:#fbbf24;color:#0f172a; }
+    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
+    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
+    .spin-btn:active { transform:scale(0.98); }
+    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
+    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
+    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
+    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
+    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="game-area">
+    <div class="table">
+      <div class="dice-row">
+        <div class="die" id="d0"></div>
+        <div class="die" id="d1"></div>
+        <div class="die" id="d2"></div>
+      </div>
+      <div class="sum-val" id="sumVal">—</div>
+      <div class="sum-sub" id="sumSub">LANCE LES DES</div>
+      <div class="bet-row">
+        <div class="bet-opt sel" id="bFaible" onclick="selBet('faible')">FAIBLE<br><span class="bet-sub-text">3-10 · ×1.9</span></div>
+        <div class="bet-opt" id="bFort"   onclick="selBet('fort')">FORT<br><span class="bet-sub-text">11-18 · ×1.9</span></div>
+        <div class="bet-opt" id="bTriple" onclick="selBet('triple')">TRIPLE<br><span class="bet-sub-text">3 pareils · ×25</span></div>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="result" id="result"></div>
+      <div class="chips">
+        <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+        <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+        <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+        <div class="chip" id="c25000" onclick="setBet(25000,'c25000')">25K</div>
+      </div>
+      <button class="spin-btn" id="btnPlay" onclick="roll()">LANCER — <span id="betLabel">1 000€</span></button>
+    </div>
+  </div>
+  <div class="bottom-bar">
+    <button class="back-btn" onclick="window.location.href='casino.html'">&#8592; Casino</button>
+    <div class="game-title">&#127922; DES MARSEILLAIS</div>
+    <div class="balance" id="balance">0&#8364;</div>
+  </div>
+</div>
+<script>
+  var sb = supabase.createClient('https://drtsuhnbclhmgfjiykap.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg');
+  var fmt=function(n){return Math.floor(n).toLocaleString('fr-FR');};
+  var el=function(id){return document.getElementById(id);};
+  var money=0,bet=1000,pari='faible',busy=false,currentUser=null;
+
+  // Positions des points pour chaque valeur de dé
+  var DOT_PATTERNS = {
+    1:[[1,1]],
+    2:[[0,0],[2,2]],
+    3:[[0,0],[1,1],[2,2]],
+    4:[[0,0],[0,2],[2,0],[2,2]],
+    5:[[0,0],[0,2],[1,1],[2,0],[2,2]],
+    6:[[0,0],[0,1],[0,2],[2,0],[2,1],[2,2]]
+  };
+
+  function renderDie(id, val) {
+    var die = el(id);
+    die.innerHTML = '';
+    for (var r=0;r<3;r++) for (var c=0;c<3;c++) {
+      var d = document.createElement('div');
+      var has = DOT_PATTERNS[val] && DOT_PATTERNS[val].some(function(p){return p[0]===r&&p[1]===c;});
+      d.className = 'dot' + (has ? '' : ' empty');
+      die.appendChild(d);
+    }
+  }
+
+  function selBet(b) {
+    if (busy) return;
+    pari = b;
+    ['bFaible','bFort','bTriple'].forEach(function(id){el(id).classList.remove('sel');});
+    el(b==='faible'?'bFaible':b==='fort'?'bFort':'bTriple').classList.add('sel');
+  }
+
+  function setBet(val,id) {
+    bet=val;
+    ['c1000','c5000','c10000','c25000'].forEach(function(i){el(i).classList.toggle('sel',i===id);});
+    el('betLabel').textContent=fmt(val)+'€';
+  }
+
+  function updateBal(){el('balance').textContent=fmt(money)+'€';}
+
+  function roll() {
+    if (busy||money<bet) return;
+    busy=true; money-=bet; updateBal();
+    el('btnPlay').disabled=true; el('result').style.display='none';
+    el('sumSub').textContent='...';
+
+    var vals = [1,1,1];
+    [0,1,2].forEach(function(i){el('d'+i).classList.add('rolling');});
+
+    var t=0, interval = setInterval(function(){
+      t++;
+      vals = [Math.ceil(Math.random()*6),Math.ceil(Math.random()*6),Math.ceil(Math.random()*6)];
+      [0,1,2].forEach(function(i){renderDie('d'+i,vals[i]);});
+      if (t>=12) {
+        clearInterval(interval);
+        [0,1,2].forEach(function(i){el('d'+i).classList.remove('rolling');});
+        settle(vals);
+      }
+    },80);
+  }
+
+  function settle(vals) {
+    var sum = vals[0]+vals[1]+vals[2];
+    var isTriple = vals[0]===vals[1]&&vals[1]===vals[2];
+    el('sumVal').textContent = sum;
+
+    var gain=0, msg='', cls='lose';
+    if (pari==='triple' && isTriple) {
+      gain=Math.floor(bet*25); msg='TRIPLE '+vals[0]+'! +'+fmt(gain)+'€'; cls='win';
+    } else if (pari==='faible' && sum<=10 && !isTriple) {
+      gain=Math.floor(bet*1.9); msg='FAIBLE '+sum+' ! +'+fmt(gain-bet)+'€'; cls='win';
+    } else if (pari==='fort' && sum>=11 && !isTriple) {
+      gain=Math.floor(bet*1.9); msg='FORT '+sum+' ! +'+fmt(gain-bet)+'€'; cls='win';
+    } else {
+      msg=(isTriple?'TRIPLE (mauvais pari) — ':'')+sum+' — PERDU !';
+    }
+
+    el('sumSub').textContent=isTriple?'TRIPLE !':sum<=10?'FAIBLE':'FORT';
+    if (gain>0) { money+=gain; updateBal(); }
+
+    var r=el('result');
+    r.textContent=msg; r.className='result '+cls; r.style.display='block';
+    busy=false; el('btnPlay').disabled=false;
+    if (currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+  }
+
+  async function init(){
+    var res=await sb.auth.getSession();
+    var s=res.data&&res.data.session;
+    if(!s){await new Promise(function(r){setTimeout(r,1000);});res=await sb.auth.getSession();s=res.data&&res.data.session;if(!s){window.location.href='index.html';return;}}
+    currentUser=s.user;
+    var d=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+    money=(d.data&&d.data.money)||0; updateBal();
+    [0,1,2].forEach(function(i){renderDie('d'+i,i+1);});
+  }
+  document.addEventListener('gesturestart',function(e){e.preventDefault();});
+  init();
+</script>
+</body>
+</html>
