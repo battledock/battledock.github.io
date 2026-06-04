@@ -2,269 +2,491 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Blackjack — Battle Dock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Blackjack - Battle Dock Casino</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    html { height:100%; } body { height:100dvh; overflow:hidden; }
-    body { font-family:'Inter',sans-serif; background:#0a3d1a; display:flex; flex-direction:column; }
-    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    }
 
-    .hdr { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+34px) 14px 10px; flex-shrink:0; }
-    .btn-back { background:rgba(0,0,0,0.3); border:2px solid rgba(255,255,255,0.2); color:white; border-radius:10px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; cursor:pointer; }
-    .hdr-title { flex:1; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:2px; }
-    .hdr-bal { background:#FDD835; border:2.5px solid #0a0a0a; border-radius:10px; padding:7px 14px; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:#0a0a0a; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
 
-    /* Tapis */
-    .table { flex:1; display:flex; flex-direction:column; padding:0 14px; gap:10px; overflow:hidden; }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 6px;
+      padding-bottom: 120px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
 
-    /* Zone dealer / joueur */
-    .zone { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
-    .zone-label { font-size:8px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:3px; }
-    .zone-score { font-family:'Bebas Neue',sans-serif; font-size:clamp(22px,6vw,30px); color:white; line-height:1; }
-    .zone-score.bust { color:#ff4444; }
-    .zone-score.blackjack { color:#FDD835; }
+    .game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      min-height: 0;
+    }
 
-    /* Cartes */
-    .cards { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; min-height:80px; align-items:center; }
-    .card { width:clamp(48px,13vw,60px); height:clamp(68px,18vw,84px); border-radius:8px; background:white; border:2.5px solid #0a0a0a; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:2px 2px 0 rgba(0,0,0,0.2); flex-shrink:0; }
-    .card .cv { font-size:clamp(16px,4.5vw,21px); font-weight:900; line-height:1; }
-    .card .cs { font-size:clamp(14px,4vw,19px); line-height:1; }
-    .card.red .cv, .card.red .cs { color:#cc1a1a; }
-    .card.black .cv, .card.black .cs { color:#0a0a0a; }
-    .card.hidden { background:linear-gradient(135deg,#cc1a1a,#7f1d1d); border-color:#0a0a0a; }
-    .card.hidden::after { content:'🃏'; font-size:28px; }
-    @keyframes dealCard { from{transform:translateY(-30px) scale(0.8);opacity:0} to{transform:translateY(0) scale(1);opacity:1} }
-    .card.new { animation:dealCard .25s ease-out; }
+    /* TABLE BLACKJACK — même style .machine */
+    .bj-table {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 4px solid #fbbf24;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 340px;
+      flex-shrink: 0;
+    }
 
-    /* Séparateur -->
-    .sep { height:1px; background:rgba(255,255,255,0.1); flex-shrink:0; }
+    /* ZONES DEALER / JOUEUR */
+    .zone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0;
+    }
 
-    /* Résultat */
-    .result { font-family:'Bebas Neue',sans-serif; font-size:24px; color:white; text-align:center; min-height:30px; flex-shrink:0; }
+    .zone-label {
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 3px;
+    }
 
-    /* Actions */
-    .actions { display:flex; gap:8px; flex-shrink:0; }
-    .btn-action { flex:1; padding:clamp(12px,3.5vw,17px); border:3px solid #0a0a0a; border-radius:14px; font-family:'Bebas Neue',sans-serif; font-size:clamp(15px,4.5vw,19px); letter-spacing:2px; cursor:pointer; box-shadow:4px 4px 0 rgba(0,0,0,0.2); transition:all .15s; }
-    .btn-action:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .btn-action:disabled { opacity:0.4; }
-    .btn-hit { background:#FDD835; color:#0a0a0a; }
-    .btn-stand { background:white; color:#cc1a1a; }
-    .btn-deal { width:100%; background:#FDD835; color:#0a0a0a; }
+    .zone-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      color: white;
+      line-height: 1;
+    }
+    .zone-score.bust { color: #f87171; }
+    .zone-score.blackjack { color: #fbbf24; }
 
-    /* Mise */
-    .chips { display:flex; gap:6px; flex-shrink:0; }
-    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
-    .chip.sel { background:#FDD835; border:2.5px solid #0a0a0a; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .chip.sel .cv2 { color:#0a0a0a; }
-    .chip:not(.sel) { background:rgba(0,0,0,0.25); border:2px solid rgba(255,255,255,0.15); }
-    .chip:not(.sel) .cv2 { color:rgba(255,255,255,0.4); }
-    .cv2 { font-family:'Bebas Neue',sans-serif; font-size:13px; }
+    .cards {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      justify-content: center;
+      min-height: 68px;
+      align-items: center;
+    }
 
-    .btn-retour { width:calc(100% - 28px); margin:6px 14px calc(env(safe-area-inset-bottom)+12px); background:rgba(0,0,0,0.2); border:2px solid rgba(255,255,255,0.12); border-radius:12px; padding:11px; color:rgba(255,255,255,0.35); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
+    .card {
+      width: clamp(42px, 12vw, 54px);
+      height: clamp(60px, 17vw, 76px);
+      border-radius: 7px;
+      background: white;
+      border: 2.5px solid #0f172a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
+      flex-shrink: 0;
+    }
+    .card .cv { font-size: clamp(14px,4vw,18px); font-weight: 900; line-height: 1; }
+    .card .cs { font-size: clamp(12px,3.5vw,16px); line-height: 1; }
+    .card.red .cv, .card.red .cs { color: #cc1a1a; }
+    .card.black .cv, .card.black .cs { color: #0f172a; }
+    .card.hidden {
+      background: linear-gradient(135deg, #cc1a1a, #7f1d1d);
+      border-color: #fbbf24;
+    }
+    .card.hidden::after { content: '🃏'; font-size: 24px; }
+    @keyframes dealCard { from{transform:translateY(-20px) scale(0.85);opacity:0} to{transform:none;opacity:1} }
+    .card.new { animation: dealCard .22s ease-out; }
+
+    .sep {
+      height: 1px;
+      background: rgba(251,191,36,0.2);
+      margin: 2px 0;
+    }
+
+    /* RÉSULTAT */
+    .result {
+      display: none;
+      padding: 7px 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      animation: resultPop 0.3s;
+      width: 100%;
+    }
+    @keyframes resultPop { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+    .result.win { background: linear-gradient(135deg,#10b981,#059669); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background: linear-gradient(135deg,#dc2626,#991b1b); color: white; box-shadow: 0 4px 14px rgba(220,38,38,0.4); }
+    .result.push { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+
+    /* CONTROLS — même style machineasous */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 340px;
+      flex-shrink: 0;
+    }
+
+    /* CHIPS */
+    .chips {
+      display: flex;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 8px;
+      border: 2px solid rgba(251,191,36,0.3);
+    }
+    .chip {
+      flex: 1;
+      padding: 7px 4px;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .chip.sel { background: #fbbf24; color: #0f172a; }
+    .chip:not(.sel) { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(251,191,36,0.2); }
+
+    /* BOUTONS ACTION */
+    .action-btns {
+      display: none;
+      gap: 6px;
+    }
+    .btn-action {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      transition: all .2s;
+    }
+    .btn-action:active { transform: scale(0.97); }
+    .btn-action:disabled { opacity: 0.45; }
+    .btn-hit { background: linear-gradient(135deg,#fbbf24,#f59e0b); color: #0f172a; }
+    .btn-stand { background: rgba(255,255,255,0.9); color: #cc1a1a; }
+    .btn-double { background: linear-gradient(135deg,#f97316,#ea580c); color: white; }
+
+    .spin-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border: none;
+      border-radius: 10px;
+      color: #0f172a;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(251,191,36,0.5);
+      transition: all 0.2s;
+    }
+    .spin-btn:active { transform: scale(0.98); }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* BOTTOM BAR — identique machineasous */
+    .bottom-bar {
+      background: linear-gradient(135deg, #7f1d1d, #991b1b);
+      border: 2px solid rgba(251,191,36,0.5);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      min-height: 44px;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 480px;
+      width: calc(100% - 20px);
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    }
+
+    .back-btn {
+      background: rgba(251,191,36,0.2);
+      border: 2px solid rgba(251,191,36,0.5);
+      color: #fbbf24;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .back-btn:active { transform: scale(0.95); }
+
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      color: #fbbf24;
+      letter-spacing: 1.5px;
+    }
+
+    .balance {
+      background: white;
+      color: #0f172a;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
-<div class="page">
+  <div class="container">
+    <div class="game-area">
 
-  <div class="hdr">
-    <div class="hdr-title">♠️ BLACKJACK</div>
-    <div class="hdr-bal"><div class="hdr-bal-v" id="balDisplay">—</div></div>
-  </div>
+      <!-- TABLE -->
+      <div class="bj-table">
+        <!-- DEALER -->
+        <div class="zone">
+          <div class="zone-label">CROUPIER</div>
+          <div class="cards" id="dealerCards"></div>
+          <div class="zone-score" id="dealerScore">—</div>
+        </div>
 
-  <div class="table">
-    <!-- Dealer -->
-    <div class="zone">
-      <div class="zone-label">DEALER</div>
-      <div class="cards" id="dealerCards"></div>
-      <div class="zone-score" id="dealerScore">—</div>
+        <div class="sep"></div>
+
+        <!-- JOUEUR -->
+        <div class="zone">
+          <div class="zone-label">VOUS</div>
+          <div class="cards" id="playerCards"></div>
+          <div class="zone-score" id="playerScore">—</div>
+        </div>
+      </div>
+
+      <!-- CONTROLS -->
+      <div class="controls">
+        <div class="result" id="result"></div>
+
+        <!-- CHIPS -->
+        <div class="chips">
+          <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+          <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+          <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+          <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
+        </div>
+
+        <!-- ACTIONS EN JEU -->
+        <div class="action-btns" id="actionBtns" style="display:none;gap:6px;display:none">
+          <button class="btn-action btn-hit" onclick="hit()">TIRER</button>
+          <button class="btn-action btn-stand" onclick="stand()">RESTER</button>
+          <button class="btn-action btn-double" id="btnDouble" onclick="doubleDown()">×2</button>
+        </div>
+
+        <!-- BOUTON DISTRIBUER -->
+        <button class="spin-btn" id="btnDeal" onclick="deal()">
+          DISTRIBUER — <span id="betLabel">1 000€</span>
+        </button>
+      </div>
+
     </div>
 
-    <div class="sep"></div>
-
-    <!-- Joueur -->
-    <div class="zone">
-      <div class="zone-label">TOI</div>
-      <div class="cards" id="playerCards"></div>
-      <div class="zone-score" id="playerScore">—</div>
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
+      <div class="game-title">♠ BLACKJACK</div>
+      <div class="balance" id="balance">0€</div>
     </div>
   </div>
 
-  <!-- Résultat -->
-  <div class="result" id="result"></div>
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
 
-  <!-- Actions en jeu -->
-  <div class="actions" id="actionBtns" style="padding:0 14px;display:none">
-    <button class="btn-action btn-hit" onclick="hit()">TIRER</button>
-    <button class="btn-action btn-stand" onclick="stand()">RESTER</button>
-  </div>
+    const fmt = n => Math.floor(n).toLocaleString('fr-FR');
 
-  <!-- Mise + bouton deal -->
-  <div id="betZone" style="padding:0 14px;display:flex;flex-direction:column;gap:8px">
-    <div class="chips">
-      <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')"><div class="cv2">1K</div></div>
-      <div class="chip" id="c5000" onclick="setBet(5000,'c5000')"><div class="cv2">5K</div></div>
-      <div class="chip" id="c10000" onclick="setBet(10000,'c10000')"><div class="cv2">10K</div></div>
-      <div class="chip" id="c50000" onclick="setBet(50000,'c50000')"><div class="cv2">50K</div></div>
-    </div>
-    <button class="btn-action btn-deal" id="btnDeal" onclick="deal()">DISTRIBUER — <span id="betLabel">1 000€</span></button>
-  </div>
+    const VALS  = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+    const SUITS = ['♠','♣','♥','♦'];
+    const COLORS = {'♠':'black','♣':'black','♥':'red','♦':'red'};
 
-  <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
+    let deck=[], playerHand=[], dealerHand=[], money=0, bet=1000, busy=false, currentUser=null;
 
-</div>
-<script>
-  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
-
-  const fmt = n => Math.floor(n).toLocaleString('fr-FR');
-
-  // Deck
-  const VALS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
-  const SUITS = ['♠','♣','♥','♦'];
-  const COLORS = {'♠':'black','♣':'black','♥':'red','♦':'red'};
-
-  let deck=[], playerHand=[], dealerHand=[], money=0, bet=1000, busy=false, gameOn=false, currentUser=null;
-
-  function buildDeck(){
-    deck=[];
-    for(const s of SUITS) for(const v of VALS) deck.push({v,s});
-    for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
-  }
-
-  function cardVal(c){
-    if(c.v==='A') return 11;
-    if(['J','Q','K'].includes(c.v)) return 10;
-    return parseInt(c.v);
-  }
-
-  function handVal(hand){
-    let total=0, aces=0;
-    for(const c of hand){ total+=cardVal(c); if(c.v==='A') aces++; }
-    while(total>21 && aces>0){ total-=10; aces--; }
-    return total;
-  }
-
-  function draw(){ if(deck.length<10) buildDeck(); return deck.pop(); }
-
-  function renderCard(c, hidden=false){
-    const el=document.createElement('div');
-    el.className='card new'+(hidden?' hidden':' '+COLORS[c.s]);
-    if(!hidden){
-      el.innerHTML=`<div class="cv">${c.v}</div><div class="cs">${c.s}</div>`;
+    function buildDeck(){
+      deck=[];
+      for(const s of SUITS) for(const v of VALS) deck.push({v,s});
+      for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; }
     }
-    return el;
-  }
 
-  function renderHand(hand, elId, hideFirst=false){
-    const el=document.getElementById(elId);
-    el.innerHTML='';
-    hand.forEach((c,i)=>{
-      el.appendChild(renderCard(c, hideFirst && i===0));
-    });
-  }
+    function cardVal(c){ if(c.v==='A') return 11; if(['J','Q','K'].includes(c.v)) return 10; return parseInt(c.v); }
 
-  function updateScores(hideDealer=true){
-    const ps=handVal(playerHand);
-    document.getElementById('playerScore').textContent=ps;
-    document.getElementById('playerScore').className='zone-score'+(ps>21?' bust':ps===21?' blackjack':'');
-    if(hideDealer){
-      document.getElementById('dealerScore').textContent='?';
-    } else {
-      const ds=handVal(dealerHand);
-      document.getElementById('dealerScore').textContent=ds;
-      document.getElementById('dealerScore').className='zone-score'+(ds>21?' bust':ds===21?' blackjack':'');
+    function handVal(hand){
+      let total=0, aces=0;
+      for(const c of hand){ total+=cardVal(c); if(c.v==='A') aces++; }
+      while(total>21 && aces>0){ total-=10; aces--; }
+      return total;
     }
-  }
 
-  function updateBal(){ document.getElementById('balDisplay').textContent=fmt(money)+'€'; }
+    function draw(){ if(deck.length<10) buildDeck(); return deck.pop(); }
 
-  function setBet(val,id){
-    bet=val;
-    ['c1000','c5000','c10000','c50000'].forEach(i=>document.getElementById(i).classList.toggle('sel',i===id));
-    document.getElementById('betLabel').textContent=fmt(val)+'€';
-  }
+    function renderCard(c, hidden=false){
+      const el=document.createElement('div');
+      el.className='card new'+(hidden?' hidden':' '+COLORS[c.s]);
+      if(!hidden) el.innerHTML=`<div class="cv">${c.v}</div><div class="cs">${c.s}</div>`;
+      return el;
+    }
 
-  async function init(){
-    const { data:{ session } }=await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser=session.user;
-    const { data }=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-    money=data?.money||0;
-    updateBal();
-    buildDeck();
-  }
+    function renderHand(hand, elId, hideFirst=false){
+      const el=document.getElementById(elId);
+      el.innerHTML='';
+      hand.forEach((c,i)=>el.appendChild(renderCard(c, hideFirst&&i===0)));
+    }
 
-  function deal(){
-    if(busy||money<bet){ document.getElementById('result').textContent='Pas assez d\'argent !'; return; }
-    money-=bet; updateBal();
-    document.getElementById('result').textContent='';
-    gameOn=true;
-    playerHand=[draw(),draw()];
-    dealerHand=[draw(),draw()];
-    renderHand(playerHand,'playerCards');
-    renderHand(dealerHand,'dealerCards',true);
-    updateScores(true);
-    document.getElementById('betZone').style.display='none';
-    document.getElementById('actionBtns').style.display='flex';
-
-    // Blackjack immédiat ?
-    if(handVal(playerHand)===21){ stand(); }
-  }
-
-  function hit(){
-    playerHand.push(draw());
-    renderHand(playerHand,'playerCards');
-    updateScores(true);
-    if(handVal(playerHand)>21){ endGame(); }
-  }
-
-  function stand(){
-    document.getElementById('actionBtns').style.display='none';
-    renderHand(dealerHand,'dealerCards',false);
-    updateScores(false);
-    // Dealer tire jusqu'à 17
-    const dealerPlay=()=>{
-      if(handVal(dealerHand)<17){
-        setTimeout(()=>{
-          dealerHand.push(draw());
-          renderHand(dealerHand,'dealerCards',false);
-          updateScores(false);
-          dealerPlay();
-        },500);
-      } else {
-        endGame();
+    function updateScores(hideDealer=true){
+      const ps=handVal(playerHand);
+      const pEl=document.getElementById('playerScore');
+      pEl.textContent=ps;
+      pEl.className='zone-score'+(ps>21?' bust':ps===21?' blackjack':'');
+      const dEl=document.getElementById('dealerScore');
+      if(hideDealer){ dEl.textContent='?'; dEl.className='zone-score'; }
+      else {
+        const ds=handVal(dealerHand);
+        dEl.textContent=ds;
+        dEl.className='zone-score'+(ds>21?' bust':ds===21?' blackjack':'');
       }
-    };
-    setTimeout(dealerPlay,600);
-  }
+    }
 
-  async function endGame(){
-    const ps=handVal(playerHand), ds=handVal(dealerHand);
-    let mult=0, msg='';
-    if(ps>21){ msg='💀 BUST ! Raté…'; }
-    else if(ds>21){ mult=2.5; msg='🎉 DEALER BUST ! +'+fmt(Math.floor(bet*2.5))+'€'; }
-    else if(ps>ds){ mult=2.5; msg=(ps===21?'🃏 BLACKJACK !':'✅ Gagné !') + ' +'+fmt(Math.floor(bet*2.5))+'€'; }
-    else if(ps===ds){ mult=1; msg='🤝 Égalité — Remboursé'; }
-    else { msg='❌ Dealer gagne… Raté'; }
+    function updateBal(){
+      document.getElementById('balance').textContent=fmt(money)+'€';
+    }
 
-    if(mult>0){ money+=Math.floor(bet*mult); updateBal(); }
-    document.getElementById('result').textContent=msg;
-    gameOn=false;
+    function setBet(val,id){
+      bet=val;
+      ['c1000','c5000','c10000','c50000'].forEach(i=>document.getElementById(i).classList.toggle('sel',i===id));
+      document.getElementById('betLabel').textContent=fmt(val)+'€';
+    }
 
-    if(currentUser) await sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+    function showResult(msg, cls){
+      const el=document.getElementById('result');
+      el.textContent=msg;
+      el.className='result '+cls;
+      el.style.display='block';
+    }
 
-    setTimeout(()=>{
-      document.getElementById('betZone').style.display='flex';
-      document.getElementById('betZone').style.flexDirection='column';
-    },1500);
-  }
+    function deal(){
+      if(busy||money<bet){ showResult('Pas assez d\'argent !','lose'); return; }
+      busy=true;
+      money-=bet; updateBal();
+      document.getElementById('result').style.display='none';
+      playerHand=[draw(),draw()];
+      dealerHand=[draw(),draw()];
+      renderHand(playerHand,'playerCards');
+      renderHand(dealerHand,'dealerCards',true);
+      updateScores(true);
+      document.getElementById('btnDeal').style.display='none';
+      document.querySelector('.chips').style.pointerEvents='none';
+      document.querySelector('.chips').style.opacity='0.5';
+      const ab=document.getElementById('actionBtns');
+      ab.style.display='flex';
+      // Double down seulement si assez d'argent
+      document.getElementById('btnDouble').disabled=(money<bet);
+      if(handVal(playerHand)===21){ stand(); }
+    }
 
-  init();
-</script>
+    function hit(){
+      playerHand.push(draw());
+      renderHand(playerHand,'playerCards');
+      updateScores(true);
+      document.getElementById('btnDouble').disabled=true;
+      if(handVal(playerHand)>21) endGame();
+    }
+
+    function doubleDown(){
+      if(money<bet) return;
+      money-=bet; bet*=2; updateBal();
+      playerHand.push(draw());
+      renderHand(playerHand,'playerCards');
+      updateScores(true);
+      if(handVal(playerHand)>21) endGame(); else stand();
+    }
+
+    function stand(){
+      document.getElementById('actionBtns').style.display='none';
+      renderHand(dealerHand,'dealerCards',false);
+      updateScores(false);
+      const dealerPlay=()=>{
+        if(handVal(dealerHand)<17){
+          setTimeout(()=>{ dealerHand.push(draw()); renderHand(dealerHand,'dealerCards',false); updateScores(false); dealerPlay(); },500);
+        } else { endGame(); }
+      };
+      setTimeout(dealerPlay,600);
+    }
+
+    async function endGame(){
+      const ps=handVal(playerHand), ds=handVal(dealerHand);
+      let gain=0, msg='', cls='lose';
+      if(ps>21){ msg='💀 BUST !'; }
+      else if(ds>21){ gain=Math.floor(bet*2.5); msg='🎉 DEALER BUST ! +'+fmt(gain)+'€'; cls='win'; }
+      else if(ps>ds){ gain=Math.floor(bet*2.5); msg=(ps===21?'🃏 BLACKJACK !':'✅ GAGNÉ !')+' +'+fmt(gain)+'€'; cls='win'; }
+      else if(ps===ds){ gain=bet; msg='🤝 ÉGALITÉ'; cls='push'; }
+      else { msg='❌ DEALER GAGNE'; }
+
+      if(gain>0){ money+=gain; updateBal(); }
+      showResult(msg, cls);
+      busy=false;
+
+      if(currentUser) await sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+
+      setTimeout(()=>{
+        document.getElementById('btnDeal').style.display='block';
+        document.querySelector('.chips').style.pointerEvents='auto';
+        document.querySelector('.chips').style.opacity='1';
+      },1500);
+    }
+
+    async function init(){
+      const { data:{ session } }=await sb.auth.getSession();
+      if(!session){
+        await new Promise(r=>setTimeout(r,1000));
+        const { data:{ session:s2 } }=await sb.auth.getSession();
+        if(!s2){ window.location.href='index.html'; return; }
+        currentUser=s2.user;
+      } else { currentUser=session.user; }
+      const { data }=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+      money=data?.money||0;
+      updateBal();
+      buildDeck();
+    }
+
+    document.addEventListener('gesturestart',e=>e.preventDefault());
+    document.addEventListener('gesturechange',e=>e.preventDefault());
+    init();
+  </script>
 </body>
 </html>
