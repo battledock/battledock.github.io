@@ -4,611 +4,532 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Classement - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none; }
 
     body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg,#03080f 0%,#060e1c 55%,#030508 100%);
-      min-height: 100dvh;
-      display: flex; flex-direction: column;
+      font-family:'Inter',sans-serif;
+      background:#0f172a;
+      min-height:100dvh;
+      display:flex;flex-direction:column;
     }
 
-    /* ── Hero nuit port ── */
-    .page-header {
-      padding: calc(16px + env(safe-area-inset-top)) 16px 20px;
-      text-align: center;
-      position: relative; z-index: 2;
+    /* ── HERO NAVY ── */
+    .hero {
+      background:#0f172a;
+      padding:calc(18px + env(safe-area-inset-top)) 14px 0;
+      flex-shrink:0;
     }
-    .back-btn { display: none; }
-    .page-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px; letter-spacing: 4px; color: #fff;
-    }
-    .hero-sub {
-      font-size: 9px; color: rgba(255,255,255,0.2); letter-spacing: 2px; margin-top: 3px;
-    }
-    /* Stats 3 colonnes dans le hero */
-    .hero-stats {
-      display: flex; justify-content: center; gap: 0;
-      margin-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 14px;
-    }
-    .hero-stat { flex: 1; text-align: center; }
-    .hero-stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: #fff; line-height: 1; }
-    .hero-stat-val.gold { color: #fbbf24; }
-    .hero-stat-lbl { font-size: 8px; color: rgba(255,255,255,0.2); font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
 
-    /* ── Feuille blanche ── */
+    .stats3 {
+      display:grid;
+      grid-template-columns:1fr 1px 1fr 1px 1fr;
+      border-top:1px solid rgba(255,255,255,0.08);
+      margin-top:4px;
+    }
+    .sv { background:rgba(255,255,255,0.1); }
+    .st { text-align:center;padding:14px 6px; }
+    .st-v { font-family:'Bebas Neue',sans-serif;font-size:36px;color:white;line-height:1; }
+    .st-v.gold { color:#fbbf24; }
+    .st-sub { font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);margin-top:2px; }
+    .st-lbl { font-size:7px;color:rgba(255,255,255,0.18);font-weight:700;letter-spacing:1px;margin-top:1px; }
+
+    /* ── BODY JAUNE BD ── */
     .sheet {
-      flex: 1;
-      background: #fff;
-      border-radius: 22px 22px 0 0;
-      padding: 0 0 32px;
-      margin-top: 8px;
-      position: relative; z-index: 2;
+      background:#fbbf24;
+      flex:1;
+      padding:12px 12px calc(24px + env(safe-area-inset-bottom));
+      overflow-y:auto;
     }
 
-    /* ── Tabs dans la feuille ── */
-    .tabs {
-      display: flex;
-      padding: 0 16px;
-      border-bottom: 1px solid rgba(0,0,0,0.06);
+    /* ── SAISON BANNER ── */
+    .season-banner {
+      background:#0f172a;
+      border-radius:12px;
+      padding:10px 14px;
+      margin-bottom:10px;
+      display:flex;align-items:center;gap:10px;
     }
+    .sb-icon { font-size:20px;flex-shrink:0; }
+    .sb-info { flex:1; }
+    .sb-title { font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;letter-spacing:1px; }
+    .sb-sub { font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px; }
+    .sb-timer { font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;flex-shrink:0; }
+
+    /* ── TABS ── */
+    .tabs { display:flex;gap:5px;margin-bottom:10px; }
     .tab {
-      flex: 1; padding: 13px 8px;
-      background: none; border: none;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 13px; letter-spacing: 1px;
-      color: rgba(0,0,0,0.3); cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s; text-align: center;
+      flex:1;padding:8px 4px;border-radius:8px;
+      font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;
+      background:rgba(0,0,0,0.1);color:rgba(0,0,0,0.4);
+      border:2px solid transparent;text-align:center;cursor:pointer;
+      transition:all .15s;
     }
-    .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+    .tab.active { background:white;color:#0f172a;border-color:#0f172a;box-shadow:2px 2px 0 #0f172a; }
 
-    /* ── Mon rang ── */
-    .my-rank-banner {
-      margin: 12px 14px 8px;
-      background: #f8f8f8;
-      border: 1px solid rgba(0,0,0,0.07);
-      border-radius: 12px;
-      padding: 11px 14px;
-      display: flex; align-items: center; gap: 12px;
+    /* ── MON RANG + ÉCART ── */
+    .my-band {
+      background:white;border:2.5px solid #cc1a1a;border-radius:12px;
+      padding:10px 12px;margin-bottom:10px;
+      box-shadow:2px 2px 0 #cc1a1a;
+      display:none;
     }
-    .my-rank-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px; color: #d4af37; letter-spacing: 1px; min-width: 48px;
+    .my-band-row { display:flex;align-items:center;gap:10px;margin-bottom:6px; }
+    .my-rank { font-family:'Bebas Neue',sans-serif;font-size:28px;color:#cc1a1a;line-height:1; }
+    .my-info { flex:1; }
+    .my-name { font-weight:800;font-size:13px;color:#0f172a; }
+    .my-grade { font-size:9px;color:rgba(0,0,0,0.35);margin-top:1px; }
+    .my-score { font-family:'Bebas Neue',sans-serif;font-size:18px;color:#cc1a1a; }
+    .my-gap {
+      font-size:10px;font-weight:700;color:rgba(0,0,0,0.45);
+      background:rgba(0,0,0,0.05);border-radius:6px;
+      padding:5px 8px;
     }
-    .my-rank-info { flex: 1; }
-    .my-rank-label { font-size: 8px; color: rgba(0,0,0,0.25); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-    .my-rank-val { font-family: 'Bebas Neue', sans-serif; font-size: 16px; color: #1a1a1a; letter-spacing: 0.5px; }
+    .my-gap span { color:#0f172a; }
 
-    /* ── Liste ── */
-    .list-wrap { padding: 0 14px; }
-    .rank-rows { padding: 0; }
-
-    /* ── Bouton retour bas ── */
-    .back-bottom {
-      display: block; width: calc(100% - 28px); margin: 16px 14px 0;
-      padding: 13px; border-radius: 12px; cursor: pointer;
-      background: #f8f8f8; border: 1px solid rgba(0,0,0,0.07);
-      color: rgba(0,0,0,0.35); font-family: 'Bebas Neue', sans-serif;
-      font-size: 15px; letter-spacing: 2px;
-    }
-
-    /* TOP 3 */
-    /* Podium caché — top 3 intégré dans les lignes */
-    .podium { display: none !important; }
-
-    /* LIGNES */
-    .rank-rows { display: flex; flex-direction: column; gap: 6px; }
+    /* ── ROWS ── */
+    .rank-rows { display:flex;flex-direction:column;gap:5px; }
 
     .rank-row {
-      background: #f8f8f8;
-      border: 1px solid rgba(0,0,0,0.06);
-      border-radius: 12px;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
+      display:flex;align-items:center;gap:8px;
+      padding:10px 11px;border-radius:10px;
+      background:white;border:2.5px solid #0f172a;
+      cursor:pointer;transition:transform .12s;
+      position:relative;overflow:hidden;
     }
-    .rank-row:active { transform: scale(0.99); background: #f9fafb; }
-    .rank-row.me { border-color: rgba(212,175,55,0.35); background: rgba(212,175,55,0.04); }
+    .rank-row:active { transform:scale(0.98); }
+    .rank-row.top-1 { box-shadow:3px 3px 0 #0f172a; }
+    .rank-row.top-2 { box-shadow:2px 2px 0 #0f172a; }
+    .rank-row.top-3 { box-shadow:2px 2px 0 rgba(0,0,0,0.5); }
+    .rank-row.me { background:#fef3c7;border-color:#cc1a1a;box-shadow:2px 2px 0 #cc1a1a; }
 
     .row-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px; color: #d1d5db;
-      min-width: 28px; text-align: center;
+      font-family:'Bebas Neue',sans-serif;font-size:18px;
+      min-width:26px;text-align:center;color:rgba(0,0,0,0.15);
+      flex-shrink:0;
     }
-    .rank-row.me .row-num { color: #d4af37; }
+    .rank-row.top-1 .row-num { color:#fbbf24;-webkit-text-stroke:1px #0f172a;font-size:20px; }
+    .rank-row.top-2 .row-num { color:#9e9e9e;font-size:19px; }
+    .rank-row.top-3 .row-num { color:#cd7f32;font-size:18px; }
+    .rank-row.me .row-num { color:#cc1a1a; }
 
     .row-avatar {
-      width: 36px; height: 36px; border-radius: 50%;
-      overflow: hidden; flex-shrink: 0;
-      border: 1.5px solid #e5e7eb;
-      background: #f3f4f6;
+      width:36px;height:36px;border-radius:50%;overflow:hidden;
+      flex-shrink:0;border:2px solid #e5e7eb;background:#f3f4f6;
     }
-    .row-avatar img { width:100%; height:100%; object-fit:cover; }
+    .row-avatar img { width:100%;height:100%;object-fit:cover; }
 
-    .row-info { flex: 1; min-width: 0; }
-    .row-name { font-weight: 700; font-size: 13px; color: #1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .row-grade { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+    .row-info { flex:1;min-width:0; }
+    .row-name {
+      font-weight:800;font-size:12px;color:#0f172a;
+      display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+    }
+    .rank-row.top-1 .row-name { font-size:13px; }
+    .row-grade { font-size:9px;color:rgba(0,0,0,0.35);margin-top:1px; }
 
+    /* Score + tendance + défier */
+    .row-right { display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0; }
     .row-score {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px; color: #6b7280; letter-spacing: 0.5px;
-      text-align: right; flex-shrink: 0;
+      font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(0,0,0,0.2);
     }
-    .rank-row.me .row-score { color: #d4af37; }
+    .rank-row.top-1 .row-score { color:#0f172a;font-size:19px; }
+    .rank-row.top-2 .row-score { color:#9e9e9e;font-size:17px; }
+    .rank-row.top-3 .row-score { color:#cd7f32; }
+    .rank-row.me .row-score { color:#cc1a1a; }
 
-    /* TOP 3 — style T1 : barre colorée gauche + fond teinté */
-    .rank-row.top-1,
-    .rank-row.top-2,
-    .rank-row.top-3 {
-      background: #f8f8f8;
-      border: none;
-      border-radius: 0;
-      padding: 13px 14px;
-      margin: 0 -14px;
-      position: relative;
-      box-shadow: none;
+    .row-trend { font-size:9px;font-weight:800; }
+    .row-trend.up { color:#15803d; }
+    .row-trend.dn { color:#cc1a1a; }
+    .row-trend.eq { color:rgba(0,0,0,0.2); }
+
+    .btn-defi {
+      font-size:8px;font-weight:800;letter-spacing:1px;
+      padding:2px 7px;border-radius:5px;
+      background:#fbbf24;border:1.5px solid #0f172a;
+      color:#0f172a;cursor:pointer;
+      flex-shrink:0;
     }
-    .rank-row.top-1::before,
-    .rank-row.top-2::before,
-    .rank-row.top-3::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 0; bottom: 0;
-      width: 3px;
+    .btn-defi:active { transform:scale(0.95); }
+
+    /* ── LOADER ── */
+    .loader {
+      text-align:center;padding:60px 16px;
+      font-family:'Bebas Neue',sans-serif;font-size:16px;
+      color:rgba(0,0,0,0.25);letter-spacing:2px;
     }
-    .rank-row.top-1 { background: linear-gradient(90deg, #fffbeb, #fff); }
-    .rank-row.top-2 { background: linear-gradient(90deg, #f9f9fb, #fff); }
-    .rank-row.top-3 { background: linear-gradient(90deg, #fdf8f3, #fff); }
-    .rank-row.top-1::before { background: #fbbf24; }
-    .rank-row.top-2::before { background: #9e9e9e; }
-    .rank-row.top-3::before { background: #cd7f32; }
-    .rank-row.top-1 .row-num { color: #fbbf24; font-size: 22px; }
-    .rank-row.top-2 .row-num { color: #9e9e9e; font-size: 20px; }
-    .rank-row.top-3 .row-num { color: #cd7f32; font-size: 18px; }
-    .rank-row.top-1 .row-score { color: #fbbf24; }
-    .rank-row.top-2 .row-score { color: #9e9e9e; }
-    .rank-row.top-3 .row-score { color: #cd7f32; }
-    .rank-row.top-1 .row-name { font-size: 14px; font-weight: 800; }
-    .rank-row.top-1 .row-score { font-size: 20px; }
 
-    /* ===================== LOADER ===================== */
-    .loader { text-align:center; padding:60px 20px; }
-    .loader-icon { font-size:32px; opacity:0.3; animation:lPulse 1.5s ease-in-out infinite; }
-    @keyframes lPulse { 0%,100%{opacity:0.2;transform:scale(0.95)} 50%{opacity:0.5;transform:scale(1.05)} }
-    .loader-txt { font-size:11px; color:#9ca3af; margin-top:10px; letter-spacing:1px; }
-
-    /* ===================== POPUP PROFIL ===================== */
+    /* ── POPUP PROFIL ── */
     .popup-overlay {
-      position: fixed; inset: 0; z-index: 1000;
-      background: rgba(0,0,0,0.5);
-      display: flex; align-items: flex-end;
-      animation: overlayIn 0.2s ease;
+      position:fixed;inset:0;z-index:1000;
+      background:rgba(0,0,0,0.5);
+      display:flex;align-items:flex-end;
+      animation:ovIn .2s ease;
     }
-    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+    @keyframes ovIn { from{opacity:0} to{opacity:1} }
+    .popup-sheet {
+      background:white;border-radius:22px 22px 0 0;
+      width:100%;max-width:500px;margin:0 auto;
+      padding:20px 20px calc(28px + env(safe-area-inset-bottom));
+      animation:shIn .25s ease;
+    }
+    @keyframes shIn { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .popup-handle { width:36px;height:4px;border-radius:2px;background:#e5e7eb;margin:0 auto 18px; }
+    .popup-avatar { width:72px;height:72px;border-radius:50%;border:3px solid #e5e7eb;margin:0 auto 10px;display:block;object-fit:cover; }
+    .popup-name { font-weight:900;font-size:18px;color:#1a1a1a;text-align:center; }
+    .popup-grade { font-size:11px;color:#9ca3af;text-align:center;margin-top:3px; }
+    .popup-rank { font-family:'Bebas Neue',sans-serif;font-size:14px;color:#d4af37;text-align:center;margin-top:4px;letter-spacing:1px; }
+    .popup-stats { display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0; }
+    .pp-stat { background:#f8f8f8;border-radius:10px;padding:10px;text-align:center; }
+    .pp-stat-v { font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a; }
+    .pp-stat-l { font-size:8px;color:#9ca3af;font-weight:700;letter-spacing:1px;margin-top:2px; }
+    .popup-company { display:none;align-items:center;gap:6px;margin:0 auto;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;color:#fff; }
+    .btn-close-popup { width:100%;padding:13px;border:none;border-radius:12px;background:#f3f4f6;color:rgba(0,0,0,0.5);font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer;margin-top:14px; }
 
-    .popup-card {
-      width: 100%;
-      background: white;
-      border-radius: 20px 20px 0 0;
-      padding: 24px 20px 40px;
-      animation: cardUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    }
-    @keyframes cardUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-
-    .popup-handle {
-      width: 40px; height: 4px;
-      background: #e5e7eb; border-radius: 2px;
-      margin: 0 auto 20px;
-    }
-
-    .popup-header {
-      display: flex; align-items: center; gap: 16px;
-      margin-bottom: 20px;
-    }
-
-    .popup-avatar {
-      width: 64px; height: 64px; border-radius: 50%;
-      overflow: hidden; flex-shrink: 0;
-      border: 3px solid #e5e7eb;
-      background: #f3f4f6;
-    }
-    .popup-avatar img { width:100%; height:100%; object-fit:cover; }
-
-    .popup-info { flex: 1; }
-    .popup-name { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:#1a1a1a; }
-    .popup-grade { font-size:12px; color:#b8962e; font-weight:700; margin-top:2px; }
-    .popup-rank { font-size:11px; color:#9ca3af; margin-top:2px; }
-    .popup-bio { font-size:12px; color:#6b7280; margin-top:6px; font-style:italic; }
-
-    .popup-stats {
-      display: grid; grid-template-columns: repeat(3,1fr);
-      gap: 10px; margin-bottom: 20px;
-    }
-
-    .popup-stat {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 12px 8px;
-      text-align: center;
-    }
-    .ps-icon { font-size: 20px; margin-bottom: 4px; }
-    .ps-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#1a1a1a; letter-spacing:0.5px; }
-    .ps-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:1px; }
-
-    .popup-close {
-      width: 100%;
-      background: #1a1a1a; color: white;
-      border: none; border-radius: 12px;
-      padding: 14px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px; letter-spacing: 1px;
-      cursor: pointer;
-    }
-  
-    /* FLUIDITÉ GLOBALE */
-    * { -webkit-font-smoothing:antialiased; }
-    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
-      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    button:active, .nav-card:active, .row:active {
-      transform: scale(0.97) !important;
-      opacity: 0.9 !important;
-    }
-    img { transition: opacity 0.3s ease; }
-    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
-
+    /* ── ONLINE DOT ── */
+    @keyframes onlinePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
   </style>
 </head>
 <body>
 
-  <!-- HERO NUIT PORT -->
-  <canvas id="starsCanvas" style="position:fixed;top:0;left:0;width:100%;height:200px;z-index:1;pointer-events:none"></canvas>
-  <div class="page-header" style="position:relative;z-index:2">
-    <div class="page-title">CLASSEMENT</div>
-    <div class="hero-sub">PORT DE MARSEILLE</div>
-    <div class="hero-stats" id="heroStats" style="display:none">
-      <div class="hero-stat"><div class="hero-stat-val gold" id="heroMyRank">#—</div><div class="hero-stat-lbl">TON RANG</div></div>
-      <div class="hero-stat"><div class="hero-stat-val" id="heroLeader">—</div><div class="hero-stat-lbl">LEADER</div></div>
-      <div class="hero-stat"><div class="hero-stat-val" id="heroTotal">—</div><div class="hero-stat-lbl">JOUEURS</div></div>
+<!-- HERO -->
+<div class="hero">
+  <div class="stats3" id="heroStats" style="display:none">
+    <div class="st">
+      <div class="st-v gold" id="heroLeaderVal">—</div>
+      <div class="st-sub" id="heroLeader">—</div>
+      <div class="st-lbl">LEADER</div>
+    </div>
+    <div class="sv"></div>
+    <div class="st">
+      <div class="st-v" id="heroMyRank">—</div>
+      <div class="st-sub">Toi</div>
+      <div class="st-lbl">TON RANG</div>
+    </div>
+    <div class="sv"></div>
+    <div class="st">
+      <div class="st-v" id="heroTotal">—</div>
+      <div class="st-sub">joueurs</div>
+      <div class="st-lbl">TOTAL</div>
     </div>
   </div>
+</div>
 
-  <!-- FEUILLE BLANCHE -->
-  <div class="sheet">
-    <!-- TABS -->
-    <div class="tabs" id="tabs">
-      <div class="tab active" id="tab-level" onclick="switchTab('level')">Niveau</div>
-      <div class="tab" id="tab-money" onclick="switchTab('money')">Argent</div>
-      <div class="tab" id="tab-entreprises" onclick="switchTab('entreprises')">Entreprises</div>
+<!-- BODY JAUNE -->
+<div class="sheet">
+
+  <!-- SAISON -->
+  <div class="season-banner">
+    <div class="sb-icon">🏆</div>
+    <div class="sb-info">
+      <div class="sb-title">SAISON 1 EN COURS</div>
+      <div class="sb-sub">Top 3 gagne des diamants + badge permanent</div>
     </div>
-
-    <!-- MON RANG -->
-    <div class="my-rank-banner" id="myRankBanner" style="display:none">
-      <div class="my-rank-num" id="myRankNum">#-</div>
-      <div class="my-rank-info">
-        <div class="my-rank-label">Ton classement</div>
-        <div class="my-rank-val" id="myRankVal">--</div>
-      </div>
-    </div>
-
-    <!-- LOADER -->
-    <div class="loader" id="loader">
-      <div class="loader-icon">🏆</div>
-      <div class="loader-txt">Chargement...</div>
-    </div>
-
-    <!-- LISTE -->
-    <div class="list-wrap" id="listWrap" style="display:none">
-      <div class="podium" id="podium"></div>
-      <div class="rank-rows" id="rankRows"></div>
-    </div>
-
-    <!-- RETOUR -->
-    <button class="back-bottom" onclick="window.location.href='game.html'">← RETOUR AU JEU</button>
-    <button class="back-bottom" style="margin-top:8px;background:#fff0f0;color:#dc2626;border-color:rgba(220,38,38,0.15);font-size:11px" onclick="localStorage.clear();sessionStorage.clear();location.reload()">🔄 Vider le cache</button>
+    <div class="sb-timer" id="seasonTimer">—</div>
   </div>
 
-  <!-- POPUP -->
-  <div class="popup-overlay" id="popup" style="display:none" onclick="closePopup(event)">
-    <div class="popup-card">
-      <div class="popup-handle"></div>
-      <div class="popup-header">
-        <div class="popup-avatar"><img id="ppAvatar" src="avatar-default.png"></div>
-        <div class="popup-info">
-          <div class="popup-name" id="ppName">--</div>
-          <div class="popup-grade" id="ppGrade">--</div>
-          <div class="popup-rank" id="ppRank">--</div>
-          <div id="ppCompany" style="display:none;margin:8px auto 0"></div>
-        <div class="popup-bio" id="ppBio" style="display:none"></div>
-        </div>
-      </div>
-      <div class="popup-stats">
-        <div class="popup-stat">
-          <div class="ps-icon">⭐</div>
-          <div class="ps-val" id="ppLevel">-</div>
-          <div class="ps-lbl">Niveau</div>
-        </div>
-        <div class="popup-stat">
-          <div class="ps-icon">💰</div>
-          <div class="ps-val" id="ppMoney">-</div>
-          <div class="ps-lbl">Argent</div>
-        </div>
-        <div class="popup-stat">
-          <div class="ps-icon">🏆</div>
-          <div class="ps-val" id="ppTrophies">-</div>
-          <div class="ps-lbl">Trophées</div>
-        </div>
-      </div>
-      <button class="popup-close" onclick="document.getElementById('popup').style.display='none'">Fermer</button>
-    </div>
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" id="tab-level"        onclick="switchTab('level')">Niveau</div>
+    <div class="tab"        id="tab-money"        onclick="switchTab('money')">Argent</div>
+    <div class="tab"        id="tab-entreprises"  onclick="switchTab('entreprises')">Entreprises</div>
   </div>
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
+  <!-- MON RANG + ÉCART -->
+  <div class="my-band" id="myBand">
+    <div class="my-band-row">
+      <div class="my-rank" id="myRankNum">—</div>
+      <div class="my-info">
+        <div class="my-name" id="myName">—</div>
+        <div class="my-grade" id="myGrade">—</div>
+      </div>
+      <div class="my-score" id="myScore">—</div>
+    </div>
+    <div class="my-gap" id="myGap" style="display:none"></div>
+  </div>
 
-    let currentUser = null;
-    let currentTab = 'level';
-    let allPlayers = [];
+  <!-- LOADER -->
+  <div class="loader" id="loader">CHARGEMENT…</div>
 
-    const SPECIAL_AV = ['avatar-millionaire.png','avatar-completionist.png'];
-    function avatarForLevel(lvl){
-      if(lvl>=50)return 'avatar-level-50.png'; if(lvl>=30)return 'avatar-level-30.png';
-      if(lvl>=20)return 'avatar-level-20.png'; if(lvl>=17)return 'avatar-level-17.png';
-      if(lvl>=15)return 'avatar-level-15.png'; if(lvl>=13)return 'avatar-level-13.png';
-      if(lvl>=10)return 'avatar-level-10.png'; if(lvl>=5)return 'avatar-level-5.png';
-      if(lvl>=4)return 'avatar-level-4.png';  if(lvl>=3)return 'avatar-level-3.png';
-      if(lvl>=2)return 'avatar-level-2.png';  return 'avatar-default.png';
+  <!-- LISTE -->
+  <div style="display:none" id="listWrap">
+    <div class="rank-rows" id="rankRows"></div>
+  </div>
+
+</div>
+
+<!-- POPUP PROFIL -->
+<div id="popup" class="popup-overlay" style="display:none" onclick="closePopup(event)">
+  <div class="popup-sheet">
+    <div class="popup-handle"></div>
+    <img class="popup-avatar" id="ppAvatar" src="avatar-default.png">
+    <div class="popup-name" id="ppName">—</div>
+    <div class="popup-grade" id="ppGrade">—</div>
+    <div class="popup-rank" id="ppRank">—</div>
+    <div class="popup-stats">
+      <div class="pp-stat"><div class="pp-stat-v" id="ppLevel">—</div><div class="pp-stat-l">NIVEAU</div></div>
+      <div class="pp-stat"><div class="pp-stat-v" id="ppMoney">—</div><div class="pp-stat-l">ARGENT</div></div>
+      <div class="pp-stat"><div class="pp-stat-v" id="ppTrophies">—</div><div class="pp-stat-l">TROPHÉES</div></div>
+    </div>
+    <div class="popup-company" id="ppCompany"></div>
+    <button class="btn-close-popup" onclick="document.getElementById('popup').style.display='none'">FERMER</button>
+  </div>
+</div>
+
+<script>
+  const sb = supabase.createClient(
+    'https://drtsuhnbclhmgfjiykap.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg'
+  );
+
+  let currentUser = null, allPlayers = [], currentTab = 'level';
+  const SEASON_END = new Date('2025-07-01T00:00:00');
+
+  // ── Saison timer ──
+  function updateTimer() {
+    const diff = SEASON_END - Date.now();
+    if (diff <= 0) { document.getElementById('seasonTimer').textContent = 'TERMINÉE'; return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    document.getElementById('seasonTimer').textContent = d + 'J ' + h + 'H';
+  }
+  updateTimer();
+  setInterval(updateTimer, 60000);
+
+  // ── Tendance (localStorage) ──
+  function getTrend(userId, currentRank) {
+    const key = 'rank_' + currentTab + '_' + userId;
+    const prev = parseInt(localStorage.getItem(key) || '0');
+    localStorage.setItem(key, currentRank);
+    if (!prev || prev === currentRank) return { cls:'eq', txt:'= stable' };
+    if (currentRank < prev) return { cls:'up', txt:'▲ +' + (prev - currentRank) };
+    return { cls:'dn', txt:'▼ -' + (currentRank - prev) };
+  }
+
+  function getGrade(l) {
+    if (l <= 4)  return 'Docker Occasionnel';
+    if (l <= 14) return 'Docker';
+    if (l <= 29) return 'Docker Mensuel';
+    if (l <= 49) return 'Contre-Maître';
+    if (l <= 79) return 'Chef de Quai';
+    return 'Magnat du Port';
+  }
+
+  function score(p) {
+    if (currentTab === 'entreprises') return bizValuation(p.commerce).toLocaleString('fr-FR') + '€';
+    if (currentTab === 'level') return 'Niv. ' + (p.level || 1);
+    return (p.money || 0).toLocaleString('fr-FR') + '€';
+  }
+
+  function scoreVal(p) {
+    if (currentTab === 'entreprises') return bizValuation(p.commerce);
+    if (currentTab === 'level') return p.level || 1;
+    return p.money || 0;
+  }
+
+  function bizValuation(com) {
+    if (!com || !com.company || !com.company.name) return 0;
+    const l = com.company.level || 1;
+    return l * 2000 * (com.ipo ? 1.5 : 1) * 150;
+  }
+
+  function avatarOf(p) { return p.profile.avatar_url || 'avatar-default.png'; }
+  function escapeHtml(t) { return (t||'').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+  function getOnlineStatus(lastSeen) {
+    if (!lastSeen) return { online:false, text:'' };
+    const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
+    if (diff < 300)   return { online:true,  text:'En ligne' };
+    if (diff < 3600)  return { online:false, text:'il y a ' + Math.floor(diff/60) + 'min' };
+    if (diff < 86400) return { online:false, text:'il y a ' + Math.floor(diff/3600) + 'h' };
+    return { online:false, text:'il y a ' + Math.floor(diff/86400) + 'j' };
+  }
+
+  function getCompanyDesc(co, username) {
+    const level = co.level || 1;
+    const descs = [
+      ['Fondée dans un garage du Panier par '+username+'. Le garage est toujours là.',
+       username+' a lancé ça entre deux pauses clope. Ça marche mieux qu\'attendu.',
+       'L\'idée est venue à '+username+' après un pastis. Plusieurs pastis, en fait.'],
+      ['L\'entreprise grandit. '+username+' dort moins bien.',
+       'Niveau '+level+', soit dit en passant. Les concurrents tremblent légèrement.',
+       username+' a failli tout lâcher au niveau 8. Contenu(e) de ne pas l\'avoir fait.'],
+    ];
+    const seed = (co.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+    const tier = level <= 5 ? 0 : 1;
+    return descs[tier][seed % descs[tier].length];
+  }
+
+  async function loadRanking() {
+    document.getElementById('loader').style.display = 'block';
+    document.getElementById('listWrap').style.display = 'none';
+    document.getElementById('myBand').style.display = 'none';
+
+    const { data: stats } = await sb
+      .from('game_stats')
+      .select('user_id, money, level, xp, commerce')
+      .order(currentTab === 'level' ? 'level' : 'money', { ascending: false });
+
+    if (!stats?.length) { document.getElementById('loader').style.display = 'none'; return; }
+
+    const { data: profiles } = await sb
+      .from('profiles')
+      .select('user_id, username, avatar_url, trophies, last_seen')
+      .in('user_id', stats.map(s => s.user_id));
+
+    allPlayers = stats.map(s => ({
+      ...s,
+      profile: profiles?.find(p => p.user_id === s.user_id) || { username:'Docker', avatar_url:'avatar-default.png', trophies:0 }
+    }));
+
+    if (currentTab === 'entreprises') {
+      allPlayers = allPlayers
+        .filter(p => p.commerce?.company?.name)
+        .sort((a, b) => bizValuation(b.commerce) - bizValuation(a.commerce));
     }
-    function avatarOf(p){ const a=p.profile&&p.profile.avatar_url; if(SPECIAL_AV.includes(a)) return a; return avatarForLevel(p.level||1); }
 
-    function getGrade(l) {
-      if (!l||l<=4)  return 'Docker Occasionnel';
-      if (l<=14) return 'Docker';
-      if (l<=29) return 'Docker Mensuel';
-      if (l<=49) return 'Contre-Maître';
-      if (l<=79) return 'Chef de Quai';
-      return 'Magnat du Port';
+    document.getElementById('loader').style.display = 'none';
+
+    const myIdx = allPlayers.findIndex(p => p.user_id === currentUser.id);
+    if (myIdx >= 0) {
+      const me = allPlayers[myIdx];
+      const myRank = myIdx + 1;
+
+      // Hero stats
+      document.getElementById('heroMyRank').textContent = '#' + myRank;
+      document.getElementById('heroTotal').textContent   = allPlayers.length;
+      const heroLeaderEl = document.getElementById('heroLeader');
+      const heroLeaderValEl = document.getElementById('heroLeaderVal');
+      if (allPlayers[0]) {
+        heroLeaderEl.textContent    = allPlayers[0].profile.username;
+        heroLeaderValEl.textContent = '1er';
+      }
+      document.getElementById('heroStats').style.display = '';
+
+      // Mon rang band
+      document.getElementById('myRankNum').textContent = '#' + myRank;
+      document.getElementById('myName').textContent    = me.profile.username;
+      document.getElementById('myGrade').textContent   = getGrade(me.level || 1);
+      document.getElementById('myScore').textContent   = score(me);
+
+      // Écart avec joueur du dessus
+      const gapEl = document.getElementById('myGap');
+      if (myIdx > 0) {
+        const above = allPlayers[myIdx - 1];
+        const myVal  = scoreVal(me);
+        const abVal  = scoreVal(above);
+        const diff   = abVal - myVal;
+        const unit   = currentTab === 'level' ? ' niveaux' : currentTab === 'money' ? '€' : '€';
+        const label  = currentTab === 'level' ? diff + ' niveaux' : diff.toLocaleString('fr-FR') + unit;
+        gapEl.innerHTML = 'À <span>' + label + '</span> du rang #' + myIdx + ' — ' + escapeHtml(above.profile.username);
+        gapEl.style.display = 'block';
+      } else {
+        gapEl.style.display = 'none';
+      }
+      document.getElementById('myBand').style.display = 'block';
     }
 
-    // Étoiles canvas
-  (function(){
-    const cv = document.getElementById('starsCanvas');
-    if (!cv) return;
-    cv.width = window.innerWidth; cv.height = 200;
-    const ctx = cv.getContext('2d');
-    for(let i=0;i<50;i++){
-      ctx.beginPath();
-      ctx.arc(Math.random()*cv.width, Math.random()*200, Math.random()*0.8+0.2, 0, Math.PI*2);
-      ctx.fillStyle = `rgba(255,255,255,${Math.random()*0.6+0.1})`;
-      ctx.fill();
+    renderRows(allPlayers);
+    document.getElementById('listWrap').style.display = 'block';
+  }
+
+  function renderRows(players) {
+    const el = document.getElementById('rankRows');
+    if (!players.length) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(0,0,0,0.35);font-weight:700">Aucune entreprise pour l\'instant</div>';
+      return;
     }
-  })();
+    const medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
 
-  async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
-      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
-      loadRanking();
-    }
-
-    async function loadRanking() {
-      document.getElementById('loader').style.display = 'block';
-      document.getElementById('listWrap').style.display = 'none';
-      document.getElementById('myRankBanner').style.display = 'none';
-
-      const { data: stats } = await sb
-        .from('game_stats')
-        .select('user_id, money, level, xp, commerce')
-        .order(currentTab === 'level' ? 'level' : 'money', { ascending: false });
-
-      if (!stats?.length) { document.getElementById('loader').style.display = 'none'; return; }
-
-      const { data: profiles } = await sb
-        .from('profiles')
-        .select('user_id, username, avatar_url, trophies, last_seen')
-        .in('user_id', stats.map(s => s.user_id));
-
-      allPlayers = stats.map(s => ({
-        ...s,
-        profile: profiles?.find(p => p.user_id === s.user_id) || { username: 'Docker', avatar_url: 'avatar-default.png', trophies: 0 }
-      }));
+    el.innerHTML = players.map((p, i) => {
+      const rank  = i + 1;
+      const isMe  = p.user_id === currentUser.id;
+      const topCls = rank <= 3 ? ' top-' + rank : '';
+      const numDisplay = medals[rank] || rank;
+      const trend = getTrend(p.user_id, rank);
+      const online = getOnlineStatus(p.profile.last_seen);
+      const defiBtn = isMe ? '' : '<div class="btn-defi">⚔️ DÉFIER</div>';
 
       if (currentTab === 'entreprises') {
-        allPlayers = allPlayers
-          .filter(p => p.commerce && p.commerce.company && p.commerce.company.name)
-          .sort((a, b) => bizValuation(b.commerce) - bizValuation(a.commerce));
+        const co = p.commerce.company;
+        const ipoTag = co.ipo ? ' <span style="font-size:9px;background:#15803d;color:#fff;padding:1px 5px;border-radius:4px;font-weight:700">📈</span>' : '';
+        const sloganHtml = co.slogan
+          ? '<div style="font-size:10px;font-style:italic;color:rgba(0,0,0,0.5);margin-top:2px">&laquo;&nbsp;' + escapeHtml(co.slogan) + '&nbsp;&raquo;</div>' : '';
+        return '<div class="rank-row' + (isMe?' me':'') + topCls + '" onclick="showProfile(' + i + ')" style="flex-direction:column;align-items:stretch;gap:6px">'
+          + '<div style="display:flex;align-items:center;gap:8px">'
+          + '<div class="row-num">' + numDisplay + '</div>'
+          + '<div class="row-avatar" style="background:' + (co.color||'#d97706') + ';display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid #0f172a;flex-shrink:0">' + (co.logo||'🏢') + '</div>'
+          + '<div style="flex:1;min-width:0"><div class="row-name">' + escapeHtml(co.name) + ipoTag + (isMe?' 👈':'') + '</div>'
+          + '<div class="row-grade">' + escapeHtml(co.type||'Entreprise') + ' · nv.' + (co.level||1) + ' · ' + escapeHtml(p.profile.username) + '</div></div>'
+          + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div>' + defiBtn + '</div>'
+          + '</div>'
+          + (sloganHtml ? '<div style="margin-left:34px;padding:6px 10px;background:rgba(0,0,0,0.04);border-left:3px solid ' + (co.color||'#d97706') + ';border-radius:0 6px 6px 0">' + sloganHtml + '<div style="font-size:9px;color:rgba(0,0,0,0.35)">' + escapeHtml(getCompanyDesc(co, p.profile.username)) + '</div></div>' : '')
+          + '</div>';
       }
 
-      document.getElementById('loader').style.display = 'none';
+      const _co = (p.commerce?.company?.name) ? p.commerce.company : null;
+      const onlineDot = online.online
+        ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite;flex-shrink:0"></span>' : '';
+      const companyTag = _co
+        ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#fff;background:' + (_co.color||'#d97706') + ';padding:1px 6px;border-radius:8px">' + (_co.logo||'🏢') + ' ' + escapeHtml(_co.name) + '</span>' : '';
 
-      // Mon rang + hero stats
-      const myIdx = allPlayers.findIndex(p => p.user_id === currentUser.id);
-      if (myIdx >= 0) {
-        const me = allPlayers[myIdx];
-        document.getElementById('myRankNum').textContent = '#' + (myIdx+1);
-        document.getElementById('myRankVal').textContent =
-          currentTab === 'level' ? `Niveau ${me.level||1} — ${getGrade(me.level||1)}`
-          : currentTab === 'entreprises' ? `${bizValuation(me.commerce).toLocaleString('fr-FR')} € de valorisation`
-          : `${(me.money||0).toLocaleString('fr-FR')}€`;
-        document.getElementById('myRankBanner').style.display = 'flex';
-        // Hero stats
-        const heroMyRank = document.getElementById('heroMyRank');
-        const heroLeader = document.getElementById('heroLeader');
-        const heroTotal  = document.getElementById('heroTotal');
-        const heroStats  = document.getElementById('heroStats');
-        if (heroMyRank) heroMyRank.textContent = '#' + (myIdx+1);
-        if (heroLeader && allPlayers[0]) {
-          let lp = null; try { const r = await sb.from('profiles').select('username').eq('user_id', allPlayers[0].user_id).maybeSingle(); lp = r.data; } catch(_) {}
-          heroLeader.textContent = lp?.username || 'Docker';
-        }
-        if (heroTotal) heroTotal.textContent = allPlayers.length;
-        if (heroStats) heroStats.style.display = 'flex';
-      }
+      return '<div class="rank-row' + (isMe?' me':'') + topCls + '" onclick="showProfile(' + i + ')">'
+        + '<div class="row-num">' + numDisplay + '</div>'
+        + '<div class="row-avatar"><img src="' + avatarOf(p) + '"></div>'
+        + '<div class="row-info">'
+        + '<div class="row-name">' + escapeHtml(p.profile.username) + (isMe?' 👈':'') + onlineDot + '</div>'
+        + '<div class="row-grade" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">' + getGrade(p.level||1) + (!online.online && online.text ? '<span style="color:rgba(0,0,0,0.25)">' + online.text + '</span>' : '') + companyTag + '</div>'
+        + '</div>'
+        + '<div class="row-right">'
+        + '<div class="row-score">' + score(p) + '</div>'
+        + '<div class="row-trend ' + trend.cls + '">' + trend.txt + '</div>'
+        + defiBtn
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
 
-      document.getElementById('podium').style.display = 'none';
-      renderRows(allPlayers, 1);
-      document.getElementById('listWrap').style.display = 'block';
-    }
+  function showProfile(idx) {
+    const p = allPlayers[idx];
+    if (!p) return;
+    document.getElementById('ppAvatar').src         = avatarOf(p);
+    document.getElementById('ppName').textContent   = p.profile.username;
+    document.getElementById('ppGrade').textContent  = getGrade(p.level||1);
+    document.getElementById('ppRank').textContent   = '#' + (idx+1) + ' au classement';
+    document.getElementById('ppLevel').textContent  = p.level || 1;
+    document.getElementById('ppMoney').textContent  = (p.money||0) >= 1000 ? Math.floor((p.money||0)/1000) + 'k€' : (p.money||0) + '€';
+    document.getElementById('ppTrophies').textContent = p.profile.trophies || 0;
+    const _co = p.commerce?.company?.name ? p.commerce.company : null;
+    const coEl = document.getElementById('ppCompany');
+    if (_co) {
+      coEl.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin:8px auto 0;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:' + (_co.color||'#d97706');
+      coEl.innerHTML = (_co.logo||'🏢') + ' ' + escapeHtml(_co.name) + (_co.ipo?' 📈':'');
+    } else { coEl.style.display = 'none'; }
+    document.getElementById('popup').style.display = 'flex';
+  }
 
-    function score(p) {
-      if (currentTab === 'entreprises') return `${bizValuation(p.commerce).toLocaleString('fr-FR')}€`;
-      return currentTab === 'level'
-        ? `Niv. ${p.level||1}`
-        : `${(p.money||0).toLocaleString('fr-FR')}€`;
-    }
-    function getCompanyDesc(co, username) {
-      const level = co.level || 1;
-      const ipo = co.ipo;
-      const descs = [
-        ['Fondée dans un garage du Panier par '+username+'. Le garage est toujours là.',
-         username+' a lancé ça entre deux pauses clope. Ça marche mieux qu\'attendu.',
-         'L\'idée est venue à '+username+' après un pastis. Plusieurs pastis, en fait.'],
-        ['Maintenant '+username+' a des employés. Ils ne savent pas trop pourquoi.',
-         'L\'entreprise grandit. '+username+' dort moins bien.',
-         'Niveau '+level+', soit dit en passant. Les concurrents tremblent légèrement.'],
-        [username+' a failli tout lâcher au niveau 8. Contenu(e) de ne pas l\'avoir fait.',
-         'Désormais incontournable sur le port. Au moins dans la tête de '+username+'.',
-         'Les rumeurs disent que même la Direction du Port les connaît maintenant.'],
-        ['Entreprise familiale, même si la famille ne le sait pas encore.',
-         ipo ? 'En bourse depuis peu. Les actionnaires sont '+username+' et ses amis.' : 'Pas encore en bourse. '+username+' résiste à la pression.',
-         'Niveau '+level+' atteint après des semaines de labeur acharné.'],
-      ];
-      const seed = (co.name||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
-      const tier = level <= 3 ? 0 : level <= 7 ? 1 : level <= 12 ? 2 : 3;
-      const list = descs[tier];
-      return list[seed % list.length];
-    }
+  function closePopup(e) {
+    if (e.target.id === 'popup') document.getElementById('popup').style.display = 'none';
+  }
 
-    function bizValuation(com){ if(!com||!com.company||!com.company.name) return 0; const l=com.company.level||1; const iph=l*2000*(com.ipo?1.5:1); return iph*150; }
-    function escapeHtml(t){ return (t||'').replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    const a = document.getElementById('tab-' + tab);
+    if (a) a.classList.add('active');
+    loadRanking();
+  }
 
-    function renderPodium(top) {
-      const el = document.getElementById('podium');
-      const medals = ['🥇','🥈','🥉'];
-      const classes = ['rank-1','rank-2','rank-3'];
-      el.innerHTML = top.map((p,i) => `
-        <div class="podium-item ${classes[i]}" onclick="showProfile(${i})">
-          <div class="podium-stripe"></div>
-          <div class="podium-medal">${medals[i]}</div>
-          <div class="podium-avatar"><img src="${avatarOf(p)}"></div>
-          <div class="podium-name">${p.profile.username}</div>
-          <div class="podium-score">${score(p)}</div>
-        </div>`).join('');
-    }
+  async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+    currentUser = session.user;
+    sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+    loadRanking();
+  }
 
-    function getOnlineStatus(lastSeen) {
-      if (!lastSeen) return { online: false, text: '' };
-      const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
-      if (diff < 300)   return { online: true,  text: 'En ligne' };
-      if (diff < 3600)  return { online: false, text: `il y a ${Math.floor(diff/60)}min` };
-      if (diff < 86400) return { online: false, text: `il y a ${Math.floor(diff/3600)}h` };
-      return { online: false, text: `il y a ${Math.floor(diff/86400)}j` };
-    }
-
-    function renderRows(players, startRank) {
-      const el = document.getElementById('rankRows');
-      if (!players.length) { el.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#9ca3af">Aucune entreprise pour l\'instant.<br>Crée la tienne dans « Mon Entreprise » !</div>'; return; }
-      const medals = { 1:'🥇', 2:'🥈', 3:'🥉' };
-      el.innerHTML = players.map((p, i) => {
-        const rank = startRank + i;
-        const isMe = p.user_id === currentUser.id;
-        const idx = rank - 1;
-        const topCls = rank <= 3 ? ' top-' + rank : '';
-        const numDisplay = medals[rank] || rank;
-        if (currentTab === 'entreprises') {
-          const co = p.commerce.company;
-          const slogan = co.slogan || '';
-          const desc   = getCompanyDesc(co, p.profile.username);
-          const ipoTag = co.ipo ? '<span style="font-size:10px;background:#16a34a;color:#fff;padding:1px 6px;border-radius:8px;font-weight:700;margin-left:4px">📈 EN BOURSE</span>' : '';
-          const sloganHtml = slogan ? '<div style="font-size:11px;font-style:italic;color:rgba(0,0,0,0.6);margin-bottom:3px">&laquo;&nbsp;' + escapeHtml(slogan) + '&nbsp;&raquo;</div>' : '';
-          return '<div class="rank-row ' + (isMe?'me':'') + topCls + '" onclick="showProfile(' + idx + ')" style="flex-direction:column;align-items:stretch;padding:10px 14px;gap:6px">'
-            + '<div style="display:flex;align-items:center;gap:10px">'
-            + '<div class="row-num" style="min-width:28px">' + numDisplay + '</div>'
-            + '<div class="row-avatar" style="background:' + (co.color||'#d97706') + ';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + (co.logo||'🏢') + '</div>'
-            + '<div style="flex:1;min-width:0">'
-            + '<div class="row-name" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">' + escapeHtml(co.name) + ipoTag + (isMe?' 👈':'') + '</div>'
-            + '<div style="font-size:10px;color:#9ca3af;margin-top:1px">' + escapeHtml(co.type||'Entreprise') + ' · nv.' + (co.level||1) + ' · par ' + escapeHtml(p.profile.username) + '</div>'
-            + '</div>'
-            + '<div class="row-score" style="flex-shrink:0">' + score(p) + '</div>'
-            + '</div>'
-            + '<div style="margin-left:38px;padding:7px 10px;background:rgba(0,0,0,0.03);border-left:3px solid ' + (co.color||'#d97706') + ';border-radius:0 6px 6px 0">'
-            + sloganHtml
-            + '<div style="font-size:10px;color:rgba(0,0,0,0.4)">' + escapeHtml(desc) + '</div>'
-            + '</div>'
-            + '</div>';
-        }
-        const _co = (p.commerce && p.commerce.company && p.commerce.company.name) ? p.commerce.company : null;
-        return `
-          <div class="rank-row ${isMe?'me':''}${topCls}" onclick="showProfile(${idx})">
-            <div class="row-num">${numDisplay}</div>
-            <div class="row-avatar"><img src="${avatarOf(p)}"></div>
-            <div class="row-info">
-              <div class="row-name" style="display:flex;align-items:center;gap:6px">
-                ${p.profile.username}${isMe?' 👈':''}
-                ${getOnlineStatus(p.profile.last_seen).online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite"></span>' : ''}
-              </div>
-              <div class="row-grade" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-                ${getGrade(p.level||1)}
-                ${!getOnlineStatus(p.profile.last_seen).online && getOnlineStatus(p.profile.last_seen).text ? `<span style="font-size:10px;color:#9ca3af">${getOnlineStatus(p.profile.last_seen).text}</span>` : ''}
-                ${_co ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;color:#fff;background:${_co.color||'#d97706'};padding:1px 7px;border-radius:10px">${_co.logo||'🏢'} ${escapeHtml(_co.name)}</span>` : ''}
-              </div>
-            </div>
-            <div class="row-score">${score(p)}</div>
-          </div>`;
-      }).join('');
-    }
-
-    function showProfile(idx) {
-      const p = allPlayers[idx];
-      if (!p) return;
-      document.getElementById('ppAvatar').src   = avatarOf(p);
-      document.getElementById('ppName').textContent  = p.profile.username;
-      document.getElementById('ppGrade').textContent = getGrade(p.level||1);
-      document.getElementById('ppRank').textContent  = `#${idx+1} au classement`;
-      document.getElementById('ppLevel').textContent = p.level || 1;
-      document.getElementById('ppMoney').textContent = ((p.money||0) >= 1000)
-        ? Math.floor((p.money||0)/1000) + 'k€'
-        : (p.money||0) + '€';
-      document.getElementById('ppTrophies').textContent = p.profile.trophies || 0;
-      const _co = (p.commerce && p.commerce.company && p.commerce.company.name) ? p.commerce.company : null;
-      const _coEl = document.getElementById('ppCompany');
-      if (_coEl) {
-        if (_co) {
-          _coEl.style.cssText = 'display:inline-flex;align-items:center;gap:5px;margin:8px auto 0;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;background:'+(_co.color||'#d97706');
-          _coEl.innerHTML = '';
-          const s1=document.createElement('span'); s1.textContent=_co.logo||'🏢';
-          const s2=document.createElement('span'); s2.textContent=_co.name+(_co.ipo?' 📈':'');
-          _coEl.appendChild(s1); _coEl.appendChild(s2);
-        } else { _coEl.style.display='none'; }
-      }
-      document.getElementById('popup').style.display = 'flex';
-    }
-
-    function closePopup(e) {
-      if (e.target.id === 'popup') document.getElementById('popup').style.display = 'none';
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      const a = document.getElementById('tab-' + tab); if (a) a.classList.add('active');
-      loadRanking();
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
