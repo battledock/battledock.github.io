@@ -23,7 +23,7 @@
     .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:white; }
 
     /* Zone centrale */
-    .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:0 14px; }
+    .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,2vw,12px); padding:0 14px; }
 
     /* Fusée */
     .rocket { font-size:clamp(56px,16vw,72px); filter:drop-shadow(0 0 20px rgba(255,140,0,0.6)); transition:filter .3s; line-height:1; }
@@ -36,11 +36,11 @@
     .mult-val.danger { color:#ff8844; text-shadow:0 0 40px rgba(255,100,50,0.5); }
     .mult-val.crashed { color:#ff3333; text-shadow:0 0 40px rgba(255,0,0,0.6); }
     .mult-val.cashed { color:#4ade80; text-shadow:0 0 40px rgba(74,222,128,0.5); }
-    .mult-sub { font-size:11px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; text-align:center; }
+    .mult-sub { font-size:clamp(9px,2.5vw,12px); font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; text-align:center; }
 
     /* Gain potentiel */
-    .potential { background:rgba(255,140,0,0.08); border:1px solid rgba(255,140,0,0.2); border-radius:10px; padding:6px 18px; min-height:36px; display:flex; align-items:center; justify-content:center; }
-    .potential-v { font-family:'Bebas Neue',sans-serif; font-size:22px; color:rgba(255,140,0,0.7); }
+    .potential { background:rgba(255,140,0,0.08); border:1px solid rgba(255,140,0,0.2); border-radius:10px; padding:5px 16px; min-height:32px; display:flex; align-items:center; justify-content:center; }
+    .potential-v { font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5vw,24px); color:rgba(255,140,0,0.7); }
 
     /* Bouton encaisser */
     .btn-cashout { width:calc(100% - 28px); margin:0 14px; padding:clamp(14px,4vw,19px); border:none; border-radius:16px; background:linear-gradient(135deg,#ff8c00,#ff4500); color:white; font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5.5vw,24px); letter-spacing:3px; cursor:pointer; box-shadow:0 4px 24px rgba(255,100,0,0.4); transition:all .15s; flex-shrink:0; }
@@ -134,7 +134,7 @@
 
   function genCrashAt(){
     if(Math.random()<0.01) return 1.0;
-    return Math.max(1.0, 0.99/(1-Math.random()));
+    return Math.max(1.0, 0.95/(1-Math.random()));
   }
 
   function setTrail(opacity){
@@ -153,6 +153,7 @@
 
   function startGame(){
     if(running||money<bet) return;
+    if(interval) clearInterval(interval);
     money-=bet; updateBal();
     cashedOut=false; mult=1.0; crashAt=genCrashAt(); running=true;
 
@@ -163,15 +164,15 @@
     document.getElementById('multSub').textContent='Encaisse avant le crash !';
     document.getElementById('potential').textContent='';
     document.getElementById('rocketEl').className='rocket';
-    document.getElementById('multValue').className='mult-value mult-val';
+    document.getElementById('multValue').className='mult-val';
     setTrail(0.3);
 
     let elapsed=0;
     interval=setInterval(()=>{
       elapsed+=50;
-      mult=Math.pow(1.07,elapsed/100);
+      mult=Math.pow(1.035,elapsed/100);
       document.getElementById('multValue').textContent=fmtMult(mult);
-      if(mult>5) document.getElementById('multValue').className='mult-value mult-val danger';
+      if(mult>5) document.getElementById('multValue').className='mult-val danger';
       const gain=Math.floor(bet*mult);
       document.getElementById('potential').textContent='= '+fmt(gain)+'€';
       document.getElementById('btnCashout').textContent='ENCAISSER — '+fmt(gain)+'€';
@@ -185,7 +186,7 @@
     cashedOut=true; clearInterval(interval); running=false;
     const gain=Math.floor(bet*mult);
     money+=gain; updateBal();
-    document.getElementById('multValue').className='mult-value mult-val cashed';
+    document.getElementById('multValue').className='mult-val cashed';
     document.getElementById('rocketEl').className='rocket cashed';
     document.getElementById('multSub').textContent='ENCAISSÉ ! ✅';
     document.getElementById('potential').textContent='+'+fmt(gain)+'€';
@@ -200,7 +201,7 @@
   function crash(){
     clearInterval(interval); running=false;
     if(cashedOut) return;
-    document.getElementById('multValue').className='mult-value mult-val crashed';
+    document.getElementById('multValue').className='mult-val crashed';
     document.getElementById('multValue').textContent='💥 CRASH !';
     document.getElementById('rocketEl').className='rocket crashed';
     document.getElementById('rocketEl').textContent='💥';
@@ -216,7 +217,7 @@
   }
 
   function reset(){
-    document.getElementById('multValue').className='mult-value mult-val';
+    document.getElementById('multValue').className='mult-val';
     document.getElementById('multValue').textContent='1.00×';
     document.getElementById('multSub').textContent='Lance une partie pour commencer';
     document.getElementById('potential').textContent='';
