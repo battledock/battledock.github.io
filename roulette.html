@@ -2,185 +2,364 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Roulette — Battle Dock</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Roulette - Battle Dock Casino</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    html { height:100%; } body { height:100dvh; overflow:hidden; }
-    body { font-family:'Inter',sans-serif; background:#cc1a1a; display:flex; flex-direction:column; }
-    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-user-select: none; user-select: none;
+      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
+      min-height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 6px;
+      padding-bottom: 120px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .game-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      min-height: 0;
+    }
 
-    .hdr { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+36px) 14px 10px; flex-shrink:0; }
-    .btn-back { background:rgba(0,0,0,0.2); border:2px solid rgba(255,255,255,0.2); color:white; border-radius:10px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; cursor:pointer; }
-    .hdr-title { flex:1; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:2px; }
-    .hdr-bal { background:#FDD835; border:2.5px solid #0a0a0a; border-radius:10px; padding:7px 14px; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:#0a0a0a; }
+    /* TABLE ROULETTE — même style .machine */
+    .rl-table {
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 4px solid #fbbf24;
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 340px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
 
-    /* Roue */
-    .wheel-wrap { flex:1; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:14px; padding:0 14px; }
+    /* ROUE */
     @keyframes spin-wheel { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .wheel-spinning { animation:spin-wheel .3s linear infinite; }
+    .wheel-spinning { animation: spin-wheel .25s linear infinite; }
 
-    /* Paris */
-    .bets { display:flex; gap:8px; width:100%; }
-    .bet-btn { flex:1; padding:13px 4px; border:3px solid #0a0a0a; border-radius:14px; font-family:'Bebas Neue',sans-serif; font-size:15px; color:white; text-align:center; cursor:pointer; box-shadow:3px 3px 0 rgba(0,0,0,0.2); transition:all .15s; }
-    .bet-btn:active { transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(0,0,0,0.2); }
-    .bet-btn.sel { outline:3px solid #FDD835; outline-offset:2px; }
-    .bet-btn.red { background:#cc1a1a; }
-    .bet-btn.green { background:#047857; }
-    .bet-btn.black { background:#1f2937; }
-    .bet-sub { font-size:9px; color:rgba(255,255,255,0.6); font-family:'Inter',sans-serif; font-weight:400; }
+    /* PARIS */
+    .bets {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .bet-btn {
+      flex: 1;
+      padding: 10px 4px;
+      border: 2.5px solid rgba(0,0,0,0.5);
+      border-radius: 10px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      color: white;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+      transition: all .15s;
+    }
+    .bet-btn:active { transform: scale(0.97); }
+    .bet-btn.sel { outline: 3px solid #fbbf24; outline-offset: 2px; }
+    .bet-btn.red { background: #cc1a1a; }
+    .bet-btn.green { background: #047857; }
+    .bet-btn.black { background: #1f2937; }
+    .bet-sub { font-size: 9px; color: rgba(255,255,255,0.55); font-family: 'Inter', sans-serif; margin-top: 2px; }
 
-    /* Chips */
-    .chips { display:flex; gap:6px; width:100%; }
-    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
-    .chip.sel { background:#FDD835; border:2.5px solid #0a0a0a; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .chip.sel .chip-v { color:#0a0a0a; }
-    .chip:not(.sel) { background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.2); }
-    .chip:not(.sel) .chip-v { color:rgba(255,255,255,0.5); }
-    .chip-v { font-family:'Bebas Neue',sans-serif; font-size:13px; }
+    /* RÉSULTAT */
+    .result {
+      display: none;
+      padding: 7px 12px;
+      border-radius: 10px;
+      text-align: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 1px;
+      width: 100%;
+      animation: resultPop .3s;
+    }
+    @keyframes resultPop { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .result.win { background: linear-gradient(135deg,#10b981,#059669); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background: linear-gradient(135deg,#dc2626,#991b1b); color: white; }
 
-    .result { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; text-align:center; min-height:28px; }
+    /* CONTROLS */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+      max-width: 340px;
+      flex-shrink: 0;
+    }
 
-    .btn-play { width:100%; padding:clamp(12px,3.5vw,16px); border:3px solid #0a0a0a; border-radius:14px; background:white; color:#cc1a1a; font-family:'Bebas Neue',sans-serif; font-size:clamp(15px,4.5vw,19px); letter-spacing:3px; cursor:pointer; box-shadow:4px 4px 0 rgba(0,0,0,0.2); }
-    .btn-play:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
-    .btn-play:disabled { opacity:0.5; }
+    /* CHIPS */
+    .chips {
+      display: flex;
+      gap: 6px;
+      background: rgba(255,255,255,0.05);
+      padding: 6px;
+      border-radius: 8px;
+      border: 2px solid rgba(251,191,36,0.3);
+    }
+    .chip {
+      flex: 1;
+      padding: 7px 4px;
+      border-radius: 6px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .15s;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .chip.sel { background: #fbbf24; color: #0f172a; }
+    .chip:not(.sel) { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(251,191,36,0.2); }
 
-    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+14px); background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px; color:rgba(255,255,255,0.45); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
+    .spin-btn {
+      width: 100%;
+      padding: 10px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border: none;
+      border-radius: 10px;
+      color: #0f172a;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(251,191,36,0.5);
+      transition: all 0.2s;
+    }
+    .spin-btn:active { transform: scale(0.98); }
+    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* BOTTOM BAR */
+    .bottom-bar {
+      background: linear-gradient(135deg, #7f1d1d, #991b1b);
+      border: 2px solid rgba(251,191,36,0.5);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      min-height: 44px;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      max-width: 480px;
+      width: calc(100% - 20px);
+      z-index: 100;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    }
+    .back-btn {
+      background: rgba(251,191,36,0.2);
+      border: 2px solid rgba(251,191,36,0.5);
+      color: #fbbf24;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .back-btn:active { transform: scale(0.95); }
+    .game-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px;
+      color: #fbbf24;
+      letter-spacing: 1.5px;
+    }
+    .balance {
+      background: white;
+      color: #0f172a;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
-<div class="page">
+  <div class="container">
+    <div class="game-area">
 
-  <div class="hdr">
-    <button class="btn-back" onclick="window.location.href='casino.html'">← Salle</button>
-    <div class="hdr-title">ROULETTE</div>
-    <div class="hdr-bal"><div class="hdr-bal-v" id="balDisplay">—</div></div>
-  </div>
+      <!-- TABLE -->
+      <div class="rl-table">
+        <!-- ROUE SVG -->
+        <svg width="min(170px,48vw)" height="min(170px,48vw)" viewBox="0 0 200 200" id="roulWheel" style="cursor:pointer" onclick="play()">
+          <circle cx="100" cy="100" r="98" fill="#0a0a0a" stroke="#fbbf24" stroke-width="3"/>
+          <path d="M100,100 L100,2 A98,98,0,0,1,168,31 Z" fill="#cc1a1a" opacity="0.9"/>
+          <path d="M100,100 L168,31 A98,98,0,0,1,198,100 Z" fill="#0a0a0a" opacity="0.85"/>
+          <path d="M100,100 L198,100 A98,98,0,0,1,168,169 Z" fill="#cc1a1a" opacity="0.9"/>
+          <path d="M100,100 L168,169 A98,98,0,0,1,100,198 Z" fill="#0a0a0a" opacity="0.85"/>
+          <path d="M100,100 L100,198 A98,98,0,0,1,32,169 Z" fill="#cc1a1a" opacity="0.9"/>
+          <path d="M100,100 L32,169 A98,98,0,0,1,2,100 Z" fill="#0a0a0a" opacity="0.85"/>
+          <path d="M100,100 L2,100 A98,98,0,0,1,32,31 Z" fill="#cc1a1a" opacity="0.9"/>
+          <path d="M100,100 L32,31 A98,98,0,0,1,100,2 Z" fill="#047857" opacity="0.95"/>
+          <circle cx="100" cy="100" r="50" fill="#0a0a0a" stroke="#fbbf24" stroke-width="2"/>
+          <circle cx="100" cy="100" r="30" fill="#1a0a0a" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
+          <circle cx="100" cy="100" r="14" fill="#fbbf24"/>
+          <text x="100" y="108" text-anchor="middle" font-family="Bebas Neue" font-size="20" fill="#0a0a0a" id="roulNum">?</text>
+          <circle cx="100" cy="8" r="8" fill="white" id="roulBall"/>
+        </svg>
 
-  <div class="wheel-wrap">
-    <!-- Roue SVG -->
-    <svg width="min(200px,52vw)" height="min(200px,52vw)" viewBox="0 0 200 200" id="roulWheel" style="cursor:pointer" onclick="play()">
-      <circle cx="100" cy="100" r="98" fill="#0a0a0a" stroke="#FDD835" stroke-width="3"/>
-      <path d="M100,100 L100,2 A98,98,0,0,1,168,31 Z" fill="#cc1a1a" opacity="0.9"/>
-      <path d="M100,100 L168,31 A98,98,0,0,1,198,100 Z" fill="#0a0a0a" opacity="0.85"/>
-      <path d="M100,100 L198,100 A98,98,0,0,1,168,169 Z" fill="#cc1a1a" opacity="0.9"/>
-      <path d="M100,100 L168,169 A98,98,0,0,1,100,198 Z" fill="#0a0a0a" opacity="0.85"/>
-      <path d="M100,100 L100,198 A98,98,0,0,1,32,169 Z" fill="#cc1a1a" opacity="0.9"/>
-      <path d="M100,100 L32,169 A98,98,0,0,1,2,100 Z" fill="#0a0a0a" opacity="0.85"/>
-      <path d="M100,100 L2,100 A98,98,0,0,1,32,31 Z" fill="#cc1a1a" opacity="0.9"/>
-      <path d="M100,100 L32,31 A98,98,0,0,1,100,2 Z" fill="#047857" opacity="0.95"/>
-      <circle cx="100" cy="100" r="50" fill="#0a0a0a" stroke="#FDD835" stroke-width="2"/>
-      <circle cx="100" cy="100" r="30" fill="#1a0a0a" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
-      <circle cx="100" cy="100" r="14" fill="#FDD835"/>
-      <text x="100" y="108" text-anchor="middle" font-family="Bebas Neue" font-size="20" fill="#0a0a0a" id="roulNum">?</text>
-      <circle cx="100" cy="8" r="8" fill="white" id="roulBall"/>
-    </svg>
+        <!-- PARIS -->
+        <div class="bets">
+          <div class="bet-btn red sel" id="rb-red" onclick="selCouleur('red')">ROUGE<div class="bet-sub">×2 · 1-7</div></div>
+          <div class="bet-btn green" id="rb-green" onclick="selCouleur('green')">VERT<div class="bet-sub">×14 · 0</div></div>
+          <div class="bet-btn black" id="rb-black" onclick="selCouleur('black')">NOIR<div class="bet-sub">×2 · 8-14</div></div>
+        </div>
+      </div>
 
-    <!-- Paris -->
-    <div class="bets">
-      <div class="bet-btn red sel" id="rb-red" onclick="selCouleur('red')">ROUGE<div class="bet-sub">×2 · 1-7</div></div>
-      <div class="bet-btn green" id="rb-green" onclick="selCouleur('green')">VERT<div class="bet-sub">×14 · 0</div></div>
-      <div class="bet-btn black" id="rb-black" onclick="selCouleur('black')">NOIR<div class="bet-sub">×2 · 8-14</div></div>
+      <!-- CONTROLS -->
+      <div class="controls">
+        <div class="result" id="result"></div>
+
+        <div class="chips">
+          <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+          <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+          <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+          <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
+        </div>
+
+        <button class="spin-btn" id="btnPlay" onclick="play()">LANCER — <span id="betLabel">1 000€</span></button>
+      </div>
+
     </div>
 
-    <!-- Chips -->
-    <div class="chips">
-      <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')"><div class="chip-v">1K</div></div>
-      <div class="chip" id="c5000" onclick="setBet(5000,'c5000')"><div class="chip-v">5K</div></div>
-      <div class="chip" id="c10000" onclick="setBet(10000,'c10000')"><div class="chip-v">10K</div></div>
-      <div class="chip" id="c50000" onclick="setBet(50000,'c50000')"><div class="chip-v">50K</div></div>
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
+      <div class="game-title">🎡 ROULETTE</div>
+      <div class="balance" id="balance">0€</div>
     </div>
-
-    <div class="result" id="result"></div>
-    <button class="btn-play" id="btnPlay" onclick="play()">LANCER — 1 000€</button>
   </div>
 
-  <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
 
-</div>
+    let money = 0, bet = 1000, couleur = 'red', busy = false, currentUser = null;
 
-<script>
-  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
+    const fmt = n => Math.floor(n).toLocaleString('fr-FR');
+    const colorOf = n => n === 0 ? 'green' : n <= 7 ? 'red' : 'black';
 
-  let money = 0, bet = 1000, couleur = 'red', busy = false, currentUser = null;
-
-  const fmt = n => Math.floor(n).toLocaleString('fr-FR');
-  const colorOf = n => n===0 ? 'green' : n<=7 ? 'red' : 'black';
-
-  function selCouleur(c){
-    couleur = c;
-    ['red','green','black'].forEach(x=>document.getElementById('rb-'+x).classList.toggle('sel',x===c));
-  }
-
-  function setBet(val, chipId){
-    bet = val;
-    ['c1000','c5000','c10000','c50000'].forEach(id=>document.getElementById(id).classList.toggle('sel',id===chipId));
-    document.getElementById('btnPlay').textContent = 'LANCER — '+fmt(val)+'€';
-  }
-
-  function updateBal(){ document.getElementById('balDisplay').textContent = fmt(money)+'€'; }
-
-  async function init(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser = session.user;
-    const { data } = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-    money = data?.money || 0;
-    updateBal();
-  }
-
-  function play(){
-    if(busy || money<bet){ document.getElementById('result').textContent='Pas assez d\'argent !'; return; }
-    busy = true;
-    money -= bet;
-    updateBal();
-    document.getElementById('result').textContent='';
-    document.getElementById('btnPlay').disabled=true;
-
-    const wheel = document.getElementById('roulWheel');
-    const numEl = document.getElementById('roulNum');
-    const result = Math.floor(Math.random()*15);
-
-    wheel.classList.add('wheel-spinning');
-    numEl.textContent='?';
-
-    let n=0;
-    const spinInt = setInterval(()=>{ n=Math.floor(Math.random()*15); numEl.textContent=n; },70);
-
-    setTimeout(()=>{
-      clearInterval(spinInt);
-      wheel.classList.remove('wheel-spinning');
-      numEl.textContent = result;
-      settle(result);
-    }, 1800);
-  }
-
-  async function settle(result){
-    const c = colorOf(result);
-    let mult = 0, msg = '';
-    if(c===couleur){
-      mult = c==='green' ? 14 : 2;
-      const gain = Math.floor(bet*mult);
-      money += gain;
-      msg = (c==='green'?'🟢':'c'==='red'?'🔴':'⚫') + ' ' + result + ' ! +'+fmt(gain)+'€';
-    } else {
-      msg = (c==='green'?'🟢':c==='red'?'🔴':'⚫') + ' ' + result + '… Raté';
+    function selCouleur(c) {
+      couleur = c;
+      ['red','green','black'].forEach(x => document.getElementById('rb-'+x).classList.toggle('sel', x===c));
     }
 
-    updateBal();
-    document.getElementById('result').textContent = msg;
-    document.getElementById('btnPlay').disabled = false;
-    busy = false;
+    function setBet(val, chipId) {
+      bet = val;
+      ['c1000','c5000','c10000','c50000'].forEach(id => document.getElementById(id).classList.toggle('sel', id===chipId));
+      document.getElementById('betLabel').textContent = fmt(val) + '€';
+    }
 
-    if(currentUser) await sb.from('game_stats').update({ money: Math.floor(money) }).eq('user_id',currentUser.id);
-  }
+    function updateBal() {
+      document.getElementById('balance').textContent = fmt(money) + '€';
+    }
 
-  init();
-</script>
+    function showResult(msg, cls) {
+      const el = document.getElementById('result');
+      el.textContent = msg;
+      el.className = 'result ' + cls;
+      el.style.display = 'block';
+    }
+
+    function play() {
+      if (busy || money < bet) { showResult('Pas assez d\'argent !', 'lose'); return; }
+      busy = true;
+      money -= bet;
+      updateBal();
+      document.getElementById('result').style.display = 'none';
+      document.getElementById('btnPlay').disabled = true;
+
+      const wheel = document.getElementById('roulWheel');
+      const numEl = document.getElementById('roulNum');
+      const result = Math.floor(Math.random() * 15);
+
+      wheel.classList.add('wheel-spinning');
+      numEl.textContent = '?';
+
+      let n = 0;
+      const spinInt = setInterval(() => { n = Math.floor(Math.random()*15); numEl.textContent = n; }, 70);
+
+      setTimeout(() => {
+        clearInterval(spinInt);
+        wheel.classList.remove('wheel-spinning');
+        numEl.textContent = result;
+        settle(result);
+      }, 1800);
+    }
+
+    async function settle(result) {
+      const c = colorOf(result);
+      const emoji = c === 'green' ? '🟢' : c === 'red' ? '🔴' : '⚫';
+      let msg = '', cls = 'lose';
+
+      if (c === couleur) {
+        const mult = c === 'green' ? 14 : 2;
+        const gain = Math.floor(bet * mult);
+        money += gain;
+        msg = emoji + ' ' + result + ' ! +' + fmt(gain - bet) + '€';
+        cls = 'win';
+      } else {
+        msg = emoji + ' ' + result + ' — Raté !';
+      }
+
+      updateBal();
+      showResult(msg, cls);
+      document.getElementById('btnPlay').disabled = false;
+      busy = false;
+
+      if (currentUser) await sb.from('game_stats').update({ money: Math.floor(money) }).eq('user_id', currentUser.id);
+    }
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        await new Promise(r => setTimeout(r, 1000));
+        const { data: { session: s2 } } = await sb.auth.getSession();
+        if (!s2) { window.location.href = 'index.html'; return; }
+        currentUser = s2.user;
+      } else {
+        currentUser = session.user;
+      }
+      const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      money = data?.money || 0;
+      updateBal();
+    }
+
+    document.addEventListener('gesturestart', e => e.preventDefault());
+    document.addEventListener('gesturechange', e => e.preventDefault());
+    init();
+  </script>
 </body>
 </html>
