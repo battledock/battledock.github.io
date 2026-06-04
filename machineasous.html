@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Machine à Sous — Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html, body { height:100dvh; overflow:hidden; }
+    body { font-family:'Inter',sans-serif; background:#cc1a1a; display:flex; flex-direction:column; }
+
+    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; overflow:hidden; }
+
+    /* Header */
+    .hdr { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:calc(env(safe-area-inset-top)+36px) 14px 10px; flex-shrink:0; }
+    .hdr-title { font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:2px; }
+    .hdr-bal { background:#FDD835; border:2.5px solid #0a0a0a; border-radius:10px; padding:7px 14px; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:#0a0a0a; }
+
+    /* Machine */
+    .machine { margin:0 14px; background:white; border:3px solid #0a0a0a; border-radius:20px; padding:16px 14px; flex-shrink:0; box-shadow:5px 5px 0 rgba(0,0,0,0.2); }
+    .machine-title { text-align:center; font-family:'Bebas Neue',sans-serif; font-size:9px; letter-spacing:4px; color:rgba(0,0,0,0.25); margin-bottom:12px; }
+    .reels { display:flex; gap:8px; margin-bottom:12px; }
+    .reel { flex:1; height:96px; border-radius:12px; background:#f5f5f5; border:2.5px solid #0a0a0a; display:flex; align-items:center; justify-content:center; font-size:48px; box-shadow:2px 2px 0 rgba(0,0,0,0.15); transition:background .2s; }
+    .reel.active { background:#fff; border-color:#cc1a1a; box-shadow:3px 3px 0 rgba(204,26,26,0.2); }
+    @keyframes shake { 0%,100%{transform:translateY(-2px)} 50%{transform:translateY(2px)} }
+    .reel.spin { animation:shake .1s linear infinite; }
+
+    /* Paytable */
+    .paytable { display:grid; grid-template-columns:1fr 1fr; gap:4px; }
+    .pay-row { background:#f5f5f5; border:1.5px solid rgba(0,0,0,0.08); border-radius:6px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; }
+    .pay-sym { font-size:11px; }
+    .pay-mult { font-family:'Bebas Neue',sans-serif; font-size:13px; color:#cc1a1a; }
+
+    /* Mise */
+    .mise-wrap { padding:10px 14px; flex-shrink:0; display:flex; gap:6px; }
+    .chip { flex:1; padding:10px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
+    .chip.sel { background:#FDD835; border:2.5px solid #0a0a0a; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .chip.sel .chip-v { color:#0a0a0a; }
+    .chip:not(.sel) { background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.2); }
+    .chip:not(.sel) .chip-v { color:rgba(255,255,255,0.5); }
+    .chip-v { font-family:'Bebas Neue',sans-serif; font-size:14px; }
+
+    /* Résultat */
+    .result { text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; min-height:30px; padding:0 14px; flex-shrink:0; }
+
+    /* Bouton TOURNER */
+    .btn-play { margin:6px 14px 0; width:calc(100% - 28px); padding:16px; border:3px solid #0a0a0a; border-radius:14px; background:#FDD835; color:#0a0a0a; font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:3px; cursor:pointer; box-shadow:4px 4px 0 rgba(0,0,0,0.2); flex-shrink:0; }
+    .btn-play:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .btn-play:disabled { opacity:0.5; }
+
+    /* Retour */
+    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+14px); background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px; color:rgba(255,255,255,0.45); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hdr">
+    <div class="hdr-title">MACHINE À SOUS</div>
+    <div class="hdr-bal"><div class="hdr-bal-v" id="balDisplay">—</div></div>
+  </div>
+
+  <div class="machine">
+    <div class="machine-title">✦ JOLIETTE SLOTS ✦</div>
+    <div class="reels">
+      <div class="reel" id="r0">🐟</div>
+      <div class="reel" id="r1">📦</div>
+      <div class="reel" id="r2">⚓</div>
+    </div>
+    <div class="paytable">
+      <div class="pay-row"><span class="pay-sym">3× 7️⃣</span><span class="pay-mult">×60</span></div>
+      <div class="pay-row"><span class="pay-sym">3× 💰</span><span class="pay-mult">×30</span></div>
+      <div class="pay-row"><span class="pay-sym">3× 🦑</span><span class="pay-mult">×16</span></div>
+      <div class="pay-row"><span class="pay-sym">3× ⚓</span><span class="pay-mult">×10</span></div>
+      <div class="pay-row"><span class="pay-sym">3× 📦</span><span class="pay-mult">×6</span></div>
+      <div class="pay-row"><span class="pay-sym">3× 🐟</span><span class="pay-mult">×4</span></div>
+      <div class="pay-row"><span class="pay-sym">💰💰 ou 7️⃣7️⃣</span><span class="pay-mult">×1.5</span></div>
+      <div class="pay-row"><span class="pay-sym">autres</span><span class="pay-mult" style="color:#9ca3af">—</span></div>
+    </div>
+  </div>
+
+  <div class="mise-wrap">
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')"><div class="chip-v">1K</div></div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')"><div class="chip-v">5K</div></div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')"><div class="chip-v">10K</div></div>
+    <div class="chip" id="c50000" onclick="setBet(50000,'c50000')"><div class="chip-v">50K</div></div>
+  </div>
+
+  <div class="result" id="result"></div>
+  <button class="btn-play" id="btnPlay" onclick="play()">TOURNER — 1 000€</button>
+  <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
+
+</div>
+
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const SYM   = ['🐟','📦','⚓','🦑','💰','7️⃣'];
+  const PAY3  = {'🐟':4,'📦':6,'⚓':10,'🦑':16,'💰':30,'7️⃣':60};
+  const WEIGHTS = [35,28,20,10,5,2];
+
+  let money = 0, bet = 1000, busy = false, currentUser = null;
+
+  function fmt(n){ return Math.floor(n).toLocaleString('fr-FR'); }
+
+  function pickSym(){
+    const r = Math.floor(Math.random()*100);
+    let acc = 0;
+    for(let i=0;i<SYM.length;i++){ acc+=WEIGHTS[i]; if(r<acc) return SYM[i]; }
+    return SYM[0];
+  }
+
+  function setBet(val, chipId){
+    bet = val;
+    ['c1000','c5000','c10000','c50000'].forEach(id=>{
+      document.getElementById(id).classList.toggle('sel', id===chipId);
+    });
+    document.getElementById('btnPlay').textContent = 'TOURNER — ' + fmt(val) + '€';
+  }
+
+  function updateBal(){
+    document.getElementById('balDisplay').textContent = fmt(money) + '€';
+  }
+
+  async function init(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser = session.user;
+    const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+    money = data?.money || 0;
+    updateBal();
+  }
+
+  function play(){
+    if(busy || money < bet){ document.getElementById('result').textContent = 'Pas assez d\'argent !'; return; }
+    busy = true;
+    money -= bet;
+    updateBal();
+    document.getElementById('result').textContent = '';
+    document.getElementById('btnPlay').disabled = true;
+
+    const reels = [document.getElementById('r0'), document.getElementById('r1'), document.getElementById('r2')];
+    const final = [pickSym(), pickSym(), pickSym()];
+    const stopped = [false, false, false];
+
+    reels.forEach(r => r.classList.add('spin'));
+    const spinInt = setInterval(()=>{
+      reels.forEach((r,i)=>{ if(!stopped[i]) r.textContent = pickSym(); });
+    }, 80);
+
+    [700,1000,1300].forEach((t,i)=>setTimeout(()=>{
+      stopped[i] = true;
+      reels[i].textContent = final[i];
+      reels[i].classList.remove('spin');
+      if(i===2){
+        clearInterval(spinInt);
+        setTimeout(()=>{ settle(final); },100);
+      }
+    }, t));
+  }
+
+  async function settle(f){
+    let mult = 0, msg = '';
+    if(f[0]===f[1] && f[1]===f[2]){
+      mult = PAY3[f[0]]; msg = '3× ' + f[0] + ' !';
+    } else {
+      const c = {}; f.forEach(s=>c[s]=(c[s]||0)+1);
+      const pairSym = Object.keys(c)
+        .filter(k=>c[k]>=2 && (k==='💰'||k==='7️⃣'))
+        .sort((a,b)=>PAY3[b]-PAY3[a])[0];
+      if(pairSym){ mult=1.5; msg='Paire '+pairSym+' !'; }
+    }
+
+    if(mult > 0){
+      const gain = Math.floor(bet * mult);
+      money += gain;
+      msg += ' +' + fmt(gain) + '€';
+    } else {
+      msg = 'Raté…';
+    }
+
+    updateBal();
+    document.getElementById('result').textContent = msg;
+    document.getElementById('btnPlay').disabled = false;
+    busy = false;
+
+    // Sauvegarder
+    if(currentUser){
+      await sb.from('game_stats').update({ money: Math.floor(money) }).eq('user_id', currentUser.id);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
