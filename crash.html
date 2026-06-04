@@ -3,527 +3,238 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Crash - Battle Dock Casino</title>
+  <title>Crash — Battle Dock</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
-      min-height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html, body { height:100dvh; overflow:hidden; }
+    body { font-family:'Inter',sans-serif; background:#0a0510; display:flex; flex-direction:column; }
+    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; overflow:hidden; }
 
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 6px;
-      padding-bottom: 120px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-    }
+    .hdr { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+34px) 14px 10px; flex-shrink:0; }
+    .btn-back { background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.5); border-radius:10px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; cursor:pointer; }
+    .hdr-title { flex:1; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:3px; }
+    .hdr-bal { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:7px 14px; }
+    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:white; }
 
-    /* GAME AREA */
-    .game-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      overflow: hidden;
-      min-height: 0;
-    }
+    /* Zone multiplicateur */
+    .mult-zone { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+    .mult-label { font-size:9px; font-weight:700; color:rgba(255,255,255,0.2); letter-spacing:4px; }
+    .mult-value { font-family:'Bebas Neue',sans-serif; font-size:96px; color:white; line-height:1; transition:color .2s; }
+    .mult-value.danger { color:#ff4444; }
+    .mult-value.crashed { color:#ff2020; }
+    .mult-value.cashed { color:#4ade80; }
+    .mult-sub { font-size:12px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; }
 
-    /* CRASH DISPLAY */
-    .crash-display {
-      width: 100%;
-      height: clamp(200px, 50vh, 280px);
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      border: 3px solid #fbbf24;
-      border-radius: 12px;
-      position: relative;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
+    /* Graphe simplifié */
+    .graph { width:100%; height:4px; background:rgba(255,255,255,0.05); margin:0 0 8px; flex-shrink:0; overflow:hidden; }
+    .graph-fill { height:100%; width:0%; background:linear-gradient(90deg,#4ade80,#fbbf24); transition:width .1s linear; border-radius:2px; }
+    .graph-fill.danger { background:linear-gradient(90deg,#fbbf24,#ff4444); }
 
-    .rocket {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      font-size: 40px;
-      transition: all 0.1s linear;
-      transform-origin: center;
-    }
+    /* Gain potentiel */
+    .potential { font-family:'Bebas Neue',sans-serif; font-size:20px; color:rgba(255,255,255,0.3); text-align:center; flex-shrink:0; min-height:28px; }
 
-    .multiplier-display {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(48px, 12vw, 72px);
-      color: #10b981;
-      text-shadow: 0 4px 12px rgba(16, 185, 129, 0.8);
-      letter-spacing: 2px;
-    }
+    /* Bouton ENCAISSER */
+    .btn-cashout { width:calc(100% - 28px); margin:0 14px; padding:20px; border:none; border-radius:18px; background:linear-gradient(135deg,#4ade80,#16a34a); color:white; font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; cursor:pointer; box-shadow:0 4px 20px rgba(74,222,128,0.35); transition:all .15s; flex-shrink:0; }
+    .btn-cashout:active { transform:scale(0.97); }
+    .btn-cashout:disabled { background:rgba(255,255,255,0.08); box-shadow:none; color:rgba(255,255,255,0.2); }
+    .btn-cashout.crashed-btn { background:linear-gradient(135deg,#ff4444,#cc0000); box-shadow:0 4px 20px rgba(255,0,0,0.3); }
 
-    .multiplier-display.crashed {
-      color: #dc2626;
-      text-shadow: 0 4px 12px rgba(220, 38, 38, 0.8);
-    }
+    /* Mise + bouton lancer */
+    .chips { display:flex; gap:6px; padding:0 14px; flex-shrink:0; }
+    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; }
+    .chip.sel { background:rgba(74,222,128,0.15); border:1.5px solid #4ade80; }
+    .chip.sel .cv { color:#4ade80; }
+    .chip:not(.sel) { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
+    .chip:not(.sel) .cv { color:rgba(255,255,255,0.3); }
+    .cv { font-family:'Bebas Neue',sans-serif; font-size:13px; }
 
-    .status-text {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: #fbbf24;
-      letter-spacing: 1px;
-    }
+    .btn-play { width:calc(100% - 28px); margin:8px 14px 0; padding:15px; border:none; border-radius:14px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
+    .btn-play:hover { background:rgba(255,255,255,0.12); }
 
-    /* CONTROLS */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      width: 100%;
-      max-width: 340px;
-      flex-shrink: 0;
-    }
-
-    .bet-control {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 2px solid rgba(251, 191, 36, 0.3);
-    }
-
-    .bet-control label {
-      font-weight: 700;
-      font-size: 11px;
-      color: #fbbf24;
-      white-space: nowrap;
-    }
-
-    .bet-control input {
-      flex: 1;
-      padding: 6px;
-      border: 2px solid #fbbf24;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 700;
-      text-align: center;
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-      max-width: 100px;
-    }
-
-    .actions {
-      display: flex;
-      gap: 6px;
-    }
-
-    .btn {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn:active {
-      transform: scale(0.98);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      color: #0f172a;
-    }
-
-    .btn-danger {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      color: white;
-    }
-
-    /* RESULT */
-    .result {
-      display: none;
-      padding: 8px 14px;
-      border-radius: 10px;
-      text-align: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      margin-top: 6px;
-    }
-
-    .result.win {
-      background: linear-gradient(135deg, #10b981, #059669);
-      color: white;
-    }
-
-    .result.lose {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
-      color: white;
-    }
-
-    /* BOTTOM BAR */
-    .bottom-bar {
-      background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border: 2px solid rgba(251, 191, 36, 0.5);
-      border-radius: 10px;
-      padding: 6px 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-      min-height: 44px;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 480px;
-      width: calc(100% - 20px);
-      z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-    }
-
-    .back-btn {
-      background: rgba(251, 191, 36, 0.2);
-      border: 2px solid rgba(251, 191, 36, 0.5);
-      color: #fbbf24;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-weight: 700;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .back-btn:active {
-      transform: scale(0.95);
-    }
-
-    .game-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: #fbbf24;
-      letter-spacing: 1.5px;
-      white-space: nowrap;
-    }
-
-    .balance {
-      background: white;
-      color: #0f172a;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 400px) {
-      .bottom-bar {
-        padding: 5px 8px;
-        bottom: 15px;
-      }
-
-      .back-btn {
-        padding: 3px 8px;
-        font-size: 10px;
-      }
-
-      .game-title {
-        font-size: 14px;
-      }
-
-      .balance {
-        padding: 3px 8px;
-        font-size: 12px;
-      }
-
-      .crash-display {
-        height: clamp(180px, 45vh, 240px);
-      }
-
-      .rocket {
-        font-size: 32px;
-      }
-    }
-
-    @media (max-width: 320px) {
-      .bottom-bar {
-        bottom: 10px;
-      }
-
-      .back-btn {
-        padding: 2px 6px;
-        font-size: 9px;
-      }
-
-      .game-title {
-        font-size: 12px;
-        letter-spacing: 1px;
-      }
-
-      .balance {
-        font-size: 11px;
-        padding: 2px 6px;
-      }
-    }
+    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+12px); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:11px; color:rgba(255,255,255,0.2); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="game-area">
-      <!-- CRASH DISPLAY -->
-      <div class="crash-display">
-        <div class="status-text" id="statusText">Prêt à décoller</div>
-        <div class="rocket" id="rocket">🚀</div>
-        <div class="multiplier-display" id="multiplier">1.00×</div>
-      </div>
+<div class="page">
 
-      <!-- CONTROLS -->
-      <div class="controls">
-        <div class="bet-control">
-          <label>MISE:</label>
-          <input type="number" id="betAmount" value="50" min="10" step="10">
-        </div>
-        <div class="actions">
-          <button class="btn btn-primary" id="startBtn" onclick="startGame()">DÉCOLLER 🚀</button>
-          <button class="btn btn-danger" id="cashoutBtn" onclick="cashout()" style="display: none;">ENCAISSER 💰</button>
-        </div>
-        <div class="result" id="result"></div>
-      </div>
-    </div>
-
-    <!-- BOTTOM BAR -->
-    <div class="bottom-bar">
-      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-      <div class="game-title">🚀 CRASH</div>
-      <div class="balance" id="balance">0€</div>
-    </div>
+  <div class="hdr">
+    <button class="btn-back" onclick="window.location.href='casino.html'">← Salle</button>
+    <div class="hdr-title">📈 CRASH</div>
+    <div class="hdr-bal"><div class="hdr-bal-v" id="balDisplay">—</div></div>
   </div>
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
+  <!-- Graphe -->
+  <div class="graph"><div class="graph-fill" id="graphFill"></div></div>
 
-    let currentUser = null;
-    let currentMoney = 0;
-    let gameActive = false;
-    let currentMultiplier = 1.0;
-    let crashPoint = 1.0;
-    let interval = null;
-    let currentBet = 0;
+  <!-- Multiplicateur -->
+  <div class="mult-zone">
+    <div class="mult-label">MULTIPLICATEUR</div>
+    <div class="mult-value" id="multValue">1.00×</div>
+    <div class="mult-sub" id="multSub">Lance une partie pour commencer</div>
+  </div>
 
+  <!-- Gain potentiel -->
+  <div class="potential" id="potential"></div>
 
+  <!-- Bouton encaisser / crashé -->
+  <button class="btn-cashout" id="btnCashout" onclick="cashout()" disabled>ENCAISSER</button>
 
+  <!-- Mise -->
+  <div class="chips" style="margin-top:10px">
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')"><div class="cv">1K</div></div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')"><div class="cv">5K</div></div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')"><div class="cv">10K</div></div>
+    <div class="chip" id="c50000" onclick="setBet(50000,'c50000')"><div class="cv">50K</div></div>
+  </div>
+  <button class="btn-play" id="btnPlay" onclick="startGame()">LANCER — <span id="betLabel">1 000€</span></button>
 
-    async function startGame() {
-      const betInput = document.getElementById('betAmount');
-      const bet = parseInt(betInput.value);
+  <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
 
-      if (bet < 10) {
-        alert('Mise minimum : 10€');
-        return;
+</div>
+<script>
+  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+
+  const fmt = n => Math.floor(n).toLocaleString('fr-FR');
+  const fmtMult = n => n.toFixed(2) + '×';
+
+  let money=0, bet=1000, currentUser=null;
+  let mult=1, crashAt=1, running=false, cashedOut=false, interval=null;
+
+  function setBet(val,id){
+    bet=val;
+    ['c1000','c5000','c10000','c50000'].forEach(i=>document.getElementById(i).classList.toggle('sel',i===id));
+    document.getElementById('betLabel').textContent=fmt(val)+'€';
+  }
+
+  function updateBal(){ document.getElementById('balDisplay').textContent=fmt(money)+'€'; }
+
+  // Crash point : distribution exponentielle, house edge ~10%
+  function genCrashAt(){
+    const r=Math.random();
+    if(r < 0.01) return 1.0; // 1% crash immédiat
+    return Math.max(1.0, 0.99 / (1 - Math.random()));
+  }
+
+  async function init(){
+    const { data:{ session } }=await sb.auth.getSession();
+    if(!session){ window.location.href='index.html'; return; }
+    currentUser=session.user;
+    const { data }=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+    money=data?.money||0;
+    updateBal();
+  }
+
+  function startGame(){
+    if(running || money<bet) return;
+    money-=bet; updateBal();
+    cashedOut=false;
+    mult=1.0;
+    crashAt=genCrashAt();
+    running=true;
+
+    // UI
+    document.getElementById('btnPlay').style.display='none';
+    document.getElementById('btnCashout').disabled=false;
+    document.getElementById('btnCashout').className='btn-cashout';
+    document.getElementById('btnCashout').textContent='ENCAISSER';
+    document.getElementById('multSub').textContent='Encaisse avant le crash !';
+    document.getElementById('graphFill').style.width='0%';
+    document.getElementById('graphFill').className='graph-fill';
+    document.getElementById('potential').textContent='';
+
+    const multEl=document.getElementById('multValue');
+    multEl.className='mult-value';
+
+    let speed=50; // ms par tick
+    let elapsed=0;
+
+    interval=setInterval(()=>{
+      elapsed+=speed;
+      // Croissance exponentielle
+      mult=Math.pow(1.07, elapsed/100);
+
+      multEl.textContent=fmtMult(mult);
+
+      // Danger au-delà de 3x
+      if(mult>5) multEl.className='mult-value danger';
+
+      // Graphe
+      const pct=Math.min((mult-1)/Math.max(crashAt-1,0.01)*100,100);
+      document.getElementById('graphFill').style.width=pct+'%';
+      if(mult>3) document.getElementById('graphFill').className='graph-fill danger';
+
+      // Gain potentiel
+      document.getElementById('potential').textContent='= '+fmt(Math.floor(bet*mult))+'€';
+
+      // Bouton avec montant
+      document.getElementById('btnCashout').textContent='ENCAISSER — '+fmt(Math.floor(bet*mult))+'€';
+
+      // Crash ?
+      if(mult>=crashAt){
+        crash();
       }
+    }, speed);
+  }
 
-      if (bet > currentMoney) {
-        alert('Solde insuffisant !');
-        return;
-      }
+  function cashout(){
+    if(!running||cashedOut) return;
+    cashedOut=true;
+    clearInterval(interval);
+    running=false;
 
-      currentBet = bet;
-      gameActive = true;
-      currentMultiplier = 1.0;
+    const gain=Math.floor(bet*mult);
+    money+=gain; updateBal();
 
-      // Déduire la mise
-      await updateMoney(currentMoney - bet);
-      await recordBet('Crash', bet);
+    document.getElementById('multValue').className='mult-value cashed';
+    document.getElementById('multSub').textContent='ENCAISSÉ ! ✅';
+    document.getElementById('potential').textContent='+'+fmt(gain)+'€';
+    document.getElementById('btnCashout').textContent='ENCAISSÉ — '+fmt(gain)+'€';
+    document.getElementById('btnCashout').disabled=true;
 
-      // Déterminer crash point (RTP 90%)
-      const rand = Math.random();
-      if (rand < 0.4) crashPoint = 1.0 + Math.random() * 0.5; // 40% entre 1.0-1.5x
-      else if (rand < 0.7) crashPoint = 1.5 + Math.random() * 1.5; // 30% entre 1.5-3x
-      else if (rand < 0.9) crashPoint = 3.0 + Math.random() * 4.0; // 20% entre 3-7x
-      else crashPoint = 7.0 + Math.random() * 8.0; // 10% entre 7-15x
+    save();
+    setTimeout(reset, 2000);
+  }
 
-      document.getElementById('startBtn').style.display = 'none';
-      document.getElementById('cashoutBtn').style.display = 'block';
-      document.getElementById('result').style.display = 'none';
-      document.getElementById('statusText').textContent = '🚀 EN VOL';
-      document.getElementById('multiplier').className = 'multiplier-display';
+  function crash(){
+    clearInterval(interval);
+    running=false;
+    if(cashedOut) return;
 
-      const rocket = document.getElementById('rocket');
-      let position = 20;
+    document.getElementById('multValue').className='mult-value crashed';
+    document.getElementById('multValue').textContent='💥 CRASH !';
+    document.getElementById('multSub').textContent='à '+fmtMult(crashAt);
+    document.getElementById('potential').textContent='Tout perdu…';
+    document.getElementById('btnCashout').className='btn-cashout crashed-btn';
+    document.getElementById('btnCashout').textContent='💥 CRASHÉ à '+fmtMult(crashAt);
+    document.getElementById('btnCashout').disabled=true;
 
-      interval = setInterval(() => {
-        currentMultiplier += 0.01;
-        position += 1;
+    if(navigator.vibrate) navigator.vibrate([100,50,200]);
+    save();
+    setTimeout(reset, 2500);
+  }
 
-        rocket.style.bottom = position + 'px';
-        rocket.style.left = (20 + position * 0.3) + 'px';
-        rocket.style.transform = `rotate(${Math.min(position * 0.5, 45)}deg)`;
+  function reset(){
+    document.getElementById('multValue').className='mult-value';
+    document.getElementById('multValue').textContent='1.00×';
+    document.getElementById('multSub').textContent='Lance une partie pour commencer';
+    document.getElementById('potential').textContent='';
+    document.getElementById('graphFill').style.width='0%';
+    document.getElementById('graphFill').className='graph-fill';
+    document.getElementById('btnPlay').style.display='block';
+    document.getElementById('btnCashout').disabled=true;
+    document.getElementById('btnCashout').className='btn-cashout';
+    document.getElementById('btnCashout').textContent='ENCAISSER';
+  }
 
-        document.getElementById('multiplier').textContent = currentMultiplier.toFixed(2) + '×';
+  async function save(){
+    if(currentUser) await sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+  }
 
-        if (currentMultiplier >= crashPoint) {
-          crash();
-        }
-      }, 100);
-    }
-
-    function crash() {
-      clearInterval(interval);
-      gameActive = false;
-
-      document.getElementById('startBtn').style.display = 'block';
-      document.getElementById('cashoutBtn').style.display = 'none';
-      document.getElementById('statusText').textContent = '💥 CRASH !';
-      document.getElementById('multiplier').classList.add('crashed');
-
-      const res = document.getElementById('result');
-      res.className = 'result lose';
-      res.innerHTML = `💥 CRASH à ${crashPoint.toFixed(2)}× - Perdu ${currentBet.toLocaleString('fr-FR')}€`;
-      res.style.display = 'block';
-
-      // Reset rocket
-      setTimeout(() => {
-        document.getElementById('rocket').style.bottom = '20px';
-        document.getElementById('rocket').style.left = '20px';
-        document.getElementById('rocket').style.transform = 'rotate(0deg)';
-        document.getElementById('statusText').textContent = 'Prêt à décoller';
-        document.getElementById('multiplier').textContent = '1.00×';
-        document.getElementById('multiplier').classList.remove('crashed');
-      }, 2000);
-    }
-
-    async function cashout() {
-      if (!gameActive) return;
-
-      clearInterval(interval);
-      gameActive = false;
-
-      const win = Math.floor(currentBet * currentMultiplier);
-
-      document.getElementById('startBtn').style.display = 'block';
-      document.getElementById('cashoutBtn').style.display = 'none';
-      document.getElementById('statusText').textContent = '💰 ENCAISSÉ !';
-
-      const res = document.getElementById('result');
-      res.className = 'result win';
-      res.innerHTML = `🎉 Encaissé à ${currentMultiplier.toFixed(2)}× = +${win.toLocaleString('fr-FR')}€`;
-      res.style.display = 'block';
-
-      await updateMoney(currentMoney + win);
-      await recordWin('Crash', win);
-
-      // Reset rocket
-      setTimeout(() => {
-        document.getElementById('rocket').style.bottom = '20px';
-        document.getElementById('rocket').style.left = '20px';
-        document.getElementById('rocket').style.transform = 'rotate(0deg)';
-        document.getElementById('statusText').textContent = 'Prêt à décoller';
-        document.getElementById('multiplier').textContent = '1.00×';
-      }, 2000);
-    }
-
-    // Anti-zoom
-    document.addEventListener('gesturestart', e => e.preventDefault());
-    document.addEventListener('gesturechange', e => e.preventDefault());
-
-    async function loadMoney() {
-      let retries = 3;
-      while (retries > 0) {
-        const { data: stats, error } = await sb
-          .from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
-        if (error) { retries--; if (retries > 0) await new Promise(r => setTimeout(r, 500)); continue; }
-        currentMoney = stats?.money || 0;
-        const el = document.getElementById('balance');
-        if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-        return;
-      }
-    }
-
-    async function updateMoney(newAmount) {
-      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
-      if (error) { console.error('updateMoney:', error.message); return; }
-      currentMoney = newAmount;
-      const el = document.getElementById('balance');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
-    }
-
-    async function recordBet(gameName, amountBet) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: amountBet, amount_won: 0 });
-        const contrib = Math.max(1, Math.floor(amountBet * 0.05));
-        try { const { error: jErr } = await sb.rpc('increment_jackpot', { amount: contrib }); if(jErr) console.log('jackpot error:', jErr); } catch(e) {}
-      } catch(e) { console.log('recordBet:', e.message); }
-    }
-
-    async function recordWin(gameName, amountWon) {
-      try {
-        const username = (currentUser.email || '').split('@')[0] || 'Docker';
-        await sb.from('casino_wins').insert({ user_id: currentUser.id, user_name: username, game_name: gameName, amount_bet: 0, amount_won: amountWon });
-        // Mettre à jour biggest_win si record battu
-        const { data: stats } = await sb.from('game_stats').select('biggest_win').eq('user_id', currentUser.id).maybeSingle();
-        if (!stats || amountWon > (stats.biggest_win || 0)) {
-          await sb.from('game_stats').update({ biggest_win: amountWon }).eq('user_id', currentUser.id);
-        }
-      } catch(e) { console.log('recordWin:', e.message); }
-    }
-
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        await new Promise(r => setTimeout(r, 1000));
-        const { data: { session: s2 } } = await sb.auth.getSession();
-        if (!s2) { window.location.href = 'index.html'; return; }
-        currentUser = s2.user;
-      } else {
-        currentUser = session.user;
-      }
-      await loadMoney();
-    }
-
-    init();
-  </script>
+  init();
+</script>
 </body>
 </html>
