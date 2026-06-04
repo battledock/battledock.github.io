@@ -59,9 +59,6 @@
     }
 
     /* ROUE */
-    @keyframes spin-wheel { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
-    .wheel-spinning { animation: spin-wheel .25s linear infinite; }
-
     /* PARIS */
     .bets {
       display: flex;
@@ -293,30 +290,64 @@
       el.style.display = 'block';
     }
 
+    // Secteurs de la roue (degrés depuis le haut, sens horaire)
+    const SECTORS = [
+      [0,45,'red'],[45,90,'black'],[90,135,'red'],[135,180,'black'],
+      [180,225,'red'],[225,270,'black'],[270,315,'red'],[315,360,'green']
+    ];
+    let ballAngle = 0;
+    let animFrame = null;
+
+    function setBallPos(angle) {
+      const rad = (angle - 90) * Math.PI / 180;
+      const x = 100 + 88 * Math.cos(rad);
+      const y = 100 + 88 * Math.sin(rad);
+      const ball = document.getElementById('roulBall');
+      if (ball) { ball.setAttribute('cx', x.toFixed(2)); ball.setAttribute('cy', y.toFixed(2)); }
+    }
+
+    function targetAngle(color) {
+      const matching = SECTORS.filter(s => s[2] === color);
+      const sector = matching[Math.floor(Math.random() * matching.length)];
+      return sector[0] + 10 + Math.random() * 25;
+    }
+
+    function animateBall(target, onDone) {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      const start = ballAngle % 360;
+      const tours = 4 + Math.floor(Math.random() * 2);
+      let delta = target - start;
+      if (delta < 0) delta += 360;
+      const totalDeg = tours * 360 + delta;
+      const duration = 3200;
+      const startTime = performance.now();
+      function step(now) {
+        const t = Math.min((now - startTime) / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        ballAngle = start + totalDeg * ease;
+        setBallPos(ballAngle);
+        if (t < 1) { animFrame = requestAnimationFrame(step); }
+        else { ballAngle = target; setBallPos(target); onDone(); }
+      }
+      animFrame = requestAnimationFrame(step);
+    }
+
     function play() {
-      if (busy || money < bet) { showResult('Pas assez d\'argent !', 'lose'); return; }
+      if (busy || money < bet) { showResult("Pas assez d'argent !", 'lose'); return; }
       busy = true;
       money -= bet;
       updateBal();
       document.getElementById('result').style.display = 'none';
       document.getElementById('btnPlay').disabled = true;
 
-      const wheel = document.getElementById('roulWheel');
       const numEl = document.getElementById('roulNum');
       const result = Math.floor(Math.random() * 15);
-
-      wheel.classList.add('wheel-spinning');
       numEl.textContent = '?';
 
-      let n = 0;
-      const spinInt = setInterval(() => { n = Math.floor(Math.random()*15); numEl.textContent = n; }, 70);
-
-      setTimeout(() => {
-        clearInterval(spinInt);
-        wheel.classList.remove('wheel-spinning');
+      animateBall(targetAngle(colorOf(result)), () => {
         numEl.textContent = result;
         settle(result);
-      }, 1800);
+      });
     }
 
     async function settle(result) {
@@ -355,6 +386,7 @@
       const { data } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
       money = data?.money || 0;
       updateBal();
+      setBallPos(0);
     }
 
     document.addEventListener('gesturestart', e => e.preventDefault());
