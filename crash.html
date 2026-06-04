@@ -9,82 +9,49 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
     html { height:100%; }
-    body { height:100dvh; overflow:hidden; font-family:'Inter',sans-serif; background:#04020c; display:flex; flex-direction:column; position:relative; }
+    body { height:100dvh; overflow:hidden; font-family:'Inter',sans-serif; background:#cc1a1a; display:flex; flex-direction:column; }
+    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
 
-    /* Étoiles */
-    .stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+    .hdr { display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top)+34px) 16px 12px; flex-shrink:0; }
+    .hdr-title { font-family:'Bebas Neue',sans-serif; font-size:22px; color:white; letter-spacing:3px; }
+    .hdr-bal { background:#FDD835; border:2.5px solid #0a0a0a; border-radius:10px; padding:7px 14px; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:#0a0a0a; }
 
-    .page { position:relative; z-index:5; flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
+    .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(10px,3vw,18px); padding:0 16px; }
+    .rocket { font-size:clamp(56px,18vw,80px); line-height:1; transition:filter .3s; }
+    .rocket.crashed { filter:grayscale(1); }
+    .rocket.cashed { filter:brightness(1.3); }
 
-    /* Header */
-    .hdr { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+34px) 14px 10px; flex-shrink:0; }
-    .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; color:white; letter-spacing:3px; }
-    .hdr-bal { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:7px 14px; }
-    .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:white; }
+    .mult-val { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,22vw,96px); color:white; line-height:0.85; transition:color .2s; }
+    .mult-val.danger { color:#ffe566; }
+    .mult-val.crashed { color:#ff8888; }
+    .mult-val.cashed { color:#88ffaa; }
 
-    /* Zone centrale */
-    .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:clamp(6px,2vw,12px); padding:0 14px; }
+    .mult-sub { font-size:clamp(9px,2.5vw,11px); font-weight:700; color:rgba(255,255,255,0.5); letter-spacing:3px; text-align:center; }
 
-    /* Fusée */
-    .rocket { font-size:clamp(56px,16vw,72px); filter:drop-shadow(0 0 20px rgba(255,140,0,0.6)); transition:filter .3s; line-height:1; }
-    .rocket.crashed { filter:drop-shadow(0 0 20px rgba(255,50,50,0.8)); }
-    .rocket.cashed { filter:drop-shadow(0 0 20px rgba(74,222,128,0.8)); }
+    .gain-box { background:rgba(0,0,0,0.2); border-radius:12px; padding:8px 22px; min-height:38px; display:flex; align-items:center; justify-content:center; }
+    .gain-val { font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5.5vw,26px); color:#FDD835; }
 
-    /* Multiplicateur */
-    .mult-lbl { font-size:9px; font-weight:700; color:rgba(255,255,255,0.25); letter-spacing:4px; }
-    .mult-val { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,22vw,100px); color:white; line-height:0.9; transition:color .2s; text-shadow:0 0 40px rgba(255,140,0,0.3); }
-    .mult-val.danger { color:#ff8844; text-shadow:0 0 40px rgba(255,100,50,0.5); }
-    .mult-val.crashed { color:#ff3333; text-shadow:0 0 40px rgba(255,0,0,0.6); }
-    .mult-val.cashed { color:#4ade80; text-shadow:0 0 40px rgba(74,222,128,0.5); }
-    .mult-sub { font-size:clamp(9px,2.5vw,12px); font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; text-align:center; }
+    .btn-cashout { width:calc(100% - 32px); margin:0 16px; padding:clamp(14px,4vw,19px); border:3px solid #0a0a0a; border-radius:14px; background:#FDD835; color:#0a0a0a; font-family:'Bebas Neue',sans-serif; font-size:clamp(17px,5vw,22px); letter-spacing:3px; cursor:pointer; box-shadow:4px 4px 0 rgba(0,0,0,0.2); transition:all .15s; flex-shrink:0; }
+    .btn-cashout:active { transform:translate(2px,2px); box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .btn-cashout:disabled { background:rgba(0,0,0,0.15); border-color:rgba(255,255,255,0.2); color:rgba(255,255,255,0.3); box-shadow:none; }
+    .btn-cashout.crashed-btn { background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.2); color:rgba(255,255,255,0.4); box-shadow:none; }
+    .btn-cashout.cashed-btn { background:#88ffaa; border-color:#0a0a0a; color:#0a0a0a; }
 
-    /* Gain potentiel */
-    .potential { background:rgba(255,140,0,0.08); border:1px solid rgba(255,140,0,0.2); border-radius:10px; padding:5px 16px; min-height:32px; display:flex; align-items:center; justify-content:center; }
-    .potential-v { font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5vw,24px); color:rgba(255,140,0,0.7); }
+    .chips { display:flex; gap:6px; padding:0 16px; flex-shrink:0; }
+    .chip { flex:1; padding:10px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
+    .chip.sel { background:#FDD835; border:2.5px solid #0a0a0a; box-shadow:2px 2px 0 rgba(0,0,0,0.2); }
+    .chip.sel .cv { color:#0a0a0a; }
+    .chip:not(.sel) { background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.2); }
+    .chip:not(.sel) .cv { color:rgba(255,255,255,0.5); }
+    .cv { font-family:'Bebas Neue',sans-serif; font-size:14px; }
 
-    /* Bouton encaisser */
-    .btn-cashout { width:calc(100% - 28px); margin:0 14px; padding:clamp(14px,4vw,19px); border:none; border-radius:16px; background:linear-gradient(135deg,#ff8c00,#ff4500); color:white; font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5.5vw,24px); letter-spacing:3px; cursor:pointer; box-shadow:0 4px 24px rgba(255,100,0,0.4); transition:all .15s; flex-shrink:0; }
-    .btn-cashout:active { transform:scale(0.97); }
-    .btn-cashout:disabled { background:rgba(255,255,255,0.07); box-shadow:none; color:rgba(255,255,255,0.2); }
-    .btn-cashout.crashed-btn { background:linear-gradient(135deg,#ff3333,#aa0000); box-shadow:0 4px 20px rgba(255,0,0,0.3); }
-    .btn-cashout.cashed-btn { background:linear-gradient(135deg,#4ade80,#16a34a); box-shadow:0 4px 20px rgba(74,222,128,0.3); }
+    .btn-play { width:calc(100% - 32px); margin:8px 16px 0; padding:14px; border:2px solid rgba(255,255,255,0.25); border-radius:12px; background:rgba(0,0,0,0.15); color:rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
 
-    /* Chips */
-    .chips { display:flex; gap:6px; padding:0 14px; flex-shrink:0; }
-    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
-    .chip.sel { background:rgba(255,140,0,0.15); border:1.5px solid #ff8c00; }
-    .chip.sel .cv { color:#ff8c00; }
-    .chip:not(.sel) { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
-    .chip:not(.sel) .cv { color:rgba(255,255,255,0.3); }
-    .cv { font-family:'Bebas Neue',sans-serif; font-size:13px; }
-
-    .btn-play { width:calc(100% - 28px); margin:8px 14px 0; padding:14px; border:1px solid rgba(255,255,255,0.15); border-radius:14px; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
-
-    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+12px); background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:11px; color:rgba(255,255,255,0.15); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
+    .btn-retour { width:calc(100% - 32px); margin:8px 16px calc(env(safe-area-inset-bottom)+14px); background:rgba(0,0,0,0.15); border:2px solid rgba(255,255,255,0.15); border-radius:12px; padding:12px; color:rgba(255,255,255,0.4); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
   </style>
 </head>
 <body>
-
-<!-- Étoiles SVG -->
-<svg class="stars" viewBox="0 0 400 900" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-  <rect width="400" height="900" fill="#04020c"/>
-  <g fill="white">
-    <circle cx="30" cy="50" r="1" opacity="0.5"/><circle cx="80" cy="30" r="0.8" opacity="0.4"/>
-    <circle cx="140" cy="80" r="1.2" opacity="0.6"/><circle cx="220" cy="20" r="0.7" opacity="0.3"/>
-    <circle cx="270" cy="70" r="1" opacity="0.5"/><circle cx="50" cy="150" r="0.9" opacity="0.4"/>
-    <circle cx="200" cy="120" r="0.8" opacity="0.5"/><circle cx="350" cy="90" r="1.1" opacity="0.3"/>
-    <circle cx="15" cy="200" r="0.7" opacity="0.4"/><circle cx="380" cy="180" r="0.9" opacity="0.5"/>
-    <circle cx="100" cy="250" r="0.6" opacity="0.3"/><circle cx="300" cy="220" r="1" opacity="0.4"/>
-    <circle cx="160" cy="300" r="0.8" opacity="0.5"/><circle cx="60" cy="350" r="1" opacity="0.3"/>
-    <circle cx="250" cy="280" r="0.7" opacity="0.4"/><circle cx="320" cy="310" r="0.9" opacity="0.5"/>
-    <circle cx="180" cy="400" r="1.1" opacity="0.3"/><circle cx="90" cy="420" r="0.8" opacity="0.4"/>
-    <circle cx="360" cy="380" r="0.6" opacity="0.5"/><circle cx="130" cy="480" r="1" opacity="0.3"/>
-  </g>
-  <!-- Traînée de lancement (visible au départ) -->
-  <path id="trailPath" d="M200,750 Q198,700 196,650 Q194,580 192,500" stroke="rgba(255,140,0,0.0)" stroke-width="14" fill="none" stroke-linecap="round"/>
-  <path id="trailGlow" d="M200,750 Q198,700 196,650 Q194,580 192,500" stroke="rgba(255,200,50,0.0)" stroke-width="28" fill="none" stroke-linecap="round"/>
-</svg>
-
 <div class="page">
 
   <div class="hdr">
@@ -94,10 +61,9 @@
 
   <div class="main">
     <div class="rocket" id="rocketEl">🚀</div>
-    <div class="mult-lbl">MULTIPLICATEUR</div>
-    <div class="mult-val" id="multValue">1.00×</div>
+    <div class="mult-val" id="multVal">1.00×</div>
     <div class="mult-sub" id="multSub">Lance une partie pour commencer</div>
-    <div class="potential"><div class="potential-v" id="potential"></div></div>
+    <div class="gain-box"><div class="gain-val" id="gainVal"></div></div>
   </div>
 
   <button class="btn-cashout" id="btnCashout" onclick="cashout()" disabled>ENCAISSER</button>
@@ -112,34 +78,30 @@
   <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
 
 </div>
-
 <script>
   const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const sb = supabase.createClient(SB_URL, SB_KEY);
 
   const fmt = n => Math.floor(n).toLocaleString('fr-FR');
-  const fmtMult = n => n.toFixed(2) + '×';
+  const fmtM = n => n.toFixed(2) + '×';
 
   let money=0, bet=1000, currentUser=null;
   let mult=1, crashAt=1, running=false, cashedOut=false, interval=null;
 
+  const $ = id => document.getElementById(id);
+
   function setBet(val,id){
     bet=val;
-    ['c1000','c5000','c10000','c50000'].forEach(i=>document.getElementById(i).classList.toggle('sel',i===id));
-    document.getElementById('betLabel').textContent=fmt(val)+'€';
+    ['c1000','c5000','c10000','c50000'].forEach(i=>$(i).classList.toggle('sel',i===id));
+    $('betLabel').textContent=fmt(val)+'€';
   }
 
-  function updateBal(){ document.getElementById('balDisplay').textContent=fmt(money)+'€'; }
+  function updateBal(){ $('balDisplay').textContent=fmt(money)+'€'; }
 
   function genCrashAt(){
     if(Math.random()<0.01) return 1.0;
     return Math.max(1.0, 0.95/(1-Math.random()));
-  }
-
-  function setTrail(opacity){
-    document.getElementById('trailPath').style.stroke=`rgba(255,140,0,${opacity})`;
-    document.getElementById('trailGlow').style.stroke=`rgba(255,200,50,${opacity*0.6})`;
   }
 
   async function init(){
@@ -157,26 +119,24 @@
     money-=bet; updateBal();
     cashedOut=false; mult=1.0; crashAt=genCrashAt(); running=true;
 
-    document.getElementById('btnPlay').style.display='none';
-    document.getElementById('btnCashout').disabled=false;
-    document.getElementById('btnCashout').className='btn-cashout';
-    document.getElementById('btnCashout').textContent='ENCAISSER';
-    document.getElementById('multSub').textContent='Encaisse avant le crash !';
-    document.getElementById('potential').textContent='';
-    document.getElementById('rocketEl').className='rocket';
-    document.getElementById('multValue').className='mult-val';
-    setTrail(0.3);
+    $('btnPlay').style.display='none';
+    $('btnCashout').disabled=false;
+    $('btnCashout').className='btn-cashout';
+    $('btnCashout').textContent='ENCAISSER';
+    $('multSub').textContent='Encaisse avant le crash !';
+    $('gainVal').textContent='';
+    $('rocketEl').className='rocket';
+    $('multVal').className='mult-val';
 
     let elapsed=0;
     interval=setInterval(()=>{
       elapsed+=50;
       mult=Math.pow(1.035,elapsed/100);
-      document.getElementById('multValue').textContent=fmtMult(mult);
-      if(mult>5) document.getElementById('multValue').className='mult-val danger';
+      $('multVal').textContent=fmtM(mult);
+      if(mult>4) $('multVal').className='mult-val danger';
       const gain=Math.floor(bet*mult);
-      document.getElementById('potential').textContent='= '+fmt(gain)+'€';
-      document.getElementById('btnCashout').textContent='ENCAISSER — '+fmt(gain)+'€';
-      setTrail(Math.min(0.5, 0.1+mult*0.08));
+      $('gainVal').textContent='= '+fmt(gain)+'€';
+      $('btnCashout').textContent='ENCAISSER — '+fmt(gain)+'€';
       if(mult>=crashAt) crash();
     },50);
   }
@@ -186,14 +146,13 @@
     cashedOut=true; clearInterval(interval); running=false;
     const gain=Math.floor(bet*mult);
     money+=gain; updateBal();
-    document.getElementById('multValue').className='mult-val cashed';
-    document.getElementById('rocketEl').className='rocket cashed';
-    document.getElementById('multSub').textContent='ENCAISSÉ ! ✅';
-    document.getElementById('potential').textContent='+'+fmt(gain)+'€';
-    document.getElementById('btnCashout').textContent='ENCAISSÉ — '+fmt(gain)+'€';
-    document.getElementById('btnCashout').disabled=true;
-    document.getElementById('btnCashout').className='btn-cashout cashed-btn';
-    setTrail(0);
+    $('multVal').className='mult-val cashed';
+    $('rocketEl').className='rocket cashed';
+    $('multSub').textContent='ENCAISSÉ ! ✅';
+    $('gainVal').textContent='+'+fmt(gain)+'€';
+    $('btnCashout').textContent='ENCAISSÉ — '+fmt(gain)+'€';
+    $('btnCashout').disabled=true;
+    $('btnCashout').className='btn-cashout cashed-btn';
     save();
     setTimeout(reset,2000);
   }
@@ -201,33 +160,31 @@
   function crash(){
     clearInterval(interval); running=false;
     if(cashedOut) return;
-    document.getElementById('multValue').className='mult-val crashed';
-    document.getElementById('multValue').textContent='💥 CRASH !';
-    document.getElementById('rocketEl').className='rocket crashed';
-    document.getElementById('rocketEl').textContent='💥';
-    document.getElementById('multSub').textContent='à '+fmtMult(crashAt);
-    document.getElementById('potential').textContent='Tout perdu…';
-    document.getElementById('btnCashout').className='btn-cashout crashed-btn';
-    document.getElementById('btnCashout').textContent='💥 CRASHÉ à '+fmtMult(crashAt);
-    document.getElementById('btnCashout').disabled=true;
-    setTrail(0);
+    $('multVal').className='mult-val crashed';
+    $('multVal').textContent='💥 CRASH !';
+    $('rocketEl').className='rocket crashed';
+    $('rocketEl').textContent='💥';
+    $('multSub').textContent='crashé à '+fmtM(crashAt);
+    $('gainVal').textContent='Tout perdu…';
+    $('btnCashout').className='btn-cashout crashed-btn';
+    $('btnCashout').textContent='💥 CRASHÉ à '+fmtM(crashAt);
+    $('btnCashout').disabled=true;
     if(navigator.vibrate) navigator.vibrate([100,50,200]);
     save();
     setTimeout(reset,2500);
   }
 
   function reset(){
-    document.getElementById('multValue').className='mult-val';
-    document.getElementById('multValue').textContent='1.00×';
-    document.getElementById('multSub').textContent='Lance une partie pour commencer';
-    document.getElementById('potential').textContent='';
-    document.getElementById('rocketEl').textContent='🚀';
-    document.getElementById('rocketEl').className='rocket';
-    document.getElementById('btnPlay').style.display='block';
-    document.getElementById('btnCashout').disabled=true;
-    document.getElementById('btnCashout').className='btn-cashout';
-    document.getElementById('btnCashout').textContent='ENCAISSER';
-    setTrail(0);
+    $('multVal').className='mult-val';
+    $('multVal').textContent='1.00×';
+    $('multSub').textContent='Lance une partie pour commencer';
+    $('gainVal').textContent='';
+    $('rocketEl').textContent='🚀';
+    $('rocketEl').className='rocket';
+    $('btnPlay').style.display='block';
+    $('btnCashout').disabled=true;
+    $('btnCashout').className='btn-cashout';
+    $('btnCashout').textContent='ENCAISSER';
   }
 
   async function save(){
