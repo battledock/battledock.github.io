@@ -67,7 +67,7 @@
     <div class="wheel-table">
       <div class="wheel-container">
         <div class="pointer"></div>
-        <canvas id="wheelCanvas" width="220" height="220"></canvas>
+        <canvas id="wheelCanvas" style="width:220px;height:220px"></canvas>
       </div>
       <div class="last-val" id="lastVal">Tourne la roue !</div>
     </div>
@@ -127,11 +127,22 @@
     s.midAngle=s.startAngle+s.angleSize/2;
   });
 
+  const DPR = window.devicePixelRatio || 2;
+  const CSIZE = 220;
+
+  function initCanvas(){
+    const canvas=$('wheelCanvas');
+    canvas.width  = CSIZE * DPR;
+    canvas.height = CSIZE * DPR;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(DPR, DPR);
+  }
+
   function drawWheel(rotOffset=0){
     const canvas=$('wheelCanvas');
     const ctx=canvas.getContext('2d');
-    const cx=110,cy=110,r=105;
-    ctx.clearRect(0,0,220,220);
+    const cx=CSIZE/2, cy=CSIZE/2, r=CSIZE/2-5;
+    ctx.clearRect(0,0,CSIZE,CSIZE);
 
     SEGMENTS.forEach(s=>{
       const start=s.startAngle+rotOffset-Math.PI/2;
@@ -177,6 +188,7 @@
     ctx.textAlign='center';
     ctx.textBaseline='middle';
     ctx.fillText('PORT',cx,cy);
+  }
   }
 
   function getSegmentAt(angle){
@@ -267,6 +279,7 @@
     else currentUser=session.user;
     const {data}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
     money=data?.money||0; updateBal();
+    initCanvas();
     drawWheel(0);
   }
 
