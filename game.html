@@ -1063,7 +1063,7 @@ ang="fr">
         // Récupère profit + holdings + prix marché
         const [gsRes, mktRes] = await Promise.all([
           sb.from('game_stats').select('bourse_profit,bourse').eq('user_id', session.user.id).maybeSingle(),
-          sb.from('bourse_market').select('sym,price')
+          sb.from('bourse_market').select('sym,price,prev_price,change_pct')
         ]);
         const gs = gsRes.data;
         const mkt = mktRes.data || [];
@@ -1104,6 +1104,22 @@ ang="fr">
         if (line) line.setAttribute('stroke', color);
         if (fill) fill.setAttribute('fill', fillId);
         if (point) point.setAttribute('fill', color);
+
+        // Ticker dynamique depuis bourse_market
+        const tickerEl = document.getElementById('bourseTickerText');
+        if (tickerEl && mkt.length > 0) {
+          const sep = '<span style="color:rgba(255,255,255,0.15)">&nbsp;·&nbsp;</span>';
+          const items = mkt.map(r => {
+            const chg = r.change_pct != null ? r.change_pct : (r.prev_price ? ((r.price - r.prev_price) / r.prev_price * 100) : null);
+            const up = chg == null ? true : chg >= 0;
+            const col = up ? '#4ade80' : '#f87171';
+            const arrow = up ? '⬆' : '⬇';
+            const pct = chg != null ? (up ? '+' : '') + chg.toFixed(1) + '%' : r.price.toLocaleString('fr-FR') + '€';
+            return `<span style="color:${col}">${arrow} ${r.sym} ${pct}</span>`;
+          }).join(sep + '&nbsp;&nbsp;');
+          const doubled = items + '&nbsp;&nbsp;&nbsp;&nbsp;' + sep + '&nbsp;&nbsp;' + items;
+          tickerEl.innerHTML = doubled;
+        }
 
 
 
