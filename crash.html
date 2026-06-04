@@ -8,80 +8,100 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
-    html { height:100%; } body { height:100dvh; overflow:hidden; }
-    body { font-family:'Inter',sans-serif; background:#0a0510; display:flex; flex-direction:column; }
-    .page { flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
+    html { height:100%; }
+    body { height:100dvh; overflow:hidden; font-family:'Inter',sans-serif; background:#04020c; display:flex; flex-direction:column; position:relative; }
 
+    /* Étoiles */
+    .stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+
+    .page { position:relative; z-index:5; flex:1; display:flex; flex-direction:column; max-width:480px; width:100%; margin:0 auto; }
+
+    /* Header */
     .hdr { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top)+34px) 14px 10px; flex-shrink:0; }
-    .btn-back { background:rgba(255,255,255,0.06); border:1.5px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.5); border-radius:10px; padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; cursor:pointer; }
-    .hdr-title { flex:1; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:20px; color:white; letter-spacing:3px; }
+    .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; color:white; letter-spacing:3px; }
     .hdr-bal { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:7px 14px; }
     .hdr-bal-v { font-family:'Bebas Neue',sans-serif; font-size:17px; color:white; }
 
-    /* Zone multiplicateur */
-    .mult-zone { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
-    .mult-label { font-size:9px; font-weight:700; color:rgba(255,255,255,0.2); letter-spacing:4px; }
-    .mult-value { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,22vw,104px); color:white; line-height:1; transition:color .2s; }
-    .mult-value.danger { color:#ff4444; }
-    .mult-value.crashed { color:#ff2020; }
-    .mult-value.cashed { color:#4ade80; }
-    .mult-sub { font-size:12px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; }
+    /* Zone centrale */
+    .main { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:0 14px; }
 
-    /* Graphe simplifié */
-    .graph { width:100%; height:4px; background:rgba(255,255,255,0.05); margin:0 0 8px; flex-shrink:0; overflow:hidden; }
-    .graph-fill { height:100%; width:0%; background:linear-gradient(90deg,#4ade80,#fbbf24); transition:width .1s linear; border-radius:2px; }
-    .graph-fill.danger { background:linear-gradient(90deg,#fbbf24,#ff4444); }
+    /* Fusée */
+    .rocket { font-size:clamp(56px,16vw,72px); filter:drop-shadow(0 0 20px rgba(255,140,0,0.6)); transition:filter .3s; line-height:1; }
+    .rocket.crashed { filter:drop-shadow(0 0 20px rgba(255,50,50,0.8)); }
+    .rocket.cashed { filter:drop-shadow(0 0 20px rgba(74,222,128,0.8)); }
+
+    /* Multiplicateur */
+    .mult-lbl { font-size:9px; font-weight:700; color:rgba(255,255,255,0.25); letter-spacing:4px; }
+    .mult-val { font-family:'Bebas Neue',sans-serif; font-size:clamp(72px,22vw,100px); color:white; line-height:0.9; transition:color .2s; text-shadow:0 0 40px rgba(255,140,0,0.3); }
+    .mult-val.danger { color:#ff8844; text-shadow:0 0 40px rgba(255,100,50,0.5); }
+    .mult-val.crashed { color:#ff3333; text-shadow:0 0 40px rgba(255,0,0,0.6); }
+    .mult-val.cashed { color:#4ade80; text-shadow:0 0 40px rgba(74,222,128,0.5); }
+    .mult-sub { font-size:11px; font-weight:700; color:rgba(255,255,255,0.3); letter-spacing:2px; text-align:center; }
 
     /* Gain potentiel */
-    .potential { font-family:'Bebas Neue',sans-serif; font-size:20px; color:rgba(255,255,255,0.3); text-align:center; flex-shrink:0; min-height:28px; }
+    .potential { background:rgba(255,140,0,0.08); border:1px solid rgba(255,140,0,0.2); border-radius:10px; padding:6px 18px; min-height:36px; display:flex; align-items:center; justify-content:center; }
+    .potential-v { font-family:'Bebas Neue',sans-serif; font-size:22px; color:rgba(255,140,0,0.7); }
 
-    /* Bouton ENCAISSER */
-    .btn-cashout { width:calc(100% - 28px); margin:0 14px; padding:clamp(14px,4vw,21px); border:none; border-radius:18px; background:linear-gradient(135deg,#4ade80,#16a34a); color:white; font-family:'Bebas Neue',sans-serif; font-size:clamp(20px,5.5vw,27px); letter-spacing:3px; cursor:pointer; box-shadow:0 4px 20px rgba(74,222,128,0.35); transition:all .15s; flex-shrink:0; }
+    /* Bouton encaisser */
+    .btn-cashout { width:calc(100% - 28px); margin:0 14px; padding:clamp(14px,4vw,19px); border:none; border-radius:16px; background:linear-gradient(135deg,#ff8c00,#ff4500); color:white; font-family:'Bebas Neue',sans-serif; font-size:clamp(18px,5.5vw,24px); letter-spacing:3px; cursor:pointer; box-shadow:0 4px 24px rgba(255,100,0,0.4); transition:all .15s; flex-shrink:0; }
     .btn-cashout:active { transform:scale(0.97); }
-    .btn-cashout:disabled { background:rgba(255,255,255,0.08); box-shadow:none; color:rgba(255,255,255,0.2); }
-    .btn-cashout.crashed-btn { background:linear-gradient(135deg,#ff4444,#cc0000); box-shadow:0 4px 20px rgba(255,0,0,0.3); }
+    .btn-cashout:disabled { background:rgba(255,255,255,0.07); box-shadow:none; color:rgba(255,255,255,0.2); }
+    .btn-cashout.crashed-btn { background:linear-gradient(135deg,#ff3333,#aa0000); box-shadow:0 4px 20px rgba(255,0,0,0.3); }
+    .btn-cashout.cashed-btn { background:linear-gradient(135deg,#4ade80,#16a34a); box-shadow:0 4px 20px rgba(74,222,128,0.3); }
 
-    /* Mise + bouton lancer */
+    /* Chips */
     .chips { display:flex; gap:6px; padding:0 14px; flex-shrink:0; }
-    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; }
-    .chip.sel { background:rgba(74,222,128,0.15); border:1.5px solid #4ade80; }
-    .chip.sel .cv { color:#4ade80; }
+    .chip { flex:1; padding:9px; border-radius:10px; text-align:center; cursor:pointer; transition:all .15s; }
+    .chip.sel { background:rgba(255,140,0,0.15); border:1.5px solid #ff8c00; }
+    .chip.sel .cv { color:#ff8c00; }
     .chip:not(.sel) { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); }
     .chip:not(.sel) .cv { color:rgba(255,255,255,0.3); }
     .cv { font-family:'Bebas Neue',sans-serif; font-size:13px; }
 
-    .btn-play { width:calc(100% - 28px); margin:8px 14px 0; padding:15px; border:none; border-radius:14px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
-    .btn-play:hover { background:rgba(255,255,255,0.12); }
+    .btn-play { width:calc(100% - 28px); margin:8px 14px 0; padding:14px; border:1px solid rgba(255,255,255,0.15); border-radius:14px; background:rgba(255,255,255,0.07); color:rgba(255,255,255,0.6); font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; cursor:pointer; flex-shrink:0; }
 
-    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+12px); background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:11px; color:rgba(255,255,255,0.2); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
+    .btn-retour { width:calc(100% - 28px); margin:8px 14px calc(env(safe-area-inset-bottom)+12px); background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:11px; color:rgba(255,255,255,0.15); font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:2px; text-align:center; cursor:pointer; flex-shrink:0; }
   </style>
 </head>
 <body>
+
+<!-- Étoiles SVG -->
+<svg class="stars" viewBox="0 0 400 900" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <rect width="400" height="900" fill="#04020c"/>
+  <g fill="white">
+    <circle cx="30" cy="50" r="1" opacity="0.5"/><circle cx="80" cy="30" r="0.8" opacity="0.4"/>
+    <circle cx="140" cy="80" r="1.2" opacity="0.6"/><circle cx="220" cy="20" r="0.7" opacity="0.3"/>
+    <circle cx="270" cy="70" r="1" opacity="0.5"/><circle cx="50" cy="150" r="0.9" opacity="0.4"/>
+    <circle cx="200" cy="120" r="0.8" opacity="0.5"/><circle cx="350" cy="90" r="1.1" opacity="0.3"/>
+    <circle cx="15" cy="200" r="0.7" opacity="0.4"/><circle cx="380" cy="180" r="0.9" opacity="0.5"/>
+    <circle cx="100" cy="250" r="0.6" opacity="0.3"/><circle cx="300" cy="220" r="1" opacity="0.4"/>
+    <circle cx="160" cy="300" r="0.8" opacity="0.5"/><circle cx="60" cy="350" r="1" opacity="0.3"/>
+    <circle cx="250" cy="280" r="0.7" opacity="0.4"/><circle cx="320" cy="310" r="0.9" opacity="0.5"/>
+    <circle cx="180" cy="400" r="1.1" opacity="0.3"/><circle cx="90" cy="420" r="0.8" opacity="0.4"/>
+    <circle cx="360" cy="380" r="0.6" opacity="0.5"/><circle cx="130" cy="480" r="1" opacity="0.3"/>
+  </g>
+  <!-- Traînée de lancement (visible au départ) -->
+  <path id="trailPath" d="M200,750 Q198,700 196,650 Q194,580 192,500" stroke="rgba(255,140,0,0.0)" stroke-width="14" fill="none" stroke-linecap="round"/>
+  <path id="trailGlow" d="M200,750 Q198,700 196,650 Q194,580 192,500" stroke="rgba(255,200,50,0.0)" stroke-width="28" fill="none" stroke-linecap="round"/>
+</svg>
+
 <div class="page">
 
   <div class="hdr">
-    <button class="btn-back" onclick="window.location.href='casino.html'">← Salle</button>
-    <div class="hdr-title">📈 CRASH</div>
+    <div class="hdr-title">🚀 CRASH</div>
     <div class="hdr-bal"><div class="hdr-bal-v" id="balDisplay">—</div></div>
   </div>
 
-  <!-- Graphe -->
-  <div class="graph"><div class="graph-fill" id="graphFill"></div></div>
-
-  <!-- Multiplicateur -->
-  <div class="mult-zone">
-    <div class="mult-label">MULTIPLICATEUR</div>
-    <div class="mult-value" id="multValue">1.00×</div>
+  <div class="main">
+    <div class="rocket" id="rocketEl">🚀</div>
+    <div class="mult-lbl">MULTIPLICATEUR</div>
+    <div class="mult-val" id="multValue">1.00×</div>
     <div class="mult-sub" id="multSub">Lance une partie pour commencer</div>
+    <div class="potential"><div class="potential-v" id="potential"></div></div>
   </div>
 
-  <!-- Gain potentiel -->
-  <div class="potential" id="potential"></div>
-
-  <!-- Bouton encaisser / crashé -->
   <button class="btn-cashout" id="btnCashout" onclick="cashout()" disabled>ENCAISSER</button>
 
-  <!-- Mise -->
   <div class="chips" style="margin-top:10px">
     <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')"><div class="cv">1K</div></div>
     <div class="chip" id="c5000" onclick="setBet(5000,'c5000')"><div class="cv">5K</div></div>
@@ -89,10 +109,10 @@
     <div class="chip" id="c50000" onclick="setBet(50000,'c50000')"><div class="cv">50K</div></div>
   </div>
   <button class="btn-play" id="btnPlay" onclick="startGame()">LANCER — <span id="betLabel">1 000€</span></button>
-
   <div class="btn-retour" onclick="window.location.href='casino.html'">← RETOUR AU CASINO</div>
 
 </div>
+
 <script>
   const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
@@ -112,11 +132,14 @@
 
   function updateBal(){ document.getElementById('balDisplay').textContent=fmt(money)+'€'; }
 
-  // Crash point : distribution exponentielle, house edge ~10%
   function genCrashAt(){
-    const r=Math.random();
-    if(r < 0.01) return 1.0; // 1% crash immédiat
-    return Math.max(1.0, 0.99 / (1 - Math.random()));
+    if(Math.random()<0.01) return 1.0;
+    return Math.max(1.0, 0.99/(1-Math.random()));
+  }
+
+  function setTrail(opacity){
+    document.getElementById('trailPath').style.stroke=`rgba(255,140,0,${opacity})`;
+    document.getElementById('trailGlow').style.stroke=`rgba(255,200,50,${opacity*0.6})`;
   }
 
   async function init(){
@@ -129,105 +152,81 @@
   }
 
   function startGame(){
-    if(running || money<bet) return;
+    if(running||money<bet) return;
     money-=bet; updateBal();
-    cashedOut=false;
-    mult=1.0;
-    crashAt=genCrashAt();
-    running=true;
+    cashedOut=false; mult=1.0; crashAt=genCrashAt(); running=true;
 
-    // UI
     document.getElementById('btnPlay').style.display='none';
     document.getElementById('btnCashout').disabled=false;
     document.getElementById('btnCashout').className='btn-cashout';
     document.getElementById('btnCashout').textContent='ENCAISSER';
     document.getElementById('multSub').textContent='Encaisse avant le crash !';
-    document.getElementById('graphFill').style.width='0%';
-    document.getElementById('graphFill').className='graph-fill';
     document.getElementById('potential').textContent='';
+    document.getElementById('rocketEl').className='rocket';
+    document.getElementById('multValue').className='mult-value mult-val';
+    setTrail(0.3);
 
-    const multEl=document.getElementById('multValue');
-    multEl.className='mult-value';
-
-    let speed=50; // ms par tick
     let elapsed=0;
-
     interval=setInterval(()=>{
-      elapsed+=speed;
-      // Croissance exponentielle
-      mult=Math.pow(1.07, elapsed/100);
-
-      multEl.textContent=fmtMult(mult);
-
-      // Danger au-delà de 3x
-      if(mult>5) multEl.className='mult-value danger';
-
-      // Graphe
-      const pct=Math.min((mult-1)/Math.max(crashAt-1,0.01)*100,100);
-      document.getElementById('graphFill').style.width=pct+'%';
-      if(mult>3) document.getElementById('graphFill').className='graph-fill danger';
-
-      // Gain potentiel
-      document.getElementById('potential').textContent='= '+fmt(Math.floor(bet*mult))+'€';
-
-      // Bouton avec montant
-      document.getElementById('btnCashout').textContent='ENCAISSER — '+fmt(Math.floor(bet*mult))+'€';
-
-      // Crash ?
-      if(mult>=crashAt){
-        crash();
-      }
-    }, speed);
+      elapsed+=50;
+      mult=Math.pow(1.07,elapsed/100);
+      document.getElementById('multValue').textContent=fmtMult(mult);
+      if(mult>5) document.getElementById('multValue').className='mult-value mult-val danger';
+      const gain=Math.floor(bet*mult);
+      document.getElementById('potential').textContent='= '+fmt(gain)+'€';
+      document.getElementById('btnCashout').textContent='ENCAISSER — '+fmt(gain)+'€';
+      setTrail(Math.min(0.5, 0.1+mult*0.08));
+      if(mult>=crashAt) crash();
+    },50);
   }
 
   function cashout(){
     if(!running||cashedOut) return;
-    cashedOut=true;
-    clearInterval(interval);
-    running=false;
-
+    cashedOut=true; clearInterval(interval); running=false;
     const gain=Math.floor(bet*mult);
     money+=gain; updateBal();
-
-    document.getElementById('multValue').className='mult-value cashed';
+    document.getElementById('multValue').className='mult-value mult-val cashed';
+    document.getElementById('rocketEl').className='rocket cashed';
     document.getElementById('multSub').textContent='ENCAISSÉ ! ✅';
     document.getElementById('potential').textContent='+'+fmt(gain)+'€';
     document.getElementById('btnCashout').textContent='ENCAISSÉ — '+fmt(gain)+'€';
     document.getElementById('btnCashout').disabled=true;
-
+    document.getElementById('btnCashout').className='btn-cashout cashed-btn';
+    setTrail(0);
     save();
-    setTimeout(reset, 2000);
+    setTimeout(reset,2000);
   }
 
   function crash(){
-    clearInterval(interval);
-    running=false;
+    clearInterval(interval); running=false;
     if(cashedOut) return;
-
-    document.getElementById('multValue').className='mult-value crashed';
+    document.getElementById('multValue').className='mult-value mult-val crashed';
     document.getElementById('multValue').textContent='💥 CRASH !';
+    document.getElementById('rocketEl').className='rocket crashed';
+    document.getElementById('rocketEl').textContent='💥';
     document.getElementById('multSub').textContent='à '+fmtMult(crashAt);
     document.getElementById('potential').textContent='Tout perdu…';
     document.getElementById('btnCashout').className='btn-cashout crashed-btn';
     document.getElementById('btnCashout').textContent='💥 CRASHÉ à '+fmtMult(crashAt);
     document.getElementById('btnCashout').disabled=true;
-
+    setTrail(0);
     if(navigator.vibrate) navigator.vibrate([100,50,200]);
     save();
-    setTimeout(reset, 2500);
+    setTimeout(reset,2500);
   }
 
   function reset(){
-    document.getElementById('multValue').className='mult-value';
+    document.getElementById('multValue').className='mult-value mult-val';
     document.getElementById('multValue').textContent='1.00×';
     document.getElementById('multSub').textContent='Lance une partie pour commencer';
     document.getElementById('potential').textContent='';
-    document.getElementById('graphFill').style.width='0%';
-    document.getElementById('graphFill').className='graph-fill';
+    document.getElementById('rocketEl').textContent='🚀';
+    document.getElementById('rocketEl').className='rocket';
     document.getElementById('btnPlay').style.display='block';
     document.getElementById('btnCashout').disabled=true;
     document.getElementById('btnCashout').className='btn-cashout';
     document.getElementById('btnCashout').textContent='ENCAISSER';
+    setTrail(0);
   }
 
   async function save(){
