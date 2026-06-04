@@ -362,15 +362,16 @@ ang="fr">
     }
 
     /* CARTE FERMÉE */
-    .nav-card.locked { filter: grayscale(0.85) brightness(0.55); cursor: not-allowed; }
-    .nav-card.gated { pointer-events: auto; }
-    .lock-badge {
+    .nav-card.locked { filter: none; cursor: pointer; }
+    .nav-card.gated, .nav-card.locked { pointer-events: auto !important; opacity: 1 !important; }
+    .nav-card.locked { pointer-events: auto !important; }
+    ._lock-badge-disabled {
       position: absolute; inset: 0; z-index: 20;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
       background: rgba(0,0,0,0.45); backdrop-filter: blur(1px);
     }
-    .lock-badge-icon { font-size: 26px; }
-    .lock-badge-text {
+    ._lock-badge-icon-disabled { font-size: 26px; }
+    ._lock-badge-text-disabled {
       font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px;
       color: rgba(255,255,255,0.85);
     }
@@ -1333,25 +1334,9 @@ ang="fr">
         document.querySelectorAll('.gated').forEach(el => el.classList.remove('gated'));
     }
 
-    function lockCard(id, chapter) {
-      const card = document.getElementById(id);
-      if (!card) return;
-      card.classList.add('locked');
-      card.classList.remove('gated');
-      card.onclick = (e) => { e.stopPropagation(); showLocked(chapter); };
-      const badge = document.createElement('div');
-      badge.className = 'lock-badge';
-      badge.innerHTML = '<div class="lock-badge-icon">🔒</div><div class="lock-badge-text">CHAPITRE ' + chapter + '</div>';
-      card.appendChild(badge);
-    }
 
-    function showLocked(chapter) {
-      const o = document.createElement('div');
-      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .25s ease';
-      o.onclick = (e) => { if (e.target === o) o.remove(); };
-      // Popup verrouillé supprimée
-      document.body.appendChild(o);
-    }
+
+
 
     async function loadUserData() {
       const [profileResult, statsResult] = await Promise.all([
@@ -2022,38 +2007,13 @@ async function loadCalendar() {
       if (_curLbl)  _curLbl.textContent = _done >= MAX_CH ? 'TERMINÉ ✓' : 'CH.' + (_done + 1) + ' — EN COURS';
 
       // Verrous selon progression histoire
-      const sp = storyData?.story_progress || {};
-      const _gates = [
-        ['workCard','scene1_done',1], ['rankCard','scene3_done',3], ['chatCard','scene3_done',3],
-        ['bourseCard','scene4_done',4], ['barCard','scene5_done',5], ['casinoCard','scene6_done',6],
-        ['shopCard','scene7_done',7], ['objectifsCard','scene8_done',8], ['defisCard','scene9_done',9],
-        ['mariageCard','scene10_done',10], ['evenementCard','scene11_done',11], ['directionCard','scene12_done',12], ['sabotageCard','scene13_done',13], ['commerceCard','scene14_done',14], ['syndicatCard','scene15_done',15],
-        ['tournoiCard','scene19_done',19], ['evspecialCard','scene20_done',20], ['saisonCard','scene21_done',21],
-      ];
-      _gates.forEach(([id, scene, ch]) => {
-        if (sp[scene]) { const c = document.getElementById(id); if (c) c.classList.remove('gated'); }
-      });
+      // Tout débloqué — mode histoire supprimé
+      document.querySelectorAll('.gated, .locked').forEach(el => { el.classList.remove('gated'); el.classList.remove('locked'); });
     }
 
-    function lockCard(id, chapter) {
-      const card = document.getElementById(id);
-      if (!card) return;
-      card.classList.add('locked');
-      card.classList.remove('gated');
-      card.onclick = (e) => { e.stopPropagation(); showLocked(chapter); };
-      const badge = document.createElement('div');
-      badge.className = 'lock-badge';
-      badge.innerHTML = '<div class="lock-badge-icon">🔒</div><div class="lock-badge-text">CHAPITRE ' + chapter + '</div>';
-      card.appendChild(badge);
-    }
 
-    function showLocked(chapter) {
-      const o = document.createElement('div');
-      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .25s ease';
-      o.onclick = (e) => { if (e.target === o) o.remove(); };
-      // Popup verrouillé supprimée
-      document.body.appendChild(o);
-    }
+
+
 
     async function loadUserData() {
       const [profileResult, statsResult] = await Promise.all([
