@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Regate - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+
+    .table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;flex-shrink:0; }
+
+    .finish-line { text-align:right;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:2px; }
+
+    .track {
+      display:flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);
+      border-radius:8px;padding:7px 10px;cursor:pointer;transition:all .15s;
+      position:relative;overflow:hidden;
+    }
+    .track:active { transform:scale(0.98); }
+    .track.sel    { border-color:rgba(251,191,36,0.6);background:rgba(251,191,36,0.08); }
+    .track.winner { border-color:rgba(74,222,128,0.6);background:rgba(74,222,128,0.08); }
+    .track.loser  { opacity:0.4; }
+
+    .track-bar { position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:8px;opacity:0.15;transition:width .08s linear; }
+    .track-boat { font-size:22px;flex-shrink:0; }
+    .track-name { flex:1;font-family:'Bebas Neue',sans-serif;font-size:13px;color:white;letter-spacing:1px; }
+    .track-odds { font-family:'Bebas Neue',sans-serif;font-size:14px;padding:3px 8px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fbbf24;flex-shrink:0; }
+    .track.sel .track-odds { background:#fbbf24;color:#0f172a; }
+
+    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%; }
+    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
+
+    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
+    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
+    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
+    .chip.sel { background:#fbbf24;color:#0f172a; }
+    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
+    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
+    .spin-btn:active { transform:scale(0.98); }
+    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
+
+    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
+    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
+    .back-btn:active { transform:scale(0.95); }
+    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
+    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="game-area">
+
+    <div class="table">
+      <div class="finish-line">ARRIVEE 🏁</div>
+      <div id="trackWrap"></div>
+    </div>
+
+    <div class="controls">
+      <div class="result" id="result"></div>
+      <div class="chips">
+        <div class="chip sel" id="c1000"  onclick="setBet(1000,'c1000')">1K</div>
+        <div class="chip"     id="c5000"  onclick="setBet(5000,'c5000')">5K</div>
+        <div class="chip"     id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+        <div class="chip"     id="c25000" onclick="setBet(25000,'c25000')">25K</div>
+      </div>
+      <button class="spin-btn" id="btnPlay" onclick="startRace()" disabled>CHOISIR UN BATEAU</button>
+    </div>
+
+  </div>
+  <div class="bottom-bar">
+    <button class="back-btn" onclick="window.location.href='casino.html'">&#8592; Casino</button>
+    <div class="game-title">&#9975; REGATE</div>
+    <div class="balance" id="balance">0&#8364;</div>
+  </div>
+</div>
+
+<script>
+  var SUPABASE_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function fmt(n) { return Math.floor(n).toLocaleString('fr-FR'); }
+  function el(id) { return document.getElementById(id); }
+
+  var money = 0, bet = 1000, currentUser = null, busy = false, selectedBoat = -1;
+
+  var BOATS = [
+    {boat:'[1]', name:'MISTRAL',    odds:2.5,  prob:0.35, color:'#0ea5e9'},
+    {boat:'[2]', name:'TRAMONTANE', odds:3.5,  prob:0.25, color:'#22c55e'},
+    {boat:'[3]', name:'SIROCCO',    odds:4.4,  prob:0.20, color:'#f59e0b'},
+    {boat:'[4]', name:'LIBECCIO',   odds:6.7,  prob:0.13, color:'#a855f7'},
+    {boat:'[5]', name:'PONANT',     odds:12.5, prob:0.07, color:'#f87171'}
+  ];
+
+  function buildTracks() {
+    var wrap = el('trackWrap');
+    wrap.innerHTML = '';
+    for (var i = 0; i < BOATS.length; i++) {
+      (function(idx) {
+        var b = BOATS[idx];
+        var div = document.createElement('div');
+        div.className = 'track';
+        div.id = 'track' + idx;
+        div.innerHTML =
+          '<div class="track-bar" id="bar' + idx + '" style="background:' + b.color + '"></div>' +
+          '<div class="track-boat">' + b.boat + '</div>' +
+          '<div class="track-name">' + b.name + '</div>' +
+          '<div class="track-odds" id="odds' + idx + '">' + b.odds.toFixed(1) + 'x</div>';
+        div.onclick = function() { selectBoat(idx); };
+        wrap.appendChild(div);
+      })(i);
+    }
+  }
+
+  function selectBoat(idx) {
+    if (busy) return;
+    selectedBoat = idx;
+    for (var i = 0; i < BOATS.length; i++) {
+      var t = el('track' + i);
+      if (t) t.className = (i === idx) ? 'track sel' : 'track';
+    }
+    var btn = el('btnPlay');
+    btn.disabled = false;
+    btn.textContent = 'PARIER SUR ' + BOATS[idx].name + ' — x' + BOATS[idx].odds.toFixed(1);
+  }
+
+  function setBet(val, id) {
+    bet = val;
+    var ids = ['c1000','c5000','c10000','c25000'];
+    for (var i = 0; i < ids.length; i++) {
+      el(ids[i]).classList.toggle('sel', ids[i] === id);
+    }
+    if (selectedBoat >= 0) {
+      el('btnPlay').textContent = 'PARIER SUR ' + BOATS[selectedBoat].name + ' — x' + BOATS[selectedBoat].odds.toFixed(1);
+    }
+  }
+
+  function updateBal() { el('balance').textContent = fmt(money) + '\u20ac'; }
+
+  function weightedRandom() {
+    var r = Math.random(), cum = 0;
+    for (var i = 0; i < BOATS.length; i++) {
+      cum += BOATS[i].prob;
+      if (r < cum) return i;
+    }
+    return BOATS.length - 1;
+  }
+
+  function startRace() {
+    if (busy || selectedBoat < 0 || money < bet) return;
+    busy = true;
+    money -= bet;
+    updateBal();
+    el('btnPlay').disabled = true;
+    el('result').style.display = 'none';
+
+    // Bloquer sélection
+    for (var i = 0; i < BOATS.length; i++) {
+      el('track' + i).onclick = null;
+      el('track' + i).style.cursor = 'default';
+    }
+
+    var winner = weightedRandom();
+    var positions = [0, 0, 0, 0, 0];
+    var speeds = [];
+    for (var i = 0; i < BOATS.length; i++) {
+      speeds.push(0.6 + Math.random() * 1.2);
+    }
+    speeds[winner] *= 1.25;
+
+    var raceInterval = setInterval(function() {
+      var done = false;
+      for (var i = 0; i < BOATS.length; i++) {
+        positions[i] = Math.min(positions[i] + speeds[i] * (0.8 + Math.random() * 0.4), 100);
+        var bar = el('bar' + i);
+        if (bar) bar.style.width = positions[i] + '%';
+      }
+      if (positions[winner] >= 100) {
+        clearInterval(raceInterval);
+        endRace(winner);
+      }
+    }, 80);
+  }
+
+  function endRace(winner) {
+    for (var i = 0; i < BOATS.length; i++) {
+      var t = el('track' + i);
+      if (!t) continue;
+      t.classList.remove('sel');
+      t.classList.add(i === winner ? 'winner' : 'loser');
+    }
+
+    var r = el('result');
+    if (winner === selectedBoat) {
+      var gain = Math.floor(bet * BOATS[winner].odds);
+      money += gain;
+      updateBal();
+      r.textContent = '\ud83c\udfc6 ' + BOATS[winner].name + ' GAGNE ! +' + fmt(gain) + '\u20ac';
+      r.className = 'result win';
+    } else {
+      r.textContent = '\ud83c\udfc1 ' + BOATS[winner].name + ' GAGNE \u2014 RAT\u00c9 !';
+      r.className = 'result lose';
+    }
+    r.style.display = 'block';
+
+    if (currentUser) {
+      sb.from('game_stats').update({money: Math.floor(money)}).eq('user_id', currentUser.id);
+    }
+
+    setTimeout(function() {
+      buildTracks();
+      selectedBoat = -1;
+      el('btnPlay').disabled = true;
+      el('btnPlay').textContent = 'CHOISIR UN BATEAU';
+      busy = false;
+    }, 2500);
+  }
+
+  async function init() {
+    try {
+      var res = await sb.auth.getSession();
+      var session = res.data && res.data.session;
+      if (!session) {
+        await new Promise(function(r) { setTimeout(r, 1000); });
+        var res2 = await sb.auth.getSession();
+        session = res2.data && res2.data.session;
+        if (!session) { window.location.href = 'index.html'; return; }
+      }
+      currentUser = session.user;
+      var dres = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+      money = (dres.data && dres.data.money) || 0;
+      updateBal();
+      buildTracks();
+    } catch(e) {
+      console.error('init error:', e);
+      buildTracks();
+    }
+  }
+
+  document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+  document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+  init();
+</script>
+</body>
+</html>
