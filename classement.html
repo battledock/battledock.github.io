@@ -193,28 +193,7 @@
 </head>
 <body>
 
-<!-- HERO -->
-<div class="hero">
-  <div class="stats3" id="heroStats" style="display:none">
-    <div class="st">
-      <div class="st-v gold" id="heroLeaderVal">—</div>
-      <div class="st-sub" id="heroLeader">—</div>
-      <div class="st-lbl">LEADER</div>
-    </div>
-    <div class="sv"></div>
-    <div class="st">
-      <div class="st-v" id="heroMyRank">—</div>
-      <div class="st-sub">Toi</div>
-      <div class="st-lbl">TON RANG</div>
-    </div>
-    <div class="sv"></div>
-    <div class="st">
-      <div class="st-v" id="heroTotal">—</div>
-      <div class="st-sub">joueurs</div>
-      <div class="st-lbl">TOTAL</div>
-    </div>
-  </div>
-</div>
+
 
 <!-- BODY JAUNE -->
 <div class="sheet">
@@ -449,7 +428,7 @@
       const numDisplay = medals[rank] || rank;
       const trend = getTrend(p.user_id, rank);
       const online = getOnlineStatus(p.profile.last_seen);
-      const defiBtn = isMe ? '' : '<div class="btn-defi">⚔️ DÉFIER</div>';
+      const defiBtn = isMe ? '' : '<div class="btn-defi" onclick="event.stopPropagation();defier(' + i + ',\'' + escapeHtml(p.profile.username).replace(/\'/g,\'\\\'\'') + \'\')" >⚔️ DÉFIER</div>';
 
       if (currentTab === 'entreprises') {
         const co = p.commerce.company;
@@ -519,6 +498,41 @@
     const a = document.getElementById('tab-' + tab);
     if (a) a.classList.add('active');
     loadRanking();
+  }
+
+
+  // ── TRASH TALK ──
+  const TRASH = [
+    "Peuchère {name}, t'as vu ton rang ? C'est moi qui t'écrase !",
+    "{name} ! Rentre chez toi, le port c'est mon territoire !",
+    "Alors {name}, on fait quoi avec son niveau minable ?",
+    "Coucou {name} ! Je passe te dire que tu vas rester derrière moi longtemps 😘",
+    "{name}, même Gégé fait mieux que toi et il a 70 ans !",
+    "Bien essayé {name}, mais le classement c'est moi qui le tiens !",
+    "{name} ! Ta place dans le top, c'est pour quand exactement ?",
+    "Oh {name}... Courage hein. Il paraît que le bas du classement c'est très bien aussi.",
+    "{name}, j'ai vu ta valorisation. Mon bar rapporte plus que ton empire ! 😂",
+    "Allez {name}, fais un effort. On s'ennuie là-haut sans compétition.",
+  ];
+
+  function defier(idx, name) {
+    const msg = TRASH[Math.floor(Math.random() * TRASH.length)].replace(/{name}/g, name);
+    // Afficher popup trash talk
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:24px;animation:ovIn .2s ease';
+    overlay.innerHTML = \`
+      <div style="background:#0f172a;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.8)">
+        <div style="font-size:40px;margin-bottom:12px">⚔️</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:2px;margin-bottom:14px">DÉFI ENVOYÉ !</div>
+        <div style="background:#1e293b;border-radius:12px;padding:14px;margin-bottom:16px">
+          <div style="font-size:13px;color:white;line-height:1.5;font-style:italic">&laquo; \${msg} &raquo;</div>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:16px">Message envoyé à \${name}</div>
+        <button onclick="this.closest('div[style]').remove()" style="width:100%;padding:12px;border:none;border-radius:10px;background:#fbbf24;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">OK BIEN JOUÉ</button>
+      </div>
+    \`;
+    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+    document.body.appendChild(overlay);
   }
 
   async function init() {
