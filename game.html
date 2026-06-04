@@ -1044,11 +1044,36 @@ ang="fr">
 
 
 
+    // Ticker bourse — tourne sans auth, public
+    async function updateBourseTicker() {
+      try {
+        const { data: mkt } = await sb.from('stock_prices').select('symbol,price,previous_price');
+        const stocks = (mkt || []).filter(r => r.symbol !== 'BTC');
+        if (!stocks.length) return;
+        const tickerEl = document.getElementById('bourseTickerText');
+        if (!tickerEl) return;
+        const sep = '<span style="color:rgba(255,255,255,0.12)"> · </span>';
+        const items = stocks.map(r => {
+          const chg = (r.previous_price > 0) ? ((r.price - r.previous_price) / r.previous_price * 100) : null;
+          const up = chg == null ? true : chg >= 0;
+          const col = up ? '#4ade80' : '#f87171';
+          const arrow = up ? '⬆' : '⬇';
+          const pct = chg != null ? (up ? '+' : '') + chg.toFixed(1) + '%' : r.price.toLocaleString('fr-FR') + '€';
+          return `<span style="color:${col}">${arrow} ${r.symbol} ${pct}</span>`;
+        }).join(sep);
+        const html = items + '&nbsp;&nbsp;&nbsp;&nbsp;' + items;
+        tickerEl.innerHTML = html;
+        // Forcer redémarrage animation
+        tickerEl.style.animation = 'none';
+        tickerEl.offsetHeight; // reflow
+        tickerEl.style.animation = '';
+      } catch(e) { console.log('ticker:', e); }
+    }
+
     async function updateBourseBtn() {
       try {
         const { data:{ session } } = await sb.auth.getSession();
-        if (!session) return;
-        // Récupère profit + holdings + prix marché
+        if (!session) { updateBourseTicker(); return; }
         const [gsRes, mktRes] = await Promise.all([
           sb.from('game_stats').select('bourse_profit,bourse').eq('user_id', session.user.id).maybeSingle(),
           sb.from('stock_prices').select('symbol,price,previous_price')
@@ -1057,57 +1082,55 @@ ang="fr">
         const mkt = (mktRes.data || []).filter(r => r.symbol !== 'BTC');
         const profit = gs?.bourse_profit || 0;
 
-        // Calcul valeur portefeuille live
+        // Calcul valeur portefeuille
         const holdings = (gs?.bourse && gs.bourse.h) ? gs.bourse.h : {};
         const priceMap = {};
-        mkt.forEach(r => priceMap[r.sym] = r.price);
+        mkt.forEach(r => priceMap[r.symbol] = r.price);
         let portVal = 0;
         Object.entries(holdings).forEach(([sym, h]) => {
           if (h && h.shares > 0) portVal += h.shares * (priceMap[sym] || 0);
         });
 
         const el = document.getElementById('bourseVariation');
-        if (!el) return;
-
-        // Afficher profit + portefeuille si positions ouvertes
-        const sign  = profit >= 0 ? '▲' : '▼';
-        const color = profit >= 0 ? '#4ade80' : '#f87171';
-        const fillId = profit >= 0 ? 'url(#brsGradUp)' : 'url(#brsGradDn)';
-
-        if (profit === 0 && portVal === 0) {
-          el.textContent = '— aucune activité';
-          el.style.color = 'rgba(255,255,255,0.2)';
-        } else if (portVal > 0) {
-          el.innerHTML = `${sign} ${Math.abs(profit).toLocaleString('fr-FR')}€<br><span style="font-size:8px;opacity:0.7">portef. ${Math.round(portVal).toLocaleString('fr-FR')}€</span>`;
-          el.style.color = color;
-        } else {
-          el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€ total';
-          el.style.color = color;
+        if (el) {
+          const sign  = profit >= 0 ? '▲' : '▼';
+          const color = profit >= 0 ? '#4ade80' : '#f87171';
+          if (profit === 0 && portVal === 0) {
+            el.textContent = '— aucune activité';
+            el.style.color = 'rgba(255,255,255,0.2)';
+          } else if (portVal > 0) {
+            el.innerHTML = `${sign} ${Math.abs(profit).toLocaleString('fr-FR')}€`;
+            el.style.color = color;
+          } else {
+            el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€';
+            el.style.color = color;
+          }
+          // Barre + sparkline
+          const line = document.getElementById('bourseLine');
+          const bar  = document.getElementById('bourseBar');
+          if (line) { line.setAttribute('stroke', color); line.setAttribute('opacity', '0.25'); }
+          if (bar)  bar.setAttribute('fill', color);
         }
 
-        // Couleur barre + sparkline
-        const line = document.getElementById('bourseLine');
-        const bar = document.getElementById('bourseBar');
-        if (line) { line.setAttribute('stroke', color); line.setAttribute('opacity', '0.25'); }
-        if (bar) bar.setAttribute('fill', color);
-
-        // Ticker dynamique depuis bourse_market
-        const tickerEl = document.getElementById('bourseTickerText');
-        if (tickerEl && mkt.length > 0) {
-          const sep = '<span style="color:rgba(255,255,255,0.12)"> · </span>';
-          const items = mkt.map(r => {
-            const chg = r.previous_price > 0 ? ((r.price - r.previous_price) / r.previous_price * 100) : null;
-            const up = chg == null ? true : chg >= 0;
-            const col = up ? '#4ade80' : '#f87171';
-            const arrow = up ? '⬆' : '⬇';
-            const pct = chg != null ? (up ? '+' : '') + chg.toFixed(1) + '%' : r.price.toLocaleString('fr-FR') + '€';
-            return `<span style="color:${col}">${arrow} ${r.symbol} ${pct}</span>`;
-          }).join(sep);
-          tickerEl.innerHTML = items + '&nbsp;&nbsp;&nbsp;&nbsp;' + items;
+        // Ticker
+        if (mkt.length > 0) {
+          const tickerEl = document.getElementById('bourseTickerText');
+          if (tickerEl) {
+            const sep = '<span style="color:rgba(255,255,255,0.12)"> · </span>';
+            const items = mkt.map(r => {
+              const chg = (r.previous_price > 0) ? ((r.price - r.previous_price) / r.previous_price * 100) : null;
+              const up = chg == null ? true : chg >= 0;
+              const col = up ? '#4ade80' : '#f87171';
+              const arrow = up ? '⬆' : '⬇';
+              const pct = chg != null ? (up ? '+' : '') + chg.toFixed(1) + '%' : r.price.toLocaleString('fr-FR') + '€';
+              return `<span style="color:${col}">${arrow} ${r.symbol} ${pct}</span>`;
+            }).join(sep);
+            tickerEl.innerHTML = items + '&nbsp;&nbsp;&nbsp;&nbsp;' + items;
+            tickerEl.style.animation = 'none';
+            tickerEl.offsetHeight;
+            tickerEl.style.animation = '';
+          }
         }
-
-
-
       } catch(e) { console.log('bourseBtn:', e); }
     }
 
@@ -1136,7 +1159,7 @@ function getWorkSvg() {
     </svg>`;
   }
   function initWorkBtn() { const c = document.getElementById('workSvgContainer'); if (c) c.innerHTML = getWorkSvg(); }
-  document.addEventListener('DOMContentLoaded', initWorkBtn);
+  document.addEventListener('DOMContentLoaded', () => { initWorkBtn(); updateBourseTicker(); });
 
 
   let _deferredPrompt = null;
