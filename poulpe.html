@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Le Poulpe - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+
+    /* TABLE */
+    .table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0; }
+
+    /* POULPE */
+    .poulpe-wrap { font-size:clamp(52px,15vw,72px);line-height:1;transition:all .3s;cursor:default; }
+    .poulpe-wrap.reveal { animation:poulpeBounce .4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes poulpeBounce { 0%{transform:scale(0.7)} 100%{transform:scale(1)} }
+
+    /* TENTACULES */
+    .tentacles { display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:300px; }
+    .tent {
+      width:clamp(58px,16vw,72px);
+      height:clamp(58px,16vw,72px);
+      border-radius:50%;
+      background:linear-gradient(135deg,#0e7490,#164e63);
+      border:3px solid rgba(255,255,255,0.15);
+      display:flex;align-items:center;justify-content:center;
+      font-size:clamp(22px,6vw,30px);
+      cursor:pointer;
+      transition:all .2s;
+      box-shadow:0 4px 12px rgba(0,0,0,0.4);
+      flex-shrink:0;
+      position:relative;
+    }
+    .tent:active { transform:scale(0.93); }
+    .tent.picked { animation:tentPop .3s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes tentPop { 0%{transform:scale(0.5);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .tent.win  { background:linear-gradient(135deg,#059669,#064e3b);border-color:rgba(74,222,128,0.5);box-shadow:0 4px 16px rgba(74,222,128,0.3); }
+    .tent.lose { background:linear-gradient(135deg,#7f1d1d,#450a0a);border-color:rgba(248,113,113,0.3);opacity:0.6; }
+    .tent.disabled { pointer-events:none; }
+
+    /* RÉSULTAT */
+    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%;animation:resultPop .3s; }
+    @keyframes resultPop { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
+
+    /* CONTROLS */
+    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
+    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
+    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
+    .chip.sel { background:#fbbf24;color:#0f172a; }
+    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
+    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
+    .spin-btn:active { transform:scale(0.98); }
+    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
+
+    /* BOTTOM BAR */
+    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
+    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
+    .back-btn:active { transform:scale(0.95); }
+    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
+    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="game-area">
+
+    <div class="table">
+      <div class="poulpe-wrap" id="poulpeEl">🐙</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:3px" id="subLabel">CHOISIS UNE TENTACULE</div>
+      <!-- 8 tentacules -->
+      <div class="tentacles" id="tentGrid"></div>
+    </div>
+
+    <div class="controls">
+      <div class="result" id="result"></div>
+      <div class="chips">
+        <div class="chip sel" id="c1000"  onclick="setBet(1000,'c1000')">1K</div>
+        <div class="chip"     id="c5000"  onclick="setBet(5000,'c5000')">5K</div>
+        <div class="chip"     id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+        <div class="chip"     id="c25000" onclick="setBet(25000,'c25000')">25K</div>
+      </div>
+      <button class="spin-btn" id="btnPlay" onclick="newGame()">NOUVELLE PARTIE — <span id="betLabel">1 000€</span></button>
+    </div>
+
+  </div>
+  <div class="bottom-bar">
+    <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
+    <div class="game-title">🐙 LE POULPE</div>
+    <div class="balance" id="balance">0€</div>
+  </div>
+</div>
+
+<script>
+  const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
+  const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+  const {createClient}=supabase;
+  const sb=createClient(supabaseUrl,supabaseKey);
+
+  const fmt=n=>Math.floor(n).toLocaleString('fr-FR');
+  const $=id=>document.getElementById(id);
+
+  let money=0,bet=1000,currentUser=null,busy=false;
+
+  // 8 tentacules : contenu caché
+  // 2 bonnes (×3, ×5), 1 jackpot (×10), 5 mauvaises (💀)
+  // RTP = (2/8)*3*bet + (1/8)*5*bet + (1/8)*10*bet = (6+5+10)/8 = 21/8 = 2.625×
+  // → 2.625/1 = 262% → trop élevé ?
+  // Non : on perd la mise sur les 5 mauvaises
+  // E[gain] = (2/8)*3 + (1/8)*5 + (1/8)*10 + (4/8)*0 = (6+5+10)/8 = 2.625
+  // RTP = 2.625*100 = 262%... 
+  // Il faut revoir : 1 bonne (×3), 1 bonne (×5), 6 mauvaises
+  // E = (1/8)*3 + (1/8)*5 = 8/8 = 1.0 = 100% → parfait
+  // Pour house edge : 1 ×3, 1 ×4, 6 mauvaises → E = (3+4)/8 = 0.875 = 87.5% RTP
+  // Ou : 1 ×2, 1 ×4, 1 ×8, 5 mauvaises → E = (2+4+8)/8 = 1.75 = 175% trop haut
+  // Simpler: 2 ×2, 1 ×3, 5 mauvaises → E = (4+3)/8 = 0.875 = 87.5% RTP ✓
+
+  // 1 tentacule gagnante (×3.5), 7 perdantes — RTP = 3.5/8 = 43.75%
+  const PRIZES = [
+    {emoji:'🐠', label:'×3.5',  mult:3.5},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+    {emoji:'💀', label:'PERDU', mult:0},
+  ];
+
+  function shuffle(arr){ return [...arr].sort(()=>Math.random()-0.5); }
+
+  function setBet(val,id){
+    bet=val;
+    ['c1000','c5000','c10000','c25000'].forEach(i=>$(i).classList.toggle('sel',i===id));
+    $('betLabel').textContent=fmt(val)+'€';
+  }
+
+  function updateBal(){ $('balance').textContent=fmt(money)+'€'; }
+
+  function buildGrid(prizes){
+    const grid=$('tentGrid');
+    grid.innerHTML='';
+    prizes.forEach((p,i)=>{
+      const el=document.createElement('div');
+      el.className='tent';
+      el.textContent='🌊';
+      el.onclick=()=>pick(i,prizes);
+      grid.appendChild(el);
+    });
+  }
+
+  async function newGame(){
+    if(busy||money<bet) return;
+    busy=true;
+    money-=bet; updateBal();
+    $('btnPlay').disabled=true;
+    $('result').style.display='none';
+    $('poulpeEl').textContent='🐙';
+    $('subLabel').textContent='CHOISIS UNE TENTACULE';
+
+    const shuffled=shuffle(PRIZES);
+    buildGrid(shuffled);
+    busy=false;
+  }
+
+  async function pick(idx,prizes){
+    if(busy) return;
+    busy=true;
+
+    // Désactiver toutes
+    document.querySelectorAll('.tent').forEach(t=>t.classList.add('disabled'));
+
+    const p=prizes[idx];
+    const tentEl=document.querySelectorAll('.tent')[idx];
+
+    // Révéler
+    tentEl.textContent=p.emoji;
+    tentEl.classList.add('picked');
+
+    const el=$('result');
+    if(p.mult>0){
+      const gain=Math.floor(bet*p.mult);
+      money+=gain; updateBal();
+      tentEl.classList.add('win');
+      $('poulpeEl').textContent='🐙';
+      el.textContent=`${p.emoji} ${p.label} ! +${fmt(gain)}€`;
+      el.className='result win';
+    } else {
+      tentEl.classList.add('lose');
+      $('poulpeEl').textContent='😱';
+      el.textContent=`💀 LE POULPE T'A EU !`;
+      el.className='result lose';
+    }
+    el.style.display='block';
+    $('subLabel').textContent='';
+
+    if(currentUser) await sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+
+    setTimeout(()=>{
+      $('btnPlay').disabled=false;
+      busy=false;
+    },1500);
+  }
+
+  async function init(){
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){await new Promise(r=>setTimeout(r,1000));const {data:{session:s2}}=await sb.auth.getSession();if(!s2){window.location.href='index.html';return;}currentUser=s2.user;}
+    else currentUser=session.user;
+    const {data}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+    money=data?.money||0; updateBal();
+
+    // Afficher grille vide au départ
+    const grid=$('tentGrid');
+    for(let i=0;i<8;i++){
+      const el=document.createElement('div');
+      el.className='tent disabled';
+      el.textContent='🌊';
+      grid.appendChild(el);
+    }
+  }
+
+  document.addEventListener('gesturestart',e=>e.preventDefault());
+  document.addEventListener('gesturechange',e=>e.preventDefault());
+  init();
+</script>
+</body>
+</html>
