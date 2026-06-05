@@ -38,7 +38,6 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 .stat-l{font-size:9px;color:#9ca3af;margin-top:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
 .section-title{font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;text-align:left}
 
-.btn-chambrer{width:100%;padding:14px;border:none;border-radius:12px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;margin-bottom:8px}
 .btn-back{width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:12px;background:white;color:#9ca3af;font-weight:700;font-size:13px;cursor:pointer}
 
 .loader{text-align:center;padding:60px 20px;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#9ca3af;letter-spacing:2px}
@@ -88,8 +87,21 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
       <div class="stat-card"><div class="stat-v" id="statStreak">—</div><div class="stat-l">🔥 Streak</div></div>
     </div>
 
-    <button class="btn-chambrer" id="btnChambrer">💬 CHAMBRER</button>
+    <button class="btn-back" id="btnMsg" style="background:white;color:#374151;border:1.5px solid #e5e7eb;margin-bottom:8px">✉️ MESSAGE PRIVÉ</button>
     <button class="btn-back" onclick="history.back()">← Retour</button>
+  </div>
+</div>
+
+<!-- OVERLAY MSG -->
+<div id="msgOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 16px calc(24px + env(safe-area-inset-bottom))">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:2px;margin-bottom:12px">MESSAGE PRIVÉ</div>
+    <textarea id="msgInput" placeholder="Écris ton message..." maxlength="200" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;resize:none;height:90px;outline:none;color:#0f172a" oninput="document.getElementById('msgCount').textContent=this.value.length+'/200'"></textarea>
+    <div id="msgCount" style="font-size:10px;color:#9ca3af;text-align:right;margin-top:3px">0/200</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="sendMsg()" style="flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;cursor:pointer">ENVOYER</button>
+      <button onclick="document.getElementById('msgOverlay').style.display='none'" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;cursor:pointer">Annuler</button>
+    </div>
   </div>
 </div>
 
@@ -188,12 +200,23 @@ async function init(){
   document.getElementById('statStreak').textContent=(g.streak_days||0)+'j';
 
   // Chambrer
-  document.getElementById('btnChambrer').onclick=async function(){
-    const msg=TRASH[Math.floor(Math.random()*TRASH.length)];
+  document.getElementById('btnMsg').onclick = () => { document.getElementById('msgInput').value=''; document.getElementById('msgCount').textContent='0/200'; document.getElementById('msgOverlay').style.display='flex'; };    const msg=TRASH[Math.floor(Math.random()*TRASH.length)];
     await sb.from('challenges').insert({from_user_id:me.id,to_user_id:targetId,message:msg}).then(()=>{}).catch(()=>{});
     showToast('💬 Chambrage envoyé !');
   };
 }
+async function sendMsg(){
+  const msg=(document.getElementById('msgInput').value||'').trim();
+  if(!msg){showToast('✏️ Écris un message');return;}
+  const params=new URLSearchParams(location.search);
+  const targetId=params.get('id');
+  const {data:sess}=await sb.auth.getSession();
+  if(!sess?.session||!targetId)return;
+  await sb.from('challenges').insert({from_user_id:sess.session.user.id,to_user_id:targetId,message:msg,type:'message'}).then(()=>{}).catch(()=>{});
+  document.getElementById('msgOverlay').style.display='none';
+  showToast('✉️ Message envoyé !');
+}
+
 init();
 </script>
 </body>
