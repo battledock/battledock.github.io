@@ -1274,8 +1274,13 @@ function getWorkSvg() {
 
     async function init() {
       initWorkBtn();
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
+      const { data: _authData, error: _authError } = await sb.auth.getSession();
+      if (_authError || !_authData.session) {
+        await sb.auth.signOut().catch(() => {});
+        window.location.href = 'index.html';
+        return;
+      }
+      const session = _authData.session;
       currentUser = session.user;
       await loadUserData();
       // Mettre à jour last_seen
@@ -1295,7 +1300,7 @@ function getWorkSvg() {
 
     async function loadUserData() {
       const [profileResult, statsResult] = await Promise.all([
-        sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle(),
+        sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).maybeSingle(),
         sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
       ]);
 
@@ -1303,7 +1308,7 @@ function getWorkSvg() {
       let stats   = statsResult.data;
 
       if (!profile) {
-        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'blue', diamonds: 0, trophies: 0 }, { onConflict: 'user_id' }).select().maybeSingle();
+        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'blue' }, { onConflict: 'user_id' }).select().maybeSingle();
         profile = data;
       }
       if (!stats) {
