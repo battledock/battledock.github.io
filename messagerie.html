@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Messagerie — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#cc1a1a,#0f172a);padding:calc(14px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.hdr-back{background:rgba(0,0,0,0.25);border:none;border-radius:8px;width:34px;height:34px;color:white;font-size:17px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:white;letter-spacing:2px;flex:1}
+.hdr-badge{background:#fbbf24;border:2px solid rgba(255,255,255,0.3);border-radius:20px;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#0f172a;padding:2px 9px;display:none}
+
+/* TABS */
+.tabs{display:flex;background:white;border-bottom:1px solid #f3f4f6;flex-shrink:0}
+.tab{flex:1;padding:10px 4px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;color:#9ca3af;cursor:pointer;border-bottom:2.5px solid transparent;transition:all .15s}
+.tab.active{color:#cc1a1a;border-bottom-color:#cc1a1a}
+
+/* LISTE */
+.list{flex:1;overflow-y:auto;background:white}
+
+/* MESSAGE ITEM */
+.msg-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #f9fafb;cursor:pointer;transition:background .1s;position:relative}
+.msg-item:active{background:#f9fafb}
+.msg-item.unread{background:#fff8f8}
+.msg-av-wrap{position:relative;flex-shrink:0}
+.msg-av{width:46px;height:46px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+.msg-av img{width:100%;height:100%;object-fit:cover}
+.unread-dot{position:absolute;top:1px;right:1px;width:11px;height:11px;background:#cc1a1a;border:2.5px solid white;border-radius:50%}
+.msg-content{flex:1;min-width:0}
+.msg-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px}
+.msg-name{font-weight:900;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.msg-name.read{font-weight:600;color:#6b7280}
+.msg-time{font-size:9px;color:#9ca3af;flex-shrink:0;margin-left:8px}
+.msg-preview{font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-preview.read{color:#9ca3af;font-weight:400}
+.msg-type-badge{display:inline-block;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;margin-top:3px}
+.msg-type-badge.chambrage{background:#fef3c7;color:#d97706}
+.msg-type-badge.message{background:#dbeafe;color:#1d4ed8}
+
+/* VIDE */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;color:#9ca3af}
+.empty-icon{font-size:52px;margin-bottom:12px}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#9ca3af;margin-bottom:4px}
+.empty-sub{font-size:11px;text-align:center;line-height:1.5}
+
+/* SKELETON */
+.sk-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #f9fafb}
+.sk{background:linear-gradient(90deg,#f3f4f6 25%,#e5e7eb 50%,#f3f4f6 75%);background-size:400px;animation:sh 1.2s infinite;border-radius:6px}
+@keyframes sh{0%{background-position:-400px 0}100%{background-position:400px 0}}
+
+/* DETAIL OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.overlay.show{display:flex}
+.sheet{background:white;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:18px 16px calc(22px + env(safe-area-inset-bottom))}
+.sheet-handle{width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px}
+.det-from{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.det-av{width:48px;height:48px;border-radius:50%;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex-shrink:0}
+.det-av img{width:100%;height:100%;object-fit:cover}
+.det-name{font-weight:900;font-size:16px;color:#0f172a;line-height:1}
+.det-meta{font-size:10px;color:#9ca3af;margin-top:3px}
+.det-bubble{background:#f8f8f8;border-radius:4px 16px 16px 16px;padding:14px 16px;font-size:14px;color:#374151;line-height:1.6;margin-bottom:14px;border:1px solid #f3f4f6}
+.det-btns{display:flex;gap:8px}
+.btn-reply{flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer}
+.btn-close{flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;font-size:13px;cursor:pointer}
+
+/* REPLY OVERLAY */
+.reply-inp{width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;resize:none;height:90px;outline:none;color:#0f172a;transition:border-color .15s}
+.reply-inp:focus{border-color:#cc1a1a}
+
+/* TOAST */
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+  <div class="hdr-title">✉️ MESSAGERIE</div>
+  <div class="hdr-badge" id="hdrBadge">0</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" id="tabAll" onclick="switchTab('all')">TOUS</div>
+  <div class="tab" id="tabMsg" onclick="switchTab('message')">MESSAGES</div>
+  <div class="tab" id="tabChamb" onclick="switchTab('chambrage')">CHAMBRAGES</div>
+</div>
+
+<div class="list" id="list">
+  <div class="sk-item"><div class="sk" style="width:46px;height:46px;border-radius:50%;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="height:12px;width:50%;margin-bottom:7px"></div><div class="sk" style="height:10px;width:75%"></div></div></div>
+  <div class="sk-item"><div class="sk" style="width:46px;height:46px;border-radius:50%;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="height:12px;width:40%;margin-bottom:7px"></div><div class="sk" style="height:10px;width:65%"></div></div></div>
+  <div class="sk-item"><div class="sk" style="width:46px;height:46px;border-radius:50%;flex-shrink:0"></div><div style="flex:1"><div class="sk" style="height:12px;width:55%;margin-bottom:7px"></div><div class="sk" style="height:10px;width:70%"></div></div></div>
+</div>
+
+<!-- DETAIL -->
+<div class="overlay" id="detOverlay" onclick="if(event.target===this)closeDetail()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="det-from">
+      <div class="det-av"><img id="detAvImg" src="avatar-default.png"></div>
+      <div>
+        <div class="det-name" id="detName">—</div>
+        <div class="det-meta" id="detMeta">—</div>
+      </div>
+    </div>
+    <div class="det-bubble" id="detMsg">—</div>
+    <div class="det-btns">
+      <button class="btn-reply" onclick="openReply()">↩ RÉPONDRE</button>
+      <button class="btn-close" onclick="closeDetail()">Fermer</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPLY -->
+<div class="overlay" id="replyOverlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#0f172a;letter-spacing:2px;margin-bottom:4px">RÉPONDRE À</div>
+    <div id="replyToName" style="font-size:11px;color:#9ca3af;margin-bottom:12px">—</div>
+    <textarea class="reply-inp" id="replyInput" placeholder="Écris ton message..." maxlength="200" oninput="document.getElementById('replyCount').textContent=this.value.length+'/200'"></textarea>
+    <div id="replyCount" style="font-size:10px;color:#9ca3af;text-align:right;margin-top:3px">0/200</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="sendReply()" style="flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer">ENVOYER</button>
+      <button onclick="document.getElementById('replyOverlay').classList.remove('show')" style="flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;cursor:pointer">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+let me=null, all=[], tab='all', current=null;
+
+const fmt=dt=>{const d=Date.now()-new Date(dt).getTime(),m=Math.floor(d/60000);return m<1?'maintenant':m<60?m+'min':m<1440?Math.floor(m/60)+'h':Math.floor(m/1440)+'j';};
+
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+function switchTab(t){
+  tab=t;
+  ['All','Msg','Chamb'].forEach(x=>document.getElementById('tab'+x).classList.remove('active'));
+  document.getElementById('tab'+{all:'All',message:'Msg',chambrage:'Chamb'}[t]).classList.add('active');
+  render();
+}
+
+function render(){
+  const items=tab==='all'?all:all.filter(m=>(m.type||'chambrage')===tab);
+  const list=document.getElementById('list');
+  if(!items.length){
+    list.innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">AUCUN MESSAGE</div><div class="empty-sub">Les chambrages et messages<br>des autres dockers apparaîtront ici</div></div>`;
+    return;
+  }
+  list.innerHTML=items.map(m=>{
+    const unread=!m.read;
+    const type=m.type||'chambrage';
+    const name=m._name||'Docker';
+    const av=m._av;
+    const avHtml=av?`<img src="${av}" onerror="this.style.display='none'">`:'⚓';
+    return `<div class="msg-item${unread?' unread':''}" onclick="openDetail('${m.id}')">
+      <div class="msg-av-wrap">
+        <div class="msg-av">${avHtml}</div>
+        ${unread?'<div class="unread-dot"></div>':''}
+      </div>
+      <div class="msg-content">
+        <div class="msg-header">
+          <div class="msg-name${unread?'':' read'}">${name}</div>
+          <div class="msg-time">${fmt(m.created_at)}</div>
+        </div>
+        <div class="msg-preview${unread?'':' read'}">${m.message||''}</div>
+        <span class="msg-type-badge ${type}">${type==='message'?'✉️ Message privé':'💬 Chambrage'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openDetail(id){
+  current=all.find(x=>x.id===id);
+  if(!current) return;
+  const img=document.getElementById('detAvImg');
+  img.src=current._av||'avatar-default.png';
+  document.getElementById('detName').textContent=current._name||'Docker';
+  const type=current.type||'chambrage';
+  document.getElementById('detMeta').textContent=(type==='message'?'✉️ Message privé':'💬 Chambrage')+' · '+fmt(current.created_at);
+  document.getElementById('detMsg').textContent=current.message||'';
+  document.getElementById('detOverlay').classList.add('show');
+  if(!current.read){
+    current.read=true;
+    sb.from('challenges').update({read:true}).eq('id',current.id).then(()=>{}).catch(()=>{});
+    updateBadge();
+    render();
+  }
+}
+
+function closeDetail(){document.getElementById('detOverlay').classList.remove('show');}
+
+function openReply(){
+  if(!current) return;
+  document.getElementById('replyToName').textContent=(current._name||'Docker').toUpperCase();
+  document.getElementById('replyInput').value='';
+  document.getElementById('replyCount').textContent='0/200';
+  document.getElementById('replyOverlay').classList.add('show');
+}
+
+async function sendReply(){
+  const msg=(document.getElementById('replyInput').value||'').trim();
+  if(!msg){toast('✏️ Écris un message');return;}
+  if(!current||!me) return;
+  await sb.from('challenges').insert({from_user_id:me.id,to_user_id:current.from_user_id,message:msg,type:'message'}).then(()=>{}).catch(()=>{});
+  document.getElementById('replyOverlay').classList.remove('show');
+  document.getElementById('detOverlay').classList.remove('show');
+  toast('✉️ Réponse envoyée !');
+}
+
+function updateBadge(){
+  const n=all.filter(m=>!m.read).length;
+  const b=document.getElementById('hdrBadge');
+  b.style.display=n>0?'block':'none';
+  if(n>0) b.textContent=n;
+  // Tabs avec compteurs
+  const total=all.length, msgs=all.filter(m=>(m.type||'chambrage')==='message').length, chambs=all.length-msgs;
+  document.getElementById('tabAll').textContent='TOUS'+(total?` (${total})`:'');
+  document.getElementById('tabMsg').textContent='MESSAGES'+(msgs?` (${msgs})`:'');
+  document.getElementById('tabChamb').textContent='CHAMBRAGES'+(chambs?` (${chambs})`:'');
+  localStorage.setItem('bd_unread',n);
+}
+
+async function init(){
+  sb.auth.onAuthStateChange((e,s)=>{if(!s) window.location.href='index.html';});
+  const {data,error}=await sb.auth.getSession();
+  if(error||!data.session){window.location.href='index.html';return;}
+  me=data.session.user;
+
+  const {data:msgs}=await sb.from('challenges')
+    .select('*').eq('to_user_id',me.id)
+    .order('created_at',{ascending:false});
+
+  if(!msgs||!msgs.length){
+    document.getElementById('list').innerHTML=`<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">AUCUN MESSAGE</div><div class="empty-sub">Les chambrages et messages<br>des autres dockers apparaîtront ici</div></div>`;
+    updateBadge();
+    return;
+  }
+
+  const sIds=[...new Set(msgs.map(m=>m.from_user_id))];
+  const {data:profs}=await sb.from('profiles').select('user_id,username,avatar_url').in('user_id',sIds);
+  const pm={};(profs||[]).forEach(p=>pm[p.user_id]=p);
+
+  all=msgs.map(m=>({...m,_name:pm[m.from_user_id]?.username||'Docker',_av:pm[m.from_user_id]?.avatar_url||null}));
+  updateBadge();
+  render();
+}
+init();
+</script>
+</body>
+</html>
