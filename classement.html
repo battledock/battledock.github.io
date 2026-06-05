@@ -149,13 +149,6 @@
     @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 
     /* ── PULL TO REFRESH ── */
-    @keyframes ptrSpin { to{transform:rotate(360deg)} }
-    .ptr { text-align:center;padding:12px;font-size:11px;font-weight:700;color:rgba(0,0,0,0.35);letter-spacing:1px;display:none;align-items:center;justify-content:center;gap:8px; }
-    .ptr.show { display:flex; }
-    .ptr.loading { color:#fbbf24; }
-    .ptr-spinner { width:16px;height:16px;border:2px solid rgba(0,0,0,0.1);border-top-color:#fbbf24;border-radius:50%;animation:ptrSpin .8s linear infinite;display:none; }
-    .ptr.loading .ptr-spinner { display:block; }
-
     /* ── POPUP PROFIL BD ROUGE ── */
     .popup-overlay { position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;animation:ovIn .2s ease; }
     @keyframes ovIn { from{opacity:0} to{opacity:1} }
@@ -212,9 +205,6 @@
 
 <!-- BODY ROUGE -->
 <div class="sheet" id="sheet">
-
-  <!-- PULL TO REFRESH -->
-  <div class="ptr" id="ptr"><div class="ptr-spinner"></div><span id="ptrText">↓ RELÂCHER POUR ACTUALISER</span></div>
 
   <!-- COMPTE À REBOURS PERSO -->
   <div class="rivalry-block" id="rivalryBlock">
@@ -588,7 +578,7 @@
       const rank = i + 1;
       const cls = CARD_CLS[rank];
       const badge = BADGES[rank];
-      const since = getRankSince(p.user_id);
+      const since = sortMode === 'level' ? getRankSince(p.user_id) : '';
       const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
       const isMe = p.user_id === currentUser.id;
         const t3RealIdx = allPlayers.indexOf(p);
@@ -617,7 +607,7 @@
 
     if (!players.length) {
       const emptyMsg = onlineOnly ? 'Aucun joueur en ligne' : 'Aucun joueur trouvé';
-      el.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:10px">🌊</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:rgba(255,255,255,0.4);letter-spacing:2px">' + emptyMsg + '</div></div>';
+      el.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:rgba(0,0,0,0.35);letter-spacing:2px">' + emptyMsg + '</div></div>';
       document.getElementById('listWrap').style.display = 'block';
       return;
     }
@@ -833,30 +823,7 @@
     }, { passive: true });
   })();
 
-  // ── Pull to refresh ──
-  let ptStart = 0, ptActive = false;
-  document.getElementById('sheet').addEventListener('touchstart', e => {
-    if (document.getElementById('sheet').scrollTop === 0) { ptStart = e.touches[0].clientY; ptActive = true; }
-  });
-  document.getElementById('sheet').addEventListener('touchmove', e => {
-    if (!ptActive) return;
-    const dy = e.touches[0].clientY - ptStart;
-    if (dy > 60) document.getElementById('ptr').classList.add('show');
-  });
-  document.getElementById('sheet').addEventListener('touchend', e => {
-    if (!ptActive) return;
-    ptActive = false;
-    const ptr = document.getElementById('ptr');
-    if (ptr.classList.contains('show')) {
-      ptr.classList.add('loading');
-      document.getElementById('ptrText').textContent = 'ACTUALISATION…';
-      setTimeout(() => {
-        ptr.classList.remove('show','loading');
-        document.getElementById('ptrText').textContent = '↓ RELÂCHER POUR ACTUALISER';
-        loadRanking();
-      }, 600);
-    }
-  });
+
 
   // ── Trash talk ──
   const TRASH = [
