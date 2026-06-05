@@ -140,7 +140,7 @@
 
   function startGame(){
     if(busy||money<bet)return;
-    busy=false; money-=bet; updateBal();
+    busy=true; money-=bet; updateBal();
     streak=0; updateStreak();
     currentVal=randCard();
     showCard(currentVal,false);
@@ -157,7 +157,8 @@
 
     var next=randCard();
     // Tie = loss
-    var correct=(dir==='higher'&&next>currentVal)||(dir==='lower'&&next<currentVal);
+    var isTie=(next===currentVal);
+    var correct=!isTie&&((dir==='higher'&&next>currentVal)||(dir==='lower'&&next<currentVal));
 
     setTimeout(function(){
       showCard(next,false);
@@ -177,8 +178,9 @@
       } else {
         el('s'+streak).className='streak-dot fail';
         var r=el('result');
-        r.textContent='MAUVAISE REPONSE — PERDU !'; r.className='result lose'; r.style.display='block';
+        r.textContent=isTie?'ÉGALITÉ — PERDU !':'MAUVAISE RÉPONSE — PERDU !'; r.className='result lose'; r.style.display='block';
         endGame();
+        if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id).catch(function(){});
       }
     },300);
   }
@@ -186,11 +188,12 @@
   function cashout(){
     busy=true;
     var gain=Math.floor(bet*multiplier);
+    var profit=gain-bet;
     money+=gain; updateBal();
     var r=el('result');
     r.textContent='ENCAISSE ! +'+fmt(gain-bet)+'€'; r.className='result win'; r.style.display='block';
     endGame();
-    if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+    if(currentUser) sb.from('game_stats').update({money:Math.floor(money),biggest_win:profit}).eq('user_id',currentUser.id).catch(function(){});
   }
 
   function endGame(){
@@ -202,9 +205,15 @@
   }
 
   async function init(){
+    sb.auth.onAuthStateChange(function(event,session){
+      if(event==='SIGNED_OUT'||!session){ window.location.href='index.html'; }
+    });
     var res=await sb.auth.getSession();
     var s=res.data&&res.data.session;
-    if(!s){await new Promise(function(r){setTimeout(r,1000);});res=await sb.auth.getSession();s=res.data&&res.data.session;if(!s){window.location.href='index.html';return;}}
+    if(!s||res.error){
+      try{await sb.auth.signOut();}catch(e){}
+      window.location.href='index.html';return;
+    }
     currentUser=s.user;
     var d=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
     money=(d.data&&d.data.money)||0; updateBal();
