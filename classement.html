@@ -248,19 +248,23 @@
         <div class="pp-company" id="ppCompany" style="display:none"></div>
       </div>
     </div>
-    <div class="pp-stats">
+    <div class="pp-stats" style="grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr">
       <div class="pp-stat"><div class="pp-stat-v" id="ppLevel">—</div><div class="pp-stat-l">NIVEAU</div></div>
       <div class="pp-stat-sep"></div>
       <div class="pp-stat"><div class="pp-stat-v" id="ppMoney">—</div><div class="pp-stat-l">ARGENT</div></div>
       <div class="pp-stat-sep"></div>
+      <div class="pp-stat"><div class="pp-stat-v" id="ppPower">—</div><div class="pp-stat-l">⚡ PUISS.</div></div>
+      <div class="pp-stat-sep"></div>
       <div class="pp-stat"><div class="pp-stat-v" id="ppTrophies">—</div><div class="pp-stat-l">TROPHÉES</div></div>
     </div>
     <div class="pp-best-rank" id="ppBestRank"></div>
+    <button id="ppShareBtn" style="display:none;width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer"></button>
     <div class="pp-btns">
       <button class="pp-btn-defi" id="ppDefiBtn">💬 CHAMBRER</button>
       <button class="pp-btn-close" onclick="document.getElementById('popup').style.display='none'">FERMER</button>
     </div>
     <button class="pp-btn-profil" id="ppProfilBtn" onclick="">👤 VOIR LE PROFIL COMPLET</button>
+    <button class="pp-btn-copy" id="ppCopyBtn" style="display:block;width:100%;margin-top:4px;padding:9px;border:1.5px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer">📋 COPIER LE LIEN</button>
     <!-- Mini fil trash talk -->
     <div class="pp-chat" id="ppChat" style="display:none">
       <div class="pp-chat-title">💬 DÉFIS ÉCHANGÉS</div>
@@ -393,6 +397,7 @@
 
   // ── Me retrouver ──
   function locateMe() {
+    if (!myRowEl && onlineOnly) { toggleOnlineFilter(); return; }
     if (!myRowEl) return;
     myRowEl.scrollIntoView({ behavior:'smooth', block:'center' });
     myRowEl.style.outline = '3px solid #fbbf24';
@@ -401,6 +406,7 @@
 
   // ── Chargement ──
   async function loadRanking() {
+    firstRender = true;
     document.getElementById('skeletonWrap').style.display = 'block';
     document.getElementById('listWrap').style.display = 'none';
 
@@ -490,7 +496,7 @@
       return;
     }
 
-    let result = players.map((p, i) => {
+    const result = players.map((p, i) => {
       const rank = i + 1;
       const isMe = p.user_id === currentUser.id;
       const topCls = rank <= 3 ? ' top-' + rank : rank <= 10 ? ' top-10' : '';
@@ -511,23 +517,11 @@
         + '</div>'
         + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div></div>'
         + '</div>';
-    }).join('');
+    });
 
-    // Séparateur après rang 10
-    if (filteredPlayers.length > 10) {
-      const parts = result.split('</div>');
-      // Trouver la 10e row et insérer après
-      let rowCount = 0, insertIdx = -1;
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i].includes('rank-row')) rowCount++;
-        if (rowCount === 10) { insertIdx = i; break; }
-      }
-      if (insertIdx >= 0) {
-        parts.splice(insertIdx + 1, 0, '<div class="rank-sep">AUTRES DOCKERS</div>');
-        result = parts.join('</div>');
-      }
-    }
-    el.innerHTML = result;
+    // Séparateur après rang 10 — dans l'array avant join
+    if (result.length > 10) result.splice(10, 0, '<div class="rank-sep">AUTRES DOCKERS</div>');
+    el.innerHTML = result.join('');
 
     myRowEl = document.getElementById('myRow');
     document.getElementById('listWrap').style.display = 'block';
@@ -561,10 +555,25 @@
       const best = Math.min(savedBest, idx + 1);
       localStorage.setItem('bestRank_' + currentUser.id, best);
       bestRankEl.innerHTML = 'Meilleur rang : <span>#' + best + '</span>';
-    } else { bestRankEl.textContent = ''; }
+      const shareBtn2 = document.getElementById('ppShareBtn');
+      if (shareBtn2) {
+        shareBtn2.style.display = 'block';
+        shareBtn2.textContent = '🚀 PARTAGER MON RANG #' + (idx+1);
+        shareBtn2.onclick = () => {
+          const txt = 'Je suis #' + (idx+1) + ' sur Battle Dock avec ' + powerScore(p) + ' pts ⚡';
+          if (navigator.share) navigator.share({ title:'Battle Dock ⚓', text:txt });
+          else if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => { shareBtn2.textContent = '✓ COPIÉ !'; setTimeout(() => shareBtn2.textContent = '🚀 PARTAGER MON RANG #' + (idx+1), 1500); });
+        };
+      }
+    } else {
+      bestRankEl.textContent = '';
+      const shareBtn2 = document.getElementById('ppShareBtn');
+      if (shareBtn2) shareBtn2.style.display = 'none';
+    }
     document.getElementById('ppLevel').textContent = p.level || 1;
     document.getElementById('ppMoney').textContent = (p.money||0) >= 1000 ? Math.floor((p.money||0)/1000) + 'k€' : (p.money||0) + '€';
     document.getElementById('ppTrophies').textContent = p.profile.trophies || '—';
+    if (document.getElementById('ppPower')) document.getElementById('ppPower').textContent = powerScore(p);
     const _co = p.commerce?.company?.name ? p.commerce.company : null;
     const coEl = document.getElementById('ppCompany');
     if (_co) {
@@ -608,7 +617,11 @@
       chatEl.style.display = 'block';
       const replyEl = document.getElementById('ppChatReply');
       const inputEl = document.getElementById('ppChatInput');
-      const sendEl = document.getElementById('ppChatSend');
+      let sendEl = document.getElementById('ppChatSend');
+      // Reset ghost listeners en remplaçant le bouton
+      const newSend = sendEl.cloneNode(true);
+      sendEl.parentNode.replaceChild(newSend, sendEl);
+      sendEl = newSend;
       if (targetUserId !== currentUser.id) {
         replyEl.style.display = 'flex';
         sendEl.onclick = async function() {
