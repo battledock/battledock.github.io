@@ -158,7 +158,7 @@
   const fmt=n=>Math.floor(n).toLocaleString('fr-FR');
   const $=id=>document.getElementById(id);
 
-  let money=0,bet=500,currentUser=null,busy=false;
+  let money=parseInt(localStorage.getItem("bd_money")||"0"),bet=500,currentUser=null,busy=false;
   let selected=new Set();
   const MAX_NUMS=30,PICK=5;
 
@@ -281,7 +281,7 @@
     }
     el.style.display='block';
 
-    if(currentUser) await sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+    await saveMoney(money);
 
     // Reset pour nouveau tirage
     setTimeout(()=>{
@@ -299,15 +299,28 @@
       return;
     }
     const session = _authData.session;
-    else currentUser=session.user;
+    currentUser=session.user;
     const {data}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-    money=data?.money||0; updateBal();
+    money = data?.money || 0; localStorage.setItem("bd_money", money); updateBal();
     buildGrid();
     $('btnPlay').disabled=true;
   }
 
   document.addEventListener('gesturestart',e=>e.preventDefault());
   document.addEventListener('gesturechange',e=>e.preventDefault());
+
+  async function saveMoney(amount) {
+    const val = Math.floor(amount);
+    localStorage.setItem('bd_money', val);
+    if (!currentUser) return;
+    for (let i = 0; i < 3; i++) {
+      const { error } = await sb.from('game_stats').update({ money: val }).eq('user_id', currentUser.id);
+      if (!error) return;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    console.warn('saveMoney: échec après 3 tentatives');
+  }
+
   init();
 </script>
 </body>

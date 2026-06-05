@@ -370,7 +370,7 @@
       document.getElementById('btnPlay').disabled = false;
       busy = false;
 
-      if (currentUser) await sb.from('game_stats').update({ money: Math.floor(money) }).eq('user_id', currentUser.id);
+      await saveMoney(money);
     }
 
     async function init() {
@@ -390,7 +390,20 @@
 
     document.addEventListener('gesturestart', e => e.preventDefault());
     document.addEventListener('gesturechange', e => e.preventDefault());
-    init();
+  
+  async function saveMoney(amount) {
+    const val = Math.floor(amount);
+    localStorage.setItem('bd_money', val);
+    if (!currentUser) return;
+    for (let i = 0; i < 3; i++) {
+      const { error } = await sb.from('game_stats').update({ money: val }).eq('user_id', currentUser.id);
+      if (!error) return;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    console.warn('saveMoney: échec après 3 tentatives');
+  }
+
+  init();
   </script>
 </body>
 </html>

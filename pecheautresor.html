@@ -81,7 +81,7 @@
   var sb = supabase.createClient('https://drtsuhnbclhmgfjiykap.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg');
   var fmt=function(n){return Math.floor(n).toLocaleString('fr-FR');};
   var el=function(id){return document.getElementById(id);};
-  var money=0,bet=1000,currentUser=null,busy=false;
+  var money=parseInt(localStorage.getItem("bd_money")||"0"),bet=1000,currentUser=null,busy=false;
 
   // 9 spots: 1 tresor (x7), 2 poissons (x2), 6 vides
   // RTP = (1/9)*7 + (2/9)*2 = 7/9 + 4/9 = 11/9 → trop haut
@@ -130,7 +130,7 @@
     busy=false;
   }
 
-  function pick(idx,spot,div){
+  async function pick(idx,spot,div){
     if(busy||bet<=0||money<bet)return; busy=true;
     document.querySelectorAll('.spot').forEach(function(s){s.onclick=null;s.style.cursor='default';});
     div.innerHTML=spot.emoji;
@@ -146,7 +146,7 @@
       r.className='result lose';
     }
     r.style.display='block';
-    if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id);
+    await saveMoney(money);
     setTimeout(function(){el('btnPlay').disabled=false;busy=false;},1500);
   }
 
@@ -159,12 +159,25 @@
     }
     currentUser=s.user;
     var d=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-    money=(d.data&&d.data.money)||0; updateBal();
+    money = (d.data&&d.data.money)||0; localStorage.setItem("bd_money", money); updateBal();
     // Grille vide au départ
     var grid=el('spotGrid');
     for(var i=0;i<9;i++){var div=document.createElement('div');div.className='spot';div.style.cursor='default';div.innerHTML='&#127905;';grid.appendChild(div);}
   }
   document.addEventListener('gesturestart',function(e){e.preventDefault();});
+
+  async function saveMoney(amount) {
+    const val = Math.floor(amount);
+    localStorage.setItem('bd_money', val);
+    if (!currentUser) return;
+    for (let i = 0; i < 3; i++) {
+      const { error } = await sb.from('game_stats').update({ money: val }).eq('user_id', currentUser.id);
+      if (!error) return;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    console.warn('saveMoney: échec après 3 tentatives');
+  }
+
   init();
 </script>
 </body>

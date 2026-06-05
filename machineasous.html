@@ -524,11 +524,10 @@
     }
 
     async function updateMoney(newAmount) {
-      const { error } = await sb.from('game_stats').update({ money: newAmount }).eq('user_id', currentUser.id);
-      if (error) { console.error('updateMoney:', error.message); return; }
+      await saveMoney(newAmount);
       currentMoney = newAmount;
-      const el = document.getElementById('balance');
-      if (el) el.textContent = currentMoney.toLocaleString('fr-FR') + '€';
+      const balEl = document.getElementById('balance');
+      if (balEl) balEl.textContent = currentMoney.toLocaleString('fr-FR') + '€';
     }
 
 
@@ -595,7 +594,20 @@
       await loadMoney();
     }
 
-    init();
+  
+  async function saveMoney(amount) {
+    const val = Math.floor(amount);
+    localStorage.setItem('bd_money', val);
+    if (!currentUser) return;
+    for (let i = 0; i < 3; i++) {
+      const { error } = await sb.from('game_stats').update({ money: val }).eq('user_id', currentUser.id);
+      if (!error) return;
+      await new Promise(r => setTimeout(r, 400));
+    }
+    console.warn('saveMoney: échec après 3 tentatives');
+  }
+
+  init();
   </script>
 </body>
 </html>
