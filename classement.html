@@ -111,6 +111,11 @@
     .pp-infos { flex:1;min-width:0; }
     .pp-name { font-family:'Bebas Neue',sans-serif;font-size:24px;color:white;letter-spacing:1px;line-height:1; }
     .pp-grade { font-size:10px;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:1px;margin-top:4px; }
+    .pp-last-seen { font-size:9px;color:rgba(255,255,255,0.3);margin-top:3px; }
+    .pp-xp-wrap { margin-top:8px; }
+    .pp-xp-label { display:flex;justify-content:space-between;font-size:8px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:1px;margin-bottom:4px; }
+    .pp-xp-bar { background:rgba(255,255,255,0.1);border-radius:4px;height:5px;overflow:hidden; }
+    .pp-xp-fill { height:100%;border-radius:4px;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .4s ease; }
     .pp-company { margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#0f172a;padding:3px 8px;border-radius:20px; }
     .pp-stats { background:#0f172a;border:2px solid #0f172a;border-radius:10px;display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;overflow:hidden;margin-bottom:12px;box-shadow:3px 3px 0 #0f172a; }
     .pp-stat { padding:11px 4px;text-align:center; }
@@ -193,6 +198,14 @@
       <div class="pp-infos">
         <div class="pp-name" id="ppName">—</div>
         <div class="pp-grade" id="ppGrade">—</div>
+        <div class="pp-last-seen" id="ppLastSeen"></div>
+        <div class="pp-xp-wrap">
+          <div class="pp-xp-label">
+            <span id="ppXpVal">0 XP</span>
+            <span id="ppXpNext">→ Niv. 2</span>
+          </div>
+          <div class="pp-xp-bar"><div class="pp-xp-fill" id="ppXpFill" style="width:0%"></div></div>
+        </div>
         <div class="pp-company" id="ppCompany" style="display:none"></div>
       </div>
     </div>
@@ -223,7 +236,7 @@
   );
 
   let currentUser = null, allPlayers = [], filteredPlayers = [];
-  let onlineOnly = false, myRowEl = null;
+  let onlineOnly = false, myRowEl = null, firstRender = true;
 
   // ── Couleur avatar ──
   const AVATAR_COLORS = ['#dbeafe','#fee2e2','#dcfce7','#ede9fe','#fef3c7','#fce7f3','#e0f2fe','#f0fdf4','#fff7ed','#f5f3ff'];
@@ -251,6 +264,10 @@
   }
 
   // ── Helpers ──
+  function getXpRequired(level) {
+    return level * 500;
+  }
+
   function getGrade(l) {
     if (l <= 4) return 'Docker Occasionnel';
     if (l <= 14) return 'Docker';
@@ -323,7 +340,8 @@
 
     const { data: stats } = await sb.from('game_stats')
       .select('user_id, money, level, xp, commerce')
-      .order('level', { ascending: false });
+      .order('level', { ascending: false })
+      .order('xp',    { ascending: false });
 
     if (!stats?.length) { document.getElementById('skeletonWrap').style.display = 'none'; return; }
 
@@ -359,8 +377,10 @@
 
       // Bouton locate
       if (myRank > 8) {
-        document.getElementById('btnLocate').classList.add('show');
-        document.getElementById('locateRank').textContent = '#' + myRank;
+        const locateEl = document.getElementById('btnLocate');
+        const locateRankEl = document.getElementById('locateRank');
+        if (locateEl) locateEl.classList.add('show');
+        if (locateRankEl) locateRankEl.textContent = '#' + myRank;
       }
 
       // Confettis si top 3
@@ -370,7 +390,6 @@
     savePrevRanks(allPlayers);
   }
 
-  let firstRender = true;
   function renderRows(players) {
     const el = document.getElementById('rankRows');
     myRowEl = null;
@@ -389,10 +408,7 @@
       const trend = getTrend(p.user_id, rank);
       const online = getOnlineStatus(p.profile.last_seen);
       const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
-      const defiBtn = '';
       const onlineDot = online.online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite;flex-shrink:0"></span>' : '';
-      const _co = p.commerce?.company?.name ? p.commerce.company : null;
-      const companyTag = _co ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:9px;font-weight:700;color:#fff;background:' + (_co.color||'#d97706') + ';padding:1px 6px;border-radius:8px">' + (_co.logo||'🏢') + ' ' + escapeHtml(_co.name) + '</span>' : '';
       const delay = Math.min(i * 0.04, 0.6);
 
       return '<div class="rank-row' + (isMe?' me':'') + topCls + '" id="' + (isMe?'myRow':'') + '" onclick="showProfile(' + i + ')" style="animation-delay:' + delay + 's">'
@@ -401,7 +417,7 @@
         + '<div class="row-name">' + escapeHtml(p.profile.username) + (isMe?' <span class="me-badge">TOI</span>':'') + onlineDot + '</div>'
         + '<div class="row-grade">' + getGrade(p.level||1) + '</div>'
         + '</div>'
-        + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div>' + defiBtn + '</div>'
+        + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div></div>'
         + '</div>';
     }).join('');
 
@@ -418,6 +434,18 @@
     document.getElementById('ppAvatar').src = avatarForLevel(p.level||1);
     document.getElementById('ppName').textContent = p.profile.username;
     document.getElementById('ppGrade').textContent = getGrade(p.level||1).toUpperCase();
+    // Dernière activité
+    const lsEl = document.getElementById('ppLastSeen');
+    const ls = getOnlineStatus(p.profile.last_seen);
+    lsEl.textContent = ls.online ? '🟢 En ligne' : (ls.text ? '⏱ ' + ls.text : '');
+    // Barre XP
+    const lvl = p.level || 1;
+    const xp = p.xp || 0;
+    const xpNeeded = getXpRequired(lvl);
+    const pct = Math.min(Math.round((xp / xpNeeded) * 100), 100);
+    document.getElementById('ppXpVal').textContent = xp.toLocaleString('fr-FR') + ' XP';
+    document.getElementById('ppXpNext').textContent = '→ Niv. ' + (lvl + 1);
+    document.getElementById('ppXpFill').style.width = pct + '%';
     document.getElementById('ppRankBadge').textContent = '#' + (idx+1);
     document.getElementById('ppLevel').textContent = p.level || 1;
     document.getElementById('ppMoney').textContent = (p.money||0) >= 1000 ? Math.floor((p.money||0)/1000) + 'k€' : (p.money||0) + '€';
