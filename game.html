@@ -850,22 +850,27 @@ ang="fr">
     </div>
     <!-- Header réseau social -->
     <div id="profileCardBtn" style="display:none">
-      <div class="header-cover" onclick="window.location.href='profil.html'" style="cursor:pointer">
-        <div class="header-av-wrap">
-          <img src="avatar-default.png" id="avatarImage" alt="avatar" style="width:100%;height:100%;object-fit:cover">
-        </div>
-        <div class="header-infos">
-          <div class="header-name-row">
-            <div class="header-name" id="playerName">...</div>
-            <div class="header-rank-badge" id="hdrRank">#—</div>
+      <div style="position:relative">
+        <div class="header-cover" onclick="window.location.href='profil.html'" style="cursor:pointer">
+          <div class="header-av-wrap">
+            <img src="avatar-default.png" id="avatarImage" alt="avatar" style="width:100%;height:100%;object-fit:cover">
           </div>
-          <div class="header-grade"><span id="playerGrade"></span> · Niv. <span id="currentLevel">1</span></div>
-          <div class="header-xp-wrap">
-            <div class="header-xp-bar"><div class="header-xp-fill" id="xpFill" style="width:0%"></div></div>
+          <div class="header-infos">
+            <div class="header-name-row">
+              <div class="header-name" id="playerName">...</div>
+              <div class="header-rank-badge" id="hdrRank">#—</div>
+            </div>
+            <div class="header-grade"><span id="playerGrade"></span> · Niv. <span id="currentLevel">1</span></div>
+            <div class="header-xp-wrap">
+              <div class="header-xp-bar"><div class="header-xp-fill" id="xpFill" style="width:0%"></div></div>
+            </div>
+            <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
           </div>
-          <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
+          <!-- espace réservé pour l'icône -->
+          <div style="width:38px;flex-shrink:0"></div>
         </div>
-        <div id="hdrMsgBtn" style="flex-shrink:0;cursor:pointer;position:relative;width:38px;height:38px;display:flex;align-items:center;justify-content:center">
+        <!-- Enveloppe en overlay — en dehors du onclick profil -->
+        <div id="hdrMsgBtn" onclick="window.location.href='messagerie.html'" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10">
           <div style="font-size:22px">✉️</div>
           <div id="hdrMsgBadge" style="display:none;position:absolute;top:0;right:0;width:10px;height:10px;background:#cc1a1a;border:2px solid rgba(255,255,255,0.3);border-radius:50%"></div>
         </div>
@@ -1150,10 +1155,10 @@ let currentUser = null;
         ]);
         const gs = gsRes.data;
         const mkt = (mktRes.data || []).filter(r => r.symbol !== 'BTC');
-        const profit = gs?.bourse_profit || 0;
+        const profit = (gs && gs.bourse_profit) || 0;
 
         // Calcul valeur portefeuille
-        const holdings = (gs?.bourse && gs.bourse.h) ? gs.bourse.h : {};
+        const holdings = ((gs && gs.bourse) && gs.bourse.h) ? gs.bourse.h : {};
         const priceMap = {};
         mkt.forEach(r => priceMap[r.symbol] = r.price);
         let portVal = 0;
@@ -1403,7 +1408,7 @@ function getWorkSvg() {
 
       // Garde sessionStorage : empêche tout re-déclenchement dans la même session navigateur
       // (protection contre lecture Supabase en retard ou navigation rapide)
-      const ssKey = 'bd_lvlup_' + (currentUser?.id || 'x');
+      const ssKey = 'bd_lvlup_' + ((currentUser && currentUser.id) || 'x');
       const ssLevel = parseInt(sessionStorage.getItem(ssKey) || '0');
       if (level <= ssLevel) return;
       sessionStorage.setItem(ssKey, level); // marquer immédiatement côté client
@@ -1475,7 +1480,7 @@ function getWorkSvg() {
         let leaderName = '—';
         try {
           const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leaderRow.user_id).maybeSingle();
-          leaderName = prof?.username || '—';
+          leaderName = (prof && prof.username) || '—';
         } catch(_) {}
         const elPos    = document.getElementById('rankMyPos');
         const elLeader = document.getElementById('rankLeaderName');
@@ -1495,7 +1500,7 @@ async function loadCalendar() {
       try {
         const todayStr = today.toISOString().split('T')[0];
         const { data } = await sb.from('daily_objectives').select('objectives').eq('user_id', currentUser.id).eq('date', todayStr).maybeSingle();
-        if(data?.objectives) {
+        if((data && data.objectives)) {
           const objs = data.objectives;
           const completed = objs.filter(o => o.completed || o.claimed).length;
           const pct = Math.round((completed/3)*100);
@@ -1530,7 +1535,7 @@ async function loadCalendar() {
           .select('id', { count: 'exact' })
           .eq('receiver_id', currentUser.id)
           .eq('read', false);
-        const count = data?.length || 0;
+        const count = (data && data.length) || 0;
         const notif = document.getElementById('chatNotif');
         if (notif) {
           if (count > 0) {

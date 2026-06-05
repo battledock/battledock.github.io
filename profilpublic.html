@@ -138,9 +138,9 @@ function getOnlineStatus(lastSeen){
 const TRASH=['T\'as vu mon rang ?','Tu dors encore ?','Viens me chercher quand tu veux 😏','Le port c\'est mon terrain','Ton niveau dit tout 🫡'];
 
 async function init(){
-  sb.auth.onAuthStateChange((e,s)=>{if(!s) window.location.href='index.html';});
+  // auth géré par getSession ci-dessous
   const {data:sess}=await sb.auth.getSession();
-  if(!sess?.session){window.location.href='index.html';return;}
+  if(!(sess && sess.session)){window.location.href='index.html';return;}
   const me=sess.session.user;
 
   // Récupérer l'ID depuis l'URL
@@ -211,7 +211,7 @@ async function sendMsg(){
   const params=new URLSearchParams(location.search);
   const targetId=params.get('id');
   const {data:sess}=await sb.auth.getSession();
-  if(!sess?.session||!targetId)return;
+  if(!(sess && sess.session)||!targetId)return;
   await sb.from('challenges').insert({from_user_id:sess.session.user.id,to_user_id:targetId,message:msg,type:'message'}).then(()=>{}).catch(()=>{});
   document.getElementById('msgOverlay').style.display='none';
   showToast('✉️ Message envoyé !');
