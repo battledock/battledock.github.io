@@ -822,6 +822,15 @@ ang="fr">
 
 </style>
 
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const cached = localStorage.getItem('bd_cover');
+    if(cached){
+      const el = document.getElementById('skeletonCoverDiv');
+      if(el) el.style.background = cached;
+    }
+  });
+</script>
 </head>
 <body>
 
@@ -866,7 +875,7 @@ ang="fr">
   <header class="profile-header">
     <!-- Skeleton -->
     <div class="skeleton-card" id="profileSkeleton">
-      <div style="background:linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9);padding:calc(10px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px">
+      <div id="skeletonCoverDiv" style="background:linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9);padding:calc(10px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px">
         <div style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0"></div>
         <div style="flex:1">
           <div style="height:11px;background:rgba(255,255,255,0.2);border-radius:6px;width:45%;margin-bottom:7px"></div>
@@ -1036,6 +1045,11 @@ ang="fr">
   'bleu_mer':   'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
   'or_navy':    'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
   'noir':       'linear-gradient(135deg,#18181b,#3f3f46)',
+  'gold':       'linear-gradient(135deg,#b45309,#f59e0b)',
+  'emerald':    'linear-gradient(135deg,#047857,#10b981)',
+  'purple':     'linear-gradient(135deg,#6d28d9,#a855f7)',
+  'night':      'linear-gradient(135deg,#0f172a,#334155)',
+  'coral':      'linear-gradient(135deg,#be123c,#fb7185)',
 };
 function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
 let currentUser = null;
@@ -1304,7 +1318,7 @@ function getWorkSvg() {
       let stats   = statsResult.data;
 
       if (!profile) {
-        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'blue' }, { onConflict: 'user_id' }).select().maybeSingle();
+        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'rouge_navy' }, { onConflict: 'user_id' }).select().maybeSingle();
         profile = data;
       }
       if (!stats) {
@@ -1349,19 +1363,6 @@ function getWorkSvg() {
         }
       }
 
-      // Thème de carte de profil (acheté au Shop)
-      const PROFILE_THEMES = {
-        gold:    'linear-gradient(135deg,#b45309,#f59e0b)',
-        emerald: 'linear-gradient(135deg,#047857,#10b981)',
-        purple:  'linear-gradient(135deg,#6d28d9,#a855f7)',
-        night:   'linear-gradient(135deg,#0f172a,#334155)',
-        coral:   'linear-gradient(135deg,#be123c,#fb7185)',
-      };
-      const _card = document.getElementById('profileCardBtn');
-      const _grad = PROFILE_THEMES[profile.background_color];
-      if (_grad) { _card.style.background = _grad; _card.classList.add('themed'); }
-      else { _card.style.background = ''; _card.classList.remove('themed'); }
-
       document.getElementById('playerName').textContent  = profile.username;
 
       const _pcBtn = document.getElementById('profileCardBtn');
@@ -1405,6 +1406,13 @@ function getWorkSvg() {
       const pc = document.getElementById('profileCardBtn');
       if (sk) sk.style.display = 'none';
       if (pc) pc.style.display = '';
+      // Appliquer la cover — après affichage du header
+      requestAnimationFrame(function(){
+        const _coverCss = getCoverCss(profile.background_color);
+        const _cv = document.querySelector('.header-cover');
+        if (_cv) _cv.style.background = _coverCss;
+        localStorage.setItem('bd_cover', _coverCss);
+      });
 
       loadRank(stats.level || 1);
       await checkPendingLevelUp(stats, profile);
