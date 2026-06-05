@@ -277,14 +277,16 @@
         <div class="pp-company" id="ppCompany" style="display:none"></div>
       </div>
     </div>
-    <div class="pp-stats" style="grid-template-columns:1fr 1px 1fr 1px 1fr 1px 1fr">
+    <div class="pp-stats" style="grid-template-columns:repeat(9,1fr)">
       <div class="pp-stat"><div class="pp-stat-v" id="ppLevel">—</div><div class="pp-stat-l">NIVEAU</div></div>
       <div class="pp-stat-sep"></div>
       <div class="pp-stat"><div class="pp-stat-v" id="ppMoney">—</div><div class="pp-stat-l">ARGENT</div></div>
       <div class="pp-stat-sep"></div>
       <div class="pp-stat"><div class="pp-stat-v" id="ppPower">—</div><div class="pp-stat-l">⚡ PUISS.</div></div>
       <div class="pp-stat-sep"></div>
-      <div class="pp-stat"><div class="pp-stat-v" id="ppTrophies">—</div><div class="pp-stat-l">TROPHÉES</div></div>
+      <div class="pp-stat"><div class="pp-stat-v" id="ppTrophies">—</div><div class="pp-stat-l">🏆 TROPHÉES</div></div>
+      <div class="pp-stat-sep"></div>
+      <div class="pp-stat"><div class="pp-stat-v" id="ppDiamonds">—</div><div class="pp-stat-l">💎 DIAMANTS</div></div>
     </div>
     <div class="pp-best-rank" id="ppBestRank"></div>
     <button id="ppShareBtn" style="display:none;width:100%;margin-bottom:8px;padding:9px;border:1.5px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer"></button>
@@ -293,7 +295,6 @@
       <button class="pp-btn-close" onclick="document.getElementById('popup').style.display='none'">FERMER</button>
     </div>
     <button class="pp-btn-profil" id="ppProfilBtn" onclick="">👤 VOIR LE PROFIL COMPLET</button>
-    <button class="pp-btn-copy" id="ppCopyBtn" style="display:block;width:100%;margin-top:4px;padding:9px;border:1.5px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6);font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer">📋 COPIER LE LIEN</button>
     <!-- Mini fil trash talk -->
     <div class="pp-chat" id="ppChat" style="display:none">
       <div class="pp-chat-title">💬 DÉFIS ÉCHANGÉS</div>
@@ -328,7 +329,10 @@
     if (!currentUser) return;
     const myIdx = players.findIndex(p => p.user_id === currentUser.id);
     if (myIdx < 0) return;
-    try { await sb.from('game_stats').update({ prev_rank: myIdx + 1 }).eq('user_id', currentUser.id); } catch(e) {}
+    const newRank = myIdx + 1;
+    // Ne mettre à jour que si le rang a changé
+    if (prevRanks[currentUser.id] === newRank) return;
+    try { await sb.from('game_stats').update({ prev_rank: newRank }).eq('user_id', currentUser.id); } catch(e) {}
   }
   function getTrend(userId, rank) {
     const prev = prevRanks[userId];
@@ -447,14 +451,14 @@
     let stats, profiles;
     try {
       const [statsRes] = await Promise.all([
-        sb.from('game_stats').select('user_id, money, level, xp, commerce').order('level', { ascending: false }).limit(200),
+        sb.from('game_stats').select('user_id, money, level, xp, commerce, diamonds, trophies').order('level', { ascending: false }).limit(200),
       ]);
       clearTimeout(timeout);
       stats = statsRes.data;
       if (!stats?.length) { document.getElementById('skeletonWrap').style.display = 'none'; return; }
       // Profiles + prevRanks en parallèle
       const [profilesRes] = await Promise.all([
-        sb.from('profiles').select('user_id, username, avatar_url, trophies, last_seen').in('user_id', stats.map(s => s.user_id)),
+        sb.from('profiles').select('user_id, username, avatar_url, last_seen').in('user_id', stats.map(s => s.user_id)),
         loadPrevRanks()
       ]);
       profiles = profilesRes.data;
@@ -693,8 +697,12 @@
       if (shareBtn2) shareBtn2.style.display = 'none';
     }
     document.getElementById('ppLevel').textContent = p.level || 1;
-    document.getElementById('ppMoney').textContent = (p.money||0) >= 1000 ? Math.floor((p.money||0)/1000) + 'k€' : (p.money||0) + '€';
-    document.getElementById('ppTrophies').textContent = p.profile.trophies || '—';
+    const m = p.money||0;
+    document.getElementById('ppMoney').textContent = m >= 1000000 ? (m/1000000).toFixed(1) + 'M€' : m >= 1000 ? Math.floor(m/1000) + 'k€' : m + '€';
+    // Trophies et diamonds depuis game_stats (source de vérité)
+    document.getElementById('ppTrophies').textContent = p.trophies ?? p.profile.trophies ?? '—';
+    const dEl = document.getElementById('ppDiamonds');
+    if (dEl) dEl.textContent = p.diamonds ?? '—';
     if (document.getElementById('ppPower')) document.getElementById('ppPower').textContent = powerScore(p);
     const _co = p.commerce?.company?.name ? p.commerce.company : null;
     const coEl = document.getElementById('ppCompany');
