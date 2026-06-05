@@ -365,14 +365,19 @@
 
   // ── Init ──
   async function init() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = 'index.html'; return; }
+    const { data: _authData, error: _authError } = await sb.auth.getSession();
+    if (_authError || !_authData.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    const session = _authData.session;
     currentUser = session.user;
 
     const { data: stats } = await sb.from('game_stats')
       .select('money,xp,level,xp_per_click,money_per_click').eq('user_id', currentUser.id).maybeSingle();
     const { data: profile } = await sb.from('profiles')
-      .select('skin_container').eq('user_id', currentUser.id).maybeSingle();
+      .select('skin_container,equipped_epi').eq('user_id', currentUser.id).maybeSingle();
 
     if (stats) {
       totalMoney           = stats.money    || 0;
@@ -396,6 +401,18 @@
     const box = document.getElementById('containerBtn');
     box.style.background = bg; box.style.borderColor = border;
 
+    // Appliquer bonus EPI
+    if (profile && profile.equipped_epi) {
+      var eq = typeof profile.equipped_epi === 'string' ? JSON.parse(profile.equipped_epi) : profile.equipped_epi;
+      var EPI_BONUSES = {
+        casque_commune:1, casque_rare:2, casque_epique:4, casque_legendaire:8,
+        gilet_commune:1,  gilet_rare:2,  gilet_epique:4,  gilet_legendaire:8,
+        chaussures_commune:0.10, chaussures_rare:0.25, chaussures_epique:0.50, chaussures_legendaire:1.00,
+      };
+      if (eq.casque)     window.xpPerClick    += (EPI_BONUSES[eq.casque]    || 0);
+      if (eq.gilet)      window.moneyPerClick += (EPI_BONUSES[eq.gilet]     || 0);
+      if (eq.chaussures) window.epiComboBonus  = (EPI_BONUSES[eq.chaussures] || 0);
+    }
     updateDisplay();
     startCalibration();
     startComboDecay();
@@ -599,7 +616,8 @@
     clicks++;
     const xpGain = window.xpPerClick    || 1;
     const base   = window.moneyPerClick || 1;
-    const gain   = Math.floor(base * combo);
+    const comboMult = combo + (window.epiComboBonus || 0);
+    const gain   = Math.floor(base * comboMult);
 
     sessionXp    += xpGain;  currentXp   += xpGain;
     sessionMoney += gain;    totalMoney  += gain;

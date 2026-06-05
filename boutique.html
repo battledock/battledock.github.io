@@ -62,6 +62,34 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 
 /* LOADER */
 .loader{text-align:center;padding:60px 20px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#9ca3af;letter-spacing:2px}
+
+/* EPI */
+.epi-section { padding:12px 12px 4px }
+.epi-section-title { font-size:11px;font-weight:800;letter-spacing:2px;color:#0f172a;margin-bottom:12px;display:flex;align-items:center;gap:6px;border-top:2px solid #0f172a;padding-top:12px }
+.epi-grid { display:flex;flex-direction:column;gap:8px }
+.epi-card { background:white;border-radius:12px;overflow:hidden;border:2px solid #e5e7eb }
+.epi-header { display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid #f3f4f6 }
+.epi-emoji { font-size:28px;flex-shrink:0 }
+.epi-info { flex:1 }
+.epi-name { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#0f172a;letter-spacing:1px }
+.epi-effect { font-size:10px;color:#6b7280;font-weight:600;margin-top:1px }
+.epi-tiers { display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 12px }
+.epi-tier { border-radius:8px;padding:8px 6px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s;position:relative }
+.epi-tier:active { transform:scale(0.96) }
+.epi-tier.owned { border-color:#22c55e }
+.epi-tier.equipped { border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf24 }
+.tier-label { font-size:7px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px }
+.tier-boost { font-family:'Bebas Neue',sans-serif;font-size:15px;line-height:1 }
+.tier-price { font-size:8px;font-weight:700;color:#6b7280;margin-top:3px }
+.tier-commune   { background:#f9fafb }
+.tier-rare      { background:#eff6ff }
+.tier-epique    { background:#f5f3ff }
+.tier-legendaire{ background:linear-gradient(135deg,#fef3c7,#fde68a) }
+.tier-commune   .tier-label { color:#6b7280 }
+.tier-rare      .tier-label { color:#1d4ed8 }
+.tier-epique    .tier-label { color:#6d28d9 }
+.tier-legendaire .tier-label { color:#92400e }
+.epi-equipped-badge { position:absolute;top:3px;right:3px;width:12px;height:12px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;color:white }
 </style>
 </head>
 <body>
@@ -69,10 +97,16 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 <div class="hdr">
   <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
   <div class="hdr-title">🛍️ BOUTIQUE</div>
-  <div class="hdr-diamonds">💎 <span id="diamondCount">—</span></div>
+  <div class="hdr-diamonds">💰 <span id="moneyCount">—</span></div>
 </div>
 
 <div id="content">
+<div class="epi-section">
+  <div class="epi-section-title">⚒️ ÉQUIPEMENTS DE PROTECTION (EPI)</div>
+  <div style="font-size:10px;color:#9ca3af;margin-bottom:10px">Boostent tes gains dans le clicker — payés en argent</div>
+  <div class="epi-grid" id="epiSection"></div>
+</div>
+
   <div class="loader" id="loader">CHARGEMENT...</div>
 </div>
 
@@ -84,6 +118,55 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
 var currentUser=null, diamonds=0, ownedCovers=[], activeCover='rouge_navy';
+
+var EPI_CATALOG = [
+  {
+    id: 'casque',
+    name: 'Casque de chantier',
+    emoji: '🪖',
+    effect: '+XP par clic',
+    stat: 'xp',
+    tiers: [
+      {id:'casque_commune',   rarity:'commune',    label:'Commune',    boost:'+1 XP',  bonus:1,  price:5000},
+      {id:'casque_rare',      rarity:'rare',       label:'Rare',       boost:'+2 XP',  bonus:2,  price:25000},
+      {id:'casque_epique',    rarity:'epique',     label:'Épique',     boost:'+4 XP',  bonus:4,  price:100000},
+      {id:'casque_legendaire',rarity:'legendaire', label:'Légendaire', boost:'+8 XP',  bonus:8,  price:500000},
+    ]
+  },
+  {
+    id: 'gilet',
+    name: 'Gilet de sécurité',
+    emoji: '🦺',
+    effect: '+€ par clic',
+    stat: 'money',
+    tiers: [
+      {id:'gilet_commune',   rarity:'commune',    label:'Commune',    boost:'+1 €',   bonus:1,  price:5000},
+      {id:'gilet_rare',      rarity:'rare',       label:'Rare',       boost:'+2 €',   bonus:2,  price:25000},
+      {id:'gilet_epique',    rarity:'epique',     label:'Épique',     boost:'+4 €',   bonus:4,  price:100000},
+      {id:'gilet_legendaire',rarity:'legendaire', label:'Légendaire', boost:'+8 €',   bonus:8,  price:500000},
+    ]
+  },
+  {
+    id: 'chaussures',
+    name: 'Chaussures de sécurité',
+    emoji: '👟',
+    effect: '+% combo',
+    stat: 'combo',
+    tiers: [
+      {id:'chaussures_commune',   rarity:'commune',    label:'Commune',    boost:'×4 max',  bonus:1, price:5000},
+      {id:'chaussures_rare',      rarity:'rare',       label:'Rare',       boost:'×5 max',  bonus:2, price:25000},
+      {id:'chaussures_epique',    rarity:'epique',     label:'Épique',     boost:'×6 max',  bonus:3, price:100000},
+      {id:'chaussures_legendaire',rarity:'legendaire', label:'Légendaire', boost:'×9 max',  bonus:6, price:500000},
+    ]
+  },
+];
+
+var money = 0;
+var ownedEpi = [];
+var equippedEpi = {};
+
+function fmtPrice(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
+
 
 // ── CATALOGUE ──
 var COVERS = [
@@ -127,6 +210,79 @@ var RARITY_NAMES = {default:'DÉFAUT',commune:'COMMUNES',rare:'RARES',epique:'É
 
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 
+
+function renderEpi(){
+  var sec = document.getElementById('epiSection');
+  sec.innerHTML = '';
+  EPI_CATALOG.forEach(function(epi){
+    var card = document.createElement('div');
+    card.className = 'epi-card';
+    card.id = 'epi-card-'+epi.id;
+
+    var hdr = document.createElement('div');
+    hdr.className = 'epi-header';
+    hdr.innerHTML = '<div class="epi-emoji">'+epi.emoji+'</div>'
+      +'<div class="epi-info"><div class="epi-name">'+epi.name+'</div>'
+      +'<div class="epi-effect">'+epi.effect+'</div></div>';
+    card.appendChild(hdr);
+
+    var tiersWrap = document.createElement('div');
+    tiersWrap.className = 'epi-tiers';
+
+    epi.tiers.forEach(function(t){
+      var owned = ownedEpi.indexOf(t.id) !== -1;
+      var equipped = equippedEpi[epi.id] === t.id;
+      var priceLabel = owned ? (equipped ? '✓ Équipé' : 'Équiper') : fmtPrice(t.price);
+      var div = document.createElement('div');
+      div.className = 'epi-tier tier-'+t.rarity+(owned?' owned':'')+(equipped?' equipped':'');
+      div.id = 'tier-'+t.id;
+      div.innerHTML = (equipped ? '<div class="epi-equipped-badge">✓</div>' : '')
+        +'<div class="tier-label">'+t.label+'</div>'
+        +'<div class="tier-boost">'+t.boost+'</div>'
+        +'<div class="tier-price">'+priceLabel+'</div>';
+      div.onclick = (function(eid, tid){ return function(){ handleEpi(eid, tid); }; })(epi.id, t.id);
+      tiersWrap.appendChild(div);
+    });
+
+    card.appendChild(tiersWrap);
+    sec.appendChild(card);
+  });
+}
+
+async function handleEpi(epiId, tierId){
+  var epi = EPI_CATALOG.find(function(e){ return e.id===epiId; });
+  var tier = null;
+  epi.tiers.forEach(function(t){ if(t.id===tierId) tier=t; });
+  if(!tier) return;
+
+  var owned = ownedEpi.indexOf(tierId) !== -1;
+  var equipped = equippedEpi[epiId] === tierId;
+  if(equipped) return;
+
+  if(!owned){
+    if(money < tier.price){ toast('❌ Pas assez d\'argent !'); return; }
+    var newMoney = money - tier.price;
+    var newOwned = ownedEpi.concat([tierId]);
+    var {error:e1} = await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+    if(e1){ toast('❌ Erreur'); return; }
+    var {error:e2} = await sb.from('profiles').update({unlocked_epi:JSON.stringify(newOwned)}).eq('user_id',currentUser.id);
+    if(e2){ toast('❌ Erreur'); return; }
+    money = newMoney;
+    ownedEpi = newOwned;
+    document.getElementById('moneyCount').textContent = fmtPrice(money);
+    toast('✅ '+epi.name+' '+tier.label+' achetée !');
+    owned = true;
+  }
+
+  // Équiper
+  var newEquipped = JSON.parse(JSON.stringify(equippedEpi));
+  newEquipped[epiId] = tierId;
+  var {error:e3} = await sb.from('profiles').update({equipped_epi:JSON.stringify(newEquipped)}).eq('user_id',currentUser.id);
+  if(e3){ toast('❌ Erreur'); return; }
+  equippedEpi = newEquipped;
+  renderEpi();
+  toast('🔧 '+epi.name+' '+tier.label+' équipée !');
+}
 function renderShop(){
   var content=document.getElementById('content');
   content.innerHTML='';
@@ -229,11 +385,18 @@ async function init(){
   if(!sess){ window.location.href='index.html'; return; }
   currentUser=sess.user;
 
-  var gsRes=await sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle();
-  var prRes=await sb.from('profiles').select('background_color,unlocked_covers').eq('user_id',currentUser.id).maybeSingle();
+  var gsRes=await sb.from('game_stats').select('money,diamonds').eq('user_id',currentUser.id).maybeSingle();
+  var prRes=await sb.from('profiles').select('background_color,unlocked_covers,unlocked_epi,equipped_epi').eq('user_id',currentUser.id).maybeSingle();
 
   diamonds=(gsRes.data&&gsRes.data.diamonds)||0;
-  document.getElementById('diamondCount').textContent=diamonds;
+  money=(gsRes.data&&gsRes.data.money)||0;
+  document.getElementById('moneyCount').textContent=fmtPrice(money);
+
+  // EPI
+  var rawEpi=prRes.data&&prRes.data.unlocked_epi;
+  if(rawEpi){ try{ ownedEpi=typeof rawEpi==='string'?JSON.parse(rawEpi):rawEpi; }catch(e){} }
+  var rawEq=prRes.data&&prRes.data.equipped_epi;
+  if(rawEq){ try{ equippedEpi=typeof rawEq==='string'?JSON.parse(rawEq):rawEq; }catch(e){} }
 
   activeCover=(prRes.data&&prRes.data.background_color)||'rouge_navy';
   var raw=prRes.data&&prRes.data.unlocked_covers;
@@ -248,6 +411,7 @@ async function init(){
   if(ownedCovers.indexOf(activeCover)===-1) ownedCovers.push(activeCover);
 
   document.getElementById('loader').style.display='none';
+  renderEpi();
   renderShop();
 }
 init();
