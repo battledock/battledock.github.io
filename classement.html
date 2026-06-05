@@ -523,31 +523,39 @@
   async function loadChatMessages(targetUserId) {
     const chatEl = document.getElementById('ppChat');
     const listEl = document.getElementById('ppChatList');
-    listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25)">Chargement…</div>';
-    chatEl.style.display = 'block';
+    chatEl.style.display = 'none';
     try {
-      const { data } = await sb.from('challenges')
+      const { data, error } = await sb.from('challenges')
         .select('from_user_id, to_user_id, message, created_at')
-        .or('and(from_user_id.eq.' + currentUser.id + ',to_user_id.eq.' + targetUserId + '),and(from_user_id.eq.' + targetUserId + ',to_user_id.eq.' + currentUser.id + ')')
-        .order('created_at', { ascending: false })
+        .in('from_user_id', [currentUser.id, targetUserId])
+        .in('to_user_id',   [currentUser.id, targetUserId])
+        .order('created_at', { ascending: true })
         .limit(10);
+      if (error) return; // table inexistante ou autre → on cache silencieusement
+      chatEl.style.display = 'block';
       if (!data || !data.length) {
         listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">Aucun défi échangé — lance le premier !</div>';
         return;
       }
-      listEl.innerHTML = data.reverse().map(m => {
+      // Filtrer côté client pour les échanges directs entre les deux joueurs
+      const msgs = data.filter(m =>
+        (m.from_user_id === currentUser.id && m.to_user_id === targetUserId) ||
+        (m.from_user_id === targetUserId   && m.to_user_id === currentUser.id)
+      );
+      if (!msgs.length) {
+        listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">Aucun défi échangé — lance le premier !</div>';
+        return;
+      }
+      listEl.innerHTML = msgs.map(m => {
         const isSent = m.from_user_id === currentUser.id;
-        const date = new Date(m.created_at);
-        const timeAgo = Math.floor((Date.now() - date) / 60000);
+        const timeAgo = Math.floor((Date.now() - new Date(m.created_at)) / 60000);
         const timeStr = timeAgo < 60 ? 'il y a ' + timeAgo + 'min' : timeAgo < 1440 ? 'il y a ' + Math.floor(timeAgo/60) + 'h' : 'il y a ' + Math.floor(timeAgo/1440) + 'j';
         return '<div class="chat-msg ' + (isSent ? 'sent' : 'received') + '">'
           + escapeHtml(m.message)
           + '<div class="chat-meta">' + (isSent ? 'Toi' : 'Lui') + ' · ' + timeStr + '</div>'
           + '</div>';
       }).join('');
-    } catch(e) {
-      listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25)">—</div>';
-    }
+    } catch(e) { /* silencieux */ }
   }
   function closePopup(e) { if (e.target.id === 'popup') document.getElementById('popup').style.display = 'none'; }
 
@@ -600,7 +608,7 @@
       + '</div>';
     overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
     document.body.appendChild(overlay);
-    // Sauvegarder le défi en base
+    // Sauvegarder le défi en base (silencieux si table inexistante)
     const targetPlayer = allPlayers[idx];
     if (targetPlayer && currentUser) {
       sb.from('challenges').insert({
@@ -608,7 +616,7 @@
         to_user_id:   targetPlayer.user_id,
         message:      msg,
         created_at:   new Date().toISOString()
-      }).then(() => {});
+      }).then(({ error }) => { /* ignoré si table absente */ });
     }
   }
 
