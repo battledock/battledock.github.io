@@ -12,15 +12,13 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 
 /* COVER */
 .cover{height:130px;background:linear-gradient(135deg,#cc1a1a,#0f172a);position:relative}
-.cover-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.25);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .cover-edit{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;color:white;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
+.cover-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.25);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
 
 /* AVATAR */
 .av-wrap{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);width:72px;height:72px;border-radius:50%;border:4px solid white;overflow:hidden;background:#dbeafe;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
 .av-wrap img{width:100%;height:100%;object-fit:cover}
-.av-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%}
-.av-wrap:hover .av-overlay,.av-wrap:active .av-overlay{opacity:1}
-.av-overlay span{color:white;font-size:20px}
 
 /* BODY */
 .body{padding:44px 16px 0;text-align:center}
@@ -75,12 +73,10 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 <!-- COVER -->
 <div class="cover">
   <button class="cover-back" onclick="window.location.href='game.html'">←</button>
-  <button class="cover-edit" id="editBtn" onclick="openEditName()">✏️ MODIFIER</button>
-  <div class="av-wrap" id="avWrap" onclick="triggerAvatarUpload()">
+  <button class="cover-edit" onclick="openCoverPicker()">🎨 FOND</button>
+  <div class="av-wrap" id="avWrap">
     <img id="avatarImg" src="avatar-default.png" alt="avatar">
-    <div class="av-overlay"><span>📷</span></div>
   </div>
-  <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
 </div>
 
 <!-- BODY -->
@@ -116,6 +112,16 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
     <div class="stat-card"><div class="stat-v" id="statDiamonds" style="color:#7c3aed">—</div><div class="stat-l">💎 Diamants</div></div>
     <div class="stat-card"><div class="stat-v" id="statPower">—</div><div class="stat-l">⚡ Puissance</div></div>
     <div class="stat-card"><div class="stat-v" id="statStreak">—</div><div class="stat-l">🔥 Jours streak</div></div>
+  </div>
+</div>
+
+
+<!-- COVER PICKER -->
+<div class="edit-overlay" id="coverOverlay" onclick="closeCoverPicker(event)">
+  <div class="edit-sheet" id="coverSheet">
+    <div class="edit-title">CHOISIR UN FOND</div>
+    <div id="coverOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px"></div>
+    <button class="btn-cancel" style="width:100%;padding:12px" onclick="document.getElementById('coverOverlay').classList.remove('show')">Annuler</button>
   </div>
 </div>
 
@@ -163,6 +169,11 @@ async function init(){
   const g=gRes.data, p=pRes.data;
   if(!g||!p) return;
 
+  // Cover
+  if(p.background_color){
+    const saved=COVERS.find(c=>c.id===p.background_color);
+    if(saved){ currentCover=saved.id; applyCover(saved.css); }
+  }
   // Avatar
   if(p.avatar_url) document.getElementById('avatarImg').src=p.avatar_url;
 
@@ -198,16 +209,44 @@ async function init(){
   document.getElementById('statStreak').textContent=(g.streak_days||0)+'j';
 }
 
-function openEditName(){
-  editMode='name';
-  document.getElementById('editTitle').textContent='MODIFIER LE PSEUDO';
-  const inp=document.getElementById('editInput');
-  inp.className='edit-input';
-  inp.maxLength=20;
-  inp.value=document.getElementById('usernameEl').textContent;
-  document.getElementById('editSave').onclick=saveName;
-  document.getElementById('editOverlay').classList.add('show');
-  setTimeout(()=>inp.focus(),100);
+// Covers disponibles (à enrichir plus tard)
+const COVERS = [
+  { id:'rouge_navy', label:'Rouge & Navy', css:'linear-gradient(135deg,#cc1a1a,#0f172a)' },
+  { id:'bleu_mer',   label:'Bleu mer',     css:'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)' },
+  { id:'or_navy',    label:'Or & Navy',    css:'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)' },
+  { id:'noir',       label:'Noir',         css:'linear-gradient(135deg,#18181b,#3f3f46)' },
+];
+
+let currentCover = 'rouge_navy';
+
+function applyCover(css){
+  document.querySelector('.cover').style.background = css;
+}
+
+function openCoverPicker(){
+  const container = document.getElementById('coverOptions');
+  container.innerHTML = '';
+  COVERS.forEach(c => {
+    const el = document.createElement('div');
+    el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '+(currentCover===c.id?'#fbbf24':'transparent')+';background:'+c.css+';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
+    el.innerHTML = '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px">'+c.label+'</span>';
+    el.onclick = () => selectCover(c);
+    container.appendChild(el);
+  });
+  document.getElementById('coverOverlay').classList.add('show');
+}
+
+async function selectCover(c){
+  currentCover = c.id;
+  applyCover(c.css);
+  await sb.from('profiles').update({background_color: c.id}).eq('user_id', currentUser.id).then(()=>{}).catch(()=>{});
+  document.getElementById('coverOverlay').classList.remove('show');
+  showToast('✓ Fond mis à jour');
+}
+
+function closeCoverPicker(e){
+  if(e.target===document.getElementById('coverOverlay'))
+    document.getElementById('coverOverlay').classList.remove('show');
 }
 
 function openEditBio(){
@@ -228,15 +267,6 @@ function closeEdit(e){
     document.getElementById('editOverlay').classList.remove('show');
 }
 
-async function saveName(){
-  const val=document.getElementById('editInput').value.trim();
-  if(!val||val.length<2){showToast('❌ Pseudo trop court');return;}
-  const {error}=await sb.from('profiles').update({username:val}).eq('user_id',currentUser.id);
-  if(error){showToast('❌ Erreur');return;}
-  document.getElementById('usernameEl').textContent=val.toUpperCase();
-  document.getElementById('editOverlay').classList.remove('show');
-  showToast('✓ Pseudo mis à jour');
-}
 
 async function saveBio(){
   const val=document.getElementById('editInput').value.trim();
@@ -249,24 +279,6 @@ async function saveBio(){
   showToast('✓ Bio mise à jour');
 }
 
-function triggerAvatarUpload(){
-  document.getElementById('avatarInput').click();
-}
-
-async function uploadAvatar(e){
-  const file=e.target.files[0]; if(!file) return;
-  if(file.size>2*1024*1024){showToast('❌ Image trop lourde (max 2Mo)');return;}
-  showToast('⏳ Upload en cours...');
-  const ext=file.name.split('.').pop();
-  const path=`avatars/${currentUser.id}.${ext}`;
-  const {error:upErr}=await sb.storage.from('avatars').upload(path,file,{upsert:true});
-  if(upErr){showToast('❌ Erreur upload');return;}
-  const {data:urlData}=sb.storage.from('avatars').getPublicUrl(path);
-  const url=urlData.publicUrl+'?t='+Date.now();
-  await sb.from('profiles').update({avatar_url:url}).eq('user_id',currentUser.id);
-  document.getElementById('avatarImg').src=url;
-  showToast('✓ Avatar mis à jour');
-}
 
 init();
 </script>
