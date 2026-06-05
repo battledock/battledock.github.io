@@ -72,7 +72,6 @@
     <div class="table">
       <div class="card hidden" id="currentCard"></div>
   <div style="text-align:center;font-size:9px;color:rgba(255,255,255,0.25);letter-spacing:1px;margin-bottom:2px">AS = CARTE LA PLUS BASSE · ROI = CARTE LA PLUS HAUTE</div>
-  <div id="prevCardInfo" style="text-align:center;font-size:11px;color:rgba(255,255,255,0.4);margin-top:4px;min-height:16px;letter-spacing:1px;font-weight:700"></div>
       <div class="streak-row" id="streakRow">
         <div class="streak-dot" id="s0"></div><div class="streak-dot" id="s1"></div>
         <div class="streak-dot" id="s2"></div><div class="streak-dot" id="s3"></div>
@@ -163,9 +162,7 @@
     var correct=!isTie&&((dir==='higher'&&next>currentVal)||(dir==='lower'&&next<currentVal));
 
     setTimeout(function(){
-      // Afficher l'ancienne carte en petit pour comparaison
-      var prevName=el('prevCardInfo');
-      if(prevName) prevName.textContent='Carte précédente : '+['','A','2','3','4','5','6','7','8','9','10','J','Q','K'][currentVal];
+      var prev=currentVal; // sauvegarder l'ancienne valeur
       showCard(next,false);
       currentVal=next;
       if(correct){
@@ -183,7 +180,16 @@
       } else {
         el('s'+streak).className='streak-dot fail';
         var r=el('result');
-        r.textContent=isTie?'ÉGALITÉ — PERDU !':'MAUVAISE RÉPONSE — PERDU !'; r.className='result lose'; r.style.display='block';
+        var NAMES=['','A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+        var prevName=NAMES[prev];
+        var nextName=NAMES[next];
+        var arrow=dir==='higher'?'▲ HIGHER':'▼ LOWER';
+        if(isTie){
+          r.innerHTML='ÉGALITÉ — PERDU !<br><span style="font-size:11px;opacity:0.8">'+prevName+' → '+nextName+' (même carte)</span>';
+        } else {
+          r.innerHTML='PERDU !<br><span style="font-size:11px;opacity:0.85">Tu jouais '+arrow+' · '+prevName+' → '+nextName+'</span>';
+        }
+        r.className='result lose'; r.style.display='block';
         endGame();
         if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id).then(function(){}).catch(function(){});
       }
@@ -193,18 +199,17 @@
   function cashout(){
     busy=true;
     var gain=Math.floor(bet*multiplier);
-    var profit=gain-bet;
     money+=gain; updateBal();
     var r=el('result');
     r.textContent='ENCAISSE ! +'+fmt(gain-bet)+'€'; r.className='result win'; r.style.display='block';
     endGame();
-    if(currentUser) sb.from('game_stats').update({money:Math.floor(money),biggest_win:profit}).eq('user_id',currentUser.id).then(function(){}).catch(function(){});
+    if(currentUser) sb.from('game_stats').update({money:Math.floor(money)}).eq('user_id',currentUser.id).then(function(){}).catch(function(){});
   }
 
   function endGame(){
     el('btnH').disabled=true; el('btnL').disabled=true; el('btnCash').disabled=true;
     showCard(0,true);
-    var p=el('prevCardInfo'); if(p) p.textContent='';
+
     setTimeout(function(){
       el('btnPlay').disabled=false; streak=0; updateStreak(); busy=false;
     },1800);
