@@ -147,7 +147,7 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let currentUser = null, editMode = null;
 
 function fmt(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
-function xpForLevel(l){ return l*500; }
+function xpForLevel(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
 function powerScore(p){ return (p.level||1)*100 + Math.floor((p.money||0)/10000); }
 
 function showToast(msg){
@@ -170,10 +170,7 @@ async function init(){
   if(!g||!p) return;
 
   // Cover
-  if(p.background_color){
-    const saved=COVERS.find(c=>c.id===p.background_color);
-    if(saved){ currentCover=saved.id; applyCover(saved.css); }
-  }
+  if(p.background_color){ currentCover=p.background_color; applyCover(p.background_color); }
   // Avatar
   if(p.avatar_url) document.getElementById('avatarImg').src=p.avatar_url;
 
@@ -210,17 +207,30 @@ async function init(){
 }
 
 // Covers disponibles (à enrichir plus tard)
+const COVER_CSS = {
+  'rouge_navy': 'linear-gradient(135deg,#cc1a1a,#0f172a)',
+  'bleu_mer':   'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
+  'or_navy':    'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
+  'noir':       'linear-gradient(135deg,#18181b,#3f3f46)',
+  'gold':       'linear-gradient(135deg,#b45309,#f59e0b)',
+  'emerald':    'linear-gradient(135deg,#047857,#10b981)',
+  'purple':     'linear-gradient(135deg,#6d28d9,#a855f7)',
+  'night':      'linear-gradient(135deg,#0f172a,#334155)',
+  'coral':      'linear-gradient(135deg,#be123c,#fb7185)',
+};
+function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
+
 const COVERS = [
-  { id:'rouge_navy', label:'Rouge & Navy', css:'linear-gradient(135deg,#cc1a1a,#0f172a)' },
-  { id:'bleu_mer',   label:'Bleu mer',     css:'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)' },
-  { id:'or_navy',    label:'Or & Navy',    css:'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)' },
-  { id:'noir',       label:'Noir',         css:'linear-gradient(135deg,#18181b,#3f3f46)' },
+  { id:'rouge_navy', label:'Rouge & Navy' },
+  { id:'bleu_mer',   label:'Bleu mer' },
+  { id:'or_navy',    label:'Or & Navy' },
+  { id:'noir',       label:'Noir' },
 ];
 
 let currentCover = 'rouge_navy';
 
-function applyCover(css){
-  document.querySelector('.cover').style.background = css;
+function applyCover(id){
+  document.querySelector('.cover').style.background = getCoverCss(id);
 }
 
 function openCoverPicker(){
@@ -228,7 +238,7 @@ function openCoverPicker(){
   container.innerHTML = '';
   COVERS.forEach(c => {
     const el = document.createElement('div');
-    el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '+(currentCover===c.id?'#fbbf24':'transparent')+';background:'+c.css+';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
+    el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '+(currentCover===c.id?'#fbbf24':'transparent')+';background:'+getCoverCss(c.id)+';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
     el.innerHTML = '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px">'+c.label+'</span>';
     el.onclick = () => selectCover(c);
     container.appendChild(el);
@@ -238,7 +248,7 @@ function openCoverPicker(){
 
 async function selectCover(c){
   currentCover = c.id;
-  applyCover(c.css);
+  applyCover(c.id);
   await sb.from('profiles').update({background_color: c.id}).eq('user_id', currentUser.id).then(()=>{}).catch(()=>{});
   document.getElementById('coverOverlay').classList.remove('show');
   showToast('✓ Fond mis à jour');
