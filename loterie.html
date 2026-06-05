@@ -165,9 +165,9 @@
   // Paliers de gains (nombre de bons numéros + bonus)
   // RTP ~69% — 30 numéros
   const PRIZES = {
-    '5+1': 3000, '5+0': 500, '4+1': 100, '4+0': 30,
-    '3+1': 12,   '3+0': 5,  '2+1': 4,   '2+0': 2,
-    '1+1': 1.5,  '0+1': 1
+    '5+1': 3500, '5+0': 600, '4+1': 120, '4+0': 36,
+    '3+1': 15,   '3+0': 6,  '2+1': 5,  '2+0': 3,
+    '1+1': 2.5,  '0+1': 1.2
   };
 
   function setBet(val,id){
@@ -292,8 +292,13 @@
   }
 
   async function init(){
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){await new Promise(r=>setTimeout(r,1000));const {data:{session:s2}}=await sb.auth.getSession();if(!s2){window.location.href='index.html';return;}currentUser=s2.user;}
+    const { data: _authData, error: _authError } = await sb.auth.getSession();
+    if (_authError || !_authData.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    const session = _authData.session;
     else currentUser=session.user;
     const {data}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
     money=data?.money||0; updateBal();
