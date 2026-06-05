@@ -1,613 +1,274 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Profil - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-touch-callout:none; }
-    input { -webkit-user-select:text; user-select:text; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mon Profil — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding-bottom:40px}
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f2f2f7;
-      min-height: 100vh;
-      padding-bottom: 40px;
-    }
+/* COVER */
+.cover{height:130px;background:linear-gradient(135deg,#cc1a1a,#0f172a);position:relative}
+.cover-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.25);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cover-edit{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;color:white;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
 
-    /* ===================== HEADER CARD ===================== */
-    .profile-card {
-      margin: 0;
-      padding: 32px 20px 28px;
-      text-align: center;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: white;
-      box-shadow: 0 4px 20px rgba(59,130,246,0.3);
-      transition: background 0.4s, box-shadow 0.4s;
-      position: relative;
-    }
-    .profile-card.green  { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 20px rgba(16,185,129,0.3); }
-    .profile-card.yellow { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 4px 20px rgba(245,158,11,0.3); }
-    .profile-card.red    { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 4px 20px rgba(239,68,68,0.3); }
+/* AVATAR */
+.av-wrap{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);width:72px;height:72px;border-radius:50%;border:4px solid white;overflow:hidden;background:#dbeafe;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+.av-wrap img{width:100%;height:100%;object-fit:cover}
+.av-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%}
+.av-wrap:hover .av-overlay,.av-wrap:active .av-overlay{opacity:1}
+.av-overlay span{color:white;font-size:20px}
 
-    .back-btn {
-      position: absolute; top: 16px; left: 16px;
-      background: rgba(255,255,255,0.2); border: none;
-      border-radius: 20px; padding: 6px 14px;
-      color: white; font-size: 13px; font-weight: 600;
-      cursor: pointer;
-    }
+/* BODY */
+.body{padding:44px 16px 0;text-align:center}
+.username-row{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px}
+.username{font-weight:900;font-size:22px;color:#0f172a;line-height:1;text-transform:uppercase}
+.rank-badge{background:#fbbf24;border-radius:5px;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#0f172a;padding:2px 8px}
+.grade{font-size:11px;color:#9ca3af;margin-bottom:4px}
+.online{font-size:10px;color:#15803d;font-weight:700;margin-bottom:12px}
 
-    .profile-avatar-wrap {
-      position: relative; width: 90px; height: 90px;
-      margin: 0 auto 14px;
-    }
-    .profile-avatar {
-      width: 90px; height: 90px; border-radius: 50%;
-      border: 3px solid rgba(255,255,255,0.4);
-      overflow: hidden; background: white;
-    }
-    .profile-avatar img { width:100%; height:100%; object-fit:cover; }
+/* BIO */
+.bio-wrap{background:white;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1.5px solid #e5e7eb;text-align:left;cursor:pointer}
+.bio-label{font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.bio-text{font-size:13px;color:#374151;line-height:1.5}
+.bio-placeholder{font-size:13px;color:#d1d5db;font-style:italic}
+.bio-edit-icon{float:right;color:#9ca3af;font-size:14px;margin-top:2px}
 
-    .profile-username {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 30px; letter-spacing: 2px; margin-bottom: 4px;
-    }
-    .profile-grade { font-size: 14px; opacity: 0.85; font-weight: 600; margin-bottom: 2px; }
-    .profile-level { font-size: 13px; opacity: 0.7; margin-bottom: 16px; }
+/* XP */
+.xp-card{background:white;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1.5px solid #e5e7eb}
+.xp-header{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#9ca3af;margin-bottom:6px}
+.xp-bar{background:#f3f4f6;border-radius:10px;height:7px;overflow:hidden}
+.xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#cc1a1a,#fbbf24);transition:width .5s ease}
+.xp-next{font-size:9px;color:#9ca3af;margin-top:4px;text-align:right}
 
-    /* XP Bar */
-    .xp-bar-wrap { padding: 0 32px; }
-    .xp-bar-label { display:flex; justify-content:space-between; font-size:10px; opacity:0.7; margin-bottom:5px; }
-    .xp-bar-track { height:4px; background:rgba(255,255,255,0.25); border-radius:2px; overflow:hidden; }
-    .xp-bar-fill  { height:100%; background:white; border-radius:2px; transition:width 0.5s ease; }
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.stat-card{background:white;border-radius:12px;padding:14px;border:1.5px solid #e5e7eb;text-align:center}
+.stat-v{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:#0f172a}
+.stat-l{font-size:9px;color:#9ca3af;margin-top:3px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
 
-    /* Stats rapides */
-    .quick-stats {
-      display: grid; grid-template-columns: repeat(3,1fr);
-      margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.15);
-      padding-top: 16px; gap: 4px;
-    }
-    .qs-item { text-align: center; }
-    .qs-val { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1px; }
-    .qs-lbl { font-size:9px; opacity:0.65; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:1px; }
+/* TITLE */
+.section-title{font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;text-align:left}
 
-    /* ===================== SECTIONS ===================== */
-    .container { padding: 20px 16px; }
+/* PSEUDO EDITOR */
+.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:flex-end;display:none}
+.edit-overlay.show{display:flex}
+.edit-sheet{background:white;border-radius:20px 20px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom));width:100%;max-width:500px;margin:0 auto}
+.edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:2px;margin-bottom:14px}
+.edit-input{width:100%;padding:12px 14px;border:2px solid #e5e7eb;border-radius:10px;font-size:15px;font-weight:700;color:#0f172a;outline:none;font-family:'Inter',sans-serif}
+.edit-input:focus{border-color:#cc1a1a}
+.edit-input.textarea{height:80px;resize:none}
+.edit-btns{display:flex;gap:8px;margin-top:12px}
+.btn-save{flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer}
+.btn-cancel{flex:1;padding:13px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;font-size:13px;cursor:pointer}
 
-    .section-label {
-      font-size: 12px; font-weight: 700; color: #6b7280;
-      text-transform: uppercase; letter-spacing: 1px;
-      margin-bottom: 8px; margin-top: 24px; padding: 0 4px;
-    }
-    .section-label:first-child { margin-top: 0; }
-
-    .section-card {
-      background: white; border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-    }
-
-    /* ===================== AVATARS ===================== */
-    .avatars-scroll {
-      display: flex; gap: 12px;
-      padding: 14px 16px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .avatars-scroll::-webkit-scrollbar { display: none; }
-
-    .avatar-item {
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      flex-shrink: 0; cursor: pointer;
-    }
-    .avatar-img-wrap {
-      width: 58px; height: 58px; border-radius: 50%;
-      overflow: hidden; position: relative;
-      border: 2.5px solid transparent;
-      transition: border-color 0.2s;
-      background: #f3f4f6;
-    }
-    .avatar-item.active .avatar-img-wrap  { border-color: #3b82f6; }
-    .avatar-item.locked .avatar-img-wrap  { opacity: 0.4; filter: grayscale(1); cursor: default; }
-    .avatar-img-wrap img { width:100%; height:100%; object-fit:cover; }
-
-    .avatar-check {
-      position: absolute; bottom: 0; right: 0;
-      width: 18px; height: 18px; background: #3b82f6;
-      border-radius: 50%; border: 2px solid white;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 9px; color: white;
-    }
-    .avatar-lock {
-      position: absolute; inset: 0;
-      background: rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; border-radius: 50%;
-    }
-    .avatar-lbl { font-size: 10px; color: #6b7280; font-weight: 600; }
-    .avatar-item.active .avatar-lbl { color: #3b82f6; }
-
-    /* ===================== COULEURS ===================== */
-    .colors-row {
-      display: flex; gap: 10px; padding: 14px 16px;
-    }
-    .color-btn {
-      flex: 1; padding: 10px 6px; border-radius: 12px; border: 2px solid transparent;
-      cursor: pointer; transition: all 0.2s; text-align: center;
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-    }
-    .color-btn:disabled { opacity: 0.4; cursor: default; }
-    .color-btn.active { border-color: #1a1a1a; }
-
-    .color-dot { width: 28px; height: 28px; border-radius: 50%; }
-    .color-btn[data-color="blue"]   .color-dot { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-    .color-btn[data-color="green"]  .color-dot { background: linear-gradient(135deg, #10b981, #059669); }
-    .color-btn[data-color="yellow"] .color-dot { background: linear-gradient(135deg, #f59e0b, #d97706); }
-    .color-btn[data-color="red"]    .color-dot { background: linear-gradient(135deg, #ef4444, #dc2626); }
-
-    .color-name  { font-size: 11px; font-weight: 700; color: #1a1a1a; }
-    .color-badge { font-size: 9px; color: #9ca3af; font-weight: 600; }
-
-    /* ===================== BIO ===================== */
-    .bio-wrap { padding: 12px 16px; }
-    .bio-input {
-      width: 100%; background: #f9fafb;
-      border: 1px solid #e5e7eb; border-radius: 10px;
-      padding: 10px 14px; font-size: 14px;
-      font-family: 'Inter', sans-serif; color: #1a1a1a;
-      resize: none; outline: none; min-height: 60px;
-      -webkit-user-select: text; user-select: text;
-      transition: border-color 0.2s;
-    }
-    .bio-input:focus { border-color: #3b82f6; background: white; }
-    .bio-count { font-size: 10px; color: #9ca3af; text-align: right; margin-top: 4px; }
-
-    /* ===================== SUCCÈS ===================== */
-    .ach-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
-    .ach {
-      background:#f9fafb; border:1px solid #e5e7eb;
-      border-radius:12px; padding:12px; text-align:center;
-    }
-    .ach.done { background:rgba(99,102,241,0.06); border-color:rgba(99,102,241,0.25); }
-    .ach-ico  { font-size:26px; margin-bottom:6px; filter:grayscale(1) opacity(0.3); }
-    .ach.done .ach-ico { filter:none; }
-    .ach-title { font-weight:700; font-size:12px; color:#1a1a1a; margin-bottom:2px; }
-    .ach-desc  { font-size:10px; color:#9ca3af; line-height:1.3; }
-    .ach-badge { font-size:9px; color:#6366f1; font-weight:700; margin-top:4px; }
-
-    /* ===================== ROWS ===================== */
-    .row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 13px 16px;
-      border-bottom: 1px solid #f3f4f6;
-      transition: background 0.15s;
-    }
-    .row:last-child { border-bottom: none; }
-    .row:active { background: #f9fafb; }
-
-    .row-icon {
-      width: 34px; height: 34px; border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; flex-shrink: 0;
-    }
-    .row-icon.blue   { background: rgba(59,130,246,0.1); }
-    .row-icon.green  { background: rgba(16,185,129,0.1); }
-    .row-icon.orange { background: rgba(245,158,11,0.1); }
-    .row-icon.red    { background: rgba(239,68,68,0.1); }
-    .row-icon.purple { background: rgba(139,92,246,0.1); }
-    .row-icon.gray   { background: rgba(107,114,128,0.1); }
-
-    .row-info { flex: 1; }
-    .row-title { font-size: 14px; font-weight: 600; color: #1a1a1a; }
-    .row-val   { font-size: 12px; color: #6b7280; margin-top: 1px; }
-
-    .row-right { font-size: 13px; color: #9ca3af; flex-shrink: 0; }
-    .row-arrow { color: #c7c7cc; font-size: 18px; }
-
-    .row-danger .row-title { color: #ef4444; }
-  </style>
+/* TOAST */
+.toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
 </head>
 <body>
 
-  <!-- CARD PROFIL -->
-  <div class="profile-card" id="profileCard">
-    <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
-    <div class="profile-avatar-wrap">
-      <div class="profile-avatar"><img src="avatar-default.png" id="profileAvatar"></div>
-    </div>
-    <div class="profile-username" id="profileUsername">...</div>
-    <div class="profile-grade"    id="profileGrade">Docker Occasionnel</div>
-    <div class="profile-level"    id="profileLevel">Niveau 1</div>
-    <div class="xp-bar-wrap">
-      <div class="xp-bar-label">
-        <span id="xpLabel">0 XP</span>
-        <span id="xpNext">500 XP</span>
-      </div>
-      <div class="xp-bar-track"><div class="xp-bar-fill" id="xpFill" style="width:0%"></div></div>
-    </div>
-    <div class="quick-stats">
-      <div class="qs-item">
-        <div class="qs-val" id="qsMoney">0€</div>
-        <div class="qs-lbl">Argent</div>
-      </div>
-      <div class="qs-item">
-        <div class="qs-val" id="qsLevel">1</div>
-        <div class="qs-lbl">Niveau</div>
-      </div>
-      <div class="qs-item">
-        <div class="qs-val" id="qsTrophies">0</div>
-        <div class="qs-lbl">Trophées</div>
-      </div>
-    </div>
+<!-- COVER -->
+<div class="cover">
+  <button class="cover-back" onclick="window.location.href='game.html'">←</button>
+  <button class="cover-edit" id="editBtn" onclick="openEditName()">✏️ MODIFIER</button>
+  <div class="av-wrap" id="avWrap" onclick="triggerAvatarUpload()">
+    <img id="avatarImg" src="avatar-default.png" alt="avatar">
+    <div class="av-overlay"><span>📷</span></div>
+  </div>
+  <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="uploadAvatar(event)">
+</div>
+
+<!-- BODY -->
+<div class="body">
+  <div class="username-row">
+    <div class="username" id="usernameEl">...</div>
+    <div class="rank-badge" id="rankEl">#—</div>
+  </div>
+  <div class="grade" id="gradeEl">—</div>
+  <div class="online" id="onlineEl">🟢 En ligne</div>
+
+  <!-- BIO -->
+  <div class="bio-wrap" onclick="openEditBio()">
+    <div class="bio-label">Bio <span class="bio-edit-icon">✏️</span></div>
+    <div id="bioEl" class="bio-placeholder">Ajoute une bio...</div>
   </div>
 
-  <div class="container">
-
-    <!-- AVATARS -->
-    <div class="section-label">Avatars</div>
-    <div class="section-card">
-      <div class="avatars-scroll" id="avatarsGrid"></div>
+  <!-- XP -->
+  <div class="xp-card">
+    <div class="xp-header">
+      <span id="xpLabel">0 XP</span>
+      <span id="xpNext">→ Niv. 2</span>
     </div>
-
-    <!-- COULEURS -->
-    <div class="section-label">Couleur du profil</div>
-    <div class="section-card">
-      <div class="colors-row">
-        <button class="color-btn active" data-color="blue" id="colorBlue" onclick="selectColor('blue')">
-          <div class="color-dot"></div>
-          <div class="color-name">Bleu</div>
-          <div class="color-badge">Défaut</div>
-        </button>
-        <button class="color-btn" data-color="green" id="colorGreen" onclick="selectColor('green')">
-          <div class="color-dot"></div>
-          <div class="color-name">Vert</div>
-          <div class="color-badge">Niv. 5</div>
-        </button>
-        <button class="color-btn" data-color="yellow" id="colorYellow" onclick="selectColor('yellow')">
-          <div class="color-dot"></div>
-          <div class="color-name">Jaune</div>
-          <div class="color-badge">Niv. 10</div>
-        </button>
-        <button class="color-btn" data-color="red" id="colorRed" onclick="selectColor('red')">
-          <div class="color-dot"></div>
-          <div class="color-name">Rouge</div>
-          <div class="color-badge">Niv. 30</div>
-        </button>
-      </div>
-    </div>
-
-    <!-- BIO -->
-    <div class="section-label">Bio</div>
-    <div class="section-card">
-      <div class="bio-wrap">
-        <textarea class="bio-input" id="bioInput" maxlength="50"
-          placeholder="Présente-toi en quelques mots..."
-          oninput="onBioInput(this)"></textarea>
-        <div class="bio-count"><span id="bioCount">0</span>/50</div>
-      </div>
-    </div>
-
-    <!-- STATS -->
-    <div class="section-label">Statistiques</div>
-    <div class="section-card">
-      <div class="row">
-        <div class="row-icon blue">💰</div>
-        <div class="row-info"><div class="row-title">Argent</div></div>
-        <div class="row-right" id="statMoney">0€</div>
-      </div>
-      <div class="row">
-        <div class="row-icon purple">⭐</div>
-        <div class="row-info"><div class="row-title">XP total</div></div>
-        <div class="row-right" id="statXp">0</div>
-      </div>
-      <div class="row">
-        <div class="row-icon orange">🏅</div>
-        <div class="row-info"><div class="row-title">Grade</div></div>
-        <div class="row-right" id="statGrade">-</div>
-      </div>
-      <div class="row">
-        <div class="row-icon green">🏆</div>
-        <div class="row-info"><div class="row-title">Trophées</div></div>
-        <div class="row-right" id="statTrophies">0</div>
-      </div>
-    </div>
-
-    <!-- RECORDS -->
-    <div class="section-label">Records & Activité</div>
-    <div class="section-card">
-      <div class="row">
-        <div class="row-icon orange">🎰</div>
-        <div class="row-info">
-          <div class="row-title">Plus gros gain</div>
-          <div class="row-val">Record au casino</div>
-        </div>
-        <div class="row-right" id="statBiggestWin">0€</div>
-      </div>
-      <div class="row">
-        <div class="row-icon blue">⏱️</div>
-        <div class="row-info">
-          <div class="row-title">Temps de jeu</div>
-          <div class="row-val">Depuis le début</div>
-        </div>
-        <div class="row-right" id="statPlaytime">0h</div>
-      </div>
-      <div class="row">
-        <div class="row-icon green">🔥</div>
-        <div class="row-info">
-          <div class="row-title">Streak</div>
-          <div class="row-val">Jours consécutifs</div>
-        </div>
-        <div class="row-right" id="statStreak">0 jour</div>
-      </div>
-    </div>
-
-    <!-- SUCCÈS -->
-    <div class="section-label">Succès</div>
-    <div class="section-card" style="padding:12px">
-      <div class="ach-grid" id="achGrid"></div>
-    </div>
-
+    <div class="xp-bar"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
   </div>
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
+  <!-- STATS -->
+  <div class="section-title">Mes statistiques</div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-v" id="statLevel">—</div><div class="stat-l">Niveau</div></div>
+    <div class="stat-card"><div class="stat-v" id="statMoney">—</div><div class="stat-l">Argent</div></div>
+    <div class="stat-card"><div class="stat-v" id="statTrophies" style="color:#d97706">—</div><div class="stat-l">🏆 Trophées</div></div>
+    <div class="stat-card"><div class="stat-v" id="statDiamonds" style="color:#7c3aed">—</div><div class="stat-l">💎 Diamants</div></div>
+    <div class="stat-card"><div class="stat-v" id="statPower">—</div><div class="stat-l">⚡ Puissance</div></div>
+    <div class="stat-card"><div class="stat-v" id="statStreak">—</div><div class="stat-l">🔥 Jours streak</div></div>
+  </div>
+</div>
 
-    let currentUser = null;
-    let playerLevel = 1;
-    let playerMoney = 0;
-    let achievementsUnlocked = 0;
-    let eventsClaimed = [];
-    let currentAvatar = 'avatar-default.png';
-    let backgroundColor = 'blue';
+<!-- EDIT OVERLAY (pseudo) -->
+<div class="edit-overlay" id="editOverlay" onclick="closeEdit(event)">
+  <div class="edit-sheet" id="editSheet">
+    <div class="edit-title" id="editTitle">MODIFIER LE PSEUDO</div>
+    <input type="text" class="edit-input" id="editInput" maxlength="20" placeholder="Ton pseudo...">
+    <div class="edit-btns">
+      <button class="btn-save" id="editSave">SAUVEGARDER</button>
+      <button class="btn-cancel" onclick="document.getElementById('editOverlay').classList.remove('show')">Annuler</button>
+    </div>
+  </div>
+</div>
 
-    const avatars = [
-      { id: 'default',       file: 'avatar-default.png',       label: 'Défaut',      condition: () => true },
-      { id: 'level2',        file: 'avatar-level-2.png',        label: 'Niv. 2',      condition: () => playerLevel >= 2 },
-      { id: 'level3',        file: 'avatar-level-3.png',        label: 'Niv. 3',      condition: () => playerLevel >= 3 },
-      { id: 'level4',        file: 'avatar-level-4.png',        label: 'Niv. 4',      condition: () => playerLevel >= 4 },
-      { id: 'level5',        file: 'avatar-level-5.png',        label: 'Niv. 5',      condition: () => playerLevel >= 5 },
-      { id: 'level10',       file: 'avatar-level-10.png',       label: 'Niv. 10',     condition: () => playerLevel >= 10 },
-      { id: 'level13',       file: 'avatar-level-13.png',       label: 'Niv. 13',     condition: () => playerLevel >= 13 },
-      { id: 'level15',       file: 'avatar-level-15.png',       label: 'Niv. 15',     condition: () => playerLevel >= 15 },
-      { id: 'level17',       file: 'avatar-level-17.png',       label: 'Niv. 17',     condition: () => playerLevel >= 17 },
-      { id: 'level20',       file: 'avatar-level-20.png',       label: 'Niv. 20',     condition: () => playerLevel >= 20 },
-      { id: 'level30',       file: 'avatar-level-30.png',       label: 'Niv. 30',     condition: () => playerLevel >= 30 },
-      { id: 'level50',       file: 'avatar-level-50.png',       label: 'Niv. 50',     condition: () => playerLevel >= 50 },
-      { id: 'millionaire',   file: 'avatar-millionaire.png',    label: '1M€',         condition: () => playerMoney >= 1000000 },
-      { id: 'completionist', file: 'avatar-completionist.png',  label: 'Tous succès', condition: () => achievementsUnlocked >= 14 },
-    ];
+<div class="toast" id="toast"></div>
 
-    function getXpRequired(level) {
-      if (level <= 10) return level * 500;
-      if (level <= 25) return level * 1000;
-      if (level <= 50) return level * 2000;
-      return level * 4000;
-    }
+<script>
+const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-    async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
-      await loadProfile();
-      updateStreak();
-    }
+let currentUser = null, editMode = null;
 
-    async function loadProfile() {
-      const { data: profile } = await sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', currentUser.id).single();
-      const { data: stats }   = await sb.from('game_stats').select('*').eq('user_id', currentUser.id).single();
-      if (!profile || !stats) return;
+function fmt(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
+function xpForLevel(l){ return l*500; }
+function powerScore(p){ return (p.level||1)*100 + Math.floor((p.money||0)/10000); }
 
-      playerLevel  = stats.level  || 1;
-      playerMoney  = stats.money  || 0;
-      eventsClaimed = stats.events_claimed || [];
-      currentAvatar = profile.avatar_url || 'avatar-default.png';
-      backgroundColor = profile.background_color || 'blue';
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
 
-      let totalXp = 0;
-      for (let i = 1; i < playerLevel; i++) totalXp += getXpRequired(i);
-      totalXp += stats.xp || 0;
-      achievementsUnlocked = countUnlockedAchievements(playerLevel, playerMoney, totalXp);
+async function init(){
+  sb.auth.onAuthStateChange((e,s)=>{ if(!s) window.location.href='index.html'; });
+  const {data,error}=await sb.auth.getSession();
+  if(error||!data.session){ await sb.auth.signOut().catch(()=>{}); window.location.href='index.html'; return; }
+  currentUser=data.session.user;
 
-      // Header
-      document.getElementById('profileAvatar').src = currentAvatar;
-      document.getElementById('profileUsername').textContent = profile.username;
-      document.getElementById('profileGrade').textContent    = stats.grade || 'Docker Occasionnel';
-      document.getElementById('profileLevel').textContent    = 'Niveau ' + playerLevel;
+  const [gRes,pRes]=await Promise.all([
+    sb.from('game_stats').select('*').eq('user_id',currentUser.id).maybeSingle(),
+    sb.from('profiles').select('*').eq('user_id',currentUser.id).maybeSingle()
+  ]);
+  const g=gRes.data, p=pRes.data;
+  if(!g||!p) return;
 
-      // XP bar
-      const xpNeeded = getXpRequired(playerLevel);
-      const xpPct = Math.min(100, Math.round(((stats.xp||0) / xpNeeded) * 100));
-      document.getElementById('xpLabel').textContent = (stats.xp||0).toLocaleString('fr-FR') + ' XP';
-      document.getElementById('xpNext').textContent  = xpNeeded.toLocaleString('fr-FR') + ' XP';
-      document.getElementById('xpFill').style.width  = xpPct + '%';
+  // Avatar
+  if(p.avatar_url) document.getElementById('avatarImg').src=p.avatar_url;
 
-      // Quick stats
-      const money = playerMoney >= 1000000 ? (playerMoney/1000000).toFixed(1)+'M€' : playerMoney >= 1000 ? Math.floor(playerMoney/1000)+'k€' : playerMoney+'€';
-      document.getElementById('qsMoney').textContent   = money;
-      document.getElementById('qsLevel').textContent   = playerLevel;
-      document.getElementById('qsTrophies').textContent = stats.trophies || 0;
+  // Nom + grade + rang
+  document.getElementById('usernameEl').textContent=(p.username||'Docker').toUpperCase();
+  document.getElementById('gradeEl').textContent=g.grade||'Docker Occasionnel';
 
-      // Stats section
-      document.getElementById('statMoney').textContent    = playerMoney.toLocaleString('fr-FR') + '€';
-      document.getElementById('statXp').textContent       = totalXp.toLocaleString('fr-FR') + ' XP';
-      document.getElementById('statGrade').textContent    = stats.grade || 'Docker Occasionnel';
-      document.getElementById('statTrophies').textContent  = stats.trophies || 0;
+  // Bio
+  const bioEl=document.getElementById('bioEl');
+  if(p.bio){ bioEl.textContent=p.bio; bioEl.className='bio-text'; }
 
-      // Records
-      const bigWin = stats.biggest_win || 0;
-      document.getElementById('statBiggestWin').textContent = bigWin.toLocaleString('fr-FR') + '€';
+  // Rang depuis classement
+  const {data:allStats}=await sb.from('game_stats').select('user_id,level,money').order('level',{ascending:false});
+  if(allStats){
+    const sorted=[...allStats].sort((a,b)=>((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)));
+    const idx=sorted.findIndex(x=>x.user_id===currentUser.id);
+    if(idx>=0) document.getElementById('rankEl').textContent='#'+(idx+1);
+  }
 
-      const minutes = stats.playtime_minutes || 0;
-      const hours   = Math.floor(minutes / 60);
-      const mins    = minutes % 60;
-      document.getElementById('statPlaytime').textContent = hours > 0 ? `${hours}h${mins > 0 ? mins + 'min' : ''}` : `${mins}min`;
+  // XP
+  const xpNeeded=xpForLevel(g.level||1);
+  const xpPct=Math.min(100,Math.round(((g.xp||0)/xpNeeded)*100));
+  document.getElementById('xpFill').style.width=xpPct+'%';
+  document.getElementById('xpLabel').textContent=(g.xp||0)+' XP';
+  document.getElementById('xpNext').textContent='→ Niv. '+((g.level||1)+1);
 
-      const streak = stats.streak_days || 0;
-      document.getElementById('statStreak').textContent = streak + (streak > 1 ? ' jours' : ' jour');
+  // Stats
+  document.getElementById('statLevel').textContent=g.level||1;
+  document.getElementById('statMoney').textContent=fmt(g.money||0);
+  document.getElementById('statTrophies').textContent=g.trophies||0;
+  document.getElementById('statDiamonds').textContent=g.diamonds||0;
+  document.getElementById('statPower').textContent=powerScore(g);
+  document.getElementById('statStreak').textContent=(g.streak_days||0)+'j';
+}
 
-      // Bio
-      const bio = profile.bio || '';
-      document.getElementById('bioInput').value = bio;
-      document.getElementById('bioCount').textContent = bio.length;
+function openEditName(){
+  editMode='name';
+  document.getElementById('editTitle').textContent='MODIFIER LE PSEUDO';
+  const inp=document.getElementById('editInput');
+  inp.className='edit-input';
+  inp.maxLength=20;
+  inp.value=document.getElementById('usernameEl').textContent;
+  document.getElementById('editSave').onclick=saveName;
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(()=>inp.focus(),100);
+}
 
-      // Succès
-      const ACHIEVEMENTS = [
-        { ico:'🎮', title:'Première partie',   desc:'Lance ta 1ère partie',        check: true },
-        { ico:'⭐', title:'Docker confirmé',   desc:'Atteins le niveau 15',         check: playerLevel >= 15 },
-        { ico:'💰', title:'Premier millier',   desc:'Accumule 1 000€',              check: playerMoney >= 1000 },
-        { ico:'🃏', title:'Grand gagnant',     desc:'Gagne plus de 5 000€',         check: (stats.biggest_win||0) >= 5000 },
-        { ico:'🔥', title:'Régulier',          desc:'7 jours de streak',            check: (stats.streak_days||0) >= 7 },
-        { ico:'📈', title:'Investisseur',      desc:'Achète tes premières actions', check: false },
-        { ico:'🌟', title:'Docker légendaire', desc:'Atteins le niveau 30',         check: playerLevel >= 30 },
-        { ico:'💎', title:'Millionnaire',      desc:'Possède 1 000 000€',           check: playerMoney >= 1000000 },
-      ];
-      const achDone = ACHIEVEMENTS.filter(a => a.check).length;
-      document.getElementById('achGrid').innerHTML = ACHIEVEMENTS.map(a => `
-        <div class="ach ${a.check?'done':''}">
-          <div class="ach-ico">${a.ico}</div>
-          <div class="ach-title">${a.title}</div>
-          <div class="ach-desc">${a.desc}</div>
-          ${a.check ? '<div class="ach-badge">✦ Obtenu</div>' : ''}
-        </div>`).join('');
+function openEditBio(){
+  editMode='bio';
+  document.getElementById('editTitle').textContent='MODIFIER LA BIO';
+  const inp=document.getElementById('editInput');
+  inp.className='edit-input textarea';
+  inp.maxLength=120;
+  const bioEl=document.getElementById('bioEl');
+  inp.value=bioEl.classList.contains('bio-text')?bioEl.textContent:'';
+  document.getElementById('editSave').onclick=saveBio;
+  document.getElementById('editOverlay').classList.add('show');
+  setTimeout(()=>inp.focus(),100);
+}
 
-      // Couleur
-      applyColor(backgroundColor);
-      updateColorButtons(backgroundColor, playerLevel);
+function closeEdit(e){
+  if(e.target===document.getElementById('editOverlay'))
+    document.getElementById('editOverlay').classList.remove('show');
+}
 
-      // Avatars
-      renderAvatars();
-    }
+async function saveName(){
+  const val=document.getElementById('editInput').value.trim();
+  if(!val||val.length<2){showToast('❌ Pseudo trop court');return;}
+  const {error}=await sb.from('profiles').update({username:val}).eq('user_id',currentUser.id);
+  if(error){showToast('❌ Erreur');return;}
+  document.getElementById('usernameEl').textContent=val.toUpperCase();
+  document.getElementById('editOverlay').classList.remove('show');
+  showToast('✓ Pseudo mis à jour');
+}
 
-    // Bio
-    let bioSaveTimeout = null;
-    function onBioInput(el) {
-      document.getElementById('bioCount').textContent = el.value.length;
-      clearTimeout(bioSaveTimeout);
-      bioSaveTimeout = setTimeout(() => saveBio(el.value), 1000);
-    }
-    async function saveBio(bio) {
-      await sb.from('profiles').update({ bio }).eq('user_id', currentUser.id);
-    }
+async function saveBio(){
+  const val=document.getElementById('editInput').value.trim();
+  const {error}=await sb.from('profiles').update({bio:val}).eq('user_id',currentUser.id);
+  if(error){showToast('❌ Erreur');return;}
+  const bioEl=document.getElementById('bioEl');
+  if(val){ bioEl.textContent=val; bioEl.className='bio-text'; }
+  else { bioEl.textContent='Ajoute une bio...'; bioEl.className='bio-placeholder'; }
+  document.getElementById('editOverlay').classList.remove('show');
+  showToast('✓ Bio mise à jour');
+}
 
-    // Streak + playtime au chargement
-    async function updateStreak() {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: stats } = await sb.from('game_stats').select('streak_days, last_login, playtime_minutes').eq('user_id', currentUser.id).single();
-      if (!stats) return;
+function triggerAvatarUpload(){
+  document.getElementById('avatarInput').click();
+}
 
-      const lastLogin = stats.last_login;
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+async function uploadAvatar(e){
+  const file=e.target.files[0]; if(!file) return;
+  if(file.size>2*1024*1024){showToast('❌ Image trop lourde (max 2Mo)');return;}
+  showToast('⏳ Upload en cours...');
+  const ext=file.name.split('.').pop();
+  const path=`avatars/${currentUser.id}.${ext}`;
+  const {error:upErr}=await sb.storage.from('avatars').upload(path,file,{upsert:true});
+  if(upErr){showToast('❌ Erreur upload');return;}
+  const {data:urlData}=sb.storage.from('avatars').getPublicUrl(path);
+  const url=urlData.publicUrl+'?t='+Date.now();
+  await sb.from('profiles').update({avatar_url:url}).eq('user_id',currentUser.id);
+  document.getElementById('avatarImg').src=url;
+  showToast('✓ Avatar mis à jour');
+}
 
-      let newStreak = stats.streak_days || 0;
-      if (lastLogin === yesterdayStr) {
-        newStreak += 1;
-      } else if (lastLogin !== today) {
-        newStreak = 1;
-      }
-
-      // Incrémenter playtime (+1 min par visite)
-      const newPlaytime = (stats.playtime_minutes || 0) + 1;
-
-      await sb.from('game_stats').update({
-        streak_days: newStreak,
-        last_login: today,
-        playtime_minutes: newPlaytime
-      }).eq('user_id', currentUser.id);
-    }
-
-    function countUnlockedAchievements(level, money, totalXp) {
-      let c = 0;
-      if (level >= 15) c++; if (level >= 25) c++; if (level >= 40) c++; if (level >= 50) c++;
-      if (money >= 1000) c++; if (money >= 5000) c++; if (money >= 25000) c++; if (money >= 1000000) c++;
-      if (totalXp >= 5000) c++; if (totalXp >= 15000) c++; if (totalXp >= 50000) c++;
-      return c;
-    }
-
-    function renderAvatars() {
-      const grid = document.getElementById('avatarsGrid');
-      grid.innerHTML = '';
-      avatars.forEach(av => {
-        const unlocked = av.condition();
-        const isActive = currentAvatar === av.file;
-        const div = document.createElement('div');
-        div.className = `avatar-item ${unlocked?'':'locked'} ${isActive?'active':''}`;
-        if (unlocked) div.onclick = () => selectAvatar(av.file);
-        div.innerHTML = `
-          <div class="avatar-img-wrap">
-            <img src="${av.file}" alt="${av.label}">
-            ${isActive  ? '<div class="avatar-check">✓</div>' : ''}
-            ${!unlocked ? '<div class="avatar-lock">🔒</div>' : ''}
-          </div>
-          <div class="avatar-lbl">${av.label}</div>`;
-        grid.appendChild(div);
-      });
-    }
-
-    async function selectAvatar(file) {
-      if (file === currentAvatar) return;
-      const { error } = await sb.from('profiles').update({ avatar_url: file }).eq('user_id', currentUser.id);
-      if (error) { alert('Erreur lors du changement d\'avatar'); return; }
-      currentAvatar = file;
-      document.getElementById('profileAvatar').src = file;
-      renderAvatars();
-    }
-
-    function applyColor(color) {
-      const card = document.getElementById('profileCard');
-      card.className = 'profile-card' + (color !== 'blue' ? ' ' + color : '');
-    }
-
-    function updateColorButtons(color, level) {
-      document.querySelectorAll('.color-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.color === color);
-      });
-      document.getElementById('colorGreen').disabled  = level < 5;
-      document.getElementById('colorYellow').disabled = level < 10;
-      document.getElementById('colorRed').disabled    = level < 30;
-    }
-
-    async function selectColor(color) {
-      const req = { green:5, yellow:10, red:30 }[color];
-      if (req && playerLevel < req) {
-        alert(`🔒 Débloqué au niveau ${req} (tu es niveau ${playerLevel})`);
-        return;
-      }
-      backgroundColor = color;
-      applyColor(color);
-      updateColorButtons(color, playerLevel);
-      await sb.from('profiles').update({ background_color: color }).eq('user_id', currentUser.id);
-    }
-
-    function changePassword() {
-      alert('Modification du mot de passe bientôt disponible 🔐');
-    }
-
-    async function logout() {
-      if (confirm('Veux-tu vraiment te déconnecter ?')) {
-        await sb.auth.signOut();
-        window.location.href = 'index.html';
-      }
-    }
-
-    async function deleteAccount() {
-      if (!confirm('⚠️ Supprimer ton compte effacera TOUTES tes données. Action IRRÉVERSIBLE.\n\nConfirmer ?')) return;
-      if (!confirm('🚨 DERNIÈRE CONFIRMATION — Tu vas TOUT perdre. Continuer ?')) return;
-      try {
-        await sb.from('game_stats').delete().eq('user_id', currentUser.id);
-        await sb.from('profiles').delete().eq('user_id', currentUser.id);
-        await sb.auth.signOut();
-        window.location.href = 'index.html';
-      } catch(e) { alert('Erreur : ' + e.message); }
-    }
-
-    init();
-  </script>
+init();
+</script>
 </body>
 </html>
