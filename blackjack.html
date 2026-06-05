@@ -428,7 +428,7 @@
     }
 
     function doubleDown(){
-      if(money<bet) return;
+      if(bet<=0||money<bet) return;
       money-=bet; bet*=2; updateBal();
       playerHand.push(draw());
       renderHand(playerHand,'playerCards');
@@ -478,10 +478,13 @@
     }
 
     async function init(){
-      const { data:{ session } }=await sb.auth.getSession();
-      if(!session){
-        await new Promise(r=>setTimeout(r,1000));
-        const { data:{ session:s2 } }=await sb.auth.getSession();
+      const { data: _authData, error: _authError } = await sb.auth.getSession();
+      if (_authError || !_authData.session) {
+        await sb.auth.signOut().catch(() => {});
+        window.location.href = 'index.html';
+        return;
+      }
+      const session = _authData.session; }=await sb.auth.getSession();
         if(!s2){ window.location.href='index.html'; return; }
         currentUser=s2.user;
       } else { currentUser=session.user; }

@@ -131,7 +131,7 @@
   }
 
   function pick(idx,spot,div){
-    if(busy)return; busy=true;
+    if(busy||bet<=0||money<bet)return; busy=true;
     document.querySelectorAll('.spot').forEach(function(s){s.onclick=null;s.style.cursor='default';});
     div.innerHTML=spot.emoji;
     div.classList.add('revealed',spot.cls);
@@ -153,7 +153,10 @@
   async function init(){
     var res=await sb.auth.getSession();
     var s=res.data&&res.data.session;
-    if(!s){await new Promise(function(r){setTimeout(r,1000);});res=await sb.auth.getSession();s=res.data&&res.data.session;if(!s){window.location.href='index.html';return;}}
+    if(!s||res.error){
+      try{await sb.auth.signOut();}catch(e){}
+      window.location.href='index.html';return;
+    }
     currentUser=s.user;
     var d=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
     money=(d.data&&d.data.money)||0; updateBal();

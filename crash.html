@@ -310,7 +310,7 @@
     const now=Date.now();
     if(now-lastGameEnd<COOLDOWN){toast(`⏳ ATTENDS ${Math.ceil((COOLDOWN-(now-lastGameEnd))/1000)}S`);return;}
     if(dailyGain>=MAX_GAIN_DAY){toast('🔒 LIMITE JOURNALIÈRE (100 000€)');return;}
-    if(running||money<bet){toast("💸 PAS ASSEZ D'ARGENT");return;}
+    if(running||bet<=0||money<bet){toast("💸 PAS ASSEZ D'ARGENT");return;}
     if(interval) clearInterval(interval);
     if(particleTimer) clearInterval(particleTimer);
 
@@ -448,8 +448,13 @@
   }
 
   async function init() {
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){await new Promise(r=>setTimeout(r,1000));const {data:{session:s2}}=await sb.auth.getSession();if(!s2){window.location.href='index.html';return;}currentUser=s2.user;}
+    const { data: _authData, error: _authError } = await sb.auth.getSession();
+    if (_authError || !_authData.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    const session = _authData.session;
     else currentUser=session.user;
     const {data}=await sb.from('game_stats').select('money,records').eq('user_id',currentUser.id).maybeSingle();
     money=data?.money||0;

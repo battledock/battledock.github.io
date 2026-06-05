@@ -123,7 +123,7 @@
 
   // 1 tentacule gagnante (×3.5), 7 perdantes — RTP = 3.5/8 = 43.75%
   const PRIZES = [
-    {emoji:'🐠', label:'×3.5',  mult:3.5},
+    {emoji:'🐠', label:'×7',    mult:7},
     {emoji:'💀', label:'PERDU', mult:0},
     {emoji:'💀', label:'PERDU', mult:0},
     {emoji:'💀', label:'PERDU', mult:0},
@@ -156,7 +156,7 @@
   }
 
   async function newGame(){
-    if(busy||money<bet) return;
+    if(busy||bet<=0||money<bet) return;
     busy=true;
     money-=bet; updateBal();
     $('btnPlay').disabled=true;
@@ -209,8 +209,13 @@
   }
 
   async function init(){
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){await new Promise(r=>setTimeout(r,1000));const {data:{session:s2}}=await sb.auth.getSession();if(!s2){window.location.href='index.html';return;}currentUser=s2.user;}
+    const { data: _authData, error: _authError } = await sb.auth.getSession();
+    if (_authError || !_authData.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    const session = _authData.session;
     else currentUser=session.user;
     const {data}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
     money=data?.money||0; updateBal();

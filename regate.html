@@ -154,7 +154,7 @@
   }
 
   function startRace() {
-    if (busy || selectedBoat < 0 || money < bet) return;
+    if (busy || selectedBoat < 0 || money < bet || bet <= 0) return;
     busy = true;
     money -= bet;
     updateBal();
@@ -227,11 +227,9 @@
     try {
       var res = await sb.auth.getSession();
       var session = res.data && res.data.session;
-      if (!session) {
-        await new Promise(function(r) { setTimeout(r, 1000); });
-        var res2 = await sb.auth.getSession();
-        session = res2.data && res2.data.session;
-        if (!session) { window.location.href = 'index.html'; return; }
+      if (!session || res.error) {
+        await sb.auth.signOut().catch(function(){});
+        window.location.href = 'index.html'; return;
       }
       currentUser = session.user;
       var dres = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
