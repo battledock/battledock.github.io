@@ -149,6 +149,7 @@
       </div>
   <div id="content"><div class="loader">CHARGEMENT…</div></div>
   <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+  <button class="back-bottom" style="margin-top:8px;background:linear-gradient(135deg,#0f172a,#1e3a5f);color:#fbbf24;border:2px solid #fbbf24" onclick="window.location.href='containerblast.html'">📦 CONTAINER BLAST</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -184,10 +185,13 @@
   function capReached(){ return (Date.now()-new Date(com.lastCollect).getTime())/3600000 >= CAP_HOURS; }
 
   async function init(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser = session.user;
-    const { data:gs } = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+    const { data: _authData, error: _authError } = await sb.auth.getSession();
+    if (_authError || !_authData.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    const session = _authData.session; = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
     money = gs?.money || 0;
     com = (gs?.commerce && typeof gs.commerce==='object') ? gs.commerce : {};
     if(!com.lastCollect) com.lastCollect = new Date().toISOString();
