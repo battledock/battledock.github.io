@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Boutique — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+
+/* HEADER */
+.hdr{background:linear-gradient(135deg,#cc1a1a,#0f172a);padding:calc(14px + env(safe-area-inset-top)) 14px 14px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
+.hdr-back{background:rgba(0,0,0,0.25);border:none;border-radius:8px;width:34px;height:34px;color:white;font-size:17px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;letter-spacing:2px;flex:1}
+.hdr-diamonds{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.12);border-radius:20px;padding:5px 12px}
+.hdr-diamonds span{font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
+
+/* SECTION */
+.section{padding:12px 12px 4px}
+.section-title{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* RARITY COLORS */
+.rarity-default  .section-title{color:#9ca3af}
+.rarity-commune  .section-title{color:#6b7280}
+.rarity-rare     .section-title{color:#2563eb}
+.rarity-epique   .section-title{color:#7c3aed}
+.rarity-legendaire .section-title{color:#d97706}
+
+/* COVER GRID */
+.cover-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* COVER CARD */
+.cover-card{border-radius:12px;overflow:hidden;position:relative;cursor:pointer;border:2px solid transparent;transition:transform .15s,border-color .15s}
+.cover-card:active{transform:scale(0.97)}
+.cover-card.owned{border-color:#22c55e}
+.cover-card.active-cover{border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf24}
+
+.cover-bg{height:80px;position:relative}
+.cover-label{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.55));padding:6px 10px 8px}
+.cover-name{font-family:'Bebas Neue',sans-serif;font-size:14px;color:white;letter-spacing:1px;line-height:1}
+.cover-price{font-size:10px;font-weight:700;color:rgba(255,255,255,0.7);margin-top:2px}
+
+.cover-bottom{background:white;padding:8px 10px;display:flex;align-items:center;justify-content:space-between}
+.cover-badge{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.badge-default  {background:#f3f4f6;color:#6b7280}
+.badge-commune  {background:#f3f4f6;color:#374151}
+.badge-rare     {background:#dbeafe;color:#1d4ed8}
+.badge-epique   {background:#ede9fe;color:#6d28d9}
+.badge-legendaire{background:linear-gradient(90deg,#fef3c7,#fde68a);color:#92400e}
+
+.btn-buy{border:none;border-radius:8px;padding:5px 10px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .15s}
+.btn-buy.buy  {background:#cc1a1a;color:white}
+.btn-buy.owned{background:#f3f4f6;color:#9ca3af;cursor:default}
+.btn-buy.equip{background:#fbbf24;color:#0f172a}
+.btn-buy.equipped{background:#22c55e;color:white;cursor:default}
+
+/* TOAST */
+.toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* LOADER */
+.loader{text-align:center;padding:60px 20px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#9ca3af;letter-spacing:2px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
+  <div class="hdr-title">🛍️ BOUTIQUE</div>
+  <div class="hdr-diamonds">💎 <span id="diamondCount">—</span></div>
+</div>
+
+<div id="content">
+  <div class="loader" id="loader">CHARGEMENT...</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+var currentUser=null, diamonds=0, ownedCovers=[], activeCover='rouge_navy';
+
+// ── CATALOGUE ──
+var COVERS = [
+  // Défaut
+  {id:'rouge_navy', name:'Rouge & Navy',     css:'linear-gradient(135deg,#cc1a1a,#0f172a)',                           rarity:'default',    price:0},
+  {id:'bleu_mer',   name:'Bleu Mer',         css:'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',                   rarity:'default',    price:0},
+  // Communes
+  {id:'noir',       name:'Noir',             css:'linear-gradient(135deg,#18181b,#3f3f46)',                           rarity:'commune',    price:50},
+  {id:'night',      name:'Night',            css:'linear-gradient(135deg,#0f172a,#334155)',                           rarity:'commune',    price:50},
+  {id:'ciment',     name:'Ciment',           css:'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',                   rarity:'commune',    price:50},
+  {id:'carbone',    name:'Carbone',          css:'linear-gradient(135deg,#1c1917,#292524,#44403c)',                   rarity:'commune',    price:50},
+  // Rares
+  {id:'gold',       name:'Gold',             css:'linear-gradient(135deg,#b45309,#f59e0b)',                           rarity:'rare',       price:150},
+  {id:'emerald',    name:'Emerald',          css:'linear-gradient(135deg,#047857,#10b981)',                           rarity:'rare',       price:150},
+  {id:'purple',     name:'Purple',           css:'linear-gradient(135deg,#6d28d9,#a855f7)',                           rarity:'rare',       price:150},
+  {id:'coral',      name:'Coral',            css:'linear-gradient(135deg,#be123c,#fb7185)',                           rarity:'rare',       price:150},
+  {id:'or_navy',    name:'Or & Navy',        css:'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',                   rarity:'rare',       price:150},
+  {id:'abysses',    name:'Abysses',          css:'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',                   rarity:'rare',       price:150},
+  {id:'turquoise',  name:'Turquoise Med',    css:'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',                   rarity:'rare',       price:150},
+  {id:'indigo',     name:'Indigo',           css:'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',                   rarity:'rare',       price:150},
+  // Épiques
+  {id:'marseille_nuit', name:'Marseille Nuit',css:'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',                 rarity:'epique',     price:300},
+  {id:'feu_docker', name:'Feu de Docker',    css:'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',                   rarity:'epique',     price:300},
+  {id:'port_tropical',name:'Port Tropical',  css:'linear-gradient(135deg,#064e3b,#065f46,#d97706)',                   rarity:'epique',     price:300},
+  {id:'sang_requin',name:'Sang de Requin',   css:'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',                   rarity:'epique',     price:300},
+  {id:'sunset',     name:'Coucher de Soleil',css:'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',                   rarity:'epique',     price:300},
+  {id:'neon_rouge', name:'Néon Rouge',       css:'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',                   rarity:'epique',     price:300},
+  // Légendaire
+  {id:'arc_en_ciel',name:'Arc-en-Ciel',      css:'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)', rarity:'legendaire', price:800},
+];
+
+var RARITY_LABELS = {
+  default:    {label:'DÉFAUT',     cls:'badge-default'},
+  commune:    {label:'COMMUNE',    cls:'badge-commune'},
+  rare:       {label:'RARE',       cls:'badge-rare'},
+  epique:     {label:'ÉPIQUE ✦',   cls:'badge-epique'},
+  legendaire: {label:'LÉGENDAIRE ✦✦', cls:'badge-legendaire'},
+};
+var RARITY_ORDER = ['default','commune','rare','epique','legendaire'];
+var RARITY_NAMES = {default:'DÉFAUT',commune:'COMMUNES',rare:'RARES',epique:'ÉPIQUES',legendaire:'LÉGENDAIRE'};
+
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+function renderShop(){
+  var content=document.getElementById('content');
+  content.innerHTML='';
+  RARITY_ORDER.forEach(function(rarity){
+    var items=COVERS.filter(function(c){return c.rarity===rarity;});
+    if(!items.length) return;
+    var sec=document.createElement('div');
+    sec.className='section rarity-'+rarity;
+    var titleColor={default:'#9ca3af',commune:'#6b7280',rare:'#2563eb',epique:'#7c3aed',legendaire:'#d97706'}[rarity];
+    var icon={default:'⬜',commune:'◻️',rare:'🔵',epique:'🟣',legendaire:'✨'}[rarity];
+    sec.innerHTML='<div class="section-title" style="color:'+titleColor+'">'
+      +icon+' '+RARITY_NAMES[rarity]
+      +(rarity!=='default'?' — <span style="color:#9ca3af;font-weight:400;letter-spacing:0">'+(items[0].price)+' 💎</span>':'')
+      +'</div>'
+      +'<div class="cover-grid" id="grid-'+rarity+'"></div>';
+    content.appendChild(sec);
+    var grid=document.getElementById('grid-'+rarity);
+    items.forEach(function(cover){
+      grid.appendChild(renderCard(cover));
+    });
+  });
+}
+
+function renderCard(cover){
+  var owned=ownedCovers.indexOf(cover.id)!==-1;
+  var isActive=activeCover===cover.id;
+  var r=RARITY_LABELS[cover.rarity];
+  var card=document.createElement('div');
+  card.className='cover-card'+(owned?' owned':'')+(isActive?' active-cover':'');
+  card.id='card-'+cover.id;
+
+  var btnText, btnCls;
+  if(isActive){ btnText='✓ ÉQUIPÉ'; btnCls='equipped'; }
+  else if(owned){ btnText='ÉQUIPER'; btnCls='equip'; }
+  else if(cover.price===0){ btnText='GRATUIT'; btnCls='equip'; }
+  else { btnText=cover.price+' 💎'; btnCls='buy'; }
+
+  card.innerHTML=
+    '<div class="cover-bg" style="background:'+cover.css+'">'
+    +'<div class="cover-label">'
+    +'<div class="cover-name">'+cover.name+'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="cover-bottom">'
+    +'<span class="cover-badge '+r.cls+'">'+r.label+'</span>'
+    +'<button class="btn-buy '+btnCls+'" id="btn-'+cover.id+'">'+btnText+'</button>'
+    +'</div>';
+
+  card.querySelector('button').addEventListener('click', function(e){
+    e.stopPropagation();
+    handleCover(cover);
+  });
+  return card;
+}
+
+function refreshCard(cover){
+  var old=document.getElementById('card-'+cover.id);
+  if(old) old.parentNode.replaceChild(renderCard(cover), old);
+}
+
+async function handleCover(cover){
+  var owned=ownedCovers.indexOf(cover.id)!==-1;
+  var isActive=activeCover===cover.id;
+  if(isActive) return;
+
+  if(!owned && cover.price>0){
+    // Acheter
+    if(diamonds<cover.price){ toast('❌ Pas assez de diamants !'); return; }
+    var newDiamonds=diamonds-cover.price;
+    var newOwned=ownedCovers.concat([cover.id]);
+    var {error}=await sb.from('game_stats').update({diamonds:newDiamonds}).eq('user_id',currentUser.id);
+    if(error){ toast('❌ Erreur'); return; }
+    var {error:e2}=await sb.from('profiles').update({unlocked_covers:JSON.stringify(newOwned)}).eq('user_id',currentUser.id);
+    if(e2){ toast('❌ Erreur'); return; }
+    diamonds=newDiamonds;
+    ownedCovers=newOwned;
+    document.getElementById('diamondCount').textContent=diamonds;
+    toast('✅ '+cover.name+' débloquée !');
+    owned=true;
+  }
+
+  // Équiper
+  if(owned || cover.price===0){
+    var {error:e3}=await sb.from('profiles').update({background_color:cover.id}).eq('user_id',currentUser.id);
+    if(e3){ toast('❌ Erreur'); return; }
+    localStorage.setItem('bd_cover', cover.css);
+    var prev=activeCover;
+    activeCover=cover.id;
+    // Mettre à jour les cartes affectées
+    var prevCover=COVERS.find(function(c){return c.id===prev;});
+    if(prevCover) refreshCard(prevCover);
+    refreshCard(cover);
+    toast('🎨 '+cover.name+' équipée !');
+  }
+}
+
+async function init(){
+  var res=await sb.auth.getSession();
+  var sess=res.data&&res.data.session;
+  if(!sess){ window.location.href='index.html'; return; }
+  currentUser=sess.user;
+
+  var gsRes=await sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle();
+  var prRes=await sb.from('profiles').select('background_color,unlocked_covers').eq('user_id',currentUser.id).maybeSingle();
+
+  diamonds=(gsRes.data&&gsRes.data.diamonds)||0;
+  document.getElementById('diamondCount').textContent=diamonds;
+
+  activeCover=(prRes.data&&prRes.data.background_color)||'rouge_navy';
+  var raw=prRes.data&&prRes.data.unlocked_covers;
+  if(raw){
+    try{ ownedCovers=typeof raw==='string'?JSON.parse(raw):raw; }
+    catch(e){ ownedCovers=['rouge_navy','bleu_mer']; }
+  } else {
+    ownedCovers=['rouge_navy','bleu_mer'];
+  }
+
+  // S'assurer que la cover active est dans les possessions
+  if(ownedCovers.indexOf(activeCover)===-1) ownedCovers.push(activeCover);
+
+  document.getElementById('loader').style.display='none';
+  renderShop();
+}
+init();
+</script>
+</body>
+</html>
