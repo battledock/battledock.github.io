@@ -99,7 +99,7 @@
     .top3-av img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
     /* Infos */
     .top3-info { flex:1;min-width:0; }
-    .top3-name { font-family:'Bebas Neue',sans-serif;color:white;letter-spacing:0.5px;line-height:1; }
+    .top3-name { font-family:'Bebas Neue',sans-serif;color:white;letter-spacing:0.5px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px; }
     .top3-card.c1 .top3-name { font-size:22px; }
     .top3-card.c2 .top3-name { font-size:20px; }
     .top3-card.c3 .top3-name { font-size:18px; }
@@ -122,7 +122,7 @@
     .row-avatar { width:44px;height:44px;border-radius:50%;flex-shrink:0;border:2.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;color:white;overflow:hidden; }
     .row-avatar img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
     .row-info { flex:1;min-width:0; }
-    .row-name { font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:0.5px;color:white;display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.1; }
+    .row-name { font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:0.5px;color:white;display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow:hidden;line-height:1.1; }
     .rank-row.top-1 .row-name { color:#fbbf24; }
     .row-grade { font-size:9px;color:rgba(255,255,255,0.5);margin-top:3px; }
     .row-right { display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0; }
@@ -485,20 +485,23 @@
         }
       }
 
-      // Rivalité — 2 joueurs au-dessus
+      // Rivalité — 2 joueurs au-dessus (trié selon sortMode)
       if (myIdx > 0) {
-        const rivals = allPlayers.slice(Math.max(0, myIdx-2), myIdx);
+        const sortedRiv = sortPlayers(allPlayers);
+        const myIdxRiv = sortedRiv.findIndex(p => p.user_id === currentUser.id);
+        const rivals = myIdxRiv > 0 ? sortedRiv.slice(Math.max(0, myIdxRiv-2), myIdxRiv) : [];
         const rBlock = document.getElementById('rivalryBlock');
         if (rBlock && rivals.length > 0) {
           rBlock.classList.add('show');
           document.getElementById('rivalryRows').innerHTML = rivals.map((r, ri) => {
-            const rIdx = myIdx - rivals.length + ri;
+            const realRivIdx = allPlayers.indexOf(r);
+            const rIdx = myIdxRiv - rivals.length + ri;
             const diffStr = sortMode === 'money'
               ? Math.abs(Math.floor(((r.money||0)-(me.money||0))/1000)) + 'k€'
               : sortMode === 'level'
               ? Math.abs((r.level||1)-(me.level||1)) + ' niveaux'
               : Math.abs(powerScore(r)-powerScore(me)) + ' pts';
-            return '<div class="rivalry-row" onclick="showProfile(' + rIdx + ')">'
+            return '<div class="rivalry-row" onclick="showProfile(' + realRivIdx + ')">'
               + '<div class="rivalry-av"><img src="' + avatarForLevel(r.level||1) + '" onerror="this.style.display=\'none\'"></div>'
               + '<div class="rivalry-info"><div class="rivalry-name">' + escapeHtml(r.profile.username) + '</div><div class="rivalry-gap">+' + diffStr + ' devant toi</div></div>'
               + '<div class="rivalry-rank">#' + (rIdx+1) + '</div>'
@@ -520,18 +523,40 @@
       // Confettis si top 3
     }
 
+    await loadRankSince(allPlayers);
     applyFilter();
     savePrevRanks(allPlayers);
   }
 
-  // ── Durée au rang (localStorage) ──
-  function getRankSince(userId, rank) {
-    if (rank > 3) return null;
-    const key = 'ranksince_' + userId + '_' + rank;
-    const stored = localStorage.getItem(key);
-    if (!stored) { localStorage.setItem(key, Date.now()); return 'depuis aujourd\'hui'; }
-    const days = Math.floor((Date.now() - parseInt(stored)) / 86400000);
-    if (days === 0) return 'depuis aujourd\'hui';
+  // -- Duree au rang (Supabase top3_since + localStorage fallback)
+  const rankSinceCache = {};
+  async function loadRankSince(players) {
+    const top3 = players.slice(0, 3);
+    try {
+      const { data, error } = await sb.from('game_stats')
+        .select('user_id,top3_since').in('user_id', top3.map(p => p.user_id));
+      if (!error && data) {
+        const now = new Date().toISOString();
+        data.forEach(row => {
+          if (!row.top3_since) {
+            sb.from('game_stats').update({ top3_since: now }).eq('user_id', row.user_id).then(() => {});
+            rankSinceCache[row.user_id] = now;
+          } else { rankSinceCache[row.user_id] = row.top3_since; }
+        });
+        return;
+      }
+    } catch(e) {}
+    top3.forEach(p => {
+      const k = 'ranksince_' + p.user_id;
+      if (!localStorage.getItem(k)) localStorage.setItem(k, Date.now());
+      rankSinceCache[p.user_id] = new Date(parseInt(localStorage.getItem(k))).toISOString();
+    });
+  }
+  function getRankSince(userId) {
+    const iso = rankSinceCache[userId];
+    if (!iso) return '';
+    const days = Math.floor((Date.now() - new Date(iso)) / 86400000);
+    if (days === 0) return "depuis aujourd'hui";
     if (days === 1) return 'depuis hier';
     return 'depuis ' + days + 'j';
   }
@@ -548,10 +573,11 @@
       const rank = i + 1;
       const cls = CARD_CLS[rank];
       const badge = BADGES[rank];
-      const since = getRankSince(p.user_id, rank);
+      const since = getRankSince(p.user_id);
       const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
       const isMe = p.user_id === currentUser.id;
-      return '<div class="top3-card ' + cls + '" onclick="showProfile(' + i + ')">'
+        const t3RealIdx = allPlayers.indexOf(p);
+      return '<div class="top3-card ' + cls + '" onclick="showProfile(' + t3RealIdx + ')">'
         + '<div class="top3-av" style="background:' + avatarColor(p.profile.username) + '">'
         + '<img src="' + avatarForLevel(p.level||1) + '" onerror="this.style.display=\'none\'">'
         + '</div>'
@@ -683,9 +709,14 @@
       };
     }
     // Bouton profil
-    document.getElementById('ppProfilBtn').onclick = function() {
-      document.getElementById('popup').style.display = 'none';
-      window.location.href = 'profil.html?id=' + p.user_id;
+    document.getElementById('ppProfilBtn').onclick = async function() {
+      try {
+        const check = await fetch('profil.html', { method:'HEAD' });
+        if (check.ok) {
+          document.getElementById('popup').style.display = 'none';
+          window.location.href = 'profil.html?id=' + p.user_id;
+        } else { showToast('👤 PAGE PROFIL BIENTÔT DISPONIBLE', 2500); }
+      } catch(e) { showToast('👤 PAGE PROFIL BIENTÔT DISPONIBLE', 2500); }
     };
     // Charger le fil de défis
     loadChatMessages(p.user_id);
@@ -749,7 +780,10 @@
           + '<div class="chat-meta">' + (isSent ? 'Toi' : 'Lui') + ' · ' + timeStr + '</div>'
           + '</div>';
       }).join('');
-    } catch(e) { /* silencieux */ }
+    } catch(e) {
+      chatEl.style.display = 'block';
+      listEl.innerHTML = '<div style="text-align:center;padding:10px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">§§ Chambrages bientôt disponibles</div>';
+    }
   }
   function closePopup(e) {
     if (e.target.id !== 'popup') return;
