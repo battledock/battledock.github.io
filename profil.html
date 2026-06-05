@@ -74,8 +74,9 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 <div class="cover">
   <button class="cover-back" onclick="window.location.href='game.html'">←</button>
   <button class="cover-edit" onclick="openCoverPicker()">🎨 FOND</button>
-  <div class="av-wrap" id="avWrap">
+  <div class="av-wrap" id="avWrap" onclick="openAvatarPicker()" style="cursor:pointer">
     <img id="avatarImg" src="avatar-default.png" alt="avatar">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s" id="avOverlay"><span style="font-size:20px">✏️</span></div>
   </div>
 </div>
 
@@ -116,11 +117,23 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 </div>
 
 
+
+<!-- AVATAR PICKER -->
+<div class="edit-overlay" id="avatarOverlay" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="edit-sheet" id="avatarSheet">
+    <div class="edit-title">CHOISIR UN AVATAR</div>
+    <div style="font-size:10px;color:#9ca3af;margin-bottom:12px">Débloqués selon ton niveau</div>
+    <div id="avatarOptions" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+    <button class="btn-cancel" style="width:100%;padding:12px" onclick="document.getElementById('avatarOverlay').classList.remove('show')">Fermer</button>
+  </div>
+</div>
+
 <!-- COVER PICKER -->
 <div class="edit-overlay" id="coverOverlay" onclick="closeCoverPicker(event)">
   <div class="edit-sheet" id="coverSheet">
     <div class="edit-title">CHOISIR UN FOND</div>
     <div id="coverOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px"></div>
+    <button onclick="window.location.href='boutique.html'" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#cc1a1a;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px">🛍️ Plus de covers en boutique</button>
     <button class="btn-cancel" style="width:100%;padding:12px" onclick="document.getElementById('coverOverlay').classList.remove('show')">Annuler</button>
   </div>
 </div>
@@ -147,19 +160,84 @@ const sb = supabase.createClient(SB_URL, SB_KEY);
 let currentUser = null, editMode = null;
 
 function fmt(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
+function avatarForLevel(lvl){
+  if(lvl>=50) return 'avatar-level-50.png';
+  if(lvl>=30) return 'avatar-level-30.png';
+  if(lvl>=20) return 'avatar-level-20.png';
+  if(lvl>=17) return 'avatar-level-17.png';
+  if(lvl>=15) return 'avatar-level-15.png';
+  if(lvl>=13) return 'avatar-level-13.png';
+  if(lvl>=10) return 'avatar-level-10.png';
+  if(lvl>=5)  return 'avatar-level-5.png';
+  if(lvl>=4)  return 'avatar-level-4.png';
+  if(lvl>=3)  return 'avatar-level-3.png';
+  if(lvl>=2)  return 'avatar-level-2.png';
+  return 'avatar-default.png';
+}
 function xpForLevel(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
 function powerScore(p){ return (p.level||1)*100 + Math.floor((p.money||0)/10000); }
 
 function showToast(msg){
   const t=document.getElementById('toast');
   t.textContent=msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2000);
+  setTimeout(function(){t.classList.remove('show');},2000);
+}
+
+
+// Avatars débloqués selon le niveau
+var ALL_AVATARS = [
+  {file:'avatar-default.png',   label:'Docker',    minLevel:1},
+  {file:'avatar-level-2.png',   label:'Niveau 2',  minLevel:2},
+  {file:'avatar-level-3.png',   label:'Niveau 3',  minLevel:3},
+  {file:'avatar-level-4.png',   label:'Niveau 4',  minLevel:4},
+  {file:'avatar-level-5.png',   label:'Niveau 5',  minLevel:5},
+  {file:'avatar-level-10.png',  label:'Niveau 10', minLevel:10},
+  {file:'avatar-level-13.png',  label:'Niveau 13', minLevel:13},
+  {file:'avatar-level-15.png',  label:'Niveau 15', minLevel:15},
+  {file:'avatar-level-17.png',  label:'Niveau 17', minLevel:17},
+  {file:'avatar-level-20.png',  label:'Niveau 20', minLevel:20},
+  {file:'avatar-level-30.png',  label:'Niveau 30', minLevel:30},
+  {file:'avatar-level-50.png',  label:'Niveau 50', minLevel:50},
+];
+
+var currentAvatarFile = 'avatar-default.png';
+var currentLevel = 1;
+
+function getUnlockedAvatars(level){
+  return ALL_AVATARS.filter(function(a){ return a.minLevel <= level; });
+}
+
+function openAvatarPicker(){
+  var unlocked = getUnlockedAvatars(currentLevel);
+  var container = document.getElementById('avatarOptions');
+  container.innerHTML = '';
+  unlocked.forEach(function(av){
+    var div = document.createElement('div');
+    var isActive = currentAvatarFile === av.file;
+    div.style.cssText = 'text-align:center;cursor:pointer';
+    div.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;border:3px solid '+(isActive?'#cc1a1a':'#e5e7eb')+';overflow:hidden;margin:0 auto 4px">'
+      +'<img src="'+av.file+'" style="width:100%;height:100%;object-fit:cover">'
+      +'</div>'
+      +'<div style="font-size:8px;color:#9ca3af;font-weight:700">'+av.label+'</div>';
+    div.onclick = function(){ selectAvatar(av.file); };
+    container.appendChild(div);
+  });
+  document.getElementById('avatarOverlay').classList.add('show');
+}
+
+async function selectAvatar(file){
+  currentAvatarFile = file;
+  document.getElementById('avatarImg').src = file;
+  document.getElementById('avatarOverlay').classList.remove('show');
+  var {error} = await sb.from('profiles').update({avatar_url: file}).eq('user_id', currentUser.id);
+  if(error){ showToast('❌ Erreur'); return; }
+  showToast('✓ Avatar mis à jour');
 }
 
 async function init(){
-  sb.auth.onAuthStateChange((e,s)=>{ if(!s) window.location.href='index.html'; });
+  // auth géré par getSession
   const {data,error}=await sb.auth.getSession();
-  if(error||!data.session){ await sb.auth.signOut().catch(()=>{}); window.location.href='index.html'; return; }
+  if(error||!data.session){ await sb.auth.signOut().catch(function(){}); window.location.href='index.html'; return; }
   currentUser=data.session.user;
 
   const [gRes,pRes]=await Promise.all([
@@ -169,12 +247,30 @@ async function init(){
   const g=gRes.data, p=pRes.data;
   if(!g||!p) return;
 
-  // Cover
+  // Cover + covers débloquées
   if(p.background_color){ currentCover=p.background_color; applyCover(p.background_color); }
-  // Avatar
-  if(p.avatar_url) document.getElementById('avatarImg').src=p.avatar_url;
+  var rawCovers=p.unlocked_covers;
+  var ownedIds=['rouge_navy','bleu_mer'];
+  if(rawCovers){
+    try{ ownedIds=typeof rawCovers==='string'?JSON.parse(rawCovers):rawCovers; }catch(e){}
+  }
+  if(ownedIds.indexOf(currentCover)===-1) ownedIds.push(currentCover);
+  COVERS=ownedIds.map(function(id){ return {id:id, label:id.replace(/_/g,' ')}; });
+  // Avatar depuis le niveau (comme game.html)
+  var lvlAvatar = avatarForLevel(g.level||1);
+  var specialAvatar = ['avatar-millionaire.png','avatar-completionist.png'];
+  var savedAvatar = p.avatar_url;
+  var validFiles = getUnlockedAvatars(g.level||1).map(function(a){return a.file;});
+  if(savedAvatar && (specialAvatar.indexOf(savedAvatar)!==-1 || validFiles.indexOf(savedAvatar)!==-1)){
+    currentAvatarFile = savedAvatar;
+    document.getElementById('avatarImg').src = savedAvatar;
+  } else {
+    currentAvatarFile = lvlAvatar;
+    document.getElementById('avatarImg').src = lvlAvatar;
+  }
 
   // Nom + grade + rang
+  currentLevel = g.level || 1;
   document.getElementById('usernameEl').textContent=(p.username||'Docker').toUpperCase();
   document.getElementById('gradeEl').textContent=g.grade||'Docker Occasionnel';
 
@@ -185,8 +281,8 @@ async function init(){
   // Rang depuis classement
   const {data:allStats}=await sb.from('game_stats').select('user_id,level,money').order('level',{ascending:false});
   if(allStats){
-    const sorted=[...allStats].sort((a,b)=>((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)));
-    const idx=sorted.findIndex(x=>x.user_id===currentUser.id);
+    var sorted=[].concat(allStats).sort(function(a,b){ return ((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)); });
+    var idx=sorted.findIndex(function(x){ return x.user_id===currentUser.id; });
     if(idx>=0) document.getElementById('rankEl').textContent='#'+(idx+1);
   }
 
@@ -208,25 +304,32 @@ async function init(){
 
 // Covers disponibles (à enrichir plus tard)
 const COVER_CSS = {
-  'rouge_navy': 'linear-gradient(135deg,#cc1a1a,#0f172a)',
-  'bleu_mer':   'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-  'or_navy':    'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-  'noir':       'linear-gradient(135deg,#18181b,#3f3f46)',
-  'gold':       'linear-gradient(135deg,#b45309,#f59e0b)',
-  'emerald':    'linear-gradient(135deg,#047857,#10b981)',
-  'purple':     'linear-gradient(135deg,#6d28d9,#a855f7)',
-  'night':      'linear-gradient(135deg,#0f172a,#334155)',
-  'coral':      'linear-gradient(135deg,#be123c,#fb7185)',
+  'rouge_navy':     'linear-gradient(135deg,#cc1a1a,#0f172a)',
+  'bleu_mer':       'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
+  'noir':           'linear-gradient(135deg,#18181b,#3f3f46)',
+  'night':          'linear-gradient(135deg,#0f172a,#334155)',
+  'ciment':         'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
+  'carbone':        'linear-gradient(135deg,#1c1917,#292524,#44403c)',
+  'gold':           'linear-gradient(135deg,#b45309,#f59e0b)',
+  'emerald':        'linear-gradient(135deg,#047857,#10b981)',
+  'purple':         'linear-gradient(135deg,#6d28d9,#a855f7)',
+  'coral':          'linear-gradient(135deg,#be123c,#fb7185)',
+  'or_navy':        'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
+  'abysses':        'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+  'turquoise':      'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
+  'indigo':         'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
+  'marseille_nuit': 'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
+  'feu_docker':     'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
+  'port_tropical':  'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
+  'sang_requin':    'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
+  'sunset':         'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
+  'neon_rouge':     'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
+  'arc_en_ciel':    'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
 };
 function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
 
-const COVERS = [
-  { id:'rouge_navy', label:'Rouge & Navy' },
-  { id:'bleu_mer',   label:'Bleu mer' },
-  { id:'or_navy',    label:'Or & Navy' },
-  { id:'noir',       label:'Noir' },
-];
-
+// Covers chargées dynamiquement depuis unlocked_covers
+let COVERS = [];
 let currentCover = 'rouge_navy';
 
 function applyCover(id){
@@ -236,11 +339,11 @@ function applyCover(id){
 function openCoverPicker(){
   const container = document.getElementById('coverOptions');
   container.innerHTML = '';
-  COVERS.forEach(c => {
+  COVERS.forEach(function(c) {
     const el = document.createElement('div');
     el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '+(currentCover===c.id?'#fbbf24':'transparent')+';background:'+getCoverCss(c.id)+';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
     el.innerHTML = '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px">'+c.label+'</span>';
-    el.onclick = () => selectCover(c);
+    el.onclick = function(){ selectCover(c); };
     container.appendChild(el);
   });
   document.getElementById('coverOverlay').classList.add('show');
@@ -249,7 +352,7 @@ function openCoverPicker(){
 async function selectCover(c){
   currentCover = c.id;
   applyCover(c.id);
-  await sb.from('profiles').update({background_color: c.id}).eq('user_id', currentUser.id).then(()=>{}).catch(()=>{});
+  await sb.from('profiles').update({background_color: c.id}).eq('user_id', currentUser.id).then(function(){}).catch(function(){});
   document.getElementById('coverOverlay').classList.remove('show');
   showToast('✓ Fond mis à jour');
 }
@@ -269,7 +372,7 @@ function openEditBio(){
   inp.value=bioEl.classList.contains('bio-text')?bioEl.textContent:'';
   document.getElementById('editSave').onclick=saveBio;
   document.getElementById('editOverlay').classList.add('show');
-  setTimeout(()=>inp.focus(),100);
+  setTimeout(function(){ inp.focus(); }, 100);
 }
 
 function closeEdit(e){
