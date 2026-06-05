@@ -260,6 +260,21 @@
 <!-- BOUTON RETOUR -->
 <button class="btn-back" onclick="window.location.href='game.html'">← RETOUR AU JEU</button>
 
+<!-- OVERLAY MESSAGE PRIVÉ -->
+<div id="msgOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 16px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:2px;margin-bottom:4px">MESSAGE PRIVÉ</div>
+    <div id="msgTo" style="font-size:11px;color:#9ca3af;margin-bottom:12px">À : —</div>
+    <textarea id="msgInput" placeholder="Écris ton message..." maxlength="200" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;resize:none;height:90px;outline:none;color:#0f172a" oninput="document.getElementById('msgCount').textContent=this.value.length+'/200'" onfocus="this.style.borderColor='#cc1a1a'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
+    <div id="msgCount" style="font-size:10px;color:#9ca3af;text-align:right;margin-top:3px">0/200</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="sendPrivateMsg()" style="flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer">ENVOYER</button>
+      <button onclick="document.getElementById('msgOverlay').style.display='none'" style="flex:1;padding:13px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;cursor:pointer">Annuler</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -295,13 +310,8 @@
       <button class="pp-btn-close" onclick="document.getElementById('popup').style.display='none'">FERMER</button>
     </div>
     <button class="pp-btn-profil" id="ppProfilBtn" onclick="">👤 VOIR LE PROFIL COMPLET</button>
+    <button id="ppMsgBtn" style="width:100%;margin-top:6px;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#374151;font-weight:700;font-size:13px;cursor:pointer">✉️ MESSAGE PRIVÉ</button>
     </div><!-- end padding wrapper -->
-    <!-- Mini fil trash talk -->
-    <div class="pp-chat" id="ppChat" style="display:none">
-      <div class="pp-chat-title">💬 DÉFIS ÉCHANGÉS</div>
-      <div class="pp-chat-list" id="ppChatList"></div>
-      <div class="pp-chat-reply" id="ppChatReply" style="display:none"><button class="pp-chat-send" id="ppChatSend" style="width:100%">💬 RÉPONDRE PAR UN CHAMBRAGE</button></div>
-    </div>
   </div>
 </div>
 
@@ -732,6 +742,11 @@
       };
     }
     // Bouton profil
+    const ppMsgBtn = document.getElementById('ppMsgBtn');
+    if (ppMsgBtn) {
+      if (currentUser && p.user_id === currentUser.id) ppMsgBtn.style.display = 'none';
+      else { ppMsgBtn.style.display = 'block'; ppMsgBtn.onclick = () => openMsgOverlay(p); }
+    }
     document.getElementById('ppProfilBtn').onclick = function() {
       document.getElementById('popup').style.display = 'none';
       window.location.href = (p.user_id === currentUser?.id ? 'profil.html' : 'profilpublic.html?id=' + p.user_id);
@@ -742,67 +757,24 @@
   }
 
   // ── Fil de défis ──
-  async function loadChatMessages(targetUserId) {
-    const chatEl = document.getElementById('ppChat');
-    const listEl = document.getElementById('ppChatList');
-    chatEl.style.display = 'none';
-    try {
-      const { data, error } = await sb.from('challenges')
-        .select('from_user_id, to_user_id, message, created_at')
-        .in('from_user_id', [currentUser.id, targetUserId])
-        .in('to_user_id',   [currentUser.id, targetUserId])
-        .order('created_at', { ascending: true })
-        .limit(10);
-      if (error) return; // table inexistante ou autre → on cache silencieusement
-      chatEl.style.display = 'block';
-      const replyEl = document.getElementById('ppChatReply');
-      let sendEl = document.getElementById('ppChatSend');
-      // Reset ghost listeners en remplaçant le bouton
-      const newSend = sendEl.cloneNode(true);
-      sendEl.parentNode.replaceChild(newSend, sendEl);
-      sendEl = newSend;
-      const targetName = (allPlayers.find(p2 => p2.user_id === targetUserId)?.profile?.username) || 'Toi';
-      if (targetUserId !== currentUser.id) {
-        replyEl.style.display = 'block';
-        sendEl.onclick = async function() {
-          const msg = TRASH[Math.floor(Math.random() * TRASH.length)].replace(/{name}/g, targetName);
-          sendEl.textContent = '✓ ENVOYÉ !';
-          setTimeout(() => sendEl.textContent = '💬 RÉPONDRE PAR UN CHAMBRAGE', 1800);
-          // Afficher le popup trash talk
-          defier(allPlayers.findIndex(p2 => p2.user_id === targetUserId), targetName);
-          try {
-            await sb.from('challenges').insert({ from_user_id:currentUser.id, to_user_id:targetUserId, message:msg, created_at:new Date().toISOString() });
-            setTimeout(() => loadChatMessages(targetUserId), 500);
-          } catch(e) {}
-        };
-      } else { replyEl.style.display = 'none'; }
-      if (!data || !data.length) {
-        listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">Aucun chambrage échangé — lance le premier !</div>';
-        return;
-      }
-      // Filtrer côté client pour les échanges directs entre les deux joueurs
-      const msgs = data.filter(m =>
-        (m.from_user_id === currentUser.id && m.to_user_id === targetUserId) ||
-        (m.from_user_id === targetUserId   && m.to_user_id === currentUser.id)
-      );
-      if (!msgs.length) {
-        listEl.innerHTML = '<div style="text-align:center;padding:8px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">Aucun chambrage échangé — lance le premier !</div>';
-        return;
-      }
-      listEl.innerHTML = msgs.map(m => {
-        const isSent = m.from_user_id === currentUser.id;
-        const timeAgo = Math.floor((Date.now() - new Date(m.created_at)) / 60000);
-        const timeStr = timeAgo < 60 ? 'il y a ' + timeAgo + 'min' : timeAgo < 1440 ? 'il y a ' + Math.floor(timeAgo/60) + 'h' : 'il y a ' + Math.floor(timeAgo/1440) + 'j';
-        return '<div class="chat-msg ' + (isSent ? 'sent' : 'received') + '">'
-          + escapeHtml(m.message)
-          + '<div class="chat-meta">' + (isSent ? 'Toi' : 'Lui') + ' · ' + timeStr + '</div>'
-          + '</div>';
-      }).join('');
-    } catch(e) {
-      chatEl.style.display = 'block';
-      listEl.innerHTML = '<div style="text-align:center;padding:10px;font-size:10px;color:rgba(255,255,255,0.25);font-style:italic">§§ Chambrages bientôt disponibles</div>';
-    }
+
+  function openMsgOverlay(p) {
+    _msgTarget = p;
+    document.getElementById('msgTo').textContent = 'À : ' + (p.profile?.username || 'Docker');
+    document.getElementById('msgInput').value = '';
+    document.getElementById('msgCount').textContent = '0/200';
+    document.getElementById('msgOverlay').style.display = 'flex';
   }
+
+  async function sendPrivateMsg() {
+    if (!_msgTarget || !currentUser) return;
+    const msg = (document.getElementById('msgInput').value || '').trim();
+    if (!msg) { showToast('✏️ Écris un message'); return; }
+    await sb.from('challenges').insert({ from_user_id: currentUser.id, to_user_id: _msgTarget.user_id, message: msg, type: 'message' }).then(()=>{}).catch(()=>{});
+    document.getElementById('msgOverlay').style.display = 'none';
+    showToast('✉️ Message envoyé !');
+  }
+
   function closePopup(e) {
     if (e.target.id !== 'popup') return;
     const overlay = document.getElementById('popup');
