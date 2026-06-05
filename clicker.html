@@ -375,9 +375,9 @@
     currentUser = session.user;
 
     const { data: stats } = await sb.from('game_stats')
-      .select('money,xp,level,xp_per_click,money_per_click').eq('user_id', currentUser.id).maybeSingle();
+      .select('money,xp,level,xp_per_click,money_per_click,equipped_epi').eq('user_id', currentUser.id).maybeSingle();
     const { data: profile } = await sb.from('profiles')
-      .select('skin_container,equipped_epi').eq('user_id', currentUser.id).maybeSingle();
+      .select('skin_container').eq('user_id', currentUser.id).maybeSingle();
 
     if (stats) {
       totalMoney           = stats.money    || 0;
@@ -388,7 +388,7 @@
     }
 
     // Skin
-    const skin  = profile?.skin_container || 'red';
+    const skin  = (profile && profile.skin_container) || 'red';
     const skins = {
       red:    ['linear-gradient(135deg,#cc2200,#991100)','#880000'],
       blue:   ['linear-gradient(135deg,#1d4ed8,#1e3a8a)','#1e3a8a'],
@@ -402,8 +402,8 @@
     box.style.background = bg; box.style.borderColor = border;
 
     // Appliquer bonus EPI
-    if (profile && profile.equipped_epi) {
-      var eq = typeof profile.equipped_epi === 'string' ? JSON.parse(profile.equipped_epi) : profile.equipped_epi;
+    if (stats && stats.equipped_epi) {
+      var eq = typeof stats.equipped_epi === 'string' ? JSON.parse(stats.equipped_epi) : stats.equipped_epi;
       var EPI_BONUSES = {
         casque_commune:1, casque_rare:2, casque_epique:4, casque_legendaire:8,
         gilet_commune:1,  gilet_rare:2,  gilet_epique:4,  gilet_legendaire:8,

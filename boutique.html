@@ -265,7 +265,7 @@ async function handleEpi(epiId, tierId){
     var newOwned = ownedEpi.concat([tierId]);
     var {error:e1} = await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
     if(e1){ toast('❌ Erreur'); return; }
-    var {error:e2} = await sb.from('profiles').update({unlocked_epi:JSON.stringify(newOwned)}).eq('user_id',currentUser.id);
+    var {error:e2} = await sb.from('game_stats').update({unlocked_epi:JSON.stringify(newOwned)}).eq('user_id',currentUser.id);
     if(e2){ toast('❌ Erreur'); return; }
     money = newMoney;
     ownedEpi = newOwned;
@@ -277,7 +277,7 @@ async function handleEpi(epiId, tierId){
   // Équiper
   var newEquipped = JSON.parse(JSON.stringify(equippedEpi));
   newEquipped[epiId] = tierId;
-  var {error:e3} = await sb.from('profiles').update({equipped_epi:JSON.stringify(newEquipped)}).eq('user_id',currentUser.id);
+  var {error:e3} = await sb.from('game_stats').update({equipped_epi:JSON.stringify(newEquipped)}).eq('user_id',currentUser.id);
   if(e3){ toast('❌ Erreur'); return; }
   equippedEpi = newEquipped;
   renderEpi();
@@ -385,17 +385,17 @@ async function init(){
   if(!sess){ window.location.href='index.html'; return; }
   currentUser=sess.user;
 
-  var gsRes=await sb.from('game_stats').select('money,diamonds').eq('user_id',currentUser.id).maybeSingle();
-  var prRes=await sb.from('profiles').select('background_color,unlocked_covers,unlocked_epi,equipped_epi').eq('user_id',currentUser.id).maybeSingle();
+  var gsRes=await sb.from('game_stats').select('money,diamonds,unlocked_epi,equipped_epi').eq('user_id',currentUser.id).maybeSingle();
+  var prRes=await sb.from('profiles').select('background_color,unlocked_covers').eq('user_id',currentUser.id).maybeSingle();
 
   diamonds=(gsRes.data&&gsRes.data.diamonds)||0;
   money=(gsRes.data&&gsRes.data.money)||0;
   document.getElementById('moneyCount').textContent=fmtPrice(money);
 
   // EPI
-  var rawEpi=prRes.data&&prRes.data.unlocked_epi;
+  var rawEpi=gsRes.data&&gsRes.data.unlocked_epi;
   if(rawEpi){ try{ ownedEpi=typeof rawEpi==='string'?JSON.parse(rawEpi):rawEpi; }catch(e){} }
-  var rawEq=prRes.data&&prRes.data.equipped_epi;
+  var rawEq=gsRes.data&&gsRes.data.equipped_epi;
   if(rawEq){ try{ equippedEpi=typeof rawEq==='string'?JSON.parse(rawEq):rawEq; }catch(e){} }
 
   activeCover=(prRes.data&&prRes.data.background_color)||'rouge_navy';
