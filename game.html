@@ -903,17 +903,6 @@ ang="fr">
     </div>
 
     <div class="nav-grid" style="grid-template-rows:130px 130px;margin-top:0">
-      <!-- BOUTIQUE -->
-      <div onclick="window.location.href='boutique.html'" id="msgCard" style="background:#f8f8f8;border-radius:0;border:none;border-top:1px solid #e5e7eb;position:relative;overflow:hidden;grid-column:span 2;cursor:pointer">
-        <div id="msgUnreadBadge" style="display:none"></div>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 20px;gap:14px">
-          <div style="font-size:36px;flex-shrink:0">🛍️</div>
-          <div style="flex:1">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#0f172a;letter-spacing:2px;line-height:1">BOUTIQUE</div>
-            <div style="font-size:11px;color:#9ca3af;margin-top:4px">Covers de profil · Diamants</div>
-          </div>
-        </div>
-      </div>
       <div class="nav-card casino" id="casinoCard" onclick="window.location.href='casino.html'" style="background:#cc1a1a;padding:0">
         <svg width="187" height="130" viewBox="0 0 187 130" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%">
           <!-- Carte As de pique — entière dans la moitié droite -->
@@ -951,6 +940,17 @@ ang="fr">
         </div>
         <!-- Emblème -->
         <div style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:28px;opacity:0.15;z-index:1">🏛️</div>
+      </div>
+      <!-- BOUTIQUE -->
+      <div onclick="window.location.href='boutique.html'" id="msgCard" style="background:#f8f8f8;border-radius:0;border:none;border-top:1px solid #e5e7eb;position:relative;overflow:hidden;grid-column:span 2;cursor:pointer">
+        <div id="msgUnreadBadge" style="display:none"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0 20px;gap:14px">
+          <div style="font-size:36px;flex-shrink:0">🛍️</div>
+          <div style="flex:1">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#0f172a;letter-spacing:2px;line-height:1">BOUTIQUE</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:4px">Covers de profil · Diamants</div>
+          </div>
+        </div>
       </div>
       <!-- COMMERCE      <!-- COMMERCE — pleine largeur collée sous casino+bourse -->
       <div class="nav-card" onclick="window.location.href='commerce.html'" style="grid-column:span 2;background:#fbbf24;overflow:hidden;position:relative">
@@ -1245,6 +1245,39 @@ function getWorkSvg() {
     </svg>`;
   }
   function initWorkBtn() { const c = document.getElementById('workSvgContainer'); if (c) c.innerHTML = getWorkSvg(); }
+
+    async function updateBanqueCard() {
+      try {
+        var res = await sb.auth.getSession();
+        var session = res.data && res.data.session;
+        if (!session) return;
+        var gRes = await sb.from('game_stats').select('banque,money').eq('user_id', session.user.id).maybeSingle();
+        var banque = (gRes.data && gRes.data.banque) || {};
+        var totalDepot = 0;
+        var hasInterets = false;
+        var now = Date.now();
+        ['compte_courant','livret','pep'].forEach(function(c){
+          var intervalle = c==='pep'?6:6;
+          if(banque[c] && banque[c].solde > 0){
+            totalDepot += banque[c].solde;
+            var last = banque[c].last_collect ? new Date(banque[c].last_collect).getTime() : now;
+            if((now - last) >= intervalle * 3600000) hasInterets = true;
+          }
+        });
+        var depotEl = document.getElementById('banqueDepotEl');
+        var interetEl = document.getElementById('banqueInteretEl');
+        if(depotEl){
+          depotEl.textContent = totalDepot > 0
+            ? (totalDepot >= 1000 ? Math.floor(totalDepot/1000)+'k€' : totalDepot+'€') + ' déposés'
+            : 'Aucun dépôt';
+        }
+        if(interetEl){
+          interetEl.textContent = hasInterets ? '💰 INTÉRÊTS DISPONIBLES !' : '🏛️ Taux jusqu'à +6% / 6h';
+          interetEl.style.color = hasInterets ? 'rgba(212,175,55,0.9)' : 'rgba(212,175,55,0.4)';
+        }
+      } catch(e) { console.log('updateBanqueCard:', e); }
+    }
+
   document.addEventListener('DOMContentLoaded', function(){ initWorkBtn(); updateBanqueCard(); });
 
     async function init() {
