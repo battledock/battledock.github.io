@@ -1105,136 +1105,96 @@ function getWorkSvg() {
     }
 
     </script>
-<script>
-// ── EDITORIAL UI EXTRAS ──
-// Afficher le body editorial une fois le profil chargé
-var _origShowProfile = null;
-(function patchUI(){
-  var iv = setInterval(function(){
-    var pcb = document.getElementById('profileCardBtn');
-    if(pcb && pcb.style.display !== 'none'){
-      document.getElementById('edBody').style.display = 'block';
-      // Syncer chips avec stats bar
-      clearInterval(iv);
-    }
-  }, 200);
-})();
 
-function syncHeaderStats_old(){
-  var iv = setInterval(function(){
-    var m = document.getElementById('moneyAmount');
-    var d = document.getElementById('diamondsAmount');
-    var hm = document.getElementById('hdrMoney');
-    var hd = document.getElementById('hdrDiamonds');
-    var hr = document.getElementById('hdrRankVal');
-    var rm = document.getElementById('rankMyPos');
-    if(m && hm) hm.textContent = m.textContent;
-    if(d && hd) hd.textContent = d.textContent;
-    if(rm && hr) hr.textContent = rm.textContent;
-  }, 1000);
-}
-
-// Entreprise dans le dashboard
-(function checkCo(){
-  var iv = setInterval(async function(){
-    try{
-      var sb2 = supabase.createClient(supabaseUrl, supabaseKey);
-      var sess = await sb2.auth.getSession();
-      if(!sess.data.session) return;
-      var {data} = await sb2.from('companies').select('nom,name,valeur,niveau').eq('user_id', sess.data.session.user.id).maybeSingle();
-      if(data){
-        var nm = document.getElementById('coName');
-        var sb2 = document.getElementById('coSub');
-        if(nm) nm.textContent = data.nom || data.name || 'Mon Entreprise';
-        var fmtV = function(v){ return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€'; };
-        if(sb2) sb2.textContent = 'Niv.'+(data.niveau||1)+' · '+fmtV(data.valeur||0)+' · Gérer →';
-        clearInterval(iv);
-      }
-    }catch(e){}
-  }, 3000);
-})();
-</script>
 <script>
-// ── BRIDGE EDITORIAL → JS EXISTANT ──
-// Afficher le body quand le profil est chargé
-(function(){
-  var iv = setInterval(function(){
+// ══ EDITORIAL BRIDGE ══
+// Une seule initialisation — utilise sb du script principal
+
+// 1. Afficher le body quand le profil est chargé
+(function waitForProfile() {
+  var iv = setInterval(function() {
     var pcb = document.getElementById('profileCardBtn');
-    if(pcb && pcb.style.display !== 'none'){
-      document.getElementById('edBody').style.display = 'block';
-      syncHeaderStats();
+    if (pcb && pcb.style.display !== 'none') {
+      var eb = document.getElementById('edBody');
+      if (eb) eb.style.display = 'block';
+      startHeaderSync();
       clearInterval(iv);
     }
   }, 150);
 })();
 
-// Synchroniser les chips du header avec les valeurs JS
-function syncHeaderStats(){
-  setInterval(function(){
-    var m = document.getElementById('moneyAmount');
-    var d = document.getElementById('diamondsAmount');
-    var rm = document.getElementById('rankMyPos');
-    if(m && document.getElementById('hdrMoney'))
-      document.getElementById('hdrMoney').textContent = m.textContent;
-    if(d && document.getElementById('hdrDiamonds'))
-      document.getElementById('hdrDiamonds').textContent = d.textContent;
-    if(rm && document.getElementById('hdrRankStat'))
-      document.getElementById('hdrRankStat').textContent = rm.textContent;
+// 2. Synchroniser les chips header avec les valeurs existantes
+function startHeaderSync() {
+  setInterval(function() {
+    var els = {
+      moneyAmount:  'hdrMoney',
+      diamondsAmount: 'hdrDiamonds',
+      rankMyPos:    'hdrRankStat'
+    };
+    Object.keys(els).forEach(function(src) {
+      var s = document.getElementById(src);
+      var t = document.getElementById(els[src]);
+      if (s && t) t.textContent = s.textContent;
+    });
   }, 800);
 }
 
-// Charger l'entreprise dans la card
-(function loadCompanyCard(){
-  var iv = setInterval(async function(){
-    if(typeof supabaseUrl === 'undefined') return;
-    try{
-      var sbx = supabase.createClient(supabaseUrl, supabaseKey);
-      var sess = await sbx.auth.getSession();
-      if(!sess.data.session){ clearInterval(iv); return; }
-      var res = await sbx.from('companies')
+// 3. Charger l'entreprise dans la card (utilise sb)
+(function loadCoCard() {
+  var iv = setInterval(async function() {
+    if (typeof sb === 'undefined') return;
+    try {
+      var sess = await sb.auth.getSession();
+      if (!sess.data.session) { clearInterval(iv); return; }
+      var res = await sb.from('companies')
         .select('nom,name,valeur,niveau,emoji,color')
         .eq('user_id', sess.data.session.user.id)
         .maybeSingle();
-      if(res.data){
-        var co = res.data;
-        var nm = document.getElementById('coName');
-        var sb2 = document.getElementById('coSub');
-        var fmtV = function(v){ return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€'; };
-        if(nm) nm.textContent = co.nom || co.name || 'Mon Entreprise';
-        if(sb2) sb2.textContent = 'Niv.'+(co.niveau||1)+' · '+fmtV(co.valeur||0)+' · Gérer →';
-        // Colorer la card
-        var wideCard = nm && nm.closest('.card-wide');
-        if(wideCard && co.color){
-          wideCard.style.background = co.color+'22';
-          var ico = wideCard.querySelector('.card-wide-ico');
-          if(ico){ ico.style.background = co.color; ico.textContent = co.emoji || '🏪'; }
-        }
-        clearInterval(iv);
+      if (!res.data) return;
+      var co = res.data;
+      var fmtV = function(v) {
+        return v >= 1000000 ? (v/1000000).toFixed(1) + 'M€'
+             : v >= 1000    ? Math.floor(v/1000) + 'k€'
+             : v + '€';
+      };
+      var nm  = document.getElementById('coName');
+      var sub = document.getElementById('coSub');
+      if (nm)  nm.textContent  = co.nom || co.name || 'Mon Entreprise';
+      if (sub) sub.textContent = 'Niv.' + (co.niveau||1) + ' · ' + fmtV(co.valeur||0) + ' · Gérer →';
+      // Couleur de la card
+      var card = nm && nm.closest('.card-wide');
+      if (card && co.color) {
+        card.style.background = co.color + '22';
+        var ico = card.querySelector('.card-wide-ico');
+        if (ico) { ico.style.background = co.color; ico.textContent = co.emoji || '🏪'; }
       }
-    }catch(e){}
+      clearInterval(iv);
+    } catch(e) {}
   }, 2000);
 })();
 
-// Objectifs badge
-(function updateObjBadge(){
-  setInterval(async function(){
-    if(typeof supabaseUrl === 'undefined') return;
-    try{
-      var sbx = supabase.createClient(supabaseUrl, supabaseKey);
-      var sess = await sbx.auth.getSession();
-      if(!sess.data.session) return;
+// 4. Badge objectifs du jour (utilise sb)
+(function updateObjBadge() {
+  setInterval(async function() {
+    if (typeof sb === 'undefined') return;
+    try {
+      var sess = await sb.auth.getSession();
+      if (!sess.data.session) return;
       var today = new Date().toISOString().split('T')[0];
-      var res = await sbx.from('daily_objectives').select('objectives').eq('user_id', sess.data.session.user.id).eq('date', today).maybeSingle();
-      if(res.data && res.data.objectives){
-        var done = res.data.objectives.filter(function(o){ return o.claimed; }).length;
-        var total = res.data.objectives.length;
-        var remaining = total - done;
-        var badge = document.getElementById('objBadge');
-        var sub = document.getElementById('objSubTxt');
-        if(badge){ badge.textContent = remaining; badge.style.display = remaining > 0 ? 'flex' : 'none'; }
-        if(sub) sub.textContent = done+'/'+total+' complétés';
-      }
-    }catch(e){}
+      var res = await sb.from('daily_objectives')
+        .select('objectives')
+        .eq('user_id', sess.data.session.user.id)
+        .eq('date', today)
+        .maybeSingle();
+      if (!res.data || !res.data.objectives) return;
+      var done      = res.data.objectives.filter(function(o) { return o.claimed; }).length;
+      var total     = res.data.objectives.length;
+      var remaining = total - done;
+      var badge = document.getElementById('objBadge');
+      var sub   = document.getElementById('objSubTxt');
+      if (badge) { badge.textContent = remaining; badge.style.display = remaining > 0 ? 'flex' : 'none'; }
+      if (sub)   sub.textContent = done + '/' + total + ' complétés';
+    } catch(e) {}
   }, 5000);
 })();
 </script>
