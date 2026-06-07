@@ -1198,6 +1198,253 @@ async function loadCalendar() {
     }
 
     init();
+
+function getWorkSvg() {
+    return `<svg width="100%" height="100%" viewBox="0 0 390 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0d2d6e"/>
+          <stop offset="100%" stop-color="#1565C0"/>
+        </linearGradient>
+      </defs>
+      <rect width="390" height="260" fill="url(#wg)"/>
+      <!-- Halos concentriques coin haut droit -->
+      <circle cx="390" cy="0" r="320" fill="rgba(255,255,255,0.025)"/>
+      <circle cx="390" cy="0" r="250" fill="rgba(255,255,255,0.03)"/>
+      <circle cx="390" cy="0" r="190" fill="rgba(255,255,255,0.04)"/>
+      <circle cx="390" cy="0" r="135" fill="rgba(255,255,255,0.055)"/>
+      <circle cx="390" cy="0" r="88"  fill="rgba(255,255,255,0.08)"/>
+      <circle cx="390" cy="0" r="50"  fill="rgba(255,255,255,0.13)"/>
+      <circle cx="390" cy="0" r="22"  fill="rgba(255,255,255,0.22)"/>
+      <circle cx="390" cy="0" r="8"   fill="white"/>
+      <!-- Texte centré -->
+      <text x="195" y="148" text-anchor="middle" font-family="Bebas Neue, Impact, sans-serif" font-size="52" letter-spacing="4" fill="white">TRAVAILLER</text>
+      <text x="195" y="172" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="rgba(255,255,255,0.45)" letter-spacing="2">ARGENT + XP</text>
+    </svg>`;
+  }
+  function initWorkBtn() { const c = document.getElementById('workSvgContainer'); if (c) c.innerHTML = getWorkSvg(); }
+
+    async function init() {
+      initWorkBtn();
+      const { data: _authData, error: _authError } = await sb.auth.getSession();
+      if (_authError || !_authData.session) {
+        await sb.auth.signOut().catch(() => {});
+        window.location.href = 'index.html';
+        return;
+      }
+      const session = _authData.session;
+      currentUser = session.user;
+      await loadUserData();
+      // Mettre à jour last_seen
+      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+      loadChatBadge();
+      setInterval(loadChatBadge, 30000);
+      loadCalendar();
+
+
+      // Tout débloqué
+        document.querySelectorAll('.gated').forEach(el => el.classList.remove('gated'));
+    }
+
+
+
+
+
+    // Badge messagerie depuis localStorage
+    (function(){
+      const unread = parseInt(localStorage.getItem('bd_unread')||'0');
+      const badge = document.getElementById('msgUnreadBadge');
+      if(badge && unread > 0){ badge.style.display='block'; badge.textContent=unread; }
+    })();
+
+    async function loadUserData() {
+      const [profileResult, statsResult] = await Promise.all([
+        sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).maybeSingle(),
+        sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
+      ]);
+
+      let profile = profileResult.data;
+      let stats   = statsResult.data;
+
+      if (!profile) {
+        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'rouge_navy' }, { onConflict: 'user_id' }).select().maybeSingle();
+        profile = data;
+      }
+      if (!stats) {
+        const { data } = await sb.from('game_stats').upsert({ user_id: currentUser.id, money: 1000, xp: 0, level: 1, grade: 'Docker Occasionnel', last_levelup_shown: 1 }, { onConflict: 'user_id' }).select().maybeSingle();
+        stats = data;
+      }
+      if (!profile || !stats) return;
+
+      // Recalcul du niveau à partir de l'XP accumulée (clicker, tower, pointeau…)
+      let _lvl = stats.level || 1;
+      const _startLvl = _lvl;
+      let _xp  = stats.xp || 0;
+      let _leveled = false;
+      while (_xp >= getXpRequired(_lvl)) {
+        _xp -= getXpRequired(_lvl);
+        _lvl++;
+        _leveled = true;
+      }
+      if (_leveled) {
+        stats.level = _lvl;
+        stats.xp = _xp;
+        await sb.from('game_stats').update({ level: _lvl, xp: _xp }).eq('user_id', currentUser.id);
+      }
+
+
+
+      // Variation Bourse — appelée au chargement + polling toutes les 15s
+      updateBanqueCard();
+      setInterval(updateBanqueCard, 30000);
+
+      // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
+      // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
+      // Respecter l'avatar choisi par le joueur s'il est valide
+      const _allAvatars = ['avatar-default.png','avatar-level-2.png','avatar-level-3.png',
+        'avatar-level-4.png','avatar-level-5.png','avatar-level-10.png','avatar-level-13.png',
+        'avatar-level-15.png','avatar-level-17.png','avatar-level-20.png','avatar-level-30.png',
+        'avatar-level-50.png','avatar-millionaire.png','avatar-completionist.png'];
+      const _autoAvatar = avatarForLevel(stats.level || 1);
+      const _savedAvatar = profile.avatar_url;
+      if (_savedAvatar && _allAvatars.indexOf(_savedAvatar) !== -1) {
+        // Avatar valide choisi par le joueur — on respecte
+        document.getElementById('avatarImage').src = _savedAvatar;
+      } else {
+        // Pas d'avatar ou invalide — on assigne selon le niveau
+        document.getElementById('avatarImage').src = _autoAvatar;
+        sb.from('profiles').update({ avatar_url: _autoAvatar }).eq('user_id', currentUser.id).then(function(){}).catch(function(){});
+      }
+
+      document.getElementById('playerName').textContent  = profile.username;
+
+      const _pcBtn = document.getElementById('profileCardBtn');
+      if (_pcBtn) { _pcBtn.onclick = null; _pcBtn.style.cursor = 'default'; }
+
+      const level = stats.level || 1, xp = stats.xp || 0;
+      const xpNeeded = getXpRequired(level);
+      const pct = Math.min((xp / xpNeeded) * 100, 100);
+      document.getElementById('currentLevel').textContent = level;
+      const gradeEl = document.getElementById('playerGrade');
+      if (gradeEl) gradeEl.textContent = getGrade(level);
+      updateSkillTree(level);
+      // Casino : débloqué au niveau 5
+      const casinoCard = document.getElementById('casinoCard');
+      if (casinoCard) {
+        if (level >= 5) {
+          casinoCard.style.opacity = '1';
+          casinoCard.style.pointerEvents = 'auto';
+          casinoCard.onclick = () => window.location.href = 'casino.html';
+          casinoCard.title = '';
+        } else {
+          casinoCard.style.opacity = '0.45';
+          casinoCard.style.pointerEvents = 'none';
+          casinoCard.title = 'Débloqué au niveau 5';
+        }
+      }
+      document.getElementById('nextLevel').textContent    = level + 1;
+      document.getElementById('xpCounter').textContent   = `${xp} / ${xpNeeded} XP`;
+      document.getElementById('xpFill').style.width      = pct + '%';
+
+      const fmtM = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
+      const moneyVal = stats.money || 0;
+      document.getElementById('moneyAmount').textContent    = fmtM(moneyVal);
+      localStorage.setItem('bd_money', moneyVal);
+      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
+      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
+      const fmtM2 = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
+      if(document.getElementById('hdrMoney')) document.getElementById('hdrMoney').textContent = fmtM2(stats.money||0);
+
+
+      const sk = document.getElementById('profileSkeleton');
+      const pc = document.getElementById('profileCardBtn');
+      if (sk) sk.style.display = 'none';
+      if (pc) pc.style.display = '';
+      // Appliquer la cover — après affichage du header
+      requestAnimationFrame(function(){
+        const _coverCss = getCoverCss(profile.background_color);
+        const _cv = document.querySelector('.header-cover');
+        if (_cv) _cv.style.background = _coverCss;
+        localStorage.setItem('bd_cover', _coverCss);
+      });
+
+      loadRank(stats.level || 1);
+      await checkPendingLevelUp(stats, profile);
+      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
+      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
+    }
+
+    let _levelUpBusy = false;
+    async function checkPendingLevelUp(stats, profile) {
+      if (_levelUpBusy) return;
+      const level = stats.level || 1, lastShown = stats.last_levelup_shown || 1;
+      if (level <= lastShown) return;
+
+      // Garde sessionStorage : empêche tout re-déclenchement dans la même session navigateur
+      // (protection contre lecture Supabase en retard ou navigation rapide)
+      const ssKey = 'bd_lvlup_' + ((currentUser && currentUser.id) || 'x');
+      const ssLevel = parseInt(sessionStorage.getItem(ssKey) || '0');
+      if (level <= ssLevel) return;
+      sessionStorage.setItem(ssKey, level); // marquer immédiatement côté client
+
+      _levelUpBusy = true;
+      try {
+        // Marquer IMMÉDIATEMENT en base pour empêcher le double-octroi multi-onglets
+        await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
+        stats.last_levelup_shown = level;
+        // Cumuler les récompenses de TOUS les niveaux franchis
+        let addMoney = 0, addDiamonds = 0, addTrophies = 0;
+        for (let i = lastShown + 1; i <= level; i++) {
+          let diamonds, trophies, money;
+          if (i <= 10)      { diamonds = 3;  trophies = 1; money = i * 500; }
+          else if (i <= 25) { diamonds = 5;  trophies = 1; money = i * 1000; }
+          else if (i <= 50) { diamonds = 8;  trophies = 2; money = i * 2000; }
+          else               { diamonds = 15; trophies = 3; money = i * 5000; }
+          const rewards = { diamonds, trophies, money };
+          addMoney += rewards.money; addDiamonds += rewards.diamonds; addTrophies += rewards.trophies;
+          await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
+        }
+        const newMoney    = (stats.money || 0)    + addMoney;
+        const newDiamonds = (stats.diamonds || 0) + addDiamonds;
+        const newTrophies = (stats.trophies || 0) + addTrophies;
+        await sb.from('game_stats').update({ money: newMoney, diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
+        stats.money = newMoney; stats.diamonds = newDiamonds; stats.trophies = newTrophies;
+        // Rafraîchir l'affichage sans relancer loadUserData (évite la ré-entrée)
+        const mEl = document.getElementById('moneyAmount');    if (mEl) mEl.textContent = newMoney.toLocaleString('fr-FR') + '€';
+        const dEl = document.getElementById('diamondsAmount'); if (dEl) dEl.textContent = '💎 ' + newDiamonds;
+        const tEl = document.getElementById('trophiesAmount'); if (tEl) tEl.textContent = '🏆 ' + newTrophies;
+      } finally {
+        _levelUpBusy = false;
+      }
+    }
+
+    function showLevelUpPopup(level, rewards, onClose) {
+      const grade = getGrade(level);
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;animation:fadeInOverlay 0.2s ease;';
+      overlay.innerHTML = `
+        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.25);animation:popIn 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);">
+          <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Niveau atteint</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:80px;color:#1d4ed8;line-height:1;margin-bottom:4px;">${level}</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#6b7280;letter-spacing:1.5px;margin-bottom:24px;">${grade}</div>
+          <div style="background:#f8faff;border:1px solid #dbeafe;border-radius:14px;padding:18px;margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Récompenses</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💰</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.money.toLocaleString('fr-FR')}€</div></div>
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💎</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#1d4ed8;">+${rewards.diamonds}</div></div>
+              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">🏆</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.trophies}</div></div>
+            </div>
+          </div>
+          <button onclick="this.closest('[style*=fixed]').remove(); if(typeof __lvlClose==='function')__lvlClose();" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;" onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1d4ed8'">CONTINUER 🚀</button>
+        </div>
+      `;
+      window.__lvlClose = onClose;
+      document.body.appendChild(overlay);
+    }
+
+
+
+    init();
   </script>
   <script>
     // PWA service worker uniquement
@@ -1209,13 +1456,12 @@ async function loadCalendar() {
       }
     })();
   </script>
+  <script>
+    // PWA service worker uniquement
+    (function () {
 
-
-
-
-
-
-
-
-</body>
-</html>
+      // Service worker (rend le jeu installable + repli hors-ligne léger)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+      }
+    })();
