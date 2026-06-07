@@ -210,17 +210,7 @@
 
     <!-- COMPTE -->
     <div class="section-lbl">Compte</div>
-    <div class="section-card">
-      <div class="row" onclick="openModal('pseudo')">
-        <div class="row-icon blue">✏️</div>
-        <div class="row-info">
-          <div class="row-title">Changer le pseudo</div>
-          <div class="row-sub">1 changement tous les 7 jours</div>
-        </div>
-        <div class="row-arrow">›</div>
-      </div>
-
-    </div>
+    <div class="section-card">    </div>
 
     <!-- SESSION -->
     <div class="section-lbl">Session</div>
@@ -271,29 +261,6 @@
   <div class="modal-overlay" id="modalPseudo" style="display:none" onclick="closeOnOverlay(event,'modalPseudo')">
     <div class="modal-card">
       <div class="modal-handle"></div>
-      <div class="modal-header">
-        <div class="modal-title">Changer le pseudo</div>
-        <button class="modal-close" onclick="closeModal('modalPseudo')">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="cooldown-box" id="pseudoCooldown" style="display:none">⏳ Prochain changement disponible dans <strong id="cooldownDays"></strong></div>
-        <div class="field-lbl">Nouveau pseudo</div>
-        <input class="field-input" id="pseudoInput" type="text" placeholder="Ton pseudo..." maxlength="20">
-        <div class="field-hint">Entre 3 et 20 caractères, lettres et chiffres uniquement</div>
-        <button class="btn-primary" id="pseudoBtn" onclick="changePseudo()">Confirmer</button>
-        <button class="btn-cancel" onclick="closeModal('modalPseudo')">Annuler</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL SUPPRIMER -->
-  <div class="modal-overlay" id="modalDelete" style="display:none" onclick="closeOnOverlay(event,'modalDelete')">
-    <div class="modal-card">
-      <div class="modal-handle"></div>
-      <div class="modal-header">
-        <div class="modal-title" style="color:#ef4444">Supprimer le compte</div>
-        <button class="modal-close" onclick="closeModal('modalDelete')">✕</button>
-      </div>
       <div class="modal-body">
         <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:14px;margin-bottom:16px">
           <p style="font-size:13px;color:#6b7280;line-height:1.5">Ta demande sera transmise à l'administrateur qui supprimera ton compte manuellement. Tu seras déconnecté immédiatement.</p>
@@ -346,7 +313,7 @@
       if (!session) { window.location.href = 'index.html'; return; }
       currentUser = session.user;
 
-      const { data: prof } = await sb.from('profiles').select('username, avatar_url, background_color, pseudo_changed_at').eq('user_id', currentUser.id).maybeSingle();
+      const { data: prof } = await sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).maybeSingle();
       const { data: stats } = await sb.from('game_stats').select('grade').eq('user_id', currentUser.id).maybeSingle();
       profile = prof;
 
@@ -399,26 +366,6 @@
       if (e.target.classList.contains('modal-overlay')) closeModal(id);
     }
 
-    async function changePseudo() {
-      const newPseudo = document.getElementById('pseudoInput').value.trim();
-      if (!newPseudo || newPseudo.length < 3) { showToast('Minimum 3 caractères', 'error'); return; }
-      if (!/^[a-zA-Z0-9_À-ÿ]+$/.test(newPseudo)) { showToast('Caractères non autorisés', 'error'); return; }
-
-      const { error } = await sb.from('profiles').update({
-        username: newPseudo,
-        pseudo_changed_at: new Date().toISOString()
-      }).eq('user_id', currentUser.id);
-
-      if (error) { showToast('Erreur : ' + error.message, 'error'); return; }
-
-      profile.username = newPseudo;
-      document.getElementById('pmName').textContent = newPseudo;
-      closeModal('modalPseudo');
-      showToast('✅ Pseudo mis à jour !', 'success');
-    }
-
-    // ===== REPORT =====
-    let reportType = 'bug';
     function setType(type) {
       reportType = type;
       ['bug','idee','autre'].forEach(t => {
