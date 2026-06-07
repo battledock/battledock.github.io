@@ -1253,8 +1253,18 @@ async function confirmCreate(){
   btn.disabled=true;btn.textContent='CREATION...';
   try{
     var newMoney=money-100000;
-    // Sauvegarder dans companies
-    var {error:e1}=await sb.from('companies').insert({
+
+    // 1. Vérifier si company existe déjà
+    var {data:existing}=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
+    if(existing){
+      // Déjà une entreprise, aller au dashboard
+      money=newMoney;
+      loadDashboard();
+      return;
+    }
+
+    // 2. Créer l'entreprise
+    var {data:newCo, error:e1}=await sb.from('companies').insert({
       user_id:currentUser.id,
       name:companyName,
       nom:companyName,
@@ -1264,14 +1274,28 @@ async function confirmCreate(){
       slogan:selectedSlogan,
       valeur:100000,
       niveau:1
-    });
-    if(e1){toast('Erreur: '+e1.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';return;}
-    // Deduire argent
-    await sb.from('game_stats').update({money:newMoney,commerce:{created:true,invest:0,last_collect:new Date().toISOString()}}).eq('user_id',currentUser.id);
+    }).select().maybeSingle();
+    if(e1){
+      console.error('companies insert error:', e1);
+      toast('Erreur création : '+e1.message);
+      btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';
+      return;
+    }
+
+    // 3. Déduire l'argent (sans toucher à la colonne commerce)
+    var {error:e2}=await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+    if(e2) console.warn('game_stats update warning:', e2.message);
+
     money=newMoney;
-    toast('Entreprise creee !');
-    setTimeout(function(){loadDashboard();},800);
-  }catch(e){toast('Erreur');btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
+    toast('🎉 Entreprise créée !');
+    setTimeout(function(){loadDashboard();},1000);
+
+  }catch(e){
+    console.error('confirmCreate exception:', e);
+    toast('Erreur : '+e.message);
+    btn.disabled=false;
+    btn.textContent='CREER MON ENTREPRISE — 100 000€';
+  }
 }
 
 
@@ -1304,9 +1328,8 @@ async function loadDashboard(){
   document.getElementById('dash-revenus').textContent = fmtM(rev) + '/H';
 
   // Collecte
-  var {data:gs} = await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
-  var com = (gs && gs.commerce) || {};
-  var last = com.last_collect ? new Date(com.last_collect).getTime() : Date.now();
+  var {data:gs} = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+  var last = co.last_collect ? new Date(co.last_collect).getTime() : Date.now() - 3600000;
   _dashLastCollect = last;
   _dashRevPerHour = rev;
   _dashMoney = (gs && gs.money) || 0;
@@ -1354,10 +1377,8 @@ async function collecterRevenus(){
   btn.disabled = true; btn.textContent = 'COLLECTE...';
   var newMoney = _dashMoney + pending;
   var now = new Date().toISOString();
-  var {data:gs} = await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
-  var com = (gs && gs.commerce) || {};
-  com.last_collect = now;
-  await sb.from('game_stats').update({ money: newMoney, commerce: com }).eq('user_id', currentUser.id);
+  await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+  await sb.from('companies').update({ last_collect: now }).eq('user_id', currentUser.id);
   _dashMoney = newMoney;
   _dashLastCollect = new Date(now).getTime();
   toast('💰 +' + fmtM(pending) + ' collectés !');
