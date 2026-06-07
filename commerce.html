@@ -674,6 +674,9 @@ var QUESTIONS = [
 ];
 
 var qStep=0, qScore=0;
+var _mjCleanup = null; // fonction de nettoyage du mini-jeu en cours
+
+function cleanupMJ(){ if(_mjCleanup){try{_mjCleanup();}catch(e){} _mjCleanup=null;} }
 
 function startTest(){
   if(money<100000){toast('Il te faut 100 000 !');return;}
@@ -691,6 +694,7 @@ function updateProgress(){
 }
 
 function nextQ(pts){
+  cleanupMJ();
   qScore+=Math.max(0,pts);
   document.getElementById('score-live').textContent='Score: '+qScore;
   qStep++;
@@ -699,6 +703,7 @@ function nextQ(pts){
 }
 
 function renderQ(){
+  cleanupMJ();
   updateProgress();
   var body=document.getElementById('test-body');
   body.innerHTML='';
@@ -715,412 +720,366 @@ function renderQ(){
   else if(n===10) mj10(body);
 }
 
-/* ─────────────────────────────
-   MJ1 — CHARGE LE CARGO
-   Caisses tombent, tap pour les attraper
-───────────────────────────────*/
+/* ── MJ1 : CHARGE LE CARGO ── */
 function mj1(body){
-  var caught=0, total=8, active=[], done=false;
+  var caught=0,total=8,done=false;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
     +'<div class="mini-title">CHARGE LE CARGO 🚢</div>'
     +'<div class="mini-sub">Tape les caisses avant qu elles tombent !</div>'
-    +'<div id="mj1-zone" style="width:300px;height:220px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:10px;position:relative;overflow:hidden">'
-    +'<div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:rgba(139,90,43,.4);border-radius:0 0 8px 8px"></div>'
+    +'<div id="mj1-zone" style="width:300px;height:200px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:10px;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:18px;background:rgba(139,90,43,.4)"></div>'
     +'<div id="mj1-score" style="position:absolute;top:8px;right:10px;font-family:Bebas Neue,sans-serif;font-size:18px;color:#fbbf24">0/'+total+'</div>'
     +'</div></div>';
-  function spawnBox(){
-    if(done)return;
-    var zone=document.getElementById('mj1-zone');
-    if(!zone)return;
-    var box=document.createElement('div');
-    var x=20+Math.random()*220;
-    var emoji=['📦','🪣','⚓'][Math.floor(Math.random()*3)];
-    box.innerHTML=emoji;
-    box.style.cssText='position:absolute;top:-40px;left:'+x+'px;font-size:28px;cursor:pointer;transition:top 2s linear;user-select:none;z-index:2';
-    box.onclick=function(){
-      if(box.dataset.caught)return;
-      box.dataset.caught='1';
-      caught++;
-      document.getElementById('mj1-score').textContent=caught+'/'+total;
-      box.style.transform='scale(1.4)';
-      box.style.opacity='0';
-      setTimeout(function(){if(box.parentNode)box.parentNode.removeChild(box);},200);
-    };
-    zone.appendChild(box);
-    setTimeout(function(){box.style.top='190px';},50);
-    setTimeout(function(){if(box.parentNode&&!box.dataset.caught)box.parentNode.removeChild(box);},2200);
-  }
   var spawned=0;
   var iv=setInterval(function(){
     if(done){clearInterval(iv);return;}
-    spawnBox();spawned++;
-    if(spawned>=total){clearInterval(iv);}
+    var zone=document.getElementById('mj1-zone');
+    if(!zone){clearInterval(iv);return;}
+    var box=document.createElement('div');
+    var x=15+Math.random()*230;
+    var emojis=['📦','🪣','⚓'];
+    box.innerHTML=emojis[Math.floor(Math.random()*3)];
+    box.style.cssText='position:absolute;top:-40px;left:'+x+'px;font-size:28px;cursor:pointer;transition:top 2.2s linear;user-select:none;z-index:2';
+    box.onclick=function(e){
+      e.stopPropagation();
+      if(box.dataset.caught||done)return;
+      box.dataset.caught='1';caught++;
+      var sc=document.getElementById('mj1-score');
+      if(sc)sc.textContent=caught+'/'+total;
+      box.style.transform='scale(1.4)';box.style.opacity='0';
+      setTimeout(function(){if(box.parentNode)box.parentNode.removeChild(box);},200);
+    };
+    zone.appendChild(box);
+    setTimeout(function(){box.style.top='178px';},50);
+    setTimeout(function(){if(box.parentNode&&!box.dataset.caught)box.parentNode.removeChild(box);},2400);
+    spawned++;if(spawned>=total)clearInterval(iv);
   },600);
-  setTimeout(function(){
-    done=true;clearInterval(iv);
+  var t=setTimeout(function(){
+    if(done)return;done=true;clearInterval(iv);
     var pts=caught>=7?12:caught>=5?10:caught>=3?7:caught>=1?4:0;
     nextQ(pts);
-  },5500);
+  },5800);
+  _mjCleanup=function(){done=true;clearInterval(iv);clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ2 — L'ANCRE PARFAITE
-   Barre qui oscille, tap dans la zone verte
-───────────────────────────────*/
+/* ── MJ2 : L'ANCRE PARFAITE ── */
 function mj2(body){
-  var attempts=3, score=0, done=false, pos=0, dir=1, speed=1.8;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=14px;width:100%">'
+  var attempts=3,score=0,done=false,pos=0,dir=1,raf=null;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%">'
     +'<div class="mini-title">L ANCRE PARFAITE ⚓</div>'
     +'<div class="mini-sub">Jette l ancre dans la zone verte !</div>'
-    +'<div id="mj2-attempts" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:2px;margin:8px 0">3 TENTATIVES</div>'
-    +'<div style="width:280px;height:30px;background:rgba(255,255,255,.06);border-radius:15px;position:relative;overflow:hidden;margin:8px 0">'
+    +'<div id="mj2-attempts" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:2px">3 TENTATIVES</div>'
+    +'<div style="width:280px;height:30px;background:rgba(255,255,255,.06);border-radius:15px;position:relative;overflow:hidden">'
     +'<div style="position:absolute;left:35%;width:30%;height:100%;background:rgba(34,197,94,.3);border-radius:15px"></div>'
-    +'<div id="mj2-cursor" style="position:absolute;top:2px;width:26px;height:26px;background:#cc1a1a;border-radius:50%;transition:none;font-size:14px;display:flex;align-items:center;justify-content:center">⚓</div>'
+    +'<div id="mj2-cursor" style="position:absolute;top:2px;left:0;width:26px;height:26px;background:#cc1a1a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">⚓</div>'
     +'</div>'
-    +'<button class="opt-btn" style="font-size:20px;padding:16px 32px" onclick="anchor()">JETER ⚓</button>'
-    +'<div id="mj2-fb" style="font-size:14px;color:#4ade80;min-height:20px;margin-top:4px"></div>'
+    +'<button class="opt-btn" style="font-size:20px;padding:14px 32px" id="mj2-btn">JETER ⚓</button>'
+    +'<div id="mj2-fb" style="font-size:14px;color:#4ade80;min-height:20px"></div>'
     +'</div>';
   var cursor=document.getElementById('mj2-cursor');
-  var raf;
+  var btn=document.getElementById('mj2-btn');
   function animate(){
-    if(done)return;
-    pos+=dir*speed;
-    if(pos>254||pos<0){dir*=-1;}
+    if(done||!cursor)return;
+    pos+=dir*1.8;if(pos>254||pos<0)dir*=-1;
     cursor.style.left=pos+'px';
     raf=requestAnimationFrame(animate);
   }
   animate();
-  window.anchor=function(){
+  if(btn) btn.onclick=function(){
     if(done)return;
     var inZone=pos>=98&&pos<=182;
-    if(inZone){score+=4;document.getElementById('mj2-fb').textContent='✅ Dans la zone !';}
-    else{document.getElementById('mj2-fb').textContent='❌ Rate !';}
+    if(inZone)score+=4;
+    var fb=document.getElementById('mj2-fb');
+    var att=document.getElementById('mj2-attempts');
+    if(fb)fb.textContent=inZone?'✅ Dans la zone !':'❌ Raté !';
     attempts--;
-    document.getElementById('mj2-attempts').textContent=attempts+' TENTATIVE'+(attempts>1?'S':'');
+    if(att)att.textContent=attempts+' TENTATIVE'+(attempts>1?'S':'');
     if(attempts<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
-    else{setTimeout(function(){document.getElementById('mj2-fb').textContent='';},600);}
+    else setTimeout(function(){var f=document.getElementById('mj2-fb');if(f)f.textContent='';},600);
   };
+  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);};
 }
 
-/* ─────────────────────────────
-   MJ3 — GRUE EN FOLIE
-   Grue balance, tap quand la caisse est au-dessus du bateau
-───────────────────────────────*/
+/* ── MJ3 : GRUE EN FOLIE ── */
 function mj3(body){
-  var score=0, tries=4, done=false, angle=0, dir=1;
+  var score=0,tries=4,done=false,angle=0,dir=1,raf=null;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
     +'<div class="mini-title">GRUE EN FOLIE 🏗️</div>'
-    +'<div class="mini-sub">Lâche la caisse sur le bateau !</div>'
-    +'<canvas id="mj3-canvas" width="300" height="200" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
-    +'<button class="opt-btn" style="font-size:16px;padding:12px 28px" onclick="lacheCaisse()">LÂCHER 📦</button>'
-    +'<div id="mj3-fb" style="font-size:13px;min-height:20px"></div></div>';
-  var cv=document.getElementById('mj3-canvas');
+    +'<div class="mini-sub">Lache la caisse sur le bateau !</div>'
+    +'<canvas id="mj3-cv" width="300" height="180" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
+    +'<button class="opt-btn" style="font-size:15px;padding:12px 28px" id="mj3-btn">LACHER 📦</button>'
+    +'<div id="mj3-fb" style="font-size:12px;min-height:18px"></div></div>';
+  var cv=document.getElementById('mj3-cv');
+  if(!cv){nextQ(0);return;}
   var ctx=cv.getContext('2d');
+  var W=300,H=180;
   function draw(){
-    ctx.clearRect(0,0,300,200);
-    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,200);
-    // Bateau fixe
-    ctx.fillStyle='#1e3a5f';ctx.fillRect(80,155,140,25);
-    ctx.fillStyle='#0ea5e9';ctx.fillRect(120,140,60,15);
-    ctx.fillText('🚢',120,165);
-    // Pivot grue
-    var cx=150,cy=40;
-    var armLen=80;
-    var rad=angle*(Math.PI/180);
-    var ex=cx+Math.cos(rad)*armLen;
-    var ey=cy+Math.sin(rad)*armLen;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f172a';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(70,148,160,22);
+    ctx.fillStyle='#0ea5e9';ctx.fillRect(110,136,80,12);
+    var cx=150,cy=35,armLen=75,rad=angle*Math.PI/180;
+    var ex=cx+Math.cos(rad)*armLen,ey=cy+Math.sin(rad)*armLen;
     ctx.strokeStyle='#d4af37';ctx.lineWidth=3;
     ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();
     ctx.fillStyle='#d4af37';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
-    // Caisse
     ctx.font='18px serif';ctx.fillText('📦',ex-9,ey+10);
-    // Zone cible
-    ctx.strokeStyle='rgba(34,197,94,.3)';ctx.lineWidth=1;
-    ctx.strokeRect(90,138,120,18);
+    ctx.strokeStyle='rgba(34,197,94,.2)';ctx.lineWidth=1;ctx.strokeRect(80,134,140,16);
   }
-  var raf;
-  function loop(){
-    if(done)return;
-    angle+=dir*1.5;
-    if(angle>70||angle<-70)dir*=-1;
-    draw();raf=requestAnimationFrame(loop);
-  }
+  function loop(){if(done)return;angle+=dir*1.5;if(angle>65||angle<-65)dir*=-1;draw();raf=requestAnimationFrame(loop);}
   loop();
-  window.lacheCaisse=function(){
+  var btn=document.getElementById('mj3-btn');
+  if(btn) btn.onclick=function(){
     if(done||tries<=0)return;
-    var cx=150,cy=40,armLen=80,rad=angle*(Math.PI/180);
-    var bx=cx+Math.cos(rad)*armLen;
-    var inZone=bx>=90&&bx<=210;
-    tries--;
-    if(inZone){score+=3;document.getElementById('mj3-fb').style.color='#4ade80';document.getElementById('mj3-fb').textContent='✅ Sur le bateau !';}
-    else{document.getElementById('mj3-fb').style.color='#f87171';document.getElementById('mj3-fb').textContent='❌ A l eau !';}
+    var cx=150,rad=angle*Math.PI/180,bx=cx+Math.cos(rad)*75;
+    var inZone=bx>=80&&bx<=220;tries--;
+    if(inZone)score+=3;
+    var fb=document.getElementById('mj3-fb');
+    if(fb){fb.style.color=inZone?'#4ade80':'#f87171';fb.textContent=inZone?'✅ Sur le bateau !':'❌ A l eau !';}
     if(tries<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
   };
+  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);};
 }
 
-/* ─────────────────────────────
-   MJ4 — TRI DES SARDINES
-   Tap la bonne catégorie quand la sardine apparaît
-───────────────────────────────*/
+/* ── MJ4 : TRI DES SARDINES ── */
 function mj4(body){
   var categories=['🐟 PETITE','🐟 GROSSE','🦞 CRUSTACE','🗑️ POURRIE'];
   var items=[
-    {emoji:'🐟',size:'s',correct:0},{emoji:'🐟',size:'l',correct:1},
-    {emoji:'🦞',size:'m',correct:2},{emoji:'🐠',size:'s',correct:0},
-    {emoji:'🐡',size:'l',correct:1},{emoji:'🦐',size:'s',correct:2},
-    {emoji:'💀',size:'r',correct:3},{emoji:'🐟',size:'l',correct:1},
+    {emoji:'🐟',correct:0},{emoji:'🐟',correct:1},{emoji:'🦞',correct:2},
+    {emoji:'🐠',correct:0},{emoji:'🐡',correct:1},{emoji:'🦐',correct:2},
+    {emoji:'💀',correct:3},{emoji:'🐟',correct:1},
   ];
   var idx=0,score=0,done=false;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
     +'<div class="mini-title">TRI DES SARDINES 🐟</div>'
     +'<div class="mini-sub">Mets chaque poisson dans la bonne case !</div>'
-    +'<div id="mj4-fish" style="font-size:52px;min-height:60px;display:flex;align-items:center;justify-content:center"></div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">'
-    +categories.map(function(c,i){return '<button class="opt-btn" style="font-size:11px;padding:12px 6px" onclick="sortFish('+i+')">'+c+'</button>';}).join('')
+    +'<div id="mj4-fish" style="font-size:52px;min-height:60px;display:flex;align-items:center;justify-content:center;transition:opacity .2s"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%" id="mj4-btns">'
+    +categories.map(function(c,i){return '<button class="opt-btn" style="font-size:11px;padding:12px 6px" id="mj4-b'+i+'">'+c+'</button>';}).join('')
     +'</div>'
-    +'<div id="mj4-prog" style="font-size:10px;color:rgba(255,255,255,.3)">0/'+items.length+'</div>'
+    +'<div id="mj4-prog" style="font-size:10px;color:rgba(255,255,255,.3)">1/'+items.length+'</div>'
     +'</div>';
-  function showNext(){
-    if(done||idx>=items.length)return;
-    document.getElementById('mj4-fish').textContent=items[idx].emoji;
-    document.getElementById('mj4-prog').textContent=idx+'/'+items.length;
-  }
-  showNext();
-  window.sortFish=function(choice){
-    if(done)return;
-    var correct=items[idx].correct===choice;
-    if(correct)score+=1.5;
-    var fish=document.getElementById('mj4-fish');
-    fish.style.transform=correct?'scale(1.3) rotate(10deg)':'scale(.7)';
-    fish.style.opacity='0';
-    setTimeout(function(){
-      fish.style.transform='';fish.style.opacity='1';
-      idx++;
-      if(idx>=items.length){done=true;nextQ(Math.round(Math.min(12,score)));}
-      else showNext();
-    },300);
-  };
+  categories.forEach(function(c,i){
+    var btn=document.getElementById('mj4-b'+i);
+    if(btn) btn.onclick=function(){
+      if(done)return;
+      var correct=items[idx].correct===i;
+      if(correct)score+=1.5;
+      var fish=document.getElementById('mj4-fish');
+      if(fish){fish.style.opacity='0';}
+      setTimeout(function(){
+        idx++;
+        if(idx>=items.length){done=true;nextQ(Math.round(Math.min(12,score)));return;}
+        var f=document.getElementById('mj4-fish');
+        var p=document.getElementById('mj4-prog');
+        if(f){f.style.opacity='1';f.textContent=items[idx].emoji;}
+        if(p)p.textContent=(idx+1)+'/'+items.length;
+      },250);
+    };
+  });
+  var fish=document.getElementById('mj4-fish');
+  if(fish)fish.textContent=items[0].emoji;
+  var t=setTimeout(function(){if(!done){done=true;nextQ(Math.round(Math.min(12,score)));}},12000);
+  _mjCleanup=function(){done=true;clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ5 — BON DE LIVRAISON
-   Mémoriser 3 infos d'un bon de livraison
-───────────────────────────────*/
+/* ── MJ5 : BON DE LIVRAISON ── */
 function mj5(body){
   var data={date:'14/03',poids:'2.4T',conteneur:'BDK-447'};
-  var phase='show';
+  var correct=0,qi=0,done=false;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
     +'<div class="mini-title">BON DE LIVRAISON 📋</div>'
     +'<div class="mini-sub">Memorise le bon, il disparait dans 3s !</div>'
     +'<div id="mj5-card" style="background:#fffde7;border:2px solid #f59e0b;border-radius:10px;padding:16px;width:100%;text-align:left">'
     +'<div style="font-weight:800;color:#0f172a;margin-bottom:8px;font-size:11px;letter-spacing:2px">BON DE LIVRAISON N°2047</div>'
-    +'<div style="font-size:12px;color:#374151;line-height:1.8">'
-    +'📅 Date : <strong>'+data.date+'</strong><br>'
-    +'⚖️ Poids : <strong>'+data.poids+'</strong><br>'
-    +'📦 Conteneur : <strong>'+data.conteneur+'</strong>'
-    +'</div></div>'
-    +'<div id="mj5-questions" style="width:100%;display:none"></div>'
+    +'<div style="font-size:12px;color:#374151;line-height:1.8">📅 Date : <strong>'+data.date+'</strong><br>⚖️ Poids : <strong>'+data.poids+'</strong><br>📦 Conteneur : <strong>'+data.conteneur+'</strong></div>'
+    +'</div>'
+    +'<div id="mj5-q" style="width:100%;display:none"></div>'
     +'</div>';
-  var correct=0;
-  setTimeout(function(){
+  var questions=[
+    {q:'Quelle etait la date ?',opts:['12/03','14/03','17/03','21/03'],correct:1},
+    {q:'Quel etait le poids ?',opts:['1.8T','3.1T','2.4T','4.0T'],correct:2},
+    {q:'Numero du conteneur ?',opts:['BDK-447','BDX-274','BDK-474','BKD-447'],correct:0},
+  ];
+  function showQ(){
+    if(qi>=questions.length){nextQ(Math.min(12,correct*4));return;}
+    var q=questions[qi];
+    var qz=document.getElementById('mj5-q');
+    if(!qz)return;
+    qz.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:white;letter-spacing:1px;margin-bottom:10px;text-align:center">'+q.q+'</div>'
+      +'<div class="emoji-options">'
+      +q.opts.map(function(o,i){return '<button class="opt-btn" style="font-size:12px" id="mj5-o'+i+'">'+o+'</button>';}).join('')
+      +'</div>';
+    q.opts.forEach(function(o,i){
+      var btn=document.getElementById('mj5-o'+i);
+      if(btn) btn.onclick=function(){
+        if(done)return;
+        document.querySelectorAll('#mj5-q .opt-btn').forEach(function(b){b.disabled=true;});
+        if(i===q.correct)correct++;
+        qi++;setTimeout(showQ,400);
+      };
+    });
+  }
+  var t=setTimeout(function(){
     var card=document.getElementById('mj5-card');
     if(card)card.style.display='none';
-    var qz=document.getElementById('mj5-questions');
-    if(!qz)return;
-    qz.style.display='block';
-    var questions=[
-      {q:'Quelle etait la date ?',opts:['12/03','14/03','17/03','21/03'],correct:1},
-      {q:'Quel etait le poids ?',opts:['1.8T','3.1T','2.4T','4.0T'],correct:2},
-      {q:'Quel etait le conteneur ?',opts:['BDK-447','BDX-274','BDK-474','BKD-447'],correct:0},
-    ];
-    var qi=0;
-    function showQ(){
-      if(qi>=questions.length){nextQ(Math.min(12,correct*4));return;}
-      var q=questions[qi];
-      qz.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;margin-bottom:10px;text-align:center">'+q.q+'</div>'
-        +'<div class="emoji-options">'
-        +q.opts.map(function(o,i){return '<button class="opt-btn" style="font-size:12px" onclick="ansQ('+i+','+q.correct+')">'+o+'</button>';}).join('')
-        +'</div>';
-    }
-    window.ansQ=function(choice,corr){
-      document.querySelectorAll('#mj5-questions .opt-btn').forEach(function(b){b.disabled=true;});
-      if(choice===corr)correct++;
-      qi++;setTimeout(showQ,400);
-    };
+    var qz=document.getElementById('mj5-q');
+    if(qz)qz.style.display='block';
     showQ();
   },3000);
+  _mjCleanup=function(){done=true;clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ6 — EVITE LA VAGUE
-   Tap pour sauter par dessus les vagues
-───────────────────────────────*/
+/* ── MJ6 : EVITE LA VAGUE ── */
 function mj6(body){
   var score=0,wavesDone=0,totalWaves=4,jumping=false,done=false;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
     +'<div class="mini-title">EVITE LA VAGUE 🌊</div>'
     +'<div class="mini-sub">Tape pour sauter au bon moment !</div>'
-    +'<canvas id="mj6-cv" width="300" height="160" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
-    +'<div id="mj6-score" style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#4ade80">0 saut(s) reussi(s)</div>'
+    +'<canvas id="mj6-cv" width="300" height="150" style="border:2px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer"></canvas>'
+    +'<div id="mj6-score" style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#4ade80">Evite les vagues !</div>'
     +'</div>';
   var cv=document.getElementById('mj6-cv');
+  if(!cv){nextQ(0);return;}
   var ctx=cv.getContext('2d');
-  var dockerY=120,dockerJump=0,waveX=320,waveActive=false;
-  function draw(){
-    ctx.clearRect(0,0,300,160);
-    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,160);
-    ctx.fillStyle='#1e3a5f';ctx.fillRect(0,135,300,25);
-    // Docker
-    ctx.font='24px serif';ctx.fillText('🧔',30,dockerY);
-    // Vague
-    if(waveActive){ctx.font='22px serif';ctx.fillText('🌊',waveX,130);}
-    // Score
-    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='bold 11px Inter,sans-serif';
-    ctx.fillText(wavesDone+'/'+totalWaves+' vagues',200,20);
-  }
+  var W=300,H=150,dockerY=112,waveX=320,waveActive=false,raf=null;
   cv.onclick=function(){
     if(done||jumping)return;
     jumping=true;
-    var up=setInterval(function(){dockerY-=8;if(dockerY<=70){clearInterval(up);var dn=setInterval(function(){dockerY+=8;if(dockerY>=120){dockerY=120;jumping=false;clearInterval(dn);}},30);}},30);
+    var t=0;
+    var iv=setInterval(function(){
+      t++;dockerY=112-Math.sin(t/8*Math.PI)*40;
+      if(t>=8){clearInterval(iv);dockerY=112;jumping=false;}
+    },30);
   };
+  function draw(){
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#0f172a';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(0,125,W,25);
+    ctx.font='22px serif';ctx.fillText('🧔',28,dockerY);
+    if(waveActive)ctx.fillText('🌊',waveX,122);
+    ctx.fillStyle='rgba(255,255,255,.2)';ctx.font='bold 10px Inter,sans-serif';
+    ctx.fillText(wavesDone+'/'+totalWaves,W-45,18);
+  }
   function launchWave(){
     if(done)return;
     waveX=320;waveActive=true;
     var iv=setInterval(function(){
-      waveX-=5;
-      var dockerFeet=dockerY;
-      if(waveX<=60&&waveX>=30){
-        if(dockerFeet>100){score=Math.max(0,score-1);}
-        else{score+=3;}
-        waveActive=false;waveX=320;clearInterval(iv);
-        wavesDone++;
-        if(wavesDone>=totalWaves){done=true;nextQ(Math.min(12,score));}
-        else{setTimeout(launchWave,800);}
+      if(done){clearInterval(iv);return;}
+      waveX-=4;
+      if(waveX<=65&&waveX>=25){
+        if(dockerY>100)score=Math.max(0,score-1);else score+=3;
+        waveActive=false;clearInterval(iv);wavesDone++;
+        var sc=document.getElementById('mj6-score');
+        if(sc)sc.textContent=score>0?'Bien joue !':'Gege rit de toi...';
+        if(wavesDone>=totalWaves){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
+        else setTimeout(launchWave,900);
       }
     },30);
   }
-  var raf2;
-  function loop2(){if(done)return;draw();raf2=requestAnimationFrame(loop2);}
-  loop2();
-  setTimeout(launchWave,1000);
+  function loop(){if(done)return;draw();raf=requestAnimationFrame(loop);}
+  loop();
+  var t=setTimeout(launchWave,1000);
+  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ7 — PAUSE SYNDICALE
-   Ne pas toucher l'écran pendant 6 secondes
-───────────────────────────────*/
+/* ── MJ7 : PAUSE SYNDICALE ── */
 function mj7(body){
   var failed=false,countdown=6;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=16px;width:100%;padding:20px" id="mj7-wrap">'
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;padding:10px" id="mj7-wrap">'
     +'<div class="mini-title">PAUSE SYNDICALE ☕</div>'
     +'<div class="mini-sub">Ne touche PAS l ecran pendant 6 secondes !</div>'
-    +'<div id="mj7-count" style="font-family:Bebas Neue,sans-serif;font-size:64px;color:#fbbf24;margin:20px 0">6</div>'
+    +'<div id="mj7-count" style="font-family:Bebas Neue,sans-serif;font-size:64px;color:#fbbf24;line-height:1">6</div>'
     +'<div style="font-size:28px" id="mj7-icon">😤</div>'
-    +'<div id="mj7-msg" style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Gege surveille...</div>'
+    +'<div id="mj7-msg" style="font-size:12px;color:rgba(255,255,255,.4)">Gege surveille...</div>'
     +'</div>';
-  document.getElementById('mj7-wrap').addEventListener('click',function(){
-    if(failed)return;
-    failed=true;
-    clearInterval(iv);
-    document.getElementById('mj7-count').textContent='😱';
-    document.getElementById('mj7-icon').textContent='😡';
-    document.getElementById('mj7-msg').textContent='GEGE EST FURIEUX !';
-    document.getElementById('mj7-msg').style.color='#f87171';
+  function fail(){
+    if(failed)return;failed=true;clearInterval(iv);
+    var el=document.getElementById('mj7-count');var ic=document.getElementById('mj7-icon');var mg=document.getElementById('mj7-msg');
+    if(el)el.textContent='😱';if(ic)ic.textContent='😡';
+    if(mg){mg.textContent='GEGE EST FURIEUX !';mg.style.color='#f87171';}
     setTimeout(function(){nextQ(0);},1500);
-  });
+  }
+  var wrap=document.getElementById('mj7-wrap');
+  if(wrap)wrap.addEventListener('click',fail);
   var iv=setInterval(function(){
     countdown--;
-    var el=document.getElementById('mj7-count');
-    if(el)el.textContent=countdown;
+    var el=document.getElementById('mj7-count');if(el)el.textContent=countdown;
     if(countdown<=0){
-      clearInterval(iv);
-      var ic=document.getElementById('mj7-icon');
+      clearInterval(iv);failed=true;
+      var ic=document.getElementById('mj7-icon');var mg=document.getElementById('mj7-msg');
       if(ic)ic.textContent='😴';
-      var mg=document.getElementById('mj7-msg');
       if(mg){mg.textContent='Bravo, t as resiste !';mg.style.color='#4ade80';}
       setTimeout(function(){nextQ(12);},1000);
     }
   },1000);
+  _mjCleanup=function(){failed=true;clearInterval(iv);};
 }
 
-/* ─────────────────────────────
-   MJ8 — L'APPEL D'OFFRES
-   3 contrats, trouver le plus rentable
-───────────────────────────────*/
+/* ── MJ8 : L'APPEL D'OFFRES ── */
 function mj8(body){
   var contrats=[
-    {nom:'CMA CGM',   prix:45000, delai:3, poids:12},
-    {nom:'Bolloré',   prix:38000, delai:2, poids:8},
-    {nom:'MSC Lines', prix:52000, delai:5, poids:15},
+    {nom:'CMA CGM',prix:45000,delai:3,poids:12},
+    {nom:'Bollore',prix:38000,delai:2,poids:8},
+    {nom:'MSC Lines',prix:52000,delai:5,poids:15},
   ];
-  // Rentabilité = prix / (delai * poids)
   var rents=contrats.map(function(c){return c.prix/(c.delai*c.poids);});
   var best=rents.indexOf(Math.max.apply(null,rents));
-  var shown=false;
+  var done=false;
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
     +'<div class="mini-title">L APPEL D OFFRES 💼</div>'
-    +'<div class="mini-sub">Memorise les 3 contrats (4s) puis choisis le plus rentable !</div>'
+    +'<div class="mini-sub">Memorise les contrats (4s) puis choisis le plus rentable !</div>'
     +'<div id="mj8-cards" style="display:flex;flex-direction:column;gap:6px;width:100%">'
-    +contrats.map(function(c){
-      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7)">'
-      +'<strong style="color:white">'+c.nom+'</strong> — '+c.prix.toLocaleString()+'€ · '+c.delai+'j · '+c.poids+'T</div>';
-    }).join('')
+    +contrats.map(function(c){return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7)"><strong style="color:white">'+c.nom+'</strong> — '+c.prix.toLocaleString()+'€ · '+c.delai+'j · '+c.poids+'T</div>';}).join('')
     +'</div>'
     +'<div id="mj8-q" style="width:100%;display:none"></div>'
     +'</div>';
-  setTimeout(function(){
-    var cards=document.getElementById('mj8-cards');
-    if(cards)cards.style.display='none';
-    var q=document.getElementById('mj8-q');
-    if(!q)return;
+  var t=setTimeout(function(){
+    if(done)return;
+    var cards=document.getElementById('mj8-cards');if(cards)cards.style.display='none';
+    var q=document.getElementById('mj8-q');if(!q)return;
     q.style.display='block';
-    q.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;text-align:center;margin-bottom:10px">LEQUEL EST LE PLUS RENTABLE ?</div>'
+    q.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:white;letter-spacing:1px;text-align:center;margin-bottom:10px">LEQUEL EST LE PLUS RENTABLE ?</div>'
       +'<div style="display:flex;flex-direction:column;gap:6px">'
-      +contrats.map(function(c,i){
-        return '<button class="opt-btn" style="font-size:13px;text-align:left" onclick="pickContrat('+i+','+best+')">'+c.nom+'</button>';
-      }).join('')
+      +contrats.map(function(c,i){return '<button class="opt-btn" style="font-size:13px;text-align:left" id="mj8-c'+i+'">'+c.nom+'</button>';}).join('')
       +'</div>';
+    contrats.forEach(function(c,i){
+      var btn=document.getElementById('mj8-c'+i);
+      if(btn) btn.onclick=function(){
+        if(done)return;done=true;
+        document.querySelectorAll('#mj8-q .opt-btn').forEach(function(b){b.disabled=true;});
+        nextQ(i===best?12:0);
+      };
+    });
   },4000);
-  window.pickContrat=function(choice,correct){
-    document.querySelectorAll('#mj8-q .opt-btn').forEach(function(b){b.disabled=true;});
-    nextQ(choice===correct?12:0);
-  };
+  _mjCleanup=function(){done=true;clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ9 — REPARE LA GRUE
-   Retrouver les 3 cases en panne
-───────────────────────────────*/
+/* ── MJ9 : REPARE LA GRUE ── */
 function mj9(body){
-  var pannes=[], selected=[], done=false;
-  while(pannes.length<3){
-    var r=Math.floor(Math.random()*9);
-    if(pannes.indexOf(r)<0)pannes.push(r);
-  }
+  var pannes=[],selected=[],done=false;
+  while(pannes.length<3){var r=Math.floor(Math.random()*9);if(pannes.indexOf(r)<0)pannes.push(r);}
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
     +'<div class="mini-title">REPARE LA GRUE 🔧</div>'
     +'<div class="mini-sub">Memorise les 3 pannes (2s) puis retrouve-les !</div>'
-    +'<div id="mj9-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%"></div>'
+    +'<div id="mj9-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%"></div>'
     +'<div id="mj9-msg" style="font-size:11px;color:rgba(255,255,255,.4)">Observe...</div>'
     +'</div>';
   function renderGrid(reveal){
-    var g=document.getElementById('mj9-grid');
-    if(!g)return;
+    var g=document.getElementById('mj9-grid');if(!g)return;
     g.innerHTML='';
     for(var i=0;i<9;i++){
       var btn=document.createElement('div');
-      var isPanne=pannes.indexOf(i)>=0;
-      var isSel=selected.indexOf(i)>=0;
+      var isPanne=pannes.indexOf(i)>=0,isSel=selected.indexOf(i)>=0;
       if(reveal){
-        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isPanne?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isPanne?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+'';
+        btn.style.cssText='height:58px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isPanne?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isPanne?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)');
         btn.textContent=isPanne?'🔴':'⚙️';
       } else {
-        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isSel?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isSel?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+';cursor:pointer';
+        btn.style.cssText='height:58px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isSel?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isSel?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+';cursor:pointer';
         btn.textContent=isSel?'🔴':'⚙️';
         btn.onclick=(function(idx){return function(){
           if(done)return;
           var si=selected.indexOf(idx);
-          if(si>=0)selected.splice(si,1);else if(selected.length<3)selected.push(idx);
+          if(si>=0)selected.splice(si,1);
+          else if(selected.length<3)selected.push(idx);
           renderGrid(false);
           if(selected.length===3){
             done=true;
@@ -1133,40 +1092,40 @@ function mj9(body){
     }
   }
   renderGrid(true);
-  setTimeout(function(){
+  var t=setTimeout(function(){
     renderGrid(false);
-    var msg=document.getElementById('mj9-msg');
-    if(msg)msg.textContent='Retrouve les 3 pannes !';
+    var msg=document.getElementById('mj9-msg');if(msg)msg.textContent='Retrouve les 3 pannes !';
   },2000);
+  _mjCleanup=function(){done=true;clearTimeout(t);};
 }
 
-/* ─────────────────────────────
-   MJ10 — PARI DU DOCKER
-   Doubler ou garder son score
-───────────────────────────────*/
+/* ── MJ10 : PARI DU DOCKER ── */
 function mj10(body){
   body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;text-align:center;padding:10px">'
     +'<div class="mini-title">PARI DU DOCKER 🎲</div>'
-    +'<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5">Ton score actuel :<br>'
+    +'<div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5">Ton score actuel :<br>'
     +'<span style="font-family:Bebas Neue,sans-serif;font-size:40px;color:#fbbf24">'+qScore+' pts</span></div>'
-    +'<div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Gege te propose un pari :<br>Pile → +12 pts | Face → -6 pts</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Gege te propose un pari :<br>Pile → +12 pts · Face → -6 pts</div>'
     +'<div style="display:flex;gap:10px;width:100%">'
-    +'<button class="opt-btn" style="flex:1;font-size:14px;background:rgba(34,197,94,.15);border-color:#22c55e;color:#4ade80" onclick="doPari(true)">JE PARIE 🎲</button>'
-    +'<button class="opt-btn" style="flex:1;font-size:14px" onclick="doPari(false)">JE GARDE 🛡️</button>'
+    +'<button class="opt-btn" style="flex:1;font-size:14px;background:rgba(34,197,94,.15);border-color:#22c55e;color:#4ade80" id="mj10-bet">JE PARIE 🎲</button>'
+    +'<button class="opt-btn" style="flex:1;font-size:14px" id="mj10-keep">JE GARDE 🛡️</button>'
     +'</div>'
     +'<div id="mj10-result" style="font-size:13px;min-height:20px"></div>'
     +'</div>';
-  window.doPari=function(parie){
+  var done=false;
+  function doPari(parie){
+    if(done)return;done=true;
     document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
     if(!parie){nextQ(0);return;}
     var coin=Math.random()<0.5;
     var res=document.getElementById('mj10-result');
-    if(res){
-      res.textContent=coin?'⚡ PILE ! +12 pts !':'💀 FACE ! -6 pts...';
-      res.style.color=coin?'#4ade80':'#f87171';
-    }
+    if(res){res.textContent=coin?'⚡ PILE ! +12 pts !':'💀 FACE ! -6 pts...';res.style.color=coin?'#4ade80':'#f87171';}
     setTimeout(function(){nextQ(coin?12:-6);},1500);
-  };
+  }
+  var bb=document.getElementById('mj10-bet');var bk=document.getElementById('mj10-keep');
+  if(bb)bb.onclick=function(){doPari(true);};
+  if(bk)bk.onclick=function(){doPari(false);};
+  _mjCleanup=function(){done=true;};
 }
 
 
