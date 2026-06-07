@@ -3,306 +3,416 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Objectifs du jour - Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<title>Objectifs — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
-  body { font-family:'Inter',sans-serif; background:#fff; color:#1f2937; min-height:100dvh; padding:0; overflow-x:hidden; }
-  /* ===== BENTO GRID — fond blanc ===== */
-  .bg { display:none; }
-  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; padding:calc(52px + env(safe-area-inset-top)) 14px 32px; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#0d1117;font-family:'Inter',sans-serif;min-height:100dvh;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 
-  .page-title { font-family:'Bebas Neue',sans-serif; font-size:26px; letter-spacing:3px; color:#1a1a1a; margin-bottom:2px; }
-  .page-sub { font-size:9px; color:rgba(0,0,0,0.3); letter-spacing:2px; margin-bottom:14px; }
+/* ── HEADER BD ── */
+.hdr{
+  background:#cc1a1a;
+  padding:calc(14px + env(safe-area-inset-top)) 16px 14px;
+  position:relative;overflow:hidden;
+  border-bottom:4px solid #0f172a;
+}
+.hdr::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 10px,rgba(0,0,0,.04) 10px 12px)}
+.hdr-row{display:flex;align-items:center;gap:12px;position:relative;z-index:1}
+.back{background:#0f172a;border:3px solid #0f172a;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;cursor:pointer;flex-shrink:0;box-shadow:3px 3px 0 rgba(0,0,0,.4)}
+.hdr-title{font-family:'Bangers',cursive;font-size:26px;letter-spacing:3px;color:white;text-shadow:3px 3px 0 rgba(0,0,0,.4);flex:1}
+.hdr-date{font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.6)}
 
-  /* Grid bento */
-  .bento { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+/* ── BILAN ── */
+.bilan{
+  margin:14px;
+  background:#161b22;
+  border:3px solid #cc1a1a;
+  border-radius:4px;
+  padding:14px;
+  display:flex;align-items:center;gap:14px;
+  box-shadow:4px 4px 0 rgba(204,26,26,.3);
+}
+.bilan-arc{flex-shrink:0}
+.bilan-info{flex:1}
+.bilan-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:white;line-height:1}
+.bilan-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:3px;font-weight:600}
+.bilan-bar-wrap{height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:8px;overflow:hidden}
+.bilan-bar-fill{height:100%;background:linear-gradient(90deg,#cc1a1a,#fbbf24);border-radius:3px;transition:width .5s}
+.bilan-right{flex-shrink:0;text-align:right}
+.bilan-count{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fbbf24;line-height:1}
+.bilan-lbl{font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.3)}
 
-  /* Arc card (colonne gauche, 3 lignes) */
-  .arc-card {
-    grid-column:1; grid-row:span 3;
-    background:#f8f8f8; border:1px solid rgba(0,0,0,0.06);
-    border-radius:14px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; padding:16px 10px; gap:5px;
-    box-shadow:0 4px 14px rgba(0,0,0,0.05);
-  }
-  .arc-lbl { font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:2px; color:rgba(0,0,0,0.3); }
-  .arc-sub { font-size:8px; font-weight:700; letter-spacing:1px; color:rgba(0,0,0,0.2); text-align:center; }
+/* ── SECTION ── */
+.section-hd{
+  margin:14px 14px 8px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-hd-line{flex:1;height:2px;background:repeating-linear-gradient(90deg,rgba(204,26,26,.4) 0 6px,transparent 6px 10px)}
+.section-hd-txt{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:3px;color:#cc1a1a}
 
-  /* Mini objectifs (colonne droite) */
-  .obj {
-    background:#f8f8f8; border:1px solid rgba(0,0,0,0.06);
-    border-radius:14px; padding:11px; display:flex; flex-direction:column; gap:5px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.04); cursor:pointer;
-    transition:transform .12s;
-  }
-  .obj:active { transform:scale(0.97); }
-  .obj.done { border-color:rgba(220,38,38,0.2); background:linear-gradient(135deg,#fff,#fff5f6); }
-  .obj.claimed { opacity:0.55; }
-  .obj-ic { font-size:20px; }
-  .obj-mid { flex:1; }
-  .obj-title { font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:0.5px; color:#1a1a1a; line-height:1.1; }
-  .obj-hint { font-size:9px; color:#9ca3af; margin-top:2px; line-height:1.3; display:none; }
-  .obj-reward { font-size:9px; color:#d97706; font-weight:700; margin-top:3px; }
-  .obj-act { }
-  .claim-btn {
-    border:none; border-radius:8px; padding:8px 10px; width:100%;
-    font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:0.5px;
-    cursor:pointer; background:#dc2626; color:#fff;
-  }
-  .claim-btn:active { transform:scale(0.94); }
-  .badge-st {
-    font-family:'Bebas Neue',sans-serif; font-size:11px; letter-spacing:0.5px;
-    padding:8px 10px; border-radius:8px; width:100%; text-align:center; display:block;
-  }
-  .st-todo { background:rgba(0,0,0,0.05); color:rgba(0,0,0,0.25); }
-  .st-claimed { background:rgba(220,38,38,0.1); color:#dc2626; }
+/* ── OBJECTIF CARD BD ── */
+.obj-card{
+  margin:0 14px 10px;
+  background:#161b22;
+  border:3px solid #21262d;
+  border-radius:4px;
+  overflow:hidden;
+  position:relative;
+  box-shadow:3px 3px 0 rgba(0,0,0,.5);
+  transition:border-color .15s;
+}
+.obj-card.done{border-color:#22c55e}
+.obj-card.claimed{border-color:rgba(255,255,255,.1);opacity:.55}
 
-  /* Streak card (pleine largeur) */
-  .streak-card {
-    grid-column:span 2;
-    background:linear-gradient(135deg,#dc2626,#9f1239);
-    border-radius:14px; padding:12px 14px;
-    display:flex; align-items:center; gap:10px;
-    box-shadow:0 6px 20px rgba(220,38,38,0.25);
-  }
-  .streak-icon { font-size:22px; }
-  .streak-info { flex:1; }
-  .streak-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#fff; line-height:1; }
-  .streak-sub { font-size:8px; color:rgba(255,255,255,0.6); font-weight:700; letter-spacing:1px; margin-top:2px; }
-  .streak-badge {
-    background:rgba(255,255,255,0.15); border-radius:7px;
-    padding:4px 9px; font-family:'Bebas Neue',sans-serif; font-size:11px; color:#fff;
-  }
+/* Bande catégorie à gauche */
+.obj-card-inner{display:flex;align-items:stretch}
+.obj-band{width:5px;flex-shrink:0}
+.obj-body{flex:1;padding:12px}
 
-  /* Countdown card (pleine largeur) */
-  .cd-card {
-    grid-column:span 2;
-    background:#f8f8f8; border:1px solid rgba(0,0,0,0.06);
-    border-radius:14px; padding:9px 14px;
-    display:flex; align-items:center; gap:8px;
-  }
-  .cd-icon { font-size:14px; opacity:0.35; }
-  .cd-lbl { font-size:8px; color:rgba(0,0,0,0.25); font-weight:700; letter-spacing:2px; flex:1; }
-  .cd-val { font-family:'Bebas Neue',sans-serif; font-size:16px; color:rgba(0,0,0,0.35); letter-spacing:2px; }
+/* Header objectif */
+.obj-hd{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.obj-icon{font-size:26px;flex-shrink:0;width:40px;height:40px;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.06);border-radius:4px;display:flex;align-items:center;justify-content:center}
+.obj-info{flex:1}
+.obj-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:white;line-height:1.1}
+.obj-cat{font-size:8px;font-weight:800;letter-spacing:2px;margin-top:3px}
+.obj-reward{text-align:right;flex-shrink:0}
+.obj-reward-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;line-height:1}
+.obj-reward-lbl{font-size:7px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.3);margin-top:1px}
 
-  /* Back button */
-  .back-bottom {
-    grid-column:span 2; margin-top:4px;
-    padding:13px; border-radius:12px; cursor:pointer;
-    background:#f8f8f8; border:1px solid rgba(0,0,0,0.07);
-    color:rgba(0,0,0,0.35); font-family:'Bebas Neue',sans-serif;
-    font-size:15px; letter-spacing:2px; width:100%;
-  }
-  .back-bottom:active { transform:scale(0.99); }
+/* Barre de progression */
+.obj-prog-wrap{margin-bottom:10px}
+.obj-prog-top{display:flex;justify-content:space-between;margin-bottom:4px}
+.obj-prog-lbl{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.5px}
+.obj-prog-val{font-size:9px;font-weight:800;color:rgba(255,255,255,.6)}
+.obj-prog-bar{height:5px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.obj-prog-fill{height:100%;border-radius:2px;transition:width .5s}
 
-  /* Toast */
-  .toast {
-    position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:200;
-    background:#fff; border:1px solid rgba(220,38,38,0.4); border-radius:13px;
-    padding:12px 18px; font-size:13px; font-weight:700;
-    opacity:0; transition:all .35s; max-width:90%; text-align:center;
-    color:#dc2626; box-shadow:0 10px 30px rgba(0,0,0,0.12);
-  }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.bad { border-color:rgba(220,38,38,0.6); color:#dc2626; }
+/* Bouton réclamer */
+.obj-btn{
+  width:100%;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.08);border-radius:3px;
+  padding:10px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;color:rgba(255,255,255,.4);
+  cursor:default;text-align:center;
+}
+.obj-btn.ready{
+  background:linear-gradient(135deg,#cc1a1a,#991414);border-color:#cc1a1a;
+  color:white;cursor:pointer;box-shadow:2px 2px 0 rgba(0,0,0,.4);
+}
+.obj-btn.ready:active{transform:scale(.98);opacity:.85}
+.obj-btn.claimed-btn{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.2);color:#22c55e}
 
-  .loader { text-align:center; padding:60px; color:#c7c7d1; font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
-  .note { grid-column:span 2; text-align:center; font-size:10px; color:#9ca3af; line-height:1.5; }
-  .back-btn { display:none; }
-  .hdr { display:none; }
-  .mick { display:none; }
-  .prog { display:none; }
+/* Badge complété */
+.done-stamp{
+  position:absolute;top:10px;right:10px;
+  background:#22c55e;border:2px solid #166534;border-radius:3px;
+  padding:2px 8px;font-family:'Bebas Neue',sans-serif;font-size:10px;
+  color:white;letter-spacing:2px;transform:rotate(-2deg);
+  box-shadow:2px 2px 0 rgba(0,0,0,.3);
+}
+
+/* ── RÉCOMPENSE ANNONCÉE ── */
+.reward-toast{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:#0f172a;border:4px solid #cc1a1a;border-radius:4px;
+  padding:24px 32px;text-align:center;z-index:300;
+  box-shadow:6px 6px 0 rgba(204,26,26,.4);
+  display:none;
+}
+.reward-toast.show{display:block}
+.reward-icon{font-size:40px;margin-bottom:8px}
+.reward-txt{font-family:'Bangers',cursive;font-size:28px;letter-spacing:3px;color:#fbbf24;text-shadow:2px 2px 0 rgba(0,0,0,.5)}
+.reward-sub{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:299;display:none}
+.overlay.show{display:block}
+
+/* ── LOADER ── */
+.loader{position:fixed;inset:0;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loader-icon{font-size:36px;animation:ldpulse 1.2s ease-in-out infinite}
+@keyframes ldpulse{0%,100%{opacity:.3}50%{opacity:1}}
+.loader-txt{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:4px;color:rgba(255,255,255,.3)}
+
+/* ── TOAST ── */
+.sml-toast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:8px 16px;border-radius:20px;font-size:11px;font-weight:700;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;border:1px solid rgba(255,255,255,.1);white-space:nowrap}
+.sml-toast.show{opacity:1}
+
+/* ── SECTION DEMAIN ── */
+.demain-card{margin:0 14px;background:#161b22;border:2px solid rgba(255,255,255,.06);border-radius:4px;padding:14px;opacity:.5}
+.demain-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.4)}
+.demain-sub{font-size:10px;color:rgba(255,255,255,.25);margin-top:4px;font-weight:600}
+.countdown{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#cc1a1a;margin-top:6px;letter-spacing:1px}
 </style>
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="wrap">
-    <div class="page-title">OBJECTIFS</div>
-    <div class="page-sub">3 DÉFIS QUOTIDIENS</div>
-    <div class="bento">
-      <!-- Arc progress (gauche, 3 lignes) -->
-      <div class="arc-card">
-        <svg id="objArcSvg" width="90" height="90" viewBox="0 0 90 90">
-          <circle cx="45" cy="45" r="36" fill="none" stroke="rgba(220,38,38,0.1)" stroke-width="6"/>
-          <circle id="objArcFill" cx="45" cy="45" r="36" fill="none" stroke="#dc2626" stroke-width="6"
-            stroke-dasharray="0 226.2" stroke-dashoffset="56.5" stroke-linecap="round"
-            transform="rotate(-90 45 45)" style="transition:stroke-dasharray .6s ease"/>
-          <text id="objArcText" x="45" y="50" text-anchor="middle" font-family="Bebas Neue" font-size="18" fill="#1a1a1a">0/3</text>
-        </svg>
-        <div class="arc-lbl">PROGRESS</div>
-        <div class="arc-sub" id="arcSub">0 FAIT · 3 RESTANTS</div>
-      </div>
-      <!-- Objectifs (droite) -->
-      <div id="list"><div class="loader" style="grid-column:span 1;padding:20px;font-size:10px">…</div></div>
-      <!-- Streak -->
-      <div class="streak-card">
-        <div class="streak-icon">🔥</div>
-        <div class="streak-info">
-          <div class="streak-val" id="streakVal">— JOURS</div>
-          <div class="streak-sub">SÉRIE EN COURS</div>
-        </div>
-        <div class="streak-badge" id="streakBadge">RECORD : —</div>
-      </div>
-      <!-- Countdown -->
-      <div class="cd-card">
-        <div class="cd-icon">⏰</div>
-        <div class="cd-lbl">RESET À MINUIT</div>
-        <div class="cd-val" id="cdVal">—</div>
-      </div>
-      <div class="note">🔄 Nouveaux objectifs chaque jour à minuit</div>
-      <button class="back-bottom" onclick="window.location.href='game.html'">← RETOUR AU JEU</button>
-    </div>
+
+<div class="loader" id="loader">
+  <div class="loader-icon">🎯</div>
+  <div class="loader-txt">OBJECTIFS DU JOUR</div>
+</div>
+
+<div id="main" style="display:none">
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-row">
+    <button class="back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">🎯 OBJECTIFS DU JOUR</div>
+    <div class="hdr-date" id="hdr-date"></div>
   </div>
-  <div class="toast" id="toast"></div>
+</div>
+
+<!-- BILAN -->
+<div class="bilan">
+  <div class="bilan-arc">
+    <svg width="56" height="56" viewBox="0 0 56 56">
+      <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="5"/>
+      <circle cx="28" cy="28" r="22" fill="none" stroke="#cc1a1a" stroke-width="5"
+        stroke-dasharray="0 138" stroke-linecap="round"
+        transform="rotate(-90 28 28)" id="arc-fill" style="transition:stroke-dasharray .6s"/>
+      <text x="28" y="32" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="16" fill="white" id="arc-txt">0</text>
+    </svg>
+  </div>
+  <div class="bilan-info">
+    <div class="bilan-title" id="bilan-title">OBJECTIFS DU JOUR</div>
+    <div class="bilan-sub" id="bilan-sub">Charge en cours...</div>
+    <div class="bilan-bar-wrap"><div class="bilan-bar-fill" id="bilan-bar" style="width:0%"></div></div>
+  </div>
+  <div class="bilan-right">
+    <div class="bilan-count" id="bilan-count">0/3</div>
+    <div class="bilan-lbl">COMPLETES</div>
+  </div>
+</div>
+
+<!-- OBJECTIFS -->
+<div class="section-hd">
+  <div class="section-hd-txt">MISSIONS</div>
+  <div class="section-hd-line"></div>
+</div>
+
+<div id="obj-list"></div>
+
+<!-- COMPTE A REBOURS DEMAIN -->
+<div class="section-hd" style="margin-top:16px">
+  <div class="section-hd-txt">PROCHAINS OBJECTIFS</div>
+  <div class="section-hd-line"></div>
+</div>
+<div class="demain-card">
+  <div class="demain-title">NOUVEAUX OBJECTIFS DANS</div>
+  <div class="countdown" id="countdown">—</div>
+  <div class="demain-sub">Réinitialisés chaque jour à minuit</div>
+</div>
+
+</div><!-- /main -->
+
+<!-- OVERLAY RÉCOMPENSE -->
+<div class="overlay" id="overlay" onclick="closeReward()"></div>
+<div class="reward-toast" id="reward-toast">
+  <div class="reward-icon" id="reward-icon">🏆</div>
+  <div class="reward-txt" id="reward-txt">+5 000€</div>
+  <div class="reward-sub" id="reward-sub">Objectif complété !</div>
+</div>
+
+<div class="sml-toast" id="sml-toast"></div>
 
 <script>
-  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var currentUser=null, money=0, objectives=[];
 
-  // Pool de modèles d'objectifs (hors "connexion" qui est toujours présent)
-  const POOL = [
-    { id:'tower',    title:"Bats ton record d'étages (Tower)", icon:'🏗️', mode:'beat',     metric:'tower_floor',    reward:{type:'money',    amount:6000} },
-    { id:'pointeau', title:'Bats ton record de score (Pointeau)', icon:'📋', mode:'beat',  metric:'pointeau_score', reward:{type:'money',    amount:6000} },
-    { id:'combo',    title:'Bats ton combo max (Pointeau)',   icon:'🔥', mode:'beat',     metric:'pointeau_combo', reward:{type:'trophies', amount:1} },
-    { id:'level',    title:'Gagne un niveau',                 icon:'⭐', mode:'inc',      metric:'level', amount:1, reward:{type:'diamonds', amount:3} },
-    { id:'bourse',   title:'Réalise un profit à la Bourse',   icon:'📈', mode:'increase', metric:'bourse_profit',  reward:{type:'money',    amount:8000} },
-  ];
-  const LOGIN = { id:'login', title:'Connexion du jour', icon:'🔥', mode:'free', reward:{type:'diamonds', amount:2} };
+// ── CATALOGUE ──
+var POOL=[
+  {id:'click200',   cat:'CLICKER',  icon:'👊', title:'Clique 200 fois',              type:'clicks',   target:200,  reward:500,   rewardType:'money'},
+  {id:'click500',   cat:'CLICKER',  icon:'⚡', title:'Clique 500 fois',              type:'clicks',   target:500,  reward:1500,  rewardType:'money'},
+  {id:'combo5',     cat:'CLICKER',  icon:'🔥', title:'Atteins un combo x5',          type:'combo',    target:5,    reward:1000,  rewardType:'money'},
+  {id:'earn10k',    cat:'CLICKER',  icon:'💰', title:'Gagne 10 000€ en cliquant',   type:'earn',     target:10000,reward:2000,  rewardType:'money'},
+  {id:'casino1',    cat:'CASINO',   icon:'🎰', title:'Lance une partie de casino',   type:'casino_play',target:1,  reward:200,   rewardType:'money'},
+  {id:'casino_win', cat:'CASINO',   icon:'🃏', title:'Gagne une partie de casino',   type:'casino_win',target:1,  reward:1500,  rewardType:'money'},
+  {id:'casino_big', cat:'CASINO',   icon:'💎', title:'Mise plus de 5 000€ au casino',type:'casino_bet',target:5000,reward:25,   rewardType:'diamonds'},
+  {id:'bank_dep',   cat:'BANQUE',   icon:'🏦', title:'Depose de l argent en banque', type:'bank_deposit',target:1, reward:300,  rewardType:'money'},
+  {id:'bank_coll',  cat:'BANQUE',   icon:'💹', title:'Collecte tes interets',        type:'bank_collect',target:1, reward:500,  rewardType:'money'},
+  {id:'commerce1',  cat:'COMMERCE', icon:'🏪', title:'Collecte tes revenus commerce',type:'com_collect',target:1, reward:1000, rewardType:'money'},
+  {id:'invest1',    cat:'COMMERCE', icon:'📈', title:'Investis dans ton entreprise', type:'com_invest',target:1,  reward:2000, rewardType:'money'},
+  {id:'xp500',      cat:'XP',       icon:'⭐', title:'Gagne 500 XP aujourd hui',    type:'xp',       target:500,  reward:1000, rewardType:'money'},
+  {id:'login',      cat:'CONNEXION',icon:'📅', title:'Connecte-toi aujourd hui',     type:'login',    target:1,    reward:15,   rewardType:'diamonds'},
+  {id:'lvlup',      cat:'XP',       icon:'🏆', title:'Monte de niveau',              type:'levelup',  target:1,    reward:50,   rewardType:'diamonds'},
+];
 
-  let currentUser=null, todayStr='', objectives=[];
-  let money=0, level=1, diamonds=0, trophies=0, records={}, bourseProfit=0;
+var CAT_COLORS={
+  'CLICKER':'#cc1a1a','CASINO':'#7c3aed','BANQUE':'#d4af37',
+  'COMMERCE':'#0ea5e9','XP':'#22c55e','CONNEXION':'#f97316'
+};
 
-  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
-  const rewardText=r=> r.type==='money' ? `+${fmt(r.amount)}€` : r.type==='diamonds' ? `+${r.amount} 💎` : `+${r.amount} 🏆`;
+function fmtM(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.floor(n)+'€';}
+function smlToast(msg){var t=document.getElementById('sml-toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2200);}
 
-  async function init(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser=session.user;
-    todayStr = new Date().toISOString().split('T')[0];
-    const { data:gs } = await sb.from('game_stats').select('money,level,records,bourse_profit,diamonds,trophies').eq('user_id',currentUser.id).maybeSingle();
-    money=gs?.money||0; level=gs?.level||1; bourseProfit=gs?.bourse_profit||0;
-    records=(gs?.records&&typeof gs.records==='object')?gs.records:{};
-    diamonds=gs?.diamonds||0; trophies=gs?.trophies||0;
+function todayStr(){return new Date().toISOString().split('T')[0];}
 
-    const { data:row } = await sb.from('daily_objectives').select('objectives').eq('user_id',currentUser.id).eq('date',todayStr).maybeSingle();
-    if(row?.objectives && Array.isArray(row.objectives) && row.objectives.length){ objectives=row.objectives; }
-    else { objectives=generate(); await saveObjectives(); }
-    refreshCompleted(true);
-    render();
+function pickObjectifs(){
+  // Tirer 3 objectifs différents depuis le pool
+  var shuffled=POOL.slice().sort(function(){return Math.random()-.5;});
+  // Assurer diversité de catégories
+  var cats={}, result=[];
+  for(var i=0;i<shuffled.length&&result.length<3;i++){
+    if(!cats[shuffled[i].cat]||(Object.keys(cats).length>=3&&result.length<3)){
+      cats[shuffled[i].cat]=true;
+      result.push(JSON.parse(JSON.stringify(shuffled[i])));
+    }
+  }
+  return result.map(function(o){
+    return {id:o.id,title:o.title,cat:o.cat,icon:o.icon,type:o.type,target:o.target,reward:o.reward,rewardType:o.rewardType,progress:o.type==='login'?1:0,completed:o.type==='login',claimed:false};
+  });
+}
+
+function pct(o){return Math.min(100,Math.round((o.progress/o.target)*100));}
+
+function renderBilan(){
+  var done=objectives.filter(function(o){return o.completed||o.claimed;}).length;
+  var p=Math.round(done/3*100);
+  document.getElementById('bilan-count').textContent=done+'/3';
+  document.getElementById('bilan-bar').style.width=p+'%';
+  document.getElementById('arc-txt').textContent=done;
+  var arc=document.getElementById('arc-fill');
+  var filled=(done/3)*138;
+  arc.setAttribute('stroke-dasharray',filled+' '+(138-filled));
+  arc.setAttribute('stroke',done===3?'#22c55e':'#cc1a1a');
+  if(done===3){document.getElementById('bilan-title').textContent='TOUS COMPLETES !';document.getElementById('bilan-sub').textContent='Reviens demain pour de nouveaux objectifs';}
+  else{document.getElementById('bilan-title').textContent='OBJECTIFS DU JOUR';document.getElementById('bilan-sub').textContent=(3-done)+' objectif'+(3-done>1?'s':'')+' restant'+(3-done>1?'s':'');}
+}
+
+function renderObjectifs(){
+  var list=document.getElementById('obj-list');
+  list.innerHTML='';
+  objectives.forEach(function(o,i){
+    var done=o.completed||o.claimed;
+    var p=pct(o);
+    var color=CAT_COLORS[o.cat]||'#cc1a1a';
+    var rewardTxt=o.rewardType==='diamonds'?o.reward+' 💎':fmtM(o.reward);
+    var btnClass='obj-btn'+(o.claimed?' claimed-btn':done?' ready':'');
+    var btnTxt=o.claimed?'✓ RECLAME':(done?'RECLAMER LA RECOMPENSE':'EN COURS...');
+    var card=document.createElement('div');
+    card.className='obj-card'+(o.claimed?' claimed':done?' done':'');
+    card.id='obj-'+i;
+    card.innerHTML='<div class="obj-card-inner">'
+      +'<div class="obj-band" style="background:'+color+'"></div>'
+      +'<div class="obj-body">'
+      +(o.claimed?'<div class="done-stamp">RECLAME</div>':done?'<div class="done-stamp">COMPLETE</div>':'')
+      +'<div class="obj-hd">'
+        +'<div class="obj-icon">'+o.icon+'</div>'
+        +'<div class="obj-info">'
+          +'<div class="obj-title">'+o.title+'</div>'
+          +'<div class="obj-cat" style="color:'+color+'">'+o.cat+'</div>'
+        +'</div>'
+        +'<div class="obj-reward">'
+          +'<div class="obj-reward-val">'+rewardTxt+'</div>'
+          +'<div class="obj-reward-lbl">RECOMPENSE</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="obj-prog-wrap">'
+        +'<div class="obj-prog-top">'
+          +'<div class="obj-prog-lbl">PROGRESSION</div>'
+          +'<div class="obj-prog-val">'+Math.min(o.progress,o.target)+'/'+o.target+'</div>'
+        +'</div>'
+        +'<div class="obj-prog-bar"><div class="obj-prog-fill" style="width:'+p+'%;background:'+color+'"></div></div>'
+      +'</div>'
+      +'<button class="'+btnClass+'" '+(o.claimed||!done?'disabled':'onclick="claimReward('+i+')"')+'>'+btnTxt+'</button>'
+      +'</div></div>';
+    list.appendChild(card);
+  });
+  renderBilan();
+}
+
+async function claimReward(idx){
+  var o=objectives[idx];
+  if(!o||o.claimed||!o.completed)return;
+  // Donner récompense
+  var updates={};
+  if(o.rewardType==='money'){
+    money+=o.reward;
+    updates.money=money;
+  } else {
+    var {data:gs}=await sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle();
+    updates.diamonds=((gs&&gs.diamonds)||0)+o.reward;
+  }
+  await sb.from('game_stats').update(updates).eq('user_id',currentUser.id);
+  o.claimed=true;
+  // Sauvegarder
+  await saveObjectifs();
+  renderObjectifs();
+  showReward(o);
+}
+
+function showReward(o){
+  var rewardTxt=o.rewardType==='diamonds'?'+'+o.reward+' 💎':'+'+fmtM(o.reward);
+  document.getElementById('reward-icon').textContent=o.icon;
+  document.getElementById('reward-txt').textContent=rewardTxt;
+  document.getElementById('reward-sub').textContent=o.title+' accompli !';
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('reward-toast').classList.add('show');
+  setTimeout(closeReward,2800);
+}
+
+function closeReward(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('reward-toast').classList.remove('show');
+}
+
+async function saveObjectifs(){
+  await sb.from('daily_objectives').upsert({
+    user_id:currentUser.id,
+    date:todayStr(),
+    objectives:objectives
+  },{onConflict:'user_id,date'});
+}
+
+// Compte à rebours
+function updateCountdown(){
+  var now=new Date();
+  var midnight=new Date(now);
+  midnight.setHours(24,0,0,0);
+  var diff=midnight-now;
+  var h=Math.floor(diff/3600000);
+  var m=Math.floor((diff%3600000)/60000);
+  var s=Math.floor((diff%60000)/1000);
+  var txt=h+'h '+m+'min '+s+'s';
+  document.getElementById('countdown').textContent=txt;
+}
+
+async function startApp(){
+  var res=await sb.auth.getSession();
+  var sess=res.data&&res.data.session;
+  if(!sess){window.location.href='index.html';return;}
+  currentUser=sess.user;
+
+  // Date du jour
+  var now=new Date();
+  var jours=['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  var mois=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
+  document.getElementById('hdr-date').textContent=jours[now.getDay()]+' '+now.getDate()+' '+mois[now.getMonth()];
+
+  // Charger argent
+  var {data:gs}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+  money=(gs&&gs.money)||0;
+
+  // Charger ou créer objectifs du jour
+  var {data:row}=await sb.from('daily_objectives').select('objectives').eq('user_id',currentUser.id).eq('date',todayStr()).maybeSingle();
+  if(row&&row.objectives&&row.objectives.length>0){
+    objectives=row.objectives;
+  } else {
+    objectives=pickObjectifs();
+    await saveObjectifs();
   }
 
-  function curMetric(m){
-    if(m==='level') return level;
-    if(m==='bourse_profit') return bourseProfit;
-    return records[m]||0;
-  }
-  function isMet(o){
-    if(o.mode==='free') return true;
-    const cur=curMetric(o.metric);
-    if(o.mode==='inc') return (cur-(o.baseline||0))>=(o.amount||1);
-    return cur > (o.baseline||0); // beat / increase
-  }
+  document.getElementById('loader').style.display='none';
+  document.getElementById('main').style.display='block';
+  renderObjectifs();
 
-  function generate(){
-    const pool=[...POOL].sort(()=>Math.random()-0.5).slice(0,2);
-    const chosen=[LOGIN, ...pool];
-    return chosen.map(t=>({
-      id:t.id, title:t.title, icon:t.icon, mode:t.mode, metric:t.metric||null, amount:t.amount||null,
-      baseline: t.mode==='free'?0:curMetric(t.metric), reward:t.reward, completed:t.mode==='free', claimed:false
-    }));
-  }
-
-  function refreshCompleted(silentSave){
-    let changed=false;
-    objectives.forEach(o=>{ const m=isMet(o); if(m && !o.completed){ o.completed=true; changed=true; } });
-    if(changed && silentSave) saveObjectives();
-  }
-
-  function render(){
-    const claimedOrDone = objectives.filter(o=>o.completed||o.claimed).length;
-    const total = 3;
-
-    // Arc SVG
-    const arc = document.getElementById('objArcFill');
-    const arcText = document.getElementById('objArcText');
-    const arcSub = document.getElementById('arcSub');
-    const circ = 226.2;
-    if (arc) arc.setAttribute('stroke-dasharray', (claimedOrDone/total*circ) + ' ' + (circ - claimedOrDone/total*circ));
-    if (arcText) arcText.textContent = `${claimedOrDone}/3`;
-    if (arcSub) arcSub.textContent = `${claimedOrDone} FAIT · ${total-claimedOrDone} RESTANT${total-claimedOrDone>1?'S':''}`;
-
-    // Liste bento (cards compactes)
-    document.getElementById('list').innerHTML = objectives.map((o,i)=>{
-      const met=isMet(o);
-      let act;
-      if(o.claimed) act=`<div class="badge-st st-claimed">✓ Réclamé</div>`;
-      else if(met) act=`<button class="claim-btn" onclick="claim(${i})">Réclamer</button>`;
-      else act=`<div class="badge-st st-todo">À faire</div>`;
-      return `<div class="obj ${met?'done':''} ${o.claimed?'claimed':''}">
-        <div class="obj-ic">${o.icon}</div>
-        <div class="obj-mid">
-          <div class="obj-title">${o.title}</div>
-          <div class="obj-reward">🎁 ${rewardText(o.reward)}</div>
-        </div>
-        <div class="obj-act">${act}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // Countdown jusqu'à minuit
-  function updateCountdown() {
-    const now = new Date();
-    const midnight = new Date(now); midnight.setHours(24,0,0,0);
-    const diff = midnight - now;
-    const h = String(Math.floor(diff/3600000)).padStart(2,'0');
-    const m = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-    const s = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
-    const el = document.getElementById('cdVal');
-    if (el) el.textContent = `${h}:${m}:${s}`;
-  }
+  // Compte à rebours
   updateCountdown();
-  setInterval(updateCountdown, 1000);
+  setInterval(updateCountdown,1000);
+}
 
-  function hint(o,met){
-    if(o.mode==='free') return met?'Te voilà connecté ✓':'';
-    if(o.claimed) return 'Récompense empochée';
-    if(met) return 'Objectif atteint — réclame ta récompense !';
-    if(o.mode==='inc' && o.metric==='level') return `Niveau ${o.baseline} → atteins le niveau ${o.baseline+1}`;
-    if(o.metric==='tower_floor') return `Record actuel : ${o.baseline} étages — fais mieux aujourd'hui`;
-    if(o.metric==='pointeau_score') return `Record actuel : ${o.baseline} pts — fais mieux`;
-    if(o.metric==='pointeau_combo') return `Combo max : ×${o.baseline} — dépasse-le`;
-    if(o.metric==='bourse_profit') return 'Encaisse un gain à la Bourse';
-    return '';
-  }
-
-  async function claim(i){
-    const o=objectives[i];
-    if(o.claimed || !isMet(o)) return;
-    o.claimed=true; o.completed=true;
-    const r=o.reward;
-    try {
-      if(r.type==='money'){ money+=r.amount; await sb.from('game_stats').update({ money:Math.round(money) }).eq('user_id',currentUser.id); }
-      else if(r.type==='diamonds'){ diamonds+=r.amount; await sb.from('game_stats').update({ diamonds }).eq('user_id',currentUser.id); }
-      else if(r.type==='trophies'){ trophies+=r.amount; await sb.from('game_stats').update({ trophies }).eq('user_id',currentUser.id); }
-      await saveObjectives();
-    } catch(e){ console.log('claim:',e); }
-    render();
-    showToast(`🎁 Récompense empochée : ${rewardText(r)}`, false);
-  }
-
-  async function saveObjectives(){
-    try { await sb.from('daily_objectives').upsert({ user_id:currentUser.id, date:todayStr, objectives }, { onConflict:'user_id,date' }); }
-    catch(e){ console.log('save obj:',e); }
-  }
-
-  let toastT=null;
-  function showToast(msg,bad){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(bad?' bad':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(bad?' bad':''),2400); }
-
-  init();
+document.addEventListener('DOMContentLoaded',function(){startApp();});
+if(document.readyState==='complete'||document.readyState==='interactive'){startApp();}
 </script>
 </body>
 </html>
