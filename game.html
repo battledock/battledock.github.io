@@ -4,186 +4,175 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
     html,body{height:100%;overflow:hidden}
-
-    /* ── VARIABLES ── */
-    :root{
-      --cover-bg: linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9);
-      --font-display: 'Archivo Black', sans-serif;
-      --font-body: 'DM Sans', sans-serif;
-    }
-
-    body{font-family:var(--font-body);background:#f0f2f5;color:#0f172a}
+    body{font-family:'DM Sans',sans-serif;background:#faf9f6}
 
     /* ── CONTAINER ── */
     .container{
       max-width:600px;margin:0 auto;
       height:100dvh;display:flex;flex-direction:column;
-      overflow:hidden;position:relative;
+      overflow:hidden;
     }
 
-    /* ── HEADER EDITORIAL ── */
-    .profile-header{
+    /* ── HEADER ── */
+    .page-header{
       background:#0f172a;
-      padding:calc(env(safe-area-inset-top)+12px) 18px 0;
-      flex-shrink:0;
-      position:relative;overflow:hidden;
+      padding:calc(env(safe-area-inset-top)+14px) 20px 18px;
+      flex-shrink:0;position:relative;overflow:hidden;
     }
-    .profile-header::before{
-      content:'PORT';position:absolute;right:-12px;top:calc(env(safe-area-inset-top)+8px);
-      font-family:var(--font-display);font-size:72px;color:rgba(255,255,255,.03);
-      line-height:1;pointer-events:none;letter-spacing:-2px;
+    .page-header::before{
+      content:'PORT';position:absolute;right:-10px;top:calc(env(safe-area-inset-top)+10px);
+      font-family:'Archivo Black',sans-serif;font-size:90px;
+      color:rgba(255,255,255,.04);line-height:1;pointer-events:none;
     }
+
     /* Skeleton */
-    .skeleton-card{position:relative;z-index:1}
+    #profileSkeleton{position:relative;z-index:1}
+    .sk-row{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+    .sk-av{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.1);flex-shrink:0}
+    .sk-lines{flex:1}
+    .sk-line{height:11px;background:rgba(255,255,255,.12);border-radius:6px;margin-bottom:7px}
 
-    /* Profile card */
-    #profileCardBtn{position:relative;z-index:1;display:none}
-    .header-cover{
-      display:flex;align-items:center;gap:12px;
-      padding:0 0 12px;cursor:pointer;
-      background:var(--cover-bg);
-      margin:0 -18px;padding:10px 18px 12px;
-    }
-    .header-av-wrap{
-      width:44px;height:44px;border-radius:12px;overflow:hidden;
-      border:2px solid rgba(255,255,255,.25);flex-shrink:0;background:rgba(255,255,255,.1);
-    }
-    .header-infos{flex:1;min-width:0}
-    .header-name-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
-    .header-name{font-family:var(--font-display);font-size:18px;color:white;line-height:1;letter-spacing:-.3px}
-    .header-rank-badge{background:rgba(255,255,255,.15);border-radius:6px;padding:2px 7px;font-family:var(--font-display);font-size:11px;color:white;letter-spacing:1px;flex-shrink:0}
-    .header-grade{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.3px}
-    .header-xp-wrap{margin-top:6px}
-    .header-xp-bar{height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
-    .header-xp-fill{height:100%;background:white;border-radius:2px;transition:width .5s}
+    /* Profile réel */
+    #profileCardBtn{display:none;position:relative;z-index:1}
+    .hdr-row{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+    .hdr-left{}
+    .hdr-name{font-family:'Archivo Black',sans-serif;font-size:22px;color:white;line-height:1;letter-spacing:-.3px}
+    .hdr-grade{font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,.4);margin-top:4px}
+    .hdr-right{display:flex;align-items:center;gap:8px}
+    .hdr-msg-btn{background:rgba(255,255,255,.1);border-radius:9px;padding:6px 10px;font-size:14px;cursor:pointer;position:relative}
+    .hdr-stats-row{display:flex;gap:0;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
+    .hdr-stat{flex:1;border-right:1px solid rgba(255,255,255,.08);padding-right:14px;margin-right:14px}
+    .hdr-stat:last-child{border-right:none;padding-right:0;margin-right:0}
+    .hdr-stat-val{font-family:'Archivo Black',sans-serif;font-size:17px;color:white;line-height:1}
+    .hdr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin-top:3px}
+    .hdr-xp{height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin-top:10px;overflow:hidden}
+    .hdr-xp-fill{height:100%;background:rgba(255,255,255,.5);border-radius:1px;transition:width .5s}
 
-    /* Stats chips */
-    .hdr-chips{
-      display:flex;gap:8px;padding:10px 0;
-      overflow-x:auto;-webkit-overflow-scrolling:touch;
-    }
-    .hdr-chips::-webkit-scrollbar{display:none}
-    .hdr-chip{
-      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
-      border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:6px;
-      flex-shrink:0;
-    }
-    .hdr-chip-val{font-family:var(--font-display);font-size:15px;color:white;line-height:1}
-    .hdr-chip-lbl{font-size:8px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.35);margin-top:1px}
-
-    /* ── SCROLL BODY ── */
+    /* ── SCROLL ── */
     #mainContainer{
       flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding:18px 18px 0;
       padding-bottom:calc(70px + env(safe-area-inset-bottom));
     }
     #mainContainer::-webkit-scrollbar{display:none}
 
-    /* ── SECTIONS ── */
-    .ed-section{padding:16px 16px 4px;font-family:var(--font-display);font-size:10px;letter-spacing:4px;color:#94a3b8}
+    /* ── SECTION TITRE ── */
+    .sec-ttl{
+      font-family:'Archivo Black',sans-serif;font-size:10px;
+      letter-spacing:4px;color:#94a3b8;margin:0 0 10px;
+    }
 
     /* ── FEATURED CARD (TRAVAILLER) ── */
-    .ed-featured{
-      margin:0 16px 12px;border-radius:20px;overflow:hidden;
-      cursor:pointer;position:relative;
+    .featured-card{
+      background:#0f172a;border-radius:20px;padding:18px;
+      margin-bottom:12px;display:flex;gap:14px;
+      cursor:pointer;position:relative;overflow:hidden;
       box-shadow:0 4px 20px rgba(0,0,0,.12);
     }
-    .ed-feat-inner{
-      background:#0f172a;padding:20px;
-      display:flex;gap:14px;align-items:center;
-      position:relative;overflow:hidden;min-height:100px;
+    .featured-card::before{
+      content:'';position:absolute;top:0;right:0;width:80px;height:80px;
+      background:radial-gradient(circle at top right,rgba(204,26,26,.3),transparent 70%);
     }
-    .ed-feat-inner::after{
-      content:'';position:absolute;top:0;right:0;bottom:0;width:120px;
-      background:linear-gradient(90deg,transparent,rgba(255,255,255,.04));
+    .feat-ico{
+      width:52px;height:52px;border-radius:14px;
+      background:rgba(255,255,255,.08);display:flex;
+      align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
     }
-    .ed-feat-ico{
-      width:56px;height:56px;border-radius:16px;
-      background:rgba(255,255,255,.08);display:flex;align-items:center;
-      justify-content:center;font-size:28px;flex-shrink:0;
-    }
-    .ed-feat-info{flex:1;min-width:0}
-    .ed-feat-title{font-family:var(--font-display);font-size:20px;color:white;line-height:1;letter-spacing:-.3px}
-    .ed-feat-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;font-weight:500}
-    .ed-feat-action{
-      display:inline-flex;align-items:center;gap:5px;
-      background:#cc1a1a;border-radius:8px;padding:6px 12px;
-      font-size:10px;font-weight:700;letter-spacing:1px;color:white;
-      margin-top:10px;
-    }
+    .feat-info{flex:1}
+    .feat-ttl{font-family:'Archivo Black',sans-serif;font-size:17px;color:white;line-height:1;letter-spacing:-.3px}
+    .feat-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;line-height:1.4}
+    .feat-action{display:inline-block;margin-top:10px;background:#cc1a1a;border-radius:8px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:1px;color:white}
 
     /* ── GRID 2 COLS ── */
-    .ed-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:10px}
-    .ed-mini{
-      border-radius:18px;padding:16px 14px;cursor:pointer;
-      display:flex;flex-direction:column;gap:6px;
-      position:relative;overflow:hidden;min-height:100px;
-      box-shadow:0 2px 10px rgba(0,0,0,.08);
+    .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .card-sm{
+      border-radius:16px;padding:14px;cursor:pointer;
+      display:flex;flex-direction:column;gap:8px;
+      min-height:100px;position:relative;overflow:hidden;
+      box-shadow:0 2px 12px rgba(0,0,0,.07);
     }
-    .ed-mini-ico{font-size:26px;line-height:1}
-    .ed-mini-title{font-family:var(--font-display);font-size:16px;line-height:1;letter-spacing:-.2px}
-    .ed-mini-sub{font-size:10px;font-weight:500;opacity:.65}
-    .ed-mini-badge{
-      position:absolute;top:10px;right:10px;
-      border-radius:6px;padding:3px 8px;font-size:9px;font-weight:700;letter-spacing:1px;
-    }
+    .card-sm-ico{font-size:26px}
+    .card-sm-name{font-family:'Archivo Black',sans-serif;font-size:14px;line-height:1}
+    .card-sm-desc{font-size:10px;font-weight:500}
 
-    /* ── WIDE CARD (entreprise etc) ── */
-    .ed-wide{
-      margin:0 16px 10px;border-radius:18px;padding:14px 16px;
-      display:flex;align-items:center;gap:12px;cursor:pointer;
-      box-shadow:0 2px 10px rgba(0,0,0,.07);
+    /* ── WIDE CARD ── */
+    .card-wide{
+      border-radius:16px;padding:14px 18px;cursor:pointer;
+      margin-bottom:12px;display:flex;align-items:center;gap:14px;
+      box-shadow:0 2px 10px rgba(0,0,0,.06);
     }
-    .ed-wide-ico{
+    .card-wide-ico{
       width:46px;height:46px;border-radius:13px;
       display:flex;align-items:center;justify-content:center;
-      font-size:22px;flex-shrink:0;
+      font-size:24px;flex-shrink:0;
     }
-    .ed-wide-info{flex:1;min-width:0}
-    .ed-wide-title{font-family:var(--font-display);font-size:16px;color:#0f172a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .ed-wide-sub{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
-    .ed-wide-right{font-family:var(--font-display);font-size:14px;color:#22c55e;flex-shrink:0}
+    .card-wide-info{flex:1;min-width:0}
+    .card-wide-ttl{font-family:'Archivo Black',sans-serif;font-size:15px;color:#0f172a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .card-wide-sub{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
 
-    /* ── STATS BAR ── */
-    .stats-bar{
+    /* ── BOTTOM NAV ── */
+    .bottom-nav{
       position:fixed;bottom:0;left:50%;transform:translateX(-50%);
       width:100%;max-width:600px;z-index:200;
-      background:white;border-top:1px solid #f1f5f9;
-      box-shadow:0 -4px 20px rgba(0,0,0,.06);
-      display:grid;grid-template-columns:repeat(3,1fr);
-      padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+      background:white;border-top:1px solid #e8e8e8;
+      box-shadow:0 -2px 20px rgba(0,0,0,.06);
+      padding:10px 20px calc(10px + env(safe-area-inset-bottom));
+      display:flex;justify-content:space-around;
     }
-    .pcb-stat{text-align:center}
-    .pcb-stat-val{font-family:var(--font-display);font-size:18px;color:#0f172a;letter-spacing:.5px;line-height:1}
-    .pcb-stat-lbl{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:3px}
+    .btm-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:2px 8px}
+    .btm-ico{font-size:20px}
+    .btm-lbl{font-size:8px;font-weight:700;letter-spacing:.5px;color:#94a3b8}
+    .btm-item.active .btm-lbl{color:#0f172a}
 
-    /* ── OBJBADGE ── */
-    #objBadge{display:none;position:absolute;top:-4px;right:-6px;background:#cc1a1a;color:white;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;line-height:1}
+    /* ── STATS BAR (cachée, pour le JS) ── */
+    .stats-bar{display:none}
+    .pcb-stat{}
+    .pcb-stat-val{}
+    .pcb-stat-lbl{}
 
     /* ── TOAST ── */
-    #gameToast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center}
-
-    /* ── BANDEAU MAJ ── */
-    .bandeau-maj{
-      margin:0 16px 10px;border-radius:18px;overflow:hidden;
-      border:1.5px solid rgba(204,26,26,.3);
-      background:#0f172a;
+    #gameToast{
+      position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
+      background:#0f172a;color:white;padding:9px 18px;border-radius:20px;
+      font-size:11px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s;
+      pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center;
     }
 
-    /* ── HIDDEN WORK CARD (pour le SVG JS) ── */
-    .nav-card{position:relative;overflow:hidden}
-    .nav-grid{display:none}
+    /* ── BANDEAU MAJ ── */
+    .bandeau{
+      border-radius:18px;overflow:hidden;border:1.5px solid rgba(204,26,26,.25);
+      background:#0f172a;margin-bottom:12px;
+    }
+    .bandeau-inner{padding:12px 14px;position:relative;overflow:hidden}
+    .bandeau-inner::before{
+      content:'';position:absolute;inset:0;
+      background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.03) 12px 13px);
+    }
+    .bandeau-content{position:relative;z-index:1}
 
-    /* ── CASINO LOCKED ── */
-    .casino-locked{filter:grayscale(50%);opacity:.65}
+    /* ── OBJBADGE ── */
+    #objBadge{
+      position:absolute;top:-4px;right:-6px;
+      background:#cc1a1a;color:white;font-size:9px;font-weight:900;
+      width:16px;height:16px;border-radius:50%;
+      display:none;align-items:center;justify-content:center;
+      border:2px solid white;line-height:1;
+    }
 
-    /* Skeleton loading */
-    .skeleton-card .skeleton-line{background:rgba(255,255,255,.1);border-radius:6px;animation:shimmer 1.5s infinite}
-    @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
+    /* ── HIDDEN CLASSES (compatibilité JS) ── */
+    .nav-grid,.nav-card,.profile-card-btn,.header-cover,
+    .skill-tree-container,.casino-particle{display:none}
+
+    /* ── ANIMATIONS ── */
+    @keyframes pulse_maj{0%,100%{opacity:1}50%{opacity:.5}}
+    @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.8}}
+    @keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 6px transparent}}
+        @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
 
     /* SKILL TREE (caché mais JS l'utilise) */
     .skill-tree-container{display:none}
@@ -206,15 +195,6 @@
       0%,100% { transform: translate(-50%,-50%) scale(1); }
       50%      { transform: translate(-50%,-50%) scale(1.4); }
     }
-
-
-
-      8%   { opacity: 0.7; }
-      92%  { opacity: 0.4; }
-      100% { transform: translateY(-100vh) translateX(var(--dx)); opacity: 0; }
-    }
-
-    /* ===================== HEADER RÉSEAU SOCIAL ===================== */
     @keyframes bourseTick { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @keyframes cardSheen { 0%,72%{ background-position:120% 0; } 88%,100%{ background-position:-40% 0; } }
 
@@ -229,8 +209,6 @@
       0%   { transform:translateX(-100%); }
       100% { transform:translateX(100%); }
     }
-
-    /* CARTE FERMÉE */
     @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 6px currentColor} 50%{opacity:0.3} }
 
     /* PARTICULES CASINO */
@@ -240,8 +218,6 @@
       90%  { opacity: 0.8; }
       100% { transform: translateY(130px) rotate(360deg); opacity: 0; }
     }
-
-    /* SHOP - Bois chaud */
     @keyframes twinkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.5)} }
 
 
@@ -256,47 +232,18 @@
       0%,100% { opacity: 0.8; transform: scale(1); }
       50%      { opacity: 0.2; transform: scale(0.5); }
     }
-
-    /* Bulles de dialogue flottantes */
     @keyframes msgFloat {
       0%,100% { transform: translateY(0); opacity: 0.6; }
       50%      { transform: translateY(-6px); opacity: 1; }
     }
-
-    /* Badge notification */
     @keyframes notifPulse {
       0%,100% { transform: scale(1); }
       50%      { transform: scale(1.15); }
     }
-
-    /* PARAMÈTRES — engrenages mécaniques */
-    @keyframes gearRotate { to { transform: rotate(360deg); } }
-
-    /* ANIMATIONS GLOBALES */
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-    @keyframes shimmer { 0%{left:-100%} 40%{left:100%} 100%{left:100%} }
-    @keyframes popIn { 0%{transform:scale(0.5) rotate(-5deg);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
-    @keyframes bounceIcon { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-    @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
-    @keyframes pulse_maj { 0%,100%{opacity:1} 50%{opacity:.5} }
-
-    /* BOTTOM BAR */
-
-  
-
-
-    /* FLUIDITÉ GLOBALE */
-    * { -webkit-font-smoothing:antialiased; }
-    @keyframes skShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-    @keyframes pulse_maj{0%,100%{opacity:1}50%{opacity:.5}}
-    @keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 6px transparent}}
-
-    /* Casino particles */
-    .casino-particle{position:absolute;width:6px;height:6px;border-radius:50%;animation:floatUp 1.5s ease-out forwards;pointer-events:none}
-    @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
   </style>
 </head>
 <body>
+
 
 
   <!-- INSTRUCTIONS iOS -->
@@ -334,201 +281,180 @@
   </div>
 
 
-<div class="container" id="mainContainer" style="padding-top:0">
+<div class="container" id="mainContainer-wrap">
 
-  <!-- PROFIL HEADER EDITORIAL -->
-  <header class="profile-header">
+  <!-- ══ HEADER ══ -->
+  <div class="page-header">
     <!-- Skeleton -->
-    <div class="skeleton-card" id="profileSkeleton">
-      <div style="background:var(--cover-bg);padding:10px 0 12px;display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);flex-shrink:0"></div>
-        <div style="flex:1">
-          <div style="height:12px;background:rgba(255,255,255,.2);border-radius:6px;width:40%;margin-bottom:7px"></div>
-          <div style="height:4px;background:rgba(255,255,255,.1);border-radius:6px;width:65%"></div>
+    <div id="profileSkeleton">
+      <div class="sk-row">
+        <div class="sk-av"></div>
+        <div class="sk-lines">
+          <div class="sk-line" style="width:45%;animation:shimmer 1.5s infinite"></div>
+          <div class="sk-line" style="width:70%;height:8px;animation:shimmer 1.5s infinite .2s"></div>
         </div>
       </div>
     </div>
 
-    <!-- Header réel -->
-    <div id="profileCardBtn" style="display:none">
-      <div style="position:relative">
-        <div class="header-cover" onclick="window.location.href='profil.html'">
-          <div class="header-av-wrap">
-            <img src="avatar-default.png" id="avatarImage" alt="avatar" style="width:100%;height:100%;object-fit:cover">
+    <!-- Profil réel -->
+    <div id="profileCardBtn">
+      <div class="hdr-row">
+        <div class="hdr-left" onclick="window.location.href='profil.html'" style="cursor:pointer">
+          <div class="hdr-name" id="playerName">...</div>
+          <div class="hdr-grade"><span id="playerGrade"></span> · NIV. <span id="currentLevel">1</span></div>
+        </div>
+        <div class="hdr-right">
+          <div class="hdr-msg-btn" id="hdrMsgBtn" onclick="window.location.href='messagerie.html'">
+            ✉️
+            <div id="hdrMsgBadge" style="display:none;position:absolute;top:-2px;right:-2px;width:9px;height:9px;background:#cc1a1a;border-radius:50%;border:1.5px solid #0f172a"></div>
           </div>
-          <div class="header-infos">
-            <div class="header-name-row">
-              <div class="header-name" id="playerName">...</div>
-              <div class="header-rank-badge" id="hdrRank">#—</div>
-            </div>
-            <div class="header-grade"><span id="playerGrade"></span> · Niv. <span id="currentLevel">1</span></div>
-            <div class="header-xp-wrap">
-              <div class="header-xp-bar"><div class="header-xp-fill" id="xpFill" style="width:0%"></div></div>
-            </div>
-            <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
-          </div>
-          <div style="width:38px;flex-shrink:0"></div>
-        </div>
-        <!-- Message btn -->
-        <div id="hdrMsgBtn" onclick="window.location.href='messagerie.html'" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10">
-          <div style="font-size:22px">✉️</div>
-          <div id="hdrMsgBadge" style="display:none;position:absolute;top:0;right:0;width:10px;height:10px;background:#cc1a1a;border:2px solid #0f172a;border-radius:50%"></div>
+          <div id="hdrRank" style="background:#cc1a1a;border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;letter-spacing:1px;color:white;font-family:'DM Sans',sans-serif">#—</div>
         </div>
       </div>
-    </div>
-
-    <!-- Chips stats -->
-    <div class="hdr-chips" id="hdrChips" style="display:none">
-      <div class="hdr-chip">
-        <div>
-          <div class="hdr-chip-val" id="hdrMoney">—</div>
-          <div class="hdr-chip-lbl">ARGENT</div>
+      <div class="hdr-xp"><div class="hdr-xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
+      <div class="hdr-stats-row" style="margin-top:14px">
+        <div class="hdr-stat">
+          <div class="hdr-stat-val" id="hdrMoney">—</div>
+          <div class="hdr-stat-lbl">ARGENT</div>
         </div>
-      </div>
-      <div class="hdr-chip">
-        <div>
-          <div class="hdr-chip-val" id="hdrDiamonds">—</div>
-          <div class="hdr-chip-lbl">DIAMANTS</div>
+        <div class="hdr-stat">
+          <div class="hdr-stat-val" id="hdrDiamonds">—</div>
+          <div class="hdr-stat-lbl">DIAMANTS</div>
         </div>
-      </div>
-      <div class="hdr-chip" onclick="window.location.href='classement.html'" style="cursor:pointer">
-        <div>
-          <div class="hdr-chip-val" id="hdrRankVal">—</div>
-          <div class="hdr-chip-lbl">CLASSEMENT</div>
-        </div>
-      </div>
-      <div class="hdr-chip" id="calCard" style="cursor:pointer" onclick="window.location.href='objectifs.html'">
-        <div>
-          <div class="hdr-chip-val">🎯</div>
-          <div class="hdr-chip-lbl" id="calSubtitle">OBJECTIFS</div>
+        <div class="hdr-stat" onclick="window.location.href='classement.html'" style="cursor:pointer">
+          <div class="hdr-stat-val" id="hdrRankStat">—</div>
+          <div class="hdr-stat-lbl">CLASSEMENT</div>
         </div>
       </div>
     </div>
-  </header>
-
-  <!-- ══ BODY EDITORIAL ══ -->
-  <div id="edBody" style="padding:12px 0 0;display:none">
-
-    <!-- TRAVAILLER -->
-    <div class="ed-section">TRAVAILLER</div>
-    <div class="ed-featured" id="workCard" onclick="window.location.href='travail.html'">
-      <div class="ed-feat-inner" style="background:linear-gradient(160deg,#0c2461,#1e3799)">
-        <div class="ed-feat-ico">🚢</div>
-        <div class="ed-feat-info">
-          <div class="ed-feat-title">PORT MARITIME</div>
-          <div class="ed-feat-sub">Clique · Gagne de l'argent · Monte en niveau</div>
-          <div class="ed-feat-action">JOUER →</div>
-        </div>
-        <!-- SVG container caché mais gardé pour le JS -->
-        <div id="workSvgContainer" style="display:none"></div>
-      </div>
-    </div>
-
-    <!-- BANDEAU MAJ -->
-    <div class="bandeau-maj">
-      <div style="padding:12px 14px;position:relative;overflow:hidden">
-        <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.03) 12px 13px)"></div>
-        <div style="position:relative;z-index:1">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <div style="background:#cc1a1a;border-radius:5px;padding:2px 7px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s ease-in-out infinite">🔴 LIVE</div>
-            <div style="font-family:'Archivo Black',sans-serif;font-size:13px;color:white;letter-spacing:-.2px">GROSSE MAJ — LUNDI 9 JUIN</div>
-          </div>
-          <div style="font-size:10px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:10px">Roue quotidienne · Live feed · Jackpot casino · Colis mystère · Événements globaux · Badges...</div>
-          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px">
-            <div style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#fbbf24;letter-spacing:-.2px;margin-bottom:6px">💬 TES IDÉES & BUGS</div>
-            <div style="display:flex;gap:5px;margin-bottom:7px">
-              <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
-              <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.06);border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">🐛 BUG</button>
-              <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.06);border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">💬 AUTRE</button>
-            </div>
-            <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px 10px;font-size:11px;color:white;font-family:'DM Sans',sans-serif;resize:none;height:60px;outline:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
-              <div style="font-size:9px;color:rgba(255,255,255,.2)" id="fb-count">0/200</div>
-              <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:7px;padding:6px 14px;font-family:'Archivo Black',sans-serif;font-size:11px;color:#0f172a;cursor:pointer">ENVOYER →</button>
-            </div>
-          </div>
-          <div id="fb-feed" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- CLASSEMENT -->
-    <div class="ed-section">CLASSEMENT & FINANCES</div>
-
-    <!-- Classement wide card -->
-    <div class="ed-wide" style="background:white" id="rankCard" onclick="window.location.href='classement.html'">
-      <div class="ed-wide-ico" style="background:#fef3c7">🏆</div>
-      <div class="ed-wide-info">
-        <div class="ed-wide-title">CLASSEMENT</div>
-        <div class="ed-wide-sub">
-          <span id="rankLeaderName">—</span> en tête · Toi : <span id="rankMyPos">#—</span> · <span id="rankTotal">—</span> joueurs
-        </div>
-      </div>
-      <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:#f59e0b" id="rankLeaderPos">1er</div>
-    </div>
-
-    <!-- Casino + Banque -->
-    <div class="ed-duo">
-      <div class="ed-mini" style="background:linear-gradient(135deg,#450a0a,#7f1d1d)" id="casinoCard" onclick="window.location.href='casino.html'">
-        <div class="ed-mini-ico">🎰</div>
-        <div class="ed-mini-title" style="color:white">CASINO</div>
-        <div class="ed-mini-sub" style="color:rgba(255,255,255,.5)">Jackpot & jeux</div>
-      </div>
-      <div class="ed-mini" style="background:linear-gradient(135deg,#0a0d1a,#1a2240)" id="banqueCard" onclick="window.location.href='banque.html'">
-        <div class="ed-mini-ico">🏛️</div>
-        <div class="ed-mini-title" style="color:#d4af37">BANQUE</div>
-        <div class="ed-mini-sub" id="banqueInteretEl" style="color:rgba(212,175,55,.5)">DU PORT</div>
-      </div>
-    </div>
-
-    <!-- MON ENTREPRISE -->
-    <div class="ed-section">MON ENTREPRISE</div>
-    <div class="ed-wide" style="background:white" onclick="window.location.href='commerce.html'">
-      <div class="ed-wide-ico" style="background:#f0fdf4;font-size:26px">🏪</div>
-      <div class="ed-wide-info">
-        <div class="ed-wide-title" id="coName">CRÉER MON ENTREPRISE</div>
-        <div class="ed-wide-sub" id="coSub">100 000€ d'investissement</div>
-      </div>
-      <div style="font-size:16px;color:#d1d5db">›</div>
-    </div>
-
-    <!-- BOUTIQUE + OBJECTIFS -->
-    <div class="ed-section">BOUTIQUE & MISSIONS</div>
-    <div class="ed-duo">
-      <div class="ed-mini" style="background:linear-gradient(135deg,#78350f,#d97706)" id="msgCard" onclick="window.location.href='boutique.html'">
-        <div id="msgUnreadBadge" style="display:none"></div>
-        <div class="ed-mini-ico">🛍️</div>
-        <div class="ed-mini-title" style="color:#0f172a">BOUTIQUE</div>
-        <div class="ed-mini-sub" style="color:rgba(0,0,0,.5)">Chez Fouinfouin</div>
-      </div>
-      <div class="ed-mini" style="background:white;border:1.5px solid #f1f5f9" onclick="window.location.href='objectifs.html'">
-        <div style="position:relative;display:inline-block">
-          <div class="ed-mini-ico">🎯</div>
-          <div id="objBadge" style="position:absolute;top:-4px;right:-6px;background:#cc1a1a;color:white;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid white;line-height:1">3</div>
-        </div>
-        <div class="ed-mini-title">OBJECTIFS</div>
-        <div class="ed-mini-sub" id="objSubTxt">Missions du jour</div>
-      </div>
-    </div>
-
-    <!-- PARAMÈTRES -->
-    <div class="ed-duo" style="margin-top:0">
-      <div class="ed-mini" style="background:#f8fafc;border:1px solid #e2e8f0" onclick="window.location.href='parametres.html'">
-        <div class="ed-mini-ico">⚙️</div>
-        <div class="ed-mini-title" style="color:#475569">PARAMÈTRES</div>
-        <div class="ed-mini-sub" style="color:#94a3b8">Compte · Son · Notifs</div>
-      </div>
-      <div class="ed-mini" style="background:#f8fafc;border:1px solid #e2e8f0" onclick="window.location.href='classement.html'">
-        <div class="ed-mini-ico">🏆</div>
-        <div class="ed-mini-title" style="color:#0f172a">CLASSEMENT</div>
-        <div class="ed-mini-sub" style="color:#94a3b8">Top dockers</div>
-      </div>
-    </div>
-
-    <div style="height:20px"></div>
   </div>
 
-  <!-- Stats bar -->
+  <!-- ══ BODY SCROLLABLE ══ -->
+  <div id="mainContainer" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 18px 0;padding-bottom:calc(70px + env(safe-area-inset-bottom))">
+    <div id="edBody" style="display:none">
+
+      <!-- TRAVAILLER -->
+      <div class="sec-ttl">TRAVAILLER</div>
+      <div class="featured-card" id="workCard" onclick="window.location.href='travail.html'">
+        <div class="feat-ico">🚢</div>
+        <div class="feat-info">
+          <div class="feat-ttl">PORT MARITIME</div>
+          <div class="feat-sub">Clique · Gagne de l'argent · Monte en niveau</div>
+          <div class="feat-action">JOUER →</div>
+        </div>
+        <div id="workSvgContainer" style="display:none"></div>
+      </div>
+
+      <!-- BANDEAU MAJ -->
+      <div class="bandeau">
+        <div class="bandeau-inner">
+          <div class="bandeau-content">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="background:#cc1a1a;border-radius:5px;padding:2px 7px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s infinite">🔴 LIVE</div>
+              <div style="font-family:'Archivo Black',sans-serif;font-size:13px;color:white;letter-spacing:-.2px">GROSSE MAJ — LUNDI 9 JUIN</div>
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:10px">Roue quotidienne · Jackpot casino · Colis mystère · Événements globaux · Badges...</div>
+            <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px">
+              <div style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#fbbf24;margin-bottom:6px">💬 TES IDÉES & BUGS</div>
+              <div style="display:flex;gap:5px;margin-bottom:7px">
+                <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
+                <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.07);border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">🐛 BUG</button>
+                <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.07);border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">💬 AUTRE</button>
+              </div>
+              <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px;font-size:11px;color:white;font-family:'DM Sans',sans-serif;resize:none;height:60px;outline:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
+                <span id="fb-count" style="font-size:9px;color:rgba(255,255,255,.2)">0/200</span>
+                <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:7px;padding:6px 14px;font-family:'Archivo Black',sans-serif;font-size:11px;color:#0f172a;cursor:pointer">ENVOYER →</button>
+              </div>
+            </div>
+            <div id="fb-feed" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CASINO & FINANCES -->
+      <div class="sec-ttl">CASINO & FINANCES</div>
+      <div class="card-grid">
+        <div class="card-sm" id="casinoCard" onclick="window.location.href='casino.html'" style="background:linear-gradient(135deg,#450a0a,#7f1d1d)">
+          <div class="card-sm-ico">🎰</div>
+          <div class="card-sm-name" style="color:white">CASINO</div>
+          <div class="card-sm-desc" style="color:rgba(255,255,255,.45)">Blackjack · Roulette</div>
+        </div>
+        <div class="card-sm" id="banqueCard" onclick="window.location.href='banque.html'" style="background:linear-gradient(135deg,#0a0d1a,#1a2240)">
+          <div class="card-sm-ico">🏛️</div>
+          <div class="card-sm-name" style="color:#d4af37">BANQUE</div>
+          <div class="card-sm-desc" id="banqueInteretEl" style="color:rgba(212,175,55,.5)">DU PORT</div>
+        </div>
+      </div>
+
+      <!-- CLASSEMENT -->
+      <div class="card-wide" id="rankCard" onclick="window.location.href='classement.html'" style="background:white">
+        <div class="card-wide-ico" style="background:#fef3c7">🏆</div>
+        <div class="card-wide-info">
+          <div class="card-wide-ttl">CLASSEMENT</div>
+          <div class="card-wide-sub"><span id="rankLeaderName">—</span> en tête · <span id="rankMyPos">#—</span> · <span id="rankTotal">—</span> joueurs</div>
+        </div>
+        <div style="font-family:'Archivo Black',sans-serif;font-size:20px;color:#f59e0b" id="rankLeaderPos">1er</div>
+      </div>
+
+      <!-- TON ENTREPRISE -->
+      <div class="sec-ttl">TON ENTREPRISE</div>
+      <div class="card-wide" onclick="window.location.href='commerce.html'" style="background:#e8f5e9">
+        <div class="card-wide-ico" style="background:#22c55e">🏪</div>
+        <div class="card-wide-info">
+          <div class="card-wide-ttl" id="coName">CRÉER MON ENTREPRISE</div>
+          <div class="card-wide-sub" id="coSub">Investis 100 000€ pour démarrer</div>
+        </div>
+        <div style="font-size:16px;color:#22c55e">›</div>
+      </div>
+
+      <!-- BOUTIQUE & MISSIONS -->
+      <div class="sec-ttl">BOUTIQUE & MISSIONS</div>
+      <div class="card-grid">
+        <div class="card-sm" id="msgCard" onclick="window.location.href='boutique.html'" style="background:linear-gradient(135deg,#78350f,#d97706)">
+          <div id="msgUnreadBadge" style="display:none"></div>
+          <div class="card-sm-ico">🛍️</div>
+          <div class="card-sm-name" style="color:#0f172a">BOUTIQUE</div>
+          <div class="card-sm-desc" style="color:rgba(0,0,0,.45)">Chez Fouinfouin</div>
+        </div>
+        <div class="card-sm" onclick="window.location.href='objectifs.html'" style="background:white;border:1.5px solid #f1f5f9">
+          <div style="position:relative;display:inline-block">
+            <span class="card-sm-ico">🎯</span>
+            <div id="objBadge">3</div>
+          </div>
+          <div class="card-sm-name">OBJECTIFS</div>
+          <div class="card-sm-desc" style="color:#94a3b8" id="objSubTxt">Missions du jour</div>
+        </div>
+      </div>
+
+      <div style="height:16px"></div>
+    </div>
+  </div>
+
+  <!-- ══ BOTTOM NAV ══ -->
+  <div class="bottom-nav">
+    <div class="btm-item active">
+      <div class="btm-ico">🏠</div>
+      <div class="btm-lbl" style="color:#0f172a">ACCUEIL</div>
+    </div>
+    <div class="btm-item" onclick="window.location.href='classement.html'">
+      <div class="btm-ico">🏆</div>
+      <div class="btm-lbl">CLASSEMENT</div>
+    </div>
+    <div class="btm-item" onclick="window.location.href='profil.html'">
+      <div class="btm-ico">
+        <img id="avatarImage" src="avatar-default.png" style="width:22px;height:22px;border-radius:6px;object-fit:cover">
+      </div>
+      <div class="btm-lbl">PROFIL</div>
+    </div>
+    <div class="btm-item" onclick="window.location.href='parametres.html'">
+      <div class="btm-ico">⚙️</div>
+      <div class="btm-lbl">PARAMÈTRES</div>
+    </div>
+  </div>
+
+  <!-- Stats bar cachée (requis JS) -->
   <div class="stats-bar">
     <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
     <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
@@ -538,13 +464,15 @@
   <!-- Toast -->
   <div id="gameToast"></div>
 
-  <!-- Éléments cachés requis par le JS -->
-  <div style="display:none">
+  <!-- Éléments cachés requis par le JS ──
+       Ces IDs sont référencés dans le JS existant -->
+  <div style="display:none" aria-hidden="true">
     <div id="rankValue"></div>
     <div id="chatNotif"></div>
     <div id="casinoParticles"></div>
     <div id="rankStars"></div>
     <div id="rankStars2"></div>
+    <div id="calSubtitle"></div>
     <div id="calProgLabel"></div>
     <div id="objCountBadge"></div>
     <div id="objArcFill"></div>
@@ -552,14 +480,16 @@
     <div id="calProgPct"></div>
     <div id="calProgFill"></div>
     <div id="calObjs"></div>
-    <div class="nav-grid" style="display:none">
-      <div class="nav-card" id="rankCard2"></div>
+    <div id="calCard"></div>
+    <div id="coverPreload"></div>
+    <div id="profileSkeleton2"></div>
+    <div class="nav-grid">
+      <div class="nav-card work work-p1"></div>
     </div>
-    <div id="coverPreload" style="display:none"></div>
   </div>
-
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <script>
     // ── MAINTENANCE ── mettre true pour activer, false pour désactiver
@@ -1224,6 +1154,90 @@ function syncChips(){
       }
     }catch(e){}
   }, 3000);
+})();
+</script>
+<script>
+// ── BRIDGE EDITORIAL → JS EXISTANT ──
+// Afficher le body quand le profil est chargé
+(function(){
+  var iv = setInterval(function(){
+    var pcb = document.getElementById('profileCardBtn');
+    if(pcb && pcb.style.display !== 'none'){
+      document.getElementById('edBody').style.display = 'block';
+      syncHeaderStats();
+      clearInterval(iv);
+    }
+  }, 150);
+})();
+
+// Synchroniser les chips du header avec les valeurs JS
+function syncHeaderStats(){
+  setInterval(function(){
+    var m = document.getElementById('moneyAmount');
+    var d = document.getElementById('diamondsAmount');
+    var rm = document.getElementById('rankMyPos');
+    if(m && document.getElementById('hdrMoney'))
+      document.getElementById('hdrMoney').textContent = m.textContent;
+    if(d && document.getElementById('hdrDiamonds'))
+      document.getElementById('hdrDiamonds').textContent = d.textContent;
+    if(rm && document.getElementById('hdrRankStat'))
+      document.getElementById('hdrRankStat').textContent = rm.textContent;
+  }, 800);
+}
+
+// Charger l'entreprise dans la card
+(function loadCompanyCard(){
+  var iv = setInterval(async function(){
+    if(typeof supabaseUrl === 'undefined') return;
+    try{
+      var sbx = supabase.createClient(supabaseUrl, supabaseKey);
+      var sess = await sbx.auth.getSession();
+      if(!sess.data.session){ clearInterval(iv); return; }
+      var res = await sbx.from('companies')
+        .select('nom,name,valeur,niveau,emoji,color')
+        .eq('user_id', sess.data.session.user.id)
+        .maybeSingle();
+      if(res.data){
+        var co = res.data;
+        var nm = document.getElementById('coName');
+        var sb2 = document.getElementById('coSub');
+        var fmtV = function(v){ return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€'; };
+        if(nm) nm.textContent = co.nom || co.name || 'Mon Entreprise';
+        if(sb2) sb2.textContent = 'Niv.'+(co.niveau||1)+' · '+fmtV(co.valeur||0)+' · Gérer →';
+        // Colorer la card
+        var wideCard = nm && nm.closest('.card-wide');
+        if(wideCard && co.color){
+          wideCard.style.background = co.color+'22';
+          var ico = wideCard.querySelector('.card-wide-ico');
+          if(ico){ ico.style.background = co.color; ico.textContent = co.emoji || '🏪'; }
+        }
+        clearInterval(iv);
+      }
+    }catch(e){}
+  }, 2000);
+})();
+
+// Objectifs badge
+(function updateObjBadge(){
+  setInterval(async function(){
+    if(typeof supabaseUrl === 'undefined') return;
+    try{
+      var sbx = supabase.createClient(supabaseUrl, supabaseKey);
+      var sess = await sbx.auth.getSession();
+      if(!sess.data.session) return;
+      var today = new Date().toISOString().split('T')[0];
+      var res = await sbx.from('daily_objectives').select('objectives').eq('user_id', sess.data.session.user.id).eq('date', today).maybeSingle();
+      if(res.data && res.data.objectives){
+        var done = res.data.objectives.filter(function(o){ return o.claimed; }).length;
+        var total = res.data.objectives.length;
+        var remaining = total - done;
+        var badge = document.getElementById('objBadge');
+        var sub = document.getElementById('objSubTxt');
+        if(badge){ badge.textContent = remaining; badge.style.display = remaining > 0 ? 'flex' : 'none'; }
+        if(sub) sub.textContent = done+'/'+total+' complétés';
+      }
+    }catch(e){}
+  }, 5000);
 })();
 </script>
 </body>
