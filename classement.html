@@ -289,7 +289,7 @@
   </div>
 
   <!-- TABS -->
-  <div style="background:white;border-bottom:2px solid #f0f0f0;display:flex;padding:0">
+  <div style="background:white;border-bottom:1px solid #e5e7eb;display:flex">
     <button id="tab-niveau" onclick="switchTab('niveau')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid #1a1a1a;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#1a1a1a;cursor:pointer">NIVEAU</button>
     <button id="tab-argent" onclick="switchTab('argent')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid transparent;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#9ca3af;cursor:pointer">ARGENT</button>
     <button id="tab-entreprises" onclick="switchTab('entreprises')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid transparent;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#9ca3af;cursor:pointer">🏪 ENTREPRISES</button>
@@ -494,9 +494,8 @@
     function switchTab(tab) {
       currentTab = tab;
       ['niveau','argent','entreprises'].forEach(function(t){
-        var el = document.getElementById('tab-'+t);
-        if(el) el.style.borderBottomColor = t===tab ? '#1a1a1a' : 'transparent';
-        if(el) el.style.color = t===tab ? '#1a1a1a' : '#9ca3af';
+        var btn = document.getElementById('tab-'+t);
+        if(btn){ btn.style.borderBottomColor = t===tab?'#1a1a1a':'transparent'; btn.style.color = t===tab?'#1a1a1a':'#9ca3af'; }
       });
       if(tab === 'entreprises') loadCompanies();
       else loadRanking();
@@ -507,60 +506,53 @@
       document.getElementById('listWrap').style.display = 'none';
       document.getElementById('myRankBanner').style.display = 'none';
 
-      const { data: companies } = await sb.from('companies')
-        .select('user_id, nom, name, emoji, color, valeur, niveau, type_id')
+      const { data: cos } = await sb.from('companies')
+        .select('user_id,nom,name,emoji,color,valeur,niveau')
         .order('valeur', { ascending: false })
         .limit(50);
 
-      const { data: profiles } = await sb.from('profiles').select('user_id, username');
-      const profMap = {};
-      (profiles||[]).forEach(p => profMap[p.user_id] = p.username || 'Docker');
+      const { data: profs } = await sb.from('profiles').select('user_id,username');
+      const pm = {}; (profs||[]).forEach(p => pm[p.user_id] = p.username || 'Docker');
+      const fmtV = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
+      const myId = currentUser.id;
 
       document.getElementById('loader').style.display = 'none';
-      if(!companies?.length) {
-        document.getElementById('podium').innerHTML = '<div style="text-align:center;padding:40px 0;font-family:Bebas Neue,sans-serif;font-size:18px;color:#d1d5db;letter-spacing:2px">AUCUNE ENTREPRISE ENCORE</div>';
-        document.getElementById('listWrap').style.display = 'block';
+
+      if(!cos?.length){
+        document.getElementById('podium').innerHTML = '<div style="text-align:center;padding:40px 16px"><div style="font-size:40px;margin-bottom:10px">🏪</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#d1d5db;letter-spacing:2px">AUCUNE ENTREPRISE</div></div>';
         document.getElementById('rankRows').innerHTML = '';
+        document.getElementById('listWrap').style.display = 'block';
         return;
       }
 
-      const fmtV = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
-      const myUid = currentUser.id;
-
-      // Podium top 3
+      const medals = ['🥇','🥈','🥉'];
       let podHtml = '';
-      companies.slice(0,3).forEach(function(co, i){
-        const isMe = co.user_id === myUid;
-        const owner = profMap[co.user_id] || 'Docker';
-        const name = co.nom || co.name || 'Entreprise';
-        podHtml += '<div style="background:white;border-radius:14px;padding:14px 16px;margin:8px 16px;display:flex;align-items:center;gap:12px;border:'+(i===0?'2px solid #fbbf24':'1px solid #e5e7eb')+(isMe?';background:#EFF6FF':'')+'">'
-          +'<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:'+(i===0?'#fbbf24':i===1?'#94a3b8':'#cd7c2f');'">'+( i===0?'🥇':i===1?'🥈':'🥉')+'</div>'
-          +'<div style="font-size:32px">'+( co.emoji||'🏪')+'</div>'
+      cos.slice(0,3).forEach(function(co,i){
+        const isMe = co.user_id === myId;
+        const nom = co.nom||co.name||'Entreprise';
+        podHtml += '<div style="display:flex;align-items:center;gap:12px;background:white;border-radius:14px;padding:13px 16px;margin:8px 16px;border:'+(isMe?'2px solid #1565C0':'1px solid #e5e7eb')+'">'
+          +'<div style="font-size:26px">'+medals[i]+'</div>'
+          +'<div style="font-size:28px">'+( co.emoji||'🏪')+'</div>'
           +'<div style="flex:1;min-width:0">'
-          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(name)+(isMe?' 👈':'')+'</div>'
-          +'<div style="font-size:10px;color:#9ca3af;margin-top:1px">'+owner+' · Niv.'+( co.niveau||1)+'</div>'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;letter-spacing:1px;color:'+(isMe?'#1565C0':'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nom+(isMe?' 👈':'')+'</div>'
+          +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">'+pm[co.user_id]+' · Niv.'+( co.niveau||1)+'</div>'
           +'</div>'
-          +'<div style="text-align:right">'
-          +'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#0f172a">'+fmtV(co.valeur||0)+'</div>'
-          +'<div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">VALEUR</div>'
-          +'</div>'
+          +'<div style="text-align:right"><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a">'+fmtV(co.valeur||0)+'</div><div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">VALEUR</div></div>'
           +'</div>';
       });
 
-      // Reste
       let rowHtml = '';
-      companies.slice(3).forEach(function(co, i){
-        const isMe = co.user_id === myUid;
-        const owner = profMap[co.user_id] || 'Docker';
-        const name = co.nom || co.name || 'Entreprise';
-        rowHtml += '<div style="background:white;border-radius:10px;padding:11px 14px;margin:6px 16px;display:flex;align-items:center;gap:10px;'+(isMe?'border:1.5px solid #1565C0;background:#EFF6FF;':'border:1px solid #f0f0f0;')+'">'
+      cos.slice(3).forEach(function(co,i){
+        const isMe = co.user_id === myId;
+        const nom = co.nom||co.name||'Entreprise';
+        rowHtml += '<div style="display:flex;align-items:center;gap:10px;background:white;border-radius:10px;padding:11px 14px;margin:6px 16px;border:'+(isMe?'1.5px solid #1565C0':'1px solid #f0f0f0')+';background:'+(isMe?'#EFF6FF':'white')+'">'
           +'<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:#d1d5db;min-width:20px">'+(i+4)+'</div>'
-          +'<div style="font-size:24px">'+(co.emoji||'🏪')+'</div>'
+          +'<div style="font-size:22px">'+( co.emoji||'🏪')+'</div>'
           +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:12px;font-weight:700;color:'+(isMe?'#1565C0':'#0f172a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(name)+(isMe?' 👈':'')+'</div>'
-          +'<div style="font-size:9px;color:#9ca3af;margin-top:1px">'+owner+' · Niv.'+( co.niveau||1)+'</div>'
+          +'<div style="font-size:12px;font-weight:700;color:'+(isMe?'#1565C0':'#1a1a1a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+nom+(isMe?' 👈':'')+'</div>'
+          +'<div style="font-size:9px;color:#9ca3af">'+pm[co.user_id]+' · Niv.'+( co.niveau||1)+'</div>'
           +'</div>'
-          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a">'+fmtV(co.valeur||0)+'</div>'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#1a1a1a">'+fmtV(co.valeur||0)+'</div>'
           +'</div>';
       });
 
@@ -568,10 +560,9 @@
       document.getElementById('rankRows').innerHTML = rowHtml;
       document.getElementById('listWrap').style.display = 'block';
 
-      // Mon rang si hors top 3
-      const myRank = companies.findIndex(c => c.user_id === myUid);
-      if(myRank >= 3) {
-        const me = companies[myRank];
+      const myRank = cos.findIndex(c => c.user_id === myId);
+      if(myRank >= 3){
+        const me = cos[myRank];
         document.getElementById('myRankNum').textContent = '#'+(myRank+1);
         document.getElementById('myRankVal').textContent = (me.nom||me.name||'Mon Entreprise')+' · '+fmtV(me.valeur||0);
         document.getElementById('myRankBanner').style.display = 'flex';
