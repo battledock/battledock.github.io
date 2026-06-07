@@ -1,54 +1,198 @@
 <!DOCTYPE html>
-<html l
-
-ang="fr">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0a0f1e">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Battle Dock">
-  <link rel="apple-touch-icon" href="icon-180.png">
   <title>Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Permanent+Marker&family=Caveat:wght@700&family=Bebas+Neue&family=Caveat:wght@700&family=Permanent+Marker&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <script>
-    // ── MAINTENANCE ── mettre true pour activer, false pour désactiver
-    const MAINTENANCE_ON = false;
-    (function() {
-      if (!MAINTENANCE_ON) return;
-      const PASS = 'froid';
-      if (sessionStorage.getItem('bd_pass') === PASS) return;
-      window.location.replace('maintenance.html');
-    })();
-  </script>
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
-    input, textarea { -webkit-user-select:text; user-select:text; }
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+    html,body{height:100%;overflow:hidden}
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #efefef;
-      min-height: 100dvh;
-      position: relative;
+    /* ── VARIABLES ── */
+    :root{
+      --cover-bg: linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9);
+      --font-display: 'Archivo Black', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
     }
-    /* overflow-x:hidden sur body cause document.body.scrollHeight = null sur iOS Safari */
-    .container { overflow-x: hidden; }
 
+    body{font-family:var(--font-body);background:#f0f2f5;color:#0f172a}
 
-    /* Veines marbre CSS */
+    /* ── CONTAINER ── */
+    .container{
+      max-width:600px;margin:0 auto;
+      height:100dvh;display:flex;flex-direction:column;
+      overflow:hidden;position:relative;
+    }
 
+    /* ── HEADER EDITORIAL ── */
+    .profile-header{
+      background:#0f172a;
+      padding:calc(env(safe-area-inset-top)+12px) 18px 0;
+      flex-shrink:0;
+      position:relative;overflow:hidden;
+    }
+    .profile-header::before{
+      content:'PORT';position:absolute;right:-12px;top:calc(env(safe-area-inset-top)+8px);
+      font-family:var(--font-display);font-size:72px;color:rgba(255,255,255,.03);
+      line-height:1;pointer-events:none;letter-spacing:-2px;
+    }
+    /* Skeleton */
+    .skeleton-card{position:relative;z-index:1}
 
+    /* Profile card */
+    #profileCardBtn{position:relative;z-index:1;display:none}
+    .header-cover{
+      display:flex;align-items:center;gap:12px;
+      padding:0 0 12px;cursor:pointer;
+      background:var(--cover-bg);
+      margin:0 -18px;padding:10px 18px 12px;
+    }
+    .header-av-wrap{
+      width:44px;height:44px;border-radius:12px;overflow:hidden;
+      border:2px solid rgba(255,255,255,.25);flex-shrink:0;background:rgba(255,255,255,.1);
+    }
+    .header-infos{flex:1;min-width:0}
+    .header-name-row{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+    .header-name{font-family:var(--font-display);font-size:18px;color:white;line-height:1;letter-spacing:-.3px}
+    .header-rank-badge{background:rgba(255,255,255,.15);border-radius:6px;padding:2px 7px;font-family:var(--font-display);font-size:11px;color:white;letter-spacing:1px;flex-shrink:0}
+    .header-grade{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;letter-spacing:.3px}
+    .header-xp-wrap{margin-top:6px}
+    .header-xp-bar{height:3px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden}
+    .header-xp-fill{height:100%;background:white;border-radius:2px;transition:width .5s}
 
+    /* Stats chips */
+    .hdr-chips{
+      display:flex;gap:8px;padding:10px 0;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+    }
+    .hdr-chips::-webkit-scrollbar{display:none}
+    .hdr-chip{
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
+      border-radius:10px;padding:7px 12px;display:flex;align-items:center;gap:6px;
+      flex-shrink:0;
+    }
+    .hdr-chip-val{font-family:var(--font-display);font-size:15px;color:white;line-height:1}
+    .hdr-chip-lbl{font-size:8px;font-weight:700;letter-spacing:1px;color:rgba(255,255,255,.35);margin-top:1px}
 
-    /* ===================== HALOS ANIMÉS ===================== */
+    /* ── SCROLL BODY ── */
+    #mainContainer{
+      flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+      padding-bottom:calc(70px + env(safe-area-inset-bottom));
+    }
+    #mainContainer::-webkit-scrollbar{display:none}
 
+    /* ── SECTIONS ── */
+    .ed-section{padding:16px 16px 4px;font-family:var(--font-display);font-size:10px;letter-spacing:4px;color:#94a3b8}
 
+    /* ── FEATURED CARD (TRAVAILLER) ── */
+    .ed-featured{
+      margin:0 16px 12px;border-radius:20px;overflow:hidden;
+      cursor:pointer;position:relative;
+      box-shadow:0 4px 20px rgba(0,0,0,.12);
+    }
+    .ed-feat-inner{
+      background:#0f172a;padding:20px;
+      display:flex;gap:14px;align-items:center;
+      position:relative;overflow:hidden;min-height:100px;
+    }
+    .ed-feat-inner::after{
+      content:'';position:absolute;top:0;right:0;bottom:0;width:120px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.04));
+    }
+    .ed-feat-ico{
+      width:56px;height:56px;border-radius:16px;
+      background:rgba(255,255,255,.08);display:flex;align-items:center;
+      justify-content:center;font-size:28px;flex-shrink:0;
+    }
+    .ed-feat-info{flex:1;min-width:0}
+    .ed-feat-title{font-family:var(--font-display);font-size:20px;color:white;line-height:1;letter-spacing:-.3px}
+    .ed-feat-sub{font-size:11px;color:rgba(255,255,255,.45);margin-top:4px;font-weight:500}
+    .ed-feat-action{
+      display:inline-flex;align-items:center;gap:5px;
+      background:#cc1a1a;border-radius:8px;padding:6px 12px;
+      font-size:10px;font-weight:700;letter-spacing:1px;color:white;
+      margin-top:10px;
+    }
 
+    /* ── GRID 2 COLS ── */
+    .ed-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:10px}
+    .ed-mini{
+      border-radius:18px;padding:16px 14px;cursor:pointer;
+      display:flex;flex-direction:column;gap:6px;
+      position:relative;overflow:hidden;min-height:100px;
+      box-shadow:0 2px 10px rgba(0,0,0,.08);
+    }
+    .ed-mini-ico{font-size:26px;line-height:1}
+    .ed-mini-title{font-family:var(--font-display);font-size:16px;line-height:1;letter-spacing:-.2px}
+    .ed-mini-sub{font-size:10px;font-weight:500;opacity:.65}
+    .ed-mini-badge{
+      position:absolute;top:10px;right:10px;
+      border-radius:6px;padding:3px 8px;font-size:9px;font-weight:700;letter-spacing:1px;
+    }
 
-    @keyframes haloDrift1 {
+    /* ── WIDE CARD (entreprise etc) ── */
+    .ed-wide{
+      margin:0 16px 10px;border-radius:18px;padding:14px 16px;
+      display:flex;align-items:center;gap:12px;cursor:pointer;
+      box-shadow:0 2px 10px rgba(0,0,0,.07);
+    }
+    .ed-wide-ico{
+      width:46px;height:46px;border-radius:13px;
+      display:flex;align-items:center;justify-content:center;
+      font-size:22px;flex-shrink:0;
+    }
+    .ed-wide-info{flex:1;min-width:0}
+    .ed-wide-title{font-family:var(--font-display);font-size:16px;color:#0f172a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ed-wide-sub{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
+    .ed-wide-right{font-family:var(--font-display);font-size:14px;color:#22c55e;flex-shrink:0}
+
+    /* ── STATS BAR ── */
+    .stats-bar{
+      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+      width:100%;max-width:600px;z-index:200;
+      background:white;border-top:1px solid #f1f5f9;
+      box-shadow:0 -4px 20px rgba(0,0,0,.06);
+      display:grid;grid-template-columns:repeat(3,1fr);
+      padding:10px 8px calc(10px + env(safe-area-inset-bottom));
+    }
+    .pcb-stat{text-align:center}
+    .pcb-stat-val{font-family:var(--font-display);font-size:18px;color:#0f172a;letter-spacing:.5px;line-height:1}
+    .pcb-stat-lbl{font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-top:3px}
+
+    /* ── OBJBADGE ── */
+    #objBadge{display:none;position:absolute;top:-4px;right:-6px;background:#cc1a1a;color:white;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;line-height:1}
+
+    /* ── TOAST ── */
+    #gameToast{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center}
+
+    /* ── BANDEAU MAJ ── */
+    .bandeau-maj{
+      margin:0 16px 10px;border-radius:18px;overflow:hidden;
+      border:1.5px solid rgba(204,26,26,.3);
+      background:#0f172a;
+    }
+
+    /* ── HIDDEN WORK CARD (pour le SVG JS) ── */
+    .nav-card{position:relative;overflow:hidden}
+    .nav-grid{display:none}
+
+    /* ── CASINO LOCKED ── */
+    .casino-locked{filter:grayscale(50%);opacity:.65}
+
+    /* Skeleton loading */
+    .skeleton-card .skeleton-line{background:rgba(255,255,255,.1);border-radius:6px;animation:shimmer 1.5s infinite}
+    @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
+
+    /* SKILL TREE (caché mais JS l'utilise) */
+    .skill-tree-container{display:none}
+
+    /* Calendar/objectifs mini (caché, JS l'utilise) */
+    #calCard{display:none}
+
+    /* ANIMATIONS */
+        @keyframes haloDrift1 {
       0%,100% { transform: translate(0,0); }
       33%      { transform: translate(80px,100px); }
       66%      { transform: translate(40px,-50px); }
@@ -71,336 +215,25 @@ ang="fr">
     }
 
     /* ===================== HEADER RÉSEAU SOCIAL ===================== */
-    .topbar { position:relative; }
-    .topbar-bg, .topbar-line, .topbar-glow, .topbar-row { display:none; }
-
-    /* Cover bleue */
-    .header-cover {
-      background:var(--cover-bg, linear-gradient(160deg,#0c4a6e 0%,#0369a1 50%,#0ea5e9 100%));
-      padding:calc(10px + env(safe-area-inset-top)) 14px 12px;
-      display:flex;align-items:center;gap:10px;
-    }
-    .header-av-wrap {
-      width:46px;height:46px;border-radius:50%;flex-shrink:0;
-      background:#dbeafe;border:2px solid rgba(255,255,255,0.3);
-      display:flex;align-items:center;justify-content:center;
-      overflow:hidden;
-    }
-    .header-av-wrap img { width:100%;height:100%;object-fit:cover; }
-    .header-av-emoji { font-size:24px; }
-
-    /* Infos centrées */
-    .header-infos { flex:1;min-width:0; }
-    .header-name-row { display:flex;align-items:center;gap:6px; }
-    .header-rank-badge { background:#fbbf24;border-radius:4px;font-family:'Bebas Neue',sans-serif;font-size:10px;color:#0f172a;padding:1px 6px;flex-shrink:0; }
-    .header-money { flex-shrink:0;text-align:right; }
-    .header-money-val { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;line-height:1; }
-    .header-money-lbl { font-size:8px;color:rgba(255,255,255,0.3);margin-top:2px; }
-    .header-name { font-weight:900;font-size:15px;color:white;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase; }
-    .header-grade { font-size:9px;color:rgba(255,255,255,0.45);margin-top:3px; }
-    .header-xp-wrap { margin-top:5px; }
-    .header-xp-bar { background:rgba(255,255,255,0.15);border-radius:10px;height:4px;overflow:hidden; }
-    .header-xp-fill { height:100%;border-radius:10px;background:rgba(255,255,255,0.7);transition:width .5s ease; }
-    .header-xp-lbl { display:none; }
-
-    /* Stats réseau social */
-
-    /* Skeleton */
-    .avatar { display:none; }
-    .player-info { display:none; }
-    .player-name, .player-grade { display:none; }
-
-    .xp-wrap {
-      max-width:600px; margin:0 auto;
-      padding: 0 16px;
-      position: relative; z-index: 1;
-    }
-    .xp-label {
-      display:flex; justify-content:space-between;
-      font-size:9px; color:rgba(0,0,0,0.3); font-weight:700; margin-bottom:5px;
-      letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .xp-track {
-      height:3px;
-      background:rgba(0,0,0,0.06);
-      border-radius:2px; overflow:hidden;
-    }
-    .xp-fill {
-      height:100%;
-      background: linear-gradient(90deg, #b8962e, #d4af37, #f5d060);
-      border-radius:2px; transition:width 0.5s ease;
-      box-shadow: 0 0 6px rgba(212,175,55,0.5);
-    }
-
-    /* ===================== CONTAINER ===================== */
-    .container { max-width:600px; margin:0 auto; padding:0; padding-bottom:0; position:relative; z-index:1; }
-
-    /* ===================== DAILY ===================== */
-
-
-    /* ===================== SECTION LABEL ===================== */
-    .section-label { font-size:11px; font-weight:700; color:rgba(0,0,0,0.25); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:10px; }
-
-    /* ===================== PROFIL CARD ===================== */
-    .profile-card-btn {
-      background: white;
-      border-radius: 0;
-      overflow: hidden;
-      cursor: pointer;
-      transition: transform 0.2s;
-      box-shadow: none;
-      border: 1px solid #e5e7eb;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      box-sizing: border-box;
-    }
-    .profile-card-btn.themed .pcb-name,
-    .profile-card-btn.themed .pcb-level-num,
-    .profile-card-btn.themed .pcb-level-lbl,
-    .profile-card-btn.themed .pcb-xp-label,
-    .profile-card-btn.themed .pcb-stat-val,
-    .profile-card-btn.themed .pcb-stat-lbl { color:#fff !important; }
-    .profile-card-btn.themed .pcb-grade { color:#fde68a !important; }
-    .profile-card-btn.themed .pcb-stat { background:rgba(255,255,255,0.12) !important; border-color:rgba(255,255,255,0.22) !important; }
-    .profile-card-btn.themed .pcb-xp-track { background:rgba(255,255,255,0.2) !important; }
-
-    .pcb-row {
-      display: flex; align-items: center; gap: 14px;
-    }
-
-    .pcb-avatar {
-      width: 54px; height: 54px; border-radius: 50%;
-      overflow: hidden; flex-shrink: 0;
-      border: 2px solid #e5e7eb;
-    }
-    .pcb-avatar img { width:100%; height:100%; object-fit:cover; }
-
-    .pcb-info { flex: 1; min-width: 0; }
-    .pcb-name {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 20px; letter-spacing: 1.5px;
-      color: #1a1a1a; line-height: 1;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .pcb-grade { font-size: 11px; color: #b8962e; font-weight: 700; margin-top: 3px; }
-
-    .pcb-level-wrap { text-align: center; flex-shrink: 0; }
-    .pcb-level-num {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 30px; color: #1a1a1a; line-height: 1;
-    }
-    .pcb-level-lbl { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-
-    .pcb-xp-wrap { }
-    .pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
-    .pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
-    .pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
-
-    /* ===== Barre de stats fixe en bas ===== */
-    .stats-bar {
-      position:fixed; bottom:0; left:50%; transform:translateX(-50%);
-      width:100%; max-width:600px; z-index:200;
-      display:grid; grid-template-columns:repeat(3,1fr);
-      background:#fff;
-      border-top:1px solid rgba(15,23,42,0.08);
-      box-shadow:0 -4px 20px rgba(15,23,42,0.07);
-      padding:10px 8px calc(10px + env(safe-area-inset-bottom));
-    }
-    .pcb-stat { text-align:center; }
-    .pcb-stat-val { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#0f172a; letter-spacing:0.5px; line-height:1; }
-    .pcb-stat-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:4px; }
-
-    /* ===================== NAV CARDS IMMERSIVES ===================== */
-    .nav-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0;
-      margin-bottom: 0;
-    }
-
-    .nav-card {
-      border-radius: 0;
-      overflow: hidden;
-      cursor: pointer;
-      position: relative;
-      transition: transform 0.2s, box-shadow 0.2s;
-      height: 130px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 14px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-sizing: border-box;
-      will-change: transform;
-    }
-
-
-    .nav-card-bg {
-      position: absolute; inset: 0;
-      z-index: 0;
-    }
-
-    .nav-card-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(160deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
-      z-index: 1;
-    }
-
-    .nav-card-content {
-      position: relative; z-index: 2;
-      display: flex; flex-direction: column; gap: 2px;
-    }
-
-    .nav-card-icon { font-size: 28px; margin-bottom: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-
-    .nav-card-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 1.5px;
-      color: white; line-height: 1;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    }
-
-    .nav-card-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
-
-    /* ====== Cartes premium (Objectifs, Défis, Flash, Direction, Sabotage) ====== */
-    .nav-card.objectifs .nav-card-icon, .nav-card.defis .nav-card-icon,
-    .nav-card.flash .nav-card-icon, .nav-card.direction .nav-card-icon,
-    .nav-card.sabotage .nav-card-icon { font-size: 34px; margin-bottom: 5px; }
-    .nav-card.objectifs .nav-card-title, .nav-card.defis .nav-card-title,
-    .nav-card.flash .nav-card-title, .nav-card.direction .nav-card-title,
-    .nav-card.sabotage .nav-card-title { font-size: 20px; }
-
-    .nav-deco { position: absolute; top: -10px; right: -8px; font-size: 60px; line-height: 1;
-      z-index: 1; opacity: 0.16; transform: rotate(-13deg); pointer-events: none; filter: saturate(1.3); }
-
-    /* reflet brillant qui balaie */
-    .nav-card.objectifs::after { display:none; }
-    .nav-card.defis::after, .nav-card.flash::after,
-    .nav-card.direction::after, .nav-card.sabotage::after {
-      content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-      background: linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.16) 49%, transparent 58%);
-      background-size: 250% 100%; background-position: 120% 0;
-      animation: cardSheen 5.5s ease-in-out infinite;
-    }
     @keyframes bourseTick { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @keyframes cardSheen { 0%,72%{ background-position:120% 0; } 88%,100%{ background-position:-40% 0; } }
 
     /* halos + accents par thème */
-    .nav-card.objectifs { box-shadow: none; }
-    .nav-card.objectifs .nav-card-icon { filter: none; }
-    .nav-card.defis { box-shadow: inset 0 0 24px rgba(239,68,68,0.30); }
-    .nav-card.defis .nav-card-icon { filter: drop-shadow(0 0 9px rgba(248,113,113,0.75)); }
-    .nav-card.flash { box-shadow: inset 0 0 26px rgba(129,140,248,0.34); }
-    .nav-card.flash .nav-card-icon { filter: drop-shadow(0 0 11px rgba(250,204,21,0.9)); animation: flashPulse 1.5s ease-in-out infinite; }
-    .nav-card.flash .nav-deco { animation: flashPulse 1.5s ease-in-out infinite; }
     @keyframes flashPulse { 0%,100%{ opacity:0.85; transform:scale(1);} 50%{ opacity:0.4; transform:scale(1.12);} }
-    .nav-card.direction { box-shadow: inset 0 0 26px rgba(212,175,55,0.34); }
-    .nav-card.direction .nav-card-icon { filter: drop-shadow(0 0 9px rgba(253,230,138,0.85)); }
-    .nav-card.direction .nav-deco { opacity: 0.22; }
-    .nav-card.sabotage { box-shadow: inset 0 0 24px rgba(220,38,38,0.32); }
-    .nav-card.sabotage .nav-card-icon { filter: drop-shadow(0 0 9px rgba(245,158,11,0.85)); }
-    .nav-card.sabotage::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 7px; z-index: 2;
-      background: repeating-linear-gradient(45deg, #1a1208 0 9px, #f59e0b 9px 18px); opacity: 0.9; }
-
-    /* HISTOIRE */
-    .nav-card.histoire { grid-column: span 2; height: 260px; background:#fff; border:none; }
-    .hist-moon { position:absolute; top:16px; right:20px; z-index:4; width:24px; height:24px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#fffde0,#f0d060); box-shadow:0 0 16px rgba(255,240,100,0.6),0 0 40px rgba(255,240,100,0.15); animation:histMoonPulse 4s ease-in-out infinite; }
     @keyframes histMoonPulse { 0%,100%{box-shadow:0 0 16px rgba(255,240,100,0.5),0 0 40px rgba(255,240,100,0.1)} 50%{box-shadow:0 0 24px rgba(255,240,100,0.9),0 0 60px rgba(255,240,100,0.2)} }
-    .hist-skyline { position:absolute; bottom:36%; left:0; right:0; z-index:2; height:130px; }
-    .hist-crane { transform-origin:bottom center; }
-    .hist-sea { position:absolute; bottom:0; left:0; right:0; height:38%; z-index:3; }
-    .hist-sea-base { position:absolute; inset:0; background:linear-gradient(180deg,#0e4a7a 0%,#041830 100%); }
-    .hist-sea-shimmer { position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,transparent,rgba(255,255,255,0.15),transparent); }
     @keyframes histWave1 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @keyframes histWave2 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
     @keyframes histWave3 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    .hist-wave1 { position:absolute; top:-2px; left:0; width:200%; z-index:5; animation:histWave1 14s linear infinite; }
-    .hist-wave2 { position:absolute; top:5px;  left:0; width:200%; z-index:5; animation:histWave2 22s linear infinite reverse; opacity:0.5; }
-    .hist-wave3 { position:absolute; top:9px;  left:0; width:200%; z-index:5; animation:histWave3 30s linear infinite; opacity:0.3; }
-    /* Badge chapitre en cours */
-    .hist-cur-badge {
-      display:inline-flex; align-items:center; gap:6px;
-      background:rgba(167,139,250,0.12); border:1px solid rgba(167,139,250,0.25);
-      padding:4px 10px; border-radius:4px; margin-bottom:8px;
-    }
-    .hist-cur-dot { width:5px; height:5px; border-radius:50%; background:#a78bfa; animation:histDot 1.5s ease-in-out infinite; }
     @keyframes histDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .hist-cur-label { font-size:9px; color:rgba(196,181,253,0.8); font-weight:700; letter-spacing:2px; }
     @keyframes lineScan {
       0%   { transform:translateX(-100%); }
       100% { transform:translateX(100%); }
     }
 
     /* CARTE FERMÉE */
-    .nav-card.locked { filter: none; cursor: pointer; }
-    .nav-card.gated, .nav-card.locked { pointer-events: auto !important; opacity: 1 !important; }
-    .nav-card.locked { pointer-events: auto !important; }
-    ._lock-badge-disabled {
-      position: absolute; inset: 0; z-index: 20;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-      background: rgba(0,0,0,0.45); backdrop-filter: blur(1px);
-    }
-    ._lock-badge-icon-disabled { font-size: 26px; }
-    ._lock-badge-text-disabled {
-      font-family: 'Bebas Neue', sans-serif; font-size: 13px; letter-spacing: 2px;
-      color: rgba(255,255,255,0.85);
-    }
-
-    /* TRAVAILLER - P1 Golden Hour SVG */
-    .nav-card.work {
-      grid-column: span 1;
-      position: relative; overflow: hidden;
-      border: none !important;
-      box-shadow: none !important;
-    }
-    .nav-card.work .nav-card-bg { display:none; }
-    .nav-card.work .nav-card-overlay { display:none; }
-    .nav-card.work-p1 { padding:0; }
-    .nav-card.work-p1 svg { position:absolute;inset:0;width:100%;height:100%;display:block; }
-
-    /* CASINO - Nuit rouge avec particules */
-    .nav-card.casino .nav-card-bg { display:none; }
-    .nav-card.casino .nav-card-overlay { display:none; }
-    .nav-card.casino { background:#fff; }
-    .nav-card.casino .nav-card-title { color: #0a0a0a; }
-    /* Design B : 777 fantôme */
-    .casino-d-red { display:none; }
-    .casino-d-black { display:none; }
-    .casino-d-cnt { display:none; }
-    .casino-b-bg { position:absolute;top:-14px;left:-6px;font-family:'Bebas Neue',sans-serif;font-size:160px;color:rgba(0,0,0,0.04);line-height:1;letter-spacing:-10px;pointer-events:none;z-index:0; }
-    .casino-b-cnt { position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:center;padding:0 16px;gap:5px; }
-    .casino-b-title { font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:4px;color:#0a0a0a;line-height:1; }
-    .casino-b-rule { display:flex;align-items:center;gap:6px; }
-    .casino-b-dot { width:5px;height:5px;border-radius:50%;background:#dc2626;flex-shrink:0; }
-    .casino-b-sub { font-size:9px;color:rgba(0,0,0,0.3);font-weight:700;letter-spacing:2px; }
-    .casino-b-suits { position:absolute;bottom:12px;right:14px;display:flex;gap:4px;z-index:2; }
-    .casino-b-s { font-size:13px; }
-    .casino-canvas {
-      position: absolute; inset: 0; z-index: 1;
-      width: 100%; height: 100%; pointer-events: none;
-    }
-    .casino-lights {
-      position: absolute; top: 10px; right: 10px; z-index: 2;
-      display: flex; gap: 5px;
-    }
-    .casino-light { width: 6px; height: 6px; border-radius: 50%; }
-    .casino-light:nth-child(1) { background: #fbbf24; animation: blink 1.2s infinite; }
-    .casino-light:nth-child(2) { background: #ef4444; animation: blink 1.2s 0.4s infinite; }
-    .casino-light:nth-child(3) { background: #fbbf24; animation: blink 1.2s 0.8s infinite; }
     @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 6px currentColor} 50%{opacity:0.3} }
 
     /* PARTICULES CASINO */
-    .casino-particles { position:absolute; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
-    .casino-particle {
-      position: absolute;
-      width: 4px; height: 4px;
-      border-radius: 1px;
-      animation: casinoFall linear infinite;
-      opacity: 0;
-    }
     @keyframes casinoFall {
       0%   { transform: translateY(-10px) rotate(0deg);   opacity: 0; }
       10%  { opacity: 1; }
@@ -409,304 +242,34 @@ ang="fr">
     }
 
     /* SHOP - Bois chaud */
-    .nav-card.shop .nav-card-bg {
-      background: linear-gradient(160deg,#f7edd6,#ecdbb6 65%,#dec18f);
-    }
-    .nav-card.shop .nav-card-overlay { display:none; }
-    .shop-awning {
-      position:absolute; top:0; left:0; right:0; height:20px; z-index:2;
-      background:repeating-linear-gradient(90deg,#d2492f 0 16px,#f4e6cf 16px 32px);
-      box-shadow:0 2px 4px rgba(0,0,0,0.15);
-    }
-    .shop-awning::after {
-      content:''; position:absolute; left:0; right:0; bottom:-9px; height:10px;
-      background:repeating-linear-gradient(90deg,#d2492f 0 16px,#f4e6cf 16px 32px);
-      -webkit-mask:radial-gradient(circle 8px at 8px 0, transparent 7px, #000 8px) repeat-x; -webkit-mask-size:16px 10px;
-      mask:radial-gradient(circle 8px at 8px 0, transparent 7px, #000 8px) repeat-x; mask-size:16px 10px;
-    }
-    .shop-basket {
-      position:absolute; top:27px; right:10px; z-index:3; font-size:20px;
-      transform:rotate(8deg); filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));
-    }
-    .nav-card.shop .nav-card-content { z-index:3; }
-    .nav-card.shop .shop-sign {
-      font-family:'Permanent Marker',cursive; font-size:21px; line-height:1.05;
-      color:#7c4a1d; transform:rotate(-2deg); text-shadow:1px 1px 0 rgba(0,0,0,0.08);
-    }
-    .nav-card.shop .shop-tagline {
-      font-family:'Caveat',cursive; font-weight:700; font-size:15px; color:#c1432e; margin-top:1px;
-    }
-    .nav-card.shop .nav-card-sub { color:#9a6b3a; }
-    /* ── Design Z : Foinfoin BD explosif ── */
-    .nav-card.shop .nav-card-bg { display:none; }
-    .nav-card.shop .nav-card-overlay { display:none; }
-    .nav-card.shop .shop-awning { display:none; }
-    .nav-card.shop .shop-basket { display:none; }
-    .nav-card.shop { background:#f0f0f0; }
-    .shop-z-bg { position:absolute;inset:0;background:linear-gradient(135deg,#f8f8f8,#e8e8e8); }
-    .shop-z-lines { position:absolute;inset:0;overflow:hidden;z-index:0; }
-    .shop-z-action { position:absolute;height:2px;background:rgba(0,0,0,0.05);transform-origin:right center; }
-    .shop-z-burst { position:absolute;top:6px;right:6px;width:68px;height:68px;z-index:3; }
-    .shop-z-title { position:absolute;top:12px;left:12px;z-index:2; }
-    .shop-z-enseigne { font-family:'Permanent Marker',cursive;font-size:19px;color:#1a1a1a;transform:rotate(-2deg);line-height:1; }
-    .shop-z-tagline { font-family:'Caveat',cursive;font-weight:700;font-size:12px;color:#c1432e;margin-top:2px; }
-    .shop-z-main { position:absolute;top:50px;left:50%;transform:translateX(-50%);font-size:70px;filter:drop-shadow(4px 4px 0 rgba(0,0,0,0.15));z-index:1; }
-    .shop-z-bottom { position:absolute;bottom:0;left:0;right:0;background:#c1432e;padding:10px 12px;z-index:3; }
-    .shop-z-btitle { font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#fff; }
-    .shop-z-bsub { font-size:9px;color:rgba(255,255,255,0.6);font-weight:700;letter-spacing:1px;margin-top:2px; }
-
-    .bar-glow { display:none; }
-    .nav-card.bar { background:#f5f0e8; }
-    .nav-card.bar .nav-card-bg { display:none; }
-    .nav-card.bar .nav-card-overlay { display:none; }
-    .bar-r-lines { position:absolute;inset:0;overflow:hidden;z-index:0; }
-    .bar-r-line { position:absolute;height:2px;background:rgba(0,0,0,0.04); }
-    .bar-r-bubble { position:absolute;top:8px;right:8px;background:#fff;border:2px solid #1a1a1a;border-radius:12px 12px 4px 12px;padding:4px 8px;z-index:3; }
-    .bar-r-bubble-txt { font-family:'Caveat',cursive;font-weight:700;font-size:11px;color:#1a1a1a; }
-    .bar-r-emoji { position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:54px;z-index:2;filter:drop-shadow(3px 3px 0 rgba(0,0,0,0.15)); }
-    .bar-r-bottom { position:absolute;bottom:0;left:0;right:0;background:#7c2d12;padding:9px 12px;z-index:3; }
-    .bar-r-btitle { font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:#fff; }
-    .bar-r-bsub { font-size:8px;color:rgba(255,255,255,0.5);font-weight:700;letter-spacing:1px; }
-
-    /* CLASSEMENT - Podium nuit avec étoiles filantes */
-    .nav-card.rank .nav-card-bg {
-      background: linear-gradient(135deg, #0a0a1a 0%, #0d2347 60%, #1a3a6b 100%);
-    }
-    .nav-card.rank .nav-card-title { color: #60a5fa; }
-    .rank-stars {
-      position: absolute; inset: 0; z-index: 1; overflow: hidden;
-    }
-    .rank-star {
-      position: absolute;
-      width: 2px; height: 2px;
-      background: white; border-radius: 50%;
-      animation: twinkle 2s infinite;
-    }
     @keyframes twinkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.5)} }
 
 
     /* BOURSE - Terminal avec gradient dynamique */
-    .nav-card.bourse { background:#000; position:relative; overflow:hidden; }
-    .nav-card.bourse .nav-card-bg { display:none; }
-    .nav-card.bourse .nav-card-overlay { display:none; }
-    .nav-card.mariage .nav-card-title { color:#fff; text-shadow:0 1px 5px rgba(157,23,80,0.5); }
-    .nav-card.mariage .nav-card-sub   { color:rgba(255,255,255,0.9); }
-    .mariage-ring { position:absolute; right:-8px; top:-10px; font-size:52px; opacity:0.18; transform:rotate(-18deg); pointer-events:none; }
-    .mariage-h1 { position:absolute; left:8px; top:8px; font-size:15px; opacity:0.6; pointer-events:none; }
-    .mariage-h2 { position:absolute; right:12px; bottom:40px; font-size:12px; opacity:0.5; pointer-events:none; }
-    .bourse-lines {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      height: 55px; z-index: 1;
-    }
-
-    /* PROGRESSION CARD */
-    /* PROGRESSION - Arbre de compétences */
-    /* BOUTON OBJECTIFS — Jungle */
-    .nav-card.progression-card {
-      height: 110px;
-      padding: 0;
-      overflow: hidden;
-      border: none;
-      cursor: pointer;
-    }
-    .nav-card.progression-card .nav-card-bg {
-      background: linear-gradient(135deg, #0a1a0a 0%, #1a3a1a 40%, #2d5a1a 70%, #1a2e0a 100%);
-    }
-    .nav-card.progression-card .nav-card-overlay { display:none; }
-
-    /* SVG lianes */
-    .obj-jungle-svg {
-      position:absolute; inset:0; z-index:1; pointer-events:none;
-      width:100%; height:100%;
-    }
-
-    /* Lueur verte */
-    .obj-jungle-glow {
-      position:absolute; z-index:1; pointer-events:none;
-      width:200px; height:200px;
-      background:radial-gradient(circle, rgba(34,197,94,0.12), transparent 70%);
-      top:50%; left:30%; transform:translate(-50%,-50%);
-      animation:jGlow 4s ease-in-out infinite;
-    }
     @keyframes jGlow { 0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} }
 
     /* Badge */
-    .obj-count-badge {
-      position:absolute; z-index:4; top:12px; right:14px;
-      background:rgba(34,197,94,0.2); backdrop-filter:blur(8px);
-      border:1px solid rgba(34,197,94,0.3); color:#86efac;
-      font-weight:700; font-size:11px; padding:3px 10px;
-      border-radius:20px; letter-spacing:0.5px;
-    }
-
-    .cal-wrap {
-      position:absolute; inset:0; z-index:3;
-      display:flex; align-items:center; padding:0 20px; gap:16px;
-    }
-    .cal-left { display:none; }
-    .cal-day-num { display:none; }
-    .cal-day-name { display:none; }
-
-    .cal-right { display:flex; flex-direction:column; gap:6px; }
-    .cal-title {
-      font-family:'Bebas Neue',sans-serif;
-      font-size:24px; letter-spacing:3px; color:white;
-      text-shadow:0 0 20px rgba(34,197,94,0.4);
-    }
-    .cal-subtitle { display:none; }
-    .cal-objs    { display:none; }
-    .cal-progress { width:120px; }
-    .cal-prog-row { display:none; }
-    .cal-prog-track { height:2px; background:rgba(255,255,255,0.1); border-radius:1px; overflow:hidden; }
-    .cal-prog-fill  { height:100%; background:linear-gradient(90deg,#22c55e,#86efac); border-radius:1px; transition:width 0.4s ease; box-shadow:0 0 6px rgba(34,197,94,0.5); }
-
-    /* Icône centrale */
-    .obj-jungle-icon {
-      position:absolute; z-index:2;
-      right:20px; top:50%; transform:translateY(-50%);
-      font-size:52px;
-      filter:drop-shadow(0 0 12px rgba(34,197,94,0.4));
-      animation:jIcon 4s ease-in-out infinite;
-    }
     @keyframes jIcon { 0%,100%{transform:translateY(-50%) rotate(-3deg)} 50%{transform:translateY(-52%) rotate(3deg)} }
 
     /* GRID SIMPLE POUR COMPANY */
-    .nav-grid-single {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
-      margin-bottom: 0;
-    }
-
-    /* BOUTONS CHAT + PARAMÈTRES */
-    .mini-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0;
-      margin-bottom: 0;
-    }
-
-    .mini-card {
-      border-radius: 0;
-      overflow: hidden;
-      cursor: pointer;
-      position: relative;
-      transition: transform 0.2s, box-shadow 0.2s;
-      height: 130px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 14px;
-      border: 1px solid rgba(255,255,255,0.1);
-      box-sizing: border-box;
-    }
-
-
-    .mini-card-bg { position: absolute; inset: 0; z-index: 0; }
-    .mini-card-overlay {
-      position: absolute; inset: 0; z-index: 1;
-      background: linear-gradient(160deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 100%);
-    }
-    .mini-card-content {
-      position: relative; z-index: 2;
-      display: flex; flex-direction: column; gap: 2px;
-    }
-    .mini-card-icon {
-      font-size: 28px; margin-bottom: 4px;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-    }
-    .mini-card-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px; letter-spacing: 1.5px;
-      color: white; line-height: 1;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
-    }
-    .mini-card-sub { font-size: 10px; color: rgba(255,255,255,0.7); font-weight: 600; }
-
-    /* CHAT — fond dégradé violet/bleu nuit */
-    .mini-card.chat .mini-card-bg {
-      background: linear-gradient(145deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    }
-    .mini-card.chat .mini-card-title { color: #a78bfa; }
-    .mini-card.chat .mini-card-sub   { color: rgba(167,139,250,0.7); }
-
-    /* Étoiles fond chat */
-    .chat-stars {
-      position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
-    }
-    .chat-star {
-      position: absolute; border-radius: 50%;
-      background: white;
-      animation: starTwinkle ease-in-out infinite;
-    }
     @keyframes starTwinkle {
       0%,100% { opacity: 0.8; transform: scale(1); }
       50%      { opacity: 0.2; transform: scale(0.5); }
     }
 
     /* Bulles de dialogue flottantes */
-    .chat-msg-bubble {
-      position: absolute; z-index: 2;
-      background: rgba(167,139,250,0.15);
-      border: 1px solid rgba(167,139,250,0.25);
-      border-radius: 12px 12px 12px 0;
-      animation: msgFloat ease-in-out infinite;
-    }
-    .chat-msg-bubble.right {
-      border-radius: 12px 12px 0 12px;
-    }
     @keyframes msgFloat {
       0%,100% { transform: translateY(0); opacity: 0.6; }
       50%      { transform: translateY(-6px); opacity: 1; }
     }
 
     /* Badge notification */
-    .chat-notif {
-      position: absolute;
-      top: 10px; right: 10px; z-index: 5;
-      min-width: 18px; height: 18px;
-      background: #ef4444; color: white;
-      border-radius: 9px; padding: 0 5px;
-      font-size: 10px; font-weight: 700;
-      font-family: 'Inter', sans-serif;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 10px rgba(239,68,68,0.7);
-      animation: notifPulse 2s ease-in-out infinite;
-    }
-    .chat-notif.hidden { display: none; }
     @keyframes notifPulse {
       0%,100% { transform: scale(1); }
       50%      { transform: scale(1.15); }
     }
 
     /* PARAMÈTRES — engrenages mécaniques */
-    .mini-card.settings .mini-card-bg {
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-    }
-    .mini-card.settings .mini-card-title { color: #94a3b8; }
-    .mini-card.settings .mini-card-sub   { color: rgba(148,163,184,0.6); }
-
-    /* Grille mécanique fond */
-    .settings-grid {
-      position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden;
-      background-image:
-        linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px);
-      background-size: 20px 20px;
-    }
-
-    /* Engrenages */
-    .gear {
-      position: absolute;
-      border-radius: 50%;
-      border: 2px solid rgba(148,163,184,0.15);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 24px;
-      animation: gearRotate linear infinite;
-      z-index: 1;
-    }
-    .gear.big   { width: 60px; height: 60px; top: -10px; right: -10px; animation-duration: 8s; }
-    .gear.small { width: 36px; height: 36px; top: 30px; right: 40px; animation-duration: 5s; animation-direction: reverse; }
     @keyframes gearRotate { to { transform: rotate(360deg); } }
 
     /* ANIMATIONS GLOBALES */
@@ -724,76 +287,17 @@ ang="fr">
 
     /* FLUIDITÉ GLOBALE */
     * { -webkit-font-smoothing:antialiased; }
-    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
-      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
-    }
-    img { transition: opacity 0.3s ease; }
-    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
-
-    /* SKELETON PROFIL */
     @keyframes skShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-    .skeleton-card {
-      background:transparent; border:none; border-radius:0; padding:0;
-      grid-column:span 2; margin-bottom:0; box-sizing:border-box;
-    }
-    .sk { border-radius:8px; background:linear-gradient(90deg,#e8e8ed 25%,#f3f3f6 50%,#e8e8ed 75%);
-      background-size:200% 100%; animation:skShimmer 1.4s ease-in-out infinite; }
-    .sk-row { display:flex; align-items:center; gap:12px; }
-    .sk-avatar { width:54px; height:54px; border-radius:50%; flex-shrink:0; }
-    .sk-line { height:12px; }
-    .sk-stats { display:flex; gap:10px; margin-top:14px; }
-    .sk-stat { flex:1; height:42px; border-radius:12px; }
-    #profileCardBtn { transition: opacity .3s ease; }
+    @keyframes pulse_maj{0%,100%{opacity:1}50%{opacity:.5}}
+    @keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 6px transparent}}
 
-    /* ===== Header fixe en haut ===== */
-    .profile-header {
-      position: fixed; top: 0; left: 50%; transform: translateX(-50%);
-      width: 100%; max-width: 600px; z-index: 200;
-      background: var(--cover-bg, linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9));
-      border-bottom: none;
-      box-shadow: none;
-    }
-    /* Hauteur identique skeleton / profil chargé pour éviter le saut */
-    .profile-header .skeleton-card,
-    .profile-header .profile-card-btn {
-      min-height: 72px;
-      border: none !important;
-      border-radius: 0 !important;
-      margin: 0 !important;
-      box-shadow: none !important;
-      box-sizing: border-box;
-    }
-    #mainContainer {
-      padding-top: calc(68px + env(safe-area-inset-top));
-    }
-.uip-text span {
-      font-family:'Inter',sans-serif;
-      font-size:10px;
-      font-weight:700;
-      letter-spacing:0.5px;
-      display:block;
-      margin-top:1px;
-      color:rgba(0,0,0,0.5);
-    }
-     50%{opacity:0.5} }
-
-</style>
-
-<style id="coverPreload">
-  .profile-header, #profileSkeleton, #skeletonCoverDiv { background: linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9); }
-</style>
-<script>
-  (function(){
-    const c = localStorage.getItem('bd_cover');
-    const bg = c || 'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)';
-    document.documentElement.style.setProperty('--cover-bg', bg);
-    // Injecter directement dans la feuille de style pour application immédiate
-    const st = document.getElementById('coverPreload');
-    if(st) st.textContent = '.profile-header, #profileSkeleton, #skeletonCoverDiv { background: ' + bg + ' !important; }';
-  })();
-</script>
+    /* Casino particles */
+    .casino-particle{position:absolute;width:6px;height:6px;border-radius:50%;animation:floatUp 1.5s ease-out forwards;pointer-events:none}
+    @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
+  </style>
 </head>
 <body>
+
 
   <!-- INSTRUCTIONS iOS -->
   <div id="iosInstall" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);
@@ -829,27 +333,26 @@ ang="fr">
     <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
   </div>
 
-  <div class="container" id="mainContainer">
 
-    <!-- PROFIL FIXE EN HAUT -->
+<div class="container" id="mainContainer" style="padding-top:0">
+
+  <!-- PROFIL HEADER EDITORIAL -->
   <header class="profile-header">
     <!-- Skeleton -->
     <div class="skeleton-card" id="profileSkeleton">
-      <div id="skeletonCoverDiv" style="background:var(--cover-bg, linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9));padding:calc(10px + env(safe-area-inset-top)) 14px 12px;display:flex;align-items:center;gap:10px">
-        <div style="width:46px;height:46px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0"></div>
+      <div style="background:var(--cover-bg);padding:10px 0 12px;display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.15);flex-shrink:0"></div>
         <div style="flex:1">
-          <div style="height:11px;background:rgba(255,255,255,0.2);border-radius:6px;width:45%;margin-bottom:7px"></div>
-          <div style="height:4px;background:rgba(255,255,255,0.1);border-radius:6px;width:75%"></div>
-        </div>
-        <div style="width:44px;text-align:right">
-          <div style="height:11px;background:rgba(255,255,255,0.15);border-radius:6px;width:100%"></div>
+          <div style="height:12px;background:rgba(255,255,255,.2);border-radius:6px;width:40%;margin-bottom:7px"></div>
+          <div style="height:4px;background:rgba(255,255,255,.1);border-radius:6px;width:65%"></div>
         </div>
       </div>
     </div>
-    <!-- Header réseau social -->
+
+    <!-- Header réel -->
     <div id="profileCardBtn" style="display:none">
       <div style="position:relative">
-        <div class="header-cover" onclick="window.location.href='profil.html'" style="cursor:pointer">
+        <div class="header-cover" onclick="window.location.href='profil.html'">
           <div class="header-av-wrap">
             <img src="avatar-default.png" id="avatarImage" alt="avatar" style="width:100%;height:100%;object-fit:cover">
           </div>
@@ -864,148 +367,221 @@ ang="fr">
             </div>
             <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
           </div>
-          <!-- espace réservé pour l'icône -->
           <div style="width:38px;flex-shrink:0"></div>
         </div>
-        <!-- Enveloppe en overlay — en dehors du onclick profil -->
+        <!-- Message btn -->
         <div id="hdrMsgBtn" onclick="window.location.href='messagerie.html'" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10">
           <div style="font-size:22px">✉️</div>
-          <div id="hdrMsgBadge" style="display:none;position:absolute;top:0;right:0;width:10px;height:10px;background:#cc1a1a;border:2px solid rgba(255,255,255,0.3);border-radius:50%"></div>
+          <div id="hdrMsgBadge" style="display:none;position:absolute;top:0;right:0;width:10px;height:10px;background:#cc1a1a;border:2px solid #0f172a;border-radius:50%"></div>
         </div>
       </div>
+    </div>
 
+    <!-- Chips stats -->
+    <div class="hdr-chips" id="hdrChips" style="display:none">
+      <div class="hdr-chip">
+        <div>
+          <div class="hdr-chip-val" id="hdrMoney">—</div>
+          <div class="hdr-chip-lbl">ARGENT</div>
+        </div>
+      </div>
+      <div class="hdr-chip">
+        <div>
+          <div class="hdr-chip-val" id="hdrDiamonds">—</div>
+          <div class="hdr-chip-lbl">DIAMANTS</div>
+        </div>
+      </div>
+      <div class="hdr-chip" onclick="window.location.href='classement.html'" style="cursor:pointer">
+        <div>
+          <div class="hdr-chip-val" id="hdrRankVal">—</div>
+          <div class="hdr-chip-lbl">CLASSEMENT</div>
+        </div>
+      </div>
+      <div class="hdr-chip" id="calCard" style="cursor:pointer" onclick="window.location.href='objectifs.html'">
+        <div>
+          <div class="hdr-chip-val">🎯</div>
+          <div class="hdr-chip-lbl" id="calSubtitle">OBJECTIFS</div>
+        </div>
+      </div>
     </div>
   </header>
 
-    <!-- NAVIGATION -->
-    <div class="nav-grid">
+  <!-- ══ BODY EDITORIAL ══ -->
+  <div id="edBody" style="padding:12px 0 0;display:none">
 
-      <!-- TRAVAILLER -->
-      <div class="nav-card work work-p1" id="workCard" onclick="window.location.href='travail.html'" style="grid-column:span 2;height:260px;padding:0;background:#0d1117">
-        <div id="workSvgContainer" style="position:absolute;inset:0;width:100%;height:100%"></div>
-      </div>
-
-    <!-- BANDEAU MAJ + FEEDBACK -->
-    <div style="grid-column:span 2;margin:0;background:#0f172a;border-top:3px solid #cc1a1a;border-bottom:3px solid #cc1a1a;padding:14px 16px;position:relative;overflow:hidden">
-      <!-- Texture -->
-      <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.04) 12px 13px)"></div>
-      <!-- Contenu -->
-      <div style="position:relative;z-index:1">
-        <!-- Titre MAJ -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-          <div style="background:#cc1a1a;border-radius:6px;padding:3px 8px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s ease-in-out infinite">🔴 LIVE</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:white;letter-spacing:2px;flex:1">GROSSE MAJ — LUNDI 9 JUIN</div>
+    <!-- TRAVAILLER -->
+    <div class="ed-section">TRAVAILLER</div>
+    <div class="ed-featured" id="workCard" onclick="window.location.href='travail.html'">
+      <div class="ed-feat-inner" style="background:linear-gradient(160deg,#0c2461,#1e3799)">
+        <div class="ed-feat-ico">🚢</div>
+        <div class="ed-feat-info">
+          <div class="ed-feat-title">PORT MARITIME</div>
+          <div class="ed-feat-sub">Clique · Gagne de l'argent · Monte en niveau</div>
+          <div class="ed-feat-action">JOUER →</div>
         </div>
-        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:12px">
-          Roue quotidienne · Live feed · Jackpot casino · Colis mystère · Événements globaux · Titres · Badges · et bien plus...
-        </div>
-        <!-- Formulaire feedback -->
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fbbf24;letter-spacing:2px;margin-bottom:8px">💬 TES IDÉES ET BUGS ICI</div>
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
-            <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.08);border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);cursor:pointer">🐛 BUG</button>
-            <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.08);border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);cursor:pointer">💬 AUTRE</button>
-          </div>
-          <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 10px;font-size:12px;color:white;font-family:'Inter',sans-serif;resize:none;height:72px;outline:none;-webkit-appearance:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
-            <div style="font-size:9px;color:rgba(255,255,255,.25)" id="fb-count">0/200</div>
-            <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:8px;padding:7px 16px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:#0f172a;cursor:pointer">ENVOYER →</button>
-          </div>
-        </div>
-        <!-- Feed des derniers feedbacks -->
-        <div id="fb-feed" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto"></div>
+        <!-- SVG container caché mais gardé pour le JS -->
+        <div id="workSvgContainer" style="display:none"></div>
       </div>
     </div>
 
-      <!-- CLASSEMENT -->
-      <div class="nav-card rank" id="rankCard" onclick="window.location.href='classement.html'" style="grid-column:span 2;background:#fff">
-        <div style="position:absolute;inset:0;display:flex;align-items:center;padding:0;z-index:2">
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#fbbf24;line-height:1" id="rankLeaderPos">1er</div>
-            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)" id="rankLeaderName">—</div>
-            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">LEADER</div>
+    <!-- BANDEAU MAJ -->
+    <div class="bandeau-maj">
+      <div style="padding:12px 14px;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.03) 12px 13px)"></div>
+        <div style="position:relative;z-index:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <div style="background:#cc1a1a;border-radius:5px;padding:2px 7px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s ease-in-out infinite">🔴 LIVE</div>
+            <div style="font-family:'Archivo Black',sans-serif;font-size:13px;color:white;letter-spacing:-.2px">GROSSE MAJ — LUNDI 9 JUIN</div>
           </div>
-          <div style="width:1px;background:rgba(0,0,0,0.07);align-self:stretch;margin:16px 0"></div>
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#1a1a1a;line-height:1" id="rankMyPos">#—</div>
-            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)">Toi</div>
-            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TON RANG</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:10px">Roue quotidienne · Live feed · Jackpot casino · Colis mystère · Événements globaux · Badges...</div>
+          <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px">
+            <div style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#fbbf24;letter-spacing:-.2px;margin-bottom:6px">💬 TES IDÉES & BUGS</div>
+            <div style="display:flex;gap:5px;margin-bottom:7px">
+              <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
+              <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.06);border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">🐛 BUG</button>
+              <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.06);border:none;border-radius:6px;padding:5px;font-family:'Bebas Neue',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">💬 AUTRE</button>
+            </div>
+            <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px 10px;font-size:11px;color:white;font-family:'DM Sans',sans-serif;resize:none;height:60px;outline:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:5px">
+              <div style="font-size:9px;color:rgba(255,255,255,.2)" id="fb-count">0/200</div>
+              <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:7px;padding:6px 14px;font-family:'Archivo Black',sans-serif;font-size:11px;color:#0f172a;cursor:pointer">ENVOYER →</button>
+            </div>
           </div>
-          <div style="width:1px;background:rgba(0,0,0,0.07);align-self:stretch;margin:16px 0"></div>
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:38px;color:#1a1a1a;line-height:1" id="rankTotal">—</div>
-            <div style="font-size:11px;font-weight:700;color:rgba(0,0,0,0.5)">joueurs</div>
-            <div style="font-size:8px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TOTAL</div>
-          </div>
+          <div id="fb-feed" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
         </div>
       </div>
+    </div>
 
-      <!-- CASINO -->
-      <div class="nav-card casino" id="casinoCard" onclick="window.location.href='casino.html'" style="grid-column:span 1;background:#cc1a1a;padding:0">
-        <svg width="187" height="130" viewBox="0 0 187 130" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%">
-          <g transform="translate(140,65) rotate(8)">
-            <rect x="-32" y="-46" width="64" height="92" rx="5" fill="white" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
-            <text x="-24" y="-28" font-family="Bebas Neue, Impact, sans-serif" font-size="16" fill="#0a0a0a">A</text>
-            <text x="-23" y="-16" font-family="serif" font-size="11" fill="#0a0a0a">♠</text>
-            <text x="0" y="12" text-anchor="middle" font-family="serif" font-size="44" fill="#0a0a0a">♠</text>
-            <text x="18" y="38" font-family="Bebas Neue, Impact, sans-serif" font-size="16" fill="#0a0a0a" transform="rotate(180,18,32)">A</text>
-          </g>
-          <rect x="0" y="0" width="96" height="130" fill="#cc1a1a"/>
-          <text x="18" y="62" font-family="Bebas Neue, Impact, sans-serif" font-size="34" letter-spacing="2" fill="#f5f2ea">CASINO</text>
-          <text x="18" y="82" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="700" letter-spacing="2" fill="rgba(255,255,255,0.4)">OUVERT 24H/24</text>
-        </svg>
+    <!-- CLASSEMENT -->
+    <div class="ed-section">CLASSEMENT & FINANCES</div>
+
+    <!-- Classement wide card -->
+    <div class="ed-wide" style="background:white" id="rankCard" onclick="window.location.href='classement.html'">
+      <div class="ed-wide-ico" style="background:#fef3c7">🏆</div>
+      <div class="ed-wide-info">
+        <div class="ed-wide-title">CLASSEMENT</div>
+        <div class="ed-wide-sub">
+          <span id="rankLeaderName">—</span> en tête · Toi : <span id="rankMyPos">#—</span> · <span id="rankTotal">—</span> joueurs
+        </div>
       </div>
+      <div style="font-family:'Archivo Black',sans-serif;font-size:18px;color:#f59e0b" id="rankLeaderPos">1er</div>
+    </div>
 
-      <!-- BANQUE -->
-      <div class="nav-card" id="banqueCard" onclick="window.location.href='banque.html'" style="grid-column:span 1;background:#0a0d1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer">
-        <div style="font-size:36px;filter:drop-shadow(0 0 12px rgba(212,175,55,.4))">🏛️</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#d4af37">BANQUE</div>
-        <div id="banqueInteretEl" style="font-size:8px;font-weight:700;color:rgba(212,175,55,.4);letter-spacing:1px">DU PORT</div>
+    <!-- Casino + Banque -->
+    <div class="ed-duo">
+      <div class="ed-mini" style="background:linear-gradient(135deg,#450a0a,#7f1d1d)" id="casinoCard" onclick="window.location.href='casino.html'">
+        <div class="ed-mini-ico">🎰</div>
+        <div class="ed-mini-title" style="color:white">CASINO</div>
+        <div class="ed-mini-sub" style="color:rgba(255,255,255,.5)">Jackpot & jeux</div>
       </div>
+      <div class="ed-mini" style="background:linear-gradient(135deg,#0a0d1a,#1a2240)" id="banqueCard" onclick="window.location.href='banque.html'">
+        <div class="ed-mini-ico">🏛️</div>
+        <div class="ed-mini-title" style="color:#d4af37">BANQUE</div>
+        <div class="ed-mini-sub" id="banqueInteretEl" style="color:rgba(212,175,55,.5)">DU PORT</div>
+      </div>
+    </div>
 
-      <!-- BOUTIQUE -->
-      <div onclick="window.location.href='boutique.html'" id="msgCard" style="grid-column:span 2;height:130px;background:#fbbf24;position:relative;overflow:hidden;cursor:pointer">
+    <!-- MON ENTREPRISE -->
+    <div class="ed-section">MON ENTREPRISE</div>
+    <div class="ed-wide" style="background:white" onclick="window.location.href='commerce.html'">
+      <div class="ed-wide-ico" style="background:#f0fdf4;font-size:26px">🏪</div>
+      <div class="ed-wide-info">
+        <div class="ed-wide-title" id="coName">CRÉER MON ENTREPRISE</div>
+        <div class="ed-wide-sub" id="coSub">100 000€ d'investissement</div>
+      </div>
+      <div style="font-size:16px;color:#d1d5db">›</div>
+    </div>
+
+    <!-- BOUTIQUE + OBJECTIFS -->
+    <div class="ed-section">BOUTIQUE & MISSIONS</div>
+    <div class="ed-duo">
+      <div class="ed-mini" style="background:linear-gradient(135deg,#78350f,#d97706)" id="msgCard" onclick="window.location.href='boutique.html'">
         <div id="msgUnreadBadge" style="display:none"></div>
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:14px">
-          <div style="font-size:36px;flex-shrink:0">🛍️</div>
-          <div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#0f172a;letter-spacing:2px;line-height:1">BOUTIQUE</div>
-            <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.4);letter-spacing:1px;margin-top:3px">Chez Fouinfouin</div>
-          </div>
+        <div class="ed-mini-ico">🛍️</div>
+        <div class="ed-mini-title" style="color:#0f172a">BOUTIQUE</div>
+        <div class="ed-mini-sub" style="color:rgba(0,0,0,.5)">Chez Fouinfouin</div>
+      </div>
+      <div class="ed-mini" style="background:white;border:1.5px solid #f1f5f9" onclick="window.location.href='objectifs.html'">
+        <div style="position:relative;display:inline-block">
+          <div class="ed-mini-ico">🎯</div>
+          <div id="objBadge" style="position:absolute;top:-4px;right:-6px;background:#cc1a1a;color:white;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid white;line-height:1">3</div>
         </div>
+        <div class="ed-mini-title">OBJECTIFS</div>
+        <div class="ed-mini-sub" id="objSubTxt">Missions du jour</div>
       </div>
-
-      <!-- COMMERCE -->
-      <div class="nav-card" onclick="window.location.href='commerce.html'" style="grid-column:span 2;height:260px;background:linear-gradient(160deg,#0f172a,#1e3a5f);overflow:hidden;position:relative">
-        <div style="position:absolute;inset:0;background:linear-gradient(transparent,rgba(251,191,36,.06))"></div>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;z-index:2">
-          <div style="font-size:38px;filter:drop-shadow(0 0 15px rgba(251,191,36,.3))">🏪</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:white;letter-spacing:3px;line-height:1">COMMERCE</div>
-          <div style="font-size:9px;font-weight:700;color:rgba(251,191,36,.6);letter-spacing:3px">OUVRE TON AFFAIRE</div>
-        </div>
-      </div>
-
-      <!-- OBJECTIFS -->
-      <div onclick="window.location.href='objectifs.html'" style="grid-column:span 1;height:130px;background:white;border-top:1px solid #e5e7eb;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative">
-        <div style="position:relative">
-          <div style="font-size:32px">🎯</div>
-          <div id="objBadge" style="position:absolute;top:-4px;right:-8px;background:#cc1a1a;color:white;font-size:9px;font-weight:900;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white">3</div>
-        </div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#0f172a">OBJECTIFS</div>
-      </div>
-
-      <!-- PARAMS -->
-      <div onclick="window.location.href='parametres.html'" style="grid-column:span 1;height:130px;background:#f1f5f9;border-top:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;position:relative">
-        <div style="font-size:30px">⚙️</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#475569">PARAMÈTRES</div>
-      </div>
-
-    <div style="grid-column:span 2;height:calc(54px + env(safe-area-inset-bottom));background:#efefef"></div>
     </div>
+
+    <!-- PARAMÈTRES -->
+    <div class="ed-duo" style="margin-top:0">
+      <div class="ed-mini" style="background:#f8fafc;border:1px solid #e2e8f0" onclick="window.location.href='parametres.html'">
+        <div class="ed-mini-ico">⚙️</div>
+        <div class="ed-mini-title" style="color:#475569">PARAMÈTRES</div>
+        <div class="ed-mini-sub" style="color:#94a3b8">Compte · Son · Notifs</div>
+      </div>
+      <div class="ed-mini" style="background:#f8fafc;border:1px solid #e2e8f0" onclick="window.location.href='classement.html'">
+        <div class="ed-mini-ico">🏆</div>
+        <div class="ed-mini-title" style="color:#0f172a">CLASSEMENT</div>
+        <div class="ed-mini-sub" style="color:#94a3b8">Top dockers</div>
+      </div>
+    </div>
+
+    <div style="height:20px"></div>
   </div>
 
-  <script>
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="pcb-stat"><div class="pcb-stat-val" id="moneyAmount">0€</div><div class="pcb-stat-lbl">Argent</div></div>
+    <div class="pcb-stat"><div class="pcb-stat-val" id="diamondsAmount">0 💎</div><div class="pcb-stat-lbl">Diamants</div></div>
+    <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
+  </div>
+
+  <!-- Toast -->
+  <div id="gameToast"></div>
+
+  <!-- Éléments cachés requis par le JS -->
+  <div style="display:none">
+    <div id="rankValue"></div>
+    <div id="chatNotif"></div>
+    <div id="casinoParticles"></div>
+    <div id="rankStars"></div>
+    <div id="rankStars2"></div>
+    <div id="calProgLabel"></div>
+    <div id="objCountBadge"></div>
+    <div id="objArcFill"></div>
+    <div id="objDone"></div>
+    <div id="calProgPct"></div>
+    <div id="calProgFill"></div>
+    <div id="calObjs"></div>
+    <div class="nav-grid" style="display:none">
+      <div class="nav-card" id="rankCard2"></div>
+    </div>
+    <div id="coverPreload" style="display:none"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<script>
+    // ── MAINTENANCE ── mettre true pour activer, false pour désactiver
+    const MAINTENANCE_ON = false;
+    (function() {
+      if (!MAINTENANCE_ON) return;
+      const PASS = 'froid';
+      if (sessionStorage.getItem('bd_pass') === PASS) return;
+      window.location.replace('maintenance.html');
+    })();
+  </script>
+<script>
+  (function(){
+    const c = localStorage.getItem('bd_cover');
+    const bg = c || 'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)';
+    document.documentElement.style.setProperty('--cover-bg', bg);
+    // Injecter directement dans la feuille de style pour application immédiate
+    const st = document.getElementById('coverPreload');
+    if(st) st.textContent = '.profile-header, #profileSkeleton, #skeletonCoverDiv { background: ' + bg + ' !important; }';
+  })();
+</script>
+<script>
     const supabaseUrl  = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
@@ -1505,7 +1081,7 @@ function getWorkSvg() {
 
     init();
   </script>
-  <script>
+<script>
     // PWA service worker uniquement
     (function () {
 
@@ -1599,12 +1175,56 @@ function getWorkSvg() {
     }
 
     </script>
-  <script>
-    // PWA service worker uniquement
-    (function () {
+<script>
+// ── EDITORIAL UI EXTRAS ──
+// Afficher le body editorial une fois le profil chargé
+var _origShowProfile = null;
+(function patchUI(){
+  var iv = setInterval(function(){
+    var pcb = document.getElementById('profileCardBtn');
+    if(pcb && pcb.style.display !== 'none'){
+      document.getElementById('edBody').style.display = 'block';
+      document.getElementById('hdrChips').style.display = 'flex';
+      // Syncer chips avec stats bar
+      syncChips();
+      clearInterval(iv);
+    }
+  }, 200);
+})();
 
-      // Service worker (rend le jeu installable + repli hors-ligne léger)
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+function syncChips(){
+  var iv = setInterval(function(){
+    var m = document.getElementById('moneyAmount');
+    var d = document.getElementById('diamondsAmount');
+    var hm = document.getElementById('hdrMoney');
+    var hd = document.getElementById('hdrDiamonds');
+    var hr = document.getElementById('hdrRankVal');
+    var rm = document.getElementById('rankMyPos');
+    if(m && hm) hm.textContent = m.textContent;
+    if(d && hd) hd.textContent = d.textContent;
+    if(rm && hr) hr.textContent = rm.textContent;
+  }, 1000);
+}
+
+// Entreprise dans le dashboard
+(function checkCo(){
+  var iv = setInterval(async function(){
+    try{
+      var sb2 = supabase.createClient(supabaseUrl, supabaseKey);
+      var sess = await sb2.auth.getSession();
+      if(!sess.data.session) return;
+      var {data} = await sb2.from('companies').select('nom,name,valeur,niveau').eq('user_id', sess.data.session.user.id).maybeSingle();
+      if(data){
+        var nm = document.getElementById('coName');
+        var sb2 = document.getElementById('coSub');
+        if(nm) nm.textContent = data.nom || data.name || 'Mon Entreprise';
+        var fmtV = function(v){ return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€'; };
+        if(sb2) sb2.textContent = 'Niv.'+(data.niveau||1)+' · '+fmtV(data.valeur||0)+' · Gérer →';
+        clearInterval(iv);
       }
-    })();
+    }catch(e){}
+  }, 3000);
+})();
+</script>
+</body>
+</html>
