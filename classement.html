@@ -4,876 +4,581 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Classement - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <style>
-    * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none; }
-    body { font-family:'Inter',sans-serif;background:#0f172a;min-height:100dvh;display:flex;flex-direction:column; }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
 
-    /* ── HEADER ── */
-    .page-header { background:linear-gradient(135deg,#cc1a1a,#0f172a);padding:calc(18px + env(safe-area-inset-top)) 16px 16px;text-align:center;flex-shrink:0; }
-    .page-title { font-family:'Bebas Neue',sans-serif;font-size:28px;color:white;letter-spacing:3px;line-height:1; }
-    .page-sub { font-size:9px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:3px;margin-top:4px; }
-    .page-sub span { color:#fbbf24; }
-
-    /* ── TOGGLE SORT ── */
-    .sort-toggle { display:flex;gap:4px;margin-bottom:10px; }
-    .sort-btn { flex:1;padding:7px 4px;border-radius:20px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;background:rgba(0,0,0,0.06);color:rgba(0,0,0,0.4);border:1.5px solid transparent;text-align:center;cursor:pointer;transition:all .15s; }
-    .sort-btn.active { background:#0f172a;color:#fbbf24;border-color:rgba(251,191,36,0.4); }
-
-    /* ── FILTRE EN LIGNE ── */
-    .filter-bar { display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px; }
-    .filter-count { font-size:10px;font-weight:700;color:rgba(0,0,0,0.45);flex-shrink:0; }
-    .filter-count span { color:#0f172a; }
-    .toggle-online { display:flex;align-items:center;gap:7px;cursor:pointer;background:rgba(0,0,0,0.06);border-radius:20px;padding:8px 12px;border:1.5px solid rgba(0,0,0,0.1);transition:all .2s;min-height:44px; }
-    .toggle-online.on { background:rgba(74,222,128,0.15);border-color:rgba(74,222,128,0.4); }
-    .toggle-label { font-size:10px;font-weight:800;color:rgba(0,0,0,0.4);letter-spacing:0.5px;transition:color .2s; }
-    .toggle-online.on .toggle-label { color:#4ade80; }
-    .toggle-active { font-size:9px;font-weight:800;color:#4ade80;letter-spacing:1px;display:none; }
-    .toggle-online.on .toggle-active { display:inline; }
-    .toggle-dot { width:30px;height:17px;border-radius:9px;background:rgba(0,0,0,0.1);position:relative;transition:background .2s;border:1px solid rgba(0,0,0,0.15);flex-shrink:0; }
-    .toggle-dot::after { content:'';position:absolute;width:11px;height:11px;border-radius:50%;background:rgba(0,0,0,0.3);top:2px;left:2px;transition:all .2s; }
-    .toggle-dot.on { background:#4ade80;border-color:#22c55e; }
-    .toggle-dot.on::after { transform:translateX(13px);background:white; }
-
-    /* ── SHEET ROUGE ── */
-    .sheet { background:#f8f8f8;flex:1;padding:12px 12px 12px;overflow-y:auto; }
-
-    /* ── COMPTE À REBOURS PERSO ── */
-    .rivalry-block { display:none;margin-bottom:10px; }
-    .rivalry-block.show { display:block; }
-    .rivalry-title { font-size:8px;font-weight:800;color:rgba(0,0,0,0.35);letter-spacing:2px;margin-bottom:5px; }
-    .rivalry-row { display:flex;align-items:center;gap:8px;padding:12px 10px;border-radius:9px;background:rgba(255,140,0,0.07);border:1.5px solid rgba(255,140,0,0.25);margin-bottom:4px;cursor:pointer;min-height:44px; }
-    .rivalry-av { width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,140,0,0.4);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:12px;color:white; }
-    .rivalry-av img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
-    .rivalry-info { flex:1; }
-    .rivalry-name { font-family:'Bebas Neue',sans-serif;font-size:15px;color:#0f172a; }
-    .rivalry-gap { font-size:9px;color:rgba(255,140,0,0.8);margin-top:1px; }
-    .rivalry-rank { font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(255,140,0,0.6); }
-    .personal-gap { background:white;border-radius:10px;padding:9px 12px;margin-bottom:10px;display:none;border:1px solid #e5e7eb; }
-    .personal-gap.show { display:block; }
-    .personal-gap-txt { font-size:11px;font-weight:700;color:rgba(0,0,0,0.5); }
-    .personal-gap-txt span { color:#0f172a; }
-
-    /* ── SKELETON ── */
-    @keyframes shimmer { 0%{background-position:-300px 0} 100%{background-position:300px 0} }
-    .skeleton { border-radius:10px;margin-bottom:5px;height:66px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:600px 100%;animation:shimmer 1.4s infinite linear; }
-
-    /* ── ROWS ── */
-    .rank-rows { display:flex;flex-direction:column;gap:5px; }
-    .rank-sep { display:flex;align-items:center;gap:8px;margin:6px 0 2px;font-size:8px;font-weight:800;color:rgba(0,0,0,0.2);letter-spacing:2px; }
-    .rank-sep::before,.rank-sep::after { content:'';flex:1;height:1px;background:rgba(0,0,0,0.08); }
-    @keyframes rowIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    .rank-row { display:flex;align-items:center;gap:8px;padding:10px 11px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:transform .12s; }
-    .rank-rows.animate .rank-row { animation:rowIn .3s ease both; }
-    .rank-row:active { transform:scale(0.98); }
-    .rank-row.top-1 { background:white;border-color:#e5e7eb; }
-    .rank-row.top-2 { background:white; }
-    .rank-row.top-3 { background:white; }
-    .rank-row.top-10 { border-left:2px solid rgba(0,0,0,0.07); }
-    .row-rank { font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(0,0,0,0.22);min-width:22px;text-align:center;flex-shrink:0; }
-    .rank-row.me .row-rank { color:#fbbf24; }
-
-    /* ── TOP 3 CARDS ── */
-    .top3-section { display:none;flex-direction:column;gap:6px;margin-bottom:8px; }
-    .top3-section.show { display:flex; }
-    .top3-card {
-      display:flex;align-items:center;gap:10px;
-      border-radius:12px;cursor:pointer;
-      transition:transform .12s;position:relative;overflow:hidden;
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f0f0;
+      min-height: 100vh;
+      padding-bottom: 30px;
     }
-    .top3-card:active { transform:scale(0.98); }
-    .top3-card.c1 { background:#fbbf24;border:2.5px solid #0f172a;box-shadow:2px 2px 0 rgba(0,0,0,0.15);padding:14px 14px; }
-    .top3-card.c2 { background:white;border:1.5px solid #e5e7eb;padding:12px 13px; }
-    .top3-card.c3 { background:white;border:1px solid #f3f4f6;padding:10px 12px; }
-    /* Barre gauche */
-    .top3-card::before { content:'';position:absolute;left:0;top:0;bottom:0; }
-    .top3-card.c1::before { width:3px;background:#fbbf24; }
-    .top3-card.c2::before { width:2.5px;background:#9e9e9e; }
-    .top3-card.c3::before { width:2px;background:#cd7f32; }
-    /* Avatar */
-    .top3-av { border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;color:white; }
-    .top3-card.c1 .top3-av { width:52px;height:52px;font-size:18px;border-color:rgba(0,0,0,0.12); }
-    .top3-card.c2 .top3-av { width:48px;height:48px;font-size:16px;border-color:rgba(158,158,158,0.4); }
-    .top3-card.c3 .top3-av { width:44px;height:44px;font-size:15px;border-color:rgba(205,127,50,0.35); }
-    .top3-av img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
-    /* Infos */
-    .top3-info { flex:1;min-width:0; }
-    .top3-name { font-family:'Bebas Neue',sans-serif;color:#0f172a;letter-spacing:0.5px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px; }
-    .top3-card.c1 .top3-name { font-size:22px; }
-    .top3-card.c2 .top3-name { font-size:20px; }
-    .top3-card.c3 .top3-name { font-size:18px; }
-    .top3-badge { display:inline-block;font-size:8px;font-weight:800;letter-spacing:1px;margin-top:4px;padding:2px 7px;border-radius:4px; }
-    .top3-card.c1 .top3-badge { background:#0f172a;color:#fbbf24; }
-    .top3-card.c2 .top3-badge { background:#f3f4f6;color:#9e9e9e; }
-    .top3-card.c3 .top3-badge { background:rgba(205,127,50,0.2);color:rgba(205,127,50,0.9); }
-    .top3-since { display:block;font-size:9px;color:rgba(0,0,0,0.3);margin-top:3px; }
-    /* Score */
-    .top3-right { text-align:right;flex-shrink:0; }
-    .top3-score { font-family:'Bebas Neue',sans-serif;display:block; }
-    .top3-card.c1 .top3-score { font-size:22px;color:#0f172a; }
-    .top3-card.c2 .top3-score { font-size:18px;color:#9e9e9e; }
-    .top3-card.c3 .top3-score { font-size:16px;color:rgba(205,127,50,0.8); }
-    .rank-row.me { background:linear-gradient(90deg,rgba(251,191,36,0.18),rgba(0,0,0,0.35));border-color:#fbbf24;border-width:2px; }
-    .rank-row.me .row-name { color:#0f172a; }
-    .rank-row.me .row-score { color:#fbbf24; }
-    .me-badge { display:inline-block;font-size:8px;font-weight:800;background:#cc1a1a;color:white;padding:1px 5px;border-radius:4px;letter-spacing:1px;flex-shrink:0; }
 
-    .row-avatar { width:44px;height:44px;border-radius:50%;flex-shrink:0;border:2.5px solid #e5e7eb;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;color:#0f172a;overflow:hidden; }
-    .row-avatar img { width:100%;height:100%;object-fit:cover;border-radius:50%; }
-    .row-info { flex:1;min-width:0; }
-    .row-name { font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:0.5px;color:#0f172a;display:flex;align-items:center;gap:5px;flex-wrap:nowrap;overflow:hidden;line-height:1.1; }
-    .rank-row.top-1 .row-name { color:#0f172a; }
-    .row-grade { font-size:9px;color:rgba(0,0,0,0.35);margin-top:3px;display:flex;align-items:center;gap:5px; }
-    .row-online { font-size:9px;font-weight:700;color:#15803d; }
-    .row-lastseen { font-size:9px;color:rgba(0,0,0,0.25); }
-    .row-right { display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0; }
-    .row-score { font-family:'Bebas Neue',sans-serif;font-size:16px;color:rgba(0,0,0,0.25); }
-    .rank-row.top-1 .row-score { color:#0f172a;font-size:19px; }
-    .rank-row.top-2 .row-score { color:#9e9e9e;font-size:17px; }
-    .rank-row.top-3 .row-score { color:#cd7f32; }
-    .rank-row.me .row-score { color:#cc1a1a; }
-    .row-trend { font-size:9px;font-weight:800; }
-    .row-trend.up { color:#15803d; }
-    .row-trend.dn { color:#cc1a1a; }
-    .row-trend.eq { color:rgba(0,0,0,0.2); }
-    .btn-defi { font-size:8px;font-weight:800;letter-spacing:1px;padding:3px 8px;border-radius:5px;background:transparent;border:none;color:rgba(255,255,255,0.35);cursor:pointer;flex-shrink:0; }
-    .btn-defi:active { transform:scale(0.95); }
+    /* ===================== HEADER ===================== */
+    .page-header {
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
-    /* ── BOUTON ME RETROUVER ── */
-    .btn-locate { position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));right:16px;z-index:200;background:#0f172a;border:2.5px solid #fbbf24;border-radius:16px;min-width:46px;padding:6px 10px;display:none;align-items:center;justify-content:center;gap:4px;cursor:pointer;box-shadow:3px 3px 0 #fbbf24;flex-direction:column; }
-    .locate-rank { font-family:'Bebas Neue',sans-serif;font-size:11px;color:#fbbf24;letter-spacing:1px;line-height:1; }
-    .btn-locate.show { display:flex; }
+    .back-btn {
+      background: #f3f4f6;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px; letter-spacing: 1px;
+      color: #6b7280; cursor: pointer;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .back-btn:hover { background: #e5e7eb; color: #1a1a1a; }
 
-    /* ── TOAST ── */
-    .toast { position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:500;background:#0f172a;border:2px solid #fbbf24;border-radius:12px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fbbf24;letter-spacing:1px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,0.6);animation:toastIn .3s ease;display:none; }
-    .toast.show { display:block; }
-    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    .page-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px; letter-spacing: 2px; color: #1a1a1a;
+      flex: 1; text-align: center;
+    }
 
-    /* ── PULL TO REFRESH ── */
-    /* ── POPUP PROFIL BD ROUGE ── */
-    .popup-overlay { position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.6);display:flex;align-items:flex-end;animation:ovIn .2s ease; }
-    @keyframes ovIn { from{opacity:0} to{opacity:1} }
-    .popup-sheet { background:white;border-radius:22px 22px 0 0;border:none;overflow:hidden;width:100%;max-width:500px;margin:0 auto;padding:16px 16px calc(24px + env(safe-area-inset-bottom));animation:shIn .25s ease; }
-    @keyframes shIn { from{transform:translateY(100%)} to{transform:translateY(0)} }
-    @keyframes shOut { from{transform:translateY(0)} to{transform:translateY(100%)} }
-    @keyframes ovOut { from{opacity:1} to{opacity:0} }
-    .popup-handle { width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.4);position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1; }
-    .pp-top { display:flex;align-items:center;gap:14px;margin-bottom:14px; }
-    .pp-av-wrap { position:absolute;bottom:-30px;left:14px; }
-    .pp-cover { height:80px;background:linear-gradient(135deg,#cc1a1a,#0f172a);position:relative;flex-shrink:0; }
-    .pp-cover-badge { position:absolute;top:10px;right:12px;background:#fbbf24;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#0f172a;padding:2px 10px;letter-spacing:1px; }
-    .pp-av { width:60px;height:60px;border-radius:50%;border:3px solid white;object-fit:cover;display:block; }
-    .pp-rank-badge { display:none; }
-    .pp-infos { flex:1;min-width:0; }
-    .pp-body { padding:38px 14px 0; }
-    .pp-name { font-weight:900;font-size:18px;color:#0f172a;line-height:1.2; }
-    .pp-grade { font-size:11px;color:#6b7280;margin-top:3px; }
-    .pp-last-seen { font-size:11px;color:#6b7280; }
-    .pp-xp-wrap { margin-top:8px; }
-    .pp-xp-wrap { margin:8px 0; }
-    .pp-xp-label { display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:#9ca3af;margin-bottom:4px; }
-    .pp-xp-bar { background:#f3f4f6;border-radius:10px;height:6px;overflow:hidden; }
-    .pp-xp-fill { height:100%;border-radius:10px;background:linear-gradient(90deg,#cc1a1a,#fbbf24);transition:width .4s ease; }
-    .pp-stats { display:flex;border-top:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6;margin:10px 0; }
-    .pp-stat { flex:1;padding:10px 4px;text-align:center;border-right:1px solid #f3f4f6; }
-    .pp-stat:last-child { border-right:none; }
-    .pp-stat-sep { display:none; }
-    .pp-stat-v { font-weight:900;font-size:17px;color:#0f172a;line-height:1; }
-    .pp-stat-l { font-size:9px;color:#9ca3af;margin-top:2px; }
-    .pp-best-rank { font-size:9px;color:#9ca3af;font-weight:600;margin:8px 0;text-align:center; }
-    .pp-best-rank span { color:#d97706;font-weight:700; }
-    .pp-btns { display:flex;gap:8px;padding-bottom:calc(14px + env(safe-area-inset-bottom)); }
-    .pp-btn-defi { flex:2;padding:12px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;cursor:pointer; }
-    .pp-btn-close { flex:1;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#374151;font-weight:700;font-size:13px;cursor:pointer; }
-    .pp-btn-profil { width:100%;margin-bottom:8px;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#374151;font-weight:700;font-size:13px;cursor:pointer;text-align:center; }
-    .pp-btn-profil:active { background:#f9fafb; }
-    .chat-msg { padding:7px 10px;border-radius:8px;font-size:11px;line-height:1.4;max-width:90%; }
-    .chat-msg.sent { background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.25);align-self:flex-end;color:rgba(255,255,255,0.8); }
-    .chat-msg.received { background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);align-self:flex-start;color:rgba(255,255,255,0.7); }
-    .chat-msg .chat-meta { font-size:8px;color:rgba(255,255,255,0.3);margin-top:3px;font-weight:700;letter-spacing:1px; }
+    /* ===================== TABS ===================== */
+    .tabs {
+      display: flex;
+      background: white;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0 16px;
+    }
 
-    @keyframes onlinePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-    .btn-back { position:fixed;bottom:calc(20px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:200;background:white;border:2px solid #e5e7eb;border-radius:20px;padding:10px 24px;display:flex;align-items:center;gap:8px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:#0f172a;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.1);white-space:nowrap; }
-    .btn-back:active { transform:translateX(-50%) scale(0.97); }
+    .tab {
+      flex: 1; padding: 12px 8px;
+      background: none; border: none;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px; letter-spacing: 1px;
+      color: #9ca3af; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s; text-align: center;
+    }
+    .tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+    /* ===================== MON RANG ===================== */
+    .my-rank-banner {
+      margin: 12px 16px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    .my-rank-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; color: #d4af37; letter-spacing: 1px;
+      min-width: 50px;
+    }
+
+    .my-rank-info { flex: 1; }
+    .my-rank-label { font-size: 9px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+    .my-rank-val { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #1a1a1a; letter-spacing: 1px; }
+
+    /* ===================== LISTE ===================== */
+    .list-wrap { padding: 0 16px; }
+
+    /* TOP 3 */
+    .podium {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .podium-item {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      position: relative;
+      overflow: hidden;
+    }
+    .podium-item:active { transform: scale(0.96); }
+
+    .podium-item.rank-1 { border-color: rgba(212,175,55,0.4); box-shadow: 0 2px 12px rgba(212,175,55,0.15); }
+    .podium-item.rank-2 { border-color: rgba(160,160,175,0.4); }
+    .podium-item.rank-3 { border-color: rgba(180,120,60,0.3); }
+
+    .podium-stripe {
+      position: absolute; top:0; left:0; right:0; height:3px;
+    }
+    .rank-1 .podium-stripe { background: linear-gradient(90deg, #d4af37, #f5d060, #d4af37); }
+    .rank-2 .podium-stripe { background: linear-gradient(90deg, #9e9e9e, #c8c8c8, #9e9e9e); }
+    .rank-3 .podium-stripe { background: linear-gradient(90deg, #cd7f32, #e8a96a, #cd7f32); }
+
+    .podium-medal { font-size: 18px; margin-bottom: 8px; }
+
+    .podium-avatar {
+      width: 46px; height: 46px; border-radius: 50%;
+      overflow: hidden; margin: 0 auto 8px;
+      border: 2px solid #e5e7eb;
+      background: #f3f4f6;
+    }
+    .rank-1 .podium-avatar { border-color: rgba(212,175,55,0.5); }
+    .podium-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .podium-name {
+      font-weight: 700; font-size: 11px; color: #1a1a1a;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+    .podium-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 13px; letter-spacing: 0.5px;
+    }
+    .rank-1 .podium-score { color: #d4af37; }
+    .rank-2 .podium-score { color: #9e9e9e; }
+    .rank-3 .podium-score { color: #cd7f32; }
+
+    /* LIGNES */
+    .rank-rows { display: flex; flex-direction: column; gap: 6px; }
+
+    .rank-row {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .rank-row:active { transform: scale(0.99); background: #f9fafb; }
+    .rank-row.me { border-color: rgba(212,175,55,0.35); background: rgba(212,175,55,0.04); }
+
+    .row-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px; color: #d1d5db;
+      min-width: 28px; text-align: center;
+    }
+    .rank-row.me .row-num { color: #d4af37; }
+
+    .row-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0;
+      border: 1.5px solid #e5e7eb;
+      background: #f3f4f6;
+    }
+    .row-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .row-info { flex: 1; min-width: 0; }
+    .row-name { font-weight: 700; font-size: 13px; color: #1a1a1a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .row-grade { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+
+    .row-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px; color: #6b7280; letter-spacing: 0.5px;
+      text-align: right; flex-shrink: 0;
+    }
+    .rank-row.me .row-score { color: #d4af37; }
+
+    /* ===================== LOADER ===================== */
+    .loader { text-align:center; padding:60px 20px; }
+    .loader-icon { font-size:32px; opacity:0.3; animation:lPulse 1.5s ease-in-out infinite; }
+    @keyframes lPulse { 0%,100%{opacity:0.2;transform:scale(0.95)} 50%{opacity:0.5;transform:scale(1.05)} }
+    .loader-txt { font-size:11px; color:#9ca3af; margin-top:10px; letter-spacing:1px; }
+
+    /* ===================== POPUP PROFIL ===================== */
+    .popup-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: flex-end;
+      animation: overlayIn 0.2s ease;
+    }
+    @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+
+    .popup-card {
+      width: 100%;
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px;
+      animation: cardUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes cardUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+    .popup-handle {
+      width: 40px; height: 4px;
+      background: #e5e7eb; border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+
+    .popup-header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .popup-avatar {
+      width: 64px; height: 64px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0;
+      border: 3px solid #e5e7eb;
+      background: #f3f4f6;
+    }
+    .popup-avatar img { width:100%; height:100%; object-fit:cover; }
+
+    .popup-info { flex: 1; }
+    .popup-name { font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; color:#1a1a1a; }
+    .popup-grade { font-size:12px; color:#b8962e; font-weight:700; margin-top:2px; }
+    .popup-rank { font-size:11px; color:#9ca3af; margin-top:2px; }
+    .popup-bio { font-size:12px; color:#6b7280; margin-top:6px; font-style:italic; }
+
+    .popup-stats {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 10px; margin-bottom: 20px;
+    }
+
+    .popup-stat {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .ps-icon { font-size: 20px; margin-bottom: 4px; }
+    .ps-val { font-family:'Bebas Neue',sans-serif; font-size:18px; color:#1a1a1a; letter-spacing:0.5px; }
+    .ps-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; font-weight:700; margin-top:1px; }
+
+    .popup-close {
+      width: 100%;
+      background: #1a1a1a; color: white;
+      border: none; border-radius: 12px;
+      padding: 14px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 16px; letter-spacing: 1px;
+      cursor: pointer;
+    }
+  
+    /* FLUIDITÉ GLOBALE */
+    * { -webkit-font-smoothing:antialiased; }
+    button, .nav-card, .row, .rank-row, .obj-card, .item-card, .stat-card, .card, .feature-card {
+      transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    button:active, .nav-card:active, .row:active {
+      transform: scale(0.97) !important;
+      opacity: 0.9 !important;
+    }
+    img { transition: opacity 0.3s ease; }
+    input, textarea { transition: border-color 0.2s ease, background 0.2s ease; }
+
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="page-header">
-  <div class="page-title">LE CLASSEMENT DES DOCKERS</div>
-  <div class="page-sub">PORT DE MARSEILLE · <span id="headerCount"></span></div>
-</div>
-
-<!-- BODY ROUGE -->
-<div class="sheet" id="sheet">
-
-  <!-- COMPTE À REBOURS PERSO -->
-  <div class="rivalry-block" id="rivalryBlock">
-    <div class="rivalry-title">👀 À SURVEILLER</div>
-    <div id="rivalryRows"></div>
+  <!-- HEADER -->
+  <div class="page-header">
+    <button class="back-btn" onclick="window.location.href='game.html'">← Retour</button>
+    <div class="page-title">🏆 Classement</div>
+    <div style="width:70px"></div>
   </div>
 
-  <div class="personal-gap" id="personalGap">
-    <div class="personal-gap-txt" id="personalGapTxt"></div>
+  <!-- TABS -->
+  <div style="background:white;border-bottom:2px solid #f0f0f0;display:flex;padding:0">
+    <button id="tab-niveau" onclick="switchTab('niveau')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid #1a1a1a;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#1a1a1a;cursor:pointer">NIVEAU</button>
+    <button id="tab-argent" onclick="switchTab('argent')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid transparent;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#9ca3af;cursor:pointer">ARGENT</button>
+    <button id="tab-entreprises" onclick="switchTab('entreprises')" style="flex:1;padding:12px 6px;border:none;border-bottom:3px solid transparent;background:none;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#9ca3af;cursor:pointer">🏪 ENTREPRISES</button>
   </div>
 
-  <!-- FILTRE -->
-  <div class="sort-toggle">
-    <div class="sort-btn active" id="sortPower" onclick="setSort('power')">⚡ PUISSANCE</div>
-    <div class="sort-btn" id="sortLevel" onclick="setSort('level')">🎖 NIVEAU</div>
-    <div class="sort-btn" id="sortMoney" onclick="setSort('money')">💰 ARGENT</div>
-  </div>
 
-  <div class="filter-bar">
-    <div class="filter-count" id="filterCount"><span id="playerCount">—</span> joueurs</div>
-    <div class="toggle-online" id="toggleOnline" onclick="toggleOnlineFilter()">
-      <div class="toggle-label">🟢 En ligne</div>
-      <div class="toggle-active">FILTRE ACTIF</div>
-      <div class="toggle-dot" id="toggleDot"></div>
+  <!-- MON RANG -->
+  <div class="my-rank-banner" id="myRankBanner" style="display:none">
+    <div class="my-rank-num" id="myRankNum">#-</div>
+    <div class="my-rank-info">
+      <div class="my-rank-label">Ton classement</div>
+      <div class="my-rank-val" id="myRankVal">--</div>
     </div>
   </div>
 
-  <!-- SKELETON -->
-  <div id="skeletonWrap">
-    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
-    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+  <!-- LOADER -->
+  <div class="loader" id="loader">
+    <div class="loader-icon">🏆</div>
+    <div class="loader-txt">Chargement...</div>
   </div>
 
-  <!-- TOP 3 CARDS -->
-  <div class="top3-section" id="top3Section"></div>
-
-  <!-- LISTE (à partir du #4) -->
-  <div style="display:none" id="listWrap">
+  <!-- LISTE -->
+  <div class="list-wrap" id="listWrap" style="display:none">
+    <div class="podium" id="podium"></div>
     <div class="rank-rows" id="rankRows"></div>
   </div>
 
-</div>
-
-<!-- BOUTON ME RETROUVER -->
-<div class="btn-locate" id="btnLocate" onclick="locateMe()" title="Me retrouver">📍</div>
-
-
-<!-- OVERLAY MESSAGE PRIVÉ -->
-<div id="msgOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
-  <div style="background:white;border-radius:20px 20px 0 0;width:100%;max-width:500px;padding:20px 16px calc(24px + env(safe-area-inset-bottom))">
-    <div style="width:36px;height:4px;background:#e5e7eb;border-radius:2px;margin:0 auto 16px"></div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:2px;margin-bottom:4px">MESSAGE PRIVÉ</div>
-    <div id="msgTo" style="font-size:11px;color:#9ca3af;margin-bottom:12px">À : —</div>
-    <textarea id="msgInput" placeholder="Écris ton message..." maxlength="200" style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:'Inter',sans-serif;resize:none;height:90px;outline:none;color:#0f172a" oninput="document.getElementById('msgCount').textContent=this.value.length+'/200'" onfocus="this.style.borderColor='#cc1a1a'" onblur="this.style.borderColor='#e5e7eb'"></textarea>
-    <div id="msgCount" style="font-size:10px;color:#9ca3af;text-align:right;margin-top:3px">0/200</div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <button onclick="sendPrivateMsg()" style="flex:2;padding:13px;border:none;border-radius:10px;background:#cc1a1a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer">ENVOYER</button>
-      <button onclick="document.getElementById('msgOverlay').style.display='none'" style="flex:1;padding:13px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#9ca3af;font-weight:700;cursor:pointer">Annuler</button>
+  <!-- POPUP -->
+  <div class="popup-overlay" id="popup" style="display:none" onclick="closePopup(event)">
+    <div class="popup-card">
+      <div class="popup-handle"></div>
+      <div class="popup-header">
+        <div class="popup-avatar"><img id="ppAvatar" src="avatar-default.png"></div>
+        <div class="popup-info">
+          <div class="popup-name" id="ppName">--</div>
+          <div class="popup-grade" id="ppGrade">--</div>
+          <div class="popup-rank" id="ppRank">--</div>
+        <div class="popup-bio" id="ppBio" style="display:none"></div>
+        </div>
+      </div>
+      <div class="popup-stats">
+        <div class="popup-stat">
+          <div class="ps-icon">⭐</div>
+          <div class="ps-val" id="ppLevel">-</div>
+          <div class="ps-lbl">Niveau</div>
+        </div>
+        <div class="popup-stat">
+          <div class="ps-icon">💰</div>
+          <div class="ps-val" id="ppMoney">-</div>
+          <div class="ps-lbl">Argent</div>
+        </div>
+        <div class="popup-stat">
+          <div class="ps-icon">🏆</div>
+          <div class="ps-val" id="ppTrophies">-</div>
+          <div class="ps-lbl">Trophées</div>
+        </div>
+      </div>
+      <button class="popup-close" onclick="document.getElementById('popup').style.display='none'">Fermer</button>
     </div>
   </div>
-</div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+  <script>
+    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+    const { createClient } = supabase;
+    const sb = createClient(supabaseUrl, supabaseKey);
 
-<!-- POPUP PROFIL -->
-<div id="popup" class="popup-overlay" style="display:none" onclick="closePopup(event)">
-  <div class="popup-sheet">
-    <div class="popup-handle"></div>
-    <div class="pp-cover">
-      <div class="pp-cover-badge" id="ppRankBadge">—</div>
-      <div class="pp-av-wrap"><img class="pp-av" id="ppAvatar" src="avatar-default.png"></div>
-    </div>
-    <div class="pp-body">
-      <div class="pp-infos">
-        <div class="pp-name" id="ppName">—</div>
-        <div class="pp-grade"><span id="ppGrade">—</span> · <span class="pp-last-seen" id="ppLastSeen"></span></div>
-      </div>
-      <div class="pp-xp-wrap">
-        <div class="pp-xp-label"><span id="ppXpVal">0 XP</span><span id="ppXpNext">→ Niv. 2</span></div>
-        <div class="pp-xp-bar"><div class="pp-xp-fill" id="ppXpFill" style="width:0%"></div></div>
-      </div>
-    </div>
-    <div class="pp-stats">
-      <div class="pp-stat"><div class="pp-stat-v" id="ppLevel">—</div><div class="pp-stat-l">Niveau</div></div>
-      <div class="pp-stat"><div class="pp-stat-v" id="ppMoney">—</div><div class="pp-stat-l">Argent</div></div>
-      <div class="pp-stat"><div class="pp-stat-v" id="ppPower" style="color:#d97706">—</div><div class="pp-stat-l">Puissance</div></div>
-      <div class="pp-stat"><div class="pp-stat-v" id="ppDiamonds" style="color:#7c3aed">—</div><div class="pp-stat-l">Diamants</div></div>
-    </div>
-    <div style="padding:0 14px">
-    <div class="pp-best-rank" id="ppBestRank"></div>
-    <div class="pp-btns">
-      <button class="pp-btn-defi" id="ppDefiBtn">💬 CHAMBRER</button>
-      <button class="pp-btn-close" onclick="document.getElementById('popup').style.display='none'">FERMER</button>
-    </div>
-    <button class="pp-btn-profil" id="ppProfilBtn" onclick="">👤 VOIR LE PROFIL COMPLET</button>
-    <button id="ppMsgBtn" style="width:100%;margin-top:6px;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#374151;font-weight:700;font-size:13px;cursor:pointer">✉️ MESSAGE PRIVÉ</button>
-    </div><!-- end padding wrapper -->
-  </div>
-</div>
+    let currentUser = null;
+    let currentTab = 'niveau';
+    let allPlayers = [];
 
-<script>
-  const sb = supabase.createClient(
-    'https://drtsuhnbclhmgfjiykap.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg'
-  );
-
-  let currentUser = null, allPlayers = [], filteredPlayers = [];
-  let onlineOnly = false, myRowEl = null, firstRender = true;
-
-  // ── Couleur avatar ──
-  const AVATAR_COLORS = ['#dbeafe','#fee2e2','#dcfce7','#ede9fe','#fef3c7','#fce7f3','#e0f2fe','#f0fdf4','#fff7ed','#f5f3ff'];
-  function avatarColor(u) { const s=(u||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0); return AVATAR_COLORS[s%AVATAR_COLORS.length]; }
-
-  // ── Tendance → Supabase ──
-  let prevRanks = {};
-  async function loadPrevRanks() {
-    try {
-      const { data } = await sb.from('game_stats').select('user_id,prev_rank').not('prev_rank','is',null);
-      if (data) data.forEach(r => { if (r.prev_rank) prevRanks[r.user_id] = r.prev_rank; });
-    } catch(e) {}
-  }
-  async function savePrevRanks(players) {
-    if (!currentUser) return;
-    const myIdx = players.findIndex(p => p.user_id === currentUser.id);
-    if (myIdx < 0) return;
-    const newRank = myIdx + 1;
-    // Ne mettre à jour que si le rang a changé
-    if (prevRanks[currentUser.id] === newRank) return;
-    try { await sb.from('game_stats').update({ prev_rank: newRank }).eq('user_id', currentUser.id); } catch(e) {}
-  }
-  function getTrend(userId, rank) {
-    const prev = prevRanks[userId];
-    if (!prev || prev === rank) return { cls:'eq', txt:'\u2014' };
-    if (rank < prev) return { cls:'up', txt:'\u25b2 +' + (prev - rank) };
-    return { cls:'dn', txt:'\u25bc -' + (rank - prev) };
-  }
-
-  // ── Helpers ──
-    const COVER_CSS = {
-    'rouge_navy':     'linear-gradient(135deg,#cc1a1a,#0f172a)',
-    'bleu_mer':       'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-    'noir':           'linear-gradient(135deg,#18181b,#3f3f46)',
-    'night':          'linear-gradient(135deg,#0f172a,#334155)',
-    'ciment':         'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
-    'carbone':        'linear-gradient(135deg,#1c1917,#292524,#44403c)',
-    'gold':           'linear-gradient(135deg,#b45309,#f59e0b)',
-    'emerald':        'linear-gradient(135deg,#047857,#10b981)',
-    'purple':         'linear-gradient(135deg,#6d28d9,#a855f7)',
-    'coral':          'linear-gradient(135deg,#be123c,#fb7185)',
-    'or_navy':        'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-    'abysses':        'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
-    'turquoise':      'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
-    'indigo':         'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
-    'marseille_nuit': 'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
-    'feu_docker':     'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
-    'port_tropical':  'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
-    'sang_requin':    'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
-    'sunset':         'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
-    'neon_rouge':     'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
-    'arc_en_ciel':    'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
-  };
-  function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
-
-  function getXpRequired(level) {
-    return level * 500;
-  }
-
-  function getGrade(l) {
-    if (l <= 4) return 'Docker Occasionnel';
-    if (l <= 14) return 'Docker';
-    if (l <= 29) return 'Docker Mensuel';
-    if (l <= 49) return 'Contre-Maître';
-    if (l <= 79) return 'Chef de Quai';
-    return 'Magnat du Port';
-  }
-  let sortMode = 'power'; // power | level | money
-
-  function powerScore(p) {
-    return (p.level||1) * 100 + Math.floor((p.money||0) / 10000);
-  }
-  function score(p) {
-    if (sortMode === 'level') return 'Niv. ' + (p.level||1);
-    if (sortMode === 'money') return ((p.money||0) >= 1000000 ? (((p.money||0)/1000000).toFixed(1)) + 'M€' : (p.money||0) >= 1000 ? Math.floor((p.money||0)/1000) + 'k€' : (p.money||0) + '€');
-    return powerScore(p) + ' ⚡';
-  }
-  function sortPlayers(arr) {
-    return [...arr].sort((a,b) => {
-      if (sortMode === 'level') return (b.level||1) - (a.level||1);
-      if (sortMode === 'money') return (b.money||0) - (a.money||0);
-      return powerScore(b) - powerScore(a);
-    });
-  }
-  function bizValuation(com) {
-    if (!(com && com.company && com.company.name)) return 0;
-    return (com.company.level||1) * 2000 * (com.ipo ? 1.5 : 1) * 150;
-  }
-  function avatarForLevel(lvl) {
-    if (lvl>=50) return 'avatar-level-50.png'; if (lvl>=30) return 'avatar-level-30.png';
-    if (lvl>=20) return 'avatar-level-20.png'; if (lvl>=17) return 'avatar-level-17.png';
-    if (lvl>=15) return 'avatar-level-15.png'; if (lvl>=13) return 'avatar-level-13.png';
-    if (lvl>=10) return 'avatar-level-10.png'; if (lvl>=5)  return 'avatar-level-5.png';
-    if (lvl>=4)  return 'avatar-level-4.png';  if (lvl>=3)  return 'avatar-level-3.png';
-    if (lvl>=2)  return 'avatar-level-2.png';  return 'avatar-default.png';
-  }
-  function escapeHtml(t) { return (t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
-  function getOnlineStatus(lastSeen) {
-    if (!lastSeen) return { online:false, text:'' };
-    const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
-    if (diff < 300) return { online:true, text:'En ligne' };
-    if (diff < 3600) return { online:false, text:'il y a ' + Math.floor(diff/60) + 'min' };
-    if (diff < 86400) return { online:false, text:'il y a ' + Math.floor(diff/3600) + 'h' };
-    return { online:false, text:'il y a ' + Math.floor(diff/86400) + 'j' };
-  }
-
-  // ── Toast ──
-  function showToast(msg, duration) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), duration || 3000);
-  }
-
-  // ── Filtre en ligne ──
-  function setSort(mode) {
-    sortMode = mode;
-    ['power','level','money'].forEach(m => {
-      document.getElementById('sort'+m.charAt(0).toUpperCase()+m.slice(1)).classList.toggle('active', m === mode);
-    });
-    applyFilter();
-  }
-
-  function toggleOnlineFilter() {
-    onlineOnly = !onlineOnly;
-    document.getElementById('toggleDot').classList.toggle('on', onlineOnly);
-    document.getElementById('toggleOnline').classList.toggle('on', onlineOnly);
-    applyFilter();
-  }
-  function applyFilter() {
-    const onlinePlayers = allPlayers.filter(p => getOnlineStatus(p.profile.last_seen).online);
-    const base = onlineOnly ? onlinePlayers : allPlayers;
-    filteredPlayers = sortPlayers(base);
-    const countEl = document.getElementById('playerCount');
-    const hdrCount = document.getElementById('headerCount');
-    if (hdrCount) hdrCount.textContent = allPlayers.length + ' DOCKERS';
-    if (onlineOnly) {
-      countEl.innerHTML = filteredPlayers.length + ' <span style="color:#4ade80;font-size:9px">EN LIGNE</span>';
-    } else {
-      countEl.textContent = filteredPlayers.length + ' joueurs · ' + onlinePlayers.length + ' 🟢';
+    function getGrade(l) {
+      if (!l||l<=4)  return 'Docker Occasionnel';
+      if (l<=14) return 'Docker';
+      if (l<=29) return 'Docker Mensuel';
+      if (l<=49) return 'Contre-Maître';
+      if (l<=79) return 'Chef de Quai';
+      return 'Magnat du Port';
     }
-    renderRows(filteredPlayers);
-  }
 
-  // ── Me retrouver ──
-  function locateMe() {
-    if (!myRowEl && onlineOnly) { toggleOnlineFilter(); return; }
-    if (!myRowEl) return;
-    myRowEl.scrollIntoView({ behavior:'smooth', block:'center' });
-    myRowEl.style.outline = '3px solid #fbbf24';
-    setTimeout(() => { myRowEl.style.outline = ''; }, 1500);
-  }
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+      loadRanking();
+    }
 
-  // ── Chargement ──
-  async function loadRanking() {
-    firstRender = true;
-    document.getElementById('skeletonWrap').style.display = 'block';
-    document.getElementById('listWrap').style.display = 'none';
+    async function loadRanking() {
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('listWrap').style.display = 'none';
+      document.getElementById('myRankBanner').style.display = 'none';
 
-    // Requêtes parallèles pour réduire le temps de chargement
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    let stats, profiles;
-    try {
-      const [statsRes] = await Promise.all([
-        sb.from('game_stats').select('user_id, money, level, xp, commerce, diamonds, trophies').order('level', { ascending: false }).limit(200),
-      ]);
-      clearTimeout(timeout);
-      stats = statsRes.data;
-      if (!(stats && stats.length)) { document.getElementById('skeletonWrap').style.display = 'none'; return; }
-      // Profiles + prevRanks en parallèle
-      const [profilesRes] = await Promise.all([
-        sb.from('profiles').select('user_id, username, avatar_url, last_seen, background_color').in('user_id', stats.map(s => s.user_id)),
-        loadPrevRanks()
-      ]);
-      profiles = profilesRes.data;
-    } catch(e) {
-      clearTimeout(timeout);
-      document.getElementById('skeletonWrap').style.display = 'none';
-      document.getElementById('rankRows').innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:10px">📡</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:rgba(255,255,255,0.4);letter-spacing:2px">IMPOSSIBLE DE CHARGER</div><div style="font-size:11px;color:rgba(255,255,255,0.25);margin-top:6px">Vérifiez votre connexion</div></div>';
+      const { data: stats } = await sb
+        .from('game_stats')
+        .select('user_id, money, level, xp')
+        .order(currentTab === 'niveau' ? 'level' : 'money', { ascending: false });
+
+      if (!stats?.length) { document.getElementById('loader').style.display = 'none'; return; }
+
+      const { data: profiles } = await sb
+        .from('profiles')
+        .select('user_id, username, avatar_url, trophies, last_seen')
+        .in('user_id', stats.map(s => s.user_id));
+
+      allPlayers = stats.map(s => ({
+        ...s,
+        profile: profiles?.find(p => p.user_id === s.user_id) || { username: 'Docker', avatar_url: 'avatar-default.png', trophies: 0 }
+      }));
+
+      document.getElementById('loader').style.display = 'none';
+
+      // Mon rang
+      const myIdx = allPlayers.findIndex(p => p.user_id === currentUser.id);
+      if (myIdx >= 0) {
+        const me = allPlayers[myIdx];
+        document.getElementById('myRankNum').textContent = '#' + (myIdx+1);
+        document.getElementById('myRankVal').textContent = currentTab === 'level'
+          ? `Niveau ${me.level||1} — ${getGrade(me.level||1)}`
+          : `${(me.money||0).toLocaleString('fr-FR')}€`;
+        document.getElementById('myRankBanner').style.display = 'flex';
+      }
+
+      renderPodium(allPlayers.slice(0, Math.min(3, allPlayers.length)));
+      renderRows(allPlayers.slice(3), 4);
       document.getElementById('listWrap').style.display = 'block';
-      return;
-    }
-    allPlayers = stats.map(s => ({
-      ...s,
-      profile: (profiles ? profiles.find(function(p){ return p.user_id === s.user_id; }) : null) || { username:'Anonyme', trophies:0 }
-    }));
-
-    document.getElementById('skeletonWrap').style.display = 'none';
-    document.getElementById('playerCount').textContent = allPlayers.length;
-
-    const myIdx = allPlayers.findIndex(p => p.user_id === currentUser.id);
-    if (myIdx >= 0) {
-      const me = allPlayers[myIdx];
-      const myRank = myIdx + 1;
-
-      // Compte à rebours perso
-      const gapEl = document.getElementById('personalGap');
-      const gapTxt = document.getElementById('personalGapTxt');
-      if (myIdx > 0) {
-        const above = allPlayers[myIdx - 1];
-        const diff = (above.level||1) - (me.level||1);
-        if (diff > 0) {
-          gapTxt.innerHTML = 'Encore <span>' + diff + ' niveau' + (diff>1?'x':'') + '</span> pour dépasser <span>' + escapeHtml(above.profile.username) + '</span> et passer #' + myIdx;
-          gapEl.classList.add('show');
-        }
-      }
-
-      // Rivalité — 2 joueurs au-dessus (trié selon sortMode)
-      if (myIdx > 0) {
-        const sortedRiv = sortPlayers(allPlayers);
-        const myIdxRiv = sortedRiv.findIndex(p => p.user_id === currentUser.id);
-        const rivals = myIdxRiv > 0 ? sortedRiv.slice(Math.max(0, myIdxRiv-2), myIdxRiv) : [];
-        const rBlock = document.getElementById('rivalryBlock');
-        if (rBlock && rivals.length > 0) {
-          rBlock.classList.add('show');
-          document.getElementById('rivalryRows').innerHTML = rivals.map((r, ri) => {
-            const realRivIdx = allPlayers.indexOf(r);
-            const rIdx = myIdxRiv - rivals.length + ri;
-            const diffStr = sortMode === 'money'
-              ? Math.abs(Math.floor(((r.money||0)-(me.money||0))/1000)) + 'k€'
-              : sortMode === 'level'
-              ? Math.abs((r.level||1)-(me.level||1)) + ' niveaux'
-              : Math.abs(powerScore(r)-powerScore(me)) + ' pts';
-            return '<div class="rivalry-row" onclick="showProfile(' + realRivIdx + ')">'
-              + '<div class="rivalry-av"><img src="' + avatarForLevel(r.level||1) + '" onerror="this.style.display=\'none\'"></div>'
-              + '<div class="rivalry-info"><div class="rivalry-name">' + escapeHtml(r.profile.username) + '</div><div class="rivalry-gap">+' + diffStr + ' devant toi</div></div>'
-              + '<div class="rivalry-rank">#' + (rIdx+1) + '</div>'
-              + '</div>';
-          }).join('');
-        }
-      }
-
-      // Bouton locate
-      if (myRank > 8) {
-        const locateEl = document.getElementById('btnLocate');
-        const locateRankEl = document.getElementById('locateRank');
-        if (locateEl) locateEl.classList.add('show');
-        if (locateRankEl) locateRankEl.textContent = '#' + myRank;
-        const locateAvEl = document.getElementById('locateAvatar');
-        if (locateAvEl) locateAvEl.innerHTML = '<img src="' + avatarForLevel(me.level||1) + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-      }
-
-      // Confettis si top 3
     }
 
-    await loadRankSince(allPlayers);
-    applyFilter();
-    savePrevRanks(allPlayers);
-  }
+    function score(p) {
+      return currentTab === 'level'
+        ? `Niv. ${p.level||1}`
+        : `${(p.money||0).toLocaleString('fr-FR')}€`;
+    }
 
-  // -- Duree au rang (Supabase top3_since + localStorage fallback)
-  const rankSinceCache = {};
-  async function loadRankSince(players) {
-    const top3 = players.slice(0, 3);
-    try {
-      const { data, error } = await sb.from('game_stats')
-        .select('user_id,top3_since').in('user_id', top3.map(p => p.user_id));
-      if (!error && data) {
-        const now = new Date().toISOString();
-        data.forEach(row => {
-          if (!row.top3_since) {
-            sb.from('game_stats').update({ top3_since: now }).eq('user_id', row.user_id).then(() => {});
-            rankSinceCache[row.user_id] = now;
-          } else { rankSinceCache[row.user_id] = row.top3_since; }
-        });
+    function renderPodium(top) {
+      const el = document.getElementById('podium');
+      const medals = ['🥇','🥈','🥉'];
+      const classes = ['rank-1','rank-2','rank-3'];
+      el.innerHTML = top.map((p,i) => `
+        <div class="podium-item ${classes[i]}" onclick="showProfile(${i})">
+          <div class="podium-stripe"></div>
+          <div class="podium-medal">${medals[i]}</div>
+          <div class="podium-avatar"><img src="${p.profile.avatar_url||'avatar-default.png'}"></div>
+          <div class="podium-name">${p.profile.username}</div>
+          <div class="podium-score">${score(p)}</div>
+        </div>`).join('');
+    }
+
+    function getOnlineStatus(lastSeen) {
+      if (!lastSeen) return { online: false, text: '' };
+      const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
+      if (diff < 300)   return { online: true,  text: 'En ligne' };
+      if (diff < 3600)  return { online: false, text: `il y a ${Math.floor(diff/60)}min` };
+      if (diff < 86400) return { online: false, text: `il y a ${Math.floor(diff/3600)}h` };
+      return { online: false, text: `il y a ${Math.floor(diff/86400)}j` };
+    }
+
+    function renderRows(players, startRank) {
+      const el = document.getElementById('rankRows');
+      el.innerHTML = players.map((p, i) => {
+        const rank = startRank + i;
+        const isMe = p.user_id === currentUser.id;
+        const idx = rank - 1;
+        return `
+          <div class="rank-row ${isMe?'me':''}" onclick="showProfile(${idx})">
+            <div class="row-num">${rank}</div>
+            <div class="row-avatar"><img src="${p.profile.avatar_url||'avatar-default.png'}"></div>
+            <div class="row-info">
+              <div class="row-name" style="display:flex;align-items:center;gap:6px">
+                ${p.profile.username}${isMe?' 👈':''}
+                ${getOnlineStatus(p.profile.last_seen).online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite"></span>' : ''}
+              </div>
+              <div class="row-grade" style="display:flex;align-items:center;gap:5px">
+                ${getGrade(p.level||1)}
+                ${!getOnlineStatus(p.profile.last_seen).online && getOnlineStatus(p.profile.last_seen).text ? `<span style="font-size:10px;color:#9ca3af">${getOnlineStatus(p.profile.last_seen).text}</span>` : ''}
+              </div>
+            </div>
+            <div class="row-score">${score(p)}</div>
+          </div>`;
+      }).join('');
+    }
+
+    function showProfile(idx) {
+      const p = allPlayers[idx];
+      if (!p) return;
+      document.getElementById('ppAvatar').src   = p.profile.avatar_url || 'avatar-default.png';
+      document.getElementById('ppName').textContent  = p.profile.username;
+      document.getElementById('ppGrade').textContent = getGrade(p.level||1);
+      document.getElementById('ppRank').textContent  = `#${idx+1} au classement`;
+      document.getElementById('ppLevel').textContent = p.level || 1;
+      document.getElementById('ppMoney').textContent = ((p.money||0) >= 1000)
+        ? Math.floor((p.money||0)/1000) + 'k€'
+        : (p.money||0) + '€';
+      document.getElementById('ppTrophies').textContent = p.profile.trophies || 0;
+      document.getElementById('popup').style.display = 'flex';
+    }
+
+    function closePopup(e) {
+      if (e.target.id === 'popup') document.getElementById('popup').style.display = 'none';
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ['niveau','argent','entreprises'].forEach(function(t){
+        var el = document.getElementById('tab-'+t);
+        if(el) el.style.borderBottomColor = t===tab ? '#1a1a1a' : 'transparent';
+        if(el) el.style.color = t===tab ? '#1a1a1a' : '#9ca3af';
+      });
+      if(tab === 'entreprises') loadCompanies();
+      else loadRanking();
+    }
+
+    async function loadCompanies() {
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('listWrap').style.display = 'none';
+      document.getElementById('myRankBanner').style.display = 'none';
+
+      const { data: companies } = await sb.from('companies')
+        .select('user_id, nom, name, emoji, color, valeur, niveau, type_id')
+        .order('valeur', { ascending: false })
+        .limit(50);
+
+      const { data: profiles } = await sb.from('profiles').select('user_id, username');
+      const profMap = {};
+      (profiles||[]).forEach(p => profMap[p.user_id] = p.username || 'Docker');
+
+      document.getElementById('loader').style.display = 'none';
+      if(!companies?.length) {
+        document.getElementById('podium').innerHTML = '<div style="text-align:center;padding:40px 0;font-family:Bebas Neue,sans-serif;font-size:18px;color:#d1d5db;letter-spacing:2px">AUCUNE ENTREPRISE ENCORE</div>';
+        document.getElementById('listWrap').style.display = 'block';
+        document.getElementById('rankRows').innerHTML = '';
         return;
       }
-    } catch(e) {}
-    top3.forEach(p => {
-      const k = 'ranksince_' + p.user_id;
-      if (!localStorage.getItem(k)) localStorage.setItem(k, Date.now());
-      rankSinceCache[p.user_id] = new Date(parseInt(localStorage.getItem(k))).toISOString();
-    });
-  }
-  function getRankSince(userId) {
-    const iso = rankSinceCache[userId];
-    if (!iso) return '';
-    const days = Math.floor((Date.now() - new Date(iso)) / 86400000);
-    if (days === 0) return "depuis aujourd'hui";
-    if (days === 1) return 'depuis hier';
-    return 'depuis ' + days + 'j';
-  }
 
-  const BADGES = { 1:'🏆 LEADER', 2:'2ÈME', 3:'3ÈME' };
-  const CARD_CLS = { 1:'c1', 2:'c2', 3:'c3' };
+      const fmtV = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
+      const myUid = currentUser.id;
 
-  function renderTop3(players) {
-    const el = document.getElementById('top3Section');
-    const top3 = players.slice(0, Math.min(3, players.length));
-    if (!top3.length) { el.classList.remove('show'); return; }
-    el.classList.add('show');
-    el.innerHTML = top3.map((p, i) => {
-      const rank = i + 1;
-      const cls = CARD_CLS[rank];
-      const badge = BADGES[rank];
-      const since = sortMode === 'level' ? getRankSince(p.user_id) : '';
-      const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
-      const isMe = p.user_id === currentUser.id;
-        const t3RealIdx = allPlayers.indexOf(p);
-      return '<div class="top3-card ' + cls + '" onclick="showProfile(' + t3RealIdx + ')">'
-        + '<div class="top3-av" style="background:' + avatarColor(p.profile.username) + '">'
-        + '<img src="' + ((p.profile && p.profile.avatar_url) || avatarForLevel(p.level||1)) + '" onerror="this.src=\'avatar-default.png\'">'
-        + '</div>'
-        + '<div class="top3-info">'
-        + '<div class="top3-name">' + escapeHtml(p.profile.username) + (isMe ? ' 👈' : '') + '</div>'
-        + '<span class="top3-badge">' + badge + '</span>'
-        + '<span class="top3-since">' + (since || '') + '</span>'
-        + (function(){ const os=getOnlineStatus(p.profile.last_seen); return os.online ? '<span style="font-size:9px;font-weight:700;color:#15803d">🟢 En ligne</span>' : (os.text ? '<span style="font-size:9px;color:rgba(0,0,0,0.3)">· ' + os.text + '</span>' : ''); })()
-        + '</div>'
-        + '<div class="top3-right">'
-        + '<span class="top3-score">' + score(p) + '</span>'
-        + '</div>'
-        + '</div>';
-    }).join('');
-  }
+      // Podium top 3
+      let podHtml = '';
+      companies.slice(0,3).forEach(function(co, i){
+        const isMe = co.user_id === myUid;
+        const owner = profMap[co.user_id] || 'Docker';
+        const name = co.nom || co.name || 'Entreprise';
+        podHtml += '<div style="background:white;border-radius:14px;padding:14px 16px;margin:8px 16px;display:flex;align-items:center;gap:12px;border:'+(i===0?'2px solid #fbbf24':'1px solid #e5e7eb')+(isMe?';background:#EFF6FF':'')+'">'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:'+(i===0?'#fbbf24':i===1?'#94a3b8':'#cd7c2f');'">'+( i===0?'🥇':i===1?'🥈':'🥉')+'</div>'
+          +'<div style="font-size:32px">'+( co.emoji||'🏪')+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(name)+(isMe?' 👈':'')+'</div>'
+          +'<div style="font-size:10px;color:#9ca3af;margin-top:1px">'+owner+' · Niv.'+( co.niveau||1)+'</div>'
+          +'</div>'
+          +'<div style="text-align:right">'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#0f172a">'+fmtV(co.valeur||0)+'</div>'
+          +'<div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">VALEUR</div>'
+          +'</div>'
+          +'</div>';
+      });
 
-  function renderRows(players) {
-    renderTop3(players);
-    const el = document.getElementById('rankRows');
-    myRowEl = null;
-    // La liste commence au rang 4
-    const listPlayers = players.slice(3);
+      // Reste
+      let rowHtml = '';
+      companies.slice(3).forEach(function(co, i){
+        const isMe = co.user_id === myUid;
+        const owner = profMap[co.user_id] || 'Docker';
+        const name = co.nom || co.name || 'Entreprise';
+        rowHtml += '<div style="background:white;border-radius:10px;padding:11px 14px;margin:6px 16px;display:flex;align-items:center;gap:10px;'+(isMe?'border:1.5px solid #1565C0;background:#EFF6FF;':'border:1px solid #f0f0f0;')+'">'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:#d1d5db;min-width:20px">'+(i+4)+'</div>'
+          +'<div style="font-size:24px">'+(co.emoji||'🏪')+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:12px;font-weight:700;color:'+(isMe?'#1565C0':'#0f172a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(name)+(isMe?' 👈':'')+'</div>'
+          +'<div style="font-size:9px;color:#9ca3af;margin-top:1px">'+owner+' · Niv.'+( co.niveau||1)+'</div>'
+          +'</div>'
+          +'<div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a">'+fmtV(co.valeur||0)+'</div>'
+          +'</div>';
+      });
 
-    if (!players.length) {
-      const emptyMsg = onlineOnly ? 'Aucun joueur en ligne' : 'Aucun joueur trouvé';
-      el.innerHTML = '<div style="text-align:center;padding:40px 20px"><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:rgba(0,0,0,0.35);letter-spacing:2px">' + emptyMsg + '</div></div>';
+      document.getElementById('podium').innerHTML = podHtml;
+      document.getElementById('rankRows').innerHTML = rowHtml;
       document.getElementById('listWrap').style.display = 'block';
-      return;
-    }
 
-    if (!listPlayers.length) {
-      el.innerHTML = '';
-      document.getElementById('listWrap').style.display = 'block';
-      if (firstRender) { el.classList.add('animate'); firstRender = false; } else { el.classList.remove('animate'); }
-      return;
-    }
-    const result = listPlayers.map((p, i) => {
-      const rank = i + 4; // On part du rang 4
-      const isMe = p.user_id === currentUser.id;
-      const topCls = rank <= 10 ? ' top-10' : '';
-      const trend = getTrend(p.user_id, rank);
-      const online = getOnlineStatus(p.profile.last_seen);
-      const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
-      const onlineDot = online.online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite;flex-shrink:0"></span>' : '';
-      const delay = Math.min(i * 0.04, 0.6);
-
-      const rankAlpha = rank > 3 ? Math.min(0.03, rank * 0.0005) : 0;
-      const rankBg = rank > 3 && !isMe ? ';background:rgb(' + Math.round(248 - rankAlpha*100) + ',' + Math.round(248 - rankAlpha*100) + ',' + Math.round(248 - rankAlpha*100) + ')' : '';
-      const realIdx = allPlayers.indexOf(p);
-      return '<div class="rank-row' + (isMe?' me':'') + topCls + '" id="' + (isMe?'myRow':'') + '" onclick="showProfile(' + realIdx + ')" style="animation-delay:' + delay + 's' + rankBg + '">'
-        + '<div class="row-rank">' + rank + '</div>'
-        + '<div class="row-avatar" style="background:' + avatarColor(p.profile.username) + '"><img src="' + avatarForLevel(p.level||1) + '" onerror="this.style.display=\'none\'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>'
-        + '<div class="row-info">'
-        + '<div class="row-name">' + escapeHtml(p.profile.username) + (isMe?' <span class="me-badge">TOI</span>':'') + onlineDot + '</div>'
-        + '<div class="row-grade">' + getGrade(p.level||1) + (online.online ? ' <span class="row-online">🟢 En ligne</span>' : (online.text ? ' <span class="row-lastseen">· ' + online.text + '</span>' : '')) + '</div>'
-        + '</div>'
-        + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div></div>'
-        + '</div>';
-    });
-
-    // Séparateur après rang 10 — dans l'array avant join
-    if (result.length > 7) result.splice(7, 0, '<div class="rank-sep">AUTRES DOCKERS</div>'); // après rang 10 (index 6 dans list)
-    el.innerHTML = result.join('');
-
-    myRowEl = document.getElementById('myRow');
-    document.getElementById('listWrap').style.display = 'block';
-    if (firstRender) { el.classList.add('animate'); firstRender = false; } else { el.classList.remove('animate'); }
-  }
-
-  // ── Popup profil ──
-  function showProfile(idx) {
-    const p = allPlayers[idx];
-    if (!p) return;
-    const isMe = p.user_id === currentUser.id;
-    document.getElementById('ppAvatar').src = avatarForLevel(p.level||1);
-    document.getElementById('ppName').textContent = p.profile.username;
-    document.getElementById('ppGrade').textContent = getGrade(p.level||1).toUpperCase();
-    // Dernière activité
-    const lsEl = document.getElementById('ppLastSeen');
-    const ls = getOnlineStatus(p.profile.last_seen);
-    lsEl.textContent = ls.online ? '🟢 En ligne' : (ls.text ? '⏱ ' + ls.text : '');
-    // Barre XP
-    const lvl = p.level || 1;
-    const xp = p.xp || 0;
-    const xpNeeded = getXpRequired(lvl);
-    const pct = Math.min(Math.round((xp / xpNeeded) * 100), 100);
-    document.getElementById('ppXpVal').textContent = xp.toLocaleString('fr-FR') + ' XP';
-    document.getElementById('ppXpNext').textContent = '→ Niv. ' + (lvl + 1);
-    document.getElementById('ppXpFill').style.width = pct + '%';
-    const rankLabels = {1:'#1 LEADER',2:'#2',3:'#3'};
-    document.getElementById('ppRankBadge').textContent = rankLabels[idx+1] || '#'+(idx+1);
-    const bestRankEl = document.getElementById('ppBestRank');
-    if (p.user_id === currentUser.id) {
-      const savedBest = parseInt(localStorage.getItem('bestRank_' + currentUser.id) || '9999');
-      const best = Math.min(savedBest, idx + 1);
-      localStorage.setItem('bestRank_' + currentUser.id, best);
-      bestRankEl.innerHTML = 'Meilleur rang : <span>#' + best + '</span>';
-    } else {
-      bestRankEl.textContent = '';
-    }
-    document.getElementById('ppLevel').textContent = p.level || 1;
-    const m = p.money||0;
-    document.getElementById('ppMoney').textContent = m >= 1000000 ? (m/1000000).toFixed(1) + 'M€' : m >= 1000 ? Math.floor(m/1000) + 'k€' : m + '€';
-    // Cover du joueur
-    const ppCover = document.querySelector('.pp-cover');
-    if(ppCover) ppCover.style.background = getCoverCss(p.profile.background_color);
-    // Trophies et diamonds depuis game_stats (source de vérité)
-    document.getElementById('ppPower').textContent = powerScore(p);
-    document.getElementById('ppDiamonds').textContent = p.diamonds ?? '—';
-
-    const btn = document.getElementById('ppDefiBtn');
-    if (isMe) { btn.style.display = 'none'; }
-    else {
-      btn.style.display = 'block';
-      btn.onclick = function() {
-        document.getElementById('popup').style.display = 'none';
-        setTimeout(() => defier(idx, p.profile.username), 200);
-      };
-    }
-    // Bouton profil
-    const ppMsgBtn = document.getElementById('ppMsgBtn');
-    if (ppMsgBtn) {
-      if (currentUser && p.user_id === currentUser.id) ppMsgBtn.style.display = 'none';
-      else { ppMsgBtn.style.display = 'block'; ppMsgBtn.onclick = () => openMsgOverlay(p); }
-    }
-    document.getElementById('ppProfilBtn').onclick = function() {
-      document.getElementById('popup').style.display = 'none';
-      window.location.href = (p.user_id === (currentUser && currentUser.id) ? 'profil.html' : 'profilpublic.html?id=' + p.user_id);
-    };
-    // Charger le fil de défis
-    document.getElementById('popup').style.display = 'flex';
-  }
-
-  // ── Fil de défis ──
-
-  function openMsgOverlay(p) {
-    _msgTarget = p;
-    document.getElementById('msgTo').textContent = 'À : ' + ((p.profile && p.profile.username) || 'Docker');
-    document.getElementById('msgInput').value = '';
-    document.getElementById('msgCount').textContent = '0/200';
-    document.getElementById('msgOverlay').style.display = 'flex';
-  }
-
-  async function sendPrivateMsg() {
-    if (!_msgTarget || !currentUser) return;
-    const msg = (document.getElementById('msgInput').value || '').trim();
-    if (!msg) { showToast('✏️ Écris un message'); return; }
-    await sb.from('challenges').insert({ from_user_id: currentUser.id, to_user_id: _msgTarget.user_id, message: msg, type: 'message' }).then(()=>{}).catch(()=>{});
-    document.getElementById('msgOverlay').style.display = 'none';
-    showToast('✉️ Message envoyé !');
-  }
-
-  function closePopup(e) {
-    if (e.target.id !== 'popup') return;
-    const overlay = document.getElementById('popup');
-    const sheet = overlay.querySelector('.popup-sheet');
-    sheet.style.animation = 'shOut .2s ease forwards';
-    overlay.style.animation = 'ovOut .2s ease forwards';
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      sheet.style.animation = '';
-      overlay.style.animation = '';
-    }, 200);
-  }
-
-  // ── Swipe to dismiss popup ──
-  (function() {
-    let swipeStartY = 0;
-    document.addEventListener('touchstart', e => {
-      const sheet = e.target.closest('.popup-sheet');
-      if (sheet) swipeStartY = e.touches[0].clientY;
-    }, { passive: true });
-    document.addEventListener('touchmove', e => {
-      const sheet = e.target.closest('.popup-sheet');
-      if (!sheet || swipeStartY === 0) return;
-      const dy = e.touches[0].clientY - swipeStartY;
-      if (dy > 0) sheet.style.transform = 'translateY(' + dy + 'px)';
-    }, { passive: true });
-    document.addEventListener('touchend', e => {
-      const sheet = e.target.closest('.popup-sheet');
-      if (!sheet || swipeStartY === 0) return;
-      const dy = e.changedTouches[0].clientY - swipeStartY;
-      swipeStartY = 0;
-      if (dy > 80) {
-        sheet.style.transform = '';
-        closePopup({ target: document.getElementById('popup') });
-      } else { sheet.style.transform = ''; }
-    }, { passive: true });
-  })();
-
-
-
-  // ── Trash talk ──
-  const TRASH = [
-    "Peuchère {name}, t'as vu ton rang ? C'est moi qui t'écrase !",
-    "{name} ! Rentre chez toi, le port c'est mon territoire !",
-    "Alors {name}, on fait quoi avec son niveau minable ?",
-    "Coucou {name} ! Je passe te dire que tu vas rester derrière moi longtemps 😘",
-    "{name}, même Gégé fait mieux que toi et il a 70 ans !",
-    "Bien essayé {name}, mais le classement c'est moi qui le tiens !",
-    "{name} ! Ta place dans le top, c'est pour quand exactement ?",
-    "Oh {name}... Courage hein. Il paraît que le bas du classement c'est très bien aussi.",
-    "{name}, j'ai vu ta valorisation. Mon bar rapporte plus que ton empire ! 😂",
-    "Allez {name}, fais un effort. On s'ennuie là-haut sans compétition.",
-  ];
-  function defier(idx, name) {
-    const msg = TRASH[Math.floor(Math.random() * TRASH.length)].replace(/{name}/g, name);
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:24px;animation:ovIn .2s ease';
-    overlay.innerHTML = '<div style="background:#0f172a;border-radius:20px;padding:24px;max-width:320px;width:100%;text-align:center;border:3px solid #cc1a1a;box-shadow:4px 4px 0 #cc1a1a">'
-      + '<div style="font-size:40px;margin-bottom:12px">⚔️</div>'
-      + '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:2px;margin-bottom:14px">DÉFI ENVOYÉ !</div>'
-      + '<div style="background:#1e293b;border-radius:12px;padding:14px;margin-bottom:16px">'
-      + '<div style="font-size:13px;color:white;line-height:1.5;font-style:italic">&laquo; ' + escapeHtml(msg) + ' &raquo;</div>'
-      + '</div>'
-      + '<div style="font-size:10px;color:rgba(255,255,255,0.3);margin-bottom:16px">Message envoyé à ' + escapeHtml(name) + '</div>'
-      + '<button onclick="this.closest(\'div[style]\').remove()" style="width:100%;padding:12px;border:2.5px solid #0f172a;border-radius:10px;background:#fbbf24;color:#0f172a;font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;box-shadow:2px 2px 0 #0f172a">OK BIEN JOUÉ</button>'
-      + '</div>';
-    overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
-    document.body.appendChild(overlay);
-    // Sauvegarder le défi en base (silencieux si table inexistante)
-    const targetPlayer = allPlayers[idx];
-    if (targetPlayer && currentUser) {
-      sb.from('challenges').insert({
-        from_user_id: currentUser.id,
-        to_user_id:   targetPlayer.user_id,
-        message:      msg,
-        created_at:   new Date().toISOString()
-      }).then(({ error }) => { /* ignoré si table absente */ });
-    }
-  }
-
-  async function init() {
-    // Écouter les erreurs de token expiré
-    sb.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
-        window.location.href = 'index.html';
+      // Mon rang si hors top 3
+      const myRank = companies.findIndex(c => c.user_id === myUid);
+      if(myRank >= 3) {
+        const me = companies[myRank];
+        document.getElementById('myRankNum').textContent = '#'+(myRank+1);
+        document.getElementById('myRankVal').textContent = (me.nom||me.name||'Mon Entreprise')+' · '+fmtV(me.valeur||0);
+        document.getElementById('myRankBanner').style.display = 'flex';
       }
-    });
-
-    const { data, error } = await sb.auth.getSession();
-    if (error || !data.session) {
-      // Token invalide ou absent → nettoyer et rediriger
-      await sb.auth.signOut().catch(() => {});
-      window.location.href = 'index.html';
-      return;
     }
-    currentUser = data.session.user;
-    const updateLastSeen = () => sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
-    updateLastSeen();
-    setInterval(updateLastSeen, 300000); // Rafraîchir toutes les 5 min
-    loadRanking();
-  }
-  init();
-</script>
 
-<button onclick="window.location.href='game.html'" style="display:block;width:100%;padding:16px;border:none;background:#0f172a;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;margin-top:0">← RETOUR AU JEU</button>
-
+    init();
+  </script>
 </body>
 </html>
