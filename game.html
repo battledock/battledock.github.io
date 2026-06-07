@@ -715,6 +715,7 @@ ang="fr">
     @keyframes popIn { 0%{transform:scale(0.5) rotate(-5deg);opacity:0} 60%{transform:scale(1.05)} 100%{transform:scale(1);opacity:1} }
     @keyframes bounceIcon { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
     @keyframes fadeInOverlay { from{opacity:0} to{opacity:1} }
+    @keyframes pulse_maj { 0%,100%{opacity:1} 50%{opacity:.5} }
 
     /* BOTTOM BAR */
 
@@ -883,6 +884,39 @@ ang="fr">
       <div class="nav-card work work-p1" id="workCard" onclick="window.location.href='travail.html'" style="grid-column:span 2;height:260px;padding:0;background:#0d1117">
         <div id="workSvgContainer" style="position:absolute;inset:0;width:100%;height:100%"></div>
       </div>
+
+    <!-- BANDEAU MAJ + FEEDBACK -->
+    <div style="margin:0;background:#0f172a;border-top:3px solid #cc1a1a;border-bottom:3px solid #cc1a1a;padding:14px 16px;position:relative;overflow:hidden">
+      <!-- Texture -->
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.04) 12px 13px)"></div>
+      <!-- Contenu -->
+      <div style="position:relative;z-index:1">
+        <!-- Titre MAJ -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="background:#cc1a1a;border-radius:6px;padding:3px 8px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s ease-in-out infinite">🔴 LIVE</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:white;letter-spacing:2px;flex:1">GROSSE MAJ — LUNDI 9 JUIN</div>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.55);line-height:1.5;margin-bottom:12px">
+          Roue quotidienne · Live feed · Jackpot casino · Colis mystère · Événements globaux · Titres · Badges · et bien plus...
+        </div>
+        <!-- Formulaire feedback -->
+        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fbbf24;letter-spacing:2px;margin-bottom:8px">💬 TES IDÉES ET BUGS ICI</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
+            <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.08);border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);cursor:pointer">🐛 BUG</button>
+            <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.08);border:none;border-radius:6px;padding:6px;font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,.5);cursor:pointer">💬 AUTRE</button>
+          </div>
+          <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 10px;font-size:12px;color:white;font-family:'Inter',sans-serif;resize:none;height:72px;outline:none;-webkit-appearance:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+            <div style="font-size:9px;color:rgba(255,255,255,.25)" id="fb-count">0/200</div>
+            <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:8px;padding:7px 16px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;color:#0f172a;cursor:pointer">ENVOYER →</button>
+          </div>
+        </div>
+        <!-- Feed des derniers feedbacks -->
+        <div id="fb-feed" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto"></div>
+      </div>
+    </div>
 
       <!-- CLASSEMENT -->
       <div class="nav-card rank" id="rankCard" onclick="window.location.href='classement.html'" style="grid-column:span 2;background:#fff">
@@ -1317,6 +1351,7 @@ function getWorkSvg() {
       // Variation Bourse — appelée au chargement + polling toutes les 15s
       updateBanqueCard();
       setInterval(updateBanqueCard, 30000);
+      loadFeedback();
 
       // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
       // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
@@ -1493,7 +1528,77 @@ function getWorkSvg() {
       clearTimeout(t._timeout);
       t._timeout = setTimeout(function() { t.style.opacity = '0'; }, 3000);
     }
-</script>
+
+    // ══ FEEDBACK ══
+    var _fbType = 'idea';
+
+    function setFbType(type) {
+      _fbType = type;
+      var colors = {idea:'#cc1a1a', bug:'#f59e0b', general:'rgba(255,255,255,.2)'};
+      var labels = {idea:'💡 IDÉE', bug:'🐛 BUG', general:'💬 AUTRE'};
+      ['idea','bug','general'].forEach(function(t) {
+        var btn = document.getElementById('fb-type-'+t);
+        if(!btn) return;
+        btn.style.background = t === type ? colors[t] : 'rgba(255,255,255,.08)';
+        btn.style.color = t === type ? 'white' : 'rgba(255,255,255,.5)';
+      });
+    }
+
+    async function submitFeedback() {
+      var input = document.getElementById('fb-input');
+      var msg = input ? input.value.trim() : '';
+      if(!msg || msg.length < 3) { return; }
+      var btn = document.getElementById('fb-submit');
+      if(btn) { btn.disabled = true; btn.textContent = '...'; }
+      var uname = document.getElementById('playerName') ? document.getElementById('playerName').textContent : 'Docker';
+      var uid = null;
+      try { var s2 = await sb.auth.getSession(); uid = s2.data.session ? s2.data.session.user.id : null; } catch(e){}
+      await sb.from('feedback').insert({ user_id: uid, username: uname, message: msg, type: _fbType });
+      if(input) input.value = '';
+      var count = document.getElementById('fb-count');
+      if(count) count.textContent = '0/200';
+      if(btn) { btn.disabled = false; btn.textContent = '✓ ENVOYÉ !'; setTimeout(function(){ btn.textContent = 'ENVOYER →'; }, 2000); }
+      loadFeedback();
+    }
+
+    async function loadFeedback() {
+      var feed = document.getElementById('fb-feed');
+      if(!feed) return;
+      var res = await sb.from('feedback').select('id,username,message,type,created_at,likes').order('created_at', { ascending: false }).limit(10);
+      var data = res.data;
+      if(!data || !data.length) {
+        feed.innerHTML = '<div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;padding:6px">Sois le premier a partager une idee !</div>';
+        return;
+      }
+      var icons = {idea:'💡', bug:'🐛', general:'💬'};
+      feed.innerHTML = '';
+      data.forEach(function(f) {
+        var when = Math.floor((Date.now()-new Date(f.created_at).getTime())/60000);
+        var whenStr = when < 1 ? 'maintenant' : when < 60 ? when+'min' : Math.floor(when/60)+'h';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:9px 10px';
+        card.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+          +'<span style="font-size:11px">'+(icons[f.type]||'💬')+'</span>'
+          +'<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6)">'+(f.username||'Docker')+'</span>'
+          +'<span style="font-size:9px;color:rgba(255,255,255,.2);margin-left:auto">'+whenStr+'</span>'
+          +'</div><div style="font-size:11px;color:rgba(255,255,255,.75);line-height:1.4">'+f.message+'</div>';
+        var likeBtn = document.createElement('button');
+        likeBtn.style.cssText = 'margin-top:5px;background:rgba(255,255,255,.06);border:none;border-radius:5px;padding:3px 8px;font-size:10px;color:rgba(255,255,255,.5);cursor:pointer';
+        likeBtn.textContent = String.fromCodePoint(0x2764)+' '+(f.likes||0);
+        likeBtn.onclick = (function(fid){ return function(){ likeFeedback(fid); }; })(f.id);
+        card.appendChild(likeBtn);
+        feed.appendChild(card);
+      });
+    }
+
+    async function likeFeedback(id) {
+      var { data } = await sb.from('feedback').select('likes').eq('id', id).maybeSingle();
+      var newLikes = ((data && data.likes) || 0) + 1;
+      await sb.from('feedback').update({ likes: newLikes }).eq('id', id);
+      loadFeedback();
+    }
+
+    </script>
   <script>
     // PWA service worker uniquement
     (function () {
