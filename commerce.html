@@ -382,219 +382,178 @@ function fmtM(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.fl
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
 
-// ══ MINI-JEUX ══
-var MINIGAMES=[
-  {name:'Compte les poissons', pts:20},
-  {name:'La suite logique',    pts:20},
-  {name:'Reaction express',    pts:20},
-  {name:'Question piege',      pts:20},
-  {name:'Test de memoire',     pts:20},
-  {name:'Maths marseillaises', pts:20},
-  {name:'Trouve l intrus',     pts:20},
+// ══ QUESTIONS ══
+var QUESTIONS = [
+  // ── 3 BUSINESS ──
+  {
+    type: 'qcm', cat: 'BUSINESS', num: 1,
+    titre: 'TON CONCURRENT BAISSE SES PRIX DE 30%',
+    question: 'Que fais-tu ?',
+    opts: [
+      {txt: 'Je baisse aussi, on verra bien', pts: 5},
+      {txt: 'Je maintiens et mise sur la qualite', pts: 20},
+      {txt: 'Je le rachete', pts: 15},
+      {txt: 'Je change de secteur', pts: 0},
+    ]
+  },
+  {
+    type: 'qcm', cat: 'BUSINESS', num: 2,
+    titre: '50 000€ A INVESTIR',
+    question: 'Tu priorises quoi dans ton entreprise ?',
+    opts: [
+      {txt: 'Marketing et communication', pts: 10},
+      {txt: 'Recruter du personnel', pts: 15},
+      {txt: 'Equipement et materiel', pts: 20},
+      {txt: 'Je garde ca en tresorerie', pts: 5},
+    ]
+  },
+  {
+    type: 'qcm', cat: 'BUSINESS', num: 3,
+    titre: 'TON MEILLEUR EMPLOYE',
+    question: 'Il demande une augmentation de 40%. Tu...',
+    opts: [
+      {txt: 'J accepte sans negocier', pts: 10},
+      {txt: 'Je negocie a 20%', pts: 20},
+      {txt: 'Je le licencie', pts: 0},
+      {txt: 'Je fais semblant de pas avoir lu', pts: 5},
+    ]
+  },
+  // ── 3 DÉCALÉES ──
+  {
+    type: 'qcm', cat: 'MARSEILLE', num: 4,
+    titre: 'Y A PLUS DE CAFE AU BUREAU',
+    question: 'Lundi matin. Tu arrives. Le percolateur est mort.',
+    opts: [
+      {txt: 'Tu travailles quand meme', pts: 20},
+      {txt: 'Tu rentres chez toi', pts: 0},
+      {txt: 'Tu envoies un mail urgent a toute l equipe', pts: 10},
+      {txt: 'Tu attends que quelqu un en fasse', pts: 5},
+    ]
+  },
+  {
+    type: 'qcm', cat: 'MARSEILLE', num: 5,
+    titre: 'GEGE TE PROPOSE UN DEAL',
+    question: '3 caisses de sardines. Prix suspect. Origine inconnue.',
+    opts: [
+      {txt: 'J accepte sans poser de questions', pts: 5},
+      {txt: 'Je negocie le prix', pts: 15},
+      {txt: 'J appelle mon avocat', pts: 20},
+      {txt: 'Je le mange avec lui', pts: 10},
+    ]
+  },
+  {
+    type: 'qcm', cat: 'MARSEILLE', num: 6,
+    titre: 'UNE MOUETTE VOLE TA PRESENTATION',
+    question: 'Conseil d administration dans 5 minutes. Elle est partie.',
+    opts: [
+      {txt: 'J improvise, ca va le faire', pts: 20},
+      {txt: 'Je blame la mouette devant le CA', pts: 10},
+      {txt: 'Je reporte la reunion', pts: 5},
+      {txt: 'Je demissionne sur le champ', pts: 0},
+    ]
+  },
+  // ── MINI-JEU ──
+  {type: 'minijeu', cat: 'REACTION', num: 7}
 ];
-var reactionStart=0, reactionTimeout=null, memSequence=[], memSelected=[];
+
+var qStep = 0, qScore = 0;
+var reactionStart2 = 0, reactionTimeout2 = null;
 
 function startTest(){
-  if(money<100000){toast('Il te faut 100 000€ !');return;}
-  miniStep=0;miniScore=0;qi=0;
+  if(money < 100000){ toast('Il te faut 100 000 !'); return; }
+  qStep = 0; qScore = 0;
   show('s-test');
-  renderMini();
+  renderQ();
 }
 
 function updateProgress(){
-  document.getElementById('prog-fill').style.width=(miniStep/7*100)+'%';
-  document.getElementById('test-title').textContent='EPREUVE '+(miniStep+1)+'/7';
-  document.getElementById('prog-label').textContent=MINIGAMES[miniStep]?MINIGAMES[miniStep].name:'';
-  document.getElementById('score-live').textContent='QI: '+Math.min(140,miniScore);
+  var pct = Math.round((qStep / 7) * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('test-title').textContent = 'QUESTION ' + (qStep + 1) + '/7';
+  var cats = ['BUSINESS','BUSINESS','BUSINESS','MARSEILLE','MARSEILLE','MARSEILLE','MINI-JEU'];
+  document.getElementById('prog-label').textContent = cats[qStep] || '';
+  document.getElementById('score-live').textContent = 'Score: ' + qScore;
 }
 
-function nextMini(pts){
-  miniScore+=pts;
-  document.getElementById('score-live').textContent='QI: '+Math.min(140,miniScore);
-  miniStep++;
-  if(miniStep>=7){finishTest();return;}
-  setTimeout(function(){renderMini();},600);
+function nextQ(pts) {
+  qScore += pts;
+  document.getElementById('score-live').textContent = 'Score: ' + qScore;
+  qStep++;
+  if(qStep >= 7){ finishTest(); return; }
+  setTimeout(renderQ, 500);
 }
 
-function renderMini(){
+function renderQ(){
   updateProgress();
-  var body=document.getElementById('test-body');
-  body.innerHTML='';
-  if(miniStep===0) renderM1(body);
-  else if(miniStep===1) renderM2(body);
-  else if(miniStep===2) renderM3(body);
-  else if(miniStep===3) renderM4(body);
-  else if(miniStep===4) renderM5(body);
-  else if(miniStep===5) renderM6(body);
-  else if(miniStep===6) renderM7(body);
+  var q = QUESTIONS[qStep];
+  var body = document.getElementById('test-body');
+  body.innerHTML = '';
+  if(q.type === 'qcm') renderQCM(body, q);
+  else renderMiniReact(body);
 }
 
-// M1 — Compte les poissons
-function renderM1(body){
-  var emojis=['🐟','🦞','🐟','🦐','🐟','🦀','🐟','🐙'];
-  var correct=emojis.filter(function(e){return e==='🐟';}).length;
-  var shown=false;
-  body.innerHTML='<div class="mini-title">COMPTE LES 🐟</div>'
-    +'<div class="mini-sub">Regarde bien... puis reponds !</div>'
-    +'<div class="emoji-display" id="m1-display">'+emojis.join('')+'</div>'
-    +'<div class="emoji-options" id="m1-opts" style="opacity:0;pointer-events:none">'
-    +[correct,correct+1,correct-1,correct+2].sort(function(){return Math.random()-.5;}).map(function(n){
-      return '<button class="opt-btn" onclick="answerM1('+n+','+correct+',this)">'+n+'</button>';
-    }).join('')+'</div>';
-  setTimeout(function(){
-    document.getElementById('m1-display').innerHTML='???';
-    var opts=document.getElementById('m1-opts');
-    opts.style.opacity='1';opts.style.pointerEvents='auto';
-  },2500);
-}
-function answerM1(val,correct,btn){
-  if(btn.disabled)return;
-  document.querySelectorAll('#m1-opts .opt-btn').forEach(function(b){b.disabled=true;});
-  if(val===correct){btn.classList.add('correct');nextMini(20);}
-  else{btn.classList.add('wrong');
-    document.querySelectorAll('#m1-opts .opt-btn').forEach(function(b){if(parseInt(b.textContent)===correct)b.classList.add('correct');});
-    setTimeout(function(){nextMini(0);},800);
-  }
+function renderQCM(body, q){
+  var catColor = q.cat === 'BUSINESS' ? '#0ea5e9' : '#cc1a1a';
+  body.innerHTML =
+    '<div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:14px">'
+    + '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px">'
+    + '<div style="font-size:9px;font-weight:800;letter-spacing:3px;color:' + catColor + ';margin-bottom:6px">' + q.cat + '</div>'
+    + '<div style="font-family:Bebas Neue,sans-serif;font-size:19px;color:white;letter-spacing:1px;line-height:1.2;margin-bottom:4px">' + q.titre + '</div>'
+    + '<div style="font-size:12px;color:rgba(255,255,255,.45)">' + q.question + '</div>'
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:8px" id="opts-wrap">'
+    + q.opts.map(function(o, i){
+      return '<button class="opt-btn" style="font-size:13px;text-align:left;padding:13px 14px;letter-spacing:0;font-family:Inter,sans-serif;font-weight:600" onclick="answerQ(' + o.pts + ',this)">' + o.txt + '</button>';
+    }).join('')
+    + '</div></div>';
 }
 
-// M2 — Suite logique
-function renderM2(body){
-  var correct=32;
-  body.innerHTML='<div class="mini-title">LA SUITE LOGIQUE</div>'
-    +'<div class="mini-sub">2, 4, 8, 16, ... ?</div>'
-    +'<div class="emoji-options">'
-    +['32','24','Gege','Mercredi'].map(function(n){
-      return '<button class="opt-btn" style="font-size:16px" onclick="answerM2(\''+n+'\',this)">'+n+'</button>';
-    }).join('')+'</div>';
-}
-function answerM2(val,btn){
-  if(btn.disabled)return;
-  document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
-  if(val==='32'){btn.classList.add('correct');nextMini(20);}
-  else{btn.classList.add('wrong');setTimeout(function(){nextMini(0);},800);}
-}
-
-// M3 — Reaction
-function renderM3(body){
-  var phase=0;
-  body.innerHTML='<div class="mini-title">REACTION EXPRESS</div>'
-    +'<div class="mini-sub">Tape DES QUE tu vois 🐟 !</div>'
-    +'<div class="reaction-area" id="react-area" onclick="tapReaction()">⏳</div>'
-    +'<div class="reaction-timer" id="react-timer"></div>';
-  // Faux departs
-  function showFake(){
-    var area=document.getElementById('react-area');
-    if(!area)return;
-    area.textContent=['🦞','🦀','🦐'][Math.floor(Math.random()*3)];
-    var delay=800+Math.random()*1500;
-    reactionTimeout=setTimeout(function(){
-      if(!document.getElementById('react-area'))return;
-      phase++;
-      if(phase<3){area.textContent='⏳';setTimeout(showFake,500+Math.random()*1000);}
-      else{area.textContent='🐟';area.classList.add('ready');reactionStart=Date.now();}
-    },delay);
-  }
-  setTimeout(showFake,1000);
-}
-function tapReaction(){
-  var area=document.getElementById('react-area');
-  if(!area)return;
-  if(!area.classList.contains('ready')){
-    toast('Pas encore !');
-    area.textContent='⏳';
-    return;
-  }
-  clearTimeout(reactionTimeout);
-  var ms=Date.now()-reactionStart;
-  area.classList.remove('ready');
-  var pts=ms<300?20:ms<500?15:ms<800?10:ms<1200?5:0;
-  area.textContent=ms<500?'⚡':'👍';
-  document.getElementById('react-timer').textContent=ms+'ms';
-  nextMini(pts);
-}
-
-// M4 — Question piege
-function renderM4(body){
-  body.innerHTML='<div class="mini-title">QUESTION PIEGE</div>'
-    +'<div class="mini-sub">Un cargo part de Marseille a 14h et arrive a Toulon a 15h30.<br><strong>Quelle couleur est le capitaine ?</strong></div>'
-    +'<div class="emoji-options">'
-    +['Rouge','Bleu','Aucune bonne reponse','Jaune'].map(function(n,i){
-      return '<button class="opt-btn" style="font-size:13px" onclick="answerM4(\''+n+'\','+i+',this)">'+n+'</button>';
-    }).join('')+'</div>';
-}
-function answerM4(val,idx,btn){
-  if(btn.disabled)return;
-  document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
-  if(idx===2){btn.classList.add('correct');nextMini(20);}
-  else{btn.classList.add('wrong');
-    document.querySelectorAll('#s-test .opt-btn')[2].classList.add('correct');
-    setTimeout(function(){nextMini(0);},800);
-  }
-}
-
-// M5 — Mémoire
-function renderM5(body){
-  var pool=['🐟','🦞','🦀','🦐','⚓','🌊','🚢','⛵'];
-  memSequence=pool.sort(function(){return Math.random()-.5;}).slice(0,5);
-  memSelected=[];
-  body.innerHTML='<div class="mini-title">TEST DE MEMOIRE</div>'
-    +'<div class="mini-sub" id="mem-sub">Memorise cet ordre !</div>'
-    +'<div class="memory-grid" id="mem-grid">'
-    +memSequence.map(function(e,i){return '<div class="mem-emoji" id="me-'+i+'">'+e+'</div>';}).join('')
-    +'</div>';
-  setTimeout(function(){
-    var g=document.getElementById('mem-grid');
-    if(!g)return;
-    document.getElementById('mem-sub').textContent='Retrouve le bon ordre !';
-    var shuffled=memSequence.slice().sort(function(){return Math.random()-.5;});
-    g.innerHTML=shuffled.map(function(e,i){return '<div class="mem-emoji" id="ms-'+i+'" onclick="tapMem(\''+e+'\',this)">'+e+'</div>';}).join('');
-  },3000);
-}
-function tapMem(e,el){
-  if(el.classList.contains('selected'))return;
-  memSelected.push(e);
-  el.classList.add('selected');
-  el.style.opacity='.4';
-  if(memSelected.length===memSequence.length){
-    var ok=memSelected.every(function(v,i){return v===memSequence[i];});
-    setTimeout(function(){nextMini(ok?20:memSelected.filter(function(v,i){return v===memSequence[i];}).length*4);},400);
-  }
-}
-
-// M6 — Maths marseillaises
-function renderM6(body){
-  body.innerHTML='<div class="mini-title">MATHS MARSEILLAISES</div>'
-    +'<div class="mini-sub">Gege a 3 caisses de sardines.<br>Sa femme en prend 2.<br><strong>Combien de disputes ?</strong></div>'
-    +'<div class="emoji-options">'
-    +[{t:'1',p:5},{t:'2',p:10},{t:'Toutes',p:20},{t:'Ca depend de la belle-mere',p:15}].map(function(o){
-      return '<button class="opt-btn" style="font-size:13px" onclick="answerM6('+o.p+',this)">'+o.t+'</button>';
-    }).join('')+'</div>';
-}
-function answerM6(pts,btn){
-  if(btn.disabled)return;
-  document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
+function answerQ(pts, btn){
+  if(btn.disabled) return;
+  document.querySelectorAll('#opts-wrap .opt-btn').forEach(function(b){ b.disabled = true; });
   btn.classList.add('correct');
-  nextMini(pts);
+  btn.style.background = 'rgba(34,197,94,.15)';
+  btn.style.borderColor = '#22c55e';
+  nextQ(pts);
 }
 
-// M7 — Trouve l'intrus
-function renderM7(body){
-  var base='🚢';
-  var intrus='🛳️';
-  var intrusIdx=Math.floor(Math.random()*12);
-  var cells=[];
-  for(var i=0;i<12;i++)cells.push(i===intrusIdx?intrus:base);
-  body.innerHTML='<div class="mini-title">TROUVE L INTRUS</div>'
-    +'<div class="mini-sub">Un element est different. Trouve-le !</div>'
-    +'<div class="intrus-grid">'
-    +cells.map(function(e,i){return '<div class="intrus-cell" onclick="tapIntrus('+i+','+intrusIdx+',this)">'+e+'</div>';}).join('')
-    +'</div>';
+// Mini-jeu réaction (Q7)
+function renderMiniReact(body){
+  body.innerHTML =
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:16px">'
+    + '<div class="mini-title">REACTION EXPRESS</div>'
+    + '<div class="mini-sub">Tape DES QUE tu vois 🐟 !</div>'
+    + '<div class="reaction-area" id="react-area2" onclick="tapReaction2()">⏳</div>'
+    + '<div class="reaction-timer" id="react-timer2"></div>'
+    + '</div>';
+  var phase = 0;
+  function showFake(){
+    var area = document.getElementById('react-area2');
+    if(!area) return;
+    area.textContent = ['🦞','🦀','🦐'][Math.floor(Math.random() * 3)];
+    reactionTimeout2 = setTimeout(function(){
+      if(!document.getElementById('react-area2')) return;
+      phase++;
+      if(phase < 3){ area.textContent = '⏳'; setTimeout(showFake, 600 + Math.random() * 1200); }
+      else{ area.textContent = '🐟'; area.classList.add('ready'); reactionStart2 = Date.now(); }
+    }, 700 + Math.random() * 1400);
+  }
+  setTimeout(showFake, 1000);
 }
-function tapIntrus(idx,correct,el){
-  document.querySelectorAll('.intrus-cell').forEach(function(c){c.onclick=null;});
-  if(idx===correct){el.classList.add('found');nextMini(20);}
-  else{el.classList.add('wrong');document.querySelectorAll('.intrus-cell')[correct].classList.add('found');setTimeout(function(){nextMini(0);},800);}
+
+function tapReaction2(){
+  var area = document.getElementById('react-area2');
+  if(!area) return;
+  if(!area.classList.contains('ready')){ toast('Pas encore !'); area.textContent = '⏳'; return; }
+  clearTimeout(reactionTimeout2);
+  var ms = Date.now() - reactionStart2;
+  area.classList.remove('ready');
+  var pts = ms < 300 ? 20 : ms < 500 ? 15 : ms < 800 ? 10 : ms < 1200 ? 5 : 0;
+  area.textContent = ms < 500 ? '⚡' : '👍';
+  document.getElementById('react-timer2').textContent = ms + 'ms';
+  nextQ(pts);
 }
+
 
 // ══ FIN TEST ══
 function finishTest(){
