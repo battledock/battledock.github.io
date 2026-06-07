@@ -86,7 +86,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 
 /* ── SCREEN 4 : PERSO ── */
 #s-perso{overflow-y:auto}
-.perso-body{padding:16px;display:flex;flex-direction:column;gap:16px;padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+.perso-body{padding:16px;display:flex;flex-direction:column;gap:16px;padding-bottom:14px}
 /* Preview carte */
 .co-card{border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:4px;position:relative;overflow:hidden}
 .co-card-emoji{font-size:48px;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3))}
@@ -121,7 +121,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 
 
 /* Bouton confirmer fixe en bas */
-.perso-confirm{position:fixed;bottom:0;left:0;right:0;padding:16px calc(16px) calc(16px + env(safe-area-inset-bottom));background:white;border-top:1px solid #e2e8f0;z-index:10}
+.perso-confirm{flex-shrink:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:white;border-top:1px solid #e2e8f0}
 .btn-confirm{width:100%;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:15px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer}
 
 /* ── SCREEN 5 : DASHBOARD ── */
@@ -546,13 +546,10 @@ var QUESTIONS = [
       {txt: 'Je reporte la reunion', pts: 5},
       {txt: 'Je demissionne sur le champ', pts: 0},
     ]
-  },
-  // ── MINI-JEU ──
-  {type: 'minijeu', cat: 'REACTION', num: 7}
+  }
 ];
 
 var qStep = 0, qScore = 0;
-var reactionStart2 = 0, reactionTimeout2 = null;
 
 function startTest(){
   if(money < 100000){ toast('Il te faut 100 000 !'); return; }
@@ -562,9 +559,9 @@ function startTest(){
 }
 
 function updateProgress(){
-  var pct = Math.round((qStep / 7) * 100);
+  var pct = Math.round((qStep / 6) * 100);
   document.getElementById('prog-fill').style.width = pct + '%';
-  document.getElementById('test-title').textContent = 'QUESTION ' + (qStep + 1) + '/7';
+  document.getElementById('test-title').textContent = 'QUESTION ' + (qStep + 1) + '/6';
   var cats = ['BUSINESS','BUSINESS','BUSINESS','MARSEILLE','MARSEILLE','MARSEILLE','MINI-JEU'];
   document.getElementById('prog-label').textContent = cats[qStep] || '';
   document.getElementById('score-live').textContent = 'Score: ' + qScore;
@@ -574,7 +571,7 @@ function nextQ(pts) {
   qScore += pts;
   document.getElementById('score-live').textContent = 'Score: ' + qScore;
   qStep++;
-  if(qStep >= 7){ finishTest(); return; }
+  if(qStep >= 6){ finishTest(); return; }
   setTimeout(renderQ, 500);
 }
 
@@ -612,47 +609,12 @@ function answerQ(pts, btn){
   nextQ(pts);
 }
 
-// Mini-jeu réaction (Q7)
-function renderMiniReact(body){
-  body.innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:16px">'
-    + '<div class="mini-title">REACTION EXPRESS</div>'
-    + '<div class="mini-sub">Tape DES QUE tu vois 🐟 !</div>'
-    + '<div class="reaction-area" id="react-area2" onclick="tapReaction2()">⏳</div>'
-    + '<div class="reaction-timer" id="react-timer2"></div>'
-    + '</div>';
-  var phase = 0;
-  function showFake(){
-    var area = document.getElementById('react-area2');
-    if(!area) return;
-    area.textContent = ['🦞','🦀','🦐'][Math.floor(Math.random() * 3)];
-    reactionTimeout2 = setTimeout(function(){
-      if(!document.getElementById('react-area2')) return;
-      phase++;
-      if(phase < 3){ area.textContent = '⏳'; setTimeout(showFake, 600 + Math.random() * 1200); }
-      else{ area.textContent = '🐟'; area.classList.add('ready'); reactionStart2 = Date.now(); }
-    }, 700 + Math.random() * 1400);
-  }
-  setTimeout(showFake, 1000);
-}
 
-function tapReaction2(){
-  var area = document.getElementById('react-area2');
-  if(!area) return;
-  if(!area.classList.contains('ready')){ toast('Pas encore !'); area.textContent = '⏳'; return; }
-  clearTimeout(reactionTimeout2);
-  var ms = Date.now() - reactionStart2;
-  area.classList.remove('ready');
-  var pts = ms < 300 ? 20 : ms < 500 ? 15 : ms < 800 ? 10 : ms < 1200 ? 5 : 0;
-  area.textContent = ms < 500 ? '⚡' : '👍';
-  document.getElementById('react-timer2').textContent = ms + 'ms';
-  nextQ(pts);
-}
 
 
 // ══ FIN TEST ══
 function finishTest(){
-  qi=Math.min(140,miniScore);
+  qi=Math.min(120,qScore);
   typeIdx=getType(qi);
   var t=TYPES[typeIdx];
   companyName=genName(t.label,username);
