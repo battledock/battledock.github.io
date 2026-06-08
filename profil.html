@@ -55,18 +55,6 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 .back-btn{display:block;width:100%;padding:14px;border:1.5px solid #e5e7eb;border-radius:12px;background:white;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;cursor:pointer;text-align:center;margin-bottom:10px}
 .back-btn:active{background:#f8f8f8}
 
-/* AVATARS */
-.avatars-section{margin-bottom:12px}
-.avatars-title{font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;text-align:left}
-.avatars-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.avatar-item{position:relative;cursor:pointer;border-radius:12px;overflow:hidden;aspect-ratio:1;border:2px solid transparent;transition:border-color .15s}
-.avatar-item.selected{border-color:#0f172a}
-.avatar-item.locked{cursor:not-allowed}
-.avatar-item img{width:100%;height:100%;object-fit:cover;display:block}
-.avatar-lock{position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
-.avatar-lock-icon{font-size:16px}
-.avatar-lock-lvl{font-family:'Bebas Neue',sans-serif;font-size:10px;letter-spacing:1px;color:rgba(255,255,255,0.8)}
-
 /* DÉCONNEXION */
 .logout-btn{display:block;width:100%;padding:14px;border:1.5px solid #fee2e2;border-radius:12px;background:white;color:#dc2626;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;cursor:pointer;text-align:center}
 .logout-btn:active{background:#fee2e2}
@@ -157,12 +145,6 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
       <div class="info-label">🔥 Streak</div>
       <div class="info-value" id="infoStreak">—</div>
     </div>
-  </div>
-
-  <!-- AVATARS -->
-  <div class="avatars-section">
-    <div class="avatars-title">Mes avatars</div>
-    <div class="avatars-grid" id="avatarsGrid"></div>
   </div>
 
   <!-- BIO -->
@@ -280,62 +262,6 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-// ── Avatars ───────────────────────────────────────────────────
-
-const ALL_AVATARS = [
-  { file: 'avatar-default.png',        label: 'Défaut',       minLevel: 1  },
-  { file: 'avatar-level-2.png',        label: 'Niveau 2',     minLevel: 2  },
-  { file: 'avatar-level-3.png',        label: 'Niveau 3',     minLevel: 3  },
-  { file: 'avatar-level-4.png',        label: 'Niveau 4',     minLevel: 4  },
-  { file: 'avatar-level-5.png',        label: 'Niveau 5',     minLevel: 5  },
-  { file: 'avatar-level-10.png',       label: 'Niveau 10',    minLevel: 10 },
-  { file: 'avatar-level-13.png',       label: 'Niveau 13',    minLevel: 13 },
-  { file: 'avatar-level-15.png',       label: 'Niveau 15',    minLevel: 15 },
-  { file: 'avatar-level-17.png',       label: 'Niveau 17',    minLevel: 17 },
-  { file: 'avatar-level-20.png',       label: 'Niveau 20',    minLevel: 20 },
-  { file: 'avatar-level-30.png',       label: 'Niveau 30',    minLevel: 30 },
-  { file: 'avatar-level-50.png',       label: 'Niveau 50',    minLevel: 50 },
-  { file: 'avatar-millionaire.png',    label: 'Millionnaire', minLevel: 999 },
-  { file: 'avatar-completionist.png',  label: 'Complétiste',  minLevel: 999 },
-];
-
-let currentAvatarFile = 'avatar-default.png';
-
-function buildAvatars(lvl, selectedAvatar) {
-  currentAvatarFile = selectedAvatar;
-  const grid = document.getElementById('avatarsGrid');
-  grid.innerHTML = '';
-  ALL_AVATARS.forEach(av => {
-    const unlocked = lvl >= av.minLevel;
-    const isSelected = av.file === currentAvatarFile;
-    const item = document.createElement('div');
-    item.className = 'avatar-item' + (isSelected ? ' selected' : '') + (!unlocked ? ' locked' : '');
-    item.innerHTML = '<img src="' + av.file + '" alt="' + av.label + '">';
-    if (!unlocked) {
-      item.innerHTML += '<div class="avatar-lock"><div class="avatar-lock-icon">🔒</div><div class="avatar-lock-lvl">NIV. ' + av.minLevel + '</div></div>';
-    } else {
-      item.onclick = () => selectAvatar(av.file);
-    }
-    grid.appendChild(item);
-  });
-}
-
-async function selectAvatar(file) {
-  if (file === currentAvatarFile) return;
-  currentAvatarFile = file;
-  document.getElementById('avatarImg').src = file;
-  buildAvatars(
-    parseInt(document.getElementById('infoLevel').textContent.replace('NIV. ', '')) || 1,
-    file
-  );
-  try {
-    await sb.from('profiles').update({ avatar_url: file }).eq('user_id', currentUser.id);
-    showToast('✓ Avatar mis à jour');
-  } catch(e) {
-    showToast('❌ Erreur de sauvegarde');
-  }
 }
 
 // ── Covers ────────────────────────────────────────────────────
@@ -479,8 +405,6 @@ async function init() {
       await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', currentUser.id);
     }
 
-    // ── Grille avatars ──
-    buildAvatars(lvl, avatarSrc);
 
     // ── Cover ──
     currentCover = p.background_color || 'rouge_navy';
