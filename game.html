@@ -209,6 +209,24 @@
         </svg>
       </div>
 
+    <!-- CLASSEMENT -->
+    <div onclick="window.location.href='classement.html'" style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff;border-top:1px solid #f0f0f0;cursor:pointer">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;gap:2px;border-right:1px solid #f0f0f0">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fbbf24;line-height:1" id="rankLeaderPos">1er</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.4)" id="rankLeaderName">—</div>
+        <div style="font-size:7px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">LEADER</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;gap:2px;border-right:1px solid #f0f0f0">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#0f172a;line-height:1" id="rankMyPos">#—</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.4)">Toi</div>
+        <div style="font-size:7px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TON RANG</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px 8px;gap:2px">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#0f172a;line-height:1" id="rankTotal">—</div>
+        <div style="font-size:10px;font-weight:700;color:rgba(0,0,0,0.4)">joueurs</div>
+        <div style="font-size:7px;color:rgba(0,0,0,0.2);font-weight:700;letter-spacing:1px">TOTAL</div>
+      </div>
+    </div>
     </div>
   </div>
 
@@ -349,6 +367,9 @@
         // Vérifier et mettre à jour le streak
         checkStreak(uid);
 
+        // Charger le classement
+        loadRank(uid, lvl);
+
       } catch(e) {
         console.error('init error:', e);
         showError();
@@ -397,6 +418,31 @@
           last_login: today
         }).eq('user_id', uid);
 
+      } catch(e) {}
+    }
+
+    async function loadRank(uid, lvl) {
+      try {
+        const { data } = await sb.from('game_stats').select('user_id,level,money').order('level', { ascending: false });
+        if (!data) return;
+        const sorted = data.slice().sort(function(a,b){
+          return ((b.level||0)*100 + Math.floor((b.money||0)/10000)) - ((a.level||0)*100 + Math.floor((a.money||0)/10000));
+        });
+        const idx = sorted.findIndex(function(x){ return x.user_id === uid; });
+        const rank = idx >= 0 ? idx + 1 : '—';
+        const total = sorted.length;
+        const leader = sorted[0];
+        let leaderName = '—';
+        if (leader) {
+          const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leader.user_id).maybeSingle();
+          leaderName = (prof && prof.username) ? prof.username : '—';
+        }
+        const elPos    = document.getElementById('rankMyPos');
+        const elLeader = document.getElementById('rankLeaderName');
+        const elTotal  = document.getElementById('rankTotal');
+        if (elPos)    elPos.textContent    = '#' + rank;
+        if (elLeader) elLeader.textContent = leaderName;
+        if (elTotal)  elTotal.textContent  = total;
       } catch(e) {}
     }
 
