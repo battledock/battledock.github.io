@@ -181,62 +181,81 @@
       coral:   'linear-gradient(135deg,#be123c,#fb7185)',
     };
 
+    function showError() {
+      const sk = document.getElementById('profileSkeleton');
+      sk.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;padding:4px 0">
+          <div style="font-size:22px">⚠️</div>
+          <div style="flex:1">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:#1a1a1a">Erreur de connexion</div>
+            <div style="font-size:11px;color:#9ca3af;margin-top:2px">Vérifie ta connexion internet</div>
+          </div>
+          <button onclick="location.reload()" style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:8px 14px;border:none;border-radius:8px;background:#1a1a1a;color:#fbbf24;cursor:pointer">Réessayer</button>
+        </div>`;
+    }
+
     async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { window.location.href = 'index.html'; return; }
 
-      const uid = session.user.id;
+        const uid = session.user.id;
 
-      const [profileRes, statsRes] = await Promise.all([
-        sb.from('profiles').select('username,avatar_url,background_color').eq('user_id', uid).maybeSingle(),
-        sb.from('game_stats').select('level,xp').eq('user_id', uid).maybeSingle()
-      ]);
+        const [profileRes, statsRes] = await Promise.all([
+          sb.from('profiles').select('username,avatar_url,background_color').eq('user_id', uid).maybeSingle(),
+          sb.from('game_stats').select('level,xp').eq('user_id', uid).maybeSingle()
+        ]);
 
-      const profile = profileRes.data;
-      const stats   = statsRes.data;
-      if (!profile || !stats) return;
+        const profile = profileRes.data;
+        const stats   = statsRes.data;
+        if (!profile || !stats) { showError(); return; }
 
-      // Recalcul niveau réel + sauvegarde si changement
-      let lvl = stats.level || 1;
-      let xp  = stats.xp || 0;
-      const startLvl = lvl;
-      while (xp >= getXpRequired(lvl)) { xp -= getXpRequired(lvl); lvl++; }
-      if (lvl !== startLvl) {
-        await sb.from('game_stats').update({ level: lvl, xp }).eq('user_id', uid);
+        // Recalcul niveau réel + sauvegarde si changement
+        let lvl = stats.level || 1;
+        let xp  = stats.xp || 0;
+        const startLvl = lvl;
+        while (xp >= getXpRequired(lvl)) { xp -= getXpRequired(lvl); lvl++; }
+        if (lvl !== startLvl) {
+          await sb.from('game_stats').update({ level: lvl, xp }).eq('user_id', uid);
+        }
+
+        const xpNeeded = getXpRequired(lvl);
+        const pct = Math.min((xp / xpNeeded) * 100, 100);
+
+        // Avatar + sync en base si désynchronisé
+        const SPECIAL = ['avatar-millionaire.png','avatar-completionist.png'];
+        const autoAvatar = avatarForLevel(lvl);
+        const avatarSrc = SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : autoAvatar;
+        document.getElementById('avatarImage').src = avatarSrc;
+        if (!SPECIAL.includes(profile.avatar_url) && profile.avatar_url !== autoAvatar) {
+          await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', uid);
+        }
+
+        // Thème carte
+        const card = document.getElementById('profileCardBtn');
+        const grad = PROFILE_THEMES[profile.background_color];
+        if (grad) { card.style.background = grad; card.classList.add('themed'); }
+
+        // Clic → profil.html
+        card.style.cursor = 'pointer';
+        card.onclick = () => window.location.href = 'profil.html';
+
+        // Remplissage
+        document.getElementById('playerName').textContent   = profile.username;
+        document.getElementById('playerGrade').textContent  = getGrade(lvl);
+        document.getElementById('currentLevel').textContent = lvl;
+        document.getElementById('nextLevel').textContent    = lvl + 1;
+        document.getElementById('xpCounter').textContent    = `${xp} / ${xpNeeded} XP`;
+        document.getElementById('xpFill').style.width       = pct + '%';
+
+        // Afficher
+        document.getElementById('profileSkeleton').style.display = 'none';
+        card.style.display = 'flex';
+
+      } catch(e) {
+        console.error('init error:', e);
+        showError();
       }
-
-      const xpNeeded = getXpRequired(lvl);
-      const pct = Math.min((xp / xpNeeded) * 100, 100);
-
-      // Avatar + sync en base si désynchronisé
-      const SPECIAL = ['avatar-millionaire.png','avatar-completionist.png'];
-      const autoAvatar = avatarForLevel(lvl);
-      const avatarSrc = SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : autoAvatar;
-      document.getElementById('avatarImage').src = avatarSrc;
-      if (!SPECIAL.includes(profile.avatar_url) && profile.avatar_url !== autoAvatar) {
-        await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', uid);
-      }
-
-      // Thème carte
-      const card = document.getElementById('profileCardBtn');
-      const grad = PROFILE_THEMES[profile.background_color];
-      if (grad) { card.style.background = grad; card.classList.add('themed'); }
-
-      // Clic → profil.html
-      card.style.cursor = 'pointer';
-      card.onclick = () => window.location.href = 'profil.html';
-
-      // Remplissage
-      document.getElementById('playerName').textContent   = profile.username;
-      document.getElementById('playerGrade').textContent  = getGrade(lvl);
-      document.getElementById('currentLevel').textContent = lvl;
-      document.getElementById('nextLevel').textContent    = lvl + 1;
-      document.getElementById('xpCounter').textContent    = `${xp} / ${xpNeeded} XP`;
-      document.getElementById('xpFill').style.width       = pct + '%';
-
-      // Afficher
-      document.getElementById('profileSkeleton').style.display = 'none';
-      card.style.display = 'flex';
     }
 
     init();
