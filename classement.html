@@ -419,7 +419,7 @@
   function getOnlineStatus(lastSeen) {
     if (!lastSeen) return { online:false, text:'' };
     const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
-    if (diff < 300) return { online:true, text:'En ligne' };
+    if (diff < 600) return { online:true, text:'En ligne' };
     if (diff < 3600) return { online:false, text:'il y a ' + Math.floor(diff/60) + 'min' };
     if (diff < 86400) return { online:false, text:'il y a ' + Math.floor(diff/3600) + 'h' };
     return { online:false, text:'il y a ' + Math.floor(diff/86400) + 'j' };
@@ -933,7 +933,44 @@
     updateLastSeen();
     setInterval(updateLastSeen, 60000); // Rafraîchir toutes les 60s
     loadRanking();
+    setupRealtime();
   }
+  function setupRealtime() {
+    // Écoute les changements sur game_stats (niveau, xp, argent)
+    sb.channel('classement-stats')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_stats'
+      }, payload => {
+        // Mettre à jour le joueur dans allPlayers sans tout recharger
+        const idx = allPlayers.findIndex(p => p.user_id === payload.new.user_id);
+        if (idx >= 0) {
+          allPlayers[idx] = { ...allPlayers[idx], ...payload.new };
+          applyFilter();
+        } else {
+          // Nouveau joueur — recharger tout
+          loadRanking();
+        }
+      })
+      .subscribe();
+
+    // Écoute les changements sur profiles (last_seen, username, avatar)
+    sb.channel('classement-profiles')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles'
+      }, payload => {
+        const idx = allPlayers.findIndex(p => p.user_id === payload.new.user_id);
+        if (idx >= 0) {
+          allPlayers[idx].profile = { ...allPlayers[idx].profile, ...payload.new };
+          applyFilter();
+        }
+      })
+      .subscribe();
+  }
+
   init();
 </script>
 
