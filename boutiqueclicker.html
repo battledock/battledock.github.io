@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Équipements — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+body{font-family:'Inter',sans-serif;background:#1a0f00;min-height:100dvh;padding-bottom:20px}
+
+/* BANDES CHANTIER */
+.tape{height:14px;background:repeating-linear-gradient(45deg,#1a1a1a 0 10px,#f59e0b 10px 20px);flex-shrink:0}
+
+/* HEADER */
+.header{padding:16px 16px 14px;border-bottom:1px solid #2a1a00}
+.header-tag{font-size:8px;font-weight:700;letter-spacing:3px;color:#f59e0b;text-transform:uppercase;margin-bottom:4px}
+.header-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:white;line-height:1}
+.header-money{font-size:12px;font-weight:700;color:#fbbf24;margin-top:6px}
+
+/* BODY */
+.body{padding:14px 16px}
+
+/* ITEM EPI */
+.epi-item{background:rgba(255,255,255,0.04);border:1px solid rgba(245,158,11,0.15);border-radius:10px;padding:12px;margin-bottom:10px}
+.epi-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.epi-icon{font-size:26px;flex-shrink:0}
+.epi-name{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;color:white;line-height:1}
+.epi-desc{font-size:10px;color:#78350f;margin-top:2px}
+.epi-tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.tier{background:rgba(0,0,0,0.3);border:1px solid rgba(245,158,11,0.1);border-radius:8px;padding:8px 4px;text-align:center;cursor:pointer;transition:transform .1s,border-color .15s}
+.tier:active{transform:scale(0.95)}
+.tier.owned{border-color:rgba(74,222,128,0.35);background:rgba(74,222,128,0.06)}
+.tier.equipped{border-color:rgba(251,191,36,0.45);background:rgba(251,191,36,0.07)}
+.tier.locked{opacity:0.4;cursor:not-allowed}
+.tier-rar{font-size:7px;font-weight:700;color:#78350f;letter-spacing:1px;margin-bottom:3px;text-transform:uppercase}
+.tier-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#e5e7eb;line-height:1}
+.tier-price{font-size:8px;color:#78350f;margin-top:2px;font-weight:700}
+.tier.owned .tier-val{color:#4ade80}
+.tier.owned .tier-rar{color:#4ade80}
+.tier.equipped .tier-val{color:#fbbf24}
+.tier.equipped .tier-rar{color:#fbbf24}
+.tier.equipped .tier-price{color:#fbbf24}
+
+/* BACK */
+.back-btn{width:100%;padding:13px;background:#0f0800;border:1px solid #2a1a00;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:#78350f;cursor:pointer;margin-top:4px}
+.back-btn:active{opacity:0.7}
+
+/* TOAST */
+.toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* LOADER */
+.loader{position:fixed;inset:0;background:#1a0f00;display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:10px}
+.loader-txt{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#f59e0b}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div style="font-size:36px">🛠</div>
+  <div class="loader-txt">CHARGEMENT...</div>
+</div>
+
+<div id="mainContent" style="display:none">
+  <div class="tape"></div>
+
+  <div class="header">
+    <div class="header-tag">Équipements · Clicker</div>
+    <div class="header-title">CHANTIER EPI</div>
+    <div class="header-money" id="moneyDisplay">💰 —</div>
+  </div>
+
+  <div class="body" id="epiBody"></div>
+
+  <div style="padding:0 16px">
+    <button class="back-btn" onclick="goBack()">← RETOUR AU CLICKER</button>
+  </div>
+
+  <div class="tape" style="margin-top:14px"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+let currentUser = null;
+let money = 0;
+let ownedEpi = [];
+let equippedEpi = {};
+
+const EPI_CATALOG = [
+  { id:'casque', name:'Casque de chantier', emoji:'🪖', desc:'+XP par clic', stat:'xp_per_click',
+    tiers:[
+      { id:'casque_commune',    rar:'COMM.',   val:'+1 XP', bonus:1, price:5000   },
+      { id:'casque_rare',       rar:'RARE',    val:'+2 XP', bonus:2, price:25000  },
+      { id:'casque_epique',     rar:'ÉPIQUE',  val:'+4 XP', bonus:4, price:100000 },
+      { id:'casque_legendaire', rar:'LÉGEND.', val:'+8 XP', bonus:8, price:500000 },
+    ]},
+  { id:'gilet', name:'Gilet de sécurité', emoji:'🦺', desc:'+€ par clic', stat:'money_per_click',
+    tiers:[
+      { id:'gilet_commune',    rar:'COMM.',   val:'+1€',  bonus:1, price:5000   },
+      { id:'gilet_rare',       rar:'RARE',    val:'+2€',  bonus:2, price:25000  },
+      { id:'gilet_epique',     rar:'ÉPIQUE',  val:'+4€',  bonus:4, price:100000 },
+      { id:'gilet_legendaire', rar:'LÉGEND.', val:'+8€',  bonus:8, price:500000 },
+    ]},
+  { id:'chaussures', name:'Chaussures de sécu', emoji:'👟', desc:'Combo maximum', stat:'combo',
+    tiers:[
+      { id:'chaussures_commune',    rar:'COMM.',   val:'×4',  bonus:4, price:5000   },
+      { id:'chaussures_rare',       rar:'RARE',    val:'×5',  bonus:5, price:25000  },
+      { id:'chaussures_epique',     rar:'ÉPIQUE',  val:'×6',  bonus:6, price:100000 },
+      { id:'chaussures_legendaire', rar:'LÉGEND.', val:'×9',  bonus:9, price:500000 },
+    ]},
+];
+
+function fmt(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function render() {
+  const body = document.getElementById('epiBody');
+  body.innerHTML = '';
+  document.getElementById('moneyDisplay').textContent = '💰 ' + fmt(money) + ' disponibles';
+
+  EPI_CATALOG.forEach(epi => {
+    const item = document.createElement('div');
+    item.className = 'epi-item';
+
+    item.innerHTML = `
+      <div class="epi-top">
+        <div class="epi-icon">${epi.emoji}</div>
+        <div>
+          <div class="epi-name">${epi.name}</div>
+          <div class="epi-desc">${epi.desc}</div>
+        </div>
+      </div>
+      <div class="epi-tiers" id="tiers-${epi.id}"></div>`;
+
+    body.appendChild(item);
+
+    const tiersDiv = document.getElementById('tiers-' + epi.id);
+    epi.tiers.forEach((tier, idx) => {
+      const owned    = ownedEpi.includes(tier.id);
+      const equipped = equippedEpi[epi.id] === tier.id;
+      // Verrouillé si le tier précédent n'est pas possédé
+      const locked   = idx > 0 && !ownedEpi.includes(epi.tiers[idx-1].id);
+
+      const div = document.createElement('div');
+      div.className = 'tier' + (owned ? ' owned' : '') + (equipped ? ' equipped' : '') + (locked ? ' locked' : '');
+
+      const priceLabel = owned ? (equipped ? '✓ Équipé' : 'Équiper') : fmt(tier.price);
+      div.innerHTML = `
+        <div class="tier-rar">${tier.rar}</div>
+        <div class="tier-val">${tier.val}</div>
+        <div class="tier-price">${priceLabel}</div>`;
+
+      if (!locked) div.onclick = () => handleEpi(epi, tier);
+      tiersDiv.appendChild(div);
+    });
+  });
+}
+
+async function handleEpi(epi, tier) {
+  const owned = ownedEpi.includes(tier.id);
+
+  // Si équipé → rien
+  if (equippedEpi[epi.id] === tier.id) return;
+
+  // Achat si pas possédé
+  if (!owned) {
+    if (money < tier.price) { showToast('❌ Pas assez d\'argent !'); return; }
+    const newMoney = money - tier.price;
+    const { error } = await sb.from('game_stats').update({ money: newMoney }).eq('user_id', currentUser.id);
+    if (error) { showToast('❌ Erreur achat'); return; }
+    money = newMoney;
+    ownedEpi.push(tier.id);
+    showToast('✅ ' + epi.name + ' achetée !');
+  }
+
+  // Équiper
+  equippedEpi[epi.id] = tier.id;
+
+  // Calculer les nouvelles valeurs selon tous les EPI équipés
+  const xpBonus    = getStatBonus('casque',    'xp_per_click');
+  const moneyBonus = getStatBonus('gilet',     'money_per_click');
+
+  // Sauvegarder records + stats
+  const { data: fresh } = await sb.from('game_stats').select('records').eq('user_id', currentUser.id).maybeSingle();
+  const rec = { ...(fresh?.records || {}) };
+  rec.equipped_epi = equippedEpi;
+  rec.unlocked_epi = ownedEpi;
+
+  const { error: e2 } = await sb.from('game_stats').update({
+    records:          rec,
+    xp_per_click:     xpBonus,
+    money_per_click:  moneyBonus,
+  }).eq('user_id', currentUser.id);
+
+  if (e2) { showToast('❌ Erreur équipement'); return; }
+
+  showToast('🔧 ' + epi.name + ' équipée !');
+  render();
+}
+
+function getStatBonus(epiId, stat) {
+  const epi = EPI_CATALOG.find(e => e.id === epiId);
+  if (!epi) return 1;
+  const equippedId = equippedEpi[epiId];
+  if (!equippedId) return 1;
+  const tier = epi.tiers.find(t => t.id === equippedId);
+  return tier ? 1 + tier.bonus : 1;
+}
+
+function goBack() {
+  window.location.href = 'clicker.html';
+}
+
+async function init() {
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error || !data.session) { window.location.href = 'index.html'; return; }
+    currentUser = data.session.user;
+
+    const { data: stats } = await sb.from('game_stats')
+      .select('money, records')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+
+    if (stats) {
+      money = stats.money || 0;
+      const rec = stats.records || {};
+      if (Array.isArray(rec.unlocked_epi)) ownedEpi = rec.unlocked_epi;
+      if (rec.equipped_epi && typeof rec.equipped_epi === 'object') equippedEpi = rec.equipped_epi;
+    }
+
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    render();
+  } catch(e) {
+    console.error(e);
+    showToast('❌ Erreur de connexion');
+  }
+}
+
+init();
+</script>
+</body>
+</html>

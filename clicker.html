@@ -441,7 +441,7 @@
     currentUser = session.user;
 
     const { data: stats } = await sb.from('game_stats')
-      .select('money,xp,level,xp_per_click,money_per_click').eq('user_id', currentUser.id).maybeSingle();
+      .select('money,xp,level,xp_per_click,money_per_click,records').eq('user_id', currentUser.id).maybeSingle();
     const { data: profile } = await sb.from('profiles')
       .select('skin_container').eq('user_id', currentUser.id).maybeSingle();
 
@@ -451,6 +451,19 @@
       currentLevel         = stats.level    || 1;
       window.xpPerClick    = Math.min(stats.xp_per_click    || 1, 11);
       window.moneyPerClick = Math.min(stats.money_per_click || 1, 30);
+
+      // Appliquer le combo max depuis les chaussures équipées
+      const equippedEpi = stats.records?.equipped_epi || {};
+      const comboMap = {
+        'chaussures_commune':    4.0,
+        'chaussures_rare':       5.0,
+        'chaussures_epique':     6.0,
+        'chaussures_legendaire': 9.0,
+      };
+      const equippedChaussures = equippedEpi['chaussures'];
+      if (equippedChaussures && comboMap[equippedChaussures]) {
+        window.COMBO_MAX_OVERRIDE = comboMap[equippedChaussures];
+      }
     }
 
     // Skin
@@ -679,7 +692,8 @@
     sessionMoney += gain;    totalMoney  += gain;
 
     // Combo
-    combo = Math.min(combo + COMBO_INCREMENT, COMBO_MAX);
+    const effectiveComboMax = window.COMBO_MAX_OVERRIDE || COMBO_MAX;
+    combo = Math.min(combo + COMBO_INCREMENT, effectiveComboMax);
     if (shiftMaxCombo < combo) shiftMaxCombo = combo;
 
     if (shiftState === 'calibrating') {
