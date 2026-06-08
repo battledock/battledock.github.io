@@ -453,14 +453,14 @@
       window.moneyPerClick = Math.min(stats.money_per_click || 1, 30);
 
       // Appliquer le combo max depuis les chaussures équipées
-      const equippedEpi = stats.records?.equipped_epi || {};
+      const _rec = (stats.records && stats.records.equipped_epi) ? stats.records.equipped_epi : {};
       const comboMap = {
         'chaussures_commune':    4.0,
         'chaussures_rare':       5.0,
         'chaussures_epique':     6.0,
         'chaussures_legendaire': 9.0,
       };
-      const equippedChaussures = equippedEpi['chaussures'];
+      const equippedChaussures = _rec['chaussures'];
       if (equippedChaussures && comboMap[equippedChaussures]) {
         window.COMBO_MAX_OVERRIDE = comboMap[equippedChaussures];
       }
@@ -809,6 +809,17 @@
 
   window.addEventListener('beforeunload', save);
   init();
-</script>
+
+    // ── Last seen (présence en ligne) ──
+    const _lsUpdate = () => {
+      sb.auth.getUser().then(({ data }) => {
+        if (data?.user?.id) {
+          sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', data.user.id);
+        }
+      });
+    };
+    _lsUpdate();
+    setInterval(_lsUpdate, 60000);
+  </script>
 </body>
 </html>

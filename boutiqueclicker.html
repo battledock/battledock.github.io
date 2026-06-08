@@ -194,7 +194,7 @@ async function handleEpi(epi, tier) {
 
   // Sauvegarder records + stats
   const { data: fresh } = await sb.from('game_stats').select('records').eq('user_id', currentUser.id).maybeSingle();
-  const rec = { ...(fresh?.records || {}) };
+  const rec = Object.assign({}, (fresh && fresh.records) ? fresh.records : {});
   rec.equipped_epi = equippedEpi;
   rec.unlocked_epi = ownedEpi;
 
@@ -236,7 +236,7 @@ async function init() {
 
     if (stats) {
       money = stats.money || 0;
-      const rec = stats.records || {};
+      const rec = (stats && stats.records) ? stats.records : {};
       if (Array.isArray(rec.unlocked_epi)) ownedEpi = rec.unlocked_epi;
       if (rec.equipped_epi && typeof rec.equipped_epi === 'object') equippedEpi = rec.equipped_epi;
     }
@@ -252,6 +252,17 @@ async function init() {
 }
 
 init();
-</script>
+
+    // ── Last seen (présence en ligne) ──
+    const _lsUpdate = () => {
+      sb.auth.getUser().then(({ data }) => {
+        if (data?.user?.id) {
+          sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', data.user.id);
+        }
+      });
+    };
+    _lsUpdate();
+    setInterval(_lsUpdate, 60000);
+  </script>
 </body>
 </html>
