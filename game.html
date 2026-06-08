@@ -268,10 +268,61 @@
         document.getElementById('profileSkeleton').style.display = 'none';
         card.style.display = 'flex';
 
+        // Démarrer le tracking temps de jeu
+        startPlaytimeTracking(uid);
+
+        // Vérifier et mettre à jour le streak
+        checkStreak(uid);
+
       } catch(e) {
         console.error('init error:', e);
         showError();
       }
+    }
+
+    // ── Tracking temps de jeu (ping toutes les 60s, RPC atomique) ──
+    let _playtimeUid = null;
+
+    function startPlaytimeTracking(uid) {
+      _playtimeUid = uid;
+      setInterval(async () => {
+        try {
+          await sb.rpc('increment_playtime', { uid: _playtimeUid });
+        } catch(e) {}
+      }, 60000);
+    }
+
+    // ── Streak ────────────────────────────────────────────────────
+    async function checkStreak(uid) {
+      try {
+        const { data } = await sb.from('game_stats')
+          .select('streak_days, last_login')
+          .eq('user_id', uid)
+          .maybeSingle();
+        if (!data) return;
+
+        const today = new Date().toISOString().split('T')[0];
+        const lastLogin = data.last_login;
+
+        if (lastLogin === today) return; // déjà compté aujourd'hui
+
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        let newStreak;
+        if (lastLogin === yesterdayStr) {
+          newStreak = (data.streak_days || 0) + 1; // streak maintenu
+        } else {
+          newStreak = 1; // streak cassé ou première connexion
+        }
+
+        await sb.from('game_stats').update({
+          streak_days: newStreak,
+          last_login: today
+        }).eq('user_id', uid);
+
+      } catch(e) {}
     }
 
     init();
