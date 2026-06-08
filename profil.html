@@ -59,6 +59,12 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 .toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
 
+/* PROCHAIN GRADE */
+.next-grade{display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;background:#f8f8f8;border:1.5px solid #e5e7eb;border-radius:8px;padding:5px 12px}
+.next-grade-arrow{font-size:10px;color:#9ca3af}
+.next-grade-text{font-size:10px;font-weight:700;color:#6b7280;letter-spacing:0.3px}
+.next-grade-highlight{color:#b8962e}
+
 /* SKELETON */
 @keyframes skShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .sk{border-radius:8px;background:linear-gradient(90deg,#e8e8ed 25%,#f3f3f6 50%,#e8e8ed 75%);background-size:200% 100%;animation:skShimmer 1.4s ease-in-out infinite}
@@ -109,9 +115,21 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
     <div class="rank-badge" id="rankEl">#—</div>
   </div>
   <div class="grade" id="gradeEl">—</div>
+  <div class="next-grade" id="nextGradeWrap">
+    <span class="next-grade-arrow">→</span>
+    <span class="next-grade-text" id="nextGradeEl">—</span>
+  </div>
 
   <!-- INFOS -->
   <div class="info-list">
+    <div class="info-row">
+      <div class="info-label">⭐ Niveau</div>
+      <div class="info-value" id="infoLevel">—</div>
+    </div>
+    <div class="info-row">
+      <div class="info-label">💰 Argent</div>
+      <div class="info-value" id="infoMoney">—</div>
+    </div>
     <div class="info-row">
       <div class="info-label">📅 Docker depuis</div>
       <div class="info-value" id="infoSince">—</div>
@@ -169,6 +187,21 @@ let currentCover = 'rouge_navy';
 let COVERS = [];
 
 // ── Utilitaires ───────────────────────────────────────────────
+
+function fmt(n) {
+  return n >= 1000000 ? (n/1000000).toFixed(1)+'M€'
+       : n >= 1000    ? Math.floor(n/1000)+'k€'
+       : n+'€';
+}
+
+function getNextGrade(level) {
+  if (level <= 4)  return { name: 'Docker',          levels: 5 - level };
+  if (level <= 14) return { name: 'Docker Mensuel',  levels: 15 - level };
+  if (level <= 29) return { name: 'Contre-Maître',   levels: 30 - level };
+  if (level <= 49) return { name: 'Chef de Quai',    levels: 50 - level };
+  if (level <= 79) return { name: 'Magnat du Port',  levels: 80 - level };
+  return null; // grade max
+}
 
 function getXpRequired(level) {
   if (level <= 10) return level * 500;
@@ -395,6 +428,8 @@ async function init() {
     }
 
     // ── Infos liste ──
+    document.getElementById('infoLevel').textContent   = 'NIV. ' + lvl;
+    document.getElementById('infoMoney').textContent   = fmt(g.money || 0);
     document.getElementById('infoSince').textContent    = formatDate(p.created_at);
     document.getElementById('infoPlaytime').textContent = formatPlaytime(g.playtime_minutes);
     document.getElementById('infoStreak').textContent   = (g.streak_days || 0) + ' JOUR' + ((g.streak_days || 0) > 1 ? 'S' : '');
@@ -404,6 +439,16 @@ async function init() {
     if (p.bio) { bioEl.textContent = p.bio; bioEl.className = 'bio-text'; }
 
     // ── Afficher ──
+    // Prochain grade
+    const nextG = getNextGrade(lvl);
+    if (nextG) {
+      document.getElementById('nextGradeEl').innerHTML =
+        nextG.levels + ' niveau' + (nextG.levels > 1 ? 's' : '') +
+        ' pour <span class="next-grade-highlight">' + nextG.name + '</span>';
+    } else {
+      document.getElementById('nextGradeWrap').style.display = 'none';
+    }
+
     document.getElementById('profileSkeleton').style.display = 'none';
     document.getElementById('profileBody').style.display = '';
 
