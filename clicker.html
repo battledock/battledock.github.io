@@ -347,6 +347,76 @@
   let combo = 1, clicks = 0;
   let lastTouchTime = 0;
 
+  // ── Anti-triche ──
+  const MAX_CLICKS_PER_SEC = 20;         // max clics/sec (multi-touch inclus)
+  const RHYTHM_CHECK_INTERVAL = 10000;   // vérifier le rythme toutes les 10s
+  const RHYTHM_WINDOW = 120000;          // fenêtre 2min pour détecter le rythme régulier
+  let clickTimestamps = [];              // historique des timestamps de clics
+  let suspiciousBlocked = false;         // si true, clics ignorés
+  let suspiciousBlockUntil = 0;          // timestamp fin du blocage
+  let rhythmSamples = [];                // échantillons de clics/sec
+  let lastRhythmCheck = Date.now();
+
+  function recordClick() {
+    const now = Date.now();
+    clickTimestamps.push(now);
+    // Garder seulement la dernière seconde
+    clickTimestamps = clickTimestamps.filter(t => now - t < 1000);
+    return clickTimestamps.length;
+  }
+
+  function isAntiCheatBlocked() {
+    const now = Date.now();
+    if (suspiciousBlocked && now < suspiciousBlockUntil) return true;
+    if (suspiciousBlocked && now >= suspiciousBlockUntil) suspiciousBlocked = false;
+    return false;
+  }
+
+  function checkClickRate() {
+    const cps = recordClick();
+    // Si plus de 20 clics/sec → bloquer 5 secondes
+    if (cps > MAX_CLICKS_PER_SEC) {
+      suspiciousBlocked = true;
+      suspiciousBlockUntil = Date.now() + 5000;
+      return false;
+    }
+    return true;
+  }
+
+  // Vérification du rythme toutes les 10s
+  function checkRhythm() {
+    const now = Date.now();
+    const elapsed = (now - lastRhythmCheck) / 1000;
+    if (elapsed < 9) return;
+    const cps = clicks / ((now - sessionStart) / 1000);
+    rhythmSamples.push(cps);
+    lastRhythmCheck = now;
+
+    // Garder seulement les 12 derniers échantillons (2 minutes)
+    if (rhythmSamples.length > 12) rhythmSamples = rhythmSamples.slice(-12);
+
+    // Si au moins 12 échantillons (2 min) et variance très faible → autoclicker
+    if (rhythmSamples.length >= 12) {
+      const mean = rhythmSamples.reduce((a,b) => a+b, 0) / rhythmSamples.length;
+      const variance = rhythmSamples.reduce((a,b) => a + Math.pow(b - mean, 2), 0) / rhythmSamples.length;
+      // Variance < 0.5 sur 2min = rythme trop régulier
+      if (mean > 2 && variance < 0.5) {
+        flagSuspicious();
+      }
+    }
+  }
+
+  let sessionStart = Date.now();
+  let flaggedSuspicious = false;
+
+  async function flagSuspicious() {
+    if (flaggedSuspicious || !currentUser) return;
+    flaggedSuspicious = true;
+    try {
+      await sb.from('game_stats').update({ suspicious: true }).eq('user_id', currentUser.id);
+    } catch(e) {}
+  }
+
   // Shift state : 'calibrating' | 'active' | 'free'
   let shiftState     = 'calibrating';
   let calibSeconds   = CALIB_DURATION;
@@ -365,17 +435,12 @@
 
   // ── Init ──
   async function init() {
-    const { data: _authData, error: _authError } = await sb.auth.getSession();
-    if (_authError || !_authData.session) {
-      await sb.auth.signOut().catch(() => {});
-      window.location.href = 'index.html';
-      return;
-    }
-    const session = _authData.session;
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
     currentUser = session.user;
 
     const { data: stats } = await sb.from('game_stats')
-      .select('money,xp,level,xp_per_click,money_per_click,records').eq('user_id', currentUser.id).maybeSingle();
+      .select('money,xp,level,xp_per_click,money_per_click').eq('user_id', currentUser.id).maybeSingle();
     const { data: profile } = await sb.from('profiles')
       .select('skin_container').eq('user_id', currentUser.id).maybeSingle();
 
@@ -388,7 +453,7 @@
     }
 
     // Skin
-    const skin  = (profile && profile.skin_container) || 'red';
+    const skin  = profile?.skin_container || 'red';
     const skins = {
       red:    ['linear-gradient(135deg,#cc2200,#991100)','#880000'],
       blue:   ['linear-gradient(135deg,#1d4ed8,#1e3a8a)','#1e3a8a'],
@@ -401,19 +466,6 @@
     const box = document.getElementById('containerBtn');
     box.style.background = bg; box.style.borderColor = border;
 
-    // Appliquer bonus EPI depuis records
-    var epiRec = (stats && stats.records) || {};
-    if (epiRec.equipped_epi) {
-      var eq = epiRec.equipped_epi;
-      var EPI_BONUSES = {
-        casque_commune:1, casque_rare:2, casque_epique:4, casque_legendaire:8,
-        gilet_commune:1,  gilet_rare:2,  gilet_epique:4,  gilet_legendaire:8,
-        chaussures_commune:0.10, chaussures_rare:0.25, chaussures_epique:0.50, chaussures_legendaire:1.00,
-      };
-      if (eq.casque)     window.xpPerClick    += (EPI_BONUSES[eq.casque]    || 0);
-      if (eq.gilet)      window.moneyPerClick += (EPI_BONUSES[eq.gilet]     || 0);
-      if (eq.chaussures) window.epiComboBonus  = (EPI_BONUSES[eq.chaussures] || 0);
-    }
     updateDisplay();
     startCalibration();
     startComboDecay();
@@ -547,8 +599,6 @@
       checkLevelUp();
       updateDisplay();
       save();
-      // Sauvegarder meilleur shift dans records
-      saveClickRecord();
 
       overlay.querySelector('#popupEncaisser').onclick = () => {
         document.body.removeChild(overlay);
@@ -614,11 +664,15 @@
   }
 
   function doClick(x, y) {
+    // Anti-triche : vérification vitesse + blocage
+    if (isAntiCheatBlocked()) return;
+    if (!checkClickRate()) return;
+    checkRhythm();
+
     clicks++;
     const xpGain = window.xpPerClick    || 1;
     const base   = window.moneyPerClick || 1;
-    const comboMult = combo + (window.epiComboBonus || 0);
-    const gain   = Math.floor(base * comboMult);
+    const gain   = Math.floor(base * combo);
 
     sessionXp    += xpGain;  currentXp   += xpGain;
     sessionMoney += gain;    totalMoney  += gain;
@@ -689,24 +743,27 @@
   }
 
   // ── Save ──
-  async function saveClickRecord() {
-    if (!currentUser || clicks === 0) return;
-    try {
-      const { data: fresh } = await sb.from('game_stats').select('records').eq('user_id', currentUser.id).maybeSingle();
-      const rec = fresh?.records || {};
-      rec.clicker_clicks = (rec.clicker_clicks || 0) + clicks;
-      await sb.from('game_stats').update({ records: rec }).eq('user_id', currentUser.id);
-    } catch(e) { console.error(e); }
-  }
-
   async function save() {
     if (!currentUser) return;
-    const { data: fresh } = await sb.from('game_stats').select('money').eq('user_id', currentUser.id).maybeSingle();
+
+    // Plafonnement anti-triche : max 20 clics/sec × minutes jouées
+    const minutesPlayed = (Date.now() - sessionStart) / 60000;
+    const maxClicks = Math.ceil(minutesPlayed * 20 * 60);
+    if (clicks > maxClicks && minutesPlayed > 1) {
+      flagSuspicious();
+    }
+
+    // Mise à jour records clicker_clicks
+    const { data: fresh } = await sb.from('game_stats').select('money, records').eq('user_id', currentUser.id).maybeSingle();
+    const oldClicks = fresh?.records?.clicker_clicks || 0;
+    const newClicks = oldClicks + clicks;
+
     await sb.from('game_stats').update({
-      money: Math.max(fresh?.money ?? 0, Math.floor(totalMoney)),
-      xp:    Math.floor(currentXp),
-      level: currentLevel,
-      grade: getGrade(currentLevel)
+      money:   Math.max(fresh?.money ?? 0, Math.floor(totalMoney)),
+      xp:      Math.floor(currentXp),
+      level:   currentLevel,
+      grade:   getGrade(currentLevel),
+      records: { ...(fresh?.records || {}), clicker_clicks: newClicks }
     }).eq('user_id', currentUser.id);
   }
 
@@ -717,7 +774,6 @@
     const btn = document.getElementById('backBtn');
     btn.textContent = '💾...'; btn.disabled = true;
     try {
-      await saveClickRecord();
       await sb.from('game_stats').update({
         money: Math.floor(totalMoney),
         xp:    Math.floor(currentXp),
