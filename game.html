@@ -3,1300 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <title>Header Preview — Battle Dock</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-    html,body{height:100%;overflow:hidden}
-    body{font-family:'DM Sans',sans-serif;background:#faf9f6}
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    body { font-family:'Inter',sans-serif; background:#efefef; min-height:100vh; }
 
-    /* ── CONTAINER ── */
-    .container{
-      max-width:600px;margin:0 auto;
-      height:100dvh;display:flex;flex-direction:column;
-      overflow:hidden;
+    /* ── SKELETON ── */
+    @keyframes skShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+    .skeleton-card {
+      background:#ffffff; border:1px solid #e5e7eb; border-bottom:none;
+      border-radius:0; padding:16px; box-sizing:border-box;
     }
+    .sk {
+      border-radius:8px;
+      background:linear-gradient(90deg,#e8e8ed 25%,#f3f3f6 50%,#e8e8ed 75%);
+      background-size:200% 100%; animation:skShimmer 1.4s ease-in-out infinite;
+    }
+    .sk-row { display:flex; align-items:center; gap:12px; }
+    .sk-avatar { width:54px; height:54px; border-radius:50%; flex-shrink:0; }
+    .sk-line { height:12px; }
 
-    /* ── HEADER COVER CARD ── */
-    .page-header{
-      background:white;
-      position:relative;
-      margin:0 -18px;
+    /* ── PROFILE CARD ── */
+    .profile-card-btn {
+      background:white; padding:16px;
+      display:flex; flex-direction:column; gap:12px; box-sizing:border-box;
+      border:1px solid #e5e7eb;
     }
+    .pcb-row { display:flex; align-items:center; gap:14px; }
+    .pcb-avatar {
+      width:54px; height:54px; border-radius:50%;
+      overflow:hidden; flex-shrink:0; border:2px solid #e5e7eb;
+      background:#e5e7eb; display:flex; align-items:center; justify-content:center;
+      font-size:22px;
+    }
+    .pcb-info { flex:1; min-width:0; }
+    .pcb-name {
+      font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1.5px;
+      color:#1a1a1a; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pcb-grade { font-size:11px; color:#b8962e; font-weight:700; margin-top:3px; }
+    .pcb-level-wrap { text-align:center; flex-shrink:0; }
+    .pcb-level-num { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#1a1a1a; line-height:1; }
+    .pcb-level-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+    .pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
+    .pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
+    .pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
 
-    /* Cover */
-    .hdr-cover{
-      height:calc(100px + env(safe-area-inset-top));
-      padding-top:env(safe-area-inset-top);
-      background:var(--cover-bg,linear-gradient(160deg,#0c4a6e,#0369a1,#7c3aed));
-      position:relative;overflow:hidden;
+    /* ── PROFILE HEADER FIXE ── */
+    .profile-header {
+      position:fixed; top:0; left:50%; transform:translateX(-50%);
+      width:100%; max-width:600px; z-index:200;
+      background:#fff;
+      border-bottom:1px solid rgba(15,23,42,0.08);
+      box-shadow:0 2px 16px rgba(15,23,42,0.07);
     }
-
-    /* Boutons cover */
-    .hdr-cover-btns{
-      position:absolute;
-      top:calc(env(safe-area-inset-top) + 10px);
-      right:14px;
-      display:flex;gap:8px;
-    }
-    .hdr-cover-btn{
-      width:30px;height:30px;
-      background:rgba(0,0,0,.25);
-      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-      border-radius:9px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:13px;cursor:pointer;
-      border:1px solid rgba(255,255,255,.1);
-      position:relative;
-    }
-
-    /* Corps : avatar + infos + stats sur une ligne */
-    .hdr-body{
-      padding:0 14px 10px;
-    }
-
-    /* Ligne principale : avatar flottant + tout le reste */
-    .hdr-main-row{
-      display:flex;
-      align-items:flex-end;
-      gap:10px;
-      margin-bottom:8px;
-      flex-wrap: wrap; /* Permet aux stats de passer en dessous proprement si l'écran est ultra-étroit */
-    }
-
-    /* Avatar */
-    .hdr-av-float{
-      width:52px;height:52px;
-      border-radius:14px;
-      border:3px solid white;
-      overflow:hidden;background:#1e3a5f;
-      box-shadow:0 3px 12px rgba(0,0,0,.18);
-      cursor:pointer;flex-shrink:0;
-      margin-top:-26px;
-      position:relative;z-index:2;
-    }
-    .hdr-av-float img{width:100%;height:100%;object-fit:cover}
-
-    /* Infos : nom + grade */
-    .hdr-identity{flex:1;min-width:0;padding-bottom:2px}
-    .hdr-name{
-      font-family:'Archivo Black',sans-serif;
-      font-size:16px;color:#0f172a;line-height:1;
-      letter-spacing:-.2px;text-transform:uppercase;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .hdr-grade-txt{
-      font-size:9px;font-weight:600;
-      color:#64748b;margin-top:2px;
-    }
-
-    /* Stats inline à droite */
-    .hdr-stats-inline{
-      display:flex;gap:8px;align-items:flex-end;
-      flex-shrink:0;padding-bottom:2px;
-      margin-left: auto; /* Aligne à droite tant qu'il y a de la place */
-    }
-    .hdr-stat-i{text-align:center}
-    .hdr-stat-i-val{
-      font-family:'Archivo Black',sans-serif;
-      font-size:12px;color:#0f172a;line-height:1;
-      white-space:nowrap;
-    }
-    .hdr-stat-i-lbl{
-      font-size:6.5px;font-weight:700;
-      letter-spacing:0.5px;color:#94a3b8;
-      margin-top:1px;text-transform:uppercase;
-    }
-    
-    /* Optimisation responsive propre pour écrans étroits */
-@media (max-width: 400px) {
-  .hdr-main-row {
-    flex-wrap: wrap; /* Autorise les éléments à passer à la ligne naturellement */
-    align-items: flex-end;
-  }
-  
-  /* L'avatar et l'identité restent tranquilles sur la première ligne */
-  
-  .hdr-stats-inline {
-    width: 100%; /* Force les stats à descendre sur leur propre ligne */
-    justify-content: space-between;
-    background: #f8fafc;
-    padding: 8px 12px;
-    border-radius: 12px;
-    margin-top: 10px; /* Donne de l'air entre le pseudo et les stats */
-    box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);
-  }
-  
-  .hdr-stat-sep {
-    display: none; /* On cache les séparateurs verticaux sur mobile */
-  }
-}
-    .hdr-stat-sep{
-      width:1px;height:22px;
-      background:#e2e8f0;flex-shrink:0;
-      align-self:center;
-    }
-
-    /* XP bar */
-    .hdr-xp-bar{
-      height:3px;background:#e2e8f0;
-      border-radius:2px;overflow:hidden;
-    }
-    .hdr-xp-fill{
-      height:100%;
-      background:linear-gradient(90deg,#3b82f6,#8b5cf6);
-      border-radius:2px;transition:width .5s;
-    }
-
-    /* Skeleton */
-    .sk-cover{
-      height:calc(100px + env(safe-area-inset-top));
-      padding-top:env(safe-area-inset-top);
-      background:var(--cover-bg,#e2e8f0);opacity:.7;
-    }
-    .sk-body{padding:0 14px 12px;background:white}
-    .sk-line{height:10px;background:#e2e8f0;border-radius:5px;animation:shimmer 1.5s infinite}
-
-
-    /* ── SCROLL ── */
-    #mainContainer{
-      flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-      padding:18px 18px 0;
-      padding-bottom:calc(70px + env(safe-area-inset-bottom));
-    }
-    #mainContainer::-webkit-scrollbar{display:none}
-
-    /* ── SECTION TITRE ── */
-    .sec-ttl{
-      font-family:'Archivo Black',sans-serif;font-size:10px;
-      letter-spacing:4px;color:#94a3b8;margin:0 0 10px;
-    }
-
-    /* ── FEATURED CARD (TRAVAILLER) ── */
-    .featured-card{
-      background:#0f172a;border-radius:20px;padding:18px;
-      margin-bottom:12px;display:flex;gap:14px;
-      cursor:pointer;position:relative;overflow:hidden;
-      box-shadow:0 4px 20px rgba(0,0,0,.12);
-    }
-    .featured-card::before{
-      content:'';position:absolute;top:0;right:0;width:80px;height:80px;
-      background:radial-gradient(circle at top right,rgba(204,26,26,.3),transparent 70%);
-    }
-    .feat-ico{
-      width:52px;height:52px;border-radius:14px;
-      background:rgba(255,255,255,.08);display:flex;
-      align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
-    }
-    .feat-info{flex:1}
-    .feat-ttl{font-family:'Archivo Black',sans-serif;font-size:17px;color:white;line-height:1;letter-spacing:-.3px}
-    .feat-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:4px;line-height:1.4}
-    .feat-action{display:inline-block;margin-top:10px;background:#cc1a1a;border-radius:8px;padding:5px 12px;font-size:10px;font-weight:700;letter-spacing:1px;color:white}
-
-    /* ── GRID 2 COLS ── */
-    .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-    .card-sm{
-      border-radius:16px;padding:14px;cursor:pointer;
-      display:flex;flex-direction:column;gap:8px;
-      min-height:100px;position:relative;overflow:hidden;
-      box-shadow:0 2px 12px rgba(0,0,0,.07);
-    }
-    .card-sm-ico{font-size:26px}
-    .card-sm-name{font-family:'Archivo Black',sans-serif;font-size:14px;line-height:1}
-    .card-sm-desc{font-size:10px;font-weight:500}
-
-    /* ── WIDE CARD ── */
-    .card-wide{
-      border-radius:16px;padding:14px 18px;cursor:pointer;
-      margin-bottom:12px;display:flex;align-items:center;gap:14px;
-      box-shadow:0 2px 10px rgba(0,0,0,.06);
-    }
-    .card-wide-ico{
-      width:46px;height:46px;border-radius:13px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:24px;flex-shrink:0;
-    }
-    .card-wide-info{flex:1;min-width:0}
-    .card-wide-ttl{font-family:'Archivo Black',sans-serif;font-size:15px;color:#0f172a;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .card-wide-sub{font-size:10px;color:#94a3b8;margin-top:3px;font-weight:500}
-
-    /* ── BOTTOM NAV ── */
-    .bottom-nav{
-      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-      width:100%;max-width:600px;z-index:200;
-      background:white;border-top:1px solid #e8e8e8;
-      box-shadow:0 -2px 20px rgba(0,0,0,.06);
-      padding:10px 20px calc(10px + env(safe-area-inset-bottom));
-      display:flex;justify-content:space-around;
-    }
-    .btm-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:2px 8px}
-    .btm-ico{font-size:20px}
-    .btm-lbl{font-size:8px;font-weight:700;letter-spacing:.5px;color:#94a3b8}
-    .btm-item.active .btm-lbl{color:#0f172a}
-
-    /* ── STATS BAR (cachée, pour le JS) ── */
-    .stats-bar{display:none}
-    .pcb-stat{}
-    .pcb-stat-val{}
-    .pcb-stat-lbl{}
-
-    /* ── TOAST ── */
-    #gameToast{
-      position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);
-      background:#0f172a;color:white;padding:9px 18px;border-radius:20px;
-      font-size:11px;font-weight:700;z-index:9999;opacity:0;transition:opacity .2s;
-      pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center;
+    .profile-header .skeleton-card,
+    .profile-header .profile-card-btn {
+      min-height:119px; border:none !important; border-radius:0 !important;
+      margin:0 !important; box-shadow:none !important; box-sizing:border-box;
     }
 
     /* ── BANDEAU MAJ ── */
-    .bandeau{
-      border-radius:18px;overflow:hidden;border:1.5px solid rgba(204,26,26,.25);
-      background:#0f172a;margin-bottom:12px;
-    }
-    .bandeau-inner{padding:12px 14px;position:relative;overflow:hidden}
-    .bandeau-inner::before{
-      content:'';position:absolute;inset:0;
-      background:repeating-linear-gradient(45deg,transparent 0 12px,rgba(204,26,26,.03) 12px 13px);
-    }
-    .bandeau-content{position:relative;z-index:1}
-
-    /* ── OBJBADGE ── */
-    #objBadge{
-      position:absolute;top:-4px;right:-6px;
-      background:#cc1a1a;color:white;font-size:9px;font-weight:900;
-      width:16px;height:16px;border-radius:50%;
-      display:none;align-items:center;justify-content:center;
-      border:2px solid white;line-height:1;
+    .bandeau-maj {
+      position:fixed; top:119px; left:50%; transform:translateX(-50%);
+      width:100%; max-width:600px; z-index:199;
+      background:#1a1a1a; border-bottom:1px solid rgba(255,255,255,0.08);
+      padding:9px 16px; display:flex; align-items:center; gap:10px;
     }
 
-    /* ── HIDDEN CLASSES (compatibilité JS) ── */
-    .nav-grid,.nav-card,.profile-card-btn,
-    .skill-tree-container,.casino-particle{display:none}
+    /* ── SPACER ── */
+    .spacer { height: calc(119px + 38px + 24px); }
 
-    /* ── ANIMATIONS ── */
-    @keyframes pulse_maj{0%,100%{opacity:1}50%{opacity:.5}}
-    @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.8}}
-    @keyframes onlinePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 6px transparent}}
-        @keyframes shimmer{0%,100%{opacity:.4}50%{opacity:.9}}
-
-    /* SKILL TREE (caché mais JS l'utilise) */
-    .skill-tree-container{display:none}
-
-    /* Calendar/objectifs mini (caché, JS l'utilise) */
-    #calCard{display:none}
-
-    /* ANIMATIONS */
-        @keyframes haloDrift1 {
-      0%,100% { transform: translate(0,0); }
-      33%      { transform: translate(80px,100px); }
-      66%      { transform: translate(40px,-50px); }
+    /* ── DEMO CONTROLS ── */
+    .demo-controls {
+      max-width:600px; margin:0 auto;
+      padding:20px 16px; display:flex; gap:10px; flex-wrap:wrap;
     }
-    @keyframes haloDrift2 {
-      0%,100% { transform: translate(0,0); }
-      33%      { transform: translate(-90px,-70px); }
-      66%      { transform: translate(-40px,60px); }
+    .demo-btn {
+      font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px;
+      padding:8px 16px; border:none; border-radius:6px; cursor:pointer;
+      background:#1a1a1a; color:#fbbf24;
     }
-    @keyframes haloDrift3 {
-      0%,100% { transform: translate(-50%,-50%) scale(1); }
-      50%      { transform: translate(-50%,-50%) scale(1.4); }
-    }
-    @keyframes bourseTick { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    @keyframes cardSheen { 0%,72%{ background-position:120% 0; } 88%,100%{ background-position:-40% 0; } }
-
-    /* halos + accents par thème */
-    @keyframes flashPulse { 0%,100%{ opacity:0.85; transform:scale(1);} 50%{ opacity:0.4; transform:scale(1.12);} }
-    @keyframes histMoonPulse { 0%,100%{box-shadow:0 0 16px rgba(255,240,100,0.5),0 0 40px rgba(255,240,100,0.1)} 50%{box-shadow:0 0 24px rgba(255,240,100,0.9),0 0 60px rgba(255,240,100,0.2)} }
-    @keyframes histWave1 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    @keyframes histWave2 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    @keyframes histWave3 { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-    @keyframes histDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    @keyframes lineScan {
-      0%   { transform:translateX(-100%); }
-      100% { transform:translateX(100%); }
-    }
-    @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 6px currentColor} 50%{opacity:0.3} }
-
-    /* PARTICULES CASINO */
-    @keyframes casinoFall {
-      0%   { transform: translateY(-10px) rotate(0deg);   opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 0.8; }
-      100% { transform: translateY(130px) rotate(360deg); opacity: 0; }
-    }
-    @keyframes twinkle { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.2;transform:scale(0.5)} }
-
-
-    /* BOURSE - Terminal avec gradient dynamique */
-    @keyframes jGlow { 0%,100%{opacity:0.5;transform:translate(-50%,-50%) scale(1)} 50%{opacity:1;transform:translate(-50%,-50%) scale(1.3)} }
-
-    /* Badge */
-    @keyframes jIcon { 0%,100%{transform:translateY(-50%) rotate(-3deg)} 50%{transform:translateY(-52%) rotate(3deg)} }
-
-    /* GRID SIMPLE POUR COMPANY */
-    @keyframes starTwinkle {
-      0%,100% { opacity: 0.8; transform: scale(1); }
-      50%      { opacity: 0.2; transform: scale(0.5); }
-    }
-    @keyframes msgFloat {
-      0%,100% { transform: translateY(0); opacity: 0.6; }
-      50%      { transform: translateY(-6px); opacity: 1; }
-    }
-    @keyframes notifPulse {
-      0%,100% { transform: scale(1); }
-      50%      { transform: scale(1.15); }
+    .demo-note {
+      max-width:600px; margin:0 auto; padding:0 16px 20px;
+      font-size:12px; color:rgba(0,0,0,0.4); line-height:1.6;
     }
   </style>
 </head>
 <body>
 
+  <!-- HEADER FIXE -->
+  <header class="profile-header">
 
+    <!-- SKELETON (affiché par défaut, masqué après chargement) -->
+    <div class="skeleton-card" id="profileSkeleton">
+      <div class="sk-row">
+        <div class="sk sk-avatar"></div>
+        <div style="flex:1">
+          <div class="sk sk-line" style="width:55%"></div>
+          <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
+        </div>
+        <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
+      </div>
+      <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
+    </div>
 
-  <!-- INSTRUCTIONS iOS -->
-  <div id="iosInstall" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);
-       align-items:center;justify-content:center;padding:24px" onclick="document.getElementById('iosInstall').style.display='none'">
-    <div style="max-width:340px;background:#16233f;border:2px solid #fbbf24;border-radius:18px;padding:22px;text-align:center;color:#fff">
-      <div style="font-size:40px">📲</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin:6px 0">Installer sur iPhone</div>
-      <div style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.8)">1. Appuie sur le bouton <b>Partager</b> ⬆️ en bas de Safari.<br>2. Choisis <b>« Sur l'écran d'accueil »</b>.<br>3. Valide — l'icône Battle Dock apparaît !</div>
-      <button style="margin-top:16px;border:none;border-radius:11px;padding:11px 20px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1208;cursor:pointer">Compris</button>
+    <!-- PROFIL CHARGÉ -->
+    <div class="profile-card-btn" id="profileCardBtn" style="display:none">
+      <div class="pcb-row">
+        <div class="pcb-avatar">⚓</div>
+        <div class="pcb-info">
+          <div class="pcb-name" id="playerName">MR.693</div>
+          <div class="pcb-grade" id="playerGrade">Docker Senior</div>
+        </div>
+        <div class="pcb-level-wrap">
+          <div class="pcb-level-num" id="currentLevel">12</div>
+          <div class="pcb-level-lbl">Niv.</div>
+        </div>
+      </div>
+      <div>
+        <div class="pcb-xp-label">
+          <span id="xpCounter">3 200 / 5 000 XP</span>
+          <span>→ Niv. <span id="nextLevel">13</span></span>
+        </div>
+        <div class="pcb-xp-track">
+          <div class="pcb-xp-fill" id="xpFill" style="width:64%"></div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- BANDEAU MAJ -->
+  <div class="bandeau-maj">
+    <div style="font-size:13px;flex-shrink:0">🔧</div>
+    <div style="flex:1">
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fbbf24">MISE À JOUR 1.2 EN COURS</span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.35);margin-left:8px">Merci de ne pas tenir compte de l'état actuel de la disposition du jeu.</span>
     </div>
   </div>
 
-  <!-- INSTRUCTIONS ANDROID / AUTRES -->
-  <div id="otherInstall" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.7);
-       align-items:center;justify-content:center;padding:24px" onclick="document.getElementById('otherInstall').style.display='none'">
-    <div style="max-width:340px;background:#16233f;border:2px solid #fbbf24;border-radius:18px;padding:22px;text-align:center;color:#fff">
-      <div style="font-size:40px">📲</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;margin:6px 0">Installer l'app</div>
-      <div style="font-size:14px;line-height:1.6;color:rgba(255,255,255,0.8)">Ouvre le menu de ton navigateur (<b>⋮</b> en haut à droite) puis choisis <b>« Installer l'application »</b> ou <b>« Ajouter à l'écran d'accueil »</b>.</div>
-      <button style="margin-top:16px;border:none;border-radius:11px;padding:11px 20px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;background:linear-gradient(135deg,#d97706,#fbbf24);color:#1a1208;cursor:pointer">Compris</button>
-    </div>
+  <!-- CONTENU DÉMO -->
+  <div class="spacer"></div>
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="showSkeleton()">Afficher Skeleton</button>
+    <button class="demo-btn" onclick="showProfile()">Afficher Profil chargé</button>
+  </div>
+  <div class="demo-note">
+    Le header est <strong>fixe en haut</strong> (position:fixed). Le bandeau MAJ est positionné juste en dessous.<br>
+    En production, le skeleton disparaît dès que Supabase retourne les données du joueur.
   </div>
 
+  <script>
+    function showSkeleton() {
+      document.getElementById('profileSkeleton').style.display = 'block';
+      document.getElementById('profileCardBtn').style.display = 'none';
+    }
+    function showProfile() {
+      document.getElementById('profileSkeleton').style.display = 'none';
+      document.getElementById('profileCardBtn').style.display = 'flex';
+    }
 
-  <!-- FOND ANIMÉ -->
-
-
-  <!-- CONTENU -->
-  <!-- BARRE DE STATS FIXE -->
-
-
-<div class="container" id="mainContainer-wrap">
-
-  <!-- ══ HEADER COVER CARD ══ -->
-  <div class="page-header">
-
-    <!-- Skeleton -->
-    <div id="profileSkeleton">
-      <div class="sk-cover"></div>
-      <div class="sk-body">
-        <div style="display:flex;align-items:flex-end;gap:10px;margin-bottom:8px">
-          <div style="width:52px;height:52px;border-radius:14px;background:#e2e8f0;margin-top:-26px;flex-shrink:0"></div>
-          <div style="flex:1">
-            <div class="sk-line" style="width:45%;margin-bottom:6px"></div>
-            <div class="sk-line" style="width:30%;height:7px;animation-delay:.1s"></div>
-          </div>
-          <div style="display:flex;gap:8px">
-            <div style="width:40px;height:28px;background:#f1f5f9;border-radius:5px;animation:shimmer 1.5s infinite .1s"></div>
-            <div style="width:40px;height:28px;background:#f1f5f9;border-radius:5px;animation:shimmer 1.5s infinite .2s"></div>
-            <div style="width:40px;height:28px;background:#f1f5f9;border-radius:5px;animation:shimmer 1.5s infinite .3s"></div>
-          </div>
-        </div>
-        <div class="sk-line" style="width:100%;height:3px;animation-delay:.2s"></div>
-      </div>
-    </div>
-
-    <!-- Profil réel -->
-    <div id="profileCardBtn" style="display:none">
-      <!-- Cover -->
-      <div class="hdr-cover header-cover">
-        <div class="hdr-cover-btns">
-          <div class="hdr-cover-btn" id="hdrMsgBtn" onclick="window.location.href='messagerie.html'">
-            ✉️
-            <div id="hdrMsgBadge" style="display:none;position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#cc1a1a;border-radius:50%;border:1.5px solid rgba(0,0,0,.3)"></div>
-          </div>
-          <div class="hdr-cover-btn" onclick="window.location.href='parametres.html'">⚙️</div>
-        </div>
-      </div>
-
-      <!-- Corps blanc -->
-      <div class="hdr-body">
-        <!-- Ligne principale : avatar + nom + stats -->
-        <div class="hdr-main-row">
-          <!-- Avatar -->
-          <div class="hdr-av-float" onclick="window.location.href='profil.html'">
-            <img src="avatar-default.png" id="avatarImage" alt="avatar">
-          </div>
-          <!-- Identité -->
-          <div class="hdr-identity" onclick="window.location.href='profil.html'" style="cursor:pointer">
-            <div class="hdr-name" id="playerName">...</div>
-            <div class="hdr-grade-txt"><span id="playerGrade"></span> · Niv. <span id="currentLevel">1</span></div>
-          </div>
-          <!-- Stats inline -->
-          <div class="hdr-stats-inline">
-            <div class="hdr-stat-i">
-              <div class="hdr-stat-i-val" id="moneyAmount">—</div>
-              <div class="hdr-stat-i-lbl">Argent</div>
-            </div>
-            <div class="hdr-stat-sep"></div>
-            <div class="hdr-stat-i">
-              <div class="hdr-stat-i-val" id="diamondsAmount">—</div>
-              <div class="hdr-stat-i-lbl">Diamants</div>
-            </div>
-            <div class="hdr-stat-sep"></div>
-            <div class="hdr-stat-i">
-              <div class="hdr-stat-i-val" id="trophiesAmount">—</div>
-              <div class="hdr-stat-i-lbl">Trophées</div>
-            </div>
-          </div>
-        </div>
-        <!-- XP bar -->
-        <div class="hdr-xp-bar">
-          <div class="hdr-xp-fill" id="xpFill" style="width:0%"></div>
-        </div>
-        <div style="display:none"><span id="xpCounter">0</span><span id="nextLevel">2</span></div>
-      </div>
-    </div>
-  </div>
-
-<!-- ══ BODY SCROLLABLE ══ -->
-  <div id="mainContainer" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 18px 0;padding-bottom:calc(70px + env(safe-area-inset-bottom))">
-    <div id="edBody" style="display:none">
-
-      <!-- TRAVAILLER -->
-      <div class="sec-ttl">TRAVAILLER</div>
-      <div class="featured-card" id="workCard" onclick="window.location.href='travail.html'">
-        <div class="feat-ico">🚢</div>
-        <div class="feat-info">
-          <div class="feat-ttl">PORT MARITIME</div>
-          <div class="feat-sub">Clique · Gagne de l'argent · Monte en niveau</div>
-          <div class="feat-action">JOUER →</div>
-        </div>
-        <div id="workSvgContainer" style="display:none"></div>
-      </div>
-
-      <!-- BANDEAU MAJ -->
-      <div class="bandeau">
-        <div class="bandeau-inner">
-          <div class="bandeau-content">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-              <div style="background:#cc1a1a;border-radius:5px;padding:2px 7px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:2px;color:white;animation:pulse_maj 1.5s infinite">🔴 LIVE</div>
-              <div style="font-family:'Archivo Black',sans-serif;font-size:13px;color:white;letter-spacing:-.2px">GROSSE MAJ — LUNDI 9 JUIN</div>
-            </div>
-            <div style="font-size:10px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:10px">Roue quotidienne · Jackpot casino · Colis mystère · Événements globaux · Badges...</div>
-            <div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px">
-              <div style="font-family:'Archivo Black',sans-serif;font-size:11px;color:#fbbf24;margin-bottom:6px">💬 TES IDÉES & BUGS</div>
-              <div style="display:flex;gap:5px;margin-bottom:7px">
-                <button id="fb-type-idea" onclick="setFbType('idea')" style="flex:1;background:#cc1a1a;border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:white;cursor:pointer">💡 IDÉE</button>
-                <button id="fb-type-bug" onclick="setFbType('bug')" style="flex:1;background:rgba(255,255,255,.07);border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">🐛 BUG</button>
-                <button id="fb-type-general" onclick="setFbType('general')" style="flex:1;background:rgba(255,255,255,.07);border:none;border-radius:6px;padding:5px;font-family:'Archivo Black',sans-serif;font-size:9px;letter-spacing:1px;color:rgba(255,255,255,.4);cursor:pointer">💬 AUTRE</button>
-              </div>
-              <textarea id="fb-input" maxlength="200" placeholder="Une idée ? Un bug ? Dis tout..." style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:7px;padding:8px;font-size:11px;color:white;font-family:'DM Sans',sans-serif;resize:none;height:60px;outline:none" oninput="document.getElementById('fb-count').textContent=this.value.length+'/200'"></textarea>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px">
-                <span id="fb-count" style="font-size:9px;color:rgba(255,255,255,.2)">0/200</span>
-                <button onclick="submitFeedback()" id="fb-submit" style="background:#fbbf24;border:none;border-radius:7px;padding:6px 14px;font-family:'Archivo Black',sans-serif;font-size:11px;color:#0f172a;cursor:pointer">ENVOYER →</button>
-              </div>
-            </div>
-            <div id="fb-feed" style="margin-top:8px;display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- CASINO & FINANCES -->
-      <div class="sec-ttl">CASINO & FINANCES</div>
-      <div class="card-grid">
-        <div class="card-sm" id="casinoCard" onclick="window.location.href='casino.html'" style="background:linear-gradient(135deg,#450a0a,#7f1d1d)">
-          <div class="card-sm-ico">🎰</div>
-          <div class="card-sm-name" style="color:white">CASINO</div>
-          <div class="card-sm-desc" style="color:rgba(255,255,255,.45)">Blackjack · Roulette</div>
-        </div>
-        <div class="card-sm" id="banqueCard" onclick="window.location.href='banque.html'" style="background:linear-gradient(135deg,#0a0d1a,#1a2240)">
-          <div class="card-sm-ico">🏛️</div>
-          <div class="card-sm-name" style="color:#d4af37">BANQUE</div>
-          <div class="card-sm-desc" id="banqueInteretEl" style="color:rgba(212,175,55,.5)">DU PORT</div>
-        </div>
-      </div>
-
-      <!-- CLASSEMENT -->
-      <div class="card-wide" id="rankCard" onclick="window.location.href='classement.html'" style="background:white">
-        <div class="card-wide-ico" style="background:#fef3c7">🏆</div>
-        <div class="card-wide-info">
-          <div class="card-wide-ttl">CLASSEMENT</div>
-          <div class="card-wide-sub"><span id="rankLeaderName">—</span> en tête · <span id="rankMyPos">#—</span> · <span id="rankTotal">—</span> joueurs</div>
-        </div>
-        <div style="font-family:'Archivo Black',sans-serif;font-size:20px;color:#f59e0b" id="rankLeaderPos">1er</div>
-      </div>
-
-      <!-- TON ENTREPRISE -->
-      <div class="sec-ttl">TON ENTREPRISE</div>
-      <div class="card-wide" onclick="window.location.href='commerce.html'" style="background:#e8f5e9">
-        <div class="card-wide-ico" style="background:#22c55e">🏪</div>
-        <div class="card-wide-info">
-          <div class="card-wide-ttl" id="coName">CRÉER MON ENTREPRISE</div>
-          <div class="card-wide-sub" id="coSub">Investis 100 000€ pour démarrer</div>
-        </div>
-        <div style="font-size:16px;color:#22c55e">›</div>
-      </div>
-
-      <!-- BOUTIQUE & MISSIONS -->
-      <div class="sec-ttl">BOUTIQUE & MISSIONS</div>
-      <div class="card-grid">
-        <div class="card-sm" id="msgCard" onclick="window.location.href='boutique.html'" style="background:linear-gradient(135deg,#78350f,#d97706)">
-          <div id="msgUnreadBadge" style="display:none"></div>
-          <div class="card-sm-ico">🛍️</div>
-          <div class="card-sm-name" style="color:#0f172a">BOUTIQUE</div>
-          <div class="card-sm-desc" style="color:rgba(0,0,0,.45)">Chez Fouinfouin</div>
-        </div>
-        <div class="card-sm" onclick="window.location.href='objectifs.html'" style="background:white;border:1.5px solid #f1f5f9">
-          <div style="position:relative;display:inline-block">
-            <span class="card-sm-ico">🎯</span>
-            <div id="objBadge">3</div>
-          </div>
-          <div class="card-sm-name">OBJECTIFS</div>
-          <div class="card-sm-desc" style="color:#94a3b8" id="objSubTxt">Missions du jour</div>
-        </div>
-      </div>
-
-      <div style="height:16px"></div>
-    </div>
-  </div>
-
-  <!-- ══ BOTTOM NAV ══ -->
-  <div class="bottom-nav">
-    <div class="btm-item active">
-      <div class="btm-ico">🏠</div>
-      <div class="btm-lbl" style="color:#0f172a">ACCUEIL</div>
-    </div>
-    <div class="btm-item" onclick="window.location.href='classement.html'">
-      <div class="btm-ico">🏆</div>
-      <div class="btm-lbl">CLASSEMENT</div>
-    </div>
-    <div class="btm-item" onclick="window.location.href='profil.html'">
-      <div class="btm-ico">
-        <img src="avatar-default.png" style="width:22px;height:22px;border-radius:6px;object-fit:cover">
-      </div>
-      <div class="btm-lbl">PROFIL</div>
-    </div>
-    <div class="btm-item" onclick="window.location.href='parametres.html'">
-      <div class="btm-ico">⚙️</div>
-      <div class="btm-lbl">PARAMÈTRES</div>
-    </div>
-  </div>
-
-  <!-- Stats bar cachée (requis JS) -->
-
-  <!-- Toast -->
-  <div id="gameToast"></div>
-
-  <!-- Éléments cachés requis par le JS ──
-       Ces IDs sont référencés dans le JS existant -->
-  <div style="display:none" aria-hidden="true">
-    <div id="rankValue"></div>
-    <div id="chatNotif"></div>
-    <div id="casinoParticles"></div>
-    <div id="rankStars"></div>
-    <div id="rankStars2"></div>
-    <div id="calSubtitle"></div>
-    <div id="calProgLabel"></div>
-    <div id="objCountBadge"></div>
-    <div id="objArcFill"></div>
-    <div id="objDone"></div>
-    <div id="calProgPct"></div>
-    <div id="calProgFill"></div>
-    <div id="calObjs"></div>
-    <div id="calCard"></div>
-    <div id="coverPreload"></div>
-    <div id="profileSkeleton2"></div>
-    <div class="nav-grid">
-      <div class="nav-card work work-p1"></div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-<script>
-    // ── MAINTENANCE ── mettre true pour activer, false pour désactiver
-    const MAINTENANCE_ON = false;
-    (function() {
-      if (!MAINTENANCE_ON) return;
-      const PASS = 'froid';
-      if (sessionStorage.getItem('bd_pass') === PASS) return;
-      window.location.replace('maintenance.html');
-    })();
+    // Simule le chargement après 1.5s
+    setTimeout(showProfile, 1500);
   </script>
-<script>
-  (function(){
-    const c = localStorage.getItem('bd_cover');
-    const bg = c || 'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)';
-    document.documentElement.style.setProperty('--cover-bg', bg);
-    // Injecter directement dans la feuille de style pour application immédiate
-    const st = document.getElementById('coverPreload');
-    if(st) st.textContent = '.profile-header, #profileSkeleton, #skeletonCoverDiv { background: ' + bg + ' !important; }';
-  })();
-</script>
-<script>
-    const supabaseUrl  = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
-
-    const COVER_CSS = {
-  'rouge_navy':     'linear-gradient(135deg,#cc1a1a,#0f172a)',
-  'bleu_mer':       'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-  'noir':           'linear-gradient(135deg,#18181b,#3f3f46)',
-  'night':          'linear-gradient(135deg,#0f172a,#334155)',
-  'ciment':         'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
-  'carbone':        'linear-gradient(135deg,#1c1917,#292524,#44403c)',
-  'gold':           'linear-gradient(135deg,#b45309,#f59e0b)',
-  'emerald':        'linear-gradient(135deg,#047857,#10b981)',
-  'purple':         'linear-gradient(135deg,#6d28d9,#a855f7)',
-  'coral':          'linear-gradient(135deg,#be123c,#fb7185)',
-  'or_navy':        'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-  'abysses':        'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
-  'turquoise':      'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
-  'indigo':         'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
-  'marseille_nuit': 'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
-  'feu_docker':     'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
-  'port_tropical':  'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
-  'sang_requin':    'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
-  'sunset':         'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
-  'neon_rouge':     'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
-  'arc_en_ciel':    'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
-};
-function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
-let currentUser = null;
-    let canClaimDaily = false;
-
-    // =====================
-    // ARBRE COMPÉTENCES - Mise à jour selon niveau
-    // =====================
-    function updateSkillTree(level) {
-      // Nœuds débloqués selon niveau
-      const nodes = [
-        { id: 'n1', minLevel: 1,  cx: 60,  cy: 60 },
-        { id: 'n2', minLevel: 5,  cx: 130, cy: 30 },
-        { id: 'n3', minLevel: 10, cx: 210, cy: 30 },
-        { id: 'n4', minLevel: 15, cx: 210, cy: 90 },
-        { id: 'n5', minLevel: 30, cx: 290, cy: 60 },
-        { id: 'n6', minLevel: 50, cx: 360, cy: 60 },
-      ];
-      const icons = ['⚡','⭐','🔥','💪','🏆','👑'];
-
-      nodes.forEach((node, i) => {
-        const el = document.getElementById(node.id);
-        if (!el) return;
-        if (level >= node.minLevel) {
-          el.setAttribute('fill', '#4338ca');
-          el.setAttribute('stroke', '#a5b4fc');
-          el.setAttribute('opacity', '1');
-          // Enlever le 🔒 du text correspondant
-          const texts = document.querySelectorAll('#skillTreeSvg text');
-          texts.forEach(t => {
-            if (Math.abs(parseInt(t.getAttribute('x')) - node.cx) < 5) {
-              t.textContent = icons[i];
-              t.setAttribute('fill', 'white');
-            }
-          });
-        }
-      });
-
-      // Mettre à jour grade overlay
-
-    }
-
-    // =====================
-    // PARTICULES CASINO
-    // =====================
-    const casinoParticles = document.getElementById('casinoParticles');
-    const casinoColors = ['#fbbf24','#f59e0b','#fcd34d','#ef4444','#fff'];
-    if (casinoParticles) {
-      for (let i = 0; i < 12; i++) {
-        const p = document.createElement('div');
-        p.className = 'casino-particle';
-        p.style.cssText = `left:${Math.random()*100}%;background:${casinoColors[Math.floor(Math.random()*casinoColors.length)]};width:${2+Math.random()*4}px;height:${2+Math.random()*4}px;animation-duration:${2+Math.random()*2}s;animation-delay:${Math.random()*3}s;`;
-        casinoParticles.appendChild(p);
-      }
-    }
-
-    // =====================
-    // ÉTOILES + FILANTES Classement
-    // =====================
-    const starsContainer = document.getElementById('rankStars') || document.getElementById('rankStars2');
-    if (starsContainer) { for (let i = 0; i < 20; i++) {
-      const s = document.createElement('div');
-      s.className = 'rank-star';
-      s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*2}s;animation-duration:${1.5+Math.random()*2}s;`;
-      starsContainer.appendChild(s);
-    }}
-
-    // Bourse : graphe statique, variation depuis Supabase
-
-    // Avatar automatique selon le niveau (mêmes paliers que profil.html)
-    function avatarForLevel(lvl) {
-      if (lvl >= 50) return 'avatar-level-50.png';
-      if (lvl >= 30) return 'avatar-level-30.png';
-      if (lvl >= 20) return 'avatar-level-20.png';
-      if (lvl >= 17) return 'avatar-level-17.png';
-      if (lvl >= 15) return 'avatar-level-15.png';
-      if (lvl >= 13) return 'avatar-level-13.png';
-      if (lvl >= 10) return 'avatar-level-10.png';
-      if (lvl >= 5)  return 'avatar-level-5.png';
-      if (lvl >= 4)  return 'avatar-level-4.png';
-      if (lvl >= 3)  return 'avatar-level-3.png';
-      if (lvl >= 2)  return 'avatar-level-2.png';
-      return 'avatar-default.png';
-    }
-
-    function getXpRequired(level) {
-      if (level <= 10) return level * 500;
-      if (level <= 25) return level * 1000;
-      if (level <= 50) return level * 2000;
-      return level * 4000;
-    }
-
-    function getGrade(level) {
-      if (level <= 4)  return 'Docker Occasionnel';
-      if (level <= 14) return 'Docker';
-      if (level <= 29) return 'Docker Mensuel';
-      if (level <= 49) return 'Contre-Maître';
-      if (level <= 79) return 'Chef de Quai';
-      return 'Magnat du Port';
-    }
-
-
-
-    // Ticker bourse — tourne sans auth, public
-
-    async function updateBanqueCard() {
-      try {
-        var res = await sb.auth.getSession();
-        var session = res.data && res.data.session;
-        if (!session) return;
-        var gRes = await sb.from('game_stats').select('banque').eq('user_id', session.user.id).maybeSingle();
-        var banque = (gRes.data && gRes.data.banque) || {};
-        var totalDepot = 0;
-        var hasInterets = false;
-        var now = Date.now();
-        ['compte_courant','livret','pep'].forEach(function(c){
-          if(banque[c] && banque[c].solde > 0){
-            totalDepot += banque[c].solde;
-            var last = banque[c].last_collect ? new Date(banque[c].last_collect).getTime() : now;
-            if((now - last) >= 6 * 3600000) hasInterets = true;
-          }
-        });
-        var depotEl = document.getElementById('banqueInteretEl');
-        if(depotEl){
-          depotEl.textContent = hasInterets ? "Interets disponibles !" : "DU PORT";
-          depotEl.style.color = hasInterets ? 'rgba(212,175,55,0.9)' : 'rgba(212,175,55,0.4)';
-        }
-      } catch(e) { console.log('updateBanqueCard:', e); }
-    }
-    async function loadRank(level) {
-      try {
-        const { data } = await sb.from('game_stats').select('user_id,level').order('level', { ascending: false });
-        if (!data) return;
-        const rank = data.findIndex(p => p.level <= level) + 1;
-        if(document.getElementById('rankValue')) document.getElementById('rankValue').textContent = '#' + rank;
-        if(document.getElementById('hdrRank')) document.getElementById('hdrRank').textContent = '#' + rank;
-        const total = data.length;
-        const leaderRow = data[0];
-        let leaderName = '—';
-        try {
-          const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leaderRow.user_id).maybeSingle();
-          leaderName = (prof && prof.username) || '—';
-        } catch(_) {}
-        const elPos    = document.getElementById('rankMyPos');
-        const elLeader = document.getElementById('rankLeaderName');
-        const elTotal  = document.getElementById('rankTotal');
-        if (elPos)    elPos.textContent    = '#' + rank;
-        if (elLeader) elLeader.textContent = leaderName;
-        if (elTotal)  elTotal.textContent  = total;
-      } catch(e) { console.log('loadRank:', e); }
-    }
-
-    function openChat() { window.location.href = 'chat.html'; }
-
-async function loadCalendar() {
-      const today = new Date();
-      const days = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-
-      try {
-        const todayStr = today.toISOString().split('T')[0];
-        const { data } = await sb.from('daily_objectives').select('objectives').eq('user_id', currentUser.id).eq('date', todayStr).maybeSingle();
-        if((data && data.objectives)) {
-          const objs = data.objectives;
-          const completed = objs.filter(o => o.completed || o.claimed).length;
-          const pct = Math.round((completed/3)*100);
-          document.getElementById('calSubtitle').textContent = completed===3 ? '🎉 Tous complétés !' : `${3-completed} objectif${3-completed>1?'s':''} restant${3-completed>1?'s':''}`;
-          document.getElementById('calProgLabel').textContent = `${completed}/3 complétés`;
-          document.getElementById('objCountBadge').textContent = `${completed}/3`;
-          const _arc = document.getElementById('objArcFill');
-          const _od = document.getElementById('objDone');
-          if (_od) _od.textContent = completed;
-          if (_arc) {
-            const filled = (completed / 3) * 175.9;
-            _arc.setAttribute('stroke-dasharray', filled + ' ' + (175.9 - filled));
-          }
-          document.getElementById('calProgPct').textContent   = pct+'%';
-          document.getElementById('calProgFill').style.width  = pct+'%';
-          document.getElementById('calObjs').innerHTML = objs.map(o => {
-            const done = o.completed||o.claimed;
-            return `<div class="cal-obj"><div class="cal-obj-dot ${done?'done':'todo'}"></div><span class="cal-obj-text ${done?'done':''}">${o.title}</span></div>`;
-          }).join('');
-        } else {
-          document.getElementById('calSubtitle').textContent = '3 objectifs t\'attendent';
-          document.getElementById('calObjs').innerHTML = ['🎰 Casino','📈 Bourse','🔥 Connexion'].map(t =>
-            `<div class="cal-obj"><div class="cal-obj-dot todo"></div><span>${t}</span></div>`
-          ).join('');
-        }
-      } catch(e) { console.log('calendar:', e.message); }
-    }
-
-    async function loadChatBadge() {
-      try {
-        const { data } = await sb.from('private_messages')
-          .select('id', { count: 'exact' })
-          .eq('receiver_id', currentUser.id)
-          .eq('read', false);
-        const count = (data && data.length) || 0;
-        const notif = document.getElementById('chatNotif');
-        if (notif) {
-          if (count > 0) {
-            notif.textContent = count > 9 ? '9+' : count;
-            notif.classList.remove('hidden');
-          } else {
-            notif.classList.add('hidden');
-          }
-        }
-      } catch(e) {}
-    }
-    function openSettings() { window.location.href = 'parametres.html'; }
-
-    function showClosed() {
-      const o = document.createElement('div');
-      o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;animation:fadeIn .25s ease';
-      o.onclick = () => o.remove();
-      o.innerHTML = '<div style="max-width:300px;width:88%;background:#12121a;border:1px solid #2a2a2a;border-radius:18px;padding:28px 22px;text-align:center"><div style="font-size:46px;margin-bottom:12px">🔒</div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:20px;letter-spacing:2px;color:#fff;margin-bottom:8px">SECTION FERMÉE</div><div style="font-size:13px;color:rgba(255,255,255,0.55);line-height:1.6">Cette section est fermée jusqu\'à nouvel ordre.</div></div>';
-      document.body.appendChild(o);
-    }
-
-    init();
-
-function getWorkSvg() {
-    return `<svg width="100%" height="100%" viewBox="0 0 390 260" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
-      <defs>
-        <linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#0d2d6e"/>
-          <stop offset="100%" stop-color="#1565C0"/>
-        </linearGradient>
-      </defs>
-      <rect width="390" height="260" fill="url(#wg)"/>
-      <!-- Halos concentriques coin haut droit -->
-      <circle cx="390" cy="0" r="320" fill="rgba(255,255,255,0.025)"/>
-      <circle cx="390" cy="0" r="250" fill="rgba(255,255,255,0.03)"/>
-      <circle cx="390" cy="0" r="190" fill="rgba(255,255,255,0.04)"/>
-      <circle cx="390" cy="0" r="135" fill="rgba(255,255,255,0.055)"/>
-      <circle cx="390" cy="0" r="88"  fill="rgba(255,255,255,0.08)"/>
-      <circle cx="390" cy="0" r="50"  fill="rgba(255,255,255,0.13)"/>
-      <circle cx="390" cy="0" r="22"  fill="rgba(255,255,255,0.22)"/>
-      <circle cx="390" cy="0" r="8"   fill="white"/>
-      <!-- Texte centré -->
-      <text x="195" y="148" text-anchor="middle" font-family="Bebas Neue, Impact, sans-serif" font-size="52" letter-spacing="4" fill="white">TRAVAILLER</text>
-      <text x="195" y="172" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="600" fill="rgba(255,255,255,0.45)" letter-spacing="2">ARGENT + XP</text>
-    </svg>`;
-  }
-  function initWorkBtn() { const c = document.getElementById('workSvgContainer'); if (c) c.innerHTML = getWorkSvg(); }
-
-    async function init() {
-      initWorkBtn();
-      const { data: _authData, error: _authError } = await sb.auth.getSession();
-      if (_authError || !_authData.session) {
-        await sb.auth.signOut().catch(() => {});
-        window.location.href = 'index.html';
-        return;
-      }
-      const session = _authData.session;
-      currentUser = session.user;
-      await loadUserData();
-      // Mettre à jour last_seen
-      await sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
-      loadChatBadge();
-      setInterval(loadChatBadge, 30000);
-      loadCalendar();
-
-
-      // Tout débloqué
-        document.querySelectorAll('.gated').forEach(el => el.classList.remove('gated'));
-    }
-
-
-
-
-
-    // Badge messagerie depuis localStorage
-    (function(){
-      const unread = parseInt(localStorage.getItem('bd_unread')||'0');
-      const badge = document.getElementById('msgUnreadBadge');
-      if(badge && unread > 0){ badge.style.display='block'; badge.textContent=unread; }
-    })();
-
-    async function loadUserData() {
-      const [profileResult, statsResult] = await Promise.all([
-        sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', currentUser.id).maybeSingle(),
-        sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
-      ]);
-
-      let profile = profileResult.data;
-      let stats   = statsResult.data;
-
-      if (!profile) {
-        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'rouge_navy' }, { onConflict: 'user_id' }).select().maybeSingle();
-        profile = data;
-      }
-      if (!stats) {
-        const { data } = await sb.from('game_stats').upsert({ user_id: currentUser.id, money: 1000, xp: 0, level: 1, grade: 'Docker Occasionnel', last_levelup_shown: 1 }, { onConflict: 'user_id' }).select().maybeSingle();
-        stats = data;
-      }
-      if (!profile || !stats) return;
-
-      // Recalcul du niveau à partir de l'XP accumulée (clicker, tower, pointeau…)
-      let _lvl = stats.level || 1;
-      const _startLvl = _lvl;
-      let _xp  = stats.xp || 0;
-      let _leveled = false;
-      while (_xp >= getXpRequired(_lvl)) {
-        _xp -= getXpRequired(_lvl);
-        _lvl++;
-        _leveled = true;
-      }
-      if (_leveled) {
-        stats.level = _lvl;
-        stats.xp = _xp;
-        await sb.from('game_stats').update({ level: _lvl, xp: _xp }).eq('user_id', currentUser.id);
-      }
-
-
-
-      // Variation Bourse — appelée au chargement + polling toutes les 15s
-      updateBanqueCard();
-      setInterval(updateBanqueCard, 30000);
-      loadFeedback();
-
-      // Avatar automatique selon le niveau — synchronisé partout via profiles.avatar_url
-      // (les avatars spéciaux choisis volontairement restent : 1M€ et tous succès)
-      // Respecter l'avatar choisi par le joueur s'il est valide
-      const _allAvatars = ['avatar-default.png','avatar-level-2.png','avatar-level-3.png',
-        'avatar-level-4.png','avatar-level-5.png','avatar-level-10.png','avatar-level-13.png',
-        'avatar-level-15.png','avatar-level-17.png','avatar-level-20.png','avatar-level-30.png',
-        'avatar-level-50.png','avatar-millionaire.png','avatar-completionist.png'];
-      const _autoAvatar = avatarForLevel(stats.level || 1);
-      const _savedAvatar = profile.avatar_url;
-      if (_savedAvatar && _allAvatars.indexOf(_savedAvatar) !== -1) {
-        // Avatar valide choisi par le joueur — on respecte
-        document.getElementById('avatarImage').src = _savedAvatar;
-      } else {
-        // Pas d'avatar ou invalide — on assigne selon le niveau
-        document.getElementById('avatarImage').src = _autoAvatar;
-        sb.from('profiles').update({ avatar_url: _autoAvatar }).eq('user_id', currentUser.id).then(function(){}).catch(function(){});
-      }
-
-      document.getElementById('playerName').textContent  = profile.username;
-
-      const _pcBtn = document.getElementById('profileCardBtn');
-      if (_pcBtn) { _pcBtn.onclick = null; _pcBtn.style.cursor = 'default'; }
-
-      const level = stats.level || 1, xp = stats.xp || 0;
-      const xpNeeded = getXpRequired(level);
-      const pct = Math.min((xp / xpNeeded) * 100, 100);
-      document.getElementById('currentLevel').textContent = level;
-      const gradeEl = document.getElementById('playerGrade');
-      if (gradeEl) gradeEl.textContent = getGrade(level);
-      updateSkillTree(level);
-      // Casino : débloqué au niveau 5
-      const casinoCard = document.getElementById('casinoCard');
-      if (casinoCard) {
-        if (level >= 5) {
-          casinoCard.style.opacity = '1';
-          casinoCard.style.pointerEvents = 'auto';
-          casinoCard.style.filter = '';
-          casinoCard.onclick = function() { window.location.href = 'casino.html'; };
-        } else {
-          casinoCard.style.opacity = '0.45';
-          casinoCard.style.pointerEvents = 'auto';
-          casinoCard.style.filter = 'grayscale(60%)';
-          casinoCard.onclick = function() {
-            var needed = 5 - level;
-            showToastGame('🎰 Niveau 5 requis pour débloquer le Casino ! (encore ' + needed + ' niveau' + (needed > 1 ? 'x' : '') + ')');
-          };
-        }
-      }
-      document.getElementById('nextLevel').textContent    = level + 1;
-      document.getElementById('xpCounter').textContent   = `${xp} / ${xpNeeded} XP`;
-      document.getElementById('xpFill').style.width      = pct + '%';
-
-      const fmtM = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
-      const moneyVal = stats.money || 0;
-      document.getElementById('moneyAmount').textContent    = fmtM(moneyVal);
-      localStorage.setItem('bd_money', moneyVal);
-      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
-      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
-      const fmtM2 = v => v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';
-      if(document.getElementById('hdrMoney')) document.getElementById('hdrMoney').textContent = fmtM2(stats.money||0);
-
-
-      const sk = document.getElementById('profileSkeleton');
-      const pc = document.getElementById('profileCardBtn');
-      if (sk) sk.style.display = 'none';
-      if (pc) pc.style.display = '';
-      // Appliquer la cover — après affichage du header
-      requestAnimationFrame(function(){
-        const _coverCss = getCoverCss(profile.background_color);
-        const _cv = document.querySelector('.header-cover');
-        if (_cv) _cv.style.background = _coverCss;
-        localStorage.setItem('bd_cover', _coverCss);
-      });
-
-      loadRank(stats.level || 1);
-      await checkPendingLevelUp(stats, profile);
-      document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
-      document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
-    }
-
-    let _levelUpBusy = false;
-    async function checkPendingLevelUp(stats, profile) {
-      if (_levelUpBusy) return;
-      const level = stats.level || 1, lastShown = stats.last_levelup_shown || 1;
-      if (level <= lastShown) return;
-
-      // Garde sessionStorage : empêche tout re-déclenchement dans la même session navigateur
-      // (protection contre lecture Supabase en retard ou navigation rapide)
-      const ssKey = 'bd_lvlup_' + ((currentUser && currentUser.id) || 'x');
-      const ssLevel = parseInt(sessionStorage.getItem(ssKey) || '0');
-      if (level <= ssLevel) return;
-      sessionStorage.setItem(ssKey, level); // marquer immédiatement côté client
-
-      _levelUpBusy = true;
-      try {
-        // Marquer IMMÉDIATEMENT en base pour empêcher le double-octroi multi-onglets
-        await sb.from('game_stats').update({ last_levelup_shown: level }).eq('user_id', currentUser.id);
-        stats.last_levelup_shown = level;
-        // Cumuler les récompenses de TOUS les niveaux franchis
-        let addMoney = 0, addDiamonds = 0, addTrophies = 0;
-        for (let i = lastShown + 1; i <= level; i++) {
-          let diamonds, trophies, money;
-          if (i <= 10)      { diamonds = 3;  trophies = 1; money = i * 500; }
-          else if (i <= 25) { diamonds = 5;  trophies = 1; money = i * 1000; }
-          else if (i <= 50) { diamonds = 8;  trophies = 2; money = i * 2000; }
-          else               { diamonds = 15; trophies = 3; money = i * 5000; }
-          const rewards = { diamonds, trophies, money };
-          addMoney += rewards.money; addDiamonds += rewards.diamonds; addTrophies += rewards.trophies;
-          await new Promise(resolve => { showLevelUpPopup(i, rewards, resolve); });
-        }
-        const newMoney    = (stats.money || 0)    + addMoney;
-        const newDiamonds = (stats.diamonds || 0) + addDiamonds;
-        const newTrophies = (stats.trophies || 0) + addTrophies;
-        await sb.from('game_stats').update({ money: newMoney, diamonds: newDiamonds, trophies: newTrophies }).eq('user_id', currentUser.id);
-        stats.money = newMoney; stats.diamonds = newDiamonds; stats.trophies = newTrophies;
-        // Rafraîchir l'affichage sans relancer loadUserData (évite la ré-entrée)
-        const mEl = document.getElementById('moneyAmount');    if (mEl) mEl.textContent = newMoney.toLocaleString('fr-FR') + '€';
-        const dEl = document.getElementById('diamondsAmount'); if (dEl) dEl.textContent = '💎 ' + newDiamonds;
-        const tEl = document.getElementById('trophiesAmount'); if (tEl) tEl.textContent = '🏆 ' + newTrophies;
-      } finally {
-        _levelUpBusy = false;
-      }
-    }
-
-    function showLevelUpPopup(level, rewards, onClose) {
-      const grade = getGrade(level);
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:99999;padding:20px;animation:fadeInOverlay 0.2s ease;';
-      overlay.innerHTML = `
-        <div style="background:white;border-radius:20px;padding:36px 28px;max-width:380px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,0.25);animation:popIn 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);">
-          <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Niveau atteint</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:80px;color:#1d4ed8;line-height:1;margin-bottom:4px;">${level}</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#6b7280;letter-spacing:1.5px;margin-bottom:24px;">${grade}</div>
-          <div style="background:#f8faff;border:1px solid #dbeafe;border-radius:14px;padding:18px;margin-bottom:20px;">
-            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Récompenses</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💰</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.money.toLocaleString('fr-FR')}€</div></div>
-              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">💎</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#1d4ed8;">+${rewards.diamonds}</div></div>
-              <div style="background:white;border:1px solid #e5e7eb;border-radius:10px;padding:12px 6px;"><div style="font-size:28px;margin-bottom:4px;">🏆</div><div style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#d97706;">+${rewards.trophies}</div></div>
-            </div>
-          </div>
-          <button onclick="this.closest('[style*=fixed]').remove(); if(typeof __lvlClose==='function')__lvlClose();" style="width:100%;background:#1d4ed8;color:white;border:none;border-radius:10px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;cursor:pointer;" onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1d4ed8'">CONTINUER 🚀</button>
-        </div>
-      `;
-      window.__lvlClose = onClose;
-      document.body.appendChild(overlay);
-    }
-
-
-
-    init();
-  </script>
-<script>
-    // PWA service worker uniquement
-    (function () {
-
-      // Service worker (rend le jeu installable + repli hors-ligne léger)
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
-      }
-    })();
-  
-    function showToastGame(msg) {
-      var t = document.getElementById('gameToast');
-      if (!t) {
-        t = document.createElement('div');
-        t.id = 'gameToast';
-        t.style.cssText = 'position:fixed;top:calc(70px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:10px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1);max-width:90vw;text-align:center';
-        document.body.appendChild(t);
-      }
-      t.textContent = msg;
-      t.style.opacity = '1';
-      clearTimeout(t._timeout);
-      t._timeout = setTimeout(function() { t.style.opacity = '0'; }, 3000);
-    }
-
-    // ══ FEEDBACK ══
-    var _fbType = 'idea';
-
-    function setFbType(type) {
-      _fbType = type;
-      var colors = {idea:'#cc1a1a', bug:'#f59e0b', general:'rgba(255,255,255,.2)'};
-      var labels = {idea:'💡 IDÉE', bug:'🐛 BUG', general:'💬 AUTRE'};
-      ['idea','bug','general'].forEach(function(t) {
-        var btn = document.getElementById('fb-type-'+t);
-        if(!btn) return;
-        btn.style.background = t === type ? colors[t] : 'rgba(255,255,255,.08)';
-        btn.style.color = t === type ? 'white' : 'rgba(255,255,255,.5)';
-      });
-    }
-
-    async function submitFeedback() {
-      var input = document.getElementById('fb-input');
-      var msg = input ? input.value.trim() : '';
-      if(!msg || msg.length < 3) { return; }
-      var btn = document.getElementById('fb-submit');
-      if(btn) { btn.disabled = true; btn.textContent = '...'; }
-      var uname = document.getElementById('playerName') ? document.getElementById('playerName').textContent : 'Docker';
-      var uid = null;
-      try { var s2 = await sb.auth.getSession(); uid = s2.data.session ? s2.data.session.user.id : null; } catch(e){}
-      await sb.from('feedback').insert({ user_id: uid, username: uname, message: msg, type: _fbType });
-      if(input) input.value = '';
-      var count = document.getElementById('fb-count');
-      if(count) count.textContent = '0/200';
-      if(btn) { btn.disabled = false; btn.textContent = '✓ ENVOYÉ !'; setTimeout(function(){ btn.textContent = 'ENVOYER →'; }, 2000); }
-      loadFeedback();
-    }
-
-    async function loadFeedback() {
-      var feed = document.getElementById('fb-feed');
-      if(!feed) return;
-      var res = await sb.from('feedback').select('id,username,message,type,created_at,likes').order('created_at', { ascending: false }).limit(10);
-      var data = res.data;
-      if(!data || !data.length) {
-        feed.innerHTML = '<div style="font-size:10px;color:rgba(255,255,255,.2);text-align:center;padding:6px">Sois le premier a partager une idee !</div>';
-        return;
-      }
-      var icons = {idea:'💡', bug:'🐛', general:'💬'};
-      feed.innerHTML = '';
-      data.forEach(function(f) {
-        var when = Math.floor((Date.now()-new Date(f.created_at).getTime())/60000);
-        var whenStr = when < 1 ? 'maintenant' : when < 60 ? when+'min' : Math.floor(when/60)+'h';
-        var card = document.createElement('div');
-        card.style.cssText = 'background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:9px 10px';
-        card.innerHTML = '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
-          +'<span style="font-size:11px">'+(icons[f.type]||'💬')+'</span>'
-          +'<span style="font-size:10px;font-weight:700;color:rgba(255,255,255,.6)">'+(f.username||'Docker')+'</span>'
-          +'<span style="font-size:9px;color:rgba(255,255,255,.2);margin-left:auto">'+whenStr+'</span>'
-          +'</div><div style="font-size:11px;color:rgba(255,255,255,.75);line-height:1.4">'+f.message+'</div>';
-        var likeBtn = document.createElement('button');
-        likeBtn.style.cssText = 'margin-top:5px;background:rgba(255,255,255,.06);border:none;border-radius:5px;padding:3px 8px;font-size:10px;color:rgba(255,255,255,.5);cursor:pointer';
-        likeBtn.textContent = String.fromCodePoint(0x2764)+' '+(f.likes||0);
-        likeBtn.onclick = (function(fid){ return function(){ likeFeedback(fid); }; })(f.id);
-        card.appendChild(likeBtn);
-        feed.appendChild(card);
-      });
-    }
-
-    async function likeFeedback(id) {
-      var { data } = await sb.from('feedback').select('likes').eq('id', id).maybeSingle();
-      var newLikes = ((data && data.likes) || 0) + 1;
-      await sb.from('feedback').update({ likes: newLikes }).eq('id', id);
-      loadFeedback();
-    }
-
-    </script>
-
-<script>
-// ══ BRIDGE ══
-(function waitForProfile(){
-  var iv = setInterval(function(){
-    var pcb = document.getElementById('profileCardBtn');
-    if(pcb && pcb.style.display !== 'none'){
-      var eb = document.getElementById('edBody');
-      if(eb) eb.style.display = 'block';
-      clearInterval(iv);
-    }
-  }, 150);
-})();
-
-// Charger l'entreprise
-(function loadCoCard(){
-  var iv = setInterval(async function(){
-    if(typeof sb === 'undefined') return;
-    try{
-      var sess = await sb.auth.getSession();
-      if(!sess.data.session){clearInterval(iv);return;}
-      var res = await sb.from('companies')
-        .select('nom,name,valeur,niveau,emoji,color')
-        .eq('user_id',sess.data.session.user.id)
-        .maybeSingle();
-      if(!res.data) return;
-      var co = res.data;
-      var fmtV = function(v){return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':v+'€';};
-      var nm = document.getElementById('coName');
-      var sub = document.getElementById('coSub');
-      if(nm) nm.textContent = co.nom||co.name||'Mon Entreprise';
-      if(sub) sub.textContent = 'Niv.'+(co.niveau||1)+' · '+fmtV(co.valeur||0)+' · Gérer →';
-      var card = nm&&nm.closest('.card-wide');
-      if(card&&co.color){
-        card.style.background = co.color+'22';
-        var ico = card.querySelector('.card-wide-ico');
-        if(ico){ico.style.background=co.color;ico.textContent=co.emoji||'🏪';}
-      }
-      clearInterval(iv);
-    }catch(e){}
-  }, 2000);
-})();
-
-// Badge objectifs
-(function updateObjBadge(){
-  setInterval(async function(){
-    if(typeof sb==='undefined') return;
-    try{
-      var sess = await sb.auth.getSession();
-      if(!sess.data.session) return;
-      var today = new Date().toISOString().split('T')[0];
-      var res = await sb.from('daily_objectives')
-        .select('objectives')
-        .eq('user_id',sess.data.session.user.id)
-        .eq('date',today)
-        .maybeSingle();
-      if(!res.data||!res.data.objectives) return;
-      var done = res.data.objectives.filter(function(o){return o.claimed;}).length;
-      var total = res.data.objectives.length;
-      var remaining = total-done;
-      var badge = document.getElementById('objBadge');
-      var sub = document.getElementById('objSubTxt');
-      if(badge){badge.textContent=remaining;badge.style.display=remaining>0?'flex':'none';}
-      if(sub) sub.textContent = done+'/'+total+' complétés';
-    }catch(e){}
-  }, 5000);
-})();
-</script>
 </body>
 </html>
