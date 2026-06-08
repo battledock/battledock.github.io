@@ -223,7 +223,6 @@
   <div class="sort-toggle">
     <div class="sort-btn active" id="sortPower" onclick="setSort('power')">⚡ PUISSANCE</div>
     <div class="sort-btn" id="sortLevel" onclick="setSort('level')">🎖 NIVEAU</div>
-    <div class="sort-btn" id="sortCo" onclick="setSort('co')">🏪 COMMERCE</div>
   </div>
 
   <div class="filter-bar">
@@ -436,7 +435,7 @@
   // ── Filtre en ligne ──
   function setSort(mode) {
     sortMode = mode;
-    ['power','level','co'].forEach(m => {
+    ['power','level'].forEach(m => {
       var el = document.getElementById('sort'+m.charAt(0).toUpperCase()+m.slice(1));
       if(el) el.classList.toggle('active', m === mode);
     });
@@ -506,9 +505,9 @@
       // Profiles + prevRanks en parallèle
       const [profilesRes] = await Promise.all([
         sb.from('profiles').select('user_id, username, avatar_url, last_seen, background_color').in('user_id', stats.map(s => s.user_id)),
-        loadPrevRanks()
       ]);
       profiles = profilesRes.data;
+      loadPrevRanks();
     } catch(e) {
       clearTimeout(timeout);
       document.getElementById('skeletonWrap').style.display = 'none';
@@ -932,7 +931,7 @@
     currentUser = data.session.user;
     const updateLastSeen = () => sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
     updateLastSeen();
-    setInterval(updateLastSeen, 300000); // Rafraîchir toutes les 5 min
+    setInterval(updateLastSeen, 60000); // Rafraîchir toutes les 60s
     loadRanking();
   }
   init();
