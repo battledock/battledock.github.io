@@ -1,285 +1,175 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Travail - Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <script>
-    (function() {
-      const PASS = 'froid';
-      if (sessionStorage.getItem('bd_pass') === PASS) return;
-      fetch('https://drtsuhnbclhmgfjiykap.supabase.co/rest/v1/config?key=eq.maintenance&select=value', {
-        headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg' }
-      }).then(r=>r.json()).then(d=>{
-        if (d?.[0]?.value !== 'true') return;
-        // Afficher le popup maintenance
-        const overlay = document.createElement('div');
-        overlay.id = 'maintenanceOverlay';
-        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
-        overlay.innerHTML = `
-          <div style="background:white;border-radius:20px;padding:28px 22px;max-width:320px;width:90%;text-align:center">
-            <div style="font-size:48px;margin-bottom:12px">🔒</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#1a1a1a;margin-bottom:6px">En Maintenance</div>
-            <div style="font-size:12px;color:#6b7280;margin-bottom:20px;line-height:1.5">Le jeu est en cours de mise à jour.<br>Reviens bientôt !</div>
-            <input id="maintenanceInput" type="password" placeholder="Code d'accès..." style="-webkit-user-select:text;user-select:text;width:100%;padding:12px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:15px;outline:none;margin-bottom:10px;box-sizing:border-box;text-align:center;letter-spacing:3px">
-            <button onclick="checkMaintenancePass()" style="width:100%;padding:13px;background:#1a1a1a;border:none;border-radius:10px;color:white;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer">ENTRER</button>
-            <div id="maintenanceError" style="font-size:11px;color:#ef4444;margin-top:8px;display:none">Code incorrect</div>
-          </div>`;
-        document.body.appendChild(overlay);
-        document.body.style.overflow = 'hidden';
-        setTimeout(() => document.getElementById('maintenanceInput')?.focus(), 100);
-      }).catch(()=>{});
-    })();
-  </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Travail — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+body { font-family:'Inter',sans-serif; background:#f8f8f8; min-height:100dvh; display:flex; flex-direction:column; padding-bottom:70px; }
 
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+/* TITRE PAGE */
+.page-title {
+  padding:20px 16px 12px;
+  border-bottom:1px solid #f0f0f0;
+  background:#fff;
+}
+.page-title-main { font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:3px;color:#0f172a;line-height:1; }
+.page-title-sub { font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:2px;text-transform:uppercase;margin-top:4px; }
 
-    body {
-      font-family:'Inter',sans-serif;
-      background:#0a1628;
-      min-height:100dvh;
-      display:flex; flex-direction:column;
-      overflow-y:auto;
-    }
+/* SECTION LABEL */
+.section-label { font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px;text-transform:uppercase;padding:16px 16px 8px; }
 
-    /* FOND */
-    body::before {
-      content:'';
-      position:fixed; inset:0; z-index:0;
-      background:
-        linear-gradient(180deg,#0ea5e9 0%,#0284c7 40%,#1d4ed8 100%);
-      pointer-events:none;
-    }
+/* CARTE ACTIVITÉ */
+.activity-card {
+  margin:0 16px;
+  border-radius:16px; overflow:hidden;
+  border:1.5px solid #f0f0f0;
+  cursor:pointer;
+  transition:transform .15s;
+  background:#fff;
+  box-shadow:0 4px 20px rgba(0,0,0,0.06);
+}
+.activity-card:active { transform:scale(0.98); }
 
-    /* VAGUES */
-    .waves-wrap { position:fixed; bottom:0; left:0; right:0; height:120px; z-index:1; pointer-events:none; overflow:hidden; }
-    .waves-wrap svg { width:200%; height:100%; animation:waveMove 5s linear infinite; }
-    @keyframes sunFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+/* ILLUSTRATION PORT */
+.activity-illus {
+  height:180px; position:relative; overflow:hidden;
+  background:linear-gradient(180deg,#0ea5e9 0%,#38bdf8 40%,#7dd3fc 55%,#2563eb 55%,#1d4ed8 100%);
+}
+.illus-sun { position:absolute;top:14px;right:20px;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#fef08a,#fbbf24);box-shadow:0 0 24px rgba(251,191,36,0.65); }
+.illus-cloud { position:absolute;top:16px;left:16px;background:white;opacity:0.9;border-radius:50px;width:60px;height:18px; }
+.illus-cloud::before { content:'';position:absolute;background:white;border-radius:50%;width:26px;height:26px;top:-13px;left:8px; }
+.illus-cloud::after  { content:'';position:absolute;background:white;border-radius:50%;width:18px;height:18px;top:-9px;left:28px; }
+.illus-sea { position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(180deg,#1e3a8a,#1d4ed8); }
+.illus-quai { position:absolute;bottom:0;left:0;right:0;height:20px;background:#374151;border-top:3px solid #4b5563; }
+.illus-grue-v { position:absolute;left:20px;bottom:20px;width:5px;height:55px;background:#6b7280; }
+.illus-grue-h { position:absolute;left:20px;bottom:73px;width:44px;height:4px;background:#6b7280; }
+.illus-grue-c { position:absolute;left:62px;bottom:55px;width:2px;height:20px;background:#9ca3af; }
+.illus-container { position:absolute;bottom:20px;left:50%;transform:translateX(-50%);width:100px;height:66px;background:linear-gradient(135deg,#cc2200,#991100);border-radius:6px;border:2px solid rgba(255,255,255,0.2);box-shadow:0 -4px 20px rgba(0,0,0,0.5),0 0 20px rgba(204,34,0,0.35); }
+.illus-container-s1 { position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:25px; }
+.illus-container-s2 { position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:52px; }
+.illus-container-s3 { position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:79px; }
+.illus-container2 { position:absolute;bottom:20px;right:14px;width:48px;height:32px;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);border-radius:3px;border:1px solid rgba(255,255,255,0.15); }
 
-    /* HEADER — style shop */
-    .header {
-      position:fixed; bottom:0; left:0; right:0; z-index:10;
-      background:rgba(2,100,180,0.75);
-      backdrop-filter:blur(12px);
-      border-top:1px solid rgba(255,255,255,0.15);
-      padding:14px 16px;
-      display:flex; align-items:center; gap:12px;
-    }
-    .back-btn {
-      background:white; border:none;
-      border-radius:10px; padding:11px 20px;
-      font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:2px;
-      color:#0264b4; cursor:pointer; transition:all 0.2s;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15);
-      flex:1;
-    }
-    .back-btn:active { transform:scale(0.97); opacity:0.9; }
-    .header-anchor { font-size:22px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+/* INFO CARTE */
+.activity-info { padding:14px 16px;display:flex;align-items:center;gap:14px; }
+.activity-text { flex:1; }
+.activity-name { font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#0f172a;line-height:1; }
+.activity-desc { font-size:11px;color:#9ca3af;margin-top:2px; }
+.activity-chevron { color:#0f172a;font-size:22px;opacity:0.2; }
 
-    /* HERO */
-    .hero {
-      position:relative; z-index:2;
-      padding:20px 20px 16px; text-align:center;
-      border-bottom:1px solid rgba(255,255,255,0.1);
-    }
-    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:28px; letter-spacing:4px; color:white; text-shadow:0 0 20px rgba(255,255,255,0.2); }
-    .hero-sub { font-size:11px; color:rgba(255,255,255,0.55); letter-spacing:2px; margin-top:4px; text-transform:uppercase; }
+/* CLASSEMENT ROW */
+.rank-row {
+  margin:10px 16px 0;
+  background:#fff;border-radius:12px;border:1.5px solid #f0f0f0;
+  padding:12px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:transform .15s;
+  box-shadow:0 2px 10px rgba(0,0,0,0.04);
+}
+.rank-row:active { transform:scale(0.98); }
+.rank-icon { width:36px;height:36px;background:#eff6ff;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0; }
+.rank-text { flex:1; }
+.rank-name { font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;color:#1565c0; }
+.rank-sub { font-size:11px;color:#9ca3af;margin-top:1px; }
+.rank-arrow { font-size:18px;color:#d1d5db; }
 
-    /* CONTENU */
-    .content {
-      position:relative; z-index:2;
-      flex:1; display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      padding:10px 16px 100px; gap:16px;
-    }
+/* BARRE BAS */
+.bottom-bar {
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-top:1px solid rgba(15,23,42,0.08);
+  box-shadow:0 -4px 20px rgba(15,23,42,0.07);
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+}
+.back-btn {
+  width:100%;padding:13px;
+  background:#0f172a;border:none;border-radius:12px;
+  font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;
+  color:white;cursor:pointer;transition:opacity .15s;
+}
+.back-btn:active { opacity:0.8; }
 
-    /* CARTE */
-    .game-card {
-      width:100%; max-width:400px;
-      border-radius:18px; overflow:hidden;
-      cursor:pointer;
-      box-shadow:0 12px 40px rgba(0,0,0,0.35);
-      transition:transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .game-card:active { transform:scale(0.97); box-shadow:0 4px 16px rgba(0,0,0,0.3); }
-
-    /* PREVIEW CLICKER */
-    .preview-clicker {
-      height:150px; position:relative; overflow:hidden;
-      background:linear-gradient(180deg,#87ceeb 0%,#b8e4f7 55%,#c8a882 55%,#8b7355 100%);
-    }
-    .pc-sun { position:absolute; top:12px; right:18px; width:38px; height:38px; border-radius:50%; background:radial-gradient(circle,#fde68a,#fbbf24); box-shadow:0 0 20px rgba(251,191,36,0.6); animation:pcFloat 4s ease-in-out infinite; }
-    .pc-cloud { position:absolute; top:16px; left:14px; font-size:24px; opacity:0.8; animation:pcFloat 5s ease-in-out infinite; animation-delay:-2s; }
-    .pc-grue { position:absolute; right:20px; top:18px; font-size:30px; opacity:0.6; }
-    .pc-container {
-      position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-      width:100px; height:66px;
-      background:linear-gradient(135deg,#cc2200,#991100);
-      border-radius:6px; border:2px solid rgba(255,255,255,0.2);
-      box-shadow:0 6px 20px rgba(0,0,0,0.5), 0 0 16px rgba(204,34,0,0.3);
-      overflow:hidden; display:flex; align-items:center; justify-content:center;
-      animation:pcFloat 2.5s ease-in-out infinite;
-    }
-    .pc-stripe { position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.25); }
-    .pc-label { font-family:'Bebas Neue',sans-serif; font-size:12px; color:rgba(255,255,255,0.85); letter-spacing:2px; position:relative; z-index:1; }
-    @keyframes pcFloat { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-7px)} }
-
-    /* PREVIEW TOWER */
-    .pt-bg {
-      position:absolute; inset:0;
-      background:
-        repeating-linear-gradient(0deg,transparent,transparent 14px,rgba(255,255,255,0.02) 14px,rgba(255,255,255,0.02) 15px),
-        repeating-linear-gradient(90deg,transparent,transparent 29px,rgba(255,255,255,0.015) 29px,rgba(255,255,255,0.015) 30px);
-    }
-    .pt-beam-h { position:absolute; top:0; left:0; right:0; height:8px; background:linear-gradient(180deg,#1e1e1e,#2a2a2a); border-bottom:1px solid #333; }
-    .pt-beam-v { position:absolute; top:0; bottom:0; width:6px; background:linear-gradient(90deg,#1a1a1a,#2a2a2a,#1a1a1a); }
-    .pt-lamp { position:absolute; top:0; display:flex; flex-direction:column; align-items:center; }
-    .pt-lamp-body { width:18px; height:10px; background:#222; border-radius:2px; border:1px solid #333; }
-    .pt-lamp-cone { width:0; height:0; border-left:30px solid transparent; border-right:30px solid transparent; border-top:45px solid rgba(255,215,60,0.07); }
-    .pt-floor { position:absolute; bottom:0; left:0; right:0; height:12px; background:#222; border-top:2px solid #2d2d2d; }
-    .pt-danger { position:absolute; bottom:0; left:0; right:0; height:8px; background:repeating-linear-gradient(90deg,#f59e0b,#f59e0b 14px,#111 14px,#111 28px); opacity:0.45; }
-    .pt-stack { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column-reverse; align-items:center; gap:2px; }
-    .pt-block { height:14px; border-radius:2px; border:1px solid rgba(255,255,255,0.15); }
-
-    /* INFO BAS DE CARTE */
-    .card-info { background:white; padding:14px 16px; display:flex; align-items:center; gap:12px; }
-    .card-icon-wrap { width:42px; height:42px; border-radius:11px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-    .card-icon-blue { background:linear-gradient(135deg,#0ea5e9,#1d4ed8); box-shadow:0 4px 12px rgba(14,165,233,0.3); }
-    .card-icon-amber { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 4px 12px rgba(245,158,11,0.3); }
-    .card-title { font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:1.5px; color:#1a1a1a; }
-    .card-desc  { font-size:11px; color:#9ca3af; margin-top:1px; }
-    .card-badge { font-size:9px; font-weight:700; padding:3px 10px; border-radius:20px; flex-shrink:0; }
-    .badge-green  { background:rgba(22,163,74,0.1);  color:#16a34a; }
-    .badge-purple { background:rgba(124,58,237,0.1); color:#7c3aed; }
-    .badge-lock   { background:rgba(107,114,128,0.1); color:#6b7280; }
-  </style>
+/* TOAST */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}
+</style>
 </head>
 <body>
 
-  <!-- VAGUES -->
-  <div class="waves-wrap">
-    <svg viewBox="0 0 1440 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0,60 C240,100 480,20 720,60 C960,100 1200,20 1440,60 L1440,120 L0,120 Z" fill="rgba(0,0,0,0.15)"/>
-      <path d="M0,80 C360,40 720,110 1080,70 C1260,50 1350,90 1440,80 L1440,120 L0,120 Z" fill="rgba(0,0,0,0.1)"/>
-    </svg>
-  </div>
+<!-- TITRE -->
+<div class="page-title">
+  <div class="page-title-main">CHOISIR UNE ACTIVITÉ</div>
+  <div class="page-title-sub">Port de Marseille · Battle Dock</div>
+</div>
 
-    
-  </div>
+<div class="section-label">Activités disponibles</div>
 
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-title">Choisir une activité</div>
-    <div class="hero-sub">Port de Marseille · Battle Dock</div>
-  </div>
-
-  <div class="content">
-
-    <!-- PORT -->
-    <div class="game-card" onclick="window.location.href='clicker.html'">
-      <!-- ILLUSTRATION PORT -->
-      <div style="height:200px;position:relative;overflow:hidden;background:linear-gradient(180deg,#0ea5e9 0%,#38bdf8 40%,#7dd3fc 55%,#2563eb 55%,#1d4ed8 100%)">
-        <!-- CIEL dégradé -->
-        <!-- Soleil -->
-        <div style="position:absolute;top:16px;right:24px;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle,#fef08a,#fbbf24);box-shadow:0 0 30px rgba(251,191,36,0.7);animation:sunFloat 4s ease-in-out infinite"></div>
-        <!-- Nuage 1 -->
-        <div style="position:absolute;top:18px;left:16px">
-          <div style="background:white;opacity:0.9;border-radius:50px;width:60px;height:20px;position:relative">
-            <div style="background:white;opacity:0.9;border-radius:50%;width:28px;height:28px;position:absolute;top:-14px;left:8px"></div>
-            <div style="background:white;opacity:0.9;border-radius:50%;width:20px;height:20px;position:absolute;top:-10px;left:28px"></div>
-          </div>
-        </div>
-        <!-- Nuage 2 -->
-        <div style="position:absolute;top:28px;left:50%">
-          <div style="background:white;opacity:0.7;border-radius:50px;width:44px;height:14px;position:relative">
-            <div style="background:white;opacity:0.7;border-radius:50%;width:20px;height:20px;position:absolute;top:-10px;left:6px"></div>
-          </div>
-        </div>
-        <!-- MER -->
-        <!-- Vague -->
-        <div style="position:absolute;top:calc(55% - 6px);left:0;right:0;height:12px;background:rgba(255,255,255,0.15);border-radius:50%"></div>
-        <!-- QUAI -->
-        <div style="position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(180deg,#1e3a8a,#1d4ed8)">
-          <!-- Sol quai béton -->
-          <div style="position:absolute;bottom:0;left:0;right:0;height:22px;background:#374151;border-top:3px solid #4b5563"></div>
-          <!-- Grue à gauche -->
-          <div style="position:absolute;left:14px;bottom:22px">
-            <div style="width:6px;height:60px;background:#6b7280;margin:0 auto"></div>
-            <div style="width:50px;height:5px;background:#6b7280;position:absolute;top:0;left:0"></div>
-            <div style="width:2px;height:28px;background:#9ca3af;position:absolute;top:5px;left:48px"></div>
-          </div>
-          <!-- CONTENEUR PRINCIPAL -->
-          <div style="position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:110px;height:70px;background:linear-gradient(135deg,#cc2200,#991100);border-radius:6px;border:2px solid rgba(255,255,255,0.2);box-shadow:0 -4px 20px rgba(0,0,0,0.5),0 0 20px rgba(204,34,0,0.4)">
-            <div style="position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:25px"></div>
-            <div style="position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:52px"></div>
-            <div style="position:absolute;top:0;bottom:0;width:2px;background:rgba(0,0,0,0.3);left:79px"></div>
-            <div style="position:absolute;top:0;left:0;right:0;height:5px;background:rgba(255,255,255,0.2);border-radius:4px 4px 0 0"></div>
-            <div style="position:absolute;bottom:0;left:0;right:0;height:5px;background:rgba(0,0,0,0.2)"></div>
-            
-          </div>
-          <!-- Conteneur petit à droite -->
-          <div style="position:absolute;bottom:22px;right:16px;width:52px;height:36px;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);border-radius:3px;border:1px solid rgba(255,255,255,0.15)">
-            <div style="position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.3);left:18px"></div>
-            <div style="position:absolute;top:0;bottom:0;width:1px;background:rgba(0,0,0,0.3);left:34px"></div>
-          </div>
-        </div>
-        <!-- Reflet eau -->
-        
-      </div>
-      <!-- INFO -->
-      <div style="background:white;padding:16px 18px;display:flex;align-items:center;gap:14px">
-        <div style="flex:1">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#1a1a1a">Port Maritime</div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:2px">Clique · Gagne de l'argent · XP</div>
-        </div>
-        <button style="background:linear-gradient(135deg,#0ea5e9,#1d4ed8);border:none;color:white;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;padding:10px 20px;border-radius:10px;cursor:pointer;box-shadow:0 4px 12px rgba(14,165,233,0.4)">JOUER →</button>
-      </div>
+<!-- CARTE PORT MARITIME -->
+<div class="activity-card" onclick="window.location.href='clicker.html'">
+  <div class="activity-illus">
+    <div class="illus-sun"></div>
+    <div class="illus-cloud"></div>
+    <div class="illus-sea"></div>
+    <div class="illus-quai"></div>
+    <div class="illus-grue-v"></div>
+    <div class="illus-grue-h"></div>
+    <div class="illus-grue-c"></div>
+    <div class="illus-container">
+      <div class="illus-container-s1"></div>
+      <div class="illus-container-s2"></div>
+      <div class="illus-container-s3"></div>
     </div>
-
-    <!-- CLASSEMENT CLICKER -->
-    <div onclick="window.location.href='clicker-scores.html'" style="background:white;border-top:1px solid #f0f0f0;padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer">
-      <div style="width:36px;height:36px;background:#EFF6FF;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏆</div>
-      <div style="flex:1">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:#1565C0">CLASSEMENT CLIQUEURS</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:1px">Voir le top des dockers</div>
-      </div>
-      <div style="font-size:18px;color:#d1d5db">›</div>
+    <div class="illus-container2"></div>
+  </div>
+  <div class="activity-info">
+    <div class="activity-text">
+      <div class="activity-name">Port Maritime</div>
+      <div class="activity-desc">Clique · Gagne de l'argent · XP</div>
     </div>
-
+    <div class="activity-chevron">›</div>
   </div>
+</div>
 
-  <script>
-    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
-
-    // Vérifier déblocage via histoire CH.2
-    async function init() {
-      const { data:{ session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      const { data } = await sb.from('game_stats').select('story_progress').eq('user_id', session.user.id).maybeSingle();
-      const progress = data?.story_progress || {};
-
-      if (!progress.scene2_done) {
-      }
-    }
-
-    function showToast(msg) {
-      let t = document.getElementById('toast');
-      if (!t) { t = document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:white;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;white-space:nowrap'; document.body.appendChild(t); }
-      t.textContent = msg; t.style.opacity = '1';
-      setTimeout(() => t.style.opacity = '0', 2800);
-    }
-
-    init();
-  </script>  <!-- HEADER BAS -->
-  <div class="header">
-    <button class="back-btn" onclick="window.location.href='game.html'">⬅ RETOUR AU PORT</button>
+<!-- CLASSEMENT -->
+<div class="rank-row" onclick="window.location.href='clicker-scores.html'">
+  <div class="rank-icon">🏆</div>
+  <div class="rank-text">
+    <div class="rank-name">CLASSEMENT CLIQUEURS</div>
+    <div class="rank-sub">Voir le top des dockers</div>
   </div>
+  <div class="rank-arrow">›</div>
+</div>
 
+<!-- BARRE BAS -->
+<div class="bottom-bar">
+  <button class="back-btn" onclick="window.location.href='game.html'">⬅ RETOUR AU PORT</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+async function init() {
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+  } catch(e) {
+    showToast('❌ Erreur de connexion');
+  }
+}
+
+init();
+</script>
 </body>
 </html>
