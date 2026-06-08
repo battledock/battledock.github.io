@@ -439,6 +439,10 @@
     const { data: { session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'index.html'; return; }
     currentUser = session.user;
+    // ── Last seen ──
+    const _lsUpdate = () => sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', currentUser.id);
+    _lsUpdate();
+    setInterval(_lsUpdate, 60000);
 
     const { data: stats } = await sb.from('game_stats')
       .select('money,xp,level,xp_per_click,money_per_click,records').eq('user_id', currentUser.id).maybeSingle();
@@ -810,16 +814,7 @@
   window.addEventListener('beforeunload', save);
   init();
 
-    // ── Last seen (présence en ligne) ──
-    const _lsUpdate = () => {
-      sb.auth.getUser().then(({ data }) => {
-        if (data?.user?.id) {
-          sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', data.user.id);
-        }
-      });
-    };
-    _lsUpdate();
-    setInterval(_lsUpdate, 60000);
+
   </script>
 </body>
 </html>
