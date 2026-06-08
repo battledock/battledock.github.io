@@ -15,7 +15,6 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 .cover-edit{position:absolute;top:calc(14px + env(safe-area-inset-top));right:14px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.2);border-radius:20px;padding:5px 12px;color:white;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:1px}
 .cover-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;width:36px;height:36px;border-radius:10px;background:rgba(0,0,0,0.25);border:none;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 
-
 /* AVATAR */
 .av-wrap{position:absolute;bottom:-36px;left:50%;transform:translateX(-50%);width:72px;height:72px;border-radius:50%;border:4px solid white;overflow:hidden;background:#dbeafe;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
 .av-wrap img{width:100%;height:100%;object-fit:cover}
@@ -39,8 +38,7 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 .xp-card{background:white;border-radius:12px;padding:12px 14px;margin-bottom:12px;border:1.5px solid #e5e7eb}
 .xp-header{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:#9ca3af;margin-bottom:6px}
 .xp-bar{background:#f3f4f6;border-radius:10px;height:7px;overflow:hidden}
-.xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#cc1a1a,#fbbf24);transition:width .5s ease}
-.xp-next{font-size:9px;color:#9ca3af;margin-top:4px;text-align:right}
+.xp-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060);transition:width .5s ease}
 
 /* STATS GRID */
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
@@ -51,8 +49,8 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 /* TITLE */
 .section-title{font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;text-align:left}
 
-/* PSEUDO EDITOR */
-.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:flex-end;display:none}
+/* OVERLAYS */
+.edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end}
 .edit-overlay.show{display:flex}
 .edit-sheet{background:white;border-radius:20px 20px 0 0;padding:20px 16px calc(24px + env(safe-area-inset-bottom));width:100%;max-width:500px;margin:0 auto}
 .edit-title{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:2px;margin-bottom:14px}
@@ -66,17 +64,20 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
 /* TOAST */
 .toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;z-index:300;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
+
+/* ERREUR */
+.error-wrap{padding:24px 16px;text-align:center;color:#9ca3af;font-size:13px}
+.error-wrap button{margin-top:12px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;padding:10px 20px;border:none;border-radius:8px;background:#1a1a1a;color:#fbbf24;cursor:pointer}
 </style>
 </head>
 <body>
 
 <!-- COVER -->
-<div class="cover">
+<div class="cover" id="coverEl">
   <button class="cover-back" onclick="window.location.href='game.html'">←</button>
   <button class="cover-edit" onclick="openCoverPicker()">🎨 FOND</button>
-  <div class="av-wrap" id="avWrap" onclick="openAvatarPicker()" style="cursor:pointer">
+  <div class="av-wrap" id="avWrap">
     <img id="avatarImg" src="avatar-default.png" alt="avatar">
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s" id="avOverlay"><span style="font-size:20px">✏️</span></div>
   </div>
 </div>
 
@@ -87,7 +88,7 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
     <div class="rank-badge" id="rankEl">#—</div>
   </div>
   <div class="grade" id="gradeEl">—</div>
-  <div class="online" id="onlineEl">🟢 En ligne</div>
+  <div class="online">🟢 En ligne</div>
 
   <!-- BIO -->
   <div class="bio-wrap" onclick="openEditBio()">
@@ -116,21 +117,9 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
   </div>
 </div>
 
-
-
-<!-- AVATAR PICKER -->
-<div class="edit-overlay" id="avatarOverlay" onclick="if(event.target===this)this.classList.remove('show')">
-  <div class="edit-sheet" id="avatarSheet">
-    <div class="edit-title">CHOISIR UN AVATAR</div>
-    <div style="font-size:10px;color:#9ca3af;margin-bottom:12px">Débloqués selon ton niveau</div>
-    <div id="avatarOptions" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
-    <button class="btn-cancel" style="width:100%;padding:12px" onclick="document.getElementById('avatarOverlay').classList.remove('show')">Fermer</button>
-  </div>
-</div>
-
 <!-- COVER PICKER -->
 <div class="edit-overlay" id="coverOverlay" onclick="closeCoverPicker(event)">
-  <div class="edit-sheet" id="coverSheet">
+  <div class="edit-sheet">
     <div class="edit-title">CHOISIR UN FOND</div>
     <div id="coverOptions" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px"></div>
     <button onclick="window.location.href='boutique.html'" style="width:100%;padding:11px;border:1.5px solid #e5e7eb;border-radius:10px;background:white;color:#cc1a1a;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:8px">🛍️ Plus de covers en boutique</button>
@@ -138,11 +127,11 @@ body{background:#f8f8f8;font-family:'Inter',sans-serif;min-height:100dvh;padding
   </div>
 </div>
 
-<!-- EDIT OVERLAY (pseudo) -->
+<!-- EDIT OVERLAY -->
 <div class="edit-overlay" id="editOverlay" onclick="closeEdit(event)">
-  <div class="edit-sheet" id="editSheet">
-    <div class="edit-title" id="editTitle">MODIFIER LE PSEUDO</div>
-    <input type="text" class="edit-input" id="editInput" maxlength="20" placeholder="Ton pseudo...">
+  <div class="edit-sheet">
+    <div class="edit-title" id="editTitle">MODIFIER LA BIO</div>
+    <input type="text" class="edit-input" id="editInput" maxlength="20" placeholder="...">
     <div class="edit-btns">
       <button class="btn-save" id="editSave">SAUVEGARDER</button>
       <button class="btn-cancel" onclick="document.getElementById('editOverlay').classList.remove('show')">Annuler</button>
@@ -157,152 +146,63 @@ const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-let currentUser = null, editMode = null;
+let currentUser = null;
+let currentCover = 'rouge_navy';
+let COVERS = [];
 
-function fmt(n){ return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€'; }
-function avatarForLevel(lvl){
-  if(lvl>=50) return 'avatar-level-50.png';
-  if(lvl>=30) return 'avatar-level-30.png';
-  if(lvl>=20) return 'avatar-level-20.png';
-  if(lvl>=17) return 'avatar-level-17.png';
-  if(lvl>=15) return 'avatar-level-15.png';
-  if(lvl>=13) return 'avatar-level-13.png';
-  if(lvl>=10) return 'avatar-level-10.png';
-  if(lvl>=5)  return 'avatar-level-5.png';
-  if(lvl>=4)  return 'avatar-level-4.png';
-  if(lvl>=3)  return 'avatar-level-3.png';
-  if(lvl>=2)  return 'avatar-level-2.png';
+// ── Fonctions utilitaires ──────────────────────────────────────
+
+function fmt(n) {
+  return n >= 1000000 ? (n/1000000).toFixed(1)+'M€'
+       : n >= 1000    ? Math.floor(n/1000)+'k€'
+       : n+'€';
+}
+
+function getXpRequired(level) {
+  if (level <= 10) return level * 500;
+  if (level <= 25) return level * 1000;
+  if (level <= 50) return level * 2000;
+  return level * 4000;
+}
+
+// Identique à game.html et header_preview.html
+function getGrade(level) {
+  if (level <= 4)  return 'Docker Occasionnel';
+  if (level <= 14) return 'Docker';
+  if (level <= 29) return 'Docker Mensuel';
+  if (level <= 49) return 'Contre-Maître';
+  if (level <= 79) return 'Chef de Quai';
+  return 'Magnat du Port';
+}
+
+function avatarForLevel(lvl) {
+  if (lvl >= 50) return 'avatar-level-50.png';
+  if (lvl >= 30) return 'avatar-level-30.png';
+  if (lvl >= 20) return 'avatar-level-20.png';
+  if (lvl >= 17) return 'avatar-level-17.png';
+  if (lvl >= 15) return 'avatar-level-15.png';
+  if (lvl >= 13) return 'avatar-level-13.png';
+  if (lvl >= 10) return 'avatar-level-10.png';
+  if (lvl >= 5)  return 'avatar-level-5.png';
+  if (lvl >= 4)  return 'avatar-level-4.png';
+  if (lvl >= 3)  return 'avatar-level-3.png';
+  if (lvl >= 2)  return 'avatar-level-2.png';
   return 'avatar-default.png';
 }
-function xpForLevel(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
-function powerScore(p){ return (p.level||1)*100 + Math.floor((p.money||0)/10000); }
 
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2000);
+function powerScore(g) {
+  return (g.level || 1) * 100 + Math.floor((g.money || 0) / 10000);
 }
 
-
-// Avatars débloqués selon le niveau
-var ALL_AVATARS = [
-  {file:'avatar-default.png',   label:'Docker',    minLevel:1},
-  {file:'avatar-level-2.png',   label:'Niveau 2',  minLevel:2},
-  {file:'avatar-level-3.png',   label:'Niveau 3',  minLevel:3},
-  {file:'avatar-level-4.png',   label:'Niveau 4',  minLevel:4},
-  {file:'avatar-level-5.png',   label:'Niveau 5',  minLevel:5},
-  {file:'avatar-level-10.png',  label:'Niveau 10', minLevel:10},
-  {file:'avatar-level-13.png',  label:'Niveau 13', minLevel:13},
-  {file:'avatar-level-15.png',  label:'Niveau 15', minLevel:15},
-  {file:'avatar-level-17.png',  label:'Niveau 17', minLevel:17},
-  {file:'avatar-level-20.png',  label:'Niveau 20', minLevel:20},
-  {file:'avatar-level-30.png',  label:'Niveau 30', minLevel:30},
-  {file:'avatar-level-50.png',  label:'Niveau 50', minLevel:50},
-];
-
-var currentAvatarFile = 'avatar-default.png';
-var currentLevel = 1;
-
-function getUnlockedAvatars(level){
-  return ALL_AVATARS.filter(function(a){ return a.minLevel <= level; });
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
 }
 
-function openAvatarPicker(){
-  var unlocked = getUnlockedAvatars(currentLevel);
-  var container = document.getElementById('avatarOptions');
-  container.innerHTML = '';
-  unlocked.forEach(function(av){
-    var div = document.createElement('div');
-    var isActive = currentAvatarFile === av.file;
-    div.style.cssText = 'text-align:center;cursor:pointer';
-    div.innerHTML = '<div style="width:56px;height:56px;border-radius:50%;border:3px solid '+(isActive?'#cc1a1a':'#e5e7eb')+';overflow:hidden;margin:0 auto 4px">'
-      +'<img src="'+av.file+'" style="width:100%;height:100%;object-fit:cover">'
-      +'</div>'
-      +'<div style="font-size:8px;color:#9ca3af;font-weight:700">'+av.label+'</div>';
-    div.onclick = function(){ selectAvatar(av.file); };
-    container.appendChild(div);
-  });
-  document.getElementById('avatarOverlay').classList.add('show');
-}
+// ── Covers ────────────────────────────────────────────────────
 
-async function selectAvatar(file){
-  currentAvatarFile = file;
-  document.getElementById('avatarImg').src = file;
-  document.getElementById('avatarOverlay').classList.remove('show');
-  var {error} = await sb.from('profiles').update({avatar_url: file}).eq('user_id', currentUser.id);
-  if(error){ showToast('❌ Erreur'); return; }
-  showToast('✓ Avatar mis à jour');
-}
-
-async function init(){
-  // auth géré par getSession
-  const {data,error}=await sb.auth.getSession();
-  if(error||!data.session){ await sb.auth.signOut().catch(function(){}); window.location.href='index.html'; return; }
-  currentUser=data.session.user;
-
-  const [gRes,pRes]=await Promise.all([
-    sb.from('game_stats').select('*').eq('user_id',currentUser.id).maybeSingle(),
-    sb.from('profiles').select('*').eq('user_id',currentUser.id).maybeSingle()
-  ]);
-  const g=gRes.data, p=pRes.data;
-  if(!g||!p) return;
-
-  // Cover + covers débloquées
-  if(p.background_color){ currentCover=p.background_color; applyCover(p.background_color); }
-  var rawCovers=p.unlocked_covers;
-  var ownedIds=['rouge_navy','bleu_mer'];
-  if(rawCovers){
-    try{ ownedIds=typeof rawCovers==='string'?JSON.parse(rawCovers):rawCovers; }catch(e){}
-  }
-  if(ownedIds.indexOf(currentCover)===-1) ownedIds.push(currentCover);
-  COVERS=ownedIds.map(function(id){ return {id:id, label:id.replace(/_/g,' ')}; });
-  // Avatar depuis le niveau (comme game.html)
-  var lvlAvatar = avatarForLevel(g.level||1);
-  var specialAvatar = ['avatar-millionaire.png','avatar-completionist.png'];
-  var savedAvatar = p.avatar_url;
-  var validFiles = getUnlockedAvatars(g.level||1).map(function(a){return a.file;});
-  if(savedAvatar && (specialAvatar.indexOf(savedAvatar)!==-1 || validFiles.indexOf(savedAvatar)!==-1)){
-    currentAvatarFile = savedAvatar;
-    document.getElementById('avatarImg').src = savedAvatar;
-  } else {
-    currentAvatarFile = lvlAvatar;
-    document.getElementById('avatarImg').src = lvlAvatar;
-  }
-
-  // Nom + grade + rang
-  currentLevel = g.level || 1;
-  document.getElementById('usernameEl').textContent=(p.username||'Docker').toUpperCase();
-  document.getElementById('gradeEl').textContent=g.grade||'Docker Occasionnel';
-
-  // Bio
-  const bioEl=document.getElementById('bioEl');
-  if(p.bio){ bioEl.textContent=p.bio; bioEl.className='bio-text'; }
-
-  // Rang depuis classement
-  const {data:allStats}=await sb.from('game_stats').select('user_id,level,money').order('level',{ascending:false});
-  if(allStats){
-    var sorted=[].concat(allStats).sort(function(a,b){ return ((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)); });
-    var idx=sorted.findIndex(function(x){ return x.user_id===currentUser.id; });
-    if(idx>=0) document.getElementById('rankEl').textContent='#'+(idx+1);
-  }
-
-  // XP
-  const xpNeeded=xpForLevel(g.level||1);
-  const xpPct=Math.min(100,Math.round(((g.xp||0)/xpNeeded)*100));
-  document.getElementById('xpFill').style.width=xpPct+'%';
-  document.getElementById('xpLabel').textContent=(g.xp||0)+' XP';
-  document.getElementById('xpNext').textContent='→ Niv. '+((g.level||1)+1);
-
-  // Stats
-  document.getElementById('statLevel').textContent=g.level||1;
-  document.getElementById('statMoney').textContent=fmt(g.money||0);
-  document.getElementById('statTrophies').textContent=g.trophies||0;
-  document.getElementById('statDiamonds').textContent=g.diamonds||0;
-  document.getElementById('statPower').textContent=powerScore(g);
-  document.getElementById('statStreak').textContent=(g.streak_days||0)+'j';
-}
-
-// Covers disponibles (à enrichir plus tard)
 const COVER_CSS = {
   'rouge_navy':     'linear-gradient(135deg,#cc1a1a,#0f172a)',
   'bleu_mer':       'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
@@ -326,72 +226,185 @@ const COVER_CSS = {
   'neon_rouge':     'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
   'arc_en_ciel':    'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
 };
-function getCoverCss(id){ return COVER_CSS[id] || COVER_CSS['rouge_navy']; }
 
-// Covers chargées dynamiquement depuis unlocked_covers
-let COVERS = [];
-let currentCover = 'rouge_navy';
-
-function applyCover(id){
-  document.querySelector('.cover').style.background = getCoverCss(id);
+function getCoverCss(id) {
+  return COVER_CSS[id] || COVER_CSS['rouge_navy'];
 }
 
-function openCoverPicker(){
+function applyCover(id) {
+  document.getElementById('coverEl').style.background = getCoverCss(id);
+}
+
+function openCoverPicker() {
   const container = document.getElementById('coverOptions');
   container.innerHTML = '';
-  COVERS.forEach(function(c) {
+  COVERS.forEach(c => {
     const el = document.createElement('div');
-    el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '+(currentCover===c.id?'#fbbf24':'transparent')+';background:'+getCoverCss(c.id)+';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
-    el.innerHTML = '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px">'+c.label+'</span>';
-    el.onclick = function(){ selectCover(c); };
+    el.style.cssText = 'height:60px;border-radius:10px;cursor:pointer;border:3px solid '
+      + (currentCover === c.id ? '#fbbf24' : 'transparent')
+      + ';background:' + getCoverCss(c.id)
+      + ';display:flex;align-items:flex-end;padding:6px 8px;transition:all .15s';
+    el.innerHTML = '<span style="font-size:9px;font-weight:700;color:rgba(255,255,255,0.7);letter-spacing:1px">' + c.label + '</span>';
+    el.onclick = () => selectCover(c);
     container.appendChild(el);
   });
   document.getElementById('coverOverlay').classList.add('show');
 }
 
-async function selectCover(c){
+async function selectCover(c) {
   currentCover = c.id;
   applyCover(c.id);
-  await sb.from('profiles').update({background_color: c.id}).eq('user_id', currentUser.id).then(function(){}).catch(function(){});
   document.getElementById('coverOverlay').classList.remove('show');
-  showToast('✓ Fond mis à jour');
+  try {
+    await sb.from('profiles').update({ background_color: c.id }).eq('user_id', currentUser.id);
+    showToast('✓ Fond mis à jour');
+  } catch(e) {
+    showToast('❌ Erreur de sauvegarde');
+  }
 }
 
-function closeCoverPicker(e){
-  if(e.target===document.getElementById('coverOverlay'))
+function closeCoverPicker(e) {
+  if (e.target === document.getElementById('coverOverlay'))
     document.getElementById('coverOverlay').classList.remove('show');
 }
 
-function openEditBio(){
-  editMode='bio';
-  document.getElementById('editTitle').textContent='MODIFIER LA BIO';
-  const inp=document.getElementById('editInput');
-  inp.className='edit-input textarea';
-  inp.maxLength=120;
-  const bioEl=document.getElementById('bioEl');
-  inp.value=bioEl.classList.contains('bio-text')?bioEl.textContent:'';
-  document.getElementById('editSave').onclick=saveBio;
+// ── Bio ───────────────────────────────────────────────────────
+
+function openEditBio() {
+  document.getElementById('editTitle').textContent = 'MODIFIER LA BIO';
+  const inp = document.getElementById('editInput');
+  inp.className = 'edit-input textarea';
+  inp.maxLength = 120;
+  inp.placeholder = 'Ta bio...';
+  const bioEl = document.getElementById('bioEl');
+  inp.value = bioEl.classList.contains('bio-text') ? bioEl.textContent : '';
+  document.getElementById('editSave').onclick = saveBio;
   document.getElementById('editOverlay').classList.add('show');
-  setTimeout(function(){ inp.focus(); }, 100);
+  setTimeout(() => inp.focus(), 100);
 }
 
-function closeEdit(e){
-  if(e.target===document.getElementById('editOverlay'))
+function closeEdit(e) {
+  if (e.target === document.getElementById('editOverlay'))
     document.getElementById('editOverlay').classList.remove('show');
 }
 
-
-async function saveBio(){
-  const val=document.getElementById('editInput').value.trim();
-  const {error}=await sb.from('profiles').update({bio:val}).eq('user_id',currentUser.id);
-  if(error){showToast('❌ Erreur');return;}
-  const bioEl=document.getElementById('bioEl');
-  if(val){ bioEl.textContent=val; bioEl.className='bio-text'; }
-  else { bioEl.textContent='Ajoute une bio...'; bioEl.className='bio-placeholder'; }
-  document.getElementById('editOverlay').classList.remove('show');
-  showToast('✓ Bio mise à jour');
+async function saveBio() {
+  const val = document.getElementById('editInput').value.trim();
+  try {
+    const { error } = await sb.from('profiles').update({ bio: val }).eq('user_id', currentUser.id);
+    if (error) throw error;
+    const bioEl = document.getElementById('bioEl');
+    if (val) { bioEl.textContent = val; bioEl.className = 'bio-text'; }
+    else      { bioEl.textContent = 'Ajoute une bio...'; bioEl.className = 'bio-placeholder'; }
+    document.getElementById('editOverlay').classList.remove('show');
+    showToast('✓ Bio mise à jour');
+  } catch(e) {
+    showToast('❌ Erreur de sauvegarde');
+  }
 }
 
+// ── Init ──────────────────────────────────────────────────────
+
+async function init() {
+  try {
+    const { data, error } = await sb.auth.getSession();
+    if (error || !data.session) {
+      await sb.auth.signOut().catch(() => {});
+      window.location.href = 'index.html';
+      return;
+    }
+    currentUser = data.session.user;
+
+    const [gRes, pRes] = await Promise.all([
+      sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle(),
+      sb.from('profiles').select('*').eq('user_id', currentUser.id).maybeSingle()
+    ]);
+
+    const g = gRes.data, p = pRes.data;
+    if (!g || !p) { showError(); return; }
+
+    // ── Recalcul niveau réel + sauvegarde si changement ──
+    let lvl = g.level || 1;
+    let xp  = g.xp || 0;
+    const startLvl = lvl;
+    while (xp >= getXpRequired(lvl)) { xp -= getXpRequired(lvl); lvl++; }
+    if (lvl !== startLvl) {
+      await sb.from('game_stats').update({ level: lvl, xp }).eq('user_id', currentUser.id);
+    }
+
+    // ── Avatar + sync en base si désynchronisé ──
+    const SPECIAL = ['avatar-millionaire.png', 'avatar-completionist.png'];
+    const autoAvatar = avatarForLevel(lvl);
+    const avatarSrc = SPECIAL.includes(p.avatar_url) ? p.avatar_url : autoAvatar;
+    document.getElementById('avatarImg').src = avatarSrc;
+    if (!SPECIAL.includes(p.avatar_url) && p.avatar_url !== autoAvatar) {
+      await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', currentUser.id);
+    }
+
+    // ── Cover (background_color = même champ que header) ──
+    currentCover = p.background_color || 'rouge_navy';
+    applyCover(currentCover);
+
+    // ── Covers débloquées ──
+    let ownedIds = ['rouge_navy', 'bleu_mer'];
+    if (p.unlocked_covers) {
+      try {
+        const raw = typeof p.unlocked_covers === 'string' ? JSON.parse(p.unlocked_covers) : p.unlocked_covers;
+        if (Array.isArray(raw)) ownedIds = raw;
+      } catch(e) {}
+    }
+    if (!ownedIds.includes(currentCover)) ownedIds.push(currentCover);
+    COVERS = ownedIds.map(id => ({ id, label: id.replace(/_/g, ' ') }));
+
+    // ── Nom + grade (calculé depuis niveau, pas depuis la base) ──
+    document.getElementById('usernameEl').textContent = (p.username || 'Docker').toUpperCase();
+    document.getElementById('gradeEl').textContent    = getGrade(lvl);
+
+    // ── Bio ──
+    const bioEl = document.getElementById('bioEl');
+    if (p.bio) { bioEl.textContent = p.bio; bioEl.className = 'bio-text'; }
+
+    // ── Rang ──
+    const { data: allStats } = await sb.from('game_stats').select('user_id,level,money').order('level', { ascending: false });
+    if (allStats) {
+      const sorted = [...allStats].sort((a, b) =>
+        ((b.level||0)*100 + Math.floor((b.money||0)/10000)) -
+        ((a.level||0)*100 + Math.floor((a.money||0)/10000))
+      );
+      const idx = sorted.findIndex(x => x.user_id === currentUser.id);
+      if (idx >= 0) document.getElementById('rankEl').textContent = '#' + (idx + 1);
+    }
+
+    // ── XP ──
+    const xpNeeded = getXpRequired(lvl);
+    const xpPct = Math.min(100, Math.round((xp / xpNeeded) * 100));
+    document.getElementById('xpFill').style.width  = xpPct + '%';
+    document.getElementById('xpLabel').textContent = xp + ' / ' + xpNeeded + ' XP';
+    document.getElementById('xpNext').textContent  = '→ Niv. ' + (lvl + 1);
+
+    // ── Stats ──
+    document.getElementById('statLevel').textContent    = lvl;
+    document.getElementById('statMoney').textContent    = fmt(g.money || 0);
+    document.getElementById('statTrophies').textContent = g.trophies || 0;
+    document.getElementById('statDiamonds').textContent = g.diamonds || 0;
+    document.getElementById('statPower').textContent    = powerScore(g);
+    document.getElementById('statStreak').textContent   = (g.streak_days || 0) + 'j';
+
+  } catch(e) {
+    console.error('profil init error:', e);
+    showError();
+  }
+}
+
+function showError() {
+  document.querySelector('.body').innerHTML = `
+    <div class="error-wrap">
+      <div style="font-size:32px;margin-bottom:8px">⚠️</div>
+      <div style="font-weight:700;color:#1a1a1a;margin-bottom:4px">Erreur de connexion</div>
+      <div>Vérifie ta connexion internet</div>
+      <button onclick="location.reload()">Réessayer</button>
+    </div>`;
+}
 
 init();
 </script>
