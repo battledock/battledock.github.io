@@ -196,35 +196,47 @@
       const stats   = statsRes.data;
       if (!profile || !stats) return;
 
-      // Calcul niveau réel
+      // Recalcul niveau réel + sauvegarde si changement
       let lvl = stats.level || 1;
       let xp  = stats.xp || 0;
+      const startLvl = lvl;
       while (xp >= getXpRequired(lvl)) { xp -= getXpRequired(lvl); lvl++; }
+      if (lvl !== startLvl) {
+        await sb.from('game_stats').update({ level: lvl, xp }).eq('user_id', uid);
+      }
 
       const xpNeeded = getXpRequired(lvl);
       const pct = Math.min((xp / xpNeeded) * 100, 100);
 
-      // Avatar
+      // Avatar + sync en base si désynchronisé
       const SPECIAL = ['avatar-millionaire.png','avatar-completionist.png'];
-      const avatarSrc = SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : avatarForLevel(lvl);
+      const autoAvatar = avatarForLevel(lvl);
+      const avatarSrc = SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : autoAvatar;
       document.getElementById('avatarImage').src = avatarSrc;
+      if (!SPECIAL.includes(profile.avatar_url) && profile.avatar_url !== autoAvatar) {
+        await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', uid);
+      }
 
       // Thème carte
       const card = document.getElementById('profileCardBtn');
       const grad = PROFILE_THEMES[profile.background_color];
       if (grad) { card.style.background = grad; card.classList.add('themed'); }
 
+      // Clic → profil.html
+      card.style.cursor = 'pointer';
+      card.onclick = () => window.location.href = 'profil.html';
+
       // Remplissage
-      document.getElementById('playerName').textContent  = profile.username;
-      document.getElementById('playerGrade').textContent = getGrade(lvl);
+      document.getElementById('playerName').textContent   = profile.username;
+      document.getElementById('playerGrade').textContent  = getGrade(lvl);
       document.getElementById('currentLevel').textContent = lvl;
-      document.getElementById('nextLevel').textContent   = lvl + 1;
-      document.getElementById('xpCounter').textContent   = `${xp} / ${xpNeeded} XP`;
-      document.getElementById('xpFill').style.width      = pct + '%';
+      document.getElementById('nextLevel').textContent    = lvl + 1;
+      document.getElementById('xpCounter').textContent    = `${xp} / ${xpNeeded} XP`;
+      document.getElementById('xpFill').style.width       = pct + '%';
 
       // Afficher
       document.getElementById('profileSkeleton').style.display = 'none';
-      card.style.display = '';
+      card.style.display = 'flex';
     }
 
     init();
