@@ -213,6 +213,15 @@ var SPECIALTIES=[
 ];
 
 function fmtM(v){return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':Math.floor(v)+'€';}
+// Impact bourse
+async function pushBourseImpact(name,mult){
+  var sym=(name||'').replace(/[^A-Za-z]/g,'').substring(0,6).toUpperCase();
+  if(!sym)return;
+  try{var r=await sb.from('bourse_market').select('price').eq('sym',sym).maybeSingle();
+  if(!r.data)return;
+  await sb.from('bourse_market').update({price:Math.max(1,Math.round(r.data.price*mult*100)/100),updated_at:new Date().toISOString()}).eq('sym',sym);
+  }catch(e){}
+}
 function toast(msg){var t=document.getElementById('toast-el');t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);}
 function getSpec(id){return SPECIALTIES.find(function(s){return s.id===id;})||SPECIALTIES[0];}
 
@@ -316,6 +325,8 @@ async function submitRating(stars){
   document.getElementById('e-rep-bar').style.width=newRep+'%';
   document.getElementById('e-rep-lbl').textContent=newRep+'/100';
   toast('⭐ Note de '+stars+' étoiles envoyée');
+  if(stars>=4)pushBourseImpact(_target.nom||_target.name,1.01);
+  if(stars<=2)pushBourseImpact(_target.nom||_target.name,0.99);
 }
 
 // ══ AVIS CLIENTS ══
@@ -408,6 +419,7 @@ async function doPirateContract(){
   _myMoney+=reward;_myDiamonds-=5;
   await sb.from('game_stats').update({money:_myMoney,diamonds:_myDiamonds}).eq('user_id',_me.id);
   toast('🏴‍☠️ Contrat pirated ! +'+fmtM(reward));
+  pushBourseImpact(_target.nom||_target.name,0.97);
 }
 
 // ══ DÉBAUCHER ══
@@ -438,6 +450,7 @@ async function doDebauchage(){
   _target.employees=targetEmps;
   renderEmployees();
   toast('👷 '+emp.name+' débauché pour '+fmtM(cost)+' !');
+  pushBourseImpact(_target.nom||_target.name,0.98);
 }
 
 // ══ FAUX AVIS ══
@@ -456,6 +469,7 @@ async function doFakeReview(){
   renderReviews();
   document.getElementById('e-rep').textContent=newRep+'/100';
   toast('📝 Faux avis planté ! -5 réputation');
+  pushBourseImpact(_target.nom||_target.name,0.97);
 }
 
 // ══ SABOTAGE ══
@@ -467,6 +481,7 @@ async function doSabotage(){
   _myDiamonds-=10;
   await sb.from('game_stats').update({diamonds:_myDiamonds}).eq('user_id',_me.id);
   toast('💣 Sabotage lancé !');
+  pushBourseImpact(_target.nom||_target.name,0.95);
 }
 
 // ══ GUERRE DES PRIX ══
@@ -476,6 +491,7 @@ async function doPriceWar(){
   var pw={target_uid:_targetUid,target_name:nom,pct:20,until:new Date(Date.now()+86400000).toISOString()};
   await sb.from('companies').update({price_war:pw}).eq('user_id',_me.id);
   toast('⚔️ Guerre des prix -20% lancée contre '+nom+' !');
+  pushBourseImpact(_target.nom||_target.name,0.98);
 }
 
 // ══ PARTENARIAT ══

@@ -329,6 +329,19 @@ var _mjCleanup=null;
 // ══ UTILS ══
 function fmtM(v){return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':Math.floor(v)+'€';}
 function goEntreprise(uid){location.href='entreprise.html?uid='+uid;}
+
+// ══ Impact Bourse — connecte les événements commerce aux cours ══
+async function pushBourseImpact(companyName,multiplier){
+  // Génère le symbole de la même façon que bourse.html
+  var sym=(companyName||'').replace(/[^A-Za-z]/g,'').substring(0,6).toUpperCase();
+  if(!sym)return;
+  try{
+    var res=await sb.from('bourse_market').select('price').eq('sym',sym).maybeSingle();
+    if(!res.data)return;
+    var newPrice=Math.max(1,Math.round(res.data.price*multiplier*100)/100);
+    await sb.from('bourse_market').update({price:newPrice,updated_at:new Date().toISOString()}).eq('sym',sym);
+  }catch(e){}
+}
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById(id);if(el)el.classList.add('active');}
 function toast(msg){var t=document.getElementById('toast-el');if(!t)return;t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);}
 function cleanupMJ(){if(_mjCleanup){try{_mjCleanup();}catch(e){}}_mjCleanup=null;}
@@ -678,6 +691,7 @@ async function collecterRevenus(){
   await sb.from('companies').update({last_collect:now,reputation:rep}).eq('user_id',currentUser.id);
   _dashMoney=newMoney;_dashLastCollect=new Date(now).getTime();_coData.reputation=rep;
   toast('💰 +'+fmtM(pending)+' collectés !');
+  pushBourseImpact(_coData.nom||_coData.name,1.005);
   checkAndTriggerEvent();
   updateCollectUI();
   document.getElementById('dash-rep-bar').style.width=rep+'%';
@@ -716,12 +730,14 @@ async function checkAndTriggerEvent(){
     _coData.valeur=Math.max(0,(_coData.valeur||0)-fiscalLoss);
     await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
     toast('🏛️ Contrôle fiscal ! -'+fmtM(fiscalLoss)+(comptBonus>0?' (réduit par comptable)':''));
+    pushBourseImpact(_coData.nom||_coData.name,0.92);
   }
   if(ev.id==='flood'){
     var loss=Math.round((_coData.valeur||0)*0.05);
     _coData.valeur=Math.max(0,(_coData.valeur||0)-loss);
     await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
     toast('🌊 Inondation ! -'+fmtM(loss)+' de valeur');
+    pushBourseImpact(_coData.nom||_coData.name,0.96);
   }
   await sb.from('companies').update({active_event:newEv,last_event_check:new Date().toISOString()}).eq('user_id',currentUser.id);
   _coData.active_event=newEv;renderEvent(newEv);
@@ -744,6 +760,7 @@ function processPayroll(employees){
     if(daysSince>1){
       // Impayé > 1 jour → l'employé part
       toast('💨 '+emp.name+' est parti (impayé)');
+      pushBourseImpact(_coData.nom||_coData.name,0.98);
       _coData.reputation=Math.max(0,(_coData.reputation||0)-5);
       changed=true;
     }else{
@@ -904,6 +921,7 @@ async function hireEmployee(specId){
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
   _dashMoney=newMoney;_coData.employees=employees;_coData.reputation=rep;
   toast(spec.icon+' '+newEmp.name+' embauché !');
+  pushBourseImpact(_coData.nom||_coData.name,1.01);
   loadDashboard();
 }
 
@@ -945,6 +963,7 @@ async function fireEmployee(idx){
   await sb.from('companies').update({employees:employees,reputation:rep}).eq('user_id',currentUser.id);
   _coData.employees=employees;_coData.reputation=rep;
   toast(spec.icon+' '+emp.name+' viré');
+  pushBourseImpact(_coData.nom||_coData.name,0.98);
   loadDashboard();
 }
 
@@ -1589,6 +1608,7 @@ async function doInvestir(){
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
   _dashMoney=newMoney;_coData.valeur=newVal;_coData.niveau=newNiv;
   closeInvestModal();toast('Investissement de +'+fmtM(amt)+' !');
+  pushBourseImpact(_coData.nom||_coData.name,1.03);
   loadDashboard();
 }
 

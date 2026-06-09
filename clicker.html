@@ -453,11 +453,25 @@
       totalMoney           = stats.money    || 0;
       currentXp            = stats.xp       || 0;
       currentLevel         = stats.level    || 1;
-      window.xpPerClick    = Math.min(stats.xp_per_click    || 1, 11);
-      window.moneyPerClick = Math.min(stats.money_per_click || 1, 30);
+
+      // ── Recalcul automatique des per-click depuis les items équipés ──
+      const _rec = (stats.records && stats.records.equipped_epi) ? stats.records.equipped_epi : {};
+      const bonusMap = {
+        'casque_commune':1, 'casque_rare':2, 'casque_epique':4, 'casque_legendaire':8,
+        'gilet_commune':1,  'gilet_rare':2,  'gilet_epique':4,  'gilet_legendaire':8,
+      };
+      const realXp    = 1 + (bonusMap[_rec['casque']] || 0);
+      const realMoney = 1 + (bonusMap[_rec['gilet']]  || 0);
+
+      window.xpPerClick    = Math.min(realXp, 11);
+      window.moneyPerClick = Math.min(realMoney, 30);
+
+      // Corriger en DB si les valeurs sont fausses
+      if ((stats.xp_per_click||1) !== realXp || (stats.money_per_click||1) !== realMoney) {
+        sb.from('game_stats').update({ xp_per_click: realXp, money_per_click: realMoney }).eq('user_id', currentUser.id);
+      }
 
       // Appliquer le combo max depuis les chaussures équipées
-      const _rec = (stats.records && stats.records.equipped_epi) ? stats.records.equipped_epi : {};
       const comboMap = {
         'chaussures_commune':    4.0,
         'chaussures_rare':       5.0,
