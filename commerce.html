@@ -265,6 +265,9 @@ body{font-family:Inter,sans-serif;background:#0f172a}
     <div class="dash-section-title">CLASSEMENT</div>
     <div class="dash-card" id="mini-rank"></div>
 
+    <div class="dash-section-title" id="spy-section-title" style="display:none">ESPIONNAGE</div>
+    <div class="dash-card" id="spy-section" style="display:none"></div>
+
     <div class="dash-section-title">ACTIONS</div>
     <div class="dash-card" id="sabotage-section"></div>
 
@@ -618,6 +621,7 @@ async function loadDashboard(){
   renderEmployees(employees,co.valeur||0);
   renderContracts(co);
   loadMiniRank();
+  renderSpySection();
   renderSabotage(co);
   updateCollectUI();
   if(_dashInterval)clearInterval(_dashInterval);
@@ -906,6 +910,148 @@ async function fireEmployee(idx){
   _coData.employees=employees;_coData.reputation=rep;
   toast(spec.icon+' '+emp.name+' viré');
   loadDashboard();
+}
+
+// ══ ESPIONNAGE ══
+function getSpyLevel(){
+  var emps=_coData.employees||[];
+  var spies=emps.filter(function(e){return e.specialty==='espion';});
+  if(spies.length===0)return 0;
+  return Math.max.apply(null,spies.map(function(e){return e.level||1;}));
+}
+
+function renderSpySection(){
+  var lvl=getSpyLevel();
+  var titleEl=document.getElementById('spy-section-title');
+  var sectionEl=document.getElementById('spy-section');
+  if(!titleEl||!sectionEl)return;
+  if(lvl===0){titleEl.style.display='none';sectionEl.style.display='none';return;}
+  titleEl.style.display='block';sectionEl.style.display='block';
+
+  sectionEl.innerHTML='<div class="dash-card-row" onclick="loadSpyTargets()" style="cursor:pointer">'
+    +'<div class="dash-card-icon" style="background:rgba(167,139,250,.1)">🕵️</div>'
+    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Espionner un rival</div>'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px">Niveau espion : '+lvl+' · '
+    +(lvl>=1?'Valeur':'')+(lvl>=2?' · Employés':'')+(lvl>=3?' · Détails':'')+(lvl>=4?' · Contrats':'')+(lvl>=5?' · Failles':'')
+    +'</div></div><div style="color:rgba(255,255,255,.15)">›</div></div>'
+    +'<div id="spy-targets" style="display:none"></div>';
+}
+
+async function loadSpyTargets(){
+  var tgt=document.getElementById('spy-targets');
+  if(!tgt)return;
+  if(tgt.style.display==='block'){tgt.style.display='none';return;}
+  tgt.style.display='block';
+  tgt.innerHTML='<div style="padding:10px;font-size:10px;color:rgba(255,255,255,.3);text-align:center">Chargement...</div>';
+
+  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,employees,defense_until').order('valeur',{ascending:false}).limit(10);
+  if(!res.data){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#ef4444;text-align:center">Erreur</div>';return;}
+
+  var html='';
+  res.data.forEach(function(co){
+    if(co.user_id===currentUser.id)return;
+    var cooldownKey='spy_cd_'+co.user_id;
+    var lastSpy=parseInt(localStorage.getItem(cooldownKey)||'0');
+    var onCooldown=(Date.now()-lastSpy)<21600000; // 6h
+    var nom=co.nom||co.name||'???';
+
+    html+='<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.04)">'
+      +'<div style="font-size:18px">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#fff">'+nom+'</div></div>';
+    if(onCooldown){
+      var minLeft=Math.ceil((21600000-(Date.now()-lastSpy))/60000);
+      html+='<div style="font-size:8px;color:rgba(255,255,255,.2);font-weight:700">⏳ '+minLeft+'min</div>';
+    }else{
+      html+='<button onclick="spyOn(\''+co.user_id+'\')" style="background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.2);border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:#a78bfa;cursor:pointer">🕵️ ESPIONNER</button>';
+    }
+    html+='</div>';
+  });
+  if(!html)html='<div style="padding:10px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Aucune cible</div>';
+  tgt.innerHTML=html;
+}
+
+async function spyOn(targetUid){
+  var lvl=getSpyLevel();
+  if(lvl===0){toast('Pas d\'espion dans l\'équipe');return;}
+
+  // Fetch target data
+  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,employees,defense_until,contracts,niveau').eq('user_id',targetUid).maybeSingle();
+  if(!res.data){toast('Cible introuvable');return;}
+  var target=res.data;
+
+  // Check if rival has security → chance of getting caught
+  var targetEmps=migrateEmployees(Array.isArray(target.employees)?target.employees:[]);
+  var secuLevel=0;
+  targetEmps.forEach(function(e){if(e.specialty==='securite')secuLevel=Math.max(secuLevel,e.level||1);});
+
+  var catchChance=Math.max(0,secuLevel*15-lvl*10); // % chance caught
+  var caught=Math.random()*100<catchChance;
+
+  if(caught){
+    // Caught! Reputation drops
+    var rep=Math.max(0,(_coData.reputation||0)-8);
+    await sb.from('companies').update({reputation:rep}).eq('user_id',currentUser.id);
+    _coData.reputation=rep;
+    toast('🚨 Espion attrapé ! Réputation -8');
+    loadDashboard();
+    return;
+  }
+
+  // Success — set cooldown
+  localStorage.setItem('spy_cd_'+targetUid,Date.now().toString());
+
+  // Build intel report based on spy level
+  var nom=target.nom||target.name||'???';
+  var report='<div style="padding:14px;border-top:1px solid rgba(255,255,255,.04)">';
+  report+='<div style="font-size:11px;font-weight:800;color:#a78bfa;letter-spacing:1px;margin-bottom:8px">🕵️ RAPPORT — '+(target.emoji||'')+' '+nom+'</div>';
+
+  // Level 1+: Value + reputation
+  if(lvl>=1){
+    report+='<div style="display:flex;gap:8px;margin-bottom:6px">'
+      +'<div style="flex:1;background:rgba(255,255,255,.03);border-radius:6px;padding:8px;text-align:center">'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#fbbf24">'+fmtM(target.valeur||0)+'</div>'
+      +'<div style="font-size:6px;color:rgba(255,255,255,.2);font-weight:700;letter-spacing:1px">VALEUR</div></div>'
+      +'<div style="flex:1;background:rgba(255,255,255,.03);border-radius:6px;padding:8px;text-align:center">'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#fff">'+(target.reputation||0)+'/100</div>'
+      +'<div style="font-size:6px;color:rgba(255,255,255,.2);font-weight:700;letter-spacing:1px">RÉPUTATION</div></div></div>';
+  }
+
+  // Level 2+: Employee count
+  if(lvl>=2){
+    report+='<div style="font-size:9px;color:rgba(255,255,255,.4);margin-bottom:4px">👷 '+targetEmps.length+' employé'+(targetEmps.length>1?'s':'')+'</div>';
+  }
+
+  // Level 3+: Employee details
+  if(lvl>=3&&targetEmps.length>0){
+    targetEmps.forEach(function(emp){
+      var s=getSpecialty(emp.specialty);
+      report+='<div style="font-size:8px;color:rgba(255,255,255,.25);margin-left:12px">'+s.icon+' '+s.name+' Niv.'+emp.level+'</div>';
+    });
+    report+='<div style="margin-bottom:4px"></div>';
+  }
+
+  // Level 4+: Active contracts
+  if(lvl>=4){
+    var contracts=target.contracts||{};
+    var active=(contracts.list||[]).filter(function(c){return c.status==='accepted';});
+    report+='<div style="font-size:9px;color:rgba(255,255,255,.4)">📋 '+active.length+' contrat'+(active.length>1?'s':'')+' en cours</div>';
+  }
+
+  // Level 5: Security weakness
+  if(lvl>=5){
+    if(secuLevel===0){
+      report+='<div style="font-size:9px;color:#ef4444;font-weight:700;margin-top:4px">🔓 AUCUNE SÉCURITÉ — Sabotage garanti</div>';
+    }else{
+      report+='<div style="font-size:9px;color:#f59e0b;margin-top:4px">🔒 Sécurité niv.'+secuLevel+' — Sabotage risqué</div>';
+    }
+  }
+
+  report+='</div>';
+
+  // Show report inline
+  var tgt=document.getElementById('spy-targets');
+  if(tgt)tgt.innerHTML=report;
+  toast('🕵️ Espionnage réussi !');
 }
 
 // Contrats
