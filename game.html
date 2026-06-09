@@ -174,36 +174,40 @@ body{
 /* Widget row (Commerce) */
 .widget-row{grid-column:span 2;display:flex;align-items:center;gap:14px;}
 
-/* Commerce (V2 coffre qui déborde) */
+/* Commerce (Z3 blanc + pluie de pièces) */
 .widget-commerce{
-  background:linear-gradient(135deg,#1c1917,#292524);
+  background:#fff;
   grid-column:span 2;min-height:160px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   text-align:center;padding:22px;
+  border-bottom:1px solid #f0f0f0;
 }
-.commerce-chest{position:relative;z-index:2;margin-bottom:4px;}
-.commerce-chest-emoji{font-size:48px;animation:chestBounce 3s ease-in-out infinite;}
-@keyframes chestBounce{
-  0%,100%{transform:translateY(0) rotate(0)}
-  30%{transform:translateY(-3px) rotate(-2deg)}
-  60%{transform:translateY(-1px) rotate(1deg)}
+.commerce-rain{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.commerce-drop{position:absolute;animation:commerceFall linear infinite;opacity:.18;}
+@keyframes commerceFall{
+  0%{transform:translateY(-20px) rotate(0);opacity:0}
+  10%{opacity:.2}90%{opacity:.12}
+  100%{transform:translateY(180px) rotate(360deg);opacity:0}
 }
-.commerce-burst{position:absolute;inset:-30px;overflow:visible;pointer-events:none;}
-.commerce-coin{position:absolute;top:50%;left:50%;animation:coinBurst ease-out infinite;}
-@keyframes coinBurst{
-  0%{transform:translate(-50%,-50%) scale(0);opacity:0}
-  15%{opacity:.7;transform:translate(var(--bx),var(--by)) scale(1)}
-  60%{opacity:.3}
-  100%{opacity:0;transform:translate(var(--ex),var(--ey)) scale(.5)}
+.commerce-company-logo{
+  font-size:42px;z-index:2;
+  animation:commerceFloat 3s ease-in-out infinite;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,.08));
+}
+@keyframes commerceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.commerce-company-name{
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:800;
+  color:#1a1a1a;letter-spacing:1px;z-index:2;margin-top:6px;
+  max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 .commerce-title{
-  font-family:'Bangers',cursive;font-size:clamp(24px,7vw,30px);
-  color:#fbbf24;letter-spacing:3px;z-index:2;
+  font-family:'Bangers',cursive;font-size:clamp(20px,6vw,26px);
+  color:#9ca3af;letter-spacing:2px;z-index:2;margin-top:2px;
 }
-.commerce-amount{font-size:11px;z-index:2;margin-top:2px;}
+.commerce-amount{font-size:11px;z-index:2;margin-top:4px;}
 .commerce-sub{
-  font-size:9px;color:rgba(255,255,255,.25);
+  font-size:9px;color:#d1d5db;
   font-weight:700;z-index:2;margin-top:3px;
 }
 
@@ -455,10 +459,9 @@ body{
 
   <!-- COMMERCE -->
   <div class="widget widget-full widget-commerce" onclick="location.href='commerce.html'">
-    <div class="commerce-chest">
-      <div class="commerce-chest-emoji">📦</div>
-      <div class="commerce-burst" id="commerceBurst"></div>
-    </div>
+    <div class="commerce-rain" id="commerceRain"></div>
+    <div class="commerce-company-logo" id="commerceLogo">🏪</div>
+    <div class="commerce-company-name" id="commerceName">Mon Entreprise</div>
     <div class="commerce-title">COMMERCE</div>
     <div class="commerce-amount card-dynamic-val zero" id="commerceStatus">—</div>
     <div class="commerce-sub">Récupère tes gains</div>
@@ -677,8 +680,9 @@ async function init(){
       document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
     });
 
-    // Commerce coins burst
-    initCommerceBurst();
+    // Commerce rain + company data
+    initCommerceRain();
+    loadCompanyCard(uid);
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -838,29 +842,32 @@ async function loadChatBadge(uid){
   }catch(e){}
 }
 
-// ── Commerce coins burst ──
-function initCommerceBurst(){
-  const burst=document.getElementById('commerceBurst');
-  if(!burst)return;
-  const emojis=['💰','🪙','💵','💶','✨'];
-  function spawnCoin(){
+// ── Commerce coin rain ──
+function initCommerceRain(){
+  const rain=document.getElementById('commerceRain');
+  if(!rain)return;
+  const coins=['💰','🪙','💵','💶'];
+  for(let i=0;i<12;i++){
     const c=document.createElement('div');
-    c.className='commerce-coin';
-    c.textContent=emojis[Math.floor(Math.random()*emojis.length)];
-    const angle=Math.random()*Math.PI*2;
-    const dist=30+Math.random()*25;
-    const endDist=50+Math.random()*30;
-    c.style.setProperty('--bx',Math.cos(angle)*dist+'px');
-    c.style.setProperty('--by',Math.sin(angle)*dist+'px');
-    c.style.setProperty('--ex',Math.cos(angle)*endDist+'px');
-    c.style.setProperty('--ey',(Math.sin(angle)*endDist-20)+'px');
-    c.style.animationDuration=(2+Math.random()*1.5)+'s';
-    c.style.fontSize=(10+Math.random()*8)+'px';
-    burst.appendChild(c);
-    setTimeout(()=>c.remove(),3500);
+    c.className='commerce-drop';
+    c.textContent=coins[Math.floor(Math.random()*coins.length)];
+    c.style.left=Math.random()*100+'%';
+    c.style.fontSize=(10+Math.random()*10)+'px';
+    c.style.animationDuration=(2.5+Math.random()*3)+'s';
+    c.style.animationDelay=(-Math.random()*4)+'s';
+    rain.appendChild(c);
   }
-  setInterval(spawnCoin,700);
-  for(let i=0;i<4;i++)setTimeout(spawnCoin,i*200);
+}
+
+// ── Commerce company data ──
+async function loadCompanyCard(uid){
+  try{
+    const{data}=await sb.from('companies').select('emoji,nom').eq('user_id',uid).maybeSingle();
+    if(data){
+      if(data.emoji)document.getElementById('commerceLogo').textContent=data.emoji;
+      if(data.nom)document.getElementById('commerceName').textContent=data.nom;
+    }
+  }catch(e){}
 }
 
 init();
