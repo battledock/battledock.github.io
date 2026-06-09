@@ -99,6 +99,10 @@ body.wasted{animation:wasted 1s ease-in-out infinite;filter:blur(1px)}
 .music-back{background:rgba(255,255,255,.06);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:10px;font-weight:700;cursor:pointer}
 
 .toast{position:fixed;top:calc(12px+env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:#fbbf24;color:#1a1a1a;padding:10px 20px;border-radius:20px;font-size:12px;font-weight:800;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none}
+@keyframes phoneShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-15deg)}75%{transform:rotate(15deg)}}
+@keyframes phonePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 15px rgba(34,197,94,0)}}
+.phone-choice{width:100%;padding:12px;border:1.5px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.04);color:#fff;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;text-align:left}
+.phone-choice:active{background:rgba(255,255,255,.1);transform:scale(.97)}
 </style>
 </head>
 <body>
@@ -149,6 +153,14 @@ body.wasted{animation:wasted 1s ease-in-out infinite;filter:blur(1px)}
     </div>
   </div>
 
+  <!-- GÉGÉ TE PROVOQUE -->
+  <div class="sec">🤬 GÉGÉ TE PROVOQUE</div>
+  <div class="card" style="text-align:center">
+    <div style="font-size:42px;margin-bottom:6px">👴</div>
+    <div id="insulte" style="font-size:13px;font-weight:700;color:#ef4444;min-height:40px;line-height:1.4">"Appuie si t'es pas un lâche"</div>
+    <button onclick="getInsulte()" style="width:100%;margin-top:8px;padding:12px;border:none;border-radius:10px;background:rgba(239,68,68,.1);color:#ef4444;font-family:Bangers,cursive;font-size:15px;letter-spacing:2px;cursor:pointer;touch-action:manipulation">😤 PROVOQUE-MOI</button>
+  </div>
+
   <!-- JOUEURS CONNECTÉS -->
   <div class="sec">🕺 SUR LA PISTE</div>
   <div class="card" id="playersCard">Chargement...</div>
@@ -167,6 +179,33 @@ body.wasted{animation:wasted 1s ease-in-out infinite;filter:blur(1px)}
   <div class="sec">📰 JOURNAL DU PORT — MAJ 1.2</div>
   <div class="card" id="changelog"></div>
 
+</div>
+
+<!-- APPEL TÉLÉPHONIQUE -->
+<div id="phoneOverlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.92);backdrop-filter:blur(12px);flex-direction:column;align-items:center;justify-content:center;padding:20px">
+  <!-- Écran d'appel entrant -->
+  <div id="phoneRing" style="text-align:center">
+    <div style="font-size:60px;animation:phoneShake .3s ease-in-out infinite" id="phoneEmoji">📞</div>
+    <div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#fff;letter-spacing:3px;margin-top:12px">APPEL ENTRANT</div>
+    <div style="font-size:13px;color:#fbbf24;font-weight:700;margin-top:4px">L'EMBAUCHE DU PORT</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px">+33 4 91 00 00 00</div>
+    <div style="display:flex;gap:16px;margin-top:24px;justify-content:center">
+      <button onclick="pickupPhone()" style="width:64px;height:64px;border-radius:50%;border:none;background:#22c55e;font-size:28px;cursor:pointer;animation:phonePulse 1s ease-in-out infinite">📱</button>
+      <button onclick="hangupPhone()" style="width:64px;height:64px;border-radius:50%;border:none;background:#ef4444;font-size:28px;cursor:pointer">📵</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:10px">
+      <div style="font-size:9px;color:#22c55e;font-weight:700">DÉCROCHER</div>
+      <div style="font-size:9px;color:#ef4444;font-weight:700">RACCROCHER</div>
+    </div>
+  </div>
+  <!-- Dialogue -->
+  <div id="phoneDialog" style="display:none;text-align:center;width:100%;max-width:340px">
+    <div style="font-size:36px;margin-bottom:8px">👴📞</div>
+    <div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.3);letter-spacing:2px;margin-bottom:12px">L'EMBAUCHE DU PORT</div>
+    <div id="phoneMsg" style="font-size:14px;color:#fff;font-weight:700;min-height:50px;line-height:1.5;margin-bottom:16px"></div>
+    <div id="phoneChoices" style="display:flex;flex-direction:column;gap:6px"></div>
+    <button onclick="hangupPhone()" style="margin-top:16px;padding:10px 24px;border:none;border-radius:20px;background:#ef4444;color:#fff;font-size:11px;font-weight:800;cursor:pointer;touch-action:manipulation">📵 RACCROCHER</button>
+  </div>
 </div>
 
 <!-- Music bar -->
@@ -419,6 +458,117 @@ function renderChangelog(){
   document.getElementById('changelog').innerHTML=html;
 }
 
+// ══ GÉGÉ TE PROVOQUE ══
+var INSULTES=[
+  "T'es tellement lent que même les containers te doublent",
+  "Si t'étais un docker, le port ferait faillite",
+  "T'as la carrure d'une sardine et l'intelligence d'une ancre",
+  "Même le mistral fait moins de bruit que toi pour rien",
+  "Tu travailles comme une huître : tu t'ouvres jamais",
+  "T'es le genre à perdre un bras de fer contre une crevette",
+  "Si le travail c'est la santé, toi t'es immortel",
+  "T'as autant de charisme qu'un bollard rouillé",
+  "Le port était plus propre avant que t'arrives",
+  "T'es tellement fauché que même les mouettes te font la charité",
+  "Si t'étais une entreprise, t'aurais fait faillite à la création",
+  "T'as le QI d'une bouée et encore, la bouée flotte",
+  "Même Patrick Lavagne bosse plus que toi",
+  "Tu fais peur aux poissons avec ta tête",
+  "T'es le seul docker que même le syndicat veut pas",
+  "Si la bêtise payait, tu serais milliardaire",
+  "T'es aussi utile qu'un parapluie à Marseille",
+  "Même Titouan est plus motivé que toi, et il dort debout",
+  "T'es le genre à rater le port en bateau",
+  "Gégé a vu des palettes plus intelligentes que toi",
+];
+function getInsulte(){
+  var i=INSULTES[Math.floor(Math.random()*INSULTES.length)];
+  document.getElementById('insulte').textContent='"'+i+'"';
+  document.getElementById('insulte').style.animation='none';
+  setTimeout(function(){document.getElementById('insulte').style.animation='hdrBounce .3s';},10);
+}
+
+// ══ APPEL DE L'EMBAUCHE ══
+var phoneTimeout=null,phoneInterval=null,phoneStep=0,phoneActive=false;
+
+var PHONE_SCRIPT=[
+  {msg:"Allô ? Ici l'embauche du port de Marseille. Tu veux travailler ?",
+   choices:["Euh... oui ?","Non merci je fais la fête","C'est qui ?"]},
+  {msg:"Parfait ! On a besoin de quelqu'un pour décharger 47 tonnes de sardines. Maintenant.",
+   choices:["47 TONNES ?!","Je suis en fête là...","D'accord chef"]},
+  {msg:"T'as un diplôme de docker ? Un certificat de portage ? Un brevet de sardine ?",
+   choices:["Un brevet de sardine ???","J'ai mon permis B...","J'ai rien du tout"]},
+  {msg:"Bon c'est pas grave. Tu sais nager au moins ? Parce que le dernier est tombé à l'eau.",
+   choices:["Il est mort ?!","Je sais faire la planche","Raccrochez s'il vous plaît"]},
+  {msg:"Il est pas mort, il a ouvert un restaurant de fruits de mer. Bref, tu commences MAINTENANT.",
+   choices:["MAINTENANT ?!","Mais il est minuit !","Je suis bourré"]},
+  {msg:"On s'en fout de l'heure. Les sardines attendent pas. Tu viens oui ou non ?",
+   choices:["Les sardines ATTENDENT ?","OK j'arrive...","Appelez Gégé plutôt"]},
+  {msg:"Gégé est en arrêt maladie. Il s'est coincé le dos en portant une olive. UNE OLIVE.",
+   choices:["Une olive ?!","Le pauvre...","C'est du Gégé ça"]},
+  {msg:"Bon écoute, si tu viens pas dans 30 secondes, on embauche le goéland.",
+   choices:["Le GOÉLAND ?","OK OK J'ARRIVE","Embauchez le goéland"]},
+  {msg:"Le goéland demande 3 sardines de l'heure. C'est moins cher que toi. Dernière chance.",
+   choices:["Je suis moins cher qu'un goéland ???","C'est une blague ?","Payez-moi en sardines aussi"]},
+  {msg:"Trop tard, le goéland a accepté. Il commence demain. Il a même un CV. Au revoir.",
+   choices:["...","Le goéland a un CV ?!","Rappelle-moi jamais"]},
+  {msg:"*bip bip bip* — L'embauche a raccroché. Le goéland a eu le poste.",
+   choices:["Je vais retourner à la fête..."]},
+];
+
+function triggerPhoneCall(){
+  phoneStep=0;
+  document.getElementById('phoneOverlay').style.display='flex';
+  document.getElementById('phoneRing').style.display='block';
+  document.getElementById('phoneDialog').style.display='none';
+  // Vibrate if available
+  if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);
+}
+
+function pickupPhone(){
+  document.getElementById('phoneRing').style.display='none';
+  document.getElementById('phoneDialog').style.display='block';
+  phoneActive=true;
+  showPhoneStep();
+}
+
+function showPhoneStep(){
+  if(phoneStep>=PHONE_SCRIPT.length){hangupPhone();return;}
+  var step=PHONE_SCRIPT[phoneStep];
+  document.getElementById('phoneMsg').textContent=step.msg;
+  var choicesEl=document.getElementById('phoneChoices');
+  choicesEl.innerHTML='';
+  step.choices.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='phone-choice';
+    btn.textContent=c;
+    btn.onclick=function(){
+      phoneStep++;
+      if(phoneStep>=PHONE_SCRIPT.length){
+        document.getElementById('phoneMsg').textContent='*bip bip bip*';
+        choicesEl.innerHTML='<button class="phone-choice" onclick="hangupPhone()" style="text-align:center;color:#fbbf24">🎉 Retourner à la fête</button>';
+      }else{
+        showPhoneStep();
+      }
+    };
+    choicesEl.appendChild(btn);
+  });
+}
+
+function hangupPhone(){
+  document.getElementById('phoneOverlay').style.display='none';
+  phoneActive=false;
+  if(!phoneActive&&phoneStep<3){
+    // They hung up early — call back in 15s
+    toast('📵 Raccroché. Ils vont rappeler...');
+    setTimeout(function(){if(!phoneActive)triggerPhoneCall();},15000);
+  }else if(phoneStep>=PHONE_SCRIPT.length){
+    toast('🐦 Le goéland a eu le poste.');
+  }else{
+    toast('📵 Raccroché');
+  }
+}
+
 // ══ INIT ══
 async function init(){
   var sess=await sb.auth.getSession();
@@ -440,6 +590,8 @@ async function init(){
   loadFeteMsgs();
   renderChangelog();
   startBalloons();
+  // L'embauche appelle après 10 secondes
+  setTimeout(triggerPhoneCall,10000);
 }
 init();
 </script>
