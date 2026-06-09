@@ -25,12 +25,10 @@ body{
   --ink:#1a1a1a;
   --border:#1a1a1a;
   --shadow:#1a1a1a;
-  --red:#d63031;
   --gold:#e17f00;
   --gold-light:#fbbf24;
   --navy:#0d1f3a;
   --casino:#8b0018;
-  --blue-sea:#0369a1;
   --radius:14px;
   --border-w:3px;
   --shadow-offset:5px;
@@ -453,7 +451,7 @@ body{
         <div class="card-banque-icon">🏛️</div>
       </div>
       <div>
-        <div class="card-banque-label">SOLDE DISPONIBLE</div>
+        <div class="card-banque-label">ÉPARGNE TOTALE</div>
         <div class="card-banque-amount" id="banqueBalance">— €</div>
       </div>
       <div class="card-banque-title">BANQUE</div>
@@ -563,6 +561,22 @@ function avatarForLevel(lvl){
   return'avatar-default.png';
 }
 
+// FIX #8 : date locale (pas UTC)
+function getLocalDateStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Calcul solde banque réel (FIX #2)
+function getBankTotal(banque){
+  if(!banque||typeof banque!=='object')return 0;
+  let total=0;
+  if(banque.cc)total+=(banque.cc.solde||0);
+  if(banque.livret)total+=(banque.livret.solde||0);
+  if(banque.pep)total+=(banque.pep.solde||0);
+  return total;
+}
+
 const PROFILE_THEMES={
   'rouge_navy':'linear-gradient(135deg,#cc1a1a,#0f172a)',
   'bleu_mer':'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
@@ -586,8 +600,6 @@ const PROFILE_THEMES={
   'neon_rouge':'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
   'arc_en_ciel':'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
 };
-
-
 
 function showLevelUp(lvl,diaReward,moneyReward){
   const overlay=document.createElement('div');
@@ -624,9 +636,10 @@ async function init(){
     if(!session){location.href='index.html';return;}
     const uid=session.user.id;
 
+    // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
     const[profileRes,statsRes]=await Promise.all([
       sb.from('profiles').select('username,avatar_url,background_color').eq('user_id',uid).maybeSingle(),
-      sb.from('game_stats').select('level,xp,money,diamonds,last_level_rewarded,last_levelup_shown').eq('user_id',uid).maybeSingle()
+      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login').eq('user_id',uid).maybeSingle()
     ]);
     const profile=profileRes.data;
     const stats=statsRes.data;
@@ -640,25 +653,29 @@ async function init(){
     const startLvl=lvl;
     while(xp>=getXpRequired(lvl)){xp-=getXpRequired(lvl);lvl++;}
 
-    // Récompenses de level-up
+    // FIX #5 : récompenses level-up (skip level 1 = pas de cadeau parasite)
     const lastRewarded=stats.last_level_rewarded||0;
     let rewardDiamonds=0;
     let rewardMoney=0;
     if(lvl>lastRewarded){
-      for(let l=lastRewarded+1;l<=lvl;l++){
+      const startFrom=Math.max(lastRewarded+1,2); // jamais récompenser le niveau 1
+      for(let l=startFrom;l<=lvl;l++){
         rewardDiamonds+=5;
-        if(l%5===0) rewardDiamonds+=10; // bonus tous les 5 niveaux
-        if(l%10===0) rewardMoney+=5000;  // bonus tous les 10 niveaux
+        if(l%5===0) rewardDiamonds+=10;
+        if(l%10===0) rewardMoney+=5000;
       }
       diamonds+=rewardDiamonds;
       money+=rewardMoney;
+      // FIX #4 : sync grade en base
       await sb.from('game_stats').update({
         level:lvl,xp,diamonds,money,
+        grade:getGrade(lvl),
         last_level_rewarded:lvl,
         last_levelup_shown:lvl
       }).eq('user_id',uid);
     } else if(lvl!==startLvl){
-      await sb.from('game_stats').update({level:lvl,xp}).eq('user_id',uid);
+      // FIX #4 : sync grade même sans récompenses
+      await sb.from('game_stats').update({level:lvl,xp,grade:getGrade(lvl)}).eq('user_id',uid);
     }
 
     const xpNeeded=getXpRequired(lvl);
@@ -672,6 +689,9 @@ async function init(){
     if(!SPECIAL.includes(profile.avatar_url)&&profile.avatar_url!==autoAvatar){
       await sb.from('profiles').update({avatar_url:autoAvatar}).eq('user_id',uid);
     }
+
+    // FIX #3 : mettre à jour last_seen
+    sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(()=>{});
 
     // Thème → appliquer sur le header entier
     const card=document.getElementById('profileCardBtn');
@@ -693,9 +713,13 @@ async function init(){
     document.getElementById('xpCounter').textContent=`${xp} / ${xpNeeded} XP`;
     document.getElementById('xpFill').style.width=pct+'%';
 
-    // Money + diamonds in header (use updated values)
+    // Money + diamonds in header
     document.getElementById('moneyDisplay').textContent=Math.floor(money).toLocaleString('fr-FR')+'€';
     document.getElementById('diamondDisplay').textContent=Math.floor(diamonds).toLocaleString('fr-FR');
+
+    // FIX #2 : carte banque → vrai solde banque (pas le wallet)
+    const bankTotal=getBankTotal(stats.banque);
+    document.getElementById('banqueBalance').textContent=Math.floor(bankTotal).toLocaleString('fr-FR')+' €';
 
     // Afficher
     document.getElementById('profileSkeleton').style.display='none';
@@ -712,10 +736,11 @@ async function init(){
       showLevelUp(lvl,rewardDiamonds,rewardMoney);
     }
 
+    // FIX #8 : streak avec date locale (plus UTC)
+    checkStreak(uid,stats);
+
     startPlaytimeTracking(uid);
-    checkStreak(uid);
-    loadRank(uid,lvl);
-    loadBalance(uid);
+    loadRank(uid);
 
   }catch(e){
     console.error('init error:',e);
@@ -723,62 +748,70 @@ async function init(){
   }
 }
 
-// ── Playtime tracking ──
+// ── Playtime tracking (FIX #10 : catch silencieux OK, RPC peut ne pas exister) ──
 let _playtimeUid=null;
 function startPlaytimeTracking(uid){
   _playtimeUid=uid;
   setInterval(async()=>{
-    try{await sb.rpc('increment_playtime',{uid:_playtimeUid});}catch(e){}
+    try{await sb.rpc('increment_playtime',{uid:_playtimeUid});}catch(e){/* RPC may not exist */}
   },60000);
 }
 
-// ── Streak ──
-async function checkStreak(uid){
+// FIX #8 : streak avec date locale + données déjà fetchées (pas de re-SELECT)
+function checkStreak(uid,stats){
   try{
-    const{data}=await sb.from('game_stats').select('streak_days,last_login').eq('user_id',uid).maybeSingle();
-    if(!data)return;
-    const today=new Date().toISOString().split('T')[0];
-    if(data.last_login===today)return;
+    const today=getLocalDateStr();
+    if(stats.last_login===today)return;
     const yesterday=new Date();
     yesterday.setDate(yesterday.getDate()-1);
-    const yesterdayStr=yesterday.toISOString().split('T')[0];
+    const yStr=yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
     let newStreak;
-    if(data.last_login===yesterdayStr){newStreak=(data.streak_days||0)+1;}
+    if(stats.last_login===yStr){newStreak=(stats.streak_days||0)+1;}
     else{newStreak=1;}
-    await sb.from('game_stats').update({streak_days:newStreak,last_login:today}).eq('user_id',uid);
+    sb.from('game_stats').update({streak_days:newStreak,last_login:today}).eq('user_id',uid).then(()=>{});
   }catch(e){}
 }
 
-// ── Rank ──
-async function loadRank(uid,lvl){
+// FIX #7 : rank — tri Supabase + count séparé (scalable)
+async function loadRank(uid){
   try{
-    const{data}=await sb.from('game_stats').select('user_id,level,money').order('level',{ascending:false});
-    if(!data)return;
-    const sorted=data.slice().sort((a,b)=>((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)));
-    const idx=sorted.findIndex(x=>x.user_id===uid);
-    const rank=idx>=0?idx+1:'—';
-    const total=sorted.length;
-    const leader=sorted[0];
+    // Leader = top 1
+    const{data:top}=await sb.from('game_stats')
+      .select('user_id,level,money')
+      .order('level',{ascending:false})
+      .order('money',{ascending:false})
+      .limit(1);
+
+    // Total joueurs
+    const{count}=await sb.from('game_stats')
+      .select('user_id',{count:'exact',head:true});
+
+    // Position du joueur : compter combien ont un level+money supérieur
+    // Approx : on fetch juste user_id,level,money et on trie côté client
+    // TODO: remplacer par une RPC Postgres pour 500+ joueurs
+    const{data:all}=await sb.from('game_stats')
+      .select('user_id,level,money')
+      .order('level',{ascending:false})
+      .order('money',{ascending:false});
+
+    let rank='—';
+    if(all){
+      const idx=all.findIndex(x=>x.user_id===uid);
+      if(idx>=0) rank=idx+1;
+    }
+
     let leaderName='—';
-    if(leader){
-      const{data:prof}=await sb.from('profiles').select('username').eq('user_id',leader.user_id).maybeSingle();
+    if(top&&top[0]){
+      const{data:prof}=await sb.from('profiles').select('username').eq('user_id',top[0].user_id).maybeSingle();
       leaderName=(prof&&prof.username)?prof.username:'—';
     }
+
     const elPos=document.getElementById('rankMyPos');
     const elLeader=document.getElementById('rankLeaderName');
     const elTotal=document.getElementById('rankTotal');
     if(elPos)elPos.textContent='#'+rank;
     if(elLeader)elLeader.textContent=leaderName;
-    if(elTotal)elTotal.textContent=total;
-  }catch(e){}
-}
-
-// ── Balance banque ──
-async function loadBalance(uid){
-  try{
-    const{data}=await sb.from('game_stats').select('money').eq('user_id',uid).maybeSingle();
-    if(!data)return;
-    document.getElementById('banqueBalance').textContent=Math.floor(data.money).toLocaleString('fr-FR')+' €';
+    if(elTotal)elTotal.textContent=count||'—';
   }catch(e){}
 }
 
