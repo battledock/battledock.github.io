@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#e8e0cc">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -277,6 +277,37 @@ body{
 
 /* Dynamic values */
 .card-dynamic-val{font-size:9px;font-weight:700;margin-top:2px;word-break:break-word;overflow-wrap:break-word;}
+
+/* Bourse (T4 green + ticker joueurs) */
+.widget-bourse{
+  background:linear-gradient(135deg,#065f46,#059669);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:16px;
+}
+.bourse-title{
+  font-family:'Bangers',cursive;font-size:clamp(22px,7vw,28px);
+  color:#fff;letter-spacing:3px;z-index:2;
+}
+.bourse-ticker{
+  position:absolute;bottom:0;left:0;right:0;
+  height:18px;background:rgba(0,0,0,.2);
+  overflow:hidden;display:flex;align-items:center;
+}
+.bourse-tape{
+  display:flex;gap:16px;
+  animation:tickerScroll 20s linear infinite;
+  white-space:nowrap;
+}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.bourse-tape-item{
+  font-family:'JetBrains Mono',monospace;
+  font-size:7px;font-weight:700;
+  display:flex;gap:4px;
+}
+.bourse-tape-item .sym{color:rgba(255,255,255,.4);}
+.bourse-tape-item .up{color:#86efac;}
+.bourse-tape-item .down{color:#fca5a5;}
 .card-dynamic-val.zero{color:#9ca3af;}
 .card-dynamic-val.positive{color:#22c55e;}
 .card-dynamic-val.negative{color:#ef4444;}
@@ -469,10 +500,11 @@ body{
 
   <!-- BOURSE + SYNDICAT -->
   <div class="widget-duo">
-    <div class="widget" onclick="location.href='bourse.html'">
-      <div class="widget-emoji">📈</div>
-      <div class="widget-title">BOURSE</div>
-      <div class="card-dynamic-val zero" id="bourseProfit">—</div>
+    <div class="widget widget-bourse" onclick="location.href='bourse.html'">
+      <div class="bourse-title">BOURSE</div>
+      <div class="bourse-ticker">
+        <div class="bourse-tape" id="bourseTape"></div>
+      </div>
     </div>
     <div class="widget" onclick="location.href='syndicat.html'">
       <div class="widget-emoji">✊</div>
@@ -616,7 +648,7 @@ async function init(){
     // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
     const[profileRes,statsRes]=await Promise.all([
       sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
-      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,bourse_profit,direction').eq('user_id',uid).maybeSingle()
+      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,direction').eq('user_id',uid).maybeSingle()
     ]);
     const profile=profileRes.data;
     const stats=statsRes.data;
@@ -680,9 +712,10 @@ async function init(){
       document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
     });
 
-    // Commerce rain + company data
+    // Commerce rain + company data + bourse ticker
     initCommerceRain();
     loadCompanyCard(uid);
+    loadBourseTicker();
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -798,20 +831,6 @@ function populateDynamicCards(stats){
       el1.textContent='Pas encore créée';
     }
   }
-  // Bourse
-  const el2=document.getElementById('bourseProfit');
-  if(el2){
-    const bp=stats.bourse_profit||0;
-    if(bp>0){
-      el2.textContent='+'+Math.floor(bp).toLocaleString('fr-FR')+'€';
-      el2.classList.replace('zero','positive');
-    } else if(bp<0){
-      el2.textContent=Math.floor(bp).toLocaleString('fr-FR')+'€';
-      el2.style.color='#f87171';
-    } else {
-      el2.textContent='0€ profit';
-    }
-  }
   // Direction
   const el3=document.getElementById('directionSalary');
   if(el3){
@@ -840,6 +859,38 @@ async function loadChatBadge(uid){
       if(badge){badge.textContent=txt;badge.style.display='flex';}
     }
   }catch(e){}
+}
+
+// ── Bourse ticker — entreprises des joueurs ──
+async function loadBourseTicker(){
+  const tape=document.getElementById('bourseTape');
+  if(!tape)return;
+  try{
+    const{data}=await sb.from('companies')
+      .select('nom,emoji,valeur,reputation')
+      .order('valeur',{ascending:false})
+      .limit(20);
+    if(!data||data.length===0){
+      tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Aucune entreprise cotée</span></span>';
+      return;
+    }
+    // Générer les items du ticker
+    let html='';
+    data.forEach(c=>{
+      const name=(c.nom||'???').substring(0,12).toUpperCase();
+      // Variation basée sur la réputation (positif si > 50, négatif sinon)
+      const rep=c.reputation||50;
+      const variation=((rep-50)/5).toFixed(1);
+      const isUp=variation>=0;
+      const cls=isUp?'up':'down';
+      const arrow=isUp?'+':'';
+      html+=`<span class="bourse-tape-item"><span class="sym">${c.emoji||'🏢'} ${name}</span> <span class="${cls}">${arrow}${variation}%</span></span>`;
+    });
+    // Dupliquer pour boucle infinie
+    tape.innerHTML=html+html;
+  }catch(e){
+    tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Chargement...</span></span>';
+  }
 }
 
 // ── Commerce coin rain ──
