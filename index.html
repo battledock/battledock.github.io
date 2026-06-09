@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icon-180.png">
 <meta name="theme-color" content="#e8e0cc">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
@@ -263,7 +263,7 @@ async function handleLogin(e){
   btn.textContent='CONNEXION...';btn.disabled=true;
 
   try{
-    const email=user+'@battledock.local';
+    const email=user.toLowerCase()+'@battledock.local';
     const{error}=await sb.auth.signInWithPassword({email,password:pass});
     if(error){
       showPopup('Pseudo ou mot de passe incorrect !');
@@ -292,36 +292,44 @@ async function handleSignup(e){
   btn.textContent='INSCRIPTION...';btn.disabled=true;
 
   try{
-    // Vérifier si pseudo pris
-    const{data:existing}=await sb.from('profiles').select('username').eq('username',user).maybeSingle();
-    if(existing){
+    // Vérifier si pseudo pris (case-insensitive)
+    const userLower=user.toLowerCase();
+    const{data:allProfiles}=await sb.from('profiles').select('username');
+    const taken=allProfiles&&allProfiles.some(p=>p.username.toLowerCase()===userLower);
+    if(taken){
       showPopup('Ce pseudo est déjà pris !');
       btn.textContent="S'INSCRIRE";btn.disabled=false;
       return;
     }
 
     // Créer le compte auth
-    const email=user+'@battledock.local';
+    const email=userLower+'@battledock.local';
     const{data:authData,error:authErr}=await sb.auth.signUp({
       email,password:pass,
       options:{data:{username:user}}
     });
     if(authErr) throw authErr;
+    if(!authData||!authData.user){
+      throw new Error('Inscription échouée — réessaye.');
+    }
 
     const uid=authData.user.id;
     await new Promise(r=>setTimeout(r,500));
 
-    // Créer profiles (sans diamonds — colonne absente)
-    await sb.from('profiles').upsert({
+    // Créer profiles
+    const{error:profErr}=await sb.from('profiles').upsert({
       user_id:uid,
       username:user,
       avatar_url:'avatar-default.png',
       background_color:'bleu_mer',
+      skin_container:'red',
+      unlocked_covers:['rouge_navy','bleu_mer'],
       trophies:0
     },{onConflict:'user_id'});
+    if(profErr) throw profErr;
 
-    // Créer game_stats (last_level_rewarded:1 pour éviter récompense parasite)
-    await sb.from('game_stats').upsert({
+    // Créer game_stats
+    const{error:statsErr}=await sb.from('game_stats').upsert({
       user_id:uid,
       money:1000,
       level:1,
@@ -333,6 +341,7 @@ async function handleSignup(e){
       streak_days:0,
       trophies:0
     },{onConflict:'user_id'});
+    if(statsErr) throw statsErr;
 
     btn.textContent='✅ BIENVENUE !';
     setTimeout(()=>{location.href='game.html';},800);
