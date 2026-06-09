@@ -1,157 +1,344 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Header — Battle Dock</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter',sans-serif; background:#efefef; min-height:100vh; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Battle Dock — Le Port</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{background:#e8e0cc;}
+body{
+  font-family:'Inter',sans-serif;
+  background:#e8e0cc;
+  /* Subtle paper texture via noise */
+  background-image:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  min-height:100vh;
+  -webkit-user-select:none;user-select:none;
+}
 
-    /* SKELETON */
-    @keyframes skShimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-    .skeleton-card {
-      background:#fff; padding:16px; box-sizing:border-box;
-    }
-    .sk {
-      border-radius:8px;
-      background:linear-gradient(90deg,#e8e8ed 25%,#f3f3f6 50%,#e8e8ed 75%);
-      background-size:200% 100%; animation:skShimmer 1.4s ease-in-out infinite;
-    }
-    .sk-row { display:flex; align-items:center; gap:12px; }
-    .sk-avatar { width:54px; height:54px; border-radius:50%; flex-shrink:0; }
-    .sk-line { height:12px; }
+/* ── TOKENS ── */
+:root{
+  --bg:#e8e0cc;
+  --card:#fffdf7;
+  --ink:#1a1a1a;
+  --border:#1a1a1a;
+  --shadow:#1a1a1a;
+  --red:#d63031;
+  --gold:#e17f00;
+  --gold-light:#fbbf24;
+  --navy:#0d1f3a;
+  --casino:#8b0018;
+  --blue-sea:#0369a1;
+  --radius:14px;
+  --border-w:3px;
+  --shadow-offset:5px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
 
-    /* PROFILE CARD */
-    .profile-card-btn {
-      background:white; padding:16px;
-      display:flex; flex-direction:column; gap:12px; box-sizing:border-box;
-    }
-    .profile-card-btn.themed .pcb-name,
-    .profile-card-btn.themed .pcb-grade,
-    .profile-card-btn.themed .pcb-level-num,
-    .profile-card-btn.themed .pcb-level-lbl,
-    .profile-card-btn.themed .pcb-xp-label { color:#fff !important; }
-    .profile-card-btn.themed .pcb-grade { color:#fde68a !important; }
-    .profile-card-btn.themed .pcb-xp-track { background:rgba(255,255,255,0.2) !important; }
+/* ── SKELETON ── */
+@keyframes skShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.sk{border-radius:8px;background:linear-gradient(90deg,#e8e0cc 25%,#f0ead8 50%,#e8e0cc 75%);background-size:200% 100%;animation:skShimmer 1.4s ease-in-out infinite;}
 
-    .pcb-row { display:flex; align-items:center; gap:14px; }
-    .pcb-avatar { width:54px; height:54px; border-radius:50%; overflow:hidden; flex-shrink:0; border:2px solid #e5e7eb; }
-    .pcb-avatar img { width:100%; height:100%; object-fit:cover; }
-    .pcb-info { flex:1; min-width:0; }
-    .pcb-name { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:1.5px; color:#1a1a1a; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .pcb-grade { font-size:11px; color:#b8962e; font-weight:700; margin-top:3px; }
-    .pcb-level-wrap { text-align:center; flex-shrink:0; }
-    .pcb-level-num { font-family:'Bebas Neue',sans-serif; font-size:30px; color:#1a1a1a; line-height:1; }
-    .pcb-level-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-    .pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
-    .pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
-    .pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
+/* ── HEADER FIXE ── */
+.profile-header{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:600px;z-index:200;
+  padding-top:var(--safe-top);
+  background:var(--card);
+  border-bottom:var(--border-w) solid var(--border);
+  box-shadow:0 var(--shadow-offset) 0 var(--border);
+}
+.profile-header-inner{
+  padding:14px 16px 12px;
+}
+#profileSkeleton .sk-row{display:flex;align-items:center;gap:12px;}
+.sk-avatar{width:52px;height:52px;border-radius:50%;flex-shrink:0;}
+.sk-line{height:12px;}
 
-    /* HEADER FIXE */
-    .profile-header {
-      position:fixed; top:0; left:50%; transform:translateX(-50%);
-      width:100%; max-width:600px; z-index:200;
-      background:#fff;
-      border-bottom:1px solid rgba(15,23,42,0.08);
-      box-shadow:0 2px 16px rgba(15,23,42,0.07);
-    }
-    .profile-header .skeleton-card,
-    .profile-header .profile-card-btn {
-      min-height:119px; border:none !important; border-radius:0 !important;
-      margin:0 !important; box-shadow:none !important;
-    }
+/* ── PROFILE CARD ── */
+.pcb{display:none;gap:10px;}
+.pcb-row{display:flex;align-items:center;gap:14px;}
+.pcb-avatar{
+  width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  border:var(--border-w) solid var(--border);
+  box-shadow:2px 2px 0 var(--shadow);
+}
+.pcb-avatar img{width:100%;height:100%;object-fit:cover;}
+.pcb-info{flex:1;min-width:0;}
+.pcb-name{
+  font-family:'Bangers',cursive;font-size:22px;letter-spacing:1.5px;
+  color:var(--ink);line-height:1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.pcb-grade{font-size:10px;color:var(--gold);font-weight:700;margin-top:2px;letter-spacing:0.5px;}
+.pcb-level-wrap{text-align:center;flex-shrink:0;}
+.pcb-level-num{font-family:'Bangers',cursive;font-size:34px;color:var(--ink);line-height:1;}
+.pcb-level-lbl{font-size:8px;color:#9ca3af;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
+.pcb-xp-row{display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;font-weight:600;margin-bottom:3px;margin-top:10px;}
+.pcb-xp-track{height:6px;background:#ece6d4;border-radius:4px;overflow:hidden;border:1.5px solid var(--border);}
+.pcb-xp-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-light));border-radius:4px;transition:width .5s ease;}
 
-    /* CONTENU PAGE */
-    .page-content {
-      max-width:600px; margin:0 auto;
-      padding-top: 119px;
-      padding-left:0; padding-right:0;
-    }
+/* Themed card override */
+.pcb.themed .pcb-name,
+.pcb.themed .pcb-grade,
+.pcb.themed .pcb-level-num,
+.pcb.themed .pcb-level-lbl,
+.pcb.themed .pcb-xp-row{color:#fff !important;}
+.pcb.themed .pcb-grade{color:#fde68a !important;}
+.pcb.themed .pcb-xp-track{background:rgba(255,255,255,.18) !important;border-color:rgba(255,255,255,.3) !important;}
 
-    /* GRILLE ÉCOLE + CASINO */
-    .duo-grid {
-      display:grid; grid-template-columns:1fr 1fr; height:15vh;
-    }
-    .ecole-card {
-      overflow:hidden; cursor:pointer; position:relative;
-      background:#fafaf8; border-top:1px solid #e2e0d8; border-right:0.5px solid #e2e0d8;
-      transition:transform .15s; height:100%;
-    }
-    .ecole-card:active { transform:scale(0.97); }
+/* ── PAGE CONTENT ── */
+.page-content{
+  max-width:600px;margin:0 auto;
+  padding-top:calc(110px + var(--safe-top));
+  padding-bottom:calc(24px + var(--safe-bottom));
+  display:flex;flex-direction:column;gap:12px;
+  padding-left:12px;padding-right:12px;
+}
 
-    .casino-card {
-      overflow:hidden; cursor:pointer; position:relative;
-      border-top:1px solid rgba(212,175,55,0.2); border-left:0.5px solid rgba(212,175,55,0.1);
-      transition:transform .15s; height:100%;
-    }
-    .casino-card:active { transform:scale(0.97); }
+/* ── BD PANEL (carte générique) ── */
+.bd-panel{
+  background:var(--card);
+  border:var(--border-w) solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow-offset) var(--shadow-offset) 0 var(--shadow);
+  overflow:hidden;
+  cursor:pointer;
+  transition:transform .12s,box-shadow .12s;
+  position:relative;
+}
+.bd-panel:active{
+  transform:translate(2px,2px);
+  box-shadow:2px 2px 0 var(--shadow);
+}
 
-    /* CLASSEMENT BAR */
-    .rank-bar {
-      display:grid; grid-template-columns:1fr 1fr 1fr;
-      background:#fff; border-top:1px solid #f0f0f0;
-      cursor:pointer; width:100%;
-    }
-    .rank-bar:active { opacity:0.8; }
-    .rank-cell { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 8px;gap:3px; }
-    .rank-cell-border { border-right:1px solid #f0f0f0; }
-    .rank-val { font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1; }
-    .rank-val.gold { color:#fbbf24; }
-    .rank-val.dark { color:#0f172a; }
-    .rank-name { font-size:10px;font-weight:700;color:rgba(0,0,0,0.35); }
-    .rank-lbl { font-size:7px;color:rgba(0,0,0,0.18);font-weight:700;letter-spacing:1.5px;text-transform:uppercase; }
+/* ── TRAVAILLER ── */
+.card-work{
+  background:linear-gradient(135deg,#fff8e7,#fff3cd);
+  min-height:140px;
+  display:flex;align-items:center;
+  padding:24px 20px;gap:16px;
+}
+.card-work-icon{font-size:52px;flex-shrink:0;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.15));}
+.card-work-text{flex:1;}
+.card-work-tag{
+  font-size:8px;font-weight:700;letter-spacing:3px;
+  color:var(--gold);text-transform:uppercase;
+  font-family:'Inter',sans-serif;
+}
+.card-work-title{
+  font-family:'Bangers',cursive;font-size:52px;
+  letter-spacing:3px;color:var(--ink);line-height:1;
+  margin-top:2px;
+}
+.card-work-sub{
+  font-size:10px;font-weight:600;color:#b8a070;
+  margin-top:4px;letter-spacing:.5px;
+}
+.card-work-chevron{
+  font-family:'Bebas Neue',sans-serif;font-size:32px;
+  color:var(--ink);opacity:.2;flex-shrink:0;
+}
 
-    /* CARTE TRAVAILLER */
-    .work-card {
-      width:100%; height:30vh; border-radius:0; overflow:hidden;
-      cursor:pointer; position:relative;
-      background:#fff; border:none;
-      margin-bottom:0;
-      transition:transform .15s;
-    }
-    .work-card:active { transform:scale(0.98); }
-    .work-card-content {
-      position:absolute; inset:0; padding:28px; padding-right:60px;
-      display:flex; flex-direction:column; justify-content:center;
-    }
-    .work-card-tag {
-      font-size:9px; font-weight:700; letter-spacing:2px;
-      color:#9ca3af; text-transform:uppercase; margin-bottom:8px;
-    }
-    .work-card-title {
-      font-family:'Bebas Neue',sans-serif; font-size:64px;
-      letter-spacing:2px; color:#0f172a; line-height:1;
-    }
-    .work-card-sub {
-      font-size:10px; font-weight:600; color:#cbd5e1;
-      margin-top:7px; white-space:nowrap;
-    }
-    .work-card-chevron {
-      position:absolute; right:24px; top:50%; transform:translateY(-50%);
-      color:#0f172a; font-size:28px; font-weight:300; line-height:1;
-      opacity:0.25;
-    }
-  </style>
+/* ── HISTOIRE ── */
+.card-story{
+  background:linear-gradient(135deg,#fef9ef,#fdf2e0);
+  min-height:90px;
+  display:flex;align-items:center;
+  padding:18px 20px;gap:16px;
+}
+.card-story-icon{font-size:38px;flex-shrink:0;}
+.card-story-title{
+  font-family:'Bangers',cursive;font-size:28px;
+  color:var(--ink);letter-spacing:2px;line-height:1;
+}
+.card-story-sub{font-size:10px;color:#b8a070;font-weight:600;margin-top:3px;}
+.card-story-badge{
+  margin-left:auto;flex-shrink:0;
+  background:var(--ink);color:var(--gold-light);
+  font-family:'Bebas Neue',sans-serif;font-size:16px;
+  padding:6px 12px;border-radius:8px;letter-spacing:1px;
+}
+
+/* ── CLASSEMENT ── */
+.card-rank{
+  background:linear-gradient(135deg,#fffef7,#fef9e7);
+  display:grid;grid-template-columns:auto 1fr;
+  min-height:80px;
+}
+.card-rank-left{
+  display:flex;align-items:center;justify-content:center;
+  padding:0 20px;font-size:38px;
+  border-right:var(--border-w) solid var(--border);
+}
+.card-rank-grid{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+}
+.rank-cell{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:14px 8px;gap:2px;
+}
+.rank-cell+.rank-cell{border-left:1.5px solid #e8e0cc;}
+.rank-val{font-family:'Bangers',cursive;font-size:24px;line-height:1;color:var(--ink);}
+.rank-val.gold{color:var(--gold);}
+.rank-lbl{font-size:7px;color:#b8a070;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;}
+.rank-name{font-size:9px;font-weight:700;color:var(--ink);max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ── DUO GRID (Banque + Casino) ── */
+.duo-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* BANQUE */
+.card-banque{
+  background:var(--navy);
+  min-height:130px;
+  display:flex;flex-direction:column;
+  justify-content:space-between;
+  padding:16px;
+}
+.card-banque-top{display:flex;justify-content:space-between;align-items:center;}
+.card-banque-tag{font-size:7px;color:rgba(255,255,255,.35);font-weight:700;letter-spacing:2.5px;}
+.card-banque-icon{font-size:20px;}
+.card-banque-amount{
+  font-family:'Bebas Neue',sans-serif;font-size:22px;
+  color:#fbbf24;letter-spacing:1px;line-height:1;
+}
+.card-banque-label{font-size:7px;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:1px;margin-top:2px;}
+.card-banque-title{
+  font-family:'Bangers',cursive;font-size:22px;
+  color:#fff;letter-spacing:2px;
+}
+
+/* CASINO */
+.card-casino{
+  background:var(--casino);
+  min-height:130px;
+  position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+}
+.card-casino-dots{
+  position:absolute;inset:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.08) 1.5px,transparent 1.5px);
+  background-size:14px 14px;
+}
+.card-casino-vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,.4) 100%);
+}
+.card-casino-text{
+  position:relative;z-index:1;text-align:center;
+}
+.card-casino-title{
+  font-family:'Bangers',cursive;font-size:32px;
+  color:#fff;letter-spacing:4px;
+  text-shadow:2px 2px 0 rgba(0,0,0,.4);
+}
+.card-casino-sub{font-size:8px;color:rgba(255,255,255,.4);font-weight:700;letter-spacing:3px;margin-top:2px;}
+
+/* ── COMMERCE ── */
+.card-commerce{
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  min-height:110px;
+  display:flex;align-items:center;
+  padding:20px;gap:16px;
+}
+.card-commerce-icon{font-size:38px;flex-shrink:0;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.3));}
+.card-commerce-title{
+  font-family:'Bangers',cursive;font-size:32px;
+  color:#fff;letter-spacing:3px;line-height:1;
+}
+.card-commerce-sub{font-size:9px;color:rgba(255,255,255,.3);font-weight:600;margin-top:3px;letter-spacing:1px;}
+.card-commerce-chevron{
+  margin-left:auto;font-size:24px;color:rgba(255,255,255,.15);flex-shrink:0;
+}
+
+/* ── TRIO GRID (Boutique + Chat + Bar) ── */
+.trio-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.card-mini{
+  min-height:110px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:6px;padding:16px 8px;
+  text-align:center;
+}
+.card-mini-icon{font-size:32px;}
+.card-mini-title{
+  font-family:'Bangers',cursive;font-size:18px;
+  color:var(--ink);letter-spacing:1.5px;line-height:1;
+}
+.card-mini-sub{font-size:7px;color:#b8a070;font-weight:700;letter-spacing:1px;}
+
+/* ── BANDEAU MAJ ── */
+.banner-maj{
+  background:var(--card);
+  border:var(--border-w) solid var(--gold);
+  border-radius:var(--radius);
+  padding:12px 16px;
+  display:flex;align-items:flex-start;gap:10px;
+  box-shadow:var(--shadow-offset) var(--shadow-offset) 0 rgba(225,127,0,.2);
+}
+.banner-maj-text{
+  font-size:11px;color:var(--gold);line-height:1.5;font-weight:600;letter-spacing:.3px;
+}
+
+/* ── MONEY PILL (header) ── */
+.money-pill{
+  display:flex;align-items:center;gap:6px;
+  margin-top:8px;
+}
+.money-pill-item{
+  display:flex;align-items:center;gap:4px;
+  background:#f0ead4;
+  border:1.5px solid var(--border);
+  border-radius:20px;
+  padding:3px 10px;
+  font-family:'Bebas Neue',sans-serif;
+  font-size:15px;color:var(--ink);letter-spacing:.5px;
+}
+.money-pill-item span{font-size:12px;}
+
+/* Themed pills */
+.pcb.themed .money-pill-item{
+  background:rgba(255,255,255,.15) !important;
+  border-color:rgba(255,255,255,.25) !important;
+  color:#fff !important;
+}
+
+/* ── ERROR STATE ── */
+.error-box{
+  display:flex;align-items:center;gap:12px;padding:12px 0;
+}
+.error-btn{
+  font-family:'Bangers',cursive;font-size:14px;letter-spacing:1px;
+  padding:8px 16px;border:var(--border-w) solid var(--border);
+  border-radius:10px;background:var(--gold-light);color:var(--ink);
+  cursor:pointer;box-shadow:3px 3px 0 var(--shadow);
+}
+.error-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow);}
+</style>
 </head>
 <body>
 
-  <header class="profile-header">
-    <div class="skeleton-card" id="profileSkeleton">
+<!-- ═══ HEADER FIXE ═══ -->
+<header class="profile-header">
+  <div class="profile-header-inner">
+    <!-- Skeleton -->
+    <div id="profileSkeleton">
       <div class="sk-row">
         <div class="sk sk-avatar"></div>
         <div style="flex:1">
           <div class="sk sk-line" style="width:55%"></div>
           <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
         </div>
-        <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
+        <div class="sk" style="width:36px;height:36px;border-radius:10px"></div>
       </div>
-      <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
+      <div class="sk sk-line" style="width:100%;height:8px;margin-top:14px"></div>
     </div>
 
-    <div class="profile-card-btn" id="profileCardBtn" style="display:none">
+    <!-- Carte profil -->
+    <div class="pcb" id="profileCardBtn">
       <div class="pcb-row">
         <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
         <div class="pcb-info">
@@ -163,326 +350,353 @@
           <div class="pcb-level-lbl">Niv.</div>
         </div>
       </div>
-      <div>
-        <div class="pcb-xp-label">
-          <span id="xpCounter">0 / 500 XP</span>
-          <span>→ Niv. <span id="nextLevel">2</span></span>
-        </div>
-        <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="pcb-xp-row">
+        <span id="xpCounter">0 / 500 XP</span>
+        <span>→ Niv. <span id="nextLevel">2</span></span>
+      </div>
+      <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="money-pill">
+        <div class="money-pill-item"><span>💶</span> <span id="moneyDisplay">—</span></div>
+        <div class="money-pill-item"><span>💎</span> <span id="diamondDisplay">—</span></div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
-  <div class="page-content">
-    <!-- TRAVAILLER -->
-    <div class="work-card" onclick="window.location.href='travail.html'">
-      <div class="work-card-content">
-        <div class="work-card-tag">Port de Marseille</div>
-        <div class="work-card-title">TRAVAILLER</div>
-        <div class="work-card-sub">Gagner de l'argent · Monter en niveau</div>
-      </div>
-      <div class="work-card-chevron">›</div>
+<!-- ═══ CONTENU ═══ -->
+<div class="page-content">
+
+  <!-- TRAVAILLER -->
+  <div class="bd-panel card-work" onclick="location.href='travail.html'">
+    <div class="card-work-icon">🏗️</div>
+    <div class="card-work-text">
+      <div class="card-work-tag">Port de Marseille</div>
+      <div class="card-work-title">TRAVAILLER</div>
+      <div class="card-work-sub">Gagner de l'argent · Monter en niveau</div>
     </div>
-
-    <!-- CLASSEMENT -->
-    <div onclick="window.location.href='classement.html'" style="background:#fbbf24;display:flex;align-items:center;padding:0 24px;gap:20px;height:72px;cursor:pointer;border-top:1px solid rgba(0,0,0,0.06);">
-      <div style="font-size:32px">🏆</div>
-      <div style="flex:1;display:flex;align-items:flex-end;gap:5px;height:42px">
-        <div style="flex:1;background:rgba(0,0,0,0.08);border-radius:3px 3px 0 0;height:40%"></div>
-        <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:3px 3px 0 0;height:100%"></div>
-        <div style="flex:1;background:rgba(0,0,0,0.12);border-radius:3px 3px 0 0;height:65%"></div>
-        <div style="flex:1;background:rgba(0,0,0,0.08);border-radius:3px 3px 0 0;height:45%"></div>
-        <div style="flex:1;background:rgba(0,0,0,0.06);border-radius:3px 3px 0 0;height:30%"></div>
-      </div>
-    </div>
-
-    <!-- GRILLE : BANQUE + CASINO -->
-    <div class="duo-grid">
-
-      <!-- BANQUE -->
-      <div class="ecole-card" onclick="window.location.href='banque.html'" style="background:#fff;overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:16px;border-right:1px solid #f0f0f0;">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:8px;color:#9ca3af;font-weight:700;letter-spacing:3px;font-family:'Inter',sans-serif">BATTLE DOCK</div>
-          <div style="display:flex">
-            <div style="width:16px;height:16px;border-radius:50%;background:#eb4034;opacity:0.9"></div>
-            <div style="width:16px;height:16px;border-radius:50%;background:#f5a623;opacity:0.9;margin-left:-6px"></div>
-          </div>
-        </div>
-        <div>
-          <div style="font-size:7px;color:#9ca3af;font-weight:600;letter-spacing:2px;margin-bottom:3px;font-family:'Inter',sans-serif">SOLDE DISPONIBLE</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#111;letter-spacing:1px" id="banqueBalance">— €</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-end">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:3px;color:#111">BANQUE</div>
-          <div style="font-size:7px;color:#9ca3af;letter-spacing:1px;font-weight:600;font-family:'Inter',sans-serif">Dépôts · Intérêts</div>
-        </div>
-      </div>
-
-      <!-- CASINO -->
-      <div class="casino-card" onclick="window.location.href='casino.html'">
-        <svg width="100%" height="100%" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%">
-          <defs>
-            <pattern id="dotsC" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
-              <circle cx="8" cy="8" r="1.5" fill="rgba(0,0,0,0.15)"/>
-            </pattern>
-            <radialGradient id="vigC" cx="50%" cy="50%" r="70%"><stop offset="0%" stop-color="transparent"/><stop offset="100%" stop-color="rgba(0,0,0,0.4)"/></radialGradient>
-            <filter id="gC3"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-          </defs>
-          <rect width="200" height="200" fill="#8b0018"/>
-          <rect width="200" height="200" fill="url(#dotsC)"/>
-          <rect width="200" height="200" fill="url(#vigC)"/>
-          <text x="100" y="112" text-anchor="middle" font-family="Bebas Neue" font-size="34" letter-spacing="5" fill="#3a0008" filter="url(#gC3)">CASINO</text>
-          <text x="100" y="112" text-anchor="middle" font-family="Bebas Neue" font-size="34" letter-spacing="5" fill="white">CASINO</text>
-        </svg>
-      </div>
-
-    </div>
-
-    <!-- COMMERCE -->
-    <div onclick="window.location.href='commerce.html'" style="height:25vh;min-height:130px;background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a);overflow:hidden;position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-top:1px solid rgba(255,255,255,0.06);">
-      <div style="font-size:9px;color:rgba(255,255,255,0.2);font-weight:700;letter-spacing:6px;font-family:'Inter',sans-serif">TON ENTREPRISE</div>
-      <div style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:white;line-height:1">COMMERCE</div>
-      <div style="font-size:8px;color:rgba(255,255,255,0.2);font-weight:600;letter-spacing:3px;font-family:'Inter',sans-serif">DOCKER · MARSEILLE</div>
-    </div>
-
-    <!-- BANDEAU MAJ -->
-    <div style="background:#1a1000;border-top:2px solid #f59e0b;border-bottom:2px solid #f59e0b;padding:10px 16px;display:flex;align-items:flex-start;gap:10px;">
-      <div style="font-size:18px;flex-shrink:0;margin-top:1px">🚧</div>
-      <div style="font-family:'Inter',sans-serif;font-size:11px;color:rgba(245,158,11,0.85);line-height:1.5;font-weight:600;letter-spacing:0.3px">
-        Mise à jour en pause — classement à vérifier, commerce également. École des Dockers + nouveaux métiers arrivent prochainement !
-      </div>
-    </div>
-
+    <div class="card-work-chevron">›</div>
   </div>
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const sb = supabase.createClient(supabaseUrl, supabaseKey);
+  <!-- HISTOIRE -->
+  <div class="bd-panel card-story" onclick="location.href='histoire.html'">
+    <div class="card-story-icon">📖</div>
+    <div>
+      <div class="card-story-title">MODE HISTOIRE</div>
+      <div class="card-story-sub" id="storyProgress">Chapitre 1 — Le premier jour</div>
+    </div>
+    <div class="card-story-badge" id="storyBadge">CH.1</div>
+  </div>
 
-    function getXpRequired(level) {
-      if (level <= 10) return level * 500;
-      if (level <= 25) return level * 1000;
-      if (level <= 50) return level * 2000;
-      return level * 4000;
+  <!-- CLASSEMENT -->
+  <div class="bd-panel card-rank" onclick="location.href='classement.html'">
+    <div class="card-rank-left">🏆</div>
+    <div class="card-rank-grid">
+      <div class="rank-cell">
+        <div class="rank-val gold" id="rankMyPos">—</div>
+        <div class="rank-lbl">Position</div>
+      </div>
+      <div class="rank-cell">
+        <div class="rank-name" id="rankLeaderName">—</div>
+        <div class="rank-lbl">Leader</div>
+      </div>
+      <div class="rank-cell">
+        <div class="rank-val" id="rankTotal">—</div>
+        <div class="rank-lbl">Joueurs</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BANQUE + CASINO -->
+  <div class="duo-grid">
+    <!-- BANQUE -->
+    <div class="bd-panel card-banque" onclick="location.href='banque.html'">
+      <div class="card-banque-top">
+        <div class="card-banque-tag">BATTLE DOCK</div>
+        <div class="card-banque-icon">🏛️</div>
+      </div>
+      <div>
+        <div class="card-banque-label">SOLDE DISPONIBLE</div>
+        <div class="card-banque-amount" id="banqueBalance">— €</div>
+      </div>
+      <div class="card-banque-title">BANQUE</div>
+    </div>
+
+    <!-- CASINO -->
+    <div class="bd-panel card-casino" onclick="location.href='casino.html'">
+      <div class="card-casino-dots"></div>
+      <div class="card-casino-vignette"></div>
+      <div class="card-casino-text">
+        <div class="card-casino-title">CASINO</div>
+        <div class="card-casino-sub">TENTE TA CHANCE</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMERCE -->
+  <div class="bd-panel card-commerce" onclick="location.href='commerce.html'">
+    <div class="card-commerce-icon">🏪</div>
+    <div>
+      <div class="card-commerce-title">COMMERCE</div>
+      <div class="card-commerce-sub">Ton entreprise · Docker Marseille</div>
+    </div>
+    <div class="card-commerce-chevron">›</div>
+  </div>
+
+  <!-- BOUTIQUE + CHAT + BAR -->
+  <div class="trio-grid">
+    <div class="bd-panel card-mini" onclick="location.href='boutiqueclicker.html'">
+      <div class="card-mini-icon">🛒</div>
+      <div class="card-mini-title">BOUTIQUE</div>
+      <div class="card-mini-sub">Upgrades</div>
+    </div>
+    <div class="bd-panel card-mini" onclick="location.href='chat.html'">
+      <div class="card-mini-icon">💬</div>
+      <div class="card-mini-title">CHAT</div>
+      <div class="card-mini-sub">Discuter</div>
+    </div>
+    <div class="bd-panel card-mini" onclick="location.href='bar.html'">
+      <div class="card-mini-icon">🍺</div>
+      <div class="card-mini-title">BAR</div>
+      <div class="card-mini-sub">Du Docker</div>
+    </div>
+  </div>
+
+  <!-- BANDEAU MAJ -->
+  <div class="banner-maj">
+    <div style="font-size:18px;flex-shrink:0">🚧</div>
+    <div class="banner-maj-text">
+      Mise à jour en pause — classement à vérifier, commerce également. École des Dockers + nouveaux métiers arrivent prochainement !
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+<script>
+const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
+const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(supabaseUrl,supabaseKey);
+
+function getXpRequired(level){
+  if(level<=10)return level*500;
+  if(level<=25)return level*1000;
+  if(level<=50)return level*2000;
+  return level*4000;
+}
+function getGrade(level){
+  if(level<=4)return'Docker Occasionnel';
+  if(level<=14)return'Docker';
+  if(level<=29)return'Docker Mensuel';
+  if(level<=49)return'Contre-Maître';
+  if(level<=79)return'Chef de Quai';
+  return'Magnat du Port';
+}
+function avatarForLevel(lvl){
+  if(lvl>=50)return'avatar-level-50.png';
+  if(lvl>=30)return'avatar-level-30.png';
+  if(lvl>=20)return'avatar-level-20.png';
+  if(lvl>=17)return'avatar-level-17.png';
+  if(lvl>=15)return'avatar-level-15.png';
+  if(lvl>=13)return'avatar-level-13.png';
+  if(lvl>=10)return'avatar-level-10.png';
+  if(lvl>=5)return'avatar-level-5.png';
+  if(lvl>=4)return'avatar-level-4.png';
+  if(lvl>=3)return'avatar-level-3.png';
+  if(lvl>=2)return'avatar-level-2.png';
+  return'avatar-default.png';
+}
+
+const PROFILE_THEMES={
+  'rouge_navy':'linear-gradient(135deg,#cc1a1a,#0f172a)',
+  'bleu_mer':'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
+  'noir':'linear-gradient(135deg,#18181b,#3f3f46)',
+  'night':'linear-gradient(135deg,#0f172a,#334155)',
+  'ciment':'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
+  'carbone':'linear-gradient(135deg,#1c1917,#292524,#44403c)',
+  'gold':'linear-gradient(135deg,#b45309,#f59e0b)',
+  'emerald':'linear-gradient(135deg,#047857,#10b981)',
+  'purple':'linear-gradient(135deg,#6d28d9,#a855f7)',
+  'coral':'linear-gradient(135deg,#be123c,#fb7185)',
+  'or_navy':'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
+  'abysses':'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
+  'turquoise':'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
+  'indigo':'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
+  'marseille_nuit':'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
+  'feu_docker':'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
+  'port_tropical':'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
+  'sang_requin':'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
+  'sunset':'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
+  'neon_rouge':'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
+  'arc_en_ciel':'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
+};
+
+const STORY_CHAPTERS=[
+  'Le premier jour','L\'engrenage','Le vieux loup','La rumeur',
+  'Coup de tabac','Double jeu','Le piège','Homme à terre',
+  'Sous pression','Le choix','Bras de fer','La faille',
+  'Contre-attaque','Trahison','L\'assemblée','Main basse',
+  'Dernier quart','Tout ou rien','Le débarquement','Patron du Port'
+];
+
+function showError(){
+  document.getElementById('profileSkeleton').innerHTML=`
+    <div class="error-box">
+      <div style="font-size:22px">⚠️</div>
+      <div style="flex:1">
+        <div style="font-family:'Bangers',cursive;font-size:16px;letter-spacing:1px;color:var(--ink)">Erreur de connexion</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px">Vérifie ta connexion internet</div>
+      </div>
+      <button class="error-btn" onclick="location.reload()">Réessayer</button>
+    </div>`;
+}
+
+async function init(){
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){location.href='index.html';return;}
+    const uid=session.user.id;
+
+    const[profileRes,statsRes]=await Promise.all([
+      sb.from('profiles').select('username,avatar_url,background_color').eq('user_id',uid).maybeSingle(),
+      sb.from('game_stats').select('level,xp,money,diamonds,story_progress').eq('user_id',uid).maybeSingle()
+    ]);
+    const profile=profileRes.data;
+    const stats=statsRes.data;
+    if(!profile||!stats){showError();return;}
+
+    // Recalcul niveau
+    let lvl=stats.level||1;
+    let xp=stats.xp||0;
+    const startLvl=lvl;
+    while(xp>=getXpRequired(lvl)){xp-=getXpRequired(lvl);lvl++;}
+    if(lvl!==startLvl){
+      await sb.from('game_stats').update({level:lvl,xp}).eq('user_id',uid);
     }
 
-    function getGrade(level) {
-      if (level <= 4)  return 'Docker Occasionnel';
-      if (level <= 14) return 'Docker';
-      if (level <= 29) return 'Docker Mensuel';
-      if (level <= 49) return 'Contre-Maître';
-      if (level <= 79) return 'Chef de Quai';
-      return 'Magnat du Port';
+    const xpNeeded=getXpRequired(lvl);
+    const pct=Math.min((xp/xpNeeded)*100,100);
+
+    // Avatar
+    const SPECIAL=['avatar-millionaire.png','avatar-completionist.png'];
+    const autoAvatar=avatarForLevel(lvl);
+    const avatarSrc=SPECIAL.includes(profile.avatar_url)?profile.avatar_url:autoAvatar;
+    document.getElementById('avatarImage').src=avatarSrc;
+    if(!SPECIAL.includes(profile.avatar_url)&&profile.avatar_url!==autoAvatar){
+      await sb.from('profiles').update({avatar_url:autoAvatar}).eq('user_id',uid);
     }
 
-    function avatarForLevel(lvl) {
-      if (lvl >= 50) return 'avatar-level-50.png';
-      if (lvl >= 30) return 'avatar-level-30.png';
-      if (lvl >= 20) return 'avatar-level-20.png';
-      if (lvl >= 17) return 'avatar-level-17.png';
-      if (lvl >= 15) return 'avatar-level-15.png';
-      if (lvl >= 13) return 'avatar-level-13.png';
-      if (lvl >= 10) return 'avatar-level-10.png';
-      if (lvl >= 5)  return 'avatar-level-5.png';
-      if (lvl >= 4)  return 'avatar-level-4.png';
-      if (lvl >= 3)  return 'avatar-level-3.png';
-      if (lvl >= 2)  return 'avatar-level-2.png';
-      return 'avatar-default.png';
+    // Thème
+    const card=document.getElementById('profileCardBtn');
+    const grad=PROFILE_THEMES[profile.background_color];
+    if(grad){card.style.background=grad;card.classList.add('themed');}
+
+    card.style.cursor='pointer';
+    card.onclick=()=>location.href='profil.html';
+
+    // Remplissage
+    document.getElementById('playerName').textContent=profile.username;
+    document.getElementById('playerGrade').textContent=getGrade(lvl);
+    document.getElementById('currentLevel').textContent=lvl;
+    document.getElementById('nextLevel').textContent=lvl+1;
+    document.getElementById('xpCounter').textContent=`${xp} / ${xpNeeded} XP`;
+    document.getElementById('xpFill').style.width=pct+'%';
+
+    // Money + diamonds in header
+    document.getElementById('moneyDisplay').textContent=Math.floor(stats.money||0).toLocaleString('fr-FR')+'€';
+    document.getElementById('diamondDisplay').textContent=Math.floor(stats.diamonds||0).toLocaleString('fr-FR');
+
+    // Story progress
+    const sp=stats.story_progress||{};
+    let lastScene=0;
+    for(let i=1;i<=20;i++){if(sp['scene'+i+'_done'])lastScene=i;}
+    const storyEl=document.getElementById('storyProgress');
+    const storyBadge=document.getElementById('storyBadge');
+    if(lastScene>=20){
+      storyEl.textContent='Histoire terminée !';
+      storyBadge.textContent='FIN';
+      storyBadge.style.background='var(--gold)';
+    }else{
+      const nextCh=lastScene+1;
+      storyEl.textContent='Chapitre '+nextCh+' — '+(STORY_CHAPTERS[nextCh-1]||'');
+      storyBadge.textContent='CH.'+nextCh;
     }
 
-    const PROFILE_THEMES = {
-      'rouge_navy':     'linear-gradient(135deg,#cc1a1a,#0f172a)',
-      'bleu_mer':       'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-      'noir':           'linear-gradient(135deg,#18181b,#3f3f46)',
-      'night':          'linear-gradient(135deg,#0f172a,#334155)',
-      'ciment':         'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
-      'carbone':        'linear-gradient(135deg,#1c1917,#292524,#44403c)',
-      'gold':           'linear-gradient(135deg,#b45309,#f59e0b)',
-      'emerald':        'linear-gradient(135deg,#047857,#10b981)',
-      'purple':         'linear-gradient(135deg,#6d28d9,#a855f7)',
-      'coral':          'linear-gradient(135deg,#be123c,#fb7185)',
-      'or_navy':        'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-      'abysses':        'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
-      'turquoise':      'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
-      'indigo':         'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
-      'marseille_nuit': 'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
-      'feu_docker':     'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
-      'port_tropical':  'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
-      'sang_requin':    'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
-      'sunset':         'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
-      'neon_rouge':     'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
-      'arc_en_ciel':    'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
-    };
+    // Afficher
+    document.getElementById('profileSkeleton').style.display='none';
+    card.style.display='flex';
+    card.style.flexDirection='column';
 
-    function showError() {
-      const sk = document.getElementById('profileSkeleton');
-      sk.innerHTML = `
-        <div style="display:flex;align-items:center;gap:12px;padding:4px 0">
-          <div style="font-size:22px">⚠️</div>
-          <div style="flex:1">
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:#1a1a1a">Erreur de connexion</div>
-            <div style="font-size:11px;color:#9ca3af;margin-top:2px">Vérifie ta connexion internet</div>
-          </div>
-          <button onclick="location.reload()" style="font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;padding:8px 14px;border:none;border-radius:8px;background:#1a1a1a;color:#fbbf24;cursor:pointer">Réessayer</button>
-        </div>`;
+    startPlaytimeTracking(uid);
+    checkStreak(uid);
+    loadRank(uid,lvl);
+    loadBalance(uid);
+
+  }catch(e){
+    console.error('init error:',e);
+    showError();
+  }
+}
+
+// ── Playtime tracking ──
+let _playtimeUid=null;
+function startPlaytimeTracking(uid){
+  _playtimeUid=uid;
+  setInterval(async()=>{
+    try{await sb.rpc('increment_playtime',{uid:_playtimeUid});}catch(e){}
+  },60000);
+}
+
+// ── Streak ──
+async function checkStreak(uid){
+  try{
+    const{data}=await sb.from('game_stats').select('streak_days,last_login').eq('user_id',uid).maybeSingle();
+    if(!data)return;
+    const today=new Date().toISOString().split('T')[0];
+    if(data.last_login===today)return;
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    const yesterdayStr=yesterday.toISOString().split('T')[0];
+    let newStreak;
+    if(data.last_login===yesterdayStr){newStreak=(data.streak_days||0)+1;}
+    else{newStreak=1;}
+    await sb.from('game_stats').update({streak_days:newStreak,last_login:today}).eq('user_id',uid);
+  }catch(e){}
+}
+
+// ── Rank ──
+async function loadRank(uid,lvl){
+  try{
+    const{data}=await sb.from('game_stats').select('user_id,level,money').order('level',{ascending:false});
+    if(!data)return;
+    const sorted=data.slice().sort((a,b)=>((b.level||0)*100+Math.floor((b.money||0)/10000))-((a.level||0)*100+Math.floor((a.money||0)/10000)));
+    const idx=sorted.findIndex(x=>x.user_id===uid);
+    const rank=idx>=0?idx+1:'—';
+    const total=sorted.length;
+    const leader=sorted[0];
+    let leaderName='—';
+    if(leader){
+      const{data:prof}=await sb.from('profiles').select('username').eq('user_id',leader.user_id).maybeSingle();
+      leaderName=(prof&&prof.username)?prof.username:'—';
     }
+    const elPos=document.getElementById('rankMyPos');
+    const elLeader=document.getElementById('rankLeaderName');
+    const elTotal=document.getElementById('rankTotal');
+    if(elPos)elPos.textContent='#'+rank;
+    if(elLeader)elLeader.textContent=leaderName;
+    if(elTotal)elTotal.textContent=total;
+  }catch(e){}
+}
 
-    async function init() {
-      try {
-        const { data: { session } } = await sb.auth.getSession();
-        if (!session) { window.location.href = 'index.html'; return; }
+// ── Balance banque ──
+async function loadBalance(uid){
+  try{
+    const{data}=await sb.from('game_stats').select('money').eq('user_id',uid).maybeSingle();
+    if(!data)return;
+    document.getElementById('banqueBalance').textContent=Math.floor(data.money).toLocaleString('fr-FR')+' €';
+  }catch(e){}
+}
 
-        const uid = session.user.id;
-
-        const [profileRes, statsRes] = await Promise.all([
-          sb.from('profiles').select('username,avatar_url,background_color').eq('user_id', uid).maybeSingle(),
-          sb.from('game_stats').select('level,xp').eq('user_id', uid).maybeSingle()
-        ]);
-
-        const profile = profileRes.data;
-        const stats   = statsRes.data;
-        if (!profile || !stats) { showError(); return; }
-
-        // Recalcul niveau réel + sauvegarde si changement
-        let lvl = stats.level || 1;
-        let xp  = stats.xp || 0;
-        const startLvl = lvl;
-        while (xp >= getXpRequired(lvl)) { xp -= getXpRequired(lvl); lvl++; }
-        if (lvl !== startLvl) {
-          await sb.from('game_stats').update({ level: lvl, xp }).eq('user_id', uid);
-        }
-
-        const xpNeeded = getXpRequired(lvl);
-        const pct = Math.min((xp / xpNeeded) * 100, 100);
-
-        // Avatar + sync en base si désynchronisé
-        const SPECIAL = ['avatar-millionaire.png','avatar-completionist.png'];
-        const autoAvatar = avatarForLevel(lvl);
-        const avatarSrc = SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : autoAvatar;
-        document.getElementById('avatarImage').src = avatarSrc;
-        if (!SPECIAL.includes(profile.avatar_url) && profile.avatar_url !== autoAvatar) {
-          await sb.from('profiles').update({ avatar_url: autoAvatar }).eq('user_id', uid);
-        }
-
-        // Thème carte
-        const card = document.getElementById('profileCardBtn');
-        const grad = PROFILE_THEMES[profile.background_color];
-        if (grad) { card.style.background = grad; card.classList.add('themed'); }
-
-        // Clic → profil.html
-        card.style.cursor = 'pointer';
-        card.onclick = () => window.location.href = 'profil.html';
-
-        // Remplissage
-        document.getElementById('playerName').textContent   = profile.username;
-        document.getElementById('playerGrade').textContent  = getGrade(lvl);
-        document.getElementById('currentLevel').textContent = lvl;
-        document.getElementById('nextLevel').textContent    = lvl + 1;
-        document.getElementById('xpCounter').textContent    = `${xp} / ${xpNeeded} XP`;
-        document.getElementById('xpFill').style.width       = pct + '%';
-
-        // Afficher
-        document.getElementById('profileSkeleton').style.display = 'none';
-        card.style.display = 'flex';
-
-        // Démarrer le tracking temps de jeu
-        startPlaytimeTracking(uid);
-
-        // Vérifier et mettre à jour le streak
-        checkStreak(uid);
-
-        // Charger le classement
-        loadRank(uid, lvl);
-        // Charger le solde banque
-        loadBalance(uid);
-
-      } catch(e) {
-        console.error('init error:', e);
-        showError();
-      }
-    }
-
-    // ── Tracking temps de jeu (ping toutes les 60s, RPC atomique) ──
-    let _playtimeUid = null;
-
-    function startPlaytimeTracking(uid) {
-      _playtimeUid = uid;
-      setInterval(async () => {
-        try {
-          await sb.rpc('increment_playtime', { uid: _playtimeUid });
-        } catch(e) {}
-      }, 60000);
-    }
-
-    // ── Streak ────────────────────────────────────────────────────
-    async function checkStreak(uid) {
-      try {
-        const { data } = await sb.from('game_stats')
-          .select('streak_days, last_login')
-          .eq('user_id', uid)
-          .maybeSingle();
-        if (!data) return;
-
-        const today = new Date().toISOString().split('T')[0];
-        const lastLogin = data.last_login;
-
-        if (lastLogin === today) return; // déjà compté aujourd'hui
-
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        let newStreak;
-        if (lastLogin === yesterdayStr) {
-          newStreak = (data.streak_days || 0) + 1; // streak maintenu
-        } else {
-          newStreak = 1; // streak cassé ou première connexion
-        }
-
-        await sb.from('game_stats').update({
-          streak_days: newStreak,
-          last_login: today
-        }).eq('user_id', uid);
-
-      } catch(e) {}
-    }
-
-    async function loadRank(uid, lvl) {
-      try {
-        const { data } = await sb.from('game_stats').select('user_id,level,money').order('level', { ascending: false });
-        if (!data) return;
-        const sorted = data.slice().sort(function(a,b){
-          return ((b.level||0)*100 + Math.floor((b.money||0)/10000)) - ((a.level||0)*100 + Math.floor((a.money||0)/10000));
-        });
-        const idx = sorted.findIndex(function(x){ return x.user_id === uid; });
-        const rank = idx >= 0 ? idx + 1 : '—';
-        const total = sorted.length;
-        const leader = sorted[0];
-        let leaderName = '—';
-        if (leader) {
-          const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leader.user_id).maybeSingle();
-          leaderName = (prof && prof.username) ? prof.username : '—';
-        }
-        const elPos    = document.getElementById('rankMyPos');
-        const elLeader = document.getElementById('rankLeaderName');
-        const elTotal  = document.getElementById('rankTotal');
-        if (elPos)    elPos.textContent    = '#' + rank;
-        if (elLeader) elLeader.textContent = leaderName;
-        if (elTotal)  elTotal.textContent  = total;
-      } catch(e) {}
-    }
-
-    async function loadBalance(uid) {
-      try {
-        const { data } = await sb.from('game_stats').select('money').eq('user_id', uid).maybeSingle();
-        if (!data) return;
-        const el = document.getElementById('banqueBalance');
-        if (el) el.textContent = Math.floor(data.money).toLocaleString('fr-FR') + ' €';
-      } catch(e) {}
-    }
-
-    init();
-  </script>
+init();
+</script>
 </body>
 </html>
