@@ -146,7 +146,7 @@ body{
 
 /* Widget large (Travailler — P2 living mesh) */
 .widget-work{
-  background:#0369a1;min-height:120px;
+  background:#0369a1;min-height:160px;
   display:flex;align-items:center;padding:22px;
 }
 .work-mesh{position:absolute;inset:0;overflow:hidden;}
@@ -162,7 +162,7 @@ body{
 }
 .work-content{z-index:2;}
 .work-title{
-  font-family:'Bangers',cursive;font-size:clamp(26px,8vw,34px);
+  font-family:'Bangers',cursive;font-size:clamp(32px,10vw,42px);
   color:#fff;letter-spacing:3px;
   text-shadow:0 2px 20px rgba(0,0,0,.2);
 }
@@ -173,6 +173,39 @@ body{
 
 /* Widget row (Commerce) */
 .widget-row{grid-column:span 2;display:flex;align-items:center;gap:14px;}
+
+/* Commerce (V2 coffre qui déborde) */
+.widget-commerce{
+  background:linear-gradient(135deg,#1c1917,#292524);
+  grid-column:span 2;min-height:160px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:22px;
+}
+.commerce-chest{position:relative;z-index:2;margin-bottom:4px;}
+.commerce-chest-emoji{font-size:48px;animation:chestBounce 3s ease-in-out infinite;}
+@keyframes chestBounce{
+  0%,100%{transform:translateY(0) rotate(0)}
+  30%{transform:translateY(-3px) rotate(-2deg)}
+  60%{transform:translateY(-1px) rotate(1deg)}
+}
+.commerce-burst{position:absolute;inset:-30px;overflow:visible;pointer-events:none;}
+.commerce-coin{position:absolute;top:50%;left:50%;animation:coinBurst ease-out infinite;}
+@keyframes coinBurst{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:0}
+  15%{opacity:.7;transform:translate(var(--bx),var(--by)) scale(1)}
+  60%{opacity:.3}
+  100%{opacity:0;transform:translate(var(--ex),var(--ey)) scale(.5)}
+}
+.commerce-title{
+  font-family:'Bangers',cursive;font-size:clamp(24px,7vw,30px);
+  color:#fbbf24;letter-spacing:3px;z-index:2;
+}
+.commerce-amount{font-size:11px;z-index:2;margin-top:2px;}
+.commerce-sub{
+  font-size:9px;color:rgba(255,255,255,.25);
+  font-weight:700;z-index:2;margin-top:3px;
+}
 
 /* Banque (B4 coffre-fort) */
 .widget-banque{
@@ -231,7 +264,6 @@ body{
   font-size:7px;color:rgba(255,255,255,.35);
   font-weight:700;letter-spacing:3px;z-index:1;margin-top:3px;
 }
-.widget-emoji-md{font-size:28px;flex-shrink:0;}
 
 /* Widget small */
 .widget-emoji{font-size:22px;}
@@ -422,12 +454,14 @@ body{
   </div>
 
   <!-- COMMERCE -->
-  <div class="widget widget-full widget-row" onclick="location.href='commerce.html'">
-    <div class="widget-emoji-md">🏪</div>
-    <div>
-      <div class="widget-title">COMMERCE</div>
-      <div class="card-dynamic-val zero" id="commerceStatus">—</div>
+  <div class="widget widget-full widget-commerce" onclick="location.href='commerce.html'">
+    <div class="commerce-chest">
+      <div class="commerce-chest-emoji">📦</div>
+      <div class="commerce-burst" id="commerceBurst"></div>
     </div>
+    <div class="commerce-title">COMMERCE</div>
+    <div class="commerce-amount card-dynamic-val zero" id="commerceStatus">—</div>
+    <div class="commerce-sub">Récupère tes gains</div>
   </div>
 
   <!-- BOURSE + SYNDICAT -->
@@ -643,6 +677,9 @@ async function init(){
       document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
     });
 
+    // Commerce coins burst
+    initCommerceBurst();
+
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
     document.getElementById('playerGrade').textContent=getGrade(lvl);
@@ -799,6 +836,31 @@ async function loadChatBadge(uid){
       if(badge){badge.textContent=txt;badge.style.display='flex';}
     }
   }catch(e){}
+}
+
+// ── Commerce coins burst ──
+function initCommerceBurst(){
+  const burst=document.getElementById('commerceBurst');
+  if(!burst)return;
+  const emojis=['💰','🪙','💵','💶','✨'];
+  function spawnCoin(){
+    const c=document.createElement('div');
+    c.className='commerce-coin';
+    c.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    const angle=Math.random()*Math.PI*2;
+    const dist=30+Math.random()*25;
+    const endDist=50+Math.random()*30;
+    c.style.setProperty('--bx',Math.cos(angle)*dist+'px');
+    c.style.setProperty('--by',Math.sin(angle)*dist+'px');
+    c.style.setProperty('--ex',Math.cos(angle)*endDist+'px');
+    c.style.setProperty('--ey',(Math.sin(angle)*endDist-20)+'px');
+    c.style.animationDuration=(2+Math.random()*1.5)+'s';
+    c.style.fontSize=(10+Math.random()*8)+'px';
+    burst.appendChild(c);
+    setTimeout(()=>c.remove(),3500);
+  }
+  setInterval(spawnCoin,700);
+  for(let i=0;i<4;i++)setTimeout(spawnCoin,i*200);
 }
 
 init();
