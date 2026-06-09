@@ -859,8 +859,36 @@ function checkStreak(uid,stats){
     let newStreak;
     if(stats.last_login===yStr){newStreak=(stats.streak_days||0)+1;}
     else{newStreak=1;}
-    sb.from('game_stats').update({streak_days:newStreak,last_login:today}).eq('user_id',uid).then(()=>{});
+    // Bonus : 500€ × streak (max 10 jours = 5000€) + diamants tous les 5 jours
+    const bonus=Math.min(newStreak,10)*500;
+    const diamondBonus=(newStreak%5===0)?newStreak:0;
+    const newMoney=(stats.money||0)+bonus;
+    const newDiamonds=(stats.diamonds||0)+diamondBonus;
+    sb.from('game_stats').update({streak_days:newStreak,last_login:today,money:newMoney,diamonds:newDiamonds}).eq('user_id',uid).then(()=>{
+      document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
+      if(diamondBonus)document.getElementById('diamondBar').textContent=newDiamonds;
+    });
+    // Popup
+    showStreakPopup(newStreak,bonus,diamondBonus);
   }catch(e){}
+}
+
+function showStreakPopup(streak,bonus,diamonds){
+  var flames='';for(var i=0;i<Math.min(streak,10);i++)flames+='🔥';
+  var ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s';
+  ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<div style="font-size:48px;margin-bottom:8px">'+flames+'</div>'
+    +'<div style="font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:3px;color:#1a1a1a">JOUR '+streak+'</div>'
+    +'<div style="font-size:11px;color:#9ca3af;margin-top:4px">Connexion consécutive</div>'
+    +'<div style="margin-top:14px;background:#f0fdf4;border-radius:12px;padding:12px">'
+    +'<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#059669">+'+bonus.toLocaleString('fr-FR')+'€</div>'
+    +(diamonds?'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#3b82f6;margin-top:2px">+'+diamonds+'💎</div>':'')
+    +'</div>'
+    +'<div style="font-size:9px;color:#9ca3af;margin-top:8px">'+(streak<10?'Jour '+(streak+1)+' = +'+(Math.min(streak+1,10)*500).toLocaleString('fr-FR')+'€':'MAX STREAK ! 5 000€/jour')+'</div>'
+    +'<button onclick="this.closest(\'div[style]\').remove()" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:800;cursor:pointer">MERCI !</button>'
+    +'</div>';
+  document.body.appendChild(ov);
 }
 
 // FIX #7 : rank — tri Supabase + count séparé (scalable)
