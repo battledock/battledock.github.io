@@ -283,6 +283,9 @@ body{font-family:Inter,sans-serif;background:#0f172a}
     <div class="dash-section-title">LIVRE D'OR</div>
     <div class="dash-card" id="guestbook-section"></div>
 
+    <div class="dash-section-title">PARTENARIATS</div>
+    <div class="dash-card" id="partnership-section"></div>
+
     <div style="height:calc(60px + env(safe-area-inset-bottom))"></div>
   </div>
 </div>
@@ -327,6 +330,7 @@ var _mjCleanup=null;
 
 // ══ UTILS ══
 function fmtM(v){return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':Math.floor(v)+'€';}
+function goEntreprise(uid){location.href='entreprise.html?uid='+uid;}
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById(id);if(el)el.classList.add('active');}
 function toast(msg){var t=document.getElementById('toast-el');if(!t)return;t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);}
 function cleanupMJ(){if(_mjCleanup){try{_mjCleanup();}catch(e){}}_mjCleanup=null;}
@@ -642,6 +646,7 @@ async function loadDashboard(){
   loadBuyoutTargets();
   renderReviews(co);
   renderGuestbook(co);
+  renderPartnerships(co);
   updateCollectUI();
   if(_dashInterval)clearInterval(_dashInterval);
   _dashInterval=setInterval(updateCollectUI,5000);
@@ -989,8 +994,8 @@ async function loadSpyTargets(){
     var nom=co.nom||co.name||'???';
 
     html+='<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,.04)">'
-      +'<div style="font-size:18px">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#fff">'+nom+'</div></div>';
+      +'<div style="font-size:18px;cursor:pointer" onclick="goEntreprise('"+co.user_id+"')">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#fff">'+nom+'</div></div>';
     if(onCooldown){
       var minLeft=Math.ceil((21600000-(Date.now()-lastSpy))/60000);
       html+='<div style="font-size:8px;color:rgba(255,255,255,.2);font-weight:700">⏳ '+minLeft+'min</div>';
@@ -1145,7 +1150,8 @@ async function loadMiniRank(){
   cos.forEach(function(co,i){
     var isMe=co.user_id===myId;
     var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:'+(i<cos.length-1?'1px solid #f8fafc':'none')+';background:'+(isMe?'#EFF6FF':'white');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:'+(i<cos.length-1?'1px solid #f8fafc':'none')+';background:'+(isMe?'#EFF6FF':'white')+';cursor:'+(isMe?'default':'pointer');
+    if(!isMe)row.onclick=(function(uid){return function(){location.href='entreprise.html?uid='+uid;};})(co.user_id);
     row.innerHTML='<div style="font-size:13px;min-width:22px">'+(medals[i]||(i+1))+'</div><div style="font-size:20px">'+(co.emoji||'🏪')+'</div><div style="flex:1;font-size:12px;font-weight:700;color:'+(isMe?'#1565C0':'#0f172a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(co.nom||co.name||'?')+(isMe?' 👈':'')+'</div><div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:#0f172a">'+fmtM(co.valeur||0)+'</div>';
     el.appendChild(row);
   });
@@ -1179,7 +1185,7 @@ async function loadSabotageTargets(){
     var defended=co.defense_until&&new Date(co.defense_until).getTime()>Date.now();
     var row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:8px;padding:8px 10px;margin-bottom:4px';
-    row.innerHTML='<div style="font-size:18px">'+(co.emoji||'🏪')+'</div><div style="flex:1;font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(co.nom||co.name||'?')+'</div>';
+    row.innerHTML='<div style="font-size:18px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏪')+'</div><div onclick="goEntreprise(\''+co.user_id+'\')" style="flex:1;font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">'+(co.nom||co.name||'?')+'</div>';
     if(defended){var p=document.createElement('div');p.style.cssText='font-size:9px;font-weight:700;color:#22c55e';p.textContent='PROTEGE';row.appendChild(p);}
     else{var b=document.createElement('button');b.style.cssText='background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:10px;color:#ef4444;cursor:pointer';b.textContent='SABOTER 10💎';b.onclick=(function(uid){return function(){sabotageCompany(uid);};})(co.user_id);row.appendChild(b);}
     el.appendChild(row);
@@ -1240,8 +1246,8 @@ async function loadPriceWarTargets(){
   var html='';
   res.data.forEach(function(co){
     html+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.04)">'
-      +'<div style="font-size:16px">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1;font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
+      +'<div style="font-size:16px;cursor:pointer" onclick="goEntreprise('"+co.user_id+"')">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1;font-size:11px;font-weight:700;color:#fff;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.nom||co.name||'?')+'</div>'
       +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',10)" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-10%</button>'
       +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',20)" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-20%</button>'
       +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',30)" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-30%</button></div>';
@@ -1283,8 +1289,8 @@ async function loadBuyoutTargets(){
     var buyPrice=Math.round((co.valeur||0)*0.5);
     var canAfford=_dashMoney>=buyPrice;
     html+='<div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:10px">'
-      +'<div style="font-size:18px">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
+      +'<div style="font-size:18px;cursor:pointer" onclick="goEntreprise('"+co.user_id+"')">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
       +'<div style="font-size:8px;color:rgba(255,255,255,.2)">Inactif depuis '+daysSince+'j · Valeur '+fmtM(co.valeur||0)+'</div></div>'
       +'<button onclick="buyoutCompany(\''+co.user_id+'\','+buyPrice+')" '+(canAfford?'':'disabled ')
       +'style="background:'+(canAfford?'rgba(251,191,36,.15)':'rgba(255,255,255,.03)')+';border:1px solid '+(canAfford?'rgba(251,191,36,.2)':'rgba(255,255,255,.04)')
@@ -1374,6 +1380,170 @@ function renderGuestbook(co){
   }
   // Note: pour écrire dans le livre d'or d'un autre joueur, voir sa page entreprise
   el.innerHTML=html;
+}
+
+// ══ PARTENARIATS ══
+function renderPartnerships(co){
+  var el=document.getElementById('partnership-section');if(!el)return;
+  var parts=Array.isArray(co.partnerships)?co.partnerships:[];
+  var pending=parts.filter(function(p){return p.status==='pending'&&p.from_uid!==currentUser.id;});
+  var myPending=parts.filter(function(p){return p.status==='pending'&&p.from_uid===currentUser.id;});
+  var html='';
+
+  // Incoming requests
+  if(pending.length>0){
+    pending.forEach(function(p){
+      html+='<div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04)">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+        +'<div style="font-size:16px">'+(p.from_emoji||'🏢')+'</div>'
+        +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#fff">'+(p.from_name||'?')+' propose un partenariat</div>'
+        +'<div style="font-size:8px;color:rgba(255,255,255,.25)">Livraison de '+fmtM(p.reward||0)+' · Commission '+fmtM(p.commission||0)+'</div></div></div>'
+        +'<div style="display:flex;gap:4px">'
+        +'<button onclick="acceptPartnership(\''+p.id+'\')" style="flex:1;background:#22c55e;border:none;border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:#fff;cursor:pointer">✓ ACCEPTER (+'+fmtM(p.reward||0)+')</button>'
+        +'<button onclick="declinePartnership(\''+p.id+'\')" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:6px 10px;font-size:9px;color:#ef4444;cursor:pointer">✕</button></div></div>';
+    });
+  }
+
+  // My outgoing pending
+  if(myPending.length>0){
+    myPending.forEach(function(p){
+      html+='<div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:8px">'
+        +'<div style="font-size:14px">⏳</div>'
+        +'<div style="flex:1;font-size:10px;color:rgba(255,255,255,.3)">Offre envoyée à '+(p.to_name||'?')+' — en attente</div></div>';
+    });
+  }
+
+  // Propose button
+  html+='<div class="dash-card-row" onclick="loadPartnershipTargets()">'
+    +'<div class="dash-card-icon" style="background:rgba(56,189,248,.1)">🤝</div>'
+    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Proposer un partenariat</div>'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px">Livre pour un autre joueur, touche une commission</div></div>'
+    +'<div style="color:rgba(255,255,255,.15)">›</div></div>'
+    +'<div id="partner-targets" style="display:none"></div>';
+
+  el.innerHTML=html;
+}
+
+async function loadPartnershipTargets(){
+  var tgt=document.getElementById('partner-targets');if(!tgt)return;
+  if(tgt.style.display==='block'){tgt.style.display='none';return;}
+  tgt.style.display='block';
+  tgt.innerHTML='<div style="padding:10px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Chargement...</div>';
+
+  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,niveau').neq('user_id',currentUser.id).order('valeur',{ascending:false}).limit(10);
+  if(!res.data||res.data.length===0){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Aucun partenaire</div>';return;}
+
+  var html='';
+  res.data.forEach(function(co){
+    var deliveryVal=Math.round((co.valeur||10000)*0.05); // 5% of target value
+    var commission=Math.round(deliveryVal*0.15); // 15% commission
+    var cdKey='part_cd_'+co.user_id;
+    var lastPart=parseInt(localStorage.getItem(cdKey)||'0');
+    var onCooldown=(Date.now()-lastPart)<43200000; // 12h
+
+    html+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.04)">'
+      +'<div style="font-size:16px;cursor:pointer" onclick="goEntreprise('"+co.user_id+"')">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
+      +'<div style="font-size:8px;color:rgba(255,255,255,.2)">Livraison '+fmtM(deliveryVal)+' · Ta commission '+fmtM(commission)+'</div></div>';
+    if(onCooldown){
+      var minLeft=Math.ceil((43200000-(Date.now()-lastPart))/60000);
+      html+='<div style="font-size:8px;color:rgba(255,255,255,.15);font-weight:700">⏳ '+Math.ceil(minLeft/60)+'h</div>';
+    }else{
+      html+='<button onclick="proposePartnership(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',\''+((co.emoji||'🏢').replace(/'/g,''))+'\','+deliveryVal+','+commission+')" '
+        +'style="background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.2);border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:#38bdf8;cursor:pointer">PROPOSER</button>';
+    }
+    html+='</div>';
+  });
+  tgt.innerHTML=html;
+}
+
+async function proposePartnership(targetUid,targetName,targetEmoji,reward,commission){
+  // Add partnership to TARGET's company
+  var targetRes=await sb.from('companies').select('partnerships').eq('user_id',targetUid).maybeSingle();
+  if(!targetRes.data){toast('Entreprise introuvable');return;}
+
+  var parts=Array.isArray(targetRes.data.partnerships)?targetRes.data.partnerships.slice():[];
+  // Check if already pending
+  if(parts.some(function(p){return p.from_uid===currentUser.id&&p.status==='pending';})){toast('Offre déjà en cours');return;}
+
+  var myName=_coData.nom||_coData.name||'Mon Entreprise';
+  var myEmoji=_coData.emoji||'🏢';
+  var partId='part_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
+
+  parts.push({
+    id:partId,
+    from_uid:currentUser.id,
+    from_name:myName,
+    from_emoji:myEmoji,
+    to_name:targetName,
+    status:'pending',
+    reward:reward,
+    commission:commission,
+    created_at:new Date().toISOString()
+  });
+
+  await sb.from('companies').update({partnerships:parts}).eq('user_id',targetUid);
+
+  // Also track on our side
+  var myParts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
+  myParts.push({id:partId,from_uid:currentUser.id,to_name:targetName,status:'pending',reward:reward,commission:commission,created_at:new Date().toISOString()});
+  await sb.from('companies').update({partnerships:myParts}).eq('user_id',currentUser.id);
+  _coData.partnerships=myParts;
+
+  localStorage.setItem('part_cd_'+targetUid,Date.now().toString());
+  toast('🤝 Partenariat proposé à '+targetName+' !');
+  renderPartnerships(_coData);
+}
+
+async function acceptPartnership(partId){
+  var parts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
+  var idx=parts.findIndex(function(p){return p.id===partId;});
+  if(idx<0){toast('Partenariat introuvable');return;}
+  var p=parts[idx];
+
+  // Give reward to us (target)
+  var newMoney=_dashMoney+p.reward;
+  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+  _dashMoney=newMoney;
+
+  // Give commission to proposer
+  var proposerStats=await sb.from('game_stats').select('money').eq('user_id',p.from_uid).maybeSingle();
+  if(proposerStats.data){
+    await sb.from('game_stats').update({money:(proposerStats.data.money||0)+p.commission}).eq('user_id',p.from_uid);
+  }
+
+  // Reputation boost for both
+  var myRep=Math.min(100,(_coData.reputation||0)+3);
+  await sb.from('companies').update({reputation:myRep}).eq('user_id',currentUser.id);
+  var propCo=await sb.from('companies').select('reputation').eq('user_id',p.from_uid).maybeSingle();
+  if(propCo.data){await sb.from('companies').update({reputation:Math.min(100,(propCo.data.reputation||0)+3)}).eq('user_id',p.from_uid);}
+
+  // Mark as completed
+  parts[idx].status='completed';
+  await sb.from('companies').update({partnerships:parts}).eq('user_id',currentUser.id);
+  _coData.partnerships=parts;_coData.reputation=myRep;
+
+  // Also update proposer's tracking
+  var propParts=await sb.from('companies').select('partnerships').eq('user_id',p.from_uid).maybeSingle();
+  if(propParts.data){
+    var pp=Array.isArray(propParts.data.partnerships)?propParts.data.partnerships:[];
+    var pi=pp.findIndex(function(x){return x.id===partId;});
+    if(pi>=0){pp[pi].status='completed';await sb.from('companies').update({partnerships:pp}).eq('user_id',p.from_uid);}
+  }
+
+  toast('🤝 Partenariat accepté ! +'+fmtM(p.reward));
+  loadDashboard();
+}
+
+async function declinePartnership(partId){
+  var parts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
+  var idx=parts.findIndex(function(p){return p.id===partId;});
+  if(idx<0)return;
+  parts.splice(idx,1);
+  await sb.from('companies').update({partnerships:parts}).eq('user_id',currentUser.id);
+  _coData.partnerships=parts;
+  toast('Partenariat refusé');
+  renderPartnerships(_coData);
 }
 
 // ══ INVESTIR ══
