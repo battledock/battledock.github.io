@@ -183,26 +183,40 @@
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const sb = supabase.createClient(SB_URL, SB_KEY);
 
-  // ── 8 compagnies fictives (profils variés) ──
-  const COMPANIES = [
-    { sym:'CALANCA',  name:'Calanca Lines',      base:120, vol:0.018, color:'#0ea5e9',
-      desc:'Armateur historique du port de Marseille. Spécialisée dans le fret méditerranéen depuis 1932. Flotte de 12 porte-conteneurs.', sector:'Fret', employees:'1 200', founded:'1932', risk:'Faible' },
-    { sym:'MISTRAL',  name:'Mistral Cargo',      base:90,  vol:0.028, color:'#f59e0b',
-      desc:'Transporteur de vrac sec et liquide. Acteur clé des échanges Marseille-Maghreb. Fort potentiel de croissance.', sector:'Vrac', employees:'680', founded:'1987', risk:'Moyen' },
-    { sym:'PHOCEA',   name:'Phocéa Maritime',    base:150, vol:0.022, color:'#a855f7',
-      desc:'Leader du transport de produits chimiques en Méditerranée. Normes de sécurité premium. Clientèle industrielle fidèle.', sector:'Chimie', employees:'950', founded:'1975', risk:'Moyen' },
-    { sym:'STJEAN',   name:'Saint-Jean Shipping', base:60, vol:0.040, color:'#22c55e',
-      desc:'Start-up du fret maritime fondée à Marseille. Modèle numérique disruptif. Haute volatilité, haut potentiel.', sector:'Tech-Fret', employees:'120', founded:'2019', risk:'Élevé' },
-    { sym:'CAPVERT',  name:'Cap Vert Fret',      base:210, vol:0.015, color:'#14b8a6',
-      desc:'Géant du conteneur, coté en bourse depuis 1998. Très stable. Dividendes réguliers. Peu de surprises.', sector:'Conteneur', employees:'4 800', founded:'1968', risk:'Faible' },
-    { sym:'LACYDON',  name:'Lacydon Container',  base:75,  vol:0.045, color:'#ef4444',
-      desc:'Spécialiste des liaisons port-entrepôt. En difficulté depuis la grève de 2023. Très volatile — à risque.', sector:'Logistique', employees:'430', founded:'2001', risk:'Très élevé' },
-    { sym:'BONNEMER', name:'Bonne-Mère Lines',   base:110, vol:0.026, color:'#eab308',
-      desc:'Compagnie familiale marseillaise, 3ème génération. Fret mixte passagers-cargo. Réputation solide sur le littoral.', sector:'Mixte', employees:'780', founded:'1954', risk:'Faible' },
-    { sym:'ESTAQUE',  name:'Estaque Maritime',   base:135, vol:0.030, color:'#06b6d4',
-      desc:'Nouveau venu agressif. Cible les routes transatlantiques. Financement par dette — potentiel élevé, risque modéré.', sector:'Trans-Atlantique', employees:'290', founded:'2015', risk:'Moyen' },
-  ];
-  const CO = {}; COMPANIES.forEach(c=>CO[c.sym]=c);
+  // ── Entreprises réelles des joueurs ──
+  let COMPANIES = [];
+  const CO = {};
+  const STOCK_COLORS = ['#0ea5e9','#f59e0b','#a855f7','#22c55e','#14b8a6','#ef4444','#eab308','#06b6d4','#ec4899','#8b5cf6'];
+  const TYPES_TAG = ['Pêche','Restauration','Transport','Street Food','Nettoyage','Brocante','Manutention','Gardiennage','BTP Naval','Tourisme','Import-Export','Services Admin','Logistique','Commerce Int.','Assurance','Supply Chain','Tech Portuaire','Armateur','Holding','Conglomérat'];
+
+  async function loadCompaniesForBourse(){
+    const res = await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,niveau,employees,slogan,type_id,color').order('valeur',{ascending:false}).limit(20);
+    if(!res.data || res.data.length===0) return;
+    COMPANIES = res.data.filter(c=>c.valeur>0).map((c,i)=>{
+      const nom = c.nom||c.name||'Entreprise';
+      const sym = nom.replace(/[^A-Za-z]/g,'').substring(0,6).toUpperCase()||('CO'+i);
+      const basePrice = Math.max(10, Math.round((c.valeur||10000)/1000));
+      const rep = c.reputation||50;
+      const vol = Math.max(0.012, Math.min(0.05, (100-rep)/2000));
+      const emps = Array.isArray(c.employees)?c.employees.length:0;
+      const risk = rep>=70?'Faible':rep>=40?'Moyen':rep>=20?'Élevé':'Très élevé';
+      const sector = TYPES_TAG[c.type_id]||'Maritime';
+      return {
+        sym: sym,
+        name: (c.emoji||'🏢')+' '+nom,
+        base: basePrice,
+        vol: vol,
+        color: c.color||STOCK_COLORS[i%STOCK_COLORS.length],
+        desc: c.slogan||'Entreprise du port de Marseille',
+        sector: sector,
+        employees: emps+'',
+        founded: '2025',
+        risk: risk,
+        uid: c.user_id
+      };
+    });
+    COMPANIES.forEach(c=>CO[c.sym]=c);
+  }
   const EVENTS = [
     { t:'⚓ Pénurie de conteneurs', m:0.10, bad:false },
     { t:'📈 Hausse de la demande',  m:0.08, bad:false },
@@ -314,6 +328,8 @@
     const b = (gs?.bourse && typeof gs.bourse==='object') ? gs.bourse : {};
     holdings = b.h || {}; cooldowns = b.cd || {};
     profit = gs?.bourse_profit || 0; best = gs?.bourse_best || 0;
+    await loadCompaniesForBourse();
+    if(COMPANIES.length===0){ document.querySelector('.wrap').innerHTML='<div style="padding:40px;text-align:center;color:#9ca3af">Aucune entreprise en bourse.<br>Les joueurs doivent d\'abord créer leur entreprise dans Commerce.</div>'; return; }
     COMPANIES.forEach(c=>{ prices[c.sym]=c.base; prev[c.sym]=c.base; hist[c.sym]=Array(HIST).fill(c.base); });
     renderStocks();
     await syncMarket(true);   // lecture + rattrapage
@@ -386,7 +402,7 @@
       <div class="stock" id="st-${c.sym}">
         <div class="stock-top">
           <div class="stock-badge" style="background:${c.color}">${c.sym.slice(0,4)}</div>
-          <div class="stock-id"><div class="stock-sym">${c.name}</div><div class="stock-name">${c.sym}</div></div>
+          <div class="stock-id"><div class="stock-sym" ${c.uid?'onclick="location.href=\'entreprise.html?uid='+c.uid+'\'" style="cursor:pointer"':''}>${c.name}</div><div class="stock-name">${c.sym}</div></div>
           <div class="stock-price-wrap"><div class="stock-price" id="pr-${c.sym}">—</div><div class="stock-chg" id="ch-${c.sym}">—</div></div>
         </div>
         <svg class="spark" id="sp-${c.sym}" viewBox="0 0 300 42" preserveAspectRatio="none"></svg>
