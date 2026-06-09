@@ -650,6 +650,16 @@
       p = clamp(p*(1 + total/IMPACT_LIQ), c);   // impact haussier
       feedAction='a acheté'; feedAmount=total;
       showToast(`Achat ${c.sym} · ${shares} parts`, false);
+      // Commission 3% au propriétaire de l'entreprise
+      if(c.uid && c.uid !== currentUser.id){
+        const commission = Math.round(cost * 0.03);
+        if(commission > 0){
+          try {
+            const { data:ownerGs } = await sb.from('game_stats').select('money').eq('user_id',c.uid).maybeSingle();
+            if(ownerGs){ await sb.from('game_stats').update({money:(ownerGs.money||0)+commission}).eq('user_id',c.uid); }
+          } catch(e){}
+        }
+      }
     } else {
       const h=holdings[c.sym]; if(!h) return;
       const sh=Math.min(Math.floor(val), h.shares); if(sh<1) return;
