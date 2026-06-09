@@ -139,6 +139,31 @@ body{
 }
 .widget:active{transform:scale(.97);opacity:.9;}
 
+/* News ticker */
+.news-ticker{
+  display:flex;align-items:center;
+  background:#fff;border-bottom:1px solid #f0f0f0;
+  cursor:pointer;overflow:hidden;
+  padding:7px 10px;gap:6px;
+  touch-action:manipulation;
+  min-height:30px;
+}
+.news-ticker-badge{
+  font-size:7px;font-weight:800;letter-spacing:1px;
+  background:#dc2626;color:#fff;
+  padding:3px 6px;border-radius:4px;flex-shrink:0;
+  white-space:nowrap;
+}
+.news-ticker-scroll{
+  flex:1;overflow:hidden;position:relative;
+}
+.news-ticker-text{
+  white-space:nowrap;font-size:10px;font-weight:600;color:#1a1a1a;
+  animation:tickerScroll 20s linear infinite;
+  display:inline-block;padding-left:100%;
+}
+@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+
 .widget-full{grid-column:span 2;min-height:auto;}
 .widget-duo{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:0;}
 .widget-duo>.widget:first-child{border-right:1px solid #f0f0f0;}
@@ -538,6 +563,12 @@ body{
 <!-- ═══ CONTENU ═══ -->
 <div class="page-content">
 
+  <!-- NEWS TICKER -->
+  <div class="news-ticker" onclick="location.href='journal.html'" style="grid-column:span 2">
+    <div class="news-ticker-badge">📰 ACTU</div>
+    <div class="news-ticker-scroll"><div class="news-ticker-text" id="newsTicker">Chargement des nouvelles...</div></div>
+  </div>
+
   <!-- TRAVAILLER -->
   <div class="widget widget-full widget-work" onclick="location.href='travail.html'">
     <div class="work-mesh">
@@ -794,6 +825,7 @@ async function init(){
     loadBourseTicker();
     loadSyndicatMembers();
     initClassementFlags();
+    loadNewsTicker();
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -1007,6 +1039,47 @@ async function loadSyndicatMembers(){
     const{count}=await sb.from('profiles').select('user_id',{count:'exact',head:true});
     el.textContent=count||0;
   }catch(e){el.textContent='0';}
+}
+
+// ── News ticker ──
+var NPC_HEADLINES=[
+  '👴 Gégé se coince le dos en soulevant un cure-dent',
+  '🐦 Le goéland du quai 7 dépose un CV au syndicat',
+  '😴 Titouan : 14h de sieste consécutive, nouveau record',
+  '🏗️ Jeff affirme que la grue lui a dit bonjour',
+  '☕ La machine à café du port a rendu l\'âme',
+  '👔 Lavagne surpris en train de sourire (0.3 secondes)',
+  '🐟 Le cours de la sardine atteint un record historique',
+  '⚖️ Procès du siècle : Docker contre Sardine',
+];
+async function loadNewsTicker(){
+  var el=document.getElementById('newsTicker');if(!el)return;
+  var headlines=[];
+  try{
+    var[cos,sts,cas]=await Promise.all([
+      sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,sabotaged_until').order('valeur',{ascending:false}).limit(10),
+      sb.from('game_stats').select('user_id,level,money,streak_days').order('level',{ascending:false}).limit(10),
+      sb.from('casino_wins').select('username,amount').order('created_at',{ascending:false}).limit(3)
+    ]);
+    var names={};
+    (cos.data||[]).forEach(function(c){names[c.user_id]=(c.emoji||'')+' '+(c.nom||c.name||'Docker');});
+    if(sts.data&&sts.data[0])headlines.push('💰 '+(names[sts.data[0].user_id]||'Docker')+' est le plus riche du port');
+    (cos.data||[]).forEach(function(c){
+      if(c.sabotaged_until&&new Date(c.sabotaged_until)>new Date())headlines.push('💣 '+(names[c.user_id]||'Docker')+' a été saboté !');
+      if((c.reputation||50)<20)headlines.push('📉 '+(names[c.user_id]||'Docker')+' : réputation au plus bas');
+    });
+    if(cos.data&&cos.data[0])headlines.push('📈 '+(names[cos.data[0].user_id]||'Docker')+' domine le marché');
+    (cas.data||[]).forEach(function(w){if((w.amount||0)>10000)headlines.push('🎰 '+(w.username||'Docker')+' gagne '+(w.amount||0).toLocaleString('fr-FR')+'€ au casino');});
+    (sts.data||[]).forEach(function(s){if((s.streak_days||0)>5)headlines.push('🔥 '+(names[s.user_id]||'Docker')+' : '+s.streak_days+' jours de streak');});
+  }catch(e){}
+  // Add NPC filler
+  var seed=Math.floor(Date.now()/86400000);
+  headlines.push(NPC_HEADLINES[seed%NPC_HEADLINES.length]);
+  headlines.push(NPC_HEADLINES[(seed+3)%NPC_HEADLINES.length]);
+  if(headlines.length>0){
+    el.textContent=headlines.join('   ·   ');
+    el.style.animationDuration=Math.max(15,headlines.length*5)+'s';
+  }
 }
 
 // ── Classement flags ──
