@@ -2,254 +2,223 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Syndicat - Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Syndicat — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
-  body { font-family:'Inter',sans-serif; background:#120606; color:#f6e7e0; min-height:100dvh; padding:0 14px 30px; }
-  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
-      radial-gradient(120% 60% at 50% -5%, rgba(220,38,38,0.20), transparent 60%),
-      linear-gradient(180deg,#2a0d08,#180806 55%,#0d0503); }
-  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
-  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
-    background:linear-gradient(180deg,#180806,rgba(24,8,6,0.85)); backdrop-filter:blur(8px); }
-  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#fff; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
-  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:23px; letter-spacing:2px;
-    background:linear-gradient(135deg,#ef4444,#fca5a5,#f59e0b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:#fff;color:#1a1a1a}
+.hdr{position:fixed;top:0;left:0;right:0;z-index:100;background:#fff;padding:calc(env(safe-area-inset-top,0px)+10px) 16px 10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #f3f4f6}
+.hdr-back{background:#f3f4f6;border:none;border-radius:10px;width:34px;height:34px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b7280}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#1a1a1a;flex:1}
+.hdr-count{font-size:10px;color:#9ca3af;font-weight:700}
+.content{padding:calc(env(safe-area-inset-top,0px)+65px) 14px calc(20px + env(safe-area-inset-bottom,0px))}
 
-  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px; margin-bottom:12px; }
-  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin:18px 4px 10px; }
+/* Hero */
+.hero{text-align:center;padding:20px 0 16px}
+.hero-emoji{font-size:48px}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;margin-top:6px}
+.hero-sub{font-size:11px;color:#9ca3af;margin-top:4px}
 
-  .gege { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(160deg,rgba(220,38,38,0.1),rgba(245,158,11,0.05)); border:1px solid rgba(220,38,38,0.22); border-radius:16px; padding:14px; margin-bottom:14px; }
-  .gege-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#b45309,#f59e0b); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
-  .gege-txt { font-size:14px; line-height:1.4; color:#fecaca; font-style:italic; }
+/* Proposals */
+.section{font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px;margin:16px 0 8px;padding:0 2px}
+.proposal{background:#fff;border:1px solid #f3f4f6;border-radius:14px;padding:16px;margin-bottom:10px;overflow:hidden}
+.proposal.voted{border-color:#dcfce7}
+.prop-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.prop-emoji{font-size:28px;flex-shrink:0}
+.prop-title{font-size:14px;font-weight:800;color:#1a1a1a}
+.prop-desc{font-size:11px;color:#6b7280;margin-top:3px;line-height:1.5}
+.prop-tag{display:inline-block;font-size:8px;font-weight:700;padding:2px 8px;border-radius:6px;margin-top:4px}
 
-  .badge-mem { text-align:center; padding:18px; border-radius:16px; margin-bottom:12px;
-    background:linear-gradient(160deg,rgba(239,68,68,0.16),rgba(245,158,11,0.08)); border:1px solid rgba(239,68,68,0.4); }
-  .badge-mem .fist { font-size:40px; }
-  .badge-mem .t { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1px; color:#fca5a5; margin-top:4px; }
-  .badge-mem .s { font-size:12px; color:rgba(255,255,255,0.55); margin-top:2px; }
+/* Results bar */
+.results{margin-top:10px}
+.result-bar{height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden;display:flex;margin-bottom:4px}
+.result-pour{height:100%;background:#22c55e;border-radius:4px 0 0 4px;transition:width .5s}
+.result-contre{height:100%;background:#ef4444;border-radius:0 4px 4px 0;transition:width .5s}
+.result-labels{display:flex;justify-content:space-between;font-size:9px;font-weight:700}
+.result-pour-lbl{color:#16a34a}
+.result-contre-lbl{color:#dc2626}
+.result-total{font-size:8px;color:#9ca3af;text-align:center;margin-top:2px}
 
-  .bar-wrap { background:rgba(255,255,255,0.07); border-radius:10px; height:16px; overflow:hidden; margin:10px 0 6px; }
-  .bar-fill { height:100%; background:linear-gradient(90deg,#dc2626,#f59e0b); border-radius:10px; transition:width .5s; }
+/* Vote buttons */
+.vote-btns{display:flex;gap:8px;margin-top:10px}
+.vote-btn{flex:1;padding:12px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;text-align:center;border:none;transition:transform .1s}
+.vote-btn:active{transform:scale(.96)}
+.vote-pour{background:#f0fdf4;color:#16a34a;border:1px solid #dcfce7}
+.vote-contre{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.vote-btn.selected{opacity:1}
+.vote-btn.dimmed{opacity:.35;cursor:default}
+.voted-tag{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;font-size:11px;font-weight:700;border-radius:10px;margin-top:10px}
+.voted-pour{background:#f0fdf4;color:#16a34a}
+.voted-contre{background:#fef2f2;color:#dc2626}
 
-  .btn { width:100%; border:none; border-radius:13px; padding:14px; font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:1px; cursor:pointer;
-    background:linear-gradient(135deg,#b91c1c,#ef4444); color:#fff; margin-top:8px; }
-  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.4; }
-  .btn-gold { background:linear-gradient(135deg,#b45309,#f59e0b); color:#1a1208; }
+/* History */
+.hist-row{display:flex;align-items:center;gap:10px;padding:12px;border-bottom:1px solid #f3f4f6}
+.hist-row:last-child{border-bottom:none}
+.hist-emoji{font-size:20px}
+.hist-title{font-size:12px;font-weight:700;color:#1a1a1a}
+.hist-result{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px}
+.hist-adopte{background:#f0fdf4;color:#16a34a}
+.hist-rejete{background:#fef2f2;color:#dc2626}
 
-  .coti-row { display:flex; gap:8px; margin-top:8px; }
-  .coti { flex:1; border:1px solid rgba(245,158,11,0.3); background:rgba(245,158,11,0.08); color:#fcd34d; border-radius:11px; padding:12px 4px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:0.5px; cursor:pointer; }
-  .coti:active{ transform:scale(0.97); }
-
-  .lb-row { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.06); font-size:13.5px; }
-  .lb-row:last-child{ border-bottom:none; }
-  .lb-rank { width:24px; font-family:'Bebas Neue',sans-serif; color:#fca5a5; text-align:center; flex-shrink:0; }
-  .lb-name { flex:1; font-weight:700; }
-  .lb-amt { font-family:'Bebas Neue',sans-serif; color:#fcd34d; letter-spacing:0.5px; }
-
-  .kpi-row { display:flex; gap:10px; }
-  .kpi { flex:1; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:13px; padding:12px 8px; text-align:center; }
-  .kpi-v { font-family:'Bebas Neue',sans-serif; font-size:22px; color:#fca5a5; }
-  .kpi-l { font-size:10px; letter-spacing:0.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-top:2px; }
-
-  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
-  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
-  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
-    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.7);
-    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
-  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300;
-    background:rgba(42,13,8,0.97); border:1px solid rgba(239,68,68,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
-    opacity:0; transition:all .35s; max-width:92%; text-align:center; color:#fca5a5; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:9px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 </style>
 </head>
 <body>
-<div class="bg"></div>
-<div class="wrap">
-  <div class="hdr">
-    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
-    <div class="hdr-title">✊ SYNDICAT</div>
-  </div>
-  <div id="content"><div class="loader">CHARGEMENT…</div></div>
-  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+
+<div class="hdr">
+  <button class="hdr-back" onclick="location.href='game.html'">←</button>
+  <div class="hdr-title">🗳️ SYNDICAT</div>
+  <div class="hdr-count" id="member-count">— membres</div>
 </div>
-<div class="toast" id="toast"></div>
+
+<div class="content">
+  <div class="hero">
+    <div class="hero-emoji">🗳️</div>
+    <div class="hero-title">VOTE & DÉCIDE</div>
+    <div class="hero-sub">Chaque docker a une voix. Choisis l'avenir du port.</div>
+  </div>
+
+  <div class="section">VOTES EN COURS</div>
+  <div id="active-proposals"></div>
+
+  <div class="section">VOTES TERMINÉS</div>
+  <div id="history-proposals" style="background:#fff;border:1px solid #f3f4f6;border-radius:14px;overflow:hidden"></div>
+</div>
+
+<div class="toast" id="toast-el"></div>
 
 <script>
-  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var _me=null,_myVotes={};
 
-  const SOLID_BASE = 5000;       // prime de solidarité de base / jour
-  const SOLID_RATE = 0.02;       // + 2% du total cotisé...
-  const SOLID_CAP  = 20000;      // ... plafonné
-  const PALIER_STEP = 500000;    // chaque palier de caisse commune
-  const PALIER_REWARD = 10000;   // prime par palier atteint
-  const COTI = [5000, 20000, 100000];
+function toast(msg){var t=document.getElementById('toast-el');t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);}
 
-  let currentUser=null, username='Docker', money=0, syn={}, communityTotal=0, leaderboard=[];
-  const fmt=n=>Math.round(n).toLocaleString('fr-FR');
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
+// ══ PROPOSITIONS ══
+// Statut : 'active' = en cours, 'closed' = terminé
+var PROPOSALS=[
+  {id:'ecole',emoji:'🎓',title:'École des Dockers',desc:'Ajouter un système de formation avec des cours, diplômes et certifications qui débloquent de nouveaux métiers.',tag:'GAMEPLAY',tagColor:'#3b82f6',status:'active'},
+  {id:'metiers',emoji:'👨‍🔧',title:'Nouveaux métiers',desc:'Grutier, plongeur, capitaine... chaque métier avec ses avantages et son gameplay unique.',tag:'CONTENU',tagColor:'#8b5cf6',status:'active'},
+  {id:'saisons',emoji:'🏆',title:'Système de saisons',desc:'Saisons de 30 jours avec classement, récompenses exclusives et reset partiel.',tag:'COMPÉTITION',tagColor:'#f59e0b',status:'active'},
+  {id:'immobilier',emoji:'🏠',title:'Immobilier',desc:'Acheter des appartements, entrepôts et terrains au port. Revenus passifs + décoration.',tag:'ÉCONOMIE',tagColor:'#059669',status:'active'},
+  {id:'pvp_arena',emoji:'⚔️',title:'Arène PvP',desc:'Combats 1v1 en temps réel avec paris. Le perdant paie, le gagnant empoche.',tag:'PVP',tagColor:'#dc2626',status:'active'},
+  {id:'peche',emoji:'🎣',title:'Système de pêche',desc:'Mini-jeu de pêche avec collection de poissons, vente au marché et records.',tag:'MINI-JEU',tagColor:'#0ea5e9',status:'active'},
+  // Exemples terminés
+  {id:'casino',emoji:'🎰',title:'Casino du port',desc:'Roulette, Blackjack, Slots, Crash et Higher/Lower.',tag:'MINI-JEU',tagColor:'#0ea5e9',status:'closed',result:'adopte',pour:14,contre:3},
+  {id:'commerce_v2',emoji:'🏢',title:'Commerce v2',desc:'Employés, espionnage, guerre des prix, partenariats.',tag:'GAMEPLAY',tagColor:'#3b82f6',status:'closed',result:'adopte',pour:11,contre:2},
+];
 
-  async function init(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser = session.user;
-    const [{ data:prof }, { data:gs }] = await Promise.all([
-      sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle(),
-      sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle()
-    ]);
-    username = prof?.username || currentUser.email.split('@')[0];
-    money = gs?.money || 0;
-    syn = (gs?.syndicat && typeof gs.syndicat==='object') ? gs.syndicat : {};
-    await loadFund();
-    render();
-  }
+async function init(){
+  var sess=await sb.auth.getSession();
+  if(!sess.data.session){location.href='index.html';return;}
+  _me=sess.data.session.user;
 
-  async function loadFund(){
-    communityTotal = 0; leaderboard = [];
-    try {
-      const { data } = await sb.from('syndicat').select('username,amount').limit(2000);
-      const map = {};
-      (data||[]).forEach(r=>{ communityTotal += (r.amount||0); const n=r.username||'?'; map[n]=(map[n]||0)+(r.amount||0); });
-      leaderboard = Object.entries(map).map(([n,a])=>({n,a})).sort((x,y)=>y.a-x.a).slice(0,8);
-    } catch(e){ console.log('fund:',e); }
-  }
+  // Charger mes votes
+  var gs=await sb.from('game_stats').select('syndicat').eq('user_id',_me.id).maybeSingle();
+  _myVotes=(gs.data&&gs.data.syndicat&&typeof gs.data.syndicat==='object')?gs.data.syndicat:{};
 
-  function dailyAmount(){ return Math.round(SOLID_BASE + Math.min((syn.contributed||0)*SOLID_RATE, SOLID_CAP)); }
-  function palier(){ return Math.floor(communityTotal / PALIER_STEP); }
+  // Compter les membres
+  var cnt=await sb.from('profiles').select('user_id',{count:'exact',head:true});
+  document.getElementById('member-count').textContent=(cnt.count||0)+' membres';
 
-  function render(){
-    const member = !!syn.member;
-    const canSolid = member && syn.lastSolidarity !== todayStr();
-    const pal = palier();
-    const pendingPaliers = member ? Math.max(0, pal - (syn.claimedPalier||0)) : 0;
-    const progress = ((communityTotal % PALIER_STEP) / PALIER_STEP) * 100;
+  // Charger les résultats pour les propositions actives
+  await loadResults();
+  render();
+}
 
-    let html = `
-      <div class="gege">
-        <div class="gege-ava">🧓</div>
-        <div class="gege-txt">"Le port, on l'a construit à la sueur. Le syndicat, c'est nous tous : on cotise à la caisse de grève, et quand on serre les rangs, personne nous marche dessus. Tu en es ?"</div>
-      </div>`;
+var _results={}; // {proposal_id: {pour:X, contre:Y}}
 
-    if(member){
-      html += `<div class="badge-mem"><div class="fist">✊</div><div class="t">Membre du Syndicat</div><div class="s">Total cotisé : ${fmt(syn.contributed||0)} € · protégé à 50% contre le sabotage</div></div>`;
-    } else {
-      html += `<div class="card" style="text-align:center"><div class="info" style="margin-bottom:10px">Tu n'es pas encore syndiqué. Rejoins la caisse de grève pour la prime de solidarité, les paliers collectifs et la protection anti-sabotage.</div><button class="btn" onclick="joinUnion()">✊ Rejoindre le Syndicat</button></div>`;
+async function loadResults(){
+  // Fetch all players' syndicat votes
+  var res=await sb.from('game_stats').select('syndicat').not('syndicat','is',null);
+  _results={};
+  PROPOSALS.forEach(function(p){_results[p.id]={pour:0,contre:0};});
+  (res.data||[]).forEach(function(row){
+    var votes=row.syndicat;
+    if(!votes||typeof votes!=='object')return;
+    Object.keys(votes).forEach(function(pid){
+      if(!_results[pid])_results[pid]={pour:0,contre:0};
+      if(votes[pid]==='pour')_results[pid].pour++;
+      if(votes[pid]==='contre')_results[pid].contre++;
+    });
+  });
+}
+
+function render(){
+  var activeEl=document.getElementById('active-proposals');
+  var histEl=document.getElementById('history-proposals');
+  var activeHtml='',histHtml='';
+
+  PROPOSALS.forEach(function(p){
+    if(p.status==='active'){
+      var myVote=_myVotes[p.id]||null;
+      var r=_results[p.id]||{pour:0,contre:0};
+      var total=r.pour+r.contre;
+      var pctPour=total>0?Math.round(r.pour/total*100):50;
+      var pctContre=total>0?100-pctPour:50;
+
+      activeHtml+='<div class="proposal'+(myVote?' voted':'')+'">'
+        +'<div class="prop-header"><div class="prop-emoji">'+p.emoji+'</div><div style="flex:1">'
+        +'<div class="prop-title">'+p.title+'</div>'
+        +'<div class="prop-desc">'+p.desc+'</div>'
+        +'<div class="prop-tag" style="background:'+p.tagColor+'15;color:'+p.tagColor+'">'+p.tag+'</div>'
+        +'</div></div>';
+
+      // Results bar
+      activeHtml+='<div class="results"><div class="result-bar">'
+        +'<div class="result-pour" style="width:'+pctPour+'%"></div>'
+        +'<div class="result-contre" style="width:'+pctContre+'%"></div></div>'
+        +'<div class="result-labels"><div class="result-pour-lbl">✓ POUR '+pctPour+'%</div>'
+        +'<div class="result-contre-lbl">CONTRE '+pctContre+'% ✕</div></div>'
+        +'<div class="result-total">'+total+' vote'+(total>1?'s':'')+'</div></div>';
+
+      // Vote buttons or voted tag
+      if(myVote){
+        activeHtml+='<div class="voted-tag '+(myVote==='pour'?'voted-pour':'voted-contre')+'">'
+          +(myVote==='pour'?'✓ Tu as voté POUR':'✕ Tu as voté CONTRE')+'</div>';
+      }else{
+        activeHtml+='<div class="vote-btns">'
+          +'<button class="vote-btn vote-pour" onclick="vote(\''+p.id+'\',\'pour\')">✓ POUR</button>'
+          +'<button class="vote-btn vote-contre" onclick="vote(\''+p.id+'\',\'contre\')">✕ CONTRE</button></div>';
+      }
+      activeHtml+='</div>';
+
+    }else{
+      // History
+      var rp=p.pour||0,rc=p.contre||0;
+      histHtml+='<div class="hist-row"><div class="hist-emoji">'+p.emoji+'</div>'
+        +'<div style="flex:1"><div class="hist-title">'+p.title+'</div>'
+        +'<div style="font-size:9px;color:#9ca3af;margin-top:1px">'+rp+' pour · '+rc+' contre</div></div>'
+        +'<div class="hist-result '+(p.result==='adopte'?'hist-adopte':'hist-rejete')+'">'
+        +(p.result==='adopte'?'✓ ADOPTÉ':'✕ REJETÉ')+'</div></div>';
     }
+  });
 
-    if(member){
-      html += `
-        <div class="sect-lbl">Prime de solidarité</div>
-        <div class="card" style="text-align:center">
-          <div class="kpi-v" style="font-size:32px;color:#fcd34d">+${fmt(dailyAmount())} €</div>
-          <div class="info" style="margin:4px 0 10px">Une fois par jour · base ${fmt(SOLID_BASE)}€ + 2% de ton total cotisé (max ${fmt(SOLID_CAP)}€)</div>
-          ${canSolid ? '<button class="btn btn-gold" onclick="claimSolidarity()">🤝 TOUCHER LA PRIME</button>'
-                     : '<div class="info">✓ Déjà touchée aujourd\'hui. Reviens demain.</div>'}
-        </div>`;
-    }
+  if(!activeHtml)activeHtml='<div style="text-align:center;padding:20px;font-size:11px;color:#9ca3af">Aucun vote en cours</div>';
+  if(!histHtml)histHtml='<div style="padding:14px;text-align:center;font-size:11px;color:#9ca3af">Aucun historique</div>';
 
-    html += `
-      <div class="sect-lbl">Caisse de grève commune</div>
-      <div class="card">
-        <div class="kpi-row" style="margin-bottom:6px">
-          <div class="kpi"><div class="kpi-v">${fmt(communityTotal)} €</div><div class="kpi-l">Cagnotte totale</div></div>
-          <div class="kpi"><div class="kpi-v">Palier ${pal}</div><div class="kpi-l">Niveau de grève</div></div>
-        </div>
-        <div class="bar-wrap"><div class="bar-fill" style="width:${progress.toFixed(1)}%"></div></div>
-        <div class="info">Plus que ${fmt(PALIER_STEP - (communityTotal % PALIER_STEP))} € avant le palier ${pal+1}.</div>`;
-    if(pendingPaliers>0){
-      html += `<button class="btn" onclick="claimPalier()">🎉 Réclamer ${pendingPaliers} palier(s) — +${fmt(pendingPaliers*PALIER_REWARD)} €</button>`;
-    }
-    html += `</div>`;
+  activeEl.innerHTML=activeHtml;
+  histEl.innerHTML=histHtml;
+}
 
-    if(member){
-      html += `
-        <div class="sect-lbl">Cotiser à la caisse</div>
-        <div class="card">
-          <div class="info">Renforce la cagnotte commune (et ta prime de solidarité monte avec ton total cotisé) :</div>
-          <div class="coti-row">${COTI.map(a=>`<button class="coti" onclick="cotiser(${a})">+${fmt(a)}€</button>`).join('')}</div>
-        </div>`;
-    }
+async function vote(proposalId,choice){
+  if(_myVotes[proposalId]){toast('Tu as déjà voté');return;}
+  _myVotes[proposalId]=choice;
 
-    html += `<div class="sect-lbl">Classement des cotisants</div><div class="card">`;
-    if(!leaderboard.length){ html += `<div class="info">Personne n'a encore cotisé. Sois le premier !</div>`; }
-    else { leaderboard.forEach((r,i)=>{ html += `<div class="lb-row"><div class="lb-rank">${i+1}</div><div class="lb-name">${(r.n||'?').replace(/[<>&]/g,'')}</div><div class="lb-amt">${fmt(r.a)} €</div></div>`; }); }
-    html += `</div>
-      <div class="sect-lbl">Ta caisse</div><div class="card info">💰 Argent disponible : <b>${fmt(money)} €</b></div>`;
+  await sb.from('game_stats').update({syndicat:_myVotes}).eq('user_id',_me.id);
 
-    document.getElementById('content').innerHTML = html;
-  }
+  // Update local results
+  if(!_results[proposalId])_results[proposalId]={pour:0,contre:0};
+  _results[proposalId][choice]++;
 
-  async function saveSyn(){ try{ await sb.from('game_stats').update({ syndicat:syn }).eq('user_id',currentUser.id); }catch(e){ console.log('saveSyn:',e); } }
+  toast('🗳️ Vote enregistré — '+(choice==='pour'?'POUR':'CONTRE'));
+  render();
+}
 
-  async function joinUnion(){
-    syn.member = true;
-    if(syn.contributed==null) syn.contributed = 0;
-    if(syn.claimedPalier==null) syn.claimedPalier = palier(); // on n'hérite pas des paliers passés
-    await saveSyn();
-    showToast('✊ Bienvenue au Syndicat, camarade !');
-    render();
-  }
-
-  async function claimSolidarity(){
-    if(!syn.member || syn.lastSolidarity===todayStr()) return;
-    const amount = dailyAmount();
-    try {
-      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
-      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
-      if(syn.lastSolidarity===todayStr()){ render(); return; }
-      const newMoney = (fresh?.money||0) + amount;
-      syn.lastSolidarity = todayStr();
-      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
-      money = newMoney;
-      showToast(`🤝 +${fmt(amount)} € de solidarité !`);
-      render();
-    } catch(e){ console.log('solid:',e); showToast('Erreur, réessaie.'); }
-  }
-
-  async function claimPalier(){
-    const pending = Math.max(0, palier() - (syn.claimedPalier||0));
-    if(pending<=0) return;
-    const reward = pending*PALIER_REWARD;
-    try {
-      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
-      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
-      const newMoney = (fresh?.money||0) + reward;
-      syn.claimedPalier = palier();
-      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
-      money = newMoney;
-      showToast(`🎉 +${fmt(reward)} € (paliers de grève) !`);
-      render();
-    } catch(e){ console.log('palier:',e); showToast('Erreur.'); }
-  }
-
-  async function cotiser(amount){
-    if(!syn.member){ showToast('Rejoins d\'abord le syndicat.'); return; }
-    if(money < amount){ showToast('Pas assez d\'argent.'); return; }
-    if(!confirm(`Cotiser ${fmt(amount)}€ à la caisse de grève ?`)) return;
-    try {
-      const { data:fresh } = await sb.from('game_stats').select('money,syndicat').eq('user_id',currentUser.id).maybeSingle();
-      if((fresh?.money||0) < amount){ showToast('Pas assez d\'argent.'); return; }
-      syn = (fresh?.syndicat && typeof fresh.syndicat==='object') ? fresh.syndicat : syn;
-      const newMoney = (fresh?.money||0) - amount;
-      syn.contributed = (syn.contributed||0) + amount;
-      await sb.from('game_stats').update({ money:newMoney, syndicat:syn }).eq('user_id',currentUser.id);
-      await sb.from('syndicat').insert({ user_id:currentUser.id, username, amount });
-      money = newMoney;
-      showToast(`✊ +${fmt(amount)}€ pour la caisse commune !`);
-      await loadFund();
-      render();
-    } catch(e){ console.log('cotiser:',e); showToast('Erreur, réessaie.'); }
-  }
-
-  let toastT;
-  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2800); }
-
-  init();
+init();
 </script>
 </body>
 </html>
