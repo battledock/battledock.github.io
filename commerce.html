@@ -384,14 +384,42 @@ var NAME_TEMPLATES=['Les Copains des Mouettes;Association Plume Port;Mouettes Sa
 
 var SLOGAN_TEMPLATES=['On fait ce qu on peut;La mouette nous guide;Depuis 1987 environ','Fraiches ce matin juré;La sardine c est la vie;Pas chères mais sympas','On arrive peut-etre;Tarif fixe heure variable;Flotte encore pour l instant','Sauce harissa offerte;Ouvert quand il fait beau;Gégé recommande','Propre entre 9h et 9h30;On efface vos traces;Presque impeccable','Si c est bizarre c est nous;L inutile a de la valeur;Venu de loin parti vite','Les pleines c est plus cher;On déplace du vide;Léger comme nos profits','Présent en esprit;On surveille parfois;Dissuasif par l exemple','Fini quand c est fini;Le devis est gratuit;On construit on verra','La vue vaut le déplacement;Cuisine avec amour;Revenez on progresse','La mer le soleil les grues;On vend du rêve pas cher;Marseille vue d en haut','Vos papiers notre passion;Bureaucratie souriante;On déclare tout ou presque','On arrive souvent a l heure;La Med est notre route;Cap sur les profits','Import export sans questions;Le monde est notre port;On bouge ce qui flotte','On espère ne jamais vous revoir;Le risque on l a vécu;Assuré ou pas c est vous','Dans les délais presque;Flux tendus nerfs aussi;On optimise jusqu au bout','Trop complexe a expliquer;La tech au service du port;On répare ce qu on n a pas cassé','Nos bateaux votre confiance;Le port nous appartient presque;Armateurs depuis toujours','L argent ne dort pas ici;On possède ce qu on voit pas;Filiales a tous les étages','Le port c est nous;L empire ne s excuse pas;On ne négocie pas on dicte'];
 
-var EMPLOYEES=[
-  {id:'docker',   name:'Docker',          icon:'👷', cost:5000,   bonus_rev:0.05, desc:'+5% revenus/h'},
-  {id:'chef',     name:'Chef equipe',     icon:'👨‍💼', cost:15000,  bonus_rev:0.10, desc:'+10% revenus/h'},
-  {id:'compta',   name:'Comptable',       icon:'🧮', cost:25000,  desc:'Collecte 2x plus vite'},
-  {id:'comm',     name:'Commercial',      icon:'🤝', cost:20000,  desc:'+1 contrat/jour'},
-  {id:'securite', name:'Agent secu',      icon:'💂', cost:10000,  desc:'Defense contre sabotage'},
-  {id:'directeur',name:'Directeur',       icon:'👔', cost:50000,  bonus_rev:0.20, desc:'+20% revenus/h'},
+// ══ SPÉCIALITÉS EMPLOYÉS ══
+var SPECIALTIES=[
+  {id:'docker',   name:'Docker',     icon:'👷', desc:'Revenus/h',         baseCost:5000,  baseSalary:500,  bonusPerLvl:0.05},
+  {id:'commercial',name:'Commercial',icon:'🤝', desc:'Contrats/jour',     baseCost:8000,  baseSalary:600,  bonusPerLvl:1},
+  {id:'comptable',name:'Comptable',  icon:'🧮', desc:'Réduit pertes fiscales', baseCost:10000, baseSalary:700,  bonusPerLvl:0.10},
+  {id:'securite', name:'Sécurité',   icon:'💂', desc:'Bloque sabotages',  baseCost:7000,  baseSalary:550,  bonusPerLvl:0.15},
+  {id:'espion',   name:'Espion',     icon:'🕵️', desc:'Infos sur rivaux', baseCost:15000, baseSalary:900,  bonusPerLvl:1},
 ];
+var PRENOMS=['Jean-Pierre','Gégé','Dédé','Momo','Fifi','Tonton','Kéké','Biloute','Nono','Rico','Jojo','Mimile','Paulo','Lulu','Titou','Coco','Néné','Zézé','Pierrot','Marcel'];
+var NOMS=['Bianchi','Ferrara','Casanova','Sardino','Moretti','Di Franco','Catalan','Bouche','Pastis','Gambetta','Ricard','Castellane','Pagnol','Calanque','Raimu','Mistral','Gabian','Marius','Fanny','César'];
+function genEmployeeName(){return PRENOMS[Math.floor(Math.random()*PRENOMS.length)]+' '+NOMS[Math.floor(Math.random()*NOMS.length)];}
+function getSpecialty(id){return SPECIALTIES.find(function(s){return s.id===id;})||SPECIALTIES[0];}
+function empSalary(emp){var s=getSpecialty(emp.specialty);return Math.round(s.baseSalary*(emp.level||1));}
+function empBonus(emp){var s=getSpecialty(emp.specialty);return s.bonusPerLvl*(emp.level||1);}
+function empHireCost(specId){var s=getSpecialty(specId);return s.baseCost;}
+function empTrainCost(emp){return Math.round(empHireCost(emp.specialty)*0.5*(emp.level||1));}
+function empTrainTime(emp){return (emp.level||1)*2;} // heures
+function empMaxSlots(valeur){return Math.min(8,Math.floor((valeur||0)/50000)+3);}
+
+// Migration ancien format ['docker','chef'] → nouveau [{id,name,specialty,level,...}]
+function migrateEmployees(arr){
+  if(!Array.isArray(arr)||arr.length===0)return[];
+  if(typeof arr[0]==='object'&&arr[0].specialty)return arr; // déjà nouveau format
+  var oldMap={docker:'docker',chef:'docker',compta:'comptable',comm:'commercial',securite:'securite',directeur:'docker'};
+  var oldLvl={docker:1,chef:2,compta:1,comm:1,securite:1,directeur:3};
+  return arr.map(function(eid){
+    return{
+      id:'emp_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+      name:genEmployeeName(),
+      specialty:oldMap[eid]||'docker',
+      level:oldLvl[eid]||1,
+      last_paid:new Date().toISOString().slice(0,10),
+      training_until:null
+    };
+  });
+}
 
 var EVENTS=[
   {id:'strike',   icon:'✊', title:'GREVE DU PERSONNEL',      desc:'Revenus -40% pendant 2h',  color:'#ef4444'},
@@ -554,10 +582,17 @@ async function loadDashboard(){
   if(!co){show('s-accueil');return;}
   _coData=co;
   var t=TYPES[co.type_id]||TYPES[0];
-  var employees=Array.isArray(co.employees)?co.employees:[];
-  var empBonus=employees.reduce(function(acc,eid){var e=EMPLOYEES.find(function(x){return x.id===eid;});return acc+(e&&e.bonus_rev?e.bonus_rev:0);},0);
+  var employees=migrateEmployees(Array.isArray(co.employees)?co.employees:[]);
+  // Sauver si migration a eu lieu
+  if(JSON.stringify(employees)!==JSON.stringify(co.employees)){
+    co.employees=employees;
+    sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
+  }
+  // Payer salaires impayés + virer les non-payés
+  employees=processPayroll(employees);
+  var empRevBonus=employees.filter(function(e){return e.specialty==='docker';}).reduce(function(a,e){return a+empBonus(e);},0);
   var baseRev=Math.floor((co.valeur||0)*0.002);
-  var rev=Math.round(baseRev*(1+empBonus));
+  var rev=Math.round(baseRev*(1+empRevBonus));
   var niv=co.niveau||1;
   var pctNiv=Math.min(100,Math.round(((co.valeur||0)%100000)/1000));
   var rep=Math.min(100,co.reputation||0);
@@ -652,51 +687,224 @@ async function checkAndTriggerEvent(){
   _coData.active_event=newEv;renderEvent(newEv);
 }
 
-// Employés
+// ══ EMPLOYÉS — Système complet ══
 function toggleEmp(){
   var b=document.getElementById('emp-body');
   if(b)b.style.display=b.style.display==='none'?'block':'none';
 }
-function renderEmployees(hired,valeur){
-  var maxSlots=Math.floor(valeur/50000)+1;
-  var sub=document.getElementById('emp-sub');
-  if(sub)sub.textContent=hired.length+'/'+maxSlots+' employes';
-  var body=document.getElementById('emp-body');if(!body)return;
-  body.innerHTML='';
-  EMPLOYEES.forEach(function(e){
-    var isHired=hired.indexOf(e.id)>=0;
-    var canAfford=_dashMoney>=e.cost;
-    var slotFull=!isHired&&hired.length>=maxSlots;
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border-radius:8px;margin-bottom:4px;border:1px solid '+(isHired?'#22c55e':'#e2e8f0');
-    var icon=document.createElement('div');icon.style.fontSize='20px';icon.textContent=e.icon;
-    var info=document.createElement('div');info.style.flex='1';
-    info.innerHTML='<div style="font-size:12px;font-weight:700;color:#0f172a">'+e.name+'</div><div style="font-size:9px;color:#9ca3af">'+e.desc+'</div>';
-    row.appendChild(icon);row.appendChild(info);
-    if(isHired){var b2=document.createElement('div');b2.style.cssText='font-size:10px;font-weight:700;color:#22c55e';b2.textContent='EN POSTE';row.appendChild(b2);}
-    else{
-      var btn=document.createElement('button');
-      btn.disabled=(!canAfford||slotFull);
-      btn.style.cssText='background:'+(canAfford&&!slotFull?'#0f172a':'#e5e7eb')+';border:none;border-radius:6px;padding:6px 10px;font-size:10px;color:'+(canAfford&&!slotFull?'white':'#9ca3af')+';cursor:'+(canAfford&&!slotFull?'pointer':'default');
-      btn.textContent=slotFull?'PLEIN':fmtM(e.cost);
-      btn.onclick=(function(eid){return function(){hireEmployee(eid);};})(e.id);
-      row.appendChild(btn);
+
+// Payer les salaires et virer les impayés (appelé au chargement)
+function processPayroll(employees){
+  var today=new Date().toISOString().slice(0,10);
+  var changed=false;
+  var kept=[];
+  employees.forEach(function(emp){
+    var lastPaid=emp.last_paid||today;
+    var daysSince=Math.floor((Date.now()-new Date(lastPaid).getTime())/86400000);
+    if(daysSince>1){
+      // Impayé > 1 jour → l'employé part
+      toast('💨 '+emp.name+' est parti (impayé)');
+      _coData.reputation=Math.max(0,(_coData.reputation||0)-5);
+      changed=true;
+    }else{
+      // Vérifier formation terminée
+      if(emp.training_until&&new Date(emp.training_until).getTime()<=Date.now()){
+        emp.level=Math.min(5,(emp.level||1)+1);
+        emp.training_until=null;
+        toast('🎓 '+emp.name+' passe niveau '+emp.level+' !');
+        changed=true;
+      }
+      kept.push(emp);
     }
-    body.appendChild(row);
   });
+  if(changed){
+    _coData.employees=kept;
+    sb.from('companies').update({employees:kept,reputation:_coData.reputation}).eq('user_id',currentUser.id);
+  }
+  return kept;
 }
 
-async function hireEmployee(eid){
-  var co=_coData;var employees=Array.isArray(co.employees)?[...co.employees]:[];
-  var def=EMPLOYEES.find(function(e){return e.id===eid;});
-  if(!def||employees.indexOf(eid)>=0||_dashMoney<def.cost){toast('Impossible');return;}
-  employees.push(eid);
-  var newMoney=_dashMoney-def.cost;
-  var rep=Math.min(100,(_coData.reputation||0)+5);
+function renderEmployees(employees,valeur){
+  var maxSlots=empMaxSlots(valeur);
+  var sub=document.getElementById('emp-sub');
+  if(sub)sub.textContent=employees.length+'/'+maxSlots+' employés';
+  var body=document.getElementById('emp-body');if(!body)return;
+  body.innerHTML='';
+  var today=new Date().toISOString().slice(0,10);
+
+  // Liste des employés en poste
+  employees.forEach(function(emp,idx){
+    var spec=getSpecialty(emp.specialty);
+    var salary=empSalary(emp);
+    var paid=emp.last_paid===today;
+    var inTraining=emp.training_until&&new Date(emp.training_until).getTime()>Date.now();
+    var trainMin=inTraining?Math.ceil((new Date(emp.training_until).getTime()-Date.now())/60000):0;
+
+    var row=document.createElement('div');
+    row.style.cssText='padding:10px;background:rgba(255,255,255,.03);border-radius:10px;margin-bottom:6px;border:1px solid rgba(255,255,255,.06)';
+
+    // Header: icon + name + level
+    var hdr=document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
+    hdr.innerHTML='<div style="font-size:22px">'+spec.icon+'</div>'
+      +'<div style="flex:1"><div style="font-size:12px;font-weight:700;color:#fff">'+emp.name+'</div>'
+      +'<div style="font-size:9px;color:rgba(255,255,255,.3)">'+spec.name+' · Niv.'+emp.level+'</div></div>'
+      +'<div style="font-size:9px;font-weight:700;color:'+(paid?'#4ade80':'#ef4444')+'">'+salary+'€/j</div>';
+    row.appendChild(hdr);
+
+    // Level bar
+    var lvlBar=document.createElement('div');
+    lvlBar.style.cssText='height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-bottom:6px';
+    lvlBar.innerHTML='<div style="height:100%;background:#a78bfa;border-radius:2px;width:'+((emp.level||1)/5*100)+'%"></div>';
+    row.appendChild(lvlBar);
+
+    // Bonus info
+    var bonusText=spec.id==='docker'?'+'+Math.round(empBonus(emp)*100)+'% revenus':spec.id==='commercial'?'+'+Math.floor(empBonus(emp))+' contrats/j':spec.id==='comptable'?'-'+Math.round(empBonus(emp)*100)+'% pertes fiscales':spec.id==='securite'?Math.round(empBonus(emp)*100)+'% anti-sabotage':'Espionnage niv.'+emp.level;
+    var bonusEl=document.createElement('div');
+    bonusEl.style.cssText='font-size:8px;color:rgba(255,255,255,.25);margin-bottom:8px';
+    bonusEl.textContent='⚡ '+bonusText;
+    row.appendChild(bonusEl);
+
+    // Actions
+    var acts=document.createElement('div');
+    acts.style.cssText='display:flex;gap:4px';
+
+    // Payer
+    if(!paid){
+      var payBtn=document.createElement('button');
+      payBtn.style.cssText='flex:1;background:#22c55e;border:none;border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:#fff;cursor:pointer';
+      payBtn.textContent='💰 PAYER '+salary+'€';
+      payBtn.onclick=(function(i){return function(){payEmployee(i);};})(idx);
+      acts.appendChild(payBtn);
+    }else{
+      var paidTag=document.createElement('div');
+      paidTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#4ade80;padding:6px';
+      paidTag.textContent='✓ Payé aujourd\'hui';
+      acts.appendChild(paidTag);
+    }
+
+    // Former
+    if(inTraining){
+      var trainTag=document.createElement('div');
+      trainTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#a78bfa;padding:6px';
+      trainTag.textContent='🎓 '+trainMin+'min restantes';
+      acts.appendChild(trainTag);
+    }else if(emp.level<5){
+      var trainBtn=document.createElement('button');
+      var tCost=empTrainCost(emp);
+      var canTrain=_dashMoney>=tCost;
+      trainBtn.style.cssText='flex:1;background:'+(canTrain?'rgba(167,139,250,.15)':'rgba(255,255,255,.04)')+';border:1px solid '+(canTrain?'rgba(167,139,250,.2)':'rgba(255,255,255,.04)')+';border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:'+(canTrain?'#a78bfa':'rgba(255,255,255,.15)')+';cursor:'+(canTrain?'pointer':'default');
+      trainBtn.textContent='🎓 '+fmtM(tCost);
+      trainBtn.disabled=!canTrain;
+      trainBtn.onclick=(function(i){return function(){trainEmployee(i);};})(idx);
+      acts.appendChild(trainBtn);
+    }else{
+      var maxTag=document.createElement('div');
+      maxTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#fbbf24;padding:6px';
+      maxTag.textContent='⭐ NIVEAU MAX';
+      acts.appendChild(maxTag);
+    }
+
+    // Virer
+    var fireBtn=document.createElement('button');
+    fireBtn.style.cssText='background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:6px 8px;font-size:9px;color:#ef4444;cursor:pointer';
+    fireBtn.textContent='✕';
+    fireBtn.onclick=(function(i){return function(){fireEmployee(i);};})(idx);
+    acts.appendChild(fireBtn);
+
+    row.appendChild(acts);
+    body.appendChild(row);
+  });
+
+  // Bouton embaucher
+  if(employees.length<maxSlots){
+    var hireDiv=document.createElement('div');
+    hireDiv.style.cssText='margin-top:8px';
+    SPECIALTIES.forEach(function(spec){
+      var cost=empHireCost(spec.id);
+      var canAfford=_dashMoney>=cost;
+      var btn=document.createElement('button');
+      btn.style.cssText='display:flex;align-items:center;gap:8px;width:100%;background:'+(canAfford?'rgba(255,255,255,.04)':'rgba(255,255,255,.02)')+';border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:10px;margin-bottom:4px;cursor:'+(canAfford?'pointer':'default')+';text-align:left';
+      btn.innerHTML='<div style="font-size:18px">'+spec.icon+'</div>'
+        +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:'+(canAfford?'#fff':'rgba(255,255,255,.2)')+'">Embaucher '+spec.name+'</div>'
+        +'<div style="font-size:8px;color:rgba(255,255,255,.2)">'+spec.desc+'</div></div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(canAfford?'#fbbf24':'rgba(255,255,255,.15)')+'">'+fmtM(cost)+'</div>';
+      btn.disabled=!canAfford;
+      btn.onclick=(function(sid){return function(){hireEmployee(sid);};})(spec.id);
+      hireDiv.appendChild(btn);
+    });
+    body.appendChild(hireDiv);
+  }else{
+    var full=document.createElement('div');
+    full.style.cssText='text-align:center;font-size:9px;color:rgba(255,255,255,.15);font-weight:700;padding:8px;letter-spacing:1px';
+    full.textContent='ÉQUIPE COMPLÈTE ('+maxSlots+'/'+maxSlots+')';
+    body.appendChild(full);
+  }
+}
+
+async function hireEmployee(specId){
+  var co=_coData;
+  var employees=Array.isArray(co.employees)?co.employees.slice():[];
+  var cost=empHireCost(specId);
+  var spec=getSpecialty(specId);
+  if(_dashMoney<cost){toast('Pas assez d\'argent');return;}
+  if(employees.length>=empMaxSlots(co.valeur||0)){toast('Équipe complète');return;}
+  var newEmp={
+    id:'emp_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
+    name:genEmployeeName(),
+    specialty:specId,
+    level:1,
+    last_paid:new Date().toISOString().slice(0,10),
+    training_until:null
+  };
+  employees.push(newEmp);
+  var newMoney=_dashMoney-cost;
+  var rep=Math.min(100,(co.reputation||0)+3);
   await sb.from('companies').update({employees:employees,reputation:rep}).eq('user_id',currentUser.id);
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
   _dashMoney=newMoney;_coData.employees=employees;_coData.reputation=rep;
-  toast(def.icon+' '+def.name+' embauche !');
+  toast(spec.icon+' '+newEmp.name+' embauché !');
+  loadDashboard();
+}
+
+async function payEmployee(idx){
+  var employees=_coData.employees.slice();
+  var emp=employees[idx];if(!emp)return;
+  var salary=empSalary(emp);
+  if(_dashMoney<salary){toast('Pas assez d\'argent');return;}
+  emp.last_paid=new Date().toISOString().slice(0,10);
+  var newMoney=_dashMoney-salary;
+  await sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
+  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+  _dashMoney=newMoney;_coData.employees=employees;
+  toast('💰 '+emp.name+' payé');
+  renderEmployees(employees,_coData.valeur||0);
+}
+
+async function trainEmployee(idx){
+  var employees=_coData.employees.slice();
+  var emp=employees[idx];if(!emp||emp.level>=5)return;
+  var cost=empTrainCost(emp);
+  if(_dashMoney<cost){toast('Pas assez d\'argent');return;}
+  var hours=empTrainTime(emp);
+  emp.training_until=new Date(Date.now()+hours*3600000).toISOString();
+  var newMoney=_dashMoney-cost;
+  await sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
+  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+  _dashMoney=newMoney;_coData.employees=employees;
+  toast('🎓 '+emp.name+' en formation ('+hours+'h)');
+  renderEmployees(employees,_coData.valeur||0);
+}
+
+async function fireEmployee(idx){
+  var employees=_coData.employees.slice();
+  var emp=employees[idx];if(!emp)return;
+  var spec=getSpecialty(emp.specialty);
+  employees.splice(idx,1);
+  var rep=Math.max(0,(_coData.reputation||0)-3);
+  await sb.from('companies').update({employees:employees,reputation:rep}).eq('user_id',currentUser.id);
+  _coData.employees=employees;_coData.reputation=rep;
+  toast(spec.icon+' '+emp.name+' viré');
   loadDashboard();
 }
 
@@ -704,8 +912,9 @@ async function hireEmployee(eid){
 function renderContracts(co){
   var contracts=co.contracts||{last_refresh:null,list:[]};
   var employees=Array.isArray(co.employees)?co.employees:[];
-  var hasComm=employees.indexOf('comm')>=0;
-  var count=hasComm?4:3;
+  var hasComm=employees.some(function(e){return typeof e==='object'&&e.specialty==='commercial';});
+  var commBonus=employees.filter(function(e){return typeof e==='object'&&e.specialty==='commercial';}).reduce(function(a,e){return a+Math.floor(empBonus(e));},0);
+  var count=(hasComm?3+commBonus:3);
   var lastRefresh=contracts.last_refresh?new Date(contracts.last_refresh).getTime():0;
   if((Date.now()-lastRefresh)>86400000||!contracts.list||!contracts.list.length){
     var eligible=CONTRACT_POOL.filter(function(c){return (co.valeur||0)>=c.req_val;});
