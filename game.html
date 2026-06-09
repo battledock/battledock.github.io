@@ -36,7 +36,6 @@ body{
   --casino:#8b0018;
   --radius:0px;
   --border-w:3px;
-  --shadow-offset:0px;
   --safe-top:env(safe-area-inset-top,0px);
   --safe-bottom:env(safe-area-inset-bottom,0px);
 }
@@ -101,7 +100,6 @@ body{
 }
 
 /* Hide unused */
-.avatar-ring-svg,.avatar-ring-bg,.avatar-ring-fill{display:none;}
 
 
 /* ── STATS BAR BAS ── */
@@ -151,7 +149,6 @@ body{
   min-height:130px;
   display:flex;align-items:center;
   padding:22px 20px;gap:14px;
-  box-shadow:none !important;
 }
 .card-work-text{flex:1;z-index:2;position:relative;}
 .card-work-tag{
@@ -315,7 +312,7 @@ body{
   border-radius:var(--radius);
   padding:12px 16px;
   display:flex;align-items:flex-start;gap:10px;
-  box-shadow:var(--shadow-offset) var(--shadow-offset) 0 rgba(225,127,0,.2);
+  
 }
 .banner-maj-text{
   font-size:11px;color:var(--gold);line-height:1.5;font-weight:600;letter-spacing:.3px;
@@ -640,29 +637,6 @@ function getBankTotal(banque){
   return total;
 }
 
-const PROFILE_THEMES={
-  'rouge_navy':'linear-gradient(135deg,#cc1a1a,#0f172a)',
-  'bleu_mer':'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-  'noir':'linear-gradient(135deg,#18181b,#3f3f46)',
-  'night':'linear-gradient(135deg,#0f172a,#334155)',
-  'ciment':'linear-gradient(135deg,#78716c,#a8a29e,#e7e5e4)',
-  'carbone':'linear-gradient(135deg,#1c1917,#292524,#44403c)',
-  'gold':'linear-gradient(135deg,#b45309,#f59e0b)',
-  'emerald':'linear-gradient(135deg,#047857,#10b981)',
-  'purple':'linear-gradient(135deg,#6d28d9,#a855f7)',
-  'coral':'linear-gradient(135deg,#be123c,#fb7185)',
-  'or_navy':'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-  'abysses':'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
-  'turquoise':'linear-gradient(135deg,#134e4a,#0d9488,#5eead4)',
-  'indigo':'linear-gradient(160deg,#1e1b4b,#4338ca,#818cf8)',
-  'marseille_nuit':'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
-  'feu_docker':'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
-  'port_tropical':'linear-gradient(135deg,#064e3b,#065f46,#d97706)',
-  'sang_requin':'linear-gradient(135deg,#450a0a,#991b1b,#cc1a1a)',
-  'sunset':'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
-  'neon_rouge':'linear-gradient(160deg,#1a1a2e,#16213e,#e94560)',
-  'arc_en_ciel':'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
-};
 
 function showLevelUp(lvl,diaReward,moneyReward){
   const overlay=document.createElement('div');
@@ -701,7 +675,7 @@ async function init(){
 
     // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
     const[profileRes,statsRes]=await Promise.all([
-      sb.from('profiles').select('username,avatar_url,background_color').eq('user_id',uid).maybeSingle(),
+      sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
       sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,bourse_profit,direction').eq('user_id',uid).maybeSingle()
     ]);
     const profile=profileRes.data;
@@ -760,21 +734,16 @@ async function init(){
     card.style.cursor='pointer';
     card.onclick=()=>location.href='profil.html';
 
+    // Ajuster padding dynamiquement
+    requestAnimationFrame(()=>{
+      const hh=document.querySelector('.profile-header').offsetHeight;
+      document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
+    });
+
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
     document.getElementById('playerGrade').textContent=getGrade(lvl);
     document.getElementById('currentLevel').textContent=lvl;
-
-    // Anneau XP (r=31, circ=194.8)
-    const ring=document.getElementById('xpRing');
-    if(ring){
-      const circ=194.8;
-      ring.style.strokeDashoffset=circ*(1-pct/100);
-    }
-
-    // XP bar fill
-    const xpBar=document.getElementById('xpFill');
-    if(xpBar) xpBar.style.width=pct+'%';
 
     // Stats barre bas uniquement
     document.getElementById('moneyBar').textContent=Math.floor(money).toLocaleString('fr-FR')+'€';
