@@ -140,6 +140,32 @@
     <div class="warn">⚠️ Fiabilité en % = estimation. Même à 80% un tuyau peut être bidon. 3 tuyaux max/jour.</div>
     <div id="rumors"><div class="loader">…</div></div>
 
+    <div class="section-h">💬 Comptoir</div>
+    <div id="chat-box" style="background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.1);border-radius:14px;max-height:250px;overflow-y:auto;padding:8px 10px;margin-bottom:6px"></div>
+    <div style="display:flex;gap:6px;margin-bottom:6px">
+      <input id="chatInput" type="text" maxlength="80" placeholder="Un mot au comptoir... (100€)" style="flex:1;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;color:#f3e9dc;font-size:12px;font-family:Inter,sans-serif;outline:none">
+      <button onclick="sendChat()" style="background:linear-gradient(135deg,#d97706,#fbbf24);border:none;border-radius:10px;padding:10px 14px;font-family:Bebas Neue,sans-serif;font-size:13px;letter-spacing:1px;color:#2a1500;cursor:pointer;flex-shrink:0">ENVOYER</button>
+    </div>
+
+    <div class="section-h">🎲 421</div>
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.1);border-radius:14px;padding:14px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,210,150,.5);margin-bottom:8px">Lance 3 dés — 421 = jackpot ×10 · Brelan = ×5 · Suite = ×3</div>
+      <div id="dice-display" style="font-size:40px;letter-spacing:12px;margin:8px 0;min-height:48px">🎲🎲🎲</div>
+      <div id="dice-result" style="font-size:12px;font-weight:700;color:#fbbf24;min-height:18px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px;justify-content:center">
+        <button onclick="playDice(500)" class="pay-btn" style="font-size:11px;padding:8px 14px">500€</button>
+        <button onclick="playDice(2000)" class="pay-btn" style="font-size:11px;padding:8px 14px">2 000€</button>
+        <button onclick="playDice(10000)" class="pay-btn" style="font-size:11px;padding:8px 14px">10 000€</button>
+      </div>
+    </div>
+
+    <div class="section-h">🍺 Tournée générale</div>
+    <div style="background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.1);border-radius:14px;padding:14px">
+      <div style="font-size:10px;color:rgba(255,210,150,.5);line-height:1.5;margin-bottom:10px">Offre une tournée à tout le port ! Tu gagnes +3 réputation et tous les joueurs connectés reçoivent +100€.</div>
+      <button onclick="offrirTournee()" class="pay-btn" style="width:100%;font-size:13px;padding:12px">🍻 OFFRIR UNE TOURNÉE — 1 000€</button>
+      <div id="last-tournee" style="font-size:9px;color:rgba(255,210,150,.3);text-align:center;margin-top:6px"></div>
+    </div>
+
     <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
   </div>
 
@@ -364,7 +390,125 @@
   let toastT=null;
   function showToast(msg,bad){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'+(bad?' bad':''); clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast'+(bad?' bad':''),2600); }
 
+  // ══ CHAT COMPTOIR ══
+  async function loadChat(){
+    var box=document.getElementById('chat-box');
+    try{
+      var{data}=await sb.from('chat_messages').select('user_id,username,message,created_at').order('created_at',{ascending:false}).limit(20);
+      if(!data||data.length===0){box.innerHTML='<div style="font-size:10px;color:rgba(255,210,150,.3);text-align:center;padding:8px">Le comptoir est vide... sois le premier à parler.</div>';return;}
+      box.innerHTML=data.reverse().map(function(m){
+        var isMe=m.user_id===currentUser.id;
+        var time=new Date(m.created_at);
+        var hm=time.getHours()+':'+String(time.getMinutes()).padStart(2,'0');
+        return '<div style="margin-bottom:4px"><span style="font-size:8px;color:rgba(255,210,150,.3)">'+hm+'</span> <span style="font-size:10px;font-weight:700;color:'+(isMe?'#fbbf24':'rgba(255,210,150,.7)')+'">'+m.username+'</span> <span style="font-size:10px;color:rgba(255,210,150,.5)">'+m.message+'</span></div>';
+      }).join('');
+      box.scrollTop=box.scrollHeight;
+    }catch(e){box.innerHTML='<div style="font-size:10px;color:#fca5a5;text-align:center">Erreur chat</div>';}
+  }
+
+  async function sendChat(){
+    var input=document.getElementById('chatInput');
+    var msg=input.value.trim();
+    if(!msg){showToast('Message vide',true);return;}
+    if(money<100){showToast('Pas assez (100€ la bière)',true);return;}
+    money-=100;
+    await sb.from('game_stats').update({money:money}).eq('user_id',currentUser.id);
+    await sb.from('chat_messages').insert({user_id:currentUser.id,username:username,message:msg});
+    input.value='';
+    loadChat();
+    showToast('💬 Message envoyé (-100€)');
+  }
+
+  // ══ 421 — JEU DE DÉS ══
+  var DICE_FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
+  async function playDice(mise){
+    if(money<mise){showToast('Pas assez d\'argent',true);return;}
+    var d1=Math.floor(Math.random()*6)+1;
+    var d2=Math.floor(Math.random()*6)+1;
+    var d3=Math.floor(Math.random()*6)+1;
+    var sorted=[d1,d2,d3].sort();
+    var display=document.getElementById('dice-display');
+    var result=document.getElementById('dice-result');
+
+    // Animation
+    var anim=0;
+    var animInt=setInterval(function(){
+      display.textContent=DICE_FACES[Math.floor(Math.random()*6)]+DICE_FACES[Math.floor(Math.random()*6)]+DICE_FACES[Math.floor(Math.random()*6)];
+      anim++;
+      if(anim>8){
+        clearInterval(animInt);
+        display.textContent=DICE_FACES[d1-1]+DICE_FACES[d2-1]+DICE_FACES[d3-1];
+        // Calculate result
+        var mult=0;var label='';
+        if(sorted[0]===4&&sorted[1]===2&&sorted[2]===1||sorted[0]===1&&sorted[1]===2&&sorted[2]===4){
+          mult=10;label='🎉 421 ! JACKPOT ×10';
+        }else if(d1===d2&&d2===d3){
+          mult=5;label='🎲 BRELAN DE '+d1+' ! ×5';
+        }else if(sorted[2]-sorted[1]===1&&sorted[1]-sorted[0]===1){
+          mult=3;label='📈 SUITE ! ×3';
+        }else if(d1===d2||d2===d3||d1===d3){
+          mult=1.5;label='👀 PAIRE — ×1.5';
+        }else{
+          mult=0;label='💨 Rien... -'+mise.toLocaleString('fr-FR')+'€';
+        }
+        var gain=mult>0?Math.round(mise*mult):0;
+        var net=gain-mise;
+        money+=net;
+        sb.from('game_stats').update({money:money}).eq('user_id',currentUser.id);
+        result.style.color=net>=0?'#4ade80':'#fca5a5';
+        result.textContent=label+(net>0?' → +'+net.toLocaleString('fr-FR')+'€':'');
+        if(net>0)showToast('🎲 +'+net.toLocaleString('fr-FR')+'€ !');
+        document.getElementById('money').textContent=money.toLocaleString('fr-FR')+'€';
+      }
+    },80);
+  }
+
+  // ══ TOURNÉE GÉNÉRALE ══
+  async function offrirTournee(){
+    if(money<1000){showToast('Pas assez (1 000€)',true);return;}
+    // Check cooldown (1 par jour)
+    var cdKey='tournee_'+todayStr();
+    if(localStorage.getItem(cdKey)){showToast('Déjà offert aujourd\'hui',true);return;}
+
+    money-=1000;
+    // Give 100€ to all players
+    var{data:all}=await sb.from('game_stats').select('user_id,money').limit(50);
+    if(all){
+      for(var i=0;i<all.length;i++){
+        if(all[i].user_id===currentUser.id)continue;
+        sb.from('game_stats').update({money:(all[i].money||0)+100}).eq('user_id',all[i].user_id);
+      }
+    }
+    // Boost own reputation
+    var{data:co}=await sb.from('companies').select('reputation').eq('user_id',currentUser.id).maybeSingle();
+    if(co){
+      await sb.from('companies').update({reputation:Math.min(100,(co.reputation||0)+3)}).eq('user_id',currentUser.id);
+    }
+    await sb.from('game_stats').update({money:money}).eq('user_id',currentUser.id);
+    // Post in chat
+    await sb.from('chat_messages').insert({user_id:currentUser.id,username:username,message:'🍻 offre une tournée générale au port !'});
+    localStorage.setItem(cdKey,'1');
+    showToast('🍻 Tournée offerte ! +3 réputation');
+    document.getElementById('money').textContent=money.toLocaleString('fr-FR')+'€';
+    document.getElementById('last-tournee').textContent='Tournée offerte aujourd\'hui ✓';
+    loadChat();
+  }
+
+  // Load chat on init
+  var _origInit=init;
+  async function init(){
+    await _origInit.call(this);
+    loadChat();
+    // Check tournee cooldown
+    if(localStorage.getItem('tournee_'+todayStr())){
+      document.getElementById('last-tournee').textContent='Tournée offerte aujourd\'hui ✓';
+    }
+    // Auto-refresh chat
+    setInterval(loadChat,15000);
+  }
+
   init();
 </script>
 </body>
 </html>
+
