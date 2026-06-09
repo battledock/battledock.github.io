@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Battle Dock — Le Port</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#e8e0cc">
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
@@ -301,6 +306,62 @@ body{
   font-size:11px;color:var(--gold);line-height:1.5;font-weight:600;letter-spacing:.3px;
 }
 
+/* ── STAGGER ANIMATION ── */
+@keyframes cardEnter{
+  from{opacity:0;transform:translateY(18px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.page-content>*{opacity:0;animation:cardEnter .35s ease forwards;}
+.page-content>*:nth-child(1){animation-delay:.05s}
+.page-content>*:nth-child(2){animation-delay:.1s}
+.page-content>*:nth-child(3){animation-delay:.15s}
+.page-content>*:nth-child(4){animation-delay:.2s}
+.page-content>*:nth-child(5){animation-delay:.25s}
+.page-content>*:nth-child(6){animation-delay:.3s}
+.page-content>*:nth-child(7){animation-delay:.35s}
+.page-content>*:nth-child(8){animation-delay:.4s}
+.page-content>*:nth-child(9){animation-delay:.45s}
+
+/* ── BADGE NOTIFICATION ── */
+.notif-badge{
+  position:absolute;top:8px;right:8px;
+  min-width:20px;height:20px;
+  background:#ef4444;color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:12px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:10px;padding:0 5px;
+  border:2px solid var(--card);
+  box-shadow:1px 1px 0 var(--shadow);
+  z-index:2;
+}
+.notif-dot{
+  position:absolute;top:8px;right:8px;
+  width:10px;height:10px;
+  background:#ef4444;border-radius:50%;
+  border:2px solid var(--card);z-index:2;
+}
+
+/* ── SETTINGS ICON ── */
+.pcb-settings{
+  position:absolute;top:12px;right:16px;
+  width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;
+  opacity:.4;transition:opacity .15s;
+  z-index:10;
+}
+.pcb-settings:active{opacity:.8;}
+.pcb.themed .pcb-settings{opacity:.5;}
+
+/* ── DYNAMIC CARD LABEL ── */
+.card-dynamic-val{
+  font-family:'Bebas Neue',sans-serif;font-size:13px;
+  color:rgba(255,255,255,.5);letter-spacing:.5px;
+  margin-top:2px;
+}
+.card-dynamic-val.positive{color:#4ade80;}
+.card-dynamic-val.zero{color:rgba(255,255,255,.25);}
+
 /* ── ERROR STATE ── */
 .error-box{display:flex;align-items:center;gap:12px;padding:12px 0;}
 .error-btn{
@@ -371,7 +432,8 @@ body{
     </div>
 
     <!-- Carte profil -->
-    <div class="pcb" id="profileCardBtn">
+    <div class="pcb" id="profileCardBtn" style="position:relative;">
+      <div class="pcb-settings" onclick="event.stopPropagation();location.href='parametres.html'">⚙️</div>
       <div class="pcb-top">
         <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
         <div class="pcb-info">
@@ -392,8 +454,10 @@ body{
       </div>
       <div class="pcb-wallet">
         <div class="pcb-wallet-item"><span class="w-icon">💶</span> <span id="moneyDisplay">—</span></div>
-        <div class="pcb-wallet-sep"></div>
         <div class="pcb-wallet-item"><span class="w-icon">💎</span> <span id="diamondDisplay">—</span></div>
+        <div class="pcb-wallet-sep"></div>
+        <div class="pcb-wallet-item"><span class="w-icon">🔥</span> <span id="streakDisplay">0</span></div>
+        <div class="pcb-wallet-item"><span class="w-icon">🏆</span> <span id="trophyDisplay">0</span></div>
       </div>
     </div>
   </div>
@@ -474,6 +538,7 @@ body{
     <div>
       <div class="card-commerce-title">COMMERCE</div>
       <div class="card-commerce-sub">Ton entreprise · Docker Marseille</div>
+      <div class="card-dynamic-val zero" id="commerceStatus">—</div>
     </div>
     <div class="card-commerce-chevron">›</div>
   </div>
@@ -483,7 +548,7 @@ body{
     <div class="bd-panel card-mini" onclick="location.href='bourse.html'" style="background:linear-gradient(135deg,#064e3b,#065f46);">
       <div class="card-mini-icon">📈</div>
       <div class="card-mini-title" style="color:#fff;">BOURSE</div>
-      <div class="card-mini-sub" style="color:rgba(255,255,255,.4);">Investir</div>
+      <div class="card-dynamic-val zero" id="bourseProfit">—</div>
     </div>
     <div class="bd-panel card-mini" onclick="location.href='syndicat.html'" style="background:linear-gradient(135deg,#7f1d1d,#991b1b);">
       <div class="card-mini-icon">✊</div>
@@ -493,7 +558,7 @@ body{
     <div class="bd-panel card-mini" onclick="location.href='direction.html'" style="background:linear-gradient(135deg,#1e293b,#334155);">
       <div class="card-mini-icon">👔</div>
       <div class="card-mini-title" style="color:#fff;">DIRECTION</div>
-      <div class="card-mini-sub" style="color:rgba(255,255,255,.4);">Salaire</div>
+      <div class="card-dynamic-val zero" id="directionSalary">—</div>
     </div>
   </div>
 
@@ -504,10 +569,11 @@ body{
       <div class="card-mini-title">BOUTIQUE</div>
       <div class="card-mini-sub">Upgrades</div>
     </div>
-    <div class="bd-panel card-mini" onclick="location.href='chat.html'">
+    <div class="bd-panel card-mini" onclick="location.href='chat.html'" style="position:relative;">
       <div class="card-mini-icon">💬</div>
       <div class="card-mini-title">CHAT</div>
       <div class="card-mini-sub">Discuter</div>
+      <div class="notif-badge" id="chatBadge" style="display:none;">0</div>
     </div>
     <div class="bd-panel card-mini" onclick="location.href='bar.html'">
       <div class="card-mini-icon">🍺</div>
@@ -639,7 +705,7 @@ async function init(){
     // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
     const[profileRes,statsRes]=await Promise.all([
       sb.from('profiles').select('username,avatar_url,background_color').eq('user_id',uid).maybeSingle(),
-      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login').eq('user_id',uid).maybeSingle()
+      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,bourse_profit,direction').eq('user_id',uid).maybeSingle()
     ]);
     const profile=profileRes.data;
     const stats=statsRes.data;
@@ -721,6 +787,13 @@ async function init(){
     const bankTotal=getBankTotal(stats.banque);
     document.getElementById('banqueBalance').textContent=Math.floor(bankTotal).toLocaleString('fr-FR')+' €';
 
+    // Streak + trophées dans le header
+    document.getElementById('streakDisplay').textContent=stats.streak_days||0;
+    document.getElementById('trophyDisplay').textContent=stats.trophies||0;
+
+    // Données dynamiques sur les cartes
+    populateDynamicCards(stats);
+
     // Afficher
     document.getElementById('profileSkeleton').style.display='none';
     card.style.display='flex';
@@ -741,6 +814,12 @@ async function init(){
 
     startPlaytimeTracking(uid);
     loadRank(uid);
+    loadChatBadge(uid);
+
+    // PWA : enregistrer le service worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
 
   }catch(e){
     console.error('init error:',e);
@@ -812,6 +891,63 @@ async function loadRank(uid){
     if(elPos)elPos.textContent='#'+rank;
     if(elLeader)elLeader.textContent=leaderName;
     if(elTotal)elTotal.textContent=count||'—';
+  }catch(e){}
+}
+
+// ── Données dynamiques sur les cartes ──
+function populateDynamicCards(stats){
+  // Commerce
+  const el1=document.getElementById('commerceStatus');
+  if(el1){
+    const c=stats.commerce||{};
+    if(c.created){
+      el1.textContent='Entreprise active';
+      el1.classList.replace('zero','positive');
+    } else {
+      el1.textContent='Pas encore créée';
+    }
+  }
+  // Bourse
+  const el2=document.getElementById('bourseProfit');
+  if(el2){
+    const bp=stats.bourse_profit||0;
+    if(bp>0){
+      el2.textContent='+'+Math.floor(bp).toLocaleString('fr-FR')+'€';
+      el2.classList.replace('zero','positive');
+    } else if(bp<0){
+      el2.textContent=Math.floor(bp).toLocaleString('fr-FR')+'€';
+      el2.style.color='#f87171';
+    } else {
+      el2.textContent='0€ profit';
+    }
+  }
+  // Direction
+  const el3=document.getElementById('directionSalary');
+  if(el3){
+    const d=stats.direction||{};
+    if(d.totalClaimed&&d.totalClaimed>0){
+      el3.textContent=Math.floor(d.totalClaimed).toLocaleString('fr-FR')+'€ perçus';
+      el3.classList.replace('zero','positive');
+    } else {
+      el3.textContent='Pas de salaire';
+    }
+  }
+}
+
+// ── Badge chat (messages récents non lus) ──
+async function loadChatBadge(uid){
+  try{
+    // Compter messages des 24 dernières heures (hors les siens)
+    const since=new Date(Date.now()-86400000).toISOString();
+    const{count}=await sb.from('chat_messages')
+      .select('id',{count:'exact',head:true})
+      .neq('user_id',uid)
+      .gt('created_at',since);
+    const badge=document.getElementById('chatBadge');
+    if(badge&&count&&count>0){
+      badge.textContent=count>99?'99+':count;
+      badge.style.display='flex';
+    }
   }catch(e){}
 }
 
