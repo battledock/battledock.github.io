@@ -271,6 +271,18 @@ body{font-family:Inter,sans-serif;background:#0f172a}
     <div class="dash-section-title">ACTIONS</div>
     <div class="dash-card" id="sabotage-section"></div>
 
+    <div class="dash-section-title">GUERRE DES PRIX</div>
+    <div class="dash-card" id="pricewar-section"></div>
+
+    <div class="dash-section-title">RACHATS DISPONIBLES</div>
+    <div class="dash-card" id="buyout-section"></div>
+
+    <div class="dash-section-title">AVIS CLIENTS</div>
+    <div class="dash-card" id="reviews-section"></div>
+
+    <div class="dash-section-title">LIVRE D'OR</div>
+    <div class="dash-card" id="guestbook-section"></div>
+
     <div style="height:calc(60px + env(safe-area-inset-bottom))"></div>
   </div>
 </div>
@@ -432,6 +444,9 @@ var EVENTS=[
   {id:'contrat',  icon:'📋', title:'CONTRAT GOUVERNEMENTAL',   desc:'Revenus +25% pendant 4h',  color:'#3b82f6'},
   {id:'weather',  icon:'⛈️', title:'TEMPETE SUR LE PORT',     desc:'Revenus -20% pendant 2h',  color:'#6366f1'},
   {id:'festival', icon:'🎉', title:'FETE DU PORT',             desc:'Revenus +60% pendant 1h',  color:'#f59e0b'},
+  {id:'fiscal',   icon:'🏛️', title:'CONTROLE FISCAL',          desc:'Perte de 10% de la valeur', color:'#dc2626'},
+  {id:'mistral',  icon:'🌬️', title:'MISTRAL VIOLENT',          desc:'Port fermé 3h',            color:'#7c3aed'},
+  {id:'flood',    icon:'🌊', title:'INONDATION DU PORT',       desc:'Dégâts -5% valeur',        color:'#0ea5e9'},
 ];
 
 var CONTRACT_POOL=[
@@ -623,6 +638,10 @@ async function loadDashboard(){
   loadMiniRank();
   renderSpySection();
   renderSabotage(co);
+  renderPriceWar(co);
+  loadBuyoutTargets();
+  renderReviews(co);
+  renderGuestbook(co);
   updateCollectUI();
   if(_dashInterval)clearInterval(_dashInterval);
   _dashInterval=setInterval(updateCollectUI,5000);
@@ -684,9 +703,23 @@ async function checkAndTriggerEvent(){
   if(Date.now()-lastCheck<21600000)return;
   if(Math.random()>0.4)return;
   var ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
-  var dur={strike:7200000,bonus:0,promo:10800000,inspect:3600000,contrat:14400000,weather:7200000,festival:3600000};
+  var dur={strike:7200000,bonus:0,promo:10800000,inspect:3600000,contrat:14400000,weather:7200000,festival:3600000,fiscal:0,mistral:10800000,flood:0};
   var newEv={id:ev.id,expires_at:new Date(Date.now()+(dur[ev.id]||3600000)).toISOString()};
+  // Immediate effects
   if(ev.id==='bonus'){_dashMoney+=3000;await sb.from('game_stats').update({money:_dashMoney}).eq('user_id',currentUser.id);toast('🚢 Cargo surprise ! +3 000€');}
+  if(ev.id==='fiscal'){
+    var comptBonus=(_coData.employees||[]).filter(function(e){return typeof e==='object'&&e.specialty==='comptable';}).reduce(function(a,e){return a+empBonus(e);},0);
+    var fiscalLoss=Math.round((_coData.valeur||0)*0.10*(1-Math.min(0.8,comptBonus)));
+    _coData.valeur=Math.max(0,(_coData.valeur||0)-fiscalLoss);
+    await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
+    toast('🏛️ Contrôle fiscal ! -'+fmtM(fiscalLoss)+(comptBonus>0?' (réduit par comptable)':''));
+  }
+  if(ev.id==='flood'){
+    var loss=Math.round((_coData.valeur||0)*0.05);
+    _coData.valeur=Math.max(0,(_coData.valeur||0)-loss);
+    await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
+    toast('🌊 Inondation ! -'+fmtM(loss)+' de valeur');
+  }
   await sb.from('companies').update({active_event:newEv,last_event_check:new Date().toISOString()}).eq('user_id',currentUser.id);
   _coData.active_event=newEv;renderEvent(newEv);
 }
@@ -1176,6 +1209,171 @@ async function sabotageCompany(uid){
   await sb.from('companies').update({sabotaged_until:until}).eq('user_id',uid);
   toast('Sabotage lance sur '+(t&&(t.nom||t.name)||'la cible')+' !');
   loadSabotageTargets();
+}
+
+// ══ GUERRE DES PRIX ══
+function renderPriceWar(co){
+  var el=document.getElementById('pricewar-section');if(!el)return;
+  var pw=co.price_war||null;
+  var active=pw&&pw.until&&new Date(pw.until).getTime()>Date.now();
+
+  if(active){
+    var minLeft=Math.ceil((new Date(pw.until).getTime()-Date.now())/60000);
+    el.innerHTML='<div style="padding:14px"><div style="font-size:12px;font-weight:700;color:#ef4444">⚔️ Guerre en cours contre '+pw.target_name+'</div>'
+      +'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:3px">Baisse de '+pw.pct+'% · Encore '+minLeft+'min</div>'
+      +'<div style="font-size:9px;color:rgba(255,255,255,.2);margin-top:2px">Tes revenus: -'+pw.pct+'% · Vol rival: +'+Math.round(pw.pct*0.6)+'%</div></div>';
+    return;
+  }
+  el.innerHTML='<div class="dash-card-row" onclick="loadPriceWarTargets()"><div class="dash-card-icon" style="background:rgba(239,68,68,.1)">⚔️</div>'
+    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#fff">Lancer une guerre des prix</div>'
+    +'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px">Vole les clients d\'un rival</div></div>'
+    +'<div style="color:rgba(255,255,255,.15)">›</div></div>'
+    +'<div id="pw-targets" style="display:none"></div>';
+}
+
+async function loadPriceWarTargets(){
+  var tgt=document.getElementById('pw-targets');if(!tgt)return;
+  if(tgt.style.display==='block'){tgt.style.display='none';return;}
+  tgt.style.display='block';
+  var res=await sb.from('companies').select('user_id,nom,name,emoji').neq('user_id',currentUser.id).order('valeur',{ascending:false}).limit(8);
+  if(!res.data||res.data.length===0){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Aucune cible</div>';return;}
+  var html='';
+  res.data.forEach(function(co){
+    html+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,255,255,.04)">'
+      +'<div style="font-size:16px">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1;font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
+      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',10)" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-10%</button>'
+      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',20)" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-20%</button>'
+      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',30)" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-30%</button></div>';
+  });
+  tgt.innerHTML=html;
+}
+
+async function startPriceWar(targetUid,targetName,pct){
+  var pw={target_uid:targetUid,target_name:targetName,pct:pct,until:new Date(Date.now()+86400000).toISOString()};
+  await sb.from('companies').update({price_war:pw}).eq('user_id',currentUser.id);
+  _coData.price_war=pw;
+  toast('⚔️ Guerre des prix lancée ! -'+pct+'% pendant 24h');
+  renderPriceWar(_coData);
+}
+
+// ══ RACHAT D'ENTREPRISES INACTIVES ══
+async function loadBuyoutTargets(){
+  var el=document.getElementById('buyout-section');if(!el)return;
+  // Fetch companies with profiles.last_seen > 7 days ago
+  var sevenDaysAgo=new Date(Date.now()-604800000).toISOString();
+  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,niveau').order('valeur',{ascending:false}).limit(20);
+  if(!res.data){el.innerHTML='<div style="padding:14px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Erreur</div>';return;}
+
+  // Check last_seen for each
+  var uids=res.data.filter(function(c){return c.user_id!==currentUser.id;}).map(function(c){return c.user_id;});
+  if(uids.length===0){el.innerHTML='<div style="padding:14px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Aucune entreprise inactive</div>';return;}
+
+  var profiles=await sb.from('profiles').select('user_id,last_seen,username').in('user_id',uids);
+  var lastSeenMap={};
+  (profiles.data||[]).forEach(function(p){lastSeenMap[p.user_id]={last_seen:p.last_seen,username:p.username};});
+
+  var html='';
+  res.data.forEach(function(co){
+    if(co.user_id===currentUser.id)return;
+    var info=lastSeenMap[co.user_id];
+    if(!info||!info.last_seen)return;
+    var daysSince=Math.floor((Date.now()-new Date(info.last_seen).getTime())/86400000);
+    if(daysSince<7)return; // Not dormant yet
+    var buyPrice=Math.round((co.valeur||0)*0.5);
+    var canAfford=_dashMoney>=buyPrice;
+    html+='<div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:18px">'+(co.emoji||'🏢')+'</div>'
+      +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#fff">'+(co.nom||co.name||'?')+'</div>'
+      +'<div style="font-size:8px;color:rgba(255,255,255,.2)">Inactif depuis '+daysSince+'j · Valeur '+fmtM(co.valeur||0)+'</div></div>'
+      +'<button onclick="buyoutCompany(\''+co.user_id+'\','+buyPrice+')" '+(canAfford?'':'disabled ')
+      +'style="background:'+(canAfford?'rgba(251,191,36,.15)':'rgba(255,255,255,.03)')+';border:1px solid '+(canAfford?'rgba(251,191,36,.2)':'rgba(255,255,255,.04)')
+      +';border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:'+(canAfford?'#fbbf24':'rgba(255,255,255,.15)')+';cursor:'+(canAfford?'pointer':'default')+'">'
+      +fmtM(buyPrice)+'</button></div>';
+  });
+  if(!html)html='<div style="padding:14px;font-size:10px;color:rgba(255,255,255,.2);text-align:center">Aucune entreprise dormante (7j+ d\'inactivité)</div>';
+  el.innerHTML=html;
+}
+
+async function buyoutCompany(targetUid,price){
+  if(_dashMoney<price){toast('Pas assez d\'argent');return;}
+  var target=await sb.from('companies').select('*').eq('user_id',targetUid).maybeSingle();
+  if(!target.data){toast('Entreprise introuvable');return;}
+  var t=target.data;
+  // Absorb: add value + reputation to own company
+  var newVal=(_coData.valeur||0)+Math.round((t.valeur||0)*0.3);
+  var newRep=Math.min(100,(_coData.reputation||0)+Math.round((t.reputation||0)*0.2));
+  var newMoney=_dashMoney-price;
+  // Update own company
+  await sb.from('companies').update({valeur:newVal,reputation:newRep}).eq('user_id',currentUser.id);
+  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+  // Reset target company (give them the money when they return)
+  await sb.from('companies').update({valeur:0,employees:[],reputation:0,contracts:{},active_event:null}).eq('user_id',targetUid);
+  await sb.from('game_stats').update({money:price}).eq('user_id',targetUid);
+  _dashMoney=newMoney;_coData.valeur=newVal;_coData.reputation=newRep;
+  toast('🏢 Entreprise rachetée ! +'+fmtM(Math.round((t.valeur||0)*0.3))+' valeur');
+  loadDashboard();
+}
+
+// ══ AVIS CLIENTS ══
+var REVIEWS_GOOD=[
+  'Livraison rapide, docker au top !','Service impeccable, je recommande','Meilleure entreprise du port','On dirait des pros, non en fait ce sont des pros',
+  'Gégé m\'a dit que c\'était bien, Gégé a raison','5 étoiles, comme ma mère cuisine','Plus efficace que la SNCF (c\'est pas dur)',
+  'J\'ai cru que c\'était Amazon, mais en mieux','Le patron est sympa, il offre le pastis','Ils bossent même quand il fait beau à Marseille',
+  'Rapide comme le mistral, mais sans la poussière','Service au top, je reviens demain'
+];
+var REVIEWS_MID=[
+  'Correct, sans plus','Ils font le taf, mais faut pas être pressé','Le docker avait l\'air fatigué mais bon','Livraison OK, emballage moyen',
+  'C\'est pas Bezos mais ça passe','Le livreur sentait la sardine, mais bon','Moyen, j\'ai connu mieux au Vieux-Port',
+  'Ils ont perdu un colis mais retrouvé les deux autres','Le patron était au bar, mais l\'employé était là'
+];
+var REVIEWS_BAD=[
+  'Catastrophique, jamais vu ça','Le docker était au bar depuis 3h','Ils ont livré au mauvais port','Ma marchandise est arrivée mouillée',
+  '0 étoile si je pouvais','Le patron m\'a dit "demain inch\'allah"','3 semaines d\'attente pour un colis','Service client inexistant',
+  'J\'ai appelé, personne ne répond depuis mardi','Ils ont confondu mes sardines avec des anchois'
+];
+var REVIEW_NAMES=['Jean-Michel','Martine','Roger','Brigitte','Gérard','Monique','Bernard','Simone','Dédé','Ginette','Fernand','Josiane','Tonton Marcel','Mamie Jeanne','Le voisin'];
+
+function renderReviews(co){
+  var el=document.getElementById('reviews-section');if(!el)return;
+  var rep=co.reputation||0;
+  var seed=(co.valeur||0)+(co.reputation||0)+((co.type_id||0)*7);
+  var html='';
+  for(var i=0;i<3;i++){
+    var r=Math.abs(Math.sin(seed+i*137.5))*100;
+    var pool,stars;
+    if(rep>=70||(rep>=40&&r>40)){pool=REVIEWS_GOOD;stars='⭐⭐⭐⭐⭐';}
+    else if(rep>=30||(rep<70&&r>50)){pool=REVIEWS_MID;stars='⭐⭐⭐';}
+    else{pool=REVIEWS_BAD;stars='⭐';}
+    var review=pool[Math.floor(Math.abs(Math.sin(seed+i*42.7))*pool.length)];
+    var name=REVIEW_NAMES[Math.floor(Math.abs(Math.sin(seed+i*91.3))*REVIEW_NAMES.length)];
+    html+='<div style="padding:10px 14px;border-top:'+(i?'1px solid rgba(255,255,255,.04)':'none')+'">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
+      +'<div style="font-size:9px;font-weight:700;color:#fff">'+name+'</div>'
+      +'<div style="font-size:8px">'+stars+'</div></div>'
+      +'<div style="font-size:9px;color:rgba(255,255,255,.3);font-style:italic">"'+review+'"</div></div>';
+  }
+  el.innerHTML=html;
+}
+
+// ══ LIVRE D'OR ══
+function renderGuestbook(co){
+  var el=document.getElementById('guestbook-section');if(!el)return;
+  var entries=Array.isArray(co.guestbook)?co.guestbook:[];
+  var html='';
+  if(entries.length===0){
+    html='<div style="padding:14px;text-align:center;font-size:10px;color:rgba(255,255,255,.2)">Aucun message pour l\'instant</div>';
+  }else{
+    entries.slice(-5).reverse().forEach(function(e,i){
+      html+='<div style="padding:8px 14px;border-top:'+(i?'1px solid rgba(255,255,255,.04)':'none')+'">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +'<div style="font-size:9px;font-weight:700;color:#fff">'+(e.from_name||'Anonyme')+'</div>'
+        +'<div style="font-size:7px;color:rgba(255,255,255,.15)">'+new Date(e.date).toLocaleDateString('fr-FR')+'</div></div>'
+        +'<div style="font-size:9px;color:rgba(255,255,255,.3);margin-top:2px">"'+e.message+'"</div></div>';
+    });
+  }
+  // Note: pour écrire dans le livre d'or d'un autre joueur, voir sa page entreprise
+  el.innerHTML=html;
 }
 
 // ══ INVESTIR ══
