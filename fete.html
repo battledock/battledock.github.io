@@ -229,9 +229,9 @@ body.wasted{animation:wasted 1s ease-in-out infinite;filter:blur(1px)}
   <!-- Écran d'appel entrant -->
   <div id="phoneRing" style="text-align:center">
     <div style="font-size:60px;animation:phoneShake .3s ease-in-out infinite" id="phoneEmoji">📞</div>
-    <div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#fff;letter-spacing:3px;margin-top:12px">APPEL ENTRANT</div>
-    <div style="font-size:13px;color:#fbbf24;font-weight:700;margin-top:4px">L'EMBAUCHE DU PORT</div>
-    <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px">+33 4 91 00 00 00</div>
+    <div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#fff;letter-spacing:3px;margin-top:12px" id="phoneName">APPEL ENTRANT</div>
+    <div style="font-size:13px;color:#fbbf24;font-weight:700;margin-top:4px" id="phoneCaller">L'EMBAUCHE DU PORT</div>
+    <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px" id="phoneSub">+33 4 91 00 00 00</div>
     <div style="display:flex;gap:16px;margin-top:24px;justify-content:center">
       <button onclick="pickupPhone()" style="width:64px;height:64px;border-radius:50%;border:none;background:#22c55e;font-size:28px;cursor:pointer;animation:phonePulse 1s ease-in-out infinite">📱</button>
       <button onclick="hangupPhone()" style="width:64px;height:64px;border-radius:50%;border:none;background:#ef4444;font-size:28px;cursor:pointer">📵</button>
@@ -386,6 +386,40 @@ function startCrazyMoments(){
   setTimeout(function(){
     showLavagneEvent();
   },180000);
+
+  // BLACKOUT à 210 secondes
+  setTimeout(function(){
+    toast('💡 COUPURE DE COURANT !!!');
+    var black=document.createElement('div');
+    black.style.cssText='position:fixed;inset:0;z-index:300;background:#000;display:flex;align-items:center;justify-content:center';
+    black.innerHTML='<div style="color:rgba(255,255,255,.1);font-size:10px;text-align:center">*bruit de grillon*<br><br>...<br><br>Gégé ? C\'est toi ?</div>';
+    document.body.appendChild(black);
+    setTimeout(function(){black.remove();toast('💡 Ça remarche ! Gégé avait débranché la prise.');},3500);
+  },210000);
+
+  // Alerte au goéland à 240 secondes
+  setTimeout(function(){
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.9);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center';
+    ov.innerHTML='<div style="font-size:80px;animation:hdrBounce .5s ease-in-out infinite alternate">🐦</div>'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:#fbbf24;letter-spacing:3px;margin-top:12px">LE GOÉLAND</div>'
+      +'<div style="font-size:14px;color:#fff;font-weight:700;margin-top:4px">A PRIS LE CONTRÔLE DU PORT</div>'
+      +'<div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:12px;line-height:1.6;max-width:280px">"CRIIII CRIII ! Désormais le port sera dirigé par des goélands. Les dockers sont priés de fournir des sardines à l\'entrée."</div>'
+      +'<button onclick="this.parentNode.remove();toast(\'🐦 Le goéland est reparti voler des frites.\')" style="margin-top:16px;padding:12px 24px;border:none;border-radius:12px;background:#ef4444;color:#fff;font-family:Bangers,cursive;font-size:16px;letter-spacing:2px;cursor:pointer;touch-action:manipulation">🦅 CHASSER LE GOÉLAND</button>';
+    document.body.appendChild(ov);
+  },240000);
+
+  // Le port s'envole à 270 secondes
+  setTimeout(function(){
+    toast('🚀 LE PORT DÉCOLLE !!!');
+    document.body.style.transition='transform 3s ease-in';
+    document.body.style.transform='scale(0.3) rotate(720deg)';
+    setTimeout(function(){
+      document.body.style.transition='transform 1s ease-out';
+      document.body.style.transform='';
+      toast('🌍 Atterrissage réussi. On est toujours à Marseille.');
+    },3500);
+  },270000);
 
   // Disco MEGA MODE toutes les 2 minutes (après la première)
   setTimeout(function(){
@@ -747,8 +781,8 @@ function getInsulte(){
   setTimeout(function(){document.getElementById('insulte').style.animation='hdrBounce .3s';},10);
 }
 
-// ══ APPEL DE L'EMBAUCHE ══
-var phoneTimeout=null,phoneInterval=null,phoneStep=0,phoneActive=false;
+// ══ APPELS TÉLÉPHONIQUES ══
+var phoneStep=0,phoneActive=false,embaucheCount=0,callHistory=0;
 
 var PHONE_SCRIPT=[
   {msg:"Allô ? Ici l'embauche du port de Marseille. Tu veux travailler ?",
@@ -759,28 +793,73 @@ var PHONE_SCRIPT=[
    choices:["Un brevet de sardine ???","J'ai mon permis B...","J'ai rien du tout"]},
   {msg:"Bon c'est pas grave. Tu sais nager au moins ? Parce que le dernier est tombé à l'eau.",
    choices:["Il est mort ?!","Je sais faire la planche","Raccrochez s'il vous plaît"]},
-  {msg:"Il est pas mort, il a ouvert un restaurant de fruits de mer. Bref, tu commences MAINTENANT.",
-   choices:["MAINTENANT ?!","Mais il est minuit !","Je suis bourré"]},
-  {msg:"On s'en fout de l'heure. Les sardines attendent pas. Tu viens oui ou non ?",
-   choices:["Les sardines ATTENDENT ?","OK j'arrive...","Appelez Gégé plutôt"]},
-  {msg:"Gégé est en arrêt maladie. Il s'est coincé le dos en portant une olive. UNE OLIVE.",
-   choices:["Une olive ?!","Le pauvre...","C'est du Gégé ça"]},
-  {msg:"Bon écoute, si tu viens pas dans 30 secondes, on embauche le goéland.",
+  {msg:"Si tu viens pas dans 30 secondes, on embauche le goéland. Il a un CV.",
    choices:["Le GOÉLAND ?","OK OK J'ARRIVE","Embauchez le goéland"]},
-  {msg:"Le goéland demande 3 sardines de l'heure. C'est moins cher que toi. Dernière chance.",
-   choices:["Je suis moins cher qu'un goéland ???","C'est une blague ?","Payez-moi en sardines aussi"]},
-  {msg:"Trop tard, le goéland a accepté. Il commence demain. Il a même un CV. Au revoir.",
-   choices:["...","Le goéland a un CV ?!","Rappelle-moi jamais"]},
-  {msg:"*bip bip bip* — L'embauche a raccroché. Le goéland a eu le poste.",
-   choices:["Je vais retourner à la fête..."]},
+  {msg:"Trop tard, le goéland a accepté. Au revoir.",
+   choices:["..."]},
+];
+
+// Numéros masqués — appels drôles avec bonne réponse = 200 XP
+var MASKED_CALLS=[
+  {caller:"🐦 Le Goéland",intro:"CRIIIII CRIIII !!! (traduction : Allô ?)",
+   msg:"Bonjour, c'est le goéland du quai 7. Je voudrais renégocier mon contrat. 3 sardines de l'heure c'est plus suffisant. Je veux 5 sardines ET un bureau avec vue mer.",
+   choices:[{t:"C'est une blague ?",ok:false},{t:"Les goélands n'ont pas de contrat",ok:false},{t:"5 sardines ET une place de parking",ok:true,r:"Le goéland accepte. Tu es promu négociateur inter-espèces."}]},
+  {caller:"👔 Patrick Lavagne (bourré)",intro:"*bruit de verre cassé*",
+   msg:"C'est Lavagne... Patrick... écoute... t'es pas si nul en fait... enfin si mais... tu vois ce que je veux dire... *hic*... je t'aime bien quand même... dis le à personne...",
+   choices:[{t:"Je screenshot et j'envoie à tout le port",ok:true,r:"Lavagne démissionnera demain matin. Tu as sauvé le port."},{t:"Chef vous allez bien ?",ok:false},{t:"Je raccroche",ok:false}]},
+  {caller:"🐟 Une sardine",intro:"*bloup bloup bloup*",
+   msg:"S'il vous plaît monsieur le docker... les sardines du container 42 veulent négocier leur libération. On propose 10 000€ et un pardon officiel.",
+   choices:[{t:"Les sardines parlent maintenant ?!",ok:false},{t:"Accepter le deal",ok:true,r:"Les sardines sont libres. Tu es le héros des océans."},{t:"Non, vous finissez en bouillabaisse",ok:false}]},
+  {caller:"👴 Gégé (depuis l'hôpital)",intro:"*bip bip bip* (moniteur cardiaque)",
+   msg:"C'est Gégé... je me suis coincé le dos en portant une olive... UNE OLIVE... le médecin dit que c'est la première fois qu'il voit ça... envoie-moi un pastis s'il te plaît...",
+   choices:[{t:"Apporter un pastis à l'hôpital",ok:true,r:"Gégé est guéri instantanément. Le pastis soigne tout."},{t:"Comment on se coince le dos avec une olive ?",ok:false},{t:"Repose-toi Gégé",ok:false}]},
+  {caller:"🏛️ Les Impôts",intro:"*musique d'attente pendant 45 minutes*",
+   msg:"Bonjour, ici le centre des impôts de Marseille. Il semblerait que vous n'ayez pas déclaré vos 47 tonnes de sardines. L'amende est de 3 millions d'euros. Ou 6 millions de sardines.",
+   choices:[{t:"C'est pas mes sardines, c'est celles du goéland",ok:true,r:"Le goéland est maintenant en contrôle fiscal. Problème résolu."},{t:"Je paie en sardines",ok:false},{t:"Rappelle-moi jamais",ok:false}]},
+  {caller:"🤖 Siri du Port",intro:"*ding dong*",
+   msg:"Bonjour, je suis l'assistant vocal du port de Marseille. Vous avez 47 notifications non lues, 3 containers en retard, et Gégé vous a envoyé 12 messages vocaux de 8 minutes chacun.",
+   choices:[{t:"Supprimer tous les messages de Gégé",ok:false},{t:"Écouter les 12 messages de Gégé",ok:false},{t:"Désactiver Siri du Port pour toujours",ok:true,r:"Siri du Port est désactivé. Il reviendra demain. Il revient TOUJOURS."}]},
+  {caller:"👻 Le fantôme du quai 13",intro:"*woooooouuuuu*",
+   msg:"Je suis le fantôme d'un docker de 1847... je hante le quai 13 depuis 179 ans... est-ce que le port a enfin une machine à café correcte ?",
+   choices:[{t:"Non toujours la même depuis 1992",ok:false},{t:"Oui ! Capsules et tout !",ok:true,r:"Le fantôme peut enfin reposer en paix. Café en main."},{t:"T'es pas un vrai fantôme",ok:false}]},
+  {caller:"🦜 Le perroquet du capitaine",intro:"RRRAWK ! RRRAWK !",
+   msg:"POLLY VEUT UN CRACKER ! POLLY VEUT UNE AUGMENTATION ! POLLY VEUT ÊTRE DIRECTEUR DU PORT ! RRRAWK !",
+   choices:[{t:"Polly est promu directeur adjoint",ok:true,r:"Polly est ravi. Il a déjà redécoré le bureau avec des graines."},{t:"Les perroquets ne parlent pas",ok:false},{t:"Polly veut se taire",ok:false}]},
+  {caller:"📺 BFM Port",intro:"*jingle d'info en continu*",
+   msg:"Ici BFM Port en direct ! On nous signale qu'un docker aurait été vu en train de faire la FÊTE pendant les heures de TRAVAIL. Nos experts sont SCANDALISÉS. Qu'avez-vous à dire pour votre défense ?",
+   choices:[{t:"C'est pas moi c'est le goéland",ok:false},{t:"La fête EST mon travail",ok:true,r:"BFM Port vous nomme Docker de l'Année. Pas de questions."},{t:"Sans commentaire",ok:false}]},
+  {caller:"🍕 Allo Pizza du Port",intro:"Bonsoir, Allo Pizza !",
+   msg:"Votre commande de 47 pizzas aux sardines est prête. C'est 890€. On livre au quai 7 ou au bar ? Le livreur est un goéland, ça pose problème ?",
+   choices:[{t:"J'AI JAMAIS COMMANDÉ 47 PIZZAS",ok:false},{t:"Le goéland livreur, ça me va",ok:true,r:"Les 47 pizzas sont arrivées. Le goéland a gardé la monnaie."},{t:"Livrez au bar, on partage",ok:false}]},
 ];
 
 function triggerPhoneCall(){
-  phoneStep=0;
-  document.getElementById('phoneOverlay').style.display='flex';
+  if(embaucheCount<2){
+    embaucheCount++;
+    phoneStep=0;
+    showPhoneOverlay('📞','APPEL ENTRANT',"L'EMBAUCHE DU PORT",'+33 4 91 00 00 00',false);
+  }else{
+    triggerMaskedCall();
+  }
+}
+
+function triggerMaskedCall(){
+  var call=MASKED_CALLS[callHistory%MASKED_CALLS.length];
+  callHistory++;
+  showPhoneOverlay('🔒','NUMÉRO MASQUÉ',call.caller,call.intro,true,call);
+}
+
+function showPhoneOverlay(emoji,label,name,sub,isMasked,callData){
+  var ov=document.getElementById('phoneOverlay');
+  ov.style.display='flex';
   document.getElementById('phoneRing').style.display='block';
   document.getElementById('phoneDialog').style.display='none';
-  // Vibrate if available
+  document.getElementById('phoneEmoji').textContent=emoji;
+  document.getElementById('phoneName').textContent=label;
+  document.getElementById('phoneCaller').textContent=name;
+  document.getElementById('phoneSub').textContent=sub;
+  ov._isMasked=isMasked;
+  ov._callData=callData;
   if(navigator.vibrate)navigator.vibrate([200,100,200,100,200]);
 }
 
@@ -788,7 +867,12 @@ function pickupPhone(){
   document.getElementById('phoneRing').style.display='none';
   document.getElementById('phoneDialog').style.display='block';
   phoneActive=true;
-  showPhoneStep();
+  var ov=document.getElementById('phoneOverlay');
+  if(ov._isMasked){
+    showMaskedDialog(ov._callData);
+  }else{
+    showPhoneStep();
+  }
 }
 
 function showPhoneStep(){
@@ -804,11 +888,37 @@ function showPhoneStep(){
     btn.onclick=function(){
       phoneStep++;
       if(phoneStep>=PHONE_SCRIPT.length){
-        document.getElementById('phoneMsg').textContent='*bip bip bip*';
+        document.getElementById('phoneMsg').textContent='*bip bip bip* — Raccroché.';
         choicesEl.innerHTML='<button class="phone-choice" onclick="hangupPhone()" style="text-align:center;color:#fbbf24">🎉 Retourner à la fête</button>';
+      }else{showPhoneStep();}
+    };
+    choicesEl.appendChild(btn);
+  });
+}
+
+function showMaskedDialog(call){
+  document.getElementById('phoneMsg').textContent=call.msg;
+  var choicesEl=document.getElementById('phoneChoices');
+  choicesEl.innerHTML='';
+  call.choices.forEach(function(c){
+    var btn=document.createElement('button');
+    btn.className='phone-choice';
+    btn.textContent=(c.ok?'':'')+'  '+c.t;
+    btn.onclick=function(){
+      if(c.ok){
+        document.getElementById('phoneMsg').innerHTML='<div style="color:#4ade80;margin-bottom:6px">✅ BONNE RÉPONSE !</div><div style="font-size:12px;color:rgba(255,255,255,.6)">'+c.r+'</div><div style="color:#fbbf24;font-size:14px;margin-top:8px">+200 XP 🎉</div>';
+        // Give XP
+        if(_me){
+          sb.from('game_stats').select('xp').eq('user_id',_me.id).maybeSingle().then(function(res){
+            if(res.data)sb.from('game_stats').update({xp:(res.data.xp||0)+200}).eq('user_id',_me.id);
+          });
+        }
+        toast('🎉 +200 XP !');
       }else{
-        showPhoneStep();
+        document.getElementById('phoneMsg').innerHTML='<div style="color:#ef4444;margin-bottom:6px">❌ RATÉ !</div><div style="font-size:12px;color:rgba(255,255,255,.4)">La bonne réponse était : "'+call.choices.find(function(x){return x.ok;}).t+'"</div>';
+        toast('😤 Pas de XP...');
       }
+      choicesEl.innerHTML='<button class="phone-choice" onclick="hangupPhone()" style="text-align:center;color:#fbbf24">🎉 Retourner à la fête</button>';
     };
     choicesEl.appendChild(btn);
   });
@@ -817,14 +927,11 @@ function showPhoneStep(){
 function hangupPhone(){
   document.getElementById('phoneOverlay').style.display='none';
   phoneActive=false;
-  if(!phoneActive&&phoneStep<3){
-    // They hung up early — call back in 15s
-    toast('📵 Raccroché. Ils vont rappeler...');
-    setTimeout(function(){if(!phoneActive)triggerPhoneCall();},15000);
-  }else if(phoneStep>=PHONE_SCRIPT.length){
-    toast('🐦 Le goéland a eu le poste.');
+  // Rappel : embauche rappelle si < 2, sinon masqué toutes les 45s
+  if(embaucheCount<2){
+    setTimeout(triggerPhoneCall,15000);
   }else{
-    toast('📵 Raccroché');
+    setTimeout(triggerMaskedCall,45000+Math.random()*30000);
   }
 }
 
