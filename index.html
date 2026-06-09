@@ -1,562 +1,352 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Battle Dock — LE JEU</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  
-  <style>
-    :root {
-      --port-dark: #0f172a;
-      --port-blue: #2563eb;
-      --port-light-blue: #38bdf8;
-      --comic-yellow: #facc15;
-      --comic-red: #ef4444;
-      --comic-green: #22c55e;
-      --comic-purple: #a855f7;
-      --paper-cream: #fefce8;
-      --border-thick: 4px solid #000000;
-      --shadow-comic: 8px 8px 0px #000000;
-      --shadow-comic-sm: 4px 4px 0px #000000;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Battle Dock — LE JEU</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#e8e0cc">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
+input{-webkit-user-select:text;user-select:text;}
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-    }
+:root{
+  --bg:#e8e0cc;
+  --card:#fffdf7;
+  --ink:#1a1a1a;
+  --gold:#e17f00;
+  --gold-light:#fbbf24;
+  --border-w:3px;
+  --radius:14px;
+  --shadow:5px 5px 0 #1a1a1a;
+}
 
-    /* Permettre la sélection dans les inputs */
-    input, textarea {
-      -webkit-user-select: text;
-      -moz-user-select: text;
-      user-select: text;
-    }
+body{
+  font-family:'Inter',sans-serif;
+  background:#e8e0cc;
+  background-image:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:16px;
+}
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      margin: 0;
-    }
+/* ── HEADER ── */
+.logo{
+  text-align:center;margin-bottom:20px;
+}
+.logo-title{
+  font-family:'Bangers',cursive;
+  font-size:clamp(3rem,12vw,4.5rem);
+  color:var(--ink);letter-spacing:4px;line-height:.9;
+}
+.logo-sub{
+  font-size:11px;color:var(--gold);font-weight:700;
+  letter-spacing:3px;margin-top:4px;
+}
 
-    .header-container {
-      text-align: center;
-      margin-bottom: 16px;
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 480px;
-      padding: 0 16px;
-      flex-shrink: 0;
-    }
+/* ── CARD ── */
+.login-card{
+  width:100%;max-width:400px;
+  background:var(--card);
+  border:var(--border-w) solid var(--ink);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
 
-    .main-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: clamp(3.5rem, 12vw, 5rem);
-      color: #ffffff;
-      letter-spacing: 4px;
-      text-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
-      line-height: 0.9;
-      display: inline-block;
-      margin-bottom: 4px;
-    }
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:var(--border-w) solid var(--ink);}
+.tab{
+  flex:1;
+  background:var(--card);
+  border:none;
+  font-family:'Bangers',cursive;font-size:16px;
+  letter-spacing:1.5px;color:#9ca3af;
+  padding:14px 8px;cursor:pointer;
+  transition:all .15s;
+}
+.tab:first-child{border-right:var(--border-w) solid var(--ink);}
+.tab.active{
+  background:var(--ink);color:var(--gold-light);
+}
 
-    .subtitle {
-      font-family: 'Inter', sans-serif;
-      font-size: clamp(0.8rem, 2.5vw, 0.95rem);
-      color: rgba(255, 255, 255, 0.7);
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
+/* ── FORM ── */
+.form-wrap{padding:20px;}
+.form-section{display:none;}
+.form-section.active{display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    .dock-container {
-      width: calc(100% - 32px);
-      max-width: 480px;
-      background: rgba(255, 255, 255, 0.95);
-      border: none;
-      border-radius: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      position: relative;
-      z-index: 5;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      margin: 0 16px;
-      flex-shrink: 0;
-    }
+.field-label{
+  font-size:12px;font-weight:700;color:var(--ink);
+  letter-spacing:.5px;margin-bottom:5px;display:block;
+}
+.field-input{
+  width:100%;padding:12px 14px;
+  font-family:'Inter',sans-serif;font-size:15px;color:var(--ink);
+  background:#fff;
+  border:2px solid #d4c9a8;border-radius:10px;
+  transition:border-color .2s;
+}
+.field-input:focus{
+  outline:none;border-color:var(--gold);
+  box-shadow:0 0 0 3px rgba(225,127,0,.1);
+}
+.field-input::placeholder{color:#c4b896;}
 
-    .tabs-wrapper {
-      display: flex;
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      border-bottom: none;
-    }
+.btn-submit{
+  width:100%;padding:14px;
+  font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;
+  color:var(--ink);
+  background:linear-gradient(180deg,var(--gold-light),#f59e0b);
+  border:var(--border-w) solid var(--ink);
+  border-radius:10px;
+  box-shadow:3px 3px 0 var(--ink);
+  cursor:pointer;
+  transition:transform .1s,box-shadow .1s;
+  margin-top:4px;
+}
+.btn-submit:active{
+  transform:translate(2px,2px);
+  box-shadow:1px 1px 0 var(--ink);
+}
+.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
 
-    .tab-btn {
-      flex: 1;
-      background: transparent;
-      border: none;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.6);
-      padding: 16px 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: center;
-      letter-spacing: 1px;
-    }
+/* ── FOOTER ── */
+.footer{
+  margin-top:16px;font-size:8px;color:#b8a070;
+  text-align:center;letter-spacing:.5px;line-height:1.4;
+  max-width:400px;
+}
 
-    .tab-btn:first-child {
-      border-right: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .tab-btn.active {
-      color: #ffffff;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .form-content {
-      background: #f3f4f6;
-      padding: 24px 20px;
-      position: relative;
-    }
-
-    .form-section { 
-      display: none; 
-    }
-    
-    .form-section.active { 
-      display: block; 
-      animation: fadeIn 0.3s ease-out forwards;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .input-group { 
-      margin-bottom: 16px; 
-    }
-    
-    .input-group:last-of-type {
-      margin-bottom: 0;
-    }
-
-    .input-group label {
-      display: block;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-      color: #1a1a1a;
-      margin-bottom: 7px;
-    }
-
-    .custom-field {
-      width: 100%;
-      padding: 13px 15px;
-      font-family: 'Inter', sans-serif;
-      font-size: 15px;
-      color: #1a1a1a;
-      background: #ffffff;
-      border: 2px solid #e5e7eb;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-    }
-
-    .custom-field:focus {
-      outline: none;
-      background: #ffffff;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .submit-lever-btn {
-      background: linear-gradient(135deg, #3b82f6, #2563eb);
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 14px 26px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-      transition: all 0.2s ease;
-      width: 100%;
-      margin-top: 10px;
-    }
-
-    .submit-lever-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
-    }
-
-    .submit-lever-btn:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
-    }
-
-    .footer-stamp {
-      margin-top: 16px;
-      font-size: 9px;
-      color: #ffffff;
-      text-align: center;
-      max-width: 480px;
-      line-height: 1.3;
-      padding: 0 16px;
-      flex-shrink: 0;
-    }
-
-    .error-popup {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: white;
-      border: none;
-      border-radius: 16px;
-      padding: 32px 28px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      z-index: 1000;
-      max-width: 90%;
-      width: 400px;
-    }
-
-    .error-popup.show {
-      display: block;
-      animation: popupShow 0.3s ease-out forwards;
-    }
-
-    @keyframes popupShow {
-      from {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.8);
-      }
-      to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
-    }
-
-    .error-popup-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 999;
-    }
-
-    .error-popup-overlay.show {
-      display: block;
-    }
-
-    .error-popup-title {
-      font-family: 'Bangers', cursive;
-      font-size: 28px;
-      color: var(--comic-red);
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .error-popup-message {
-      font-family: 'Bungee', sans-serif;
-      font-size: 14px;
-      color: var(--port-dark);
-      margin-bottom: 24px;
-      line-height: 1.8;
-      font-weight: 400;
-    }
-
-    .error-popup-btn {
-      background: var(--comic-red);
-      color: white;
-      border: 4px solid #000000;
-      border-radius: 12px;
-      padding: 14px 28px;
-      font-family: 'Bungee', sans-serif;
-      font-size: 15px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      box-shadow: 6px 6px 0px #000000;
-      transition: all 0.15s ease;
-      width: 100%;
-      border-bottom: none;
-    }
-
-    .error-popup-btn:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 8px 8px 0px #000000;
-    }
-
-    .error-popup-btn:active {
-      transform: translate(2px, 2px);
-      box-shadow: 2px 2px 0px #000000;
-    }
-
-    @media (max-width: 540px) {
-      .dock-container {
-        border-radius: 12px;
-      }
-
-      .main-title {
-        font-size: 3rem;
-      }
-
-      .form-content {
-        padding: 20px 16px;
-      }
-
-      .tab-btn {
-        font-size: 13px;
-        padding: 14px 6px;
-      }
-    }
-
-    @media (max-width: 400px) {
-      .dock-container {
-        width: calc(100% - 24px);
-        margin: 0 12px;
-      }
-
-      .header-container,
-      .footer-stamp {
-        padding: 0 12px;
-      }
-
-      .main-title {
-        font-size: 2.5rem;
-      }
-
-      .subtitle {
-        font-size: 0.75rem;
-      }
-
-      .form-content {
-        padding: 20px 16px;
-      }
-
-      .custom-field {
-        padding: 12px 14px;
-        font-size: 14px;
-      }
-
-      .submit-lever-btn {
-        padding: 13px 20px;
-        font-size: 14px;
-      }
-    }
-  </style>
+/* ── ERROR POPUP ── */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.6);z-index:999;
+}
+.overlay.show{display:block;}
+.popup{
+  display:none;position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:var(--card);
+  border:var(--border-w) solid var(--ink);
+  border-radius:16px;box-shadow:6px 6px 0 var(--ink);
+  padding:28px 24px;z-index:1000;
+  width:85%;max-width:340px;text-align:center;
+}
+.popup.show{display:block;animation:popIn .3s ease;}
+@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.85)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.popup-title{
+  font-family:'Bangers',cursive;font-size:26px;
+  color:#dc2626;letter-spacing:2px;margin-bottom:10px;
+}
+.popup-msg{
+  font-size:13px;color:var(--ink);line-height:1.6;
+  margin-bottom:20px;font-weight:500;
+}
+.popup-btn{
+  font-family:'Bangers',cursive;font-size:16px;letter-spacing:1px;
+  padding:10px 28px;
+  background:var(--gold-light);color:var(--ink);
+  border:var(--border-w) solid var(--ink);
+  border-radius:10px;box-shadow:3px 3px 0 var(--ink);
+  cursor:pointer;
+}
+.popup-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+</style>
 </head>
 <body>
-  <div class="header-container">
-    <div class="main-title">BATTLE DOCK</div>
-    <div class="subtitle">LE simulateur de docker !</div>
+
+<div class="logo">
+  <div class="logo-title">BATTLE DOCK</div>
+  <div class="logo-sub">⚓ Le simulateur de docker</div>
+</div>
+
+<div class="login-card">
+  <div class="tabs">
+    <button class="tab active" id="tabLogin" onclick="swapTab('login')">CONNEXION</button>
+    <button class="tab" id="tabSignup" onclick="swapTab('signup')">INSCRIPTION</button>
   </div>
-
-  <div class="dock-container">
-    <div class="tabs-wrapper">
-      <button class="tab-btn active" id="tabHome" onclick="swapTab('home')">👔 CONNEXION</button>
-      <button class="tab-btn" id="tabScores" onclick="swapTab('scores')">📝 INSCRIPTION</button>
-    </div>
-
-    <div class="form-content">
-      <div class="form-section active" id="secHome">
-        <form id="quick-login-form" style="display: flex; flex-direction: column; gap: 20px;">
-          <div class="input-group">
-            <label>👤 Pseudo</label>
-            <input type="text" class="custom-field" id="quick-username" placeholder="Ton pseudo" required>
-          </div>
-          <div class="input-group">
-            <label>🔑 Mot de passe</label>
-            <input type="password" class="custom-field" id="quick-password" placeholder="••••••••" required>
-          </div>
-          <button type="submit" class="submit-lever-btn">SE CONNECTER</button>
-        </form>
+  <div class="form-wrap">
+    <!-- CONNEXION -->
+    <form class="form-section active" id="secLogin" onsubmit="handleLogin(event)">
+      <div>
+        <label class="field-label">👤 Pseudo</label>
+        <input type="text" class="field-input" id="loginUser" placeholder="Ton pseudo" required autocomplete="username">
       </div>
-
-      <div class="form-section" id="secScores">
-        <form id="application-form" style="display: flex; flex-direction: column; gap: 20px;">
-          <div class="input-group">
-            <label>👤 Ton Pseudo</label>
-            <input type="text" class="custom-field" id="app-username" placeholder="Pseudo de joueur" required>
-          </div>
-          <div class="input-group">
-            <label>🔒 Mot de passe</label>
-            <input type="password" class="custom-field" id="app-password" placeholder="Minimum 6 caractères" required>
-          </div>
-          <button type="submit" class="submit-lever-btn">S'INSCRIRE</button>
-        </form>
+      <div>
+        <label class="field-label">🔑 Mot de passe</label>
+        <input type="password" class="field-input" id="loginPass" placeholder="••••••••" required autocomplete="current-password">
       </div>
-    </div>
+      <button type="submit" class="btn-submit" id="loginBtn">SE CONNECTER</button>
+    </form>
+    <!-- INSCRIPTION -->
+    <form class="form-section" id="secSignup" onsubmit="handleSignup(event)">
+      <div>
+        <label class="field-label">👤 Choisis un pseudo</label>
+        <input type="text" class="field-input" id="signupUser" placeholder="3-20 caractères, lettres/chiffres" required autocomplete="username">
+      </div>
+      <div>
+        <label class="field-label">🔒 Mot de passe</label>
+        <input type="password" class="field-input" id="signupPass" placeholder="Minimum 6 caractères" required autocomplete="new-password">
+      </div>
+      <button type="submit" class="btn-submit" id="signupBtn">S'INSCRIRE</button>
+    </form>
   </div>
+</div>
 
-  <div class="footer-stamp">Battle Dock est une œuvre de fiction et de divertissement.<br>Tous les éléments sont purement imaginaires.</div>
+<div class="footer">Battle Dock est une œuvre de fiction et de divertissement.<br>Tous les éléments sont purement imaginaires.</div>
 
-  <div class="error-popup-overlay" id="errorOverlay"></div>
-  <div class="error-popup" id="errorPopup">
-    <div class="error-popup-title">ERREUR</div>
-    <div class="error-popup-message" id="errorMessage"></div>
-    <button class="error-popup-btn" onclick="closeErrorPopup()">OK</button>
-  </div>
+<!-- Error popup -->
+<div class="overlay" id="overlay" onclick="closePopup()"></div>
+<div class="popup" id="popup">
+  <div class="popup-title">ERREUR</div>
+  <div class="popup-msg" id="popupMsg"></div>
+  <button class="popup-btn" onclick="closePopup()">OK</button>
+</div>
 
-  <script>
-    const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(supabaseUrl, supabaseKey);
+<script>
+const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
+const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(supabaseUrl,supabaseKey);
 
-    sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) window.location.href = 'game.html';
-    });
+// Si déjà connecté → game.html
+sb.auth.getSession().then(({data:{session}})=>{
+  if(session) location.href='game.html';
+});
 
-    function showErrorPopup(message) {
-      document.getElementById('errorMessage').textContent = message;
-      document.getElementById('errorPopup').classList.add('show');
-      document.getElementById('errorOverlay').classList.add('show');
+// ── Tabs ──
+function swapTab(t){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.form-section').forEach(s=>s.classList.remove('active'));
+  if(t==='login'){
+    document.getElementById('tabLogin').classList.add('active');
+    document.getElementById('secLogin').classList.add('active');
+  } else {
+    document.getElementById('tabSignup').classList.add('active');
+    document.getElementById('secSignup').classList.add('active');
+  }
+}
+
+// ── Popup ──
+function showPopup(msg){
+  document.getElementById('popupMsg').textContent=msg;
+  document.getElementById('popup').classList.add('show');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePopup(){
+  document.getElementById('popup').classList.remove('show');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// ── Validation pseudo ──
+function validatePseudo(pseudo){
+  if(pseudo.length<3) return 'Pseudo trop court (min 3 caractères)';
+  if(pseudo.length>20) return 'Pseudo trop long (max 20 caractères)';
+  if(!/^[a-zA-Z0-9._-]+$/.test(pseudo)) return 'Pseudo invalide (lettres, chiffres, . - _ uniquement)';
+  return null;
+}
+
+// ── Connexion ──
+async function handleLogin(e){
+  e.preventDefault();
+  const user=document.getElementById('loginUser').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!user||!pass){showPopup('Remplis tous les champs !');return;}
+
+  const btn=document.getElementById('loginBtn');
+  btn.textContent='CONNEXION...';btn.disabled=true;
+
+  try{
+    const email=user+'@battledock.local';
+    const{error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){
+      showPopup('Pseudo ou mot de passe incorrect !');
+      btn.textContent='SE CONNECTER';btn.disabled=false;
+      return;
+    }
+    location.href='game.html';
+  }catch(err){
+    showPopup('Erreur : '+err.message);
+    btn.textContent='SE CONNECTER';btn.disabled=false;
+  }
+}
+
+// ── Inscription ──
+async function handleSignup(e){
+  e.preventDefault();
+  const user=document.getElementById('signupUser').value.trim();
+  const pass=document.getElementById('signupPass').value;
+
+  if(!user||!pass){showPopup('Remplis tous les champs !');return;}
+  const pseudoErr=validatePseudo(user);
+  if(pseudoErr){showPopup(pseudoErr);return;}
+  if(pass.length<6){showPopup('Minimum 6 caractères pour le mot de passe !');return;}
+
+  const btn=document.getElementById('signupBtn');
+  btn.textContent='INSCRIPTION...';btn.disabled=true;
+
+  try{
+    // Vérifier si pseudo pris
+    const{data:existing}=await sb.from('profiles').select('username').eq('username',user).maybeSingle();
+    if(existing){
+      showPopup('Ce pseudo est déjà pris !');
+      btn.textContent="S'INSCRIRE";btn.disabled=false;
+      return;
     }
 
-    function closeErrorPopup() {
-      document.getElementById('errorPopup').classList.remove('show');
-      document.getElementById('errorOverlay').classList.remove('show');
-    }
-
-    document.getElementById('errorOverlay').addEventListener('click', closeErrorPopup);
-
-    function swapTab(target) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
-      document.getElementById('tab' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active');
-      document.getElementById('sec' + target.charAt(0).toUpperCase() + target.slice(1)).classList.add('active');
-      document.body.style.background = target === 'home'
-        ? 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%)'
-        : 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #dc2626 100%)';
-    }
-
-    document.getElementById('quick-login-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('quick-username').value.trim();
-      const password = document.getElementById('quick-password').value;
-      if (!username || !password) { showErrorPopup('Remplis tous les champs !'); return; }
-
-      const btn = e.target.querySelector('button');
-      btn.textContent = 'CONNEXION...'; btn.disabled = true;
-
-      try {
-        const email = username + '@battledock.local';
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-
-        if (error) { 
-          showErrorPopup('Pseudo ou mot de passe incorrect !'); 
-          btn.textContent='SE CONNECTER'; 
-          btn.disabled=false; 
-          return; 
-        }
-
-        window.location.href = 'game.html';
-      } catch (err) {
-        showErrorPopup('Erreur : ' + err.message);
-        btn.textContent='SE CONNECTER'; 
-        btn.disabled=false;
-      }
+    // Créer le compte auth
+    const email=user+'@battledock.local';
+    const{data:authData,error:authErr}=await sb.auth.signUp({
+      email,password:pass,
+      options:{data:{username:user}}
     });
+    if(authErr) throw authErr;
 
-    document.getElementById('application-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const username = document.getElementById('app-username').value.trim();
-      const password = document.getElementById('app-password').value;
+    const uid=authData.user.id;
+    await new Promise(r=>setTimeout(r,500));
 
-      if (!username || !password) { showErrorPopup('Remplis tous les champs !'); return; }
-      if (password.length < 6) { showErrorPopup('Minimum 6 caractères !'); return; }
-      if (username.length < 3) { showErrorPopup('Pseudo trop court (min 3 caractères) !'); return; }
+    // Créer profiles (sans diamonds — colonne absente)
+    await sb.from('profiles').upsert({
+      user_id:uid,
+      username:user,
+      avatar_url:'avatar-default.png',
+      background_color:'bleu_mer',
+      trophies:0
+    },{onConflict:'user_id'});
 
-      const btn = e.target.querySelector('button');
-      btn.textContent = 'INSCRIPTION...'; btn.disabled = true;
+    // Créer game_stats (last_level_rewarded:1 pour éviter récompense parasite)
+    await sb.from('game_stats').upsert({
+      user_id:uid,
+      money:1000,
+      level:1,
+      xp:0,
+      diamonds:20,
+      grade:'Docker Occasionnel',
+      last_level_rewarded:1,
+      last_levelup_shown:1,
+      streak_days:0,
+      trophies:0
+    },{onConflict:'user_id'});
 
-      try {
-        const { data: existing, error: checkError } = await sb
-          .from('profiles').select('username').eq('username', username).maybeSingle();
-        
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw new Error('Erreur de vérification du pseudo');
-        }
-        
-        if (existing) { 
-          showErrorPopup('Ce pseudo est déjà pris !'); 
-          btn.textContent="S'INSCRIRE"; 
-          btn.disabled=false; 
-          return; 
-        }
+    btn.textContent='✅ BIENVENUE !';
+    setTimeout(()=>{location.href='game.html';},800);
 
-        const email = username + '@battledock.local';
+  }catch(err){
+    showPopup('Erreur : '+err.message);
+    btn.textContent="S'INSCRIRE";btn.disabled=false;
+  }
+}
 
-        const { data: authData, error: authErr } = await sb.auth.signUp({
-          email, 
-          password,
-          options: { data: { username } }
-        });
-        if (authErr) throw authErr;
-
-        const userId = authData.user.id;
-
-        // Attendre un peu que l'auth se propage
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        // Créer profiles (avec retry si le trigger l'a déjà fait)
-        const { error: profileErr } = await sb.from('profiles').upsert({ 
-          user_id: userId, 
-          username,
-          avatar_url: 'avatar-default.png',
-          background_color: 'blue',
-          diamonds: 0,
-          trophies: 0
-        }, { onConflict: 'user_id' });
-
-        if (profileErr && profileErr.code !== '23505') throw profileErr;
-
-        // Créer game_stats (avec retry si le trigger l'a déjà fait)
-        const { error: statsErr } = await sb.from('game_stats').upsert({
-          user_id: userId,
-          money: 0,
-          level: 1,
-          xp: 0,
-          grade: 'Docker Occasionnel',
-          last_level_rewarded: 0
-        }, { onConflict: 'user_id' });
-
-        if (statsErr && statsErr.code !== '23505') throw statsErr;
-        
-        btn.textContent = '✅ BIENVENUE !';
-        setTimeout(() => { window.location.href = 'game.html'; }, 800);
-
-      } catch (err) {
-        showErrorPopup('Erreur : ' + err.message);
-        btn.textContent = "S'INSCRIRE"; 
-        btn.disabled = false;
-      }
-    });
-  </script>
+// PWA
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
 </body>
 </html>
