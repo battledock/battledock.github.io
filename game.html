@@ -385,17 +385,32 @@ body{
 .card-dynamic-val.positive{color:#22c55e;}
 .card-dynamic-val.negative{color:#ef4444;}
 
-/* ── BANDEAU MAJ ── */
-.banner-maj{
-  grid-column:span 2;
-  background:#fff;
-  border:2px solid var(--gold);
-  border-radius:0;
-  padding:12px 16px;
-  display:flex;align-items:flex-start;gap:10px;
+/* Classement (R1 course + gros rang) */
+.widget-classement{
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  grid-column:span 2;min-height:100px;
+  display:flex;align-items:center;
+  padding:22px;gap:16px;
 }
-.banner-maj-text{
-  font-size:11px;color:var(--gold);line-height:1.5;font-weight:600;letter-spacing:.3px;
+.classement-flags{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.classement-flag{
+  position:absolute;font-size:14px;opacity:.06;
+  animation:flagDrift linear infinite;
+}
+@keyframes flagDrift{0%{transform:translateX(110%) rotate(0)}100%{transform:translateX(-110%) rotate(10deg)}}
+.classement-pos{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(44px,14vw,56px);
+  color:#fbbf24;z-index:1;line-height:1;
+  text-shadow:0 0 20px rgba(251,191,36,.15);
+}
+.classement-title{
+  font-family:'Bangers',cursive;font-size:clamp(24px,7vw,30px);
+  color:#fff;letter-spacing:3px;z-index:1;
+}
+.classement-sub{
+  font-size:9px;color:rgba(255,255,255,.3);
+  font-weight:700;z-index:1;margin-top:3px;
 }
 
 /* ── STAGGER ANIMATION ── */
@@ -607,14 +622,12 @@ body{
 
   <!-- CLASSEMENT -->
   <div class="widget widget-full widget-classement" onclick="location.href='classement.html'">
-    <div class="widget-title">CLASSEMENT</div>
-    <div class="widget-value" style="font-size:16px;" id="rankMyPos">—</div>
-  </div>
-
-  <!-- BANDEAU MAJ -->
-  <div class="banner-maj">
-    <div style="font-size:18px;flex-shrink:0;">🚧</div>
-    <div class="banner-maj-text">Mise à jour en pause — classement à vérifier, commerce également. École des Dockers + nouveaux métiers arrivent prochainement !</div>
+    <div class="classement-flags" id="classementFlags"></div>
+    <div class="classement-pos" id="rankMyPos">#—</div>
+    <div>
+      <div class="classement-title">CLASSEMENT</div>
+      <div class="classement-sub">Qui est le meilleur docker ?</div>
+    </div>
   </div>
 
 </div>
@@ -786,6 +799,7 @@ async function init(){
     initCommerceRain();
     loadCompanyCard(uid);
     loadBourseTicker();
+    initClassementFlags();
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -960,6 +974,22 @@ async function loadBourseTicker(){
     tape.innerHTML=html+html;
   }catch(e){
     tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Chargement...</span></span>';
+  }
+}
+
+// ── Classement flags ──
+function initClassementFlags(){
+  const box=document.getElementById('classementFlags');
+  if(!box)return;
+  const flags=['🏁','🚩','🏁'];
+  for(let i=0;i<3;i++){
+    const f=document.createElement('div');
+    f.className='classement-flag';
+    f.textContent=flags[i%flags.length];
+    f.style.top=(15+i*30)+'%';
+    f.style.animationDuration=(6+i*2)+'s';
+    f.style.animationDelay=(-i*2.5)+'s';
+    box.appendChild(f);
   }
 }
 
