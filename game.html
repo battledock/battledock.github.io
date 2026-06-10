@@ -873,8 +873,10 @@ function isStandalone(){
 }
 
 async function checkPWAInstall(uid,currentMoney,currentTrophies){
-  // Already rewarded → don't show
-  if(localStorage.getItem('pwa_rewarded')){
+  // Check Supabase records first
+  var gs=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
+  var records=(gs.data&&gs.data.records)||{};
+  if(records.pwa_installed){
     document.getElementById('installBanner').style.display='none';
     return;
   }
@@ -882,12 +884,12 @@ async function checkPWAInstall(uid,currentMoney,currentTrophies){
   if(isStandalone()){
     var newMoney=currentMoney+25000;
     var newTrophies=currentTrophies+5;
-    await sb.from('game_stats').update({money:newMoney,trophies:newTrophies}).eq('user_id',uid);
+    records.pwa_installed=true;
+    await sb.from('game_stats').update({money:newMoney,trophies:newTrophies,records:records}).eq('user_id',uid);
     localStorage.setItem('pwa_rewarded','1');
     document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
     document.getElementById('trophyBar').textContent=newTrophies;
     document.getElementById('installBanner').style.display='none';
-    // Show reward popup
     var ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
     ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
@@ -909,7 +911,6 @@ async function checkPWAInstall(uid,currentMoney,currentTrophies){
     document.getElementById('installBanner').style.display='none';
     return;
   }
-  // Show banner
   document.getElementById('installBanner').style.display='block';
 }
 
