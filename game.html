@@ -819,7 +819,7 @@ async function init(){
     }
 
     // FIX #8 : streak avec date locale (plus UTC)
-    checkStreak(uid,stats);
+    checkStreak(uid,stats,money,diamonds);
 
     startPlaytimeTracking(uid);
     loadRank(uid);
@@ -846,7 +846,7 @@ function startPlaytimeTracking(uid){
 }
 
 // FIX #8 : streak avec date locale + données déjà fetchées (pas de re-SELECT)
-function checkStreak(uid,stats){
+function checkStreak(uid,stats,currentMoney,currentDiamonds){
   try{
     const today=getLocalDateStr();
     if(stats.last_login===today)return;
@@ -859,8 +859,8 @@ function checkStreak(uid,stats){
     // Bonus : 500€ × streak (max 10 jours = 5000€) + diamants tous les 5 jours
     const bonus=Math.min(newStreak,10)*500;
     const diamondBonus=(newStreak%5===0)?newStreak:0;
-    const newMoney=(stats.money||0)+bonus;
-    const newDiamonds=(stats.diamonds||0)+diamondBonus;
+    const newMoney=currentMoney+bonus;
+    const newDiamonds=currentDiamonds+diamondBonus;
     sb.from('game_stats').update({streak_days:newStreak,last_login:today,money:newMoney,diamonds:newDiamonds}).eq('user_id',uid).then(()=>{
       document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
       if(diamondBonus)document.getElementById('diamondBar').textContent=newDiamonds;
