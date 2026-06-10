@@ -67,7 +67,7 @@ canvas{display:block;width:100%;height:100%}
 <div class="hud">
   <div style="position:fixed;top:calc(env(safe-area-inset-top,0px)+8px);left:50%;transform:translateX(-50%);z-index:11;pointer-events:auto;display:flex;gap:6px"><button onclick="togglePause()" id="pauseBtn" style="background:rgba(0,0,0,.25);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 12px;font-family:Bangers,cursive;font-size:12px;color:rgba(255,255,255,.5);letter-spacing:2px;cursor:pointer">⏸</button><button onclick="toggleMusic()" id="muteBtn" style="background:rgba(0,0,0,.25);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;padding:4px 10px;font-size:12px;color:rgba(255,255,255,.5);cursor:pointer">🔊</button></div>
   <div><div class="hud-score-lbl">CHARGEMENTS</div><div class="hud-score" id="hudScore">0</div>
-    <div style="width:80px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:3px;overflow:hidden"><div id="milestoneBar" style="height:100%;width:0%;background:#fbbf24;border-radius:2px;transition:width .3s"></div></div><div class="hud-money" id="hudMoney">+0€</div></div>
+    <div style="width:80px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:3px;overflow:hidden"><div id="milestoneBar" style="height:100%;width:0%;background:#fbbf24;border-radius:2px;transition:width .3s"></div></div><div class="hud-money" id="hudMoney">+0€</div><div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:#818cf8;margin-top:1px" id="hudXP">+0 XP</div></div>
   <div><div class="hud-combo" id="hudCombo"></div><div class="hud-lives" id="hudLives">❤️❤️❤️</div><div class="hud-best" id="hudBest">RECORD : 0</div></div>
 </div>
 <div class="feedback"><div class="fb-text" id="fbText"></div><div class="fb-money" id="fbMoney"></div></div>
@@ -75,7 +75,7 @@ canvas{display:block;width:100%;height:100%}
 <div class="start" id="startScreen"><div class="st-card">
   <div class="st-emoji">🏗️</div>
   <div class="st-title">GRUTIER</div>
-  <div class="st-sub">Charge les camions du port de Marseille.<br>Tape pour lâcher le container sur la remorque !</div>
+  <div class="st-sub">Charge les camions du port de Marseille.<br>Glisse ton doigt pour positionner le container, relâche pour lâcher !</div>
   <button class="st-btn" onclick="startGame()">COMMENCER</button>
   <button class="st-back" onclick="location.href='travail.html'">← RETOUR</button>
 </div></div>
@@ -110,20 +110,7 @@ function toggleMusic(){
   document.getElementById('muteBtn').textContent=_musicMuted?'🔇':'🔊';
 }
 
-// Audio
-var _audioCtx=null;
-function playClang(freq,vol){
-  try{
-    if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    var osc=_audioCtx.createOscillator();var gain=_audioCtx.createGain();
-    osc.type='triangle';osc.frequency.setValueAtTime(freq,_audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(freq*.5,_audioCtx.currentTime+.15);
-    gain.gain.setValueAtTime(vol,_audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(.001,_audioCtx.currentTime+.2);
-    osc.connect(gain);gain.connect(_audioCtx.destination);
-    osc.start();osc.stop(_audioCtx.currentTime+.2);
-  }catch(e){}
-}
+// Audio removed - music only
 var _paused=false;
 function togglePause(){
   if(state!=='playing'&&!_paused)return;
@@ -157,8 +144,9 @@ var loaded=null,truckLeaving=false;
 var smokeParticles=[];
 var clouds=[],gulls=[];
 
-// Crane container (swinging at top)
+// Crane container (finger-controlled)
 var crane={x:0,w:100,h:40,color:null,speed:1.8,dir:1};
+var _dragging=false,_dragStartX=0,_craneStartX=0;
 // Falling container
 var falling=null; // {x,y,w,h,color,vy}
 // Truck
@@ -362,26 +350,30 @@ function spawnDust(x,y){
 function spawnP(x,y,color,n){var c=typeof color==='object'?color.base:color;for(var i=0;i<n;i++)particles.push({x:x+(Math.random()-.5)*20,y:y,vx:(Math.random()-.5)*6,vy:-Math.random()*4-2,size:2+Math.random()*4,color:c,life:1,decay:.015+Math.random()*.02,rot:Math.random()*6});}
 
 // ══ GAME ══
+var truckWait=0,truckWaitMax=0,truckStopped=false;
+
 function newRound(){
   if(goldenActive){crane.color=GOLDEN;goldenActive=false;}
   else{crane.color=COLORS[score%COLORS.length];}
-  crane.x=20;crane.dir=1;
-  crane.speed=2.5+Math.min(score*.12,4);
-  crane.w=truck.trailerW-10;
+  crane.x=W/2-crane.w/2;crane.dir=1;
+  // Container shrinks slightly with difficulty
+  crane.w=Math.max(60,truck.trailerW-10-Math.min(score*1.5,25));
   crane.h=36;
   falling=null;
-  loaded=null;truckLeaving=false;truck._warn=false;
-  // New truck from random side
+  loaded=null;truckLeaving=false;truckStopped=false;truckWait=0;
+  // Wait window: generous early, tight late
+  truckWaitMax=Math.max(50,140-score*6);
+  // New truck from right
   truck.dir=-1;
   truck.x=W+30;
   truck.cabColor=CAB_COLORS[Math.floor(Math.random()*CAB_COLORS.length)];
-  truck.speed=2.0+Math.min(score*.1,3);
+  truck.speed=2.2+Math.min(score*.08,2.5);
 }
 
 function dropContainer(){
   if(!crane.color||falling||truckLeaving||state!=='playing')return;
   if(navigator.vibrate)navigator.vibrate(10);
-  falling={x:crane.x,y:H*.18,w:crane.w,h:crane.h,color:crane.color,vy:0,vx:crane.speed*crane.dir*.35};
+  falling={x:crane.x,y:H*.18,w:crane.w,h:crane.h,color:crane.color,vy:0,vx:0};
 }
 
 function checkLanding(){
@@ -395,7 +387,7 @@ function checkLanding(){
   // If container missed the truck entirely, let it fall off screen
   if(falling.y>H+50){
     lives--;updateLives();
-    showFB('RATÉ !','#ef4444',0);playClang(150,.25);
+    showFB('RATÉ !','#ef4444',0);
     shakeX=5;shakeY=3;
     if(navigator.vibrate)navigator.vibrate([30,30,60]);
     if(lives<=0){falling=null;setTimeout(gameOver,500);return;}
@@ -429,30 +421,34 @@ function checkLanding(){
     perfectStreak++;totalPerfects++;
     if(perfectStreak>=3&&!goldenActive){goldenActive=true;perfectStreak=0;showFB('CONTAINER DORÉ !','#d4af37',earn);}
     else{showFB('PARFAIT !','#fbbf24',earn);}
-    flashAlpha=.4;playClang(800,.3);
+    flashAlpha=.4;
     if(totalPerfects>0&&totalPerfects%10===0&&lives<5){lives++;updateLives();showFB('+1 VIE !','#ef4444',0);}
     spawnP(cx,falling.y,'#fbbf24',25);spawnDust(cx,falling.y+falling.h);
     shakeX=3;shakeY=2;
     if(navigator.vibrate)navigator.vibrate([8,20,8]);
-    // totalEarned+=earn; // disabled
+    totalEarned+=earn;
+    totalXP+=(isGold?100:50)*Math.min(combo,10);
   }else if(diff<18){
     combo++;score++;
     var earn=200*Math.min(combo,10);
-    perfectStreak=0;showFB('SUPER !','#4ade80',earn);playClang(600,.2);
+    perfectStreak=0;showFB('SUPER !','#4ade80',earn);
     spawnP(cx,falling.y,'#4ade80',15);spawnDust(cx,falling.y+falling.h);
     shakeY=1;
-    // totalEarned+=earn; // disabled
+    totalEarned+=earn;
+    totalXP+=25*Math.min(combo,10);
   }else{
     combo=0;score++;
     perfectStreak=0;var earn=100;
-    showFB('CHARGÉ','rgba(255,255,255,.6)',earn);playClang(400,.15);
+    showFB('CHARGÉ','rgba(255,255,255,.6)',earn);
     spawnP(cx,falling.y,'#fff',6);spawnDust(cx,falling.y+falling.h);
     totalEarned+=earn;
+    totalXP+=10;
   }
 
   if(combo>maxCombo)maxCombo=combo;
   document.getElementById('hudScore').textContent=score;
   document.getElementById('hudMoney').textContent='+'+totalEarned.toLocaleString('fr-FR')+'€';
+  document.getElementById('hudXP').textContent='+'+totalXP+' XP';
   document.getElementById('hudCombo').textContent=combo>1?'COMBO ×'+combo:'';
   // Milestone bar
   var nextM=score<5?5:score<10?10:score<15?15:score<20?20:25;
@@ -469,7 +465,7 @@ function checkLanding(){
   loaded={x:truck.trailerX+5,y:falling.y,w:falling.w,h:falling.h,color:falling.color};
   falling=null;
   truckLeaving=true;
-  truck.speed=3.5+Math.min(score*.15,4);
+  truck.speed=2.5+Math.min(score*.12,3);
 }
 
 function updateLives(){
@@ -487,35 +483,46 @@ function showFB(text,color,money){
 // ══ LOOP ══
 function update(){
   t++;
-  // Crane swing
-  if(!falling&&!truckLeaving&&crane.color&&state==='playing'){
-    crane.x+=crane.speed*crane.dir;
-    if(crane.x+crane.w>W-20)crane.dir=-1;
-    if(crane.x<20)crane.dir=1;
-  }
-  // Truck movement
+  // Crane is finger-controlled — no auto-swing
+  // Clamp crane to screen bounds
+  if(crane.x<10)crane.x=10;
+  if(crane.x+crane.w>W-10)crane.x=W-10-crane.w;
+  // Truck movement: arrive → stop → wait → depart
   if(truckLeaving){
     truck.x+=truck.speed*truck.dir;
     if(loaded){loaded.x+=truck.speed*truck.dir;}
     if(truck.x<-200){newRound();}
   }else if(!falling&&state==='playing'){
-    truck.x+=truck.speed*truck.dir;
-    // Truck arrived at center-ish area → slow down / stop
-    var truckCenter=truck.x-truck.trailerW/2;
-    if(truckCenter>W*.3&&truckCenter<W*.65)truck.speed=Math.max(.8,truck.speed-.008);
-    // Truck off screen → respawn
-    // Warning flash when truck near edge
-    if(truck.x<W*.15&&truck.x>0&&!truckLeaving){truck._warn=true;}
-    if(truck.x<-truck.w-40){
-      if(state==='playing'){lives--;updateLives();showFB('TROP LENT !','#f97316',0);if(lives<=0){setTimeout(gameOver,300);return;}newRound();}
+    if(truckStopped){
+      // Waiting phase — truck is parked
+      truckWait++;
+      if(truckWait>truckWaitMax){
+        // Time's up, truck rolls away
+        truckStopped=false;
+        truck.speed=1.2+Math.min(score*.06,2);
+      }
+    }else{
+      truck.x+=truck.speed*truck.dir;
+      // Smooth deceleration into stop zone
+      var truckCenter=truck.x+22+truck.trailerW/2;
+      var target=W*.5;
+      var dist=Math.abs(truckCenter-target);
+      if(dist<W*.2&&truck.speed>0.1){
+        truck.speed*=0.96;
+        if(truck.speed<0.15){truck.speed=0;truckStopped=true;truckWait=0;}
+      }
+      // Truck off screen → lose a life
+      if(truck.x<-truck.w-40){
+        if(state==='playing'){lives--;updateLives();showFB('TROP LENT !','#f97316',0);if(lives<=0){setTimeout(gameOver,300);return;}newRound();}
+      }
     }
   }
-  // Falling container
+  // Falling container — slightly slower gravity for satisfying weight feel
   if(falling){
-    falling.vy+=1.2;
+    falling.vy+=0.85;
     falling.y+=falling.vy;
     falling.x+=falling.vx;
-    falling.vx*=.97; // air friction
+    falling.vx*=.97;
     checkLanding();
   }
   // Exhaust smoke
@@ -538,7 +545,6 @@ function draw(){
   drawSky();drawClouds();drawGulls();drawPort();drawBoats();drawSea();drawRoad();
   // Truck
   drawTruck(truck.x,ROAD_Y+(H-ROAD_Y)*.45);
-  if(truck._warn&&t%20<10){ctx.fillStyle='rgba(249,115,22,.15)';ctx.fillRect(0,0,W,H);}
   // Loaded container on truck
   if(loaded)drawContainer(loaded.x,loaded.y,loaded.w,loaded.h,loaded.color,false);
 
@@ -551,16 +557,23 @@ function draw(){
   }
   // Crane container
   if(!falling&&!truckLeaving&&crane.color){
-    var swingAngle=Math.sin(t*.06)*0.08*crane.dir;
+    var swingAngle=_dragging?0:Math.sin(t*.04)*0.03;
+    // Ready pulse when truck is waiting
+    if(truckStopped){
+      var pulse=.08+Math.sin(t*.08)*.04;
+      ctx.shadowColor=crane.color.base||'#fbbf24';ctx.shadowBlur=15*pulse*10;
+    }
     ctx.save();ctx.translate(crane.x+crane.w/2,H*.18+crane.h/2);ctx.rotate(swingAngle);
     drawContainer(-crane.w/2,-crane.h/2,crane.w,crane.h,crane.color,true);
     ctx.restore();
-    // Drop guide line
+    ctx.shadowBlur=0;
+    // Drop guide line — brighter when truck stopped
     var guideX=crane.x+crane.w/2;
-    ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;ctx.setLineDash([3,6]);
+    var ga=truckStopped?.2:.1;
+    ctx.strokeStyle='rgba(255,255,255,'+ga+')';ctx.lineWidth=1;ctx.setLineDash([3,6]);
     ctx.beginPath();ctx.moveTo(guideX,H*.18+crane.h+5);ctx.lineTo(guideX,ROAD_Y);ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(guideX,ROAD_Y-2,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,'+(ga+.05)+')';ctx.beginPath();ctx.arc(guideX,ROAD_Y-2,3,0,Math.PI*2);ctx.fill();
   }
   drawCraneStructure();
   // Target zone indicator
@@ -568,6 +581,16 @@ function draw(){
     ctx.strokeStyle='rgba(251,191,36,.15)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
     ctx.beginPath();ctx.moveTo(truck.trailerX+truck.trailerW/2,ROAD_Y-20);ctx.lineTo(truck.trailerX+truck.trailerW/2,H*.25);ctx.stroke();
     ctx.setLineDash([]);
+  }
+  // Wait timer bar above truck
+  if(truckStopped&&truckWaitMax>0&&!falling){
+    var barW=truck.trailerW*.8,barH=3;
+    var barX=truck.trailerX+(truck.trailerW-barW)/2;
+    var barY=ROAD_Y-55;
+    var pct=1-truckWait/truckWaitMax;
+    var barCol=pct>.5?'#4ade80':pct>.25?'#fbbf24':'#ef4444';
+    ctx.fillStyle='rgba(0,0,0,.3)';rr(ctx,barX,barY,barW,barH,1.5);ctx.fill();
+    ctx.fillStyle=barCol;rr(ctx,barX,barY,barW*pct,barH,1.5);ctx.fill();
   }
   // Smoke
   smokeParticles.forEach(function(s){ctx.globalAlpha=s.life*.3;ctx.fillStyle='#999';ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
@@ -589,6 +612,7 @@ function startGame(){
   document.getElementById('gameoverScreen').classList.remove('show');
   document.getElementById('hudScore').textContent='0';
   document.getElementById('hudMoney').textContent='+0€';
+  document.getElementById('hudXP').textContent='+0 XP';
   document.getElementById('hudCombo').textContent='';
   document.getElementById('goTitle').textContent='FIN DE SERVICE';
   updateLives();initAmbient();smokeParticles=[];
@@ -616,13 +640,50 @@ async function gameOver(){
   document.getElementById('goEmoji').textContent=score>=20?'🏆':score>=10?'⭐':score>=5?'🚛':'💀';
   document.getElementById('gameoverScreen').classList.add('show');
   var isNew=score>_bestScore&&score>0;
-  if(isNew)totalEarned+=2000;
+  if(isNew){totalEarned+=2000;totalXP+=200;}
   document.getElementById('hudBest').textContent='RECORD : '+Math.max(_bestScore,score);
   if(isNew){document.getElementById('goEmoji').textContent='🎉';document.getElementById('goTitle').textContent='NOUVEAU RECORD !';}
 }
 
-canvas.addEventListener('click',function(){if(state==='playing')dropContainer();});
-canvas.addEventListener('touchstart',function(e){e.preventDefault();if(state==='playing')dropContainer();},{passive:false});
+// ══ TOUCH/MOUSE: drag to move crane, release to drop ══
+canvas.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  if(state!=='playing'||falling||truckLeaving||!crane.color)return;
+  _dragging=true;
+  var tx=e.touches[0].clientX;
+  _dragStartX=tx;_craneStartX=crane.x;
+},{passive:false});
+canvas.addEventListener('touchmove',function(e){
+  e.preventDefault();
+  if(!_dragging)return;
+  var tx=e.touches[0].clientX;
+  crane.x=_craneStartX+(tx-_dragStartX);
+  if(crane.x<10)crane.x=10;
+  if(crane.x+crane.w>W-10)crane.x=W-10-crane.w;
+},{passive:false});
+canvas.addEventListener('touchend',function(e){
+  e.preventDefault();
+  if(!_dragging)return;
+  _dragging=false;
+  if(state==='playing'&&!falling&&!truckLeaving&&crane.color)dropContainer();
+},{passive:false});
+// Mouse fallback
+var _mouseDown=false;
+canvas.addEventListener('mousedown',function(e){
+  if(state!=='playing'||falling||truckLeaving||!crane.color)return;
+  _mouseDown=true;_dragStartX=e.clientX;_craneStartX=crane.x;
+});
+canvas.addEventListener('mousemove',function(e){
+  if(!_mouseDown)return;
+  crane.x=_craneStartX+(e.clientX-_dragStartX);
+  if(crane.x<10)crane.x=10;
+  if(crane.x+crane.w>W-10)crane.x=W-10-crane.w;
+});
+canvas.addEventListener('mouseup',function(){
+  if(!_mouseDown)return;
+  _mouseDown=false;
+  if(state==='playing'&&!falling&&!truckLeaving&&crane.color)dropContainer();
+});
 
 async function init(){
   ROAD_Y=H*.82;
