@@ -538,6 +538,24 @@ body{
 <!-- ═══ CONTENU ═══ -->
 <div class="page-content">
 
+  <!-- PWA INSTALL BANNER -->
+  <div id="installBanner" style="display:none;grid-column:span 2">
+    <div style="background:#fefce8;border:2.5px solid #1a1a1a;border-radius:14px;box-shadow:3px 3px 0 #1a1a1a;padding:12px;position:relative">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:28px">📲</div>
+        <div style="flex:1">
+          <div style="font-family:Bangers,cursive;font-size:13px;color:#1a1a1a;letter-spacing:1px">INSTALLE LE JEU !</div>
+          <div style="font-size:8px;color:#92400e;margin-top:1px">Ajoute Battle Dock sur ton écran d'accueil</div>
+          <div style="font-size:9px;color:#059669;font-weight:800;margin-top:3px">🎁 BONUS : +25 000€ + 5🏆</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button onclick="doInstall()" style="flex:1;padding:9px;border:2px solid #1a1a1a;border-radius:8px;background:#1a1a1a;color:#fbbf24;font-family:Bangers,cursive;font-size:11px;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #92400e" id="installBtn">INSTALLER</button>
+        <button onclick="dismissInstall()" style="flex:1;padding:9px;border:2px solid #d1d5db;border-radius:8px;background:#fff;color:#9ca3af;font-family:Bangers,cursive;font-size:11px;letter-spacing:1px;cursor:pointer">PLUS TARD</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TRAVAILLER -->
   <div class="widget widget-full widget-work" onclick="location.href='travail.html'">
     <div class="work-mesh">
@@ -820,6 +838,7 @@ async function init(){
 
     // FIX #8 : streak avec date locale (plus UTC)
     checkStreak(uid,stats,money,diamonds);
+    checkPWAInstall(uid,money,stats.trophies||0);
 
     startPlaytimeTracking(uid);
     loadRank(uid);
@@ -845,7 +864,79 @@ function startPlaytimeTracking(uid){
   },60000);
 }
 
-// FIX #8 : streak avec date locale + données déjà fetchées (pas de re-SELECT)
+// ── PWA Install ──
+var _deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_deferredPrompt=e;});
+
+function isStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
+
+async function checkPWAInstall(uid,currentMoney,currentTrophies){
+  // Already rewarded → don't show
+  if(localStorage.getItem('pwa_rewarded')){
+    document.getElementById('installBanner').style.display='none';
+    return;
+  }
+  // Running as installed app → credit reward
+  if(isStandalone()){
+    var newMoney=currentMoney+25000;
+    var newTrophies=currentTrophies+5;
+    await sb.from('game_stats').update({money:newMoney,trophies:newTrophies}).eq('user_id',uid);
+    localStorage.setItem('pwa_rewarded','1');
+    document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
+    document.getElementById('trophyBar').textContent=newTrophies;
+    document.getElementById('installBanner').style.display='none';
+    // Show reward popup
+    var ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
+    ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+      +'<div style="font-size:48px;margin-bottom:8px">🎉</div>'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:3px;color:#1a1a1a">MERCI !</div>'
+      +'<div style="font-size:11px;color:#9ca3af;margin-top:4px">Battle Dock est installé sur ton écran</div>'
+      +'<div style="margin-top:14px;background:#f0fdf4;border-radius:12px;padding:12px">'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#059669">+25 000€</div>'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#d97706;margin-top:2px">+5 🏆</div>'
+      +'</div>'
+      +'<button onclick="this.closest(\'div[style]\').remove()" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:800;cursor:pointer">MERCI !</button>'
+      +'</div>';
+    document.body.appendChild(ov);
+    return;
+  }
+  // Dismissed recently → hide for 3 days
+  var dismissed=localStorage.getItem('pwa_dismissed');
+  if(dismissed&&Date.now()-parseInt(dismissed)<3*86400000){
+    document.getElementById('installBanner').style.display='none';
+    return;
+  }
+  // Show banner
+  document.getElementById('installBanner').style.display='block';
+}
+
+function doInstall(){
+  if(_deferredPrompt){
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(r){
+      if(r.outcome==='accepted'){localStorage.setItem('pwa_dismissed',Date.now().toString());}
+      _deferredPrompt=null;
+    });
+  }else{
+    // iOS or no prompt available → show instructions
+    var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
+    if(isIOS){
+      alert('Sur iPhone :\n1. Tape le bouton Partager ⬆️\n2. Choisis "Sur l\'écran d\'accueil"\n3. Confirme\n\nEnsuite ouvre le jeu depuis l\'icône pour recevoir ton bonus !');
+    }else{
+      alert('Ouvre le menu de ton navigateur (⋮) puis choisis "Installer l\'application" ou "Ajouter à l\'écran d\'accueil".\n\nEnsuite ouvre le jeu depuis l\'icône pour recevoir ton bonus !');
+    }
+  }
+}
+
+function dismissInstall(){
+  localStorage.setItem('pwa_dismissed',Date.now().toString());
+  document.getElementById('installBanner').style.display='none';
+}
+
+// ── Streak ──
 function checkStreak(uid,stats,currentMoney,currentDiamonds){
   try{
     const today=getLocalDateStr();
