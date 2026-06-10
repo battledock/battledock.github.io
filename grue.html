@@ -57,15 +57,7 @@ canvas{display:block;width:100%;height:100%}
 .go-retry{background:#fbbf24;color:#1a1a1a}
 .go-quit{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
 
-.start{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:20px}
-.start.hide{display:none}
-.st-card{text-align:center;max-width:300px;background:rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.08);border-radius:28px;padding:32px 24px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.st-emoji{font-size:64px;filter:drop-shadow(0 4px 20px rgba(251,191,36,.2))}
-.st-title{font-family:'Bangers',cursive;font-size:32px;color:#fbbf24;letter-spacing:3px;text-shadow:2px 2px 0 rgba(0,0,0,.4);margin-top:8px}
-.st-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:8px;line-height:1.6}
-.st-btn{margin-top:20px;width:100%;padding:15px;border:none;border-radius:14px;background:#fbbf24;color:#1a1a1a;font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;cursor:pointer}
-.st-btn:active{transform:scale(.97)}
-.st-back{margin-top:12px;background:none;border:none;color:rgba(255,255,255,.2);font-family:'Bangers',cursive;font-size:11px;letter-spacing:2px;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -98,13 +90,8 @@ canvas{display:block;width:100%;height:100%}
 </div>
 <div class="feedback"><div class="fb-text" id="fbText"></div><div class="fb-money" id="fbMoney"></div></div>
 <div id="pauseOverlay" style="display:none;position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.75);align-items:center;justify-content:center;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)"><div style="text-align:center"><div style="font-family:Bangers,cursive;font-size:32px;color:#fff;letter-spacing:3px">PAUSE</div><button onclick="togglePause()" style="margin-top:16px;padding:13px 28px;border:none;border-radius:12px;background:#fbbf24;color:#1a1a1a;font-family:Bangers,cursive;font-size:16px;letter-spacing:2px;cursor:pointer">REPRENDRE</button></div></div>
-<div class="start" id="startScreen"><div class="st-card">
-  <div class="st-emoji">🏗️</div>
-  <div class="st-title">GRUTIER</div>
-  <div class="st-sub">Charge les camions du port de Marseille.<br>Glisse ton doigt pour positionner le container, relâche pour lâcher !</div>
-  <button class="st-btn" onclick="startGame()">COMMENCER</button>
-  <button class="st-back" onclick="location.href='travail.html'">← RETOUR</button>
-</div></div>
+<div class="start" id="startScreen" style="display:none"></div>
+<div id="lockedOverlay" style="display:none;position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.85);align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)"><div style="text-align:center;max-width:300px"><div style="font-size:64px">🔒</div><div style="font-family:Bangers,cursive;font-size:24px;color:#fff;letter-spacing:2px;margin-top:10px">FORMATION REQUISE</div><div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Tu dois obtenir la formation <b style="color:#fbbf24">Grutier</b> à l'École des Dockers pour accéder à ce métier.</div><button onclick="location.href='ecole.html'" style="margin-top:16px;padding:12px 24px;border:none;border-radius:12px;background:#fbbf24;color:#1a1a1a;font-family:Bangers,cursive;font-size:15px;letter-spacing:2px;cursor:pointer">ALLER À L'ÉCOLE</button><br><button onclick="location.href='travail.html'" style="margin-top:8px;background:none;border:none;color:rgba(255,255,255,.3);font-family:Bangers,cursive;font-size:11px;letter-spacing:2px;cursor:pointer">← RETOUR</button></div></div>
 <div class="gameover" id="gameoverScreen"><div class="go-card">
   <div style="font-size:48px;margin-bottom:6px" id="goEmoji">📦</div>
   <div class="go-title" id="goTitle">FIN DE SERVICE</div>
@@ -164,7 +151,7 @@ var clouds=[],gulls=[];
 
 // Crane container (finger-controlled)
 var crane={x:0,w:100,h:40,color:null,speed:1.8,dir:1};
-var _dragging=false,_dragStartX=0,_craneStartX=0;
+var _dragging=false,_dragStartX=0,_craneStartX=0,_hasDropped=false;
 // Falling container
 var falling=null; // {x,y,w,h,color,vy}
 // Truck
@@ -380,11 +367,12 @@ function newRound(){
   truck.dir=-1;truck.x=W+30;
   truck.cabColor=CAB_COLORS[Math.floor(Math.random()*CAB_COLORS.length)];
   // Slow at start, ramps up
-  truck.speed=1.0+Math.min(score*.12,3);
+  truck.speed=1.6+Math.min(score*.12,8.4);
 }
 
 function dropContainer(){
   if(!crane.color||falling||truckLeaving||state!=='playing')return;
+  _hasDropped=true;
   if(navigator.vibrate)navigator.vibrate(10);
   falling={x:crane.x,y:H*.18,w:crane.w,h:crane.h,color:crane.color,vy:0,vx:0};
 }
@@ -440,7 +428,7 @@ function checkLanding(){
     shakeX=3;shakeY=2;
     if(navigator.vibrate)navigator.vibrate([8,20,8]);
     totalEarned+=earn;
-    totalXP+=(isGold?90:45)*Math.min(combo,5);
+    totalXP+=(isGold?180:90)*Math.min(combo,5);
   }else if(diff<18){
     combo++;score++;
     var earn=60*Math.min(combo,5);
@@ -448,14 +436,14 @@ function checkLanding(){
     spawnP(cx,falling.y,'#4ade80',15);spawnDust(cx,falling.y+falling.h);
     shakeY=1;
     totalEarned+=earn;
-    totalXP+=18*Math.min(combo,5);
+    totalXP+=40*Math.min(combo,5);
   }else{
     combo=0;score++;
     perfectStreak=0;var earn=25;
     showFB('CHARGÉ','rgba(255,255,255,.6)',earn);
     spawnP(cx,falling.y,'#fff',6);spawnDust(cx,falling.y+falling.h);
     totalEarned+=earn;
-    totalXP+=10;
+    totalXP+=25;
   }
 
   if(combo>maxCombo)maxCombo=combo;
@@ -506,7 +494,7 @@ function update(){
     var target=W*.5;
     var dist=Math.abs(truckCenter-target);
     if(dist<W*.15){
-      truck.speed=Math.max(0.6+Math.min(score*.05,1.5),truck.speed*.997);
+      truck.speed=Math.max(1.2+Math.min(score*.05,2),truck.speed*.997);
     }
     // Truck off screen → lose a life
     if(truck.x<-truck.w-60){
@@ -570,6 +558,13 @@ function draw(){
     var swingAngle=_dragging?0:Math.sin(t*.04)*0.03;
     ctx.save();ctx.translate(crane.x+crane.w/2,H*.18+crane.h/2);ctx.rotate(swingAngle);
     drawContainer(-crane.w/2,-crane.h/2,crane.w,crane.h,crane.color,true);
+    // "Fais glisser" hint — only before first drop
+    if(score===0&&!_hasDropped){
+      ctx.globalAlpha=.5+Math.sin(t*.06)*.2;
+      ctx.fillStyle='#fff';ctx.font='bold 9px Inter';ctx.textAlign='center';
+      ctx.fillText('☜ FAIS GLISSER ☞',0,4);
+      ctx.globalAlpha=1;
+    }
     ctx.restore();
   }
   drawCraneStructure();
@@ -584,12 +579,12 @@ function draw(){
 function loop(){if(state==='playing')update();if(state!=='paused')draw();requestAnimationFrame(loop);}
 
 function startGame(){
-  score=0;combo=0;maxCombo=0;totalEarned=0;totalXP=0;lives=3;perfectStreak=0;goldenActive=false;totalPerfects=0;totalMisses=0;
+  score=0;combo=0;maxCombo=0;totalEarned=0;totalXP=0;lives=3;perfectStreak=0;goldenActive=false;totalPerfects=0;totalMisses=0;_hasDropped=false;
   particles=[];shakeX=0;shakeY=0;falling=null;
   ROAD_Y=H*.82;
   truck.wheelY=ROAD_Y+(H-ROAD_Y)*.45;
   state='playing';
-  document.getElementById('startScreen').classList.add('hide');
+  
   document.getElementById('gameoverScreen').classList.remove('show');
   document.getElementById('hudScore').textContent='0';
   document.getElementById('hudMoney').textContent='+0€';
@@ -621,7 +616,7 @@ async function gameOver(){
   document.getElementById('goEmoji').textContent=score>=20?'🏆':score>=10?'⭐':score>=5?'🚛':'💀';
   document.getElementById('gameoverScreen').classList.add('show');
   var isNew=score>_bestScore&&score>0;
-  if(isNew){totalEarned+=1000;totalXP+=150;}
+  if(isNew){totalEarned+=1000;totalXP+=300;}
   document.getElementById('hudBest').textContent='RECORD : '+Math.max(_bestScore,score);
   if(isNew){document.getElementById('goEmoji').textContent='🎉';document.getElementById('goTitle').textContent='NOUVEAU RECORD !';}
 }
@@ -668,8 +663,24 @@ canvas.addEventListener('mouseup',function(){
 
 async function init(){
   ROAD_Y=H*.82;
-  try{var s=await sb.auth.getSession();if(s.data&&s.data.session){_me=s.data.session.user;var gs=await sb.from('game_stats').select('records').eq('user_id',_me.id).maybeSingle();if(gs.data)_bestScore=(gs.data.records&&gs.data.records.grue_best)||0;document.getElementById('hudBest').textContent='RECORD : '+_bestScore;}}catch(e){}
+  try{
+    var s=await sb.auth.getSession();
+    if(!s.data||!s.data.session){location.href='index.html';return;}
+    _me=s.data.session.user;
+    var gs=await sb.from('game_stats').select('records').eq('user_id',_me.id).maybeSingle();
+    if(gs.data){
+      _bestScore=(gs.data.records&&gs.data.records.grue_best)||0;
+      document.getElementById('hudBest').textContent='RECORD : '+_bestScore;
+      // Check formation
+      var formations=(gs.data.records&&gs.data.records.formations)||{};
+      if(!formations.grutier){
+        document.getElementById('lockedOverlay').style.display='flex';
+        initAmbient();loop();return;
+      }
+    }
+  }catch(e){}
   initAmbient();loop();
+  startGame();
 }
 init();
 </script>

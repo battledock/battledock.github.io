@@ -168,7 +168,11 @@ body { font-family:'Inter',sans-serif; background:#f8f8f8; min-height:100dvh; di
 </div>
 
 <!-- CARTE GRUTIER -->
-<div class="activity-card" onclick="window.location.href='grue.html'" style="margin-top:10px">
+<div class="activity-card" id="grueCard" onclick="openGrue()" style="margin-top:10px;position:relative">
+  <div id="grueLock" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.6);border-radius:16px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;cursor:pointer" onclick="event.stopPropagation();location.href='ecole.html'">
+    <div style="font-size:28px">🔒</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.6);letter-spacing:1px">FORMATION REQUISE</div>
+  </div>
   <div class="activity-illus" style="background:linear-gradient(180deg,#7EC8E3 0%,#5BA3D9 40%,#1e3a5f 100%);overflow:hidden">
     <div class="illus-sun"></div>
     <div class="illus-cloud"></div>
@@ -225,10 +229,26 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
+var _grueUnlocked=false;
+function openGrue(){
+  if(_grueUnlocked)window.location.href='grue.html';
+  else window.location.href='ecole.html';
+}
+
 async function init() {
   try {
     const { data:{ session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'index.html'; return; }
+    // Check formations
+    var gs=await sb.from('game_stats').select('records').eq('user_id',session.user.id).maybeSingle();
+    if(gs.data){
+      var formations=(gs.data.records&&gs.data.records.formations)||{};
+      if(formations.grutier){
+        _grueUnlocked=true;
+      }else{
+        document.getElementById('grueLock').style.display='flex';
+      }
+    }
   } catch(e) {
     showToast('❌ Erreur de connexion');
   }
