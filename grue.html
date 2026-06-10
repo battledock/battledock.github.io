@@ -281,15 +281,15 @@ function spawnP(x,y,color,n){var c=typeof color==='object'?color.base:color;for(
 function newRound(){
   crane.color=COLORS[score%COLORS.length];
   crane.x=20;crane.dir=1;
-  crane.speed=1.8+Math.min(score*.08,3);
+  crane.speed=2.5+Math.min(score*.12,4);
   crane.w=truck.trailerW-10;
   crane.h=36;
   falling=null;
   loaded=null;truckLeaving=false;
   // New truck from random side
   truck.dir=-1;
-  truck.x=W+60;
-  truck.speed=1.2+Math.min(score*.06,2.5);
+  truck.x=W+30;
+  truck.speed=2.0+Math.min(score*.1,3);
 }
 
 function dropContainer(){
@@ -300,7 +300,7 @@ function dropContainer(){
 
 function checkLanding(){
   if(!falling)return;
-  var landY=truck.wheelY-12-falling.h;
+  var landY=truck.wheelY-14-falling.h;
   var cx=falling.x+falling.w/2;
   var tx=truck.trailerX+truck.trailerW/2;
   var diff=Math.abs(cx-tx);
@@ -313,8 +313,8 @@ function checkLanding(){
     shakeX=5;shakeY=3;
     if(navigator.vibrate)navigator.vibrate([30,30,60]);
     if(lives<=0){falling=null;setTimeout(gameOver,500);return;}
-    falling=null;truckLeaving=true;truck.speed=2.5;
-    setTimeout(newRound,600);return;
+    falling=null;truckLeaving=true;truck.speed=3.5;
+    setTimeout(newRound,300);return;
   }
 
   if(falling.y<landY)return; // still falling
@@ -330,8 +330,8 @@ function checkLanding(){
     shakeX=6;shakeY=4;
     if(navigator.vibrate)navigator.vibrate([30,30,60]);
     if(lives<=0){falling=null;setTimeout(gameOver,500);return;}
-    falling=null;truckLeaving=true;truck.speed=2.5;
-    setTimeout(newRound,600);return;
+    falling=null;truckLeaving=true;truck.speed=3.5;
+    setTimeout(newRound,300);return;
   }else if(diff<5){
     combo++;score++;
     var earn=500*Math.min(combo,10);
@@ -360,11 +360,10 @@ function checkLanding(){
   document.getElementById('hudCombo').textContent=combo>1?'COMBO ×'+combo:'';
 
   // Container stays on truck, truck drives away
-  loaded={x:falling.x,y:falling.y,w:falling.w,h:falling.h,color:falling.color};
+  loaded={x:truck.trailerX+5,y:falling.y,w:falling.w,h:falling.h,color:falling.color};
   falling=null;
   truckLeaving=true;
-  truck.speed=2.5+Math.min(score*.1,3);
-  // New round when truck exits
+  truck.speed=3.5+Math.min(score*.15,4);
 }
 
 function updateLives(){
@@ -392,20 +391,20 @@ function update(){
   if(truckLeaving){
     truck.x+=truck.speed*truck.dir;
     if(loaded){loaded.x+=truck.speed*truck.dir;}
-    if(truck.x<-250){newRound();}
+    if(truck.x<-200){newRound();}
   }else if(!falling&&state==='playing'){
     truck.x+=truck.speed*truck.dir;
     // Truck arrived at center-ish area → slow down / stop
     var truckCenter=truck.x-truck.trailerW/2;
-    if(truckCenter>W*.25&&truckCenter<W*.7)truck.speed=Math.max(.4,truck.speed-.015);
+    if(truckCenter>W*.3&&truckCenter<W*.65)truck.speed=Math.max(.8,truck.speed-.008);
     // Truck off screen → respawn
-    if(truck.x<-truck.w-100){
+    if(truck.x<-truck.w-40){
       if(state==='playing'){lives--;updateLives();showFB('TROP LENT !','#f97316',0);if(lives<=0){setTimeout(gameOver,300);return;}newRound();}
     }
   }
   // Falling container
   if(falling){
-    falling.vy+=.6;
+    falling.vy+=1.2;
     falling.y+=falling.vy;
     checkLanding();
   }
@@ -463,7 +462,7 @@ function startGame(){
   document.getElementById('hudCombo').textContent='';
   document.getElementById('goTitle').textContent='FIN DE SERVICE';
   updateLives();initAmbient();smokeParticles=[];
-  truck.x=-200;truck.dir=1;truck.speed=1.5;
+  truck.x=W+30;truck.dir=-1;truck.speed=2.0;
   newRound();
 }
 
