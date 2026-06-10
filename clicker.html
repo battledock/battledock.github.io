@@ -2,8 +2,12 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Travailler - Battle Dock</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0f1e">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
   <script>
@@ -454,24 +458,22 @@
       currentXp            = stats.xp       || 0;
       currentLevel         = stats.level    || 1;
 
-      // ── Recalcul automatique des per-click depuis les items équipés ──
+      // Recalcul automatique depuis les EPI équipés
       const _rec = (stats.records && stats.records.equipped_epi) ? stats.records.equipped_epi : {};
-      const bonusMap = {
-        'casque_commune':1, 'casque_rare':2, 'casque_epique':4, 'casque_legendaire':8,
-        'gilet_commune':1,  'gilet_rare':2,  'gilet_epique':4,  'gilet_legendaire':8,
-      };
-      const realXp    = 1 + (bonusMap[_rec['casque']] || 0);
-      const realMoney = 1 + (bonusMap[_rec['gilet']]  || 0);
+      const casqueBonus = {casque_commune:1,casque_rare:2,casque_epique:4,casque_legendaire:8};
+      const giletBonus  = {gilet_commune:1,gilet_rare:2,gilet_epique:4,gilet_legendaire:8};
+      const calcXp    = 1 + (casqueBonus[_rec['casque']]||0);
+      const calcMoney = 1 + (giletBonus[_rec['gilet']]||0);
 
-      window.xpPerClick    = Math.min(realXp, 11);
-      window.moneyPerClick = Math.min(realMoney, 30);
+      window.xpPerClick    = Math.min(calcXp, 11);
+      window.moneyPerClick = Math.min(calcMoney, 30);
 
-      // Corriger en DB si les valeurs sont fausses
-      if ((stats.xp_per_click||1) !== realXp || (stats.money_per_click||1) !== realMoney) {
-        sb.from('game_stats').update({ xp_per_click: realXp, money_per_click: realMoney }).eq('user_id', currentUser.id);
+      // Corriger la DB si désynchronisée
+      if(calcXp !== (stats.xp_per_click||1) || calcMoney !== (stats.money_per_click||1)){
+        sb.from('game_stats').update({xp_per_click:calcXp,money_per_click:calcMoney}).eq('user_id',currentUser.id);
       }
 
-      // Appliquer le combo max depuis les chaussures équipées
+      // Combo max depuis les chaussures équipées
       const comboMap = {
         'chaussures_commune':    4.0,
         'chaussures_rare':       5.0,
