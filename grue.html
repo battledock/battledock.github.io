@@ -70,7 +70,7 @@ canvas{display:block;width:100%;height:100%}
 <div class="gameover" id="gameoverScreen"><div class="go-card">
   <div style="font-size:52px;margin-bottom:6px" id="goEmoji">📦</div>
   <div class="go-title" id="goTitle">FIN DE SERVICE</div>
-  <div class="go-stat"><div><div class="go-stat-val" id="goScore">0</div><div class="go-stat-lbl">CHARGEMENTS</div></div><div><div class="go-stat-val" id="goCombo">0</div><div class="go-stat-lbl">MAX COMBO</div></div></div>
+  <div class="go-stat"><div><div class="go-stat-val" id="goScore">0</div><div class="go-stat-lbl">CHARGEMENTS</div></div><div><div class="go-stat-val" id="goCombo">0</div><div class="go-stat-lbl">MAX COMBO</div></div><div><div class="go-stat-val" id="goPerfect">0%</div><div class="go-stat-lbl">PARFAITS</div></div></div>
   <div class="go-earned"><div class="go-earned-val" id="goEarned">+0€</div><div style="font-size:7px;color:#059669;font-weight:800;letter-spacing:1px">GAGNÉ</div></div>
   <div class="go-btns"><button class="go-btn go-retry" onclick="startGame()">REJOUER</button><button class="go-btn go-quit" onclick="location.href='travail.html'">QUITTER</button></div>
 </div></div>
@@ -81,6 +81,20 @@ var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI
 var sb=supabase.createClient(SB_URL,SB_KEY);
 var _me=null,_bestScore=0;
 
+// Audio
+var _audioCtx=null;
+function playClang(freq,vol){
+  try{
+    if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    var osc=_audioCtx.createOscillator();var gain=_audioCtx.createGain();
+    osc.type='triangle';osc.frequency.setValueAtTime(freq,_audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(freq*.5,_audioCtx.currentTime+.15);
+    gain.gain.setValueAtTime(vol,_audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(.001,_audioCtx.currentTime+.2);
+    osc.connect(gain);gain.connect(_audioCtx.destination);
+    osc.start();osc.stop(_audioCtx.currentTime+.2);
+  }catch(e){}
+}
 var canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),W,H,dpr;
 function resize(){dpr=window.devicePixelRatio||1;W=window.innerWidth;H=window.innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0);}
 resize();window.addEventListener('resize',resize);
@@ -101,7 +115,7 @@ var COLORS=[
 
 // ══ STATE ══
 var state='start',score=0,combo=0,maxCombo=0,totalEarned=0,lives=3;
-var particles=[],shakeX=0,shakeY=0;
+var particles=[],shakeX=0,shakeY=0,flashAlpha=0;
 var loaded=null,truckLeaving=false;
 var smokeParticles=[];
 var clouds=[],gulls=[];
@@ -126,10 +140,34 @@ function initAmbient(){
 // ══ DRAWING ══
 function drawSky(){
   var g=ctx.createLinearGradient(0,0,0,H*.6);
-  g.addColorStop(0,'#7EC8E3');g.addColorStop(.4,'#5BA3D9');g.addColorStop(.8,'#3A7BC8');g.addColorStop(1,'#2563EB');
+  // Sky evolves with score
+  if(score<10){
+    g.addColorStop(0,'#7EC8E3');g.addColorStop(.4,'#5BA3D9');g.addColorStop(.8,'#3A7BC8');g.addColorStop(1,'#2563EB');
+  }else if(score<20){
+    g.addColorStop(0,'#f59e0b');g.addColorStop(.3,'#f97316');g.addColorStop(.6,'#6366f1');g.addColorStop(1,'#312e81');
+  }else{
+    g.addColorStop(0,'#1e1b4b');g.addColorStop(.3,'#312e81');g.addColorStop(.7,'#0f172a');g.addColorStop(1,'#020617');
+  }
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H*.6);
-  ctx.beginPath();ctx.arc(W*.82,H*.08,24,0,Math.PI*2);ctx.fillStyle='#FDE68A';ctx.fill();
-  ctx.beginPath();ctx.arc(W*.82,H*.08,32,0,Math.PI*2);ctx.fillStyle='rgba(253,230,138,.06)';ctx.fill();
+  // Sun position changes
+  var sunY=H*.08+Math.min(score,25)*H*.015;
+  var sunX=W*.82-Math.min(score,25)*W*.015;
+  if(score<25){
+    ctx.beginPath();ctx.arc(sunX,sunY,24,0,Math.PI*2);
+    ctx.fillStyle=score<10?'#FDE68A':score<20?'#f97316':'#ef4444';ctx.fill();
+    ctx.beginPath();ctx.arc(sunX,sunY,32,0,Math.PI*2);
+    ctx.fillStyle='rgba(253,230,138,.06)';ctx.fill();
+  }
+  // Stars at night (score 20+)
+  if(score>=20){
+    ctx.fillStyle='#fff';
+    for(var i=0;i<15;i++){
+      var sx=(i*137+50)%W,sy=(i*89+20)%(H*.4);
+      ctx.globalAlpha=.3+Math.sin(t*.03+i)*.2;
+      ctx.fillRect(sx,sy,1.5,1.5);
+    }
+    ctx.globalAlpha=1;
+  }
 }
 function drawClouds(){
   clouds.forEach(function(c){c.x+=c.speed;if(c.x>W+80)c.x=-80;ctx.globalAlpha=c.opacity;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(c.x,c.y,c.w*.28,0,Math.PI*2);ctx.arc(c.x+c.w*.22,c.y-c.w*.08,c.w*.2,0,Math.PI*2);ctx.arc(c.x+c.w*.45,c.y,c.w*.22,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;});
@@ -318,7 +356,7 @@ function checkLanding(){
   // If container missed the truck entirely, let it fall off screen
   if(falling.y>H+50){
     lives--;updateLives();
-    showFB('RATÉ !','#ef4444',0);
+    showFB('RATÉ !','#ef4444',0);playClang(150,.25);
     shakeX=5;shakeY=3;
     if(navigator.vibrate)navigator.vibrate([30,30,60]);
     if(lives<=0){falling=null;setTimeout(gameOver,500);return;}
@@ -336,7 +374,7 @@ function checkLanding(){
   var onCab=contLeft<truck.trailerX-5;
   if(diff>halfT+10||onCab){
     // Missed the trailer - container hits the ground
-    lives--;
+    totalMisses++;lives--;
     updateLives();
     showFB('RATÉ !','#ef4444',0);
     spawnP(falling.x+falling.w/2,falling.y,'#ef4444',15);spawnDust(falling.x+falling.w/2,falling.y+falling.h);
@@ -349,9 +387,10 @@ function checkLanding(){
     combo++;score++;
     var isGold=crane.color===GOLDEN;
     var earn=(isGold?2500:500)*Math.min(combo,10);
-    perfectStreak++;
+    perfectStreak++;totalPerfects++;
     if(perfectStreak>=3&&!goldenActive){goldenActive=true;perfectStreak=0;showFB('CONTAINER DORÉ !','#d4af37',earn);}
     else{showFB('PARFAIT !','#fbbf24',earn);}
+    flashAlpha=.4;playClang(800,.3);
     spawnP(cx,falling.y,'#fbbf24',25);spawnDust(cx,falling.y+falling.h);
     shakeX=3;shakeY=2;
     if(navigator.vibrate)navigator.vibrate([8,20,8]);
@@ -359,13 +398,13 @@ function checkLanding(){
   }else if(diff<18){
     combo++;score++;
     var earn=200*Math.min(combo,10);
-    perfectStreak=0;showFB('SUPER !','#4ade80',earn);
+    perfectStreak=0;showFB('SUPER !','#4ade80',earn);playClang(600,.2);
     spawnP(cx,falling.y,'#4ade80',15);spawnDust(cx,falling.y+falling.h);
     shakeY=1;
     // totalEarned+=earn; // disabled
   }else{
     combo=0;score++;
-    perfectStreak=0;showFB('CHARGÉ','rgba(255,255,255,.6)',50);
+    perfectStreak=0;showFB('CHARGÉ','rgba(255,255,255,.6)',50);playClang(400,.15);
     spawnP(cx,falling.y,'#fff',6);spawnDust(cx,falling.y+falling.h);
     // totalEarned+=50; // disabled
   }
@@ -374,6 +413,11 @@ function checkLanding(){
   document.getElementById('hudScore').textContent=score;
   document.getElementById('hudMoney').textContent='+'+totalEarned.toLocaleString('fr-FR')+'€';
   document.getElementById('hudCombo').textContent=combo>1?'COMBO ×'+combo:'';
+  // Milestones
+  if(score===5)setTimeout(function(){showFB('ÉCHAUFFÉ !','#fbbf24',0);},300);
+  if(score===10)setTimeout(function(){showFB('EN FEU 🔥','#f97316',0);},300);
+  if(score===15)setTimeout(function(){showFB('INARRÊTABLE !','#ef4444',0);},300);
+  if(score===20)setTimeout(function(){showFB('LÉGENDE DU PORT 👑','#d4af37',0);flashAlpha=.5;},300);
 
   // Container stays on truck, truck drives away
   loaded={x:truck.trailerX+5,y:falling.y,w:falling.w,h:falling.h,color:falling.color};
@@ -432,6 +476,7 @@ function update(){
   smokeParticles=smokeParticles.filter(function(s){return s.life>0;});
   // Shake decay
   shakeX*=.85;shakeY*=.85;
+  if(flashAlpha>0)flashAlpha-=.08;
   // Particles
   particles.forEach(function(p){p.x+=p.vx;p.y+=p.vy;p.vy+=.2;p.life-=p.decay;p.rot+=(p.vx*.08);});
   particles=particles.filter(function(p){return p.life>0;});
@@ -449,7 +494,15 @@ function draw(){
   // Falling container
   if(falling)drawContainer(falling.x,falling.y,falling.w,falling.h,falling.color,true);
   // Crane container
-  if(!falling&&crane.color)drawContainer(crane.x,H*.18,crane.w,crane.h,crane.color,true);
+  if(!falling&&crane.color){
+    drawContainer(crane.x,H*.18,crane.w,crane.h,crane.color,true);
+    // Drop guide line
+    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.setLineDash([3,6]);
+    ctx.beginPath();ctx.moveTo(crane.x+crane.w/2,H*.18+crane.h);ctx.lineTo(crane.x+crane.w/2,ROAD_Y);ctx.stroke();
+    ctx.setLineDash([]);
+    // Landing indicator dot
+    ctx.fillStyle='rgba(255,255,255,.15)';ctx.beginPath();ctx.arc(crane.x+crane.w/2,ROAD_Y-2,3,0,Math.PI*2);ctx.fill();
+  }
   drawCraneStructure();
   // Target zone indicator
   if(!falling&&truck.trailerX){
@@ -460,13 +513,15 @@ function draw(){
   // Smoke
   smokeParticles.forEach(function(s){ctx.globalAlpha=s.life*.3;ctx.fillStyle='#999';ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
   drawParticles();
+  // White flash
+  if(flashAlpha>0){ctx.fillStyle='rgba(255,255,255,'+flashAlpha+')';ctx.fillRect(0,0,W,H);}
   ctx.restore();
 }
 
 function loop(){if(state==='playing')update();draw();requestAnimationFrame(loop);}
 
 function startGame(){
-  score=0;combo=0;maxCombo=0;totalEarned=0;lives=3;perfectStreak=0;goldenActive=false;
+  score=0;combo=0;maxCombo=0;totalEarned=0;lives=3;perfectStreak=0;goldenActive=false;totalPerfects=0;totalMisses=0;
   particles=[];shakeX=0;shakeY=0;falling=null;
   ROAD_Y=H*.82;
   truck.wheelY=ROAD_Y+(H-ROAD_Y)*.45;
@@ -494,6 +549,7 @@ async function gameOver(){
   }
   document.getElementById('goScore').textContent=score;
   document.getElementById('goCombo').textContent=maxCombo;
+  document.getElementById('goPerfect').textContent=score>0?Math.round(totalPerfects/score*100)+'%':'0%';
   document.getElementById('goEarned').textContent='+'+totalEarned.toLocaleString('fr-FR')+'€';
   document.getElementById('goEmoji').textContent=score>=20?'🏆':score>=10?'⭐':score>=5?'🚛':'💀';
   document.getElementById('gameoverScreen').classList.add('show');
