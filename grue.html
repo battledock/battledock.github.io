@@ -282,10 +282,6 @@ function drawTruck(tx,ty){
   ctx.fillStyle='#777';
   var stakes=[tlx,tlx+tw/3,tlx+tw*2/3,tlx+tw-3];
   stakes.forEach(function(sx){ctx.fillRect(sx,ty-th-8,3,8);ctx.strokeStyle='#1a1a1a';ctx.lineWidth=1;ctx.strokeRect(sx,ty-th-8,3,8);});
-  // ── Target zone on trailer ──
-  ctx.strokeStyle='rgba(251,191,36,.25)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
-  ctx.strokeRect(tlx+8,ty-th-3,tw-16,th);
-  ctx.setLineDash([]);
   // ── Cab body ──
   ctx.fillStyle=truck.cabColor;
   rr(ctx,cabX,ty-cabH,cabW,cabH,6);ctx.fill();
@@ -368,27 +364,23 @@ function spawnDust(x,y){
 function spawnP(x,y,color,n){var c=typeof color==='object'?color.base:color;for(var i=0;i<n;i++)particles.push({x:x+(Math.random()-.5)*20,y:y,vx:(Math.random()-.5)*6,vy:-Math.random()*4-2,size:2+Math.random()*4,color:c,life:1,decay:.015+Math.random()*.02,rot:Math.random()*6});}
 
 // ══ GAME ══
-var truckWait=0,truckWaitMax=0,truckStopped=false;
-var wind=0; // sideways push on falling container
+var wind=0;
 
 function newRound(){
   if(goldenActive){crane.color=GOLDEN;goldenActive=false;}
   else{crane.color=COLORS[score%COLORS.length];}
   crane.x=W/2-crane.w/2;crane.dir=1;
-  // Container shrinks aggressively
   crane.w=Math.max(45,truck.trailerW-10-Math.min(score*2.5,45));
   crane.h=36;
   falling=null;
-  loaded=null;truckLeaving=false;truckStopped=false;truckWait=0;
-  // Wind: random, stronger with score
+  loaded=null;truckLeaving=false;
   var windStr=Math.min(score*.08,2.5);
   wind=(Math.random()-.5)*2*windStr;
-  // Wait window: short early, almost zero late. Score 15+ truck barely stops
-  truckWaitMax=Math.max(15,90-score*5);
-  // Truck always from right (visual consistency)
+  // Truck always from right, never stops
   truck.dir=-1;truck.x=W+30;
   truck.cabColor=CAB_COLORS[Math.floor(Math.random()*CAB_COLORS.length)];
-  truck.speed=2.5+Math.min(score*.15,4);
+  // Slow at start, ramps up
+  truck.speed=1.0+Math.min(score*.12,3);
 }
 
 function dropContainer(){
@@ -502,34 +494,23 @@ function update(){
   // Clamp crane to screen bounds
   if(crane.x<10)crane.x=10;
   if(crane.x+crane.w>W-10)crane.x=W-10-crane.w;
-  // Truck movement: arrive → stop → wait → depart
+  // Truck movement: always moving, slows in center but never stops
   if(truckLeaving){
     truck.x+=truck.speed*truck.dir;
     if(loaded){loaded.x+=truck.speed*truck.dir;}
     if(truck.x<-250){newRound();}
   }else if(!falling&&state==='playing'){
-    if(truckStopped){
-      // Waiting phase — truck is parked
-      truckWait++;
-      if(truckWait>truckWaitMax){
-        // Time's up, truck rolls away
-        truckStopped=false;
-        truck.speed=1.2+Math.min(score*.06,2);
-      }
-    }else{
-      truck.x+=truck.speed*truck.dir;
-      // Smooth deceleration into stop zone
-      var truckCenter=truck.dir===-1?(truck.x+22+truck.trailerW/2):(truck.x+22+truck.trailerW/2);
-      var target=W*.5;
-      var dist=Math.abs(truckCenter-target);
-      if(dist<W*.18&&truck.speed>0.1){
-        truck.speed*=0.95;
-        if(truck.speed<0.15){truck.speed=0;truckStopped=true;truckWait=0;}
-      }
-      // Truck off screen → lose a life
-      if(truck.x<-truck.w-60||truck.x>W+60){
-        if(state==='playing'){lives--;updateLives();showFB('TROP LENT !','#f97316',0);if(lives<=0){setTimeout(gameOver,300);return;}newRound();}
-      }
+    truck.x+=truck.speed*truck.dir;
+    // Slight slowdown in center zone but never stops
+    var truckCenter=truck.x+22+truck.trailerW/2;
+    var target=W*.5;
+    var dist=Math.abs(truckCenter-target);
+    if(dist<W*.15){
+      truck.speed=Math.max(0.6+Math.min(score*.05,1.5),truck.speed*.997);
+    }
+    // Truck off screen → lose a life
+    if(truck.x<-truck.w-60){
+      if(state==='playing'){lives--;updateLives();showFB('TROP LENT !','#f97316',0);if(lives<=0){setTimeout(gameOver,300);return;}newRound();}
     }
   }
   // Falling container — wind pushes sideways
@@ -539,12 +520,9 @@ function update(){
     falling.vx+=wind*.015;
     falling.x+=falling.vx;
     falling.vx*=.98;
+    // Truck keeps moving during fall
+    if(!truckLeaving){truck.x+=truck.speed*truck.dir;}
     checkLanding();
-  }
-  // Truck creeps forward during fall at score 10+
-  if(falling&&!truckLeaving&&score>=10){
-    var creep=Math.min((score-10)*.04,.6);
-    truck.x+=creep*truck.dir;
   }
   // Exhaust smoke
   if(truck.exhaustX&&state==='playing'&&t%6===0){
@@ -590,40 +568,11 @@ function draw(){
   // Crane container
   if(!falling&&!truckLeaving&&crane.color){
     var swingAngle=_dragging?0:Math.sin(t*.04)*0.03;
-    // Ready pulse when truck is waiting
-    if(truckStopped){
-      var pulse=.08+Math.sin(t*.08)*.04;
-      ctx.shadowColor=crane.color.base||'#fbbf24';ctx.shadowBlur=15*pulse*10;
-    }
     ctx.save();ctx.translate(crane.x+crane.w/2,H*.18+crane.h/2);ctx.rotate(swingAngle);
     drawContainer(-crane.w/2,-crane.h/2,crane.w,crane.h,crane.color,true);
     ctx.restore();
-    ctx.shadowBlur=0;
-    // Drop guide line — brighter when truck stopped
-    var guideX=crane.x+crane.w/2;
-    var ga=truckStopped?.2:.1;
-    ctx.strokeStyle='rgba(255,255,255,'+ga+')';ctx.lineWidth=1;ctx.setLineDash([3,6]);
-    ctx.beginPath();ctx.moveTo(guideX,H*.18+crane.h+5);ctx.lineTo(guideX,ROAD_Y);ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='rgba(255,255,255,'+(ga+.05)+')';ctx.beginPath();ctx.arc(guideX,ROAD_Y-2,3,0,Math.PI*2);ctx.fill();
   }
   drawCraneStructure();
-  // Target zone indicator
-  if(!falling&&truck.trailerX){
-    ctx.strokeStyle='rgba(251,191,36,.15)';ctx.lineWidth=1;ctx.setLineDash([3,5]);
-    ctx.beginPath();ctx.moveTo(truck.trailerX+truck.trailerW/2,ROAD_Y-20);ctx.lineTo(truck.trailerX+truck.trailerW/2,H*.25);ctx.stroke();
-    ctx.setLineDash([]);
-  }
-  // Wait timer bar above truck
-  if(truckStopped&&truckWaitMax>0&&!falling){
-    var barW=truck.trailerW*.8,barH=3;
-    var barX=truck.trailerX+(truck.trailerW-barW)/2;
-    var barY=ROAD_Y-55;
-    var pct=1-truckWait/truckWaitMax;
-    var barCol=pct>.5?'#4ade80':pct>.25?'#fbbf24':'#ef4444';
-    ctx.fillStyle='rgba(0,0,0,.3)';rr(ctx,barX,barY,barW,barH,1.5);ctx.fill();
-    ctx.fillStyle=barCol;rr(ctx,barX,barY,barW*pct,barH,1.5);ctx.fill();
-  }
   // Smoke
   smokeParticles.forEach(function(s){ctx.globalAlpha=s.life*.3;ctx.fillStyle='#999';ctx.beginPath();ctx.arc(s.x,s.y,s.size,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
   drawParticles();
