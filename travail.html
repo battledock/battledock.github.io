@@ -185,6 +185,50 @@ body { font-family:'Inter',sans-serif; background:#f8f8f8; min-height:100dvh; di
   <div class="rank-arrow">›</div>
 </div>
 
+<!-- CARTE PILOTE DE CLARK -->
+<div class="activity-card" id="clarkCard" onclick="openClark()" style="margin-top:16px;position:relative">
+  <div id="clarkLock" style="display:none;position:absolute;inset:0;z-index:5;background:rgba(0,0,0,.6);border-radius:16px;display:none;align-items:center;justify-content:center;flex-direction:column;gap:4px;cursor:pointer" onclick="event.stopPropagation();location.href='ecole.html'">
+    <div style="font-size:28px">🔒</div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.6);letter-spacing:1px">FORMATION REQUISE</div>
+  </div>
+  <div class="activity-illus" style="background:linear-gradient(180deg,#2a3a2a 0%,#1a2a1a 50%,#333 100%);overflow:hidden">
+    <!-- Track -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">
+      <svg width="120" height="80" viewBox="0 0 120 80">
+        <ellipse cx="60" cy="40" rx="45" ry="28" fill="none" stroke="#555" stroke-width="12" stroke-linecap="round"/>
+        <ellipse cx="60" cy="40" rx="45" ry="28" fill="none" stroke="#4a4a4a" stroke-width="9" stroke-linecap="round"/>
+        <!-- Clark -->
+        <rect x="85" y="28" width="12" height="18" rx="3" fill="#fbbf24" stroke="#1a1a1a" stroke-width="1.5"/>
+        <rect x="87" y="24" width="8" height="5" rx="1" fill="#333"/>
+        <!-- Bot -->
+        <rect x="18" y="45" width="12" height="18" rx="3" fill="#ff6a00" stroke="#1a1a1a" stroke-width="1.5"/>
+        <!-- Checkerboard -->
+        <line x1="58" y1="12" x2="62" y2="12" stroke="rgba(255,255,255,.3)" stroke-width="3"/>
+      </svg>
+    </div>
+    <!-- Flags -->
+    <div style="position:absolute;top:8px;right:12px;font-size:16px">🏁</div>
+    <div style="position:absolute;bottom:8px;left:12px;font-size:10px;color:rgba(255,255,255,.15);font-family:'Bebas Neue',sans-serif;letter-spacing:2px">GRAND PRIX</div>
+  </div>
+  <div class="activity-info">
+    <div class="activity-text">
+      <div class="activity-name">Pilote de Clark</div>
+      <div class="activity-desc">Course de clarks · 3 circuits · 500-6500€</div>
+    </div>
+    <div class="activity-chevron">›</div>
+  </div>
+</div>
+
+<!-- CLASSEMENT CLARK -->
+<div class="rank-row" onclick="window.location.href='clarkclassement.html'">
+  <div class="rank-icon">🏎️</div>
+  <div class="rank-text">
+    <div class="rank-name">CLASSEMENT PILOTES</div>
+    <div class="rank-sub">Meilleurs temps de course</div>
+  </div>
+  <div class="rank-arrow">›</div>
+</div>
+
 
 <!-- BARRE BAS -->
 <div class="bottom-bar">
@@ -204,9 +248,13 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-var _grueUnlocked=false;
+var _grueUnlocked=false,_clarkUnlocked=false;
 function openGrue(){
   if(_grueUnlocked)window.location.href='grue.html';
+  else window.location.href='ecole.html';
+}
+function openClark(){
+  if(_clarkUnlocked)window.location.href='clark.html';
   else window.location.href='ecole.html';
 }
 
@@ -214,15 +262,13 @@ async function init() {
   try {
     const { data:{ session } } = await sb.auth.getSession();
     if (!session) { window.location.href = 'index.html'; return; }
-    // Check formations
     var gs=await sb.from('game_stats').select('records').eq('user_id',session.user.id).maybeSingle();
     if(gs.data){
       var formations=(gs.data.records&&gs.data.records.formations)||{};
-      if(formations.grutier){
-        _grueUnlocked=true;
-      }else{
-        document.getElementById('grueLock').style.display='flex';
-      }
+      if(formations.grutier){_grueUnlocked=true;}
+      else{document.getElementById('grueLock').style.display='flex';}
+      if(formations.clark){_clarkUnlocked=true;}
+      else{document.getElementById('clarkLock').style.display='flex';}
     }
   } catch(e) {
     showToast('❌ Erreur de connexion');

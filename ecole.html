@@ -88,6 +88,37 @@ body{animation:pageIn .3s ease}
   </div>
 </div>
 
+<!-- SONDAGE -->
+<div class="formation-card" id="sondageCard">
+  <div class="formation-header">
+    <div class="formation-icon" style="background:linear-gradient(135deg,#818cf8,#6366f1)">📋</div>
+    <div class="formation-info">
+      <div class="formation-name">Sondeur Portuaire</div>
+      <div class="formation-desc">Apprends à recueillir l'avis des dockers. Débloque les sondages du port.</div>
+    </div>
+    <div class="formation-status locked" id="sondageStatus">🔒</div>
+  </div>
+  <div class="formation-action">
+    <button class="formation-btn buy" id="sondageBtn" onclick="confirmBuy('sondage')" style="background:#6366f1">FORMATION GRATUITE</button>
+    <div class="formation-price" id="sondagePrice" style="color:#6366f1">Gratuit</div>
+  </div>
+</div>
+
+<div class="formation-card" id="clarkCard">
+  <div class="formation-header">
+    <div class="formation-icon" style="background:linear-gradient(135deg,#fbbf24,#ff6a00)">🏎️</div>
+    <div class="formation-info">
+      <div class="formation-name">Pilote de Clark</div>
+      <div class="formation-desc">Apprends à piloter les clarks en course. Débloque le Grand Prix du Port.</div>
+    </div>
+    <div class="formation-status locked" id="clarkStatus">🔒</div>
+  </div>
+  <div class="formation-action">
+    <button class="formation-btn buy" id="clarkBtn" onclick="confirmBuy('clark')">OBTENIR LA FORMATION — 150 000€</button>
+    <div class="formation-price" id="clarkPrice">Coût : 150 000€</div>
+  </div>
+</div>
+
 <div class="section-title">PROCHAINEMENT</div>
 <div class="formation-soon">
   <div class="formation-soon-emoji">🚧</div>
@@ -121,12 +152,30 @@ let currentUser=null,playerMoney=0,playerRecords={};
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
+var _buyTarget='grutier';
 function confirmBuy(id){
   if(id==='grutier'){
     var f=(playerRecords.formations||{});
     if(f.grutier){showToast('✅ Déjà obtenue !');return;}
     if(playerMoney<50000){showToast('❌ Il te faut 50 000€');return;}
+    _buyTarget='grutier';
+    document.querySelector('.confirm-sub').textContent='Formation Grutier Portuaire';
+    document.getElementById('confirmPrice').textContent='50 000€';
     document.getElementById('confirmOverlay').style.display='flex';
+  }
+  if(id==='clark'){
+    var f=(playerRecords.formations||{});
+    if(f.clark){showToast('✅ Déjà obtenue !');return;}
+    if(playerMoney<150000){showToast('❌ Il te faut 150 000€');return;}
+    _buyTarget='clark';
+    document.querySelector('.confirm-sub').textContent='Formation Pilote de Clark';
+    document.getElementById('confirmPrice').textContent='150 000€';
+    document.getElementById('confirmOverlay').style.display='flex';
+  }
+  if(id==='sondage'){
+    var f=(playerRecords.formations||{});
+    if(f.sondage){showToast('✅ Déjà obtenue !');return;}
+    window.location.href='formationsondage.html';
   }
 }
 function closeConfirm(){document.getElementById('confirmOverlay').style.display='none';}
@@ -134,14 +183,19 @@ function closeConfirm(){document.getElementById('confirmOverlay').style.display=
 async function buyFormation(){
   closeConfirm();
   try{
-    await sb.from('game_stats').update({money:playerMoney-50000}).eq('user_id',currentUser.id);
-    // Redirect to formation story page
-    window.location.href='formationgrutier.html';
+    if(_buyTarget==='grutier'){
+      await sb.from('game_stats').update({money:playerMoney-50000}).eq('user_id',currentUser.id);
+      window.location.href='formationgrutier.html';
+    }else if(_buyTarget==='clark'){
+      await sb.from('game_stats').update({money:playerMoney-150000}).eq('user_id',currentUser.id);
+      window.location.href='formationclark.html';
+    }
   }catch(e){showToast('❌ Erreur');}
 }
 
 function updateUI(){
   var formations=(playerRecords.formations)||{};
+  // Grutier
   if(formations.grutier){
     document.getElementById('grutierCard').classList.add('unlocked');
     document.getElementById('grutierStatus').textContent='✅';
@@ -154,6 +208,31 @@ function updateUI(){
   }else if(playerMoney<50000){
     document.getElementById('grutierBtn').disabled=true;
     document.getElementById('grutierPrice').textContent='Solde insuffisant';
+  }
+  // Sondage
+  if(formations.sondage){
+    document.getElementById('sondageCard').classList.add('unlocked');
+    document.getElementById('sondageStatus').textContent='✅';
+    document.getElementById('sondageStatus').className='formation-status done';
+    document.getElementById('sondageBtn').textContent='FORMATION OBTENUE';
+    document.getElementById('sondageBtn').className='formation-btn done';
+    document.getElementById('sondageBtn').disabled=true;
+    document.getElementById('sondageBtn').onclick=null;
+    document.getElementById('sondagePrice').textContent='Sondages débloqués';
+  }
+  // Clark
+  if(formations.clark){
+    document.getElementById('clarkCard').classList.add('unlocked');
+    document.getElementById('clarkStatus').textContent='✅';
+    document.getElementById('clarkStatus').className='formation-status done';
+    document.getElementById('clarkBtn').textContent='FORMATION OBTENUE';
+    document.getElementById('clarkBtn').className='formation-btn done';
+    document.getElementById('clarkBtn').disabled=true;
+    document.getElementById('clarkBtn').onclick=null;
+    document.getElementById('clarkPrice').textContent='Métier débloqué → Pilote de Clark';
+  }else if(playerMoney<150000){
+    document.getElementById('clarkBtn').disabled=true;
+    document.getElementById('clarkPrice').textContent='Solde insuffisant (150 000€)';
   }
 }
 
