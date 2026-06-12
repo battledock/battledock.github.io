@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Collection OG — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body{font-family:'Inter',sans-serif;background:#0a0a0f;min-height:100vh;padding-bottom:calc(env(safe-area-inset-bottom,20px)+20px)}
+.hdr{padding:calc(env(safe-area-inset-top,44px)+10px) 14px 14px;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:3px solid #fbbf24;text-align:center}
+.prog{margin:8px 12px;background:#1a1a2e;border:2px solid #2a2a3e;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.prog-bar{flex:1;height:6px;background:#2a2a3e;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px;transition:width .5s}
+.main-tabs{display:flex;margin:8px 12px;border:2px solid #fbbf24;border-radius:10px;overflow:hidden}
+.main-tab{flex:1;text-align:center;padding:9px;font-family:'Bangers',cursive;font-size:12px;letter-spacing:1px;cursor:pointer;color:#555}
+.main-tab.on{background:#fbbf24;color:#1a1a1a}
+.sub-tabs{display:flex;margin:4px 12px;gap:4px}
+.sub-tab{flex:1;text-align:center;padding:5px;font-size:7px;font-weight:800;letter-spacing:1px;cursor:pointer;color:#444;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:6px}
+.sub-tab.on{background:#2a2a3e;color:#fbbf24;border-color:#fbbf24}
+.sec{padding:10px 14px 6px;font-size:7px;font-weight:800;color:#555;letter-spacing:2px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px}
+.slot{aspect-ratio:.72;border-radius:10px;position:relative;overflow:hidden;cursor:pointer;transition:transform .1s}
+.slot:active{transform:scale(.95)}
+.slot.locked{opacity:.25;filter:grayscale(1)}
+.slot-inner{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px;text-align:center}
+.slot-emo{font-size:26px}
+.slot-name{font-family:'Bangers',cursive;font-size:9px;color:#fff;letter-spacing:.3px;margin-top:2px;text-shadow:0 1px 3px rgba(0,0,0,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.slot-rt{position:absolute;top:3px;right:3px;font-size:5px;font-weight:900;padding:1px 4px;border-radius:3px;letter-spacing:.5px}
+.slot-qty{position:absolute;bottom:3px;left:3px;font-size:7px;font-weight:900;color:#fff;background:rgba(0,0,0,.5);padding:1px 5px;border-radius:4px}
+.r-C{background:linear-gradient(135deg,#374151,#1f2937);border:2px solid #4b5563}
+.r-R{background:linear-gradient(135deg,#1e3a5f,#0c1929);border:2px solid #3b82f6;box-shadow:0 0 8px rgba(59,130,246,.15)}
+.r-L{background:linear-gradient(135deg,#78350f,#451a03);border:2px solid #fbbf24;box-shadow:0 0 12px rgba(251,191,36,.2)}
+.r-S{background:linear-gradient(135deg,#450a0a,#0a0a0f);border:2px solid #ef4444;box-shadow:0 0 12px rgba(239,68,68,.2)}
+.r-M{background:linear-gradient(135deg,#1a1a2e,#0a0a0f);border:3px solid;border-image:conic-gradient(from 0deg,#fbbf24,#f472b6,#818cf8,#34d399,#fbbf24) 1;box-shadow:0 0 20px rgba(251,191,36,.2)}
+.rt-C{background:#6b7280;color:#fff}.rt-R{background:#3b82f6;color:#fff}
+.rt-L{background:#fbbf24;color:#1a1a1a}.rt-S{background:#ef4444;color:#fff}
+.rt-M{background:linear-gradient(90deg,#fbbf24,#f472b6);color:#fff}
+.pack{margin:8px 12px;border-radius:14px;padding:16px;text-align:center;cursor:pointer;border:2px solid;position:relative;overflow:hidden}
+.pack:active{transform:scale(.98)}
+.pack::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.03) 50%,transparent 70%);animation:sheen 3s ease infinite}
+@keyframes sheen{0%{transform:translateX(-100%) rotate(25deg)}100%{transform:translateX(200%) rotate(25deg)}}
+.ov{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.95);display:none;align-items:center;justify-content:center;flex-direction:column}
+.ov.show{display:flex}
+.dc{width:250px;height:370px;border-radius:16px;position:relative;overflow:hidden}
+.dc-art{width:100%;height:170px;display:flex;align-items:center;justify-content:center;font-size:64px;position:relative}
+.dc-body{padding:12px 16px;display:flex;flex-direction:column;height:200px;position:relative;z-index:2}
+.dc-name{font-family:'Bangers',cursive;font-size:22px;color:#fff;letter-spacing:1px}
+.dc-type{font-size:6px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:2px;margin-top:1px}
+.dc-desc{font-size:9px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5}
+.dc-flavor{font-size:8px;color:rgba(255,255,255,.2);font-style:italic;margin-top:auto}
+.dc-rt{position:absolute;top:8px;right:8px;font-size:7px;font-weight:900;padding:2px 8px;border-radius:4px;z-index:5}
+.rc{width:250px;height:370px;border-radius:16px;position:relative;overflow:hidden;transform:scale(0) rotateY(180deg);transition:transform .8s cubic-bezier(.175,.885,.32,1.275)}
+.rc.go{transform:scale(1) rotateY(0deg)}
+.holo{position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:16px;overflow:hidden}
+.holo-rain{position:absolute;inset:0;background:linear-gradient(105deg,transparent 20%,rgba(255,0,0,.06) 27%,rgba(255,255,0,.06) 33%,rgba(0,255,0,.06) 39%,rgba(0,0,255,.06) 45%,transparent 52%);background-size:200% 200%;animation:hRain 4s ease infinite}
+@keyframes hRain{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.holo-shim{position:absolute;inset:0;background:linear-gradient(110deg,transparent 25%,rgba(255,255,255,.1) 38%,rgba(255,255,255,.18) 41%,rgba(255,255,255,.1) 44%,transparent 56%);background-size:300% 100%;animation:hShim 3s ease infinite}
+@keyframes hShim{0%{background-position:300% 0}100%{background-position:-300% 0}}
+.mega-border{position:absolute;inset:-2px;border-radius:18px;background:conic-gradient(from 0deg,#fbbf24,#f472b6,#818cf8,#34d399,#fbbf24);z-index:0;animation:megaB 4s linear infinite}
+@keyframes megaB{0%{filter:hue-rotate(0deg)}100%{filter:hue-rotate(360deg)}}
+.mega-inner{position:absolute;inset:3px;border-radius:14px;background:#0a0a0f;z-index:1}
+.mega-name{background:linear-gradient(90deg,#fbbf24,#f472b6,#818cf8,#fbbf24);background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:megaN 3s linear infinite}
+@keyframes megaN{0%{background-position:0%}100%{background-position:300%}}
+.parts{position:fixed;inset:0;pointer-events:none;z-index:99}
+.pt{position:absolute;border-radius:50%;animation:ptF 2s ease-out forwards;opacity:0}
+@keyframes ptF{0%{opacity:1;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(100px) scale(0)}}
+.st{position:absolute;animation:stF 2.5s ease-out forwards;opacity:0;font-size:14px}
+@keyframes stF{0%{opacity:1;transform:translateY(0) rotate(0) scale(0)}30%{transform:translateY(-30px) rotate(120deg) scale(1.2);opacity:1}100%{opacity:0;transform:translateY(-80px) rotate(360deg) scale(0)}}
+.fl{position:fixed;inset:0;background:#fff;z-index:98;opacity:0;pointer-events:none;transition:opacity .1s}.fl.on{opacity:.5;transition:none}
+.hint{color:rgba(255,255,255,.15);font-size:10px;margin-top:20px}
+.xp-pop{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Bebas Neue',sans-serif;font-size:28px;color:#4ade80;z-index:101;opacity:0;animation:xpUp 1.5s ease forwards;pointer-events:none;text-shadow:0 0 10px rgba(74,222,128,.5)}
+@keyframes xpUp{0%{opacity:1;transform:translate(-50%,-30%)}100%{opacity:0;transform:translate(-50%,-120%)}}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+10px);left:50%;transform:translateX(-50%);background:#fbbf24;color:#1a1a1a;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}.toast.show{opacity:1}
+/* Market */
+.offer{padding:12px;border-bottom:1px solid #1a1a2e;display:flex;align-items:center;gap:10px}
+.offer:last-child{border:none}
+.offer-card{width:40px;height:56px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.offer-info{flex:1;min-width:0}
+.offer-name{font-size:11px;font-weight:800;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.offer-sub{font-size:8px;color:#666;margin-top:1px}
+.offer-price{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;flex-shrink:0}
+.offer-btn{font-size:8px;font-weight:800;padding:4px 10px;border-radius:6px;border:none;cursor:pointer;margin-left:6px;flex-shrink:0}
+.sell-row{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid #1a1a2e;cursor:pointer}
+.sell-row:last-child{border:none}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div style="font-size:24px">🃏</div>
+  <div style="font-family:'Bangers',cursive;font-size:22px;color:#fff;letter-spacing:2px;text-shadow:2px 2px 0 rgba(0,0,0,.3)">COLLECTION OG</div>
+  <div style="font-size:7px;color:rgba(255,255,255,.2);letter-spacing:2px;font-weight:700;margin-top:2px">CARTES DU PORT DE MARSEILLE</div>
+  <div style="position:absolute;right:14px;top:calc(env(safe-area-inset-top,44px)+14px);font-family:'Bebas Neue',sans-serif;font-size:12px;color:#4ade80" id="hMoney">💰 —</div>
+</div>
+<div class="prog">
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24" id="pC">0/131</div>
+  <div class="prog-bar"><div class="prog-fill" id="pB" style="width:0%"></div></div>
+  <div style="font-size:8px;color:#666;font-weight:700" id="pP">0%</div>
+</div>
+<div class="main-tabs">
+  <div class="main-tab on" id="mtCards" onclick="setMain('cards')">🃏 CARTES</div>
+  <div class="main-tab" id="mtPacks" onclick="setMain('packs')">📦 PACKS</div>
+  <div class="main-tab" id="mtMarket" onclick="setMain('market')">🏪 MARCHÉ</div>
+</div>
+<div id="mainContent"></div>
+<div style="padding:10px 12px">
+  <div onclick="location.href='profil.html'" style="padding:14px;text-align:center;background:#1a1a2e;border:2px solid #2a2a3e;border-radius:12px;cursor:pointer;font-family:'Bangers',cursive;font-size:14px;color:#666;letter-spacing:1px">← RETOUR</div>
+</div>
+<div class="ov" id="detOv" onclick="if(event.target===this)this.classList.remove('show')"><div id="detSlot"></div></div>
+<div class="ov" id="revOv" onclick="nextRev()"><div id="revSlot"></div><div class="hint" id="revHint"></div></div>
+<div class="ov" id="sellOv" onclick="if(event.target===this)this.classList.remove('show')"><div id="sellSlot" style="background:#12121a;border:2px solid #2a2a3e;border-radius:16px;padding:16px;width:90%;max-width:320px;max-height:70vh;overflow-y:auto"></div></div>
+<div class="parts" id="parts"></div>
+<div class="fl" id="fl"></div>
+<div class="toast" id="toast"></div>
+<script>
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var CU=null,money=0,diamonds=0,xp=0;
+var myCards={};// {card_id: count}
+var mainView='cards',subFilter='all';
+
+var CD=[];var _id=0;
+function a(n,e,cat,r,d,f){CD.push({id:_id++,name:n,emoji:e,cat:cat,rarity:r,desc:d,flavor:f});}
+a('Le Soudeur','🔥','perso','C','Soude tout ce qui bouge sur le port.','\"Ça tient, chef.\"');
+a('Le Peintre','🎨','perso','C','Repeint les coques au rouleau.','\"Encore du rouge anti-rouille.\"');
+a('Le Plongeur','🤿','perso','C','Inspecte les coques sous l\'eau.','\"C\'est frais ce matin.\"');
+a('Le Grutier Junior','🏗️','perso','C','Apprend à manipuler la bête.','\"Doucement, doucement...\"');
+a('Le Matelot','⚓','perso','C','Amarrage et manœuvres.','\"Largue les amarres !\"');
+a('Le Mousse','🧹','perso','C','Le petit nouveau. Corvée pont.','\"Un jour je serai capitaine.\"');
+a('Le Pointeur','📋','perso','C','Vérifie chaque container.','\"3247-B, coché.\"');
+a('Le Lamaneur','🚤','perso','C','Guide les navires au port.','\"À tribord, doucement.\"');
+a('Le Gabier','🧗','perso','C','Grimpe partout. Vertige ? Connais pas.','\"La vue d\'en haut est magnifique.\"');
+a('Le Bosco','📣','perso','C','Maître d\'équipage. Voix qui porte.','\"TOUT LE MONDE EN POSTE !\"');
+a('Le Timonier','🧭','perso','C','Tient la barre.','\"Cap au 220.\"');
+a('Le Mécanicien','🔧','perso','C','Répare les moteurs.','\"C\'est le joint de culasse.\"');
+a('L\'Électricien','⚡','perso','C','Câble et recâble.','\"Coupe le courant d\'abord.\"');
+a('Le Charpentier','🪚','perso','C','Répare les structures bois.','\"Du chêne massif.\"');
+a('Le Cordier','🪢','perso','C','Nœuds et cordages.','\"Celui-là ne lâchera pas.\"');
+a('Le Calier','📦','perso','C','Charge la cale.','\"Encore 200 palettes.\"');
+a('Le Docker de Nuit','🌙','perso','C','Travaille quand les autres dorment.','\"Le port ne dort jamais.\"');
+a('Le Remplaçant','🔄','perso','C','Toujours dispo, jamais titulaire.','\"Aujourd\'hui c\'est mon jour.\"');
+a('Le Retraité','👴','perso','C','Passe encore tous les matins au port.','\"C\'était mieux avant.\"');
+a('Le Syndicaliste','✊','perso','C','Défend les droits. Toujours en réunion.','\"ON LÂCHE RIEN !\"');
+a('Le Gréviste','📢','perso','C','Pancarte en main, megaphone en option.','\"On reprend quand on veut.\"');
+a('La Cantinière','🍲','perso','C','Nourrit tout le port.','\"Aujourd\'hui c\'est aïoli.\"');
+a('Le Veilleur','👁️','perso','C','Surveille le port la nuit.','\"Rien à signaler. Comme toujours.\"');
+a('Le Contrôleur','🔍','perso','C','Vérifie les papiers.','\"Vos documents s\'il vous plaît.\"');
+a('Le Manœuvre','💪','perso','C','Porte, pousse, tire. La base.','\"C\'est ça qui forge le caractère.\"');
+a('Casque de Chantier','⛑️','item','C','Protection de base.','Obligatoire sur le port.');
+a('Gilet Orange','🦺','item','C','Haute visibilité.','On te voit de loin.');
+a('Corde Usée','🪢','item','C','Sert à tout.','Encore solide... peut-être.');
+a('Bouée de Sauvetage','🛟','item','C','On espère ne jamais l\'utiliser.','Accrochée au mur depuis 1998.');
+a('Sardine Fraîche','🐟','item','C','Tout droit du bateau.','Encore frétillante.');
+a('Pan-bagnat','🥖','item','C','Le sandwich marseillais.','Thon, tomate, olive.');
+a('Verre de Pastis','🥃','item','C','L\'apéro du docker.','Un doigt, pas plus. Bon peut-être deux.');
+a('Café du Matin','☕','item','C','Le carburant du port.','Serré, sans sucre.');
+a('Cadenas Rouillé','🔒','item','C','Ferme un container oublié.','La combinaison ? Perdue.');
+a('Clé à Molette','🔧','item','C','Outil passe-partout.','12 pouces, la bonne taille.');
+a('Pied de Biche','🔨','item','C','Ouvre tout.','Même ce qui devrait rester fermé.');
+a('Lampe Torche','🔦','item','C','Pour les coins sombres.','Les piles sont faibles.');
+a('Sifflet du Chef','📯','item','C','Signal de début et fin.','PRIIIIIT !');
+a('Carte du Port','🗺️','item','C','Plan annoté à la main.','Plein de ratures.');
+a('Radio FM','📻','item','C','Musique sur le quai.','Toujours sur la même station.');
+a('Thermos','🫗','item','C','Café chaud toute la journée.','Le bouchon fuit un peu.');
+a('Gants Neufs','🧤','item','C','Jamais portés longtemps neufs.','Le cuir sent bon.');
+a('Chaussures de Sécu','👞','item','C','Embout acier. Lourdes.','Tu t\'y habitues.');
+a('Palette en Bois','🪵','item','C','Support universel.','Recyclée 47 fois.');
+a('Filet de Pêche','🥅','item','C','Pour la pause midi.','Quelques trous.');
+a('Chaîne d\'Ancre','⛓️','item','C','Lourde et bruyante.','100 mètres de ferraille.');
+a('Boussole','🧭','item','C','Nord, sud, pastis.','Le verre est rayé.');
+a('Jumelles','🔭','item','C','Pour voir les bateaux au loin.','Un œilleton est cassé.');
+a('Extincteur','🧯','item','C','Vérifié le mois dernier.','Probablement.');
+a('Bidon de Gasoil','⛽','item','C','Nourrit les machines.','Ça sent fort.');
+a('Peinture Anti-rouille','🪣','item','C','Rouge, toujours rouge.','La base de l\'entretien.');
+a('Scotch d\'Emballage','📎','item','C','Emballe tout.','Le bruit caractéristique.');
+a('Stylo du Chef','🖊️','item','C','Signe les bons.','Encre bleue uniquement.');
+a('Tampon Officiel','📌','item','C','Valide les documents.','PAF.');
+a('Badge Visiteur','🪪','item','C','Accès limité.','À rendre en sortant.');
+a('Sandwich Jambon','🥪','item','C','Le basique de la cantine.','Beurre, jambon, terminé.');
+a('Chips du Distributeur','🍟','item','C','Sel et vinaigre.','Coincées une fois sur deux.');
+a('Canette de Coca','🥤','item','C','Fraîche du frigo.','La pause sucrée.');
+a('Journal du Jour','📰','item','C','La Provence du matin.','Pages sport en premier.');
+a('Ticket de Cantine','🎫','item','C','Repas du midi.','Menu unique, pas le choix.');
+a('Quai Nord','🏗️','lieu','C','Zone de chargement principale.','6h du matin, ça s\'anime.');
+a('Quai Sud','⚓','lieu','C','Les petits bateaux.','Plus calme que le Nord.');
+a('Quai Est','🚢','lieu','C','Les gros tonnages.','Impressionnant.');
+a('Hangar A','🏚️','lieu','C','Stockage sec.','Souris en option.');
+a('Hangar B','📦','lieu','C','Stockage froid.','Brrrr.');
+a('Parking du Port','🅿️','lieu','C','Toujours plein.','Ta place est prise.');
+a('La Cantine','🍽️','lieu','C','Repas du midi.','Bruit de couverts.');
+a('Vestiaire','🚿','lieu','C','Casiers et douches.','Ça sent le savon.');
+a('Toilettes du Port','🚻','lieu','C','On en parle pas.','Papier en option.');
+a('Bureau d\'Accueil','🏢','lieu','C','Premier contact.','Sourire obligatoire.');
+a('Poste de Garde','🛂','lieu','C','Entrée/sortie.','Badge svp.');
+a('L\'Infirmerie','🏥','lieu','C','Pansements et aspirine.','Le minimum vital.');
+a('Local Syndical','🏛️','lieu','C','Affiches et tracts.','Réunion ce soir.');
+a('Salle de Pause','🛋️','lieu','C','Café et discussions.','Le canapé est défoncé.');
+a('Terrasse du Bar','🍺','lieu','C','Vue sur le port.','L\'apéro du soir.');
+a('Pont du Ferry','🛳️','lieu','C','Traversée quotidienne.','Embruns garantis.');
+a('La Passerelle','🌉','lieu','C','Entre deux quais.','Attention au vent.');
+a('L\'Écluse','🔐','lieu','C','Régule le niveau d\'eau.','Mécanisme d\'époque.');
+a('Bassin 1','🌊','lieu','C','Le plus ancien.','Pierres centenaires.');
+a('Bassin 2','💧','lieu','C','Le moderne.','Béton frais.');
+a('Zone de Tri','♻️','lieu','C','Containers par destination.','Organisation millimétrée.');
+a('Station Carburant','⛽','lieu','C','Plein de gasoil.','24h/24.');
+a('Dépôt de Containers','📦','lieu','C','Des milliers empilés.','Un Tetris géant.');
+a('Aire de Repos','🅿️','lieu','C','Pause des routiers.','Calme relatif.');
+a('Mouette','🕊️','nature','C','Vole tes frites.','CRIIIII !');
+a('Goéland','🦅','nature','C','La mouette en plus gros.','Territorial.');
+a('Chat du Port','🐱','nature','C','Chasseur de rats officiel.','Adopté par tout le monde.');
+a('Rat de Cale','🐀','nature','C','Discret mais présent.','Court vite.');
+a('Méduse','🪼','nature','C','Transparente et piquante.','Ne pas toucher.');
+a('Poulpe','🐙','nature','C','8 bras, 0 stress.','Se cache dans les rochers.');
+a('Sardine Géante','🐟','nature','C','Légende ou réalité ?','\"J\'te jure, elle faisait 50cm !\"');
+a('Dauphin','🐬','nature','C','Apparaît parfois à l\'entrée du port.','Moment magique.');
+a('Crabe','🦀','nature','C','Marche de travers.','Pince fort.');
+a('Mouche de Juin','🪰','nature','C','Envahissante et collante.','BZZzzzz.');
+a('Coucher de Soleil','🌅','nature','C','Le spectacle quotidien.','Orange sur la mer.');
+a('Le Mistral','💨','nature','C','Vent violent du nord.','Accroche-toi.');
+a('Orage d\'Été','⛈️','nature','C','Violent mais court.','Tout le monde aux abris.');
+a('Brouillard','🌫️','nature','C','Le port disparaît.','Corne de brume.');
+a('Arc-en-Ciel','🌈','nature','C','Après la pluie.','Promesse de beau.');
+a('Titouan','😴','perso','C','Roi de la sieste. Productivité : 0.','\"Cinq minutes...\"');
+a('Gégé','👷','perso','R','Chef docker légendaire. 30 ans sur les quais.','\"Allez les gars, on bosse !\"');
+a('Jeff','🗣️','perso','R','Parle aux grues comme à des êtres vivants.','\"Doucement Bertha...\"');
+a('Doudou','🤗','perso','R','Trop gentil pour son propre bien.','\"T\'inquiète frangin !\"');
+a('La Serveuse du Bar','💃','perso','R','Connaît les secrets de tout le monde.','\"Un pastis ? Comme d\'hab.\"');
+a('Le Capitaine','🎖️','perso','R','Commande le plus gros ferry.','\"Paré à appareiller.\"');
+a('Le Douanier Sympa','😎','perso','R','Ferme les yeux parfois.','\"Circulez, y\'a rien à voir.\"');
+a('Le Vieux Loup de Mer','🧔','perso','R','A traversé tous les océans.','\"La mer, elle pardonne pas.\"');
+a('L\'Inspecteur','🕵️','perso','R','Enquête sur les anomalies.','\"Quelque chose ne colle pas.\"');
+a('Ancre Rouillée','⚓','item','R','Du premier navire accosté ici. 1847.','Relique historique.');
+a('Carnet de Comptes','📒','item','R','Les vrais chiffres. Pas ceux du rapport.','Pages cornées et café renversé.');
+a('Gants du Vétéran','🧤','item','R','Portés par Gégé depuis 30 ans.','Imprégnés de sueur et de gloire.');
+a('Clé USB Suspecte','💾','item','R','Trouvée dans le bureau du directeur.','Cryptée.');
+a('Talkie Vintage','📟','item','R','Canal 7, fréquence oubliée.','*Grésillement*');
+a('Carte VIP','💳','item','R','Accès à toutes les zones.','Doré sur tranche.');
+a('Maquette du Port','🏗️','item','R','Miniature parfaite. Faite main.','3 ans de travail.');
+a('Barre à Mine en Or','⛏️','item','R','Plaquée or. Cadeau de départ.','Ne sert à rien mais brille.');
+a('Bar des Dockers','🍺','lieu','R','QG non-officiel. Bières et confidences.','Le patron sait tout.');
+a('Cale Sèche','🚢','lieu','R','Là où les navires se font soigner.','Rouille et peinture.');
+a('Phare de la Joliette','🗼','lieu','R','Guide les navires depuis 1853.','Toujours allumé.');
+a('Le Vieux Bassin','🌊','lieu','R','Le plus ancien du port.','Pierres du XVIIe.');
+a('Le Docker Fantôme','👻','perso','L','Hante le Quai Nord depuis 1962.','\"...\"');
+a('Patrick Lavagne','🕴️','perso','L','Directeur. Sourire de façade.','\"C\'est pour le bien de l\'entreprise.\"');
+a('Mickaël Dufresne','📋','perso','L','Contremaître. L\'œil de Lavagne.','\"C\'est dans le règlement.\"');
+a('Le Talkie Doré','📻','item','L','Canal secret. Fréquence inconnue.','\"Le colis est arrivé.\"');
+a('Container 13B','📦','lieu','L','Scellé par la direction. Interdit.','Il vibre quand il pleut.');
+a('Le Vieux Phare','🗼','lieu','L','Abandonné depuis 1998. Ou pas.','La lumière s\'allume parfois.');
+a('Les Dés Truqués','🎲','item','L','Toujours le 6.','Personne ne sait comment.');
+a('La Clé du Bureau','🔑','item','L','Ouvre le bureau de Lavagne.','Trouvée sous un container.');
+a('Le Traître','🎭','perso','S','Quelqu\'un travaille pour la concurrence.','\"Tu ne sauras jamais.\"');
+a('Les Plans Secrets','🗺️','item','S','Les vrais plans d\'expansion du port.','Annotés en rouge.');
+a('L\'Âme du Port','⚜️','perso','M','Le port est vivant. Cette carte en est la preuve.','\"Le port se souvient de tout.\"');
+
+var RL={C:'COMMUNE',R:'RARE',L:'LÉGENDAIRE',S:'★ SECRÈTE ★',M:'✦ MÉGA RARE ✦'};
+var RCo={C:'#6b7280',R:'#3b82f6',L:'#fbbf24',S:'#ef4444',M:'#fbbf24'};
+var XPR={C:0,R:1000,L:5000,S:15000,M:30000};
+
+function fm(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1000?Math.floor(n/1000)+'k':n;}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function qty(id){return myCards[id]||0;}
+function uniqueCount(){return Object.keys(myCards).filter(function(k){return myCards[k]>0;}).length;}
+function updMoney(){document.getElementById('hMoney').textContent='💰 '+fm(money);}
+
+function setMain(v){
+  mainView=v;
+  ['Cards','Packs','Market'].forEach(function(x,i){
+    var ids=['cards','packs','market'];
+    document.getElementById('mt'+x).className='main-tab '+(ids[i]===v?'on':'');
+  });
+  renderMain();
+}
+
+function renderMain(){
+  var uc=uniqueCount();
+  document.getElementById('pC').textContent=uc+'/'+CD.length;
+  document.getElementById('pB').style.width=(uc/CD.length*100)+'%';
+  document.getElementById('pP').textContent=Math.round(uc/CD.length*100)+'%';
+  updMoney();
+  if(mainView==='cards')renderCards();
+  else if(mainView==='packs')renderPacks();
+  else renderMarket();
+}
+
+// ═══ CARDS TAB ═══
+function renderCards(){
+  var cats=[['all','TOUTES'],['perso','PERSOS'],['item','OBJETS'],['lieu','LIEUX'],['nature','NATURE']];
+  var h='<div class="sub-tabs">';
+  cats.forEach(function(c){h+='<div class="sub-tab'+(subFilter===c[0]?' on':'')+'" onclick="subFilter=\''+c[0]+'\';renderMain()">'+c[1]+'</div>';});
+  h+='</div>';
+  var fl=CD.filter(function(c){return subFilter==='all'||c.cat===subFilter;});
+  var order={M:0,S:1,L:2,R:3,C:4};
+  fl.sort(function(a,b){return order[a.rarity]-order[b.rarity];});
+  var lastR='';
+  fl.forEach(function(c){
+    if(c.rarity!==lastR){if(lastR)h+='</div>';lastR=c.rarity;h+='<div class="sec" style="color:'+RCo[c.rarity]+'">'+RL[c.rarity]+'</div><div class="grid">';}
+    var has=qty(c.id)>0;
+    h+='<div class="slot r-'+c.rarity+(has?'':' locked')+'" onclick="showDet('+c.id+')">';
+    h+='<div class="slot-inner">';
+    h+='<div class="slot-rt rt-'+c.rarity+'">'+RL[c.rarity].replace(/[★✦ ]/g,'').slice(0,3)+'</div>';
+    if(has){
+      h+='<div class="slot-emo">'+c.emoji+'</div><div class="slot-name">'+c.name+'</div>';
+      if(qty(c.id)>1)h+='<div class="slot-qty">x'+qty(c.id)+'</div>';
+    }else{h+='<div class="slot-emo" style="opacity:.3">❓</div><div class="slot-name" style="color:#333">???</div>';}
+    h+='</div></div>';
+  });
+  h+='</div>';
+  document.getElementById('mainContent').innerHTML=h;
+}
+
+// ═══ PACKS TAB ═══
+var shopData={};
+async function renderPacks(){
+  var today=new Date().toISOString().split('T')[0];
+  try{
+    var stdKey='std_'+today,legKey='leg_'+today;
+    var {data:rows}=await sb.from('shop_stock').select('*').in('id',[stdKey,legKey]);
+    var byId={};if(rows)rows.forEach(function(r){byId[r.id]=r;});
+    if(!byId[stdKey]){await sb.from('shop_stock').upsert({id:stdKey,item_type:'pack_std',max_qty:10,sold:0,base_price:5000,price_type:'money'});byId[stdKey]={max_qty:10,sold:0,base_price:5000};}
+    if(!byId[legKey]){await sb.from('shop_stock').upsert({id:legKey,item_type:'pack_leg',max_qty:3,sold:0,base_price:50,price_type:'diamonds'});byId[legKey]={max_qty:3,sold:0,base_price:50};}
+    shopData=byId;
+    var {data:excls}=await sb.from('shop_stock').select('*').eq('item_type','exclusive').gt('max_qty',0);
+    var exclList=excls||[];
+  }catch(e){console.error(e);shopData={};var exclList=[];}
+  var std=shopData['std_'+today]||{sold:0,max_qty:10,base_price:5000};
+  var leg=shopData['leg_'+today]||{sold:0,max_qty:3,base_price:50};
+  var stdPrice=Math.floor(std.base_price*(1+std.sold*0.1));
+  var legPrice=Math.floor(leg.base_price*(1+leg.sold*0.15));
+  var stdLeft=Math.max(0,std.max_qty-std.sold),legLeft=Math.max(0,leg.max_qty-leg.sold);
+  var h='<div class="sec">\u{1F4E6} PACKS DU JOUR \u2014 Restock \u00e0 minuit</div>';
+  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2a2a3e);border-color:'+(stdLeft<=0?'#333':'#4b5563')+';'+(stdLeft<=0?'opacity:.4;pointer-events:none':'')+'" onclick="openPack(\'std\','+stdPrice+')">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">\u{1F4E6}</div><div style="font-size:8px;font-weight:800;color:'+(stdLeft<=3?'#ef4444':'#4ade80')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(stdLeft<=0?'\u00c9PUIS\u00c9':stdLeft+'/'+std.max_qty+' EN STOCK')+'</div></div>';
+  h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#fff;margin-top:4px">PACK STANDARD</div>';
+  h+='<div style="font-size:8px;color:#666;margin-top:2px">3 cartes \u00b7 Garanti 1 Rare minimum</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px"><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24">'+fm(stdPrice)+'\u20ac</div>';
+  if(std.sold>0)h+='<div style="font-size:8px;color:#ef4444;font-weight:700">\u2191 +'+(std.sold*10)+'%</div>';
+  h+='</div></div>';
+  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2d1b69);border-color:'+(legLeft<=0?'#333':'#8b5cf6')+';'+(legLeft<=0?'opacity:.4;pointer-events:none':'')+'" onclick="openPack(\'leg\','+legPrice+')">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">\u{1F48E}</div><div style="font-size:8px;font-weight:800;color:'+(legLeft<=1?'#ef4444':'#c4b5fd')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(legLeft<=0?'\u00c9PUIS\u00c9':legLeft+'/'+leg.max_qty+' EN STOCK')+'</div></div>';
+  h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#c4b5fd;margin-top:4px">PACK L\u00c9GENDAIRE</div>';
+  h+='<div style="font-size:8px;color:#666;margin-top:2px">3 cartes \u00b7 Garanti 1 L\u00e9gendaire minimum</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px"><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#8b5cf6">'+legPrice+' \u{1F48E}</div>';
+  if(leg.sold>0)h+='<div style="font-size:8px;color:#ef4444;font-weight:700">\u2191 +'+(leg.sold*15)+'%</div>';
+  h+='</div></div>';
+  if(typeof exclList!=='undefined'&&exclList.length>0){
+    h+='<div class="sec">\u2b50 \u00c9DITIONS LIMIT\u00c9ES</div>';
+    exclList.forEach(function(ex){
+      var meta=ex.metadata||{};var card=meta.card_id!==undefined?CD[meta.card_id]:null;
+      var left=Math.max(0,ex.max_qty-ex.sold);
+      h+='<div class="pack" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border-color:'+(left<=0?'#333':'#fbbf24')+';'+(left<=0?'opacity:.4;pointer-events:none':'')+'" onclick="buyExclusive(\''+ex.id+'\')">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">'+(card?card.emoji:'\u{1f31f}')+'</div><div style="font-size:8px;font-weight:900;color:'+(left<=0?'#666':'#fbbf24')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(left<=0?'VENDU':left===1?'DERNIER !':left+' DISPO')+'</div></div>';
+      h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#fbbf24;margin-top:4px">'+(meta.name||'Item Exclusif')+'</div>';
+      h+='<div style="font-size:8px;color:#666;margin-top:2px">'+(meta.desc||'\u00c9dition limit\u00e9e')+'</div>';
+      h+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24;margin-top:6px">'+fm(ex.base_price)+(ex.price_type==='diamonds'?'\u{1F48E}':'\u20ac')+'</div></div>';
+    });
+  }
+  document.getElementById('mainContent').innerHTML=h;
+}
+
+// ═══ MARKET TAB ═══
+async function renderMarket(){
+  var h='<div class="sec">🏪 MARCHÉ DES CARTES</div>';
+  h+='<div style="padding:0 12px 8px"><div onclick="openSellPanel()" style="padding:10px;text-align:center;background:#1a1a2e;border:2px solid #fbbf24;border-radius:10px;cursor:pointer;font-family:Bangers,cursive;font-size:13px;color:#fbbf24;letter-spacing:1px">+ VENDRE UNE CARTE</div></div>';
+  h+='<div style="margin:0 12px;background:#12121a;border:2px solid #2a2a3e;border-radius:12px;overflow:hidden" id="marketList"><div style="padding:20px;text-align:center;color:#555;font-size:11px">Chargement...</div></div>';
+  h+='<div class="sec">📋 MES OFFRES</div>';
+  h+='<div style="margin:0 12px;background:#12121a;border:2px solid #2a2a3e;border-radius:12px;overflow:hidden" id="myOffers"><div style="padding:20px;text-align:center;color:#555;font-size:11px">Chargement...</div></div>';
+  document.getElementById('mainContent').innerHTML=h;
+  await loadMarket();
+}
+
+async function loadMarket(){
+  try{
+    var {data:offers}=await sb.from('card_market').select('*').eq('status','active').order('created_at',{ascending:false});
+    var {data:profs}=await sb.from('profiles').select('user_id,username');
+    var pm={};if(profs)profs.forEach(function(p){pm[p.user_id]=p.username;});
+    var el=document.getElementById('marketList');
+    var myEl=document.getElementById('myOffers');
+    if(!offers||!offers.length){el.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-size:11px">Aucune offre. Sois le premier à vendre !</div>';myEl.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-size:11px">Aucune offre en cours</div>';return;}
+
+    var others=offers.filter(function(o){return o.seller_id!==CU.id;});
+    var mine=offers.filter(function(o){return o.seller_id===CU.id;});
+
+    if(!others.length)el.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-size:11px">Aucune offre disponible</div>';
+    else{
+      var oh='';
+      others.forEach(function(o){
+        var c=CD[o.card_id];if(!c)return;
+        oh+='<div class="offer"><div class="offer-card r-'+c.rarity+'">'+c.emoji+'</div>';
+        oh+='<div class="offer-info"><div class="offer-name">'+c.name+'</div>';
+        oh+='<div class="offer-sub">'+RL[c.rarity]+' · @'+(pm[o.seller_id]||'?')+'</div></div>';
+        oh+='<div class="offer-price">'+fm(o.price)+(o.price_type==='diamonds'?'💎':'€')+'</div>';
+        oh+='<button class="offer-btn" style="background:#4ade80;color:#052e16" onclick="buyCard(\''+o.id+'\')">ACHETER</button>';
+        oh+='</div>';
+      });
+      el.innerHTML=oh;
+    }
+
+    if(!mine.length)myEl.innerHTML='<div style="padding:20px;text-align:center;color:#555;font-size:11px">Aucune offre en cours</div>';
+    else{
+      var mh='';
+      mine.forEach(function(o){
+        var c=CD[o.card_id];if(!c)return;
+        mh+='<div class="offer"><div class="offer-card r-'+c.rarity+'">'+c.emoji+'</div>';
+        mh+='<div class="offer-info"><div class="offer-name">'+c.name+'</div>';
+        mh+='<div class="offer-sub">'+fm(o.price)+(o.price_type==='diamonds'?'💎':'€')+'</div></div>';
+        mh+='<button class="offer-btn" style="background:#ef4444;color:#fff" onclick="cancelOffer(\''+o.id+'\','+o.card_id+')">ANNULER</button>';
+        mh+='</div>';
+      });
+      myEl.innerHTML=mh;
+    }
+  }catch(e){
+    document.getElementById('marketList').innerHTML='<div style="padding:20px;text-align:center;color:#ef4444;font-size:11px">Erreur — La table card_market n\'existe pas encore.<br>Lance le SQL dans Supabase !</div>';
+  }
+}
+
+function openSellPanel(){
+  var sellable=[];
+  Object.keys(myCards).forEach(function(k){
+    if(myCards[k]>=2)sellable.push({id:parseInt(k),qty:myCards[k]});
+  });
+  var h='<div style="font-family:Bangers,cursive;font-size:18px;color:#fbbf24;text-align:center;margin-bottom:10px">VENDRE UNE CARTE</div>';
+  if(!sellable.length){h+='<div style="text-align:center;color:#555;font-size:11px;padding:20px">Tu dois avoir au moins 2 exemplaires pour vendre (tu gardes toujours 1)</div>';}
+  else{
+    sellable.forEach(function(s){
+      var c=CD[s.id];
+      h+='<div class="sell-row" onclick="sellCard('+s.id+')">';
+      h+='<div class="offer-card r-'+c.rarity+'" style="width:36px;height:48px;font-size:18px;border-radius:5px">'+c.emoji+'</div>';
+      h+='<div style="flex:1"><div style="font-size:11px;font-weight:800;color:#fff">'+c.name+'</div>';
+      h+='<div style="font-size:8px;color:#555">'+RL[c.rarity]+' · x'+s.qty+' (1 en vente)</div></div>';
+      h+='<div style="font-size:12px;color:#fbbf24">→</div></div>';
+    });
+  }
+  document.getElementById('sellSlot').innerHTML=h;
+  document.getElementById('sellOv').classList.add('show');
+}
+
+async function sellCard(cardId){
+  var price=parseInt(prompt('Prix de vente en € ?'));
+  if(!price||price<=0)return toast('Prix invalide');
+  document.getElementById('sellOv').classList.remove('show');
+  // Remove 1 from inventory
+  myCards[cardId]--;if(myCards[cardId]<=0)delete myCards[cardId];
+  await saveCards();
+  // Create listing
+  await sb.from('card_market').insert({seller_id:CU.id,card_id:cardId,price:price,price_type:'money',status:'active'});
+  toast('📤 Carte en vente !');
+  renderMarket();
+}
+
+async function buyCard(offerId){
+  var {data:offer}=await sb.from('card_market').select('*').eq('id',offerId).eq('status','active').maybeSingle();
+  if(!offer)return toast('Offre plus disponible');
+  if(offer.seller_id===CU.id)return toast('C\'est ta propre offre !');
+  if(offer.price_type==='money'&&money<offer.price)return toast('Pas assez d\'argent !');
+  if(offer.price_type==='diamonds'&&diamonds<offer.price)return toast('Pas assez de diamants !');
+
+  // Deduct buyer money
+  if(offer.price_type==='money')money-=offer.price;else diamonds-=offer.price;
+  // Add card to buyer
+  myCards[offer.card_id]=(myCards[offer.card_id]||0)+1;
+  await saveCards();
+
+  // Credit seller
+  var {data:sellerGs}=await sb.from('game_stats').select('money,diamonds').eq('user_id',offer.seller_id).maybeSingle();
+  if(sellerGs){
+    if(offer.price_type==='money')await sb.from('game_stats').update({money:(sellerGs.money||0)+offer.price}).eq('user_id',offer.seller_id);
+    else await sb.from('game_stats').update({diamonds:(sellerGs.diamonds||0)+offer.price}).eq('user_id',offer.seller_id);
+  }
+
+  // Mark as sold
+  await sb.from('card_market').update({status:'sold',buyer_id:CU.id,bought_at:new Date().toISOString()}).eq('id',offerId);
+
+  var c=CD[offer.card_id];
+  toast('✅ '+c.name+' achetée !');
+  renderMain();
+}
+
+async function cancelOffer(offerId,cardId){
+  // Return card
+  myCards[cardId]=(myCards[cardId]||0)+1;
+  await saveCards();
+  await sb.from('card_market').delete().eq('id',offerId);
+  toast('Offre annulée');
+  renderMarket();
+}
+
+// ═══ CARD DETAIL ═══
+function mkArt(c){
+  var bg=c.rarity==='M'?'#050510':c.rarity==='S'?'#1a0505':c.rarity==='L'?'#1a0a00':c.rarity==='R'?'#0c1929':'#1f2937';
+  var s='<svg viewBox="0 0 190 155" width="100%" height="100%"><rect width="190" height="155" fill="'+bg+'"/>';
+  if(c.rarity==='M'){s+='<defs><radialGradient id="mg'+c.id+'"><stop offset="0%" stop-color="rgba(251,191,36,.12)"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs><circle cx="95" cy="75" r="55" fill="url(#mg'+c.id+')"/><circle cx="40" cy="30" r="1" fill="#fbbf24" opacity=".3"><animate attributeName="opacity" values=".1;.5;.1" dur="3s" repeatCount="indefinite"/></circle>';}
+  else if(c.rarity==='S'){s+='<circle cx="95" cy="75" r="40" fill="none" stroke="rgba(239,68,68,.06)" stroke-width="1"/><circle cx="95" cy="75" r="25" fill="rgba(239,68,68,.03)"/>';}
+  else if(c.rarity==='L'){s+='<circle cx="95" cy="75" r="45" fill="none" stroke="rgba(251,191,36,.05)" stroke-width="1"/>';}
+  s+='<text x="95" y="92" text-anchor="middle" font-size="52">'+c.emoji+'</text></svg>';
+  return s;
+}
+
+function showDet(id){
+  var c=CD[id];if(!c||qty(id)<=0){toast('Pas encore obtenue');return;}
+  var isM=c.rarity==='M',hasHolo=c.rarity!=='C';
+  var h='<div class="dc r-'+c.rarity+'">';
+  if(isM)h+='<div class="mega-border"></div><div class="mega-inner"></div>';
+  h+='<div class="dc-rt rt-'+c.rarity+'">'+RL[c.rarity]+'</div>';
+  if(hasHolo)h+='<div class="holo"><div class="holo-rain"></div><div class="holo-shim"></div></div>';
+  h+='<div class="dc-art" style="position:relative;z-index:2">'+mkArt(c)+'</div>';
+  h+='<div class="dc-body"><div class="dc-name'+(isM?' mega-name':'')+'">'+c.name+'</div>';
+  h+='<div class="dc-type">'+c.cat.toUpperCase()+' · x'+qty(id)+'</div>';
+  h+='<div class="dc-desc">'+c.desc+'</div>';
+  h+='<div class="dc-flavor">'+c.flavor+'</div></div></div>';
+  document.getElementById('detSlot').innerHTML=h;
+  document.getElementById('detOv').classList.add('show');
+}
+
+// ═══ PACK OPENING ═══
+var revQ=[],revI=0;
+async function buyExclusive(exId){
+  try{
+    var {data:ex}=await sb.from('shop_stock').select('*').eq('id',exId).maybeSingle();
+    if(!ex||ex.sold>=ex.max_qty)return toast('Plus disponible !');
+    var meta=ex.metadata||{};
+    if(ex.price_type==='money'&&money<ex.base_price)return toast('Pas assez !');
+    if(ex.price_type==='diamonds'&&diamonds<ex.base_price)return toast('Pas assez !');
+    // Increment sold atomically
+    var {data:upd,error}=await sb.from('shop_stock').update({sold:ex.sold+1}).eq('id',exId).eq('sold',ex.sold).select();
+    if(error||!upd||!upd.length)return toast('Trop tard !');
+    if(ex.price_type==='money')money-=ex.base_price;else diamonds-=ex.base_price;
+    if(meta.card_id!==undefined){myCards[meta.card_id]=(myCards[meta.card_id]||0)+1;}
+    await saveCards();
+    toast('⭐ Item exclusif obtenu !');
+    renderPacks();
+  }catch(e){toast('Erreur');}
+}
+
+function openPack(type,dynPrice){
+  var today=new Date().toISOString().split('T')[0];
+  var key=type==='std'?'std_'+today:'leg_'+today;
+  var stock=shopData[key];
+  if(stock&&stock.sold>=stock.max_qty)return toast('Stock épuisé ! Reviens demain.');
+  if(type==='std'){
+    if(money<dynPrice)return toast('Pas assez ! ('+fm(dynPrice)+'€)');
+    money-=dynPrice;
+  }else{
+    if(diamonds<dynPrice)return toast('Pas assez ! ('+dynPrice+'💎)');
+    diamonds-=dynPrice;
+  }
+  // Update stock
+  if(stock){stock.sold++;sb.from('shop_stock').update({sold:stock.sold}).eq('id',key);}
+  var drawn=[];
+  var gR=type==='std'?'R':'L';
+  var gPool=CD.filter(function(c){return c.rarity===gR;});
+  drawn.push(gPool[Math.floor(Math.random()*gPool.length)]);
+  for(var i=0;i<2;i++){
+    var roll=Math.random(),r;
+    if(roll<0.00001)r='M';else if(roll<0.001)r='S';else if(roll<0.01)r='L';else if(roll<0.1)r='R';else r='C';
+    var rP=CD.filter(function(c){return c.rarity===r;});
+    if(!rP.length)rP=CD.filter(function(c){return c.rarity==='C';});
+    drawn.push(rP[Math.floor(Math.random()*rP.length)]);
+  }
+  revQ=drawn;revI=0;showRev();
+}
+
+function showRev(){
+  if(revI>=revQ.length){document.getElementById('revOv').classList.remove('show');document.getElementById('parts').innerHTML='';saveCards();renderMain();return;}
+  var c=revQ[revI];
+  var isNew=qty(c.id)===0;
+  var hasHolo=c.rarity!=='C';var isM=c.rarity==='M';
+  myCards[c.id]=(myCards[c.id]||0)+1;
+  var xpR=isNew?XPR[c.rarity]:0;if(xpR>0)xp+=xpR;
+  if(isNew&&isM)money+=500000;
+  if(!isNew)money+=500;
+
+  var h='<div class="rc r-'+c.rarity+'" id="ac">';
+  if(isM)h+='<div class="mega-border"></div><div class="mega-inner"></div>';
+  if(hasHolo)h+='<div class="holo"><div class="holo-rain"></div><div class="holo-shim"></div></div>';
+  h+='<div style="position:absolute;top:8px;right:8px;z-index:5;font-size:7px;font-weight:900;padding:2px 8px;border-radius:4px;background:'+(isNew?'#4ade80':'#6b7280')+';color:'+(isNew?'#052e16':'#fff')+'">'+(isNew?'NOUVELLE !':'DOUBLON x'+qty(c.id))+'</div>';
+  h+='<div class="dc-art" style="position:relative;z-index:2;height:180px">'+mkArt(c)+'</div>';
+  h+='<div style="padding:12px 16px;position:relative;z-index:2;text-align:center">';
+  h+='<div style="display:inline-block;font-size:6px;font-weight:900;letter-spacing:3px;padding:2px 10px;border-radius:4px;background:'+RCo[c.rarity]+';color:'+(c.rarity==='L'||c.rarity==='M'?'#1a1a1a':'#fff')+'">'+RL[c.rarity]+'</div>';
+  h+='<div class="dc-name'+(isM?' mega-name':'')+'" style="margin-top:6px">'+c.name+'</div>';
+  h+='<div class="dc-type" style="margin-top:2px">'+c.cat.toUpperCase()+'</div>';
+  h+='<div class="dc-desc" style="margin-top:8px">'+c.desc+'</div>';
+  if(isNew&&xpR>0)h+='<div style="margin-top:8px;font-size:10px;font-weight:800;color:#4ade80">+'+xpR.toLocaleString()+' XP</div>';
+  if(isNew&&isM)h+='<div style="font-size:12px;font-weight:800;color:#fbbf24;margin-top:2px">+500 000€ !!</div>';
+  if(!isNew)h+='<div style="margin-top:6px;font-size:9px;color:#666">Doublon → +500€</div>';
+  h+='</div></div>';
+
+  document.getElementById('revSlot').innerHTML=h;
+  document.getElementById('revOv').classList.add('show');
+  document.getElementById('revHint').textContent=revI<revQ.length-1?'TAP ('+(revQ.length-revI-1)+' restantes)':'TAP POUR FERMER';
+  if(isM){flash();spawn('#fbbf24',40,'star');setTimeout(flash,200);}
+  else if(c.rarity==='S'){flash();spawn('#ef4444',30,'dot');}
+  else if(c.rarity==='L'){flash();spawn('#fbbf24',20,'dot');}
+  else spawn(RCo[c.rarity],10,'dot');
+  setTimeout(function(){var el=document.getElementById('ac');if(el)el.classList.add('go');},80);
+  if(isNew&&xpR>0)setTimeout(function(){var p=document.createElement('div');p.className='xp-pop';p.textContent='+'+xpR.toLocaleString()+' XP';document.body.appendChild(p);setTimeout(function(){p.remove();},1500);},600);
+  revI++;
+}
+function nextRev(){showRev();}
+function flash(){var f=document.getElementById('fl');f.classList.add('on');setTimeout(function(){f.classList.remove('on');},100);}
+function spawn(col,n,type){var el=document.getElementById('parts');el.innerHTML='';for(var i=0;i<n;i++){var p=document.createElement('div');if(type==='star'){p.className='st';p.textContent=['✨','⭐','💫','🌟'][Math.floor(Math.random()*4)];}else{p.className='pt';p.style.background=col;p.style.width=(2+Math.random()*4)+'px';p.style.height=p.style.width;}p.style.left=Math.random()*100+'%';p.style.top=(20+Math.random()*50)+'%';p.style.animationDelay=Math.random()+'s';el.appendChild(p);}}
+
+// ═══ SAVE ═══
+async function saveCards(){
+  var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',CU.id).maybeSingle();
+  var rec=(gs&&gs.records)||{};rec.cards=myCards;
+  await sb.from('game_stats').update({records:rec,money:money,diamonds:diamonds,xp:xp}).eq('user_id',CU.id);
+  updMoney();
+}
+
+(async function(){
+  var r=await sb.auth.getSession();var s=r.data&&r.data.session;
+  if(!s){location.href='index.html';return;}CU=s.user;
+  var {data:gs}=await sb.from('game_stats').select('money,diamonds,xp,records').eq('user_id',CU.id).maybeSingle();
+  if(gs){money=gs.money||0;diamonds=gs.diamonds||0;xp=gs.xp||0;
+    var raw=(gs.records&&gs.records.cards)||{};
+    // Migrate from array to object if needed
+    if(Array.isArray(raw)){var obj={};raw.forEach(function(id){obj[id]=(obj[id]||0)+1;});myCards=obj;}
+    else myCards=raw;
+  }
+  renderMain();
+})();
+</script>
+</body>
+</html>
