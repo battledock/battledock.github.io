@@ -235,7 +235,7 @@
 <div class="page">
 
   <!-- Music button -->
-  <div class="music-btn" id="musicBtn" onclick="toggleMusicPanel()">🎵</div>
+  <div class="music-btn" id="menuDots" onclick="openDotMenu()" style="font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.4)">⋮</div>
 
   <!-- Header -->
   <div class="hdr">
@@ -510,16 +510,29 @@
     // Skin
     const skin  = profile?.skin_container || 'red';
     const skins = {
-      red:    ['linear-gradient(135deg,#cc2200,#991100)','#880000'],
-      blue:   ['linear-gradient(135deg,#1d4ed8,#1e3a8a)','#1e3a8a'],
-      green:  ['linear-gradient(135deg,#15803d,#14532d)','#14532d'],
-      gold:   ['linear-gradient(135deg,#b45309,#92400e)','#92400e'],
-      black:  ['linear-gradient(135deg,#1a1a1a,#000)','#000'],
-      purple: ['linear-gradient(135deg,#7c3aed,#5b21b6)','#5b21b6'],
+      red:    ['linear-gradient(135deg,#cc2200,#991100)','#880000',''],
+      blue:   ['linear-gradient(135deg,#1d4ed8,#1e3a8a)','#1e3a8a',''],
+      green:  ['linear-gradient(135deg,#15803d,#14532d)','#14532d',''],
+      gold:   ['linear-gradient(135deg,#b45309,#92400e)','#92400e',''],
+      black:  ['linear-gradient(135deg,#1a1a1a,#000)','#000',''],
+      purple: ['linear-gradient(135deg,#7c3aed,#5b21b6)','#5b21b6',''],
+      neon:   ['linear-gradient(135deg,#00ff88,#00cc66)','#00ff88','0 0 15px rgba(0,255,136,.4),inset 0 0 10px rgba(0,255,136,.1)'],
+      ice:    ['linear-gradient(135deg,#67e8f9,#0e7490)','#06b6d4','0 0 12px rgba(103,232,249,.3)'],
+      fire:   ['linear-gradient(135deg,#ff4500,#ff8c00,#ff4500)','#cc3700','0 0 14px rgba(255,69,0,.35)'],
+      rainbow:['linear-gradient(135deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff)','#ff0000','0 0 10px rgba(255,255,255,.2)'],
+      galaxy: ['linear-gradient(135deg,#1a0533,#4a1a8a,#0a0a2a)','#2d1b69','0 0 12px rgba(100,50,200,.3)'],
+      marseille:['linear-gradient(135deg,#0078D7,#fff,#0078D7)','#0068c7','0 0 8px rgba(0,120,215,.3)'],
     };
-    const [bg, border] = skins[skin] || skins.red;
+    const [cbg, cborder, cshadow] = skins[skin] || skins.red;
     const box = document.getElementById('containerBtn');
-    box.style.background = bg; box.style.borderColor = border;
+    box.style.background = cbg; box.style.borderColor = cborder;
+    if(cshadow)box.style.boxShadow=cshadow;
+
+    // Load cosmetics
+    const rec=gs?.records||{};
+    window._clickEffect=rec.click_effect||'standard';
+    window._bgTheme=rec.bg_theme||'jour';
+    applyBgTheme(window._bgTheme);
 
     updateDisplay();
     startCalibration();
@@ -527,6 +540,45 @@
     setInterval(save, 10000);
     loadMusicPrefs();
   }
+
+// ═══ MUSIC (for dot menu) ═══
+var MUSIC_CATALOG=[
+  {id:'none',file:null,name:'Pas de musique',emoji:'🔇'},
+  {id:'rock-with-you',file:'music-rock-with-you.mp3',name:'La Danse du Container 🕺',emoji:'🕺'},
+  {id:'a-la-la',file:'music-a-la-la.mp3',name:'Docker en Vacances 🌴',emoji:'🌴'},
+  {id:'aventurier',file:'music-aventurier.mp3',name:'Aventurier des Quais ⚓',emoji:'⚓'},
+  {id:'demons-minuit',file:'music-demons-minuit.mp3',name:'Le Shift de 3h du Mat\' 🌙',emoji:'🌙'},
+  {id:'so-excited',file:'music-so-excited.mp3',name:'Vendredi Soir au Port 🎉',emoji:'🎉'},
+];
+var _bgMusic=null,_selectedMusic='none',_unlockedMusic=['none'];
+
+function selectMusic(id){
+  _selectedMusic=id;
+  var track=MUSIC_CATALOG.find(function(m){return m.id===id;});
+  if(_bgMusic){_bgMusic.pause();_bgMusic=null;}
+  var btn=document.getElementById('menuDots');
+  if(btn)btn.classList.remove('playing');
+  if(track&&track.file){
+    _bgMusic=new Audio(track.file);_bgMusic.loop=true;_bgMusic.volume=0.2;
+    _bgMusic.play().catch(function(){});
+    if(btn)btn.classList.add('playing');
+  }
+}
+async function loadMusicPrefs(){
+  if(!window.currentUser)return;
+  try{
+    var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
+    if(gs.data&&gs.data.records){
+      var rec=gs.data.records;
+      if(rec.unlocked_packs){
+        _unlockedMusic=['none'];
+        MUSIC_CATALOG.forEach(function(m){if(m.id!=='none'&&rec.unlocked_packs.indexOf(m.id)!==-1)_unlockedMusic.push(m.id);});
+      }
+      if(rec.selected_music){_selectedMusic=rec.selected_music;selectMusic(_selectedMusic);}
+    }
+  }catch(e){}
+}
+window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();});
 
   // ── Calibration ──
   function startCalibration() {
@@ -750,6 +802,7 @@
 
     spawnParticle(x, y, '+' + gain + '€', false);
     if (clicks % 3 === 0) spawnParticle(x - 20, y - 24, '+' + xpGain + ' XP', true);
+    spawnClickEffect(x, y);
 
     checkLevelUp();
     updateDisplay();
@@ -855,95 +908,198 @@
 
   </script>
 
-<!-- Music Panel -->
-<div class="music-overlay" id="musicOverlay" onclick="if(event.target===this)closeMusicPanel()">
-  <div class="music-sheet">
-    <div class="music-title">🎵 MUSIQUE</div>
-    <div id="musicList"></div>
-    <button class="music-close" onclick="closeMusicPanel()">FERMER</button>
+<!-- Click Effects + Background Themes -->
+<script>
+// ═══ CLICK EFFECTS ═══
+function spawnClickEffect(x,y){
+  var eff=window._clickEffect||'standard';
+  if(eff==='standard')return;
+  var count=eff==='explosion'?8:eff==='confettis'?6:eff==='feu'?5:4;
+  for(var i=0;i<count;i++){
+    var p=document.createElement('div');
+    p.style.cssText='position:fixed;pointer-events:none;z-index:998;';
+    p.style.left=(x+Math.random()*60-30)+'px';
+    p.style.top=(y+Math.random()*40-20)+'px';
+    if(eff==='etoiles'){
+      p.textContent='✦';
+      p.style.cssText+='font-size:'+(10+Math.random()*14)+'px;color:'+['#fbbf24','#fde68a','#fff','#f59e0b'][i%4]+';animation:efStar .7s ease-out forwards;';
+    }else if(eff==='explosion'){
+      p.style.cssText+='width:'+(4+Math.random()*6)+'px;height:'+(4+Math.random()*6)+'px;border-radius:50%;background:'+['#ff4444','#ff8800','#ffcc00','#ff6600','#fff'][i%5]+';animation:efBurst .5s ease-out forwards;';
+      p.style.setProperty('--dx',(Math.random()*80-40)+'px');
+      p.style.setProperty('--dy',(Math.random()*80-40)+'px');
+    }else if(eff==='confettis'){
+      p.style.cssText+='width:'+(4+Math.random()*6)+'px;height:'+(6+Math.random()*8)+'px;border-radius:1px;background:'+['#ef4444','#3b82f6','#fbbf24','#22c55e','#a855f7','#06b6d4'][i%6]+';animation:efConf .8s ease-out forwards;';
+      p.style.setProperty('--dx',(Math.random()*60-30)+'px');
+      p.style.setProperty('--rot',(Math.random()*360)+'deg');
+    }else if(eff==='bulles'){
+      var sz=6+Math.random()*10;
+      p.style.cssText+='width:'+sz+'px;height:'+sz+'px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);background:rgba(255,255,255,.05);animation:efBub 1s ease-out forwards;';
+    }else if(eff==='feu'){
+      p.style.cssText+='width:'+(5+Math.random()*8)+'px;height:'+(8+Math.random()*12)+'px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:'+['#ff4500','#ff6600','#ff8c00','#ffcc00','#ff3300'][i%5]+';animation:efFire .6s ease-out forwards;';
+    }
+    document.body.appendChild(p);
+    setTimeout(function(){p.remove();},1000);
+  }
+}
+
+// ═══ BACKGROUND THEMES ═══
+var BG_THEMES={
+  jour:{sky1:'#2196F3',sky2:'#64B5F6',sea1:'#0288D1',sea2:'#01579B'},
+  coucher:{sky1:'#ff6b35',sky2:'#ffa94d',sea1:'#c44900',sea2:'#6b2100'},
+  nuit:{sky1:'#0a0a2e',sky2:'#1a1a4e',sea1:'#050520',sea2:'#020218'},
+  orage:{sky1:'#374151',sky2:'#6b7280',sea1:'#1f2937',sea2:'#111827'},
+  aurore:{sky1:'#ec4899',sky2:'#f9a8d4',sea1:'#9d174d',sea2:'#831843'},
+};
+
+function applyBgTheme(id){
+  var th=BG_THEMES[id]||BG_THEMES.jour;
+  var stops=document.querySelectorAll('#gsky stop');
+  if(stops.length>=2){stops[0].setAttribute('stop-color',th.sky1);stops[1].setAttribute('stop-color',th.sky2);}
+  var seaStops=document.querySelectorAll('#gsea stop');
+  if(seaStops.length>=2){seaStops[0].setAttribute('stop-color',th.sea1);seaStops[1].setAttribute('stop-color',th.sea2);}
+  // Add stars for night theme
+  var starsEl=document.getElementById('bgStars');
+  if(id==='nuit'||id==='orage'){
+    if(!starsEl){
+      var svg=document.getElementById('bg');
+      var g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='bgStars';
+      for(var i=0;i<30;i++){
+        var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('cx',Math.random()*375);c.setAttribute('cy',Math.random()*300);
+        c.setAttribute('r',Math.random()*1.5);c.setAttribute('fill','#fff');
+        c.setAttribute('opacity',Math.random()*.5+.1);g.appendChild(c);
+      }
+      svg.insertBefore(g,svg.firstChild.nextSibling);
+    }
+  }else if(starsEl)starsEl.remove();
+}
+</script>
+
+<!-- Effect animations -->
+<style>
+@keyframes efStar{0%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(.3) translateY(-50px) rotate(180deg)}}
+@keyframes efBurst{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0)}}
+@keyframes efConf{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),-60px) rotate(var(--rot))}}
+@keyframes efBub{0%{opacity:.6;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
+@keyframes efFire{0%{opacity:.8;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-50px) scale(0)}}
+</style>
+
+<!-- Three Dots Menu -->
+<div class="music-overlay" id="dotMenuOv" onclick="if(event.target===this)closeDotMenu()">
+  <div class="music-sheet" style="background:#fff;color:#1a1a1a">
+    <div style="width:36px;height:4px;border-radius:2px;background:#e5e7eb;margin:4px auto 12px"></div>
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;text-align:center;color:#9ca3af;margin-bottom:12px">PERSONNALISATION</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="dotMenuGrid">
+      <div style="padding:14px 8px;text-align:center;border-radius:12px;background:#f5f5f7;cursor:pointer" onclick="cycleCosm('skin')">
+        <div style="font-size:22px" id="menuSkinEmoji">📦</div>
+        <div style="font-size:9px;font-weight:800;color:#9ca3af;margin-top:4px">SKIN</div>
+        <div style="font-size:8px;color:#3b82f6;margin-top:1px" id="menuSkinVal">—</div>
+      </div>
+      <div style="padding:14px 8px;text-align:center;border-radius:12px;background:#f5f5f7;cursor:pointer" onclick="cycleCosm('effet')">
+        <div style="font-size:22px" id="menuEffetEmoji">💥</div>
+        <div style="font-size:9px;font-weight:800;color:#9ca3af;margin-top:4px">EFFET</div>
+        <div style="font-size:8px;color:#3b82f6;margin-top:1px" id="menuEffetVal">—</div>
+      </div>
+      <div style="padding:14px 8px;text-align:center;border-radius:12px;background:#f5f5f7;cursor:pointer" onclick="cycleCosm('fond')">
+        <div style="font-size:22px" id="menuFondEmoji">🌅</div>
+        <div style="font-size:9px;font-weight:800;color:#9ca3af;margin-top:4px">FOND</div>
+        <div style="font-size:8px;color:#3b82f6;margin-top:1px" id="menuFondVal">—</div>
+      </div>
+      <div style="padding:14px 8px;text-align:center;border-radius:12px;background:#f5f5f7;cursor:pointer" onclick="cycleCosm('musique')">
+        <div style="font-size:22px" id="menuMusiqueEmoji">🎵</div>
+        <div style="font-size:9px;font-weight:800;color:#9ca3af;margin-top:4px">MUSIQUE</div>
+        <div style="font-size:8px;color:#3b82f6;margin-top:1px" id="menuMusiqueVal">—</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button onclick="location.href='boutiqueclicker.html'" style="flex:1;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#1a0f00;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:2px;cursor:pointer">🛒 BOUTIQUE</button>
+      <button onclick="closeDotMenu()" style="flex:1;padding:11px;border:none;border-radius:12px;background:#f3f4f6;color:#9ca3af;font-weight:700;font-size:11px;cursor:pointer">FERMER</button>
+    </div>
   </div>
 </div>
 
 <script>
-// ═══ MUSIC SYSTEM ═══
-var MUSIC_CATALOG=[
-  {id:'none',file:null,name:'Pas de musique',emoji:'🔇',price:0},
-  {id:'rock-with-you',file:'music-rock-with-you.mp3',name:'La Danse du Container 🕺',price:35000,emoji:'🕺'},
-  {id:'a-la-la',file:'music-a-la-la.mp3',name:'Docker en Vacances 🌴',price:40000,emoji:'🌴'},
-  {id:'aventurier',file:'music-aventurier.mp3',name:'Aventurier des Quais ⚓',price:50000,emoji:'⚓'},
-  {id:'demons-minuit',file:'music-demons-minuit.mp3',name:'Le Shift de 3h du Mat\' 🌙',price:50000,emoji:'🌙'},
-  {id:'so-excited',file:'music-so-excited.mp3',name:'Vendredi Soir au Port 🎉',price:40000,emoji:'🎉'},
-];
-var _bgMusic=null,_selectedMusic='none',_unlockedMusic=['none'];
+// ═══ DOT MENU ═══
+var _menuItems={
+  skin:[{id:'red',name:'Rouge',emoji:'📦'},{id:'blue',name:'Bleu',emoji:'📦'},{id:'green',name:'Vert',emoji:'📦'},{id:'gold',name:'Or',emoji:'📦'},{id:'black',name:'Noir',emoji:'📦'},{id:'purple',name:'Violet',emoji:'📦'},{id:'neon',name:'Néon',emoji:'✨'},{id:'ice',name:'Givré',emoji:'🧊'},{id:'fire',name:'Flammes',emoji:'🔥'},{id:'rainbow',name:'Arc-en-Ciel',emoji:'🌈'},{id:'galaxy',name:'Galaxie',emoji:'🌌'},{id:'marseille',name:'Marseille',emoji:'🏟️'}],
+  effet:[{id:'standard',name:'Standard',emoji:'📝'},{id:'etoiles',name:'Étoiles',emoji:'⭐'},{id:'bulles',name:'Bulles',emoji:'🫧'},{id:'confettis',name:'Confettis',emoji:'🎊'},{id:'explosion',name:'Big Bang',emoji:'💥'},{id:'feu',name:'Feu',emoji:'🔥'}],
+  fond:[{id:'jour',name:'Jour',emoji:'☀️'},{id:'coucher',name:'Coucher',emoji:'🌅'},{id:'nuit',name:'Nuit',emoji:'🌙'},{id:'orage',name:'Orage',emoji:'⛈️'},{id:'aurore',name:'Aurore',emoji:'💜'}],
+  musique:[{id:'none',name:'Aucune',emoji:'🔇'}].concat(MUSIC_CATALOG.filter(function(m){return m.id!=='none'}).map(function(m){return{id:m.id,name:m.name.replace(/ [^\s]+$/,''),emoji:m.emoji}}))
+};
+var _equipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
+var _ownedItems=[];
 
-function toggleMusicPanel(){
-  document.getElementById('musicOverlay').style.display='flex';
-  renderMusicList();
+function openDotMenu(){
+  document.getElementById('dotMenuOv').style.display='flex';
+  updateMenuDisplay();
 }
-function closeMusicPanel(){
-  document.getElementById('musicOverlay').style.display='none';
-}
-function renderMusicList(){
-  var html='';
-  MUSIC_CATALOG.forEach(function(m){
-    var unlocked=_unlockedMusic.indexOf(m.id)!==-1;
-    var active=_selectedMusic===m.id;
-    var cls='music-item'+(active?' active':'')+((!unlocked&&m.id!=='none')?' locked':'');
-    html+='<div class="'+cls+'" onclick="selectMusic(\''+m.id+'\')">';
-    html+='<div class="music-item-emoji">'+m.emoji+'</div>';
-    html+='<div class="music-item-name">'+m.name+'</div>';
-    if(!unlocked&&m.id!=='none')html+='<div class="music-item-status">🔒 BOUTIQUE</div>';
-    else if(active)html+='<div class="music-item-status active">▶ EN COURS</div>';
-    else html+='<div class="music-item-status">JOUER</div>';
-    html+='</div>';
+function closeDotMenu(){document.getElementById('dotMenuOv').style.display='none';}
+
+function updateMenuDisplay(){
+  ['skin','effet','fond','musique'].forEach(function(cat){
+    var cur=_menuItems[cat].find(function(it){return it.id===_equipped[cat];})||_menuItems[cat][0];
+    document.getElementById('menu'+cap(cat)+'Emoji').textContent=cur.emoji;
+    document.getElementById('menu'+cap(cat)+'Val').textContent=cur.name;
   });
-  document.getElementById('musicList').innerHTML=html;
 }
-function selectMusic(id){
-  _selectedMusic=id;
-  var track=MUSIC_CATALOG.find(function(m){return m.id===id;});
-  if(_bgMusic){_bgMusic.pause();_bgMusic=null;}
-  document.getElementById('musicBtn').classList.remove('playing');
-  if(track&&track.file){
-    _bgMusic=new Audio(track.file);
-    _bgMusic.loop=true;_bgMusic.volume=0.2;
-    _bgMusic.play().catch(function(){});
-    document.getElementById('musicBtn').classList.add('playing');
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function cycleCosm(cat){
+  var available=_menuItems[cat].filter(function(it){
+    if(cat==='skin')return['red','blue','green','gold','black','purple'].indexOf(it.id)!==-1||_ownedItems.indexOf(it.id)!==-1;
+    if(cat==='effet')return it.id==='standard'||_ownedItems.indexOf(it.id)!==-1;
+    if(cat==='fond')return it.id==='jour'||_ownedItems.indexOf(it.id)!==-1;
+    if(cat==='musique')return it.id==='none'||_unlockedMusic.indexOf(it.id)!==-1;
+    return false;
+  });
+  if(available.length<2)return;
+  var idx=available.findIndex(function(it){return it.id===_equipped[cat];});
+  idx=(idx+1)%available.length;
+  _equipped[cat]=available[idx].id;
+  updateMenuDisplay();
+  applyCosm(cat,_equipped[cat]);
+}
+
+function applyCosm(cat,id){
+  if(cat==='skin'){
+    var skins={red:['linear-gradient(135deg,#cc2200,#991100)','#880000',''],blue:['linear-gradient(135deg,#1d4ed8,#1e3a8a)','#1e3a8a',''],green:['linear-gradient(135deg,#15803d,#14532d)','#14532d',''],gold:['linear-gradient(135deg,#b45309,#92400e)','#92400e',''],black:['linear-gradient(135deg,#1a1a1a,#000)','#000',''],purple:['linear-gradient(135deg,#7c3aed,#5b21b6)','#5b21b6',''],neon:['linear-gradient(135deg,#00ff88,#00cc66)','#00ff88','0 0 15px rgba(0,255,136,.4)'],ice:['linear-gradient(135deg,#67e8f9,#0e7490)','#06b6d4','0 0 12px rgba(103,232,249,.3)'],fire:['linear-gradient(135deg,#ff4500,#ff8c00,#ff4500)','#cc3700','0 0 14px rgba(255,69,0,.35)'],rainbow:['linear-gradient(135deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff,#8800ff)','#ff0000',''],galaxy:['linear-gradient(135deg,#1a0533,#4a1a8a,#0a0a2a)','#2d1b69','0 0 12px rgba(100,50,200,.3)'],marseille:['linear-gradient(135deg,#0078D7,#fff,#0078D7)','#0068c7','']};
+    var s=skins[id]||skins.red;var box=document.getElementById('containerBtn');
+    box.style.background=s[0];box.style.borderColor=s[1];box.style.boxShadow=s[2]||'none';
   }
-  renderMusicList();
-  // Save selection
-  saveMusicChoice();
+  if(cat==='effet')window._clickEffect=id;
+  if(cat==='fond')applyBgTheme(id);
+  if(cat==='musique')selectMusic(id);
+  saveCosmPrefs();
 }
-async function saveMusicChoice(){
-  if(!window.currentUser)return;
+
+async function saveCosmPrefs(){
+  if(!window.currentUser||!window._sb)return;
   try{
     var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
-    if(gs.data){var rec=gs.data.records||{};rec.selected_music=_selectedMusic;
-      await window._sb.from('game_stats').update({records:rec}).eq('user_id',window.currentUser.id);}
-  }catch(e){}
-}
-async function loadMusicPrefs(){
-  if(!window.currentUser)return;
-  try{
-    var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
-    if(gs.data&&gs.data.records){
-      if(gs.data.records.unlocked_music)_unlockedMusic=['none'].concat(gs.data.records.unlocked_music);
-      if(gs.data.records.selected_music){
-        _selectedMusic=gs.data.records.selected_music;
-        if(_unlockedMusic.indexOf(_selectedMusic)!==-1){
-          var track=MUSIC_CATALOG.find(function(m){return m.id===_selectedMusic;});
-          if(track&&track.file){
-            _bgMusic=new Audio(track.file);_bgMusic.loop=true;_bgMusic.volume=0.2;
-            _bgMusic.play().catch(function(){});
-            document.getElementById('musicBtn').classList.add('playing');
-          }
-        }
-      }
+    if(gs.data){var rec=gs.data.records||{};
+      rec.click_effect=_equipped.effet;rec.bg_theme=_equipped.fond;rec.selected_music=_equipped.musique;
+      await window._sb.from('game_stats').update({records:rec}).eq('user_id',window.currentUser.id);
+      await window._sb.from('profiles').update({skin_container:_equipped.skin}).eq('user_id',window.currentUser.id);
     }
   }catch(e){}
 }
-// Stop music when leaving
-window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();});
+
+async function loadDotMenuPrefs(){
+  if(!window.currentUser||!window._sb)return;
+  try{
+    var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
+    var pr=await window._sb.from('profiles').select('skin_container').eq('user_id',window.currentUser.id).maybeSingle();
+    if(gs.data){var rec=gs.data.records||{};
+      _ownedItems=rec.unlocked_packs||[];
+      _equipped.skin=pr?.data?.skin_container||'red';
+      _equipped.effet=rec.click_effect||'standard';
+      _equipped.fond=rec.bg_theme||'jour';
+      _equipped.musique=rec.selected_music||'none';
+    }
+  }catch(e){}
+}
+// Load on init
+var _dotReady=setInterval(function(){if(window.currentUser){clearInterval(_dotReady);loadDotMenuPrefs();}},200);
 </script>
 </body>
 </html>
