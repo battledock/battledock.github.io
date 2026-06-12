@@ -15,24 +15,8 @@
 html,body{height:100%;overflow:hidden;touch-action:manipulation}
 body{background:#0a0a0a;font-family:'Inter',sans-serif}
 canvas{display:block;width:100%;height:100%}
-.hud{position:fixed;top:0;left:0;right:0;padding:calc(env(safe-area-inset-top,0px)+8px) 10px 0;z-index:10;pointer-events:none}
-.hud-top{display:flex;align-items:flex-start;justify-content:space-between}
-.hud-left{display:flex;flex-direction:column;gap:5px;pointer-events:auto}
-.hud-back{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:5px 12px;font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1px;cursor:pointer;text-decoration:none;display:inline-block;width:fit-content}
-.hud-lives-pill{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:5px 10px;display:flex;align-items:center;gap:4px;width:fit-content}
-.hud-lives{font-size:13px}
-.hud-lives-count{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff}
-.hud-center{text-align:center;pointer-events:auto}
-.hud-score-pill{background:rgba(0,0,0,.4);border:1.5px solid rgba(255,255,255,.1);border-radius:16px;padding:6px 18px;display:inline-block}
-.hud-score-lbl{font-size:7px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px}
-.hud-score{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#fff;line-height:1}
-.hud-combo{font-family:'Bangers',cursive;font-size:14px;color:#fbbf24;letter-spacing:1px;margin-top:2px}
-.hud-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;pointer-events:auto}
-.hud-pause{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:5px 10px;font-size:12px;color:rgba(255,255,255,.5);cursor:pointer}
-.hud-gains-pill{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:5px 10px;text-align:right}
-.hud-money{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#4ade80;line-height:1}
-.hud-xp{font-family:'Bebas Neue',sans-serif;font-size:11px;color:#818cf8;line-height:1;margin-top:2px}
-.hud-best{font-size:7px;color:rgba(255,255,255,.2);font-weight:700;letter-spacing:1px;margin-top:2px}
+.life-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,.4);transition:all .3s}
+.life-dot.lost{background:rgba(255,255,255,.1);box-shadow:none}
 
 .feedback{position:fixed;top:32%;left:50%;transform:translate(-50%,-50%);z-index:20;pointer-events:none;text-align:center}
 .fb-text{font-family:'Bangers',cursive;font-size:38px;letter-spacing:3px;opacity:0;transform:scale(.5) rotate(-3deg);transition:all .15s cubic-bezier(.175,.885,.32,1.275);text-shadow:3px 3px 0 rgba(0,0,0,.4);-webkit-text-stroke:1px rgba(0,0,0,.15)}
@@ -62,32 +46,33 @@ canvas{display:block;width:100%;height:100%}
 </head>
 <body>
 <canvas id="game"></canvas>
-<div class="hud">
-  <div class="hud-top">
-    <div class="hud-left">
-      <a class="hud-back" onclick="location.href='travail.html'">← RETOUR</a>
-      <div class="hud-lives-pill">
-        <span class="hud-lives">❤️</span>
-        <span class="hud-lives-count" id="hudLives">×3</span>
-      </div>
-    </div>
-    <div class="hud-center">
-      <div class="hud-score-pill">
-        <div class="hud-score-lbl">CHARGEMENTS</div>
-        <div class="hud-score" id="hudScore">0</div>
-        <div class="hud-combo" id="hudCombo"></div>
-      </div>
-    </div>
-    <div class="hud-right">
-      <div class="hud-pause" id="pauseBtn" onclick="togglePause()">⏸</div>
-      <div class="hud-gains-pill">
-        <div class="hud-money" id="hudMoney">+0€</div>
-        <div class="hud-xp" id="hudXP">+0 XP</div>
-        <div class="hud-best" id="hudBest">RECORD : 0</div>
-      </div>
-    </div>
+<div style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10;pointer-events:none">
+  <!-- Score centre -->
+  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px)+10px);left:50%;transform:translateX(-50%);text-align:center">
+    <div id="hudScore" style="font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:1;text-shadow:0 3px 12px rgba(0,0,0,.4);color:#fff">0</div>
+  </div>
+  <!-- Combo sous le score -->
+  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px)+54px);left:50%;transform:translateX(-50%)">
+    <div id="hudCombo" style="font-family:'Bangers',cursive;font-size:16px;color:#fbbf24;text-shadow:0 1px 6px rgba(0,0,0,.5)"></div>
+  </div>
+  <!-- Retour haut gauche -->
+  <div onclick="location.href='travail.html'" style="pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top,0px)+12px);left:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:14px;color:rgba(255,255,255,.5);cursor:pointer">←</div>
+  <!-- Pause haut droite -->
+  <div id="pauseBtn" onclick="togglePause()" style="pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top,0px)+12px);right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:13px;color:rgba(255,255,255,.5);cursor:pointer">⏸</div>
+  <!-- Boutique haut droite sous pause -->
+  <div onclick="location.href='boutiquegrutier.html'" style="pointer-events:auto;position:absolute;top:calc(env(safe-area-inset-top,0px)+52px);right:12px;width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.25);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer">🛒</div>
+  <!-- Vies sous le score -->
+  <div style="position:absolute;top:calc(env(safe-area-inset-top,0px)+74px);left:50%;transform:translateX(-50%);display:flex;gap:3px" id="hudLivesWrap">
+    <div class="life-dot"></div><div class="life-dot"></div><div class="life-dot"></div>
+  </div>
+  <!-- Gains bas droite -->
+  <div style="position:absolute;bottom:calc(env(safe-area-inset-bottom,20px)+10px);right:10px;text-align:right">
+    <div id="hudMoney" style="font-family:'Bebas Neue',sans-serif;font-size:15px;color:#4ade80;text-shadow:0 1px 4px rgba(0,0,0,.4)">+0€</div>
+    <div id="hudXP" style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:#818cf8;text-shadow:0 1px 4px rgba(0,0,0,.4)">+0 XP</div>
+    <div id="hudBest" style="font-size:7px;color:rgba(255,255,255,.2);font-weight:700;margin-top:1px">RECORD : 0</div>
   </div>
 </div>
+<div id="hudLives" style="display:none">×3</div>
 <div class="feedback"><div class="fb-text" id="fbText"></div><div class="fb-money" id="fbMoney"></div></div>
 <div id="pauseOverlay" style="display:none;position:fixed;inset:0;z-index:45;background:rgba(0,0,0,.75);align-items:center;justify-content:center;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)"><div style="text-align:center"><div style="font-family:Bangers,cursive;font-size:32px;color:#fff;letter-spacing:3px">PAUSE</div><button onclick="togglePause()" style="margin-top:16px;padding:13px 28px;border:none;border-radius:12px;background:#fbbf24;color:#1a1a1a;font-family:Bangers,cursive;font-size:16px;letter-spacing:2px;cursor:pointer">REPRENDRE</button></div></div>
 <div class="start" id="startScreen" style="display:none"></div>
@@ -468,6 +453,9 @@ function checkLanding(){
 
 function updateLives(){
   document.getElementById('hudLives').textContent='×'+lives;
+  // Update life dots
+  var dots=document.querySelectorAll('.life-dot');
+  dots.forEach(function(d,i){d.classList.toggle('lost',i>=lives);});
 }
 
 function showFB(text,color,money){
