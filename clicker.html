@@ -9,7 +9,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0a">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js">
+// ═══ SYNDICAT WEEKLY TRACKING ═══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+async function trackSyndicat(uid,field,value,mode){
+  try{
+    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
+    var rec=(gs&&gs.records)||{};
+    rec.syndicat=rec.syndicat||{};
+    var wk='week_'+_weekNum();
+    rec.syndicat[wk]=rec.syndicat[wk]||{};
+    var cur=rec.syndicat[wk][field]||0;
+    if(mode==='max')rec.syndicat[wk][field]=Math.max(cur,value);
+    else if(mode==='min')rec.syndicat[wk][field]=(cur===0?value:Math.min(cur,value));
+    else if(mode==='add')rec.syndicat[wk][field]=cur+value;
+    await sb.from('game_stats').update({records:rec}).eq('user_id',uid);
+  }catch(e){}
+}
+</script>
   <script>
     (function() {
       const PASS = 'froid';
@@ -748,6 +765,7 @@ window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();}
     checkRhythm();
 
     clicks++;
+    if(clicks%10===0&&currentUser)trackSyndicat(currentUser.id,'total_clicks_week',10,'add');
     const xpGain = window.xpPerClick    || 1;
     const base   = window.moneyPerClick || 1;
     const gain   = Math.floor(base * combo);

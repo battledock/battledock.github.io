@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>Course de Clarks — 4K</title>
 <style>*{margin:0;padding:0;box-sizing:border-box}html,body{height:100%;overflow:hidden;background:#222}canvas{display:block;width:100%;height:100%;touch-action:none}</style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js">
+// ═══ SYNDICAT WEEKLY TRACKING ═══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+async function trackSyndicat(uid,field,value,mode){
+  try{
+    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
+    var rec=(gs&&gs.records)||{};
+    rec.syndicat=rec.syndicat||{};
+    var wk='week_'+_weekNum();
+    rec.syndicat[wk]=rec.syndicat[wk]||{};
+    var cur=rec.syndicat[wk][field]||0;
+    if(mode==='max')rec.syndicat[wk][field]=Math.max(cur,value);
+    else if(mode==='min')rec.syndicat[wk][field]=(cur===0?value:Math.min(cur,value));
+    else if(mode==='add')rec.syndicat[wk][field]=cur+value;
+    await sb.from('game_stats').update({records:rec}).eq('user_id',uid);
+  }catch(e){}
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -943,6 +960,7 @@ async function saveRaceResults(){
       var rec=gs.data.records||{};
       var raceTimeSec=raceTime/60;
       if(!rec.clark_best||raceTimeSec<rec.clark_best)rec.clark_best=raceTimeSec;
+      trackSyndicat(_me.id,'clark_best',raceTimeSec,'min');
       if(!rec.clark_races)rec.clark_races=0;rec.clark_races++;
       var pos=getPos(),myP=pos.indexOf('p')+1;
       if(!rec.clark_wins)rec.clark_wins=0;if(myP===1)rec.clark_wins++;

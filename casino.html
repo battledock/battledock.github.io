@@ -5,7 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Battle Dock Casino</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+// ═══ SYNDICAT WEEKLY TRACKING ═══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+async function trackSyndicat(uid,field,value,mode){
+  try{
+    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
+    var rec=(gs&&gs.records)||{};
+    rec.syndicat=rec.syndicat||{};
+    var wk='week_'+_weekNum();
+    rec.syndicat[wk]=rec.syndicat[wk]||{};
+    var cur=rec.syndicat[wk][field]||0;
+    if(mode==='max')rec.syndicat[wk][field]=Math.max(cur,value);
+    else if(mode==='min')rec.syndicat[wk][field]=(cur===0?value:Math.min(cur,value));
+    else if(mode==='add')rec.syndicat[wk][field]=cur+value;
+    await sb.from('game_stats').update({records:rec}).eq('user_id',uid);
+  }catch(e){}
+}
+</script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
   body { font-family:'Inter',sans-serif; background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b); background-attachment:fixed; color:#fff; padding:env(safe-area-inset-top,16px) 16px calc(env(safe-area-inset-bottom,0px) + 24px); min-height:100dvh; -webkit-overflow-scrolling:touch; }
@@ -626,6 +643,7 @@
   function finishRound(mult,resEl,label){
     if(mult>0){
       const gain=Math.round(bet*mult); money+=gain;
+      if(currentUser)trackSyndicat(currentUser.id,'casino_gains_week',gain,'add');
       resEl.className='result win'; resEl.textContent=`${label} · +${fmt(gain-bet)}€`;
       showToast(`🎉 ${label} — tu gagnes ${fmt(gain)}€ !`,'good');
     } else {

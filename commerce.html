@@ -1223,6 +1223,9 @@ async function confirmCreate(){
   }catch(e){toast('Erreur');btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
 }
 
+// ══ WEEK HELPER ══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+
 // ══ ZONE REVENUE HELPER ══
 var ZONE_REVS={quai_nord:100,hangar_sud:180,zone_frigo:280,terminal:420,docks:650,zone_com:900};
 var ZONE_KW={quai_nord:['LOGISTIQUE','MANUTENTION','HUB','CHAINE'],hangar_sud:['COMMERCE','DISTRIBUTION','STOCKAGE','GROS'],zone_frigo:['ALIMENTAIRE','FROID','POISSONNERIE','RESTAURATION','GASTRONOMIE','SNACK','CAFE'],terminal:['TRANSPORT','NAUTIQUE','MARITIME','COTIER','BATEAUX','ARMEMENT','LACUSTRE'],docks:['CONSTRUCTION','TECHNIQUE','FABRICATION','NAVALE','REHABILITATION','REPARATION','INGENIERIE'],zone_com:['SERVICES','RESTAURATION','CAFE','LOISIRS','EVENEMENT','GASTRONOMIE','ARTISAN']};
@@ -1289,6 +1292,8 @@ async function investir(){
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
   money=newMoney;
   toast('Investi '+fmtM(amt)+' !');
+  // Syndicat tracking
+  try{var wk='week_'+_weekNum();var {data:_gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();var _rec=(_gs&&_gs.records)||{};_rec.syndicat=_rec.syndicat||{};_rec.syndicat[wk]=_rec.syndicat[wk]||{};_rec.syndicat[wk].invested_week=(_rec.syndicat[wk].invested_week||0)+amt;await sb.from('game_stats').update({records:_rec}).eq('user_id',currentUser.id);}catch(e){}
   loadDashboard();
 }
 

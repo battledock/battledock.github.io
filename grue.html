@@ -9,7 +9,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a0a">
 <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js">
+// ═══ SYNDICAT WEEKLY TRACKING ═══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+async function trackSyndicat(uid,field,value,mode){
+  try{
+    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
+    var rec=(gs&&gs.records)||{};
+    rec.syndicat=rec.syndicat||{};
+    var wk='week_'+_weekNum();
+    rec.syndicat[wk]=rec.syndicat[wk]||{};
+    var cur=rec.syndicat[wk][field]||0;
+    if(mode==='max')rec.syndicat[wk][field]=Math.max(cur,value);
+    else if(mode==='min')rec.syndicat[wk][field]=(cur===0?value:Math.min(cur,value));
+    else if(mode==='add')rec.syndicat[wk][field]=cur+value;
+    await sb.from('game_stats').update({records:rec}).eq('user_id',uid);
+  }catch(e){}
+}
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 html,body{height:100%;overflow:hidden;touch-action:manipulation}
@@ -599,6 +616,7 @@ async function gameOver(){
       var gs=await sb.from('game_stats').select('money,xp,records').eq('user_id',_me.id).maybeSingle();
       if(gs.data){var rec=gs.data.records||{};if(!rec.grue_best||score>rec.grue_best)rec.grue_best=score;
       await sb.from('game_stats').update({money:(gs.data.money||0)+totalEarned,xp:(gs.data.xp||0)+totalXP,records:rec}).eq('user_id',_me.id);_bestScore=rec.grue_best;}
+      trackSyndicat(_me.id,'grue_best',score,'max');
     }catch(e){}
   }
   document.getElementById('goScore').textContent=score;
