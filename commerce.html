@@ -1226,16 +1226,18 @@ async function confirmCreate(){
 // ══ ZONE REVENUE HELPER ══
 var ZONE_REVS={quai_nord:100,hangar_sud:180,zone_frigo:280,terminal:420,docks:650,zone_com:900};
 var ZONE_KW={quai_nord:['LOGISTIQUE','MANUTENTION','HUB','CHAINE'],hangar_sud:['COMMERCE','DISTRIBUTION','STOCKAGE','GROS'],zone_frigo:['ALIMENTAIRE','FROID','POISSONNERIE','RESTAURATION','GASTRONOMIE','SNACK','CAFE'],terminal:['TRANSPORT','NAUTIQUE','MARITIME','COTIER','BATEAUX','ARMEMENT','LACUSTRE'],docks:['CONSTRUCTION','TECHNIQUE','FABRICATION','NAVALE','REHABILITATION','REPARATION','INGENIERIE'],zone_com:['SERVICES','RESTAURATION','CAFE','LOISIRS','EVENEMENT','GASTRONOMIE','ARTISAN']};
-function calcZoneRev(zones,tag){var total=0;if(!zones)return 0;Object.keys(zones).forEach(function(id){var z=zones[id];if(!z||!z.level)return;var base=ZONE_REVS[id]||0;var bonus=(ZONE_KW[id]||[]).some(function(k){return(tag||'').toUpperCase().indexOf(k)!==-1;});total+=Math.floor(base*z.level*(bonus?1.5:1));});return total;}
+function calcZoneRev(zones,tag){var total=0;if(!zones)return 0;Object.keys(zones).forEach(function(id){var z=zones[id];if(!z||!z.level)return;if(z.fused_with&&z.level<6)return;var base=ZONE_REVS[id]||0;var mult=z.level>=6?15:z.level;var bonus=(ZONE_KW[id]||[]).some(function(k){return(tag||'').toUpperCase().indexOf(k)!==-1;});total+=Math.floor(base*mult*(bonus?1.5:1));});return total;}
 
 // ══ DASHBOARD ══
 async function loadDashboard(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(!co)return;
   var t=TYPES[co.type_id]||TYPES[0];
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
   var baseRev=Math.floor((co.valeur||0)*0.002);
-  var {data:gs2}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
-  var zRev=calcZoneRev(gs2&&gs2.commerce&&gs2.commerce.zones,t.tag);var rev=baseRev+zRev;
+  var zRev=calcZoneRev(com.zones||{},t.tag);
+  var rev=baseRev+zRev;
   document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
   document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
@@ -1245,8 +1247,6 @@ async function loadDashboard(){
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
   // Collecte
-  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
-  var com=(gs&&gs.commerce)||{};
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
   var elapsed=(Date.now()-last)/3600000;
   var pending=Math.floor(rev*elapsed);
@@ -1259,8 +1259,11 @@ async function collecterRevenus(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
   if(!co||!gs)return;
-  var baseRev2=Math.floor((co.valeur||0)*0.002);var t2=TYPES[co.type_id]||TYPES[0];var zRev2=calcZoneRev(com&&com.zones,t2.tag);var rev=baseRev2+zRev2;
   var com=(gs.commerce)||{};
+  var t2=TYPES[co.type_id]||TYPES[0];
+  var baseRev2=Math.floor((co.valeur||0)*0.002);
+  var zRev2=calcZoneRev(com.zones||{},t2.tag);
+  var rev=baseRev2+zRev2;
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
   var elapsed=(Date.now()-last)/3600000;
   var pending=Math.floor(rev*elapsed);
