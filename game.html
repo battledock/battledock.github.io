@@ -495,6 +495,34 @@ body{
   cursor:pointer;box-shadow:4px 4px 0 var(--shadow);
 }
 .lvlup-btn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--shadow);}
+
+/* ═══ ONBOARDING ═══ */
+.ob-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;animation:obFadeIn .3s ease}
+@keyframes obFadeIn{from{opacity:0}to{opacity:1}}
+.ob-card{background:#fff;border:3px solid #1a1a1a;border-radius:16px;box-shadow:4px 4px 0 #1a1a1a;width:100%;max-width:320px;overflow:hidden;animation:obSlideUp .4s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes obSlideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+.ob-hero{background:linear-gradient(135deg,#cc1a1a,#991414);padding:24px 20px;text-align:center;position:relative;overflow:hidden}
+.ob-hero::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='rgba(255,255,255,.05)'/%3E%3C/svg%3E")}
+.ob-emoji{font-size:56px;display:block;margin-bottom:4px;animation:obBob 2s ease infinite}
+@keyframes obBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.ob-body{padding:18px 20px 20px}
+.ob-step{font-size:7px;font-weight:800;color:#cc1a1a;letter-spacing:2px;margin-bottom:6px}
+.ob-title{font-family:'Bangers',cursive;font-size:22px;color:#1a1a1a;letter-spacing:1px;line-height:1.1}
+.ob-text{font-size:11px;color:#6b7280;margin-top:8px;line-height:1.5}
+.ob-quote{font-size:12px;color:#1a1a1a;font-style:italic;background:#f5f0e8;border-left:3px solid #cc1a1a;border-radius:0 8px 8px 0;padding:8px 12px;margin-top:10px;line-height:1.4}
+.ob-btn{margin-top:14px;width:100%;padding:12px;background:#cc1a1a;border:2px solid #1a1a1a;border-radius:10px;font-family:'Bangers',cursive;font-size:15px;color:#fff;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a}
+.ob-btn:active{box-shadow:0 0;transform:translate(2px,2px)}
+.ob-btn-skip{margin-top:8px;width:100%;padding:8px;background:transparent;border:none;font-size:10px;color:#9ca3af;cursor:pointer}
+.ob-dots{display:flex;justify-content:center;gap:5px;margin-top:12px}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:#e5e7eb;transition:background .3s}
+.ob-dot.on{background:#cc1a1a}
+/* Tooltip */
+.ob-tooltip{position:absolute;z-index:9999;pointer-events:none;animation:ttPop .3s cubic-bezier(.175,.885,.32,1.275)}
+@keyframes ttPop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.ob-tooltip-box{background:#1a1a1a;color:#fff;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;white-space:nowrap;position:relative;max-width:200px;white-space:normal;line-height:1.3}
+.ob-tooltip-box::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#1a1a1a;border-bottom:none}
+.ob-pulse{position:absolute;z-index:9998;border-radius:14px;animation:pulse 1.5s ease infinite;pointer-events:none;background:rgba(204,26,26,.15);border:2px dashed #cc1a1a}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.02)}}
 </style>
 </head>
 <body>
@@ -562,7 +590,7 @@ body{
   </div>
 
   <!-- TRAVAILLER -->
-  <div class="widget widget-full widget-work" onclick="location.href='travail.html'">
+  <div class="widget widget-full widget-work" id="wTravail" onclick="location.href='travail.html'">
     <div class="work-mesh">
       <div class="work-blob" style="top:-20%;left:10%;width:150px;height:150px;background:rgba(14,165,233,.4);animation-duration:7s;"></div>
       <div class="work-blob" style="top:30%;right:-10%;width:120px;height:120px;background:rgba(251,191,36,.2);animation-duration:5s;animation-delay:-2s;"></div>
@@ -593,7 +621,7 @@ body{
   </div>
 
   <!-- COMMERCE -->
-  <div class="widget widget-full widget-commerce" onclick="location.href='commerce.html'">
+  <div class="widget widget-full widget-commerce" id="wCommerce" onclick="location.href='commerce.html'">
     <div class="commerce-rain" id="commerceRain"></div>
     <div class="commerce-company-logo" id="commerceLogo">🏪</div>
     <div class="commerce-company-name" id="commerceName">Mon Entreprise</div>
@@ -899,7 +927,8 @@ async function checkPWAInstall(uid,currentMoney,currentTrophies){
   // Check Supabase records first
   var gs=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
   var records=(gs.data&&gs.data.records)||{};
-  if(records.pwa_installed&&isStandalone()){
+  checkOnboarding(uid,records);
+    if(records.pwa_installed&&isStandalone()){
     // Already installed on THIS device → hide
     document.getElementById('installBanner').style.display='none';
     return;
@@ -1225,6 +1254,91 @@ function closePopup(){
 
 
 var dlgTimer=null;
+
+// ═══ ONBOARDING ═══
+var OB_STEPS=[
+  {emoji:'👷',step:'BIENVENUE',title:'Bienvenue au Port',
+   quote:'Bienvenue gamin. Ici on travaille dur, on gagne bien, et on rit fort.',
+   text:'Battle Dock, ton empire portuaire. Clique, construis, domine.',
+   btn:'C EST PARTI'},
+  {emoji:'💪',step:'ETAPE 1 sur 3',title:'Commence par travailler',
+   quote:'Le boulot passe avant tout. Travaille pour tes premiers euros.',
+   text:'Le widget TRAVAILLER est ta source de revenus de base. Chaque jour.',
+   btn:'OK',target:'wTravail'},
+  {emoji:'🏪',step:'ETAPE 2 sur 3',title:'Lance ton entreprise',
+   quote:'Un vrai docker a son business. Le commerce donne des revenus passifs.',
+   text:'Ton entreprise rapporte de l argent meme quand tu ne joues pas.',
+   btn:'OK',target:'wCommerce'},
+  {emoji:'🏆',step:'ETAPE 3 sur 3',title:'Le port vous appartient',
+   quote:'Maintenant tu sais. Le reste, tu l apprendras en jouant.',
+   text:'Mini-jeux, casino, syndicat, bourse, cartes... Explore et domine !',
+   btn:'JOUER !',finish:true},
+];
+var obStep=0;
+
+function obShow(){
+  var s=OB_STEPS[obStep];
+  var ov=document.getElementById('obOverlay');
+  ov.style.display='flex';
+  ov.className='ob-overlay';
+
+  var dots=OB_STEPS.map(function(_,i){return '<div class="ob-dot'+(i===obStep?' on':'')+'"></div>';}).join('');
+
+  ov.innerHTML='<div class="ob-card">'
+    +'<div class="ob-hero"><span class="ob-emoji">'+s.emoji+'</span>'
+    +'<div style="font-family:Bangers,cursive;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:3px">'+s.step+'</div>'
+    +'<div style="font-family:Bangers,cursive;font-size:20px;color:#fff;margin-top:2px;text-shadow:1px 1px 0 rgba(0,0,0,.2)">'+s.title+'</div>'
+    +'</div>'
+    +'<div class="ob-body">'
+    +'<div class="ob-quote">'+s.quote+'</div>'
+    +'<div class="ob-text">'+s.text+'</div>'
+    +'<div class="ob-dots">'+dots+'</div>'
+    +'<button class="ob-btn" onclick="obNext()">'+s.btn+'</button>'
+    +(obStep===0?'<button class="ob-btn-skip" onclick="obFinish()">Passer</button>':'')
+    +'</div></div>';
+
+  // Highlight target widget
+  if(s.target){obPulse(s.target);}else{obClearPulse();}
+}
+
+function obPulse(wid){
+  var el=document.getElementById(wid);
+  if(!el)return;
+  var r=el.getBoundingClientRect();
+  var p=document.getElementById('obPulse');
+  p.style.display='block';
+  p.style.top=(r.top+window.scrollY-4)+'px';
+  p.style.left=(r.left-4)+'px';
+  p.style.width=(r.width+8)+'px';
+  p.style.height=(r.height+8)+'px';
+}
+function obClearPulse(){document.getElementById('obPulse').style.display='none';}
+
+function obNext(){
+  obStep++;
+  if(obStep>=OB_STEPS.length){obFinish();return;}
+  obShow();
+}
+
+async function obFinish(){
+  document.getElementById('obOverlay').style.display='none';
+  obClearPulse();
+  // Save to Supabase
+  try{
+    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser).maybeSingle();
+    var rec=(gs&&gs.records)||{};
+    rec.onboarding_done=true;
+    await sb.from('game_stats').update({records:rec}).eq('user_id',currentUser);
+  }catch(e){}
+}
+
+function checkOnboarding(uid,records){
+  if(records&&records.onboarding_done)return;
+  currentUser=uid;
+  obStep=0;
+  obShow();
+}
+
 </script>
 
   <div class="d4-row">
@@ -1232,6 +1346,13 @@ var dlgTimer=null;
     <div class="d4-bubble" id="d4Text">...</div>
   </div>
   <div class="d4-name" id="d4Name">GÉGÉ · Quai Nord</div>
+</div>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div id="obOverlay" style="display:none"></div>
+<div id="obPulse" class="ob-pulse" style="display:none"></div>
+<div id="obTooltip" class="ob-tooltip" style="display:none">
+  <div class="ob-tooltip-box" id="obTooltipText"></div>
 </div>
 </body>
 </html>
