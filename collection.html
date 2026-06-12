@@ -311,10 +311,51 @@ function renderCards(){
 }
 
 // ═══ PACKS TAB ═══
-function renderPacks(){
-  var h='<div class="sec">📦 OUVRIR DES PACKS</div>';
-  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2a2a3e);border-color:#4b5563" onclick="openPack(\'std\')"><div style="font-size:28px">📦</div><div style="font-family:Bangers,cursive;font-size:14px;color:#fff;margin-top:4px">PACK STANDARD</div><div style="font-size:8px;color:#666;margin-top:2px">3 cartes · Garanti 1 Rare minimum</div><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24;margin-top:6px">5 000€</div></div>';
-  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2d1b69);border-color:#8b5cf6" onclick="openPack(\'leg\')"><div style="font-size:28px">💎</div><div style="font-family:Bangers,cursive;font-size:14px;color:#c4b5fd;margin-top:4px">PACK LÉGENDAIRE</div><div style="font-size:8px;color:#666;margin-top:2px">3 cartes · Garanti 1 Légendaire minimum</div><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#8b5cf6;margin-top:6px">5 💎</div></div>';
+var shopData={};
+async function renderPacks(){
+  var today=new Date().toISOString().split('T')[0];
+  try{
+    var stdKey='std_'+today,legKey='leg_'+today;
+    var {data:rows}=await sb.from('shop_stock').select('*').in('id',[stdKey,legKey]);
+    var byId={};if(rows)rows.forEach(function(r){byId[r.id]=r;});
+    if(!byId[stdKey]){await sb.from('shop_stock').upsert({id:stdKey,item_type:'pack_std',max_qty:10,sold:0,base_price:5000,price_type:'money'});byId[stdKey]={max_qty:10,sold:0,base_price:5000};}
+    if(!byId[legKey]){await sb.from('shop_stock').upsert({id:legKey,item_type:'pack_leg',max_qty:3,sold:0,base_price:50,price_type:'diamonds'});byId[legKey]={max_qty:3,sold:0,base_price:50};}
+    shopData=byId;
+    var {data:excls}=await sb.from('shop_stock').select('*').eq('item_type','exclusive').gt('max_qty',0);
+    var exclList=excls||[];
+  }catch(e){console.error(e);shopData={};var exclList=[];}
+  var std=shopData['std_'+today]||{sold:0,max_qty:10,base_price:5000};
+  var leg=shopData['leg_'+today]||{sold:0,max_qty:3,base_price:50};
+  var stdPrice=Math.floor(std.base_price*(1+std.sold*0.1));
+  var legPrice=Math.floor(leg.base_price*(1+leg.sold*0.15));
+  var stdLeft=Math.max(0,std.max_qty-std.sold),legLeft=Math.max(0,leg.max_qty-leg.sold);
+  var h='<div class="sec">\u{1F4E6} PACKS DU JOUR \u2014 Restock \u00e0 minuit</div>';
+  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2a2a3e);border-color:'+(stdLeft<=0?'#333':'#4b5563')+';'+(stdLeft<=0?'opacity:.4;pointer-events:none':'')+'" onclick="openPack(\'std\','+stdPrice+')">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">\u{1F4E6}</div><div style="font-size:8px;font-weight:800;color:'+(stdLeft<=3?'#ef4444':'#4ade80')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(stdLeft<=0?'\u00c9PUIS\u00c9':stdLeft+'/'+std.max_qty+' EN STOCK')+'</div></div>';
+  h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#fff;margin-top:4px">PACK STANDARD</div>';
+  h+='<div style="font-size:8px;color:#666;margin-top:2px">3 cartes \u00b7 Garanti 1 Rare minimum</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px"><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24">'+fm(stdPrice)+'\u20ac</div>';
+  if(std.sold>0)h+='<div style="font-size:8px;color:#ef4444;font-weight:700">\u2191 +'+(std.sold*10)+'%</div>';
+  h+='</div></div>';
+  h+='<div class="pack" style="background:linear-gradient(135deg,#1a1a2e,#2d1b69);border-color:'+(legLeft<=0?'#333':'#8b5cf6')+';'+(legLeft<=0?'opacity:.4;pointer-events:none':'')+'" onclick="openPack(\'leg\','+legPrice+')">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">\u{1F48E}</div><div style="font-size:8px;font-weight:800;color:'+(legLeft<=1?'#ef4444':'#c4b5fd')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(legLeft<=0?'\u00c9PUIS\u00c9':legLeft+'/'+leg.max_qty+' EN STOCK')+'</div></div>';
+  h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#c4b5fd;margin-top:4px">PACK L\u00c9GENDAIRE</div>';
+  h+='<div style="font-size:8px;color:#666;margin-top:2px">3 cartes \u00b7 Garanti 1 L\u00e9gendaire minimum</div>';
+  h+='<div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:6px"><div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#8b5cf6">'+legPrice+' \u{1F48E}</div>';
+  if(leg.sold>0)h+='<div style="font-size:8px;color:#ef4444;font-weight:700">\u2191 +'+(leg.sold*15)+'%</div>';
+  h+='</div></div>';
+  if(typeof exclList!=='undefined'&&exclList.length>0){
+    h+='<div class="sec">\u2b50 \u00c9DITIONS LIMIT\u00c9ES</div>';
+    exclList.forEach(function(ex){
+      var meta=ex.metadata||{};var card=meta.card_id!==undefined?CD[meta.card_id]:null;
+      var left=Math.max(0,ex.max_qty-ex.sold);
+      h+='<div class="pack" style="background:linear-gradient(135deg,#1a0a00,#2a1500);border-color:'+(left<=0?'#333':'#fbbf24')+';'+(left<=0?'opacity:.4;pointer-events:none':'')+'" onclick="buyExclusive(\''+ex.id+'\')">';
+      h+='<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-size:28px">'+(card?card.emoji:'\u{1f31f}')+'</div><div style="font-size:8px;font-weight:900;color:'+(left<=0?'#666':'#fbbf24')+';background:rgba(0,0,0,.3);padding:2px 8px;border-radius:6px">'+(left<=0?'VENDU':left===1?'DERNIER !':left+' DISPO')+'</div></div>';
+      h+='<div style="font-family:Bangers,cursive;font-size:14px;color:#fbbf24;margin-top:4px">'+(meta.name||'Item Exclusif')+'</div>';
+      h+='<div style="font-size:8px;color:#666;margin-top:2px">'+(meta.desc||'\u00c9dition limit\u00e9e')+'</div>';
+      h+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24;margin-top:6px">'+fm(ex.base_price)+(ex.price_type==='diamonds'?'\u{1F48E}':'\u20ac')+'</div></div>';
+    });
+  }
   document.getElementById('mainContent').innerHTML=h;
 }
 
@@ -474,10 +515,38 @@ function showDet(id){
 
 // ═══ PACK OPENING ═══
 var revQ=[],revI=0;
-function openPack(type){
-  if(type==='std'&&money<5000)return toast('Pas assez ! (5 000€)');
-  if(type==='leg'&&diamonds<5)return toast('Pas assez ! (5💎)');
-  if(type==='std')money-=5000;else diamonds-=5;
+async function buyExclusive(exId){
+  try{
+    var {data:ex}=await sb.from('shop_stock').select('*').eq('id',exId).maybeSingle();
+    if(!ex||ex.sold>=ex.max_qty)return toast('Plus disponible !');
+    var meta=ex.metadata||{};
+    if(ex.price_type==='money'&&money<ex.base_price)return toast('Pas assez !');
+    if(ex.price_type==='diamonds'&&diamonds<ex.base_price)return toast('Pas assez !');
+    // Increment sold atomically
+    var {data:upd,error}=await sb.from('shop_stock').update({sold:ex.sold+1}).eq('id',exId).eq('sold',ex.sold).select();
+    if(error||!upd||!upd.length)return toast('Trop tard !');
+    if(ex.price_type==='money')money-=ex.base_price;else diamonds-=ex.base_price;
+    if(meta.card_id!==undefined){myCards[meta.card_id]=(myCards[meta.card_id]||0)+1;}
+    await saveCards();
+    toast('⭐ Item exclusif obtenu !');
+    renderPacks();
+  }catch(e){toast('Erreur');}
+}
+
+function openPack(type,dynPrice){
+  var today=new Date().toISOString().split('T')[0];
+  var key=type==='std'?'std_'+today:'leg_'+today;
+  var stock=shopData[key];
+  if(stock&&stock.sold>=stock.max_qty)return toast('Stock épuisé ! Reviens demain.');
+  if(type==='std'){
+    if(money<dynPrice)return toast('Pas assez ! ('+fm(dynPrice)+'€)');
+    money-=dynPrice;
+  }else{
+    if(diamonds<dynPrice)return toast('Pas assez ! ('+dynPrice+'💎)');
+    diamonds-=dynPrice;
+  }
+  // Update stock
+  if(stock){stock.sold++;sb.from('shop_stock').update({sold:stock.sold}).eq('id',key);}
   var drawn=[];
   var gR=type==='std'?'R':'L';
   var gPool=CD.filter(function(c){return c.rarity===gR;});
