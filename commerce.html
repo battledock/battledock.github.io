@@ -2,535 +2,711 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Commerce — Battle Dock</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0a0a0a">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
-body{font-family:Inter,sans-serif;background:#0f172a}
+body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflow:hidden}
 .screen{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden}
 .screen.active{display:flex}
-/* SHARED */
-.hdr{padding:calc(env(safe-area-inset-top)+12px) 16px 12px;background:#cc1a1a;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.back{background:rgba(0,0,0,.2);border:none;border-radius:8px;width:34px;height:34px;color:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hdr-title{font-family:"Bebas Neue",sans-serif;font-size:20px;letter-spacing:3px;color:white;flex:1}
-/* ACCUEIL */
-.acc-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;text-align:center;background:linear-gradient(160deg,#0f172a,#1e3a5f)}
-.acc-icon{font-size:60px;animation:fl 3s ease-in-out infinite}
-@keyframes fl{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.acc-title{font-family:"Bebas Neue",sans-serif;font-size:30px;letter-spacing:4px;color:white}
-.acc-sub{font-size:12px;color:rgba(255,255,255,.45);line-height:1.6;max-width:280px}
-.price-box{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);border-radius:12px;padding:12px 24px}
-.price-val{font-family:"Bebas Neue",sans-serif;font-size:22px;color:#fbbf24;letter-spacing:2px}
-.price-lbl{font-size:8px;color:rgba(255,255,255,.3);letter-spacing:2px;font-weight:700;margin-top:2px}
-.btn-red{background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:14px 36px;font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer;box-shadow:0 6px 20px rgba(204,26,26,.3)}
-/* TEST */
-.test-hdr{background:#0a0d1a;padding:10px 16px;flex-shrink:0}
-.prog-track{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:5px}
-.prog-fill{height:100%;background:linear-gradient(90deg,#cc1a1a,#fbbf24);border-radius:2px;transition:width .4s}
-.test-meta{display:flex;justify-content:space-between;font-size:9px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:1px}
-.test-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;align-items:center;gap:14px;background:#0f172a}
-.mini-title{font-family:"Bebas Neue",sans-serif;font-size:20px;color:white;letter-spacing:2px;text-align:center}
-.mini-sub{font-size:11px;color:rgba(255,255,255,.4);text-align:center;line-height:1.5}
-.opt-btn{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:10px;padding:13px 16px;font-family:"Bebas Neue",sans-serif;font-size:15px;letter-spacing:1px;color:white;cursor:pointer;text-align:center;width:100%}
-.opt-btn:active{opacity:.7}
-.emoji-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
-.reaction-area{width:120px;height:120px;border-radius:50%;background:#f3f4f6;border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:52px;cursor:pointer}
-.reaction-area.ready{border-color:#22c55e;background:rgba(34,197,94,.1)}
-.reaction-timer{font-family:"Bebas Neue",sans-serif;font-size:28px;color:white;min-height:32px}
-/* RESULT */
-.res-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:#0f172a;text-align:center;overflow-y:auto}
-.res-qi{font-family:"Bebas Neue",sans-serif;font-size:72px;color:white;line-height:1}
-.res-qi-lbl{font-size:8px;font-weight:800;letter-spacing:4px;color:rgba(255,255,255,.25);margin-top:-6px}
-.res-comment{font-size:12px;color:rgba(255,255,255,.5);line-height:1.5;max-width:260px;font-style:italic}
-.res-card{background:#f3f4f6;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;width:100%}
-/* PERSO */
-.perso-scroll{flex:1;overflow-y:auto;padding:12px 14px}
-.perso-sec{background:white;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;margin-bottom:10px}
-.perso-sec-hd{padding:10px 12px;border-bottom:1px solid #f1f5f9;font-family:"Bebas Neue",sans-serif;font-size:13px;color:#0f172a;letter-spacing:1px}
-.perso-sec-body{padding:12px}
-.preview-card{border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;min-height:70px}
-.emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.ep{aspect-ratio:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
-.ep.sel{border-color:#cc1a1a;background:#fff5f5}
-.perso-confirm{flex-shrink:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom, 20px));background:white;border-top:1px solid #e2e8f0}
-.btn-confirm{width:100%;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:15px;font-family:"Bebas Neue",sans-serif;font-size:16px;letter-spacing:2px;color:white;cursor:pointer}
-/* DASHBOARD — X3 Blanc Apple Premium */
-.dash-hero{padding:calc(env(safe-area-inset-top)+16px) 16px 16px;flex-shrink:0;text-align:center;background:#fff}
-.dash-hero-top{display:flex;align-items:center;margin-bottom:8px}
-.dash-emoji-wrap{font-size:56px;animation:dashFloat 3s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(0,0,0,.06))}
-@keyframes dashFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.dash-stats{display:flex;border-top:1px solid #f3f4f6;border-bottom:1px solid #f3f4f6}
-.dash-stat{flex:1;padding:16px;text-align:center}
-.dash-stat+.dash-stat{border-left:1px solid #f3f4f6}
-.dash-stat-val{font-family:"Bebas Neue",sans-serif;font-size:22px;color:#1a1a1a}
-.dash-stat-val.gold{color:#d97706}
-.dash-stat-val.green{color:#059669}
-.dash-stat-lbl{font-size:7px;color:#9ca3af;font-weight:700;letter-spacing:1.5px;margin-top:2px}
-.dash-body{flex:1;overflow-y:auto;background:#fff}
-.dash-collect{margin:14px;background:#f0fdf4;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px;border:1px solid #dcfce7;position:relative;overflow:hidden}
-.dash-collect-icon{width:44px;height:44px;border-radius:12px;background:#059669;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 12px rgba(5,150,105,.15);animation:collectPulse 3s ease-in-out infinite}
-@keyframes collectPulse{0%,100%{box-shadow:0 4px 12px rgba(5,150,105,.15)}50%{box-shadow:0 4px 20px rgba(5,150,105,.3)}}
-.dash-collect-btn{background:#059669;color:#fff;border:none;border-radius:12px;padding:12px 18px;font-size:12px;font-weight:800;cursor:pointer;margin-left:auto;box-shadow:0 4px 12px rgba(5,150,105,.15)}
-.dash-section-title{padding:12px 16px 4px;font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:2px}
-.dash-card{margin:0 14px 8px;background:#fff;border:1px solid #f3f4f6;border-radius:14px;overflow:hidden}
-.dash-card-row{padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer}
-.dash-card-row:active{background:#f9fafb}
-.dash-card-row+.dash-card-row{border-top:1px solid #f3f4f6}
-.dash-card-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-.dash-row-badge{background:#fef2f2;color:#ef4444;font-size:8px;font-weight:800;padding:2px 8px;border-radius:8px;margin-left:auto}
-/* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:flex-end}
-.modal-sheet{background:white;border-radius:20px 20px 0 0;padding:24px 16px calc(24px + env(safe-area-inset-bottom, 20px));width:100%}
-/* TOAST */
-.toast-el{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
 
-/* Page transition */
-body{animation:pageIn .3s ease}
-@keyframes pageIn{from{opacity:0}to{opacity:1}}
-body.page-out{animation:pageOut .2s ease forwards}
-@keyframes pageOut{from{opacity:1}to{opacity:0}}
+/* ── HEADER ── */
+.hdr{background:#0f172a;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;width:34px;height:34px;color:white;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:white;flex:1}
+.hdr-money{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24}
+
+/* ── SCREEN 1 : ACCUEIL ── */
+#s-accueil{background:linear-gradient(160deg,#0f172a,#1e3a5f)}
+.acc-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px;text-align:center}
+.acc-icon{font-size:64px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.acc-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:white;line-height:1}
+.acc-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;max-width:280px}
+.acc-price{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:12px 24px;font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fbbf24;letter-spacing:2px}
+.acc-price-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-weight:700}
+.btn-start{background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:14px;padding:16px 40px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:white;cursor:pointer;box-shadow:0 8px 24px rgba(204,26,26,.3);transition:transform .1s}
+.btn-start:active{transform:scale(.97)}
+.acc-warning{font-size:11px;color:rgba(255,255,255,.25);font-weight:600}
+
+/* ── SCREEN 2 : TEST QI ── */
+#s-test{background:#0f172a}
+.test-progress{flex-shrink:0;padding:0 16px 0;background:#0f172a}
+.prog-bar-wrap{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin:10px 0}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,#cc1a1a,#fbbf24);border-radius:2px;transition:width .4s}
+.prog-info{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px}
+.test-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.mini-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;letter-spacing:2px;text-align:center;margin-bottom:6px}
+.mini-sub{font-size:12px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:20px;line-height:1.4}
+.score-live{position:fixed;top:calc(60px + env(safe-area-inset-top));right:16px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:6px 12px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;z-index:10}
+
+/* Mini-game 1 : emojis */
+.emoji-display{font-size:32px;letter-spacing:4px;min-height:60px;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.emoji-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px}
+.opt-btn{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;color:white;cursor:pointer;transition:all .12s}
+.opt-btn:active{transform:scale(.96);background:rgba(204,26,26,.2);border-color:#cc1a1a}
+.opt-btn.correct{background:rgba(34,197,94,.15);border-color:#22c55e;color:#22c55e}
+.opt-btn.wrong{background:rgba(239,68,68,.15);border-color:#ef4444;color:#ef4444}
+
+/* Mini-game 3 : reaction */
+.reaction-area{width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);border:3px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:60px;cursor:pointer;transition:all .1s;user-select:none}
+.reaction-area:active{transform:scale(.95)}
+.reaction-area.ready{background:rgba(34,197,94,.1);border-color:#22c55e;animation:pulse 0.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.reaction-timer{font-family:'Bebas Neue',sans-serif;font-size:48px;color:white;margin-top:16px}
+
+/* Mini-game 5 : mémoire */
+.memory-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:300px}
+.mem-emoji{font-size:36px;width:60px;height:60px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.08);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s}
+.mem-emoji:active{transform:scale(.9)}
+.mem-emoji.selected{background:rgba(251,191,36,.2);border-color:#fbbf24}
+.mem-emoji.hidden-mem{font-size:0;background:rgba(255,255,255,.04)}
+
+/* Mini-game 7 : intrus */
+.intrus-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:320px}
+.intrus-cell{font-size:28px;width:100%;aspect-ratio:1;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s}
+.intrus-cell:active{transform:scale(.9)}
+.intrus-cell.found{background:rgba(34,197,94,.2);border-color:#22c55e}
+.intrus-cell.wrong{background:rgba(239,68,68,.15);border-color:#ef4444}
+
+/* ── SCREEN 3 : RÉSULTAT ── */
+#s-result{background:#0f172a;overflow-y:auto}
+.res-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;text-align:center}
+.res-qi{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;color:white}
+.res-qi-lbl{font-size:9px;font-weight:800;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:-8px}
+.res-comment{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;max-width:280px;font-style:italic}
+.res-type-reveal{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:100%;max-width:320px}
+.res-type-emoji{font-size:48px;margin-bottom:8px}
+.res-type-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:white;line-height:1}
+.res-type-tag{font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;font-weight:700;letter-spacing:1px}
+.res-name-reveal{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1px;margin-top:8px}
+.btn-next{background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:14px 40px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer;width:100%;max-width:320px}
+
+/* ── SCREEN 4 : PERSO ── */
+#s-perso{overflow-y:auto}
+.perso-body{padding:16px;display:flex;flex-direction:column;gap:16px;padding-bottom:14px}
+/* Preview carte */
+.co-card{border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:4px;position:relative;overflow:hidden}
+.co-card-emoji{font-size:48px;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3))}
+.co-card-info{flex:1;min-width:0}
+.co-card-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:white;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-card-type{font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.5);margin-top:3px}
+.co-card-slogan{font-size:11px;color:rgba(255,255,255,.7);margin-top:5px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Sections perso */
+.perso-section{background:white;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden}
+.perso-sec-hd{padding:12px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+.perso-sec-icon{font-size:16px}
+.perso-sec-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:#0f172a}
+.perso-sec-body{padding:14px}
+
+/* Emoji picker */
+.emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ep-emoji{font-size:26px;width:100%;aspect-ratio:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s}
+.ep-emoji:active{transform:scale(.9)}
+.ep-emoji.selected{border-color:#cc1a1a;background:#fff5f5;box-shadow:0 0 0 2px rgba(204,26,26,.2)}
+
+/* Color picker */
+.color-input{width:100%;height:52px;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;padding:4px}
+
+/* Slogans */
+.slogan-opts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.slogan-opt{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:12px;color:#374151;cursor:pointer;transition:all .1s;text-align:left}
+.slogan-opt:active{background:#fee2e2;border-color:#cc1a1a}
+.slogan-opt.selected{background:#fff5f5;border-color:#cc1a1a;color:#cc1a1a;font-weight:700}
+
+
+
+
+/* Bouton confirmer fixe en bas */
+.perso-confirm{flex-shrink:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:white;border-top:1px solid #e2e8f0}
+.btn-confirm{width:100%;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:15px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer}
+
+/* ── SCREEN 5 : DASHBOARD ── */
+#s-dashboard{overflow-y:auto;background:#f8fafc}
+.dash-hero{padding:calc(14px + env(safe-area-inset-top)) 16px 20px;color:white;position:relative;overflow:hidden}
+.dash-hero-inner{position:relative;z-index:1}
+.dash-co-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;line-height:1;margin-top:8px}
+.dash-co-type{font-size:10px;font-weight:800;letter-spacing:3px;opacity:.6;margin-top:2px}
+.dash-co-slogan{font-size:12px;opacity:.7;margin-top:6px;font-style:italic}
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.dash-stat{background:rgba(255,255,255,.12);border-radius:10px;padding:12px}
+.dash-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;line-height:1}
+.dash-stat-lbl{font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.5);margin-top:2px}
+.dash-body{padding:14px;display:flex;flex-direction:column;gap:10px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+/* Actions */
+.action-card{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:opacity .1s}
+.action-card:active{opacity:.8}
+.action-ico{font-size:28px;flex-shrink:0}
+.action-info{flex:1}
+.action-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#0f172a}
+.action-sub{font-size:11px;color:#64748b;margin-top:2px}
+.action-right{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#cc1a1a}
+
+/* ── LOADER ── */
+.loader{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loader-icon{font-size:40px;animation:float 1.5s ease-in-out infinite}
+.loader-txt{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:4px;color:rgba(255,255,255,.4)}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
 
-<!-- S1 ACCUEIL -->
+<div class="loader" id="loader">
+  <div class="loader-icon">🏪</div>
+  <div class="loader-txt">COMMERCE DU PORT</div>
+</div>
+
+<!-- ══ S1 : ACCUEIL ══ -->
 <div class="screen" id="s-accueil">
-  <div class="hdr" style="background:linear-gradient(135deg,#0f172a,#1e3a5f)">
+  <div class="hdr">
     <button class="back" onclick="window.location.href='game.html'">←</button>
     <div class="hdr-title">COMMERCE</div>
-    <div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#fbbf24" id="acc-money">—</div>
+    <div class="hdr-money" id="acc-money">—</div>
   </div>
-  <div class="acc-body" id="acc-body-content">
+  <div class="acc-body">
     <div class="acc-icon">🏪</div>
     <div>
       <div class="acc-title">CRÉE TON ENTREPRISE</div>
-      <div class="acc-sub">Passe le test du port de Marseille pour découvrir quel type d'entreprise tu mérites vraiment.</div>
+      <div class="acc-sub">Passe le test de QI du port pour découvrir quel type d'entreprise tu mérites vraiment.</div>
     </div>
-    <div class="price-box">
-      <div class="price-val">100 000 €</div>
-      <div class="price-lbl">INVESTISSEMENT DE DÉPART</div>
+    <div>
+      <div class="acc-price">100 000 €</div>
+      <div class="acc-price-sub">INVESTISSEMENT DE DÉPART</div>
     </div>
-    <button class="btn-red" onclick="startTest()">PASSER LE TEST</button>
+    <button class="btn-start" id="btn-start" onclick="startTest()">PASSER LE TEST</button>
+    <div class="acc-warning" id="acc-warning"></div>
   </div>
 </div>
 
-<!-- S2 TEST -->
+<!-- ══ S2 : TEST ══ -->
 <div class="screen" id="s-test">
-  <div class="test-hdr">
-    <div class="test-meta">
-      <span id="test-title">ÉPREUVE 1/10</span>
-      <span id="prog-label"></span>
-      <span id="score-live">Score: 0</span>
+  <div class="hdr">
+    <div class="hdr-title" id="test-title">ÉPREUVE 1/7</div>
+    <div class="score-live" id="score-live">QI: 0</div>
+  </div>
+  <div class="test-progress">
+    <div class="prog-info">
+      <span id="prog-label">COMPTE LES POISSONS</span>
+      <span id="prog-pts"></span>
     </div>
-    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
   </div>
   <div class="test-body" id="test-body"></div>
 </div>
 
-<!-- S3 RESULTAT -->
+<!-- ══ S3 : RÉSULTAT ══ -->
 <div class="screen" id="s-result">
-  <div class="hdr"><div class="hdr-title">RÉSULTAT</div></div>
+  <div class="hdr">
+    <div class="hdr-title">RÉSULTAT QI</div>
+  </div>
   <div class="res-body">
     <div>
-      <div class="res-qi" id="res-qi">0</div>
-      <div class="res-qi-lbl">SCORE</div>
+      <div class="res-qi" id="res-qi">—</div>
+      <div class="res-qi-lbl">QUOTIENT INTELLECTUEL</div>
     </div>
-    <div class="res-comment" id="res-comment">—</div>
-    <div class="res-card">
-      <div style="font-size:42px;margin-bottom:6px" id="res-emoji">🏪</div>
-      <div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:white;letter-spacing:1px" id="res-type">—</div>
-      <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:2px;margin-top:3px" id="res-tag">—</div>
-      <div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#fbbf24;margin-top:10px" id="res-name">—</div>
-      <div style="font-size:11px;color:rgba(255,255,255,.4);font-style:italic;margin-top:4px" id="res-slogan">—</div>
+    <div class="res-comment" id="res-comment"></div>
+    <div class="res-type-reveal">
+      <div class="res-type-emoji" id="res-type-emoji">🏪</div>
+      <div class="res-type-name" id="res-type-name">—</div>
+      <div class="res-type-tag" id="res-type-tag">VOTRE TYPE D'ENTREPRISE</div>
+      <div class="res-name-reveal" id="res-name-reveal">—</div>
     </div>
-    <button class="btn-red" onclick="goPerso()">PERSONNALISER →</button>
+    <button class="btn-next" onclick="goPerso()">PERSONNALISER →</button>
   </div>
 </div>
 
-<!-- S4 PERSO -->
-<div class="screen" id="s-perso" style="background:#f8fafc">
-  <div class="hdr" style="background:#0f172a">
-    <button class="back" onclick="show('s-result')">←</button>
+<!-- ══ S4 : PERSO ══ -->
+<div class="screen" id="s-perso">
+  <div class="hdr">
     <div class="hdr-title">PERSONNALISATION</div>
   </div>
-  <div class="perso-scroll">
-    <!-- Preview -->
-    <div class="preview-card" id="preview-card">
-      <div style="font-size:42px" id="prev-emoji">🏪</div>
-      <div>
-        <div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:white;letter-spacing:1px" id="prev-name">—</div>
-        <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:2px;margin-top:2px" id="prev-type">—</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;font-style:italic" id="prev-slogan">—</div>
+  <!-- Preview live -->
+  <div id="co-preview" style="padding:12px 16px 0">
+    <div class="co-card" id="preview-card" style="background:#cc1a1a">
+      <div class="co-card-emoji" id="prev-emoji">🏪</div>
+      <div class="co-card-info">
+        <div class="co-card-name" id="prev-name">Mon Entreprise</div>
+        <div class="co-card-type" id="prev-type">TYPE</div>
+        <div class="co-card-slogan" id="prev-slogan">Slogan ici</div>
       </div>
     </div>
-    <!-- Nom & slogan auto -->
-    <div class="perso-sec">
-      <div class="perso-sec-hd">📛 NOM & SLOGAN</div>
-      <div class="perso-sec-body">
-        <div style="font-size:13px;font-weight:700;color:#0f172a" id="perso-name-disp">—</div>
-        <div style="font-size:11px;color:#9ca3af;font-style:italic;margin-top:4px" id="perso-slogan-disp">—</div>
-        <div style="font-size:9px;color:#9ca3af;margin-top:8px;font-weight:600">Généré automatiquement · non modifiable</div>
-      </div>
-    </div>
+  </div>
+  <div class="perso-body">
     <!-- Emoji -->
-    <div class="perso-sec">
-      <div class="perso-sec-hd">😀 LOGO</div>
-      <div class="perso-sec-body">
-        <div class="emoji-grid" id="emoji-grid"></div>
-      </div>
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">😀</div><div class="perso-sec-title">LOGO</div></div>
+      <div class="perso-sec-body"><div class="emoji-grid" id="emoji-grid"></div></div>
     </div>
     <!-- Couleur -->
-    <div class="perso-sec">
-      <div class="perso-sec-hd">🎨 COULEUR</div>
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">🎨</div><div class="perso-sec-title">COULEUR</div></div>
       <div class="perso-sec-body">
-        <input type="color" id="color-input" value="#cc1a1a" oninput="selectColor(this.value)" style="width:100%;height:44px;border:none;border-radius:8px;cursor:pointer;background:none">
+        <input type="color" class="color-input" id="color-input" value="#cc1a1a" oninput="updateColor(this.value)">
+      </div>
+    </div>
+    <!-- Slogan -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">💬</div><div class="perso-sec-title">SLOGAN</div></div>
+      <div class="perso-sec-body">
+        <div class="slogan-opts" id="slogan-opts"></div>
+  <div class="loader-txt">COMMERCE DU PORT</div>
+</div>
+
+<!-- ══ S1 : ACCUEIL ══ -->
+<div class="screen" id="s-accueil">
+  <div class="hdr">
+    <button class="back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">COMMERCE</div>
+    <div class="hdr-money" id="acc-money">—</div>
+  </div>
+  <div class="acc-body">
+    <div class="acc-icon">🏪</div>
+    <div>
+      <div class="acc-title">CRÉE TON ENTREPRISE</div>
+      <div class="acc-sub">Passe le test de QI du port pour découvrir quel type d'entreprise tu mérites vraiment.</div>
+    </div>
+    <div>
+      <div class="acc-price">100 000 €</div>
+      <div class="acc-price-sub">INVESTISSEMENT DE DÉPART</div>
+    </div>
+    <button class="btn-start" id="btn-start" onclick="startTest()">PASSER LE TEST</button>
+    <div class="acc-warning" id="acc-warning"></div>
+  </div>
+</div>
+
+<!-- ══ S2 : TEST ══ -->
+<div class="screen" id="s-test">
+  <div class="hdr">
+    <div class="hdr-title" id="test-title">ÉPREUVE 1/7</div>
+    <div class="score-live" id="score-live">QI: 0</div>
+  </div>
+  <div class="test-progress">
+    <div class="prog-info">
+      <span id="prog-label">COMPTE LES POISSONS</span>
+      <span id="prog-pts"></span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="test-body" id="test-body"></div>
+</div>
+
+<!-- ══ S3 : RÉSULTAT ══ -->
+<div class="screen" id="s-result">
+  <div class="hdr">
+    <div class="hdr-title">RÉSULTAT QI</div>
+  </div>
+  <div class="res-body">
+    <div>
+      <div class="res-qi" id="res-qi">—</div>
+      <div class="res-qi-lbl">QUOTIENT INTELLECTUEL</div>
+    </div>
+    <div class="res-comment" id="res-comment"></div>
+    <div class="res-type-reveal">
+      <div class="res-type-emoji" id="res-type-emoji">🏪</div>
+      <div class="res-type-name" id="res-type-name">—</div>
+      <div class="res-type-tag" id="res-type-tag">VOTRE TYPE D'ENTREPRISE</div>
+      <div class="res-name-reveal" id="res-name-reveal">—</div>
+    </div>
+    <button class="btn-next" onclick="goPerso()">PERSONNALISER →</button>
+  </div>
+</div>
+
+<!-- ══ S4 : PERSO ══ -->
+<div class="screen" id="s-perso">
+  <div class="hdr">
+    <div class="hdr-title">PERSONNALISATION</div>
+  </div>
+  <!-- Preview live -->
+  <div id="co-preview" style="padding:12px 16px 0">
+    <div class="co-card" id="preview-card" style="background:#cc1a1a">
+      <div class="co-card-emoji" id="prev-emoji">🏪</div>
+      <div class="co-card-info">
+        <div class="co-card-name" id="prev-name">Mon Entreprise</div>
+        <div class="co-card-type" id="prev-type">TYPE</div>
+        <div class="co-card-slogan" id="prev-slogan">Slogan ici</div>
+      </div>
+    </div>
+  </div>
+  <div class="perso-body">
+    <!-- Emoji -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">😀</div><div class="perso-sec-title">LOGO</div></div>
+      <div class="perso-sec-body"><div class="emoji-grid" id="emoji-grid"></div></div>
+    </div>
+    <!-- Couleur -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">🎨</div><div class="perso-sec-title">COULEUR</div></div>
+      <div class="perso-sec-body">
+        <input type="color" class="color-input" id="color-input" value="#cc1a1a" oninput="updateColor(this.value)">
+      </div>
+    </div>
+    <!-- Slogan -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">💬</div><div class="perso-sec-title">SLOGAN</div></div>
+      <div class="perso-sec-body">
+        <div class="slogan-opts" id="slogan-opts"></div>
+        <textarea class="slogan-custom" id="slogan-custom" maxlength="40" rows="2" placeholder="Ou écris le tien..." oninput="updateSlogan()"></textarea>
       </div>
     </div>
   </div>
   <div class="perso-confirm">
-    <button class="btn-confirm" onclick="confirmCreate()" id="btn-confirm">CRÉER MON ENTREPRISE — 100 000€</button>
+    <button class="btn-confirm" onclick="confirmCreate()">CRÉER MON ENTREPRISE — 100 000€</button>
   </div>
 </div>
 
-<!-- S5 DASHBOARD (BD STYLE) -->
-<div class="screen" id="s-dashboard" style="min-height:100dvh;background:#fafafa;overflow-y:auto;padding-bottom:calc(env(safe-area-inset-bottom,20px)+20px)">
-<div style="padding:calc(env(safe-area-inset-top,44px)+6px) 10px 0">
-
-  <!-- Top -->
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px 8px">
-    <div style="font-size:16px;color:#999;cursor:pointer" onclick="location.href='game.html'">←</div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <span style="font-size:14px" id="dash-emoji">🏪</span>
-      <span style="font-family:'Bangers',cursive;font-size:20px;color:#1a1a1a;letter-spacing:1px" id="dash-name">—</span>
-    </div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:12px;color:#16a34a" id="topMoney">💰 —</div>
-  </div>
-  <!-- Hidden compat -->
-  <div style="display:none"><span id="dash-type"></span><span id="dash-slogan"></span><span id="dash-niv-lbl"></span><div id="dash-niv-bar"></div><div id="dash-rep-bar"></div><div id="dash-event"></div><span id="dash-niv-badge"></span></div>
-
-  <!-- Comic grid -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
-
-    <!-- Panel: TON ENTREPRISE -->
-    <div onclick="openBureauPanel('info')" style="grid-column:span 2;background:#fff;border:3px solid #1a1a1a;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:3px 3px 0 #1a1a1a">
-      <div style="font-size:36px" id="dash-emoji-big">🏪</div>
-      <div style="flex:1">
-        <div style="font-family:'Bangers',cursive;font-size:18px;color:#1a1a1a;letter-spacing:1px" id="dash-name-big">—</div>
-        <div style="font-size:7px;font-weight:700;color:#059669;letter-spacing:1px;margin-top:1px" id="dash-type-vis">—</div>
-        <div style="display:flex;gap:8px;margin-top:5px">
-          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#d97706" id="dash-valeur">—</div><div style="font-size:5px;color:#999;font-weight:700;letter-spacing:1px">VALEUR</div></div>
-          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#16a34a" id="dash-revenus">—</div><div style="font-size:5px;color:#999;font-weight:700;letter-spacing:1px">REVENUS/H</div></div>
-          <div><div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#6366f1" id="dash-rep-lbl">—</div><div style="font-size:5px;color:#999;font-weight:700;letter-spacing:1px">RÉPUT.</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panel: COLLECTER -->
-    <div id="collect-card" onclick="collecterRevenus()" style="grid-column:span 2;background:#fff;border:3px solid #16a34a;border-radius:8px;padding:10px;display:flex;align-items:center;gap:10px;cursor:pointer;position:relative;overflow:hidden">
-      <div style="position:absolute;top:-5px;right:-5px;font-family:'Bangers',cursive;font-size:28px;color:rgba(22,163,74,.08);transform:rotate(12deg)">CASH!</div>
-      <div style="font-size:24px" id="collect-icon">📥</div>
-      <div style="flex:1">
-        <div style="font-family:'Bangers',cursive;font-size:16px;color:#16a34a" id="collect-amt">—</div>
-        <div style="font-size:7px;color:#999" id="collect-sub">Chargement...</div>
-        <div style="height:3px;background:#dcfce7;border-radius:2px;margin-top:4px"><div id="collect-bar" style="height:100%;width:0%;background:#16a34a;border-radius:2px;transition:width 1s"></div></div>
-      </div>
-      <div id="collect-btn" onclick="collecterRevenus()" style="background:#16a34a;color:#fff;border:2px solid #1a1a1a;border-radius:8px;padding:6px 12px;font-family:'Bangers',cursive;font-size:12px;letter-spacing:1px;box-shadow:2px 2px 0 #1a1a1a;display:none;cursor:pointer">OK!</div>
-    </div>
-
-    <!-- Panel: INVESTIR -->
-    <div onclick="openInvestModal()" style="background:#fff;border:3px solid #1a1a1a;border-radius:8px;padding:12px;text-align:center;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a;position:relative;overflow:hidden">
-      <div style="position:absolute;top:-3px;left:-3px;font-family:'Bangers',cursive;font-size:40px;color:rgba(0,0,0,.03);transform:rotate(-8deg)">$$$</div>
-      <div style="font-size:28px">💰</div>
-      <div style="font-family:'Bangers',cursive;font-size:15px;color:#1a1a1a;margin-top:4px">INVESTIR</div>
-      <div style="font-size:7px;color:#999;margin-top:2px">+valeur +revenus</div>
-    </div>
-
-    <!-- Panel: EMPLOYÉS -->
-    <div onclick="toggleEmp();openBureauPanel('employes')" style="background:#fff;border:3px solid #1a1a1a;border-radius:8px;padding:12px;text-align:center;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a">
-      <div style="font-size:28px">👷</div>
-      <div style="font-family:'Bangers',cursive;font-size:15px;color:#1a1a1a;margin-top:4px">EMPLOYÉS</div>
-      <div style="font-size:7px;color:#999;margin-top:2px" id="emp-sub">—</div>
-    </div>
-
-    <!-- Panel: CONTRATS -->
-    <div onclick="openBureauPanel('contrats')" style="background:#fff;border:3px solid #1a1a1a;border-radius:8px;padding:12px;text-align:center;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a;position:relative">
-      <div style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border:2px solid #1a1a1a;border-radius:50%;width:20px;height:20px;font-family:'Bangers',cursive;font-size:12px;display:flex;align-items:center;justify-content:center" id="contractBadge">0</div>
-      <div style="font-size:28px">📋</div>
-      <div style="font-family:'Bangers',cursive;font-size:15px;color:#1a1a1a;margin-top:4px">CONTRATS</div>
-      <div style="font-size:7px;color:#ef4444;font-weight:800;margin-top:2px">DU JOUR</div>
-    </div>
-
-    <!-- Panel: CLASSEMENT -->
-    <div onclick="openBureauPanel('classement')" style="background:#fff;border:3px solid #1a1a1a;border-radius:8px;padding:12px;text-align:center;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a">
-      <div style="font-size:28px">🏆</div>
-      <div style="font-family:'Bangers',cursive;font-size:15px;color:#1a1a1a;margin-top:4px">CLASSEMENT</div>
-      <div style="font-size:7px;color:#6366f1;font-weight:800;margin-top:2px">#? DU PORT</div>
-    </div>
-
-    <!-- Panel: OPÉRATIONS SECRÈTES -->
-    <div style="grid-column:span 2;background:#1a1a1a;border:3px solid #1a1a1a;border-radius:8px;padding:10px;display:flex;gap:6px;box-shadow:3px 3px 0 rgba(0,0,0,.2)">
-      <div onclick="openBureauPanel('attaquer')" style="flex:1;background:rgba(239,68,68,.1);border:2px solid rgba(239,68,68,.2);border-radius:8px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:22px">🕵️</div>
-        <div style="font-family:'Bangers',cursive;font-size:11px;color:#ef4444;margin-top:3px">ESPIONNER</div>
-      </div>
-      <div onclick="openBureauPanel('attaquer')" style="flex:1;background:rgba(168,85,247,.1);border:2px solid rgba(168,85,247,.2);border-radius:8px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:22px">⚔️</div>
-        <div style="font-family:'Bangers',cursive;font-size:11px;color:#a855f7;margin-top:3px">GUERRE !</div>
-      </div>
-      <div onclick="openBureauPanel('rachats')" style="flex:1;background:rgba(251,191,36,.1);border:2px solid rgba(251,191,36,.2);border-radius:8px;padding:10px;text-align:center;cursor:pointer">
-        <div style="font-size:22px">🏦</div>
-        <div style="font-family:'Bangers',cursive;font-size:11px;color:#fbbf24;margin-top:3px">RACHETER</div>
+<!-- ══ S5 : DASHBOARD ══ -->
+<div class="screen" id="s-dashboard">
+  <div class="dash-hero" id="dash-hero">
+    <button class="back" onclick="window.location.href='game.html'" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:8px;width:32px;height:32px;color:white;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-top:calc(env(safe-area-inset-top))">←</button>
+    <div class="dash-hero-inner">
+      <div style="font-size:44px" id="dash-emoji">🏪</div>
+      <div class="dash-co-name" id="dash-name">—</div>
+      <div class="dash-co-type" id="dash-type">—</div>
+      <div class="dash-co-slogan" id="dash-slogan">—</div>
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-valeur">0€</div><div class="dash-stat-lbl">VALEUR</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-revenus">0€/H</div><div class="dash-stat-lbl">REVENUS</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-niveau">Niv. 1</div><div class="dash-stat-lbl">NIVEAU</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-collect">—</div><div class="dash-stat-lbl">PROCHAIN COLLECTE</div></div>
       </div>
     </div>
   </div>
-</div>
-  <!-- Hidden for JS compat -->
-  <div style="display:none"><div id="emp-body"></div><div id="emp-arrow"></div><div id="spy-section"></div><div id="spy-section-title"></div><div id="sabotage-section"></div><div id="pricewar-section"></div><div id="buyout-section"></div><div id="reviews-section"></div><div id="guestbook-section"></div><div id="partnership-section"></div><div id="contracts-list"></div><div id="mini-rank"></div></div>
-</div>
-
-<!-- BD ACTION PANELS -->
-<div id="bureauPanel" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.5);align-items:flex-end;justify-content:center" onclick="if(event.target===this)closeBureauPanel()">
-  <div style="background:#fff;border-top:3px solid #1a1a1a;border-radius:18px 18px 0 0;width:100%;max-width:400px;padding:16px 16px calc(env(safe-area-inset-bottom,20px)+12px);max-height:70vh;overflow-y:auto">
-    <div style="width:36px;height:4px;border-radius:2px;background:#e5e7eb;margin:0 auto 12px"></div>
-    <div id="bureauPanelContent"></div>
-    <button onclick="closeBureauPanel()" style="width:100%;margin-top:10px;padding:12px;border:2px solid #1a1a1a;border-radius:10px;background:#f3f4f6;color:#1a1a1a;font-family:'Bangers',cursive;font-size:13px;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a">FERMER</button>
-  </div>
-</div>
-
-<!-- MODAL INVESTIR -->
-<div class="modal-overlay" id="invest-overlay">
-  <div class="modal-sheet">
-    <div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:#0f172a;letter-spacing:2px;margin-bottom:4px">INVESTIR</div>
-    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px">Disponible : <span id="invest-dispo" style="font-weight:700;color:#0f172a">—</span></div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px" id="invest-quick"></div>
-    <input id="invest-slider" type="range" min="0" max="100" value="0" style="width:100%;accent-color:#cc1a1a;margin-bottom:6px" oninput="updateInvestPreview(this.value)">
-    <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-      <div style="font-size:9px;color:#9ca3af">0€</div>
-      <div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#cc1a1a" id="invest-amt-disp">0€</div>
-      <div style="font-size:9px;color:#9ca3af" id="invest-max-lbl">—</div>
+  <div class="dash-body">
+    <div class="action-card" onclick="investir()">
+      <div class="action-ico">💰</div>
+      <div class="action-info">
+        <div class="action-title">INVESTIR</div>
+        <div class="action-sub">Augmente la valeur et les revenus</div>
+      </div>
+      <div class="action-right">→</div>
     </div>
-    <div style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:12px;display:flex;justify-content:space-around;text-align:center">
-      <div><div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">NOUVELLE VALEUR</div><div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a;margin-top:2px" id="invest-new-val">—</div></div>
-      <div style="width:1px;background:#e2e8f0"></div>
-      <div><div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">REVENUS/H</div><div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#22c55e;margin-top:2px" id="invest-new-rev">—</div></div>
-      <div style="width:1px;background:#e2e8f0"></div>
-      <div><div style="font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px">NIVEAU</div><div style="font-family:Bebas Neue,sans-serif;font-size:15px;color:#0f172a;margin-top:2px" id="invest-new-niv">—</div></div>
+    <div class="action-card" id="collect-card" onclick="collecterRevenus()">
+      <div class="action-ico">📥</div>
+      <div class="action-info">
+        <div class="action-title">COLLECTER LES REVENUS</div>
+        <div class="action-sub" id="collect-sub">Disponible dans —</div>
+      </div>
+      <div class="action-right" id="collect-amt">—</div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button onclick="closeInvestModal()" style="flex:1;background:#f1f5f9;border:none;border-radius:12px;padding:13px;font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:2px;color:#64748b;cursor:pointer">ANNULER</button>
-      <button id="invest-confirm-btn" onclick="doInvestir()" style="flex:2;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:13px;font-family:Bebas Neue,sans-serif;font-size:14px;letter-spacing:2px;color:white;cursor:pointer">INVESTIR</button>
+    <div class="action-card" style="opacity:.4;cursor:default">
+      <div class="action-ico">🗺️</div>
+      <div class="action-info">
+        <div class="action-title">ZONES DU PORT</div>
+        <div class="action-sub">Bientôt disponible...</div>
+      </div>
+      <div class="action-right" style="font-size:10px;color:#9ca3af">V2</div>
     </div>
   </div>
 </div>
 
-<div class="toast-el" id="toast-el"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 var sb=supabase.createClient(SB_URL,SB_KEY);
-var currentUser=null,money=0,username='Docker';
-var qStep=0,qScore=0,qi=0,typeIdx=0;
-var companyName='',selectedEmoji='🏪',selectedColor='#cc1a1a',selectedSlogan='';
-var _coData=null,_dashLastCollect=0,_dashRevPerHour=0,_dashMoney=0,_dashInterval=null;
-var _mjCleanup=null;
-
-// ══ UTILS ══
-function fmtM(v){return v>=1000000?(v/1000000).toFixed(1)+'M€':v>=1000?Math.floor(v/1000)+'k€':Math.floor(v)+'€';}
-function goEntreprise(uid){location.href='entreprise.html?uid='+uid;}
-
-// ══ Impact Bourse — connecte les événements commerce aux cours ══
-async function pushBourseImpact(companyName,multiplier){
-  // Génère le symbole de la même façon que bourse.html
-  var sym=(companyName||'').replace(/[^A-Za-z]/g,'').substring(0,6).toUpperCase();
-  if(!sym)return;
-  try{
-    var res=await sb.from('bourse_market').select('price').eq('sym',sym).maybeSingle();
-    if(!res.data)return;
-    var newPrice=Math.max(1,Math.round(res.data.price*multiplier*100)/100);
-    await sb.from('bourse_market').update({price:newPrice,updated_at:new Date().toISOString()}).eq('sym',sym);
-  }catch(e){}
-}
-function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});var el=document.getElementById(id);if(el)el.classList.add('active');}
-function toast(msg){var t=document.getElementById('toast-el');if(!t)return;t.textContent=msg;t.style.opacity='1';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';},2800);}
-function cleanupMJ(){if(_mjCleanup){try{_mjCleanup();}catch(e){}}_mjCleanup=null;}
+var currentUser=null, money=0, username='Docker';
+var qi=0, typeIdx=0, companyName='', selectedEmoji='', selectedColor='#cc1a1a', selectedSlogan='';
+var miniStep=0, miniScore=0;
 
 // ══ DONNÉES ══
 var TYPES=[
-  {min:0,max:5,label:'Association des Amis des Mouettes',tag:'ORNITHOLOGIE PORTUAIRE',emojis:['🐦','🦅','🦆','🕊️','🦢','🐧','🦉','🦜','🦩','🪶']},
-  {min:0,max:5,label:'Gardien de Parking du Port',tag:'SURVEILLANCE VEHICULES',emojis:['🅿️','🚗','🔑','⛔','🪧','🚧','📋','🛞','🪨','🔦']},
-  {min:0,max:5,label:'Club des Pecheurs du Dimanche',tag:'LOISIRS NAUTIQUES',emojis:['🎣','🐟','⛵','☀️','🪣','🪝','🦞','🌊','🏖️','🎏']},
-  {min:6,max:11,label:'Sardines du Vieux-Port',tag:'POISSONNERIE ARTISANALE',emojis:['🐟','🐠','🦈','🦐','🦞','🦀','🦑','🐙','🦪','🐡']},
-  {min:6,max:11,label:'Boulangerie du Docker',tag:'ARTISANAT ALIMENTAIRE',emojis:['🥐','🍞','🥖','🧁','🍩','☕','🥨','🫓','🍰','🥧']},
-  {min:6,max:11,label:'Location de Vestiaires',tag:'SERVICES AUX TRAVAILLEURS',emojis:['👔','🦺','🧤','🪖','👟','🧣','🪣','🔑','🚿','🧺']},
-  {min:12,max:17,label:'Taxi Maritime de Marseille',tag:'TRANSPORT LACUSTRE',emojis:['⛵','🚤','🛥️','🛶','⚓','🪝','🧭','🌊','🚢','🗺️']},
-  {min:12,max:17,label:'Conciergerie du Port',tag:'SERVICES PORTUAIRES',emojis:['🗝️','🏨','📋','☎️','🛎️','🪴','🧹','😊','🛁','📦']},
-  {min:12,max:17,label:'Ecole de Conduite de Chariot',tag:'FORMATION PROFESSIONNELLE',emojis:['🚜','📋','🎓','⚠️','🔧','📐','🪝','🏗️','⛑️','📊']},
-  {min:18,max:23,label:'Kebab du Docker',tag:'RESTAURATION RAPIDE PORTUAIRE',emojis:['🥙','🌮','🍖','🥗','🍢','🧆','🫔','🥪','🍡','🧇']},
-  {min:18,max:23,label:'Friterie du Quai',tag:'SNACK PORTUAIRE',emojis:['🍟','🌭','🥤','🧂','🍔','🫕','🍦','🥪','🧃','🥐']},
-  {min:18,max:23,label:'Traiteur Evenementiel Portuaire',tag:'RESTAURATION EVENEMENTIELLE',emojis:['🍽️','🥂','🎉','🫕','🥗','🍱','🧑‍🍳','🎂','🍾','🌹']},
-  {min:24,max:29,label:'Nettoyage des Quais',tag:'PROPRETE PORTUAIRE',emojis:['🧹','🧺','🪣','🧽','🫧','🧴','🗑️','🪠','🧻','🪤']},
-  {min:24,max:29,label:'Depollution Maritime',tag:'ENVIRONNEMENT PORTUAIRE',emojis:['🌊','♻️','🪣','🧤','⚗️','🌿','🔬','💧','🐢','🌍']},
-  {min:24,max:29,label:'Entreprise de Dechets Portuaires',tag:'GESTION DECHETS',emojis:['🗑️','♻️','🚛','🧤','📦','🗃️','🪣','⚠️','🔄','🏭']},
-  {min:30,max:35,label:'Import Export Divers',tag:'COMMERCE DE GROS',emojis:['📦','📫','🗃️','🎁','🧸','🪣','📭','🎀','🗄️','📬']},
-  {min:30,max:35,label:'Grossiste Alimentaire du Port',tag:'DISTRIBUTION ALIMENTAIRE',emojis:['🛒','🥫','📦','🚛','🏭','🌽','🍅','🫙','🧂','🥩']},
-  {min:30,max:35,label:'Entrepot Frigorifique',tag:'STOCKAGE FROID',emojis:['🧊','❄️','📦','🏭','🌡️','🔒','🚛','🥶','⚙️','🔧']},
-  {min:36,max:41,label:'Transport de Palettes',tag:'LOGISTIQUE BASIQUE',emojis:['🚛','🚚','🚐','🏎️','🚜','🛻','🚁','🚌','🚑','🏗️']},
-  {min:36,max:41,label:'Messagerie Portuaire Express',tag:'LIVRAISON RAPIDE',emojis:['📮','📦','🛵','⚡','📋','🗺️','⏱️','🚴','📫','🔔']},
-  {min:36,max:41,label:'Location de Vehicules Industriels',tag:'LOCATION MATERIEL',emojis:['🚜','🏗️','🚛','🔧','⚙️','🪝','🔩','🛠️','⛽','📋']},
-  {min:42,max:47,label:'Securite Portuaire',tag:'GARDIENNAGE ET SURVEILLANCE',emojis:['💂','👮','🕵️','🦺','🪖','🛡️','🔦','🔒','🚨','🪪']},
-  {min:42,max:47,label:'Systemes de Surveillance Maritime',tag:'SECURITE TECHNOLOGIQUE',emojis:['📡','🔭','💻','📷','🛰️','🔒','📊','⚡','🖥️','🔍']},
-  {min:42,max:47,label:'Protection des Biens Portuaires',tag:'ASSURANCE SECURITE',emojis:['🛡️','🔐','🏰','🗝️','📋','⚖️','🔏','💼','🤝','🏛️']},
-  {min:48,max:53,label:'BTP du Port',tag:'CONSTRUCTION ET TRAVAUX',emojis:['🏗️','⚒️','🪚','🔨','⚙️','🪛','🔧','🧱','🏚️','🏛️']},
-  {min:48,max:53,label:'Renovation des Infrastructures',tag:'REHABILITATION PORTUAIRE',emojis:['🏚️','🔨','🪚','🧱','⚙️','🪟','🚿','🏗️','📐','🎨']},
-  {min:48,max:53,label:'Chaudronnerie Navale',tag:'FABRICATION METALLIQUE',emojis:['⚙️','🔩','🔧','🛠️','🪛','⚒️','🔥','🏭','💨','🪨']},
-  {min:54,max:59,label:'Restauration du Vieux-Port',tag:'GASTRONOMIE MARSEILLAISE',emojis:['🍽️','🍳','🫕','🥘','🍲','🧑‍🍳','🥩','🍱','🥗','🍜']},
-  {min:54,max:59,label:'Bar des Dockers',tag:'CAFE RESTAURANT OUVRIER',emojis:['🍺','☕','🥃','🃏','🎲','🍻','🥜','🧀','📺','🎵']},
-  {min:54,max:59,label:'Traiteur Specialites Mediterraneennes',tag:'GASTRONOMIE REGIONALE',emojis:['🫒','🍅','🧄','🌿','🫙','🥗','🍋','🐟','🧆','🥙']},
-  {min:60,max:65,label:'Agence Maritime Regionale',tag:'SERVICES NAUTIQUES',emojis:['🗺️','🏖️','⛱️','🧳','✈️','🌅','🏝️','🎡','🌊','🔭']},
-  {min:60,max:65,label:'Charterie Nautique',tag:'LOCATION DE BATEAUX',emojis:['⛵','🚤','🛥️','⚓','🧭','🌊','🪝','🗺️','☀️','🌅']},
-  {min:60,max:65,label:'Courtage Maritime',tag:'INTERMEDIAIRE PORTUAIRE',emojis:['🤝','📋','💼','📞','🗂️','✍️','💹','🔄','📊','💰']},
-  {min:66,max:71,label:'Transitaire Portuaire',tag:'DOUANES ET FORMALITES',emojis:['📋','📊','🖊️','📁','🗂️','📎','🔏','📌','📍','🗝️']},
-  {min:66,max:71,label:'Agence en Douane',tag:'DEDOUANEMENT EXPERT',emojis:['📋','⚖️','🔏','🛃','📦','✍️','🗂️','💼','🏛️','🔍']},
-  {min:66,max:71,label:'Consignataire de Navires',tag:'REPRESENTATION MARITIME',emojis:['🚢','📋','🤝','⚓','🗂️','📞','🏛️','💼','🌊','🗺️']},
-  {min:72,max:77,label:'Transport Maritime Cote',tag:'ARMEMENT COTIER',emojis:['🚢','⛴️','🛳️','⚓','🌊','🧭','🗺️','🪝','🔭','⛵']},
-  {min:72,max:77,label:'Cabotage Mediterraneen',tag:'TRANSPORT COTIER REGIONAL',emojis:['⛴️','🗺️','🌊','⚓','🧭','🪝','🚢','🌅','⛵','🔭']},
-  {min:72,max:77,label:'Affretement Maritime',tag:'LOCATION DE NAVIRES',emojis:['🚢','💰','📋','🤝','⚓','🌍','🌊','💼','📊','🛳️']},
-  {min:78,max:83,label:'Import Export International',tag:'COMMERCE MONDIAL',emojis:['🌍','📦','💼','🤝','📋','🏭','🔄','📊','🌐','💹']},
-  {min:78,max:83,label:'Trading Maritime International',tag:'NEGOCE INTERNATIONAL',emojis:['💹','🌍','📊','💰','🤝','🏦','📈','🔄','💼','🌐']},
-  {min:78,max:83,label:'Plateforme Logistique Multimodale',tag:'HUB LOGISTIQUE',emojis:['🏭','🚛','🚢','✈️','🚂','🔄','📦','🗺️','🏗️','⚙️']},
-  {min:84,max:89,label:'Assurance et Logistique',tag:'GESTION DES RISQUES',emojis:['🛡️','📋','⚖️','✍️','🏛️','🔏','📝','💎','🏆','🪙']},
-  {min:84,max:89,label:'Cabinet de Droit Maritime',tag:'CONSEIL JURIDIQUE',emojis:['⚖️','📋','🏛️','👔','✍️','🔏','💼','🗂️','📚','🤝']},
-  {min:84,max:89,label:'Inspection et Certification Navale',tag:'CONTROLE QUALITE',emojis:['🔍','📋','⚙️','🏆','✅','📊','🔬','🛳️','📐','🔧']},
-  {min:90,max:95,label:'Groupe Logistique Med',tag:'LOGISTIQUE AVANCEE',emojis:['📊','📈','🗂️','📋','🖥️','🔄','🏭','🚦','⌚','📉']},
-  {min:90,max:95,label:'Operateur de Terminal Portuaire',tag:'EXPLOITATION PORTUAIRE',emojis:['🏗️','🚢','📦','⚙️','🔧','🚛','📊','🌊','💼','🏭']},
-  {min:90,max:95,label:'Solutions Supply Chain Maritime',tag:'CHAINE LOGISTIQUE',emojis:['🔗','📦','🌍','🚛','🚢','📊','💹','🏭','🔄','⚙️']},
-  {min:96,max:101,label:'Ingenierie et Conseil Naval',tag:'EXPERTISE MARITIME',emojis:['⚙️','🔧','🪛','🔩','🛠️','🔬','💡','🧮','🖥️','🏗️']},
-  {min:96,max:101,label:'Bureau d Etudes Portuaires',tag:'INGENIERIE ET CONCEPTION',emojis:['📐','📊','💡','🔬','🖥️','📋','⚙️','🏗️','🔭','📏']},
-  {min:96,max:101,label:'Maintenance et Reparation Navale',tag:'TECHNIQUE NAVALE',emojis:['🔧','⚙️','🛠️','🔩','🪛','⛴️','🚢','🔥','💨','🏭']},
-  {min:102,max:107,label:'Compagnie Maritime Internationale',tag:'ARMEMENT INTERNATIONAL',emojis:['⚓','🚢','🌍','💰','📊','🏆','⛵','🌊','🗺️','🦁']},
-  {min:102,max:107,label:'Groupe Shipbuilding Mediterranee',tag:'CONSTRUCTION NAVALE',emojis:['🚢','🏗️','⚙️','🔩','🔧','🌊','⚓','🏭','💪','⭐']},
-  {min:102,max:107,label:'Terminal a Conteneurs International',tag:'MANUTENTION PORTUAIRE',emojis:['📦','🏗️','🚢','⚙️','🚛','📊','🌍','🔄','🏭','⚓']},
-  {min:108,max:113,label:'Conglomerat Portuaire',tag:'HOLDING DIVERSIFIE',emojis:['💰','💎','💹','📈','🏦','🤑','💳','🏛️','🪙','💲']},
-  {min:108,max:113,label:'Groupe Armateur Europeen',tag:'ARMEMENT EUROPEEN',emojis:['🌍','🚢','⚓','💰','🏆','🌊','📊','🛳️','💼','👑']},
-  {min:108,max:113,label:'Fonds d Investissement Maritime',tag:'FINANCE MARITIME',emojis:['💹','🏦','💰','📈','💎','🔐','💳','🏛️','🌍','💼']},
-  {min:114,max:999,label:'Empire Mediterraneen',tag:'DOMINATION TOTALE',emojis:['👑','💎','🌍','⚡','🦁','🏰','🔱','⭐','🪄','✨']},
-  {min:114,max:999,label:'Holding Maritime Mondial',tag:'EMPIRE FINANCIER',emojis:['🌍','💰','👑','🏦','💹','🏰','💎','⭐','🔱','🌐']},
-  {min:114,max:999,label:'Groupe Le Magnifique du Port',tag:'LEGENDE PORTUAIRE',emojis:['🏆','👑','🦁','💪','🌟','🎯','⭐','🔱','💎','🪄']},
+  // ── TIER 0 (0-5) ──
+  {min:0,max:5,label:'Association des Amis des Mouettes',tag:'ORNITHOLOGIE PORTUAIRE',
+   emojis:['🐦','🦅','🦆','🕊️','🦢','🐧','🦉','🦜','🦩','🪶'],
+   slogans:["On nourrit les mouettes depuis 1987","La mouette est notre avenir","Nos fondateurs sont aussi des pigeons"]},
+  {min:0,max:5,label:'Gardien de Parking du Port',tag:'SURVEILLANCE VEHICULES',
+   emojis:['🅿️','🚗','🔑','⛔','🪧','🚧','📋','🛞','🪨','🔦'],
+   slogans:["Place reservee aux autres","On surveille les voitures des autres","Gratuit le dimanche si personne regarde"]},
+  {min:0,max:5,label:'Club des Pecheurs du Dimanche',tag:'LOISIRS NAUTIQUES',
+   emojis:['🎣','🐟','⛵','☀️','🪣','🪝','🦞','🌊','🏖️','🎏'],
+   slogans:["On peche peu mais on rigole bien","Le poisson attend, nous aussi","La prise du jour: un pneu et un sac plastique"]},
+
+  // ── TIER 1 (6-11) ──
+  {min:6,max:11,label:'Sardines du Vieux-Port',tag:'POISSONNERIE ARTISANALE',
+   emojis:['🐟','🐠','🦈','🦐','🦞','🦀','🦑','🐙','🦪','🐡'],
+   slogans:["Fraiches ce matin sur mon honneur","Pas si fraiches mais tellement sympas","La sardine qui a ferme le port c etait nous"]},
+  {min:6,max:11,label:'Boulangerie du Docker',tag:'ARTISANAT ALIMENTAIRE',
+   emojis:['🥐','🍞','🥖','🧁','🍩','☕','🥨','🫓','🍰','🥧'],
+   slogans:["La baguette a la force d un docker","Ouvert avant Gege ce qui est tot","Pain frais pour dockers durs au labeur"]},
+  {min:6,max:11,label:'Location de Vestiaires',tag:'SERVICES AUX TRAVAILLEURS',
+   emojis:['👔','🦺','🧤','🪖','👟','🧣','🪣','🔑','🚿','🧺'],
+   slogans:["Le casque est propre au moins une fois","Vos affaires en securite relative","On loue ce que vous oubliez de rapporter"]},
+
+  // ── TIER 2 (12-17) ──
+  {min:12,max:17,label:'Taxi Maritime de Marseille',tag:'TRANSPORT LACUSTRE',
+   emojis:['⛵','🚤','🛥️','🛶','⚓','🪝','🧭','🌊','🚢','🗺️'],
+   slogans:["On arrive si le moteur veut bien","Tarif fixe heure d arrivee variable","On a coule que deux fois cette annee"]},
+  {min:12,max:17,label:'Conciergerie du Port',tag:'SERVICES PORTUAIRES',
+   emojis:['🗝️','🏨','📋','☎️','🛎️','🪴','🧹','😊','🛁','📦'],
+   slogans:["On s occupe de tout meme du reste","Service 5 etoiles port 2 etoiles","Votre satisfaction notre probleme"]},
+  {min:12,max:17,label:'Ecole de Conduite de Chariot',tag:'FORMATION PROFESSIONNELLE',
+   emojis:['🚜','📋','🎓','⚠️','🔧','📐','🪝','🏗️','⛑️','📊'],
+   slogans:["On forme les dockers de demain","Le chariot elevateur n a plus de secret","Taux de reussite 60% en moyenne"]},
+
+  // ── TIER 3 (18-23) ──
+  {min:18,max:23,label:'Kebab du Docker',tag:'RESTAURATION RAPIDE PORTUAIRE',
+   emojis:['🥙','🌮','🍖','🥗','🍢','🧆','🫔','🥪','🍡','🧇'],
+   slogans:["Ouvert quand il fait beau","Sauce harissa comprise dans le prix","Gege vient tous les jours c est dire"]},
+  {min:18,max:23,label:'Friterie du Quai',tag:'SNACK PORTUAIRE',
+   emojis:['🍟','🌭','🥤','🧂','🍔','🫕','🍦','🥪','🧃','🥐'],
+   slogans:["Les meilleures frites du port selon nous","L huile est changee regulierement on croit","Pas de ticket resto mais on accepte l amitie"]},
+  {min:18,max:23,label:'Traiteur Evenementiel Portuaire',tag:'RESTAURATION EVENEMENTIELLE',
+   emojis:['🍽️','🥂','🎉','🫕','🥗','🍱','🧑‍🍳','🎂','🍾','🌹'],
+   slogans:["Vos evenements notre cuisine leur risques","Buffet a volonte sauf le dessert","On cuisine avec amour et peu de connaissances"]},
+
+  // ── TIER 4 (24-29) ──
+  {min:24,max:29,label:'Nettoyage des Quais',tag:'PROPRETE PORTUAIRE',
+   emojis:['🧹','🧺','🪣','🧽','🫧','🧴','🗑️','🪠','🧻','🪤'],
+   slogans:["Propre entre 9h et 9h30","On efface vos traces sans poser de questions","Le quai brille la conscience aussi"]},
+  {min:24,max:29,label:'Depollution Maritime',tag:'ENVIRONNEMENT PORTUAIRE',
+   emojis:['🌊','♻️','🪣','🧤','⚗️','🌿','🔬','💧','🐢','🌍'],
+   slogans:["On nettoie ce que les autres ont verse","La mer nous remercie avec discretion","Depollution avec conscience et preventions"]},
+  {min:24,max:29,label:'Entreprise de Dechets Portuaires',tag:'GESTION DECHETS',
+   emojis:['🗑️','♻️','🚛','🧤','📦','🗃️','🪣','⚠️','🔄','🏭'],
+   slogans:["Vos dechets notre tresor","On trie meme ce qui ne merite pas","La poubelle est la premiere etape du recyclage"]},
+
+  // ── TIER 5 (30-35) ──
+  {min:30,max:35,label:'Import Export Divers',tag:'COMMERCE DE GROS',
+   emojis:['📦','📫','🗃️','🎁','🧸','🪣','📭','🎀','🗄️','📬'],
+   slogans:["On sait pas ce que c est mais ca vient de loin","Si c est bizarre c est nous","L inutile merite aussi d etre importe"]},
+  {min:30,max:35,label:'Grossiste Alimentaire du Port',tag:'DISTRIBUTION ALIMENTAIRE',
+   emojis:['🛒','🥫','📦','🚛','🏭','🌽','🍅','🫙','🧂','🥩'],
+   slogans:["On nourrit le port sans vous montrer comment","Du producteur au docker sans escale","Les meilleures dates de peremption de la region"]},
+  {min:30,max:35,label:'Entrepot Frigorifique',tag:'STOCKAGE FROID',
+   emojis:['🧊','❄️','📦','🏭','🌡️','🔒','🚛','🥶','⚙️','🔧'],
+   slogans:["Froid dehors froid dedans c est coherent","Vos produits congeles notre specialite","La temperature ideale pour les affaires"]},
+
+  // ── TIER 6 (36-41) ──
+  {min:36,max:41,label:'Transport de Palettes',tag:'LOGISTIQUE BASIQUE',
+   emojis:['🚛','🚚','🚐','🏎️','🚜','🛻','🚁','🚌','🚑','🏗️'],
+   slogans:["Les pleines c est plus cher","Leger comme nos benefices","On deplace des possibilites vides"]},
+  {min:36,max:41,label:'Messagerie Portuaire Express',tag:'LIVRAISON RAPIDE',
+   emojis:['📮','📦','🛵','⚡','📋','🗺️','⏱️','🚴','📫','🔔'],
+   slogans:["Express en theorie livraison en pratique","Votre colis arrive avant vous peut-etre","Le rouge signifie urgence chez nous aussi"]},
+  {min:36,max:41,label:'Location de Vehicules Industriels',tag:'LOCATION MATERIEL',
+   emojis:['🚜','🏗️','🚛','🔧','⚙️','🪝','🔩','🛠️','⛽','📋'],
+   slogans:["On loue ce que vous ne pouvez pas acheter","Caution raisonnable dommages frequents","Le chariot ne part pas seul en general"]},
+
+  // ── TIER 7 (42-47) ──
+  {min:42,max:47,label:'Securite Portuaire',tag:'GARDIENNAGE ET SURVEILLANCE',
+   emojis:['💂','👮','🕵️','🦺','🪖','🛡️','🔦','🔒','🚨','🪪'],
+   slogans:["Dissuasif par l exemple","Present en esprit sinon en corps","On surveille sauf quand on dort"]},
+  {min:42,max:47,label:'Systemes de Surveillance Maritime',tag:'SECURITE TECHNOLOGIQUE',
+   emojis:['📡','🔭','💻','📷','🛰️','🔒','📊','⚡','🖥️','🔍'],
+   slogans:["On voit tout sauf ce qu on rate","Surveillance 24h meme la nuit","Nos cameras enregistrent quand elles veulent"]},
+  {min:42,max:47,label:'Protection des Biens Portuaires',tag:'ASSURANCE SECURITE',
+   emojis:['🛡️','🔐','🏰','🗝️','📋','⚖️','🔏','💼','🤝','🏛️'],
+   slogans:["On protege ce que vous avez peur de perdre","La serrure est notre ami et le votre","Tranquillite d esprit incluse dans le devis"]},
+
+  // ── TIER 8 (48-53) ──
+  {min:48,max:53,label:'BTP du Port',tag:'CONSTRUCTION ET TRAVAUX',
+   emojis:['🏗️','⚒️','🪚','🔨','⚙️','🪛','🔧','🧱','🏚️','🏛️'],
+   slogans:["On construit on verra bien","Le devis gratuit les travaux moins","Fini quand c est fini soit bientot soit jamais"]},
+  {min:48,max:53,label:'Renovation des Infrastructures',tag:'REHABILITATION PORTUAIRE',
+   emojis:['🏚️','🔨','🪚','🧱','⚙️','🪟','🚿','🏗️','📐','🎨'],
+   slogans:["Vieux quai nouvelle chance","On renovate comme si c etait le notre","Plus vieux que l original mais plus beau on croit"]},
+  {min:48,max:53,label:'Chaudronnerie Navale',tag:'FABRICATION METALLIQUE',
+   emojis:['⚙️','🔩','🔧','🛠️','🪛','⚒️','🔥','🏭','💨','🪨'],
+   slogans:["Le metal n a pas de secret pour nous","On soude ce que les autres ont casse","Du fer de la sueur du talent dans cet ordre"]},
+
+  // ── TIER 9 (54-59) ──
+  {min:54,max:59,label:'Restauration du Vieux-Port',tag:'GASTRONOMIE MARSEILLAISE',
+   emojis:['🍽️','🍳','🫕','🥘','🍲','🧑‍🍳','🥩','🍱','🥗','🍜'],
+   slogans:["Comme a la maison en moins bon","La vue est meilleure que la carte","Nos clients reviennent la plupart"]},
+  {min:54,max:59,label:'Bar des Dockers',tag:'CAFE RESTAURANT OUVRIER',
+   emojis:['🍺','☕','🥃','🃏','🎲','🍻','🥜','🧀','📺','🎵'],
+   slogans:["Ouvert avant le travail et apres aussi","L endroit ou tout se decide","Gege y a son tabouret reserve depuis 89"]},
+  {min:54,max:59,label:'Traiteur Specialites Mediterraneennes',tag:'GASTRONOMIE REGIONALE',
+   emojis:['🫒','🍅','🧄','🌿','🫙','🥗','🍋','🐟','🧆','🥙'],
+   slogans:["La Mediterranee dans chaque assiette","Huile d olive et bonne humeur incluses","De la mer a la table sans trop d escales"]},
+
+  // ── TIER 10 (60-65) ──
+  {min:60,max:65,label:'Agence Maritime Regionale',tag:'SERVICES NAUTIQUES',
+   emojis:['🗺️','🏖️','⛱️','🧳','✈️','🌅','🏝️','🎡','🌊','🔭'],
+   slogans:["La mer le soleil et les grues","Marseille vue d en haut et d en bas","On vend du reve avec garantie partielle"]},
+  {min:60,max:65,label:'Charterie Nautique',tag:'LOCATION DE BATEAUX',
+   emojis:['⛵','🚤','🛥️','⚓','🧭','🌊','🪝','🗺️','☀️','🌅'],
+   slogans:["Votre bateau notre responsabilite partielle","Location avec ou sans experience c est vous qui voyez","La mer est grande et votre bateau aussi"]},
+  {min:60,max:65,label:'Courtage Maritime',tag:'INTERMEDIAIRE PORTUAIRE',
+   emojis:['🤝','📋','💼','📞','🗂️','✍️','💹','🔄','📊','💰'],
+   slogans:["On met les bons bateaux avec les bonnes cargaisons","L intermediaire que tout le monde cherche","Commission raisonnable services exceptionnels"]},
+
+  // ── TIER 11 (66-71) ──
+  {min:66,max:71,label:'Transitaire Portuaire',tag:'DOUANES ET FORMALITES',
+   emojis:['📋','📊','🖊️','📁','🗂️','📎','🔏','📌','📍','🗝️'],
+   slogans:["On fait les papiers que vous ne voulez pas faire","Bureaucratie avec le sourire","Vos formulaires notre passion"]},
+  {min:66,max:71,label:'Agence en Douane',tag:'DEDOUANEMENT EXPERT',
+   emojis:['📋','⚖️','🔏','🛃','📦','✍️','🗂️','💼','🏛️','🔍'],
+   slogans:["On declare tout sauf ce qu on ne sait pas","La douane ne nous fait pas peur ou presque","Dedouanement rapide si les papiers sont bons"]},
+  {min:66,max:71,label:'Consignataire de Navires',tag:'REPRESENTATION MARITIME',
+   emojis:['🚢','📋','🤝','⚓','🗂️','📞','🏛️','💼','🌊','🗺️'],
+   slogans:["Votre bateau notre responsabilite totale","On represente les navires meme absents","Le port nous connait et vice versa"]},
+
+  // ── TIER 12 (72-77) ──
+  {min:72,max:77,label:'Transport Maritime Cote',tag:'ARMEMENT COTIER',
+   emojis:['🚢','⛴️','🛳️','⚓','🌊','🧭','🗺️','🪝','🔭','⛵'],
+   slogans:["Mediterranee et parfois au dela","Vos marchandises notre mer nos regles","On arrive a l heure souvent le bon jour"]},
+  {min:72,max:77,label:'Cabotage Mediterraneen',tag:'TRANSPORT COTIER REGIONAL',
+   emojis:['⛴️','🗺️','🌊','⚓','🧭','🪝','🚢','🌅','⛵','🔭'],
+   slogans:["De port en port sans se perdre souvent","La Mediterranee est notre autoroute","Cadence reguliere sauf en cas de mistral"]},
+  {min:72,max:77,label:'Affrètement Maritime',tag:'LOCATION DE NAVIRES',
+   emojis:['🚢','💰','📋','🤝','⚓','🌍','🌊','💼','📊','🛳️'],
+   slogans:["Le bon navire pour la bonne cargaison","On affrete ce que les autres n osent pas","Flotte disponible selon les marees et les humeurs"]},
+
+  // ── TIER 13 (78-83) ──
+  {min:78,max:83,label:'Import Export International',tag:'COMMERCE MONDIAL',
+   emojis:['🌍','📦','💼','🤝','📋','🏭','🔄','📊','🌐','💹'],
+   slogans:["Tout ce qui flotte on le bouge","Le monde est notre port et c est grand","Import export on ne pose pas trop de questions"]},
+  {min:78,max:83,label:'Trading Maritime International',tag:'NEGOCE INTERNATIONAL',
+   emojis:['💹','🌍','📊','💰','🤝','🏦','📈','🔄','💼','🌐'],
+   slogans:["On achete bas on vend haut c est le principe","Les marches mondiaux n ont pas de secret","Du fret au profit en passant par Marseille"]},
+  {min:78,max:83,label:'Plateforme Logistique Multimodale',tag:'HUB LOGISTIQUE',
+   emojis:['🏭','🚛','🚢','✈️','🚂','🔄','📦','🗺️','🏗️','⚙️'],
+   slogans:["Terre mer air on gere tout","La multimodalite c est complique mais on le fait","Hub strategique de Marseille c est nous"]},
+
+  // ── TIER 14 (84-89) ──
+  {min:84,max:89,label:'Assurance et Logistique',tag:'GESTION DES RISQUES',
+   emojis:['🛡️','📋','⚖️','✍️','🏛️','🔏','📝','💎','🏆','🪙'],
+   slogans:["On espere ne jamais vous revoir","Le risque on connait on l a vecu","Assure ou pas c est votre probleme"]},
+  {min:84,max:89,label:'Cabinet de Droit Maritime',tag:'CONSEIL JURIDIQUE',
+   emojis:['⚖️','📋','🏛️','👔','✍️','🔏','💼','🗂️','📚','🤝'],
+   slogans:["La loi maritime n a pas de secret pour nous","On defend ce que les autres ont perdu","Justice maritime depuis que c est necessaire"]},
+  {min:84,max:89,label:'Inspection et Certification Navale',tag:'CONTROLE QUALITE',
+   emojis:['🔍','📋','⚙️','🏆','✅','📊','🔬','🛳️','📐','🔧'],
+   slogans:["On certifie ce qui merite d etre certifie","Inspection rigoureuse et bienveillante","Aucun navire ne nous echappe ou presque"]},
+
+  // ── TIER 15 (90-95) ──
+  {min:90,max:95,label:'Groupe Logistique Med',tag:'LOGISTIQUE AVANCEE',
+   emojis:['📊','📈','🗂️','📋','🖥️','🔄','🏭','🚦','⌚','📉'],
+   slogans:["Dans les delais la plupart du temps","Optimise jusqu a ce que ca casse","Flux tendus nerfs aussi"]},
+  {min:90,max:95,label:'Operateur de Terminal Portuaire',tag:'EXPLOITATION PORTUAIRE',
+   emojis:['🏗️','🚢','📦','⚙️','🔧','🚛','📊','🌊','💼','🏭'],
+   slogans:["Le terminal c est notre domaine","On decharge plus vite que l eclair presque","Du quai au camion en temps record ou pas loin"]},
+  {min:90,max:95,label:'Solutions Supply Chain Maritime',tag:'CHAINE LOGISTIQUE',
+   emojis:['🔗','📦','🌍','🚛','🚢','📊','💹','🏭','🔄','⚙️'],
+   slogans:["La chaine logistique sans les maillons faibles","On optimise de A a Z souvent","Supply chain complexe solutions simples"]},
+
+  // ── TIER 16 (96-101) ──
+  {min:96,max:101,label:'Ingenierie et Conseil Naval',tag:'EXPERTISE MARITIME',
+   emojis:['⚙️','🔧','🪛','🔩','🛠️','🔬','💡','🧮','🖥️','🏗️'],
+   slogans:["On optimise ce que les autres ont casse","La technique au service du port","Trop complexe a expliquer mais ca marche"]},
+  {min:96,max:101,label:'Bureau d Etudes Portuaires',tag:'INGENIERIE ET CONCEPTION',
+   emojis:['📐','📊','💡','🔬','🖥️','📋','⚙️','🏗️','🔭','📏'],
+   slogans:["On dessine ce que les autres construiront","Etudes approfondies devis raisonnables","L avenir du port passe par nos plans"]},
+  {min:96,max:101,label:'Maintenance et Reparation Navale',tag:'TECHNIQUE NAVALE',
+   emojis:['🔧','⚙️','🛠️','🔩','🪛','⛴️','🚢','🔥','💨','🏭'],
+   slogans:["On repare ce que la mer a abime","Du moteur a la coque on sait tout faire","Vos navires repartent toujours de chez nous"]},
+
+  // ── TIER 17 (102-107) ──
+  {min:102,max:107,label:'Compagnie Maritime Internationale',tag:'ARMEMENT INTERNATIONAL',
+   emojis:['⚓','🚢','🌍','💰','📊','🏆','⛵','🌊','🗺️','🦁'],
+   slogans:["Nos bateaux votre argent notre gloire","Le port nous appartient en grande partie","Armateurs depuis peu mais avec conviction"]},
+  {min:102,max:107,label:'Groupe Shipbuilding Mediterranee',tag:'CONSTRUCTION NAVALE',
+   emojis:['🚢','🏗️','⚙️','🔩','🔧','🌊','⚓','🏭','💪','⭐'],
+   slogans:["On construit des navires pas des excuses","Chaque bateau est une oeuvre et un business","La cale seche c est notre bureau principal"]},
+  {min:102,max:107,label:'Terminal a Conteneurs International',tag:'MANUTENTION PORTUAIRE',
+   emojis:['📦','🏗️','🚢','⚙️','🚛','📊','🌍','🔄','🏭','⚓'],
+   slogans:["Des conteneurs a perte de vue c est le notre","Le plus grand terminal du coin presque","On deplace des millions de tonnes par passion"]},
+
+  // ── TIER 18 (108-113) ──
+  {min:108,max:113,label:'Conglomerat Portuaire',tag:'HOLDING DIVERSIFIE',
+   emojis:['💰','💎','💹','📈','🏦','🤑','💳','🏛️','🪙','💲'],
+   slogans:["On possede ce qu on ne voit pas","Nos filiales font le travail","L argent ne dort jamais ici"]},
+  {min:108,max:113,label:'Groupe Armateur Europeen',tag:'ARMEMENT EUROPEEN',
+   emojis:['🌍','🚢','⚓','💰','🏆','🌊','📊','🛳️','💼','👑'],
+   slogans:["L Europe est notre mer interieure","Nos pavillons sur toutes les mers ou presque","Du Havre a Marseille on domine discretement"]},
+  {min:108,max:113,label:'Fonds d Investissement Maritime',tag:'FINANCE MARITIME',
+   emojis:['💹','🏦','💰','📈','💎','🔐','💳','🏛️','🌍','💼'],
+   slogans:["On investit dans ce que les autres n osent pas","L argent maritime se multiplie ici","Portfolio maritime diversifie et secretement rentable"]},
+
+  // ── TIER 19 (114+) ──
+  {min:114,max:999,label:'Empire Mediterraneen',tag:'DOMINATION TOTALE',
+   emojis:['👑','💎','🌍','⚡','🦁','🏰','🔱','⭐','🪄','✨'],
+   slogans:["Le port c est nous et ca se sait","L empire ne dort jamais meme le dimanche","On ne negocie pas on dicte les termes"]},
+  {min:114,max:999,label:'Holding Maritime Mondial',tag:'EMPIRE FINANCIER',
+   emojis:['🌍','💰','👑','🏦','💹','🏰','💎','⭐','🔱','🌐'],
+   slogans:["On possede des ports que vous avez vus en reve","Notre patrimoine maritime est incalculable","Le monde entier est notre zone d influence"]},
+  {min:114,max:999,label:'Groupe Le Magnifique du Port',tag:'LEGENDE PORTUAIRE',
+   emojis:['🏆','👑','🦁','💪','🌟','🎯','⭐','🔱','💎','🪄'],
+   slogans:["Les autres font des affaires nous faisons l histoire","Gege lui-meme nous demande des conseils","Le port de Marseille porte notre nom en secret"]},
 ];
 
-var NAME_TEMPLATES=['Les Copains des Mouettes;Association Plume Port;Mouettes Sans Frontières','Sardines de l Oncle René;La Fraiche du Port;Poissonnerie des Copains','Taxi Flotte ou Coule;Les Chauffeurs du Vieux-Port;On Arrive Si le Vent Veut','Le Kebab de Gégé;Sauce Harissa Cie;La Baraque du Quai','Propre en Théorie;Nettoyage Débrouille;Ca Brille Ce Matin Sarl','Trucs Bidules Import;On Sait Pas Ce Que C Est;L Entrepot Mystere','Palettes Vides Fils;Transport Presque Express;Léger Comme L Air Sas','Sécurité Très Relative;On Surveille Sauf Dodo;Vigile Associés','BTP Inch Allah;On Construit On Verra;Marteau Devis Sarl','Chez Mémé du Port;La Vue Vaut La Cuisine;Mangez Priez Partez','Voyages Presque Parfaits;Mer Soleil Grues;L Agence Du Possible','Papiers Tampons Sarl;Douanes Pour Les Nuls;On Déclare Presque Tout','Flotte Méditerranée;On Arrive Souvent;Cap sur Marseille Cie','Tout Ce Qui Flotte Cie;Le Monde Est Notre Quai;Import Export Discret','On Espère Ne Pas Vous Revoir;Couverture Totale Ou Presque;Le Risque On Connait','Flux Tendus Associés;Logistique Flux Nerveux;Dans Les Délais Sarl','Trop Technique A Expliquer;La Technique Du Port;On Optimise Tout Cie','Nos Bateaux Votre Argent;Armateurs Sans Complexe;Le Port Nous Appartient','On Possède Ce Qu On Voit Pas;Holding Des Invisibles;Filiales Mystères','L Empire Du Vieux-Port;Le Port C Est Nous Cie;Domination Méditerranée'];
 
-var SLOGAN_TEMPLATES=['On fait ce qu on peut;La mouette nous guide;Depuis 1987 environ','Fraiches ce matin juré;La sardine c est la vie;Pas chères mais sympas','On arrive peut-etre;Tarif fixe heure variable;Flotte encore pour l instant','Sauce harissa offerte;Ouvert quand il fait beau;Gégé recommande','Propre entre 9h et 9h30;On efface vos traces;Presque impeccable','Si c est bizarre c est nous;L inutile a de la valeur;Venu de loin parti vite','Les pleines c est plus cher;On déplace du vide;Léger comme nos profits','Présent en esprit;On surveille parfois;Dissuasif par l exemple','Fini quand c est fini;Le devis est gratuit;On construit on verra','La vue vaut le déplacement;Cuisine avec amour;Revenez on progresse','La mer le soleil les grues;On vend du rêve pas cher;Marseille vue d en haut','Vos papiers notre passion;Bureaucratie souriante;On déclare tout ou presque','On arrive souvent a l heure;La Med est notre route;Cap sur les profits','Import export sans questions;Le monde est notre port;On bouge ce qui flotte','On espère ne jamais vous revoir;Le risque on l a vécu;Assuré ou pas c est vous','Dans les délais presque;Flux tendus nerfs aussi;On optimise jusqu au bout','Trop complexe a expliquer;La tech au service du port;On répare ce qu on n a pas cassé','Nos bateaux votre confiance;Le port nous appartient presque;Armateurs depuis toujours','L argent ne dort pas ici;On possède ce qu on voit pas;Filiales a tous les étages','Le port c est nous;L empire ne s excuse pas;On ne négocie pas on dicte'];
 
-// ══ SPÉCIALITÉS EMPLOYÉS ══
-var SPECIALTIES=[
-  {id:'docker',   name:'Docker',     icon:'👷', desc:'Revenus/h',         baseCost:5000,  baseSalary:500,  bonusPerLvl:0.05},
-  {id:'commercial',name:'Commercial',icon:'🤝', desc:'Contrats/jour',     baseCost:8000,  baseSalary:600,  bonusPerLvl:1},
-  {id:'comptable',name:'Comptable',  icon:'🧮', desc:'Réduit pertes fiscales', baseCost:10000, baseSalary:700,  bonusPerLvl:0.10},
-  {id:'securite', name:'Sécurité',   icon:'💂', desc:'Bloque sabotages',  baseCost:7000,  baseSalary:550,  bonusPerLvl:0.15},
-  {id:'espion',   name:'Espion',     icon:'🕵️', desc:'Infos sur rivaux', baseCost:15000, baseSalary:900,  bonusPerLvl:1},
-];
-var PRENOMS=['Jean-Pierre','Gégé','Dédé','Momo','Fifi','Tonton','Kéké','Biloute','Nono','Rico','Jojo','Mimile','Paulo','Lulu','Titou','Coco','Néné','Zézé','Pierrot','Marcel'];
-var NOMS=['Bianchi','Ferrara','Casanova','Sardino','Moretti','Di Franco','Catalan','Bouche','Pastis','Gambetta','Ricard','Castellane','Pagnol','Calanque','Raimu','Mistral','Gabian','Marius','Fanny','César'];
-function genEmployeeName(){return PRENOMS[Math.floor(Math.random()*PRENOMS.length)]+' '+NOMS[Math.floor(Math.random()*NOMS.length)];}
-function getSpecialty(id){return SPECIALTIES.find(function(s){return s.id===id;})||SPECIALTIES[0];}
-function empSalary(emp){var s=getSpecialty(emp.specialty);return Math.round(s.baseSalary*(emp.level||1));}
-function empBonus(emp){var s=getSpecialty(emp.specialty);return s.bonusPerLvl*(emp.level||1);}
-function empHireCost(specId){var s=getSpecialty(specId);return s.baseCost;}
-function empTrainCost(emp){return Math.round(empHireCost(emp.specialty)*0.5*(emp.level||1));}
-function empTrainTime(emp){return (emp.level||1)*2;} // heures
-function empMaxSlots(valeur){return Math.min(8,Math.floor((valeur||0)/50000)+3);}
-
-// Migration ancien format ['docker','chef'] → nouveau [{id,name,specialty,level,...}]
-function migrateEmployees(arr){
-  if(!Array.isArray(arr)||arr.length===0)return[];
-  if(typeof arr[0]==='object'&&arr[0].specialty)return arr; // déjà nouveau format
-  var oldMap={docker:'docker',chef:'docker',compta:'comptable',comm:'commercial',securite:'securite',directeur:'docker'};
-  var oldLvl={docker:1,chef:2,compta:1,comm:1,securite:1,directeur:3};
-  return arr.map(function(eid){
-    return{
-      id:'emp_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
-      name:genEmployeeName(),
-      specialty:oldMap[eid]||'docker',
-      level:oldLvl[eid]||1,
-      last_paid:new Date().toISOString().slice(0,10),
-      training_until:null
-    };
-  });
-}
-
-var EVENTS=[
-  {id:'strike',   icon:'✊', title:'GREVE DU PERSONNEL',      desc:'Revenus -40% pendant 2h',  color:'#ef4444'},
-  {id:'bonus',    icon:'🚢', title:'CARGO SURPRISE',           desc:'Bonus +3000 immediat',     color:'#22c55e'},
-  {id:'promo',    icon:'📣', title:'PROMOTION EXCEPTIONNELLE', desc:'Revenus +50% pendant 3h',  color:'#22c55e'},
-  {id:'inspect',  icon:'🔍', title:'INSPECTION SANITAIRE',     desc:'Fermeture 1h',             color:'#f59e0b'},
-  {id:'contrat',  icon:'📋', title:'CONTRAT GOUVERNEMENTAL',   desc:'Revenus +25% pendant 4h',  color:'#3b82f6'},
-  {id:'weather',  icon:'⛈️', title:'TEMPETE SUR LE PORT',     desc:'Revenus -20% pendant 2h',  color:'#6366f1'},
-  {id:'festival', icon:'🎉', title:'FETE DU PORT',             desc:'Revenus +60% pendant 1h',  color:'#f59e0b'},
-  {id:'fiscal',   icon:'🏛️', title:'CONTROLE FISCAL',          desc:'Perte de 10% de la valeur', color:'#dc2626'},
-  {id:'mistral',  icon:'🌬️', title:'MISTRAL VIOLENT',          desc:'Port fermé 3h',            color:'#7c3aed'},
-  {id:'flood',    icon:'🌊', title:'INONDATION DU PORT',       desc:'Dégâts -5% valeur',        color:'#0ea5e9'},
+var COMMENTS=[
+  "Cliniquement remarquable. Les mouettes vous ont accorde leur pitie.",
+  "T avez essaye, c est ce qui compte. Le port aussi fait des efforts.",
+  "Un taxi qui coule, c est deja du courage d avoir essaye.",
+  "Le kebab sera votre royaume. Gege est client fidele.",
+  "Nettoyage c est noble. Surtout quand c est pour les autres.",
+  "L import export de l inutile, c est quand meme un business.",
+  "Des palettes vides mais une ame pleine. Belle philosophie.",
+  "La securite c est serieux. Vous dormez mais vous etes la.",
+  "BTP du port. Ca construit, ca tombe, ca reconstruit. La vie.",
+  "La restauration portuaire. Ni Michelin ni catastrophe. Quelque part entre les deux.",
+  "Agence maritime regionale. Le tourisme c est l avenir parait-il.",
+  "Transitaire. Le heros de l ombre qui fait les formulaires.",
+  "Transport cotier. La Mediterranee n a pas de secret pour vous.",
+  "Import export international. Le monde vous appartient presque.",
+  "Assurance et logistique. Les risques vous les gerez avec le sourire.",
+  "Groupe logistique. On optimise tout sauf les pauses cafe.",
+  "Ingenierie navale. Vous impressionnez meme les experts.",
+  "Compagnie maritime internationale. Le port vous doit des excuses.",
+  "Conglomerat portuaire. Vous possedez des choses que vous n avez pas vues.",
+  "Erreur systeme. Aucun humain ne devrait scorer ca. Etes-vous Fouinfouin ?",
 ];
 
-var CONTRACT_POOL=[
-  {id:'sardines', title:'Livraison sardines',     icon:'🐟', reward:10000,  req_val:0,      time:6},
-  {id:'cargo',    title:'Décharger un cargo',     icon:'🚢', reward:25000, req_val:100000, time:12},
-  {id:'transit',  title:'Transit douanier',       icon:'📦', reward:17500,  req_val:50000,  time:8},
-  {id:'mairie',   title:'Contrat Mairie',         icon:'🏛️', reward:40000,  req_val:200000, time:24},
-  {id:'peche',    title:'Approvisionnement criée',icon:'🦞', reward:7500,  req_val:0,      time:4},
-  {id:'btp',      title:'Rénovation quai',        icon:'🔨', reward:60000, req_val:300000, time:24},
-  {id:'resto',    title:'Fourniture restaurants', icon:'🍽️', reward:20000,  req_val:80000,  time:10},
-  {id:'expo',     title:'Export Méditerranée',    icon:'🌍', reward:45000,  req_val:250000, time:20},
-];
 
-// ══ NOMS ET SLOGANS ══
-function getTypeIdx(score){
+function getType(qi){
   var matching=[];
-  for(var i=0;i<TYPES.length;i++){if(score>=TYPES[i].min&&score<=TYPES[i].max)matching.push(i);}
-  if(!matching.length)return TYPES.length-1;
+  for(var i=0;i<TYPES.length;i++){
+    if(qi>=TYPES[i].min&&qi<=TYPES[i].max)matching.push(i);
+  }
+  if(matching.length===0)return TYPES.length-1;
   return matching[Math.floor(Math.random()*matching.length)];
 }
-function genName(tidx){
-  var tier=Math.floor(tidx/3);
-  var opts=NAME_TEMPLATES[Math.min(tier,NAME_TEMPLATES.length-1)].split(';');
-  return opts[Math.floor(Math.random()*opts.length)];
-}
-function genSlogan(tidx){
-  var tier=Math.floor(tidx/3);
-  var opts=SLOGAN_TEMPLATES[Math.min(tier,SLOGAN_TEMPLATES.length-1)].split(';');
-  return opts[Math.floor(Math.random()*opts.length)];
-}
-function getComment(score){
-  var comments=['Cliniquement remarquable. Les mouettes vous remercient.','T avez essayé c est ce qui compte.','Un taxi qui coule c est déjà du courage.','Le kebab sera votre royaume.','Nettoyage c est noble.','L import export de l inutile c est un business.','Des palettes vides mais une âme pleine.','La sécurité c est sérieux.','BTP du port. Ca construit ca tombe ca reconstruit.','La restauration portuaire. Entre Michelin et catastrophe.','Agence maritime. Le tourisme c est l avenir.','Transitaire. Le héros de l ombre.','Transport côtier. La Méditerranée n a plus de secret.','Import export international. Le monde vous appartient presque.','Assurance et logistique. Les risques vous les gérez.','Groupe logistique. On optimise tout sauf les pauses café.','Ingénierie navale. Vous impressionnez les experts.','Compagnie maritime. Le port vous doit des excuses.','Conglomérat. Vous possédez des choses que vous n avez pas vues.','Erreur système. Aucun humain ne devrait scorer ça.'];
-  return comments[Math.min(Math.floor(score/6),comments.length-1)];
+function getComment(qi){var idx=Math.min(19,Math.floor(qi/6));return COMMENTS[idx];}
+function genName(typeLabel,username){
+  var prefixes=['Les','Cie','Groupe','Sarl','Sas'];
+  var p=prefixes[Math.floor(Math.random()*prefixes.length)];
+  var u=username.slice(0,10);
+  var n=p+' '+u;
+  if(n.length>25)n=n.slice(0,25);
+  return n;
 }
 
-// ══ TEST ══
-var QUESTIONS=[
-  {type:'minijeu',num:1,name:'CHARGE LE CARGO'},
-  {type:'minijeu',num:2,name:'L ANCRE PARFAITE'},
-  {type:'minijeu',num:3,name:'GRUE EN FOLIE'},
-  {type:'minijeu',num:4,name:'TRI DES SARDINES'},
-  {type:'minijeu',num:5,name:'BON DE LIVRAISON'},
-  {type:'minijeu',num:6,name:'EVITE LA VAGUE'},
-  {type:'minijeu',num:7,name:'PAUSE SYNDICALE'},
-  {type:'minijeu',num:8,name:'L APPEL D OFFRES'},
-  {type:'minijeu',num:9,name:'REPARE LA GRUE'},
-  {type:'minijeu',num:10,name:'PARI DU DOCKER'},
+function fmtM(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.floor(n)+'€';}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+
+// ══ MINI-JEUX DOCKER ══
+var QUESTIONS = [
+  {type:'minijeu', num:1, name:'CHARGE LE CARGO'},
+  {type:'minijeu', num:2, name:'L ANCRE PARFAITE'},
+  {type:'minijeu', num:3, name:'GRUE EN FOLIE'},
+  {type:'minijeu', num:4, name:'TRI DES SARDINES'},
+  {type:'minijeu', num:5, name:'BON DE LIVRAISON'},
+  {type:'minijeu', num:6, name:'EVITE LA VAGUE'},
+  {type:'minijeu', num:7, name:'PAUSE SYNDICALE'},
+  {type:'minijeu', num:8, name:'L APPEL D OFFRES'},
+  {type:'minijeu', num:9, name:'REPARE LA GRUE'},
+  {type:'minijeu', num:10, name:'PARI DU DOCKER'},
 ];
+
+var qStep=0, qScore=0;
 
 function startTest(){
   if(money<100000){toast('Il te faut 100 000 !');return;}
   qStep=0;qScore=0;
-  show('s-test');renderQ();
+  show('s-test');
+  renderQ();
 }
 
 function updateProgress(){
@@ -542,7 +718,6 @@ function updateProgress(){
 }
 
 function nextQ(pts){
-  cleanupMJ();
   qScore+=Math.max(0,pts);
   document.getElementById('score-live').textContent='Score: '+qScore;
   qStep++;
@@ -551,1273 +726,646 @@ function nextQ(pts){
 }
 
 function renderQ(){
-  cleanupMJ();updateProgress();
-  var body=document.getElementById('test-body');body.innerHTML='';
-  [null,mj1,mj2,mj3,mj4,mj5,mj6,mj7,mj8,mj9,mj10][qStep+1](body);
+  updateProgress();
+  var body=document.getElementById('test-body');
+  body.innerHTML='';
+  var n=qStep+1;
+  if(n===1) mj1(body);
+  else if(n===2) mj2(body);
+  else if(n===3) mj3(body);
+  else if(n===4) mj4(body);
+  else if(n===5) mj5(body);
+  else if(n===6) mj6(body);
+  else if(n===7) mj7(body);
+  else if(n===8) mj8(body);
+  else if(n===9) mj9(body);
+  else if(n===10) mj10(body);
 }
 
+/* ─────────────────────────────
+   MJ1 — CHARGE LE CARGO
+   Caisses tombent, tap pour les attraper
+───────────────────────────────*/
+function mj1(body){
+  var caught=0, total=8, active=[], done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">CHARGE LE CARGO 🚢</div>'
+    +'<div class="mini-sub">Tape les caisses avant qu elles tombent !</div>'
+    +'<div id="mj1-zone" style="width:300px;height:220px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:10px;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:rgba(139,90,43,.4);border-radius:0 0 8px 8px"></div>'
+    +'<div id="mj1-score" style="position:absolute;top:8px;right:10px;font-family:Bebas Neue,sans-serif;font-size:18px;color:#fbbf24">0/'+total+'</div>'
+    +'</div></div>';
+  function spawnBox(){
+    if(done)return;
+    var zone=document.getElementById('mj1-zone');
+    if(!zone)return;
+    var box=document.createElement('div');
+    var x=20+Math.random()*220;
+    var emoji=['📦','🪣','⚓'][Math.floor(Math.random()*3)];
+    box.innerHTML=emoji;
+    box.style.cssText='position:absolute;top:-40px;left:'+x+'px;font-size:28px;cursor:pointer;transition:top 2s linear;user-select:none;z-index:2';
+    box.onclick=function(){
+      if(box.dataset.caught)return;
+      box.dataset.caught='1';
+      caught++;
+      document.getElementById('mj1-score').textContent=caught+'/'+total;
+      box.style.transform='scale(1.4)';
+      box.style.opacity='0';
+      setTimeout(function(){if(box.parentNode)box.parentNode.removeChild(box);},200);
+    };
+    zone.appendChild(box);
+    setTimeout(function(){box.style.top='190px';},50);
+    setTimeout(function(){if(box.parentNode&&!box.dataset.caught)box.parentNode.removeChild(box);},2200);
+  }
+  var spawned=0;
+  var iv=setInterval(function(){
+    if(done){clearInterval(iv);return;}
+    spawnBox();spawned++;
+    if(spawned>=total){clearInterval(iv);}
+  },600);
+  setTimeout(function(){
+    done=true;clearInterval(iv);
+    var pts=caught>=7?12:caught>=5?10:caught>=3?7:caught>=1?4:0;
+    nextQ(pts);
+  },5500);
+}
+
+/* ─────────────────────────────
+   MJ2 — L'ANCRE PARFAITE
+   Barre qui oscille, tap dans la zone verte
+───────────────────────────────*/
+function mj2(body){
+  var attempts=3, score=0, done=false, pos=0, dir=1, speed=1.8;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=14px;width:100%">'
+    +'<div class="mini-title">L ANCRE PARFAITE ⚓</div>'
+    +'<div class="mini-sub">Jette l ancre dans la zone verte !</div>'
+    +'<div id="mj2-attempts" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:2px;margin:8px 0">3 TENTATIVES</div>'
+    +'<div style="width:280px;height:30px;background:rgba(255,255,255,.06);border-radius:15px;position:relative;overflow:hidden;margin:8px 0">'
+    +'<div style="position:absolute;left:35%;width:30%;height:100%;background:rgba(34,197,94,.3);border-radius:15px"></div>'
+    +'<div id="mj2-cursor" style="position:absolute;top:2px;width:26px;height:26px;background:#cc1a1a;border-radius:50%;transition:none;font-size:14px;display:flex;align-items:center;justify-content:center">⚓</div>'
+    +'</div>'
+    +'<button class="opt-btn" style="font-size:20px;padding:16px 32px" onclick="anchor()">JETER ⚓</button>'
+    +'<div id="mj2-fb" style="font-size:14px;color:#4ade80;min-height:20px;margin-top:4px"></div>'
+    +'</div>';
+  var cursor=document.getElementById('mj2-cursor');
+  var raf;
+  function animate(){
+    if(done)return;
+    pos+=dir*speed;
+    if(pos>254||pos<0){dir*=-1;}
+    cursor.style.left=pos+'px';
+    raf=requestAnimationFrame(animate);
+  }
+  animate();
+  window.anchor=function(){
+    if(done)return;
+    var inZone=pos>=98&&pos<=182;
+    if(inZone){score+=4;document.getElementById('mj2-fb').textContent='✅ Dans la zone !';}
+    else{document.getElementById('mj2-fb').textContent='❌ Rate !';}
+    attempts--;
+    document.getElementById('mj2-attempts').textContent=attempts+' TENTATIVE'+(attempts>1?'S':'');
+    if(attempts<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
+    else{setTimeout(function(){document.getElementById('mj2-fb').textContent='';},600);}
+  };
+}
+
+/* ─────────────────────────────
+   MJ3 — GRUE EN FOLIE
+   Grue balance, tap quand la caisse est au-dessus du bateau
+───────────────────────────────*/
+function mj3(body){
+  var score=0, tries=4, done=false, angle=0, dir=1;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">GRUE EN FOLIE 🏗️</div>'
+    +'<div class="mini-sub">Lâche la caisse sur le bateau !</div>'
+    +'<canvas id="mj3-canvas" width="300" height="200" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
+    +'<button class="opt-btn" style="font-size:16px;padding:12px 28px" onclick="lacheCaisse()">LÂCHER 📦</button>'
+    +'<div id="mj3-fb" style="font-size:13px;min-height:20px"></div></div>';
+  var cv=document.getElementById('mj3-canvas');
+  var ctx=cv.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,300,200);
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,200);
+    // Bateau fixe
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(80,155,140,25);
+    ctx.fillStyle='#0ea5e9';ctx.fillRect(120,140,60,15);
+    ctx.fillText('🚢',120,165);
+    // Pivot grue
+    var cx=150,cy=40;
+    var armLen=80;
+    var rad=angle*(Math.PI/180);
+    var ex=cx+Math.cos(rad)*armLen;
+    var ey=cy+Math.sin(rad)*armLen;
+    ctx.strokeStyle='#d4af37';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle='#d4af37';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
+    // Caisse
+    ctx.font='18px serif';ctx.fillText('📦',ex-9,ey+10);
+    // Zone cible
+    ctx.strokeStyle='rgba(34,197,94,.3)';ctx.lineWidth=1;
+    ctx.strokeRect(90,138,120,18);
+  }
+  var raf;
+  function loop(){
+    if(done)return;
+    angle+=dir*1.5;
+    if(angle>70||angle<-70)dir*=-1;
+    draw();raf=requestAnimationFrame(loop);
+  }
+  loop();
+  window.lacheCaisse=function(){
+    if(done||tries<=0)return;
+    var cx=150,cy=40,armLen=80,rad=angle*(Math.PI/180);
+    var bx=cx+Math.cos(rad)*armLen;
+    var inZone=bx>=90&&bx<=210;
+    tries--;
+    if(inZone){score+=3;document.getElementById('mj3-fb').style.color='#4ade80';document.getElementById('mj3-fb').textContent='✅ Sur le bateau !';}
+    else{document.getElementById('mj3-fb').style.color='#f87171';document.getElementById('mj3-fb').textContent='❌ A l eau !';}
+    if(tries<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
+  };
+}
+
+/* ─────────────────────────────
+   MJ4 — TRI DES SARDINES
+   Tap la bonne catégorie quand la sardine apparaît
+───────────────────────────────*/
+function mj4(body){
+  var categories=['🐟 PETITE','🐟 GROSSE','🦞 CRUSTACE','🗑️ POURRIE'];
+  var items=[
+    {emoji:'🐟',size:'s',correct:0},{emoji:'🐟',size:'l',correct:1},
+    {emoji:'🦞',size:'m',correct:2},{emoji:'🐠',size:'s',correct:0},
+    {emoji:'🐡',size:'l',correct:1},{emoji:'🦐',size:'s',correct:2},
+    {emoji:'💀',size:'r',correct:3},{emoji:'🐟',size:'l',correct:1},
+  ];
+  var idx=0,score=0,done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
+    +'<div class="mini-title">TRI DES SARDINES 🐟</div>'
+    +'<div class="mini-sub">Mets chaque poisson dans la bonne case !</div>'
+    +'<div id="mj4-fish" style="font-size:52px;min-height:60px;display:flex;align-items:center;justify-content:center"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">'
+    +categories.map(function(c,i){return '<button class="opt-btn" style="font-size:11px;padding:12px 6px" onclick="sortFish('+i+')">'+c+'</button>';}).join('')
+    +'</div>'
+    +'<div id="mj4-prog" style="font-size:10px;color:rgba(255,255,255,.3)">0/'+items.length+'</div>'
+    +'</div>';
+  function showNext(){
+    if(done||idx>=items.length)return;
+    document.getElementById('mj4-fish').textContent=items[idx].emoji;
+    document.getElementById('mj4-prog').textContent=idx+'/'+items.length;
+  }
+  showNext();
+  window.sortFish=function(choice){
+    if(done)return;
+    var correct=items[idx].correct===choice;
+    if(correct)score+=1.5;
+    var fish=document.getElementById('mj4-fish');
+    fish.style.transform=correct?'scale(1.3) rotate(10deg)':'scale(.7)';
+    fish.style.opacity='0';
+    setTimeout(function(){
+      fish.style.transform='';fish.style.opacity='1';
+      idx++;
+      if(idx>=items.length){done=true;nextQ(Math.round(Math.min(12,score)));}
+      else showNext();
+    },300);
+  };
+}
+
+/* ─────────────────────────────
+   MJ5 — BON DE LIVRAISON
+   Mémoriser 3 infos d'un bon de livraison
+───────────────────────────────*/
+function mj5(body){
+  var data={date:'14/03',poids:'2.4T',conteneur:'BDK-447'};
+  var phase='show';
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
+    +'<div class="mini-title">BON DE LIVRAISON 📋</div>'
+    +'<div class="mini-sub">Memorise le bon, il disparait dans 3s !</div>'
+    +'<div id="mj5-card" style="background:#fffde7;border:2px solid #f59e0b;border-radius:10px;padding:16px;width:100%;text-align:left">'
+    +'<div style="font-weight:800;color:#0f172a;margin-bottom:8px;font-size:11px;letter-spacing:2px">BON DE LIVRAISON N°2047</div>'
+    +'<div style="font-size:12px;color:#374151;line-height:1.8">'
+    +'📅 Date : <strong>'+data.date+'</strong><br>'
+    +'⚖️ Poids : <strong>'+data.poids+'</strong><br>'
+    +'📦 Conteneur : <strong>'+data.conteneur+'</strong>'
+    +'</div></div>'
+    +'<div id="mj5-questions" style="width:100%;display:none"></div>'
+    +'</div>';
+  var correct=0;
+  setTimeout(function(){
+    var card=document.getElementById('mj5-card');
+    if(card)card.style.display='none';
+    var qz=document.getElementById('mj5-questions');
+    if(!qz)return;
+    qz.style.display='block';
+    var questions=[
+      {q:'Quelle etait la date ?',opts:['12/03','14/03','17/03','21/03'],correct:1},
+      {q:'Quel etait le poids ?',opts:['1.8T','3.1T','2.4T','4.0T'],correct:2},
+      {q:'Quel etait le conteneur ?',opts:['BDK-447','BDX-274','BDK-474','BKD-447'],correct:0},
+    ];
+    var qi=0;
+    function showQ(){
+      if(qi>=questions.length){nextQ(Math.min(12,correct*4));return;}
+      var q=questions[qi];
+      qz.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;margin-bottom:10px;text-align:center">'+q.q+'</div>'
+        +'<div class="emoji-options">'
+        +q.opts.map(function(o,i){return '<button class="opt-btn" style="font-size:12px" onclick="ansQ('+i+','+q.correct+')">'+o+'</button>';}).join('')
+        +'</div>';
+    }
+    window.ansQ=function(choice,corr){
+      document.querySelectorAll('#mj5-questions .opt-btn').forEach(function(b){b.disabled=true;});
+      if(choice===corr)correct++;
+      qi++;setTimeout(showQ,400);
+    };
+    showQ();
+  },3000);
+}
+
+/* ─────────────────────────────
+   MJ6 — EVITE LA VAGUE
+   Tap pour sauter par dessus les vagues
+───────────────────────────────*/
+function mj6(body){
+  var score=0,wavesDone=0,totalWaves=4,jumping=false,done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">EVITE LA VAGUE 🌊</div>'
+    +'<div class="mini-sub">Tape pour sauter au bon moment !</div>'
+    +'<canvas id="mj6-cv" width="300" height="160" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
+    +'<div id="mj6-score" style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#4ade80">0 saut(s) reussi(s)</div>'
+    +'</div>';
+  var cv=document.getElementById('mj6-cv');
+  var ctx=cv.getContext('2d');
+  var dockerY=120,dockerJump=0,waveX=320,waveActive=false;
+  function draw(){
+    ctx.clearRect(0,0,300,160);
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,160);
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(0,135,300,25);
+    // Docker
+    ctx.font='24px serif';ctx.fillText('🧔',30,dockerY);
+    // Vague
+    if(waveActive){ctx.font='22px serif';ctx.fillText('🌊',waveX,130);}
+    // Score
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='bold 11px Inter,sans-serif';
+    ctx.fillText(wavesDone+'/'+totalWaves+' vagues',200,20);
+  }
+  cv.onclick=function(){
+    if(done||jumping)return;
+    jumping=true;
+    var up=setInterval(function(){dockerY-=8;if(dockerY<=70){clearInterval(up);var dn=setInterval(function(){dockerY+=8;if(dockerY>=120){dockerY=120;jumping=false;clearInterval(dn);}},30);}},30);
+  };
+  function launchWave(){
+    if(done)return;
+    waveX=320;waveActive=true;
+    var iv=setInterval(function(){
+      waveX-=5;
+      var dockerFeet=dockerY;
+      if(waveX<=60&&waveX>=30){
+        if(dockerFeet>100){score=Math.max(0,score-1);}
+        else{score+=3;}
+        waveActive=false;waveX=320;clearInterval(iv);
+        wavesDone++;
+        if(wavesDone>=totalWaves){done=true;nextQ(Math.min(12,score));}
+        else{setTimeout(launchWave,800);}
+      }
+    },30);
+  }
+  var raf2;
+  function loop2(){if(done)return;draw();raf2=requestAnimationFrame(loop2);}
+  loop2();
+  setTimeout(launchWave,1000);
+}
+
+/* ─────────────────────────────
+   MJ7 — PAUSE SYNDICALE
+   Ne pas toucher l'écran pendant 6 secondes
+───────────────────────────────*/
+function mj7(body){
+  var failed=false,countdown=6;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=16px;width:100%;padding:20px" id="mj7-wrap">'
+    +'<div class="mini-title">PAUSE SYNDICALE ☕</div>'
+    +'<div class="mini-sub">Ne touche PAS l ecran pendant 6 secondes !</div>'
+    +'<div id="mj7-count" style="font-family:Bebas Neue,sans-serif;font-size:64px;color:#fbbf24;margin:20px 0">6</div>'
+    +'<div style="font-size:28px" id="mj7-icon">😤</div>'
+    +'<div id="mj7-msg" style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Gege surveille...</div>'
+    +'</div>';
+  document.getElementById('mj7-wrap').addEventListener('click',function(){
+    if(failed)return;
+    failed=true;
+    clearInterval(iv);
+    document.getElementById('mj7-count').textContent='😱';
+    document.getElementById('mj7-icon').textContent='😡';
+    document.getElementById('mj7-msg').textContent='GEGE EST FURIEUX !';
+    document.getElementById('mj7-msg').style.color='#f87171';
+    setTimeout(function(){nextQ(0);},1500);
+  });
+  var iv=setInterval(function(){
+    countdown--;
+    var el=document.getElementById('mj7-count');
+    if(el)el.textContent=countdown;
+    if(countdown<=0){
+      clearInterval(iv);
+      var ic=document.getElementById('mj7-icon');
+      if(ic)ic.textContent='😴';
+      var mg=document.getElementById('mj7-msg');
+      if(mg){mg.textContent='Bravo, t as resiste !';mg.style.color='#4ade80';}
+      setTimeout(function(){nextQ(12);},1000);
+    }
+  },1000);
+}
+
+/* ─────────────────────────────
+   MJ8 — L'APPEL D'OFFRES
+   3 contrats, trouver le plus rentable
+───────────────────────────────*/
+function mj8(body){
+  var contrats=[
+    {nom:'CMA CGM',   prix:45000, delai:3, poids:12},
+    {nom:'Bolloré',   prix:38000, delai:2, poids:8},
+    {nom:'MSC Lines', prix:52000, delai:5, poids:15},
+  ];
+  // Rentabilité = prix / (delai * poids)
+  var rents=contrats.map(function(c){return c.prix/(c.delai*c.poids);});
+  var best=rents.indexOf(Math.max.apply(null,rents));
+  var shown=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
+    +'<div class="mini-title">L APPEL D OFFRES 💼</div>'
+    +'<div class="mini-sub">Memorise les 3 contrats (4s) puis choisis le plus rentable !</div>'
+    +'<div id="mj8-cards" style="display:flex;flex-direction:column;gap:6px;width:100%">'
+    +contrats.map(function(c){
+      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7)">'
+      +'<strong style="color:white">'+c.nom+'</strong> — '+c.prix.toLocaleString()+'€ · '+c.delai+'j · '+c.poids+'T</div>';
+    }).join('')
+    +'</div>'
+    +'<div id="mj8-q" style="width:100%;display:none"></div>'
+    +'</div>';
+  setTimeout(function(){
+    var cards=document.getElementById('mj8-cards');
+    if(cards)cards.style.display='none';
+    var q=document.getElementById('mj8-q');
+    if(!q)return;
+    q.style.display='block';
+    q.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;text-align:center;margin-bottom:10px">LEQUEL EST LE PLUS RENTABLE ?</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">'
+      +contrats.map(function(c,i){
+        return '<button class="opt-btn" style="font-size:13px;text-align:left" onclick="pickContrat('+i+','+best+')">'+c.nom+'</button>';
+      }).join('')
+      +'</div>';
+  },4000);
+  window.pickContrat=function(choice,correct){
+    document.querySelectorAll('#mj8-q .opt-btn').forEach(function(b){b.disabled=true;});
+    nextQ(choice===correct?12:0);
+  };
+}
+
+/* ─────────────────────────────
+   MJ9 — REPARE LA GRUE
+   Retrouver les 3 cases en panne
+───────────────────────────────*/
+function mj9(body){
+  var pannes=[], selected=[], done=false;
+  while(pannes.length<3){
+    var r=Math.floor(Math.random()*9);
+    if(pannes.indexOf(r)<0)pannes.push(r);
+  }
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
+    +'<div class="mini-title">REPARE LA GRUE 🔧</div>'
+    +'<div class="mini-sub">Memorise les 3 pannes (2s) puis retrouve-les !</div>'
+    +'<div id="mj9-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%"></div>'
+    +'<div id="mj9-msg" style="font-size:11px;color:rgba(255,255,255,.4)">Observe...</div>'
+    +'</div>';
+  function renderGrid(reveal){
+    var g=document.getElementById('mj9-grid');
+    if(!g)return;
+    g.innerHTML='';
+    for(var i=0;i<9;i++){
+      var btn=document.createElement('div');
+      var isPanne=pannes.indexOf(i)>=0;
+      var isSel=selected.indexOf(i)>=0;
+      if(reveal){
+        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isPanne?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isPanne?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+'';
+        btn.textContent=isPanne?'🔴':'⚙️';
+      } else {
+        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isSel?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isSel?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+';cursor:pointer';
+        btn.textContent=isSel?'🔴':'⚙️';
+        btn.onclick=(function(idx){return function(){
+          if(done)return;
+          var si=selected.indexOf(idx);
+          if(si>=0)selected.splice(si,1);else if(selected.length<3)selected.push(idx);
+          renderGrid(false);
+          if(selected.length===3){
+            done=true;
+            var ok=pannes.filter(function(p){return selected.indexOf(p)>=0;}).length;
+            nextQ(ok===3?12:ok===2?8:ok===1?4:0);
+          }
+        };})(i);
+      }
+      g.appendChild(btn);
+    }
+  }
+  renderGrid(true);
+  setTimeout(function(){
+    renderGrid(false);
+    var msg=document.getElementById('mj9-msg');
+    if(msg)msg.textContent='Retrouve les 3 pannes !';
+  },2000);
+}
+
+/* ─────────────────────────────
+   MJ10 — PARI DU DOCKER
+   Doubler ou garder son score
+───────────────────────────────*/
+function mj10(body){
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;text-align:center;padding:10px">'
+    +'<div class="mini-title">PARI DU DOCKER 🎲</div>'
+    +'<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5">Ton score actuel :<br>'
+    +'<span style="font-family:Bebas Neue,sans-serif;font-size:40px;color:#fbbf24">'+qScore+' pts</span></div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Gege te propose un pari :<br>Pile → +12 pts | Face → -6 pts</div>'
+    +'<div style="display:flex;gap:10px;width:100%">'
+    +'<button class="opt-btn" style="flex:1;font-size:14px;background:rgba(34,197,94,.15);border-color:#22c55e;color:#4ade80" onclick="doPari(true)">JE PARIE 🎲</button>'
+    +'<button class="opt-btn" style="flex:1;font-size:14px" onclick="doPari(false)">JE GARDE 🛡️</button>'
+    +'</div>'
+    +'<div id="mj10-result" style="font-size:13px;min-height:20px"></div>'
+    +'</div>';
+  window.doPari=function(parie){
+    document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
+    if(!parie){nextQ(0);return;}
+    var coin=Math.random()<0.5;
+    var res=document.getElementById('mj10-result');
+    if(res){
+      res.textContent=coin?'⚡ PILE ! +12 pts !':'💀 FACE ! -6 pts...';
+      res.style.color=coin?'#4ade80':'#f87171';
+    }
+    setTimeout(function(){nextQ(coin?12:-6);},1500);
+  };
+}
+
+
+// ══ FIN TEST ══
 function finishTest(){
   qi=Math.min(120,qScore);
-  typeIdx=getTypeIdx(qi);
+  typeIdx=getType(qi);
   var t=TYPES[typeIdx];
-  companyName=genName(typeIdx);
+  companyName=genName(t.label,username);
   selectedEmoji=t.emojis[0];
-  selectedSlogan=genSlogan(typeIdx);
+  selectedSlogan=t.slogans[0];
+
   document.getElementById('res-qi').textContent=qi;
   document.getElementById('res-comment').textContent=getComment(qi);
-  document.getElementById('res-emoji').textContent=selectedEmoji;
-  document.getElementById('res-type').textContent=t.label;
-  document.getElementById('res-tag').textContent=t.tag;
-  document.getElementById('res-name').textContent='"'+companyName+'"';
-  document.getElementById('res-slogan').textContent=selectedSlogan;
+  document.getElementById('res-type-emoji').textContent=selectedEmoji;
+  document.getElementById('res-type-name').textContent=t.label.toUpperCase();
+  document.getElementById('res-type-tag').textContent=t.tag;
+  document.getElementById('res-name-reveal').textContent='"'+companyName+'"';
   show('s-result');
 }
 
 // ══ PERSO ══
 function goPerso(){
   var t=TYPES[typeIdx];
-  document.getElementById('perso-name-disp').textContent=companyName;
-  document.getElementById('perso-slogan-disp').textContent=selectedSlogan;
-  document.getElementById('preview-card').style.background=selectedColor;
-  document.getElementById('prev-emoji').textContent=selectedEmoji;
-  document.getElementById('prev-name').textContent=companyName;
-  document.getElementById('prev-type').textContent=t.tag;
-  document.getElementById('prev-slogan').textContent=selectedSlogan;
   // Emoji grid
-  var grid=document.getElementById('emoji-grid');
-  grid.innerHTML='';
-  t.emojis.forEach(function(em){
-    var d=document.createElement('div');
-    d.className='ep'+(em===selectedEmoji?' sel':'');
-    d.textContent=em;
-    d.onclick=(function(e){return function(){selectedEmoji=e;document.querySelectorAll('.ep').forEach(function(x){x.classList.remove('sel');});this.classList.add('sel');document.getElementById('prev-emoji').textContent=e;};})(em);
-    grid.appendChild(d);
-  });
-  document.getElementById('color-input').value=selectedColor;
+  var g=document.getElementById('emoji-grid');
+  g.innerHTML=t.emojis.map(function(e,i){
+    return '<div class="ep-emoji'+(i===0?' selected':'')+'" onclick="selectEmoji(\''+e+'\',this)">'+e+'</div>';
+  }).join('');
+  // Slogans
+  var so=document.getElementById('slogan-opts');
+  so.innerHTML=t.slogans.map(function(s,i){
+    return '<div class="slogan-opt'+(i===0?' selected':'')+'" onclick="selectSlogan(\''+s+'\',this)">'+s+'</div>';
+  }).join('');
+  updatePreview();
   show('s-perso');
 }
 
-function selectColor(v){
+function selectEmoji(e,el){
+  document.querySelectorAll('.ep-emoji').forEach(function(x){x.classList.remove('selected');});
+  el.classList.add('selected');
+  selectedEmoji=e;
+  updatePreview();
+}
+function updateColor(v){
   selectedColor=v;
-  document.getElementById('preview-card').style.background=v;
+  updatePreview();
+}
+function selectSlogan(s,el){
+  document.querySelectorAll('.slogan-opt').forEach(function(x){x.classList.remove('selected');});
+  el.classList.add('selected');
+  selectedSlogan=s;
+  
+  
+  updatePreview();
+}
+function updatePreview(){
+  document.getElementById('preview-card').style.background=selectedColor;
+  document.getElementById('prev-emoji').textContent=selectedEmoji;
+  document.getElementById('prev-name').textContent=companyName;
+  document.getElementById('prev-type').textContent=TYPES[typeIdx].tag;
+  document.getElementById('prev-slogan').textContent=selectedSlogan||'Votre slogan ici';
 }
 
+// ══ CRÉER ══
 async function confirmCreate(){
   if(money<100000){toast('Solde insuffisant !');return;}
-  var btn=document.getElementById('btn-confirm');
+  var btn=document.querySelector('.btn-confirm');
   btn.disabled=true;btn.textContent='CREATION...';
   try{
-    var existing=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
-    if(existing.data){money-=100000;await sb.from('game_stats').update({money:money}).eq('user_id',currentUser.id);loadDashboard();return;}
-    var e1=await sb.from('companies').insert({
-      user_id:currentUser.id,name:companyName,nom:companyName,
-      type_id:typeIdx,emoji:selectedEmoji,color:selectedColor,slogan:selectedSlogan,
-      valeur:100000,niveau:1,last_collect:new Date().toISOString(),
-      employees:[],reputation:0
-    });
-    if(e1.error){console.error(e1.error);toast('Erreur: '+e1.error.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';return;}
     var newMoney=money-100000;
-    await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+    // Sauvegarder dans companies
+    var {error:e1}=await sb.from('companies').insert({
+      user_id:currentUser.id,
+      name:companyName,
+      nom:companyName,
+      type_id:typeIdx,
+      emoji:selectedEmoji,
+      color:selectedColor,
+      slogan:selectedSlogan,
+      valeur:100000,
+      niveau:1
+    });
+    if(e1){toast('Erreur: '+e1.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';return;}
+    // Deduire argent
+    await sb.from('game_stats').update({money:newMoney,commerce:{created:true,invest:0,last_collect:new Date().toISOString()}}).eq('user_id',currentUser.id);
     money=newMoney;
-    toast('Entreprise créée !');
-    setTimeout(loadDashboard,800);
-  }catch(e){console.error(e);toast('Erreur: '+e.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
+    toast('Entreprise creee !');
+    setTimeout(function(){loadDashboard();},800);
+  }catch(e){toast('Erreur');btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
 }
 
 // ══ DASHBOARD ══
 async function loadDashboard(){
-  var res=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
-  var co=res.data;
-  if(!co){show('s-accueil');return;}
-  _coData=co;
+  var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
+  if(!co)return;
   var t=TYPES[co.type_id]||TYPES[0];
-  var employees=migrateEmployees(Array.isArray(co.employees)?co.employees:[]);
-  // Sauver si migration a eu lieu
-  if(JSON.stringify(employees)!==JSON.stringify(co.employees)){
-    co.employees=employees;
-    sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
-  }
-  // Payer salaires impayés + virer les non-payés
-  employees=processPayroll(employees);
-  var empRevBonus=employees.filter(function(e){return e.specialty==='docker';}).reduce(function(a,e){return a+empBonus(e);},0);
-  var baseRev=Math.floor((co.valeur||0)*0.01);
-  var rev=Math.round(baseRev*(1+empRevBonus));
-  var niv=co.niveau||1;
-  var pctNiv=Math.min(100,Math.round(((co.valeur||0)%100000)/1000));
-  var rep=Math.min(100,co.reputation||0);
-  var gs=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-  _dashMoney=(gs.data&&gs.data.money)||0;
-  _dashRevPerHour=rev;
-  _dashLastCollect=co.last_collect?new Date(co.last_collect).getTime():Date.now()-3600000;
-
-  // Hero stays white in X3 design
+  var rev=Math.floor((co.valeur||0)*0.002); // 0.2% par heure
+  document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
-  document.getElementById('dash-name').textContent=co.nom||co.name||'Mon Entreprise';
+  document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
   document.getElementById('dash-type').textContent=t.tag;
-  // Sync BD elements
-  try{
-    var _e=document.getElementById('dash-emoji-big');if(_e)_e.textContent=co.emoji||'🏪';
-    var _n=document.getElementById('dash-name-big');if(_n)_n.textContent=co.nom||co.name||'Mon Entreprise';
-    var _t=document.getElementById('dash-type-vis');if(_t)_t.textContent=t.tag;
-  }catch(e){}
   document.getElementById('dash-slogan').textContent=co.slogan||'';
-  document.getElementById('dash-niv-badge').textContent='NIV. '+niv;
-  document.getElementById('dash-niv-bar').style.width=pctNiv+'%';
-  document.getElementById('dash-niv-lbl').textContent=fmtM(co.valeur)+' / '+fmtM(niv*100000);
-  document.getElementById('dash-rep-bar').style.width=rep+'%';
-  document.getElementById('dash-rep-lbl').textContent=rep+'/100';
   document.getElementById('dash-valeur').textContent=fmtM(co.valeur||0);
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
-
-  renderEvent(co.active_event);
-  renderEmployees(employees,co.valeur||0);
-  renderContracts(co);
-  loadMiniRank();
-  renderSpySection();
-  renderSabotage(co);
-  renderPriceWar(co);
-  loadBuyoutTargets();
-  renderReviews(co);
-  renderGuestbook(co);
-  renderPartnerships(co);
-  updateCollectUI();
-  if(_dashInterval)clearInterval(_dashInterval);
-  _dashInterval=setInterval(updateCollectUI,5000);
+  document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
+  // Collecte
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var elapsed=(Date.now()-last)/3600000;
+  var pending=Math.floor(rev*elapsed);
+  document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
+  document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochaine collecte dans '+(Math.ceil(1-elapsed*60))+'min';
   show('s-dashboard');
 }
 
-// Collecte
-function updateCollectUI(){
-  var elapsed=(Date.now()-_dashLastCollect)/3600000;
-  var pending=Math.min(Math.floor(_dashRevPerHour*elapsed),_dashRevPerHour*24);
-  var pct=Math.min(100,(elapsed/24)*100);
-  var ready=pending>=_dashRevPerHour;
-  document.getElementById('collect-bar').style.width=pct+'%';
-  document.getElementById('collect-bar').style.background=ready?'#22c55e':'#f59e0b';
-  document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
-  document.getElementById('collect-icon').textContent=ready?'💰':'⏳';
-  var btn=document.getElementById('collect-btn');
-  if(ready){document.getElementById('collect-sub').textContent='Prêt à collecter !';if(btn)btn.style.display='block';document.getElementById('collect-card').style.borderColor='#22c55e';}
-  else{var m=Math.ceil((1-elapsed)*60);document.getElementById('collect-sub').textContent=m>0?'Dans '+m+' min':'Presque prêt...';if(btn)btn.style.display='none';document.getElementById('collect-card').style.borderColor='#dcfce7';}
-}
-
 async function collecterRevenus(){
-  var elapsed=(Date.now()-_dashLastCollect)/3600000;
-  var pending=Math.min(Math.floor(_dashRevPerHour*elapsed),_dashRevPerHour*24);
-  if(pending<_dashRevPerHour){toast('Pas encore assez de revenus !');return;}
-  var btn=document.getElementById('collect-btn');if(btn){btn.disabled=true;btn.textContent='...';}
-  var now=new Date().toISOString();
-  var newMoney=_dashMoney+pending;
-  var rep=Math.min(100,(_coData.reputation||0)+2);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  await sb.from('companies').update({last_collect:now,reputation:rep}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_dashLastCollect=new Date(now).getTime();_coData.reputation=rep;
-  toast('💰 +'+fmtM(pending)+' collectés !');
-  pushBourseImpact(_coData.nom||_coData.name,1.005);
-  checkAndTriggerEvent();
-  updateCollectUI();
-  document.getElementById('dash-rep-bar').style.width=rep+'%';
-  document.getElementById('dash-rep-lbl').textContent=rep+'/100';
-  if(btn){btn.disabled=false;btn.textContent='💰 COLLECTER';}
-}
-
-// Événements
-function renderEvent(ev){
-  var el=document.getElementById('dash-event');
-  if(!ev||!ev.id){el.style.display='none';return;}
-  var def=EVENTS.find(function(e){return e.id===ev.id;});
-  if(!def){el.style.display='none';return;}
-  var remaining=Math.max(0,Math.ceil((new Date(ev.expires_at).getTime()-Date.now())/60000));
-  if(remaining<=0){el.style.display='none';sb.from('companies').update({active_event:null}).eq('user_id',currentUser.id);return;}
-  el.style.display='block';
-  el.innerHTML='<div style="background:'+def.color+';border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px;margin-bottom:4px">'
-    +'<div style="font-size:22px">'+def.icon+'</div>'
-    +'<div style="flex:1"><div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:white;letter-spacing:1px">'+def.title+'</div>'
-    +'<div style="font-size:10px;color:rgba(255,255,255,.8);margin-top:1px">'+def.desc+' · encore '+remaining+'min</div></div></div>';
-}
-
-async function checkAndTriggerEvent(){
-  var co=_coData;if(!co)return;
-  var lastCheck=co.last_event_check?new Date(co.last_event_check).getTime():0;
-  if(Date.now()-lastCheck<21600000)return;
-  if(Math.random()>0.4)return;
-  var ev=EVENTS[Math.floor(Math.random()*EVENTS.length)];
-  var dur={strike:7200000,bonus:0,promo:10800000,inspect:3600000,contrat:14400000,weather:7200000,festival:3600000,fiscal:0,mistral:10800000,flood:0};
-  var newEv={id:ev.id,expires_at:new Date(Date.now()+(dur[ev.id]||3600000)).toISOString()};
-  // Immediate effects
-  if(ev.id==='bonus'){_dashMoney+=3000;await sb.from('game_stats').update({money:_dashMoney}).eq('user_id',currentUser.id);toast('🚢 Cargo surprise ! +3 000€');}
-  if(ev.id==='fiscal'){
-    var comptBonus=(_coData.employees||[]).filter(function(e){return typeof e==='object'&&e.specialty==='comptable';}).reduce(function(a,e){return a+empBonus(e);},0);
-    var fiscalLoss=Math.round((_coData.valeur||0)*0.10*(1-Math.min(0.8,comptBonus)));
-    _coData.valeur=Math.max(0,(_coData.valeur||0)-fiscalLoss);
-    await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
-    toast('🏛️ Contrôle fiscal ! -'+fmtM(fiscalLoss)+(comptBonus>0?' (réduit par comptable)':''));
-    pushBourseImpact(_coData.nom||_coData.name,0.92);
-  }
-  if(ev.id==='flood'){
-    var loss=Math.round((_coData.valeur||0)*0.05);
-    _coData.valeur=Math.max(0,(_coData.valeur||0)-loss);
-    await sb.from('companies').update({valeur:_coData.valeur}).eq('user_id',currentUser.id);
-    toast('🌊 Inondation ! -'+fmtM(loss)+' de valeur');
-    pushBourseImpact(_coData.nom||_coData.name,0.96);
-  }
-  await sb.from('companies').update({active_event:newEv,last_event_check:new Date().toISOString()}).eq('user_id',currentUser.id);
-  _coData.active_event=newEv;renderEvent(newEv);
-}
-
-// ══ EMPLOYÉS — Système complet ══
-function toggleEmp(){
-  var b=document.getElementById('emp-body');
-  if(b)b.style.display=b.style.display==='none'?'block':'none';
-}
-
-// Payer les salaires et virer les impayés (appelé au chargement)
-function processPayroll(employees){
-  var today=new Date().toISOString().slice(0,10);
-  var changed=false;
-  var kept=[];
-  employees.forEach(function(emp){
-    var lastPaid=emp.last_paid||today;
-    var daysSince=Math.floor((Date.now()-new Date(lastPaid).getTime())/86400000);
-    if(daysSince>1){
-      // Impayé > 1 jour → l'employé part
-      toast('💨 '+emp.name+' est parti (impayé)');
-      pushBourseImpact(_coData.nom||_coData.name,0.98);
-      _coData.reputation=Math.max(0,(_coData.reputation||0)-5);
-      changed=true;
-    }else{
-      // Vérifier formation terminée
-      if(emp.training_until&&new Date(emp.training_until).getTime()<=Date.now()){
-        emp.level=Math.min(5,(emp.level||1)+1);
-        emp.training_until=null;
-        toast('🎓 '+emp.name+' passe niveau '+emp.level+' !');
-        changed=true;
-      }
-      kept.push(emp);
-    }
-  });
-  if(changed){
-    _coData.employees=kept;
-    sb.from('companies').update({employees:kept,reputation:_coData.reputation}).eq('user_id',currentUser.id);
-  }
-  return kept;
-}
-
-function renderEmployees(employees,valeur){
-  var maxSlots=empMaxSlots(valeur);
-  var sub=document.getElementById('emp-sub');
-  if(sub)sub.textContent=employees.length+'/'+maxSlots+' employés';
-  var body=document.getElementById('emp-body');if(!body)return;
-  body.innerHTML='';
-  var today=new Date().toISOString().slice(0,10);
-
-  // Liste des employés en poste
-  employees.forEach(function(emp,idx){
-    var spec=getSpecialty(emp.specialty);
-    var salary=empSalary(emp);
-    var paid=emp.last_paid===today;
-    var inTraining=emp.training_until&&new Date(emp.training_until).getTime()>Date.now();
-    var trainMin=inTraining?Math.ceil((new Date(emp.training_until).getTime()-Date.now())/60000):0;
-
-    var row=document.createElement('div');
-    row.style.cssText='padding:10px;background:#f9fafb;border-radius:10px;margin-bottom:6px;border:1px solid #e5e7eb';
-
-    // Header: icon + name + level
-    var hdr=document.createElement('div');
-    hdr.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:6px';
-    hdr.innerHTML='<div style="font-size:22px">'+spec.icon+'</div>'
-      +'<div style="flex:1"><div style="font-size:12px;font-weight:700;color:#1a1a1a">'+emp.name+'</div>'
-      +'<div style="font-size:9px;color:#9ca3af">'+spec.name+' · Niv.'+emp.level+'</div></div>'
-      +'<div style="font-size:9px;font-weight:700;color:'+(paid?'#059669':'#ef4444')+'">'+salary+'€/j</div>';
-    row.appendChild(hdr);
-
-    // Level bar
-    var lvlBar=document.createElement('div');
-    lvlBar.style.cssText='height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden;margin-bottom:6px';
-    lvlBar.innerHTML='<div style="height:100%;background:#a78bfa;border-radius:2px;width:'+((emp.level||1)/5*100)+'%"></div>';
-    row.appendChild(lvlBar);
-
-    // Bonus info
-    var bonusText=spec.id==='docker'?'+'+Math.round(empBonus(emp)*100)+'% revenus':spec.id==='commercial'?'+'+Math.floor(empBonus(emp))+' contrats/j':spec.id==='comptable'?'-'+Math.round(empBonus(emp)*100)+'% pertes fiscales':spec.id==='securite'?Math.round(empBonus(emp)*100)+'% anti-sabotage':'Espionnage niv.'+emp.level;
-    var bonusEl=document.createElement('div');
-    bonusEl.style.cssText='font-size:8px;color:#9ca3af;margin-bottom:8px';
-    bonusEl.textContent='⚡ '+bonusText;
-    row.appendChild(bonusEl);
-
-    // Actions
-    var acts=document.createElement('div');
-    acts.style.cssText='display:flex;gap:4px';
-
-    // Payer
-    if(!paid){
-      var payBtn=document.createElement('button');
-      payBtn.style.cssText='flex:1;background:#22c55e;border:none;border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:#fff;cursor:pointer';
-      payBtn.textContent='💰 PAYER '+salary+'€';
-      payBtn.onclick=(function(i){return function(){payEmployee(i);};})(idx);
-      acts.appendChild(payBtn);
-    }else{
-      var paidTag=document.createElement('div');
-      paidTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#059669;padding:6px';
-      paidTag.textContent='✓ Payé aujourd\'hui';
-      acts.appendChild(paidTag);
-    }
-
-    // Former
-    if(inTraining){
-      var trainTag=document.createElement('div');
-      trainTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#a78bfa;padding:6px';
-      trainTag.textContent='🎓 '+trainMin+'min restantes';
-      acts.appendChild(trainTag);
-    }else if(emp.level<5){
-      var trainBtn=document.createElement('button');
-      var tCost=empTrainCost(emp);
-      var canTrain=_dashMoney>=tCost;
-      trainBtn.style.cssText='flex:1;background:'+(canTrain?'#f5f3ff':'#f9fafb')+';border:1px solid '+(canTrain?'#c4b5fd':'#e5e7eb')+';border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:'+(canTrain?'#7c3aed':'#d1d5db')+';cursor:'+(canTrain?'pointer':'default');
-      trainBtn.textContent='🎓 '+fmtM(tCost);
-      trainBtn.disabled=!canTrain;
-      trainBtn.onclick=(function(i){return function(){trainEmployee(i);};})(idx);
-      acts.appendChild(trainBtn);
-    }else{
-      var maxTag=document.createElement('div');
-      maxTag.style.cssText='flex:1;text-align:center;font-size:8px;font-weight:700;color:#fbbf24;padding:6px';
-      maxTag.textContent='⭐ NIVEAU MAX';
-      acts.appendChild(maxTag);
-    }
-
-    // Virer
-    var fireBtn=document.createElement('button');
-    fireBtn.style.cssText='background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:6px 8px;font-size:9px;color:#ef4444;cursor:pointer';
-    fireBtn.textContent='✕';
-    fireBtn.onclick=(function(i){return function(){fireEmployee(i);};})(idx);
-    acts.appendChild(fireBtn);
-
-    row.appendChild(acts);
-    body.appendChild(row);
-  });
-
-  // Bouton embaucher
-  if(employees.length<maxSlots){
-    var hireDiv=document.createElement('div');
-    hireDiv.style.cssText='margin-top:8px';
-    SPECIALTIES.forEach(function(spec){
-      var cost=empHireCost(spec.id);
-      var canAfford=_dashMoney>=cost;
-      var btn=document.createElement('button');
-      btn.style.cssText='display:flex;align-items:center;gap:8px;width:100%;background:'+(canAfford?'#fff':'#f9fafb')+';border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:4px;cursor:'+(canAfford?'pointer':'default')+';text-align:left';
-      btn.innerHTML='<div style="font-size:18px">'+spec.icon+'</div>'
-        +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:'+(canAfford?'#1a1a1a':'#9ca3af')+'">Embaucher '+spec.name+'</div>'
-        +'<div style="font-size:8px;color:#9ca3af">'+spec.desc+'</div></div>'
-        +'<div style="font-size:10px;font-weight:700;color:'+(canAfford?'#d97706':'#9ca3af')+'">'+fmtM(cost)+'</div>';
-      btn.disabled=!canAfford;
-      btn.onclick=(function(sid){return function(){hireEmployee(sid);};})(spec.id);
-      hireDiv.appendChild(btn);
-    });
-    body.appendChild(hireDiv);
-  }else{
-    var full=document.createElement('div');
-    full.style.cssText='text-align:center;font-size:9px;color:#9ca3af;font-weight:700;padding:8px;letter-spacing:1px';
-    full.textContent='ÉQUIPE COMPLÈTE ('+maxSlots+'/'+maxSlots+')';
-    body.appendChild(full);
-  }
-}
-
-async function hireEmployee(specId){
-  var co=_coData;
-  var employees=Array.isArray(co.employees)?co.employees.slice():[];
-  var cost=empHireCost(specId);
-  var spec=getSpecialty(specId);
-  if(_dashMoney<cost){toast('Pas assez d\'argent');return;}
-  if(employees.length>=empMaxSlots(co.valeur||0)){toast('Équipe complète');return;}
-  var newEmp={
-    id:'emp_'+Date.now()+'_'+Math.random().toString(36).substr(2,4),
-    name:genEmployeeName(),
-    specialty:specId,
-    level:1,
-    last_paid:new Date().toISOString().slice(0,10),
-    training_until:null
-  };
-  employees.push(newEmp);
-  var newMoney=_dashMoney-cost;
-  var rep=Math.min(100,(co.reputation||0)+3);
-  await sb.from('companies').update({employees:employees,reputation:rep}).eq('user_id',currentUser.id);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_coData.employees=employees;_coData.reputation=rep;
-  toast(spec.icon+' '+newEmp.name+' embauché !');
-  pushBourseImpact(_coData.nom||_coData.name,1.01);
+  var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
+  var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  if(!co||!gs)return;
+  var rev=Math.floor((co.valeur||0)*0.002);
+  var com=(gs.commerce)||{};
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var elapsed=(Date.now()-last)/3600000;
+  var pending=Math.floor(rev*elapsed);
+  if(pending<1){toast('Rien a collecter encore');return;}
+  com.last_collect=new Date().toISOString();
+  var newMoney=(gs.money||0)+pending;
+  await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
+  money=newMoney;
+  toast('💰 +'+fmtM(pending)+' collectes !');
   loadDashboard();
 }
 
-async function payEmployee(idx){
-  var employees=_coData.employees.slice();
-  var emp=employees[idx];if(!emp)return;
-  var salary=empSalary(emp);
-  if(_dashMoney<salary){toast('Pas assez d\'argent');return;}
-  emp.last_paid=new Date().toISOString().slice(0,10);
-  var newMoney=_dashMoney-salary;
-  await sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_coData.employees=employees;
-  toast('💰 '+emp.name+' payé');
-  renderEmployees(employees,_coData.valeur||0);
-}
-
-async function trainEmployee(idx){
-  var employees=_coData.employees.slice();
-  var emp=employees[idx];if(!emp||emp.level>=5)return;
-  var cost=empTrainCost(emp);
-  if(_dashMoney<cost){toast('Pas assez d\'argent');return;}
-  var hours=empTrainTime(emp);
-  emp.training_until=new Date(Date.now()+hours*3600000).toISOString();
-  var newMoney=_dashMoney-cost;
-  await sb.from('companies').update({employees:employees}).eq('user_id',currentUser.id);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_coData.employees=employees;
-  toast('🎓 '+emp.name+' en formation ('+hours+'h)');
-  renderEmployees(employees,_coData.valeur||0);
-}
-
-async function fireEmployee(idx){
-  var employees=_coData.employees.slice();
-  var emp=employees[idx];if(!emp)return;
-  var spec=getSpecialty(emp.specialty);
-  employees.splice(idx,1);
-  var rep=Math.max(0,(_coData.reputation||0)-3);
-  await sb.from('companies').update({employees:employees,reputation:rep}).eq('user_id',currentUser.id);
-  _coData.employees=employees;_coData.reputation=rep;
-  toast(spec.icon+' '+emp.name+' viré');
-  pushBourseImpact(_coData.nom||_coData.name,0.98);
-  loadDashboard();
-}
-
-// ══ ESPIONNAGE ══
-function getSpyLevel(){
-  var emps=_coData.employees||[];
-  var spies=emps.filter(function(e){return e.specialty==='espion';});
-  if(spies.length===0)return 0;
-  return Math.max.apply(null,spies.map(function(e){return e.level||1;}));
-}
-
-function renderSpySection(){
-  var lvl=getSpyLevel();
-  var titleEl=document.getElementById('spy-section-title');
-  var sectionEl=document.getElementById('spy-section');
-  if(!titleEl||!sectionEl)return;
-  if(lvl===0){titleEl.style.display='none';sectionEl.style.display='none';return;}
-  titleEl.style.display='block';sectionEl.style.display='block';
-
-  sectionEl.innerHTML='<div class="dash-card-row" onclick="loadSpyTargets()" style="cursor:pointer">'
-    +'<div class="dash-card-icon" style="background:#f5f3ff">🕵️</div>'
-    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1a1a1a">Espionner un rival</div>'
-    +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">Niveau espion : '+lvl+' · '
-    +(lvl>=1?'Valeur':'')+(lvl>=2?' · Employés':'')+(lvl>=3?' · Détails':'')+(lvl>=4?' · Contrats':'')+(lvl>=5?' · Failles':'')
-    +'</div></div><div style="color:#d1d5db">›</div></div>'
-    +'<div id="spy-targets" style="display:none"></div>';
-}
-
-async function loadSpyTargets(){
-  var tgt=document.getElementById('spy-targets');
-  if(!tgt)return;
-  if(tgt.style.display==='block'){tgt.style.display='none';return;}
-  tgt.style.display='block';
-  tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#9ca3af;text-align:center">Chargement...</div>';
-
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,employees,defense_until').order('valeur',{ascending:false}).limit(10);
-  if(!res.data){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#ef4444;text-align:center">Erreur</div>';return;}
-
-  var html='';
-  res.data.forEach(function(co){
-    if(co.user_id===currentUser.id)return;
-    var cooldownKey='spy_cd_'+co.user_id;
-    var lastSpy=parseInt(localStorage.getItem(cooldownKey)||'0');
-    var onCooldown=(Date.now()-lastSpy)<21600000; // 6h
-    var nom=co.nom||co.name||'???';
-
-    html+='<div style="padding:10px 14px;display:flex;align-items:center;gap:10px;border-top:1px solid #f3f4f6">'
-      +'<div style="font-size:18px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#1a1a1a">'+nom+'</div></div>';
-    if(onCooldown){
-      var minLeft=Math.ceil((21600000-(Date.now()-lastSpy))/60000);
-      html+='<div style="font-size:8px;color:#9ca3af;font-weight:700">⏳ '+minLeft+'min</div>';
-    }else{
-      html+='<button onclick="spyOn(\''+co.user_id+'\')" style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:#a78bfa;cursor:pointer">🕵️ ESPIONNER</button>';
-    }
-    html+='</div>';
-  });
-  if(!html)html='<div style="padding:10px;font-size:10px;color:#9ca3af;text-align:center">Aucune cible</div>';
-  tgt.innerHTML=html;
-}
-
-async function spyOn(targetUid){
-  var lvl=getSpyLevel();
-  if(lvl===0){toast('Pas d\'espion dans l\'équipe');return;}
-
-  // Fetch target data
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,employees,defense_until,contracts,niveau').eq('user_id',targetUid).maybeSingle();
-  if(!res.data){toast('Cible introuvable');return;}
-  var target=res.data;
-
-  // Check if rival has security → chance of getting caught
-  var targetEmps=migrateEmployees(Array.isArray(target.employees)?target.employees:[]);
-  var secuLevel=0;
-  targetEmps.forEach(function(e){if(e.specialty==='securite')secuLevel=Math.max(secuLevel,e.level||1);});
-
-  var catchChance=Math.max(0,secuLevel*15-lvl*10); // % chance caught
-  var caught=Math.random()*100<catchChance;
-
-  if(caught){
-    // Caught! Reputation drops
-    var rep=Math.max(0,(_coData.reputation||0)-8);
-    await sb.from('companies').update({reputation:rep}).eq('user_id',currentUser.id);
-    _coData.reputation=rep;
-    toast('🚨 Espion attrapé ! Réputation -8');
-    loadDashboard();
-    return;
-  }
-
-  // Success — set cooldown
-  localStorage.setItem('spy_cd_'+targetUid,Date.now().toString());
-
-  // Build intel report based on spy level
-  var nom=target.nom||target.name||'???';
-  var report='<div style="padding:14px;border-top:1px solid #f3f4f6">';
-  report+='<div style="font-size:11px;font-weight:800;color:#a78bfa;letter-spacing:1px;margin-bottom:8px">🕵️ RAPPORT — '+(target.emoji||'')+' '+nom+'</div>';
-
-  // Level 1+: Value + reputation
-  if(lvl>=1){
-    report+='<div style="display:flex;gap:8px;margin-bottom:6px">'
-      +'<div style="flex:1;background:#f9fafb;border-radius:6px;padding:8px;text-align:center">'
-      +'<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#fbbf24">'+fmtM(target.valeur||0)+'</div>'
-      +'<div style="font-size:8px;color:#9ca3af;font-weight:700;letter-spacing:1px">VALEUR</div></div>'
-      +'<div style="flex:1;background:#f9fafb;border-radius:6px;padding:8px;text-align:center">'
-      +'<div style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#1a1a1a">'+(target.reputation||0)+'/100</div>'
-      +'<div style="font-size:8px;color:#9ca3af;font-weight:700;letter-spacing:1px">RÉPUTATION</div></div></div>';
-  }
-
-  // Level 2+: Employee count
-  if(lvl>=2){
-    report+='<div style="font-size:9px;color:#6b7280;margin-bottom:4px">👷 '+targetEmps.length+' employé'+(targetEmps.length>1?'s':'')+'</div>';
-  }
-
-  // Level 3+: Employee details
-  if(lvl>=3&&targetEmps.length>0){
-    targetEmps.forEach(function(emp){
-      var s=getSpecialty(emp.specialty);
-      report+='<div style="font-size:8px;color:#9ca3af;margin-left:12px">'+s.icon+' '+s.name+' Niv.'+emp.level+'</div>';
-    });
-    report+='<div style="margin-bottom:4px"></div>';
-  }
-
-  // Level 4+: Active contracts
-  if(lvl>=4){
-    var contracts=target.contracts||{};
-    var active=(contracts.list||[]).filter(function(c){return c.status==='accepted';});
-    report+='<div style="font-size:9px;color:#6b7280">📋 '+active.length+' contrat'+(active.length>1?'s':'')+' en cours</div>';
-  }
-
-  // Level 5: Security weakness
-  if(lvl>=5){
-    if(secuLevel===0){
-      report+='<div style="font-size:9px;color:#ef4444;font-weight:700;margin-top:4px">🔓 AUCUNE SÉCURITÉ — Sabotage garanti</div>';
-    }else{
-      report+='<div style="font-size:9px;color:#f59e0b;margin-top:4px">🔒 Sécurité niv.'+secuLevel+' — Sabotage risqué</div>';
-    }
-  }
-
-  report+='</div>';
-
-  // Show report inline
-  var tgt=document.getElementById('spy-targets');
-  if(tgt)tgt.innerHTML=report;
-  toast('🕵️ Espionnage réussi !');
-}
-
-// Contrats
-function renderContracts(co){
-  var contracts=co.contracts||{last_refresh:null,list:[]};
-  var employees=Array.isArray(co.employees)?co.employees:[];
-  var hasComm=employees.some(function(e){return typeof e==='object'&&e.specialty==='commercial';});
-  var commBonus=employees.filter(function(e){return typeof e==='object'&&e.specialty==='commercial';}).reduce(function(a,e){return a+Math.floor(empBonus(e));},0);
-  var count=(hasComm?3+commBonus:3);
-  var lastRefresh=contracts.last_refresh?new Date(contracts.last_refresh).getTime():0;
-  if((Date.now()-lastRefresh)>86400000||!contracts.list||!contracts.list.length){
-    var eligible=CONTRACT_POOL.filter(function(c){return (co.valeur||0)>=c.req_val;});
-    var shuffled=eligible.sort(function(){return Math.random()-.5;}).slice(0,count);
-    contracts={last_refresh:new Date().toISOString(),list:shuffled.map(function(c){return {id:c.id,claimed:false,expires_at:new Date(Date.now()+c.time*3600000).toISOString()};})};
-    sb.from('companies').update({contracts:contracts}).eq('user_id',currentUser.id);
-    _coData.contracts=contracts;
-  }
-  var el=document.getElementById('contracts-list');if(!el)return;
-  el.innerHTML='';
-  if(!contracts.list.length){el.innerHTML='<div style="text-align:center;padding:12px;font-size:11px;color:#9ca3af">Investis davantage pour débloquer des contrats</div>';return;}
-  contracts.list.forEach(function(c){
-    var def=CONTRACT_POOL.find(function(x){return x.id===c.id;});if(!def)return;
-    var expire=Math.max(0,Math.ceil((new Date(c.expires_at).getTime()-Date.now())/3600000));
-    var row=document.createElement('div');
-    row.style.cssText='background:white;border-radius:10px;border:1px solid '+(c.claimed?'rgba(0,0,0,.06)':'#e2e8f0')+';padding:11px 12px;display:flex;align-items:center;gap:10px;margin-bottom:6px;opacity:'+(c.claimed?0.5:1);
-    row.innerHTML='<div style="font-size:20px">'+def.icon+'</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:#0f172a">'+def.title+'</div><div style="font-size:9px;color:#9ca3af;margin-top:1px">Expire dans '+expire+'h</div></div>';
-    if(c.claimed){var done=document.createElement('div');done.style.cssText='font-size:10px;font-weight:700;color:#9ca3af';done.textContent='FAIT';row.appendChild(done);}
-    else{var btn=document.createElement('button');btn.style.cssText='background:#0f172a;border:none;border-radius:7px;padding:7px 10px;font-size:11px;color:#fbbf24;cursor:pointer';btn.textContent='+'+fmtM(def.reward);btn.onclick=(function(cid){return function(){claimContract(cid);};})(c.id);row.appendChild(btn);}
-    el.appendChild(row);
-  });
-}
-
-async function claimContract(cid){
-  var co=_coData;var contracts=co.contracts||{list:[]};
-  var c=contracts.list.find(function(x){return x.id===cid;});
-  var def=CONTRACT_POOL.find(function(x){return x.id===cid;});
-  if(!c||!def||c.claimed)return;
-  c.claimed=true;
-  var newMoney=_dashMoney+def.reward;
-  var rep=Math.min(100,(co.reputation||0)+10);
-  await sb.from('companies').update({contracts:contracts,reputation:rep}).eq('user_id',currentUser.id);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_coData.contracts=contracts;_coData.reputation=rep;
-  toast('Contrat signe ! +'+fmtM(def.reward));
-  renderContracts(_coData);
-  document.getElementById('dash-rep-bar').style.width=rep+'%';
-  document.getElementById('dash-rep-lbl').textContent=rep+'/100';
-}
-
-// Mini-classement
-async function loadMiniRank(){
-  var el=document.getElementById('mini-rank');if(!el)return;
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur').order('valeur',{ascending:false}).limit(5);
-  var cos=res.data||[];
-  if(!cos.length){el.innerHTML='<div style="padding:12px;font-size:11px;color:#9ca3af;text-align:center">Aucune entreprise</div>';return;}
-  var myId=currentUser.id;var medals=['🥇','🥈','🥉'];
-  el.innerHTML='';
-  cos.forEach(function(co,i){
-    var isMe=co.user_id===myId;
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:'+(i<cos.length-1?'1px solid #f8fafc':'none')+';background:'+(isMe?'#EFF6FF':'white')+';cursor:'+(isMe?'default':'pointer');
-    if(!isMe)row.onclick=(function(uid){return function(){location.href='entreprise.html?uid='+uid;};})(co.user_id);
-    row.innerHTML='<div style="font-size:13px;min-width:22px">'+(medals[i]||(i+1))+'</div><div style="font-size:20px">'+(co.emoji||'🏪')+'</div><div style="flex:1;font-size:12px;font-weight:700;color:'+(isMe?'#1565C0':'#0f172a')+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(co.nom||co.name||'?')+(isMe?' 👈':'')+'</div><div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:#0f172a">'+fmtM(co.valeur||0)+'</div>';
-    el.appendChild(row);
-  });
-}
-
-// Sabotage
-function renderSabotage(co){
-  var el=document.getElementById('sabotage-section');if(!el)return;
-  var defended=co.defense_until&&new Date(co.defense_until).getTime()>Date.now();
-  var sabotaged=co.sabotaged_until&&new Date(co.sabotaged_until).getTime()>Date.now();
-  var defH=defended?Math.ceil((new Date(co.defense_until).getTime()-Date.now())/3600000):0;
-  var sabH=sabotaged?Math.ceil((new Date(co.sabotaged_until).getTime()-Date.now())/3600000):0;
-  var html='<div style="padding:12px 14px">';
-  if(sabotaged)html+='<div style="background:#fef2f2;border-radius:8px;padding:10px;font-size:11px;color:#ef4444;font-weight:700;margin-bottom:8px">Sabotee ! Revenus -20% encore '+sabH+'h</div>';
-  if(defended)html+='<div style="background:#f0fdf4;border-radius:8px;padding:10px;font-size:11px;color:#22c55e;font-weight:700;margin-bottom:8px">Defense active encore '+defH+'h</div>';
-  else html+='<button id="btn-defense" style="width:100%;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px;font-family:Bebas Neue,sans-serif;font-size:12px;letter-spacing:1px;color:#0f172a;cursor:pointer;margin-bottom:8px">Defense 24h — 20 💎</button>';
-  html+='</div><div style="border-top:1px solid #f1f5f9;padding:12px 14px"><div style="font-size:9px;font-weight:700;color:#9ca3af;letter-spacing:1px;margin-bottom:8px">SABOTER UN CONCURRENT</div><div id="sab-targets"></div></div>';
-  el.innerHTML=html;
-  var defBtn=document.getElementById('btn-defense');
-  if(defBtn)defBtn.onclick=buyDefense;
-  loadSabotageTargets();
-}
-
-async function loadSabotageTargets(){
-  var el=document.getElementById('sab-targets');if(!el)return;
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,defense_until').order('valeur',{ascending:false}).limit(6);
-  var cos=(res.data||[]).filter(function(c){return c.user_id!==currentUser.id;}).slice(0,3);
-  el.innerHTML='';
-  if(!cos.length){el.innerHTML='<div style="font-size:11px;color:#9ca3af">Aucun concurrent</div>';return;}
-  cos.forEach(function(co){
-    var defended=co.defense_until&&new Date(co.defense_until).getTime()>Date.now();
-    var row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:8px;padding:8px 10px;margin-bottom:4px';
-    row.innerHTML='<div style="font-size:18px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏪')+'</div><div onclick="goEntreprise(\''+co.user_id+'\')" style="flex:1;font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">'+(co.nom||co.name||'?')+'</div>';
-    if(defended){var p=document.createElement('div');p.style.cssText='font-size:9px;font-weight:700;color:#22c55e';p.textContent='PROTEGE';row.appendChild(p);}
-    else{var b=document.createElement('button');b.style.cssText='background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:5px 10px;font-size:10px;color:#ef4444;cursor:pointer';b.textContent='SABOTER 10💎';b.onclick=(function(uid){return function(){sabotageCompany(uid);};})(co.user_id);row.appendChild(b);}
-    el.appendChild(row);
-  });
-}
-
-async function buyDefense(){
-  var gs=await sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle();
-  var diamonds=(gs.data&&gs.data.diamonds)||0;
-  if(diamonds<20){toast('Pas assez de diamants (20 requis)');return;}
-  var until=new Date(Date.now()+86400000).toISOString();
-  await sb.from('game_stats').update({diamonds:diamonds-20}).eq('user_id',currentUser.id);
-  await sb.from('companies').update({defense_until:until}).eq('user_id',currentUser.id);
-  _coData.defense_until=until;
-  toast('Defense active 24h !');renderSabotage(_coData);
-}
-
-async function sabotageCompany(uid){
-  var gs=await sb.from('game_stats').select('diamonds').eq('user_id',currentUser.id).maybeSingle();
-  var diamonds=(gs.data&&gs.data.diamonds)||0;
-  if(diamonds<10){toast('Pas assez de diamants (10 requis)');return;}
-  var target=await sb.from('companies').select('defense_until,nom,name').eq('user_id',uid).maybeSingle();
-  var t=target.data;
-  if(t&&t.defense_until&&new Date(t.defense_until).getTime()>Date.now()){toast('Cette entreprise est protegee !');return;}
-  var until=new Date(Date.now()+7200000).toISOString();
-  await sb.from('game_stats').update({diamonds:diamonds-10}).eq('user_id',currentUser.id);
-  await sb.from('companies').update({sabotaged_until:until}).eq('user_id',uid);
-  toast('Sabotage lance sur '+(t&&(t.nom||t.name)||'la cible')+' !');
-  loadSabotageTargets();
-}
-
-// ══ GUERRE DES PRIX ══
-function renderPriceWar(co){
-  var el=document.getElementById('pricewar-section');if(!el)return;
-  var pw=co.price_war||null;
-  var active=pw&&pw.until&&new Date(pw.until).getTime()>Date.now();
-
-  if(active){
-    var minLeft=Math.ceil((new Date(pw.until).getTime()-Date.now())/60000);
-    el.innerHTML='<div style="padding:14px"><div style="font-size:12px;font-weight:700;color:#ef4444">⚔️ Guerre en cours contre '+pw.target_name+'</div>'
-      +'<div style="font-size:9px;color:#9ca3af;margin-top:3px">Baisse de '+pw.pct+'% · Encore '+minLeft+'min</div>'
-      +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">Tes revenus: -'+pw.pct+'% · Vol rival: +'+Math.round(pw.pct*0.6)+'%</div></div>';
-    return;
-  }
-  el.innerHTML='<div class="dash-card-row" onclick="loadPriceWarTargets()"><div class="dash-card-icon" style="background:rgba(239,68,68,.1)">⚔️</div>'
-    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1a1a1a">Lancer une guerre des prix</div>'
-    +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">Vole les clients d\'un rival</div></div>'
-    +'<div style="color:#d1d5db">›</div></div>'
-    +'<div id="pw-targets" style="display:none"></div>';
-}
-
-async function loadPriceWarTargets(){
-  var tgt=document.getElementById('pw-targets');if(!tgt)return;
-  if(tgt.style.display==='block'){tgt.style.display='none';return;}
-  tgt.style.display='block';
-  var res=await sb.from('companies').select('user_id,nom,name,emoji').neq('user_id',currentUser.id).order('valeur',{ascending:false}).limit(8);
-  if(!res.data||res.data.length===0){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#9ca3af;text-align:center">Aucune cible</div>';return;}
-  var html='';
-  res.data.forEach(function(co){
-    html+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:1px solid #f3f4f6">'
-      +'<div style="font-size:16px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1;font-size:11px;font-weight:700;color:#1a1a1a;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.nom||co.name||'?')+'</div>'
-      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',10)" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-10%</button>'
-      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',20)" style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-20%</button>'
-      +'<button onclick="startPriceWar(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',30)" style="background:rgba(239,68,68,.2);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:4px 8px;font-size:8px;color:#ef4444;font-weight:700;cursor:pointer">-30%</button></div>';
-  });
-  tgt.innerHTML=html;
-}
-
-async function startPriceWar(targetUid,targetName,pct){
-  var pw={target_uid:targetUid,target_name:targetName,pct:pct,until:new Date(Date.now()+86400000).toISOString()};
-  await sb.from('companies').update({price_war:pw}).eq('user_id',currentUser.id);
-  _coData.price_war=pw;
-  toast('⚔️ Guerre des prix lancée ! -'+pct+'% pendant 24h');
-  renderPriceWar(_coData);
-}
-
-// ══ RACHAT D'ENTREPRISES INACTIVES ══
-async function loadBuyoutTargets(){
-  var el=document.getElementById('buyout-section');if(!el)return;
-  // Fetch companies with profiles.last_seen > 7 days ago
-  var sevenDaysAgo=new Date(Date.now()-604800000).toISOString();
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,reputation,niveau').order('valeur',{ascending:false}).limit(20);
-  if(!res.data){el.innerHTML='<div style="padding:14px;font-size:10px;color:#9ca3af;text-align:center">Erreur</div>';return;}
-
-  // Check last_seen for each
-  var uids=res.data.filter(function(c){return c.user_id!==currentUser.id;}).map(function(c){return c.user_id;});
-  if(uids.length===0){el.innerHTML='<div style="padding:14px;font-size:10px;color:#9ca3af;text-align:center">Aucune entreprise inactive</div>';return;}
-
-  var profiles=await sb.from('profiles').select('user_id,last_seen,username').in('user_id',uids);
-  var lastSeenMap={};
-  (profiles.data||[]).forEach(function(p){lastSeenMap[p.user_id]={last_seen:p.last_seen,username:p.username};});
-
-  var html='';
-  res.data.forEach(function(co){
-    if(co.user_id===currentUser.id)return;
-    var info=lastSeenMap[co.user_id];
-    if(!info||!info.last_seen)return;
-    var daysSince=Math.floor((Date.now()-new Date(info.last_seen).getTime())/86400000);
-    if(daysSince<7)return; // Not dormant yet
-    var buyPrice=Math.round((co.valeur||0)*0.5);
-    var canAfford=_dashMoney>=buyPrice;
-    html+='<div style="padding:10px 14px;border-top:1px solid #f3f4f6;display:flex;align-items:center;gap:10px">'
-      +'<div style="font-size:18px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#1a1a1a">'+(co.nom||co.name||'?')+'</div>'
-      +'<div style="font-size:8px;color:#9ca3af">Inactif depuis '+daysSince+'j · Valeur '+fmtM(co.valeur||0)+'</div></div>'
-      +'<button onclick="buyoutCompany(\''+co.user_id+'\','+buyPrice+')" '+(canAfford?'':'disabled ')
-      +'style="background:'+(canAfford?'#fefce8':'#f9fafb')+';border:1px solid '+(canAfford?'#fde68a':'#e5e7eb')
-      +';border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:'+(canAfford?'#92400e':'#d1d5db')+';cursor:'+(canAfford?'pointer':'default')+'">'
-      +fmtM(buyPrice)+'</button></div>';
-  });
-  if(!html)html='<div style="padding:14px;font-size:10px;color:#9ca3af;text-align:center">Aucune entreprise dormante (7j+ d\'inactivité)</div>';
-  el.innerHTML=html;
-}
-
-async function buyoutCompany(targetUid,price){
-  if(_dashMoney<price){toast('Pas assez d\'argent');return;}
-  var target=await sb.from('companies').select('*').eq('user_id',targetUid).maybeSingle();
-  if(!target.data){toast('Entreprise introuvable');return;}
-  var t=target.data;
-  // Absorb: add value + reputation to own company
-  var newVal=(_coData.valeur||0)+Math.round((t.valeur||0)*0.3);
-  var newRep=Math.min(100,(_coData.reputation||0)+Math.round((t.reputation||0)*0.2));
-  var newMoney=_dashMoney-price;
-  // Update own company
-  await sb.from('companies').update({valeur:newVal,reputation:newRep}).eq('user_id',currentUser.id);
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  // Reset target company (give them the money when they return)
-  await sb.from('companies').update({valeur:0,employees:[],reputation:0,contracts:{},active_event:null}).eq('user_id',targetUid);
-  await sb.from('game_stats').update({money:price}).eq('user_id',targetUid);
-  _dashMoney=newMoney;_coData.valeur=newVal;_coData.reputation=newRep;
-  toast('🏢 Entreprise rachetée ! +'+fmtM(Math.round((t.valeur||0)*0.3))+' valeur');
-  loadDashboard();
-}
-
-// ══ AVIS CLIENTS ══
-var REVIEWS_GOOD=[
-  'Livraison rapide, docker au top !','Service impeccable, je recommande','Meilleure entreprise du port','On dirait des pros, non en fait ce sont des pros',
-  'Gégé m\'a dit que c\'était bien, Gégé a raison','5 étoiles, comme ma mère cuisine','Plus efficace que la SNCF (c\'est pas dur)',
-  'J\'ai cru que c\'était Amazon, mais en mieux','Le patron est sympa, il offre le pastis','Ils bossent même quand il fait beau à Marseille',
-  'Rapide comme le mistral, mais sans la poussière','Service au top, je reviens demain'
-];
-var REVIEWS_MID=[
-  'Correct, sans plus','Ils font le taf, mais faut pas être pressé','Le docker avait l\'air fatigué mais bon','Livraison OK, emballage moyen',
-  'C\'est pas Bezos mais ça passe','Le livreur sentait la sardine, mais bon','Moyen, j\'ai connu mieux au Vieux-Port',
-  'Ils ont perdu un colis mais retrouvé les deux autres','Le patron était au bar, mais l\'employé était là'
-];
-var REVIEWS_BAD=[
-  'Catastrophique, jamais vu ça','Le docker était au bar depuis 3h','Ils ont livré au mauvais port','Ma marchandise est arrivée mouillée',
-  '0 étoile si je pouvais','Le patron m\'a dit "demain inch\'allah"','3 semaines d\'attente pour un colis','Service client inexistant',
-  'J\'ai appelé, personne ne répond depuis mardi','Ils ont confondu mes sardines avec des anchois'
-];
-var REVIEW_NAMES=['Jean-Michel','Martine','Roger','Brigitte','Gérard','Monique','Bernard','Simone','Dédé','Ginette','Fernand','Josiane','Tonton Marcel','Mamie Jeanne','Le voisin'];
-
-function renderReviews(co){
-  var el=document.getElementById('reviews-section');if(!el)return;
-  var rep=co.reputation||0;
-  var seed=(co.valeur||0)+(co.reputation||0)+((co.type_id||0)*7);
-  var html='';
-  for(var i=0;i<3;i++){
-    var r=Math.abs(Math.sin(seed+i*137.5))*100;
-    var pool,stars;
-    if(rep>=70||(rep>=40&&r>40)){pool=REVIEWS_GOOD;stars='⭐⭐⭐⭐⭐';}
-    else if(rep>=30||(rep<70&&r>50)){pool=REVIEWS_MID;stars='⭐⭐⭐';}
-    else{pool=REVIEWS_BAD;stars='⭐';}
-    var review=pool[Math.floor(Math.abs(Math.sin(seed+i*42.7))*pool.length)];
-    var name=REVIEW_NAMES[Math.floor(Math.abs(Math.sin(seed+i*91.3))*REVIEW_NAMES.length)];
-    html+='<div style="padding:10px 14px;border-top:'+(i?'1px solid #f3f4f6':'none')+'">'
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">'
-      +'<div style="font-size:9px;font-weight:700;color:#1a1a1a">'+name+'</div>'
-      +'<div style="font-size:8px">'+stars+'</div></div>'
-      +'<div style="font-size:9px;color:#6b7280;font-style:italic">"'+review+'"</div></div>';
-  }
-  el.innerHTML=html;
-}
-
-// ══ LIVRE D'OR ══
-function renderGuestbook(co){
-  var el=document.getElementById('guestbook-section');if(!el)return;
-  var entries=Array.isArray(co.guestbook)?co.guestbook:[];
-  var html='';
-  if(entries.length===0){
-    html='<div style="padding:14px;text-align:center;font-size:10px;color:#9ca3af">Aucun message pour l\'instant</div>';
-  }else{
-    entries.slice(-5).reverse().forEach(function(e,i){
-      html+='<div style="padding:8px 14px;border-top:'+(i?'1px solid #f3f4f6':'none')+'">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between">'
-        +'<div style="font-size:9px;font-weight:700;color:#1a1a1a">'+(e.from_name||'Anonyme')+'</div>'
-        +'<div style="font-size:7px;color:#9ca3af">'+new Date(e.date).toLocaleDateString('fr-FR')+'</div></div>'
-        +'<div style="font-size:9px;color:#6b7280;margin-top:2px">"'+e.message+'"</div></div>';
-    });
-  }
-  // Note: pour écrire dans le livre d'or d'un autre joueur, voir sa page entreprise
-  el.innerHTML=html;
-}
-
-// ══ PARTENARIATS ══
-function renderPartnerships(co){
-  var el=document.getElementById('partnership-section');if(!el)return;
-  var parts=Array.isArray(co.partnerships)?co.partnerships:[];
-  var pending=parts.filter(function(p){return p.status==='pending'&&p.from_uid!==currentUser.id;});
-  var myPending=parts.filter(function(p){return p.status==='pending'&&p.from_uid===currentUser.id;});
-  var html='';
-
-  // Incoming requests
-  if(pending.length>0){
-    pending.forEach(function(p){
-      html+='<div style="padding:10px 14px;border-bottom:1px solid #f3f4f6">'
-        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-        +'<div style="font-size:16px">'+(p.from_emoji||'🏢')+'</div>'
-        +'<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1a1a1a">'+(p.from_name||'?')+' propose un partenariat</div>'
-        +'<div style="font-size:8px;color:#9ca3af">Livraison de '+fmtM(p.reward||0)+' · Commission '+fmtM(p.commission||0)+'</div></div></div>'
-        +'<div style="display:flex;gap:4px">'
-        +'<button onclick="acceptPartnership(\''+p.id+'\')" style="flex:1;background:#22c55e;border:none;border-radius:6px;padding:6px;font-size:9px;font-weight:700;color:#fff;cursor:pointer">✓ ACCEPTER (+'+fmtM(p.reward||0)+')</button>'
-        +'<button onclick="declinePartnership(\''+p.id+'\')" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.15);border-radius:6px;padding:6px 10px;font-size:9px;color:#ef4444;cursor:pointer">✕</button></div></div>';
-    });
-  }
-
-  // My outgoing pending
-  if(myPending.length>0){
-    myPending.forEach(function(p){
-      html+='<div style="padding:10px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:8px">'
-        +'<div style="font-size:14px">⏳</div>'
-        +'<div style="flex:1;font-size:10px;color:#9ca3af">Offre envoyée à '+(p.to_name||'?')+' — en attente</div></div>';
-    });
-  }
-
-  // Propose button
-  html+='<div class="dash-card-row" onclick="loadPartnershipTargets()">'
-    +'<div class="dash-card-icon" style="background:rgba(56,189,248,.1)">🤝</div>'
-    +'<div style="flex:1"><div style="font-size:13px;font-weight:700;color:#1a1a1a">Proposer un partenariat</div>'
-    +'<div style="font-size:9px;color:#9ca3af;margin-top:2px">Livre pour un autre joueur, touche une commission</div></div>'
-    +'<div style="color:#d1d5db">›</div></div>'
-    +'<div id="partner-targets" style="display:none"></div>';
-
-  el.innerHTML=html;
-}
-
-async function loadPartnershipTargets(){
-  var tgt=document.getElementById('partner-targets');if(!tgt)return;
-  if(tgt.style.display==='block'){tgt.style.display='none';return;}
-  tgt.style.display='block';
-  tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#9ca3af;text-align:center">Chargement...</div>';
-
-  var res=await sb.from('companies').select('user_id,nom,name,emoji,valeur,niveau').neq('user_id',currentUser.id).order('valeur',{ascending:false}).limit(10);
-  if(!res.data||res.data.length===0){tgt.innerHTML='<div style="padding:10px;font-size:10px;color:#9ca3af;text-align:center">Aucun partenaire</div>';return;}
-
-  var html='';
-  res.data.forEach(function(co){
-    var deliveryVal=Math.round((co.valeur||10000)*0.05); // 5% of target value
-    var commission=Math.round(deliveryVal*0.15); // 15% commission
-    var cdKey='part_cd_'+co.user_id;
-    var lastPart=parseInt(localStorage.getItem(cdKey)||'0');
-    var onCooldown=(Date.now()-lastPart)<43200000; // 12h
-
-    html+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-top:1px solid #f3f4f6">'
-      +'<div style="font-size:16px;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')">'+(co.emoji||'🏢')+'</div>'
-      +'<div style="flex:1;cursor:pointer" onclick="goEntreprise(\''+co.user_id+'\')"><div style="font-size:11px;font-weight:700;color:#1a1a1a">'+(co.nom||co.name||'?')+'</div>'
-      +'<div style="font-size:8px;color:#9ca3af">Livraison '+fmtM(deliveryVal)+' · Ta commission '+fmtM(commission)+'</div></div>';
-    if(onCooldown){
-      var minLeft=Math.ceil((43200000-(Date.now()-lastPart))/60000);
-      html+='<div style="font-size:8px;color:#9ca3af;font-weight:700">⏳ '+Math.ceil(minLeft/60)+'h</div>';
-    }else{
-      html+='<button onclick="proposePartnership(\''+co.user_id+'\',\''+((co.nom||co.name||'?').replace(/'/g,''))+'\',\''+((co.emoji||'🏢').replace(/'/g,''))+'\','+deliveryVal+','+commission+')" '
-        +'style="background:#e0f2fe;border:1px solid #7dd3fc;border-radius:6px;padding:5px 10px;font-size:9px;font-weight:700;color:#38bdf8;cursor:pointer">PROPOSER</button>';
-    }
-    html+='</div>';
-  });
-  tgt.innerHTML=html;
-}
-
-async function proposePartnership(targetUid,targetName,targetEmoji,reward,commission){
-  // Add partnership to TARGET's company
-  var targetRes=await sb.from('companies').select('partnerships').eq('user_id',targetUid).maybeSingle();
-  if(!targetRes.data){toast('Entreprise introuvable');return;}
-
-  var parts=Array.isArray(targetRes.data.partnerships)?targetRes.data.partnerships.slice():[];
-  // Check if already pending
-  if(parts.some(function(p){return p.from_uid===currentUser.id&&p.status==='pending';})){toast('Offre déjà en cours');return;}
-
-  var myName=_coData.nom||_coData.name||'Mon Entreprise';
-  var myEmoji=_coData.emoji||'🏢';
-  var partId='part_'+Date.now()+'_'+Math.random().toString(36).substr(2,4);
-
-  parts.push({
-    id:partId,
-    from_uid:currentUser.id,
-    from_name:myName,
-    from_emoji:myEmoji,
-    to_name:targetName,
-    status:'pending',
-    reward:reward,
-    commission:commission,
-    created_at:new Date().toISOString()
-  });
-
-  await sb.from('companies').update({partnerships:parts}).eq('user_id',targetUid);
-
-  // Also track on our side
-  var myParts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
-  myParts.push({id:partId,from_uid:currentUser.id,to_name:targetName,status:'pending',reward:reward,commission:commission,created_at:new Date().toISOString()});
-  await sb.from('companies').update({partnerships:myParts}).eq('user_id',currentUser.id);
-  _coData.partnerships=myParts;
-
-  localStorage.setItem('part_cd_'+targetUid,Date.now().toString());
-  toast('🤝 Partenariat proposé à '+targetName+' !');
-  renderPartnerships(_coData);
-}
-
-async function acceptPartnership(partId){
-  var parts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
-  var idx=parts.findIndex(function(p){return p.id===partId;});
-  if(idx<0){toast('Partenariat introuvable');return;}
-  var p=parts[idx];
-
-  // Give reward to us (target)
-  var newMoney=_dashMoney+p.reward;
-  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;
-
-  // Give commission to proposer
-  var proposerStats=await sb.from('game_stats').select('money').eq('user_id',p.from_uid).maybeSingle();
-  if(proposerStats.data){
-    await sb.from('game_stats').update({money:(proposerStats.data.money||0)+p.commission}).eq('user_id',p.from_uid);
-  }
-
-  // Reputation boost for both
-  var myRep=Math.min(100,(_coData.reputation||0)+3);
-  await sb.from('companies').update({reputation:myRep}).eq('user_id',currentUser.id);
-  var propCo=await sb.from('companies').select('reputation').eq('user_id',p.from_uid).maybeSingle();
-  if(propCo.data){await sb.from('companies').update({reputation:Math.min(100,(propCo.data.reputation||0)+3)}).eq('user_id',p.from_uid);}
-
-  // Mark as completed
-  parts[idx].status='completed';
-  await sb.from('companies').update({partnerships:parts}).eq('user_id',currentUser.id);
-  _coData.partnerships=parts;_coData.reputation=myRep;
-
-  // Also update proposer's tracking
-  var propParts=await sb.from('companies').select('partnerships').eq('user_id',p.from_uid).maybeSingle();
-  if(propParts.data){
-    var pp=Array.isArray(propParts.data.partnerships)?propParts.data.partnerships:[];
-    var pi=pp.findIndex(function(x){return x.id===partId;});
-    if(pi>=0){pp[pi].status='completed';await sb.from('companies').update({partnerships:pp}).eq('user_id',p.from_uid);}
-  }
-
-  toast('🤝 Partenariat accepté ! +'+fmtM(p.reward));
-  loadDashboard();
-}
-
-async function declinePartnership(partId){
-  var parts=Array.isArray(_coData.partnerships)?_coData.partnerships.slice():[];
-  var idx=parts.findIndex(function(p){return p.id===partId;});
-  if(idx<0)return;
-  parts.splice(idx,1);
-  await sb.from('companies').update({partnerships:parts}).eq('user_id',currentUser.id);
-  _coData.partnerships=parts;
-  toast('Partenariat refusé');
-  renderPartnerships(_coData);
-}
-
-// ══ INVESTIR ══
-var _investMax=0;
-function openInvestModal(){
-  _investMax=_dashMoney;
-  document.getElementById('invest-dispo').textContent=fmtM(_dashMoney);
-  document.getElementById('invest-max-lbl').textContent=fmtM(_dashMoney);
-  document.getElementById('invest-slider').max=_dashMoney;
-  document.getElementById('invest-slider').value=0;
-  var quick=document.getElementById('invest-quick');quick.innerHTML='';
-  [10000,50000,100000,Math.floor(_dashMoney*0.5)].filter(function(a){return a>0&&a<=_dashMoney;}).forEach(function(a){
-    var b=document.createElement('button');
-    b.style.cssText='background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 4px;font-size:12px;color:#0f172a;cursor:pointer;width:100%';
-    b.textContent=fmtM(a);
-    b.onclick=(function(amt){return function(){document.getElementById('invest-slider').value=amt;updateInvestPreview(amt);};})(a);
-    quick.appendChild(b);
-  });
-  updateInvestPreview(0);
-  document.getElementById('invest-overlay').style.display='flex';
-}
-function closeInvestModal(){document.getElementById('invest-overlay').style.display='none';}
-function updateInvestPreview(v){
-  var amt=parseInt(v)||0;
-  var co=_coData||{};
-  var newVal=(co.valeur||0)+amt;
-  var newRev=Math.floor(newVal*0.01);
-  var newNiv=Math.floor(newVal/100000)+1;
-  document.getElementById('invest-amt-disp').textContent=fmtM(amt);
-  document.getElementById('invest-new-val').textContent=fmtM(newVal);
-  document.getElementById('invest-new-rev').textContent=fmtM(newRev)+'/H';
-  document.getElementById('invest-new-niv').textContent='Niv. '+newNiv;
-  var btn=document.getElementById('invest-confirm-btn');
-  if(btn){btn.disabled=amt<=0;btn.style.opacity=amt>0?'1':'0.4';}
-}
-async function doInvestir(){
-  var amt=parseInt(document.getElementById('invest-slider').value)||0;
-  if(amt<=0||amt>_dashMoney){toast('Montant invalide');return;}
-  var btn=document.getElementById('invest-confirm-btn');btn.disabled=true;btn.textContent='...';
-  var co=_coData;
+async function investir(){
+  var amt=prompt('Combien investir ? (argent en poche: '+fmtM(money)+')');
+  amt=Math.floor(parseFloat(amt)||0);
+  if(amt<=0||amt>money){toast('Montant invalide');return;}
+  var {data:co}=await sb.from('companies').select('valeur,niveau').eq('user_id',currentUser.id).maybeSingle();
+  if(!co)return;
   var newVal=(co.valeur||0)+amt;
   var newNiv=Math.floor(newVal/100000)+1;
-  var newMoney=_dashMoney-amt;
+  var newMoney=money-amt;
   await sb.from('companies').update({valeur:newVal,niveau:newNiv}).eq('user_id',currentUser.id);
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
-  _dashMoney=newMoney;_coData.valeur=newVal;_coData.niveau=newNiv;
-  closeInvestModal();toast('Investissement de +'+fmtM(amt)+' !');
-  pushBourseImpact(_coData.nom||_coData.name,1.03);
+  money=newMoney;
+  toast('Investi '+fmtM(amt)+' !');
   loadDashboard();
-}
-
-// ══ MINI-JEUX ══
-function mj1(body){
-  var caught=0,total=8,done=false;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%"><div class="mini-title">CHARGE LE CARGO 🚢</div><div class="mini-sub">Tape les caisses avant qu elles tombent !</div><div id="mj1-zone" style="width:300px;height:200px;background:#f9fafb;border:2px solid rgba(255,255,255,.08);border-radius:10px;position:relative;overflow:hidden"><div style="position:absolute;bottom:0;left:0;right:0;height:18px;background:rgba(139,90,43,.4)"></div><div id="mj1-sc" style="position:absolute;top:8px;right:10px;font-family:Bebas Neue,sans-serif;font-size:18px;color:#fbbf24">0/'+total+'</div></div></div>';
-  var iv=setInterval(function(){
-    if(done)return;
-    var zone=document.getElementById('mj1-zone');if(!zone)return;
-    var box=document.createElement('div');
-    box.innerHTML=['📦','🪣','⚓'][Math.floor(Math.random()*3)];
-    box.style.cssText='position:absolute;top:-40px;left:'+(15+Math.random()*230)+'px;font-size:28px;cursor:pointer;transition:top 2.2s linear;user-select:none';
-    box.onclick=function(){if(box.dataset.c||done)return;box.dataset.c='1';caught++;var s=document.getElementById('mj1-sc');if(s)s.textContent=caught+'/'+total;box.style.opacity='0';setTimeout(function(){if(box.parentNode)box.parentNode.removeChild(box);},200);};
-    zone.appendChild(box);setTimeout(function(){box.style.top='178px';},50);
-    setTimeout(function(){if(box.parentNode&&!box.dataset.c)box.parentNode.removeChild(box);},2400);
-  },600);
-  var t=setTimeout(function(){done=true;clearInterval(iv);nextQ(caught>=7?12:caught>=5?10:caught>=3?7:caught>=1?4:0);},5800);
-  _mjCleanup=function(){done=true;clearInterval(iv);clearTimeout(t);};
-}
-
-function mj2(body){
-  var attempts=3,score=0,done=false,pos=0,dir=1,raf=null;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%"><div class="mini-title">L ANCRE PARFAITE ⚓</div><div class="mini-sub">Jette l ancre dans la zone verte !</div><div id="mj2-att" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:2px">3 TENTATIVES</div><div style="width:280px;height:30px;background:rgba(255,255,255,.06);border-radius:15px;position:relative;overflow:hidden"><div style="position:absolute;left:35%;width:30%;height:100%;background:rgba(34,197,94,.3);border-radius:15px"></div><div id="mj2-cur" style="position:absolute;top:2px;left:0;width:26px;height:26px;background:#cc1a1a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">⚓</div></div><button class="opt-btn" id="mj2-btn" style="max-width:200px">JETER ⚓</button><div id="mj2-fb" style="font-size:14px;color:#4ade80;min-height:20px"></div></div>';
-  var cur=document.getElementById('mj2-cur');
-  function anim(){if(done||!cur)return;pos+=dir*1.8;if(pos>254||pos<0)dir*=-1;cur.style.left=pos+'px';raf=requestAnimationFrame(anim);}
-  anim();
-  var btn=document.getElementById('mj2-btn');
-  if(btn)btn.onclick=function(){
-    if(done)return;
-    var inZone=pos>=98&&pos<=182;if(inZone)score+=4;
-    var fb=document.getElementById('mj2-fb');var att=document.getElementById('mj2-att');
-    if(fb)fb.textContent=inZone?'✅ Dans la zone !':'❌ Raté !';
-    attempts--;if(att)att.textContent=attempts+' TENTATIVE'+(attempts>1?'S':'');
-    if(attempts<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
-    else setTimeout(function(){var f=document.getElementById('mj2-fb');if(f)f.textContent='';},600);
-  };
-  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);};
-}
-
-function mj3(body){
-  var score=0,tries=4,done=false,angle=0,dir=1,raf=null;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%"><div class="mini-title">GRUE EN FOLIE 🏗️</div><div class="mini-sub">Lache la caisse sur le bateau !</div><canvas id="mj3-cv" width="300" height="180" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas><button class="opt-btn" id="mj3-btn" style="max-width:200px">LACHER 📦</button><div id="mj3-fb" style="font-size:12px;min-height:18px"></div></div>';
-  var cv=document.getElementById('mj3-cv');if(!cv){nextQ(0);return;}
-  var ctx=cv.getContext('2d');
-  function draw(){ctx.clearRect(0,0,300,180);ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,180);ctx.fillStyle='#1e3a5f';ctx.fillRect(70,148,160,22);var cx=150,cy=35,rad=angle*Math.PI/180;var ex=cx+Math.cos(rad)*75,ey=cy+Math.sin(rad)*75;ctx.strokeStyle='#d4af37';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();ctx.font='18px serif';ctx.fillText('📦',ex-9,ey+10);}
-  function loop(){if(done)return;angle+=dir*1.5;if(angle>65||angle<-65)dir*=-1;draw();raf=requestAnimationFrame(loop);}
-  loop();
-  var btn=document.getElementById('mj3-btn');
-  if(btn)btn.onclick=function(){if(done||tries<=0)return;var cx=150,rad=angle*Math.PI/180,bx=cx+Math.cos(rad)*75;var inZone=bx>=80&&bx<=220;tries--;if(inZone)score+=3;var fb=document.getElementById('mj3-fb');if(fb){fb.style.color=inZone?'#4ade80':'#f87171';fb.textContent=inZone?'✅ Sur le bateau !':'❌ A l eau !';}if(tries<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}};
-  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);};
-}
-
-function mj4(body){
-  var cats=['🐟 PETITE','🐟 GROSSE','🦞 CRUSTACE','🗑️ POURRIE'];
-  var items=[{emoji:'🐟',correct:0},{emoji:'🐟',correct:1},{emoji:'🦞',correct:2},{emoji:'🐠',correct:0},{emoji:'🐡',correct:1},{emoji:'🦐',correct:2},{emoji:'💀',correct:3},{emoji:'🐟',correct:1}];
-  var idx=0,score=0,done=false;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px"><div class="mini-title">TRI DES SARDINES 🐟</div><div class="mini-sub">Classe chaque poisson !</div><div id="mj4-fish" style="font-size:52px;min-height:60px;display:flex;align-items:center;justify-content:center;transition:opacity .2s">'+items[0].emoji+'</div><div class="emoji-options" id="mj4-btns">'+cats.map(function(c,i){return '<button class="opt-btn" style="font-size:11px;padding:12px 6px" id="mj4-b'+i+'">'+c+'</button>';}).join('')+'</div><div id="mj4-prog" style="font-size:10px;color:rgba(255,255,255,.3)">1/'+items.length+'</div></div>';
-  cats.forEach(function(c,i){var btn=document.getElementById('mj4-b'+i);if(btn)btn.onclick=function(){if(done)return;var correct=items[idx].correct===i;if(correct)score+=1.5;var fish=document.getElementById('mj4-fish');if(fish)fish.style.opacity='0';setTimeout(function(){idx++;if(idx>=items.length){done=true;nextQ(Math.round(Math.min(12,score)));return;}var f=document.getElementById('mj4-fish');var p=document.getElementById('mj4-prog');if(f){f.style.opacity='1';f.textContent=items[idx].emoji;}if(p)p.textContent=(idx+1)+'/'+items.length;},250);};});
-  var t=setTimeout(function(){if(!done){done=true;nextQ(Math.round(Math.min(12,score)));}},12000);
-  _mjCleanup=function(){done=true;clearTimeout(t);};
-}
-
-function mj5(body){
-  var data={date:'14/03',poids:'2.4T',conteneur:'BDK-447'};
-  var correct=0,qi=0,done=false;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px"><div class="mini-title">BON DE LIVRAISON 📋</div><div class="mini-sub">Memorise le bon — il disparait dans 3s !</div><div id="mj5-card" style="background:#fffde7;border:2px solid #f59e0b;border-radius:10px;padding:14px;width:100%"><div style="font-weight:800;color:#0f172a;margin-bottom:8px;font-size:11px">BON DE LIVRAISON N°2047</div><div style="font-size:12px;color:#374151;line-height:1.8">📅 Date : <strong>'+data.date+'</strong><br>⚖️ Poids : <strong>'+data.poids+'</strong><br>📦 Conteneur : <strong>'+data.conteneur+'</strong></div></div><div id="mj5-q" style="width:100%;display:none"></div></div>';
-  var questions=[{q:'Quelle etait la date ?',opts:['12/03','14/03','17/03','21/03'],correct:1},{q:'Quel etait le poids ?',opts:['1.8T','3.1T','2.4T','4.0T'],correct:2},{q:'Numero du conteneur ?',opts:['BDK-447','BDX-274','BDK-474','BKD-447'],correct:0}];
-  function showQ(){if(qi>=questions.length){nextQ(Math.min(12,correct*4));return;}var q=questions[qi];var qz=document.getElementById('mj5-q');if(!qz)return;qz.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:white;letter-spacing:1px;margin-bottom:10px;text-align:center">'+q.q+'</div><div class="emoji-options">'+q.opts.map(function(o,i){return '<button class="opt-btn" style="font-size:12px" id="mj5-o'+i+'">'+o+'</button>';}).join('')+'</div>';q.opts.forEach(function(o,i){var btn=document.getElementById('mj5-o'+i);if(btn)btn.onclick=function(){if(done)return;document.querySelectorAll('#mj5-q .opt-btn').forEach(function(b){b.disabled=true;});if(i===q.correct)correct++;qi++;setTimeout(showQ,400);};});}
-  var t=setTimeout(function(){var card=document.getElementById('mj5-card');if(card)card.style.display='none';var qz=document.getElementById('mj5-q');if(qz)qz.style.display='block';showQ();},3000);
-  _mjCleanup=function(){done=true;clearTimeout(t);};
-}
-
-function mj6(body){
-  var score=0,wavesDone=0,totalWaves=4,jumping=false,done=false;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%"><div class="mini-title">EVITE LA VAGUE 🌊</div><div class="mini-sub">Tape pour sauter !</div><canvas id="mj6-cv" width="300" height="150" style="border:2px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer"></canvas><div id="mj6-sc" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#4ade80">Evite les vagues !</div></div>';
-  var cv=document.getElementById('mj6-cv');if(!cv){nextQ(0);return;}
-  var ctx=cv.getContext('2d');var dockerY=112,waveX=320,waveActive=false,raf=null;
-  cv.onclick=function(){if(done||jumping)return;jumping=true;var t=0;var iv=setInterval(function(){t++;dockerY=112-Math.sin(t/8*Math.PI)*40;if(t>=8){clearInterval(iv);dockerY=112;jumping=false;}},30);};
-  function draw(){ctx.clearRect(0,0,300,150);ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,150);ctx.fillStyle='#1e3a5f';ctx.fillRect(0,125,300,25);ctx.font='22px serif';ctx.fillText('🧔',28,dockerY);if(waveActive)ctx.fillText('🌊',waveX,122);}
-  function launchWave(){if(done)return;waveX=320;waveActive=true;var iv=setInterval(function(){if(done){clearInterval(iv);return;}waveX-=4;if(waveX<=65&&waveX>=25){if(dockerY>100)score=Math.max(0,score-1);else score+=3;waveActive=false;clearInterval(iv);wavesDone++;var sc=document.getElementById('mj6-sc');if(sc)sc.textContent=score>0?'Bien joue !':'Gege rit de toi...';if(wavesDone>=totalWaves){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}else setTimeout(launchWave,900);}},30);}
-  function loop(){if(done)return;draw();raf=requestAnimationFrame(loop);}loop();
-  var t=setTimeout(launchWave,1000);
-  _mjCleanup=function(){done=true;cancelAnimationFrame(raf);clearTimeout(t);};
-}
-
-function mj7(body){
-  var failed=false,countdown=6;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;padding:10px" id="mj7-wrap"><div class="mini-title">PAUSE SYNDICALE ☕</div><div class="mini-sub">Ne touche PAS l ecran pendant 6 secondes !</div><div id="mj7-count" style="font-family:Bebas Neue,sans-serif;font-size:64px;color:#fbbf24;line-height:1">6</div><div style="font-size:28px" id="mj7-icon">😤</div><div id="mj7-msg" style="font-size:12px;color:rgba(255,255,255,.4)">Gege surveille...</div></div>';
-  function fail(){if(failed)return;failed=true;clearInterval(iv);var el=document.getElementById('mj7-count');var ic=document.getElementById('mj7-icon');var mg=document.getElementById('mj7-msg');if(el)el.textContent='😱';if(ic)ic.textContent='😡';if(mg){mg.textContent='GEGE EST FURIEUX !';mg.style.color='#f87171';}setTimeout(function(){nextQ(0);},1500);}
-  var wrap=document.getElementById('mj7-wrap');if(wrap)wrap.addEventListener('click',fail);
-  var iv=setInterval(function(){countdown--;var el=document.getElementById('mj7-count');if(el)el.textContent=countdown;if(countdown<=0){clearInterval(iv);failed=true;var ic=document.getElementById('mj7-icon');var mg=document.getElementById('mj7-msg');if(ic)ic.textContent='😴';if(mg){mg.textContent='Bravo tu as resiste !';mg.style.color='#4ade80';}setTimeout(function(){nextQ(12);},1000);}},1000);
-  _mjCleanup=function(){failed=true;clearInterval(iv);};
-}
-
-function mj8(body){
-  var contrats=[{nom:'CMA CGM',prix:45000,delai:3,poids:12},{nom:'Bollore',prix:38000,delai:2,poids:8},{nom:'MSC Lines',prix:52000,delai:5,poids:15}];
-  var rents=contrats.map(function(c){return c.prix/(c.delai*c.poids);});var best=rents.indexOf(Math.max.apply(null,rents));var done=false;
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px"><div class="mini-title">L APPEL D OFFRES 💼</div><div class="mini-sub">Memorise les contrats (4s) puis choisis le plus rentable !</div><div id="mj8-cards" style="display:flex;flex-direction:column;gap:6px;width:100%">'+contrats.map(function(c){return '<div style="background:#f3f4f6;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7)"><strong style="color:white">'+c.nom+'</strong> — '+c.prix.toLocaleString()+'€ · '+c.delai+'j · '+c.poids+'T</div>';}).join('')+'</div><div id="mj8-q" style="width:100%;display:none"></div></div>';
-  var t=setTimeout(function(){if(done)return;var cards=document.getElementById('mj8-cards');if(cards)cards.style.display='none';var q=document.getElementById('mj8-q');if(!q)return;q.style.display='block';q.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:13px;color:white;letter-spacing:1px;text-align:center;margin-bottom:10px">LEQUEL EST LE PLUS RENTABLE ?</div><div style="display:flex;flex-direction:column;gap:6px">'+contrats.map(function(c,i){return '<button class="opt-btn" style="font-size:13px;text-align:left" id="mj8-c'+i+'">'+c.nom+'</button>';}).join('')+'</div>';contrats.forEach(function(c,i){var btn=document.getElementById('mj8-c'+i);if(btn)btn.onclick=function(){if(done)return;done=true;document.querySelectorAll('#mj8-q .opt-btn').forEach(function(b){b.disabled=true;});nextQ(i===best?12:0);};});},4000);
-  _mjCleanup=function(){done=true;clearTimeout(t);};
-}
-
-function mj9(body){
-  var pannes=[],selected=[],done=false;
-  while(pannes.length<3){var r=Math.floor(Math.random()*9);if(pannes.indexOf(r)<0)pannes.push(r);}
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px"><div class="mini-title">REPARE LA GRUE 🔧</div><div class="mini-sub">Memorise les 3 pannes (2s) puis retrouve-les !</div><div id="mj9-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%"></div><div id="mj9-msg" style="font-size:11px;color:rgba(255,255,255,.4)">Observe...</div></div>';
-  function renderGrid(reveal){var g=document.getElementById('mj9-grid');if(!g)return;g.innerHTML='';for(var i=0;i<9;i++){var btn=document.createElement('div');var isPanne=pannes.indexOf(i)>=0,isSel=selected.indexOf(i)>=0;if(reveal){btn.style.cssText='height:58px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isPanne?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isPanne?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)');btn.textContent=isPanne?'🔴':'⚙️';}else{btn.style.cssText='height:58px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isSel?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isSel?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+';cursor:pointer';btn.textContent=isSel?'🔴':'⚙️';btn.onclick=(function(idx){return function(){if(done)return;var si=selected.indexOf(idx);if(si>=0)selected.splice(si,1);else if(selected.length<3)selected.push(idx);renderGrid(false);if(selected.length===3){done=true;var ok=pannes.filter(function(p){return selected.indexOf(p)>=0;}).length;nextQ(ok===3?12:ok===2?8:ok===1?4:0);}};})(i);}g.appendChild(btn);}}
-  renderGrid(true);
-  var t=setTimeout(function(){renderGrid(false);var msg=document.getElementById('mj9-msg');if(msg)msg.textContent='Retrouve les 3 pannes !';},2000);
-  _mjCleanup=function(){done=true;clearTimeout(t);};
-}
-
-function mj10(body){
-  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;text-align:center;padding:10px"><div class="mini-title">PARI DU DOCKER 🎲</div><div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.5">Ton score actuel :<br><span style="font-family:Bebas Neue,sans-serif;font-size:40px;color:#fbbf24">'+qScore+' pts</span></div><div style="font-size:12px;color:rgba(255,255,255,.4)">Pile +12 pts · Face -6 pts</div><div style="display:flex;gap:10px;width:100%"><button class="opt-btn" id="mj10-bet" style="background:rgba(34,197,94,.15);border-color:#22c55e;color:#4ade80">JE PARIE 🎲</button><button class="opt-btn" id="mj10-keep">JE GARDE 🛡️</button></div><div id="mj10-res" style="font-size:13px;min-height:20px"></div></div>';
-  var done=false;
-  function doPari(parie){if(done)return;done=true;document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});if(!parie){nextQ(0);return;}var coin=Math.random()<0.5;var res=document.getElementById('mj10-res');if(res){res.textContent=coin?'PILE ! +12 pts !':'FACE ! -6 pts...';res.style.color=coin?'#4ade80':'#f87171';}setTimeout(function(){nextQ(coin?12:-6);},1500);}
-  var bb=document.getElementById('mj10-bet');var bk=document.getElementById('mj10-keep');
-  if(bb)bb.onclick=function(){doPari(true);};if(bk)bk.onclick=function(){doPari(false);};
-  _mjCleanup=function(){done=true;};
 }
 
 // ══ INIT ══
 async function startApp(){
   var res=await sb.auth.getSession();
-  var session=res.data&&res.data.session;
-  if(!session){window.location.href='index.html';return;}
-  currentUser=session.user;
-
-  var gsRes=await sb.from('game_stats').select('money,level').eq('user_id',currentUser.id).maybeSingle();
-  var gs=gsRes.data;
-  if(!gs){
-    await sb.from('game_stats').insert({user_id:currentUser.id}).select().maybeSingle();
-    gs={money:0,level:1};
-  }
-  money=gs.money||0;
-
-  var profRes=await sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle();
-  username=(profRes.data&&profRes.data.username)||'Docker';
-
-  // Vérifier si une entreprise existe déjà
-  var coRes=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
-  if(coRes.data){loadDashboard();return;}
-
-  // Mettre à jour l'affichage accueil
-  var accMoney=document.getElementById('acc-money');
-  if(accMoney)accMoney.textContent=fmtM(money);
-
-  // Message si pas assez d argent
-  if(money<100000){
-    var btn=document.querySelector('.btn-red');
-    if(btn){btn.disabled=true;btn.textContent='Il te faut 100 000€ !';btn.style.opacity='0.5';}
-  }
+  var sess=res.data&&res.data.session;
+  if(!sess){window.location.href='index.html';return;}
+  currentUser=sess.user;
+  var {data:gs}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+  var {data:pr}=await sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle();
+  money=(gs&&gs.money)||0;
+  username=(pr&&pr.username)||'Docker';
+  document.getElementById('acc-money').textContent=fmtM(money);
+  document.getElementById('loader').style.display='none';
+  // Verifier si deja une entreprise
+  var {data:co}=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
+  if(co){loadDashboard();return;}
+  // Avertissement argent
+  if(money<100000)document.getElementById('acc-warning').textContent='⚠️ Il te faut 100 000€ (tu as '+fmtM(money)+')';
   show('s-accueil');
 }
-
-document.addEventListener('DOMContentLoaded',startApp);
-
-</script>
-<script>
-// Page transitions
-document.addEventListener('click',function(e){
-  var a=e.target.closest('[onclick*="location.href"],[onclick*="location="]');
-  if(!a)return;
-  var m=a.getAttribute('onclick').match(/['"](.*?\.html.*?)['"]/);
-  if(!m)return;
-  e.preventDefault();e.stopPropagation();
-  document.body.classList.add('page-out');
-  setTimeout(function(){window.location.href=m[1];},200);
-},true);
-
-// ═══ BUREAU PANELS ═══
-function openBureauPanel(type){
-  var c='';
-  var h=function(id){try{return document.getElementById(id).innerHTML}catch(e){return''}};
-  if(type==='contrats'){c='<div style="font-size:24px;text-align:center">📱</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">CONTRATS DU JOUR</div><div style="color:#374151;font-size:11px">'+h('contracts-list')+'</div>';}
-  else if(type==='employes'){c='<div style="font-size:24px;text-align:center">📋</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">EMPLOYÉS</div><div style="color:#374151;font-size:11px">'+h('emp-body')+'</div>';}
-  else if(type==='attaquer'){c='<div style="font-size:24px;text-align:center">🔴</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">ACTIONS OFFENSIVES</div><div style="color:#374151;font-size:11px">'+h('sabotage-section')+h('pricewar-section')+h('spy-section')+'</div>';}
-  else if(type==='rachats'){c='<div style="font-size:24px;text-align:center">🚪</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">RACHATS DISPONIBLES</div><div style="color:#374151;font-size:11px">'+h('buyout-section')+'</div>';}
-  else if(type==='classement'){c='<div style="font-size:24px;text-align:center">🏆</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">CLASSEMENT</div><div style="color:#374151;font-size:11px">'+h('mini-rank')+'</div>';}
-  else if(type==='stats'){var v=document.getElementById('dash-valeur').textContent,r=document.getElementById('dash-revenus').textContent,rp=document.getElementById('dash-rep-lbl').textContent;c='<div style="font-size:24px;text-align:center">📊</div><div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#1a1a1a;text-align:center;letter-spacing:2px;margin:6px 0 10px">STATISTIQUES</div><div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;background:#f3f4f6;border-radius:10px;padding:10px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:#fbbf24">'+v+'</div><div style="font-size:7px;color:#9ca3af;letter-spacing:1px;margin-top:2px">VALEUR</div></div><div style="flex:1;background:#f3f4f6;border-radius:10px;padding:10px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:#4ade80">'+r+'</div><div style="font-size:7px;color:#9ca3af;letter-spacing:1px;margin-top:2px">REVENUS/H</div></div><div style="flex:1;background:#f3f4f6;border-radius:10px;padding:10px;text-align:center"><div style="font-family:Bebas Neue,sans-serif;font-size:20px;color:#818cf8">'+rp+'</div><div style="font-size:7px;color:#9ca3af;letter-spacing:1px;margin-top:2px">RÉPUTATION</div></div></div>';}
-  else if(type==='info'){var nm=document.getElementById('dash-name').textContent,tp=document.getElementById('dash-type').textContent,sl=document.getElementById('dash-slogan').textContent,em=document.getElementById('dash-emoji').textContent;c='<div style="font-size:36px;text-align:center">'+em+'</div><div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#fbbf24;text-align:center;letter-spacing:2px;margin-top:6px">'+nm+'</div><div style="font-size:9px;color:#9ca3af;text-align:center;font-weight:700;letter-spacing:1px;margin-top:2px">'+tp+'</div><div style="font-size:10px;color:#9ca3af;text-align:center;font-style:italic;margin-top:4px">"'+sl+'"</div>';}
-  document.getElementById('bureauPanelContent').innerHTML=c;
-  document.getElementById('bureauPanel').style.display='flex';
-  if(navigator.vibrate)navigator.vibrate(10);
-}
-function closeBureauPanel(){document.getElementById('bureauPanel').style.display='none';}
+document.addEventListener('DOMContentLoaded',function(){startApp();});
+if(document.readyState==='complete'||document.readyState==='interactive'){startApp();}
 </script>
 </body>
 </html>
