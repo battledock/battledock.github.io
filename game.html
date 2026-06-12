@@ -308,9 +308,6 @@ body{
 .bourse-tape-item .up{color:#86efac;}
 .bourse-tape-item .down{color:#fca5a5;}
 
-/* Gazette */
-@keyframes gazetteTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-@keyframes gazetteP{0%,100%{opacity:.3}50%{opacity:1}}
 /* Dialogue D4 */
 #dialogueD4{position:fixed;bottom:80px;right:14px;z-index:9998;max-width:210px;background:#fff;border:2px solid #1a1a1a;border-radius:12px;box-shadow:2px 2px 0 #1a1a1a;padding:8px 10px;opacity:0;transition:opacity .5s;pointer-events:none;display:block !important}
 .d4-flag{display:inline-block;background:#cc1a1a;color:#fff;font-size:6px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:1px;margin-bottom:5px}
@@ -545,17 +542,6 @@ body{
 <!-- ═══ CONTENU ═══ -->
 <div class="page-content">
 
-  <!-- ═══ GAZETTE DU PORT ═══ -->
-  <div style="grid-column:span 2;margin:0;overflow:hidden;background:#fff;border-bottom:2px solid #e5e7eb">
-    <div style="background:#cc1a1a;padding:5px 12px;display:flex;align-items:center;gap:8px">
-      <div style="font-family:'Bangers',cursive;font-size:13px;color:#fff;letter-spacing:2px">📰 LA GAZETTE DU PORT</div>
-      <div style="font-size:7px;color:rgba(255,255,255,.5);margin-left:auto;font-weight:700;letter-spacing:1px">EN DIRECT</div>
-      <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:gazetteP 1.5s ease infinite"></div>
-    </div>
-    <div style="overflow:hidden;padding:6px 0">
-      <div id="gazetteTicker" style="display:flex;gap:0;white-space:nowrap;animation:gazetteTick 35s linear infinite"></div>
-    </div>
-  </div>
 
   <!-- PWA INSTALL BANNER -->
   <div id="installBanner" style="display:none;grid-column:span 2">
@@ -1237,38 +1223,6 @@ function closePopup(){
   },2000);
 })();
 
-// ═══ GAZETTE DU PORT ═══
-async function loadGazette(){
-  var items=[];
-  try{
-    var {data:wins}=await sb.from('casino_wins').select('user_name,amount_won').order('created_at',{ascending:false}).limit(5);
-    if(wins)wins.forEach(function(w){if(w.amount_won>0)items.push('🎰 <b>'+w.user_name+'</b> a gagné '+(w.amount_won>=1000?Math.floor(w.amount_won/1000)+'k':w.amount_won)+'€ au casino');});
-    var {data:gs}=await sb.from('game_stats').select('user_id,records,level').order('level',{ascending:false}).limit(8);
-    var {data:profs}=await sb.from('profiles').select('user_id,username');
-    var pm={};if(profs)profs.forEach(function(p){pm[p.user_id]=p.username;});
-    if(gs)gs.forEach(function(g){
-      var r=g.records||{},n=pm[g.user_id]||'Un docker';
-      if(r.grue_best>0)items.push('🏗️ <b>'+n+'</b> a scoré '+r.grue_best+' pts à la grue');
-      if(r.clark_best>0)items.push('🏎️ <b>'+n+'</b> a fait '+r.clark_best+'s aux Clarks');
-    });
-    var {data:cos}=await sb.from('companies').select('nom,valeur').order('valeur',{ascending:false}).limit(3);
-    if(cos)cos.forEach(function(co){if(co.valeur>0)items.push('💰 <b>'+co.nom+'</b> vaut '+(co.valeur>=1e6?(co.valeur/1e6).toFixed(1)+'M':Math.floor(co.valeur/1000)+'k')+'€');});
-  }catch(e){}
-  var fallback=['⚓ Le port de Marseille ne dort jamais','🚢 Arrivée du cargo MSC Marseille ce soir','🐟 Arrivée de sardines fraîches — Quai Sud','💨 Mistral annoncé cette nuit : 80 km/h','📦 Container 13B toujours scellé...','☀️ Belle journée sur les quais','🌊 Mer agitée — retard des ferries prévu'];
-  if(items.length<3)items=items.concat(fallback);
-  items.sort(function(){return Math.random()-.5;});
-  items=items.slice(0,6);
-  var all=items.concat(items);
-  var html=all.map(function(t){return '<div style="padding:0 24px;font-size:10px;color:#374151;display:inline-flex;align-items:center;border-right:1px solid #e5e7eb;white-space:nowrap">'+t+'</div>';}).join('');
-  var el=document.getElementById('gazetteTicker');
-  if(!el)return;
-  el.innerHTML=html;
-  el.style.animation='none';
-  void el.offsetWidth;
-  el.style.animation='gazetteTick 22s linear infinite';
-}
-loadGazette();
-setInterval(loadGazette,120000);
 
 var dlgTimer=null;
 </script>
