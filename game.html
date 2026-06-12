@@ -308,31 +308,21 @@ body{
 .bourse-tape-item .up{color:#86efac;}
 .bourse-tape-item .down{color:#fca5a5;}
 
-/* Syndicat (S4 urne + bulletin) */
+/* Syndicat (B — flamme + événements) */
 .widget-syndicat{
-  background:#fbbf24;
+  background:linear-gradient(180deg,#fbbf24,#f59e0b,#d97706);
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  text-align:center;padding:16px;
+  text-align:center;padding:14px;position:relative;
 }
-.syndicat-urn{font-size:32px;position:relative;z-index:1;}
-.syndicat-ballot{
-  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
-  font-size:10px;
-  animation:ballotDrop 3s ease-in-out infinite;
-}
-@keyframes ballotDrop{
-  0%,100%{transform:translateX(-50%) translateY(-8px);opacity:0}
-  30%{opacity:.6}
-  50%{transform:translateX(-50%) translateY(6px);opacity:.3}
-  51%{opacity:0}
-}
-.syndicat-title{
-  font-family:'Bangers',cursive;font-size:clamp(13px,4vw,15px);
-  color:#1a1a1a;letter-spacing:2px;z-index:1;margin-top:4px;
-}
-.syndicat-sub{font-size:7px;color:#78350f;font-weight:700;z-index:1;margin-top:3px;letter-spacing:1px;}
-.syndicat-members{font-size:8px;color:#92400e;font-weight:700;z-index:1;margin-top:4px;}
+@keyframes synFlame{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.1) translateY(-3px)}}
+.syndicat-icon{font-size:34px;animation:synFlame 2s ease-in-out infinite;z-index:1}
+.syndicat-title{font-family:'Bangers',cursive;font-size:clamp(14px,4vw,16px);color:#1a1a1a;letter-spacing:2px;z-index:1;margin-top:4px;}
+.syndicat-sub{font-size:7px;color:#451a03;font-weight:700;z-index:1;margin-top:2px;letter-spacing:1px;}
+.syndicat-week{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.15);border-radius:6px;padding:2px 6px;font-size:7px;font-weight:800;color:#fff;letter-spacing:.5px}
+.syndicat-dots{display:flex;gap:4px;margin-top:6px;z-index:1}
+.syndicat-dots span{font-size:10px;opacity:.35}
+.syndicat-dots span.on{opacity:1}
 
 /* Direction (D1 navy shimmer) */
 .widget-direction{
@@ -628,10 +618,11 @@ body{
       </div>
     </div>
     <div class="widget widget-syndicat" onclick="location.href='syndicat.html'">
-      <div class="syndicat-urn">🗳️<div class="syndicat-ballot">📄</div></div>
+      <div class="syndicat-week" id="synWeek">S.—</div>
+      <div class="syndicat-icon">🏛️</div>
       <div class="syndicat-title">SYNDICAT</div>
-      <div class="syndicat-sub">VOTE & DÉCIDE</div>
-      <div class="syndicat-members">👥 <span id="syndicatMembers">—</span> membres</div>
+      <div class="syndicat-sub">ÉVÉNEMENTS & TOURNOIS</div>
+      <div class="syndicat-dots" id="synDots"></div>
     </div>
   </div>
 
@@ -1132,12 +1123,13 @@ async function loadBourseTicker(){
 
 // ── Syndicat members count ──
 async function loadSyndicatMembers(){
-  const el=document.getElementById('syndicatMembers');
-  if(!el)return;
-  try{
-    const{count}=await sb.from('profiles').select('user_id',{count:'exact',head:true});
-    el.textContent=count||0;
-  }catch(e){el.textContent='0';}
+  var EVTS=['🏗️','🏎️','📦','💰','🤝','🎰'];
+  var d=new Date(),o=new Date(d.getFullYear(),0,1),w=Math.ceil(((d-o)/864e5+o.getDay()+1)/7);
+  var active=w%6;
+  var wEl=document.getElementById('synWeek');
+  if(wEl)wEl.textContent='S.'+w;
+  var dots=document.getElementById('synDots');
+  if(dots){dots.innerHTML='';EVTS.forEach(function(e,i){var s=document.createElement('span');s.textContent=e;if(i===active)s.className='on';dots.appendChild(s);});}
 }
 
 // ── Classement flags ──
