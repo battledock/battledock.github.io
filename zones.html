@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Zones du Port — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Inter',sans-serif;background:#f5f0e8;min-height:100vh;padding-bottom:calc(env(safe-area-inset-bottom,20px)+20px)}
+.hdr{padding:calc(env(safe-area-inset-top,44px)+8px) 14px 10px;display:flex;align-items:center;gap:10px;background:#fff;border-bottom:1px solid #eee}
+.hdr-back{width:30px;height:30px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;font-weight:800;color:#6b7280;border:none}
+.hdr-title{font-family:'Bangers',cursive;font-size:18px;color:#1a1a1a;letter-spacing:1px;flex:1}
+.hdr-money{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#16a34a}
+.zone-card{background:#fff;border:3px solid #1a1a1a;border-radius:12px;margin:8px 12px;box-shadow:3px 3px 0 #1a1a1a;overflow:hidden;cursor:pointer;transition:transform .1s}
+.zone-card:active{transform:scale(.98);box-shadow:1px 1px 0 #1a1a1a}
+.zone-top{padding:12px 14px;display:flex;align-items:center;gap:12px}
+.zone-emoji{font-size:32px;width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.zone-info{flex:1}
+.zone-name{font-family:'Bangers',cursive;font-size:16px;color:#1a1a1a;letter-spacing:.5px}
+.zone-type{font-size:7px;font-weight:700;color:#9ca3af;letter-spacing:1.5px;margin-top:1px}
+.zone-rev{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#16a34a}
+.zone-right{text-align:right}
+.zone-lvl{font-family:'Bebas Neue',sans-serif;font-size:12px;color:#6b7280;letter-spacing:1px}
+.zone-bottom{padding:8px 14px;border-top:2px solid #1a1a1a;display:flex;align-items:center;gap:8px}
+.zone-bonus{font-size:8px;font-weight:700;border-radius:6px;padding:2px 8px;letter-spacing:.5px}
+.zone-bonus.match{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
+.zone-bonus.no{background:#f3f4f6;color:#9ca3af;border:1px solid #e5e7eb}
+.zone-bar{flex:1;height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden}
+.zone-bar-fill{height:100%;background:#1a1a1a;border-radius:2px;transition:width .3s}
+.btn-buy{border:2px solid #1a1a1a;border-radius:8px;padding:8px 16px;font-family:'Bangers',cursive;font-size:12px;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a;display:block;width:100%;text-align:center;margin-top:6px}
+.btn-buy:active{box-shadow:0 0 0 #1a1a1a;transform:translate(2px,2px)}
+.locked{opacity:.5;filter:grayscale(.5)}
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+10px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.summary{margin:8px 12px;background:#fff;border:3px solid #1a1a1a;border-radius:12px;padding:12px;box-shadow:3px 3px 0 #1a1a1a;display:flex;gap:8px;text-align:center}
+.summary-item{flex:1}
+.summary-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#1a1a1a}
+.summary-lbl{font-size:6px;font-weight:700;color:#9ca3af;letter-spacing:1.5px;margin-top:1px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <button class="hdr-back" onclick="location.href='commerce.html'">←</button>
+  <div class="hdr-title">🗺️ ZONES DU PORT</div>
+  <div class="hdr-money" id="money">💰 —</div>
+</div>
+
+<!-- Summary -->
+<div class="summary" id="summary">
+  <div class="summary-item"><div class="summary-val" id="ownedCount">0</div><div class="summary-lbl">ZONES POSSÉDÉES</div></div>
+  <div class="summary-item"><div class="summary-val" id="totalRev" style="color:#16a34a">0€/h</div><div class="summary-lbl">REVENUS ZONES</div></div>
+  <div class="summary-item"><div class="summary-val" id="bonusInfo" style="color:#6366f1">—</div><div class="summary-lbl">BONUS SPÉCIALITÉ</div></div>
+</div>
+
+<div id="zonesList"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var currentUser=null,money=0,companyTag='',companyColor='#cc1a1a';
+
+var ZONES=[
+  {id:'quai_nord',name:'Quai Nord',emoji:'🏗️',type:'MANUTENTION',color:'#f59e0b',
+   cost:50000,rev:100,
+   keywords:['LOGISTIQUE','MANUTENTION','HUB','CHAINE'],
+   desc:'Zone de chargement/déchargement des navires'},
+  {id:'hangar_sud',name:'Hangar Sud',emoji:'📦',type:'STOCKAGE SEC',color:'#8b5cf6',
+   cost:80000,rev:180,
+   keywords:['COMMERCE','DISTRIBUTION','STOCKAGE','GROS'],
+   desc:'Entrepôt de marchandises sèches'},
+  {id:'zone_frigo',name:'Zone Frigo',emoji:'🧊',type:'STOCKAGE FROID',color:'#0ea5e9',
+   cost:120000,rev:280,
+   keywords:['ALIMENTAIRE','FROID','POISSONNERIE','RESTAURATION','GASTRONOMIE','SNACK','CAFE'],
+   desc:'Chambre froide pour produits périssables'},
+  {id:'terminal',name:'Terminal Passagers',emoji:'🚢',type:'TRANSPORT',color:'#ec4899',
+   cost:200000,rev:420,
+   keywords:['TRANSPORT','NAUTIQUE','MARITIME','COTIER','BATEAUX','ARMEMENT','LACUSTRE'],
+   desc:'Gare maritime pour les ferries et croisières'},
+  {id:'docks',name:'Docks Réparation',emoji:'⚓',type:'RÉPARATION NAVALE',color:'#ef4444',
+   cost:350000,rev:650,
+   keywords:['CONSTRUCTION','TECHNIQUE','FABRICATION','NAVALE','REHABILITATION','REPARATION','INGENIERIE'],
+   desc:'Cale sèche et atelier de réparation'},
+  {id:'zone_com',name:'Zone Commerciale',emoji:'🏪',type:'COMMERCE',color:'#22c55e',
+   cost:500000,rev:900,
+   keywords:['SERVICES','RESTAURATION','CAFE','LOISIRS','EVENEMENT','GASTRONOMIE','ARTISAN'],
+   desc:'Boutiques, restaurants et services du port'}
+];
+
+function fmtM(n){if(n>=1000000)return(n/1000000).toFixed(1)+'M€';if(n>=1000)return Math.floor(n/1000)+'k€';return n+'€';}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+
+function hasBonus(zone){
+  var tag=companyTag.toUpperCase();
+  return zone.keywords.some(function(k){return tag.indexOf(k)!==-1;});
+}
+
+function getUpgradeCost(zone,level){return Math.floor(zone.cost*0.6*level);}
+function getRevenue(zone,level,bonus){return Math.floor(zone.rev*level*(bonus?1.5:1));}
+
+async function loadZones(){
+  var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
+  if(!gs||!co)return;
+  
+  money=gs.money||0;
+  document.getElementById('money').textContent='💰 '+fmtM(money);
+  
+  // Get company tag from TYPES
+  companyTag=co.tag||'';
+  companyColor=co.color||'#cc1a1a';
+  
+  var com=gs.commerce||{};
+  var zones=com.zones||{};
+  
+  var totalOwned=0,totalRev=0,bonusCount=0;
+  var html='';
+  
+  ZONES.forEach(function(z){
+    var owned=zones[z.id];
+    var level=owned?owned.level:0;
+    var bonus=hasBonus(z);
+    var rev=level>0?getRevenue(z,level,bonus):0;
+    var nextCost=level===0?z.cost:getUpgradeCost(z,level+1);
+    var maxed=level>=5;
+    
+    if(level>0){totalOwned++;totalRev+=rev;}
+    if(bonus)bonusCount++;
+    
+    html+='<div class="zone-card'+(level===0?' locked':'')+'" onclick="zoneAction(\''+z.id+'\')">';
+    html+='<div class="zone-top">';
+    html+='<div class="zone-emoji" style="background:'+z.color+'15;border:2px solid '+z.color+'30">'+z.emoji+'</div>';
+    html+='<div class="zone-info"><div class="zone-name">'+z.name+'</div><div class="zone-type">'+z.type+'</div>';
+    if(level>0)html+='<div style="font-size:8px;color:#6b7280;margin-top:2px">'+z.desc+'</div>';
+    html+='</div>';
+    html+='<div class="zone-right">';
+    if(level>0){
+      html+='<div class="zone-rev">+'+fmtM(rev)+'/h</div>';
+      html+='<div class="zone-lvl">NV.'+level+(maxed?' MAX':'')+'</div>';
+    }else{
+      html+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#d97706">'+fmtM(z.cost)+'</div>';
+      html+='<div class="zone-lvl">À ACHETER</div>';
+    }
+    html+='</div></div>';
+    
+    // Bottom bar
+    html+='<div class="zone-bottom">';
+    html+='<div class="zone-bonus '+(bonus?'match':'no')+'">'+(bonus?'✓ BONUS x1.5':'Pas de bonus')+'</div>';
+    if(level>0&&!maxed){
+      html+='<div class="zone-bar"><div class="zone-bar-fill" style="width:'+((level/5)*100)+'%"></div></div>';
+    }else if(level>0){
+      html+='<div class="zone-bar"><div class="zone-bar-fill" style="width:100%;background:#16a34a"></div></div>';
+    }
+    html+='</div>';
+    
+    // Action button
+    if(!maxed){
+      var btnColor=level===0?z.color:'#1a1a1a';
+      var btnText=level===0?'ACHETER — '+fmtM(z.cost):'AMÉLIORER NV.'+(level+1)+' — '+fmtM(nextCost);
+      html+='<div style="padding:6px 14px 12px"><div class="btn-buy" style="background:'+btnColor+';color:#fff" onclick="event.stopPropagation();buyZone(\''+z.id+'\')">'+btnText+'</div></div>';
+    }
+    html+='</div>';
+  });
+  
+  document.getElementById('zonesList').innerHTML=html;
+  document.getElementById('ownedCount').textContent=totalOwned+'/6';
+  document.getElementById('totalRev').textContent='+'+fmtM(totalRev)+'/h';
+  document.getElementById('bonusInfo').textContent=bonusCount+' zone'+(bonusCount>1?'s':'')+' bonus';
+}
+
+async function buyZone(id){
+  var zone=ZONES.find(function(z){return z.id===id;});
+  if(!zone)return;
+  
+  var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  if(!gs)return;
+  
+  var com=gs.commerce||{};
+  var zones=com.zones||{};
+  var owned=zones[id];
+  var level=owned?owned.level:0;
+  
+  if(level>=5){toast('Zone au niveau max !');return;}
+  
+  var cost=level===0?zone.cost:getUpgradeCost(zone,level+1);
+  if((gs.money||0)<cost){toast('Pas assez d\'argent ! ('+fmtM(cost)+')');return;}
+  
+  var newMoney=(gs.money||0)-cost;
+  zones[id]={level:level+1,bought_at:zones[id]?zones[id].bought_at:new Date().toISOString()};
+  com.zones=zones;
+  
+  await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
+  money=newMoney;
+  
+  if(level===0){
+    toast('🗺️ '+zone.name+' achetée !');
+  }else{
+    toast('⬆️ '+zone.name+' niveau '+(level+1)+' !');
+  }
+  loadZones();
+}
+
+function zoneAction(id){
+  // Could open a detail panel later
+}
+
+(async function(){
+  var res=await sb.auth.getSession();
+  var sess=res.data&&res.data.session;
+  if(!sess){location.href='index.html';return;}
+  currentUser=sess.user;
+  
+  // Get company tag from type_id
+  var {data:co}=await sb.from('companies').select('type_id,color').eq('user_id',currentUser.id).maybeSingle();
+  if(co){
+    companyColor=co.color||'#cc1a1a';
+    // Derive tag from type_id (same TYPES array as commerce.html)
+    var TAGS=['ORNITHOLOGIE PORTUAIRE','SURVEILLANCE VEHICULES','LOISIRS NAUTIQUES','POISSONNERIE ARTISANALE','ARTISANAT ALIMENTAIRE','SERVICES AUX TRAVAILLEURS','TRANSPORT LACUSTRE','SERVICES PORTUAIRES','FORMATION PROFESSIONNELLE','RESTAURATION RAPIDE PORTUAIRE','SNACK PORTUAIRE','RESTAURATION EVENEMENTIELLE','PROPRETE PORTUAIRE','ENVIRONNEMENT PORTUAIRE','GESTION DECHETS','COMMERCE DE GROS','DISTRIBUTION ALIMENTAIRE','STOCKAGE FROID','LOGISTIQUE BASIQUE','LIVRAISON RAPIDE','LOCATION MATERIEL','GARDIENNAGE ET SURVEILLANCE','SECURITE TECHNOLOGIQUE','ASSURANCE SECURITE','CONSTRUCTION ET TRAVAUX','REHABILITATION PORTUAIRE','FABRICATION METALLIQUE','GASTRONOMIE MARSEILLAISE','CAFE RESTAURANT OUVRIER','GASTRONOMIE REGIONALE','SERVICES NAUTIQUES','LOCATION DE BATEAUX','INTERMEDIAIRE PORTUAIRE','DOUANES ET FORMALITES','DEDOUANEMENT EXPERT','REPRESENTATION MARITIME','ARMEMENT COTIER','TRANSPORT COTIER REGIONAL','LOCATION DE NAVIRES','COMMERCE MONDIAL','NEGOCE INTERNATIONAL','HUB LOGISTIQUE','GESTION DES RISQUES','CONSEIL JURIDIQUE','CONTROLE QUALITE','LOGISTIQUE AVANCEE','EXPLOITATION PORTUAIRE','CHAINE LOGISTIQUE','EXPERTISE MARITIME','INGENIERIE ET CONCEPTION','TECHNIQUE NAVALE','ARMEMENT INTERNATIONAL','CONSTRUCTION NAVALE','MANUTENTION PORTUAIRE','HOLDING DIVERSIFIE','ARMEMENT EUROPEEN','FINANCE MARITIME','DOMINATION TOTALE','EMPIRE FINANCIER','LEGENDE PORTUAIRE'];
+    companyTag=TAGS[co.type_id]||'';
+  }
+  
+  await loadZones();
+  document.getElementById('loader')&&(document.getElementById('loader').style.display='none');
+})();
+</script>
+</body>
+</html>

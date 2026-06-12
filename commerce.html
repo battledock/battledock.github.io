@@ -267,7 +267,6 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 <!-- ══ S5 : DASHBOARD ══ -->
 <div class="screen" id="s-dashboard">
   <div class="dash-hero" id="dash-hero">
-    <button class="back" onclick="window.location.href='game.html'" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:8px;width:32px;height:32px;color:white;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding-top:calc(env(safe-area-inset-top))">←</button>
     <div class="dash-hero-inner">
       <div style="font-size:44px" id="dash-emoji">🏪</div>
       <div class="dash-co-name" id="dash-name">—</div>
@@ -298,14 +297,16 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
       <div class="action-right" id="collect-amt">—</div>
     </div>
-    <div class="action-card" style="opacity:.4;cursor:default">
+    <div class="action-card" onclick="location.href='zones.html'">
       <div class="action-ico">🗺️</div>
       <div class="action-info">
         <div class="action-title">ZONES DU PORT</div>
-        <div class="action-sub">Bientôt disponible...</div>
+        <div class="action-sub">Achète et améliore des zones</div>
       </div>
-      <div class="action-right" style="font-size:10px;color:#9ca3af">V2</div>
+      <div class="action-right">→</div>
     </div>
+    <div onclick="location.href='game.html'" style="margin-top:8px;padding:14px;text-align:center;background:rgba(0,0,0,.03);border-radius:12px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#9ca3af;letter-spacing:2px">← RETOUR AU PORT</div>
+    <div style="height:calc(env(safe-area-inset-bottom,20px)+10px)"></div>
   </div>
 </div>
 
@@ -1190,12 +1191,19 @@ async function confirmCreate(){
   }catch(e){toast('Erreur');btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
 }
 
+// ══ ZONE REVENUE HELPER ══
+var ZONE_REVS={quai_nord:100,hangar_sud:180,zone_frigo:280,terminal:420,docks:650,zone_com:900};
+var ZONE_KW={quai_nord:['LOGISTIQUE','MANUTENTION','HUB','CHAINE'],hangar_sud:['COMMERCE','DISTRIBUTION','STOCKAGE','GROS'],zone_frigo:['ALIMENTAIRE','FROID','POISSONNERIE','RESTAURATION','GASTRONOMIE','SNACK','CAFE'],terminal:['TRANSPORT','NAUTIQUE','MARITIME','COTIER','BATEAUX','ARMEMENT','LACUSTRE'],docks:['CONSTRUCTION','TECHNIQUE','FABRICATION','NAVALE','REHABILITATION','REPARATION','INGENIERIE'],zone_com:['SERVICES','RESTAURATION','CAFE','LOISIRS','EVENEMENT','GASTRONOMIE','ARTISAN']};
+function calcZoneRev(zones,tag){var total=0;if(!zones)return 0;Object.keys(zones).forEach(function(id){var z=zones[id];if(!z||!z.level)return;var base=ZONE_REVS[id]||0;var bonus=(ZONE_KW[id]||[]).some(function(k){return(tag||'').toUpperCase().indexOf(k)!==-1;});total+=Math.floor(base*z.level*(bonus?1.5:1));});return total;}
+
 // ══ DASHBOARD ══
 async function loadDashboard(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(!co)return;
   var t=TYPES[co.type_id]||TYPES[0];
-  var rev=Math.floor((co.valeur||0)*0.002); // 0.2% par heure
+  var baseRev=Math.floor((co.valeur||0)*0.002);
+  var {data:gs2}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var zRev=calcZoneRev(gs2&&gs2.commerce&&gs2.commerce.zones,t.tag);var rev=baseRev+zRev;
   document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
   document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
@@ -1219,7 +1227,7 @@ async function collecterRevenus(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
   if(!co||!gs)return;
-  var rev=Math.floor((co.valeur||0)*0.002);
+  var baseRev2=Math.floor((co.valeur||0)*0.002);var t2=TYPES[co.type_id]||TYPES[0];var zRev2=calcZoneRev(com&&com.zones,t2.tag);var rev=baseRev2+zRev2;
   var com=(gs.commerce)||{};
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
   var elapsed=(Date.now()-last)/3600000;
