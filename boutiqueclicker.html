@@ -53,6 +53,16 @@ body{font-family:'Inter',sans-serif;background:#1a0f00;min-height:100dvh;padding
 
 /* LOADER */
 .loader{position:fixed;inset:0;background:#1a0f00;display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:10px}
+.music-shop-item{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.1);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.music-shop-item.owned{border-color:rgba(74,222,128,.15);background:rgba(74,222,128,.04)}
+.music-shop-emoji{font-size:24px;width:36px;text-align:center}
+.music-shop-info{flex:1}
+.music-shop-name{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#f5f5f5;letter-spacing:1px}
+.music-shop-price{font-size:10px;color:rgba(255,255,255,.3);margin-top:2px}
+.music-shop-btn{padding:6px 14px;border:none;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer}
+.music-shop-btn.buy{background:#f59e0b;color:#1a0f00}
+.music-shop-btn.owned{background:rgba(74,222,128,.15);color:#4ade80}
+.music-shop-btn:disabled{opacity:.4;cursor:default}
 .loader-txt{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#f59e0b}
 </style>
 </head>
@@ -73,6 +83,12 @@ body{font-family:'Inter',sans-serif;background:#1a0f00;min-height:100dvh;padding
   </div>
 
   <div class="body" id="epiBody"></div>
+
+  <!-- MUSIQUES -->
+  <div style="padding:0 16px;margin-top:16px">
+    <div style="font-size:9px;font-weight:800;color:rgba(245,158,11,.4);letter-spacing:2px;margin-bottom:10px">🎵 MUSIQUES DU PORT</div>
+    <div id="musicShop"></div>
+  </div>
 
   <div style="padding:0 16px">
     <button class="back-btn" onclick="goBack()">← RETOUR AU CLICKER</button>
@@ -244,11 +260,61 @@ async function init() {
     document.getElementById('loader').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     render();
+    renderMusicShop();
   } catch(e) {
     console.error(e);
     alert('ERREUR: ' + e.message);
     showToast('❌ Erreur de connexion');
   }
+}
+
+// ═══ MUSIC SHOP ═══
+var MUSIC_ITEMS=[
+  {id:'rock-with-you',name:'La Danse du Container 🕺',emoji:'🕺',price:35000},
+  {id:'a-la-la',name:'Docker en Vacances 🌴',emoji:'🌴',price:40000},
+  {id:'aventurier',name:'Aventurier des Quais ⚓',emoji:'⚓',price:50000},
+  {id:'demons-minuit',name:'Le Shift de 3h du Mat\' 🌙',emoji:'🌙',price:50000},
+  {id:'so-excited',name:'Vendredi Soir au Port 🎉',emoji:'🎉',price:40000},
+];
+var _ownedMusic=[];
+
+function renderMusicShop(){
+  // Get owned music from records
+  var gs;
+  sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle().then(function(res){
+    if(res.data&&res.data.records&&res.data.records.unlocked_music)_ownedMusic=res.data.records.unlocked_music;
+    var html='';
+    MUSIC_ITEMS.forEach(function(m){
+      var owned=_ownedMusic.indexOf(m.id)!==-1;
+      var canBuy=money>=m.price&&!owned;
+      html+='<div class="music-shop-item'+(owned?' owned':'')+'">';
+      html+='<div class="music-shop-emoji">'+m.emoji+'</div>';
+      html+='<div class="music-shop-info"><div class="music-shop-name">'+m.name+'</div>';
+      html+='<div class="music-shop-price">'+(owned?'✅ Débloqué':m.price.toLocaleString('fr-FR')+'€')+'</div></div>';
+      if(owned)html+='<div class="music-shop-btn owned">✅</div>';
+      else html+='<button class="music-shop-btn buy" onclick="buyMusic(\''+m.id+'\','+m.price+')"'+(canBuy?'':' disabled')+'>ACHETER</button>';
+      html+='</div>';
+    });
+    document.getElementById('musicShop').innerHTML=html;
+  });
+}
+
+async function buyMusic(id,price){
+  if(money<price)return;
+  try{
+    money-=price;
+    var gs=await sb.from('game_stats').select('money,records').eq('user_id',currentUser.id).maybeSingle();
+    if(gs.data){
+      var rec=gs.data.records||{};
+      if(!rec.unlocked_music)rec.unlocked_music=[];
+      if(rec.unlocked_music.indexOf(id)===-1)rec.unlocked_music.push(id);
+      await sb.from('game_stats').update({money:money,records:rec}).eq('user_id',currentUser.id);
+      _ownedMusic=rec.unlocked_music;
+    }
+    document.getElementById('moneyDisplay').textContent='💰 '+money.toLocaleString('fr-FR')+'€ disponibles';
+    renderMusicShop();
+    showToast('🎵 Musique débloquée !');
+  }catch(e){showToast('❌ Erreur');}
 }
 
 init();
