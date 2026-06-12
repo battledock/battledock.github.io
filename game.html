@@ -312,8 +312,7 @@ body{
 @keyframes gazetteTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 @keyframes gazetteP{0%,100%{opacity:.3}50%{opacity:1}}
 /* Dialogue D4 */
-#dialogueD4{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+70px);right:14px;z-index:300;max-width:210px;background:#fff;border:2px solid #1a1a1a;border-radius:12px;box-shadow:2px 2px 0 #1a1a1a;padding:8px 10px;opacity:0;transition:opacity .4s;pointer-events:none}
-#dialogueD4.show{opacity:1}
+#dialogueD4{position:fixed;bottom:80px;right:14px;z-index:9998;max-width:210px;background:#fff;border:2px solid #1a1a1a;border-radius:12px;box-shadow:2px 2px 0 #1a1a1a;padding:8px 10px;opacity:0;transition:opacity .5s;pointer-events:none;display:block !important}
 .d4-flag{display:inline-block;background:#cc1a1a;color:#fff;font-size:6px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:1px;margin-bottom:5px}
 .d4-row{display:flex;align-items:flex-end;gap:8px}
 .d4-bubble{background:#f5f0e8;border-radius:8px 8px 8px 2px;padding:6px 8px;font-size:9px;color:#374151;font-style:italic;line-height:1.3;flex:1}
@@ -1242,141 +1241,38 @@ function closePopup(){
 async function loadGazette(){
   var items=[];
   try{
-    // Casino wins
     var {data:wins}=await sb.from('casino_wins').select('user_name,amount_won').order('created_at',{ascending:false}).limit(5);
     if(wins)wins.forEach(function(w){if(w.amount_won>0)items.push('🎰 <b>'+w.user_name+'</b> a gagné '+(w.amount_won>=1000?Math.floor(w.amount_won/1000)+'k':w.amount_won)+'€ au casino');});
-    // Top records
-    var {data:gs}=await sb.from('game_stats').select('user_id,records,level').order('level',{ascending:false}).limit(10);
+    var {data:gs}=await sb.from('game_stats').select('user_id,records,level').order('level',{ascending:false}).limit(8);
     var {data:profs}=await sb.from('profiles').select('user_id,username');
     var pm={};if(profs)profs.forEach(function(p){pm[p.user_id]=p.username;});
     if(gs)gs.forEach(function(g){
-      var r=g.records||{};var n=pm[g.user_id]||'Un docker';
+      var r=g.records||{},n=pm[g.user_id]||'Un docker';
       if(r.grue_best>0)items.push('🏗️ <b>'+n+'</b> a scoré '+r.grue_best+' pts à la grue');
       if(r.clark_best>0)items.push('🏎️ <b>'+n+'</b> a fait '+r.clark_best+'s aux Clarks');
-      if(r.cards&&Object.keys(r.cards).length>0)items.push('🃏 <b>'+n+'</b> possède '+Object.keys(r.cards).length+' cartes');
     });
-    // Companies
     var {data:cos}=await sb.from('companies').select('nom,valeur').order('valeur',{ascending:false}).limit(3);
-    if(cos)cos.forEach(function(c){if(c.valeur>0)items.push('💰 <b>'+c.nom+'</b> vaut '+(c.valeur>=1e6?(c.valeur/1e6).toFixed(1)+'M':c.valeur>=1000?Math.floor(c.valeur/1000)+'k':c.valeur)+'€');});
+    if(cos)cos.forEach(function(co){if(co.valeur>0)items.push('💰 <b>'+co.nom+'</b> vaut '+(co.valeur>=1e6?(co.valeur/1e6).toFixed(1)+'M':Math.floor(co.valeur/1000)+'k')+'€');});
   }catch(e){}
-
-  // Fallback phrases
-  var fallback=['⚓ Le port de Marseille ne dort jamais','🌊 Mistral annoncé cette nuit sur le port','🐟 Arrivée d\'une cargaison de sardines géantes','📦 Container 13B toujours scellé...','☀️ Belle journée sur les quais','🚢 Le Mistral II accoste dans 2 heures'];
+  var fallback=['⚓ Le port de Marseille ne dort jamais','🚢 Arrivée du cargo MSC Marseille ce soir','🐟 Arrivée de sardines fraîches — Quai Sud','💨 Mistral annoncé cette nuit : 80 km/h','📦 Container 13B toujours scellé...','☀️ Belle journée sur les quais','🌊 Mer agitée — retard des ferries prévu'];
   if(items.length<3)items=items.concat(fallback);
-
-  // Shuffle + limit
   items.sort(function(){return Math.random()-.5;});
-  items=items.slice(0,5);
+  items=items.slice(0,6);
   var all=items.concat(items);
-  var html=all.map(function(t){return '<div style="padding:0 20px;font-size:10px;color:#374151;display:inline-flex;align-items:center;gap:4px;border-right:1px solid #e5e7eb">'+t+'</div>';}).join('');
+  var html=all.map(function(t){return '<div style="padding:0 24px;font-size:10px;color:#374151;display:inline-flex;align-items:center;border-right:1px solid #e5e7eb;white-space:nowrap">'+t+'</div>';}).join('');
   var el=document.getElementById('gazetteTicker');
-  if(el){el.innerHTML=html;var totalW=el.scrollWidth/2;el.style.animation='none';el.style.transform='';setTimeout(function(){el.style.animation='gazetteTick 20s linear infinite';},50);}
+  if(!el)return;
+  el.innerHTML=html;
+  el.style.animation='none';
+  void el.offsetWidth;
+  el.style.animation='gazetteTick 22s linear infinite';
 }
 loadGazette();
 setInterval(loadGazette,120000);
 
-// ═══ DIALOGUE D4 ═══
-var DIALOGUES=[
-  // GÉGÉ
-  {e:'👷',name:'GÉGÉ · Quai Nord',text:'"Allez les gars, on bouge ! Le container arrive !"'},
-  {e:'👷',name:'GÉGÉ · Hangar B',text:'"Trente ans ici. J\'en ai vu d\'autres."'},
-  {e:'👷',name:'GÉGÉ · Quai Est',text:'"Le port c\'est une famille. Une famille qui crie fort."'},
-  {e:'👷',name:'GÉGÉ · Vestiaire',text:'"Vous avez vu l\'état du quai 4 ce matin ? Scandaleux."'},
-  {e:'👷',name:'GÉGÉ · Cantine',text:'"L\'aïoli du vendredi c\'est sacré. Touchez pas à ça."'},
-  {e:'👷',name:'GÉGÉ · Quai Nord',text:'"Le mistral arrive cette nuit. On sécurise tout avant 18h."'},
-  {e:'👷',name:'GÉGÉ · Bureau',text:'"Lavagne m\'a encore convoqué. Je sais ce que ça veut dire."'},
-  {e:'👷',name:'GÉGÉ · Quai Sud',text:'"Ce gamin a l\'étoffe. Je le vois dans ses yeux."'},
-  {e:'👷',name:'GÉGÉ · Hangar A',text:'"J\'ai commencé ici à 17 ans. Mon père y était avant moi."'},
-  {e:'👷',name:'GÉGÉ · Quai Nord',text:'"Personne ne touche à ma grue. Personne."'},
-  // JEFF
-  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Doucement Bertha... doucement ma belle."'},
-  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Elle m\'a encore parlé ce matin, Bertha."'},
-  {e:'🗣️',name:'JEFF · Quai Nord',text:'"Les grues ont une âme. Les gens comprennent pas."'},
-  {e:'🗣️',name:'JEFF · Hangar B',text:'"Bertha était triste hier. Je lui ai joué de la guitare."'},
-  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Elle grinçait différemment ce matin. Elle est contente."'},
-  {e:'🗣️',name:'JEFF · Atelier',text:'"Touche pas à ma grue. Elle aime pas les inconnus."'},
-  {e:'🗣️',name:'JEFF · Quai Est',text:'"La grue n°7 est jalouse de Bertha. Je la vois bien."'},
-  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Bertha a peur des orages. Je reste avec elle cette nuit."'},
-  {e:'🗣️',name:'JEFF · Cantine',text:'"J\'ai apporté des fleurs pour la cabine de Bertha."'},
-  // DOUDOU
-  {e:'🤗',name:'DOUDOU · Partout',text:'"T\'inquiète frangin, je gère tout !"'},
-  {e:'🤗',name:'DOUDOU · Cantine',text:'"J\'ai commandé l\'aïoli pour tout le monde !"'},
-  {e:'🤗',name:'DOUDOU · Quai Sud',text:'"J\'ai aidé le nouveau à décharger. Et le suivant aussi."'},
-  {e:'🤗',name:'DOUDOU · Local syndical',text:'"J\'ai signé la pétition. Et celle d\'après. Et celle d\'avant."'},
-  {e:'🤗',name:'DOUDOU · Parking',text:'"J\'ai prêté ma voiture à six personnes aujourd\'hui."'},
-  {e:'🤗',name:'DOUDOU · Cantine',text:'"J\'ai payé la tournée. Encore. Mais ça fait plaisir !"'},
-  {e:'🤗',name:'DOUDOU · Infirmerie',text:'"C\'est rien, juste le dos. J\'aide quand même !"'},
-  {e:'🤗',name:'DOUDOU · Vestiaire',text:'"Quelqu\'un a oublié sa veste ? J\'ai attendu deux heures."'},
-  {e:'🤗',name:'DOUDOU · Quai Nord',text:'"Gégé avait l\'air fatigué. Je fais sa pause pour lui."'},
-  {e:'🤗',name:'DOUDOU · Partout',text:'"Y\'a quelqu\'un qui a besoin d\'aide ? Non ? Je cherche."'},
-  // TITOUAN
-  {e:'😴',name:'TITOUAN · Salle de pause',text:'"Cinq minutes... juste cinq minutes..."'},
-  {e:'😴',name:'TITOUAN · Hangar A',text:'"C\'est pas moi qui ai cassé ça... je dormais."'},
-  {e:'😴',name:'TITOUAN · Quai Sud',text:'"Le soleil me fatigue. Et l\'ombre aussi d\'ailleurs."'},
-  {e:'😴',name:'TITOUAN · Vestiaire',text:'"J\'ai travaillé d\'arrache-pied ce matin. Enfin j\'étais là."'},
-  {e:'😴',name:'TITOUAN · Cantine',text:'"Le repas c\'est bien. Le reste... bof."'},
-  {e:'😴',name:'TITOUAN · Hangar B',text:'"J\'ai compté les containers. Jusqu\'au troisième."'},
-  {e:'😴',name:'TITOUAN · Parking',text:'"J\'allais partir mais j\'avais trop la flemme de conduire."'},
-  {e:'😴',name:'TITOUAN · Salle de pause',text:'"C\'est quoi déjà mon poste ? Je fais quoi moi ?"'},
-  {e:'😴',name:'TITOUAN · Quai Nord',text:'"Gégé m\'a crié dessus. Ça m\'a réveillé 30 secondes."'},
-  // MICKAËL
-  {e:'📋',name:'MICKAËL · Bureau',text:'"C\'est dans le règlement, article 12."'},
-  {e:'📋',name:'MICKAËL · Ronde',text:'"Je note. Je note tout."'},
-  {e:'📋',name:'MICKAËL · Quai Nord',text:'"Monsieur Lavagne a été informé. Comme toujours."'},
-  {e:'📋',name:'MICKAËL · Vestiaire',text:'"Les casques sont obligatoires. J\'ai le rapport."'},
-  {e:'📋',name:'MICKAËL · Hangar A',text:'"J\'ai relevé 3 infractions ce matin. Avant 8h."'},
-  {e:'📋',name:'MICKAËL · Bureau',text:'"Votre rendement est en dessous de la moyenne. Encore."'},
-  {e:'📋',name:'MICKAËL · Cantine',text:'"La pause de midi dure 45 minutes. Pas 46."'},
-  {e:'📋',name:'MICKAËL · Quai Est',text:'"Ce n\'est pas personnel. C\'est procédural."'},
-  {e:'📋',name:'MICKAËL · Couloir',text:'"J\'ai un rapport sur vous. Plusieurs en fait."'},
-  // LAVAGNE
-  {e:'🕴️',name:'LAVAGNE · Direction',text:'"Les chiffres parlent d\'eux-mêmes. Et ils me plaisent."'},
-  {e:'🕴️',name:'LAVAGNE · Quai Nord',text:'"Je viens voir mes... investissements."'},
-  {e:'🕴️',name:'LAVAGNE · Direction',text:'"La restructuration va dans le bon sens. Pour l\'entreprise."'},
-  {e:'🕴️',name:'LAVAGNE · Couloir',text:'"Souriez. On ne sait jamais qui observe."'},
-  {e:'🕴️',name:'LAVAGNE · Quai Sud',text:'"Intéressant. Très intéressant."'},
-  {e:'🕴️',name:'LAVAGNE · Bureau',text:'"Cette conversation n\'a pas eu lieu."'},
-  // VENDEUR
-  {e:'🐟',name:'VENDEUR · Quai Sud',text:'"Fraîches mes sardines ! Fraîches ce matin !"'},
-  {e:'🐟',name:'VENDEUR · Quai Nord',text:'"La plus belle de Méditerranée ! Allez !"'},
-  {e:'🐟',name:'VENDEUR · Passerelle',text:'"Pêchées à l\'aube. Encore vivantes presque !"'},
-  {e:'🐟',name:'VENDEUR · Cantine',text:'"Cinq euros le kilo ! On brade ! On solde !"'},
-  {e:'🐟',name:'VENDEUR · Quai Est',text:'"Sardine ! Sardine ! La meilleure de Marseille !"'},
-  // AUTRES
-  {e:'🧔',name:'VIEUX LOUP · Terrasse bar',text:'"J\'ai traversé l\'Atlantique trois fois. Ici c\'est calme."'},
-  {e:'🧔',name:'VIEUX LOUP · Quai Est',text:'"La mer pardonne pas. Mais elle oublie."'},
-  {e:'🧔',name:'VIEUX LOUP · Bar',text:'"Un pastis. Le même depuis quarante ans."'},
-  {e:'🧔',name:'VIEUX LOUP · Quai Nord',text:'"Ce port a changé. Mais l\'essentiel est là."'},
-  {e:'💃',name:'SERVEUSE · Bar',text:'"Je sais tout sur tout le monde ici. Vraiment tout."'},
-  {e:'💃',name:'SERVEUSE · Bar',text:'"Encore un pastis ? C\'est le cinquième..."'},
-  {e:'💃',name:'SERVEUSE · Bar',text:'"Gégé m\'a encore raconté l\'histoire du container. La dixième fois."'},
-  {e:'💃',name:'SERVEUSE · Bar',text:'"Lavagne est venu hier soir. Il a rien dit. Il a juste regardé."'},
-  {e:'😎',name:'DOUANIER · Poste de garde',text:'"Circulez. Y\'a rien à voir. Allez."'},
-  {e:'😎',name:'DOUANIER · Poste de garde',text:'"Ce container... je devrais l\'ouvrir. Mais non."'},
-  {e:'😎',name:'DOUANIER · Poste de garde',text:'"Troisième fois cette semaine que ce camion passe. Intéressant."'},
-  {e:'🐱',name:'CHAT DU PORT · Hangar B',text:'"..."'},
-  {e:'🐱',name:'CHAT DU PORT · Quai Nord',text:'"...miaou."'},
-  {e:'🐱',name:'CHAT DU PORT · Cantine',text:'"...MIAOu."'},
-  {e:'👻',name:'DOCKER FANTÔME · Quai Nord',text:'"..."'},
-  {e:'👻',name:'DOCKER FANTÔME · Quai Nord',text:'"...tu l\'as entendu aussi ?"'},
-];
 var dlgTimer=null;
-function showDialogue(){
-  var d=DIALOGUES[Math.floor(Math.random()*DIALOGUES.length)];
-  var el=document.getElementById('dialogueD4');
-  document.getElementById('d4Emoji').textContent=d.e;
-  document.getElementById('d4Text').textContent=d.text;
-  document.getElementById('d4Name').textContent=d.name;
-  el.classList.add('show');
-  setTimeout(function(){el.classList.remove('show');},5000);
-}
-setTimeout(showDialogue,2000);
-setInterval(showDialogue,60000);
 </script>
 
-<!-- DIALOGUE D4 -->
-<div id="dialogueD4">
-  <div class="d4-flag" id="d4Flag">EN CE MOMENT</div>
   <div class="d4-row">
     <div id="d4Emoji" style="font-size:24px">👷</div>
     <div class="d4-bubble" id="d4Text">...</div>
