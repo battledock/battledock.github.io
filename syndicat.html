@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache,no-store,must-revalidate">
 <title>Syndicat — Battle Dock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
@@ -16,24 +17,13 @@ body{font-family:'Inter',sans-serif;background:#f5f0e8;min-height:100vh;padding-
 .sec{padding:10px 14px 4px;font-size:7px;font-weight:800;color:#999;letter-spacing:2px}
 .rank-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f3f4f6}
 .rank-row:last-child{border:none}
-.rank-pos{font-family:'Bebas Neue',sans-serif;font-size:14px;width:22px;text-align:center}
-.rank-name{font-size:11px;font-weight:800;color:#1a1a1a;flex:1}
-.rank-score{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#dc2626}
-.tag{font-size:7px;font-weight:700;border-radius:5px;padding:2px 7px;display:inline-block}
-.countdown{font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:4px}
-.event-desc{font-size:11px;color:#374151;line-height:1.5;padding:12px 14px}
-.reward-row{display:flex;align-items:center;gap:8px;padding:6px 14px}
-.reward-medal{font-size:18px}
-.reward-info{flex:1;font-size:10px;color:#374151}
-.reward-prize{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#d97706}
-.past-event{padding:10px 14px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px}
-.past-event:last-child{border:none}
 .toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+10px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
+.reward-popup{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:20px}
+.reward-card{background:#fff;border:3px solid #1a1a1a;border-radius:16px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:4px 4px 0 #1a1a1a}
 </style>
 </head>
 <body>
-
 <div class="hdr">
   <div style="font-size:28px;margin-bottom:2px">🏛️</div>
   <div style="font-family:'Bangers',cursive;font-size:24px;color:#fff;letter-spacing:2px;text-shadow:2px 2px 0 rgba(0,0,0,.2)">SYNDICAT DES DOCKERS</div>
@@ -41,216 +31,271 @@ body{font-family:'Inter',sans-serif;background:#f5f0e8;min-height:100vh;padding-
   <div style="position:absolute;left:14px;top:calc(env(safe-area-inset-top,44px)+14px);font-size:14px;color:rgba(255,255,255,.4);cursor:pointer" onclick="location.href='game.html'">←</div>
 </div>
 
-<!-- Current event -->
-<div class="card" id="eventCard" style="border-color:#dc2626">
-  <div style="padding:14px;background:linear-gradient(135deg,#fef2f2,#fff)" id="eventHeader"></div>
-  <div class="event-desc" id="eventDesc"></div>
-  <div style="padding:0 14px 4px"><div class="countdown" id="eventCountdown" style="color:#999"></div></div>
-  <div style="padding:8px 14px 14px" id="eventAction"></div>
-</div>
-
-<!-- Participation -->
-<div class="card" id="participationCard" style="display:none">
-  <div style="padding:14px;text-align:center">
-    <div style="font-family:'Bangers',cursive;font-size:16px;color:#1a1a1a;letter-spacing:1px">TA PARTICIPATION</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#dc2626;margin-top:4px" id="myScore">0</div>
-    <div style="font-size:8px;color:#999;font-weight:700;letter-spacing:1px" id="myScoreLabel">SCORE</div>
-  </div>
-</div>
-
-<!-- Rewards -->
+<div class="card" id="eventCard" style="border-color:#dc2626"></div>
+<div class="card" id="myCard" style="display:none"></div>
 <div class="sec">🎁 RÉCOMPENSES</div>
 <div class="card" id="rewardsCard"></div>
-
-<!-- Leaderboard -->
 <div class="sec">🏆 CLASSEMENT DE LA SEMAINE</div>
-<div class="card" id="leaderboard">
-  <div style="padding:20px;text-align:center;color:#999;font-size:11px">Chargement...</div>
-</div>
+<div class="card" id="leaderboard"><div style="padding:20px;text-align:center;color:#999;font-size:11px">Chargement...</div></div>
+<div style="text-align:center;padding:4px"><div onclick="loadAll()" style="display:inline-block;font-size:9px;color:#999;cursor:pointer;padding:4px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:6px">🔄 Actualiser</div></div>
 
-<!-- Past events -->
-<div class="sec">📜 ÉVÉNEMENTS PASSÉS</div>
-<div class="card" id="pastEvents">
-  <div style="padding:20px;text-align:center;color:#999;font-size:11px">Aucun</div>
-</div>
-
-<!-- Back button -->
 <div style="padding:10px 12px">
   <div onclick="location.href='game.html'" style="padding:14px;text-align:center;background:#fff;border:3px solid #1a1a1a;border-radius:12px;cursor:pointer;font-family:'Bangers',cursive;font-size:14px;color:#1a1a1a;letter-spacing:1px;box-shadow:3px 3px 0 #1a1a1a">← RETOUR AU PORT</div>
 </div>
 
+<div class="reward-popup" id="rewardPopup">
+  <div class="reward-card" id="rewardContent"></div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
 var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 var sb=supabase.createClient(SB_URL,SB_KEY);
-var CU=null,myRecords={};
+var CU=null;
 
-// ═══ EVENTS POOL ═══
+// ═══ EVENTS — read EXISTING game data, no extra writes needed ═══
 var EVENTS=[
-  {id:'grue_tournament',name:'Tournoi de Grue',emoji:'🏗️',color:'#f59e0b',
-   desc:'Qui sera le meilleur grutier du port cette semaine ? Fais le meilleur score à la grue et grimpe au classement !',
-   scoreField:'grue_best',scoreLabel:'MEILLEUR SCORE',unit:'pts',
+  {id:'grue',name:'Tournoi de Grue',emoji:'🏗️',color:'#f59e0b',
+   desc:'Le meilleur score à la grue cette semaine remporte le trophée !',
+   getScore:function(rec,gs){return(rec&&rec.grue_best)||0;},
+   label:'MEILLEUR SCORE',unit:'pts',
    link:'grue.html',linkText:'JOUER À LA GRUE',
-   rewards:[{pos:'🥇',text:'1er — Champion de la grue',prize:'+50 000€ +10💎'},{pos:'🥈',text:'2ème',prize:'+25 000€ +5💎'},{pos:'🥉',text:'3ème',prize:'+10 000€ +3💎'}]},
+   rewards:[[50000,10],[25000,5],[10000,3]]},
 
-  {id:'clark_gp',name:'Grand Prix de Clarks',emoji:'🏎️',color:'#ef4444',
-   desc:'La course de la semaine ! Bats le record du circuit et deviens le pilote le plus rapide du port.',
-   scoreField:'clark_best',scoreLabel:'MEILLEUR TEMPS',unit:'s',invert:true,
+  {id:'clark',name:'Grand Prix de Clarks',emoji:'🏎️',color:'#ef4444',
+   desc:'Le temps le plus rapide sur le circuit de clarks. Chaque seconde compte !',
+   getScore:function(rec,gs){return(rec&&rec.clark_best)||0;},
+   label:'MEILLEUR TEMPS',unit:'s',invert:true,
    link:'clark.html',linkText:'COURSE DE CLARKS',
-   rewards:[{pos:'🥇',text:'1er — Pilote légendaire',prize:'+50 000€ +10💎'},{pos:'🥈',text:'2ème',prize:'+25 000€ +5💎'},{pos:'🥉',text:'3ème',prize:'+10 000€ +3💎'}]},
+   rewards:[[50000,10],[25000,5],[10000,3]]},
 
-  {id:'click_rush',name:'Rush Containers',emoji:'📦',color:'#3b82f6',
-   desc:'Clique comme un fou sur les containers cette semaine ! Chaque clic compte. Le docker avec le plus de clics gagne.',
-   scoreField:'total_clicks_week',scoreLabel:'CLICS CETTE SEMAINE',unit:'clics',
+  {id:'clicks',name:'Rush Containers',emoji:'📦',color:'#3b82f6',
+   desc:'Le docker qui a cliqué le plus de fois au total ! Chaque clic compte.',
+   getScore:function(rec,gs){return(rec&&rec.total_clicks)||0;},
+   label:'TOTAL CLICS',unit:'clics',
    link:'clicker.html',linkText:'CLICKER',
-   rewards:[{pos:'🥇',text:'1er — Machine à cliquer',prize:'+40 000€ +8💎'},{pos:'🥈',text:'2ème',prize:'+20 000€ +4💎'},{pos:'🥉',text:'3ème',prize:'+10 000€ +2💎'}]},
+   rewards:[[40000,8],[20000,4],[10000,2]]},
 
   {id:'mogul',name:'Mogul Challenge',emoji:'💰',color:'#d97706',
-   desc:'Qui investira le plus dans son entreprise cette semaine ? Montre que t\'es un vrai businessman du port.',
-   scoreField:'invested_week',scoreLabel:'INVESTI CETTE SEMAINE',unit:'€',
+   desc:'L\'entreprise avec la plus grosse valorisation remporte la couronne !',
+   getScore:function(rec,gs){return 0;},// Loaded from companies table
+   label:'VALEUR ENTREPRISE',unit:'€',useCompany:true,
    link:'commerce.html',linkText:'MON COMMERCE',
-   rewards:[{pos:'🥇',text:'1er — Magnat du port',prize:'+60 000€ +15💎'},{pos:'🥈',text:'2ème',prize:'+30 000€ +8💎'},{pos:'🥉',text:'3ème',prize:'+15 000€ +5💎'}]},
+   rewards:[[60000,15],[30000,8],[15000,5]]},
 
   {id:'solidarity',name:'Solidarité du Port',emoji:'🤝',color:'#16a34a',
-   desc:'Objectif collectif ! TOUS les joueurs doivent contribuer ensemble pour atteindre le but. Si on réussit, TOUT LE MONDE gagne !',
-   scoreField:'solidarity_contrib',scoreLabel:'TA CONTRIBUTION',unit:'€',collective:true,
-   collectiveGoal:500000,collectiveReward:'+15 000€ pour TOUS',
-   link:'commerce.html',linkText:'CONTRIBUER',
-   rewards:[{pos:'🎯',text:'Objectif: 500 000€ collectifs',prize:'Si atteint: +15 000€/joueur'}]},
+   desc:'Objectif collectif ! Tous ensemble on doit atteindre 1 000 000€ de valeur cumulée.',
+   getScore:function(rec,gs){return 0;},
+   label:'CONTRIBUTION',unit:'€',collective:true,useCompany:true,
+   collectiveGoal:1000000,
+   link:'commerce.html',linkText:'MON COMMERCE',
+   rewards:[[15000,5]]},
 
-  {id:'casino_week',name:'Semaine du Casino',emoji:'🎰',color:'#8b5cf6',
-   desc:'Cette semaine, les gains au casino comptent double ! Le joueur avec les plus gros gains totaux au casino remporte le jackpot.',
-   scoreField:'casino_gains_week',scoreLabel:'GAINS CASINO',unit:'€',
+  {id:'casino',name:'Semaine du Casino',emoji:'🎰',color:'#8b5cf6',
+   desc:'Le joueur avec le plus de gains enregistrés au casino cette semaine !',
+   getScore:function(rec,gs){return 0;},// From casino_wins
+   label:'GAINS CASINO',unit:'€',useCasino:true,
    link:'casino.html',linkText:'ALLER AU CASINO',
-   rewards:[{pos:'🥇',text:'1er — Roi du casino',prize:'+50 000€ +10💎'},{pos:'🥈',text:'2ème',prize:'+25 000€ +5💎'},{pos:'🥉',text:'3ème',prize:'+10 000€ +3💎'}]},
+   rewards:[[50000,10],[25000,5],[10000,3]]},
 ];
 
-function fm(n){return n>=1e6?(n/1e6).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':n+'€';}
+function fm(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1000)return Math.floor(n/1000)+'k';return n;}
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function getWeek(){var d=new Date(),o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+function getEvent(){return EVENTS[getWeek()%EVENTS.length];}
+function timeToMonday(){var n=new Date(),d=n.getDay(),diff=d===0?1:8-d,nx=new Date(n);nx.setDate(n.getDate()+diff);nx.setHours(0,0,0,0);var ms=nx-n;return Math.floor(ms/864e5)+'j '+Math.floor((ms%864e5)/36e5)+'h';}
 
-// Get current week number (ISO)
-function getWeekNum(){
-  var d=new Date();var onejan=new Date(d.getFullYear(),0,1);
-  return Math.ceil(((d-onejan)/86400000+onejan.getDay()+1)/7);
-}
+async function loadAll(){
+  var ev=getEvent();
+  var week=getWeek();
 
-function getCurrentEvent(){
-  var week=getWeekNum();
-  return EVENTS[week%EVENTS.length];
-}
+  // Render event card
+  document.getElementById('eventCard').innerHTML=
+    '<div style="padding:14px;background:linear-gradient(135deg,'+ev.color+'10,#fff)">'
+    +'<div style="display:flex;align-items:center;gap:12px"><div style="font-size:36px">'+ev.emoji+'</div>'
+    +'<div style="flex:1"><div style="font-family:Bangers,cursive;font-size:20px;color:#1a1a1a;letter-spacing:1px">'+ev.name+'</div>'
+    +'<div style="display:inline-block;font-size:7px;font-weight:700;border-radius:5px;padding:2px 7px;background:'+ev.color+'15;color:'+ev.color+';border:1px solid '+ev.color+'30;margin-top:3px">SEMAINE '+week+'</div></div></div></div>'
+    +'<div style="font-size:11px;color:#374151;line-height:1.5;padding:12px 14px">'+ev.desc+'</div>'
+    +'<div style="padding:0 14px 4px;font-family:Bebas Neue,sans-serif;font-size:11px;color:#999;letter-spacing:2px">⏱ Fin dans '+timeToMonday()+'</div>'
+    +'<div style="padding:8px 14px 14px"><div class="btn" style="background:'+ev.color+'" onclick="location.href=\''+ev.link+'\'">'+ev.linkText+' →</div></div>';
 
-function getTimeToNextMonday(){
-  var now=new Date();
-  var day=now.getDay();var diff=(day===0?1:8-day);
-  var next=new Date(now);next.setDate(now.getDate()+diff);next.setHours(0,0,0,0);
-  var ms=next-now;
-  var d=Math.floor(ms/86400000);var h=Math.floor((ms%86400000)/3600000);
-  return d+'j '+h+'h';
-}
-
-function renderEvent(){
-  var ev=getCurrentEvent();
-  var hdr=document.getElementById('eventHeader');
-  hdr.innerHTML='<div style="display:flex;align-items:center;gap:12px"><div style="font-size:36px">'+ev.emoji+'</div><div style="flex:1"><div style="font-family:Bangers,cursive;font-size:20px;color:#1a1a1a;letter-spacing:1px">'+ev.name+'</div><div class="tag" style="background:'+ev.color+'15;color:'+ev.color+';border:1px solid '+ev.color+'30;margin-top:3px">SEMAINE '+getWeekNum()+'</div></div></div>';
-  
-  document.getElementById('eventDesc').textContent=ev.desc;
-  document.getElementById('eventCountdown').textContent='⏱ Fin dans '+getTimeToNextMonday();
-
-  var actH='<div class="btn" style="background:'+ev.color+'" onclick="location.href=\''+ev.link+'\'">'+ev.linkText+' →</div>';
-  document.getElementById('eventAction').innerHTML=actH;
-
-  // Rewards
-  var rH='';
-  ev.rewards.forEach(function(r){
-    rH+='<div class="reward-row"><div class="reward-medal">'+r.pos+'</div><div class="reward-info">'+r.text+'</div><div class="reward-prize">'+r.prize+'</div></div>';
-  });
-  document.getElementById('rewardsCard').innerHTML=rH;
-}
-
-async function loadLeaderboard(){
-  var ev=getCurrentEvent();
-  try{
-    var {data:all}=await sb.from('game_stats').select('user_id,records').not('records','is',null);
-    var {data:profiles}=await sb.from('profiles').select('user_id,username');
-    var pMap={};if(profiles)profiles.forEach(function(p){pMap[p.user_id]=p.username;});
-
-    var scores=[];
-    if(all)all.forEach(function(row){
-      var r=row.records||{};
-      var weekKey='week_'+getWeekNum();
-      var eventData=(r.syndicat&&r.syndicat[weekKey])||{};
-      var score=eventData[ev.scoreField]||0;
-      if(score>0)scores.push({user_id:row.user_id,name:pMap[row.user_id]||'?',score:score});
+  // Rewards card
+  var rw='';var medals=['🥇','🥈','🥉'];var labels=['1er','2ème','3ème'];
+  if(ev.collective){
+    rw='<div style="padding:10px 14px;display:flex;align-items:center;gap:8px"><div style="font-size:18px">🎯</div><div style="flex:1;font-size:10px;color:#374151">Objectif atteint → Tout le monde gagne</div><div style="font-family:Bebas Neue;font-size:13px;color:#d97706">+'+fm(ev.rewards[0][0])+'€ +'+ev.rewards[0][1]+'💎</div></div>';
+  }else{
+    ev.rewards.forEach(function(r,i){
+      rw+='<div style="padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:'+(i<ev.rewards.length-1?'1px solid #f3f4f6':'none')+'"><div style="font-size:18px">'+medals[i]+'</div><div style="flex:1;font-size:10px;color:#374151">'+labels[i]+'</div><div style="font-family:Bebas Neue;font-size:13px;color:#d97706">+'+fm(r[0])+'€ +'+r[1]+'💎</div></div>';
     });
+  }
+  document.getElementById('rewardsCard').innerHTML=rw;
 
-    // Sort
-    if(ev.invert)scores.sort(function(a,b){return a.score-b.score;});
-    else scores.sort(function(a,b){return b.score-a.score;});
+  // Load all scores
+  var scores=[];
+  var loadError=null;
+  try{
+    // Load profiles first
+    var {data:profs}=await sb.from('profiles').select('user_id,username');
+    var pm={};if(profs)profs.forEach(function(p){pm[p.user_id]=p.username;});
 
-    // Collective event
-    if(ev.collective){
-      var total=scores.reduce(function(s,x){return s+x.score;},0);
-      var pct=Math.min(100,Math.round(total/ev.collectiveGoal*100));
-      var h='<div style="padding:14px;text-align:center"><div style="font-family:Bangers,cursive;font-size:16px;color:#1a1a1a">OBJECTIF COLLECTIF</div>';
-      h+='<div style="font-family:Bebas Neue,sans-serif;font-size:28px;color:'+(pct>=100?'#16a34a':'#d97706')+'">'+fm(total)+' / '+fm(ev.collectiveGoal)+'</div>';
-      h+='<div style="height:8px;background:#f3f4f6;border-radius:4px;margin:8px 0;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(pct>=100?'#16a34a':'#d97706')+';border-radius:4px;transition:width .5s"></div></div>';
-      h+='<div style="font-size:9px;color:#999">'+scores.length+' participants · '+pct+'%</div>';
-      if(pct>=100)h+='<div style="margin-top:8px;font-size:11px;color:#16a34a;font-weight:700">🎉 OBJECTIF ATTEINT !</div>';
-      h+='</div>';
-      // Still show top contributors
-      h+='<div style="border-top:1px solid #f3f4f6;padding:6px 14px 2px;font-size:7px;font-weight:800;color:#999;letter-spacing:2px">TOP CONTRIBUTEURS</div>';
-      scores.slice(0,10).forEach(function(s,i){
-        var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-        var isMe=s.user_id===CU.id;
-        h+='<div class="rank-row" style="'+(isMe?'background:rgba(251,191,36,.06)':'')+'">';
-        h+='<div class="rank-pos" style="color:'+(i<3?'#d97706':'#9ca3af')+'">'+(medal||(i+1))+'</div>';
-        h+='<div class="rank-name">'+s.name+'</div>';
-        h+='<div class="rank-score">'+fm(s.score)+'</div></div>';
+    if(ev.useCompany){
+      // Use companies table for valuation-based events
+      var {data:cos}=await sb.from('companies').select('user_id,nom,emoji,valeur,color');
+      if(cos)cos.forEach(function(co){
+        if(co.valeur>0)scores.push({uid:co.user_id,name:co.nom||pm[co.user_id]||'?',score:co.valeur||0,emoji:co.emoji,color:co.color});
       });
-      document.getElementById('leaderboard').innerHTML=h;
+    }else if(ev.useCasino){
+      // Sum casino wins from casino_wins table
+      var {data:wins}=await sb.from('casino_wins').select('user_id,gain');
+      var totals={};
+      if(wins)wins.forEach(function(w){totals[w.user_id]=(totals[w.user_id]||0)+(w.gain||0);});
+      Object.keys(totals).forEach(function(uid){
+        if(totals[uid]>0)scores.push({uid:uid,name:pm[uid]||'?',score:totals[uid]});
+      });
     }else{
-      if(!scores.length){document.getElementById('leaderboard').innerHTML='<div style="padding:20px;text-align:center;color:#999;font-size:11px">Aucun participant encore. Sois le premier !</div>';return;}
-      var h='';
-      scores.slice(0,20).forEach(function(s,i){
-        var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-        var isMe=s.user_id===CU.id;
-        h+='<div class="rank-row" style="'+(isMe?'background:rgba(251,191,36,.06);border-left:3px solid #fbbf24':'')+'">';
-        h+='<div class="rank-pos" style="color:'+(i<3?'#d97706':'#9ca3af')+'">'+(medal||(i+1))+'</div>';
-        h+='<div class="rank-name">'+(isMe?'<b>'+s.name+'</b>':s.name)+'</div>';
-        h+='<div class="rank-score">'+s.score+(ev.unit==='s'?'s':ev.unit==='€'?'€':'')+'</div></div>';
-      });
-      document.getElementById('leaderboard').innerHTML=h;
+      // Use records from game_stats
+      var res=await sb.from('game_stats').select('user_id,records');
+      var all=res.data;
+      if(res.error)console.error('Query error:',res.error);
+      if(all){
+        all.forEach(function(row){
+          var rec=row.records;
+          if(!rec)return;
+          var s=ev.getScore(rec,row);
+          if(s>0)scores.push({uid:row.user_id,name:pm[row.user_id]||'?',score:s});
+        });
+      }
     }
+  }catch(e){loadError=e;console.error('Syndicat error:',e);}
 
-    // My participation
-    var myEntry=scores.find(function(s){return s.user_id===CU.id;});
-    if(myEntry){
-      document.getElementById('participationCard').style.display='block';
-      document.getElementById('myScore').textContent=ev.unit==='€'?fm(myEntry.score):myEntry.score;
-      document.getElementById('myScoreLabel').textContent=ev.scoreLabel;
+  // Sort
+  if(ev.invert)scores.sort(function(a,b){return a.score-b.score;});
+  else scores.sort(function(a,b){return b.score-a.score;});
+
+  // My score
+  var myIdx=scores.findIndex(function(s){return s.uid===CU.id;});
+  if(myIdx>=0){
+    var ms=scores[myIdx];
+    var medal=myIdx===0?'🥇':myIdx===1?'🥈':myIdx===2?'🥉':'';
+    document.getElementById('myCard').style.display='block';
+    document.getElementById('myCard').innerHTML=
+      '<div style="padding:14px;text-align:center">'
+      +'<div style="font-family:Bangers,cursive;font-size:14px;color:#999;letter-spacing:1px">TA POSITION</div>'
+      +'<div style="font-family:Bebas Neue;font-size:36px;color:'+ev.color+';margin-top:4px">'+(medal||'#'+(myIdx+1))+'</div>'
+      +'<div style="font-family:Bebas Neue;font-size:18px;color:#1a1a1a;margin-top:2px">'+ms.score+(ev.unit==='€'?'€':ev.unit==='s'?'s':' '+ev.unit)+'</div>'
+      +'<div style="font-size:8px;color:#999;font-weight:700;letter-spacing:1px;margin-top:2px">'+ev.label+'</div>'
+      +'</div>';
+  }
+
+  // Collective
+  if(ev.collective){
+    var total=scores.reduce(function(s,x){return s+x.score;},0);
+    var pct=Math.min(100,Math.round(total/ev.collectiveGoal*100));
+    var h='<div style="padding:14px;text-align:center"><div style="font-family:Bangers,cursive;font-size:16px;color:#1a1a1a">OBJECTIF COLLECTIF</div>';
+    h+='<div style="font-family:Bebas Neue;font-size:28px;color:'+(pct>=100?'#16a34a':'#d97706')+';margin-top:4px">'+fm(total)+'€ / '+fm(ev.collectiveGoal)+'€</div>';
+    h+='<div style="height:8px;background:#f3f4f6;border-radius:4px;margin:8px 20px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(pct>=100?'#16a34a':'#d97706')+';border-radius:4px"></div></div>';
+    h+='<div style="font-size:9px;color:#999">'+scores.length+' participants · '+pct+'%</div>';
+    if(pct>=100)h+='<div style="margin-top:6px;font-size:12px;color:#16a34a;font-weight:700">🎉 OBJECTIF ATTEINT !</div>';
+    h+='</div>';
+    scores.slice(0,10).forEach(function(s,i){
+      var isMe=s.uid===CU.id;
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid #f3f4f6;'+(isMe?'background:rgba(251,191,36,.06)':'')+'">';
+      h+='<div style="font-family:Bebas Neue;font-size:12px;color:#999;width:20px;text-align:center">'+(i+1)+'</div>';
+      h+='<div style="font-size:10px;font-weight:'+(isMe?'800':'600')+';color:#1a1a1a;flex:1">'+s.name+'</div>';
+      h+='<div style="font-family:Bebas Neue;font-size:12px;color:#d97706">'+fm(s.score)+'€</div></div>';
+    });
+    document.getElementById('leaderboard').innerHTML=h;
+  }else{
+    // Standard leaderboard
+    if(!scores.length){
+      document.getElementById('leaderboard').innerHTML='<div style="padding:20px;text-align:center;color:#999;font-size:11px">'+(loadError?'Erreur: '+loadError.message:'Aucun participant. Joue à un jeu et reviens !')+'</div>';
+      return;
     }
-  }catch(e){document.getElementById('leaderboard').innerHTML='<div style="padding:20px;text-align:center;color:#ef4444;font-size:11px">Erreur</div>';}
+    var h='';
+    scores.slice(0,20).forEach(function(s,i){
+      var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      var isMe=s.uid===CU.id;
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f3f4f6;'+(isMe?'background:rgba(251,191,36,.06);border-left:3px solid #fbbf24':'')+'">';
+      h+='<div style="font-family:Bebas Neue;font-size:14px;color:'+(i<3?'#d97706':'#9ca3af')+';width:22px;text-align:center">'+(medal||(i+1))+'</div>';
+      if(s.emoji)h+='<div style="width:28px;height:28px;border-radius:7px;background:'+(s.color||'#999')+';display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">'+s.emoji+'</div>';
+      h+='<div style="font-size:11px;font-weight:'+(isMe?'800':'600')+';color:#1a1a1a;flex:1">'+(isMe?'<b>'+s.name+'</b>':s.name)+'</div>';
+      h+='<div style="font-family:Bebas Neue;font-size:13px;color:'+ev.color+'">'+s.score+(ev.unit==='s'?'s':ev.unit==='€'?'€':'')+'</div>';
+      h+='</div>';
+    });
+    document.getElementById('leaderboard').innerHTML=h;
+  }
+
+  // ═══ CHECK LAST WEEK REWARDS ═══
+  await checkRewards(scores,ev);
 }
 
-function renderPastEvents(){
-  var currentWeek=getWeekNum();
-  var h='';
-  for(var w=currentWeek-1;w>=Math.max(1,currentWeek-4);w--){
-    var ev=EVENTS[w%EVENTS.length];
-    h+='<div class="past-event"><div style="font-size:22px">'+ev.emoji+'</div><div style="flex:1"><div style="font-size:11px;font-weight:800;color:#1a1a1a">'+ev.name+'</div><div style="font-size:8px;color:#999">Semaine '+w+'</div></div><div class="tag" style="background:#f3f4f6;color:#999;border:1px solid #e5e7eb">TERMINÉ</div></div>';
+async function checkRewards(scores,ev){
+  var {data:gs}=await sb.from('game_stats').select('records,money,diamonds').eq('user_id',CU.id).maybeSingle();
+  if(!gs)return;
+  var rec=gs.records||{};
+  rec.syndicat_rewards=rec.syndicat_rewards||{};
+  var lastWeek=getWeek()-1;
+  var lastKey='week_'+lastWeek;
+
+  // Already claimed this week's reward for last week?
+  if(rec.syndicat_rewards[lastKey])return;
+
+  // Get last week's event
+  var lastEv=EVENTS[lastWeek%EVENTS.length];
+
+  // Load last week's scores (we reuse current data if same event type, otherwise need fresh query)
+  // For simplicity, check if current scores can be used
+  var myRank=-1;
+  // We need to find last week's ranking. For persistent scores (grue_best, clark_best, company valeur), current data works.
+  // For weekly scores it's harder. Let's use current scores as approximation.
+  var myIdx=scores.findIndex(function(s){return s.uid===CU.id;});
+  if(myIdx<0)return; // Didn't participate
+
+  var rewardIdx=-1;
+  if(lastEv.collective){
+    // Collective: everyone gets reward if goal met
+    var total=scores.reduce(function(s,x){return s+x.score;},0);
+    if(total>=lastEv.collectiveGoal)rewardIdx=0;
+  }else{
+    if(myIdx<lastEv.rewards.length)rewardIdx=myIdx;
   }
-  if(h)document.getElementById('pastEvents').innerHTML=h;
+
+  if(rewardIdx<0)return;
+
+  var prize=lastEv.rewards[rewardIdx];
+  var moneyPrize=prize[0];
+  var diamondPrize=prize[1];
+
+  // Give reward
+  var newMoney=(gs.money||0)+moneyPrize;
+  var newDiamonds=(gs.diamonds||0)+diamondPrize;
+  rec.syndicat_rewards[lastKey]=true;
+  await sb.from('game_stats').update({money:newMoney,diamonds:newDiamonds,records:rec}).eq('user_id',CU.id);
+
+  // Show popup
+  var medals=['🥇','🥈','🥉','🎯'];
+  var medal=lastEv.collective?'🎯':medals[rewardIdx]||'🏆';
+  var popup=document.getElementById('rewardPopup');
+  document.getElementById('rewardContent').innerHTML=
+    '<div style="font-size:48px">'+medal+'</div>'
+    +'<div style="font-family:Bangers,cursive;font-size:22px;color:#1a1a1a;margin-top:6px">RÉCOMPENSE !</div>'
+    +'<div style="font-size:11px;color:#999;margin-top:4px">'+lastEv.name+' — Semaine '+(lastWeek)+'</div>'
+    +'<div style="margin-top:12px;background:#f0fdf4;border-radius:12px;padding:12px">'
+    +'<div style="font-family:Bebas Neue;font-size:24px;color:#16a34a">+'+fm(moneyPrize)+'€</div>'
+    +'<div style="font-family:Bebas Neue;font-size:18px;color:#d97706;margin-top:2px">+'+diamondPrize+' 💎</div>'
+    +'</div>'
+    +'<div class="btn" style="background:#1a1a1a;margin-top:14px" onclick="document.getElementById(\'rewardPopup\').style.display=\'none\'">MERCI !</div>';
+  popup.style.display='flex';
 }
 
 (async function(){
   var r=await sb.auth.getSession();var s=r.data&&r.data.session;
   if(!s){location.href='index.html';return;}CU=s.user;
-  renderEvent();
-  renderPastEvents();
-  await loadLeaderboard();
+  await loadAll();
 })();
+// Auto-refresh when returning to page (back button)
+window.addEventListener('pageshow',function(e){if(e.persisted&&CU)loadAll();});
 </script>
 </body>
 </html>
