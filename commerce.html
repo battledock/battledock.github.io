@@ -305,6 +305,27 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
       <div class="action-right">→</div>
     </div>
+    <!-- OBJECTIFS QUOTIDIENS -->
+    <div class="action-card" onclick="toggleObj()" id="obj-card" style="border-left:4px solid #fbbf24">
+      <div class="action-ico">📋</div>
+      <div class="action-info">
+        <div class="action-title">OBJECTIFS DU JOUR</div>
+        <div class="action-sub" id="obj-sub">0/3 complétés</div>
+      </div>
+      <div class="action-right" id="obj-arrow">→</div>
+    </div>
+    <div id="obj-body" style="display:none;padding:0 16px 8px"></div>
+
+    <!-- MARCHÉ & CHAT -->
+    <div class="action-card" onclick="location.href='marche.html'">
+      <div class="action-ico">🤝</div>
+      <div class="action-info">
+        <div class="action-title">MARCHÉ & MESSAGERIE</div>
+        <div class="action-sub">Trade de ressources & discussion</div>
+      </div>
+      <div class="action-right">→</div>
+    </div>
+
     <!-- CLASSEMENT -->
     <div class="action-card" onclick="toggleRank()" id="rank-card">
       <div class="action-ico">🏆</div>
@@ -1289,6 +1310,106 @@ async function startApp(){
 }
 document.addEventListener('DOMContentLoaded',function(){startApp();});
 if(document.readyState==='complete'||document.readyState==='interactive'){startApp();}
+
+// ══ OBJECTIFS QUOTIDIENS ══
+var MISSIONS=[
+  {id:'collect',label:'Collecter tes revenus',icon:'📥',check:function(d){return d.collected||false;}},
+  {id:'invest',label:'Investir dans ton entreprise',icon:'💰',check:function(d){return d.invested||false;}},
+  {id:'visit_zones',label:'Visiter les Zones du Port',icon:'🗺️',check:function(d){return d.visited_zones||false;}},
+  {id:'pay_tax',label:'Payer une taxe de zone',icon:'💸',check:function(d){return d.paid_tax||false;}},
+  {id:'check_rank',label:'Consulter le classement',icon:'🏆',check:function(d){return d.checked_rank||false;}},
+  {id:'login',label:'Se connecter aujourd\'hui',icon:'✅',check:function(){return true;}},
+];
+var objOpen=false;
+var dailyData={};
+
+function todayStr(){return new Date().toISOString().split('T')[0];}
+
+function getDailyMissions(dateStr){
+  // Seed random from date string for consistent daily missions
+  var seed=0;for(var i=0;i<dateStr.length;i++)seed=((seed<<5)-seed)+dateStr.charCodeAt(i);
+  seed=Math.abs(seed);
+  var pool=MISSIONS.slice();
+  var picked=[];
+  for(var i=0;i<3;i++){
+    var idx=seed%(pool.length);
+    picked.push(pool.splice(idx,1)[0]);
+    seed=Math.floor(seed/7)+i;
+  }
+  return picked;
+}
+
+function toggleObj(){
+  objOpen=!objOpen;
+  document.getElementById('obj-body').style.display=objOpen?'block':'none';
+  document.getElementById('obj-arrow').textContent=objOpen?'↓':'→';
+  if(objOpen)renderObj();
+}
+
+async function renderObj(){
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  var daily=com.daily||{};
+  var dt=todayStr();
+  if(daily.date!==dt){daily={date:dt,progress:{},claimed:false};}
+  dailyData=daily;
+
+  var missions=getDailyMissions(dt);
+  var done=0;
+  var h='';
+  missions.forEach(function(m){
+    var ok=m.check(daily.progress||{});
+    if(ok)done++;
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;margin-bottom:4px;background:'+(ok?'rgba(74,222,128,.06)':'rgba(0,0,0,.02)')+';border:1px solid '+(ok?'#bbf7d0':'#f3f4f6')+'">';
+    h+='<div style="font-size:18px">'+m.icon+'</div>';
+    h+='<div style="flex:1;font-size:11px;color:'+(ok?'#16a34a':'#374151')+';font-weight:'+(ok?'800':'600')+'">'+(ok?'✅ ':'')+m.label+'</div>';
+    h+='</div>';
+  });
+
+  // Reward
+  if(done>=3&&!daily.claimed){
+    h+='<div onclick="claimDaily()" style="margin-top:6px;padding:12px;text-align:center;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-family:Bangers,cursive;font-size:14px;color:#1a1a1a;letter-spacing:1px;box-shadow:2px 2px 0 #1a1a1a">🎁 RÉCUPÉRER LA RÉCOMPENSE — +10 000€</div>';
+  }else if(daily.claimed){
+    h+='<div style="margin-top:6px;padding:10px;text-align:center;background:#f0fdf4;border-radius:10px;font-size:11px;color:#16a34a;font-weight:700">✅ Récompense récupérée aujourd\'hui !</div>';
+  }else{
+    h+='<div style="margin-top:6px;padding:10px;text-align:center;background:#f9fafb;border-radius:10px;font-size:10px;color:#9ca3af">Complète les 3 objectifs pour débloquer la récompense</div>';
+  }
+
+  document.getElementById('obj-body').innerHTML=h;
+  document.getElementById('obj-sub').textContent=done+'/3 complétés'+(daily.claimed?' ✅':'');
+}
+
+async function claimDaily(){
+  dailyData.claimed=true;
+  money+=10000;
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  com.daily=dailyData;
+  await sb.from('game_stats').update({money:money,commerce:com}).eq('user_id',currentUser.id);
+  toast('🎁 +10 000€ !');
+  renderObj();
+  loadDashboard();
+}
+
+// Track objectives completion
+async function trackObj(key){
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  var daily=com.daily||{};
+  if(daily.date!==todayStr())daily={date:todayStr(),progress:{},claimed:false};
+  daily.progress=daily.progress||{};
+  daily.progress[key]=true;
+  com.daily=daily;
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+}
+
+// Hook into existing functions
+var _origCollect=window.collecterRevenus;
+window.collecterRevenus=async function(){await _origCollect.apply(this,arguments);trackObj('collected');};
+var _origInvest=window.investir;
+window.investir=async function(){await _origInvest.apply(this,arguments);trackObj('invested');};
+var _origRank=window.toggleRank;
+window.toggleRank=function(){_origRank.apply(this,arguments);trackObj('checked_rank');};
 
 // ══ CLASSEMENT ══
 var rankOpen=false;
