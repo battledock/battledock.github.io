@@ -308,7 +308,17 @@ body{
 .bourse-tape-item .up{color:#86efac;}
 .bourse-tape-item .down{color:#fca5a5;}
 
-/* Syndicat (B — flamme + événements) */
+/* Gazette */
+@keyframes gazetteTick{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes gazetteP{0%,100%{opacity:.3}50%{opacity:1}}
+/* Dialogue D4 */
+#dialogueD4{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+14px);right:14px;z-index:40;max-width:210px;background:#fff;border:2px solid #1a1a1a;border-radius:12px;box-shadow:2px 2px 0 #1a1a1a;padding:8px 10px;opacity:0;transition:opacity .4s;pointer-events:none}
+#dialogueD4.show{opacity:1}
+.d4-flag{display:inline-block;background:#cc1a1a;color:#fff;font-size:6px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:1px;margin-bottom:5px}
+.d4-row{display:flex;align-items:flex-end;gap:8px}
+.d4-bubble{background:#f5f0e8;border-radius:8px 8px 8px 2px;padding:6px 8px;font-size:9px;color:#374151;font-style:italic;line-height:1.3;flex:1}
+.d4-name{font-family:'Bangers',cursive;font-size:7px;color:#9ca3af;margin-top:4px;letter-spacing:.5px;text-align:right}
+/* Syndicat */
 .widget-syndicat{
   background:linear-gradient(180deg,#fbbf24,#f59e0b,#d97706);
   display:flex;flex-direction:column;
@@ -536,6 +546,18 @@ body{
 <!-- ═══ CONTENU ═══ -->
 <div class="page-content">
 
+  <!-- ═══ GAZETTE DU PORT ═══ -->
+  <div style="grid-column:span 2;margin:0;overflow:hidden;background:#fff;border-bottom:2px solid #e5e7eb">
+    <div style="background:#cc1a1a;padding:5px 12px;display:flex;align-items:center;gap:8px">
+      <div style="font-family:'Bangers',cursive;font-size:13px;color:#fff;letter-spacing:2px">📰 LA GAZETTE DU PORT</div>
+      <div style="font-size:7px;color:rgba(255,255,255,.5);margin-left:auto;font-weight:700;letter-spacing:1px">EN DIRECT</div>
+      <div style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:gazetteP 1.5s ease infinite"></div>
+    </div>
+    <div style="overflow:hidden;padding:6px 0">
+      <div id="gazetteTicker" style="display:flex;gap:0;white-space:nowrap;animation:gazetteTick 35s linear infinite"></div>
+    </div>
+  </div>
+
   <!-- PWA INSTALL BANNER -->
   <div id="installBanner" style="display:none;grid-column:span 2">
     <div style="background:#fefce8;border:2.5px solid #1a1a1a;border-radius:14px;box-shadow:3px 3px 0 #1a1a1a;padding:12px;position:relative">
@@ -564,20 +586,6 @@ body{
     <div class="work-content">
       <div class="work-title">TRAVAILLER</div>
       <div class="work-sub">⚓ Port de Marseille</div>
-    </div>
-  </div>
-
-  <!-- BANNIÈRE MISE À JOUR -->
-  <div style="grid-column:span 2;margin:0;padding:0 2px">
-    <div style="background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:16px;padding:14px 16px;position:relative;overflow:hidden">
-      <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:radial-gradient(circle,rgba(129,140,248,.15),transparent);border-radius:50%"></div>
-      <div style="position:absolute;bottom:-10px;left:30%;width:60px;height:60px;background:radial-gradient(circle,rgba(251,191,36,.1),transparent);border-radius:50%"></div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="background:rgba(129,140,248,.2);padding:2px 8px;border-radius:8px;font-family:'Bebas Neue',sans-serif;font-size:11px;color:#818cf8;letter-spacing:1px">NOUVEAU</div>
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;letter-spacing:1px">MISE À JOUR 1.3</div>
-      </div>
-      <div style="font-size:11px;color:rgba(255,255,255,.6);line-height:1.5">🎓 Sondage gratuit disponible dans l'École des Dockers<br><span style="color:#4ade80;font-weight:700">+15 000€ et +1 000 XP offerts !</span></div>
-      <div onclick="location.href='miseajour.html'" style="display:inline-block;margin-top:8px;padding:6px 14px;border-radius:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font-size:10px;font-weight:700;color:rgba(255,255,255,.5);cursor:pointer;letter-spacing:.5px">En savoir plus →</div>
     </div>
   </div>
 
@@ -1229,7 +1237,82 @@ function closePopup(){
     document.getElementById('popupBanner').classList.add('show');
   },2000);
 })();
+
+// ═══ GAZETTE DU PORT ═══
+async function loadGazette(){
+  var items=[];
+  try{
+    // Casino wins
+    var {data:wins}=await sb.from('casino_wins').select('username,gain').order('created_at',{ascending:false}).limit(5);
+    if(wins)wins.forEach(function(w){if(w.gain>0)items.push('🎰 <b>'+w.username+'</b> a gagné '+fmtM(w.gain)+'€ au casino');});
+    // Top records
+    var {data:gs}=await sb.from('game_stats').select('user_id,records,level').order('level',{ascending:false}).limit(10);
+    var {data:profs}=await sb.from('profiles').select('user_id,username');
+    var pm={};if(profs)profs.forEach(function(p){pm[p.user_id]=p.username;});
+    if(gs)gs.forEach(function(g){
+      var r=g.records||{};var n=pm[g.user_id]||'Un docker';
+      if(r.grue_best>0)items.push('🏗️ <b>'+n+'</b> a scoré '+r.grue_best+' pts à la grue');
+      if(r.clark_best>0)items.push('🏎️ <b>'+n+'</b> a fait '+r.clark_best+'s aux Clarks');
+      if(r.cards&&Object.keys(r.cards).length>0)items.push('🃏 <b>'+n+'</b> possède '+Object.keys(r.cards).length+' cartes');
+    });
+    // Companies
+    var {data:cos}=await sb.from('companies').select('nom,valeur').order('valeur',{ascending:false}).limit(3);
+    if(cos)cos.forEach(function(c){if(c.valeur>0)items.push('💰 <b>'+c.nom+'</b> vaut '+fmtM(c.valeur)+'€');});
+  }catch(e){}
+
+  // Fallback phrases
+  var fallback=['⚓ Le port de Marseille ne dort jamais','🌊 Mistral annoncé cette nuit sur le port','🐟 Arrivée d\'une cargaison de sardines géantes','📦 Container 13B toujours scellé...','☀️ Belle journée sur les quais','🚢 Le Mistral II accoste dans 2 heures'];
+  if(items.length<3)items=items.concat(fallback);
+
+  // Shuffle
+  items.sort(function(){return Math.random()-.5;});
+  // Duplicate for infinite loop
+  var all=items.concat(items);
+  var html=all.map(function(t){return '<div style="padding:0 20px;font-size:10px;color:#374151;display:inline-flex;align-items:center;gap:4px;border-right:1px solid #e5e7eb">'+t+'</div>';}).join('');
+  var el=document.getElementById('gazetteTicker');
+  if(el){el.innerHTML=html;var totalW=el.scrollWidth/2;el.style.animation='none';el.style.transform='';setTimeout(function(){el.style.animation='gazetteTick '+(Math.max(30,items.length*5))+'s linear infinite';},50);}
+}
+loadGazette();
+setInterval(loadGazette,120000);
+
+// ═══ DIALOGUE D4 ═══
+var DIALOGUES=[
+  {e:'👷',name:'GÉGÉ · Quai Nord',text:'"Allez les gars, on bouge ! Le container arrive !"'},
+  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Doucement Bertha... doucement ma belle."'},
+  {e:'🤗',name:'DOUDOU · Partout',text:'"T\'inquiète frangin, je gère tout !"'},
+  {e:'😴',name:'TITOUAN · Salle de pause',text:'"Cinq minutes... juste cinq minutes..."'},
+  {e:'📋',name:'MICKAËL · Bureau',text:'"C\'est dans le règlement, article 12."'},
+  {e:'🐟',name:'VENDEUR · Quai Sud',text:'"Fraîches mes sardines ! Fraîches ce matin !"'},
+  {e:'👷',name:'GÉGÉ · Hangar B',text:'"Trente ans ici. J\'en ai vu d\'autres."'},
+  {e:'🗣️',name:'JEFF · Grue n°3',text:'"Elle m\'a encore parlé ce matin, Bertha."'},
+  {e:'🤗',name:'DOUDOU · Cantine',text:'"J\'ai commandé l\'aïoli pour tout le monde !"'},
+  {e:'😴',name:'TITOUAN · Hangar A',text:'"C\'est pas moi qui ai cassé ça... je dormais."'},
+  {e:'📋',name:'MICKAËL · Ronde',text:'"Je note. Je note tout."'},
+  {e:'👷',name:'GÉGÉ · Quai Est',text:'"Le port, c\'est une famille. Une famille qui crie fort."'},
+];
+var dlgTimer=null;
+function showDialogue(){
+  if(document.querySelector('.ov.show'))return;
+  var d=DIALOGUES[Math.floor(Math.random()*DIALOGUES.length)];
+  var el=document.getElementById('dialogueD4');
+  document.getElementById('d4Emoji').textContent=d.e;
+  document.getElementById('d4Text').textContent=d.text;
+  document.getElementById('d4Name').textContent=d.name;
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},5000);
+}
+setTimeout(showDialogue,8000);
+setInterval(showDialogue,60000);
 </script>
 
+<!-- DIALOGUE D4 -->
+<div id="dialogueD4">
+  <div class="d4-flag" id="d4Flag">EN CE MOMENT</div>
+  <div class="d4-row">
+    <div id="d4Emoji" style="font-size:24px">👷</div>
+    <div class="d4-bubble" id="d4Text">...</div>
+  </div>
+  <div class="d4-name" id="d4Name">GÉGÉ · Quai Nord</div>
+</div>
 </body>
 </html>
