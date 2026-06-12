@@ -235,7 +235,7 @@
 <div class="page">
 
   <!-- Music button -->
-  <div class="music-btn" id="menuDots" onclick="openDotMenu()" style="font-size:14px;letter-spacing:2px;color:rgba(255,255,255,.4)">⋮</div>
+  <div id="menuDots" onclick="openDotMenu()" ontouchstart="event.stopPropagation()" style="position:fixed;top:calc(env(safe-area-inset-top,0px)+10px);right:12px;z-index:50;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.25);border:1.5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;letter-spacing:2px;color:rgba(255,255,255,.4)">⋮</div>
 
   <!-- Header -->
   <div class="hdr">
@@ -538,7 +538,6 @@
     startCalibration();
     startComboDecay();
     setInterval(save, 10000);
-    loadMusicPrefs();
   }
 
 // ═══ MUSIC (for dot menu) ═══
@@ -556,27 +555,10 @@ function selectMusic(id){
   _selectedMusic=id;
   var track=MUSIC_CATALOG.find(function(m){return m.id===id;});
   if(_bgMusic){_bgMusic.pause();_bgMusic=null;}
-  var btn=document.getElementById('menuDots');
-  if(btn)btn.classList.remove('playing');
   if(track&&track.file){
     _bgMusic=new Audio(track.file);_bgMusic.loop=true;_bgMusic.volume=0.2;
     _bgMusic.play().catch(function(){});
-    if(btn)btn.classList.add('playing');
   }
-}
-async function loadMusicPrefs(){
-  if(!window.currentUser)return;
-  try{
-    var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
-    if(gs.data&&gs.data.records){
-      var rec=gs.data.records;
-      if(rec.unlocked_packs){
-        _unlockedMusic=['none'];
-        MUSIC_CATALOG.forEach(function(m){if(m.id!=='none'&&rec.unlocked_packs.indexOf(m.id)!==-1)_unlockedMusic.push(m.id);});
-      }
-      if(rec.selected_music){_selectedMusic=rec.selected_music;selectMusic(_selectedMusic);}
-    }
-  }catch(e){}
 }
 window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();});
 
@@ -982,11 +964,12 @@ function applyBgTheme(id){
 @keyframes efConf{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--dx),-60px) rotate(var(--rot))}}
 @keyframes efBub{0%{opacity:.6;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-80px) scale(1.5)}}
 @keyframes efFire{0%{opacity:.8;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(-50px) scale(0)}}
+@keyframes menuUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 </style>
 
 <!-- Three Dots Menu -->
-<div class="music-overlay" id="dotMenuOv" onclick="if(event.target===this)closeDotMenu()">
-  <div class="music-sheet" style="background:#fff;color:#1a1a1a">
+<div id="dotMenuOv" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)" onclick="if(event.target===this)closeDotMenu()" ontouchstart="event.stopPropagation()">
+  <div style="background:#fff;color:#1a1a1a;border-radius:22px 22px 0 0;width:100%;max-width:400px;padding:8px 16px calc(env(safe-area-inset-bottom,20px)+12px);animation:menuUp .25s ease" ontouchstart="event.stopPropagation()">
     <div style="width:36px;height:4px;border-radius:2px;background:#e5e7eb;margin:4px auto 12px"></div>
     <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;text-align:center;color:#9ca3af;margin-bottom:12px">PERSONNALISATION</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="dotMenuGrid">
@@ -1076,12 +1059,15 @@ async function saveCosmPrefs(){
   if(!window.currentUser||!window._sb)return;
   try{
     var gs=await window._sb.from('game_stats').select('records').eq('user_id',window.currentUser.id).maybeSingle();
-    if(gs.data){var rec=gs.data.records||{};
-      rec.click_effect=_equipped.effet;rec.bg_theme=_equipped.fond;rec.selected_music=_equipped.musique;
+    if(gs.data){
+      var rec=gs.data.records||{};
+      rec.click_effect=_equipped.effet;
+      rec.bg_theme=_equipped.fond;
+      rec.selected_music=_equipped.musique;
       await window._sb.from('game_stats').update({records:rec}).eq('user_id',window.currentUser.id);
-      await window._sb.from('profiles').update({skin_container:_equipped.skin}).eq('user_id',window.currentUser.id);
     }
-  }catch(e){}
+    await window._sb.from('profiles').update({skin_container:_equipped.skin}).eq('user_id',window.currentUser.id);
+  }catch(e){console.error('saveCosmPrefs error',e);}
 }
 
 async function loadDotMenuPrefs(){
@@ -1095,11 +1081,20 @@ async function loadDotMenuPrefs(){
       _equipped.effet=rec.click_effect||'standard';
       _equipped.fond=rec.bg_theme||'jour';
       _equipped.musique=rec.selected_music||'none';
+      // Sync unlocked music
+      _unlockedMusic=['none'];
+      MUSIC_CATALOG.forEach(function(m){if(m.id!=='none'&&_ownedItems.indexOf(m.id)!==-1)_unlockedMusic.push(m.id);});
+      // Apply cosmetics
+      window._clickEffect=_equipped.effet;
+      if(typeof applyBgTheme==='function')applyBgTheme(_equipped.fond);
+      // Autoplay music
+      if(_equipped.musique&&_equipped.musique!=='none'&&_unlockedMusic.indexOf(_equipped.musique)!==-1){
+        selectMusic(_equipped.musique);
+      }
     }
-  }catch(e){}
+  }catch(e){console.error('loadDotMenu error',e);}
 }
-// Load on init
-var _dotReady=setInterval(function(){if(window.currentUser){clearInterval(_dotReady);loadDotMenuPrefs();}},200);
+var _dotReady=setInterval(function(){if(window.currentUser&&window._sb){clearInterval(_dotReady);loadDotMenuPrefs();}},300);
 </script>
 </body>
 </html>
