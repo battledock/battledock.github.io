@@ -532,12 +532,12 @@ body{
         </div>
       </div>
       <!-- XP Bar -->
-      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:1px" id="xpLevelLabel">NV.1</div>
-        <div style="flex:1;height:4px;background:rgba(0,0,0,.2);border-radius:2px;overflow:hidden">
-          <div id="xpBarFill" style="height:100%;width:0%;background:#fbbf24;border-radius:2px;transition:width .5s ease"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:#d97706;letter-spacing:1px" id="xpLevelLabel">NV.1</div>
+        <div style="flex:1;height:5px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden">
+          <div id="xpBarFill" style="height:100%;width:0%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px;transition:width .5s ease"></div>
         </div>
-        <div style="font-size:8px;color:rgba(255,255,255,.3);font-weight:700" id="xpCountLabel">0/500</div>
+        <div style="font-size:8px;color:#9ca3af;font-weight:700" id="xpCountLabel">0/500</div>
       </div>
     </div>
   </div>
@@ -866,6 +866,18 @@ async function init(){
     // FIX #8 : streak avec date locale (plus UTC)
     checkStreak(uid,stats,money,diamonds);
     checkPWAInstall(uid,money,stats.trophies||0);
+
+    // Refresh money after async operations (streak/PWA might update it)
+    setTimeout(async function(){
+      try{
+        var fresh=await sb.from('game_stats').select('money,diamonds,trophies').eq('user_id',uid).maybeSingle();
+        if(fresh.data){
+          document.getElementById('moneyBar').textContent=Math.floor(fresh.data.money||0).toLocaleString('fr-FR')+'€';
+          document.getElementById('diamondBar').textContent=Math.floor(fresh.data.diamonds||0).toLocaleString('fr-FR');
+          document.getElementById('trophyBar').textContent=fresh.data.trophies||0;
+        }
+      }catch(e){}
+    },2000);
 
     startPlaytimeTracking(uid);
     loadRank(uid);
