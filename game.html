@@ -1244,7 +1244,7 @@ async function loadGazette(){
   try{
     // Casino wins
     var {data:wins}=await sb.from('casino_wins').select('username,gain').order('created_at',{ascending:false}).limit(5);
-    if(wins)wins.forEach(function(w){if(w.gain>0)items.push('🎰 <b>'+w.username+'</b> a gagné '+fmtM(w.gain)+'€ au casino');});
+    if(wins)wins.forEach(function(w){if(w.gain>0)items.push('🎰 <b>'+w.username+'</b> a gagné '+(w.gain>=1000?Math.floor(w.gain/1000)+'k':w.gain)+'€ au casino');});
     // Top records
     var {data:gs}=await sb.from('game_stats').select('user_id,records,level').order('level',{ascending:false}).limit(10);
     var {data:profs}=await sb.from('profiles').select('user_id,username');
@@ -1257,20 +1257,20 @@ async function loadGazette(){
     });
     // Companies
     var {data:cos}=await sb.from('companies').select('nom,valeur').order('valeur',{ascending:false}).limit(3);
-    if(cos)cos.forEach(function(c){if(c.valeur>0)items.push('💰 <b>'+c.nom+'</b> vaut '+fmtM(c.valeur)+'€');});
+    if(cos)cos.forEach(function(c){if(c.valeur>0)items.push('💰 <b>'+c.nom+'</b> vaut '+(c.valeur>=1e6?(c.valeur/1e6).toFixed(1)+'M':c.valeur>=1000?Math.floor(c.valeur/1000)+'k':c.valeur)+'€');});
   }catch(e){}
 
   // Fallback phrases
   var fallback=['⚓ Le port de Marseille ne dort jamais','🌊 Mistral annoncé cette nuit sur le port','🐟 Arrivée d\'une cargaison de sardines géantes','📦 Container 13B toujours scellé...','☀️ Belle journée sur les quais','🚢 Le Mistral II accoste dans 2 heures'];
   if(items.length<3)items=items.concat(fallback);
 
-  // Shuffle
+  // Shuffle + limit
   items.sort(function(){return Math.random()-.5;});
-  // Duplicate for infinite loop
+  items=items.slice(0,5);
   var all=items.concat(items);
   var html=all.map(function(t){return '<div style="padding:0 20px;font-size:10px;color:#374151;display:inline-flex;align-items:center;gap:4px;border-right:1px solid #e5e7eb">'+t+'</div>';}).join('');
   var el=document.getElementById('gazetteTicker');
-  if(el){el.innerHTML=html;var totalW=el.scrollWidth/2;el.style.animation='none';el.style.transform='';setTimeout(function(){el.style.animation='gazetteTick '+(Math.max(30,items.length*5))+'s linear infinite';},50);}
+  if(el){el.innerHTML=html;var totalW=el.scrollWidth/2;el.style.animation='none';el.style.transform='';setTimeout(function(){el.style.animation='gazetteTick 20s linear infinite';},50);}
 }
 loadGazette();
 setInterval(loadGazette,120000);
@@ -1362,7 +1362,7 @@ var DIALOGUES=[
 ];
 var dlgTimer=null;
 function showDialogue(){
-  if(document.querySelector('.ov.show'))return;
+  if(document.querySelector('.popup-overlay.show,.lvlup-overlay'))return;
   var d=DIALOGUES[Math.floor(Math.random()*DIALOGUES.length)];
   var el=document.getElementById('dialogueD4');
   document.getElementById('d4Emoji').textContent=d.e;
@@ -1371,7 +1371,7 @@ function showDialogue(){
   el.classList.add('show');
   setTimeout(function(){el.classList.remove('show');},5000);
 }
-setTimeout(showDialogue,8000);
+setTimeout(showDialogue,4000);
 setInterval(showDialogue,60000);
 </script>
 
