@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Résultats Sondage — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:#f5f5f7;color:#1a1a1a;padding-bottom:80px}
+.header{padding:calc(env(safe-area-inset-top,0px)+10px) 14px 10px;background:#fff;border-bottom:1px solid #eee;display:flex;align-items:center;gap:10px}
+.header-back{width:28px;height:28px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;font-weight:800;color:#6b7280}
+.header-title{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;flex:1}
+.header-count{font-size:11px;font-weight:800;color:#6366f1}
+.stats{padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.stat{background:#fff;border-radius:12px;padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a}
+.stat-lbl{font-size:8px;font-weight:700;color:#9ca3af;letter-spacing:1px;margin-top:2px}
+.section{padding:14px 16px 6px;font-size:10px;font-weight:800;color:#9ca3af;letter-spacing:2px}
+.chart{background:#fff;margin:0 16px 8px;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.chart-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;margin-bottom:10px}
+.chart-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.chart-label{font-size:10px;font-weight:700;color:#6b7280;width:100px;flex-shrink:0}
+.chart-bar-wrap{flex:1;height:16px;background:#f3f4f6;border-radius:8px;overflow:hidden;position:relative}
+.chart-bar{height:100%;border-radius:8px;transition:width .5s}
+.chart-pct{font-size:9px;font-weight:800;color:#6b7280;width:30px;text-align:right;flex-shrink:0}
+.freetext-list{background:#fff;margin:0 16px 8px;border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.freetext-item{padding:8px 10px;border-radius:8px;background:#f9fafb;margin-bottom:6px;font-size:11px;color:#374151;line-height:1.5;border-left:3px solid #6366f1}
+.freetext-user{font-size:8px;font-weight:700;color:#9ca3af;margin-top:3px}
+.loading{text-align:center;padding:40px;color:#9ca3af;font-size:12px}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-back" onclick="history.back()">←</div>
+  <div class="header-title">📋 RÉSULTATS SONDAGE</div>
+  <div class="header-count" id="totalCount">—</div>
+</div>
+<div class="stats">
+  <div class="stat"><div class="stat-val" id="statTotal">0</div><div class="stat-lbl">RÉPONSES</div></div>
+  <div class="stat"><div class="stat-val" id="statNote">—</div><div class="stat-lbl">NOTE MOY.</div></div>
+  <div class="stat"><div class="stat-val" id="statStars">—</div><div class="stat-lbl">⭐ / 5</div></div>
+</div>
+<div id="results"><div class="loading">Chargement...</div></div>
+
+<script>
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+
+var QUESTIONS={
+  decouverte:{title:'Comment t\'as débarqué ?',color:'#3b82f6',labels:{ami:'Pote',reseaux:'Réseaux',hasard:'Hasard',oubli:'Oublié',recherche:'Recherche'}},
+  activite_pref:{title:'Activité préférée',color:'#22c55e',labels:{clicker:'Clicker',grue:'Grue',casino:'Casino',classement:'Classement',minijeux:'Mini-jeux',histoire:'Histoire',style:'Style'}},
+  souhait:{title:'Feature souhaitée',color:'#f59e0b',labels:{pvp:'PvP 1v1',housing:'Appart',jeux:'Mini-jeux',peche:'Pêche',chat:'Chat',guildes:'Guildes',casino:'Casino',metiers:'Métiers',avatar:'Avatar'}},
+  temps:{title:'Temps de jeu',color:'#a855f7',labels:{rapide:'2 min',moyen:'10-15 min',long:'30 min',addict:'∞','5min':'5 min','15min':'15 min','30min':'30 min',infini:'∞'}},
+  kif:{title:'Ce qui fait revenir',color:'#ec4899',labels:{clicker:'Clicker',minijeux:'Mini-jeux',histoire:'Histoire',style:'Style'}},
+  manque:{title:'Ce qui manque',color:'#06b6d4',labels:{pvp:'PvP',chat:'Chat',plus_jeux:'+ jeux',guildes:'Guildes'}},
+  feature_future:{title:'Feature future',color:'#f97316',labels:{casino:'Casino',metiers:'Métiers',avatar:'Avatar',housing:'Housing'}},
+};
+
+(async function(){
+  var s=await sb.auth.getSession();
+  if(!s.data.session){location.href='index.html';return;}
+  
+  // Get all surveys
+  var res=await sb.from('game_stats').select('user_id,records').not('records','is',null);
+  var profiles=await sb.from('profiles').select('user_id,username');
+  var pMap={};if(profiles.data)profiles.data.forEach(function(p){pMap[p.user_id]=p.username;});
+  
+  var surveys=[];
+  if(res.data)res.data.forEach(function(gs){
+    if(gs.records&&gs.records.survey)surveys.push({user:pMap[gs.user_id]||'?',data:gs.records.survey});
+  });
+  
+  if(!surveys.length){document.getElementById('results').innerHTML='<div class="loading">Aucune réponse pour le moment</div>';return;}
+  
+  document.getElementById('statTotal').textContent=surveys.length;
+  document.getElementById('totalCount').textContent=surveys.length+' réponses';
+  
+  // Average note
+  var notes=surveys.filter(function(s){return s.data.note;}).map(function(s){return s.data.note;});
+  if(notes.length){
+    var avg=(notes.reduce(function(a,b){return a+b;},0)/notes.length).toFixed(1);
+    document.getElementById('statNote').textContent=avg;
+    document.getElementById('statStars').textContent='⭐'.repeat(Math.round(avg));
+  }
+  
+  var html='';
+  
+  // Charts for each question
+  for(var key in QUESTIONS){
+    var q=QUESTIONS[key];
+    var counts={};
+    surveys.forEach(function(s){
+      var v=s.data[key];if(v){counts[v]=(counts[v]||0)+1;}
+    });
+    if(Object.keys(counts).length===0)continue;
+    
+    var total=Object.values(counts).reduce(function(a,b){return a+b;},0);
+    var sorted=Object.entries(counts).sort(function(a,b){return b[1]-a[1];});
+    
+    html+='<div class="section">'+q.title.toUpperCase()+'</div>';
+    html+='<div class="chart"><div class="chart-title">'+q.title+'</div>';
+    sorted.forEach(function(e){
+      var pct=Math.round(e[1]/total*100);
+      var label=q.labels[e[0]]||e[0];
+      html+='<div class="chart-row"><div class="chart-label">'+label+'</div><div class="chart-bar-wrap"><div class="chart-bar" style="width:'+pct+'%;background:'+q.color+'"></div></div><div class="chart-pct">'+pct+'%</div></div>';
+    });
+    html+='</div>';
+  }
+  
+  // Free text responses
+  var freeTexts=surveys.filter(function(s){return s.data.souhait_libre;});
+  if(freeTexts.length){
+    html+='<div class="section">💬 SUGGESTIONS LIBRES</div>';
+    html+='<div class="freetext-list">';
+    freeTexts.forEach(function(s){
+      html+='<div class="freetext-item">'+s.data.souhait_libre+'<div class="freetext-user">— '+s.user+'</div></div>';
+    });
+    html+='</div>';
+  }
+  
+  document.getElementById('results').innerHTML=html;
+})();
+</script>
+</body>
+</html>
