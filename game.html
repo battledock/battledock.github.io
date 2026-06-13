@@ -213,6 +213,7 @@ body{font-family:'Inter',sans-serif;background:#0f172a;overflow:hidden;height:10
 .nav-btn.active .nav-ico{filter:drop-shadow(0 3px 5px rgba(239,68,68,.35))}
 .nav-dot{width:9px;height:9px;background:#ef4444;border-radius:50%;border:2px solid #fff;position:absolute;top:-2px;right:-4px}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -287,17 +288,17 @@ function checkCode(){
 
 <div class="hdr">
   <div class="hdr-av">
-    <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=eliasse&backgroundColor=b6e3f4" alt="">
-    <div class="hdr-av-lvl">15</div>
+    <img id="hdAvatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=default&backgroundColor=b6e3f4" alt="">
+    <div class="hdr-av-lvl" id="hdLevel">—</div>
   </div>
   <div class="hdr-info">
-    <div class="hdr-name">ELIASSE</div>
-    <div class="hdr-grade">Docker Confirmé · 62% → NV.16</div>
-    <div class="hdr-xp"><div class="hdr-xp-fill"></div></div>
+    <div class="hdr-name" id="hdName">—</div>
+    <div class="hdr-grade" id="hdGrade">—</div>
+    <div class="hdr-xp"><div class="hdr-xp-fill" id="hdXpFill" style="width:0%"></div></div>
   </div>
   <div class="hdr-chips">
-    <div class="chip chip-gold">💰 1.2M</div>
-    <div class="chip chip-red">🔥 12</div>
+    <div class="chip chip-gold" id="hdMoney">💰 —</div>
+    <div class="chip chip-red" id="hdStreak">🔥 —</div>
   </div>
 </div>
 
@@ -619,6 +620,63 @@ function checkCode(){
     <div class="nav-lbl">PROFIL</div>
   </button>
 </div>
+
+
+<script>
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+
+function fm(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M€';if(n>=1e3)return Math.floor(n/1e3)+'k€';return n+'€';}
+function getXpRequired(l){if(l<=10)return l*500;if(l<=25)return l*1000;if(l<=50)return l*2000;return l*4000;}
+function getGrade(l){
+  if(l<=4)return'Docker Occasionnel';
+  if(l<=14)return'Docker Confirmé';
+  if(l<=29)return'Docker Mensuel';
+  if(l<=49)return'Contre-Maître';
+  if(l<=79)return'Chef de Quai';
+  return'Magnat du Port';
+}
+
+(async function(){
+  var r=await sb.auth.getSession();
+  var s=r.data&&r.data.session;
+  if(!s){location.href='index.html';return;}
+
+  var uid=s.user.id;
+
+  var [gRes,pRes]=await Promise.all([
+    sb.from('game_stats').select('level,xp,money,streak_days').eq('user_id',uid).maybeSingle(),
+    sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle()
+  ]);
+
+  var g=gRes.data||{};
+  var p=pRes.data||{};
+
+  var lvl=g.level||1;
+  var xp=g.xp||0;
+  var xpReq=getXpRequired(lvl);
+  var pct=Math.min(100,Math.round(xp/xpReq*100));
+  var pseudo=(p.username||'Docker').toUpperCase();
+  var nextLvl=lvl+1;
+
+  // Avatar
+  var av=document.getElementById('hdAvatar');
+  if(p.avatar_url) av.src=p.avatar_url;
+  else av.src='https://api.dicebear.com/7.x/pixel-art/svg?seed='+encodeURIComponent(pseudo)+'&backgroundColor=b6e3f4';
+
+  // Textes
+  document.getElementById('hdLevel').textContent=lvl;
+  document.getElementById('hdName').textContent=pseudo;
+  document.getElementById('hdGrade').textContent=getGrade(lvl)+' · '+pct+'% → NV.'+nextLvl;
+  document.getElementById('hdXpFill').style.width=pct+'%';
+  document.getElementById('hdMoney').textContent='💰 '+fm(g.money||0);
+  document.getElementById('hdStreak').textContent='🔥 '+(g.streak_days||0);
+
+  // last_seen
+  await sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid);
+})();
+</script>
 
 </body>
 </html>
