@@ -27,12 +27,12 @@ body{background:#f5f0e8;font-family:'Inter',sans-serif;min-height:100vh;padding-
 .cover-back{width:34px;height:34px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(4px)}
 .cover-edit{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 12px;color:#fff;font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;backdrop-filter:blur(4px)}
 .av-zone{position:absolute;bottom:-40px;left:50%;transform:translateX(-50%)}
-.av-ring{width:80px;height:80px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#cc1a1a,#fbbf24,#cc1a1a);background-size:200%;animation:gradRing 3s linear infinite;box-shadow:0 4px 16px rgba(204,26,26,.3)}
-.av-img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid #f5f0e8;background:#dbeafe}
+.av-ring{width:90px;height:90px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#cc1a1a,#fbbf24,#cc1a1a);background-size:200%;animation:gradRing 3s linear infinite;box-shadow:0 4px 16px rgba(204,26,26,.3)}
+.av-img{width:100%;height:100%;border-radius:50%;object-fit:contain;border:3px solid #f5f0e8;background:#dbeafe}
 .av-online{position:absolute;bottom:4px;right:2px;width:12px;height:12px;border-radius:50%;background:#4ade80;border:2px solid #f5f0e8}
 
 /* IDENTITY */
-.identity{background:#fff;padding:50px 16px 16px;text-align:center;border-bottom:1px solid #f3f4f6}
+.identity{background:#fff;padding:56px 16px 16px;text-align:center;border-bottom:1px solid #f3f4f6}
 .username{font-weight:900;font-size:22px;color:#0f172a;text-transform:uppercase;letter-spacing:1px}
 .title-badge{display:inline-block;background:linear-gradient(135deg,#cc1a1a,#991414);color:#fff;font-size:8px;font-weight:900;padding:3px 12px;border-radius:20px;letter-spacing:1.5px;margin-top:5px}
 .grade-rank{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
@@ -313,18 +313,6 @@ var currentUser=null,currentUserId='',currentCover='rouge_navy',COVERS=[],vitrin
 var COVER_CSS={
   'rouge_navy':'linear-gradient(135deg,#cc1a1a,#0f172a)',
   'bleu_mer':'linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9)',
-  'noir':'linear-gradient(135deg,#18181b,#3f3f46)',
-  'night':'linear-gradient(135deg,#0f172a,#334155)',
-  'gold':'linear-gradient(135deg,#b45309,#f59e0b)',
-  'emerald':'linear-gradient(135deg,#047857,#10b981)',
-  'purple':'linear-gradient(135deg,#6d28d9,#a855f7)',
-  'coral':'linear-gradient(135deg,#be123c,#fb7185)',
-  'or_navy':'linear-gradient(135deg,#78350f,#fbbf24,#0f172a)',
-  'abysses':'linear-gradient(135deg,#0f2027,#203a43,#2c5364)',
-  'marseille_nuit':'linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9)',
-  'feu_docker':'linear-gradient(160deg,#7f1d1d,#dc2626,#fbbf24)',
-  'sunset':'linear-gradient(135deg,#f59e0b,#ef4444,#7c3aed)',
-  'arc_en_ciel':'conic-gradient(from 180deg at 50% 50%,#cc1a1a,#fbbf24,#10b981,#0ea5e9,#a855f7,#cc1a1a)',
 };
 
 var CARD_DEFS=[];var _cid=0;
@@ -367,23 +355,34 @@ function show(id){var el=document.getElementById(id);if(el)el.style.display='';}
 function renderVitrine(cards,myCards){
   var owned=Object.keys(myCards||{});
   var picks=vitrinePick.filter(function(id){return owned.indexOf(String(id))!==-1;});
-  while(picks.length<3){var def=[6,3,0];picks.push(def[picks.length]||0);}
+  // Only show cards the user actually owns - pad with null for empty slots
+  while(picks.length<3){picks.push(null);}
   var html='';
   picks.forEach(function(cid,i){
-    var c=CARD_DEFS[cid]||CARD_DEFS[0];
     var isMain=i===1;
-    var bg=RARITY_BG[c.rarity]||RARITY_BG.C;
-    var border=RARITY_BORDER[c.rarity]||'#6b7280';
-    var lbl=RARITY_LBL[c.rarity]||'COM';
-    html+='<div class="vc vc'+c.rarity+(isMain?' vc-main':'')+'">'+
+    if(cid===null){
+      html+='<div class="vc"'+(isMain?' style="flex:1.12"':'')+'>'+
+        '<div class="vc-bg" style="background:#1a1a2e;border:1.5px dashed #2a2a3e"></div>'+
+        '<div class="vc-content" style="opacity:.3">'+
+          '<div style="font-size:20px">＋</div>'+
+          '<div style="font-family:Bangers,cursive;font-size:7px;color:#fff;margin-top:3px">VIDE</div>'+
+        '</div>'+
+      '</div>';
+      return;
+    }
+    var card=CARD_DEFS[cid]||CARD_DEFS[0];
+    var bg=RARITY_BG[card.rarity]||RARITY_BG.C;
+    var border=RARITY_BORDER[card.rarity]||'#6b7280';
+    var lbl=RARITY_LBL[card.rarity]||'COM';
+    html+='<div class="vc vc'+card.rarity+(isMain?' vc-main':'')+'">'+
       '<div class="vc-bg" style="background:'+bg+';border:1.5px solid '+border+'"></div>'+
       (isMain?'<div class="vc-crown">👑</div>':'')+
       '<div class="vc-content">'+
-        '<div class="vc-emo" style="font-size:'+(isMain?'30px':'24px')+'">'+c.emoji+'</div>'+
-        '<div class="vc-name" style="font-size:'+(isMain?'10px':'8px')+'">'+c.name+'</div>'+
+        '<div class="vc-emo" style="font-size:'+(isMain?'30px':'24px')+'">'+card.emoji+'</div>'+
+        '<div class="vc-name" style="font-size:'+(isMain?'10px':'8px')+'">'+card.name+'</div>'+
         (isMain?'<div style="font-size:6px;color:rgba(255,255,255,.3);margin-top:2px">PRÉFÉRÉE</div>':'')+
       '</div>'+
-      '<div class="vc-rt" style="background:'+(c.rarity==='L'||c.rarity==='M'?'#fbbf24':'#'+{'C':'6b7280','R':'3b82f6','S':'ef4444'}[c.rarity]||'6b7280')+';color:'+(c.rarity==='L'||c.rarity==='M'?'#1a1a1a':'#fff')+'">'+lbl+'</div>'+
+      '<div class="vc-rt" style="background:'+(card.rarity==='L'||card.rarity==='M'?'#fbbf24':'#'+{'C':'6b7280','R':'3b82f6','S':'ef4444'}[card.rarity]||'6b7280')+';color:'+(card.rarity==='L'||card.rarity==='M'?'#1a1a1a':'#fff')+'">'+lbl+'</div>'+
     '</div>';
   });
   document.getElementById('vitrineCards').innerHTML=html;
@@ -449,7 +448,46 @@ async function saveBio(){
 }
 
 // Vitrine editor
-function openVitrineEditor(){toast('Bientôt disponible !');}
+function openVitrineEditor(){
+  var cards=window._myCards||{};
+  var owned=Object.keys(cards);
+  if(owned.length===0)return toast('Ouvre des packs pour obtenir des cartes !');
+  var html='<div style="font-size:9px;color:#9ca3af;margin-bottom:10px">Tap une carte pour la mettre en vitrine (3 max)</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px">';
+  owned.forEach(function(cid){
+    var c=CARD_DEFS[parseInt(cid)];
+    if(!c)return;
+    var sel=vitrinePick.indexOf(parseInt(cid))!==-1;
+    var bg=RARITY_BG[c.rarity]||RARITY_BG.C;
+    html+='<div onclick="toggleVitrineCard('+cid+')" style="aspect-ratio:.72;border-radius:8px;position:relative;overflow:hidden;cursor:pointer;border:2px solid '+(sel?'#fbbf24':'transparent')+';box-shadow:'+(sel?'0 0 8px rgba(251,191,36,.3)':'none')+';background:'+bg+'">';
+    html+='<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:20px">'+c.emoji+'</div><div style="font-family:Bangers,cursive;font-size:7px;color:#fff;text-align:center;margin-top:2px">'+c.name+'</div></div>';
+    if(sel)html+='<div style="position:absolute;top:2px;right:2px;background:#fbbf24;color:#1a1a1a;font-size:7px;font-weight:900;padding:1px 4px;border-radius:3px">'+(vitrinePick.indexOf(parseInt(cid))+1)+'</div>';
+    html+='</div>';
+  });
+  html+='</div>';
+  html+='<button onclick="saveVitrine()" style="width:100%;padding:12px;background:#cc1a1a;border:2px solid #1a1a1a;border-radius:10px;font-family:Bangers,cursive;font-size:14px;color:#fff;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a">VALIDER</button>';
+  var sheet=document.createElement('div');sheet.className='ov show';sheet.id='vitrineOv';
+  sheet.onclick=function(e){if(e.target===sheet)sheet.remove();};
+  sheet.innerHTML='<div class="ov-sheet"><div class="ov-title">MA VITRINE</div>'+html+'</div>';
+  document.body.appendChild(sheet);
+}
+function toggleVitrineCard(cid){
+  cid=parseInt(cid);
+  var idx=vitrinePick.indexOf(cid);
+  if(idx!==-1){vitrinePick.splice(idx,1);}
+  else if(vitrinePick.length<3){vitrinePick.push(cid);}
+  else{vitrinePick.shift();vitrinePick.push(cid);}
+  openVitrineEditor();
+}
+async function saveVitrine(){
+  var ov=document.getElementById('vitrineOv');if(ov)ov.remove();
+  var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();
+  var rec=(gs&&gs.records)||{};
+  rec.vitrine_cards=vitrinePick;
+  await sb.from('game_stats').update({records:rec}).eq('user_id',currentUser.id);
+  renderVitrine(CARD_DEFS,window._myCards||{});
+  toast('Vitrine mise à jour !');
+}
 
 async function logout(){await sb.auth.signOut();location.href='index.html';}
 
@@ -525,6 +563,7 @@ async function logout(){await sb.auth.signOut();location.href='index.html';}
   document.getElementById('dataFormations').textContent=fCount+' / 3';
   if(p.bio){document.getElementById('bioEl').textContent=p.bio;document.getElementById('bioEl').className='bio-text';}
   var cards=rec.cards||{};
+  window._myCards=cards;
   document.getElementById('colCount').textContent=Object.keys(cards).length;
   document.getElementById('vitrineCount').textContent=Object.keys(cards).length+'/131 cartes';
   buildStory(p.username||'Docker',g,rec,p.created_at);
