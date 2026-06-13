@@ -2,207 +2,211 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Bureau de la Direction - Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Direction — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none; -webkit-font-smoothing:antialiased; }
-  body { font-family:'Inter',sans-serif; background:#0c0a06; color:#f3ecd8; min-height:100dvh; padding:0 14px 30px; }
-  .bg { position:fixed; inset:0; z-index:0; pointer-events:none; background:
-      radial-gradient(120% 60% at 50% -5%, rgba(212,175,55,0.18), transparent 60%),
-      linear-gradient(180deg,#1c160a,#120d05 55%,#08060300); }
-  .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; }
-  .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px; padding:14px 4px;
-    background:linear-gradient(180deg,#120d05,rgba(18,13,5,0.85)); backdrop-filter:blur(8px); }
-  .hdr-back { background:rgba(255,255,255,0.07); border:1px solid rgba(212,175,55,0.25); color:#f3ecd8; width:38px; height:38px; border-radius:11px; font-size:18px; cursor:pointer; flex-shrink:0; }
-  .hdr-title { flex:1; font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px;
-    background:linear-gradient(135deg,#d4af37,#fde68a,#b8860b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-
-  .card { background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.14); border-radius:16px; padding:16px; margin-bottom:12px; }
-  .sect-lbl { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:rgba(212,175,55,0.6); margin:18px 4px 10px; }
-
-  /* LAVAGNE */
-  .lav { display:flex; gap:12px; align-items:flex-start; background:linear-gradient(160deg,rgba(16,185,129,0.1),rgba(212,175,55,0.05)); border:1px solid rgba(16,185,129,0.22); border-radius:16px; padding:14px; margin-bottom:14px; }
-  .lav-ava { width:46px; height:46px; border-radius:50%; background:linear-gradient(135deg,#059669,#34d399); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; }
-  .lav-txt { font-size:14px; line-height:1.45; color:#a7f3d0; font-style:italic; }
-
-  /* PLAQUE DIRECTION */
-  .plaque { text-align:center; padding:24px 16px; border-radius:18px; margin-bottom:14px;
-    background:linear-gradient(160deg,rgba(212,175,55,0.16),rgba(184,134,11,0.06)); border:1px solid rgba(212,175,55,0.4);
-    box-shadow:0 0 0 1px rgba(212,175,55,0.15), 0 12px 36px rgba(0,0,0,0.4); }
-  .plaque-seal { font-size:46px; }
-  .plaque-name { font-family:'Playfair Display',serif; font-weight:900; font-size:24px; color:#fde68a; margin:4px 0; }
-  .plaque-grade { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:2px; color:#d4af37; }
-
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .kpi { background:rgba(255,255,255,0.04); border:1px solid rgba(212,175,55,0.12); border-radius:13px; padding:14px; }
-  .kpi-val { font-family:'Bebas Neue',sans-serif; font-size:26px; color:#fde68a; }
-  .kpi-lbl { font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; color:rgba(255,255,255,0.45); margin-top:2px; }
-
-  /* SALAIRE */
-  .sal { text-align:center; }
-  .sal-amt { font-family:'Bebas Neue',sans-serif; font-size:44px; color:#facc15; }
-  .sal-meta { font-size:12px; color:rgba(255,255,255,0.5); margin-bottom:14px; }
-  .cd-time { font-family:'Bebas Neue',sans-serif; font-size:34px; letter-spacing:1px; color:#d4af37; }
-  .btn { width:100%; border:none; border-radius:14px; padding:16px; font-family:'Bebas Neue',sans-serif; font-size:18px; letter-spacing:2px; cursor:pointer;
-    background:linear-gradient(135deg,#b8860b,#facc15); color:#1a1208; }
-  .btn:active{ transform:scale(0.98); } .btn:disabled{ opacity:0.45; }
-
-  .info { font-size:12.5px; color:rgba(255,255,255,0.5); line-height:1.6; }
-  .loader { text-align:center; padding:60px; color:rgba(255,255,255,0.3); font-family:'Bebas Neue',sans-serif; letter-spacing:2px; }
-  .back-bottom { width:100%; margin-top:18px; padding:15px; border-radius:14px; cursor:pointer;
-    background:rgba(255,255,255,0.05); border:1px solid rgba(212,175,55,0.18); color:rgba(255,255,255,0.7);
-    font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; }
-  .toast { position:fixed; top:18px; left:50%; transform:translateX(-50%) translateY(-20px); z-index:300;
-    background:rgba(28,22,10,0.97); border:1px solid rgba(212,175,55,0.5); border-radius:12px; padding:11px 18px; font-size:13px; font-weight:700;
-    opacity:0; transition:all .35s; max-width:90%; text-align:center; color:#fde68a; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{font-family:'Inter',sans-serif;background:#f2f2f7;min-height:100vh;padding-bottom:32px}
+.hdr{background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,0,0,.07);padding:calc(14px + env(safe-area-inset-top,44px)) 16px 14px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+.hdr-back{width:34px;height:34px;border-radius:8px;background:rgba(204,26,26,.08);display:flex;align-items:center;justify-content:center;font-size:16px;color:#cc1a1a;font-weight:800;cursor:pointer;border:none}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#0f172a;letter-spacing:1.5px;flex:1}
+.hdr-money{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#16a34a}
+.pad{padding:16px}
+/* Hero card */
+.hero{background:#111118;border-radius:16px;padding:24px;margin-bottom:12px;position:relative;overflow:hidden;text-align:center}
+.hero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:radial-gradient(circle,rgba(251,191,36,.08),transparent)}
+.hero-emoji{font-size:48px;margin-bottom:8px}
+.hero-label{font-size:8px;font-weight:800;color:rgba(255,255,255,.25);letter-spacing:3px;margin-bottom:4px}
+.hero-amount{font-family:'Bebas Neue',sans-serif;font-size:56px;background:linear-gradient(135deg,#fbbf24,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.hero-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:6px;font-weight:700}
+/* Status */
+.status-card{background:#fff;border-radius:14px;overflow:hidden;margin-bottom:12px}
+.status-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f3f4f6}
+.status-row:last-child{border:none}
+.status-lbl{font-size:11px;color:#9ca3af;font-weight:700}
+.status-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#0f172a;letter-spacing:.5px}
+/* Claim button */
+.btn-claim{width:100%;padding:16px;border:none;border-radius:14px;background:#cc1a1a;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:2px;cursor:pointer;margin-bottom:8px;position:relative;overflow:hidden}
+.btn-claim::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);animation:btnShine 3s ease infinite}
+@keyframes btnShine{0%{transform:translateX(-100%) rotate(25deg)}100%{transform:translateX(300%) rotate(25deg)}}
+.btn-claim:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}
+.btn-claim:disabled::after{display:none}
+.btn-back{width:100%;padding:13px;border:none;border-radius:14px;background:transparent;font-size:12px;font-weight:700;color:#9ca3af;cursor:pointer}
+/* History */
+.hist-title{font-size:8px;font-weight:800;color:#9ca3af;letter-spacing:3px;padding:8px 0 10px}
+.hist-card{background:#fff;border-radius:14px;overflow:hidden;margin-bottom:12px}
+.hist-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f6}
+.hist-row:last-child{border:none}
+.hist-day{font-size:11px;color:#9ca3af;font-weight:700}
+.hist-amount{font-family:'Bebas Neue',sans-serif;font-size:15px;color:#16a34a}
+/* Toast */
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+10px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
 </style>
 </head>
 <body>
-<div class="bg"></div>
-<div class="wrap">
-  <div class="hdr">
-    <button class="hdr-back" onclick="window.location.href='game.html'">←</button>
-    <div class="hdr-title">🏛️ BUREAU DE LA DIRECTION</div>
-  </div>
-  <div id="content"><div class="loader">CHARGEMENT…</div></div>
-  <button class="back-bottom" onclick="window.location.href='game.html'">← Retour au jeu</button>
+
+<div class="hdr">
+  <button class="hdr-back" onclick="location.href='game.html'">←</button>
+  <div class="hdr-title">👔 DIRECTION</div>
+  <div class="hdr-money" id="hdrMoney">— €</div>
 </div>
+
+<div class="pad">
+
+  <!-- Hero : salaire du jour -->
+  <div class="hero">
+    <div class="hero-emoji">💼</div>
+    <div class="hero-label">SALAIRE DU JOUR</div>
+    <div class="hero-amount" id="salaryAmount">—</div>
+    <div class="hero-sub" id="salaryDesc">Calcul en cours...</div>
+  </div>
+
+  <!-- Statuts -->
+  <div class="status-card">
+    <div class="status-row">
+      <div class="status-lbl">Poste</div>
+      <div class="status-val" id="statPoste">—</div>
+    </div>
+    <div class="status-row">
+      <div class="status-lbl">Niveau</div>
+      <div class="status-val" id="statLevel">—</div>
+    </div>
+    <div class="status-row">
+      <div class="status-lbl">Total perçu</div>
+      <div class="status-val" id="statTotal">—</div>
+    </div>
+    <div class="status-row">
+      <div class="status-lbl">Jours consécutifs</div>
+      <div class="status-val" id="statDays">—</div>
+    </div>
+  </div>
+
+  <!-- Bouton -->
+  <button class="btn-claim" id="btnClaim" onclick="claimSalary()" disabled>CHARGER...</button>
+  <button class="btn-back" onclick="location.href='game.html'">← Retour au port</button>
+
+  <!-- Historique -->
+  <div class="hist-title">HISTORIQUE</div>
+  <div class="hist-card" id="histCard">
+    <div style="padding:20px;text-align:center;color:#9ca3af;font-size:11px">Aucun historique</div>
+  </div>
+
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-  const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-  const sb = supabase.createClient(SB_URL, SB_KEY);
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var currentUser=null,playerLevel=1,playerMoney=0,dirData={};
 
-  const LAVAGNE_QUOTES = [
-    "« Je te l'accorde : tu m'as surpris. Voilà ton bureau. Ne me déçois pas. »",
-    "« Un bon cadre arrive à l'heure et repart le dernier. Prends ta paie et bosse. »",
-    "« Le port récompense ceux qui durent. Reviens chaque jour, tu verras. »",
-    "« Ne crois pas que je t'ai à la bonne. Mais le travail, ça se respecte. »",
-  ];
+function fm(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M€';if(n>=1e3)return Math.floor(n/1e3)+'k€';return n+'€';}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 
-  let currentUser=null, stats=null, dir={}, cdTimer=null, malusUntil=0;
-  function fmtLeft(ts){ const l=Math.max(0,ts-Date.now()); const h=Math.floor(l/3600000),m=Math.floor(l%3600000/60000); return (h>0?h+'h ':'')+m+'min'; }
-  async function checkSabotage(){
-    try {
-      const { data:pend } = await sb.from('sabotages').select('id,stolen').eq('target_id',currentUser.id).eq('processed',false);
-      if(pend && pend.length){
-        const total = pend.reduce((s,r)=>s+(r.stolen||0),0);
-        if(total>0){ const nm=Math.max(0,(stats.money||0)-total); await sb.from('game_stats').update({ money:nm }).eq('user_id',currentUser.id); stats.money=nm; }
-        await sb.from('sabotages').update({ processed:true }).eq('target_id',currentUser.id).eq('processed',false);
-      }
-      const { data:mz } = await sb.from('sabotages').select('malus_until').eq('target_id',currentUser.id).gt('malus_until', new Date().toISOString()).order('malus_until',{ascending:false}).limit(1);
-      malusUntil = (mz && mz.length && mz[0].malus_until) ? new Date(mz[0].malus_until).getTime() : 0;
-    } catch(e){ console.log('sabotage check:',e); }
-  }
-  function todayStr(){ return new Date().toISOString().slice(0,10); }
-  function yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); }
-  const SALARY_CAP = 100000; // plafond du salaire quotidien (bonus de série inclus)
-  function salaryFor(level, days){ const mult = 1 + Math.min(Math.max(days-1,0),5)*0.1; return Math.min(Math.round(level*2000*mult), SALARY_CAP); }
+function getSalary(lvl){
+  // 500€ × niveau, bonus tous les 5 niveaux
+  var base=lvl*500;
+  var bonus=Math.floor(lvl/5)*1000;
+  return base+bonus;
+}
 
-  async function init(){
-    const { data:{ session } } = await sb.auth.getSession();
-    if(!session){ window.location.href='index.html'; return; }
-    currentUser = session.user;
-    const { data:gs } = await sb.from('game_stats').select('money,xp,level,grade,diamonds,trophies,direction').eq('user_id',currentUser.id).maybeSingle();
-    stats = gs || { money:0, level:1, grade:'Bleu', diamonds:0, trophies:0 };
-    dir = (gs?.direction && typeof gs.direction==='object') ? gs.direction : {};
-    await checkSabotage();
-    render();
-  }
+function getPoste(lvl){
+  if(lvl>=50)return'PDG';
+  if(lvl>=30)return'Directeur Général';
+  if(lvl>=20)return'Directeur de Zone';
+  if(lvl>=10)return'Chef de Service';
+  if(lvl>=5)return'Responsable';
+  return'Employé Cadre';
+}
 
-  function msToMidnight(){ const n=new Date(); const m=new Date(n); m.setHours(24,0,0,0); return m-n; }
+function todayStr(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 
-  function render(){
-    if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
-    const claimable = dir.lastSalaryDay !== todayStr();
-    // série de jours prévue si on réclame aujourd'hui
-    const projDays = (dir.lastSalaryDay===yesterdayStr()) ? (dir.days||0)+1 : 1;
-    const amount = salaryFor(stats.level||1, claimable ? projDays : (dir.days||1));
-    const quote = LAVAGNE_QUOTES[(stats.level||1) % LAVAGNE_QUOTES.length];
+function render(){
+  var salary=getSalary(playerLevel);
+  var today=todayStr();
+  var alreadyClaimed=dirData.lastSalaryDay===today;
+  var days=dirData.days||0;
 
-    let html = `
-      <div class="lav">
-        <div class="lav-ava">🧐</div>
-        <div class="lav-txt">${quote}</div>
-      </div>
-      <div class="plaque">
-        <div class="plaque-seal">🏛️</div>
-        <div class="plaque-name">Direction du Port</div>
-        <div class="plaque-grade">${(stats.grade||'—').toUpperCase()} · NIVEAU ${stats.level||1}</div>
-      </div>
+  document.getElementById('salaryAmount').textContent=fm(salary);
+  document.getElementById('salaryDesc').textContent='Niveau '+playerLevel+' · '+getPoste(playerLevel);
+  document.getElementById('statPoste').textContent=getPoste(playerLevel);
+  document.getElementById('statLevel').textContent='NV. '+playerLevel;
+  document.getElementById('statTotal').textContent=fm(dirData.totalClaimed||0);
+  document.getElementById('statDays').textContent=(days||0)+' jour'+(days>1?'s':'');
+  document.getElementById('hdrMoney').textContent=fm(playerMoney);
 
-      <div class="sect-lbl">Salaire de direction</div>
-      <div class="card sal">`;
-
-    if(claimable){
-      html += `
-        <div class="sal-amt">+${amount.toLocaleString('fr-FR')} €</div>
-        <div class="sal-meta" style="color:#a5b4fc;font-weight:700;margin-bottom:2px">⭐ +${SALARY_XP.toLocaleString('fr-FR')} XP</div>
-        <div class="sal-meta">Jour ${projDays} consécutif${projDays>1?'s':''} · bonus série +${Math.min(Math.max(projDays-1,0),5)*10}%</div>
-        ${malusUntil>Date.now() ? '<div class="sal-meta" style="color:#fca5a5;font-weight:700">⛔ Saboté ! Salaire bloqué encore '+fmtLeft(malusUntil)+'.</div>' : '<button class="btn" onclick="claimSalary()">💼 ENCAISSER LE SALAIRE</button>'}`;
-    } else {
-      html += `
-        <div class="sal-meta" style="margin-bottom:6px">Salaire déjà encaissé aujourd'hui.</div>
-        <div class="cd-time" id="cdTime">--:--:--</div>
-        <div class="sal-meta" style="margin-top:6px">Série en cours : ${dir.days||1} jour${(dir.days||1)>1?'s':''} 🔥</div>`;
-    }
-
-    html += `</div>
-      <div class="sect-lbl">Carrière</div>
-      <div class="grid">
-        <div class="kpi"><div class="kpi-val">${(stats.money||0).toLocaleString('fr-FR')} €</div><div class="kpi-lbl">Trésorerie</div></div>
-        <div class="kpi"><div class="kpi-val">${(dir.totalClaimed||0).toLocaleString('fr-FR')} €</div><div class="kpi-lbl">Salaires perçus</div></div>
-        <div class="kpi"><div class="kpi-val">💎 ${stats.diamonds||0}</div><div class="kpi-lbl">Diamants</div></div>
-        <div class="kpi"><div class="kpi-val">🏆 ${stats.trophies||0}</div><div class="kpi-lbl">Trophées</div></div>
-      </div>
-      <div class="sect-lbl">Note de direction</div>
-      <div class="card info">Le salaire de direction s'encaisse <b>une fois par jour</b>. Il grimpe avec ton <b>niveau</b>, et venir chaque jour fait monter ton <b>bonus de série</b> (jusqu'à +50% au bout de 6 jours). Manquer un jour remet la série à 1. Plafonné à <b>${SALARY_CAP.toLocaleString('fr-FR')} €/jour</b>.</div>`;
-
-    document.getElementById('content').innerHTML = html;
-
-    if(!claimable){
-      const upd = () => {
-        const l = msToMidnight();
-        if(l <= 0){ render(); return; }
-        const h=Math.floor(l/3600000), m=Math.floor(l%3600000/60000), s=Math.floor(l%60000/1000);
-        const el=document.getElementById('cdTime');
-        if(el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-      };
-      upd(); cdTimer=setInterval(upd,1000);
-    }
+  var btn=document.getElementById('btnClaim');
+  if(alreadyClaimed){
+    btn.textContent='DÉJÀ RÉCUPÉRÉ AUJOURD\'HUI';
+    btn.disabled=true;
+  } else {
+    btn.textContent='RÉCUPÉRER '+fm(salary);
+    btn.disabled=false;
   }
 
-  const SALARY_XP = 10000; // XP offerte avec le salaire quotidien
-  function getXpRequired(l){ if(l<=10) return l*500; if(l<=25) return l*1000; if(l<=50) return l*2000; return l*4000; }
-  async function claimSalary(){
-    if(malusUntil>Date.now()){ showToast('Tu es saboté : salaire bloqué pour le moment.'); return; }
-    if(dir.lastSalaryDay === todayStr()) return;
-    const days = (dir.lastSalaryDay===yesterdayStr()) ? (dir.days||0)+1 : 1;
-    const amount = salaryFor(stats.level||1, days);
-    try {
-      const { data:fresh } = await sb.from('game_stats').select('money,xp,level,direction').eq('user_id',currentUser.id).maybeSingle();
-      // re-vérifier côté frais pour éviter double encaissement
-      const fdir = (fresh?.direction && typeof fresh.direction==='object') ? fresh.direction : {};
-      if(fdir.lastSalaryDay === todayStr()){ dir=fdir; showToast('Déjà encaissé aujourd\'hui.'); render(); return; }
-      const newMoney = (fresh?.money||0) + amount;
-      let nXp = (fresh?.xp||0) + SALARY_XP, nLvl = fresh?.level||1;
-      while (nXp >= getXpRequired(nLvl)) { nXp -= getXpRequired(nLvl); nLvl++; }
-      const newDir = { lastSalaryDay:todayStr(), days, totalClaimed:(fdir.totalClaimed||0)+amount };
-      await sb.from('game_stats').update({ money:newMoney, xp:nXp, level:nLvl, direction:newDir }).eq('user_id',currentUser.id);
-      stats.money = newMoney; stats.xp = nXp; stats.level = nLvl; dir = newDir;
-      showToast(`💼 +${amount.toLocaleString('fr-FR')} € · +${SALARY_XP.toLocaleString('fr-FR')} XP !`);
-      render();
-    } catch(e){ console.log('salary:', e); showToast('Erreur, réessaie.'); }
+  // Historique
+  var hist=dirData.history||[];
+  if(hist.length===0){
+    document.getElementById('histCard').innerHTML='<div style="padding:20px;text-align:center;color:#9ca3af;font-size:11px">Aucun historique</div>';
+  } else {
+    var html='';
+    hist.slice().reverse().slice(0,10).forEach(function(h){
+      html+='<div class="hist-row"><div class="hist-day">'+h.date+'</div><div class="hist-amount">+'+fm(h.amount)+'</div></div>';
+    });
+    document.getElementById('histCard').innerHTML=html;
   }
+}
 
-  let toastT;
-  function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; clearTimeout(toastT); toastT=setTimeout(()=>t.className='toast',2600); }
+async function claimSalary(){
+  var salary=getSalary(playerLevel);
+  var today=todayStr();
+  if(dirData.lastSalaryDay===today)return toast('Déjà récupéré aujourd\'hui !');
 
-  init();
+  // Update
+  var newMoney=playerMoney+salary;
+  var newDays=(dirData.days||0)+1;
+  var newTotal=(dirData.totalClaimed||0)+salary;
+  var hist=dirData.history||[];
+  hist.push({date:today,amount:salary});
+  if(hist.length>30)hist=hist.slice(-30);
+
+  dirData={lastSalaryDay:today,days:newDays,totalClaimed:newTotal,history:hist};
+
+  var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();
+  var rec=(gs&&gs.records)||{};
+
+  await sb.from('game_stats').update({
+    money:newMoney,
+    direction:dirData,
+    records:rec
+  }).eq('user_id',currentUser.id);
+
+  playerMoney=newMoney;
+  toast('💼 +'+fm(salary)+' perçu !');
+  render();
+}
+
+(async function(){
+  var r=await sb.auth.getSession();var s=r.data&&r.data.session;
+  if(!s){location.href='index.html';return;}
+  currentUser=s.user;
+
+  var {data:gs}=await sb.from('game_stats').select('level,money,direction').eq('user_id',currentUser.id).maybeSingle();
+  if(!gs){location.href='game.html';return;}
+
+  playerLevel=gs.level||1;
+  playerMoney=gs.money||0;
+  dirData=gs.direction||{};
+
+  render();
+})();
 </script>
 </body>
 </html>
