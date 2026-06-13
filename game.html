@@ -3,680 +3,651 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>Battle Dock — Port de Marseille</title>
+<title>Battle Dock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-:root{
-  --ink:#1e293b;
-  --border:2.5px solid #1e293b;
-  --shadow:2px 2px 0 #1e293b;
-  --bg-ui:rgba(255,255,255,.96);
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
-body{font-family:'Inter',sans-serif;background:#0f172a;overflow:hidden;height:100dvh;display:flex;flex-direction:column}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:#0f172a;height:100dvh;display:flex;flex-direction:column}
 
+/* ── ANIMATIONS ── */
 @keyframes xpFlow{0%{background-position:0%}100%{background-position:300%}}
-@keyframes cloudDrift{0%{transform:translateX(0)}100%{transform:translateX(28px)}}
-@keyframes sunSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-@keyframes pinBounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
-@keyframes waterFlow{0%{transform:translateX(0)}100%{transform:translateX(-25%)}}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
-@keyframes boatRock{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
-@keyframes crane{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
-@keyframes seagull{0%{transform:translate(0,0)}25%{transform:translate(16px,-5px)}50%{transform:translate(32px,0)}75%{transform:translate(16px,-5px)}100%{transform:translate(0,0)}}
-@keyframes casinoFlash{0%,100%{background:#6d28d9}50%{background:#7c3aed}}
-@keyframes flagWave{0%,100%{transform:skewX(0)}50%{transform:skewX(-12deg)}}
-@keyframes puff{0%{transform:translateY(0) scale(1);opacity:.5}100%{transform:translateY(-20px) scale(2);opacity:0}}
-@keyframes l1{0%{background:#fbbf24}33%{background:#ef4444}66%{background:#4ade80}100%{background:#fbbf24}}
-@keyframes l2{0%{background:#4ade80}33%{background:#fbbf24}66%{background:#818cf8}100%{background:#4ade80}}
-@keyframes l3{0%{background:#818cf8}33%{background:#4ade80}66%{background:#fbbf24}100%{background:#818cf8}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pinBounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-6px)}}
+@keyframes waterFlow{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes boatRock{0%,100%{transform:rotate(-.6deg)}50%{transform:rotate(.6deg)}}
+@keyframes craneSway{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
+@keyframes puff{0%{transform:translateY(0) scale(1);opacity:.5}100%{transform:translateY(-18px) scale(2);opacity:0}}
+@keyframes lc1{0%{background:#fbbf24;box-shadow:0 0 5px 2px #fbbf24}33%{background:#ef4444;box-shadow:0 0 5px 2px #ef4444}66%{background:#4ade80;box-shadow:0 0 5px 2px #4ade80}100%{background:#fbbf24;box-shadow:0 0 5px 2px #fbbf24}}
+@keyframes lc2{0%{background:#4ade80}33%{background:#fbbf24}66%{background:#818cf8}100%{background:#4ade80}}
+@keyframes lc3{0%{background:#818cf8}33%{background:#4ade80}66%{background:#fbbf24}100%{background:#818cf8}}
+@keyframes shine{0%{left:-70%}100%{left:170%}}
+@keyframes gull{0%{transform:translate(0,0)}25%{transform:translate(18px,-5px)}50%{transform:translate(36px,0)}75%{transform:translate(18px,-5px)}100%{transform:translate(0,0)}}
+@keyframes casinoAnim{0%,100%{background:linear-gradient(135deg,#7c3aed,#5b21b6)}50%{background:linear-gradient(135deg,#9333ea,#7c3aed)}}
+@keyframes flagWave{0%,100%{transform:skewX(0)}50%{transform:skewX(-11deg)}}
+@keyframes cloudDrift{0%{transform:translateX(0)}100%{transform:translateX(22px)}}
+@keyframes tickerRoll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes lightBlink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes cswing{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.5deg)}}
+@keyframes maint-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes maint-fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-/* ══ HEADER ══ */
-.hdr{background:var(--bg-ui);backdrop-filter:blur(10px);border-bottom:var(--border);padding:calc(10px + env(safe-area-inset-top,44px)) 14px 10px;display:flex;align-items:center;gap:10px;z-index:100;flex-shrink:0;box-shadow:0 3px 0 #1e293b}
-.hdr-av{width:46px;height:46px;border-radius:14px;border:var(--border);background:#bae6fd;flex-shrink:0;position:relative;box-shadow:var(--shadow)}
+/* ── MAINTENANCE GATE ── */
+#mg{position:fixed;inset:0;z-index:9999;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+.mg-ico{font-size:60px;animation:maint-pulse 2s ease infinite;margin-bottom:18px}
+.mg-badge{background:#fbbf24;border:2.5px solid #1e293b;border-radius:8px;padding:4px 14px;font-family:'Bangers',cursive;font-size:12px;color:#1e293b;letter-spacing:2px;box-shadow:3px 3px 0 #1e293b;margin-bottom:12px}
+.mg-title{font-family:'Bangers',cursive;font-size:30px;color:#fff;letter-spacing:2px;text-align:center;line-height:1.1;margin-bottom:8px}
+.mg-sub{font-size:12px;color:#94a3b8;text-align:center;line-height:1.5;margin-bottom:26px;max-width:280px}
+.mg-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:18px;width:100%;max-width:300px;animation:maint-fade .4s ease}
+.mg-lbl{font-size:9px;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:8px}
+.mg-row{display:flex;gap:8px}
+.mg-input{flex:1;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;font-family:'Bangers',cursive;font-size:16px;color:#fff;letter-spacing:2px;outline:none;transition:border .2s;-webkit-user-select:text;user-select:text}
+.mg-input:focus{border-color:rgba(251,191,36,.5)}
+.mg-input.shake{animation:mgShake .3s ease}
+@keyframes mgShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.mg-btn{background:#fbbf24;border:2.5px solid #1e293b;border-radius:10px;padding:11px 16px;font-family:'Bangers',cursive;font-size:14px;color:#1e293b;cursor:pointer;box-shadow:2px 2px 0 #1e293b;letter-spacing:1px}
+.mg-btn:active{transform:translate(2px,2px);box-shadow:none}
+.mg-err{font-size:11px;color:#f87171;margin-top:8px;text-align:center;min-height:16px;font-weight:700}
+.mg-ver{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:9px;color:#334155;font-weight:700;letter-spacing:1.5px}
+
+/* ── HEADER ── */
+.hdr{background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:2.5px solid #1e293b;padding:calc(10px + env(safe-area-inset-top,44px)) 14px 10px;display:flex;align-items:center;gap:10px;z-index:50;flex-shrink:0;box-shadow:0 3px 0 #1e293b}
+.hdr-av{width:46px;height:46px;border-radius:14px;border:2.5px solid #1e293b;background:#bae6fd;flex-shrink:0;position:relative;box-shadow:2px 2px 0 #1e293b;cursor:pointer}
 .hdr-av img{width:100%;height:100%;object-fit:contain;border-radius:10px}
-.hdr-av-lvl{position:absolute;bottom:-5px;right:-5px;background:#ef4444;color:#fff;font-family:'Bangers',cursive;font-size:11px;border:var(--border);border-radius:5px;padding:1px 4px;line-height:1.2}
+.hdr-av-lvl{position:absolute;bottom:-5px;right:-5px;background:#ef4444;color:#fff;font-family:'Bangers',cursive;font-size:11px;border:2.5px solid #1e293b;border-radius:5px;padding:1px 4px;line-height:1.2}
 .hdr-info{flex:1;min-width:0}
-.hdr-name{font-family:'Bangers',cursive;font-size:22px;color:var(--ink);letter-spacing:1px;line-height:1}
+.hdr-name{font-family:'Bangers',cursive;font-size:22px;color:#1e293b;letter-spacing:1px;line-height:1}
 .hdr-grade{font-size:8px;font-weight:700;color:#64748b;letter-spacing:.8px;margin-top:1px}
 .hdr-xp{height:8px;background:#e2e8f0;border-radius:4px;border:1.5px solid #cbd5e1;overflow:hidden;margin-top:4px}
-.hdr-xp-fill{height:100%;width:62%;background:linear-gradient(90deg,#ef4444,#f59e0b,#ef4444);background-size:200%;animation:xpFlow 2s linear infinite}
-.hdr-chips{display:flex;gap:5px;flex-shrink:0}
-.chip{border:var(--border);border-radius:20px;padding:4px 10px;font-family:'Bangers',cursive;font-size:14px;display:flex;align-items:center;gap:3px;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s}
+.hdr-xp-fill{height:100%;width:0%;background:linear-gradient(90deg,#ef4444,#f59e0b,#ef4444);background-size:200%;animation:xpFlow 2s linear infinite;transition:width .6s ease}
+.chip{border:2.5px solid #1e293b;border-radius:20px;padding:4px 10px;font-family:'Bangers',cursive;font-size:14px;display:flex;align-items:center;gap:3px;cursor:pointer;box-shadow:2px 2px 0 #1e293b;white-space:nowrap}
 .chip:active{box-shadow:none;transform:translate(2px,2px)}
-.chip-gold{background:#fcd34d;color:var(--ink)}
-.chip-red{background:#fca5a5;color:var(--ink)}
+.chip-gold{background:#fcd34d;color:#1e293b}
+.chip-red{background:#fca5a5;color:#1e293b}
 
-/* ══ SCENE ══ */
-.scene{flex:1;position:relative;overflow:hidden}
-.sky-bg{position:absolute;inset:0;background:linear-gradient(180deg,#7dd3fc 0%,#bae6fd 55%,#fef9c3 100%)}
+/* ── SCENE ── */
+.scene{flex:1;position:relative;overflow:hidden;min-height:0}
 
-.sun-wrap{position:absolute;top:16px;right:18px}
-.sun{width:52px;height:52px;background:#fde047;border-radius:50%;border:var(--border);box-shadow:0 0 22px rgba(253,224,71,.55),var(--shadow);position:relative;z-index:1}
-.sun-rays{position:absolute;inset:-14px;animation:sunSpin 22s linear infinite;z-index:0;opacity:.55}
-.sun-ray{position:absolute;background:#fde047;border:1.5px solid #1e293b;border-radius:3px;width:7px;height:14px;left:calc(50% - 3.5px);transform-origin:50% 38px}
-
-.seagull{position:absolute;font-size:15px;animation:seagull 7s ease-in-out infinite;opacity:.8}
+/* SKY — 148px */
+.sky{position:absolute;top:0;left:0;right:0;height:148px;background:linear-gradient(180deg,#5bb8f5 0%,#87ceeb 55%,#b8e4f7 100%)}
+.sun{position:absolute;top:18px;right:24px;width:52px;height:52px;background:radial-gradient(circle at 38% 34%,#fffde0,#f9e04b 50%,#f1c40f);border-radius:50%;box-shadow:0 0 22px rgba(249,224,75,.55),0 4px 8px rgba(0,0,0,.12)}
+.gull{position:absolute;font-size:14px;opacity:.8;animation:gull ease-in-out infinite}
 .cloud{position:absolute}
-.cloud-body{background:#fff;border-radius:28px;border:var(--border);box-shadow:inset -2px -4px 0 rgba(0,0,0,.05);position:relative}
-.cloud-bump{position:absolute;background:#fff;border-radius:50%;border:var(--border);border-bottom:none}
+.cld{background:#fff;border-radius:30px;position:relative;box-shadow:2px 4px 10px rgba(0,0,0,.08)}
+.cld b{position:absolute;background:#fff;border-radius:50%}
 
-/* GROUND */
-.ground{position:absolute;bottom:115px;left:0;right:0;top:95px}
-.grass{position:absolute;inset:0;background:#86efac}
-.road{position:absolute;background:#d6d3d1}
-.road-dash{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0,rgba(255,255,255,.5) 10px,transparent 10px,transparent 22px)}
-.road-v-dash{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.5) 0,rgba(255,255,255,.5) 10px,transparent 10px,transparent 22px)}
+/* GROUND — 148→330px (182px) */
+.ground{position:absolute;top:148px;left:0;right:0;height:182px;overflow:visible}
+.ground-fill{position:absolute;inset:0;background:linear-gradient(180deg,#58a040 0%,#6ab04c 45%,#7ec850 100%)}
+.road{position:absolute;bottom:0;left:0;right:0;height:22px;background:#c0b898}
+.road::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.35) 0,rgba(255,255,255,.35) 10px,transparent 10px,transparent 22px)}
 
-.water-zone{position:absolute;bottom:0;left:0;right:0;height:115px;background:#38bdf8;border-top:var(--border);overflow:hidden;box-shadow:inset 0 12px 20px rgba(2,132,199,.25)}
-.water-shine{position:absolute;top:12px;left:0;width:200%;display:flex;animation:waterFlow 4s linear infinite}
-.water-line{height:4px;background:rgba(255,255,255,.28);border-radius:4px;display:inline-block;margin:0 8px}
-.dock{position:absolute;bottom:115px;left:0;right:0;height:22px;background:#b45309;border-top:var(--border);border-bottom:var(--border);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
+/* QUAI — 330px */
+.quai{position:absolute;top:330px;left:0;right:0;height:20px;background:linear-gradient(180deg,#d4a843,#9e7428);box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:15}
+.quai::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.18)}
+.quai::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 28px,rgba(0,0,0,.07) 28px,rgba(0,0,0,.07) 30px)}
+.mooring{position:absolute;top:326px;width:8px;height:14px;background:linear-gradient(180deg,#6b4c1a,#4a3010);border-radius:3px 3px 0 0;z-index:16}
 
-/* ══ BÂTIMENTS ══ */
-.b{position:absolute;cursor:pointer;transition:transform .15s cubic-bezier(.4,0,.2,1)}
-.b:active{transform:scale(.93) !important}
-.b-shadow{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);height:10px;background:rgba(30,41,59,.15);border-radius:50%;filter:blur(4px)}
-.b-lbl{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Bangers',cursive;font-size:11px;letter-spacing:.5px;border:var(--border);border-radius:8px;padding:2px 9px;box-shadow:var(--shadow);z-index:5;background:#fff;color:var(--ink)}
+/* WATER — 350→fin */
+.water{position:absolute;top:350px;left:0;right:0;bottom:0;background:linear-gradient(180deg,#2892d7 0%,#1565a0 100%);overflow:hidden;z-index:10}
+.water::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.07),transparent 50%)}
+.waves-wrap{position:absolute;top:10px;width:200%;display:flex;animation:waterFlow 3.8s linear infinite}
+.wave{height:11px;border-radius:50%;background:rgba(255,255,255,.13);display:inline-block;margin:0 8px}
 
-.pin{position:absolute;z-index:10;animation:pinBounce 1.4s ease infinite}
-.pin-bubble{border:var(--border);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:var(--shadow)}
-.pin-tail{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin:-1px auto 0}
+/* ── BÂTIMENTS (positions en % pour responsive) ── */
+.b{position:absolute;cursor:pointer;transition:transform .14s cubic-bezier(.4,0,.2,1)}
+.b:active{filter:brightness(1.09);transform:scale(.93)!important}
+.bsh{position:absolute;bottom:-6px;left:10%;right:10%;height:7px;background:rgba(0,0,0,.18);border-radius:50%;filter:blur(3px);pointer-events:none}
+/* Label */
+.lbl{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Bangers',cursive;font-size:11px;letter-spacing:.5px;border-radius:10px;padding:2px 9px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.35);z-index:30;box-shadow:0 2px 7px rgba(0,0,0,.25)}
+/* Pin */
+.pin{position:absolute;z-index:40;animation:pinBounce 1.4s ease-in-out infinite}
+.pb{border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 3px 8px rgba(0,0,0,.3)}
+.pt{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin:-1px auto 0}
+/* Shine */
+.sw{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit}
+.sh{position:absolute;top:0;bottom:0;width:36%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);animation:shine 4.5s ease-in-out infinite}
+/* Smoke */
+.smk{position:absolute;font-size:9px}
+.smk:nth-child(1){animation:puff 2.6s ease-in-out infinite}
+.smk:nth-child(2){animation:puff 2.6s ease-in-out infinite .85s}
 
-.smoke-p{position:absolute;font-size:11px;top:-5px}
-.smoke-p:nth-child(1){left:2px;animation:puff 2.2s ease-in-out infinite}
-.smoke-p:nth-child(2){left:11px;animation:puff 2.2s ease-in-out infinite .7s}
-.smoke-p:nth-child(3){left:20px;animation:puff 2.2s ease-in-out infinite 1.4s}
+/* Composants */
+.w-roof{height:20px;background:linear-gradient(180deg,#ef4444,#c62828);border-radius:5px 5px 0 0;display:flex;align-items:center;justify-content:space-evenly;padding:0 8%;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+.w-m{width:13%;height:13px;background:linear-gradient(180deg,#fca5a5,#ef9090);border-radius:2px}
+.w-body{height:78px;background:linear-gradient(135deg,#f87171,#ef4444);border-radius:0 0 4px 4px;position:relative;overflow:hidden;box-shadow:inset -7px 0 0 rgba(0,0,0,.1)}
+.w-win{position:absolute;top:13px;width:17%;height:15px;background:linear-gradient(135deg,#90caf9,#64b5f6);border-radius:3px}
+.w-win::after{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(0,0,0,.12)}
+.w-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:22%;height:34px;background:linear-gradient(180deg,#7f1d1d,#4a0e0e);border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.w-sign{position:absolute;top:5px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#fde047,#facc15);border-radius:3px;padding:1px 8px;font-family:'Bangers',cursive;font-size:8px;color:#1a1a1a;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,.18)}
+.w-chim{position:absolute;width:10%;height:18px;background:linear-gradient(180deg,#546e7a,#37474f);border-radius:2px 2px 0 0}
 
-/* WAREHOUSE */
-.w{width:108px}
-.w-chimney{position:absolute;bottom:94px;left:14px;width:12px;height:20px;background:#94a3b8;border:var(--border);border-radius:2px 2px 0 0;box-shadow:var(--shadow)}
-.w-roof{height:20px;background:#ef4444;border:var(--border);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:space-evenly;padding:0 8px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.1)}
-.w-merlon{width:11px;height:13px;background:#fca5a5;border:var(--border);border-radius:2px}
-.w-body{height:72px;background:#fca5a5;border:var(--border);border-top:none;position:relative;box-shadow:inset -6px 0 0 rgba(0,0,0,.08)}
-.w-stripe{position:absolute;top:0;bottom:0;width:7px;background:rgba(0,0,0,.05)}
-.w-win{position:absolute;top:10px;width:20px;height:16px;background:#bae6fd;border:var(--border);border-radius:3px}
-.w-win::after{content:'';position:absolute;top:50%;left:0;right:0;height:1.5px;background:#1e293b}
-.w-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:24px;height:32px;background:#7f1d1d;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:15px}
-.w-sign{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#fde047;border:var(--border);padding:1px 6px;border-radius:3px;font-family:'Bangers',cursive;font-size:8px;color:var(--ink);white-space:nowrap}
-
-/* CASINO */
-.ca{width:80px}
-.ca-tower{width:16px;height:36px;background:#7c3aed;border:var(--border);border-radius:2px 2px 0 0;position:absolute;bottom:68px;left:50%;transform:translateX(-50%);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;overflow:hidden}
-.ca-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid #1e293b}
-.ca-roof{height:15px;background:#8b5cf6;border:var(--border);border-radius:4px 4px 0 0;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12);position:relative;overflow:hidden}
+.ca-tower{width:18%;height:30px;background:linear-gradient(180deg,#9333ea,#6b21a8);border-radius:2px 2px 0 0;position:absolute;left:50%;transform:translateX(-50%);box-shadow:0 3px 6px rgba(0,0,0,.3)}
+.ca-roof{height:14px;background:linear-gradient(180deg,#a855f7,#8b5cf6);border-radius:4px 4px 0 0;position:relative;overflow:hidden}
 .ca-roof::after{content:'✦ CASINO ✦';font-family:'Bangers',cursive;font-size:7px;color:#fde047;letter-spacing:1px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
-.ca-body{height:54px;border:var(--border);border-top:none;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.1);animation:casinoFlash 3s ease infinite}
-.ca-lights{position:absolute;top:5px;left:0;right:0;display:flex;justify-content:space-evenly;padding:0 4px}
-.ca-l{width:9px;height:9px;border-radius:50%;border:1.5px solid #1e293b}
-.ca-l2{position:absolute;top:18px;left:0;right:0;display:flex;justify-content:space-evenly;padding:0 10px}
-.ca-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:19px;height:26px;background:#2e1065;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:12px}
+.ca-body{height:50px;border-radius:0 0 4px 4px;position:relative;overflow:hidden;animation:casinoAnim 3s ease infinite;box-shadow:inset -4px 0 0 rgba(0,0,0,.12)}
+.ca-ll{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:space-evenly;padding:0 8%}
+.ca-l{width:10px;height:10px;border-radius:50%}
+.ca-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:22%;height:26px;background:linear-gradient(180deg,#3b0764,#1e0036);border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:13px}
 
-/* COMMERCE */
-.co{width:86px}
-.co-body{height:64px;background:#86efac;border:var(--border);border-radius:5px 5px 0 0;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.08)}
-.co-awn{height:13px;background:repeating-linear-gradient(90deg,#ef4444 0,#ef4444 9px,#fde047 9px,#fde047 18px);border:var(--border);border-radius:0 0 5px 5px;margin-bottom:-2px;position:relative;z-index:2}
-.co-sign{position:absolute;top:5px;left:50%;transform:translateX(-50%);background:#fde047;border:var(--border);padding:1px 5px;border-radius:3px;font-family:'Bangers',cursive;font-size:8px;white-space:nowrap;color:var(--ink)}
-.co-win{position:absolute;top:24px;background:#dcfce7;border:var(--border);border-radius:3px;width:22px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px}
-.co-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:28px;background:#14532d;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0}
+.co-body{height:58px;background:linear-gradient(135deg,#4ade80,#22c55e);border-radius:5px 5px 0 0;position:relative;overflow:hidden;box-shadow:inset -5px 0 0 rgba(0,0,0,.1)}
+.co-awn{height:11px;background:repeating-linear-gradient(90deg,#ef4444 0,#ef4444 9px,#fde047 9px,#fde047 18px);border-radius:0 0 4px 4px;margin-bottom:-2px;position:relative;z-index:2;box-shadow:0 2px 5px rgba(0,0,0,.14)}
+.co-sign{position:absolute;top:4px;left:50%;transform:translateX(-50%);background:linear-gradient(180deg,#fde047,#facc15);border-radius:3px;padding:1px 5px;font-family:'Bangers',cursive;font-size:7.5px;white-space:nowrap;color:#1a1a1a}
+.co-win{position:absolute;top:22px;background:linear-gradient(135deg,#bbf7d0,#86efac);border-radius:3px;width:24%;height:15px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.co-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:22%;height:26px;background:#14532d;border-radius:3px 3px 0 0}
+
+.bo-ped{height:0;border-left:50% solid transparent;border-right:50% solid transparent;border-bottom:15px solid #1e3a5f;filter:drop-shadow(0 -2px 3px rgba(0,0,0,.18));margin-bottom:-1px}
+.bo-cols{display:flex;gap:4%;justify-content:center;padding:0 6%;position:relative;z-index:1}
+.bo-col{flex:1;background:linear-gradient(180deg,#1e3a5f,#0f2040);border-radius:1px}
+.bo-body{height:46px;background:linear-gradient(135deg,#0f172a,#0a1120);border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -4px 0 0 rgba(0,0,0,.2)}
+.bo-ticker{position:absolute;top:0;left:0;right:0;height:9px;background:#22c55e;overflow:hidden;display:flex;align-items:center}
+.bo-tick{font-size:6px;font-weight:900;color:#0f2200;white-space:nowrap;animation:tickerRoll 5s linear infinite;padding:0 4px}
+.bo-chart{display:flex;align-items:flex-end;gap:3%;padding:3px 6% 0;height:28px;position:absolute;bottom:3px;left:0;right:0}
+.bo-bar{flex:1;border-radius:2px 2px 0 0}
+
+.sy-dome{width:43%;height:14px;background:linear-gradient(180deg,#fca5a5,#ef4444);border-radius:50% 50% 0 0;margin:0 auto;position:relative}
+.sy-flag{width:29%;height:10px;background:#ef4444;position:absolute;top:-9px;left:42%;animation:flagWave .9s ease-in-out infinite;transform-origin:left center;border-radius:0 2px 2px 0}
+.sy-post{width:2px;height:11px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
+.sy-body{height:42px;background:linear-gradient(135deg,#f87171,#ef4444);border-radius:4px 4px 0 0;position:relative;overflow:hidden;box-shadow:inset -3px 0 0 rgba(0,0,0,.1)}
+.sy-arch{position:absolute;top:5px;left:50%;transform:translateX(-50%);width:32%;height:14px;border-radius:9px 9px 0 0;background:linear-gradient(180deg,#dc2626,#b91c1c)}
+.sy-cols{position:absolute;bottom:0;left:5%;right:5%;display:flex;gap:8%;align-items:flex-end}
+.sy-pillar{flex:1;height:22px;background:linear-gradient(180deg,#fca5a5,#ef4444)}
+
+.ec-roof{height:0;border-left:50% solid transparent;border-right:50% solid transparent;border-bottom:18px solid #38bdf8;filter:drop-shadow(0 -2px 3px rgba(56,189,248,.22));margin-bottom:-1px}
+.ec-body{height:40px;background:linear-gradient(135deg,#7dd3fc,#38bdf8);border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -3px 0 0 rgba(0,0,0,.08)}
+.ec-win{position:absolute;top:7px;width:23%;height:12px;background:linear-gradient(135deg,#e0f7fa,#b2ebf2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px}
+.ec-board{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:38%;height:9px;background:#134e00;border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:6px;color:#4ade80;font-weight:700}
+.ec-bell{font-size:12px;display:block;text-align:center;animation:bob 2.2s ease-in-out infinite}
+.ec-post{width:2px;height:10px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
+
+.cl-top{height:11px;background:linear-gradient(180deg,#3b82f6,#2563eb);border-radius:3px 3px 0 0;overflow:hidden;position:relative}
+.cl-stripe{position:absolute;inset:0;background:repeating-linear-gradient(90deg,#fde047 0,#fde047 6px,transparent 6px,transparent 12px);opacity:.6}
+.cl-body{height:50px;background:linear-gradient(135deg,#60a5fa,#3b82f6);border-radius:0 0 4px 4px;position:relative;overflow:hidden;box-shadow:inset -5px 0 0 rgba(0,0,0,.1)}
+.cl-bay{position:absolute;bottom:0;background:linear-gradient(180deg,#1e3a8a,#0d2168);border-radius:2px 2px 0 0;display:flex;align-items:center;justify-content:center}
+.cl-tl{position:absolute;top:4px;right:5%;width:9px;height:24px;background:#1e293b;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:3px 0}
+.cl-d{width:5px;height:5px;border-radius:50%}
+
+.rk-roof{height:11px;background:linear-gradient(180deg,#c2410c,#9a3412);border-radius:4px 4px 0 0}
+.rk-body{height:48px;background:linear-gradient(135deg,#fb923c,#ea580c);border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -5px 0 0 rgba(0,0,0,.1);display:flex;align-items:flex-end;justify-content:center;gap:3%;padding:0 6%}
+.pod{border-radius:3px 3px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:2px;font-size:9px;box-shadow:inset 0 2px 0 rgba(255,255,255,.12)}
+.p1{flex:1.4;height:36px;background:linear-gradient(180deg,#fcd34d,#f59e0b)}
+.p2{flex:1.1;height:26px;background:linear-gradient(180deg,#e2e8f0,#94a3b8)}
+.p3{flex:1;height:19px;background:linear-gradient(180deg,#fdba74,#c2773d)}
+.rk-trophy{position:absolute;top:-24px;left:50%;transform:translateX(-50%);font-size:19px;animation:bob 2.2s ease-in-out infinite;filter:drop-shadow(0 3px 5px rgba(251,146,60,.4))}
 
 /* GRUE */
-.gr{width:74px}
-.gr-base{height:52px;background:#94a3b8;border:var(--border);border-radius:3px;position:relative;box-shadow:inset -4px 0 0 rgba(0,0,0,.12)}
-.gr-base-top{height:7px;background:repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 9px,#1e293b 9px,#1e293b 11px)}
-.gr-tw-wrap{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);transform-origin:bottom center;animation:crane 5s ease-in-out infinite alternate}
-.gr-tw{width:10px;height:50px;background:#fcd34d;border:var(--border);margin:0 auto;position:relative;box-shadow:var(--shadow)}
-.gr-arm{position:absolute;top:3px;left:-26px;width:58px;height:8px;background:#fcd34d;border:var(--border);border-radius:2px;box-shadow:var(--shadow)}
-.gr-ctr{position:absolute;top:2px;right:-13px;width:14px;height:6px;background:#f59e0b;border:var(--border);border-radius:1px}
-.gr-cable{position:absolute;top:11px;left:4px;width:2px;height:26px;background:#1e293b}
-.gr-hook{position:absolute;bottom:-5px;left:-2px;font-size:10px}
-.gr-light{position:absolute;top:-4px;left:-4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid #1e293b;animation:blink .9s ease infinite}
-
-/* CLARK */
-.cl{width:76px}
-.cl-top{height:12px;background:#3b82f6;border:var(--border);border-radius:4px 4px 0 0;overflow:hidden;position:relative}
-.cl-stripe{position:absolute;inset:0;background:repeating-linear-gradient(90deg,#fde047 0,#fde047 7px,#3b82f6 7px,#3b82f6 13px)}
-.cl-body{height:52px;background:#60a5fa;border:var(--border);border-top:none;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.1)}
-.cl-bay{position:absolute;bottom:0;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;background:#bfdbfe;display:flex;align-items:center;justify-content:center}
-.cl-tl{position:absolute;top:5px;right:5px;width:10px;height:28px;background:#1e293b;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:3px 0}
-.cl-tl-dot{width:6px;height:6px;border-radius:50%}
-
-/* BOURSE */
-.bo{width:72px}
-.bo-ped{height:0;width:0;border-left:36px solid transparent;border-right:36px solid transparent;border-bottom:16px solid #334155;margin-bottom:-1px;filter:drop-shadow(0 -2px 0 #1e293b)}
-.bo-cols{display:flex;gap:3px;justify-content:center;padding:0 5px;position:relative;z-index:1}
-.bo-col{width:8px;background:#334155;border:var(--border);border-radius:1px}
-.bo-body{height:50px;background:#1e293b;border:var(--border);border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -4px 0 0 rgba(0,0,0,.2)}
-.bo-ticker{position:absolute;top:0;left:0;right:0;height:10px;background:#4ade80;border-bottom:var(--border);display:flex;align-items:center;overflow:hidden}
-.bo-tick{font-size:7px;font-weight:900;color:#0f172a;white-space:nowrap;animation:waterFlow 5s linear infinite;padding:0 6px}
-.bo-chart{display:flex;align-items:flex-end;gap:2px;padding:3px 5px 0;height:32px;position:absolute;bottom:3px;left:0;right:0}
-.bo-bar{flex:1;border:1.5px solid #1e293b;border-radius:2px 2px 0 0}
-
-/* SYNDICAT */
-.sy{width:66px}
-.sy-dome{width:32px;height:20px;background:#fca5a5;border:var(--border);border-radius:50% 50% 0 0;margin:0 auto;box-shadow:var(--shadow);position:relative}
-.sy-flag{width:20px;height:12px;background:#ef4444;border:var(--border);position:absolute;top:-13px;left:15px;animation:flagWave .9s ease-in-out infinite;transform-origin:left center}
-.sy-post{width:2px;height:16px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
-.sy-body{height:52px;background:#fca5a5;border:var(--border);border-radius:4px 4px 0 0;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.08)}
-.sy-arch{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:22px;height:18px;border:var(--border);border-radius:11px 11px 0 0;background:#f87171}
-.sy-cols{position:absolute;bottom:0;left:5px;right:5px;display:flex;gap:5px;align-items:flex-end}
-.sy-pillar{flex:1;height:28px;background:#f87171;border:var(--border);border-radius:1px}
-
-/* ÉCOLE */
-.ec{width:63px}
-.ec-roof{width:0;height:0;border-left:32px solid transparent;border-right:32px solid transparent;border-bottom:20px solid #7dd3fc;filter:drop-shadow(1px -1px 0 #1e293b);margin-bottom:-1px}
-.ec-body{height:48px;background:#bae6fd;border:var(--border);border-radius:0 0 3px 3px;position:relative;box-shadow:inset -4px 0 0 rgba(0,0,0,.08)}
-.ec-win{position:absolute;top:8px;width:15px;height:15px;background:#e0f7fa;border:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px}
-.ec-board{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:26px;height:11px;background:#1a3c00;border:var(--border);border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#4ade80;font-weight:700}
-.ec-bell{font-size:14px;display:block;text-align:center;animation:bob 2s ease-in-out infinite}
-.ec-post{width:2px;height:13px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
-
-/* CLASSEMENT */
-.rk{width:74px}
-.rk-roof{height:12px;background:#d97706;border:var(--border);border-radius:4px 4px 0 0;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
-.rk-body{height:52px;background:#fcd34d;border:var(--border);border-top:none;border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -5px 0 0 rgba(0,0,0,.1);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:0 5px}
-.pod{border:var(--border);border-radius:3px 3px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:2px;font-size:10px}
-.p1{width:22px;height:38px;background:#fbbf24}
-.p2{width:18px;height:28px;background:#e2e8f0}
-.p3{width:16px;height:20px;background:#fdba74}
-.rk-trophy{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:22px;animation:bob 2.2s ease-in-out infinite}
+.crane{position:absolute;top:60px;left:23%;z-index:22}
+.crane-base{width:14.4vw;max-width:58px;min-width:44px;height:82px;background:linear-gradient(135deg,#546e7a,#37474f);border-radius:4px;position:relative;overflow:hidden;box-shadow:inset -6px 0 0 rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.4)}
+.crane-base-top{height:8px;background:repeating-linear-gradient(90deg,#f59e0b 0,#f59e0b 10px,#1e293b 10px,#1e293b 12px)}
+.crane-base-ico{position:absolute;inset:12px 5px 5px;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.35}
+.crane-anim{position:absolute;bottom:82px;left:50%;transform:translateX(-50%);transform-origin:bottom center;animation:craneSway 6s ease-in-out infinite}
+.crane-tower{width:13px;height:7.5vh;min-height:110px;max-height:140px;background:linear-gradient(180deg,#fcd34d,#f59e0b);border-radius:2px;margin:0 auto;position:relative;box-shadow:2px 0 5px rgba(0,0,0,.2)}
+.crane-tower::before{content:'';position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 8px 3px rgba(239,68,68,.6);animation:lightBlink .9s ease infinite}
+.crane-arm{position:absolute;top:10px;left:-6vw;width:45vw;max-width:176px;min-width:120px;height:10px;background:linear-gradient(180deg,#fcd34d,#f59e0b);border-radius:2px;box-shadow:0 3px 6px rgba(0,0,0,.2)}
+.crane-cw{position:absolute;top:0;right:-5%;width:13%;height:100%;background:linear-gradient(180deg,#d97706,#b45309);border-radius:2px}
+.crane-cable{position:absolute;top:20px;left:27vw;max-left:105px;width:2px;height:52px;background:linear-gradient(180deg,rgba(0,0,0,.6),rgba(0,0,0,.3));border-radius:1px;transform-origin:top center;animation:cswing 4s ease-in-out infinite}
+.crane-box{position:absolute;top:69px;left:calc(27vw - 6px);width:5.6vw;max-width:22px;min-width:14px;height:14px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:2px;box-shadow:0 4px 8px rgba(0,0,0,.35);animation:cswing 4s ease-in-out infinite}
+.crane-box::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1.5px;background:rgba(0,0,0,.2)}
 
 /* BATEAU */
-.bt{width:94px;transform-origin:bottom center;animation:boatRock 4.5s ease-in-out infinite}
-.bt-mast{width:3px;height:44px;background:#92400e;border:1.5px solid #1e293b;margin:0 auto;position:relative}
-.bt-sail{position:absolute;top:0;left:3px;width:0;height:0;border-left:22px solid transparent;border-right:0;border-bottom:36px solid #fef9c3;filter:drop-shadow(1px 1px 0 #1e293b)}
-.bt-sail2{position:absolute;top:6px;right:3px;width:0;height:0;border-right:14px solid transparent;border-bottom:24px solid #fde047;filter:drop-shadow(-1px 1px 0 #1e293b)}
-.bt-deck{height:22px;background:#60a5fa;border:var(--border);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 8px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
-.bt-card{width:13px;height:17px;border-radius:2px;border:var(--border);box-shadow:1px 1px 0 #1e293b}
-.bt-hull{height:17px;background:#3b82f6;border:var(--border);border-radius:0 0 14px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.bt-wl{position:absolute;top:7px;left:0;right:0;height:2px;background:rgba(255,255,255,.25)}
-.bt-port{position:absolute;top:2px;width:8px;height:8px;border-radius:50%;background:#bfdbfe;border:1.5px solid #1e293b}
+.boat{position:absolute;top:354px;left:1.5%;right:1.5%;height:56px;z-index:12;animation:boatRock 5.5s ease-in-out infinite;transform-origin:50% 100%}
+.boat-hull{position:absolute;bottom:0;left:0;right:0;height:18px;background:linear-gradient(180deg,#1e40af,#0d2168);border-radius:3px 26px 26px 3px;box-shadow:0 5px 14px rgba(0,0,0,.45)}
+.boat-hull::before{content:'';position:absolute;top:7px;left:0;right:0;height:2px;background:rgba(255,255,255,.18)}
+.bhp{position:absolute;top:4px;width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,#bfdbfe,#93c5fd)}
+.boat-fore{position:absolute;bottom:18px;right:10%;left:36%;height:16px;background:linear-gradient(135deg,#3b82f6,#2563eb);border-radius:3px 3px 0 0;box-shadow:inset 0 2px 0 rgba(255,255,255,.1)}
+.boat-cabin{position:absolute;bottom:18px;left:15%;width:18%;height:22px;background:linear-gradient(135deg,#2563eb,#1e40af);border-radius:4px 4px 0 0;box-shadow:inset -4px 0 0 rgba(0,0,0,.1)}
+.boat-cabin-win{position:absolute;top:5px;width:28%;height:10px;background:linear-gradient(135deg,#bae6fd,#93c5fd);border-radius:2px}
+.boat-c{position:absolute;bottom:18px;height:13px;border-radius:2px;box-shadow:0 2px 5px rgba(0,0,0,.25)}
+.boat-c::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 7px,rgba(0,0,0,.08) 7px,rgba(0,0,0,.08) 8px)}
+.mast{position:absolute;bottom:34px;width:3px;background:linear-gradient(180deg,#92400e,#78350f);border-radius:1px}
+.boat-lbl{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-family:'Bangers',cursive;font-size:11px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);white-space:nowrap;letter-spacing:.5px;background:linear-gradient(135deg,#3b82f6,#1e40af);border-radius:10px;padding:2px 10px;box-shadow:0 2px 6px rgba(59,130,246,.4);z-index:2}
 
-/* DÉCO */
-.tree{position:absolute;display:flex;flex-direction:column;align-items:center}
-.tree-top{border-radius:50% 50% 45% 45%;border:var(--border)}
-.tree-trunk{width:6px;background:#92400e;border:var(--border);border-radius:1px}
-.box{border:var(--border);border-radius:2px;box-shadow:var(--shadow)}
-.lamp{position:absolute;display:flex;flex-direction:column;align-items:center}
-.lamp-arm{width:13px;height:7px;background:#94a3b8;border:var(--border);border-radius:4px 4px 0 0;margin-bottom:-1px}
-.lamp-glow{width:7px;height:7px;border-radius:50%;background:#fef3c7;box-shadow:0 0 8px 4px rgba(254,243,199,.4);margin:-3px auto 0}
-.lamp-post{width:3px;background:#94a3b8;border:1.5px solid #1e293b;border-radius:1px}
+/* CONTAINERS QUAI */
+.qc-wrap{position:absolute;top:310px;right:1.5%;z-index:14}
+.qc-row{display:flex;gap:2px;margin-bottom:2px}
+.qc{height:18px;border-radius:2px;box-shadow:0 2px 6px rgba(0,0,0,.28);position:relative;overflow:hidden}
+.qc::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 7px,rgba(0,0,0,.07) 7px,rgba(0,0,0,.07) 8px)}
 
-/* ══ BOTTOM NAV ══ */
-.bottom-nav{background:var(--bg-ui);backdrop-filter:blur(10px);border-top:var(--border);padding:7px 0 calc(7px + env(safe-area-inset-bottom,10px));display:flex;z-index:100;flex-shrink:0;box-shadow:0 -3px 0 #1e293b}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent}
+/* ARBRES */
+.tree{position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.tc{border-radius:50% 50% 46% 46%;box-shadow:inset -2px -3px 0 rgba(0,0,0,.1),2px 4px 7px rgba(0,0,0,.14)}
+.tt{width:6px;border-radius:2px;background:linear-gradient(180deg,#78350f,#92400e)}
+
+/* LAMP */
+.lamp{position:absolute;display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.lamp-arm{width:11px;height:6px;background:#78909c;border-radius:4px 4px 0 0;margin-bottom:-1px}
+.lamp-glow{width:7px;height:7px;border-radius:50%;background:#fef3c7;box-shadow:0 0 9px 4px rgba(254,243,199,.4);margin:-2px auto 0}
+.lamp-post{width:3px;background:#78909c;border-radius:1px}
+
+/* ── NAV ── */
+.nav{background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-top:2.5px solid #1e293b;padding:7px 0 calc(7px + env(safe-area-inset-bottom,10px));display:flex;z-index:50;flex-shrink:0;box-shadow:0 -3px 0 #1e293b}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent;-webkit-tap-highlight-color:transparent}
 .nav-btn:active .nav-ico{transform:scale(.85)}
 .nav-ico{font-size:23px;transition:transform .12s;position:relative}
 .nav-lbl{font-family:'Bangers',cursive;font-size:10px;color:#64748b;letter-spacing:.8px}
 .nav-btn.active .nav-lbl{color:#ef4444}
-.nav-btn.active .nav-ico{filter:drop-shadow(0 3px 5px rgba(239,68,68,.35))}
+.nav-btn.active .nav-ico{filter:drop-shadow(0 3px 5px rgba(239,68,68,.4))}
 .nav-dot{width:9px;height:9px;background:#ef4444;border-radius:50%;border:2px solid #fff;position:absolute;top:-2px;right:-4px}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(env(safe-area-inset-bottom,20px)+60px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:12px;font-size:12px;font-weight:700;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
-<style>
-/* ══ MAINTENANCE GATE ══ */
-#maint-gate{
-  position:fixed;inset:0;z-index:9999;
-  background:#0f172a;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:24px;
-  font-family:'Inter',sans-serif;
-}
-@keyframes warningPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.mg-icon{font-size:64px;animation:warningPulse 2s ease infinite;margin-bottom:20px}
-.mg-badge{background:#fbbf24;border:2.5px solid #1e293b;border-radius:8px;padding:4px 14px;font-family:'Bangers',cursive;font-size:12px;color:#1e293b;letter-spacing:2px;box-shadow:3px 3px 0 #1e293b;margin-bottom:14px}
-.mg-title{font-family:'Bangers',cursive;font-size:32px;color:#fff;letter-spacing:2px;text-align:center;line-height:1.1;margin-bottom:8px}
-.mg-sub{font-size:13px;color:#94a3b8;text-align:center;line-height:1.5;margin-bottom:28px;max-width:280px}
-.mg-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;width:100%;max-width:300px;animation:fadeSlide .4s ease}
-.mg-label{font-size:9px;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:8px}
-.mg-input-wrap{display:flex;gap:8px}
-.mg-input{flex:1;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;font-family:'Bangers',cursive;font-size:16px;color:#fff;letter-spacing:2px;outline:none;transition:border .2s}
-.mg-input:focus{border-color:rgba(251,191,36,.5)}
-.mg-input.shake{animation:mgShake .3s ease}
-@keyframes mgShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.mg-btn{background:#fbbf24;border:2px solid #1e293b;border-radius:10px;padding:11px 16px;font-family:'Bangers',cursive;font-size:14px;color:#1e293b;cursor:pointer;box-shadow:2px 2px 0 #1e293b;letter-spacing:1px;transition:transform .1s}
-.mg-btn:active{transform:translate(2px,2px);box-shadow:none}
-.mg-error{font-size:11px;color:#f87171;margin-top:8px;text-align:center;min-height:16px;font-weight:700}
-.mg-version{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:9px;color:#334155;font-weight:700;letter-spacing:1.5px}
-</style>
-
-<div id="maint-gate">
-  <div class="mg-icon">🔧</div>
+<!-- MAINTENANCE GATE -->
+<div id="mg">
+  <div class="mg-ico">🔧</div>
   <div class="mg-badge">VERSION 1.4</div>
   <div class="mg-title">MAINTENANCE<br>EN COURS</div>
-  <div class="mg-sub">Le port est temporairement fermé pour maintenance. Une mise à jour importante est en cours de déploiement.</div>
+  <div class="mg-sub">Le port est temporairement fermé. Une mise à jour importante est en cours de déploiement.</div>
   <div class="mg-card">
-    <div class="mg-label">CODE D'ACCÈS</div>
-    <div class="mg-input-wrap">
+    <div class="mg-lbl">CODE D'ACCÈS</div>
+    <div class="mg-row">
       <input class="mg-input" id="mgInput" type="password" placeholder="••••••" maxlength="10" autocomplete="off">
       <button class="mg-btn" onclick="checkCode()">ENTRER</button>
     </div>
-    <div class="mg-error" id="mgError"></div>
+    <div class="mg-err" id="mgErr"></div>
   </div>
-  <div class="mg-version">BATTLE DOCK v1.4 · PORT DE MARSEILLE</div>
+  <div class="mg-ver">BATTLE DOCK v1.4 · PORT DE MARSEILLE</div>
 </div>
 
-<script>
-document.getElementById('mgInput').addEventListener('keydown', function(e){
-  if(e.key === 'Enter') checkCode();
-});
-function checkCode(){
-  var val = document.getElementById('mgInput').value.toLowerCase().trim();
-  if(val === 'ouioui'){
-    var gate = document.getElementById('maint-gate');
-    gate.style.transition = 'opacity .5s ease';
-    gate.style.opacity = '0';
-    setTimeout(function(){ gate.remove(); }, 500);
-  } else {
-    var inp = document.getElementById('mgInput');
-    var err = document.getElementById('mgError');
-    inp.classList.remove('shake');
-    void inp.offsetWidth;
-    inp.classList.add('shake');
-    err.textContent = '❌ Code incorrect';
-    inp.value = '';
-    setTimeout(function(){ err.textContent = ''; }, 2000);
-  }
-}
-</script>
-
-
-<div class="hdr">
-  <div class="hdr-av">
-    <img id="hdAvatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=default&backgroundColor=b6e3f4" alt="">
+<!-- HEADER -->
+<div class="hdr" style="display:none" id="mainHeader">
+  <div class="hdr-av" onclick="location.href='profil.html'">
+    <img id="hdAvatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=docker&backgroundColor=b6e3f4" alt="">
     <div class="hdr-av-lvl" id="hdLevel">—</div>
   </div>
   <div class="hdr-info">
     <div class="hdr-name" id="hdName">—</div>
     <div class="hdr-grade" id="hdGrade">—</div>
-    <div class="hdr-xp"><div class="hdr-xp-fill" id="hdXpFill" style="width:0%"></div></div>
+    <div class="hdr-xp"><div class="hdr-xp-fill" id="hdXp"></div></div>
   </div>
-  <div class="hdr-chips">
+  <div style="display:flex;gap:5px;flex-shrink:0">
     <div class="chip chip-gold" id="hdMoney">💰 —</div>
     <div class="chip chip-red" id="hdStreak">🔥 —</div>
   </div>
 </div>
 
-<div class="scene">
-  <div class="sky-bg"></div>
+<!-- SCENE -->
+<div class="scene" style="display:none" id="mainScene">
 
-  <!-- SOLEIL -->
-  <div class="sun-wrap">
-    <div class="sun-rays">
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(0deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(40deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(80deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(120deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(160deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(200deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(240deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(280deg) translateY(-34px)"></div>
-      <div class="sun-ray" style="transform:translateX(-50%) rotate(320deg) translateY(-34px)"></div>
-    </div>
+  <!-- SKY -->
+  <div class="sky">
     <div class="sun"></div>
-  </div>
+    <div class="gull" style="top:22px;left:12%;animation-duration:8s">🕊️</div>
+    <div class="gull" style="top:28px;left:19%;animation-duration:11.5s;animation-delay:2s;font-size:11px">🕊️</div>
+    <div class="gull" style="top:18px;left:46%;animation-duration:13s;animation-delay:4.5s;font-size:12px">🕊️</div>
 
-  <div class="seagull" style="top:22px;left:34px;animation-duration:8s">🕊️</div>
-  <div class="seagull" style="top:28px;left:58px;animation-duration:12s;animation-delay:2.5s;font-size:11px">🕊️</div>
-
-  <div class="cloud" style="top:14px;left:16px;animation:cloudDrift 8s ease-in-out infinite alternate">
-    <div class="cloud-body" style="width:56px;height:18px">
-      <div class="cloud-bump" style="width:24px;height:24px;top:-13px;left:7px"></div>
-      <div class="cloud-bump" style="width:17px;height:17px;top:-9px;left:27px"></div>
+    <div class="cloud" style="top:16px;left:18px;animation:cloudDrift 8s ease-in-out infinite alternate">
+      <div class="cld" style="width:60px;height:20px">
+        <b style="width:28px;height:28px;top:-15px;left:8px"></b>
+        <b style="width:20px;height:20px;top:-11px;left:30px"></b>
+      </div>
     </div>
-  </div>
-  <div class="cloud" style="top:10px;left:152px;animation:cloudDrift 11s ease-in-out infinite alternate-reverse">
-    <div class="cloud-body" style="width:40px;height:13px">
-      <div class="cloud-bump" style="width:17px;height:17px;top:-9px;left:5px"></div>
+    <div class="cloud" style="top:10px;left:52%;animation:cloudDrift 10.5s ease-in-out infinite alternate-reverse">
+      <div class="cld" style="width:46px;height:14px">
+        <b style="width:20px;height:20px;top:-11px;left:6px"></b>
+        <b style="width:14px;height:14px;top:-7px;left:22px"></b>
+      </div>
     </div>
+
+    <!-- Collines Marseille -->
+    <svg style="position:absolute;bottom:0;width:100%;height:52px" viewBox="0 0 390 52" preserveAspectRatio="none">
+      <ellipse cx="330" cy="52" rx="75" ry="38" fill="#4a6741" opacity=".55"/>
+      <ellipse cx="185" cy="52" rx="125" ry="28" fill="#567a49" opacity=".45"/>
+      <ellipse cx="45" cy="52" rx="65" ry="22" fill="#4a6741" opacity=".5"/>
+      <rect x="324" y="10" width="4" height="20" fill="#3d5435" opacity=".6"/>
+      <polygon points="322,10 326,4 330,10" fill="#3d5435" opacity=".6"/>
+    </svg>
   </div>
 
+  <!-- GROUND -->
   <div class="ground">
-    <div class="grass">
+    <div class="ground-fill"></div>
+    <div class="road"></div>
 
-      <!-- Routes -->
-      <div class="road" style="top:128px;left:0;right:0;height:26px"><div class="road-dash"></div></div>
-      <div class="road" style="top:0;bottom:98px;left:34px;width:24px"><div class="road-v-dash"></div></div>
-      <div class="road" style="top:0;bottom:98px;right:34px;width:24px"><div class="road-v-dash"></div></div>
+    <!-- Arbres -->
+    <div class="tree" style="top:6px;left:2%">
+      <div class="tc" style="width:16px;height:16px;background:linear-gradient(135deg,#22c55e,#16a34a)"></div>
+      <div class="tt" style="height:8px"></div>
+    </div>
+    <div class="tree" style="top:4px;left:8%">
+      <div class="tc" style="width:14px;height:14px;background:linear-gradient(135deg,#16a34a,#15803d)"></div>
+      <div class="tt" style="height:7px"></div>
+    </div>
+    <div class="tree" style="top:5px;right:7%">
+      <div class="tc" style="width:15px;height:15px;background:linear-gradient(135deg,#4ade80,#22c55e)"></div>
+      <div class="tt" style="height:8px"></div>
+    </div>
+    <div class="tree" style="top:88px;left:2%">
+      <div class="tc" style="width:20px;height:20px;background:linear-gradient(135deg,#4ade80,#22c55e)"></div>
+      <div class="tt" style="height:11px"></div>
+    </div>
+    <div class="tree" style="top:90px;right:2%">
+      <div class="tc" style="width:19px;height:19px;background:linear-gradient(135deg,#22c55e,#16a34a)"></div>
+      <div class="tt" style="height:10px"></div>
+    </div>
 
-      <!-- Arbres -->
-      <div class="tree" style="top:58px;left:18px">
-        <div class="tree-top" style="width:26px;height:26px;background:#4ade80"></div>
-        <div class="tree-trunk" style="height:12px"></div>
-      </div>
-      <div class="tree" style="top:64px;right:18px">
-        <div class="tree-top" style="width:22px;height:22px;background:#22c55e"></div>
-        <div class="tree-trunk" style="height:10px"></div>
-      </div>
-      <div class="tree" style="top:70px;right:44px">
-        <div class="tree-top" style="width:18px;height:18px;background:#16a34a"></div>
-        <div class="tree-trunk" style="height:9px"></div>
-      </div>
-
-      <!-- Lampadaires -->
-      <div class="lamp" style="top:86px;left:66px">
-        <div class="lamp-arm"></div>
-        <div class="lamp-glow"></div>
-        <div class="lamp-post" style="height:28px"></div>
-      </div>
-      <div class="lamp" style="top:86px;right:62px">
-        <div class="lamp-arm"></div>
-        <div class="lamp-glow"></div>
-        <div class="lamp-post" style="height:28px"></div>
-      </div>
-
-      <!-- Caisses -->
-      <div style="position:absolute;top:156px;left:70px">
-        <div style="display:flex;gap:2px">
-          <div class="box" style="width:12px;height:10px;background:#fde047"></div>
-          <div class="box" style="width:12px;height:10px;background:#fcd34d"></div>
-        </div>
-        <div class="box" style="width:26px;height:10px;background:#fbbf24;margin-top:-1px"></div>
-      </div>
-      <div style="position:absolute;top:158px;right:68px">
-        <div class="box" style="width:14px;height:12px;background:#93c5fd"></div>
-        <div class="box" style="width:14px;height:12px;background:#60a5fa;margin-top:-1px"></div>
-      </div>
-
-      <!-- Camion -->
-      <div style="position:absolute;top:130px;left:96px;font-size:17px">🚛</div>
-
-      <!-- ═ TRAVAILLER ═ -->
-      <div class="b w" style="left:50%;transform:translateX(-50%);top:8px">
-        <div class="w-chimney">
-          <div style="position:relative">
-            <span class="smoke-p">💨</span><span class="smoke-p">💨</span>
-          </div>
-        </div>
-        <div class="w-roof">
-          <div class="w-merlon"></div><div class="w-merlon"></div><div class="w-merlon"></div>
-        </div>
-        <div class="w-body">
-          <div class="w-stripe" style="left:22px"></div>
-          <div class="w-stripe" style="left:52px"></div>
-          <div class="w-sign">DOCK CENTRAL</div>
-          <div class="w-win" style="left:8px"></div>
-          <div class="w-win" style="right:8px"></div>
-          <div class="w-door">👷</div>
-        </div>
-        <div class="b-shadow" style="width:86px"></div>
-        <div class="pin" style="top:-20px;right:-3px">
-          <div class="pin-bubble" style="background:#fde047">⭐</div>
-          <div class="pin-tail" style="border-top:6px solid #fde047"></div>
-        </div>
-        <div class="b-lbl" style="bottom:-16px;background:#ef4444;color:#fff">TRAVAILLER</div>
-      </div>
-
-      <!-- ═ CASINO ═ -->
-      <div class="b ca" style="left:4px;top:16px">
-        <div class="ca-tower">
-          <div class="ca-dot" style="animation:l1 .8s infinite"></div>
-          <div class="ca-dot" style="animation:l2 .8s infinite .26s"></div>
-          <div class="ca-dot" style="animation:l3 .8s infinite .52s"></div>
-        </div>
-        <div class="ca-roof"></div>
-        <div class="ca-body">
-          <div class="ca-lights">
-            <div class="ca-l" style="animation:l1 .8s linear infinite"></div>
-            <div class="ca-l" style="animation:l2 .8s linear infinite .26s"></div>
-            <div class="ca-l" style="animation:l3 .8s linear infinite .52s"></div>
-          </div>
-          <div class="ca-l2">
-            <div class="ca-l" style="animation:l2 .6s linear infinite"></div>
-            <div class="ca-l" style="animation:l3 .6s linear infinite .2s"></div>
-          </div>
-          <div class="ca-door">🎰</div>
-        </div>
-        <div class="b-shadow" style="width:62px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#8b5cf6;color:#fff">CASINO</div>
-      </div>
-
-      <!-- ═ COMMERCE ═ -->
-      <div class="b co" style="right:4px;top:14px">
-        <div class="pin" style="top:-19px;left:-3px">
-          <div class="pin-bubble" style="background:#4ade80;color:#fff">💰</div>
-          <div class="pin-tail" style="border-top:6px solid #4ade80"></div>
-        </div>
-        <div class="co-body">
-          <div class="co-sign">SARDINES D'OR</div>
-          <div class="co-win" style="left:6px">🐟</div>
-          <div class="co-win" style="right:6px">🛒</div>
-          <div class="co-door"></div>
-        </div>
-        <div class="co-awn"></div>
-        <div class="b-shadow" style="width:68px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#22c55e;color:#fff">COMMERCE</div>
-      </div>
-
-      <!-- ═ GRUE ═ -->
-      <div class="b gr" style="left:6px;top:150px">
-        <div class="gr-tw-wrap">
-          <div class="gr-tw">
-            <div class="gr-light"></div>
-            <div class="gr-arm">
-              <div class="gr-ctr"></div>
-              <div class="gr-cable"><div class="gr-hook">🪝</div></div>
-            </div>
-          </div>
-        </div>
-        <div class="gr-base">
-          <div class="gr-base-top"></div>
-          <div style="position:absolute;inset:10px 4px 4px;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.5">⚙️</div>
-        </div>
-        <div class="b-shadow" style="width:56px"></div>
-        <div class="b-lbl" style="bottom:-16px">GRUE</div>
-      </div>
-
-      <!-- ═ CLARK ═ -->
-      <div class="b cl" style="right:4px;top:148px">
-        <div class="cl-top"><div class="cl-stripe"></div></div>
-        <div class="cl-body">
-          <div class="cl-bay" style="left:4px;width:28px;height:38px;font-size:20px">🏎️</div>
-          <div class="cl-bay" style="right:4px;width:22px;height:32px"></div>
-          <div class="cl-tl">
-            <div class="cl-tl-dot" style="background:#ef4444"></div>
-            <div class="cl-tl-dot" style="background:#4b5563"></div>
-            <div class="cl-tl-dot" style="background:#4b5563"></div>
-          </div>
-        </div>
-        <div class="b-shadow" style="width:60px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#3b82f6;color:#fff">CLARKS</div>
-      </div>
-
-      <!-- ═ BOURSE ═ -->
-      <div class="b bo" style="left:50%;transform:translateX(-50%);top:150px">
-        <div class="bo-ped"></div>
-        <div class="bo-cols">
-          <div class="bo-col" style="height:24px"></div>
-          <div class="bo-col" style="height:24px"></div>
-          <div class="bo-col" style="height:24px"></div>
-          <div class="bo-col" style="height:24px"></div>
-        </div>
-        <div class="bo-body">
-          <div class="bo-ticker"><div class="bo-tick">📈 +14% · CLARK +8% · CASINO +31% · 📈 +14% · </div></div>
-          <div class="bo-chart">
-            <div class="bo-bar" style="height:40%;background:#fca5a5"></div>
-            <div class="bo-bar" style="height:62%;background:#4ade80"></div>
-            <div class="bo-bar" style="height:84%;background:#4ade80"></div>
-            <div class="bo-bar" style="height:56%;background:#4ade80"></div>
-            <div class="bo-bar" style="height:100%;background:#4ade80"></div>
-          </div>
-        </div>
-        <div class="b-shadow" style="width:56px"></div>
-        <div class="b-lbl" style="bottom:-16px">BOURSE</div>
-      </div>
-
-      <!-- ═ SYNDICAT ═ -->
-      <div class="b sy" style="left:5px;top:238px">
-        <div style="position:relative">
-          <div class="sy-post"></div>
-          <div class="sy-dome"><div class="sy-flag"></div></div>
-        </div>
-        <div class="sy-body">
-          <div class="sy-arch"></div>
-          <div class="sy-cols">
-            <div class="sy-pillar"></div>
-            <div class="sy-pillar"></div>
-            <div class="sy-pillar"></div>
-          </div>
-        </div>
-        <div class="b-shadow" style="width:50px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#ef4444;color:#fff">SYNDICAT</div>
-      </div>
-
-      <!-- ═ ÉCOLE ═ -->
-      <div class="b ec" style="right:5px;top:238px">
-        <div style="text-align:center">
-          <div class="ec-bell">🔔</div>
-          <div class="ec-post"></div>
-        </div>
-        <div class="ec-roof"></div>
-        <div class="ec-body">
-          <div class="ec-win" style="left:7px">🔬</div>
-          <div class="ec-win" style="right:7px">📚</div>
-          <div class="ec-board">ABC</div>
-        </div>
-        <div class="b-shadow" style="width:48px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#38bdf8;color:#fff">ÉCOLE</div>
-      </div>
-
-      <!-- ═ CLASSEMENT ═ -->
-      <div class="b rk" style="left:50%;transform:translateX(-50%);top:238px">
-        <div style="position:relative">
-          <div class="rk-trophy">🏆</div>
-        </div>
-        <div class="rk-roof"></div>
-        <div class="rk-body">
-          <div class="pod p2">🥈</div>
-          <div class="pod p1">🥇</div>
-          <div class="pod p3">🥉</div>
-        </div>
-        <div class="b-shadow" style="width:58px"></div>
-        <div class="b-lbl" style="bottom:-16px">CLASSEMENT</div>
-      </div>
-
-      <!-- QUAI + BATEAU -->
-      <div class="dock"></div>
-      <div class="b bt" style="left:50%;transform:translateX(-50%);bottom:108px">
-        <div class="bt-mast">
-          <div class="bt-sail"></div>
-          <div class="bt-sail2"></div>
-        </div>
-        <div class="bt-deck">
-          <div class="bt-card" style="background:linear-gradient(135deg,#78350f,#451a03);border-color:#fbbf24"></div>
-          <div class="bt-card" style="background:linear-gradient(135deg,#1e3a5f,#0c1929);border-color:#60a5fa"></div>
-          <div class="bt-card" style="background:linear-gradient(135deg,#374151,#1f2937)"></div>
-        </div>
-        <div class="bt-hull">
-          <div class="bt-wl"></div>
-          <div class="bt-port" style="left:8px"></div>
-          <div class="bt-port" style="right:8px"></div>
-        </div>
-        <div class="b-shadow" style="width:74px;bottom:-14px"></div>
-        <div class="b-lbl" style="bottom:-16px;background:#3b82f6;color:#fff">COLLECTION</div>
-      </div>
-
-    </div><!-- /grass -->
-
-    <div class="water-zone">
-      <div class="water-shine">
-        <span class="water-line" style="width:42px;margin-top:8px"></span>
-        <span class="water-line" style="width:26px;margin-top:22px"></span>
-        <span class="water-line" style="width:48px;margin-top:12px"></span>
-        <span class="water-line" style="width:32px;margin-top:30px"></span>
-        <span class="water-line" style="width:38px;margin-top:8px"></span>
-        <span class="water-line" style="width:22px;margin-top:18px"></span>
-        <span class="water-line" style="width:44px;margin-top:26px"></span>
-        <span class="water-line" style="width:28px;margin-top:10px"></span>
-        <span class="water-line" style="width:42px;margin-top:8px"></span>
-        <span class="water-line" style="width:26px;margin-top:22px"></span>
-        <span class="water-line" style="width:48px;margin-top:12px"></span>
-        <span class="water-line" style="width:32px;margin-top:30px"></span>
-      </div>
+    <!-- Lampadaires -->
+    <div class="lamp" style="top:56px;left:14%">
+      <div class="lamp-arm"></div><div class="lamp-glow"></div><div class="lamp-post" style="height:22px"></div>
+    </div>
+    <div class="lamp" style="top:56px;right:13%">
+      <div class="lamp-arm"></div><div class="lamp-glow"></div><div class="lamp-post" style="height:22px"></div>
+    </div>
+    <div class="lamp" style="top:110px;left:2%">
+      <div class="lamp-arm"></div><div class="lamp-glow"></div><div class="lamp-post" style="height:28px"></div>
+    </div>
+    <div class="lamp" style="top:110px;right:2%">
+      <div class="lamp-arm"></div><div class="lamp-glow"></div><div class="lamp-post" style="height:28px"></div>
     </div>
   </div>
+
+  <!-- ÉCOLE fond gauche -->
+  <div class="b" style="width:13.3%;left:15.9%;top:284px;z-index:2;transform:scale(.78);transform-origin:bottom center;filter:drop-shadow(2px 4px 7px rgba(0,0,0,.18))" onclick="location.href='ecole.html'">
+    <div style="text-align:center"><div class="ec-bell">🔔</div><div class="ec-post"></div></div>
+    <div class="ec-roof"></div>
+    <div class="ec-body"><div class="ec-win" style="left:8%">🔬</div><div class="ec-win" style="right:8%">📚</div><div class="ec-board">ABC</div></div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9);font-size:10px">ÉCOLE</div>
+  </div>
+
+  <!-- SYNDICAT fond droite -->
+  <div class="b" style="width:14.4%;left:74.4%;top:282px;z-index:2;transform:scale(.78);transform-origin:bottom center;filter:drop-shadow(2px 4px 7px rgba(0,0,0,.18))" onclick="location.href='syndicat.html'">
+    <div style="position:relative"><div class="sy-post"></div><div class="sy-dome"><div class="sy-flag"></div></div></div>
+    <div class="sy-body"><div class="sy-arch"></div><div class="sy-cols"><div class="sy-pillar" style="height:20px"></div><div class="sy-pillar" style="height:20px"></div><div class="sy-pillar" style="height:20px"></div></div></div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#ef4444,#dc2626);font-size:10px">SYNDICAT</div>
+  </div>
+
+  <!-- ENTREPÔT (TRAVAILLER) centre haut -->
+  <div class="b" style="width:29.7%;left:38%;top:218px;z-index:8;filter:drop-shadow(3px 6px 12px rgba(0,0,0,.3))" onclick="location.href='travail.html'">
+    <div class="w-chim" style="bottom:98px;left:8%">
+      <div style="position:relative;height:4px"><span class="smk" style="left:0">💨</span><span class="smk" style="left:8px">💨</span></div>
+    </div>
+    <div class="w-roof"><div class="w-m"></div><div class="w-m"></div><div class="w-m"></div><div class="w-m"></div></div>
+    <div class="w-body">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="w-sign">DOCK CENTRAL</div>
+      <div class="w-win" style="left:8%"></div>
+      <div class="w-win" style="right:8%"></div>
+      <div class="w-door">👷</div>
+    </div>
+    <div class="bsh"></div>
+    <div class="pin" style="top:-22px;right:3%">
+      <div class="pb" style="background:linear-gradient(135deg,#fde047,#facc15);color:#1a1a1a">⭐</div>
+      <div class="pt" style="border-top:7px solid #facc15"></div>
+    </div>
+    <div class="lbl" style="background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 3px 8px rgba(239,68,68,.4)">TRAVAILLER</div>
+  </div>
+
+  <!-- CASINO gauche haut -->
+  <div class="b" style="width:20.5%;left:1%;top:235px;z-index:9;filter:drop-shadow(3px 5px 10px rgba(0,0,0,.28))" onclick="location.href='casino.html'">
+    <div class="ca-tower" style="bottom:64px"></div>
+    <div class="ca-roof"></div>
+    <div class="ca-body">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="ca-ll">
+        <div class="ca-l" style="animation:lc1 .8s linear infinite"></div>
+        <div class="ca-l" style="animation:lc2 .8s linear infinite .27s"></div>
+        <div class="ca-l" style="animation:lc3 .8s linear infinite .54s"></div>
+      </div>
+      <div class="ca-door">🎰</div>
+    </div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#a855f7,#7c3aed);box-shadow:0 3px 8px rgba(168,85,247,.4)">CASINO</div>
+  </div>
+
+  <!-- COMMERCE droite haut -->
+  <div class="b" style="width:21%;left:78%;top:242px;z-index:9;filter:drop-shadow(3px 5px 10px rgba(0,0,0,.25))" onclick="location.href='commerce.html'">
+    <div class="pin" style="top:-20px;left:-2%">
+      <div class="pb" style="background:linear-gradient(135deg,#4ade80,#22c55e)">💰</div>
+      <div class="pt" style="border-top:7px solid #22c55e"></div>
+    </div>
+    <div class="co-body">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="co-sign" id="commerceSign">COMMERCE</div>
+      <div class="co-win" style="left:7%">🐟</div>
+      <div class="co-win" style="right:7%">🛒</div>
+      <div class="co-door"></div>
+    </div>
+    <div class="co-awn"></div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 3px 8px rgba(34,197,94,.35)">COMMERCE</div>
+  </div>
+
+  <!-- CLARK gauche bas -->
+  <div class="b" style="width:19.5%;left:1%;top:257px;z-index:11;filter:drop-shadow(3px 5px 10px rgba(0,0,0,.25))" onclick="location.href='clark.html'">
+    <div class="cl-top"><div class="cl-stripe"></div></div>
+    <div class="cl-body">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="cl-bay" style="left:5%;width:36%;height:38px;font-size:19px">🏎️</div>
+      <div class="cl-bay" style="right:5%;width:29%;height:32px"></div>
+      <div class="cl-tl"><div class="cl-d" style="background:#ef4444;box-shadow:0 0 4px rgba(239,68,68,.6)"></div><div class="cl-d" style="background:#374151"></div><div class="cl-d" style="background:#374151"></div></div>
+    </div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 3px 8px rgba(59,130,246,.4)">CLARKS</div>
+  </div>
+
+  <!-- BOURSE centre bas -->
+  <div class="b" style="width:18%;left:41%;top:254px;z-index:10;filter:drop-shadow(3px 5px 10px rgba(0,0,0,.22))" onclick="location.href='bourse.html'">
+    <div class="bo-ped"></div>
+    <div class="bo-cols"><div class="bo-col" style="height:22px"></div><div class="bo-col" style="height:22px"></div><div class="bo-col" style="height:22px"></div><div class="bo-col" style="height:22px"></div></div>
+    <div class="bo-body">
+      <div class="bo-ticker"><div class="bo-tick" id="bourseTick">📈 CHARGEMENT...</div></div>
+      <div class="bo-chart">
+        <div class="bo-bar" style="height:40%;background:linear-gradient(180deg,#f87171,#ef4444)"></div>
+        <div class="bo-bar" style="height:66%;background:linear-gradient(180deg,#4ade80,#22c55e)"></div>
+        <div class="bo-bar" style="height:88%;background:linear-gradient(180deg,#4ade80,#22c55e)"></div>
+        <div class="bo-bar" style="height:56%;background:linear-gradient(180deg,#4ade80,#22c55e)"></div>
+        <div class="bo-bar" style="height:100%;background:linear-gradient(180deg,#4ade80,#22c55e)"></div>
+      </div>
+    </div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#1e3a5f,#0f2040)">BOURSE</div>
+  </div>
+
+  <!-- CLASSEMENT droite bas -->
+  <div class="b" style="width:18.5%;left:80%;top:259px;z-index:11;filter:drop-shadow(3px 5px 10px rgba(0,0,0,.25))" onclick="location.href='classement.html'">
+    <div style="position:relative"><div class="rk-trophy">🏆</div></div>
+    <div class="rk-roof"></div>
+    <div class="rk-body">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="pod p2">🥈</div>
+      <div class="pod p1">🥇</div>
+      <div class="pod p3">🥉</div>
+    </div>
+    <div class="bsh"></div>
+    <div class="lbl" style="background:linear-gradient(135deg,#fb923c,#ea580c);box-shadow:0 3px 8px rgba(251,146,60,.4)">CLASSEMENT</div>
+  </div>
+
+  <!-- GRANDE GRUE -->
+  <div class="crane" onclick="location.href='grue.html'">
+    <div class="crane-anim">
+      <div class="crane-tower">
+        <div class="crane-arm">
+          <div class="crane-cw"></div>
+          <div class="crane-cable"><div class="crane-box"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="crane-base">
+      <div class="crane-base-top"></div>
+      <div class="crane-base-ico">⚙️</div>
+    </div>
+  </div>
+
+  <!-- QUAI -->
+  <div class="quai"></div>
+  <div class="mooring" style="left:7%"></div>
+  <div class="mooring" style="left:28%"></div>
+  <div class="mooring" style="left:58%"></div>
+  <div class="mooring" style="right:7%"></div>
+
+  <!-- CONTAINERS QUAI droite -->
+  <div class="qc-wrap">
+    <div class="qc-row">
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#ef4444,#dc2626)"></div>
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#3b82f6,#2563eb)"></div>
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#22c55e,#16a34a)"></div>
+    </div>
+    <div class="qc-row">
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#fbbf24,#f59e0b)"></div>
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#ef4444,#dc2626)"></div>
+      <div class="qc" style="width:6vw;max-width:24px;background:linear-gradient(135deg,#8b5cf6,#7c3aed)"></div>
+    </div>
+  </div>
+  <!-- Camion -->
+  <div style="position:absolute;top:334px;left:1.5%;font-size:19px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.3));z-index:17">🚛</div>
+
+  <!-- BATEAU (COLLECTION) -->
+  <div class="boat" onclick="location.href='collection.html'">
+    <div class="boat-c" style="left:1.5%;width:12%;background:linear-gradient(135deg,#ef4444,#dc2626)"></div>
+    <div class="boat-c" style="left:14%;width:10%;background:linear-gradient(135deg,#3b82f6,#2563eb)"></div>
+    <div class="boat-cabin">
+      <div class="sw"><div class="sh"></div></div>
+      <div class="boat-cabin-win" style="left:8%"></div>
+      <div class="boat-cabin-win" style="left:36%"></div>
+      <div class="boat-cabin-win" style="right:6%"></div>
+    </div>
+    <div class="boat-fore"></div>
+    <div class="mast" style="left:38%;height:38px">
+      <div style="position:absolute;top:0;left:3px;width:0;height:0;border-left:18px solid transparent;border-bottom:30px solid rgba(255,249,230,.92)"></div>
+    </div>
+    <div class="mast" style="right:13%;height:28px">
+      <div style="position:absolute;top:0;right:3px;width:0;height:0;border-right:14px solid transparent;border-bottom:22px solid rgba(253,224,71,.88)"></div>
+    </div>
+    <div class="boat-lbl">⛵ COLLECTION</div>
+    <div class="boat-hull">
+      <div class="bhp" style="left:4%"></div>
+      <div class="bhp" style="left:12%"></div>
+      <div class="bhp" style="left:22%"></div>
+      <div class="bhp" style="right:12%"></div>
+      <div class="bhp" style="right:4%"></div>
+    </div>
+  </div>
+
+  <!-- EAU -->
+  <div class="water">
+    <div style="position:absolute;top:0;left:0;right:0;height:18px;background:linear-gradient(180deg,rgba(180,130,50,.15),transparent)"></div>
+    <div class="waves-wrap">
+      <span class="wave" style="width:50px;margin-top:8px"></span>
+      <span class="wave" style="width:32px;margin-top:24px"></span>
+      <span class="wave" style="width:56px;margin-top:14px"></span>
+      <span class="wave" style="width:38px;margin-top:32px"></span>
+      <span class="wave" style="width:44px;margin-top:6px"></span>
+      <span class="wave" style="width:26px;margin-top:20px"></span>
+      <span class="wave" style="width:52px;margin-top:28px"></span>
+      <span class="wave" style="width:34px;margin-top:10px"></span>
+      <span class="wave" style="width:50px;margin-top:8px"></span>
+      <span class="wave" style="width:32px;margin-top:24px"></span>
+      <span class="wave" style="width:56px;margin-top:14px"></span>
+      <span class="wave" style="width:38px;margin-top:32px"></span>
+    </div>
+  </div>
+
+</div><!-- /scene -->
+
+<!-- NAV -->
+<div class="nav" style="display:none" id="mainNav">
+  <button class="nav-btn active" onclick="void(0)">
+    <div class="nav-ico">🗺️</div><div class="nav-lbl">PORT</div>
+  </button>
+  <button class="nav-btn" onclick="location.href='bar.html'">
+    <div class="nav-ico">💬<div class="nav-dot"></div></div><div class="nav-lbl">CHAT</div>
+  </button>
+  <button class="nav-btn" onclick="location.href='classement.html'">
+    <div class="nav-ico">🏆</div><div class="nav-lbl">RANG</div>
+  </button>
+  <button class="nav-btn" onclick="location.href='profil.html'">
+    <div class="nav-ico">👤</div><div class="nav-lbl">PROFIL</div>
+  </button>
 </div>
 
-<div class="bottom-nav">
-  <button class="nav-btn active">
-    <div class="nav-ico">🗺️</div>
-    <div class="nav-lbl">PORT</div>
-  </button>
-  <button class="nav-btn">
-    <div class="nav-ico">💬<div class="nav-dot"></div></div>
-    <div class="nav-lbl">CHAT</div>
-  </button>
-  <button class="nav-btn">
-    <div class="nav-ico">🏆</div>
-    <div class="nav-lbl">RANG</div>
-  </button>
-  <button class="nav-btn">
-    <div class="nav-ico">👤</div>
-    <div class="nav-lbl">PROFIL</div>
-  </button>
-</div>
-
+<div class="toast" id="toast"></div>
 
 <script>
+/* ── MAINTENANCE ── */
+document.getElementById('mgInput').addEventListener('keydown',function(e){if(e.key==='Enter')checkCode()});
+function checkCode(){
+  var v=document.getElementById('mgInput').value.toLowerCase().trim();
+  if(v==='ouioui'){
+    var g=document.getElementById('mg');
+    g.style.transition='opacity .5s';g.style.opacity='0';
+    setTimeout(function(){g.remove();initApp()},500);
+  } else {
+    var inp=document.getElementById('mgInput'),err=document.getElementById('mgErr');
+    inp.classList.remove('shake');void inp.offsetWidth;inp.classList.add('shake');
+    err.textContent='❌ Code incorrect';inp.value='';
+    setTimeout(function(){err.textContent=''},2000);
+  }
+}
+
+/* ── SUPABASE ── */
 var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 var sb=supabase.createClient(SB_URL,SB_KEY);
 
-function fm(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M€';if(n>=1e3)return Math.floor(n/1e3)+'k€';return n+'€';}
-function getXpRequired(l){if(l<=10)return l*500;if(l<=25)return l*1000;if(l<=50)return l*2000;return l*4000;}
-function getGrade(l){
-  if(l<=4)return'Docker Occasionnel';
-  if(l<=14)return'Docker Confirmé';
-  if(l<=29)return'Docker Mensuel';
-  if(l<=49)return'Contre-Maître';
-  if(l<=79)return'Chef de Quai';
-  return'Magnat du Port';
-}
+function fm(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M€';if(n>=1e3)return Math.floor(n/1e3)+'k€';return n+'€'}
+function getXpReq(l){if(l<=10)return l*500;if(l<=25)return l*1000;if(l<=50)return l*2000;return l*4000}
+function getGrade(l){if(l<=4)return'Docker Occasionnel';if(l<=14)return'Docker Confirmé';if(l<=29)return'Docker Mensuel';if(l<=49)return'Contre-Maître';if(l<=79)return'Chef de Quai';return'Magnat du Port'}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
 
-(async function(){
+async function initApp(){
+  /* Auth */
   var r=await sb.auth.getSession();
   var s=r.data&&r.data.session;
-  if(!s){location.href='index.html';return;}
-
+  if(!s){location.href='index.html';return}
   var uid=s.user.id;
 
+  /* Show UI */
+  document.getElementById('mainHeader').style.display='flex';
+  document.getElementById('mainScene').style.display='block';
+  document.getElementById('mainNav').style.display='flex';
+
+  /* Fetch data */
   var [gRes,pRes]=await Promise.all([
-    sb.from('game_stats').select('level,xp,money,streak_days').eq('user_id',uid).maybeSingle(),
+    sb.from('game_stats').select('level,xp,money,streak_days,commerce,bourse_profit,direction').eq('user_id',uid).maybeSingle(),
     sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle()
   ]);
+  var g=gRes.data||{},p=pRes.data||{};
 
-  var g=gRes.data||{};
-  var p=pRes.data||{};
-
-  var lvl=g.level||1;
-  var xp=g.xp||0;
-  var xpReq=getXpRequired(lvl);
-  var pct=Math.min(100,Math.round(xp/xpReq*100));
+  /* Header */
+  var lvl=g.level||1,xp=g.xp||0;
+  var pct=Math.min(100,Math.round(xp/getXpReq(lvl)*100));
   var pseudo=(p.username||'Docker').toUpperCase();
-  var nextLvl=lvl+1;
-
-  // Avatar
-  var av=document.getElementById('hdAvatar');
-  if(p.avatar_url) av.src=p.avatar_url;
-  else av.src='https://api.dicebear.com/7.x/pixel-art/svg?seed='+encodeURIComponent(pseudo)+'&backgroundColor=b6e3f4';
-
-  // Textes
+  document.getElementById('hdAvatar').src=p.avatar_url||'https://api.dicebear.com/7.x/pixel-art/svg?seed='+encodeURIComponent(pseudo)+'&backgroundColor=b6e3f4';
   document.getElementById('hdLevel').textContent=lvl;
   document.getElementById('hdName').textContent=pseudo;
-  document.getElementById('hdGrade').textContent=getGrade(lvl)+' · '+pct+'% → NV.'+nextLvl;
-  document.getElementById('hdXpFill').style.width=pct+'%';
+  document.getElementById('hdGrade').textContent=getGrade(lvl)+' · '+pct+'% → NV.'+(lvl+1);
+  document.getElementById('hdXp').style.width=pct+'%';
   document.getElementById('hdMoney').textContent='💰 '+fm(g.money||0);
   document.getElementById('hdStreak').textContent='🔥 '+(g.streak_days||0);
 
-  // last_seen
-  await sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid);
-})();
-</script>
+  /* Commerce sign */
+  var cname=g.commerce&&g.commerce.name;
+  if(cname)document.getElementById('commerceSign').textContent=cname.toUpperCase().slice(0,12);
 
+  /* Bourse ticker */
+  if(g.bourse_profit){
+    var sign=g.bourse_profit>=0?'+':'';
+    document.getElementById('bourseTick').textContent='📈 TON PROFIT '+sign+fm(g.bourse_profit)+' · CLIQUER POUR TRADER · 📈 TON PROFIT '+sign+fm(g.bourse_profit)+' · CLIQUER POUR TRADER · ';
+  }
+
+  /* last_seen */
+  sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(function(){});
+
+  /* Streak check */
+  var today=new Date().toDateString();
+  var lastLogin=localStorage.getItem('bd_last_login');
+  if(lastLogin!==today){
+    localStorage.setItem('bd_last_login',today);
+    if(g.streak_days>0)toast('🔥 Streak '+g.streak_days+'j — Bonne journée au port !');
+  }
+}
+</script>
 </body>
 </html>
