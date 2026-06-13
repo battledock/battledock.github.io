@@ -2,1355 +2,623 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Battle Dock — Le Port</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#e8e0cc">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bebas+Neue&family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Battle Dock — Port de Marseille</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html{background:#f3f4f6;}
-body{
-  font-family:'Inter',sans-serif;
-  background:#f3f4f6;
-  /* Subtle paper texture via noise */
-  background-image:url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-  min-height:100vh;
-  -webkit-user-select:none;user-select:none;
-}
-
-/* ── TOKENS ── */
 :root{
-  --card:#fffdf7;
-  --ink:#1a1a1a;
-  --border:#1a1a1a;
-  --shadow:#1a1a1a;
-  --gold-light:#fbbf24;
-  --border-w:3px;
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --ink:#1e293b;
+  --border:2.5px solid #1e293b;
+  --shadow:2px 2px 0 #1e293b;
+  --bg-ui:rgba(255,255,255,.96);
 }
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+body{font-family:'Inter',sans-serif;background:#0f172a;overflow:hidden;height:100dvh;display:flex;flex-direction:column}
 
-/* ── SKELETON ── */
-@keyframes skShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-.sk{border-radius:8px;background:linear-gradient(90deg,#e8e0cc 25%,#f0ead8 50%,#e8e0cc 75%);background-size:200% 100%;animation:skShimmer 1.4s ease-in-out infinite;}
+@keyframes xpFlow{0%{background-position:0%}100%{background-position:300%}}
+@keyframes cloudDrift{0%{transform:translateX(0)}100%{transform:translateX(28px)}}
+@keyframes sunSpin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pinBounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-7px)}}
+@keyframes waterFlow{0%{transform:translateX(0)}100%{transform:translateX(-25%)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes boatRock{0%,100%{transform:rotate(-1.5deg)}50%{transform:rotate(1.5deg)}}
+@keyframes crane{0%,100%{transform:rotate(-2.5deg)}50%{transform:rotate(2.5deg)}}
+@keyframes seagull{0%{transform:translate(0,0)}25%{transform:translate(16px,-5px)}50%{transform:translate(32px,0)}75%{transform:translate(16px,-5px)}100%{transform:translate(0,0)}}
+@keyframes casinoFlash{0%,100%{background:#6d28d9}50%{background:#7c3aed}}
+@keyframes flagWave{0%,100%{transform:skewX(0)}50%{transform:skewX(-12deg)}}
+@keyframes puff{0%{transform:translateY(0) scale(1);opacity:.5}100%{transform:translateY(-20px) scale(2);opacity:0}}
+@keyframes l1{0%{background:#fbbf24}33%{background:#ef4444}66%{background:#4ade80}100%{background:#fbbf24}}
+@keyframes l2{0%{background:#4ade80}33%{background:#fbbf24}66%{background:#818cf8}100%{background:#4ade80}}
+@keyframes l3{0%{background:#818cf8}33%{background:#4ade80}66%{background:#fbbf24}100%{background:#818cf8}}
 
-/* ── HEADER ── */
-.profile-header{
-  position:fixed;top:0;left:50%;transform:translateX(-50%);
-  width:100%;max-width:600px;z-index:200;
-  padding-top:var(--safe-top);
-  background:#fff;
-}
-.profile-header-inner{padding:14px 16px;}
-#profileSkeleton{padding:14px 16px;}
+/* ══ HEADER ══ */
+.hdr{background:var(--bg-ui);backdrop-filter:blur(10px);border-bottom:var(--border);padding:calc(10px + env(safe-area-inset-top,44px)) 14px 10px;display:flex;align-items:center;gap:10px;z-index:100;flex-shrink:0;box-shadow:0 3px 0 #1e293b}
+.hdr-av{width:46px;height:46px;border-radius:14px;border:var(--border);background:#bae6fd;flex-shrink:0;position:relative;box-shadow:var(--shadow)}
+.hdr-av img{width:100%;height:100%;object-fit:contain;border-radius:10px}
+.hdr-av-lvl{position:absolute;bottom:-5px;right:-5px;background:#ef4444;color:#fff;font-family:'Bangers',cursive;font-size:11px;border:var(--border);border-radius:5px;padding:1px 4px;line-height:1.2}
+.hdr-info{flex:1;min-width:0}
+.hdr-name{font-family:'Bangers',cursive;font-size:22px;color:var(--ink);letter-spacing:1px;line-height:1}
+.hdr-grade{font-size:8px;font-weight:700;color:#64748b;letter-spacing:.8px;margin-top:1px}
+.hdr-xp{height:8px;background:#e2e8f0;border-radius:4px;border:1.5px solid #cbd5e1;overflow:hidden;margin-top:4px}
+.hdr-xp-fill{height:100%;width:62%;background:linear-gradient(90deg,#ef4444,#f59e0b,#ef4444);background-size:200%;animation:xpFlow 2s linear infinite}
+.hdr-chips{display:flex;gap:5px;flex-shrink:0}
+.chip{border:var(--border);border-radius:20px;padding:4px 10px;font-family:'Bangers',cursive;font-size:14px;display:flex;align-items:center;gap:3px;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s}
+.chip:active{box-shadow:none;transform:translate(2px,2px)}
+.chip-gold{background:#fcd34d;color:var(--ink)}
+.chip-red{background:#fca5a5;color:var(--ink)}
 
-/* ── PROFILE CARD (I3 compact) ── */
-.pcb{display:none;flex-direction:column;gap:0;}
-.pcb-row{display:flex;align-items:center;gap:12px;}
+/* ══ SCENE ══ */
+.scene{flex:1;position:relative;overflow:hidden}
+.sky-bg{position:absolute;inset:0;background:linear-gradient(180deg,#7dd3fc 0%,#bae6fd 55%,#fef9c3 100%)}
 
-.pcb-avatar{
-  width:50px;height:50px;border-radius:50%;overflow:hidden;
-  border:2.5px solid #fbbf24;flex-shrink:0;
-}
-.pcb-avatar img{width:100%;height:100%;object-fit:cover;}
-.avatar-ring-wrap{position:relative;flex-shrink:0;}
-.pcb-level-badge{
-  position:absolute;bottom:-2px;right:-2px;
-  background:#fbbf24;color:var(--ink);
-  font-family:'Inter',sans-serif;font-size:8px;font-weight:800;
-  width:18px;height:18px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  border:2px solid #fff;z-index:2;
-}
+.sun-wrap{position:absolute;top:16px;right:18px}
+.sun{width:52px;height:52px;background:#fde047;border-radius:50%;border:var(--border);box-shadow:0 0 22px rgba(253,224,71,.55),var(--shadow);position:relative;z-index:1}
+.sun-rays{position:absolute;inset:-14px;animation:sunSpin 22s linear infinite;z-index:0;opacity:.55}
+.sun-ray{position:absolute;background:#fde047;border:1.5px solid #1e293b;border-radius:3px;width:7px;height:14px;left:calc(50% - 3.5px);transform-origin:50% 38px}
 
-.pcb-info{flex:1;min-width:0;}
-.pcb-name{
-  font-family:'Bangers',cursive;font-size:20px;letter-spacing:2px;
-  color:var(--ink);line-height:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.pcb-grade{font-size:8px;color:#9ca3af;font-weight:600;margin-top:1px;}
+.seagull{position:absolute;font-size:15px;animation:seagull 7s ease-in-out infinite;opacity:.8}
+.cloud{position:absolute}
+.cloud-body{background:#fff;border-radius:28px;border:var(--border);box-shadow:inset -2px -4px 0 rgba(0,0,0,.05);position:relative}
+.cloud-bump{position:absolute;background:#fff;border-radius:50%;border:var(--border);border-bottom:none}
 
-.pcb-actions{display:flex;gap:6px;}
-.pcb-action{
-  width:34px;height:34px;border-radius:10px;
-  background:#f3f4f6;
-  display:flex;align-items:center;justify-content:center;
-  font-size:16px;cursor:pointer;
-  transition:background .15s;position:relative;
-}
-.pcb-action:active{background:#e5e7eb;}
-.pcb-badge{
-  position:absolute;top:-3px;right:-3px;
-  background:#ef4444;color:#fff;
-  font-size:7px;font-weight:800;
-  min-width:14px;height:14px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  border:1.5px solid #fff;
-}
+/* GROUND */
+.ground{position:absolute;bottom:115px;left:0;right:0;top:95px}
+.grass{position:absolute;inset:0;background:#86efac}
+.road{position:absolute;background:#d6d3d1}
+.road-dash{position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0,rgba(255,255,255,.5) 10px,transparent 10px,transparent 22px)}
+.road-v-dash{position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.5) 0,rgba(255,255,255,.5) 10px,transparent 10px,transparent 22px)}
 
-/* Hide unused */
+.water-zone{position:absolute;bottom:0;left:0;right:0;height:115px;background:#38bdf8;border-top:var(--border);overflow:hidden;box-shadow:inset 0 12px 20px rgba(2,132,199,.25)}
+.water-shine{position:absolute;top:12px;left:0;width:200%;display:flex;animation:waterFlow 4s linear infinite}
+.water-line{height:4px;background:rgba(255,255,255,.28);border-radius:4px;display:inline-block;margin:0 8px}
+.dock{position:absolute;bottom:115px;left:0;right:0;height:22px;background:#b45309;border-top:var(--border);border-bottom:var(--border);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18)}
 
+/* ══ BÂTIMENTS ══ */
+.b{position:absolute;cursor:pointer;transition:transform .15s cubic-bezier(.4,0,.2,1)}
+.b:active{transform:scale(.93) !important}
+.b-shadow{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);height:10px;background:rgba(30,41,59,.15);border-radius:50%;filter:blur(4px)}
+.b-lbl{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font-family:'Bangers',cursive;font-size:11px;letter-spacing:.5px;border:var(--border);border-radius:8px;padding:2px 9px;box-shadow:var(--shadow);z-index:5;background:#fff;color:var(--ink)}
 
-/* ── STATS BAR BAS ── */
-.stats-bar{
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-  width:100%;max-width:600px;z-index:200;
-  background:#fff;
-  border-top:1px solid #f3f4f6;
-  padding:12px 0;
-  padding-bottom:max(12px,env(safe-area-inset-bottom));
-  display:flex;
-}
-.stats-bar-item{flex:1;text-align:center;}
-.stats-bar-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--ink);line-height:1;}
-.stats-bar-val.blue{color:#3b82f6;}
-.stats-bar-val.gold{color:#f59e0b;}
-.stats-bar-lbl{font-size:7px;color:#9ca3af;font-weight:700;margin-top:2px;}
-.stats-bar-sep{width:1px;background:#f3f4f6;}
+.pin{position:absolute;z-index:10;animation:pinBounce 1.4s ease infinite}
+.pin-bubble{border:var(--border);border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:var(--shadow)}
+.pin-tail{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin:-1px auto 0}
 
-/* ── PAGE CONTENT ── */
-.page-content{
-  max-width:600px;margin:0 auto;
-  padding-top:calc(70px + var(--safe-top));
-  padding-bottom:calc(52px + var(--safe-bottom));
-  display:grid;grid-template-columns:1fr 1fr;gap:0;
-  padding-left:0;padding-right:0;
-  border-left:1px solid #e5e7eb;
-  border-right:1px solid #e5e7eb;
-}
+.smoke-p{position:absolute;font-size:11px;top:-5px}
+.smoke-p:nth-child(1){left:2px;animation:puff 2.2s ease-in-out infinite}
+.smoke-p:nth-child(2){left:11px;animation:puff 2.2s ease-in-out infinite .7s}
+.smoke-p:nth-child(3){left:20px;animation:puff 2.2s ease-in-out infinite 1.4s}
 
-/* ── WIDGETS ── */
-.widget{
-  background:#fff;
-  border-radius:0;
-  padding:16px;
-  cursor:pointer;
-  transition:transform .12s;
-  border-bottom:1px solid #f0f0f0;
-  min-height:120px;
-  overflow:hidden;
-  position:relative;
-}
-.widget:active{transform:scale(.97);opacity:.9;}
+/* WAREHOUSE */
+.w{width:108px}
+.w-chimney{position:absolute;bottom:94px;left:14px;width:12px;height:20px;background:#94a3b8;border:var(--border);border-radius:2px 2px 0 0;box-shadow:var(--shadow)}
+.w-roof{height:20px;background:#ef4444;border:var(--border);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:space-evenly;padding:0 8px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.1)}
+.w-merlon{width:11px;height:13px;background:#fca5a5;border:var(--border);border-radius:2px}
+.w-body{height:72px;background:#fca5a5;border:var(--border);border-top:none;position:relative;box-shadow:inset -6px 0 0 rgba(0,0,0,.08)}
+.w-stripe{position:absolute;top:0;bottom:0;width:7px;background:rgba(0,0,0,.05)}
+.w-win{position:absolute;top:10px;width:20px;height:16px;background:#bae6fd;border:var(--border);border-radius:3px}
+.w-win::after{content:'';position:absolute;top:50%;left:0;right:0;height:1.5px;background:#1e293b}
+.w-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:24px;height:32px;background:#7f1d1d;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.w-sign{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:#fde047;border:var(--border);padding:1px 6px;border-radius:3px;font-family:'Bangers',cursive;font-size:8px;color:var(--ink);white-space:nowrap}
 
-.widget-full{grid-column:span 2;min-height:auto;}
-.widget-duo{grid-column:span 2;display:grid;grid-template-columns:1fr 1fr;gap:0;}
-.widget-duo>.widget:first-child{border-right:1px solid #f0f0f0;}
+/* CASINO */
+.ca{width:80px}
+.ca-tower{width:16px;height:36px;background:#7c3aed;border:var(--border);border-radius:2px 2px 0 0;position:absolute;bottom:68px;left:50%;transform:translateX(-50%);box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px 0;overflow:hidden}
+.ca-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid #1e293b}
+.ca-roof{height:15px;background:#8b5cf6;border:var(--border);border-radius:4px 4px 0 0;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12);position:relative;overflow:hidden}
+.ca-roof::after{content:'✦ CASINO ✦';font-family:'Bangers',cursive;font-size:7px;color:#fde047;letter-spacing:1px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.ca-body{height:54px;border:var(--border);border-top:none;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.1);animation:casinoFlash 3s ease infinite}
+.ca-lights{position:absolute;top:5px;left:0;right:0;display:flex;justify-content:space-evenly;padding:0 4px}
+.ca-l{width:9px;height:9px;border-radius:50%;border:1.5px solid #1e293b}
+.ca-l2{position:absolute;top:18px;left:0;right:0;display:flex;justify-content:space-evenly;padding:0 10px}
+.ca-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:19px;height:26px;background:#2e1065;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;display:flex;align-items:center;justify-content:center;font-size:12px}
 
-/* Widget large (Travailler — P2 living mesh) */
-.widget-work{
-  background:#0369a1;min-height:160px;
-  display:flex;align-items:center;padding:22px;
-}
-.work-mesh{position:absolute;inset:0;overflow:hidden;}
-.work-blob{
-  position:absolute;border-radius:50%;
-  filter:blur(40px);
-  animation:blobFloat ease-in-out infinite;
-}
-@keyframes blobFloat{
-  0%,100%{transform:translate(0,0) scale(1)}
-  33%{transform:translate(20px,-15px) scale(1.1)}
-  66%{transform:translate(-15px,10px) scale(.9)}
-}
-.work-content{z-index:2;}
-.work-title{
-  font-family:'Bangers',cursive;font-size:clamp(32px,10vw,42px);
-  color:#fff;letter-spacing:3px;
-  text-shadow:0 2px 20px rgba(0,0,0,.2);
-}
-.work-sub{
-  font-size:9px;color:rgba(255,255,255,.5);
-  font-weight:700;margin-top:3px;letter-spacing:1px;
-}
+/* COMMERCE */
+.co{width:86px}
+.co-body{height:64px;background:#86efac;border:var(--border);border-radius:5px 5px 0 0;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.08)}
+.co-awn{height:13px;background:repeating-linear-gradient(90deg,#ef4444 0,#ef4444 9px,#fde047 9px,#fde047 18px);border:var(--border);border-radius:0 0 5px 5px;margin-bottom:-2px;position:relative;z-index:2}
+.co-sign{position:absolute;top:5px;left:50%;transform:translateX(-50%);background:#fde047;border:var(--border);padding:1px 5px;border-radius:3px;font-family:'Bangers',cursive;font-size:8px;white-space:nowrap;color:var(--ink)}
+.co-win{position:absolute;top:24px;background:#dcfce7;border:var(--border);border-radius:3px;width:22px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.co-door{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:20px;height:28px;background:#14532d;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0}
 
-/* Widget row (Commerce) */
-.widget-row{grid-column:span 2;display:flex;align-items:center;gap:14px;}
+/* GRUE */
+.gr{width:74px}
+.gr-base{height:52px;background:#94a3b8;border:var(--border);border-radius:3px;position:relative;box-shadow:inset -4px 0 0 rgba(0,0,0,.12)}
+.gr-base-top{height:7px;background:repeating-linear-gradient(90deg,#fbbf24 0,#fbbf24 9px,#1e293b 9px,#1e293b 11px)}
+.gr-tw-wrap{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);transform-origin:bottom center;animation:crane 5s ease-in-out infinite alternate}
+.gr-tw{width:10px;height:50px;background:#fcd34d;border:var(--border);margin:0 auto;position:relative;box-shadow:var(--shadow)}
+.gr-arm{position:absolute;top:3px;left:-26px;width:58px;height:8px;background:#fcd34d;border:var(--border);border-radius:2px;box-shadow:var(--shadow)}
+.gr-ctr{position:absolute;top:2px;right:-13px;width:14px;height:6px;background:#f59e0b;border:var(--border);border-radius:1px}
+.gr-cable{position:absolute;top:11px;left:4px;width:2px;height:26px;background:#1e293b}
+.gr-hook{position:absolute;bottom:-5px;left:-2px;font-size:10px}
+.gr-light{position:absolute;top:-4px;left:-4px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:1.5px solid #1e293b;animation:blink .9s ease infinite}
 
-/* Commerce (Z3 blanc + pluie de pièces) */
-.widget-commerce{
-  background:#fff;
-  grid-column:span 2;min-height:160px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:22px;
-  border-bottom:1px solid #f0f0f0;
-}
-.commerce-rain{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
-.commerce-drop{position:absolute;animation:commerceFall linear infinite;opacity:.18;}
-@keyframes commerceFall{
-  0%{transform:translateY(-20px) rotate(0);opacity:0}
-  10%{opacity:.2}90%{opacity:.12}
-  100%{transform:translateY(180px) rotate(360deg);opacity:0}
-}
-.commerce-company-logo{
-  font-size:42px;z-index:2;
-  animation:commerceFloat 3s ease-in-out infinite;
-  filter:drop-shadow(0 4px 8px rgba(0,0,0,.08));
-}
-@keyframes commerceFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.commerce-company-name{
-  font-family:'Inter',sans-serif;font-size:11px;font-weight:800;
-  color:#1a1a1a;letter-spacing:1px;z-index:2;margin-top:6px;
-  max-width:80%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.commerce-title{
-  font-family:'Bangers',cursive;font-size:clamp(20px,6vw,26px);
-  color:#9ca3af;letter-spacing:2px;z-index:2;margin-top:2px;
-}
-.commerce-amount{font-size:11px;z-index:2;margin-top:4px;}
-.commerce-sub{
-  font-size:9px;color:#d1d5db;
-  font-weight:700;z-index:2;margin-top:3px;
-}
+/* CLARK */
+.cl{width:76px}
+.cl-top{height:12px;background:#3b82f6;border:var(--border);border-radius:4px 4px 0 0;overflow:hidden;position:relative}
+.cl-stripe{position:absolute;inset:0;background:repeating-linear-gradient(90deg,#fde047 0,#fde047 7px,#3b82f6 7px,#3b82f6 13px)}
+.cl-body{height:52px;background:#60a5fa;border:var(--border);border-top:none;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.1)}
+.cl-bay{position:absolute;bottom:0;border:var(--border);border-bottom:none;border-radius:3px 3px 0 0;background:#bfdbfe;display:flex;align-items:center;justify-content:center}
+.cl-tl{position:absolute;top:5px;right:5px;width:10px;height:28px;background:#1e293b;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:space-evenly;padding:3px 0}
+.cl-tl-dot{width:6px;height:6px;border-radius:50%}
 
-/* Banque (B4 coffre-fort) */
-.widget-banque{
-  background:linear-gradient(135deg,#1c1917,#292524);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;min-height:130px;
-}
-.banque-vault{
-  width:50px;height:50px;border-radius:50%;
-  border:3px solid #fbbf24;
-  display:flex;align-items:center;justify-content:center;
-  font-size:22px;position:relative;
-}
-.banque-vault-pulse{
-  position:absolute;inset:-6px;border-radius:50%;
-  border:1px solid rgba(251,191,36,.15);
-  animation:vaultPulse 2s ease-in-out infinite;
-}
-@keyframes vaultPulse{
-  0%,100%{transform:scale(1);opacity:.3}
-  50%{transform:scale(1.15);opacity:.6}
-}
-.banque-title{
-  font-family:'Bangers',cursive;font-size:clamp(14px,4vw,16px);
-  color:#fbbf24;margin-top:8px;letter-spacing:2px;
-}
-.banque-amount{
-  font-family:'Bebas Neue',sans-serif;font-size:clamp(16px,5vw,20px);
-  color:#fff;margin-top:2px;word-break:break-word;
-}
+/* BOURSE */
+.bo{width:72px}
+.bo-ped{height:0;width:0;border-left:36px solid transparent;border-right:36px solid transparent;border-bottom:16px solid #334155;margin-bottom:-1px;filter:drop-shadow(0 -2px 0 #1e293b)}
+.bo-cols{display:flex;gap:3px;justify-content:center;padding:0 5px;position:relative;z-index:1}
+.bo-col{width:8px;background:#334155;border:var(--border);border-radius:1px}
+.bo-body{height:50px;background:#1e293b;border:var(--border);border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -4px 0 0 rgba(0,0,0,.2)}
+.bo-ticker{position:absolute;top:0;left:0;right:0;height:10px;background:#4ade80;border-bottom:var(--border);display:flex;align-items:center;overflow:hidden}
+.bo-tick{font-size:7px;font-weight:900;color:#0f172a;white-space:nowrap;animation:waterFlow 5s linear infinite;padding:0 6px}
+.bo-chart{display:flex;align-items:flex-end;gap:2px;padding:3px 5px 0;height:32px;position:absolute;bottom:3px;left:0;right:0}
+.bo-bar{flex:1;border:1.5px solid #1e293b;border-radius:2px 2px 0 0}
 
-/* Casino (C5 cartes flottantes) */
-.widget-casino{
-  background:linear-gradient(135deg,#7f1d1d,#b91c1c);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;min-height:130px;
-}
-.casino-cards{position:relative;width:60px;height:40px;margin-bottom:6px;z-index:1;}
-.casino-card{
-  position:absolute;width:28px;height:38px;border-radius:4px;
-  background:#fff;display:flex;align-items:center;justify-content:center;
-  font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.3);
-  animation-duration:3s;animation-timing-function:ease-in-out;animation-iteration-count:infinite;
-}
-@keyframes cardF1{0%,100%{transform:rotate(-12deg) translateY(0)}50%{transform:rotate(-15deg) translateY(-4px)}}
-@keyframes cardF2{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes cardF3{0%,100%{transform:rotate(12deg) translateY(0)}50%{transform:rotate(15deg) translateY(-4px)}}
-.casino-title{
-  font-family:'Bangers',cursive;font-size:clamp(16px,5vw,20px);
-  color:#fff;letter-spacing:3px;z-index:1;
-  text-shadow:2px 2px 0 rgba(0,0,0,.3);
-}
-.casino-sub{
-  font-size:7px;color:rgba(255,255,255,.35);
-  font-weight:700;letter-spacing:3px;z-index:1;margin-top:3px;
-}
+/* SYNDICAT */
+.sy{width:66px}
+.sy-dome{width:32px;height:20px;background:#fca5a5;border:var(--border);border-radius:50% 50% 0 0;margin:0 auto;box-shadow:var(--shadow);position:relative}
+.sy-flag{width:20px;height:12px;background:#ef4444;border:var(--border);position:absolute;top:-13px;left:15px;animation:flagWave .9s ease-in-out infinite;transform-origin:left center}
+.sy-post{width:2px;height:16px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
+.sy-body{height:52px;background:#fca5a5;border:var(--border);border-radius:4px 4px 0 0;position:relative;box-shadow:inset -5px 0 0 rgba(0,0,0,.08)}
+.sy-arch{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:22px;height:18px;border:var(--border);border-radius:11px 11px 0 0;background:#f87171}
+.sy-cols{position:absolute;bottom:0;left:5px;right:5px;display:flex;gap:5px;align-items:flex-end}
+.sy-pillar{flex:1;height:28px;background:#f87171;border:var(--border);border-radius:1px}
 
-/* Widget small */
-.widget-emoji{font-size:22px;}
-.widget-title{font-family:'Bangers',cursive;font-size:clamp(14px,4vw,16px);color:var(--ink);margin-top:6px;letter-spacing:1px;}
-.widget-value{font-family:'Bebas Neue',sans-serif;font-size:clamp(16px,5vw,20px);color:var(--ink);margin-top:2px;word-break:break-word;}
-.widget-sub{font-size:9px;color:#9ca3af;font-weight:600;margin-top:2px;}
+/* ÉCOLE */
+.ec{width:63px}
+.ec-roof{width:0;height:0;border-left:32px solid transparent;border-right:32px solid transparent;border-bottom:20px solid #7dd3fc;filter:drop-shadow(1px -1px 0 #1e293b);margin-bottom:-1px}
+.ec-body{height:48px;background:#bae6fd;border:var(--border);border-radius:0 0 3px 3px;position:relative;box-shadow:inset -4px 0 0 rgba(0,0,0,.08)}
+.ec-win{position:absolute;top:8px;width:15px;height:15px;background:#e0f7fa;border:var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px}
+.ec-board{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:26px;height:11px;background:#1a3c00;border:var(--border);border-radius:1px;display:flex;align-items:center;justify-content:center;font-size:7px;color:#4ade80;font-weight:700}
+.ec-bell{font-size:14px;display:block;text-align:center;animation:bob 2s ease-in-out infinite}
+.ec-post{width:2px;height:13px;background:#1e293b;margin:0 auto;margin-bottom:-1px}
 
-/* Dynamic values */
-.card-dynamic-val{font-size:9px;font-weight:700;margin-top:2px;word-break:break-word;overflow-wrap:break-word;}
+/* CLASSEMENT */
+.rk{width:74px}
+.rk-roof{height:12px;background:#d97706;border:var(--border);border-radius:4px 4px 0 0;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
+.rk-body{height:52px;background:#fcd34d;border:var(--border);border-top:none;border-radius:0 0 3px 3px;position:relative;overflow:hidden;box-shadow:inset -5px 0 0 rgba(0,0,0,.1);display:flex;align-items:flex-end;justify-content:center;gap:3px;padding:0 5px}
+.pod{border:var(--border);border-radius:3px 3px 0 0;display:flex;align-items:flex-start;justify-content:center;padding-top:2px;font-size:10px}
+.p1{width:22px;height:38px;background:#fbbf24}
+.p2{width:18px;height:28px;background:#e2e8f0}
+.p3{width:16px;height:20px;background:#fdba74}
+.rk-trophy{position:absolute;top:-30px;left:50%;transform:translateX(-50%);font-size:22px;animation:bob 2.2s ease-in-out infinite}
 
-/* Bourse (T4 green + ticker joueurs) */
-.widget-bourse{
-  background:linear-gradient(135deg,#065f46,#059669);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:16px;
-}
-.bourse-title{
-  font-family:'Bangers',cursive;font-size:clamp(22px,7vw,28px);
-  color:#fff;letter-spacing:3px;z-index:2;
-}
-.bourse-ticker{
-  position:absolute;bottom:0;left:0;right:0;
-  height:18px;background:rgba(0,0,0,.2);
-  overflow:hidden;display:flex;align-items:center;
-}
-.bourse-tape{
-  display:flex;gap:16px;
-  animation:tickerScroll 20s linear infinite;
-  white-space:nowrap;
-}
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.bourse-tape-item{
-  font-family:'JetBrains Mono',monospace;
-  font-size:7px;font-weight:700;
-  display:flex;gap:4px;
-}
-.bourse-tape-item .sym{color:rgba(255,255,255,.4);}
-.bourse-tape-item .up{color:#86efac;}
-.bourse-tape-item .down{color:#fca5a5;}
+/* BATEAU */
+.bt{width:94px;transform-origin:bottom center;animation:boatRock 4.5s ease-in-out infinite}
+.bt-mast{width:3px;height:44px;background:#92400e;border:1.5px solid #1e293b;margin:0 auto;position:relative}
+.bt-sail{position:absolute;top:0;left:3px;width:0;height:0;border-left:22px solid transparent;border-right:0;border-bottom:36px solid #fef9c3;filter:drop-shadow(1px 1px 0 #1e293b)}
+.bt-sail2{position:absolute;top:6px;right:3px;width:0;height:0;border-right:14px solid transparent;border-bottom:24px solid #fde047;filter:drop-shadow(-1px 1px 0 #1e293b)}
+.bt-deck{height:22px;background:#60a5fa;border:var(--border);border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;gap:5px;padding:0 8px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
+.bt-card{width:13px;height:17px;border-radius:2px;border:var(--border);box-shadow:1px 1px 0 #1e293b}
+.bt-hull{height:17px;background:#3b82f6;border:var(--border);border-radius:0 0 14px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.bt-wl{position:absolute;top:7px;left:0;right:0;height:2px;background:rgba(255,255,255,.25)}
+.bt-port{position:absolute;top:2px;width:8px;height:8px;border-radius:50%;background:#bfdbfe;border:1.5px solid #1e293b}
 
-/* Dialogue D4 */
-#dialogueD4{position:fixed;bottom:80px;right:14px;z-index:9998;max-width:210px;background:#fff;border:2px solid #1a1a1a;border-radius:12px;box-shadow:2px 2px 0 #1a1a1a;padding:8px 10px;opacity:0;transition:opacity .5s;pointer-events:none;display:block !important}
-.d4-flag{display:inline-block;background:#cc1a1a;color:#fff;font-size:6px;font-weight:800;padding:1px 6px;border-radius:4px;letter-spacing:1px;margin-bottom:5px}
-.d4-row{display:flex;align-items:flex-end;gap:8px}
-.d4-bubble{background:#f5f0e8;border-radius:8px 8px 8px 2px;padding:6px 8px;font-size:9px;color:#374151;font-style:italic;line-height:1.3;flex:1}
-.d4-name{font-family:'Bangers',cursive;font-size:7px;color:#9ca3af;margin-top:4px;letter-spacing:.5px;text-align:right}
-/* Syndicat */
-.widget-syndicat{
-  background:linear-gradient(180deg,#fbbf24,#f59e0b,#d97706);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:14px;position:relative;
-}
-@keyframes synFlame{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.1) translateY(-3px)}}
-.syndicat-icon{font-size:34px;animation:synFlame 2s ease-in-out infinite;z-index:1}
-.syndicat-title{font-family:'Bangers',cursive;font-size:clamp(14px,4vw,16px);color:#1a1a1a;letter-spacing:2px;z-index:1;margin-top:4px;}
-.syndicat-sub{font-size:7px;color:#451a03;font-weight:700;z-index:1;margin-top:2px;letter-spacing:1px;}
-.syndicat-week{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.15);border-radius:6px;padding:2px 6px;font-size:7px;font-weight:800;color:#fff;letter-spacing:.5px}
-.syndicat-dots{display:flex;gap:4px;margin-top:6px;z-index:1}
-.syndicat-dots span{font-size:10px;opacity:.35}
-.syndicat-dots span.on{opacity:1}
+/* DÉCO */
+.tree{position:absolute;display:flex;flex-direction:column;align-items:center}
+.tree-top{border-radius:50% 50% 45% 45%;border:var(--border)}
+.tree-trunk{width:6px;background:#92400e;border:var(--border);border-radius:1px}
+.box{border:var(--border);border-radius:2px;box-shadow:var(--shadow)}
+.lamp{position:absolute;display:flex;flex-direction:column;align-items:center}
+.lamp-arm{width:13px;height:7px;background:#94a3b8;border:var(--border);border-radius:4px 4px 0 0;margin-bottom:-1px}
+.lamp-glow{width:7px;height:7px;border-radius:50%;background:#fef3c7;box-shadow:0 0 8px 4px rgba(254,243,199,.4);margin:-3px auto 0}
+.lamp-post{width:3px;background:#94a3b8;border:1.5px solid #1e293b;border-radius:1px}
 
-/* Direction (D1 navy shimmer) */
-.widget-direction{
-  background:linear-gradient(135deg,#0f172a,#1e293b);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:16px;
-}
-.widget-direction::after{
-  content:'';position:absolute;
-  top:-50%;left:-100%;width:60%;height:200%;
-  background:linear-gradient(90deg,transparent,rgba(251,191,36,.04),transparent);
-  animation:dirShimmer 5s ease-in-out infinite;
-}
-@keyframes dirShimmer{0%{left:-100%}50%{left:150%}100%{left:150%}}
-.widget-direction .emoji{font-size:28px;z-index:1;}
-.widget-direction .widget-title{color:#fff;z-index:1;}
-.widget-direction .card-dynamic-val{color:#fbbf24;z-index:1;}
-.widget-direction .card-dynamic-val.zero{color:rgba(255,255,255,.4);}
-
-/* École des Dockers */
-.widget-ecole{
-  background:linear-gradient(135deg,#1e3a5f,#2563eb);
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;padding:16px;
-}
-.ecole-hat{
-  font-size:32px;z-index:1;
-  animation:ecoleFloat 3s ease-in-out infinite;
-  filter:drop-shadow(0 2px 8px rgba(0,0,0,.2));
-}
-@keyframes ecoleFloat{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-4px) rotate(3deg)}}
-.ecole-title{
-  font-family:'Bangers',cursive;font-size:clamp(14px,4vw,16px);
-  color:#fff;letter-spacing:2px;z-index:1;margin-top:4px;
-}
-.ecole-sub{font-size:8px;color:rgba(191,219,254,.4);font-weight:700;z-index:1;margin-top:3px;}
-.ecole-progress{
-  margin-top:6px;width:60%;height:3px;
-  background:rgba(255,255,255,.1);border-radius:2px;
-  overflow:hidden;z-index:1;
-}
-.ecole-progress-fill{height:100%;background:#fbbf24;border-radius:2px;transition:width .5s;}
-.card-dynamic-val.zero{color:#9ca3af;}
-.card-dynamic-val.positive{color:#22c55e;}
-.card-dynamic-val.negative{color:#ef4444;}
-
-/* Classement (R1 course + gros rang) */
-.widget-classement{
-  background:linear-gradient(135deg,#0f172a,#1e293b);
-  grid-column:span 2;min-height:100px;
-  display:flex;align-items:center;
-  padding:22px;gap:16px;
-}
-.classement-flags{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
-.classement-flag{
-  position:absolute;font-size:14px;opacity:.06;
-  animation:flagDrift linear infinite;
-}
-@keyframes flagDrift{0%{transform:translateX(110%) rotate(0)}100%{transform:translateX(-110%) rotate(10deg)}}
-.classement-pos{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(44px,14vw,56px);
-  color:#fbbf24;z-index:1;line-height:1;
-  text-shadow:0 0 20px rgba(251,191,36,.15);
-}
-.classement-title{
-  font-family:'Bangers',cursive;font-size:clamp(24px,7vw,30px);
-  color:#fff;letter-spacing:3px;z-index:1;
-}
-.classement-sub{
-  font-size:9px;color:rgba(255,255,255,.3);
-  font-weight:700;z-index:1;margin-top:3px;
-}
-
-/* ── STAGGER ANIMATION ── */
-@keyframes cardEnter{
-  from{opacity:0;transform:translateY(18px)}
-  to{opacity:1;transform:translateY(0)}
-}
-.page-content>*{opacity:0;animation:cardEnter .35s ease forwards;}
-.page-content>*:nth-child(1){animation-delay:.05s}
-.page-content>*:nth-child(2){animation-delay:.1s}
-.page-content>*:nth-child(3){animation-delay:.15s}
-.page-content>*:nth-child(4){animation-delay:.2s}
-.page-content>*:nth-child(5){animation-delay:.25s}
-.page-content>*:nth-child(6){animation-delay:.3s}
-
-/* ── BADGE NOTIFICATION ── */
-.notif-badge{
-  position:absolute;top:8px;right:8px;
-  min-width:20px;height:20px;
-  background:#ef4444;color:#fff;
-  font-family:'Bebas Neue',sans-serif;font-size:12px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:10px;padding:0 5px;
-  border:2px solid var(--card);
-  box-shadow:1px 1px 0 var(--shadow);
-  z-index:2;
-}
-.notif-dot{
-  position:absolute;top:8px;right:8px;
-  width:10px;height:10px;
-  background:#ef4444;border-radius:50%;
-  border:2px solid var(--card);z-index:2;
-}
-
-/* ── DYNAMIC CARD LABEL ── */
-.card-dynamic-val{
-  font-family:'Bebas Neue',sans-serif;font-size:13px;
-  color:rgba(255,255,255,.5);letter-spacing:.5px;
-  margin-top:2px;
-}
-.card-dynamic-val.positive{color:#4ade80;}
-.card-dynamic-val.zero{color:rgba(255,255,255,.25);}
-
-/* ── ERROR STATE ── */
-.error-box{display:flex;align-items:center;gap:12px;padding:12px 0;}
-.error-btn{
-  font-family:'Bangers',cursive;font-size:14px;letter-spacing:1px;
-  padding:8px 16px;border:var(--border-w) solid var(--border);
-  border-radius:10px;background:var(--gold-light);color:var(--ink);
-  cursor:pointer;box-shadow:3px 3px 0 var(--shadow);
-}
-.error-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--shadow);}
-
-/* ── LEVEL UP POPUP — STYLE C ── */
-.lvlup-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;animation:lvlFadeIn .3s ease}
-@keyframes lvlFadeIn{from{opacity:0}to{opacity:1}}
-@keyframes lvlPop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
-@keyframes lvlShine{0%{transform:translateX(-100%) rotate(25deg)}100%{transform:translateX(200%) rotate(25deg)}}
-@keyframes lvlSparkle{0%,100%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1)}}
-@keyframes lvlGrad{0%{background-position:0%}100%{background-position:300%}}
-.lvlup-card{background:linear-gradient(160deg,#1a1a2e,#2d1b69,#1a1a2e);border:3px solid #8b5cf6;border-radius:20px;box-shadow:0 0 30px rgba(139,92,246,.3),4px 4px 0 #0a0a0f;width:100%;max-width:300px;animation:lvlPop .4s cubic-bezier(.34,1.56,.64,1);overflow:hidden}
-.lvlup-top{padding:24px 20px 16px;text-align:center;position:relative}
-.lvlup-sp{position:absolute;width:4px;height:4px;border-radius:50%;animation:lvlSparkle 2s ease infinite;pointer-events:none}
-.lvlup-lbl{font-size:8px;font-weight:800;color:#8b5cf6;letter-spacing:3px;margin-bottom:4px}
-.lvlup-num{font-family:'Bangers',cursive;font-size:68px;background:linear-gradient(135deg,#fbbf24,#f472b6,#818cf8,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:.9;animation:lvlGrad 3s linear infinite;background-size:300%}
-.lvlup-grade{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:2px;font-weight:700;margin-top:5px}
-.lvlup-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,.4),transparent);margin:0 20px}
-.lvlup-body{padding:14px 16px 18px}
-.lvlup-rewards{display:flex;gap:8px;margin-bottom:12px}
-.lvlup-rew{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 6px;text-align:center}
-.lvlup-rew-icon{font-size:18px}
-.lvlup-rew-val{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;margin-top:2px}
-.lvlup-rew-lbl{font-size:5px;color:rgba(255,255,255,.25);letter-spacing:1px;font-weight:700}
-.lvlup-unlock{background:linear-gradient(135deg,rgba(251,191,36,.06),rgba(244,114,182,.03));border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:flex;gap:10px;align-items:center}
-.lvlup-unlock-new{font-size:6px;font-weight:900;color:#fbbf24;letter-spacing:2px;display:block;margin-bottom:2px}
-.lvlup-unlock-name{font-family:'Bangers',cursive;font-size:14px;color:#fff;letter-spacing:1px}
-.lvlup-unlock-desc{font-size:8px;color:rgba(255,255,255,.3);margin-top:1px}
-.lvlup-btn{width:100%;padding:12px;background:linear-gradient(135deg,#8b5cf6,#6d28d9);border:2px solid #0a0a0f;border-radius:10px;font-family:'Bangers',cursive;font-size:16px;color:#fff;letter-spacing:2px;cursor:pointer;box-shadow:2px 2px 0 #0a0a0f;position:relative;overflow:hidden}
-.lvlup-btn::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);animation:lvlShine 2.5s ease infinite}
-.lvlup-btn:active{transform:translate(2px,2px);box-shadow:0 0 0}
-
-/* ═══ ONBOARDING ═══ */
-.ob-overlay{position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:20px;animation:obFadeIn .3s ease}
-@keyframes obFadeIn{from{opacity:0}to{opacity:1}}
-.ob-card{background:#fff;border:3px solid #1a1a1a;border-radius:16px;box-shadow:4px 4px 0 #1a1a1a;width:100%;max-width:320px;overflow:hidden;animation:obSlideUp .4s cubic-bezier(.175,.885,.32,1.275)}
-@keyframes obSlideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
-.ob-hero{background:linear-gradient(135deg,#cc1a1a,#991414);padding:24px 20px;text-align:center;position:relative;overflow:hidden}
-.ob-hero::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='20' height='20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='2' cy='2' r='1' fill='rgba(255,255,255,.05)'/%3E%3C/svg%3E")}
-.ob-emoji{font-size:56px;display:block;margin-bottom:4px;animation:obBob 2s ease infinite}
-@keyframes obBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-.ob-body{padding:18px 20px 20px}
-.ob-step{font-size:7px;font-weight:800;color:#cc1a1a;letter-spacing:2px;margin-bottom:6px}
-.ob-title{font-family:'Bangers',cursive;font-size:22px;color:#1a1a1a;letter-spacing:1px;line-height:1.1}
-.ob-text{font-size:11px;color:#6b7280;margin-top:8px;line-height:1.5}
-.ob-quote{font-size:12px;color:#1a1a1a;font-style:italic;background:#f5f0e8;border-left:3px solid #cc1a1a;border-radius:0 8px 8px 0;padding:8px 12px;margin-top:10px;line-height:1.4}
-.ob-btn{margin-top:14px;width:100%;padding:12px;background:#cc1a1a;border:2px solid #1a1a1a;border-radius:10px;font-family:'Bangers',cursive;font-size:15px;color:#fff;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #1a1a1a}
-.ob-btn:active{box-shadow:0 0;transform:translate(2px,2px)}
-.ob-btn-skip{margin-top:8px;width:100%;padding:8px;background:transparent;border:none;font-size:10px;color:#9ca3af;cursor:pointer}
-.ob-dots{display:flex;justify-content:center;gap:5px;margin-top:12px}
-.ob-dot{width:6px;height:6px;border-radius:50%;background:#e5e7eb;transition:background .3s}
-.ob-dot.on{background:#cc1a1a}
-/* Tooltip */
-.ob-tooltip{position:absolute;z-index:9999;pointer-events:none;animation:ttPop .3s cubic-bezier(.175,.885,.32,1.275)}
-@keyframes ttPop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
-.ob-tooltip-box{background:#1a1a1a;color:#fff;border-radius:10px;padding:8px 12px;font-size:11px;font-weight:700;white-space:nowrap;position:relative;max-width:200px;white-space:normal;line-height:1.3}
-.ob-tooltip-box::before{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border:7px solid transparent;border-top-color:#1a1a1a;border-bottom:none}
-.ob-pulse{position:absolute;z-index:9998;border-radius:14px;animation:pulse 1.5s ease infinite;pointer-events:none;background:rgba(204,26,26,.15);border:2px dashed #cc1a1a}
-@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.02)}}
+/* ══ BOTTOM NAV ══ */
+.bottom-nav{background:var(--bg-ui);backdrop-filter:blur(10px);border-top:var(--border);padding:7px 0 calc(7px + env(safe-area-inset-bottom,10px));display:flex;z-index:100;flex-shrink:0;box-shadow:0 -3px 0 #1e293b}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;border:none;background:transparent}
+.nav-btn:active .nav-ico{transform:scale(.85)}
+.nav-ico{font-size:23px;transition:transform .12s;position:relative}
+.nav-lbl{font-family:'Bangers',cursive;font-size:10px;color:#64748b;letter-spacing:.8px}
+.nav-btn.active .nav-lbl{color:#ef4444}
+.nav-btn.active .nav-ico{filter:drop-shadow(0 3px 5px rgba(239,68,68,.35))}
+.nav-dot{width:9px;height:9px;background:#ef4444;border-radius:50%;border:2px solid #fff;position:absolute;top:-2px;right:-4px}
 </style>
 </head>
 <body>
 
-<!-- ═══ HEADER FIXE ═══ -->
-<header class="profile-header">
-  <div class="profile-header-inner">
-    <div id="profileSkeleton">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="sk" style="width:50px;height:50px;border-radius:50%;flex-shrink:0;"></div>
-        <div style="flex:1"><div class="sk sk-line" style="width:50%"></div><div class="sk sk-line" style="width:35%;margin-top:6px;height:10px"></div></div>
-        <div class="sk" style="width:34px;height:34px;border-radius:10px;"></div>
-        <div class="sk" style="width:34px;height:34px;border-radius:10px;"></div>
-      </div>
-      <div class="sk" style="width:100%;height:4px;margin-top:10px;"></div>
-    </div>
-
-    <div class="pcb" id="profileCardBtn">
-      <div class="pcb-row">
-        <div class="avatar-ring-wrap">
-          <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
-          <div class="pcb-level-badge" id="currentLevel">1</div>
-        </div>
-        <div class="pcb-info">
-          <div class="pcb-name" id="playerName">...</div>
-          <div class="pcb-grade" id="playerGrade">...</div>
-        </div>
-        <div class="pcb-actions">
-          <div class="pcb-action" onclick="event.stopPropagation();location.href='messagerie.html'">💬<div class="pcb-badge" id="chatBadge" style="display:none;">0</div></div>
-          <div class="pcb-action" onclick="event.stopPropagation();location.href='parametres.html'">⚙️</div>
-        </div>
-      </div>
-      <!-- XP Bar -->
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:11px;color:#d97706;letter-spacing:1px" id="xpLevelLabel">NV.1</div>
-        <div style="flex:1;height:5px;background:rgba(0,0,0,.06);border-radius:3px;overflow:hidden">
-          <div id="xpBarFill" style="height:100%;width:0%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:3px;transition:width .5s ease"></div>
-        </div>
-        <div style="font-size:8px;color:#9ca3af;font-weight:700" id="xpCountLabel">0/500</div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<!-- ═══ CONTENU ═══ -->
-<div class="page-content">
-
-
-  <!-- PWA INSTALL BANNER -->
-  <div id="installBanner" style="display:none;grid-column:span 2;height:0;overflow:hidden">
-    <div style="background:#fefce8;border:2.5px solid #1a1a1a;border-radius:14px;box-shadow:3px 3px 0 #1a1a1a;padding:12px;position:relative">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-size:28px">📲</div>
-        <div style="flex:1">
-          <div style="font-family:Bangers,cursive;font-size:13px;color:#1a1a1a;letter-spacing:1px">INSTALLE LE JEU !</div>
-          <div style="font-size:8px;color:#92400e;margin-top:1px">Ajoute Battle Dock sur ton écran d'accueil</div>
-          <div style="font-size:9px;color:#059669;font-weight:800;margin-top:3px">🎁 BONUS : +25 000€ + 5🏆</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;margin-top:10px">
-        <button onclick="doInstall()" style="flex:1;padding:9px;border:2px solid #1a1a1a;border-radius:8px;background:#1a1a1a;color:#fbbf24;font-family:Bangers,cursive;font-size:11px;letter-spacing:1px;cursor:pointer;box-shadow:2px 2px 0 #92400e" id="installBtn">INSTALLER</button>
-        <button onclick="dismissInstall()" style="flex:1;padding:9px;border:2px solid #d1d5db;border-radius:8px;background:#fff;color:#9ca3af;font-family:Bangers,cursive;font-size:11px;letter-spacing:1px;cursor:pointer">PLUS TARD</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- TRAVAILLER -->
-  <div class="widget widget-full widget-work" id="wTravail" onclick="location.href='travail.html'">
-    <div class="work-mesh">
-      <div class="work-blob" style="top:-20%;left:10%;width:150px;height:150px;background:rgba(14,165,233,.4);animation-duration:7s;"></div>
-      <div class="work-blob" style="top:30%;right:-10%;width:120px;height:120px;background:rgba(251,191,36,.2);animation-duration:5s;animation-delay:-2s;"></div>
-      <div class="work-blob" style="bottom:-20%;left:40%;width:100px;height:100px;background:rgba(168,85,247,.15);animation-duration:8s;animation-delay:-4s;"></div>
-    </div>
-    <div class="work-content">
-      <div class="work-title">TRAVAILLER</div>
-      <div class="work-sub">⚓ Port de Marseille</div>
-    </div>
-  </div>
-
-  <!-- BANQUE + CASINO -->
-  <div class="widget-duo">
-    <div class="widget widget-banque" onclick="location.href='banque.html'">
-      <div class="banque-vault">🏛️<div class="banque-vault-pulse"></div></div>
-      <div class="banque-title">BANQUE</div>
-      <div class="banque-amount" id="banqueBalance">— €</div>
-    </div>
-    <div class="widget widget-casino" onclick="location.href='casino.html'">
-      <div class="casino-cards">
-        <div class="casino-card" style="left:0;transform:rotate(-12deg);animation-name:cardF1;">♠️</div>
-        <div class="casino-card" style="left:16px;top:-4px;z-index:1;animation-name:cardF2;">🃏</div>
-        <div class="casino-card" style="left:32px;transform:rotate(12deg);animation-name:cardF3;">♦️</div>
-      </div>
-      <div class="casino-title">CASINO</div>
-      <div class="casino-sub">TENTE TA CHANCE</div>
-    </div>
-  </div>
-
-  <!-- COMMERCE -->
-  <div class="widget widget-full widget-commerce" id="wCommerce" onclick="location.href='commerce.html'">
-    <div class="commerce-rain" id="commerceRain"></div>
-    <div class="commerce-company-logo" id="commerceLogo">🏪</div>
-    <div class="commerce-company-name" id="commerceName">Mon Entreprise</div>
-    <div class="commerce-title">COMMERCE</div>
-    <div class="commerce-amount card-dynamic-val zero" id="commerceStatus">—</div>
-    <div class="commerce-sub">Récupère tes gains</div>
-  </div>
-
-  <!-- BOURSE + SYNDICAT -->
-  <div class="widget-duo">
-    <div class="widget widget-bourse" onclick="location.href='bourse.html'">
-      <div class="bourse-title">BOURSE</div>
-      <div class="bourse-ticker">
-        <div class="bourse-tape" id="bourseTape"></div>
-      </div>
-    </div>
-    <div class="widget widget-syndicat" onclick="location.href='syndicat.html'">
-      <div class="syndicat-week" id="synWeek">S.—</div>
-      <div class="syndicat-icon">🏛️</div>
-      <div class="syndicat-title">SYNDICAT</div>
-      <div class="syndicat-sub">ÉVÉNEMENTS & TOURNOIS</div>
-      <div class="syndicat-dots" id="synDots"></div>
-    </div>
-  </div>
-
-  <!-- DIRECTION + BAR -->
-  <div class="widget-duo">
-    <div class="widget widget-direction" onclick="location.href='direction.html'">
-      <div class="emoji">👔</div>
-      <div class="widget-title">DIRECTION</div>
-      <div class="card-dynamic-val zero" id="directionSalary">—</div>
-    </div>
-    <div class="widget widget-ecole" onclick="location.href='ecole.html'">
-      <div class="ecole-hat">🎓</div>
-      <div class="ecole-title">ÉCOLE</div>
-      <div class="ecole-sub">Des Dockers</div>
-      <div class="ecole-progress" id="ecoleProgress"></div>
-    </div>
-  </div>
-
-  <!-- CLASSEMENT -->
-  <div class="widget widget-full widget-classement" onclick="location.href='classement.html'">
-    <div class="classement-flags" id="classementFlags"></div>
-    <div class="classement-pos" id="rankMyPos">#—</div>
-    <div>
-      <div class="classement-title">CLASSEMENT</div>
-      <div class="classement-sub">Qui est le meilleur docker ?</div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══ BARRE STATS BAS ═══ -->
-<nav class="stats-bar">
-  <div class="stats-bar-item"><div class="stats-bar-val" id="moneyBar">—</div><div class="stats-bar-lbl">💶 ARGENT</div></div>
-  <div class="stats-bar-sep"></div>
-  <div class="stats-bar-item"><div class="stats-bar-val blue" id="diamondBar">—</div><div class="stats-bar-lbl">💎 DIAMANTS</div></div>
-  <div class="stats-bar-sep"></div>
-  <div class="stats-bar-item"><div class="stats-bar-val gold" id="trophyBar">—</div><div class="stats-bar-lbl">🏆 TROPHÉES</div></div>
-</nav>
-
-<!-- ═══ JAVASCRIPT ═══ -->
-<script>
-const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
-const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-const sb=supabase.createClient(supabaseUrl,supabaseKey);
-
-function getXpRequired(level){
-  if(level<=10)return level*500;
-  if(level<=25)return level*1000;
-  if(level<=50)return level*2000;
-  return level*4000;
-}
-function getGrade(level){
-  if(level<=4)return'Docker Occasionnel';
-  if(level<=14)return'Docker';
-  if(level<=29)return'Docker Mensuel';
-  if(level<=49)return'Contre-Maître';
-  if(level<=79)return'Chef de Quai';
-  return'Magnat du Port';
-}
-function avatarForLevel(lvl){
-  if(lvl>=50)return'avatar-level-50.png';
-  if(lvl>=30)return'avatar-level-30.png';
-  if(lvl>=20)return'avatar-level-20.png';
-  if(lvl>=17)return'avatar-level-17.png';
-  if(lvl>=15)return'avatar-level-15.png';
-  if(lvl>=13)return'avatar-level-13.png';
-  if(lvl>=10)return'avatar-level-10.png';
-  if(lvl>=5)return'avatar-level-5.png';
-  if(lvl>=4)return'avatar-level-4.png';
-  if(lvl>=3)return'avatar-level-3.png';
-  if(lvl>=2)return'avatar-level-2.png';
-  return'avatar-default.png';
-}
-
-// FIX #8 : date locale (pas UTC)
-function getLocalDateStr(){
-  const d=new Date();
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-
-// Calcul solde banque réel (FIX #2)
-function getBankTotal(banque){
-  if(!banque||typeof banque!=='object')return 0;
-  let total=0;
-  if(banque.cc)total+=(banque.cc.solde||0);
-  if(banque.livret)total+=(banque.livret.solde||0);
-  if(banque.pep)total+=(banque.pep.solde||0);
-  return total;
-}
-
-
-function showLevelUp(lvl,diaReward,moneyReward){
-
-  var overlay=document.createElement('div');
-  overlay.className='lvlup-overlay';
-  var rewHTML='<div class="lvlup-rew"><div class="lvlup-rew-icon">💎</div><div class="lvlup-rew-val">+'+diaReward+'</div><div class="lvlup-rew-lbl">DIAMANTS</div></div>';
-  if(moneyReward>0)rewHTML+='<div class="lvlup-rew"><div class="lvlup-rew-icon">💶</div><div class="lvlup-rew-val">+'+(moneyReward>=1000?Math.floor(moneyReward/1000)+'k':moneyReward)+'€</div><div class="lvlup-rew-lbl">ARGENT</div></div>';
-  rewHTML+='<div class="lvlup-rew"><div class="lvlup-rew-icon">⭐</div><div class="lvlup-rew-val">+'+Math.floor(lvl*10)+'</div><div class="lvlup-rew-lbl">XP BONUS</div></div>';
-
-  overlay.innerHTML='<div class="lvlup-card">'
-    +'<div class="lvlup-top">'
-    +'<div class="lvlup-sp" style="top:15%;left:8%;background:#fbbf24;animation-delay:.2s"></div>'
-    +'<div class="lvlup-sp" style="top:20%;right:10%;background:#f472b6;animation-delay:.7s"></div>'
-    +'<div class="lvlup-sp" style="top:65%;left:6%;background:#818cf8;animation-delay:1.2s"></div>'
-    +'<div class="lvlup-sp" style="top:70%;right:12%;background:#fbbf24;animation-delay:.4s"></div>'
-    +'<div class="lvlup-lbl">NIVEAU ATTEINT</div>'
-    +'<div class="lvlup-num">'+lvl+'</div>'
-    +'<div class="lvlup-grade">'+getGrade(lvl)+'</div>'
-    +'</div>'
-    +'<div class="lvlup-divider"></div>'
-    +'<div class="lvlup-body">'
-    +'<div class="lvlup-rewards">'+rewHTML+'</div>'
-    +'<button class="lvlup-btn" onclick="this.closest(\'.lvlup-overlay\').remove()">RECUPERER</button>'
-    +'</div></div>';
-  document.body.appendChild(overlay);
-  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
-}
-
-function showError(){
-  document.getElementById('profileSkeleton').innerHTML=`
-    <div class="error-box">
-      <div style="font-size:22px">⚠️</div>
-      <div style="flex:1">
-        <div style="font-family:'Bangers',cursive;font-size:16px;letter-spacing:1px;color:var(--ink)">Erreur de connexion</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:2px">Vérifie ta connexion internet</div>
-      </div>
-      <button class="error-btn" onclick="location.reload()">Réessayer</button>
-    </div>`;
-}
-
-async function init(){
-  try{
-    const{data:{session}}=await sb.auth.getSession();
-    if(!session){location.href='index.html';return;}
-    const uid=session.user.id;
-
-    // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
-    const[profileRes,statsRes]=await Promise.all([
-      sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
-      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,direction').eq('user_id',uid).maybeSingle()
-    ]);
-    const profile=profileRes.data;
-    const stats=statsRes.data;
-    if(!profile||!stats){showError();return;}
-
-    // Recalcul niveau
-    let lvl=stats.level||1;
-    let xp=stats.xp||0;
-    let money=stats.money||0;
-    let diamonds=stats.diamonds||0;
-    const startLvl=lvl;
-    while(xp>=getXpRequired(lvl)){xp-=getXpRequired(lvl);lvl++;}
-
-    // FIX #5 : récompenses level-up (skip level 1 = pas de cadeau parasite)
-    const lastRewarded=stats.last_level_rewarded||0;
-    let rewardDiamonds=0;
-    let rewardMoney=0;
-    if(lvl>lastRewarded){
-      const startFrom=Math.max(lastRewarded+1,2); // jamais récompenser le niveau 1
-      for(let l=startFrom;l<=lvl;l++){
-        rewardDiamonds+=5;
-        if(l%5===0) rewardDiamonds+=10;
-        if(l%10===0) rewardMoney+=5000;
-      }
-      diamonds+=rewardDiamonds;
-      money+=rewardMoney;
-      // FIX #4 : sync grade en base
-      await sb.from('game_stats').update({
-        level:lvl,xp,diamonds,money,
-        grade:getGrade(lvl),
-        last_level_rewarded:lvl,
-        last_levelup_shown:lvl
-      }).eq('user_id',uid);
-    } else if(lvl!==startLvl){
-      // FIX #4 : sync grade même sans récompenses
-      await sb.from('game_stats').update({level:lvl,xp,grade:getGrade(lvl)}).eq('user_id',uid);
-    }
-
-    const xpNeeded=getXpRequired(lvl);
-    const pct=Math.min((xp/xpNeeded)*100,100);
-
-    // Avatar
-    const SPECIAL=['avatar-millionaire.png','avatar-completionist.png'];
-    const autoAvatar=avatarForLevel(lvl);
-    const avatarSrc=SPECIAL.includes(profile.avatar_url)?profile.avatar_url:autoAvatar;
-    document.getElementById('avatarImage').src=avatarSrc;
-    if(!SPECIAL.includes(profile.avatar_url)&&profile.avatar_url!==autoAvatar){
-      await sb.from('profiles').update({avatar_url:autoAvatar}).eq('user_id',uid);
-    }
-
-    // FIX #3 : mettre à jour last_seen
-    sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(()=>{});
-
-    const card=document.getElementById('profileCardBtn');
-    card.style.cursor='pointer';
-    card.onclick=()=>location.href='profil.html';
-
-    // Ajuster padding dynamiquement
-    requestAnimationFrame(()=>{
-      const hh=document.querySelector('.profile-header').offsetHeight;
-      document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
-    });
-
-    // Commerce rain + company data + bourse ticker
-    initCommerceRain();
-    loadCompanyCard(uid);
-    loadBourseTicker();
-    loadSyndicatMembers();
-    initClassementFlags();
-
-    // Remplissage
-    document.getElementById('playerName').textContent=profile.username;
-    document.getElementById('playerGrade').textContent=getGrade(lvl);
-    document.getElementById('currentLevel').textContent=lvl;
-
-    // XP bar
-    document.getElementById('xpLevelLabel').textContent='NV.'+lvl;
-    document.getElementById('xpBarFill').style.width=pct+'%';
-    document.getElementById('xpCountLabel').textContent=Math.floor(xp)+'/'+xpNeeded;
-
-    // Stats barre bas uniquement
-    document.getElementById('moneyBar').textContent=Math.floor(money).toLocaleString('fr-FR')+'€';
-    document.getElementById('diamondBar').textContent=Math.floor(diamonds).toLocaleString('fr-FR');
-    document.getElementById('trophyBar').textContent=stats.trophies||0;
-
-    // FIX #2 : carte banque → vrai solde banque (pas le wallet)
-    const bankTotal=getBankTotal(stats.banque);
-    document.getElementById('banqueBalance').textContent=Math.floor(bankTotal).toLocaleString('fr-FR')+' €';
-
-    // Données dynamiques sur les cartes
-    populateDynamicCards(stats);
-
-    // Afficher
-    document.getElementById('profileSkeleton').style.display='none';
-    card.style.display='block';
-
-    // Popup level-up si récompenses données
-    if(rewardDiamonds>0||rewardMoney>0){
-      showLevelUp(lvl,rewardDiamonds,rewardMoney);
-    }
-
-    // FIX #8 : streak avec date locale (plus UTC)
-    checkStreak(uid,stats,money,diamonds);
-    checkPWAInstall(uid,money,stats.trophies||0);
-
-    // Refresh money after async operations (streak/PWA might update it)
-    setTimeout(async function(){
-      try{
-        var fresh=await sb.from('game_stats').select('money,diamonds,trophies').eq('user_id',uid).maybeSingle();
-        if(fresh.data){
-          document.getElementById('moneyBar').textContent=Math.floor(fresh.data.money||0).toLocaleString('fr-FR')+'€';
-          document.getElementById('diamondBar').textContent=Math.floor(fresh.data.diamonds||0).toLocaleString('fr-FR');
-          document.getElementById('trophyBar').textContent=fresh.data.trophies||0;
-        }
-      }catch(e){}
-    },2000);
-
-    startPlaytimeTracking(uid);
-    loadRank(uid);
-    loadChatBadge(uid);
-
-    // PWA : enregistrer le service worker
-    if('serviceWorker' in navigator){
-      navigator.serviceWorker.register('sw.js').catch(()=>{});
-    }
-
-  }catch(e){
-    console.error('init error:',e);
-    showError();
-  }
-}
-
-// ── Playtime tracking (FIX #10 : catch silencieux OK, RPC peut ne pas exister) ──
-let _playtimeUid=null;
-function startPlaytimeTracking(uid){
-  _playtimeUid=uid;
-  setInterval(async()=>{
-    try{await sb.rpc('increment_playtime',{uid:_playtimeUid});}catch(e){/* RPC may not exist */}
-  },60000);
-}
-
-// ── PWA Install ──
-var _deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();_deferredPrompt=e;});
-
-function isStandalone(){
-  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
-}
-
-async function checkPWAInstall(uid,currentMoney,currentTrophies){
-  // Check Supabase records first
-  var gs=await sb.from('game_stats').select('records').eq('user_id',uid).maybeSingle();
-  var records=(gs.data&&gs.data.records)||{};
-  checkOnboarding(uid,records);
-    if(records.pwa_installed&&isStandalone()){
-    // Already installed on THIS device → hide
-    document.getElementById('installBanner').style.display='none';
-    return;
-  }
-  // Running as installed app → credit reward
-  if(isStandalone()){
-    var newMoney=currentMoney+25000;
-    var newTrophies=currentTrophies+5;
-    records.pwa_installed=true;
-    await sb.from('game_stats').update({money:newMoney,trophies:newTrophies,records:records}).eq('user_id',uid);
-    localStorage.setItem('pwa_rewarded','1');
-    document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
-    document.getElementById('trophyBar').textContent=newTrophies;
-    document.getElementById('installBanner').style.display='none';
-    var ov=document.createElement('div');
-    ov.id='pwaRewardOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px';
-    ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
-      +'<div style="font-size:48px;margin-bottom:8px">🎉</div>'
-      +'<div style="font-family:Bebas Neue,sans-serif;font-size:24px;letter-spacing:3px;color:#1a1a1a">MERCI !</div>'
-      +'<div style="font-size:11px;color:#9ca3af;margin-top:4px">Battle Dock est installé sur ton écran</div>'
-      +'<div style="margin-top:14px;background:#f0fdf4;border-radius:12px;padding:12px">'
-      +'<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#059669">+25 000€</div>'
-      +'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#d97706;margin-top:2px">+5 🏆</div>'
-      +'</div>'
-      +'<button onclick="document.getElementById(\'pwaRewardOverlay\').remove()" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:800;cursor:pointer">MERCI !</button>'
-      +'</div>';
-    document.body.appendChild(ov);
-    return;
-  }
-  // Dismissed recently → hide for 3 days
-  var dismissed=localStorage.getItem('pwa_dismissed');
-  if(dismissed&&Date.now()-parseInt(dismissed)<3*86400000){
-    document.getElementById('installBanner').style.display='none';
-    return;
-  }
-  var ib=document.getElementById('installBanner');ib.style.display='block';ib.style.height='auto';ib.style.overflow='visible';
-}
-
-function doInstall(){
-  if(_deferredPrompt){
-    _deferredPrompt.prompt();
-    _deferredPrompt.userChoice.then(function(r){
-      if(r.outcome==='accepted'){localStorage.setItem('pwa_dismissed',Date.now().toString());}
-      _deferredPrompt=null;
-    });
-  }else{
-    // iOS or no prompt available → show instructions
-    var isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-    if(isIOS){
-      alert('Sur iPhone :\n1. Tape le bouton Partager ⬆️\n2. Choisis "Sur l\'écran d\'accueil"\n3. Confirme\n\nEnsuite ouvre le jeu depuis l\'icône pour recevoir ton bonus !');
-    }else{
-      alert('Ouvre le menu de ton navigateur (⋮) puis choisis "Installer l\'application" ou "Ajouter à l\'écran d\'accueil".\n\nEnsuite ouvre le jeu depuis l\'icône pour recevoir ton bonus !');
-    }
-  }
-}
-
-function dismissInstall(){
-  localStorage.setItem('pwa_dismissed',Date.now().toString());
-  document.getElementById('installBanner').style.display='none';
-}
-
-// ── Streak ──
-function checkStreak(uid,stats,currentMoney,currentDiamonds){
-  try{
-    const today=getLocalDateStr();
-    if(stats.last_login===today)return;
-    const yesterday=new Date();
-    yesterday.setDate(yesterday.getDate()-1);
-    const yStr=yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
-    let newStreak;
-    if(stats.last_login===yStr){newStreak=(stats.streak_days||0)+1;}
-    else{newStreak=1;}
-    // Bonus : 500€ × streak (max 10 jours = 5000€) + diamants tous les 5 jours
-    const bonus=Math.min(newStreak,10)*500;
-    const diamondBonus=(newStreak%5===0)?newStreak:0;
-    const newMoney=currentMoney+bonus;
-    const newDiamonds=currentDiamonds+diamondBonus;
-    sb.from('game_stats').update({streak_days:newStreak,last_login:today,money:newMoney,diamonds:newDiamonds}).eq('user_id',uid).then(()=>{
-      document.getElementById('moneyBar').textContent=newMoney.toLocaleString('fr-FR')+'€';
-      if(diamondBonus)document.getElementById('diamondBar').textContent=newDiamonds;
-    });
-    // Popup
-    showStreakPopup(newStreak,bonus,diamondBonus);
-  }catch(e){}
-}
-
-function showStreakPopup(streak,bonus,diamonds){
-  var flames='';for(var i=0;i<Math.min(streak,10);i++)flames+='🔥';
-  var ov=document.createElement('div');
-  ov.id='streakOverlay';
-  ov.style.cssText='position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .3s';
-  ov.innerHTML='<div style="background:#fff;border-radius:20px;padding:24px;text-align:center;max-width:300px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
-    +'<div style="font-size:48px;margin-bottom:8px">'+flames+'</div>'
-    +'<div style="font-family:Bebas Neue,sans-serif;font-size:28px;letter-spacing:3px;color:#1a1a1a">JOUR '+streak+'</div>'
-    +'<div style="font-size:11px;color:#9ca3af;margin-top:4px">Connexion consécutive</div>'
-    +'<div style="margin-top:14px;background:#f0fdf4;border-radius:12px;padding:12px">'
-    +'<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#059669">+'+bonus.toLocaleString('fr-FR')+'€</div>'
-    +(diamonds?'<div style="font-family:Bebas Neue,sans-serif;font-size:18px;color:#3b82f6;margin-top:2px">+'+diamonds+'💎</div>':'')
-    +'</div>'
-    +'<div style="font-size:9px;color:#9ca3af;margin-top:8px">'+(streak<10?'Jour '+(streak+1)+' = +'+(Math.min(streak+1,10)*500).toLocaleString('fr-FR')+'€':'MAX STREAK ! 5 000€/jour')+'</div>'
-    +'<button onclick="document.getElementById(\'streakOverlay\').remove()" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:12px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:800;cursor:pointer">MERCI !</button>'
-    +'</div>';
-  document.body.appendChild(ov);
-}
-
-// FIX #7 : rank — tri Supabase + count séparé (scalable)
-async function loadRank(uid){
-  try{
-    // Leader = top 1
-    const{data:top}=await sb.from('game_stats')
-      .select('user_id,level,money')
-      .order('level',{ascending:false})
-      .order('money',{ascending:false})
-      .limit(1);
-
-    // Total joueurs
-    const{count}=await sb.from('game_stats')
-      .select('user_id',{count:'exact',head:true});
-
-    // Position du joueur : compter combien ont un level+money supérieur
-    // Approx : on fetch juste user_id,level,money et on trie côté client
-    // TODO: remplacer par une RPC Postgres pour 500+ joueurs
-    const{data:all}=await sb.from('game_stats')
-      .select('user_id,level,money')
-      .order('level',{ascending:false})
-      .order('money',{ascending:false});
-
-    let rank='—';
-    if(all){
-      const idx=all.findIndex(x=>x.user_id===uid);
-      if(idx>=0) rank=idx+1;
-    }
-
-    const elPos=document.getElementById('rankMyPos');
-    if(elPos)elPos.textContent='#'+rank;
-  }catch(e){}
-}
-
-// ── Données dynamiques sur les cartes ──
-function populateDynamicCards(stats){
-  // Commerce
-  const el1=document.getElementById('commerceStatus');
-  if(el1){
-    const c=stats.commerce||{};
-    if(c.created){
-      el1.textContent='Entreprise active';
-      el1.classList.replace('zero','positive');
-    } else {
-      el1.textContent='Pas encore créée';
-    }
-  }
-  // Direction
-  const el3=document.getElementById('directionSalary');
-  if(el3){
-    const d=stats.direction||{};
-    if(d.totalClaimed&&d.totalClaimed>0){
-      el3.textContent=Math.floor(d.totalClaimed).toLocaleString('fr-FR')+'€ perçus';
-      el3.classList.replace('zero','positive');
-    } else {
-      el3.textContent='Pas de salaire';
-    }
-  }
-}
-
-// ── Badge chat (messages non lus dans messagerie) ──
-async function loadChatBadge(uid){
-  try{
-    const{count}=await sb.from('challenges')
-      .select('id',{count:'exact',head:true})
-      .eq('to_user_id',uid)
-      .or('read.is.null,read.eq.false');
-    const badge=document.getElementById('chatBadge');
-    if(count&&count>0){
-      const txt=count>99?'99+':count;
-      if(badge){badge.textContent=txt;badge.style.display='flex';}
-    }else{
-      if(badge)badge.style.display='none';
-    }
-  }catch(e){}
-}
-
-// ── Bourse ticker — entreprises des joueurs ──
-async function loadBourseTicker(){
-  const tape=document.getElementById('bourseTape');
-  if(!tape)return;
-  try{
-    const{data}=await sb.from('companies')
-      .select('nom,emoji,valeur,reputation')
-      .order('valeur',{ascending:false})
-      .limit(20);
-    if(!data||data.length===0){
-      tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Aucune entreprise cotée</span></span>';
-      return;
-    }
-    // Générer les items du ticker
-    let html='';
-    data.forEach(c=>{
-      const name=(c.nom||'???').substring(0,12).toUpperCase();
-      // Variation basée sur la réputation (positif si > 50, négatif sinon)
-      const rep=c.reputation||50;
-      const variation=((rep-50)/5).toFixed(1);
-      const isUp=variation>=0;
-      const cls=isUp?'up':'down';
-      const arrow=isUp?'+':'';
-      html+=`<span class="bourse-tape-item"><span class="sym">${c.emoji||'🏢'} ${name}</span> <span class="${cls}">${arrow}${variation}%</span></span>`;
-    });
-    // Dupliquer pour boucle infinie
-    tape.innerHTML=html+html;
-  }catch(e){
-    tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Chargement...</span></span>';
-  }
-}
-
-// ── Syndicat members count ──
-async function loadSyndicatMembers(){
-  var EVTS=['🏗️','🏎️','📦','💰','🤝','🎰'];
-  var d=new Date(),o=new Date(d.getFullYear(),0,1),w=Math.ceil(((d-o)/864e5+o.getDay()+1)/7);
-  var active=w%6;
-  var wEl=document.getElementById('synWeek');
-  if(wEl)wEl.textContent='S.'+w;
-  var dots=document.getElementById('synDots');
-  if(dots){dots.innerHTML='';EVTS.forEach(function(e,i){var s=document.createElement('span');s.textContent=e;if(i===active)s.className='on';dots.appendChild(s);});}
-}
-
-// ── Classement flags ──
-function initClassementFlags(){
-  const box=document.getElementById('classementFlags');
-  if(!box)return;
-  const flags=['🏁','🚩','🏁'];
-  for(let i=0;i<3;i++){
-    const f=document.createElement('div');
-    f.className='classement-flag';
-    f.textContent=flags[i%flags.length];
-    f.style.top=(15+i*30)+'%';
-    f.style.animationDuration=(6+i*2)+'s';
-    f.style.animationDelay=(-i*2.5)+'s';
-    box.appendChild(f);
-  }
-}
-
-// ── Commerce coin rain ──
-function initCommerceRain(){
-  const rain=document.getElementById('commerceRain');
-  if(!rain)return;
-  const coins=['💰','🪙','💵','💶'];
-  for(let i=0;i<12;i++){
-    const c=document.createElement('div');
-    c.className='commerce-drop';
-    c.textContent=coins[Math.floor(Math.random()*coins.length)];
-    c.style.left=Math.random()*100+'%';
-    c.style.fontSize=(10+Math.random()*10)+'px';
-    c.style.animationDuration=(2.5+Math.random()*3)+'s';
-    c.style.animationDelay=(-Math.random()*4)+'s';
-    rain.appendChild(c);
-  }
-}
-
-// ── Commerce company data ──
-async function loadCompanyCard(uid){
-  try{
-    const{data}=await sb.from('companies').select('emoji,nom').eq('user_id',uid).maybeSingle();
-    if(data){
-      if(data.emoji)document.getElementById('commerceLogo').textContent=data.emoji;
-      if(data.nom)document.getElementById('commerceName').textContent=data.nom;
-    }
-  }catch(e){}
-}
-
-init();
-</script>
-
-<!-- POPUP ÉCOLE -->
 <style>
-.popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;opacity:0;transition:opacity .3s;pointer-events:none}
-.popup-overlay.show{opacity:1;pointer-events:auto}
-.popup-banner{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#fff;border-radius:24px 24px 0 0;padding:24px 20px calc(env(safe-area-inset-bottom,0px)+20px);transform:translateY(100%);transition:transform .5s cubic-bezier(.34,1.2,.64,1);box-shadow:0 -10px 40px rgba(0,0,0,.3)}
-.popup-banner.show{transform:translateY(0)}
-.popup-top{display:flex;align-items:center;gap:14px}
-.popup-icon{width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0;box-shadow:0 4px 15px rgba(251,191,36,.3)}
-.popup-info{flex:1}
-.popup-new{display:inline-block;background:#fef3c7;color:#d97706;font-size:8px;font-weight:700;letter-spacing:2px;padding:2px 8px;border-radius:10px;margin-bottom:4px}
-.popup-title{font-weight:900;font-size:15px;color:#1a1a1a}
-.popup-desc{font-size:11px;color:#6b7280;margin-top:2px;line-height:1.4}
-.popup-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:18px;color:#d1d5db;cursor:pointer}
-.popup-price{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1565C0;margin-top:12px}
-.popup-btns{display:flex;gap:8px;margin-top:16px}
-.popup-btn{flex:1;padding:13px;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;cursor:pointer}
-.popup-btn.primary{background:#1565C0;color:#fff}
-.popup-btn.primary:active{transform:scale(.97)}
-.popup-btn.secondary{background:#f3f4f6;color:#6b7280}
+/* ══ MAINTENANCE GATE ══ */
+#maint-gate{
+  position:fixed;inset:0;z-index:9999;
+  background:#0f172a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;
+  font-family:'Inter',sans-serif;
+}
+@keyframes warningPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.mg-icon{font-size:64px;animation:warningPulse 2s ease infinite;margin-bottom:20px}
+.mg-badge{background:#fbbf24;border:2.5px solid #1e293b;border-radius:8px;padding:4px 14px;font-family:'Bangers',cursive;font-size:12px;color:#1e293b;letter-spacing:2px;box-shadow:3px 3px 0 #1e293b;margin-bottom:14px}
+.mg-title{font-family:'Bangers',cursive;font-size:32px;color:#fff;letter-spacing:2px;text-align:center;line-height:1.1;margin-bottom:8px}
+.mg-sub{font-size:13px;color:#94a3b8;text-align:center;line-height:1.5;margin-bottom:28px;max-width:280px}
+.mg-card{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;width:100%;max-width:300px;animation:fadeSlide .4s ease}
+.mg-label{font-size:9px;font-weight:800;color:#64748b;letter-spacing:2px;margin-bottom:8px}
+.mg-input-wrap{display:flex;gap:8px}
+.mg-input{flex:1;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 14px;font-family:'Bangers',cursive;font-size:16px;color:#fff;letter-spacing:2px;outline:none;transition:border .2s}
+.mg-input:focus{border-color:rgba(251,191,36,.5)}
+.mg-input.shake{animation:mgShake .3s ease}
+@keyframes mgShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.mg-btn{background:#fbbf24;border:2px solid #1e293b;border-radius:10px;padding:11px 16px;font-family:'Bangers',cursive;font-size:14px;color:#1e293b;cursor:pointer;box-shadow:2px 2px 0 #1e293b;letter-spacing:1px;transition:transform .1s}
+.mg-btn:active{transform:translate(2px,2px);box-shadow:none}
+.mg-error{font-size:11px;color:#f87171;margin-top:8px;text-align:center;min-height:16px;font-weight:700}
+.mg-version{position:absolute;bottom:calc(14px + env(safe-area-inset-bottom,0px));font-size:9px;color:#334155;font-weight:700;letter-spacing:1.5px}
 </style>
-<div class="popup-overlay" id="popupOverlay"></div>
-<div class="popup-banner" id="popupBanner">
-  <button class="popup-close" onclick="closePopup()">✕</button>
-  <div class="popup-top">
-    <div class="popup-icon">🎓</div>
-    <div class="popup-info">
-      <div class="popup-new">✨ NOUVEAU</div>
-      <div class="popup-title">L'école des dockers est ouverte !</div>
-      <div class="popup-desc">Fais la formation <b>Grutier</b> pour débloquer un nouveau métier au port.</div>
+
+<div id="maint-gate">
+  <div class="mg-icon">🔧</div>
+  <div class="mg-badge">VERSION 1.4</div>
+  <div class="mg-title">MAINTENANCE<br>EN COURS</div>
+  <div class="mg-sub">Le port est temporairement fermé pour maintenance. Une mise à jour importante est en cours de déploiement.</div>
+  <div class="mg-card">
+    <div class="mg-label">CODE D'ACCÈS</div>
+    <div class="mg-input-wrap">
+      <input class="mg-input" id="mgInput" type="password" placeholder="••••••" maxlength="10" autocomplete="off">
+      <button class="mg-btn" onclick="checkCode()">ENTRER</button>
     </div>
+    <div class="mg-error" id="mgError"></div>
   </div>
-  <div class="popup-price">50 000€ seulement</div>
-  <div class="popup-btns">
-    <button class="popup-btn secondary" onclick="closePopup()">PLUS TARD</button>
-    <button class="popup-btn primary" onclick="location.href='ecole.html'">DÉCOUVRIR →</button>
-  </div>
+  <div class="mg-version">BATTLE DOCK v1.4 · PORT DE MARSEILLE</div>
 </div>
+
 <script>
-function closePopup(){
-  document.getElementById('popupBanner').classList.remove('show');
-  document.getElementById('popupOverlay').classList.remove('show');
-  localStorage.setItem('popup_ecole_seen','1');
+document.getElementById('mgInput').addEventListener('keydown', function(e){
+  if(e.key === 'Enter') checkCode();
+});
+function checkCode(){
+  var val = document.getElementById('mgInput').value.toLowerCase().trim();
+  if(val === 'ouioui'){
+    var gate = document.getElementById('maint-gate');
+    gate.style.transition = 'opacity .5s ease';
+    gate.style.opacity = '0';
+    setTimeout(function(){ gate.remove(); }, 500);
+  } else {
+    var inp = document.getElementById('mgInput');
+    var err = document.getElementById('mgError');
+    inp.classList.remove('shake');
+    void inp.offsetWidth;
+    inp.classList.add('shake');
+    err.textContent = '❌ Code incorrect';
+    inp.value = '';
+    setTimeout(function(){ err.textContent = ''; }, 2000);
+  }
 }
-(function(){
-  if(localStorage.getItem('popup_ecole_seen'))return;
-  setTimeout(function(){
-    document.getElementById('popupOverlay').classList.add('show');
-    document.getElementById('popupBanner').classList.add('show');
-  },2000);
-})();
-
-
-var dlgTimer=null;
-
-// ═══ ONBOARDING ═══
-var OB_STEPS=[
-  {emoji:'👷',step:'BIENVENUE',title:'Bienvenue au Port',
-   quote:'Bienvenue gamin. Ici on travaille dur, on gagne bien, et on rit fort.',
-   text:'Battle Dock, ton empire portuaire. Clique, construis, domine.',
-   btn:'C EST PARTI'},
-  {emoji:'💪',step:'ETAPE 1 sur 3',title:'Commence par travailler',
-   quote:'Le boulot passe avant tout. Travaille pour tes premiers euros.',
-   text:'Le widget TRAVAILLER est ta source de revenus de base. Chaque jour.',
-   btn:'OK',target:'wTravail'},
-  {emoji:'🏪',step:'ETAPE 2 sur 3',title:'Lance ton entreprise',
-   quote:'Un vrai docker a son business. Le commerce donne des revenus passifs.',
-   text:'Ton entreprise rapporte de l argent meme quand tu ne joues pas.',
-   btn:'OK',target:'wCommerce'},
-  {emoji:'🏆',step:'ETAPE 3 sur 3',title:'Le port vous appartient',
-   quote:'Maintenant tu sais. Le reste, tu l apprendras en jouant.',
-   text:'Mini-jeux, casino, syndicat, bourse, cartes... Explore et domine !',
-   btn:'JOUER !',finish:true},
-];
-var obStep=0;
-
-function obShow(){
-  var s=OB_STEPS[obStep];
-  var ov=document.getElementById('obOverlay');
-  ov.style.display='flex';
-  ov.className='ob-overlay';
-
-  var dots=OB_STEPS.map(function(_,i){return '<div class="ob-dot'+(i===obStep?' on':'')+'"></div>';}).join('');
-
-  ov.innerHTML='<div class="ob-card">'
-    +'<div class="ob-hero"><span class="ob-emoji">'+s.emoji+'</span>'
-    +'<div style="font-family:Bangers,cursive;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:3px">'+s.step+'</div>'
-    +'<div style="font-family:Bangers,cursive;font-size:20px;color:#fff;margin-top:2px;text-shadow:1px 1px 0 rgba(0,0,0,.2)">'+s.title+'</div>'
-    +'</div>'
-    +'<div class="ob-body">'
-    +'<div class="ob-quote">'+s.quote+'</div>'
-    +'<div class="ob-text">'+s.text+'</div>'
-    +'<div class="ob-dots">'+dots+'</div>'
-    +'<button class="ob-btn" onclick="obNext()">'+s.btn+'</button>'
-    +(obStep===0?'<button class="ob-btn-skip" onclick="obFinish()">Passer</button>':'')
-    +'</div></div>';
-
-  // Highlight target widget
-  if(s.target){obPulse(s.target);}else{obClearPulse();}
-}
-
-function obPulse(wid){
-  var el=document.getElementById(wid);
-  if(!el)return;
-  var r=el.getBoundingClientRect();
-  var p=document.getElementById('obPulse');
-  p.style.display='block';
-  p.style.top=(r.top+window.scrollY-4)+'px';
-  p.style.left=(r.left-4)+'px';
-  p.style.width=(r.width+8)+'px';
-  p.style.height=(r.height+8)+'px';
-}
-function obClearPulse(){document.getElementById('obPulse').style.display='none';}
-
-function obNext(){
-  obStep++;
-  if(obStep>=OB_STEPS.length){obFinish();return;}
-  obShow();
-}
-
-async function obFinish(){
-  document.getElementById('obOverlay').style.display='none';
-  obClearPulse();
-  // Save to Supabase
-  try{
-    var {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser).maybeSingle();
-    var rec=(gs&&gs.records)||{};
-    rec.onboarding_done=true;
-    await sb.from('game_stats').update({records:rec}).eq('user_id',currentUser);
-  }catch(e){}
-}
-
-function checkOnboarding(uid,records){
-  if(records&&records.onboarding_done)return;
-  currentUser=uid;
-  obStep=0;
-  obShow();
-}
-
 </script>
 
-  <div class="d4-row">
-    <div id="d4Emoji" style="font-size:24px">👷</div>
-    <div class="d4-bubble" id="d4Text">...</div>
+
+<div class="hdr">
+  <div class="hdr-av">
+    <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=eliasse&backgroundColor=b6e3f4" alt="">
+    <div class="hdr-av-lvl">15</div>
   </div>
-  <div class="d4-name" id="d4Name">GÉGÉ · Quai Nord</div>
+  <div class="hdr-info">
+    <div class="hdr-name">ELIASSE</div>
+    <div class="hdr-grade">Docker Confirmé · 62% → NV.16</div>
+    <div class="hdr-xp"><div class="hdr-xp-fill"></div></div>
+  </div>
+  <div class="hdr-chips">
+    <div class="chip chip-gold">💰 1.2M</div>
+    <div class="chip chip-red">🔥 12</div>
+  </div>
 </div>
 
-<!-- ═══ ONBOARDING ═══ -->
-<div id="obOverlay" style="display:none"></div>
-<div id="obPulse" class="ob-pulse" style="display:none"></div>
-<div id="obTooltip" class="ob-tooltip" style="display:none">
-  <div class="ob-tooltip-box" id="obTooltipText"></div>
+<div class="scene">
+  <div class="sky-bg"></div>
+
+  <!-- SOLEIL -->
+  <div class="sun-wrap">
+    <div class="sun-rays">
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(0deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(40deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(80deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(120deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(160deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(200deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(240deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(280deg) translateY(-34px)"></div>
+      <div class="sun-ray" style="transform:translateX(-50%) rotate(320deg) translateY(-34px)"></div>
+    </div>
+    <div class="sun"></div>
+  </div>
+
+  <div class="seagull" style="top:22px;left:34px;animation-duration:8s">🕊️</div>
+  <div class="seagull" style="top:28px;left:58px;animation-duration:12s;animation-delay:2.5s;font-size:11px">🕊️</div>
+
+  <div class="cloud" style="top:14px;left:16px;animation:cloudDrift 8s ease-in-out infinite alternate">
+    <div class="cloud-body" style="width:56px;height:18px">
+      <div class="cloud-bump" style="width:24px;height:24px;top:-13px;left:7px"></div>
+      <div class="cloud-bump" style="width:17px;height:17px;top:-9px;left:27px"></div>
+    </div>
+  </div>
+  <div class="cloud" style="top:10px;left:152px;animation:cloudDrift 11s ease-in-out infinite alternate-reverse">
+    <div class="cloud-body" style="width:40px;height:13px">
+      <div class="cloud-bump" style="width:17px;height:17px;top:-9px;left:5px"></div>
+    </div>
+  </div>
+
+  <div class="ground">
+    <div class="grass">
+
+      <!-- Routes -->
+      <div class="road" style="top:128px;left:0;right:0;height:26px"><div class="road-dash"></div></div>
+      <div class="road" style="top:0;bottom:98px;left:34px;width:24px"><div class="road-v-dash"></div></div>
+      <div class="road" style="top:0;bottom:98px;right:34px;width:24px"><div class="road-v-dash"></div></div>
+
+      <!-- Arbres -->
+      <div class="tree" style="top:58px;left:18px">
+        <div class="tree-top" style="width:26px;height:26px;background:#4ade80"></div>
+        <div class="tree-trunk" style="height:12px"></div>
+      </div>
+      <div class="tree" style="top:64px;right:18px">
+        <div class="tree-top" style="width:22px;height:22px;background:#22c55e"></div>
+        <div class="tree-trunk" style="height:10px"></div>
+      </div>
+      <div class="tree" style="top:70px;right:44px">
+        <div class="tree-top" style="width:18px;height:18px;background:#16a34a"></div>
+        <div class="tree-trunk" style="height:9px"></div>
+      </div>
+
+      <!-- Lampadaires -->
+      <div class="lamp" style="top:86px;left:66px">
+        <div class="lamp-arm"></div>
+        <div class="lamp-glow"></div>
+        <div class="lamp-post" style="height:28px"></div>
+      </div>
+      <div class="lamp" style="top:86px;right:62px">
+        <div class="lamp-arm"></div>
+        <div class="lamp-glow"></div>
+        <div class="lamp-post" style="height:28px"></div>
+      </div>
+
+      <!-- Caisses -->
+      <div style="position:absolute;top:156px;left:70px">
+        <div style="display:flex;gap:2px">
+          <div class="box" style="width:12px;height:10px;background:#fde047"></div>
+          <div class="box" style="width:12px;height:10px;background:#fcd34d"></div>
+        </div>
+        <div class="box" style="width:26px;height:10px;background:#fbbf24;margin-top:-1px"></div>
+      </div>
+      <div style="position:absolute;top:158px;right:68px">
+        <div class="box" style="width:14px;height:12px;background:#93c5fd"></div>
+        <div class="box" style="width:14px;height:12px;background:#60a5fa;margin-top:-1px"></div>
+      </div>
+
+      <!-- Camion -->
+      <div style="position:absolute;top:130px;left:96px;font-size:17px">🚛</div>
+
+      <!-- ═ TRAVAILLER ═ -->
+      <div class="b w" style="left:50%;transform:translateX(-50%);top:8px">
+        <div class="w-chimney">
+          <div style="position:relative">
+            <span class="smoke-p">💨</span><span class="smoke-p">💨</span>
+          </div>
+        </div>
+        <div class="w-roof">
+          <div class="w-merlon"></div><div class="w-merlon"></div><div class="w-merlon"></div>
+        </div>
+        <div class="w-body">
+          <div class="w-stripe" style="left:22px"></div>
+          <div class="w-stripe" style="left:52px"></div>
+          <div class="w-sign">DOCK CENTRAL</div>
+          <div class="w-win" style="left:8px"></div>
+          <div class="w-win" style="right:8px"></div>
+          <div class="w-door">👷</div>
+        </div>
+        <div class="b-shadow" style="width:86px"></div>
+        <div class="pin" style="top:-20px;right:-3px">
+          <div class="pin-bubble" style="background:#fde047">⭐</div>
+          <div class="pin-tail" style="border-top:6px solid #fde047"></div>
+        </div>
+        <div class="b-lbl" style="bottom:-16px;background:#ef4444;color:#fff">TRAVAILLER</div>
+      </div>
+
+      <!-- ═ CASINO ═ -->
+      <div class="b ca" style="left:4px;top:16px">
+        <div class="ca-tower">
+          <div class="ca-dot" style="animation:l1 .8s infinite"></div>
+          <div class="ca-dot" style="animation:l2 .8s infinite .26s"></div>
+          <div class="ca-dot" style="animation:l3 .8s infinite .52s"></div>
+        </div>
+        <div class="ca-roof"></div>
+        <div class="ca-body">
+          <div class="ca-lights">
+            <div class="ca-l" style="animation:l1 .8s linear infinite"></div>
+            <div class="ca-l" style="animation:l2 .8s linear infinite .26s"></div>
+            <div class="ca-l" style="animation:l3 .8s linear infinite .52s"></div>
+          </div>
+          <div class="ca-l2">
+            <div class="ca-l" style="animation:l2 .6s linear infinite"></div>
+            <div class="ca-l" style="animation:l3 .6s linear infinite .2s"></div>
+          </div>
+          <div class="ca-door">🎰</div>
+        </div>
+        <div class="b-shadow" style="width:62px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#8b5cf6;color:#fff">CASINO</div>
+      </div>
+
+      <!-- ═ COMMERCE ═ -->
+      <div class="b co" style="right:4px;top:14px">
+        <div class="pin" style="top:-19px;left:-3px">
+          <div class="pin-bubble" style="background:#4ade80;color:#fff">💰</div>
+          <div class="pin-tail" style="border-top:6px solid #4ade80"></div>
+        </div>
+        <div class="co-body">
+          <div class="co-sign">SARDINES D'OR</div>
+          <div class="co-win" style="left:6px">🐟</div>
+          <div class="co-win" style="right:6px">🛒</div>
+          <div class="co-door"></div>
+        </div>
+        <div class="co-awn"></div>
+        <div class="b-shadow" style="width:68px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#22c55e;color:#fff">COMMERCE</div>
+      </div>
+
+      <!-- ═ GRUE ═ -->
+      <div class="b gr" style="left:6px;top:150px">
+        <div class="gr-tw-wrap">
+          <div class="gr-tw">
+            <div class="gr-light"></div>
+            <div class="gr-arm">
+              <div class="gr-ctr"></div>
+              <div class="gr-cable"><div class="gr-hook">🪝</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="gr-base">
+          <div class="gr-base-top"></div>
+          <div style="position:absolute;inset:10px 4px 4px;display:flex;align-items:center;justify-content:center;font-size:18px;opacity:.5">⚙️</div>
+        </div>
+        <div class="b-shadow" style="width:56px"></div>
+        <div class="b-lbl" style="bottom:-16px">GRUE</div>
+      </div>
+
+      <!-- ═ CLARK ═ -->
+      <div class="b cl" style="right:4px;top:148px">
+        <div class="cl-top"><div class="cl-stripe"></div></div>
+        <div class="cl-body">
+          <div class="cl-bay" style="left:4px;width:28px;height:38px;font-size:20px">🏎️</div>
+          <div class="cl-bay" style="right:4px;width:22px;height:32px"></div>
+          <div class="cl-tl">
+            <div class="cl-tl-dot" style="background:#ef4444"></div>
+            <div class="cl-tl-dot" style="background:#4b5563"></div>
+            <div class="cl-tl-dot" style="background:#4b5563"></div>
+          </div>
+        </div>
+        <div class="b-shadow" style="width:60px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#3b82f6;color:#fff">CLARKS</div>
+      </div>
+
+      <!-- ═ BOURSE ═ -->
+      <div class="b bo" style="left:50%;transform:translateX(-50%);top:150px">
+        <div class="bo-ped"></div>
+        <div class="bo-cols">
+          <div class="bo-col" style="height:24px"></div>
+          <div class="bo-col" style="height:24px"></div>
+          <div class="bo-col" style="height:24px"></div>
+          <div class="bo-col" style="height:24px"></div>
+        </div>
+        <div class="bo-body">
+          <div class="bo-ticker"><div class="bo-tick">📈 +14% · CLARK +8% · CASINO +31% · 📈 +14% · </div></div>
+          <div class="bo-chart">
+            <div class="bo-bar" style="height:40%;background:#fca5a5"></div>
+            <div class="bo-bar" style="height:62%;background:#4ade80"></div>
+            <div class="bo-bar" style="height:84%;background:#4ade80"></div>
+            <div class="bo-bar" style="height:56%;background:#4ade80"></div>
+            <div class="bo-bar" style="height:100%;background:#4ade80"></div>
+          </div>
+        </div>
+        <div class="b-shadow" style="width:56px"></div>
+        <div class="b-lbl" style="bottom:-16px">BOURSE</div>
+      </div>
+
+      <!-- ═ SYNDICAT ═ -->
+      <div class="b sy" style="left:5px;top:238px">
+        <div style="position:relative">
+          <div class="sy-post"></div>
+          <div class="sy-dome"><div class="sy-flag"></div></div>
+        </div>
+        <div class="sy-body">
+          <div class="sy-arch"></div>
+          <div class="sy-cols">
+            <div class="sy-pillar"></div>
+            <div class="sy-pillar"></div>
+            <div class="sy-pillar"></div>
+          </div>
+        </div>
+        <div class="b-shadow" style="width:50px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#ef4444;color:#fff">SYNDICAT</div>
+      </div>
+
+      <!-- ═ ÉCOLE ═ -->
+      <div class="b ec" style="right:5px;top:238px">
+        <div style="text-align:center">
+          <div class="ec-bell">🔔</div>
+          <div class="ec-post"></div>
+        </div>
+        <div class="ec-roof"></div>
+        <div class="ec-body">
+          <div class="ec-win" style="left:7px">🔬</div>
+          <div class="ec-win" style="right:7px">📚</div>
+          <div class="ec-board">ABC</div>
+        </div>
+        <div class="b-shadow" style="width:48px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#38bdf8;color:#fff">ÉCOLE</div>
+      </div>
+
+      <!-- ═ CLASSEMENT ═ -->
+      <div class="b rk" style="left:50%;transform:translateX(-50%);top:238px">
+        <div style="position:relative">
+          <div class="rk-trophy">🏆</div>
+        </div>
+        <div class="rk-roof"></div>
+        <div class="rk-body">
+          <div class="pod p2">🥈</div>
+          <div class="pod p1">🥇</div>
+          <div class="pod p3">🥉</div>
+        </div>
+        <div class="b-shadow" style="width:58px"></div>
+        <div class="b-lbl" style="bottom:-16px">CLASSEMENT</div>
+      </div>
+
+      <!-- QUAI + BATEAU -->
+      <div class="dock"></div>
+      <div class="b bt" style="left:50%;transform:translateX(-50%);bottom:108px">
+        <div class="bt-mast">
+          <div class="bt-sail"></div>
+          <div class="bt-sail2"></div>
+        </div>
+        <div class="bt-deck">
+          <div class="bt-card" style="background:linear-gradient(135deg,#78350f,#451a03);border-color:#fbbf24"></div>
+          <div class="bt-card" style="background:linear-gradient(135deg,#1e3a5f,#0c1929);border-color:#60a5fa"></div>
+          <div class="bt-card" style="background:linear-gradient(135deg,#374151,#1f2937)"></div>
+        </div>
+        <div class="bt-hull">
+          <div class="bt-wl"></div>
+          <div class="bt-port" style="left:8px"></div>
+          <div class="bt-port" style="right:8px"></div>
+        </div>
+        <div class="b-shadow" style="width:74px;bottom:-14px"></div>
+        <div class="b-lbl" style="bottom:-16px;background:#3b82f6;color:#fff">COLLECTION</div>
+      </div>
+
+    </div><!-- /grass -->
+
+    <div class="water-zone">
+      <div class="water-shine">
+        <span class="water-line" style="width:42px;margin-top:8px"></span>
+        <span class="water-line" style="width:26px;margin-top:22px"></span>
+        <span class="water-line" style="width:48px;margin-top:12px"></span>
+        <span class="water-line" style="width:32px;margin-top:30px"></span>
+        <span class="water-line" style="width:38px;margin-top:8px"></span>
+        <span class="water-line" style="width:22px;margin-top:18px"></span>
+        <span class="water-line" style="width:44px;margin-top:26px"></span>
+        <span class="water-line" style="width:28px;margin-top:10px"></span>
+        <span class="water-line" style="width:42px;margin-top:8px"></span>
+        <span class="water-line" style="width:26px;margin-top:22px"></span>
+        <span class="water-line" style="width:48px;margin-top:12px"></span>
+        <span class="water-line" style="width:32px;margin-top:30px"></span>
+      </div>
+    </div>
+  </div>
 </div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active">
+    <div class="nav-ico">🗺️</div>
+    <div class="nav-lbl">PORT</div>
+  </button>
+  <button class="nav-btn">
+    <div class="nav-ico">💬<div class="nav-dot"></div></div>
+    <div class="nav-lbl">CHAT</div>
+  </button>
+  <button class="nav-btn">
+    <div class="nav-ico">🏆</div>
+    <div class="nav-lbl">RANG</div>
+  </button>
+  <button class="nav-btn">
+    <div class="nav-ico">👤</div>
+    <div class="nav-lbl">PROFIL</div>
+  </button>
+</div>
+
 </body>
 </html>
