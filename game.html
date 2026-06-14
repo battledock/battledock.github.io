@@ -141,6 +141,35 @@ body{
   border-radius:50%;border:1.5px solid #fff;
 }
 
+/* ── MAINTENANCE ── */
+.mg-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:#0a0a0a;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px;gap:16px;
+}
+.mg-ico{font-size:48px;margin-bottom:8px}
+.mg-title{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:3px;text-align:center}
+.mg-sub{font-size:11px;color:#444;font-weight:700;letter-spacing:2px;text-align:center}
+.mg-input{
+  width:100%;max-width:280px;padding:14px 18px;
+  background:#111;border:1.5px solid #222;border-radius:12px;
+  font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;
+  color:#fff;text-align:center;outline:none;
+  transition:border-color .2s;
+}
+.mg-input:focus{border-color:#fbbf24}
+.mg-btn{
+  width:100%;max-width:280px;padding:13px;
+  background:#fbbf24;border:none;border-radius:12px;
+  font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;
+  color:#1a1a1a;cursor:pointer;
+}
+.mg-btn:active{opacity:.85}
+.mg-err{font-size:10px;color:#ef4444;font-weight:700;min-height:14px;letter-spacing:1px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake .3s ease}
+
 /* ── PAGE CONTENT ── */
 .page-content{
   max-width:600px;margin:0 auto;
@@ -641,6 +670,17 @@ body{
 </header>
 
 <!-- ═══ CONTENU ═══ -->
+<!-- ═══ MAINTENANCE ═══ -->
+<div class="mg-overlay" id="mgOverlay">
+  <div class="mg-ico">🚧</div>
+  <div class="mg-title">MAINTENANCE</div>
+  <div class="mg-sub">BATTLE DOCK · PORT DE MARSEILLE</div>
+  <input class="mg-input" id="mgInput" type="password" placeholder="CODE D'ACCÈS"
+    onkeydown="if(event.key==='Enter')checkMg()">
+  <div class="mg-err" id="mgErr"></div>
+  <button class="mg-btn" onclick="checkMg()">ENTRER</button>
+</div>
+
 <div class="page-content">
 
     <!-- TRAVAILLER -->
@@ -933,6 +973,7 @@ async function init(){
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
+    if(profile.username && profile.username.toLowerCase()==='eliasse') bypassMg();
 
     const gradeEl=document.getElementById('playerGrade');
     if(gradeEl)gradeEl.textContent=getGrade(lvl);
@@ -1269,6 +1310,25 @@ async function loadCompanyCard(uid){
 
 
 
+
+// ── MAINTENANCE ──
+const MG_CODE = 'froid';
+function checkMg(){
+  const v = document.getElementById('mgInput').value.toLowerCase().trim();
+  if(v === MG_CODE){ bypassMg(); return; }
+  const inp = document.getElementById('mgInput');
+  const err = document.getElementById('mgErr');
+  inp.classList.remove('shake'); void inp.offsetWidth; inp.classList.add('shake');
+  err.textContent = '❌ Code incorrect'; inp.value = '';
+  setTimeout(()=>err.textContent='', 2000);
+}
+function bypassMg(){
+  const ov = document.getElementById('mgOverlay');
+  if(!ov) return;
+  ov.style.transition = 'opacity .4s';
+  ov.style.opacity = '0';
+  setTimeout(()=>ov.remove(), 400);
+}
 
 init();
 </script>
