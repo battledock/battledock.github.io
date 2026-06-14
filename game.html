@@ -148,7 +148,8 @@ body{
 /* ── PAGE CONTENT ── */
 .page-content{
   max-width:600px;margin:0 auto;
-  padding-top:280px;
+  padding-top:0;
+  visibility:hidden;
   padding-bottom:calc(65px + var(--safe-bottom));
   display:grid;grid-template-columns:1fr 1fr;gap:0;
   padding-left:0;padding-right:0;
@@ -584,6 +585,27 @@ body{
 
 
 </style>
+<script>
+// Mesure le header et applique le padding AVANT le premier paint
+document.addEventListener('DOMContentLoaded',function(){
+  function applyPadding(){
+    var hdr=document.querySelector('.profile-header');
+    var page=document.querySelector('.page-content');
+    if(!hdr||!page)return;
+    var h=hdr.getBoundingClientRect().height;
+    if(h>0){
+      page.style.paddingTop=h+'px';
+      page.style.visibility='visible';
+    } else {
+      // Header pas encore rendu — réessayer
+      requestAnimationFrame(applyPadding);
+    }
+  }
+  applyPadding();
+  window.addEventListener('resize',applyPadding);
+  window.addEventListener('orientationchange',applyPadding);
+});
+</script>
 </head>
 <body>
 
@@ -764,12 +786,7 @@ body{
 
 <!-- ═══ JAVASCRIPT ═══ -->
 <script>
-// Padding fixe géré en CSS — pas besoin de JS
-window.addEventListener('resize',()=>{
-  const hdr=document.querySelector('.profile-header');
-  const page=document.querySelector('.page-content');
-  if(hdr&&page)page.style.paddingTop=(hdr.offsetHeight+4)+'px';
-});
+// Padding géré dans <head>
 
 const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
 const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
