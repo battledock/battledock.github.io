@@ -586,25 +586,35 @@ body{
 
 </style>
 <script>
-// Mesure le header et applique le padding AVANT le premier paint
-document.addEventListener('DOMContentLoaded',function(){
-  function applyPadding(){
+// Padding exact : attend les fonts puis mesure
+(function(){
+  function apply(){
     var hdr=document.querySelector('.profile-header');
     var page=document.querySelector('.page-content');
     if(!hdr||!page)return;
     var h=hdr.getBoundingClientRect().height;
-    if(h>0){
+    if(h>10){
       page.style.paddingTop=h+'px';
       page.style.visibility='visible';
-    } else {
-      // Header pas encore rendu — réessayer
-      requestAnimationFrame(applyPadding);
     }
   }
-  applyPadding();
-  window.addEventListener('resize',applyPadding);
-  window.addEventListener('orientationchange',applyPadding);
-});
+  // Dès que le DOM est prêt
+  document.addEventListener('DOMContentLoaded',function(){
+    // Attendre les fonts (Bebas Neue change la hauteur du header)
+    if(document.fonts&&document.fonts.ready){
+      document.fonts.ready.then(function(){
+        apply();
+        // Sécurité : réappliquer 200ms après au cas où safe-area se recalcule
+        setTimeout(apply,200);
+      });
+    } else {
+      // Fallback sans fonts API
+      setTimeout(apply,300);
+    }
+    window.addEventListener('resize',apply);
+    window.addEventListener('orientationchange',function(){setTimeout(apply,100);});
+  });
+})();
 </script>
 </head>
 <body>
