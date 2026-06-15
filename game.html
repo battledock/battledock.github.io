@@ -1662,7 +1662,7 @@ function checkMg(){
 
     async function loadUserData() {
       const [profileResult, statsResult] = await Promise.all([
-        sb.from('profiles').select('username, avatar_url, background_color, diamonds, trophies').eq('user_id', currentUser.id).maybeSingle(),
+        sb.from('profiles').select('username, avatar_url').eq('user_id', currentUser.id).maybeSingle(),
         sb.from('game_stats').select('*').eq('user_id', currentUser.id).maybeSingle()
       ]);
 
@@ -1670,7 +1670,7 @@ function checkMg(){
       let stats   = statsResult.data;
 
       if (!profile) {
-        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png', background_color: 'blue', diamonds: 0, trophies: 0 }, { onConflict: 'user_id' }).select().maybeSingle();
+        const { data } = await sb.from('profiles').upsert({ user_id: currentUser.id, username: currentUser.email.split('@')[0], avatar_url: 'avatar-default.png' }, { onConflict: 'user_id' }).select().maybeSingle();
         profile = data;
       }
       if (!stats) {
@@ -1724,7 +1724,7 @@ function checkMg(){
         coral:   'linear-gradient(135deg,#be123c,#fb7185)',
       };
       const _card = document.getElementById('profileCardBtn');
-      const _grad = PROFILE_THEMES[profile.background_color];
+      const _grad = PROFILE_THEMES[profile.background_color] || null;
       if (_grad) { _card.style.background = _grad; _card.classList.add('themed'); }
       else { _card.style.background = ''; _card.classList.remove('themed'); }
 
@@ -1905,9 +1905,6 @@ async function loadCalendar() {
 
 <!-- JS WIDGETS -->
 <script>
-const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
-const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-const sb=supabase.createClient(supabaseUrl,supabaseKey);
 
 function getXpRequired(level){
   if(level<=10)return level*500;
