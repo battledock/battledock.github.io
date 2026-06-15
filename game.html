@@ -697,5 +697,371 @@ function fm(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1000?Math.floor(n/1000)+'
 })();
 </script>
 
+<!-- JS WIDGETS -->
+<script>
+const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
+const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(supabaseUrl,supabaseKey);
+
+function getXpRequired(level){
+  if(level<=10)return level*500;
+  if(level<=25)return level*1000;
+  if(level<=50)return level*2000;
+  return level*4000;
+}
+function getGrade(level){
+  if(level<=4)return'Docker Occasionnel';
+  if(level<=14)return'Docker';
+  if(level<=29)return'Docker Mensuel';
+  if(level<=49)return'Contre-Maître';
+  if(level<=79)return'Chef de Quai';
+  return'Magnat du Port';
+}
+function avatarForLevel(lvl){
+  if(lvl>=50)return'avatar-level-50.png';
+  if(lvl>=30)return'avatar-level-30.png';
+  if(lvl>=20)return'avatar-level-20.png';
+  if(lvl>=17)return'avatar-level-17.png';
+  if(lvl>=15)return'avatar-level-15.png';
+  if(lvl>=13)return'avatar-level-13.png';
+  if(lvl>=10)return'avatar-level-10.png';
+  if(lvl>=5)return'avatar-level-5.png';
+  if(lvl>=4)return'avatar-level-4.png';
+  if(lvl>=3)return'avatar-level-3.png';
+  if(lvl>=2)return'avatar-level-2.png';
+  return'avatar-default.png';
+}
+
+// FIX #8 : date locale (pas UTC)
+function getLocalDateStr(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Calcul solde banque réel (FIX #2)
+function getBankTotal(banque){
+  if(!banque||typeof banque!=='object')return 0;
+  let total=0;
+  if(banque.cc)total+=(banque.cc.solde||0);
+  if(banque.livret)total+=(banque.livret.solde||0);
+  if(banque.pep)total+=(banque.pep.solde||0);
+  return total;
+}
+
+
+function showLevelUp(lvl,diaReward,moneyReward){
+  const overlay=document.createElement('div');
+  overlay.className='lvlup-overlay';
+  let rewardsHTML='<div class="lvlup-reward"><span class="r-icon">💎</span>+'+diaReward+'</div>';
+  if(moneyReward>0) rewardsHTML+='<div class="lvlup-reward"><span class="r-icon">💶</span>+'+moneyReward.toLocaleString('fr-FR')+'€</div>';
+  overlay.innerHTML=`
+    <div class="lvlup-card">
+      <div class="lvlup-emoji">🎉</div>
+      <div class="lvlup-title">NIVEAU ${lvl} !</div>
+      <div class="lvlup-sub">${getGrade(lvl)}</div>
+      <div class="lvlup-rewards">${rewardsHTML}</div>
+      <button class="lvlup-btn" onclick="this.closest('.lvlup-overlay').remove()">RÉCUPÉRER</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',(e)=>{if(e.target===overlay)overlay.remove();});
+}
+
+function showError(){
+  document.getElementById('profileSkeleton').innerHTML=`
+    <div class="error-box">
+      <div style="font-size:22px">⚠️</div>
+      <div style="flex:1">
+        <div style="font-family:'Bangers',cursive;font-size:16px;letter-spacing:1px;color:var(--ink)">Erreur de connexion</div>
+        <div style="font-size:11px;color:#9ca3af;margin-top:2px">Vérifie ta connexion internet</div>
+      </div>
+      <button class="error-btn" onclick="location.reload()">Réessayer</button>
+    </div>`;
+}
+
+async function init(){
+  try{
+    const{data:{session}}=await sb.auth.getSession();
+    if(!session){location.href='index.html';return;}
+    const uid=session.user.id;
+
+    // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
+    const[profileRes,statsRes]=await Promise.all([
+      sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
+      sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,direction').eq('user_id',uid).maybeSingle()
+    ]);
+    const profile=profileRes.data;
+    const stats=statsRes.data;
+    if(!profile||!stats){showError();return;}
+
+    // Recalcul niveau
+    let lvl=stats.level||1;
+    let xp=stats.xp||0;
+    let money=stats.money||0;
+    let diamonds=stats.diamonds||0;
+    const startLvl=lvl;
+    while(xp>=getXpRequired(lvl)){xp-=getXpRequired(lvl);lvl++;}
+
+    // FIX #5 : récompenses level-up (skip level 1 = pas de cadeau parasite)
+    const lastRewarded=stats.last_level_rewarded||0;
+    let rewardDiamonds=0;
+    let rewardMoney=0;
+    if(lvl>lastRewarded){
+      const startFrom=Math.max(lastRewarded+1,2); // jamais récompenser le niveau 1
+      for(let l=startFrom;l<=lvl;l++){
+        rewardDiamonds+=5;
+        if(l%5===0) rewardDiamonds+=10;
+        if(l%10===0) rewardMoney+=5000;
+      }
+      diamonds+=rewardDiamonds;
+      money+=rewardMoney;
+      // FIX #4 : sync grade en base
+      await sb.from('game_stats').update({
+        level:lvl,xp,diamonds,money,
+        grade:getGrade(lvl),
+        last_level_rewarded:lvl,
+        last_levelup_shown:lvl
+      }).eq('user_id',uid);
+    } else if(lvl!==startLvl){
+      // FIX #4 : sync grade même sans récompenses
+      await sb.from('game_stats').update({level:lvl,xp,grade:getGrade(lvl)}).eq('user_id',uid);
+    }
+
+    const xpNeeded=getXpRequired(lvl);
+    const pct=Math.min((xp/xpNeeded)*100,100);
+
+    // Avatar
+    const SPECIAL=['avatar-millionaire.png','avatar-completionist.png'];
+    const autoAvatar=avatarForLevel(lvl);
+    const avatarSrc=SPECIAL.includes(profile.avatar_url)?profile.avatar_url:autoAvatar;
+    document.getElementById('avatarImage').src=avatarSrc;
+    if(!SPECIAL.includes(profile.avatar_url)&&profile.avatar_url!==autoAvatar){
+      await sb.from('profiles').update({avatar_url:autoAvatar}).eq('user_id',uid);
+    }
+
+    // FIX #3 : mettre à jour last_seen
+    sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(()=>{});
+
+    const card=document.getElementById('profileCardBtn');
+    card.style.cursor='pointer';
+    card.onclick=()=>location.href='profil.html';
+
+    // Ajuster padding dynamiquement
+    requestAnimationFrame(()=>{
+      const hh=document.querySelector('.profile-header').offsetHeight;
+      document.querySelector('.page-content').style.paddingTop=(hh+4)+'px';
+    });
+
+    // Commerce rain + company data + bourse ticker
+    initCommerceRain();
+    loadCompanyCard(uid);
+    loadBourseTicker();
+
+    // Remplissage
+    document.getElementById('playerName').textContent=profile.username;
+    document.getElementById('playerGrade').textContent=getGrade(lvl);
+    document.getElementById('currentLevel').textContent=lvl;
+
+    // Stats barre bas uniquement
+    document.getElementById('moneyBar').textContent=Math.floor(money).toLocaleString('fr-FR')+'€';
+    document.getElementById('diamondBar').textContent=Math.floor(diamonds).toLocaleString('fr-FR');
+    document.getElementById('trophyBar').textContent=stats.trophies||0;
+
+    // FIX #2 : carte banque → vrai solde banque (pas le wallet)
+    const bankTotal=getBankTotal(stats.banque);
+    document.getElementById('banqueBalance').textContent=Math.floor(bankTotal).toLocaleString('fr-FR')+' €';
+
+    // Données dynamiques sur les cartes
+    populateDynamicCards(stats);
+
+    // Afficher
+    document.getElementById('profileSkeleton').style.display='none';
+    card.style.display='block';
+
+    // Popup level-up si récompenses données
+    if(rewardDiamonds>0||rewardMoney>0){
+      showLevelUp(lvl,rewardDiamonds,rewardMoney);
+    }
+
+    // FIX #8 : streak avec date locale (plus UTC)
+    checkStreak(uid,stats);
+
+    startPlaytimeTracking(uid);
+    loadRank(uid);
+    loadChatBadge(uid);
+
+    // PWA : enregistrer le service worker
+    if('serviceWorker' in navigator){
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+
+  }catch(e){
+    console.error('init error:',e);
+    showError();
+  }
+}
+
+// ── Playtime tracking (FIX #10 : catch silencieux OK, RPC peut ne pas exister) ──
+let _playtimeUid=null;
+function startPlaytimeTracking(uid){
+  _playtimeUid=uid;
+  setInterval(async()=>{
+    try{await sb.rpc('increment_playtime',{uid:_playtimeUid});}catch(e){/* RPC may not exist */}
+  },60000);
+}
+
+// FIX #8 : streak avec date locale + données déjà fetchées (pas de re-SELECT)
+function checkStreak(uid,stats){
+  try{
+    const today=getLocalDateStr();
+    if(stats.last_login===today)return;
+    const yesterday=new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    const yStr=yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
+    let newStreak;
+    if(stats.last_login===yStr){newStreak=(stats.streak_days||0)+1;}
+    else{newStreak=1;}
+    sb.from('game_stats').update({streak_days:newStreak,last_login:today}).eq('user_id',uid).then(()=>{});
+  }catch(e){}
+}
+
+// FIX #7 : rank — tri Supabase + count séparé (scalable)
+async function loadRank(uid){
+  try{
+    // Leader = top 1
+    const{data:top}=await sb.from('game_stats')
+      .select('user_id,level,money')
+      .order('level',{ascending:false})
+      .order('money',{ascending:false})
+      .limit(1);
+
+    // Total joueurs
+    const{count}=await sb.from('game_stats')
+      .select('user_id',{count:'exact',head:true});
+
+    // Position du joueur : compter combien ont un level+money supérieur
+    // Approx : on fetch juste user_id,level,money et on trie côté client
+    // TODO: remplacer par une RPC Postgres pour 500+ joueurs
+    const{data:all}=await sb.from('game_stats')
+      .select('user_id,level,money')
+      .order('level',{ascending:false})
+      .order('money',{ascending:false});
+
+    let rank='—';
+    if(all){
+      const idx=all.findIndex(x=>x.user_id===uid);
+      if(idx>=0) rank=idx+1;
+    }
+
+    const elPos=document.getElementById('rankMyPos');
+    if(elPos)elPos.textContent='#'+rank;
+  }catch(e){}
+}
+
+// ── Données dynamiques sur les cartes ──
+function populateDynamicCards(stats){
+  // Commerce
+  const el1=document.getElementById('commerceStatus');
+  if(el1){
+    const c=stats.commerce||{};
+    if(c.created){
+      el1.textContent='Entreprise active';
+      el1.classList.replace('zero','positive');
+    } else {
+      el1.textContent='Pas encore créée';
+    }
+  }
+  // Direction
+  const el3=document.getElementById('directionSalary');
+  if(el3){
+    const d=stats.direction||{};
+    if(d.totalClaimed&&d.totalClaimed>0){
+      el3.textContent=Math.floor(d.totalClaimed).toLocaleString('fr-FR')+'€ perçus';
+      el3.classList.replace('zero','positive');
+    } else {
+      el3.textContent='Pas de salaire';
+    }
+  }
+}
+
+// ── Badge chat (messages récents non lus) ──
+async function loadChatBadge(uid){
+  try{
+    // Compter messages des 24 dernières heures (hors les siens)
+    const since=new Date(Date.now()-86400000).toISOString();
+    const{count}=await sb.from('chat_messages')
+      .select('id',{count:'exact',head:true})
+      .neq('user_id',uid)
+      .gt('created_at',since);
+    const badge=document.getElementById('chatBadge');
+    if(count&&count>0){
+      const txt=count>99?'99+':count;
+      if(badge){badge.textContent=txt;badge.style.display='flex';}
+    }
+  }catch(e){}
+}
+
+// ── Bourse ticker — entreprises des joueurs ──
+async function loadBourseTicker(){
+  const tape=document.getElementById('bourseTape');
+  if(!tape)return;
+  try{
+    const{data}=await sb.from('companies')
+      .select('nom,emoji,valeur,reputation')
+      .order('valeur',{ascending:false})
+      .limit(20);
+    if(!data||data.length===0){
+      tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Aucune entreprise cotée</span></span>';
+      return;
+    }
+    // Générer les items du ticker
+    let html='';
+    data.forEach(c=>{
+      const name=(c.nom||'???').substring(0,12).toUpperCase();
+      // Variation basée sur la réputation (positif si > 50, négatif sinon)
+      const rep=c.reputation||50;
+      const variation=((rep-50)/5).toFixed(1);
+      const isUp=variation>=0;
+      const cls=isUp?'up':'down';
+      const arrow=isUp?'+':'';
+      html+=`<span class="bourse-tape-item"><span class="sym">${c.emoji||'🏢'} ${name}</span> <span class="${cls}">${arrow}${variation}%</span></span>`;
+    });
+    // Dupliquer pour boucle infinie
+    tape.innerHTML=html+html;
+  }catch(e){
+    tape.innerHTML='<span class="bourse-tape-item"><span class="sym">Chargement...</span></span>';
+  }
+}
+
+// ── Commerce coin rain ──
+function initCommerceRain(){
+  const rain=document.getElementById('commerceRain');
+  if(!rain)return;
+  const coins=['💰','🪙','💵','💶'];
+  for(let i=0;i<12;i++){
+    const c=document.createElement('div');
+    c.className='commerce-drop';
+    c.textContent=coins[Math.floor(Math.random()*coins.length)];
+    c.style.left=Math.random()*100+'%';
+    c.style.fontSize=(10+Math.random()*10)+'px';
+    c.style.animationDuration=(2.5+Math.random()*3)+'s';
+    c.style.animationDelay=(-Math.random()*4)+'s';
+    rain.appendChild(c);
+  }
+}
+
+// ── Commerce company data ──
+async function loadCompanyCard(uid){
+  try{
+    const{data}=await sb.from('companies').select('emoji,nom').eq('user_id',uid).maybeSingle();
+    if(data){
+      if(data.emoji)document.getElementById('commerceLogo').textContent=data.emoji;
+      if(data.nom)document.getElementById('commerceName').textContent=data.nom;
+    }
+  }catch(e){}
+}
+
+init();
+</script>
+
 </body>
 </html>
