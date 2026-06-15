@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>AA</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
 body{background:#f0f0f0;font-family:'Inter',sans-serif}
@@ -13,25 +14,67 @@ body{background:#f0f0f0;font-family:'Inter',sans-serif}
 <body>
 
 <div id="gameHeader">
-  <!-- COVER -->
   <div style="background:linear-gradient(160deg,#0a0a0f,#1a0505,#0a1a0f);padding-top:env(safe-area-inset-top,0px);position:relative">
     <div style="height:160px;position:relative">
-      <div style="position:absolute;bottom:-50px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:#111;display:flex;align-items:center;justify-content:center;font-size:52px;z-index:2">🐳</div>
+      <div id="hdrAvatar" style="position:absolute;bottom:-50px;left:50%;transform:translateX(-50%);width:100px;height:100px;border-radius:50%;border:4px solid rgba(255,255,255,.9);background:#111;display:flex;align-items:center;justify-content:center;font-size:52px;z-index:2;overflow:hidden">
+        <img id="hdrAvatarImg" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+        <span id="hdrAvatarEmoji">🐳</span>
+      </div>
     </div>
   </div>
-  <!-- INFOS -->
   <div style="background:#fff;padding:60px 20px 20px;text-align:center">
-    <div style="font-family:'Bangers',cursive;font-size:26px;color:#1a1a1a;letter-spacing:1.5px">ELIASSE</div>
-    <div style="font-size:9px;font-weight:800;color:#9ca3af;letter-spacing:2px;margin-top:3px">CHEF DE QUAI · NV. 28</div>
-    <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#1a1a1a;letter-spacing:1px;margin-top:12px">2 400 000 €</div>
+    <div id="hdrPseudo" style="font-family:'Bangers',cursive;font-size:26px;color:#1a1a1a;letter-spacing:1.5px">—</div>
+    <div style="font-size:9px;font-weight:800;color:#9ca3af;letter-spacing:2px;margin-top:3px"><span id="hdrGrade">DOCKER</span> · NV. <span id="hdrLvl">—</span></div>
+    <div id="hdrMoney" style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#1a1a1a;letter-spacing:1px;margin-top:12px">— €</div>
     <div style="margin-top:12px;display:flex;align-items:center;gap:8px">
       <div style="flex:1;height:5px;background:#f3f4f6;border-radius:3px;overflow:hidden">
-        <div style="height:100%;width:67%;background:linear-gradient(90deg,#1d4ed8,#60a5fa);border-radius:3px"></div>
+        <div id="hdrXpBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1d4ed8,#60a5fa);border-radius:3px;transition:width .6s"></div>
       </div>
-      <div style="font-size:8px;font-weight:700;color:#9ca3af;white-space:nowrap">330 XP</div>
+      <div id="hdrXpLabel" style="font-size:8px;font-weight:700;color:#9ca3af;white-space:nowrap">— XP</div>
     </div>
   </div>
 </div>
 
+<script>
+var SB=supabase.createClient(
+  'https://drtsuhnbclhmgfjiykap.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg'
+);
+
+function getGrade(l){return l>=50?'LÉGENDE DU PORT':l>=40?'CHEF DE PORT':l>=30?'CONTREMAÎTRE':l>=20?'CHEF DE QUAI':l>=10?'DOCKER CONFIRMÉ':'DOCKER';}
+function fm(n){return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1000?Math.floor(n/1000)+'k':Math.floor(n);}
+
+(async function(){
+  var {data:{session}}=await SB.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  var uid=session.user.id;
+
+  var [{data:profile},{data:stats}]=await Promise.all([
+    SB.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
+    SB.from('game_stats').select('money,xp,level').eq('user_id',uid).maybeSingle()
+  ]);
+
+  if(!profile||!stats)return;
+
+  var lvl=stats.level||1, xp=stats.xp||0, money=stats.money||0;
+  var xpNeeded=lvl*500;
+  var xpPct=Math.min(100,Math.round(xp/xpNeeded*100));
+
+  document.getElementById('hdrPseudo').textContent=profile.username;
+  document.getElementById('hdrGrade').textContent=getGrade(lvl);
+  document.getElementById('hdrLvl').textContent=lvl;
+  document.getElementById('hdrMoney').textContent=fm(money)+' €';
+  document.getElementById('hdrXpLabel').textContent=xp+' XP';
+  document.getElementById('hdrXpBar').style.width=xpPct+'%';
+
+  if(profile.avatar_url){
+    var img=document.getElementById('hdrAvatarImg');
+    var emoji=document.getElementById('hdrAvatarEmoji');
+    img.src=profile.avatar_url;
+    img.style.display='block';
+    emoji.style.display='none';
+  }
+})();
+</script>
 </body>
 </html>
