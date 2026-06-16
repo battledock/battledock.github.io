@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Battle Dock · Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Inter',sans-serif}
+
+/* ── FOND ── */
+#bg{position:fixed;inset:0;background:radial-gradient(ellipse at 50% 60%,#1a000a 0%,#000 70%)}
+
+/* ── PARTICULES FOND ── */
+#particles{position:fixed;inset:0;pointer-events:none}
+
+/* ── RIDEAUX ── */
+#cl,#cr{position:fixed;top:0;bottom:0;width:52%;z-index:30;transition:transform 1.4s cubic-bezier(.77,0,.18,1)}
+#cl{left:0;background:linear-gradient(90deg,#1c0010 0%,#3d0020 60%,#600030 100%)}
+#cr{right:0;background:linear-gradient(270deg,#1c0010 0%,#3d0020 60%,#600030 100%)}
+#cl.open{transform:translateX(-102%)}
+#cr.open{transform:translateX(102%)}
+
+/* Texture tissu */
+#cl::after,#cr::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.12) 0,rgba(255,255,255,.02) 8px,rgba(0,0,0,.08) 16px);mix-blend-mode:overlay}
+
+/* Bordure dorée */
+#cl::before{content:'';position:absolute;right:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,transparent,#fbbf24 10%,#fde68a 50%,#fbbf24 90%,transparent);box-shadow:0 0 20px rgba(251,191,36,.5)}
+#cr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px;background:linear-gradient(180deg,transparent,#fbbf24 10%,#fde68a 50%,#fbbf24 90%,transparent);box-shadow:0 0 20px rgba(251,191,36,.5)}
+
+/* ── SCÈNE ── */
+#scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+
+/* ── PLANCHER EN PERSPECTIVE ── */
+#floor{position:fixed;bottom:0;left:0;right:0;height:45%;background:linear-gradient(180deg,#1a000a,#0d0008);transform:perspective(600px) rotateX(30deg);transform-origin:bottom center;opacity:0;transition:opacity 1s ease}
+#floor::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,191,36,.03) 0,transparent 60px),repeating-linear-gradient(0deg,rgba(255,191,36,.03) 0,transparent 60px)}
+
+/* ── LOGO / ENSEIGNE ── */
+#sign{position:relative;text-align:center;opacity:0;transform:translateY(30px) scale(.9);transition:opacity .8s ease, transform .8s ease}
+#sign.on{opacity:1;transform:translateY(0) scale(1)}
+
+#sign-bg{background:linear-gradient(135deg,#1a0005,#2d000f);border:2px solid rgba(251,191,36,.3);border-radius:4px;padding:28px 40px 20px;position:relative;overflow:hidden;box-shadow:0 0 60px rgba(220,20,60,.2),0 0 120px rgba(220,20,60,.1),inset 0 0 40px rgba(0,0,0,.5)}
+
+/* Ampoules contour */
+.bulb-row{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.bulb{width:8px;height:8px;border-radius:50%;background:#fbbf24;box-shadow:0 0 6px 2px #fbbf24;animation:bulbFlash 1.2s ease-in-out infinite}
+@keyframes bulbFlash{0%,100%{opacity:1;box-shadow:0 0 8px 3px #fbbf24}50%{opacity:.4;box-shadow:0 0 3px 1px #fbbf24}}
+
+#casino-text{font-family:'Bebas Neue',sans-serif;font-size:88px;line-height:.9;letter-spacing:12px;color:#fff;position:relative;z-index:2}
+#casino-glow{position:absolute;inset:0;font-family:'Bebas Neue',sans-serif;font-size:88px;line-height:.9;letter-spacing:12px;color:transparent;z-index:1;filter:blur(20px);animation:textPulse 2s ease-in-out infinite}
+@keyframes textPulse{0%,100%{text-shadow:0 0 40px rgba(220,20,60,.8),0 0 80px rgba(220,20,60,.4)}50%{text-shadow:0 0 60px rgba(220,20,60,1),0 0 120px rgba(220,20,60,.6),0 0 200px rgba(220,20,60,.2)}}
+
+#sub-text{font-size:9px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:6px;margin-top:10px;font-family:'Inter',sans-serif}
+
+/* ── CARTES QUI VOLENT ── */
+.card-fly{position:fixed;font-size:36px;opacity:0;z-index:20;animation:cardFly 1s ease-out forwards}
+@keyframes cardFly{0%{opacity:0;transform:scale(.3) rotate(0deg) translate(0,0)}30%{opacity:1}100%{opacity:0;transform:scale(1.2) rotate(var(--rot)) translate(var(--tx),var(--ty))}}
+
+/* ── SPOTS ── */
+.spot{position:fixed;top:0;width:2px;background:linear-gradient(180deg,rgba(255,240,200,.8),transparent);transform-origin:top center;opacity:0;transition:opacity .5s ease;z-index:5}
+.spot.on{opacity:1}
+.spot-cone{position:fixed;top:0;width:0;height:0;border-style:solid;opacity:0;transition:opacity .6s ease;z-index:4}
+.spot-cone.on{opacity:1}
+
+/* ── CHIPS QUI TOMBENT ── */
+.chip{position:fixed;font-size:20px;opacity:0;animation:chipFall 2s ease-in forwards}
+@keyframes chipFall{0%{opacity:1;transform:translateY(-40px) rotate(0deg)}100%{opacity:0;transform:translateY(110vh) rotate(calc(var(--spin)*1deg))}}
+
+/* ── FLASH ── */
+
+/* ── RING LUMINEUX ── */
+#ring{position:fixed;width:320px;height:320px;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid rgba(251,191,36,.0);box-shadow:0 0 0px rgba(251,191,36,0);z-index:8;transition:border-color 1s ease, box-shadow 1s ease, transform 1.5s ease}
+#ring.on{border-color:rgba(251,191,36,.15);box-shadow:0 0 60px rgba(251,191,36,.1),0 0 120px rgba(251,191,36,.05);transform:translate(-50%,-50%) scale(1.1)}
+
+
+@keyframes twinkle{0%,100%{opacity:.05}50%{opacity:.4}}
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="particles"></div>
+<div id="floor"></div>
+<div id="ring"></div>
+
+<!-- Spots -->
+<div class="spot" id="sp1" style="left:15%;height:55vh"></div>
+<div class="spot" id="sp2" style="left:30%;height:65vh"></div>
+<div class="spot" id="sp3" style="left:50%;transform:translateX(-50%);height:75vh;width:3px"></div>
+<div class="spot" id="sp4" style="right:30%;height:65vh"></div>
+<div class="spot" id="sp5" style="right:15%;height:55vh"></div>
+
+<div id="scene">
+  <div id="sign">
+    <div id="sign-bg">
+      <div class="bulb-row">
+        <div class="bulb" style="animation-delay:0s"></div>
+        <div class="bulb" style="animation-delay:.1s"></div>
+        <div class="bulb" style="animation-delay:.2s"></div>
+        <div class="bulb" style="animation-delay:.3s"></div>
+        <div class="bulb" style="animation-delay:.4s"></div>
+        <div class="bulb" style="animation-delay:.5s"></div>
+        <div class="bulb" style="animation-delay:.6s"></div>
+        <div class="bulb" style="animation-delay:.7s"></div>
+        <div class="bulb" style="animation-delay:.8s"></div>
+      </div>
+      <div style="position:relative">
+        <div id="casino-glow">CASINO</div>
+        <div id="casino-text">CASINO</div>
+      </div>
+      <div class="bulb-row" style="margin-top:8px;margin-bottom:0">
+        <div class="bulb" style="animation-delay:.9s"></div>
+        <div class="bulb" style="animation-delay:.8s"></div>
+        <div class="bulb" style="animation-delay:.7s"></div>
+        <div class="bulb" style="animation-delay:.6s"></div>
+        <div class="bulb" style="animation-delay:.5s"></div>
+        <div class="bulb" style="animation-delay:.4s"></div>
+        <div class="bulb" style="animation-delay:.3s"></div>
+        <div class="bulb" style="animation-delay:.2s"></div>
+        <div class="bulb" style="animation-delay:.1s"></div>
+      </div>
+    </div>
+    <div id="sub-text">PORT DE MARSEILLE · BATTLE DOCK</div>
+  </div>
+</div>
+
+<!-- Rideaux -->
+<div id="cl"></div>
+<div id="cr"></div>
+
+
+<script>
+var CARDS=['🂡','🂮','🂭','🂫','🃁','🃎','🃍','♠','♥','♦','♣','7️⃣','🎰'];
+var CHIPS=['🟡','🔴','⚫','🔵','🟢'];
+
+function star(){
+  var s=document.createElement('div');
+  s.style.cssText='position:fixed;border-radius:50%;background:#fff;left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;width:'+(1+Math.random()*2)+'px;height:'+(1+Math.random()*2)+'px;animation:twinkle '+(2+Math.random()*3)+'s ease-in-out infinite '+(-Math.random()*3)+'s';
+  document.getElementById('particles').appendChild(s);
+}
+for(var i=0;i<60;i++) star();
+
+function launchCards(){
+  var cx=window.innerWidth/2, cy=window.innerHeight/2;
+  for(var i=0;i<12;i++){
+    (function(i){
+      setTimeout(function(){
+        var c=document.createElement('div');
+        var angle=(Math.random()*360);
+        var dist=150+Math.random()*200;
+        c.className='card-fly';
+        c.textContent=CARDS[Math.floor(Math.random()*CARDS.length)];
+        var tx=Math.cos(angle*Math.PI/180)*dist;
+        var ty=Math.sin(angle*Math.PI/180)*dist - 100;
+        c.style.cssText='left:'+cx+'px;top:'+cy+'px;--rot:'+(Math.random()*360-180)+'deg;--tx:'+tx+'px;--ty:'+ty+'px;animation-duration:'+(0.8+Math.random()*0.4)+'s';
+        document.body.appendChild(c);
+        setTimeout(function(){c.remove();},1200);
+      },i*80);
+    })(i);
+  }
+}
+
+function launchChips(){
+  for(var i=0;i<20;i++){
+    (function(i){
+      setTimeout(function(){
+        var c=document.createElement('div');
+        c.className='chip';
+        c.textContent=CHIPS[Math.floor(Math.random()*CHIPS.length)];
+        c.style.cssText='left:'+(10+Math.random()*80)+'%;top:0;--spin:'+(Math.random()*720-360)+';animation-delay:0s;animation-duration:'+(1+Math.random()*1)+'s';
+        document.body.appendChild(c);
+        setTimeout(function(){c.remove();},2500);
+      },i*100);
+    })(i);
+  }
+}
+
+function flash(){
+  var f=document.getElementById('flash');
+  f.style.opacity='.7';
+  setTimeout(function(){f.style.opacity='0';},120);
+}
+
+
+function run(){
+  // 1. Flash
+  setTimeout(flash, 300);
+
+  // 2. Rideaux
+  setTimeout(function(){
+    document.getElementById('cl').classList.add('open');
+    document.getElementById('cr').classList.add('open');
+  },500);
+
+  // 3. Floor apparaît
+  setTimeout(function(){
+    document.getElementById('floor').style.opacity='1';
+  },900);
+
+  // 4. Ring
+  setTimeout(function(){
+    document.getElementById('ring').classList.add('on');
+  },1000);
+
+  // 5. Spots un par un
+  var order=['sp3','sp1','sp5','sp2','sp4'];
+  order.forEach(function(id,i){
+    setTimeout(function(){document.getElementById(id).classList.add('on');},1100+i*150);
+  });
+
+  // 6. Enseigne
+  setTimeout(function(){
+    document.getElementById('sign').classList.add('on');
+    flash();
+  },2000);
+
+  // 7. Cartes volent
+  setTimeout(launchCards, 2300);
+
+  // 8. Chips tombent
+  setTimeout(launchChips, 2500);
+
+  // 9. Deuxième vague de cartes
+  setTimeout(launchCards, 3000);
+
+  // 10. Redirect
+  setTimeout(function(){
+    window.location.href='casino.html';
+  },3200);
+}
+
+run();
+</script>
+</body>
+</html>
