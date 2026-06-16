@@ -1,661 +1,134 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Battle Dock — Maintenance</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    html, body { height:100%; }
-    body { font-family:'Inter',sans-serif; background:#f8f7f4; min-height:100dvh; display:flex; flex-direction:column; color:#1a1a1a; }
-    input, textarea { -webkit-user-select:text; user-select:text; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Battle Dock — Maintenance</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+html,body{width:100%;height:100%;overflow:hidden;font-family:'Inter',sans-serif}
+body{background:linear-gradient(160deg,#020810,#0c2a4a,#0369a1);position:relative}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:20px 20px;pointer-events:none}
 
-    body::before {
-      content:''; position:fixed; inset:0; z-index:0;
-      background:
-        radial-gradient(ellipse at 15% 15%, rgba(124,58,237,0.07), transparent 45%),
-        radial-gradient(ellipse at 85% 85%, rgba(251,191,36,0.09), transparent 45%);
-      pointer-events:none;
-    }
+/* Particules */
+.p{position:fixed;border-radius:50%;background:#fff;animation:twink var(--d) ease-in-out infinite var(--dl)}
+@keyframes twink{0%,100%{opacity:.03}50%{opacity:.15}}
 
-    /* HEADER */
-    .header { position:relative; z-index:2; flex-shrink:0; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(0,0,0,0.06); }
-    .logo { font-family:'Bebas Neue',sans-serif; font-size:17px; letter-spacing:4px; color:rgba(0,0,0,0.4); }
-    .badge { display:inline-flex; align-items:center; gap:5px; background:#fef3c7; color:#92400e; font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:4px 10px; border-radius:20px; border:1px solid #fde68a; }
-    .badge-dot { width:5px; height:5px; border-radius:50%; background:#f59e0b; animation:pulse 1.5s ease-in-out infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* Layout */
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;z-index:1}
 
-    /* TABS */
-    .tabs { position:relative; z-index:2; flex-shrink:0; display:flex; background:white; border-bottom:1px solid #e5e7eb; }
-    .tab { flex:1; padding:12px 8px; text-align:center; font-size:11px; font-weight:700; color:#9ca3af; cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; text-transform:uppercase; letter-spacing:1px; }
-    .tab.active { color:#1a1a1a; border-bottom-color:#1a1a1a; }
+/* Logo / Titre */
+#logo{text-align:center;margin-bottom:32px}
+#logo-sub{font-size:9px;font-weight:800;color:rgba(255,255,255,.2);letter-spacing:6px;margin-bottom:10px}
+#logo-title{font-family:'Bebas Neue',sans-serif;font-size:64px;color:#fff;letter-spacing:8px;line-height:.85;text-shadow:0 0 60px rgba(14,165,233,.25)}
+#logo-version{font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(14,165,233,.5);letter-spacing:6px;margin-top:10px}
 
-    /* CONTENU */
-    .tab-content { position:relative; z-index:1; flex:1; display:none; overflow-y:auto; padding:14px 14px 20px; }
-    .tab-content.active { display:flex; flex-direction:column; gap:12px; align-items:center; }
+/* Card maintenance -->
+#card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:24px;width:100%;max-width:380px;backdrop-filter:blur(20px)}
 
-    /* INFOS */
+/* Badge maintenance -->
+#badge{display:inline-flex;align-items:center;gap:6px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.15);border-radius:100px;padding:5px 14px;margin-bottom:18px}
+#badge-dot{width:6px;height:6px;border-radius:50%;background:#fbbf24;box-shadow:0 0 8px #fbbf24;animation:bdot .8s ease-in-out infinite alternate}
+@keyframes bdot{from{opacity:.5;transform:scale(1)}to{opacity:1;transform:scale(1.3)}}
+#badge-txt{font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(251,191,36,.7);letter-spacing:4px}
 
-    .card { background:white; border-radius:18px; padding:18px 16px; width:100%; max-width:400px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.06); }
-    .card-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:#1a1a1a; margin-bottom:4px; }
-    .card-sub { font-size:12px; color:#6b7280; line-height:1.5; margin-bottom:14px; }
+#card-title{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;letter-spacing:4px;margin-bottom:4px}
+#card-sub{font-size:10px;color:rgba(255,255,255,.25);margin-bottom:20px;font-weight:700;letter-spacing:1px}
 
-    .countdown-label { font-size:10px; color:#9ca3af; text-transform:uppercase; letter-spacing:1.5px; font-weight:700; margin-bottom:8px; text-align:center; }
-    .countdown { display:flex; gap:6px; justify-content:center; margin-bottom:14px; }
-    .countdown-unit { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:8px 10px; flex:1; max-width:72px; text-align:center; }
-    .countdown-num { font-family:'Bebas Neue',sans-serif; font-size:26px; color:#1a1a1a; line-height:1; }
-    .countdown-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; margin-top:2px; }
+/* Ouverture prévue */
+#opening{background:rgba(14,165,233,.06);border:1px solid rgba(14,165,233,.15);border-radius:14px;padding:14px;margin-bottom:20px;display:flex;align-items:center;gap:12px}
+#opening-ico{font-size:24px}
+#opening-info{flex:1}
+#opening-lbl{font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(14,165,233,.5);letter-spacing:3px;margin-bottom:4px}
+#opening-date{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:3px;line-height:1}
+#opening-sub{font-size:9px;color:rgba(255,255,255,.2);margin-top:3px;font-weight:700;letter-spacing:1px}
 
-    .features-title { font-size:10px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-    .features-title::after { content:''; flex:1; height:1px; background:#e5e7eb; }
-    .features-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .feature-item { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:10px; }
-    .feature-icon { font-size:16px; margin-bottom:3px; }
-    .feature-name { font-size:11px; font-weight:700; color:#374151; }
-    .feature-desc { font-size:10px; color:#9ca3af; line-height:1.3; margin-top:2px; }
-
-    .quote { background:linear-gradient(135deg,#fef3c7,#fffbeb); border:1px solid #fde68a; border-radius:12px; padding:12px 14px; font-size:12px; color:#92400e; font-style:italic; line-height:1.5; text-align:center; }
-    .quote-author { font-size:10px; color:#b45309; font-weight:700; margin-top:6px; font-style:normal; }
-
-    /* MINI JEU */
-    .game-card { background:white; border-radius:18px; padding:18px 16px; width:100%; max-width:400px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.06); text-align:center; }
-    .game-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; color:#1a1a1a; margin-bottom:4px; }
-    .game-sub { font-size:11px; color:#6b7280; margin-bottom:16px; line-height:1.5; }
-
-    .progress-wrap { margin-bottom:14px; }
-    .progress-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; font-weight:700; margin-bottom:6px; }
-    .progress-bar { height:10px; background:#f3f4f6; border-radius:20px; overflow:hidden; border:1px solid #e5e7eb; }
-    .progress-fill { height:100%; background:linear-gradient(90deg,#fbbf24,#f59e0b); border-radius:20px; transition:width 0.5s ease; }
-
-    .click-btn {
-      width:120px; height:120px; border-radius:50%; border:none;
-      background:linear-gradient(135deg,#fbbf24,#f59e0b);
-      box-shadow:0 6px 24px rgba(251,191,36,0.4);
-      font-size:40px; cursor:pointer; margin:0 auto 12px;
-      display:flex; align-items:center; justify-content:center;
-      transition:transform .08s, box-shadow .08s;
-      animation:glow 2s ease-in-out infinite;
-    }
-    .click-btn:active { transform:scale(0.9); box-shadow:0 2px 8px rgba(251,191,36,0.3); }
-    @keyframes glow { 0%,100%{box-shadow:0 6px 24px rgba(251,191,36,0.4)} 50%{box-shadow:0 6px 40px rgba(251,191,36,0.7)} }
-
-    .click-stats { display:flex; gap:8px; justify-content:center; margin-bottom:14px; }
-    .click-stat { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:8px 12px; text-align:center; flex:1; }
-    .click-stat-num { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#1a1a1a; }
-    .click-stat-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-
-    .docker-msg { background:#fef3c7; border:1px solid #fde68a; border-radius:12px; padding:12px; font-size:12px; color:#92400e; font-style:italic; display:none; }
-
-    /* MINI JEU 2 — DÉFI RAPIDITÉ */
-    .defi-card { background:white; border-radius:18px; padding:18px 16px; width:100%; max-width:400px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.06); }
-    .defi-title { font-family:'Bebas Neue',sans-serif; font-size:20px; letter-spacing:2px; color:#1a1a1a; margin-bottom:4px; }
-    .defi-sub { font-size:11px; color:#6b7280; margin-bottom:14px; line-height:1.5; }
-    .defi-target { font-family:'Bebas Neue',sans-serif; font-size:60px; color:#dc2626; line-height:1; text-align:center; margin:8px 0; text-shadow:0 4px 16px rgba(220,38,38,0.3); transition:all 0.1s; }
-    .defi-instruction { font-size:11px; color:#9ca3af; text-align:center; margin-bottom:12px; font-weight:700; letter-spacing:1px; }
-    .defi-input-row { display:flex; gap:8px; margin-bottom:12px; }
-    .defi-input { flex:1; padding:13px; border-radius:12px; border:1.5px solid #e5e7eb; background:#f9fafb; font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; text-align:center; outline:none; color:#1a1a1a; }
-    .defi-input:focus { border-color:#dc2626; background:#fff; }
-    .defi-btn { padding:13px 16px; border-radius:12px; border:none; background:linear-gradient(135deg,#dc2626,#991b1b); color:#fff; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; }
-    .defi-feedback { text-align:center; font-size:13px; font-weight:700; height:20px; margin-bottom:8px; }
-    .defi-feedback.ok { color:#16a34a; }
-    .defi-feedback.bad { color:#dc2626; }
-    .defi-score-row { display:flex; gap:8px; justify-content:center; margin-bottom:14px; }
-    .defi-score-box { flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:8px; text-align:center; }
-    .defi-score-num { font-family:'Bebas Neue',sans-serif; font-size:20px; color:#1a1a1a; }
-    .defi-score-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-    /* Classement */
-    .lb-title { font-size:10px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-    .lb-title::after { content:''; flex:1; height:1px; background:#e5e7eb; }
-    .lb-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:10px; border:1px solid rgba(0,0,0,0.05); background:#f9fafb; margin-bottom:5px; }
-    .lb-row.me { background:#fef3c7; border-color:rgba(245,158,11,0.3); }
-    .lb-pos { font-family:'Bebas Neue',sans-serif; font-size:15px; color:#9ca3af; width:20px; }
-    .lb-name { flex:1; font-size:12px; font-weight:700; color:#1a1a1a; }
-    .lb-val { font-family:'Bebas Neue',sans-serif; font-size:14px; color:#1a1a1a; }
-    .lb-streak { font-size:10px; color:#9ca3af; margin-left:4px; }
-
-    /* CHAT */
-    .chat-card { background:white; border-radius:18px; width:100%; max-width:400px; box-shadow:0 2px 16px rgba(0,0,0,0.06); border:1px solid rgba(0,0,0,0.06); display:flex; flex-direction:column; flex:1; overflow:hidden; }
-    .chat-header { padding:14px 16px; border-bottom:1px solid #e5e7eb; }
-    .chat-title { font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:2px; color:#1a1a1a; }
-    .chat-sub { font-size:10px; color:#9ca3af; margin-top:1px; }
-
-    .chat-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:8px; min-height:200px; max-height:300px; }
-    .chat-msg { display:flex; gap:8px; align-items:flex-start; }
-    .chat-msg.mine { flex-direction:row-reverse; }
-    .chat-avatar { width:28px; height:28px; border-radius:50%; background:#e5e7eb; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#6b7280; flex-shrink:0; }
-    .chat-bubble-wrap { display:flex; flex-direction:column; gap:2px; max-width:75%; }
-    .chat-msg.mine .chat-bubble-wrap { align-items:flex-end; }
-    .chat-name { font-size:9px; color:#9ca3af; font-weight:700; }
-    .chat-bubble { background:#f3f4f6; border-radius:4px 14px 14px 14px; padding:8px 10px; font-size:13px; color:#1a1a1a; line-height:1.4; }
-    .chat-msg.mine .chat-bubble { background:#1a1a1a; color:white; border-radius:14px 4px 14px 14px; }
-    .chat-time { font-size:9px; color:#d1d5db; }
-
-    .chat-input-wrap { padding:10px 12px; border-top:1px solid #e5e7eb; display:flex; gap:8px; }
-    .chat-input { flex:1; background:#f9fafb; border:1px solid #e5e7eb; border-radius:20px; padding:10px 14px; font-size:13px; outline:none; font-family:'Inter',sans-serif; }
-    .chat-input:focus { border-color:#d1d5db; }
-    .chat-send { background:#1a1a1a; border:none; border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; color:white; font-size:16px; }
-    .chat-send:active { background:#333; }
-
-    .login-prompt { text-align:center; padding:20px; }
-    .login-prompt-text { font-size:13px; color:#6b7280; margin-bottom:12px; }
-    .login-btn { background:#1a1a1a; border:none; border-radius:10px; padding:12px 24px; color:white; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:1px; cursor:pointer; }
-  </style>
+/* Input mot de passe */
+#pwd-lbl{font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.2);letter-spacing:3px;margin-bottom:8px}
+#pwd-wrap{display:flex;gap:8px;margin-bottom:8px}
+#pwd{flex:1;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:12px;padding:14px 16px;font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:8px;color:#fff;text-align:center;outline:none;transition:border-color .2s}
+#pwd:focus{border-color:rgba(14,165,233,.5)}
+#pwd-btn{background:rgba(14,165,233,.15);border:1px solid rgba(14,165,233,.3);border-radius:12px;padding:14px 18px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#7dd3fc;letter-spacing:1px;cursor:pointer;white-space:nowrap}
+#pwd-btn:active{background:rgba(14,165,233,.25)}
+#pwd-err{font-size:9px;font-weight:700;color:#ef4444;letter-spacing:1px;min-height:14px;text-align:center;transition:opacity .2s}
+</style>
 </head>
 <body>
 
-  <div class="header">
-    <div class="logo">⚓ BATTLE DOCK</div>
-    <div class="badge"><div class="badge-dot"></div>Maintenance</div>
+<div id="stars"></div>
+
+<div id="wrap">
+  <div id="logo">
+    <div id="logo-sub">PORT DE MARSEILLE</div>
+    <div id="logo-title">BATTLE<br>DOCK</div>
+    <div id="logo-version">VERSION 1.4</div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('info')">📋 Infos</div>
-    <div class="tab" onclick="switchTab('game')">📦 Mini-Jeu</div>
-    <div class="tab" onclick="switchTab('defi')">⚡ Défi</div>
-    <div class="tab" onclick="switchTab('chat')">💬 Chat</div>
-  </div>
-
-  <!-- TAB INFOS -->
-  <div class="tab-content active" id="tab-info">
-    <!-- ILLUSTRATION PORT -->
-    <div style="width:100%;max-width:400px;margin:0 auto 4px">
-      <svg viewBox="0 0 400 200" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">
-        <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#e8f4fd"/>
-            <stop offset="100%" stop-color="#bfd9f0"/>
-          </linearGradient>
-          <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#7cb9e8"/>
-            <stop offset="100%" stop-color="#4a90c4"/>
-          </linearGradient>
-          <linearGradient id="sun" cx="50%" cy="50%" r="50%" gradientUnits="objectBoundingBox">
-            <stop offset="0%" stop-color="#fff7d6"/>
-            <stop offset="100%" stop-color="#fbbf24"/>
-          </linearGradient>
-          <radialGradient id="sunhalo" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="rgba(251,191,36,0.25)"/>
-            <stop offset="100%" stop-color="rgba(251,191,36,0)"/>
-          </radialGradient>
-        </defs>
-
-        <!-- Ciel -->
-        <rect width="400" height="200" fill="url(#sky)"/>
-
-        <!-- Soleil -->
-        <ellipse cx="340" cy="52" rx="44" ry="44" fill="url(#sunhalo)"/>
-        <circle cx="340" cy="52" r="22" fill="url(#sun)"/>
-        <!-- Rayons -->
-        <g stroke="#fbbf24" stroke-width="1.5" opacity="0.5" stroke-linecap="round">
-          <line x1="340" y1="20" x2="340" y2="10"/>
-          <line x1="340" y1="84" x2="340" y2="94"/>
-          <line x1="308" y1="52" x2="298" y2="52"/>
-          <line x1="372" y1="52" x2="382" y2="52"/>
-          <line x1="317" y1="29" x2="310" y2="22"/>
-          <line x1="363" y1="75" x2="370" y2="82"/>
-          <line x1="363" y1="29" x2="370" y2="22"/>
-          <line x1="317" y1="75" x2="310" y2="82"/>
-        </g>
-
-        <!-- Nuages -->
-        <g fill="white" opacity="0.85">
-          <ellipse cx="65" cy="38" rx="38" ry="13"/>
-          <ellipse cx="80" cy="30" rx="24" ry="16"/>
-          <ellipse cx="50" cy="34" rx="18" ry="11"/>
-        </g>
-        <g fill="white" opacity="0.6">
-          <ellipse cx="185" cy="28" rx="28" ry="10"/>
-          <ellipse cx="196" cy="22" rx="16" ry="12"/>
-        </g>
-
-        <!-- Mer -->
-        <rect x="0" y="130" width="400" height="70" fill="url(#sea)"/>
-        <!-- Vaguelettes -->
-        <g stroke="rgba(255,255,255,0.3)" stroke-width="1.5" fill="none" stroke-linecap="round">
-          <path d="M0,145 Q30,140 60,145 Q90,150 120,145 Q150,140 180,145 Q210,150 240,145 Q270,140 300,145 Q330,150 360,145 Q380,140 400,145"/>
-          <path d="M0,158 Q40,153 80,158 Q120,163 160,158 Q200,153 240,158 Q280,163 320,158 Q360,153 400,158"/>
-        </g>
-        <!-- Reflet soleil sur mer -->
-        <ellipse cx="340" cy="148" rx="50" ry="6" fill="rgba(255,215,60,0.2)"/>
-
-        <!-- QUAI -->
-        <rect x="0" y="120" width="400" height="15" fill="#c8b89a"/>
-        <rect x="0" y="118" width="400" height="4" fill="#d4c4a8"/>
-        <!-- Planches -->
-        <g stroke="rgba(0,0,0,0.06)" stroke-width="1">
-          <line x1="0" y1="124" x2="400" y2="124"/>
-          <line x1="0" y1="128" x2="400" y2="128"/>
-          <line x1="0" y1="132" x2="400" y2="132"/>
-        </g>
-        <!-- Bollards -->
-        <g fill="#8b7355">
-          <rect x="28" y="112" width="10" height="16" rx="3"/>
-          <rect x="170" y="112" width="10" height="16" rx="3"/>
-          <rect x="320" y="112" width="10" height="16" rx="3"/>
-        </g>
-
-        <!-- GRUE GAUCHE -->
-        <g fill="#6b7280" stroke="#9ca3af" stroke-width="0.8">
-          <rect x="18" y="30" width="7" height="92"/>
-          <rect x="18" y="30" width="90" height="6"/>
-          <line x1="80" y1="36" x2="80" y2="110" stroke="#9ca3af" stroke-width="1.5"/>
-          <rect x="14" y="72" width="20" height="14" rx="2" fill="#4b5563"/>
-        </g>
-
-        <!-- GRUE DROITE (petite) -->
-        <g fill="#9ca3af" stroke="#d1d5db" stroke-width="0.6">
-          <rect x="280" y="55" width="5" height="68"/>
-          <rect x="280" y="55" width="60" height="4"/>
-          <line x1="325" y1="59" x2="325" y2="112" stroke="#d1d5db" stroke-width="1"/>
-        </g>
-
-        <!-- CONTENEURS -->
-        <!-- Stack gauche -->
-        <rect x="50" y="98" width="55" height="24" rx="3" fill="#cc2200"/>
-        <line x1="68" y1="98" x2="68" y2="122" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <line x1="86" y1="98" x2="86" y2="122" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <rect x="50" y="76" width="55" height="24" rx="3" fill="#1d4ed8"/>
-        <line x1="68" y1="76" x2="68" y2="100" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <rect x="50" y="56" width="55" height="22" rx="3" fill="#15803d"/>
-
-        <!-- Stack milieu -->
-        <rect x="130" y="98" width="50" height="24" rx="3" fill="#b45309"/>
-        <line x1="147" y1="98" x2="147" y2="122" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <rect x="130" y="77" width="50" height="23" rx="3" fill="#7c3aed"/>
-
-        <!-- Stack droite -->
-        <rect x="210" y="100" width="58" height="22" rx="3" fill="#1d4ed8"/>
-        <line x1="229" y1="100" x2="229" y2="122" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <line x1="248" y1="100" x2="248" y2="122" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>
-        <rect x="218" y="80" width="45" height="22" rx="3" fill="#cc2200"/>
-
-        <!-- CARGO horizon -->
-        <g opacity="0.5">
-          <rect x="280" y="108" width="110" height="18" rx="3" fill="#374151"/>
-          <rect x="310" y="96" width="18" height="16" rx="2" fill="#4b5563"/>
-          <rect x="315" y="88" width="4" height="16" fill="#6b7280"/>
-        </g>
-
-        <!-- Lignes horizon lumière -->
-        <rect x="0" y="117" width="400" height="2" fill="rgba(255,255,255,0.3)"/>
-      </svg>
+  <div id="card">
+    <div style="text-align:center;margin-bottom:2px">
+      <div id="badge"><div id="badge-dot"></div><div id="badge-txt">EN MAINTENANCE</div></div>
+    </div>
+    <div style="text-align:center">
+      <div id="card-title">MISE À JOUR</div>
+      <div id="card-sub">Le port est temporairement fermé</div>
     </div>
 
-    <div class="card">
-      <div class="card-title">Mise à jour 1.2</div>
-      <div class="card-sub">Tout est plus beau, plus fluide, plus riche. Le port de Marseille comme tu ne l'as jamais vu.</div>
-      <div class="countdown-label">Retour le dimanche 7 juin à 15h00</div>
-      <div class="countdown">
-        <div class="countdown-unit"><div class="countdown-num" id="cdH">00</div><div class="countdown-lbl">Heures</div></div>
-        <div class="countdown-unit"><div class="countdown-num" id="cdM">00</div><div class="countdown-lbl">Min</div></div>
-        <div class="countdown-unit"><div class="countdown-num" id="cdS">00</div><div class="countdown-lbl">Sec</div></div>
-      </div>
-      <div class="features-title">Ce qui arrive</div>
-      <div class="features-grid">
-        <div class="feature-item"><div class="feature-icon">🎨</div><div class="feature-name">Nouveau design</div><div class="feature-desc">Interface repensée de A à Z, plus belle et plus cohérente</div></div>
-        <div class="feature-item"><div class="feature-icon">✨</div><div class="feature-name">Plus fluide</div><div class="feature-desc">Animations, transitions et performances améliorées</div></div>
-        <div class="feature-item"><div class="feature-icon">🐛</div><div class="feature-name">Bugs corrigés</div><div class="feature-desc">Bugs d'affichage, crashes et comportements inattendus fixés</div></div>
-        <div class="feature-item"><div class="feature-icon">🤝</div><div class="feature-name">Interactions</div><div class="feature-desc">Plus d'interaction entre joueurs au port</div></div>
-        <div class="feature-item"><div class="feature-icon">📖</div><div class="feature-name">Mode Histoire</div><div class="feature-desc">Chapitres enrichis, meilleure narration, plus de contenu</div></div>
-        <div class="feature-item"><div class="feature-icon">💰</div><div class="feature-name">Système de gains</div><div class="feature-desc">Travail, mini-jeux et économie rééquilibrés</div></div>
-        <div class="feature-item"><div class="feature-icon">🔧</div><div class="feature-name">Reporter un bug</div><div class="feature-desc">Espace dédié pour signaler les problèmes directement</div></div>
-        <div class="feature-item"><div class="feature-icon">🚀</div><div class="feature-name">Nouvelles features</div><div class="feature-desc">Des surprises qu'on garde secrètes pour le moment 👀</div></div>
-      </div>
-      <div class="quote" style="margin-top:12px">
-        "Le port de Marseille mérite mieux. On revient dimanche avec quelque chose de bien."
+    <div id="opening">
+      <div id="opening-ico">🚀</div>
+      <div id="opening-info">
+        <div id="opening-lbl">OUVERTURE PRÉVUE</div>
+        <div id="opening-date">CETTE SEMAINE</div>
+        <div id="opening-sub">Version 1.4 — Nouvelles features</div>
       </div>
     </div>
-  </div>
 
-  <!-- TAB MINI JEU -->
-  <div class="tab-content" id="tab-game">
-    <div class="game-card">
-      <div class="game-title">Aide le Docker !</div>
-      <div class="game-sub">Un docker attend son CDI depuis des années...<br>Clique pour lui redonner espoir !</div>
-
-      <div class="progress-wrap">
-        <div class="progress-label">
-          <span>Espoir du Docker</span>
-          <span id="clickCount">0</span> / 10 000
-        </div>
-        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-      </div>
-
-      <div style="display:flex;justify-content:center;margin-bottom:12px">
-        <button class="click-btn" id="clickBtn" onclick="handleClick()">📄</button>
-      </div>
-
-      <div class="click-stats">
-        <div class="click-stat"><div class="click-stat-num" id="myClicks">0</div><div class="click-stat-lbl">Mes clics</div></div>
-        <div class="click-stat"><div class="click-stat-num" id="totalClicks">0</div><div class="click-stat-lbl">Total</div></div>
-        <div class="click-stat"><div class="click-stat-num" id="playersCount">-</div><div class="click-stat-lbl">Joueurs</div></div>
-      </div>
-
-      <div class="docker-msg" id="dockerMsg"></div>
+    <div id="pwd-lbl">ACCÈS ÉQUIPE</div>
+    <div id="pwd-wrap">
+      <input id="pwd" type="password" placeholder="••••" maxlength="20"
+        onkeydown="if(event.key==='Enter')check()"
+        onfocus="this.style.borderColor='rgba(14,165,233,.5)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+      <button id="pwd-btn" onclick="check()">ENTRER</button>
     </div>
+    <div id="pwd-err"></div>
   </div>
+</div>
 
-  <!-- TAB DÉFI -->
-  <div class="tab-content" id="tab-defi">
-    <div class="defi-card">
-      <div class="defi-title">⚡ Défi du Port</div>
-      <div class="defi-sub">Un nombre s'affiche — tape-le le plus vite possible ! Ton score = tes bonnes réponses en 30 secondes.</div>
+<script>
+// Étoiles
+(function(){
+  var c=document.getElementById('stars');
+  for(var i=0;i<50;i++){
+    var s=document.createElement('div');
+    s.className='p';
+    var sz=0.5+Math.random()*2;
+    s.style.cssText='width:'+sz+'px;height:'+sz+'px;left:'+Math.random()*100+'%;top:'+Math.random()*100+'%;--d:'+(3+Math.random()*5)+'s;--dl:'+(-Math.random()*5)+'s';
+    c.appendChild(s);
+  }
+})();
 
-      <div class="defi-target" id="defiTarget">?</div>
-      <div class="defi-instruction" id="defiInstruction">APPUIE SUR DÉMARRER</div>
+function check(){
+  var v=document.getElementById('pwd').value.trim().toLowerCase();
+  var err=document.getElementById('pwd-err');
+  if(v==='toto'){
+    localStorage.setItem('mg_ok','toto');
+    window.location.reload();
+  } else {
+    err.textContent='Mot de passe incorrect';
+    document.getElementById('pwd').style.borderColor='rgba(239,68,68,.5)';
+    setTimeout(function(){
+      err.textContent='';
+      document.getElementById('pwd').style.borderColor='rgba(255,255,255,.1)';
+    },2000);
+  }
+}
 
-      <div class="defi-score-row">
-        <div class="defi-score-box"><div class="defi-score-num" id="defiScore">0</div><div class="defi-score-lbl">Mon score</div></div>
-        <div class="defi-score-box"><div class="defi-score-num" id="defiTimer">30</div><div class="defi-score-lbl">Secondes</div></div>
-        <div class="defi-score-box"><div class="defi-score-num" id="defiBest">—</div><div class="defi-score-lbl">Mon record</div></div>
-      </div>
-
-      <div class="defi-input-row">
-        <input class="defi-input" type="number" id="defiInput" placeholder="···" disabled oninput="checkDefiInput(this.value)">
-        <button class="defi-btn" id="defiStartBtn" onclick="startDefi()">START</button>
-      </div>
-      <div class="defi-feedback" id="defiFeedback"></div>
-
-      <div class="lb-title">Classement</div>
-      <div id="defiLb">
-        <div style="text-align:center;color:#d1d5db;font-size:12px;padding:16px">Chargement...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TAB CHAT -->
-  <div class="tab-content" id="tab-chat">
-    <div class="chat-card">
-      <div class="chat-header">
-        <div class="chat-title">Salle d'attente</div>
-        <div class="chat-sub">Discute pendant la maintenance</div>
-      </div>
-      <div class="chat-messages" id="chatMessages">
-        <div style="text-align:center;color:#d1d5db;font-size:12px;margin:auto">Chargement...</div>
-      </div>
-      <div id="chatInputWrap" class="chat-input-wrap" style="display:none">
-        <input class="chat-input" id="chatInput" type="text" maxlength="200" placeholder="Un message...">
-        <button class="chat-send" onclick="sendMessage()">↑</button>
-      </div>
-      <div id="chatLoginPrompt" class="login-prompt">
-        <div class="login-prompt-text">Connecte-toi pour participer au chat</div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const SB_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-    const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
-
-    let currentUser = null, currentUsername = '', myClicks = 0;
-
-    const GOAL = 10000;
-    const DOCKER_MSGS = [
-      "Vous voyez ! Je vais signer ! 😤",
-      "C'est encourageant... mais c'est pas mon CDI ça.",
-      "Merci. La RH m'a rappelé hier. Enfin je crois.",
-      "1000 clics ! C'est un bon signe. Les astres sont alignés.",
-      "On y est presque. Comme mon CDI — toujours presque.",
-      "🎉 ON L'A ! Je signe demain. Ou après-demain.",
-    ];
-
-    // ── TABS ──
-    function switchTab(tab) {
-      document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['info','game','defi','chat'][i]===tab));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      document.getElementById('tab-'+tab).classList.add('active');
-      if (tab === 'chat') scrollChat(); if (tab === 'defi') loadDefiLb();
-    }
-
-    // ── COUNTDOWN ──
-    const target = new Date('2026-06-07T15:00:00');
-    function tick() {
-      const diff = target - new Date();
-      if (diff <= 0) { ['cdH','cdM','cdS'].forEach(id => document.getElementById(id).textContent='00'); return; }
-      document.getElementById('cdH').textContent = String(Math.floor(diff/3600000)).padStart(2,'0');
-      document.getElementById('cdM').textContent = String(Math.floor((diff%3600000)/60000)).padStart(2,'0');
-      document.getElementById('cdS').textContent = String(Math.floor((diff%60000)/1000)).padStart(2,'0');
-    }
-    tick(); setInterval(tick,1000);
-
-    // ── MINI JEU ──
-    async function loadClicks() {
-      const { data } = await sb.from('maintenance_clicks').select('*').limit(1).maybeSingle();
-      const total = data?.total || 0;
-      updateGameUI(total);
-    }
-
-    function updateGameUI(total) {
-      const pct = Math.min((total/GOAL)*100, 100);
-      document.getElementById('clickCount').textContent = total.toLocaleString('fr-FR');
-      document.getElementById('progressFill').style.width = pct + '%';
-      document.getElementById('totalClicks').textContent = total.toLocaleString('fr-FR');
-
-      const msgEl = document.getElementById('dockerMsg');
-      if (total >= GOAL) {
-        msgEl.style.display = 'block';
-        msgEl.textContent = DOCKER_MSGS[5];
-      } else if (total > 0 && total % 1000 === 0) {
-        msgEl.style.display = 'block';
-        msgEl.textContent = DOCKER_MSGS[Math.floor(total/1000) % 5];
-        setTimeout(() => msgEl.style.display = 'none', 4000);
-      }
-    }
-
-    async function handleClick() {
-      myClicks++;
-      document.getElementById('myClicks').textContent = myClicks;
-      if (navigator.vibrate) navigator.vibrate(10);
-
-      const btn = document.getElementById('clickBtn');
-      btn.style.transform = 'scale(0.88)';
-      setTimeout(() => btn.style.transform = '', 80);
-
-      // Incrémenter en BD tous les 5 clics pour éviter trop de requêtes
-      if (myClicks % 5 === 0) {
-        const { data } = await sb.from('maintenance_clicks').select('*').limit(1).maybeSingle();
-        const newTotal = (data?.total || 0) + 5;
-        await sb.from('maintenance_clicks').update({ total: newTotal }).eq('id', data.id);
-        updateGameUI(newTotal);
-      }
-    }
-
-    // Realtime clics
-    sb.channel('maintenance-clicks')
-      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'maintenance_clicks' }, payload => {
-        updateGameUI(payload.new.total);
-      }).subscribe();
-
-    loadClicks();
-
-    // ── CHAT ──
-    async function loadChat() {
-      const { data } = await sb.from('maintenance_chat')
-        .select('*').order('created_at', { ascending:true }).limit(50);
-      renderMessages(data || []);
-    }
-
-    function renderMessages(msgs) {
-      const el = document.getElementById('chatMessages');
-      if (!msgs.length) { el.innerHTML = '<div style="text-align:center;color:#d1d5db;font-size:12px;margin:auto;padding:20px">Soyez le premier à écrire !</div>'; return; }
-      el.innerHTML = msgs.map(m => {
-        const mine = m.user_id === currentUser?.id;
-        const initials = (m.username||'?').charAt(0).toUpperCase();
-        const time = new Date(m.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-        return `<div class="chat-msg${mine?' mine':''}">
-          <div class="chat-avatar">${initials}</div>
-          <div class="chat-bubble-wrap">
-            ${!mine ? `<div class="chat-name">${m.username}</div>` : ''}
-            <div class="chat-bubble">${escHtml(m.message)}</div>
-            <div class="chat-time">${time}</div>
-          </div>
-        </div>`;
-      }).join('');
-      scrollChat();
-    }
-
-    function scrollChat() {
-      const el = document.getElementById('chatMessages');
-      setTimeout(() => el.scrollTop = el.scrollHeight, 50);
-    }
-
-    function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-    async function sendMessage() {
-      const input = document.getElementById('chatInput');
-      const msg = input.value.trim();
-      if (!msg || !currentUser) return;
-      input.value = '';
-      await sb.from('maintenance_chat').insert({ user_id:currentUser.id, username:currentUsername, message:msg });
-    }
-
-    document.getElementById('chatInput')?.addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
-
-    // Realtime chat
-    sb.channel('maintenance-chat')
-      .on('postgres_changes', { event:'INSERT', schema:'public', table:'maintenance_chat' }, payload => {
-        loadChat();
-      }).subscribe();
-
-    // ── AUTH ──
-    async function init() {
-      const { data:{ session } } = await sb.auth.getSession();
-      if (session) {
-        currentUser = session.user;
-        const { data } = await sb.from('profiles').select('username').eq('user_id', currentUser.id).maybeSingle();
-        currentUsername = data?.username || 'Docker';
-        document.getElementById('chatInputWrap').style.display = 'flex';
-        document.getElementById('chatLoginPrompt').style.display = 'none';
-      }
-      loadChat();
-    }
-
-    init();
-
-    // ── DÉFI DU PORT ──
-    let defiActive = false, defiScore = 0, defiTimer = 30, defiInterval = null, defiTarget = 0;
-    let defiBest = parseInt(localStorage.getItem('defi_best') || '0');
-
-    function startDefi() {
-      if (defiActive) return;
-      defiActive = true; defiScore = 0; defiTimer = 30;
-      document.getElementById('defiScore').textContent = 0;
-      document.getElementById('defiTimer').textContent = 30;
-      document.getElementById('defiStartBtn').disabled = true;
-      document.getElementById('defiInput').disabled = false;
-      document.getElementById('defiInput').focus();
-      document.getElementById('defiBest').textContent = defiBest || '—';
-      nextDefiTarget();
-      defiInterval = setInterval(() => {
-        defiTimer--;
-        document.getElementById('defiTimer').textContent = defiTimer;
-        if (defiTimer <= 0) endDefi();
-      }, 1000);
-    }
-
-    function nextDefiTarget() {
-      defiTarget = Math.floor(Math.random() * 900) + 100;
-      document.getElementById('defiTarget').textContent = defiTarget;
-      document.getElementById('defiTarget').style.color = '#dc2626';
-      document.getElementById('defiInstruction').textContent = 'TAPE CE NOMBRE !';
-      document.getElementById('defiInput').value = '';
-    }
-
-    function checkDefiInput(val) {
-      if (!defiActive) return;
-      if (parseInt(val) === defiTarget) {
-        defiScore++;
-        document.getElementById('defiScore').textContent = defiScore;
-        document.getElementById('defiFeedback').textContent = '✓ CORRECT !';
-        document.getElementById('defiFeedback').className = 'defi-feedback ok';
-        setTimeout(() => document.getElementById('defiFeedback').textContent = '', 400);
-        nextDefiTarget();
-      }
-    }
-
-    async function endDefi() {
-      clearInterval(defiInterval);
-      defiActive = false;
-      document.getElementById('defiStartBtn').disabled = false;
-      document.getElementById('defiInput').disabled = true;
-      document.getElementById('defiTarget').textContent = defiScore;
-      document.getElementById('defiTarget').style.color = '#16a34a';
-      document.getElementById('defiInstruction').textContent = 'PARTIE TERMINÉE !';
-
-      // Sauvegarder record local
-      if (defiScore > defiBest) {
-        defiBest = defiScore;
-        localStorage.setItem('defi_best', defiBest);
-        document.getElementById('defiBest').textContent = defiBest;
-      }
-
-      // Sauvegarder en BD
-      if (currentUser && defiScore > 0) {
-        try {
-          const { data: existing } = await sb.from('maintenance_defi')
-            .select('score').eq('user_id', currentUser.id).maybeSingle();
-          if (!existing || defiScore > existing.score) {
-            await sb.from('maintenance_defi').upsert({
-              user_id: currentUser.id,
-              username: currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'Docker',
-              score: defiScore
-            }, { onConflict: 'user_id' });
-          }
-        } catch(e) {}
-        loadDefiLb();
-      }
-    }
-
-    async function loadDefiLb() {
-      try {
-        const { data } = await sb.from('maintenance_defi')
-          .select('username, score, user_id').order('score', { ascending: false }).limit(10);
-        const el = document.getElementById('defiLb');
-        if (!data || !data.length) { el.innerHTML = '<div style="text-align:center;color:#d1d5db;font-size:12px;padding:12px">Sois le premier !</div>'; return; }
-        const medals = ['🥇','🥈','🥉'];
-        el.innerHTML = data.map((r, i) => {
-          const me = currentUser && r.user_id === currentUser.id;
-          const pos = medals[i] || (i+1);
-          const cls = me ? ' me' : '';
-          return '<div class="lb-row' + cls + '">' +
-            '<div class="lb-pos">' + pos + '</div>' +
-            '<div class="lb-name">' + (r.username || 'Docker') + '</div>' +
-            '<div class="lb-val">' + r.score + ' pts</div>' +
-            '</div>';
-        }).join('');
-      } catch(e) {}
-    }
-
-  </script>
-
-  <!-- BOUTON ADMIN SECRET -->
-  <div id="adminZone" style="display:none;position:fixed;bottom:20px;right:20px;z-index:99">
-    <button onclick="goToGame()" style="background:#1a1a1a;border:none;border-radius:12px;padding:12px 20px;color:white;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3)">
-      ⚙️ ENTRER
-    </button>
-  </div>
-
-  <script>
-    function goToGame() { window.location.href = 'game.html'; }
-    let tapCount = 0;
-    document.querySelector('.logo').addEventListener('click', function() {
-      tapCount++;
-      if (tapCount >= 5) {
-        const pwd = prompt('Code admin :');
-        if (pwd === 'marseille2026') {
-          localStorage.setItem('bd_admin', '1');
-          document.getElementById('adminZone').style.display = 'block';
-        }
-        tapCount = 0;
-      }
-    });
-    if (localStorage.getItem('bd_admin') === '1') {
-      document.getElementById('adminZone').style.display = 'block';
-    }
-  </script>
+// Si déjà déverrouillé
+if(localStorage.getItem('mg_ok')==='toto'){
+  document.getElementById('wrap').style.display='none';
+  // Laisser la page normale se charger
+}
+</script>
 </body>
 </html>
