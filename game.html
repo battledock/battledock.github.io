@@ -1969,7 +1969,6 @@ async function init(){
     ]);
     const profile=profileRes.data;
     const stats=statsRes.data;
-    console.log('[STATS]', stats ? 'ok banque='+JSON.stringify(stats.banque) : 'NULL');
     if(!profile||!stats){showError();return;}
 
     // Recalcul niveau
@@ -2045,18 +2044,14 @@ async function init(){
     document.getElementById('diamondBar').textContent=Math.floor(diamonds).toLocaleString('fr-FR');
     document.getElementById('trophyBar').textContent=stats.trophies||0;
 
-    // Solde banque — fetch direct
-    (async function(){
-      try{
-        var uid2=(await sb.auth.getUser()).data.user.id;
-        var r=await sb.from('game_stats').select('banque').eq('user_id',uid2).maybeSingle();
-        var b=r.data&&r.data.banque?r.data.banque:{};
-        var total=0;
-        ['cc','livret','pep'].forEach(function(k){total+=(b[k]&&b[k].solde)||0;});
-        var el=document.getElementById('banqueBalance');
-        if(el)el.innerHTML=(total>0?Math.floor(total).toLocaleString('fr-FR'):'0')+' <span class="banque-euro">€</span>';
-      }catch(e){}
-    })();
+    // Solde banque
+    try{
+      var _b=stats&&stats.banque?stats.banque:{};
+      var _bt=0;
+      ['cc','livret','pep'].forEach(function(k){_bt+=(_b[k]&&_b[k].solde)||0;});
+      var _bel=document.getElementById('banqueBalance');
+      if(_bel)_bel.innerHTML=(_bt>0?Math.floor(_bt).toLocaleString('fr-FR'):'0')+' <span class="banque-euro">€</span>';
+    }catch(e){console.error('[BANQUE]',e);}
 
     // Données dynamiques sur les cartes
     populateDynamicCards(stats);
