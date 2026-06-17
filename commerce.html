@@ -338,6 +338,33 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
     </div>
 
+    <!-- ══ RÉPUTATION ══ -->
+    <div class="reput-card" id="reputCard">
+      <div class="reput-header" onclick="toggleReput()">
+        <div class="reput-header-ico">⭐</div>
+        <div class="reput-header-info">
+          <div class="reput-header-title">RÉPUTATION</div>
+          <div class="reput-header-sub" id="reput-header-sub">Chargement...</div>
+        </div>
+        <div class="reput-stars-big" id="reput-stars-header">—</div>
+      </div>
+      <div class="reput-body" id="reputBody">
+        <div class="reput-bar-wrap">
+          <div class="reput-bar-top">
+            <div class="reput-bar-lbl">SCORE DE RÉPUTATION</div>
+            <div class="reput-bar-val" id="reput-score-val">—/100</div>
+          </div>
+          <div class="reput-bar"><div class="reput-bar-fill" id="reput-bar-fill"></div></div>
+        </div>
+        <div class="reput-score-grid">
+          <div class="rscore"><div class="rscore-val" id="rscore-pos" style="color:#16a34a">0</div><div class="rscore-lbl">POSITIFS</div></div>
+          <div class="rscore"><div class="rscore-val" id="rscore-neg" style="color:#dc2626">0</div><div class="rscore-lbl">NÉGATIFS</div></div>
+          <div class="rscore"><div class="rscore-val" id="rscore-neu">0</div><div class="rscore-lbl">NEUTRES</div></div>
+        </div>
+        <div id="avis-list" class="avis-list"></div>
+      </div>
+    </div>
+
     <!-- OBJECTIFS QUOTIDIENS -->
     <div class="action-card" onclick="toggleObj()" id="obj-card" style="border-left:4px solid #fbbf24">
       <div class="action-ico">📋</div>
@@ -1276,11 +1303,16 @@ async function loadDashboard(){
   var clients = calcClients(com, co.type_id, co.valeur||0, gs&&gs.last_seen);
   com.clients = clients;
 
-  // ── Revenus avec multiplicateur clients ──
+  // ── Calcul réputation ──
+  var reput = calcReputation(com, co.type_id, gs&&gs.last_seen);
+  com.reputation = reput;
+
+  // ── Revenus avec multiplicateurs ──
   var baseRev=Math.floor((co.valeur||0)*0.002);
   var zRev=calcZoneRev(com.zones||{},t.tag);
   var cMult = clientsRevMult(clients);
-  var rev=Math.floor((baseRev+zRev)*cMult);
+  var rMult = reputRevMult(reput);
+  var rev=Math.floor((baseRev+zRev)*cMult*rMult);
 
   document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
@@ -1301,7 +1333,10 @@ async function loadDashboard(){
   // ── Render clients ──
   renderClients(clients, gs&&gs.last_seen);
 
-  // ── Sauvegarder clients en background ──
+  // ── Render réputation ──
+  renderReputation(reput);
+
+  // ── Sauvegarder en background ──
   sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
 
   show('s-dashboard');
@@ -1321,6 +1356,7 @@ async function collecterRevenus(){
   var pending=Math.floor(rev*elapsed);
   if(pending<1){toast('Rien a collecter encore');return;}
   com.last_collect=new Date().toISOString();
+  com=boostReputOnCollect(com);
   var newMoney=(gs.money||0)+pending;
   await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
   money=newMoney;
@@ -1350,6 +1386,192 @@ async function investir(){
 }
 
 // ══ INIT ══
+
+
+// ══════════════════════════════════════
+// SYSTÈME RÉPUTATION & AVIS
+// ══════════════════════════════════════
+
+var AVIS_AUTEURS = [
+  {nom:'Gégé', emoji:'👨‍🦲'},
+  {nom:'Doudou', emoji:'😎'},
+  {nom:'Patrick Lavagne', emoji:'👔'},
+  {nom:'Titouan', emoji:'🧢'},
+  {nom:'Jeff', emoji:'🤙'},
+  {nom:'Marie-Jo', emoji:'👩'},
+  {nom:'Un client anonyme', emoji:'🕵️'},
+  {nom:'Le voisin', emoji:'🧓'},
+  {nom:'Mme Bonnet', emoji:'👵'},
+  {nom:'Un docker', emoji:'⚓'},
+];
+
+var AVIS_PAR_TYPE = {
+  0: { // Kebab
+    pos: ["Franchement le meilleur kebab du port", "La sauce piquante elle déchire vraiment", "Gégé m'a dit que c'est top et il a raison", "Rapide propre et copieux que demander de plus"],
+    neg: ["La viande était froide hier soir", "J'ai attendu 20 minutes pour rien", "Le pain pita trop sec franchement", "Un peu cher pour la portion"],
+    neu: ["C'est correct pour le quartier", "Rien d'exceptionnel mais ça dépanne", "Service moyen ambiance correcte"],
+  },
+  1: { // Cabinet
+    pos: ["Très professionnel je recommande vivement", "Résultats excellents au-delà de mes espérances", "Équipe sérieuse et réactive merci", "Le meilleur du port sans hésiter"],
+    neg: ["Pas de retour depuis 3 jours c'est honteux", "Tarifs trop élevés pour la qualité", "Rendez-vous annulé à la dernière minute", "Décevant par rapport à la réputation"],
+    neu: ["Correct sans plus", "Service standard rien d'exceptionnel", "Dans la moyenne du secteur"],
+  },
+  4: { // Restaurant
+    pos: ["La bouillabaisse était incroyable", "Service impeccable et cadre magnifique", "On revient chaque semaine c'est dire", "Chef talentueux plats généreux"],
+    neg: ["Trop bruyant impossible de discuter", "La carte change trop souvent on s'y perd", "Addition salée pour ce qu'on a eu", "Service lent un vendredi soir c'est non"],
+    neu: ["Cuisine honnête sans surprise", "Correct pour le prix", "On a passé un moment agréable sans plus"],
+  },
+};
+
+function getAvisTexts(typeId){
+  return AVIS_PAR_TYPE[typeId] || {
+    pos: ["Excellent service je recommande", "Très satisfait de ma commande", "Équipe professionnelle et sympathique", "Top rapport qualité prix"],
+    neg: ["Décevant pas à la hauteur", "Service lent et peu agréable", "À éviter selon moi", "Peut mieux faire vraiment"],
+    neu: ["Correct pour le quartier", "Rien d'exceptionnel mais correct", "Dans la moyenne"],
+  };
+}
+
+function genAvis(typeId, delta){
+  var auteur = AVIS_AUTEURS[Math.floor(Math.random()*AVIS_AUTEURS.length)];
+  var texts = getAvisTexts(typeId);
+  var type, stars, text;
+  if(delta > 4){ type='positive'; stars='★★★★★'; text=texts.pos[Math.floor(Math.random()*texts.pos.length)]; }
+  else if(delta > 0){ type='positive'; stars='★★★★☆'; text=texts.pos[Math.floor(Math.random()*texts.pos.length)]; }
+  else if(delta < -4){ type='negative'; stars='★☆☆☆☆'; text=texts.neg[Math.floor(Math.random()*texts.neg.length)]; }
+  else if(delta < 0){ type='negative'; stars='★★☆☆☆'; text=texts.neg[Math.floor(Math.random()*texts.neg.length)]; }
+  else { type='neutral'; stars='★★★☆☆'; text=texts.neu[Math.floor(Math.random()*texts.neu.length)]; }
+  return { auteur:auteur.nom, emoji:auteur.emoji, type:type, stars:stars, text:text, date:new Date().toISOString(), delta:delta, replied:false };
+}
+
+function calcReputation(com, typeId, lastSeen){
+  var reput = com.reputation || {};
+  var now = Date.now();
+  if(!reput.score){ reput.score=50; reput.history=[]; reput.last_update=new Date().toISOString(); }
+
+  var lastUpdate = reput.last_update ? new Date(reput.last_update).getTime() : now;
+  var hoursElapsed = (now - lastUpdate) / 3600000;
+  if(hoursElapsed < 0.5) return reput;
+
+  // Avis automatique toutes les 4-8h
+  var avisInterval = 4 + Math.random()*4;
+  if(hoursElapsed >= avisInterval){
+    var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+    var inactiveHours = (now - lastSeenMs) / 3600000;
+    // Plus inactif = plus de chances d'avis négatif
+    var negBias = Math.min(0.6, inactiveHours / 100);
+    var r = Math.random();
+    var delta;
+    if(r < 0.5 - negBias) delta = Math.floor(Math.random()*8)+1;       // positif
+    else if(r < 0.7 - negBias) delta = 0;                               // neutre
+    else delta = -(Math.floor(Math.random()*8)+1);                      // négatif
+
+    var avis = genAvis(typeId, delta);
+    reput.history = reput.history || [];
+    reput.history.unshift(avis);
+    if(reput.history.length > 10) reput.history = reput.history.slice(0,10);
+    reput.score = Math.max(0, Math.min(100, reput.score + delta));
+  }
+
+  // Dégradation passive si inactif
+  var lastSeenMs2 = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactH = (now - lastSeenMs2) / 3600000;
+  if(inactH > 24) reput.score = Math.max(0, reput.score - Math.floor(hoursElapsed * 0.3));
+
+  reput.last_update = new Date().toISOString();
+  return reput;
+}
+
+function starsFromScore(score){
+  if(score >= 85) return '★★★★★';
+  if(score >= 70) return '★★★★☆';
+  if(score >= 50) return '★★★☆☆';
+  if(score >= 30) return '★★☆☆☆';
+  return '★☆☆☆☆';
+}
+
+function reputColor(score){
+  if(score >= 75) return '#16a34a';
+  if(score >= 50) return '#d97706';
+  return '#dc2626';
+}
+
+function reputLabel(score){
+  if(score >= 85) return 'Réputation excellente';
+  if(score >= 70) return 'Bonne réputation';
+  if(score >= 50) return 'Réputation correcte';
+  if(score >= 30) return 'Réputation fragile';
+  return 'Mauvaise réputation';
+}
+
+// Multiplicateur revenus selon réputation
+function reputRevMult(reput){
+  var score = reput && reput.score || 50;
+  return Math.max(0.5, 0.7 + (score/100) * 0.6); // 0.7x à 1.3x
+}
+
+function toggleReput(){ document.getElementById('reputBody').classList.toggle('open'); }
+
+function renderReputation(reput){
+  var score = reput.score || 50;
+  var hist = reput.history || [];
+  var pos = hist.filter(function(a){return a.type==='positive';}).length;
+  var neg = hist.filter(function(a){return a.type==='negative';}).length;
+  var neu = hist.filter(function(a){return a.type==='neutral';}).length;
+  var color = reputColor(score);
+  var stars = starsFromScore(score);
+
+  document.getElementById('reput-stars-header').textContent = stars;
+  document.getElementById('reput-stars-header').style.color = color;
+  document.getElementById('reput-header-sub').textContent = reputLabel(score);
+  document.getElementById('reput-score-val').textContent = score+'/100';
+  document.getElementById('reput-score-val').style.color = color;
+  var fill = document.getElementById('reput-bar-fill');
+  fill.style.width = score+'%';
+  fill.style.background = score>=75?'linear-gradient(90deg,#16a34a,#4ade80)':score>=50?'linear-gradient(90deg,#d97706,#fbbf24)':'linear-gradient(90deg,#dc2626,#ef4444)';
+  document.getElementById('rscore-pos').textContent = pos;
+  document.getElementById('rscore-neg').textContent = neg;
+  document.getElementById('rscore-neu').textContent = neu;
+
+  var listEl = document.getElementById('avis-list');
+  if(!hist.length){ listEl.innerHTML='<div style="font-size:10px;color:#9ca3af;text-align:center;padding:10px">Aucun avis pour le moment</div>'; return; }
+  listEl.innerHTML = hist.slice(0,5).map(function(a,i){
+    var d = new Date(a.date);
+    var ds = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="avis-item '+a.type+'">' +
+      '<div class="avis-top">' +
+        '<div class="avis-avatar">'+a.emoji+'</div>' +
+        '<div class="avis-author">'+a.auteur+'</div>' +
+        '<div class="avis-stars">'+a.stars+'</div>' +
+        '<div class="avis-date">'+ds+'</div>' +
+      '</div>' +
+      '<div class="avis-text">"'+a.text+'"</div>' +
+      (a.replied ? '<div class="avis-repondre" style="color:#9ca3af">✓ Répondu</div>' :
+        '<div class="avis-repondre" onclick="repondreAvis('+i+')">↩ Répondre (+2 satisfaction)</div>') +
+    '</div>';
+  }).join('');
+}
+
+async function repondreAvis(idx){
+  var gs = await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com = (gs.data&&gs.data.commerce)||{};
+  if(!com.reputation||!com.reputation.history) return;
+  if(com.reputation.history[idx] && !com.reputation.history[idx].replied){
+    com.reputation.history[idx].replied = true;
+    com.clients = com.clients||{};
+    com.clients.satisfaction = Math.min(100,(com.clients.satisfaction||75)+2);
+    await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+    toast('Réponse envoyée ! +2 satisfaction 👍');
+    loadDashboard();
+  }
+}
+
+// Boost réputation lors d'une collecte
+function boostReputOnCollect(com){
+  com.reputation = com.reputation || {score:50, history:[], last_update:new Date().toISOString()};
+  com.reputation.score = Math.min(100, com.reputation.score + 1);
+  return com;
+}
+
 
 // ══════════════════════════════════════
 // SYSTÈME CLIENTS
