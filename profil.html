@@ -297,13 +297,13 @@ var AVATARS=[
   {src:'avatar-level-50.png',lbl:'NV.50',min:50}
 ];
 var TITRES=[
-  {id:'docker',  ico:'⚓', nom:'Docker du Port',      cond:'Compte cree',           req:'free',    min:1,  prix:0},
-  {id:'chef',    ico:'🚢',nom:'Chef de Quai',  cond:'Atteindre niveau 5',    req:'level',   min:5,  prix:0},
-  {id:'loup',    ico:'🐳',nom:'Vieux Loup',    cond:'30 jours connexion',    req:'streak',  min:1,  prix:0},
-  {id:'baron',   ico:'💰',nom:'Baron du Port', cond:'1 000 000 en poche',    req:'money',   min:1,  prix:0},
-  {id:'roi',     ico:'👑',nom:'Roi des Docks', cond:'Titre premium',          req:'diamond', min:1,  prix:500},
-  {id:'magnat',  ico:'🏆',nom:'Magnat Portuaire',cond:'Niveau 20',            req:'level',   min:20, prix:0},
-  {id:'legende', ico:'⭐',  nom:'Legende de Marseille',cond:'Niveau 50',             req:'level',   min:50, prix:0}
+  {id:'docker',  ico:'\u2693', nom:'Docker du Port',      cond:'Compte cree',           req:'free',    min:1,  prix:0},
+  {id:'chef',    ico:'\uD83D\uDEA2',nom:'Chef de Quai',  cond:'Atteindre niveau 5',    req:'level',   min:5,  prix:0},
+  {id:'loup',    ico:'\uD83D\uDC33',nom:'Vieux Loup',    cond:'30 jours connexion',    req:'streak',  min:1,  prix:0},
+  {id:'baron',   ico:'\uD83D\uDCB0',nom:'Baron du Port', cond:'1 000 000 en poche',    req:'money',   min:1,  prix:0},
+  {id:'roi',     ico:'\uD83D\uDC51',nom:'Roi des Docks', cond:'Titre premium',          req:'diamond', min:1,  prix:500},
+  {id:'magnat',  ico:'\uD83C\uDFC6',nom:'Magnat Portuaire',cond:'Niveau 20',            req:'level',   min:20, prix:0},
+  {id:'legende', ico:'\u2B50',  nom:'Legende de Marseille',cond:'Niveau 50',             req:'level',   min:50, prix:0}
 ];
 var _selAv=null,_curLvl=1,_actTitre='docker';
 
@@ -314,14 +314,13 @@ function renderAvatarGrid(lvl,curSrc){
   g.innerHTML=AVATARS.map(function(av,i){
     var ok=lvl>=av.min,sel=curSrc===av.src||(i===0&&!curSrc);
     if(sel)_selAv=av.src;
-    var noErr="this.style.display='none'";
-    var html='<div class="av-item"'+(ok?' onclick="selAv('+i+')"':'')+'>';
-    html+='<div class="av-wrap'+(sel?' sel':'')+(ok?'':' lck')+'">';
-    html+='<img src="'+av.src+'" alt="" onerror="'+noErr+'">';
+    var html='<div class="av-item"'+(ok?' onclick="selAv('+i+')"':'')+'>'
+    +'<div class="av-wrap'+(sel?' sel':'')+(ok?'':' lck')+'">';
+    html+='<img src="'+av.src+'" alt="">';
     html+='</div>';
     if(sel)html+='<div class="av-chk">v</div>';
     if(!ok)html+='<div class="av-lock">L</div>';
-    html+='<div class="av-lbl'+(sel?' sel':'')+'">'+av.lbl+'</div>';
+    html+='<div class="av-lbl'+(sel?' sel':'')+'">'+(ok?av.lbl:'?')+'</div>';
     html+='</div>';
     return html;
   }).join('');
@@ -354,15 +353,22 @@ function renderTitres(stats,profile){
     var badge='';
     if(act)badge='<span class="tr-badge act">ACTIF</span>';
     else if(own)badge='<span class="tr-badge owned">POSSEDE</span>';
-    else if(buy)badge='<span class="tr-prix">'+t.prix+' 💎</span>';
+    else if(buy)badge='<span class="tr-prix">'+t.prix+' Diam.</span>';
     else badge='<span class="tr-badge lck">'+(t.min>1?'NV.'+t.min:'-')+'</span>';
     var cls='tr-item'+(act?' active':'')+(lck?' locked':'');
-    var onclick='';
-    if(own&&!act)onclick=' onclick="activerTitre(\\'' + t.id + '\\')'+'"';
-    else if(buy)onclick=' onclick="acheterTitre(\\'' + t.id + '\\',' + t.prix + ')'+'"';
-    return '<div class="'+cls+'"'+onclick+'>'      +'<div class="tr-ico">'+t.ico+'</div>'      +'<div class="tr-info"><div class="tr-nm'+(act?' active':'')+'">'+t.nom+'</div>'      +'<div class="tr-cond">'+t.cond+'</div></div>'      +badge+'</div>';
+    var click='';
+    if(own&&!act)click=' data-tid="'+t.id+'" onclick="activerTitreClic(this)"';
+    else if(buy)click=' data-tid="'+t.id+'" data-prix="'+t.prix+'" onclick="acheterTitreClic(this)"';
+    return '<div class="'+cls+'"'+click+'>'
+      +'<div class="tr-ico">'+t.ico+'</div>'
+      +'<div class="tr-info"><div class="tr-nm'+(act?' active':'')+'">'+t.nom+'</div>'
+      +'<div class="tr-cond">'+t.cond+'</div></div>'
+      +badge+'</div>';
   }).join('');
 }
+function activerTitreClic(el){activerTitre(el.getAttribute('data-tid'));}
+function acheterTitreClic(el){acheterTitre(el.getAttribute('data-tid'),parseInt(el.getAttribute('data-prix')));}
+
 async function activerTitre(id){
   _actTitre=id;
   var t=TITRES.find(function(x){return x.id===id;});
@@ -398,7 +404,7 @@ function renderCarte(profile,stats,lvl,xp){
   if(document.getElementById('carteGrade'))document.getElementById('carteGrade').textContent=getGrade(lvl).toUpperCase()+' - NIVEAU '+lvl;
   if(document.getElementById('carteMat'))document.getElementById('carteMat').textContent=mat;
   if(document.getElementById('carteAv'))document.getElementById('carteAv').src=profile.avatar_src||avatarForLevel(lvl);
-  if(document.getElementById('carteXP'))document.getElementById('carteXP').textContent=(xp||0).toLocaleString()+' XP';
+  if(document.getElementById('carteXP'))document.getElementById('carteXP').textContent=(xp||0).toLocaleString('fr-FR')+' XP';
   if(document.getElementById('carteBarcode'))document.getElementById('carteBarcode').textContent='DKR-2025-'+String(num).padStart(5,'0')+'-MRS';
   if(profile.created_at&&document.getElementById('carteDate')){
     var d=new Date(profile.created_at);
