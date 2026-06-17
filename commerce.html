@@ -305,6 +305,39 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
       <div class="action-right">→</div>
     </div>
+
+    <!-- ══ CLIENTS ══ -->
+    <div class="clients-card" id="clientsCard">
+      <div class="clients-header" onclick="toggleClients()">
+        <div class="clients-header-ico">👥</div>
+        <div class="clients-header-info">
+          <div class="clients-header-title">CLIENTS</div>
+          <div class="clients-header-sub" id="clients-badge-txt">Chargement...</div>
+        </div>
+        <div class="clients-total">
+          <div class="clients-total-val" id="clients-total">—</div>
+          <div class="clients-total-lbl">CLIENTS</div>
+        </div>
+      </div>
+      <div class="clients-body" id="clientsBody">
+        <div class="clients-alert" id="clientsAlert">⚠️ Inactivité détectée — tes clients commencent à partir !</div>
+        <div class="clients-badge" id="clientsFidelBadge">⭐ Clientèle fidèle</div>
+        <div class="satis-wrap">
+          <div class="satis-top">
+            <div class="satis-lbl">SATISFACTION</div>
+            <div class="satis-val" id="clients-satis-val">—%</div>
+          </div>
+          <div class="satis-bar"><div class="satis-fill" id="clients-satis-bar" style="width:0%"></div></div>
+        </div>
+        <div class="clients-stats">
+          <div class="cstat"><div class="cstat-val" id="cstat-normal">0</div><div class="cstat-lbl">NORMAUX</div></div>
+          <div class="cstat"><div class="cstat-val" id="cstat-vip" style="color:#d97706">0 👑</div><div class="cstat-lbl">VIP</div></div>
+          <div class="cstat"><div class="cstat-val" id="cstat-gain" style="color:#16a34a">+0</div><div class="cstat-lbl">CE JOUR</div></div>
+        </div>
+        <div class="clients-hist" id="clientsHist">Aucun historique</div>
+      </div>
+    </div>
+
     <!-- OBJECTIFS QUOTIDIENS -->
     <div class="action-card" onclick="toggleObj()" id="obj-card" style="border-left:4px solid #fbbf24">
       <div class="action-ico">📋</div>
@@ -1236,11 +1269,19 @@ async function loadDashboard(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(!co)return;
   var t=TYPES[co.type_id]||TYPES[0];
-  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var {data:gs}=await sb.from('game_stats').select('commerce,last_seen').eq('user_id',currentUser.id).maybeSingle();
   var com=(gs&&gs.commerce)||{};
+
+  // ── Calcul clients ──
+  var clients = calcClients(com, co.type_id, co.valeur||0, gs&&gs.last_seen);
+  com.clients = clients;
+
+  // ── Revenus avec multiplicateur clients ──
   var baseRev=Math.floor((co.valeur||0)*0.002);
   var zRev=calcZoneRev(com.zones||{},t.tag);
-  var rev=baseRev+zRev;
+  var cMult = clientsRevMult(clients);
+  var rev=Math.floor((baseRev+zRev)*cMult);
+
   document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
   document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
@@ -1249,12 +1290,20 @@ async function loadDashboard(){
   document.getElementById('dash-valeur').textContent=fmtM(co.valeur||0);
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
-  // Collecte
+
+  // ── Collecte ──
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
   var elapsed=(Date.now()-last)/3600000;
   var pending=Math.floor(rev*elapsed);
   document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
   document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochaine collecte dans '+(Math.ceil(1-elapsed*60))+'min';
+
+  // ── Render clients ──
+  renderClients(clients, gs&&gs.last_seen);
+
+  // ── Sauvegarder clients en background ──
+  sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
+
   show('s-dashboard');
 }
 
@@ -1291,13 +1340,191 @@ async function investir(){
   await sb.from('companies').update({valeur:newVal,niveau:newNiv}).eq('user_id',currentUser.id);
   await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
   money=newMoney;
-  toast('Investi '+fmtM(amt)+' !');
+  // Boost clients
+  com=boostClientsOnInvest(com,amt);
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+  toast('Investi '+fmtM(amt)+' ! +'+Math.floor(amt/10000)+' clients 📢');
   // Syndicat tracking
   try{var wk='week_'+_weekNum();var {data:_gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();var _rec=(_gs&&_gs.records)||{};_rec.syndicat=_rec.syndicat||{};_rec.syndicat[wk]=_rec.syndicat[wk]||{};_rec.syndicat[wk].invested_week=(_rec.syndicat[wk].invested_week||0)+amt;await sb.from('game_stats').update({records:_rec}).eq('user_id',currentUser.id);}catch(e){}
   loadDashboard();
 }
 
 // ══ INIT ══
+
+// ══════════════════════════════════════
+// SYSTÈME CLIENTS
+// ══════════════════════════════════════
+
+var CLIENT_BASE = {
+  0: 30,  // kebab
+  1: 15,  // cabinet
+  2: 50,  // superette
+  3: 20,  // agence
+  4: 40,  // restaurant
+  5: 10,  // investisseur
+  6: 60,  // épicerie
+  7: 25,  // bar
+};
+
+function getClientBase(typeId){ return CLIENT_BASE[typeId] || 25; }
+
+// Calcule l'état actuel des clients
+function calcClients(com, typeId, valeur, lastSeen){
+  var clients = com.clients || {};
+  var now = Date.now();
+  var base = getClientBase(typeId);
+  var niveau = Math.floor((valeur||0)/100000)+1;
+
+  // Init si premier passage
+  if(!clients.total){
+    clients.total = base;
+    clients.vip = Math.floor(base/10);
+    clients.satisfaction = 75;
+    clients.last_update = new Date().toISOString();
+    clients.history = [];
+    clients.day_gain = 0;
+    clients.day_date = new Date().toISOString().split('T')[0];
+  }
+
+  var lastUpdate = clients.last_update ? new Date(clients.last_update).getTime() : now;
+  var hoursElapsed = (now - lastUpdate) / 3600000;
+
+  if(hoursElapsed < 0.1) return clients; // Pas encore 6 min, skip
+
+  // Croissance naturelle (niveau * 0.5 clients/heure max 5/h)
+  var growthRate = Math.min(5, niveau * 0.5);
+  var naturalGain = Math.floor(hoursElapsed * growthRate);
+
+  // Perte si inactif (lastSeen = dernière connexion)
+  var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactiveHours = (now - lastSeenMs) / 3600000;
+  var lossRate = 0;
+  if(inactiveHours > 48) lossRate = Math.floor(clients.total * 0.10); // -10% si 48h+
+  if(inactiveHours > 96) lossRate = Math.floor(clients.total * 0.20); // -20% si 4j+
+
+  // Satisfaction impact
+  var satisMult = clients.satisfaction >= 80 ? 1.2 : clients.satisfaction >= 50 ? 1 : 0.7;
+  var netGain = Math.floor(naturalGain * satisMult) - lossRate;
+
+  // Appliquer
+  clients.total = Math.max(1, clients.total + netGain);
+  clients.vip = Math.max(0, Math.floor(clients.total / 10));
+
+  // Satisfaction évolue lentement vers 75% naturellement
+  if(clients.satisfaction < 75) clients.satisfaction = Math.min(75, clients.satisfaction + hoursElapsed * 2);
+  if(clients.satisfaction > 75 && lossRate > 0) clients.satisfaction = Math.max(20, clients.satisfaction - hoursElapsed * 5);
+
+  // Historique
+  var today = new Date().toISOString().split('T')[0];
+  if(clients.day_date !== today){ clients.day_gain = 0; clients.day_date = today; }
+  clients.day_gain = (clients.day_gain||0) + netGain;
+
+  if(netGain !== 0){
+    clients.history = clients.history || [];
+    clients.history.unshift({
+      date: new Date().toISOString(),
+      delta: netGain,
+      label: netGain > 0 ? '+'+netGain+' nouveaux clients' : netGain+' clients perdus'
+    });
+    if(clients.history.length > 8) clients.history = clients.history.slice(0,8);
+  }
+
+  clients.last_update = new Date().toISOString();
+  return clients;
+}
+
+// Multiplicateur revenus selon clients
+function clientsRevMult(clients){
+  if(!clients || !clients.total) return 1;
+  var vipBonus = (clients.vip||0) * 0.03; // +3% par VIP
+  var satisBonus = ((clients.satisfaction||75) - 75) / 200; // ±12.5% selon satis
+  return Math.max(0.5, 1 + vipBonus + satisBonus);
+}
+
+// Badge fidélité
+function getClientBadge(clients){
+  var satis = clients.satisfaction || 75;
+  var total = clients.total || 0;
+  if(satis >= 90 && total > 100) return { txt: '🌟 Clientèle premium', color: '#854d0e', bg: '#fef9c3', border: '#fde047' };
+  if(satis >= 75) return { txt: '⭐ Clientèle fidèle', color: '#854d0e', bg: '#fef9c3', border: '#fde047' };
+  if(satis >= 50) return { txt: '😐 Clientèle volatile', color: '#92400e', bg: '#fff7ed', border: '#fed7aa' };
+  return { txt: '⚠️ Clientèle insatisfaite', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' };
+}
+
+function toggleClients(){
+  var b = document.getElementById('clientsBody');
+  b.classList.toggle('open');
+}
+
+function renderClients(clients, lastSeen){
+  var total = clients.total || 0;
+  var vip = clients.vip || 0;
+  var satis = Math.round(clients.satisfaction || 75);
+  var dayGain = clients.day_gain || 0;
+  var now = Date.now();
+  var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactiveHours = (now - lastSeenMs) / 3600000;
+
+  // Header
+  document.getElementById('clients-total').textContent = total.toLocaleString('fr-FR');
+
+  // Badge
+  var badge = getClientBadge(clients);
+  var badgeEl = document.getElementById('clientsFidelBadge');
+  badgeEl.textContent = badge.txt;
+  badgeEl.style.background = badge.bg;
+  badgeEl.style.borderColor = badge.border;
+  badgeEl.style.color = badge.color;
+  document.getElementById('clients-badge-txt').textContent = badge.txt;
+
+  // Alerte inactivité
+  var alert = document.getElementById('clientsAlert');
+  alert.classList.toggle('show', inactiveHours > 48);
+
+  // Satisfaction
+  document.getElementById('clients-satis-val').textContent = satis + '%';
+  var bar = document.getElementById('clients-satis-bar');
+  bar.style.width = satis + '%';
+  bar.style.background = satis >= 75 ? 'linear-gradient(90deg,#16a34a,#4ade80)' :
+                         satis >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' :
+                                       'linear-gradient(90deg,#dc2626,#ef4444)';
+  document.getElementById('clients-satis-val').style.color = satis >= 75 ? '#16a34a' : satis >= 50 ? '#d97706' : '#dc2626';
+
+  // Stats
+  document.getElementById('cstat-normal').textContent = (total - vip).toLocaleString('fr-FR');
+  document.getElementById('cstat-vip').textContent = vip + ' 👑';
+  document.getElementById('cstat-gain').textContent = (dayGain >= 0 ? '+' : '') + dayGain;
+  document.getElementById('cstat-gain').style.color = dayGain >= 0 ? '#16a34a' : '#dc2626';
+
+  // Historique
+  var hist = clients.history || [];
+  if(hist.length){
+    document.getElementById('clientsHist').innerHTML = hist.slice(0,5).map(function(h){
+      var d = new Date(h.date);
+      var ds = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
+               d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="clients-hist-item"><span>'+h.label+'</span>' +
+             '<span class="'+(h.delta>=0?'clients-hist-pos':'clients-hist-neg')+'">'+ds+'</span></div>';
+    }).join('');
+  }
+}
+
+// Boost clients lors d'un investissement
+function boostClientsOnInvest(com, amount){
+  var clients = com.clients || {};
+  var boost = Math.floor(amount / 10000); // +1 client par 10k€ investi
+  clients.total = (clients.total || 0) + boost;
+  clients.satisfaction = Math.min(100, (clients.satisfaction || 75) + Math.min(10, boost / 2));
+  if(boost > 0){
+    clients.history = clients.history || [];
+    clients.history.unshift({ date: new Date().toISOString(), delta: boost, label: '📢 Pub : +'+boost+' clients' });
+    if(clients.history.length > 8) clients.history = clients.history.slice(0,8);
+  }
+  com.clients = clients;
+  return com;
+}
+
+
 async function startApp(){
   var res=await sb.auth.getSession();
   var sess=res.data&&res.data.session;
