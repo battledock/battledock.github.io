@@ -2,14 +2,14 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Commerce — Battle Dock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
 body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflow:hidden}
-.screen{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden;height:100%;height:100dvh}
 .screen.active{display:flex}
 
 /* ── HEADER ── */
@@ -125,8 +125,8 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 .btn-confirm{width:100%;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:15px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer}
 
 /* ── SCREEN 5 : DASHBOARD ── */
-#s-dashboard{overflow-y:auto;background:#f8fafc}
-.dash-hero{padding:calc(14px + env(safe-area-inset-top)) 16px 20px;color:white;position:relative;overflow:hidden}
+#s-dashboard{overflow-y:auto;-webkit-overflow-scrolling:touch;background:#f8fafc;height:100%;display:flex;flex-direction:column}
+.dash-hero{padding:calc(14px + env(safe-area-inset-top)) 16px 20px;color:white;position:relative;overflow:hidden;min-height:180px;background:#cc1a1a;flex-shrink:0}
 .dash-hero-inner{position:relative;z-index:1}
 .dash-co-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;line-height:1;margin-top:8px}
 .dash-co-type{font-size:10px;font-weight:800;letter-spacing:3px;opacity:.6;margin-top:2px}
@@ -135,7 +135,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 .dash-stat{background:rgba(255,255,255,.12);border-radius:10px;padding:12px}
 .dash-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;line-height:1}
 .dash-stat-lbl{font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.5);margin-top:2px}
-.dash-body{padding:14px;display:flex;flex-direction:column;gap:10px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+.dash-body{padding:14px;display:flex;flex-direction:column;gap:10px;padding-bottom:calc(20px + env(safe-area-inset-bottom));flex:1}
 /* Actions */
 .action-card{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:opacity .1s}
 .action-card:active{opacity:.8}
@@ -1260,18 +1260,7 @@ function mj6(body){
   var cv=document.getElementById('mj6-cv');
   var ctx=cv.getContext('2d');
   var dockerY=120,dockerJump=0,waveX=320,waveActive=false;
-  function draw(){
-    ctx.clearRect(0,0,300,160);
-    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,160);
-    ctx.fillStyle='#1e3a5f';ctx.fillRect(0,135,300,25);
-    // Docker
-    ctx.font='24px serif';ctx.fillText('🧔',30,dockerY);
-    // Vague
-    if(waveActive){ctx.font='22px serif';ctx.fillText('🌊',waveX,130);}
-    // Score
-    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='bold 11px Inter,sans-serif';
-    ctx.fillText(wavesDone+'/'+totalWaves+' vagues',200,20);
-  }
+  
   cv.onclick=function(){
     if(done||jumping)return;
     jumping=true;
@@ -1566,30 +1555,37 @@ async function loadDashboard(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   if(!co)return;
   var t=TYPES[co.type_id]||TYPES[0];
-  var {data:gs}=await sb.from('game_stats').select('commerce,last_seen').eq('user_id',currentUser.id).maybeSingle();
+  var {data:gs}=await sb.from('game_stats').select('commerce,last_seen,money').eq('user_id',currentUser.id).maybeSingle();
   var com=(gs&&gs.commerce)||{};
+  var money=(gs&&gs.money)||0;
 
-  // ── Calcul employés ──
-  com = calcEmployees(com, gs&&gs.last_seen);
+  // Employés
+  com=calcEmployees(com,gs&&gs.last_seen);
+  var eMult=employeesRevMult(com.employees);
+  var eSatisMult=employeesSatisMult(com.employees);
 
-  // ── Calcul clients ──
-  var clients = calcClients(com, co.type_id, co.valeur||0, gs&&gs.last_seen);
-  if(eSatisMult>1&&com.clients){com.clients.satisfaction=Math.min(100,(com.clients.satisfaction||75)*(eSatisMult));}
-  com.clients = clients;
+  // Clients
+  var clients=calcClients(com,co.type_id,co.valeur||0,gs&&gs.last_seen);
+  if(eSatisMult>1&&clients){clients.satisfaction=Math.min(100,(clients.satisfaction||75)*eSatisMult);}
+  com.clients=clients;
 
-  // ── Calcul réputation ──
-  var reput = calcReputation(com, co.type_id, gs&&gs.last_seen);
-  com.reputation = reput;
+  // Réputation
+  var reput=calcReputation(com,co.type_id,gs&&gs.last_seen);
+  com.reputation=reput;
 
-  // ── Revenus avec multiplicateurs ──
+  // Événement
+  var evt=checkRandomEvent(com);
+  if(evt){com=applyEvent(evt,com);}
+
+  // Revenus
   var baseRev=Math.floor((co.valeur||0)*0.002);
   var zRev=calcZoneRev(com.zones||{},t.tag);
-  var cMult = clientsRevMult(clients);
-  var rMult = reputRevMult(reput);
-  var eMult = employeesRevMult(com.employees);
-  var eSatisMult = employeesSatisMult(com.employees);
-  var rev=Math.floor((baseRev+zRev)*cMult*rMult*eMult);
+  var cMult=clientsRevMult(clients);
+  var rMult=reputRevMult(reput);
+  var chMult=chargesMult(com,co.valeur||0);
+  var rev=Math.floor((baseRev+zRev)*cMult*rMult*eMult*chMult);
 
+  // Header
   document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
   document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
   document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
@@ -1599,35 +1595,30 @@ async function loadDashboard(){
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
 
-  // ── Collecte ──
+  // Collecte
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
   var elapsed=(Date.now()-last)/3600000;
   var pending=Math.floor(rev*elapsed);
   document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
-  document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochaine collecte dans '+(Math.ceil(1-elapsed*60))+'min';
+  document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochain dans '+(Math.ceil(60-elapsed*60))+'min';
 
-  // ── Render clients ──
-  renderClients(clients, gs&&gs.last_seen);
-
-  // ── Render réputation ──
+  // Render sections
+  renderClients(clients,gs&&gs.last_seen);
   renderReputation(reput);
+  renderRang(co.valeur||0);
+  renderCharges(com,co.valeur||0,money);
+  renderEmployees(com,co.niveau||1,money);
+  renderEvent(evt||(com.pending_event?EVENTS.find(function(e){return e.id===com.pending_event;})||null:null));
 
-  // ── Render employés ──
-  var gs2 = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
-  renderEmployees(com, co.niveau||1, (gs2.data&&gs2.data.money)||0);
+  // Perte argent événement
+  if(com.pending_money_loss&&com.pending_money_loss>0){
+    await sb.from('game_stats').update({money:Math.max(0,money-com.pending_money_loss)}).eq('user_id',currentUser.id);
+    com.pending_money_loss=0;
+  }
 
-  // ── Sauvegarder en background ──
+  // Sauvegarder
   sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
 
-  // Employes
-  com=calcEmployees(com,gs&&gs.last_seen);
-  var eMult=employeesRevMult(com.employees);
-  // Rang + Charges + Evenements
-  renderRang(co.valeur||0);
-  renderCharges(com,co.valeur||0,(gs&&gs.money)||0);
-  var evt=checkRandomEvent(com);if(evt){com=applyEvent(evt,com);renderEvent(evt);}else{var pe=com.pending_event;if(pe){var pev=EVENTS.find(function(e){return e.id===pe;});renderEvent(pev||null);}else renderEvent(null);}
-  if(com.pending_money_loss){var lgs=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();var lm=(lgs.data&&lgs.data.money)||0;await sb.from('game_stats').update({money:Math.max(0,lm-com.pending_money_loss)}).eq('user_id',currentUser.id);com.pending_money_loss=0;}
-  renderEmployees(com,co.niveau||1,(gs&&gs.money)||0);
   show('s-dashboard');
 }
 
