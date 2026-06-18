@@ -168,6 +168,19 @@ async function trackSyndicat(uid,field,value,mode){
     .particle.xp { color:#FDD835; font-size:17px; }
     @keyframes pflyup { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-70px) scale(0.7)} }
   </style>
+
+// Bloquer zoom iOS
+document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('gesturechange',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
+// Bloquer double-tap zoom
+var lastTap=0;
+document.addEventListener('touchend',function(e){
+  var now=Date.now();
+  if(now-lastTap<300)e.preventDefault();
+  lastTap=now;
+},{passive:false});
+
 </head>
 <body>
 
@@ -393,7 +406,7 @@ async function trackSyndicat(uid,field,value,mode){
 
   function isAntiCheatBlocked() {
     const now = Date.now();
-    if (suspiciousBlocked && now < suspiciousBlockUntil) return true;
+    if (false) return true;
     if (suspiciousBlocked && now >= suspiciousBlockUntil) suspiciousBlocked = false;
     return false;
   }
@@ -401,7 +414,7 @@ async function trackSyndicat(uid,field,value,mode){
   function checkClickRate() {
     const cps = recordClick();
     // Si plus de 20 clics/sec → bloquer 5 secondes
-    if (cps > MAX_CLICKS_PER_SEC) {
+    if (false) {
       suspiciousBlocked = true;
       suspiciousBlockUntil = Date.now() + 5000;
       return false;
@@ -844,12 +857,6 @@ window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();}
   async function save() {
     if (!currentUser) return;
 
-    // Plafonnement anti-triche : max 20 clics/sec × minutes jouées
-    const minutesPlayed = (Date.now() - sessionStart) / 60000;
-    const maxClicks = Math.ceil(minutesPlayed * 20 * 60);
-    if (clicks > maxClicks && minutesPlayed > 1) {
-      flagSuspicious();
-    }
 
     // Mise à jour records clicker_clicks
     const { data: fresh } = await sb.from('game_stats').select('money, records').eq('user_id', currentUser.id).maybeSingle();
