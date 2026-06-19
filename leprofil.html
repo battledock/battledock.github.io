@@ -25,62 +25,11 @@ html,body{
 @keyframes skShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .sk{border-radius:8px;background:linear-gradient(90deg,#e8e0cc 25%,#f0ead8 50%,#e8e0cc 75%);background-size:200% 100%;animation:skShimmer 1.4s ease-in-out infinite;}
 
-/* ── HEADER (identique game.html) ── */
-.profile-header{
-  position:fixed;top:0;left:50%;transform:translateX(-50%);
-  width:100%;max-width:600px;z-index:200;
-  padding-top:var(--safe-top);
-  background:#fff;
-}
-.profile-header-inner{padding:14px 16px;}
-#profileSkeleton{padding:14px 16px;}
-.sk-row{display:flex;align-items:center;gap:12px;}
-.sk-avatar{width:50px;height:50px;border-radius:50%;flex-shrink:0;}
-.sk-line{height:14px;}
 
-.profile-card-btn.themed .pcb-name,
-.profile-card-btn.themed .pcb-level-num,
-.profile-card-btn.themed .pcb-level-lbl,
-.profile-card-btn.themed .pcb-xp-label,
-.profile-card-btn.themed .pcb-stat-val,
-.profile-card-btn.themed .pcb-stat-lbl { color:#fff !important; }
-.profile-card-btn.themed .pcb-grade { color:#fde68a !important; }
-.profile-card-btn.themed .pcb-xp-track { background:rgba(255,255,255,0.2) !important; }
-
-.pcb-row { display:flex; align-items:center; gap:14px; }
-.pcb-avatar {
-  width:54px; height:54px; border-radius:50%;
-  overflow:hidden; flex-shrink:0;
-  border:2px solid #e5e7eb;
-}
-.pcb-avatar img { width:100%; height:100%; object-fit:cover; }
-
-.pcb-info { flex:1; min-width:0; }
-.pcb-name {
-  font-family:'Bebas Neue',sans-serif;
-  font-size:20px; letter-spacing:1.5px;
-  color:#1a1a1a; line-height:1;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.pcb-grade { font-size:11px; color:#b8962e; font-weight:700; margin-top:3px; }
-
-.pcb-level-wrap { text-align:center; flex-shrink:0; }
-.pcb-level-num {
-  font-family:'Bebas Neue',sans-serif;
-  font-size:30px; color:#1a1a1a; line-height:1;
-}
-.pcb-level-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
-
-.pcb-xp-wrap { margin-top:10px; }
-.pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
-.pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
-.pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
-
-.profile-card-btn { padding:14px 16px; }
 
 /* ── PAGE CONTENT ── */
 .page-content{
-  padding-top:120px; /* espace sous le header fixe */
+  padding-top:calc(14px + var(--safe-top));
   padding-bottom:calc(20px + var(--safe-bottom));
   min-height:100vh;
 }
@@ -123,40 +72,6 @@ html,body{
 <!-- Bouton retour -->
 <button class="back-btn" onclick="history.back()">←</button>
 
-<!-- HEADER (copie exacte de game.html) -->
-<header class="profile-header">
-  <div id="profileSkeleton">
-    <div class="sk-row">
-      <div class="sk sk-avatar"></div>
-      <div style="flex:1">
-        <div class="sk sk-line" style="width:55%"></div>
-        <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
-      </div>
-      <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
-    </div>
-    <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
-  </div>
-  <div class="profile-card-btn" id="profileCardBtn" style="display:none">
-    <div class="pcb-row">
-      <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
-      <div class="pcb-info">
-        <div class="pcb-name" id="playerName">...</div>
-        <div class="pcb-grade" id="playerGrade"></div>
-      </div>
-      <div class="pcb-level-wrap">
-        <div class="pcb-level-num" id="currentLevel">1</div>
-        <div class="pcb-level-lbl">Niv.</div>
-      </div>
-    </div>
-    <div class="pcb-xp-wrap">
-      <div class="pcb-xp-label">
-        <span id="xpCounter">0 / 500 XP</span>
-        <span>→ Niv. <span id="nextLevel">2</span></span>
-      </div>
-      <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
-    </div>
-  </div>
-</header>
 
 <!-- CONTENU PAGE (vide pour l'instant) -->
 <div class="page-content">
@@ -295,22 +210,7 @@ async function init() {
   const avatar = _SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : avatarForLevel(level);
   document.getElementById('avatarImage').src = avatar;
 
-  // Thème
-  const card = document.getElementById('profileCardBtn');
-  const grad = PROFILE_THEMES[profile.background_color];
-  if (grad) { card.style.background = grad; card.classList.add('themed'); }
 
-  // Remplissage
-  document.getElementById('playerName').textContent   = profile.username;
-  document.getElementById('playerGrade').textContent  = getGrade(level);
-  document.getElementById('currentLevel').textContent = level;
-  document.getElementById('nextLevel').textContent    = level + 1;
-  document.getElementById('xpCounter').textContent    = xp + ' / ' + xpReq + ' XP';
-  document.getElementById('xpFill').style.width       = pct + '%';
-
-  // Afficher
-  document.getElementById('profileSkeleton').style.display = 'none';
-  card.style.display = '';
 
   // Avatar grid
   _uid=uid;
