@@ -95,6 +95,21 @@ html,body{
   -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
 }
 .back-btn:active{ background:#e5e7eb; }
+
+/* AVATAR SELECTOR */
+.section{background:#fff;border-radius:16px;margin:0 12px 12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section-title{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;padding:14px 14px 8px}
+.av-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 14px 14px}
+.av-cell{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative}
+.av-ring{width:64px;height:64px;border-radius:50%;border:2.5px solid #e5e7eb;overflow:hidden;background:#f5f5f5;transition:border-color .15s}
+.av-ring img{width:100%;height:100%;object-fit:contain}
+.av-ring.active{border-color:#b8962e;box-shadow:0 0 0 3px rgba(184,150,46,.15)}
+.av-ring.locked{filter:grayscale(1);opacity:.3}
+.av-check{position:absolute;top:0;right:4px;width:18px;height:18px;border-radius:50%;background:#b8962e;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.av-lock{position:absolute;top:0;right:4px;width:18px;height:18px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:9px}
+.av-lbl{font-size:7px;font-weight:800;color:#9ca3af;text-align:center}
+.av-lbl.active{color:#b8962e}
+
 </style>
 </head>
 <body>
@@ -139,7 +154,10 @@ html,body{
 
 <!-- CONTENU PAGE (vide pour l'instant) -->
 <div class="page-content">
-
+  <div class="section">
+    <div class="section-title">MON AVATAR</div>
+    <div class="av-grid" id="avatarGrid"></div>
+  </div>
 </div>
 
 <script>
@@ -187,6 +205,45 @@ const PROFILE_THEMES = {
   coral:   'linear-gradient(135deg,#be123c,#fb7185)',
 };
 
+const AVATARS=[
+  {src:'avatar-default.png',lbl:'NV.1',min:1},
+  {src:'avatar-level-2.png',lbl:'NV.2',min:2},
+  {src:'avatar-level-3.png',lbl:'NV.3',min:3},
+  {src:'avatar-level-4.png',lbl:'NV.4',min:4},
+  {src:'avatar-level-5.png',lbl:'NV.5',min:5},
+  {src:'avatar-level-10.png',lbl:'NV.10',min:10},
+  {src:'avatar-level-13.png',lbl:'NV.13',min:13},
+  {src:'avatar-level-15.png',lbl:'NV.15',min:15},
+  {src:'avatar-level-17.png',lbl:'NV.17',min:17},
+  {src:'avatar-level-20.png',lbl:'NV.20',min:20},
+  {src:'avatar-level-30.png',lbl:'NV.30',min:30},
+  {src:'avatar-level-50.png',lbl:'NV.50',min:50},
+];
+let _curLvl=1,_curAv='avatar-default.png',_uid=null;
+
+function renderAvatarGrid(lvl,curSrc){
+  _curLvl=lvl;_curAv=curSrc;
+  const g=document.getElementById('avatarGrid');
+  g.innerHTML=AVATARS.map(function(av,i){
+    const ok=lvl>=av.min,active=curSrc===av.src;
+    let h='<div class="av-cell"'+(ok?' onclick="selectAvatar('+i+')"':'')+'>'      +'<div class="av-ring'+(active?' active':'')+(ok?'':' locked')+'">'
+      +'<img src="'+av.src+'" alt="'+av.lbl+'"></div>';
+    if(active)h+='<div class="av-check">v</div>';
+    if(!ok)h+='<div class="av-lock">L</div>';
+    h+='<div class="av-lbl'+(active?' active':'')+'">'+av.lbl+'</div></div>';
+    return h;
+  }).join('');
+}
+
+async function selectAvatar(idx){
+  const av=AVATARS[idx];
+  if(_curLvl<av.min)return;
+  _curAv=av.src;
+  document.getElementById('avatarImage').src=av.src;
+  renderAvatarGrid(_curLvl,av.src);
+  await sb.from('profiles').update({avatar_url:av.src}).eq('user_id',_uid);
+}
+
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'index.html'; return; }
@@ -227,6 +284,10 @@ async function init() {
   // Afficher
   document.getElementById('profileSkeleton').style.display = 'none';
   card.style.display = '';
+
+  // Avatar grid
+  _uid=uid;
+  renderAvatarGrid(level, profile.avatar_url||avatarForLevel(level));
 
   // last_seen
   sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', uid);
