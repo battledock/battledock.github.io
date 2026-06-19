@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1628">
+<script>
+const manifest = {name:"BourseCoach",short_name:"BourseCoach",description:"Ton coach bourse pour débutants",start_url:"./",display:"standalone",background_color:"#0f1628",theme_color:"#0f1628",orientation:"portrait",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230f1628'/%3E%3Ctext x='256' y='300' text-anchor='middle' font-size='260'%3E🚀%3C/text%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
+const blob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+const link = document.createElement('link');
+link.rel = 'manifest';
+link.href = URL.createObjectURL(blob);
+document.head.appendChild(link);
+</script>
+<title>BourseCoach</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f1628;--bg2:#182038;--bg3:#1f2b4a;--bg4:#263356;
+  --green:#22d68a;--green2:#17a86c;--greenbg:#22d68a1a;
+  --red:#f4516c;--redbg:#f4516c1a;
+  --orange:#ffaa2b;--orangebg:#ffaa2b1a;
+  --blue:#5b8def;--bluebg:#5b8def22;
+  --purple:#a78bfa;--purplebg:#a78bfa1a;
+  --text:#edf0f7;--text2:#8b95b0;--text3:#505c7a;
+  --border:#253050;
+  --radius:16px;
+}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden;padding-bottom:80px}
+
+/* Onboarding overlay */
+.onboarding{position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;animation:fadeIn .5s}
+.onb-emoji{font-size:80px;margin-bottom:20px;animation:bounce 1s infinite}
+.onb-title{font-size:26px;font-weight:900;margin-bottom:10px;background:linear-gradient(135deg,var(--green),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.onb-text{font-size:15px;color:var(--text2);line-height:1.6;margin-bottom:30px;max-width:320px}
+.onb-btn{padding:16px 48px;border:none;border-radius:50px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;background:linear-gradient(135deg,var(--green),var(--blue));color:#fff;box-shadow:0 8px 30px #22d68a44}
+.onb-dots{display:flex;gap:8px;margin-top:24px}
+.onb-dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.onb-dot.active{background:var(--green);width:24px;border-radius:4px}
+
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+@keyframes glow{0%,100%{box-shadow:0 0 5px var(--green)44}50%{box-shadow:0 0 20px var(--green)88}}
+
+/* Header */
+.header{padding:16px 16px 14px;background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);position:sticky;top:0;z-index:100}
+.header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.logo{font-size:22px;font-weight:900;display:flex;align-items:center;gap:6px}
+.logo-text{background:linear-gradient(135deg,var(--green),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.level-badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:700;background:var(--purplebg);color:var(--purple);border:1px solid var(--purple)44}
+
+.search-box{position:relative}
+.search-box input{width:100%;padding:12px 14px 12px 40px;background:var(--bg3);border:2px solid var(--border);border-radius:14px;color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;outline:none;transition:border .2s}
+.search-box input:focus{border-color:var(--blue)}
+.search-box input::placeholder{color:var(--text3)}
+.search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:18px}
+.search-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--bg2);border:2px solid var(--border);border-radius:14px;overflow:hidden;z-index:200;display:none;max-height:240px;overflow-y:auto}
+.search-drop.show{display:block}
+.search-item{padding:12px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background .15s}
+.search-item:active{background:var(--bg3)}
+.si-sym{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px}
+.si-name{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* Nav tabs */
+.tabs{display:flex;gap:4px;padding:0 12px;background:var(--bg);position:sticky;top:78px;z-index:99;padding-bottom:8px}
+.tab{flex:1;padding:10px 6px;text-align:center;border-radius:12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;transition:all .2s;background:transparent}
+.tab.active{background:var(--bg3);color:var(--text)}
+.tab-ico{font-size:18px;display:block;margin-bottom:2px}
+
+/* Cards */
+.section{display:none;padding:12px 12px 0}
+.section.active{display:block;animation:slideUp .3s}
+
+.card{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;transition:transform .15s}
+.card:active{transform:scale(0.985)}
+
+/* Stock card */
+.stock-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.stock-sym{font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:700}
+.stock-name{font-size:12px;color:var(--text2);margin-top:2px;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stock-price{text-align:right}
+.stock-price-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700}
+.stock-pct{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;margin-top:2px}
+.up{color:var(--green)}.down{color:var(--red)}
+
+/* Signal traffic light */
+.traffic-light{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;margin-bottom:10px}
+.tl-buy{background:var(--greenbg);border:1.5px solid var(--green)44}
+.tl-sell{background:var(--redbg);border:1.5px solid var(--red)44}
+.tl-hold{background:var(--orangebg);border:1.5px solid var(--orange)44}
+.tl-emoji{font-size:28px}
+.tl-text{flex:1}
+.tl-signal{font-size:15px;font-weight:800}
+.tl-advice{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* Mini indicators */
+.mini-inds{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.mini-ind{background:var(--bg3);border-radius:10px;padding:8px;text-align:center}
+.mi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.mi-value{font-size:15px;font-weight:800;margin-top:3px}
+
+/* Thermometer (RSI) */
+.thermo{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--orange),var(--red));position:relative;margin:8px 0 4px}
+.thermo-dot{position:absolute;top:-5px;width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--bg);transform:translateX(-50%);box-shadow:0 2px 8px #0005}
+.thermo-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);font-weight:600}
+
+/* Detail */
+.detail{display:none;animation:slideUp .3s}
+.detail.show{display:block}
+.detail-head{display:flex;align-items:center;gap:10px;padding:14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.back-btn{background:none;border:none;color:var(--text);font-size:24px;cursor:pointer;padding:4px}
+
+.chart-wrap{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px;margin:12px;overflow:hidden}
+
+.explain-card{background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:10px}
+.explain-title{font-size:13px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.explain-text{font-size:13px;color:var(--text2);line-height:1.5}
+
+/* Météo */
+.meteo{text-align:center;padding:20px}
+.meteo-emoji{font-size:64px;margin-bottom:8px}
+.meteo-label{font-size:20px;font-weight:900}
+.meteo-sub{font-size:13px;color:var(--text2);margin-top:6px;line-height:1.5;max-width:280px;margin-left:auto;margin-right:auto}
+
+/* Badges */
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.badge{padding:8px 14px;border-radius:12px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.badge-locked{background:var(--bg3);color:var(--text3);filter:grayscale(1);opacity:.5}
+.badge-unlocked{background:var(--purplebg);color:var(--purple);border:1px solid var(--purple)44;animation:pulse 2s ease-in-out}
+
+/* Alerts */
+.alert-form{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.form-label{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--text2)}
+.form-row{display:flex;gap:8px;margin-bottom:10px}
+.finput{flex:1;padding:12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:'Nunito',sans-serif;outline:none}
+.finput:focus{border-color:var(--blue)}
+.fselect{padding:12px;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-size:14px;font-family:'Nunito',sans-serif}
+.btn{width:100%;padding:14px;border:none;border-radius:14px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:transform .1s}
+.btn:active{transform:scale(.97)}
+.btn-green{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;box-shadow:0 4px 15px var(--green)33}
+.btn-blue{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 4px 15px var(--blue)33}
+.btn-red{background:transparent;border:1.5px solid var(--red);color:var(--red)}
+
+.alert-item{display:flex;justify-content:space-between;align-items:center;padding:14px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:8px}
+.alert-del{background:none;border:none;color:var(--red);font-size:20px;cursor:pointer}
+
+/* DCA */
+.dca-stat{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.dca-stat:last-child{border:none}
+.dca-stat-l{font-size:14px;color:var(--text2)}
+.dca-stat-v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700}
+
+/* Coach tip */
+.coach-tip{background:linear-gradient(135deg,var(--bluebg),var(--purplebg));border:1.5px solid var(--blue)33;border-radius:var(--radius);padding:16px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start}
+.coach-emoji{font-size:32px;flex-shrink:0}
+.coach-text{font-size:13px;color:var(--text2);line-height:1.6}
+.coach-text strong{color:var(--text);font-weight:700}
+
+/* Popular grid */
+.pop-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.pop-chip{padding:10px 16px;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .2s}
+.pop-chip:active{border-color:var(--green);color:var(--green);background:var(--greenbg)}
+
+/* Empty */
+.empty{text-align:center;padding:40px 20px}
+.empty-ico{font-size:56px;margin-bottom:12px}
+.empty-title{font-size:18px;font-weight:800;margin-bottom:6px}
+.empty-sub{font-size:14px;color:var(--text2);line-height:1.5}
+
+/* Toast */
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-120px);background:var(--bg3);border:1.5px solid var(--border);padding:12px 24px;border-radius:14px;font-size:14px;font-weight:700;z-index:9999;transition:transform .3s cubic-bezier(.175,.885,.32,1.275);display:flex;align-items:center;gap:8px}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Confetti */
+.confetti-piece{position:fixed;top:-20px;width:10px;height:10px;border-radius:2px;z-index:9998;animation:confetti 2s ease-in forwards;pointer-events:none}
+
+/* Loading */
+.loading{text-align:center;padding:30px;color:var(--text3)}
+.spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Screener chips */
+.filter-bar{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.fchip{padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;border:1.5px solid var(--border);background:var(--bg2);color:var(--text3);transition:all .2s;flex-shrink:0}
+.fchip.on{border-color:var(--green);color:var(--green);background:var(--greenbg)}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING -->
+<div class="onboarding" id="onboarding" style="display:none">
+  <div class="onb-emoji" id="onbEmoji">🚀</div>
+  <div class="onb-title" id="onbTitle">Bienvenue sur BourseCoach !</div>
+  <div class="onb-text" id="onbText">Ton assistant perso pour savoir quand acheter ou vendre des actions. Même si t'y connais rien, on t'explique tout simplement.</div>
+  <button class="onb-btn" id="onbBtn" onclick="nextOnb()">C'est parti !</button>
+  <div class="onb-dots" id="onbDots"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- APP -->
+<div id="app">
+  <!-- Header -->
+  <div class="header" id="headerMain">
+    <div class="header-row">
+      <div class="logo">🚀 <span class="logo-text">BourseCoach</span></div>
+      <div class="level-badge" id="levelBadge">🌱 Mousse</div>
+    </div>
+    <div class="search-box">
+      <span class="search-ico">🔍</span>
+      <input id="searchInput" placeholder="Cherche une action (Apple, Tesla...)" autocomplete="off">
+      <div class="search-drop" id="searchDrop"></div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)" id="tab0"><span class="tab-ico">📊</span>Suivi</div>
+    <div class="tab" onclick="switchTab(1)" id="tab1"><span class="tab-ico">🔔</span>Alertes</div>
+    <div class="tab" onclick="switchTab(2)" id="tab2"><span class="tab-ico">🏆</span>Screener</div>
+    <div class="tab" onclick="switchTab(3)" id="tab3"><span class="tab-ico">☀️</span>Météo</div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mainContent">
+    <!-- Tab 0: Watchlist -->
+    <div class="section active" id="sec0">
+      <div class="coach-tip" id="coachTip">
+        <div class="coach-emoji">🧑‍🏫</div>
+        <div class="coach-text"><strong>Le conseil du coach :</strong> Ajoute tes premières actions ci-dessus pour recevoir des signaux simples. Pas besoin d'être un expert, je t'explique tout ! 💪</div>
+      </div>
+      <div id="watchlistBox"></div>
+      <div class="empty" id="emptyWL">
+        <div class="empty-ico">📈</div>
+        <div class="empty-title">Commence ici !</div>
+        <div class="empty-sub">Ajoute des actions pour voir si c'est le bon moment d'acheter ou pas.</div>
+        <div class="pop-grid" style="justify-content:center;margin-top:16px">
+          <div class="pop-chip" onclick="addSymbol('AAPL')">🍎 AAPL</div>
+          <div class="pop-chip" onclick="addSymbol('TSLA')">🚗 TSLA</div>
+          <div class="pop-chip" onclick="addSymbol('MSFT')">💻 MSFT</div>
+          <div class="pop-chip" onclick="addSymbol('NVDA')">🎮 NVDA</div>
+          <div class="pop-chip" onclick="addSymbol('MC.PA')">👜 MC.PA</div>
+          <div class="pop-chip" onclick="addSymbol('GOOGL')">🔍 GOOGL</div>
+          <div class="pop-chip" onclick="addSymbol('AI.PA')">✈️ AI.PA</div>
+          <div class="pop-chip" onclick="addSymbol('BNP.PA')">🏦 BNP.PA</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 1: Alerts -->
+    <div class="section" id="sec1">
+      <div class="coach-tip">
+        <div class="coach-emoji">🔔</div>
+        <div class="coach-text"><strong>C'est quoi une alerte ?</strong> Tu choisis un prix, et on te prévient quand l'action l'atteint. Par exemple : "Préviens-moi si Apple descend sous 180$".</div>
+      </div>
+      <div class="alert-form">
+        <div class="form-label">Créer une alerte</div>
+        <div class="form-row">
+          <input class="finput" id="alertSym" placeholder="Ex: AAPL" style="text-transform:uppercase">
+          <select class="fselect" id="alertType">
+            <option value="above">Monte au-dessus de</option>
+            <option value="below">Descend sous</option>
+          </select>
+        </div>
+        <div class="form-row"><input class="finput" id="alertPrice" placeholder="Prix cible" type="number" step="0.01"></div>
+        <button class="btn btn-green" onclick="addAlert()">🔔 Créer l'alerte</button>
+      </div>
+      <div id="alertsList"></div>
+      <div class="empty" id="emptyAlerts" style="display:none"><div class="empty-ico">🔕</div><div class="empty-title">Pas d'alerte</div><div class="empty-sub">Crée ta première alerte pour ne plus rater une occasion !</div></div>
+    </div>
+
+    <!-- Tab 2: Screener -->
+    <div class="section" id="sec2">
+      <div class="coach-tip">
+        <div class="coach-emoji">🏆</div>
+        <div class="coach-text"><strong>Le screener</strong> trie toutes tes actions par signal. Tu vois d'un coup d'œil lesquelles sont intéressantes en ce moment.</div>
+      </div>
+      <div class="filter-bar">
+        <div class="fchip on" onclick="setFilter(this,'all')">Toutes</div>
+        <div class="fchip" onclick="setFilter(this,'buy')">🟢 Achat</div>
+        <div class="fchip" onclick="setFilter(this,'sell')">🔴 Vente</div>
+        <div class="fchip" onclick="setFilter(this,'hot')">🔥 Survendu</div>
+        <div class="fchip" onclick="setFilter(this,'cold')">🧊 Suracheté</div>
+      </div>
+      <div id="screenerBox"></div>
+    </div>
+
+    <!-- Tab 3: Météo -->
+    <div class="section" id="sec3">
+      <div id="meteoBox"><div class="loading"><div class="spinner"></div>Chargement de la météo...</div></div>
+      
+      <div class="card">
+        <div class="explain-title">🧮 Simulateur d'épargne</div>
+        <div class="explain-text" style="margin-bottom:12px">Si tu investis chaque mois la même somme, voilà ce que ça donne au bout de quelques années :</div>
+        <div class="form-row"><input class="finput" id="dcaAmt" value="200" type="number" placeholder="€ par mois"></div>
+        <div class="form-row">
+          <input class="finput" id="dcaYrs" value="10" type="number" placeholder="Années">
+          <input class="finput" id="dcaRet" value="8" type="number" placeholder="% rendement/an">
+        </div>
+        <button class="btn btn-blue" onclick="simDCA()">Calculer 🚀</button>
+        <div id="dcaResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="explain-title">📖 Mini-glossaire</div>
+        <div class="explain-card">
+          <div class="explain-title">📊 RSI (Relative Strength Index)</div>
+          <div class="explain-text">C'est comme un thermomètre 🌡️ de l'action. En dessous de 30 = trop froid (les gens vendent trop, possible bonne affaire). Au-dessus de 70 = trop chaud (les gens achètent trop, attention).</div>
+        </div>
+        <div class="explain-card">
+          <div class="explain-title">📈 Moyenne mobile (SMA)</div>
+          <div class="explain-text">C'est le prix moyen sur X jours. Si le prix actuel est AU-DESSUS de la moyenne, c'est plutôt bon signe (tendance à la hausse). En dessous = tendance à la baisse.</div>
+        </div>
+        <div class="explain-card">
+          <div class="explain-title">🔀 MACD</div>
+          <div class="explain-text">Ça compare la vitesse de montée récente vs moins récente. Si le MACD est positif, ça accélère à la hausse. Négatif = ça ralentit ou ça baisse.</div>
+        </div>
+        <div class="explain-card">
+          <div class="explain-title">✨ Golden Cross / ☠️ Death Cross</div>
+          <div class="explain-text">Quand la moyenne courte (50j) passe AU-DESSUS de la longue (200j), c'est un "Golden Cross" = signal positif. L'inverse c'est un "Death Cross" = signal négatif.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="explain-title">🏅 Tes badges</div>
+        <div class="badges" id="badgesBox"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL VIEW -->
+  <div class="detail" id="detailView">
+    <div class="detail-head">
+      <button class="back-btn" onclick="closeDetail()">←</button>
+      <div style="flex:1">
+        <div class="stock-sym" id="dSym"></div>
+        <div class="stock-name" id="dName"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="stock-price-val" id="dPrice"></div>
+        <div class="stock-pct" id="dPct"></div>
+      </div>
+    </div>
+    <div style="padding:12px">
+      <!-- Chart -->
+      <div class="chart-wrap"><canvas id="chartCanvas" height="200"></canvas></div>
+
+      <!-- Signal card -->
+      <div id="dSignalCard"></div>
+
+      <!-- Coach explanation -->
+      <div class="coach-tip" id="dCoach"></div>
+
+      <!-- Indicators explained -->
+      <div class="card">
+        <div class="explain-title">🌡️ Thermomètre RSI</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin:6px 0">
+          <span id="dRsiLabel" style="font-size:13px;font-weight:700"></span>
+          <span id="dRsiVal" style="font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700"></span>
+        </div>
+        <div class="thermo"><div class="thermo-dot" id="dRsiDot"></div></div>
+        <div class="thermo-labels"><span>🟢 Bonne affaire ?</span><span>⚪ Normal</span><span>🔴 Trop cher ?</span></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="card">
+          <div class="explain-title">📈 Moy. 50j</div>
+          <div id="dSma50" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:4px"></div>
+          <div id="dSma50Status" style="font-size:12px;font-weight:700;margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="explain-title">📈 Moy. 200j</div>
+          <div id="dSma200" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:4px"></div>
+          <div id="dSma200Status" style="font-size:12px;font-weight:700;margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="explain-title">🔀 MACD</div>
+          <div id="dMacd" style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;margin-top:4px"></div>
+          <div id="dMacdStatus" style="font-size:12px;font-weight:700;margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="explain-title">🔄 Cross</div>
+          <div id="dCross" style="font-size:18px;font-weight:700;margin-top:4px"></div>
+          <div id="dCrossStatus" style="font-size:12px;font-weight:700;margin-top:4px"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-red" onclick="removeSymbol(curDetail);closeDetail()" style="margin-top:8px">Retirer de ma liste</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// ========== STATE ==========
+let watchlist = JSON.parse(localStorage.getItem('bc_wl') || '[]');
+let stocks = {};
+let alerts = JSON.parse(localStorage.getItem('bc_al') || '[]');
+let seen = JSON.parse(localStorage.getItem('bc_seen') || 'false');
+let curDetail = null;
+let chartInst = null;
+let curFilter = 'all';
+
+// ========== ONBOARDING ==========
+const onbSteps = [
+  { emoji:'🚀', title:'Bienvenue sur BourseCoach !', text:"Ton assistant perso pour savoir quand acheter ou vendre. Même si t'y connais rien, je t'explique tout simplement.", btn:'C\'est parti !' },
+  { emoji:'🚦', title:'Des signaux simples', text:"Feu vert = bon moment pour acheter. Feu rouge = plutôt vendre ou attendre. Feu orange = rien de spécial. Simple non ?", btn:'Trop bien !' },
+  { emoji:'🌡️', title:'Des indicateurs expliqués', text:"RSI, moyennes mobiles, MACD... Chaque indicateur est expliqué avec des mots simples. Plus besoin d'être un expert.", btn:'J\'adore !' },
+  { emoji:'🏆', title:'Gagne des badges !', text:"Plus tu suis d'actions, plus tu montes de niveau et tu débloques des badges. Mousse → Matelot → Capitaine → Amiral !", btn:'Go !' },
+];
+let onbStep = 0;
+
+function showOnb() {
+  if (seen) return;
+  const o = document.getElementById('onboarding');
+  o.style.display = '';
+  renderOnbStep();
+}
+function renderOnbStep() {
+  const s = onbSteps[onbStep];
+  document.getElementById('onbEmoji').textContent = s.emoji;
+  document.getElementById('onbTitle').textContent = s.title;
+  document.getElementById('onbText').textContent = s.text;
+  document.getElementById('onbBtn').textContent = s.btn;
+  document.getElementById('onbDots').innerHTML = onbSteps.map((_,i) => `<div class="onb-dot ${i===onbStep?'active':''}"></div>`).join('');
+}
+function nextOnb() {
+  onbStep++;
+  if (onbStep >= onbSteps.length) {
+    document.getElementById('onboarding').style.display = 'none';
+    seen = true; localStorage.setItem('bc_seen','true');
+    return;
+  }
+  renderOnbStep();
+}
+
+// ========== FETCH ==========
+const PX = 'https://corsproxy.io/?url=';
+async function fetchY(sym, range='6mo', interval='1d') {
+  try {
+    const r = await fetch(`${PX}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${sym}?range=${range}&interval=${interval}`)}`);
+    return (await r.json()).chart.result[0];
+  } catch(e) { return null; }
+}
+async function searchY(q) {
+  try {
+    const r = await fetch(`${PX}${encodeURIComponent(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&newsCount=0&quotesCount=8`)}`);
+    return ((await r.json()).quotes || []).filter(x => x.quoteType==='EQUITY'||x.quoteType==='ETF');
+  } catch { return []; }
+}
+
+// ========== INDICATORS ==========
+function sma(d,p){if(d.length<p)return null;return d.slice(-p).reduce((a,b)=>a+b,0)/p}
+function ema(d,p){if(d.length<p)return null;const k=2/(p+1);let e=d.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<d.length;i++)e=d[i]*k+e*(1-k);return e}
+function rsi(c,p=14){if(c.length<p+1)return null;let g=0,l=0;for(let i=c.length-p;i<c.length;i++){const d=c[i]-c[i-1];d>0?g+=d:l-=d}const ag=g/p,al=l/p;return al===0?100:100-100/(1+ag/al)}
+function macd(c){const e12=ema(c,12),e26=ema(c,26);if(!e12||!e26)return{v:null,s:null,h:null};const v=e12-e26;const ml=[];const k1=2/13,k2=2/27;let a=c.slice(0,12).reduce((x,y)=>x+y,0)/12,b=c.slice(0,26).reduce((x,y)=>x+y,0)/26;for(let i=26;i<c.length;i++){a=c[i]*k1+a*(1-k1);b=c[i]*k2+b*(1-k2);ml.push(a-b)}const s=ml.length>=9?ema(ml,9):null;return{v,s,h:s?v-s:null}}
+
+function analyze(data) {
+  if (!data?.indicators?.quote?.[0]?.close) return null;
+  const closes = data.indicators.quote[0].close.filter(c=>c!==null);
+  const ts = data.timestamp;
+  const m = data.meta;
+  if (closes.length < 30) return null;
+  const price = closes[closes.length-1], prev = closes[closes.length-2];
+  const chg = price-prev, pct = (chg/prev)*100;
+  const r = rsi(closes), s20 = sma(closes,20), s50 = sma(closes,50), s200 = sma(closes,200);
+  const mc = macd(closes);
+  let bp=0, sp=0; const reasons=[];
+  if(r!==null){if(r<30){bp+=2;reasons.push('🌡️ RSI froid (<30) = possible bonne affaire')}else if(r<40){bp++;reasons.push('🌡️ RSI plutôt bas')}else if(r>70){sp+=2;reasons.push('🌡️ RSI chaud (>70) = peut-être trop cher')}else if(r>60){sp++;reasons.push('🌡️ RSI plutôt élevé')}}
+  if(s50&&price>s50){bp++;reasons.push('📈 Prix au-dessus de la moyenne 50j = tendance positive')}else if(s50){sp++;reasons.push('📉 Prix sous la moyenne 50j = tendance négative')}
+  if(s200&&price>s200){bp++;reasons.push('📈 Tendance long terme positive (>moy. 200j)')}else if(s200){sp++;reasons.push('📉 Tendance long terme négative (<moy. 200j)')}
+  if(s50&&s200){if(s50>s200){bp++;reasons.push('✨ Golden Cross = signal très positif')}else{sp++;reasons.push('☠️ Death Cross = signal négatif')}}
+  if(mc.h!==null){if(mc.h>0){bp++;reasons.push('🔀 MACD positif = ça accélère à la hausse')}else{sp++;reasons.push('🔀 MACD négatif = ça ralentit')}}
+  const net=bp-sp;
+  let signal, sigType, emoji, advice;
+  if(net>=4){signal='ACHAT FORT';sigType='strongbuy';emoji='🤑';advice="Plusieurs indicateurs sont au vert ! C'est potentiellement un très bon moment."}
+  else if(net>=2){signal='ACHAT';sigType='buy';emoji='😊';advice="La tendance est plutôt positive. Ça peut être un bon moment pour investir."}
+  else if(net<=-4){signal='VENTE FORTE';sigType='strongsell';emoji='😰';advice="Attention, beaucoup de signaux négatifs. Mieux vaut attendre ou vendre."}
+  else if(net<=-2){signal='VENTE';sigType='sell';emoji='😕';advice="La tendance n'est pas top. Prudence recommandée."}
+  else{signal='NEUTRE';sigType='hold';emoji='😐';advice="Pas de signal fort. Tu peux attendre de voir comment ça évolue."}
+
+  const chartData = [];
+  const len = Math.min(closes.length, 90);
+  for(let i=0;i<len;i++){
+    const idx=closes.length-len+i;
+    const dt=ts?.[idx]?new Date(ts[idx]*1000):null;
+    const all=closes.slice(0,idx+1);
+    chartData.push({date:dt?`${dt.getDate()}/${dt.getMonth()+1}`:'',prix:closes[idx],s20:all.length>=20?sma(all,20):null,s50:all.length>=50?sma(all,50):null});
+  }
+  return {symbol:m.symbol,name:m.shortName||m.symbol,currency:m.currency||'USD',price,chg,pct,rsi:r,sma20:s20,sma50:s50,sma200:s200,macd:mc,signal,sigType,emoji,advice,reasons,chartData,bp,sp,hasCross:s50&&s200,crossGold:s50&&s200&&s50>s200};
+}
+
+// ========== UI HELPERS ==========
+const f=(n,d=2)=>n==null?'—':n.toFixed(d);
+function toast(msg,ico='✅'){const t=document.getElementById('toast');t.innerHTML=`${ico} ${msg}`;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+function confetti(){for(let i=0;i<20;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.left=Math.random()*100+'vw';el.style.background=['#22d68a','#5b8def','#a78bfa','#ffaa2b','#f4516c'][Math.floor(Math.random()*5)];el.style.animationDelay=Math.random()+'s';document.body.appendChild(el);setTimeout(()=>el.remove(),2500)}}
+
+function getLevel(){
+  const n=watchlist.length;
+  if(n>=10)return{name:'Amiral',emoji:'🎖️',color:'#ffd740'};
+  if(n>=6)return{name:'Capitaine',emoji:'⚓',color:'#5b8def'};
+  if(n>=3)return{name:'Matelot',emoji:'⛵',color:'#a78bfa'};
+  return{name:'Mousse',emoji:'🌱',color:'#22d68a'};
+}
+
+function updateLevel(){
+  const l=getLevel();
+  document.getElementById('levelBadge').textContent=`${l.emoji} ${l.name}`;
+  document.getElementById('levelBadge').style.color=l.color;
+  document.getElementById('levelBadge').style.borderColor=l.color+'66';
+  document.getElementById('levelBadge').style.background=l.color+'1a';
+}
+
+function getBadges(){
+  const b=[];
+  b.push({ico:'🌱',name:'Premier pas',desc:'Ajouté 1 action',ok:watchlist.length>=1});
+  b.push({ico:'⛵',name:'Matelot',desc:'3 actions suivies',ok:watchlist.length>=3});
+  b.push({ico:'⚓',name:'Capitaine',desc:'6 actions suivies',ok:watchlist.length>=6});
+  b.push({ico:'🎖️',name:'Amiral',desc:'10 actions suivies',ok:watchlist.length>=10});
+  b.push({ico:'🔔',name:'Vigilant',desc:'1 alerte créée',ok:alerts.length>=1});
+  b.push({ico:'🇫🇷',name:'Cocorico',desc:'Action française ajoutée',ok:watchlist.some(s=>s.includes('.PA'))});
+  b.push({ico:'🌍',name:'Globe-trotter',desc:'Action US + FR',ok:watchlist.some(s=>s.includes('.PA'))&&watchlist.some(s=>!s.includes('.'))});
+  const hasBuy=Object.values(stocks).some(d=>d&&d.sigType.includes('buy'));
+  b.push({ico:'🤑',name:'Chasseur',desc:'Trouvé un signal achat',ok:hasBuy});
+  return b;
+}
+
+function renderBadges(){
+  document.getElementById('badgesBox').innerHTML=getBadges().map(b=>`<div class="badge ${b.ok?'badge-unlocked':'badge-locked'}">${b.ico} ${b.name}</div>`).join('');
+}
+
+// ========== TABS ==========
+function switchTab(i){
+  document.querySelectorAll('.section').forEach((s,j)=>s.classList.toggle('active',j===i));
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('mainContent').style.display='';
+  document.getElementById('headerMain').style.display='';
+  if(i===2)renderScreener();
+  if(i===3){loadMeteo();renderBadges();}
+}
+
+// ========== WATCHLIST ==========
+async function addSymbol(sym){
+  sym=sym.toUpperCase().trim();
+  if(!sym)return;
+  if(watchlist.includes(sym)){toast('Déjà dans ta liste','ℹ️');return}
+  watchlist.push(sym);
+  localStorage.setItem('bc_wl',JSON.stringify(watchlist));
+  updateLevel();
+  toast(`${sym} ajouté !`);
+  document.getElementById('searchInput').value='';
+  document.getElementById('searchDrop').classList.remove('show');
+  // Check for new badges
+  const oldBadges=getBadges().filter(b=>b.ok).length;
+  await loadStock(sym);
+  const newBadges=getBadges().filter(b=>b.ok).length;
+  if(newBadges>oldBadges)confetti();
+  renderWL();
+}
+
+function removeSymbol(sym){
+  watchlist=watchlist.filter(s=>s!==sym);
+  localStorage.setItem('bc_wl',JSON.stringify(watchlist));
+  delete stocks[sym];
+  updateLevel();
+  renderWL();
+  toast(`${sym} retiré`,'🗑️');
+}
+
+async function loadStock(sym){
+  const data=await fetchY(sym);
+  if(data){const a=analyze(data);if(a)stocks[sym]=a}
+}
+
+async function loadAll(){
+  if(!watchlist.length){renderWL();return}
+  document.getElementById('watchlistBox').innerHTML='<div class="loading"><div class="spinner"></div>Chargement...</div>';
+  await Promise.all(watchlist.map(s=>loadStock(s)));
+  renderWL();
+}
+
+function sigStyle(t){
+  if(t==='strongbuy'||t==='buy')return{cl:'tl-buy',bg:'var(--greenbg)',border:'var(--green)'};
+  if(t==='strongsell'||t==='sell')return{cl:'tl-sell',bg:'var(--redbg)',border:'var(--red)'};
+  return{cl:'tl-hold',bg:'var(--orangebg)',border:'var(--orange)'};
+}
+
+function renderWL(){
+  const box=document.getElementById('watchlistBox');
+  const emp=document.getElementById('emptyWL');
+  if(!watchlist.length){emp.style.display='';box.innerHTML='';return}
+  emp.style.display='none';
+  
+  // Update coach tip
+  const buyCount=Object.values(stocks).filter(d=>d&&d.sigType.includes('buy')).length;
+  const tip=document.getElementById('coachTip');
+  if(buyCount>0)tip.querySelector('.coach-text').innerHTML=`<strong>Le coach :</strong> ${buyCount} action(s) avec signal d'achat ! 🟢 Clique dessus pour comprendre pourquoi.`;
+  else if(Object.keys(stocks).length>0)tip.querySelector('.coach-text').innerHTML=`<strong>Le coach :</strong> Pas de signal fort en ce moment. La patience est la clé ! ⏳`;
+
+  box.innerHTML=watchlist.map(sym=>{
+    const d=stocks[sym];
+    if(!d)return`<div class="card"><div class="stock-sym">${sym}</div><div style="color:var(--text3);font-size:13px;margin-top:4px">Chargement...</div></div>`;
+    const ss=sigStyle(d.sigType);
+    return`
+    <div class="card" onclick="openDetail('${sym}')">
+      <div class="stock-top">
+        <div><div class="stock-sym">${d.symbol}</div><div class="stock-name">${d.name}</div></div>
+        <div class="stock-price">
+          <div class="stock-price-val">${f(d.price)}</div>
+          <div class="stock-pct ${d.pct>=0?'up':'down'}">${d.pct>=0?'+':''}${f(d.pct)}%</div>
+        </div>
+      </div>
+      <div class="traffic-light ${ss.cl}">
+        <div class="tl-emoji">${d.emoji}</div>
+        <div class="tl-text">
+          <div class="tl-signal">${d.signal}</div>
+          <div class="tl-advice">${d.advice.substring(0,60)}...</div>
+        </div>
+      </div>
+      <div class="mini-inds">
+        <div class="mini-ind"><div class="mi-label">Thermo</div><div class="mi-value" style="color:${d.rsi<30?'var(--green)':d.rsi>70?'var(--red)':'var(--orange)'}">${f(d.rsi,0)}</div></div>
+        <div class="mini-ind"><div class="mi-label">Moy. 50j</div><div class="mi-value ${d.sma50&&d.price>d.sma50?'up':'down'}">${d.sma50?(d.price>d.sma50?'👍':'👎'):'—'}</div></div>
+        <div class="mini-ind"><div class="mi-label">MACD</div><div class="mi-value ${d.macd?.h>0?'up':'down'}">${d.macd?.h>0?'🚀':d.macd?.h<0?'📉':'—'}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ========== DETAIL ==========
+function openDetail(sym){
+  curDetail=sym;
+  const d=stocks[sym];
+  if(!d)return;
+  document.getElementById('mainContent').style.display='none';
+  document.getElementById('headerMain').style.display='none';
+  const dv=document.getElementById('detailView');
+  dv.classList.add('show');
+  document.getElementById('dSym').textContent=d.symbol;
+  document.getElementById('dName').textContent=d.name;
+  document.getElementById('dPrice').textContent=f(d.price);
+  const pctEl=document.getElementById('dPct');
+  pctEl.textContent=`${d.pct>=0?'+':''}${f(d.pct)}%`;
+  pctEl.className=`stock-pct ${d.pct>=0?'up':'down'}`;
+
+  // Signal card
+  const ss=sigStyle(d.sigType);
+  document.getElementById('dSignalCard').innerHTML=`
+    <div class="traffic-light ${ss.cl}" style="flex-direction:column;text-align:center;padding:20px;margin:0 0 12px">
+      <div style="font-size:48px;margin-bottom:8px">${d.emoji}</div>
+      <div style="font-size:22px;font-weight:900">${d.signal}</div>
+      <div style="font-size:14px;color:var(--text2);margin-top:6px">${d.advice}</div>
+    </div>`;
+
+  // Coach explanation
+  document.getElementById('dCoach').innerHTML=`
+    <div class="coach-emoji">🧑‍🏫</div>
+    <div class="coach-text"><strong>Pourquoi ce signal ?</strong><br>${d.reasons.map(r=>`• ${r}`).join('<br>')}</div>`;
+
+  // RSI
+  const rVal=d.rsi;
+  document.getElementById('dRsiVal').textContent=f(rVal,1);
+  document.getElementById('dRsiVal').style.color=rVal<30?'var(--green)':rVal>70?'var(--red)':'var(--orange)';
+  document.getElementById('dRsiLabel').textContent=rVal<30?'🟢 Zone froide (bonne affaire ?)':rVal>70?'🔴 Zone chaude (trop cher ?)':'⚪ Zone normale';
+  document.getElementById('dRsiLabel').style.color=rVal<30?'var(--green)':rVal>70?'var(--red)':'var(--orange)';
+  document.getElementById('dRsiDot').style.left=`${Math.min(98,Math.max(2,rVal||50))}%`;
+
+  // SMA
+  document.getElementById('dSma50').textContent=d.sma50?f(d.sma50):'—';
+  const s50up=d.sma50&&d.price>d.sma50;
+  document.getElementById('dSma50Status').innerHTML=d.sma50?`<span class="${s50up?'up':'down'}">${s50up?'👍 Au-dessus':'👎 En-dessous'}</span>`:'';
+  document.getElementById('dSma200').textContent=d.sma200?f(d.sma200):'Pas assez de données';
+  document.getElementById('dSma200').style.fontSize=d.sma200?'18px':'11px';
+  const s200up=d.sma200&&d.price>d.sma200;
+  document.getElementById('dSma200Status').innerHTML=d.sma200?`<span class="${s200up?'up':'down'}">${s200up?'👍 Au-dessus':'👎 En-dessous'}</span>`:'';
+
+  // MACD
+  document.getElementById('dMacd').textContent=f(d.macd?.v,3);
+  document.getElementById('dMacd').style.color=d.macd?.h>0?'var(--green)':'var(--red)';
+  document.getElementById('dMacdStatus').innerHTML=d.macd?.h>0?'<span class="up">🚀 Positif</span>':'<span class="down">📉 Négatif</span>';
+
+  // Cross
+  if(d.hasCross){
+    document.getElementById('dCross').textContent=d.crossGold?'✨':'☠️';
+    document.getElementById('dCrossStatus').innerHTML=d.crossGold?'<span class="up">Golden Cross</span>':'<span class="down">Death Cross</span>';
+  } else {
+    document.getElementById('dCross').textContent='—';
+    document.getElementById('dCrossStatus').textContent='Données insuf.';
+  }
+
+  drawChart(d);
+}
+
+function closeDetail(){
+  document.getElementById('detailView').classList.remove('show');
+  document.getElementById('mainContent').style.display='';
+  document.getElementById('headerMain').style.display='';
+}
+
+function drawChart(d){
+  const ctx=document.getElementById('chartCanvas').getContext('2d');
+  if(chartInst)chartInst.destroy();
+  chartInst=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:d.chartData.map(x=>x.date),
+      datasets:[
+        {label:'Prix',data:d.chartData.map(x=>x.prix),borderColor:'#5b8def',borderWidth:2.5,pointRadius:0,fill:false,tension:.1},
+        {label:'Moy. 20j',data:d.chartData.map(x=>x.s20),borderColor:'#ffaa2b',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[4,4],tension:.1},
+        {label:'Moy. 50j',data:d.chartData.map(x=>x.s50),borderColor:'#f4516c',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[4,4],tension:.1},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{color:'#8b95b0',font:{size:10,family:'Nunito'},boxWidth:10}}},
+      scales:{
+        x:{display:true,ticks:{color:'#505c7a',maxTicksLimit:5,font:{size:9,family:'Nunito'}},grid:{color:'#253050'}},
+        y:{display:true,ticks:{color:'#505c7a',font:{size:10,family:'JetBrains Mono'}},grid:{color:'#25305044'}}
+      },
+      interaction:{intersect:false,mode:'index'}
+    }
+  });
+}
+
+// ========== SEARCH ==========
+let sTimer;
+const sInput=document.getElementById('searchInput');
+const sDrop=document.getElementById('searchDrop');
+sInput.addEventListener('input',()=>{
+  clearTimeout(sTimer);
+  const q=sInput.value.trim();
+  if(q.length<1){sDrop.classList.remove('show');return}
+  sTimer=setTimeout(async()=>{
+    const r=await searchY(q);
+    if(!r.length){sDrop.innerHTML='<div class="search-item" style="color:var(--text3)">Aucun résultat</div>'}
+    else{sDrop.innerHTML=r.map(x=>`<div class="search-item" onclick="addSymbol('${x.symbol}')"><div><div class="si-sym">${x.symbol}</div><div class="si-name">${x.shortname||''}</div></div><div style="font-size:11px;color:var(--text3)">${x.exchange||''}</div></div>`).join('')}
+    sDrop.classList.add('show');
+  },350);
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.search-box'))sDrop.classList.remove('show')});
+
+// ========== ALERTS ==========
+function addAlert(){
+  const sym=document.getElementById('alertSym').value.toUpperCase().trim();
+  const type=document.getElementById('alertType').value;
+  const price=parseFloat(document.getElementById('alertPrice').value);
+  if(!sym||!price){toast('Remplis tout !','⚠️');return}
+  alerts.push({sym,type,price,id:Date.now(),triggered:false});
+  localStorage.setItem('bc_al',JSON.stringify(alerts));
+  document.getElementById('alertSym').value='';
+  document.getElementById('alertPrice').value='';
+  renderAlerts();
+  toast('Alerte créée !','🔔');
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
+}
+function delAlert(id){alerts=alerts.filter(a=>a.id!==id);localStorage.setItem('bc_al',JSON.stringify(alerts));renderAlerts()}
+function renderAlerts(){
+  const box=document.getElementById('alertsList');
+  const emp=document.getElementById('emptyAlerts');
+  if(!alerts.length){emp.style.display='';box.innerHTML='';return}
+  emp.style.display='none';
+  box.innerHTML=alerts.map(a=>`
+    <div class="alert-item" style="opacity:${a.triggered?.5:1}">
+      <div><div style="font-family:'JetBrains Mono',monospace;font-weight:700">${a.sym}</div>
+      <div style="font-size:12px;color:var(--text2)">${a.type==='above'?'📈 Monte au-dessus de':'📉 Descend sous'} ${a.price} ${a.triggered?'✅ Déclenchée':''}</div></div>
+      <button class="alert-del" onclick="event.stopPropagation();delAlert(${a.id})">✕</button>
+    </div>`).join('');
+}
+function checkAlerts(){
+  alerts.forEach(a=>{
+    if(a.triggered)return;
+    const d=stocks[a.sym];if(!d)return;
+    const ok=(a.type==='above'&&d.price>=a.price)||(a.type==='below'&&d.price<=a.price);
+    if(ok){
+      a.triggered=true;localStorage.setItem('bc_al',JSON.stringify(alerts));
+      const msg=`${a.sym} a ${a.type==='above'?'dépassé':'chuté sous'} ${a.price} !`;
+      toast(msg,'🚨');confetti();
+      if('Notification' in window&&Notification.permission==='granted')new Notification('BourseCoach',{body:msg});
+    }
+  });
+  renderAlerts();
+}
+
+// ========== SCREENER ==========
+function setFilter(el,f){
+  curFilter=f;
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  renderScreener();
+}
+function renderScreener(){
+  let list=Object.values(stocks).filter(d=>d);
+  if(curFilter==='buy')list=list.filter(d=>d.sigType.includes('buy'));
+  if(curFilter==='sell')list=list.filter(d=>d.sigType.includes('sell'));
+  if(curFilter==='hot')list=list.filter(d=>d.rsi!=null&&d.rsi<30);
+  if(curFilter==='cold')list=list.filter(d=>d.rsi!=null&&d.rsi>70);
+  list.sort((a,b)=>(b.bp-b.sp)-(a.bp-a.sp));
+  const box=document.getElementById('screenerBox');
+  if(!list.length){box.innerHTML='<div class="empty"><div class="empty-ico">🔍</div><div class="empty-title">Rien trouvé</div><div class="empty-sub">Ajoute plus d\'actions pour voir des résultats ici.</div></div>';return}
+  box.innerHTML=list.map(d=>{
+    const ss=sigStyle(d.sigType);
+    return`<div class="card" onclick="switchTab(0);openDetail('${d.symbol}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><div class="stock-sym">${d.symbol}</div><div class="stock-name">${d.name}</div></div>
+        <div class="traffic-light ${ss.cl}" style="margin:0;padding:6px 12px"><span style="font-size:18px">${d.emoji}</span> <span style="font-size:13px;font-weight:800">${d.signal}</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:13px">
+        <span style="color:var(--text2)">🌡️ ${f(d.rsi,0)}</span>
+        <span class="${d.pct>=0?'up':'down'}" style="font-weight:700">${d.pct>=0?'+':''}${f(d.pct)}%</span>
+        <span style="color:var(--text2)">${f(d.price)} ${d.currency}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ========== MÉTÉO ==========
+async function loadMeteo(){
+  const box=document.getElementById('meteoBox');
+  if(box.dataset.loaded)return;
+  const data=await fetchY('^VIX','1mo','1d');
+  if(!data?.indicators?.quote?.[0]?.close){box.innerHTML='<div class="card"><div style="color:var(--text3)">Indisponible</div></div>';return}
+  const c=data.indicators.quote[0].close.filter(v=>v!=null);
+  const v=c[c.length-1];
+  let emoji,label,color,advice;
+  if(v<15){emoji='☀️';label='Grand beau';color='var(--green)';advice="Le marché est calme et confiant. Bon moment pour investir tranquillement."}
+  else if(v<20){emoji='⛅';label='Quelques nuages';color='var(--orange)';advice="Volatilité normale. Continue tes investissements réguliers."}
+  else if(v<30){emoji='🌧️';label='Temps orageux';color='#ff9800';advice="Le marché est nerveux. Les prix baissent souvent = possible bonne affaire !"}
+  else{emoji='⛈️';label='Tempête !';color='var(--red)';advice="Panique sur les marchés. Historiquement, c'est souvent LE meilleur moment pour acheter... si tu as les nerfs solides !"}
+  box.innerHTML=`
+    <div class="card">
+      <div class="meteo">
+        <div class="meteo-emoji">${emoji}</div>
+        <div class="meteo-label" style="color:${color}">${label}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text3);margin-top:4px">VIX : ${f(v,1)}</div>
+        <div class="meteo-sub">${advice}</div>
+      </div>
+    </div>
+    <div class="coach-tip">
+      <div class="coach-emoji">💡</div>
+      <div class="coach-text"><strong>C'est quoi le VIX ?</strong> C'est "l'indice de la peur" des marchés. Plus il est haut, plus les investisseurs ont peur. Paradoxalement, quand tout le monde a peur, les prix sont bas = opportunité !</div>
+    </div>`;
+  box.dataset.loaded='1';
+}
+
+function simDCA(){
+  const m=+document.getElementById('dcaAmt').value||200;
+  const y=+document.getElementById('dcaYrs').value||10;
+  const r=(+document.getElementById('dcaRet').value||8)/100;
+  const mr=Math.pow(1+r,1/12)-1;
+  let t=0;const inv=m*y*12;
+  for(let i=0;i<y*12;i++)t=(t+m)*(1+mr);
+  const g=t-inv;
+  document.getElementById('dcaResult').innerHTML=`
+    <div style="background:var(--bg3);border-radius:12px;padding:14px;margin-top:12px">
+      <div class="dca-stat"><span class="dca-stat-l">💰 Investi au total</span><span class="dca-stat-v">${inv.toLocaleString('fr-FR')} €</span></div>
+      <div class="dca-stat"><span class="dca-stat-l">📈 Valeur finale</span><span class="dca-stat-v up">${Math.round(t).toLocaleString('fr-FR')} €</span></div>
+      <div class="dca-stat"><span class="dca-stat-l">🎉 Plus-values</span><span class="dca-stat-v up">+${Math.round(g).toLocaleString('fr-FR')} €</span></div>
+      <div class="dca-stat"><span class="dca-stat-l">📊 Rendement</span><span class="dca-stat-v up">+${((g/inv)*100).toFixed(1)}%</span></div>
+    </div>`;
+}
+
+// ========== INIT ==========
+showOnb();
+updateLevel();
+renderAlerts();
+loadAll().then(()=>{checkAlerts();renderBadges()});
+setInterval(()=>{loadAll().then(checkAlerts)},120000);
+if('serviceWorker' in navigator){
+const swCode=`const C='boursecoach-v2';self.addEventListener('install',e=>{self.skipWaiting()});self.addEventListener('activate',e=>{});self.addEventListener('fetch',e=>{})`;
+const swBlob=new Blob([swCode],{type:'application/javascript'});
+navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{})}
+</script>
+</body>
+</html>
