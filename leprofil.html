@@ -99,16 +99,22 @@ html,body{
 /* AVATAR SELECTOR */
 .section{background:#fff;border-radius:16px;margin:0 12px 12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
 .section-title{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;padding:14px 14px 8px}
-.av-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:0 14px 14px}
-.av-cell{display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;position:relative}
-.av-ring{width:64px;height:64px;border-radius:50%;border:2.5px solid #e5e7eb;overflow:hidden;background:#f5f5f5;transition:border-color .15s}
-.av-ring img{width:100%;height:100%;object-fit:contain}
-.av-ring.active{border-color:#b8962e;box-shadow:0 0 0 3px rgba(184,150,46,.15)}
-.av-ring.locked{filter:grayscale(1);opacity:.3}
-.av-check{position:absolute;top:0;right:4px;width:18px;height:18px;border-radius:50%;background:#b8962e;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
-.av-lock{position:absolute;top:0;right:4px;width:18px;height:18px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:9px}
-.av-lbl{font-size:7px;font-weight:800;color:#9ca3af;text-align:center}
-.av-lbl.active{color:#b8962e}
+@keyframes avPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.av-slot-wrap{display:flex;align-items:center;gap:16px;padding:0 14px 14px}
+.av-slot{width:72px;height:72px;border-radius:20px;overflow:hidden;background:#f5f5f5;border:3px solid #b8962e;flex-shrink:0;box-shadow:0 4px 12px rgba(184,150,46,.2);animation:avPulse 2.5s ease-in-out infinite}
+.av-slot img{width:100%;height:100%;object-fit:contain}
+.av-slot-info{flex:1;min-width:0}
+.av-slot-name{font-family:'Bebas Neue',sans-serif;font-size:17px;color:#1a1a1a;letter-spacing:1px;line-height:1}
+.av-slot-sub{font-size:8px;font-weight:700;color:#b8962e;margin-top:3px}
+.av-progress{display:flex;gap:3px;margin-top:8px}
+.av-prog-dot{height:4px;flex:1;border-radius:2px;background:#e5e7eb}
+.av-prog-dot.done{background:#b8962e}
+.av-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 14px 14px}
+.av-scroll::-webkit-scrollbar{display:none}
+.av-thumb{flex-shrink:0;width:46px;height:46px;border-radius:12px;overflow:hidden;background:#f5f5f5;border:2.5px solid #e5e7eb;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
+.av-thumb img{width:100%;height:100%;object-fit:contain}
+.av-thumb.active{border-color:#b8962e;box-shadow:0 0 0 2px rgba(184,150,46,.15)}
+.av-thumb.locked{filter:grayscale(1);opacity:.35;cursor:default;font-size:18px}
 
 </style>
 </head>
@@ -156,7 +162,15 @@ html,body{
 <div class="page-content">
   <div class="section">
     <div class="section-title">MON AVATAR</div>
-    <div class="av-grid" id="avatarGrid"></div>
+    <div class="av-slot-wrap">
+      <div class="av-slot" id="avSlotImg"><img src="avatar-default.png" id="avSlotSrc" alt=""></div>
+      <div class="av-slot-info">
+        <div class="av-slot-name" id="avSlotName">DOCKER</div>
+        <div class="av-slot-sub" id="avSlotSub">Niveau 1 · Actif</div>
+        <div class="av-progress" id="avProgress"></div>
+      </div>
+    </div>
+    <div class="av-scroll" id="avatarGrid"></div>
   </div>
 </div>
 
@@ -223,15 +237,28 @@ let _curLvl=1,_curAv='avatar-default.png',_uid=null;
 
 function renderAvatarGrid(lvl,curSrc){
   _curLvl=lvl;_curAv=curSrc;
+  const unlocked=AVATARS.filter(function(av){return lvl>=av.min;});
+  const active=AVATARS.find(function(av){return av.src===curSrc;})||AVATARS[0];
+
+  // Slot principal
+  document.getElementById('avSlotSrc').src=active.src;
+  document.getElementById('avSlotName').textContent='DOCKER NV.'+active.min;
+  document.getElementById('avSlotSub').textContent='Niveau '+active.min+' · '+unlocked.length+'/'+AVATARS.length+' débloqués';
+
+  // Barre progression
+  const prog=document.getElementById('avProgress');
+  prog.innerHTML=AVATARS.map(function(av){
+    return '<div class="av-prog-dot'+(lvl>=av.min?' done':'')+'"></div>';
+  }).join('');
+
+  // Scroll thumbnails
   const g=document.getElementById('avatarGrid');
   g.innerHTML=AVATARS.map(function(av,i){
-    const ok=lvl>=av.min,active=curSrc===av.src;
-    let h='<div class="av-cell"'+(ok?' onclick="selectAvatar('+i+')"':'')+'>'      +'<div class="av-ring'+(active?' active':'')+(ok?'':' locked')+'">'
-      +'<img src="'+av.src+'" alt="'+av.lbl+'"></div>';
-    if(active)h+='<div class="av-check">v</div>';
-    if(!ok)h+='<div class="av-lock">L</div>';
-    h+='<div class="av-lbl'+(active?' active':'')+'">'+av.lbl+'</div></div>';
-    return h;
+    const ok=lvl>=av.min,sel=curSrc===av.src;
+    if(ok){
+      return '<div class="av-thumb'+(sel?' active':'')+'" onclick="selectAvatar('+i+')"><img src="'+av.src+'" alt="'+av.lbl+'"></div>';
+    }
+    return '<div class="av-thumb locked">🔒</div>';
   }).join('');
 }
 
