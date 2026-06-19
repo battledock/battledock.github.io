@@ -29,7 +29,7 @@ html,body{
 
 /* ── PAGE CONTENT ── */
 .page-content{
-  padding-top:calc(14px + var(--safe-top));
+  padding-top:14px;
   padding-bottom:calc(20px + var(--safe-bottom));
   min-height:100vh;
 }
@@ -56,6 +56,15 @@ html,body{
 .av-thumb-lbl{font-size:7px;font-weight:800;color:#9ca3af}
 .av-thumb-lbl.active{color:#1a1a1a}
 
+
+
+/* BANNIÈRE */
+.banner{width:100%;height:120px;position:relative;overflow:hidden;flex-shrink:0}
+.banner-bg{position:absolute;inset:0;background:linear-gradient(120deg,#000,#1a1a2e)}
+.banner-av{position:absolute;bottom:0;right:16px;height:100px;width:100px;object-fit:contain}
+.banner-info{position:absolute;bottom:14px;left:16px}
+.banner-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+.banner-grade{font-size:8px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:2px;margin-top:3px}
 
 </style>
 </head>
@@ -121,6 +130,38 @@ const PROFILE_THEMES = {
   coral:   'linear-gradient(135deg,#be123c,#fb7185)',
 };
 
+
+var BANNERS = [
+  {min:1,  bg:'linear-gradient(120deg,#000 0%,#1a1a2e 50%,#2d2d44 100%)',  dark:false},
+  {min:2,  bg:'linear-gradient(120deg,#a8f0e4 0%,#c8f5ee 50%,#e0faf6 100%)', dark:true},
+  {min:3,  bg:'linear-gradient(120deg,#1a9e88 0%,#5de8c8 60%,#80f0d8 100%)', dark:false},
+  {min:4,  bg:'linear-gradient(120deg,#5aa8d8 0%,#b3d9f5 60%,#d4ecff 100%)', dark:false},
+  {min:5,  bg:'linear-gradient(120deg,#90b8d8 0%,#b8d4f0 50%,#e8f4ff 100%)', dark:true},
+  {min:10, bg:'linear-gradient(120deg,#2d8a50 0%,#5ab878 50%,#8fdc9e 100%)', dark:false},
+  {min:13, bg:'linear-gradient(120deg,#3a7a4a 0%,#5aaa6a 50%,#7dcb8a 100%)', dark:false},
+  {min:15, bg:'linear-gradient(120deg,#e0708a 0%,#f598b0 50%,#ffb8cc 100%)', dark:false},
+  {min:17, bg:'linear-gradient(120deg,#d0507a 0%,#f07898 50%,#ff9ab5 100%)', dark:false},
+  {min:20, bg:'linear-gradient(120deg,#cc4030 0%,#f06050 50%,#ff8070 100%)', dark:false},
+  {min:30, bg:'linear-gradient(120deg,#7050b8 0%,#9878d8 50%,#c8b0f0 100%)', dark:false},
+  {min:50, bg:'linear-gradient(120deg,#c8900a 0%,#e8b830 50%,#fad878 100%)', dark:false},
+];
+
+function getBanner(lvl){
+  var b=BANNERS[0];
+  for(var i=0;i<BANNERS.length;i++){if(lvl>=BANNERS[i].min)b=BANNERS[i];}
+  return b;
+}
+
+function renderBanner(lvl, username, grade, avatarSrc){
+  var b=getBanner(lvl);
+  document.getElementById('bannerBg').style.background=b.bg;
+  document.getElementById('bannerAv').src=avatarSrc||'avatar-default.png';
+  document.getElementById('bannerName').textContent=(username||'—').toUpperCase();
+  document.getElementById('bannerName').style.color=b.dark?'#1a1a1a':'#fff';
+  document.getElementById('bannerGrade').textContent=grade.toUpperCase()+' · NV.'+lvl;
+  document.getElementById('bannerGrade').style.color=b.dark?'rgba(0,0,0,.4)':'rgba(255,255,255,.55)';
+}
+
 const AVATARS=[
   {src:'avatar-default.png',lbl:'NV.1',min:1},
   {src:'avatar-level-2.png',lbl:'NV.2',min:2},
@@ -165,6 +206,7 @@ async function selectAvatar(idx){
   if(_curLvl<av.min)return;
   _curAv=av.src;
   if(document.getElementById('avBigImg'))document.getElementById('avBigImg').src=av.src;
+  if(document.getElementById('bannerAv'))document.getElementById('bannerAv').src=av.src;
   renderAvatarGrid(_curLvl,av.src);
   await sb.from('profiles').update({avatar_url:av.src}).eq('user_id',_uid);
 }
@@ -195,6 +237,7 @@ async function init() {
 
   // Avatar grid
   _uid=uid;
+  renderBanner(level, profile.username, getGrade(level), profile.avatar_url||avatarForLevel(level));
   renderAvatarGrid(level, profile.avatar_url || avatarForLevel(level));
 
   // last_seen
