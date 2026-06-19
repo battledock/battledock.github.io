@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Mon Profil — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  font-family:'Inter',sans-serif;
+  background:#f3f4f6;
+  min-height:100vh;
+  -webkit-user-select:none;user-select:none;
+}
+
+:root{
+  --ink:#1a1a1a;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* ── SKELETON ── */
+@keyframes skShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.sk{border-radius:8px;background:linear-gradient(90deg,#e8e0cc 25%,#f0ead8 50%,#e8e0cc 75%);background-size:200% 100%;animation:skShimmer 1.4s ease-in-out infinite;}
+
+/* ── HEADER (identique game.html) ── */
+.profile-header{
+  position:fixed;top:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:600px;z-index:200;
+  padding-top:var(--safe-top);
+  background:#fff;
+}
+.profile-header-inner{padding:14px 16px;}
+#profileSkeleton{padding:14px 16px;}
+.sk-row{display:flex;align-items:center;gap:12px;}
+.sk-avatar{width:50px;height:50px;border-radius:50%;flex-shrink:0;}
+.sk-line{height:14px;}
+
+.profile-card-btn.themed .pcb-name,
+.profile-card-btn.themed .pcb-level-num,
+.profile-card-btn.themed .pcb-level-lbl,
+.profile-card-btn.themed .pcb-xp-label,
+.profile-card-btn.themed .pcb-stat-val,
+.profile-card-btn.themed .pcb-stat-lbl { color:#fff !important; }
+.profile-card-btn.themed .pcb-grade { color:#fde68a !important; }
+.profile-card-btn.themed .pcb-xp-track { background:rgba(255,255,255,0.2) !important; }
+
+.pcb-row { display:flex; align-items:center; gap:14px; }
+.pcb-avatar {
+  width:54px; height:54px; border-radius:50%;
+  overflow:hidden; flex-shrink:0;
+  border:2px solid #e5e7eb;
+}
+.pcb-avatar img { width:100%; height:100%; object-fit:cover; }
+
+.pcb-info { flex:1; min-width:0; }
+.pcb-name {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:20px; letter-spacing:1.5px;
+  color:#1a1a1a; line-height:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.pcb-grade { font-size:11px; color:#b8962e; font-weight:700; margin-top:3px; }
+
+.pcb-level-wrap { text-align:center; flex-shrink:0; }
+.pcb-level-num {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:30px; color:#1a1a1a; line-height:1;
+}
+.pcb-level-lbl { font-size:9px; color:#9ca3af; text-transform:uppercase; letter-spacing:1px; font-weight:700; }
+
+.pcb-xp-wrap { margin-top:10px; }
+.pcb-xp-label { display:flex; justify-content:space-between; font-size:10px; color:#9ca3af; margin-bottom:4px; font-weight:600; }
+.pcb-xp-track { height:3px; background:#f3f4f6; border-radius:2px; overflow:hidden; }
+.pcb-xp-fill  { height:100%; background:linear-gradient(90deg,#b8962e,#d4af37,#f5d060); border-radius:2px; transition:width 0.5s ease; }
+
+.profile-card-btn { padding:14px 16px; }
+
+/* ── PAGE CONTENT ── */
+.page-content{
+  padding-top:120px; /* espace sous le header fixe */
+  padding-bottom:calc(20px + var(--safe-bottom));
+  min-height:100vh;
+}
+
+/* ── BACK BUTTON ── */
+.back-btn{
+  position:fixed; top:var(--safe-top); left:8px; z-index:300;
+  width:36px; height:36px; margin-top:14px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(243,244,246,0.9); border-radius:50%;
+  font-size:18px; cursor:pointer; border:none;
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+}
+.back-btn:active{ background:#e5e7eb; }
+</style>
+</head>
+<body>
+
+<!-- Bouton retour -->
+<button class="back-btn" onclick="history.back()">←</button>
+
+<!-- HEADER (copie exacte de game.html) -->
+<header class="profile-header">
+  <div id="profileSkeleton">
+    <div class="sk-row">
+      <div class="sk sk-avatar"></div>
+      <div style="flex:1">
+        <div class="sk sk-line" style="width:55%"></div>
+        <div class="sk sk-line" style="width:35%;margin-top:8px;height:10px"></div>
+      </div>
+      <div class="sk" style="width:34px;height:34px;border-radius:10px"></div>
+    </div>
+    <div class="sk sk-line" style="width:100%;height:8px;margin-top:16px"></div>
+  </div>
+  <div class="profile-card-btn" id="profileCardBtn" style="display:none">
+    <div class="pcb-row">
+      <div class="pcb-avatar"><img src="avatar-default.png" id="avatarImage" alt="avatar"></div>
+      <div class="pcb-info">
+        <div class="pcb-name" id="playerName">...</div>
+        <div class="pcb-grade" id="playerGrade"></div>
+      </div>
+      <div class="pcb-level-wrap">
+        <div class="pcb-level-num" id="currentLevel">1</div>
+        <div class="pcb-level-lbl">Niv.</div>
+      </div>
+    </div>
+    <div class="pcb-xp-wrap">
+      <div class="pcb-xp-label">
+        <span id="xpCounter">0 / 500 XP</span>
+        <span>→ Niv. <span id="nextLevel">2</span></span>
+      </div>
+      <div class="pcb-xp-track"><div class="pcb-xp-fill" id="xpFill" style="width:0%"></div></div>
+    </div>
+  </div>
+</header>
+
+<!-- CONTENU PAGE (vide pour l'instant) -->
+<div class="page-content">
+
+</div>
+
+<script>
+const supabaseUrl  = 'https://drtsuhnbclhmgfjiykap.supabase.co';
+const supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const { createClient } = supabase;
+const sb = createClient(supabaseUrl, supabaseKey);
+
+function avatarForLevel(lvl) {
+  if (lvl >= 50) return 'avatar-level-50.png';
+  if (lvl >= 30) return 'avatar-level-30.png';
+  if (lvl >= 20) return 'avatar-level-20.png';
+  if (lvl >= 17) return 'avatar-level-17.png';
+  if (lvl >= 15) return 'avatar-level-15.png';
+  if (lvl >= 13) return 'avatar-level-13.png';
+  if (lvl >= 10) return 'avatar-level-10.png';
+  if (lvl >= 5)  return 'avatar-level-5.png';
+  if (lvl >= 4)  return 'avatar-level-4.png';
+  if (lvl >= 3)  return 'avatar-level-3.png';
+  if (lvl >= 2)  return 'avatar-level-2.png';
+  return 'avatar-default.png';
+}
+
+function getXpRequired(level) {
+  if (level <= 10) return level * 500;
+  if (level <= 25) return level * 1000;
+  if (level <= 50) return level * 2000;
+  return level * 4000;
+}
+
+function getGrade(level) {
+  if (level <= 4)  return 'Docker Occasionnel';
+  if (level <= 14) return 'Docker';
+  if (level <= 29) return 'Docker Mensuel';
+  if (level <= 49) return 'Contre-Maître';
+  if (level <= 79) return 'Chef de Quai';
+  return 'Magnat du Port';
+}
+
+const PROFILE_THEMES = {
+  gold:    'linear-gradient(135deg,#b45309,#f59e0b)',
+  emerald: 'linear-gradient(135deg,#047857,#10b981)',
+  purple:  'linear-gradient(135deg,#6d28d9,#a855f7)',
+  night:   'linear-gradient(135deg,#0f172a,#334155)',
+  coral:   'linear-gradient(135deg,#be123c,#fb7185)',
+};
+
+async function init() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { window.location.href = 'index.html'; return; }
+  const uid = session.user.id;
+
+  const [profileRes, statsRes] = await Promise.all([
+    sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', uid).maybeSingle(),
+    sb.from('game_stats').select('level, xp, money, diamonds, trophies').eq('user_id', uid).maybeSingle()
+  ]);
+
+  const profile = profileRes.data;
+  const stats   = statsRes.data;
+  if (!profile || !stats) return;
+
+  const level = stats.level || 1;
+  const xp    = stats.xp || 0;
+  const xpReq = getXpRequired(level);
+  const pct   = Math.min((xp / xpReq) * 100, 100);
+
+  // Avatar
+  const _SPECIAL = ['avatar-millionaire.png', 'avatar-completionist.png'];
+  const avatar = _SPECIAL.includes(profile.avatar_url) ? profile.avatar_url : avatarForLevel(level);
+  document.getElementById('avatarImage').src = avatar;
+
+  // Thème
+  const card = document.getElementById('profileCardBtn');
+  const grad = PROFILE_THEMES[profile.background_color];
+  if (grad) { card.style.background = grad; card.classList.add('themed'); }
+
+  // Remplissage
+  document.getElementById('playerName').textContent   = profile.username;
+  document.getElementById('playerGrade').textContent  = getGrade(level);
+  document.getElementById('currentLevel').textContent = level;
+  document.getElementById('nextLevel').textContent    = level + 1;
+  document.getElementById('xpCounter').textContent    = xp + ' / ' + xpReq + ' XP';
+  document.getElementById('xpFill').style.width       = pct + '%';
+
+  // Afficher
+  document.getElementById('profileSkeleton').style.display = 'none';
+  card.style.display = '';
+
+  // last_seen
+  sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', uid);
+}
+
+init();
+</script>
+</body>
+</html>
