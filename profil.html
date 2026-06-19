@@ -357,15 +357,16 @@ async function logout(){await sb.auth.signOut();location.href='index.html';}
 
 (async function(){
   var r,s;
-  try{
-    r=await sb.auth.getSession();
-    s=r.data&&r.data.session;
-  }catch(e){
-    // Retry once
+  // Retry jusqu'à 3 fois avec délai croissant (fix Safari iOS)
+  for(var _i=0;_i<3;_i++){
     try{
       r=await sb.auth.getSession();
       s=r.data&&r.data.session;
-    }catch(e2){location.href='index.html';return;}
+      if(s)break;
+    }catch(e){
+      if(_i<2)await new Promise(function(res){setTimeout(res,500*(_i+1));});
+      else{location.href='index.html';return;}
+    }
   }
   if(!s){location.href='index.html';return;}
   currentUser=s.user;
@@ -383,7 +384,6 @@ async function logout(){await sb.auth.signOut();location.href='index.html';}
   var money=stats.money||0;
 
   // Header
-  document.getElementById('avatarImg').src=avatarForLevel(lvl);
   document.getElementById('usernameEl').textContent=profile.username||'—';
   document.getElementById('gradeEl').textContent=getGrade(lvl);
   document.getElementById('levelEl').textContent=lvl;
