@@ -58,14 +58,6 @@ html,body{
 
 
 
-/* BANNIÈRE */
-.banner{width:100%;height:120px;position:relative;overflow:hidden;flex-shrink:0}
-.banner-bg{position:absolute;inset:0;background:linear-gradient(120deg,#000,#1a1a2e)}
-.banner-av{position:absolute;bottom:0;right:16px;height:100px;width:100px;object-fit:contain}
-.banner-info{position:absolute;bottom:14px;left:16px}
-.banner-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.2)}
-.banner-grade{font-size:8px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:2px;margin-top:3px}
-
 
 /* BIO */
 .bio-section{background:#fff;border-radius:16px;margin:0 12px 12px;padding:14px}
@@ -78,20 +70,41 @@ html,body{
 .bio-save:active{opacity:.8}
 .bio-saved{font-size:8px;font-weight:700;color:#16a34a;opacity:0;transition:opacity .3s}
 
+
+/* HEADER PROFIL IMMERSIF */
+.profil-hdr{position:relative;overflow:hidden;padding-top:env(safe-area-inset-top)}
+.profil-hdr-bg{position:absolute;inset:0;background:linear-gradient(160deg,#000,#1a1a2e);transition:background .4s}
+.profil-hdr-back{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;z-index:10;background:rgba(0,0,0,.2);border:none;border-radius:50%;width:32px;height:32px;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.profil-hdr-inner{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;padding:calc(48px + env(safe-area-inset-top)) 16px 0}
+.profil-av-big{width:88px;height:88px;border-radius:50%;overflow:hidden;border:3px solid rgba(255,255,255,.7);background:rgba(255,255,255,.15);margin-bottom:10px;box-shadow:0 8px 24px rgba(0,0,0,.2);flex-shrink:0}
+.profil-av-big img{width:100%;height:100%;object-fit:contain;display:block}
+.profil-hdr-name{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#fff;letter-spacing:3px;line-height:1}
+.profil-hdr-sub{font-size:8px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:2px;margin-top:3px}
+.profil-hdr-stats{display:flex;gap:0;margin-top:14px;width:100%}
+.profil-hdr-stat{flex:1;text-align:center;padding:8px 0;position:relative}
+.profil-hdr-stat+.profil-hdr-stat::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:1px;background:rgba(255,255,255,.15)}
+.profil-hdr-stat-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;line-height:1}
+.profil-hdr-stat-lbl{font-size:6px;font-weight:800;color:rgba(255,255,255,.45);letter-spacing:1px;margin-top:2px}
+/* Scroll avatars */
+.av-scroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:14px 14px 0}
+.av-scroll::-webkit-scrollbar{display:none}
+.av-thumb{flex-shrink:0;width:44px;height:44px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);overflow:hidden;background:rgba(255,255,255,.15);cursor:pointer;transition:border-color .15s;position:relative}
+.av-thumb img{width:100%;height:100%;object-fit:contain;display:block}
+.av-thumb.active{border-color:rgba(255,255,255,.9);box-shadow:0 0 0 3px rgba(255,255,255,.2)}
+.av-thumb.locked{filter:grayscale(1);opacity:.3;cursor:default;display:flex;align-items:center;justify-content:center;font-size:18px}
+.av-thumb.locked img{display:none}
+/* Vague */
+.profil-hdr-wave{display:block;width:100%;height:28px;margin-top:12px}
+/* Sections sous header */
+.section{background:#fff;border-radius:16px;margin:0 12px 12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.section-title{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;padding:14px 14px 8px}
+
 </style>
 </head>
 <body>
 
-<div class="banner" id="bannerEl">
-  <div class="banner-bg" id="bannerBg"></div>
-  <img class="banner-av" id="bannerAv" src="" alt="">
-  <div class="banner-info">
-    <div class="banner-name" id="bannerName">—</div>
-    <div class="banner-grade" id="bannerGrade">—</div>
-  </div>
-</div>
 
-<!-- CONTENU PAGE (vide pour l'instant) -->
+<!-- CONTENU -->
 <div class="page-content">
   <div class="section">
     <div class="section-title">MON AVATAR</div>
@@ -111,7 +124,7 @@ html,body{
     </div>
   </div>
 
-  <button onclick="location.href='game.html'" style="display:block;width:calc(100% - 24px);margin:0 12px 20px;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">← RETOUR AU JEU</button>
+
 </div>
 
 <script>
@@ -159,6 +172,26 @@ const PROFILE_THEMES = {
   coral:   'linear-gradient(135deg,#be123c,#fb7185)',
 };
 
+
+
+function fmtMoney(n){if(n>=1000000)return(n/1000000).toFixed(1).replace('.0','')+'M';if(n>=1000)return Math.floor(n/1000)+'k';return n+'';}
+
+function renderHeader(username, grade, level, money, diamonds, avatarSrc){
+  var bg = getBannerForAvatar(avatarSrc);
+  document.getElementById('profilHdrBg').style.background = bg.bg;
+  document.getElementById('avBigImg').src = avatarSrc || 'avatar-default.png';
+  document.getElementById('profilName').textContent = (username||'—').toUpperCase();
+  document.getElementById('profilSub').textContent = grade.toUpperCase() + ' · NV.' + level;
+  document.getElementById('profilSub').style.color = bg.dark ? 'rgba(0,0,0,.45)' : 'rgba(255,255,255,.55)';
+  document.getElementById('profilName').style.color = bg.dark ? '#1a1a1a' : '#fff';
+  ['statMoney','statDiamonds','statLevel'].forEach(function(id){
+    document.getElementById(id).style.color = bg.dark ? '#1a1a1a' : '#fff';
+    document.getElementById(id).nextElementSibling.style.color = bg.dark ? 'rgba(0,0,0,.4)' : 'rgba(255,255,255,.45)';
+  });
+  document.getElementById('statMoney').textContent = fmtMoney(money||0) + ' €';
+  document.getElementById('statDiamonds').textContent = '💎 ' + (diamonds||0);
+  document.getElementById('statLevel').textContent = level;
+}
 
 var BANNERS = [
   {min:1,  bg:'linear-gradient(120deg,#000 0%,#1a1a2e 50%,#2d2d44 100%)',  dark:false},
@@ -235,10 +268,11 @@ function renderAvatarGrid(lvl,curSrc){
   const g=document.getElementById('avatarGrid');
   g.innerHTML=AVATARS.map(function(av,i){
     var ok=lvl>=av.min,sel=curSrc===av.src;
-    return '<div class="av-thumb"'+(ok?' onclick="selectAvatar('+i+')"':'')+'>'+
-      '<div class="av-thumb-ring'+(sel?' active':'')+(ok?'':' locked')+'">'+(ok?'<img src="'+av.src+'" alt="">':'🔒')+'</div>'+
-      '<div class="av-thumb-lbl'+(sel?' active':'')+'">'+av.lbl+'</div>'+
-      '</div>';
+    var cls='av-thumb'+(sel?' active':'')+(ok?'':' locked');
+    if(ok){
+      return '<div class="'+cls+'" onclick="selectAvatar('+i+')"><img src="'+av.src+'" alt=""></div>';
+    }
+    return '<div class="'+cls+'">🔒</div>';
   }).join('');
 }
 
@@ -246,9 +280,8 @@ async function selectAvatar(idx){
   const av=AVATARS[idx];
   if(_curLvl<av.min)return;
   _curAv=av.src;
-  if(document.getElementById('avBigImg'))document.getElementById('avBigImg').src=av.src;
-  if(document.getElementById('bannerAv'))document.getElementById('bannerAv').src=av.src;
-  var _b=getBannerForAvatar(av.src);document.getElementById('bannerBg').style.background=_b.bg;var _dark=_b.dark;document.getElementById('bannerName').style.color=_dark?'#1a1a1a':'#fff';document.getElementById('bannerGrade').style.color=_dark?'rgba(0,0,0,.4)':'rgba(255,255,255,.55)';
+  document.getElementById('avBigImg').src=av.src;
+  var _bg=getBannerForAvatar(av.src);document.getElementById('profilHdrBg').style.background=_bg.bg;
   renderAvatarGrid(_curLvl,av.src);
   await sb.from('profiles').update({avatar_url:av.src}).eq('user_id',_uid);
 }
@@ -296,8 +329,9 @@ async function init() {
 
   // Avatar grid
   _uid=uid;
-  renderBanner(level, profile.username, getGrade(level), profile.avatar_url||avatarForLevel(level));
-  renderAvatarGrid(level, profile.avatar_url || avatarForLevel(level));
+  var _avSrc=profile.avatar_url||avatarForLevel(level);
+  renderHeader(profile.username, getGrade(level), level, stats.money, stats.diamonds, _avSrc);
+  renderAvatarGrid(level, _avSrc);
   initBio(profile.bio);
 
   // last_seen
