@@ -66,6 +66,18 @@ html,body{
 .banner-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;line-height:1;text-shadow:0 2px 8px rgba(0,0,0,.2)}
 .banner-grade{font-size:8px;font-weight:800;color:rgba(255,255,255,.55);letter-spacing:2px;margin-top:3px}
 
+
+/* BIO */
+.bio-section{background:#fff;border-radius:16px;margin:0 12px 12px;padding:14px}
+.bio-label{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;margin-bottom:10px}
+.bio-textarea{width:100%;border:1.5px solid #e5e7eb;border-radius:10px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13px;color:#1a1a1a;resize:none;outline:none;height:80px;line-height:1.5;transition:border-color .15s}
+.bio-textarea:focus{border-color:#1a1a1a}
+.bio-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.bio-count{font-size:8px;font-weight:700;color:#9ca3af}
+.bio-save{background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer}
+.bio-save:active{opacity:.8}
+.bio-saved{font-size:8px;font-weight:700;color:#16a34a;opacity:0;transition:opacity .3s}
+
 </style>
 </head>
 <body>
@@ -89,7 +101,17 @@ html,body{
       <div class="av-big-sub" id="avBigSub">Niveau 1 · Actif</div>
     </div>
     <div class="av-scroll" id="avatarGrid"></div>
-    <button onclick="location.href='game.html'" style="display:block;width:calc(100% - 24px);margin:0 12px 20px;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">← RETOUR AU JEU</button>
+    <div class="bio-section">
+    <div class="bio-label">MA BIO</div>
+    <textarea class="bio-textarea" id="bioTextarea" maxlength="120" placeholder="Dis quelque chose sur toi..."></textarea>
+    <div class="bio-footer">
+      <span class="bio-count" id="bioCount">0/120</span>
+      <span class="bio-saved" id="bioSaved">✓ Enregistré</span>
+      <button class="bio-save" onclick="saveBio()">ENREGISTRER</button>
+    </div>
+  </div>
+
+  <button onclick="location.href='game.html'" style="display:block;width:calc(100% - 24px);margin:0 12px 20px;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;">← RETOUR AU JEU</button>
 </div>
 
 <script>
@@ -231,13 +253,30 @@ async function selectAvatar(idx){
   await sb.from('profiles').update({avatar_url:av.src}).eq('user_id',_uid);
 }
 
+async function saveBio(){
+  var val=document.getElementById('bioTextarea').value.trim();
+  await sb.from('profiles').update({bio:val}).eq('user_id',_uid);
+  var s=document.getElementById('bioSaved');
+  s.style.opacity='1';
+  setTimeout(function(){s.style.opacity='0';},2000);
+}
+
+function initBio(bio){
+  var ta=document.getElementById('bioTextarea');
+  ta.value=bio||'';
+  document.getElementById('bioCount').textContent=(bio||'').length+'/120';
+  ta.addEventListener('input',function(){
+    document.getElementById('bioCount').textContent=ta.value.length+'/120';
+  });
+}
+
 async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'index.html'; return; }
   const uid = session.user.id;
 
   const [profileRes, statsRes] = await Promise.all([
-    sb.from('profiles').select('username, avatar_url, background_color').eq('user_id', uid).maybeSingle(),
+    sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', uid).maybeSingle(),
     sb.from('game_stats').select('level, xp, money, diamonds, trophies').eq('user_id', uid).maybeSingle()
   ]);
 
@@ -259,6 +298,7 @@ async function init() {
   _uid=uid;
   renderBanner(level, profile.username, getGrade(level), profile.avatar_url||avatarForLevel(level));
   renderAvatarGrid(level, profile.avatar_url || avatarForLevel(level));
+  initBio(profile.bio);
 
   // last_seen
   sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', uid);
