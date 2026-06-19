@@ -174,15 +174,20 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-const PX='https://corsproxy.io/?url=';
+const PROXIES=['https://api.allorigins.win/raw?url=','https://corsproxy.io/?url=','https://api.codetabs.com/v1/proxy?quest='];
+async function proxiedFetch(url){
+  for(const px of PROXIES){
+    try{const r=await fetch(px+encodeURIComponent(url),{signal:AbortSignal.timeout(8000)});if(r.ok)return await r.json()}catch{}
+  }
+  return null;
+}
+async function fetchC(s){try{const j=await proxiedFetch(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?range=6mo&interval=1d`);return j?.chart?.result?.[0]||null}catch{return null}}
+async function fetchR(s){try{const j=await proxiedFetch(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${s}?modules=recommendationTrend`);return j?.quoteSummary?.result?.[0]?.recommendationTrend?.trend?.[0]||null}catch{return null}}
+async function searchY(q){try{const j=await proxiedFetch(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&newsCount=0&quotesCount=8`);return(j?.quotes||[]).filter(x=>x.quoteType==='EQUITY'||x.quoteType==='ETF')}catch{return[]}}
 const DEF=['PLTR','RKLB','SOFI','DUOL','CELH','IONQ','HIMS','BABA','MCHP','EVER'];
 let wl=JSON.parse(localStorage.getItem('bc4_wl')||'null');
 if(!wl){wl=[...DEF];localStorage.setItem('bc4_wl',JSON.stringify(wl))}
 let ST={},alerts=JSON.parse(localStorage.getItem('bc4_al')||'[]'),curD=null,chI=null,cFil='all';
-
-async function fetchC(s){try{const r=await fetch(`${PX}${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${s}?range=6mo&interval=1d`)}`);return(await r.json()).chart.result[0]}catch{return null}}
-async function fetchR(s){try{const r=await fetch(`${PX}${encodeURIComponent(`https://query1.finance.yahoo.com/v10/finance/quoteSummary/${s}?modules=recommendationTrend`)}`);const j=await r.json();const t=j.quoteSummary.result[0].recommendationTrend.trend;return t&&t[0]?t[0]:null}catch{return null}}
-async function searchY(q){try{const r=await fetch(`${PX}${encodeURIComponent(`https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&newsCount=0&quotesCount=8`)}`);return((await r.json()).quotes||[]).filter(x=>x.quoteType==='EQUITY'||x.quoteType==='ETF')}catch{return[]}}
 
 function sma(d,p){if(d.length<p)return null;return d.slice(-p).reduce((a,b)=>a+b,0)/p}
 function ema(d,p){if(d.length<p)return null;const k=2/(p+1);let e=d.slice(0,p).reduce((a,b)=>a+b,0)/p;for(let i=p;i<d.length;i++)e=d[i]*k+e*(1-k);return e}
@@ -237,7 +242,8 @@ function scoreColor(s){return s>=70?'var(--green)':s>=55?'#8bc34a':s>=45?'var(--
 async function add(sym){sym=sym.toUpperCase().trim();if(!sym||wl.includes(sym)){toast('Déjà dans la liste');return}wl.push(sym);localStorage.setItem('bc4_wl',JSON.stringify(wl));toast(sym+' ajouté !');document.getElementById('sIn').value='';document.getElementById('sD').classList.remove('show');await loadS(sym);renderWL()}
 function rm(sym){wl=wl.filter(s=>s!==sym);localStorage.setItem('bc4_wl',JSON.stringify(wl));delete ST[sym];renderWL();toast(sym+' retiré')}
 async function loadS(sym){const[c,r]=await Promise.all([fetchC(sym),fetchR(sym)]);if(c){const a=analyze(c,r);if(a)ST[sym]=a}}
-async function loadAll(){if(!wl.length){renderWL();return}document.getElementById('wlBox').innerHTML='<div class="loading"><div class="spinner"></div>Chargement données réelles...</div>';await Promise.all(wl.map(s=>loadS(s)));renderWL()}
+async function loadAll(){if(!wl.length){renderWL();return}document.getElementById('wlBox').innerHTML='<div class="loading"><div class="spinner"></div>Chargement données réelles...</div>';
+  for(let i=0;i<wl.length;i++){await loadS(wl[i]);if(i===2||i===5||i===8)renderWL();if(i<wl.length-1)await new Promise(r=>setTimeout(r,300))}renderWL()}
 function renderWL(){
   const box=document.getElementById('wlBox');
   if(!wl.length){box.innerHTML='<div style="text-align:center;padding:30px"><div style="font-size:42px">📈</div><div style="font-size:15px;font-weight:800;margin-top:8px">Ajoute des actions !</div></div>';return}
