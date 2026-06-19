@@ -34,56 +34,40 @@ html,body{
   min-height:100vh;
 }
 
-/* ── BACK BUTTON ── */
-.back-btn{
-  position:fixed; top:var(--safe-top); left:8px; z-index:300;
-  width:36px; height:36px; margin-top:14px;
-  display:flex; align-items:center; justify-content:center;
-  background:rgba(243,244,246,0.9); border-radius:50%;
-  font-size:18px; cursor:pointer; border:none;
-  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
-}
-.back-btn:active{ background:#e5e7eb; }
 
 /* AVATAR SELECTOR */
 .section{background:#fff;border-radius:16px;margin:0 12px 12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
-.section-title{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;padding:14px 14px 8px}
-@keyframes avPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-.av-slot-wrap{display:flex;align-items:center;gap:16px;padding:0 14px 14px}
-.av-slot{width:72px;height:72px;border-radius:20px;overflow:hidden;background:#f5f5f5;border:3px solid #b8962e;flex-shrink:0;box-shadow:0 4px 12px rgba(184,150,46,.2);animation:avPulse 2.5s ease-in-out infinite}
-.av-slot img{width:100%;height:100%;object-fit:contain}
-.av-slot-info{flex:1;min-width:0}
-.av-slot-name{font-family:'Bebas Neue',sans-serif;font-size:17px;color:#1a1a1a;letter-spacing:1px;line-height:1}
-.av-slot-sub{font-size:8px;font-weight:700;color:#b8962e;margin-top:3px}
-.av-progress{display:flex;gap:3px;margin-top:8px}
-.av-prog-dot{height:4px;flex:1;border-radius:2px;background:#e5e7eb}
-.av-prog-dot.done{background:#b8962e}
-.av-scroll{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 14px 14px}
+.section-title{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2.5px;padding:14px 14px 8px;text-align:center}
+@keyframes avGlow{0%,100%{box-shadow:0 0 0 0 rgba(184,150,46,.4)}50%{box-shadow:0 0 0 8px rgba(184,150,46,.08)}}
+.av-main{display:flex;flex-direction:column;align-items:center;padding:0 14px 14px}
+.av-big{width:90px;height:90px;border-radius:50%;border:3px solid #b8962e;overflow:hidden;background:#f5f5f5;animation:avGlow 2.5s ease-in-out infinite}
+.av-big img{width:100%;height:100%;object-fit:contain}
+.av-big-name{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px;margin-top:8px}
+.av-big-sub{font-size:8px;font-weight:700;color:#b8962e;margin-top:2px}
+.av-scroll{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:10px 14px 14px}
 .av-scroll::-webkit-scrollbar{display:none}
-.av-thumb{flex-shrink:0;width:46px;height:46px;border-radius:12px;overflow:hidden;background:#f5f5f5;border:2.5px solid #e5e7eb;cursor:pointer;transition:border-color .15s;display:flex;align-items:center;justify-content:center}
-.av-thumb img{width:100%;height:100%;object-fit:contain}
-.av-thumb.active{border-color:#b8962e;box-shadow:0 0 0 2px rgba(184,150,46,.15)}
-.av-thumb.locked{filter:grayscale(1);opacity:.35;cursor:default;font-size:18px}
+.av-thumb{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+.av-thumb-ring{width:52px;height:52px;border-radius:50%;border:2.5px solid #e5e7eb;overflow:hidden;background:#f5f5f5;transition:border-color .15s}
+.av-thumb-ring img{width:100%;height:100%;object-fit:contain}
+.av-thumb-ring.active{border-color:#b8962e;box-shadow:0 0 0 3px rgba(184,150,46,.15)}
+.av-thumb-ring.locked{filter:grayscale(1);opacity:.3}
+.av-thumb-lbl{font-size:7px;font-weight:800;color:#9ca3af}
+.av-thumb-lbl.active{color:#b8962e}
 
 </style>
 </head>
 <body>
 
-<!-- Bouton retour -->
-<button class="back-btn" onclick="history.back()">←</button>
 
 
 <!-- CONTENU PAGE (vide pour l'instant) -->
 <div class="page-content">
   <div class="section">
     <div class="section-title">MON AVATAR</div>
-    <div class="av-slot-wrap">
-      <div class="av-slot" id="avSlotImg"><img src="avatar-default.png" id="avSlotSrc" alt=""></div>
-      <div class="av-slot-info">
-        <div class="av-slot-name" id="avSlotName">DOCKER</div>
-        <div class="av-slot-sub" id="avSlotSub">Niveau 1 · Actif</div>
-        <div class="av-progress" id="avProgress"></div>
-      </div>
+    <div class="av-main">
+      <div class="av-big"><img src="avatar-default.png" id="avBigImg" alt=""></div>
+      <div class="av-big-name" id="avBigName">DOCKER</div>
+      <div class="av-big-sub" id="avBigSub">Niveau 1 · Actif</div>
     </div>
     <div class="av-scroll" id="avatarGrid"></div>
   </div>
@@ -155,25 +139,20 @@ function renderAvatarGrid(lvl,curSrc){
   const unlocked=AVATARS.filter(function(av){return lvl>=av.min;});
   const active=AVATARS.find(function(av){return av.src===curSrc;})||AVATARS[0];
 
-  // Slot principal
-  document.getElementById('avSlotSrc').src=active.src;
-  document.getElementById('avSlotName').textContent='DOCKER NV.'+active.min;
-  document.getElementById('avSlotSub').textContent='Niveau '+active.min+' · '+unlocked.length+'/'+AVATARS.length+' débloqués';
-
-  // Barre progression
-  const prog=document.getElementById('avProgress');
-  prog.innerHTML=AVATARS.map(function(av){
-    return '<div class="av-prog-dot'+(lvl>=av.min?' done':'')+'"></div>';
-  }).join('');
+  // Grand avatar centré
+  document.getElementById('avBigImg').src=active.src;
+  document.getElementById('avBigName').textContent='DOCKER NV.'+active.min;
+  document.getElementById('avBigSub').textContent=unlocked.length+'/'+AVATARS.length+' debloqués';
 
   // Scroll thumbnails
   const g=document.getElementById('avatarGrid');
   g.innerHTML=AVATARS.map(function(av,i){
     const ok=lvl>=av.min,sel=curSrc===av.src;
-    if(ok){
-      return '<div class="av-thumb'+(sel?' active':'')+'" onclick="selectAvatar('+i+')"><img src="'+av.src+'" alt="'+av.lbl+'"></div>';
-    }
-    return '<div class="av-thumb locked">🔒</div>';
+    var html='<div class="av-thumb"'+(ok?' onclick="selectAvatar('+i+')"':'')+'>'      +'<div class="av-thumb-ring'+(sel?' active':'')+(ok?'':' locked')+'">'
+      +(ok?'<img src="'+av.src+'" alt="'+av.lbl+'">'+'</div>':'🔒</div>');
+    html+='<div class="av-thumb-lbl'+(sel?' active':'')+'">'+av.lbl+'</div>';
+    html+='</div>';
+    return html;
   }).join('');
 }
 
@@ -181,7 +160,7 @@ async function selectAvatar(idx){
   const av=AVATARS[idx];
   if(_curLvl<av.min)return;
   _curAv=av.src;
-  document.getElementById('avatarImage').src=av.src;
+  if(document.getElementById('avBigImg'))document.getElementById('avBigImg').src=av.src;
   renderAvatarGrid(_curLvl,av.src);
   await sb.from('profiles').update({avatar_url:av.src}).eq('user_id',_uid);
 }
