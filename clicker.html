@@ -854,11 +854,13 @@ window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();}
   var _charge = 0, _lastComboPalier = 1;
 
   function bonusChargeFull(x,y) {
-    var bonus = Math.floor((window.moneyPerClick||1) * combo * 15);
-    totalMoney += bonus; sessionMoney += bonus;
-    spawnParticle(x, y, '⚡ +' + bonus + '€', false);
+    // Bonus XP uniquement — pas d'argent supplémentaire
+    var bonusXp = Math.floor((window.xpPerClick||1) * 10);
+    currentXp += bonusXp; sessionXp += bonusXp;
+    spawnParticle(x, y, '⚡ +' + bonusXp + ' XP', true);
     document.getElementById('containerBtn').style.animation = 'chargeFlash .3s ease-out';
     setTimeout(function(){ document.getElementById('containerBtn').style.animation=''; },300);
+    checkLevelUp();
     updateDisplay();
   }
 
@@ -982,6 +984,7 @@ window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();}
   var _eventActive = false, _eventMult = 1, _eventTimer = null;
 
   function triggerRandomEvent() {
+    return; // désactivé
     if(_eventActive || shiftState === 'calibrating') return;
     var ev = _events[Math.floor(Math.random()*_events.length)];
     _eventActive = true;
@@ -1006,27 +1009,9 @@ window.addEventListener('beforeunload',function(){if(_bgMusic)_bgMusic.pause();}
     },1000);
   }
 
-  // Déclencher un événement toutes les 45-90s
-  function scheduleEvent(){
-    setTimeout(function(){
-      triggerRandomEvent();
-      scheduleEvent();
-    }, 45000 + Math.random()*45000);
-  }
-  setTimeout(scheduleEvent, 20000);
 
-  // Patch doClick pour multiplicateur événement
-  var _origDoClick = doClick;
-  doClick = function(x,y){
-    if(_eventActive && _eventMult > 1){
-      var _origMpc = window.moneyPerClick;
-      window.moneyPerClick = Math.floor((_origMpc||1)*_eventMult);
-      _origDoClick(x,y);
-      window.moneyPerClick = _origMpc;
-    } else {
-      _origDoClick(x,y);
-    }
-  };
+
+
 
   window.addEventListener('beforeunload', save);
   init();
