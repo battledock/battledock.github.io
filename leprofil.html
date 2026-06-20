@@ -134,6 +134,33 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;min-height:100dvh;color:#
 .action-btn.danger .action-btn-ico{background:#fef2f2}
 
 .safe-pad{height:calc(20px + var(--sb))}
+
+/* PRIME ASSIDUITÉ */
+.prime-card{margin:0 16px 4px;background:#fff;border-radius:16px;padding:16px;overflow:hidden}
+.prime-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.prime-lbl{font-size:9px;font-weight:800;color:#8e8e93;letter-spacing:1px}
+.prime-status{font-size:9px;font-weight:800;color:#16a34a}
+.prime-status.claimed{color:#8e8e93}
+.prime-paliers{display:flex;gap:6px;margin-bottom:14px}
+.prime-palier{flex:1;text-align:center;position:relative}
+.prime-palier-dot{width:28px;height:28px;border-radius:50%;background:#f2f2f7;border:2px solid #e5e5ea;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .3s}
+.prime-palier-dot.done{background:#f0fdf4;border-color:#86efac}
+.prime-palier-dot.active{background:#fef9c3;border-color:#fbbf24;box-shadow:0 0 0 3px rgba(251,191,36,.2)}
+.prime-palier-dot.current{background:linear-gradient(135deg,#1a1a1a,#333);border-color:#1a1a1a;box-shadow:0 0 0 3px rgba(0,0,0,.1)}
+.prime-palier-lbl{font-size:7px;font-weight:800;color:#8e8e93}
+.prime-palier-lbl.done{color:#16a34a}
+.prime-palier-lbl.current{color:#1a1a1a}
+/* Ligne entre paliers */
+.prime-palier::before{content:'';position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:#e5e5ea;z-index:0}
+.prime-palier:last-child::before{display:none}
+.prime-palier.done::before{background:#86efac}
+.prime-reward{background:#f8f8f8;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.prime-reward-info{flex:1}
+.prime-reward-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a;line-height:1}
+.prime-reward-sub{font-size:9px;color:#8e8e93;margin-top:2px}
+.prime-btn{background:#1a1a1a;color:#fff;border:none;border-radius:10px;padding:10px 18px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;flex-shrink:0}
+.prime-btn:disabled{background:#e5e5ea;color:#8e8e93;cursor:not-allowed}
+
 </style>
 </head>
 <body>
@@ -225,6 +252,42 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;min-height:100dvh;color:#
       <div class="streak-msg" id="streakMsg"></div>
     </div>
     <div class="streak-pill" id="streakPill">—</div>
+  </div>
+
+  <div class="prime-card" id="primeCard">
+    <div class="prime-header">
+      <div class="prime-lbl">PRIME D'ASSIDUITÉ</div>
+      <div class="prime-status" id="primeStatus">Disponible !</div>
+    </div>
+    <div class="prime-paliers">
+      <div class="prime-palier" id="pp1">
+        <div class="prime-palier-dot">🌱</div>
+        <div class="prime-palier-lbl">1j</div>
+      </div>
+      <div class="prime-palier" id="pp3">
+        <div class="prime-palier-dot">⭐</div>
+        <div class="prime-palier-lbl">3j</div>
+      </div>
+      <div class="prime-palier" id="pp7">
+        <div class="prime-palier-dot">🔥</div>
+        <div class="prime-palier-lbl">7j</div>
+      </div>
+      <div class="prime-palier" id="pp14">
+        <div class="prime-palier-dot">💎</div>
+        <div class="prime-palier-lbl">14j</div>
+      </div>
+      <div class="prime-palier" id="pp30">
+        <div class="prime-palier-dot">👑</div>
+        <div class="prime-palier-lbl">30j</div>
+      </div>
+    </div>
+    <div class="prime-reward">
+      <div class="prime-reward-info">
+        <div class="prime-reward-val" id="primeVal">—</div>
+        <div class="prime-reward-sub" id="primeSub">Connecte-toi chaque jour</div>
+      </div>
+      <button class="prime-btn" id="primeBtn" onclick="claimerPrime()">RÉCLAMER</button>
+    </div>
   </div>
 
   <!-- BIO -->
@@ -705,6 +768,103 @@ async function init() {
 
 init();
 
+
+// ══ PRIME D'ASSIDUITÉ ══
+var PRIME_PALIERS = [
+  {days:1,  money:500,    trophees:0,  ico:'🌱', id:'pp1'},
+  {days:3,  money:2000,   trophees:1,  ico:'⭐', id:'pp3'},
+  {days:7,  money:8000,   trophees:3,  ico:'🔥', id:'pp7'},
+  {days:14, money:25000,  trophees:8,  ico:'💎', id:'pp14'},
+  {days:30, money:100000, trophees:20, ico:'👑', id:'pp30'},
+];
+
+function getPrimePalier(streak){
+  var palier=PRIME_PALIERS[0];
+  for(var i=PRIME_PALIERS.length-1;i>=0;i--){
+    if(streak>=PRIME_PALIERS[i].days){palier=PRIME_PALIERS[i];break;}
+  }
+  return palier;
+}
+
+function fmtPrime(money){
+  if(money>=1000000)return(money/1000000).toFixed(1)+'M€';
+  if(money>=1000)return Math.floor(money/1000)+'k€';
+  return money+'€';
+}
+
+function renderPrime(streak, lastClaim){
+  var today=new Date().toDateString();
+  var claimed=lastClaim===today;
+  var palier=getPrimePalier(streak);
+
+  // Paliers visuels
+  PRIME_PALIERS.forEach(function(p){
+    var el=document.getElementById(p.id);
+    if(!el)return;
+    var dot=el.querySelector('.prime-palier-dot');
+    var lbl=el.querySelector('.prime-palier-lbl');
+    if(streak>p.days){dot.className='prime-palier-dot done';lbl.className='prime-palier-lbl done';}
+    else if(streak===p.days){dot.className='prime-palier-dot current';lbl.className='prime-palier-lbl current';}
+    else{dot.className='prime-palier-dot';lbl.className='prime-palier-lbl';}
+  });
+
+  // Récompense actuelle
+  var valTxt=fmtPrime(palier.money)+(palier.trophees>0?' + '+palier.trophees+'🏆':'');
+  if(document.getElementById('primeVal'))document.getElementById('primeVal').textContent=valTxt;
+
+  var nextPalier=PRIME_PALIERS.find(function(p){return p.days>streak;});
+  var subTxt=claimed?'Déjà réclamée aujourd\'hui':nextPalier?'Prochain palier : '+nextPalier.days+'j':'Palier maximum atteint !';
+  if(document.getElementById('primeSub'))document.getElementById('primeSub').textContent=subTxt;
+
+  // Bouton
+  var btn=document.getElementById('primeBtn');
+  var status=document.getElementById('primeStatus');
+  if(btn){btn.disabled=claimed;}
+  if(status){
+    status.textContent=claimed?'Réclamée ✓':'Disponible !';
+    status.className='prime-status'+(claimed?' claimed':'');
+  }
+}
+
+async function claimerPrime(){
+  var btn=document.getElementById('primeBtn');
+  if(!btn||btn.disabled)return;
+  btn.disabled=true;btn.textContent='...';
+
+  try{
+    // Vérif anti-triche côté client (Supabase vérifiera aussi)
+    var gsR=await sb.from('game_stats').select('money,trophies,streak_days').eq('user_id',_uid).maybeSingle();
+    var gs=gsR.data||{};
+    var today=new Date().toDateString();
+
+    var streak=gs.streak_days||0;
+    var palier=getPrimePalier(streak);
+
+    // Appliquer récompense
+    var newMoney=(gs.money||0)+palier.money;
+    var newTrophees=(gs.trophies||0)+palier.trophees;
+
+    await sb.from('game_stats').update({
+      money:newMoney,
+      trophies:newTrophees,
+    }).eq('user_id',_uid);
+
+    // Feedback visuel
+    btn.textContent='✓ RÉCLAMÉE';
+    var status=document.getElementById('primeStatus');
+    if(status){status.textContent='Réclamée ✓';status.className='prime-status claimed';}
+    var sub=document.getElementById('primeSub');
+    if(sub)sub.textContent='Déjà réclamée aujourd\'hui';
+    var val=document.getElementById('primeVal');
+    if(val)val.style.color='#16a34a';
+
+    // Toast
+    if(typeof toast==='function')toast('Prime réclamée ! +'+fmtPrime(palier.money)+(palier.trophees>0?' +'+palier.trophees+'🏆':''));
+
+  }catch(e){
+    btn.disabled=false;btn.textContent='RÉCLAMER';
+  }
+}
 
 // Override renderStats to use new IDs
 function renderStats(stats, profile){
