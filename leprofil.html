@@ -734,15 +734,10 @@ async function init() {
   if (!session) { window.location.href = 'index.html'; return; }
   const uid = session.user.id;
   // Récupérer l'heure serveur Supabase
-  var nowRes=await sb.rpc('get_server_time').maybeSingle().catch(function(){return {data:null};});
-  if(nowRes&&nowRes.data){_serverNow=new Date(nowRes.data);}
-  else{
-    // fallback: requête timestamp via select
-    var tsRes=await sb.from('game_stats').select('created_at').limit(1).maybeSingle().catch(function(){return {data:null};});
-    // use server time from headers not possible via JS SDK easily
-    // Use Date.now() as last resort but log warning
-    _serverNow=new Date();
-  }
+  try{
+    var nowRes=await sb.rpc('get_server_time');
+    _serverNow=nowRes.data?new Date(nowRes.data):new Date();
+  }catch(e){_serverNow=new Date();}
 
   const [profileRes, statsRes] = await Promise.all([
     sb.from('profiles').select('username, avatar_url, background_color, bio, created_at').eq('user_id', uid).maybeSingle(),
