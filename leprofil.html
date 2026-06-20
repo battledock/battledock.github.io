@@ -144,6 +144,15 @@ html,body{
 .stats-bandeau-lbl{font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:1px;margin-top:1px}
 .stats-bandeau-sep{width:1px;height:32px;background:#f0f0f0}
 
+
+/* EXTRAS */
+.extras-row{display:flex;flex-direction:column;gap:8px;margin:0 12px 12px}
+.extra-card{background:#fff;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px}
+.extra-ico{font-size:24px;flex-shrink:0;width:36px;text-align:center}
+.extra-info{flex:1}
+.extra-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a;letter-spacing:1px;line-height:1}
+.extra-lbl{font-size:8px;font-weight:700;color:#9ca3af;margin-top:2px}
+
 </style>
 </head>
 <body>
@@ -181,6 +190,30 @@ html,body{
     <div class="stats-bandeau-ico">⏱️</div>
     <div class="stats-bandeau-val" id="statTemps">—</div>
     <div class="stats-bandeau-lbl">TEMPS DE JEU</div>
+  </div>
+</div>
+
+<div class="extras-row">
+  <div class="extra-card">
+    <div class="extra-ico">⚓</div>
+    <div class="extra-info">
+      <div class="extra-val" id="extraInscription">—</div>
+      <div class="extra-lbl">DATE D'INSCRIPTION</div>
+    </div>
+  </div>
+  <div class="extra-card">
+    <div class="extra-ico">🏅</div>
+    <div class="extra-info">
+      <div class="extra-val" id="extraRang">—</div>
+      <div class="extra-lbl">RANG DANS LE CLASSEMENT</div>
+    </div>
+  </div>
+  <div class="extra-card">
+    <div class="extra-ico">🔥</div>
+    <div class="extra-info">
+      <div class="extra-val" id="extraStreak">—</div>
+      <div class="extra-lbl">JOURS CONSÉCUTIFS</div>
+    </div>
   </div>
 </div>
 
@@ -402,6 +435,25 @@ function renderStats(stats, profile){
   if(document.getElementById('statTemps'))document.getElementById('statTemps').textContent=tps||'—';
 }
 
+
+async function renderExtras(profile, stats, uid){
+  // Date inscription
+  if(profile.created_at){
+    var d=new Date(profile.created_at);
+    var opts={day:'2-digit',month:'long',year:'numeric'};
+    document.getElementById('extraInscription').textContent='Docker depuis le '+d.toLocaleDateString('fr-FR',opts);
+  }
+  // Streak
+  if(document.getElementById('extraStreak'))
+    document.getElementById('extraStreak').textContent=(stats.streak_days||0)+' jour'+(stats.streak_days>1?'s':'');
+  // Rang
+  var {data:all}=await sb.from('game_stats').select('user_id,money').order('money',{ascending:false});
+  if(all){
+    var rank=all.findIndex(function(r){return r.user_id===uid;})+1;
+    document.getElementById('extraRang').textContent='#'+rank+' sur '+all.length+' joueurs';
+  }
+}
+
 function fmtM2(n){if(n>=1000000)return(n/1000000).toFixed(1).replace('.0','')+'M';if(n>=1000)return Math.floor(n/1000)+'k';return n+'';}
 
 function renderHeader(username,grade,level,money,diamonds,avatarSrc){
@@ -501,7 +553,7 @@ async function init() {
 
   const [profileRes, statsRes] = await Promise.all([
     sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', uid).maybeSingle(),
-    sb.from('game_stats').select('level, xp, money, diamonds, trophies, playtime_minutes').eq('user_id', uid).maybeSingle()
+    sb.from('game_stats').select('level, xp, money, diamonds, trophies, playtime_minutes, streak_days').eq('user_id', uid).maybeSingle()
   ]);
 
   const profile = profileRes.data;
@@ -524,6 +576,7 @@ async function init() {
   renderHeader(profile.username,getGrade(level),level,stats.money,stats.diamonds,_avSrc);
   initBio(profile.bio);
   renderStats(stats, profile);
+  renderExtras(profile, stats, uid);
 
   // last_seen
   sb.from('profiles').update({ last_seen: new Date().toISOString() }).eq('user_id', uid);
