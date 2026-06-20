@@ -732,6 +732,16 @@ async function init() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { window.location.href = 'index.html'; return; }
   const uid = session.user.id;
+  // Récupérer l'heure serveur Supabase
+  var nowRes=await sb.rpc('get_server_time').maybeSingle().catch(function(){return {data:null};});
+  if(nowRes&&nowRes.data){_serverNow=new Date(nowRes.data);}
+  else{
+    // fallback: requête timestamp via select
+    var tsRes=await sb.from('game_stats').select('created_at').limit(1).maybeSingle().catch(function(){return {data:null};});
+    // use server time from headers not possible via JS SDK easily
+    // Use Date.now() as last resort but log warning
+    _serverNow=new Date();
+  }
 
   const [profileRes, statsRes] = await Promise.all([
     sb.from('profiles').select('username, avatar_url, background_color, bio, created_at').eq('user_id', uid).maybeSingle(),
@@ -793,7 +803,7 @@ function fmtPrime(money){
 }
 
 function renderPrime(streak, lastClaim){
-  var _now=new Date();
+  var _now=_serverNow||new Date();
   var _card=document.getElementById('primeCard');
   if(_now<new Date('2026-07-01')||_now>=new Date('2026-08-01')){
     if(_card)_card.style.opacity='0.5';
@@ -802,7 +812,7 @@ function renderPrime(streak, lastClaim){
     var _st=document.getElementById('primeStatus');
     if(_st){_st.textContent='Du 1er au 31 juillet';_st.className='prime-status claimed';}
   }
-  var today=new Date().toDateString();
+  var today=(_serverNow||new Date()).toDateString();
   var claimed=lastClaim===today;
   var palier=getPrimePalier(streak);
 
@@ -836,7 +846,7 @@ function renderPrime(streak, lastClaim){
 }
 
 async function claimerPrime(){
-  var _n=new Date();if(_n<new Date('2026-07-01')||_n>=new Date('2026-08-01'))return;
+  var _n=_serverNow||new Date();if(_n<new Date('2026-07-01')||_n>=new Date('2026-08-01'))return;
   var btn=document.getElementById('primeBtn');
   if(!btn||btn.disabled)return;
   btn.disabled=true;btn.textContent='...';
@@ -845,7 +855,7 @@ async function claimerPrime(){
     // Vérif anti-triche côté client (Supabase vérifiera aussi)
     var gsR=await sb.from('game_stats').select('money,trophies,streak_days').eq('user_id',_uid).maybeSingle();
     var gs=gsR.data||{};
-    var today=new Date().toDateString();
+    var today=(_serverNow||new Date()).toDateString();
 
     var streak=gs.streak_days||0;
     var palier=getPrimePalier(streak);
