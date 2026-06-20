@@ -153,6 +153,9 @@ html,body{
 .extra-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a;letter-spacing:1px;line-height:1}
 .extra-lbl{font-size:8px;font-weight:700;color:#9ca3af;margin-top:2px}
 
+
+.share-btn{display:block;width:calc(100% - 24px);margin:0 12px 20px;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;text-align:center}
+.share-btn:active{opacity:.8}
 </style>
 </head>
 <body>
@@ -193,29 +196,6 @@ html,body{
   </div>
 </div>
 
-<div class="extras-row">
-  <div class="extra-card">
-    <div class="extra-ico">⚓</div>
-    <div class="extra-info">
-      <div class="extra-val" id="extraInscription">—</div>
-      <div class="extra-lbl">DATE D'INSCRIPTION</div>
-    </div>
-  </div>
-  <div class="extra-card">
-    <div class="extra-ico">🏅</div>
-    <div class="extra-info">
-      <div class="extra-val" id="extraRang">—</div>
-      <div class="extra-lbl">RANG DANS LE CLASSEMENT</div>
-    </div>
-  </div>
-  <div class="extra-card">
-    <div class="extra-ico">🔥</div>
-    <div class="extra-info">
-      <div class="extra-val" id="extraStreak">—</div>
-      <div class="extra-lbl">JOURS CONSÉCUTIFS</div>
-    </div>
-  </div>
-</div>
 
 <div class="bio-section">
   <div class="bio-label">MA BIO</div>
@@ -229,6 +209,22 @@ html,body{
 
 <div class="page-content">
 
+<div class="extras-row">
+  <div class="extra-card">
+    <div class="extra-ico">⚓</div>
+    <div class="extra-info"><div class="extra-val" id="extraInscription">—</div><div class="extra-lbl">DATE D'INSCRIPTION</div></div>
+  </div>
+  <div class="extra-card">
+    <div class="extra-ico">🏅</div>
+    <div class="extra-info"><div class="extra-val" id="extraRang">—</div><div class="extra-lbl">RANG DANS LE CLASSEMENT</div></div>
+  </div>
+  <div class="extra-card">
+    <div class="extra-ico">🔥</div>
+    <div class="extra-info"><div class="extra-val" id="extraStreak">—</div><div class="extra-lbl">JOURS CONSECUTIFS</div></div>
+  </div>
+</div>
+
+<button class="share-btn" onclick="shareProfil()">PARTAGER MON PROFIL</button>
 
 </div>
 
@@ -454,6 +450,20 @@ async function renderExtras(profile, stats, uid){
   }
 }
 
+
+async function shareProfil(){
+  var name = document.getElementById('profilName') ? document.getElementById('profilName').textContent : 'Docker';
+  var sub = document.getElementById('profilSub') ? document.getElementById('profilSub').textContent : '';
+  var txt = name + ' — ' + sub + '\nBattle Dock · Port de Marseille\nbattledock.github.io';
+  if(navigator.share){
+    try{await navigator.share({title:'Mon profil Battle Dock', text:txt, url:'https://battledock.github.io'});}
+    catch(e){}
+  } else {
+    await navigator.clipboard.writeText(txt);
+    alert('Lien copié !');
+  }
+}
+
 function fmtM2(n){if(n>=1000000)return(n/1000000).toFixed(1).replace('.0','')+'M';if(n>=1000)return Math.floor(n/1000)+'k';return n+'';}
 
 function renderHeader(username,grade,level,money,diamonds,avatarSrc){
@@ -552,7 +562,7 @@ async function init() {
   const uid = session.user.id;
 
   const [profileRes, statsRes] = await Promise.all([
-    sb.from('profiles').select('username, avatar_url, background_color, bio').eq('user_id', uid).maybeSingle(),
+    sb.from('profiles').select('username, avatar_url, background_color, bio, created_at').eq('user_id', uid).maybeSingle(),
     sb.from('game_stats').select('level, xp, money, diamonds, trophies, playtime_minutes, streak_days').eq('user_id', uid).maybeSingle()
   ]);
 
