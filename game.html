@@ -1265,9 +1265,6 @@ body{
 <body>
 <!-- Placeholders invisibles pour JS game-17 -->
 <div style="display:none">
-  <span id="moneyAmount"></span>
-  <span id="diamondsAmount"></span>
-  <span id="trophiesAmount"></span>
   <span id="rankBadge"></span>
   <span id="calProgPct"></span>
   <span id="chatNotif" class="hidden"></span>
@@ -2272,5 +2269,24 @@ init();
     <div class="pcb-stat"><div class="pcb-stat-val" id="trophiesAmount">0 🏆</div><div class="pcb-stat-lbl">Trophées</div></div>
     <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
   </div>
+
+<script>
+// Connexion barre stats au rang Supabase
+async function loadRankForBar(){
+  try {
+    if(!window.currentUser) return;
+    var res = await window.sb.from('game_stats')
+      .select('user_id, money')
+      .order('money', {ascending:false});
+    if(!res.data) return;
+    var pos = res.data.findIndex(function(r){ return r.user_id === window.currentUser.id; });
+    var rankEl = document.getElementById('rankValue');
+    if(rankEl) rankEl.textContent = pos >= 0 ? '#' + (pos+1) : '#--';
+  } catch(e){}
+}
+// Charger le rang après 2s (laisser le temps à l'auth)
+setTimeout(loadRankForBar, 2500);
+</script>
+
 </body>
 </html>
