@@ -105,17 +105,19 @@ body{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:600px;z-index:200;
   background:#fff;
-  border-top:1px solid #f3f4f6;
-  padding:12px 0;
-  padding-bottom:max(12px,env(safe-area-inset-bottom));
+  border-top:1px solid #e5e7eb;
+  padding:10px 0 max(10px,env(safe-area-inset-bottom));
   display:flex;
+  box-shadow:0 -4px 20px rgba(0,0,0,.06);
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
 }
-.stats-bar-item{flex:1;text-align:center;}
-.stats-bar-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--ink);line-height:1;}
+.stats-bar-item{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;}
+.stats-bar-val{font-family:'Bebas Neue',sans-serif;font-size:19px;color:#1a1a1a;line-height:1;}
 .stats-bar-val.blue{color:#3b82f6;}
 .stats-bar-val.gold{color:#f59e0b;}
-.stats-bar-lbl{font-size:7px;color:#9ca3af;font-weight:700;margin-top:2px;}
-.stats-bar-sep{width:1px;background:#f3f4f6;}
+.stats-bar-lbl{font-size:7px;color:#9ca3af;font-weight:800;letter-spacing:1px;}
+.stats-bar-sep{width:1px;background:#f3f4f6;align-self:stretch;margin:4px 0;}
 
 /* ── PAGE CONTENT ── */
 .page-content{
@@ -1332,6 +1334,29 @@ body{
     </div>
   </div>
 
+
+  <!-- PRIME 100K -->
+  <div style="margin-bottom:12px">
+    <div id="prime100kBtn" onclick="claimPrime100k()" style="
+      background:linear-gradient(135deg,#3f1f00,#7c3a00);
+      border:1.5px solid rgba(251,191,36,.35);
+      border-radius:18px;padding:16px 20px;
+      display:flex;align-items:center;gap:14px;
+      cursor:pointer;position:relative;overflow:hidden;
+    ">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(251,191,36,.08),transparent 60%);pointer-events:none"></div>
+      <div style="font-size:36px">💰</div>
+      <div style="flex:1">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:2px;line-height:1">PRIME EXCEPTIONNELLE</div>
+        <div style="font-size:8px;font-weight:800;color:rgba(251,191,36,.6);letter-spacing:1.5px;margin-top:3px">1 FOIS PAR JOUR · EXCLUSIF</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fbbf24;line-height:1">+100 000€</div>
+        <div id="prime100kStatus" style="font-size:8px;font-weight:700;color:rgba(251,191,36,.5);letter-spacing:1px;margin-top:2px">DISPONIBLE</div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODE HISTOIRE -->
   <div onclick="location.href='histoire.html'" style="
     background:linear-gradient(180deg,#03080f 0%,#060e1c 50%,#0d2240 100%);
@@ -1938,6 +1963,40 @@ async function loadCalendar() {
     }catch(e){console.error(e);}
   }
 
+
+  async function claimPrime100k(){
+    if(!currentUser)return;
+    const btn=document.getElementById('prime100kBtn');
+    const status=document.getElementById('prime100kStatus');
+    if(btn&&btn.dataset.claimed==='1')return;
+    const todayKey='prime_100k_'+new Date().toISOString().slice(0,10)+'_'+currentUser.id;
+    if(localStorage.getItem(todayKey)){
+      if(status)status.textContent='DÉJÀ RÉCUPÉRÉE';
+      if(btn){btn.style.opacity='.45';btn.style.cursor='default';}
+      return;
+    }
+    try{
+      const {data:gs}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).single();
+      const newMoney=(gs?.money||0)+100000;
+      await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+      localStorage.setItem(todayKey,'1');
+      if(btn){btn.dataset.claimed='1';btn.style.opacity='.45';btn.style.cursor='default';}
+      if(status)status.textContent='RÉCUPÉRÉE ✓';
+      showToast('💰 +100 000€ Prime exceptionnelle récupérée !');
+    }catch(e){console.error(e);}
+  }
+
+  function checkPrime100k(){
+    if(!currentUser)return;
+    const todayKey='prime_100k_'+new Date().toISOString().slice(0,10)+'_'+currentUser.id;
+    const btn=document.getElementById('prime100kBtn');
+    const status=document.getElementById('prime100kStatus');
+    if(localStorage.getItem(todayKey)){
+      if(btn){btn.dataset.claimed='1';btn.style.opacity='.45';btn.style.cursor='default';}
+      if(status)status.textContent='DÉJÀ RÉCUPÉRÉE';
+    }
+  }
+
   function checkPrimeNuit(){
     if(!currentUser)return;
     const todayKey='prime_nuit_'+new Date().toISOString().slice(0,10)+'_'+currentUser.id;
@@ -1958,6 +2017,7 @@ async function loadCalendar() {
 
     init();
     checkPrimeNuit();
+    checkPrime100k();
   </script>
 
 <!-- JS WIDGETS -->
@@ -2313,6 +2373,50 @@ async function loadCompanyCard(uid){
 }
 
 init();
+</script>
+
+
+<!-- BARRE STATS FIXE -->
+<div class="stats-bar">
+  <div class="stats-bar-item">
+    <div class="stats-bar-val gold" id="sbMoney">—</div>
+    <div class="stats-bar-lbl">ARGENT</div>
+  </div>
+  <div class="stats-bar-sep"></div>
+  <div class="stats-bar-item">
+    <div class="stats-bar-val blue" id="sbDiamonds">—</div>
+    <div class="stats-bar-lbl">DIAMANTS</div>
+  </div>
+  <div class="stats-bar-sep"></div>
+  <div class="stats-bar-item">
+    <div class="stats-bar-val" id="sbTrophies">—</div>
+    <div class="stats-bar-lbl">TROPHÉES</div>
+  </div>
+</div>
+
+
+<script>
+// Sync barre stats
+function syncStatsBar(){
+  var m=document.getElementById('moneyAmount');
+  var d=document.getElementById('diamondsAmount');
+  var t=document.getElementById('trophiesAmount');
+  var sbM=document.getElementById('sbMoney');
+  var sbD=document.getElementById('sbDiamonds');
+  var sbT=document.getElementById('sbTrophies');
+  if(sbM&&m&&m.textContent)sbM.textContent=m.textContent.replace('€','').trim()+'€';
+  if(sbD&&d&&d.textContent)sbD.textContent=d.textContent.replace('💎','').trim()+' 💎';
+  if(sbT&&t&&t.textContent)sbT.textContent=t.textContent.replace('🏆','').trim()+' 🏆';
+}
+// Observer les changements
+['moneyAmount','diamondsAmount','trophiesAmount'].forEach(function(id){
+  var el=document.getElementById(id);
+  if(!el)return;
+  new MutationObserver(syncStatsBar).observe(el,{childList:true,subtree:true,characterData:true});
+});
+// Sync initiale après chargement
+setTimeout(syncStatsBar,1500);
+setInterval(syncStatsBar,3000);
 </script>
 
 </body>
