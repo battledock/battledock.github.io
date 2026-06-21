@@ -95,7 +95,7 @@
     .container-box { width:186px; height:128px; background:linear-gradient(135deg,#cc2200,#991100); border-radius:10px; border:4px solid #0a0a0a; position:relative; overflow:hidden; cursor:pointer; }
     .container-box::before { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(255,255,255,0.07),transparent 50%); }
     .container-stripe { position:absolute; top:0; bottom:0; width:2px; background:rgba(0,0,0,0.22); }
-    .container-label { position:absolute; bottom:16px; left:0; right:0; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:14px; color:rgba(255,255,255,0.85); letter-spacing:3px; transition:opacity 1s ease; }
+    .container-label { position:absolute; bottom:16px; left:0; right:0; text-align:center; font-family:'Bebas Neue',sans-serif; font-size:14px; color:rgba(255,255,255,0.85); letter-spacing:3px; }
 
     /* Badge combo avec barre */
     .combo-wrap { display:inline-flex; align-items:center; gap:8px; background:rgba(0,0,0,0.22); border:2px solid rgba(0,0,0,0.28); border-radius:20px; padding:6px 14px; }
@@ -284,7 +284,7 @@
     <div class="container-box" id="containerBtn" ontouchstart="handleTouch(event)" onclick="handleClick(event)">
       <div class="container-stripe" style="left:74px"></div>
       <div class="container-stripe" style="left:120px"></div>
-      <div class="container-label" id="containerLabel">CLIQUEZ ICI</div>
+      <div class="container-label">APPUYER</div>
     </div>
 
     <!-- Combo -->
@@ -303,7 +303,15 @@
       <div class="stat"><div class="stat-v xp" id="sessionXpDisplay">0 XP</div><div class="stat-l">XP SESSION</div></div>
       <div class="stat"><div class="stat-v" id="clicksDisplay">0</div><div class="stat-l">CLICS</div></div>
     </div>
-    <button onclick="goShop()" style="width:100%;background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;border-radius:14px;padding:13px;color:#1a1208;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-bottom:8px;">🛠 AMÉLIORE TON CLICKER</button>
+    <div class="stats-grid" style="margin-bottom:8px">
+      <div class="stat"><div class="stat-v" id="sessionMoneyDisplay">0€</div><div class="stat-l">SESSION</div></div>
+      <div class="stat"><div class="stat-v xp" id="comboMaxDisplay">×1.0</div><div class="stat-l">COMBO MAX</div></div>
+      <div class="stat"><div class="stat-v" id="totalClicksDisplay">0</div><div class="stat-l">TOTAL CLICS</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button onclick="goShop()" style="flex:1;background:linear-gradient(135deg,#f59e0b,#fbbf24);border:none;border-radius:14px;padding:13px;color:#1a1208;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">🛠 AMÉLIORER</button>
+      <button onclick="location.href='clicker-scores.html'" style="flex:1;background:rgba(255,255,255,0.15);border:none;border-radius:14px;padding:13px;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;">🏆 CLASSEMENT</button>
+    </div>
     <button class="btn-back" id="backBtn" onclick="goBack()">← RETOUR</button>
   </div>
 
@@ -349,7 +357,7 @@
   let currentUser = null;
   let totalMoney = 0, sessionMoney = 0;
   let currentXp = 0, currentLevel = 1, sessionXp = 0;
-  let combo = 1, clicks = 0;
+  let combo = 1, clicks = 0, totalClicksSession = 0;
   let lastTouchTime = 0;
 
   // ── Anti-triche ──
@@ -393,7 +401,7 @@
     const now = Date.now();
     const elapsed = (now - lastRhythmCheck) / 1000;
     if (elapsed < 9) return;
-    const cps = clicks / ((now - sessionStart) / 1000);
+    const cps = totalClicksSession / ((now - sessionStart) / 1000);
     rhythmSamples.push(cps);
     lastRhythmCheck = now;
 
@@ -704,10 +712,6 @@
     checkRhythm();
 
     clicks++;
-    if (clicks === 10) {
-      const lbl = document.getElementById('containerLabel');
-      if (lbl) lbl.style.opacity = '0';
-    }
     const xpGain = window.xpPerClick    || 1;
     const base   = window.moneyPerClick || 1;
     const gain   = Math.floor(base * combo);
@@ -779,6 +783,9 @@
     document.getElementById('perClickMoney').textContent = '+' + mpc + '€';
     document.getElementById('sessionXpDisplay').textContent = sessionXp + ' XP';
     document.getElementById('clicksDisplay').textContent = clicks;
+    if(document.getElementById('sessionMoneyDisplay')) document.getElementById('sessionMoneyDisplay').textContent = sessionMoney.toLocaleString('fr-FR') + '€';
+    if(document.getElementById('comboMaxDisplay')) document.getElementById('comboMaxDisplay').textContent = '×' + (shiftMaxCombo||combo).toFixed(1);
+    if(document.getElementById('totalClicksDisplay')) document.getElementById('totalClicksDisplay').textContent = totalClicksSession;
   }
 
   // ── Save ──
@@ -804,7 +811,6 @@
       grade:   getGrade(currentLevel),
       records: { ...(fresh?.records || {}), clicker_clicks: newClicks }
     }).eq('user_id', currentUser.id);
-    clicks = 0; // reset après save pour éviter le double comptage
   }
 
   function goShop() {
