@@ -1756,7 +1756,7 @@ function applyBannerColor(src){
       if (sk) sk.style.display = 'none';
       if (pc) pc.style.display = '';
 
-      loadRank(stats.level || 1);
+      loadRank(currentUser.id);
       await checkPendingLevelUp(stats, profile);
       document.getElementById('diamondsAmount').textContent = '💎 ' + (stats.diamonds || 0);
       document.getElementById('trophiesAmount').textContent = '🏆 ' + (stats.trophies || 0);
@@ -1817,11 +1817,11 @@ function applyBannerColor(src){
       document.body.appendChild(overlay);
     }
 
-    async function loadRank(level) {
+    async function loadRank(uid) {
       try {
         const { data } = await sb.from('game_stats').select('user_id,money').order('money', { ascending: false });
-        if (!data || !currentUser) return;
-        const rank = data.findIndex(p => p.user_id === currentUser.id) + 1;
+        if (!data || !uid) return;
+        const rank = data.findIndex(p => p.user_id === uid) + 1;
         const total = data.length;
         const rankEl = document.getElementById('rankValue');
         if (rankEl) rankEl.textContent = rank > 0 ? '#' + rank : '#—';
@@ -2102,7 +2102,7 @@ async function init(){
     checkStreak(uid,stats);
 
     startPlaytimeTracking(uid);
-    loadRank(uid);
+    // loadRank(uid); // géré par la fonction principale
     loadChatBadge(uid);
 
     // PWA : enregistrer le service worker
@@ -2140,38 +2140,7 @@ function checkStreak(uid,stats){
   }catch(e){}
 }
 
-// FIX #7 : rank — tri Supabase + count séparé (scalable)
-async function loadRank(uid){
-  try{
-    // Leader = top 1
-    const{data:top}=await sb.from('game_stats')
-      .select('user_id,level,money')
-      .order('level',{ascending:false})
-      .order('money',{ascending:false})
-      .limit(1);
 
-    // Total joueurs
-    const{count}=await sb.from('game_stats')
-      .select('user_id',{count:'exact',head:true});
-
-    // Position du joueur : compter combien ont un level+money supérieur
-    // Approx : on fetch juste user_id,level,money et on trie côté client
-    // TODO: remplacer par une RPC Postgres pour 500+ joueurs
-    const{data:all}=await sb.from('game_stats')
-      .select('user_id,level,money')
-      .order('level',{ascending:false})
-      .order('money',{ascending:false});
-
-    let rank='—';
-    if(all){
-      const idx=all.findIndex(x=>x.user_id===uid);
-      if(idx>=0) rank=idx+1;
-    }
-
-    const elPos=document.getElementById('rankMyPos');
-    if(elPos)elPos.textContent='#'+rank;
-  }catch(e){}
-}
 
 // ── Données dynamiques sur les cartes ──
 function populateDynamicCards(stats){
