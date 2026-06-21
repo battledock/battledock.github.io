@@ -1819,23 +1819,24 @@ function applyBannerColor(src){
 
     async function loadRank(level) {
       try {
-        const { data } = await sb.from('game_stats').select('user_id,level').order('level', { ascending: false });
-        if (!data) return;
-        const rank = data.findIndex(p => p.level <= level) + 1;
-        document.getElementById('rankValue').textContent = '#' + rank;
+        const { data } = await sb.from('game_stats').select('user_id,money').order('money', { ascending: false });
+        if (!data || !currentUser) return;
+        const rank = data.findIndex(p => p.user_id === currentUser.id) + 1;
         const total = data.length;
+        const rankEl = document.getElementById('rankValue');
+        if (rankEl) rankEl.textContent = rank > 0 ? '#' + rank : '#—';
+        const elPos = document.getElementById('rankMyPos');
+        if (elPos) elPos.textContent = rank > 0 ? '#' + rank : '#—';
         const leaderRow = data[0];
-        let leaderName = '—';
-        try {
-          const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leaderRow.user_id).maybeSingle();
-          leaderName = prof?.username || '—';
-        } catch(_) {}
-        const elPos    = document.getElementById('rankMyPos');
-        const elLeader = document.getElementById('rankLeaderName');
-        const elTotal  = document.getElementById('rankTotal');
-        if (elPos)    elPos.textContent    = '#' + rank;
-        if (elLeader) elLeader.textContent = leaderName;
-        if (elTotal)  elTotal.textContent  = total;
+        if (leaderRow) {
+          try {
+            const { data: prof } = await sb.from('profiles').select('username').eq('user_id', leaderRow.user_id).maybeSingle();
+            const elLeader = document.getElementById('rankLeaderName');
+            if (elLeader) elLeader.textContent = prof?.username || '—';
+          } catch(_) {}
+        }
+        const elTotal = document.getElementById('rankTotal');
+        if (elTotal) elTotal.textContent = total;
       } catch(e) { console.log('loadRank:', e); }
     }
 
@@ -2270,23 +2271,7 @@ init();
     <div class="pcb-stat"><div class="pcb-stat-val" id="rankValue">#--</div><div class="pcb-stat-lbl">Rang</div></div>
   </div>
 
-<script>
-// Connexion barre stats au rang Supabase
-async function loadRankForBar(){
-  try {
-    if(!window.currentUser) return;
-    var res = await window.sb.from('game_stats')
-      .select('user_id, money')
-      .order('money', {ascending:false});
-    if(!res.data) return;
-    var pos = res.data.findIndex(function(r){ return r.user_id === window.currentUser.id; });
-    var rankEl = document.getElementById('rankValue');
-    if(rankEl) rankEl.textContent = pos >= 0 ? '#' + (pos+1) : '#--';
-  } catch(e){}
-}
-// Charger le rang après 2s (laisser le temps à l'auth)
-setTimeout(loadRankForBar, 2500);
-</script>
+
 
 </body>
 </html>
