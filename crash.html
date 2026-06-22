@@ -1,216 +1,114 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Crash - Battle Dock Casino</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
-    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
-    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Crash — Battle Dock Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:'Inter',sans-serif}
+body{background:radial-gradient(ellipse at top,#0f0c29,#302b63 40%,#24243e);display:flex;flex-direction:column}
 
-    /* TABLE */
-    .crash-table {
-      background:linear-gradient(135deg,#1e293b,#0f172a);
-      border:4px solid #fbbf24;
-      border-radius:14px;
-      box-shadow:0 8px 32px rgba(0,0,0,0.6);
-      width:100%;max-width:340px;
-      display:flex;flex-direction:column;align-items:center;
-      gap:0;flex-shrink:0;
-      overflow:hidden;
-      position:relative;
-    }
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px)+10px) 16px 10px;flex-shrink:0;z-index:10}
+.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px}
+.hdr-bal{background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
 
-    /* SCÈNE FUSÉE */
-    .scene {
-      width:100%;height:180px;
-      position:relative;
-      overflow:hidden;
-    }
+/* GAME */
+.game{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 14px;gap:12px;min-height:0}
 
-    /* Étoiles de fond */
-    .stars { position:absolute;inset:0; }
-    .star {
-      position:absolute;
-      border-radius:50%;
-      background:white;
-      opacity:0;
-      animation:twinkle var(--d) ease-in-out infinite var(--delay);
-    }
-    @keyframes twinkle { 0%,100%{opacity:0} 50%{opacity:var(--op)} }
+/* TABLE CRASH */
+.crash-table{
+  background:linear-gradient(180deg,#0a0a1a,#111128);
+  border:3px solid rgba(251,191,36,.3);border-radius:24px;
+  width:100%;max-width:420px;
+  overflow:hidden;position:relative;
+  flex-shrink:0;
+}
 
-    /* Trajectoire */
-    .trail-canvas { position:absolute;inset:0;width:100%;height:100%; }
+/* SCÈNE */
+.scene{
+  height:clamp(180px,45vw,240px);
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#000510,#0a0a1a);
+}
+.stars{position:absolute;inset:0;pointer-events:none}
+.explosion{position:absolute;inset:0;display:none;align-items:center;justify-content:center;font-size:80px;z-index:10}
+.rocket-wrap{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);transition:bottom .05s linear;display:flex;flex-direction:column;align-items:center;gap:0}
+.rocket-emoji{font-size:44px;line-height:1}
+.flame{font-size:28px;line-height:1;animation:flameP .2s ease-in-out infinite alternate}
+@keyframes flameP{from{transform:scaleY(.8)}to{transform:scaleY(1.2)}}
 
-    /* Fusée */
-    .rocket-wrap {
-      position:absolute;
-      bottom:20px;
-      left:50%;
-      transform:translateX(-50%);
-      transition:bottom 0.1s linear;
-      z-index:10;
-      display:flex;flex-direction:column;align-items:center;
-    }
-    .rocket-emoji { font-size:44px;line-height:1;transition:filter .3s; }
-    .rocket-emoji.crashed { filter:grayscale(1); }
-    .rocket-emoji.cashed  { filter:brightness(1.4) drop-shadow(0 0 14px rgba(136,255,170,0.8)); }
+/* INFO MULT */
+.table-info{padding:14px 16px 16px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.mult-val{font-family:'Bebas Neue',sans-serif;font-size:52px;color:#fbbf24;line-height:1;letter-spacing:2px;text-shadow:0 0 20px rgba(251,191,36,.3)}
+.mult-sub{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px}
+.gain-box{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:8px 24px;min-width:140px;text-align:center;min-height:36px;display:flex;align-items:center;justify-content:center}
+.gain-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fbbf24;letter-spacing:1px}
+.btn-cashout{
+  width:100%;padding:14px;border:none;border-radius:14px;
+  background:linear-gradient(135deg,#4ade80,#16a34a);
+  color:#0a0a0a;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;
+  cursor:pointer;font-weight:900;transition:all .15s;
+  box-shadow:0 4px 16px rgba(74,222,128,.3);
+}
+.btn-cashout:disabled{background:rgba(255,255,255,.07);color:rgba(255,255,255,.25);box-shadow:none;cursor:default}
+.btn-cashout.cashed-btn{background:linear-gradient(135deg,#4ade80,#16a34a);color:#0a0a0a}
+.btn-cashout.crashed-btn{background:rgba(220,38,38,.15);color:rgba(255,100,100,.5);box-shadow:none}
 
-    /* Flamme sous la fusée */
-    .flame {
-      font-size:22px;margin-top:-4px;
-      opacity:0;
-      animation:none;
-    }
-    .flame.burning {
-      opacity:1;
-      animation:flamePulse .15s ease-in-out infinite alternate;
-    }
-    @keyframes flamePulse { from{transform:scaleY(0.8) scaleX(0.9)} to{transform:scaleY(1.2) scaleX(1.1)} }
+/* Chips */
+.chips{display:flex;gap:6px;width:100%;max-width:420px}
+.chip{flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);transition:all .15s}
+.chip.sel{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24}
+.chip:active{transform:scale(.96)}
 
-    /* Particules trail */
-    .particle {
-      position:absolute;
-      border-radius:50%;
-      pointer-events:none;
-      animation:particleFade var(--dur) ease-out forwards;
-    }
-    @keyframes particleFade {
-      0%   { opacity:0.9;transform:scale(1) translate(0,0); }
-      100% { opacity:0;transform:scale(0.2) translate(var(--tx),var(--ty)); }
-    }
-
-    /* Explosion */
-    .explosion {
-      position:absolute;top:50%;left:50%;
-      transform:translate(-50%,-50%);
-      font-size:0;opacity:0;
-      z-index:20;
-      animation:none;
-    }
-    .explosion.boom {
-      animation:explode .6s ease-out forwards;
-    }
-    @keyframes explode {
-      0%   { font-size:20px;opacity:1;transform:translate(-50%,-50%) scale(0.5); }
-      50%  { font-size:60px;opacity:1;transform:translate(-50%,-50%) scale(1.2); }
-      100% { font-size:80px;opacity:0;transform:translate(-50%,-50%) scale(1.5); }
-    }
-
-    /* Shake sur crash */
-    @keyframes shake {
-      0%,100%{transform:translateX(0)}
-      20%{transform:translateX(-8px)}
-      40%{transform:translateX(8px)}
-      60%{transform:translateX(-5px)}
-      80%{transform:translateX(5px)}
-    }
-    .shaking { animation:shake .4s ease-out; }
-
-    /* INFOS BAS TABLE */
-    .table-info {
-      padding:12px 14px;
-      display:flex;flex-direction:column;align-items:center;gap:6px;
-      width:100%;
-    }
-
-    .mult-val {
-      font-family:'Bebas Neue',sans-serif;
-      font-size:clamp(52px,15vw,72px);
-      color:white;line-height:0.9;
-      transition:color .2s,text-shadow .2s;
-    }
-    .mult-val.danger  { color:#fbbf24;text-shadow:0 0 20px rgba(251,191,36,0.5); }
-    .mult-val.mega    { color:#f97316;text-shadow:0 0 30px rgba(249,115,22,0.6); }
-    .mult-val.crashed { color:#f87171; }
-    .mult-val.cashed  { color:#88ffaa;text-shadow:0 0 20px rgba(136,255,170,0.5); }
-
-    .mult-sub { font-size:10px;font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:2px;text-align:center; }
-
-    .gain-box { background:rgba(251,191,36,0.1);border:1.5px solid rgba(251,191,36,0.25);border-radius:10px;padding:5px 20px;min-width:160px;text-align:center;min-height:32px;display:flex;align-items:center;justify-content:center; }
-    .gain-val { font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fbbf24; }
-
-    .btn-cashout {
-      width:100%;padding:11px;
-      background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;
-      color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;
-      cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s;
-    }
-    .btn-cashout:active   { transform:scale(0.98); }
-    .btn-cashout:disabled { background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.25);box-shadow:none;cursor:default; }
-    .btn-cashout.cashed-btn  { background:#88ffaa;color:#0f172a; }
-    .btn-cashout.crashed-btn { background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);box-shadow:none; }
-
-    /* CONTROLS */
-    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
-    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
-    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
-    .chip.sel { background:#fbbf24;color:#0f172a; }
-    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
-    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
-    .spin-btn:active { transform:scale(0.98); }
-    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
-
-    /* BOTTOM BAR */
-    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
-    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
-    .back-btn:active { transform:scale(0.95); }
-    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
-    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
-  </style>
+/* Bouton */
+.spin-btn{width:100%;max-width:420px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.3);transition:all .15s;font-weight:900}
+.spin-btn:active{transform:scale(.98);opacity:.9}
+.spin-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+</style>
 </head>
 <body>
-<div class="container">
-  <div class="game-area">
 
-    <div class="crash-table" id="crashTable">
-      <!-- SCÈNE FUSÉE -->
-      <div class="scene" id="scene">
-        <!-- Étoiles -->
-        <div class="stars" id="starsEl"></div>
-        <!-- Explosion -->
-        <div class="explosion" id="explosionEl">💥</div>
-        <!-- Fusée -->
-        <div class="rocket-wrap" id="rocketWrap">
-          <div class="rocket-emoji" id="rocketEl">🚀</div>
-          <div class="flame" id="flameEl">🔥</div>
-        </div>
-      </div>
+<div class="hdr">
+  <button class="btn-back" onclick="location.href='casino.html'">← CASINO</button>
+  <div class="hdr-title">🚀 CRASH</div>
+  <div class="hdr-bal" id="balance">0€</div>
+</div>
 
-      <!-- INFOS -->
-      <div class="table-info">
-        <div class="mult-val" id="multVal">1.00×</div>
-        <div class="mult-sub" id="multSub">Lance une partie pour commencer</div>
-        <div class="gain-box"><div class="gain-val" id="gainVal"></div></div>
-        <button class="btn-cashout" id="btnCashout" onclick="cashout()" disabled>ENCAISSER</button>
+<div class="game">
+  <div class="crash-table" id="crashTable">
+    <div class="scene" id="scene">
+      <div class="stars" id="starsEl"></div>
+      <div class="explosion" id="explosionEl">💥</div>
+      <div class="rocket-wrap" id="rocketWrap">
+        <div class="rocket-emoji" id="rocketEl">🚀</div>
+        <div class="flame" id="flameEl">🔥</div>
       </div>
     </div>
-
-    <!-- CONTROLS -->
-    <div class="controls">
-      <div class="chips">
-        <div class="chip sel" id="c1000"  onclick="setBet(1000,'c1000')">1K</div>
-        <div class="chip"     id="c5000"  onclick="setBet(5000,'c5000')">5K</div>
-        <div class="chip"     id="c10000" onclick="setBet(10000,'c10000')">10K</div>
-        <div class="chip"     id="c25000" onclick="setBet(25000,'c25000')">25K</div>
-      </div>
-      <button class="spin-btn" id="btnPlay" onclick="startGame()">LANCER — <span id="betLabel">1 000€</span></button>
+    <div class="table-info">
+      <div class="mult-val" id="multVal">1.00×</div>
+      <div class="mult-sub" id="multSub">Lance une partie</div>
+      <div class="gain-box"><div class="gain-val" id="gainVal"></div></div>
+      <button class="btn-cashout" id="btnCashout" onclick="cashout()" disabled>ENCAISSER</button>
     </div>
-
   </div>
 
-  <div class="bottom-bar">
-    <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-    <div class="game-title">🚀 CRASH</div>
-    <div class="balance" id="balance">0€</div>
+  <div class="chips">
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+    <div class="chip" id="c25000" onclick="setBet(25000,'c25000')">25K</div>
   </div>
+
+  <button class="spin-btn" id="btnPlay" onclick="startGame()">LANCER — <span id="betLabel">1 000€</span></button>
 </div>
 
 <script>
+
   const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const { createClient } = supabase;
@@ -481,6 +379,7 @@
   }
 
   init();
+
 </script>
 </body>
 </html>

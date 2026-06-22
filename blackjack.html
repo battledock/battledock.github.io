@@ -1,330 +1,120 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Blackjack - Battle Dock Casino</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-      -webkit-user-select: none; user-select: none;
-      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Blackjack — Battle Dock Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:'Inter',sans-serif}
+body{background:radial-gradient(ellipse at top,#064e3b,#022c22 60%,#011a14);display:flex;flex-direction:column}
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
-      min-height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px)+10px) 16px 10px;flex-shrink:0}
+.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px}
+.hdr-bal{background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
 
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 6px;
-      padding-bottom: 120px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-    }
+/* GAME */
+.game{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 14px;gap:10px;min-height:0}
 
-    .game-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      overflow: hidden;
-      min-height: 0;
-    }
+/* TABLE */
+.bj-table{background:linear-gradient(135deg,#065f46,#047857);border:5px solid #92400e;border-radius:24px;width:100%;max-width:420px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.5),inset 0 2px 8px rgba(0,0,0,.2);display:flex;flex-direction:column;gap:10px}
 
-    /* TABLE BLACKJACK — même style .machine */
-    .bj-table {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 4px solid #fbbf24;
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      width: 100%;
-      max-width: 340px;
-      flex-shrink: 0;
-    }
+/* Zones */
+.zone{display:flex;flex-direction:column;align-items:center;gap:6px}
+.zone-label{font-size:8px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:3px}
+.cards{display:flex;gap:-8px;justify-content:center;min-height:70px;align-items:center;flex-wrap:wrap;gap:4px}
+.zone-score{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fbbf24;min-height:24px}
+.sep{width:100%;height:1px;background:rgba(255,255,255,.1)}
 
-    /* ZONES DEALER / JOUEUR */
-    .zone {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 0;
-    }
+/* Cartes */
+.card{
+  width:clamp(44px,12vw,54px);height:clamp(62px,17vw,76px);
+  background:white;border-radius:8px;border:2px solid #1a1a1a;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(20px,6vw,26px);font-weight:900;
+  box-shadow:0 3px 8px rgba(0,0,0,.4);
+  flex-shrink:0;
+  animation:cardIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cardIn{from{opacity:0;transform:scale(.5) rotate(-10deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.card.red{color:#cc1a1a}
+.card.black{color:#1a1a1a}
+.card.back{background:linear-gradient(135deg,#1565C0,#0d47a1);color:transparent;font-size:0}
 
-    .zone-label {
-      font-size: 9px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.35);
-      letter-spacing: 3px;
-    }
+/* Actions BJ */
+.action-btns{display:flex;gap:8px;width:100%;max-width:420px}
+.btn-action{flex:1;padding:14px 8px;border:none;border-radius:14px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;font-weight:900;transition:all .15s}
+.btn-action:active{transform:scale(.96)}
+.btn-hit{background:#fbbf24;color:#1a0000;box-shadow:0 4px 14px rgba(251,191,36,.3)}
+.btn-stand{background:rgba(255,255,255,.1);color:#fff;border:1.5px solid rgba(255,255,255,.2)}
+.btn-double{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1.5px solid rgba(255,255,255,.1)}
 
-    .zone-score {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 24px;
-      color: white;
-      line-height: 1;
-    }
-    .zone-score.bust { color: #f87171; }
-    .zone-score.blackjack { color: #fbbf24; }
+/* Résultat */
+.result{display:none;padding:12px 16px;border-radius:14px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;width:100%;max-width:420px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.result.win{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 16px rgba(22,163,74,.4)}
+.result.lose{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
+.result.push{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7)}
 
-    .cards {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-      justify-content: center;
-      min-height: 68px;
-      align-items: center;
-    }
+/* Chips */
+.chips{display:flex;gap:6px;width:100%;max-width:420px}
+.chip{flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);transition:all .15s}
+.chip.sel{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24}
+.chip:active{transform:scale(.96)}
 
-    .card {
-      width: clamp(42px, 12vw, 54px);
-      height: clamp(60px, 17vw, 76px);
-      border-radius: 7px;
-      background: white;
-      border: 2.5px solid #0f172a;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 2px 2px 0 rgba(0,0,0,0.3);
-      flex-shrink: 0;
-    }
-    .card .cv { font-size: clamp(14px,4vw,18px); font-weight: 900; line-height: 1; }
-    .card .cs { font-size: clamp(12px,3.5vw,16px); line-height: 1; }
-    .card.red .cv, .card.red .cs { color: #cc1a1a; }
-    .card.black .cv, .card.black .cs { color: #0f172a; }
-    .card.hidden {
-      background: linear-gradient(135deg, #cc1a1a, #7f1d1d);
-      border-color: #fbbf24;
-    }
-    .card.hidden::after { content: '🃏'; font-size: 24px; }
-    @keyframes dealCard { from{transform:translateY(-20px) scale(0.85);opacity:0} to{transform:none;opacity:1} }
-    .card.new { animation: dealCard .22s ease-out; }
-
-    .sep {
-      height: 1px;
-      background: rgba(251,191,36,0.2);
-      margin: 2px 0;
-    }
-
-    /* RÉSULTAT */
-    .result {
-      display: none;
-      padding: 7px 12px;
-      border-radius: 10px;
-      text-align: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      animation: resultPop 0.3s;
-      width: 100%;
-    }
-    @keyframes resultPop { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
-    .result.win { background: linear-gradient(135deg,#10b981,#059669); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
-    .result.lose { background: linear-gradient(135deg,#dc2626,#991b1b); color: white; box-shadow: 0 4px 14px rgba(220,38,38,0.4); }
-    .result.push { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
-
-    /* CONTROLS — même style machineasous */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      width: 100%;
-      max-width: 340px;
-      flex-shrink: 0;
-    }
-
-    /* CHIPS */
-    .chips {
-      display: flex;
-      gap: 6px;
-      background: rgba(255,255,255,0.05);
-      padding: 6px;
-      border-radius: 8px;
-      border: 2px solid rgba(251,191,36,0.3);
-    }
-    .chip {
-      flex: 1;
-      padding: 7px 4px;
-      border-radius: 6px;
-      text-align: center;
-      cursor: pointer;
-      transition: all .15s;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 12px;
-      letter-spacing: 1px;
-    }
-    .chip.sel { background: #fbbf24; color: #0f172a; }
-    .chip:not(.sel) { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(251,191,36,0.2); }
-
-    /* BOUTONS ACTION */
-    .action-btns {
-      display: none;
-      gap: 6px;
-    }
-    .btn-action {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 10px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 15px;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-      transition: all .2s;
-    }
-    .btn-action:active { transform: scale(0.97); }
-    .btn-action:disabled { opacity: 0.45; }
-    .btn-hit { background: linear-gradient(135deg,#fbbf24,#f59e0b); color: #0f172a; }
-    .btn-stand { background: rgba(255,255,255,0.9); color: #cc1a1a; }
-    .btn-double { background: linear-gradient(135deg,#f97316,#ea580c); color: white; }
-
-    .spin-btn {
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border: none;
-      border-radius: 10px;
-      color: #0f172a;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(251,191,36,0.5);
-      transition: all 0.2s;
-    }
-    .spin-btn:active { transform: scale(0.98); }
-    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    /* BOTTOM BAR — identique machineasous */
-    .bottom-bar {
-      background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border: 2px solid rgba(251,191,36,0.5);
-      border-radius: 10px;
-      padding: 6px 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-      min-height: 44px;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 480px;
-      width: calc(100% - 20px);
-      z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-    }
-
-    .back-btn {
-      background: rgba(251,191,36,0.2);
-      border: 2px solid rgba(251,191,36,0.5);
-      color: #fbbf24;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-weight: 700;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-    .back-btn:active { transform: scale(0.95); }
-
-    .game-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: #fbbf24;
-      letter-spacing: 1.5px;
-    }
-
-    .balance {
-      background: white;
-      color: #0f172a;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-  </style>
+/* Boutons */
+.spin-btn{width:100%;max-width:420px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.3);transition:all .15s;font-weight:900}
+.spin-btn:active{transform:scale(.98);opacity:.9}
+.spin-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="game-area">
 
-      <!-- TABLE -->
-      <div class="bj-table">
-        <!-- DEALER -->
-        <div class="zone">
-          <div class="zone-label">CROUPIER</div>
-          <div class="cards" id="dealerCards"></div>
-          <div class="zone-score" id="dealerScore">—</div>
-        </div>
+<div class="hdr">
+  <button class="btn-back" onclick="location.href='casino.html'">← CASINO</button>
+  <div class="hdr-title">♠ BLACKJACK</div>
+  <div class="hdr-bal" id="balance">0€</div>
+</div>
 
-        <div class="sep"></div>
-
-        <!-- JOUEUR -->
-        <div class="zone">
-          <div class="zone-label">VOUS</div>
-          <div class="cards" id="playerCards"></div>
-          <div class="zone-score" id="playerScore">—</div>
-        </div>
-      </div>
-
-      <!-- CONTROLS -->
-      <div class="controls">
-        <div class="result" id="result"></div>
-
-        <!-- CHIPS -->
-        <div class="chips">
-          <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
-          <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
-          <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
-          <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
-        </div>
-
-        <!-- ACTIONS EN JEU -->
-        <div class="action-btns" id="actionBtns" style="display:none;gap:6px;display:none">
-          <button class="btn-action btn-hit" onclick="hit()">TIRER</button>
-          <button class="btn-action btn-stand" onclick="stand()">RESTER</button>
-          <button class="btn-action btn-double" id="btnDouble" onclick="doubleDown()">×2</button>
-        </div>
-
-        <!-- BOUTON DISTRIBUER -->
-        <button class="spin-btn" id="btnDeal" onclick="deal()">
-          DISTRIBUER — <span id="betLabel">1 000€</span>
-        </button>
-      </div>
-
+<div class="game">
+  <div class="bj-table">
+    <div class="zone">
+      <div class="zone-label">CROUPIER</div>
+      <div class="cards" id="dealerCards"></div>
+      <div class="zone-score" id="dealerScore">—</div>
     </div>
-
-    <!-- BOTTOM BAR -->
-    <div class="bottom-bar">
-      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-      <div class="game-title">♠ BLACKJACK</div>
-      <div class="balance" id="balance">0€</div>
+    <div class="sep"></div>
+    <div class="zone">
+      <div class="zone-label">VOUS</div>
+      <div class="cards" id="playerCards"></div>
+      <div class="zone-score" id="playerScore">—</div>
     </div>
   </div>
 
-  <script>
+  <div class="result" id="result"></div>
+
+  <div class="action-btns" id="actionBtns" style="display:none">
+    <button class="btn-action btn-hit" onclick="hit()">TIRER</button>
+    <button class="btn-action btn-stand" onclick="stand()">RESTER</button>
+    <button class="btn-action btn-double" id="btnDouble" onclick="doubleDown()">×2</button>
+  </div>
+
+  <div class="chips">
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+    <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
+  </div>
+
+  <button class="spin-btn" id="btnDeal" onclick="deal()">DISTRIBUER — <span id="betLabel">1 000€</span></button>
+</div>
+
+<script>
+
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
@@ -507,6 +297,7 @@
   }
 
   init();
-  </script>
+  
+</script>
 </body>
 </html>
