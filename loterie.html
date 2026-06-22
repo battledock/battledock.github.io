@@ -1,155 +1,77 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Loterie - Battle Dock Casino</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent; }
-    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
-    .container { max-width:500px;margin:0 auto;padding:6px;padding-bottom:120px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
-    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Loterie — Battle Dock Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:'Inter',sans-serif}
+body{background:radial-gradient(ellipse at top,#1a1600,#0d0b00 60%,#050400);display:flex;flex-direction:column}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px)+12px) 16px 12px;flex-shrink:0;background:rgba(0,0,0,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px}
+.hdr-bal{background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
+.game{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:14px;min-height:0}
+.chips{display:flex;gap:6px;width:100%;max-width:420px}
+.chip{flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);transition:all .15s}
+.chip.sel{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24}
+.chip:active{transform:scale(.96)}
+.spin-btn{width:100%;max-width:420px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.35);transition:all .15s;font-weight:900}
+.spin-btn:active{transform:scale(.98);opacity:.9}
+.spin-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.result{display:none;padding:13px 16px;border-radius:16px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;width:100%;max-width:420px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.result.win{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 16px rgba(22,163,74,.4)}
+.result.lose{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
+.result.jackpot{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;box-shadow:0 4px 16px rgba(251,191,36,.5)}
 
-    /* TABLE */
-    .lot-table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0; }
-
-    /* BOULES */
-    .balls-row { display:flex;gap:8px;justify-content:center;align-items:center;min-height:64px; }
-    .ball {
-      width:clamp(46px,13vw,58px);
-      height:clamp(46px,13vw,58px);
-      border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-family:'Bebas Neue',sans-serif;
-      font-size:clamp(16px,4.5vw,22px);
-      font-weight:700;
-      border:3px solid rgba(255,255,255,0.25);
-      box-shadow:
-        inset 0 -5px 10px rgba(0,0,0,0.35),
-        inset 0 5px 10px rgba(255,255,255,0.2),
-        0 6px 16px rgba(0,0,0,0.5),
-        0 0 0 2px rgba(0,0,0,0.3);
-      color:white;
-      text-shadow:0 1px 3px rgba(0,0,0,0.5);
-      flex-shrink:0;
-      transition:all .2s;
-    }
-    .ball.empty {
-      background:rgba(255,255,255,0.05);
-      border:2px dashed rgba(255,255,255,0.12);
-      color:rgba(255,255,255,0.1);
-      box-shadow:none;
-      font-size:18px;
-    }
-    .ball.drawn { animation:ballPop .35s cubic-bezier(0.34,1.56,0.64,1); }
-    @keyframes ballPop {
-      0%  { transform:scale(0) rotate(-180deg); opacity:0; }
-      70% { transform:scale(1.15) rotate(5deg); }
-      100%{ transform:scale(1) rotate(0deg); opacity:1; }
-    }
-
-    /* couleurs boules par numéro */
-    .ball.bc-red   { background:linear-gradient(135deg,#ef4444,#991b1b); }
-    .ball.bc-blue  { background:linear-gradient(135deg,#3b82f6,#1e3a8a); }
-    .ball.bc-green { background:linear-gradient(135deg,#22c55e,#14532d); }
-
-    .ball.bonus { background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#0f172a;border-color:rgba(0,0,0,0.5); }
-    .ball-sep { color:rgba(255,255,255,0.3);font-size:18px;font-weight:700;flex-shrink:0; }
-
-    /* GRILLE JOUEUR */
-    .grid-label { font-size:9px;font-weight:700;color:rgba(255,255,255,0.35);letter-spacing:3px; }
-    .num-grid { display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:300px; }
-    .num-btn {
-      width:clamp(34px,9.5vw,42px);
-      height:clamp(34px,9.5vw,42px);
-      border-radius:50%;
-      display:flex;align-items:center;justify-content:center;
-      font-family:'Bebas Neue',sans-serif;
-      font-size:clamp(11px,3vw,14px);
-      background:rgba(255,255,255,0.06);
-      border:2px solid rgba(255,255,255,0.1);
-      color:rgba(255,255,255,0.4);
-      cursor:pointer;transition:all .15s;
-    }
-    .num-btn.r1  { border-color:rgba(239,68,68,0.3); }
-    .num-btn.r2  { border-color:rgba(59,130,246,0.3); }
-    .num-btn.r3  { border-color:rgba(34,197,94,0.3); }
-    .num-btn:active { transform:scale(0.9); }
-    .num-btn.sel { background:#fbbf24;border-color:#0f172a;color:#0f172a;box-shadow:0 2px 8px rgba(251,191,36,0.4); }
-    .num-btn.hit { background:#10b981;border-color:#0f172a;color:white;box-shadow:0 2px 8px rgba(16,185,129,0.5); }
-    .num-btn.miss { opacity:0.3; }
-
-    /* RÉSULTAT */
-    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%;animation:resultPop .3s; }
-    @keyframes resultPop { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
-    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
-    .result.push { background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:white; }
-
-    /* CONTROLS */
-    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
-    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
-    .chip { flex:1;padding:7px 4px;border-radius:6px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px; }
-    .chip.sel { background:#fbbf24;color:#0f172a; }
-    .chip:not(.sel) { background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.4);border:1px solid rgba(251,191,36,0.2); }
-    .spin-btn { width:100%;padding:10px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;color:#0f172a;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1.5px;cursor:pointer;box-shadow:0 6px 20px rgba(251,191,36,0.5);transition:all .2s; }
-    .spin-btn:active { transform:scale(0.98); }
-    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
-
-    /* BOTTOM BAR */
-    .bottom-bar { background:linear-gradient(135deg,#7f1d1d,#991b1b);border:2px solid rgba(251,191,36,0.5);border-radius:10px;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;min-height:44px;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 20px);z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,0.5); }
-    .back-btn { background:rgba(251,191,36,0.2);border:2px solid rgba(251,191,36,0.5);color:#fbbf24;border-radius:6px;padding:4px 10px;font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap; }
-    .back-btn:active { transform:scale(0.95); }
-    .game-title { font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1.5px; }
-    .balance { background:white;color:#0f172a;padding:4px 10px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;font-weight:700;white-space:nowrap; }
-  </style>
+.ticket{background:linear-gradient(135deg,#1a1a1a,#2d2d2d);border:2px solid #fbbf24;border-radius:20px;width:100%;max-width:420px;padding:20px 16px;position:relative;overflow:hidden}
+.ticket::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.ticket-title{font-family:'Bebas Neue',sans-serif;font-size:11px;color:rgba(255,255,255,.3);letter-spacing:3px;text-align:center;margin-bottom:14px}
+.ticket-nums{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.ticket-num{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px;color:rgba(255,255,255,.4);cursor:pointer;transition:all .2s}
+.ticket-num.drawn{background:linear-gradient(135deg,#fbbf24,#f59e0b);border-color:#fbbf24;color:#1a0000;transform:scale(1.1);box-shadow:0 0 16px rgba(251,191,36,.4)}
+.ticket-num.miss{background:rgba(220,38,38,.15);border-color:#dc2626;color:#dc2626}
+.ticket-sep{width:100%;height:1px;background:rgba(255,255,255,.08);margin:10px 0;position:relative}
+.ticket-sep::before,.ticket-sep::after{content:'';position:absolute;top:50%;transform:translateY(-50%);width:12px;height:12px;border-radius:50%;background:#0a0a0a;border:2px solid rgba(255,255,255,.08)}
+.ticket-sep::before{left:-8px}.ticket-sep::after{right:-8px}
+.ticket-prize{font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(255,255,255,.3);letter-spacing:2px;text-align:center}
+.ticket-prize span{color:#fbbf24}
+</style>
 </head>
 <body>
-<div class="container">
-  <div class="game-area">
-
-    <div class="lot-table">
-      <!-- BOULES TIRÉES -->
-      <div class="grid-label">TIRAGE</div>
-      <div class="balls-row" id="drawnBalls">
-        <div class="ball empty">○</div>
-        <div class="ball empty">○</div>
-        <div class="ball empty">○</div>
-        <div class="ball empty">○</div>
-        <div class="ball empty">○</div>
-        <div class="ball-sep">+</div>
-        <div class="ball bonus empty" id="bonusBall">★</div>
-      </div>
-
-      <!-- GRILLE JOUEUR -->
-      <div class="grid-label">CHOISIS 5 NUMÉROS (1-30)</div>
-      <div class="num-grid" id="numGrid"></div>
-    </div>
-
-    <!-- CONTROLS -->
-    <div class="controls">
-      <div class="result" id="result"></div>
-      <div class="chips">
-        <div class="chip sel" id="c500"  onclick="setBet(500,'c500')">500€</div>
-        <div class="chip"     id="c1000" onclick="setBet(1000,'c1000')">1K</div>
-        <div class="chip"     id="c2000" onclick="setBet(2000,'c2000')">2K</div>
-        <div class="chip"     id="c5000" onclick="setBet(5000,'c5000')">5K</div>
-      </div>
-      <button class="spin-btn" id="btnPlay" onclick="play()">TIRER — <span id="betLabel">500€</span></button>
-    </div>
-
-  </div>
-
-  <div class="bottom-bar">
-    <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-    <div class="game-title">🎱 LOTERIE</div>
-    <div class="balance" id="balance">0€</div>
-  </div>
+<div class="hdr">
+  <button class="btn-back" onclick="location.href='casino.html'">← CASINO</button>
+  <div class="hdr-title">🎟️ LOTERIE</div>
+  <div class="hdr-bal" id="balance">0€</div>
 </div>
-
+<div class="game">
+  <div class="ticket">
+    <div class="ticket-title">🎟️ BILLET DE LOTERIE · PORT DE MARSEILLE</div>
+    <div class="ticket-nums" id="ticketNums">
+      <div class="ticket-num" id="n1">?</div>
+      <div class="ticket-num" id="n2">?</div>
+      <div class="ticket-num" id="n3">?</div>
+      <div class="ticket-num" id="n4">?</div>
+      <div class="ticket-num" id="n5">?</div>
+    </div>
+    <div class="ticket-sep"></div>
+    <div class="ticket-prize">Gagnant si <span>3+</span> numéros sortent · Max <span>×50</span></div>
+  </div>
+  <div class="result" id="result"></div>
+  <div class="chips">
+    <div class="chip" id="c500" onclick="setBet(500,'c500')">500€</div>
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+  </div>
+<button class="spin-btn" id="btnPlay" onclick="play()">TIRER — <span id="betLabel">1 000€</span></button>
+</div>
 <script>
+
   const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
   const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   const {createClient}=supabase;
@@ -322,6 +244,7 @@
   }
 
   init();
+
 </script>
 </body>
 </html>
