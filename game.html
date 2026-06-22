@@ -300,39 +300,45 @@ body{
 
 /* Bourse (T4 green + ticker joueurs) */
 .widget-bourse{
-  background:linear-gradient(160deg,#022c22,#065f46);
+  background:#0f0f0f;
   position:relative;overflow:hidden;
   display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:2px;
+  padding:12px;
+  border-right:1px solid #222;
 }
 .bourse-title{
-  font-size:7px;font-weight:800;color:rgba(255,255,255,.3);
-  letter-spacing:4px;z-index:2;
+  font-size:7px;font-weight:800;color:#555;
+  letter-spacing:2px;z-index:2;margin-bottom:4px;
+}
+.bourse-top-row{
+  display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:6px;z-index:2;
 }
 .bourse-variation{
-  font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,10vw,48px);
-  color:#86efac;letter-spacing:-1px;line-height:1;z-index:2;
+  font-family:'Bebas Neue',sans-serif;font-size:clamp(32px,9vw,42px);
+  color:#fff;letter-spacing:-1px;line-height:1;z-index:2;
 }
+.bourse-badge{
+  background:#0f2c0f;border:1px solid #16a34a;border-radius:6px;
+  padding:4px 8px;text-align:center;z-index:2;flex-shrink:0;
+}
+.bourse-badge-val{font-size:9px;font-weight:800;color:#22c55e}
+.bourse-badge-lbl{font-size:6px;color:#16a34a;margin-top:1px}
 .bourse-sub{
-  font-size:8px;font-weight:700;color:rgba(255,255,255,.25);
-  letter-spacing:2px;z-index:2;margin-top:2px;
+  font-size:8px;font-weight:700;color:rgba(255,255,255,.2);
+  letter-spacing:1px;z-index:2;display:none;
 }
-.bourse-ticker{
-  position:absolute;bottom:0;left:0;right:0;
-  height:16px;background:rgba(0,0,0,.15);
-  overflow:hidden;display:flex;align-items:center;
+/* Barres de volume */
+.bourse-bars{
+  display:flex;align-items:flex-end;gap:2px;
+  height:36px;margin-top:auto;z-index:2;
 }
-.bourse-tape{
-  display:flex;gap:14px;padding:0 8px;
-  animation:tickerScroll 20s linear infinite;
-  white-space:nowrap;
+.bourse-bar{
+  flex:1;border-radius:2px 2px 0 0;min-height:4px;
 }
-@keyframes tickerScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-.bourse-tape-item{
-  font-family:'JetBrains Mono',monospace;
-  font-size:7px;font-weight:700;
-  display:flex;gap:4px;
-}
+/* Ticker caché — gardé pour compat JS */
+.bourse-ticker{display:none}
+.bourse-tape{display:none}
 .bourse-tape-item .sym{color:rgba(255,255,255,.4);}
 .bourse-tape-item .up{color:#86efac;}
 .bourse-tape-item .down{color:#fca5a5;}
@@ -1339,9 +1345,29 @@ body{
   <div class="widget-duo">
     <div class="widget widget-bourse" onclick="location.href='bourse.html'">
       <div class="bourse-title">BOURSE</div>
-      <div class="bourse-variation" id="bourseVariation">—</div>
+      <div class="bourse-top-row">
+        <div class="bourse-variation" id="bourseVariation">—</div>
+        <div class="bourse-badge">
+          <div class="bourse-badge-val" id="bourseBadge">—</div>
+          <div class="bourse-badge-lbl">JOUR</div>
+        </div>
+      </div>
       <div class="bourse-sub" id="bourseSub">PROFIT TOTAL</div>
-      <div class="bourse-ticker">
+      <!-- Barres de volume -->
+      <div class="bourse-bars" id="bourseBars">
+        <div class="bourse-bar" style="height:30%;background:#1a3a1a"></div>
+        <div class="bourse-bar" style="height:45%;background:#1a3a1a"></div>
+        <div class="bourse-bar" style="height:55%;background:#16a34a"></div>
+        <div class="bourse-bar" style="height:35%;background:#16a34a"></div>
+        <div class="bourse-bar" style="height:70%;background:#16a34a"></div>
+        <div class="bourse-bar" style="height:50%;background:#22c55e"></div>
+        <div class="bourse-bar" style="height:80%;background:#22c55e"></div>
+        <div class="bourse-bar" style="height:65%;background:#22c55e"></div>
+        <div class="bourse-bar" style="height:90%;background:#4ade80"></div>
+        <div class="bourse-bar" style="height:75%;background:#4ade80"></div>
+      </div>
+      <!-- Ticker caché pour compat JS -->
+      <div class="bourse-ticker" style="display:none">
         <div class="bourse-tape" id="bourseTape"></div>
       </div>
     </div>
@@ -1561,6 +1587,23 @@ function applyBannerColor(src){
           el.textContent = sign + ' ' + Math.abs(profit).toLocaleString('fr-FR') + '€';
           el.style.color = color;
           if(sub) sub.textContent = 'PROFIT TOTAL';
+        }
+        // Patch T — badge + barres couleur
+        var badge = document.getElementById('bourseBadge');
+        if(badge){
+          badge.textContent = profit >= 0 ? '+'+Math.abs(profit).toLocaleString('fr-FR')+'€' : '-'+Math.abs(profit).toLocaleString('fr-FR')+'€';
+          badge.style.color = profit >= 0 ? '#22c55e' : '#ef4444';
+          var bp = badge.parentElement;
+          if(bp){ bp.style.background = profit >= 0 ? '#0f2c0f' : '#2c0f0f'; bp.style.borderColor = profit >= 0 ? '#16a34a' : '#dc2626'; }
+        }
+        var bars = document.getElementById('bourseBars');
+        if(bars && profit !== 0){
+          var barColor = profit >= 0 ? '#22c55e' : '#ef4444';
+          var barMid   = profit >= 0 ? '#16a34a' : '#dc2626';
+          var barDark  = profit >= 0 ? '#1a3a1a' : '#3a1a1a';
+          bars.querySelectorAll('.bourse-bar').forEach(function(b,i){
+            b.style.background = i < 3 ? barDark : i < 6 ? barMid : barColor;
+          });
         }
 
         // Couleur ligne graphe
