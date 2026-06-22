@@ -153,6 +153,20 @@ body.page-out{animation:pageOut .2s ease forwards}
         <path id="pcLine" fill="none" stroke="#16a34a" stroke-width="1.5"/>
       </svg>
     </div>
+    <!-- CAC PORT — indice global -->
+    <div id="cacPort" style="background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:14px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-size:7px;font-weight:800;color:rgba(0,0,0,.3);letter-spacing:2px;margin-bottom:2px">CAC PORT · INDICE GÉNÉRAL</div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a;line-height:1" id="cacVal">—</div>
+          <div style="font-size:11px;font-weight:700" id="cacChg">—</div>
+        </div>
+      </div>
+      <svg width="80" height="32" viewBox="0 0 80 32" preserveAspectRatio="none" id="cacSpark">
+        <path id="cacSparkFill" fill="rgba(22,163,74,.1)"/>
+        <path id="cacSparkLine" fill="none" stroke="#16a34a" stroke-width="1.5"/>
+      </svg>
+    </div>
     <div class="wallet">
       <div class="wallet-box"><div class="wallet-lbl">Liquidités</div><div class="wallet-val cash" id="cash">—</div></div>
       <div class="wallet-box"><div class="wallet-lbl">Portefeuille</div><div class="wallet-val" id="portfolio">—</div></div>
@@ -174,6 +188,15 @@ body.page-out{animation:pageOut .2s ease forwards}
         <div><div class="sheet-sym" id="mSym"></div><div class="stock-name" id="mName"></div></div>
         <div style="display:flex;align-items:center;gap:10px"><div class="sheet-price" id="mPrice"></div><button class="sheet-x" onclick="closeModal()">✕</button></div>
       </div>
+      <!-- Sparkline agrandie dans la modal -->
+      <svg id="mSpark" width="100%" height="80" viewBox="0 0 300 80" preserveAspectRatio="none" style="display:block;margin-bottom:10px;border-radius:8px;background:#f8f8f8">
+        <defs><linearGradient id="mSparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#16a34a" stop-opacity="0.2" id="mSparkStop"/>
+          <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path id="mSparkFill" fill="url(#mSparkGrad)"/>
+        <path id="mSparkLine" fill="none" stroke="#16a34a" stroke-width="2.5" id="mSparkStroke"/>
+      </svg>
       <div class="tt">
         <button class="tt-btn" id="ttBuy" onclick="setMode('buy')">Acheter</button>
         <button class="tt-btn" id="ttInfo" onclick="setMode('info')" style="flex:0.6;font-size:12px">ℹ Info</button>
@@ -235,8 +258,8 @@ body.page-out{animation:pageOut .2s ease forwards}
     { t:'⛔ Retard portuaire',       m:-0.08, bad:true },
   ];
 
-  const TICK_MS=3000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
-  const IMPACT_LIQ=2500000, MEANREV=0.05, EVENT_PROB=0.022, KRACH_PROB=0.0015, KRACH_M=0.65;
+  const TICK_MS=15000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
+  const IMPACT_LIQ=2500000, MEANREV=0.02, EVENT_PROB=0.01, KRACH_PROB=0.0005, KRACH_M=0.75;
   const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36, RUMOR_BIAS=0.20;
   // Volume & Momentum
   const VOL_WINDOW_MS = 5 * 60 * 1000;  // 5 minutes de fenêtre pour le volume
@@ -472,6 +495,49 @@ body.page-out{animation:pageOut .2s ease forwards}
   let portHistory = [];
   function portfolioValue(){ let v=0; COMPANIES.forEach(c=>{const h=holdings[c.sym]; if(h)v+=h.shares*prices[c.sym];}); return v; }
   function updateWallet(){
+    // CAC PORT — moyenne pondérée de toutes les actions
+    var cacNow = 0, cacBase = 0, cnt = 0;
+    COMPANIES.forEach(function(co){
+      if(prices[co.sym] && co.base){
+        cacNow += prices[co.sym];
+        cacBase += co.base;
+        cnt++;
+      }
+    });
+    if(cnt > 0){
+      var cacPct = ((cacNow - cacBase) / cacBase * 100);
+      var cacEl = document.getElementById('cacVal');
+      var cacChgEl = document.getElementById('cacChg');
+      var cacFill = document.getElementById('cacSparkFill');
+      var cacLine = document.getElementById('cacSparkLine');
+      if(cacEl) cacEl.textContent = Math.round(cacNow).toLocaleString('fr-FR') + ' pts';
+      if(cacChgEl){
+        cacChgEl.textContent = (cacPct >= 0 ? '▲ +' : '▼ ') + cacPct.toFixed(2) + '%';
+        cacChgEl.style.color = cacPct >= 0 ? '#16a34a' : '#dc2626';
+      }
+      // Sparkline CAC
+      var cacHists = [];
+      COMPANIES.forEach(function(co){ if(co.hist && co.hist.length > 1) cacHists.push(co.hist); });
+      if(cacHists.length > 0){
+        var len = cacHists[0].length;
+        var pts = [];
+        for(var i=0;i<len;i++){
+          var sum2=0,cnt2=0;
+          cacHists.forEach(function(h){ if(h[i]!==undefined){sum2+=h[i];cnt2++;} });
+          if(cnt2>0) pts.push(sum2/cnt2);
+        }
+        if(pts.length > 1){
+          var mn2=Math.min(...pts), mx2=Math.max(...pts), rng2=mx2-mn2||1;
+          var W2=80,H2=32,p2=3;
+          var coords = pts.map(function(v,i){ return [(i/(pts.length-1))*(W2-p2*2)+p2, H2-p2-(v-mn2)/rng2*(H2-p2*2)]; });
+          var l2 = 'M'+coords.map(function(p){ return p[0].toFixed(1)+','+p[1].toFixed(1); }).join(' L');
+          var f2 = l2+' L'+(W2-p2)+','+(H2-p2)+' L'+p2+','+(H2-p2)+' Z';
+          var clr2 = cacPct >= 0 ? '#16a34a' : '#dc2626';
+          if(cacLine){ cacLine.setAttribute('d',l2); cacLine.setAttribute('stroke',clr2); }
+          if(cacFill){ cacFill.setAttribute('d',f2); cacFill.setAttribute('fill', (cacPct>=0?'rgba(22,163,74,.12)':'rgba(220,38,38,.12)')); }
+        }
+      }
+    }
     const pv = portfolioValue();
     const total = cash + pv;
     document.getElementById('cash').textContent=fmt(cash)+'€';
@@ -526,7 +592,32 @@ body.page-out{animation:pageOut .2s ease forwards}
   }
 
   // ── Modal ──
-  function openModal(sym,m){ modalSym=sym; document.getElementById('ov').classList.add('show'); setMode(m); if(m!=='info'){ document.getElementById('amt').value=''; updateModal(); } }
+  function openModal(sym,m){
+    modalSym=sym;
+    document.getElementById('ov').classList.add('show');
+    setMode(m);
+    if(m!=='info'){ document.getElementById('amt').value=''; updateModal(); }
+    // Remplir sparkline modal
+    var c2 = CO[sym];
+    if(c2 && c2.hist && c2.hist.length > 1){
+      var hist = c2.hist;
+      var mn = Math.min(...hist), mx = Math.max(...hist);
+      var rng = mx - mn || 1;
+      var W=300, H=80, pad=6;
+      var pts = hist.map((v,i)=>[(i/(hist.length-1))*(W-pad*2)+pad, H-pad-(v-mn)/rng*(H-pad*2)]);
+      var line = 'M'+pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' L');
+      var fill = line+' L'+(W-pad)+','+(H-pad)+' L'+pad+','+(H-pad)+' Z';
+      var sl = document.getElementById('mSparkLine');
+      var sf = document.getElementById('mSparkFill');
+      var color2 = c2.color || '#16a34a';
+      var isUp = hist[hist.length-1] >= hist[0];
+      var lineColor = isUp ? '#16a34a' : '#dc2626';
+      if(sl){ sl.setAttribute('d',line); sl.setAttribute('stroke',lineColor); }
+      if(sf){ sf.setAttribute('d',fill); sf.setAttribute('fill',isUp ? 'url(#mSparkGrad)' : 'url(#mSparkGradDn)'); }
+      var stop = document.getElementById('mSparkStop');
+      if(stop) stop.setAttribute('stop-color', lineColor);
+    }
+  }
   function closeModal(){ modalSym=null; document.getElementById('ov').classList.remove('show'); }
 
   function toggleInfo(sym){
