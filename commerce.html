@@ -1597,10 +1597,12 @@ async function loadDashboard(){
   renderEmployees(com,co.niveau||1,money);
   renderEvent(evt||(com.pending_event?EVENTS.find(function(e){return e.id===com.pending_event;})||null:null));
 
-  // Perte argent événement
+  // Perte argent événement — utiliser le solde réel rechargé
   if(com.pending_money_loss&&com.pending_money_loss>0){
-    await sb.from('game_stats').update({money:Math.max(0,money-com.pending_money_loss)}).eq('user_id',currentUser.id);
+    var _realMoney=(gs&&gs.money)||0;
+    await sb.from('game_stats').update({money:Math.max(0,_realMoney-com.pending_money_loss)}).eq('user_id',currentUser.id);
     com.pending_money_loss=0;
+    money=Math.max(0,_realMoney-com.pending_money_loss);
   }
 
   // Sauvegarder
