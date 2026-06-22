@@ -2,12 +2,12 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>Commerce — Battle Dock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflow:hidden}
 .screen{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden;height:100%;height:100dvh}
 .screen.active{display:flex}
@@ -483,17 +483,10 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
       <div class="action-right" id="collect-amt">—</div>
     </div>
-    <div class="action-card" onclick="location.href='zones.html'">
-      <div class="action-ico">🗺️</div>
-      <div class="action-info">
-        <div class="action-title">ZONES DU PORT</div>
-        <div class="action-sub">Achète et améliore des zones</div>
-      </div>
-      <div class="action-right">→</div>
-    </div>
+
 
     <!-- ══ CLIENTS ══ -->
-    <div class="clients-card" id="clientsCard">
+    <div class="clients-card" id="clientsCard" style="display:none">
       <div class="clients-header" onclick="toggleClients()">
         <div class="clients-header-ico">👥</div>
         <div class="clients-header-info">
@@ -525,7 +518,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
     </div>
 
     <!-- ══ RÉPUTATION ══ -->
-    <div class="reput-card" id="reputCard">
+    <div class="reput-card" id="reputCard" style="display:none">
       <div class="reput-header" onclick="toggleReput()">
         <div class="reput-header-ico">⭐</div>
         <div class="reput-header-info">
@@ -551,6 +544,10 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
       </div>
     </div>
 
+    <!-- Bouton voir plus -->
+    <div id="show-more-btn" onclick="showAdvanced()" style="padding:14px;text-align:center;background:#fff;border-radius:14px;border:1px solid #e5e7eb;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#9ca3af;letter-spacing:2px">
+      ↓ VOIR PLUS (CLIENTS, RÉPUTATION...)
+    </div>
     <!-- EVENEMENT -->
     <div class="event-banner" id="eventBanner">
       <div class="event-ico" id="eventIco">🎯</div>
@@ -646,15 +643,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
     </div>
     <div id="obj-body" style="display:none;padding:0 16px 8px"></div>
 
-    <!-- MARCHÉ & CHAT -->
-    <div class="action-card" onclick="location.href='marche.html'">
-      <div class="action-ico">🤝</div>
-      <div class="action-info">
-        <div class="action-title">MARCHÉ & MESSAGERIE</div>
-        <div class="action-sub">Trade de ressources & discussion</div>
-      </div>
-      <div class="action-right">→</div>
-    </div>
+
 
     <!-- CLASSEMENT -->
     <div class="action-card" onclick="toggleRank()" id="rank-card">
@@ -949,6 +938,14 @@ function genName(typeLabel,username){
   return n;
 }
 
+function showAdvanced(){
+  ['clientsCard','reputCard'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el)el.style.display='';
+  });
+  var btn=document.getElementById('show-more-btn');
+  if(btn)btn.style.display='none';
+}
 function fmtM(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.floor(n)+'€';}
 function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
 function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
@@ -1535,7 +1532,7 @@ async function confirmCreate(){
     });
     if(e1){toast('Erreur: '+e1.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';return;}
     // Deduire argent
-    await sb.from('game_stats').update({money:newMoney,commerce:{created:true,invest:0,last_collect:new Date().toISOString()}}).eq('user_id',currentUser.id);
+    await sb.from('game_stats').update({money:newMoney,commerce:{created:true,invest:0,last_collect:new Date(Date.now()-3600000*2).toISOString()}}).eq('user_id',currentUser.id);
     money=newMoney;
     toast('Entreprise creee !');
     setTimeout(function(){loadDashboard();},800);
@@ -1595,12 +1592,14 @@ async function loadDashboard(){
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
 
-  // Collecte
-  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
-  var elapsed=(Date.now()-last)/3600000;
-  var pending=Math.floor(rev*elapsed);
+  // Collecte — Fix: utiliser les minutes pour éviter Math.floor qui donne 0
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now()-3600000;
+  var elapsedMs=Date.now()-last;
+  var elapsedH=elapsedMs/3600000;
+  var pending=Math.floor(rev*elapsedH);
+  var minRestantes=Math.max(0,Math.ceil(60-(elapsedMs/60000)));
   document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
-  document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochain dans '+(Math.ceil(60-elapsed*60))+'min';
+  document.getElementById('collect-sub').textContent=pending>0?'Disponible ! '+fmtM(pending)+'€':'Prochain dans '+minRestantes+'min';
 
   // Render sections
   renderClients(clients,gs&&gs.last_seen);
@@ -1631,10 +1630,10 @@ async function collecterRevenus(){
   var baseRev2=Math.floor((co.valeur||0)*0.002);
   var zRev2=calcZoneRev(com.zones||{},t2.tag);
   var rev=baseRev2+zRev2;
-  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
-  var elapsed=(Date.now()-last)/3600000;
-  var pending=Math.floor(rev*elapsed);
-  if(pending<1){toast('Rien a collecter encore');return;}
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now()-3600000;
+  var elapsedH=(Date.now()-last)/3600000;
+  var pending=Math.floor(rev*elapsedH);
+  if(pending<1){toast('Rien à collecter pour l instant');return;}
   com.last_collect=new Date().toISOString();
   com=boostReputOnCollect(com);
   var newMoney=(gs.money||0)+pending;
@@ -1645,9 +1644,36 @@ async function collecterRevenus(){
 }
 
 async function investir(){
-  var amt=prompt('Combien investir ? (argent en poche: '+fmtM(money)+')');
-  amt=Math.floor(parseFloat(amt)||0);
+  // Utiliser une modal inline plutôt que prompt()
+  var modal=document.getElementById('invest-modal');
+  if(!modal){
+    modal=document.createElement('div');
+    modal.id='invest-modal';
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)';
+    modal.innerHTML='<div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px 20px calc(20px + env(safe-area-inset-bottom))">'
+      +'<div style="width:36px;height:4px;background:#e5e5ea;border-radius:2px;margin:0 auto 16px"></div>'
+      +'<div style="font-family:Bebas Neue,sans-serif;font-size:22px;color:#1a1a1a;letter-spacing:2px;margin-bottom:4px">INVESTIR</div>'
+      +'<div style="font-size:11px;color:#9ca3af;font-weight:600;margin-bottom:16px">En poche : <span id="invest-pocket">0€</span></div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+      +['10k','25k','50k','100k','250k'].map(function(v){var n=v.replace('k','000');return '<div onclick="setInvest('+parseInt(n)+')" style="flex:1;min-width:55px;padding:10px 6px;background:#f5f5f7;border-radius:12px;text-align:center;font-family:Bebas Neue,sans-serif;font-size:14px;color:#1a1a1a;cursor:pointer">'+v+'€</div>';}).join('')
+      +'</div>'
+      +'<input id="invest-input" type="number" inputmode="numeric" placeholder="Montant" style="width:100%;background:#f5f5f7;border:1.5px solid #e5e5ea;border-radius:14px;padding:14px;font-family:Bebas Neue,sans-serif;font-size:24px;color:#1a1a1a;text-align:center;outline:none;margin-bottom:12px;-webkit-user-select:text;user-select:text">'
+      +'<button onclick="confirmInvest()" style="width:100%;padding:15px;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:14px;font-family:Bebas Neue,sans-serif;font-size:18px;letter-spacing:2px;color:#fff;cursor:pointer;margin-bottom:8px">CONFIRMER</button>'
+      +'<button onclick="document.getElementById('invest-modal').remove()" style="width:100%;padding:12px;background:transparent;border:none;font-family:Bebas Neue,sans-serif;font-size:14px;color:#9ca3af;cursor:pointer;letter-spacing:1px">ANNULER</button>'
+      +'</div>';
+    document.body.appendChild(modal);
+    modal.onclick=function(e){if(e.target===modal)modal.remove();};
+  }
+  document.getElementById('invest-pocket').textContent=fmtM(money);
+  document.getElementById('invest-input').value='';
+  return;
+}
+window.setInvest=function(n){var inp=document.getElementById('invest-input');if(inp)inp.value=n;};
+window.confirmInvest=async function(){
+  var modal=document.getElementById('invest-modal');
+  var amt=Math.floor(parseFloat(document.getElementById('invest-input').value)||0);
   if(amt<=0||amt>money){toast('Montant invalide');return;}
+  if(modal)modal.remove();
   var {data:co}=await sb.from('companies').select('valeur,niveau').eq('user_id',currentUser.id).maybeSingle();
   if(!co)return;
   var newVal=(co.valeur||0)+amt;
@@ -1660,10 +1686,9 @@ async function investir(){
   com=boostClientsOnInvest(com,amt);
   await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
   toast('Investi '+fmtM(amt)+' ! +'+Math.floor(amt/10000)+' clients 📢');
-  // Syndicat tracking
   try{var wk='week_'+_weekNum();var {data:_gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();var _rec=(_gs&&_gs.records)||{};_rec.syndicat=_rec.syndicat||{};_rec.syndicat[wk]=_rec.syndicat[wk]||{};_rec.syndicat[wk].invested_week=(_rec.syndicat[wk].invested_week||0)+amt;await sb.from('game_stats').update({records:_rec}).eq('user_id',currentUser.id);}catch(e){}
   loadDashboard();
-}
+};
 
 // ══ INIT ══
 
@@ -2401,6 +2426,13 @@ async function fireEmployee(idx){
   await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
   toast('Employe licencie');loadDashboard();
 }
+
+document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('gesturechange',function(e){e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',function(e){e.preventDefault();});
+document.addEventListener('selectstart',function(e){e.preventDefault();});
+document.addEventListener('contextmenu',function(e){e.preventDefault();});
 </script>
 </body>
 </html>
