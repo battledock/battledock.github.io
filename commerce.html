@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>Commerce — Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -1579,6 +1579,7 @@ async function loadDashboard(){
   document.getElementById('dash-valeur').textContent=fmtM(co.valeur||0);
   document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
+  document.getElementById('dash-collect').textContent=_pending>0?'DISPO !':_minRest+'min';
 
   // Collecte — Fix elapsed en ms pour éviter Math.floor=0
   var _last=com.last_collect?new Date(com.last_collect).getTime():Date.now()-7200000;
@@ -1670,6 +1671,7 @@ async function investir(){
     toast('Investi '+fmtM(amt)+' ! +'+Math.floor(amt/10000)+' clients 📢');
     try{var wk='week_'+_weekNum();var {data:_gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();var _rec=(_gs&&_gs.records)||{};_rec.syndicat=_rec.syndicat||{};_rec.syndicat[wk]=_rec.syndicat[wk]||{};_rec.syndicat[wk].invested_week=(_rec.syndicat[wk].invested_week||0)+amt;await sb.from('game_stats').update({records:_rec}).eq('user_id',currentUser.id);}catch(e){}
     loadDashboard();
+    trackObj('invested');
   };
 }
 
@@ -2036,6 +2038,7 @@ function boostClientsOnInvest(com, amount){
 
 
 async function startApp(){
+  try{
   var res=await sb.auth.getSession();
   var sess=res.data&&res.data.session;
   if(!sess){window.location.href='index.html';return;}
@@ -2046,12 +2049,13 @@ async function startApp(){
   username=(pr&&pr.username)||'Docker';
   document.getElementById('acc-money').textContent=fmtM(money);
   document.getElementById('loader').style.display='none';
-  // Verifier si deja une entreprise
+  // Vérifier si déjà une entreprise
   var {data:co}=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
   if(co){loadDashboard();return;}
   // Avertissement argent
   if(money<100000)document.getElementById('acc-warning').textContent='⚠️ Il te faut 100 000€ (tu as '+fmtM(money)+')';
   show('s-accueil');
+  }catch(e){console.error('startApp:',e);try{document.getElementById('loader').style.display='none';}catch(_){}}
 }
 if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',startApp);}else{startApp();}
 
@@ -2059,7 +2063,6 @@ if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded'
 var MISSIONS=[
   {id:'collect',label:'Collecter tes revenus',icon:'📥',check:function(d){return d.collected||false;}},
   {id:'invest',label:'Investir dans ton entreprise',icon:'💰',check:function(d){return d.invested||false;}},
-  {id:'play_clicker',label:'Jouer au Clicker',icon:'📦',check:function(d){return d.play_clicker||false;}},
   {id:'pay_tax',label:'Payer une taxe de zone',icon:'💸',check:function(d){return d.paid_tax||false;}},
   {id:'check_rank',label:'Consulter le classement',icon:'🏆',check:function(d){return d.checked_rank||false;}},
   {id:'login',label:'Se connecter aujourd\'hui',icon:'✅',check:function(){return true;}},
@@ -2091,6 +2094,7 @@ function toggleObj(){
 }
 
 async function renderObj(){
+  if(!currentUser)return;
   var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
   var com=(gs&&gs.commerce)||{};
   var daily=com.daily||{};
