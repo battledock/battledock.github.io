@@ -1,77 +1,92 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>Régate — Battle Dock Casino</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
-html,body{height:100%;height:100dvh;overflow:hidden;font-family:'Inter',sans-serif}
-body{background:radial-gradient(ellipse at top,#001529,#000d1a 60%,#000508);display:flex;flex-direction:column}
-.hdr{display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px)+12px) 16px 12px;flex-shrink:0;background:rgba(0,0,0,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.btn-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer}
-.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px}
-.hdr-bal{background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
-.game{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 16px;gap:14px;min-height:0}
-.chips{display:flex;gap:6px;width:100%;max-width:420px}
-.chip{flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);background:rgba(255,255,255,.06);transition:all .15s}
-.chip.sel{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24}
-.chip:active{transform:scale(.96)}
-.spin-btn{width:100%;max-width:420px;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.35);transition:all .15s;font-weight:900}
-.spin-btn:active{transform:scale(.98);opacity:.9}
-.spin-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
-.result{display:none;padding:13px 16px;border-radius:16px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;width:100%;max-width:420px;animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
-@keyframes pop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
-.result.win{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 16px rgba(22,163,74,.4)}
-.result.lose{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6)}
-.result.jackpot{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#1a0000;box-shadow:0 4px 16px rgba(251,191,36,.5)}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+  <title>Regate - Battle Dock Casino</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+  <style>
+    * { margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation; }
+    body { font-family:'Inter',sans-serif;background:linear-gradient(180deg,#450a0a,#7f1d1d,#991b1b);min-height:100vh;overflow:hidden;display:flex;flex-direction:column; }
+    .container { width:100%;max-width:600px;margin:0 auto;padding:6px;padding-bottom:8px;flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden; }
+    .game-area { flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:10px;overflow:hidden;min-height:0; }
 
-.regate-table{background:linear-gradient(180deg,#001a2e,#002a45);border:3px solid rgba(56,189,248,.25);border-radius:24px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-.regate-scene{height:120px;background:linear-gradient(180deg,#001529,#002a45 50%,#0ea5e9 50%,#0284c7);position:relative;overflow:hidden}
-.wave{position:absolute;bottom:0;left:0;right:0;height:50%;background:linear-gradient(180deg,#0ea5e9,#0284c7)}
-.wave::before{content:'';position:absolute;top:-8px;left:0;right:0;height:16px;background:radial-gradient(ellipse,#38bdf8 0%,transparent 70%) repeat-x;background-size:40px 16px;animation:waveAnim 1s linear infinite}
-@keyframes waveAnim{from{background-position:0}to{background-position:40px}}
-.bateaux{position:absolute;bottom:50%;left:0;right:0;display:flex;justify-content:space-around;padding:0 10px}
-.bateau{font-size:28px;transition:all .3s;cursor:pointer;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
-.bateau.sel{transform:scale(1.2);filter:drop-shadow(0 0 8px rgba(56,189,248,.6))}
-.regate-bets{display:flex;gap:8px;padding:14px 16px;flex-wrap:wrap;justify-content:center}
-.bateau-btn{flex:1;min-width:80px;padding:10px 8px;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;cursor:pointer;border:2px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);background:rgba(255,255,255,.05);text-align:center;transition:all .15s}
-.bateau-btn.sel{background:rgba(56,189,248,.15);border-color:#38bdf8;color:#38bdf8}
-.bateau-btn:active{transform:scale(.95)}
-.bateau-sub{font-size:8px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:1px;margin-top:2px}
-</style>
+    .table { background:linear-gradient(135deg,#1e293b,#0f172a);border:4px solid #fbbf24;border-radius:14px;padding:14px;box-shadow:0 8px 32px rgba(0,0,0,0.6);width:100%;max-width:340px;display:flex;flex-direction:column;gap:8px;flex-shrink:0; }
+
+    .finish-line { text-align:right;font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:2px; }
+
+    .track {
+      display:flex;align-items:center;gap:8px;
+      background:rgba(255,255,255,0.04);border:1.5px solid rgba(255,255,255,0.08);
+      border-radius:8px;padding:7px 10px;cursor:pointer;transition:all .15s;
+      position:relative;overflow:hidden;
+    }
+    .track:active { transform:scale(0.98); }
+    .track.sel    { border-color:rgba(251,191,36,0.6);background:rgba(251,191,36,0.08); }
+    .track.winner { border-color:rgba(74,222,128,0.6);background:rgba(74,222,128,0.08); }
+    .track.loser  { opacity:0.4; }
+
+    .track-bar { position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:8px;opacity:0.15;transition:width .08s linear; }
+    .track-boat { font-size:22px;flex-shrink:0; }
+    .track-name { flex:1;font-family:'Bebas Neue',sans-serif;font-size:13px;color:white;letter-spacing:1px; }
+    .track-odds { font-family:'Bebas Neue',sans-serif;font-size:14px;padding:3px 8px;border-radius:6px;background:rgba(251,191,36,0.15);color:#fbbf24;flex-shrink:0; }
+    .track.sel .track-odds { background:#fbbf24;color:#0f172a; }
+
+    .result { display:none;padding:7px 12px;border-radius:10px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;width:100%; }
+    .result.win  { background:linear-gradient(135deg,#10b981,#059669);color:white;box-shadow:0 4px 14px rgba(16,185,129,0.4); }
+    .result.lose { background:linear-gradient(135deg,#dc2626,#991b1b);color:white; }
+
+    .controls { display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px;flex-shrink:0; }
+    .chips { display:flex;gap:6px;background:rgba(255,255,255,0.05);padding:6px;border-radius:8px;border:2px solid rgba(251,191,36,0.3); }
+    .chip { flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;transition:all .15s;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px; }
+    .chip.sel { background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24; }
+    .chip:not(.sel) { background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);border:1.5px solid rgba(255,255,255,.1); }
+    .spin-btn { width:100%;padding:16px;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:16px;color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.35);transition:all .15s;font-weight:900; }
+    .spin-btn:active { transform:scale(0.98); }
+    .spin-btn:disabled { opacity:0.4;cursor:not-allowed;box-shadow:none; }
+
+    .bottom-bar { display:none; }
+    .back-btn { display:none; }
+    .back-btn:active { transform:scale(0.95); }
+    .game-title { display:none; }
+    .balance { display:none; }
+  </style>
 </head>
 <body>
-<div class="hdr">
-  <button class="btn-back" onclick="location.href='casino.html'">← CASINO</button>
-  <div class="hdr-title">⛵ RÉGATE</div>
-  <div class="hdr-bal" id="balance">0€</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:calc(env(safe-area-inset-top,44px)+12px) 16px 12px;flex-shrink:0;background:rgba(0,0,0,.2);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)">
+  <button onclick="location.href='casino.html'" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;cursor:pointer">← CASINO</button>
+  <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px">⛵ RÉGATE</div>
+  <div id="balanceNew" style="background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:7px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24">0€</div>
 </div>
-<div class="game">
-  <div class="regate-table">
-    <div class="regate-scene">
-      <div class="wave"></div>
-      <div class="bateaux" id="bateauxScene">
-        <div class="bateau">⛵</div>
-        <div class="bateau">🚤</div>
-        <div class="bateau">🛥️</div>
-      </div>
-    </div>
-    <div class="regate-bets" id="betsEl"></div>
-  </div>
-  <div class="result" id="result"></div>
-  <div class="chips">
-    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
-    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
-    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
-    <div class="chip" id="c25000" onclick="setBet(25000,'c25000')">25K</div>
-  </div>
-<button class="spin-btn" id="btnPlay" onclick="play()">LANCER LA RÉGATE — <span id="betLabel">1 000€</span></button>
-</div>
-<script>
+<div class="container">
+  <div class="game-area">
 
+    <div class="table">
+      <div class="finish-line">ARRIVEE 🏁</div>
+      <div id="trackWrap"></div>
+    </div>
+
+    <div class="controls">
+      <div class="result" id="result"></div>
+      <div class="chips">
+        <div class="chip sel" id="c1000"  onclick="setBet(1000,'c1000')">1K</div>
+        <div class="chip"     id="c5000"  onclick="setBet(5000,'c5000')">5K</div>
+        <div class="chip"     id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+        <div class="chip"     id="c25000" onclick="setBet(25000,'c25000')">25K</div>
+      </div>
+      <button class="spin-btn" id="btnPlay" onclick="startRace()" disabled>CHOISIR UN BATEAU</button>
+    </div>
+
+  </div>
+  <div class="bottom-bar">
+    <button class="back-btn" onclick="window.location.href='casino.html'">&#8592; Casino</button>
+    <div class="game-title">&#9975; REGATE</div>
+    <div class="balance" id="balance">0&#8364;</div>
+  </div>
+</div>
+
+<script>
   var SUPABASE_URL = 'https://drtsuhnbclhmgfjiykap.supabase.co';
   var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -248,7 +263,6 @@ body{background:radial-gradient(ellipse at top,#001529,#000d1a 60%,#000508);disp
   }
 
   init();
-
 </script>
 </body>
 </html>
