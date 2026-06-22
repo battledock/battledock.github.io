@@ -1,263 +1,172 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Roulette - Battle Dock Casino</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
-  <style>
-    * {
-      margin: 0; padding: 0; box-sizing: border-box;
-      -webkit-user-select: none; user-select: none;
-      -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
-    }
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(180deg, #450a0a, #7f1d1d, #991b1b);
-      min-height: 100vh;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .container {
-      max-width: 500px;
-      margin: 0 auto;
-      padding: 6px;
-      padding-bottom: 120px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
-    }
-    .game-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      overflow: hidden;
-      min-height: 0;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Roulette — Battle Dock Casino</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+html,body{height:100%;height:100dvh;overflow:hidden;font-family:'Inter',sans-serif}
+body{
+  background:radial-gradient(ellipse at top,#1e3a5f,#0c1e33 60%,#000d1a);
+  display:flex;flex-direction:column;
+}
 
-    /* TABLE ROULETTE — même style .machine */
-    .rl-table {
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 4px solid #fbbf24;
-      border-radius: 14px;
-      padding: 14px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      width: 100%;
-      max-width: 340px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      flex-shrink: 0;
-    }
+/* ══ HEADER ══ */
+.hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,44px) + 10px) 16px 10px;
+  flex-shrink:0;
+}
+.btn-back{
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  border-radius:20px;padding:7px 14px;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:#fff;
+  cursor:pointer;
+}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:3px}
+.hdr-balance{
+  background:rgba(0,0,0,.3);border:1px solid rgba(251,191,36,.3);
+  border-radius:20px;padding:7px 14px;
+  font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24;
+}
 
-    /* ROUE */
-    /* PARIS */
-    .bets {
-      display: flex;
-      gap: 6px;
-      width: 100%;
-    }
-    .bet-btn {
-      flex: 1;
-      padding: 10px 4px;
-      border: 2.5px solid rgba(0,0,0,0.5);
-      border-radius: 10px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      color: white;
-      text-align: center;
-      cursor: pointer;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-      transition: all .15s;
-    }
-    .bet-btn:active { transform: scale(0.97); }
-    .bet-btn.sel { outline: 3px solid #fbbf24; outline-offset: 2px; }
-    .bet-btn.red { background: #cc1a1a; }
-    .bet-btn.green { background: #047857; }
-    .bet-btn.black { background: #1f2937; }
-    .bet-sub { font-size: 9px; color: rgba(255,255,255,0.55); font-family: 'Inter', sans-serif; margin-top: 2px; }
+/* ══ CONTENU ══ */
+.game-wrap{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:0 16px;gap:14px;min-height:0;
+}
 
-    /* RÉSULTAT */
-    .result {
-      display: none;
-      padding: 7px 12px;
-      border-radius: 10px;
-      text-align: center;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      letter-spacing: 1px;
-      width: 100%;
-      animation: resultPop .3s;
-    }
-    @keyframes resultPop { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-    .result.win { background: linear-gradient(135deg,#10b981,#059669); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
-    .result.lose { background: linear-gradient(135deg,#dc2626,#991b1b); color: white; }
+/* ══ TABLE ══ */
+.table{
+  background:linear-gradient(180deg,#1a0a00,#0f0500);
+  border:4px solid #fbbf24;border-radius:24px;
+  width:100%;max-width:400px;
+  padding:20px 16px;
+  box-shadow:0 0 40px rgba(251,191,36,.15),inset 0 0 20px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+}
 
-    /* CONTROLS */
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      width: 100%;
-      max-width: 340px;
-      flex-shrink: 0;
-    }
+/* Roue */
+.wheel-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.wheel-wrap svg{
+  width:min(200px,55vw);height:min(200px,55vw);
+  filter:drop-shadow(0 0 20px rgba(251,191,36,.2));
+  cursor:pointer;
+}
 
-    /* CHIPS */
-    .chips {
-      display: flex;
-      gap: 6px;
-      background: rgba(255,255,255,0.05);
-      padding: 6px;
-      border-radius: 8px;
-      border: 2px solid rgba(251,191,36,0.3);
-    }
-    .chip {
-      flex: 1;
-      padding: 7px 4px;
-      border-radius: 6px;
-      text-align: center;
-      cursor: pointer;
-      transition: all .15s;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 12px;
-      letter-spacing: 1px;
-    }
-    .chip.sel { background: #fbbf24; color: #0f172a; }
-    .chip:not(.sel) { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); border: 1px solid rgba(251,191,36,0.2); }
+/* Paris */
+.bets{display:flex;gap:8px;width:100%}
+.bet-btn{
+  flex:1;padding:12px 6px;
+  border:2.5px solid rgba(0,0,0,.4);border-radius:14px;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;
+  text-align:center;cursor:pointer;
+  transition:all .15s;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);
+}
+.bet-btn:active{transform:scale(.96)}
+.bet-btn.sel{outline:3px solid #fbbf24;outline-offset:2px;transform:scale(1.03)}
+.bet-btn.red{background:linear-gradient(135deg,#cc1a1a,#991111)}
+.bet-btn.green{background:linear-gradient(135deg,#047857,#035740)}
+.bet-btn.black{background:linear-gradient(135deg,#1f2937,#111827)}
+.bet-sub{font-size:9px;color:rgba(255,255,255,.5);font-family:'Inter',sans-serif;margin-top:3px;font-weight:700;letter-spacing:.5px}
 
-    .spin-btn {
-      width: 100%;
-      padding: 10px;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border: none;
-      border-radius: 10px;
-      color: #0f172a;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      letter-spacing: 1.5px;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(251,191,36,0.5);
-      transition: all 0.2s;
-    }
-    .spin-btn:active { transform: scale(0.98); }
-    .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Résultat */
+.result{
+  display:none;padding:12px 16px;border-radius:14px;
+  text-align:center;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;
+  animation:resultPop .3s cubic-bezier(.34,1.56,.64,1);
+  width:100%;max-width:400px;
+}
+@keyframes resultPop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.result.win{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;box-shadow:0 4px 16px rgba(22,163,74,.4)}
+.result.lose{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7)}
 
-    /* BOTTOM BAR */
-    .bottom-bar {
-      background: linear-gradient(135deg, #7f1d1d, #991b1b);
-      border: 2px solid rgba(251,191,36,0.5);
-      border-radius: 10px;
-      padding: 6px 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-      min-height: 44px;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      max-width: 480px;
-      width: calc(100% - 20px);
-      z-index: 100;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-    }
-    .back-btn {
-      background: rgba(251,191,36,0.2);
-      border: 2px solid rgba(251,191,36,0.5);
-      color: #fbbf24;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-weight: 700;
-      font-size: 11px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .back-btn:active { transform: scale(0.95); }
-    .game-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 16px;
-      color: #fbbf24;
-      letter-spacing: 1.5px;
-    }
-    .balance {
-      background: white;
-      color: #0f172a;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-  </style>
+/* Chips */
+.chips{display:flex;gap:6px;width:100%;max-width:400px}
+.chip{
+  flex:1;padding:10px 4px;border-radius:20px;text-align:center;cursor:pointer;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;
+  border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);
+  background:rgba(255,255,255,.06);transition:all .15s;
+}
+.chip.sel{background:rgba(251,191,36,.2);border-color:#fbbf24;color:#fbbf24}
+.chip:active{transform:scale(.96)}
+
+/* Bouton */
+.spin-btn{
+  width:100%;max-width:400px;padding:16px;border:none;border-radius:16px;
+  background:linear-gradient(135deg,#fbbf24,#f59e0b);
+  color:#1a0000;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;
+  cursor:pointer;box-shadow:0 6px 24px rgba(251,191,36,.35);
+  transition:all .15s;font-weight:900;
+}
+.spin-btn:active{transform:scale(.98);opacity:.9}
+.spin-btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="game-area">
 
-      <!-- TABLE -->
-      <div class="rl-table">
-        <!-- ROUE SVG -->
-        <svg width="170" height="170" style="width:min(170px,48vw);height:min(170px,48vw)" viewBox="0 0 200 200" id="roulWheel" style="cursor:pointer" onclick="play()">
-          <circle cx="100" cy="100" r="98" fill="#0a0a0a" stroke="#fbbf24" stroke-width="3"/>
-          <path d="M100,100 L100,2 A98,98,0,0,1,168,31 Z" fill="#cc1a1a" opacity="0.9"/>
-          <path d="M100,100 L168,31 A98,98,0,0,1,198,100 Z" fill="#0a0a0a" opacity="0.85"/>
-          <path d="M100,100 L198,100 A98,98,0,0,1,168,169 Z" fill="#cc1a1a" opacity="0.9"/>
-          <path d="M100,100 L168,169 A98,98,0,0,1,100,198 Z" fill="#0a0a0a" opacity="0.85"/>
-          <path d="M100,100 L100,198 A98,98,0,0,1,32,169 Z" fill="#cc1a1a" opacity="0.9"/>
-          <path d="M100,100 L32,169 A98,98,0,0,1,2,100 Z" fill="#0a0a0a" opacity="0.85"/>
-          <path d="M100,100 L2,100 A98,98,0,0,1,32,31 Z" fill="#cc1a1a" opacity="0.9"/>
-          <path d="M100,100 L32,31 A98,98,0,0,1,100,2 Z" fill="#047857" opacity="0.95"/>
-          <circle cx="100" cy="100" r="50" fill="#0a0a0a" stroke="#fbbf24" stroke-width="2"/>
-          <circle cx="100" cy="100" r="30" fill="#1a0a0a" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
-          <circle cx="100" cy="100" r="14" fill="#fbbf24"/>
-          <text x="100" y="108" text-anchor="middle" font-family="Bebas Neue" font-size="20" fill="#0a0a0a" id="roulNum">?</text>
-          <circle cx="100" cy="8" r="8" fill="white" id="roulBall"/>
-        </svg>
+<!-- HEADER -->
+<div class="hdr">
+  <button class="btn-back" onclick="location.href='casino.html'">← CASINO</button>
+  <div class="hdr-title">🎡 ROULETTE</div>
+  <div class="hdr-balance" id="balance">0€</div>
+</div>
 
-        <!-- PARIS -->
-        <div class="bets">
-          <div class="bet-btn red sel" id="rb-red" onclick="selCouleur('red')">ROUGE<div class="bet-sub">×2 · 1-7</div></div>
-          <div class="bet-btn green" id="rb-green" onclick="selCouleur('green')">VERT<div class="bet-sub">×14 · 0</div></div>
-          <div class="bet-btn black" id="rb-black" onclick="selCouleur('black')">NOIR<div class="bet-sub">×2 · 8-14</div></div>
-        </div>
-      </div>
+<!-- JEU -->
+<div class="game-wrap">
 
-      <!-- CONTROLS -->
-      <div class="controls">
-        <div class="result" id="result"></div>
-
-        <div class="chips">
-          <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
-          <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
-          <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
-          <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
-        </div>
-
-        <button class="spin-btn" id="btnPlay" onclick="play()">LANCER — <span id="betLabel">1 000€</span></button>
-      </div>
-
+  <div class="table">
+    <!-- ROUE SVG -->
+    <div class="wheel-wrap">
+      <svg viewBox="0 0 200 200" id="roulWheel" onclick="play()">
+        <circle cx="100" cy="100" r="98" fill="#0a0a0a" stroke="#fbbf24" stroke-width="3"/>
+        <path d="M100,100 L100,2 A98,98,0,0,1,168,31 Z" fill="#cc1a1a" opacity="0.9"/>
+        <path d="M100,100 L168,31 A98,98,0,0,1,198,100 Z" fill="#0a0a0a" opacity="0.85"/>
+        <path d="M100,100 L198,100 A98,98,0,0,1,168,169 Z" fill="#cc1a1a" opacity="0.9"/>
+        <path d="M100,100 L168,169 A98,98,0,0,1,100,198 Z" fill="#0a0a0a" opacity="0.85"/>
+        <path d="M100,100 L100,198 A98,98,0,0,1,32,169 Z" fill="#cc1a1a" opacity="0.9"/>
+        <path d="M100,100 L32,169 A98,98,0,0,1,2,100 Z" fill="#0a0a0a" opacity="0.85"/>
+        <path d="M100,100 L2,100 A98,98,0,0,1,32,31 Z" fill="#cc1a1a" opacity="0.9"/>
+        <path d="M100,100 L32,31 A98,98,0,0,1,100,2 Z" fill="#047857" opacity="0.95"/>
+        <circle cx="100" cy="100" r="50" fill="#0a0a0a" stroke="#fbbf24" stroke-width="2"/>
+        <circle cx="100" cy="100" r="30" fill="#1a0a0a" stroke="rgba(251,191,36,0.3)" stroke-width="1"/>
+        <circle cx="100" cy="100" r="14" fill="#fbbf24"/>
+        <text x="100" y="108" text-anchor="middle" font-family="Bebas Neue" font-size="20" fill="#0a0a0a" id="roulNum">?</text>
+        <circle cx="100" cy="8" r="9" fill="white" stroke="#fbbf24" stroke-width="1.5" id="roulBall"/>
+      </svg>
     </div>
 
-    <!-- BOTTOM BAR -->
-    <div class="bottom-bar">
-      <button class="back-btn" onclick="window.location.href='casino.html'">← Casino</button>
-      <div class="game-title">🎡 ROULETTE</div>
-      <div class="balance" id="balance">0€</div>
+    <!-- PARIS -->
+    <div class="bets">
+      <div class="bet-btn red sel" id="rb-red" onclick="selCouleur('red')">ROUGE<div class="bet-sub">×1.9 · 1—7</div></div>
+      <div class="bet-btn green" id="rb-green" onclick="selCouleur('green')">VERT<div class="bet-sub">×14 · 0</div></div>
+      <div class="bet-btn black" id="rb-black" onclick="selCouleur('black')">NOIR<div class="bet-sub">×1.9 · 8—14</div></div>
     </div>
   </div>
 
-  <script>
+  <!-- RÉSULTAT -->
+  <div class="result" id="result"></div>
+
+  <!-- CHIPS -->
+  <div class="chips">
+    <div class="chip sel" id="c1000" onclick="setBet(1000,'c1000')">1K</div>
+    <div class="chip" id="c5000" onclick="setBet(5000,'c5000')">5K</div>
+    <div class="chip" id="c10000" onclick="setBet(10000,'c10000')">10K</div>
+    <div class="chip" id="c50000" onclick="setBet(50000,'c50000')">50K</div>
+  </div>
+
+  <!-- BOUTON -->
+  <button class="spin-btn" id="btnPlay" onclick="play()">LANCER — <span id="betLabel">1 000€</span></button>
+
+</div>
+
+<script>
+
     const supabaseUrl = 'https://drtsuhnbclhmgfjiykap.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
     const { createClient } = supabase;
@@ -280,7 +189,7 @@
     }
 
     function updateBal() {
-      document.getElementById('balance').textContent = fmt(money) + '€';
+      var fmt2=function(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.floor(n).toLocaleString('fr-FR')+'€';}; document.getElementById('balance').textContent = fmt2(money);
     }
 
     function showResult(msg, cls) {
@@ -404,6 +313,7 @@
   }
 
   init();
-  </script>
+  
+</script>
 </body>
 </html>
