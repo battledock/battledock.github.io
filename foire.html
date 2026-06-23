@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Fête Foraine — Battle Dock</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+:root{--st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,20px)}
+html,body{min-height:100%;background:#f2f2f7;font-family:'Inter',sans-serif;overflow-x:hidden}
+
+/* ══ DATES ÉVÉNEMENT ══ */
+:root{
+  --start:1750633200000; /* 23 juin 2025 00:00 */
+  --end:1751324400000;   /* 30 juin 2025 23:59 */
+}
+
+/* ══ HEADER ══ */
+.hdr{
+  position:sticky;top:0;z-index:20;
+  background:rgba(242,242,247,.92);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(0,0,0,.06);
+  padding:calc(var(--st)+8px) 16px 10px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.hdr-back{width:32px;height:32px;border-radius:50%;background:#e5e5ea;display:flex;align-items:center;justify-content:center;font-size:14px;color:#1a1a1a;cursor:pointer;border:none;flex-shrink:0}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a;letter-spacing:2px}
+.hdr-timer{background:#ff3b30;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;color:#fff}
+
+/* ══ HERO ══ */
+.hero{margin:12px;border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.hero-img{background:linear-gradient(135deg,#ff3b30,#ff9500);padding:28px 20px;text-align:center;position:relative;overflow:hidden}
+.hero-circle1{position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.1)}
+.hero-circle2{position:absolute;bottom:-20px;left:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero-ico{font-size:52px;margin-bottom:8px;animation:float 3s ease-in-out infinite;filter:drop-shadow(0 4px 12px rgba(0,0,0,.2));position:relative;z-index:1;display:block}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:34px;color:#fff;letter-spacing:3px;line-height:1;position:relative;z-index:1;text-shadow:0 2px 8px rgba(0,0,0,.2)}
+.hero-sub{font-size:11px;font-weight:700;color:rgba(255,255,255,.7);margin-top:4px;letter-spacing:1px;position:relative;z-index:1}
+.hero-info{background:#fff;padding:14px 16px}
+.hero-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hero-dates{font-size:13px;font-weight:700;color:#1a1a1a}
+.hero-dates-sub{font-size:11px;color:#8e8e93;margin-top:2px}
+.hero-jours{font-size:13px;font-weight:800;color:#ff3b30;text-align:right}
+.hero-jours-sub{font-size:11px;color:#8e8e93;margin-top:2px;text-align:right}
+.hero-pills{display:flex;gap:6px;flex-wrap:wrap}
+.hero-pill{border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700}
+
+/* ══ STANDS ══ */
+.stands{padding:0 12px;display:flex;flex-direction:column;gap:10px;padding-bottom:calc(20px + var(--sb))}
+.stand-card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.07);cursor:pointer;transition:transform .12s}
+.stand-card:active{transform:scale(.98)}
+.stand-hero{padding:20px 16px;display:flex;align-items:center;gap:14px}
+.stand-ico{font-size:48px;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.2));flex-shrink:0}
+.stand-ico.pulse{animation:pulse 1s ease-in-out infinite}
+.stand-ico.float{animation:float 3s ease-in-out infinite}
+.stand-info{flex:1}
+.stand-name{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;letter-spacing:2px;line-height:1}
+.stand-tagline{font-size:10px;color:rgba(255,255,255,.6);margin-top:3px}
+.stand-badge{border-radius:20px;padding:4px 10px;font-size:10px;font-weight:800;color:#fff;background:rgba(255,255,255,.2);white-space:nowrap;flex-shrink:0}
+.stand-footer{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.stand-desc{font-size:11px;color:#8e8e93;line-height:1.4;flex:1}
+.stand-btn{border:none;border-radius:12px;padding:10px 16px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;letter-spacing:1px;cursor:pointer;flex-shrink:0;white-space:nowrap}
+
+/* Couleurs par stand */
+.s-roue .stand-hero{background:linear-gradient(135deg,#1a237e,#3949ab)}
+.s-roue .stand-btn{background:#1a237e}
+.s-titouan .stand-hero{background:linear-gradient(135deg,#4a0080,#7b1fa2)}
+.s-titouan .stand-btn{background:#4a0080}
+.s-force .stand-hero{background:linear-gradient(135deg,#b71c1c,#e53935)}
+.s-force .stand-btn{background:#b71c1c}
+.s-loterie .stand-hero{background:linear-gradient(135deg,#e65100,#ff6d00)}
+.s-loterie .stand-btn{background:#e65100}
+
+/* ══ MODALS ══ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:390px;padding:20px 20px calc(20px + var(--sb));max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:#e5e5ea;margin:0 auto 16px}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#1a1a1a;margin-bottom:4px}
+.modal-sub{font-size:13px;color:#8e8e93;margin-bottom:16px;line-height:1.4}
+.modal-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;background:#f2f2f7;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+/* ══ GRANDE ROUE ══ */
+.roue-etages{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.roue-etage{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:2px solid #e5e5ea}
+.roue-etage.actif{border-color:#3949ab;background:#f0f4ff}
+.roue-etage.passe{border-color:#16a34a;background:#f0fdf4}
+.roue-etage.locked{opacity:.4}
+.roue-etage-num{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#1a1a1a;width:32px;text-align:center}
+.roue-etage-info{flex:1}
+.roue-etage-name{font-size:13px;font-weight:700;color:#1a1a1a}
+.roue-etage-gain{font-size:12px;color:#16a34a;font-weight:700;margin-top:1px}
+.roue-etage-risk{font-size:10px;color:#ff3b30;margin-top:1px}
+.roue-btns{display:flex;gap:8px}
+.btn-descendre{flex:1;padding:14px;border:2px solid #e5e5ea;border-radius:14px;background:#fff;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px;cursor:pointer}
+.btn-monter{flex:2;padding:14px;border:none;border-radius:14px;background:#1a237e;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;letter-spacing:1px;cursor:pointer}
+.btn-monter:disabled{background:#e5e5ea;color:#aeaeb2}
+
+/* ══ TITOUAN SHOW ══ */
+.titouan-scene{background:linear-gradient(135deg,#2a0040,#4a0080);border-radius:16px;padding:20px;text-align:center;margin-bottom:14px;position:relative;overflow:hidden}
+.titouan-ico{font-size:64px;display:block;margin-bottom:8px;animation:float 3s ease-in-out infinite}
+.titouan-phrase{font-family:'Bangers',cursive;font-size:20px;color:#fff;letter-spacing:1px;line-height:1.3;min-height:60px;display:flex;align-items:center;justify-content:center;padding:0 10px}
+.titouan-vote-row{display:flex;gap:8px;margin-bottom:12px}
+.btn-oui{flex:1;padding:14px;border:none;border-radius:14px;background:#16a34a;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:1px;cursor:pointer}
+.btn-non{flex:1;padding:14px;border:none;border-radius:14px;background:#dc2626;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:1px;cursor:pointer}
+.titouan-mise{margin-bottom:14px}
+.mise-lbl{font-size:11px;font-weight:800;color:#8e8e93;letter-spacing:1px;margin-bottom:6px}
+.mise-btns{display:flex;gap:6px}
+.mise-btn{flex:1;padding:10px;border:2px solid #e5e5ea;border-radius:10px;background:#fff;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#1a1a1a;cursor:pointer;text-align:center}
+.mise-btn.selected{border-color:#4a0080;background:#f5f0ff;color:#4a0080}
+.titouan-result{background:#f5f0ff;border-radius:12px;padding:14px;text-align:center;display:none}
+.titouan-result.show{display:block}
+
+/* ══ TEST DE FORCE ══ */
+.force-zone{text-align:center;margin-bottom:14px}
+.force-cta{background:linear-gradient(135deg,#b71c1c,#e53935);border-radius:20px;width:160px;height:160px;margin:0 auto 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;box-shadow:0 6px 20px rgba(183,28,28,.3);transition:transform .08s}
+.force-cta:active{transform:scale(.94)}
+.force-cta-ico{font-size:56px;pointer-events:none}
+.force-cta-lbl{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;letter-spacing:2px;pointer-events:none;margin-top:4px}
+.force-compteur{font-family:'Bebas Neue',sans-serif;font-size:72px;color:#1a1a1a;line-height:1}
+.force-timer-bar{height:8px;background:#f2f2f7;border-radius:4px;overflow:hidden;margin-bottom:6px}
+.force-timer-fill{height:100%;background:linear-gradient(90deg,#b71c1c,#e53935);border-radius:4px;transition:width .1s linear}
+.force-records{background:#f2f2f7;border-radius:12px;padding:12px;margin-top:8px}
+.force-records-title{font-size:10px;font-weight:800;color:#8e8e93;letter-spacing:2px;margin-bottom:8px}
+.force-record-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #e5e5ea}
+.force-record-row:last-child{border-bottom:none}
+.force-record-name{font-size:12px;font-weight:700;color:#1a1a1a}
+.force-record-score{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#b71c1c}
+
+/* ══ LOTERIE ══ */
+.loterie-ticket{background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:16px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.loterie-ticket::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;background:rgba(255,255,255,.08);border-radius:0 0 0 80px}
+.loterie-ticket-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
+.loterie-ticket-label{font-size:8px;font-weight:900;color:rgba(255,255,255,.5);letter-spacing:3px}
+.loterie-ticket-num{font-size:8px;color:rgba(255,255,255,.3);font-weight:700}
+.loterie-grille{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.loterie-case{background:rgba(255,255,255,.15);border-radius:10px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transition:all .15s;border:2px solid rgba(255,255,255,.1);position:relative;overflow:hidden}
+.loterie-case.grattee{background:rgba(255,255,255,.9);cursor:default}
+.loterie-case.grattee .gratte-ico{font-size:28px}
+.gratte-cover{position:absolute;inset:0;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:rgba(255,255,255,.7)}
+.loterie-result{background:#fff;border-radius:12px;padding:14px;margin-top:10px;text-align:center;display:none}
+.loterie-result.show{display:block}
+.loterie-info{background:rgba(0,0,0,.15);border-radius:10px;padding:10px;margin-top:10px;display:flex;justify-content:space-between;align-items:center}
+.loterie-jackpot{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;line-height:1}
+.loterie-jackpot-lbl{font-size:8px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-top:2px}
+.loterie-tickets-left{text-align:right}
+.loterie-tl-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fff;line-height:1}
+.loterie-tl-lbl{font-size:8px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-top:2px}
+
+/* ══ INPUTS MONTANT ══ */
+.amount-input{width:100%;padding:14px;border:2px solid #e5e5ea;border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a;text-align:center;letter-spacing:1px;background:#fff;margin-bottom:10px;outline:none}
+.amount-input:focus{border-color:#3949ab}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;top:calc(14px + var(--st));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:400;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast.show{opacity:1}
+
+/* ══ SOLDE ══ */
+.solde-badge{background:#f2f2f7;border-radius:20px;padding:5px 12px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#1a1a1a}
+
+/* ══ TERMINÉ ══ */
+.event-over{text-align:center;padding:60px 20px;color:#8e8e93}
+.event-over-ico{font-size:64px;margin-bottom:16px;display:block}
+.event-over-title{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a1a;letter-spacing:2px;margin-bottom:8px}
+
+/* ══ ANIMS ══ */
+
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes confetti{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(80px) rotate(720deg);opacity:0}}
+@keyframes wiggle{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+@keyframes fall{0%{transform:translateY(0) rotate(0)}100%{transform:translateY(30px) rotate(90deg);opacity:0}}
+@keyframes explode{0%{transform:scale(0);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes sweat{0%,100%{transform:translateY(0)}50%{transform:translateY(4px) scale(1.1)}}
+@keyframes slide-in-r{from{transform:translateX(60px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes run{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+@keyframes shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(6deg)}}
+@keyframes confetti{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(60px) rotate(360deg);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<div class="hdr">
+  <button class="hdr-back" onclick="location.href='game.html'">←</button>
+  <div class="hdr-title">🎪 FÊTE FORAINE</div>
+  <div class="hdr-timer" id="hdrTimer">—</div>
+</div>
+
+<!-- ══ HERO ══ -->
+<div class="hero" id="heroSection">
+  <div class="hero-img">
+    <div class="hero-circle1"></div>
+    <div class="hero-circle2"></div>
+    <span class="hero-ico">🎪</span>
+    <div class="hero-title">FÊTE FORAINE DU PORT</div>
+    <div class="hero-sub">PORT DE MARSEILLE · ÉDITION LIMITÉE</div>
+  </div>
+  <div class="hero-info">
+    <div class="hero-row">
+      <div>
+        <div class="hero-dates">23 → 30 Juin 2025</div>
+        <div class="hero-dates-sub">Événement temporaire</div>
+      </div>
+      <div>
+        <div class="hero-jours" id="joursRestants">— jours</div>
+        <div class="hero-jours-sub">restants</div>
+      </div>
+    </div>
+    <div class="hero-pills">
+      <div class="hero-pill" style="background:#fff0f0;color:#ff3b30;border:1px solid #ffcdd2">🎡 Grande Roue</div>
+      <div class="hero-pill" style="background:#f5f0ff;color:#7b1fa2;border:1px solid #e1bee7">🎭 Titouan Show</div>
+      <div class="hero-pill" style="background:#fff5f5;color:#b71c1c;border:1px solid #ffcdd2">🏋️ Test de Force</div>
+      <div class="hero-pill" style="background:#fff8f0;color:#e65100;border:1px solid #ffe0b2">🎁 Loterie</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STANDS ══ -->
+<div class="stands" id="standsSection">
+
+  <!-- GRANDE ROUE -->
+  <div class="stand-card s-roue" onclick="openRoue()">
+    <div class="stand-hero">
+      <div class="stand-ico float">🎡</div>
+      <div class="stand-info">
+        <div class="stand-name">GRANDE ROUE</div>
+        <div class="stand-tagline">Monte étage par étage — descends quand tu veux</div>
+      </div>
+      <div class="stand-badge">Risqué</div>
+    </div>
+    <div class="stand-footer">
+      <div class="stand-desc">À chaque étage tu multiplies ta mise. Mais si tu tombes tu perds tout. <strong>Jusqu'à ×50 !</strong></div>
+      <button class="stand-btn" onclick="event.stopPropagation();openRoue()">MONTER →</button>
+    </div>
+  </div>
+
+  <!-- TITOUAN SHOW -->
+  <div class="stand-card s-titouan" onclick="openTitouan()">
+    <div class="stand-hero">
+      <div class="stand-ico float">🎭</div>
+      <div class="stand-info">
+        <div class="stand-name">TITOUAN SHOW</div>
+        <div class="stand-tagline">Ça va bien se passer... ou pas</div>
+      </div>
+      <div class="stand-badge">×2 ou ×0</div>
+    </div>
+    <div class="stand-footer">
+      <div class="stand-desc">Titouan essaie un truc. Tu paries si ça va bien ou mal se finir. Spoiler : <strong>souvent mal.</strong></div>
+      <button class="stand-btn" onclick="event.stopPropagation();openTitouan()">PARIER →</button>
+    </div>
+  </div>
+
+  <!-- TEST DE FORCE -->
+  <div class="stand-card s-force" onclick="openForce()">
+    <div class="stand-hero">
+      <div class="stand-ico pulse">🏋️</div>
+      <div class="stand-info">
+        <div class="stand-name">TEST DE FORCE</div>
+        <div class="stand-tagline">Clique le plus vite en 5 secondes</div>
+      </div>
+      <div class="stand-badge" id="forceBadge">Record : —</div>
+    </div>
+    <div class="stand-footer">
+      <div class="stand-desc">Tape comme un dingue. Plus tu cliques vite, plus tu gagnes. <strong>Gratuit !</strong> Rejoue autant que tu veux.</div>
+      <button class="stand-btn" onclick="event.stopPropagation();openForce()">TAPER →</button>
+    </div>
+  </div>
+
+  <!-- LOTERIE -->
+  <div class="stand-card s-loterie" onclick="openLoterie()">
+    <div class="stand-hero">
+      <div class="stand-ico float">🎁</div>
+      <div class="stand-info">
+        <div class="stand-name">LOTERIE À GRATTER</div>
+        <div class="stand-tagline">1 ticket par jour · Jackpot 500 000€</div>
+      </div>
+      <div class="stand-badge" id="loterieBadge">1 ticket/j</div>
+    </div>
+    <div class="stand-footer">
+      <div class="stand-desc">3 sardines identiques = jackpot. Coûte <strong>1 000€</strong>. Le jackpot monte jusqu'à <strong>500 000€</strong>.</div>
+      <button class="stand-btn" onclick="event.stopPropagation();openLoterie()">GRATTER →</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══ MODAL GRANDE ROUE ══ -->
+<div class="modal-overlay" id="moRoue">
+<div class="modal" style="position:relative">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('moRoue')">✕</button>
+  <div class="modal-title">🎡 GRANDE ROUE</div>
+  <div class="modal-sub">Monte étage par étage. À chaque étage tu peux encaisser ou continuer pour plus. Si tu tombes, tu perds tout.</div>
+  <div id="roueMise" style="display:block">
+    <div style="font-size:11px;font-weight:800;color:#8e8e93;letter-spacing:1px;margin-bottom:6px">TA MISE DE DÉPART</div>
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <div class="mise-btn" onclick="setRoieMise(1000)">1k€</div>
+      <div class="mise-btn" onclick="setRoieMise(5000)">5k€</div>
+      <div class="mise-btn" onclick="setRoieMise(10000)">10k€</div>
+      <div class="mise-btn" onclick="setRoieMise(50000)">50k€</div>
+    </div>
+    <input type="number" class="amount-input" id="roueMiseInput" placeholder="Ou saisir un montant..." min="500">
+    <button onclick="startRoue()" style="width:100%;padding:15px;border:none;border-radius:14px;background:#1a237e;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:2px;cursor:pointer">MONTER ! 🎡</button>
+  </div>
+  <div id="rouePlateau" style="display:none">
+    <div style="background:#f0f4ff;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:10px;font-weight:800;color:#8e8e93;letter-spacing:1px">GAIN ACTUEL</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a237e;line-height:1" id="roueCurrent">—</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:10px;font-weight:800;color:#8e8e93;letter-spacing:1px">ÉTAGE</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#1a1a1a;line-height:1" id="rouEtageActuel">1</div>
+      </div>
+    </div>
+    <div class="roue-etages" id="rouEtages"></div>
+    <div class="roue-btns">
+      <button class="btn-descendre" onclick="descendre()">💰 ENCAISSER</button>
+      <button class="btn-monter" id="btnMonter" onclick="monterEtage()">MONTER 🎡</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL TITOUAN ══ -->
+<div class="modal-overlay" id="moTitouan">
+<div class="modal" style="position:relative">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('moTitouan')">✕</button>
+  <div class="modal-title">🎭 TITOUAN SHOW</div>
+  <div class="modal-sub" id="titouanCooldownMsg">Titouan est sur scène. Parie sur ce qui va se passer.</div>
+  <div id="titouanJeu">
+    <div class="titouan-scene">
+      <span class="titouan-ico">🎭</span>
+      <div class="titouan-phrase" id="titouanPhrase">Chargement...</div>
+    </div>
+    <div class="titouan-mise">
+      <div class="mise-lbl">TA MISE</div>
+      <div class="mise-btns">
+        <div class="mise-btn" onclick="setTitouanMise(500)">500€</div>
+        <div class="mise-btn" onclick="setTitouanMise(2000)">2k€</div>
+        <div class="mise-btn" onclick="setTitouanMise(10000)">10k€</div>
+        <div class="mise-btn" onclick="setTitouanMise(25000)">25k€</div>
+      </div>
+    </div>
+    <input type="number" class="amount-input" id="titouanMiseInput" placeholder="Mise personnalisée..." min="100">
+    <div class="titouan-vote-row">
+      <button class="btn-oui" onclick="voterTitouan('oui')">👍 BIEN SE PASSER</button>
+      <button class="btn-non" onclick="voterTitouan('non')">👎 MAL SE PASSER</button>
+    </div>
+    <div class="titouan-result" id="titouanResult"></div>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL FORCE ══ -->
+<div class="modal-overlay" id="moForce">
+<div class="modal" style="position:relative">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('moForce')">✕</button>
+  <div class="modal-title">🏋️ TEST DE FORCE</div>
+  <div class="modal-sub">Clique le plus vite possible pendant 5 secondes ! Chaque clic = 100€.</div>
+  <div class="force-zone">
+    <div id="forceCounterDisplay" style="font-family:'Bebas Neue',sans-serif;font-size:72px;color:#1a1a1a;line-height:1;text-align:center;margin-bottom:10px">0</div>
+    <div class="force-timer-bar"><div class="force-timer-fill" id="forceTimerBar" style="width:100%"></div></div>
+    <div style="text-align:center;font-size:11px;color:#8e8e93;margin-bottom:14px" id="forceTimerLbl">5.0s</div>
+    <button class="force-cta" id="forceCta" onclick="clicForce()">
+      <div class="force-cta-ico">💪</div>
+      <div class="force-cta-lbl" id="forceCtaLbl">APPUYER !</div>
+    </button>
+  </div>
+  <div class="force-records">
+    <div class="force-records-title">🏆 RECORDS</div>
+    <div id="forceRecordsList"><div style="font-size:12px;color:#8e8e93">Chargement...</div></div>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL LOTERIE ══ -->
+<div class="modal-overlay" id="moLoterie">
+<div class="modal" style="position:relative">
+  <div class="modal-handle"></div>
+  <button class="modal-close" onclick="closeModal('moLoterie')">✕</button>
+  <div class="modal-title">🎁 LOTERIE À GRATTER</div>
+  <div class="modal-sub">3 symboles identiques = TU GAGNES ! 1 ticket par jour. Jackpot : 500 000€ 🤑</div>
+  <div class="loterie-ticket">
+    <div class="loterie-ticket-top">
+      <div>
+        <div class="loterie-ticket-label">LOTERIE DU PORT</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;letter-spacing:1px;margin-top:3px">TENTEZ VOTRE CHANCE</div>
+      </div>
+      <div class="loterie-ticket-num" id="loterieTicketNum">#——</div>
+    </div>
+    <div class="loterie-grille" id="loterieGrille">
+      <!-- Cases générées en JS -->
+    </div>
+    <div class="loterie-info">
+      <div>
+        <div class="loterie-jackpot" id="loterieJackpot">500 000€</div>
+        <div class="loterie-jackpot-lbl">JACKPOT</div>
+      </div>
+      <div class="loterie-tickets-left">
+        <div class="loterie-tl-val" id="loterieTicketsLeft">1</div>
+        <div class="loterie-tl-lbl">TICKET RESTANT</div>
+      </div>
+    </div>
+    <div class="loterie-result" id="loterieResult"></div>
+  </div>
+  <div id="loterieBuyZone">
+    <div style="font-size:12px;color:#8e8e93;text-align:center;margin-bottom:10px">Ticket : <strong>1 000€</strong></div>
+    <button onclick="acheterTicket()" style="width:100%;padding:15px;border:none;border-radius:14px;background:#e65100;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;letter-spacing:2px;cursor:pointer" id="btnAcheterTicket">ACHETER UN TICKET — 1 000€</button>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// Dates événement
+const EVENT_START = new Date('2025-06-23T00:00:00').getTime();
+const EVENT_END   = new Date('2025-06-30T23:59:59').getTime();
+
+let currentUser = null;
+let playerMoney = 0;
+let foireData = {}; // données persistées
+
+const fm = n => n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.round(n)+'€';
+const today = () => new Date().toISOString().split('T')[0];
+
+function showToast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=err?'#dc2626':'#1a1a1a';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function closeModal(id){document.getElementById(id).classList.remove('show')}
+function openModal(id){document.getElementById(id).classList.add('show')}
+
+// ══ TIMER ══
+function updateTimer(){
+  const now=Date.now();
+  const left=EVENT_END-now;
+  if(left<=0){
+    document.getElementById('hdrTimer').textContent='TERMINÉ';
+    return;
+  }
+  const d=Math.floor(left/86400000);
+  const h=Math.floor((left%86400000)/3600000);
+  const m=Math.floor((left%3600000)/60000);
+  document.getElementById('hdrTimer').textContent=`${d}J ${h}H ${m}M`;
+  document.getElementById('joursRestants').textContent=`${d}J ${h}H`;
+  document.getElementById('forceBadge').textContent=`Record : ${foireData.force_record||0} clics`;
+}
+
+// ══ INIT ══
+async function init(){
+  try{
+    const {data:{user}} = await sb.auth.getUser();
+    if(!user){location.href='index.html';return;}
+    currentUser=user;
+
+    const {data:gs} = await sb.from('game_stats').select('money,foire').eq('user_id',user.id).maybeSingle();
+    playerMoney = (gs&&gs.money)||0;
+    foireData = (gs&&gs.foire)||{};
+
+    updateTimer();
+    setInterval(updateTimer,30000);
+    loadForceRecords();
+    initLoterie();
+  }catch(e){console.warn(e);}
+}
+
+async function saveMoney(delta, extra={}){
+  playerMoney += delta;
+  const update = {money:playerMoney, foire:foireData, ...extra};
+  await sb.from('game_stats').update(update).eq('user_id',currentUser.id);
+}
+
+// ══════════════════════════════
+//   GRANDE ROUE
+// ══════════════════════════════
+const ETAGES = [
+  {mult:1.5,  risk:15, label:'Rez-de-chaussée',   desc:'Sortie tranquille'},
+  {mult:2,    risk:20, label:'1er étage',          desc:'Ça commence à balancer'},
+  {mult:3,    risk:25, label:'2ème étage',         desc:'Le vent souffle'},
+  {mult:5,    risk:30, label:'3ème étage',         desc:'On entend la mer'},
+  {mult:8,    risk:35, label:'4ème étage',         desc:'Gégé a le vertige'},
+  {mult:12,   risk:40, label:'5ème étage',         desc:'Lavagne regarde d\'en bas'},
+  {mult:20,   risk:45, label:'6ème étage',         desc:'Vue sur Marseille'},
+  {mult:35,   risk:50, label:'7ème étage',         desc:'On voit la Corse'},
+  {mult:50,   risk:60, label:'SOMMET',             desc:'JACKPOT MAXIMUM !'},
+];
+
+let roueMise=0, rouEtage=0, rouGain=0;
+
+function setRoieMise(v){
+  document.getElementById('roueMiseInput').value=v;
+  document.querySelectorAll('#roueMise .mise-btn').forEach(b=>b.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function startRoue(){
+  const mise = parseInt(document.getElementById('roueMiseInput').value)||0;
+  if(!mise||mise<500){showToast('Mise minimum : 500€',true);return;}
+  if(mise>playerMoney){showToast('Pas assez d\'argent !',true);return;}
+  roueMise=mise; rouEtage=0; rouGain=mise;
+  playerMoney-=mise;
+  document.getElementById('roueMise').style.display='none';
+  document.getElementById('rouePlateau').style.display='block';
+  renderRoue();
+}
+
+function renderRoue(){
+  document.getElementById('roueCurrent').textContent=fm(rouGain);
+  document.getElementById('rouEtageActuel').textContent=rouEtage+1;
+  const list=document.getElementById('rouEtages');
+  list.innerHTML='';
+  ETAGES.slice(rouEtage,rouEtage+4).forEach((e,i)=>{
+    const idx=rouEtage+i;
+    const div=document.createElement('div');
+    div.className='roue-etage'+(i===0?' actif':i<0?' passe':' locked');
+    div.innerHTML=`<div class="roue-etage-num">${i===0?'▶':idx+1}</div><div class="roue-etage-info"><div class="roue-etage-name">${e.label}</div><div class="roue-etage-gain">+${fm(roueMise*e.mult)}</div><div class="roue-etage-risk">${i===0?'Étage actuel':'Risque de chute : '+e.risk+'%'}</div></div>`;
+    list.appendChild(div);
+  });
+  const maxAtteint = rouEtage>=ETAGES.length-1;
+  document.getElementById('btnMonter').disabled=maxAtteint;
+  document.getElementById('btnMonter').textContent=maxAtteint?'SOMMET ATTEINT ✓':'MONTER 🎡';
+}
+
+function monterEtage(){
+  if(rouEtage>=ETAGES.length-1) return;
+  const e=ETAGES[rouEtage];
+  if(Math.random()*100<e.risk){
+    // CHUTE !
+    showToast('💥 T\'ES TOMBÉ ! Perdu !',true);
+    document.getElementById('roueCurrent').textContent='0€ 💀';
+    setTimeout(async()=>{
+      await saveMoney(0);
+      closeModal('moRoue');
+      resetRoue();
+    },2000);
+    return;
+  }
+  rouEtage++;
+  rouGain=Math.round(roueMise*ETAGES[rouEtage].mult);
+  renderRoue();
+  showToast(`✅ Étage ${rouEtage+1} atteint ! ${fm(rouGain)}`);
+}
+
+async function descendre(){
+  const gain=rouGain;
+  await saveMoney(gain);
+  showToast(`💰 Tu encaisses ${fm(gain)} !`);
+  closeModal('moRoue');
+  resetRoue();
+}
+
+function resetRoue(){
+  document.getElementById('roueMise').style.display='block';
+  document.getElementById('rouePlateau').style.display='none';
+  document.getElementById('roueMiseInput').value='';
+}
+
+function openRoue(){openModal('moRoue')}
+
+// ══════════════════════════════
+//   TITOUAN SHOW
+// ══════════════════════════════
+const TITOUAN_SCENARIOS = [
+  {texte:'"Je vais faire un salto. Je l\'ai jamais essayé mais ça va le faire."', proba_bien:0.25},
+  {texte:'"Je cuisine une bouillabaisse pour 50 personnes. En 10 minutes."', proba_bien:0.2},
+  {texte:'"Je parie que je peux traverser le port en courant sans m\'arrêter."', proba_bien:0.35},
+  {texte:'"Je vais convaincre Gégé de me donner une journée de congé."', proba_bien:0.05},
+  {texte:'"Je répare la grue avec du scotch et de la bonne volonté."', proba_bien:0.15},
+  {texte:'"Je joue de la guitare pour les mouettes. Elles vont adorer."', proba_bien:0.4},
+  {texte:'"Je vais négocier une augmentation avec Lavagne. Après le déjeuner."', proba_bien:0.1},
+  {texte:'"Je participe à un concours de bouillabaisse contre un vrai chef."', proba_bien:0.2},
+  {texte:'"Je saute d\'un container à l\'autre les yeux fermés."', proba_bien:0.3},
+  {texte:'"Je chante l\'hymne du port devant toute l\'équipe."', proba_bien:0.45},
+];
+
+const FINS_BIEN = [
+  '"Incroyable, Titouan s\'en sort ! Même lui n\'en revient pas."',
+  '"Contre toute attente... ça marche ! Doudou applaudit."',
+  '"Titouan triomphe ! Gégé lève les yeux au ciel mais reconnaît le talent."',
+  '"C\'est pas beau mais c\'est réussi. On prend."',
+];
+const FINS_MAL = [
+  '"Évidemment. On savait tous comment ça allait finir."',
+  '"Titouan est convaincu que c\'était pas de sa faute. Il a tort."',
+  '"Gégé soupire pour la 47ème fois de la journée."',
+  '"Jeff a essayé de prévenir. Personne écoute Jeff."',
+  '"Doudou est trop sympa pour dire ce qu\'il pense vraiment."',
+];
+
+let titouanScenario=null, titouanMise=0, titouanVote=null;
+
+function openTitouan(){
+  const now=Date.now();
+  const lastPlay=foireData.titouan_last||0;
+  if(now-lastPlay<3600000){
+    const left=Math.ceil((3600000-(now-lastPlay))/60000);
+    document.getElementById('titouanCooldownMsg').textContent=`Titouan se repose. Reviens dans ${left} min.`;
+    document.getElementById('titouanJeu').style.display='none';
+    openModal('moTitouan');
+    return;
+  }
+  document.getElementById('titouanCooldownMsg').textContent='Titouan est sur scène. Parie sur ce qui va se passer.';
+  document.getElementById('titouanJeu').style.display='block';
+  titouanScenario=TITOUAN_SCENARIOS[Math.floor(Math.random()*TITOUAN_SCENARIOS.length)];
+  document.getElementById('titouanPhrase').textContent=titouanScenario.texte;
+  document.getElementById('titouanResult').classList.remove('show');
+  document.getElementById('titouanResult').innerHTML='';
+  titouanVote=null;titouanMise=0;
+  document.getElementById('titouanMiseInput').value='';
+  document.querySelectorAll('.titouan-mise .mise-btn').forEach(b=>b.classList.remove('selected'));
+  openModal('moTitouan');
+}
+
+function setTitouanMise(v){
+  document.getElementById('titouanMiseInput').value=v;
+  document.querySelectorAll('.titouan-mise .mise-btn').forEach(b=>b.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+const TITOUAN_SCENE_HTML = {'salto_victoire': '\n<div style="background:#f5f0e8;border-radius:16px;overflow:hidden;border:3px solid #1a1a1a;box-shadow:4px 4px 0 #1a1a1a">\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-bottom:2px solid #1a1a1a">ACTE 1 — TITOUAN A UN PLAN</div>\n  <svg width="100%" viewBox="0 0 390 130" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="130" fill="#e8f4fd"/>\n    <rect x="0" y="100" width="390" height="30" fill="#c8a876"/>\n    <line x1="0" y1="100" x2="390" y2="100" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="90" cy="80" rx="15" ry="20" fill="#ff8c42" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="90" cy="55" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="83" cy="53" rx="4" ry="3" fill="#1a1a1a"/><ellipse cx="97" cy="53" rx="4" ry="3" fill="#1a1a1a"/>\n    <circle cx="84" cy="52" r="1.5" fill="white"/><circle cx="98" cy="52" r="1.5" fill="white"/>\n    <path d="M82,62 Q90,68 98,62" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M74,48 Q90,40 106,48" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n    <line x1="76" y1="73" x2="62" y2="85" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="104" y1="73" x2="118" y2="85" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="83" y1="98" x2="78" y2="115" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="97" y1="98" x2="102" y2="115" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <ellipse cx="76" cy="117" rx="7" ry="3" fill="#1a1a1a"/>\n    <ellipse cx="104" cy="117" rx="7" ry="3" fill="#1a1a1a"/>\n    <rect x="128" y="25" width="220" height="55" rx="12" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>\n    <polygon points="145,80 128,95 170,80" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="146,80 130,93 171,80" fill="white"/>\n    <text x="238" y="46" text-anchor="middle" font-family="Bangers,cursive" font-size="13" fill="#1a1a1a">"Je vais faire un salto.</text>\n    <text x="238" y="61" text-anchor="middle" font-family="Bangers,cursive" font-size="13" fill="#1a1a1a">Je l\'ai jamais essayé</text>\n    <text x="238" y="74" text-anchor="middle" font-family="Bangers,cursive" font-size="13" fill="#cc1a1a">mais c\'est bon."</text>\n    <ellipse cx="320" cy="80" rx="17" ry="23" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="320" cy="52" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M310,50 Q314,47 318,50" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <path d="M322,50 Q326,47 330,50" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <ellipse cx="314" cy="52" rx="3" ry="2.5" fill="#1a1a1a"/>\n    <ellipse cx="326" cy="52" rx="3" ry="2.5" fill="#1a1a1a"/>\n    <path d="M312,60 Q320,57 328,60" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <rect x="302" y="37" width="36" height="7" rx="2" fill="#1a1a1a"/>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 2 — WOOOOSH</div>\n  <svg width="100%" viewBox="0 0 390 130" xmlns="http://www.w3.org/2000/svg" style="background:#fff8e1">\n    <rect width="390" height="130" fill="#fff8e1"/>\n    <rect x="0" y="100" width="390" height="30" fill="#c8a876"/>\n    <line x1="0" y1="100" x2="390" y2="100" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M60,90 Q110,30 195,35 Q280,40 330,90" stroke="#1a1a1a" stroke-width="1.5" fill="none" stroke-dasharray="5,4" opacity=".3"/>\n    <text x="55" y="78" font-size="18" fill="#fbbf24" opacity=".8">✦</text>\n    <text x="200" y="28" font-size="22" fill="#fbbf24">✦</text>\n    <text x="310" y="72" font-size="16" fill="#fbbf24" opacity=".7">✦</text>\n    <g transform="translate(190,38)" style="animation:spin 0.7s linear infinite;transform-origin:0px 0px">\n      <ellipse cx="0" cy="6" rx="13" ry="17" fill="#ff8c42" stroke="#1a1a1a" stroke-width="2"/>\n      <circle cx="0" cy="-14" r="14" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <path d="M-5,-16 Q-2,-19 1,-16" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n      <path d="M1,-16 Q4,-19 7,-16" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n      <path d="M-5,-9 Q0,-5 5,-9" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n      <line x1="-13" y1="3" x2="-25" y2="3" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="13" y1="3" x2="25" y2="3" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="-6" y1="21" x2="-9" y2="34" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="6" y1="21" x2="9" y2="34" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    </g>\n    <text x="80" y="88" font-family="Bangers,cursive" font-size="30" fill="#ff3b30" stroke="#1a1a1a" stroke-width="1.5">WOOOOSH!</text>\n    <line x1="22" y1="65" x2="72" y2="63" stroke="#fbbf24" stroke-width="2" opacity=".6"/>\n    <line x1="18" y1="74" x2="70" y2="74" stroke="#fbbf24" stroke-width="2" opacity=".5"/>\n    <line x1="22" y1="83" x2="70" y2="85" stroke="#fbbf24" stroke-width="2" opacity=".4"/>\n    <ellipse cx="330" cy="80" rx="17" ry="23" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="330" cy="50" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="322" cy="47" rx="5" ry="5" fill="#1a1a1a"/>\n    <ellipse cx="338" cy="47" rx="5" ry="5" fill="#1a1a1a"/>\n    <circle cx="323" cy="46" r="2" fill="white"/><circle cx="339" cy="46" r="2" fill="white"/>\n    <ellipse cx="330" cy="60" rx="6" ry="5" fill="#1a1a1a"/>\n    <rect x="312" y="35" width="36" height="7" rx="2" fill="#1a1a1a"/>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 3 — L\'ATTERRISSAGE</div>\n  <svg width="100%" viewBox="0 0 390 145" xmlns="http://www.w3.org/2000/svg" style="background:#f0fdf4">\n    <rect width="390" height="145" fill="#f0fdf4"/>\n    <rect x="0" y="112" width="390" height="33" fill="#c8a876"/>\n    <line x1="0" y1="112" x2="390" y2="112" stroke="#1a1a1a" stroke-width="2"/>\n    <text x="15" y="30" font-size="14" style="animation:confetti 1.2s .1s infinite">🎉</text>\n    <text x="80" y="20" font-size="12" style="animation:confetti 1.4s .3s infinite">⭐</text>\n    <text x="180" y="18" font-size="16" style="animation:confetti 1.1s 0s infinite">🎊</text>\n    <text x="270" y="22" font-size="12" style="animation:confetti 1.5s .4s infinite">✨</text>\n    <text x="350" y="28" font-size="14" style="animation:confetti 1.3s .2s infinite">🎉</text>\n    <ellipse cx="145" cy="115" rx="40" ry="8" fill="rgba(200,168,118,.4)"/>\n    <g style="animation:bounce 1s ease-in-out infinite">\n      <ellipse cx="140" cy="94" rx="15" ry="20" fill="#ff8c42" stroke="#1a1a1a" stroke-width="2"/>\n      <circle cx="140" cy="68" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <ellipse cx="133" cy="66" rx="4" ry="4" fill="#1a1a1a"/>\n      <ellipse cx="147" cy="66" rx="4" ry="4" fill="#1a1a1a"/>\n      <circle cx="134" cy="65" r="1.5" fill="white"/><circle cx="148" cy="65" r="1.5" fill="white"/>\n      <path d="M130,76 Q140,84 150,76" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n      <path d="M124,62 Q140,54 156,62" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n      <line x1="126" y1="87" x2="108" y2="70" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="154" y1="87" x2="172" y2="70" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="133" y1="112" x2="127" y2="128" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="147" y1="112" x2="153" y2="128" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <ellipse cx="125" cy="130" rx="7" ry="3.5" fill="#1a1a1a"/>\n      <ellipse cx="155" cy="130" rx="7" ry="3.5" fill="#1a1a1a"/>\n    </g>\n    <g transform="translate(300,108) rotate(-85)">\n      <ellipse cx="0" cy="-12" rx="13" ry="18" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n      <circle cx="0" cy="-34" r="14" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <text x="-8" y="-30" font-size="11">😵</text>\n      <rect x="-16" y="-46" width="32" height="6" rx="2" fill="#1a1a1a"/>\n    </g>\n    <text x="252" y="138" font-family="Bebas Neue,sans-serif" font-size="9" fill="#888">GÉGÉ (K.O. de surprise)</text>\n    <rect x="188" y="45" width="155" height="50" rx="12" fill="#1a7a1a" stroke="#1a1a1a" stroke-width="2.5"/>\n    <polygon points="202,95 188,110 228,95" fill="#1a7a1a" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="203,95 190,108 229,95" fill="#1a7a1a"/>\n    <text x="265" y="64" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="white">"Je savais que j\'allais</text>\n    <text x="265" y="79" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="white">réussir depuis</text>\n    <text x="265" y="92" text-anchor="middle" font-family="Bangers,cursive" font-size="10" fill="rgba(255,255,255,.7)">(il mentait un peu)</text>\n  </svg>\n</div>', 'mouettes_victoire': '\n<div style="background:#f5f0e8;border-radius:16px;overflow:hidden;border:3px solid #1a1a1a;box-shadow:4px 4px 0 #1a1a1a">\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-bottom:2px solid #1a1a1a">ACTE 1 — LE CONCERT</div>\n  <svg width="100%" viewBox="0 0 390 130" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="130" fill="#e8f4fd"/>\n    <rect x="0" y="100" width="390" height="30" fill="#006994"/>\n    <line x1="0" y1="100" x2="390" y2="100" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="0" y="93" width="390" height="9" fill="#c8a876"/>\n    <line x1="0" y1="93" x2="390" y2="93" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="110" cy="78" rx="15" ry="20" fill="#ff8c42" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="110" cy="52" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M98,46 Q110,38 122,46" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n    <ellipse cx="103" cy="50" rx="4" ry="3.5" fill="#1a1a1a"/>\n    <ellipse cx="117" cy="50" rx="4" ry="3.5" fill="#1a1a1a"/>\n    <ellipse cx="110" cy="60" rx="7" ry="6" fill="#1a1a1a"/>\n    <ellipse cx="110" cy="59" rx="5" ry="3.5" fill="#cc1a1a"/>\n    <line x1="96" y1="70" x2="76" y2="58" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <rect x="66" y="50" width="11" height="16" rx="5" fill="#333" stroke="#1a1a1a" stroke-width="1.5"/>\n    <ellipse cx="72" cy="50" rx="7" ry="4" fill="#555" stroke="#1a1a1a" stroke-width="1.5"/>\n    <line x1="124" y1="70" x2="142" y2="56" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="103" y1="96" x2="97" y2="112" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="117" y1="96" x2="123" y2="112" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <ellipse cx="95" cy="114" rx="7" ry="3.5" fill="#1a1a1a"/>\n    <ellipse cx="125" cy="114" rx="7" ry="3.5" fill="#1a1a1a"/>\n    <text x="148" y="38" font-size="20" fill="#1a1a1a" style="animation:float 1.2s ease-in-out infinite">♪</text>\n    <text x="172" y="25" font-size="16" fill="#cc1a1a" style="animation:float 1.5s .3s ease-in-out infinite">♫</text>\n    <text x="200" y="40" font-size="22" fill="#1a1a1a" style="animation:float 1.1s .6s ease-in-out infinite">♪</text>\n    <ellipse cx="285" cy="62" rx="18" ry="10" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="285" cy="54" rx="10" ry="7" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M267,59 Q258,52 248,56" stroke="#1a1a1a" stroke-width="2" fill="white"/>\n    <path d="M303,59 Q312,52 322,56" stroke="#1a1a1a" stroke-width="2" fill="white"/>\n    <polygon points="294,54 301,56 294,58" fill="#fbbf24" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="288" cy="52" r="2.5" fill="#1a1a1a"/>\n    <circle cx="288" cy="52" r="1" fill="white"/>\n    <ellipse cx="290" cy="60" rx="1.5" ry="2.5" fill="#87ceeb" style="animation:sweat 1s ease-in-out infinite"/>\n    <rect x="238" y="72" width="98" height="26" rx="8" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="282,72 276,60 298,72" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="283,72 278,62 299,72" fill="white"/>\n    <text x="287" y="83" text-anchor="middle" font-family="Bangers,cursive" font-size="10" fill="#555">"Coin coin"</text>\n    <text x="287" y="94" text-anchor="middle" font-family="Bangers,cursive" font-size="8" fill="#aaa">(= chef-d\'oeuvre)</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 2 — LES RÉACTIONS</div>\n  <svg width="100%" viewBox="0 0 390 130" xmlns="http://www.w3.org/2000/svg" style="background:#f5f0e8">\n    <rect width="390" height="130" fill="#f5f0e8"/>\n    <rect x="0" y="102" width="390" height="28" fill="#c8a876"/>\n    <line x1="0" y1="102" x2="390" y2="102" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="90" cy="80" rx="16" ry="22" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="90" cy="50" r="16" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="74" y="36" width="32" height="7" rx="2" fill="#1a1a1a"/>\n    <ellipse cx="82" cy="48" rx="5" ry="5" fill="#1a1a1a"/>\n    <ellipse cx="98" cy="48" rx="5" ry="5" fill="#1a1a1a"/>\n    <circle cx="83" cy="47" r="2" fill="white"/><circle cx="99" cy="47" r="2" fill="white"/>\n    <ellipse cx="90" cy="60" rx="6" ry="5" fill="#1a1a1a"/>\n    <rect x="78" y="34" width="10" height="7" rx="2" fill="#333" stroke="#555" stroke-width="1" transform="rotate(15,83,38)"/>\n    <rect x="92" y="36" width="10" height="7" rx="2" fill="#333" stroke="#555" stroke-width="1" transform="rotate(15,97,40)"/>\n    <rect x="115" y="35" width="98" height="40" rx="8" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="100,75 92,62 118,75" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="101,75 94,64 119,75" fill="white"/>\n    <text x="164" y="51" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="#555">"40 ans de docker.</text>\n    <text x="164" y="66" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="#555">Jamais vu ça."</text>\n    <ellipse cx="295" cy="80" rx="15" ry="21" fill="#4CAF50" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="295" cy="52" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M283,46 Q295,38 307,46" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n    <path d="M285,49 Q289,45 293,49" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M297,49 Q301,45 305,49" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M285,60 Q295,68 305,60" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M288,52 Q286,60 287,66" stroke="#87ceeb" stroke-width="2.5" fill="none" stroke-linecap="round"/>\n    <path d="M302,52 Q304,60 303,66" stroke="#87ceeb" stroke-width="2.5" fill="none" stroke-linecap="round"/>\n    <circle cx="287" cy="68" r="2.5" fill="#87ceeb" opacity=".8"/>\n    <circle cx="303" cy="68" r="2.5" fill="#87ceeb" opacity=".8"/>\n    <rect x="222" y="22" width="90" height="38" rx="8" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="290,60 284,48 308,60" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="291,60 286,50 309,60" fill="white"/>\n    <text x="267" y="37" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="#4a90d9">"C\'est</text>\n    <text x="267" y="51" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="#4a90d9">tellement BEAU"</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 3 — LE RAPPEL</div>\n  <svg width="100%" viewBox="0 0 390 140" xmlns="http://www.w3.org/2000/svg" style="background:#f0fdf4">\n    <rect width="390" height="140" fill="#f0fdf4"/>\n    <rect x="0" y="112" width="390" height="28" fill="#006994"/>\n    <line x1="0" y1="112" x2="390" y2="112" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="0" y="104" width="390" height="10" fill="#c8a876"/>\n    <line x1="0" y1="104" x2="390" y2="104" stroke="#1a1a1a" stroke-width="2"/>\n    <text x="15" y="30" font-size="13" style="animation:confetti 1.2s .1s infinite">⭐</text>\n    <text x="55" y="18" font-size="11" style="animation:confetti 1.4s .4s infinite">🎵</text>\n    <text x="130" y="22" font-size="15" style="animation:confetti 1.1s 0s infinite">✨</text>\n    <text x="215" y="16" font-size="12" style="animation:confetti 1.5s .3s infinite">🎊</text>\n    <text x="295" y="26" font-size="13" style="animation:confetti 1.2s .2s infinite">⭐</text>\n    <text x="355" y="20" font-size="10" style="animation:confetti 1.3s .5s infinite">🎵</text>\n    <g style="animation:bounce 1.5s ease-in-out infinite">\n      <ellipse cx="195" cy="86" rx="14" ry="19" fill="#ff8c42" stroke="#1a1a1a" stroke-width="2"/>\n      <circle cx="195" cy="60" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <path d="M183,54 Q195,46 207,54" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n      <ellipse cx="188" cy="58" rx="4" ry="4" fill="#1a1a1a"/>\n      <ellipse cx="202" cy="58" rx="4" ry="4" fill="#1a1a1a"/>\n      <circle cx="189" cy="57" r="1.5" fill="white"/><circle cx="203" cy="57" r="1.5" fill="white"/>\n      <path d="M184,68 Q195,76 206,68" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n      <line x1="182" y1="79" x2="164" y2="62" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="208" y1="79" x2="226" y2="62" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="188" y1="103" x2="182" y2="120" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="202" y1="103" x2="208" y2="120" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <ellipse cx="180" cy="122" rx="7" ry="3.5" fill="#1a1a1a"/>\n      <ellipse cx="210" cy="122" rx="7" ry="3.5" fill="#1a1a1a"/>\n    </g>\n    <text x="90" y="62" font-size="16" style="animation:float 1.5s .3s ease-in-out infinite">🐦</text>\n    <text x="135" y="44" font-size="13" style="animation:float 1.2s .1s ease-in-out infinite">🐦</text>\n    <text x="240" y="46" font-size="14" style="animation:float 1.4s .5s ease-in-out infinite">🐦</text>\n    <text x="285" y="62" font-size="16" style="animation:float 1.3s .2s ease-in-out infinite">🐦</text>\n    <rect x="218" y="30" width="150" height="50" rx="12" fill="#1a7a1a" stroke="#1a1a1a" stroke-width="2.5"/>\n    <polygon points="232,80 218,95 258,80" fill="#1a7a1a" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="233,80 220,93 259,80" fill="#1a7a1a"/>\n    <text x="293" y="48" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="white">"Je savais que j\'avais</text>\n    <text x="293" y="62" text-anchor="middle" font-family="Bangers,cursive" font-size="11" fill="white">du talent. Les mouettes</text>\n    <text x="293" y="76" text-anchor="middle" font-family="Bangers,cursive" font-size="9" fill="rgba(255,255,255,.7)">aussi d\'ailleurs."</text>\n  </svg>\n</div>', 'bouillabaisse_defaite': '\n<div style="background:#f5f0e8;border-radius:16px;overflow:hidden;border:3px solid #1a1a1a;box-shadow:4px 4px 0 #1a1a1a">\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-bottom:2px solid #1a1a1a">ACTE 1 — LE PLAN</div>\n  <svg width="100%" viewBox="0 0 390 120" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="120" fill="#fff8e1"/>\n    <rect x="0" y="90" width="390" height="30" fill="#c8a876"/>\n    <line x1="0" y1="90" x2="390" y2="90" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="90" cy="68" rx="14" ry="19" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="78" y="52" width="24" height="30" rx="2" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1.5"/>\n    <circle cx="90" cy="43" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="75" y="28" width="30" height="17" rx="2" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="90" cy="28" rx="17" ry="7" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="83" cy="41" rx="4" ry="3" fill="#1a1a1a"/><ellipse cx="97" cy="41" rx="4" ry="3" fill="#1a1a1a"/>\n    <circle cx="84" cy="40" r="1.5" fill="white"/><circle cx="98" cy="40" r="1.5" fill="white"/>\n    <path d="M82,50 Q90,56 98,50" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <line x1="103" y1="60" x2="120" y2="45" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <ellipse cx="124" cy="42" rx="5" ry="3.5" fill="#555" stroke="#1a1a1a" stroke-width="1.5"/>\n    <rect x="130" y="22" width="220" height="52" rx="12" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>\n    <polygon points="148,74 130,88 172,74" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="149,74 132,86 173,74" fill="white"/>\n    <text x="240" y="40" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">"Bouillabaisse pour 50.</text>\n    <text x="240" y="54" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">10 minutes chrono.</text>\n    <text x="240" y="68" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#cc1a1a">Les yeux fermés."</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 2 — 3 MINUTES PLUS TARD</div>\n  <svg width="100%" viewBox="0 0 390 140" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="140" fill="#fff8f0"/>\n    <rect x="0" y="108" width="390" height="32" fill="#c8a876"/>\n    <line x1="0" y1="108" x2="390" y2="108" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M150,106 Q146,84 154,70 Q158,84 163,72 Q168,86 172,76 Q176,92 180,106Z" fill="#ff6b00" stroke="#cc1a1a" stroke-width="1.5" style="animation:wiggle .3s ease-in-out infinite"/>\n    <path d="M165,106 Q162,88 168,77 Q173,90 178,80 Q182,94 184,106Z" fill="#fbbf24" opacity=".8"/>\n    <text x="42" y="55" font-size="20" style="animation:spin .8s linear infinite;transform-origin:52px 50px">🐟</text>\n    <text x="278" y="70" font-size="16" style="animation:spin 1s .3s linear infinite;transform-origin:288px 65px">🐠</text>\n    <text x="122" y="34" font-size="14" style="animation:fall 1.5s .2s ease-in infinite">🦐</text>\n    <text x="258" y="42" font-size="18" style="animation:fall 1.3s .5s ease-in infinite">🦑</text>\n    <text x="318" y="30" font-size="12" style="animation:fall 1.2s .1s ease-in infinite">🐙</text>\n    <g style="animation:run .4s ease-in-out infinite">\n      <ellipse cx="82" cy="84" rx="13" ry="17" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>\n      <rect x="71" y="68" width="22" height="30" rx="2" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1.5"/>\n      <circle cx="82" cy="57" r="14" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <rect x="70" y="43" width="24" height="16" rx="2" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n      <ellipse cx="82" cy="43" rx="14" ry="6" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n      <path d="M76,36 Q82,30 88,36" stroke="#ff6b00" stroke-width="3" fill="none" opacity=".8"/>\n      <ellipse cx="76" cy="55" rx="4" ry="4.5" fill="#1a1a1a"/><ellipse cx="88" cy="55" rx="4" ry="4.5" fill="#1a1a1a"/>\n      <circle cx="77" cy="54" r="1.8" fill="white"/><circle cx="89" cy="54" r="1.8" fill="white"/>\n      <ellipse cx="82" cy="64" rx="5" ry="4.5" fill="#1a1a1a"/>\n      <line x1="74" y1="100" x2="63" y2="118" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <line x1="90" y1="100" x2="101" y2="112" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n      <ellipse cx="61" cy="120" rx="6" ry="3" fill="#1a1a1a"/>\n      <ellipse cx="103" cy="114" rx="6" ry="3" fill="#1a1a1a"/>\n    </g>\n    <rect x="108" y="46" width="128" height="44" rx="10" fill="white" stroke="#cc1a1a" stroke-width="3"/>\n    <polygon points="120,90 108,104 148,90" fill="white" stroke="#cc1a1a" stroke-width="3" stroke-linejoin="round"/>\n    <polygon points="121,90 110,102 149,90" fill="white"/>\n    <text x="172" y="64" text-anchor="middle" font-family="Bangers,cursive" font-size="14" fill="#cc1a1a">"C\'EST PAS</text>\n    <text x="172" y="81" text-anchor="middle" font-family="Bangers,cursive" font-size="14" fill="#cc1a1a">MA FAUTE !!!"</text>\n    <ellipse cx="320" cy="84" rx="15" ry="21" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="320" cy="57" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="313" cy="55" rx="4" ry="3.5" fill="#1a1a1a"/><ellipse cx="327" cy="55" rx="4" ry="3.5" fill="#1a1a1a"/>\n    <path d="M313,63 Q320,60 327,63" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <rect x="305" y="43" width="30" height="7" rx="2" fill="#1a1a1a"/>\n    <path d="M306,44 Q296,30 291,22" stroke="#aaa" stroke-width="2" fill="none" stroke-dasharray="3,3"/>\n    <text x="255" y="20" font-family="Bangers,cursive" font-size="10" fill="#888">SOUPIR N°48</text>\n    <text x="248" y="30" font-family="Bangers,cursive" font-size="9" fill="#aaa">(il a arrêté de compter)</text>\n    <text x="188" y="24" font-family="Bangers,cursive" font-size="28" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1.5" text-anchor="middle" style="animation:explode .5s ease-out">BOOM!</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 3 — LE BILAN</div>\n  <svg width="100%" viewBox="0 0 390 130" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="130" fill="#f5f0e8"/>\n    <rect x="0" y="100" width="390" height="30" fill="#c8a876"/>\n    <line x1="0" y1="100" x2="390" y2="100" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="50" cy="65" r="10" fill="#e65c00" opacity=".2"/>\n    <circle cx="300" cy="45" r="7" fill="#e65c00" opacity=".25"/>\n    <circle cx="350" cy="75" r="9" fill="#e65c00" opacity=".2"/>\n    <ellipse cx="100" cy="88" rx="14" ry="10" fill="#fff" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="100" cy="65" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="84" y="48" width="26" height="18" rx="2" fill="white" stroke="#1a1a1a" stroke-width="2" transform="rotate(22,97,57)"/>\n    <path d="M87,60 Q100,65 113,60" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <ellipse cx="93" cy="58" rx="4" ry="3" fill="#1a1a1a"/><ellipse cx="107" cy="58" rx="4" ry="3" fill="#1a1a1a"/>\n    <path d="M88,48 Q100,42 112,48" stroke="#e65c00" stroke-width="3.5" fill="none" opacity=".8"/>\n    <line x1="88" y1="80" x2="72" y2="96" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="112" y1="80" x2="128" y2="96" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="94" y1="96" x2="88" y2="113" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <line x1="106" y1="96" x2="112" y2="113" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>\n    <ellipse cx="86" cy="115" rx="7" ry="3.5" fill="#1a1a1a"/>\n    <ellipse cx="114" cy="115" rx="7" ry="3.5" fill="#1a1a1a"/>\n    <rect x="128" y="48" width="160" height="55" rx="12" fill="white" stroke="#1a1a1a" stroke-width="2.5"/>\n    <polygon points="145,103 128,118 167,103" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="146,103 130,116 168,103" fill="white"/>\n    <text x="208" y="66" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#555">"Le four était</text>\n    <text x="208" y="80" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#555">trop chaud."</text>\n    <text x="208" y="94" text-anchor="middle" font-family="Bangers,cursive" font-size="9" fill="#aaa">(il avait mis 250°)</text>\n    <ellipse cx="330" cy="86" rx="15" ry="21" fill="#4a90d9" stroke="#1a1a1a" stroke-width="2"/>\n    <circle cx="330" cy="58" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="323" cy="56" rx="4" ry="3.5" fill="#1a1a1a"/><ellipse cx="337" cy="56" rx="4" ry="3.5" fill="#1a1a1a"/>\n    <path d="M323,64 Q330,61 337,64" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <rect x="315" y="44" width="30" height="7" rx="2" fill="#1a1a1a"/>\n    <rect x="315" y="100" width="20" height="26" rx="2" fill="#fbbf24" stroke="#1a1a1a" stroke-width="2"/>\n    <line x1="318" y1="105" x2="330" y2="105" stroke="#1a1a1a" stroke-width="1"/>\n    <line x1="318" y1="110" x2="330" y2="110" stroke="#1a1a1a" stroke-width="1"/>\n    <line x1="318" y1="115" x2="330" y2="115" stroke="#1a1a1a" stroke-width="1"/>\n    <rect x="240" y="30" width="85" height="32" rx="8" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="328,62 322,50 344,62" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="329,62 324,52 345,62" fill="white"/>\n    <text x="282" y="44" text-anchor="middle" font-family="Bangers,cursive" font-size="10" fill="#1a1a1a">"Soupir n°49.</text>\n    <text x="282" y="57" text-anchor="middle" font-family="Bangers,cursive" font-size="10" fill="#1a1a1a">Je note."</text>\n    <text x="168" y="42" font-size="16" style="animation:fall 2s ease-in infinite">🐟</text>\n    <text x="42" y="32" font-size="12" style="animation:fall 2.5s .5s ease-in infinite">🦐</text>\n  </svg>\n</div>', 'lavagne_defaite': '\n<div style="background:#f5f0e8;border-radius:16px;overflow:hidden;border:3px solid #1a1a1a;box-shadow:4px 4px 0 #1a1a1a">\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-bottom:2px solid #1a1a1a">ACTE 1 — LE PLAN</div>\n  <svg width="100%" viewBox="0 0 390 120" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="120" fill="#e8f4fd"/>\n    <rect x="0" y="90" width="390" height="30" fill="#c8a876"/>\n    <line x1="0" y1="90" x2="390" y2="90" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="90" cy="68" rx="14" ry="20" fill="#2d5a8e" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="90,48 87,78 90,76 93,78" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="90" cy="42" r="15" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="83" cy="40" rx="4" ry="3" fill="#1a1a1a"/><ellipse cx="97" cy="40" rx="4" ry="3" fill="#1a1a1a"/>\n    <path d="M84,50 Q90,55 96,50" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <path d="M75,35 Q90,27 105,35" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n    <rect x="100" y="65" width="14" height="18" rx="2" fill="#fbbf24" stroke="#1a1a1a" stroke-width="1.5"/>\n    <line x1="103" y1="70" x2="111" y2="70" stroke="#1a1a1a" stroke-width="1"/>\n    <line x1="103" y1="74" x2="111" y2="74" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="140" cy="30" r="4" fill="white" stroke="#1a1a1a" stroke-width="1.5"/>\n    <circle cx="154" cy="20" r="5" fill="white" stroke="#1a1a1a" stroke-width="1.5"/>\n    <rect x="162" y="8" width="185" height="45" rx="10" fill="white" stroke="#1a1a1a" stroke-width="2.5" stroke-dasharray="5,3"/>\n    <text x="254" y="26" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">"Je vais demander</text>\n    <text x="254" y="40" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">+500€/mois.</text>\n    <text x="254" y="50" text-anchor="middle" font-family="Bangers,cursive" font-size="10" fill="#cc1a1a">Hehe."</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 2 — FACE À FACE</div>\n  <svg width="100%" viewBox="0 0 390 140" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="140" fill="#fff0f0"/>\n    <rect x="140" y="96" width="210" height="14" rx="2" fill="#6B4226" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="155" y="108" width="7" height="28" fill="#6B4226" stroke="#1a1a1a" stroke-width="1.5"/>\n    <rect x="330" y="108" width="7" height="28" fill="#6B4226" stroke="#1a1a1a" stroke-width="1.5"/>\n    <rect x="0" y="135" width="390" height="5" fill="#e8e0d0"/>\n    <ellipse cx="280" cy="84" rx="18" ry="24" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="280" cy="84" rx="12" ry="18" fill="#fff"/>\n    <polygon points="280,66 277,98 280,96 283,98" fill="#7c3aed" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="280" cy="57" r="18" fill="#ffc5a0" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="262" y="42" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="271" y="42" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="282" y="42" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="291" y="42" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <path d="M264,40 Q272,36 280,40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M280,40 Q288,36 296,40" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <line x1="268,67" y1="" x2="292,67" stroke="#1a1a1a" stroke-width="2"/>\n    <line x1="268" y1="67" x2="292" y2="67" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M260,57 Q280,44 300,57" stroke="#1a1a1a" stroke-width="2" fill="#555"/>\n    <path d="M262,80 Q271,87 280,84 Q289,87 298,80" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>\n    <rect x="306" y="88" width="18" height="14" rx="3" fill="white" stroke="#1a1a1a" stroke-width="1.5"/>\n    <rect x="308" y="90" width="14" height="7" rx="1" fill="#8B4513" opacity=".7"/>\n    <ellipse cx="85" cy="96" rx="14" ry="20" fill="#2d5a8e" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="85,77 82,110 85,108 88,110" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="85" cy="70" r="14" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n    <path d="M74,63 Q85,56 96,63" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n    <ellipse cx="79" cy="68" rx="4" ry="3.5" fill="#1a1a1a"/><ellipse cx="91" cy="68" rx="4" ry="3.5" fill="#1a1a1a"/>\n    <ellipse cx="100" cy="60" rx="3.5" ry="5.5" fill="#87ceeb" opacity=".7" style="animation:sweat 1s ease-in-out infinite"/>\n    <ellipse cx="108" cy="65" rx="2.5" ry="4.5" fill="#87ceeb" opacity=".5" style="animation:sweat 1s .3s ease-in-out infinite"/>\n    <path d="M79,77 Q85,81 91,77" stroke="#1a1a1a" stroke-width="2" fill="none"/>\n    <rect x="102" y="90" width="14" height="18" rx="2" fill="#fbbf24" stroke="#1a1a1a" stroke-width="1.5" style="animation:shake .3s ease-in-out infinite"/>\n    <rect x="114" y="30" width="128" height="44" rx="10" fill="white" stroke="#1a1a1a" stroke-width="2"/>\n    <polygon points="126,74 114,88 152,74" fill="white" stroke="#1a1a1a" stroke-width="2" stroke-linejoin="round"/>\n    <polygon points="127,74 116,86 153,74" fill="white"/>\n    <text x="178" y="48" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">"M. Lavagne,</text>\n    <text x="178" y="62" text-anchor="middle" font-family="Bangers,cursive" font-size="12" fill="#1a1a1a">j\'aurais une...</text>\n    <text x="178" y="72" text-anchor="middle" font-family="Bangers,cursive" font-size="9" fill="#aaa">hm hm heu..."</text>\n  </svg>\n  <div style="font-family:\'Bebas Neue\',sans-serif;font-size:10px;letter-spacing:3px;color:rgba(0,0,0,.3);text-align:center;padding:5px;border-top:2px solid #1a1a1a;border-bottom:2px solid #1a1a1a">ACTE 3 — LA RÉPONSE</div>\n  <svg width="100%" viewBox="0 0 390 140" xmlns="http://www.w3.org/2000/svg">\n    <rect width="390" height="140" fill="#fff0f0"/>\n    <rect x="0" y="112" width="390" height="28" fill="#e8e0d0"/>\n    <line x1="0" y1="112" x2="390" y2="112" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="280" cy="90" rx="18" ry="24" fill="#1a1a1a" stroke="#1a1a1a" stroke-width="2"/>\n    <ellipse cx="280" cy="90" rx="12" ry="18" fill="#fff"/>\n    <polygon points="280,72 277,104 280,102 283,104" fill="#7c3aed" stroke="#1a1a1a" stroke-width="1"/>\n    <circle cx="280" cy="62" r="18" fill="#ffc5a0" stroke="#1a1a1a" stroke-width="2"/>\n    <rect x="262" y="46" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="271" y="46" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="282" y="46" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <rect x="291" y="46" width="7" height="5" rx="1" fill="#1a1a1a"/>\n    <path d="M264,44 Q272,40 280,44" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <path d="M280,44 Q288,40 296,44" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>\n    <ellipse cx="280" cy="74" rx="8" ry="6" fill="#1a1a1a"/>\n    <ellipse cx="280" cy="73" rx="6" ry="3.5" fill="#cc1a1a"/>\n    <path d="M260,62 Q280,49 300,62" stroke="#1a1a1a" stroke-width="2" fill="#555"/>\n    <path d="M262,86 Q271,93 280,90 Q289,93 298,86" stroke="#1a1a1a" stroke-width="3" fill="none" stroke-linecap="round"/>\n    <text x="130" y="74" font-family="Bangers,cursive" font-size="62" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="2" opacity=".95" style="animation:explode .3s ease-out">NON.</text>\n    <g transform="translate(72,74)" style="animation:slide-in-r .4s ease-out">\n      <ellipse cx="0" cy="24" rx="13" ry="17" fill="#2d5a8e" stroke="#1a1a1a" stroke-width="2"/>\n      <polygon points="0,6 -3,36 0,34 3,36" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="1"/>\n      <circle cx="0" cy="2" r="14" fill="#ffd4a3" stroke="#1a1a1a" stroke-width="2"/>\n      <ellipse cx="-5" cy="0" rx="4.5" ry="4.5" fill="#1a1a1a"/>\n      <ellipse cx="5" cy="0" rx="4.5" ry="4.5" fill="#1a1a1a"/>\n      <circle cx="-4" cy="-1" r="1.8" fill="white"/><circle cx="6" cy="-1" r="1.8" fill="white"/>\n      <ellipse cx="0" cy="10" rx="4.5" ry="4" fill="#1a1a1a"/>\n      <path d="M-8,-8 Q0,-3 8,-8" stroke="#1a1a1a" stroke-width="2" fill="#8B4513"/>\n      <ellipse cx="18" cy="-10" rx="4" ry="7" fill="#87ceeb" opacity=".8" transform="rotate(30,18,-10)"/>\n      <ellipse cx="26" cy="-3" rx="3" ry="5.5" fill="#87ceeb" opacity=".6" transform="rotate(20,26,-3)"/>\n    </g>\n    <rect x="42" y="100" width="14" height="18" rx="2" fill="#fbbf24" stroke="#1a1a1a" stroke-width="1.5" transform="rotate(45,49,109)" style="animation:fall .5s ease-in forwards"/>\n    <rect x="108" y="80" width="84" height="26" rx="4" fill="#cc1a1a" stroke="#1a1a1a" stroke-width="2" transform="rotate(-12,150,93)"/>\n    <text x="150" y="97" text-anchor="middle" font-family="Bebas Neue,sans-serif" font-size="14" fill="white" letter-spacing="2" transform="rotate(-12,150,93)">REFUSÉ</text>\n    <text x="210" y="128" font-family="Bangers,cursive" font-size="10" fill="#888">Il a même pas levé les yeux de son café.</text>\n  </svg>\n</div>'};
+const TITOUAN_SCENE_MAP = {0: ('salto_victoire', 'mouettes_victoire'), 1: ('bouillabaisse_defaite', 'bouillabaisse_defaite'), 2: ('salto_victoire', 'bouillabaisse_defaite'), 3: ('lavagne_defaite', 'lavagne_defaite'), 4: ('bouillabaisse_defaite', 'bouillabaisse_defaite'), 5: ('mouettes_victoire', 'bouillabaisse_defaite'), 6: ('lavagne_defaite', 'lavagne_defaite'), 7: ('bouillabaisse_defaite', 'bouillabaisse_defaite'), 8: ('salto_victoire', 'bouillabaisse_defaite'), 9: ('mouettes_victoire', 'bouillabaisse_defaite')};
+
+async function voterTitouan(vote){
+  const mise=parseInt(document.getElementById('titouanMiseInput').value)||0;
+  if(!mise||mise<100){showToast('Mise minimum : 100€',true);return;}
+  if(mise>playerMoney){showToast('Pas assez d\'argent !',true);return;}
+
+  const biense = Math.random()<titouanScenario.proba_bien;
+  const gagne = (vote==='oui'&&biense)||(vote==='non'&&!biense);
+  const gain = gagne?mise*2:0;
+
+  playerMoney-=mise;
+  await saveMoney(gagne?mise:-mise, {'foire':{...foireData,titouan_last:Date.now()}});
+  foireData.titouan_last=Date.now();
+
+  const finTexts = biense?FINS_BIEN:FINS_MAL;
+  const fin = finTexts[Math.floor(Math.random()*finTexts.length)];
+
+  // Trouver la scène correspondante
+  const scenIdx = TITOUAN_SCENARIOS.indexOf(titouanScenario);
+  const scenePair = TITOUAN_SCENE_MAP[scenIdx]||['salto_victoire','lavagne_defaite'];
+  const sceneKey = gagne ? scenePair[0] : scenePair[1];
+  const sceneHTML = TITOUAN_SCENE_HTML[sceneKey]||'';
+
+  const res=document.getElementById('titouanResult');
+  res.innerHTML = sceneHTML + `
+    <div style="text-align:center;margin-top:12px;padding:12px;background:${gagne?'#f0fdf4':'#fff5f5'};border-radius:12px;border:2px solid ${gagne?'#86efac':'#fca5a5'}">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:${gagne?'#16a34a':'#dc2626'}">${gagne?'+'+fm(mise)+' GAGNÉ !':'-'+fm(mise)+' perdu...'}</div>
+      <div style="font-size:11px;color:#8e8e93;margin-top:4px">${gagne?'Tu t\'en sors avec '+fm(playerMoney):'Mieux vaut pas regarder ton solde.'}</div>
+    </div>
+  `;
+  res.classList.add('show');
+  res.style.background='transparent';
+  res.style.padding='0';
+}
+
+// ══════════════════════════════
+//   TEST DE FORCE
+// ══════════════════════════════
+let forceActive=false, forceCount=0, forceTimer=null, forceElapsed=0;
+const FORCE_DURATION=5000;
+
+function openForce(){openModal('moForce');resetForce();}
+
+function resetForce(){
+  forceActive=false;forceCount=0;forceElapsed=0;
+  clearInterval(forceTimer);
+  document.getElementById('forceCounterDisplay').textContent='0';
+  document.getElementById('forceTimerBar').style.width='100%';
+  document.getElementById('forceTimerLbl').textContent='5.0s';
+  document.getElementById('forceCtaLbl').textContent='APPUYER !';
+  document.getElementById('forceCta').style.transform='scale(1)';
+}
+
+function clicForce(){
+  if(!forceActive){
+    // Démarrage
+    forceActive=true;
+    document.getElementById('forceCtaLbl').textContent='ENCORE !';
+    const start=Date.now();
+    forceTimer=setInterval(()=>{
+      forceElapsed=Date.now()-start;
+      const left=Math.max(0,(FORCE_DURATION-forceElapsed)/1000);
+      document.getElementById('forceTimerBar').style.width=(left/5*100)+'%';
+      document.getElementById('forceTimerLbl').textContent=left.toFixed(1)+'s';
+      if(forceElapsed>=FORCE_DURATION){
+        clearInterval(forceTimer);
+        finirForce();
+      }
+    },50);
+  }
+  if(!forceActive||forceElapsed>=FORCE_DURATION) return;
+  forceCount++;
+  document.getElementById('forceCounterDisplay').textContent=forceCount;
+  // Feedback visuel
+  document.getElementById('forceCta').style.transform='scale(.92)';
+  setTimeout(()=>document.getElementById('forceCta').style.transform='scale(1)',80);
+}
+
+async function finirForce(){
+  forceActive=false;
+  document.getElementById('forceCtaLbl').textContent=`${forceCount} CLICS !`;
+  const gain=forceCount*100;
+
+  // Record ?
+  const isRecord = forceCount>(foireData.force_record||0);
+  if(isRecord) foireData.force_record=forceCount;
+
+  await saveMoney(gain);
+  showToast(`${forceCount} clics = ${fm(gain)} gagnés !${isRecord?' 🏆 NOUVEAU RECORD !':''}`);
+  loadForceRecords();
+}
+
+async function loadForceRecords(){
+  try{
+    const {data} = await sb.from('game_stats').select('user_id,foire,profiles(pseudo)').not('foire','is',null);
+    if(!data) return;
+    const records = data
+      .filter(r=>r.foire&&r.foire.force_record)
+      .map(r=>({pseudo:r.profiles?.pseudo||'Joueur',score:r.foire.force_record}))
+      .sort((a,b)=>b.score-a.score)
+      .slice(0,5);
+
+    const list=document.getElementById('forceRecordsList');
+    if(records.length===0){list.innerHTML='<div style="font-size:12px;color:#8e8e93">Pas encore de record !</div>';return;}
+    list.innerHTML=records.map((r,i)=>`
+      <div class="force-record-row">
+        <div class="force-record-name">${['🥇','🥈','🥉','4️⃣','5️⃣'][i]} ${r.pseudo}</div>
+        <div class="force-record-score">${r.score} clics</div>
+      </div>
+    `).join('');
+
+    // Badge sur la card
+    if(records[0]) document.getElementById('forceBadge').textContent=`Record : ${records[0].score} clics`;
+  }catch(e){console.warn(e);}
+}
+
+// ══════════════════════════════
+//   LOTERIE À GRATTER
+// ══════════════════════════════
+const LOTERIE_SYMBOLES = ['🐟','🐟','⚓','⚓','💰','💰','🎪','🎪','🌊','🌊','⭐','⭐'];
+const LOTERIE_GAINS = {
+  '🐟':500,'⚓':1000,'💰':5000,'🎪':20000,'🌊':50000,'⭐':500000
+};
+
+let loterieGrille=[], loterieGrattees=new Set(), loterieTicketDispo=false;
+
+function initLoterie(){
+  const t = today();
+  const lastTicket = foireData.loterie_date;
+  loterieTicketDispo = lastTicket!==t;
+  document.getElementById('loterieBadge').textContent = loterieTicketDispo?'1 ticket dispo':'Reviens demain';
+  document.getElementById('btnAcheterTicket').disabled=!loterieTicketDispo;
+  document.getElementById('btnAcheterTicket').style.background=loterieTicketDispo?'#e65100':'#aeaeb2';
+}
+
+function openLoterie(){
+  initLoterie();
+  renderLoterieVide();
+  openModal('moLoterie');
+}
+
+function renderLoterieVide(){
+  const grille=document.getElementById('loterieGrille');
+  grille.innerHTML='';
+  loterieGrille=[];loterieGrattees=new Set();
+  document.getElementById('loterieResult').classList.remove('show');
+  document.getElementById('loterieTicketNum').textContent='#——';
+  for(let i=0;i<9;i++){
+    const div=document.createElement('div');
+    div.className='loterie-case';
+    div.style.background='rgba(255,255,255,.15)';
+    div.innerHTML=`<div class="gratte-cover">🤞</div>`;
+    grille.appendChild(div);
+  }
+}
+
+async function acheterTicket(){
+  if(!loterieTicketDispo){showToast('Déjà joué aujourd\'hui !',true);return;}
+  if(playerMoney<1000){showToast('Il te faut 1 000€ pour un ticket !',true);return;}
+
+  playerMoney-=1000;
+  foireData.loterie_date=today();
+  loterieTicketDispo=false;
+  initLoterie();
+
+  // Générer la grille
+  const symboles=[...LOTERIE_SYMBOLES].sort(()=>Math.random()-.5).slice(0,9);
+  loterieGrille=symboles;
+
+  const num='#'+Math.floor(Math.random()*90000+10000);
+  document.getElementById('loterieTicketNum').textContent=num;
+
+  const grille=document.getElementById('loterieGrille');
+  grille.innerHTML='';
+  loterieGrattees=new Set();
+  document.getElementById('loterieResult').classList.remove('show');
+
+  symboles.forEach((s,i)=>{
+    const div=document.createElement('div');
+    div.className='loterie-case';
+    div.onclick=()=>gratteCase(i,div,s);
+    div.innerHTML=`<div class="gratte-cover" style="font-size:20px">😬</div>`;
+    grille.appendChild(div);
+  });
+
+  await saveMoney(-1000);
+}
+
+async function gratteCase(i,div,symbole){
+  if(loterieGrattees.has(i)) return;
+  loterieGrattees.add(i);
+  div.classList.add('grattee');
+  div.innerHTML=`<div class="gratte-ico">${symbole}</div>`;
+
+  if(loterieGrattees.size===9){
+    // Vérifier résultat
+    const counts={};
+    loterieGrille.forEach(s=>counts[s]=(counts[s]||0)+1);
+    const gagnant=Object.entries(counts).find(([s,c])=>c>=3);
+    const res=document.getElementById('loterieResult');
+
+    if(gagnant){
+      const [sym,_]=gagnant;
+      const gain=LOTERIE_GAINS[sym];
+      await saveMoney(gain);
+      res.innerHTML=`<div style="font-size:36px;margin-bottom:8px">🎉</div><div style="font-family:'Bebas Neue',sans-serif;font-size:28px;color:#16a34a">+${fm(gain)} GAGNÉ !</div><div style="font-size:12px;color:#16a34a;margin-top:4px">3× ${sym}</div>`;
+      res.style.background='#f0fdf4';
+      showToast(`🎉 JACKPOT ! Tu gagnes ${fm(gain)} !`);
+    }else{
+      res.innerHTML=`<div style="font-size:32px;margin-bottom:8px">😭</div><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#dc2626">PERDU...</div><div style="font-size:12px;color:#8e8e93;margin-top:4px">Reviens demain !</div>`;
+      res.style.background='#fff5f5';
+    }
+    res.style.borderRadius='12px';
+    res.style.padding='14px';
+    res.style.textAlign='center';
+    res.classList.add('show');
+    await saveMoney(0,{foire:foireData});
+  }
+}
+
+// Anti-zoom
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault();},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+
+init();
+</script>
+</body>
+</html>
