@@ -475,7 +475,13 @@ async function init(){
     const {data:gs} = await sb.from('game_stats').select('money,foire').eq('user_id',user.id).maybeSingle();
     playerMoney = (gs&&gs.money)||0;
     foireData = (gs&&gs.foire)||{};
+    
+    // Si pas de ligne game_stats, créer
+    if(!gs){
+      await sb.from('game_stats').insert({user_id:user.id, money:0, foire:{}});
+    }
 
+    console.log('Foire init OK — solde:', playerMoney);
     updateTimer();
     setInterval(updateTimer,30000);
     loadForceRecords();
@@ -484,9 +490,11 @@ async function init(){
 }
 
 async function saveMoney(delta, extra={}){
-  playerMoney += delta;
+  playerMoney = Math.round(playerMoney + delta);
   const update = {money:playerMoney, foire:foireData, ...extra};
-  await sb.from('game_stats').update(update).eq('user_id',currentUser.id);
+  try{
+    await sb.from('game_stats').update(update).eq('user_id',currentUser.id);
+  }catch(e){console.warn('saveMoney error:',e);}
 }
 
 // ══════════════════════════════
@@ -515,7 +523,8 @@ function setRoieMise(v){
 function startRoue(){
   const mise = parseInt(document.getElementById('roueMiseInput').value)||0;
   if(!mise||mise<500){showToast('Mise minimum : 500€',true);return;}
-  if(mise>playerMoney){showToast('Pas assez d\'argent !',true);return;}
+  if(playerMoney<=0){showToast('Solde non chargé, réessaie',true);return;}
+  if(mise>playerMoney){showToast('Pas assez d\'argent ! Solde: '+fm(playerMoney),true);return;}
   roueMise=mise; rouEtage=0; rouGain=mise;
   playerMoney-=mise;
   document.getElementById('roueMise').style.display='none';
@@ -574,7 +583,10 @@ function resetRoue(){
   document.getElementById('roueMiseInput').value='';
 }
 
-function openRoue(){openModal('moRoue')}
+function openRoue(){
+  if(!currentUser){showToast('Chargement en cours...',true);return;}
+  openModal('moRoue');
+}
 
 // ══════════════════════════════
 //   TITOUAN SHOW
@@ -609,6 +621,7 @@ const FINS_MAL = [
 let titouanScenario=null, titouanMise=0, titouanVote=null;
 
 function openTitouan(){
+  if(!currentUser){showToast('Chargement en cours...',true);return;}
   const now=Date.now();
   const lastPlay=foireData.titouan_last||0;
   if(now-lastPlay<3600000){
@@ -679,7 +692,10 @@ async function voterTitouan(vote){
 let forceActive=false, forceCount=0, forceTimer=null, forceElapsed=0;
 const FORCE_DURATION=5000;
 
-function openForce(){openModal('moForce');resetForce();}
+function openForce(){
+  if(!currentUser){showToast('Chargement en cours...',true);return;}
+  openModal('moForce');resetForce();
+}
 
 function resetForce(){
   forceActive=false;forceCount=0;forceElapsed=0;
@@ -774,6 +790,7 @@ function initLoterie(){
 }
 
 function openLoterie(){
+  if(!currentUser){showToast('Chargement en cours...',true);return;}
   initLoterie();
   renderLoterieVide();
   openModal('moLoterie');
@@ -796,7 +813,8 @@ function renderLoterieVide(){
 
 async function acheterTicket(){
   if(!loterieTicketDispo){showToast('Déjà joué aujourd\'hui !',true);return;}
-  if(playerMoney<1000){showToast('Il te faut 1 000€ pour un ticket !',true);return;}
+  if(playerMoney<1000){showToast('Il te faut 1 000€ ! Solde: '+fm(playerMoney),true);return;}
+  if(!currentUser){showToast('Non connecté',true);return;}
 
   foireData.loterie_date=today();
   loterieTicketDispo=false;
