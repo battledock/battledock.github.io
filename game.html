@@ -5,7 +5,28 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
 <title>Battle Dock</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js">
+// ── PWA Install ──
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();deferredPrompt=e;
+  document.getElementById('pwaBanner').style.display='flex';
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('pwaBanner').style.display='none';
+  deferredPrompt=null;
+});
+function installPWA(){
+  if(!deferredPrompt)return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(()=>{deferredPrompt=null;document.getElementById('pwaBanner').style.display='none';});
+}
+// Cacher si déjà installé (standalone)
+if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone){
+  const b=document.getElementById('pwaBanner');if(b)b.style.display='none';
+}
+
+</script>
 <style>
 @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
 .sk{background:linear-gradient(90deg,#ececec 25%,#f5f5f5 50%,#ececec 75%);background-size:800px 100%;animation:shimmer 1.4s ease-in-out infinite;border-radius:6px}
@@ -1302,7 +1323,7 @@ body{
 <div class="page-content" style="margin-top:0">
 
   <!-- TRAVAILLER -->
-  <div class="widget widget-full widget-work" onclick="location.href='travail.html'">
+  <div class="widget widget-full widget-work" onclick="location.href='travail.html'" style="position:relative">
     <div class="work-diagonal"></div>
     <div class="work-mesh"></div>
     <div class="work-content">
@@ -1310,6 +1331,17 @@ body{
         <div style="font-size:7px;font-weight:800;color:rgba(255,255,255,.2);letter-spacing:5px;margin-bottom:12px">PORT DE MARSEILLE</div>
         <div class="work-title">TRAVAILLER</div>
       </div>
+    </div>
+    <!-- Bandeau PWA -->
+    <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.1);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px" id="pwaBanner">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-size:20px">📲</div>
+        <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;letter-spacing:1px;line-height:1">INSTALLE L'APP</div>
+          <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px">BATTLE DOCK · ACCÈS RAPIDE</div>
+        </div>
+      </div>
+      <button onclick="event.stopPropagation();installPWA()" style="background:#fbbf24;border:none;border-radius:8px;padding:6px 12px;font-family:'Bebas Neue',sans-serif;font-size:12px;color:#1a1a1a;letter-spacing:1px;cursor:pointer;flex-shrink:0">INSTALLER</button>
     </div>
   </div>
 
