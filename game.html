@@ -2192,15 +2192,30 @@ window.addEventListener('appinstalled', function() {
   if (banner) banner.style.display = 'none';
 });
 function installPWA() {
-  if (!_deferredPrompt) return;
-  _deferredPrompt.prompt();
-  _deferredPrompt.userChoice.then(function(r) {
-    _deferredPrompt = null;
-    if (r.outcome === 'accepted') {
-      var banner = document.getElementById('pwaBanner');
-      if (banner) banner.style.display = 'none';
-    }
-  });
+  // Essayer le prompt natif d'abord (Android Chrome)
+  if (_deferredPrompt) {
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(r) {
+      _deferredPrompt = null;
+      if (r.outcome === 'accepted') {
+        var banner = document.getElementById('pwaBanner');
+        if (banner) banner.style.display = 'none';
+      }
+    });
+    return;
+  }
+  // Sinon afficher les instructions manuelles
+  var modal = document.getElementById('pwaModal');
+  var ios = document.getElementById('pwaIos');
+  var android = document.getElementById('pwaAndroid');
+  var other = document.getElementById('pwaOther');
+  var ua = navigator.userAgent;
+  var isIos = /iphone|ipad|ipod/i.test(ua);
+  var isAndroid = /android/i.test(ua);
+  ios.style.display = isIos ? 'block' : 'none';
+  android.style.display = isAndroid ? 'block' : 'none';
+  other.style.display = (!isIos && !isAndroid) ? 'block' : 'none';
+  modal.style.display = 'flex';
 }
 // Cacher si déjà en mode standalone (app installée)
 (function() {
@@ -2221,5 +2236,55 @@ function installPWA() {
 
 
 
+
+<!-- Modal installation PWA -->
+<div id="pwaModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.style.display='none'">
+  <div style="background:#1a1a2e;border:1px solid rgba(251,191,36,.25);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:600px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fbbf24;letter-spacing:2px">INSTALLER BATTLE DOCK</div>
+      <button onclick="document.getElementById('pwaModal').style.display='none'" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <!-- iOS -->
+    <div id="pwaIos" style="display:none">
+      <div style="font-size:13px;color:rgba(255,255,255,.7);font-weight:600;line-height:1.6;margin-bottom:16px">Sur <b style="color:#fff">Safari iPhone/iPad</b> :</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">1️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur le bouton <span style="color:#fbbf24">Partager ⬆️</span> en bas de Safari</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">2️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Descends et appuie sur <span style="color:#fbbf24">"Sur l'écran d'accueil"</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">3️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur <span style="color:#fbbf24">"Ajouter"</span> en haut à droite</div>
+        </div>
+      </div>
+    </div>
+    <!-- Android -->
+    <div id="pwaAndroid" style="display:none">
+      <div style="font-size:13px;color:rgba(255,255,255,.7);font-weight:600;line-height:1.6;margin-bottom:16px">Sur <b style="color:#fff">Chrome Android</b> :</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">1️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur <span style="color:#fbbf24">⋮</span> en haut à droite de Chrome</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">2️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur <span style="color:#fbbf24">"Ajouter à l'écran d'accueil"</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:28px;flex-shrink:0">3️⃣</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur <span style="color:#fbbf24">"Ajouter"</span> pour confirmer</div>
+        </div>
+      </div>
+    </div>
+    <!-- Autre -->
+    <div id="pwaOther" style="display:none;font-size:13px;color:rgba(255,255,255,.7);font-weight:600;line-height:1.7">
+      Ouvre <b style="color:#fbbf24">battledock.github.io</b> dans Chrome ou Safari, puis utilise le menu du navigateur pour l'ajouter à ton écran d'accueil.
+    </div>
+  </div>
+</div>
 </body>
 </html>
