@@ -368,6 +368,8 @@ async function sendMsg(){
     }
     convMap[convWith].msgs.push(data);
     renderConv(convMsgs.length>=MAX_MSGS);
+    // Mettre à jour la liste conversations
+    renderList();
   }
 }
 
@@ -473,15 +475,22 @@ async function init(){
   // Charger tous les joueurs
   const {data:players}=await sb.from('profiles').select('user_id,username,avatar_url,title').neq('user_id',me.id).order('last_seen',{ascending:false}).limit(100);
   allPlayers=players||[];
-  // Charger tous les messages reçus
-  const {data:msgs}=await sb.from('challenges').select('*').eq('to_user_id',me.id).order('created_at',{ascending:true});
-  // Grouper par expéditeur
-  (msgs||[]).forEach(m=>{
-    const uid=m.from_user_id;
+  // Charger messages reçus ET envoyés
+  const [{data:recv},{data:sent}]=await Promise.all([
+    sb.from('challenges').select('*').eq('to_user_id',me.id).order('created_at',{ascending:true}),
+    sb.from('challenges').select('*').eq('from_user_id',me.id).order('created_at',{ascending:true})
+  ]);
+  // Grouper par interlocuteur
+  const allMsgs=[...(recv||[]),...(sent||[])].sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  allMsgs.forEach(m=>{
+    const uid=m.from_user_id===me.id?m.to_user_id:m.from_user_id;
     const p=allPlayers.find(x=>x.user_id===uid)||{};
     if(!convMap[uid])convMap[uid]={msgs:[],unread:0,profile:p};
-    convMap[uid].msgs.push(m);
-    if(!m.read)convMap[uid].unread++;
+    // Éviter doublons
+    if(!convMap[uid].msgs.find(x=>x.id===m.id)){
+      convMap[uid].msgs.push(m);
+      if(!m.read&&m.from_user_id!==me.id)convMap[uid].unread++;
+    }
   });
   updateBadge();
   renderList();
