@@ -48,16 +48,26 @@ html,body{height:100%;background:#f2f2f7;font-family:'Inter',sans-serif;overflow
 
 /* CONVERSATION */
 #convView{background:#f2f2f7}
-.conv-hdr{background:linear-gradient(180deg,#0f172a 0%,#cc1a1a 100%);padding:calc(var(--st)+10px) 14px 20px;flex-shrink:0;box-shadow:0 4px 20px rgba(0,0,0,.4)}
-.conv-hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
-.conv-av{width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#fbbf24,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:32px;flex-shrink:0;overflow:hidden;border:3px solid rgba(255,255,255,.25);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.conv-hdr{background:linear-gradient(135deg,#cc1a1a 0%,#7a0e0e 50%,#fbbf24 130%);padding:calc(var(--st)+10px) 14px 14px;flex-shrink:0;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.conv-av{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;border:2px solid rgba(255,255,255,.35)}
 .conv-av img{width:100%;height:100%;object-fit:cover}
-.conv-info{flex:1;min-width:0;padding-bottom:4px}
-.conv-name{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:1px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.conv-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px}
-.conv-online{display:flex;align-items:center;gap:4px;margin-top:4px}
-.conv-online-dot{width:7px;height:7px;border-radius:50%;background:#22c55e}
-.conv-online-txt{font-size:10px;color:#22c55e;font-weight:700}
+.conv-info{flex:1;min-width:0}
+.conv-name{font-family:'Bebas Neue',sans-serif;font-size:21px;color:#fff;letter-spacing:1px;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.conv-sub{font-size:10px;color:rgba(255,255,255,.65);margin-top:3px;display:flex;align-items:center;gap:4px}
+.conv-online{display:none}
+.conv-online-dot{width:6px;height:6px;border-radius:50%;background:#a8f0c0;flex-shrink:0}
+.conv-online-txt{font-size:10px;color:rgba(255,255,255,.65)}
+/* Menu contextuel */
+.ctx-menu{position:fixed;z-index:500;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.2);overflow:hidden;display:none;min-width:200px}
+.ctx-menu.show{display:block;animation:ctxIn .15s ease-out}
+@keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.ctx-item{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;font-size:14px;font-weight:600;color:#0f172a;border-bottom:1px solid #f9fafb;transition:background .1s}
+.ctx-item:last-child{border-bottom:none}
+.ctx-item:active{background:#f9fafb}
+.ctx-item.danger{color:#ef4444}
+.ctx-ico{font-size:18px;width:24px;text-align:center}
+.ctx-overlay{position:fixed;inset:0;z-index:499;display:none}
+.ctx-overlay.show{display:block}
 .conv-body{flex:1;overflow-y:auto;padding:12px 14px 8px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
 .bubble-row{display:flex;align-items:flex-end;gap:6px}
 .bubble-row.me{flex-direction:row-reverse}
@@ -133,27 +143,31 @@ html,body{height:100%;background:#f2f2f7;font-family:'Inter',sans-serif;overflow
 <!-- VUE CONVERSATION -->
 <div class="view slide-hidden" id="convView">
   <div class="conv-hdr">
-    <div class="conv-hdr-top">
+    <div style="display:flex;align-items:center;gap:12px">
       <button class="hdr-back" id="convBack">←</button>
-      <div style="flex:1"></div>
-      <div style="color:rgba(255,255,255,.4);font-size:22px;cursor:pointer">⋯</div>
-    </div>
-    <div style="display:flex;align-items:flex-end;gap:14px">
       <div class="conv-av" id="convAv">⚓</div>
       <div class="conv-info">
         <div class="conv-name" id="convName">—</div>
-        <div class="conv-sub" id="convSub">Docker</div>
-        <div class="conv-online" id="convOnline" style="display:none">
-          <div class="conv-online-dot"></div>
-          <div class="conv-online-txt">En ligne</div>
+        <div class="conv-sub" id="convSub">
+          <div class="conv-online-dot" id="convOnlineDot" style="display:none"></div>
+          <span id="convSubTxt">Docker</span>
         </div>
       </div>
+      <button onclick="openCtxMenu(event)" style="background:rgba(0,0,0,.2);border:none;border-radius:10px;width:36px;height:36px;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;letter-spacing:2px">⋯</button>
     </div>
   </div>
+  <!-- Menu contextuel -->
+  <div class="ctx-overlay" id="ctxOverlay" onclick="closeCtxMenu()"></div>
+  <div class="ctx-menu" id="ctxMenu">
+    <div class="ctx-item" onclick="voirProfil()"><div class="ctx-ico">👤</div>Voir le profil</div>
+    <div class="ctx-item danger" onclick="supprimerConv()"><div class="ctx-ico">🗑️</div>Supprimer la conversation</div>
+  </div>
   <div class="conv-body" id="convBody" style="background:#f5f5f5"></div>
-  <div class="conv-input">
-    <textarea class="inp-field" id="convInp" placeholder="Écris un message..." maxlength="500" rows="1"></textarea>
-    <button class="inp-send" id="convSendBtn">↑</button>
+  <div style="background:#fff;border-top:1px solid #f0f0f0;padding:8px 12px calc(var(--sb)+12px)">
+    <div style="display:flex;align-items:center;gap:8px;background:#f2f2f7;border-radius:24px;padding:8px 8px 8px 14px">
+      <textarea id="convInp" placeholder="Écris un message..." maxlength="500" rows="1" style="flex:1;background:none;border:none;outline:none;font-size:14px;font-family:'Inter',sans-serif;resize:none;color:#0f172a;max-height:100px;line-height:1.4;-webkit-user-select:text;user-select:text;padding:2px 0"></textarea>
+      <button id="convSendBtn" style="background:#cc1a1a;border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(204,26,26,.35);transition:transform .1s;cursor:pointer">↑</button>
+    </div>
   </div>
 </div>
 
@@ -392,6 +406,45 @@ function setupConvRealtime(){
       if(idx>=0){convMsgs[idx]=m;renderConv(convMsgs.length>=MAX_MSGS);}
     })
     .subscribe();
+}
+
+
+// ── MENU CONTEXTUEL ──
+function openCtxMenu(e){
+  const menu=document.getElementById('ctxMenu');
+  const overlay=document.getElementById('ctxOverlay');
+  // Position sous le bouton ⋯
+  const btn=e.currentTarget;
+  const r=btn.getBoundingClientRect();
+  menu.style.top=(r.bottom+6)+'px';
+  menu.style.right=(window.innerWidth-r.right)+'px';
+  menu.classList.add('show');
+  overlay.classList.add('show');
+}
+function closeCtxMenu(){
+  document.getElementById('ctxMenu').classList.remove('show');
+  document.getElementById('ctxOverlay').classList.remove('show');
+}
+function voirProfil(){
+  closeCtxMenu();
+  if(convWith) window.location.href='leprofil.html?uid='+convWith;
+}
+async function supprimerConv(){
+  closeCtxMenu();
+  if(!convWith||!me) return;
+  if(!confirm('Supprimer toute la conversation avec ce joueur ?')) return;
+  // Supprimer messages reçus
+  await sb.from('challenges').delete().eq('from_user_id',convWith).eq('to_user_id',me.id);
+  // Supprimer messages envoyés
+  await sb.from('challenges').delete().eq('from_user_id',me.id).eq('to_user_id',convWith);
+  // Nettoyer localement
+  delete convMap[convWith];
+  toast('💬 Conversation supprimée');
+  // Retour à la liste
+  document.getElementById('convView').classList.add('slide-hidden');
+  document.getElementById('listView').classList.remove('slide-out');
+  convWith=null;convMsgs=[];
+  renderList();updateBadge();
 }
 
 // ── INIT ──
