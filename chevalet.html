@@ -51,7 +51,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
 /* Gégé */
 .comm{position:fixed;bottom:calc(var(--sb)+6px);left:12px;right:12px;z-index:20;background:rgba(0,0,0,.72);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px}
 .comm-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4a90d9,#2563eb);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.comm-txt{font-size:11.5px;color:rgba(255,255,255,.9);font-weight:600;line-height:1.4}.comm-txt b{color:#fbbf24}
+.comm-txt{font-size:11px;color:rgba(255,255,255,.9);font-weight:600;line-height:1.3}.comm-txt b{color:#fbbf24}
 
 /* Flash */
 .flash{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0}
@@ -83,7 +83,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%}
   <div id="actionBtn" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:14px;padding:14px 40px;font-family:'Bebas Neue',sans-serif;font-size:20px;color:#1a1a1a;letter-spacing:2px;box-shadow:0 8px 28px rgba(251,191,36,.45);transition:transform .1s;pointer-events:none">AVANCER</div>
 </div>
 <div class="manivelle-wrap" id="maniWrap">
-  <canvas id="manivelleCanvas" width="160" height="160" style="touch-action:none"></canvas>
+  <canvas id="manivelleCanvas" width="130" height="130" style="touch-action:none;width:130px;height:130px"></canvas>
   <div class="mani-hint">TOURNE EN CERCLE ↻</div>
 </div>
 <div class="bek-wrap" id="bekWrap">
@@ -259,11 +259,11 @@ const MCX=MC.getContext('2d');
 function getAng(cx,cy,x,y){return Math.atan2(y-cy,x-cx);}
 function resetManivelle(){maniAngle=0;maniTurns=0;maniActive=false;maniLastAngle=null;drawMani();}
 
-MC.addEventListener('touchstart',e=>{e.preventDefault();const r=MC.getBoundingClientRect(),t=e.touches[0];maniLastAngle=getAng(80,80,t.clientX-r.left,t.clientY-r.top);maniActive=true;},{passive:false});
-MC.addEventListener('touchmove',e=>{e.preventDefault();if(!maniActive)return;const r=MC.getBoundingClientRect(),t=e.touches[0];doTurn(t.clientX-r.left,t.clientY-r.top);},{passive:false});
+MC.addEventListener('touchstart',e=>{e.preventDefault();const r=MC.getBoundingClientRect(),t=e.touches[0];maniLastAngle=getAng(65,65,t.clientX-r.left*(130/r.width),t.clientY-r.top*(130/r.height));maniActive=true;},{passive:false});
+MC.addEventListener('touchmove',e=>{e.preventDefault();if(!maniActive)return;const r=MC.getBoundingClientRect(),t=e.touches[0];doTurn((t.clientX-r.left)*(130/r.width),(t.clientY-r.top)*(130/r.height));},{passive:false});
 MC.addEventListener('touchend',()=>{maniActive=false;maniLastAngle=null;});
-MC.addEventListener('mousedown',e=>{const r=MC.getBoundingClientRect();maniLastAngle=getAng(80,80,e.clientX-r.left,e.clientY-r.top);maniActive=true;});
-window.addEventListener('mousemove',e=>{if(!maniActive)return;const r=MC.getBoundingClientRect();doTurn(e.clientX-r.left,e.clientY-r.top);});
+MC.addEventListener('mousedown',e=>{const r=MC.getBoundingClientRect();maniLastAngle=getAng(65,65,(e.clientX-r.left)*(130/r.width),(e.clientY-r.top)*(130/r.height));maniActive=true;});
+window.addEventListener('mousemove',e=>{if(!maniActive)return;const r=MC.getBoundingClientRect();doTurn((e.clientX-r.left)*(130/r.width),(e.clientY-r.top)*(130/r.height));});
 window.addEventListener('mouseup',()=>{maniActive=false;maniLastAngle=null;});
 
 function doTurn(x,y){
@@ -290,21 +290,21 @@ function doTurn(x,y){
 }
 
 function drawMani(){
-  MCX.clearRect(0,0,160,160);
+  MCX.clearRect(0,0,130,130);
   // Fond
-  MCX.fillStyle='rgba(255,255,255,.05)';MCX.beginPath();MCX.arc(80,80,72,0,Math.PI*2);MCX.fill();
-  MCX.strokeStyle='rgba(255,255,255,.08)';MCX.lineWidth=10;MCX.beginPath();MCX.arc(80,80,62,0,Math.PI*2);MCX.stroke();
+  MCX.fillStyle='rgba(255,255,255,.05)';MCX.beginPath();MCX.arc(65,65,58,0,Math.PI*2);MCX.fill();
+  MCX.strokeStyle='rgba(255,255,255,.08)';MCX.lineWidth=8;MCX.beginPath();MCX.arc(65,65,50,0,Math.PI*2);MCX.stroke();
   // Arc progression
   const col=bekPct>=100?'#fbbf24':'#22c55e';
-  MCX.strokeStyle=col;MCX.lineWidth=10;MCX.lineCap='round';
-  MCX.beginPath();MCX.arc(80,80,62,-Math.PI/2,-Math.PI/2+bekPct/100*Math.PI*2);MCX.stroke();
+  MCX.strokeStyle=col;MCX.lineWidth=8;MCX.lineCap='round';
+  MCX.beginPath();MCX.arc(65,65,50,-Math.PI/2,-Math.PI/2+bekPct/100*Math.PI*2);MCX.stroke();
   // Bras
-  const mx=80+Math.cos(maniAngle)*52,my=80+Math.sin(maniAngle)*52;
-  MCX.strokeStyle='rgba(255,255,255,.85)';MCX.lineWidth=5;MCX.lineCap='round';
-  MCX.beginPath();MCX.moveTo(80,80);MCX.lineTo(mx,my);MCX.stroke();
-  MCX.fillStyle='#fbbf24';MCX.beginPath();MCX.arc(mx,my,10,0,Math.PI*2);MCX.fill();
+  const mx=65+Math.cos(maniAngle)*42,my=65+Math.sin(maniAngle)*42;
+  MCX.strokeStyle='rgba(255,255,255,.85)';MCX.lineWidth=4;MCX.lineCap='round';
+  MCX.beginPath();MCX.moveTo(65,65);MCX.lineTo(mx,my);MCX.stroke();
+  MCX.fillStyle='#fbbf24';MCX.beginPath();MCX.arc(mx,my,8,0,Math.PI*2);MCX.fill();
   MCX.strokeStyle='rgba(0,0,0,.3)';MCX.lineWidth=2;MCX.stroke();
-  MCX.fillStyle='rgba(255,255,255,.5)';MCX.beginPath();MCX.arc(80,80,6,0,Math.PI*2);MCX.fill();
+  MCX.fillStyle='rgba(255,255,255,.5)';MCX.beginPath();MCX.arc(65,65,5,0,Math.PI*2);MCX.fill();
 }
 drawMani();
 
