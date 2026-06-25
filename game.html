@@ -1302,7 +1302,7 @@ body{
 
 <div class="page-content" style="margin-top:0">
 
-  <!-- BANDEAU PWA -->
+  <!-- BANDEAU PWA INSTALL -->
   <div id="pwaBanner" style="display:flex;grid-column:span 2;background:linear-gradient(135deg,#1a1a2e,#16213e);border-bottom:1px solid rgba(251,191,36,.2);padding:11px 16px;align-items:center;gap:12px">
     <div style="font-size:22px;flex-shrink:0">📲</div>
     <div style="flex:1">
@@ -1310,6 +1310,16 @@ body{
       <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;margin-top:2px">ACCÈS RAPIDE · HORS LIGNE</div>
     </div>
     <button onclick="installPWA()" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;padding:8px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#1a1a1a;letter-spacing:1px;cursor:pointer;flex-shrink:0;box-shadow:0 4px 12px rgba(251,191,36,.3)">INSTALLER</button>
+  </div>
+
+  <!-- BANDEAU RÉINSTALLATION (nouvelle icône) -->
+  <div id="reinstallBanner" style="display:none;grid-column:span 2;background:linear-gradient(135deg,#7a0e0e,#cc1a1a);border-bottom:1px solid rgba(255,100,50,.3);padding:11px 16px;align-items:center;gap:12px">
+    <div style="font-size:22px;flex-shrink:0">🆕</div>
+    <div style="flex:1">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;letter-spacing:1px;line-height:1.1">NOUVELLE ICÔNE DISPONIBLE</div>
+      <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:1px;margin-top:2px">DÉSINSTALLE ET RÉINSTALLE L'APP</div>
+    </div>
+    <button onclick="showReinstallModal()" style="background:#fff;border:none;border-radius:10px;padding:8px 14px;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#cc1a1a;letter-spacing:1px;cursor:pointer;flex-shrink:0">COMMENT ?</button>
   </div>
 
   <!-- TRAVAILLER -->
@@ -2235,6 +2245,39 @@ function installPWA() {
     if (banner) banner.style.display = 'none';
   }
 })();
+
+// ── GESTION VERSION ICÔNE ──
+const APP_ICON_VERSION = '2.0';
+function checkIconVersion(){
+  const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const savedVersion = localStorage.getItem('bd_icon_version');
+  const banner = document.getElementById('reinstallBanner');
+  if(!banner) return;
+  if(installed && savedVersion && savedVersion !== APP_ICON_VERSION){
+    banner.style.display = 'flex';
+  }
+  // Marquer la version actuelle si pas encore fait
+  if(!savedVersion) localStorage.setItem('bd_icon_version', APP_ICON_VERSION);
+}
+function showReinstallModal(){
+  const modal = document.getElementById('reinstallModal');
+  const ua = navigator.userAgent;
+  document.getElementById('rIos').style.display = /iphone|ipad|ipod/i.test(ua)?'block':'none';
+  document.getElementById('rAndroid').style.display = /android/i.test(ua)?'block':'none';
+  modal.style.display='flex';
+}
+function markReinstalled(){
+  localStorage.setItem('bd_icon_version', APP_ICON_VERSION);
+  document.getElementById('reinstallModal').style.display='none';
+  document.getElementById('reinstallBanner').style.display='none';
+}
+// Fermer modal en cliquant fond
+document.getElementById('reinstallModal')?.addEventListener('click', function(e){
+  if(e.target===this) this.style.display='none';
+});
+// Lancer la vérification
+checkIconVersion();
+
 </script>
 
   <div class="stats-bar">
@@ -2299,5 +2342,46 @@ function installPWA() {
     </div>
   </div>
 </div>
+
+<!-- Modal réinstallation -->
+<div id="reinstallModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);align-items:flex-end;justify-content:center">
+  <div style="background:#1a1a2e;border:1px solid rgba(204,26,26,.3);border-radius:20px 20px 0 0;padding:24px 20px 36px;width:100%;max-width:600px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fbbf24;letter-spacing:2px">🆕 NOUVELLE ICÔNE</div>
+      <button onclick="document.getElementById('reinstallModal').style.display='none'" style="background:rgba(255,255,255,.1);border:none;border-radius:50%;width:30px;height:30px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;margin-bottom:16px;line-height:1.5">Battle Dock a une nouvelle icône — le skyline de Marseille au coucher de soleil 🌅<br>Pour l'avoir sur ton écran d'accueil :</div>
+    <!-- iOS -->
+    <div id="rIos" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">1️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuis long sur l'icône Battle Dock → <span style="color:#fbbf24">Supprimer l'app</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">2️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuie sur <span style="color:#fbbf24">⬆️ Partager</span> en bas de Safari</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">3️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">→ <span style="color:#fbbf24">"Sur l'écran d'accueil"</span> → Ajouter</div>
+        </div>
+      </div>
+    </div>
+    <!-- Android -->
+    <div id="rAndroid" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">1️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Appuis long sur l'icône Battle Dock → <span style="color:#fbbf24">Désinstaller</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">2️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Ouvre <span style="color:#fbbf24">battledock.fr</span> dans Chrome</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.06);border-radius:12px;padding:12px">
+          <div style="font-size:24px;flex-shrink:0">3️⃣</div><div style="font-size:13px;color:rgba(255,255,255,.8);font-weight:600">Menu <span style="color:#fbbf24">⋮</span> → "Ajouter à l'écran d'accueil"</div>
+        </div>
+      </div>
+    </div>
+    <button onclick="markReinstalled()" style="width:100%;margin-top:16px;background:linear-gradient(135deg,#cc1a1a,#991111);border:none;border-radius:12px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;letter-spacing:2px;cursor:pointer">J'AI RÉINSTALLÉ ✓</button>
+  </div>
+</div>
+
 </body>
 </html>
