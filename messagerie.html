@@ -358,8 +358,17 @@ async function sendMsg(){
   inp.value='';inp.style.height='auto';
   const {data,error}=await sb.from('challenges').insert({from_user_id:me.id,to_user_id:convWith,message:msg,type:'message',read:false}).select().single();
   if(error){toast('❌ Erreur');return;}
-  // Ajouter localement
-  if(data){convMsgs.push(data);if(convMsgs.length>MAX_MSGS)convMsgs=convMsgs.slice(-MAX_MSGS);renderConv(convMsgs.length>=MAX_MSGS);}
+  if(data){
+    convMsgs.push(data);
+    if(convMsgs.length>MAX_MSGS)convMsgs=convMsgs.slice(-MAX_MSGS);
+    // S'assurer que la conv existe dans convMap pour l'affichage liste
+    if(!convMap[convWith]){
+      const p=allPlayers.find(x=>x.user_id===convWith)||{};
+      convMap[convWith]={msgs:[],unread:0,profile:p};
+    }
+    convMap[convWith].msgs.push(data);
+    renderConv(convMsgs.length>=MAX_MSGS);
+  }
 }
 
 // ── RETOUR ──
