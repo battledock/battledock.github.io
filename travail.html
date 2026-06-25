@@ -215,21 +215,6 @@ html,body{min-height:100%;background:#f5f5f7;font-family:'Inter',sans-serif;over
       </div>
     </div>
 
-    <!-- Chevalet -->
-    <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">
-      <div style="height:6px;background:linear-gradient(90deg,#cc1a1a,#f87171)"></div>
-      <div style="padding:14px 16px;display:flex;align-items:center;gap:14px">
-        <div style="width:48px;height:48px;border-radius:14px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🔧</div>
-        <div style="flex:1">
-          <div style="font-weight:900;font-size:14px;color:#0f172a">POSEUR DE CHEVALET</div>
-          <div style="font-size:11px;color:#9ca3af;margin-top:2px">Meilleur gain</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:#cc1a1a;line-height:1" id="recChevalet">—</div>
-          <div style="font-size:9px;color:#9ca3af;font-weight:700;letter-spacing:1px">EUROS</div>
-        </div>
-      </div>
-    </div>
 
     <!-- Docker -->
     <div style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">
@@ -355,71 +340,58 @@ async function init(){
   } catch(e){console.error('Erreur connexion',e);}
 }
 init();
+loadTabData();
 
 
 // Injecter infos supplementaires apres chargement
-(function patchInit(){
-  var _origInit=typeof init==='function'?init:null;
-  if(!_origInit)return;
-  init=async function(){
-    await _origInit();
-    // Recuperer donnees fraiches
-    try{
-      var session=await sb.auth.getSession();
-      var uid=session.data.session.user.id;
-      var gs=await sb.from('game_stats').select('level,xp,records').eq('user_id',uid).maybeSingle();
-      if(!gs.data)return;
-      var lvl=gs.data.level||1;
-      var xp=gs.data.xp||0;
-      var rec=gs.data.records||{};
-      var f=rec.formations||{};
 
-      // Niveau docker
-      if(document.getElementById('clickerLvl'))document.getElementById('clickerLvl').textContent=lvl;
-      var needed=lvl<=10?lvl*500:lvl<=25?lvl*1000:lvl*2000;
-      var pct=Math.round(xp/needed*100);
-      var xpBar=document.getElementById('clickerXp');
-      var xpPct=document.getElementById('clickerXpPct');
-      var xp2=document.getElementById('clickerXp2');
-      var xpLbl=document.getElementById('clickerXpLbl');
-      if(xpBar)xpBar.style.width=pct+'%';
-      if(xpPct)xpPct.textContent=pct+'%';
-      if(xpLbl)xpLbl.textContent='NV.'+lvl+' → NV.'+(lvl+1);
-      if(xp2){var fx=function(n){return n>=1000?Math.floor(n/1000)+'k':n;};xp2.textContent=fx(xp)+'/'+fx(needed)+' XP';}
+// ── RECORDS & STATS ──
+async function loadTabData(){
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)return;
+    const uid=session.user.id;
+    const {data:gs}=await sb.from('game_stats').select('level,xp,records,money,diamonds,trophies').eq('user_id',uid).maybeSingle();
+    if(!gs)return;
+    const lvl=gs.level||1;
+    const rec=gs.records||{};
+    const f=(rec.formations)||{};
 
-      // Records grue/clark
-      if(rec.grue_best&&document.getElementById('grueLvl')){
-        document.getElementById('grueLvl').textContent=rec.grue_best;
-        if(f.grutier)document.getElementById('grueLvlBadge').style.display='inline-flex';
-      }
-      if(rec.clark_best&&document.getElementById('clarkLvl')){
-        document.getElementById('clarkLvl').textContent=Math.floor(rec.clark_best);
-        if(f.clark)document.getElementById('clarkLvlBadge').style.display='inline-flex';
-      }
+    // ── Badges sur les cards ──
+    if(document.getElementById('clickerLvl'))document.getElementById('clickerLvl').textContent=lvl;
+    const needed=lvl<=10?lvl*500:lvl<=25?lvl*1000:lvl*2000;
+    const pct=Math.round((gs.xp||0)/needed*100);
+    if(document.getElementById('clickerXp'))document.getElementById('clickerXp').style.width=pct+'%';
+    if(document.getElementById('clickerXpPct'))document.getElementById('clickerXpPct').textContent=pct+'%';
+    if(rec.grue_best&&document.getElementById('grueLvl')){
+      document.getElementById('grueLvl').textContent=rec.grue_best;
+      if(document.getElementById('grueLvlBadge'))document.getElementById('grueLvlBadge').style.display='inline-flex';
+    }
+    if(rec.clark_best&&document.getElementById('clarkLvl')){
+      document.getElementById('clarkLvl').textContent=Math.floor(rec.clark_best);
+      if(document.getElementById('clarkLvlBadge'))document.getElementById('clarkLvlBadge').style.display='inline-flex';
+    }
 
+    // ── Onglet RECORDS ──
+    const elGrue=document.getElementById('recGrue');
+    const elClark=document.getElementById('recClark');
+    const elDocker=document.getElementById('recDocker');
+    if(elGrue)elGrue.textContent=rec.grue_best?Math.floor(rec.grue_best).toLocaleString('fr-FR'):'—';
+    if(elClark)elClark.textContent=rec.clark_best?Math.floor(rec.clark_best).toLocaleString('fr-FR'):'—';
+    if(elDocker)elDocker.textContent=lvl;
 
+    // ── Onglet STATS ──
+    if(document.getElementById('statArgent'))document.getElementById('statArgent').textContent=(gs.money||0).toLocaleString('fr-FR')+'€';
+    if(document.getElementById('statNiveau'))document.getElementById('statNiveau').textContent=lvl;
+    if(document.getElementById('statDiamants'))document.getElementById('statDiamants').textContent=(gs.diamonds||0).toLocaleString('fr-FR');
+    if(document.getElementById('statTrophees'))document.getElementById('statTrophees').textContent=(gs.trophies||0).toLocaleString('fr-FR');
 
-      // Records dans l'onglet
-      if(document.getElementById('recGrue'))document.getElementById('recGrue').textContent=rec.grue_best?Math.floor(rec.grue_best).toLocaleString('fr-FR'):'—';
-      if(document.getElementById('recClark'))document.getElementById('recClark').textContent=rec.clark_best?Math.floor(rec.clark_best).toLocaleString('fr-FR'):'—';
-      if(document.getElementById('recChevalet'))document.getElementById('recChevalet').textContent=rec.chevalet_best?Math.floor(rec.chevalet_best).toLocaleString('fr-FR')+'€':'—';
-      if(document.getElementById('recDocker'))document.getElementById('recDocker').textContent=lvl||'—';
-      // Stats
-      var gs2=await sb.from('game_stats').select('money,diamonds,trophies').eq('user_id',uid).maybeSingle();
-      if(gs2.data){
-        if(document.getElementById('statArgent'))document.getElementById('statArgent').textContent=(gs2.data.money||0).toLocaleString('fr-FR')+'€';
-        if(document.getElementById('statDiamants'))document.getElementById('statDiamants').textContent=gs2.data.diamonds||0;
-        if(document.getElementById('statTrophees'))document.getElementById('statTrophees').textContent=gs2.data.trophies||0;
-      }
-      if(document.getElementById('statNiveau'))document.getElementById('statNiveau').textContent=lvl||1;
-      // Pill actif
-      var actifs=1+(f.grutier?1:0)+(f.clark?1:0);
-      var pill=document.getElementById('pillActif');
-      if(pill)pill.textContent='● '+actifs+' actif'+(actifs>1?'s':'');
-
-    }catch(e){console.warn('patch init err',e);}
-  };
-})();
+    // ── Pill actifs ──
+    const actifs=1+(f.grutier?1:0)+(f.clark?1:0);
+    const pill=document.getElementById('pillActif');
+    if(pill)pill.textContent='● '+actifs+' actif'+(actifs>1?'s':'');
+  }catch(e){console.warn('loadTabData err',e);}
+}
 
 
 document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
