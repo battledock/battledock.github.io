@@ -246,7 +246,7 @@ async function openConv(userId, msgId){
   const avEl=document.getElementById('convAv');
   if(p.avatar_url){avEl.innerHTML=`<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover">`;} else{avEl.textContent='⚓';}
   document.getElementById('convName').textContent=p.username||'Docker';
-  document.getElementById('convStatus').textContent=(p.grade||'Docker');
+  document.getElementById('convStatus').textContent=(p.title||'Docker');
   // Marquer comme lu
   if(msgId){
     sb.from('challenges').update({read:true}).eq('id',msgId).then(()=>{});
@@ -373,7 +373,7 @@ async function init(){
   if(error||!data.session){window.location.href='index.html';return;}
   me=data.session.user;
   // Charger mon profil
-  const {data:mp}=await sb.from('profiles').select('*').eq('user_id',me.id).single();
+  const {data:mp}=await sb.from('profiles').select('user_id,username,avatar_url,title,bio').eq('user_id',me.id).single();
   myProfile=mp;
   // Charger messages reçus
   const {data:msgs}=await sb.from('challenges')
@@ -387,7 +387,7 @@ async function init(){
   }
   // Enrichir avec profils
   const uids=[...new Set(msgs.map(m=>m.from_user_id))];
-  const {data:profs}=await sb.from('profiles').select('user_id,username,avatar_url,grade').in('user_id',uids);
+  const {data:profs}=await sb.from('profiles').select('user_id,username,avatar_url,title').in('user_id',uids);
   const pm={};(profs||[]).forEach(p=>pm[p.user_id]=p);
   all=msgs.map(m=>({...m,_profile:pm[m.from_user_id]||{}}));
   updateBadge();
