@@ -359,11 +359,11 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
     <div class="acc-icon">🏪</div>
     <div>
       <div class="acc-title">CRÉE TON ENTREPRISE</div>
-      <div class="acc-sub">Passe le test de QI du port gratuitement. L'investissement de 100 000€ n'est demandé qu'à la création.</div>
+      <div class="acc-sub">Test gratuit — l'investissement de 100 000€ n'est demandé qu'à la création.</div>
     </div>
     <div>
-      <div class="acc-price">GRATUIT</div>
-      <div class="acc-price-sub">LE TEST EST GRATUIT · 100 000€ À LA CRÉATION</div>
+      <div class="acc-price">100 000 €</div>
+      <div class="acc-price-sub">INVESTISSEMENT DE DÉPART</div>
     </div>
     <button class="btn-start" id="btn-start" onclick="startTest()">PASSER LE TEST</button>
     <div class="acc-warning" id="acc-warning"></div>
@@ -1600,7 +1600,7 @@ async function loadDashboard(){
 
   // ── Collecte ──
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
-  var elapsed=Math.min((Date.now()-last)/3600000, 24); // max 24h
+  var elapsed=Math.min((Date.now()-last)/3600000,24);
   var pending=Math.floor(rev*elapsed);
   document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
   document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochaine collecte dans '+(Math.ceil(1-elapsed*60))+'min';
@@ -1615,17 +1615,6 @@ async function loadDashboard(){
   var gs2 = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
   renderEmployees(com, co.niveau||1, (gs2.data&&gs2.data.money)||0);
 
-  // ── Refresh contrats expirés ──
-  var now=Date.now();
-  if(co.contracts&&co.contracts.list){
-    var allExpired=co.contracts.list.every(function(ct){return new Date(ct.expires_at).getTime()<now;});
-    if(allExpired){
-      var newContracts=generateContracts();
-      sb.from('companies').update({contracts:newContracts}).eq('user_id',currentUser.id).then(function(){});
-      co.contracts=newContracts;
-      toast('📋 Nouveaux contrats disponibles !');
-    }
-  }
   // ── Sauvegarder en background ──
   sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
 
@@ -1651,7 +1640,7 @@ async function collecterRevenus(){
   var zRev2=calcZoneRev(com.zones||{},t2.tag);
   var rev=baseRev2+zRev2;
   var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
-  var elapsed=Math.min((Date.now()-last)/3600000, 24); // max 24h
+  var elapsed=Math.min((Date.now()-last)/3600000,24);
   var pending=Math.floor(rev*elapsed);
   if(pending<1){toast('Rien a collecter encore');return;}
   com.last_collect=new Date().toISOString();
@@ -2046,18 +2035,6 @@ function boostClientsOnInvest(com, amount){
 }
 
 
-function generateContracts(){
-  var ids=['peche','resto','cargo','mairie','transit','sardines','expo','btp'];
-  var picked=ids.sort(function(){return Math.random()-.5;}).slice(0,4);
-  var now=Date.now();
-  return {
-    list:picked.map(function(id){
-      return {id:id,claimed:false,expires_at:new Date(now+Math.floor(Math.random()*12+4)*3600000).toISOString()};
-    }),
-    last_refresh:new Date().toISOString()
-  };
-}
-
 async function startApp(){
   var res=await sb.auth.getSession();
   var sess=res.data&&res.data.session;
@@ -2073,7 +2050,7 @@ async function startApp(){
   var {data:co}=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
   if(co){loadDashboard();return;}
   // Avertissement argent
-  if(money<100000)document.getElementById('acc-warning').textContent='💡 Il te faudra 100 000€ pour créer ton entreprise (tu as '+fmtM(money)+')';
+  if(money<100000)document.getElementById('acc-warning').textContent='💡 Il te faudra 100 000€ pour créer (tu as '+fmtM(money)+')';
   else document.getElementById('acc-warning').textContent='✅ Tu as assez pour créer ton entreprise !';
   show('s-accueil');
 }
@@ -2211,6 +2188,226 @@ async function loadRank(){
     var myRank=data.findIndex(function(co){return co.user_id===currentUser.id;});
     if(myRank>=0)document.getElementById('rank-sub').textContent='Tu es #'+(myRank+1)+' sur '+data.length;
   }catch(e){el.innerHTML='<div style="color:#ef4444;font-size:11px;padding:10px">Erreur chargement</div>';}
+}
+
+// CHARGES FIXES
+var CHARGES_DEF=[
+  {id:'loyer',ico:'🏪',nom:'Loyer local',base:500,scale:0.001},
+  {id:'electricite',ico:'⚡',nom:'Electricite',base:200,scale:0.0003},
+  {id:'assurance',ico:'🛡️',nom:'Assurance',base:300,scale:0.0002}
+];
+function calcCharges(com,valeur){
+  var ch=com.charges||{},now=Date.now(),total=0;
+  var items=CHARGES_DEF.map(function(d){
+    var amt=Math.floor(d.base+(valeur||0)*d.scale);
+    var lp=ch[d.id]?new Date(ch[d.id]).getTime():now;
+    var days=Math.floor((now-lp)/86400000);
+    total+=amt;
+    return {id:d.id,ico:d.ico,nom:d.nom,amt:amt,daysUnpaid:days};
+  });
+  return {items:items,total:total};
+}
+function chargesMult(com,valeur){
+  var ch=calcCharges(com,valeur);
+  return ch.items.some(function(i){return i.daysUnpaid>=1;})?0.7:1;
+}
+function renderCharges(com,valeur,money){
+  var ch=calcCharges(com,valeur);
+  var anyUnpaid=ch.items.some(function(i){return i.daysUnpaid>=1;});
+  if(document.getElementById('chargesTotalEl'))document.getElementById('chargesTotalEl').textContent=fmtM(ch.total)+'/j';
+  if(document.getElementById('chargesSub'))document.getElementById('chargesSub').textContent=anyUnpaid?'Charges en retard':'A jour';
+  if(document.getElementById('chargesAlert'))document.getElementById('chargesAlert').classList.toggle('show',anyUnpaid);
+  var list=document.getElementById('chargesList');
+  if(!list)return;
+  list.innerHTML=ch.items.map(function(item){
+    var due=item.daysUnpaid>=1;
+    var html='<div class="charge-item">';
+    html+='<div style="display:flex;align-items:center;flex:1">';
+    html+='<div class="charge-ico">'+item.ico+'</div>';
+    html+='<div><div class="charge-nm">'+item.nom+'</div>';
+    html+='<div class="charge-due">'+(due?item.daysUnpaid+'j retard':'A jour')+'</div></div></div>';
+    html+='<div class="charge-amt">'+fmtM(item.amt)+'/j</div>';
+    if(due&&money>=item.amt)html+='<button class="charge-pay-btn" data-cid="'+item.id+'" data-amt="'+item.amt+'" onclick="payChargeBtn(this)">PAYER</button>';
+    html+='</div>';
+    return html;
+  }).join('');
+}
+function toggleCharges(){var b=document.getElementById('chargesBody');if(b)b.classList.toggle('open');}
+async function payChargeBtn(btn){await payCharge(btn.getAttribute('data-cid'),parseInt(btn.getAttribute('data-amt')));}
+async function payCharge(id,amt){
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;
+  if(money<amt){toast('Pas assez');return;}
+  var com=(gs.data&&gs.data.commerce)||{};
+  com.charges=com.charges||{};
+  com.charges[id]=new Date().toISOString();
+  await sb.from('game_stats').update({money:money-amt,commerce:com}).eq('user_id',currentUser.id);
+  toast('Charge payee');loadDashboard();
+}
+async function payAllCharges(){
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;
+  var com=(gs.data&&gs.data.commerce)||{};
+  var co2=await sb.from('companies').select('valeur').eq('user_id',currentUser.id).maybeSingle();
+  var valeur=(co2.data&&co2.data.valeur)||0;
+  var ch=calcCharges(com,valeur);
+  var total=ch.items.reduce(function(s,i){return i.daysUnpaid>=1?s+i.amt:s;},0);
+  if(total===0){toast('Rien a payer');return;}
+  if(money<total){toast('Pas assez ('+fmtM(total)+' requis)');return;}
+  com.charges=com.charges||{};
+  var now=new Date().toISOString();
+  ch.items.forEach(function(i){if(i.daysUnpaid>=1)com.charges[i.id]=now;});
+  await sb.from('game_stats').update({money:money-total,commerce:com}).eq('user_id',currentUser.id);
+  toast('Toutes les charges payees');loadDashboard();
+}
+
+// EVENEMENTS ALEATOIRES
+var EVENTS=[
+  {id:'client_vip',type:'good',ico:'👑',title:'Client VIP surprise',desc:'Un client VIP a visite votre commerce. +500 clients',effect:'clients_boost'},
+  {id:'inspection',type:'bad',ico:'🏛️',title:'Inspection fiscale',desc:'Les autorites verifient vos comptes. -10 reputation',effect:'reput_down'},
+  {id:'bon_avis',type:'good',ico:'⭐',title:'Avis viral',desc:'Votre commerce buzze sur les reseaux. +15 reputation',effect:'reput_up'},
+  {id:'periode_creuse',type:'bad',ico:'📉',title:'Periode creuse',desc:'Peu de clients ce mois. Satisfaction -10',effect:'satis_down'},
+  {id:'coup_chance',type:'good',ico:'🍀',title:'Coup de chance',desc:'Livraison gratuite. Revenus x2 pendant 1h',effect:'rev_boost'},
+  {id:'panne',type:'bad',ico:'🔧',title:'Panne equipement',desc:'Reparation urgente. -5000 euros',effect:'money_down'},
+  {id:'partenariat',type:'good',ico:'🤝',title:'Offre de partenariat',desc:'Une enseigne veut collaborer. +20% revenus 24h',effect:'rev_boost'},
+  {id:'greve_fourn',type:'neutral',ico:'🚚',title:'Greve des fournisseurs',desc:'Livraisons retardees. Pas impact direct',effect:'none'}
+];
+function checkRandomEvent(com){
+  var last=com.last_event?new Date(com.last_event).getTime():0;
+  var hoursSince=(Date.now()-last)/3600000;
+  if(hoursSince<4)return null;
+  if(Math.random()>0.3)return null;
+  var e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  com.last_event=new Date().toISOString();
+  com.pending_event=e.id;
+  return e;
+}
+function applyEvent(e,com){
+  if(!e)return com;
+  if(e.effect==='clients_boost'){com.clients=com.clients||{};com.clients.total=(com.clients.total||0)+500;}
+  if(e.effect==='reput_down'){com.reputation=com.reputation||{score:50};com.reputation.score=Math.max(0,(com.reputation.score||50)-10);}
+  if(e.effect==='reput_up'){com.reputation=com.reputation||{score:50};com.reputation.score=Math.min(100,(com.reputation.score||50)+15);}
+  if(e.effect==='satis_down'){com.clients=com.clients||{};com.clients.satisfaction=Math.max(0,(com.clients.satisfaction||75)-10);}
+  if(e.effect==='money_down')com.pending_money_loss=5000;
+  delete com.pending_event;
+  return com;
+}
+function renderEvent(e){
+  var b=document.getElementById('eventBanner');
+  if(!b)return;
+  if(!e){b.classList.remove('show');return;}
+  b.className='event-banner show '+e.type;
+  if(document.getElementById('eventIco'))document.getElementById('eventIco').textContent=e.ico;
+  if(document.getElementById('eventTitle'))document.getElementById('eventTitle').textContent=e.title;
+  if(document.getElementById('eventDesc'))document.getElementById('eventDesc').textContent=e.desc;
+}
+async function dismissEvent(){
+  var b=document.getElementById('eventBanner');
+  if(b)b.classList.remove('show');
+  var gs=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs.data&&gs.data.commerce)||{};
+  delete com.pending_event;
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+}
+
+// RANG DE COMMERCANT
+var RANGS=[
+  {id:'ambulant',nom:'Ambulant',min:0,max:100000,perks:['Revenus de base']},
+  {id:'tpe',nom:'TPE',min:100000,max:500000,perks:['+10% revenus','2 employes max']},
+  {id:'pme',nom:'PME',min:500000,max:2000000,perks:['+25% revenus','5 employes']},
+  {id:'eti',nom:'ETI',min:2000000,max:10000000,perks:['+50% revenus','8 employes']},
+  {id:'groupe',nom:'Groupe',min:10000000,max:Infinity,perks:['+100% revenus','10 employes']}
+];
+function getRang(valeur){
+  for(var i=RANGS.length-1;i>=0;i--){if((valeur||0)>=RANGS[i].min)return RANGS[i];}
+  return RANGS[0];
+}
+function renderRang(valeur){
+  var rang=getRang(valeur);
+  var idx=RANGS.indexOf(rang);
+  var next=RANGS[idx+1];
+  var pct=next?Math.min(100,Math.round(((valeur-rang.min)/(next.min-rang.min))*100)):100;
+  if(document.getElementById('rangName'))document.getElementById('rangName').textContent=rang.nom.toUpperCase();
+  if(document.getElementById('rangSub'))document.getElementById('rangSub').textContent=next?'Prochain : '+next.nom+' ('+fmtM(next.min)+')':'Rang maximum';
+  if(document.getElementById('rangPct'))document.getElementById('rangPct').textContent=pct+'%';
+  if(document.getElementById('rangFill'))document.getElementById('rangFill').style.width=pct+'%';
+  if(document.getElementById('rangPerks'))document.getElementById('rangPerks').innerHTML=rang.perks.map(function(p){return '<div class="rang-perk">'+p+'</div>';}).join('');
+}
+
+
+// EMPLOYES
+var PRENOM_M=['Kader','Mourad','Samir','Karim','Youssef','Djamel','Mehdi','Farid','Sofiane','Rachid','Sebastien','Kevin','Mathieu','Thomas'];
+var PRENOM_F=['Fatima','Yasmine','Nadia','Sofia','Leila','Amina','Celine','Nathalie','Marie','Isabelle'];
+var NOM_FAM=['Benali','Zidane','Rouget','Paoli','Fabre','Mancini','Gomez','Pons','Blanc','Ferrara','Khalil','Dupont','Martin','Girard'];
+function randomName(){var p=Math.random()>0.5?PRENOM_M:PRENOM_F;return p[Math.floor(Math.random()*p.length)]+' '+NOM_FAM[Math.floor(Math.random()*NOM_FAM.length)];}
+var EMP_TYPES={vendeur:{ico:'🛒',label:'Vendeur',cost:5000,salary:500},manager:{ico:'📋',label:'Manager',cost:12000,salary:1200},comptable:{ico:'📊',label:'Comptable',cost:8000,salary:800}};
+function getMaxEmployees(niveau){return Math.min(10,1+Math.floor((niveau||1)/2));}
+function calcEmployees(com,lastSeen){
+  var emps=com.employees||[],now=Date.now();
+  var lastSeenMs=lastSeen?new Date(lastSeen).getTime():now;
+  var h=Math.min(72,(now-lastSeenMs)/3600000);
+  if(h>8)emps=emps.map(function(e){e.moral=Math.max(0,(e.moral||100)-Math.floor(h*1.5));return e;});
+  emps=emps.filter(function(e){return (e.moral||100)>0;});
+  com.employees=emps;return com;
+}
+function employeesRevMult(emps){
+  if(!emps||!emps.length)return 1;
+  if(emps.some(function(e){return (e.moral||100)<30;}))return 0.5;
+  return 1+emps.reduce(function(s,e){return e.type==='vendeur'?s+0.15:s;},0);
+}
+function employeesSatisMult(emps){return 1+(emps||[]).reduce(function(s,e){return e.type==='manager'?s+0.20:s;},0);}
+function totalSalary(emps){return (emps||[]).reduce(function(s,e){return s+(EMP_TYPES[e.type]&&EMP_TYPES[e.type].salary||0);},0);}
+function renderEmployees(com,niveau,money){
+  var emps=com.employees||[],maxEmp=getMaxEmployees(niveau);
+  var onGreve=emps.some(function(e){return (e.moral||100)<30;});
+  if(document.getElementById('empCount'))document.getElementById('empCount').textContent=emps.length;
+  if(document.getElementById('empHeaderSub'))document.getElementById('empHeaderSub').textContent=emps.length?emps.length+'/'+maxEmp:'Aucun employe';
+  if(document.getElementById('greveBanner'))document.getElementById('greveBanner').classList.toggle('show',onGreve);
+  var rb=Math.round((employeesRevMult(emps)-1)*100),sb2=Math.round((employeesSatisMult(emps)-1)*100),st=totalSalary(emps);
+  if(document.getElementById('empRevBonus'))document.getElementById('empRevBonus').textContent=(rb>=0?'+':'')+rb+'%';
+  if(document.getElementById('empSatisBonus'))document.getElementById('empSatisBonus').textContent='+'+sb2+'%';
+  if(document.getElementById('empSalTotal'))document.getElementById('empSalTotal').textContent=fmtM(st)+'/j';
+  var listEl=document.getElementById('empList');if(!listEl)return;
+  if(!emps.length){listEl.innerHTML='<div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">Aucun employe</div>';return;}
+  listEl.innerHTML=emps.map(function(e,i){
+    var moral=e.moral||100,mc=moral>=70?'#16a34a':moral>=40?'#d97706':'#dc2626';
+    var t=EMP_TYPES[e.type]||{ico:'👤',label:'Inconnu',salary:0};
+    var html='<div class="emp-item'+(moral<30?' greve':'')+'">';
+    html+='<div class="emp-avatar">'+t.ico+'</div>';
+    html+='<div class="emp-info"><div class="emp-name">'+e.name+'</div>';
+    html+='<div class="emp-role">'+t.label+(moral<30?' - GREVE':'')+'</div>';
+    html+='<div class="emp-moral-wrap"><div class="emp-moral-bar"><div class="emp-moral-fill" style="width:'+moral+'%;background:'+mc+'"></div></div><div class="emp-moral-val">'+moral+'%</div></div></div>';
+    html+='<div style="text-align:right"><div class="emp-salary">'+fmtM(t.salary)+'/j</div>';
+    html+='<div style="font-size:7px;color:#dc2626;margin-top:3px;cursor:pointer" data-idx="'+i+'" onclick="fireEmpBtn(this)">Licencier</div></div>';
+    html+='</div>';return html;
+  }).join('');
+  var canHire=emps.length<maxEmp;
+  ['vendeur','manager','comptable'].forEach(function(type){
+    var id='hire'+type.charAt(0).toUpperCase()+type.slice(1);
+    var btn=document.getElementById(id);if(!btn)return;
+    btn.classList.toggle('disabled',!canHire||money<EMP_TYPES[type].cost);
+  });
+}
+function toggleEmp(){var b=document.getElementById('empBody');if(b)b.classList.toggle('open');}
+async function hireEmployee(type){
+  var t=EMP_TYPES[type];
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;if(money<t.cost){toast('Pas assez');return;}
+  var com=(gs.data&&gs.data.commerce)||{};
+  var co=await sb.from('companies').select('niveau').eq('user_id',currentUser.id).maybeSingle();
+  com.employees=com.employees||[];
+  if(com.employees.length>=getMaxEmployees((co.data&&co.data.niveau)||1)){toast('Maximum atteint');return;}
+  com.employees.push({id:Date.now(),name:randomName(),type:type,hired_at:new Date().toISOString(),moral:100});
+  await sb.from('game_stats').update({money:money-t.cost,commerce:com}).eq('user_id',currentUser.id);
+  toast('Employe embauche');loadDashboard();
+}
+function fireEmpBtn(btn){fireEmployee(parseInt(btn.getAttribute('data-idx')));}
+async function fireEmployee(idx){
+  var gs=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs.data&&gs.data.commerce)||{};
+  com.employees=com.employees||[];com.employees.splice(idx,1);
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+  toast('Employe licencie');loadDashboard();
 }
 </script>
 </body>
