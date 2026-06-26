@@ -1269,6 +1269,27 @@ body{
 .dir-new-ico{font-size:30px;margin-bottom:2px}
 .dir-new-title{font-family:'Bebas Neue',sans-serif;font-size:20px;color:#fff;letter-spacing:3px;line-height:1}
 .dir-new-sub{font-size:7px;color:rgba(147,197,253,.4);font-weight:800;letter-spacing:2px}
+
+/* ── CLASSEMENT B2 ── */
+.widget-classement-new{
+  background:linear-gradient(160deg,#0f0520,#1a0a35,#0a0520);
+  grid-column:span 2;min-height:180px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;padding:20px;
+  border-bottom:1px solid rgba(139,92,246,.15);
+  border-right:none;
+}
+.class-bg-glow{position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(139,92,246,.2),transparent 60%),radial-gradient(ellipse at 70% 50%,rgba(217,70,239,.12),transparent 60%);pointer-events:none}
+.class-stars{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.class-crown{font-size:40px;margin-bottom:6px;filter:drop-shadow(0 4px 12px rgba(251,191,36,.5));animation:crownFloat 3s ease-in-out infinite;position:relative;z-index:2}
+@keyframes crownFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-6px) rotate(5deg)}}
+.class-new-title{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:3px;line-height:1;position:relative;z-index:2;text-shadow:0 0 20px rgba(167,139,250,.5)}
+.class-new-sub{font-size:9px;color:rgba(255,255,255,.3);font-weight:700;letter-spacing:2px;margin-top:4px;position:relative;z-index:2}
+.class-top3{display:flex;gap:8px;margin-top:12px;position:relative;z-index:2;flex-wrap:wrap;justify-content:center}
+.class-pill{border-radius:20px;padding:4px 12px;font-size:10px;font-weight:800;letter-spacing:1px}
+.class-pill-gold{background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.35);color:#fbbf24}
+.class-pill-silver{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5)}
 </style>
 </head>
 <body>
@@ -1411,6 +1432,26 @@ body{
         <div class="dir-new-title">DIRECTION</div>
         <div class="dir-new-sub">STRATÉGIE · POUVOIR</div>
       </div>
+    </div>
+  </div>
+
+  <!-- CLASSEMENT B2 -->
+  <div class="widget widget-full widget-classement-new" onclick="location.href='classement.html'">
+    <div class="class-bg-glow"></div>
+    <svg class="class-stars" viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice">
+      <circle cx="12%" cy="25%" r="1.5" fill="rgba(255,255,255,.5)"/><circle cx="88%" cy="18%" r="1" fill="rgba(255,255,255,.35)"/>
+      <circle cx="72%" cy="78%" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="28%" cy="82%" r="1" fill="rgba(255,255,255,.3)"/>
+      <circle cx="92%" cy="52%" r="1.5" fill="rgba(255,255,255,.4)"/><circle cx="8%" cy="65%" r="1" fill="rgba(255,255,255,.25)"/>
+      <circle cx="50%" cy="8%" r="1" fill="rgba(255,255,255,.45)"/><circle cx="62%" cy="92%" r="1.5" fill="rgba(255,255,255,.3)"/>
+      <circle cx="38%" cy="12%" r="1" fill="rgba(255,255,255,.35)"/><circle cx="78%" cy="40%" r="1" fill="rgba(255,255,255,.2)"/>
+    </svg>
+    <div class="class-crown">👑</div>
+    <div class="class-new-title">CLASSEMENT</div>
+    <div class="class-new-sub">MEILLEURS DOCKERS DU PORT</div>
+    <div class="class-top3" id="classTop3">
+      <div class="class-pill class-pill-gold">🥇 —</div>
+      <div class="class-pill class-pill-silver">🥈 —</div>
+      <div class="class-pill class-pill-silver">🥉 —</div>
     </div>
   </div>
 
@@ -2071,6 +2112,22 @@ async function init(){
 
     // FIX #3 : mettre à jour last_seen
     sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(()=>{});
+    // Charger top 3 classement
+    (async function(){
+      try{
+        var {data:gs2}=await sb.from('game_stats').select('user_id,money').order('money',{ascending:false}).limit(3);
+        var {data:prs}=await sb.from('profiles').select('user_id,username').limit(100);
+        if(!gs2||!gs2.length)return;
+        var nm={};(prs||[]).forEach(function(p){nm[p.user_id]=p.username||'Docker';});
+        var pills=['class-pill-gold','class-pill-silver','class-pill-silver'];
+        var medals=['🥇','🥈','🥉'];
+        var el=document.getElementById('classTop3');
+        if(!el)return;
+        el.innerHTML=gs2.map(function(r,i){
+          return '<div class="class-pill '+pills[i]+'">'+medals[i]+' '+(nm[r.user_id]||'Docker')+'</div>';
+        }).join('');
+      }catch(e){}
+    })();
 
     const card=document.getElementById('profileCardBtn');
     card.style.cursor='pointer';
