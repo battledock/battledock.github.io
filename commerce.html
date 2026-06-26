@@ -2,32 +2,2438 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Commerce — Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;user-select:none}
-html,body{height:100%;height:100dvh;background:#f5f0e8;font-family:'Inter',sans-serif;overflow:hidden}
-body{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}
-.ico{font-size:80px;margin-bottom:16px;animation:shake 3s ease-in-out infinite}
-@keyframes shake{0%,90%,100%{transform:rotate(0)}93%{transform:rotate(-8deg)}96%{transform:rotate(8deg)}}
-.title{font-family:'Bebas Neue',sans-serif;font-size:36px;color:#1a1a1a;letter-spacing:3px;line-height:1;margin-bottom:8px}
-.badge{display:inline-block;background:#cc1a1a;border:3px solid #1a1a1a;border-radius:4px;box-shadow:3px 3px 0 #1a1a1a;padding:5px 14px;font-family:'Bangers',cursive;font-size:16px;color:#fbbf24;letter-spacing:2px;margin-bottom:16px}
-.sub{font-size:13px;color:#888;line-height:1.6;max-width:260px;margin-bottom:28px}
-.back-btn{background:#1a1a1a;border:3px solid #1a1a1a;border-radius:8px;box-shadow:4px 4px 0 rgba(0,0,0,.3);padding:14px 32px;font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fbbf24;letter-spacing:2px;cursor:pointer;text-decoration:none;display:inline-block}
-/* Trame -->
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(0,0,0,.05) 1px,transparent 1px);background-size:6px 6px;pointer-events:none}
-/* Bandes haut/bas */
-body::after{content:'';position:fixed;top:0;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,#cc1a1a 0,#cc1a1a 20px,#fbbf24 20px,#fbbf24 40px)}
-.band-bot{position:fixed;bottom:0;left:0;right:0;height:8px;background:repeating-linear-gradient(90deg,#cc1a1a 0,#cc1a1a 20px,#fbbf24 20px,#fbbf24 40px)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflow:hidden}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;overflow:hidden}
+.screen.active{display:flex}
+
+/* ── HEADER ── */
+.hdr{background:#0f172a;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.back{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;width:34px;height:34px;color:white;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:white;flex:1}
+.hdr-money{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24}
+
+/* ── SCREEN 1 : ACCUEIL ── */
+#s-accueil{background:linear-gradient(160deg,#0f172a,#1e3a5f)}
+.acc-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:20px;text-align:center}
+.acc-icon{font-size:64px;animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.acc-title{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:4px;color:white;line-height:1}
+.acc-sub{font-size:13px;color:rgba(255,255,255,.5);line-height:1.5;max-width:280px}
+.acc-price{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:12px;padding:12px 24px;font-family:'Bebas Neue',sans-serif;font-size:24px;color:#fbbf24;letter-spacing:2px}
+.acc-price-sub{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:1px;font-weight:700}
+.btn-start{background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:14px;padding:16px 40px;font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:white;cursor:pointer;box-shadow:0 8px 24px rgba(204,26,26,.3);transition:transform .1s}
+.btn-start:active{transform:scale(.97)}
+.acc-warning{font-size:11px;color:rgba(255,255,255,.25);font-weight:600}
+
+/* ── SCREEN 2 : TEST QI ── */
+#s-test{background:#0f172a}
+.test-progress{flex-shrink:0;padding:0 16px 0;background:#0f172a}
+.prog-bar-wrap{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin:10px 0}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,#cc1a1a,#fbbf24);border-radius:2px;transition:width .4s}
+.prog-info{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px}
+.test-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:hidden}
+.mini-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;letter-spacing:2px;text-align:center;margin-bottom:6px}
+.mini-sub{font-size:12px;color:rgba(255,255,255,.4);text-align:center;margin-bottom:20px;line-height:1.4}
+.score-live{position:fixed;top:calc(60px + env(safe-area-inset-top));right:16px;background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:6px 12px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;z-index:10}
+
+/* Mini-game 1 : emojis */
+.emoji-display{font-size:32px;letter-spacing:4px;min-height:60px;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.emoji-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px}
+.opt-btn{background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;font-family:'Bebas Neue',sans-serif;font-size:20px;color:white;cursor:pointer;transition:all .12s}
+.opt-btn:active{transform:scale(.96);background:rgba(204,26,26,.2);border-color:#cc1a1a}
+.opt-btn.correct{background:rgba(34,197,94,.15);border-color:#22c55e;color:#22c55e}
+.opt-btn.wrong{background:rgba(239,68,68,.15);border-color:#ef4444;color:#ef4444}
+
+/* Mini-game 3 : reaction */
+.reaction-area{width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.04);border:3px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;font-size:60px;cursor:pointer;transition:all .1s;user-select:none}
+.reaction-area:active{transform:scale(.95)}
+.reaction-area.ready{background:rgba(34,197,94,.1);border-color:#22c55e;animation:pulse 0.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.reaction-timer{font-family:'Bebas Neue',sans-serif;font-size:48px;color:white;margin-top:16px}
+
+/* Mini-game 5 : mémoire */
+.memory-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:300px}
+.mem-emoji{font-size:36px;width:60px;height:60px;background:rgba(255,255,255,.06);border:2px solid rgba(255,255,255,.08);border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s}
+.mem-emoji:active{transform:scale(.9)}
+.mem-emoji.selected{background:rgba(251,191,36,.2);border-color:#fbbf24}
+.mem-emoji.hidden-mem{font-size:0;background:rgba(255,255,255,.04)}
+
+/* Mini-game 7 : intrus */
+.intrus-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:320px}
+.intrus-cell{font-size:28px;width:100%;aspect-ratio:1;background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.06);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s}
+.intrus-cell:active{transform:scale(.9)}
+.intrus-cell.found{background:rgba(34,197,94,.2);border-color:#22c55e}
+.intrus-cell.wrong{background:rgba(239,68,68,.15);border-color:#ef4444}
+
+/* ── SCREEN 3 : RÉSULTAT ── */
+#s-result{background:#0f172a;overflow-y:auto}
+.res-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:16px;text-align:center}
+.res-qi{font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:1;color:white}
+.res-qi-lbl{font-size:9px;font-weight:800;letter-spacing:4px;color:rgba(255,255,255,.3);margin-top:-8px}
+.res-comment{font-size:13px;color:rgba(255,255,255,.6);line-height:1.5;max-width:280px;font-style:italic}
+.res-type-reveal{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;width:100%;max-width:320px}
+.res-type-emoji{font-size:48px;margin-bottom:8px}
+.res-type-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:white;line-height:1}
+.res-type-tag{font-size:10px;color:rgba(255,255,255,.35);margin-top:4px;font-weight:700;letter-spacing:1px}
+.res-name-reveal{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;letter-spacing:1px;margin-top:8px}
+.btn-next{background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:14px 40px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer;width:100%;max-width:320px}
+
+/* ── SCREEN 4 : PERSO ── */
+#s-perso{overflow-y:auto}
+.perso-body{padding:16px;display:flex;flex-direction:column;gap:16px;padding-bottom:14px}
+/* Preview carte */
+.co-card{border-radius:16px;padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:4px;position:relative;overflow:hidden}
+.co-card-emoji{font-size:48px;flex-shrink:0;filter:drop-shadow(0 4px 8px rgba(0,0,0,.3))}
+.co-card-info{flex:1;min-width:0}
+.co-card-name{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:1px;color:white;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.co-card-type{font-size:9px;font-weight:800;letter-spacing:2px;color:rgba(255,255,255,.5);margin-top:3px}
+.co-card-slogan{font-size:11px;color:rgba(255,255,255,.7);margin-top:5px;font-style:italic;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Sections perso */
+.perso-section{background:white;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden}
+.perso-sec-hd{padding:12px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+.perso-sec-icon{font-size:16px}
+.perso-sec-title{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1px;color:#0f172a}
+.perso-sec-body{padding:14px}
+
+/* Emoji picker */
+.emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.ep-emoji{font-size:26px;width:100%;aspect-ratio:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s}
+.ep-emoji:active{transform:scale(.9)}
+.ep-emoji.selected{border-color:#cc1a1a;background:#fff5f5;box-shadow:0 0 0 2px rgba(204,26,26,.2)}
+
+/* Color picker */
+.color-input{width:100%;height:52px;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;padding:4px}
+
+/* Slogans */
+.slogan-opts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.slogan-opt{background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:12px;color:#374151;cursor:pointer;transition:all .1s;text-align:left}
+.slogan-opt:active{background:#fee2e2;border-color:#cc1a1a}
+.slogan-opt.selected{background:#fff5f5;border-color:#cc1a1a;color:#cc1a1a;font-weight:700}
+
+
+
+
+/* Bouton confirmer fixe en bas */
+.perso-confirm{flex-shrink:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:white;border-top:1px solid #e2e8f0}
+.btn-confirm{width:100%;background:linear-gradient(135deg,#cc1a1a,#991414);border:none;border-radius:12px;padding:15px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:white;cursor:pointer}
+
+/* ── SCREEN 5 : DASHBOARD ── */
+#s-dashboard{overflow-y:auto;background:#f8fafc}
+.dash-hero{padding:calc(14px + env(safe-area-inset-top)) 16px 20px;color:white;position:relative;overflow:hidden}
+.dash-hero-inner{position:relative;z-index:1}
+.dash-co-name{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;line-height:1;margin-top:8px}
+.dash-co-type{font-size:10px;font-weight:800;letter-spacing:3px;opacity:.6;margin-top:2px}
+.dash-co-slogan{font-size:12px;opacity:.7;margin-top:6px;font-style:italic}
+.dash-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.dash-stat{background:rgba(255,255,255,.12);border-radius:10px;padding:12px}
+.dash-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:white;line-height:1}
+.dash-stat-lbl{font-size:8px;font-weight:800;letter-spacing:1px;color:rgba(255,255,255,.5);margin-top:2px}
+.dash-body{padding:14px;display:flex;flex-direction:column;gap:10px;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+/* Actions */
+.action-card{background:white;border-radius:14px;border:1px solid #e2e8f0;padding:16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:opacity .1s}
+.action-card:active{opacity:.8}
+.action-ico{font-size:28px;flex-shrink:0}
+.action-info{flex:1}
+.action-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#0f172a}
+.action-sub{font-size:11px;color:#64748b;margin-top:2px}
+.action-right{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#cc1a1a}
+
+/* ── LOADER ── */
+.loader{position:fixed;inset:0;background:#0f172a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:12px}
+.loader-icon{font-size:40px;animation:float 1.5s ease-in-out infinite}
+.loader-txt{font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:4px;color:rgba(255,255,255,.4)}
+
+/* ── TOAST ── */
+.toast{position:fixed;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#0f172a;color:white;padding:9px 18px;border-radius:20px;font-size:12px;font-weight:700;z-index:400;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;border:1px solid rgba(255,255,255,.1)}
+.toast.show{opacity:1}
+
+/* ── RÉPUTATION ── */
+
+/* ── EMPLOYÉS ── */
+.emp-card{background:#fff;border-radius:16px;margin:0 12px 10px;border:1px solid #f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden}
+.emp-header{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-bottom:1px solid #f8f8f8}
+.emp-header-ico{font-size:22px}
+.emp-header-info{flex:1}
+.emp-header-title{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px}
+.emp-header-sub{font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px}
+.emp-count{text-align:right}
+.emp-count-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a;line-height:1}
+.emp-count-lbl{font-size:7px;font-weight:700;color:#9ca3af;letter-spacing:1px;margin-top:1px}
+.emp-body{padding:12px 14px;display:none}
+.emp-body.open{display:block}
+/* Liste employés */
+.emp-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.emp-item{background:#f8f8f8;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.emp-item.greve{background:#fef2f2;border:1px solid #fecaca}
+.emp-avatar{font-size:22px;flex-shrink:0}
+.emp-info{flex:1;min-width:0}
+.emp-name{font-size:11px;font-weight:800;color:#1a1a1a}
+.emp-role{font-size:8px;color:#9ca3af;margin-top:1px}
+.emp-moral-wrap{display:flex;align-items:center;gap:6px;margin-top:4px}
+.emp-moral-bar{flex:1;height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden}
+.emp-moral-fill{height:100%;border-radius:2px;transition:width .4s}
+.emp-moral-val{font-size:7px;font-weight:800;color:#9ca3af;flex-shrink:0}
+.emp-salary{font-size:8px;font-weight:700;color:#6366f1;flex-shrink:0}
+/* Boutons embauche */
+.emp-hire-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.emp-hire-btn{background:#f8f8f8;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer}
+.emp-hire-btn:active{background:#f0f0f0}
+.emp-hire-btn.disabled{opacity:.4;pointer-events:none}
+.emp-hire-ico{font-size:20px;margin-bottom:4px}
+.emp-hire-nm{font-size:8px;font-weight:800;color:#1a1a1a;letter-spacing:.5px}
+.emp-hire-cost{font-size:7px;font-weight:700;color:#6366f1;margin-top:2px}
+.emp-hire-sal{font-size:6px;color:#9ca3af}
+/* Grève banner */
+.greve-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:9px;font-weight:700;color:#dc2626;display:none}
+.greve-banner.show{display:block}
+/* Stats impact */
+.emp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.emp-stat{background:#f8f8f8;border-radius:10px;padding:8px;text-align:center}
+.emp-stat-val{font-family:'Bebas Neue',sans-serif;font-size:15px;line-height:1}
+.emp-stat-lbl{font-size:6px;font-weight:800;color:#9ca3af;letter-spacing:.5px;margin-top:2px}
+
+.reput-card{background:#fff;border-radius:16px;margin:0 12px 10px;border:1px solid #f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden}
+.reput-header{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-bottom:1px solid #f8f8f8}
+.reput-header-ico{font-size:22px}
+.reput-header-info{flex:1}
+.reput-header-title{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px}
+.reput-header-sub{font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px}
+.reput-stars-big{font-size:18px;letter-spacing:2px}
+.reput-body{padding:12px 14px;display:none}
+.reput-body.open{display:block}
+.reput-bar-wrap{margin-bottom:12px}
+.reput-bar-top{display:flex;justify-content:space-between;margin-bottom:5px}
+.reput-bar-lbl{font-size:8px;font-weight:800;color:#9ca3af;letter-spacing:1px}
+.reput-bar-val{font-size:10px;font-weight:800}
+.reput-bar{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.reput-bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.avis-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.avis-item{background:#f8f8f8;border-radius:10px;padding:10px 12px;position:relative}
+.avis-item.positive{border-left:3px solid #16a34a}
+.avis-item.negative{border-left:3px solid #dc2626}
+.avis-item.neutral{border-left:3px solid #9ca3af}
+.avis-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.avis-avatar{font-size:16px}
+.avis-author{font-size:10px;font-weight:800;color:#1a1a1a;flex:1}
+.avis-stars{font-size:10px;letter-spacing:1px}
+.avis-date{font-size:7px;color:#9ca3af;font-weight:600}
+.avis-text{font-size:10px;color:#374151;line-height:1.4;font-style:italic}
+.avis-repondre{font-size:8px;font-weight:800;color:#6366f1;margin-top:5px;cursor:pointer;letter-spacing:.5px}
+.reput-score-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.rscore{background:#f8f8f8;border-radius:10px;padding:8px;text-align:center}
+.rscore-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;line-height:1}
+.rscore-lbl{font-size:6px;font-weight:800;color:#9ca3af;letter-spacing:.5px;margin-top:2px}
+
+/* ── CLIENTS ── */
+.clients-card{background:#fff;border-radius:16px;margin:0 12px 10px;border:1px solid #f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden}
+.clients-header{display:flex;align-items:center;gap:12px;padding:14px;border-bottom:1px solid #f8f8f8;cursor:pointer}
+.clients-header-ico{font-size:22px}
+.clients-header-info{flex:1}
+.clients-header-title{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px}
+.clients-header-sub{font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px}
+.clients-total{text-align:right}
+.clients-total-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a;line-height:1}
+.clients-total-lbl{font-size:7px;font-weight:700;color:#9ca3af;letter-spacing:1px;margin-top:1px}
+.clients-body{padding:12px 14px;display:none}
+.clients-body.open{display:block}
+.satis-wrap{margin-bottom:12px}
+.satis-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.satis-lbl{font-size:8px;font-weight:800;color:#9ca3af;letter-spacing:1px}
+.satis-val{font-size:10px;font-weight:800}
+.satis-bar{height:6px;background:#f0f0f0;border-radius:3px;overflow:hidden}
+.satis-fill{height:100%;border-radius:3px;transition:width .5s}
+.clients-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.cstat{background:#f8f8f8;border-radius:10px;padding:8px;text-align:center}
+.cstat-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;line-height:1}
+.cstat-lbl{font-size:6px;font-weight:800;color:#9ca3af;letter-spacing:.5px;margin-top:2px}
+.clients-hist{background:#f8f8f8;border-radius:10px;padding:10px;font-size:9px;color:#6b7280;line-height:1.8}
+.clients-hist-item{display:flex;justify-content:space-between}
+.clients-hist-pos{color:#16a34a;font-weight:700}
+.clients-hist-neg{color:#dc2626;font-weight:700}
+.clients-badge{display:inline-flex;align-items:center;gap:5px;background:#fef9c3;border:1px solid #fde047;border-radius:20px;padding:4px 10px;font-size:8px;font-weight:800;color:#854d0e;margin-bottom:10px}
+.clients-alert{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;font-size:9px;color:#dc2626;font-weight:700;margin-bottom:10px;display:none}
+.clients-alert.show{display:block}
+
+
+/* CHARGES */
+.charges-card{background:#fff;border-radius:16px;margin:0 12px 10px;border:1px solid #f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden}
+.charges-header{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-bottom:1px solid #f8f8f8}
+.charges-body{padding:12px 14px;display:none}
+.charges-body.open{display:block}
+.charge-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.charge-item:last-child{border-bottom:none}
+.charge-ico{font-size:16px;margin-right:8px}
+.charge-nm{font-size:11px;font-weight:700;color:#1a1a1a}
+.charge-due{font-size:8px;color:#9ca3af;margin-top:1px}
+.charge-amt{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#dc2626}
+.charge-pay-btn{background:#1a1a1a;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:8px;font-weight:800;cursor:pointer;margin-left:6px}
+.charges-alert{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 10px;font-size:9px;color:#dc2626;font-weight:700;margin-bottom:10px;display:none}
+.charges-alert.show{display:block}
+/* EVENEMENTS */
+.event-banner{border-radius:14px;margin:0 12px 10px;padding:14px;display:none;align-items:center;gap:12px}
+.event-banner.show{display:flex}
+.event-banner.good{background:#f0fdf4;border:1px solid #86efac}
+.event-banner.bad{background:#fef2f2;border:1px solid #fca5a5}
+.event-banner.neutral{background:#f8f8f8;border:1px solid #e5e7eb}
+.event-ico{font-size:28px}
+.event-title{font-size:12px;font-weight:800;color:#1a1a1a}
+.event-desc{font-size:9px;color:#6b7280;margin-top:2px}
+.event-dismiss{background:rgba(0,0,0,.08);border:none;border-radius:6px;padding:4px 10px;font-size:8px;font-weight:800;cursor:pointer;margin-left:auto;flex-shrink:0}
+/* RANG */
+.rang-card{background:linear-gradient(135deg,#0f172a,#1e293b);border-radius:16px;margin:0 12px 10px;padding:16px;position:relative;overflow:hidden}
+.rang-title{font-size:7px;font-weight:800;color:rgba(255,255,255,.25);letter-spacing:3px;margin-bottom:6px}
+.rang-name{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#fff;letter-spacing:2px;line-height:1}
+.rang-sub{font-size:9px;color:rgba(255,255,255,.4);margin-top:4px}
+.rang-bar-wrap{margin-top:12px}
+.rang-bar-top{display:flex;justify-content:space-between;margin-bottom:4px}
+.rang-bar-lbl{font-size:7px;font-weight:800;color:rgba(255,255,255,.25);letter-spacing:1px}
+.rang-bar-val{font-size:8px;font-weight:800;color:rgba(255,255,255,.5)}
+.rang-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.rang-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#fbbf24,#f59e0b);transition:width .5s}
+.rang-perks{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rang-perk{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:3px 8px;font-size:7px;font-weight:700;color:rgba(255,255,255,.5)}
+
+
+/* EMPLOYES */
+.emp-card{background:#fff;border-radius:16px;margin:0 12px 10px;border:1px solid #f0f0f0;box-shadow:0 2px 8px rgba(0,0,0,.05);overflow:hidden}
+.emp-header{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;border-bottom:1px solid #f8f8f8}
+.emp-header-ico{font-size:22px}
+.emp-header-info{flex:1}
+.emp-header-title{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px}
+.emp-header-sub{font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px}
+.emp-count{text-align:right}
+.emp-count-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#1a1a1a;line-height:1}
+.emp-count-lbl{font-size:7px;font-weight:700;color:#9ca3af;letter-spacing:1px;margin-top:1px}
+.emp-body{padding:12px 14px;display:none}
+.emp-body.open{display:block}
+.emp-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.emp-item{background:#f8f8f8;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.emp-item.greve{background:#fef2f2;border:1px solid #fecaca}
+.emp-avatar{font-size:22px;flex-shrink:0}
+.emp-info{flex:1;min-width:0}
+.emp-name{font-size:11px;font-weight:800;color:#1a1a1a}
+.emp-role{font-size:8px;color:#9ca3af;margin-top:1px}
+.emp-moral-wrap{display:flex;align-items:center;gap:6px;margin-top:4px}
+.emp-moral-bar{flex:1;height:3px;background:#e5e7eb;border-radius:2px;overflow:hidden}
+.emp-moral-fill{height:100%;border-radius:2px;transition:width .4s}
+.emp-moral-val{font-size:7px;font-weight:800;color:#9ca3af;flex-shrink:0}
+.emp-salary{font-size:8px;font-weight:700;color:#6366f1;flex-shrink:0}
+.emp-hire-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px}
+.emp-hire-btn{background:#f8f8f8;border:1.5px solid #e5e7eb;border-radius:12px;padding:10px 8px;text-align:center;cursor:pointer}
+.emp-hire-btn.disabled{opacity:.4;pointer-events:none}
+.emp-hire-ico{font-size:20px;margin-bottom:4px}
+.emp-hire-nm{font-size:8px;font-weight:800;color:#1a1a1a;letter-spacing:.5px}
+.emp-hire-cost{font-size:7px;font-weight:700;color:#6366f1;margin-top:2px}
+.emp-hire-sal{font-size:6px;color:#9ca3af}
+.greve-banner{background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:9px;font-weight:700;color:#dc2626;display:none}
+.greve-banner.show{display:block}
+.emp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:10px}
+.emp-stat{background:#f8f8f8;border-radius:10px;padding:8px;text-align:center}
+.emp-stat-val{font-family:'Bebas Neue',sans-serif;font-size:15px;line-height:1}
+.emp-stat-lbl{font-size:6px;font-weight:800;color:#9ca3af;letter-spacing:.5px;margin-top:2px}
+
 </style>
 </head>
 <body>
-<div class="band-bot"></div>
-<div class="ico">🔧</div>
-<div class="title">COMMERCE<br>EN MAINTENANCE</div>
-<div class="badge">🚧 TRAVAUX EN COURS 🚧</div>
-<div class="sub">Le patron rénove tout.<br>Revenez plus tard,<br>ça va être beau !</div>
-<a class="back-btn" href="game.html">⬅ RETOUR AU PORT</a>
+
+<div class="loader" id="loader">
+  <div class="loader-icon">🏪</div>
+  <div class="loader-txt">COMMERCE DU PORT</div>
+</div>
+
+<!-- ══ S1 : ACCUEIL ══ -->
+<div class="screen" id="s-accueil">
+  <div class="hdr">
+    <button class="back" onclick="window.location.href='game.html'">←</button>
+    <div class="hdr-title">COMMERCE</div>
+    <div class="hdr-money" id="acc-money">—</div>
+  </div>
+  <div class="acc-body">
+    <div class="acc-icon">🏪</div>
+    <div>
+      <div class="acc-title">CRÉE TON ENTREPRISE</div>
+      <div class="acc-sub">Passe le test de QI du port gratuitement. L'investissement de 100 000€ n'est demandé qu'à la création.</div>
+    </div>
+    <div>
+      <div class="acc-price">GRATUIT</div>
+      <div class="acc-price-sub">LE TEST EST GRATUIT · 100 000€ À LA CRÉATION</div>
+    </div>
+    <button class="btn-start" id="btn-start" onclick="startTest()">PASSER LE TEST</button>
+    <div class="acc-warning" id="acc-warning"></div>
+  </div>
+</div>
+
+<!-- ══ S2 : TEST ══ -->
+<div class="screen" id="s-test">
+  <div class="hdr">
+    <div class="hdr-title" id="test-title">ÉPREUVE 1/7</div>
+    <div class="score-live" id="score-live">QI: 0</div>
+  </div>
+  <div class="test-progress">
+    <div class="prog-info">
+      <span id="prog-label">COMPTE LES POISSONS</span>
+      <span id="prog-pts"></span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+  <div class="test-body" id="test-body"></div>
+</div>
+
+<!-- ══ S3 : RÉSULTAT ══ -->
+<div class="screen" id="s-result">
+  <div class="hdr">
+    <div class="hdr-title">RÉSULTAT QI</div>
+  </div>
+  <div class="res-body">
+    <div>
+      <div class="res-qi" id="res-qi">—</div>
+      <div class="res-qi-lbl">QUOTIENT INTELLECTUEL</div>
+    </div>
+    <div class="res-comment" id="res-comment"></div>
+    <div class="res-type-reveal">
+      <div class="res-type-emoji" id="res-type-emoji">🏪</div>
+      <div class="res-type-name" id="res-type-name">—</div>
+      <div class="res-type-tag" id="res-type-tag">VOTRE TYPE D'ENTREPRISE</div>
+      <div class="res-name-reveal" id="res-name-reveal">—</div>
+    </div>
+    <button class="btn-next" onclick="goPerso()">PERSONNALISER →</button>
+  </div>
+</div>
+
+<!-- ══ S4 : PERSO ══ -->
+<div class="screen" id="s-perso">
+  <div class="hdr">
+    <div class="hdr-title">PERSONNALISATION</div>
+  </div>
+  <!-- Preview live -->
+  <div id="co-preview" style="padding:12px 16px 0">
+    <div class="co-card" id="preview-card" style="background:#cc1a1a">
+      <div class="co-card-emoji" id="prev-emoji">🏪</div>
+      <div class="co-card-info">
+        <div class="co-card-name" id="prev-name">Mon Entreprise</div>
+        <div class="co-card-type" id="prev-type">TYPE</div>
+        <div class="co-card-slogan" id="prev-slogan">Slogan ici</div>
+      </div>
+    </div>
+  </div>
+  <div class="perso-body">
+    <!-- Emoji -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">😀</div><div class="perso-sec-title">LOGO</div></div>
+      <div class="perso-sec-body"><div class="emoji-grid" id="emoji-grid"></div></div>
+    </div>
+    <!-- Couleur -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">🎨</div><div class="perso-sec-title">COULEUR</div></div>
+      <div class="perso-sec-body">
+        <input type="color" class="color-input" id="color-input" value="#cc1a1a" oninput="updateColor(this.value)">
+      </div>
+    </div>
+    <!-- Slogan -->
+    <div class="perso-section">
+      <div class="perso-sec-hd"><div class="perso-sec-icon">💬</div><div class="perso-sec-title">SLOGAN</div></div>
+      <div class="perso-sec-body">
+        <div class="slogan-opts" id="slogan-opts"></div>
+        <textarea class="slogan-custom" id="slogan-custom" maxlength="40" rows="2" placeholder="Ou écris le tien..." oninput="updateSlogan()"></textarea>
+      </div>
+    </div>
+  </div>
+  <div class="perso-confirm">
+    <button class="btn-confirm" onclick="confirmCreate()">CRÉER MON ENTREPRISE — 100 000€</button>
+  </div>
+</div>
+
+<!-- ══ S5 : DASHBOARD ══ -->
+<div class="screen" id="s-dashboard">
+  <div class="dash-hero" id="dash-hero">
+    <div class="dash-hero-inner">
+      <div style="font-size:44px" id="dash-emoji">🏪</div>
+      <div class="dash-co-name" id="dash-name">—</div>
+      <div class="dash-co-type" id="dash-type">—</div>
+      <div class="dash-co-slogan" id="dash-slogan">—</div>
+      <div class="dash-stats">
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-valeur">0€</div><div class="dash-stat-lbl">VALEUR</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-revenus">0€/H</div><div class="dash-stat-lbl">REVENUS</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-niveau">Niv. 1</div><div class="dash-stat-lbl">NIVEAU</div></div>
+        <div class="dash-stat"><div class="dash-stat-val" id="dash-collect">—</div><div class="dash-stat-lbl">PROCHAIN COLLECTE</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="dash-body">
+    <div class="action-card" onclick="investir()">
+      <div class="action-ico">💰</div>
+      <div class="action-info">
+        <div class="action-title">INVESTIR</div>
+        <div class="action-sub">Augmente la valeur et les revenus</div>
+      </div>
+      <div class="action-right">→</div>
+    </div>
+    <div class="action-card" id="collect-card" onclick="collecterRevenus()">
+      <div class="action-ico">📥</div>
+      <div class="action-info">
+        <div class="action-title">COLLECTER LES REVENUS</div>
+        <div class="action-sub" id="collect-sub">Disponible dans —</div>
+      </div>
+      <div class="action-right" id="collect-amt">—</div>
+    </div>
+    <div class="action-card" onclick="location.href='zones.html'">
+      <div class="action-ico">🗺️</div>
+      <div class="action-info">
+        <div class="action-title">ZONES DU PORT</div>
+        <div class="action-sub">Achète et améliore des zones</div>
+      </div>
+      <div class="action-right">→</div>
+    </div>
+
+    <!-- ══ CLIENTS ══ -->
+    <div class="clients-card" id="clientsCard">
+      <div class="clients-header" onclick="toggleClients()">
+        <div class="clients-header-ico">👥</div>
+        <div class="clients-header-info">
+          <div class="clients-header-title">CLIENTS</div>
+          <div class="clients-header-sub" id="clients-badge-txt">Chargement...</div>
+        </div>
+        <div class="clients-total">
+          <div class="clients-total-val" id="clients-total">—</div>
+          <div class="clients-total-lbl">CLIENTS</div>
+        </div>
+      </div>
+      <div class="clients-body" id="clientsBody">
+        <div class="clients-alert" id="clientsAlert">⚠️ Inactivité détectée — tes clients commencent à partir !</div>
+        <div class="clients-badge" id="clientsFidelBadge">⭐ Clientèle fidèle</div>
+        <div class="satis-wrap">
+          <div class="satis-top">
+            <div class="satis-lbl">SATISFACTION</div>
+            <div class="satis-val" id="clients-satis-val">—%</div>
+          </div>
+          <div class="satis-bar"><div class="satis-fill" id="clients-satis-bar" style="width:0%"></div></div>
+        </div>
+        <div class="clients-stats">
+          <div class="cstat"><div class="cstat-val" id="cstat-normal">0</div><div class="cstat-lbl">NORMAUX</div></div>
+          <div class="cstat"><div class="cstat-val" id="cstat-vip" style="color:#d97706">0 👑</div><div class="cstat-lbl">VIP</div></div>
+          <div class="cstat"><div class="cstat-val" id="cstat-gain" style="color:#16a34a">+0</div><div class="cstat-lbl">CE JOUR</div></div>
+        </div>
+        <div class="clients-hist" id="clientsHist">Aucun historique</div>
+      </div>
+    </div>
+
+    <!-- ══ RÉPUTATION ══ -->
+    <div class="reput-card" id="reputCard">
+      <div class="reput-header" onclick="toggleReput()">
+        <div class="reput-header-ico">⭐</div>
+        <div class="reput-header-info">
+          <div class="reput-header-title">RÉPUTATION</div>
+          <div class="reput-header-sub" id="reput-header-sub">Chargement...</div>
+        </div>
+        <div class="reput-stars-big" id="reput-stars-header">—</div>
+      </div>
+      <div class="reput-body" id="reputBody">
+        <div class="reput-bar-wrap">
+          <div class="reput-bar-top">
+            <div class="reput-bar-lbl">SCORE DE RÉPUTATION</div>
+            <div class="reput-bar-val" id="reput-score-val">—/100</div>
+          </div>
+          <div class="reput-bar"><div class="reput-bar-fill" id="reput-bar-fill"></div></div>
+        </div>
+        <div class="reput-score-grid">
+          <div class="rscore"><div class="rscore-val" id="rscore-pos" style="color:#16a34a">0</div><div class="rscore-lbl">POSITIFS</div></div>
+          <div class="rscore"><div class="rscore-val" id="rscore-neg" style="color:#dc2626">0</div><div class="rscore-lbl">NÉGATIFS</div></div>
+          <div class="rscore"><div class="rscore-val" id="rscore-neu">0</div><div class="rscore-lbl">NEUTRES</div></div>
+        </div>
+        <div id="avis-list" class="avis-list"></div>
+      </div>
+    </div>
+
+    <!-- EVENEMENT -->
+    <div class="event-banner" id="eventBanner">
+      <div class="event-ico" id="eventIco">🎯</div>
+      <div style="flex:1"><div class="event-title" id="eventTitle">-</div><div class="event-desc" id="eventDesc">-</div></div>
+      <button class="event-dismiss" onclick="dismissEvent()">OK</button>
+    </div>
+    <!-- RANG -->
+    <div class="rang-card" id="rangCard">
+      <div class="rang-title">RANG DE COMMERCANT</div>
+      <div class="rang-name" id="rangName">AMBULANT</div>
+      <div class="rang-sub" id="rangSub">-</div>
+      <div class="rang-bar-wrap">
+        <div class="rang-bar-top"><div class="rang-bar-lbl">PROGRESSION</div><div class="rang-bar-val" id="rangPct">0%</div></div>
+        <div class="rang-bar"><div class="rang-bar-fill" id="rangFill" style="width:0%"></div></div>
+      </div>
+      <div class="rang-perks" id="rangPerks"></div>
+    </div>
+    <!-- CHARGES -->
+    <div class="charges-card" id="chargesCard">
+      <div class="charges-header" onclick="toggleCharges()">
+        <div style="font-size:22px">💸</div>
+        <div style="flex:1">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:16px;color:#1a1a1a;letter-spacing:1px">CHARGES FIXES</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px" id="chargesSub">-</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#dc2626;line-height:1" id="chargesTotalEl">0/j</div>
+          <div style="font-size:7px;font-weight:700;color:#9ca3af;letter-spacing:1px">PAR JOUR</div>
+        </div>
+      </div>
+      <div class="charges-body" id="chargesBody">
+        <div class="charges-alert" id="chargesAlert">Charges impayees - penalites en cours</div>
+        <div id="chargesList"></div>
+        <button style="width:100%;padding:11px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;margin-top:8px" onclick="payAllCharges()">TOUT PAYER</button>
+      </div>
+    </div>
+
+
+    <!-- EMPLOYES -->
+    <div class="emp-card" id="empCard">
+      <div class="emp-header" onclick="toggleEmp()">
+        <div class="emp-header-ico">👷</div>
+        <div class="emp-header-info">
+          <div class="emp-header-title">EMPLOYÉS</div>
+          <div class="emp-header-sub" id="empHeaderSub">Aucun employé</div>
+        </div>
+        <div class="emp-count">
+          <div class="emp-count-val" id="empCount">0</div>
+          <div class="emp-count-lbl">EMPLOYÉS</div>
+        </div>
+      </div>
+      <div class="emp-body" id="empBody">
+        <div class="greve-banner" id="greveBanner">🚨 GRÈVE EN COURS — Revenus divisés par 2 !</div>
+        <div class="emp-stats">
+          <div class="emp-stat"><div class="emp-stat-val" id="empRevBonus" style="color:#16a34a">+0%</div><div class="emp-stat-lbl">REVENUS</div></div>
+          <div class="emp-stat"><div class="emp-stat-val" id="empSatisBonus" style="color:#6366f1">+0%</div><div class="emp-stat-lbl">SATISFACTION</div></div>
+          <div class="emp-stat"><div class="emp-stat-val" id="empSalTotal" style="color:#dc2626">0€/j</div><div class="emp-stat-lbl">SALAIRES</div></div>
+        </div>
+        <div class="emp-list" id="empList"></div>
+        <div style="font-size:7px;font-weight:800;color:#9ca3af;letter-spacing:2px;margin-bottom:8px">EMBAUCHER</div>
+        <div class="emp-hire-grid">
+          <div class="emp-hire-btn" id="hireVendeur" onclick="hireEmployee('vendeur')">
+            <div class="emp-hire-ico">🛒</div>
+            <div class="emp-hire-nm">VENDEUR</div>
+            <div class="emp-hire-cost">5 000 €</div>
+            <div class="emp-hire-sal">500 €/j</div>
+          </div>
+          <div class="emp-hire-btn" id="hireManager" onclick="hireEmployee('manager')">
+            <div class="emp-hire-ico">📋</div>
+            <div class="emp-hire-nm">MANAGER</div>
+            <div class="emp-hire-cost">12 000 €</div>
+            <div class="emp-hire-sal">1 200 €/j</div>
+          </div>
+          <div class="emp-hire-btn" id="hireComptable" onclick="hireEmployee('comptable')">
+            <div class="emp-hire-ico">📊</div>
+            <div class="emp-hire-nm">COMPTABLE</div>
+            <div class="emp-hire-cost">8 000 €</div>
+            <div class="emp-hire-sal">800 €/j</div>
+          </div>
+        </div>
+        <div style="font-size:8px;color:#9ca3af;margin-top:8px;text-align:center" id="empMaxTxt"></div>
+      </div>
+    </div>
+
+    <!-- OBJECTIFS QUOTIDIENS -->
+    <div class="action-card" onclick="toggleObj()" id="obj-card" style="border-left:4px solid #fbbf24">
+      <div class="action-ico">📋</div>
+      <div class="action-info">
+        <div class="action-title">OBJECTIFS DU JOUR</div>
+        <div class="action-sub" id="obj-sub">0/3 complétés</div>
+      </div>
+      <div class="action-right" id="obj-arrow">→</div>
+    </div>
+    <div id="obj-body" style="display:none;padding:0 16px 8px"></div>
+
+    <!-- MARCHÉ & CHAT -->
+    <div class="action-card" onclick="location.href='marche.html'">
+      <div class="action-ico">🤝</div>
+      <div class="action-info">
+        <div class="action-title">MARCHÉ & MESSAGERIE</div>
+        <div class="action-sub">Trade de ressources & discussion</div>
+      </div>
+      <div class="action-right">→</div>
+    </div>
+
+    <!-- CLASSEMENT -->
+    <div class="action-card" onclick="toggleRank()" id="rank-card">
+      <div class="action-ico">🏆</div>
+      <div class="action-info">
+        <div class="action-title">CLASSEMENT</div>
+        <div class="action-sub" id="rank-sub">Top entreprises du port</div>
+      </div>
+      <div class="action-right" id="rank-arrow">→</div>
+    </div>
+    <div id="rank-body" style="display:none;padding:0 16px 8px"></div>
+
+    <div onclick="location.href='game.html'" style="margin-top:8px;padding:14px;text-align:center;background:rgba(0,0,0,.03);border-radius:12px;cursor:pointer;font-family:'Bebas Neue',sans-serif;font-size:13px;color:#9ca3af;letter-spacing:2px">← RETOUR AU PORT</div>
+    <div style="height:calc(env(safe-area-inset-bottom,20px)+10px)"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+var sb=supabase.createClient(SB_URL,SB_KEY);
+var currentUser=null, money=0, username='Docker';
+var qi=0, typeIdx=0, companyName='', selectedEmoji='', selectedColor='#cc1a1a', selectedSlogan='';
+var miniStep=0, miniScore=0;
+
+// ══ DONNÉES ══
+var TYPES=[
+  // ── TIER 0 (0-5) ──
+  {min:0,max:5,label:'Association des Amis des Mouettes',tag:'ORNITHOLOGIE PORTUAIRE',
+   emojis:['🐦','🦅','🦆','🕊️','🦢','🐧','🦉','🦜','🦩','🪶'],
+   slogans:["On nourrit les mouettes depuis 1987","La mouette est notre avenir","Nos fondateurs sont aussi des pigeons"]},
+  {min:0,max:5,label:'Gardien de Parking du Port',tag:'SURVEILLANCE VEHICULES',
+   emojis:['🅿️','🚗','🔑','⛔','🪧','🚧','📋','🛞','🪨','🔦'],
+   slogans:["Place reservee aux autres","On surveille les voitures des autres","Gratuit le dimanche si personne regarde"]},
+  {min:0,max:5,label:'Club des Pecheurs du Dimanche',tag:'LOISIRS NAUTIQUES',
+   emojis:['🎣','🐟','⛵','☀️','🪣','🪝','🦞','🌊','🏖️','🎏'],
+   slogans:["On peche peu mais on rigole bien","Le poisson attend, nous aussi","La prise du jour: un pneu et un sac plastique"]},
+
+  // ── TIER 1 (6-11) ──
+  {min:6,max:11,label:'Sardines du Vieux-Port',tag:'POISSONNERIE ARTISANALE',
+   emojis:['🐟','🐠','🦈','🦐','🦞','🦀','🦑','🐙','🦪','🐡'],
+   slogans:["Fraiches ce matin sur mon honneur","Pas si fraiches mais tellement sympas","La sardine qui a ferme le port c etait nous"]},
+  {min:6,max:11,label:'Boulangerie du Docker',tag:'ARTISANAT ALIMENTAIRE',
+   emojis:['🥐','🍞','🥖','🧁','🍩','☕','🥨','🫓','🍰','🥧'],
+   slogans:["La baguette a la force d un docker","Ouvert avant Gege ce qui est tot","Pain frais pour dockers durs au labeur"]},
+  {min:6,max:11,label:'Location de Vestiaires',tag:'SERVICES AUX TRAVAILLEURS',
+   emojis:['👔','🦺','🧤','🪖','👟','🧣','🪣','🔑','🚿','🧺'],
+   slogans:["Le casque est propre au moins une fois","Vos affaires en securite relative","On loue ce que vous oubliez de rapporter"]},
+
+  // ── TIER 2 (12-17) ──
+  {min:12,max:17,label:'Taxi Maritime de Marseille',tag:'TRANSPORT LACUSTRE',
+   emojis:['⛵','🚤','🛥️','🛶','⚓','🪝','🧭','🌊','🚢','🗺️'],
+   slogans:["On arrive si le moteur veut bien","Tarif fixe heure d arrivee variable","On a coule que deux fois cette annee"]},
+  {min:12,max:17,label:'Conciergerie du Port',tag:'SERVICES PORTUAIRES',
+   emojis:['🗝️','🏨','📋','☎️','🛎️','🪴','🧹','😊','🛁','📦'],
+   slogans:["On s occupe de tout meme du reste","Service 5 etoiles port 2 etoiles","Votre satisfaction notre probleme"]},
+  {min:12,max:17,label:'Ecole de Conduite de Chariot',tag:'FORMATION PROFESSIONNELLE',
+   emojis:['🚜','📋','🎓','⚠️','🔧','📐','🪝','🏗️','⛑️','📊'],
+   slogans:["On forme les dockers de demain","Le chariot elevateur n a plus de secret","Taux de reussite 60% en moyenne"]},
+
+  // ── TIER 3 (18-23) ──
+  {min:18,max:23,label:'Kebab du Docker',tag:'RESTAURATION RAPIDE PORTUAIRE',
+   emojis:['🥙','🌮','🍖','🥗','🍢','🧆','🫔','🥪','🍡','🧇'],
+   slogans:["Ouvert quand il fait beau","Sauce harissa comprise dans le prix","Gege vient tous les jours c est dire"]},
+  {min:18,max:23,label:'Friterie du Quai',tag:'SNACK PORTUAIRE',
+   emojis:['🍟','🌭','🥤','🧂','🍔','🫕','🍦','🥪','🧃','🥐'],
+   slogans:["Les meilleures frites du port selon nous","L huile est changee regulierement on croit","Pas de ticket resto mais on accepte l amitie"]},
+  {min:18,max:23,label:'Traiteur Evenementiel Portuaire',tag:'RESTAURATION EVENEMENTIELLE',
+   emojis:['🍽️','🥂','🎉','🫕','🥗','🍱','🧑‍🍳','🎂','🍾','🌹'],
+   slogans:["Vos evenements notre cuisine leur risques","Buffet a volonte sauf le dessert","On cuisine avec amour et peu de connaissances"]},
+
+  // ── TIER 4 (24-29) ──
+  {min:24,max:29,label:'Nettoyage des Quais',tag:'PROPRETE PORTUAIRE',
+   emojis:['🧹','🧺','🪣','🧽','🫧','🧴','🗑️','🪠','🧻','🪤'],
+   slogans:["Propre entre 9h et 9h30","On efface vos traces sans poser de questions","Le quai brille la conscience aussi"]},
+  {min:24,max:29,label:'Depollution Maritime',tag:'ENVIRONNEMENT PORTUAIRE',
+   emojis:['🌊','♻️','🪣','🧤','⚗️','🌿','🔬','💧','🐢','🌍'],
+   slogans:["On nettoie ce que les autres ont verse","La mer nous remercie avec discretion","Depollution avec conscience et preventions"]},
+  {min:24,max:29,label:'Entreprise de Dechets Portuaires',tag:'GESTION DECHETS',
+   emojis:['🗑️','♻️','🚛','🧤','📦','🗃️','🪣','⚠️','🔄','🏭'],
+   slogans:["Vos dechets notre tresor","On trie meme ce qui ne merite pas","La poubelle est la premiere etape du recyclage"]},
+
+  // ── TIER 5 (30-35) ──
+  {min:30,max:35,label:'Import Export Divers',tag:'COMMERCE DE GROS',
+   emojis:['📦','📫','🗃️','🎁','🧸','🪣','📭','🎀','🗄️','📬'],
+   slogans:["On sait pas ce que c est mais ca vient de loin","Si c est bizarre c est nous","L inutile merite aussi d etre importe"]},
+  {min:30,max:35,label:'Grossiste Alimentaire du Port',tag:'DISTRIBUTION ALIMENTAIRE',
+   emojis:['🛒','🥫','📦','🚛','🏭','🌽','🍅','🫙','🧂','🥩'],
+   slogans:["On nourrit le port sans vous montrer comment","Du producteur au docker sans escale","Les meilleures dates de peremption de la region"]},
+  {min:30,max:35,label:'Entrepot Frigorifique',tag:'STOCKAGE FROID',
+   emojis:['🧊','❄️','📦','🏭','🌡️','🔒','🚛','🥶','⚙️','🔧'],
+   slogans:["Froid dehors froid dedans c est coherent","Vos produits congeles notre specialite","La temperature ideale pour les affaires"]},
+
+  // ── TIER 6 (36-41) ──
+  {min:36,max:41,label:'Transport de Palettes',tag:'LOGISTIQUE BASIQUE',
+   emojis:['🚛','🚚','🚐','🏎️','🚜','🛻','🚁','🚌','🚑','🏗️'],
+   slogans:["Les pleines c est plus cher","Leger comme nos benefices","On deplace des possibilites vides"]},
+  {min:36,max:41,label:'Messagerie Portuaire Express',tag:'LIVRAISON RAPIDE',
+   emojis:['📮','📦','🛵','⚡','📋','🗺️','⏱️','🚴','📫','🔔'],
+   slogans:["Express en theorie livraison en pratique","Votre colis arrive avant vous peut-etre","Le rouge signifie urgence chez nous aussi"]},
+  {min:36,max:41,label:'Location de Vehicules Industriels',tag:'LOCATION MATERIEL',
+   emojis:['🚜','🏗️','🚛','🔧','⚙️','🪝','🔩','🛠️','⛽','📋'],
+   slogans:["On loue ce que vous ne pouvez pas acheter","Caution raisonnable dommages frequents","Le chariot ne part pas seul en general"]},
+
+  // ── TIER 7 (42-47) ──
+  {min:42,max:47,label:'Securite Portuaire',tag:'GARDIENNAGE ET SURVEILLANCE',
+   emojis:['💂','👮','🕵️','🦺','🪖','🛡️','🔦','🔒','🚨','🪪'],
+   slogans:["Dissuasif par l exemple","Present en esprit sinon en corps","On surveille sauf quand on dort"]},
+  {min:42,max:47,label:'Systemes de Surveillance Maritime',tag:'SECURITE TECHNOLOGIQUE',
+   emojis:['📡','🔭','💻','📷','🛰️','🔒','📊','⚡','🖥️','🔍'],
+   slogans:["On voit tout sauf ce qu on rate","Surveillance 24h meme la nuit","Nos cameras enregistrent quand elles veulent"]},
+  {min:42,max:47,label:'Protection des Biens Portuaires',tag:'ASSURANCE SECURITE',
+   emojis:['🛡️','🔐','🏰','🗝️','📋','⚖️','🔏','💼','🤝','🏛️'],
+   slogans:["On protege ce que vous avez peur de perdre","La serrure est notre ami et le votre","Tranquillite d esprit incluse dans le devis"]},
+
+  // ── TIER 8 (48-53) ──
+  {min:48,max:53,label:'BTP du Port',tag:'CONSTRUCTION ET TRAVAUX',
+   emojis:['🏗️','⚒️','🪚','🔨','⚙️','🪛','🔧','🧱','🏚️','🏛️'],
+   slogans:["On construit on verra bien","Le devis gratuit les travaux moins","Fini quand c est fini soit bientot soit jamais"]},
+  {min:48,max:53,label:'Renovation des Infrastructures',tag:'REHABILITATION PORTUAIRE',
+   emojis:['🏚️','🔨','🪚','🧱','⚙️','🪟','🚿','🏗️','📐','🎨'],
+   slogans:["Vieux quai nouvelle chance","On renovate comme si c etait le notre","Plus vieux que l original mais plus beau on croit"]},
+  {min:48,max:53,label:'Chaudronnerie Navale',tag:'FABRICATION METALLIQUE',
+   emojis:['⚙️','🔩','🔧','🛠️','🪛','⚒️','🔥','🏭','💨','🪨'],
+   slogans:["Le metal n a pas de secret pour nous","On soude ce que les autres ont casse","Du fer de la sueur du talent dans cet ordre"]},
+
+  // ── TIER 9 (54-59) ──
+  {min:54,max:59,label:'Restauration du Vieux-Port',tag:'GASTRONOMIE MARSEILLAISE',
+   emojis:['🍽️','🍳','🫕','🥘','🍲','🧑‍🍳','🥩','🍱','🥗','🍜'],
+   slogans:["Comme a la maison en moins bon","La vue est meilleure que la carte","Nos clients reviennent la plupart"]},
+  {min:54,max:59,label:'Bar des Dockers',tag:'CAFE RESTAURANT OUVRIER',
+   emojis:['🍺','☕','🥃','🃏','🎲','🍻','🥜','🧀','📺','🎵'],
+   slogans:["Ouvert avant le travail et apres aussi","L endroit ou tout se decide","Gege y a son tabouret reserve depuis 89"]},
+  {min:54,max:59,label:'Traiteur Specialites Mediterraneennes',tag:'GASTRONOMIE REGIONALE',
+   emojis:['🫒','🍅','🧄','🌿','🫙','🥗','🍋','🐟','🧆','🥙'],
+   slogans:["La Mediterranee dans chaque assiette","Huile d olive et bonne humeur incluses","De la mer a la table sans trop d escales"]},
+
+  // ── TIER 10 (60-65) ──
+  {min:60,max:65,label:'Agence Maritime Regionale',tag:'SERVICES NAUTIQUES',
+   emojis:['🗺️','🏖️','⛱️','🧳','✈️','🌅','🏝️','🎡','🌊','🔭'],
+   slogans:["La mer le soleil et les grues","Marseille vue d en haut et d en bas","On vend du reve avec garantie partielle"]},
+  {min:60,max:65,label:'Charterie Nautique',tag:'LOCATION DE BATEAUX',
+   emojis:['⛵','🚤','🛥️','⚓','🧭','🌊','🪝','🗺️','☀️','🌅'],
+   slogans:["Votre bateau notre responsabilite partielle","Location avec ou sans experience c est vous qui voyez","La mer est grande et votre bateau aussi"]},
+  {min:60,max:65,label:'Courtage Maritime',tag:'INTERMEDIAIRE PORTUAIRE',
+   emojis:['🤝','📋','💼','📞','🗂️','✍️','💹','🔄','📊','💰'],
+   slogans:["On met les bons bateaux avec les bonnes cargaisons","L intermediaire que tout le monde cherche","Commission raisonnable services exceptionnels"]},
+
+  // ── TIER 11 (66-71) ──
+  {min:66,max:71,label:'Transitaire Portuaire',tag:'DOUANES ET FORMALITES',
+   emojis:['📋','📊','🖊️','📁','🗂️','📎','🔏','📌','📍','🗝️'],
+   slogans:["On fait les papiers que vous ne voulez pas faire","Bureaucratie avec le sourire","Vos formulaires notre passion"]},
+  {min:66,max:71,label:'Agence en Douane',tag:'DEDOUANEMENT EXPERT',
+   emojis:['📋','⚖️','🔏','🛃','📦','✍️','🗂️','💼','🏛️','🔍'],
+   slogans:["On declare tout sauf ce qu on ne sait pas","La douane ne nous fait pas peur ou presque","Dedouanement rapide si les papiers sont bons"]},
+  {min:66,max:71,label:'Consignataire de Navires',tag:'REPRESENTATION MARITIME',
+   emojis:['🚢','📋','🤝','⚓','🗂️','📞','🏛️','💼','🌊','🗺️'],
+   slogans:["Votre bateau notre responsabilite totale","On represente les navires meme absents","Le port nous connait et vice versa"]},
+
+  // ── TIER 12 (72-77) ──
+  {min:72,max:77,label:'Transport Maritime Cote',tag:'ARMEMENT COTIER',
+   emojis:['🚢','⛴️','🛳️','⚓','🌊','🧭','🗺️','🪝','🔭','⛵'],
+   slogans:["Mediterranee et parfois au dela","Vos marchandises notre mer nos regles","On arrive a l heure souvent le bon jour"]},
+  {min:72,max:77,label:'Cabotage Mediterraneen',tag:'TRANSPORT COTIER REGIONAL',
+   emojis:['⛴️','🗺️','🌊','⚓','🧭','🪝','🚢','🌅','⛵','🔭'],
+   slogans:["De port en port sans se perdre souvent","La Mediterranee est notre autoroute","Cadence reguliere sauf en cas de mistral"]},
+  {min:72,max:77,label:'Affrètement Maritime',tag:'LOCATION DE NAVIRES',
+   emojis:['🚢','💰','📋','🤝','⚓','🌍','🌊','💼','📊','🛳️'],
+   slogans:["Le bon navire pour la bonne cargaison","On affrete ce que les autres n osent pas","Flotte disponible selon les marees et les humeurs"]},
+
+  // ── TIER 13 (78-83) ──
+  {min:78,max:83,label:'Import Export International',tag:'COMMERCE MONDIAL',
+   emojis:['🌍','📦','💼','🤝','📋','🏭','🔄','📊','🌐','💹'],
+   slogans:["Tout ce qui flotte on le bouge","Le monde est notre port et c est grand","Import export on ne pose pas trop de questions"]},
+  {min:78,max:83,label:'Trading Maritime International',tag:'NEGOCE INTERNATIONAL',
+   emojis:['💹','🌍','📊','💰','🤝','🏦','📈','🔄','💼','🌐'],
+   slogans:["On achete bas on vend haut c est le principe","Les marches mondiaux n ont pas de secret","Du fret au profit en passant par Marseille"]},
+  {min:78,max:83,label:'Plateforme Logistique Multimodale',tag:'HUB LOGISTIQUE',
+   emojis:['🏭','🚛','🚢','✈️','🚂','🔄','📦','🗺️','🏗️','⚙️'],
+   slogans:["Terre mer air on gere tout","La multimodalite c est complique mais on le fait","Hub strategique de Marseille c est nous"]},
+
+  // ── TIER 14 (84-89) ──
+  {min:84,max:89,label:'Assurance et Logistique',tag:'GESTION DES RISQUES',
+   emojis:['🛡️','📋','⚖️','✍️','🏛️','🔏','📝','💎','🏆','🪙'],
+   slogans:["On espere ne jamais vous revoir","Le risque on connait on l a vecu","Assure ou pas c est votre probleme"]},
+  {min:84,max:89,label:'Cabinet de Droit Maritime',tag:'CONSEIL JURIDIQUE',
+   emojis:['⚖️','📋','🏛️','👔','✍️','🔏','💼','🗂️','📚','🤝'],
+   slogans:["La loi maritime n a pas de secret pour nous","On defend ce que les autres ont perdu","Justice maritime depuis que c est necessaire"]},
+  {min:84,max:89,label:'Inspection et Certification Navale',tag:'CONTROLE QUALITE',
+   emojis:['🔍','📋','⚙️','🏆','✅','📊','🔬','🛳️','📐','🔧'],
+   slogans:["On certifie ce qui merite d etre certifie","Inspection rigoureuse et bienveillante","Aucun navire ne nous echappe ou presque"]},
+
+  // ── TIER 15 (90-95) ──
+  {min:90,max:95,label:'Groupe Logistique Med',tag:'LOGISTIQUE AVANCEE',
+   emojis:['📊','📈','🗂️','📋','🖥️','🔄','🏭','🚦','⌚','📉'],
+   slogans:["Dans les delais la plupart du temps","Optimise jusqu a ce que ca casse","Flux tendus nerfs aussi"]},
+  {min:90,max:95,label:'Operateur de Terminal Portuaire',tag:'EXPLOITATION PORTUAIRE',
+   emojis:['🏗️','🚢','📦','⚙️','🔧','🚛','📊','🌊','💼','🏭'],
+   slogans:["Le terminal c est notre domaine","On decharge plus vite que l eclair presque","Du quai au camion en temps record ou pas loin"]},
+  {min:90,max:95,label:'Solutions Supply Chain Maritime',tag:'CHAINE LOGISTIQUE',
+   emojis:['🔗','📦','🌍','🚛','🚢','📊','💹','🏭','🔄','⚙️'],
+   slogans:["La chaine logistique sans les maillons faibles","On optimise de A a Z souvent","Supply chain complexe solutions simples"]},
+
+  // ── TIER 16 (96-101) ──
+  {min:96,max:101,label:'Ingenierie et Conseil Naval',tag:'EXPERTISE MARITIME',
+   emojis:['⚙️','🔧','🪛','🔩','🛠️','🔬','💡','🧮','🖥️','🏗️'],
+   slogans:["On optimise ce que les autres ont casse","La technique au service du port","Trop complexe a expliquer mais ca marche"]},
+  {min:96,max:101,label:'Bureau d Etudes Portuaires',tag:'INGENIERIE ET CONCEPTION',
+   emojis:['📐','📊','💡','🔬','🖥️','📋','⚙️','🏗️','🔭','📏'],
+   slogans:["On dessine ce que les autres construiront","Etudes approfondies devis raisonnables","L avenir du port passe par nos plans"]},
+  {min:96,max:101,label:'Maintenance et Reparation Navale',tag:'TECHNIQUE NAVALE',
+   emojis:['🔧','⚙️','🛠️','🔩','🪛','⛴️','🚢','🔥','💨','🏭'],
+   slogans:["On repare ce que la mer a abime","Du moteur a la coque on sait tout faire","Vos navires repartent toujours de chez nous"]},
+
+  // ── TIER 17 (102-107) ──
+  {min:102,max:107,label:'Compagnie Maritime Internationale',tag:'ARMEMENT INTERNATIONAL',
+   emojis:['⚓','🚢','🌍','💰','📊','🏆','⛵','🌊','🗺️','🦁'],
+   slogans:["Nos bateaux votre argent notre gloire","Le port nous appartient en grande partie","Armateurs depuis peu mais avec conviction"]},
+  {min:102,max:107,label:'Groupe Shipbuilding Mediterranee',tag:'CONSTRUCTION NAVALE',
+   emojis:['🚢','🏗️','⚙️','🔩','🔧','🌊','⚓','🏭','💪','⭐'],
+   slogans:["On construit des navires pas des excuses","Chaque bateau est une oeuvre et un business","La cale seche c est notre bureau principal"]},
+  {min:102,max:107,label:'Terminal a Conteneurs International',tag:'MANUTENTION PORTUAIRE',
+   emojis:['📦','🏗️','🚢','⚙️','🚛','📊','🌍','🔄','🏭','⚓'],
+   slogans:["Des conteneurs a perte de vue c est le notre","Le plus grand terminal du coin presque","On deplace des millions de tonnes par passion"]},
+
+  // ── TIER 18 (108-113) ──
+  {min:108,max:113,label:'Conglomerat Portuaire',tag:'HOLDING DIVERSIFIE',
+   emojis:['💰','💎','💹','📈','🏦','🤑','💳','🏛️','🪙','💲'],
+   slogans:["On possede ce qu on ne voit pas","Nos filiales font le travail","L argent ne dort jamais ici"]},
+  {min:108,max:113,label:'Groupe Armateur Europeen',tag:'ARMEMENT EUROPEEN',
+   emojis:['🌍','🚢','⚓','💰','🏆','🌊','📊','🛳️','💼','👑'],
+   slogans:["L Europe est notre mer interieure","Nos pavillons sur toutes les mers ou presque","Du Havre a Marseille on domine discretement"]},
+  {min:108,max:113,label:'Fonds d Investissement Maritime',tag:'FINANCE MARITIME',
+   emojis:['💹','🏦','💰','📈','💎','🔐','💳','🏛️','🌍','💼'],
+   slogans:["On investit dans ce que les autres n osent pas","L argent maritime se multiplie ici","Portfolio maritime diversifie et secretement rentable"]},
+
+  // ── TIER 19 (114+) ──
+  {min:114,max:999,label:'Empire Mediterraneen',tag:'DOMINATION TOTALE',
+   emojis:['👑','💎','🌍','⚡','🦁','🏰','🔱','⭐','🪄','✨'],
+   slogans:["Le port c est nous et ca se sait","L empire ne dort jamais meme le dimanche","On ne negocie pas on dicte les termes"]},
+  {min:114,max:999,label:'Holding Maritime Mondial',tag:'EMPIRE FINANCIER',
+   emojis:['🌍','💰','👑','🏦','💹','🏰','💎','⭐','🔱','🌐'],
+   slogans:["On possede des ports que vous avez vus en reve","Notre patrimoine maritime est incalculable","Le monde entier est notre zone d influence"]},
+  {min:114,max:999,label:'Groupe Le Magnifique du Port',tag:'LEGENDE PORTUAIRE',
+   emojis:['🏆','👑','🦁','💪','🌟','🎯','⭐','🔱','💎','🪄'],
+   slogans:["Les autres font des affaires nous faisons l histoire","Gege lui-meme nous demande des conseils","Le port de Marseille porte notre nom en secret"]},
+];
+
+
+
+var COMMENTS=[
+  "Cliniquement remarquable. Les mouettes vous ont accorde leur pitie.",
+  "T avez essaye, c est ce qui compte. Le port aussi fait des efforts.",
+  "Un taxi qui coule, c est deja du courage d avoir essaye.",
+  "Le kebab sera votre royaume. Gege est client fidele.",
+  "Nettoyage c est noble. Surtout quand c est pour les autres.",
+  "L import export de l inutile, c est quand meme un business.",
+  "Des palettes vides mais une ame pleine. Belle philosophie.",
+  "La securite c est serieux. Vous dormez mais vous etes la.",
+  "BTP du port. Ca construit, ca tombe, ca reconstruit. La vie.",
+  "La restauration portuaire. Ni Michelin ni catastrophe. Quelque part entre les deux.",
+  "Agence maritime regionale. Le tourisme c est l avenir parait-il.",
+  "Transitaire. Le heros de l ombre qui fait les formulaires.",
+  "Transport cotier. La Mediterranee n a pas de secret pour vous.",
+  "Import export international. Le monde vous appartient presque.",
+  "Assurance et logistique. Les risques vous les gerez avec le sourire.",
+  "Groupe logistique. On optimise tout sauf les pauses cafe.",
+  "Ingenierie navale. Vous impressionnez meme les experts.",
+  "Compagnie maritime internationale. Le port vous doit des excuses.",
+  "Conglomerat portuaire. Vous possedez des choses que vous n avez pas vues.",
+  "Erreur systeme. Aucun humain ne devrait scorer ca. Etes-vous Fouinfouin ?",
+];
+
+
+function getType(qi){
+  var matching=[];
+  for(var i=0;i<TYPES.length;i++){
+    if(qi>=TYPES[i].min&&qi<=TYPES[i].max)matching.push(i);
+  }
+  if(matching.length===0)return TYPES.length-1;
+  return matching[Math.floor(Math.random()*matching.length)];
+}
+function getComment(qi){var idx=Math.min(19,Math.floor(qi/6));return COMMENTS[idx];}
+function genName(typeLabel,username){
+  var prefixes=['Les','Cie','Groupe','Sarl','Sas'];
+  var p=prefixes[Math.floor(Math.random()*prefixes.length)];
+  var u=username.slice(0,10);
+  var n=p+' '+u;
+  if(n.length>25)n=n.slice(0,25);
+  return n;
+}
+
+function fmtM(n){return n>=1000000?(n/1000000).toFixed(1)+'M€':n>=1000?Math.floor(n/1000)+'k€':Math.floor(n)+'€';}
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function show(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');}
+
+// ══ MINI-JEUX DOCKER ══
+var QUESTIONS = [
+  {type:'minijeu', num:1, name:'CHARGE LE CARGO'},
+  {type:'minijeu', num:2, name:'L ANCRE PARFAITE'},
+  {type:'minijeu', num:3, name:'GRUE EN FOLIE'},
+  {type:'minijeu', num:4, name:'TRI DES SARDINES'},
+  {type:'minijeu', num:5, name:'BON DE LIVRAISON'},
+  {type:'minijeu', num:6, name:'EVITE LA VAGUE'},
+  {type:'minijeu', num:7, name:'PAUSE SYNDICALE'},
+  {type:'minijeu', num:8, name:'L APPEL D OFFRES'},
+  {type:'minijeu', num:9, name:'REPARE LA GRUE'},
+  {type:'minijeu', num:10, name:'PARI DU DOCKER'},
+];
+
+var qStep=0, qScore=0;
+
+function startTest(){
+  qStep=0;qScore=0;
+  show('s-test');
+  renderQ();
+}
+
+function updateProgress(){
+  var pct=Math.round((qStep/10)*100);
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('test-title').textContent='EPREUVE '+(qStep+1)+'/10';
+  document.getElementById('prog-label').textContent=QUESTIONS[qStep]?QUESTIONS[qStep].name:'';
+  document.getElementById('score-live').textContent='Score: '+qScore;
+}
+
+function nextQ(pts){
+  qScore+=Math.max(0,pts);
+  document.getElementById('score-live').textContent='Score: '+qScore;
+  qStep++;
+  if(qStep>=10){finishTest();return;}
+  setTimeout(renderQ,700);
+}
+
+function renderQ(){
+  updateProgress();
+  var body=document.getElementById('test-body');
+  body.innerHTML='';
+  var n=qStep+1;
+  if(n===1) mj1(body);
+  else if(n===2) mj2(body);
+  else if(n===3) mj3(body);
+  else if(n===4) mj4(body);
+  else if(n===5) mj5(body);
+  else if(n===6) mj6(body);
+  else if(n===7) mj7(body);
+  else if(n===8) mj8(body);
+  else if(n===9) mj9(body);
+  else if(n===10) mj10(body);
+}
+
+/* ─────────────────────────────
+   MJ1 — CHARGE LE CARGO
+   Caisses tombent, tap pour les attraper
+───────────────────────────────*/
+function mj1(body){
+  var caught=0, total=8, active=[], done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">CHARGE LE CARGO 🚢</div>'
+    +'<div class="mini-sub">Tape les caisses avant qu elles tombent !</div>'
+    +'<div id="mj1-zone" style="width:300px;height:220px;background:rgba(255,255,255,.03);border:2px solid rgba(255,255,255,.08);border-radius:10px;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;bottom:0;left:0;right:0;height:20px;background:rgba(139,90,43,.4);border-radius:0 0 8px 8px"></div>'
+    +'<div id="mj1-score" style="position:absolute;top:8px;right:10px;font-family:Bebas Neue,sans-serif;font-size:18px;color:#fbbf24">0/'+total+'</div>'
+    +'</div></div>';
+  function spawnBox(){
+    if(done)return;
+    var zone=document.getElementById('mj1-zone');
+    if(!zone)return;
+    var box=document.createElement('div');
+    var x=20+Math.random()*220;
+    var emoji=['📦','🪣','⚓'][Math.floor(Math.random()*3)];
+    box.innerHTML=emoji;
+    box.style.cssText='position:absolute;top:-40px;left:'+x+'px;font-size:28px;cursor:pointer;transition:top 2s linear;user-select:none;z-index:2';
+    box.onclick=function(){
+      if(box.dataset.caught)return;
+      box.dataset.caught='1';
+      caught++;
+      document.getElementById('mj1-score').textContent=caught+'/'+total;
+      box.style.transform='scale(1.4)';
+      box.style.opacity='0';
+      setTimeout(function(){if(box.parentNode)box.parentNode.removeChild(box);},200);
+    };
+    zone.appendChild(box);
+    setTimeout(function(){box.style.top='190px';},50);
+    setTimeout(function(){if(box.parentNode&&!box.dataset.caught)box.parentNode.removeChild(box);},2200);
+  }
+  var spawned=0;
+  var iv=setInterval(function(){
+    if(done){clearInterval(iv);return;}
+    spawnBox();spawned++;
+    if(spawned>=total){clearInterval(iv);}
+  },600);
+  setTimeout(function(){
+    done=true;clearInterval(iv);
+    var pts=caught>=7?12:caught>=5?10:caught>=3?7:caught>=1?4:0;
+    nextQ(pts);
+  },5500);
+}
+
+/* ─────────────────────────────
+   MJ2 — L'ANCRE PARFAITE
+   Barre qui oscille, tap dans la zone verte
+───────────────────────────────*/
+function mj2(body){
+  var attempts=3, score=0, done=false, pos=0, dir=1, speed=1.8;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=14px;width:100%">'
+    +'<div class="mini-title">L ANCRE PARFAITE ⚓</div>'
+    +'<div class="mini-sub">Jette l ancre dans la zone verte !</div>'
+    +'<div id="mj2-attempts" style="font-family:Bebas Neue,sans-serif;font-size:14px;color:rgba(255,255,255,.5);letter-spacing:2px;margin:8px 0">3 TENTATIVES</div>'
+    +'<div style="width:280px;height:30px;background:rgba(255,255,255,.06);border-radius:15px;position:relative;overflow:hidden;margin:8px 0">'
+    +'<div style="position:absolute;left:35%;width:30%;height:100%;background:rgba(34,197,94,.3);border-radius:15px"></div>'
+    +'<div id="mj2-cursor" style="position:absolute;top:2px;width:26px;height:26px;background:#cc1a1a;border-radius:50%;transition:none;font-size:14px;display:flex;align-items:center;justify-content:center">⚓</div>'
+    +'</div>'
+    +'<button class="opt-btn" style="font-size:20px;padding:16px 32px" onclick="anchor()">JETER ⚓</button>'
+    +'<div id="mj2-fb" style="font-size:14px;color:#4ade80;min-height:20px;margin-top:4px"></div>'
+    +'</div>';
+  var cursor=document.getElementById('mj2-cursor');
+  var raf;
+  function animate(){
+    if(done)return;
+    pos+=dir*speed;
+    if(pos>254||pos<0){dir*=-1;}
+    cursor.style.left=pos+'px';
+    raf=requestAnimationFrame(animate);
+  }
+  animate();
+  window.anchor=function(){
+    if(done)return;
+    var inZone=pos>=98&&pos<=182;
+    if(inZone){score+=4;document.getElementById('mj2-fb').textContent='✅ Dans la zone !';}
+    else{document.getElementById('mj2-fb').textContent='❌ Rate !';}
+    attempts--;
+    document.getElementById('mj2-attempts').textContent=attempts+' TENTATIVE'+(attempts>1?'S':'');
+    if(attempts<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
+    else{setTimeout(function(){document.getElementById('mj2-fb').textContent='';},600);}
+  };
+}
+
+/* ─────────────────────────────
+   MJ3 — GRUE EN FOLIE
+   Grue balance, tap quand la caisse est au-dessus du bateau
+───────────────────────────────*/
+function mj3(body){
+  var score=0, tries=4, done=false, angle=0, dir=1;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">GRUE EN FOLIE 🏗️</div>'
+    +'<div class="mini-sub">Lâche la caisse sur le bateau !</div>'
+    +'<canvas id="mj3-canvas" width="300" height="200" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
+    +'<button class="opt-btn" style="font-size:16px;padding:12px 28px" onclick="lacheCaisse()">LÂCHER 📦</button>'
+    +'<div id="mj3-fb" style="font-size:13px;min-height:20px"></div></div>';
+  var cv=document.getElementById('mj3-canvas');
+  var ctx=cv.getContext('2d');
+  function draw(){
+    ctx.clearRect(0,0,300,200);
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,200);
+    // Bateau fixe
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(80,155,140,25);
+    ctx.fillStyle='#0ea5e9';ctx.fillRect(120,140,60,15);
+    ctx.fillText('🚢',120,165);
+    // Pivot grue
+    var cx=150,cy=40;
+    var armLen=80;
+    var rad=angle*(Math.PI/180);
+    var ex=cx+Math.cos(rad)*armLen;
+    var ey=cy+Math.sin(rad)*armLen;
+    ctx.strokeStyle='#d4af37';ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);ctx.stroke();
+    ctx.fillStyle='#d4af37';ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fill();
+    // Caisse
+    ctx.font='18px serif';ctx.fillText('📦',ex-9,ey+10);
+    // Zone cible
+    ctx.strokeStyle='rgba(34,197,94,.3)';ctx.lineWidth=1;
+    ctx.strokeRect(90,138,120,18);
+  }
+  var raf;
+  function loop(){
+    if(done)return;
+    angle+=dir*1.5;
+    if(angle>70||angle<-70)dir*=-1;
+    draw();raf=requestAnimationFrame(loop);
+  }
+  loop();
+  window.lacheCaisse=function(){
+    if(done||tries<=0)return;
+    var cx=150,cy=40,armLen=80,rad=angle*(Math.PI/180);
+    var bx=cx+Math.cos(rad)*armLen;
+    var inZone=bx>=90&&bx<=210;
+    tries--;
+    if(inZone){score+=3;document.getElementById('mj3-fb').style.color='#4ade80';document.getElementById('mj3-fb').textContent='✅ Sur le bateau !';}
+    else{document.getElementById('mj3-fb').style.color='#f87171';document.getElementById('mj3-fb').textContent='❌ A l eau !';}
+    if(tries<=0){done=true;cancelAnimationFrame(raf);nextQ(Math.min(12,score));}
+  };
+}
+
+/* ─────────────────────────────
+   MJ4 — TRI DES SARDINES
+   Tap la bonne catégorie quand la sardine apparaît
+───────────────────────────────*/
+function mj4(body){
+  var categories=['🐟 PETITE','🐟 GROSSE','🦞 CRUSTACE','🗑️ POURRIE'];
+  var items=[
+    {emoji:'🐟',size:'s',correct:0},{emoji:'🐟',size:'l',correct:1},
+    {emoji:'🦞',size:'m',correct:2},{emoji:'🐠',size:'s',correct:0},
+    {emoji:'🐡',size:'l',correct:1},{emoji:'🦐',size:'s',correct:2},
+    {emoji:'💀',size:'r',correct:3},{emoji:'🐟',size:'l',correct:1},
+  ];
+  var idx=0,score=0,done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
+    +'<div class="mini-title">TRI DES SARDINES 🐟</div>'
+    +'<div class="mini-sub">Mets chaque poisson dans la bonne case !</div>'
+    +'<div id="mj4-fish" style="font-size:52px;min-height:60px;display:flex;align-items:center;justify-content:center"></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%">'
+    +categories.map(function(c,i){return '<button class="opt-btn" style="font-size:11px;padding:12px 6px" onclick="sortFish('+i+')">'+c+'</button>';}).join('')
+    +'</div>'
+    +'<div id="mj4-prog" style="font-size:10px;color:rgba(255,255,255,.3)">0/'+items.length+'</div>'
+    +'</div>';
+  function showNext(){
+    if(done||idx>=items.length)return;
+    document.getElementById('mj4-fish').textContent=items[idx].emoji;
+    document.getElementById('mj4-prog').textContent=idx+'/'+items.length;
+  }
+  showNext();
+  window.sortFish=function(choice){
+    if(done)return;
+    var correct=items[idx].correct===choice;
+    if(correct)score+=1.5;
+    var fish=document.getElementById('mj4-fish');
+    fish.style.transform=correct?'scale(1.3) rotate(10deg)':'scale(.7)';
+    fish.style.opacity='0';
+    setTimeout(function(){
+      fish.style.transform='';fish.style.opacity='1';
+      idx++;
+      if(idx>=items.length){done=true;nextQ(Math.round(Math.min(12,score)));}
+      else showNext();
+    },300);
+  };
+}
+
+/* ─────────────────────────────
+   MJ5 — BON DE LIVRAISON
+   Mémoriser 3 infos d'un bon de livraison
+───────────────────────────────*/
+function mj5(body){
+  var data={date:'14/03',poids:'2.4T',conteneur:'BDK-447'};
+  var phase='show';
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
+    +'<div class="mini-title">BON DE LIVRAISON 📋</div>'
+    +'<div class="mini-sub">Memorise le bon, il disparait dans 3s !</div>'
+    +'<div id="mj5-card" style="background:#fffde7;border:2px solid #f59e0b;border-radius:10px;padding:16px;width:100%;text-align:left">'
+    +'<div style="font-weight:800;color:#0f172a;margin-bottom:8px;font-size:11px;letter-spacing:2px">BON DE LIVRAISON N°2047</div>'
+    +'<div style="font-size:12px;color:#374151;line-height:1.8">'
+    +'📅 Date : <strong>'+data.date+'</strong><br>'
+    +'⚖️ Poids : <strong>'+data.poids+'</strong><br>'
+    +'📦 Conteneur : <strong>'+data.conteneur+'</strong>'
+    +'</div></div>'
+    +'<div id="mj5-questions" style="width:100%;display:none"></div>'
+    +'</div>';
+  var correct=0;
+  setTimeout(function(){
+    var card=document.getElementById('mj5-card');
+    if(card)card.style.display='none';
+    var qz=document.getElementById('mj5-questions');
+    if(!qz)return;
+    qz.style.display='block';
+    var questions=[
+      {q:'Quelle etait la date ?',opts:['12/03','14/03','17/03','21/03'],correct:1},
+      {q:'Quel etait le poids ?',opts:['1.8T','3.1T','2.4T','4.0T'],correct:2},
+      {q:'Quel etait le conteneur ?',opts:['BDK-447','BDX-274','BDK-474','BKD-447'],correct:0},
+    ];
+    var qi=0;
+    function showQ(){
+      if(qi>=questions.length){nextQ(Math.min(12,correct*4));return;}
+      var q=questions[qi];
+      qz.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;margin-bottom:10px;text-align:center">'+q.q+'</div>'
+        +'<div class="emoji-options">'
+        +q.opts.map(function(o,i){return '<button class="opt-btn" style="font-size:12px" onclick="ansQ('+i+','+q.correct+')">'+o+'</button>';}).join('')
+        +'</div>';
+    }
+    window.ansQ=function(choice,corr){
+      document.querySelectorAll('#mj5-questions .opt-btn').forEach(function(b){b.disabled=true;});
+      if(choice===corr)correct++;
+      qi++;setTimeout(showQ,400);
+    };
+    showQ();
+  },3000);
+}
+
+/* ─────────────────────────────
+   MJ6 — EVITE LA VAGUE
+   Tap pour sauter par dessus les vagues
+───────────────────────────────*/
+function mj6(body){
+  var score=0,wavesDone=0,totalWaves=4,jumping=false,done=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">'
+    +'<div class="mini-title">EVITE LA VAGUE 🌊</div>'
+    +'<div class="mini-sub">Tape pour sauter au bon moment !</div>'
+    +'<canvas id="mj6-cv" width="300" height="160" style="border:2px solid rgba(255,255,255,.08);border-radius:10px"></canvas>'
+    +'<div id="mj6-score" style="font-family:Bebas Neue,sans-serif;font-size:16px;color:#4ade80">0 saut(s) reussi(s)</div>'
+    +'</div>';
+  var cv=document.getElementById('mj6-cv');
+  var ctx=cv.getContext('2d');
+  var dockerY=120,dockerJump=0,waveX=320,waveActive=false;
+  function draw(){
+    ctx.clearRect(0,0,300,160);
+    ctx.fillStyle='#0f172a';ctx.fillRect(0,0,300,160);
+    ctx.fillStyle='#1e3a5f';ctx.fillRect(0,135,300,25);
+    // Docker
+    ctx.font='24px serif';ctx.fillText('🧔',30,dockerY);
+    // Vague
+    if(waveActive){ctx.font='22px serif';ctx.fillText('🌊',waveX,130);}
+    // Score
+    ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='bold 11px Inter,sans-serif';
+    ctx.fillText(wavesDone+'/'+totalWaves+' vagues',200,20);
+  }
+  cv.onclick=function(){
+    if(done||jumping)return;
+    jumping=true;
+    var up=setInterval(function(){dockerY-=8;if(dockerY<=70){clearInterval(up);var dn=setInterval(function(){dockerY+=8;if(dockerY>=120){dockerY=120;jumping=false;clearInterval(dn);}},30);}},30);
+  };
+  function launchWave(){
+    if(done)return;
+    waveX=320;waveActive=true;
+    var iv=setInterval(function(){
+      waveX-=5;
+      var dockerFeet=dockerY;
+      if(waveX<=60&&waveX>=30){
+        if(dockerFeet>100){score=Math.max(0,score-1);}
+        else{score+=3;}
+        waveActive=false;waveX=320;clearInterval(iv);
+        wavesDone++;
+        if(wavesDone>=totalWaves){done=true;nextQ(Math.min(12,score));}
+        else{setTimeout(launchWave,800);}
+      }
+    },30);
+  }
+  var raf2;
+  function loop2(){if(done)return;draw();raf2=requestAnimationFrame(loop2);}
+  loop2();
+  setTimeout(launchWave,1000);
+}
+
+/* ─────────────────────────────
+   MJ7 — PAUSE SYNDICALE
+   Ne pas toucher l'écran pendant 6 secondes
+───────────────────────────────*/
+function mj7(body){
+  var failed=false,countdown=6;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap=16px;width:100%;padding:20px" id="mj7-wrap">'
+    +'<div class="mini-title">PAUSE SYNDICALE ☕</div>'
+    +'<div class="mini-sub">Ne touche PAS l ecran pendant 6 secondes !</div>'
+    +'<div id="mj7-count" style="font-family:Bebas Neue,sans-serif;font-size:64px;color:#fbbf24;margin:20px 0">6</div>'
+    +'<div style="font-size:28px" id="mj7-icon">😤</div>'
+    +'<div id="mj7-msg" style="font-size:12px;color:rgba(255,255,255,.4);margin-top:8px">Gege surveille...</div>'
+    +'</div>';
+  document.getElementById('mj7-wrap').addEventListener('click',function(){
+    if(failed)return;
+    failed=true;
+    clearInterval(iv);
+    document.getElementById('mj7-count').textContent='😱';
+    document.getElementById('mj7-icon').textContent='😡';
+    document.getElementById('mj7-msg').textContent='GEGE EST FURIEUX !';
+    document.getElementById('mj7-msg').style.color='#f87171';
+    setTimeout(function(){nextQ(0);},1500);
+  });
+  var iv=setInterval(function(){
+    countdown--;
+    var el=document.getElementById('mj7-count');
+    if(el)el.textContent=countdown;
+    if(countdown<=0){
+      clearInterval(iv);
+      var ic=document.getElementById('mj7-icon');
+      if(ic)ic.textContent='😴';
+      var mg=document.getElementById('mj7-msg');
+      if(mg){mg.textContent='Bravo, t as resiste !';mg.style.color='#4ade80';}
+      setTimeout(function(){nextQ(12);},1000);
+    }
+  },1000);
+}
+
+/* ─────────────────────────────
+   MJ8 — L'APPEL D'OFFRES
+   3 contrats, trouver le plus rentable
+───────────────────────────────*/
+function mj8(body){
+  var contrats=[
+    {nom:'CMA CGM',   prix:45000, delai:3, poids:12},
+    {nom:'Bolloré',   prix:38000, delai:2, poids:8},
+    {nom:'MSC Lines', prix:52000, delai:5, poids:15},
+  ];
+  // Rentabilité = prix / (delai * poids)
+  var rents=contrats.map(function(c){return c.prix/(c.delai*c.poids);});
+  var best=rents.indexOf(Math.max.apply(null,rents));
+  var shown=false;
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:320px">'
+    +'<div class="mini-title">L APPEL D OFFRES 💼</div>'
+    +'<div class="mini-sub">Memorise les 3 contrats (4s) puis choisis le plus rentable !</div>'
+    +'<div id="mj8-cards" style="display:flex;flex-direction:column;gap:6px;width:100%">'
+    +contrats.map(function(c){
+      return '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 12px;font-size:11px;color:rgba(255,255,255,.7)">'
+      +'<strong style="color:white">'+c.nom+'</strong> — '+c.prix.toLocaleString()+'€ · '+c.delai+'j · '+c.poids+'T</div>';
+    }).join('')
+    +'</div>'
+    +'<div id="mj8-q" style="width:100%;display:none"></div>'
+    +'</div>';
+  setTimeout(function(){
+    var cards=document.getElementById('mj8-cards');
+    if(cards)cards.style.display='none';
+    var q=document.getElementById('mj8-q');
+    if(!q)return;
+    q.style.display='block';
+    q.innerHTML='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:white;letter-spacing:1px;text-align:center;margin-bottom:10px">LEQUEL EST LE PLUS RENTABLE ?</div>'
+      +'<div style="display:flex;flex-direction:column;gap:6px">'
+      +contrats.map(function(c,i){
+        return '<button class="opt-btn" style="font-size:13px;text-align:left" onclick="pickContrat('+i+','+best+')">'+c.nom+'</button>';
+      }).join('')
+      +'</div>';
+  },4000);
+  window.pickContrat=function(choice,correct){
+    document.querySelectorAll('#mj8-q .opt-btn').forEach(function(b){b.disabled=true;});
+    nextQ(choice===correct?12:0);
+  };
+}
+
+/* ─────────────────────────────
+   MJ9 — REPARE LA GRUE
+   Retrouver les 3 cases en panne
+───────────────────────────────*/
+function mj9(body){
+  var pannes=[], selected=[], done=false;
+  while(pannes.length<3){
+    var r=Math.floor(Math.random()*9);
+    if(pannes.indexOf(r)<0)pannes.push(r);
+  }
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%;max-width:320px">'
+    +'<div class="mini-title">REPARE LA GRUE 🔧</div>'
+    +'<div class="mini-sub">Memorise les 3 pannes (2s) puis retrouve-les !</div>'
+    +'<div id="mj9-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%"></div>'
+    +'<div id="mj9-msg" style="font-size:11px;color:rgba(255,255,255,.4)">Observe...</div>'
+    +'</div>';
+  function renderGrid(reveal){
+    var g=document.getElementById('mj9-grid');
+    if(!g)return;
+    g.innerHTML='';
+    for(var i=0;i<9;i++){
+      var btn=document.createElement('div');
+      var isPanne=pannes.indexOf(i)>=0;
+      var isSel=selected.indexOf(i)>=0;
+      if(reveal){
+        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isPanne?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isPanne?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+'';
+        btn.textContent=isPanne?'🔴':'⚙️';
+      } else {
+        btn.style.cssText='height:60px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;border:2px solid '+(isSel?'#f87171':'rgba(255,255,255,.08)')+';background:'+(isSel?'rgba(239,68,68,.15)':'rgba(255,255,255,.04)')+';cursor:pointer';
+        btn.textContent=isSel?'🔴':'⚙️';
+        btn.onclick=(function(idx){return function(){
+          if(done)return;
+          var si=selected.indexOf(idx);
+          if(si>=0)selected.splice(si,1);else if(selected.length<3)selected.push(idx);
+          renderGrid(false);
+          if(selected.length===3){
+            done=true;
+            var ok=pannes.filter(function(p){return selected.indexOf(p)>=0;}).length;
+            nextQ(ok===3?12:ok===2?8:ok===1?4:0);
+          }
+        };})(i);
+      }
+      g.appendChild(btn);
+    }
+  }
+  renderGrid(true);
+  setTimeout(function(){
+    renderGrid(false);
+    var msg=document.getElementById('mj9-msg');
+    if(msg)msg.textContent='Retrouve les 3 pannes !';
+  },2000);
+}
+
+/* ─────────────────────────────
+   MJ10 — PARI DU DOCKER
+   Doubler ou garder son score
+───────────────────────────────*/
+function mj10(body){
+  body.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;text-align:center;padding:10px">'
+    +'<div class="mini-title">PARI DU DOCKER 🎲</div>'
+    +'<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5">Ton score actuel :<br>'
+    +'<span style="font-family:Bebas Neue,sans-serif;font-size:40px;color:#fbbf24">'+qScore+' pts</span></div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Gege te propose un pari :<br>Pile → +12 pts | Face → -6 pts</div>'
+    +'<div style="display:flex;gap:10px;width:100%">'
+    +'<button class="opt-btn" style="flex:1;font-size:14px;background:rgba(34,197,94,.15);border-color:#22c55e;color:#4ade80" onclick="doPari(true)">JE PARIE 🎲</button>'
+    +'<button class="opt-btn" style="flex:1;font-size:14px" onclick="doPari(false)">JE GARDE 🛡️</button>'
+    +'</div>'
+    +'<div id="mj10-result" style="font-size:13px;min-height:20px"></div>'
+    +'</div>';
+  window.doPari=function(parie){
+    document.querySelectorAll('#s-test .opt-btn').forEach(function(b){b.disabled=true;});
+    if(!parie){nextQ(0);return;}
+    var coin=Math.random()<0.5;
+    var res=document.getElementById('mj10-result');
+    if(res){
+      res.textContent=coin?'⚡ PILE ! +12 pts !':'💀 FACE ! -6 pts...';
+      res.style.color=coin?'#4ade80':'#f87171';
+    }
+    setTimeout(function(){nextQ(coin?12:-6);},1500);
+  };
+}
+
+
+// ══ FIN TEST ══
+function finishTest(){
+  qi=Math.min(120,qScore);
+  typeIdx=getType(qi);
+  var t=TYPES[typeIdx];
+  companyName=genName(t.label,username);
+  selectedEmoji=t.emojis[0];
+  selectedSlogan=t.slogans[0];
+
+  document.getElementById('res-qi').textContent=qi;
+  document.getElementById('res-comment').textContent=getComment(qi);
+  document.getElementById('res-type-emoji').textContent=selectedEmoji;
+  document.getElementById('res-type-name').textContent=t.label.toUpperCase();
+  document.getElementById('res-type-tag').textContent=t.tag;
+  document.getElementById('res-name-reveal').textContent='"'+companyName+'"';
+  show('s-result');
+}
+
+// ══ PERSO ══
+function goPerso(){
+  var t=TYPES[typeIdx];
+  // Emoji grid
+  var g=document.getElementById('emoji-grid');
+  g.innerHTML=t.emojis.map(function(e,i){
+    return '<div class="ep-emoji'+(i===0?' selected':'')+'" onclick="selectEmoji(\''+e+'\',this)">'+e+'</div>';
+  }).join('');
+  // Slogans
+  var so=document.getElementById('slogan-opts');
+  so.innerHTML=t.slogans.map(function(s,i){
+    return '<div class="slogan-opt'+(i===0?' selected':'')+'" onclick="selectSlogan(\''+s+'\',this)">'+s+'</div>';
+  }).join('');
+  updatePreview();
+  show('s-perso');
+}
+
+function selectEmoji(e,el){
+  document.querySelectorAll('.ep-emoji').forEach(function(x){x.classList.remove('selected');});
+  el.classList.add('selected');
+  selectedEmoji=e;
+  updatePreview();
+}
+function updateColor(v){
+  selectedColor=v;
+  updatePreview();
+}
+function selectSlogan(s,el){
+  document.querySelectorAll('.slogan-opt').forEach(function(x){x.classList.remove('selected');});
+  el.classList.add('selected');
+  selectedSlogan=s;
+  
+  
+  updatePreview();
+}
+function updatePreview(){
+  document.getElementById('preview-card').style.background=selectedColor;
+  document.getElementById('prev-emoji').textContent=selectedEmoji;
+  document.getElementById('prev-name').textContent=companyName;
+  document.getElementById('prev-type').textContent=TYPES[typeIdx].tag;
+  document.getElementById('prev-slogan').textContent=selectedSlogan||'Votre slogan ici';
+}
+
+// ══ CRÉER ══
+async function confirmCreate(){
+  if(money<100000){toast('Solde insuffisant !');return;}
+  var btn=document.querySelector('.btn-confirm');
+  btn.disabled=true;btn.textContent='CREATION...';
+  try{
+    var newMoney=money-100000;
+    // Sauvegarder dans companies
+    var {error:e1}=await sb.from('companies').insert({
+      user_id:currentUser.id,
+      name:companyName,
+      nom:companyName,
+      type_id:typeIdx,
+      emoji:selectedEmoji,
+      color:selectedColor,
+      slogan:selectedSlogan,
+      valeur:100000,
+      niveau:1
+    });
+    if(e1){toast('Erreur: '+e1.message);btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';return;}
+    // Deduire argent
+    await sb.from('game_stats').update({money:newMoney,commerce:{created:true,invest:0,last_collect:new Date().toISOString()}}).eq('user_id',currentUser.id);
+    money=newMoney;
+    toast('Entreprise creee !');
+    setTimeout(function(){loadDashboard();},800);
+  }catch(e){toast('Erreur');btn.disabled=false;btn.textContent='CREER MON ENTREPRISE — 100 000€';}
+}
+
+// ══ WEEK HELPER ══
+function _weekNum(){var d=new Date();var o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
+
+// ══ ZONE REVENUE HELPER ══
+var ZONE_REVS={quai_nord:100,hangar_sud:180,zone_frigo:280,terminal:420,docks:650,zone_com:900};
+var ZONE_KW={quai_nord:['LOGISTIQUE','MANUTENTION','HUB','CHAINE'],hangar_sud:['COMMERCE','DISTRIBUTION','STOCKAGE','GROS'],zone_frigo:['ALIMENTAIRE','FROID','POISSONNERIE','RESTAURATION','GASTRONOMIE','SNACK','CAFE'],terminal:['TRANSPORT','NAUTIQUE','MARITIME','COTIER','BATEAUX','ARMEMENT','LACUSTRE'],docks:['CONSTRUCTION','TECHNIQUE','FABRICATION','NAVALE','REHABILITATION','REPARATION','INGENIERIE'],zone_com:['SERVICES','RESTAURATION','CAFE','LOISIRS','EVENEMENT','GASTRONOMIE','ARTISAN']};
+function calcZoneRev(zones,tag){var total=0;if(!zones)return 0;Object.keys(zones).forEach(function(id){var z=zones[id];if(!z||!z.level)return;if(z.fused_with&&z.level<6)return;var base=ZONE_REVS[id]||0;var mult=z.level>=6?15:z.level;var bonus=(ZONE_KW[id]||[]).some(function(k){return(tag||'').toUpperCase().indexOf(k)!==-1;});total+=Math.floor(base*mult*(bonus?1.5:1));});return total;}
+
+// ══ DASHBOARD ══
+async function loadDashboard(){
+  var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
+  if(!co)return;
+  var t=TYPES[co.type_id]||TYPES[0];
+  var {data:gs}=await sb.from('game_stats').select('commerce,last_seen').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+
+  // ── Calcul employés ──
+  com = calcEmployees(com, gs&&gs.last_seen);
+
+  // ── Calcul clients ──
+  var clients = calcClients(com, co.type_id, co.valeur||0, gs&&gs.last_seen);
+  if(eSatisMult>1&&com.clients){com.clients.satisfaction=Math.min(100,(com.clients.satisfaction||75)*(eSatisMult));}
+  com.clients = clients;
+
+  // ── Calcul réputation ──
+  var reput = calcReputation(com, co.type_id, gs&&gs.last_seen);
+  com.reputation = reput;
+
+  // ── Revenus avec multiplicateurs ──
+  var baseRev=Math.floor((co.valeur||0)*0.002);
+  var zRev=calcZoneRev(com.zones||{},t.tag);
+  var cMult = clientsRevMult(clients);
+  var rMult = reputRevMult(reput);
+  var eMult = employeesRevMult(com.employees);
+  var eSatisMult = employeesSatisMult(com.employees);
+  var rev=Math.floor((baseRev+zRev)*cMult*rMult*eMult);
+
+  document.getElementById('dash-hero').style.background=co.color||'#cc1a1a';
+  document.getElementById('dash-emoji').textContent=co.emoji||'🏪';
+  document.getElementById('dash-name').textContent=co.nom||'Mon Entreprise';
+  document.getElementById('dash-type').textContent=t.tag;
+  document.getElementById('dash-slogan').textContent=co.slogan||'';
+  document.getElementById('dash-valeur').textContent=fmtM(co.valeur||0);
+  document.getElementById('dash-revenus').textContent=fmtM(rev)+'/H';
+  document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
+
+  // ── Collecte ──
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var elapsed=Math.min((Date.now()-last)/3600000, 24); // max 24h
+  var pending=Math.floor(rev*elapsed);
+  document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
+  document.getElementById('collect-sub').textContent=pending>0?'Disponible maintenant !':'Prochaine collecte dans '+(Math.ceil(1-elapsed*60))+'min';
+
+  // ── Render clients ──
+  renderClients(clients, gs&&gs.last_seen);
+
+  // ── Render réputation ──
+  renderReputation(reput);
+
+  // ── Render employés ──
+  var gs2 = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+  renderEmployees(com, co.niveau||1, (gs2.data&&gs2.data.money)||0);
+
+  // ── Refresh contrats expirés ──
+  var now=Date.now();
+  if(co.contracts&&co.contracts.list){
+    var allExpired=co.contracts.list.every(function(ct){return new Date(ct.expires_at).getTime()<now;});
+    if(allExpired){
+      var newContracts=generateContracts();
+      sb.from('companies').update({contracts:newContracts}).eq('user_id',currentUser.id).then(function(){});
+      co.contracts=newContracts;
+      toast('📋 Nouveaux contrats disponibles !');
+    }
+  }
+  // ── Sauvegarder en background ──
+  sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
+
+  // Employes
+  com=calcEmployees(com,gs&&gs.last_seen);
+  var eMult=employeesRevMult(com.employees);
+  // Rang + Charges + Evenements
+  renderRang(co.valeur||0);
+  renderCharges(com,co.valeur||0,(gs&&gs.money)||0);
+  var evt=checkRandomEvent(com);if(evt){com=applyEvent(evt,com);renderEvent(evt);}else{var pe=com.pending_event;if(pe){var pev=EVENTS.find(function(e){return e.id===pe;});renderEvent(pev||null);}else renderEvent(null);}
+  if(com.pending_money_loss){var lgs=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();var lm=(lgs.data&&lgs.data.money)||0;await sb.from('game_stats').update({money:Math.max(0,lm-com.pending_money_loss)}).eq('user_id',currentUser.id);com.pending_money_loss=0;}
+  renderEmployees(com,co.niveau||1,(gs&&gs.money)||0);
+  show('s-dashboard');
+}
+
+async function collecterRevenus(){
+  var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
+  var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  if(!co||!gs)return;
+  var com=(gs.commerce)||{};
+  var t2=TYPES[co.type_id]||TYPES[0];
+  var baseRev2=Math.floor((co.valeur||0)*0.002);
+  var zRev2=calcZoneRev(com.zones||{},t2.tag);
+  var rev=baseRev2+zRev2;
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var elapsed=Math.min((Date.now()-last)/3600000, 24); // max 24h
+  var pending=Math.floor(rev*elapsed);
+  if(pending<1){toast('Rien a collecter encore');return;}
+  com.last_collect=new Date().toISOString();
+  com=boostReputOnCollect(com);
+  var newMoney=(gs.money||0)+pending;
+  await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
+  money=newMoney;
+  toast('💰 +'+fmtM(pending)+' collectes !');
+  loadDashboard();
+}
+
+async function investir(){
+  var amt=prompt('Combien investir ? (argent en poche: '+fmtM(money)+')');
+  amt=Math.floor(parseFloat(amt)||0);
+  if(amt<=0||amt>money){toast('Montant invalide');return;}
+  var {data:co}=await sb.from('companies').select('valeur,niveau').eq('user_id',currentUser.id).maybeSingle();
+  if(!co)return;
+  var newVal=(co.valeur||0)+amt;
+  var newNiv=Math.floor(newVal/100000)+1;
+  var newMoney=money-amt;
+  await sb.from('companies').update({valeur:newVal,niveau:newNiv}).eq('user_id',currentUser.id);
+  await sb.from('game_stats').update({money:newMoney}).eq('user_id',currentUser.id);
+  money=newMoney;
+  // Boost clients
+  com=boostClientsOnInvest(com,amt);
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+  toast('Investi '+fmtM(amt)+' ! +'+Math.floor(amt/10000)+' clients 📢');
+  // Syndicat tracking
+  try{var wk='week_'+_weekNum();var {data:_gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();var _rec=(_gs&&_gs.records)||{};_rec.syndicat=_rec.syndicat||{};_rec.syndicat[wk]=_rec.syndicat[wk]||{};_rec.syndicat[wk].invested_week=(_rec.syndicat[wk].invested_week||0)+amt;await sb.from('game_stats').update({records:_rec}).eq('user_id',currentUser.id);}catch(e){}
+  loadDashboard();
+}
+
+// ══ INIT ══
+
+
+// ══════════════════════════════════════
+// SYSTÈME RÉPUTATION & AVIS
+// ══════════════════════════════════════
+
+var AVIS_AUTEURS = [
+  {nom:'Gégé', emoji:'👨‍🦲'},
+  {nom:'Doudou', emoji:'😎'},
+  {nom:'Patrick Lavagne', emoji:'👔'},
+  {nom:'Titouan', emoji:'🧢'},
+  {nom:'Jeff', emoji:'🤙'},
+  {nom:'Marie-Jo', emoji:'👩'},
+  {nom:'Un client anonyme', emoji:'🕵️'},
+  {nom:'Le voisin', emoji:'🧓'},
+  {nom:'Mme Bonnet', emoji:'👵'},
+  {nom:'Un docker', emoji:'⚓'},
+];
+
+var AVIS_PAR_TYPE = {
+  0: { // Kebab
+    pos: ["Franchement le meilleur kebab du port", "La sauce piquante elle déchire vraiment", "Gégé m'a dit que c'est top et il a raison", "Rapide propre et copieux que demander de plus"],
+    neg: ["La viande était froide hier soir", "J'ai attendu 20 minutes pour rien", "Le pain pita trop sec franchement", "Un peu cher pour la portion"],
+    neu: ["C'est correct pour le quartier", "Rien d'exceptionnel mais ça dépanne", "Service moyen ambiance correcte"],
+  },
+  1: { // Cabinet
+    pos: ["Très professionnel je recommande vivement", "Résultats excellents au-delà de mes espérances", "Équipe sérieuse et réactive merci", "Le meilleur du port sans hésiter"],
+    neg: ["Pas de retour depuis 3 jours c'est honteux", "Tarifs trop élevés pour la qualité", "Rendez-vous annulé à la dernière minute", "Décevant par rapport à la réputation"],
+    neu: ["Correct sans plus", "Service standard rien d'exceptionnel", "Dans la moyenne du secteur"],
+  },
+  4: { // Restaurant
+    pos: ["La bouillabaisse était incroyable", "Service impeccable et cadre magnifique", "On revient chaque semaine c'est dire", "Chef talentueux plats généreux"],
+    neg: ["Trop bruyant impossible de discuter", "La carte change trop souvent on s'y perd", "Addition salée pour ce qu'on a eu", "Service lent un vendredi soir c'est non"],
+    neu: ["Cuisine honnête sans surprise", "Correct pour le prix", "On a passé un moment agréable sans plus"],
+  },
+};
+
+function getAvisTexts(typeId){
+  return AVIS_PAR_TYPE[typeId] || {
+    pos: ["Excellent service je recommande", "Très satisfait de ma commande", "Équipe professionnelle et sympathique", "Top rapport qualité prix"],
+    neg: ["Décevant pas à la hauteur", "Service lent et peu agréable", "À éviter selon moi", "Peut mieux faire vraiment"],
+    neu: ["Correct pour le quartier", "Rien d'exceptionnel mais correct", "Dans la moyenne"],
+  };
+}
+
+function genAvis(typeId, delta){
+  var auteur = AVIS_AUTEURS[Math.floor(Math.random()*AVIS_AUTEURS.length)];
+  var texts = getAvisTexts(typeId);
+  var type, stars, text;
+  if(delta > 4){ type='positive'; stars='★★★★★'; text=texts.pos[Math.floor(Math.random()*texts.pos.length)]; }
+  else if(delta > 0){ type='positive'; stars='★★★★☆'; text=texts.pos[Math.floor(Math.random()*texts.pos.length)]; }
+  else if(delta < -4){ type='negative'; stars='★☆☆☆☆'; text=texts.neg[Math.floor(Math.random()*texts.neg.length)]; }
+  else if(delta < 0){ type='negative'; stars='★★☆☆☆'; text=texts.neg[Math.floor(Math.random()*texts.neg.length)]; }
+  else { type='neutral'; stars='★★★☆☆'; text=texts.neu[Math.floor(Math.random()*texts.neu.length)]; }
+  return { auteur:auteur.nom, emoji:auteur.emoji, type:type, stars:stars, text:text, date:new Date().toISOString(), delta:delta, replied:false };
+}
+
+function calcReputation(com, typeId, lastSeen){
+  var reput = com.reputation || {};
+  var now = Date.now();
+  if(!reput.score){ reput.score=50; reput.history=[]; reput.last_update=new Date().toISOString(); }
+
+  var lastUpdate = reput.last_update ? new Date(reput.last_update).getTime() : now;
+  var hoursElapsed = (now - lastUpdate) / 3600000;
+  if(hoursElapsed < 0.5) return reput;
+
+  // Avis automatique toutes les 4-8h
+  var avisInterval = 4 + Math.random()*4;
+  if(hoursElapsed >= avisInterval){
+    var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+    var inactiveHours = (now - lastSeenMs) / 3600000;
+    // Plus inactif = plus de chances d'avis négatif
+    var negBias = Math.min(0.6, inactiveHours / 100);
+    var r = Math.random();
+    var delta;
+    if(r < 0.5 - negBias) delta = Math.floor(Math.random()*8)+1;       // positif
+    else if(r < 0.7 - negBias) delta = 0;                               // neutre
+    else delta = -(Math.floor(Math.random()*8)+1);                      // négatif
+
+    var avis = genAvis(typeId, delta);
+    reput.history = reput.history || [];
+    reput.history.unshift(avis);
+    if(reput.history.length > 10) reput.history = reput.history.slice(0,10);
+    reput.score = Math.max(0, Math.min(100, reput.score + delta));
+  }
+
+  // Dégradation passive si inactif
+  var lastSeenMs2 = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactH = (now - lastSeenMs2) / 3600000;
+  if(inactH > 24) reput.score = Math.max(0, reput.score - Math.floor(hoursElapsed * 0.3));
+
+  reput.last_update = new Date().toISOString();
+  return reput;
+}
+
+function starsFromScore(score){
+  if(score >= 85) return '★★★★★';
+  if(score >= 70) return '★★★★☆';
+  if(score >= 50) return '★★★☆☆';
+  if(score >= 30) return '★★☆☆☆';
+  return '★☆☆☆☆';
+}
+
+function reputColor(score){
+  if(score >= 75) return '#16a34a';
+  if(score >= 50) return '#d97706';
+  return '#dc2626';
+}
+
+function reputLabel(score){
+  if(score >= 85) return 'Réputation excellente';
+  if(score >= 70) return 'Bonne réputation';
+  if(score >= 50) return 'Réputation correcte';
+  if(score >= 30) return 'Réputation fragile';
+  return 'Mauvaise réputation';
+}
+
+// Multiplicateur revenus selon réputation
+function reputRevMult(reput){
+  var score = reput && reput.score || 50;
+  return Math.max(0.5, 0.7 + (score/100) * 0.6); // 0.7x à 1.3x
+}
+
+function toggleReput(){ document.getElementById('reputBody').classList.toggle('open'); }
+
+function renderReputation(reput){
+  var score = reput.score || 50;
+  var hist = reput.history || [];
+  var pos = hist.filter(function(a){return a.type==='positive';}).length;
+  var neg = hist.filter(function(a){return a.type==='negative';}).length;
+  var neu = hist.filter(function(a){return a.type==='neutral';}).length;
+  var color = reputColor(score);
+  var stars = starsFromScore(score);
+
+  document.getElementById('reput-stars-header').textContent = stars;
+  document.getElementById('reput-stars-header').style.color = color;
+  document.getElementById('reput-header-sub').textContent = reputLabel(score);
+  document.getElementById('reput-score-val').textContent = score+'/100';
+  document.getElementById('reput-score-val').style.color = color;
+  var fill = document.getElementById('reput-bar-fill');
+  fill.style.width = score+'%';
+  fill.style.background = score>=75?'linear-gradient(90deg,#16a34a,#4ade80)':score>=50?'linear-gradient(90deg,#d97706,#fbbf24)':'linear-gradient(90deg,#dc2626,#ef4444)';
+  document.getElementById('rscore-pos').textContent = pos;
+  document.getElementById('rscore-neg').textContent = neg;
+  document.getElementById('rscore-neu').textContent = neu;
+
+  var listEl = document.getElementById('avis-list');
+  if(!hist.length){ listEl.innerHTML='<div style="font-size:10px;color:#9ca3af;text-align:center;padding:10px">Aucun avis pour le moment</div>'; return; }
+  listEl.innerHTML = hist.slice(0,5).map(function(a,i){
+    var d = new Date(a.date);
+    var ds = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' + d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="avis-item '+a.type+'">' +
+      '<div class="avis-top">' +
+        '<div class="avis-avatar">'+a.emoji+'</div>' +
+        '<div class="avis-author">'+a.auteur+'</div>' +
+        '<div class="avis-stars">'+a.stars+'</div>' +
+        '<div class="avis-date">'+ds+'</div>' +
+      '</div>' +
+      '<div class="avis-text">"'+a.text+'"</div>' +
+      (a.replied ? '<div class="avis-repondre" style="color:#9ca3af">✓ Répondu</div>' :
+        '<div class="avis-repondre" onclick="repondreAvis('+i+')">↩ Répondre (+2 satisfaction)</div>') +
+    '</div>';
+  }).join('');
+}
+
+async function repondreAvis(idx){
+  var gs = await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com = (gs.data&&gs.data.commerce)||{};
+  if(!com.reputation||!com.reputation.history) return;
+  if(com.reputation.history[idx] && !com.reputation.history[idx].replied){
+    com.reputation.history[idx].replied = true;
+    com.clients = com.clients||{};
+    com.clients.satisfaction = Math.min(100,(com.clients.satisfaction||75)+2);
+    await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+    toast('Réponse envoyée ! +2 satisfaction 👍');
+    loadDashboard();
+  }
+}
+
+// Boost réputation lors d'une collecte
+function boostReputOnCollect(com){
+  com.reputation = com.reputation || {score:50, history:[], last_update:new Date().toISOString()};
+  com.reputation.score = Math.min(100, com.reputation.score + 1);
+  return com;
+}
+
+
+// ══════════════════════════════════════
+// SYSTÈME CLIENTS
+// ══════════════════════════════════════
+
+var CLIENT_BASE = {
+  0: 30,  // kebab
+  1: 15,  // cabinet
+  2: 50,  // superette
+  3: 20,  // agence
+  4: 40,  // restaurant
+  5: 10,  // investisseur
+  6: 60,  // épicerie
+  7: 25,  // bar
+};
+
+function getClientBase(typeId){ return CLIENT_BASE[typeId] || 25; }
+
+// Calcule l'état actuel des clients
+function calcClients(com, typeId, valeur, lastSeen){
+  var clients = com.clients || {};
+  var now = Date.now();
+  var base = getClientBase(typeId);
+  var niveau = Math.floor((valeur||0)/100000)+1;
+
+  // Init si premier passage
+  if(!clients.total){
+    clients.total = base;
+    clients.vip = Math.floor(base/10);
+    clients.satisfaction = 75;
+    clients.last_update = new Date().toISOString();
+    clients.history = [];
+    clients.day_gain = 0;
+    clients.day_date = new Date().toISOString().split('T')[0];
+  }
+
+  var lastUpdate = clients.last_update ? new Date(clients.last_update).getTime() : now;
+  var hoursElapsed = (now - lastUpdate) / 3600000;
+
+  if(hoursElapsed < 0.1) return clients; // Pas encore 6 min, skip
+
+  // Croissance naturelle (niveau * 0.5 clients/heure max 5/h)
+  var growthRate = Math.min(5, niveau * 0.5);
+  var naturalGain = Math.floor(hoursElapsed * growthRate);
+
+  // Perte si inactif (lastSeen = dernière connexion)
+  var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactiveHours = (now - lastSeenMs) / 3600000;
+  var lossRate = 0;
+  if(inactiveHours > 48) lossRate = Math.floor(clients.total * 0.10); // -10% si 48h+
+  if(inactiveHours > 96) lossRate = Math.floor(clients.total * 0.20); // -20% si 4j+
+
+  // Satisfaction impact
+  var satisMult = clients.satisfaction >= 80 ? 1.2 : clients.satisfaction >= 50 ? 1 : 0.7;
+  var netGain = Math.floor(naturalGain * satisMult) - lossRate;
+
+  // Appliquer
+  clients.total = Math.max(1, clients.total + netGain);
+  clients.vip = Math.max(0, Math.floor(clients.total / 10));
+
+  // Satisfaction évolue lentement vers 75% naturellement
+  if(clients.satisfaction < 75) clients.satisfaction = Math.min(75, clients.satisfaction + hoursElapsed * 2);
+  if(clients.satisfaction > 75 && lossRate > 0) clients.satisfaction = Math.max(20, clients.satisfaction - hoursElapsed * 5);
+
+  // Historique
+  var today = new Date().toISOString().split('T')[0];
+  if(clients.day_date !== today){ clients.day_gain = 0; clients.day_date = today; }
+  clients.day_gain = (clients.day_gain||0) + netGain;
+
+  if(netGain !== 0){
+    clients.history = clients.history || [];
+    clients.history.unshift({
+      date: new Date().toISOString(),
+      delta: netGain,
+      label: netGain > 0 ? '+'+netGain+' nouveaux clients' : netGain+' clients perdus'
+    });
+    if(clients.history.length > 8) clients.history = clients.history.slice(0,8);
+  }
+
+  clients.last_update = new Date().toISOString();
+  return clients;
+}
+
+// Multiplicateur revenus selon clients
+function clientsRevMult(clients){
+  if(!clients || !clients.total) return 1;
+  var vipBonus = (clients.vip||0) * 0.03; // +3% par VIP
+  var satisBonus = ((clients.satisfaction||75) - 75) / 200; // ±12.5% selon satis
+  return Math.max(0.5, 1 + vipBonus + satisBonus);
+}
+
+// Badge fidélité
+function getClientBadge(clients){
+  var satis = clients.satisfaction || 75;
+  var total = clients.total || 0;
+  if(satis >= 90 && total > 100) return { txt: '🌟 Clientèle premium', color: '#854d0e', bg: '#fef9c3', border: '#fde047' };
+  if(satis >= 75) return { txt: '⭐ Clientèle fidèle', color: '#854d0e', bg: '#fef9c3', border: '#fde047' };
+  if(satis >= 50) return { txt: '😐 Clientèle volatile', color: '#92400e', bg: '#fff7ed', border: '#fed7aa' };
+  return { txt: '⚠️ Clientèle insatisfaite', color: '#dc2626', bg: '#fef2f2', border: '#fecaca' };
+}
+
+function toggleClients(){
+  var b = document.getElementById('clientsBody');
+  b.classList.toggle('open');
+}
+
+function renderClients(clients, lastSeen){
+  var total = clients.total || 0;
+  var vip = clients.vip || 0;
+  var satis = Math.round(clients.satisfaction || 75);
+  var dayGain = clients.day_gain || 0;
+  var now = Date.now();
+  var lastSeenMs = lastSeen ? new Date(lastSeen).getTime() : now;
+  var inactiveHours = (now - lastSeenMs) / 3600000;
+
+  // Header
+  document.getElementById('clients-total').textContent = total.toLocaleString('fr-FR');
+
+  // Badge
+  var badge = getClientBadge(clients);
+  var badgeEl = document.getElementById('clientsFidelBadge');
+  badgeEl.textContent = badge.txt;
+  badgeEl.style.background = badge.bg;
+  badgeEl.style.borderColor = badge.border;
+  badgeEl.style.color = badge.color;
+  document.getElementById('clients-badge-txt').textContent = badge.txt;
+
+  // Alerte inactivité
+  var alert = document.getElementById('clientsAlert');
+  alert.classList.toggle('show', inactiveHours > 48);
+
+  // Satisfaction
+  document.getElementById('clients-satis-val').textContent = satis + '%';
+  var bar = document.getElementById('clients-satis-bar');
+  bar.style.width = satis + '%';
+  bar.style.background = satis >= 75 ? 'linear-gradient(90deg,#16a34a,#4ade80)' :
+                         satis >= 50 ? 'linear-gradient(90deg,#d97706,#fbbf24)' :
+                                       'linear-gradient(90deg,#dc2626,#ef4444)';
+  document.getElementById('clients-satis-val').style.color = satis >= 75 ? '#16a34a' : satis >= 50 ? '#d97706' : '#dc2626';
+
+  // Stats
+  document.getElementById('cstat-normal').textContent = (total - vip).toLocaleString('fr-FR');
+  document.getElementById('cstat-vip').textContent = vip + ' 👑';
+  document.getElementById('cstat-gain').textContent = (dayGain >= 0 ? '+' : '') + dayGain;
+  document.getElementById('cstat-gain').style.color = dayGain >= 0 ? '#16a34a' : '#dc2626';
+
+  // Historique
+  var hist = clients.history || [];
+  if(hist.length){
+    document.getElementById('clientsHist').innerHTML = hist.slice(0,5).map(function(h){
+      var d = new Date(h.date);
+      var ds = d.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}) + ' ' +
+               d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      return '<div class="clients-hist-item"><span>'+h.label+'</span>' +
+             '<span class="'+(h.delta>=0?'clients-hist-pos':'clients-hist-neg')+'">'+ds+'</span></div>';
+    }).join('');
+  }
+}
+
+// Boost clients lors d'un investissement
+function boostClientsOnInvest(com, amount){
+  var clients = com.clients || {};
+  var boost = Math.floor(amount / 10000); // +1 client par 10k€ investi
+  clients.total = (clients.total || 0) + boost;
+  clients.satisfaction = Math.min(100, (clients.satisfaction || 75) + Math.min(10, boost / 2));
+  if(boost > 0){
+    clients.history = clients.history || [];
+    clients.history.unshift({ date: new Date().toISOString(), delta: boost, label: '📢 Pub : +'+boost+' clients' });
+    if(clients.history.length > 8) clients.history = clients.history.slice(0,8);
+  }
+  com.clients = clients;
+  return com;
+}
+
+
+function generateContracts(){
+  var ids=['peche','resto','cargo','mairie','transit','sardines','expo','btp'];
+  var picked=ids.sort(function(){return Math.random()-.5;}).slice(0,4);
+  var now=Date.now();
+  return {
+    list:picked.map(function(id){
+      return {id:id,claimed:false,expires_at:new Date(now+Math.floor(Math.random()*12+4)*3600000).toISOString()};
+    }),
+    last_refresh:new Date().toISOString()
+  };
+}
+
+async function startApp(){
+  var res=await sb.auth.getSession();
+  var sess=res.data&&res.data.session;
+  if(!sess){window.location.href='index.html';return;}
+  currentUser=sess.user;
+  var {data:gs}=await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
+  var {data:pr}=await sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle();
+  money=(gs&&gs.money)||0;
+  username=(pr&&pr.username)||'Docker';
+  document.getElementById('acc-money').textContent=fmtM(money);
+  document.getElementById('loader').style.display='none';
+  // Verifier si deja une entreprise
+  var {data:co}=await sb.from('companies').select('id').eq('user_id',currentUser.id).maybeSingle();
+  if(co){loadDashboard();return;}
+  // Avertissement argent
+  if(money<100000)document.getElementById('acc-warning').textContent='💡 Il te faudra 100 000€ pour créer ton entreprise (tu as '+fmtM(money)+')';
+  else document.getElementById('acc-warning').textContent='✅ Tu as assez pour créer ton entreprise !';
+  show('s-accueil');
+}
+document.addEventListener('DOMContentLoaded',function(){startApp();});
+if(document.readyState==='complete'||document.readyState==='interactive'){startApp();}
+
+// ══ OBJECTIFS QUOTIDIENS ══
+var MISSIONS=[
+  {id:'collect',label:'Collecter tes revenus',icon:'📥',check:function(d){return d.collected||false;}},
+  {id:'invest',label:'Investir dans ton entreprise',icon:'💰',check:function(d){return d.invested||false;}},
+  {id:'visit_zones',label:'Visiter les Zones du Port',icon:'🗺️',check:function(d){return d.visited_zones||false;}},
+  {id:'pay_tax',label:'Payer une taxe de zone',icon:'💸',check:function(d){return d.paid_tax||false;}},
+  {id:'check_rank',label:'Consulter le classement',icon:'🏆',check:function(d){return d.checked_rank||false;}},
+  {id:'login',label:'Se connecter aujourd\'hui',icon:'✅',check:function(){return true;}},
+];
+var objOpen=false;
+var dailyData={};
+
+function todayStr(){return new Date().toISOString().split('T')[0];}
+
+function getDailyMissions(dateStr){
+  // Seed random from date string for consistent daily missions
+  var seed=0;for(var i=0;i<dateStr.length;i++)seed=((seed<<5)-seed)+dateStr.charCodeAt(i);
+  seed=Math.abs(seed);
+  var pool=MISSIONS.slice();
+  var picked=[];
+  for(var i=0;i<3;i++){
+    var idx=seed%(pool.length);
+    picked.push(pool.splice(idx,1)[0]);
+    seed=Math.floor(seed/7)+i;
+  }
+  return picked;
+}
+
+function toggleObj(){
+  objOpen=!objOpen;
+  document.getElementById('obj-body').style.display=objOpen?'block':'none';
+  document.getElementById('obj-arrow').textContent=objOpen?'↓':'→';
+  if(objOpen)renderObj();
+}
+
+async function renderObj(){
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  var daily=com.daily||{};
+  var dt=todayStr();
+  if(daily.date!==dt){daily={date:dt,progress:{},claimed:false};}
+  dailyData=daily;
+
+  var missions=getDailyMissions(dt);
+  var done=0;
+  var h='';
+  missions.forEach(function(m){
+    var ok=m.check(daily.progress||{});
+    if(ok)done++;
+    h+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;margin-bottom:4px;background:'+(ok?'rgba(74,222,128,.06)':'rgba(0,0,0,.02)')+';border:1px solid '+(ok?'#bbf7d0':'#f3f4f6')+'">';
+    h+='<div style="font-size:18px">'+m.icon+'</div>';
+    h+='<div style="flex:1;font-size:11px;color:'+(ok?'#16a34a':'#374151')+';font-weight:'+(ok?'800':'600')+'">'+(ok?'✅ ':'')+m.label+'</div>';
+    h+='</div>';
+  });
+
+  // Reward
+  if(done>=3&&!daily.claimed){
+    h+='<div onclick="claimDaily()" style="margin-top:6px;padding:12px;text-align:center;background:linear-gradient(135deg,#fbbf24,#f59e0b);border:2px solid #1a1a1a;border-radius:10px;cursor:pointer;font-family:Bangers,cursive;font-size:14px;color:#1a1a1a;letter-spacing:1px;box-shadow:2px 2px 0 #1a1a1a">🎁 RÉCUPÉRER LA RÉCOMPENSE — +10 000€</div>';
+  }else if(daily.claimed){
+    h+='<div style="margin-top:6px;padding:10px;text-align:center;background:#f0fdf4;border-radius:10px;font-size:11px;color:#16a34a;font-weight:700">✅ Récompense récupérée aujourd\'hui !</div>';
+  }else{
+    h+='<div style="margin-top:6px;padding:10px;text-align:center;background:#f9fafb;border-radius:10px;font-size:10px;color:#9ca3af">Complète les 3 objectifs pour débloquer la récompense</div>';
+  }
+
+  document.getElementById('obj-body').innerHTML=h;
+  document.getElementById('obj-sub').textContent=done+'/3 complétés'+(daily.claimed?' ✅':'');
+}
+
+async function claimDaily(){
+  dailyData.claimed=true;
+  money+=10000;
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  com.daily=dailyData;
+  await sb.from('game_stats').update({money:money,commerce:com}).eq('user_id',currentUser.id);
+  toast('🎁 +10 000€ !');
+  renderObj();
+  loadDashboard();
+}
+
+// Track objectives completion
+async function trackObj(key){
+  var {data:gs}=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs&&gs.commerce)||{};
+  var daily=com.daily||{};
+  if(daily.date!==todayStr())daily={date:todayStr(),progress:{},claimed:false};
+  daily.progress=daily.progress||{};
+  daily.progress[key]=true;
+  com.daily=daily;
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+}
+
+// Hook into existing functions
+var _origCollect=window.collecterRevenus;
+window.collecterRevenus=async function(){await _origCollect.apply(this,arguments);await trackObj('collected');};
+var _origInvest=window.investir;
+window.investir=async function(){await _origInvest.apply(this,arguments);await trackObj('invested');};
+var _origRank=window.toggleRank;
+window.toggleRank=function(){_origRank.apply(this,arguments);trackObj('checked_rank');};
+
+// ══ CLASSEMENT ══
+var rankOpen=false;
+function toggleRank(){
+  rankOpen=!rankOpen;
+  document.getElementById('rank-body').style.display=rankOpen?'block':'none';
+  document.getElementById('rank-arrow').textContent=rankOpen?'↓':'→';
+  if(rankOpen)loadRank();
+}
+async function loadRank(){
+  var el=document.getElementById('rank-body');
+  el.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:11px;padding:10px">Chargement...</div>';
+  try{
+    var {data}=await sb.from('companies').select('user_id,nom,emoji,valeur,niveau,color').order('valeur',{ascending:false}).limit(20);
+    var {data:profiles}=await sb.from('profiles').select('user_id,username');
+    var pMap={};if(profiles)profiles.forEach(function(p){pMap[p.user_id]=p.username;});
+    if(!data||!data.length){el.innerHTML='<div style="text-align:center;color:#9ca3af;font-size:11px;padding:10px">Aucune entreprise</div>';return;}
+    var h='';
+    data.forEach(function(co,i){
+      var isMe=co.user_id===currentUser.id;
+      var medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;margin-bottom:4px;background:'+(isMe?'rgba(251,191,36,.08)':'rgba(0,0,0,.02)')+';border:'+(isMe?'2px solid rgba(251,191,36,.2)':'1px solid #f3f4f6')+'">';
+      h+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:'+(i<3?'#d97706':'#9ca3af')+';width:22px;text-align:center">'+(medal||(i+1))+'</div>';
+      h+='<div style="width:32px;height:32px;border-radius:8px;background:'+(co.color||'#cc1a1a')+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+co.emoji+'</div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:800;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+co.nom+'</div><div style="font-size:8px;color:#9ca3af">@'+(pMap[co.user_id]||'?')+' · Niv.'+(co.niveau||1)+'</div></div>';
+      h+='<div style="font-family:Bebas Neue,sans-serif;font-size:14px;color:#d97706;flex-shrink:0">'+fmtM(co.valeur||0)+'</div>';
+      h+='</div>';
+    });
+    el.innerHTML=h;
+    // Update sub with rank
+    var myRank=data.findIndex(function(co){return co.user_id===currentUser.id;});
+    if(myRank>=0)document.getElementById('rank-sub').textContent='Tu es #'+(myRank+1)+' sur '+data.length;
+  }catch(e){el.innerHTML='<div style="color:#ef4444;font-size:11px;padding:10px">Erreur chargement</div>';}
+}
+</script>
 </body>
 </html>
+// CHARGES FIXES
+var CHARGES_DEF=[
+  {id:'loyer',ico:'🏪',nom:'Loyer local',base:500,scale:0.001},
+  {id:'electricite',ico:'⚡',nom:'Electricite',base:200,scale:0.0003},
+  {id:'assurance',ico:'🛡️',nom:'Assurance',base:300,scale:0.0002}
+];
+function calcCharges(com,valeur){
+  var ch=com.charges||{},now=Date.now(),total=0;
+  var items=CHARGES_DEF.map(function(d){
+    var amt=Math.floor(d.base+(valeur||0)*d.scale);
+    var lp=ch[d.id]?new Date(ch[d.id]).getTime():now;
+    var days=Math.floor((now-lp)/86400000);
+    total+=amt;
+    return {id:d.id,ico:d.ico,nom:d.nom,amt:amt,daysUnpaid:days};
+  });
+  return {items:items,total:total};
+}
+function chargesMult(com,valeur){
+  var ch=calcCharges(com,valeur);
+  return ch.items.some(function(i){return i.daysUnpaid>=1;})?0.7:1;
+}
+function renderCharges(com,valeur,money){
+  var ch=calcCharges(com,valeur);
+  var anyUnpaid=ch.items.some(function(i){return i.daysUnpaid>=1;});
+  if(document.getElementById('chargesTotalEl'))document.getElementById('chargesTotalEl').textContent=fmtM(ch.total)+'/j';
+  if(document.getElementById('chargesSub'))document.getElementById('chargesSub').textContent=anyUnpaid?'Charges en retard':'A jour';
+  if(document.getElementById('chargesAlert'))document.getElementById('chargesAlert').classList.toggle('show',anyUnpaid);
+  var list=document.getElementById('chargesList');
+  if(!list)return;
+  list.innerHTML=ch.items.map(function(item){
+    var due=item.daysUnpaid>=1;
+    var html='<div class="charge-item">';
+    html+='<div style="display:flex;align-items:center;flex:1">';
+    html+='<div class="charge-ico">'+item.ico+'</div>';
+    html+='<div><div class="charge-nm">'+item.nom+'</div>';
+    html+='<div class="charge-due">'+(due?item.daysUnpaid+'j retard':'A jour')+'</div></div></div>';
+    html+='<div class="charge-amt">'+fmtM(item.amt)+'/j</div>';
+    if(due&&money>=item.amt)html+='<button class="charge-pay-btn" data-cid="'+item.id+'" data-amt="'+item.amt+'" onclick="payChargeBtn(this)">PAYER</button>';
+    html+='</div>';
+    return html;
+  }).join('');
+}
+function toggleCharges(){var b=document.getElementById('chargesBody');if(b)b.classList.toggle('open');}
+async function payChargeBtn(btn){await payCharge(btn.getAttribute('data-cid'),parseInt(btn.getAttribute('data-amt')));}
+async function payCharge(id,amt){
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;
+  if(money<amt){toast('Pas assez');return;}
+  var com=(gs.data&&gs.data.commerce)||{};
+  com.charges=com.charges||{};
+  com.charges[id]=new Date().toISOString();
+  await sb.from('game_stats').update({money:money-amt,commerce:com}).eq('user_id',currentUser.id);
+  toast('Charge payee');loadDashboard();
+}
+async function payAllCharges(){
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;
+  var com=(gs.data&&gs.data.commerce)||{};
+  var co2=await sb.from('companies').select('valeur').eq('user_id',currentUser.id).maybeSingle();
+  var valeur=(co2.data&&co2.data.valeur)||0;
+  var ch=calcCharges(com,valeur);
+  var total=ch.items.reduce(function(s,i){return i.daysUnpaid>=1?s+i.amt:s;},0);
+  if(total===0){toast('Rien a payer');return;}
+  if(money<total){toast('Pas assez ('+fmtM(total)+' requis)');return;}
+  com.charges=com.charges||{};
+  var now=new Date().toISOString();
+  ch.items.forEach(function(i){if(i.daysUnpaid>=1)com.charges[i.id]=now;});
+  await sb.from('game_stats').update({money:money-total,commerce:com}).eq('user_id',currentUser.id);
+  toast('Toutes les charges payees');loadDashboard();
+}
+
+// EVENEMENTS ALEATOIRES
+var EVENTS=[
+  {id:'client_vip',type:'good',ico:'👑',title:'Client VIP surprise',desc:'Un client VIP a visite votre commerce. +500 clients',effect:'clients_boost'},
+  {id:'inspection',type:'bad',ico:'🏛️',title:'Inspection fiscale',desc:'Les autorites verifient vos comptes. -10 reputation',effect:'reput_down'},
+  {id:'bon_avis',type:'good',ico:'⭐',title:'Avis viral',desc:'Votre commerce buzze sur les reseaux. +15 reputation',effect:'reput_up'},
+  {id:'periode_creuse',type:'bad',ico:'📉',title:'Periode creuse',desc:'Peu de clients ce mois. Satisfaction -10',effect:'satis_down'},
+  {id:'coup_chance',type:'good',ico:'🍀',title:'Coup de chance',desc:'Livraison gratuite. Revenus x2 pendant 1h',effect:'rev_boost'},
+  {id:'panne',type:'bad',ico:'🔧',title:'Panne equipement',desc:'Reparation urgente. -5000 euros',effect:'money_down'},
+  {id:'partenariat',type:'good',ico:'🤝',title:'Offre de partenariat',desc:'Une enseigne veut collaborer. +20% revenus 24h',effect:'rev_boost'},
+  {id:'greve_fourn',type:'neutral',ico:'🚚',title:'Greve des fournisseurs',desc:'Livraisons retardees. Pas impact direct',effect:'none'}
+];
+function checkRandomEvent(com){
+  var last=com.last_event?new Date(com.last_event).getTime():0;
+  var hoursSince=(Date.now()-last)/3600000;
+  if(hoursSince<4)return null;
+  if(Math.random()>0.3)return null;
+  var e=EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  com.last_event=new Date().toISOString();
+  com.pending_event=e.id;
+  return e;
+}
+function applyEvent(e,com){
+  if(!e)return com;
+  if(e.effect==='clients_boost'){com.clients=com.clients||{};com.clients.total=(com.clients.total||0)+500;}
+  if(e.effect==='reput_down'){com.reputation=com.reputation||{score:50};com.reputation.score=Math.max(0,(com.reputation.score||50)-10);}
+  if(e.effect==='reput_up'){com.reputation=com.reputation||{score:50};com.reputation.score=Math.min(100,(com.reputation.score||50)+15);}
+  if(e.effect==='satis_down'){com.clients=com.clients||{};com.clients.satisfaction=Math.max(0,(com.clients.satisfaction||75)-10);}
+  if(e.effect==='money_down')com.pending_money_loss=5000;
+  delete com.pending_event;
+  return com;
+}
+function renderEvent(e){
+  var b=document.getElementById('eventBanner');
+  if(!b)return;
+  if(!e){b.classList.remove('show');return;}
+  b.className='event-banner show '+e.type;
+  if(document.getElementById('eventIco'))document.getElementById('eventIco').textContent=e.ico;
+  if(document.getElementById('eventTitle'))document.getElementById('eventTitle').textContent=e.title;
+  if(document.getElementById('eventDesc'))document.getElementById('eventDesc').textContent=e.desc;
+}
+async function dismissEvent(){
+  var b=document.getElementById('eventBanner');
+  if(b)b.classList.remove('show');
+  var gs=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs.data&&gs.data.commerce)||{};
+  delete com.pending_event;
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+}
+
+// RANG DE COMMERCANT
+var RANGS=[
+  {id:'ambulant',nom:'Ambulant',min:0,max:100000,perks:['Revenus de base']},
+  {id:'tpe',nom:'TPE',min:100000,max:500000,perks:['+10% revenus','2 employes max']},
+  {id:'pme',nom:'PME',min:500000,max:2000000,perks:['+25% revenus','5 employes']},
+  {id:'eti',nom:'ETI',min:2000000,max:10000000,perks:['+50% revenus','8 employes']},
+  {id:'groupe',nom:'Groupe',min:10000000,max:Infinity,perks:['+100% revenus','10 employes']}
+];
+function getRang(valeur){
+  for(var i=RANGS.length-1;i>=0;i--){if((valeur||0)>=RANGS[i].min)return RANGS[i];}
+  return RANGS[0];
+}
+function renderRang(valeur){
+  var rang=getRang(valeur);
+  var idx=RANGS.indexOf(rang);
+  var next=RANGS[idx+1];
+  var pct=next?Math.min(100,Math.round(((valeur-rang.min)/(next.min-rang.min))*100)):100;
+  if(document.getElementById('rangName'))document.getElementById('rangName').textContent=rang.nom.toUpperCase();
+  if(document.getElementById('rangSub'))document.getElementById('rangSub').textContent=next?'Prochain : '+next.nom+' ('+fmtM(next.min)+')':'Rang maximum';
+  if(document.getElementById('rangPct'))document.getElementById('rangPct').textContent=pct+'%';
+  if(document.getElementById('rangFill'))document.getElementById('rangFill').style.width=pct+'%';
+  if(document.getElementById('rangPerks'))document.getElementById('rangPerks').innerHTML=rang.perks.map(function(p){return '<div class="rang-perk">'+p+'</div>';}).join('');
+}
+
+
+// EMPLOYES
+var PRENOM_M=['Kader','Mourad','Samir','Karim','Youssef','Djamel','Mehdi','Farid','Sofiane','Rachid','Sebastien','Kevin','Mathieu','Thomas'];
+var PRENOM_F=['Fatima','Yasmine','Nadia','Sofia','Leila','Amina','Celine','Nathalie','Marie','Isabelle'];
+var NOM_FAM=['Benali','Zidane','Rouget','Paoli','Fabre','Mancini','Gomez','Pons','Blanc','Ferrara','Khalil','Dupont','Martin','Girard'];
+function randomName(){var p=Math.random()>0.5?PRENOM_M:PRENOM_F;return p[Math.floor(Math.random()*p.length)]+' '+NOM_FAM[Math.floor(Math.random()*NOM_FAM.length)];}
+var EMP_TYPES={vendeur:{ico:'🛒',label:'Vendeur',cost:5000,salary:500},manager:{ico:'📋',label:'Manager',cost:12000,salary:1200},comptable:{ico:'📊',label:'Comptable',cost:8000,salary:800}};
+function getMaxEmployees(niveau){return Math.min(10,1+Math.floor((niveau||1)/2));}
+function calcEmployees(com,lastSeen){
+  var emps=com.employees||[],now=Date.now();
+  var lastSeenMs=lastSeen?new Date(lastSeen).getTime():now;
+  var h=Math.min(72,(now-lastSeenMs)/3600000);
+  if(h>8)emps=emps.map(function(e){e.moral=Math.max(0,(e.moral||100)-Math.floor(h*1.5));return e;});
+  emps=emps.filter(function(e){return (e.moral||100)>0;});
+  com.employees=emps;return com;
+}
+function employeesRevMult(emps){
+  if(!emps||!emps.length)return 1;
+  if(emps.some(function(e){return (e.moral||100)<30;}))return 0.5;
+  return 1+emps.reduce(function(s,e){return e.type==='vendeur'?s+0.15:s;},0);
+}
+function employeesSatisMult(emps){return 1+(emps||[]).reduce(function(s,e){return e.type==='manager'?s+0.20:s;},0);}
+function totalSalary(emps){return (emps||[]).reduce(function(s,e){return s+(EMP_TYPES[e.type]&&EMP_TYPES[e.type].salary||0);},0);}
+function renderEmployees(com,niveau,money){
+  var emps=com.employees||[],maxEmp=getMaxEmployees(niveau);
+  var onGreve=emps.some(function(e){return (e.moral||100)<30;});
+  if(document.getElementById('empCount'))document.getElementById('empCount').textContent=emps.length;
+  if(document.getElementById('empHeaderSub'))document.getElementById('empHeaderSub').textContent=emps.length?emps.length+'/'+maxEmp:'Aucun employe';
+  if(document.getElementById('greveBanner'))document.getElementById('greveBanner').classList.toggle('show',onGreve);
+  var rb=Math.round((employeesRevMult(emps)-1)*100),sb2=Math.round((employeesSatisMult(emps)-1)*100),st=totalSalary(emps);
+  if(document.getElementById('empRevBonus'))document.getElementById('empRevBonus').textContent=(rb>=0?'+':'')+rb+'%';
+  if(document.getElementById('empSatisBonus'))document.getElementById('empSatisBonus').textContent='+'+sb2+'%';
+  if(document.getElementById('empSalTotal'))document.getElementById('empSalTotal').textContent=fmtM(st)+'/j';
+  var listEl=document.getElementById('empList');if(!listEl)return;
+  if(!emps.length){listEl.innerHTML='<div style="font-size:10px;color:#9ca3af;text-align:center;padding:8px">Aucun employe</div>';return;}
+  listEl.innerHTML=emps.map(function(e,i){
+    var moral=e.moral||100,mc=moral>=70?'#16a34a':moral>=40?'#d97706':'#dc2626';
+    var t=EMP_TYPES[e.type]||{ico:'👤',label:'Inconnu',salary:0};
+    var html='<div class="emp-item'+(moral<30?' greve':'')+'">';
+    html+='<div class="emp-avatar">'+t.ico+'</div>';
+    html+='<div class="emp-info"><div class="emp-name">'+e.name+'</div>';
+    html+='<div class="emp-role">'+t.label+(moral<30?' - GREVE':'')+'</div>';
+    html+='<div class="emp-moral-wrap"><div class="emp-moral-bar"><div class="emp-moral-fill" style="width:'+moral+'%;background:'+mc+'"></div></div><div class="emp-moral-val">'+moral+'%</div></div></div>';
+    html+='<div style="text-align:right"><div class="emp-salary">'+fmtM(t.salary)+'/j</div>';
+    html+='<div style="font-size:7px;color:#dc2626;margin-top:3px;cursor:pointer" data-idx="'+i+'" onclick="fireEmpBtn(this)">Licencier</div></div>';
+    html+='</div>';return html;
+  }).join('');
+  var canHire=emps.length<maxEmp;
+  ['vendeur','manager','comptable'].forEach(function(type){
+    var id='hire'+type.charAt(0).toUpperCase()+type.slice(1);
+    var btn=document.getElementById(id);if(!btn)return;
+    btn.classList.toggle('disabled',!canHire||money<EMP_TYPES[type].cost);
+  });
+}
+function toggleEmp(){var b=document.getElementById('empBody');if(b)b.classList.toggle('open');}
+async function hireEmployee(type){
+  var t=EMP_TYPES[type];
+  var gs=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
+  var money=(gs.data&&gs.data.money)||0;if(money<t.cost){toast('Pas assez');return;}
+  var com=(gs.data&&gs.data.commerce)||{};
+  var co=await sb.from('companies').select('niveau').eq('user_id',currentUser.id).maybeSingle();
+  com.employees=com.employees||[];
+  if(com.employees.length>=getMaxEmployees((co.data&&co.data.niveau)||1)){toast('Maximum atteint');return;}
+  com.employees.push({id:Date.now(),name:randomName(),type:type,hired_at:new Date().toISOString(),moral:100});
+  await sb.from('game_stats').update({money:money-t.cost,commerce:com}).eq('user_id',currentUser.id);
+  toast('Employe embauche');loadDashboard();
+}
+function fireEmpBtn(btn){fireEmployee(parseInt(btn.getAttribute('data-idx')));}
+async function fireEmployee(idx){
+  var gs=await sb.from('game_stats').select('commerce').eq('user_id',currentUser.id).maybeSingle();
+  var com=(gs.data&&gs.data.commerce)||{};
+  com.employees=com.employees||[];com.employees.splice(idx,1);
+  await sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id);
+  toast('Employe licencie');loadDashboard();
+}
+
+
