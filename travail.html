@@ -512,11 +512,17 @@ var bOwnedEpi=[], bEquippedEpi={};
 var bRecords={};
 
 const B_ITEMS=[
-  {id:'neon',cat:'skin',name:'Néon Portuaire',emoji:'✨',rarity:'rare',preview:'linear-gradient(135deg,#00ff88,#00cc66)',shadow:'0 0 8px rgba(0,255,136,.3)'},
+  // ── DÉFAUT (débloqués dès le départ) ──
+  {id:'default',cat:'skin',name:'Container de Base',emoji:'📦',rarity:'defaut',preview:'linear-gradient(135deg,#cc2200,#991100)',defaut:true},
+  {id:'no_effet',cat:'effet',name:'Sans effet',emoji:'✋',rarity:'defaut',defaut:true},
+  {id:'jour',cat:'fond',name:'Port de jour',emoji:'☀️',rarity:'defaut',preview:'linear-gradient(180deg,#2196F3,#64B5F6)',defaut:true},
+  {id:'no_music',cat:'musique',name:'Sans musique',emoji:'🔇',rarity:'defaut',defaut:true},
+  // ── PACKS ──
+  {id:'neon',cat:'skin',name:'Néon Portuaire',emoji:'✨',rarity:'rare',preview:'linear-gradient(135deg,#00ff88,#00cc66)'},
   {id:'ice',cat:'skin',name:'Givré Polaire',emoji:'🧊',rarity:'rare',preview:'linear-gradient(135deg,#67e8f9,#0e7490)'},
-  {id:'fire',cat:'skin',name:'Flammes du Quai',emoji:'🔥',rarity:'epique',preview:'linear-gradient(135deg,#ff4500,#ff8c00)',shadow:'0 0 8px rgba(255,69,0,.3)'},
+  {id:'fire',cat:'skin',name:'Flammes du Quai',emoji:'🔥',rarity:'epique',preview:'linear-gradient(135deg,#ff4500,#ff8c00)'},
   {id:'rainbow',cat:'skin',name:'Arc-en-Ciel',emoji:'🌈',rarity:'epique',preview:'linear-gradient(135deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff)'},
-  {id:'galaxy',cat:'skin',name:'Galaxie du Docker',emoji:'🌌',rarity:'legendaire',preview:'linear-gradient(135deg,#1a0533,#4a1a8a)',shadow:'0 0 8px rgba(100,50,200,.3)'},
+  {id:'galaxy',cat:'skin',name:'Galaxie du Docker',emoji:'🌌',rarity:'legendaire',preview:'linear-gradient(135deg,#1a0533,#4a1a8a)'},
   {id:'marseille',cat:'skin',name:'Fierté Marseillaise',emoji:'🏟️',rarity:'legendaire',preview:'linear-gradient(135deg,#0078D7,#fff,#0078D7)'},
   {id:'etoiles',cat:'effet',name:"Pluie d'Étoiles",emoji:'⭐',rarity:'commun'},
   {id:'bulles',cat:'effet',name:'Bulles de Mer',emoji:'🫧',rarity:'commun'},
@@ -642,10 +648,10 @@ function boutiqueRenderColl(cat){
   grid.innerHTML=items.map(it=>{
     const owned=bOwned.indexOf(it.id)!==-1;
     const eq=bEquipped[it.cat]===it.id;
-    const rarColor={commun:'#9ca3af',rare:'#3b82f6',epique:'#a855f7',legendaire:'#f59e0b'}[it.rarity]||'#9ca3af';
-    const rarBg={commun:'#f3f4f6',rare:'#eff6ff',epique:'#faf5ff',legendaire:'#fffbeb'}[it.rarity]||'#f3f4f6';
-    const rarLabel={commun:'COMMUN',rare:'RARE',epique:'ÉPIQUE',legendaire:'LÉGEND.'}[it.rarity]||'';
-    return `<div onclick="boutiqueEquip('${it.cat}','${it.id}')" style="background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);cursor:pointer;border:2px solid ${eq?'#3b82f6':'transparent'};opacity:${owned?1:.3};position:relative">
+    const rarColor={defaut:'#6b7280',commun:'#9ca3af',rare:'#3b82f6',epique:'#a855f7',legendaire:'#f59e0b'}[it.rarity]||'#9ca3af';
+    const rarBg={defaut:'#f9fafb',commun:'#f3f4f6',rare:'#eff6ff',epique:'#faf5ff',legendaire:'#fffbeb'}[it.rarity]||'#f3f4f6';
+    const rarLabel={defaut:'DE BASE',commun:'COMMUN',rare:'RARE',epique:'ÉPIQUE',legendaire:'LÉGEND.'}[it.rarity]||'';
+    return `<div onclick="boutiqueEquip('${it.cat}','${it.id}')" style="background:#fff;border-radius:14px;padding:12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.04);cursor:pointer;border:2px solid ${eq?'#3b82f6':'transparent'};opacity:${(owned||it.defaut)?1:.3};position:relative">
       <div style="position:absolute;top:6px;right:6px;font-size:7px;font-weight:800;padding:2px 6px;border-radius:8px;background:${rarBg};color:${rarColor}">${rarLabel}</div>
       <div style="height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:6px">${it.preview?`<div style="width:52px;height:30px;border-radius:6px;background:${it.preview};border:1px solid #e5e7eb"></div>`:`<span style="font-size:26px">${it.emoji}</span>`}</div>
       <div style="font-size:10px;font-weight:800;color:#374151">${it.name}</div>
@@ -705,7 +711,15 @@ async function loadBoutique(){
     const {data:gs}=await sb.from('game_stats').select('money,records').eq('user_id',session.user.id).maybeSingle();
     const {data:pr}=await sb.from('profiles').select('skin_container').eq('user_id',session.user.id).maybeSingle();
     if(gs){bMoney=gs.money||0;bRecords=gs.records||{};}
-    bOwned=bRecords.unlocked_packs||[];
+    // Items de base toujours débloqués
+    const DEFAUT_IDS=['default','no_effet','jour','no_music'];
+    const savedOwned=bRecords.unlocked_packs||[];
+    bOwned=[...new Set([...DEFAUT_IDS,...savedOwned])];
+    // Équipements par défaut si rien de sélectionné
+    bEquipped.skin=bEquipped.skin||'default';
+    bEquipped.effet=bEquipped.effet||'no_effet';
+    bEquipped.fond=bEquipped.fond||'jour';
+    bEquipped.musique=bEquipped.musique||'no_music';
     bOwnedEpi=bRecords.unlocked_epi||[];
     bEquippedEpi=bRecords.equipped_epi||{};
     bEquipped.skin=pr?.skin_container||'red';
