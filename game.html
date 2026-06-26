@@ -2115,15 +2115,18 @@ async function init(){
     // Charger top 3 classement
     (async function(){
       try{
-        var {data:gs2}=await sb.from('game_stats').select('user_id,money').order('money',{ascending:false}).limit(3);
-        var {data:prs}=await sb.from('profiles').select('user_id,username').limit(100);
+        // Même formule que classement.html : powerScore = level*100 + money/10000
+        var {data:gs2}=await sb.from('game_stats').select('user_id,money,level').limit(200);
+        var {data:prs}=await sb.from('profiles').select('user_id,username').limit(200);
         if(!gs2||!gs2.length)return;
         var nm={};(prs||[]).forEach(function(p){nm[p.user_id]=p.username||'Docker';});
+        function pw(r){return (r.level||1)*100+Math.floor((r.money||0)/10000);}
+        var top3=gs2.slice().sort(function(a,b){return pw(b)-pw(a);}).slice(0,3);
         var pills=['class-pill-gold','class-pill-silver','class-pill-silver'];
         var medals=['🥇','🥈','🥉'];
         var el=document.getElementById('classTop3');
         if(!el)return;
-        el.innerHTML=gs2.map(function(r,i){
+        el.innerHTML=top3.map(function(r,i){
           return '<div class="class-pill '+pills[i]+'">'+medals[i]+' '+(nm[r.user_id]||'Docker')+'</div>';
         }).join('');
       }catch(e){}
