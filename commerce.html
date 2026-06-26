@@ -707,6 +707,7 @@ body{background:#f8fafc;font-family:'Inter',sans-serif;min-height:100dvh;overflo
 <div class="toast" id="toast"></div>
 
 <script>
+var com={}; // état commerce global
 var SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
 var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 var sb=supabase.createClient(SB_URL,SB_KEY);
@@ -1645,7 +1646,7 @@ async function loadDashboard(){
   document.getElementById('dash-niveau').textContent='Niv. '+(co.niveau||1);
 
   // ── Collecte ──
-  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now()-3600000;
   var elapsed=Math.min((Date.now()-last)/3600000,24);
   var pending=Math.floor(rev*elapsed);
   document.getElementById('collect-amt').textContent=pending>0?'+'+fmtM(pending):'0€';
@@ -1680,22 +1681,26 @@ async function loadDashboard(){
 async function collecterRevenus(){
   var {data:co}=await sb.from('companies').select('*').eq('user_id',currentUser.id).maybeSingle();
   var {data:gs}=await sb.from('game_stats').select('money,commerce').eq('user_id',currentUser.id).maybeSingle();
-  if(!co||!gs)return;
-  var com=(gs.commerce)||{};
+  if(!co||!gs){toast('Erreur chargement');return;}
+  var com=(gs&&gs.commerce)||{};
   var t2=TYPES[co.type_id]||TYPES[0];
   var baseRev2=Math.floor((co.valeur||0)*0.002);
   var zRev2=calcZoneRev(com.zones||{},t2.tag);
-  var rev=baseRev2+zRev2;
-  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now();
+  var rev=Math.max(baseRev2+zRev2, 10); // min 10€/h pour pas bloquer
+  // Si pas de last_collect, on met 1h en arrière pour permettre une première collecte
+  var last=com.last_collect?new Date(com.last_collect).getTime():Date.now()-3600000;
   var elapsed=Math.min((Date.now()-last)/3600000,24);
   var pending=Math.floor(rev*elapsed);
-  if(pending<1){toast('Rien a collecter encore');return;}
+  if(pending<1){
+    var minLeft=Math.ceil(60-(elapsed*60));
+    toast('Reviens dans '+minLeft+'min 🕐');return;
+  }
   com.last_collect=new Date().toISOString();
   com=boostReputOnCollect(com);
   var newMoney=(gs.money||0)+pending;
   await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
   money=newMoney;
-  toast('💰 +'+fmtM(pending)+' collectes !');
+  toast('💰 +'+fmtM(pending)+' collectés !');
   loadDashboard();
 }
 
@@ -2247,7 +2252,8 @@ function calcCharges(com,valeur){
   var ch=com.charges||{},now=Date.now(),total=0;
   var items=CHARGES_DEF.map(function(d){
     var amt=Math.floor(d.base+(valeur||0)*d.scale);
-    var lp=ch[d.id]?new Date(ch[d.id]).getTime():now;
+    // Si jamais payé : 2 jours de retard par défaut
+    var lp=ch[d.id]?new Date(ch[d.id]).getTime():now-172800000;
     var days=Math.floor((now-lp)/86400000);
     total+=amt;
     return {id:d.id,ico:d.ico,nom:d.nom,amt:amt,daysUnpaid:days};
