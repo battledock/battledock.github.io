@@ -513,7 +513,7 @@ var bRecords={};
 
 const B_ITEMS=[
   // ── DÉFAUT (débloqués dès le départ) ──
-  {id:'default',cat:'skin',name:'Container de Base',emoji:'📦',rarity:'defaut',preview:'linear-gradient(135deg,#cc2200,#991100)',defaut:true},
+  {id:'red',cat:'skin',name:'Container de Base',emoji:'📦',rarity:'defaut',preview:'linear-gradient(135deg,#cc2200,#991100)',defaut:true},
   {id:'no_effet',cat:'effet',name:'Sans effet',emoji:'✋',rarity:'defaut',defaut:true},
   {id:'jour',cat:'fond',name:'Port de jour',emoji:'☀️',rarity:'defaut',preview:'linear-gradient(180deg,#2196F3,#64B5F6)',defaut:true},
   {id:'no_music',cat:'musique',name:'Sans musique',emoji:'🔇',rarity:'defaut',defaut:true},
@@ -660,12 +660,19 @@ function boutiqueRenderColl(cat){
   }).join('');
 }
 
-function boutiqueEquip(cat,id){
+async function boutiqueEquip(cat,id){
   if(bOwned.indexOf(id)===-1)return;
   bEquipped[cat]=id;
   bRecords['click_effect']=bEquipped.effet;
   bRecords['bg_theme']=bEquipped.fond;
   bRecords['selected_music']=bEquipped.musique;
+  // Sauvegarder le skin dans profiles.skin_container
+  if(cat==='skin'){
+    try{
+      const {data:{session}}=await sb.auth.getSession();
+      if(session)await sb.from('profiles').update({skin_container:id}).eq('user_id',session.user.id);
+    }catch(e){console.warn('skin save',e);}
+  }
   boutiqueSaveData();
   boutiqueRenderColl(cat);
   boutiqueToast('✅ Équipé !');
@@ -712,11 +719,11 @@ async function loadBoutique(){
     const {data:pr}=await sb.from('profiles').select('skin_container').eq('user_id',session.user.id).maybeSingle();
     if(gs){bMoney=gs.money||0;bRecords=gs.records||{};}
     // Items de base toujours débloqués
-    const DEFAUT_IDS=['default','no_effet','jour','no_music'];
+    const DEFAUT_IDS=['red','no_effet','jour','no_music'];
     const savedOwned=bRecords.unlocked_packs||[];
     bOwned=[...new Set([...DEFAUT_IDS,...savedOwned])];
     // Équipements par défaut si rien de sélectionné
-    bEquipped.skin=bEquipped.skin||'default';
+    bEquipped.skin=bEquipped.skin||'red';
     bEquipped.effet=bEquipped.effet||'no_effet';
     bEquipped.fond=bEquipped.fond||'jour';
     bEquipped.musique=bEquipped.musique||'no_music';
