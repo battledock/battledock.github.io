@@ -1602,6 +1602,14 @@ async function loadDashboard(){
   var {data:_pr}=await sb.from('profiles').select('last_seen').eq('user_id',currentUser.id).maybeSingle();
   if(gs)gs.last_seen=_pr&&_pr.last_seen;
   var com=(gs&&gs.commerce)||{};
+  // Sync last_collect depuis companies si absent dans com
+  if(!com.last_collect&&co.last_collect){
+    com.last_collect=co.last_collect;
+  }
+  // Si toujours absent : 1h en arrière pour permettre collecte immédiate
+  if(!com.last_collect){
+    com.last_collect=new Date(Date.now()-3600000).toISOString();
+  }
 
   // ── Calcul employés ──
   com = calcEmployees(com, gs&&gs.last_seen);
@@ -1668,6 +1676,17 @@ async function loadDashboard(){
   var gs2 = await sb.from('game_stats').select('money').eq('user_id',currentUser.id).maybeSingle();
   renderEmployees(com, co.niveau||1, (gs2.data&&gs2.data.money)||0);
 
+  // ── Reset contrats expirés ──
+  if(co.contracts&&co.contracts.list){
+    var _now=Date.now();
+    var _allExp=co.contracts.list.every(function(ct){return new Date(ct.expires_at).getTime()<_now;});
+    if(_allExp){
+      var _newC=generateContracts();
+      sb.from('companies').update({contracts:_newC}).eq('user_id',currentUser.id).then(function(){});
+      co.contracts=_newC;
+      toast('📋 Nouveaux contrats disponibles !');
+    }
+  }
   // ── Sauvegarder en background ──
   sb.from('game_stats').update({commerce:com}).eq('user_id',currentUser.id).then(function(){});
 
@@ -1715,7 +1734,11 @@ async function collecterRevenus(){
   com.last_collect=new Date().toISOString();
   com=boostReputOnCollect(com);
   var newMoney=(gs.money||0)+pending;
-  await sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id);
+  // Sauvegarder dans game_stats ET mettre à jour companies.last_collect
+  await Promise.all([
+    sb.from('game_stats').update({money:newMoney,commerce:com}).eq('user_id',currentUser.id),
+    sb.from('companies').update({last_collect:com.last_collect,valeur:Math.floor((co.valeur||50000)*1.001)}).eq('user_id',currentUser.id)
+  ]);
   money=newMoney;
   toast('💰 +'+fmtM(pending)+' collectés !');
   loadDashboard();
