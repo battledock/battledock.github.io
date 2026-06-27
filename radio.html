@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Radio Port 13 FM</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Bangers&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+:root{--st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,16px)}
+html,body{height:100%;overflow:hidden;background:#0a0500;font-family:'Inter',sans-serif;color:#fff}
+.app{display:flex;flex-direction:column;height:100%;max-width:500px;margin:0 auto}
+
+/* ── BG ── */
+.bg{position:fixed;inset:0;z-index:0;
+  background:linear-gradient(180deg,#1a0800 0%,#0a0500 50%,#050200 100%)}
+.bg-glow{position:fixed;top:-80px;left:50%;transform:translateX(-50%);
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,140,0,.12),transparent 70%);
+  pointer-events:none;z-index:0}
+
+/* ── HEADER ── */
+.hdr{flex-shrink:0;position:relative;z-index:10;
+  padding:calc(var(--st)+8px) 14px 10px;
+  border-bottom:1px solid rgba(255,140,0,.12)}
+.hdr-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hdr-back{width:34px;height:34px;background:rgba(255,140,0,.1);
+  border:1px solid rgba(255,140,0,.2);border-radius:10px;
+  color:#ff8c00;font-size:16px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;text-decoration:none;flex-shrink:0}
+.hdr-logo{flex:1}
+.hdr-freq{font-family:'Bebas Neue',sans-serif;font-size:26px;color:#ff8c00;
+  letter-spacing:2px;line-height:1;text-shadow:0 0 16px rgba(255,140,0,.5)}
+.hdr-name{font-size:8px;font-weight:800;color:rgba(255,140,0,.35);
+  letter-spacing:3px;margin-top:2px}
+.hdr-onair{display:flex;align-items:center;gap:5px;
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
+  border-radius:20px;padding:5px 10px}
+.dot{width:7px;height:7px;border-radius:50%;background:#ef4444;
+  animation:dotPulse 1s ease-in-out infinite}
+@keyframes dotPulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(239,68,68,.4)}
+  50%{opacity:.5;box-shadow:0 0 0 4px rgba(239,68,68,0)}}
+.onair-txt{font-size:9px;font-weight:800;color:#ef4444;letter-spacing:2px}
+
+/* Tabs */
+.tabs{display:flex;background:rgba(255,255,255,.05);border-radius:10px;padding:3px;gap:2px}
+.tab{flex:1;padding:7px 4px;text-align:center;font-family:'Bebas Neue',sans-serif;
+  font-size:10px;letter-spacing:1px;cursor:pointer;border-radius:8px;
+  color:rgba(255,255,255,.3);transition:all .18s}
+.tab.on{background:rgba(255,140,0,.15);color:#ff8c00;
+  border:1px solid rgba(255,140,0,.25)}
+
+/* ── SCROLL ── */
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  position:relative;z-index:5;padding:14px 14px calc(var(--sb)+20px)}
+
+/* ── VIEWS ── */
+.view{display:none}.view.on{display:block}
+
+/* ── VIEW : ANTENNE (écoute) ── */
+.now-card{background:linear-gradient(135deg,rgba(255,140,0,.1),rgba(255,140,0,.04));
+  border:1.5px solid rgba(255,140,0,.2);border-radius:18px;padding:16px;margin-bottom:12px}
+.now-lbl{font-size:8px;font-weight:800;color:rgba(255,140,0,.4);
+  letter-spacing:2px;margin-bottom:10px}
+.now-row{display:flex;align-items:center;gap:12px}
+.now-av{width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,#ff8c00,#ff6000);
+  display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0;
+  box-shadow:0 0 20px rgba(255,140,0,.35)}
+.now-info{flex:1;min-width:0}
+.now-user{font-weight:900;font-size:15px;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-filter{font-size:10px;color:rgba(255,140,0,.6);font-weight:700;margin-top:2px}
+.now-dur{font-family:'Bebas Neue',sans-serif;font-size:18px;
+  color:#ff8c00;flex-shrink:0}
+
+/* Waveform lecture */
+.play-wave{display:flex;align-items:center;gap:3px;height:28px;margin:10px 0 6px}
+.pw-bar{width:4px;border-radius:2px;background:rgba(255,140,0,.25);transition:height .08s}
+.pw-bar.active{background:#ff8c00}
+.play-prog{height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.play-prog-fill{height:100%;background:linear-gradient(90deg,#ff8c00,#ffb347);
+  border-radius:2px;width:0%;transition:width .1s linear}
+
+/* Bouton play/stop */
+.play-btn{width:100%;border:none;border-radius:12px;padding:11px;
+  font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(255,140,0,.12);border:1px solid rgba(255,140,0,.25);color:#ff8c00;
+  margin-top:8px}
+.play-btn:active{opacity:.8}
+.play-btn.playing{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);color:#ef4444}
+
+/* Liste messages */
+.feed-title{font-size:9px;font-weight:800;color:rgba(255,255,255,.25);
+  letter-spacing:2px;margin-bottom:10px}
+.msg-item{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:11px 13px;margin-bottom:8px;
+  display:flex;align-items:center;gap:11px;cursor:pointer;transition:all .15s}
+.msg-item:active{opacity:.8;transform:scale(.98)}
+.msg-item.playing-item{border-color:rgba(255,140,0,.35);
+  background:rgba(255,140,0,.06)}
+.msg-av{width:36px;height:36px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;flex-shrink:0}
+.msg-info{flex:1;min-width:0}
+.msg-user{font-weight:800;font-size:13px;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-meta{font-size:9px;color:rgba(255,255,255,.3);font-weight:700;margin-top:2px}
+.msg-dur{font-family:'Bebas Neue',sans-serif;font-size:15px;
+  color:rgba(255,255,255,.3);flex-shrink:0}
+.msg-play-ico{font-size:18px;flex-shrink:0;color:rgba(255,140,0,.5)}
+
+/* Empty state */
+.empty{text-align:center;padding:40px 20px}
+.empty-ico{font-size:48px;margin-bottom:10px;opacity:.4}
+.empty-txt{font-size:13px;color:rgba(255,255,255,.25);font-weight:700}
+
+/* ── VIEW : MICRO ── */
+.rec-hero{text-align:center;padding:10px 0 16px}
+.rec-hero-txt{font-family:'Bebas Neue',sans-serif;font-size:22px;
+  color:#fff;letter-spacing:2px;margin-bottom:4px}
+.rec-hero-sub{font-size:11px;color:rgba(255,255,255,.3);font-weight:600}
+
+/* Filtres */
+.filters-lbl{font-size:9px;font-weight:800;color:rgba(255,255,255,.25);
+  letter-spacing:2px;margin-bottom:10px}
+.filters{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.filter-btn{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s}
+.filter-btn:active{transform:scale(.95)}
+.filter-btn.sel{background:rgba(255,140,0,.12);border-color:rgba(255,140,0,.35)}
+.filter-ico{font-size:24px;margin-bottom:5px}
+.filter-name{font-size:10px;font-weight:800;color:rgba(255,255,255,.6);letter-spacing:.5px}
+.filter-btn.sel .filter-name{color:#ff8c00}
+
+/* Waveform enregistrement */
+.rec-wave{display:flex;align-items:center;justify-content:center;gap:3px;
+  height:56px;background:rgba(0,0,0,.3);border-radius:12px;margin-bottom:14px;padding:0 12px}
+.rw-bar{width:4px;border-radius:2px;background:rgba(255,80,80,.2);transition:height .06s ease}
+.rw-bar.rec{background:#ef4444}
+
+/* Timer */
+.rec-timer{font-family:'Bebas Neue',sans-serif;font-size:36px;
+  color:#ef4444;letter-spacing:3px;text-align:center;margin-bottom:14px;display:none}
+.rec-timer.on{display:block}
+
+/* Contrôles */
+.rec-controls{display:flex;gap:8px;margin-bottom:10px}
+.rec-start{flex:1;border:none;border-radius:14px;padding:14px;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;
+  background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff;
+  box-shadow:0 6px 20px rgba(239,68,68,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.rec-stop{flex:1;border:none;border-radius:14px;padding:14px;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;
+  display:none;align-items:center;justify-content:center;gap:8px}
+.rec-send{width:100%;border:none;border-radius:14px;padding:13px;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;
+  background:linear-gradient(135deg,#ff8c00,#ff6000);color:#fff;
+  box-shadow:0 6px 20px rgba(255,140,0,.35);display:none}
+.rec-send:active,.rec-start:active,.rec-stop:active{opacity:.85;transform:scale(.97)}
+.rec-limit{font-size:10px;color:rgba(255,255,255,.2);text-align:center;margin-top:8px;font-weight:600}
+
+/* Preview enregistré */
+.rec-preview{background:rgba(255,140,0,.06);border:1px solid rgba(255,140,0,.2);
+  border-radius:14px;padding:12px 14px;margin-bottom:12px;display:none}
+.rec-prev-lbl{font-size:8px;font-weight:800;color:rgba(255,140,0,.4);letter-spacing:2px;margin-bottom:6px}
+.rec-prev-row{display:flex;align-items:center;gap:10px}
+.rec-prev-play{width:36px;height:36px;border-radius:50%;
+  background:rgba(255,140,0,.15);border:1px solid rgba(255,140,0,.3);
+  color:#ff8c00;font-size:15px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0}
+.rec-prev-info{flex:1}
+.rec-prev-dur{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#ff8c00}
+.rec-prev-filter{font-size:10px;color:rgba(255,140,0,.5);font-weight:700;margin-top:2px}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--sb)+20px);left:50%;transform:translateX(-50%);
+  background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;
+  font-size:13px;font-weight:700;z-index:999;opacity:0;transition:opacity .2s;
+  pointer-events:none;white-space:nowrap;max-width:85vw;text-align:center}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="bg"><div class="bg-glow"></div></div>
+
+<div class="app">
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-top">
+      <a href="game.html" class="hdr-back">←</a>
+      <div class="hdr-logo">
+        <div class="hdr-freq">📻 PORT 13 FM</div>
+        <div class="hdr-name">LA RADIO DES DOCKERS</div>
+      </div>
+      <div class="hdr-onair"><div class="dot"></div><div class="onair-txt">LIVE</div></div>
+    </div>
+    <div class="tabs">
+      <div class="tab on" id="t0" onclick="switchTab(0)">📻 ANTENNE</div>
+      <div class="tab" id="t1" onclick="switchTab(1)">🎙 MICRO</div>
+    </div>
+  </div>
+
+  <!-- SCROLL -->
+  <div class="scroll" id="mainScroll">
+
+    <!-- ANTENNE -->
+    <div class="view on" id="v0">
+      <!-- En cours -->
+      <div class="now-card">
+        <div class="now-lbl">🔴 EN CE MOMENT</div>
+        <div class="now-row">
+          <div class="now-av" id="nowAv">📻</div>
+          <div class="now-info">
+            <div class="now-user" id="nowUser">Chargement...</div>
+            <div class="now-filter" id="nowFilter">—</div>
+          </div>
+          <div class="now-dur" id="nowDur">0:00</div>
+        </div>
+        <div class="play-wave" id="playWave"></div>
+        <div class="play-prog"><div class="play-prog-fill" id="playFill"></div></div>
+        <button class="play-btn" id="playBtn" onclick="togglePlay()">▶ ÉCOUTER</button>
+      </div>
+      <!-- Feed -->
+      <div class="feed-title">📼 MESSAGES DES DOCKERS</div>
+      <div id="feedList"><div class="empty"><div class="empty-ico">📻</div><div class="empty-txt">Chargement des messages...</div></div></div>
+    </div>
+
+    <!-- MICRO -->
+    <div class="view" id="v1">
+      <div class="rec-hero">
+        <div class="rec-hero-txt">TON MESSAGE À L'ANTENNE</div>
+        <div class="rec-hero-sub">Max 20 secondes · Tout le monde t'entend</div>
+      </div>
+
+      <!-- Filtres voix -->
+      <div class="filters-lbl">🎛 FILTRE VOIX</div>
+      <div class="filters" id="filtersGrid"></div>
+
+      <!-- Waveform -->
+      <div class="rec-wave" id="recWave"></div>
+      <div class="rec-timer" id="recTimer">0:00</div>
+
+      <!-- Contrôles -->
+      <div class="rec-controls">
+        <button class="rec-start" id="recStart" onclick="startRec()">🔴 ENREGISTRER</button>
+        <button class="rec-stop" id="recStop" onclick="stopRec()">⏹ STOP</button>
+      </div>
+      <button class="rec-send" id="recSend" onclick="sendRec()">📤 DIFFUSER SUR PORT 13 FM</button>
+
+      <!-- Preview -->
+      <div class="rec-preview" id="recPreview">
+        <div class="rec-prev-lbl">APERÇU DE TON MESSAGE</div>
+        <div class="rec-prev-row">
+          <div class="rec-prev-play" onclick="previewPlay()">▶</div>
+          <div class="rec-prev-info">
+            <div class="rec-prev-dur" id="prevDur">0:00</div>
+            <div class="rec-prev-filter" id="prevFilter">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="rec-limit">⚠️ Max 20 secondes · Ton pseudo apparaît sur le message</div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+let currentUser=null,username='Docker';
+let audioCtx=null,analyser=null,sourceNode=null,filterNodes=[];
+let mediaRecorder=null,recChunks=[],recBlob=null,recUrl=null;
+let recSeconds=0,recInterval=null,maxSec=20;
+let isPlaying=false,currentAudio=null;
+let playingMsgId=null,playInterval=null;
+let selectedFilter='normal';
+let vuInterval=null;
+
+// ── FILTRES ──
+const FILTERS=[
+  {id:'normal',ico:'🎙',name:'NORMAL',desc:'Ta voix naturelle'},
+  {id:'robot',ico:'🤖',name:'ROBOT',desc:'Effet métallique'},
+  {id:'cave',ico:'🏔️',name:'CAVERNE',desc:'Écho profond'},
+  {id:'telephone',ico:'📞',name:'TELE',desc:'Vieille ligne'},
+  {id:'alien',ico:'👾',name:'ALIEN',desc:'Voix haut perché'},
+  {id:'monstre',ico:'👹',name:'MONSTRE',desc:'Voix grave'},
+];
+
+function initFilters(){
+  const el=document.getElementById('filtersGrid');
+  el.innerHTML=FILTERS.map(f=>`
+    <div class="filter-btn${f.id===selectedFilter?' sel':''}" onclick="selectFilter('${f.id}')">
+      <div class="filter-ico">${f.ico}</div>
+      <div class="filter-name">${f.name}</div>
+    </div>
+  `).join('');
+}
+
+function selectFilter(id){
+  selectedFilter=id;
+  document.querySelectorAll('.filter-btn').forEach((b,i)=>{
+    b.classList.toggle('sel',FILTERS[i].id===id);
+  });
+}
+
+// ── WAVEFORMS ──
+function initWave(elId,n=32){
+  const el=document.getElementById(elId);
+  el.innerHTML='';
+  for(let i=0;i<n;i++){
+    const b=document.createElement('div');
+    b.className=elId==='recWave'?'rw-bar':'pw-bar';
+    b.style.height='4px';
+    el.appendChild(b);
+  }
+}
+
+function animateRecWave(active){
+  const bars=document.querySelectorAll('.rw-bar');
+  bars.forEach((b,i)=>{
+    if(active&&analyser){
+      const data=new Uint8Array(analyser.frequencyBinCount);
+      analyser.getByteFrequencyData(data);
+      const idx=Math.floor(i*data.length/bars.length);
+      const h=4+data[idx]/255*44;
+      b.style.height=h+'px';
+    } else if(active){
+      b.style.height=(4+Math.random()*40)+'px';
+    } else {
+      b.style.height='4px';
+    }
+    b.classList.toggle('rec',active);
+  });
+}
+
+function animatePlayWave(active){
+  const bars=document.querySelectorAll('.pw-bar');
+  bars.forEach((b,i)=>{
+    const h=active?(4+Math.random()*20):4;
+    b.style.height=h+'px';
+    b.classList.toggle('active',active);
+  });
+}
+
+// ── AUDIO CONTEXT & FILTRES ──
+function getAudioCtx(){
+  if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
+
+function applyFilter(stream){
+  const ctx=getAudioCtx();
+  const src=ctx.createMediaStreamSource(stream);
+  analyser=ctx.createAnalyser();analyser.fftSize=64;
+  const dest=ctx.createMediaStreamDestination();
+  filterNodes=[];
+
+  if(selectedFilter==='normal'){
+    src.connect(analyser);analyser.connect(dest);
+  } else if(selectedFilter==='robot'){
+    // Distorsion + bitcrusher effect
+    const wave=ctx.createWaveShaper();
+    const curve=new Float32Array(256);
+    for(let i=0;i<256;i++){const x=i*2/256-1;curve[i]=x<0?-1:1;}
+    wave.curve=curve;
+    const g=ctx.createGain();g.gain.value=0.4;
+    const osc=ctx.createOscillator();osc.frequency.value=30;osc.start();
+    const ring=ctx.createGain();osc.connect(ring.gain);
+    src.connect(ring);ring.connect(wave);wave.connect(analyser);analyser.connect(g);g.connect(dest);
+  } else if(selectedFilter==='cave'){
+    const conv=ctx.createConvolver();
+    const len=ctx.sampleRate*2;
+    const buf=ctx.createBuffer(2,len,ctx.sampleRate);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2);}
+    conv.buffer=buf;conv.normalize=true;
+    const wet=ctx.createGain();wet.gain.value=0.7;
+    const dry=ctx.createGain();dry.gain.value=0.5;
+    src.connect(dry);src.connect(conv);conv.connect(wet);
+    dry.connect(analyser);wet.connect(analyser);analyser.connect(dest);
+  } else if(selectedFilter==='telephone'){
+    const hp=ctx.createBiquadFilter();hp.type='highpass';hp.frequency.value=500;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2000;
+    const dist=ctx.createWaveShaper();
+    const c2=new Float32Array(256);for(let i=0;i<256;i++){const x=i*2/256-1;c2[i]=x*(1+Math.abs(x)*.4);}
+    dist.curve=c2;
+    src.connect(hp);hp.connect(lp);lp.connect(dist);dist.connect(analyser);analyser.connect(dest);
+  } else if(selectedFilter==='alien'){
+    // Pitch haut via ringmod rapide
+    const osc=ctx.createOscillator();osc.frequency.value=800;osc.start();
+    const ring=ctx.createGain();osc.connect(ring.gain);ring.gain.value=0;
+    const g=ctx.createGain();g.gain.value=0.6;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=6000;
+    src.connect(ring);src.connect(lp);ring.connect(analyser);lp.connect(analyser);analyser.connect(g);g.connect(dest);
+  } else if(selectedFilter==='monstre'){
+    // Pitch bas via chorus lent
+    const delay=ctx.createDelay(0.3);delay.delayTime.value=0.02;
+    const fb=ctx.createGain();fb.gain.value=0.5;
+    const g=ctx.createGain();g.gain.value=0.7;
+    src.connect(delay);delay.connect(fb);fb.connect(delay);
+    src.connect(analyser);delay.connect(analyser);analyser.connect(g);g.connect(dest);
+  }
+
+  filterNodes.push(src);
+  return dest.stream;
+}
+
+// ── ENREGISTREMENT ──
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,sampleRate:22050}});
+    const filteredStream=applyFilter(stream);
+    mediaRecorder=new MediaRecorder(filteredStream,{mimeType:getSupportedMime()});
+    recChunks=[];
+    mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
+    mediaRecorder.onstop=()=>{
+      recBlob=new Blob(recChunks,{type:getSupportedMime()});
+      recUrl=URL.createObjectURL(recBlob);
+      document.getElementById('prevDur').textContent=fmtSec(recSeconds);
+      document.getElementById('prevFilter').textContent=FILTERS.find(f=>f.id===selectedFilter)?.ico+' '+FILTERS.find(f=>f.id===selectedFilter)?.name;
+      document.getElementById('recPreview').style.display='block';
+      document.getElementById('recSend').style.display='block';
+      document.getElementById('recStart').style.display='flex';
+      document.getElementById('recStop').style.display='none';
+      document.getElementById('recTimer').classList.remove('on');
+      animateRecWave(false);
+    };
+    mediaRecorder.start(100);
+    recSeconds=0;
+    document.getElementById('recStart').style.display='none';
+    document.getElementById('recStop').style.display='flex';
+    document.getElementById('recTimer').classList.add('on');
+    document.getElementById('recPreview').style.display='none';
+    document.getElementById('recSend').style.display='none';
+    if(navigator.vibrate)navigator.vibrate(15);
+    recInterval=setInterval(()=>{
+      recSeconds++;
+      document.getElementById('recTimer').textContent='🔴 '+fmtSec(recSeconds);
+      animateRecWave(true);
+      if(recSeconds>=maxSec)stopRec();
+    },1000);
+    toast('🔴 Enregistrement en cours...');
+  }catch(e){
+    toast('❌ Micro non disponible');console.warn(e);
+  }
+}
+
+function stopRec(){
+  clearInterval(recInterval);
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+  if(navigator.vibrate)navigator.vibrate(10);
+}
+
+function previewPlay(){
+  if(!recUrl)return;
+  if(currentAudio){currentAudio.pause();currentAudio=null;}
+  currentAudio=new Audio(recUrl);
+  applyFilterToAudio(currentAudio);
+  currentAudio.play().catch(e=>console.warn(e));
+  toast('▶ Aperçu de ton message');
+}
+
+function applyFilterToAudio(audio){
+  // Pour la preview on joue directement sans filtre (déjà filtré à l'enregistrement)
+}
+
+async function sendRec(){
+  if(!recBlob){toast('Enregistre d\'abord !');return;}
+  const btn=document.getElementById('recSend');
+  btn.disabled=true;btn.textContent='📤 ENVOI...';
+  try{
+    // Convertir en base64
+    const b64=await blobToBase64(recBlob);
+    const filterInfo=FILTERS.find(f=>f.id===selectedFilter);
+    const msg={
+      user_id:currentUser?.id||'anonymous',
+      username:username,
+      audio_b64:b64,
+      filter:selectedFilter,
+      filter_name:filterInfo?.name||'NORMAL',
+      filter_ico:filterInfo?.ico||'🎙',
+      duration:recSeconds,
+      created_at:new Date().toISOString(),
+    };
+    // Stocker dans game_stats.records.radio_messages (liste des 20 derniers)
+    const {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();
+    const records=gs?.records||{};
+    const msgs=records.radio_messages||[];
+    msg.id=Date.now().toString();
+    msgs.unshift(msg);
+    if(msgs.length>20)msgs.splice(20);
+    records.radio_messages=msgs;
+    await sb.from('game_stats').update({records}).eq('user_id',currentUser.id);
+    if(navigator.vibrate)navigator.vibrate([15,10,25]);
+    toast('✅ Message diffusé sur Port 13 FM !');
+    btn.disabled=false;btn.textContent='📤 DIFFUSER SUR PORT 13 FM';
+    recBlob=null;recUrl=null;recSeconds=0;
+    document.getElementById('recPreview').style.display='none';
+    document.getElementById('recSend').style.display='none';
+    document.getElementById('recTimer').textContent='';
+    initWave('recWave');
+    // Reload feed
+    await loadFeed();
+    switchTab(0);
+  }catch(e){
+    console.warn('sendRec',e);
+    toast('❌ Erreur envoi: '+e.message);
+    btn.disabled=false;btn.textContent='📤 DIFFUSER SUR PORT 13 FM';
+  }
+}
+
+// ── LECTURE ──
+async function loadFeed(){
+  // Charger tous les messages radio de tous les joueurs
+  const {data:all}=await sb.from('game_stats').select('records,user_id').not('records','is',null).limit(50);
+  const msgs=[];
+  (all||[]).forEach(r=>{
+    (r.records?.radio_messages||[]).forEach(m=>msgs.push(m));
+  });
+  msgs.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  renderFeed(msgs);
+}
+
+function renderFeed(msgs){
+  const el=document.getElementById('feedList');
+  if(!msgs.length){
+    el.innerHTML='<div class="empty"><div class="empty-ico">📻</div><div class="empty-txt">Aucun message pour l\'instant.<br>Sois le premier à parler !</div></div>';
+    return;
+  }
+  // Premier message = "en cours"
+  const first=msgs[0];
+  const initials=(first.username||'?').slice(0,2).toUpperCase();
+  const colors=['#ff8c00','#3b82f6','#16a34a','#dc2626','#7c3aed','#0891b2'];
+  const col=colors[first.username?.charCodeAt(0)%colors.length||0];
+  document.getElementById('nowAv').textContent=initials;
+  document.getElementById('nowAv').style.background=`linear-gradient(135deg,${col},${col}99)`;
+  document.getElementById('nowUser').textContent=first.username||'Docker';
+  document.getElementById('nowFilter').textContent=(first.filter_ico||'🎙')+' '+(first.filter_name||'NORMAL');
+  document.getElementById('nowDur').textContent=fmtSec(first.duration||0);
+  el.innerHTML=msgs.slice(1).map(m=>{
+    const ini=(m.username||'?').slice(0,2).toUpperCase();
+    const c=colors[m.username?.charCodeAt(0)%colors.length||0];
+    const ago=timeAgo(m.created_at);
+    return `<div class="msg-item${playingMsgId===m.id?' playing-item':''}" onclick="playMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+      <div class="msg-av" style="background:linear-gradient(135deg,${c},${c}99)">${ini}</div>
+      <div class="msg-info">
+        <div class="msg-user">${m.username||'Docker'}</div>
+        <div class="msg-meta">${m.filter_ico||'🎙'} ${m.filter_name||'NORMAL'} · ${ago}</div>
+      </div>
+      <div class="msg-dur">${fmtSec(m.duration||0)}</div>
+      <div class="msg-play-ico">${playingMsgId===m.id?'⏸':'▶'}</div>
+    </div>`;
+  }).join('');
+
+  // Stocker le premier message pour lecture
+  window._firstMsg=first;
+}
+
+function togglePlay(){
+  if(isPlaying){
+    stopCurrentPlay();
+  } else {
+    if(window._firstMsg)playMsg(window._firstMsg,true);
+  }
+}
+
+function playMsg(m,isFirst=false){
+  stopCurrentPlay();
+  if(!m.audio_b64)return toast('Audio non disponible');
+  try{
+    const url=base64ToUrl(m.audio_b64,getSupportedMime());
+    currentAudio=new Audio(url);
+    currentAudio.play().then(()=>{
+      isPlaying=true;playingMsgId=m.id;
+      document.getElementById('playBtn').textContent='⏸ PAUSE';
+      document.getElementById('playBtn').classList.add('playing');
+      // Waveform animée
+      playInterval=setInterval(()=>{
+        animatePlayWave(true);
+        const pct=currentAudio.currentTime/currentAudio.duration*100;
+        document.getElementById('playFill').style.width=pct+'%';
+      },100);
+      currentAudio.onended=()=>{stopCurrentPlay();};
+    }).catch(e=>{console.warn(e);toast('❌ Lecture impossible');});
+  }catch(e){toast('❌ Audio non disponible');console.warn(e);}
+}
+
+function stopCurrentPlay(){
+  if(currentAudio){currentAudio.pause();currentAudio.src='';currentAudio=null;}
+  clearInterval(playInterval);
+  isPlaying=false;playingMsgId=null;
+  document.getElementById('playBtn').textContent='▶ ÉCOUTER';
+  document.getElementById('playBtn').classList.remove('playing');
+  document.getElementById('playFill').style.width='0%';
+  animatePlayWave(false);
+}
+
+// ── UTILS ──
+function getSupportedMime(){
+  const mimes=['audio/webm;codecs=opus','audio/webm','audio/ogg','audio/mp4'];
+  return mimes.find(m=>MediaRecorder.isTypeSupported(m))||'audio/webm';
+}
+function blobToBase64(blob){
+  return new Promise(r=>{const reader=new FileReader();reader.onload=e=>r(e.target.result);reader.readAsDataURL(blob);});
+}
+function base64ToUrl(b64,mime){return b64;} // dataURL directement utilisable
+function fmtSec(s){return Math.floor(s/60)+':'+(s%60<10?'0':'')+s%60;}
+function timeAgo(iso){
+  const diff=(Date.now()-new Date(iso))/1000;
+  if(diff<60)return 'À l\'instant';
+  if(diff<3600)return Math.floor(diff/60)+'min';
+  if(diff<86400)return Math.floor(diff/3600)+'h';
+  return Math.floor(diff/86400)+'j';
+}
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── TABS ──
+function switchTab(n){
+  [0,1].forEach(i=>{
+    document.getElementById('t'+i).classList.toggle('on',i===n);
+    document.getElementById('v'+i).classList.toggle('on',i===n);
+  });
+  document.getElementById('mainScroll').scrollTop=0;
+}
+
+// ── INIT ──
+(async()=>{
+  initFilters();
+  initWave('recWave');
+  initWave('playWave',24);
+
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session){location.href='index.html';return;}
+  currentUser=session.user;
+  const {data:pr}=await sb.from('profiles').select('username').eq('user_id',currentUser.id).maybeSingle();
+  username=pr?.username||'Docker';
+  await loadFeed();
+})();
+</script>
+</body>
+</html>
