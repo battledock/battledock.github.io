@@ -112,6 +112,12 @@ html,body{height:100%;overflow:hidden;background:#0a0500;font-family:'Inter',san
 .msg-dur{font-family:'Bebas Neue',sans-serif;font-size:15px;
   color:rgba(255,255,255,.3);flex-shrink:0}
 .msg-play-ico{font-size:18px;flex-shrink:0;color:rgba(255,140,0,.5)}
+.msg-delete{width:28px;height:28px;border-radius:50%;background:rgba(239,68,68,.1);
+  border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.5);font-size:13px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  flex-shrink:0;transition:all .15s;margin-left:4px}
+.msg-delete:active{background:rgba(239,68,68,.25);color:#ef4444;transform:scale(.9)}
+.msg-delete-confirm{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#ef4444}
 
 /* Empty state */
 .empty{text-align:center;padding:40px 20px}
@@ -753,8 +759,11 @@ function renderFeed(msgs){
           <div class="msg-wave" onclick="event.stopPropagation();playMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">${wfHtml}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
-          <div class="msg-dur">${fmtSec(m.duration||0)}</div>
-          <div class="msg-play-ico">${playingMsgId===m.id?'⏸':'▶'}</div>
+          <div style="display:flex;align-items:center;gap:4px">
+            <div class="msg-dur">${fmtSec(m.duration||0)}</div>
+            <div class="msg-play-ico">${playingMsgId===m.id?'⏸':'▶'}</div>
+            ${m.user_id===currentUser?.id?`<div class="msg-delete" id="del_${m.id}" onclick="event.stopPropagation();confirmDelete('${m.id}')" title="Supprimer">🗑</div>`:''}
+          </div>
         </div>
       </div>
       <div class="msg-reactions">${reactHtml}</div>
@@ -929,6 +938,72 @@ window.playMsg=function(m,isFirst){
   initBlindWave();
 })();
 
+
+// ─────────────────────────────────────────
+// ── SUPPRESSION MESSAGE ──
+// ─────────────────────────────────────────
+let deleteConfirm={};
+
+function confirmDelete(msgId){
+  const btn=document.getElementById('del_'+msgId);
+  if(!btn)return;
+  if(deleteConfirm[msgId]){
+    // 2e tap = confirmer
+    deleteMsg(msgId);
+  } else {
+    // 1er tap = demander confirmation
+    deleteConfirm[msgId]=true;
+    btn.classList.add('msg-delete-confirm');
+    btn.textContent='?';
+    btn.title='Tap encore pour confirmer';
+    if(navigator.vibrate)navigator.vibrate(8);
+    // Reset après 3s si pas confirmé
+    setTimeout(()=>{
+      if(deleteConfirm[msgId]){
+        delete deleteConfirm[msgId];
+        if(btn){btn.classList.remove('msg-delete-confirm');btn.textContent='🗑';btn.title='Supprimer';}
+      }
+    },3000);
+  }
+}
+
+async function deleteMsg(msgId){
+  delete deleteConfirm[msgId];
+  try{
+    const {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();
+    if(!gs)return;
+    const records=gs.records||{};
+    const msgs=records.radio_messages||[];
+    const idx=msgs.findIndex(m=>m.id===msgId);
+    if(idx===-1)return toast('Message introuvable');
+    // Arrêter si en cours de lecture
+    if(playingMsgId===msgId)stopCurrentPlay();
+    msgs.splice(idx,1);
+    records.radio_messages=msgs;
+    await sb.from('game_stats').update({records}).eq('user_id',currentUser.id);
+    if(navigator.vibrate)navigator.vibrate([10,5,15]);
+    // Animer la suppression
+    const el=document.getElementById('msg_'+msgId);
+    if(el){
+      el.style.transition='all .3s ease';
+      el.style.opacity='0';el.style.transform='translateX(40px)';
+      el.style.maxHeight=el.offsetHeight+'px';
+      setTimeout(()=>{
+        el.style.maxHeight='0';el.style.padding='0';el.style.margin='0';
+        el.style.border='none';
+        setTimeout(()=>el.remove(),300);
+      },300);
+    }
+    // Recharger le feed en arrière-plan
+    setTimeout(()=>loadFeed(),700);
+    toast('🗑 Message supprimé');
+    msgsToday=Math.max(0,msgsToday-1);
+    updateLimitUI();
+  }catch(e){
+    console.warn('deleteMsg',e);
+    toast('❌ Erreur suppression');
+  }
+}
 
 // ─────────────────────────────────────────
 // ── FLASH INFO ──
