@@ -178,6 +178,25 @@ html,body{height:100%;overflow:hidden;background:#0a0500;font-family:'Inter',san
 .rec-prev-dur{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#ff8c00}
 .rec-prev-filter{font-size:10px;color:rgba(255,140,0,.5);font-weight:700;margin-top:2px}
 
+
+/* ── RÉACTIONS ── */
+.msg-reactions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.react-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;padding:3px 10px;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;gap:4px;transition:all .15s}
+.react-btn:active{transform:scale(.92)}
+.react-btn.reacted{background:rgba(255,140,0,.15);border-color:rgba(255,140,0,.3)}
+.react-count{font-family:'Bebas Neue',sans-serif;font-size:13px;color:rgba(255,255,255,.5)}
+.react-btn.reacted .react-count{color:#ff8c00}
+
+/* ── WAVEFORM FEED ── */
+.msg-wave{height:24px;display:flex;align-items:center;gap:1.5px;margin-top:5px;
+  padding:0 2px;cursor:pointer}
+.mw-bar{width:3px;border-radius:1.5px;background:rgba(255,140,0,.25);flex-shrink:0}
+.msg-item.playing-item .mw-bar{background:rgba(255,140,0,.6);
+  animation:waveAnim .4s ease-in-out infinite alternate}
+@keyframes waveAnim{from{transform:scaleY(.4)}to{transform:scaleY(1)}}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:calc(var(--sb)+20px);left:50%;transform:translateX(-50%);
   background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;
@@ -283,6 +302,7 @@ let audioCtx=null,analyser=null,sourceNode=null,filterNodes=[];
 let mediaRecorder=null,recChunks=[],recBlob=null,recUrl=null;
 let recSeconds=0,recInterval=null,maxSec=20;
 let isPlaying=false,currentAudio=null;
+let recWaveform=[]; // amplitude snapshot pour le feed
 let playingMsgId=null,playInterval=null;
 let selectedFilter='normal';
 let vuInterval=null;
@@ -360,6 +380,20 @@ function getAudioCtx(){
   return audioCtx;
 }
 
+function captureWaveform(){
+  // Générer une waveform synthétique depuis l'analyser
+  if(!analyser)return Array.from({length:32},()=>Math.random());
+  const data=new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  const bars=32;
+  const result=[];
+  for(let i=0;i<bars;i++){
+    const idx=Math.floor(i*data.length/bars);
+    result.push(data[idx]/255);
+  }
+  return result;
+}
+
 function applyFilter(stream){
   const ctx=getAudioCtx();
   const src=ctx.createMediaStreamSource(stream);
@@ -421,12 +455,18 @@ async function startRec(){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,sampleRate:22050}});
     const filteredStream=applyFilter(stream);
-    mediaRecorder=new MediaRecorder(filteredStream,{mimeType:getSupportedMime()});
+    // Compression : bitrate réduit pour minimiser la taille base64
+    const mime=getSupportedMime();
+    const opts={mimeType:mime};
+    if(mime.includes('webm'))opts.audioBitsPerSecond=16000; // 16kbps suffisant pour la voix
+    mediaRecorder=new MediaRecorder(filteredStream,opts);
     recChunks=[];
     mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recChunks.push(e.data);};
     mediaRecorder.onstop=()=>{
       recBlob=new Blob(recChunks,{type:getSupportedMime()});
       recUrl=URL.createObjectURL(recBlob);
+      // Capturer la waveform au moment de l'arrêt
+      recWaveform=captureWaveform();
       document.getElementById('prevDur').textContent=fmtSec(recSeconds);
       document.getElementById('prevFilter').textContent=FILTERS.find(f=>f.id===selectedFilter)?.ico+' '+FILTERS.find(f=>f.id===selectedFilter)?.name;
       document.getElementById('recPreview').style.display='block';
@@ -492,6 +532,8 @@ async function sendRec(){
       filter_ico:filterInfo?.ico||'🎙',
       duration:recSeconds,
       created_at:new Date().toISOString(),
+      waveform:recWaveform||[],
+      reactions:{},
     };
     // Stocker dans game_stats.records.radio_messages (liste des 20 derniers)
     const {data:gs}=await sb.from('game_stats').select('records').eq('user_id',currentUser.id).maybeSingle();
@@ -552,14 +594,30 @@ function renderFeed(msgs){
     const ini=(m.username||'?').slice(0,2).toUpperCase();
     const c=colors[m.username?.charCodeAt(0)%colors.length||0];
     const ago=timeAgo(m.created_at);
-    return `<div class="msg-item${playingMsgId===m.id?' playing-item':''}" onclick="playMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">
-      <div class="msg-av" style="background:linear-gradient(135deg,${c},${c}99)">${ini}</div>
-      <div class="msg-info">
-        <div class="msg-user">${m.username||'Docker'}</div>
-        <div class="msg-meta">${m.filter_ico||'🎙'} ${m.filter_name||'NORMAL'} · ${ago}</div>
+    const wf=m.waveform&&m.waveform.length?m.waveform:Array.from({length:32},()=>0.2+Math.random()*0.6);
+    const wfHtml=wf.map(v=>`<div class="mw-bar" style="height:${Math.max(3,Math.round(v*22))}px"></div>`).join('');
+    const reacts=m.reactions||{};
+    const myReact=m._myReact||'';
+    const reactHtml=['👏','🔥','😂'].map(e=>{
+      const cnt=(reacts[e]||0);
+      return `<div class="react-btn${myReact===e?' reacted':''}" onclick="event.stopPropagation();addReact('${m.id}','${e}',${JSON.stringify(m).replace(/"/g,"'")})">
+        ${e}<span class="react-count">${cnt>0?cnt:''}</span>
+      </div>`;
+    }).join('');
+    return `<div class="msg-item${playingMsgId===m.id?' playing-item':''}" id="msg_${m.id}">
+      <div style="display:flex;align-items:center;gap:11px" onclick="playMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">
+        <div class="msg-av" style="background:linear-gradient(135deg,${c},${c}99)">${ini}</div>
+        <div class="msg-info" style="flex:1;min-width:0">
+          <div class="msg-user">${m.username||'Docker'}</div>
+          <div class="msg-meta">${m.filter_ico||'🎙'} ${m.filter_name||'NORMAL'} · ${ago}</div>
+          <div class="msg-wave" onclick="event.stopPropagation();playMsg(${JSON.stringify(m).replace(/"/g,'&quot;')})">${wfHtml}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+          <div class="msg-dur">${fmtSec(m.duration||0)}</div>
+          <div class="msg-play-ico">${playingMsgId===m.id?'⏸':'▶'}</div>
+        </div>
       </div>
-      <div class="msg-dur">${fmtSec(m.duration||0)}</div>
-      <div class="msg-play-ico">${playingMsgId===m.id?'⏸':'▶'}</div>
+      <div class="msg-reactions">${reactHtml}</div>
     </div>`;
   }).join('');
 
@@ -594,6 +652,38 @@ function playMsg(m,isFirst=false){
       currentAudio.onended=()=>{stopCurrentPlay();};
     }).catch(e=>{console.warn(e);toast('❌ Lecture impossible');});
   }catch(e){toast('❌ Audio non disponible');console.warn(e);}
+}
+
+// ── RÉACTIONS ──
+async function addReact(msgId,emoji,msg){
+  if(!currentUser)return;
+  if(navigator.vibrate)navigator.vibrate(6);
+  // Trouver le propriétaire du message
+  const ownerId=msg.user_id;
+  if(!ownerId)return;
+  // Charger son game_stats
+  const {data:gs}=await sb.from('game_stats').select('records').eq('user_id',ownerId).maybeSingle();
+  if(!gs)return;
+  const records=gs.records||{};
+  const msgs=records.radio_messages||[];
+  const idx=msgs.findIndex(m=>m.id===msgId);
+  if(idx===-1)return;
+  const m=msgs[idx];
+  m.reactions=m.reactions||{};
+  // Toggle
+  const myKey='_react_'+currentUser.id;
+  if(m[myKey]===emoji){
+    m.reactions[emoji]=Math.max(0,(m.reactions[emoji]||1)-1);
+    delete m[myKey];
+  } else {
+    if(m[myKey])m.reactions[m[myKey]]=Math.max(0,(m.reactions[m[myKey]]||1)-1);
+    m.reactions[emoji]=(m.reactions[emoji]||0)+1;
+    m[myKey]=emoji;
+  }
+  msgs[idx]=m;
+  records.radio_messages=msgs;
+  await sb.from('game_stats').update({records}).eq('user_id',ownerId);
+  await loadFeed();
 }
 
 function stopCurrentPlay(){
@@ -636,6 +726,52 @@ function switchTab(n){
   });
   document.getElementById('mainScroll').scrollTop=0;
 }
+
+// ── JINGLE PORT 13 FM ──
+function playJingle(){
+  const ctx2=getAudioCtx();
+  const t=ctx2.currentTime;
+  // Notes : sol-la-si-do (jingle radio)
+  const notes=[392,440,494,523,494,440,523];
+  const durs=[0.12,0.12,0.12,0.25,0.1,0.1,0.35];
+  let time=t+0.1;
+  notes.forEach((freq,i)=>{
+    const osc=ctx2.createOscillator();
+    const g=ctx2.createGain();
+    osc.type='sine';osc.frequency.value=freq;
+    g.gain.setValueAtTime(0,time);
+    g.gain.linearRampToValueAtTime(0.18,time+0.02);
+    g.gain.linearRampToValueAtTime(0,time+durs[i]);
+    osc.connect(g);g.connect(ctx2.destination);
+    osc.start(time);osc.stop(time+durs[i]+0.05);
+    // Harmonique légère
+    const osc2=ctx2.createOscillator();
+    const g2=ctx2.createGain();
+    osc2.type='triangle';osc2.frequency.value=freq*2;
+    g2.gain.setValueAtTime(0,time);
+    g2.gain.linearRampToValueAtTime(0.04,time+0.02);
+    g2.gain.linearRampToValueAtTime(0,time+durs[i]);
+    osc2.connect(g2);g2.connect(ctx2.destination);
+    osc2.start(time);osc2.stop(time+durs[i]+0.05);
+    time+=durs[i]*0.85;
+  });
+  // Dernier accord
+  [523,659,784].forEach(f=>{
+    const o=ctx2.createOscillator();const g=ctx2.createGain();
+    o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0.06,time);
+    g.gain.linearRampToValueAtTime(0,time+0.6);
+    o.connect(g);g.connect(ctx2.destination);
+    o.start(time);o.stop(time+0.65);
+  });
+}
+
+// Jingle avant lecture
+const _origPlay=playMsg;
+window.playMsg=function(m,isFirst){
+  if(isFirst){playJingle();setTimeout(()=>_origPlay(m,isFirst),900);}
+  else _origPlay(m,isFirst);
+};
 
 // ── INIT ──
 (async()=>{
