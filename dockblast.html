@@ -927,18 +927,18 @@ async function endGame(){
 }
 
 async function saveRec(){
-  if(!sbUser){console.warn('[DockBlast] saveRec: pas de user');return;}
+  if(!sbUser)return;
   try{
-    const{data:gs,error:e1}=await sb.from('game_stats')
+    // 1. Lire les records existants
+    const{data:gs}=await sb.from('game_stats')
       .select('records').eq('user_id',sbUser.id).maybeSingle();
-    if(e1){console.error('[DockBlast] select error:',e1);return;}
-    const rec=(gs?.records)||{};
-    rec.dockblast_record=record;
-    const{error:e2}=await sb.from('game_stats')
-      .upsert({user_id:sbUser.id,records:rec},{onConflict:'user_id'});
-    if(e2)console.error('[DockBlast] upsert error:',e2);
-    else console.log('[DockBlast] record sauvegardé:',record);
-  }catch(err){console.error('[DockBlast] saveRec exception:',err);}
+    // 2. Merger uniquement dockblast_record
+    const rec=Object.assign({},gs?.records||{},{dockblast_record:record});
+    // 3. Update uniquement la colonne records
+    const{error}=await sb.from('game_stats')
+      .update({records:rec}).eq('user_id',sbUser.id);
+    if(error)console.error('[DockBlast]',error.message);
+  }catch(e){console.error('[DockBlast]',e);}
 }
 
 // ── INIT ──
