@@ -17,7 +17,8 @@
   .wrap { position:relative; z-index:1; max-width:540px; margin:0 auto; padding:0 14px 40px; }
 
   .hdr { position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:12px;
-    padding:14px 4px; background:rgba(255,255,255,0.92); backdrop-filter:blur(8px);
+    padding:max(calc(env(safe-area-inset-top,0px) + 10px),14px) 14px 12px;
+    background:rgba(255,255,255,0.96); backdrop-filter:blur(12px);
     border-bottom:1px solid rgba(0,0,0,0.06); }
   .back-btn { background:#f8f8f8; border:1px solid rgba(0,0,0,0.08); border-radius:9px;
     padding:8px 12px; font-family:'Bebas Neue',sans-serif; font-size:13px; letter-spacing:1px; color:rgba(0,0,0,0.5); cursor:pointer; }
@@ -65,7 +66,7 @@
   .btn { flex:1; padding:10px; border:none; border-radius:11px; font-family:'Bebas Neue',sans-serif; font-size:14px; letter-spacing:1px; cursor:pointer; transition:transform .1s; }
   .btn:active { transform:scale(0.96); }
   .btn-buy  { background:#16a34a; color:#fff; }
-  .btn-info { background:#f8f8f8; border:1px solid rgba(0,0,0,0.1); color:rgba(0,0,0,0.5); flex:0.6; font-size:12px; }
+  .btn-info { background:#f8f8f8; border:1px solid rgba(0,0,0,0.1); color:rgba(0,0,0,0.5); flex:1; font-size:13px; }
   .btn-info.open { background:#eff6ff; border-color:#93c5fd; color:#2563eb; }
   .btn-sell { background:transparent; border:1px solid rgba(220,38,38,0.3); color:#dc2626; }
   .btn:disabled { opacity:0.35; cursor:default; }
@@ -134,6 +135,7 @@ body.page-out{animation:pageOut .2s ease forwards}
   <div class="bg-grid"></div>
   <div class="wrap">
     <div class="hdr">
+      <button class="back-btn" onclick="location.href='game.html'">←</button>
       <div class="hdr-title">BOURSE DU FRET</div>
       <div class="hdr-profit" id="hdrProfit">—</div>
     </div>
@@ -205,7 +207,7 @@ body.page-out{animation:pageOut .2s ease forwards}
     <div id="view-market"><div class="loader">Connexion au marché…</div></div>
     <div id="view-feed" style="display:none"></div>
     <div id="view-lb" style="display:none"></div>
-    <button onclick="window.location.href='game.html'" style="display:block;width:100%;margin-top:20px;padding:14px;background:#f8f8f8;border:1px solid rgba(0,0,0,0.08);border-radius:12px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:rgba(0,0,0,0.4);cursor:pointer">← REVENIR AU JEU</button>
+
   </div>
 
   <div class="ov" id="ov">
@@ -584,8 +586,9 @@ body.page-out{animation:pageOut .2s ease forwards}
   }
 
   function drawSpark(c){
-    const d=hist[c.sym]; const sp=document.getElementById('sp-'+c.sym); if(!sp) return;
-    const min=Math.min(...d),max=Math.max(...d),rng=(max-min)||1;
+    const d=hist[c.sym]; const sp=document.getElementById('sp-'+c.sym); if(!sp||!d||d.length<2) return;
+    // Si tous les points identiques, légère variation pour éviter une ligne plate invisible
+    const min=Math.min(...d),max=Math.max(...d),rng=(max-min)||c.base*0.01||1;
     const pts=d.map((v,i)=>`${(i/(d.length-1))*300},${42-((v-min)/rng)*38-2}`).join(' ');
     const col=d[d.length-1]>=d[0]?'#34d399':'#f87171';
     sp.innerHTML=`<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>`;
@@ -642,19 +645,23 @@ body.page-out{animation:pageOut .2s ease forwards}
     document.getElementById('cash').textContent=fmt(cash)+'€';
     document.getElementById('portfolio').textContent=fmt(pv)+'€';
 
-    // Portfolio chart mini
-    portHistory.push(total);
-    if (portHistory.length > 20) portHistory.shift();
+    // Portfolio chart mini — cap strict
+    if(portHistory.length === 0 || portHistory[portHistory.length-1] !== total){
+      portHistory.push(total);
+      if (portHistory.length > 30) portHistory.shift();
+    }
     const pcVal = document.getElementById('pcVal');
     const pcChg = document.getElementById('pcChg');
     const pcLine = document.getElementById('pcLine');
     const pcFill = document.getElementById('pcFill');
     if (pcVal) pcVal.textContent = fmt(total)+'€';
     if (pcChg && portHistory.length > 1) {
-      const diff = total - portHistory[0];
-      const sign = diff >= 0 ? '▲' : '▼';
+      const first = portHistory[0];
+      const diff = total - first;
+      const pct = first > 0 ? (diff/first*100) : 0;
+      const sign = diff >= 0 ? '▲ +' : '▼ ';
       const col = diff >= 0 ? '#16a34a' : '#dc2626';
-      pcChg.textContent = sign+' '+fmt(Math.abs(diff))+'€';
+      pcChg.textContent = sign + fmt(Math.abs(diff)) + '€ (' + (diff>=0?'+':'') + pct.toFixed(1) + '% session)';
       pcChg.style.color = col;
       if (pcLine) pcLine.setAttribute('stroke', col);
     }
@@ -676,15 +683,19 @@ body.page-out{animation:pageOut .2s ease forwards}
     // Profit latent = valeur actuelle du portefeuille - coût d'achat
     const latentEl = document.getElementById('profitLatent');
     if(latentEl){
-      let totalCost = 0;
-      COMPANIES.forEach(co => {
-        const h = holdings[co.sym];
-        if(h && h.shares > 0) totalCost += h.cost;
-      });
-      const latent = pv - totalCost;
-      const latentSign = latent >= 0 ? '+' : '';
-      latentEl.textContent = latentSign + fmt(latent) + '€';
-      latentEl.style.color = latent >= 0 ? '#2563eb' : '#dc2626';
+      if(pv <= 0){
+        latentEl.textContent = '—';
+        latentEl.style.color = 'rgba(0,0,0,0.3)';
+      } else {
+        let totalCost = 0;
+        COMPANIES.forEach(co => {
+          const h = holdings[co.sym];
+          if(h && h.shares > 0) totalCost += h.cost;
+        });
+        const latent = pv - totalCost;
+        latentEl.textContent = (latent>=0?'+':'')+fmt(latent)+'€';
+        latentEl.style.color = latent >= 0 ? '#2563eb' : '#dc2626';
+      }
     }
 
     // Badge profit header
@@ -697,7 +708,9 @@ body.page-out{animation:pageOut .2s ease forwards}
       const brd   = profit >= 0 ? '#86efac' : '#fca5a5';
       if (profit === 0 && pv === 0) {
         hdrProfit.textContent = '—';
-        hdrProfit.style.cssText = 'color:rgba(0,0,0,0.3);border-color:rgba(0,0,0,0.1);background:#f8f8f8';
+        hdrProfit.style.color = 'rgba(0,0,0,0.3)';
+        hdrProfit.style.borderColor = 'rgba(0,0,0,0.1)';
+        hdrProfit.style.background = '#f8f8f8';
       } else if (pv > 0) {
         let totalCost2 = 0;
         COMPANIES.forEach(co => { const h=holdings[co.sym]; if(h&&h.shares>0) totalCost2+=h.cost; });
@@ -949,8 +962,9 @@ body.page-out{animation:pageOut .2s ease forwards}
         .select('user_id,bourse_profit,bourse_best')
         .order('bourse_profit',{ascending:false}).limit(15);
       const rows=(data||[]);
-      if(!rows.length){ el.innerHTML='<div class="muted">Pas encore de traders classés.<br><span style="font-size:11px">Fais un profit à la bourse pour apparaître !</span></div>'; return; }
-      const ids=rows.map(r=>r.user_id);
+      const filteredRows = rows.filter(r=>(r.bourse_profit||0)>0);
+      if(!filteredRows.length){ el.innerHTML='<div class="muted">Pas encore de traders classés.<br><span style="font-size:11px">Fais un profit pour apparaître !</span></div>'; return; }
+      const ids=filteredRows.map(r=>r.user_id);
       // Essai join profiles, fallback sur bourse_feed
       let nameOf={};
       try {
@@ -967,13 +981,13 @@ body.page-out{animation:pageOut .2s ease forwards}
       const medals=['🥇','🥈','🥉'];
       // Calculer le score de la semaine = profit réalisé (on n'a pas d'historique semaine,
       // on affiche le profit total avec mise en avant du n°1)
-      const sorted = [...rows].sort((a,b)=>(b.bourse_profit||0)-(a.bourse_profit||0));
+      const sorted = [...filteredRows].sort((a,b)=>(b.bourse_profit||0)-(a.bourse_profit||0));
       const winner = sorted[0];
       const winnerName = nameOf[winner?.user_id]||'Docker';
 
       // Banner trader de la semaine
       let html = '';
-      if(winner && (winner.bourse_profit||0)>0){
+      if(winner){
         html += `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fbbf24;
           border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
           <div style="font-size:32px">🏆</div>
