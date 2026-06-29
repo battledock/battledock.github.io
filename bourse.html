@@ -171,6 +171,18 @@ body.page-out{animation:pageOut .2s ease forwards}
       <div class="wallet-box"><div class="wallet-lbl">Liquidités</div><div class="wallet-val cash" id="cash">—</div></div>
       <div class="wallet-box"><div class="wallet-lbl">Portefeuille</div><div class="wallet-val" id="portfolio">—</div></div>
     </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px">
+        <div style="font-size:7px;font-weight:800;color:rgba(0,0,0,.3);letter-spacing:2px;margin-bottom:3px">✅ PROFIT RÉALISÉ</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#16a34a;line-height:1" id="profitRealise">—</div>
+        <div style="font-size:9px;color:rgba(0,0,0,.3);font-weight:700;margin-top:3px">Ventes clôturées</div>
+      </div>
+      <div style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 12px">
+        <div style="font-size:7px;font-weight:800;color:rgba(0,0,0,.3);letter-spacing:2px;margin-bottom:3px">📈 LATENT</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;line-height:1" id="profitLatent">—</div>
+        <div style="font-size:9px;color:rgba(0,0,0,.3);font-weight:700;margin-top:3px">Si tu vends maintenant</div>
+      </div>
+    </div>
     <!-- PROFITS DÉTAILLÉS -->
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px">
@@ -263,17 +275,101 @@ body.page-out{animation:pageOut .2s ease forwards}
     });
     COMPANIES.forEach(c=>CO[c.sym]=c);
   }
+  // ── ÉVÉNEMENTS NARRATIFS ──
+  // sym: null = toutes entreprises, sinon ciblé sur le type
   const EVENTS = [
-    { t:'⚓ Pénurie de conteneurs', m:0.10, bad:false },
-    { t:'📈 Hausse de la demande',  m:0.08, bad:false },
-    { t:'🚢 Contrat décroché',      m:0.09, bad:false },
-    { t:'🌊 Avarie en mer',         m:-0.09, bad:true },
-    { t:'⛔ Retard portuaire',       m:-0.08, bad:true },
+    // Lavagne
+    { t:"Lavagne signe un méga-contrat avec Rotterdam', sym:null, m:0.12, bad:false, tag:'LAVAGNE", duration:45 },
+    { t:"Scandale : Lavagne accusé de corruption douanière', sym:null, m:-0.18, bad:true, tag:'LAVAGNE", duration:60 },
+    { t:"Lavagne rachète un concurrent — marché en ébullition', sym:null, m:0.09, bad:false, tag:'LAVAGNE", duration:30 },
+    { t:"Audit surprise chez Lavagne — les investisseurs fuient', sym:null, m:-0.14, bad:true, tag:'LAVAGNE", duration:50 },
+    // Port de Marseille
+    { t:"Grève des dockers au port — trafic arrêté 48h', sym:null, m:-0.12, bad:true, tag:'PORT", duration:60 },
+    { t:"Nouveau terminal inauguré — capacité +30%', sym:null, m:0.15, bad:false, tag:'PORT", duration:45 },
+    { t:"Tempête en Méditerranée — retards massifs', sym:null, m:-0.10, bad:true, tag:'PORT", duration:40 },
+    { t:"Le port de Marseille élu meilleur port européen', sym:null, m:0.11, bad:false, tag:'PORT", duration:35 },
+    // Géopolitique
+    { t:"Fermeture du canal de Suez — détournement via Marseille', sym:null, m:0.22, bad:false, tag:'GEO", duration:90 },
+    { t:"Tensions commerciales Europe/Chine — échanges en berne', sym:null, m:-0.13, bad:true, tag:'GEO", duration:60 },
+    { t:"Nouveau accord de libre-échange Méditerranée', sym:null, m:0.10, bad:false, tag:'GEO", duration:45 },
+    // Fun / personnages
+    { t:"Un krach de containers de thon envahit le quai — chaos total', sym:null, m:-0.07, bad:true, tag:'PORT", duration:20 },
+    { t:"Gégé a négocié un contrat secret — rumeurs en bourse', sym:null, m:0.08, bad:false, tag:'DOCK", duration:30 },
+    { t:"Douglas a encore cassé une grue — production a l arret', sym:null, m:-0.11, bad:true, tag:'DOCK", duration:35 },
+    { t:"Jeff parle à une grue et elle accepte de faire des heures sup', sym:null, m:0.06, bad:false, tag:'DOCK", duration:20 },
+    { t:"Doudou a commandé trop de stocks — surcoût massif', sym:null, m:-0.08, bad:true, tag:'DOCK", duration:25 },
+    // Marché
+    { t:"Flash krach — vente panique sur tous les marchés', sym:null, m:-0.20, bad:true, tag:'KRACH", duration:15 },
+    { t:"Rebond inattendu après le krach — les acheteurs reviennent', sym:null, m:0.18, bad:false, tag:'REBOND", duration:30 },
+    { t:"Rumeur de fusion entre deux grandes entreprises portuaires', sym:null, m:0.13, bad:false, tag:'MARCHE", duration:40 },
+    { t:"Pénurie mondiale de conteneurs — les prix s envolent', sym:null, m:0.16, bad:false, tag:'MARCHE", duration:60 },
   ];
 
+  // État événement actif
+  let activeEvent = null;
+  let eventBiasMap = {};  // impact event sur biasMap
+
+  function pickRandomEvent(){
+    return EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  }
+
+  function triggerEvent(ev){
+    activeEvent = { ...ev, startedAt: Date.now(), expiresAt: Date.now() + ev.duration * 60000 };
+    // Appliquer biais à toutes les entreprises
+    COMPANIES.forEach(co => {
+      eventBiasMap[co.sym] = ev.m;
+    });
+    // Afficher dans le feed
+    showEventBanner(ev);
+    pushEventFeed(ev);
+  }
+
+  function checkEventExpiry(){
+    if(!activeEvent) return;
+    if(Date.now() > activeEvent.expiresAt){
+      // Annuler les biais
+      COMPANIES.forEach(co => { delete eventBiasMap[co.sym]; });
+      activeEvent = null;
+      const banner = document.getElementById('eventBanner');
+      if(banner) banner.style.display = 'none';
+    }
+  }
+
+  function showEventBanner(ev){
+    let banner = document.getElementById('eventBanner');
+    if(!banner){
+      banner = document.createElement('div');
+      banner.id = 'eventBanner';
+      banner.style.cssText = 'position:sticky;top:0;z-index:30;padding:10px 14px;'+
+        'display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;'+
+        'border-bottom:1px solid rgba(0,0,0,.08);animation:slideDown .3s ease';
+      const wrap = document.querySelector('.wrap');
+      if(wrap) wrap.insertBefore(banner, wrap.firstChild);
+    }
+    const isGood = ev.m > 0;
+    banner.style.background = isGood ? '#f0fdf4' : '#fef2f2';
+    banner.style.color = isGood ? '#15803d' : '#dc2626';
+    banner.innerHTML = (isGood ? '📈' : '📉') +
+      ' <span style="flex:1"><b>' + ev.tag + '</b> · ' + ev.t + '</span>'+
+      '<span style="font-size:11px;opacity:.6">' + ev.duration + 'min</span>';
+    banner.style.display = 'flex';
+  }
+
+  async function pushEventFeed(ev){
+    try {
+      await sb.from('bourse_feed').insert({
+        user_id: currentUser?.id,
+        username: 'FLASH MARCHE',
+        action: ev.t,
+        sym: 'MKT',
+        amount: 0
+      });
+    } catch(e){}
+  }
+
   const TICK_MS=15000, MIN_TRADE=5000, MAX_TRADE=150000, FEE=0.05, COOLDOWN=30000;
-  const IMPACT_LIQ=2500000, MEANREV=0.02, EVENT_PROB=0.01, KRACH_PROB=0.0005, KRACH_M=0.75;
-  const CLAMP_LO=0.72, CLAMP_HI=1.30, HIST=36, RUMOR_BIAS=0.20;
+  const IMPACT_LIQ=800000, MEANREV=0.018, EVENT_PROB=0.012, KRACH_PROB=0.0005, KRACH_M=0.75;
+  const CLAMP_LO=0.40, CLAMP_HI=2.0, HIST=36, RUMOR_BIAS=0.20;
   // Volume & Momentum
   const VOL_WINDOW_MS = 5 * 60 * 1000;  // 5 minutes de fenêtre pour le volume
   const VOL_BIAS_MAX  = 0.15;            // biais max ±15% depuis le volume
@@ -296,8 +392,8 @@ body.page-out{animation:pageOut .2s ease forwards}
 
   function stepPrice(sym,p){
     const c = CO[sym];
-    // Biais combiné : rumeurs + volume joueurs
-    const combinedBias = (biasMap[sym]||0) + (volBias[sym]||0);
+    // Biais combiné : rumeurs + volume joueurs + événement narratif
+    const combinedBias = (biasMap[sym]||0) + (volBias[sym]||0) + (eventBiasMap[sym]||0);
     const target = c.base * (1 + combinedBias);
     // Momentum : amplifie la volatilité si tendance consécutive
     const mom = momentum[sym]||0;
@@ -456,7 +552,7 @@ body.page-out{animation:pageOut .2s ease forwards}
         <div id="po-${c.sym}"></div>
         <div class="btns">
           <button class="btn btn-buy" onclick="openModal('${c.sym}','buy')">Acheter</button>
-          <button class="btn btn-info" onclick="toggleInfo('${c.sym}')">ℹ Info</button>
+          <button class="btn btn-info" onclick="openChart('${c.sym}')">📊 Graphique</button>
           <button class="btn btn-sell" id="sb-${c.sym}" onclick="openModal('${c.sym}','sell')">Vendre</button>
         </div>
         <div id="info-${c.sym}" class="stock-info-panel" style="display:none"></div>
@@ -599,6 +695,22 @@ body.page-out{animation:pageOut .2s ease forwards}
       const latentSign = latent >= 0 ? '+' : '';
       latentEl.textContent = latentSign + fmt(latent) + '€';
       latentEl.style.color = latent >= 0 ? '#2563eb' : '#dc2626';
+    }
+
+    // Profit réalisé
+    const prEl = document.getElementById('profitRealise');
+    if(prEl){
+      prEl.textContent = (profit>=0?'+':'')+fmt(profit)+'€';
+      prEl.style.color = profit>=0?'#16a34a':'#dc2626';
+    }
+    // Profit latent = valeur portefeuille - coût d'achat
+    const latentEl = document.getElementById('profitLatent');
+    if(latentEl){
+      let totalCost=0;
+      COMPANIES.forEach(co=>{ const h=holdings[co.sym]; if(h&&h.shares>0) totalCost+=h.cost; });
+      const latent=pv-totalCost;
+      latentEl.textContent=(latent>=0?'+':'')+fmt(latent)+'€';
+      latentEl.style.color=latent>=0?'#2563eb':'#dc2626';
     }
 
     // Badge profit header
@@ -842,22 +954,32 @@ body.page-out{animation:pageOut .2s ease forwards}
       const now=Date.now();
       function timeAgo(ts){
         const s=Math.floor((now-new Date(ts).getTime())/1000);
-        if(s<60) return "à l'instant";
+        if(s<60) return "maintenant";
         if(s<3600) return 'il y a '+Math.floor(s/60)+'min';
         if(s<86400) return 'il y a '+Math.floor(s/3600)+'h';
         return 'il y a '+Math.floor(s/86400)+'j';
       }
       el.innerHTML=data.map(f=>{
         const co=CO[f.sym]; const nm=co?co.name:f.sym;
-        const isBuy=f.action==='a acheté';
-        const cls=isBuy?'buy':'sell';
-        const verb=isBuy?'Achat':'Vente';
-        const me=f.user_id===currentUser?.id?' <span style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:1px 5px;font-size:9px;color:#16a34a;font-weight:700">MOI</span>':'';
+        const isEvent = f.username==='FLASH MARCHE';
+        const isBuy = f.action==='a acheté';
+        const cls = isEvent ? (f.amount>=0?'buy':'sell') : isBuy?'buy':'sell';
+        const me = !isEvent && f.user_id===currentUser?.id?' <span style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:1px 5px;font-size:9px;color:#16a34a;font-weight:700">MOI</span>':'';
+        if(isEvent){
+          return `<div class="feed-line" style="background:#fffbeb;border-radius:10px;margin-bottom:4px">
+            <div style="font-size:16px;line-height:1;margin-right:2px">${isBuy?'📈':'📉'}</div>
+            <div class="feed-body">
+              <div class="feed-text" style="font-weight:800;color:#92400e">FLASH MARCHÉ</div>
+              <div style="font-size:12px;color:#78350f;margin-top:2px">${f.action}</div>
+              <div class="feed-meta">${timeAgo(f.created_at)}</div>
+            </div>
+          </div>`;
+        }
         return `<div class="feed-line">
           <div class="feed-dot ${cls}"></div>
           <div class="feed-body">
-            <div class="feed-text"><b>${f.username||'Docker'}</b>${me} ${f.action} <b>${nm}</b></div>
-            <div class="feed-meta">${timeAgo(f.created_at)} · ${verb}</div>
+            <div class="feed-text"><b>${f.username||'Docker'}</b>${me} ${f.action==='a acheté'?'a acheté':'a vendu'} <b>${nm}</b></div>
+            <div class="feed-meta">${timeAgo(f.created_at)} · ${isBuy?'Achat':'Vente'}</div>
           </div>
           <div class="feed-badge ${cls}">${fmt(f.amount)}€</div>
         </div>`;
@@ -891,21 +1013,44 @@ body.page-out{animation:pageOut .2s ease forwards}
         } catch(_) {}
       }
       const medals=['🥇','🥈','🥉'];
-      el.innerHTML = rows.map((r,i)=>{
+      // Calculer le score de la semaine = profit réalisé (on n'a pas d'historique semaine,
+      // on affiche le profit total avec mise en avant du n°1)
+      const sorted = [...rows].sort((a,b)=>(b.bourse_profit||0)-(a.bourse_profit||0));
+      const winner = sorted[0];
+      const winnerName = nameOf[winner?.user_id]||'Docker';
+
+      // Banner trader de la semaine
+      let html = '';
+      if(winner && (winner.bourse_profit||0)>0){
+        html += `<div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border:1px solid #fbbf24;
+          border-radius:14px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:32px">🏆</div>
+          <div style="flex:1">
+            <div style="font-size:8px;font-weight:900;color:rgba(0,0,0,.4);letter-spacing:2px;margin-bottom:2px">TRADER N°1</div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#92400e;letter-spacing:1px">${winnerName}</div>
+            <div style="font-size:11px;color:#b45309;font-weight:700;margin-top:1px">+${fmt(winner.bourse_profit||0)}€ de profit total</div>
+          </div>
+          <div style="font-size:28px">🥇</div>
+        </div>`;
+      }
+
+      html += sorted.map((r,i)=>{
         const isMe = r.user_id===currentUser?.id;
         const name = nameOf[r.user_id]||'Docker';
+        const prof = r.bourse_profit||0;
         return `<div class="lb-line${isMe?' lb-me':''}">
-          <div class="lb-rank">${medals[i]||('#'+(i+1))}</div>
+          <div class="lb-rank">${medals[i]||(i+1)}</div>
           <div class="lb-name" style="flex:1">
             <div>${name}${isMe?' 👈':''}</div>
             <div class="lb-best">Meilleur trade : +${fmt(r.bourse_best||0)}€</div>
           </div>
-          <div>
-            <div class="lb-val">+${fmt(r.bourse_profit||0)}€</div>
-            ${isMe?'<div style="font-size:9px;color:#16a34a;text-align:right;font-weight:700">MON PROFIT</div>':''}
+          <div style="text-align:right">
+            <div class="lb-val" style="color:${prof>0?'#16a34a':prof<0?'#dc2626':'#888'}">${prof>=0?'+':''}${fmt(prof)}€</div>
+            ${isMe?'<div style="font-size:9px;color:#16a34a;font-weight:700">MOI</div>':''}
           </div>
         </div>`;
       }).join('');
+      el.innerHTML = html;
     } catch(e){ console.log('lb error:',e); el.innerHTML='<div class="muted">Indisponible.</div>'; }
   }
 
@@ -926,6 +1071,165 @@ document.addEventListener('click',function(e){
   document.body.classList.add('page-out');
   setTimeout(function(){window.location.href=m[1];},200);
 },true);
+</script>
+<!-- CHART MODAL -->
+<div class="chart-modal-bg" id="chartBg" onclick="if(event.target===this)closeChart()">
+  <div class="chart-modal">
+    <div class="chart-handle"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+      <div>
+        <div class="chart-title" id="chartTitle">—</div>
+        <div style="font-size:11px;color:#888;font-weight:700" id="chartSym">—</div>
+      </div>
+      <button onclick="closeChart()" style="background:#f5f5f5;border:none;border-radius:10px;
+        padding:8px 12px;font-size:13px;font-weight:700;color:#888;cursor:pointer">✕</button>
+    </div>
+    <div class="chart-price" id="chartPrice">—</div>
+    <div class="chart-chg" id="chartChg">—</div>
+    <div class="chart-periods">
+      <button class="chart-period on" onclick="setChartPeriod('all',this)">TOUT</button>
+      <button class="chart-period" onclick="setChartPeriod('half',this)">50%</button>
+      <button class="chart-period" onclick="setChartPeriod('quarter',this)">25%</button>
+    </div>
+    <div class="chart-svg-wrap">
+      <svg id="chartSvg" width="100%" height="160" viewBox="0 0 400 160" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#16a34a" stop-opacity="0.2"/>
+            <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path id="chartFill" fill="url(#chartGrad)"/>
+        <path id="chartLine" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linejoin="round"/>
+        <line id="chartCross" x1="0" y1="0" x2="0" y2="160" stroke="rgba(0,0,0,.15)" stroke-width="1" stroke-dasharray="4,4" display="none"/>
+        <circle id="chartDot" cx="0" cy="0" r="5" fill="#16a34a" display="none"/>
+      </svg>
+      <div id="chartTooltip" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);
+        background:#1a1a1a;color:#fff;font-size:11px;font-weight:700;padding:4px 10px;
+        border-radius:8px;pointer-events:none;display:none"></div>
+    </div>
+    <div class="chart-stat-row">
+      <div class="chart-stat">
+        <div class="chart-stat-v" id="chartHigh">—</div>
+        <div class="chart-stat-l">PLUS HAUT</div>
+      </div>
+      <div class="chart-stat">
+        <div class="chart-stat-v" id="chartLow">—</div>
+        <div class="chart-stat-l">PLUS BAS</div>
+      </div>
+      <div class="chart-stat">
+        <div class="chart-stat-v" id="chartBase">—</div>
+        <div class="chart-stat-l">PRIX BASE</div>
+      </div>
+    </div>
+    <div id="chartPosition" style="margin-top:8px"></div>
+  </div>
+</div>
+<script>
+// ── GRAPHIQUE INTERACTIF ──
+let chartSym=null, chartPeriod='all';
+
+function openChart(sym){
+  chartSym=sym;chartPeriod='all';
+  document.getElementById('chartBg').classList.add('on');
+  renderChart();
+}
+function closeChart(){
+  document.getElementById('chartBg').classList.remove('on');
+  chartSym=null;
+}
+function setChartPeriod(p,btn){
+  chartPeriod=p;
+  document.querySelectorAll('.chart-period').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderChart();
+}
+function renderChart(){
+  if(!chartSym)return;
+  const co=CO[chartSym]; if(!co)return;
+  const p=prices[chartSym]||co.base;
+  const h=hist[chartSym]||[p];
+  const pct=((p-co.base)/co.base*100);
+  const isUp=pct>=0;
+
+  document.getElementById('chartTitle').textContent=co.name||chartSym;
+  document.getElementById('chartSym').textContent=chartSym;
+  document.getElementById('chartPrice').textContent=fmt2(p)+'€';
+  const chgEl=document.getElementById('chartChg');
+  chgEl.textContent=(isUp?'▲ +':'▼ ')+Math.abs(pct).toFixed(2)+'% vs prix de base';
+  chgEl.style.color=isUp?'#16a34a':'#dc2626';
+
+  // Choisir les données selon la période
+  let data=h;
+  if(chartPeriod==='half') data=h.slice(Math.floor(h.length/2));
+  else if(chartPeriod==='quarter') data=h.slice(Math.floor(h.length*3/4));
+  if(!data.length) data=[p];
+
+  const mn=Math.min(...data), mx=Math.max(...data), rng=mx-mn||1;
+  const W=400,H=150,pad=8;
+  const pts=data.map((v,i)=>{
+    const x=pad+(i/(data.length-1||1))*(W-pad*2);
+    const y=H-pad-((v-mn)/rng)*(H-pad*2);
+    return[x.toFixed(1),y.toFixed(1)];
+  });
+  const lineD='M'+pts.map(p=>p.join(',')).join(' L');
+  const fillD=lineD+' L'+pts[pts.length-1][0]+','+(H+2)+' L'+pts[0][0]+','+(H+2)+' Z';
+  const col=isUp?'#16a34a':'#dc2626';
+  const gradStop=document.querySelector('#chartGrad stop:first-child');
+  const gradStop2=document.querySelector('#chartGrad stop:last-child');
+  if(gradStop) gradStop.setAttribute('stop-color',col);
+  if(gradStop2) gradStop2.setAttribute('stop-color',col);
+  document.getElementById('chartLine').setAttribute('d',lineD);
+  document.getElementById('chartLine').setAttribute('stroke',col);
+  document.getElementById('chartFill').setAttribute('d',fillD);
+  document.getElementById('chartFill').setAttribute('fill','url(#chartGrad)');
+
+  document.getElementById('chartHigh').textContent=fmt2(mx)+'€';
+  document.getElementById('chartLow').textContent=fmt2(mn)+'€';
+  document.getElementById('chartBase').textContent=fmt2(co.base)+'€';
+
+  // Position perso
+  const h2=holdings[chartSym];
+  const posEl=document.getElementById('chartPosition');
+  if(h2&&h2.shares>0){
+    const val=h2.shares*p, pl=val-h2.cost;
+    const plPct=h2.cost?pl/h2.cost*100:0;
+    posEl.innerHTML='<div style="background:'+(pl>=0?'#f0fdf4':'#fef2f2')+';border:1px solid '+(pl>=0?'#86efac':'#fca5a5')+';border-radius:12px;padding:10px 12px;">'+
+      '<div style="font-size:8px;font-weight:900;color:rgba(0,0,0,.35);letter-spacing:2px;margin-bottom:4px">MA POSITION</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700">'+
+      '<span>'+h2.shares+' parts · PRU '+fmt2(h2.cost/h2.shares)+'€</span>'+
+      '<span style="color:'+(pl>=0?'#16a34a':'#dc2626')+'">'+(pl>=0?'+':'')+fmt(pl)+'€ ('+(plPct>=0?'+':'')+plPct.toFixed(1)+'%)</span>'+
+      '</div></div>';
+  } else {
+    posEl.innerHTML='';
+  }
+
+  // Interaction touch/mouse
+  const svg=document.getElementById('chartSvg');
+  function handleChartMove(e){
+    const rect=svg.getBoundingClientRect();
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    const rx=(clientX-rect.left)/rect.width;
+    const idx=Math.round(rx*(data.length-1));
+    if(idx<0||idx>=data.length)return;
+    const v=data[idx];
+    const x=pts[idx][0], y=pts[idx][1];
+    const cross=document.getElementById('chartCross');
+    const dot=document.getElementById('chartDot');
+    const tip=document.getElementById('chartTooltip');
+    cross.setAttribute('x1',x);cross.setAttribute('x2',x);cross.setAttribute('display','block');
+    dot.setAttribute('cx',x);dot.setAttribute('cy',y);dot.setAttribute('fill',col);dot.setAttribute('display','block');
+    tip.textContent=fmt2(v)+'€';tip.style.display='block';
+    tip.style.left=Math.min(Math.max(rx*100,10),85)+'%';
+  }
+  function hideChartCursor(){
+    document.getElementById('chartCross').setAttribute('display','none');
+    document.getElementById('chartDot').setAttribute('display','none');
+    document.getElementById('chartTooltip').style.display='none';
+  }
+  svg.onmousemove=handleChartMove;svg.ontouchmove=handleChartMove;
+  svg.onmouseleave=hideChartCursor;svg.ontouchend=hideChartCursor;
+}
 </script>
 </body>
 </html>
