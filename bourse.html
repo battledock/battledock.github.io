@@ -171,6 +171,19 @@ body.page-out{animation:pageOut .2s ease forwards}
       <div class="wallet-box"><div class="wallet-lbl">Liquidités</div><div class="wallet-val cash" id="cash">—</div></div>
       <div class="wallet-box"><div class="wallet-lbl">Portefeuille</div><div class="wallet-val" id="portfolio">—</div></div>
     </div>
+    <!-- PROFITS DÉTAILLÉS -->
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:10px 12px">
+        <div style="font-size:7px;font-weight:800;color:rgba(0,0,0,.3);letter-spacing:2px;margin-bottom:3px">✅ PROFIT RÉALISÉ</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;color:#16a34a;line-height:1" id="profitRealise">—</div>
+        <div style="font-size:9px;color:rgba(0,0,0,.3);font-weight:700;margin-top:3px">Ventes clôturées</div>
+      </div>
+      <div style="flex:1;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 12px">
+        <div style="font-size:7px;font-weight:800;color:rgba(0,0,0,.3);letter-spacing:2px;margin-bottom:3px">📈 LATENT (non vendu)</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;line-height:1" id="profitLatent">—</div>
+        <div style="font-size:9px;color:rgba(0,0,0,.3);font-weight:700;margin-top:3px">Si tu vends maintenant</div>
+      </div>
+    </div>
     <div class="hint">Marché partagé · frais 5% · mise 5 000–150 000 € · 30 s entre 2 trades d'une même compagnie</div>
     <div class="tabs">
       <button class="tab act" id="tab-market" onclick="showTab('market')">Marché</button>
@@ -566,6 +579,28 @@ body.page-out{animation:pageOut .2s ease forwards}
       if (pcFill) pcFill.setAttribute('d', 'M'+pts.split(' ').join(' L')+` L120,48 L0,48 Z`);
     }
 
+    // Profit réalisé
+    const prEl = document.getElementById('profitRealise');
+    if(prEl){
+      const sign = profit >= 0 ? '+' : '';
+      prEl.textContent = sign + fmt(profit) + '€';
+      prEl.style.color = profit >= 0 ? '#16a34a' : '#dc2626';
+    }
+
+    // Profit latent = valeur actuelle du portefeuille - coût d'achat
+    const latentEl = document.getElementById('profitLatent');
+    if(latentEl){
+      let totalCost = 0;
+      COMPANIES.forEach(co => {
+        const h = holdings[co.sym];
+        if(h && h.shares > 0) totalCost += h.cost;
+      });
+      const latent = pv - totalCost;
+      const latentSign = latent >= 0 ? '+' : '';
+      latentEl.textContent = latentSign + fmt(latent) + '€';
+      latentEl.style.color = latent >= 0 ? '#2563eb' : '#dc2626';
+    }
+
     // Badge profit header
     const hdrProfit = document.getElementById('hdrProfit');
     if (hdrProfit) {
@@ -578,7 +613,11 @@ body.page-out{animation:pageOut .2s ease forwards}
         hdrProfit.textContent = '—';
         hdrProfit.style.cssText = 'color:rgba(0,0,0,0.3);border-color:rgba(0,0,0,0.1);background:#f8f8f8';
       } else if (pv > 0) {
-        hdrProfit.innerHTML = `${sign} ${fmt(Math.abs(profit))}€ <span style="opacity:0.6;font-size:11px">· ${fmt(pv)}€</span>`;
+        let totalCost2 = 0;
+        COMPANIES.forEach(co => { const h=holdings[co.sym]; if(h&&h.shares>0) totalCost2+=h.cost; });
+        const latent2 = pv - totalCost2;
+        const latSign = latent2 >= 0 ? '+' : '';
+        hdrProfit.innerHTML = `${sign} ${fmt(Math.abs(profit))}€ <span style="opacity:0.55;font-size:10px">réalisé · ${latSign}${fmt(latent2)}€ latent</span>`;
         hdrProfit.style.color = col;
         hdrProfit.style.borderColor = brd;
         hdrProfit.style.background = bg;
