@@ -521,10 +521,23 @@ const B_ITEMS=[
   {id:'so-excited',cat:'musique',name:'Vendredi Soir au Port',emoji:'🎉',rarity:'rare'},
 ];
 const B_EPI=[
-  {id:'casque',name:'Casque de chantier',emoji:'🪖',desc:'+XP par clic',tiers:[{id:'casque_c',rar:'COMM.',val:'+1 XP',price:5000},{id:'casque_r',rar:'RARE',val:'+2 XP',price:25000},{id:'casque_e',rar:'ÉPIQUE',val:'+4 XP',price:100000},{id:'casque_l',rar:'LÉGEND.',val:'+8 XP',price:500000}]},
-  {id:'gilet',name:'Gilet de sécurité',emoji:'🦺',desc:'+€ par clic',tiers:[{id:'gilet_c',rar:'COMM.',val:'+1€',price:5000},{id:'gilet_r',rar:'RARE',val:'+2€',price:25000},{id:'gilet_e',rar:'ÉPIQUE',val:'+4€',price:100000},{id:'gilet_l',rar:'LÉGEND.',val:'+8€',price:500000}]},
-  {id:'chaussures',name:'Chaussures de sécu',emoji:'👟',desc:'Combo max',tiers:[{id:'chaussures_c',rar:'COMM.',val:'×4',price:5000},{id:'chaussures_r',rar:'RARE',val:'×5',price:25000},{id:'chaussures_e',rar:'ÉPIQUE',val:'×6',price:100000},{id:'chaussures_l',rar:'LÉGEND.',val:'×9',price:500000}]},
+  {id:'casque',name:'Casque de chantier',emoji:'🪖',desc:'+XP par clic',tiers:[{id:'casque_commune',rar:'COMM.',val:'+1 XP',price:5000},{id:'casque_rare',rar:'RARE',val:'+2 XP',price:25000},{id:'casque_epique',rar:'ÉPIQUE',val:'+4 XP',price:100000},{id:'casque_legendaire',rar:'LÉGEND.',val:'+8 XP',price:500000}]},
+  {id:'gilet',name:'Gilet de sécurité',emoji:'🦺',desc:'+€ par clic',tiers:[{id:'gilet_commune',rar:'COMM.',val:'+1€',price:5000},{id:'gilet_rare',rar:'RARE',val:'+2€',price:25000},{id:'gilet_epique',rar:'ÉPIQUE',val:'+4€',price:100000},{id:'gilet_legendaire',rar:'LÉGEND.',val:'+8€',price:500000}]},
+  {id:'chaussures',name:'Chaussures de sécu',emoji:'👟',desc:'Combo max',tiers:[{id:'chaussures_commune',rar:'COMM.',val:'×4',price:5000},{id:'chaussures_rare',rar:'RARE',val:'×5',price:25000},{id:'chaussures_epique',rar:'ÉPIQUE',val:'×6',price:100000},{id:'chaussures_legendaire',rar:'LÉGEND.',val:'×9',price:500000}]},
 ];
+// Compat : anciens ids courts (casque_c, casque_e...) vus dans certains comptes historiques
+const B_EPI_ALIAS={casque_c:'casque_commune',casque_r:'casque_rare',casque_e:'casque_epique',casque_l:'casque_legendaire',gilet_c:'gilet_commune',gilet_r:'gilet_rare',gilet_e:'gilet_epique',gilet_l:'gilet_legendaire',chaussures_c:'chaussures_commune',chaussures_r:'chaussures_rare',chaussures_e:'chaussures_epique',chaussures_l:'chaussures_legendaire'};
+function epiOwned(tierId){
+  if(bOwnedEpi.indexOf(tierId)!==-1)return true;
+  for(var k in B_EPI_ALIAS){if(B_EPI_ALIAS[k]===tierId&&bOwnedEpi.indexOf(k)!==-1)return true;}
+  return false;
+}
+function epiEquipped(epiId,tierId){
+  var cur=bEquippedEpi[epiId];
+  if(cur===tierId)return true;
+  if(cur&&B_EPI_ALIAS[cur]===tierId)return true;
+  return false;
+}
 const B_ODDS={bronze:{commun:.55,rare:.35,epique:.08,legendaire:.02},argent:{commun:.15,rare:.50,epique:.28,legendaire:.07},or:{commun:0,rare:.25,epique:.55,legendaire:.20}};
 const B_PRICES={bronze:10000,argent:25000,or:50000};
 
@@ -599,7 +612,7 @@ function boutiqueRenderEpi(){
       +'<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:1px;color:#fff">'+e.name+'</div><div style="font-size:10px;color:rgba(255,255,255,.35)">'+e.desc+'</div></div>'
       +'</div>'
       +'<div style="display:flex;gap:5px;margin-top:12px">'+e.tiers.map(function(t){
-        var owns=bOwnedEpi.indexOf(t.id)!==-1;var eq=bEquippedEpi[e.id]===t.id;
+        var owns=epiOwned(t.id);var eq=epiEquipped(e.id,t.id);
         return '<div onclick="boutiqueEquipEpi(\''+e.id+'\',\''+t.id+'\','+t.price+')" style="flex:1;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;border:1.5px solid '+(eq?'#fbbf24':'rgba(255,255,255,.08)')+';background:'+(eq?'rgba(251,191,36,.12)':'rgba(0,0,0,.2)')+'">'
           +'<div style="font-size:8px;font-weight:800;color:'+(eq?'#fbbf24':'rgba(255,255,255,.4)')+'">'+t.rar+'</div>'
           +'<div style="font-size:11px;font-weight:800;margin-top:2px;color:#fff">'+t.val+'</div>'
@@ -611,14 +624,21 @@ function boutiqueRenderEpi(){
 }
 
 async function boutiqueEquipEpi(epiId,tierId,price){
-  if(bOwnedEpi.indexOf(tierId)!==-1){bEquippedEpi[epiId]=tierId;bRecords.equipped_epi=bEquippedEpi;await boutiqueSaveData();boutiqueRenderEpi();toast('✅ Équipé !');return;}
+  if(epiOwned(tierId)){bEquippedEpi[epiId]=tierId;bRecords.equipped_epi=bEquippedEpi;boutiqueRenderEpi();await boutiqueSaveData();toast('✅ Équipé !');return;}
   if(bMoney<price){toast('❌ Pas assez');return;}
   bMoney-=price;bOwnedEpi.push(tierId);bEquippedEpi[epiId]=tierId;
   bRecords.unlocked_epi=bOwnedEpi;bRecords.equipped_epi=bEquippedEpi;
-  await boutiqueSaveData();boutiqueUpdateMoney();boutiqueRenderEpi();toast('🎉 Acheté !');
+  boutiqueUpdateMoney();boutiqueRenderEpi();
+  await boutiqueSaveData();
+  toast('🎉 Acheté !');
 }
 
+var bBoutiqueLoaded=false;
+
 async function loadBoutique(){
+  // Ne recharge depuis Supabase qu'une fois par session : évite d'écraser
+  // les achats locaux si une sauvegarde précédente n'a pas fini d'arriver côté serveur.
+  if(bBoutiqueLoaded){boutiqueUpdateMoney();return;}
   try{
     var s=await sb.auth.getSession();if(!s.data.session)return;
     var gs=await sb.from('game_stats').select('money,records').eq('user_id',s.data.session.user.id).maybeSingle();
@@ -633,6 +653,7 @@ async function loadBoutique(){
     bOwnedEpi=bRecords.unlocked_epi||[];
     bEquippedEpi=bRecords.equipped_epi||{};
     boutiqueUpdateMoney();
+    bBoutiqueLoaded=true;
   }catch(e){console.warn(e);}
 }
 
