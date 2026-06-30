@@ -10,6 +10,13 @@
 :root{--st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,20px)}
 html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#0369a1);font-family:'Inter',sans-serif;color:#fff;overflow:hidden;touch-action:none;position:relative}
 
+/* Panneau de debug visible directement sur le téléphone */
+.debug-panel{position:fixed;left:8px;right:8px;top:calc(var(--st)+50px);z-index:999;
+  background:rgba(0,0,0,.85);border:1px solid rgba(34,211,238,.4);border-radius:10px;
+  padding:8px 10px;font-family:monospace;font-size:9px;line-height:1.5;
+  color:#22d3ee;max-height:110px;overflow:hidden;pointer-events:none}
+.debug-panel div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 /* Ambient bubbles floating in background */
 .bg-bubbles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
 .bg-bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.25),rgba(255,255,255,.02));
@@ -157,6 +164,10 @@ html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#036
 <body>
 
 <div class="bg-bubbles" id="bgBubbles"></div>
+
+<div class="debug-panel" id="debugPanel">
+  <div>📍 prêt — touche l'écran</div>
+</div>
 
 <div class="hdr">
   <div class="hdr-back" onclick="history.back()">←</div>
@@ -347,12 +358,19 @@ function spawnBgBubbles(){
 // ── CANVAS SETUP ──
 function resize(){
   const rect = gameZone.getBoundingClientRect();
-  const size = Math.min(rect.width - 24, rect.height - 24, 420);
-  W = size; H = size * 1.15;
+  // Sur certains Chrome Android, la hauteur peut être anormalement petite au
+  // premier calcul (barre d'adresse dynamique pas encore stabilisée). On se
+  // protège avec un minimum sûr pour ne jamais produire un canvas de taille nulle.
+  const availW = Math.max(rect.width, 200);
+  const availH = Math.max(rect.height, 200);
+  const size = Math.min(availW - 24, availH - 24, 420);
+  const safeSize = Math.max(size, 180);
+  W = safeSize; H = safeSize * 1.15;
   canvas.width = W * 2; canvas.height = H * 2;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
   ctx.scale(2,2);
   initDirtLayer();
+  dbg('resize: gameZone='+Math.round(rect.width)+'x'+Math.round(rect.height)+' → W='+Math.round(W)+' H='+Math.round(H));
 }
 
 function initDirtLayer(){
@@ -601,13 +619,26 @@ function render(){
 
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
-  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-  return { x: clientX - rect.left, y: clientY - rect.top, clientX, clientY };
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top, clientX: e.clientX, clientY: e.clientY };
+}
+
+function dbg(msg){
+  const panel = document.getElementById('debugPanel');
+  if(!panel) return;
+  const line = document.createElement('div');
+  line.textContent = msg;
+  panel.appendChild(line);
+  while(panel.children.length > 6) panel.removeChild(panel.firstChild);
 }
 
 function startSpray(e){
-  e.preventDefault();
+  dbg('▶ pointerdown type='+e.pointerType+' x='+Math.round(e.clientX)+' y='+Math.round(e.clientY));
+  if(e.cancelable) e.preventDefault();
+  // Capture le pointeur : garantit que tous les events suivants (move/up) sont
+  // bien reçus par le canvas même si le doigt glisse légèrement à l'extérieur.
+  if(canvas.setPointerCapture && e.pointerId !== undefined){
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){ dbg('⚠ setPointerCapture: '+err.message); }
+  }
   isSpraying = true;
   const pos = getPos(e);
   sprayX = pos.x; sprayY = pos.y;
@@ -616,16 +647,22 @@ function startSpray(e){
   sprayJet.style.left = pos.clientX+'px';
   sprayJet.style.top = pos.clientY+'px';
   updateJetSize();
+  dbg('  canvas-relative x='+Math.round(pos.x)+' y='+Math.round(pos.y)+' / W='+Math.round(W)+' H='+Math.round(H));
 }
 
+let moveCount = 0;
 function moveSpray(e){
   if(!isSpraying) return;
-  e.preventDefault();
+  if(e.cancelable) e.preventDefault();
   const pos = getPos(e);
   sprayX = pos.x; sprayY = pos.y;
   lastClientX = pos.clientX; lastClientY = pos.clientY;
   sprayJet.style.left = pos.clientX+'px';
   sprayJet.style.top = pos.clientY+'px';
+  moveCount++;
+  if(moveCount % 8 === 0){
+    dbg('  ↔ move #'+moveCount+' clean='+Math.round((cleanedPixels/totalPixels)*100)+'%');
+  }
 }
 
 function updateJetSize(){
@@ -635,24 +672,30 @@ function updateJetSize(){
   cone.style.height = (46*scale)+'px';
 }
 
-function endSpray(){
+function endSpray(e){
+  dbg('⏹ pointerup/cancel — moves reçus: '+moveCount);
+  moveCount = 0;
   isSpraying = false;
   sprayJet.classList.remove('active');
 }
 
-canvas.addEventListener('touchstart', startSpray, {passive:false});
-canvas.addEventListener('touchmove', moveSpray, {passive:false});
-canvas.addEventListener('touchend', endSpray);
-canvas.addEventListener('touchcancel', endSpray);
-canvas.addEventListener('mousedown', startSpray);
-canvas.addEventListener('mousemove', moveSpray);
-canvas.addEventListener('mouseup', endSpray);
-canvas.addEventListener('mouseleave', endSpray);
+// Pointer Events : une seule API qui gère doigt, souris et stylet de façon
+// unifiée et fiable sur Android Chrome, Safari iOS et desktop, sans les
+// pièges de double-déclenchement entre touch et mouse events synthétiques.
+canvas.style.touchAction = 'none';
+canvas.addEventListener('pointerdown', startSpray, {passive:false});
+canvas.addEventListener('pointermove', moveSpray, {passive:false});
+canvas.addEventListener('pointerup', endSpray);
+canvas.addEventListener('pointercancel', endSpray);
+canvas.addEventListener('pointerleave', endSpray);
+
+dbg('window.PointerEvent dispo: '+(typeof PointerEvent !== 'undefined'));
+dbg('canvas rect au chargement: '+JSON.stringify({w:Math.round(canvas.getBoundingClientRect().width), h:Math.round(canvas.getBoundingClientRect().height)}));
 
 // Empêche le navigateur mobile de capter le geste comme un scroll de page
 // ou un pull-to-refresh, ce qui bloquerait sinon le nettoyage au doigt.
-document.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false});
-document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, {passive:false});
+// Pointer Events + touch-action:none gèrent nativement le blocage du scroll
+// et du pull-to-refresh : plus besoin de bloquer manuellement le document.
 
 function winGame(){
   gameWon = true;
