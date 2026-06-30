@@ -394,7 +394,10 @@ body::after{content:'';position:fixed;top:32%;left:0;right:0;height:1px;
     <div class="coll-grid2" id="bcollGrid"></div>
   </div>
 
-  <div id="bviewEpi" style="display:none" id="bepiBody"></div>
+  <div id="bviewEpi" style="display:none">
+    <div style="font-size:9px;font-weight:900;color:rgba(255,255,255,.3);letter-spacing:3px;margin-bottom:14px">ÉQUIPEMENT</div>
+    <div id="bepiBody"></div>
+  </div>
 
 </div>
 
@@ -484,15 +487,151 @@ function boutiqueSwitchTab(t){
     if(btn)btn.classList.toggle('on',on);
     if(view)view.style.display=on?'block':'none';
   });
+  if(t==='coll')boutiqueRenderColl('skin');
+  if(t==='epi')boutiqueRenderEpi();
 }
-var bMoney=0;
-function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';}
-function boutiqueOpenPack(tier){toast('🎁 Pack '+tier+' (démo)');}
+
+var bMoney=0,bOwned=[],bEquipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
+var bTaps=0,bPackTier='',bState='idle',bDrawn=null,bOwnedEpi=[],bEquippedEpi={},bRecords={};
+
+const B_ITEMS=[
+  {id:'red',cat:'skin',name:'Container de Base',emoji:'📦',rarity:'defaut',preview:'linear-gradient(135deg,#cc2200,#991100)',defaut:true},
+  {id:'no_effet',cat:'effet',name:'Sans effet',emoji:'✋',rarity:'defaut',defaut:true},
+  {id:'jour',cat:'fond',name:'Port de jour',emoji:'☀️',rarity:'defaut',preview:'linear-gradient(180deg,#2196F3,#64B5F6)',defaut:true},
+  {id:'no_music',cat:'musique',name:'Sans musique',emoji:'🔇',rarity:'defaut',defaut:true},
+  {id:'neon',cat:'skin',name:'Néon Portuaire',emoji:'✨',rarity:'rare',preview:'linear-gradient(135deg,#00ff88,#00cc66)'},
+  {id:'ice',cat:'skin',name:'Givré Polaire',emoji:'🧊',rarity:'rare',preview:'linear-gradient(135deg,#67e8f9,#0e7490)'},
+  {id:'fire',cat:'skin',name:'Flammes du Quai',emoji:'🔥',rarity:'epique',preview:'linear-gradient(135deg,#ff4500,#ff8c00)'},
+  {id:'rainbow',cat:'skin',name:'Arc-en-Ciel',emoji:'🌈',rarity:'epique',preview:'linear-gradient(135deg,#ff0000,#ff8800,#ffff00,#00ff00,#0088ff)'},
+  {id:'galaxy',cat:'skin',name:'Galaxie du Docker',emoji:'🌌',rarity:'legendaire',preview:'linear-gradient(135deg,#1a0533,#4a1a8a)'},
+  {id:'marseille',cat:'skin',name:'Fierté Marseillaise',emoji:'🏟️',rarity:'legendaire',preview:'linear-gradient(135deg,#0078D7,#fff,#0078D7)'},
+  {id:'etoiles',cat:'effet',name:"Pluie d'Étoiles",emoji:'⭐',rarity:'commun'},
+  {id:'bulles',cat:'effet',name:'Bulles de Mer',emoji:'🫧',rarity:'commun'},
+  {id:'confettis',cat:'effet',name:'Fête au Port',emoji:'🎊',rarity:'rare'},
+  {id:'explosion',cat:'effet',name:'Big Bang',emoji:'💥',rarity:'epique'},
+  {id:'feu_effet',cat:'effet',name:'Docker Enflammé',emoji:'🔥',rarity:'epique'},
+  {id:'coucher',cat:'fond',name:'Coucher de Soleil',emoji:'🌅',rarity:'commun',preview:'linear-gradient(180deg,#ff6b35,#ffa94d)'},
+  {id:'nuit',cat:'fond',name:'Nuit Étoilée',emoji:'🌙',rarity:'rare',preview:'linear-gradient(180deg,#0a0a2e,#1a1a4e)'},
+  {id:'orage',cat:'fond',name:'Orage sur le Port',emoji:'⛈️',rarity:'epique',preview:'linear-gradient(180deg,#374151,#6b7280)'},
+  {id:'aurore',cat:'fond',name:'Aurore Boréale',emoji:'💜',rarity:'legendaire',preview:'linear-gradient(180deg,#ec4899,#f9a8d4)'},
+  {id:'rock-with-you',cat:'musique',name:'La Danse du Container',emoji:'🕺',rarity:'rare'},
+  {id:'a-la-la',cat:'musique',name:'Docker en Vacances',emoji:'🌴',rarity:'rare'},
+  {id:'aventurier',cat:'musique',name:'Aventurier des Quais',emoji:'⚓',rarity:'epique'},
+  {id:'demons-minuit',cat:'musique',name:"Shift de 3h du Mat'",emoji:'🌙',rarity:'epique'},
+  {id:'so-excited',cat:'musique',name:'Vendredi Soir au Port',emoji:'🎉',rarity:'rare'},
+];
+const B_EPI=[
+  {id:'casque',name:'Casque de chantier',emoji:'🪖',desc:'+XP par clic',tiers:[{id:'casque_c',rar:'COMM.',val:'+1 XP',price:5000},{id:'casque_r',rar:'RARE',val:'+2 XP',price:25000},{id:'casque_e',rar:'ÉPIQUE',val:'+4 XP',price:100000},{id:'casque_l',rar:'LÉGEND.',val:'+8 XP',price:500000}]},
+  {id:'gilet',name:'Gilet de sécurité',emoji:'🦺',desc:'+€ par clic',tiers:[{id:'gilet_c',rar:'COMM.',val:'+1€',price:5000},{id:'gilet_r',rar:'RARE',val:'+2€',price:25000},{id:'gilet_e',rar:'ÉPIQUE',val:'+4€',price:100000},{id:'gilet_l',rar:'LÉGEND.',val:'+8€',price:500000}]},
+  {id:'chaussures',name:'Chaussures de sécu',emoji:'👟',desc:'Combo max',tiers:[{id:'chaussures_c',rar:'COMM.',val:'×4',price:5000},{id:'chaussures_r',rar:'RARE',val:'×5',price:25000},{id:'chaussures_e',rar:'ÉPIQUE',val:'×6',price:100000},{id:'chaussures_l',rar:'LÉGEND.',val:'×9',price:500000}]},
+];
+const B_ODDS={bronze:{commun:.55,rare:.35,epique:.08,legendaire:.02},argent:{commun:.15,rare:.50,epique:.28,legendaire:.07},or:{commun:0,rare:.25,epique:.55,legendaire:.20}};
+const B_PRICES={bronze:10000,argent:25000,or:50000};
+
+function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;}
+
+function boutiqueOpenPack(tier){
+  if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
+  bMoney-=B_PRICES[tier];boutiqueUpdateMoney();
+  var item=boutiqueDrawItem(tier);
+  var isDupe=bOwned.indexOf(item.id)!==-1;
+  if(!isDupe)bOwned.push(item.id);
+  boutiqueSaveData();
+  var rl={commun:'Commun',rare:'Rare',epique:'Épique',legendaire:'Légendaire'};
+  toast((isDupe?'🔁 Doublon : ':'✨ Nouveau : ')+item.emoji+' '+item.name+' ('+(rl[item.rarity]||'')+')');
+}
+
+function boutiqueDrawItem(tier){
+  var odds=B_ODDS[tier];var r=Math.random();var cum=0;var rarity='commun';
+  for(var k in odds){cum+=odds[k];if(r<cum){rarity=k;break;}}
+  var pool=B_ITEMS.filter(function(it){return it.rarity===rarity;});
+  if(!pool.length)return B_ITEMS[0];
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+async function boutiqueSaveData(){
+  try{
+    var s=await sb.auth.getSession();if(!s.data.session)return;
+    bRecords.unlocked_packs=bOwned;
+    await sb.from('game_stats').update({money:bMoney,records:bRecords}).eq('user_id',s.data.session.user.id);
+  }catch(e){console.warn(e);}
+}
+
+function boutiqueRenderColl(cat){
+  var cats=['skin','effet','fond','musique'];
+  var catLabels={skin:'SKINS',effet:'EFFETS',fond:'FONDS',musique:'MUSIQUES'};
+  var tabs=document.getElementById('bcollTabs');var grid=document.getElementById('bcollGrid');
+  if(!tabs||!grid)return;
+  tabs.innerHTML=cats.map(function(c){
+    return '<div onclick="boutiqueRenderColl(\''+c+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;background:'+(c===cat?'#fff':'rgba(255,140,0,.08)')+';color:'+(c===cat?'#0d0d12':'rgba(255,255,255,.4)')+';white-space:nowrap">'+catLabels[c]+'</div>';
+  }).join('');
+  var items=B_ITEMS.filter(function(it){return it.cat===cat;});
+  var rarCol={defaut:'rgba(255,255,255,.4)',commun:'rgba(255,255,255,.4)',rare:'#60a5fa',epique:'#c084fc',legendaire:'#fbbf24'};
+  var rarBg={defaut:'rgba(255,255,255,.06)',commun:'rgba(255,255,255,.06)',rare:'rgba(96,165,250,.15)',epique:'rgba(192,132,252,.15)',legendaire:'rgba(251,191,36,.15)'};
+  var rarLbl={defaut:'BASE',commun:'COMM.',rare:'RARE',epique:'ÉPIQUE',legendaire:'LÉGEND.'};
+  grid.innerHTML=items.map(function(it){
+    var owned=bOwned.indexOf(it.id)!==-1;var eq=bEquipped[it.cat]===it.id;
+    return '<div onclick="boutiqueEquip(\''+it.cat+'\',\''+it.id+'\')" class="coll-tile'+(eq?' eq':'')+'" style="opacity:'+((owned||it.defaut)?'1':'.4')+'">'
+      +'<div style="position:absolute;top:5px;right:5px;font-size:6px;font-weight:800;padding:1px 5px;border-radius:6px;background:'+rarBg[it.rarity]+';color:'+rarCol[it.rarity]+'">'+rarLbl[it.rarity]+'</div>'
+      +'<div class="coll-tile-preview">'+(it.preview?'<div style="width:34px;height:20px;border-radius:5px;background:'+it.preview+'"></div>':'<span style="font-size:20px">'+it.emoji+'</span>')+'</div>'
+      +'<div class="coll-tile-name">'+it.name+'</div>'
+      +'<div style="font-size:8px;margin-top:3px;color:'+(eq?'#fbbf24':'rgba(255,255,255,.3)')+'">'+(owned?(eq?'✅ Équipé':'Équiper'):'???')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function boutiqueEquip(cat,id){
+  if(bOwned.indexOf(id)===-1)return;
+  bEquipped[cat]=id;
+  bRecords.click_effect=bEquipped.effet;bRecords.bg_theme=bEquipped.fond;bRecords.selected_music=bEquipped.musique;
+  if(cat==='skin'){
+    try{var s=await sb.auth.getSession();if(s.data.session)await sb.from('profiles').update({skin_container:id}).eq('user_id',s.data.session.user.id);}catch(e){}
+  }
+  boutiqueSaveData();boutiqueRenderColl(cat);toast('✅ Équipé !');
+}
+
+function boutiqueRenderEpi(){
+  var el=document.getElementById('bepiBody');if(!el)return;
+  el.innerHTML=B_EPI.map(function(e){
+    return '<div style="background:rgba(255,140,0,.05);border:1px solid rgba(255,150,0,.1);border-radius:14px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:24px">'+e.emoji+'</span>'
+      +'<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:1px;color:#fff">'+e.name+'</div><div style="font-size:10px;color:rgba(255,255,255,.35)">'+e.desc+'</div></div>'
+      +'</div>'
+      +'<div style="display:flex;gap:5px;margin-top:12px">'+e.tiers.map(function(t){
+        var owns=bOwnedEpi.indexOf(t.id)!==-1;var eq=bEquippedEpi[e.id]===t.id;
+        return '<div onclick="boutiqueEquipEpi(\''+e.id+'\',\''+t.id+'\','+t.price+')" style="flex:1;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;border:1.5px solid '+(eq?'#fbbf24':'rgba(255,255,255,.08)')+';background:'+(eq?'rgba(251,191,36,.12)':'rgba(0,0,0,.2)')+'">'
+          +'<div style="font-size:8px;font-weight:800;color:'+(eq?'#fbbf24':'rgba(255,255,255,.4)')+'">'+t.rar+'</div>'
+          +'<div style="font-size:11px;font-weight:800;margin-top:2px;color:#fff">'+t.val+'</div>'
+          +'<div style="font-size:7px;color:rgba(255,255,255,.3);margin-top:3px">'+(owns?(eq?'✅':'OK'):t.price.toLocaleString('fr-FR')+'€')+'</div>'
+          +'</div>';
+      }).join('')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+async function boutiqueEquipEpi(epiId,tierId,price){
+  if(bOwnedEpi.indexOf(tierId)!==-1){bEquippedEpi[epiId]=tierId;bRecords.equipped_epi=bEquippedEpi;await boutiqueSaveData();boutiqueRenderEpi();toast('✅ Équipé !');return;}
+  if(bMoney<price){toast('❌ Pas assez');return;}
+  bMoney-=price;bOwnedEpi.push(tierId);bEquippedEpi[epiId]=tierId;
+  bRecords.unlocked_epi=bOwnedEpi;bRecords.equipped_epi=bEquippedEpi;
+  await boutiqueSaveData();boutiqueUpdateMoney();boutiqueRenderEpi();toast('🎉 Acheté !');
+}
+
 async function loadBoutique(){
   try{
     var s=await sb.auth.getSession();if(!s.data.session)return;
-    var gs=await sb.from('game_stats').select('money').eq('user_id',s.data.session.user.id).maybeSingle();
-    if(gs.data)bMoney=gs.data.money||0;
+    var gs=await sb.from('game_stats').select('money,records').eq('user_id',s.data.session.user.id).maybeSingle();
+    var pr=await sb.from('profiles').select('skin_container').eq('user_id',s.data.session.user.id).maybeSingle();
+    if(gs.data){bMoney=gs.data.money||0;bRecords=gs.data.records||{};}
+    var DEFS=['red','no_effet','jour','no_music'];
+    bOwned=[...new Set([...DEFS,...(bRecords.unlocked_packs||[])])];
+    bEquipped.skin=pr.data?.skin_container||'red';
+    bEquipped.effet=bRecords.click_effect||'standard';
+    bEquipped.fond=bRecords.bg_theme||'jour';
+    bEquipped.musique=bRecords.selected_music||'none';
+    bOwnedEpi=bRecords.unlocked_epi||[];
+    bEquippedEpi=bRecords.equipped_epi||{};
     boutiqueUpdateMoney();
   }catch(e){console.warn(e);}
 }
