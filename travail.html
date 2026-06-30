@@ -104,6 +104,26 @@ body::after{content:'';position:fixed;inset:0;
 .qstat-val{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1}
 .qstat-lbl{font-size:8px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
 
+/* ── STREAK & PROCHAIN PALIER ── */
+.streak-card{display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.04));
+  border:1px solid rgba(251,191,36,.25);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.streak-icon{font-size:28px;flex-shrink:0}
+.streak-text{flex:1}
+.streak-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#fbbf24}
+.streak-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;margin-top:2px}
+
+.milestone-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.milestone-icon{font-size:24px;flex-shrink:0}
+.milestone-text{flex:1;min-width:0}
+.milestone-title{font-size:9px;font-weight:900;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase}
+.milestone-desc{font-size:12px;color:rgba(255,255,255,.85);font-weight:700;margin-top:3px}
+.milestone-bar-wrap{margin-top:8px}
+.milestone-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.milestone-bar-fill{height:100%;background:linear-gradient(90deg,#22d3ee,#4ade80);border-radius:3px;transition:width .5s}
+.milestone-pct{font-size:9px;color:rgba(255,255,255,.3);font-weight:700;margin-top:4px;text-align:right}
+
 /* ══ RECORDS — style "trading cards" ══ */
 .rec-hero{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px}
 .rec-card{flex:1;border-radius:18px;padding:16px 12px;text-align:center;position:relative;overflow:hidden}
@@ -280,7 +300,9 @@ body::after{content:'';position:fixed;inset:0;
       <div class="qstat-lbl">Record Clark</div>
     </div>
   </div>
-  </div>
+
+  <div id="streakCard" style="display:none"></div>
+  <div id="milestoneCard" style="display:none"></div>
 
 </div>
 
@@ -379,11 +401,13 @@ body::after{content:'';position:fixed;inset:0;
       <div class="pack-tile" onclick="boutiqueOpenPack('bronze')">
         <div class="pack-tile-icon">📦</div>
         <div class="pack-tile-name">BRONZE</div>
+        <div style="font-size:8px;color:rgba(255,255,255,.35);font-weight:700;margin-top:2px">55% · 35% · 8% · 2%</div>
         <div class="pack-tile-price" style="color:#d97706">10 000€</div>
       </div>
       <div class="pack-tile" onclick="boutiqueOpenPack('argent')">
         <div class="pack-tile-icon">🎁</div>
         <div class="pack-tile-name">ARGENT</div>
+        <div style="font-size:8px;color:rgba(255,255,255,.35);font-weight:700;margin-top:2px">15% · 50% · 28% · 7%</div>
         <div class="pack-tile-price" style="color:#cbd5e1">25 000€</div>
       </div>
     </div>
@@ -425,12 +449,17 @@ function openGrue(){location.href='grue.html';}
 function openClark(){location.href='clark.html';}
 function fmtMoney(m){return m>=1000000?(m/1000000).toFixed(1)+'M€':m>=1000?Math.floor(m/1000)+'k€':m+'€';}
 
+// Source unique de vérité pour l'argent du joueur : fixée une seule fois dans
+// init() puis partagée par tous les onglets (Jouer/Records/Boutique), pour
+// éviter deux requêtes Supabase séparées qui pourraient diverger entre elles.
+var bMoney=0,bOwned=[],bEquipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
+
 async function init(){
   try{
     var s=await sb.auth.getSession();
     if(!s.data.session){location.href='index.html';return;}
     var uid=s.data.session.user.id;
-    var gs=await sb.from('game_stats').select('records,xp,level,money').eq('user_id',uid).maybeSingle();
+    var gs=await sb.from('game_stats').select('records,xp,level,money,streak_days').eq('user_id',uid).maybeSingle();
     if(gs.data){
       var rec=gs.data.records||{};var f=rec.formations||{};
       var lvl=gs.data.level||1;var xp=gs.data.xp||0;
@@ -440,12 +469,15 @@ async function init(){
       var cx=document.getElementById('clarkXp');if(cx)cx.style.width=(f.clark_pct||0)+'%';
       if(rec.grue_best){var g=document.getElementById('grueLvl');if(g)g.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR')+'pts';}
       if(rec.clark_best){var c=document.getElementById('clarkLvl');if(c)c.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR')+'pts';}
-      if(gs.data.money){var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(gs.data.money);}
+      bMoney=gs.data.money||0;
+      var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);
       ['recDocker','recDocker2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=lvl;});
       if(rec.grue_best){['recGrue','recGrue2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR');});}
       if(rec.clark_best){['recClark','recClark2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR');});}
       checkRecordBadge('grue_best','badgeGrue',rec);
       checkRecordBadge('clark_best','badgeClark',rec);
+      renderStreakAndTip(gs.data.streak_days||0,lvl);
+      renderNextMilestone(lvl,xp,needed);
     }
     sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(function(){});
   }catch(e){console.error(e);}
@@ -456,6 +488,54 @@ function checkRecordBadge(key,badgeId,rec){
   var prev=sessionStorage.getItem('prev_'+key);
   if(prev&&rec[key]>Number(prev)){var b=document.getElementById(badgeId);if(b)b.style.display='flex';}
   sessionStorage.setItem('prev_'+key,rec[key]);
+}
+
+// ── STREAK : encourage à revenir jouer chaque jour ──
+function renderStreakAndTip(streakDays,lvl){
+  var card=document.getElementById('streakCard');
+  if(!card)return;
+  if(streakDays>=2){
+    card.style.display='flex';
+    card.className='streak-card';
+    card.innerHTML=
+      '<div class="streak-icon">🔥</div>'+
+      '<div class="streak-text">'+
+        '<div class="streak-title">'+streakDays+' JOURS DE SUITE</div>'+
+        '<div class="streak-sub">Reviens demain pour continuer ta série</div>'+
+      '</div>';
+  }
+}
+
+// ── PROCHAIN PALIER : teasing de récompense pour motiver à monter de niveau ──
+// Paliers alignés sur ceux déjà gérés côté game.html (showLevelUp / rewardDiamonds)
+var LEVEL_REWARDS={
+  5:'🥉 Titre "Docker confirmé"',10:'💎 +20 diamants',15:'🧊 Skin Givré Polaire',
+  20:'💎 +40 diamants',25:'🔥 Skin Flammes du Quai',30:'💎 +60 diamants',
+  40:'🌌 Skin Galaxie du Docker',50:'🏟️ Skin Fierté Marseillaise'
+};
+function renderNextMilestone(lvl,xp,needed){
+  var card=document.getElementById('milestoneCard');
+  if(!card)return;
+  var nextLvl=lvl+1;
+  var nextReward=null;
+  // Cherche la prochaine récompense connue à partir du niveau actuel
+  var keys=Object.keys(LEVEL_REWARDS).map(Number).sort(function(a,b){return a-b;});
+  for(var i=0;i<keys.length;i++){
+    if(keys[i]>lvl){nextReward=LEVEL_REWARDS[keys[i]];nextLvl=keys[i];break;}
+  }
+  var pct=Math.min(100,Math.round((xp/needed)*100));
+  card.style.display='flex';
+  card.className='milestone-card';
+  card.innerHTML=
+    '<div class="milestone-icon">🎁</div>'+
+    '<div class="milestone-text">'+
+      '<div class="milestone-title">Niveau '+nextLvl+'</div>'+
+      '<div class="milestone-desc">'+(nextReward||'Continue à progresser')+'</div>'+
+      '<div class="milestone-bar-wrap">'+
+        '<div class="milestone-bar"><div class="milestone-bar-fill" style="width:'+pct+'%"></div></div>'+
+        '<div class="milestone-pct">'+pct+'% jusqu\'au niveau '+(lvl+1)+'</div>'+
+      '</div>'+
+    '</div>';
 }
 
 async function loadLeaderboards(){
@@ -491,7 +571,6 @@ function boutiqueSwitchTab(t){
   if(t==='epi')boutiqueRenderEpi();
 }
 
-var bMoney=0,bOwned=[],bEquipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
 var bTaps=0,bPackTier='',bState='idle',bDrawn=null,bOwnedEpi=[],bEquippedEpi={},bRecords={};
 
 const B_ITEMS=[
@@ -541,7 +620,7 @@ function epiEquipped(epiId,tierId){
 const B_ODDS={bronze:{commun:.55,rare:.35,epique:.08,legendaire:.02},argent:{commun:.15,rare:.50,epique:.28,legendaire:.07},or:{commun:0,rare:.25,epique:.55,legendaire:.20}};
 const B_PRICES={bronze:10000,argent:25000,or:50000};
 
-function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;}
+function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);}
 
 function boutiqueOpenPack(tier){
   if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
@@ -641,9 +720,11 @@ async function loadBoutique(){
   if(bBoutiqueLoaded){boutiqueUpdateMoney();return;}
   try{
     var s=await sb.auth.getSession();if(!s.data.session)return;
-    var gs=await sb.from('game_stats').select('money,records').eq('user_id',s.data.session.user.id).maybeSingle();
+    // bMoney est déjà chargé par init() au lancement de la page : on ne va
+    // chercher ici que ce qui est spécifique à la boutique (records, skin équipé).
+    var gs=await sb.from('game_stats').select('records').eq('user_id',s.data.session.user.id).maybeSingle();
     var pr=await sb.from('profiles').select('skin_container').eq('user_id',s.data.session.user.id).maybeSingle();
-    if(gs.data){bMoney=gs.data.money||0;bRecords=gs.data.records||{};}
+    if(gs.data){bRecords=gs.data.records||{};}
     var DEFS=['red','no_effet','jour','no_music'];
     bOwned=[...new Set([...DEFS,...(bRecords.unlocked_packs||[])])];
     bEquipped.skin=pr.data?.skin_container||'red';
