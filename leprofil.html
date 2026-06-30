@@ -70,6 +70,17 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
 .av-opt.locked .av-opt-lbl{color:rgba(255,255,255,.4)}
 .av-close{width:100%;margin-top:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:13px;font-size:13px;color:#fff;letter-spacing:1px;cursor:pointer}
 
+/* ── BOUTIQUE ── */
+.shop-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.shop-opt{position:relative;border-radius:14px;overflow:hidden;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
+.shop-opt.owned{border-color:#4ade80}
+.shop-opt img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.shop-opt-price{font-size:11px;font-weight:800;text-align:center;padding:6px 4px;color:#fff}
+.shop-opt-price.afford{cursor:pointer}
+.shop-opt-price.cant-afford{opacity:.4}
+.shop-opt-owned-lbl{font-size:10px;font-weight:800;text-align:center;padding:6px 4px;color:#4ade80}
+.shop-opt-buying{font-size:10px;font-weight:800;text-align:center;padding:6px 4px;color:rgba(255,255,255,.4)}
+
 .loader{position:fixed;inset:0;background:#020810;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:500}
 .loader-spin{width:36px;height:36px;border:3px solid rgba(34,211,238,.2);border-top-color:#22d3ee;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -107,6 +118,11 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
   <div class="stat-card"><div class="stat-card-val bebas" id="statMoney">—</div><div class="stat-card-lbl">Argent</div></div>
   <div class="stat-card"><div class="stat-card-val bebas" id="statDiamonds">—</div><div class="stat-card-lbl">Diamants</div></div>
   <div class="stat-card"><div class="stat-card-val bebas" id="statTrophies">—</div><div class="stat-card-lbl">Trophées</div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">🛒 BOUTIQUE AVATARS</div>
+  <div class="shop-grid" id="shopGrid"></div>
 </div>
 
 <div class="section">
@@ -165,6 +181,15 @@ const AVATARS=[
   {src:'avatar-level-50.png',lbl:'NV.50',min:50},
 ];
 
+// ── Avatars en vente dans la boutique (à compléter avec tes images) ──
+// currency: 'money' ou 'diamonds'
+const SHOP_AVATARS=[
+  // {src:'avatar-shop-1.png',lbl:'Capitaine',price:5000,currency:'money'},
+  // {src:'avatar-shop-2.png',lbl:'Légende',price:200,currency:'diamonds'},
+];
+
+var ownedAvatars=[];
+
 function avatarForLevel(lvl){
   if(lvl>=50)return'avatar-level-50.png';
   if(lvl>=30)return'avatar-level-30.png';
@@ -208,6 +233,49 @@ function renderAvatarGrid(lvl,curSrc){
       '<div class="av-opt-lbl">'+(unlocked?av.lbl:'🔒 '+av.lbl)+'</div>'+
       '</div>';
   }).join('');
+}
+
+function curMoney(){return parseInt(document.getElementById('statMoney').dataset.raw||0);}
+function curDiamonds(){return parseInt(document.getElementById('statDiamonds').dataset.raw||0);}
+
+function renderShopGrid(){
+  var el=document.getElementById('shopGrid');
+  if(!SHOP_AVATARS.length){el.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:rgba(255,255,255,.3);text-align:center;padding:10px 0">Aucun avatar disponible pour le moment</div>';return;}
+  var money=curMoney(),diamonds=curDiamonds();
+  el.innerHTML=SHOP_AVATARS.map(function(av,i){
+    var owned=ownedAvatars.indexOf(av.src)>=0;
+    var sym=av.currency==='diamonds'?'💎':'€';
+    var balance=av.currency==='diamonds'?diamonds:money;
+    var afford=balance>=av.price;
+    var cls='shop-opt'+(owned?' owned':'');
+    var footer=owned
+      ?'<div class="shop-opt-owned-lbl">✅ Possédé</div>'
+      :'<div class="shop-opt-price '+(afford?'afford':'cant-afford')+'" '+(afford?('onclick="buyAvatar('+i+')"'):'')+'>'+fm(av.price)+sym+'</div>';
+    return '<div class="'+cls+'"><img src="'+av.src+'" alt="">'+footer+'</div>';
+  }).join('');
+}
+
+async function buyAvatar(i){
+  var av=SHOP_AVATARS[i];
+  if(!av||ownedAvatars.indexOf(av.src)>=0)return;
+  var field=av.currency==='diamonds'?'diamonds':'money';
+  var balance=av.currency==='diamonds'?curDiamonds():curMoney();
+  if(balance<av.price)return;
+  try{
+    ownedAvatars.push(av.src);
+    var newBalance=balance-av.price;
+    var upd={};upd[field]=newBalance;
+    await Promise.all([
+      sb.from('profiles').update({owned_avatars:ownedAvatars}).eq('user_id',_uid),
+      sb.from('game_stats').update(upd).eq('user_id',_uid)
+    ]);
+    if(field==='diamonds'){document.getElementById('statDiamonds').dataset.raw=newBalance;document.getElementById('statDiamonds').textContent=fm(newBalance)+'💎';}
+    else{document.getElementById('statMoney').dataset.raw=newBalance;document.getElementById('statMoney').textContent=fm(newBalance)+'€';}
+    renderShopGrid();
+  }catch(e){
+    ownedAvatars.splice(ownedAvatars.indexOf(av.src),1);
+    console.error(e);
+  }
 }
 
 function openAvatarModal(){
@@ -271,13 +339,14 @@ async function init(){
     _uid=session.user.id;
 
     var res=await Promise.all([
-      sb.from('profiles').select('username, avatar_url, background_color, bio, created_at').eq('user_id',_uid).maybeSingle(),
+      sb.from('profiles').select('username, avatar_url, background_color, bio, created_at, owned_avatars').eq('user_id',_uid).maybeSingle(),
       sb.from('game_stats').select('level, xp, money, diamonds, trophies, playtime_minutes, streak_days').eq('user_id',_uid).maybeSingle(),
       sb.from('game_stats').select('user_id,money').order('money',{ascending:false}).limit(500)
     ]);
     var profile=res[0].data||{};
     var stats=res[1].data||{};
     var allMoney=res[2].data||[];
+    ownedAvatars=profile.owned_avatars||[];
 
     playerLevel=stats.level||1;
     playerXp=stats.xp||0;
@@ -294,8 +363,12 @@ async function init(){
     document.getElementById('heroXpLabel').textContent=fm(playerXp)+' / '+fm(needed)+' XP — NV.'+playerLevel;
 
     document.getElementById('statMoney').textContent=fm(stats.money)+'€';
+    document.getElementById('statMoney').dataset.raw=stats.money||0;
     document.getElementById('statDiamonds').textContent=fm(stats.diamonds)+'💎';
+    document.getElementById('statDiamonds').dataset.raw=stats.diamonds||0;
     document.getElementById('statTrophies').textContent=fm(stats.trophies)+'🏆';
+
+    renderShopGrid();
 
     var bio=profile.bio;
     document.getElementById('bioDisplay').innerHTML=bio?escapeHtml(bio):'<span class="bio-empty">Aucune bio pour l\'instant</span>';
