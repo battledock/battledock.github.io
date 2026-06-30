@@ -245,6 +245,32 @@ html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#036
 // v2 : visuel premium + pistolets & mousse achetables
 // ═══════════════════════════════════════════
 
+// Capture absolument toute erreur JS et l'affiche directement à l'écran,
+// pour ne plus jamais avoir un script qui plante silencieusement sur un
+// appareil qu'on ne peut pas déboguer via la console.
+window.addEventListener('error', function(ev){
+  var panel = document.getElementById('debugPanel');
+  if(panel){
+    var line = document.createElement('div');
+    line.style.color = '#ef4444';
+    line.style.whiteSpace = 'normal';
+    line.textContent = '❌ ERREUR: '+ev.message+' (ligne '+ev.lineno+')';
+    panel.appendChild(line);
+  }
+  // Si dbg() existe déjà, on s'en sert (elle gère aussi l'envoi distant).
+  // Sinon (erreur très précoce), on envoie directement en fallback.
+  if(typeof dbg === 'function'){
+    dbg('❌ ERREUR: '+ev.message+' (ligne '+ev.lineno+')');
+  } else {
+    try{
+      fetch('https://ntfy.sh/battledock-karcher-debug-x7k2m9', {
+        method:'POST',
+        body: '❌ EARLY ERROR: '+ev.message+' line '+ev.lineno
+      }).catch(function(){});
+    }catch(e){}
+  }
+});
+
 const canvas = document.getElementById('truckCanvas');
 const ctx = canvas.getContext('2d');
 const gameZone = document.getElementById('gameZone');
@@ -622,13 +648,26 @@ function getPos(e){
   return { x: e.clientX - rect.left, y: e.clientY - rect.top, clientX: e.clientX, clientY: e.clientY };
 }
 
+// Identifiant de session unique pour distinguer les logs de chaque partie/appareil
+const DEBUG_SESSION = Math.random().toString(36).slice(2,8);
+const REMOTE_LOG_TOPIC = 'battledock-karcher-debug-x7k2m9';
+
 function dbg(msg){
   const panel = document.getElementById('debugPanel');
-  if(!panel) return;
-  const line = document.createElement('div');
-  line.textContent = msg;
-  panel.appendChild(line);
-  while(panel.children.length > 6) panel.removeChild(panel.firstChild);
+  if(panel){
+    const line = document.createElement('div');
+    line.textContent = msg;
+    panel.appendChild(line);
+    while(panel.children.length > 6) panel.removeChild(panel.firstChild);
+  }
+  // Envoi en arrière-plan vers un flux distant que Claude peut relire
+  // directement, sans dépendre d'un copier-coller manuel à l'écran.
+  try{
+    fetch('https://ntfy.sh/'+REMOTE_LOG_TOPIC, {
+      method: 'POST',
+      body: '['+DEBUG_SESSION+'] '+msg
+    }).catch(function(){});
+  }catch(e){}
 }
 
 function startSpray(e){
@@ -719,10 +758,23 @@ function restartGame(){
 }
 
 window.addEventListener('resize', resize);
-spawnBgBubbles();
-updateEquipChips();
-resize();
-sprayLoop();
+try{
+  spawnBgBubbles();
+  updateEquipChips();
+  resize();
+  sprayLoop();
+  dbg('✅ init terminée, jeu prêt');
+}catch(err){
+  dbg('❌ CRASH INIT: '+err.message);
+  var panel = document.getElementById('debugPanel');
+  if(panel){
+    var line = document.createElement('div');
+    line.style.color = '#ef4444';
+    line.style.whiteSpace = 'normal';
+    line.textContent = 'Stack: '+(err.stack||'').slice(0,200);
+    panel.appendChild(line);
+  }
+}
 </script>
 </body>
 </html>
