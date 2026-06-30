@@ -32,8 +32,11 @@ body::after{content:'';position:fixed;inset:0;
 .hdr-center{text-align:center}
 .hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:rgba(255,255,255,.95)}
 .hdr-money{display:flex;align-items:center;gap:5px;background:rgba(245,158,11,.12);
-  border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:8px 14px;flex-shrink:0}
-.hdr-money-val{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24}
+  border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:8px 14px;flex-shrink:0;transition:background .25s,border-color .25s}
+.hdr-money-val{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;transition:transform .2s}
+.hdr-money.flash-gain{background:rgba(74,222,128,.22);border-color:rgba(74,222,128,.5);animation:moneyPulse .5s ease}
+.hdr-money.flash-loss{background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.5);animation:moneyPulse .5s ease}
+@keyframes moneyPulse{0%{transform:scale(1)}30%{transform:scale(1.12)}100%{transform:scale(1)}}
 
 /* ══ HERO STATS BAND ══ */
 .hero{margin:6px clamp(16px,4vw,20px) 14px;position:relative;z-index:1;
@@ -189,6 +192,21 @@ body::after{content:'';position:fixed;inset:0;
 .coll-tile.eq{border-color:#fbbf24;background:rgba(245,158,11,.08)}
 .coll-tile-preview{height:30px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
 .coll-tile-name{font-size:9px;font-weight:800;color:rgba(255,255,255,.7)}
+
+.back-port-btn{display:block;width:100%;margin:20px 0 calc(var(--sb) + 16px);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:13px;padding:14px;font-size:13px;font-weight:800;color:#fff;letter-spacing:1px;text-align:center;cursor:pointer}
+
+/* ── MODALE CONFIRMATION ACHAT (cohérente avec leprofil.html) ── */
+.buy-modal-bg{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px}
+.buy-modal-bg.show{display:flex}
+.buy-modal{background:#0c2a4a;border-radius:20px;padding:24px 20px;width:100%;max-width:340px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.buy-modal-emoji{font-size:40px;margin-bottom:10px}
+.buy-modal-name{font-size:16px;font-weight:800;margin-bottom:6px;color:#fff}
+.buy-modal-q{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.buy-modal-price{font-size:17px;font-weight:800;color:#fbbf24;margin-bottom:18px}
+.buy-modal-row{display:flex;gap:10px}
+.buy-modal-btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+.buy-modal-cancel{background:rgba(255,255,255,.08);color:#fff}
+.buy-modal-confirm{background:#fff;color:#0c2a4a}
 
 .toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
   background:#fff;color:#0d0d12;padding:12px 24px;border-radius:14px;
@@ -425,7 +443,24 @@ body::after{content:'';position:fixed;inset:0;
 
 </div>
 
+<div style="padding:0 clamp(16px,4vw,20px);position:relative;z-index:1">
+  <button class="back-port-btn" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+</div>
+
 <div class="toast" id="toast"></div>
+
+<div class="buy-modal-bg" id="buyModalBg" onclick="if(event.target===this)closeBuyModal()">
+  <div class="buy-modal">
+    <div class="buy-modal-emoji" id="buyModalEmoji">🛒</div>
+    <div class="buy-modal-name" id="buyModalName">—</div>
+    <div class="buy-modal-q" id="buyModalQ">Confirmer pour</div>
+    <div class="buy-modal-price" id="buyModalPrice">—</div>
+    <div class="buy-modal-row">
+      <button class="buy-modal-btn buy-modal-cancel" onclick="closeBuyModal()">ANNULER</button>
+      <button class="buy-modal-btn buy-modal-confirm" id="buyModalConfirmBtn">CONFIRMER</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
@@ -470,6 +505,7 @@ async function init(){
       if(rec.grue_best){var g=document.getElementById('grueLvl');if(g)g.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR')+'pts';}
       if(rec.clark_best){var c=document.getElementById('clarkLvl');if(c)c.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR')+'pts';}
       bMoney=gs.data.money||0;
+      _lastShownMoney=bMoney;
       var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);
       ['recDocker','recDocker2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=lvl;});
       if(rec.grue_best){['recGrue','recGrue2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR');});}
@@ -620,9 +656,45 @@ function epiEquipped(epiId,tierId){
 const B_ODDS={bronze:{commun:.55,rare:.35,epique:.08,legendaire:.02},argent:{commun:.15,rare:.50,epique:.28,legendaire:.07},or:{commun:0,rare:.25,epique:.55,legendaire:.20}};
 const B_PRICES={bronze:10000,argent:25000,or:50000};
 
-function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);}
+var _lastShownMoney=null;
+function flashMoney(newVal){
+  var box=document.querySelector('.hdr-money');
+  if(!box)return;
+  if(_lastShownMoney===null){_lastShownMoney=newVal;return;}
+  if(newVal===_lastShownMoney){return;}
+  box.classList.remove('flash-gain','flash-loss');
+  void box.offsetWidth; // reset animation
+  box.classList.add(newVal>_lastShownMoney?'flash-gain':'flash-loss');
+  setTimeout(function(){box.classList.remove('flash-gain','flash-loss');},500);
+  _lastShownMoney=newVal;
+}
+
+function openBuyModal(opts){
+  document.getElementById('buyModalEmoji').textContent=opts.emoji||'🛒';
+  document.getElementById('buyModalName').textContent=opts.name;
+  document.getElementById('buyModalQ').textContent=opts.question||'Confirmer pour';
+  document.getElementById('buyModalPrice').textContent=opts.price.toLocaleString('fr-FR')+'€';
+  var btn=document.getElementById('buyModalConfirmBtn');
+  btn.onclick=function(){closeBuyModal();opts.onConfirm();};
+  document.getElementById('buyModalBg').classList.add('show');
+}
+function closeBuyModal(){document.getElementById('buyModalBg').classList.remove('show');}
+
+function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);flashMoney(bMoney);}
 
 function boutiqueOpenPack(tier){
+  if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
+  var tierLbl={bronze:'Bronze',argent:'Argent',or:'Or'};
+  openBuyModal({
+    emoji:tier==='or'?'🟡':tier==='argent'?'⚪':'🟤',
+    name:'Pack '+(tierLbl[tier]||tier),
+    question:'Ouvrir ce pack pour',
+    price:B_PRICES[tier],
+    onConfirm:function(){boutiqueOpenPackConfirmed(tier);}
+  });
+}
+
+function boutiqueOpenPackConfirmed(tier){
   if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
   bMoney-=B_PRICES[tier];boutiqueUpdateMoney();
   var item=boutiqueDrawItem(tier);
@@ -704,6 +776,19 @@ function boutiqueRenderEpi(){
 
 async function boutiqueEquipEpi(epiId,tierId,price){
   if(epiOwned(tierId)){bEquippedEpi[epiId]=tierId;bRecords.equipped_epi=bEquippedEpi;boutiqueRenderEpi();await boutiqueSaveData();toast('✅ Équipé !');return;}
+  if(bMoney<price){toast('❌ Pas assez');return;}
+  var epiDef=B_EPI.filter(function(e){return e.id===epiId;})[0];
+  var tierDef=epiDef?epiDef.tiers.filter(function(t){return t.id===tierId;})[0]:null;
+  openBuyModal({
+    emoji:epiDef?epiDef.emoji:'🛒',
+    name:(epiDef?epiDef.name:'Équipement')+(tierDef?' — '+tierDef.rar:''),
+    question:'Acheter pour',
+    price:price,
+    onConfirm:function(){boutiqueEquipEpiConfirmed(epiId,tierId,price);}
+  });
+}
+
+async function boutiqueEquipEpiConfirmed(epiId,tierId,price){
   if(bMoney<price){toast('❌ Pas assez');return;}
   bMoney-=price;bOwnedEpi.push(tierId);bEquippedEpi[epiId]=tierId;
   bRecords.unlocked_epi=bOwnedEpi;bRecords.equipped_epi=bEquippedEpi;
