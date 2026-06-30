@@ -3,478 +3,631 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
-<title>Métiers — Battle Dock</title>
-<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d0d12">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<title>Métiers — Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-:root{--st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,20px)}
-html,body{min-height:100%;
-  background:linear-gradient(160deg,#020810,#0c2a4a,#0369a1);
-  font-family:'Inter',sans-serif;color:#fff;overflow-x:hidden;position:relative}
-body::before{content:'';position:fixed;inset:0;
-  background:linear-gradient(135deg,transparent 30%,rgba(255,255,255,.03) 50%,transparent 70%);
-  pointer-events:none;z-index:0}
-body::after{content:'';position:fixed;inset:0;
-  background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);
-  background-size:20px 20px;pointer-events:none;z-index:0}
-
-/* ══ HEADER COMPACT ══ */
-.hdr{padding:calc(var(--st) + 14px) clamp(16px,4vw,20px) 16px;
-  display:flex;align-items:center;justify-content:space-between;gap:10px;
-  position:relative;z-index:1}
-.hdr-back{width:44px;height:44px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:13px;
-  display:flex;align-items:center;justify-content:center;font-size:19px;color:rgba(255,255,255,.85);flex-shrink:0;cursor:pointer}
-.hdr-center{text-align:center}
-.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:rgba(255,255,255,.95)}
-.hdr-money{display:flex;align-items:center;gap:5px;background:rgba(245,158,11,.12);
-  border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:8px 14px;flex-shrink:0;transition:background .25s,border-color .25s}
-.hdr-money-val{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;transition:transform .2s}
-.hdr-money.flash-gain{background:rgba(74,222,128,.22);border-color:rgba(74,222,128,.5);animation:moneyPulse .5s ease}
-.hdr-money.flash-loss{background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.5);animation:moneyPulse .5s ease}
-@keyframes moneyPulse{0%{transform:scale(1)}30%{transform:scale(1.12)}100%{transform:scale(1)}}
-
-/* ══ HERO STATS BAND ══ */
-.hero{margin:6px clamp(16px,4vw,20px) 14px;position:relative;z-index:1;
-  background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(3,105,161,.25));
-  border-radius:20px;padding:18px 18px 16px;
-  display:flex;align-items:center;justify-content:space-between;
-  border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px)}
-.hero-left{flex:1}
-.hero-greet{font-size:10px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:2px;text-transform:uppercase}
-.hero-lvl{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1px;line-height:1;margin-top:4px}
-.hero-lvl span{font-size:14px;color:rgba(255,255,255,.4);font-weight:400;letter-spacing:1px;font-family:'Inter',sans-serif}
-.hero-ring{position:relative;width:60px;height:60px;flex-shrink:0}
-.hero-ring svg{transform:rotate(-90deg)}
-.hero-ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
-
-/* ══ TABS PILLULES ══ */
-.tabs{display:flex;gap:8px;padding:0 clamp(16px,4vw,20px);margin-bottom:16px;position:relative;z-index:1}
-.tab{flex:1;padding:11px 4px;border-radius:14px;text-align:center;
-  font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1.5px;
-  background:rgba(255,255,255,.05);color:rgba(255,255,255,.35);
-  border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:all .15s}
-.tab.on{background:#fff;color:#0d0d12;border-color:#fff}
-
-.scroll{padding:0 clamp(16px,4vw,20px) calc(var(--sb) + 28px);position:relative;z-index:1}
-
-/* ══ JOB GRID — 2 colonnes, tuiles carrées ══ */
-.job-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.job-tile{
-  border-radius:22px;overflow:visible;position:relative;
-  aspect-ratio:0.92;cursor:pointer;transition:transform .12s;
+:root{
+  --st:env(safe-area-inset-top,44px);
+  --sb:env(safe-area-inset-bottom,20px);
+  --bg:#060b14;
+  --surf:rgba(255,255,255,.05);
+  --surf2:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.08);
+  --txt:#fff;
+  --txt2:rgba(255,255,255,.45);
+  --docker:#f97316;
+  --grutier:#38bdf8;
+  --clark:#c084fc;
+  --pecheur:#34d399;
+  --shop:#fbbf24;
 }
-.job-tile-bg{border-radius:22px;overflow:hidden}
-.job-tile:active{transform:scale(.96)}
-.job-tile-bg{position:absolute;inset:0}
-.job-tile-content{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;
-  justify-content:space-between;padding:14px}
-.job-tile-top{display:flex;justify-content:space-between;align-items:flex-start}
-.job-tile-icon{font-size:30px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
-.job-tile-badge{background:rgba(255,255,255,.15);backdrop-filter:blur(10px);
-  border-radius:20px;padding:3px 8px;font-size:8px;font-weight:900;letter-spacing:1px;color:#fff}
-.job-tile-bottom{}
-.job-tile-name{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;
-  line-height:1;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
-.job-tile-sub{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);margin-top:3px}
-.job-tile-xp{height:4px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;margin-top:8px}
-.job-tile-xp-fill{height:100%;background:#fff;border-radius:3px}
-.job-tile-record{position:absolute;top:-8px;left:10px;z-index:3;
-  background:#fff;color:#0d0d12;border-radius:50%;width:26px;height:26px;
-  display:flex;align-items:center;justify-content:center;font-size:13px;
-  box-shadow:0 4px 10px rgba(0,0,0,.3);
-  animation:pop .3s cubic-bezier(.34,1.56,.64,1)}
-@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:var(--txt);overflow:hidden}
+.bebas{font-family:'Bebas Neue',sans-serif}
 
-/* Big featured tile (Docker - métier principal) spans full width */
-.job-tile.soon{opacity:.55;cursor:not-allowed;filter:grayscale(.4)}
-.job-tile.soon .job-tile-name{color:rgba(255,255,255,.7)}
-.job-tile.soon .job-tile-badge{background:rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
-.job-tile.featured{aspect-ratio:auto;height:110px;grid-column:1/-1}
-.job-tile.featured .job-tile-content{flex-direction:row;align-items:center;justify-content:space-between}
-.job-tile.featured .job-tile-left{display:flex;align-items:center;gap:14px}
-.job-tile.featured .job-tile-icon{font-size:40px}
-.job-tile.featured .job-btn{
-  background:rgba(255,255,255,.95);color:#0d0d12;border:none;border-radius:12px;
-  padding:10px 18px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:1.5px;cursor:pointer}
+/* ── LOADER ── */
+#loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px}
+.ld-icon{font-size:52px;animation:ldBob 1.4s ease-in-out infinite}
+@keyframes ldBob{0%,100%{transform:translateY(0) rotate(0deg)}50%{transform:translateY(-10px) rotate(-8deg)}}
+.ld-bar{width:100px;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.ld-fill{height:100%;background:linear-gradient(90deg,var(--docker),#fbbf24);border-radius:2px;animation:ldBar 1.6s ease-in-out infinite}
+@keyframes ldBar{0%{width:0;opacity:1}70%{width:100%}100%{width:100%;opacity:0}}
+.ld-txt{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:4px;color:var(--txt2)}
 
-/* ══ QUICK STATS ROW ══ */
-.qstat-row{display:flex;gap:10px;margin-bottom:16px}
-.qstat{flex:1;background:rgba(3,105,161,.1);border:1px solid rgba(255,255,255,.1);
-  border-radius:14px;padding:12px;text-align:center}
-.qstat-val{font-family:'Bebas Neue',sans-serif;font-size:20px;line-height:1}
-.qstat-lbl{font-size:8px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:4px;text-transform:uppercase}
+/* ── APP ── */
+#app{display:none;flex-direction:column;height:100%;height:100dvh}
 
-/* ── STREAK & PROCHAIN PALIER ── */
-.streak-card{display:flex;align-items:center;gap:12px;
-  background:linear-gradient(135deg,rgba(251,191,36,.12),rgba(251,191,36,.04));
-  border:1px solid rgba(251,191,36,.25);border-radius:16px;padding:14px 16px;margin-bottom:12px}
-.streak-icon{font-size:28px;flex-shrink:0}
-.streak-text{flex:1}
-.streak-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;color:#fbbf24}
-.streak-sub{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;margin-top:2px}
+/* ── TOP BAR ── */
+.top-bar{
+  flex-shrink:0;display:flex;align-items:center;gap:10px;
+  padding:calc(var(--st) + 10px) 16px 12px;
+  background:var(--bg);border-bottom:1px solid var(--border);
+  position:relative;z-index:10;
+}
+.tb-back{
+  width:40px;height:40px;background:var(--surf);border:1px solid var(--border);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  color:var(--txt2);cursor:pointer;flex-shrink:0;text-decoration:none;
+}
+.tb-avatar{
+  width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  background:linear-gradient(135deg,var(--docker),#991100);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.tb-avatar img{width:100%;height:100%;object-fit:cover}
+.tb-info{flex:1;min-width:0}
+.tb-name{font-size:13px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-lvl{font-size:10px;font-weight:700;color:var(--txt2)}
+.tb-money-wrap{
+  display:flex;align-items:center;gap:5px;flex-shrink:0;
+  background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.25);
+  border-radius:20px;padding:6px 11px;
+  transition:background .25s,border-color .25s;
+}
+.tb-money-wrap.flash-gain{background:rgba(52,211,153,.2);border-color:rgba(52,211,153,.4);animation:mPop .4s ease}
+.tb-money-wrap.flash-loss{background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.4);animation:mPop .4s ease}
+@keyframes mPop{0%,100%{transform:scale(1)}40%{transform:scale(1.07)}}
+#hdrMoneyVal{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fbbf24;letter-spacing:.5px}
 
-.milestone-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-  border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px}
-.milestone-icon{font-size:24px;flex-shrink:0}
-.milestone-text{flex:1;min-width:0}
-.milestone-title{font-size:9px;font-weight:900;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase}
-.milestone-desc{font-size:12px;color:rgba(255,255,255,.85);font-weight:700;margin-top:3px}
-.milestone-bar-wrap{margin-top:8px}
-.milestone-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
-.milestone-bar-fill{height:100%;background:linear-gradient(90deg,#22d3ee,#4ade80);border-radius:3px;transition:width .5s}
-.milestone-pct{font-size:9px;color:rgba(255,255,255,.3);font-weight:700;margin-top:4px;text-align:right}
+/* ── CONTENT ── */
+.content-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px 16px calc(var(--nb-h,72px) + var(--sb) + 28px)}
+.job-view{display:none}
+.job-view.active{display:block;animation:fadeUp .22s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-/* ══ RECORDS — style "trading cards" ══ */
-.rec-hero{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px}
-.rec-card{flex:1;border-radius:18px;padding:16px 12px;text-align:center;position:relative;overflow:hidden}
-.rec-card-bg{position:absolute;inset:0;opacity:.15}
-.rec-card-content{position:relative;z-index:1}
-.rec-emoji{font-size:26px;margin-bottom:6px}
-.rec-val{font-family:'Bebas Neue',sans-serif;font-size:26px;line-height:1}
-.rec-lbl{font-size:8px;font-weight:900;letter-spacing:1.5px;margin-top:5px;opacity:.5;text-transform:uppercase}
+/* ── HERO CARD ── */
+.hero-card{width:100%;height:176px;border-radius:22px;overflow:hidden;margin-bottom:20px;position:relative;box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.hero-card svg{width:100%;height:100%;display:block}
 
-.podium-card{background:rgba(2,8,16,.5);border:1px solid rgba(255,255,255,.08);
-  border-radius:20px;padding:18px;margin-bottom:14px}
-.podium-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.podium-card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;
-  justify-content:center;font-size:18px;flex-shrink:0}
-.podium-card-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px}
-.podium-card-sub{font-size:10px;color:rgba(255,255,255,.3);font-weight:600}
-.podium-list{display:flex;flex-direction:column;gap:6px}
-.podium-item{display:flex;align-items:center;gap:10px;padding:9px 12px;
-  background:rgba(3,105,161,.08);border-radius:12px}
-.podium-rank{font-family:'Bebas Neue',sans-serif;font-size:15px;width:20px;text-align:center;color:rgba(255,255,255,.25)}
-.podium-name{flex:1;font-weight:700;font-size:13px;color:rgba(255,255,255,.85)}
-.podium-score{font-family:'Bebas Neue',sans-serif;font-size:17px}
+/* ── JOB HEADER ── */
+.job-name{font-family:'Bebas Neue',sans-serif;font-size:clamp(34px,10vw,48px);letter-spacing:2px;line-height:1;margin-bottom:6px}
+.job-badges{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.badge{font-size:9px;font-weight:900;letter-spacing:1.5px;padding:4px 10px;border-radius:20px;flex-shrink:0}
+.badge-diff{background:var(--surf2);color:var(--txt2)}
+.badge-new{background:rgba(52,211,153,.18);color:#34d399;border:1px solid rgba(52,211,153,.25)}
+.badge-principal{background:rgba(249,115,22,.18);color:#f97316;border:1px solid rgba(249,115,22,.25)}
 
-/* ══ BOUTIQUE — masonry style ══ */
-.shop-band{background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(3,105,161,.25));border-radius:20px;border:1px solid rgba(255,255,255,.12);
-  padding:18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;
-  border:1px solid rgba(255,255,255,.06)}
-.shop-band-icon{font-size:36px}
-.shop-band-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px}
-.shop-band-sub{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;margin-top:2px}
-.shop-band-money{margin-left:auto;background:rgba(255,255,255,.1);border-radius:12px;padding:8px 12px;text-align:center}
-.shop-band-money-val{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24}
+/* ── XP BAR ── */
+.xp-block{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:13px 16px;margin-bottom:14px}
+.xp-block-label{font-size:9px;font-weight:900;letter-spacing:2px;color:var(--txt2);margin-bottom:8px}
+.xp-track{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.xp-fill{height:100%;border-radius:3px;transition:width .8s ease}
+.xp-sub{font-size:10px;font-weight:700;color:var(--txt2);margin-top:6px}
 
-.shop-tabs{display:flex;gap:8px;margin-bottom:14px}
-.shop-tab{flex:1;padding:9px;text-align:center;border-radius:12px;
-  font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;
-  background:rgba(255,255,255,.04);color:rgba(255,255,255,.3);cursor:pointer;
-  border:1px solid rgba(255,255,255,.06)}
+/* ── RECORD ── */
+.rec-block{
+  display:flex;align-items:center;gap:14px;
+  background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:14px;
+}
+.rec-ico{font-size:26px;flex-shrink:0}
+.rec-val{font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:1px;line-height:1}
+.rec-lbl{font-size:9px;font-weight:900;letter-spacing:2px;color:var(--txt2);margin-top:3px}
+
+/* ── CTA JOUER ── */
+.cta{
+  width:100%;border:none;border-radius:18px;padding:19px;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:#fff;
+  cursor:pointer;margin-bottom:16px;position:relative;overflow:hidden;
+  transition:transform .13s,filter .13s;
+}
+.cta:active{transform:scale(.97);filter:brightness(.9)}
+.cta::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.18) 50%,transparent 70%);
+  background-size:200% 100%;animation:shine 3.5s ease infinite;
+}
+@keyframes shine{0%{background-position:200% center}40%,100%{background-position:-200% center}}
+.cta.disabled{background:var(--surf2)!important;color:var(--txt2)!important;cursor:not-allowed}
+.cta.disabled::after{display:none}
+
+/* ── INFO CARDS (streak/milestone) ── */
+.icard{
+  display:none;align-items:flex-start;gap:12px;
+  background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:10px;
+}
+.icard.show{display:flex}
+.icard-icon{font-size:24px;flex-shrink:0;margin-top:2px}
+.icard-title{font-size:12px;font-weight:800;color:var(--txt);margin-bottom:3px}
+.icard-desc{font-size:11px;color:var(--txt2);line-height:1.4}
+.mbar{height:4px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;margin-top:8px}
+.mbar-fill{height:100%;background:linear-gradient(90deg,#38bdf8,#34d399);border-radius:2px;transition:width .6s ease}
+
+/* ── SECTION HDR ── */
+.sec-hdr{font-size:9px;font-weight:900;color:var(--txt2);letter-spacing:2px;margin:20px 0 10px}
+
+/* ── LEADERBOARD ── */
+.lb-wrap{background:var(--surf);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:16px;width:26px;text-align:center;color:var(--txt2);flex-shrink:0}
+.lb-name{flex:1;font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-val{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.5px;flex-shrink:0}
+.lb-empty{padding:16px;text-align:center;font-size:12px;color:var(--txt2)}
+
+/* ── PÊCHEUR SOON ── */
+.soon-card{border-radius:14px;padding:20px;text-align:center;background:linear-gradient(135deg,rgba(52,211,153,.06),rgba(16,185,129,.04));border:1px solid rgba(52,211,153,.15);margin-bottom:14px}
+.soon-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:#34d399;margin-bottom:4px}
+.soon-desc{font-size:12px;color:var(--txt2);line-height:1.5}
+
+/* ── SHOP ── */
+.shop-money{display:flex;align-items:center;justify-content:space-between;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.2);border-radius:14px;padding:13px 16px;margin-bottom:16px}
+.shop-money-lbl{font-size:9px;font-weight:900;letter-spacing:2px;color:#fbbf24}
+.shop-money-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:1px}
+.shop-tabs{display:flex;gap:0;background:var(--surf);border-radius:12px;padding:4px;margin-bottom:16px}
+.shop-tab{flex:1;padding:9px 4px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;color:var(--txt2);cursor:pointer;border-radius:9px;transition:all .15s}
 .shop-tab.on{background:#fff;color:#0d0d12}
+.pack-hero{background:linear-gradient(135deg,#3a2a0a,#1f1505);border:1px solid rgba(245,158,11,.2);border-radius:18px;padding:18px;margin-bottom:12px}
+.pack-hero-title{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#fbbf24;letter-spacing:2px;margin-bottom:2px}
+.pack-hero-sub{font-size:11px;color:rgba(245,158,11,.4);margin-bottom:14px}
+.pack-hero-btn{width:100%;background:#fbbf24;color:#1a1200;border:none;border-radius:13px;padding:13px;font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;cursor:pointer;display:block}
+.pack-hero-btn:active{opacity:.85}
+.pack-tile{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.pack-tile:active{background:var(--surf2)}
+.pack-tile-info{flex:1}
+.pack-tile-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px}
+.pack-tile-sub{font-size:10px;color:var(--txt2)}
+.pack-tile-price{font-family:'Bebas Neue',sans-serif;font-size:15px;color:#fbbf24}
+.coll-tabs-wrap{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.coll-tabs-wrap::-webkit-scrollbar{display:none}
+.coll-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.coll-tile{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:10px 6px;text-align:center;cursor:pointer;position:relative;transition:border-color .15s}
+.coll-tile.eq{border-color:#fbbf24;background:rgba(251,191,36,.08)}
+.coll-tile-prev{display:flex;align-items:center;justify-content:center;height:36px;margin-bottom:5px}
+.coll-tile-name{font-size:9px;font-weight:800;color:var(--txt2);line-height:1.2}
 
-.pack-hero{border-radius:20px;overflow:hidden;margin-bottom:12px;position:relative;
-  background:linear-gradient(135deg,#3a2a0a,#1f1505);border:1px solid rgba(245,158,11,.2);padding:18px}
-.pack-hero-row{display:flex;align-items:center;gap:14px}
-.pack-hero-icon{font-size:42px}
-.pack-hero-name{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px}
-.pack-hero-sub{font-size:10px;color:rgba(255,255,255,.4);font-weight:600;margin-top:2px}
-.pack-hero-tags{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-.pack-hero-tag{padding:2px 7px;border-radius:6px;font-size:8px;font-weight:800}
-.pack-hero-price{font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fbbf24;margin-top:6px}
-.pack-hero-btn{background:#fbbf24;color:#1a1200;border:none;border-radius:10px;
-  padding:9px 16px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;margin-top:8px}
+/* ── BOUTON RETOUR BAS ── */
+.back-bottom{display:block;width:100%;margin-top:20px;background:var(--surf);border:1px solid var(--border);border-radius:13px;padding:14px;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--txt);letter-spacing:1px;text-align:center;cursor:pointer}
+.back-bottom:active{opacity:.8}
 
-.pack-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.pack-tile{background:rgba(3,105,161,.08);border:1px solid rgba(255,255,255,.1);
-  border-radius:16px;padding:14px;text-align:center;cursor:pointer}
-.pack-tile-icon{font-size:28px}
-.pack-tile-name{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:1px;margin-top:5px}
-.pack-tile-price{font-family:'Bebas Neue',sans-serif;font-size:14px;margin-top:5px}
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  flex-shrink:0;display:flex;align-items:stretch;
+  background:rgba(6,11,20,.96);border-top:1px solid var(--border);
+  backdrop-filter:blur(24px);padding-bottom:var(--sb);
+}
+.nav-tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:9px 4px 7px;cursor:pointer;transition:opacity .15s;
+}
+.nav-tab:active{opacity:.7}
+.nav-dot{width:4px;height:4px;border-radius:50%;background:transparent;transition:background .2s;margin-bottom:2px}
+.nav-tab.active .nav-dot{background:var(--tc)}
+.nav-icon{font-size:21px;transition:filter .2s,transform .2s;filter:grayscale(.6)}
+.nav-tab.active .nav-icon{filter:none;transform:scale(1.12)}
+.nav-label{font-family:'Bebas Neue',sans-serif;font-size:clamp(7px,2vw,10px);letter-spacing:1px;color:var(--txt2);transition:color .2s}
+.nav-tab.active .nav-label{color:var(--tc)}
 
-.coll-grid2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.coll-tile{background:rgba(3,105,161,.08);border:1.5px solid rgba(255,255,255,.1);
-  border-radius:14px;padding:10px;text-align:center;position:relative}
-.coll-tile.eq{border-color:#fbbf24;background:rgba(245,158,11,.08)}
-.coll-tile-preview{height:30px;display:flex;align-items:center;justify-content:center;margin-bottom:6px}
-.coll-tile-name{font-size:9px;font-weight:800;color:rgba(255,255,255,.7)}
+/* ── TOAST ── */
+#toast{
+  position:fixed;top:calc(var(--st) + 56px);left:50%;transform:translateX(-50%);
+  background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:14px;
+  padding:10px 18px;font-size:12px;font-weight:800;color:#fff;
+  z-index:800;opacity:0;pointer-events:none;white-space:nowrap;
+  transition:opacity .2s;box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#toast.show{opacity:1}
 
-.back-port-btn{display:block;width:100%;margin:20px 0 calc(var(--sb) + 16px);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:13px;padding:14px;font-size:13px;font-weight:800;color:#fff;letter-spacing:1px;text-align:center;cursor:pointer}
-
-/* ── MODALE CONFIRMATION ACHAT (cohérente avec leprofil.html) ── */
-.buy-modal-bg{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.75);backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;padding:20px}
+/* ── BUY MODAL ── */
+.buy-modal-bg{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
 .buy-modal-bg.show{display:flex}
 .buy-modal{background:#0c2a4a;border-radius:20px;padding:24px 20px;width:100%;max-width:340px;text-align:center;border:1px solid rgba(255,255,255,.1)}
-.buy-modal-emoji{font-size:40px;margin-bottom:10px}
-.buy-modal-name{font-size:16px;font-weight:800;margin-bottom:6px;color:#fff}
-.buy-modal-q{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px}
-.buy-modal-price{font-size:17px;font-weight:800;color:#fbbf24;margin-bottom:18px}
-.buy-modal-row{display:flex;gap:10px}
-.buy-modal-btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:800;letter-spacing:.5px;cursor:pointer}
-.buy-modal-cancel{background:rgba(255,255,255,.08);color:#fff}
-.buy-modal-confirm{background:#fff;color:#0c2a4a}
-
-.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  background:#fff;color:#0d0d12;padding:12px 24px;border-radius:14px;
-  font-size:13px;font-weight:700;z-index:200;opacity:0;transition:opacity .2s;pointer-events:none}
-.toast.show{opacity:1}
-
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.tab-view.on{animation:fadeIn .2s ease}
+#buyModalEmoji{font-size:40px;margin-bottom:10px}
+#buyModalName{font-size:16px;font-weight:800;margin-bottom:6px}
+#buyModalQ{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px}
+#buyModalPrice{font-size:17px;font-weight:800;color:#fbbf24;margin-bottom:18px}
+.bm-row{display:flex;gap:10px}
+.bm-btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+.bm-cancel{background:rgba(255,255,255,.08);color:#fff}
+.bm-confirm{background:#fff;color:#0c2a4a}
 </style>
 </head>
 <body>
 
-<div class="hdr">
-  <div class="hdr-back" onclick="location.href='game.html'">←</div>
-  <div class="hdr-center"><div class="hdr-title">MÉTIERS</div></div>
-  <div class="hdr-money">
-    <span style="font-size:11px">💰</span>
-    <span class="hdr-money-val" id="hdrMoneyVal">—</span>
-  </div>
+<div id="loader">
+  <div class="ld-icon">⚓</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-txt">CHARGEMENT</div>
 </div>
 
-<!-- HERO band -->
-<div class="hero">
-  <div class="hero-left">
-    <div class="hero-greet">Niveau actuel</div>
-    <div class="hero-lvl">12 <span>· Docker confirmé</span></div>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <a href="game.html" class="tb-back">←</a>
+    <div class="tb-avatar" id="tbAvatar">👤</div>
+    <div class="tb-info">
+      <div class="tb-name" id="tbName">—</div>
+      <div class="tb-lvl" id="tbLvl">Niveau —</div>
+    </div>
+    <div class="tb-money-wrap">
+      💰 <span id="hdrMoneyVal">—</span>
+    </div>
   </div>
-  <div class="hero-ring">
-    <svg width="60" height="60">
-      <circle cx="30" cy="30" r="26" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="6"/>
-      <circle cx="30" cy="30" r="26" fill="none" stroke="#fbbf24" stroke-width="6"
-        stroke-dasharray="163" stroke-dashoffset="52" stroke-linecap="round"/>
-    </svg>
-    <div class="hero-ring-pct">68%</div>
-  </div>
-</div>
 
-<div class="tabs">
-  <div class="tab on" id="tabJobsBtn" onclick="switchTab('jobs')">JOUER</div>
-  <div class="tab" id="tabRecordsBtn" onclick="switchTab('records')">RECORDS</div>
-  <div class="tab" id="tabStatsBtn" onclick="switchTab('stats')">SHOP</div>
-</div>
+  <!-- CONTENT AREA -->
+  <div class="content-area" id="contentArea">
 
-<!-- ══ JOUER ══ -->
-<div id="jobsContent" class="scroll tab-view on">
-
-  <div class="job-grid">
-
-    <!-- DOCKER featured full width -->
-    <div class="job-tile featured" onclick="location.href='clicker.html'" style="background:linear-gradient(135deg,#7c2d12,#431407)">
-      <div class="job-tile-content">
-        <div class="job-tile-left">
-          <div class="job-tile-icon">📦</div>
-          <div>
-            <div class="job-tile-name">DOCKER</div>
-            <div class="job-tile-sub">Métier principal · Niv. <span id="clickerLvl">—</span></div>
-          </div>
-        </div>
-        <button class="job-btn" onclick="event.stopPropagation();location.href='clicker.html'">JOUER</button>
+    <!-- ═══ DOCKER ═══ -->
+    <div class="job-view active" id="viewDocker">
+      <div class="hero-card">
+        <svg viewBox="0 0 360 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="dkBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1c0800"/><stop offset="100%" stop-color="#2d1200"/></linearGradient>
+            <radialGradient id="dkGlow" cx="75%" cy="60%" r="50%"><stop offset="0%" stop-color="#f97316" stop-opacity=".35"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+          </defs>
+          <rect width="360" height="176" fill="url(#dkBg)"/>
+          <rect width="360" height="176" fill="url(#dkGlow)"/>
+          <!-- Grille de fond -->
+          <g stroke="rgba(249,115,22,.06)" stroke-width="1">
+            <line x1="0" y1="44" x2="360" y2="44"/><line x1="0" y1="88" x2="360" y2="88"/>
+            <line x1="0" y1="132" x2="360" y2="132"/>
+            <line x1="72" y1="0" x2="72" y2="176"/><line x1="144" y1="0" x2="144" y2="176"/>
+            <line x1="216" y1="0" x2="216" y2="176"/><line x1="288" y1="0" x2="288" y2="176"/>
+          </g>
+          <!-- Quai -->
+          <rect x="0" y="148" width="360" height="28" fill="#1a0600"/>
+          <rect x="0" y="144" width="360" height="6" fill="#2a1000"/>
+          <!-- Containers empilés (fond) -->
+          <rect x="20" y="90" width="70" height="54" rx="3" fill="rgba(249,115,22,.15)" stroke="rgba(249,115,22,.2)" stroke-width="1"/>
+          <rect x="24" y="60" width="62" height="32" rx="3" fill="rgba(249,115,22,.12)" stroke="rgba(249,115,22,.18)" stroke-width="1"/>
+          <rect x="100" y="96" width="64" height="48" rx="3" fill="rgba(249,115,22,.12)" stroke="rgba(249,115,22,.16)" stroke-width="1"/>
+          <rect x="104" y="72" width="56" height="26" rx="3" fill="rgba(249,115,22,.09)" stroke="rgba(249,115,22,.14)" stroke-width="1"/>
+          <!-- Rainures containers -->
+          <line x1="40" y1="90" x2="40" y2="144" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+          <line x1="60" y1="90" x2="60" y2="144" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+          <line x1="118" y1="96" x2="118" y2="144" stroke="rgba(0,0,0,.25)" stroke-width="1.5"/>
+          <!-- Grue silhouette -->
+          <rect x="244" y="14" width="6" height="130" fill="rgba(255,255,255,.12)"/>
+          <rect x="230" y="14" width="76" height="5" fill="rgba(255,255,255,.12)"/>
+          <rect x="302" y="14" width="4" height="18" fill="rgba(255,255,255,.1)"/>
+          <rect x="306" y="18" width="10" height="2" fill="rgba(255,255,255,.1)"/>
+          <!-- Câble + hook -->
+          <line x1="258" y1="19" x2="258" y2="78" stroke="rgba(255,255,255,.15)" stroke-width="1"/>
+          <rect x="252" y="78" width="12" height="8" rx="2" fill="rgba(255,255,255,.12)"/>
+          <!-- Grand emoji flou -->
+          <text x="190" y="128" font-size="90" opacity=".07" text-anchor="middle">📦</text>
+          <!-- Lueurs lumières port -->
+          <circle cx="30" cy="148" r="3" fill="#f97316" opacity=".7"/>
+          <circle cx="180" cy="148" r="3" fill="#f97316" opacity=".5"/>
+          <circle cx="320" cy="148" r="3" fill="#f97316" opacity=".6"/>
+          <!-- Titre -->
+          <text x="22" y="50" font-family="Bebas Neue, Impact, sans-serif" font-size="48" fill="white" letter-spacing="3" opacity=".9">DOCKER</text>
+          <text x="22" y="70" font-family="Inter, Arial, sans-serif" font-size="9" fill="rgba(249,115,22,.6)" font-weight="700" letter-spacing="2">MÉTIER PRINCIPAL</text>
+        </svg>
       </div>
-    </div>
-
-    <!-- GRUE -->
-    <div class="job-tile" id="grueCard" onclick="openGrue()" style="background:linear-gradient(160deg,#9a3412,#431407)">
-      <div id="badgeGrue" class="job-tile-record" style="display:none">🏆</div>
-      <div class="job-tile-content">
-        <div class="job-tile-top">
-          <div class="job-tile-icon">🏗️</div>
-          <div class="job-tile-badge">MOYEN</div>
-        </div>
-        <div class="job-tile-bottom">
-          <div class="job-tile-name">GRUTIER</div>
-          <div class="job-tile-sub">Record <span id="grueLvl">—</span></div>
-          <div class="job-tile-xp"><div class="job-tile-xp-fill" id="grueXp" style="width:0%"></div></div>
-        </div>
+      <div class="job-name" style="color:var(--docker)">DOCKER</div>
+      <div class="job-badges">
+        <div class="badge badge-principal">⭐ MÉTIER PRINCIPAL</div>
+        <div class="badge badge-diff">CLICKER</div>
       </div>
-    </div>
-
-    <!-- CLARK -->
-    <div class="job-tile" id="clarkCard" onclick="openClark()" style="background:linear-gradient(160deg,#6d28d9,#3b0764)">
-      <div id="badgeClark" class="job-tile-record" style="display:none">🏆</div>
-      <div class="job-tile-content">
-        <div class="job-tile-top">
-          <div class="job-tile-icon">🏎️</div>
-          <div class="job-tile-badge">DIFFICILE</div>
-        </div>
-        <div class="job-tile-bottom">
-          <div class="job-tile-name">CLARK</div>
-          <div class="job-tile-sub">Record <span id="clarkLvl">—</span></div>
-          <div class="job-tile-xp"><div class="job-tile-xp-fill" id="clarkXp" style="width:0%"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- NOUVEAU MÉTIER — en cours de création, nom pas encore décidé (placeholder ???) -->
-    <div class="job-tile soon" style="background:linear-gradient(160deg,#374151,#111827)">
-      <div class="job-tile-content">
-        <div class="job-tile-top">
-          <div class="job-tile-icon">🔒</div>
-          <div class="job-tile-badge">BIENTÔT</div>
-        </div>
-        <div class="job-tile-bottom">
-          <div class="job-tile-name">???</div>
-          <div class="job-tile-sub">Nouveau métier en préparation</div>
+      <div class="rec-block">
+        <div class="rec-ico">🏅</div>
+        <div>
+          <div class="rec-val" id="jobLvlDocker" style="color:var(--docker)">—</div>
+          <div class="rec-lbl">NIVEAU ATTEINT</div>
         </div>
       </div>
-    </div>
-
-  </div>
-
-  <!-- Quick stats -->
-  <div class="qstat-row">
-    <div class="qstat">
-      <div class="qstat-val" style="color:#60a5fa" id="recDocker">—</div>
-      <div class="qstat-lbl">Niveau Docker</div>
-    </div>
-    <div class="qstat">
-      <div class="qstat-val" style="color:#fbbf24" id="recGrue">—</div>
-      <div class="qstat-lbl">Record Grue</div>
-    </div>
-    <div class="qstat">
-      <div class="qstat-val" style="color:#a78bfa" id="recClark">—</div>
-      <div class="qstat-lbl">Record Clark</div>
-    </div>
-  </div>
-
-  <div id="streakCard" style="display:none"></div>
-  <div id="milestoneCard" style="display:none"></div>
-
-</div>
-
-<!-- ══ RECORDS ══ -->
-<div id="recordsContent" class="scroll tab-view" style="display:none">
-
-  <div class="rec-hero">
-    <div class="rec-card" style="background:linear-gradient(145deg,#0c4a6e,#0a2540)">
-      <div class="rec-card-content">
-        <div class="rec-emoji">📦</div>
-        <div class="rec-val" style="color:#60a5fa" id="recDocker2">—</div>
-        <div class="rec-lbl">Niveau</div>
+      <button class="cta" style="background:linear-gradient(135deg,#f97316,#c2410c)" onclick="location.href='clicker.html'">▶ JOUER</button>
+      <div class="icard" id="streakCard">
+        <div class="icard-icon">🔥</div>
+        <div>
+          <div class="icard-title" id="streakTitle">—</div>
+          <div class="icard-desc">Reviens demain pour continuer ta série</div>
+        </div>
       </div>
-    </div>
-    <div class="rec-card" style="background:linear-gradient(145deg,#7c4a08,#3d2504)">
-      <div class="rec-card-content">
-        <div class="rec-emoji">🏗️</div>
-        <div class="rec-val" style="color:#fbbf24" id="recGrue2">—</div>
-        <div class="rec-lbl">Points</div>
-      </div>
-    </div>
-    <div class="rec-card" style="background:linear-gradient(145deg,#5b21b6,#2e1065)">
-      <div class="rec-card-content">
-        <div class="rec-emoji">🏎️</div>
-        <div class="rec-val" style="color:#a78bfa" id="recClark2">—</div>
-        <div class="rec-lbl">Points</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="podium-card">
-    <div class="podium-card-hdr">
-      <div class="podium-card-icon" style="background:rgba(34,211,238,.15)">📦</div>
-      <div><div class="podium-card-title">TOP CLICKERS</div><div class="podium-card-sub">Clics total</div></div>
-    </div>
-    <div class="podium-list" id="leaderClicker"></div>
-  </div>
-
-  <div class="podium-card">
-    <div class="podium-card-hdr">
-      <div class="podium-card-icon" style="background:rgba(251,191,36,.15)">🏗️</div>
-      <div><div class="podium-card-title">TOP GRUTIERS</div><div class="podium-card-sub">Meilleur score</div></div>
-    </div>
-    <div class="podium-list" id="leaderGrue"></div>
-  </div>
-
-  <div class="podium-card">
-    <div class="podium-card-hdr">
-      <div class="podium-card-icon" style="background:rgba(167,139,250,.15)">🏎️</div>
-      <div><div class="podium-card-title">TOP CLARKS</div><div class="podium-card-sub">Meilleur score</div></div>
-    </div>
-    <div class="podium-list" id="leaderClark"></div>
-  </div>
-
-</div>
-
-<!-- ══ SHOP ══ -->
-<div id="statsContent" class="scroll tab-view" style="display:none">
-
-  <div class="shop-band">
-    <div class="shop-band-icon">🛠️</div>
-    <div>
-      <div class="shop-band-title">BOUTIQUE</div>
-      <div class="shop-band-sub">Améliore ton clicker</div>
-    </div>
-    <div class="shop-band-money">
-      <div class="shop-band-money-val" id="boutiqueMoneyDisplay">—</div>
-    </div>
-  </div>
-
-  <div class="shop-tabs">
-    <div id="btabPacks" class="shop-tab on" onclick="boutiqueSwitchTab('packs')">PACKS</div>
-    <div id="btabColl" class="shop-tab" onclick="boutiqueSwitchTab('coll')">SKINS</div>
-    <div id="btabEpi" class="shop-tab" onclick="boutiqueSwitchTab('epi')">EPI</div>
-  </div>
-
-  <div id="bviewPacks">
-    <div class="pack-hero">
-      <div class="pack-hero-row">
-        <div class="pack-hero-icon">👑</div>
+      <div class="icard" id="milestoneCard">
+        <div class="icard-icon">🎁</div>
         <div style="flex:1">
-          <div class="pack-hero-name">PACK OR</div>
-          <div class="pack-hero-sub">Épique garanti · 20% légendaire</div>
-          <div class="pack-hero-tags">
-            <div class="pack-hero-tag" style="background:rgba(59,130,246,.15);color:#60a5fa">25% Rare</div>
-            <div class="pack-hero-tag" style="background:rgba(167,139,250,.15);color:#a78bfa">55% Épique</div>
-            <div class="pack-hero-tag" style="background:rgba(251,191,36,.15);color:#fbbf24">20% Légend.</div>
-          </div>
-          <div class="pack-hero-price">50 000€</div>
-          <button id="btnOr" class="pack-hero-btn" onclick="boutiqueOpenPack('or')">OUVRIR</button>
+          <div class="icard-title" id="milestoneTitle">—</div>
+          <div class="icard-desc" id="milestoneDesc">—</div>
+          <div class="mbar"><div class="mbar-fill" id="mbarFill" style="width:0%"></div></div>
         </div>
       </div>
+      <div class="sec-hdr">🏆 CLASSEMENT CLICS</div>
+      <div class="lb-wrap" id="leaderClicker"><div class="lb-empty">Chargement...</div></div>
+      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
     </div>
 
-    <div class="pack-grid">
-      <div class="pack-tile" onclick="boutiqueOpenPack('bronze')">
-        <div class="pack-tile-icon">📦</div>
-        <div class="pack-tile-name">BRONZE</div>
-        <div style="font-size:8px;color:rgba(255,255,255,.35);font-weight:700;margin-top:2px">55% · 35% · 8% · 2%</div>
-        <div class="pack-tile-price" style="color:#d97706">10 000€</div>
+    <!-- ═══ GRUTIER ═══ -->
+    <div class="job-view" id="viewGrutier">
+      <div class="hero-card">
+        <svg viewBox="0 0 360 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="grBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00111f"/><stop offset="100%" stop-color="#001830"/></linearGradient>
+            <radialGradient id="grGlow" cx="70%" cy="30%" r="45%"><stop offset="0%" stop-color="#38bdf8" stop-opacity=".25"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+          </defs>
+          <rect width="360" height="176" fill="url(#grBg)"/>
+          <rect width="360" height="176" fill="url(#grGlow)"/>
+          <!-- Mer + reflets -->
+          <rect x="0" y="140" width="360" height="36" fill="#001525"/>
+          <path d="M0,148 Q45,142 90,148 Q135,154 180,148 Q225,142 270,148 Q315,154 360,148 L360,176 L0,176 Z" fill="#00111f"/>
+          <!-- Reflet lune -->
+          <ellipse cx="290" cy="158" rx="30" ry="4" fill="rgba(56,189,248,.08)"/>
+          <!-- Stars -->
+          <circle cx="40" cy="18" r="1.5" fill="#fff" opacity=".5"><animate attributeName="opacity" values=".3;.8;.3" dur="3s" repeatCount="indefinite"/></circle>
+          <circle cx="100" cy="10" r="1" fill="#fff" opacity=".4"><animate attributeName="opacity" values=".2;.7;.2" dur="2.5s" repeatCount="indefinite" begin=".5s"/></circle>
+          <circle cx="160" cy="22" r="1.5" fill="#fff" opacity=".45"><animate attributeName="opacity" values=".3;.9;.3" dur="4s" repeatCount="indefinite" begin="1s"/></circle>
+          <circle cx="220" cy="8" r="1" fill="#fff" opacity=".3"><animate attributeName="opacity" values=".2;.6;.2" dur="3.2s" repeatCount="indefinite" begin=".8s"/></circle>
+          <!-- Lune -->
+          <circle cx="300" cy="28" r="22" fill="#f0e8d0" opacity=".6"/>
+          <circle cx="308" cy="22" r="19" fill="#001830" opacity=".5"/>
+          <!-- Grue structure -->
+          <rect x="180" y="18" width="8" height="122" fill="rgba(56,189,248,.25)"/>
+          <!-- Bras horizontal -->
+          <rect x="120" y="18" width="130" height="6" fill="rgba(56,189,248,.25)"/>
+          <!-- Contrepoids -->
+          <rect x="114" y="18" width="16" height="20" rx="2" fill="rgba(56,189,248,.15)"/>
+          <!-- Câbles structure -->
+          <line x1="188" y1="24" x2="120" y2="24" stroke="rgba(56,189,248,.15)" stroke-width="1"/>
+          <line x1="188" y1="24" x2="250" y2="24" stroke="rgba(56,189,248,.15)" stroke-width="1"/>
+          <line x1="188" y1="60" x2="140" y2="24" stroke="rgba(56,189,248,.1)" stroke-width="1"/>
+          <line x1="188" y1="60" x2="240" y2="24" stroke="rgba(56,189,248,.1)" stroke-width="1"/>
+          <!-- Câble + container suspendu -->
+          <line x1="250" y1="24" x2="250" y2="90" stroke="rgba(56,189,248,.3)" stroke-width="1.5"/>
+          <rect x="234" y="90" width="32" height="22" rx="3" fill="rgba(56,189,248,.2)" stroke="rgba(56,189,248,.35)" stroke-width="1"/>
+          <!-- Base + jambes grue -->
+          <rect x="177" y="140" width="14" height="8" fill="rgba(56,189,248,.15)"/>
+          <polygon points="170,148 194,148 190,168 174,168" fill="rgba(56,189,248,.1)"/>
+          <!-- Titre -->
+          <text x="22" y="56" font-family="Bebas Neue, Impact, sans-serif" font-size="48" fill="white" letter-spacing="3" opacity=".9">GRUTIER</text>
+          <text x="22" y="76" font-family="Inter, Arial, sans-serif" font-size="9" fill="rgba(56,189,248,.6)" font-weight="700" letter-spacing="2">SCORE · RECORD</text>
+        </svg>
       </div>
-      <div class="pack-tile" onclick="boutiqueOpenPack('argent')">
-        <div class="pack-tile-icon">🎁</div>
-        <div class="pack-tile-name">ARGENT</div>
-        <div style="font-size:8px;color:rgba(255,255,255,.35);font-weight:700;margin-top:2px">15% · 50% · 28% · 7%</div>
-        <div class="pack-tile-price" style="color:#cbd5e1">25 000€</div>
+      <div class="job-name" style="color:var(--grutier)">GRUTIER</div>
+      <div class="job-badges">
+        <div class="badge badge-diff">MOYEN</div>
+        <div class="badge" style="background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.25)">SCORE</div>
       </div>
+      <div class="xp-block">
+        <div class="xp-block-label">PROGRESSION FORMATION</div>
+        <div class="xp-track"><div class="xp-fill" id="jobXpGrue" style="width:0%;background:linear-gradient(90deg,#0369a1,#38bdf8)"></div></div>
+        <div class="xp-sub" id="jobXpGrueLbl">Commence à jouer pour progresser</div>
+      </div>
+      <div class="rec-block">
+        <div class="rec-ico">🏗️</div>
+        <div>
+          <div class="rec-val" id="jobRecGrue" style="color:var(--grutier)">—</div>
+          <div class="rec-lbl">RECORD PERSONNEL</div>
+        </div>
+      </div>
+      <button class="cta" style="background:linear-gradient(135deg,#0ea5e9,#0369a1)" onclick="location.href='grue.html'">▶ JOUER</button>
+      <div class="sec-hdr">🏆 CLASSEMENT GRUTIERS</div>
+      <div class="lb-wrap" id="leaderGrue"><div class="lb-empty">Chargement...</div></div>
+      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+    </div>
+
+    <!-- ═══ CLARK ═══ -->
+    <div class="job-view" id="viewClark">
+      <div class="hero-card">
+        <svg viewBox="0 0 360 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="clBg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a0018"/><stop offset="100%" stop-color="#14003a"/></linearGradient>
+            <radialGradient id="clGlow" cx="65%" cy="65%" r="50%"><stop offset="0%" stop-color="#a855f7" stop-opacity=".3"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+          </defs>
+          <rect width="360" height="176" fill="url(#clBg)"/>
+          <rect width="360" height="176" fill="url(#clGlow)"/>
+          <!-- Sol perspective -->
+          <path d="M0,160 L360,160 L360,176 L0,176 Z" fill="#0d0025"/>
+          <g stroke="rgba(168,85,247,.08)" stroke-width="1" fill="none">
+            <path d="M180,160 L0,176"/><path d="M180,160 L60,176"/><path d="M180,160 L120,176"/>
+            <path d="M180,160 L240,176"/><path d="M180,160 L300,176"/><path d="M180,160 L360,176"/>
+          </g>
+          <g stroke="rgba(168,85,247,.05)" stroke-width="1">
+            <line x1="0" y1="164" x2="360" y2="164"/><line x1="0" y1="169" x2="360" y2="169"/>
+            <line x1="0" y1="174" x2="360" y2="174"/>
+          </g>
+          <!-- Lignes de vitesse -->
+          <g stroke="rgba(168,85,247,.15)" stroke-width="1.5">
+            <line x1="310" y1="80" x2="360" y2="80"/><line x1="305" y1="95" x2="360" y2="95"/>
+            <line x1="315" y1="110" x2="360" y2="110"/>
+          </g>
+          <g stroke="rgba(192,132,252,.1)" stroke-width="1">
+            <line x1="295" y1="70" x2="360" y2="70"/><line x1="290" y1="120" x2="360" y2="120"/>
+          </g>
+          <!-- Clark shape (vue de côté stylisée) -->
+          <!-- Corps principal -->
+          <rect x="120" y="100" width="140" height="44" rx="8" fill="rgba(168,85,247,.2)" stroke="rgba(192,132,252,.35)" stroke-width="1.5"/>
+          <!-- Poste de conduite -->
+          <rect x="130" y="78" width="50" height="24" rx="6" fill="rgba(168,85,247,.18)" stroke="rgba(192,132,252,.3)" stroke-width="1"/>
+          <!-- Vitre -->
+          <rect x="134" y="82" width="42" height="16" rx="4" fill="rgba(192,132,252,.12)" stroke="rgba(192,132,252,.2)" stroke-width="1"/>
+          <!-- Fourches -->
+          <rect x="42" y="118" width="82" height="6" rx="2" fill="rgba(192,132,252,.35)" stroke="rgba(192,132,252,.4)" stroke-width="1"/>
+          <rect x="42" y="130" width="82" height="6" rx="2" fill="rgba(192,132,252,.35)" stroke="rgba(192,132,252,.4)" stroke-width="1"/>
+          <!-- Mat fourches -->
+          <rect x="116" y="78" width="10" height="66" rx="2" fill="rgba(168,85,247,.25)"/>
+          <!-- Roues -->
+          <circle cx="162" cy="144" r="14" fill="#0a0018" stroke="rgba(192,132,252,.4)" stroke-width="2"/>
+          <circle cx="162" cy="144" r="6" fill="rgba(192,132,252,.2)"/>
+          <circle cx="232" cy="144" r="14" fill="#0a0018" stroke="rgba(192,132,252,.4)" stroke-width="2"/>
+          <circle cx="232" cy="144" r="6" fill="rgba(192,132,252,.2)"/>
+          <!-- Lueur sol roues -->
+          <ellipse cx="162" cy="160" rx="18" ry="4" fill="rgba(168,85,247,.15)"/>
+          <ellipse cx="232" cy="160" rx="18" ry="4" fill="rgba(168,85,247,.15)"/>
+          <!-- Titre -->
+          <text x="22" y="56" font-family="Bebas Neue, Impact, sans-serif" font-size="48" fill="white" letter-spacing="3" opacity=".9">CLARK</text>
+          <text x="22" y="76" font-family="Inter, Arial, sans-serif" font-size="9" fill="rgba(192,132,252,.6)" font-weight="700" letter-spacing="2">TEMPS · PRÉCISION</text>
+        </svg>
+      </div>
+      <div class="job-name" style="color:var(--clark)">CLARK</div>
+      <div class="job-badges">
+        <div class="badge badge-diff">DIFFICILE</div>
+        <div class="badge" style="background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.25)">TEMPS</div>
+      </div>
+      <div class="xp-block">
+        <div class="xp-block-label">PROGRESSION FORMATION</div>
+        <div class="xp-track"><div class="xp-fill" id="jobXpClark" style="width:0%;background:linear-gradient(90deg,#7c3aed,#c084fc)"></div></div>
+        <div class="xp-sub" id="jobXpClarkLbl">Commence à jouer pour progresser</div>
+      </div>
+      <div class="rec-block">
+        <div class="rec-ico">🏎️</div>
+        <div>
+          <div class="rec-val" id="jobRecClark" style="color:var(--clark)">—</div>
+          <div class="rec-lbl">RECORD PERSONNEL</div>
+        </div>
+      </div>
+      <button class="cta" style="background:linear-gradient(135deg,#a855f7,#7c3aed)" onclick="location.href='clark.html'">▶ JOUER</button>
+      <div class="sec-hdr">🏆 CLASSEMENT CLARKS</div>
+      <div class="lb-wrap" id="leaderClark"><div class="lb-empty">Chargement...</div></div>
+      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+    </div>
+
+    <!-- ═══ PÊCHEUR ═══ -->
+    <div class="job-view" id="viewPecheur">
+      <div class="hero-card" style="position:relative">
+        <svg viewBox="0 0 360 176" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="peBg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00120d"/><stop offset="100%" stop-color="#001a14"/></linearGradient>
+            <radialGradient id="peMoon" cx="75%" cy="20%" r="30%"><stop offset="0%" stop-color="#34d399" stop-opacity=".2"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+          </defs>
+          <rect width="360" height="176" fill="url(#peBg)"/>
+          <rect width="360" height="176" fill="url(#peMoon)"/>
+          <!-- Ciel étoilé -->
+          <circle cx="30" cy="20" r="1.5" fill="#fff" opacity=".5"><animate attributeName="opacity" values=".3;.8;.3" dur="3s" repeatCount="indefinite"/></circle>
+          <circle cx="80" cy="12" r="1" fill="#fff" opacity=".4"><animate attributeName="opacity" values=".2;.7;.2" dur="2.8s" repeatCount="indefinite" begin=".4s"/></circle>
+          <circle cx="140" cy="25" r="1.5" fill="#fff" opacity=".5"><animate attributeName="opacity" values=".3;.9;.3" dur="3.5s" repeatCount="indefinite" begin=".9s"/></circle>
+          <circle cx="200" cy="10" r="1" fill="#fff" opacity=".3"><animate attributeName="opacity" values=".1;.6;.1" dur="4s" repeatCount="indefinite" begin=".6s"/></circle>
+          <!-- Lune -->
+          <circle cx="300" cy="30" r="24" fill="#d1fae5" opacity=".55"/>
+          <circle cx="308" cy="25" r="20" fill="#001a14" opacity=".45"/>
+          <!-- Reflet lune sur eau -->
+          <ellipse cx="300" cy="162" rx="28" ry="5" fill="rgba(52,211,153,.1)"/>
+          <line x1="300" y1="120" x2="300" y2="156" stroke="rgba(52,211,153,.06)" stroke-width="8"/>
+          <!-- Mer - vagues -->
+          <path d="M0,120 Q30,114 60,120 Q90,126 120,120 Q150,114 180,120 Q210,126 240,120 Q270,114 300,120 Q330,126 360,120 L360,176 L0,176 Z" fill="#001a14" opacity=".8"/>
+          <path d="M0,130 Q40,122 80,130 Q120,138 160,130 Q200,122 240,130 Q280,138 320,130 Q340,126 360,130 L360,176 L0,176 Z" fill="#001208"/>
+          <!-- Vaguettes surface -->
+          <path d="M20,118 Q35,112 50,118" stroke="rgba(52,211,153,.25)" stroke-width="1.5" fill="none"/>
+          <path d="M80,122 Q100,115 120,122" stroke="rgba(52,211,153,.2)" stroke-width="1.5" fill="none"/>
+          <path d="M200,116 Q225,110 250,116" stroke="rgba(52,211,153,.2)" stroke-width="1.5" fill="none"/>
+          <!-- Bateau - coque -->
+          <path d="M100,104 L260,104 L250,130 L110,130 Z" fill="rgba(52,211,153,.18)" stroke="rgba(52,211,153,.35)" stroke-width="1.5"/>
+          <!-- Cabine -->
+          <rect x="150" y="76" width="60" height="30" rx="5" fill="rgba(52,211,153,.15)" stroke="rgba(52,211,153,.3)" stroke-width="1"/>
+          <!-- Fenêtres -->
+          <rect x="156" y="82" width="14" height="10" rx="2" fill="rgba(52,211,153,.2)"/>
+          <rect x="178" y="82" width="14" height="10" rx="2" fill="rgba(52,211,153,.2)"/>
+          <rect x="200" y="82" width="4" height="10" rx="1" fill="rgba(52,211,153,.15)"/>
+          <!-- Mât -->
+          <line x1="180" y1="24" x2="180" y2="76" stroke="rgba(52,211,153,.3)" stroke-width="2"/>
+          <!-- Pavillon -->
+          <polygon points="180,24 206,34 180,44" fill="rgba(52,211,153,.4)"/>
+          <!-- Canne à pêche -->
+          <line x1="110" y1="88" x2="60" y2="56" stroke="rgba(52,211,153,.5)" stroke-width="2"/>
+          <line x1="60" y1="56" x2="46" y2="118" stroke="rgba(52,211,153,.25)" stroke-width="1"/>
+          <!-- Titre -->
+          <text x="22" y="55" font-family="Bebas Neue, Impact, sans-serif" font-size="48" fill="white" letter-spacing="3" opacity=".9">PÊCHEUR</text>
+          <text x="22" y="74" font-family="Inter, Arial, sans-serif" font-size="9" fill="rgba(52,211,153,.6)" font-weight="700" letter-spacing="2">BIENTÔT DISPONIBLE</text>
+        </svg>
+        <!-- Overlay "nouveau" -->
+        <div style="position:absolute;top:12px;right:14px;background:#34d399;color:#001a14;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:5px 12px;border-radius:20px">🆕 NOUVEAU</div>
+      </div>
+      <div class="job-name" style="color:var(--pecheur)">PÊCHEUR</div>
+      <div class="job-badges">
+        <div class="badge badge-new">🆕 EN DÉVELOPPEMENT</div>
+        <div class="badge badge-diff">MINI-JEU MER</div>
+      </div>
+      <div class="soon-card">
+        <div class="soon-title">🎣 LA MER T'ATTEND</div>
+        <div class="soon-desc">Un mini-jeu de pêche en haute mer arrive bientôt sur le port. Équipe-toi d'une canne, choisis ton spot et attrape les meilleurs poissons pour gagner des €.</div>
+      </div>
+      <button class="cta disabled">🔒 EN DÉVELOPPEMENT</button>
+      <div style="background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:16px;margin-top:4px;text-align:center">
+        <div style="font-size:24px;margin-bottom:8px">🐟🦈🐡</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--txt2)">POISSONS À DÉBLOQUER</div>
+        <div style="font-size:11px;color:var(--txt2);margin-top:4px;line-height:1.5">Sardines, thons, poulpes, daurades...<br>Chaque prise = des gains différents</div>
+      </div>
+      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+    </div>
+
+    <!-- ═══ SHOP ═══ -->
+    <div class="job-view" id="viewShop">
+      <div class="shop-money">
+        <div class="shop-money-lbl">TON ARGENT</div>
+        <div class="shop-money-val" id="boutiqueMoneyDisplay">—</div>
+      </div>
+      <div class="shop-tabs">
+        <div class="shop-tab on" id="btabPacks" onclick="boutiqueSwitchTab('packs')">PACKS</div>
+        <div class="shop-tab" id="btabColl" onclick="boutiqueSwitchTab('coll')">SKINS</div>
+        <div class="shop-tab" id="btabEpi" onclick="boutiqueSwitchTab('epi')">EPI</div>
+      </div>
+      <!-- PACKS -->
+      <div id="bviewPacks">
+        <div class="pack-hero">
+          <div class="pack-hero-title">PACK OR 🟡</div>
+          <div class="pack-hero-sub">55% Épique · 20% Légendaire</div>
+          <button class="pack-hero-btn" id="btnOr" onclick="boutiqueOpenPack('or')">OUVRIR — 50 000€</button>
+        </div>
+        <div class="pack-tile" onclick="boutiqueOpenPack('argent')">
+          <div style="font-size:28px">⚪</div>
+          <div class="pack-tile-info">
+            <div class="pack-tile-name">PACK ARGENT</div>
+            <div class="pack-tile-sub">50% Rare · 28% Épique</div>
+          </div>
+          <div class="pack-tile-price">25 000€</div>
+        </div>
+        <div class="pack-tile" onclick="boutiqueOpenPack('bronze')">
+          <div style="font-size:28px">🟤</div>
+          <div class="pack-tile-info">
+            <div class="pack-tile-name">PACK BRONZE</div>
+            <div class="pack-tile-sub">55% Commun · 35% Rare</div>
+          </div>
+          <div class="pack-tile-price">10 000€</div>
+        </div>
+      </div>
+      <!-- COLLECTION -->
+      <div id="bviewColl" style="display:none">
+        <div class="coll-tabs-wrap" id="bcollTabs"></div>
+        <div class="coll-grid" id="bcollGrid"></div>
+      </div>
+      <!-- EPI -->
+      <div id="bviewEpi" style="display:none">
+        <div style="font-size:9px;font-weight:900;color:var(--txt2);letter-spacing:2px;margin-bottom:14px">ÉQUIPEMENT DE PROTECTION</div>
+        <div id="bepiBody"></div>
+      </div>
+      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+    </div>
+
+  </div><!-- /content-area -->
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav">
+    <div class="nav-tab active" id="navDocker" onclick="switchJob('docker')" style="--tc:var(--docker)">
+      <div class="nav-dot"></div><div class="nav-icon">📦</div><div class="nav-label">DOCKER</div>
+    </div>
+    <div class="nav-tab" id="navGrutier" onclick="switchJob('grutier')" style="--tc:var(--grutier)">
+      <div class="nav-dot"></div><div class="nav-icon">🏗️</div><div class="nav-label">GRUE</div>
+    </div>
+    <div class="nav-tab" id="navClark" onclick="switchJob('clark')" style="--tc:var(--clark)">
+      <div class="nav-dot"></div><div class="nav-icon">🏎️</div><div class="nav-label">CLARK</div>
+    </div>
+    <div class="nav-tab" id="navPecheur" onclick="switchJob('pecheur')" style="--tc:var(--pecheur)">
+      <div class="nav-dot"></div><div class="nav-icon">🎣</div><div class="nav-label">PÊCHE</div>
+    </div>
+    <div class="nav-tab" id="navShop" onclick="switchJob('shop')" style="--tc:var(--shop)">
+      <div class="nav-dot"></div><div class="nav-icon">🛒</div><div class="nav-label">SHOP</div>
     </div>
   </div>
 
-  <div id="bviewColl" style="display:none">
-    <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:14px" id="bcollTabs"></div>
-    <div class="coll-grid2" id="bcollGrid"></div>
-  </div>
+</div><!-- /app -->
 
-  <div id="bviewEpi" style="display:none">
-    <div style="font-size:9px;font-weight:900;color:rgba(255,255,255,.3);letter-spacing:3px;margin-bottom:14px">ÉQUIPEMENT</div>
-    <div id="bepiBody"></div>
-  </div>
+<!-- TOAST -->
+<div id="toast"></div>
 
-</div>
-
-<div style="padding:0 clamp(16px,4vw,20px);position:relative;z-index:1">
-  <button class="back-port-btn" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
-</div>
-
-<div class="toast" id="toast"></div>
-
+<!-- BUY MODAL -->
 <div class="buy-modal-bg" id="buyModalBg" onclick="if(event.target===this)closeBuyModal()">
   <div class="buy-modal">
-    <div class="buy-modal-emoji" id="buyModalEmoji">🛒</div>
-    <div class="buy-modal-name" id="buyModalName">—</div>
-    <div class="buy-modal-q" id="buyModalQ">Confirmer pour</div>
-    <div class="buy-modal-price" id="buyModalPrice">—</div>
-    <div class="buy-modal-row">
-      <button class="buy-modal-btn buy-modal-cancel" onclick="closeBuyModal()">ANNULER</button>
-      <button class="buy-modal-btn buy-modal-confirm" id="buyModalConfirmBtn">CONFIRMER</button>
+    <div id="buyModalEmoji">🛒</div>
+    <div id="buyModalName">—</div>
+    <div id="buyModalQ">Confirmer pour</div>
+    <div id="buyModalPrice">—</div>
+    <div class="bm-row">
+      <button class="bm-btn bm-cancel" onclick="closeBuyModal()">ANNULER</button>
+      <button class="bm-btn bm-confirm" id="buyModalConfirmBtn">CONFIRMER</button>
     </div>
   </div>
 </div>
@@ -484,148 +637,104 @@ const SB_URL='https://drtsuhnbclhmgfjiykap.supabase.co';
 const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
 window._sb=supabase.createClient(SB_URL,SB_KEY);const sb=window._sb;
 
-function switchTab(t){
-  ['jobs','records','stats'].forEach(function(id){
-    var btn=document.getElementById('tab'+id.charAt(0).toUpperCase()+id.slice(1)+'Btn');
-    var view=document.getElementById(id==='jobs'?'jobsContent':id==='records'?'recordsContent':'statsContent');
-    var on=id===t;
-    if(btn)btn.classList.toggle('on',on);
-    if(view){view.style.display=on?'block':'none';if(on)view.classList.add('on');}
-  });
-  if(t==='records')loadLeaderboards();
-  if(t==='stats')loadBoutique();
-}
+// ── État global ──
+var bMoney=0,_lastShownMoney=null;
+var bOwned=[],bEquipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
+var bOwnedEpi=[],bEquippedEpi={},bRecords={};
+var bBoutiqueLoaded=false;
+var bTaps=0,bPackTier='',bState='idle',bDrawn=null;
+var _currentJob='docker';
+var _lbLoaded=false;
 
-function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
-function openGrue(){location.href='grue.html';}
-function openClark(){location.href='clark.html';}
+// ── Utilitaires ──
 function fmtMoney(m){return m>=1000000?(m/1000000).toFixed(1)+'M€':m>=1000?Math.floor(m/1000)+'k€':m+'€';}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2800);}
 
-// Source unique de vérité pour l'argent du joueur : fixée une seule fois dans
-// init() puis partagée par tous les onglets (Jouer/Records/Boutique), pour
-// éviter deux requêtes Supabase séparées qui pourraient diverger entre elles.
-var bMoney=0,bOwned=[],bEquipped={skin:'red',effet:'standard',fond:'jour',musique:'none'};
-
-async function init(){
-  try{
-    var s=await sb.auth.getSession();
-    if(!s.data.session){location.href='index.html';return;}
-    var uid=s.data.session.user.id;
-    var gs=await sb.from('game_stats').select('records,xp,level,money,streak_days').eq('user_id',uid).maybeSingle();
-    if(gs.data){
-      var rec=gs.data.records||{};var f=rec.formations||{};
-      var lvl=gs.data.level||1;var xp=gs.data.xp||0;
-      var needed=lvl<=10?lvl*500:lvl<=25?lvl*1000:lvl*2000;
-      var el=document.getElementById('clickerLvl');if(el)el.textContent=lvl;
-      var gx=document.getElementById('grueXp');if(gx)gx.style.width=(f.grutier_pct||0)+'%';
-      var cx=document.getElementById('clarkXp');if(cx)cx.style.width=(f.clark_pct||0)+'%';
-      if(rec.grue_best){var g=document.getElementById('grueLvl');if(g)g.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR')+'pts';}
-      if(rec.clark_best){var c=document.getElementById('clarkLvl');if(c)c.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR')+'pts';}
-      bMoney=gs.data.money||0;
-      _lastShownMoney=bMoney;
-      var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);
-      ['recDocker','recDocker2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=lvl;});
-      if(rec.grue_best){['recGrue','recGrue2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR');});}
-      if(rec.clark_best){['recClark','recClark2'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR');});}
-      checkRecordBadge('grue_best','badgeGrue',rec);
-      checkRecordBadge('clark_best','badgeClark',rec);
-      renderStreakAndTip(gs.data.streak_days||0,lvl);
-      renderNextMilestone(lvl,xp,needed);
-    }
-    sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(function(){});
-  }catch(e){console.error(e);}
+function flashMoney(newVal){
+  var box=document.querySelector('.tb-money-wrap');
+  if(!box)return;
+  if(_lastShownMoney===null){_lastShownMoney=newVal;return;}
+  if(newVal===_lastShownMoney)return;
+  box.classList.remove('flash-gain','flash-loss');
+  void box.offsetWidth;
+  box.classList.add(newVal>_lastShownMoney?'flash-gain':'flash-loss');
+  setTimeout(function(){box.classList.remove('flash-gain','flash-loss');},500);
+  _lastShownMoney=newVal;
 }
 
-function checkRecordBadge(key,badgeId,rec){
-  if(!rec[key])return;
-  var prev=sessionStorage.getItem('prev_'+key);
-  if(prev&&rec[key]>Number(prev)){var b=document.getElementById(badgeId);if(b)b.style.display='flex';}
-  sessionStorage.setItem('prev_'+key,rec[key]);
+// ── Navigation bottom tabs ──
+function switchJob(job){
+  if(job===_currentJob)return;
+  _currentJob=job;
+  // Tabs
+  ['docker','grutier','clark','pecheur','shop'].forEach(function(j){
+    var n=document.getElementById('nav'+j.charAt(0).toUpperCase()+j.slice(1));
+    var v=document.getElementById('view'+j.charAt(0).toUpperCase()+j.slice(1));
+    var active=j===job;
+    if(n)n.classList.toggle('active',active);
+    if(v){v.classList.toggle('active',active);}
+  });
+  // Scroll haut
+  var ca=document.getElementById('contentArea');
+  if(ca)ca.scrollTop=0;
+  // Boutique si besoin
+  if(job==='shop')loadBoutique();
+  // Leaderboards si besoin
+  if((job==='docker'||job==='grutier'||job==='clark')&&!_lbLoaded)loadLeaderboards();
 }
 
-// ── STREAK : encourage à revenir jouer chaque jour ──
+// ── Streak et Milestone ──
+var LEVEL_REWARDS={5:'🥉 Titre "Docker confirmé"',10:'💎 +20 diamants',15:'🧊 Skin Givré Polaire',20:'💎 +40 diamants',25:'🔥 Skin Flammes du Quai',30:'💎 +60 diamants',40:'🌌 Skin Galaxie du Docker',50:'🏟️ Skin Fierté Marseillaise'};
+
 function renderStreakAndTip(streakDays,lvl){
-  var card=document.getElementById('streakCard');
-  if(!card)return;
   if(streakDays>=2){
-    card.style.display='flex';
-    card.className='streak-card';
-    card.innerHTML=
-      '<div class="streak-icon">🔥</div>'+
-      '<div class="streak-text">'+
-        '<div class="streak-title">'+streakDays+' JOURS DE SUITE</div>'+
-        '<div class="streak-sub">Reviens demain pour continuer ta série</div>'+
-      '</div>';
+    var c=document.getElementById('streakCard');
+    document.getElementById('streakTitle').textContent=streakDays+' JOURS DE SUITE 🔥';
+    if(c)c.classList.add('show');
   }
 }
 
-// ── PROCHAIN PALIER : teasing de récompense pour motiver à monter de niveau ──
-// Paliers alignés sur ceux déjà gérés côté game.html (showLevelUp / rewardDiamonds)
-var LEVEL_REWARDS={
-  5:'🥉 Titre "Docker confirmé"',10:'💎 +20 diamants',15:'🧊 Skin Givré Polaire',
-  20:'💎 +40 diamants',25:'🔥 Skin Flammes du Quai',30:'💎 +60 diamants',
-  40:'🌌 Skin Galaxie du Docker',50:'🏟️ Skin Fierté Marseillaise'
-};
 function renderNextMilestone(lvl,xp,needed){
-  var card=document.getElementById('milestoneCard');
-  if(!card)return;
-  var nextLvl=lvl+1;
-  var nextReward=null;
-  // Cherche la prochaine récompense connue à partir du niveau actuel
+  var nextLvl=lvl+1,nextReward=null;
   var keys=Object.keys(LEVEL_REWARDS).map(Number).sort(function(a,b){return a-b;});
-  for(var i=0;i<keys.length;i++){
-    if(keys[i]>lvl){nextReward=LEVEL_REWARDS[keys[i]];nextLvl=keys[i];break;}
-  }
+  for(var i=0;i<keys.length;i++){if(keys[i]>lvl){nextReward=LEVEL_REWARDS[keys[i]];nextLvl=keys[i];break;}}
   var pct=Math.min(100,Math.round((xp/needed)*100));
-  card.style.display='flex';
-  card.className='milestone-card';
-  card.innerHTML=
-    '<div class="milestone-icon">🎁</div>'+
-    '<div class="milestone-text">'+
-      '<div class="milestone-title">Niveau '+nextLvl+'</div>'+
-      '<div class="milestone-desc">'+(nextReward||'Continue à progresser')+'</div>'+
-      '<div class="milestone-bar-wrap">'+
-        '<div class="milestone-bar"><div class="milestone-bar-fill" style="width:'+pct+'%"></div></div>'+
-        '<div class="milestone-pct">'+pct+'% jusqu\'au niveau '+(lvl+1)+'</div>'+
-      '</div>'+
-    '</div>';
+  var mc=document.getElementById('milestoneCard');
+  if(!mc)return;
+  mc.classList.add('show');
+  document.getElementById('milestoneTitle').textContent='Prochain palier : Niveau '+nextLvl;
+  document.getElementById('milestoneDesc').textContent=nextReward||'Continue à progresser !';
+  document.getElementById('mbarFill').style.width=pct+'%';
+}
+
+// ── Leaderboards ──
+function renderLbRow(i,name,val,color){
+  var medals=['🥇','🥈','🥉'];
+  return '<div class="lb-row"><div class="lb-rank">'+(i<3?medals[i]:(i+1))+'</div><div class="lb-name">'+name+'</div><div class="lb-val" style="color:'+color+'">'+val+'</div></div>';
 }
 
 async function loadLeaderboards(){
-  var medals=['🥇','🥈','🥉'];
-  var NONE='<div style="text-align:center;padding:14px;font-size:12px;color:rgba(255,255,255,.2)">Aucun score encore</div>';
-  function row(i,name,val,color){
-    var med=i<3?medals[i]:(i+1);
-    return '<div class="podium-item"><span class="podium-rank">'+med+'</span><span class="podium-name">'+name+'</span><span class="podium-score" style="color:'+color+'">'+val+'</span></div>';
-  }
+  if(_lbLoaded)return;
+  _lbLoaded=true;
   try{
-    var res=await Promise.all([sb.from('game_stats').select('user_id,records,level').limit(200),sb.from('profiles').select('user_id,username').limit(200)]);
+    var res=await Promise.all([
+      sb.from('game_stats').select('user_id,records,level').limit(200),
+      sb.from('profiles').select('user_id,username').limit(200)
+    ]);
     var gs=res[0].data||[];var profiles=res[1].data||[];
-    var nameMap={};profiles.forEach(function(p){if(p.user_id&&p.username)nameMap[p.user_id]=p.username;});
-    var gn=function(uid){return nameMap[uid]||'Anonyme';};
+    var nm={};profiles.forEach(function(p){if(p.user_id&&p.username)nm[p.user_id]=p.username;});
+    var gn=function(uid){return nm[uid]||'Anonyme';};
+    var NONE='<div class="lb-empty">Aucun score encore</div>';
     var elC=document.getElementById('leaderClicker');
-    if(elC){var s=gs.filter(function(r){return r.records?.clicker_clicks>0;}).sort(function(a,b){return (b.records?.clicker_clicks||0)-(a.records?.clicker_clicks||0);}).slice(0,10);elC.innerHTML=s.length?s.map(function(r,i){return row(i,gn(r.user_id),(r.records?.clicker_clicks||0).toLocaleString('fr-FR'),'#22d3ee');}).join(''):NONE;}
+    if(elC){var s=gs.filter(function(r){return r.records&&r.records.clicker_clicks>0;}).sort(function(a,b){return (b.records.clicker_clicks||0)-(a.records.clicker_clicks||0);}).slice(0,10);elC.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),(r.records.clicker_clicks||0).toLocaleString('fr-FR'),'var(--docker)');}).join(''):NONE;}
     var elG=document.getElementById('leaderGrue');
-    if(elG){var s=gs.filter(function(r){return r.records?.grue_best>0;}).sort(function(a,b){return (b.records?.grue_best||0)-(a.records?.grue_best||0);}).slice(0,10);elG.innerHTML=s.length?s.map(function(r,i){return row(i,gn(r.user_id),Math.floor(r.records.grue_best).toLocaleString('fr-FR'),'#fbbf24');}).join(''):NONE;}
+    if(elG){var s=gs.filter(function(r){return r.records&&r.records.grue_best>0;}).sort(function(a,b){return (b.records.grue_best||0)-(a.records.grue_best||0);}).slice(0,10);elG.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),Math.floor(r.records.grue_best).toLocaleString('fr-FR')+'pts','var(--grutier)');}).join(''):NONE;}
     var elCl=document.getElementById('leaderClark');
-    if(elCl){var s=gs.filter(function(r){return r.records?.clark_best>0;}).sort(function(a,b){return (b.records?.clark_best||0)-(a.records?.clark_best||0);}).slice(0,10);elCl.innerHTML=s.length?s.map(function(r,i){return row(i,gn(r.user_id),Math.floor(r.records.clark_best).toLocaleString('fr-FR'),'#a78bfa');}).join(''):NONE;}
-  }catch(e){console.warn(e);}
+    if(elCl){var s=gs.filter(function(r){return r.records&&r.records.clark_best>0;}).sort(function(a,b){return (b.records.clark_best||0)-(a.records.clark_best||0);}).slice(0,10);elCl.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),Math.floor(r.records.clark_best).toLocaleString('fr-FR')+'pts','var(--clark)');}).join(''):NONE;}
+  }catch(e){console.warn('lb error',e);}
 }
 
-function boutiqueSwitchTab(t){
-  ['packs','coll','epi'].forEach(function(id){
-    var btn=document.getElementById('btab'+id.charAt(0).toUpperCase()+id.slice(1));
-    var view=document.getElementById('bview'+id.charAt(0).toUpperCase()+id.slice(1));
-    var on=id===t;
-    if(btn)btn.classList.toggle('on',on);
-    if(view)view.style.display=on?'block':'none';
-  });
-  if(t==='coll')boutiqueRenderColl('skin');
-  if(t==='epi')boutiqueRenderEpi();
-}
-
-var bTaps=0,bPackTier='',bState='idle',bDrawn=null,bOwnedEpi=[],bEquippedEpi={},bRecords={};
-
+// ── BOUTIQUE ──
 const B_ITEMS=[
   {id:'red',cat:'skin',name:'Container de Base',emoji:'📦',rarity:'defaut',preview:'linear-gradient(135deg,#cc2200,#991100)',defaut:true},
   {id:'no_effet',cat:'effet',name:'Sans effet',emoji:'✋',rarity:'defaut',defaut:true},
@@ -657,33 +766,17 @@ const B_EPI=[
   {id:'gilet',name:'Gilet de sécurité',emoji:'🦺',desc:'+€ par clic',tiers:[{id:'gilet_commune',rar:'COMM.',val:'+1€',price:5000},{id:'gilet_rare',rar:'RARE',val:'+2€',price:25000},{id:'gilet_epique',rar:'ÉPIQUE',val:'+4€',price:100000},{id:'gilet_legendaire',rar:'LÉGEND.',val:'+8€',price:500000}]},
   {id:'chaussures',name:'Chaussures de sécu',emoji:'👟',desc:'Combo max',tiers:[{id:'chaussures_commune',rar:'COMM.',val:'×4',price:5000},{id:'chaussures_rare',rar:'RARE',val:'×5',price:25000},{id:'chaussures_epique',rar:'ÉPIQUE',val:'×6',price:100000},{id:'chaussures_legendaire',rar:'LÉGEND.',val:'×9',price:500000}]},
 ];
-// Compat : anciens ids courts (casque_c, casque_e...) vus dans certains comptes historiques
 const B_EPI_ALIAS={casque_c:'casque_commune',casque_r:'casque_rare',casque_e:'casque_epique',casque_l:'casque_legendaire',gilet_c:'gilet_commune',gilet_r:'gilet_rare',gilet_e:'gilet_epique',gilet_l:'gilet_legendaire',chaussures_c:'chaussures_commune',chaussures_r:'chaussures_rare',chaussures_e:'chaussures_epique',chaussures_l:'chaussures_legendaire'};
-function epiOwned(tierId){
-  if(bOwnedEpi.indexOf(tierId)!==-1)return true;
-  for(var k in B_EPI_ALIAS){if(B_EPI_ALIAS[k]===tierId&&bOwnedEpi.indexOf(k)!==-1)return true;}
-  return false;
-}
-function epiEquipped(epiId,tierId){
-  var cur=bEquippedEpi[epiId];
-  if(cur===tierId)return true;
-  if(cur&&B_EPI_ALIAS[cur]===tierId)return true;
-  return false;
-}
+function epiOwned(id){if(bOwnedEpi.indexOf(id)!==-1)return true;for(var k in B_EPI_ALIAS){if(B_EPI_ALIAS[k]===id&&bOwnedEpi.indexOf(k)!==-1)return true;}return false;}
+function epiEquipped(epiId,tid){var cur=bEquippedEpi[epiId];if(cur===tid)return true;if(cur&&B_EPI_ALIAS[cur]===tid)return true;return false;}
 const B_ODDS={bronze:{commun:.55,rare:.35,epique:.08,legendaire:.02},argent:{commun:.15,rare:.50,epique:.28,legendaire:.07},or:{commun:0,rare:.25,epique:.55,legendaire:.20}};
 const B_PRICES={bronze:10000,argent:25000,or:50000};
 
-var _lastShownMoney=null;
-function flashMoney(newVal){
-  var box=document.querySelector('.hdr-money');
-  if(!box)return;
-  if(_lastShownMoney===null){_lastShownMoney=newVal;return;}
-  if(newVal===_lastShownMoney){return;}
-  box.classList.remove('flash-gain','flash-loss');
-  void box.offsetWidth; // reset animation
-  box.classList.add(newVal>_lastShownMoney?'flash-gain':'flash-loss');
-  setTimeout(function(){box.classList.remove('flash-gain','flash-loss');},500);
-  _lastShownMoney=newVal;
+function boutiqueUpdateMoney(){
+  var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';
+  var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;
+  var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);
+  flashMoney(bMoney);
 }
 
 function openBuyModal(opts){
@@ -697,20 +790,11 @@ function openBuyModal(opts){
 }
 function closeBuyModal(){document.getElementById('buyModalBg').classList.remove('show');}
 
-function boutiqueUpdateMoney(){var el=document.getElementById('boutiqueMoneyDisplay');if(el)el.textContent=bMoney.toLocaleString('fr-FR')+'€';var b=document.getElementById('btnOr');if(b)b.disabled=bMoney<50000;var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);flashMoney(bMoney);}
-
 function boutiqueOpenPack(tier){
-  if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
-  var tierLbl={bronze:'Bronze',argent:'Argent',or:'Or'};
-  openBuyModal({
-    emoji:tier==='or'?'🟡':tier==='argent'?'⚪':'🟤',
-    name:'Pack '+(tierLbl[tier]||tier),
-    question:'Ouvrir ce pack pour',
-    price:B_PRICES[tier],
-    onConfirm:function(){boutiqueOpenPackConfirmed(tier);}
-  });
+  if(bMoney<B_PRICES[tier]){toast('❌ Pas assez d\'argent');return;}
+  var lbl={bronze:'Bronze',argent:'Argent',or:'Or'};
+  openBuyModal({emoji:tier==='or'?'🟡':tier==='argent'?'⚪':'🟤',name:'Pack '+lbl[tier],question:'Ouvrir ce pack pour',price:B_PRICES[tier],onConfirm:function(){boutiqueOpenPackConfirmed(tier);}});
 }
-
 function boutiqueOpenPackConfirmed(tier){
   if(bMoney<B_PRICES[tier]){toast('❌ Pas assez');return;}
   bMoney-=B_PRICES[tier];boutiqueUpdateMoney();
@@ -721,7 +805,6 @@ function boutiqueOpenPackConfirmed(tier){
   var rl={commun:'Commun',rare:'Rare',epique:'Épique',legendaire:'Légendaire'};
   toast((isDupe?'🔁 Doublon : ':'✨ Nouveau : ')+item.emoji+' '+item.name+' ('+(rl[item.rarity]||'')+')');
 }
-
 function boutiqueDrawItem(tier){
   var odds=B_ODDS[tier];var r=Math.random();var cum=0;var rarity='commun';
   for(var k in odds){cum+=odds[k];if(r<cum){rarity=k;break;}}
@@ -729,56 +812,52 @@ function boutiqueDrawItem(tier){
   if(!pool.length)return B_ITEMS[0];
   return pool[Math.floor(Math.random()*pool.length)];
 }
-
 async function boutiqueSaveData(){
-  try{
-    var s=await sb.auth.getSession();if(!s.data.session)return;
-    bRecords.unlocked_packs=bOwned;
-    await sb.from('game_stats').update({money:bMoney,records:bRecords}).eq('user_id',s.data.session.user.id);
-  }catch(e){console.warn(e);}
+  try{var s=await sb.auth.getSession();if(!s.data.session)return;bRecords.unlocked_packs=bOwned;await sb.from('game_stats').update({money:bMoney,records:bRecords}).eq('user_id',s.data.session.user.id);}catch(e){console.warn(e);}
 }
-
+function boutiqueSwitchTab(t){
+  ['packs','coll','epi'].forEach(function(id){
+    var btn=document.getElementById('btab'+id.charAt(0).toUpperCase()+id.slice(1));
+    var view=document.getElementById('bview'+id.charAt(0).toUpperCase()+id.slice(1));
+    var on=id===t;
+    if(btn)btn.classList.toggle('on',on);
+    if(view)view.style.display=on?'block':'none';
+  });
+  if(t==='coll')boutiqueRenderColl('skin');
+  if(t==='epi')boutiqueRenderEpi();
+}
 function boutiqueRenderColl(cat){
   var cats=['skin','effet','fond','musique'];
   var catLabels={skin:'SKINS',effet:'EFFETS',fond:'FONDS',musique:'MUSIQUES'};
   var tabs=document.getElementById('bcollTabs');var grid=document.getElementById('bcollGrid');
   if(!tabs||!grid)return;
-  tabs.innerHTML=cats.map(function(c){
-    return '<div onclick="boutiqueRenderColl(\''+c+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;background:'+(c===cat?'#fff':'rgba(255,140,0,.08)')+';color:'+(c===cat?'#0d0d12':'rgba(255,255,255,.4)')+';white-space:nowrap">'+catLabels[c]+'</div>';
-  }).join('');
-  var items=B_ITEMS.filter(function(it){return it.cat===cat;});
+  tabs.innerHTML=cats.map(function(c){return '<div onclick="boutiqueRenderColl(\''+c+'\')" style="flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:11px;font-weight:800;cursor:pointer;background:'+(c===cat?'#fff':'rgba(255,140,0,.08)')+';color:'+(c===cat?'#0d0d12':'rgba(255,255,255,.4)')+';white-space:nowrap">'+catLabels[c]+'</div>';}).join('');
   var rarCol={defaut:'rgba(255,255,255,.4)',commun:'rgba(255,255,255,.4)',rare:'#60a5fa',epique:'#c084fc',legendaire:'#fbbf24'};
   var rarBg={defaut:'rgba(255,255,255,.06)',commun:'rgba(255,255,255,.06)',rare:'rgba(96,165,250,.15)',epique:'rgba(192,132,252,.15)',legendaire:'rgba(251,191,36,.15)'};
   var rarLbl={defaut:'BASE',commun:'COMM.',rare:'RARE',epique:'ÉPIQUE',legendaire:'LÉGEND.'};
-  grid.innerHTML=items.map(function(it){
+  grid.innerHTML=B_ITEMS.filter(function(it){return it.cat===cat;}).map(function(it){
     var owned=bOwned.indexOf(it.id)!==-1;var eq=bEquipped[it.cat]===it.id;
-    return '<div onclick="boutiqueEquip(\''+it.cat+'\',\''+it.id+'\')" class="coll-tile'+(eq?' eq':'')+'" style="opacity:'+((owned||it.defaut)?'1':'.4')+'">'
-      +'<div style="position:absolute;top:5px;right:5px;font-size:6px;font-weight:800;padding:1px 5px;border-radius:6px;background:'+rarBg[it.rarity]+';color:'+rarCol[it.rarity]+'">'+rarLbl[it.rarity]+'</div>'
-      +'<div class="coll-tile-preview">'+(it.preview?'<div style="width:34px;height:20px;border-radius:5px;background:'+it.preview+'"></div>':'<span style="font-size:20px">'+it.emoji+'</span>')+'</div>'
+    return '<div onclick="boutiqueEquip(\''+it.cat+'\',\''+it.id+'\')" class="coll-tile'+(eq?' eq':'')+'" style="opacity:'+((owned||it.defaut)?'1':'.35')+'">'
+      +'<div style="position:absolute;top:4px;right:4px;font-size:6px;font-weight:900;padding:1px 4px;border-radius:5px;background:'+rarBg[it.rarity]+';color:'+rarCol[it.rarity]+'">'+rarLbl[it.rarity]+'</div>'
+      +'<div class="coll-tile-prev">'+(it.preview?'<div style="width:36px;height:22px;border-radius:6px;background:'+it.preview+'"></div>':'<span style="font-size:22px">'+it.emoji+'</span>')+'</div>'
       +'<div class="coll-tile-name">'+it.name+'</div>'
       +'<div style="font-size:8px;margin-top:3px;color:'+(eq?'#fbbf24':'rgba(255,255,255,.3)')+'">'+(owned?(eq?'✅ Équipé':'Équiper'):'???')+'</div>'
       +'</div>';
   }).join('');
 }
-
 async function boutiqueEquip(cat,id){
   if(bOwned.indexOf(id)===-1)return;
   bEquipped[cat]=id;
   bRecords.click_effect=bEquipped.effet;bRecords.bg_theme=bEquipped.fond;bRecords.selected_music=bEquipped.musique;
-  if(cat==='skin'){
-    try{var s=await sb.auth.getSession();if(s.data.session)await sb.from('profiles').update({skin_container:id}).eq('user_id',s.data.session.user.id);}catch(e){}
-  }
+  if(cat==='skin'){try{var s=await sb.auth.getSession();if(s.data.session)await sb.from('profiles').update({skin_container:id}).eq('user_id',s.data.session.user.id);}catch(e){}}
   boutiqueSaveData();boutiqueRenderColl(cat);toast('✅ Équipé !');
 }
-
 function boutiqueRenderEpi(){
   var el=document.getElementById('bepiBody');if(!el)return;
   el.innerHTML=B_EPI.map(function(e){
     return '<div style="background:rgba(3,105,161,.08);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:14px;margin-bottom:10px">'
-      +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<span style="font-size:24px">'+e.emoji+'</span>'
-      +'<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:1px;color:#fff">'+e.name+'</div><div style="font-size:10px;color:rgba(255,255,255,.35)">'+e.desc+'</div></div>'
-      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px"><span style="font-size:24px">'+e.emoji+'</span>'
+      +'<div><div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:1px;color:#fff">'+e.name+'</div><div style="font-size:10px;color:rgba(255,255,255,.35)">'+e.desc+'</div></div></div>'
       +'<div style="display:flex;gap:5px;margin-top:12px">'+e.tiers.map(function(t){
         var owns=epiOwned(t.id);var eq=epiEquipped(e.id,t.id);
         return '<div onclick="boutiqueEquipEpi(\''+e.id+'\',\''+t.id+'\','+t.price+')" style="flex:1;border-radius:10px;padding:8px 4px;text-align:center;cursor:pointer;border:1.5px solid '+(eq?'#fbbf24':'rgba(255,255,255,.08)')+';background:'+(eq?'rgba(251,191,36,.12)':'rgba(0,0,0,.2)')+'">'
@@ -786,47 +865,29 @@ function boutiqueRenderEpi(){
           +'<div style="font-size:11px;font-weight:800;margin-top:2px;color:#fff">'+t.val+'</div>'
           +'<div style="font-size:7px;color:rgba(255,255,255,.3);margin-top:3px">'+(owns?(eq?'✅':'OK'):t.price.toLocaleString('fr-FR')+'€')+'</div>'
           +'</div>';
-      }).join('')+'</div>'
-      +'</div>';
+      }).join('')+'</div></div>';
   }).join('');
 }
-
 async function boutiqueEquipEpi(epiId,tierId,price){
   if(epiOwned(tierId)){bEquippedEpi[epiId]=tierId;bRecords.equipped_epi=bEquippedEpi;boutiqueRenderEpi();await boutiqueSaveData();toast('✅ Équipé !');return;}
   if(bMoney<price){toast('❌ Pas assez');return;}
   var epiDef=B_EPI.filter(function(e){return e.id===epiId;})[0];
   var tierDef=epiDef?epiDef.tiers.filter(function(t){return t.id===tierId;})[0]:null;
-  openBuyModal({
-    emoji:epiDef?epiDef.emoji:'🛒',
-    name:(epiDef?epiDef.name:'Équipement')+(tierDef?' — '+tierDef.rar:''),
-    question:'Acheter pour',
-    price:price,
-    onConfirm:function(){boutiqueEquipEpiConfirmed(epiId,tierId,price);}
-  });
+  openBuyModal({emoji:epiDef?epiDef.emoji:'🛒',name:(epiDef?epiDef.name:'Équipement')+(tierDef?' — '+tierDef.rar:''),question:'Acheter pour',price:price,onConfirm:function(){boutiqueEquipEpiConfirmed(epiId,tierId,price);}});
 }
-
 async function boutiqueEquipEpiConfirmed(epiId,tierId,price){
   if(bMoney<price){toast('❌ Pas assez');return;}
   bMoney-=price;bOwnedEpi.push(tierId);bEquippedEpi[epiId]=tierId;
   bRecords.unlocked_epi=bOwnedEpi;bRecords.equipped_epi=bEquippedEpi;
-  boutiqueUpdateMoney();boutiqueRenderEpi();
-  await boutiqueSaveData();
-  toast('🎉 Acheté !');
+  boutiqueUpdateMoney();boutiqueRenderEpi();await boutiqueSaveData();toast('🎉 Acheté !');
 }
-
-var bBoutiqueLoaded=false;
-
 async function loadBoutique(){
-  // Ne recharge depuis Supabase qu'une fois par session : évite d'écraser
-  // les achats locaux si une sauvegarde précédente n'a pas fini d'arriver côté serveur.
   if(bBoutiqueLoaded){boutiqueUpdateMoney();return;}
   try{
     var s=await sb.auth.getSession();if(!s.data.session)return;
-    // bMoney est déjà chargé par init() au lancement de la page : on ne va
-    // chercher ici que ce qui est spécifique à la boutique (records, skin équipé).
     var gs=await sb.from('game_stats').select('records').eq('user_id',s.data.session.user.id).maybeSingle();
     var pr=await sb.from('profiles').select('skin_container').eq('user_id',s.data.session.user.id).maybeSingle();
-    if(gs.data){bRecords=gs.data.records||{};}
+    if(gs.data)bRecords=gs.data.records||{};
     var DEFS=['red','no_effet','jour','no_music'];
     bOwned=[...new Set([...DEFS,...(bRecords.unlocked_packs||[])])];
     bEquipped.skin=pr.data?.skin_container||'red';
@@ -840,9 +901,65 @@ async function loadBoutique(){
   }catch(e){console.warn(e);}
 }
 
+// ── INIT ──
+async function init(){
+  try{
+    var s=await sb.auth.getSession();
+    if(!s.data.session){location.href='index.html';return;}
+    var uid=s.data.session.user.id;
+    var res=await Promise.all([
+      sb.from('game_stats').select('records,xp,level,money,streak_days').eq('user_id',uid).maybeSingle(),
+      sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle()
+    ]);
+    var gs=res[0].data||{};var prof=res[1].data||{};
+    var rec=gs.records||{};var f=rec.formations||{};
+    var lvl=gs.level||1;var xp=gs.xp||0;
+    var needed=lvl<=10?lvl*500:lvl<=25?lvl*1000:lvl*2000;
+    bMoney=gs.money||0;
+    _lastShownMoney=bMoney;
+
+    // Top bar
+    var tbN=document.getElementById('tbName');if(tbN)tbN.textContent=prof.username||'Docker';
+    var tbL=document.getElementById('tbLvl');if(tbL)tbL.textContent='Niveau '+lvl;
+    var tbAv=document.getElementById('tbAvatar');
+    if(tbAv&&prof.avatar_url){tbAv.innerHTML='<img src="'+prof.avatar_url+'" alt="">';} else if(tbAv){tbAv.textContent='👤';}
+    var hmv=document.getElementById('hdrMoneyVal');if(hmv)hmv.textContent=fmtMoney(bMoney);
+
+    // Docker
+    var el=document.getElementById('jobLvlDocker');if(el)el.textContent='NV.'+lvl;
+
+    // Grutier
+    var grPct=f.grutier_pct||0;
+    var gx=document.getElementById('jobXpGrue');if(gx)gx.style.width=grPct+'%';
+    var gxl=document.getElementById('jobXpGrueLbl');if(gxl)gxl.textContent=grPct+'% progression formation';
+    if(rec.grue_best){var grv=document.getElementById('jobRecGrue');if(grv)grv.textContent=Math.floor(rec.grue_best).toLocaleString('fr-FR')+' pts';}
+
+    // Clark
+    var clPct=f.clark_pct||0;
+    var cx=document.getElementById('jobXpClark');if(cx)cx.style.width=clPct+'%';
+    var cxl=document.getElementById('jobXpClarkLbl');if(cxl)cxl.textContent=clPct+'% progression formation';
+    if(rec.clark_best){var clv=document.getElementById('jobRecClark');if(clv)clv.textContent=Math.floor(rec.clark_best).toLocaleString('fr-FR')+' pts';}
+
+    // Streak / milestone
+    renderStreakAndTip(gs.streak_days||0,lvl);
+    renderNextMilestone(lvl,xp,needed);
+
+    // Afficher
+    document.getElementById('loader').style.display='none';
+    document.getElementById('app').style.display='flex';
+
+    // Charger leaderboards en arrière-plan
+    loadLeaderboards();
+
+    // Last seen
+    sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(function(){});
+  }catch(e){
+    console.error(e);
+    document.getElementById('loader').innerHTML='<div style="color:rgba(255,255,255,.4);font-size:13px;letter-spacing:2px;font-family:\'Bebas Neue\'">ERREUR DE CHARGEMENT</div>';
+  }
+}
+
 init();
-document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
-document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
 </script>
 </body>
 </html>
