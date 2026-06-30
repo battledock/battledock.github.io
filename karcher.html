@@ -8,78 +8,173 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
 :root{--st:env(safe-area-inset-top,44px);--sb:env(safe-area-inset-bottom,20px)}
-html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#0369a1);font-family:'Inter',sans-serif;color:#fff;overflow:hidden;touch-action:none}
+html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#0369a1);font-family:'Inter',sans-serif;color:#fff;overflow:hidden;touch-action:none;position:relative}
 
-.hdr{position:relative;z-index:10;padding:calc(var(--st)+8px) 18px 10px;
+/* Ambient bubbles floating in background */
+.bg-bubbles{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.bg-bubble{position:absolute;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.25),rgba(255,255,255,.02));
+  animation:bgFloat linear infinite}
+@keyframes bgFloat{from{transform:translateY(110vh) translateX(0)}to{transform:translateY(-10vh) translateX(20px)}}
+
+/* ── HEADER ── */
+.hdr{position:relative;z-index:10;padding:calc(var(--st)+8px) 18px 8px;
   display:flex;align-items:center;justify-content:space-between}
-.hdr-back{width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);
-  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.6)}
-.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:#fff}
+.hdr-back{width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:15px;color:rgba(255,255,255,.7);backdrop-filter:blur(8px)}
+.hdr-title{font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:4px;color:#fff;
+  text-shadow:0 2px 12px rgba(34,211,238,.4)}
 .hdr-money{display:flex;align-items:center;gap:5px;background:rgba(74,222,128,.12);
-  border:1px solid rgba(74,222,128,.3);border-radius:20px;padding:6px 12px}
+  border:1px solid rgba(74,222,128,.3);border-radius:20px;padding:6px 12px;backdrop-filter:blur(8px)}
 .hdr-money-val{font-family:'Bebas Neue',sans-serif;font-size:14px;color:#4ade80}
 
+/* ── EQUIPMENT BAR ── */
+.equip-bar{position:relative;z-index:10;padding:2px 18px 8px;display:flex;gap:8px}
+.equip-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:5px 10px;cursor:pointer;backdrop-filter:blur(6px)}
+.equip-chip-ico{font-size:14px}
+.equip-chip-lbl{font-size:9px;font-weight:800;color:rgba(255,255,255,.6);letter-spacing:.5px}
+
+/* ── PROGRESS BAR ── */
 .prog-wrap{position:relative;z-index:10;padding:0 18px 10px}
-.prog-bar{height:10px;background:rgba(0,0,0,.3);border-radius:6px;overflow:hidden;
-  border:1px solid rgba(255,255,255,.08)}
+.prog-bar{height:11px;background:rgba(0,0,0,.35);border-radius:7px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.1);box-shadow:inset 0 2px 4px rgba(0,0,0,.3)}
 .prog-fill{height:100%;background:linear-gradient(90deg,#22d3ee,#4ade80);
-  border-radius:6px;transition:width .15s ease-out}
-.prog-label{display:flex;justify-content:space-between;margin-top:5px;
-  font-size:10px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:1px}
-.prog-pct{color:#4ade80}
+  border-radius:7px;transition:width .15s ease-out;position:relative;
+  box-shadow:0 0 12px rgba(34,211,238,.6)}
+.prog-fill::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+  width:40px;animation:progShine 1.8s ease-in-out infinite}
+@keyframes progShine{0%{transform:translateX(-40px)}100%{transform:translateX(calc(100vw))}}
+.prog-label{display:flex;justify-content:space-between;margin-top:6px;
+  font-size:10px;font-weight:800;color:rgba(255,255,255,.4);letter-spacing:1.5px}
+.prog-pct{color:#4ade80;text-shadow:0 0 8px rgba(74,222,128,.5)}
 
-.game-zone{position:relative;width:100%;height:calc(100vh - 200px);overflow:hidden;
+/* ── GAME ZONE ── */
+.game-zone{position:relative;width:100%;height:calc(100vh - 230px);overflow:visible;
+  display:flex;align-items:center;justify-content:center;z-index:2}
+.truck-wrap{position:relative}
+#truckCanvas{display:block;touch-action:none;border-radius:20px;
+  box-shadow:0 24px 70px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.08) inset;
+  position:relative;z-index:2}
+/* Puddle reflection under truck */
+.puddle{position:absolute;left:8%;right:8%;bottom:-14px;height:24px;border-radius:50%;
+  background:radial-gradient(ellipse,rgba(34,211,238,.25),transparent 70%);
+  filter:blur(4px);z-index:1;opacity:0;transition:opacity .6s}
+.puddle.show{opacity:1}
+
+/* Spray jet cone (CSS, follows finger) */
+.spray-jet{position:fixed;pointer-events:none;z-index:50;display:none;
+  transform-origin:top center}
+.spray-jet.active{display:block}
+.spray-cone{position:absolute;width:46px;height:46px;border-radius:50%;
+  background:radial-gradient(circle,rgba(190,235,255,.5) 0%,rgba(190,235,255,.18) 45%,transparent 75%);
+  transform:translate(-50%,-50%);animation:sprayPulse .12s ease-in-out infinite alternate;
+  mix-blend-mode:screen}
+@keyframes sprayPulse{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.15)}}
+
+/* Foam bubble particle */
+.foam-bit{position:fixed;pointer-events:none;z-index:55;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.95),rgba(220,240,255,.5));
+  animation:foamPop .55s ease-out forwards}
+@keyframes foamPop{
+  0%{opacity:1;transform:translate(0,0) scale(.4)}
+  60%{opacity:1}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.1)}
+}
+
+/* Sparkle on clean reveal */
+.sparkle{position:fixed;pointer-events:none;font-size:13px;z-index:56;
+  animation:sparkleFloat .75s ease-out forwards}
+@keyframes sparkleFloat{
+  0%{opacity:1;transform:translateY(0) scale(.4) rotate(0)}
+  50%{opacity:1;transform:translateY(-18px) scale(1.15) rotate(90deg)}
+  100%{opacity:0;transform:translateY(-36px) scale(.6) rotate(180deg)}
+}
+
+/* Money pop-up */
+.money-pop{position:fixed;pointer-events:none;z-index:57;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:#4ade80;
+  text-shadow:0 1px 4px rgba(0,0,0,.5);
+  animation:moneyFloat .7s ease-out forwards}
+@keyframes moneyFloat{
+  0%{opacity:0;transform:translateY(0) scale(.7)}
+  20%{opacity:1;transform:translateY(-6px) scale(1.1)}
+  100%{opacity:0;transform:translateY(-30px) scale(1)}
+}
+
+/* ── HUD ── */
+.hud{position:relative;z-index:10;padding:12px 18px calc(var(--sb)+12px);
   display:flex;align-items:center;justify-content:center}
-#truckCanvas{display:block;touch-action:none;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-
-.spray-cursor{position:fixed;width:70px;height:70px;border-radius:50%;
-  pointer-events:none;z-index:50;transform:translate(-50%,-50%);
-  background:radial-gradient(circle,rgba(180,230,255,.35) 0%,rgba(180,230,255,.1) 50%,transparent 75%);
-  display:none;mix-blend-mode:screen}
-.spray-cursor.active{display:block;animation:spraySway .15s ease-in-out infinite alternate}
-@keyframes spraySway{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.08)}}
-
-.hud{position:relative;z-index:10;padding:14px 18px calc(var(--sb)+14px);
-  display:flex;align-items:center;justify-content:center}
-.earn-counter{font-family:'Bebas Neue',sans-serif;font-size:24px;color:#4ade80;text-align:center}
+.earn-counter{font-family:'Bebas Neue',sans-serif;font-size:25px;color:#4ade80;text-align:center;
+  text-shadow:0 0 16px rgba(74,222,128,.4)}
 .earn-label{font-size:8px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:2px;text-align:center;margin-top:2px}
 
-.win-ov{position:fixed;inset:0;z-index:100;background:rgba(2,8,16,.92);
+/* ── WIN OVERLAY ── */
+.win-ov{position:fixed;inset:0;z-index:100;background:rgba(2,8,16,.94);
   display:none;align-items:center;justify-content:center;flex-direction:column;
-  backdrop-filter:blur(8px)}
-.win-ov.show{display:flex}
-.win-emoji{font-size:64px;animation:winBounce .6s cubic-bezier(.34,1.56,.64,1)}
+  backdrop-filter:blur(10px)}
+.win-ov.show{display:flex;animation:fadeInOv .3s ease}
+@keyframes fadeInOv{from{opacity:0}to{opacity:1}}
+.win-emoji{font-size:66px;animation:winBounce .6s cubic-bezier(.34,1.56,.64,1)}
 @keyframes winBounce{from{transform:scale(0) rotate(-15deg)}to{transform:scale(1) rotate(0)}}
-.win-title{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:3px;
+.win-title{font-family:'Bebas Neue',sans-serif;font-size:35px;letter-spacing:3px;
   margin-top:14px;background:linear-gradient(90deg,#fff,#a5f3fc,#fff);
   -webkit-background-clip:text;background-clip:text;color:transparent}
-.win-stats{display:flex;gap:14px;margin-top:20px}
+.win-stats{display:flex;gap:14px;margin-top:22px}
 .win-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  border-radius:14px;padding:14px 18px;text-align:center}
-.win-stat-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#4ade80}
+  border-radius:15px;padding:15px 20px;text-align:center}
+.win-stat-val{font-family:'Bebas Neue',sans-serif;font-size:23px;color:#4ade80}
 .win-stat-lbl{font-size:8px;font-weight:800;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:3px}
-.win-btn{margin-top:24px;background:linear-gradient(135deg,#22d3ee,#0369a1);
-  border:none;color:#fff;border-radius:14px;padding:14px 40px;
-  font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;cursor:pointer;
-  box-shadow:0 8px 24px rgba(34,211,238,.35)}
+.win-btn{margin-top:26px;background:linear-gradient(135deg,#22d3ee,#0369a1);
+  border:none;color:#fff;border-radius:15px;padding:15px 42px;
+  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;cursor:pointer;
+  box-shadow:0 10px 28px rgba(34,211,238,.4)}
 
-.sparkle{position:fixed;pointer-events:none;font-size:14px;z-index:60;
-  animation:sparkleFloat .8s ease-out forwards}
-@keyframes sparkleFloat{
-  0%{opacity:1;transform:translateY(0) scale(0.5)}
-  50%{opacity:1;transform:translateY(-20px) scale(1.2)}
-  100%{opacity:0;transform:translateY(-40px) scale(0.6)}
-}
+/* ── EQUIPMENT MODAL ── */
+.equip-modal{position:fixed;inset:0;z-index:90;background:rgba(2,8,16,.85);
+  display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}
+.equip-modal.show{display:flex}
+.equip-sheet{width:100%;max-width:480px;background:linear-gradient(180deg,#0c2a4a,#071a30);
+  border-radius:24px 24px 0 0;padding:20px 18px calc(var(--sb)+20px);
+  border-top:1px solid rgba(255,255,255,.1);
+  animation:sheetUp .25s cubic-bezier(.16,1,.3,1)}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.equip-sheet-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;margin-bottom:4px}
+.equip-sheet-sub{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:16px}
+.equip-opt{display:flex;align-items:center;gap:12px;padding:13px;border-radius:14px;
+  background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.08);margin-bottom:8px;cursor:pointer}
+.equip-opt.eq{border-color:#22d3ee;background:rgba(34,211,238,.08)}
+.equip-opt-ico{font-size:24px;width:38px;text-align:center;flex-shrink:0}
+.equip-opt-name{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px}
+.equip-opt-desc{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
+.equip-opt-right{margin-left:auto;text-align:right;flex-shrink:0}
+.equip-opt-price{font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fbbf24}
+.equip-opt-status{font-size:9px;font-weight:800;color:#22d3ee;letter-spacing:.5px}
+.equip-close{width:100%;margin-top:8px;background:rgba(255,255,255,.08);border:none;color:#fff;
+  border-radius:12px;padding:12px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer}
 </style>
 </head>
 <body>
 
+<div class="bg-bubbles" id="bgBubbles"></div>
+
 <div class="hdr">
-  <div class="hdr-back">←</div>
+  <div class="hdr-back" onclick="history.back()">←</div>
   <div class="hdr-title">KARCHER</div>
   <div class="hdr-money">
     <span style="font-size:11px">💰</span>
     <span class="hdr-money-val" id="hdrMoney">0€</span>
+  </div>
+</div>
+
+<div class="equip-bar">
+  <div class="equip-chip" onclick="openEquipModal('gun')">
+    <span class="equip-chip-ico" id="gunIcon">🚿</span>
+    <span class="equip-chip-lbl" id="gunLabel">JET STANDARD</span>
+  </div>
+  <div class="equip-chip" onclick="openEquipModal('foam')">
+    <span class="equip-chip-ico" id="foamIcon">💧</span>
+    <span class="equip-chip-lbl" id="foamLabel">SANS MOUSSE</span>
   </div>
 </div>
 
@@ -92,10 +187,13 @@ html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#036
 </div>
 
 <div class="game-zone" id="gameZone">
-  <canvas id="truckCanvas"></canvas>
+  <div class="truck-wrap">
+    <canvas id="truckCanvas"></canvas>
+    <div class="puddle" id="puddle"></div>
+  </div>
 </div>
 
-<div class="spray-cursor" id="sprayCursor"></div>
+<div class="spray-jet" id="sprayJet"><div class="spray-cone"></div></div>
 
 <div class="hud">
   <div>
@@ -120,16 +218,27 @@ html,body{min-height:100%;background:linear-gradient(160deg,#020810,#0c2a4a,#036
   <button class="win-btn" onclick="restartGame()">REJOUER ▶</button>
 </div>
 
+<!-- Equipment modal -->
+<div class="equip-modal" id="equipModal">
+  <div class="equip-sheet">
+    <div class="equip-sheet-title" id="equipModalTitle">PISTOLETS</div>
+    <div class="equip-sheet-sub" id="equipModalSub">Nettoie plus vite, gagne plus</div>
+    <div id="equipModalList"></div>
+    <button class="equip-close" onclick="closeEquipModal()">FERMER</button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // KARCHER — Mini-jeu de nettoyage haute pression
-// Gain cible : ~275€/partie, calibré comme Grutier/Clark
+// v2 : visuel premium + pistolets & mousse achetables
 // ═══════════════════════════════════════════
 
 const canvas = document.getElementById('truckCanvas');
 const ctx = canvas.getContext('2d');
 const gameZone = document.getElementById('gameZone');
-const sprayCursor = document.getElementById('sprayCursor');
+const sprayJet = document.getElementById('sprayJet');
+const puddle = document.getElementById('puddle');
 
 let W, H, dirtCanvas, dirtCtx, dirtData;
 let totalPixels = 0, cleanedPixels = 0;
@@ -139,10 +248,103 @@ let money = 0, sessionEarn = 0;
 let startTime = Date.now();
 let gameWon = false;
 let frameSkip = 0;
+let lastClientX = 0, lastClientY = 0;
 
-// Le gain total visé par partie est réparti sur la surface du camion
-const TARGET_EARN = 275; // €/partie, aligné sur Grutier/Clark
+const TARGET_EARN = 275;
 
+// ── ÉQUIPEMENT : PISTOLETS ──
+const GUNS = [
+  {id:'standard', name:'Jet Standard', icon:'🚿', radius:32, speedMult:1, price:0, desc:'Le pistolet de base, fiable'},
+  {id:'pro', name:'Lance Pro', icon:'🔫', radius:42, speedMult:1.4, price:8000, desc:'Jet plus large, 40% plus rapide'},
+  {id:'turbo', name:'Turbo Karcher', icon:'⚡', radius:54, speedMult:1.9, price:30000, desc:'Pression maximale, quasi instantané'},
+];
+// ── ÉQUIPEMENT : MOUSSE ──
+const FOAMS = [
+  {id:'none', name:'Sans mousse', icon:'💧', bonusMult:1, price:0, desc:'Eau seule'},
+  {id:'basic', name:'Mousse Active', icon:'🫧', bonusMult:1.25, price:5000, desc:'+25% de gain par pixel'},
+  {id:'premium', name:'Mousse Premium', icon:'🌈', bonusMult:1.5, price:18000, desc:'+50% de gain, effet brillant'},
+];
+
+let equippedGun = 'standard';
+let equippedFoam = 'none';
+let ownedGuns = ['standard'];
+let ownedFoams = ['none'];
+
+function currentGun(){ return GUNS.find(g=>g.id===equippedGun) || GUNS[0]; }
+function currentFoam(){ return FOAMS.find(f=>f.id===equippedFoam) || FOAMS[0]; }
+
+function updateEquipChips(){
+  document.getElementById('gunIcon').textContent = currentGun().icon;
+  document.getElementById('gunLabel').textContent = currentGun().name.toUpperCase();
+  document.getElementById('foamIcon').textContent = currentFoam().icon;
+  document.getElementById('foamLabel').textContent = currentFoam().name.toUpperCase();
+}
+
+function openEquipModal(type){
+  const modal = document.getElementById('equipModal');
+  const title = document.getElementById('equipModalTitle');
+  const sub = document.getElementById('equipModalSub');
+  const list = document.getElementById('equipModalList');
+  const items = type === 'gun' ? GUNS : FOAMS;
+  const owned = type === 'gun' ? ownedGuns : ownedFoams;
+  const equipped = type === 'gun' ? equippedGun : equippedFoam;
+  title.textContent = type === 'gun' ? 'PISTOLETS' : 'MOUSSE';
+  sub.textContent = type === 'gun' ? 'Nettoie plus vite, gagne plus' : 'Bonus de gain par pixel nettoyé';
+  list.innerHTML = items.map(it=>{
+    const isOwned = owned.indexOf(it.id) !== -1;
+    const isEq = equipped === it.id;
+    return `<div class="equip-opt${isEq?' eq':''}" onclick="selectEquip('${type}','${it.id}',${it.price})">
+      <div class="equip-opt-ico">${it.icon}</div>
+      <div>
+        <div class="equip-opt-name">${it.name}</div>
+        <div class="equip-opt-desc">${it.desc}</div>
+      </div>
+      <div class="equip-opt-right">
+        ${isEq ? '<div class="equip-opt-status">✅ ÉQUIPÉ</div>' : isOwned ? '<div class="equip-opt-status" style="color:rgba(255,255,255,.4)">ÉQUIPER</div>' : '<div class="equip-opt-price">'+it.price.toLocaleString('fr-FR')+'€</div>'}
+      </div>
+    </div>`;
+  }).join('');
+  modal.classList.add('show');
+  modal.dataset.type = type;
+}
+function closeEquipModal(){ document.getElementById('equipModal').classList.remove('show'); }
+
+function selectEquip(type, id, price){
+  const owned = type==='gun' ? ownedGuns : ownedFoams;
+  if(owned.indexOf(id) === -1){
+    if(money < price){ flashInsufficient(); return; }
+    money -= price;
+    owned.push(id);
+    document.getElementById('hdrMoney').textContent = Math.floor(money).toLocaleString('fr-FR')+'€';
+  }
+  if(type==='gun') equippedGun = id; else equippedFoam = id;
+  updateEquipChips();
+  openEquipModal(type); // re-render with new state
+}
+
+function flashInsufficient(){
+  const el = document.getElementById('hdrMoney');
+  el.style.color = '#ef4444';
+  setTimeout(()=>{ el.style.color = ''; }, 350);
+}
+
+// ── BACKGROUND BUBBLES ──
+function spawnBgBubbles(){
+  const layer = document.getElementById('bgBubbles');
+  for(let i=0;i<10;i++){
+    const b = document.createElement('div');
+    b.className = 'bg-bubble';
+    const size = 6 + Math.random()*22;
+    b.style.width = size+'px';
+    b.style.height = size+'px';
+    b.style.left = Math.random()*100+'%';
+    b.style.animationDuration = (8+Math.random()*10)+'s';
+    b.style.animationDelay = (Math.random()*10)+'s';
+    layer.appendChild(b);
+  }
+}
+
+// ── CANVAS SETUP ──
 function resize(){
   const rect = gameZone.getBoundingClientRect();
   const size = Math.min(rect.width - 24, rect.height - 24, 420);
@@ -162,6 +364,7 @@ function initDirtLayer(){
   totalPixels = W*H;
   cleanedPixels = 0;
   updateProgress();
+  puddle.classList.remove('show');
 }
 
 function drawDirtTexture(){
@@ -190,47 +393,92 @@ function drawDirtTexture(){
   }
 }
 
+// ── TRUCK RENDERING (beautified) ──
 function drawTruckBase(){
   ctx.clearRect(0,0,W,H);
-  const g = ctx.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,'#e8edf2');
-  g.addColorStop(1,'#c5ccd4');
-  ctx.fillStyle = g;
+
+  // Sky/background panel behind truck for nicer contrast
+  const bgGrad = ctx.createLinearGradient(0,0,0,H);
+  bgGrad.addColorStop(0,'#dbe9f5');
+  bgGrad.addColorStop(1,'#aebfd1');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0,0,W,H);
 
-  ctx.fillStyle = '#2563eb';
+  // Subtle floor shading
+  ctx.fillStyle = 'rgba(0,0,0,.06)';
+  ctx.fillRect(0, H*0.7, W, H*0.3);
+
+  // ── Truck body ──
+  // Cabine
+  const cabGrad = ctx.createLinearGradient(0,H*0.16,0,H*0.6);
+  cabGrad.addColorStop(0,'#3b82f6');
+  cabGrad.addColorStop(1,'#1d4ed8');
+  ctx.fillStyle = cabGrad;
   ctx.beginPath();
   ctx.roundRect(W*0.06, H*0.18, W*0.32, H*0.42, 14);
   ctx.fill();
-  ctx.fillStyle = 'rgba(150,210,255,.85)';
+  // Cabine highlight strip
+  ctx.fillStyle = 'rgba(255,255,255,.18)';
+  ctx.beginPath();
+  ctx.roundRect(W*0.06, H*0.18, W*0.32, H*0.06, 14);
+  ctx.fill();
+  // Pare-brise
+  const wsGrad = ctx.createLinearGradient(0,H*0.22,0,H*0.38);
+  wsGrad.addColorStop(0,'rgba(200,235,255,.95)');
+  wsGrad.addColorStop(1,'rgba(140,200,255,.8)');
+  ctx.fillStyle = wsGrad;
   ctx.beginPath();
   ctx.roundRect(W*0.09, H*0.22, W*0.26, H*0.16, 8);
   ctx.fill();
-  ctx.fillStyle = '#fbbf24';
+
+  // Benne / remorque
+  const trGrad = ctx.createLinearGradient(0,H*0.20,0,H*0.6);
+  trGrad.addColorStop(0,'#fde047');
+  trGrad.addColorStop(1,'#f59e0b');
+  ctx.fillStyle = trGrad;
   ctx.beginPath();
   ctx.roundRect(W*0.40, H*0.20, W*0.54, H*0.4, 10);
   ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,.15)';
+  ctx.fillStyle = 'rgba(255,255,255,.15)';
+  ctx.beginPath();
+  ctx.roundRect(W*0.40, H*0.20, W*0.54, H*0.05, 10);
+  ctx.fill();
+
+  // Logo BD
+  ctx.fillStyle = 'rgba(0,0,0,.18)';
   ctx.font = `bold ${H*0.12}px Arial`;
   ctx.textAlign = 'center';
   ctx.fillText('BD', W*0.67, H*0.45);
+
+  // Bande rouge
   ctx.fillStyle = '#dc2626';
   ctx.fillRect(W*0.06, H*0.50, W*0.88, H*0.04);
-  ctx.fillStyle = '#1a1a1a';
+  ctx.fillStyle = 'rgba(255,255,255,.2)';
+  ctx.fillRect(W*0.06, H*0.50, W*0.88, H*0.012);
+
+  // Roues
   [0.18,0.55,0.78].forEach(rx=>{
+    ctx.fillStyle = '#15171c';
     ctx.beginPath();
-    ctx.arc(W*rx, H*0.66, H*0.07, 0, Math.PI*2);
+    ctx.arc(W*rx, H*0.66, H*0.072, 0, Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = '#9aa3ad';
     ctx.beginPath();
-    ctx.arc(W*rx, H*0.66, H*0.035, 0, Math.PI*2);
+    ctx.arc(W*rx, H*0.66, H*0.036, 0, Math.PI*2);
     ctx.fill();
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = 'rgba(255,255,255,.5)';
+    ctx.beginPath();
+    ctx.arc(W*rx-2, H*0.66-2, H*0.012, 0, Math.PI*2);
+    ctx.fill();
   });
-  ctx.fillStyle = 'rgba(0,0,0,.12)';
+
+  // Sol / ombre
+  ctx.fillStyle = 'rgba(0,0,0,.14)';
   ctx.fillRect(0, H*0.72, W, H*0.06);
   ctx.fillStyle = '#1e293b';
   ctx.fillRect(0, H*0.78, W, H*0.22);
+
+  // Wet shine overlay where cleaned (subtle, applied after dirt composite below via shine pass)
 }
 
 function compositeDirt(){
@@ -255,7 +503,7 @@ function eraseDirtAt(x, y, radius){
         const falloff = 1 - (distSq/r2);
         const currentAlpha = data[idx+3];
         if(currentAlpha > 10){
-          const reduction = falloff * 60;
+          const reduction = falloff * 60 * currentGun().speedMult;
           const newAlpha = Math.max(0, currentAlpha - reduction);
           if(currentAlpha > 30 && newAlpha <= 30) erased++;
           data[idx+3] = newAlpha;
@@ -271,6 +519,7 @@ function updateProgress(){
   const pct = totalPixels ? Math.min(100, Math.round((cleanedPixels/totalPixels)*100)) : 0;
   document.getElementById('progFill').style.width = pct+'%';
   document.getElementById('progPct').textContent = pct+'%';
+  if(pct > 15) puddle.classList.add('show');
   if(pct >= 92 && !gameWon){
     winGame();
   }
@@ -284,27 +533,61 @@ function gainMoney(amount){
 }
 
 function spawnSparkle(clientX, clientY){
-  if(Math.random() > 0.7) return;
+  if(Math.random() > 0.65) return;
   const el = document.createElement('div');
   el.className = 'sparkle';
   el.textContent = ['✨','💧','⭐'][Math.floor(Math.random()*3)];
   el.style.left = (clientX - 7) + 'px';
   el.style.top = (clientY - 7) + 'px';
   document.body.appendChild(el);
-  setTimeout(()=>el.remove(), 800);
+  setTimeout(()=>el.remove(), 750);
+}
+
+function spawnFoam(clientX, clientY){
+  if(equippedFoam === 'none') return;
+  if(Math.random() > 0.55) return;
+  const el = document.createElement('div');
+  el.className = 'foam-bit';
+  const size = 4 + Math.random()*8;
+  el.style.width = size+'px';
+  el.style.height = size+'px';
+  el.style.left = clientX+'px';
+  el.style.top = clientY+'px';
+  const dx = (Math.random()-0.5)*60;
+  const dy = -20 - Math.random()*40;
+  el.style.setProperty('--dx', dx+'px');
+  el.style.setProperty('--dy', dy+'px');
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 600);
+}
+
+function spawnMoneyPop(clientX, clientY, amount){
+  if(Math.random() > 0.85) return;
+  const el = document.createElement('div');
+  el.className = 'money-pop';
+  el.textContent = '+'+amount.toFixed(1)+'€';
+  el.style.left = clientX+'px';
+  el.style.top = (clientY-20)+'px';
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 700);
 }
 
 function sprayLoop(){
   if(isSpraying && !gameWon){
-    const erased = eraseDirtAt(sprayX, sprayY, 32);
+    const radius = currentGun().radius;
+    const erased = eraseDirtAt(sprayX, sprayY, radius);
     if(erased > 0){
       cleanedPixels += erased * 3;
-      // gain calibré pour atteindre ~TARGET_EARN sur la totalité du nettoyage
-      const earn = erased * (TARGET_EARN / (totalPixels * 0.92 / 3) * 3) * 0.3346;
+      const baseRate = TARGET_EARN / (totalPixels * 0.92 / 3) * 3 * 0.3346;
+      const earn = erased * baseRate * currentFoam().bonusMult;
       gainMoney(earn);
       updateProgress();
       frameSkip++;
-      if(frameSkip % 3 === 0) spawnSparkle(lastClientX, lastClientY);
+      if(frameSkip % 3 === 0){
+        spawnSparkle(lastClientX, lastClientY);
+        spawnFoam(lastClientX, lastClientY);
+      }
+      if(frameSkip % 8 === 0) spawnMoneyPop(lastClientX, lastClientY, earn*8);
     }
   }
   render();
@@ -315,8 +598,6 @@ function render(){
   drawTruckBase();
   compositeDirt();
 }
-
-let lastClientX = 0, lastClientY = 0;
 
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
@@ -331,9 +612,10 @@ function startSpray(e){
   const pos = getPos(e);
   sprayX = pos.x; sprayY = pos.y;
   lastClientX = pos.clientX; lastClientY = pos.clientY;
-  sprayCursor.classList.add('active');
-  sprayCursor.style.left = pos.clientX+'px';
-  sprayCursor.style.top = pos.clientY+'px';
+  sprayJet.classList.add('active');
+  sprayJet.style.left = pos.clientX+'px';
+  sprayJet.style.top = pos.clientY+'px';
+  updateJetSize();
 }
 
 function moveSpray(e){
@@ -342,26 +624,40 @@ function moveSpray(e){
   const pos = getPos(e);
   sprayX = pos.x; sprayY = pos.y;
   lastClientX = pos.clientX; lastClientY = pos.clientY;
-  sprayCursor.style.left = pos.clientX+'px';
-  sprayCursor.style.top = pos.clientY+'px';
+  sprayJet.style.left = pos.clientX+'px';
+  sprayJet.style.top = pos.clientY+'px';
+}
+
+function updateJetSize(){
+  const cone = sprayJet.querySelector('.spray-cone');
+  const scale = currentGun().radius / 32;
+  cone.style.width = (46*scale)+'px';
+  cone.style.height = (46*scale)+'px';
 }
 
 function endSpray(){
   isSpraying = false;
-  sprayCursor.classList.remove('active');
+  sprayJet.classList.remove('active');
 }
 
 canvas.addEventListener('touchstart', startSpray, {passive:false});
 canvas.addEventListener('touchmove', moveSpray, {passive:false});
 canvas.addEventListener('touchend', endSpray);
+canvas.addEventListener('touchcancel', endSpray);
 canvas.addEventListener('mousedown', startSpray);
 canvas.addEventListener('mousemove', moveSpray);
 canvas.addEventListener('mouseup', endSpray);
 canvas.addEventListener('mouseleave', endSpray);
 
+// Empêche le navigateur mobile de capter le geste comme un scroll de page
+// ou un pull-to-refresh, ce qui bloquerait sinon le nettoyage au doigt.
+document.addEventListener('touchmove', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, {passive:false});
+
 function winGame(){
   gameWon = true;
   isSpraying = false;
+  sprayJet.classList.remove('active');
   const elapsed = Math.round((Date.now()-startTime)/1000);
   document.getElementById('winEarn').textContent = '+'+Math.floor(sessionEarn).toLocaleString('fr-FR')+'€';
   document.getElementById('winTime').textContent = elapsed+'s';
@@ -380,6 +676,8 @@ function restartGame(){
 }
 
 window.addEventListener('resize', resize);
+spawnBgBubbles();
+updateEquipChips();
 resize();
 sprayLoop();
 </script>
