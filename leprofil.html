@@ -79,13 +79,32 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
 .shop-opt img{width:100%;height:100%;object-fit:contain;display:block}
 .shop-opt-price{font-size:clamp(8px,2.4vw,10px);font-weight:800;text-align:center;padding:6px 4px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .shop-opt.collector{border-color:#fbbf24}
-.shop-opt-badge{position:absolute;top:4px;left:4px;background:#fbbf24;color:#071a30;font-size:8px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:6px}
+.shop-opt-badge{position:absolute;top:4px;left:4px;background:#fbbf24;color:#071a30;font-size:7px;font-weight:900;letter-spacing:.3px;padding:2px 5px;border-radius:6px;white-space:nowrap}
+.shop-opt-new-badge{position:absolute;top:4px;right:4px;background:#22d3ee;color:#071a30;font-size:7px;font-weight:900;letter-spacing:.3px;padding:2px 5px;border-radius:6px;white-space:nowrap}
+.shop-opt-badge.stacked{left:4px;right:4px;top:4px}
+.shop-opt-new-badge.stacked{left:4px;right:4px;top:22px}
+
+/* ── MODALE CONFIRMATION ACHAT ── */
+.buy-modal-bg{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px}
+.buy-modal-bg.show{display:flex}
+.buy-modal{background:#0c2a4a;border-radius:20px;padding:24px 20px;width:100%;max-width:340px;text-align:center;border:1px solid rgba(255,255,255,.1)}
+.buy-modal-imgwrap{width:88px;height:88px;border-radius:16px;background:rgba(0,0,0,.2);margin:0 auto 14px;overflow:hidden}
+.buy-modal-imgwrap img{width:100%;height:100%;object-fit:contain;display:block}
+.buy-modal-name{font-size:16px;font-weight:800;margin-bottom:6px}
+.buy-modal-q{font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px}
+.buy-modal-price{font-size:15px;font-weight:800;color:#fbbf24;margin-bottom:18px}
+.buy-modal-row{display:flex;gap:10px}
+.buy-modal-btn{flex:1;border:none;border-radius:12px;padding:13px;font-size:13px;font-weight:800;letter-spacing:.5px;cursor:pointer}
+.buy-modal-cancel{background:rgba(255,255,255,.08);color:#fff}
+.buy-modal-confirm{background:#fff;color:#0c2a4a}
 .shop-opt-locked-lbl{font-size:9px;font-weight:800;text-align:center;padding:6px 4px;color:rgba(255,255,255,.4)}
 .shop-opt-expired-lbl{font-size:9px;font-weight:800;text-align:center;padding:6px 4px;color:#f87171}
 .shop-opt-price.afford{cursor:pointer}
 .shop-opt-price.cant-afford{opacity:.4}
 .shop-opt-owned-lbl{font-size:10px;font-weight:800;text-align:center;padding:6px 4px;color:#4ade80}
 .shop-opt-buying{font-size:10px;font-weight:800;text-align:center;padding:6px 4px;color:rgba(255,255,255,.4)}
+
+.back-port-btn{display:block;width:calc(100% - 36px);margin:24px 18px calc(var(--sb) + 20px);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:13px;padding:14px;font-size:13px;font-weight:800;color:#fff;letter-spacing:1px;text-align:center;cursor:pointer}
 
 .loader{position:fixed;inset:0;background:#020810;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:500}
 .loader-spin{width:36px;height:36px;border:3px solid rgba(34,211,238,.2);border-top-color:#22d3ee;border-radius:50%;animation:spin .8s linear infinite}
@@ -152,6 +171,8 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
   <div class="info-row"><div class="info-ico">🏅</div><div class="info-lbl">Classement richesse</div><div class="info-val" id="infoRank">—</div></div>
 </div>
 
+<button class="back-port-btn" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+
 </div>
 
 <!-- ── MODALE SÉLECTION AVATAR ── -->
@@ -161,6 +182,20 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
     <div class="av-modal-sub">Débloqués au fil de ta progression</div>
     <div class="av-grid" id="avGrid"></div>
     <button class="av-close" onclick="closeAvatarModal()">FERMER</button>
+  </div>
+</div>
+
+<!-- ── MODALE CONFIRMATION ACHAT ── -->
+<div class="buy-modal-bg" id="buyModalBg" onclick="if(event.target===this)closeBuyModal()">
+  <div class="buy-modal">
+    <div class="buy-modal-imgwrap"><img id="buyModalImg" src=""></div>
+    <div class="buy-modal-name" id="buyModalName">—</div>
+    <div class="buy-modal-q">Acheter cet avatar pour</div>
+    <div class="buy-modal-price" id="buyModalPrice">—</div>
+    <div class="buy-modal-row">
+      <button class="buy-modal-btn buy-modal-cancel" onclick="closeBuyModal()">ANNULER</button>
+      <button class="buy-modal-btn buy-modal-confirm" id="buyModalConfirmBtn">ACHETER</button>
+    </div>
   </div>
 </div>
 
@@ -190,13 +225,14 @@ const AVATARS=[
 // ── Avatars en vente dans la boutique ──
 // price: {money: X, diamonds: Y} — les deux sont exigés ensemble
 const SHOP_AVATARS=[
-  {src:'notionists-1782833710429.png',lbl:'Influenceur',price:{money:50000,diamonds:20}},
-  {src:'notionists-1782834062586.png',lbl:'Intello',price:{money:150000,diamonds:50}},
-  {src:'notionists-1782834298087.png',lbl:'Stylé',price:{money:500000,diamonds:100}},
-  {src:'notionists-1782834465500.png',lbl:'Boss',price:{money:500000,trophies:100}},
-  {src:'micah-1782835034464.png',lbl:'Collector',price:{money:2000000,diamonds:500,trophies:300},minLevel:30,expiresAt:'2026-07-31T23:59:59',collector:true},
-  {src:'micah-1782836005515.png',lbl:'Collector Élite',price:{money:5000000,diamonds:1000,trophies:600},minLevel:50,expiresAt:'2026-07-31T23:59:59',collector:true},
+  {src:'notionists-1782833710429.png',lbl:'Influenceur',price:{money:50000,diamonds:20},addedAt:'2026-06-30'},
+  {src:'notionists-1782834062586.png',lbl:'Intello',price:{money:150000,diamonds:50},addedAt:'2026-06-30'},
+  {src:'notionists-1782834298087.png',lbl:'Stylé',price:{money:500000,diamonds:100},addedAt:'2026-06-30'},
+  {src:'notionists-1782834465500.png',lbl:'Boss',price:{money:500000,trophies:100},addedAt:'2026-06-30'},
+  {src:'micah-1782835034464.png',lbl:'Collector',price:{money:2000000,diamonds:500,trophies:300},minLevel:30,expiresAt:'2026-07-31T23:59:59',collector:true,addedAt:'2026-06-30'},
+  {src:'micah-1782836005515.png',lbl:'Collector Élite',price:{money:5000000,diamonds:1000,trophies:600},minLevel:50,expiresAt:'2026-07-31T23:59:59',collector:true,addedAt:'2026-06-30'},
 ];
+var NEW_BADGE_DAYS=14;
 
 var ownedAvatars=[];
 
@@ -276,15 +312,32 @@ function renderShopGrid(){
     var expired=av.expiresAt&&now>new Date(av.expiresAt);
     var levelOk=!av.minLevel||playerLevel>=av.minLevel;
     var afford=canAfford(av.price);
+    var isNew=av.addedAt&&!owned&&((now-new Date(av.addedAt))/86400000)<=NEW_BADGE_DAYS;
     var cls='shop-opt'+(owned?' owned':'')+(av.collector?' collector':'');
-    var badge=av.collector?'<div class="shop-opt-badge">★ COLLECTOR</div>':'';
+    var badge=av.collector?'<div class="shop-opt-badge'+(isNew?' stacked':'')+'">★ COLLECTOR</div>':'';
+    var newBadge=isNew?'<div class="shop-opt-new-badge'+(av.collector?' stacked':'')+'">NOUVEAU</div>':'';
     var footer;
     if(owned)footer='<div class="shop-opt-owned-lbl">✅ Possédé</div>';
     else if(expired)footer='<div class="shop-opt-expired-lbl">⏳ Expiré</div>';
     else if(!levelOk)footer='<div class="shop-opt-locked-lbl">🔒 Nv.'+av.minLevel+'</div>';
-    else footer='<div class="shop-opt-price '+(afford?'afford':'cant-afford')+'" '+(afford?('onclick="buyAvatar('+i+')"'):'')+'>'+priceLabel(av.price)+'</div>';
-    return '<div class="'+cls+'"><div class="shop-opt-imgwrap">'+badge+'<img src="'+av.src+'" alt=""></div>'+footer+'</div>';
+    else footer='<div class="shop-opt-price '+(afford?'afford':'cant-afford')+'" '+(afford?('onclick="openBuyModal('+i+')"'):'')+'>'+priceLabel(av.price)+'</div>';
+    return '<div class="'+cls+'"><div class="shop-opt-imgwrap">'+badge+newBadge+'<img src="'+av.src+'" alt=""></div>'+footer+'</div>';
   }).join('');
+}
+
+function openBuyModal(i){
+  var av=SHOP_AVATARS[i];
+  if(!av)return;
+  document.getElementById('buyModalImg').src=av.src;
+  document.getElementById('buyModalName').textContent=av.lbl;
+  document.getElementById('buyModalPrice').textContent=priceLabel(av.price);
+  var btn=document.getElementById('buyModalConfirmBtn');
+  btn.onclick=function(){closeBuyModal();buyAvatar(i);};
+  document.getElementById('buyModalBg').classList.add('show');
+}
+
+function closeBuyModal(){
+  document.getElementById('buyModalBg').classList.remove('show');
 }
 
 async function buyAvatar(i){
