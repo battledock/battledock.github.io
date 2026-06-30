@@ -71,11 +71,15 @@ html,body{min-height:100%;background:linear-gradient(180deg,#0c2a4a,#020810);fon
 .av-close{width:100%;margin-top:18px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:13px;padding:13px;font-size:13px;color:#fff;letter-spacing:1px;cursor:pointer}
 
 /* ── BOUTIQUE ── */
-.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:10px}
+.shop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
 .shop-opt{position:relative;border-radius:14px;overflow:hidden;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
 .shop-opt.owned{border-color:#4ade80}
 .shop-opt img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
 .shop-opt-price{font-size:clamp(8px,2.4vw,10px);font-weight:800;text-align:center;padding:6px 4px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shop-opt.collector{border-color:#fbbf24}
+.shop-opt-badge{position:absolute;top:4px;left:4px;background:#fbbf24;color:#071a30;font-size:8px;font-weight:900;letter-spacing:.5px;padding:2px 6px;border-radius:6px}
+.shop-opt-locked-lbl{font-size:9px;font-weight:800;text-align:center;padding:6px 4px;color:rgba(255,255,255,.4)}
+.shop-opt-expired-lbl{font-size:9px;font-weight:800;text-align:center;padding:6px 4px;color:#f87171}
 .shop-opt-price.afford{cursor:pointer}
 .shop-opt-price.cant-afford{opacity:.4}
 .shop-opt-owned-lbl{font-size:10px;font-weight:800;text-align:center;padding:6px 4px;color:#4ade80}
@@ -187,7 +191,8 @@ const SHOP_AVATARS=[
   {src:'notionists-1782833710429.png',lbl:'Influenceur',price:{money:50000,diamonds:20}},
   {src:'notionists-1782834062586.png',lbl:'Intello',price:{money:150000,diamonds:50}},
   {src:'notionists-1782834298087.png',lbl:'Stylé',price:{money:500000,diamonds:100}},
-  {src:'notionists-1782834465500.png',lbl:'Boss',price:{money:1000000,diamonds:300}},
+  {src:'notionists-1782834465500.png',lbl:'Boss',price:{money:500000,trophies:100}},
+  {src:'micah-1782835034464.png',lbl:'Collector',price:{money:2000000,diamonds:500,trophies:300},minLevel:30,expiresAt:'2026-07-31T23:59:59',collector:true},
 ];
 
 var ownedAvatars=[];
@@ -226,8 +231,10 @@ function fm(n){return Math.floor(n||0).toLocaleString('fr-FR');}
 
 function renderAvatarGrid(lvl,curSrc){
   var el=document.getElementById('avGrid');
-  el.innerHTML=AVATARS.map(function(av){
-    var unlocked=lvl>=av.min;
+  var shopOwned=SHOP_AVATARS.filter(function(av){return ownedAvatars.indexOf(av.src)>=0;});
+  var all=AVATARS.concat(shopOwned);
+  el.innerHTML=all.map(function(av){
+    var unlocked=av.min?lvl>=av.min:true; // avatars boutique = toujours débloqués une fois achetés
     var selected=curSrc===av.src;
     var cls='av-opt'+(unlocked?'':' locked')+(selected?' selected':'');
     return '<div class="'+cls+'" onclick="'+(unlocked?("selectAvatar('"+av.src+"')"):'')+'">'+
@@ -239,40 +246,64 @@ function renderAvatarGrid(lvl,curSrc){
 
 function curMoney(){return parseInt(document.getElementById('statMoney').dataset.raw||0);}
 function curDiamonds(){return parseInt(document.getElementById('statDiamonds').dataset.raw||0);}
+function curTrophies(){return parseInt(document.getElementById('statTrophies').dataset.raw||0);}
+
+var CURRENCY_SYM={money:'€',diamonds:'💎',trophies:'🏆'};
+
+function curBalance(field){
+  if(field==='diamonds')return curDiamonds();
+  if(field==='trophies')return curTrophies();
+  return curMoney();
+}
+
+function canAfford(price){
+  return Object.keys(price).every(function(f){return curBalance(f)>=price[f];});
+}
+
+function priceLabel(price){
+  return Object.keys(price).map(function(f){return fm(price[f])+CURRENCY_SYM[f];}).join(' + ');
+}
 
 function renderShopGrid(){
   var el=document.getElementById('shopGrid');
   if(!SHOP_AVATARS.length){el.innerHTML='<div style="grid-column:1/-1;font-size:11px;color:rgba(255,255,255,.3);text-align:center;padding:10px 0">Aucun avatar disponible pour le moment</div>';return;}
-  var money=curMoney(),diamonds=curDiamonds();
+  var now=new Date();
   el.innerHTML=SHOP_AVATARS.map(function(av,i){
     var owned=ownedAvatars.indexOf(av.src)>=0;
-    var afford=money>=av.price.money&&diamonds>=av.price.diamonds;
-    var cls='shop-opt'+(owned?' owned':'');
-    var priceLbl=fm(av.price.money)+'€ + '+fm(av.price.diamonds)+'💎';
-    var footer=owned
-      ?'<div class="shop-opt-owned-lbl">✅ Possédé</div>'
-      :'<div class="shop-opt-price '+(afford?'afford':'cant-afford')+'" '+(afford?('onclick="buyAvatar('+i+')"'):'')+'>'+priceLbl+'</div>';
-    return '<div class="'+cls+'"><img src="'+av.src+'" alt="">'+footer+'</div>';
+    var expired=av.expiresAt&&now>new Date(av.expiresAt);
+    var levelOk=!av.minLevel||playerLevel>=av.minLevel;
+    var afford=canAfford(av.price);
+    var cls='shop-opt'+(owned?' owned':'')+(av.collector?' collector':'');
+    var badge=av.collector?'<div class="shop-opt-badge">★ COLLECTOR</div>':'';
+    var footer;
+    if(owned)footer='<div class="shop-opt-owned-lbl">✅ Possédé</div>';
+    else if(expired)footer='<div class="shop-opt-expired-lbl">⏳ Expiré</div>';
+    else if(!levelOk)footer='<div class="shop-opt-locked-lbl">🔒 Nv.'+av.minLevel+'</div>';
+    else footer='<div class="shop-opt-price '+(afford?'afford':'cant-afford')+'" '+(afford?('onclick="buyAvatar('+i+')"'):'')+'>'+priceLabel(av.price)+'</div>';
+    return '<div class="'+cls+'">'+badge+'<img src="'+av.src+'" alt="">'+footer+'</div>';
   }).join('');
 }
 
 async function buyAvatar(i){
   var av=SHOP_AVATARS[i];
   if(!av||ownedAvatars.indexOf(av.src)>=0)return;
-  var money=curMoney(),diamonds=curDiamonds();
-  if(money<av.price.money||diamonds<av.price.diamonds)return;
+  if(av.expiresAt&&new Date()>new Date(av.expiresAt))return;
+  if(av.minLevel&&playerLevel<av.minLevel)return;
+  if(!canAfford(av.price))return;
+  var fields=Object.keys(av.price);
+  var newBalances={};
+  fields.forEach(function(f){newBalances[f]=curBalance(f)-av.price[f];});
   try{
     ownedAvatars.push(av.src);
-    var newMoney=money-av.price.money;
-    var newDiamonds=diamonds-av.price.diamonds;
     await Promise.all([
       sb.from('profiles').update({owned_avatars:ownedAvatars}).eq('user_id',_uid),
-      sb.from('game_stats').update({money:newMoney,diamonds:newDiamonds}).eq('user_id',_uid)
+      sb.from('game_stats').update(newBalances).eq('user_id',_uid)
     ]);
-    document.getElementById('statMoney').dataset.raw=newMoney;
-    document.getElementById('statMoney').textContent=fm(newMoney)+'€';
-    document.getElementById('statDiamonds').dataset.raw=newDiamonds;
-    document.getElementById('statDiamonds').textContent=fm(newDiamonds)+'💎';
+    fields.forEach(function(f){
+      var elId=f==='diamonds'?'statDiamonds':(f==='trophies'?'statTrophies':'statMoney');
+      document.getElementById(elId).dataset.raw=newBalances[f];
+      document.getElementById(elId).textContent=fm(newBalances[f])+CURRENCY_SYM[f];
+    });
     renderShopGrid();
   }catch(e){
     ownedAvatars.splice(ownedAvatars.indexOf(av.src),1);
@@ -369,6 +400,7 @@ async function init(){
     document.getElementById('statDiamonds').textContent=fm(stats.diamonds)+'💎';
     document.getElementById('statDiamonds').dataset.raw=stats.diamonds||0;
     document.getElementById('statTrophies').textContent=fm(stats.trophies)+'🏆';
+    document.getElementById('statTrophies').dataset.raw=stats.trophies||0;
 
     renderShopGrid();
 
