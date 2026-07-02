@@ -504,12 +504,12 @@
   }
   function escapeHtml(t) { return (t||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
   function getOnlineStatus(lastSeen) {
-    if (!lastSeen) return { online:false, text:'' };
+    if (!lastSeen) return { online:false, recent:false, text:'' };
     const diff = Math.floor((Date.now() - new Date(lastSeen)) / 1000);
-    if (diff < 600) return { online:true, text:'En ligne' };
-    if (diff < 3600) return { online:false, text:'il y a ' + Math.floor(diff/60) + 'min' };
-    if (diff < 86400) return { online:false, text:'il y a ' + Math.floor(diff/3600) + 'h' };
-    return { online:false, text:'il y a ' + Math.floor(diff/86400) + 'j' };
+    if (diff < 600) return { online:true, recent:false, text:'En ligne' };
+    if (diff < 7200) return { online:false, recent:true, text:'il y a ' + Math.floor(diff/60) + 'min' };
+    if (diff < 86400) return { online:false, recent:false, text:'il y a ' + Math.floor(diff/3600) + 'h' };
+    return { online:false, recent:false, text:'il y a ' + Math.floor(diff/86400) + 'j' };
   }
 
   // ── Toast ──
@@ -727,7 +727,7 @@
         + '<div class="top3-name">' + escapeHtml(p.profile.username) + (isMe ? ' 👈' : '') + '</div>'
         + '<span class="top3-badge">' + badge + '</span>'
         + '<span class="top3-since">' + (since || '') + '</span>'
-        + (function(){ const os=getOnlineStatus(p.profile.last_seen); return os.online ? '<span style="font-size:9px;font-weight:700;color:#15803d">🟢 En ligne</span>' : (os.text ? '<span style="font-size:9px;color:rgba(0,0,0,0.3)">· ' + os.text + '</span>' : ''); })()
+        + (function(){ const os=getOnlineStatus(p.profile.last_seen); return os.online ? '<span style="font-size:9px;font-weight:700;color:#15803d">🟢 En ligne</span>' : (os.recent ? '<span style="font-size:9px;font-weight:700;color:#b45309">🟡 ' + os.text + '</span>' : (os.text ? '<span style="font-size:9px;color:rgba(0,0,0,0.3)">· ' + os.text + '</span>' : '')); })()
         + '</div>'
         + '<div class="top3-right">'
         + '<span class="top3-score">' + score(p) + '</span>'
@@ -763,7 +763,7 @@
       const trend = getTrend(p.user_id, rank);
       const online = getOnlineStatus(p.profile.last_seen);
       const initials = (p.profile.username||'?').substring(0,2).toUpperCase();
-      const onlineDot = online.online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite;flex-shrink:0"></span>' : '';
+      const onlineDot = online.online ? '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 5px rgba(34,197,94,0.7);animation:onlinePulse 2s ease-in-out infinite;flex-shrink:0"></span>' : (online.recent ? '<span style="width:7px;height:7px;border-radius:50%;background:#fbbf24;display:inline-block;box-shadow:0 0 4px rgba(251,191,36,0.5);flex-shrink:0"></span>' : '');
       const delay = Math.min(i * 0.04, 0.6);
 
       const rankAlpha = rank > 3 ? Math.min(0.03, rank * 0.0005) : 0;
@@ -774,7 +774,7 @@
         + '<div class="row-avatar" style="background:' + avatarColor(p.profile.username) + '"><img src="' + avatarForLevel(p.level||1) + '" onerror="this.style.display=\'none\'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>'
         + '<div class="row-info">'
         + '<div class="row-name">' + escapeHtml(p.profile.username) + (isMe?' <span class="me-badge">TOI</span>':'') + onlineDot + '</div>'
-        + '<div class="row-grade">' + getGrade(p.level||1) + (online.online ? ' <span class="row-online">🟢 En ligne</span>' : (online.text ? ' <span class="row-lastseen">· ' + online.text + '</span>' : '')) + '</div>'
+        + '<div class="row-grade">' + getGrade(p.level||1) + (online.online ? ' <span class="row-online">🟢 En ligne</span>' : (online.recent ? ' <span style="font-size:9px;font-weight:700;color:#b45309">🟡 ' + online.text + '</span>' : (online.text ? ' <span class="row-lastseen">· ' + online.text + '</span>' : ''))) + '</div>'
         + '</div>'
         + '<div class="row-right"><div class="row-score">' + score(p) + '</div><div class="row-trend ' + trend.cls + '">' + trend.txt + '</div></div>'
         + '</div>';
@@ -800,7 +800,7 @@
     // Dernière activité
     const lsEl = document.getElementById('ppLastSeen');
     const ls = getOnlineStatus(p.profile.last_seen);
-    lsEl.textContent = ls.online ? '🟢 En ligne' : (ls.text ? '⏱ ' + ls.text : '');
+    lsEl.textContent = ls.online ? '🟢 En ligne' : (ls.recent ? '🟡 ' + ls.text : (ls.text ? '⏱ ' + ls.text : ''));
     // Barre XP
     const lvl = p.level || 1;
     const xp = p.xp || 0;
