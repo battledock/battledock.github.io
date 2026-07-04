@@ -144,6 +144,18 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
 
 /* ── CTA JOUER ── */
 
+
+/* ── MINI LEADERBOARD ── */
+.mini-lb{width:100%;background:#fff;border-radius:14px;border:1px solid rgba(0,0,0,.06);overflow:hidden;margin-top:4px}
+.mini-lb-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.04)}
+.mini-lb-row:last-child{border-bottom:none}
+.mini-lb-rank{font-family:'Bebas Neue',sans-serif;font-size:16px;width:24px;text-align:center;flex-shrink:0}
+.mini-lb-name{flex:1;font-size:12px;font-weight:700;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini-lb-val{font-size:11px;font-weight:800;color:#c2410c}
+/* ── CONFETTIS ── */
+@keyframes confettiFall{0%{transform:translateY(-10px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+.confetti{position:fixed;top:0;width:10px;height:10px;border-radius:2px;pointer-events:none;z-index:9999;animation:confettiFall 1.5s ease-in forwards}
+/* ── STREAK BADGE ── */
 /* ── DESIGN E MINIMAL ── */
 .job-view{
   display:none;flex-direction:column;align-items:center;justify-content:center;
@@ -157,15 +169,20 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
 .job-underline{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);height:3px;width:40px;border-radius:2px}
 .job-sub{font-size:11px;color:rgba(0,0,0,.35);font-weight:500;margin-top:8px;margin-bottom:4px}
 .job-record{font-size:22px;font-weight:900;color:#111;margin-bottom:4px}
-.job-rank{font-size:9px;font-weight:800;letter-spacing:2px;margin-bottom:28px}
-.job-epi{display:flex;gap:16px;margin-bottom:0}
-.job-epi span{font-size:30px}
+.job-rank{font-size:9px;font-weight:800;letter-spacing:2px;margin-bottom:12px}
+.job-epi{display:flex;gap:10px;margin-bottom:0}
+.job-epi-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+.job-epi-item .epi-ico{font-size:30px}
+.job-epi-item .epi-bonus{font-size:9px;font-weight:800;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:2px 8px;border-radius:20px;}
+.job-epi-item .epi-tip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#111;color:#fff;font-size:10px;font-weight:700;padding:6px 12px;border-radius:10px;white-space:nowrap;z-index:100;pointer-events:none}
+.job-epi-item .epi-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#111}
+.job-epi-item.open .epi-tip{display:block}
 .cta{
-  width:100%;border:none;border-radius:14px;padding:15px;
-  font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:3px;color:#111;
+  width:100%;border:none;border-radius:16px;padding:18px;
+  font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:4px;color:#111;
   cursor:pointer;margin-bottom:14px;position:relative;overflow:hidden;
   background:#fff;
-  box-shadow:0 4px 16px rgba(0,0,0,.12),inset 0 -2px 0 rgba(0,0,0,.08);
+  box-shadow:0 6px 20px rgba(0,0,0,.14),inset 0 -3px 0 rgba(0,0,0,.1);
   transition:transform .13s,filter .13s;
 }
 .cta:active{transform:scale(.97);filter:brightness(.97)}
@@ -303,12 +320,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
       <span class="tb-money-lbl">SOLDE</span>
     </div>
   </div>
-  <!-- GAME HEADER XP BAR -->
-  <div class="hdr-xp-bar">
-    <div class="hxp-label" id="hxpLabel">XP</div>
-    <div class="hxp-track"><div class="hxp-fill" id="hxpFill" style="width:0%"></div></div>
-    <div class="hxp-pct" id="hxpPct">—</div>
-  </div>
+  <div style="display:none"><div id="hxpFill"></div><div id="hxpPct"></div><div id="hxpLabel"></div></div>
 
   <!-- CONTENT AREA -->
   <div class="content-area" id="contentArea">
@@ -325,17 +337,19 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
       <div class="job-sub">Chargement · ⭐ Métier principal</div>
       <div class="job-record" id="jobRecClicker">—</div>
       <div class="job-rank" id="jobRankClicker" style="color:#c2410c">#— CLASSEMENT</div>
+      <div id="streakBadge" style="display:none;margin-bottom:16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:20px;padding:4px 14px;font-size:11px;font-weight:800;color:#c2410c">🔥 <span id="streakBadgeTxt"></span> JOURS DE SUITE</div>
       <div class="job-epi">
-        <span title="+15% clics">⛑️</span>
-        <span title="+10% €/clic">👟</span>
-        <span title="+20% XP">🦺</span>
+        <div class="job-epi-item" onclick="toggleEpiTip(this)"><div class="epi-ico">⛑️</div><div class="epi-bonus">+15% clics</div><div class="epi-tip">Casque · +15% clics par tap</div></div>
+        <div class="job-epi-item" onclick="toggleEpiTip(this)"><div class="epi-ico">👟</div><div class="epi-bonus">+10% €</div><div class="epi-tip">Chaussures · +10% argent/clic</div></div>
+        <div class="job-epi-item" onclick="toggleEpiTip(this)"><div class="epi-ico">🦺</div><div class="epi-bonus">+20% XP</div><div class="epi-tip">Gilet · +20% XP gagné</div></div>
       </div>
       <div style="height:24px"></div>
       <button class="cta" onclick="location.href='clicker.html'">▶ Jouer</button>
+      <div id="mini-lb-clicker" style="width:100%;margin-bottom:8px"></div>
       <div class="icard" id="streakCard"><div class="icard-icon">🔥</div><div><div class="icard-title" id="streakTitle">—</div><div class="icard-desc">Reviens demain pour continuer ta série</div></div></div>
       <div class="icard" id="milestoneCard"><div class="icard-icon">🎁</div><div style="flex:1"><div class="icard-title" id="milestoneTitle">—</div><div class="icard-desc" id="milestoneDesc">—</div><div class="mbar"><div class="mbar-fill" id="mbarFill" style="width:0%"></div></div></div></div>
       <div id="leaderClicker" style="display:none"></div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
     <!-- PLACEHOLDER pour l'ancien port-scene (ne plus afficher)
@@ -358,7 +372,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
       <div style="height:24px"></div>
       <button class="cta" onclick="location.href='grue.html'">▶ Jouer</button>
       <div id="leaderGrutier" style="display:none"></div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
     <!-- ═══ CLARK ═══ -->
@@ -378,7 +392,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
       <div style="height:24px"></div>
       <button class="cta" onclick="location.href='karcher.html'">▶ Jouer</button>
       <div id="leaderClark" style="display:none"></div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
     <!-- ═══ PÊCHEUR ═══ -->
@@ -446,7 +460,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
         <div style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;color:var(--txt2)">POISSONS À DÉBLOQUER</div>
         <div style="font-size:11px;color:var(--txt2);margin-top:4px;line-height:1.5">Sardines, thons, poulpes, daurades...<br>Chaque prise = des gains différents</div>
       </div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
     <!-- ═══ SHOP ═══ -->
@@ -494,7 +508,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
         <div style="font-size:9px;font-weight:900;color:var(--txt2);letter-spacing:2px;margin-bottom:14px">ÉQUIPEMENT DE PROTECTION</div>
         <div id="bepiBody"></div>
       </div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
   </div><!-- /content-area -->
@@ -535,7 +549,7 @@ html,body{height:100%;background:var(--bg);font-family:'Inter',sans-serif;color:
         <div class="sec-hdr">🏎️ CLARK</div>
         <div class="lb-wrap" id="leaderClarkMain"><div class="lb-empty">Chargement...</div></div>
       </div>
-      <button class="back-bottom" onclick="location.href='game.html'">⚓ RETOUR AU PORT</button>
+      
     </div>
 
 </div><!-- /app -->
@@ -614,8 +628,8 @@ var LEVEL_REWARDS={5:'🥉 Titre "Docker confirmé"',10:'💎 +20 diamants',15:'
 function renderStreakAndTip(streakDays,lvl){
   if(streakDays>=2){
     var c=document.getElementById('streakCard');
-    document.getElementById('streakTitle').textContent=streakDays+' JOURS DE SUITE 🔥';
-    if(c)c.classList.add('show');
+    if(c){document.getElementById('streakTitle').textContent=streakDays+' JOURS DE SUITE 🔥';c.classList.add('show');}
+    renderStreakBadge(streakDays);
   }
 }
 
@@ -641,6 +655,7 @@ function renderLbRow(i,name,val,color){
 async function loadLeaderboards(){
   if(_lbLoaded)return;
   _lbLoaded=true;
+  var _myUid=null;try{var s=await sb.auth.getSession();_myUid=s.data?.session?.user?.id||null;}catch(e){}
   try{
     var res=await Promise.all([
       sb.from('game_stats').select('user_id,records,level').limit(200),
@@ -650,8 +665,14 @@ async function loadLeaderboards(){
     var nm={};profiles.forEach(function(p){if(p.user_id&&p.username)nm[p.user_id]=p.username;});
     var gn=function(uid){return nm[uid]||'Anonyme';};
     var NONE='<div class="lb-empty">Aucun score encore</div>';
+    var allClicker=gs.filter(function(r){return r.records&&r.records.clicker_clicks>0;}).sort(function(a,b){return (b.records.clicker_clicks||0)-(a.records.clicker_clicks||0);});
     var elC=document.getElementById('leaderClicker');
-    if(elC){var s=gs.filter(function(r){return r.records&&r.records.clicker_clicks>0;}).sort(function(a,b){return (b.records.clicker_clicks||0)-(a.records.clicker_clicks||0);}).slice(0,10);elC.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),(r.records.clicker_clicks||0).toLocaleString('fr-FR'),'var(--docker)');}).join(''):NONE;}
+    if(elC){var s=allClicker.slice(0,10);elC.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),(r.records.clicker_clicks||0).toLocaleString('fr-FR'),'var(--docker)');}).join(''):NONE;}
+    var miniRowsC=allClicker.slice(0,3).map(function(r){return {name:gn(r.user_id),val:(r.records.clicker_clicks||0).toLocaleString('fr-FR'),rawVal:r.records.clicker_clicks||0};});
+    renderMiniLb(miniRowsC,'#c2410c','mini-lb-clicker');
+    var myClickerRow=_myUid?allClicker.find(function(r){return r.user_id===_myUid;}):null;
+    if(myClickerRow&&allClicker.indexOf(myClickerRow)===0)setTimeout(launchConfettis,600);
+    checkRecordThreat(myClickerRow?myClickerRow.records.clicker_clicks:0,miniRowsC,'navDocker');
     var elG=document.getElementById('leaderGrue');
     if(elG){var s=gs.filter(function(r){return r.records&&r.records.grue_best>0;}).sort(function(a,b){return (b.records.grue_best||0)-(a.records.grue_best||0);}).slice(0,10);elG.innerHTML=s.length?s.map(function(r,i){return renderLbRow(i,gn(r.user_id),Math.floor(r.records.grue_best).toLocaleString('fr-FR')+'pts','var(--grutier)');}).join(''):NONE;}
     var elCl=document.getElementById('leaderClark');
@@ -887,6 +908,68 @@ async function init(){
   }catch(e){
     console.error(e);
     document.getElementById('loader').innerHTML='<div style="color:rgba(255,255,255,.4);font-size:13px;letter-spacing:2px;font-family:\'Bebas Neue\'">ERREUR DE CHARGEMENT</div>';
+  }
+}
+
+
+// ── EPI tooltip ──
+function toggleEpiTip(el){
+  var open = el.classList.contains('open');
+  document.querySelectorAll('.job-epi-item').forEach(function(e){e.classList.remove('open');});
+  if(!open) el.classList.add('open');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.job-epi-item')) document.querySelectorAll('.job-epi-item').forEach(function(e){e.classList.remove('open');});
+});
+
+// ── Confettis nouveau record ──
+function launchConfettis(){
+  var colors=['#f97316','#fbbf24','#c2410c','#fff','#111'];
+  for(var i=0;i<32;i++){
+    var el=document.createElement('div');
+    el.className='confetti';
+    el.style.left=Math.random()*100+'vw';
+    el.style.background=colors[Math.floor(Math.random()*colors.length)];
+    el.style.animationDelay=(Math.random()*.8)+'s';
+    el.style.width=(Math.random()*8+6)+'px';
+    el.style.height=(Math.random()*8+6)+'px';
+    document.body.appendChild(el);
+    setTimeout(function(e){e.remove();},2500);
+  }
+}
+
+// ── Streak badge ──
+function renderStreakBadge(days){
+  var b=document.getElementById('streakBadge');
+  var t=document.getElementById('streakBadgeTxt');
+  if(!b||!t)return;
+  if(days>=2){b.style.display='block';t.textContent=days;}
+}
+
+// ── Mini leaderboard top 3 ──
+function renderMiniLb(rows, color, containerId){
+  var el=document.getElementById(containerId);
+  if(!el)return;
+  if(!rows||!rows.length){el.innerHTML='';return;}
+  var medals=['🥇','🥈','🥉'];
+  el.innerHTML='<div class="mini-lb">'+rows.slice(0,3).map(function(r,i){
+    return '<div class="mini-lb-row"><div class="mini-lb-rank">'+medals[i]+'</div><div class="mini-lb-name">'+r.name+'</div><div class="mini-lb-val" style="color:'+color+'">'+r.val+'</div></div>';
+  }).join('')+'</div>';
+}
+
+// ── Dot rouge nav si record menacé ──
+function checkRecordThreat(myVal, allRows, navId){
+  if(!allRows||allRows.length<2)return;
+  var second=allRows[1];
+  if(second&&myVal&&second.rawVal>(myVal*0.9)){
+    var n=document.getElementById(navId);
+    if(n&&!n.querySelector('.nav-threat')){
+      var dot=document.createElement('div');
+      dot.className='nav-threat';
+      dot.style.cssText='position:absolute;top:4px;right:8px;width:7px;height:7px;border-radius:50%;background:#ef4444;box-shadow:0 0 6px #ef4444';
+      n.style.position='relative';
+      n.appendChild(dot);
+    }
   }
 }
 
