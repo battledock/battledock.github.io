@@ -2079,7 +2079,7 @@ async function loadCalendar() {
       document.body.appendChild(o);
     }
 
-    init();
+    // init() géré par le script principal
   </script>
 
 <!-- JS WIDGETS -->
@@ -2167,27 +2167,12 @@ async function init(){
     const uid=session.user.id;
 
     // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
-    var _cached=getCached(); var profile,stats;
-    if(_cached&&cacheValid(_cached)){
-      profile=_cached.profile; stats=_cached.stats;
-      // Rendre UI immédiatement depuis cache puis refresh en bg
-      setTimeout(async()=>{
-        const[pR,sR]=await Promise.all([
-          sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
-          sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,direction,records').eq('user_id',uid).maybeSingle()
-        ]);
-        if(pR.data&&sR.data)setCache(pR.data,sR.data);
-      },3000);
-    } else {
     const[profileRes,statsRes]=await Promise.all([
       sb.from('profiles').select('username,avatar_url').eq('user_id',uid).maybeSingle(),
       sb.from('game_stats').select('level,xp,money,diamonds,banque,last_level_rewarded,last_levelup_shown,streak_days,last_login,trophies,commerce,direction,records').eq('user_id',uid).maybeSingle()
     ]);
-    profile=profileRes.data;
-    stats=statsRes.data;
-    } // fin cache else
-    if(!profile||!stats){if(!_cached)showError();return;}
-    setCache(profile,stats);
+    var profile=profileRes.data, stats=statsRes.data;
+    if(!profile||!stats){showError();return;}
 
     // Popup 1.7
     _lastRecords = stats.records || {};
@@ -2261,7 +2246,20 @@ async function init(){
     initCommerceRain();
     loadCompanyCard(uid);
     loadBourseTicker();
-    loadTop3();
+    // top3 inline
+    (async function(){
+      try{
+        var r1=await sb.from('game_stats').select('user_id,money,level').limit(200);
+        var r2=await sb.from('profiles').select('user_id,username').limit(200);
+        if(!r1.data||!r1.data.length)return;
+        var nm={};(r2.data||[]).forEach(function(p){nm[p.user_id]=p.username||'Docker';});
+        var rows=r1.data.slice().sort(function(a,b){return ((b.level||1)*100+Math.floor((b.money||0)/10000))-((a.level||1)*100+Math.floor((a.money||0)/10000));}).slice(0,3);
+        var el=document.getElementById('classTop3');
+        if(!el)return;
+        var m=['🥇','🥈','🥉'],c=['class-pill-gold','class-pill-silver','class-pill-silver'];
+        el.innerHTML=rows.map(function(r,i){return '<div class="class-pill '+c[i]+'">'+m[i]+' '+(nm[r.user_id]||'Docker')+'</div>';}).join('');
+      }catch(e){console.error('top3',e);}
+    })();
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -2442,6 +2440,7 @@ document.addEventListener('visibilitychange',function(){
 
 // ── Top 3 classement ──
 async function loadTop3(){
+  var sb=window.sb;
   try{
     var {data:gs2}=await sb.from('game_stats').select('user_id,money,level').limit(200);
     var {data:prs}=await sb.from('profiles').select('user_id,username').limit(200);
