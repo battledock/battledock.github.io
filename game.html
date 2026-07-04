@@ -2633,7 +2633,63 @@ checkIconVersion();
 function showComingSoon(){
   document.getElementById('comingSoonModal').style.display='flex';
 }
-<!-- ═══════════════ FIN POPUP MISE À JOUR 1.6 ═══════════════ -->
+
+var UPDATE_VERSION='1.7';
+var _lastRecords={};
+
+function checkUpdatePopup(records){
+  if(!records||records.update_seen_version===UPDATE_VERSION)return;
+  document.getElementById('updateModal').style.display='flex';
+}
+
+function closeUpdateModal(){
+  var btn=document.getElementById('um-btn');
+  var loader=document.getElementById('um-loader');
+  var btnTxt=document.getElementById('um-btn-txt');
+  var bar=document.getElementById('um-load-bar');
+  var loadTxt=document.getElementById('um-load-txt');
+  btn.style.pointerEvents='none';
+  btnTxt.style.opacity='0';
+  loader.style.display='flex';
+  var steps=[
+    {pct:25,txt:'CONNEXION…'},
+    {pct:55,txt:'CHARGEMENT…'},
+    {pct:85,txt:'MISE À JOUR APPLIQUÉE ✓'},
+    {pct:100,txt:'BIENVENUE SUR 1.7 🚀'},
+  ];
+  var i=0;
+  function next(){
+    if(i>=steps.length){
+      document.getElementById('updateModal').dispatchEvent(new Event('um-close'));
+      document.getElementById('updateModal').style.display='none';
+      if(typeof sb!=='undefined'&&currentUser){
+        var newRec=Object.assign({},_lastRecords,{update_seen_version:UPDATE_VERSION});
+        sb.from('game_stats').update({records:newRec}).eq('user_id',currentUser.id).then(function(){});
+      }
+      return;
+    }
+    var s=steps[i++];
+    bar.style.width=s.pct+'%';
+    loadTxt.textContent=s.txt;
+    setTimeout(next,700);
+  }
+  next();
+}
+
+// Canvas étoiles
+(function(){
+  var c=document.getElementById('umStars');
+  if(!c)return;
+  var ctx=c.getContext('2d');
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  var stars=Array.from({length:80},function(){return{x:Math.random(),y:Math.random(),r:Math.random()*.8+.3,o:Math.random()};});
+  var af;
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(function(s){ctx.beginPath();ctx.arc(s.x*c.width,s.y*c.height,s.r,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,'+s.o+')';ctx.fill();s.o+=.005*(Math.random()>.5?1:-1);s.o=Math.max(.1,Math.min(.9,s.o));});af=requestAnimationFrame(draw);}
+  draw();
+  document.getElementById('updateModal').addEventListener('um-close',function(){cancelAnimationFrame(af);});
+})();
+</script>
 
 
 
