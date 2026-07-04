@@ -2169,7 +2169,7 @@ async function init(){
     // FIX #1+#2 : fetch banque JSONB en même temps, plus besoin de loadBalance
     var _cached=getCached(); var profile,stats;
     if(_cached&&cacheValid(_cached)){
-      var profile=_cached.profile,stats=_cached.stats;
+      profile=_cached.profile; stats=_cached.stats;
       // Rendre UI immédiatement depuis cache puis refresh en bg
       setTimeout(async()=>{
         const[pR,sR]=await Promise.all([
@@ -2186,7 +2186,7 @@ async function init(){
     profile=profileRes.data;
     stats=statsRes.data;
     } // fin cache else
-    if(!profile||!stats){showError();return;}
+    if(!profile||!stats){if(!_cached)showError();return;}
     setCache(profile,stats);
 
     // Popup 1.7
@@ -2246,26 +2246,6 @@ async function init(){
     // FIX #3 : mettre à jour last_seen
     sb.from('profiles').update({last_seen:new Date().toISOString()}).eq('user_id',uid).then(()=>{});
     // Charger top 3 classement
-    (function(){var fn=async function fn(){
-      try{
-        // Même formule que classement.html : powerScore = level*100 + money/10000
-        var {data:gs2}=await sb.from('game_stats').select('user_id,money,level').limit(200);
-        var {data:prs}=await sb.from('profiles').select('user_id,username').limit(200);
-        if(!gs2||!gs2.length)return;
-        var nm={};(prs||[]).forEach(function(p){nm[p.user_id]=p.username||'Docker';});
-        function pw(r){return (r.level||1)*100+Math.floor((r.money||0)/10000);}
-        var top3=gs2.slice().sort(function(a,b){return pw(b)-pw(a);}).slice(0,3);
-        var pills=['class-pill-gold','class-pill-silver','class-pill-silver'];
-        var medals=['🥇','🥈','🥉'];
-        var el=document.getElementById('classTop3');
-        if(!el)return;
-        el.innerHTML=top3.map(function(r,i){
-          return '<div class="class-pill '+pills[i]+'">'+medals[i]+' '+(nm[r.user_id]||'Docker')+'</div>';
-        }).join('');
-      }catch(e){}
-    };
-    fn();
-    })();
 
     const card=document.getElementById('profileCardBtn');
     card.style.cursor='pointer';
@@ -2281,6 +2261,7 @@ async function init(){
     initCommerceRain();
     loadCompanyCard(uid);
     loadBourseTicker();
+    loadTop3();
 
     // Remplissage
     document.getElementById('playerName').textContent=profile.username;
@@ -2458,6 +2439,26 @@ document.addEventListener('visibilitychange',function(){
     if(typeof loadChatBadge==='function')_si(function(){loadChatBadge(currentUser&&currentUser.id);},30000);
   }
 });
+
+// ── Top 3 classement ──
+async function loadTop3(){
+  try{
+    var {data:gs2}=await sb.from('game_stats').select('user_id,money,level').limit(200);
+    var {data:prs}=await sb.from('profiles').select('user_id,username').limit(200);
+    if(!gs2||!gs2.length)return;
+    var nm={};(prs||[]).forEach(function(p){nm[p.user_id]=p.username||'Docker';});
+    function pw(r){return (r.level||1)*100+Math.floor((r.money||0)/10000);}
+    var top3=gs2.slice().sort(function(a,b){return pw(b)-pw(a);}).slice(0,3);
+    var pills=['class-pill-gold','class-pill-silver','class-pill-silver'];
+    var medals=['🥇','🥈','🥉'];
+    var el=document.getElementById('classTop3');
+    if(!el)return;
+    el.innerHTML=top3.map(function(r,i){
+      return '<div class="class-pill '+pills[i]+'">'+medals[i]+' '+(nm[r.user_id]||'Docker')+'</div>';
+    }).join('');
+  }catch(e){console.log('top3:',e);}
+}
+
 init();
 
 // ── PWA Install Banner ──
