@@ -2,358 +2,367 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Battle Dock — LE JEU</title>
-<link rel="manifest" href="manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="icon-180.png">
-<meta name="theme-color" content="#7f1d1d">
-<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#f4f1ea">
+<title>Battle Dock</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;}
-input{-webkit-user-select:text;user-select:text;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{font-family:'Inter',sans-serif;background:#f4f1ea;color:#16140f;min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px));
+  position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.5;
+  background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:14px 14px}
 
-:root{
-  --card:#fffdf7;
-  --ink:#1a1a1a;
-  --gold:#e17f00;
-  --gold-light:#fbbf24;
-  --border-w:3px;
-  --radius:14px;
-  --shadow:5px 5px 0 #1a1a1a;
-}
+.wrap{position:relative;z-index:2;width:100%;max-width:400px;
+  animation:rise .7s cubic-bezier(.2,.8,.3,1)}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-body{
-  font-family:'Inter',sans-serif;
-  background:linear-gradient(135deg,#7f1d1d,#991b1b,#b91c1c);
-  min-height:100vh;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  padding:16px;
-}
+/* ── LOGO ── */
+.brand{text-align:center;margin-bottom:26px}
+.logo{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;background:#16140f;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 30px rgba(22,20,15,.22)}
+.logo svg{width:30px;height:30px}
+.name{font-family:'Playfair Display',serif;font-weight:900;font-size:34px;letter-spacing:-1px;line-height:1}
+.name em{font-style:italic;color:#c0392b}
+.tag{font-size:9px;font-weight:900;letter-spacing:3px;color:#a09888;margin-top:8px}
 
-/* ── HEADER ── */
-.logo{
-  text-align:center;margin-bottom:20px;
-}
-.logo-title{
-  font-family:'Bangers',cursive;
-  font-size:clamp(3rem,12vw,4.5rem);
-  color:#fff;letter-spacing:4px;line-height:.9;
-}
-.logo-sub{
-  font-size:11px;color:var(--gold-light);font-weight:700;
-  letter-spacing:3px;margin-top:4px;
-}
+/* ── ONGLETS ── */
+.tabs{display:flex;background:#eae5da;border-radius:12px;padding:3px;margin-bottom:20px}
+.tab{flex:1;border:none;background:transparent;border-radius:9px;padding:11px;cursor:pointer;
+  font-family:Inter;font-size:11.5px;font-weight:800;letter-spacing:.8px;color:#8a8278;transition:all .25s}
+.tab.on{background:#fff;color:#16140f;box-shadow:0 2px 8px rgba(22,20,15,.08)}
 
-/* ── CARD ── */
-.login-card{
-  width:100%;max-width:400px;
-  background:var(--card);
-  border:var(--border-w) solid var(--ink);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-}
+/* ── CARTE ── */
+.card{background:#fff;border-radius:20px;padding:24px 22px;
+  box-shadow:0 4px 28px rgba(22,20,15,.08),0 1px 3px rgba(22,20,15,.04)}
+.pane{display:none}
+.pane.on{display:block;animation:fade .35s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── TABS ── */
-.tabs{display:flex;border-bottom:var(--border-w) solid var(--ink);}
-.tab{
-  flex:1;
-  background:var(--card);
-  border:none;
-  font-family:'Bangers',cursive;font-size:16px;
-  letter-spacing:1.5px;color:#9ca3af;
-  padding:14px 8px;cursor:pointer;
-  transition:all .15s;
-}
-.tab:first-child{border-right:var(--border-w) solid var(--ink);}
-.tab.active{
-  background:#2563eb;color:var(--gold-light);
-}
+/* ── CHAMPS ── */
+.fld{margin-bottom:15px}
+.lbl{display:block;font-size:9.5px;font-weight:900;letter-spacing:1.6px;color:#a09888;margin-bottom:7px}
+.inp{width:100%;background:#faf8f3;border:1.5px solid #e8e2d6;border-radius:12px;padding:13px 14px;
+  font-family:Inter;font-size:15px;font-weight:600;color:#16140f;outline:none;transition:border-color .2s,box-shadow .2s}
+.inp:focus{border-color:#16140f;box-shadow:0 0 0 3px rgba(22,20,15,.05)}
+.inp::placeholder{color:#c4bdb0;font-weight:500}
+.inp.bad{border-color:#c0392b;box-shadow:0 0 0 3px rgba(192,57,43,.06)}
+.inp.good{border-color:#16a34a}
+.hint{font-size:10.5px;color:#a09888;margin-top:6px;line-height:1.4;min-height:14px}
+.hint.err{color:#c0392b;font-weight:600}
+.hint.ok{color:#16a34a;font-weight:600}
 
-/* ── FORM ── */
-.form-wrap{padding:20px;}
-.form-section{display:none;}
-.form-section.active{display:flex;flex-direction:column;gap:14px;animation:fadeUp .3s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* jauge force du mot de passe */
+.pwbar{height:3px;background:#eae5da;border-radius:2px;margin-top:7px;overflow:hidden}
+.pwfill{height:100%;width:0;border-radius:2px;transition:width .3s,background .3s}
 
-.field-label{
-  font-size:12px;font-weight:700;color:var(--ink);
-  letter-spacing:.5px;margin-bottom:5px;display:block;
-}
-.field-input{
-  width:100%;padding:12px 14px;
-  font-family:'Inter',sans-serif;font-size:15px;color:var(--ink);
-  background:#fff;
-  border:2px solid #d4c9a8;border-radius:10px;
-  transition:border-color .2s;
-}
-.field-input:focus{
-  outline:none;border-color:var(--gold);
-  box-shadow:0 0 0 3px rgba(225,127,0,.1);
-}
-.field-input::placeholder{color:#c4b896;}
+/* ── BOUTONS ── */
+.btn{width:100%;border:none;border-radius:12px;padding:15px;font-family:Inter;
+  font-size:12px;font-weight:900;letter-spacing:1.4px;cursor:pointer;transition:transform .15s,opacity .2s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-p{background:#16140f;color:#fff;box-shadow:0 8px 22px rgba(22,20,15,.2);margin-top:4px}
+.btn-l{background:transparent;color:#8a8278;font-size:11px;font-weight:700;letter-spacing:.4px;
+  padding:12px;margin-top:6px;text-decoration:underline;text-underline-offset:3px}
 
-.btn-submit{
-  width:100%;padding:14px;
-  font-family:'Bangers',cursive;font-size:18px;letter-spacing:2px;
-  color:var(--ink);
-  background:linear-gradient(180deg,var(--gold-light),#f59e0b);
-  border:var(--border-w) solid var(--ink);
-  border-radius:10px;
-  box-shadow:3px 3px 0 var(--ink);
-  cursor:pointer;
-  transition:transform .1s,box-shadow .1s;
-  margin-top:4px;
-}
-.btn-submit:active{
-  transform:translate(2px,2px);
-  box-shadow:1px 1px 0 var(--ink);
-}
-.btn-submit:disabled{opacity:.5;cursor:not-allowed;}
+/* ── MESSAGE ── */
+.msg{border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:16px;
+  display:none;font-weight:500}
+.msg.on{display:block;animation:fade .3s}
+.msg.err{background:#fdf0ef;border:1px solid #f2ccc8;color:#c0392b}
+.msg.ok{background:#eefaf1;border:1px solid #c3ebd0;color:#1a7d3f}
+.msg.info{background:#f0f4fd;border:1px solid #cdd9f5;color:#2c5aa8}
 
-/* ── FOOTER ── */
-.footer{
-  margin-top:16px;font-size:8px;color:rgba(255,255,255,.4);
-  text-align:center;letter-spacing:.5px;line-height:1.4;
-  max-width:400px;
-}
+/* ── LOADER ── */
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
 
-/* ── ERROR POPUP ── */
-.overlay{
-  display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.6);z-index:999;
-}
-.overlay.show{display:block;}
-.popup{
-  display:none;position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  background:var(--card);
-  border:var(--border-w) solid var(--ink);
-  border-radius:16px;box-shadow:6px 6px 0 var(--ink);
-  padding:28px 24px;z-index:1000;
-  width:85%;max-width:340px;text-align:center;
-}
-.popup.show{display:block;animation:popIn .3s ease;}
-@keyframes popIn{from{opacity:0;transform:translate(-50%,-50%) scale(.85)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-.popup-title{
-  font-family:'Bangers',cursive;font-size:26px;
-  color:#dc2626;letter-spacing:2px;margin-bottom:10px;
-}
-.popup-msg{
-  font-size:13px;color:var(--ink);line-height:1.6;
-  margin-bottom:20px;font-weight:500;
-}
-.popup-btn{
-  font-family:'Bangers',cursive;font-size:16px;letter-spacing:1px;
-  padding:10px 28px;
-  background:var(--gold-light);color:var(--ink);
-  border:var(--border-w) solid var(--ink);
-  border-radius:10px;box-shadow:3px 3px 0 var(--ink);
-  cursor:pointer;
-}
-.popup-btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink);}
+.foot{text-align:center;margin-top:20px;font-size:9px;letter-spacing:2px;color:#c4bdb0;font-weight:700}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="logo">
-  <div class="logo-title">BATTLE DOCK</div>
-  <div class="logo-sub">⚓ Le simulateur de docker</div>
-</div>
+  <div class="brand">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ffcf3f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="4" r="2"/><line x1="12" y1="6" x2="12" y2="22"/>
+        <line x1="7" y1="10" x2="17" y2="10"/><path d="M4 14a8 8 0 0 0 16 0"/>
+      </svg>
+    </div>
+    <div class="name">Battle <em>Dock</em></div>
+    <div class="tag">MANUTENTION PORTUAIRE</div>
+  </div>
 
-<div class="login-card">
   <div class="tabs">
-    <button class="tab active" id="tabLogin" onclick="swapTab('login')">CONNEXION</button>
-    <button class="tab" id="tabSignup" onclick="swapTab('signup')">INSCRIPTION</button>
+    <button class="tab on" id="tCo" onclick="tab('co')">CONNEXION</button>
+    <button class="tab" id="tIn" onclick="tab('in')">INSCRIPTION</button>
   </div>
-  <div class="form-wrap">
-    <!-- CONNEXION -->
-    <form class="form-section active" id="secLogin" onsubmit="handleLogin(event)">
-      <div>
-        <label class="field-label">👤 Pseudo</label>
-        <input type="text" class="field-input" id="loginUser" placeholder="Ton pseudo" required autocomplete="username">
+
+  <div class="card">
+    <div class="msg" id="msg"></div>
+
+    <!-- ══ CONNEXION ══ -->
+    <div class="pane on" id="pCo">
+      <div class="fld">
+        <label class="lbl">EMAIL</label>
+        <input class="inp" id="coMail" type="email" inputmode="email" autocomplete="email" placeholder="toi@exemple.fr">
       </div>
-      <div>
-        <label class="field-label">🔑 Mot de passe</label>
-        <input type="password" class="field-input" id="loginPass" placeholder="••••••••" required autocomplete="current-password">
+      <div class="fld">
+        <label class="lbl">MOT DE PASSE</label>
+        <input class="inp" id="coPw" type="password" autocomplete="current-password" placeholder="••••••••">
       </div>
-      <button type="submit" class="btn-submit" id="loginBtn">SE CONNECTER</button>
-    </form>
-    <!-- INSCRIPTION -->
-    <form class="form-section" id="secSignup" onsubmit="handleSignup(event)">
-      <div>
-        <label class="field-label">👤 Choisis un pseudo</label>
-        <input type="text" class="field-input" id="signupUser" placeholder="3-20 caractères, lettres/chiffres" required autocomplete="username">
+      <button class="btn btn-p" id="bCo" onclick="connexion()">SE CONNECTER</button>
+      <button class="btn btn-l" onclick="oubli()">Mot de passe oublié ?</button>
+    </div>
+
+    <!-- ══ INSCRIPTION ══ -->
+    <div class="pane" id="pIn">
+      <div class="fld">
+        <label class="lbl">NOM DE TON ENTREPRISE</label>
+        <input class="inp" id="inPseudo" type="text" maxlength="16" autocomplete="username" placeholder="Ex : Transports Marius">
+        <div class="hint" id="hPseudo">3 à 16 caractères. C'est ton nom au classement.</div>
       </div>
-      <div>
-        <label class="field-label">🔒 Mot de passe</label>
-        <input type="password" class="field-input" id="signupPass" placeholder="Minimum 6 caractères" required autocomplete="new-password">
+      <div class="fld">
+        <label class="lbl">EMAIL</label>
+        <input class="inp" id="inMail" type="email" inputmode="email" autocomplete="email" placeholder="toi@exemple.fr">
+        <div class="hint" id="hMail"></div>
       </div>
-      <button type="submit" class="btn-submit" id="signupBtn">S'INSCRIRE</button>
-    </form>
+      <div class="fld">
+        <label class="lbl">MOT DE PASSE</label>
+        <input class="inp" id="inPw" type="password" autocomplete="new-password" placeholder="8 caractères minimum">
+        <div class="pwbar"><div class="pwfill" id="pwFill"></div></div>
+        <div class="hint" id="hPw">8 caractères minimum.</div>
+      </div>
+      <button class="btn btn-p" id="bIn" onclick="inscription()">CRÉER MON ENTREPRISE</button>
+    </div>
   </div>
+
+  <div class="foot">⚓ PORT DE MARSEILLE</div>
 </div>
 
-<div class="footer">Battle Dock est une œuvre de fiction et de divertissement.<br>Tous les éléments sont purement imaginaires.</div>
-
-<!-- Error popup -->
-<div class="overlay" id="overlay" onclick="closePopup()"></div>
-<div class="popup" id="popup">
-  <div class="popup-title">ERREUR</div>
-  <div class="popup-msg" id="popupMsg"></div>
-  <button class="popup-btn" onclick="closePopup()">OK</button>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const supabaseUrl='https://drtsuhnbclhmgfjiykap.supabase.co';
-const supabaseKey='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRydHN1aG5iY2xobWdmaml5a2FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NDIzODksImV4cCI6MjA5NDQxODM4OX0.68cvRa8xhrSDt2nnEEp7pagL7NT5ugRtOhKLGX2CQJg';
-const sb=supabase.createClient(supabaseUrl,supabaseKey);
+/* ═══════════════════════════════════════════════════
+   ⚠️  À REMPLACER PAR TES IDENTIFIANTS SUPABASE
+   Supabase → ton projet → Settings → API
+   ═══════════════════════════════════════════════════ */
+const SB_URL = 'https://xvphypcpikodtrqctqkd.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cGh5cGNwaWtvZHRycWN0cWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3OTM5ODgsImV4cCI6MjA5OTM2OTk4OH0.Q7G2Tm05R4Ei08s7TudT-C5xychQImoYK-RLEdjoYGA';
 
-// Si déjà connecté → game.html
-sb.auth.getSession().then(({data:{session}})=>{
-  if(session) location.href='game.html';
+var sb = null;
+try { sb = supabase.createClient(SB_URL, SB_KEY); }
+catch(e){ console.warn('Supabase non initialisé', e); }
+
+function $(i){ return document.getElementById(i); }
+function vib(m){ if(navigator.vibrate) navigator.vibrate(m); }
+
+/* ── UI ── */
+function tab(t){
+  var co = (t==='co');
+  $('tCo').classList.toggle('on', co);
+  $('tIn').classList.toggle('on', !co);
+  $('pCo').classList.toggle('on', co);
+  $('pIn').classList.toggle('on', !co);
+  hideMsg();
+  vib(12);
+}
+function showMsg(txt, type){
+  var m = $('msg');
+  m.textContent = txt;
+  m.className = 'msg on ' + (type||'err');
+}
+function hideMsg(){ $('msg').classList.remove('on'); }
+function loading(btn, on, label){
+  var b = $(btn);
+  b.disabled = on;
+  b.innerHTML = on ? '<span class="spin"></span>PATIENTE…' : label;
+}
+
+/* ── Traduction des erreurs Supabase en français clair ── */
+function humanErr(e){
+  var m = (e && (e.message || e.error_description) || '').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Email ou mot de passe incorrect.';
+  if(m.includes('email not confirmed'))       return 'Ton email n\'est pas encore confirmé. Vérifie ta boîte mail.';
+  if(m.includes('user already registered') ||
+     m.includes('already been registered'))   return 'Un compte existe déjà avec cet email.';
+  if(m.includes('password should be at least'))return 'Mot de passe trop court (8 caractères minimum).';
+  if(m.includes('unable to validate email') ||
+     m.includes('invalid email'))              return 'Cet email n\'est pas valide.';
+  if(m.includes('duplicate key') && m.includes('pseudo')) return 'Ce nom d\'entreprise est déjà pris.';
+  if(m.includes('rate limit') || m.includes('too many'))  return 'Trop de tentatives. Réessaie dans quelques minutes.';
+  if(m.includes('failed to fetch') || m.includes('network')) return 'Connexion impossible. Vérifie ta connexion internet.';
+  return 'Une erreur est survenue. Réessaie.';
+}
+
+/* ── Validations ── */
+function mailOk(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()); }
+function pwScore(v){
+  var s = 0;
+  if(v.length >= 8)  s++;
+  if(v.length >= 12) s++;
+  if(/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
+  if(/\d/.test(v))   s++;
+  if(/[^a-zA-Z0-9]/.test(v)) s++;
+  return Math.min(s, 4);
+}
+
+/* ── Champ pseudo : vérif de disponibilité en direct ── */
+var pseudoT = null, pseudoOk = false;
+$('inPseudo').addEventListener('input', function(){
+  var v = this.value.trim();
+  var h = $('hPseudo');
+  pseudoOk = false;
+  this.classList.remove('good','bad');
+  clearTimeout(pseudoT);
+
+  if(v.length === 0){ h.className='hint'; h.textContent='3 à 16 caractères. C\'est ton nom au classement.'; return; }
+  if(v.length < 3){  h.className='hint err'; h.textContent='Trop court (3 caractères minimum).'; this.classList.add('bad'); return; }
+
+  h.className='hint'; h.textContent='Vérification…';
+  var self = this;
+  pseudoT = setTimeout(async function(){
+    if(!sb) return;
+    try{
+      const { data, error } = await sb.rpc('pseudo_libre', { p: v });
+      if(error) throw error;
+      if(data === true){
+        pseudoOk = true;
+        h.className='hint ok'; h.textContent='✓ Ce nom est libre.';
+        self.classList.add('good');
+      } else {
+        h.className='hint err'; h.textContent='Ce nom est déjà pris.';
+        self.classList.add('bad');
+      }
+    }catch(e){
+      h.className='hint'; h.textContent='';
+    }
+  }, 450);
 });
 
-// ── Tabs ──
-function swapTab(t){
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.form-section').forEach(s=>s.classList.remove('active'));
-  if(t==='login'){
-    document.getElementById('tabLogin').classList.add('active');
-    document.getElementById('secLogin').classList.add('active');
-  } else {
-    document.getElementById('tabSignup').classList.add('active');
-    document.getElementById('secSignup').classList.add('active');
-  }
-}
+/* ── Champ email (inscription) ── */
+$('inMail').addEventListener('input', function(){
+  var v = this.value.trim(), h = $('hMail');
+  this.classList.remove('good','bad');
+  if(!v){ h.className='hint'; h.textContent=''; return; }
+  if(mailOk(v)){ h.className='hint'; h.textContent=''; this.classList.add('good'); }
+  else { h.className='hint err'; h.textContent='Email invalide.'; }
+});
 
-// ── Popup ──
-function showPopup(msg){
-  document.getElementById('popupMsg').textContent=msg;
-  document.getElementById('popup').classList.add('show');
-  document.getElementById('overlay').classList.add('show');
-}
-function closePopup(){
-  document.getElementById('popup').classList.remove('show');
-  document.getElementById('overlay').classList.remove('show');
-}
+/* ── Champ mot de passe (jauge) ── */
+$('inPw').addEventListener('input', function(){
+  var v = this.value, s = pwScore(v), f = $('pwFill'), h = $('hPw');
+  var W = ['0%','25%','50%','75%','100%'][s];
+  var C = ['#eae5da','#c0392b','#e67e22','#eab308','#16a34a'][s];
+  var T = ['8 caractères minimum.','Trop faible.','Moyen.','Bien.','Excellent.'][s];
+  f.style.width = W; f.style.background = C;
+  h.className = 'hint' + (v.length && v.length < 8 ? ' err' : (s>=3 ? ' ok' : ''));
+  h.textContent = v.length && v.length < 8 ? 'Trop court (8 caractères minimum).' : T;
+});
 
-// ── Validation pseudo ──
-function validatePseudo(pseudo){
-  if(pseudo.length<3) return 'Pseudo trop court (min 3 caractères)';
-  if(pseudo.length>20) return 'Pseudo trop long (max 20 caractères)';
-  if(!/^[a-zA-Z0-9._-]+$/.test(pseudo)) return 'Pseudo invalide (lettres, chiffres, . - _ uniquement)';
-  return null;
-}
+/* ══════════ INSCRIPTION ══════════ */
+async function inscription(){
+  hideMsg();
+  var pseudo = $('inPseudo').value.trim();
+  var mail   = $('inMail').value.trim();
+  var pw     = $('inPw').value;
 
-// ── Connexion ──
-async function handleLogin(e){
-  e.preventDefault();
-  const user=document.getElementById('loginUser').value.trim();
-  const pass=document.getElementById('loginPass').value;
-  if(!user||!pass){showPopup('Remplis tous les champs !');return;}
+  if(pseudo.length < 3)  return showMsg('Choisis un nom d\'entreprise (3 caractères minimum).');
+  if(!pseudoOk)          return showMsg('Ce nom d\'entreprise n\'est pas disponible.');
+  if(!mailOk(mail))      return showMsg('Ton email n\'est pas valide.');
+  if(pw.length < 8)      return showMsg('Ton mot de passe doit faire 8 caractères minimum.');
+  if(!sb)                return showMsg('Connexion au serveur impossible.');
+  if(!navigator.onLine)  return showMsg('Tu es hors-ligne.');
 
-  const btn=document.getElementById('loginBtn');
-  btn.textContent='CONNEXION...';btn.disabled=true;
-
+  loading('bIn', true);
   try{
-    const email=user.toLowerCase()+'@battledock.local';
-    const{error}=await sb.auth.signInWithPassword({email,password:pass});
-    if(error){
-      showPopup('Pseudo ou mot de passe incorrect !');
-      btn.textContent='SE CONNECTER';btn.disabled=false;
-      return;
-    }
-    location.href='game.html';
-  }catch(err){
-    showPopup('Erreur : '+err.message);
-    btn.textContent='SE CONNECTER';btn.disabled=false;
-  }
-}
-
-// ── Inscription ──
-async function handleSignup(e){
-  e.preventDefault();
-  const user=document.getElementById('signupUser').value.trim();
-  const pass=document.getElementById('signupPass').value;
-
-  if(!user||!pass){showPopup('Remplis tous les champs !');return;}
-  const pseudoErr=validatePseudo(user);
-  if(pseudoErr){showPopup(pseudoErr);return;}
-  if(pass.length<6){showPopup('Minimum 6 caractères pour le mot de passe !');return;}
-
-  const btn=document.getElementById('signupBtn');
-  btn.textContent='INSCRIPTION...';btn.disabled=true;
-
-  try{
-    // Vérifier si pseudo pris (case-insensitive)
-    const userLower=user.toLowerCase();
-    const{data:allProfiles}=await sb.from('profiles').select('username');
-    const taken=allProfiles&&allProfiles.some(p=>p.username.toLowerCase()===userLower);
-    if(taken){
-      showPopup('Ce pseudo est déjà pris !');
-      btn.textContent="S'INSCRIRE";btn.disabled=false;
-      return;
-    }
-
-    // Créer le compte auth
-    const email=userLower+'@battledock.local';
-    const{data:authData,error:authErr}=await sb.auth.signUp({
-      email,password:pass,
-      options:{data:{username:user}}
+    const { data, error } = await sb.auth.signUp({
+      email: mail,
+      password: pw,
+      options: { data: { pseudo: pseudo } }   // → récupéré par le trigger SQL
     });
-    if(authErr) throw authErr;
-    if(!authData||!authData.user){
-      throw new Error('Inscription échouée — réessaye.');
+    if(error) throw error;
+
+    // Si la confirmation par email est activée, il n'y a pas encore de session
+    if(data.session){
+      vib([30,20,60]);
+      showMsg('✅ Bienvenue ! Ton entreprise est créée.', 'ok');
+      setTimeout(function(){ location.href = 'jeu.html'; }, 900);
+    } else {
+      vib(30);
+      showMsg('📬 Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.', 'info');
+      setTimeout(function(){ tab('co'); $('coMail').value = mail; }, 2500);
     }
+  }catch(e){
+    console.warn(e);
+    showMsg(humanErr(e));
+    vib([60,40,60]);
+  }
+  loading('bIn', false, 'CRÉER MON ENTREPRISE');
+}
 
-    const uid=authData.user.id;
-    await new Promise(r=>setTimeout(r,500));
+/* ══════════ CONNEXION ══════════ */
+async function connexion(){
+  hideMsg();
+  var mail = $('coMail').value.trim();
+  var pw   = $('coPw').value;
 
-    // Créer profiles
-    const{error:profErr}=await sb.from('profiles').upsert({
-      user_id:uid,
-      username:user,
-      avatar_url:'avatar-default.png',
-      background_color:'bleu_mer',
-      skin_container:'red',
-      unlocked_covers:['rouge_navy','bleu_mer'],
-      trophies:0
-    },{onConflict:'user_id'});
-    if(profErr) throw profErr;
+  if(!mailOk(mail))     return showMsg('Ton email n\'est pas valide.');
+  if(!pw)               return showMsg('Entre ton mot de passe.');
+  if(!sb)               return showMsg('Connexion au serveur impossible.');
+  if(!navigator.onLine) return showMsg('Tu es hors-ligne.');
 
-    // Créer game_stats
-    const{error:statsErr}=await sb.from('game_stats').upsert({
-      user_id:uid,
-      money:1000,
-      level:1,
-      xp:0,
-      diamonds:20,
-      grade:'Docker Occasionnel',
-      last_level_rewarded:1,
-      last_levelup_shown:1,
-      streak_days:0,
-      trophies:0
-    },{onConflict:'user_id'});
-    if(statsErr) throw statsErr;
+  loading('bCo', true);
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email: mail, password: pw });
+    if(error) throw error;
+    vib([30,20,60]);
+    location.href = 'jeu.html';
+  }catch(e){
+    console.warn(e);
+    showMsg(humanErr(e));
+    vib([60,40,60]);
+  }
+  loading('bCo', false, 'SE CONNECTER');
+}
 
-    btn.textContent='✅ BIENVENUE !';
-    setTimeout(()=>{location.href='game.html';},800);
+/* ══════════ MOT DE PASSE OUBLIÉ ══════════ */
+async function oubli(){
+  hideMsg();
+  var mail = $('coMail').value.trim();
+  if(!mailOk(mail)) return showMsg('Entre d\'abord ton email ci-dessus, puis reclique.');
+  if(!sb)           return showMsg('Connexion au serveur impossible.');
 
-  }catch(err){
-    showPopup('Erreur : '+err.message);
-    btn.textContent="S'INSCRIRE";btn.disabled=false;
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(mail, {
+      redirectTo: location.origin + '/nouveau-mdp.html'
+    });
+    if(error) throw error;
+    showMsg('📬 Si un compte existe avec cet email, tu vas recevoir un lien de réinitialisation.', 'info');
+    vib(30);
+  }catch(e){
+    console.warn(e);
+    showMsg(humanErr(e));
   }
 }
 
-// PWA
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
-}
+/* ══════════ DÉJÀ CONNECTÉ ? ══════════ */
+(async function(){
+  if(!sb) return;
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session) location.href = 'jeu.html';
+  }catch(e){}
+})();
+
+/* Entrée = valider */
+$('coPw').addEventListener('keydown', function(e){ if(e.key==='Enter') connexion(); });
+$('inPw').addEventListener('keydown', function(e){ if(e.key==='Enter') inscription(); });
 </script>
 </body>
 </html>
