@@ -3,366 +3,751 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#f4f1ea">
-<title>Battle Dock</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#07141c">
+<title>Battle Dock — Créer mon entreprise</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600;9..144,900&family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&family=Bangers&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{min-height:100%}
-body{font-family:'Inter',sans-serif;background:#f4f1ea;color:#16140f;min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:calc(24px + env(safe-area-inset-top,0px)) 20px calc(24px + env(safe-area-inset-bottom,0px));
-  position:relative}
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;opacity:.5;
-  background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:14px 14px}
+html{-webkit-text-size-adjust:100%}
+body{font-family:'Outfit',sans-serif;background:#07141c;color:#f5ede0;
+  min-height:100vh;min-height:100dvh;position:relative;overflow-x:hidden}
 
-.wrap{position:relative;z-index:2;width:100%;max-width:400px;
-  animation:rise .7s cubic-bezier(.2,.8,.3,1)}
-@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+/* ══ LE DÉCOR ══ */
+.bg{position:fixed;inset:0;z-index:0;animation:zoom 30s ease-in-out infinite alternate}
+@keyframes zoom{0%{transform:scale(1)}100%{transform:scale(1.1) translate(-2%,-2%)}}
+.bg svg{width:100%;height:100%;display:block}
+.veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(7,20,28,.72) 0%, rgba(7,20,28,.5) 22%,
+    rgba(7,20,28,.88) 55%, #07141c 88%)}
+.grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.06;
+  background-image:radial-gradient(circle,#fff 1px,transparent 1px);
+  background-size:3px 3px;mix-blend-mode:overlay}
 
-/* ── LOGO ── */
-.brand{text-align:center;margin-bottom:26px}
-.logo{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;background:#16140f;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 10px 30px rgba(22,20,15,.22)}
-.logo svg{width:30px;height:30px}
-.name{font-family:'Playfair Display',serif;font-weight:900;font-size:34px;letter-spacing:-1px;line-height:1}
-.name em{font-style:italic;color:#c0392b}
-.tag{font-size:9px;font-weight:900;letter-spacing:3px;color:#a09888;margin-top:8px}
+.w{position:relative;z-index:2;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:calc(28px + env(safe-area-inset-top,0px)) 26px calc(30px + env(safe-area-inset-bottom,0px));
+  max-width:460px;margin:0 auto}
 
-/* ── ONGLETS ── */
-.tabs{display:flex;background:#eae5da;border-radius:12px;padding:3px;margin-bottom:20px}
-.tab{flex:1;border:none;background:transparent;border-radius:9px;padding:11px;cursor:pointer;
-  font-family:Inter;font-size:11.5px;font-weight:800;letter-spacing:.8px;color:#8a8278;transition:all .25s}
-.tab.on{background:#fff;color:#16140f;box-shadow:0 2px 8px rgba(22,20,15,.08)}
+/* ══ ÉTAPES ══ */
+.step{display:none;animation:in .5s cubic-bezier(.16,.84,.32,1)}
+.step.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
 
-/* ── CARTE ── */
-.card{background:#fff;border-radius:20px;padding:24px 22px;
-  box-shadow:0 4px 28px rgba(22,20,15,.08),0 1px 3px rgba(22,20,15,.04)}
-.pane{display:none}
-.pane.on{display:block;animation:fade .35s}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* progression */
+.dots{display:flex;gap:6px;justify-content:center;margin-bottom:30px}
+.dots i{width:6px;height:6px;border-radius:50%;background:rgba(245,237,224,.18);
+  font-style:normal;transition:all .35s cubic-bezier(.16,.84,.32,1)}
+.dots i.on{background:#e07a5f;width:22px;border-radius:3px}
+.dots i.done{background:rgba(224,122,95,.5)}
 
-/* ── CHAMPS ── */
-.fld{margin-bottom:15px}
-.lbl{display:block;font-size:9.5px;font-weight:900;letter-spacing:1.6px;color:#a09888;margin-bottom:7px}
-.inp{width:100%;background:#faf8f3;border:1.5px solid #e8e2d6;border-radius:12px;padding:13px 14px;
-  font-family:Inter;font-size:15px;font-weight:600;color:#16140f;outline:none;transition:border-color .2s,box-shadow .2s}
-.inp:focus{border-color:#16140f;box-shadow:0 0 0 3px rgba(22,20,15,.05)}
-.inp::placeholder{color:#c4bdb0;font-weight:500}
-.inp.bad{border-color:#c0392b;box-shadow:0 0 0 3px rgba(192,57,43,.06)}
-.inp.good{border-color:#16a34a}
-.hint{font-size:10.5px;color:#a09888;margin-top:6px;line-height:1.4;min-height:14px}
-.hint.err{color:#c0392b;font-weight:600}
-.hint.ok{color:#16a34a;font-weight:600}
+/* entêtes */
+.k{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;letter-spacing:2.6px;
+  color:rgba(242,204,143,.72);margin-bottom:12px;text-align:center}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:34px;line-height:1.05;
+  letter-spacing:-1.2px;text-align:center;margin-bottom:10px}
+h1 em{font-style:italic;font-weight:400;color:#e07a5f}
+.sub{font-size:14px;line-height:1.55;font-weight:300;color:rgba(245,237,224,.55);
+  text-align:center;margin-bottom:28px}
 
-/* jauge force du mot de passe */
-.pwbar{height:3px;background:#eae5da;border-radius:2px;margin-top:7px;overflow:hidden}
-.pwfill{height:100%;width:0;border-radius:2px;transition:width .3s,background .3s}
+/* champs */
+.f{margin-bottom:13px}
+.lab{font-size:10px;font-weight:700;letter-spacing:1.4px;
+  color:rgba(245,237,224,.4);margin-bottom:7px;display:flex;justify-content:space-between}
+.in{width:100%;background:rgba(245,237,224,.07);border:1.5px solid rgba(245,237,224,.14);
+  border-radius:14px;padding:16px;font-family:'Outfit',sans-serif;font-size:16px;
+  font-weight:500;color:#f5ede0;outline:none;transition:all .25s}
+.in:focus{border-color:#e07a5f;background:rgba(245,237,224,.1)}
+.in::placeholder{color:rgba(245,237,224,.28)}
+.in.err{border-color:#c85a3f}
+.in.ok{border-color:#3d8168}
 
-/* ── BOUTONS ── */
-.btn{width:100%;border:none;border-radius:12px;padding:15px;font-family:Inter;
-  font-size:12px;font-weight:900;letter-spacing:1.4px;cursor:pointer;transition:transform .15s,opacity .2s}
-.btn:active{transform:scale(.97)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-p{background:#16140f;color:#fff;box-shadow:0 8px 22px rgba(22,20,15,.2);margin-top:4px}
-.btn-l{background:transparent;color:#8a8278;font-size:11px;font-weight:700;letter-spacing:.4px;
-  padding:12px;margin-top:6px;text-decoration:underline;text-underline-offset:3px}
+/* le nom + dé */
+.nom-r{display:flex;gap:9px}
+.nom-r .in{flex:1;min-width:0}
+.de{flex:0 0 54px;background:linear-gradient(180deg,#ffd95e,#e8a020);
+  border:2px solid #a06810;border-radius:14px;font-size:22px;cursor:pointer;
+  box-shadow:0 4px 0 #7a4c08;transition:transform .1s, box-shadow .1s;
+  display:flex;align-items:center;justify-content:center}
+.de:active{transform:translateY(3px);box-shadow:0 1px 0 #7a4c08}
+.de.spin{animation:spin .5s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.hint{font-size:11.5px;font-weight:500;color:rgba(245,237,224,.35);margin-top:8px;
+  display:flex;align-items:center;gap:6px;min-height:17px}
+.hint.ok{color:#81b29a}
+.hint.err{color:#e88a70}
 
-/* ── MESSAGE ── */
-.msg{border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.5;margin-bottom:16px;
-  display:none;font-weight:500}
-.msg.on{display:block;animation:fade .3s}
-.msg.err{background:#fdf0ef;border:1px solid #f2ccc8;color:#c0392b}
-.msg.ok{background:#eefaf1;border:1px solid #c3ebd0;color:#1a7d3f}
-.msg.info{background:#f0f4fd;border:1px solid #cdd9f5;color:#2c5aa8}
+/* jauge mot de passe */
+.jauge{height:3px;background:rgba(245,237,224,.1);border-radius:2px;margin-top:8px;overflow:hidden}
+.jauge-f{height:100%;width:0;border-radius:2px;transition:width .3s, background .3s}
 
-/* ── LOADER ── */
-.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);
-  border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:6px}
+/* ══ LES AVATARS ══ */
+.av-g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px}
+.av-i{background:rgba(245,237,224,.06);border:2px solid rgba(245,237,224,.1);
+  border-radius:16px;padding:7px;cursor:pointer;transition:all .18s cubic-bezier(.2,.9,.3,1.3)}
+.av-i:active{transform:scale(.93)}
+.av-i.on{border-color:#e07a5f;background:rgba(224,122,95,.14);
+  box-shadow:0 0 22px rgba(224,122,95,.35)}
+.av-i svg{width:100%;display:block;border-radius:50%}
+.av-n{text-align:center;font-size:12px;font-weight:600;color:rgba(245,237,224,.45);
+  margin-top:14px;min-height:18px}
+.av-n b{color:#f5ede0;font-weight:700}
+
+/* ══ LE RÉCAP (bienvenue) ══ */
+.bv{text-align:center}
+.bv-av{width:96px;height:96px;margin:0 auto 20px;border-radius:50%;overflow:hidden;
+  background:#e8dcc8;border:3px solid rgba(242,204,143,.5);
+  box-shadow:0 12px 40px rgba(0,0,0,.5);
+  animation:pop .7s cubic-bezier(.2,.9,.3,1.5)}
+@keyframes pop{0%{transform:scale(0) rotate(-18deg);opacity:0}
+  60%{transform:scale(1.1) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0)}}
+.bv-av svg{width:100%;height:100%;display:block}
+.bv-n{font-family:'Fraunces',serif;font-weight:900;font-size:26px;letter-spacing:-.8px;
+  margin-bottom:26px}
+.bv-t{font-family:'Fraunces',serif;font-weight:300;font-size:26px;line-height:1.35;
+  letter-spacing:-.6px;margin-bottom:30px;color:rgba(245,237,224,.9)}
+.bv-t em{font-style:italic;color:#e07a5f}
+.bv-t b{font-weight:900}
+.bv-n2{display:flex;gap:26px;justify-content:center;margin-bottom:34px}
+.bv-nv{font-family:'Space Mono',monospace;font-size:19px;font-weight:700;color:#f5ede0}
+.bv-nl{font-size:8px;font-weight:700;letter-spacing:1.5px;
+  color:rgba(245,237,224,.38);margin-top:5px}
+
+/* ══ BOUTONS ══ */
+.b{width:100%;background:#f5ede0;color:#0f3a4d;border:none;border-radius:100px;
+  padding:18px;font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;
+  letter-spacing:1.7px;cursor:pointer;box-shadow:0 14px 40px rgba(0,0,0,.45);
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.3), opacity .25s;
+  position:relative;overflow:hidden}
+.b:active{transform:scale(.96)}
+.b:disabled{opacity:.35;cursor:not-allowed}
+.b::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:translateX(-100%)}
+.b:not(:disabled)::after{animation:sweep 4s ease-in-out 2s infinite}
+@keyframes sweep{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
+.b2{width:100%;margin-top:12px;background:none;border:none;
+  color:rgba(245,237,224,.4);font-family:'Outfit',sans-serif;font-size:12.5px;
+  font-weight:500;cursor:pointer}
+.b2 u{color:rgba(242,204,143,.85);text-decoration:none;
+  border-bottom:1px solid rgba(242,204,143,.3);padding-bottom:1px}
+.back{background:none;border:none;color:rgba(245,237,224,.35);font-size:12.5px;
+  font-weight:500;cursor:pointer;margin-top:14px;width:100%}
+
+/* message d'erreur */
+.msg{background:rgba(200,90,63,.16);border:1px solid rgba(200,90,63,.35);
+  border-radius:12px;padding:13px 15px;margin-bottom:16px;
+  font-size:13px;line-height:1.45;color:#f0b4a0;display:none}
+.msg.on{display:block;animation:in .3s}
+.msg.ok{background:rgba(61,129,104,.16);border-color:rgba(129,178,154,.4);color:#a8d4bc}
+
+/* chargement */
+.load{display:inline-block;width:14px;height:14px;border:2px solid rgba(15,58,77,.25);
+  border-top-color:#0f3a4d;border-radius:50%;animation:sp .6s linear infinite;
+  vertical-align:-2px;margin-right:7px}
 @keyframes sp{to{transform:rotate(360deg)}}
-
-.foot{text-align:center;margin-top:20px;font-size:9px;letter-spacing:2px;color:#c4bdb0;font-weight:700}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="brand">
-    <div class="logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#ffcf3f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="4" r="2"/><line x1="12" y1="6" x2="12" y2="22"/>
-        <line x1="7" y1="10" x2="17" y2="10"/><path d="M4 14a8 8 0 0 0 16 0"/>
-      </svg>
-    </div>
-    <div class="name">Battle <em>Dock</em></div>
-    <div class="tag">MANUTENTION PORTUAIRE</div>
+<!-- LE DÉCOR -->
+<div class="bg">
+<svg viewBox="0 0 390 844" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a1f2e"/><stop offset="36%" stop-color="#1d4d68"/>
+      <stop offset="60%" stop-color="#4e8fb0"/><stop offset="78%" stop-color="#c88f68"/>
+      <stop offset="100%" stop-color="#e8b888"/>
+    </linearGradient>
+    <linearGradient id="mer" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a7fa0"/><stop offset="100%" stop-color="#0f3040"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="72%" cy="53%">
+      <stop offset="0%" stop-color="#ffe0b0" stop-opacity=".95"/>
+      <stop offset="32%" stop-color="#f0b078" stop-opacity=".4"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+  <rect width="390" height="844" fill="url(#ciel)"/>
+  <ellipse cx="281" cy="447" rx="210" ry="170" fill="url(#halo)"/>
+  <circle cx="281" cy="447" r="35" fill="#ffe8c8" opacity=".9">
+    <animate attributeName="opacity" values=".9;.98;.9" dur="7s" repeatCount="indefinite"/>
+  </circle>
+  <g stroke="#0a1a24" stroke-width="2.2" fill="none" opacity=".55">
+    <path d="M0,0 q6,-6 12,0 q6,-6 12,0">
+      <animateTransform attributeName="transform" type="translate"
+        values="30,270;180,250;390,272" dur="21s" repeatCount="indefinite"/></path>
+  </g>
+  <g fill="#0a1a24" opacity=".88">
+    <rect x="20" y="298" width="9" height="182"/><rect x="-2" y="298" width="62" height="9"/>
+    <rect x="51" y="298" width="9" height="32"/>
+  </g>
+  <g fill="#0a1a24" opacity=".74">
+    <rect x="343" y="266" width="9" height="214"/><rect x="321" y="266" width="62" height="9"/>
+  </g>
+  <rect x="0" y="470" width="390" height="118" fill="url(#mer)"/>
+  <g fill="#ffd9a8" opacity=".24">
+    <ellipse cx="281" cy="486" rx="50" ry="3.2">
+      <animate attributeName="rx" values="44;56;44" dur="5s" repeatCount="indefinite"/></ellipse>
+    <ellipse cx="281" cy="504" rx="38" ry="2.6">
+      <animate attributeName="rx" values="33;44;33" dur="6.2s" repeatCount="indefinite"/></ellipse>
+    <ellipse cx="281" cy="522" rx="26" ry="2.1"/>
+  </g>
+  <g fill="#08151d">
+    <path d="M58,460 L252,460 L233,504 L77,504 Z"/>
+    <rect x="93" y="424" width="46" height="36"/>
+    <rect x="102" y="434" width="12" height="11" fill="#ffd9a8" opacity=".38"/>
+    <rect x="160" y="432" width="30" height="28"/><rect x="194" y="432" width="30" height="28"/>
+    <rect x="177" y="404" width="30" height="28"/><rect x="136" y="396" width="3" height="30"/>
+  </g>
+  <rect x="0" y="580" width="390" height="264" fill="#0a1a24"/>
+  <g fill="#060f16">
+    <rect x="118" y="600" width="154" height="84"/>
+    <path d="M110,600 L280,600 L257,568 L133,568 Z"/>
+    <rect x="176" y="632" width="40" height="52" fill="#040a0f"/>
+  </g>
+  <g fill="#04090d">
+    <rect x="300" y="626" width="13" height="28" rx="3"/><circle cx="306.5" cy="618" r="8.5"/>
+    <animateTransform attributeName="transform" type="translate"
+      values="0,0;3,0;0,0;-3,0;0,0" dur="6s" repeatCount="indefinite"/>
+  </g>
+  <g fill="#04090d">
+    <rect x="332" y="626" width="13" height="28" rx="3"/><circle cx="338.5" cy="618" r="8.5"/>
+    <animateTransform attributeName="transform" type="translate"
+      values="0,0;-3,0;0,0;3,0;0,0" dur="7.4s" repeatCount="indefinite"/>
+  </g>
+</svg>
+</div>
+<div class="veil"></div>
+<div class="grain"></div>
+
+<div class="w">
+
+  <div class="dots" id="dots">
+    <i class="on"></i><i></i><i></i>
   </div>
 
-  <div class="tabs">
-    <button class="tab on" id="tCo" onclick="tab('co')">CONNEXION</button>
-    <button class="tab" id="tIn" onclick="tab('in')">INSCRIPTION</button>
-  </div>
+  <div class="msg" id="msg"></div>
 
-  <div class="card">
-    <div class="msg" id="msg"></div>
+  <!-- ═══ ÉTAPE 1 : COMPTE ═══ -->
+  <div class="step on" id="s1">
+    <div class="k">PORT DE MARSEILLE</div>
+    <h1>Crée ton<br><em>entreprise.</em></h1>
+    <div class="sub">Gratuit. Aucune carte bancaire.</div>
 
-    <!-- ══ CONNEXION ══ -->
-    <div class="pane on" id="pCo">
-      <div class="fld">
-        <label class="lbl">EMAIL</label>
-        <input class="inp" id="coMail" type="email" inputmode="email" autocomplete="email" placeholder="toi@exemple.fr">
-      </div>
-      <div class="fld">
-        <label class="lbl">MOT DE PASSE</label>
-        <input class="inp" id="coPw" type="password" autocomplete="current-password" placeholder="••••••••">
-      </div>
-      <button class="btn btn-p" id="bCo" onclick="connexion()">SE CONNECTER</button>
-      <button class="btn btn-l" onclick="oubli()">Mot de passe oublié ?</button>
+    <div class="f">
+      <div class="lab">EMAIL</div>
+      <input class="in" id="email" type="email" inputmode="email"
+        autocomplete="email" placeholder="toi@exemple.fr">
     </div>
 
-    <!-- ══ INSCRIPTION ══ -->
-    <div class="pane" id="pIn">
-      <div class="fld">
-        <label class="lbl">NOM DE TON ENTREPRISE</label>
-        <input class="inp" id="inPseudo" type="text" maxlength="16" autocomplete="username" placeholder="Ex : Transports Marius">
-        <div class="hint" id="hPseudo">3 à 16 caractères. C'est ton nom au classement.</div>
+    <div class="f">
+      <div class="lab">MOT DE PASSE<span id="jaugeT"></span></div>
+      <input class="in" id="mdp" type="password" autocomplete="new-password"
+        placeholder="6 caractères minimum">
+      <div class="jauge"><div class="jauge-f" id="jaugeF"></div></div>
+    </div>
+
+    <button class="b" id="b1" onclick="etape1()">CONTINUER</button>
+    <button class="b2" onclick="allerConnexion()">Déjà un compte ? <u>Se connecter</u></button>
+  </div>
+
+  <!-- ═══ ÉTAPE 2 : NOM + AVATAR ═══ -->
+  <div class="step" id="s2">
+    <div class="k">TON IDENTITÉ</div>
+    <h1>Qui es-tu sur<br><em>le quai ?</em></h1>
+    <div class="sub">Le nom de ton entreprise, et ta tête.</div>
+
+    <div class="f">
+      <div class="lab">NOM DE L'ENTREPRISE</div>
+      <div class="nom-r">
+        <input class="in" id="nom" maxlength="16" placeholder="Transports Marius"
+          autocomplete="off" autocapitalize="words">
+        <button class="de" id="de" onclick="tirerNom()" title="Trouve-moi un nom">🎲</button>
       </div>
-      <div class="fld">
-        <label class="lbl">EMAIL</label>
-        <input class="inp" id="inMail" type="email" inputmode="email" autocomplete="email" placeholder="toi@exemple.fr">
-        <div class="hint" id="hMail"></div>
+      <div class="hint" id="hintNom">3 à 16 caractères</div>
+    </div>
+
+    <div class="f">
+      <div class="lab">TA TÊTE</div>
+      <div class="av-g" id="avBox"></div>
+      <div class="av-n" id="avNom"></div>
+    </div>
+
+    <button class="b" id="b2" onclick="etape2()">C'EST PARTI</button>
+    <button class="back" onclick="retour(1)">← Retour</button>
+  </div>
+
+  <!-- ═══ ÉTAPE 3 : BIENVENUE ═══ -->
+  <div class="step" id="s3">
+    <div class="bv">
+      <div class="bv-av" id="bvAv"></div>
+      <div class="bv-n" id="bvNom">—</div>
+
+      <div class="bv-t">
+        Un hangar.<br>
+        Deux hommes.<br>
+        <em>Cinq cents euros.</em><br><br>
+        <b>Le reste, tu le construis.</b>
       </div>
-      <div class="fld">
-        <label class="lbl">MOT DE PASSE</label>
-        <input class="inp" id="inPw" type="password" autocomplete="new-password" placeholder="8 caractères minimum">
-        <div class="pwbar"><div class="pwfill" id="pwFill"></div></div>
-        <div class="hint" id="hPw">8 caractères minimum.</div>
+
+      <div class="bv-n2">
+        <div><div class="bv-nv">1</div><div class="bv-nl">HANGAR</div></div>
+        <div><div class="bv-nv">2</div><div class="bv-nl">DOCKERS</div></div>
+        <div><div class="bv-nv">500 €</div><div class="bv-nl">EN CAISSE</div></div>
       </div>
-      <button class="btn btn-p" id="bIn" onclick="inscription()">CRÉER MON ENTREPRISE</button>
+
+      <button class="b" id="b3" onclick="entrer()">ENTRER SUR LE QUAI</button>
     </div>
   </div>
 
-  <div class="foot">⚓ PORT DE MARSEILLE</div>
+  <!-- ═══ CONNEXION ═══ -->
+  <div class="step" id="sc">
+    <div class="k">PORT DE MARSEILLE</div>
+    <h1>Content de te<br><em>revoir.</em></h1>
+    <div class="sub">Le quai t'attend.</div>
+
+    <div class="f">
+      <div class="lab">EMAIL</div>
+      <input class="in" id="cEmail" type="email" inputmode="email"
+        autocomplete="email" placeholder="toi@exemple.fr">
+    </div>
+
+    <div class="f">
+      <div class="lab">MOT DE PASSE</div>
+      <input class="in" id="cMdp" type="password" autocomplete="current-password"
+        placeholder="••••••••">
+    </div>
+
+    <button class="b" id="bc" onclick="connexion()">SE CONNECTER</button>
+    <button class="b2" onclick="allerInscription()">Pas de compte ? <u>Créer mon entreprise</u></button>
+    <button class="back" onclick="motDePasseOublie()">Mot de passe oublié ?</button>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ═══════════════════════════════════════════════════
-   ⚠️  À REMPLACER PAR TES IDENTIFIANTS SUPABASE
-   Supabase → ton projet → Settings → API
-   ═══════════════════════════════════════════════════ */
-const SB_URL = 'https://xvphypcpikodtrqctqkd.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cGh5cGNwaWtvZHRycWN0cWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3OTM5ODgsImV4cCI6MjA5OTM2OTk4OH0.Q7G2Tm05R4Ei08s7TudT-C5xychQImoYK-RLEdjoYGA';
+const SB_URL='https://xvphypcpikodtrqctqkd.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cGh5cGNwaWtvZHRycWN0cWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3OTM5ODgsImV4cCI6MjA5OTM2OTk4OH0.Q7G2Tm05R4Ei08s7TudT-C5xychQImoYK-RLEdjoYGA';
 
 var sb = null;
-try { sb = supabase.createClient(SB_URL, SB_KEY); }
-catch(e){ console.warn('Supabase non initialisé', e); }
+try{ sb = supabase.createClient(SB_URL, SB_KEY); }catch(e){ console.warn(e); }
 
 function $(i){ return document.getElementById(i); }
 function vib(m){ if(navigator.vibrate) navigator.vibrate(m); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
 
-/* ── UI ── */
-function tab(t){
-  var co = (t==='co');
-  $('tCo').classList.toggle('on', co);
-  $('tIn').classList.toggle('on', !co);
-  $('pCo').classList.toggle('on', co);
-  $('pIn').classList.toggle('on', !co);
-  hideMsg();
+var E = { email:'', mdp:'', nom:'', avatar:'a1' };
+var busy = false;
+
+/* ══════════ LES 12 TÊTES ══════════ */
+var AVATARS = {
+  a1:  {skin:'#d8a87c', couleur:'#8a3a2a', chapeau:'casque',    moustache:true,  barbe:false},
+  a2:  {skin:'#e0b48a', couleur:'#3a5a7a', chapeau:'casquette', moustache:false, barbe:false},
+  a3:  {skin:'#a07850', couleur:'#3a4250', chapeau:'casque',    moustache:true,  barbe:true},
+  a4:  {skin:'#c09468', couleur:'#5a7a3a', chapeau:'casquette', moustache:false, barbe:true},
+  a5:  {skin:'#e8bc94', couleur:'#4a3a5a', chapeau:'casque',    moustache:false, barbe:false},
+  a6:  {skin:'#b08050', couleur:'#2a5a4a', chapeau:'bonnet',    moustache:true,  barbe:false},
+  a7:  {skin:'#8a6040', couleur:'#6a4a2a', chapeau:'casque',    moustache:true,  barbe:true},
+  a8:  {skin:'#f0cca8', couleur:'#7a2a5a', chapeau:'casquette', moustache:false, barbe:false},
+  a9:  {skin:'#7a5638', couleur:'#2a2a3a', chapeau:'bonnet',    moustache:false, barbe:true},
+  a10: {skin:'#d0a078', couleur:'#4a3a2e', chapeau:'casquette', moustache:true,  barbe:false},
+  a11: {skin:'#c8a078', couleur:'#1a3a5a', chapeau:'casque',    moustache:false, barbe:true},
+  a12: {skin:'#9a7048', couleur:'#5a2a2a', chapeau:'bonnet',    moustache:true,  barbe:true}
+};
+var AV_NOMS = {
+  a1:'Le vieux de la vieille', a2:'Le rapide',       a3:'Le taiseux',
+  a4:'Le costaud',             a5:'Le sérieux',      a6:'Le marin',
+  a7:'Le patriarche',          a8:'Le nouveau',      a9:'L\'ombre',
+  a10:'Le contremaître',       a11:'Le colosse',     a12:'Le patron'
+};
+
+function tete(a){
+  var d = AVATARS[a] || AVATARS.a1;
+  var hat = '';
+  if(d.chapeau === 'casque'){
+    hat = '<path d="M14,30 Q14,11 32,10 Q50,11 50,30 Q50,32 48,34 Q32,21 16,34 Q14,32 14,30 Z" fill="#ffd23f"/>'
+        + '<rect x="10" y="32" width="44" height="5" rx="2.5" fill="#e0951c"/>'
+        + '<rect x="30" y="10" width="4" height="24" fill="#e0951c" opacity=".5"/>';
+  } else if(d.chapeau === 'casquette'){
+    hat = '<path d="M15,31 Q15,13 32,12 Q49,13 49,31 L49,33 Q32,23 15,33 Z" fill="#2a3a4a"/>'
+        + '<path d="M11,33 Q32,23 53,33 L55,38 Q32,28 9,38 Z" fill="#1a2632"/>';
+  } else {
+    hat = '<path d="M15,32 Q15,12 32,11 Q49,12 49,32 Q32,26 15,32 Z" fill="#8a3a2a"/>'
+        + '<rect x="13" y="30" width="38" height="7" rx="3" fill="#6a2a1c"/>';
+  }
+  var m = d.moustache
+    ? '<path d="M22,49 Q32,44 42,49 Q37,55 32,52 Q27,55 22,49 Z" fill="#3a2a1c"/>' : '';
+  var b = d.barbe
+    ? '<path d="M18,44 Q18,60 32,62 Q46,60 46,44 Q46,54 32,56 Q18,54 18,44 Z" fill="#3a2a1c" opacity=".85"/>' : '';
+
+  return '<svg viewBox="0 0 64 64">'
+    + '<circle cx="32" cy="32" r="32" fill="#e8dcc8"/>'
+    + '<path d="M8,64 Q8,46 32,44 Q56,46 56,64 Z" fill="'+d.couleur+'"/>'
+    + '<ellipse cx="32" cy="36" rx="18" ry="19" fill="'+d.skin+'"/>'
+    + '<path d="M14,36 Q14,17 32,17 Q23,25 22,38 Q22,49 32,55 Q14,50 14,36 Z" fill="#000" opacity=".12"/>'
+    + b + hat
+    + '<ellipse cx="24.5" cy="35" rx="3.6" ry="3" fill="#fff"/>'
+    + '<ellipse cx="39.5" cy="35" rx="3.6" ry="3" fill="#fff"/>'
+    + '<circle cx="25" cy="35.5" r="1.8" fill="#2a1e14"/>'
+    + '<circle cx="40" cy="35.5" r="1.8" fill="#2a1e14"/>'
+    + '<path d="M32,38 L28.5,45 Q32,47.5 35.5,45 Z" fill="#000" opacity=".14"/>'
+    + m + '</svg>';
+}
+
+/* ══════════ LE GÉNÉRATEUR DE NOMS ══════════ */
+var G1 = ['Transports','Manutention','Établissements','Comptoir','Négoce','Entrepôts',
+          'Docks','Maison','Société','Compagnie','Consortium','Armement','Cargos',
+          'Frets','Sarl','Les Docks','Chantiers'];
+var G2 = ['Marius','Gégé','Bébert','Riton','Fanny','Titin','Momo','Loulou','Dédé',
+          'César','Pastis','Toinou','Nino','Ange','Jojo','Pipo','Zé','Nénesse'];
+var G3 = ['du Vieux-Port','de la Joliette','du Panier','de Fos','de l\'Estaque',
+          'des Catalans','du Mistral','de la Corniche','de Malmousque','du Frioul',
+          'des Goudes','de Saint-Jean','de la Criée','du Quai 84','de Marseille'];
+
+function tirerNom(){
+  var de = $('de');
+  de.classList.remove('spin'); void de.offsetWidth; de.classList.add('spin');
+  vib(15);
+
+  var r = Math.random();
+  var n;
+  if(r < 0.42){
+    /* Transports Marius */
+    n = pick(G1) + ' ' + pick(G2);
+  } else if(r < 0.72){
+    /* Docks du Vieux-Port */
+    n = pick(G1) + ' ' + pick(G3);
+  } else if(r < 0.9){
+    /* Marius & Fils */
+    n = pick(G2) + ' & Fils';
+  } else {
+    /* Chez Gégé */
+    n = 'Chez ' + pick(G2);
+  }
+
+  /* pas plus de 16 caractères */
+  var essais = 0;
+  while(n.length > 16 && essais < 12){
+    n = (Math.random() < .5)
+      ? pick(G1) + ' ' + pick(G2)
+      : pick(G2) + ' & Fils';
+    essais++;
+  }
+  if(n.length > 16) n = pick(G2) + ' & Fils';
+
+  $('nom').value = n;
+  verifNom();
+}
+function pick(a){ return a[Math.floor(Math.random() * a.length)]; }
+
+/* ══════════ LES AVATARS ══════════ */
+function rendAvatars(){
+  $('avBox').innerHTML = Object.keys(AVATARS).map(function(a){
+    return '<div class="av-i'+(a === E.avatar ? ' on' : '')+'" onclick="choisirAv(\''+a+'\')">'
+      + tete(a) + '</div>';
+  }).join('');
+  $('avNom').innerHTML = '<b>' + esc(AV_NOMS[E.avatar] || '') + '</b>';
+}
+function choisirAv(a){
+  E.avatar = a;
   vib(12);
-}
-function showMsg(txt, type){
-  var m = $('msg');
-  m.textContent = txt;
-  m.className = 'msg on ' + (type||'err');
-}
-function hideMsg(){ $('msg').classList.remove('on'); }
-function loading(btn, on, label){
-  var b = $(btn);
-  b.disabled = on;
-  b.innerHTML = on ? '<span class="spin"></span>PATIENTE…' : label;
+  rendAvatars();
 }
 
-/* ── Traduction des erreurs Supabase en français clair ── */
-function humanErr(e){
-  var m = (e && (e.message || e.error_description) || '').toLowerCase();
-  if(m.includes('invalid login credentials')) return 'Email ou mot de passe incorrect.';
-  if(m.includes('email not confirmed'))       return 'Ton email n\'est pas encore confirmé. Vérifie ta boîte mail.';
-  if(m.includes('user already registered') ||
-     m.includes('already been registered'))   return 'Un compte existe déjà avec cet email.';
-  if(m.includes('password should be at least'))return 'Mot de passe trop court (8 caractères minimum).';
-  if(m.includes('unable to validate email') ||
-     m.includes('invalid email'))              return 'Cet email n\'est pas valide.';
-  if(m.includes('duplicate key') && m.includes('pseudo')) return 'Ce nom d\'entreprise est déjà pris.';
-  if(m.includes('rate limit') || m.includes('too many'))  return 'Trop de tentatives. Réessaie dans quelques minutes.';
-  if(m.includes('failed to fetch') || m.includes('network')) return 'Connexion impossible. Vérifie ta connexion internet.';
+/* ══════════ NAVIGATION ══════════ */
+function montrer(id, n){
+  ['s1','s2','s3','sc'].forEach(function(x){ $(x).classList.toggle('on', x === id); });
+  cacherMsg();
+  /* les points */
+  var d = $('dots');
+  d.style.display = (id === 'sc') ? 'none' : 'flex';
+  if(n){
+    [0,1,2].forEach(function(i){
+      var e = d.children[i];
+      e.className = (i === n-1) ? 'on' : (i < n-1 ? 'done' : '');
+    });
+  }
+  window.scrollTo(0,0);
+}
+function retour(n){
+  if(n === 1) montrer('s1', 1);
+  vib(10);
+}
+function allerConnexion(){ montrer('sc'); }
+function allerInscription(){ montrer('s1', 1); }
+
+/* ══════════ MESSAGES ══════════ */
+function msg(t, ok){
+  var m = $('msg');
+  m.innerHTML = t;
+  m.className = 'msg on' + (ok ? ' ok' : '');
+}
+function cacherMsg(){ $('msg').className = 'msg'; }
+
+function err(e){
+  var m = ((e && e.message) || '').toLowerCase();
+  if(m.indexOf('already registered') >= 0 || m.indexOf('already been registered') >= 0)
+    return 'Cet email a déjà un compte. <u onclick="allerConnexion()" style="cursor:pointer">Se connecter ?</u>';
+  if(m.indexOf('invalid login') >= 0)
+    return 'Email ou mot de passe incorrect.';
+  if(m.indexOf('email not confirmed') >= 0)
+    return 'Confirme ton email avant de te connecter.';
+  if(m.indexOf('password') >= 0 && m.indexOf('6') >= 0)
+    return 'Le mot de passe doit faire 6 caractères minimum.';
+  if(m.indexOf('invalid email') >= 0 || m.indexOf('valid email') >= 0)
+    return 'Cet email n\'est pas valide.';
+  if(m.indexOf('rate limit') >= 0 || m.indexOf('too many') >= 0)
+    return 'Trop de tentatives. Attends une minute.';
+  if(m.indexOf('failed to fetch') >= 0 || m.indexOf('network') >= 0)
+    return 'Pas de connexion. Vérifie ton réseau.';
+  if(m.indexOf('duplicate') >= 0 || m.indexOf('unique') >= 0)
+    return 'Ce nom d\'entreprise est déjà pris.';
   return 'Une erreur est survenue. Réessaie.';
 }
 
-/* ── Validations ── */
-function mailOk(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()); }
-function pwScore(v){
-  var s = 0;
-  if(v.length >= 8)  s++;
-  if(v.length >= 12) s++;
-  if(/[a-z]/.test(v) && /[A-Z]/.test(v)) s++;
-  if(/\d/.test(v))   s++;
-  if(/[^a-zA-Z0-9]/.test(v)) s++;
-  return Math.min(s, 4);
+/* ══════════ ÉTAPE 1 : LE COMPTE ══════════ */
+function etape1(){
+  if(busy) return;
+  var e = $('email').value.trim();
+  var m = $('mdp').value;
+
+  if(!e || e.indexOf('@') < 0 || e.indexOf('.') < 0){
+    msg('Entre un email valide.');
+    $('email').classList.add('err');
+    $('email').focus();
+    return;
+  }
+  if(m.length < 6){
+    msg('Le mot de passe doit faire 6 caractères minimum.');
+    $('mdp').classList.add('err');
+    $('mdp').focus();
+    return;
+  }
+
+  E.email = e;
+  E.mdp = m;
+  cacherMsg();
+  vib(15);
+
+  /* si le nom est vide, on en propose un */
+  if(!$('nom').value.trim()) tirerNom();
+  rendAvatars();
+  montrer('s2', 2);
+  setTimeout(function(){ $('nom').focus(); }, 400);
 }
 
-/* ── Champ pseudo : vérif de disponibilité en direct ── */
-var pseudoT = null, pseudoOk = false;
-$('inPseudo').addEventListener('input', function(){
-  var v = this.value.trim();
-  var h = $('hPseudo');
-  pseudoOk = false;
-  this.classList.remove('good','bad');
-  clearTimeout(pseudoT);
+/* ══════════ ÉTAPE 2 : NOM + AVATAR ══════════ */
+var timerNom = null;
+function verifNom(){
+  var n = $('nom').value.trim();
+  var h = $('hintNom');
+  var i = $('nom');
 
-  if(v.length === 0){ h.className='hint'; h.textContent='3 à 16 caractères. C\'est ton nom au classement.'; return; }
-  if(v.length < 3){  h.className='hint err'; h.textContent='Trop court (3 caractères minimum).'; this.classList.add('bad'); return; }
+  i.classList.remove('ok','err');
 
-  h.className='hint'; h.textContent='Vérification…';
-  var self = this;
-  pseudoT = setTimeout(async function(){
+  if(n.length === 0){ h.className = 'hint'; h.textContent = '3 à 16 caractères'; return; }
+  if(n.length < 3){
+    h.className = 'hint err'; h.textContent = 'Trop court (3 caractères minimum)';
+    i.classList.add('err'); return;
+  }
+
+  h.className = 'hint'; h.textContent = 'Vérification…';
+
+  clearTimeout(timerNom);
+  timerNom = setTimeout(async function(){
     if(!sb) return;
     try{
-      const { data, error } = await sb.rpc('pseudo_libre', { p: v });
+      const {data,error} = await sb.rpc('pseudo_libre', {p_pseudo: n});
       if(error) throw error;
-      if(data === true){
-        pseudoOk = true;
-        h.className='hint ok'; h.textContent='✓ Ce nom est libre.';
-        self.classList.add('good');
+      if(data){
+        h.className = 'hint ok'; h.textContent = '✓ Ce nom est libre';
+        i.classList.add('ok');
       } else {
-        h.className='hint err'; h.textContent='Ce nom est déjà pris.';
-        self.classList.add('bad');
+        h.className = 'hint err'; h.textContent = '✕ Ce nom est déjà pris';
+        i.classList.add('err');
       }
     }catch(e){
-      h.className='hint'; h.textContent='';
+      h.className = 'hint'; h.textContent = '3 à 16 caractères';
     }
   }, 450);
-});
+}
 
-/* ── Champ email (inscription) ── */
-$('inMail').addEventListener('input', function(){
-  var v = this.value.trim(), h = $('hMail');
-  this.classList.remove('good','bad');
-  if(!v){ h.className='hint'; h.textContent=''; return; }
-  if(mailOk(v)){ h.className='hint'; h.textContent=''; this.classList.add('good'); }
-  else { h.className='hint err'; h.textContent='Email invalide.'; }
-});
+async function etape2(){
+  if(busy) return;
+  var n = $('nom').value.trim();
 
-/* ── Champ mot de passe (jauge) ── */
-$('inPw').addEventListener('input', function(){
-  var v = this.value, s = pwScore(v), f = $('pwFill'), h = $('hPw');
-  var W = ['0%','25%','50%','75%','100%'][s];
-  var C = ['#eae5da','#c0392b','#e67e22','#eab308','#16a34a'][s];
-  var T = ['8 caractères minimum.','Trop faible.','Moyen.','Bien.','Excellent.'][s];
-  f.style.width = W; f.style.background = C;
-  h.className = 'hint' + (v.length && v.length < 8 ? ' err' : (s>=3 ? ' ok' : ''));
-  h.textContent = v.length && v.length < 8 ? 'Trop court (8 caractères minimum).' : T;
-});
+  if(n.length < 3){
+    msg('Le nom doit faire 3 caractères minimum.');
+    $('nom').focus();
+    return;
+  }
 
-/* ══════════ INSCRIPTION ══════════ */
-async function inscription(){
-  hideMsg();
-  var pseudo = $('inPseudo').value.trim();
-  var mail   = $('inMail').value.trim();
-  var pw     = $('inPw').value;
+  busy = true;
+  var b = $('b2');
+  var txt = b.textContent;
+  b.disabled = true;
+  b.innerHTML = '<span class="load"></span>CRÉATION…';
+  cacherMsg();
 
-  if(pseudo.length < 3)  return showMsg('Choisis un nom d\'entreprise (3 caractères minimum).');
-  if(!pseudoOk)          return showMsg('Ce nom d\'entreprise n\'est pas disponible.');
-  if(!mailOk(mail))      return showMsg('Ton email n\'est pas valide.');
-  if(pw.length < 8)      return showMsg('Ton mot de passe doit faire 8 caractères minimum.');
-  if(!sb)                return showMsg('Connexion au serveur impossible.');
-  if(!navigator.onLine)  return showMsg('Tu es hors-ligne.');
-
-  loading('bIn', true);
   try{
-    const { data, error } = await sb.auth.signUp({
-      email: mail,
-      password: pw,
-      options: { data: { pseudo: pseudo } }   // → récupéré par le trigger SQL
+    /* le nom est-il libre ? */
+    const lib = await sb.rpc('pseudo_libre', {p_pseudo: n});
+    if(lib.data === false){
+      throw new Error('Ce nom d\'entreprise est déjà pris.');
+    }
+
+    /* créer le compte AVEC le nom et l'avatar */
+    const {data, error} = await sb.auth.signUp({
+      email: E.email,
+      password: E.mdp,
+      options: { data: { pseudo: n, avatar: E.avatar } }
     });
     if(error) throw error;
 
-    // Si la confirmation par email est activée, il n'y a pas encore de session
-    if(data.session){
-      vib([30,20,60]);
-      showMsg('✅ Bienvenue ! Ton entreprise est créée.', 'ok');
-      setTimeout(function(){ location.href = 'jeu.html'; }, 900);
-    } else {
-      vib(30);
-      showMsg('📬 Compte créé ! Vérifie ta boîte mail pour confirmer ton adresse, puis connecte-toi.', 'info');
-      setTimeout(function(){ tab('co'); $('coMail').value = mail; }, 2500);
-    }
+    E.nom = n;
+    vib([30,20,55]);
+
+    /* l'écran de bienvenue */
+    $('bvAv').innerHTML = tete(E.avatar);
+    $('bvNom').textContent = E.nom;
+    montrer('s3', 3);
+
   }catch(e){
     console.warn(e);
-    showMsg(humanErr(e));
-    vib([60,40,60]);
+    var m = (e && e.message) || '';
+    msg(m.indexOf('déjà pris') >= 0 ? m : err(e));
+    vib([50,30,50]);
+    b.disabled = false;
+    b.textContent = txt;
   }
-  loading('bIn', false, 'CRÉER MON ENTREPRISE');
+  busy = false;
+}
+
+/* ══════════ ÉTAPE 3 : ENTRER ══════════ */
+async function entrer(){
+  if(busy) return;
+  busy = true;
+  var b = $('b3');
+  b.disabled = true;
+  b.innerHTML = '<span class="load"></span>ON Y VA…';
+
+  try{
+    /* si la session n'est pas encore ouverte, on se connecte */
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){
+      const {error} = await sb.auth.signInWithPassword({
+        email: E.email, password: E.mdp
+      });
+      if(error) throw error;
+    }
+    /* pas de visite guidée : on entre directement */
+    try{ localStorage.setItem('bd_guide','1'); }catch(e){}
+    vib([25,15,45]);
+    location.href = 'jeu.html';
+
+  }catch(e){
+    console.warn(e);
+    msg(err(e));
+    b.disabled = false;
+    b.textContent = 'ENTRER SUR LE QUAI';
+  }
+  busy = false;
 }
 
 /* ══════════ CONNEXION ══════════ */
 async function connexion(){
-  hideMsg();
-  var mail = $('coMail').value.trim();
-  var pw   = $('coPw').value;
+  if(busy) return;
+  var e = $('cEmail').value.trim();
+  var m = $('cMdp').value;
 
-  if(!mailOk(mail))     return showMsg('Ton email n\'est pas valide.');
-  if(!pw)               return showMsg('Entre ton mot de passe.');
-  if(!sb)               return showMsg('Connexion au serveur impossible.');
-  if(!navigator.onLine) return showMsg('Tu es hors-ligne.');
+  if(!e || !m){ msg('Remplis les deux champs.'); return; }
 
-  loading('bCo', true);
+  busy = true;
+  var b = $('bc');
+  b.disabled = true;
+  b.innerHTML = '<span class="load"></span>CONNEXION…';
+  cacherMsg();
+
   try{
-    const { error } = await sb.auth.signInWithPassword({ email: mail, password: pw });
+    const {error} = await sb.auth.signInWithPassword({ email: e, password: m });
     if(error) throw error;
-    vib([30,20,60]);
+    vib([25,15,45]);
     location.href = 'jeu.html';
-  }catch(e){
-    console.warn(e);
-    showMsg(humanErr(e));
-    vib([60,40,60]);
+  }catch(x){
+    console.warn(x);
+    msg(err(x));
+    vib([50,30,50]);
+    b.disabled = false;
+    b.textContent = 'SE CONNECTER';
   }
-  loading('bCo', false, 'SE CONNECTER');
+  busy = false;
 }
 
 /* ══════════ MOT DE PASSE OUBLIÉ ══════════ */
-async function oubli(){
-  hideMsg();
-  var mail = $('coMail').value.trim();
-  if(!mailOk(mail)) return showMsg('Entre d\'abord ton email ci-dessus, puis reclique.');
-  if(!sb)           return showMsg('Connexion au serveur impossible.');
-
+async function motDePasseOublie(){
+  var e = $('cEmail').value.trim();
+  if(!e || e.indexOf('@') < 0){
+    msg('Entre ton email d\'abord.');
+    $('cEmail').focus();
+    return;
+  }
   try{
-    const { error } = await sb.auth.resetPasswordForEmail(mail, {
-      redirectTo: location.origin + '/nouveau-mdp.html'
+    const {error} = await sb.auth.resetPasswordForEmail(e, {
+      redirectTo: location.origin + '/index.html'
     });
     if(error) throw error;
-    showMsg('📬 Si un compte existe avec cet email, tu vas recevoir un lien de réinitialisation.', 'info');
-    vib(30);
-  }catch(e){
-    console.warn(e);
-    showMsg(humanErr(e));
+    msg('Un lien vient de t\'être envoyé. Regarde tes emails.', true);
+  }catch(x){
+    msg(err(x));
   }
 }
 
-/* ══════════ DÉJÀ CONNECTÉ ? ══════════ */
-(async function(){
-  if(!sb) return;
-  try{
-    const { data:{ session } } = await sb.auth.getSession();
-    if(session) location.href = 'jeu.html';
-  }catch(e){}
-})();
+/* ══════════ JAUGE MOT DE PASSE ══════════ */
+$('mdp').addEventListener('input', function(){
+  var v = this.value;
+  var f = $('jaugeF'), t = $('jaugeT');
+  this.classList.remove('err');
+
+  var s = 0;
+  if(v.length >= 6)  s++;
+  if(v.length >= 10) s++;
+  if(/[A-Z]/.test(v) || /[0-9]/.test(v)) s++;
+  if(/[^A-Za-z0-9]/.test(v)) s++;
+
+  var C = ['#c85a3f','#e0a05f','#e0a05f','#81b29a','#3d8168'];
+  var L = ['','Faible','Correct','Bon','Solide'];
+
+  f.style.width = (v.length ? (s+1) * 20 : 0) + '%';
+  f.style.background = C[s];
+  t.textContent = v.length ? L[s] : '';
+  t.style.color = C[s];
+});
+
+$('email').addEventListener('input', function(){ this.classList.remove('err'); });
+$('nom').addEventListener('input', verifNom);
 
 /* Entrée = valider */
-$('coPw').addEventListener('keydown', function(e){ if(e.key==='Enter') connexion(); });
-$('inPw').addEventListener('keydown', function(e){ if(e.key==='Enter') inscription(); });
+$('email').addEventListener('keydown', function(e){ if(e.key==='Enter') $('mdp').focus(); });
+$('mdp').addEventListener('keydown',   function(e){ if(e.key==='Enter') etape1(); });
+$('nom').addEventListener('keydown',   function(e){ if(e.key==='Enter') etape2(); });
+$('cEmail').addEventListener('keydown',function(e){ if(e.key==='Enter') $('cMdp').focus(); });
+$('cMdp').addEventListener('keydown',  function(e){ if(e.key==='Enter') connexion(); });
+
+/* ══════════ DÉMARRAGE ══════════ */
+(async function(){
+  rendAvatars();
+
+  /* déjà connecté ? on file au jeu */
+  if(sb){
+    try{
+      const {data:{session}} = await sb.auth.getSession();
+      if(session){ location.href = 'jeu.html'; return; }
+    }catch(e){}
+  }
+})();
 </script>
 </body>
 </html>
