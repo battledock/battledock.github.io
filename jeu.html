@@ -520,19 +520,19 @@ function rendNavires(){
       +'<div class="sh-i"><div class="sh-n">'+esc(nv.nom)+' x'+nv.quantite
         +(nv.louche?'<span class="tag-l">LOUCHE</span>':'')+'</div>'
       +'<div class="sh-d">'+(pourri?'&#9888;&#65039; Cargaison perdue':(nv.louche?'Ne pose pas de questions...':''))+'</div></div>'
-      +'<div class="sh-v" style="color:'+(pourri?'#c0392b':'#16140f')+'">'+fmt(val)+' F<small>VALEUR</small></div></div>';
+      +'<div class="sh-v" id="val'+nv.id+'" style="color:'+(pourri?'#c0392b':'#16140f')+'">'+fmt(val)+' F<small>VALEUR</small></div></div>';
     if(!ok){
-      h+='<div class="pg"><div class="pg-f" style="width:'+pc+'%;background:'+nv.couleur+'"></div></div>'
-        +'<div class="pg-t"><span class="l">Dechargement...</span><span class="r">'+mmss(rest)+'</span></div>';
+      h+='<div class="pg"><div class="pg-f" id="pgf'+nv.id+'" style="width:'+pc+'%;background:'+nv.couleur+'"></div></div>'
+        +'<div class="pg-t"><span class="l">Dechargement...</span><span class="r" id="chr'+nv.id+'">'+mmss(rest)+'</span></div>';
     } else if(nv.peri_sec>0){
       var fc=f>.6?'#16a34a':(f>.3?'#f59e0b':'#dc2626');
-      h+='<div class="fr"><div class="fr-b"><div class="fr-f" style="width:'+(f*100)+'%;background:'+fc+'"></div></div>'
-        +'<div class="fr-t" style="color:'+fc+'">'+(f<=0?'PERDU':Math.round(f*100)+'% FRAIS')+'</div></div>';
+      h+='<div class="fr"><div class="fr-b"><div class="fr-f" id="frf'+nv.id+'" style="width:'+(f*100)+'%;background:'+fc+'"></div></div>'
+        +'<div class="fr-t" id="frt'+nv.id+'" style="color:'+fc+'">'+(f<=0?'PERDU':Math.round(f*100)+'% FRAIS')+'</div></div>';
     }
     if(ok){
-      if(pourri) h+='<button class="coll bad" onclick="collecter('+nv.id+',event)">JETER A LA MER</button>';
-      else if(nv.louche) h+='<button class="coll risk" onclick="collecter('+nv.id+',event)">ECOULER - '+fmt(val)+' F <span style="opacity:.6">(risque)</span></button>';
-      else h+='<button class="coll go" onclick="collecter('+nv.id+',event)">COLLECTER '+fmt(val)+' F</button>';
+      if(pourri) h+='<button class="coll bad" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">JETER A LA MER</button>';
+      else if(nv.louche) h+='<button class="coll risk" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">ECOULER - '+fmt(val)+' F <span style="opacity:.6">(risque)</span></button>';
+      else h+='<button class="coll go" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">COLLECTER '+fmt(val)+' F</button>';
     }
     return h+'</div>';
   }).join('');
@@ -601,6 +601,85 @@ async function rendLb(){
 
 
 
+
+/* ═════════ TICK LÉGER ═════════
+   Met à jour les compteurs SANS reconstruire le HTML.
+   (reconstruire toutes les secondes faisait clignoter la page) */
+function tick(){
+  if(!D) return;
+  var nav=(D.navires)||[];
+  var besoinRedraw=false;
+
+  nav.forEach(function(nv){
+    var rest=restant(nv.fini_le), ok=rest<=0;
+    var chr=$('chr'+nv.id);
+
+    if(chr){
+      /* déchargement en cours */
+      if(ok){ besoinRedraw=true; return; }   /* il vient de finir → il faut redessiner */
+      chr.textContent=mmss(rest);
+      var tot=(nv.duree_totale||60)*1000;
+      var pgf=$('pgf'+nv.id);
+      if(pgf) pgf.style.width=Math.min(100,Math.max(0,100*(1-rest/tot)))+'%';
+      return;
+    }
+
+    /* déjà déchargé : le périssable pourrit */
+    if(ok && nv.peri_sec>0){
+      var f=fraicheur(nv), val=valeurLive(nv);
+      var frf=$('frf'+nv.id), frt=$('frt'+nv.id), vl=$('val'+nv.id), bt=$('btn'+nv.id);
+      var fc=f>.6?'#16a34a':(f>.3?'#f59e0b':'#dc2626');
+      if(frf){ frf.style.width=(f*100)+'%'; frf.style.background=fc; }
+      if(frt){ frt.style.color=fc; frt.textContent=(f<=0?'PERDU':Math.round(f*100)+'% FRAIS'); }
+      if(vl){ vl.innerHTML=fmt(val)+' F<small>VALEUR</small>'; vl.style.color=(f<=0?'#c0392b':'#16140f'); }
+      if(bt && !busy){
+        if(f<=0 && bt.className.indexOf('bad')<0){ besoinRedraw=true; }        /* vient de pourrir */
+        else if(f>0) bt.innerHTML='COLLECTER '+fmt(val)+' F';
+      }
+    }
+  });
+
+  /* les chronos des effets en cours */
+  var j=D.joueur;
+  if(j){
+    document.querySelectorAll('.eff-v').forEach(function(e){
+      var t=e.getAttribute('data-t');
+      if(t) e.textContent=mmss(restant(t));
+    });
+  }
+
+  /* les chronos des contrats */
+  ((D.contrats_encours)||[]).forEach(function(k){
+    var e=$('ctc'+k.id);
+    if(e){
+      var rest=restant(k.expire_le);
+      e.textContent=mmss(rest);
+      e.className='r'+(rest<3600000?' urg':'');
+    }
+  });
+
+  /* les chronos des événements */
+  ((D.evenements)||[]).forEach(function(ev){
+    if(!ev.expire_le) return;
+    var e=$('evc'+ev.id);
+    if(e) e.textContent=mmss(restant(ev.expire_le));
+  });
+
+  /* les chronos des navires disputés */
+  if(DSP && $('pgLb').classList.contains('on')){
+    ((DSP.ouverts)||[]).forEach(function(d){
+      var e=$('dspc'+d.id);
+      if(e) e.textContent=mmss(restant(d.expire_le));
+    });
+  }
+
+  /* un navire a fini / une cargaison a pourri → là on redessine (rarement) */
+  if(besoinRedraw && !busy){
+    rendNavires();
+    rendEquipe();
+  }
+}
+
 /* ═════════ NAVIRES DISPUTÉS (le vrai multi) ═════════ */
 var DSP = null;
 
@@ -635,7 +714,7 @@ function rendDisputes(){
                                                       raison='TON PORT EST FERM&Eacute;';
         }
         return '<div class="dsp">'
-          +'<div class="dsp-tag">'+mmss(rest)+'</div>'
+          +'<div class="dsp-tag" id="dspc'+d.id+'">'+mmss(rest)+'</div>'
           +'<div class="dsp-h">'
             +'<div class="dsp-e">'+d.emoji+'</div>'
             +'<div class="dsp-i"><div class="dsp-cl">'+esc(d.client)+'</div>'
@@ -721,12 +800,12 @@ function rendEffets(){
   if(j.mistral_jusqu_a && new Date(j.mistral_jusqu_a).getTime()>Date.now()){
     h+='<div class="eff"><span class="eff-e">&#127788;&#65039;</span>'
       +'<span class="eff-t">Coup de mistral &mdash; le quai est difficile</span>'
-      +'<span class="eff-v">'+mmss(restant(j.mistral_jusqu_a))+'</span></div>';
+      +'<span class="eff-v" data-t="'+j.mistral_jusqu_a+'">'+mmss(restant(j.mistral_jusqu_a))+'</span></div>';
   }
   if(j.greve_jusqu_a && new Date(j.greve_jusqu_a).getTime()>Date.now()){
     h+='<div class="eff red"><span class="eff-e">&#128548;</span>'
       +'<span class="eff-t">Gr&egrave;ve &mdash; tes dockers ont pos&eacute; les gants</span>'
-      +'<span class="eff-v">'+mmss(restant(j.greve_jusqu_a))+'</span></div>';
+      +'<span class="eff-v" data-t="'+j.greve_jusqu_a+'">'+mmss(restant(j.greve_jusqu_a))+'</span></div>';
   }
   $('effBox').innerHTML=h;
 }
@@ -746,7 +825,7 @@ function rendEvents(){
         +'<div class="ev-i"><div class="ev-t">'+esc(e.titre)+'</div>'
         +'<div class="ev-x">'+esc(e.texte)+'</div></div>'
         + (e.expire_le
-            ? '<div class="ev-c">'+mmss(restant(e.expire_le))+'</div>'
+            ? '<div class="ev-c" id="evc'+e.id+'">'+mmss(restant(e.expire_le))+'</div>'
             : '')
       +'</div>';
 
@@ -830,7 +909,7 @@ function rendContrats(){
             +'<div class="ct-st">'+etoiles(k.difficulte)+'</div>'
           +'</div>'
           +'<div class="ct-t"><span class="l">'+k.livre+' / '+k.objectif+' livre'+(k.objectif>1?'s':'')+'</span>'
-            +'<span class="r'+(urg?' urg':'')+'">'+mmss(rest)+'</span></div>'
+            +'<span class="r'+(urg?' urg':'')+'" id="ctc'+k.id+'">'+mmss(rest)+'</span></div>'
           +'<div class="ct-pg"><div class="ct-pg-f" style="width:'+pc+'%;background:'+k.couleur+'"></div></div>'
           +'<div class="ct-money">'
             +'<div class="ct-m"><div class="ct-m-l">RECOMPENSE</div><div class="ct-m-v p">'+fmt(k.recompense)+' F</div></div>'
@@ -993,12 +1072,8 @@ function nav(i){
     if(!session){ location.href='index.html'; return; }
   }catch(e){ location.href='index.html'; return; }
   await charger();
-  setInterval(function(){
-    if(D&&!busy){
-      rendNavires(); rendBloc(); rendEquipe(); rendContrats(); rendEffets(); rendEvents();
-      if(DSP && $('pgLb').classList.contains('on')) rendDisputes();
-    }
-  }, 1000);
+  /* tick leger : met a jour les compteurs sans reconstruire (plus de clignotement) */
+  setInterval(function(){ if(D && !busy) tick(); }, 1000);
 
   /* les navires disputes vont vite : on rafraichit souvent quand l'onglet est ouvert */
   setInterval(function(){
