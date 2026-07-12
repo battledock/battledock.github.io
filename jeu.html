@@ -221,6 +221,38 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .rep-b{height:5px;background:#f0ece2;border-radius:3px;overflow:hidden}
 .rep-f{height:100%;border-radius:3px;transition:width .5s,background .5s}
 .rep-d{font-size:10px;color:#a09888;margin-top:6px;line-height:1.4}
+
+/* ═══ ÉVÉNEMENTS ═══ */
+.ev{background:#fff;border-radius:16px;padding:15px;margin-bottom:11px;position:relative;overflow:hidden;
+  box-shadow:0 4px 20px rgba(22,20,15,.1);animation:evIn .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes evIn{from{opacity:0;transform:scale(.94) translateY(-8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.ev.bad{border:1.5px solid #fca5a5;background:#fffafa}
+.ev.good{border:1.5px solid #86efac;background:#fafffb}
+.ev.warn{border:1.5px solid #fcd34d;background:#fffdf7}
+.ev-h{display:flex;align-items:flex-start;gap:11px;margin-bottom:11px}
+.ev-e{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:22px;flex-shrink:0;background:#f4f1ea}
+.ev-i{flex:1;min-width:0}
+.ev-t{font-family:'Playfair Display',serif;font-weight:900;font-size:15px;line-height:1.2}
+.ev-x{font-size:11.5px;color:#8a8278;margin-top:4px;line-height:1.5}
+.ev-c{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:#c0392b;flex-shrink:0}
+.ev-b{display:flex;gap:8px;margin-top:4px}
+.ev-btn{flex:1;border:none;border-radius:11px;padding:12px 10px;font-family:Inter;font-size:11px;
+  font-weight:900;letter-spacing:.8px;cursor:pointer;transition:transform .14s}
+.ev-btn:active{transform:scale(.96)}
+.ev-btn:disabled{opacity:.45;cursor:not-allowed}
+.ev-btn.ok{background:#16140f;color:#fff}
+.ev-btn.go{background:#16a34a;color:#fff;box-shadow:0 5px 16px rgba(22,163,74,.25)}
+.ev-btn.no{background:#f4f1ea;color:#8a8278;flex:0 0 88px}
+/* bandeau d'effet en cours */
+.eff{display:flex;align-items:center;gap:9px;background:#fff8f0;border:1.5px solid #fcd9a8;
+  border-radius:12px;padding:9px 12px;margin-bottom:9px}
+.eff.red{background:#fef2f2;border-color:#fca5a5}
+.eff-e{font-size:16px;flex-shrink:0}
+.eff-t{flex:1;font-size:11px;font-weight:700;color:#92400e;line-height:1.35}
+.eff.red .eff-t{color:#b91c1c}
+.eff-v{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;color:#92400e;flex-shrink:0}
+.eff.red .eff-v{color:#b91c1c}
 </style>
 </head>
 <body>
@@ -243,6 +275,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 
   <div class="page on" id="pgPort">
     <div class="port" id="portBox"></div>
+    <div id="effBox"></div>
+    <div id="evBox"></div>
     <div id="blocBox"></div>
     <div class="sec-h"><span class="sec-t">&Agrave; QUAI</span><span class="sec-n" id="shipN">&mdash;</span></div>
     <div id="ships"><div class="skel"></div><div class="skel"></div></div>
@@ -503,6 +537,93 @@ async function rendLb(){
 }
 
 
+
+/* ═════════ ÉVÉNEMENTS ═════════ */
+
+/* les malus en cours (bandeaux discrets) */
+function rendEffets(){
+  if(!D||!D.joueur) return;
+  var j=D.joueur, h='';
+
+  if(j.grue_en_panne){
+    h+='<div class="eff red"><span class="eff-e">&#128295;</span>'
+      +'<span class="eff-t">Grue en panne &mdash; d&eacute;chargement &agrave; 60%</span></div>';
+  }
+  if(j.mistral_jusqu_a && new Date(j.mistral_jusqu_a).getTime()>Date.now()){
+    h+='<div class="eff"><span class="eff-e">&#127788;&#65039;</span>'
+      +'<span class="eff-t">Coup de mistral &mdash; le quai est difficile</span>'
+      +'<span class="eff-v">'+mmss(restant(j.mistral_jusqu_a))+'</span></div>';
+  }
+  if(j.greve_jusqu_a && new Date(j.greve_jusqu_a).getTime()>Date.now()){
+    h+='<div class="eff red"><span class="eff-e">&#128548;</span>'
+      +'<span class="eff-t">Gr&egrave;ve &mdash; tes dockers ont pos&eacute; les gants</span>'
+      +'<span class="eff-v">'+mmss(restant(j.greve_jusqu_a))+'</span></div>';
+  }
+  $('effBox').innerHTML=h;
+}
+
+/* les événements à régler */
+function rendEvents(){
+  var ev=(D&&D.evenements)||[];
+  if(!ev.length){ $('evBox').innerHTML=''; return; }
+
+  $('evBox').innerHTML = ev.map(function(e){
+    var cls = e.code==='navire_express' ? 'good' : (e.code==='greve' ? 'warn' : 'bad');
+    var pauvre = D.joueur && e.cout>0 && D.joueur.argent < e.cout;
+
+    var h='<div class="ev '+cls+'">'
+      +'<div class="ev-h">'
+        +'<div class="ev-e">'+e.emoji+'</div>'
+        +'<div class="ev-i"><div class="ev-t">'+esc(e.titre)+'</div>'
+        +'<div class="ev-x">'+esc(e.texte)+'</div></div>'
+        + (e.expire_le
+            ? '<div class="ev-c">'+mmss(restant(e.expire_le))+'</div>'
+            : '')
+      +'</div>';
+
+    if(e.code==='navire_express'){
+      var d=e.data||{};
+      h+='<div class="ev-b">'
+        +'<button class="ev-btn no" onclick="reglerEv('+e.id+',\'refuser\')">LAISSER</button>'
+        +'<button class="ev-btn go" onclick="reglerEv('+e.id+',\'accepter\')">'
+          +'PRENDRE &mdash; '+esc(d.nom||'')+' &times;'+(d.quantite||'')+'</button>'
+        +'</div>';
+    } else if(e.cout>0){
+      h+='<div class="ev-b">'
+        +'<button class="ev-btn no" onclick="reglerEv('+e.id+',\'refuser\')">ATTENDRE</button>'
+        +'<button class="ev-btn ok" '+(pauvre?'disabled':'')+' onclick="reglerEv('+e.id+',\'accepter\')">'
+          +(e.code==='panne' ? 'R&Eacute;PARER' : 'VERSER LA PRIME')+' &mdash; '+fmt(e.cout)+' F</button>'
+        +'</div>';
+    }
+    return h+'</div>';
+  }).join('');
+}
+
+async function reglerEv(id, action){
+  if(busy) return;
+  busy=true;
+  document.querySelectorAll('.ev-btn').forEach(function(b){ b.disabled=true; });
+  try{
+    const {data,error}=await sb.rpc('regler_evenement',{p_event:id, p_action:action});
+    if(error) throw error;
+    if(action==='accepter'){
+      vib([30,20,50]);
+      if(data.message) toast(esc(data.message));
+    } else {
+      vib(15);
+    }
+    await charger();
+    bump('argV');
+  }catch(e){
+    console.warn(e);
+    toast(msgErr(e), true);
+    busy=false;
+    rendEvents();
+    return;
+  }
+  busy=false;
+}
+
 /* ═════════ CONTRATS ═════════ */
 function etoiles(n){ var s=''; for(var i=0;i<3;i++) s+= i<n ? '<i>&#9733;</i>' : '<i style="color:#e8e2d6">&#9733;</i>'; return s; }
 
@@ -658,6 +779,9 @@ function msgErr(e){
   if(m.indexOf('deja dans ton')>=0||m.indexOf('déjà dans ton')>=0) return 'Il travaille deja pour toi.';
   if(m.indexOf('maximum')>=0) return 'Ton quai est deja au maximum.';
   if(m.indexOf('trop de contrats')>=0) return 'Tu as deja 3 contrats en cours.';
+  if(m.indexOf('trop tard')>=0) return 'Trop tard, le navire est reparti.';
+  if(m.indexOf('quai plein')>=0) return 'Ton quai est plein.';
+  if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
   if(m.indexOf('contrat introuvable')>=0) return 'Cette offre n\'existe plus.';
   if(m.indexOf('introuvable')>=0) return 'Ce navire n\'est plus la.';
@@ -675,7 +799,7 @@ async function charger(){
       var f=fraicheur(nv);
       nv.__vp = f>0 ? Math.round(nv.valeur/f) : nv.valeur;   // valeur pleine (avant pourriture)
     });
-    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendRep(); rendContrats();
+    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendRep(); rendContrats(); rendEffets(); rendEvents();
   }catch(e){ console.warn(e); toast(msgErr(e),true); }
 }
 
@@ -697,7 +821,7 @@ function nav(i){
     if(!session){ location.href='index.html'; return; }
   }catch(e){ location.href='index.html'; return; }
   await charger();
-  setInterval(function(){ if(D&&!busy){ rendNavires(); rendBloc(); rendEquipe(); rendContrats(); } }, 1000);
+  setInterval(function(){ if(D&&!busy){ rendNavires(); rendBloc(); rendEquipe(); rendContrats(); rendEffets(); rendEvents(); } }, 1000);
   setInterval(function(){ if(!busy) charger(); }, 45000);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden && !busy) charger(); });
 })();
