@@ -344,6 +344,34 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .dk-say{position:relative;background:#16140f;color:#fff;border-radius:12px;padding:10px 13px;
   margin-bottom:10px;font-size:11.5px;line-height:1.45;font-style:italic}
 .dk-say b{font-style:normal;color:#ffcf3f;font-weight:800}
+
+/* ═══ PROGRESSION ═══ */
+.buy.lock{opacity:.55;background:#faf8f3}
+.buy.lock .buy-av{filter:grayscale(1) opacity(.6)}
+.buy-lk{background:#eae5da;border:none;border-radius:11px;padding:11px 14px;color:#8a8278;
+  font-family:Inter;font-size:10px;font-weight:900;letter-spacing:.5px;flex-shrink:0;
+  text-align:center;line-height:1.3;cursor:not-allowed}
+.buy-lk small{display:block;font-size:8.5px;opacity:.75;margin-top:1px}
+.cap{display:flex;align-items:center;gap:10px;background:#16140f;color:#fff;border-radius:14px;
+  padding:12px 14px;margin-bottom:11px}
+.cap-i{flex:1}
+.cap-l{font-size:9px;font-weight:900;letter-spacing:1.2px;color:rgba(255,255,255,.45)}
+.cap-v{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;margin-top:2px}
+.cap-b{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);border-radius:10px;
+  padding:10px 14px;color:#fff;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+  cursor:pointer;flex-shrink:0;transition:transform .14s}
+.cap-b:active{transform:scale(.94)}
+.cap-b:disabled{opacity:.35;cursor:not-allowed}
+/* formation */
+.frm{display:flex;gap:2px;margin-top:6px;justify-content:center}
+.frm i{width:5px;height:5px;border-radius:1px;background:#e8e2d6;font-style:normal}
+.frm i.on{background:#f59e0b}
+.dk-frm{width:100%;margin-top:8px;background:#faf8f3;border:1px solid #e8e2d6;border-radius:8px;
+  padding:6px 4px;font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;color:#16140f;
+  cursor:pointer;transition:transform .14s}
+.dk-frm:active{transform:scale(.94)}
+.dk-frm:disabled{opacity:.4;cursor:not-allowed}
+.dk-frm.max{background:#fdf6e3;border-color:#f0d9a0;color:#a07818}
 </style>
 </head>
 <body>
@@ -557,7 +585,7 @@ function rendNavires(){
       +'<div class="sh-i"><div class="sh-n">'+esc(nv.nom)+' x'+nv.quantite
         +(nv.louche?'<span class="tag-l">LOUCHE</span>':'')+'</div>'
       +'<div class="sh-d">'+(pourri?'&#9888;&#65039; Cargaison perdue':(nv.louche?'Ne pose pas de questions...':''))+'</div></div>'
-      +'<div class="sh-v" id="val'+nv.id+'" style="color:'+(pourri?'#c0392b':'#16140f')+'">'+fmt(val)+' F<small>VALEUR</small></div></div>';
+      +'<div class="sh-v" id="val'+nv.id+'" style="color:'+(pourri?'#c0392b':'#16140f')+'">'+fmt(val)+' &euro;<small>VALEUR</small></div></div>';
     if(!ok){
       h+='<div class="pg"><div class="pg-f" id="pgf'+nv.id+'" style="width:'+pc+'%;background:'+nv.couleur+'"></div></div>'
         +'<div class="pg-t"><span class="l">Dechargement...</span><span class="r" id="chr'+nv.id+'">'+mmss(rest)+'</span></div>';
@@ -568,11 +596,16 @@ function rendNavires(){
     }
     if(ok){
       if(pourri) h+='<button class="coll bad" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">JETER A LA MER</button>';
-      else if(nv.louche) h+='<button class="coll risk" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">ECOULER - '+fmt(val)+' F <span style="opacity:.6">(risque)</span></button>';
-      else h+='<button class="coll go" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">COLLECTER '+fmt(val)+' F</button>';
+      else if(nv.louche) h+='<button class="coll risk" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">ECOULER - '+fmt(val)+' &euro; <span style="opacity:.6">(risque)</span></button>';
+      else h+='<button class="coll go" id="btn'+nv.id+'" onclick="collecter('+nv.id+',event)">COLLECTER '+fmt(val)+' &euro;</button>';
     }
     return h+'</div>';
   }).join('');
+}
+function frmBarre(n){
+  var s='<div class="frm">';
+  for(var i=0;i<10;i++) s += '<i'+(i<n?' class="on"':'')+'></i>';
+  return s+'</div>';
 }
 function rendEquipe(){
   var eq=(D&&D.equipe)||[];
@@ -600,7 +633,7 @@ function rendEquipe(){
         +'<div class="eqb-d" id="eqd">'+txt+'</div>'
       +'</div>'
       +'<button class="eqb-btn" '+(peut?'':'disabled')+' onclick="tournee()">'
-        +'&#127867; TOURN&Eacute;E<small>'+fmt(prix)+' F</small></button>'
+        +'&#127867; TOURN&Eacute;E<small>'+fmt(prix)+' &euro;</small></button>'
       +'</div>';
   } else {
     $('eqBox').innerHTML='';
@@ -633,6 +666,11 @@ function rendEquipe(){
       +'<div class="dk-fb"><div class="dk-ff" id="dkf'+esc(d.code)+'" style="width:'+f+'%;background:'+fc+'"></div></div>'
       +'<div class="dk-fl" id="dkl'+esc(d.code)+'">'+(d.humeur?esc(d.humeur.label):'')+'</div>'
       +'<div class="dk-vt'+(lent?' low':'')+'">&times;'+vit+'</div>'
+      + frmBarre(d.formation||0)
+      + (d.prix_formation!=null
+          ? '<button class="dk-frm" '+((D.joueur.argent<d.prix_formation)?'disabled':'')
+            +' onclick="former(\''+d.code+'\')">&#128218; '+fmt(d.prix_formation)+' &euro;</button>'
+          : '<button class="dk-frm max" disabled>&#11088; FORM&Eacute;</button>')
     +'</div>';
   }).join('')
   +'<div class="dk dk-add" onclick="nav(2)"><div class="p">+</div><div class="l">EMBAUCHER</div></div>';
@@ -659,34 +697,97 @@ function rendJournal(){
   var j=(D&&D.journal)||[];
   $('journal').innerHTML=j.length
     ? j.map(function(x){
-        var g=x.gain>0?'<span class="jr-g p">+'+fmt(x.gain)+' F</span>'
-             :(x.gain<0?'<span class="jr-g m">'+fmt(x.gain)+' F</span>':'');
+        var g=x.gain>0?'<span class="jr-g p">+'+fmt(x.gain)+' &euro;</span>'
+             :(x.gain<0?'<span class="jr-g m">'+fmt(x.gain)+' &euro;</span>':'');
         return '<div class="jr-i"><span class="jr-x">'+esc(x.texte)+'</span>'+g+'</div>';
       }).join('')
     : '<div class="jr-i"><span class="jr-x" style="color:#b8b0a4">Rien a signaler.</span></div>';
 }
 function rendUp(){
   if(!D) return;
-  var j=D.joueur, p=j.places;
-  var prix=p>=8?null:Math.round(1500*Math.pow(2,p-3));
-  $('quaiBox').innerHTML = (prix===null)
-    ? '<div class="out"><div class="out-t">Quai au maximum</div><div class="out-d">8 places. On ne fait pas mieux a Marseille.</div></div>'
-    : '<div class="buy"><div class="buy-av" style="display:flex;align-items:center;justify-content:center;font-size:22px">&#127959;&#65039;</div>'
-      +'<div class="buy-i"><div class="buy-n">Agrandir le quai</div>'
-      +'<div class="buy-t">'+p+' &rarr; '+(p+1)+' places de navire</div>'
-      +'<div class="buy-s">Plus de navires en meme temps</div></div>'
-      +'<button class="buy-b" '+(j.argent<prix?'disabled':'')+' onclick="agrandir()">'+fmt(prix)+' F</button></div>';
-  var h=D.a_embaucher||[];
-  $('hire').innerHTML=h.length
-    ? h.map(function(d){
-        return '<div class="buy"><div class="buy-av">'+tete(d)+'</div>'
+  var j=D.joueur;
+
+  /* ── LES CAPACITÉS ── */
+  var pq = j.prix_place_quai;
+  var pe = j.prix_place_equipe;
+  var h = '';
+
+  h += '<div class="cap">'
+    +'<div class="cap-i"><div class="cap-l">PLACES DE NAVIRE</div>'
+      +'<div class="cap-v">'+j.places+' / 8</div></div>'
+    + (pq===null
+        ? '<button class="cap-b" disabled>MAX</button>'
+        : '<button class="cap-b" '+(j.argent<pq?'disabled':'')+' onclick="agrandir()">'+fmt(pq)+' &euro;</button>')
+    +'</div>';
+
+  h += '<div class="cap">'
+    +'<div class="cap-i"><div class="cap-l">PLACES DANS L\'&Eacute;QUIPE</div>'
+      +'<div class="cap-v">'+(j.taille_equipe||0)+' / '+j.places_equipe+'</div></div>'
+    + (pe===null
+        ? '<button class="cap-b" disabled>MAX</button>'
+        : '<button class="cap-b" '+(j.argent<pe?'disabled':'')+' onclick="agrandirEquipe()">'+fmt(pe)+' &euro;</button>')
+    +'</div>';
+
+  $('quaiBox').innerHTML = h;
+
+  /* ── LES DOCKERS À EMBAUCHER ── */
+  var lst=(D.a_embaucher)||[];
+  var plein = (j.taille_equipe||0) >= j.places_equipe;
+
+  $('hire').innerHTML = lst.length
+    ? lst.map(function(d){
+        var lock = d.verrou;
+        var cher = j.argent < d.prix;
+
+        var btn;
+        if(lock){
+          btn = '<div class="buy-lk">&#128274;<small>NIVEAU '+d.niveau_min+'</small></div>';
+        } else if(plein){
+          btn = '<div class="buy-lk">&Eacute;QUIPE<small>PLEINE</small></div>';
+        } else {
+          btn = '<button class="buy-b" '+(cher?'disabled':'')+' onclick="embaucher(\''+d.code+'\')">'
+                + fmt(d.prix)+' &euro;</button>';
+        }
+
+        return '<div class="buy'+(lock?' lock':'')+'">'
+          +'<div class="buy-av">'+tete(d)+'</div>'
           +'<div class="buy-i"><div class="buy-n">'+esc(d.nom)+'</div>'
-          +'<div class="buy-t">'+esc(d.trait)+'</div>'
-          +'<div class="buy-s">Vitesse &times;'+d.vitesse
-            + (d.endurance ? ' &middot; Endurance &times;'+d.endurance : '') +'</div></div>'
-          +'<button class="buy-b" '+(j.argent<d.prix?'disabled':'')+' onclick="embaucher(\''+d.code+'\')">'+fmt(d.prix)+' F</button></div>';
+            +'<div class="buy-t">'+esc(d.trait)+'</div>'
+            +'<div class="buy-s">Vitesse &times;'+d.vitesse
+              + (d.endurance ? ' &middot; Endurance &times;'+d.endurance : '')+'</div></div>'
+          + btn
+        +'</div>';
       }).join('')
-    : '<div class="out"><div class="out-t">Equipe complete</div><div class="out-d">Tout le port travaille pour toi.</div></div>';
+    : '<div class="out"><div class="out-t">Tout le port travaille pour toi</div>'
+      +'<div class="out-d">Il n\'y a plus personne &agrave; embaucher.</div></div>';
+}
+
+/* ── agrandir l'équipe ── */
+async function agrandirEquipe(){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('agrandir_equipe');
+    if(error) throw error;
+    vib([30,20,60]);
+    toast('&#128101; &Eacute;quipe agrandie &mdash; '+data.places+' places');
+    await charger(); bump('argV');
+  }catch(e){ console.warn(e); toast(msgErr(e), true); }
+  busy=false;
+}
+
+/* ── former un docker ── */
+async function former(code){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('former_docker',{p_code:code});
+    if(error) throw error;
+    vib([30,20,50]);
+    toast('&#128218; '+esc(data.nom)+' form&eacute; &mdash; palier '+data.formation);
+    await charger(); bump('argV');
+  }catch(e){ console.warn(e); toast(msgErr(e), true); }
+  busy=false;
 }
 async function rendLb(){
   var box=$('lb');
@@ -700,7 +801,7 @@ async function rendLb(){
         +'<div class="lb-p'+(r.rang<=3?' top':'')+'">'+r.rang+'</div>'
         +'<div style="flex:1;min-width:0"><div class="lb-n">'+esc(r.pseudo)+(r.moi?' <span style="color:#c0392b;font-size:9px">(TOI)</span>':'')+'</div>'
         +'<div class="lb-l">NIVEAU '+r.niveau+' &middot; '+fmt(r.xp)+' XP</div></div>'
-        +'<div class="lb-v">'+fmt(r.argent)+' F</div></div>';
+        +'<div class="lb-v">'+fmt(r.argent)+' &euro;</div></div>';
     }).join('');
   }catch(e){
     console.warn(e);
@@ -741,10 +842,10 @@ function tick(){
       var fc=f>.6?'#16a34a':(f>.3?'#f59e0b':'#dc2626');
       if(frf){ frf.style.width=(f*100)+'%'; frf.style.background=fc; }
       if(frt){ frt.style.color=fc; frt.textContent=(f<=0?'PERDU':Math.round(f*100)+'% FRAIS'); }
-      if(vl){ vl.innerHTML=fmt(val)+' F<small>VALEUR</small>'; vl.style.color=(f<=0?'#c0392b':'#16140f'); }
+      if(vl){ vl.innerHTML=fmt(val)+' &euro;<small>VALEUR</small>'; vl.style.color=(f<=0?'#c0392b':'#16140f'); }
       if(bt && !busy){
         if(f<=0 && bt.className.indexOf('bad')<0){ besoinRedraw=true; }        /* vient de pourrir */
-        else if(f>0) bt.innerHTML='COLLECTER '+fmt(val)+' F';
+        else if(f>0) bt.innerHTML='COLLECTER '+fmt(val)+' &euro;';
       }
     }
   });
@@ -832,7 +933,7 @@ function rendDisputes(){
           +'</div>'
           +'<div class="dsp-money">'
             +'<div class="dsp-m"><div class="dsp-m-l">PRIME IMM&Eacute;DIATE</div>'
-              +'<div class="dsp-m-v">'+fmt(d.prime)+' F</div></div>'
+              +'<div class="dsp-m-v">'+fmt(d.prime)+' &euro;</div></div>'
             +'<div class="dsp-m"><div class="dsp-m-l">+ LA CARGAISON</div>'
               +'<div class="dsp-m-v t">'+d.quantite+' unit&eacute;s</div></div>'
           +'</div>'
@@ -851,7 +952,7 @@ function rendDisputes(){
           +'<div class="hst-i"><div class="hst-w">'+esc(h.gagnant)
             +(h.moi?' <span style="color:#c0392b;font-size:9px">(TOI)</span>':'')+'</div>'
             +'<div class="hst-d">'+h.quantite+' &times; '+esc(h.nom)+'</div></div>'
-          +'<span class="hst-v">+'+fmt(h.prime)+' F</span>'
+          +'<span class="hst-v">+'+fmt(h.prime)+' &euro;</span>'
         +'</div>';
       }).join('')
     : '<div class="hst-r"><div class="hst-i"><div class="hst-d">Personne n\'a encore rien remport&eacute;.</div></div></div>';
@@ -878,7 +979,7 @@ async function prendreDispute(id){
     const {data,error}=await sb.rpc('prendre_dispute',{p_id:id});
     if(error) throw error;
     vib([50,30,50,30,110]);
-    toast('&#127937; Tu l\'as eu ! <span class="g">+'+fmt(data.prime)+' F</span>');
+    toast('&#127937; Tu l\'as eu ! <span class="g">+'+fmt(data.prime)+' &euro;</span>');
     await charger();
     await chargerDisputes();
     bump('argV');
@@ -950,7 +1051,7 @@ function rendEvents(){
       h+='<div class="ev-b">'
         +'<button class="ev-btn no" onclick="reglerEv('+e.id+',\'refuser\')">ATTENDRE</button>'
         +'<button class="ev-btn ok" '+(pauvre?'disabled':'')+' onclick="reglerEv('+e.id+',\'accepter\')">'
-          +(e.code==='panne' ? 'R&Eacute;PARER' : 'VERSER LA PRIME')+' &mdash; '+fmt(e.cout)+' F</button>'
+          +(e.code==='panne' ? 'R&Eacute;PARER' : 'VERSER LA PRIME')+' &mdash; '+fmt(e.cout)+' &euro;</button>'
         +'</div>';
     }
     return h+'</div>';
@@ -1022,8 +1123,8 @@ function rendContrats(){
             +'<span class="r'+(urg?' urg':'')+'" id="ctc'+k.id+'">'+mmss(rest)+'</span></div>'
           +'<div class="ct-pg"><div class="ct-pg-f" style="width:'+pc+'%;background:'+k.couleur+'"></div></div>'
           +'<div class="ct-money">'
-            +'<div class="ct-m"><div class="ct-m-l">RECOMPENSE</div><div class="ct-m-v p">'+fmt(k.recompense)+' F</div></div>'
-            +'<div class="ct-m"><div class="ct-m-l">SI TU RATES</div><div class="ct-m-v m">-'+fmt(k.penalite+k.acompte)+' F</div></div>'
+            +'<div class="ct-m"><div class="ct-m-l">RECOMPENSE</div><div class="ct-m-v p">'+fmt(k.recompense)+' &euro;</div></div>'
+            +'<div class="ct-m"><div class="ct-m-l">SI TU RATES</div><div class="ct-m-v m">-'+fmt(k.penalite+k.acompte)+' &euro;</div></div>'
           +'</div>'
         +'</div>';
       }).join('')
@@ -1042,11 +1143,11 @@ function rendContrats(){
             +'<div class="ct-st">'+etoiles(k.difficulte)+'</div>'
           +'</div>'
           +'<div class="ct-money">'
-            +'<div class="ct-m"><div class="ct-m-l">RECOMPENSE</div><div class="ct-m-v p">'+fmt(k.recompense)+' F</div></div>'
+            +'<div class="ct-m"><div class="ct-m-l">RECOMPENSE</div><div class="ct-m-v p">'+fmt(k.recompense)+' &euro;</div></div>'
             + (k.acompte>0
-                ? '<div class="ct-m"><div class="ct-m-l">ACOMPTE</div><div class="ct-m-v p">+'+fmt(k.acompte)+' F</div></div>'
+                ? '<div class="ct-m"><div class="ct-m-l">ACOMPTE</div><div class="ct-m-v p">+'+fmt(k.acompte)+' &euro;</div></div>'
                 : '')
-            +'<div class="ct-m"><div class="ct-m-l">SI TU RATES</div><div class="ct-m-v m">-'+fmt(k.penalite+k.acompte)+' F</div></div>'
+            +'<div class="ct-m"><div class="ct-m-l">SI TU RATES</div><div class="ct-m-v m">-'+fmt(k.penalite+k.acompte)+' &euro;</div></div>'
           +'</div>'
           +'<button class="ct-b" '+(plein?'disabled':'')+' onclick="accepter('+k.id+')">'
             +(plein ? 'DEJA 3 CONTRATS EN COURS' : 'ACCEPTER')+'</button>'
@@ -1064,7 +1165,7 @@ async function accepter(id){
     if(error) throw error;
     vib([30,20,50]);
     toast(data.acompte>0
-      ? '&#128220; Contrat signe &mdash; <span class="g">+'+fmt(data.acompte)+' F</span> d\'acompte'
+      ? '&#128220; Contrat signe &mdash; <span class="g">+'+fmt(data.acompte)+' &euro;</span> d\'acompte'
       : '&#128220; Contrat signe avec '+esc(data.client));
     await charger();
     bump('argV');
@@ -1089,13 +1190,13 @@ async function collecter(id, ev){
       vib([25,15,45]);
       if(ev){
         var f=document.createElement('div');
-        f.className='fly'; f.textContent='+'+fmt(g)+' F';
+        f.className='fly'; f.textContent='+'+fmt(g)+' &euro;';
         f.style.left=(ev.clientX-30)+'px'; f.style.top=(ev.clientY-14)+'px';
         document.body.appendChild(f);
         requestAnimationFrame(function(){ f.style.transform='translateY(-70px)'; f.style.opacity='0'; });
         setTimeout(function(){ f.remove(); },950);
       }
-      toast('<span class="g">+'+fmt(g)+' F</span> encaisses');
+      toast('<span class="g">+'+fmt(g)+' &euro;</span> encaisses');
     } else { vib(40); toast(data.message||'Cargaison perdue.'); }
     await charger();
     bump('argV');
@@ -1143,6 +1244,10 @@ function msgErr(e){
   if(m.indexOf('niveau insuffisant')>=0) return 'Ton niveau est trop bas.';
   if(m.indexOf('ils sont frais')>=0) return 'Ton equipe est deja en forme.';
   if(m.indexOf('aucun docker')>=0) return 'Tu n\'as personne a payer.';
+  if(m.indexOf('equipe pleine')>=0||m.indexOf('équipe pleine')>=0) return 'Ton equipe est pleine. Agrandis-la.';
+  if(m.indexOf('niveau')>=0 && m.indexOf('requis')>=0) return 'Ton niveau est trop bas pour lui.';
+  if(m.indexOf('formation terminee')>=0||m.indexOf('formation terminée')>=0) return 'Il est deja au maximum.';
+  if(m.indexOf('travaille pas pour toi')>=0) return 'Il ne fait pas partie de ton equipe.';
   if(m.indexOf('port ferm')>=0) return 'Ton port est ferme par la douane.';
   if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
