@@ -1622,6 +1622,61 @@ button:disabled{
 .gl-x{width:100%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.16);
   border-radius:12px;padding:13px;color:#f5ede0;font-family:Inter;font-size:11px;
   font-weight:800;letter-spacing:1px;cursor:pointer}
+
+/* ═══ SUPPRIMER SON COMPTE ═══ */
+.pf-danger{margin-top:20px;padding-top:20px;border-top:2px dashed rgba(200,90,63,.3)}
+.pf-dl{font-size:9px;font-weight:900;letter-spacing:1.6px;color:rgba(200,90,63,.75);
+  margin-bottom:10px;text-align:center}
+.pf-del{width:100%;background:linear-gradient(180deg,#3a1a14,#2a1008);
+  border:2px solid #8a3020;border-radius:14px;padding:15px;color:#f0b4a0;
+  font-family:'Bangers',cursive;font-size:17px;letter-spacing:2px;cursor:pointer;
+  box-shadow:0 5px 0 #5a1808;text-shadow:0 2px 0 rgba(0,0,0,.4);
+  transition:transform .1s, box-shadow .1s}
+.pf-del:active{transform:translateY(4px);box-shadow:0 1px 0 #5a1808}
+
+/* la boîte de confirmation */
+#supprBox{position:fixed;inset:0;z-index:380;display:none;
+  background:rgba(7,20,28,.93);backdrop-filter:blur(8px);
+  opacity:0;transition:opacity .3s;overflow-y:auto}
+#supprBox.on{display:flex;align-items:center;justify-content:center;opacity:1}
+.sp{max-width:400px;width:100%;margin:auto;padding:20px}
+.sp-c{background:linear-gradient(180deg,#f5ede0,#e8d8c0);color:#1a2e35;
+  border:3px solid #8a3020;border-radius:20px;padding:24px;
+  box-shadow:0 7px 0 #5a1808, 0 20px 50px rgba(0,0,0,.5)}
+.sp-e{font-size:44px;text-align:center;margin-bottom:14px}
+.sp-t{font-family:'Playfair Display',serif;font-weight:900;font-size:21px;
+  text-align:center;line-height:1.2;margin-bottom:14px;color:#8a2010}
+.sp-x{font-size:13.5px;line-height:1.6;color:#3a4a52;margin-bottom:16px}
+.sp-x b{color:#8a2010;font-weight:800}
+/* la liste de ce qui sera perdu */
+.sp-l{background:rgba(200,90,63,.1);border:1px solid rgba(200,90,63,.25);
+  border-radius:12px;padding:13px 15px;margin-bottom:18px}
+.sp-li{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:12.5px;
+  font-weight:600;color:#5a3a30}
+.sp-li i{font-style:normal;color:#c85a3f;font-size:11px}
+/* le champ de confirmation */
+.sp-in{width:100%;background:rgba(26,46,53,.06);border:2px solid rgba(138,112,80,.4);
+  border-radius:12px;padding:14px;font-family:'Space Mono',monospace;font-size:15px;
+  font-weight:700;color:#1a2e35;outline:none;text-align:center;margin-bottom:8px;
+  transition:border-color .2s}
+.sp-in:focus{border-color:#c85a3f}
+.sp-in.ok{border-color:#3d8168;background:rgba(61,129,104,.08)}
+.sp-h{font-size:11.5px;color:#7a8a90;text-align:center;margin-bottom:18px;line-height:1.4}
+.sp-h b{font-family:'Space Mono',monospace;color:#8a2010;font-weight:700}
+/* les boutons */
+.sp-b{display:flex;gap:9px}
+.sp-btn{flex:1;border:2px solid;border-radius:12px;padding:14px;
+  font-family:Inter,sans-serif;font-size:11.5px;font-weight:900;letter-spacing:.8px;
+  cursor:pointer;transition:transform .1s, box-shadow .1s}
+.sp-btn:active{transform:translateY(3px)}
+.sp-annul{background:rgba(26,46,53,.06);border-color:rgba(138,112,80,.4);color:#3a4a52;
+  box-shadow:0 4px 0 rgba(138,112,80,.4)}
+.sp-annul:active{box-shadow:0 1px 0 rgba(138,112,80,.4)}
+.sp-ok{background:linear-gradient(180deg,#c85a3f,#a03820);border-color:#6a1808;color:#fff;
+  box-shadow:0 4px 0 #6a1808;text-shadow:0 1px 0 rgba(0,0,0,.3)}
+.sp-ok:active{box-shadow:0 1px 0 #6a1808}
+.sp-ok:disabled{background:#c8b8a0;border-color:#8a7050;color:#8a9098;
+  box-shadow:0 4px 0 #8a7050;cursor:not-allowed;transform:none}
 </style>
 </head>
 <body>
@@ -1776,6 +1831,33 @@ button:disabled{
       <div style="width:36px"></div>
     </div>
     <div id="pfBox"></div>
+  </div>
+</div>
+
+<!-- SUPPRIMER SON COMPTE -->
+<div id="supprBox">
+  <div class="sp">
+    <div class="sp-c">
+      <div class="sp-e">&#128465;&#65039;</div>
+      <div class="sp-t">Supprimer<br>ton entreprise ?</div>
+
+      <div class="sp-x">
+        Tout ce que tu as construit sera <b>effac&eacute; d&eacute;finitivement</b>.
+        Il n'y a pas de retour en arri&egrave;re.
+      </div>
+
+      <div class="sp-l" id="spListe"></div>
+
+      <input class="sp-in" id="spIn" oninput="verifSuppr()" autocomplete="off" autocapitalize="off"
+        spellcheck="false" placeholder="Recopie ton nom">
+      <div class="sp-h">Pour confirmer, recopie&nbsp;: <b id="spNom">&mdash;</b></div>
+
+      <div class="sp-b">
+        <button class="sp-btn sp-annul" onclick="fermerSuppr()">ANNULER</button>
+        <button class="sp-btn sp-ok" id="spOk" disabled onclick="confirmerSuppr()">
+          SUPPRIMER</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2829,6 +2911,13 @@ function rendProfil(){
   /* déconnexion */
   h += '<button class="pf-out" onclick="deconnexion()">&#128682; SE D&Eacute;CONNECTER</button>';
 
+  /* zone dangereuse */
+  h += '<div class="pf-danger">'
+    +'<div class="pf-dl">&#9888;&#65039; ZONE DANGEREUSE</div>'
+    +'<button class="pf-del" onclick="ouvrirSuppr()">'
+      +'&#128465;&#65039; SUPPRIMER MON COMPTE</button>'
+    +'</div>';
+
   $('pfBox').innerHTML = h;
 }
 
@@ -2918,6 +3007,110 @@ async function deconnexion(){
   }catch(e){ console.warn(e); }
   try{ localStorage.removeItem('bd_guide'); }catch(e){}
   location.href = 'index.html';
+}
+
+
+/* ═════════ SUPPRIMER SON COMPTE ═════════ */
+function ouvrirSuppr(){
+  if(!PRO || !PRO.joueur) return;
+  var j = PRO.joueur, s = PRO.stats;
+
+  /* ce qui sera perdu */
+  var L = [];
+  if(s.gagne > 0)      L.push('&#128176; ' + fmt(s.gagne) + ' &euro; gagn&eacute;s au total');
+  if(j.niveau > 1)     L.push('&#11088; Niveau ' + j.niveau);
+  if(s.equipe > 0)     L.push('&#128104;&#8205;&#127981;&#65039; ' + s.equipe + ' docker' + (s.equipe>1?'s':''));
+  if(s.flotte > 0)     L.push('&#128674; ' + s.flotte + ' navire' + (s.flotte>1?'s':'') + ' de flotte');
+  if(s.batiments > 0)  L.push('&#127959;&#65039; ' + s.batiments + ' niveaux de b&acirc;timents');
+  if(s.chapitres > 0)  L.push('&#128214; ' + s.chapitres + ' chapitre' + (s.chapitres>1?'s':'') + ' de ton histoire');
+  if(j.alliance)       L.push('&#129309; Ton alliance [' + esc(j.alliance.tag) + ']');
+  if(j.titre)          L.push('&#128081; ' + esc(j.titre));
+  if(j.serie_record>1) L.push('&#128293; Ta s&eacute;rie record de ' + j.serie_record + ' jours');
+
+  if(!L.length) L.push('&#9875; Ton entreprise');
+
+  $('spListe').innerHTML = L.map(function(x){
+    return '<div class="sp-li"><i>&#10007;</i>' + x + '</div>';
+  }).join('');
+
+  $('spNom').textContent = j.pseudo;
+  $('spIn').value = '';
+  $('spIn').classList.remove('ok');
+  $('spOk').disabled = true;
+
+  $('supprBox').classList.add('on');
+  document.body.style.overflow = 'hidden';
+  SFX.alerte();
+  vib([40,25,40]);
+}
+
+function fermerSuppr(){
+  $('supprBox').classList.remove('on');
+  document.body.style.overflow = 'hidden';  /* le profil est encore ouvert */
+  SFX.clic();
+  vib(12);
+}
+
+/* vérifier ce que le joueur tape */
+function verifSuppr(){
+  if(!PRO || !PRO.joueur) return;
+  var v = ($('spIn').value || '').trim();
+  var n = PRO.joueur.pseudo;
+  var ok = (v.toLowerCase() === n.toLowerCase());
+
+  $('spIn').classList.toggle('ok', ok);
+  $('spOk').disabled = !ok;
+}
+
+/* ── LA SUPPRESSION ── */
+async function confirmerSuppr(){
+  if(busy) return;
+  if(!PRO || !PRO.joueur) return;
+
+  var v = ($('spIn').value || '').trim();
+  if(v.toLowerCase() !== PRO.joueur.pseudo.toLowerCase()) return;
+
+  busy = true;
+  var b = $('spOk');
+  b.disabled = true;
+  b.textContent = 'SUPPRESSION…';
+
+  try{
+    const {data,error} = await sb.rpc('supprimer_mon_compte');
+    if(error) throw error;
+
+    vib([80,40,80,40,140]);
+    SFX.perdu();
+
+    /* nettoyer le navigateur */
+    try{
+      localStorage.removeItem('bd_guide');
+      localStorage.removeItem('bd_son');
+    }catch(e){}
+
+    /* fermer la session */
+    try{ await sb.auth.signOut(); }catch(e){}
+
+    /* au revoir */
+    $('supprBox').innerHTML =
+      '<div class="sp"><div class="sp-c" style="text-align:center">'
+      +'<div class="sp-e">&#9875;</div>'
+      +'<div class="sp-t" style="color:#3a4a52">C\'est fini.</div>'
+      +'<div class="sp-x" style="text-align:center">'
+        +'Ton entreprise a &eacute;t&eacute; ray&eacute;e des registres du port.<br><br>'
+        +'<b>Bon vent.</b></div>'
+      +'</div></div>';
+
+    setTimeout(function(){ location.href = 'index.html'; }, 2600);
+
+  }catch(e){
+    console.warn(e);
+    SFX.erreur();
+    toast(msgErr(e), true);
+    b.disabled = false;
+    b.textContent = 'SUPPRIMER';
+    busy = false;
+  }
 }
 
 /* ═════════ LE GUIDE DE DÉMARRAGE ═════════ */
@@ -4763,6 +4956,7 @@ function msgErr(e){
   if(m.indexOf('deja joue')>=0||m.indexOf('déjà joué')>=0) return 'Tu as deja joue ce chapitre.';
   if(m.indexOf('chapitre inconnu')>=0) return 'Ce chapitre n\'existe plus.';
   if(m.indexOf('avatar inconnu')>=0) return 'Avatar inconnu.';
+  if(m.indexOf('joueur introuvable')>=0) return 'Compte introuvable.';
   if(m.indexOf('nom trop court')>=0) return 'Nom trop court (3 caracteres minimum).';
   if(m.indexOf('nom trop long')>=0) return 'Nom trop long (16 caracteres maximum).';
   if(m.indexOf('deja ton nom')>=0||m.indexOf('déjà ton nom')>=0) return 'C\'est deja ton nom.';
