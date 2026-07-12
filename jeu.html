@@ -372,6 +372,37 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .dk-frm:active{transform:scale(.94)}
 .dk-frm:disabled{opacity:.4;cursor:not-allowed}
 .dk-frm.max{background:#fdf6e3;border-color:#f0d9a0;color:#a07818}
+
+/* ═══ BÂTIMENTS ═══ */
+.bt{position:relative;background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;overflow:hidden;
+  box-shadow:0 2px 14px rgba(22,20,15,.06)}
+.bt.lock{opacity:.55;background:#faf8f3}
+.bt.lock .bt-e{filter:grayscale(1)}
+.bt.built{border-left:3px solid currentColor}
+.bt-e{width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;flex-shrink:0}
+.bt-i{flex:1;min-width:0}
+.bt-n{font-size:13.5px;font-weight:800;display:flex;align-items:center;gap:6px}
+.bt-lv{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;background:#16140f;color:#fff;
+  border-radius:4px;padding:2px 5px;letter-spacing:.3px}
+.bt-lv.max{background:#f59e0b}
+.bt-d{font-size:10.5px;color:#8a8278;margin-top:3px;line-height:1.4}
+.bt-f{font-size:10px;font-weight:800;margin-top:4px}
+.bt-f.now{color:#16a34a}
+.bt-f.next{color:#a09888}
+.bt-dots{display:flex;gap:3px;margin-top:6px}
+.bt-dots i{width:14px;height:4px;border-radius:2px;background:#e8e2d6;font-style:normal}
+.bt-b{background:#16140f;border:none;border-radius:11px;padding:11px 14px;color:#fff;
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;
+  transition:transform .14s;text-align:center;line-height:1.3}
+.bt-b:active{transform:scale(.94)}
+.bt-b:disabled{background:#cfc8ba;cursor:not-allowed}
+.bt-b small{display:block;font-family:Inter;font-size:8px;font-weight:900;opacity:.65;
+  letter-spacing:.5px;margin-bottom:1px}
+.bt-lk{background:#eae5da;border-radius:11px;padding:11px 13px;color:#8a8278;font-family:Inter;
+  font-size:10px;font-weight:900;flex-shrink:0;text-align:center;line-height:1.3}
+.bt-lk small{display:block;font-size:8.5px;opacity:.75;margin-top:1px}
 </style>
 </head>
 <body>
@@ -408,8 +439,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   </div>
 
   <div class="page" id="pgUp">
-    <div class="sec-h"><span class="sec-t">LE QUAI</span></div>
+    <div class="sec-h"><span class="sec-t">CAPACIT&Eacute;S</span></div>
     <div id="quaiBox"></div>
+
+    <div class="sec-h"><span class="sec-t">TES INSTALLATIONS</span></div>
+    <div id="batBox"></div>
+
     <div class="sec-h"><span class="sec-t">EMBAUCHER</span></div>
     <div id="hire"></div>
   </div>
@@ -891,6 +926,73 @@ function tick(){
   }
 }
 
+
+/* ═════════ BÂTIMENTS ═════════ */
+function rendBatiments(){
+  if(!D) return;
+  var lst=(D.batiments)||[];
+  var j=D.joueur;
+
+  $('batBox').innerHTML = lst.length
+    ? lst.map(function(b){
+        var niv=b.niveau||0;
+        var lock=b.verrou;
+        var max = b.prix===null;
+        var cher = !max && j.argent < b.prix;
+
+        /* les 5 paliers */
+        var dots='<div class="bt-dots">';
+        for(var i=0;i<5;i++){
+          dots += '<i'+(i<niv?' style="background:'+b.couleur+'"':'')+'></i>';
+        }
+        dots+='</div>';
+
+        var btn;
+        if(lock){
+          btn='<div class="bt-lk">&#128274;<small>NIVEAU '+b.niveau_min+'</small></div>';
+        } else if(max){
+          btn='<div class="bt-lk" style="background:#fdf6e3;color:#a07818">&#11088;<small>AU MAX</small></div>';
+        } else {
+          btn='<button class="bt-b" '+(cher?'disabled':'')+' onclick="construire(\''+b.code+'\')">'
+            +'<small>'+(niv===0?'CONSTRUIRE':'AM&Eacute;LIORER')+'</small>'
+            +fmt(b.prix)+' &euro;</button>';
+        }
+
+        return '<div class="bt'+(lock?' lock':'')+(niv>0?' built':'')+'" style="color:'+b.couleur+'">'
+          +'<div class="bt-e" style="background:'+b.couleur+'1a">'+b.emoji+'</div>'
+          +'<div class="bt-i">'
+            +'<div class="bt-n" style="color:#16140f">'+esc(b.nom)
+              + (niv>0 ? '<span class="bt-lv'+(niv>=5?' max':'')+'">Niv '+niv+'</span>' : '')
+            +'</div>'
+            +'<div class="bt-d">'+esc(b.description)+'</div>'
+            + (niv>0 ? '<div class="bt-f now">&#10003; '+esc(b.effet)+'</div>' : '')
+            + (!lock && !max
+                ? '<div class="bt-f next">&rarr; '+esc(b.effet_suivant)+'</div>'
+                : '')
+            + dots
+          +'</div>'
+          + btn
+        +'</div>';
+      }).join('')
+    : '';
+}
+
+async function construire(code){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('construire',{p_code:code});
+    if(error) throw error;
+    vib([35,25,65]);
+    toast(data.emoji+' '+esc(data.nom)+' &mdash; niveau '+data.niveau);
+    await charger(); bump('argV');
+  }catch(e){
+    console.warn(e);
+    toast(msgErr(e), true);
+  }
+  busy=false;
+}
+
 /* ═════════ NAVIRES DISPUTÉS (le vrai multi) ═════════ */
 var DSP = null;
 
@@ -1248,6 +1350,8 @@ function msgErr(e){
   if(m.indexOf('niveau')>=0 && m.indexOf('requis')>=0) return 'Ton niveau est trop bas pour lui.';
   if(m.indexOf('formation terminee')>=0||m.indexOf('formation terminée')>=0) return 'Il est deja au maximum.';
   if(m.indexOf('travaille pas pour toi')>=0) return 'Il ne fait pas partie de ton equipe.';
+  if(m.indexOf('deja au maximum')>=0||m.indexOf('déjà au maximum')>=0) return 'Ce batiment est deja au maximum.';
+  if(m.indexOf('batiment inconnu')>=0||m.indexOf('bâtiment inconnu')>=0) return 'Batiment inconnu.';
   if(m.indexOf('port ferm')>=0) return 'Ton port est ferme par la douane.';
   if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
@@ -1267,7 +1371,7 @@ async function charger(){
       var f=fraicheur(nv);
       nv.__vp = f>0 ? Math.round(nv.valeur/f) : nv.valeur;   // valeur pleine (avant pourriture)
     });
-    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendRep(); rendContrats(); rendEffets(); rendEvents(); majPastille();
+    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendBatiments(); rendRep(); rendContrats(); rendEffets(); rendEvents(); majPastille();
   }catch(e){ console.warn(e); toast(msgErr(e),true); }
 }
 
