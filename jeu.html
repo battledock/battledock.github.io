@@ -309,6 +309,41 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .nv .dot{position:absolute;top:3px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;
   background:#c0392b;box-shadow:0 0 0 2px #fff;animation:dotP 1.4s ease-in-out infinite}
 @keyframes dotP{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.75}}
+
+/* ═══ DOCKERS VIVANTS ═══ */
+.dk{min-width:104px;padding:12px 10px}
+.dk-av{position:relative}
+.dk-nv{position:absolute;bottom:-2px;right:-2px;width:17px;height:17px;border-radius:50%;
+  background:#16140f;color:#ffcf3f;font-size:9px;font-weight:900;display:flex;
+  align-items:center;justify-content:center;border:2px solid #fff}
+.dk-hm{font-size:14px;margin-top:5px;line-height:1}
+.dk-fb{height:4px;background:#f0ece2;border-radius:3px;overflow:hidden;margin-top:7px}
+.dk-ff{height:100%;border-radius:3px;transition:width .5s,background .5s}
+.dk-fl{font-size:8px;font-weight:800;color:#a09888;margin-top:4px;letter-spacing:.3px}
+.dk-vt{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:#16a34a;margin-top:3px}
+.dk-vt.low{color:#c0392b}
+.dk.tired{background:#fffaf5}
+.dk.dead{background:#fff5f5;border:1px solid #fca5a5}
+
+/* bandeau fatigue de l'équipe */
+.eqb{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:12px 14px;
+  margin-bottom:10px;box-shadow:0 2px 12px rgba(22,20,15,.05)}
+.eqb-i{flex:1;min-width:0}
+.eqb-l{font-size:9px;font-weight:900;letter-spacing:1.2px;color:#a09888;margin-bottom:5px}
+.eqb-b{height:5px;background:#f0ece2;border-radius:3px;overflow:hidden}
+.eqb-f{height:100%;border-radius:3px;transition:width .5s,background .5s}
+.eqb-d{font-size:10px;color:#8a8278;margin-top:5px;line-height:1.4}
+.eqb-btn{background:#16140f;border:none;border-radius:11px;padding:11px 15px;color:#fff;
+  font-family:Inter;font-size:10.5px;font-weight:900;letter-spacing:.6px;cursor:pointer;
+  flex-shrink:0;transition:transform .14s;white-space:nowrap}
+.eqb-btn:active{transform:scale(.94)}
+.eqb-btn:disabled{background:#cfc8ba;cursor:not-allowed}
+.eqb-btn small{display:block;font-family:'Space Mono',monospace;font-size:9px;opacity:.7;margin-top:2px}
+
+/* la phrase du docker */
+.dk-say{position:relative;background:#16140f;color:#fff;border-radius:12px;padding:10px 13px;
+  margin-bottom:10px;font-size:11.5px;line-height:1.45;font-style:italic}
+.dk-say b{font-style:normal;color:#ffcf3f;font-weight:800}
 </style>
 </head>
 <body>
@@ -337,6 +372,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
     <div class="sec-h"><span class="sec-t">&Agrave; QUAI</span><span class="sec-n" id="shipN">&mdash;</span></div>
     <div id="ships"><div class="skel"></div><div class="skel"></div></div>
     <div class="sec-h"><span class="sec-t">TON &Eacute;QUIPE</span><span class="sec-n" id="crewN">&mdash;</span></div>
+    <div id="eqBox"></div>
+    <div id="sayBox"></div>
     <div class="crew" id="crew"></div>
     <div class="sec-h"><span class="sec-t">JOURNAL</span></div>
     <div class="jr" id="journal"></div>
@@ -539,12 +576,84 @@ function rendNavires(){
 }
 function rendEquipe(){
   var eq=(D&&D.equipe)||[];
+  var j=D&&D.joueur;
   var occupe=((D&&D.navires)||[]).some(function(n){return restant(n.fini_le)>0;});
   $('crewN').textContent=eq.length+' docker'+(eq.length>1?'s':'');
+
+  /* ── bandeau : fatigue de l'équipe + la tournée ── */
+  if(j && eq.length){
+    var fat=j.fatigue_moyenne||0;
+    var col = fat>=70?'#c0392b' : (fat>=50?'#f59e0b' : '#16a34a');
+    var txt = fat>=85 ? 'Ils sont a bout. La greve n\'est pas loin.'
+            : (fat>=70 ? 'Creves. Ils ralentissent serieusement.'
+            : (fat>=50 ? 'Fatigues. Le rendement baisse.'
+            : (fat>=20 ? 'Ca va. Ils tiennent le rythme.'
+            : 'En forme. Le quai tourne bien.')));
+    var prix=j.prix_tournee||0;
+    var peut = fat>=20 && j.argent>=prix;
+
+    $('eqBox').innerHTML=
+      '<div class="eqb">'
+      +'<div class="eqb-i">'
+        +'<div class="eqb-l">FATIGUE DE L\'&Eacute;QUIPE &mdash; '+fat+'%</div>'
+        +'<div class="eqb-b"><div class="eqb-f" id="eqf" style="width:'+fat+'%;background:'+col+'"></div></div>'
+        +'<div class="eqb-d" id="eqd">'+txt+'</div>'
+      +'</div>'
+      +'<button class="eqb-btn" '+(peut?'':'disabled')+' onclick="tournee()">'
+        +'&#127867; TOURN&Eacute;E<small>'+fmt(prix)+' F</small></button>'
+      +'</div>';
+  } else {
+    $('eqBox').innerHTML='';
+  }
+
+  /* ── la phrase d'un docker (le plus fatigué qui a quelque chose a dire) ── */
+  var parle=null;
+  eq.forEach(function(d){
+    if(!d.humeur) return;
+    if(!parle || d.fatigue > parle.fatigue) parle=d;
+  });
+  $('sayBox').innerHTML = (parle && (parle.fatigue||0)>=50 && parle.humeur)
+    ? '<div class="dk-say"><b>'+esc(parle.nom)+'</b> &mdash; '+esc(parle.humeur.texte)+'</div>'
+    : '';
+
+  /* ── les fiches ── */
   $('crew').innerHTML=eq.map(function(d){
-    return '<div class="dk'+(occupe?' busy':'')+'"><div class="dk-av">'+tete(d)+'</div>'
-      +'<div class="dk-n">'+esc(d.nom)+'</div><div class="dk-t">'+esc(d.trait)+'</div></div>';
-  }).join('')+'<div class="dk dk-add" onclick="nav(2)"><div class="p">+</div><div class="l">EMBAUCHER</div></div>';
+    var f=d.fatigue||0;
+    var fc = f>=70?'#c0392b' : (f>=50?'#f59e0b' : '#16a34a');
+    var cls='dk'+(occupe?' busy':'')+(f>=70?' dead':(f>=50?' tired':''));
+    var vit=d.vitesse||d.vitesse_base||1;
+    var lent = vit < (d.vitesse_base||1);
+
+    return '<div class="'+cls+'">'
+      +'<div class="dk-av">'+tete(d)
+        + (d.niveau>1 ? '<span class="dk-nv">'+d.niveau+'</span>' : '')
+      +'</div>'
+      +'<div class="dk-n">'+esc(d.nom)+'</div>'
+      + (d.humeur ? '<div class="dk-hm">'+d.humeur.emoji+'</div>' : '')
+      +'<div class="dk-fb"><div class="dk-ff" id="dkf'+esc(d.code)+'" style="width:'+f+'%;background:'+fc+'"></div></div>'
+      +'<div class="dk-fl" id="dkl'+esc(d.code)+'">'+(d.humeur?esc(d.humeur.label):'')+'</div>'
+      +'<div class="dk-vt'+(lent?' low':'')+'">&times;'+vit+'</div>'
+    +'</div>';
+  }).join('')
+  +'<div class="dk dk-add" onclick="nav(2)"><div class="p">+</div><div class="l">EMBAUCHER</div></div>';
+}
+
+/* ── payer une tournée ── */
+async function tournee(){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('payer_tournee');
+    if(error) throw error;
+    vib([30,20,60]);
+    toast('&#127867; Tourn&eacute;e pay&eacute;e. L\'&eacute;quipe repart &agrave; z&eacute;ro.');
+    await charger();
+    bump('argV');
+  }catch(e){
+    console.warn(e);
+    toast(msgErr(e), true);
+  }
+  busy=false;
 }
 function rendJournal(){
   var j=(D&&D.journal)||[];
@@ -573,7 +682,8 @@ function rendUp(){
         return '<div class="buy"><div class="buy-av">'+tete(d)+'</div>'
           +'<div class="buy-i"><div class="buy-n">'+esc(d.nom)+'</div>'
           +'<div class="buy-t">'+esc(d.trait)+'</div>'
-          +'<div class="buy-s">Vitesse x'+d.vitesse+'</div></div>'
+          +'<div class="buy-s">Vitesse &times;'+d.vitesse
+            + (d.endurance ? ' &middot; Endurance &times;'+d.endurance : '') +'</div></div>'
           +'<button class="buy-b" '+(j.argent<d.prix?'disabled':'')+' onclick="embaucher(\''+d.code+'\')">'+fmt(d.prix)+' F</button></div>';
       }).join('')
     : '<div class="out"><div class="out-t">Equipe complete</div><div class="out-d">Tout le port travaille pour toi.</div></div>';
@@ -1031,6 +1141,8 @@ function msgErr(e){
   if(m.indexOf('quai plein')>=0) return 'Ton quai est plein.';
   if(m.indexOf('deja pris')>=0||m.indexOf('déjà pris')>=0) return 'Quelqu\'un l\'a pris avant toi.';
   if(m.indexOf('niveau insuffisant')>=0) return 'Ton niveau est trop bas.';
+  if(m.indexOf('ils sont frais')>=0) return 'Ton equipe est deja en forme.';
+  if(m.indexOf('aucun docker')>=0) return 'Tu n\'as personne a payer.';
   if(m.indexOf('port ferm')>=0) return 'Ton port est ferme par la douane.';
   if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
