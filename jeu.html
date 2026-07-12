@@ -1677,6 +1677,47 @@ button:disabled{
 .sp-ok:active{box-shadow:0 1px 0 #6a1808}
 .sp-ok:disabled{background:#c8b8a0;border-color:#8a7050;color:#8a9098;
   box-shadow:0 4px 0 #8a7050;cursor:not-allowed;transform:none}
+
+/* ═══ CLASSEMENT — CARTES ═══ */
+.kc{display:flex;align-items:center;gap:13px;border-radius:18px;padding:14px;
+  margin-bottom:11px;position:relative;overflow:hidden;
+  transition:transform .18s cubic-bezier(.2,.9,.3,1.2)}
+.kc:active{transform:scale(.985)}
+.kc.k1{background:linear-gradient(135deg,#ffd95e,#e8a020);border:2px solid #a06810;
+  box-shadow:0 5px 0 #7a4c08, 0 0 32px rgba(255,217,94,.4);color:#3a2000}
+.kc.k1::before{content:"";position:absolute;top:-34px;right:-34px;width:100px;height:100px;
+  border-radius:50%;background:rgba(255,255,255,.24);pointer-events:none}
+.kc.k2{background:linear-gradient(135deg,#eef3f6,#c0ccd4);border:2px solid #8a9aa4;
+  box-shadow:0 5px 0 #6a7a84;color:#2a3a42}
+.kc.k2::before{content:"";position:absolute;top:-30px;right:-30px;width:86px;height:86px;
+  border-radius:50%;background:rgba(255,255,255,.32);pointer-events:none}
+.kc.k3{background:linear-gradient(135deg,#e8b878,#c88848);border:2px solid #a07038;
+  box-shadow:0 5px 0 #7a5428;color:#3a2410}
+.kc.k3::before{content:"";position:absolute;top:-30px;right:-30px;width:86px;height:86px;
+  border-radius:50%;background:rgba(255,255,255,.2);pointer-events:none}
+.kc.kn{background:linear-gradient(180deg,#f5ede0,#e8d8c0);border:2px solid #8a7050;
+  box-shadow:0 4px 0 #6a5438;color:#1a2e35;padding:11px}
+.kc.kn.moi{border-color:#e07a5f;box-shadow:0 4px 0 #8a3020, 0 0 18px rgba(224,122,95,.3)}
+.kc-r{font-family:'Bangers',cursive;font-size:32px;width:34px;text-align:center;
+  flex-shrink:0;position:relative;z-index:2;line-height:1;
+  text-shadow:0 2px 0 rgba(0,0,0,.16)}
+.kc.kn .kc-r{font-size:21px;width:26px;color:#8a7050;text-shadow:none}
+.kc-a{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  border:2.5px solid rgba(0,0,0,.22);position:relative;z-index:2;background:#e8dcc8}
+.kc.kn .kc-a{width:40px;height:40px;border-width:2px}
+.kc-a svg{width:100%;display:block}
+.kc-i{flex:1;min-width:0;position:relative;z-index:2}
+.kc-n{font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.kc.kn .kc-n{font-size:13px}
+.kc-d{font-size:10px;font-weight:600;opacity:.62;margin-top:2px}
+.kc-t{display:inline-block;font-size:8.5px;font-weight:800;background:rgba(0,0,0,.17);
+  border-radius:4px;padding:1px 5px;flex-shrink:0}
+.kc-moi{color:#c85a3f;font-size:9px;font-weight:800;flex-shrink:0}
+.kc-v{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;flex-shrink:0;
+  position:relative;z-index:2;text-align:right}
+.kc.kn .kc-v{font-size:12.5px;color:#3d8168}
+.kc-v small{display:block;font-size:8px;font-weight:700;opacity:.55;margin-top:1px}
 </style>
 </head>
 <body>
@@ -2416,24 +2457,34 @@ async function former(code){
   busy=false;
 }
 async function rendLb(){
-  var box=$('lb');
-  box.innerHTML='<div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div>';
+  var box = $('lb');
+  box.innerHTML = '<div class="skel" style="height:60px"></div>'
+                + '<div class="skel" style="height:60px"></div>';
   try{
-    const {data,error}=await sb.rpc('classement');
+    const {data,error} = await sb.rpc('classement');
     if(error) throw error;
-    if(!data||!data.length){ box.innerHTML='<div class="out"><div class="out-d">Personne encore.</div></div>'; return; }
-    box.innerHTML=data.map(function(r){
-      return '<div class="lb-r'+(r.moi?' moi':'')+'">'
-        +'<div class="lb-p'+(r.rang<=3?' top':'')+'">'+r.rang+'</div>'
-        +'<div style="flex:1;min-width:0"><div class="lb-n">'+esc(r.pseudo)
-          + (r.titre ? '<span class="titre">'+esc(r.titre)+'</span>' : '')
-          + (r.moi?' <span style="color:#c85a3f;font-size:9px">(TOI)</span>':'')+'</div>'
-        +'<div class="lb-l">NIVEAU '+r.niveau+' &middot; '+fmt(r.xp)+' XP</div></div>'
-        +'<div class="lb-v">'+fmt(r.argent)+' &euro;</div></div>';
+    if(!data || !data.length){
+      box.innerHTML = '<div class="out"><div class="out-d">Personne encore.</div></div>';
+      return;
+    }
+    box.innerHTML = data.map(function(r){
+      var k = r.rang===1 ? 'k1' : (r.rang===2 ? 'k2' : (r.rang===3 ? 'k3' : 'kn'));
+      return '<div class="kc '+k+(r.moi && k==='kn' ? ' moi' : '')+'">'
+        +'<div class="kc-r">'+r.rang+'</div>'
+        +'<div class="kc-a">'+tete(r.avatar || 'a1')+'</div>'
+        +'<div class="kc-i">'
+          +'<div class="kc-n">'+esc(r.pseudo)
+            + (r.titre ? '<span class="kc-t">'+esc(r.titre)+'</span>' : '')
+            + (r.moi ? '<span class="kc-moi">(TOI)</span>' : '')
+          +'</div>'
+          +'<div class="kc-d">Niveau '+r.niveau+' &middot; '+fmt(r.xp)+' XP</div>'
+        +'</div>'
+        +'<div class="kc-v">'+fmt(r.argent)+'<small>&euro;</small></div>'
+      +'</div>';
     }).join('');
   }catch(e){
     console.warn(e);
-    box.innerHTML='<div class="out"><div class="out-d">Impossible de charger le classement.</div></div>';
+    box.innerHTML = '<div class="out"><div class="out-d">Impossible de charger.</div></div>';
   }
 }
 
@@ -2735,60 +2786,267 @@ function tick(){
 /* ═════════ LE PROFIL ═════════ */
 var PRO = null;
 
-/* ── LES 12 TÊTES DE DOCKERS ── */
-var AVATARS = {
-  a1:  {skin:'#d8a87c', couleur:'#8a3a2a', chapeau:'casque',    moustache:true,  barbe:false},
-  a2:  {skin:'#e0b48a', couleur:'#3a5a7a', chapeau:'casquette', moustache:false, barbe:false},
-  a3:  {skin:'#a07850', couleur:'#3a4250', chapeau:'casque',    moustache:true,  barbe:true},
-  a4:  {skin:'#c09468', couleur:'#5a7a3a', chapeau:'casquette', moustache:false, barbe:true},
-  a5:  {skin:'#e8bc94', couleur:'#4a3a5a', chapeau:'casque',    moustache:false, barbe:false},
-  a6:  {skin:'#b08050', couleur:'#2a5a4a', chapeau:'bonnet',    moustache:true,  barbe:false},
-  a7:  {skin:'#8a6040', couleur:'#6a4a2a', chapeau:'casque',    moustache:true,  barbe:true},
-  a8:  {skin:'#f0cca8', couleur:'#7a2a5a', chapeau:'casquette', moustache:false, barbe:false},
-  a9:  {skin:'#7a5638', couleur:'#2a2a3a', chapeau:'bonnet',    moustache:false, barbe:true},
-  a10: {skin:'#d0a078', couleur:'#4a3a2e', chapeau:'casquette', moustache:true,  barbe:false},
-  a11: {skin:'#c8a078', couleur:'#1a3a5a', chapeau:'casque',    moustache:false, barbe:true},
-  a12: {skin:'#9a7048', couleur:'#5a2a2a', chapeau:'bonnet',    moustache:true,  barbe:true}
-};
 
-/* dessiner une tête (plus grande que celles du jeu) */
-function tetePro(a, taille){
+/* ═════════ LES 12 TÊTES ═════════ */
+var AVATARS = {"a1": {"bg1": "#F0D5AA","bg2": "#DBB584","skin": "#EDBF96","ombre": "#C99268","lum": "#F9DCC0","hair": "#5C4033","hair2": "#77543F","hair3": "#94705A","veste": "#B23A2F","veste2": "#8A2A22","coupe": "courts","moust": "grosse","barbe": "naissante","acc": null,"age": 2,"expr": "fatigue","iris": "#6B4E2E"},"a2": {"bg1": "#B5D8E0","bg2": "#8FBCC8","skin": "#F0CBA8","ombre": "#D09E76","lum": "#FBE2C6","hair": "#2A1F16","hair2": "#42322A","hair3": "#5C4638","veste": "#37506B","veste2": "#243748","coupe": "brosse","moust": null,"barbe": null,"acc": null,"age": 0,"expr": "sourire","iris": "#4A6B7A"},"a3": {"bg1": "#DECBA8","bg2": "#C4AC82","skin": "#C99A6A","ombre": "#A3764C","lum": "#E0B892","hair": "#1F1710","hair2": "#3A2C22","hair3": "#524034","veste": "#3D4A52","veste2": "#2A343A","coupe": "crane","moust": "grosse","barbe": "pleine","acc": null,"age": 2,"expr": "dur","iris": "#3E2C1A"},"a4": {"bg1": "#C2DCC8","bg2": "#9BC0A4","skin": "#E8BC94","ombre": "#C4926A","lum": "#F6D6B6","hair": "#4A3520","hair2": "#66492F","hair3": "#856140","veste": "#5B8C85","veste2": "#3F6B65","coupe": "ondules","moust": null,"barbe": "bouc","acc": "boucle","age": 0,"expr": "sourire","iris": "#5A7A45"},"a5": {"bg1": "#EED5B8","bg2": "#D8B892","skin": "#F2D2B0","ombre": "#CFA57F","lum": "#FCE8D0","hair": "#5C4033","hair2": "#7A5744","hair3": "#96725C","veste": "#7A4E7A","veste2": "#5C3A5C","coupe": "raie","moust": "fine","barbe": null,"acc": "lunettes","age": 1,"expr": "neutre","iris": "#6B4E2E"},"a6": {"bg1": "#D0C0DC","bg2": "#AB9BC0","skin": "#C58F63","ombre": "#9E6B41","lum": "#DCB08A","hair": "#3D2B1F","hair2": "#54402F","hair3": "#6E5442","veste": "#2E7D6B","veste2": "#1E5A4C","coupe": "chauve","moust": "grosse","barbe": "collier","acc": null,"age": 2,"expr": "dur","iris": "#4A3520"},"a7": {"bg1": "#EEC2B0","bg2": "#D49E88","skin": "#B07D50","ombre": "#8C5F36","lum": "#C89870","hair": "#1F1710","hair2": "#3A2C22","hair3": "#524034","veste": "#8AB17D","veste2": "#6A9160","coupe": "degarni","moust": "grosse","barbe": "pleine","acc": null,"age": 2,"expr": "neutre","iris": "#3E2C1A"},"a8": {"bg1": "#F5DCBE","bg2": "#E0BF9A","skin": "#F5D5B5","ombre": "#D3AB84","lum": "#FDEDD8","hair": "#2A1F16","hair2": "#453329","hair3": "#5E4A3C","veste": "#E76F51","veste2": "#C1553B","coupe": "boucles","moust": null,"barbe": null,"acc": null,"age": 0,"expr": "sourire","iris": "#5A4530"},"a9": {"bg1": "#94B0C0","bg2": "#6F8FA3","skin": "#9E7047","ombre": "#7A4F2A","lum": "#B88E68","hair": "#1A1410","hair2": "#2E2620","hair3": "#443830","veste": "#2A2A3A","veste2": "#18182A","coupe": "longs","moust": null,"barbe": "pleine","acc": "balafre","age": 1,"expr": "dur","iris": "#2E2218"},"a10": {"bg1": "#DECFAF","bg2": "#C0AE88","skin": "#DCAE82","ombre": "#B4835A","lum": "#EFC9A4","hair": "#8A7A6A","hair2": "#A39181","hair3": "#B8A695","veste": "#4A3A2E","veste2": "#332619","coupe": "catogan","moust": "grosse","barbe": "naissante","acc": null,"age": 2,"expr": "neutre","iris": "#5A4A38"},"a11": {"bg1": "#BAD0E6","bg2": "#93AECC","skin": "#D9A87E","ombre": "#B07F53","lum": "#EEC5A0","hair": "#2A1F16","hair2": "#453329","hair3": "#5E4A3C","veste": "#1A3A5A","veste2": "#0F2540","coupe": "courts","moust": null,"barbe": "bouc","acc": "boucle","age": 0,"expr": "sourire","iris": "#4A6B7A"},"a12": {"bg1": "#E8C2B0","bg2": "#CFA08C","skin": "#B08050","ombre": "#8C5F36","lum": "#CE9E72","hair": "#6A5A4A","hair2": "#84725F","hair3": "#9C8A78","veste": "#8A3A2A","veste2": "#6A2A1C","coupe": "ondules","moust": "grosse","barbe": "pleine","acc": "grain","age": 2,"expr": "fatigue","iris": "#6B4E2E"}};
+var AV_NOMS = {"a1": "Le vieux de la vieille","a2": "Le rapide","a3": "Le taiseux","a4": "Le bricoleur","a5": "Le sérieux","a6": "Le colosse","a7": "Le patriarche","a8": "Le minot","a9": "L'Ombre","a10": "Le contremaître","a11": "Le costaud","a12": "Le patron"};
+
+function tete(a){
   var d = AVATARS[a] || AVATARS.a1;
-  var hat = '';
+  var i = a;
+  var skin=d.skin, ombre=d.ombre, lum=d.lum;
+  var hair=d.hair, hair2=d.hair2, hair3=d.hair3;
 
-  if(d.chapeau === 'casque'){
-    hat = '<path d="M14,30 Q14,11 32,10 Q50,11 50,30 Q50,32 48,34 Q32,21 16,34 Q14,32 14,30 Z" fill="#ffd23f"/>'
-        + '<rect x="10" y="32" width="44" height="5" rx="2.5" fill="#e0951c"/>'
-        + '<rect x="30" y="10" width="4" height="24" fill="#e0951c" opacity=".5"/>';
-  } else if(d.chapeau === 'casquette'){
-    hat = '<path d="M15,31 Q15,13 32,12 Q49,13 49,31 L49,33 Q32,23 15,33 Z" fill="#2a3a4a"/>'
-        + '<path d="M11,33 Q32,23 53,33 L55,38 Q32,28 9,38 Z" fill="#1a2632"/>';
-  } else {
-    /* bonnet */
-    hat = '<path d="M15,32 Q15,12 32,11 Q49,12 49,32 Q32,26 15,32 Z" fill="#8a3a2a"/>'
-        + '<rect x="13" y="30" width="38" height="7" rx="3" fill="#6a2a1c"/>';
+  /* ── CHEVEUX ── */
+  var c = '';
+  var C = d.coupe;
+  if(C==='courts'){
+    c = '<path d="M16,31 Q15,12 32,11 Q49,12 48,31 Q48,21 44,17 Q38,13 32,14 Q24,13 19,18 Q16,22 16,31 Z" fill="'+hair+'"/>'
+      + '<path d="M19,18 Q25,13 33,14 Q28,17 23,22 Q19,26 18,31 Z" fill="'+hair2+'"/>'
+      + '<path d="M20,19 Q25,15 31,15.5 Q26,18 22,23 Z" fill="'+hair3+'"/>'
+      + '<path d="M22,17 Q26,14 31,15" stroke="'+hair3+'" stroke-width=".8" fill="none" opacity=".7" stroke-linecap="round"/>'
+      + '<path d="M35,14.5 Q40,15.5 44,19" stroke="'+hair3+'" stroke-width=".8" fill="none" opacity=".5" stroke-linecap="round"/>'
+      + '<path d="M18.5,29 Q22,25 27,23.5 Q32,22.5 37,23.5 Q42,25 45.5,29" stroke="'+ombre+'" stroke-width=".6" fill="none" opacity=".35"/>';
+  } else if(C==='brosse'){
+    c = '<path d="M16,30 Q16,18 32,17 Q48,18 48,30 Q48,24 46,21 L44.5,15 L42,20 L39,13 L36,19 L32,12 L28,19 L25,13 L22,20 L19.5,15 L18,21 Q16,24 16,30 Z" fill="'+hair+'"/>'
+      + '<path d="M18,21 L19.5,15 L22,20 L25,13 L28,19 L30,15 Q24,20 20,26 Z" fill="'+hair2+'"/>'
+      + '<path d="M20,19 L21.5,15.5 L23,19 L25.5,14 L27,18 Q23,21 21,25 Z" fill="'+hair3+'"/>'
+      + '<path d="M32,12 L32,17" stroke="'+hair3+'" stroke-width=".8" opacity=".6"/>'
+      + '<path d="M39,13 L38.5,18" stroke="'+hair3+'" stroke-width=".7" opacity=".5"/>';
+  } else if(C==='crane'){
+    c = '<path d="M17,30 Q16,13 32,12 Q48,13 47,30 Q47,22 43,19 Q32,15 21,19 Q17,22 17,30 Z" fill="'+hair+'" opacity=".42"/>'
+      + '<path d="M17,30 Q16,13 32,12 Q40,12 45,16 Q32,17 24,22 Q18,26 17,30 Z" fill="'+hair+'" opacity=".22"/>'
+      + '<circle cx="24" cy="19" r=".5" fill="'+hair+'" opacity=".5"/><circle cx="30" cy="16" r=".5" fill="'+hair+'" opacity=".5"/>'
+      + '<circle cx="37" cy="16.5" r=".5" fill="'+hair+'" opacity=".5"/><circle cx="42" cy="20" r=".5" fill="'+hair+'" opacity=".5"/>'
+      + '<ellipse cx="27" cy="18" rx="6" ry="3" fill="#fff" opacity=".13"/>';
+  } else if(C==='ondules'){
+    c = '<path d="M15,30 Q13,11 32,10 Q51,11 49,30 Q49,23 46,19 Q49,15 44,14 Q42,18 38,14 Q35,11 32,13 Q29,11 26,14 Q22,18 20,14 Q15,15 18,19 Q15,23 15,30 Z" fill="'+hair+'"/>'
+      + '<path d="M20,16 Q26,13 32,14 Q27,17 22,22 Q18,27 17,31 Q16,22 20,16 Z" fill="'+hair2+'"/>'
+      + '<path d="M21,17 Q26,14.5 31,15.5 Q26,18 22,23 Z" fill="'+hair3+'"/>'
+      + '<path d="M20,17 Q24,14 28,16 Q32,18 36,15 Q40,13 44,17" stroke="'+hair3+'" stroke-width=".9" fill="none" opacity=".55" stroke-linecap="round"/>'
+      + '<path d="M18.5,29 Q22,25 27,23.5 Q32,22.5 37,23.5 Q42,25 45.5,29" stroke="'+ombre+'" stroke-width=".6" fill="none" opacity=".35"/>';
+  } else if(C==='longs'){
+    c = '<path d="M15,30 Q13,11 32,10 Q51,11 49,30 Q49,20 44,16 Q32,12 20,16 Q15,20 15,30 Z" fill="'+hair+'"/>'
+      + '<path d="M15,28 Q12,37 13,46 Q17,44 18,35 Q17,31 15,28 Z" fill="'+hair+'"/>'
+      + '<path d="M49,28 Q52,37 51,46 Q47,44 46,35 Q47,31 49,28 Z" fill="'+hair+'"/>'
+      + '<path d="M15,28 Q13,36 14,43 Q16,40 16.5,33 Z" fill="'+hair2+'"/>'
+      + '<path d="M20,16 Q28,13 36,14 Q28,17 22,23 Q17,28 16,32 Q16,21 20,16 Z" fill="'+hair2+'"/>'
+      + '<path d="M21,17 Q27,14.5 33,15 Q27,18 23,23 Z" fill="'+hair3+'"/>'
+      + '<path d="M15.5,30 Q13.5,37 14,44" stroke="'+hair3+'" stroke-width=".8" fill="none" opacity=".5" stroke-linecap="round"/>';
+  } else if(C==='chauve'){
+    c = '<path d="M16,34 Q16,26 18,21 Q17,29 17.5,35 Q17,35 16,34 Z" fill="'+hair+'"/>'
+      + '<path d="M48,34 Q48,26 46,21 Q47,29 46.5,35 Q47,35 48,34 Z" fill="'+hair+'"/>'
+      + '<path d="M16,35 Q15,29 17,23 Q19,30 19,37 Q17,37 16,35 Z" fill="'+hair+'"/>'
+      + '<path d="M48,35 Q49,29 47,23 Q45,30 45,37 Q47,37 48,35 Z" fill="'+hair+'"/>'
+      + '<path d="M16.5,34 Q16,28 17.5,24 Q18.5,29 18.5,34 Z" fill="'+hair2+'"/>'
+      + '<ellipse cx="27" cy="17.5" rx="7" ry="3.5" fill="#fff" opacity=".18"/>'
+      + '<ellipse cx="24" cy="20" rx="3" ry="1.5" fill="#fff" opacity=".12"/>'
+      + '<path d="M20,22 Q26,17 32,16.5 Q38,17 44,22" stroke="#fff" stroke-width=".7" fill="none" opacity=".13"/>';
+  } else if(C==='degarni'){
+    c = '<path d="M17,31 Q17,21 22,18 Q19,22 19.5,28 Q21,25 25,23 Q29,21 32,21 Q35,21 39,23 Q43,25 44.5,28 Q45,22 42,18 Q47,21 47,31 Q47,25 43,22 Q38,19 32,19 Q26,19 21,22 Q17,25 17,31 Z" fill="'+hair+'"/>'
+      + '<path d="M17,31 Q17,21 22,18 Q19,23 19.5,29 Q18,29 17,31 Z" fill="'+hair2+'"/>'
+      + '<path d="M18,29 Q18,23 21,19.5 Q19.5,24 20,28 Z" fill="'+hair3+'"/>'
+      + '<ellipse cx="32" cy="17.5" rx="8" ry="3" fill="#fff" opacity=".14"/>'
+      + '<path d="M25,19 Q32,17 39,19" stroke="#fff" stroke-width=".7" fill="none" opacity=".12"/>';
+  } else if(C==='boucles'){
+    c = '<circle cx="20" cy="21" r="6.5" fill="'+hair+'"/><circle cx="28" cy="15" r="7" fill="'+hair+'"/>'
+      + '<circle cx="37" cy="15" r="7" fill="'+hair+'"/><circle cx="45" cy="21" r="6.5" fill="'+hair+'"/>'
+      + '<circle cx="16.5" cy="28" r="5" fill="'+hair+'"/><circle cx="48" cy="28" r="5" fill="'+hair+'"/>'
+      + '<path d="M17,30 Q17,17 32,16 Q47,17 47,30 Q47,22 40,19 Q32,17 24,19 Q17,22 17,30 Z" fill="'+hair+'"/>'
+      + '<circle cx="23.5" cy="18" r="3.2" fill="'+hair2+'"/><circle cx="32.5" cy="13.5" r="3.4" fill="'+hair2+'"/>'
+      + '<circle cx="18.5" cy="25" r="2.6" fill="'+hair2+'"/><circle cx="41" cy="15" r="2.8" fill="'+hair2+'"/>'
+      + '<circle cx="22.5" cy="17" r="1.4" fill="'+hair3+'"/><circle cx="31.5" cy="12.5" r="1.5" fill="'+hair3+'"/>'
+      + '<circle cx="17.8" cy="24" r="1.1" fill="'+hair3+'"/><circle cx="40" cy="14" r="1.2" fill="'+hair3+'"/>';
+  } else if(C==='catogan'){
+    c = '<path d="M16,31 Q16,12 32,11 Q48,12 48,31 Q48,22 44,18 Q32,14 20,18 Q16,22 16,31 Z" fill="'+hair+'"/>'
+      + '<path d="M20,18 Q30,15 42,17 Q32,19 24,24 Q19,28 17,32 Q17,23 20,18 Z" fill="'+hair2+'"/>'
+      + '<path d="M21,19 Q29,16 38,17.5 Q30,20 24,25 Z" fill="'+hair3+'"/>'
+      + '<path d="M22,19 Q30,16.5 40,18" stroke="'+hair3+'" stroke-width=".8" fill="none" opacity=".6" stroke-linecap="round"/>'
+      + '<path d="M21,23 Q29,20 39,21.5" stroke="'+hair3+'" stroke-width=".7" fill="none" opacity=".45" stroke-linecap="round"/>'
+      + '<ellipse cx="50.5" cy="27" rx="4.5" ry="7" fill="'+hair+'"/>'
+      + '<ellipse cx="49.8" cy="25" rx="2.2" ry="3.4" fill="'+hair2+'"/>'
+      + '<rect x="45.5" y="23.5" width="3.5" height="3" rx="1.5" fill="#8a5a3a"/>';
+  } else if(C==='raie'){
+    c = '<path d="M16,31 Q15,12 32,11 Q49,12 48,31 Q48,20 43,16 Q37,13 32.5,14.5 L32,21 L31.5,14.5 Q27,13 21,17 Q16,21 16,31 Z" fill="'+hair+'"/>'
+      + '<path d="M21,17 Q26,14 31,14.5 L31.5,20 Q26,17 21,22 Q18,26 17,31 Q17,21 21,17 Z" fill="'+hair2+'"/>'
+      + '<path d="M22,18 Q26,15.5 30.5,15.5 L31,19 Q26,17.5 22,22 Z" fill="'+hair3+'"/>'
+      + '<path d="M32,14 L32,21" stroke="'+ombre+'" stroke-width=".7" opacity=".45"/>'
+      + '<path d="M18.5,29 Q22,25 27,23.5 Q32,22.5 37,23.5 Q42,25 45.5,29" stroke="'+ombre+'" stroke-width=".6" fill="none" opacity=".3"/>';
   }
 
-  var m = d.moustache
-    ? '<path d="M22,49 Q32,44 42,49 Q37,55 32,52 Q27,55 22,49 Z" fill="#3a2a1c"/>' : '';
-  var b = d.barbe
-    ? '<path d="M18,44 Q18,60 32,62 Q46,60 46,44 Q46,54 32,56 Q18,54 18,44 Z" fill="#3a2a1c" opacity=".85"/>' : '';
+  /* ── POILS ── */
+  var m = '';
+  if(d.moust==='grosse'){
+    m = '<path d="M21.5,47 Q27,43 32,45.2 Q37,43 42.5,47 Q38,52 32,49 Q26,52 21.5,47 Z" fill="'+hair+'"/>'
+      + '<path d="M21.5,47 Q26,44 31,45.5 Q27,47 24,49 Z" fill="'+hair2+'"/>'
+      + '<path d="M23,46.5 Q27,44.5 31,46" stroke="'+hair3+'" stroke-width=".6" fill="none" opacity=".5" stroke-linecap="round"/>';
+  } else if(d.moust==='fine'){
+    m = '<path d="M25,47 Q32,44.8 39,47 Q35,49.5 32,48.5 Q29,49.5 25,47 Z" fill="'+hair+'"/>';
+  }
 
-  return '<svg viewBox="0 0 64 64"'
-    + (taille ? ' width="'+taille+'" height="'+taille+'"' : '') + '>'
-    + '<circle cx="32" cy="32" r="32" fill="#e8dcc8"/>'
-    + '<path d="M8,64 Q8,46 32,44 Q56,46 56,64 Z" fill="'+d.couleur+'"/>'
-    + '<ellipse cx="32" cy="36" rx="18" ry="19" fill="'+d.skin+'"/>'
-    + '<path d="M14,36 Q14,17 32,17 Q23,25 22,38 Q22,49 32,55 Q14,50 14,36 Z" fill="#000" opacity=".12"/>'
-    + b
-    + hat
-    + '<ellipse cx="24.5" cy="35" rx="3.6" ry="3" fill="#fff"/>'
-    + '<ellipse cx="39.5" cy="35" rx="3.6" ry="3" fill="#fff"/>'
-    + '<circle cx="25" cy="35.5" r="1.8" fill="#2a1e14"/>'
-    + '<circle cx="40" cy="35.5" r="1.8" fill="#2a1e14"/>'
-    + '<path d="M32,38 L28.5,45 Q32,47.5 35.5,45 Z" fill="#000" opacity=".14"/>'
-    + m
-    + '</svg>';
+  var b = '';
+  if(d.barbe==='pleine'){
+    b = '<path d="M18,37 Q18,52 24,57.5 Q32,62 40,57.5 Q46,52 46,37 Q45,49 38,54.5 Q32,58 26,54.5 Q19,49 18,37 Z" fill="'+hair+'"/>'
+      + '<path d="M19,39 Q19,51 25,56 Q23,51 21,45 Q19,41 19,39 Z" fill="'+hair2+'"/>'
+      + '<path d="M22,44 Q24,49 27,53" stroke="'+hair3+'" stroke-width=".6" fill="none" opacity=".35" stroke-linecap="round"/>'
+      + '<path d="M32,48 Q32,53 32,57" stroke="'+hair3+'" stroke-width=".6" fill="none" opacity=".3" stroke-linecap="round"/>';
+  } else if(d.barbe==='bouc'){
+    b = '<path d="M26.5,49.5 Q32,47.5 37.5,49.5 Q37.5,56.5 32,58.5 Q26.5,56.5 26.5,49.5 Z" fill="'+hair+'"/>'
+      + '<path d="M27.5,51 Q30,50 32,50 Q30,53 29,56 Q27.5,53 27.5,51 Z" fill="'+hair2+'"/>';
+  } else if(d.barbe==='naissante'){
+    b = '<path d="M19,38 Q19,51 25,56 Q32,60 39,56 Q45,51 45,38 Q44,48 37,53 Q32,56 27,53 Q20,48 19,38 Z" fill="'+hair+'" opacity=".3"/>'
+      + '<circle cx="24" cy="47" r=".45" fill="'+hair+'" opacity=".55"/><circle cx="27" cy="52" r=".45" fill="'+hair+'" opacity=".55"/>'
+      + '<circle cx="32" cy="55" r=".45" fill="'+hair+'" opacity=".55"/><circle cx="37" cy="52" r=".45" fill="'+hair+'" opacity=".5"/>'
+      + '<circle cx="40" cy="47" r=".45" fill="'+hair+'" opacity=".5"/>';
+  } else if(d.barbe==='collier'){
+    b = '<path d="M19,35 Q19,50 25,56.5 Q32,61 39,56.5 Q45,50 45,35 Q44,47 37,52.5 Q32,56 27,52.5 Q20,47 19,35 Z" fill="'+hair+'"/>'
+      + '<ellipse cx="32" cy="49.5" rx="6.5" ry="4.5" fill="'+skin+'"/>'
+      + '<path d="M20,37 Q20,49 26,55 Q23,49 21,43 Z" fill="'+hair2+'"/>';
+  }
+
+  /* ── ACCESSOIRES ── */
+  var ac = '';
+  if(d.acc==='lunettes'){
+    ac = '<circle cx="24.5" cy="32" r="6.4" fill="#C8E4F0" opacity=".2"/><circle cx="39.5" cy="32" r="6.4" fill="#C8E4F0" opacity=".2"/>'
+       + '<circle cx="24.5" cy="32" r="6.4" fill="none" stroke="#2E2B27" stroke-width="1.7"/>'
+       + '<circle cx="39.5" cy="32" r="6.4" fill="none" stroke="#2E2B27" stroke-width="1.7"/>'
+       + '<path d="M30.9,31.6 Q32,30.8 33.1,31.6" stroke="#2E2B27" stroke-width="1.7" fill="none" stroke-linecap="round"/>'
+       + '<line x1="18.1" y1="31.5" x2="16.2" y2="32.6" stroke="#2E2B27" stroke-width="1.5" stroke-linecap="round"/>'
+       + '<line x1="45.9" y1="31.5" x2="47.8" y2="32.6" stroke="#2E2B27" stroke-width="1.5" stroke-linecap="round"/>'
+       + '<path d="M20.5,28.8 Q23.5,27.2 26.5,28.4" stroke="#fff" stroke-width="1.4" fill="none" opacity=".5" stroke-linecap="round"/>';
+  } else if(d.acc==='boucle'){
+    ac = '<circle cx="48.6" cy="37.4" r="2.1" fill="#FFD54F"/><circle cx="48.6" cy="37.4" r="1.1" fill="#E0951C"/>'
+       + '<circle cx="48.1" cy="36.8" r=".55" fill="#FFF3C4"/>';
+  } else if(d.acc==='balafre'){
+    ac = '<path d="M43.8,24.5 L46.2,36.5" stroke="#A05545" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".6"/>'
+       + '<path d="M43.8,24.5 L46.2,36.5" stroke="#fff" stroke-width=".55" fill="none" stroke-linecap="round" opacity=".3"/>';
+  } else if(d.acc==='grain'){
+    ac = '<circle cx="41.5" cy="45" r="1.2" fill="#000" opacity=".24"/>';
+  }
+
+  /* ── RIDES ── */
+  var r = '';
+  if(d.age >= 1){
+    r = '<path d="M17.3,29.5 Q19.3,28.4 21.3,29.6" stroke="#000" stroke-width=".9" fill="none" opacity=".16" stroke-linecap="round"/>'
+      + '<path d="M42.7,29.5 Q44.7,28.4 46.7,29.6" stroke="#000" stroke-width=".9" fill="none" opacity=".16" stroke-linecap="round"/>';
+  }
+  if(d.age >= 2){
+    r += '<path d="M25,23.2 Q32,21.6 39,23.2" stroke="#000" stroke-width=".9" fill="none" opacity=".14" stroke-linecap="round"/>'
+       + '<path d="M26,20.6 Q32,19.4 38,20.6" stroke="#000" stroke-width=".8" fill="none" opacity=".1" stroke-linecap="round"/>'
+       + '<path d="M26.5,45.5 Q28.5,48.5 27.8,52" stroke="#000" stroke-width=".8" fill="none" opacity=".12" stroke-linecap="round"/>'
+       + '<path d="M37.5,45.5 Q35.5,48.5 36.2,52" stroke="#000" stroke-width=".8" fill="none" opacity=".12" stroke-linecap="round"/>';
+  }
+
+  /* ── EXPRESSION ── */
+  var bouche, sc1, sc2, paup;
+  if(d.expr==='sourire'){
+    bouche = '<path d="M25.5,49.2 Q32,54.5 38.5,49.2" fill="#8A3A32" opacity=".55"/>'
+           + '<path d="M26.5,50 Q32,52.5 37.5,50 Q32,53.5 26.5,50 Z" fill="#fff" opacity=".55"/>'
+           + '<path d="M25.5,49.2 Q32,54.5 38.5,49.2" stroke="#8A4A3A" stroke-width="1.6" fill="none" stroke-linecap="round"/>'
+           + '<path d="M25.5,49.2 Q24.2,48 24.8,47.2" stroke="#A05545" stroke-width="1.2" fill="none" stroke-linecap="round"/>'
+           + '<path d="M38.5,49.2 Q39.8,48 39.2,47.2" stroke="#A05545" stroke-width="1.2" fill="none" stroke-linecap="round"/>';
+    sc1='19.5,26.2 Q24.5,23.6 29.5,26.2'; sc2='34.5,26.2 Q39.5,23.6 44.5,26.2'; paup=30.2;
+  } else if(d.expr==='dur'){
+    bouche = '<path d="M26.5,50.5 Q32,49.8 37.5,50.5" stroke="#8A4A3A" stroke-width="2" fill="none" stroke-linecap="round"/>'
+           + '<path d="M27,52 Q32,52.8 37,52" stroke="'+ombre+'" stroke-width=".8" fill="none" opacity=".35" stroke-linecap="round"/>';
+    sc1='19.5,25 Q24.5,25.2 29.5,28.4'; sc2='34.5,28.4 Q39.5,25.2 44.5,25'; paup=29.6;
+  } else if(d.expr==='fatigue'){
+    bouche = '<path d="M27,51.2 Q32,49.6 37,51.2" stroke="#8A4A3A" stroke-width="1.7" fill="none" stroke-linecap="round"/>'
+           + '<path d="M27,51.2 Q28,52.4 28.5,53" stroke="'+ombre+'" stroke-width=".7" fill="none" opacity=".3" stroke-linecap="round"/>'
+           + '<path d="M37,51.2 Q36,52.4 35.5,53" stroke="'+ombre+'" stroke-width=".7" fill="none" opacity=".3" stroke-linecap="round"/>';
+    sc1='19.5,28.4 Q24.5,26.6 29.5,27.4'; sc2='34.5,27.4 Q39.5,26.6 44.5,28.4'; paup=30.8;
+  } else {
+    bouche = '<path d="M26.5,50 Q32,52.8 37.5,50" stroke="#8A4A3A" stroke-width="1.7" fill="none" stroke-linecap="round"/>'
+           + '<path d="M27.5,50.6 Q32,52.3 36.5,50.6" stroke="#000" stroke-width=".8" fill="none" opacity=".13" stroke-linecap="round"/>'
+           + '<path d="M27.5,53 Q32,54.5 36.5,53" stroke="'+ombre+'" stroke-width=".7" fill="none" opacity=".32" stroke-linecap="round"/>';
+    sc1='19.5,26.8 Q24.5,24.2 29.5,26.8'; sc2='34.5,26.8 Q39.5,24.2 44.5,26.8'; paup=30.2;
+  }
+
+  return '<svg viewBox="0 0 64 64">'
+  + '<defs>'
+  + '<linearGradient id="bg'+i+'" x1="0.2" y1="0" x2="0.8" y2="1">'
+    + '<stop offset="0%" stop-color="'+d.bg1+'"/><stop offset="100%" stop-color="'+d.bg2+'"/></linearGradient>'
+  + '<linearGradient id="sk'+i+'" x1="0.25" y1="0.08" x2="0.78" y2="0.95">'
+    + '<stop offset="0%" stop-color="'+lum+'"/><stop offset="42%" stop-color="'+skin+'"/>'
+    + '<stop offset="100%" stop-color="'+ombre+'"/></linearGradient>'
+  + '<radialGradient id="jo'+i+'" cx="50%" cy="50%">'
+    + '<stop offset="0%" stop-color="#E8836A" stop-opacity=".3"/>'
+    + '<stop offset="100%" stop-color="#E8836A" stop-opacity="0"/></radialGradient>'
+  + '<radialGradient id="or'+i+'" cx="40%" cy="35%">'
+    + '<stop offset="0%" stop-color="'+lum+'"/><stop offset="100%" stop-color="'+ombre+'"/></radialGradient>'
+  + '<linearGradient id="ve'+i+'" x1="0.1" y1="0" x2="0.7" y2="1">'
+    + '<stop offset="0%" stop-color="'+d.veste+'"/><stop offset="100%" stop-color="'+d.veste2+'"/></linearGradient>'
+  + '<radialGradient id="ir'+i+'" cx="42%" cy="35%">'
+    + '<stop offset="0%" stop-color="'+d.iris+'" stop-opacity=".55"/>'
+    + '<stop offset="65%" stop-color="'+d.iris+'"/>'
+    + '<stop offset="100%" stop-color="#2A1C10"/></radialGradient>'
+  + '</defs>'
+  + '<circle cx="32" cy="32" r="32" fill="url(#bg'+i+')"/>'
+  + '<circle cx="32" cy="32" r="32" fill="none" stroke="#000" stroke-width="7" opacity=".05"/>'
+  /* epaules */
+  + '<path d="M3,64 Q3,50 19,46.5 Q25,55 32,55 Q39,55 45,46.5 Q61,50 61,64 Z" fill="url(#ve'+i+')"/>'
+  + '<path d="M19,46.5 Q22,52 24,58" stroke="#000" stroke-width="1" fill="none" opacity=".1"/>'
+  + '<path d="M45,46.5 Q42,52 40,58" stroke="#000" stroke-width="1" fill="none" opacity=".1"/>'
+  + '<path d="M22,47.5 Q27,56 32,56 Q37,56 42,47.5 L39,45.5 Q32,53 25,45.5 Z" fill="#000" opacity=".18"/>'
+  + '<path d="M25,45.5 Q32,53 39,45.5 L38.2,44.7 Q32,51.2 25.8,44.7 Z" fill="#fff" opacity=".09"/>'
+  /* cou */
+  + '<path d="M26,42 L38,42 L38,50 Q32,55 26,50 Z" fill="'+ombre+'"/>'
+  + '<path d="M27,42 L37,42 L37,46.5 Q32,49.5 27,46.5 Z" fill="#000" opacity=".2"/>'
+  /* oreilles */
+  + '<ellipse cx="15.2" cy="34" rx="3.1" ry="4.6" fill="'+ombre+'"/>'
+  + '<path d="M13.6,31.5 Q12.6,34 13.4,36.8" stroke="'+skin+'" stroke-width=".9" fill="none" opacity=".35" stroke-linecap="round"/>'
+  + '<ellipse cx="15.6" cy="34.4" rx="1.3" ry="2.2" fill="#000" opacity=".16"/>'
+  + '<ellipse cx="48.8" cy="34" rx="3.1" ry="4.6" fill="url(#or'+i+')"/>'
+  + '<path d="M50.4,31.3 Q51.6,34 50.6,36.9" stroke="'+lum+'" stroke-width="1" fill="none" opacity=".5" stroke-linecap="round"/>'
+  + '<path d="M48.2,32 Q49.6,34 48.4,36.4" stroke="#000" stroke-width="1.1" fill="none" opacity=".2" stroke-linecap="round"/>'
+  + '<ellipse cx="48.6" cy="34.3" rx="1.2" ry="2" fill="#000" opacity=".13"/>'
+  + '<ellipse cx="47.3" cy="34.6" rx=".8" ry="1.1" fill="'+skin+'"/>'
+  + '<ellipse cx="48.6" cy="37.5" rx="1.5" ry="1.3" fill="'+skin+'"/>'
+  /* tete */
+  + '<path d="M16,30 Q16,11 32,11 Q48,11 48,30 Q48,42.5 44,48.5 Q38,57.5 32,57.5 Q26,57.5 20,48.5 Q16,42.5 16,30 Z" fill="url(#sk'+i+')"/>'
+  + '<path d="M16,30 Q16,11 32,11 Q24,15 21,26 Q19,36 22,46 Q25,53 32,57.5 Q26,57.5 20,48.5 Q16,42.5 16,30 Z" fill="#000" opacity=".09"/>'
+  + '<ellipse cx="22" cy="41" rx="5" ry="3.5" fill="url(#jo'+i+')"/>'
+  + '<ellipse cx="42" cy="41" rx="5" ry="3.5" fill="url(#jo'+i+')"/>'
+  + '<ellipse cx="29" cy="24" rx="7" ry="4.5" fill="#fff" opacity=".07"/>'
+  + b + c
+  /* sourcils */
+  + '<path d="M'+sc1+'" stroke="'+hair+'" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".94"/>'
+  + '<path d="M'+sc2+'" stroke="'+hair+'" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".94"/>'
+  /* yeux */
+  + '<ellipse cx="24.5" cy="32" rx="5.6" ry="4.4" fill="#000" opacity=".07"/>'
+  + '<ellipse cx="39.5" cy="32" rx="5.6" ry="4.4" fill="#000" opacity=".07"/>'
+  + '<path d="M20.2,32 Q22,28.6 24.5,28.6 Q27,28.6 28.8,32 Q27,35.4 24.5,35.4 Q22,35.4 20.2,32 Z" fill="#FDFCFA"/>'
+  + '<path d="M35.2,32 Q37,28.6 39.5,28.6 Q42,28.6 43.8,32 Q42,35.4 39.5,35.4 Q37,35.4 35.2,32 Z" fill="#FDFCFA"/>'
+  + '<path d="M20.2,32 Q22,28.6 24.5,28.6 Q27,28.6 28.8,32 Q26,30.4 24.5,30.4 Q23,30.4 20.2,32 Z" fill="#000" opacity=".13"/>'
+  + '<path d="M35.2,32 Q37,28.6 39.5,28.6 Q42,28.6 43.8,32 Q41,30.4 39.5,30.4 Q38,30.4 35.2,32 Z" fill="#000" opacity=".13"/>'
+  + '<ellipse cx="20.8" cy="32.4" rx=".9" ry=".8" fill="#D89A88" opacity=".5"/>'
+  + '<ellipse cx="43.2" cy="32.4" rx=".9" ry=".8" fill="#D89A88" opacity=".5"/>'
+  + '<circle cx="25" cy="32.3" r="2.5" fill="url(#ir'+i+')"/>'
+  + '<circle cx="40" cy="32.3" r="2.5" fill="url(#ir'+i+')"/>'
+  + '<circle cx="25" cy="32.3" r="2.5" fill="none" stroke="#000" stroke-width=".3" opacity=".2"/>'
+  + '<circle cx="40" cy="32.3" r="2.5" fill="none" stroke="#000" stroke-width=".3" opacity=".2"/>'
+  + '<circle cx="25" cy="32.3" r="1.15" fill="#120A04"/>'
+  + '<circle cx="40" cy="32.3" r="1.15" fill="#120A04"/>'
+  + '<circle cx="25.9" cy="31.3" r=".95" fill="#fff"/>'
+  + '<circle cx="40.9" cy="31.3" r=".95" fill="#fff"/>'
+  + '<circle cx="24" cy="33.3" r=".45" fill="#fff" opacity=".55"/>'
+  + '<circle cx="39" cy="33.3" r=".45" fill="#fff" opacity=".55"/>'
+  + '<path d="M20.2,'+paup+' Q24.5,'+(paup-2.4)+' 28.8,'+paup+'" stroke="#3A2818" stroke-width="1.4" fill="none" opacity=".8" stroke-linecap="round"/>'
+  + '<path d="M35.2,'+paup+' Q39.5,'+(paup-2.4)+' 43.8,'+paup+'" stroke="#3A2818" stroke-width="1.4" fill="none" opacity=".8" stroke-linecap="round"/>'
+  + '<path d="M21.4,34.6 Q24.5,36.2 27.8,34.6" stroke="#000" stroke-width=".6" fill="none" opacity=".18" stroke-linecap="round"/>'
+  + '<path d="M36.4,34.6 Q39.5,36.2 42.8,34.6" stroke="#000" stroke-width=".6" fill="none" opacity=".18" stroke-linecap="round"/>'
+  /* nez */
+  + '<path d="M33.2,33 Q34,37.5 34.8,41" stroke="#000" stroke-width="1.6" fill="none" opacity=".07" stroke-linecap="round"/>'
+  + '<path d="M30.9,34 Q30.3,38 29.7,40.8" stroke="#fff" stroke-width="1.2" fill="none" opacity=".18" stroke-linecap="round"/>'
+  + '<ellipse cx="32" cy="41.4" rx="2.7" ry="1.9" fill="'+skin+'"/>'
+  + '<ellipse cx="31.4" cy="40.8" rx="1.4" ry="1" fill="#fff" opacity=".15"/>'
+  + '<path d="M29.2,40.6 Q28.2,41.6 28.9,42.8 Q30,43.2 30.6,42.2" fill="#000" opacity=".1"/>'
+  + '<path d="M34.8,40.6 Q35.8,41.6 35.1,42.8 Q34,43.2 33.4,42.2" fill="#000" opacity=".13"/>'
+  + '<ellipse cx="29.6" cy="42.2" rx="1.05" ry=".75" fill="#000" opacity=".28" transform="rotate(-16 29.6 42.2)"/>'
+  + '<ellipse cx="34.4" cy="42.2" rx="1.05" ry=".75" fill="#000" opacity=".28" transform="rotate(16 34.4 42.2)"/>'
+  + '<path d="M31.2,43 Q32,43.6 32.8,43" stroke="#000" stroke-width=".7" fill="none" opacity=".18" stroke-linecap="round"/>'
+  + bouche + r + m + ac
+  + '</svg>';
 }
 
 /* ── OUVRIR / FERMER ── */
@@ -2831,7 +3089,7 @@ function rendProfil(){
   var pcXp = Math.min(100, (j.xp / j.xp_seuil) * 100);
   h += '<div class="pf-id">'
     +'<div class="pf-av" onclick="ouvrirGalerie()">'
-      + tetePro(j.avatar)
+      + tete(j.avatar)
       +'<span class="pf-av-e">&#9998;</span>'
     +'</div>'
     +'<div class="pf-n">'+esc(j.pseudo)+'</div>'
@@ -2928,7 +3186,7 @@ function ouvrirGalerie(){
 
   $('glBox').innerHTML = Object.keys(AVATARS).map(function(a){
     return '<div class="gl-i'+(a === actuel ? ' on' : '')+'" onclick="choisirAvatar(\''+a+'\')">'
-      + tetePro(a) + '</div>';
+      + tete(a) + '</div>';
   }).join('');
 
   $('galerie').classList.add('on');
@@ -4142,16 +4400,19 @@ function rendSaison(){
   /* ── le classement de saison ── */
   $('lbS').innerHTML = cl.length
     ? cl.map(function(r){
-        return '<div class="lb-r'+(r.moi?' moi':'')+'">'
-          +'<div class="lb-p'+(r.rang<=3?' top':'')+'">'+r.rang+'</div>'
-          +'<div style="flex:1;min-width:0">'
-            +'<div class="lb-n">'+esc(r.pseudo)
-              + (r.titre ? '<span class="titre">'+esc(r.titre)+'</span>' : '')
-              + (r.moi ? ' <span style="color:#c85a3f;font-size:9px">(TOI)</span>' : '')
+        var k = r.rang===1 ? 'k1' : (r.rang===2 ? 'k2' : (r.rang===3 ? 'k3' : 'kn'));
+        return '<div class="kc '+k+(r.moi && k==='kn' ? ' moi' : '')+'">'
+          +'<div class="kc-r">'+r.rang+'</div>'
+          +'<div class="kc-a">'+tete(r.avatar || 'a1')+'</div>'
+          +'<div class="kc-i">'
+            +'<div class="kc-n">'+esc(r.pseudo)
+              + (r.titre ? '<span class="kc-t">'+esc(r.titre)+'</span>' : '')
+              + (r.moi ? '<span class="kc-moi">(TOI)</span>' : '')
             +'</div>'
-            +'<div class="lb-l">'+fmt(r.navires)+' navires &middot; '+fmt(r.contrats)+' contrats</div>'
+            +'<div class="kc-d">'+fmt(r.navires)+' navires &middot; '+fmt(r.contrats)+' contrats'
+              + (r.disputes > 0 ? ' &middot; '+fmt(r.disputes)+' disput&eacute;s' : '')+'</div>'
           +'</div>'
-          +'<div class="lb-v">'+fmt(r.score)+' &euro;</div>'
+          +'<div class="kc-v">'+fmt(r.score)+'<small>&euro;</small></div>'
         +'</div>';
       }).join('')
     : '<div class="out"><div class="out-t">La saison commence</div>'
