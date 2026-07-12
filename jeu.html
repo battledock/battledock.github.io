@@ -1269,6 +1269,20 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var sb=null;
 try{ sb=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.warn('Supabase KO',e); }
 
+
+/* ── retirer l'ecran de chargement (appele partout, une seule fois) ── */
+var bootOff = false;
+function cacherBoot(){
+  if(bootOff) return;
+  bootOff = true;
+  var b = document.getElementById('boot');
+  if(!b) return;
+  b.classList.add('off');
+  setTimeout(function(){ b.style.display = 'none'; }, 700);
+}
+/* FILET DE SECURITE : quoi qu'il arrive, l'ecran part au bout de 6 s */
+setTimeout(cacherBoot, 6000);
+
 var D=null, busy=false;
 function $(i){return document.getElementById(i);}
 function vib(m){if(navigator.vibrate)navigator.vibrate(m);}
@@ -3560,6 +3574,7 @@ async function charger(){
   try{
     const {data,error}=await sb.rpc('mon_port');
     if(error) throw error;
+    cacherBoot();   /* des que les donnees arrivent, on retire l'ecran */
     D=data;
     (D.navires||[]).forEach(function(nv){
       var f=fraicheur(nv);
@@ -3590,16 +3605,31 @@ function nav(i){
 }
 
 (async function(){
+  /* pas de Supabase : on affiche l'erreur et on retire l'ecran */
   if(!sb){
-    toast('Connexion impossible.',true);
-    var b0=$('boot'); if(b0){ b0.classList.add('off'); setTimeout(function(){b0.style.display='none';},700); }
+    cacherBoot();
+    toast('Connexion impossible.', true);
     return;
   }
+
+  /* pas connecte : retour a la page de connexion */
   try{
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session){ location.href='index.html'; return; }
-  }catch(e){ location.href='index.html'; return; }
-  await charger();
+    const {data:{session}} = await sb.auth.getSession();
+    if(!session){ location.href = 'index.html'; return; }
+  }catch(e){
+    cacherBoot();
+    location.href = 'index.html';
+    return;
+  }
+
+  /* charger le port — meme si ca echoue, on retire l'ecran */
+  try{
+    await charger();
+  }catch(e){
+    console.warn('chargement initial KO', e);
+    toast('Erreur de chargement. Reessaie.', true);
+  }
+  cacherBoot();
   /* tick leger : met a jour les compteurs sans reconstruire (plus de clignotement) */
   setInterval(function(){
     if(D && !busy){
