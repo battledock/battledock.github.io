@@ -2922,7 +2922,7 @@ async function deconnexion(){
 
 /* ═════════ LE GUIDE DE DÉMARRAGE ═════════ */
 var GD = [
-  { cible:'.ship, #ships',  onglet:0, e:'⛵',
+  { cible:'#ships .ship, #ships',  onglet:0, e:'⛵',
     t:'Les navires à quai',
     x:'Un navire accoste, tes dockers le déchargent. Quand la barre est pleine, '
       +'<b>tu collectes</b> — et tu encaisses.<br><br>'
@@ -2934,7 +2934,7 @@ var GD = [
       +'<b>Ils fatiguent en travaillant.</b> Un docker épuisé bosse à 40%. '
       +'Paye-leur une tournée, ou embauche du renfort.' },
 
-  { cible:'#dfsBox',        onglet:0, e:'🎯',
+  { cible:'#dfsBox .dfs, #dfsBox', onglet:0, e:'🎯',
     t:'Les défis du jour',
     x:'Trois défis par jour. Ils avancent <b>tout seuls</b> pendant que tu joues.<br><br>'
       +'Reviens chaque jour : ta <b>série</b> monte, et les primes avec.' },
@@ -2983,109 +2983,142 @@ function peutEtreGuide(){
 
 function gdDemarrer(){
   $('gdHello').style.display = 'none';
-  $('gdSpot').style.display = '';
   $('gdBulle').style.display = '';
+  $('gdSpot').style.display  = 'none';   /* il apparait quand il est bien place */
   gdI = 0;
-  gdEtape();
+  gdBusy = false;
   SFX.clic();
   vib(15);
+  /* on remonte en haut, puis on lance */
+  window.scrollTo(0, 0);
+  nav(0);
+  setTimeout(gdEtape, 260);
 }
 
 function gdEtape(){
   var g = GD[gdI];
   if(!g){ finGuide(); return; }
 
+  var sp = $('gdSpot');
+  var bu = $('gdBulle');
+
+  /* pendant qu'on se place, on cache le projecteur (evite le flash au mauvais endroit) */
+  sp.style.display = 'none';
+
   /* aller sur le bon onglet */
   if(typeof g.onglet === 'number'){
     var page = ['pgPort','pgCt','pgUp','pgMk','pgAl','pgLb'][g.onglet];
-    if(page && !$(page).classList.contains('on')) nav(g.onglet);
+    if(page && $(page) && !$(page).classList.contains('on')) nav(g.onglet);
   }
 
+  /* remplir la bulle tout de suite */
+  $('gdE').textContent = g.e;
+  $('gdK').textContent = 'ÉTAPE ' + (gdI+1) + ' / ' + GD.length;
+  $('gdT').textContent = g.t;
+  $('gdX').innerHTML   = g.x;
+  $('gdNext').textContent = (gdI === GD.length - 1) ? 'C\'EST PARTI' : 'SUIVANT';
+
+  var dots = '';
+  for(var k=0;k<GD.length;k++) dots += '<i'+(k===gdI?' class="on"':'')+'></i>';
+  $('gdDots').innerHTML = dots;
+
+  /* laisser le temps a l'onglet de s'afficher */
   setTimeout(function(){
-    /* trouver l'élément à mettre en valeur */
-    var el = null;
-    var sels = g.cible.split(',');
-    for(var i=0;i<sels.length;i++){
-      el = document.querySelector(sels[i].trim());
-      if(el && el.getBoundingClientRect().height > 4) break;
-      el = null;
-    }
+    var el = trouverCible(g.cible);
 
-    var sp = $('gdSpot');
-    var bu = $('gdBulle');
-
-    if(el){
-      /* le faire apparaître à l'écran */
-      var r0 = el.getBoundingClientRect();
-      if(r0.top < 70 || r0.bottom > window.innerHeight - 90){
-        el.scrollIntoView({block:'center', behavior:'smooth'});
-      }
-
-      setTimeout(function(){
-        var r = el.getBoundingClientRect();
-        var pad = 8;
-        sp.style.display = '';
-        sp.style.left   = Math.max(4, r.left - pad) + 'px';
-        sp.style.top    = Math.max(4, r.top - pad) + 'px';
-        sp.style.width  = Math.min(window.innerWidth - 8, r.width + pad*2) + 'px';
-        sp.style.height = (r.height + pad*2) + 'px';
-
-        /* placer la bulle : TOUJOURS entierement visible */
-        bu.style.transform = 'none';
-        var hb = bu.offsetHeight || 220;
-        var marge = 12;
-        var hautDispo = r.top - marge;                       /* place au-dessus */
-        var basDispo  = window.innerHeight - r.bottom - marge; /* place en dessous */
-
-        if(basDispo >= hb){
-          /* ca tient en dessous */
-          bu.style.top = (r.bottom + marge) + 'px';
-          bu.style.bottom = 'auto';
-        } else if(hautDispo >= hb){
-          /* ca tient au-dessus */
-          bu.style.top = (r.top - marge - hb) + 'px';
-          bu.style.bottom = 'auto';
-        } else {
-          /* ca ne tient nulle part : on la colle en bas, au-dessus de la nav */
-          bu.style.top = 'auto';
-          bu.style.bottom = (90 + marge) + 'px';
-        }
-
-        /* filet : jamais hors de l'ecran */
-        var rb = bu.getBoundingClientRect();
-        if(rb.top < marge){
-          bu.style.top = marge + 'px';
-          bu.style.bottom = 'auto';
-        }
-        if(rb.bottom > window.innerHeight - marge){
-          bu.style.top = 'auto';
-          bu.style.bottom = marge + 'px';
-        }
-      }, 380);
-    } else {
-      /* pas d'élément : bulle centrée, pas de spot */
+    if(!el){
+      /* pas d'element : bulle centree, pas de projecteur */
       sp.style.display = 'none';
       bu.style.transform = 'none';
-      var hb2 = bu.offsetHeight || 220;
-      bu.style.top = Math.max(12, (window.innerHeight - hb2) / 2) + 'px';
+      var hb0 = bu.offsetHeight || 240;
+      bu.style.top = Math.max(12, (window.innerHeight - hb0) / 2) + 'px';
       bu.style.bottom = 'auto';
+      return;
     }
 
-    /* remplir la bulle */
-    $('gdE').textContent = g.e;
-    $('gdK').textContent = 'ÉTAPE ' + (gdI+1) + ' / ' + GD.length;
-    $('gdT').textContent = g.t;
-    $('gdX').innerHTML   = g.x;
-    $('gdNext').textContent = (gdI === GD.length - 1) ? 'C\'EST PARTI' : 'SUIVANT';
+    /* faut-il faire defiler pour le voir ? */
+    var r0 = el.getBoundingClientRect();
+    var besoin = (r0.top < 80 || r0.bottom > window.innerHeight - 120);
 
-    var d = '';
-    for(var k=0;k<GD.length;k++) d += '<i'+(k===gdI?' class="on"':'')+'></i>';
-    $('gdDots').innerHTML = d;
+    if(besoin){
+      /* scroll INSTANTANE : on evite d'attendre une animation */
+      var cible = window.scrollY + r0.top - (window.innerHeight / 2) + (r0.height / 2);
+      window.scrollTo(0, Math.max(0, cible));
+    }
 
-  }, 260);
+    /* on mesure APRES le rendu, une fois le scroll effectif */
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        placerGuide(el, sp, bu);
+      });
+    });
+
+  }, 300);
 }
 
+/* trouver le premier element visible parmi les selecteurs */
+function trouverCible(cibles){
+  var sels = String(cibles || '').split(',');
+  for(var i=0;i<sels.length;i++){
+    var s = sels[i].trim();
+    if(!s) continue;
+    var e = document.querySelector(s);
+    if(e){
+      var r = e.getBoundingClientRect();
+      if(r.height > 4 && r.width > 4) return e;
+    }
+  }
+  return null;
+}
+
+/* placer le projecteur et la bulle */
+function placerGuide(el, sp, bu){
+  var r = el.getBoundingClientRect();
+  var pad = 8;
+
+  /* le projecteur */
+  sp.style.display = '';
+  sp.style.left   = Math.max(4, r.left - pad) + 'px';
+  sp.style.top    = Math.max(4, r.top - pad) + 'px';
+  sp.style.width  = Math.min(window.innerWidth - 8, r.width + pad*2) + 'px';
+  sp.style.height = Math.min(window.innerHeight - 8, r.height + pad*2) + 'px';
+
+  /* la bulle : toujours entierement visible */
+  bu.style.transform = 'none';
+  bu.style.top = '0px';        /* on la place pour pouvoir la mesurer */
+  bu.style.bottom = 'auto';
+  var hb = bu.offsetHeight || 240;
+
+  var marge = 14;
+  var navH  = 92;   /* la barre du bas */
+  var hautDispo = r.top - marge;
+  var basDispo  = window.innerHeight - r.bottom - marge - navH;
+
+  if(basDispo >= hb){
+    bu.style.top = (r.bottom + marge) + 'px';
+  } else if(hautDispo >= hb){
+    bu.style.top = (r.top - marge - hb) + 'px';
+  } else {
+    /* nulle part : on la colle au-dessus de la nav */
+    bu.style.top = Math.max(marge, window.innerHeight - navH - marge - hb) + 'px';
+  }
+
+  /* filet de securite : jamais hors de l'ecran */
+  var rb = bu.getBoundingClientRect();
+  if(rb.top < marge){
+    bu.style.top = marge + 'px';
+  }
+  if(rb.bottom > window.innerHeight - marge){
+    bu.style.top = Math.max(marge, window.innerHeight - marge - hb) + 'px';
+  }
+}
+
+var gdBusy = false;
 function gdSuivant(){
+  if(gdBusy) return;
+  gdBusy = true;
+  setTimeout(function(){ gdBusy = false; }, 450);
+
   gdI++;
   vib(12);
   SFX.clic();
