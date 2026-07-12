@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#f4f1ea">
+<title>Battle Dock — Le Port</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{overscroll-behavior:none;overflow-x:hidden;max-width:100%}
+body{font-family:'Inter',sans-serif;background:#f4f1ea;color:#16140f;min-height:100vh;
+  padding:0 0 calc(76px + env(safe-area-inset-bottom,0px));position:relative}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.4;
+  background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px);background-size:14px 14px}
+.app{position:relative;z-index:1;max-width:460px;margin:0 auto;padding:0 14px;width:100%}
+
+/* ═══ BARRE DU HAUT ═══ */
+.top{position:sticky;top:0;z-index:20;background:rgba(244,241,234,.92);backdrop-filter:blur(12px);
+  padding:calc(12px + env(safe-area-inset-top,0px)) 0 12px;margin-bottom:14px;
+  border-bottom:1px solid rgba(22,20,15,.06);width:100%}
+.top-in{max-width:460px;margin:0 auto;padding:0 14px;display:flex;align-items:center;gap:9px}
+.ent{flex:1;min-width:0}
+.ent-n{font-family:'Playfair Display',serif;font-weight:900;font-size:16px;line-height:1.1;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ent-l{font-size:9px;font-weight:800;letter-spacing:1px;color:#a09888;margin-top:2px}
+.pill{display:flex;align-items:center;gap:5px;background:#16140f;color:#fff;border-radius:100px;
+  padding:8px 13px;font-family:'Space Mono',monospace;font-size:12.5px;font-weight:700;flex-shrink:0;
+  box-shadow:0 4px 14px rgba(22,20,15,.16)}
+.pill.gold{background:#fff;color:#16140f;border:1.5px solid #e8e2d6;box-shadow:0 2px 8px rgba(22,20,15,.06)}
+.pill .v{transition:transform .18s}
+.pill .v.bump{transform:scale(1.25)}
+
+/* ═══ LE PORT (visuel) ═══ */
+.port{position:relative;border-radius:20px;overflow:hidden;margin-bottom:14px;
+  box-shadow:0 8px 30px rgba(22,20,15,.1);background:#bcd6e8}
+.port svg{width:100%;display:block}
+
+/* ═══ SECTION ═══ */
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:20px 4px 10px}
+.sec-t{font-size:9.5px;font-weight:900;letter-spacing:2px;color:#a09888}
+.sec-n{font-size:10px;font-weight:900;color:#c0392b}
+
+/* ═══ NAVIRES ═══ */
+.ship{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;position:relative;overflow:hidden;
+  box-shadow:0 2px 14px rgba(22,20,15,.06)}
+.ship.ready{box-shadow:0 4px 20px rgba(22,163,74,.16);border:1.5px solid #86efac}
+.ship.rot{border:1.5px solid #fca5a5;background:#fffafa}
+.sh-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sh-ic{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0}
+.sh-i{flex:1;min-width:0}
+.sh-n{font-size:13.5px;font-weight:800;letter-spacing:-.1px}
+.sh-d{font-size:10.5px;color:#8a8278;margin-top:2px}
+.sh-v{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#16140f;flex-shrink:0}
+.sh-v small{display:block;font-size:8px;color:#a09888;letter-spacing:.5px;text-align:right;margin-top:1px}
+
+/* barre de progression */
+.pg{height:7px;background:#f0ece2;border-radius:4px;overflow:hidden;position:relative}
+.pg-f{height:100%;border-radius:4px;transition:width .5s linear;position:relative}
+.pg-f::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);
+  animation:sweep 1.8s linear infinite}
+@keyframes sweep{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.pg-t{display:flex;justify-content:space-between;margin-top:6px;font-size:10px;font-weight:600}
+.pg-t .l{color:#8a8278}
+.pg-t .r{font-family:'Space Mono',monospace;color:#16140f;font-weight:700}
+
+/* fraîcheur (périssable) */
+.fr{margin-top:8px;display:flex;align-items:center;gap:7px}
+.fr-b{flex:1;height:4px;background:#f0ece2;border-radius:3px;overflow:hidden}
+.fr-f{height:100%;border-radius:3px;transition:width .5s linear,background .5s}
+.fr-t{font-size:9px;font-weight:800;letter-spacing:.3px;min-width:74px;text-align:right}
+
+/* bouton collecter */
+.coll{width:100%;margin-top:11px;background:#16a34a;border:none;border-radius:12px;padding:13px;
+  font-family:Inter;font-size:12px;font-weight:900;letter-spacing:1.2px;color:#fff;cursor:pointer;
+  box-shadow:0 6px 18px rgba(22,163,74,.28);transition:transform .14s;
+  animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{0%,100%{box-shadow:0 6px 18px rgba(22,163,74,.28)}50%{box-shadow:0 6px 26px rgba(22,163,74,.45)}}
+.coll:active{transform:scale(.97)}
+
+/* ═══ QUAI VIDE ═══ */
+.empty{background:#fff;border-radius:16px;padding:26px 18px;text-align:center;
+  box-shadow:0 2px 14px rgba(22,20,15,.05)}
+.empty-e{font-size:30px;margin-bottom:8px;opacity:.35}
+.empty-t{font-family:'Playfair Display',serif;font-weight:900;font-size:15px;margin-bottom:4px}
+.empty-d{font-size:11.5px;color:#a09888;line-height:1.5}
+
+/* ═══ ÉQUIPE ═══ */
+.crew{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;max-width:100%}
+.crew::-webkit-scrollbar{display:none}
+.dk{background:#fff;border-radius:14px;padding:11px 9px;min-width:88px;text-align:center;flex-shrink:0;
+  box-shadow:0 2px 12px rgba(22,20,15,.06);position:relative}
+.dk.busy::after{content:"";position:absolute;top:8px;right:8px;width:6px;height:6px;border-radius:50%;
+  background:#f59e0b;box-shadow:0 0 6px #f59e0b;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.dk-av{width:44px;height:44px;margin:0 auto 7px;border-radius:50%;overflow:hidden;background:#f4f1ea}
+.dk-av svg{width:100%;height:100%;display:block}
+.dk-n{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-t{font-size:8.5px;color:#a09888;margin-top:2px;font-weight:600}
+.dk-add{background:#eae5da;border:1.5px dashed #cfc8ba;box-shadow:none;display:flex;
+  flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:#a09888}
+.dk-add .p{font-size:22px;line-height:1;margin-bottom:4px}
+.dk-add .l{font-size:9px;font-weight:800;letter-spacing:.5px}
+
+/* ═══ NAV BAS ═══ */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;background:rgba(255,255,255,.94);
+  backdrop-filter:blur(14px);border-top:1px solid rgba(22,20,15,.07);
+  padding:9px 0 calc(9px + env(safe-area-inset-bottom,0px))}
+.nav-in{max-width:460px;margin:0 auto;display:flex}
+.nv{flex:1;background:none;border:none;padding:7px 4px;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;gap:4px;color:#b8b0a4;transition:color .2s}
+.nv.on{color:#16140f}
+.nv svg{width:21px;height:21px}
+.nv span{font-size:8.5px;font-weight:900;letter-spacing:.6px}
+
+/* ═══ TOAST ═══ */
+.toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);z-index:60;
+  background:#16140f;color:#fff;border-radius:100px;padding:12px 22px;
+  font-size:12.5px;font-weight:700;box-shadow:0 10px 30px rgba(22,20,15,.3);
+  opacity:0;transition:all .35s cubic-bezier(.2,.9,.3,1.2);pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast .g{color:#4ade80}
+
+/* particule de gain */
+.fly{position:fixed;z-index:70;font-family:'Space Mono',monospace;font-weight:700;font-size:16px;
+  color:#16a34a;pointer-events:none;transition:all .9s cubic-bezier(.2,.8,.3,1)}
+</style>
+
+<style>
+.xpb{max-width:460px;margin:8px auto 0;padding:0 14px}
+.xpb-t{display:flex;justify-content:space-between;font-size:8.5px;font-weight:800;color:#b8b0a4;margin-bottom:3px}
+.xpb-b{height:3px;background:#eae5da;border-radius:2px;overflow:hidden}
+.xpb-f{height:100%;background:linear-gradient(90deg,#f59e0b,#c0392b);border-radius:2px;transition:width .5s}
+.bloc{background:#fef2f2;border:1.5px solid #fca5a5;border-radius:14px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.bloc-e{font-size:20px;flex-shrink:0}
+.bloc-t{flex:1;font-size:12px;font-weight:700;color:#b91c1c;line-height:1.4}
+.bloc-c{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:#b91c1c;flex-shrink:0}
+.ship.louche{border:1.5px solid #d4d4d8;background:#fafafa}
+.tag-l{display:inline-block;background:#27272a;color:#fff;font-size:8px;font-weight:900;letter-spacing:.8px;border-radius:4px;padding:2px 6px;margin-left:5px;vertical-align:1px}
+.coll{width:100%;margin-top:11px;border:none;border-radius:12px;padding:13px;font-family:Inter;font-size:12px;font-weight:900;letter-spacing:1.2px;color:#fff;cursor:pointer;transition:transform .14s}
+.coll:active{transform:scale(.97)}
+.coll:disabled{opacity:.6;cursor:wait}
+.coll.go{background:#16a34a;box-shadow:0 6px 18px rgba(22,163,74,.28);animation:breathe 2.4s ease-in-out infinite}
+.coll.risk{background:#27272a;box-shadow:0 6px 18px rgba(39,39,42,.3)}
+.coll.bad{background:#94a3b8;box-shadow:none;animation:none}
+.jr{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 2px 14px rgba(22,20,15,.05)}
+.jr-i{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f4f1ea;font-size:11.5px;line-height:1.45}
+.jr-i:last-child{border-bottom:none}
+.jr-x{flex:1;color:#5a5248}
+.jr-g{font-family:'Space Mono',monospace;font-weight:700;flex-shrink:0}
+.jr-g.p{color:#16a34a}
+.jr-g.m{color:#c0392b}
+.page{display:none}
+.page.on{display:block;animation:fadein .3s}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.buy{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:11px;box-shadow:0 2px 14px rgba(22,20,15,.06)}
+.buy-av{width:46px;height:46px;border-radius:50%;overflow:hidden;background:#f4f1ea;flex-shrink:0}
+.buy-av svg{width:100%;height:100%}
+.buy-i{flex:1;min-width:0}
+.buy-n{font-size:13.5px;font-weight:800}
+.buy-t{font-size:10.5px;color:#8a8278;margin-top:2px}
+.buy-s{font-size:9.5px;color:#16a34a;font-weight:800;margin-top:3px}
+.buy-b{background:#16140f;border:none;border-radius:11px;padding:11px 15px;color:#fff;font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0;transition:transform .14s}
+.buy-b:active{transform:scale(.94)}
+.buy-b:disabled{background:#cfc8ba;cursor:not-allowed}
+.lb{background:#fff;border-radius:16px;padding:6px 14px;box-shadow:0 2px 14px rgba(22,20,15,.06)}
+.lb-r{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f4f1ea}
+.lb-r:last-child{border-bottom:none}
+.lb-r.moi{background:#fdf6e3;margin:0 -14px;padding:11px 14px;border-radius:8px}
+.lb-p{font-family:'Playfair Display',serif;font-weight:900;font-size:15px;width:26px;flex-shrink:0;color:#a09888}
+.lb-p.top{color:#c0392b}
+.lb-n{font-size:13px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-l{font-size:9px;color:#a09888;font-weight:700;margin-top:1px}
+.lb-v{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;flex-shrink:0}
+.toast.err{background:#b91c1c}
+.skel{height:96px;border-radius:16px;margin-bottom:10px;background:linear-gradient(90deg,#eeeae0 25%,#f6f3ec 50%,#eeeae0 75%);background-size:200% 100%;animation:shim 1.3s infinite}
+@keyframes shim{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.out{background:#fff;border-radius:16px;padding:22px;text-align:center;box-shadow:0 2px 14px rgba(22,20,15,.05)}
+.out-t{font-family:'Playfair Display',serif;font-weight:900;font-size:16px;margin-bottom:6px}
+.out-d{font-size:12px;color:#8a8278;line-height:1.5}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="top-in">
+    <div class="ent">
+      <div class="ent-n" id="entN">&mdash;</div>
+      <div class="ent-l">NIVEAU <span id="entL">&ndash;</span> &middot; PORT DE MARSEILLE</div>
+    </div>
+    <div class="pill gold">&#128176; <span class="v" id="argV">&mdash;</span></div>
+  </div>
+  <div class="xpb">
+    <div class="xpb-t"><span>XP</span><span id="xpT">&mdash;</span></div>
+    <div class="xpb-b"><div class="xpb-f" id="xpF" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="page on" id="pgPort">
+    <div class="port" id="portBox"></div>
+    <div id="blocBox"></div>
+    <div class="sec-h"><span class="sec-t">&Agrave; QUAI</span><span class="sec-n" id="shipN">&mdash;</span></div>
+    <div id="ships"><div class="skel"></div><div class="skel"></div></div>
+    <div class="sec-h"><span class="sec-t">TON &Eacute;QUIPE</span><span class="sec-n" id="crewN">&mdash;</span></div>
+    <div class="crew" id="crew"></div>
+    <div class="sec-h"><span class="sec-t">JOURNAL</span></div>
+    <div class="jr" id="journal"></div>
+  </div>
+
+  <div class="page" id="pgUp">
+    <div class="sec-h"><span class="sec-t">LE QUAI</span></div>
+    <div id="quaiBox"></div>
+    <div class="sec-h"><span class="sec-t">EMBAUCHER</span></div>
+    <div id="hire"></div>
+  </div>
+
+  <div class="page" id="pgLb">
+    <div class="sec-h"><span class="sec-t">LES PLUS GROS DU PORT</span></div>
+    <div class="lb" id="lb"></div>
+  </div>
+
+</div>
+
+<div class="nav">
+  <div class="nav-in">
+    <button class="nv on" id="nv0" onclick="nav(0)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>
+      <span>PORT</span></button>
+    <button class="nv" id="nv1" onclick="nav(1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5M17 3v4M7 13v8"/><circle cx="17" cy="10" r="3"/><circle cx="7" cy="10" r="3"/></svg>
+      <span>AM&Eacute;LIORER</span></button>
+    <button class="nv" id="nv2" onclick="nav(2)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+      <span>CLASSEMENT</span></button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL='https://xvphypcpikodtrqctqkd.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2cGh5cGNwaWtvZHRycWN0cWtkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM3OTM5ODgsImV4cCI6MjA5OTM2OTk4OH0.Q7G2Tm05R4Ei08s7TudT-C5xychQImoYK-RLEdjoYGA';
+var sb=null;
+try{ sb=supabase.createClient(SB_URL,SB_KEY); }catch(e){ console.warn('Supabase KO',e); }
+
+var D=null, busy=false;
+function $(i){return document.getElementById(i);}
+function vib(m){if(navigator.vibrate)navigator.vibrate(m);}
+function fmt(n){return Math.floor(n||0).toLocaleString('fr-FR');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+var toastT=null;
+function toast(html,err){
+  var t=$('toast'); t.innerHTML=html; t.className='toast on'+(err?' err':'');
+  clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove('on');}, err?3400:2200);
+}
+function bump(id){var e=$(id); if(!e)return; e.classList.remove('bump'); void e.offsetWidth; e.classList.add('bump');}
+
+function restant(f){ return Math.max(0, new Date(f).getTime()-Date.now()); }
+function mmss(ms){
+  var s=Math.ceil(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), r=s%60;
+  if(h>0) return h+'h '+(m<10?'0':'')+m+'m';
+  if(m>0) return m+'m '+(r<10?'0':'')+r+'s';
+  return r+'s';
+}
+function fraicheur(nv){
+  if(!nv.peri_sec) return 1;
+  var f=new Date(nv.fini_le).getTime();
+  if(Date.now()<=f) return 1;
+  return Math.max(0, 1-(Date.now()-f)/(nv.peri_sec*1000));
+}
+function valeurPleine(nv){ return (nv.__vp!=null) ? nv.__vp : nv.valeur; }
+function valeurLive(nv){ return Math.floor(valeurPleine(nv)*fraicheur(nv)); }
+
+function tete(d){
+  var hat=(d.chapeau==='casque')
+    ? '<path d="M14,30 Q14,12 32,11 Q50,12 50,30 Q50,32 48,34 Q32,22 16,34 Q14,32 14,30 Z" fill="#ffd23f"/><rect x="11" y="32" width="42" height="5" rx="2.5" fill="#e0951c"/>'
+    : '<path d="M15,31 Q15,14 32,13 Q49,14 49,31 L49,33 Q32,24 15,33 Z" fill="#2a3a4a"/><path d="M12,33 Q32,24 52,33 L54,38 Q32,29 10,38 Z" fill="#1a2632"/>';
+  var m=d.moustache?'<path d="M23,49 Q32,45 41,49 Q37,54 32,52 Q27,54 23,49 Z" fill="#3a2a1c"/>':'';
+  return '<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="#f4f1ea"/>'
+    +'<path d="M10,64 Q10,48 32,46 Q54,48 54,64 Z" fill="'+d.couleur+'"/>'
+    +'<ellipse cx="32" cy="36" rx="17" ry="18" fill="'+d.skin+'"/>'
+    +'<path d="M15,36 Q15,18 32,18 Q24,25 23,38 Q23,48 32,54 Q15,50 15,36 Z" fill="#000" opacity=".13"/>'+hat
+    +'<ellipse cx="25" cy="35" rx="3.4" ry="2.8" fill="#fff"/><ellipse cx="39" cy="35" rx="3.4" ry="2.8" fill="#fff"/>'
+    +'<circle cx="25.5" cy="35.5" r="1.7" fill="#2a1e14"/><circle cx="39.5" cy="35.5" r="1.7" fill="#2a1e14"/>'
+    +'<path d="M32,38 L29,45 Q32,47 35,45 Z" fill="#000" opacity=".15"/>'+m+'</svg>';
+}
+
+function dessinePort(){
+  if(!D) return;
+  var nav=D.navires||[], eq=D.equipe||[], pos=[40,170,300];
+  var svg='<svg viewBox="0 0 440 200" preserveAspectRatio="xMidYMid slice"><defs>'
+  +'<linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8ec5e8"/><stop offset="100%" stop-color="#d8ecf6"/></linearGradient>'
+  +'<linearGradient id="mer" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3f88b5"/><stop offset="100%" stop-color="#2a6a94"/></linearGradient>'
+  +'<linearGradient id="quai" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b8b0a0"/><stop offset="100%" stop-color="#948c7c"/></linearGradient></defs>'
+  +'<rect width="440" height="200" fill="url(#ciel)"/>'
+  +'<circle cx="368" cy="34" r="18" fill="#fff6dc" opacity=".9"/>'
+  +'<g stroke="#5a7a90" stroke-width="1.6" fill="none" opacity=".55">'
+  +'<path d="M0,0 q4,-4 8,0 q4,-4 8,0"><animateTransform attributeName="transform" type="translate" values="40,30;180,20;380,34" dur="17s" repeatCount="indefinite"/></path>'
+  +'<path d="M0,0 q3,-3 6,0 q3,-3 6,0"><animateTransform attributeName="transform" type="translate" values="90,48;250,36;420,50" dur="22s" repeatCount="indefinite"/></path></g>'
+  +'<g fill="#5e6a76" opacity=".55"><rect x="24" y="52" width="6" height="70"/><rect x="8" y="52" width="46" height="6"/><rect x="48" y="52" width="6" height="18"/></g>'
+  +'<g fill="#6a7682" opacity=".4"><rect x="400" y="46" width="6" height="76"/><rect x="384" y="46" width="46" height="6"/></g>'
+  +'<rect x="0" y="112" width="440" height="46" fill="url(#mer)"/>'
+  +'<g fill="#fff" opacity=".3"><ellipse cx="120" cy="128" rx="24" ry="2.5"><animate attributeName="rx" values="20;28;20" dur="4s" repeatCount="indefinite"/></ellipse>'
+  +'<ellipse cx="300" cy="140" rx="18" ry="2" opacity=".7"><animate attributeName="rx" values="15;22;15" dur="5s" repeatCount="indefinite"/></ellipse></g>';
+  nav.slice(0,3).forEach(function(nv,i){
+    var x=pos[i], c=nv.couleur||'#64748b';
+    svg+='<g><path d="M'+x+',108 L'+(x+96)+',108 L'+(x+86)+',126 L'+(x+10)+',126 Z" fill="#3c4650"/>'
+      +'<rect x="'+(x+14)+'" y="94" width="26" height="14" fill="#4e5a66"/>'
+      +'<rect x="'+(x+18)+'" y="97" width="7" height="6" fill="#8fb8d0"/>'
+      +'<rect x="'+(x+48)+'" y="98" width="16" height="10" rx="2" fill="'+c+'"/>'
+      +'<rect x="'+(x+66)+'" y="98" width="16" height="10" rx="2" fill="'+c+'" opacity=".75"/>'
+      +'<rect x="'+(x+57)+'" y="88" width="16" height="10" rx="2" fill="'+c+'" opacity=".9"/></g>';
+  });
+  svg+='<rect x="0" y="152" width="440" height="48" fill="url(#quai)"/>'
+  +'<rect x="0" y="152" width="440" height="4" fill="#7c7466"/>'
+  +'<g stroke="#8c8474" stroke-width="1.4" opacity=".5"><line x1="90" y1="156" x2="90" y2="200"/><line x1="230" y1="156" x2="230" y2="200"/><line x1="360" y1="156" x2="360" y2="200"/></g>'
+  +'<g fill="#5e5850"><rect x="26" y="142" width="9" height="12" rx="3"/><rect x="404" y="142" width="9" height="12" rx="3"/></g>'
+  +'<g><rect x="150" y="158" width="120" height="40" fill="#a8a094"/><path d="M144,158 L276,158 L262,146 L158,146 Z" fill="#8c8478"/>'
+  +'<rect x="192" y="170" width="36" height="28" fill="#6a6258"/>'
+  +'<text x="210" y="190" text-anchor="middle" font-family="Impact,sans-serif" font-size="13" fill="#cfc8ba">84</text></g>'
+  +eq.slice(0,4).map(function(d,i){
+    var dx=300+i*26;
+    return '<g><rect x="'+dx+'" y="172" width="8" height="16" rx="2" fill="'+d.couleur+'"/>'
+      +'<circle cx="'+(dx+4)+'" cy="168" r="5" fill="'+d.skin+'"/>'
+      +'<rect x="'+(dx-1)+'" y="163" width="10" height="3" rx="1.5" fill="#ffd23f"/>'
+      +'<animateTransform attributeName="transform" type="translate" values="0,0;3,0;0,0;-3,0;0,0" dur="'+(3+i*0.6)+'s" repeatCount="indefinite"/></g>';
+  }).join('')+'</svg>';
+  $('portBox').innerHTML=svg;
+}
+
+function rendTop(){
+  if(!D||!D.joueur) return;
+  var j=D.joueur;
+  $('entN').textContent=j.pseudo;
+  $('entL').textContent=j.niveau;
+  $('argV').textContent=fmt(j.argent);
+  var seuil=j.niveau*500;
+  $('xpT').textContent=fmt(j.xp)+' / '+fmt(seuil);
+  $('xpF').style.width=Math.min(100,(j.xp/seuil*100))+'%';
+}
+function rendBloc(){
+  var b=$('blocBox'), t=D&&D.joueur&&D.joueur.bloque_jusqu_a;
+  if(!t||new Date(t).getTime()<=Date.now()){ b.innerHTML=''; return; }
+  b.innerHTML='<div class="bloc"><div class="bloc-e">🚨</div>'
+    +'<div class="bloc-t">Port ferme par la douane.<br>Aucun navire n\'accoste.</div>'
+    +'<div class="bloc-c">'+mmss(restant(t))+'</div></div>';
+}
+function rendNavires(){
+  var box=$('ships'), nav=(D&&D.navires)||[];
+  $('shipN').textContent=nav.length+' / '+((D&&D.joueur)?D.joueur.places:'-');
+  if(!nav.length){
+    box.innerHTML='<div class="empty"><div class="empty-e">&#9875;</div>'
+      +'<div class="empty-t">Le quai est vide</div>'
+      +'<div class="empty-d">Un navire ne devrait pas tarder...</div></div>';
+    return;
+  }
+  box.innerHTML=nav.map(function(nv){
+    var rest=restant(nv.fini_le), ok=rest<=0;
+    var tot=(nv.duree_totale||60)*1000;
+    var pc=Math.min(100,Math.max(0,100*(1-rest/tot)));
+    var f=fraicheur(nv), val=valeurLive(nv);
+    var pourri=ok&&nv.peri_sec>0&&f<=0;
+    var cls='ship'+(ok&&!pourri?' ready':'')+(pourri?' rot':'')+(nv.louche?' louche':'');
+    var h='<div class="'+cls+'"><div class="sh-h">'
+      +'<div class="sh-ic" style="background:'+nv.couleur+'1a">'+nv.emoji+'</div>'
+      +'<div class="sh-i"><div class="sh-n">'+esc(nv.nom)+' x'+nv.quantite
+        +(nv.louche?'<span class="tag-l">LOUCHE</span>':'')+'</div>'
+      +'<div class="sh-d">'+(pourri?'&#9888;&#65039; Cargaison perdue':(nv.louche?'Ne pose pas de questions...':''))+'</div></div>'
+      +'<div class="sh-v" style="color:'+(pourri?'#c0392b':'#16140f')+'">'+fmt(val)+' F<small>VALEUR</small></div></div>';
+    if(!ok){
+      h+='<div class="pg"><div class="pg-f" style="width:'+pc+'%;background:'+nv.couleur+'"></div></div>'
+        +'<div class="pg-t"><span class="l">Dechargement...</span><span class="r">'+mmss(rest)+'</span></div>';
+    } else if(nv.peri_sec>0){
+      var fc=f>.6?'#16a34a':(f>.3?'#f59e0b':'#dc2626');
+      h+='<div class="fr"><div class="fr-b"><div class="fr-f" style="width:'+(f*100)+'%;background:'+fc+'"></div></div>'
+        +'<div class="fr-t" style="color:'+fc+'">'+(f<=0?'PERDU':Math.round(f*100)+'% FRAIS')+'</div></div>';
+    }
+    if(ok){
+      if(pourri) h+='<button class="coll bad" onclick="collecter('+nv.id+',event)">JETER A LA MER</button>';
+      else if(nv.louche) h+='<button class="coll risk" onclick="collecter('+nv.id+',event)">ECOULER - '+fmt(val)+' F <span style="opacity:.6">(risque)</span></button>';
+      else h+='<button class="coll go" onclick="collecter('+nv.id+',event)">COLLECTER '+fmt(val)+' F</button>';
+    }
+    return h+'</div>';
+  }).join('');
+}
+function rendEquipe(){
+  var eq=(D&&D.equipe)||[];
+  var occupe=((D&&D.navires)||[]).some(function(n){return restant(n.fini_le)>0;});
+  $('crewN').textContent=eq.length+' docker'+(eq.length>1?'s':'');
+  $('crew').innerHTML=eq.map(function(d){
+    return '<div class="dk'+(occupe?' busy':'')+'"><div class="dk-av">'+tete(d)+'</div>'
+      +'<div class="dk-n">'+esc(d.nom)+'</div><div class="dk-t">'+esc(d.trait)+'</div></div>';
+  }).join('')+'<div class="dk dk-add" onclick="nav(1)"><div class="p">+</div><div class="l">EMBAUCHER</div></div>';
+}
+function rendJournal(){
+  var j=(D&&D.journal)||[];
+  $('journal').innerHTML=j.length
+    ? j.map(function(x){
+        var g=x.gain>0?'<span class="jr-g p">+'+fmt(x.gain)+' F</span>'
+             :(x.gain<0?'<span class="jr-g m">'+fmt(x.gain)+' F</span>':'');
+        return '<div class="jr-i"><span class="jr-x">'+esc(x.texte)+'</span>'+g+'</div>';
+      }).join('')
+    : '<div class="jr-i"><span class="jr-x" style="color:#b8b0a4">Rien a signaler.</span></div>';
+}
+function rendUp(){
+  if(!D) return;
+  var j=D.joueur, p=j.places;
+  var prix=p>=8?null:Math.round(1500*Math.pow(2,p-3));
+  $('quaiBox').innerHTML = (prix===null)
+    ? '<div class="out"><div class="out-t">Quai au maximum</div><div class="out-d">8 places. On ne fait pas mieux a Marseille.</div></div>'
+    : '<div class="buy"><div class="buy-av" style="display:flex;align-items:center;justify-content:center;font-size:22px">&#127959;&#65039;</div>'
+      +'<div class="buy-i"><div class="buy-n">Agrandir le quai</div>'
+      +'<div class="buy-t">'+p+' &rarr; '+(p+1)+' places de navire</div>'
+      +'<div class="buy-s">Plus de navires en meme temps</div></div>'
+      +'<button class="buy-b" '+(j.argent<prix?'disabled':'')+' onclick="agrandir()">'+fmt(prix)+' F</button></div>';
+  var h=D.a_embaucher||[];
+  $('hire').innerHTML=h.length
+    ? h.map(function(d){
+        return '<div class="buy"><div class="buy-av">'+tete(d)+'</div>'
+          +'<div class="buy-i"><div class="buy-n">'+esc(d.nom)+'</div>'
+          +'<div class="buy-t">'+esc(d.trait)+'</div>'
+          +'<div class="buy-s">Vitesse x'+d.vitesse+'</div></div>'
+          +'<button class="buy-b" '+(j.argent<d.prix?'disabled':'')+' onclick="embaucher(\''+d.code+'\')">'+fmt(d.prix)+' F</button></div>';
+      }).join('')
+    : '<div class="out"><div class="out-t">Equipe complete</div><div class="out-d">Tout le port travaille pour toi.</div></div>';
+}
+async function rendLb(){
+  var box=$('lb');
+  box.innerHTML='<div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div>';
+  try{
+    const {data,error}=await sb.rpc('classement');
+    if(error) throw error;
+    if(!data||!data.length){ box.innerHTML='<div class="out"><div class="out-d">Personne encore.</div></div>'; return; }
+    box.innerHTML=data.map(function(r){
+      return '<div class="lb-r'+(r.moi?' moi':'')+'">'
+        +'<div class="lb-p'+(r.rang<=3?' top':'')+'">'+r.rang+'</div>'
+        +'<div style="flex:1;min-width:0"><div class="lb-n">'+esc(r.pseudo)+(r.moi?' <span style="color:#c0392b;font-size:9px">(TOI)</span>':'')+'</div>'
+        +'<div class="lb-l">NIVEAU '+r.niveau+' &middot; '+fmt(r.xp)+' XP</div></div>'
+        +'<div class="lb-v">'+fmt(r.argent)+' F</div></div>';
+    }).join('');
+  }catch(e){
+    console.warn(e);
+    box.innerHTML='<div class="out"><div class="out-d">Impossible de charger le classement.</div></div>';
+  }
+}
+
+/* ═════ ACTIONS : le serveur décide ═════ */
+async function collecter(id, ev){
+  if(busy) return;
+  busy=true;
+  document.querySelectorAll('.coll').forEach(function(b){ b.disabled=true; });
+  try{
+    const {data,error}=await sb.rpc('collecter',{p_navire:id});
+    if(error) throw error;
+    var g=data.gain||0;
+    if(data.douane){ vib([90,50,90,50,140]); toast(data.message,true); }
+    else if(g>0){
+      vib([25,15,45]);
+      if(ev){
+        var f=document.createElement('div');
+        f.className='fly'; f.textContent='+'+fmt(g)+' F';
+        f.style.left=(ev.clientX-30)+'px'; f.style.top=(ev.clientY-14)+'px';
+        document.body.appendChild(f);
+        requestAnimationFrame(function(){ f.style.transform='translateY(-70px)'; f.style.opacity='0'; });
+        setTimeout(function(){ f.remove(); },950);
+      }
+      toast('<span class="g">+'+fmt(g)+' F</span> encaisses');
+    } else { vib(40); toast(data.message||'Cargaison perdue.'); }
+    await charger();
+    bump('argV');
+  }catch(e){
+    console.warn(e);
+    toast(msgErr(e),true);
+    busy=false; rendNavires(); return;
+  }
+  busy=false;
+}
+async function embaucher(code){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('embaucher',{p_code:code});
+    if(error) throw error;
+    vib([30,20,60]);
+    toast('&#129309; '+data.nom+' rejoint l\'equipe !');
+    await charger(); bump('argV');
+  }catch(e){ console.warn(e); toast(msgErr(e),true); vib([50,30,50]); }
+  busy=false;
+}
+async function agrandir(){
+  if(busy) return;
+  busy=true;
+  try{
+    const {data,error}=await sb.rpc('agrandir_quai');
+    if(error) throw error;
+    vib([30,20,60]);
+    toast('&#127959;&#65039; Quai agrandi - '+data.places+' places');
+    await charger(); bump('argV');
+  }catch(e){ console.warn(e); toast(msgErr(e),true); }
+  busy=false;
+}
+function msgErr(e){
+  var m=((e&&e.message)||'').toLowerCase();
+  if(m.indexOf('pas assez')>=0) return 'Pas assez d\'argent.';
+  if(m.indexOf('dechargement en cours')>=0||m.indexOf('déchargement en cours')>=0) return 'Le dechargement n\'est pas fini.';
+  if(m.indexOf('deja dans ton')>=0||m.indexOf('déjà dans ton')>=0) return 'Il travaille deja pour toi.';
+  if(m.indexOf('maximum')>=0) return 'Ton quai est deja au maximum.';
+  if(m.indexOf('introuvable')>=0) return 'Ce navire n\'est plus la.';
+  if(m.indexOf('non connect')>=0){ location.href='index.html'; return 'Reconnecte-toi.'; }
+  if(m.indexOf('failed to fetch')>=0||m.indexOf('network')>=0) return 'Connexion perdue.';
+  return 'Une erreur est survenue.';
+}
+
+async function charger(){
+  try{
+    const {data,error}=await sb.rpc('mon_port');
+    if(error) throw error;
+    D=data;
+    (D.navires||[]).forEach(function(nv){
+      var f=fraicheur(nv);
+      nv.__vp = f>0 ? Math.round(nv.valeur/f) : nv.valeur;   // valeur pleine (avant pourriture)
+    });
+    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp();
+  }catch(e){ console.warn(e); toast(msgErr(e),true); }
+}
+
+function nav(i){
+  [0,1,2].forEach(function(j){ $('nv'+j).classList.toggle('on', i===j); });
+  $('pgPort').classList.toggle('on', i===0);
+  $('pgUp').classList.toggle('on', i===1);
+  $('pgLb').classList.toggle('on', i===2);
+  if(i===2) rendLb();
+  window.scrollTo({top:0,behavior:'smooth'});
+  vib(12);
+}
+
+(async function(){
+  if(!sb){ toast('Connexion impossible.',true); return; }
+  try{
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session){ location.href='index.html'; return; }
+  }catch(e){ location.href='index.html'; return; }
+  await charger();
+  setInterval(function(){ if(D&&!busy){ rendNavires(); rendBloc(); rendEquipe(); } }, 1000);
+  setInterval(function(){ if(!busy) charger(); }, 45000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden && !busy) charger(); });
+})();
+</script>
+</body>
+</html>
