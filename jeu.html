@@ -263,6 +263,52 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 .eff.red .eff-t{color:#b91c1c}
 .eff-v{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;color:#92400e;flex-shrink:0}
 .eff.red .eff-v{color:#b91c1c}
+
+/* ═══ NAVIRES DISPUTÉS ═══ */
+.dsp{position:relative;background:linear-gradient(160deg,#1a1712,#0f0d0a);color:#fff;border-radius:18px;
+  padding:16px;margin-bottom:11px;overflow:hidden;
+  box-shadow:0 10px 34px rgba(22,20,15,.3);animation:dspIn .5s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes dspIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.dsp::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 80% 0%,rgba(255,157,46,.16),transparent 60%)}
+.dsp-tag{position:absolute;top:0;right:0;background:#c0392b;color:#fff;font-size:8px;font-weight:900;
+  letter-spacing:1px;padding:4px 10px;border-radius:0 18px 0 10px}
+.dsp-h{position:relative;z-index:2;display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
+.dsp-e{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:23px;flex-shrink:0;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+.dsp-i{flex:1;min-width:0}
+.dsp-cl{font-family:'Playfair Display',serif;font-weight:900;font-size:15px;line-height:1.2}
+.dsp-ob{font-size:11px;color:rgba(255,255,255,.5);margin-top:3px}
+.dsp-money{position:relative;z-index:2;display:flex;gap:8px;margin-bottom:12px}
+.dsp-m{flex:1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:11px;padding:9px 11px}
+.dsp-m-l{font-size:8px;font-weight:900;letter-spacing:.8px;color:rgba(255,255,255,.4)}
+.dsp-m-v{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;margin-top:2px;color:#4ade80}
+.dsp-m-v.t{color:#ffcf3f}
+.dsp-b{position:relative;z-index:2;width:100%;background:linear-gradient(135deg,#ff6b00,#ff2d7c);
+  border:none;border-radius:12px;padding:14px;font-family:Inter;font-size:12px;font-weight:900;
+  letter-spacing:1.3px;color:#fff;cursor:pointer;transition:transform .14s;
+  box-shadow:0 8px 24px rgba(255,45,124,.32);animation:dspPulse 2s ease-in-out infinite}
+@keyframes dspPulse{0%,100%{box-shadow:0 8px 24px rgba(255,45,124,.32)}50%{box-shadow:0 8px 34px rgba(255,45,124,.55)}}
+.dsp-b:active{transform:scale(.97)}
+.dsp-b:disabled{background:#3a3630;box-shadow:none;animation:none;color:rgba(255,255,255,.35);cursor:not-allowed}
+
+/* historique */
+.hst{background:#fff;border-radius:16px;padding:6px 14px;box-shadow:0 2px 14px rgba(22,20,15,.06)}
+.hst-r{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #f4f1ea}
+.hst-r:last-child{border-bottom:none}
+.hst-r.moi{background:#fdf6e3;margin:0 -14px;padding:11px 14px;border-radius:8px}
+.hst-e{font-size:18px;flex-shrink:0}
+.hst-i{flex:1;min-width:0}
+.hst-w{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hst-d{font-size:9.5px;color:#a09888;margin-top:1px}
+.hst-v{font-family:'Space Mono',monospace;font-size:11.5px;font-weight:700;color:#16a34a;flex-shrink:0}
+
+/* pastille sur l'onglet */
+.nv{position:relative}
+.nv .dot{position:absolute;top:3px;right:calc(50% - 16px);width:8px;height:8px;border-radius:50%;
+  background:#c0392b;box-shadow:0 0 0 2px #fff;animation:dotP 1.4s ease-in-out infinite}
+@keyframes dotP{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.75}}
 </style>
 </head>
 <body>
@@ -313,6 +359,12 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   </div>
 
   <div class="page" id="pgLb">
+    <div class="sec-h"><span class="sec-t">&Agrave; PRENDRE &mdash; PREMIER ARRIV&Eacute;</span></div>
+    <div id="dspBox"></div>
+
+    <div class="sec-h"><span class="sec-t">DERNIERS REMPORT&Eacute;S</span></div>
+    <div class="hst" id="hstBox"></div>
+
     <div class="sec-h"><span class="sec-t">LES PLUS GROS DU PORT</span></div>
     <div class="lb" id="lb"></div>
   </div>
@@ -547,6 +599,113 @@ async function rendLb(){
 }
 
 
+
+
+/* ═════════ NAVIRES DISPUTÉS (le vrai multi) ═════════ */
+var DSP = null;
+
+async function chargerDisputes(){
+  try{
+    const {data,error}=await sb.rpc('les_disputes');
+    if(error) throw error;
+    DSP=data;
+    rendDisputes();
+    majPastille();
+  }catch(e){
+    console.warn(e);
+    $('dspBox').innerHTML='<div class="out"><div class="out-d">Impossible de charger.</div></div>';
+  }
+}
+
+function rendDisputes(){
+  if(!DSP) return;
+  var ouv=DSP.ouverts||[], hst=DSP.historique||[];
+  var j=D&&D.joueur;
+
+  /* — à prendre — */
+  $('dspBox').innerHTML = ouv.length
+    ? ouv.map(function(d){
+        var rest=restant(d.expire_le);
+        var raison='';
+        if(j){
+          var occ=((D.navires)||[]).length;
+          if(j.niveau < d.niveau_min)                 raison='NIVEAU '+d.niveau_min+' REQUIS';
+          else if(occ >= j.places)                    raison='TON QUAI EST PLEIN';
+          else if(j.bloque_jusqu_a && new Date(j.bloque_jusqu_a).getTime()>Date.now())
+                                                      raison='TON PORT EST FERM&Eacute;';
+        }
+        return '<div class="dsp">'
+          +'<div class="dsp-tag">'+mmss(rest)+'</div>'
+          +'<div class="dsp-h">'
+            +'<div class="dsp-e">'+d.emoji+'</div>'
+            +'<div class="dsp-i"><div class="dsp-cl">'+esc(d.client)+'</div>'
+            +'<div class="dsp-ob">'+d.quantite+' &times; '+esc(d.nom)+' &mdash; premier arriv&eacute;, premier servi</div></div>'
+          +'</div>'
+          +'<div class="dsp-money">'
+            +'<div class="dsp-m"><div class="dsp-m-l">PRIME IMM&Eacute;DIATE</div>'
+              +'<div class="dsp-m-v">'+fmt(d.prime)+' F</div></div>'
+            +'<div class="dsp-m"><div class="dsp-m-l">+ LA CARGAISON</div>'
+              +'<div class="dsp-m-v t">'+d.quantite+' unit&eacute;s</div></div>'
+          +'</div>'
+          +'<button class="dsp-b" '+(raison?'disabled':'')+' onclick="prendreDispute('+d.id+')">'
+            +(raison || 'LE PRENDRE MAINTENANT')+'</button>'
+        +'</div>';
+      }).join('')
+    : '<div class="out"><div class="out-t">Aucun navire &agrave; prendre</div>'
+      +'<div class="out-d">Un armateur finira par chercher preneur.<br>Reste connect&eacute; pour ne pas le rater.</div></div>';
+
+  /* — historique — */
+  $('hstBox').innerHTML = hst.length
+    ? hst.map(function(h){
+        return '<div class="hst-r'+(h.moi?' moi':'')+'">'
+          +'<span class="hst-e">'+h.emoji+'</span>'
+          +'<div class="hst-i"><div class="hst-w">'+esc(h.gagnant)
+            +(h.moi?' <span style="color:#c0392b;font-size:9px">(TOI)</span>':'')+'</div>'
+            +'<div class="hst-d">'+h.quantite+' &times; '+esc(h.nom)+'</div></div>'
+          +'<span class="hst-v">+'+fmt(h.prime)+' F</span>'
+        +'</div>';
+      }).join('')
+    : '<div class="hst-r"><div class="hst-i"><div class="hst-d">Personne n\'a encore rien remport&eacute;.</div></div></div>';
+}
+
+/* la pastille rouge sur l'onglet */
+function majPastille(){
+  var n = (D && D.disputes_ouvertes) || 0;
+  var b = $('nv3');
+  if(!b) return;
+  var d = b.querySelector('.dot');
+  if(n>0 && !d){
+    d=document.createElement('span'); d.className='dot'; b.appendChild(d);
+  } else if(n<=0 && d){
+    d.remove();
+  }
+}
+
+async function prendreDispute(id){
+  if(busy) return;
+  busy=true;
+  document.querySelectorAll('.dsp-b').forEach(function(b){ b.disabled=true; b.textContent='...'; });
+  try{
+    const {data,error}=await sb.rpc('prendre_dispute',{p_id:id});
+    if(error) throw error;
+    vib([50,30,50,30,110]);
+    toast('&#127937; Tu l\'as eu ! <span class="g">+'+fmt(data.prime)+' F</span>');
+    await charger();
+    await chargerDisputes();
+    bump('argV');
+  }catch(e){
+    console.warn(e);
+    var m=((e&&e.message)||'').toLowerCase();
+    if(m.indexOf('deja pris')>=0 || m.indexOf('déjà pris')>=0){
+      vib([80,40,80]);
+      toast('&#128078; Trop lent. Quelqu\'un l\'a pris avant toi.', true);
+    } else {
+      toast(msgErr(e), true);
+    }
+    await chargerDisputes();
+  }
+  busy=false;
+}
 
 /* ═════════ ÉVÉNEMENTS ═════════ */
 
@@ -791,6 +950,9 @@ function msgErr(e){
   if(m.indexOf('trop de contrats')>=0) return 'Tu as deja 3 contrats en cours.';
   if(m.indexOf('trop tard')>=0) return 'Trop tard, le navire est reparti.';
   if(m.indexOf('quai plein')>=0) return 'Ton quai est plein.';
+  if(m.indexOf('deja pris')>=0||m.indexOf('déjà pris')>=0) return 'Quelqu\'un l\'a pris avant toi.';
+  if(m.indexOf('niveau insuffisant')>=0) return 'Ton niveau est trop bas.';
+  if(m.indexOf('port ferm')>=0) return 'Ton port est ferme par la douane.';
   if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
   if(m.indexOf('contrat introuvable')>=0) return 'Cette offre n\'existe plus.';
@@ -809,7 +971,7 @@ async function charger(){
       var f=fraicheur(nv);
       nv.__vp = f>0 ? Math.round(nv.valeur/f) : nv.valeur;   // valeur pleine (avant pourriture)
     });
-    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendRep(); rendContrats(); rendEffets(); rendEvents();
+    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendRep(); rendContrats(); rendEffets(); rendEvents(); majPastille();
   }catch(e){ console.warn(e); toast(msgErr(e),true); }
 }
 
@@ -819,7 +981,7 @@ function nav(i){
   $('pgCt').classList.toggle('on',   i===1);
   $('pgUp').classList.toggle('on',   i===2);
   $('pgLb').classList.toggle('on',   i===3);
-  if(i===3) rendLb();
+  if(i===3){ rendLb(); chargerDisputes(); }
   window.scrollTo({top:0,behavior:'smooth'});
   vib(12);
 }
@@ -831,7 +993,17 @@ function nav(i){
     if(!session){ location.href='index.html'; return; }
   }catch(e){ location.href='index.html'; return; }
   await charger();
-  setInterval(function(){ if(D&&!busy){ rendNavires(); rendBloc(); rendEquipe(); rendContrats(); rendEffets(); rendEvents(); } }, 1000);
+  setInterval(function(){
+    if(D&&!busy){
+      rendNavires(); rendBloc(); rendEquipe(); rendContrats(); rendEffets(); rendEvents();
+      if(DSP && $('pgLb').classList.contains('on')) rendDisputes();
+    }
+  }, 1000);
+
+  /* les navires disputes vont vite : on rafraichit souvent quand l'onglet est ouvert */
+  setInterval(function(){
+    if(!busy && $('pgLb') && $('pgLb').classList.contains('on')) chargerDisputes();
+  }, 12000);
   setInterval(function(){ if(!busy) charger(); }, 45000);
   document.addEventListener('visibilitychange', function(){ if(!document.hidden && !busy) charger(); });
 })();
