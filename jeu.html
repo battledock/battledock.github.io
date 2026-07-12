@@ -470,6 +470,38 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
   flex-shrink:0;transition:transform .15s,background .2s;padding:0;line-height:1}
 .snd:active{transform:scale(.9);background:#f4f1ea}
 .snd:active{transform:scale(.9)}
+
+/* ═══ DÉFIS QUOTIDIENS ═══ */
+.dfs{background:#fff;border-radius:18px;padding:14px;margin-bottom:14px;
+  box-shadow:0 3px 18px rgba(22,20,15,.07)}
+.dfs-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dfs-t{display:flex;align-items:center;gap:7px;font-size:9.5px;font-weight:900;letter-spacing:1.6px;color:#a09888}
+.serie{display:flex;align-items:center;gap:5px;background:linear-gradient(135deg,#ff6b00,#ff2d7c);
+  color:#fff;border-radius:100px;padding:5px 11px;font-size:11px;font-weight:900;
+  box-shadow:0 3px 12px rgba(255,107,0,.28)}
+.serie.off{background:#eae5da;color:#a09888;box-shadow:none}
+.df{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f4f1ea}
+.df:last-child{border-bottom:none}
+.df.done{opacity:.5}
+.df-e{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:16px;flex-shrink:0}
+.df-i{flex:1;min-width:0}
+.df-t{font-size:12px;font-weight:700;line-height:1.3}
+.df-p{display:flex;align-items:center;gap:7px;margin-top:5px}
+.df-b{flex:1;height:5px;background:#f0ece2;border-radius:3px;overflow:hidden}
+.df-f{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.2,.9,.3,1.1)}
+.df-n{font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700;color:#a09888;min-width:44px;text-align:right}
+.df-b2{background:#16a34a;border:none;border-radius:10px;padding:9px 12px;color:#fff;
+  font-family:'Space Mono',monospace;font-size:10.5px;font-weight:700;cursor:pointer;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(22,163,74,.25);transition:transform .14s;
+  animation:dfpulse 2s ease-in-out infinite}
+@keyframes dfpulse{0%,100%{box-shadow:0 4px 12px rgba(22,163,74,.25)}50%{box-shadow:0 4px 20px rgba(22,163,74,.45)}}
+.df-b2:active{transform:scale(.94)}
+.df-ok{font-size:14px;color:#16a34a;flex-shrink:0;font-weight:900}
+.dfs-bonus{margin-top:11px;padding-top:11px;border-top:1px solid #f4f1ea;
+  display:flex;align-items:center;gap:9px;font-size:11px;color:#8a8278;line-height:1.4}
+.dfs-bonus.on{color:#16a34a;font-weight:700}
+.dfs-bonus b{font-family:'Space Mono',monospace}
 </style>
 </head>
 <body>
@@ -492,6 +524,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opa
 <div class="app">
 
   <div class="page on" id="pgPort">
+    <div id="dfsBox"></div>
     <div class="port" id="portBox"></div>
     <div id="effBox"></div>
     <div id="evBox"></div>
@@ -1212,6 +1245,106 @@ function tick(){
 }
 
 
+
+/* ═════════ DÉFIS QUOTIDIENS ═════════ */
+function rendDefis(){
+  if(!D) return;
+  var d=(D.defis)||[], j=D.joueur;
+  if(!d.length){ $('dfsBox').innerHTML=''; return; }
+
+  var faits = d.filter(function(x){ return x.reclame; }).length;
+  var tous  = (faits === d.length);
+  var serie = (j && j.serie) || 0;
+
+  var h = '<div class="dfs">'
+    +'<div class="dfs-h">'
+      +'<div class="dfs-t">&#127919; D&Eacute;FIS DU JOUR <span style="color:#c0392b">'+faits+'/'+d.length+'</span></div>'
+      +'<div class="serie'+(serie<2?' off':'')+'">&#128293; '+serie+' j</div>'
+    +'</div>';
+
+  h += d.map(function(x){
+    var pc = Math.min(100, 100 * x.fait / x.objectif);
+    var cls = 'df'+(x.reclame ? ' done' : '');
+
+    var fin;
+    if(x.reclame){
+      fin = '<span class="df-ok">&#10003;</span>';
+    } else if(x.fini){
+      fin = '<button class="df-b2" onclick="reclamer('+x.id+',event)">+'+fmt(x.prime)+' &euro;</button>';
+    } else {
+      fin = '<span class="df-n" style="color:#16a34a">+'+fmt(x.prime)+' &euro;</span>';
+    }
+
+    return '<div class="'+cls+'">'
+      +'<div class="df-e" style="background:'+x.couleur+'1a">'+x.emoji+'</div>'
+      +'<div class="df-i">'
+        +'<div class="df-t">'+esc(x.titre)+'</div>'
+        +'<div class="df-p">'
+          +'<div class="df-b"><div class="df-f" id="dff'+x.id+'" style="width:'+pc+'%;background:'+x.couleur+'"></div></div>'
+          +'<span class="df-n" id="dfn'+x.id+'">'+fmt(x.fait)+'/'+fmt(x.objectif)+'</span>'
+        +'</div>'
+      +'</div>'
+      + fin
+    +'</div>';
+  }).join('');
+
+  /* le bonus des 3 défis */
+  var bonus = 3000 + (serie * 500) + ((j.niveau||1) * 300);
+  if(tous && j.bonus_du_jour){
+    h += '<div class="dfs-bonus on"><span>&#127942;</span>'
+      +'<span>Les 3 d&eacute;fis faits ! Bonus encaiss&eacute;.</span></div>';
+  } else {
+    h += '<div class="dfs-bonus"><span>&#127919;</span>'
+      +'<span>Fais les 3 d&eacute;fis &rarr; bonus de <b>'+fmt(bonus)+' &euro;</b>'
+      + (serie>1 ? ' <span style="color:#ff6b00">(s&eacute;rie &times;'+serie+')</span>' : '')
+      +'</span></div>';
+  }
+
+  h += '</div>';
+  $('dfsBox').innerHTML = h;
+}
+
+async function reclamer(id, ev){
+  if(busy) return;
+  busy=true;
+  if(ev && ev.currentTarget) ripple(ev.currentTarget, ev);
+
+  var argAvant = (D && D.joueur) ? D.joueur.argent : 0;
+  var nivAvant = (D && D.joueur) ? D.joueur.niveau : 1;
+
+  try{
+    const {data,error}=await sb.rpc('reclamer_defi',{p_defi:id});
+    if(error) throw error;
+
+    vib([30,20,60]);
+    SFX.encaisse();
+    if(ev) pieces(ev.clientX, ev.clientY, 5, false);
+
+    toast('&#10003; D&eacute;fi r&eacute;ussi &mdash; <span class="g">+'+fmt(data.prime)+' &euro;</span>');
+
+    /* les 3 defis ? */
+    if(data.bonus && data.bonus > 0){
+      setTimeout(function(){
+        vib([60,40,60,40,120]);
+        SFX.gros();
+        confettis(32);
+        toast('&#127942; Les 3 d&eacute;fis ! <span class="g">+'+fmt(data.bonus)+' &euro;</span> de bonus');
+      }, 1500);
+    }
+
+    await charger();
+    if(D && D.joueur) defile('argV', argAvant, D.joueur.argent, 800);
+    if(D && D.joueur && D.joueur.niveau > nivAvant){
+      setTimeout(function(){ montreLvUp(D.joueur.niveau); }, 900);
+    }
+  }catch(e){
+    console.warn(e);
+    SFX.erreur();
+    toast(msgErr(e), true);
+  }
+  busy=false;
+}
+
 /* ═════════ BÂTIMENTS ═════════ */
 function rendBatiments(){
   if(!D) return;
@@ -1680,6 +1813,9 @@ function msgErr(e){
   if(m.indexOf('travaille pas pour toi')>=0) return 'Il ne fait pas partie de ton equipe.';
   if(m.indexOf('deja au maximum')>=0||m.indexOf('déjà au maximum')>=0) return 'Ce batiment est deja au maximum.';
   if(m.indexOf('batiment inconnu')>=0||m.indexOf('bâtiment inconnu')>=0) return 'Batiment inconnu.';
+  if(m.indexOf('deja reclame')>=0||m.indexOf('déjà réclamé')>=0) return 'Deja reclame.';
+  if(m.indexOf('defi non termine')>=0||m.indexOf('défi non terminé')>=0) return 'Ce defi n\'est pas fini.';
+  if(m.indexOf('defi introuvable')>=0||m.indexOf('défi introuvable')>=0) return 'Ce defi n\'existe plus.';
   if(m.indexOf('port ferm')>=0) return 'Ton port est ferme par la douane.';
   if(m.indexOf('evenement introuvable')>=0||m.indexOf('événement introuvable')>=0) return 'Cet evenement n\'existe plus.';
   if(m.indexOf('contrat expir')>=0) return 'Cette offre a expire.';
@@ -1699,7 +1835,7 @@ async function charger(){
       var f=fraicheur(nv);
       nv.__vp = f>0 ? Math.round(nv.valeur/f) : nv.valeur;   // valeur pleine (avant pourriture)
     });
-    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendBatiments(); rendRep(); rendContrats(); rendEffets(); rendEvents(); majPastille();
+    rendTop(); dessinePort(); rendBloc(); rendNavires(); rendEquipe(); rendJournal(); rendUp(); rendBatiments(); rendDefis(); rendRep(); rendContrats(); rendEffets(); rendEvents(); majPastille();
   }catch(e){ console.warn(e); toast(msgErr(e),true); }
 }
 
