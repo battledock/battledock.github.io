@@ -127,25 +127,8 @@ input.bad{border-color:var(--terra);box-shadow:0 0 0 3px rgba(192,68,42,.12);ani
 .form.leaving .ttl,
 .form.leaving .sbt,
 .form.leaving .f,
-.form.leaving .go,
-.form.leaving .or,
-.form.leaving .oauth{opacity:.45;transition:opacity .3s}
+.form.leaving .go{opacity:.45;transition:opacity .3s}
 .msg.ok{color:#1a7a52}
-.or{
-  display:flex;align-items:center;gap:11px;margin:17px 0;
-  font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink3);
-}
-.or::before,.or::after{content:'';flex:1;height:1px;background:var(--line)}
-.oauth{
-  width:100%;padding:13px;cursor:pointer;border-radius:11px;
-  background:var(--white);border:1px solid var(--line);color:var(--ink);
-  font:500 14px 'Archivo';display:flex;align-items:center;justify-content:center;gap:9px;
-  transition:.18s;
-}
-.oauth:hover{border-color:var(--ink)}
-.oauth:disabled{opacity:.5;cursor:wait}
-.oauth svg{width:17px;height:17px;flex:none}
 
   transform-origin:2px 3px;opacity:0;
   animation:a-up .4s ease-out .45s both, a-wave 3.4s ease-in-out 1s infinite;
@@ -196,7 +179,6 @@ input.bad{border-color:var(--terra);box-shadow:0 0 0 3px rgba(192,68,42,.12);ani
 
 /* ─── Micro-interactions communes ─── */
 .go:hover{transform:translateY(-1px)}
-.oauth:hover{transform:translateY(-1px)}
 input{will-change:auto}
 .facts b{display:inline-block}
 
@@ -270,11 +252,6 @@ input{will-change:auto}
       </div>
       <button class="go"><span>Entrer dans la bataille</span></button>
       <div class="msg" role="status" aria-live="polite"></div>
-      <div class="or">ou</div>
-      <button class="oauth">
-        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.3h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-2 3.2-4.8 3.2-8.1z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.7l-3.6-2.7c-1 .7-2.2 1-3.6 1-2.8 0-5.2-1.8-6-4.3H2.3v2.8A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M6 14.3a6.6 6.6 0 0 1 0-4.2V7.3H2.3a11 11 0 0 0 0 9.8L6 14.3z"/><path fill="#EA4335" d="M12 5.5c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 0 0 2.3 7.3L6 10.1c.8-2.5 3.2-4.6 6-4.6z"/></svg>
-        Continuer avec Google
-      </button>
     </div>
   </div>
 </template>
@@ -283,6 +260,15 @@ input{will-change:auto}
 /* ═══ CONFIG ═══ */
 const SUPABASE_URL      = 'https://TON-PROJET.supabase.co';
 const SUPABASE_ANON_KEY = 'TA_CLE_ANON';
+
+/* Les clés sont-elles réellement renseignées ?
+   Sans ce contrôle, Supabase tente d'appeler 'TON-PROJET.supabase.co'
+   qui n'existe pas -> "Failed to fetch", message incompréhensible. */
+const CLES_OK =
+  SUPABASE_URL.startsWith('https://') &&
+  !SUPABASE_URL.includes('TON-PROJET') &&
+  SUPABASE_ANON_KEY.length > 40 &&
+  SUPABASE_ANON_KEY !== 'TA_CLE_ANON';
 const APRES_CONNEXION   = 'jeu.html';
 const FIN_SAISON        = null;
 
@@ -290,7 +276,14 @@ let sb = null;
 const sbReady = import('https://esm.sh/@supabase/supabase-js@2')
   .then(m => {
     sb = m.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth:{ detectSessionInUrl:true, persistSession:true, autoRefreshToken:true }
+      auth:{
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+        // Isole la session : si un autre projet vit sur le même domaine
+        // (Battle Dock…), les deux ne se marchent pas dessus.
+        storageKey: 'massilia-auth'
+      }
     });
     return sb;
   })
@@ -519,11 +512,27 @@ const COPY = {
 };
 function traduire(m){
   if(!m) return 'Une erreur est survenue.';
+
+  /* "Failed to fetch" = la requête n'est jamais partie.
+     Le message brut n'aide personne : on dit ce qu'il faut vérifier. */
+  if(m.includes('Failed to fetch') || m.includes('NetworkError') || m.includes('fetch')){
+    if(!CLES_OK)
+      return 'Clés Supabase non renseignées (en haut du fichier).';
+    if(location.protocol === 'file:')
+      return 'Ouvre la page via http://, pas en double-cliquant sur le fichier.';
+    return 'Serveur injoignable. Vérifie l\'URL Supabase et ta connexion.';
+  }
+
   if(m === 'Invalid login credentials')     return 'Email ou mot de passe incorrect.';
   if(m.includes('already registered'))      return 'Cet email a déjà un compte. Connecte-toi.';
   if(m.includes('Email not confirmed'))     return 'Confirme ton email avant de te connecter.';
-  if(m.includes('provider is not enabled')) return 'Google n\'est pas encore activé côté serveur.';
   if(m.includes('rate limit'))              return 'Trop de tentatives. Attends une minute.';
+  if(m.includes('Invalid API key'))         return 'Clé Supabase invalide. Reprends la clé "anon public".';
+  if(m.includes('Database error'))          return 'Erreur base : as-tu bien exécuté schema.sql ?';
+  if(m.includes('Password should be'))      return 'Mot de passe : 6 caractères minimum.';
+  if(m.includes('Unable to validate email'))return 'Format d\'email invalide.';
+  if(m.includes('signups not allowed') ||
+     m.includes('Signups not allowed'))     return 'Inscriptions désactivées dans Supabase (Authentication > Sign In / Providers).';
   return m;
 }
 
@@ -536,7 +545,6 @@ function wire(form){
   const iPw   = form.querySelector('.i-pw');
   const go    = form.querySelector('.go');
   const msg   = form.querySelector('.msg');
-  const oauth = form.querySelector('.oauth');
   const ttl   = form.querySelector('.ttl');
   const sbt   = form.querySelector('.sbt');
 
@@ -547,7 +555,7 @@ function wire(form){
     if(navigator.vibrate) navigator.vibrate([8,40,8]);
     setTimeout(()=>i.classList.remove('bad'), 330);
   };
-  const busy = on => { go.disabled = on; if(oauth) oauth.disabled = on; };
+  const busy = on => { go.disabled = on; };
 
   function render(){
     tabs.classList.toggle('up', signup);
@@ -570,11 +578,17 @@ function wire(form){
     if(!email){ bad(iEm); return say('Renseigne ton email.'); }
     if(!password){ bad(iPw); return say('Renseigne ton mot de passe.'); }
     if(signup && password.length < 6){ bad(iPw); return say('Mot de passe : 6 caractères minimum.'); }
+    // Diagnostiquer d'abord : un "Failed to fetch" ne dit rien à personne.
+    if(!CLES_OK)
+      return say('Clés Supabase non renseignées (en haut du fichier).');
+    if(location.protocol === 'file:')
+      return say('Ouvre la page via http://, pas en double-cliquant sur le fichier.');
+
     busy(true);
     say(signup ? 'Création du compte…' : 'Connexion…');
     try{
       await sbReady;
-      if(!sb) throw new Error('Connexion au serveur impossible. Réessaie.');
+      if(!sb) throw new Error('Serveur injoignable. Vérifie l\'URL Supabase.');
       if(signup){
         const { data, error } = await sb.auth.signUp({
           email, password,
@@ -600,21 +614,6 @@ function wire(form){
       }
     } catch(e){ say(traduire(e.message)); }
     busy(false);
-  };
-
-  if(oauth) oauth.onclick = async () => {
-    busy(true);
-    say('Redirection vers Google…');
-    try{
-      await sbReady;
-      if(!sb) throw new Error('Connexion au serveur impossible. Réessaie.');
-      const { error } = await sb.auth.signInWithOAuth({
-        provider:'google',
-        options:{ redirectTo: location.origin + location.pathname,
-                  queryParams:{ prompt:'select_account' } }
-      });
-      if(error) throw error;
-    } catch(e){ say(traduire(e.message)); busy(false); }
   };
 
   [iEm,iPw,iPs].forEach(i =>
@@ -680,7 +679,7 @@ async function loadLive(){
     return;
   }
 
-  // Google renvoie ses erreurs dans l'URL (annulation, refus…)
+  // Le serveur peut renvoyer une erreur dans l'URL
   const params = new URLSearchParams(location.hash.slice(1) || location.search.slice(1));
   const err = params.get('error_description') || params.get('error');
   if(err){
@@ -692,11 +691,11 @@ async function loadLive(){
     history.replaceState({}, '', location.pathname);
   }
 
-  // Session déjà là : retour de Google, ou "se souvenir de moi"
+  // Session déjà là : "se souvenir de moi"
   const { data:{ session } } = await s.auth.getSession();
   if(session){ entrer(s, session); return; }
 
-  // Et si la session arrive juste après (retour OAuth un peu lent)
+  // Et si la session arrive juste après le chargement
   s.auth.onAuthStateChange((event, sess) => {
     if(event === 'SIGNED_IN' && sess) entrer(s, sess);
   });
@@ -714,6 +713,15 @@ function boot(){
   bg.resize();
   bg.start();
   countUp(stage.querySelector('.s-q'), 111, 900, DELAI_COMPTEUR);
+
+  // Prévenir tout de suite plutôt que d'attendre un clic sur "Se connecter"
+  if(!CLES_OK){
+    const m = document.querySelector('.msg');
+    if(m){
+      m.textContent = 'Clés Supabase non renseignées (en haut du fichier).';
+      m.className = 'msg';
+    }
+  }
   loadLive();
 }
 if (document.fonts && document.fonts.ready){
