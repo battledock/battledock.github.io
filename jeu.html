@@ -487,6 +487,66 @@ nav button .dot{
   font:600 10.5px/1.4 'JetBrains Mono',monospace;color:var(--terra);
 }
 
+
+/* ═════ NATURES ═════ */
+.nat{
+  display:inline-flex;align-items:center;gap:3px;
+  margin-left:6px;padding:2px 6px;border-radius:100px;vertical-align:middle;
+  background:color-mix(in srgb, var(--nc) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--nc) 45%, transparent);
+  font:600 9px/1.3 'Archivo';color:var(--nc);white-space:nowrap;
+}
+@supports not (background: color-mix(in srgb, red 10%, transparent)){
+  .nat{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.15)}
+}
+.target.spec{border-color:color-mix(in srgb, var(--gold) 50%, var(--line))}
+
+.natmini{
+  margin-left:5px;padding:1px 5px;border-radius:100px;
+  background:var(--line2);border:1px solid var(--line);
+  font:600 8.5px/1.3 'Archivo';color:var(--ink2);
+}
+.mate.spec .av{color:#fff;font-size:13px}
+
+/* feuille d'action : le bandeau de nature */
+.acnat{
+  display:flex;align-items:center;gap:10px;margin-bottom:10px;
+  padding:10px 11px;border-radius:9px;
+  background:color-mix(in srgb, var(--nc) 8%, transparent);
+  border:1px solid color-mix(in srgb, var(--nc) 40%, transparent);
+}
+@supports not (background: color-mix(in srgb, red 10%, transparent)){
+  .acnat{background:rgba(180,83,9,.06);border-color:rgba(180,83,9,.3)}
+}
+.acnat .ic{font-size:20px;flex:none;line-height:1}
+.acnat div{flex:1;min-width:0}
+.acnat b{display:block;font:700 13px/1.2 'Archivo';color:var(--nc)}
+.acnat small{
+  display:block;margin-top:2px;font:400 11px/1.35 'Archivo';color:var(--ink2);
+}
+.acnat em{
+  flex:none;font-style:normal;padding:4px 8px;border-radius:100px;
+  background:var(--card2);border:1px solid var(--line);
+  font:700 11px/1 'Archivo';color:var(--gold);
+}
+
+/* légende des natures, sur la carte */
+.natleg{
+  position:absolute;z-index:6;right:11px;bottom:11px;
+  display:flex;flex-direction:column;gap:4px;padding:8px 10px;
+  border-radius:var(--r);background:var(--card);border:1px solid var(--line);
+  box-shadow:var(--ombre2);pointer-events:none;
+}
+.natleg div{display:flex;align-items:center;gap:6px}
+.natleg .p{
+  width:9px;height:9px;border-radius:50%;flex:none;
+  border:1.2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);
+}
+.natleg span{
+  font:600 8px/1 'Archivo';color:var(--ink2);white-space:nowrap;
+}
+@media(max-width:380px){ .natleg{display:none} }
+
 /* ═════ TOAST ═════ */
 #toast{
   position:fixed;left:50%;transform:translateX(-50%) translateY(20px);
@@ -577,6 +637,7 @@ nav button .dot{
         <div class="bar" id="mBar"></div>
       </div>
       <div class="leg" id="mLeg"></div>
+      <div class="natleg" id="mNatLeg"></div>
       <div class="tip" id="tip"><div class="q"></div><div class="o"><i></i><span></span></div></div>
 
       <div id="join">
@@ -627,6 +688,7 @@ nav button .dot{
           <div><b id="acC">—</b><small>Coût</small></div>
           <div><b>10</b><small>Or/h</small></div>
         </div>
+        <div class="acnat" id="acNat" style="display:none"></div>
         <div class="acnote" id="acNote" style="display:none"></div>
         <button class="go" id="acGo">—</button>
       </div>
@@ -691,6 +753,23 @@ const PAGE_CONNEXION = 'index.html';
 const PROD_PAR_QUARTIER = 10;   // or/heure par quartier
 const PROD_BASE = 20;           // or/heure de base, même sans territoire
 const FACTEUR_TAILLE = 1.10;    // chaque quartier rend le suivant plus cher
+
+/* Les natures. Le joueur DOIT les comprendre : sans ça, il paie 50%
+   de plus sans savoir pourquoi et croit à un bug. */
+const NATURES = {
+  port:       { i:'⚓', n:'Port',       e:'Produit 2× plus d\'or',                 c:'#0ea5e9' },
+  forteresse: { i:'🛡', n:'Forteresse', e:'Puissance max 150 au lieu de 100',      c:'#78716c' },
+  carrefour:  { i:'🔀', n:'Carrefour',  e:'−15 % sur tes attaques (max 2)',        c:'#8b5cf6' },
+  usine:      { i:'🏭', n:'Usine',      e:'+20 % de production totale (max 2)',    c:'#b45309' },
+  universite: { i:'🎓', n:'Université', e:'Tes quartiers se consolident 2× plus vite', c:'#0f766e' },
+  gare:       { i:'🚂', n:'Gare',       e:'Attaque à 2 quartiers de distance',     c:'#dc2626' },
+  ordinaire:  null
+};
+const nat = k => (k && NATURES[k]) || null;
+
+/* La nature de chaque quartier, chargée une fois depuis la base.
+   La carte en a besoin pour dessiner les pastilles. */
+let NATURE_MAP = new Map();
 
 const CLES_OK =
   SUPABASE_URL.startsWith('https://') &&
@@ -851,6 +930,23 @@ function bakeFills(){
     for(const p of q.polys){ tr(g,p); g.stroke(); }
   }
 
+  /* Pastilles des natures : un point coloré au centre des 46 quartiers
+     spéciaux. Sans repère visuel, le joueur ne saurait pas où sont
+     les ports et les carrefours. */
+  for(const q of Q){
+    const k = NATURE_MAP.get(q.id);
+    if(!k || k === 'ordinaire') continue;
+    const N = NATURES[k];
+    if(!N) continue;
+    g.beginPath();
+    g.arc(q.cx, q.cy, 3.4, 0, 6.2832);
+    g.fillStyle = N.c;
+    g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.85)';
+    g.lineWidth = 1.1;
+    g.stroke();
+  }
+
   // Calque des cibles, seulement si elles sont nombreuses.
   cibleLayer = null;
   if(!integration && CIBLES.size > SEUIL_CALQUE){
@@ -983,7 +1079,9 @@ cvs.addEventListener('pointerdown', e => {
   sel = q;
 
   const st = etat.get(q.id);
-  tip.querySelector('.q').textContent = q.n;
+  const K = NATURE_MAP.get(q.id);
+  const NN = nat(K);
+  tip.querySelector('.q').innerHTML = q.n + (NN ? ` <span style="opacity:.75">${NN.i}</span>` : '');
   const i = tip.querySelector('.o i'), s = tip.querySelector('.o span');
   if(!st){ i.style.background='#94a3b8'; s.textContent='Libre · '+q.a; }
   else if(st.owner===moi?.id){ i.style.background=mapCol(st.clan); s.textContent='À toi · '+q.a; }
@@ -1005,6 +1103,8 @@ function ouvrirAct(q){
   qOuv = q;
   const e = etat.get(q.id);
   const c = CIBLES.get(q.id);
+  // la nature vient du serveur (cibles) ou de mes quartiers
+  q.nature = c?.nature || mesQ.find(x=>x.id===q.id)?.nature || NATURE_MAP.get(q.id) || 'ordinaire';
 
   document.getElementById('acN').textContent = q.n;
   document.getElementById('acA').textContent = q.a + ' arrondissement';
@@ -1022,8 +1122,21 @@ function ouvrirAct(q){
   else
     own.innerHTML = `<i style="background:${clanCol(e.clan)}"></i>${NOMS[e.clan]} · ${joueurs.get(e.owner)||''}` + (e.inviolable?' · imprenable':'');
 
-  /* Le coût monte avec MA taille. Sans explication, le joueur croit à un bug :
-     "pourquoi ce quartier libre coûte 400 or alors que le voisin en coûtait 100 ?" */
+  /* Deux choses à expliquer, sinon le joueur croit à un bug :
+     1. la NATURE du quartier (et pourquoi il coûte 1,5x plus cher)
+     2. le multiplicateur de taille */
+  const N = nat(q.nature);
+  const nb = document.getElementById('acNat');
+  if(nb){
+    if(N){
+      nb.innerHTML = `<span class="ic">${N.i}</span>
+        <div><b>${N.n}</b><small>${N.e}</small></div>
+        <em>×1,5</em>`;
+      nb.style.setProperty('--nc', N.c);
+      nb.style.display = 'flex';
+    } else nb.style.display = 'none';
+  }
+
   const note = document.getElementById('acNote');
   if(note){
     const n = mesQ.length;
@@ -1246,6 +1359,12 @@ function maj(){
   document.getElementById('mLibres').textContent = libres;
   document.getElementById('mBar').innerHTML = classementClans.map((n,i)=>
     `<i style="width:${(n/111*100).toFixed(1)}%;background:${mapCol(i)}"></i>`).join('');
+  document.getElementById('mNatLeg').innerHTML =
+    Object.entries(NATURES)
+      .filter(([,v]) => v)
+      .map(([,v]) => `<div><span class="p" style="background:${v.c}"></span><span>${v.i} ${v.n}</span></div>`)
+      .join('');
+
   document.getElementById('mLeg').innerHTML = `
     <div><i style="background:${mapCol(moi.clan??2)}"></i><span>Toi</span></div>
     <div><i style="background:rgba(47,106,118,.92)"></i><span>Ton clan</span></div>
@@ -1292,15 +1411,18 @@ function maj(){
     </div>`).join('') || '<div class="empty"><b>Tu es seul</b><small>Aucun autre joueur dans ton clan.</small></div>';
 
   document.getElementById('cMine').textContent = nq + ' quartier' + (nq>1?'s':'');
-  document.getElementById('cList').innerHTML = mesQ.map(q=>`
-    <div class="mate">
-      <div class="av" style="background:${clanCol(moi.clan)}">${q.nom[0].toUpperCase()}</div>
+  document.getElementById('cList').innerHTML = mesQ.map(q=>{
+    const N = nat(q.nature);
+    const or = N && q.nature==='port' ? PROD_PAR_QUARTIER*2 : PROD_PAR_QUARTIER;
+    return `<div class="mate ${N?'spec':''}">
+      <div class="av" style="background:${N?N.c:clanCol(moi.clan)}">${N?N.i:q.nom[0].toUpperCase()}</div>
       <div class="t">
-        <b>${q.nom}</b>
-        <small>${q.arr} · force ${q.puissance}${q.inviolable?' · imprenable':''}</small>
+        <b>${q.nom}${N?` <span class="natmini">${N.n}</span>`:''}</b>
+        <small>${q.arr} · force ${q.puissance}/${q.p_max||100}${q.inviolable?' · imprenable':''}</small>
       </div>
-      <span class="n">+${PROD_PAR_QUARTIER}</span>
-    </div>`).join('') || '<div class="empty"><b>Aucun quartier</b><small>Prends-en un depuis l\'onglet Guerre.</small></div>';
+      <span class="n">+${or}</span>
+    </div>`;
+  }).join('') || '<div class="empty"><b>Aucun quartier</b><small>Prends-en un depuis l\'onglet Guerre.</small></div>';
 }
 
 function ligne(c){
@@ -1308,10 +1430,17 @@ function ligne(c){
   const col = c.clan!=null ? clanCol(c.clan) : '#94a3b8';
   const qui = c.qui || (c.clan!=null ? NOMS[c.clan] : 'Libre');
   const p = c.puissance!=null ? ` · force ${c.puissance}` : '';
-  return `<div class="target ${ok?'can':''}" data-id="${c.id}">
+  const N = nat(c.nature);
+  const badge = N
+    ? `<span class="nat" style="--nc:${N.c}" title="${N.e}">${N.i} ${N.n}</span>`
+    : '';
+  return `<div class="target ${ok?'can':''} ${N?'spec':''}" data-id="${c.id}">
     <i style="background:${col}"></i>
-    <div class="t"><b>${c.nom}</b><small>${qui} · ${c.arr}${p}</small></div>
-    <button class="go" ${ok?'':'disabled'}>${ok?c.cout+' or':c.cout+' or'}</button>
+    <div class="t">
+      <b>${c.nom}${badge}</b>
+      <small>${qui} · ${c.arr}${p}</small>
+    </div>
+    <button class="go" ${ok?'':'disabled'}>${c.cout} or</button>
   </div>`;
 }
 function brancher(box){
@@ -1555,6 +1684,10 @@ async function demarrer(){
 
   setBoot('Chargement de la carte…');
   try{
+    // les natures : figées, on les charge une fois
+    const { data: qn } = await sb.from('quartiers').select('id, nature');
+    NATURE_MAP = new Map((qn||[]).map(q => [q.id, q.nature]));
+
     await chargerCarte();
     await chargerJoueurs();
   }catch(e){
