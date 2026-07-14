@@ -222,27 +222,36 @@ button{font-family:inherit;touch-action:manipulation}
 .sheet .note.ok{color:#1a7a52}
 
 /* ═══ INTÉGRATION (choix du camp) ═══ */
+/* Feuille du bas, PAS un panneau plein écran :
+   la carte doit rester visible et tapable — le texte dit "touche la carte". */
 #join{
-  position:fixed;inset:0;z-index:50;background:rgba(11,26,34,.94);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  display:none;align-items:center;justify-content:center;padding:22px;
-  overflow-y:auto;
+  position:fixed;left:0;right:0;bottom:0;z-index:50;
+  display:none;justify-content:center;
+  pointer-events:none;   /* la carte reste cliquable autour */
 }
 #join.on{display:flex}
 #join .box{
-  width:100%;max-width:400px;background:var(--paper);color:var(--ink);
-  border-radius:16px;padding:22px 20px;
-  box-shadow:0 24px 60px -20px rgba(0,0,0,.7);
-  animation:pop .4s cubic-bezier(.25,1.2,.4,1);
+  pointer-events:auto;
+  width:100%;max-width:440px;
+  background:var(--paper);color:var(--ink);
+  border-radius:18px 18px 0 0;
+  padding:16px 18px calc(16px + var(--sab));
+  box-shadow:0 -14px 40px -12px rgba(0,0,0,.6);
+  animation:pop .42s cubic-bezier(.25,1.15,.4,1);
+  max-height:76svh;overflow-y:auto;
 }
-@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.97)}}
-#join h2{font:800 21px/1.2 'Archivo';letter-spacing:-.025em;margin-bottom:6px}
-#join .lede{font:400 13.5px/1.5 'Archivo';color:var(--ink2);margin-bottom:18px}
+@keyframes pop{from{opacity:0;transform:translateY(24px)}}
+#join .grab{
+  width:36px;height:4px;border-radius:100px;background:var(--line);
+  margin:0 auto 12px;
+}
+#join h2{font:800 19px/1.2 'Archivo';letter-spacing:-.025em;margin-bottom:5px}
+#join .lede{font:400 13px/1.45 'Archivo';color:var(--ink2);margin-bottom:15px}
 #join .lb{
   font:600 8.5px/1 'JetBrains Mono',monospace;letter-spacing:.15em;
   text-transform:uppercase;color:var(--ink2);margin-bottom:9px;
 }
-#join .clans{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+#join .clans{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px}
 #join .clan{
   display:flex;align-items:center;gap:6px;padding:8px 11px;cursor:pointer;
   border-radius:100px;background:var(--white);border:1.5px solid var(--line);
@@ -255,7 +264,7 @@ button{font-family:inherit;touch-action:manipulation}
   font-style:normal;font-weight:400;opacity:.55;font-size:10px;
 }
 #join .pick{
-  display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px;
+  display:flex;align-items:center;gap:10px;margin-bottom:13px;padding:11px;
   border-radius:10px;background:var(--white);border:1.5px dashed var(--line);
 }
 #join .pick.set{border-style:solid;border-color:var(--ink)}
@@ -289,6 +298,18 @@ button{font-family:inherit;touch-action:manipulation}
 #join .note{
   margin-top:11px;min-height:15px;text-align:center;
   font:600 10.5px/1.4 'JetBrains Mono',monospace;color:var(--terra);
+}
+
+/* Écran court : la feuille se compacte, sinon elle mange la carte
+   alors que c'est ELLE qui sert à choisir son quartier. */
+@media(max-height:700px){
+  #join .box{max-height:58svh;padding-top:12px}
+  #join h2{font-size:17px;margin-bottom:3px}
+  #join .lede{font-size:12px;margin-bottom:11px}
+  #join .clans{margin-bottom:11px}
+  #join .clan{padding:6px 9px;font-size:11px}
+  #join .pick{margin-bottom:10px;padding:9px 10px}
+  #join .lb{margin-bottom:6px}
 }
 
 @media(min-width:900px){
@@ -381,8 +402,9 @@ button{font-family:inherit;touch-action:manipulation}
 
 <div id="join">
   <div class="box">
+    <div class="grab"></div>
     <h2>Choisis ton camp</h2>
-    <p class="lede">Ton clan, puis ton premier quartier. Il sera <b>inviolable</b> : personne ne pourra jamais te le prendre.</p>
+    <p class="lede">Ton clan, puis ton premier quartier — <b>touche la carte</b>. Il sera <b>inviolable</b> : personne ne pourra jamais te le prendre.</p>
 
     <div class="lb">Ton clan</div>
     <div class="clans" id="jClans"></div>
@@ -390,7 +412,7 @@ button{font-family:inherit;touch-action:manipulation}
     <div class="lb">Ton premier quartier</div>
     <div class="pick" id="jPick">
       <div class="t">
-        <small>Touche la carte, ou tire au sort</small>
+        <small>Touche un quartier doré, ou tire au sort</small>
         <b id="jQ">—</b>
       </div>
       <button class="rr" id="jRoll" aria-label="Tirer au sort">
@@ -646,10 +668,21 @@ function paint(force){
   if(base) ctx.drawImage(base,0,0);
   ctx.setTransform(DPR,0,0,DPR,0,0);
 
-  // Cibles atteignables : liseré doré discret, pulsant.
-  // C'est ce qui rend l'adjacence LISIBLE — sans ça, le joueur ne comprend
-  // pas pourquoi certains quartiers refusent l'attaque.
-  if(cibles.size && !integration){
+  // Intégration : ce sont les quartiers LIBRES qu'il faut voir.
+  if(integration){
+    const pu = .5 + .5*Math.sin(t*1.6);
+    ctx.strokeStyle = `rgba(242,204,143,${.4 + pu*.4})`;
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    for(const q of Q){
+      if(q.clan >= 0) continue;   // déjà pris
+      for(const p of q.polys){ trace(ctx,p); ctx.stroke(); }
+    }
+  }
+
+  // En jeu : les cibles atteignables. C'est ce qui rend l'adjacence LISIBLE —
+  // sans ça, le joueur ne comprend pas pourquoi certains quartiers refusent.
+  else if(cibles.size){
     const pu = .5 + .5*Math.sin(t*1.5);
     ctx.strokeStyle = `rgba(242,204,143,${.35 + pu*.35})`;
     ctx.lineWidth = 1.6;
@@ -1049,10 +1082,13 @@ async function chargerClans(){
 
 function choisirQuartier(q){
   if(q.clan >= 0){
-    jNote.textContent = 'Ce quartier est déjà pris. Choisis-en un libre.';
+    jNote.textContent = `${q.n} est déjà pris. Choisis un quartier entouré d'or.`;
+    if(navigator.vibrate) navigator.vibrate([6,40,6]);
     return;
   }
   jQuartier = q;
+  picked = q;
+  needsPaint = true;
   jQ.textContent = q.n + (q.a ? ' · ' + q.a : '');
   jPick.classList.add('set');
   jNote.textContent = '';
@@ -1298,10 +1334,12 @@ async function demarrer(){
 
   document.getElementById('boot').classList.add('gone');
 
-  // Pas encore de camp : on l'accueille
+  // Pas encore de camp : on l'accueille.
+  // La feuille laisse la carte visible : c'est elle qui sert à choisir.
   if(moi.clan === null || moi.clan < 0){
     integration = true;
     joinEl.classList.add('on');
+    needsPaint = true;
     await chargerClans();
   }
 }
