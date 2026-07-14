@@ -247,6 +247,12 @@ h4:first-child{margin-top:2px}
   display:block;margin-top:3px;font:600 7px/1 'JetBrains Mono',monospace;
   letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);
 }
+.acnote{
+  margin-bottom:9px;padding:8px 10px;border-radius:7px;
+  background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.3);
+  font:600 10.5px/1.4 'JetBrains Mono',monospace;color:var(--gold);
+  text-align:center;
+}
 .act .go{
   width:100%;padding:13px;border:0;border-radius:var(--r);
   background:var(--terra);color:#fff;font:700 14.5px 'Archivo';
@@ -621,6 +627,7 @@ nav button .dot{
           <div><b id="acC">—</b><small>Coût</small></div>
           <div><b>10</b><small>Or/h</small></div>
         </div>
+        <div class="acnote" id="acNote" style="display:none"></div>
         <button class="go" id="acGo">—</button>
       </div>
     </div>
@@ -680,7 +687,10 @@ nav button .dot{
 const SUPABASE_URL      = 'https://phpzhfktfzbyjpbvuqar.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBocHpoZmt0ZnpieWpwYnZ1cWFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NzEyMDIsImV4cCI6MjA5OTU0NzIwMn0.ln-ZjBwXJO3WwtP09ViSFgLNrrt6cP7w6uEKYHLJB6g';
 const PAGE_CONNEXION = 'index.html';
-const PROD_PAR_QUARTIER = 10;   // doit correspondre à reglages() dans schema.sql
+/* Doivent correspondre à reglages() dans schema.sql. */
+const PROD_PAR_QUARTIER = 10;   // or/heure par quartier
+const PROD_BASE = 20;           // or/heure de base, même sans territoire
+const FACTEUR_TAILLE = 1.10;    // chaque quartier rend le suivant plus cher
 
 const CLES_OK =
   SUPABASE_URL.startsWith('https://') &&
@@ -1012,6 +1022,20 @@ function ouvrirAct(q){
   else
     own.innerHTML = `<i style="background:${clanCol(e.clan)}"></i>${NOMS[e.clan]} · ${joueurs.get(e.owner)||''}` + (e.inviolable?' · imprenable':'');
 
+  /* Le coût monte avec MA taille. Sans explication, le joueur croit à un bug :
+     "pourquoi ce quartier libre coûte 400 or alors que le voisin en coûtait 100 ?" */
+  const note = document.getElementById('acNote');
+  if(note){
+    const n = mesQ.length;
+    if(c && n >= 5){
+      const mult = Math.pow(FACTEUR_TAILLE, n).toFixed(1);
+      note.textContent = `Prix ×${mult} — tu tiens déjà ${n} quartiers.`;
+      note.style.display = 'block';
+    } else {
+      note.style.display = 'none';
+    }
+  }
+
   go.onclick = null;
   if(e && e.owner===moi.id){ go.textContent='Ton quartier'; go.disabled=true; }
   else if(e && e.clan===moi.clan){ go.textContent='Allié'; go.disabled=true; }
@@ -1154,7 +1178,7 @@ let tri = 'prix';
 function maj(){
   if(!moi) return;
   const nq = mesQ.length;
-  const prod = nq * PROD_PAR_QUARTIER;
+  const prod = PROD_BASE + nq * PROD_PAR_QUARTIER;
   const cbl = [...CIBLES.values()];
   const abord = cbl.filter(c => c.abordable);
 
@@ -1262,7 +1286,7 @@ function maj(){
       <div class="av" style="background:${clanCol(moi.clan)}">${p.pseudo[0].toUpperCase()}</div>
       <div class="t">
         <b>${p.pseudo}${p.moi?' · toi':''}</b>
-        <small>${p.quartiers*PROD_PAR_QUARTIER} or / heure</small>
+        <small>${PROD_BASE + p.quartiers*PROD_PAR_QUARTIER} or / heure</small>
       </div>
       <span class="n">${p.quartiers}</span>
     </div>`).join('') || '<div class="empty"><b>Tu es seul</b><small>Aucun autre joueur dans ton clan.</small></div>';
