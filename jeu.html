@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f8f9fa">
 <title>Massilia Battle</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,15 +54,19 @@ body.sombre{
 
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{height:100%;touch-action:manipulation}
 body{
   overflow:hidden;-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
+  overscroll-behavior:none;
   font-family:'Archivo',system-ui,sans-serif;
   background:var(--bg);color:var(--ink);
   display:flex;flex-direction:column;
   transition:background .25s,color .25s;
 }
 button{font-family:inherit;touch-action:manipulation;cursor:pointer}
+input,textarea{-webkit-user-select:text;user-select:text}
 :focus-visible{outline:2px solid var(--terra);outline-offset:2px}
 
 
@@ -744,6 +748,26 @@ nav button .dot{
 <script>
 
 /* ═══════════════════════════════════════════════════════════════
+   VERROUS UX — pas de zoom, pas de sélection, pas de menu long-press
+   (user-scalable=no couvre Android ; iOS Safari l'ignore, d'où le JS)
+   ═══════════════════════════════════════════════════════════════ */
+['gesturestart','gesturechange','gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), {passive:false}));
+document.addEventListener('touchmove', e => {
+  if(e.touches.length > 1) e.preventDefault();   // pinch
+}, {passive:false});
+let _dernierTap = 0;
+document.addEventListener('touchend', e => {
+  const t = Date.now();
+  if(t - _dernierTap < 300 && !e.target.closest('button,a,input,textarea,select,label'))
+    e.preventDefault();                          // double-tap zoom hors contrôles
+  _dernierTap = t;
+}, {passive:false});
+document.addEventListener('contextmenu', e => {
+  if(!e.target.closest('input,textarea')) e.preventDefault();
+});
+
+/* ═══════════════════════════════════════════════════════════════
    CONFIG
    ═══════════════════════════════════════════════════════════════ */
 const SUPABASE_URL      = 'https://phpzhfktfzbyjpbvuqar.supabase.co';
@@ -1003,7 +1027,7 @@ function pick(px,py){
   return null;
 }
 function resize(){
-  DPR = Math.min(devicePixelRatio||1, 2);
+  DPR = Math.min(devicePixelRatio||1, 3);
   const r = cvs.getBoundingClientRect();
   if(r.width<1 || r.height<1) return;
   W=r.width; H=r.height;
@@ -1063,6 +1087,7 @@ function paint(){
   if(sel){
     const p2 = .5 + .5*Math.sin(t*2.6);
     ctx.strokeStyle = '#fff';
+    ctx.lineJoin = 'round';
     ctx.lineWidth = 2.8 + p2;
     for(const p of sel.polys){ tr(ctx,p); ctx.stroke(); }
   }
@@ -1760,6 +1785,13 @@ addEventListener('resize', () => {
   clearTimeout(rt);
   rt = setTimeout(resize, 180);
 }, {passive:true});
+
+/* Netteté conservée si le navigateur change de densité (zoom desktop,
+   déplacement de fenêtre entre écrans). */
+(function veilleDPR(){
+  matchMedia(`(resolution: ${devicePixelRatio}dppx)`)
+    .addEventListener('change', () => { resize(); veilleDPR(); }, {once:true});
+})();
 
 document.getElementById('logout')?.addEventListener('click', async () => {
   if(sb) await sb.auth.signOut();
