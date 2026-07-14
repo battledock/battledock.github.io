@@ -241,11 +241,39 @@ button{font-family:inherit;touch-action:manipulation}
   max-height:76svh;overflow-y:auto;
 }
 @keyframes pop{from{opacity:0;transform:translateY(24px)}}
-#join .grab{
-  width:36px;height:4px;border-radius:100px;background:var(--line);
-  margin:0 auto 12px;
+/* Progression : deux étapes, une seule chose à la fois.
+   Le panneau reste petit -> la carte respire (+23% de largeur sur iPhone SE). */
+#join .steps{display:flex;gap:4px;margin-bottom:11px}
+#join .steps i{
+  flex:1;height:3px;border-radius:100px;background:var(--line);
+  transition:background .3s;
 }
-#join h2{font:800 19px/1.2 'Archivo';letter-spacing:-.025em;margin-bottom:5px}
+#join .steps i.on{background:var(--terra)}
+
+#join .stage{display:none}
+#join .stage.on{display:block;animation:etape .3s cubic-bezier(.3,1,.4,1)}
+@keyframes etape{from{opacity:0;transform:translateY(9px)}}
+
+#join .hd{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin-bottom:5px;
+}
+#join .hd em{
+  flex:none;font-style:normal;
+  font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink2);
+}
+
+#join .row{display:flex;gap:8px}
+#join .back{
+  flex:none;padding:13px 15px;cursor:pointer;
+  background:none;border:1.5px solid var(--line);border-radius:10px;
+  color:var(--ink2);font:600 13.5px 'Archivo';
+  transition:border-color .16s,color .16s;
+}
+#join .back:hover{border-color:var(--ink);color:var(--ink)}
+#join .row .go{flex:1}
+#join h2{font:800 17px/1.2 'Archivo';letter-spacing:-.025em}
 #join .lede{font:400 13px/1.45 'Archivo';color:var(--ink2);margin-bottom:15px}
 #join .lb{
   font:600 8.5px/1 'JetBrains Mono',monospace;letter-spacing:.15em;
@@ -402,26 +430,47 @@ button{font-family:inherit;touch-action:manipulation}
 
 <div id="join">
   <div class="box">
-    <div class="grab"></div>
-    <h2>Choisis ton camp</h2>
-    <p class="lede">Ton clan, puis ton premier quartier — <b>touche la carte</b>. Il sera <b>inviolable</b> : personne ne pourra jamais te le prendre.</p>
-
-    <div class="lb">Ton clan</div>
-    <div class="clans" id="jClans"></div>
-
-    <div class="lb">Ton premier quartier</div>
-    <div class="pick" id="jPick">
-      <div class="t">
-        <small>Touche un quartier doré, ou tire au sort</small>
-        <b id="jQ">—</b>
-      </div>
-      <button class="rr" id="jRoll" aria-label="Tirer au sort">
-        <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
+    <div class="steps">
+      <i class="on" id="st1"></i>
+      <i id="st2"></i>
     </div>
 
-    <button class="go" id="jGo" disabled>Planter mon drapeau</button>
-    <div class="note" id="jNote"></div>
+    <!-- ÉTAPE 1 : le clan -->
+    <div class="stage on" id="jS1">
+      <div class="hd">
+        <h2>Ton clan</h2>
+        <em>Étape 1 / 2</em>
+      </div>
+      <p class="lede">Les clans sont des équipes : on ne s'attaque pas entre alliés.</p>
+      <div class="clans" id="jClans"></div>
+      <button class="go" id="jNext" disabled>Continuer</button>
+      <div class="note" id="jNote1"></div>
+    </div>
+
+    <!-- ÉTAPE 2 : le quartier -->
+    <div class="stage" id="jS2">
+      <div class="hd">
+        <h2>Ton quartier</h2>
+        <em>Étape 2 / 2</em>
+      </div>
+      <p class="lede">Touche un quartier <b>doré</b> sur la carte. Il sera <b>inviolable</b> : personne ne pourra jamais te le prendre.</p>
+
+      <div class="pick" id="jPick">
+        <div class="t">
+          <small>Touche la carte, ou tire au sort</small>
+          <b id="jQ">—</b>
+        </div>
+        <button class="rr" id="jRoll" aria-label="Tirer au sort">
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 3v6h-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="row">
+        <button class="back" id="jBack">Retour</button>
+        <button class="go" id="jGo" disabled>Planter mon drapeau</button>
+      </div>
+      <div class="note" id="jNote"></div>
+    </div>
   </div>
 </div>
 
@@ -524,10 +573,45 @@ const tipSw= document.getElementById('tipSw');
 let W=0,H=0,DPR=1, base=null, grid=null, GW=0, GH=0;
 const GS = 26;
 
+/* La zone RÉELLEMENT visible : entre la jauge du haut et la feuille du bas.
+   Sans ça, la carte est centrée dans tout le canvas et Marseille se retrouve
+   coupée au nord et au sud (mesuré : 56% visible sur iPhone SE). */
+function zoneVisible(){
+  const map  = document.querySelector('.map').getBoundingClientRect();
+  const dom  = document.querySelector('.dom').getBoundingClientRect();
+
+  const haut = (dom.bottom - map.top) + 10;
+
+  // Ce qui mange le bas : la feuille d'intégration, ou celle du quartier, ou le fil.
+  // On lit le DOM directement : cette fonction est appelée au tout premier
+  // resize(), avant que les const du formulaire ne soient déclarées.
+  let bas = 52;   // le fil des prises
+  const j = document.getElementById('join');
+  const sh = document.getElementById('sheet');
+  if(j && j.classList.contains('on')){
+    bas = map.bottom - j.getBoundingClientRect().top + 10;
+  } else if(sh && sh.classList.contains('on')){
+    bas = map.bottom - sh.getBoundingClientRect().top + 10;
+  }
+
+  return {
+    x: 10,
+    y: haut,
+    w: Math.max(60, map.width - 20),
+    h: Math.max(60, map.height - haut - bas)
+  };
+}
+
 function project(){
-  const s  = Math.min(W/GEO.w, H/GEO.h) * 0.98;
-  const ox = (W - GEO.w*s)/2;
-  const oy = (H - GEO.h*s)/2;
+  const z = zoneVisible();
+
+  // Zoom auto : Marseille entière, à la plus grande taille possible
+  // dans l'espace RÉELLEMENT libre.
+  // (Pas de hauteur plancher : elle pousserait la carte hors du cadre
+  //  et couperait le sud dès qu'une feuille est ouverte.)
+  const s  = Math.min(z.w/GEO.w, z.h/GEO.h) * 0.98;
+  const ox = z.x + (z.w - GEO.w*s)/2;
+  const oy = z.y + (z.h - GEO.h*s)/2;
 
   Q = GEO.q.map(q => {
     const polys = q.p.map(ring => {
@@ -668,8 +752,8 @@ function paint(force){
   if(base) ctx.drawImage(base,0,0);
   ctx.setTransform(DPR,0,0,DPR,0,0);
 
-  // Intégration : ce sont les quartiers LIBRES qu'il faut voir.
-  if(integration){
+  // Intégration, étape 2 : ce sont les quartiers LIBRES qu'il faut voir.
+  if(integration && etape === 2){
     const pu = .5 + .5*Math.sin(t*1.6);
     ctx.strokeStyle = `rgba(242,204,143,${.4 + pu*.4})`;
     ctx.lineWidth = 1.5;
@@ -768,6 +852,7 @@ cvs.addEventListener('pointerdown', e => {
 }, {passive:true});
 
 /* ═══ Feuille du bas ═══ */
+/* déclaré ici : zoneVisible() en a besoin */
 const sheet = document.getElementById('sheet');
 const shQ = document.getElementById('shQ');
 const shA = document.getElementById('shA');
@@ -779,6 +864,7 @@ let qOuvert = null;   // quartier affiché dans la feuille
 
 function ouvrirSheet(q){
   qOuvert = q;
+  const etaitOuverte = sheet.classList.contains('on');
   shQ.textContent = q.n;
   shA.textContent = q.a ? q.a + ' arrondissement' : '';
   shNote.textContent = '';
@@ -838,6 +924,9 @@ function ouvrirSheet(q){
   }
 
   sheet.classList.add('on');
+
+  // La feuille change la zone visible : on recadre.
+  if(!etaitOuverte) setTimeout(() => { resize(); }, 60);
 }
 
 /* ═══ ATTAQUER ═══
@@ -895,6 +984,7 @@ function fermerSheet(){
   picked = null;
   qOuvert = null;
   needsPaint = true;
+  setTimeout(() => { resize(); }, 60);   // la carte reprend toute la place
 }
 document.getElementById('shX').onclick = fermerSheet;
 
@@ -1040,6 +1130,30 @@ const jPick   = document.getElementById('jPick');
 const jQ      = document.getElementById('jQ');
 const jGo     = document.getElementById('jGo');
 const jNote   = document.getElementById('jNote');
+const jNote1  = document.getElementById('jNote1');
+const jNext   = document.getElementById('jNext');
+const jBack   = document.getElementById('jBack');
+const jS1     = document.getElementById('jS1');
+const jS2     = document.getElementById('jS2');
+const st2     = document.getElementById('st2');
+
+let etape = 1;   // 1 = clan, 2 = quartier
+
+/* Changer d'étape : le panneau change de taille -> il FAUT recadrer la carte,
+   sinon Marseille se retrouve coupée. */
+async function allerEtape(n){
+  etape = n;
+  jS1.classList.toggle('on', n === 1);
+  jS2.classList.toggle('on', n === 2);
+  st2.classList.toggle('on', n === 2);
+
+  // au clan : la carte n'est pas encore utile, on la laisse tranquille
+  // au quartier : les libres se soulignent
+  needsPaint = true;
+
+  await new Promise(r => requestAnimationFrame(r));
+  resize();
+}
 
 CLANS.forEach((c,i) => {
   const b = document.createElement('button');
@@ -1074,6 +1188,7 @@ async function chargerClans(){
       if(!c.ouvert && jClan === c.clan){
         jClan = null;
         b.setAttribute('aria-pressed','false');
+        jNote1.textContent = 'Ce clan vient de se remplir. Choisis-en un autre.';
         majJoin();
       }
     }
@@ -1081,6 +1196,13 @@ async function chargerClans(){
 }
 
 function choisirQuartier(q){
+  // À l'étape 1, la carte ne sert pas encore : on invite à choisir un clan.
+  if(etape === 1){
+    jNote1.textContent = 'Choisis d\'abord ton clan.';
+    if(navigator.vibrate) navigator.vibrate([6,40,6]);
+    return;
+  }
+
   if(q.clan >= 0){
     jNote.textContent = `${q.n} est déjà pris. Choisis un quartier entouré d'or.`;
     if(navigator.vibrate) navigator.vibrate([6,40,6]);
@@ -1095,6 +1217,15 @@ function choisirQuartier(q){
   majJoin();
 }
 
+jNext.onclick = () => {
+  if(jClan === null) return;
+  allerEtape(2);
+};
+
+jBack.onclick = () => {
+  allerEtape(1);
+};
+
 document.getElementById('jRoll').onclick = () => {
   const libres = Q.filter(q => q.clan < 0);
   if(!libres.length){ jNote.textContent = 'Plus aucun quartier libre.'; return; }
@@ -1107,7 +1238,8 @@ document.getElementById('jRoll').onclick = () => {
 };
 
 function majJoin(){
-  jGo.disabled = (jClan === null || jQuartier === null);
+  jNext.disabled = (jClan === null);
+  jGo.disabled   = (jClan === null || jQuartier === null);
 }
 
 jGo.onclick = async () => {
@@ -1126,6 +1258,11 @@ jGo.onclick = async () => {
 
     integration = false;
     joinEl.classList.remove('on');
+
+    // La carte reprend toute la place : on recadre.
+    await new Promise(r => requestAnimationFrame(r));
+    resize();
+
     await rafraichirMoi();
     await chargerCarte();
     await chargerFeed();
@@ -1338,8 +1475,14 @@ async function demarrer(){
   // La feuille laisse la carte visible : c'est elle qui sert à choisir.
   if(moi.clan === null || moi.clan < 0){
     integration = true;
+    etape = 1;
     joinEl.classList.add('on');
-    needsPaint = true;
+
+    // La feuille réduit la zone visible -> il FAUT recadrer, sinon
+    // Marseille se retrouve coupée au sud (mesuré : 40% visible).
+    await new Promise(r => requestAnimationFrame(r));
+    resize();
+
     await chargerClans();
   }
 }
