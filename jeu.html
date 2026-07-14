@@ -571,6 +571,23 @@ nav button .dot{
 .out:hover{background:var(--line2)}
 .out svg{width:16px;height:16px;fill:none;stroke:var(--ink3);stroke-width:2}
 
+/* ═════ ÉVÉNEMENT (baston du samedi) ═════ */
+#evt{
+  flex:none;padding:7px 14px;text-align:center;
+  font-size:12.5px;font-weight:700;letter-spacing:.2px;
+}
+#evt.live{background:var(--sang);color:#fff;animation:evtpulse 1.6s ease-in-out infinite}
+#evt.soon{background:#fef3c7;color:#92400e}
+@keyframes evtpulse{0%,100%{opacity:1}50%{opacity:.82}}
+
+/* ═════ RIPOSTE ═════ */
+.rip{
+  display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;
+  font-size:10px;font-weight:800;letter-spacing:.3px;
+  background:var(--sang);color:#fff;vertical-align:1px;
+}
+.target.ripc .go{background:var(--sang);color:#fff}
+
 </style>
 </head>
 <body class="sombre">
@@ -607,6 +624,8 @@ nav button .dot{
     <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </button>
 </header>
+
+<div id="evt" hidden></div>
 
 <main>
   <section class="tab on" id="tAccueil">
@@ -830,6 +849,35 @@ let OR = 0;
 let etat = new Map();        // quartier_id -> {owner, clan, puissance, inviolable}
 let joueurs = new Map();     // player_id -> pseudo
 let CIBLES = new Map();      // id -> {cout, abordable, ...}  (calculé par le serveur)
+
+/* ═══ ÉVÉNEMENT : bannière « Baston du samedi » ═══ */
+let EVT = null, evtRecu = 0;
+function fmtDuree(s){
+  if(s >= 3600) return Math.floor(s/3600) + 'h' + String(Math.floor(s%3600/60)).padStart(2,'0');
+  if(s >= 60)   return Math.floor(s/60) + ' min';
+  return s + ' s';
+}
+function majEvt(){
+  const el = document.getElementById('evt');
+  if(!el) return;
+  if(!EVT){ el.hidden = true; return; }
+  const ecoule = Math.floor((Date.now() - evtRecu)/1000);
+  if(EVT.actif){
+    const reste = Math.max(0, (EVT.fin_dans_s||0) - ecoule);
+    if(!reste){ EVT = null; el.hidden = true; return; }
+    el.className = 'live';
+    el.textContent = `⚔️ ${EVT.nom} — prod ×${EVT.prod_x} · attaques -${Math.round(EVT.remise*100)}% · ${fmtDuree(reste)} restant`;
+    el.hidden = false;
+  } else {
+    const avant = Math.max(0, (EVT.debut_dans_s||0) - ecoule);
+    if(avant > 0 && avant < 86400){        // visible seulement le jour J
+      el.className = 'soon';
+      el.textContent = `⚔️ ${EVT.nom} ce soir 21h — prod ×${EVT.prod_x}, attaques -${Math.round(EVT.remise*100)}% · dans ${fmtDuree(avant)}`;
+      el.hidden = false;
+    } else el.hidden = true;
+  }
+}
+setInterval(majEvt, 30000);
 let nouvelles = [];
 let coequipiers = [];
 let mesQ = [];
@@ -1267,6 +1315,9 @@ async function rafraichir(){
     if(st && st.ok){
       OR = st.or;
       if(st.profil) moi = {...moi, ...st.profil};
+      EVT = st.evenement || null;
+      evtRecu = Date.now();
+      majEvt();
     }
 
     await chargerCarte();
@@ -1459,10 +1510,11 @@ function ligne(c){
   const badge = N
     ? `<span class="nat" style="--nc:${N.c}" title="${N.e}">${N.i} ${N.n}</span>`
     : '';
-  return `<div class="target ${ok?'can':''} ${N?'spec':''}" data-id="${c.id}">
+  const rip = c.riposte ? `<span class="rip">RIPOSTE -50%</span>` : '';
+  return `<div class="target ${ok?'can':''} ${N?'spec':''} ${c.riposte?'ripc':''}" data-id="${c.id}">
     <i style="background:${col}"></i>
     <div class="t">
-      <b>${c.nom}${badge}</b>
+      <b>${c.nom}${badge}${rip}</b>
       <small>${qui} · ${c.arr}${p}</small>
     </div>
     <button class="go" ${ok?'':'disabled'}>${c.cout} or</button>
