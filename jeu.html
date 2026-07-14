@@ -1096,10 +1096,11 @@ async function chargerJoueurs(){
   for(const [,v] of etat) if(v.clan>=0 && v.clan<5) classementClans[v.clan]++;
 }
 
+let sqlAvertit = false;
+
 async function rafraichir(){
   if(!sb || !moi) return;
   try{
-    // un seul aller-retour pour l'or et le profil
     const { data: st } = await sb.rpc('mon_etat');
     if(st && st.ok){
       OR = st.or;
@@ -1115,6 +1116,22 @@ async function rafraichir(){
       sb.rpc('mon_clan'),
       sb.rpc('mes_quartiers')
     ]);
+
+    /* Une fonction absente renvoie un 404, pas une exception : sans ce
+       contrôle, le jeu s'affiche VIDE et personne ne comprend pourquoi. */
+    const manquantes = [];
+    if(c.error)  manquantes.push('mes_cibles');
+    if(n.error)  manquantes.push('mes_nouvelles');
+    if(cl.error) manquantes.push('mon_clan');
+    if(q.error)  manquantes.push('mes_quartiers');
+
+    if(manquantes.length && !sqlAvertit){
+      sqlAvertit = true;
+      toast('Fonctions manquantes : ' + manquantes.join(', ') + ' — relance schema.sql');
+      console.error('[Massilia] Ces fonctions SQL n\'existent pas dans ta base :',
+                    manquantes.join(', '),
+                    '\n→ Relance schema.sql dans Supabase > SQL Editor.');
+    }
 
     CIBLES = new Map();
     for(const t of (c.data || [])) CIBLES.set(t.id, t);
