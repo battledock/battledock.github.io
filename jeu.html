@@ -551,6 +551,82 @@ nav button .dot{
 }
 @media(max-width:380px){ .natleg{display:none} }
 
+/* ═════ LÉGENDAIRE ═════ */
+.act .leg-banner{
+  margin:8px 0;padding:10px 12px;border-radius:var(--r);
+  background:linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fef3c7 100%);
+  border:1.5px solid #d97706;
+  display:flex;align-items:center;gap:10px;
+  animation:legShine 3s ease-in-out infinite;
+}
+@keyframes legShine{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,.0)}50%{box-shadow:0 0 16px -2px rgba(217,119,6,.3)}}
+.leg-banner .lb-emoji{font-size:24px;line-height:1;flex:none}
+.leg-banner .lb-txt{flex:1;min-width:0}
+.leg-banner .lb-txt b{display:block;font:800 13px/1.2 'Archivo';color:#92400e}
+.leg-banner .lb-txt small{display:block;margin-top:2px;font:600 10px/1.3 'Archivo';color:#a16207}
+.leg-banner .lb-bonus{
+  padding:3px 8px;border-radius:100px;background:#92400e;
+  font:800 8px/1 'JetBrains Mono',monospace;letter-spacing:.08em;
+  text-transform:uppercase;color:#fef3c7;white-space:nowrap;
+}
+
+/* ═════ ESPIONNAGE ═════ */
+.go.spy{
+  background:transparent;color:var(--ink2);border:1.5px solid var(--line);
+  margin-top:6px;font-size:12px;
+}
+.go.spy:hover:not(:disabled){border-color:var(--ink3)}
+.go.spy:disabled{opacity:.4}
+.spy-intel{
+  margin-top:8px;padding:12px;border-radius:var(--r);
+  background:linear-gradient(135deg, rgba(15,58,77,.06), rgba(15,58,77,.02));
+  border:1px solid rgba(15,58,77,.15);
+  animation:intelIn .3s ease;
+}
+@keyframes intelIn{from{opacity:0;transform:translateY(6px)}}
+.spy-intel .si-hd{
+  display:flex;align-items:center;gap:6px;margin-bottom:8px;
+  font:700 11px/1 'Archivo';letter-spacing:.02em;
+}
+.spy-intel .si-hd span{font-size:14px}
+.spy-intel .si-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:5px;
+}
+.spy-intel .si-item{
+  padding:6px 8px;border-radius:6px;background:var(--card);
+  border:1px solid var(--line);
+}
+.spy-intel .si-item b{display:block;font:800 14px/1 'Archivo';font-variant-numeric:tabular-nums}
+.spy-intel .si-item small{display:block;margin-top:2px;font:600 7px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+.spy-intel .si-chances{
+  margin-top:8px;padding:8px;border-radius:6px;text-align:center;
+  font:700 12px/1 'Archivo';
+}
+.spy-intel .si-chances.high{background:rgba(34,197,94,.1);color:#16a34a}
+.spy-intel .si-chances.mid{background:rgba(234,179,8,.1);color:#a16207}
+.spy-intel .si-chances.low{background:rgba(239,68,68,.1);color:#dc2626}
+
+/* ═════ MUR ═════ */
+.go.mur{
+  background:var(--mer);color:#fff;margin-top:6px;
+}
+.go.mur:disabled{background:var(--line2);color:var(--ink3)}
+.mur-status{
+  margin-top:8px;padding:10px 12px;border-radius:8px;
+  display:flex;align-items:center;gap:8px;
+  font:600 11px/1.3 'Archivo';
+}
+.mur-status.active{
+  background:rgba(15,58,77,.08);border:1px solid rgba(15,58,77,.2);color:var(--mer);
+}
+.mur-status.cooldown{
+  background:rgba(148,163,184,.08);border:1px solid rgba(148,163,184,.3);color:var(--ink3);
+}
+.mur-status .ms-icon{font-size:18px;flex:none}
+.mur-status .ms-txt{flex:1}
+.mur-status .ms-txt b{display:block;font:700 12px/1 'Archivo'}
+.mur-status .ms-txt small{display:block;margin-top:3px;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase}
+
 /* ═════ FORTIFICATION ═════ */
 .go.fort{
   background:var(--gold);color:#fff;margin-top:6px;
@@ -848,9 +924,14 @@ nav button .dot{
           <div><b>10</b><small>Or/h</small></div>
         </div>
         <div class="acnat" id="acNat" style="display:none"></div>
+        <div class="leg-banner" id="acLeg" style="display:none"></div>
         <div class="acnote" id="acNote" style="display:none"></div>
         <button class="go" id="acGo">—</button>
         <button class="go fort" id="acFort" style="display:none">—</button>
+        <button class="go mur" id="acMur" style="display:none">—</button>
+        <div class="mur-status" id="acMurStatus" style="display:none"></div>
+        <button class="go spy" id="acSpy" style="display:none">—</button>
+        <div class="spy-intel" id="acIntel" style="display:none"></div>
       </div>
     </div>
   </section>
@@ -977,7 +1058,15 @@ const NATURES = {
   usine:      { i:'🏭', n:'Usine',      e:'+20 % de production totale (max 2)',    c:'#b45309' },
   universite: { i:'🎓', n:'Université', e:'Tes quartiers se consolident 2× plus vite', c:'#0f766e' },
   gare:       { i:'🚂', n:'Gare',       e:'Attaque à 2 quartiers de distance',     c:'#dc2626' },
+  legendaire: { i:'⭐', n:'Légendaire', e:'Quartier mythique de Marseille',        c:'#d97706' },
   ordinaire:  null
+};
+
+const LEGENDAIRES = {
+  10: { nom:'La Joliette',         bonus:'Production ×3',        emoji:'🚢', mult_prod:3, desc:'Le port qui a fait Marseille.' },
+  25: { nom:'Notre-Dame-du-Mont',  bonus:'XP ×2 sur toutes tes prises', emoji:'⛪', mult_xp:2, desc:'Point sacré dominant la ville.' },
+   4: { nom:'Opéra',               bonus:'Espionnage gratuit',    emoji:'🎭', spy_gratuit:true, desc:'Le cœur battant de la cité.' },
+  23: { nom:'Castellane',          bonus:'Attaques −25% coût',    emoji:'🏛️', reduc_attaque:0.25, desc:'Le carrefour du pouvoir.' },
 };
 const nat = k => (k && NATURES[k]) || null;
 
@@ -1190,6 +1279,19 @@ function bakeFills(){
     g.stroke();
   }
 
+  /* Étoiles légendaires — plus grandes, dorées */
+  for(const q of Q){
+    if(!LEGENDAIRES[q.id]) continue;
+    g.save();
+    g.font = `${6}px serif`;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.shadowColor = 'rgba(217,119,6,.6)';
+    g.shadowBlur = 4;
+    g.fillText('⭐', q.cx, q.cy);
+    g.restore();
+  }
+
   // Calque des cibles, seulement si elles sont nombreuses.
   cibleLayer = null;
   if(!integration && CIBLES.size > SEUIL_CALQUE){
@@ -1348,15 +1450,20 @@ function ouvrirAct(q){
   const e = etat.get(q.id);
   const c = CIBLES.get(q.id);
   // la nature vient du serveur (cibles) ou de mes quartiers
-  q.nature = c?.nature || mesQ.find(x=>x.id===q.id)?.nature || NATURE_MAP.get(q.id) || 'ordinaire';
+  q.nature = c?.nature || mesQ.find(x=>x.id===q.id)?.nature || NATURE_MAP.get(q.id) || (LEGENDAIRES[q.id] ? 'legendaire' : 'ordinaire');
 
   document.getElementById('acN').textContent = q.n;
   document.getElementById('acA').textContent = q.a + ' arrondissement';
   const own = document.getElementById('acO');
   const go  = document.getElementById('acGo');
 
-  document.getElementById('acP').textContent = e ? (e.puissance ?? '—') : '—';
+  document.getElementById('acP').textContent = e ? (e.owner===moi.id || e.clan===moi.clan ? (e.puissance ?? '—') : '???') : '—';
   document.getElementById('acC').textContent = c ? c.cout : '—';
+
+  const spy = document.getElementById('acSpy');
+  const intel = document.getElementById('acIntel');
+  spy.style.display = 'none'; spy.onclick = null;
+  intel.style.display = 'none';
 
   if(!e) own.innerHTML = '<i style="background:#94a3b8"></i>Libre';
   else if(e.owner===moi.id)
@@ -1381,6 +1488,18 @@ function ouvrirAct(q){
     } else nb.style.display = 'none';
   }
 
+  // Légendaire
+  const legEl = document.getElementById('acLeg');
+  const leg = LEGENDAIRES[q.id];
+  if(leg){
+    legEl.innerHTML = `<span class="lb-emoji">${leg.emoji}</span>
+      <div class="lb-txt"><b>${leg.nom}</b><small>${leg.desc}</small></div>
+      <span class="lb-bonus">${leg.bonus}</span>`;
+    legEl.style.display = 'flex';
+  } else {
+    legEl.style.display = 'none';
+  }
+
   const note = document.getElementById('acNote');
   if(note){
     const n = mesQ.length;
@@ -1397,15 +1516,19 @@ function ouvrirAct(q){
   const fort = document.getElementById('acFort');
   fort.style.display = 'none';
   fort.onclick = null;
+  const mur = document.getElementById('acMur');
+  const murSt = document.getElementById('acMurStatus');
+  mur.style.display = 'none'; mur.onclick = null;
+  murSt.style.display = 'none';
 
   if(e && e.owner===moi.id){
     go.textContent='Ton quartier'; go.disabled=true;
     // Fortification
     const p = e.puissance || 100;
     const maxP = 200;
-    const niv = Math.floor((p - 100) / 20); // 0-5 niveaux
+    const niv = Math.floor((p - 100) / 20);
     if(p < maxP){
-      const coutFort = 50 + niv * 30; // 50, 80, 110, 140, 170
+      const coutFort = 50 + niv * 30;
       const peutPayer = OR >= coutFort;
       fort.textContent = `Fortifier +20 · ${coutFort} or`;
       fort.disabled = !peutPayer;
@@ -1416,15 +1539,67 @@ function ouvrirAct(q){
       fort.disabled = true;
       fort.style.display = 'block';
     }
+
+    // Mur
+    const now = Date.now();
+    const murFin = e.mur_fin ? new Date(e.mur_fin).getTime() : 0;
+    const murCd  = e.mur_cooldown ? new Date(e.mur_cooldown).getTime() : 0;
+    const coutMur = 80;
+
+    if(murFin > now){
+      // Mur actif
+      const reste = Math.ceil((murFin - now) / 60000);
+      const h = Math.floor(reste / 60);
+      const m = reste % 60;
+      murSt.className = 'mur-status active';
+      murSt.innerHTML = `<span class="ms-icon">🛡️</span>
+        <div class="ms-txt"><b>Mur actif</b><small>Expire dans ${h}h${String(m).padStart(2,'0')}</small></div>`;
+      murSt.style.display = 'flex';
+    } else if(murCd > now){
+      // Cooldown
+      const reste = Math.ceil((murCd - now) / 60000);
+      const h = Math.floor(reste / 60);
+      const m = reste % 60;
+      murSt.className = 'mur-status cooldown';
+      murSt.innerHTML = `<span class="ms-icon">⏳</span>
+        <div class="ms-txt"><b>Cooldown</b><small>Disponible dans ${h}h${String(m).padStart(2,'0')}</small></div>`;
+      murSt.style.display = 'flex';
+    } else {
+      // Disponible
+      const peutPayer = OR >= coutMur;
+      mur.textContent = `🛡️ Mur 2h · ${coutMur} or`;
+      mur.disabled = !peutPayer;
+      mur.style.display = 'block';
+      mur.onclick = () => construireMur(q.id, mur);
+    }
   }
   else if(e && e.clan===moi.clan){ go.textContent='Allié'; go.disabled=true; }
   else if(e && e.inviolable){ go.textContent='Imprenable'; go.disabled=true; }
+  else if(e && e.mur_fin && new Date(e.mur_fin).getTime() > Date.now()){
+    const reste = Math.ceil((new Date(e.mur_fin).getTime() - Date.now()) / 60000);
+    const h = Math.floor(reste / 60); const m = reste % 60;
+    go.textContent = `🛡️ Protégé — ${h}h${String(m).padStart(2,'0')}`;
+    go.disabled = true;
+  }
   else if(!c){ go.textContent='Hors de portée'; go.disabled=true; }
   else if(!c.abordable){ go.textContent=`Il manque ${c.cout - Math.floor(OR)} or`; go.disabled=true; }
   else{
     go.textContent = (e?'Attaquer':'Prendre') + ` · ${c.cout} or`;
     go.disabled = false;
     go.onclick = () => attaquer(q.id, go);
+  }
+
+  // Espionnage — quartier ennemi occupé
+  if(e && e.owner !== moi.id && e.clan !== moi.clan){
+    const aOpera = mesQ.some(x => x.id === 4);
+    const coutSpy = aOpera ? 0 : 30;
+    const peutSpy = OR >= coutSpy;
+    spy.textContent = aOpera
+      ? '🔍 Espionner · gratuit 🎭'
+      : `🔍 Espionner · ${coutSpy} or`;
+    spy.disabled = !peutSpy;
+    spy.style.display = 'block';
+    spy.onclick = () => espionner(q.id, spy);
   }
   act.classList.add('on');
   setTimeout(resize, 340);
@@ -1483,6 +1658,75 @@ async function fortifier(id, bouton){
   }
 }
 
+async function construireMur(id, bouton){
+  if(bouton){ bouton.disabled = true; bouton.textContent = '🛡️ Construction…'; }
+  try{
+    const { data, error } = await sb.rpc('construire_mur', { p_quartier: id });
+    if(error) throw error;
+    if(!data || !data.ok){
+      toast(data?.erreur || 'Impossible.');
+      if(bouton) bouton.disabled = false;
+      return;
+    }
+    if(navigator.vibrate) navigator.vibrate([8,40,8,40,8]);
+    OR = data.or;
+    toast('🛡️ Mur activé pour 2h !');
+    await rafraichir();
+    if(qOuv) ouvrirAct(qOuv);
+  }catch(e){
+    toast(e.message || 'Erreur réseau.');
+    if(bouton) bouton.disabled = false;
+  }
+}
+
+async function espionner(id, bouton){
+  if(bouton){ bouton.disabled = true; bouton.textContent = '🔍 Infiltration…'; }
+  try{
+    const { data, error } = await sb.rpc('espionner', { p_quartier: id });
+    if(error) throw error;
+    if(!data || !data.ok){
+      toast(data?.erreur || 'Espionnage échoué.');
+      if(bouton) bouton.disabled = false;
+      return;
+    }
+    OR = data.or;
+    if(bouton) bouton.style.display = 'none';
+
+    // Révéler la puissance
+    document.getElementById('acP').textContent = data.puissance;
+
+    // Afficher le rapport
+    const intel = document.getElementById('acIntel');
+    const chances = data.chances;
+    const cls = chances >= 70 ? 'high' : chances >= 40 ? 'mid' : 'low';
+    const mot = chances >= 70 ? 'Favorable' : chances >= 40 ? 'Incertain' : 'Risqué';
+
+    intel.innerHTML = `
+      <div class="si-hd"><span>🕵️</span> Rapport d'espionnage</div>
+      <div class="si-grid">
+        <div class="si-item"><b>${data.puissance}</b><small>Puissance</small></div>
+        <div class="si-item"><b>${data.titre}</b><small>Titre</small></div>
+        <div class="si-item"><b>${data.quartiers_owner}</b><small>Ses quartiers</small></div>
+        <div class="si-item"><b>${data.niveau}</b><small>Niveau</small></div>
+      </div>
+      <div class="si-chances ${cls}">${mot} — ${chances}% de chances</div>
+    `;
+    intel.style.display = 'block';
+
+    // Maj header or
+    await rafraichir();
+    // Garder le panneau ouvert
+    if(qOuv){
+      const e2 = etat.get(id);
+      if(e2) document.getElementById('acP').textContent = data.puissance;
+      intel.style.display = 'block';
+    }
+  }catch(e){
+    toast(e.message || 'Erreur réseau.');
+    if(bouton) bouton.disabled = false;
+  }
+}
+
 let toastT;
 function toast(msg){
   let t = document.getElementById('toast');
@@ -1502,14 +1746,15 @@ function toast(msg){
    ═══════════════════════════════════════════════════════════════ */
 async function chargerCarte(){
   const { data, error } = await sb.from('possessions')
-    .select('quartier_id, player_id, clan, puissance, inviolable');
+    .select('quartier_id, player_id, clan, puissance, inviolable, mur_fin, mur_cooldown');
   if(error) throw error;
 
   etat = new Map();
   for(const p of (data||[]))
     etat.set(p.quartier_id, {
       owner:p.player_id, clan:p.clan,
-      puissance:p.puissance, inviolable:p.inviolable
+      puissance:p.puissance, inviolable:p.inviolable,
+      mur_fin:p.mur_fin, mur_cooldown:p.mur_cooldown
     });
   libres = 111 - etat.size;
 }
