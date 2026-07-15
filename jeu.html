@@ -75,27 +75,43 @@ input,textarea{-webkit-user-select:text;user-select:text}
 .hdr{
   flex:none;z-index:20;position:relative;
   display:flex;align-items:center;justify-content:space-between;gap:9px;
-  padding:calc(10px + var(--sat)) 13px 10px;
+  padding:calc(10px + var(--sat)) 13px 8px;
   background:var(--card);
   border-bottom:1px solid var(--line);
 }
-.who{display:flex;align-items:center;gap:8px;min-width:0}
+.who{display:flex;align-items:center;gap:9px;min-width:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .who .av{
-  width:28px;height:28px;flex:none;border-radius:8px;
-  display:grid;place-items:center;font:800 12px/1 'Archivo';color:#fff;
+  width:32px;height:32px;flex:none;border-radius:10px;
+  display:grid;place-items:center;font:800 13px/1 'Archivo';color:#fff;
+  box-shadow:0 2px 8px -2px rgba(0,0,0,.25);
+  transition:transform .15s;
 }
-.who .t b{display:block;font:700 12.5px/1.15 'Archivo';white-space:nowrap}
+.who:active .av{transform:scale(.92)}
+.who .t{min-width:0}
+.who .t b{display:block;font:700 13px/1.15 'Archivo';white-space:nowrap}
 .who .t small{
-  display:block;font:600 7.5px/1.3 'JetBrains Mono',monospace;
+  display:block;font:600 7px/1.3 'JetBrains Mono',monospace;
   letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);white-space:nowrap;
 }
+.who .hxp{
+  height:3px;border-radius:100px;background:var(--line2);margin-top:3px;overflow:hidden;
+  width:80px;
+}
+.who .hxp i{display:block;height:100%;border-radius:100px;background:var(--gold);transition:width .5s}
 .purse{
   display:flex;align-items:center;gap:6px;flex:none;
   padding:6px 11px;border-radius:8px;
   background:var(--gold-bg);border:1px solid var(--gold);
+  position:relative;overflow:hidden;
 }
-.purse b{font:700 13px/1 'Archivo';color:var(--gold);font-variant-numeric:tabular-nums}
+.purse b{font:700 13px/1 'Archivo';color:var(--gold);font-variant-numeric:tabular-nums;transition:transform .2s}
 .purse .up{font:600 8px/1 'JetBrains Mono',monospace;color:var(--gold);opacity:.75}
+.purse.tick b{transform:scale(1.12);color:#d97706}
+.hwar{
+  position:absolute;right:0;top:0;width:6px;height:6px;border-radius:50%;
+  background:var(--sang);animation:hwarPulse 1s ease-in-out infinite;
+}
+@keyframes hwarPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.4)}}
 
 /* ═════ CORPS ═════ */
 main{flex:1;min-height:0;position:relative}
@@ -934,20 +950,19 @@ nav button .dot{
 
 
 <header class="hdr">
-  <div class="who">
+  <div class="who" id="hWho">
     <div class="av" id="hAv">E</div>
     <div class="t">
-      <b id="hNom">Elias</b>
-      <small id="hClan">Calanques</small>
+      <b id="hNom">—</b>
+      <small id="hClan">—</small>
+      <div class="hxp"><i id="hXpBar" style="width:0%"></i></div>
     </div>
   </div>
-  <div class="purse">
+  <div class="purse" id="hPurse">
     <b id="hOr">—</b>
     <span class="up" id="hProd">+0/h</span>
+    <span class="hwar" id="hWar" style="display:none"></span>
   </div>
-  <button class="out" id="logout" aria-label="Se déconnecter">
-    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  </button>
 </header>
 
 <div id="evt" hidden></div>
@@ -2130,7 +2145,13 @@ function maj(){
   const abord = cbl.filter(c => c.abordable);
 
   // header
-  document.getElementById('hOr').textContent = Math.floor(OR).toLocaleString('fr-FR');
+  const newOr = Math.floor(OR).toLocaleString('fr-FR');
+  const orEl = document.getElementById('hOr');
+  if(orEl.textContent !== newOr && orEl.textContent !== '—'){
+    document.getElementById('hPurse').classList.add('tick');
+    setTimeout(()=>document.getElementById('hPurse').classList.remove('tick'), 300);
+  }
+  orEl.textContent = newOr;
   document.getElementById('hProd').textContent = '+' + prod + '/h';
   document.getElementById('hNom').textContent = moi.pseudo;
   const av = document.getElementById('hAv');
@@ -2138,6 +2159,14 @@ function maj(){
   av.style.background = clanCol(moi.clan);
   document.getElementById('hClan').textContent =
     moi.clan!=null ? NOMS[moi.clan] : 'Sans camp';
+
+  // XP bar in header
+  const xp = profilData?.xp || 0;
+  const n = niveauXP(xp);
+  document.getElementById('hXpBar').style.width = (n.pct*100).toFixed(1)+'%';
+
+  // War indicator
+  document.getElementById('hWar').style.display = guerreActive?.en_cours ? 'block' : 'none';
 
   // ── ACCUEIL ──
   document.getElementById('aOr').innerHTML =
@@ -2463,6 +2492,58 @@ function bloque(titre, err, aide){
   w.classList.add('on');
   document.getElementById('bootAgain').style.display = 'inline-block';
   console.error('[Massilia]', titre, '→', err);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER — avatar click, or temps réel
+   ═══════════════════════════════════════════════════════════════ */
+document.getElementById('hWho')?.addEventListener('click', () => {
+  document.querySelectorAll('nav button[data-t]').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tProfil').classList.add('on');
+  document.querySelector('nav button[data-t="tProfil"]')?.classList.add('on');
+});
+
+// Or en temps réel — incrémente visuellement entre les refreshs
+let orTicker = 0;
+function startOrTicker(){
+  if(orTicker) clearInterval(orTicker);
+  orTicker = setInterval(() => {
+    if(!moi) return;
+    const nq = mesQ?.length || 0;
+    const prod = PROD_BASE + nq * PROD_PAR_QUARTIER;
+    OR += prod / 3600; // +1 seconde de production
+    const orEl = document.getElementById('hOr');
+    if(orEl) orEl.textContent = Math.floor(OR).toLocaleString('fr-FR');
+    const aOrEl = document.getElementById('aOr');
+    if(aOrEl) aOrEl.innerHTML = Math.floor(OR).toLocaleString('fr-FR') + '<small>or</small>';
+  }, 1000);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   JOUEURS IA
+   ═══════════════════════════════════════════════════════════════ */
+const IA_NOMS = [
+  'Marcel_13','Fanny_VP','GégéDock','Tonton_Marius','Pagnol_Bot',
+  'Raimu_IA','César_Bot','Mireille_13','Pastis_King','Navarro_Bot',
+  'Sardine_Bot','Calanque_AI','Mistral_Bot','Galère_IA','Massilia_Bot'
+];
+const IA_DIFFICULTE = { facile:1, moyen:2, difficile:3 };
+let iaTimer = 0;
+let dernierTickIA = 0;
+
+async function tickIA(){
+  const now = Date.now();
+  if(now - dernierTickIA < 60000) return; // Max 1 tick par minute
+  dernierTickIA = now;
+  try{
+    await sb.rpc('tick_ia');
+  }catch(e){ console.warn('tickIA:', e.message); }
+}
+
+function startIA(){
+  if(iaTimer) clearInterval(iaTimer);
+  iaTimer = setInterval(tickIA, 30000); // Tente toutes les 30s
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -2992,6 +3073,8 @@ async function demarrer(){
   }
 
   await rafraichir();
+  startOrTicker();
+  startIA();
   bootEl.classList.add('gone');
 
   // temps réel : la carte suit les prises
