@@ -645,6 +645,31 @@ nav button .dot{
 }
 .fort-lvl i.on{background:var(--gold)}
 
+/* ═════ MISSIONS ═════ */
+.missions{display:flex;flex-direction:column;gap:5px;margin-bottom:4px}
+.mission{
+  display:flex;align-items:center;gap:10px;padding:11px 12px;
+  border-radius:var(--r);background:var(--card);border:1px solid var(--line);
+  box-shadow:var(--ombre);
+}
+.mission.done{opacity:.5}
+.mission .mi{font-size:18px;line-height:1;flex:none}
+.mission .mt{flex:1;min-width:0}
+.mission .mt b{display:block;font:700 12px/1.25 'Archivo'}
+.mission .mt small{display:block;margin-top:2px;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.mission .mr{
+  flex:none;padding:4px 9px;border-radius:100px;
+  font:800 9px/1 'JetBrains Mono',monospace;letter-spacing:.06em;
+  white-space:nowrap;
+}
+.mission:not(.done) .mr{background:var(--gold-bg);color:var(--gold)}
+.mission.done .mr{background:var(--line);color:var(--ink3)}
+.mission .mp{
+  width:100%;height:4px;border-radius:100px;background:var(--line2);
+  margin-top:4px;overflow:hidden;
+}
+.mission .mp i{display:block;height:100%;border-radius:100px;background:var(--gold);transition:width .4s}
+
 /* ═════ STREAK ═════ */
 .streak-card{
   margin:11px 0;padding:14px 16px;border-radius:var(--r);
@@ -852,6 +877,9 @@ nav button .dot{
         <div class="sk-days" id="skDays"></div>
         <div class="sk-next" id="skNext"></div>
       </div>
+
+      <h4>Missions du jour</h4>
+      <div class="missions" id="aMissions"></div>
 
       <h4>Depuis ta dernière visite</h4>
       <div class="news" id="aNews"></div>
@@ -1671,19 +1699,21 @@ async function attaquer(id, bouton){
     if(error) throw error;
     if(!data || !data.ok){
       toast(data?.erreur || 'Échec.');
-      if(bouton) bouton.disabled = false;
+      if(bouton){ bouton.disabled = false; bouton.textContent = 'Réessayer'; }
       await rafraichir();
       return;
     }
     if(navigator.vibrate) navigator.vibrate([12,50,20]);
     OR = data.or;
+    tickMission('pris_today');
+    toast('✓ Quartier pris !');
     act.classList.remove('on');
     sel = null;
     await rafraichir();
     setTimeout(resize, 340);
   }catch(e){
     toast(e.message || 'Erreur réseau.');
-    if(bouton) bouton.disabled = false;
+    if(bouton){ bouton.disabled = false; bouton.textContent = 'Réessayer'; }
   }
 }
 
@@ -1700,6 +1730,7 @@ async function fortifier(id, bouton){
     }
     if(navigator.vibrate) navigator.vibrate([8,30,8]);
     OR = data.or;
+    tickMission('fort_today');
     toast(`Puissance → ${data.puissance}`);
     await rafraichir();
     // Ré-ouvrir le panneau sur le même quartier
@@ -1722,6 +1753,7 @@ async function construireMur(id, bouton){
     }
     if(navigator.vibrate) navigator.vibrate([8,40,8,40,8]);
     OR = data.or;
+    tickMission('mur_today');
     toast('🛡️ Mur activé pour 2h !');
     await rafraichir();
     if(qOuv) ouvrirAct(qOuv);
@@ -1742,6 +1774,7 @@ async function espionner(id, bouton){
       return;
     }
     OR = data.or;
+    tickMission('spy_today');
     if(bouton) bouton.style.display = 'none';
 
     // Révéler la puissance
@@ -1870,6 +1903,7 @@ async function rafraichir(){
     await chargerProfil();
     majProfil();
     majStreak();
+    majMissions();
   }catch(e){
     console.warn('rafraichir:', e.message);
   }
@@ -1928,11 +1962,18 @@ function maj(){
   const cta = document.getElementById('aCta');
   const ctaTxt = document.getElementById('aCtaTxt');
   cta.onclick = null;
+  cta.disabled = false;
   if(abord.length){
     const c = abord[0];
     ctaTxt.textContent = `Prendre ${c.nom} · ${c.cout} or`;
     cta.disabled = false;
-    cta.onclick = () => attaquer(c.id, cta);
+    cta.onclick = () => {
+      cta.disabled = true;
+      ctaTxt.textContent = 'En cours…';
+      attaquer(c.id, null).then(() => {
+        // maj() will rebuild the CTA after rafraichir
+      });
+    };
   }else if(cbl.length){
     const min = Math.min(...cbl.map(c=>c.cout));
     ctaTxt.textContent = `Il manque ${min - Math.floor(OR)} or`;
@@ -2218,6 +2259,95 @@ function bloque(titre, err, aide){
   w.classList.add('on');
   document.getElementById('bootAgain').style.display = 'inline-block';
   console.error('[Massilia]', titre, '→', err);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MISSIONS QUOTIDIENNES
+   ═══════════════════════════════════════════════════════════════ */
+const MISSIONS_POOL = [
+  { id:'prendre1',   i:'⚔️', t:'Conquérant',       d:'Prends 1 quartier',         need:1,  key:'pris_today',     xp:15, or:50 },
+  { id:'prendre3',   i:'🗡️', t:'Triple menace',    d:'Prends 3 quartiers',        need:3,  key:'pris_today',     xp:40, or:100 },
+  { id:'fortifier1', i:'🏰', t:'Bâtisseur',        d:'Fortifie 1 quartier',       need:1,  key:'fort_today',     xp:10, or:30 },
+  { id:'espion1',    i:'🔍', t:'Agent secret',      d:'Espionne 1 ennemi',         need:1,  key:'spy_today',      xp:10, or:30 },
+  { id:'mur1',       i:'🛡️', t:'Défenseur',        d:'Construis 1 mur',           need:1,  key:'mur_today',      xp:10, or:30 },
+  { id:'or500',      i:'💰', t:'Accumulateur',      d:'Accumule 500 or',           need:500, key:'or_now',        xp:20, or:0 },
+  { id:'tenir5',     i:'🏠', t:'Propriétaire',     d:'Tiens 5 quartiers',         need:5,  key:'tenus_now',      xp:15, or:40 },
+  { id:'connexion',  i:'📅', t:'Fidèle',           d:'Connecte-toi aujourd\'hui', need:1,  key:'connected',      xp:5,  or:20 },
+];
+
+function getMissionsToday(){
+  const today = new Date().toISOString().slice(0,10);
+  const key = 'missions_' + today + '_' + (moi?.id||'');
+  let saved = null;
+  try{ saved = JSON.parse(localStorage.getItem(key)); }catch(e){}
+
+  if(saved && saved.date === today) return saved;
+
+  // Choisir 3 missions aléatoires
+  const pool = [...MISSIONS_POOL];
+  const chosen = [];
+  // Toujours inclure "connexion"
+  chosen.push({ ...pool.find(m=>m.id==='connexion'), prog:1, claimed:false });
+  const reste = pool.filter(m=>m.id!=='connexion');
+  for(let i = 0; i < 2 && reste.length; i++){
+    const idx = Math.floor(Math.random() * reste.length);
+    chosen.push({ ...reste.splice(idx, 1)[0], prog:0, claimed:false });
+  }
+
+  const obj = { date:today, missions:chosen };
+  try{ localStorage.setItem(key, JSON.stringify(obj)); }catch(e){}
+  return obj;
+}
+
+let missionsData = null;
+let missionCounters = { pris_today:0, fort_today:0, spy_today:0, mur_today:0 };
+
+function getMissionKey(){
+  return 'missions_' + new Date().toISOString().slice(0,10) + '_' + (moi?.id||'');
+}
+
+function saveMissions(){
+  if(!missionsData) return;
+  try{ localStorage.setItem(getMissionKey(), JSON.stringify(missionsData)); }catch(e){}
+}
+
+function tickMission(key){
+  if(!missionCounters[key] && missionCounters[key] !== 0) missionCounters[key] = 0;
+  missionCounters[key]++;
+  majMissions();
+}
+
+function majMissions(){
+  if(!moi) return;
+  if(!missionsData) missionsData = getMissionsToday();
+
+  const el = document.getElementById('aMissions');
+  if(!el) return;
+
+  missionsData.missions.forEach(m => {
+    // Calculer la progression
+    if(m.key === 'connected') m.prog = 1;
+    else if(m.key === 'or_now') m.prog = Math.floor(OR);
+    else if(m.key === 'tenus_now') m.prog = mesQ.length;
+    else m.prog = missionCounters[m.key] || 0;
+  });
+
+  saveMissions();
+
+  el.innerHTML = missionsData.missions.map(m => {
+    const done = m.prog >= m.need;
+    const pct = Math.min(100, (m.prog / m.need) * 100);
+    const recompense = (m.xp ? `+${m.xp}XP` : '') + (m.or ? ` +${m.or}or` : '');
+    return `<div class="mission${done?' done':''}">
+      <span class="mi">${m.i}</span>
+      <div class="mt">
+        <b>${m.t}</b>
+        <small>${m.d} — ${Math.min(m.prog, m.need)}/${m.need}</small>
+        ${!done ? `<div class="mp"><i style="width:${pct}%"></i></div>` : ''}
+      </div>
+      <span class="mr">${done ? '✓' : recompense}</span>
+    </div>`;
+  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════════════
