@@ -1243,28 +1243,53 @@ function bakeFills(){
     else if(e.clan === moi?.clan) f = 'rgba(47,106,118,.92)';
     else{
       const c = PAL.mRGB[e.clan] || [120,120,120];
-      f = `rgba(${(c[0]*.72)|0},${(c[1]*.72)|0},${(c[2]*.72)|0},.95)`;
+      f = `rgba(${c[0]},${c[1]},${c[2]},.85)`;
     }
     g.fillStyle = f;
     for(const p of q.polys){ tr(g,p); g.fill(); }
   }
 
+  /* Bordures : toutes les frontières */
   g.lineJoin = 'round';
-  g.strokeStyle = 'rgba(200,245,240,.3)';
-  g.lineWidth = .75;
+  g.strokeStyle = 'rgba(200,245,240,.18)';
+  g.lineWidth = .6;
   Q.forEach(q => q.polys.forEach(p => { tr(g,p); g.stroke(); }));
 
-  g.strokeStyle = 'rgba(255,255,255,.65)';
-  g.lineWidth = 1.6;
+  /* Mes quartiers : bordure blanche + glow */
+  g.shadowColor = 'rgba(255,255,255,.4)';
+  g.shadowBlur = 4;
+  g.strokeStyle = 'rgba(255,255,255,.8)';
+  g.lineWidth = 1.8;
   for(const q of Q){
     const e = etat.get(q.id);
     if(!e || e.owner !== moi?.id) continue;
     for(const p of q.polys){ tr(g,p); g.stroke(); }
   }
+  g.shadowBlur = 0;
 
-  /* Pastilles des natures : un point coloré au centre des 46 quartiers
-     spéciaux. Sans repère visuel, le joueur ne saurait pas où sont
-     les ports et les carrefours. */
+  /* Murs actifs : hachures diagonales */
+  const now = Date.now();
+  for(const q of Q){
+    const e = etat.get(q.id);
+    if(!e || !e.mur_fin) continue;
+    if(new Date(e.mur_fin).getTime() <= now) continue;
+    g.save();
+    for(const p of q.polys){
+      tr(g,p); g.clip();
+      g.strokeStyle = 'rgba(255,255,255,.25)';
+      g.lineWidth = .8;
+      const [a,b,c,d] = p.bb;
+      for(let x = a - (d-b); x < c + 10; x += 5){
+        g.beginPath();
+        g.moveTo(x, b - 2);
+        g.lineTo(x + (d-b), d + 2);
+        g.stroke();
+      }
+    }
+    g.restore();
+  }
+
+  /* Pastilles des natures */
   for(const q of Q){
     const k = NATURE_MAP.get(q.id);
     if(!k || k === 'ordinaire') continue;
@@ -1279,7 +1304,7 @@ function bakeFills(){
     g.stroke();
   }
 
-  /* Étoiles légendaires — plus grandes, dorées */
+  /* Étoiles légendaires */
   for(const q of Q){
     if(!LEGENDAIRES[q.id]) continue;
     g.save();
@@ -1291,6 +1316,33 @@ function bakeFills(){
     g.fillText('⭐', q.cx, q.cy);
     g.restore();
   }
+
+  /* Noms des quartiers */
+  g.save();
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  for(const q of Q){
+    const e = etat.get(q.id);
+    // Taille du texte adaptée à la surface du polygone
+    const bb = q.polys[0]?.bb;
+    if(!bb) continue;
+    const pw = bb[2] - bb[0];
+    const ph = bb[3] - bb[1];
+    const sz = Math.max(4.5, Math.min(8, Math.min(pw, ph) * .22));
+    // N'afficher que si assez grand pour être lisible
+    if(sz < 5 && pw < 30) continue;
+    const nom = q.n.replace(/^(La |Le |Les |L')/, '');
+    g.font = `600 ${sz}px 'Archivo', sans-serif`;
+    g.fillStyle = e && e.owner === moi?.id
+      ? 'rgba(255,255,255,.85)'
+      : e ? 'rgba(255,255,255,.5)'
+      : 'rgba(200,220,230,.35)';
+    // Ombre pour lisibilité
+    g.shadowColor = 'rgba(0,0,0,.6)';
+    g.shadowBlur = 2;
+    g.fillText(nom, q.cx, q.cy + (NATURE_MAP.get(q.id) && NATURE_MAP.get(q.id) !== 'ordinaire' ? 5 : 0));
+  }
+  g.restore();
 
   // Calque des cibles, seulement si elles sont nombreuses.
   cibleLayer = null;
