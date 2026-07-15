@@ -3146,6 +3146,25 @@ async function demarrer(){
   }
   if(!session){ location.replace(PAGE_CONNEXION); return; }
 
+  // Si le compte auth existe mais le profil a été supprimé → déconnecter
+  {
+    const { data: exists } = await sb.from('profiles').select('id').eq('id', session.user.id).maybeSingle();
+    if(!exists){
+      try{
+        const { error } = await sb.rpc('assurer_profil');
+        if(error && error.message.includes('foreign key')){
+          await sb.auth.signOut();
+          location.replace(PAGE_CONNEXION);
+          return;
+        }
+      }catch(e){
+        await sb.auth.signOut();
+        location.replace(PAGE_CONNEXION);
+        return;
+      }
+    }
+  }
+
   setBoot('Chargement du profil…');
   let profil = null, derr = null;
   for(let i=0;i<6;i++){
