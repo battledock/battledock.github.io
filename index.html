@@ -374,8 +374,15 @@ function showScreen(id){
 }
 
 /* ═══ LIVE STATS ═══ */
+// Afficher le contenu immédiatement, charger les données en fond
 async function loadLive(){
   countUp(document.getElementById('lsQ'), 111, 900);
+
+  // Afficher les clans par défaut tout de suite
+  document.getElementById('lsClans').innerHTML = NOMS.map((n,i) =>
+    `<div class="cp" style="border-bottom:3px solid ${CLANS_C[i]}"><b style="color:${CLANS_M[i]}">…</b><small>${n.split(' ')[0]}</small></div>`
+  ).join('');
+
   const s = await sbReady;
   if(!s) return;
 
@@ -384,18 +391,16 @@ async function loadLive(){
   if(session){ location.replace(APRES_CONNEXION); return; }
 
   try{
-    const {count} = await s.from('profiles').select('*',{count:'exact',head:true});
-    document.getElementById('lsP').textContent = (count||0).toLocaleString('fr-FR');
-
-    // Quartiers libres + classement clans
-    const {data:poss} = await s.from('possessions').select('clan');
-    const cc = [0,0,0,0,0];
-    (poss||[]).forEach(p => { if(p.clan>=0 && p.clan<5) cc[p.clan]++; });
-    document.getElementById('lsF').textContent = 111 - (poss||[]).length;
-    document.getElementById('lsClans').innerHTML = NOMS.map((n,i) =>
-      `<div class="cp" style="border-bottom:3px solid ${CLANS_C[i]}"><b style="color:${CLANS_M[i]}">${cc[i]}</b><small>${n.split(' ')[0]}</small></div>`
-    ).join('');
-  }catch(e){}
+    const {data} = await s.rpc('stats_publiques');
+    if(data){
+      document.getElementById('lsP').textContent = (data.joueurs||0).toLocaleString('fr-FR');
+      document.getElementById('lsF').textContent = data.libres;
+      const cc = data.clans || [0,0,0,0,0];
+      document.getElementById('lsClans').innerHTML = NOMS.map((n,i) =>
+        `<div class="cp" style="border-bottom:3px solid ${CLANS_C[i]}"><b style="color:${CLANS_M[i]}">${cc[i]}</b><small>${n.split(' ')[0]}</small></div>`
+      ).join('');
+    }
+  }catch(e){ console.warn('stats_publiques:', e.message); }
 }
 
 /* ═══ WIZARD ═══ */
@@ -452,12 +457,13 @@ async function loadClanCounts(){
   const s = await sbReady;
   if(!s) return;
   try{
-    const {data} = await s.from('possessions').select('clan');
-    const cc=[0,0,0,0,0];
-    (data||[]).forEach(p=>{if(p.clan>=0&&p.clan<5) cc[p.clan]++;});
-    document.querySelectorAll('.clan-opt').forEach((el,i)=>{
-      el.querySelector('.co-count').textContent = cc[i]+' quartiers';
-    });
+    const {data} = await s.rpc('stats_publiques');
+    if(data && data.clans){
+      const cc = data.clans;
+      document.querySelectorAll('.clan-opt').forEach((el,i)=>{
+        el.querySelector('.co-count').textContent = cc[i]+' quartiers';
+      });
+    }
   }catch(e){}
 }
 
