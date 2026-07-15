@@ -551,6 +551,24 @@ nav button .dot{
 }
 @media(max-width:380px){ .natleg{display:none} }
 
+/* ═════ FORTIFICATION ═════ */
+.go.fort{
+  background:var(--gold);color:#fff;margin-top:6px;
+}
+.go.fort:disabled{background:var(--line2);color:var(--ink3)}
+.fort-info{
+  display:flex;align-items:center;gap:8px;margin-top:8px;
+  padding:9px 11px;border-radius:8px;
+  background:var(--gold-bg);border:1px solid rgba(180,83,9,.2);
+  font:600 11px/1.4 'Archivo';color:var(--gold);
+}
+.fort-info svg{width:16px;height:16px;flex:none;stroke:var(--gold);fill:none;stroke-width:2}
+.fort-lvl{display:flex;gap:3px;margin-top:6px;justify-content:center}
+.fort-lvl i{
+  width:8px;height:8px;border-radius:2px;background:var(--line);
+}
+.fort-lvl i.on{background:var(--gold)}
+
 /* ═════ STREAK ═════ */
 .streak-card{
   margin:11px 0;padding:14px 16px;border-radius:var(--r);
@@ -832,6 +850,7 @@ nav button .dot{
         <div class="acnat" id="acNat" style="display:none"></div>
         <div class="acnote" id="acNote" style="display:none"></div>
         <button class="go" id="acGo">—</button>
+        <button class="go fort" id="acFort" style="display:none">—</button>
       </div>
     </div>
   </section>
@@ -1375,7 +1394,29 @@ function ouvrirAct(q){
   }
 
   go.onclick = null;
-  if(e && e.owner===moi.id){ go.textContent='Ton quartier'; go.disabled=true; }
+  const fort = document.getElementById('acFort');
+  fort.style.display = 'none';
+  fort.onclick = null;
+
+  if(e && e.owner===moi.id){
+    go.textContent='Ton quartier'; go.disabled=true;
+    // Fortification
+    const p = e.puissance || 100;
+    const maxP = 200;
+    const niv = Math.floor((p - 100) / 20); // 0-5 niveaux
+    if(p < maxP){
+      const coutFort = 50 + niv * 30; // 50, 80, 110, 140, 170
+      const peutPayer = OR >= coutFort;
+      fort.textContent = `Fortifier +20 · ${coutFort} or`;
+      fort.disabled = !peutPayer;
+      fort.style.display = 'block';
+      fort.onclick = () => fortifier(q.id, fort);
+    } else {
+      fort.textContent = 'Puissance max (200)';
+      fort.disabled = true;
+      fort.style.display = 'block';
+    }
+  }
   else if(e && e.clan===moi.clan){ go.textContent='Allié'; go.disabled=true; }
   else if(e && e.inviolable){ go.textContent='Imprenable'; go.disabled=true; }
   else if(!c){ go.textContent='Hors de portée'; go.disabled=true; }
@@ -1413,6 +1454,29 @@ async function attaquer(id, bouton){
     sel = null;
     await rafraichir();
     setTimeout(resize, 340);
+  }catch(e){
+    toast(e.message || 'Erreur réseau.');
+    if(bouton) bouton.disabled = false;
+  }
+}
+
+async function fortifier(id, bouton){
+  if(bouton){ bouton.disabled = true; bouton.textContent = 'Fortification…'; }
+  try{
+    const { data, error } = await sb.rpc('fortifier', { p_quartier: id });
+    if(error) throw error;
+    if(!data || !data.ok){
+      toast(data?.erreur || 'Impossible de fortifier.');
+      if(bouton) bouton.disabled = false;
+      await rafraichir();
+      return;
+    }
+    if(navigator.vibrate) navigator.vibrate([8,30,8]);
+    OR = data.or;
+    toast(`Puissance → ${data.puissance}`);
+    await rafraichir();
+    // Ré-ouvrir le panneau sur le même quartier
+    if(qOuv) ouvrirAct(qOuv);
   }catch(e){
     toast(e.message || 'Erreur réseau.');
     if(bouton) bouton.disabled = false;
