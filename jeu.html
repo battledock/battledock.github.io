@@ -551,6 +551,36 @@ nav button .dot{
 }
 @media(max-width:380px){ .natleg{display:none} }
 
+/* ═════ STREAK ═════ */
+.streak-card{
+  margin:11px 0;padding:14px 16px;border-radius:var(--r);
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--ombre);
+}
+.sk-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sk-flame{
+  font-size:28px;line-height:1;
+  animation:skfire 1.2s ease-in-out infinite;
+}
+.sk-flame.dead{animation:none;filter:grayscale(1);opacity:.4}
+@keyframes skfire{0%,100%{transform:scale(1)}50%{transform:scale(1.15) rotate(-4deg)}}
+.sk-info b{display:block;font:800 16px/1 'Archivo'}
+.sk-info small{display:block;margin-top:3px;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.sk-days{display:flex;gap:4px;margin-bottom:8px}
+.sk-day{
+  flex:1;padding:6px 0;border-radius:6px;text-align:center;
+  background:var(--bg);border:1px solid var(--line);
+}
+.sk-day small{display:block;font:700 7px/1 'JetBrains Mono',monospace;letter-spacing:.05em;text-transform:uppercase;color:var(--ink3)}
+.sk-day b{display:block;margin-top:3px;font-size:13px;line-height:1}
+.sk-day.done{background:var(--gold-bg);border-color:rgba(180,83,9,.25)}
+.sk-day.done b{color:var(--gold)}
+.sk-day.today{border-color:var(--terra);box-shadow:0 0 0 1px var(--terra)}
+.sk-next{
+  font:600 9px/1.4 'Archivo';color:var(--ink3);text-align:center;
+  padding-top:4px;border-top:1px solid var(--line);
+}
+.sk-next b{color:var(--gold);font-weight:800}
+
 /* ═════ PROFIL ═════ */
 .pcard{
   padding:18px 16px;border-radius:var(--r);margin-bottom:11px;
@@ -716,6 +746,19 @@ nav button .dot{
           <div class="cell"><b id="aRang">3ᵉ</b><small>Rang clan</small></div>
         </div>
       </div>
+
+      <div class="streak-card" id="streakCard">
+        <div class="sk-top">
+          <div class="sk-flame" id="skFlame">🔥</div>
+          <div class="sk-info">
+            <b id="skCount">0 jour</b>
+            <small id="skBonus">+5 XP / connexion</small>
+          </div>
+        </div>
+        <div class="sk-days" id="skDays"></div>
+        <div class="sk-next" id="skNext"></div>
+      </div>
+
       <h4>Depuis ta dernière visite</h4>
       <div class="news" id="aNews"></div>
       <button class="cta" id="aCta">
@@ -1465,6 +1508,7 @@ async function rafraichir(){
     maj();
     await chargerProfil();
     majProfil();
+    majStreak();
   }catch(e){
     console.warn('rafraichir:', e.message);
   }
@@ -1813,6 +1857,79 @@ function bloque(titre, err, aide){
   w.classList.add('on');
   document.getElementById('bootAgain').style.display = 'inline-block';
   console.error('[Massilia]', titre, '→', err);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STREAK — Série de connexion
+   ═══════════════════════════════════════════════════════════════ */
+const STREAK_PALIERS = [
+  { jour:1,  bonus:5,  label:'+5 XP / connexion' },
+  { jour:7,  bonus:10, label:'+10 XP / connexion' },
+  { jour:14, bonus:12, label:'+12 XP / connexion' },
+  { jour:30, bonus:15, label:'+15 XP / connexion' },
+  { jour:60, bonus:20, label:'+20 XP / connexion' },
+  { jour:100,bonus:30, label:'+30 XP / connexion' },
+];
+const JOURS_COURTS = ['DIM','LUN','MAR','MER','JEU','VEN','SAM'];
+
+function streakBonus(streak){
+  let b = STREAK_PALIERS[0];
+  for(const p of STREAK_PALIERS) if(streak >= p.jour) b = p;
+  return b;
+}
+
+function prochainPalier(streak){
+  for(const p of STREAK_PALIERS) if(streak < p.jour) return p;
+  return null;
+}
+
+function majStreak(){
+  const s = profilData?.streak || 0;
+  const bonus = streakBonus(s);
+  const next = prochainPalier(s);
+
+  const flame = document.getElementById('skFlame');
+  if(flame){
+    flame.className = 'sk-flame' + (s === 0 ? ' dead' : '');
+    flame.textContent = s >= 30 ? '🔥' : s >= 7 ? '🔥' : s >= 1 ? '🔥' : '💀';
+  }
+
+  const countEl = document.getElementById('skCount');
+  if(countEl) countEl.textContent = s + (s <= 1 ? ' jour' : ' jours');
+
+  const bonusEl = document.getElementById('skBonus');
+  if(bonusEl) bonusEl.textContent = bonus.label;
+
+  // 7 derniers jours
+  const daysEl = document.getElementById('skDays');
+  if(daysEl){
+    const today = new Date();
+    const dow = today.getDay();
+    let html = '';
+    for(let i = 6; i >= 0; i--){
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const jour = JOURS_COURTS[d.getDay()];
+      const done = i < s && i > 0;
+      const isToday = i === 0;
+      html += `<div class="sk-day${done?' done':''}${isToday?' today done':''}">
+        <small>${jour}</small>
+        <b>${done || isToday ? '✓' : '·'}</b>
+      </div>`;
+    }
+    daysEl.innerHTML = html;
+  }
+
+  // Prochain palier
+  const nextEl = document.getElementById('skNext');
+  if(nextEl){
+    if(next){
+      const reste = next.jour - s;
+      nextEl.innerHTML = `Encore <b>${reste}j</b> pour débloquer <b>${next.label}</b>`;
+    } else {
+      nextEl.innerHTML = '<b>🏆 Palier max atteint !</b>';
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════
