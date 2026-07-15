@@ -1218,6 +1218,29 @@ const GS=26;
    plein écran. Au-dessus, le calque gagne. (Mesuré sur mobile.) */
 const SEUIL_CALQUE = 30;
 
+/* ═══ ZOOM / PAN ═══ */
+let zoom = 1, panX = 0, panY = 0;
+let pinchStart = 0, pinchZoom = 1;
+let dragStart = null, dragPan = null;
+const ZOOM_MIN = 1, ZOOM_MAX = 4;
+
+function resetZoom(){ zoom=1; panX=0; panY=0; }
+
+function clampPan(){
+  if(zoom <= 1){ panX=0; panY=0; return; }
+  const maxPx = W * (zoom-1) / 2;
+  const maxPy = H * (zoom-1) / 2;
+  panX = Math.max(-maxPx, Math.min(maxPx, panX));
+  panY = Math.max(-maxPy, Math.min(maxPy, panY));
+}
+
+function screenToMap(sx, sy){
+  return {
+    x: (sx - panX) / zoom,
+    y: (sy - panY) / zoom
+  };
+}
+
 function zone(){
   const m = cvs.parentElement.getBoundingClientRect();
   let bas = 10;
@@ -1447,36 +1470,34 @@ function paint(){
   ctx.setTransform(1,0,0,1,0,0);
   ctx.fillStyle = PAL.sea;
   ctx.fillRect(0,0,cvs.width,cvs.height);
-  if(fills) ctx.drawImage(fills,0,0);
-  ctx.setTransform(DPR,0,0,DPR,0,0);
+
+  // Apply zoom + pan
+  ctx.setTransform(DPR*zoom, 0, 0, DPR*zoom, panX*DPR, panY*DPR);
+  if(fills){
+    ctx.drawImage(fills, 0, 0, fills.width/DPR, fills.height/DPR);
+  }
 
   // Intégration : les quartiers libres pulsent en doré
   if(integration && etape === 2){
     const pu = .5 + .5*Math.sin(t*1.6);
     ctx.strokeStyle = `rgba(242,204,143,${.45+pu*.4})`;
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 1.8 / zoom;
     ctx.lineJoin = 'round';
     for(const q of Q){
       if(etat.has(q.id)) continue;
       for(const p of q.polys){ tr(ctx,p); ctx.stroke(); }
     }
   }
-  // En jeu : les cibles pulsent en rouge.
-  // Au-delà d'une trentaine (joueur sans territoire : ~107 quartiers libres),
-  // les tracer par frame coûte 4 ms. On les prend dans le calque cuit et
-  // on ne fait varier que l'opacité.
   else if(!integration && CIBLES.size){
     const pu = .5 + .5*Math.sin(t*2);
     if(cibleLayer){
-      ctx.setTransform(1,0,0,1,0,0);
       ctx.globalAlpha = .6 + pu*.4;
-      ctx.drawImage(cibleLayer, 0, 0);
+      ctx.drawImage(cibleLayer, 0, 0, cibleLayer.width/DPR, cibleLayer.height/DPR);
       ctx.globalAlpha = 1;
-      ctx.setTransform(DPR,0,0,DPR,0,0);
     } else {
       const sg = PAL.msangRGB;
       ctx.strokeStyle = `rgba(${sg[0]},${sg[1]},${sg[2]},${.6+pu*.4})`;
-      ctx.lineWidth = 2.4;
+      ctx.lineWidth = 2.4 / zoom;
       ctx.lineJoin = 'round';
       for(const q of Q){
         if(!CIBLES.has(q.id)) continue;
@@ -1489,18 +1510,136 @@ function paint(){
     const p2 = .5 + .5*Math.sin(t*2.6);
     ctx.strokeStyle = '#fff';
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 2.8 + p2;
+    ctx.lineWidth = (2.8 + p2) / zoom;
     for(const p of sel.polys){ tr(ctx,p); ctx.stroke(); }
   }
+
+  // Zoom indicator
+  if(zoom > 1.05){
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.fillStyle = 'rgba(0,0,0,.5)';
+    const bw=50, bh=22, bx=W-bw-10, by=10;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 6);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 10px Archivo, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(zoom.toFixed(1)+'×', bx+bw/2, by+bh/2);
+  }
+
   raf = requestAnimationFrame(paint);
 }
 function start(){ if(running) return; running=true; raf=requestAnimationFrame(paint); }
 function stop(){ running=false; cancelAnimationFrame(raf); raf=0; }
 
 /* ═══ interaction carte ═══ */
+let lastTap = 0;
+let touches0 = null;
+
 cvs.addEventListener('pointerdown', e => {
+  // Ignore multi-touch (pinch handled separately)
+  if(e.pointerType === 'touch'){
+    if(!dragStart){
+      dragStart = { x: e.clientX, y: e.clientY, moved: false };
+      dragPan = { x: panX, y: panY };
+    }
+    return;
+  }
+  handleTap(e);
+});
+
+cvs.addEventListener('pointermove', e => {
+  if(!dragStart || e.pointerType !== 'touch') return;
+  const dx = e.clientX - dragStart.x;
+  const dy = e.clientY - dragStart.y;
+  if(Math.abs(dx) > 5 || Math.abs(dy) > 5) dragStart.moved = true;
+  if(zoom > 1 && dragStart.moved){
+    panX = dragPan.x + dx;
+    panY = dragPan.y + dy;
+    clampPan();
+  }
+});
+
+cvs.addEventListener('pointerup', e => {
+  if(e.pointerType === 'touch' && dragStart && !dragStart.moved){
+    // Check double tap
+    const now = Date.now();
+    if(now - lastTap < 300){
+      // Double tap → toggle zoom
+      if(zoom > 1.5){
+        resetZoom();
+      } else {
+        const r = cvs.getBoundingClientRect();
+        const tx = e.clientX - r.left;
+        const ty = e.clientY - r.top;
+        zoom = 2.5;
+        panX = W/2 - tx * zoom + tx;
+        panY = H/2 - ty * zoom + ty;
+        clampPan();
+      }
+      lastTap = 0;
+    } else {
+      lastTap = now;
+      handleTap(e);
+    }
+  }
+  dragStart = null;
+  dragPan = null;
+});
+
+cvs.addEventListener('pointercancel', () => {
+  dragStart = null; dragPan = null;
+});
+
+// Pinch zoom
+cvs.addEventListener('touchstart', e => {
+  if(e.touches.length === 2){
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    pinchStart = Math.hypot(dx, dy);
+    pinchZoom = zoom;
+    dragStart = null; // cancel drag
+  }
+}, {passive: false});
+
+cvs.addEventListener('touchmove', e => {
+  if(e.touches.length === 2){
+    e.preventDefault();
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.hypot(dx, dy);
+    zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, pinchZoom * (dist / pinchStart)));
+    clampPan();
+  }
+}, {passive: false});
+
+cvs.addEventListener('touchend', e => {
+  if(e.touches.length < 2) pinchStart = 0;
+});
+
+// Mouse wheel zoom (desktop)
+cvs.addEventListener('wheel', e => {
+  e.preventDefault();
   const r = cvs.getBoundingClientRect();
-  const q = pick(e.clientX-r.left, e.clientY-r.top);
+  const mx = e.clientX - r.left;
+  const my = e.clientY - r.top;
+  const oldZ = zoom;
+  zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom * (e.deltaY < 0 ? 1.15 : 0.87)));
+  // Zoom toward cursor
+  panX = mx - (mx - panX) * (zoom / oldZ);
+  panY = my - (my - panY) * (zoom / oldZ);
+  clampPan();
+}, {passive: false});
+
+function handleTap(e){
+  const r = cvs.getBoundingClientRect();
+  const sx = e.clientX - r.left;
+  const sy = e.clientY - r.top;
+  const m = screenToMap(sx, sy);
+  const q = pick(m.x, m.y);
   if(!q) return;
   sel = q;
 
@@ -1513,8 +1652,8 @@ cvs.addEventListener('pointerdown', e => {
   else if(st.owner===moi?.id){ i.style.background=mapCol(st.clan); s.textContent='À toi · '+q.a; }
   else if(st.clan===moi?.clan){ i.style.background=mapCol(st.clan); s.textContent='Allié · '+q.a; }
   else { i.style.background=mapCol(st.clan); s.textContent=NOMS[st.clan]+' · '+q.a; }
-  tip.style.left=(e.clientX-r.left)+'px';
-  tip.style.top=(e.clientY-r.top)+'px';
+  tip.style.left=sx+'px';
+  tip.style.top=sy+'px';
   tip.classList.add('on');
   setTimeout(()=>tip.classList.remove('on'), 1600);
 
