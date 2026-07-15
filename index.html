@@ -559,9 +559,28 @@ document.getElementById('ws2Next').onclick = async () => {
     goStep(3);
     if(data.session){
       await attendreProfil(s, data.session.user.id);
-      // Set clan + color
-      try{ await s.rpc('rejoindre',{p_clan:chosenClan}); }catch(e){}
-      try{ await s.rpc('choisir_couleur',{p_color:chosenColor}); }catch(e){}
+
+      // Set clan — essayer RPC puis fallback direct
+      try{
+        const r = await s.rpc('rejoindre', {p_clan:chosenClan});
+        if(r.error) throw r.error;
+      }catch(e){
+        console.warn('rejoindre failed, fallback direct:', e.message);
+        await s.from('profiles').update({clan:chosenClan}).eq('id', data.session.user.id);
+      }
+
+      // Set couleur
+      try{ await s.rpc('choisir_couleur',{p_color:chosenColor}); }catch(e){
+        console.warn('choisir_couleur failed, fallback:', e.message);
+        await s.from('profiles').update({avatar_color:chosenColor}).eq('id', data.session.user.id);
+      }
+
+      // Vérifier que le clan est bien set avant de rediriger
+      const {data:check} = await s.from('profiles').select('clan').eq('id', data.session.user.id).maybeSingle();
+      if(!check || check.clan === null){
+        await s.from('profiles').update({clan:chosenClan}).eq('id', data.session.user.id);
+      }
+
       location.replace(APRES_CONNEXION);
     } else {
       document.getElementById('ws3Msg').textContent = 'Confirme ton email pour accéder à la carte.';
