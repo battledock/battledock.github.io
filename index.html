@@ -218,41 +218,29 @@ button{touch-action:manipulation;cursor:pointer;border:0;background:none}
 <!-- ÉCRAN 2 : WIZARD INSCRIPTION -->
 <div class="screen hidden" id="sWizard">
   <div class="wizard">
-    <div class="wiz-progress"><i class="active"></i><i></i><i></i></div>
+    <div class="wiz-progress"><i class="active"></i><i></i></div>
 
     <!-- STEP 1 : Identité -->
     <div class="wiz-step active" id="ws1">
       <h2>Qui es-tu ?</h2>
-      <p class="wsub">Choisis ton pseudo et ta couleur.</p>
+      <p class="wsub">Choisis ton pseudo et ta couleur. Ton clan sera attribué automatiquement pour l'équilibre.</p>
       <div class="field"><label>Pseudo</label><input id="wPseudo" type="text" placeholder="Ton nom sur la carte" maxlength="18" autocapitalize="none"></div>
       <div class="field"><label>Email</label><input id="wEmail" type="email" inputmode="email" placeholder="toi@exemple.fr" autocomplete="email" autocapitalize="none"></div>
       <div class="field"><label>Mot de passe</label><input id="wPwd" type="password" placeholder="6 caractères min" autocomplete="new-password"></div>
-      <label style="margin-bottom:8px;font:600 11px/1 'Archivo';color:var(--ink2)">Ta couleur</label>
+      <label style="margin-bottom:8px;font:600 11px/1 'Archivo';color:#8b9aa3">Ta couleur</label>
       <div class="avatar-grid" id="wAvatars"></div>
       <div class="wiz-actions">
         <button class="btn-back" id="ws1Back">← Retour</button>
-        <button class="btn-next" id="ws1Next" disabled>Suivant →</button>
+        <button class="btn-next" id="ws1Next" disabled>Créer mon compte →</button>
       </div>
       <div class="msg" id="ws1Msg"></div>
     </div>
 
-    <!-- STEP 2 : Clan -->
+    <!-- STEP 2 : Go -->
     <div class="wiz-step" id="ws2">
-      <h2>Choisis ton camp</h2>
-      <p class="wsub">5 clans se battent pour Marseille. Lequel rejoins-tu ?</p>
-      <div class="clan-grid" id="wClans"></div>
-      <div class="wiz-actions">
-        <button class="btn-back" id="ws2Back">← Retour</button>
-        <button class="btn-next" id="ws2Next" disabled>Planter mon drapeau →</button>
-      </div>
-      <div class="msg" id="ws2Msg"></div>
-    </div>
-
-    <!-- STEP 3 : Go -->
-    <div class="wiz-step" id="ws3">
-      <h2>🏴 C'est parti !</h2>
-      <p class="wsub">Connexion en cours…</p>
-      <div class="msg ok" id="ws3Msg">Chargement de la carte…</div>
+      <h2>C'est parti !</h2>
+      <p class="wsub" id="ws2Info">Création en cours…</p>
+      <div class="msg ok" id="ws2Msg">Chargement de la carte…</div>
     </div>
   </div>
 </div>
@@ -422,7 +410,6 @@ async function loadLive(){
 /* ═══ WIZARD ═══ */
 let step = 1;
 let chosenColor = AV_COLORS[0];
-let chosenClan = null;
 
 function initWizard(){
   // Avatars — 20 couleurs, griser les prises
@@ -451,41 +438,6 @@ function initWizard(){
   pseudo.oninput = () => { renderAvatars(); checkStep1(); };
   document.getElementById('wEmail').oninput = checkStep1;
   document.getElementById('wPwd').oninput = checkStep1;
-
-  // Clans
-  document.getElementById('wClans').innerHTML = NOMS.map((n,i) =>
-    `<div class="clan-opt" data-clan="${i}">
-      <div class="co-av" style="background:${CLANS_C[i]}">${n[0]}</div>
-      <div class="co-info"><b>${n}</b><small>${DESCS[i]}</small></div>
-      <span class="co-count">—</span>
-    </div>`
-  ).join('');
-
-  document.getElementById('wClans').onclick = e => {
-    const t = e.target.closest('.clan-opt');
-    if(!t) return;
-    document.querySelectorAll('.clan-opt').forEach(a=>a.classList.remove('sel'));
-    t.classList.add('sel');
-    chosenClan = parseInt(t.dataset.clan);
-    document.getElementById('ws2Next').disabled = false;
-  };
-
-  // Load clan counts
-  loadClanCounts();
-}
-
-async function loadClanCounts(){
-  const s = await sbReady;
-  if(!s) return;
-  try{
-    const {data} = await s.rpc('stats_publiques');
-    if(data && data.clans){
-      const cc = data.clans;
-      document.querySelectorAll('.clan-opt').forEach((el,i)=>{
-        el.querySelector('.co-count').textContent = cc[i]+' quartiers';
-      });
-    }
-  }catch(e){}
 }
 
 function checkStep1(){
@@ -530,65 +482,69 @@ document.getElementById('btnLogin').onclick = () => showScreen('sLogin');
 document.getElementById('lToSignup').onclick = () => { showScreen('sWizard'); initWizard(); };
 
 document.getElementById('ws1Back').onclick = () => showScreen('sLanding');
-document.getElementById('ws1Next').onclick = () => goStep(2);
-
-document.getElementById('ws2Back').onclick = () => goStep(1);
-document.getElementById('ws2Next').onclick = async () => {
+document.getElementById('ws1Next').onclick = async () => {
   const pseudo = document.getElementById('wPseudo').value.trim();
   const email = document.getElementById('wEmail').value.trim();
   const pwd = document.getElementById('wPwd').value;
-  const msg = document.getElementById('ws2Msg');
+  const msg = document.getElementById('ws1Msg');
 
-  if(chosenClan === null){ msg.textContent='Choisis un clan.'; return; }
-  document.getElementById('ws2Next').disabled = true;
+  document.getElementById('ws1Next').disabled = true;
   msg.textContent = 'Création du compte…';
   msg.className = 'msg';
 
   try{
     const s = await sbReady;
     if(!s) throw new Error('Serveur injoignable.');
+
+    // Auto-clan : le moins peuplé
+    let autoClan = 0;
+    try{
+      const { data:ac } = await s.rpc('clan_auto');
+      if(ac !== null && ac !== undefined) autoClan = ac;
+    }catch(e){ console.warn('clan_auto fallback:', e.message); }
+
     const {data,error} = await s.auth.signUp({
       email, password:pwd,
       options:{
-        data:{ pseudo, clan:chosenClan, avatar_color:chosenColor },
+        data:{ pseudo, clan:autoClan, avatar_color:chosenColor },
         emailRedirectTo: location.origin + location.pathname
       }
     });
     if(error) throw error;
 
-    goStep(3);
+    goStep(2);
+    document.getElementById('ws2Info').textContent = `Tu rejoins les ${NOMS[autoClan]} !`;
+
     if(data.session){
       await attendreProfil(s, data.session.user.id);
 
-      // Set clan — essayer RPC puis fallback direct
+      // Set clan
       try{
-        const r = await s.rpc('rejoindre', {p_clan:chosenClan});
+        const r = await s.rpc('rejoindre', {p_clan:autoClan});
         if(r.error) throw r.error;
       }catch(e){
-        console.warn('rejoindre failed, fallback direct:', e.message);
-        await s.from('profiles').update({clan:chosenClan}).eq('id', data.session.user.id);
+        await s.from('profiles').update({clan:autoClan}).eq('id', data.session.user.id);
       }
 
       // Set couleur
       try{ await s.rpc('choisir_couleur',{p_color:chosenColor}); }catch(e){
-        console.warn('choisir_couleur failed, fallback:', e.message);
         await s.from('profiles').update({avatar_color:chosenColor}).eq('id', data.session.user.id);
       }
 
-      // Vérifier que le clan est bien set avant de rediriger
+      // Vérifier
       const {data:check} = await s.from('profiles').select('clan').eq('id', data.session.user.id).maybeSingle();
       if(!check || check.clan === null){
-        await s.from('profiles').update({clan:chosenClan}).eq('id', data.session.user.id);
+        await s.from('profiles').update({clan:autoClan}).eq('id', data.session.user.id);
       }
 
       location.replace(APRES_CONNEXION);
     } else {
-      document.getElementById('ws3Msg').textContent = 'Confirme ton email pour accéder à la carte.';
-      document.getElementById('ws3Msg').className = 'msg ok';
+      document.getElementById('ws2Msg').textContent = 'Confirme ton email pour accéder à la carte.';
+      document.getElementById('ws2Msg').className = 'msg ok';
     }
   }catch(e){
     msg.textContent = traduire(e.message);
-    document.getElementById('ws2Next').disabled = false;
+    document.getElementById('ws1Next').disabled = false;
   }
 };
 
