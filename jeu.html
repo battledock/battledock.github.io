@@ -865,6 +865,31 @@ nav button .dot{
 }
 .pbtn-logout:hover{border-color:var(--terra);color:var(--terra)}
 
+/* ═════ COLOR SHOP ═════ */
+.pc-opt{
+  width:32px;height:32px;border-radius:8px;display:grid;place-items:center;
+  font:700 10px/1 'Archivo';color:#fff;border:2px solid transparent;
+  cursor:pointer;transition:.12s;
+}
+.pc-opt.sel{border-color:var(--ink);transform:scale(1.15);box-shadow:0 3px 10px -3px rgba(0,0,0,.3)}
+.pc-opt.taken{opacity:.2;cursor:not-allowed}
+.pc-shop-btn{
+  display:block;width:100%;margin-top:8px;padding:10px;border-radius:8px;
+  border:1.5px solid var(--line);background:var(--card);
+  font:600 11px/1.2 'Archivo';color:var(--ink2);text-align:center;transition:.12s;
+}
+.pc-shop-btn:hover{border-color:var(--gold);color:var(--gold)}
+.pc-custom{margin-top:10px;padding:12px;border-radius:var(--r);background:var(--card);border:1px solid var(--line)}
+.pc-custom h5{font:700 12px/1 'Archivo';margin-bottom:8px}
+.pc-custom input[type=color]{
+  width:100%;height:36px;border:0;border-radius:6px;cursor:pointer;background:none;
+}
+.pc-custom .pc-buy{
+  margin-top:8px;padding:10px;border-radius:8px;width:100%;
+  background:var(--gold);color:#fff;font:700 12px/1 'Archivo';border:0;
+}
+.pc-custom .pc-buy:disabled{opacity:.3}
+
 /* ═════ CLASSEMENT HEBDO ═════ */
 .weekly-board{display:flex;flex-direction:column;gap:4px}
 .wk-row{
@@ -1200,6 +1225,14 @@ nav button .dot{
       </div>
       <h4>Accomplissements</h4>
       <div class="pbadges" id="pBadges"></div>
+
+      <h4>Ma couleur</h4>
+      <div class="pcard" id="pColorSection">
+        <div class="pav" id="pAvPreview" style="margin-bottom:8px">E</div>
+        <div id="pColorGrid" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:12px"></div>
+        <div id="pColorShop"></div>
+      </div>
+
       <h4>Historique récent</h4>
       <div class="phistory" id="pHistory"></div>
       <button class="pbtn-logout" id="pLogout">Se déconnecter</button>
@@ -2198,7 +2231,9 @@ async function rafraichir(){
     if(Q.length) bakeFills();
     maj();
     await chargerProfil();
+    await chargerCouleurs();
     majProfil();
+    majColorShop();
     majStreak();
     majMissions();
     majClassementHebdo();
@@ -2232,7 +2267,7 @@ function maj(){
   document.getElementById('hNom').textContent = moi.pseudo;
   const av = document.getElementById('hAv');
   av.textContent = (moi.pseudo||'?')[0].toUpperCase();
-  av.style.background = clanCol(moi.clan);
+  av.style.background = profilData?.avatar_color || clanCol(moi.clan);
   document.getElementById('hClan').textContent =
     moi.clan!=null ? NOMS[moi.clan] : 'Sans camp';
 
@@ -3123,6 +3158,116 @@ document.getElementById('pLogout')?.addEventListener('click', async()=>{
   if(sb) await sb.auth.signOut();
   location.replace(PAGE_CONNEXION);
 });
+
+/* ═══ BOUTIQUE COULEURS ═══ */
+const BASE_COLORS = [
+  '#ef4444','#f97316','#f59e0b','#eab308','#84cc16',
+  '#22c55e','#10b981','#14b8a6','#06b6d4','#0ea5e9',
+  '#3b82f6','#6366f1','#8b5cf6','#a855f7','#d946ef',
+  '#ec4899','#f43f5e','#78716c','#1e293b','#92400e'
+];
+let allTakenColors = [];
+
+async function chargerCouleurs(){
+  try{
+    const { data } = await sb.rpc('couleurs_disponibles');
+    allTakenColors = data || [];
+  }catch(e){}
+}
+
+function majColorShop(){
+  if(!moi) return;
+  const grid = document.getElementById('pColorGrid');
+  const shop = document.getElementById('pColorShop');
+  const preview = document.getElementById('pAvPreview');
+  if(!grid) return;
+
+  const maCouleur = profilData?.avatar_color || clanCol(moi.clan);
+  preview.textContent = (moi.pseudo||'?')[0].toUpperCase();
+  preview.style.background = maCouleur;
+
+  // Grille 20 couleurs de base
+  grid.innerHTML = BASE_COLORS.map(c => {
+    const mine = c === profilData?.avatar_color;
+    const taken = allTakenColors.includes(c) && !mine;
+    return `<div class="pc-opt ${mine?'sel':''} ${taken?'taken':''}" 
+      data-c="${c}" style="background:${c}" 
+      onclick="${taken?'':'changerCouleur(this)'}">${taken?'':''}
+    </div>`;
+  }).join('');
+
+  // Boutique
+  shop.innerHTML = `
+    <div class="pc-custom">
+      <h5>🎨 Couleur custom · 500 or</h5>
+      <input type="color" id="pcCustomColor" value="${maCouleur}">
+      <button class="pc-buy" onclick="acheterCouleurCustom('custom')" ${OR>=500?'':'disabled'}>
+        Acheter · 500 or
+      </button>
+    </div>
+    <div class="pc-custom" style="margin-top:6px">
+      <h5>✨ Dégradé · 1 000 or</h5>
+      <div style="display:flex;gap:6px">
+        <input type="color" id="pcGrad1" value="#ef4444" style="flex:1">
+        <input type="color" id="pcGrad2" value="#3b82f6" style="flex:1">
+      </div>
+      <button class="pc-buy" onclick="acheterCouleurCustom('gradient')" ${OR>=1000?'':'disabled'}>
+        Acheter · 1 000 or
+      </button>
+    </div>
+    <div class="pc-custom" style="margin-top:6px">
+      <h5>👑 Doré / Chromé · 2 500 or</h5>
+      <div style="display:flex;gap:6px">
+        <div style="flex:1;height:36px;border-radius:6px;background:linear-gradient(135deg,#d97706,#fbbf24,#d97706);cursor:pointer" onclick="document.getElementById('pcSpecial').value='gold'"></div>
+        <div style="flex:1;height:36px;border-radius:6px;background:linear-gradient(135deg,#94a3b8,#e2e8f0,#94a3b8);cursor:pointer" onclick="document.getElementById('pcSpecial').value='chrome'"></div>
+        <div style="flex:1;height:36px;border-radius:6px;background:linear-gradient(135deg,#dc2626,#f97316,#eab308);cursor:pointer" onclick="document.getElementById('pcSpecial').value='fire'"></div>
+      </div>
+      <input type="hidden" id="pcSpecial" value="gold">
+      <button class="pc-buy" onclick="acheterCouleurCustom('special')" ${OR>=2500?'':'disabled'}>
+        Acheter · 2 500 or
+      </button>
+    </div>
+  `;
+}
+
+async function changerCouleur(el){
+  const c = el.dataset.c;
+  try{
+    const { data, error } = await sb.rpc('choisir_couleur', { p_color: c });
+    if(error) throw error;
+    if(!data?.ok){ toast(data?.erreur||'Erreur'); return; }
+    toast('Couleur changée !');
+    await chargerCouleurs();
+    await chargerProfil();
+    majColorShop();
+    majProfil();
+  }catch(e){ toast(e.message); }
+}
+
+async function acheterCouleurCustom(type){
+  let color;
+  if(type === 'custom'){
+    color = document.getElementById('pcCustomColor').value;
+  } else if(type === 'gradient'){
+    const g1 = document.getElementById('pcGrad1').value;
+    const g2 = document.getElementById('pcGrad2').value;
+    color = `gradient:${g1}:${g2}`;
+  } else {
+    const spec = document.getElementById('pcSpecial').value;
+    color = `special:${spec}`;
+  }
+  try{
+    const { data, error } = await sb.rpc('acheter_couleur', { p_color: color, p_type: type });
+    if(error) throw error;
+    if(!data?.ok){ toast(data?.erreur||'Erreur'); return; }
+    OR = data.or;
+    toast(type === 'special' ? '👑 Couleur légendaire !' : '🎨 Couleur achetée !');
+    await chargerCouleurs();
+    await chargerProfil();
+    majColorShop();
+    majProfil();
+  }catch(e){ toast(e.message); }
+}
 
 /* ═══════════════════════════════════════════════════════════════
    DÉMARRAGE
