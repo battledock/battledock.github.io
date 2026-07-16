@@ -251,6 +251,28 @@ async function next(){
   const err=document.getElementById('errFinal');
   btn.disabled=true;btn.textContent='Sauvegarde...';err.textContent='';
 
+  // D'abord créer le quartier (avant de mettre onboarding_done)
+  const qData=quartiersData.find(q=>q.n===selQuartier.n);
+  const defaultBuildings={};
+  (quartierBuildings[selQuartier.n]||[]).forEach(b=>defaultBuildings[b.id]=0);
+
+  const{error:qErr}=await sb.rpc('init_quartier',{
+    p_player_id:userId,
+    p_nom:selQuartier.n,
+    p_type:qData.t,
+    p_bonus_1:qData.b1||'',
+    p_bonus_2:qData.b2||'',
+    p_color:qData.bg,
+    p_buildings:defaultBuildings
+  });
+
+  if(qErr){
+    err.textContent='Erreur quartier: '+qErr.message;
+    btn.disabled=false;btn.textContent='Conquérir Marseille';
+    return;
+  }
+
+  // Quartier créé, maintenant sauvegarder le profil
   const{error}=await sb.from('players').update({
     avatar:selAvatar,
     quartier_depart:selQuartier.n,
@@ -268,20 +290,6 @@ async function next(){
     btn.disabled=false;btn.textContent='Conquérir Marseille';
     return;
   }
-
-  // Créer le quartier initial
-  const qData=quartiersData.find(q=>q.n===selQuartier.n);
-  const defaultBuildings={};
-  (quartierBuildings[selQuartier.n]||[]).forEach(b=>defaultBuildings[b.id]=0);
-  await sb.rpc('init_quartier',{
-    p_player_id:userId,
-    p_nom:selQuartier.n,
-    p_type:qData.t,
-    p_bonus_1:qData.b1||'',
-    p_bonus_2:qData.b2||'',
-    p_color:qData.bg,
-    p_buildings:defaultBuildings
-  });
 
   window.location.href='jeu.html';
 }
