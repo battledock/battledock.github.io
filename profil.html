@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Battle Dock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Nunito',sans-serif;background:#f0f4f8;color:#12243e}
+.app{height:100dvh;display:flex;flex-direction:column;padding:0 20px;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.progress{display:flex;gap:4px;padding:20px 0 0;flex-shrink:0}
+.progress-dot{flex:1;height:4px;border-radius:2px;background:#dde2ea;transition:background .3s}
+.progress-dot.done,.progress-dot.active{background:#1470a8}
+.step{display:none;flex:1;flex-direction:column;overflow:hidden;animation:fadeIn .4s}
+.step.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.step-head{flex-shrink:0;padding-top:24px;padding-bottom:16px}
+.step-num{font-size:.55rem;font-weight:900;color:#1470a8;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+.step-title{font-family:'Oswald',sans-serif;font-size:clamp(1.4rem,6vw,1.8rem);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#12243e;line-height:1}
+.step-sub{font-size:.7rem;font-weight:700;color:rgba(18,36,62,.3);margin-top:6px;line-height:1.4}
+.step-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:8px}
+.step-body::-webkit-scrollbar{display:none}
+
+/* Avatars */
+.avatar-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.av{aspect-ratio:1;border-radius:18px;background:#fff;border:3px solid #e4e8ee;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .12s;-webkit-tap-highlight-color:transparent;position:relative}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av:active{transform:scale(.92)}
+.av.on{border-color:#1470a8;box-shadow:0 4px 16px rgba(20,112,168,.15)}
+.av.on::after{content:'✓';position:absolute;bottom:4px;right:4px;width:20px;height:20px;background:#1470a8;color:#fff;border-radius:50%;font-size:.55rem;font-weight:900;display:flex;align-items:center;justify-content:center}
+
+/* Quartiers */
+.q-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.qc{border-radius:16px;overflow:hidden;background:#fff;border:3px solid #e4e8ee;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .2s,transform .12s}
+.qc:active{transform:scale(.97)}
+.qc.on{border-color:#1470a8;box-shadow:0 4px 16px rgba(20,112,168,.12)}
+.qc .img{height:75px;display:flex;align-items:flex-end;padding:8px}
+.qc .img .tag{font-size:.42rem;font-weight:900;color:#fff;background:rgba(0,0,0,.3);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);border-radius:100px;padding:3px 8px;letter-spacing:1px;text-transform:uppercase}
+.qc .info{padding:9px 11px}
+.qc .qn{font-size:.7rem;font-weight:900;color:#12243e}
+.qc .dispo{font-size:.45rem;font-weight:900;color:#10b981;margin-top:3px}
+.qc.taken{opacity:.4;pointer-events:none}
+.qc.taken .dispo{color:rgba(18,36,62,.2)}
+.q-loading{text-align:center;padding:40px;font-size:.6rem;font-weight:700;color:rgba(18,36,62,.2)}
+
+/* Card styles */
+.style-list{display:flex;flex-direction:column;gap:8px}
+.style-item{display:flex;align-items:center;gap:12px;background:#fff;border:3px solid #e4e8ee;border-radius:14px;padding:10px 14px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:border-color .2s}
+.style-item:active{transform:scale(.98)}
+.style-item.on{border-color:#1470a8;background:#f0f6ff}
+.style-thumb{width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;position:relative}
+.style-info{flex:1}
+.style-name{font-size:.78rem;font-weight:900;color:#12243e}
+.style-desc{font-size:.5rem;font-weight:700;color:rgba(18,36,62,.3);margin-top:1px}
+.style-check{width:22px;height:22px;border-radius:50%;border:2px solid #dde2ea;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:900;color:transparent;transition:all .2s}
+.style-item.on .style-check{background:#1470a8;border-color:#1470a8;color:#fff}
+
+.th-waves{background:#14243e}.th-waves::before{content:'';position:absolute;inset:0;background:radial-gradient(circle 10px at 10px 10px,transparent 9px,rgba(96,160,224,.12) 9px,rgba(96,160,224,.12) 10px,transparent 10px),radial-gradient(circle 10px at 0 10px,transparent 9px,rgba(96,160,224,.12) 9px,rgba(96,160,224,.12) 10px,transparent 10px),radial-gradient(circle 10px at 20px 10px,transparent 9px,rgba(96,160,224,.12) 9px,rgba(96,160,224,.12) 10px,transparent 10px);background-size:20px 10px}
+.th-dots{background:#e8d0b0}.th-dots::before{content:'';position:absolute;inset:0;background:radial-gradient(circle 1.5px at 6px 6px,rgba(180,140,80,.2) 1.5px,transparent 1.5px);background-size:12px 12px}
+.th-chevron{background:linear-gradient(135deg,#b04030,#902820)}.th-chevron::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06) 25%,transparent 25%),linear-gradient(225deg,rgba(255,255,255,.06) 25%,transparent 25%),linear-gradient(315deg,rgba(255,255,255,.06) 25%,transparent 25%),linear-gradient(45deg,rgba(255,255,255,.06) 25%,transparent 25%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,8px 0}
+.th-blanc{background:#fff;border:1px solid #e4e8ee}
+.th-grain{background:linear-gradient(135deg,#2a3040,#1a2030)}.th-grain::before{content:'';position:absolute;inset:0;opacity:.3;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.2'/%3E%3C/svg%3E")}
+
+/* Bio */
+.bio{width:100%;padding:18px;background:#fff;border:3px solid #e4e8ee;border-radius:16px;font-family:inherit;font-size:.88rem;font-weight:700;color:#12243e;outline:none;resize:none;height:110px;-webkit-appearance:none;transition:border-color .2s}
+.bio:focus{border-color:#1470a8}
+.bio::placeholder{color:#b8c4d0}
+.bio-count{text-align:right;font-size:.5rem;font-weight:800;color:rgba(18,36,62,.15);margin-top:6px}
+
+/* Final card */
+.final-card{border-radius:24px;padding:28px 24px;text-align:center;position:relative;overflow:hidden;color:#fff}
+.final-card .inner{position:relative;z-index:1}
+.final-avatar{width:88px;height:88px;border-radius:22px;background:rgba(255,255,255,.1);border:3px solid rgba(255,255,255,.15);overflow:hidden;margin:0 auto 16px}
+.final-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.final-pseudo{font-family:'Oswald',sans-serif;font-size:1.4rem;font-weight:600;letter-spacing:1px}
+.final-rank{font-size:.6rem;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-top:3px;opacity:.6}
+.final-quartier{font-size:.72rem;font-weight:800;margin-top:10px;opacity:.4}
+.final-bio{font-size:.72rem;font-weight:700;margin-top:6px;opacity:.3;font-style:italic;line-height:1.4}
+.final-sep{width:40px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin:16px auto}
+.final-stats{display:flex;justify-content:center;gap:28px}
+.fs-v{font-family:'Oswald',sans-serif;font-size:1.2rem;font-weight:600}
+.fs-l{font-size:.42rem;font-weight:900;letter-spacing:1px;text-transform:uppercase;margin-top:2px;opacity:.3}
+
+.fc-waves{background:#14243e}.fc-waves::before{content:'';position:absolute;inset:0;background:radial-gradient(circle 20px at 20px 20px,transparent 18px,rgba(96,160,224,.08) 18px,rgba(96,160,224,.08) 19px,transparent 19px),radial-gradient(circle 20px at 0 20px,transparent 18px,rgba(96,160,224,.08) 18px,rgba(96,160,224,.08) 19px,transparent 19px),radial-gradient(circle 20px at 40px 20px,transparent 18px,rgba(96,160,224,.08) 18px,rgba(96,160,224,.08) 19px,transparent 19px);background-size:40px 20px}
+.fc-dots{background:#e8d0b0;color:#2a1c10}.fc-dots::before{content:'';position:absolute;inset:0;background:radial-gradient(circle 2px at 10px 10px,rgba(180,140,80,.15) 2px,transparent 2px);background-size:20px 20px}
+.fc-chevron{background:linear-gradient(135deg,#b04030,#902820)}.fc-chevron::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.04) 25%,transparent 25%),linear-gradient(225deg,rgba(255,255,255,.04) 25%,transparent 25%),linear-gradient(315deg,rgba(255,255,255,.04) 25%,transparent 25%),linear-gradient(45deg,rgba(255,255,255,.04) 25%,transparent 25%);background-size:30px 30px;background-position:0 0,0 15px,15px -15px,15px 0}
+.fc-blanc{background:#fff;color:#12243e;border:2px solid #e4e8ee}.fc-blanc .final-rank{color:#1470a8;opacity:1}
+.fc-grain{background:linear-gradient(135deg,#2a3040,#1a2030)}.fc-grain::before{content:'';position:absolute;inset:0;opacity:.25;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E")}
+
+/* Buttons */
+.btns{display:flex;gap:10px;padding:16px 0;flex-shrink:0}
+.btn-back{padding:16px 20px;background:none;border:2px solid #dde2ea;color:rgba(18,36,62,.25);font-family:inherit;font-size:.88rem;font-weight:900;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn-back:active{background:#f4f6fa}
+.btn-next{flex:1;padding:16px;background:linear-gradient(135deg,#1470a8,#1060a0);color:#fff;font-family:inherit;font-size:.88rem;font-weight:900;border:none;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s,opacity .15s;box-shadow:0 4px 16px rgba(20,112,168,.2)}
+.btn-next:active{transform:scale(.98)}
+.btn-next:disabled{opacity:.3}
+.btn-skip{background:none;border:none;font-family:inherit;font-size:.65rem;font-weight:800;color:rgba(18,36,62,.15);cursor:pointer;padding:8px;-webkit-tap-highlight-color:transparent;flex-shrink:0;align-self:center}
+.error{text-align:center;font-size:.6rem;font-weight:800;color:#dc3545;margin-top:4px;min-height:1em}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="progress"><div class="progress-dot active" id="pd0"></div><div class="progress-dot" id="pd1"></div><div class="progress-dot" id="pd2"></div><div class="progress-dot" id="pd3"></div><div class="progress-dot" id="pd4"></div></div>
+
+  <div class="step active" id="s0"><div class="step-head"><div class="step-num">Étape 1 sur 5</div><div class="step-title">Qui es-tu ?</div><div class="step-sub">Choisis l'avatar qui te représente.</div></div><div class="step-body"><div class="avatar-grid" id="avatarGrid"></div></div></div>
+
+  <div class="step" id="s1"><div class="step-head"><div class="step-num">Étape 2 sur 5</div><div class="step-title">Où tu t'installes ?</div><div class="step-sub">Ton premier quartier. Un seul joueur par quartier.</div></div><div class="step-body"><div class="q-loading" id="qLoading">Chargement des quartiers...</div><div class="q-grid" id="qGrid"></div></div></div>
+
+  <div class="step" id="s2"><div class="step-head"><div class="step-num">Étape 3 sur 5</div><div class="step-title">Style de ta carte</div><div class="step-sub">Les autres joueurs la verront sur ton profil.</div></div><div class="step-body"><div class="style-list" id="styleList"></div></div></div>
+
+  <div class="step" id="s3"><div class="step-head"><div class="step-num">Étape 4 sur 5</div><div class="step-title">Un mot sur toi</div><div class="step-sub">Tes rivaux le verront sur ta carte de joueur.</div></div><div class="step-body"><textarea class="bio" id="bioInput" placeholder="Ex: Le futur maire de Marseille..." maxlength="100"></textarea><div class="bio-count"><span id="bioCount">0</span>/100</div></div></div>
+
+  <div class="step" id="s4"><div class="step-head"><div class="step-num">Étape 5 sur 5</div><div class="step-title">Ta carte de joueur</div><div class="step-sub">Prêt à conquérir Marseille ?</div></div><div class="step-body"><div class="final-card" id="finalCard"><div class="inner"><div class="final-avatar" id="fAv"></div><div class="final-pseudo" id="fPseudo">—</div><div class="final-rank">Nouveau · Niv. 1</div><div class="final-quartier" id="fQ"></div><div class="final-bio" id="fBio"></div><div class="final-sep"></div><div class="final-stats"><div><div class="fs-v">1</div><div class="fs-l">Quartier</div></div><div><div class="fs-v">500</div><div class="fs-l">Or</div></div><div><div class="fs-v">50%</div><div class="fs-l">Réputation</div></div></div></div></div><div class="error" id="errFinal"></div></div></div>
+
+  <div class="btns">
+    <button class="btn-back" id="btnBack" onclick="prev()" style="display:none">←</button>
+    <button class="btn-next" id="btnNext" onclick="next()" disabled>Suivant</button>
+    <button class="btn-skip" id="btnSkip" style="display:none" onclick="goTo(step+1)">Passer</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPA_URL='https://snqynahqxqjmdigbmiag.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucXluYWhxeHFqbWRpZ2JtaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzQyMTksImV4cCI6MjA5OTc1MDIxOX0.eLMtvtEtvrfSSSi7-SCgo_wGMLWbhWpLSLM49QwpqY8';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+const avatarFiles=['notionists-1784192860427.png','notionists-1784192878199.png','notionists-1784192886404.png','notionists-1784192908690.png','notionists-1784192915365.png','notionists-1784192921128.png','notionists-1784192926929.png','notionists-1784192930945.png','notionists-1784192934790.png','notionists-1784192948649.png','notionists-1784192954119.png','notionists-1784193054250.png','notionists-1784193063349.png','notionists-1784193069098.png','notionists-1784193108971.png'];
+
+const quartiersData=[
+  {n:'Le Panier',t:'Historique',bg:'linear-gradient(135deg,#6b9fd4,#3a6fa0)'},
+  {n:'Cours Julien',t:'Culturel',bg:'linear-gradient(135deg,#e8a050,#c47830)'},
+  {n:'Noailles',t:'Populaire',bg:'linear-gradient(135deg,#d4866a,#b06848)'},
+  {n:'Endoume',t:'Bord de mer',bg:'linear-gradient(135deg,#50b8d0,#2890a8)'},
+  {n:'La Joliette',t:'Commercial',bg:'linear-gradient(135deg,#8890a8,#606880)'},
+  {n:'La Plaine',t:'Festif',bg:'linear-gradient(135deg,#a080c8,#7860a0)'},
+  {n:'St-Charles',t:'Central',bg:'linear-gradient(135deg,#90a878,#688850)'},
+  {n:'Bonneveine',t:'Balnéaire',bg:'linear-gradient(135deg,#60c0d8,#3898b0)'},
+  {n:'La Rose',t:'Résidentiel',bg:'linear-gradient(135deg,#c8a060,#a88040)'},
+  {n:'Pointe Rouge',t:'Maritime',bg:'linear-gradient(135deg,#5098c0,#306898)'},
+];
+
+const cardStyles=[
+  {id:'waves',name:'Vagues',desc:'Motif vagues sur fond navy',th:'th-waves',fc:'fc-waves'},
+  {id:'dots',name:'Points dorés',desc:'Pois dorés sur fond sable',th:'th-dots',fc:'fc-dots'},
+  {id:'chevron',name:'Chevrons',desc:'Motif géométrique rouge',th:'th-chevron',fc:'fc-chevron'},
+  {id:'blanc',name:'Blanc',desc:'Clean et minimaliste',th:'th-blanc',fc:'fc-blanc'},
+  {id:'grain',name:'Grain',desc:'Texture granuleuse sombre',th:'th-grain',fc:'fc-grain'},
+];
+
+let step=0,userId=null,playerPseudo='',selAvatar=null,selQuartier=null,selStyle=null;
+let takenQuartiers={};
+
+// Auth check
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session){window.location.href='index.html';return}
+  userId=session.user.id;
+
+  const{data:player}=await sb.from('players').select('pseudo,onboarding_done').eq('id',userId).maybeSingle();
+  if(!player){window.location.href='index.html';return}
+  if(player.onboarding_done){window.location.href='jeu.html';return}
+  playerPseudo=player.pseudo;
+
+  // Charger les quartiers pris
+  const{data:taken}=await sb.rpc('get_taken_quartiers');
+  if(taken)taken.forEach(t=>takenQuartiers[t.quartier]=t.pseudo);
+  buildQuartiers();
+})();
+
+// Avatars
+const ag=document.getElementById('avatarGrid');
+avatarFiles.forEach(f=>{
+  const el=document.createElement('div');el.className='av';
+  el.innerHTML=`<img src="avatars/${f}" alt="">`;
+  el.onclick=()=>{ag.querySelectorAll('.av').forEach(e=>e.classList.remove('on'));el.classList.add('on');selAvatar=f;document.getElementById('btnNext').disabled=false};
+  ag.appendChild(el);
+});
+
+// Quartiers
+function buildQuartiers(){
+  document.getElementById('qLoading').style.display='none';
+  const qg=document.getElementById('qGrid');
+  qg.innerHTML='';
+  quartiersData.forEach(q=>{
+    const pris=takenQuartiers[q.n]||false;
+    const el=document.createElement('div');
+    el.className='qc'+(pris?' taken':'');
+    el.innerHTML=`<div class="img" style="background:${q.bg}"><div class="tag">${q.t}</div></div><div class="info"><div class="qn">${q.n}</div><div class="dispo">${pris?'✗ Pris par '+pris:'✓ Disponible'}</div></div>`;
+    if(!pris){el.onclick=()=>{qg.querySelectorAll('.qc').forEach(e=>e.classList.remove('on'));el.classList.add('on');selQuartier=q;document.getElementById('btnNext').disabled=false}}
+    qg.appendChild(el);
+  });
+}
+
+// Card styles
+const sl=document.getElementById('styleList');
+cardStyles.forEach(s=>{
+  const el=document.createElement('div');el.className='style-item';
+  el.innerHTML=`<div class="style-thumb ${s.th}"></div><div class="style-info"><div class="style-name">${s.name}</div><div class="style-desc">${s.desc}</div></div><div class="style-check">✓</div>`;
+  el.onclick=()=>{sl.querySelectorAll('.style-item').forEach(e=>e.classList.remove('on'));el.classList.add('on');selStyle=s;document.getElementById('btnNext').disabled=false};
+  sl.appendChild(el);
+});
+
+// Bio
+document.getElementById('bioInput').addEventListener('input',function(){document.getElementById('bioCount').textContent=this.value.length});
+
+function goTo(s){
+  step=s;
+  document.querySelectorAll('.step').forEach(e=>e.classList.remove('active'));
+  document.getElementById('s'+step).classList.add('active');
+  for(let i=0;i<5;i++){const d=document.getElementById('pd'+i);d.classList.toggle('done',i<step);d.classList.toggle('active',i===step)}
+  const back=document.getElementById('btnBack');
+  const btn=document.getElementById('btnNext');
+  const skip=document.getElementById('btnSkip');
+  back.style.display=step>0?'block':'none';
+  skip.style.display=step===3?'block':'none';
+  if(step===0){btn.textContent='Suivant';btn.disabled=!selAvatar}
+  else if(step===1){btn.textContent='Suivant';btn.disabled=!selQuartier}
+  else if(step===2){btn.textContent='Suivant';btn.disabled=!selStyle}
+  else if(step===3){btn.textContent='Suivant';btn.disabled=false}
+  else if(step===4){
+    btn.textContent='Conquérir Marseille';btn.disabled=false;skip.style.display='none';
+    const fc=document.getElementById('finalCard');fc.className='final-card '+selStyle.fc;
+    document.getElementById('fAv').innerHTML=`<img src="avatars/${selAvatar}" alt="">`;
+    document.getElementById('fPseudo').textContent=playerPseudo;
+    document.getElementById('fQ').textContent='📍 '+selQuartier.n;
+    const bio=document.getElementById('bioInput').value.trim();
+    document.getElementById('fBio').textContent=bio?'"'+bio+'"':'';
+  }
+}
+
+async function next(){
+  if(step<4){goTo(step+1);return}
+  // Save
+  const btn=document.getElementById('btnNext');
+  const err=document.getElementById('errFinal');
+  btn.disabled=true;btn.textContent='Sauvegarde...';err.textContent='';
+
+  const{error}=await sb.from('players').update({
+    avatar:selAvatar,
+    quartier_depart:selQuartier.n,
+    card_style:selStyle.id,
+    bio:document.getElementById('bioInput').value.trim(),
+    onboarding_done:true
+  }).eq('id',userId);
+
+  if(error){
+    if(error.message.includes('unique')||error.message.includes('duplicate')){
+      err.textContent='Ce quartier vient d\'être pris ! Retourne en arrière et choisis-en un autre.';
+    }else{
+      err.textContent=error.message;
+    }
+    btn.disabled=false;btn.textContent='Conquérir Marseille';
+    return;
+  }
+  window.location.href='jeu.html';
+}
+
+function prev(){if(step>0)goTo(step-1)}
+</script>
+</body>
+</html>
