@@ -2,430 +2,632 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <title>Battle Dock</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --cream:#f4f1ea; --ink:#16140f; --red:#c0392b; --gold:#e8b04a;
+  --line:#e8e2d6; --line2:#ddd3c0; --mut:#7a7266; --mut2:#b0a898;
+  --green:#4a9a5a; --card:#fff;
+}
 html,body{height:100%;overflow:hidden}
-body{font-family:'Nunito',sans-serif;background:#fefcf8;color:#2a1a0a}
-.app{height:100dvh;display:flex;flex-direction:column}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--ink)}
+.app{height:100dvh;display:flex;flex-direction:column;position:relative;max-width:480px;margin:0 auto}
+.grain{position:absolute;inset:0;pointer-events:none;z-index:50;opacity:.45;background-image:radial-gradient(rgba(0,0,0,.04) 1px,transparent 1px);background-size:15px 15px}
+svg{display:block}
+.ic{stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;fill:none}
 
-/* Resources strip */
-.res-strip{display:flex;gap:5px;padding:8px 14px;padding-top:calc(8px + env(safe-area-inset-top));background:#fff;border-bottom:1px solid rgba(0,0,0,.03);flex-shrink:0}
-.res-item{flex:1;display:flex;align-items:center;gap:4px;border-radius:10px;padding:5px 8px;font-family:'Oswald',sans-serif;font-size:.75rem;font-weight:600}
-.res-item .ri{font-size:.8rem}
-.res-gold{background:linear-gradient(135deg,#fff8e8,#fff0d0);border:1px solid rgba(220,180,60,.12);color:#a08020}
-.res-energy{background:linear-gradient(135deg,#f0f8ff,#e0f0ff);border:1px solid rgba(60,130,220,.08);color:#3070b0}
-.res-rep{background:linear-gradient(135deg,#f0fff4,#e0ffe8);border:1px solid rgba(34,197,94,.08);color:#1a8048}
-
-/* Switcher */
-.switcher{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-shrink:0;background:#fff;border-bottom:1px solid rgba(0,0,0,.02)}
-.switcher::-webkit-scrollbar{display:none}
-.sw-q{flex-shrink:0;display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;cursor:pointer;-webkit-tap-highlight-color:transparent;border:2px solid rgba(0,0,0,.03);transition:.2s}
-.sw-q.on{border-color:#c07840;background:rgba(192,120,64,.04)}
-.sw-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.sw-name{font-size:.55rem;font-weight:900;color:#2a1a0a}
-.sw-notif{min-width:14px;height:14px;border-radius:50%;background:#e04040;color:#fff;font-size:.32rem;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 3px}
-
-/* Scroll */
-.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:70px}
-.scroll::-webkit-scrollbar{display:none}
-
-/* Quartier header */
-.q-head{display:flex;align-items:center;gap:12px;padding:14px 16px;margin:8px 14px;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.02)}
-.q-color{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
-.q-info{flex:1}
-.q-name{font-family:'Oswald',sans-serif;font-size:1rem;font-weight:700;letter-spacing:1px;text-transform:uppercase}
-.q-type{font-size:.45rem;font-weight:800;color:rgba(42,26,10,.2)}
-.q-bons{display:flex;gap:3px;margin-top:3px}
-.q-bon{font-size:.35rem;font-weight:900;padding:2px 7px;border-radius:100px;background:rgba(192,120,64,.06);color:#a06830}
-
-/* Stats */
-.stats{display:flex;gap:5px;padding:0 14px;margin-bottom:10px}
-.stat{flex:1;background:#fff;border-radius:12px;padding:8px 4px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.02)}
-.stat-e{font-size:.75rem}
-.stat-v{font-family:'Oswald',sans-serif;font-size:.78rem;font-weight:600;margin-top:1px}
-.stat-l{font-size:.3rem;font-weight:900;color:rgba(42,26,10,.12);letter-spacing:.5px;text-transform:uppercase}
-.stat-bar{width:80%;height:3px;margin:4px auto 0;background:rgba(0,0,0,.03);border-radius:2px;overflow:hidden}
-.stat-fill{height:100%;border-radius:2px;transition:width .5s}
-
-/* Section label */
-.sec-l{font-size:.45rem;font-weight:900;color:rgba(42,26,10,.08);letter-spacing:2px;text-transform:uppercase;padding:8px 18px 4px}
-
-/* COLLECT - big gold card */
-.collect-card{margin:0 14px 8px;background:linear-gradient(135deg,#ffe8c0,#ffd890);border-radius:16px;padding:16px;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s;box-shadow:0 4px 14px rgba(220,180,60,.12);position:relative;overflow:hidden}
-.collect-card:active{transform:scale(.98)}
-.collect-card.empty{opacity:.4;pointer-events:none}
-.cc-emoji{font-size:1.8rem}
-.cc-val{font-family:'Oswald',sans-serif;font-size:1.2rem;font-weight:700;color:#8a6820;margin-top:2px}
-.cc-sub{font-size:.42rem;font-weight:800;color:rgba(138,104,32,.25);margin-top:2px}
-.cc-shimmer{position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shimmer 3s infinite}
 @keyframes shimmer{0%{left:-100%}100%{left:200%}}
+@keyframes glow{0%,100%{box-shadow:0 8px 24px rgba(22,20,15,.16)}50%{box-shadow:0 10px 32px rgba(232,176,74,.22)}}
+@keyframes coin{0%{opacity:0;transform:translateY(6px) scale(.6)}30%{opacity:1}100%{opacity:0;transform:translateY(-26px) scale(.9)}}
+@keyframes pop{0%{transform:scale(.8);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes floatup{0%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-40px) scale(1.3)}}
 
-/* EVENT */
-.event{margin:0 14px 8px;background:linear-gradient(135deg,#fff5f0,#fff);border:2px solid rgba(224,64,64,.06);border-radius:16px;padding:14px;position:relative}
-.ev-timer{position:absolute;top:10px;right:12px;font-size:.42rem;font-weight:900;color:#e04040;background:rgba(224,64,64,.06);padding:3px 10px;border-radius:100px}
-.ev-emoji{font-size:1.6rem;margin-bottom:4px}
-.ev-title{font-family:'Oswald',sans-serif;font-size:.9rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px}
-.ev-desc{font-size:.52rem;font-weight:700;color:rgba(42,26,10,.22);line-height:1.4;margin-bottom:12px}
-.ev-btns{display:flex;gap:6px}
-.ev-btn{flex:1;padding:11px;border-radius:12px;text-align:center;font-family:inherit;font-weight:900;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s}
-.ev-btn:active{transform:scale(.96)}
-.ev-btn.yes{background:linear-gradient(135deg,#22c55e,#1a9a48);color:#fff;font-size:.55rem;box-shadow:0 3px 10px rgba(34,197,94,.12)}
-.ev-btn .cost{display:block;font-size:.4rem;opacity:.6;margin-top:2px}
-.ev-btn.no{background:rgba(42,26,10,.03);color:rgba(42,26,10,.18);font-size:.5rem}
-.no-items{text-align:center;padding:12px;font-size:.5rem;font-weight:700;color:rgba(42,26,10,.08)}
+/* ═══ VIEWS ═══ */
+.view{display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:82px}
+.view::-webkit-scrollbar{display:none}
+.view.on{display:block}
 
-/* DEMAND */
-.dem{display:flex;align-items:center;gap:10px;background:#fff;border-radius:14px;padding:10px 12px;margin:0 14px 6px;box-shadow:0 1px 4px rgba(0,0,0,.02)}
-.dem-emoji{font-size:1.3rem;flex-shrink:0}
-.dem-info{flex:1}
-.dem-title{font-size:.6rem;font-weight:900}
-.dem-sub{font-size:.38rem;font-weight:700;color:rgba(42,26,10,.15);margin-top:1px}
-.dem-timer{font-size:.35rem;font-weight:900;color:#e04040;margin-top:3px}
-.dem-urg{display:flex;gap:2px;margin-top:3px}
-.dem-dot{width:16px;height:3px;border-radius:2px}
-.dem-btn{padding:7px 12px;border-radius:10px;font-family:inherit;font-size:.5rem;font-weight:900;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;color:#fff;background:#c07840;box-shadow:0 2px 6px rgba(192,120,64,.1)}
-.dem-btn:active{transform:scale(.95)}
+/* ═══ HEADER (photo + carte) ═══ */
+.photo{height:132px;position:relative;overflow:hidden}
+.photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo .dk{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18),rgba(0,0,0,.04))}
+.hfloat{position:absolute;top:12px;left:14px;right:14px;z-index:2;display:flex;align-items:center;justify-content:space-between;padding-top:env(safe-area-inset-top)}
+.hf-u{display:flex;align-items:center;gap:8px}
+.hf-av{width:32px;height:32px;border-radius:50%;overflow:hidden;border:2px solid rgba(255,255,255,.55);flex-shrink:0}
+.hf-av img{width:100%;height:100%;object-fit:cover}
+.hf-nm{font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.35)}
+.hf-res{display:flex;gap:4px}
+.hf-r{background:rgba(22,20,15,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;border-radius:100px;padding:6px 11px;font-family:'Space Mono',monospace;font-size:9.5px;font-weight:700}
+.qcard{margin:-30px 16px 0;position:relative;z-index:2;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;box-shadow:0 8px 24px rgba(22,20,15,.1)}
+.qc-kick{font-size:8px;font-weight:900;letter-spacing:2.5px;color:var(--red);text-transform:uppercase;margin-bottom:5px}
+.qc-name{font-family:'Playfair Display',serif;font-weight:900;font-size:28px;line-height:.9;letter-spacing:-.5px}
+.qc-name em{font-style:italic;color:var(--red)}
+.qc-chips{display:flex;gap:4px;margin-top:10px;flex-wrap:wrap}
+.chip{font-size:8px;font-weight:800;padding:3px 9px;border-radius:100px;background:var(--cream);color:var(--mut);border:1px solid var(--line)}
+.qc-xp{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f0ede6}
+.qc-xpbar{flex:1;height:5px;background:var(--line);border-radius:3px;overflow:hidden}
+.qc-xpfill{height:100%;background:var(--ink);border-radius:3px;transition:width .5s}
+.qc-xptxt{font-family:'Space Mono',monospace;font-size:8.5px;font-weight:700;color:var(--mut2)}
 
-/* TAX */
-.tax{margin:0 14px 8px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.02)}
-.tax-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.tax-emoji{font-size:1.2rem}
-.tax-info{flex:1}
-.tax-title{font-size:.62rem;font-weight:900}
-.tax-sub{font-size:.38rem;font-weight:700;color:rgba(42,26,10,.15);margin-top:1px}
-.tax-pct{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;color:#c07840}
-.tax-slider{-webkit-appearance:none;width:100%;height:8px;border-radius:4px;background:linear-gradient(90deg,#ece4d8,#c07840);outline:none}
-.tax-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:#fff;border:3px solid #c07840;box-shadow:0 2px 8px rgba(0,0,0,.1);cursor:pointer}
-.tax-res{display:flex;gap:6px;margin-top:8px}
-.tax-r{flex:1;text-align:center;padding:6px;border-radius:8px;font-size:.5rem;font-weight:900}
-.tax-r.pos{background:rgba(34,197,94,.05);color:#1a8048}
-.tax-r.neg{background:rgba(224,64,64,.04);color:#c03030}
+/* ═══ RULE ═══ */
+.rule{display:flex;align-items:center;gap:10px;margin:20px 20px 14px}
+.rule::before,.rule::after{content:"";flex:1;height:1px;background:var(--line)}
+.rule span{font-size:8.5px;font-weight:900;letter-spacing:2.5px;color:var(--mut2);text-transform:uppercase;white-space:nowrap}
 
-/* BUILDINGS */
-.builds-scroll{display:flex;gap:8px;padding:0 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin-bottom:8px}
-.builds-scroll::-webkit-scrollbar{display:none}
-.bld{flex-shrink:0;width:105px;background:#fff;border-radius:14px;padding:10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.02);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .1s}
-.bld:active{transform:scale(.96)}
-.bld.building{border:2px solid rgba(48,112,176,.12);position:relative}
-.bld-emoji{font-size:1.4rem;margin-bottom:3px}
-.bld-name{font-size:.55rem;font-weight:900}
-.bld-dots{display:flex;gap:3px;justify-content:center;margin:5px 0}
-.bld-d{width:7px;height:7px;border-radius:2px;background:#ece4d8}
-.bld-d.on{background:#c07840}
-.bld-up{font-size:.42rem;font-weight:900;color:#fff;padding:4px 10px;border-radius:6px;display:inline-block}
-.bld-up.upgrade{background:#c07840}
-.bld-up.build-new{background:#3070b0}
-.bld-up.max{background:rgba(42,26,10,.05);color:rgba(42,26,10,.12)}
-.bld-up.in-progress{background:rgba(48,112,176,.08);color:#3070b0}
-.bld-timer{font-size:.35rem;font-weight:900;color:#3070b0;margin-top:3px}
+/* ═══ STATS ═══ */
+.stats{padding:0 20px}
+.stat{display:flex;align-items:center;gap:12px;padding:7px 0}
+.stat-lb{font-size:11px;font-weight:700;color:var(--mut);width:88px;flex-shrink:0}
+.stat-tk{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.stat-fl{height:100%;border-radius:3px;transition:width .5s}
+.stat-v{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;width:38px;text-align:right;flex-shrink:0}
 
-/* Nav */
-.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid rgba(0,0,0,.03);display:flex;padding:6px 0;padding-bottom:calc(6px + env(safe-area-inset-bottom));z-index:10}
-.nav-i{flex:1;text-align:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.nav-ic{font-size:.95rem}
-.nav-lb{font-size:.3rem;font-weight:900;color:rgba(42,26,10,.1);margin-top:1px}
-.nav-i.on .nav-lb{color:#c07840}
+/* ═══ COLLECT ═══ */
+.collect{margin:0 20px;background:var(--ink);border-radius:18px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(22,20,15,.18)}
+.collect.rdy{animation:glow 2.5s ease-in-out infinite}
+.collect .shim{position:absolute;top:0;left:-100%;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);animation:shimmer 3.5s infinite}
+.cc-v{font-family:'Playfair Display',serif;font-size:24px;font-weight:900;color:#fff;line-height:1;position:relative;z-index:1}
+.cc-s{font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.4);text-transform:uppercase;margin-top:3px;position:relative;z-index:1}
+.cc-btn{position:relative;z-index:1;font-size:10px;font-weight:900;letter-spacing:1px;color:var(--ink);background:var(--gold);padding:10px 18px;border-radius:100px;text-transform:uppercase;border:none;font-family:inherit;cursor:pointer}
+.cc-btn:disabled{opacity:.4}
 
-/* Toast */
-.toast{position:fixed;top:calc(16px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-80px);background:#2a1a0a;color:#fff;border-radius:12px;padding:10px 20px;font-size:.6rem;font-weight:900;box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:20;transition:transform .3s;white-space:nowrap}
-.toast.show{transform:translateX(-50%) translateY(0)}
+/* ═══ ITEMS ═══ */
+.item{margin:0 20px 8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px}
+.item-top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.item-badge{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.item-badge svg{width:19px;height:19px}
+.item-mid{flex:1;min-width:0}
+.item-cat{font-size:8px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:2px}
+.item-t{font-family:'Playfair Display',serif;font-size:15px;font-weight:700;line-height:1.1}
+.item-timer{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;flex-shrink:0}
+.item-d{font-size:11px;font-weight:500;color:#a09a90;line-height:1.5;margin-bottom:12px;padding-left:47px}
+.item-btns{display:flex;gap:7px;padding-left:47px}
+.item-btn{padding:10px 14px;border-radius:10px;font-size:10px;font-weight:800;border:none;cursor:pointer;font-family:inherit;letter-spacing:.3px}
+.btn-primary{background:var(--ink);color:#fff;flex:1;text-align:center}
+.btn-primary:disabled{opacity:.4}
+.btn-ghost{background:var(--cream);color:#a09a90;border:1px solid var(--line)}
 
-/* Loading */
-.loading{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
-.loading-text{font-size:.65rem;font-weight:700;color:rgba(42,26,10,.15)}
+/* ═══ CLASSEMENT ═══ */
+.classement{margin:0 20px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.cl-p{display:flex;align-items:center;gap:11px;padding:11px 15px;border-bottom:1px solid var(--cream)}
+.cl-p:last-child{border-bottom:none}
+.cl-p.you{background:#faf7f0}
+.cl-rk{font-family:'Playfair Display',serif;font-size:15px;font-weight:900;color:#d4ccbe;width:20px;text-align:center;flex-shrink:0}
+.cl-p.you .cl-rk{color:var(--red)}
+.cl-av{width:30px;height:30px;border-radius:9px;overflow:hidden;flex-shrink:0;border:1px solid var(--line)}
+.cl-av img{width:100%;height:100%;object-fit:cover}
+.cl-inf{flex:1;min-width:0}
+.cl-nm{font-size:11px;font-weight:800}
+.cl-sb{font-size:8.5px;font-weight:700;letter-spacing:.5px;color:var(--mut2);text-transform:uppercase;margin-top:1px}
+.cl-sat{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0}
+.cl-btns{display:flex;gap:4px;flex-shrink:0}
+.cl-btn{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#fff;cursor:pointer}
+.cl-btn svg{width:14px;height:14px}
 
-/* Login notifications */
-.login-alerts{margin:0 14px 8px}
-.login-alert{display:flex;align-items:center;gap:8px;background:rgba(48,112,176,.04);border:1px solid rgba(48,112,176,.06);border-radius:12px;padding:8px 12px;margin-bottom:4px;font-size:.5rem;font-weight:800;color:#3070b0}
-.login-alert.warn{background:rgba(224,64,64,.04);border-color:rgba(224,64,64,.06);color:#c03030}
-.login-alert.good{background:rgba(34,197,94,.04);border-color:rgba(34,197,94,.06);color:#1a8048}
+/* ═══ GESTION ═══ */
+.gest{margin:0 20px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.gest-tax{padding:14px 16px;border-bottom:1px solid var(--cream)}
+.gest-tax-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.gest-tax-lb{font-size:11px;font-weight:800}
+.gest-tax-v{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--red)}
+.gsl{-webkit-appearance:none;width:100%;height:5px;border-radius:3px;background:var(--line);outline:none}
+.gsl::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--ink);cursor:pointer}
+.gsl::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--ink);cursor:pointer;border:none}
+.gest-tax-info{display:flex;gap:12px;margin-top:8px}
+.gest-tax-i{font-size:9px;font-weight:800}
+.gest-blds{display:flex;gap:6px;padding:14px 16px;overflow-x:auto;scrollbar-width:none}
+.gest-blds::-webkit-scrollbar{display:none}
+.bld{flex-shrink:0;width:92px;text-align:center;cursor:pointer;background:none;border:none;font-family:inherit;padding:0}
+.bld-ic{width:100%;height:56px;border-radius:12px;background:var(--cream);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.bld-ic svg{width:24px;height:24px}
+.bld.wip .bld-ic{border-color:var(--red);background:#fbeceb}
+.bld-n{font-size:9px;font-weight:800}
+.bld-dots{display:flex;gap:2px;justify-content:center;margin:4px 0}
+.bld-d{width:5px;height:5px;border-radius:2px;background:var(--line)}
+.bld-d.on{background:var(--ink)}
+.bld-tg{font-family:'Space Mono',monospace;font-size:8px;font-weight:700;color:var(--mut)}
+
+/* ═══ SIMPLE VIEWS (carte/attaque/rang/profil placeholders riches) ═══ */
+.page-head{padding:20px 20px 0;padding-top:calc(20px + env(safe-area-inset-top))}
+.page-kick{font-size:8.5px;font-weight:900;letter-spacing:3px;color:var(--red);text-transform:uppercase;margin-bottom:8px}
+.page-title{font-family:'Playfair Display',serif;font-weight:900;font-size:32px;line-height:.9;letter-spacing:-1px}
+.page-title em{font-style:italic;color:var(--red)}
+.page-sub{font-size:11px;font-weight:600;color:var(--mut);margin-top:10px;line-height:1.5}
+.empty{margin:30px 20px;padding:30px 20px;text-align:center;border:1.5px dashed var(--line2);border-radius:16px}
+.empty svg{width:32px;height:32px;stroke:var(--mut2);margin-bottom:10px}
+.empty-t{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--mut);margin-bottom:4px}
+.empty-s{font-size:10px;font-weight:600;color:var(--mut2);line-height:1.5}
+
+/* profile stats grid */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px 20px}
+.pcell{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.pcell-v{font-family:'Playfair Display',serif;font-size:26px;font-weight:900}
+.pcell-l{font-size:8px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--mut2);margin-top:2px}
+
+/* ═══ NAV AJ ═══ */
+.nav-w{position:absolute;bottom:0;left:0;right:0;z-index:40;background:#17140f;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.nav{position:relative;display:flex;max-width:480px;margin:0 auto}
+.nav .cap{position:absolute;top:0;bottom:0;width:20%;left:0;padding:0 4px;transition:left .4s cubic-bezier(.34,1.15,.4,1)}
+.nav .cap i{display:block;height:100%;background:var(--cream);border-radius:14px}
+.nav .ni{flex:1;text-align:center;padding:11px 0;position:relative;z-index:2;background:none;border:none;cursor:pointer;font-family:inherit}
+.nav .ni .ic{width:22px;height:22px;stroke:#fff;opacity:.35;transition:all .3s;margin:0 auto}
+.nav .ni.on .ic{stroke:var(--ink);opacity:1}
+.nav .ni .lb{font-size:7px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-top:4px;transition:color .3s}
+.nav .ni.on .lb{color:var(--ink)}
+
+/* toast */
+.toast{position:fixed;left:50%;top:20%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:100px;font-size:11px;font-weight:800;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast.on{opacity:1}
+.float-gain{position:fixed;z-index:60;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;color:var(--gold);pointer-events:none;animation:floatup 1s ease-out forwards}
+
+/* loading */
+.loader{position:fixed;inset:0;background:var(--cream);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.loader .sp{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;animation:spin .8s linear infinite}
+.loader .tx{font-family:'Playfair Display',serif;font-style:italic;font-size:16px;color:var(--mut)}
 </style>
 </head>
 <body>
-<div class="app" id="app">
-  <div class="loading"><div class="loading-text">Chargement...</div></div>
-</div>
+
+<!-- ICON DEFS -->
+<svg width="0" height="0" style="position:absolute"><defs>
+<g id="i-home"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h14V9.5"/><path d="M9.5 20v-6h5v6"/></g>
+<g id="i-map"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z"/><path d="M9 4v13M15 6.5v13"/></g>
+<g id="i-sword"><path d="M14.5 4h5v5l-9 9-2.5-2.5 9-9Z"/><path d="M4 14.5 9.5 20M6.5 17 4 19.5"/></g>
+<g id="i-crown"><path d="M4 8l3 8h10l3-8-5 4-3-6-3 6-5-4Z"/><path d="M6 19h12"/></g>
+<g id="i-user"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.5 3.5-7 8-7s8 2.5 8 7"/></g>
+<g id="i-fire"><path d="M12 3c1 3-1 4-1 6a3 3 0 0 0 6 0c0-1 0-2-1-3 3 2 4 5 4 8a8 8 0 0 1-16 0c0-4 3-6 4-9 1 2 3 2 4-2Z"/></g>
+<g id="i-spy"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></g>
+<g id="i-bomb"><circle cx="11" cy="14" r="7"/><path d="M16 9l3-3M18 5h3M20 3v3"/></g>
+</defs></svg>
+
+<div class="loader" id="loader"><div class="sp"></div><div class="tx">Le Panier s'éveille…</div></div>
 <div class="toast" id="toast"></div>
-<div class="nav">
-  <div class="nav-i on"><div class="nav-ic">🏘️</div><div class="nav-lb">Quartier</div></div>
-  <div class="nav-i"><div class="nav-ic">🗺️</div><div class="nav-lb">Carte</div></div>
-  <div class="nav-i"><div class="nav-ic">⚔️</div><div class="nav-lb">Attaque</div></div>
-  <div class="nav-i"><div class="nav-ic">🏆</div><div class="nav-lb">Rang</div></div>
-  <div class="nav-i"><div class="nav-ic">👤</div><div class="nav-lb">Profil</div></div>
+
+<div class="app">
+  <div class="grain"></div>
+
+  <!-- ═══ VUE QUARTIER ═══ -->
+  <div class="view on" id="v-quartier">
+    <div class="photo">
+      <img src="panier.webp" alt="Le Panier" onerror="this.style.display='none'">
+      <div class="dk"></div>
+      <div class="hfloat">
+        <div class="hf-u"><div class="hf-av"><img id="h-av" src="notionists-1784192915365.png"></div><div class="hf-nm" id="h-nm">…</div></div>
+        <div class="hf-res"><div class="hf-r" id="h-gold">💰 …</div><div class="hf-r" id="h-nrj">⚡ …</div></div>
+      </div>
+    </div>
+    <div class="qcard">
+      <div class="qc-kick" id="q-kick">Quartier · Port de Marseille</div>
+      <div class="qc-name" id="q-name">Le <em>Panier</em></div>
+      <div class="qc-chips" id="q-chips"></div>
+      <div class="qc-xp"><div class="qc-xpbar"><div class="qc-xpfill" id="q-xpfill"></div></div><div class="qc-xptxt" id="q-xptxt">…</div></div>
+    </div>
+
+    <div class="rule"><span>État du quartier</span></div>
+    <div class="stats" id="stats"></div>
+
+    <div class="rule"><span>Revenus</span></div>
+    <div class="collect" id="collect">
+      <div class="shim"></div>
+      <div><div class="cc-v" id="cc-v">+0 or</div><div class="cc-s" id="cc-s">Rien à collecter</div></div>
+      <button class="cc-btn" id="cc-btn">Collecter</button>
+    </div>
+
+    <div class="rule"><span id="todo-label">À traiter</span></div>
+    <div id="items"></div>
+
+    <div class="rule"><span>Classement du quartier</span></div>
+    <div class="classement" id="classement"></div>
+
+    <div class="rule"><span>Gestion</span></div>
+    <div class="gest">
+      <div class="gest-tax">
+        <div class="gest-tax-top"><div class="gest-tax-lb">Imposition</div><div class="gest-tax-v" id="tax-v">15%</div></div>
+        <input type="range" class="gsl" id="tax-sl" min="0" max="40" value="15">
+        <div class="gest-tax-info"><div class="gest-tax-i" id="tax-gold" style="color:var(--green)">+0 or/h</div><div class="gest-tax-i" id="tax-sat" style="color:var(--red)">satisf. -0%</div></div>
+      </div>
+      <div class="gest-blds" id="blds"></div>
+    </div>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ═══ VUE CARTE ═══ -->
+  <div class="view" id="v-carte">
+    <div class="page-head"><div class="page-kick">Territoire</div><div class="page-title">La <em>Carte</em></div><div class="page-sub">Les 24 quartiers de Marseille. Conquiers les territoires voisins pour étendre ton influence.</div></div>
+    <div class="empty"><svg class="ic"><use href="#i-map"/></svg><div class="empty-t">Carte bientôt disponible</div><div class="empty-s">La carte interactive des quartiers arrive dans une prochaine mise à jour.</div></div>
+  </div>
+
+  <!-- ═══ VUE ATTAQUE ═══ -->
+  <div class="view" id="v-attaque">
+    <div class="page-head"><div class="page-kick">Offensive</div><div class="page-title">L'<em>Attaque</em></div><div class="page-sub">Lance des offensives sur les quartiers rivaux. Il te faut de l'énergie et de l'or.</div></div>
+    <div class="empty"><svg class="ic"><use href="#i-sword"/></svg><div class="empty-t">Aucune cible pour l'instant</div><div class="empty-s">Monte au niveau 3 pour débloquer la conquête des quartiers voisins.</div></div>
+  </div>
+
+  <!-- ═══ VUE RANG ═══ -->
+  <div class="view" id="v-rang">
+    <div class="page-head"><div class="page-kick">Prestige</div><div class="page-title">Le <em>Rang</em></div></div>
+    <div class="rule"><span>Classement général</span></div>
+    <div class="classement" id="rang-list"></div>
+  </div>
+
+  <!-- ═══ VUE PROFIL ═══ -->
+  <div class="view" id="v-profil">
+    <div class="page-head"><div class="page-kick" id="p-kick">Nouveau</div><div class="page-title" id="p-name">…</div><div class="page-sub" id="p-bio"></div></div>
+    <div class="pgrid" id="p-grid"></div>
+    <div style="padding:0 20px"><button class="item-btn btn-ghost" id="logout" style="width:100%;padding:13px">Se déconnecter</button></div>
+  </div>
+
+  <!-- ═══ NAV ═══ -->
+  <div class="nav-w"><div class="nav" id="nav">
+    <div class="cap" id="nav-cap"><i></i></div>
+    <button class="ni on" data-v="quartier"><svg class="ic"><use href="#i-home"/></svg><div class="lb">Quartier</div></button>
+    <button class="ni" data-v="carte"><svg class="ic"><use href="#i-map"/></svg><div class="lb">Carte</div></button>
+    <button class="ni" data-v="attaque"><svg class="ic"><use href="#i-sword"/></svg><div class="lb">Attaque</div></button>
+    <button class="ni" data-v="rang"><svg class="ic"><use href="#i-crown"/></svg><div class="lb">Rang</div></button>
+    <button class="ni" data-v="profil"><svg class="ic"><use href="#i-user"/></svg><div class="lb">Profil</div></button>
+  </div></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPA_URL='https://snqynahqxqjmdigbmiag.supabase.co';
-const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucXluYWhxeHFqbWRpZ2JtaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzQyMTksImV4cCI6MjA5OTc1MDIxOX0.eLMtvtEtvrfSSSi7-SCgo_wGMLWbhWpLSLM49QwpqY8';
-const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+// ═══════════════════════════════════════════
+// CONFIG SUPABASE
+// ═══════════════════════════════════════════
+const SB_URL = 'https://snqynahqxqjmdigbmiag.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucXluYWhxeHFqbWRpZ2JtaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzQyMTksImV4cCI6MjA5OTc1MDIxOX0.eLMtvtEtvrfSSSi7-SCgo_wGMLWbhWpLSLM49QwpqY8';
+const sb = supabase.createClient(SB_URL, SB_KEY);
 
-const buildingMeta={
-  logements:{e:'🏠',n:'Logements'},theatre:{e:'🎭',n:'Théâtre'},musee:{e:'🏛️',n:'Musée'},caserne:{e:'🛡️',n:'Caserne'},
-  concert:{e:'🎤',n:'Concert'},galerie:{e:'🖼️',n:'Galerie'},bar:{e:'🍻',n:'Bar'},streetart:{e:'🎨',n:'Street Art'},
-  marche:{e:'🛒',n:'Marché'},hammam:{e:'🛁',n:'Hammam'},port:{e:'⚓',n:'Port'},plage:{e:'🏖️',n:'Plage'},
-  guet:{e:'🔭',n:'Tour de guet'},poissons:{e:'🐟',n:'Poissonnerie'},entrepot:{e:'📦',n:'Entrepôt'},bureaux:{e:'🏢',n:'Bureaux'},
-  dock:{e:'🚢',n:'Dock'},scene:{e:'🎪',n:'Scène'},skatepark:{e:'🛹',n:'Skatepark'},gare:{e:'🚂',n:'Gare'},
-  hotel:{e:'🏨',n:'Hôtel'},surf:{e:'🏄',n:'Surf'},restaurant:{e:'🍽️',n:'Restaurant'},ecole:{e:'🏫',n:'École'},
-  parc:{e:'🌳',n:'Parc'},voilier:{e:'⛵',n:'Club nautique'}
-};
-const buildCosts=[0,150,280,450,700,1000];
-const statColors={satisfaction:'#22c55e',securite:'#f0a040',infra:'#8b5cf6',population:'#3b82f6'};
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let ME = null;         // player row
+let QUARTIER = null;   // player_quartiers row
+let RIVALS = [];       // other players in quartier
+let EVENTS = [];       // quartier_events
+let DEMANDS = [];      // quartier_demands
+let RANKING = [];      // general ranking
 
-let player=null,quartiers=[],activeQ=null,events=[],demands=[],loginAlerts=[];
+const TITRES = ['Nouveau','Habitant','Caïd','Parrain','Baron','Sénateur','Gouverneur','Légende'];
+const XP_PALIERS = [0,100,300,600,1000,1500,2500,4000];
 
-(async()=>{
-  const{data:{session}}=await sb.auth.getSession();
-  if(!session){window.location.href='index.html';return}
+const $ = s => document.querySelector(s);
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-  const{data:p}=await sb.from('players').select('*').eq('id',session.user.id).maybeSingle();
-  if(!p||!p.onboarding_done){window.location.href='profil.html';return}
-  player=p;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
 
-  // Process expired stuff
-  const{data:alerts}=await sb.rpc('process_login',{p_player_id:player.id});
-  if(alerts&&alerts.length) loginAlerts=alerts;
+function titreFor(xp){let i=0;for(let k=0;k<XP_PALIERS.length;k++){if(xp>=XP_PALIERS[k])i=k;}return {titre:TITRES[i],level:i+1,idx:i};}
+function xpProgress(xp){const {idx}=titreFor(xp);const cur=XP_PALIERS[idx];const next=XP_PALIERS[idx+1]||cur+1000;return {cur:xp-cur,need:next-cur,pct:Math.min(100,Math.round((xp-cur)/(next-cur)*100))};}
 
-  // Refresh player data after processing
-  const{data:p2}=await sb.from('players').select('*').eq('id',player.id).maybeSingle();
-  if(p2) player=p2;
+// ═══════════════════════════════════════════
+// AUTH + LOAD
+// ═══════════════════════════════════════════
+async function init(){
+  const {data:{session}} = await sb.auth.getSession();
+  if(!session){ location.href='index.html'; return; }
+  await loadAll();
+  $('#loader').style.display='none';
+}
 
-  const{data:qs}=await sb.from('player_quartiers').select('*').eq('player_id',player.id);
-  quartiers=qs||[];
+async function loadAll(){
+  const uid = (await sb.auth.getUser()).data.user.id;
 
-  if(!quartiers.length){
-    document.getElementById('app').innerHTML='<div class="loading"><div style="font-size:1.5rem">⚠️</div><div class="loading-text">Aucun quartier trouvé</div><button onclick="location.href=\'profil.html\'" style="margin-top:8px;padding:10px 20px;background:#c07840;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:.7rem;font-weight:900;cursor:pointer">Réessayer</button></div>';
-    return;
+  // player
+  let {data:player} = await sb.from('players').select('*').eq('id',uid).single();
+  if(!player){ location.href='profil.html'; return; }
+  ME = player;
+  if(!ME.onboarding_done){ location.href='profil.html'; return; }
+
+  // process login (server-side: regen énergie, revenus, expiration events...)
+  try{ await sb.rpc('process_login'); }catch(e){ console.warn('process_login',e); }
+  // reload player after process
+  ({data:player} = await sb.from('players').select('*').eq('id',uid).single());
+  ME = player;
+
+  // quartier du joueur
+  let {data:pq} = await sb.from('player_quartiers').select('*').eq('player_id',uid).limit(1).single();
+  QUARTIER = pq;
+
+  if(QUARTIER){
+    // rivals
+    const {data:rv} = await sb.from('player_quartiers')
+      .select('*, players(pseudo, avatar, xp)')
+      .eq('quartier_ref', QUARTIER.quartier_ref)
+      .neq('player_id', uid);
+    RIVALS = rv||[];
+
+    // events + demands
+    const {data:ev} = await sb.from('quartier_events').select('*').eq('player_quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
+    EVENTS = ev||[];
+    const {data:dm} = await sb.from('quartier_demands').select('*').eq('player_quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
+    DEMANDS = dm||[];
   }
 
-  activeQ=quartiers[0];
-  await loadQuartierData();
+  // ranking général (top par xp)
+  const {data:rk} = await sb.from('players').select('pseudo,avatar,xp').eq('onboarding_done',true).order('xp',{ascending:false}).limit(20);
+  RANKING = rk||[];
+
   render();
-})();
-
-async function loadQuartierData(){
-  const{data:ev}=await sb.from('quartier_events').select('*').eq('quartier_id',activeQ.id).eq('resolved',false).order('created_at',{ascending:false});
-  events=ev||[];
-  const{data:dm}=await sb.from('quartier_demands').select('*').eq('quartier_id',activeQ.id).eq('resolved',false).order('urgency',{ascending:false});
-  demands=dm||[];
 }
 
-function timeLeft(dt){
-  const diff=new Date(dt)-Date.now();
-  if(diff<=0)return'Expiré';
-  const h=Math.floor(diff/3600000);const m=Math.floor((diff%3600000)/60000);
-  return h>0?h+'h'+String(m).padStart(2,'0'):m+'min';
-}
-
+// ═══════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════
 function render(){
-  const app=document.getElementById('app');
-  let h='';
+  renderHeader();
+  renderStats();
+  renderCollect();
+  renderItems();
+  renderClassement();
+  renderGestion();
+  renderProfil();
+  renderRang();
+}
 
-  // Resources
-  h+=`<div class="res-strip">
-    <div class="res-item res-gold"><span class="ri">💰</span><span>${player.or_total}</span></div>
-    <div class="res-item res-energy"><span class="ri">⚡</span><span>${player.energie}/${player.energie_max}</span></div>
-    <div class="res-item res-rep"><span class="ri">⭐</span><span>${player.reputation}%</span></div>
-  </div>`;
+function renderHeader(){
+  const t = titreFor(ME.xp||0);
+  $('#h-av').src = ME.avatar || 'notionists-1784192915365.png';
+  $('#h-nm').textContent = ME.pseudo || 'Joueur';
+  $('#h-gold').textContent = '💰 '+ (ME.or??0).toLocaleString('fr-FR');
+  $('#h-nrj').textContent = '⚡ '+ (ME.energie??0);
 
-  // Switcher
-  if(quartiers.length>1){
-    h+=`<div class="switcher">`;
-    quartiers.forEach(q=>{
-      h+=`<div class="sw-q ${q.id===activeQ.id?'on':''}" onclick="switchQ('${q.id}')">
-        <div class="sw-dot" style="background:${q.color_bg}"></div>
-        <div class="sw-name">${q.nom}</div>
-      </div>`;
-    });
-    h+=`</div>`;
+  if(QUARTIER){
+    $('#q-name').innerHTML = formatQName(QUARTIER.nom || 'Le Panier');
+    const chips = [];
+    if(QUARTIER.type) chips.push(esc(QUARTIER.type));
+    if(isChef()) chips.push('👑 Chef');
+    chips.push((QUARTIER.population??0).toLocaleString('fr-FR')+' hab.');
+    chips.push((RIVALS.length+1)+' joueur'+(RIVALS.length?'s':''));
+    $('#q-chips').innerHTML = chips.map(c=>`<div class="chip">${esc(c)}</div>`).join('');
   }
+  const xp = xpProgress(ME.xp||0);
+  $('#q-xpfill').style.width = xp.pct+'%';
+  $('#q-xptxt').textContent = `${t.titre} · ${xp.cur}/${xp.need} XP`;
+}
+function formatQName(n){
+  // met le dernier mot en italique rouge
+  const parts = String(n).trim().split(' ');
+  if(parts.length===1) return `<em>${esc(n)}</em>`;
+  const last = parts.pop();
+  return esc(parts.join(' '))+' <em>'+esc(last)+'</em>';
+}
+function isChef(){
+  if(!QUARTIER) return false;
+  const mySat = QUARTIER.satisfaction??0;
+  return RIVALS.every(r => (r.satisfaction??0) <= mySat);
+}
 
-  h+=`<div class="scroll">`;
+function renderStats(){
+  if(!QUARTIER){ $('#stats').innerHTML=''; return; }
+  const rows = [
+    ['Satisfaction', QUARTIER.satisfaction??0, '#4a9a5a'],
+    ['Sécurité', QUARTIER.securite??0, '#e8b04a'],
+    ['Infrastructure', QUARTIER.infrastructure??0, '#c0392b'],
+  ];
+  $('#stats').innerHTML = rows.map(([lb,v,c])=>`
+    <div class="stat"><div class="stat-lb">${lb}</div>
+    <div class="stat-tk"><div class="stat-fl" style="width:${v}%;background:${c}"></div></div>
+    <div class="stat-v" style="color:${c}">${v}%</div></div>`).join('');
+}
 
-  // Login alerts
-  if(loginAlerts.length){
-    h+=`<div class="login-alerts">`;
-    loginAlerts.forEach(a=>{
-      if(a.type==='energy') h+=`<div class="login-alert good">⚡ +${a.gained} énergie récupérée</div>`;
-      if(a.type==='event_expired') h+=`<div class="login-alert warn">⏰ "${a.title}" a expiré</div>`;
-      if(a.type==='demand_expired') h+=`<div class="login-alert warn">📢 "${a.title}" ignorée (${a.effect}%)</div>`;
-      if(a.type==='build_done') h+=`<div class="login-alert good">🏗️ ${a.building} terminé à ${a.quartier} !</div>`;
-    });
-    h+=`</div>`;
-  }
+function renderCollect(){
+  if(!QUARTIER){ return; }
+  const pending = QUARTIER.or_accumule ?? 0;
+  $('#cc-v').textContent = '+'+pending+' or';
+  $('#cc-s').textContent = pending>0 ? 'Revenus accumulés' : 'Rien à collecter';
+  const btn = $('#cc-btn');
+  btn.disabled = pending<=0;
+  $('#collect').classList.toggle('rdy', pending>0);
+}
 
-  // Quartier header
-  h+=`<div class="q-head">
-    <div class="q-color" style="background:${activeQ.color_bg}">🏘️</div>
-    <div class="q-info">
-      <div class="q-name">${activeQ.nom}</div>
-      <div class="q-type">${activeQ.type_quartier} · ${activeQ.population} habitants</div>
-      <div class="q-bons">${activeQ.bonus_1?`<div class="q-bon">${activeQ.bonus_1}</div>`:''}${activeQ.bonus_2?`<div class="q-bon">${activeQ.bonus_2}</div>`:''}</div>
-    </div>
-  </div>`;
-
-  // Stats
-  h+=`<div class="stats">
-    <div class="stat"><div class="stat-e">😊</div><div class="stat-v" style="color:#22c55e">${activeQ.satisfaction}%</div><div class="stat-l">Satisf.</div><div class="stat-bar"><div class="stat-fill" style="width:${activeQ.satisfaction}%;background:#22c55e"></div></div></div>
-    <div class="stat"><div class="stat-e">🛡️</div><div class="stat-v" style="color:#f0a040">${activeQ.securite}%</div><div class="stat-l">Sécu.</div><div class="stat-bar"><div class="stat-fill" style="width:${activeQ.securite}%;background:#f0a040"></div></div></div>
-    <div class="stat"><div class="stat-e">🏗️</div><div class="stat-v" style="color:#8b5cf6">${activeQ.infra}%</div><div class="stat-l">Infra</div><div class="stat-bar"><div class="stat-fill" style="width:${activeQ.infra}%;background:#8b5cf6"></div></div></div>
-  </div>`;
-
-  // Collect
-  const hoursSince=((Date.now()-new Date(activeQ.last_collect).getTime())/3600000);
-  const goldAvail=Math.max(0,Math.floor(activeQ.population*activeQ.tax_rate/100*hoursSince*0.1));
-  h+=`<div class="sec-l">💰 Revenus</div>`;
-  h+=`<div class="collect-card ${goldAvail<1?'empty':''}" onclick="collectGold()">
-    <div class="cc-shimmer"></div><div class="cc-emoji">💰</div>
-    <div class="cc-val">${goldAvail>0?'+'+goldAvail+' or à collecter':'Rien à collecter'}</div>
-    <div class="cc-sub">${goldAvail>0?'Appuie pour récupérer':'Reviens plus tard'}</div>
-  </div>`;
-
-  // Events
-  if(events.length){
-    h+=`<div class="sec-l">⚠️ Événements</div>`;
-    events.forEach(ev=>{
-      h+=`<div class="event">
-        <div class="ev-timer">⏱ ${timeLeft(ev.expires_at)}</div>
-        <div class="ev-emoji">${ev.emoji}</div>
-        <div class="ev-title">${ev.title}</div>
-        <div class="ev-desc">${ev.description}</div>
-        <div class="ev-btns">
-          <div class="ev-btn yes" onclick="resolveEvent('${ev.id}','a')">${ev.choice_a_label}<span class="cost">${ev.choice_a_cost>0?'-'+ev.choice_a_cost+' or':'Gratuit'}</span></div>
-          <div class="ev-btn no" onclick="resolveEvent('${ev.id}','b')">${ev.choice_b_label}</div>
-        </div>
-      </div>`;
-    });
-  }
-
-  // Demands
-  if(demands.length){
-    h+=`<div class="sec-l">📢 Demandes</div>`;
-    demands.forEach(d=>{
-      const urgColors=['#22c55e','#f0a040','#e04040'];
-      const uc=urgColors[Math.min(d.urgency-1,2)];
-      h+=`<div class="dem">
-        <div class="dem-emoji">${d.emoji}</div>
-        <div class="dem-info">
-          <div class="dem-title">${d.title}</div>
-          <div class="dem-sub">Ignorer = ${d.ignore_value}% ${d.ignore_field}</div>
-          <div class="dem-timer">⏱ ${timeLeft(d.expires_at)}</div>
-          <div class="dem-urg">${[1,2,3,4,5].map(i=>`<div class="dem-dot" style="background:${i<=d.urgency?uc:'#ece4d8'}"></div>`).join('')}</div>
-        </div>
-        <div class="dem-btn" onclick="resolveDemand('${d.id}',true)">${d.cost} 💰</div>
-      </div>`;
-    });
-  }
-
-  if(!events.length&&!demands.length) h+=`<div class="no-items">Aucun événement ni demande pour le moment 🎉</div>`;
-
-  // Tax
-  h+=`<div class="sec-l">💸 Imposition</div>
-  <div class="tax">
-    <div class="tax-head"><div class="tax-emoji">💸</div><div class="tax-info"><div class="tax-title">Taux d'imposition</div><div class="tax-sub">Plus tu taxes, plus tu gagnes — mais tes habitants râlent</div></div><div class="tax-pct" id="taxVal">${activeQ.tax_rate}%</div></div>
-    <input type="range" class="tax-slider" min="0" max="40" value="${activeQ.tax_rate}" oninput="updateTaxUI(this.value)" onchange="saveTax(this.value)">
-    <div class="tax-res" id="taxRes"></div>
-  </div>`;
-
-  // Buildings
-  const blds=activeQ.buildings||{};
-  h+=`<div class="sec-l">🏗️ Bâtiments</div><div class="builds-scroll">`;
-  Object.keys(blds).forEach(bid=>{
-    const lvl=blds[bid]||0;
-    const meta=buildingMeta[bid]||{e:'🏠',n:bid};
-    const cost=buildCosts[Math.min(lvl,5)];
-    const isBuilding=activeQ.building_in_progress===bid&&activeQ.building_finish_at&&new Date(activeQ.building_finish_at)>new Date();
-    let btnClass,btnText,timer='';
-    if(isBuilding){btnClass='in-progress';btnText='🔨 En cours';timer=`<div class="bld-timer">⏱ ${timeLeft(activeQ.building_finish_at)}</div>`}
-    else if(lvl>=5){btnClass='max';btnText='MAX'}
-    else if(lvl===0){btnClass='build-new';btnText='+ '+cost+' 💰'}
-    else{btnClass='upgrade';btnText='↑ '+cost+' 💰'}
-    h+=`<div class="bld ${isBuilding?'building':''}" onclick="${isBuilding?'':`upgradeBld('${bid}',${cost})`}">
-      <div class="bld-emoji">${meta.e}</div><div class="bld-name">${meta.n}</div>
-      <div class="bld-dots">${[1,2,3,4,5].map(i=>`<div class="bld-d ${i<=lvl?'on':''}"></div>`).join('')}</div>
-      <div class="bld-up ${btnClass}">${btnText}</div>${timer}
-    </div>`;
+const EV_ICON = {fire:'i-fire', default:'i-fire'};
+function renderItems(){
+  const wrap = $('#items');
+  const total = EVENTS.length + DEMANDS.length;
+  $('#todo-label').textContent = total? `À traiter · ${total} en attente` : 'À traiter';
+  if(!total){ wrap.innerHTML = `<div style="margin:0 20px;padding:20px;text-align:center;border:1.5px dashed var(--line2);border-radius:16px"><div style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--mut)">Tout est calme au Panier</div><div style="font-size:10px;font-weight:600;color:var(--mut2);margin-top:4px">Reviens plus tard, de nouveaux événements arriveront.</div></div>`; return; }
+  let html='';
+  EVENTS.forEach(ev=>{
+    html += `<div class="item">
+      <div class="item-top">
+        <div class="item-badge" style="background:#fbe9e7"><svg class="ic" style="stroke:#c0392b"><use href="#i-fire"/></svg></div>
+        <div class="item-mid"><div class="item-cat" style="color:var(--red)">Événement</div><div class="item-t">${esc(ev.titre)}</div></div>
+        <div class="item-timer" style="color:var(--red)">${timeLeft(ev.expires_at)}</div>
+      </div>
+      <div class="item-d">${esc(ev.description||'')}</div>
+      <div class="item-btns">
+        <button class="item-btn btn-primary" onclick="resolveEvent('${ev.id}',true)">${esc(ev.action_label||'Agir')} · ${ev.cost||0} or</button>
+        <button class="item-btn btn-ghost" onclick="resolveEvent('${ev.id}',false)">Ignorer</button>
+      </div></div>`;
   });
-  h+=`</div>`;
-
-  h+=`</div>`; // scroll
-  app.innerHTML=h;
-  updateTaxUI(activeQ.tax_rate);
-
-  // Clear login alerts after first render
-  loginAlerts=[];
+  DEMANDS.forEach(dm=>{
+    html += `<div class="item">
+      <div class="item-top">
+        <div class="item-badge" style="background:#f4ede0"><svg class="ic" style="stroke:#b08838"><use href="#i-home"/></svg></div>
+        <div class="item-mid"><div class="item-cat" style="color:#b08838">Demande citoyenne</div><div class="item-t">${esc(dm.titre)}</div></div>
+        <div class="item-timer" style="color:#b08838">${timeLeft(dm.expires_at)}</div>
+      </div>
+      <div class="item-btns">
+        <button class="item-btn btn-primary" onclick="resolveDemand('${dm.id}',true)">${esc(dm.action_label||'Accepter')} · ${dm.cost||0} or</button>
+        <button class="item-btn btn-ghost" onclick="resolveDemand('${dm.id}',false)">Ignorer</button>
+      </div></div>`;
+  });
+  wrap.innerHTML = html;
+}
+function timeLeft(iso){
+  if(!iso) return '';
+  const ms = new Date(iso)-new Date();
+  if(ms<=0) return 'expiré';
+  const h=Math.floor(ms/3.6e6), m=Math.floor(ms%3.6e6/6e4);
+  return h>0? `${h}h${String(m).padStart(2,'0')}` : `${m}min`;
 }
 
-function updateTaxUI(v){
-  const el=document.getElementById('taxVal');if(el)el.textContent=v+'%';
-  const income=Math.round(v*(activeQ.population/1000)*0.5);
-  const satisf=Math.round(v*0.2);
-  const r=document.getElementById('taxRes');
-  if(r)r.innerHTML=`<div class="tax-r pos">💰 +${income} or/h</div><div class="tax-r ${satisf>5?'neg':'pos'}">😊 ${satisf>0?'-'+satisf:'0'}% satisf.</div>`;
+function renderClassement(){
+  const el = $('#classement');
+  const list = [{me:true,pseudo:ME.pseudo,avatar:ME.avatar,xp:ME.xp,sat:QUARTIER?.satisfaction??0}]
+    .concat(RIVALS.map(r=>({me:false,pseudo:r.players?.pseudo||'?',avatar:r.players?.avatar,xp:r.players?.xp||0,sat:r.satisfaction??0,pid:r.player_id})));
+  list.sort((a,b)=> b.sat-a.sat);
+  el.innerHTML = list.map((p,i)=>{
+    const t=titreFor(p.xp||0);
+    return `<div class="cl-p ${p.me?'you':''}">
+      <div class="cl-rk">${i+1}</div>
+      <div class="cl-av"><img src="${esc(p.avatar||'notionists-1784192915365.png')}"></div>
+      <div class="cl-inf"><div class="cl-nm">${esc(p.pseudo)}${p.me?' (toi)':''}</div><div class="cl-sb">${t.titre} · Niv. ${t.level}</div></div>
+      <div class="cl-sat" style="color:${p.sat>=70?'#4a9a5a':p.sat>=40?'#e8b04a':'#c0392b'}">${p.sat}%</div>
+      ${p.me?'':`<div class="cl-btns"><button class="cl-btn" onclick="spy('${p.pid}')"><svg class="ic"><use href="#i-spy"/></svg></button><button class="cl-btn" onclick="sabotage('${p.pid}')"><svg class="ic"><use href="#i-bomb"/></svg></button></div>`}
+    </div>`;
+  }).join('');
 }
 
-let taxTimeout;
-function saveTax(v){
-  clearTimeout(taxTimeout);
-  taxTimeout=setTimeout(async()=>{
-    await sb.rpc('set_tax_rate',{p_quartier_id:activeQ.id,p_rate:parseInt(v)});
-    activeQ.tax_rate=parseInt(v);
-    toast('Taux mis à jour');
-  },500);
+const BLD_ICONS={'Logements':'i-home','Théâtre':'i-crown','Musée':'i-crown','Caserne':'i-sword'};
+function renderGestion(){
+  if(!QUARTIER){return;}
+  // tax
+  const tax = QUARTIER.taux_imposition ?? 15;
+  $('#tax-sl').value = tax; $('#tax-v').textContent = tax+'%';
+  updateTaxInfo(tax);
+  // buildings
+  const blds = QUARTIER.batiments || defaultBlds();
+  $('#blds').innerHTML = blds.map(b=>{
+    const dots = Array.from({length:5},(_,i)=>`<div class="bld-d ${i<b.niveau?'on':''}"></div>`).join('');
+    const ic = BLD_ICONS[b.nom]||'i-home';
+    const tag = b.wip? `🔨 ${b.wip}` : (b.niveau>0? `↑ ${b.cout} or` : `+ ${b.cout} or`);
+    return `<button class="bld ${b.wip?'wip':''}" onclick="upgradeBld('${esc(b.nom)}')">
+      <div class="bld-ic"><svg class="ic"><use href="#${ic}"/></svg></div>
+      <div class="bld-n">${esc(b.nom)}</div>
+      <div class="bld-dots">${dots}</div>
+      <div class="bld-tg" ${b.wip?'style="color:var(--red)"':''}>${tag}</div></button>`;
+  }).join('');
+}
+function defaultBlds(){return [
+  {nom:'Logements',niveau:2,cout:280},{nom:'Théâtre',niveau:1,cout:200,wip:'7min'},
+  {nom:'Musée',niveau:0,cout:350},{nom:'Caserne',niveau:1,cout:150},
+];}
+function updateTaxInfo(tax){
+  const pop = QUARTIER?.population||1000;
+  const goldH = Math.round(pop*tax/100*0.5);
+  const satImpact = Math.round(tax/5);
+  $('#tax-gold').textContent = `+${goldH} or/h`;
+  $('#tax-sat').textContent = `satisf. -${satImpact}%`;
 }
 
-async function collectGold(){
-  const{data}=await sb.rpc('collect_gold',{p_quartier_id:activeQ.id});
-  if(data&&data.gold){
-    player.or_total=data.total;activeQ.last_collect=new Date().toISOString();
-    toast(`+${data.gold} or collecté !`);render();
-  }else if(data&&data.error==='too_soon'){toast('Trop tôt pour collecter')}
+function renderProfil(){
+  const t=titreFor(ME.xp||0);
+  $('#p-kick').textContent = t.titre;
+  $('#p-name').innerHTML = formatQName(ME.pseudo||'Joueur');
+  $('#p-bio').textContent = ME.bio || 'Aucune bio pour le moment.';
+  const xp=xpProgress(ME.xp||0);
+  const cells=[
+    ['or',(ME.or??0).toLocaleString('fr-FR'),'Or'],
+    ['nrj',(ME.energie??0)+'/5','Énergie'],
+    ['niv','Niv. '+t.level,'Niveau'],
+    ['xp',(ME.xp??0),'XP total'],
+    ['rep',(ME.reputation??0)+'%','Réputation'],
+    ['quart',QUARTIER?formatQNametxt(QUARTIER.nom):'—','Quartier'],
+  ];
+  $('#p-grid').innerHTML = cells.map(([k,v,l])=>`<div class="pcell"><div class="pcell-v">${esc(v)}</div><div class="pcell-l">${l}</div></div>`).join('');
+}
+function formatQNametxt(n){return esc(n||'—');}
+
+function renderRang(){
+  $('#rang-list').innerHTML = RANKING.map((p,i)=>{
+    const t=titreFor(p.xp||0);const me=p.pseudo===ME.pseudo;
+    return `<div class="cl-p ${me?'you':''}">
+      <div class="cl-rk">${i+1}</div>
+      <div class="cl-av"><img src="${esc(p.avatar||'notionists-1784192915365.png')}"></div>
+      <div class="cl-inf"><div class="cl-nm">${esc(p.pseudo)}${me?' (toi)':''}</div><div class="cl-sb">${t.titre}</div></div>
+      <div class="cl-sat" style="color:var(--ink)">${(p.xp||0).toLocaleString('fr-FR')}</div>
+    </div>`;
+  }).join('');
 }
 
-async function upgradeBld(bid,cost){
-  if(player.or_total<cost){toast('Pas assez d\'or');return}
-  const{data}=await sb.rpc('upgrade_building',{p_quartier_id:activeQ.id,p_building:bid,p_cost:cost});
-  if(data&&data.error==='already_building'){toast('Construction en cours !');return}
-  if(data&&data.error==='not_enough_gold'){toast('Pas assez d\'or');return}
-  if(data&&data.error==='max_level'){toast('Niveau max');return}
-  if(data&&data.finish_at){
-    activeQ.building_in_progress=bid;
-    activeQ.building_finish_at=data.finish_at;
-    player.or_total=data.remaining_gold;
-    toast(`${buildingMeta[bid]?.n||bid} en construction ! (${data.minutes}min)`);render();
-  }
+// ═══════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════
+$('#cc-btn').onclick = async ()=>{
+  const btn=$('#cc-btn'); btn.disabled=true;
+  const gain = QUARTIER.or_accumule||0;
+  try{
+    const {error} = await sb.rpc('collect_gold');
+    if(error) throw error;
+    floatGain('+'+gain+' or');
+    await loadAll();
+    toast('Revenus collectés');
+  }catch(e){ toast('Erreur de collecte'); btn.disabled=false; }
+};
+function floatGain(txt){
+  const el=document.createElement('div');el.className='float-gain';el.textContent=txt;
+  const r=$('#collect').getBoundingClientRect();
+  el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+20)+'px';
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1000);
 }
 
-async function resolveEvent(id,choice){
-  const{data}=await sb.rpc('resolve_event',{p_event_id:id,p_choice:choice});
-  if(data&&data.ok){await refresh();toast('Choix appliqué');render()}
-  else if(data&&data.error==='not_enough_gold'){toast('Pas assez d\'or')}
-}
+window.resolveEvent = async (id,accept)=>{
+  try{
+    const {error}=await sb.rpc('resolve_event',{p_event_id:id,p_accept:accept});
+    if(error) throw error;
+    await loadAll(); toast(accept?'Événement traité':'Événement ignoré');
+  }catch(e){ toast('Action impossible'); }
+};
+window.resolveDemand = async (id,accept)=>{
+  try{
+    const {error}=await sb.rpc('resolve_demand',{p_demand_id:id,p_accept:accept});
+    if(error) throw error;
+    await loadAll(); toast(accept?'Demande satisfaite':'Demande ignorée');
+  }catch(e){ toast('Action impossible'); }
+};
+window.upgradeBld = async (nom)=>{
+  try{
+    const {error}=await sb.rpc('upgrade_building',{p_batiment:nom});
+    if(error) throw error;
+    await loadAll(); toast(nom+' amélioré');
+  }catch(e){ toast('Pas assez d\'or'); }
+};
+window.spy = async (pid)=>{
+  try{
+    const {data,error}=await sb.rpc('espionner',{p_cible:pid});
+    if(error) throw error; toast('Espionnage réussi'); await loadAll();
+  }catch(e){ toast('Espionnage impossible (énergie ?)'); }
+};
+window.sabotage = async (pid)=>{
+  try{
+    const {error}=await sb.rpc('sabotage',{p_cible:pid});
+    if(error) throw error; toast('Sabotage lancé'); await loadAll();
+  }catch(e){ toast('Sabotage impossible'); }
+};
 
-async function resolveDemand(id,accept){
-  const{data}=await sb.rpc('resolve_demand',{p_demand_id:id,p_accept:accept});
-  if(data&&data.ok){await refresh();toast(accept?'Demande acceptée':'Demande ignorée');render()}
-  else if(data&&data.error==='not_enough_gold'){toast('Pas assez d\'or')}
-}
+// tax slider
+$('#tax-sl').oninput = e=>{ $('#tax-v').textContent=e.target.value+'%'; updateTaxInfo(+e.target.value); };
+$('#tax-sl').onchange = async e=>{
+  try{ await sb.rpc('set_tax',{p_taux:+e.target.value}); toast('Imposition mise à jour'); }
+  catch(err){ toast('Erreur'); }
+};
 
-async function refresh(){
-  const{data:q}=await sb.from('player_quartiers').select('*').eq('id',activeQ.id).maybeSingle();
-  if(q){activeQ=q;const idx=quartiers.findIndex(x=>x.id===q.id);if(idx>=0)quartiers[idx]=q}
-  const{data:p}=await sb.from('players').select('*').eq('id',player.id).maybeSingle();
-  if(p)player=p;
-  await loadQuartierData();
-}
+// logout
+$('#logout').onclick = async()=>{ await sb.auth.signOut(); location.href='index.html'; };
 
-async function switchQ(qid){
-  activeQ=quartiers.find(q=>q.id===qid);
-  await loadQuartierData();render();
-}
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+const navBtns=[...document.querySelectorAll('.nav .ni')];
+const cap=$('#nav-cap');
+navBtns.forEach((b,i)=>{
+  b.onclick=()=>{
+    navBtns.forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    cap.style.left=(i*20)+'%';
+    const v=b.dataset.v;
+    document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+    $('#v-'+v).classList.add('on');
+    document.querySelector('.view.on').scrollTop=0;
+  };
+});
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+// GO
+init();
 </script>
 </body>
 </html>
