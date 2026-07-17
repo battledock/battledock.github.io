@@ -185,7 +185,7 @@ svg{display:block}
 <g id="i-bomb"><circle cx="11" cy="14" r="7"/><path d="M16 9l3-3M18 5h3M20 3v3"/></g>
 </defs></svg>
 
-<div class="loader" id="loader"><div class="sp"></div><div class="tx">Le Panier s'éveille…</div></div>
+<div class="loader" id="loader"><div class="sp"></div><div class="tx">Marseille s'éveille…</div></div>
 <div class="toast" id="toast"></div>
 
 <div class="app">
@@ -194,7 +194,7 @@ svg{display:block}
   <!-- ═══ VUE QUARTIER ═══ -->
   <div class="view on" id="v-quartier">
     <div class="photo">
-      <img src="panier.webp" alt="Le Panier" onerror="this.style.display='none'">
+      <img id="q-photo" src="marseille.webp" alt="Quartier" onerror="this.style.display='none'">
       <div class="dk"></div>
       <div class="hfloat">
         <div class="hf-u"><div class="hf-av"><img id="h-av" src="notionists-1784192915365.png"></div><div class="hf-nm" id="h-nm">…</div></div>
@@ -203,7 +203,7 @@ svg{display:block}
     </div>
     <div class="qcard">
       <div class="qc-kick" id="q-kick">Quartier · Port de Marseille</div>
-      <div class="qc-name" id="q-name">Le <em>Panier</em></div>
+      <div class="qc-name" id="q-name">&nbsp;</div>
       <div class="qc-chips" id="q-chips"></div>
       <div class="qc-xp"><div class="qc-xpbar"><div class="qc-xpfill" id="q-xpfill"></div></div><div class="qc-xptxt" id="q-xptxt">…</div></div>
     </div>
@@ -297,6 +297,20 @@ const XP_PALIERS = [0,100,300,600,1000,1500,2500,4000];
 const $ = s => document.querySelector(s);
 const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// nom de quartier -> nom de fichier photo (ex: "St-Charles" -> "st-charles.webp")
+function quartierSlug(nom){
+  return String(nom||'')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'') // enlève accents
+    .replace(/['']/g,'')          // apostrophes
+    .replace(/[^a-z0-9]+/g,'-')   // tout le reste -> tiret
+    .replace(/^-+|-+$/g,'');      // tirets en trop
+}
+function quartierPhoto(nom){
+  const slug = quartierSlug(nom);
+  return slug ? slug+'.webp' : 'marseille.webp';
+}
+
 function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2200);}
 
 function titreFor(xp){let i=0;for(let k=0;k<XP_PALIERS.length;k++){if(xp>=XP_PALIERS[k])i=k;}return {titre:TITRES[i],level:i+1,idx:i};}
@@ -375,7 +389,12 @@ function renderHeader(){
   $('#h-nrj').textContent = '⚡ '+ (ME.energie??0);
 
   if(QUARTIER){
-    $('#q-name').innerHTML = formatQName(QUARTIER.nom || 'Le Panier');
+    $('#q-name').innerHTML = formatQName(QUARTIER.nom || 'Mon quartier');
+    // photo du quartier
+    const ph = $('#q-photo');
+    ph.style.display='';
+    ph.onerror = function(){ if(this.src.indexOf('marseille.webp')<0){ this.src='marseille.webp'; } else { this.style.display='none'; } };
+    ph.src = quartierPhoto(QUARTIER.nom);
     const chips = [];
     if(QUARTIER.type) chips.push(esc(QUARTIER.type));
     if(isChef()) chips.push('👑 Chef');
@@ -428,7 +447,7 @@ function renderItems(){
   const wrap = $('#items');
   const total = EVENTS.length + DEMANDS.length;
   $('#todo-label').textContent = total? `À traiter · ${total} en attente` : 'À traiter';
-  if(!total){ wrap.innerHTML = `<div style="margin:0 20px;padding:20px;text-align:center;border:1.5px dashed var(--line2);border-radius:16px"><div style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--mut)">Tout est calme au Panier</div><div style="font-size:10px;font-weight:600;color:var(--mut2);margin-top:4px">Reviens plus tard, de nouveaux événements arriveront.</div></div>`; return; }
+  if(!total){ const qn=QUARTIER?.nom||'ton quartier'; wrap.innerHTML = `<div style="margin:0 20px;padding:20px;text-align:center;border:1.5px dashed var(--line2);border-radius:16px"><div style="font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--mut)">Tout est calme à ${esc(qn)}</div><div style="font-size:10px;font-weight:600;color:var(--mut2);margin-top:4px">Reviens plus tard, de nouveaux événements arriveront.</div></div>`; return; }
   let html='';
   EVENTS.forEach(ev=>{
     html += `<div class="item">
