@@ -86,7 +86,9 @@ svg{display:block}.ic{stroke-width:1.7;stroke-linecap:round;stroke-linejoin:roun
 .qcard .chip.chef{background:var(--ink);color:#fff;border-color:var(--ink)}
 .qcard .chip svg{width:11px;height:11px}
 .qcard .hab{font-family:'Space Mono',monospace;font-size:9px;font-weight:700;color:var(--mut2);text-align:right;white-space:nowrap}
-.qcard .hab b{display:block;font-size:14px;color:var(--ink)}
+.qcard .hab .cap{display:block;font-size:9px;font-weight:700;color:var(--mut2);letter-spacing:0}
+.hab .cap.full{color:var(--gold-d)}
+.hab b{display:block;font-size:14px;color:var(--ink)}
 
 /* ═══════════ RULE ═══════════ */
 .rule{display:flex;align-items:center;gap:11px;margin:20px 16px 13px}
@@ -369,7 +371,7 @@ svg{display:block}.ic{stroke-width:1.7;stroke-linecap:round;stroke-linejoin:roun
           <input type="range" class="gsl" id="tax-sl" min="0" max="40" value="15">
           <div class="fcons">
             <div class="fc"><div class="v" id="tax-gold" style="color:var(--green)">+0</div><div class="l">Or / heure</div></div>
-            <div class="fc"><div class="v" id="tax-sat" style="color:var(--mut)">stable</div><div class="l">Satisfaction</div></div>
+            <div class="fc"><div class="v" id="tax-sat" style="color:var(--mut)">stable</div><div class="l">Satisf. / j</div></div>
             <div class="fc"><div class="v" id="tax-pop" style="color:var(--green)">+0</div><div class="l">Habitants / j</div></div>
           </div>
           <div id="tax-action"></div>
@@ -445,7 +447,7 @@ const SB_URL = 'https://snqynahqxqjmdigbmiag.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNucXluYWhxeHFqbWRpZ2JtaWFnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzQyMTksImV4cCI6MjA5OTc1MDIxOX0.eLMtvtEtvrfSSSi7-SCgo_wGMLWbhWpLSLM49QwpqY8';
 const sb = supabase.createClient(SB_URL, SB_KEY);
 
-let ME=null, QUARTIER=null, EVENTS=[], DEMANDS=[], RANKING=[];
+let ME=null, QUARTIER=null, EVENTS=[], DEMANDS=[], RANKING=[], PENDING={gold:0};
 const TITRES = ['Nouveau','Habitant','Caïd','Parrain','Baron','Sénateur','Gouverneur','Légende'];
 const XP_PALIERS = [0,100,300,600,1000,1500,2500,4000];
 const $ = s => document.querySelector(s);
@@ -479,6 +481,9 @@ async function loadAll(){
     EVENTS=ev||[];
     const {data:dm}=await sb.from('quartier_demands').select('*').eq('quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
     DEMANDS=dm||[];
+    // or en attente : calculé par le serveur (source de vérité unique)
+    try{const{data:pg}=await sb.rpc('pending_gold',{p_quartier_id:QUARTIER.id});PENDING=(pg&&!pg.error)?pg:{gold:0};}
+    catch(e){PENDING={gold:0};}
   }
   const {data:rk}=await sb.from('players').select('pseudo,avatar,xp').eq('onboarding_done',true).order('xp',{ascending:false}).limit(20);
   RANKING=rk||[];
@@ -516,7 +521,11 @@ function renderQuartier(){
   chips.push('<div class="chip chef"><svg style="fill:#fff" viewBox="0 0 24 24"><use href="#crown-f"/></svg>Chef</div>');
   if(QUARTIER.niveau)chips.push('<div class="chip">Niveau '+QUARTIER.niveau+'</div>');
   $('#q-chips').innerHTML=chips.join('');
-  $('#q-hab').innerHTML='<b>'+(QUARTIER.population??0).toLocaleString('fr-FR')+'</b>habitants';
+  const pop=QUARTIER.population??0,pmax=QUARTIER.pop_max??0;
+  const full=pmax&&pop>=pmax*0.98;
+  $('#q-hab').innerHTML='<b>'+pop.toLocaleString('fr-FR')+'</b>'
+    +(pmax?'<span class="cap'+(full?' full':'')+'">/ '+pmax.toLocaleString('fr-FR')+'</span>':'')
+    +'habitants';
 }
 const IMPROVEMENTS={
   satisfaction:[
@@ -564,23 +573,13 @@ window.improveStat=async(stat,action,gain,cost)=>{
     toast('+'+gain+'% '+STAT_META[stat].lb.toLowerCase());
   }catch(e){toast('Amélioration impossible');}
 };
-// or en attente : même formule que collect_gold() côté SQL
-// (taux 0.35, plafond 12 h hors ligne, +15 % par niveau)
-function pendingGold(){
-  if(!QUARTIER||!QUARTIER.last_collect)return 0;
-  const hours=(Date.now()-new Date(QUARTIER.last_collect).getTime())/3600000;
-  if(hours<0.1)return 0;
-  const capped=Math.min(hours,12);
-  const pop=QUARTIER.population??0,tax=QUARTIER.tax_rate??15;
-  const lvl=1+(Math.max(1,QUARTIER.niveau??1)-1)*0.15;
-  return Math.max(0,Math.floor(pop*tax/100*capped*0.35*lvl));
-}
 function renderCollect(){
   if(!QUARTIER)return;
-  const p=pendingGold();
-  const hours=QUARTIER.last_collect?(Date.now()-new Date(QUARTIER.last_collect).getTime())/3600000:0;
+  const p=PENDING.gold??0;
   $('#cc-v').innerHTML='+'+p.toLocaleString('fr-FR')+' <em>or</em>';
-  $('#cc-s').textContent=p<=0?'Rien à collecter':(hours>=12?'Maximum atteint — collecte !':'Revenus accumulés');
+  $('#cc-s').textContent=p<=0?'Rien à collecter'
+    :PENDING.capped?'Maximum atteint — collecte !'
+    :'Revenus accumulés · '+(PENDING.rate_hour??0)+' or/h';
   $('#cc-btn').disabled=p<=0;
   $('#collect').classList.toggle('rdy',p>0);
 }
@@ -639,10 +638,25 @@ function fillAx(input){
 }
 function updateTaxInfo(tax){
   const pop=QUARTIER?.population||1000;
-  $('#tax-gold').textContent='+'+Math.round(pop*tax/100*0.5);
-  // seuil critique à 22%
-  if(tax>22){$('#tax-sat').textContent='−'+Math.round((tax-22)/2)+'%';$('#tax-sat').style.color='var(--red)';$('#tax-pop').textContent='−'+Math.round((tax-22)*1.5);$('#tax-pop').style.color='var(--red)';$('#tax-desc').textContent='Trop élevé : les habitants commencent à partir';}
-  else{$('#tax-sat').textContent='stable';$('#tax-sat').style.color='var(--mut)';$('#tax-pop').textContent='+'+Math.round((22-tax)*0.6);$('#tax-pop').style.color='var(--green)';$('#tax-desc').textContent='Équilibre sain, les revenus rentrent';}
+  const sat=QUARTIER?.satisfaction??50;
+  // or/h : même base que pending_gold (0.35), hors bonus serveur
+  $('#tax-gold').textContent='+'+Math.round(pop*tax/100*0.35);
+  // population : (22 - taux) x 0,12 %/jour, + bonus/malus satisfaction
+  let pct=tax<=22?(22-tax)*0.5:(22-tax)*0.3;
+  if(sat>=70)pct+=1; else if(sat<40)pct-=1;
+  const hab=Math.round(pop*pct/100);
+  $('#tax-pop').textContent=(hab>=0?'+':'')+hab;
+  $('#tax-pop').style.color=hab>=0?'var(--green)':'var(--red)';
+  // satisfaction : -(taux - 22)/2 points/jour au-dessus du seuil
+  if(tax>22){
+    $('#tax-sat').textContent='−'+Math.round((tax-22)/2);
+    $('#tax-sat').style.color='var(--red)';
+    $('#tax-desc').textContent='Trop élevé : les habitants partent et la colère monte';
+  }else{
+    $('#tax-sat').textContent='stable';
+    $('#tax-sat').style.color='var(--mut)';
+    $('#tax-desc').textContent=tax<12?'Très bas : croissance rapide, peu de revenus':'Équilibre sain, les revenus rentrent';
+  }
 }
 function renderProfil(){
   const t=titreFor(ME.xp||0);
@@ -657,7 +671,7 @@ function renderRang(){
 }
 
 // ACTIONS
-$('#cc-btn').onclick=async()=>{const btn=$('#cc-btn');btn.disabled=true;const gain=pendingGold();try{const{data,error}=await sb.rpc('collect_gold',{p_quartier_id:QUARTIER.id});if(error)throw error;if(data&&data.error)throw new Error(data.error);floatGain('+'+((data&&data.gold)||gain)+' or');await loadAll();toast('Revenus collectés');}catch(e){toast('Erreur de collecte');btn.disabled=false;}};
+$('#cc-btn').onclick=async()=>{const btn=$('#cc-btn');btn.disabled=true;const gain=PENDING.gold??0;try{const{data,error}=await sb.rpc('collect_gold',{p_quartier_id:QUARTIER.id});if(error)throw error;if(data&&data.error)throw new Error(data.error);floatGain('+'+((data&&data.gold)||gain)+' or');await loadAll();toast('Revenus collectés');}catch(e){toast('Erreur de collecte');btn.disabled=false;}};
 function floatGain(txt){const el=document.createElement('div');el.className='float-gain';el.textContent=txt;const r=$('#collect').getBoundingClientRect();el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+18)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1000);}
 window.resolveEvent=async(id,a)=>{try{const{error}=await sb.rpc('resolve_event',{p_event_id:id,p_choice:a?'a':'b'});if(error)throw error;await loadAll();toast(a?'Événement traité':'Événement ignoré');}catch(e){toast('Action impossible');}};
 window.resolveDemand=async(id,a)=>{try{const{error}=await sb.rpc('resolve_demand',{p_demand_id:id,p_accept:a});if(error)throw error;await loadAll();toast(a?'Demande satisfaite':'Demande ignorée');}catch(e){toast('Action impossible');}};
