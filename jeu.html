@@ -469,15 +469,15 @@ async function loadAll(){
   if(!player){ location.href='profil.html'; return; }
   ME=player;
   if(!ME.onboarding_done){ location.href='profil.html'; return; }
-  try{ await sb.rpc('process_login'); }catch(e){ console.warn('process_login',e); }
+  try{ await sb.rpc('process_login',{p_player_id:uid}); }catch(e){ console.warn('process_login',e); }
   ({data:player}=await sb.from('players').select('*').eq('id',uid).single()); ME=player;
 
   let {data:pq}=await sb.from('player_quartiers').select('*').eq('player_id',uid).limit(1).single();
   QUARTIER=pq;
   if(QUARTIER){
-    const {data:ev}=await sb.from('quartier_events').select('*').eq('player_quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
+    const {data:ev}=await sb.from('quartier_events').select('*').eq('quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
     EVENTS=ev||[];
-    const {data:dm}=await sb.from('quartier_demands').select('*').eq('player_quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
+    const {data:dm}=await sb.from('quartier_demands').select('*').eq('quartier_id',QUARTIER.id).eq('resolved',false).order('created_at');
     DEMANDS=dm||[];
   }
   const {data:rk}=await sb.from('players').select('pseudo,avatar,xp').eq('onboarding_done',true).order('xp',{ascending:false}).limit(20);
@@ -498,7 +498,7 @@ function renderHeader(){
   $('#h-nm').textContent=ME.pseudo||'Joueur';
   $('#h-lv').textContent='Niv '+t.level+' · '+t.titre;
   $('#h-xpf').style.width=xp.pct+'%';
-  $('#h-gold').textContent=(ME.or??0).toLocaleString('fr-FR');
+  $('#h-gold').textContent=(ME.or_total??0).toLocaleString('fr-FR');
   $('#h-nrj').textContent=(ME.energie??0);
 }
 function formatQName(n){const p=String(n||'Mon quartier').trim().split(' ');if(p.length===1)return '<em>'+esc(n)+'</em>';const last=p.pop();return esc(p.join(' '))+' <em>'+esc(last)+'</em>';}
@@ -511,7 +511,7 @@ function renderQuartier(){
   img.onerror=()=>{const f=new Image();f.onload=()=>{ph.style.backgroundImage="url('marseille.webp')";};f.src='marseille.webp';};
   img.src=url;
   $('#q-name').innerHTML=formatQName(QUARTIER.nom);
-  $('#q-kick').textContent='Quartier '+(QUARTIER.type||'');
+  $('#q-kick').textContent='Quartier '+(QUARTIER.type_quartier||'');
   const chips=[];
   chips.push('<div class="chip chef"><svg style="fill:#fff"><use href="#crown-f"/></svg>Chef</div>');
   if(QUARTIER.niveau)chips.push('<div class="chip">Niveau '+QUARTIER.niveau+'</div>');
@@ -528,7 +528,7 @@ const IMPROVEMENTS={
     {id:'police',nom:'Poste de police',icon:'police',gain:10,cost:400},
     {id:'cameras',nom:'Caméras de surveillance',icon:'cam',gain:6,cost:180},
   ],
-  infrastructure:[
+  infra:[
     {id:'routes',nom:'Rénover les routes',icon:'road',gain:9,cost:300},
     {id:'moderniser',nom:'Moderniser les bâtiments',icon:'b-logement',gain:7,cost:350},
   ],
@@ -536,12 +536,12 @@ const IMPROVEMENTS={
 const STAT_META={
   satisfaction:{lb:'Satisfaction',bc:'#4ade80',tc:'#4a9a5a'},
   securite:{lb:'Sécurité',bc:'#f5d98a',tc:'#c8912f'},
-  infrastructure:{lb:'Infrastructure',bc:'#e05a44',tc:'#c0392b'},
+  infra:{lb:'Infrastructure',bc:'#e05a44',tc:'#c0392b'},
 };
 function renderStats(){
   if(!QUARTIER){$('#stats').innerHTML='';return;}
-  const vals={satisfaction:QUARTIER.satisfaction??0,securite:QUARTIER.securite??0,infrastructure:QUARTIER.infrastructure??0};
-  const or=ME.or??0;
+  const vals={satisfaction:QUARTIER.satisfaction??0,securite:QUARTIER.securite??0,infra:QUARTIER.infra??0};
+  const or=ME.or_total??0;
   let html='';
   Object.keys(STAT_META).forEach((key,i)=>{
     const m=STAT_META[key],v=vals[key];
@@ -564,10 +564,18 @@ window.improveStat=async(stat,action,gain,cost)=>{
     toast('+'+gain+'% '+STAT_META[stat].lb.toLowerCase());
   }catch(e){toast('Amélioration impossible');}
 };
+// or en attente : même formule que collect_gold() côté SQL
+function pendingGold(){
+  if(!QUARTIER||!QUARTIER.last_collect)return 0;
+  const hours=(Date.now()-new Date(QUARTIER.last_collect).getTime())/3600000;
+  if(hours<0.1)return 0;
+  const pop=QUARTIER.population??0,tax=QUARTIER.tax_rate??15;
+  return Math.max(0,Math.floor(pop*tax/100*hours*0.1));
+}
 function renderCollect(){
   if(!QUARTIER)return;
-  const p=QUARTIER.or_accumule??0;
-  $('#cc-v').innerHTML='+'+p+' <em>or</em>';
+  const p=pendingGold();
+  $('#cc-v').innerHTML='+'+p.toLocaleString('fr-FR')+' <em>or</em>';
   $('#cc-s').textContent=p>0?'Revenus accumulés':'Rien à collecter';
   $('#cc-btn').disabled=p<=0;
   $('#collect').classList.toggle('rdy',p>0);
@@ -581,15 +589,15 @@ function renderItems(){
   $('#todo-label').textContent=total?`À traiter · ${total} en attente`:'À traiter';
   if(!total){const qn=QUARTIER?.nom||'ton quartier';wrap.innerHTML=`<div class="empty"><div class="empty-t">Tout est calme à ${esc(qn)}</div><div class="empty-s">Reviens plus tard, de nouveaux événements arriveront.</div></div>`;return;}
   let h='';
-  EVENTS.forEach(ev=>{h+=`<div class="item ev"><div class="item-top"><div class="item-badge"><svg class="ic" style="stroke:#b0492f"><use href="#${evIcon(ev.titre)}"/></svg></div><div class="item-mid"><div class="item-cat">Événement</div><div class="item-t">${esc(ev.titre)}</div></div><div class="item-timer">${timeLeft(ev.expires_at)}</div></div><div class="item-d">${esc(ev.description||'')}</div><div class="item-btns"><button class="item-btn btn-primary" onclick="resolveEvent('${ev.id}',true)">${esc(ev.action_label||'Agir')} · ${ev.cost||0} or</button><button class="item-btn btn-ghost" onclick="resolveEvent('${ev.id}',false)">Ignorer</button></div></div>`;});
-  DEMANDS.forEach(dm=>{h+=`<div class="item dm"><div class="item-top"><div class="item-badge"><svg class="ic" style="stroke:#a37e28"><use href="#${dmIcon(dm.titre)}"/></svg></div><div class="item-mid"><div class="item-cat">Demande citoyenne</div><div class="item-t">${esc(dm.titre)}</div></div><div class="item-timer">${timeLeft(dm.expires_at)}</div></div><div class="item-btns"><button class="item-btn btn-primary" onclick="resolveDemand('${dm.id}',true)">${esc(dm.action_label||'Accepter')} · ${dm.cost||0} or</button><button class="item-btn btn-ghost" onclick="resolveDemand('${dm.id}',false)">Refuser</button></div></div>`;});
+  EVENTS.forEach(ev=>{h+=`<div class="item ev"><div class="item-top"><div class="item-badge"><svg class="ic" style="stroke:#b0492f"><use href="#${evIcon(ev.title)}"/></svg></div><div class="item-mid"><div class="item-cat">Événement</div><div class="item-t">${esc(ev.title)}</div></div><div class="item-timer">${timeLeft(ev.expires_at)}</div></div><div class="item-d">${esc(ev.description||'')}</div><div class="item-btns"><button class="item-btn btn-primary" onclick="resolveEvent('${ev.id}',true)">${esc(ev.choice_a_label||'Agir')} · ${ev.choice_a_cost||0} or</button><button class="item-btn btn-ghost" onclick="resolveEvent('${ev.id}',false)">Ignorer</button></div></div>`;});
+  DEMANDS.forEach(dm=>{h+=`<div class="item dm"><div class="item-top"><div class="item-badge"><svg class="ic" style="stroke:#a37e28"><use href="#${dmIcon(dm.title)}"/></svg></div><div class="item-mid"><div class="item-cat">Demande citoyenne</div><div class="item-t">${esc(dm.title)}</div></div><div class="item-timer">${timeLeft(dm.expires_at)}</div></div><div class="item-btns"><button class="item-btn btn-primary" onclick="resolveDemand('${dm.id}',true)">${esc(dm.action_label||'Accepter')} · ${dm.cost||0} or</button><button class="item-btn btn-ghost" onclick="resolveDemand('${dm.id}',false)">Refuser</button></div></div>`;});
   wrap.innerHTML=h;
 }
 function timeLeft(iso){if(!iso)return'';const ms=new Date(iso)-new Date();if(ms<=0)return'expiré';const h=Math.floor(ms/3.6e6),m=Math.floor(ms%3.6e6/6e4);return h>0?`${h}h${String(m).padStart(2,'0')}`:`${m}min`;}
 function isToday(iso){if(!iso)return false;const d=new Date(iso),n=new Date();return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth()&&d.getDate()===n.getDate();}
 function renderGestion(){
   if(!QUARTIER)return;
-  const tax=QUARTIER.taux_imposition??15;
+  const tax=QUARTIER.tax_rate??15;
   $('#tax-sl').value=tax;$('#tax-v').textContent=tax+'%';updateTaxInfo(tax);
   // cooldown : verrouillé si déjà changé aujourd'hui
   const locked=isToday(ME.last_tax_change);
@@ -637,7 +645,7 @@ function renderProfil(){
   $('#p-kick').textContent=t.titre;
   $('#p-name').innerHTML=formatQName(ME.pseudo||'Joueur');
   $('#p-bio').textContent=ME.bio||'Aucune bio pour le moment.';
-  const cells=[['',(ME.or??0).toLocaleString('fr-FR'),'Or'],['',(ME.energie??0)+'/5','Énergie'],['','Niv. '+t.level,'Niveau'],['',(ME.xp??0),'XP total'],['',(ME.reputation??0)+'%','Réputation'],['',QUARTIER?esc(QUARTIER.nom):'—','Quartier']];
+  const cells=[['',(ME.or_total??0).toLocaleString('fr-FR'),'Or'],['',(ME.energie??0)+'/5','Énergie'],['','Niv. '+t.level,'Niveau'],['',(ME.xp??0),'XP total'],['',(ME.reputation??0)+'%','Réputation'],['',QUARTIER?esc(QUARTIER.nom):'—','Quartier']];
   $('#p-grid').innerHTML=cells.map(([k,v,l])=>`<div class="pcell"><div class="pcell-v">${esc(v)}</div><div class="pcell-l">${l}</div></div>`).join('');
 }
 function renderRang(){
@@ -645,12 +653,12 @@ function renderRang(){
 }
 
 // ACTIONS
-$('#cc-btn').onclick=async()=>{const btn=$('#cc-btn');btn.disabled=true;const gain=QUARTIER.or_accumule||0;try{const{error}=await sb.rpc('collect_gold');if(error)throw error;floatGain('+'+gain+' or');await loadAll();toast('Revenus collectés');}catch(e){toast('Erreur de collecte');btn.disabled=false;}};
+$('#cc-btn').onclick=async()=>{const btn=$('#cc-btn');btn.disabled=true;const gain=pendingGold();try{const{data,error}=await sb.rpc('collect_gold',{p_quartier_id:QUARTIER.id});if(error)throw error;if(data&&data.error)throw new Error(data.error);floatGain('+'+((data&&data.gold)||gain)+' or');await loadAll();toast('Revenus collectés');}catch(e){toast('Erreur de collecte');btn.disabled=false;}};
 function floatGain(txt){const el=document.createElement('div');el.className='float-gain';el.textContent=txt;const r=$('#collect').getBoundingClientRect();el.style.left=(r.left+r.width/2)+'px';el.style.top=(r.top+18)+'px';document.body.appendChild(el);setTimeout(()=>el.remove(),1000);}
-window.resolveEvent=async(id,a)=>{try{const{error}=await sb.rpc('resolve_event',{p_event_id:id,p_accept:a});if(error)throw error;await loadAll();toast(a?'Événement traité':'Événement ignoré');}catch(e){toast('Action impossible');}};
+window.resolveEvent=async(id,a)=>{try{const{error}=await sb.rpc('resolve_event',{p_event_id:id,p_choice:a?'a':'b'});if(error)throw error;await loadAll();toast(a?'Événement traité':'Événement ignoré');}catch(e){toast('Action impossible');}};
 window.resolveDemand=async(id,a)=>{try{const{error}=await sb.rpc('resolve_demand',{p_demand_id:id,p_accept:a});if(error)throw error;await loadAll();toast(a?'Demande satisfaite':'Demande ignorée');}catch(e){toast('Action impossible');}};
-window.spy=async(pid)=>{try{const{error}=await sb.rpc('espionner',{p_cible:pid});if(error)throw error;toast('Espionnage réussi');await loadAll();}catch(e){toast('Espionnage impossible');}};
-window.sabotage=async(pid)=>{try{const{error}=await sb.rpc('sabotage',{p_cible:pid});if(error)throw error;toast('Sabotage lancé');await loadAll();}catch(e){toast('Sabotage impossible');}};
+window.spy=async(pid)=>{try{const{error}=await sb.rpc('espionner',{p_player_id:ME.id,p_target_player_id:pid});if(error)throw error;toast('Espionnage réussi');await loadAll();}catch(e){toast('Espionnage impossible');}};
+window.sabotage=async(qid)=>{try{const{error}=await sb.rpc('sabotage',{p_attacker_id:ME.id,p_target_quartier_id:qid});if(error)throw error;toast('Sabotage lancé');await loadAll();}catch(e){toast('Sabotage impossible');}};
 $('#tax-sl').oninput=e=>{$('#tax-v').textContent=e.target.value+'%';updateTaxInfo(+e.target.value);};
 // fiscalité : confirmation avant de fixer le taux du jour
 let confirmMode='tax';
