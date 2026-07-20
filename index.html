@@ -276,10 +276,70 @@ function setLoading(b,on){b.disabled=on;b.textContent=on?'...':b.dataset.label}
 $$('.btn-primary').forEach(b=>b.dataset.label=b.textContent);
 
 // LOGIN
-$('#form-login').addEventListener('submit',async e=>{e.preventDefault();$$('.error-msg').forEach(e=>e.textContent='');const em=$('#login-email').value.trim(),pw=$('#login-password').value,btn=e.target.querySelector('.btn-primary');if(!em)return setError($('#login-email'),'Email requis');if(!pw)return setError($('#login-password'),'Mot de passe requis');setLoading(btn,true);try{const d=await supa.signIn(em,pw);if(d.error)throw new Error(d.error.message||d.error_description||'Erreur');localStorage.setItem('bd2_token',d.access_token);localStorage.setItem('bd2_user',JSON.stringify(d.user));showLoggedView(d.user);showToast('Connexion réussie !','success')}catch(err){showToast(err.message)}setLoading(btn,false)});
+$('#form-login').addEventListener('submit',async e=>{
+  e.preventDefault();
+  $$('.error-msg').forEach(e=>e.textContent='');
+  const em=$('#login-email').value.trim();
+  const pw=$('#login-password').value;
+  const btn=e.target.querySelector('.btn-primary');
+  if(!em) return setError($('#login-email'),'Email requis');
+  if(!pw) return setError($('#login-password'),'Mot de passe requis');
+  setLoading(btn,true);
+  try{
+    const d=await supa.signIn(em,pw);
+    console.log('LOGIN response:',JSON.stringify(d));
+    if(d.error) throw new Error(d.error.message||d.error_description||'Erreur');
+    const token=d.access_token;
+    const user=d.user;
+    if(!token||!user) throw new Error('Identifiants incorrects');
+    localStorage.setItem('bd2_token',token);
+    localStorage.setItem('bd2_user',JSON.stringify(user));
+    showLoggedView(user);
+    showToast('Connexion réussie !','success');
+  }catch(err){showToast(err.message)}
+  setLoading(btn,false);
+});
 
 // SIGNUP → profile setup
-$('#form-signup').addEventListener('submit',async e=>{e.preventDefault();$$('.error-msg').forEach(e=>e.textContent='');const ps=$('#signup-pseudo').value.trim(),em=$('#signup-email').value.trim(),pw=$('#signup-password').value,cf=$('#signup-confirm').value,btn=e.target.querySelector('.btn-primary');let ok=true;if(!ps||ps.length<3){setError($('#signup-pseudo'),'3 caractères minimum');ok=false}if(!em){setError($('#signup-email'),'Email requis');ok=false}if(pw.length<6){setError($('#signup-password'),'6 caractères minimum');ok=false}if(pw!==cf){setError($('#signup-confirm'),'Ne correspondent pas');ok=false}if(!ok)return;setLoading(btn,true);try{const d=await supa.signUp(em,pw,ps);if(d.error)throw new Error(d.error.message||'Erreur');const token=d.access_token||d.session?.access_token;const user=d.user||d.session?.user;if(token&&user){localStorage.setItem('bd2_token',token);localStorage.setItem('bd2_user',JSON.stringify(user));showToast('Bienvenue à bord !','success');showProfileSetup(user,token)}else if(d.user){showToast('Vérifie ton email pour confirmer !','success')}}catch(err){showToast(err.message)}setLoading(btn,false)});
+$('#form-signup').addEventListener('submit',async e=>{
+  e.preventDefault();
+  $$('.error-msg').forEach(e=>e.textContent='');
+  const ps=$('#signup-pseudo').value.trim();
+  const em=$('#signup-email').value.trim();
+  const pw=$('#signup-password').value;
+  const cf=$('#signup-confirm').value;
+  const btn=e.target.querySelector('.btn-primary');
+  let ok=true;
+  if(!ps||ps.length<3){setError($('#signup-pseudo'),'3 caractères minimum');ok=false}
+  if(!em){setError($('#signup-email'),'Email requis');ok=false}
+  if(pw.length<6){setError($('#signup-password'),'6 caractères minimum');ok=false}
+  if(pw!==cf){setError($('#signup-confirm'),'Ne correspondent pas');ok=false}
+  if(!ok) return;
+  setLoading(btn,true);
+  try{
+    const d=await supa.signUp(em,pw,ps);
+    console.log('SIGNUP response:',JSON.stringify(d));
+    if(d.error) throw new Error(d.error.message||'Erreur');
+    // Supabase peut renvoyer le token à différents endroits
+    const token=d.access_token||d.session?.access_token;
+    const user=d.user||d.session?.user;
+    if(token&&user){
+      localStorage.setItem('bd2_token',token);
+      localStorage.setItem('bd2_user',JSON.stringify(user));
+      showToast('Bienvenue à bord !','success');
+      showProfileSetup(user,token);
+    } else {
+      // Pas de token = email confirmation activée ou erreur
+      showToast('Compte créé ! Connecte-toi maintenant.','success');
+      // Switch vers l'onglet connexion
+      $$('.tab').forEach(t=>t.classList.remove('active'));
+      $$('.form').forEach(f=>f.classList.remove('active'));
+      document.querySelector('[data-tab="login"]').classList.add('active');
+      $('#form-login').classList.add('active');
+    }
+  }catch(err){showToast(err.message)}
+  setLoading(btn,false);
+});
 
 // PROFILE SETUP
 function showProfileSetup(user, token){
