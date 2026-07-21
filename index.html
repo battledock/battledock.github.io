@@ -360,17 +360,34 @@ $('#avatarGrid').addEventListener('click',e=>{
   selectedAvatar = opt.dataset.avatar;
 });
 
-$('#psSave').addEventListener('click',async()=>{
+$('#psSave').addEventListener('click',async(e)=>{
   const bio=$('#ps-bio').value.trim();
+  const btn=e.target;
+  setLoading(btn,true);
   try{
-    await supa.rpc('update_profile',{
-      p_avatar: selectedAvatar||null,
-      p_bio: bio||null
-    },window._bd2Token);
+    const uid=window._bd2User?.id;
+    if(!uid) throw new Error('Session expirée');
+    const r=await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+uid,{
+      method:'PATCH',
+      headers:{
+        apikey:SUPABASE_ANON,
+        Authorization:'Bearer '+window._bd2Token,
+        'Content-Type':'application/json',
+        Prefer:'return=representation'
+      },
+      body:JSON.stringify({avatar_url:selectedAvatar||null,bio:bio||''})
+    });
+    const data=await r.json();
+    console.log('SAVE PROFILE:',r.status,JSON.stringify(data));
+    if(!r.ok) throw new Error(data.message||data.hint||'Sauvegarde impossible');
+    if(Array.isArray(data)&&data.length) localStorage.setItem('bd2_profile',JSON.stringify(data[0]));
     showToast('Profil sauvegardé !','success');
-  }catch{}
-  $('#profileSetup').classList.remove('active');
-  showLoggedView(window._bd2User);
+    $('#profileSetup').classList.remove('active');
+    showLoggedView(window._bd2User);
+  }catch(err){
+    showToast(err.message);
+  }
+  setLoading(btn,false);
 });
 
 $('#psSkip').addEventListener('click',()=>{
@@ -379,8 +396,48 @@ $('#psSkip').addEventListener('click',()=>{
 });
 
 // LOGGED VIEW
-function showLoggedView(u){$('#authCard').style.display='none';$('#profileSetup').classList.remove('active');$('#loggedView').classList.add('active');$('#loggedName').textContent=u?.user_metadata?.pseudo||u?.email?.split('@')[0]||'Docker';$('#loggedEmail').textContent=u?.email||''}
-$('#btnLogout').addEventListener('click',()=>{localStorage.removeItem('bd2_token');localStorage.removeItem('bd2_user');$('#loggedView').classList.remove('active');$('#authCard').style.display='';showToast('Déconnecté','success')});
+async function showLoggedView(u){
+  $('#authCard').style.display='none';
+  $('#profileSetup').classList.remove('active');
+  $('#loggedView').classList.add('active');
+  $('#loggedName').textContent=u?.user_metadata?.pseudo||u?.email?.split('@')[0]||'Docker';
+  $('#loggedEmail').textContent=u?.email||'';
+
+  // Avatar depuis le cache local, puis rafraîchi depuis Supabase
+  const cached=localStorage.getItem('bd2_profile');
+  if(cached){try{paintAvatar(JSON.parse(cached))}catch{}}
+
+  const token=localStorage.getItem('bd2_token');
+  if(!u?.id||!token) return;
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/profiles?id=eq.'+u.id+'&select=*',{
+      headers:{apikey:SUPABASE_ANON,Authorization:'Bearer '+token}
+    });
+    const rows=await r.json();
+    if(Array.isArray(rows)&&rows.length){
+      localStorage.setItem('bd2_profile',JSON.stringify(rows[0]));
+      paintAvatar(rows[0]);
+      if(rows[0].pseudo) $('#loggedName').textContent=rows[0].pseudo;
+    }
+  }catch{}
+}
+
+function paintAvatar(p){
+  const box=document.querySelector('.logged-avatar');
+  if(!box) return;
+  if(p.avatar_url){
+    const src=document.querySelector('.avatar-option[data-avatar="'+p.avatar_url+'"] img')?.src;
+    if(src){
+      box.innerHTML='<img src="'+src+'" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">';
+      box.style.padding='0';
+      box.style.overflow='hidden';
+      return;
+    }
+  }
+  box.textContent='⚓';
+}
+
+$('#btnLogout').addEventListener('click',()=>{localStorage.removeItem('bd2_token');localStorage.removeItem('bd2_user');localStorage.removeItem('bd2_profile');$('#loggedView').classList.remove('active');$('#authCard').style.display='';showToast('Déconnecté','success')});
 
 // Auto-login
 (function(){const t=localStorage.getItem('bd2_token'),u=localStorage.getItem('bd2_user');if(t&&u){try{document.getElementById('intro').style.display='none';document.getElementById('mainApp').classList.add('visible');showLoggedView(JSON.parse(u))}catch{}}})();
