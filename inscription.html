@@ -3,300 +3,504 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>BattleDock 2 — Crée ton joueur</title>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Inscription — BattleDock 2</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
-/* ====== BASE IDENTIQUE À INDEX.HTML ====== */
+/* ═══ LA TRAVERSÉE — le monde entier change d'heure à chaque étape ═══ */
+:root{--enc:#0d2438}
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{min-height:100%;font-family:'Inter',sans-serif;overflow-x:hidden}
-body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%);color:#f2eef8}
+html,body{height:100dvh;overflow:hidden;font-family:'Nunito',sans-serif;color:#fff}
+body{transition:background 1.6s ease}
+/* 4 heures du voyage : jour → couchant → nuit → aube */
+body[data-h="0"]{background:linear-gradient(180deg,#57b6e8 0%,#a3dcf2 46%,#ffe9c4 60%)}
+body[data-h="1"]{background:linear-gradient(180deg,#3d3184 0%,#b0568e 30%,#f58a4a 52%,#ffcd74 60%)}
+body[data-h="2"]{background:linear-gradient(180deg,#070d24 0%,#101a44 46%,#1c2a5e 60%)}
+body[data-h="3"]{background:linear-gradient(180deg,#8faede 0%,#e0c2da 40%,#ffdcc2 56%,#ffeccc 60%)}
 
-.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0;animation:drift 12s ease-in-out infinite;will-change:transform}
-@media (max-width:480px){.orb{filter:blur(60px)}}
-.o1{width:min(380px,100vw);height:min(380px,100vw);background:rgba(120,90,255,.16);top:5%;left:5%}
-.o2{width:min(320px,85vw);height:min(320px,85vw);background:rgba(255,110,70,.13);bottom:5%;right:5%;animation-delay:4s}
-@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(10px,-10px)}}
+/* ── monde en parallaxe ── */
+.monde{position:fixed;inset:0;overflow:hidden}
+.couche{position:absolute;inset:0;transition:transform 1.6s cubic-bezier(.5,.9,.4,1)}
 
-.app{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:calc(clamp(24px,6vw,48px) + env(safe-area-inset-top)) 16px calc(clamp(24px,6vw,48px) + env(safe-area-inset-bottom));
-  position:relative;z-index:1;animation:fadein .6s ease-out}
-@keyframes fadein{from{opacity:0}to{opacity:1}}
+/* astre : soleil → lune, qui traverse le ciel */
+.astre{position:absolute;top:12%;left:16%;width:88px;height:88px;border-radius:50%;
+  transition:all 1.6s cubic-bezier(.5,.9,.4,1)}
+body[data-h="0"] .astre{background:radial-gradient(circle at 36% 32%,#fff6c8,#ffde68 60%,#ffc84a);
+  box-shadow:0 0 70px 28px rgba(255,222,104,.6)}
+body[data-h="1"] .astre{left:56%;top:38%;background:radial-gradient(circle at 36% 32%,#ffd2a0,#ff9a4c 62%,#f2702c);
+  box-shadow:0 0 90px 36px rgba(255,138,60,.55)}
+body[data-h="2"] .astre{left:74%;top:10%;width:66px;height:66px;
+  background:radial-gradient(circle at 40% 36%,#f8faff,#d8e0f4);box-shadow:0 0 40px 12px rgba(220,230,255,.35);
+  -webkit-mask:radial-gradient(circle at 72% 34%,transparent 22px,#000 23px);mask:radial-gradient(circle at 72% 34%,transparent 22px,#000 23px)}
+body[data-h="3"] .astre{left:22%;top:30%;background:radial-gradient(circle at 36% 32%,#ffeadb,#ffcaa2);
+  box-shadow:0 0 60px 22px rgba(255,202,162,.5)}
+.halo{position:absolute;inset:-30%;border-radius:50%;animation:respire 5s ease-in-out infinite;
+  background:radial-gradient(circle,rgba(255,255,255,.18),transparent 60%)}
+@keyframes respire{50%{transform:scale(1.12)}}
 
-.brand{text-align:center;margin-bottom:clamp(24px,6vw,36px)}
-.b-row{display:flex;align-items:center;justify-content:center;gap:10px}
-.b-t{font-family:'Oswald',sans-serif;font-size:clamp(26px,7vw,36px);font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#f2eef8}
-.b-vl{width:2px;height:clamp(22px,6vw,30px);background:linear-gradient(180deg,#9d7bff,#ff9a5c);border-radius:2px}
-.b-d{font-family:'Oswald',sans-serif;font-size:clamp(26px,7vw,36px);font-weight:700;letter-spacing:3px;text-transform:uppercase;
-  background:linear-gradient(135deg,#9d7bff,#ff7a5c,#ffc24d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.b-sub{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
-.b-sub span{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:4px;text-transform:uppercase}
-.b-sub i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.3)}
-.bs2{background:linear-gradient(90deg,#9d7bff,#ff7a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.bmrs{background:linear-gradient(90deg,#ff7a5c,#ffc24d);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+/* étoiles + filantes (nuit) */
+.ciel-nuit{position:absolute;inset:0;opacity:0;transition:opacity 1.6s;pointer-events:none}
+body[data-h="2"] .ciel-nuit{opacity:1}
+.et{position:absolute;border-radius:50%;background:#fff;animation:scin 2.8s ease-in-out infinite}
+@keyframes scin{50%{opacity:.15}}
+.fil{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:0}
+body[data-h="2"] .fil{animation:file 7s ease-in 1.5s infinite}
+.fil:nth-child(2){animation-delay:4.5s}
+@keyframes file{0%,91%{opacity:0;transform:translate(0,0)}92%{opacity:1}100%{opacity:0;transform:translate(-160px,100px)}}
+.fil::after{content:'';position:absolute;right:0;width:70px;height:1.5px;
+  background:linear-gradient(90deg,transparent,#fff);transform:rotate(-32deg);transform-origin:right}
 
-.auth-card{width:100%;max-width:400px;padding:clamp(22px,6vw,30px) clamp(18px,5vw,26px);
-  border:1.5px solid rgba(255,255,255,.12);border-radius:20px;
-  background:rgba(255,255,255,.06);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  box-shadow:0 12px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.08)}
+/* nuages (jour/aube) */
+.nuage{position:absolute;background:#fff;border-radius:999px;transition:opacity 1.6s;animation:derive linear infinite}
+.nuage::before,.nuage::after{content:'';position:absolute;background:inherit;border-radius:50%}
+body[data-h="2"] .nuage{opacity:.08}
+body[data-h="1"] .nuage{background:#ffcfae}
+body[data-h="3"] .nuage{background:#ffe9e2}
+@keyframes derive{to{transform:translateX(120vw)}}
+.n1{width:110px;height:30px;top:9%;left:-130px;opacity:.9;animation-duration:55s}
+.n1::before{width:44px;height:44px;top:-20px;left:20px}.n1::after{width:30px;height:30px;top:-12px;left:58px}
+.n2{width:74px;height:22px;top:22%;left:-90px;opacity:.7;animation-duration:80s;animation-delay:-38s}
+.n2::before{width:30px;height:30px;top:-14px;left:14px}.n2::after{width:20px;height:20px;top:-9px;left:40px}
 
-.tabs{display:flex;gap:6px;background:rgba(255,255,255,.06);border-radius:12px;padding:5px;margin-bottom:22px}
-.tab{flex:1;padding:11px;border:none;border-radius:9px;cursor:pointer;background:none;
-  font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
-  color:#a89cb8;transition:.2s}
-.tab.active{background:rgba(255,255,255,.92);color:#1b1e33;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+/* skyline lointaine (défile en parallaxe à chaque étape) */
+.lointain{position:absolute;bottom:39%;left:0;width:300%;height:110px;transition:transform 1.6s cubic-bezier(.5,.9,.4,1)}
+.lointain svg{width:100%;height:100%}
+.ile{fill:rgba(70,64,130,.34)}
+body[data-h="2"] .ile{fill:rgba(16,24,60,.85)}
+.phare-f{animation:balaye 3.4s ease-in-out infinite;transform-origin:1057px 26px;opacity:0;transition:opacity 1.6s}
+body[data-h="1"] .phare-f,body[data-h="2"] .phare-f{opacity:.8}
+@keyframes balaye{0%,100%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}}
 
-.panel{display:none}
-.panel.active{display:block;animation:fadein .3s ease-out}
+/* mer : 3 houles + traînée lumineuse + bioluminescence la nuit */
+.mer{position:absolute;bottom:0;left:0;right:0;height:41%;overflow:hidden;transition:background 1.6s}
+body[data-h="0"] .mer{background:linear-gradient(180deg,#2a9ec4,#10618a)}
+body[data-h="1"] .mer{background:linear-gradient(180deg,#7a3c86,#2a1e58)}
+body[data-h="2"] .mer{background:linear-gradient(180deg,#0e1838,#050a1e)}
+body[data-h="3"] .mer{background:linear-gradient(180deg,#4a7ca6,#274f72)}
+.houle{position:absolute;left:0;width:200%;height:60px;animation:roule linear infinite}
+.houle svg{width:100%;height:100%;display:block}
+.ho1{top:-10px;animation-duration:9s;opacity:.5}
+.ho2{top:24px;animation-duration:15s;animation-direction:reverse;opacity:.32}
+.ho3{top:64px;animation-duration:22s;opacity:.22}
+@keyframes roule{to{transform:translateX(-50%)}}
+body[data-h="2"] .houle{opacity:.14}
+.trainee{position:absolute;top:0;bottom:0;left:16%;width:74px;opacity:.4;transition:all 1.6s;filter:blur(4px);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5) 50%,transparent);
+  -webkit-mask:linear-gradient(180deg,#000,transparent 88%);mask:linear-gradient(180deg,#000,transparent 88%);
+  animation:tremble 4s ease-in-out infinite}
+@keyframes tremble{50%{opacity:.55;transform:scaleX(1.15)}}
+body[data-h="1"] .trainee{left:56%;background:linear-gradient(90deg,transparent,rgba(255,170,90,.55) 50%,transparent)}
+body[data-h="2"] .trainee{left:74%;background:linear-gradient(90deg,transparent,rgba(225,235,255,.4) 50%,transparent)}
+body[data-h="3"] .trainee{left:22%}
+.plancton{position:absolute;border-radius:50%;background:#5cf0d8;box-shadow:0 0 8px #5cf0d8;opacity:0;transition:opacity 1.6s;
+  animation:flotte 4s ease-in-out infinite}
+body[data-h="2"] .plancton{opacity:.8}
+@keyframes flotte{50%{transform:translateY(-8px);opacity:.25}}
+.caustiques{position:absolute;inset:0;opacity:.5;pointer-events:none;filter:blur(6px);
+  background:
+    radial-gradient(ellipse 220px 26px at 24% 30%,rgba(255,255,255,.3),transparent 70%),
+    radial-gradient(ellipse 170px 20px at 68% 55%,rgba(255,255,255,.22),transparent 70%),
+    radial-gradient(ellipse 260px 30px at 45% 80%,rgba(255,255,255,.16),transparent 70%),
+    radial-gradient(ellipse 140px 18px at 88% 24%,rgba(255,255,255,.2),transparent 70%);
+  animation:caus 9s ease-in-out infinite}
+@keyframes caus{50%{transform:translateX(24px);opacity:.75}}
+.scint{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;pointer-events:none;
+  animation:scint-a ease-in-out infinite}
+@keyframes scint-a{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:.9;transform:scale(1.2)}}
+body[data-h="2"] .caustiques{opacity:.08}
+body[data-h="2"] .scint{opacity:.25}
 
-.field{margin-bottom:14px}
-.field input{width:100%;padding:14px 16px;border:1.5px solid rgba(255,255,255,.12);border-radius:12px;
-  background:rgba(255,255,255,.06);font-family:'Inter',sans-serif;font-size:16px;color:#f2eef8;outline:none;transition:.2s}
-.field input:focus{border-color:#9d7bff;background:rgba(255,255,255,.1)}
-.field input::placeholder{color:#8a7f9c}
-.sec{font-family:'Oswald',sans-serif;font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
-  color:#a89cb8;margin:20px 0 8px}
-.hint{font-size:11px;color:#8a7f9c;margin-top:6px}
+/* ── LE BATEAU (héros, construit en direct) ── */
+.scene-bateau{position:absolute;bottom:24%;left:50%;transform:translateX(-50%);width:min(74vw,320px);pointer-events:none;z-index:3}
+.bateau{animation:navigue 4.4s ease-in-out infinite;transform-origin:center bottom}
+@keyframes navigue{0%,100%{transform:rotate(-1.8deg)}50%{transform:rotate(1.8deg) translateY(-7px)}}
+.bateau svg{width:100%;overflow:visible;filter:drop-shadow(0 10px 14px rgba(5,20,40,.45))}
+.reflet-b{transform:scaleY(-.5) translateY(-22px);opacity:.2;filter:blur(3px);
+  -webkit-mask:linear-gradient(0deg,transparent 15%,#000);mask:linear-gradient(0deg,transparent 15%,#000)}
+.reflet-b svg{width:100%;overflow:visible}
+.sillage{position:absolute;left:-8%;right:-8%;bottom:-4px;height:14px}
+.bulle{position:absolute;bottom:0;border-radius:50%;background:rgba(255,255,255,.7);animation:mousse 2.6s ease-in-out infinite}
+@keyframes mousse{50%{transform:translateY(-5px) scale(1.3);opacity:.3}}
 
-.btn-primary{width:100%;padding:15px;border:none;border-radius:12px;cursor:pointer;margin-top:10px;
-  font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#fff;
-  background:linear-gradient(135deg,#9d7bff,#ff7a5c);box-shadow:0 6px 24px rgba(157,123,255,.25);transition:.2s}
-.btn-primary:active{transform:scale(.97)}
-.btn-primary:disabled{opacity:.5;cursor:wait}
+/* ── UI : panneau verre en bas ── */
+.pont{position:fixed;left:0;right:0;bottom:0;z-index:10;display:flex;justify-content:center;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
+.verre{width:100%;max-width:460px;border-radius:26px;padding:18px 18px 16px;
+  background:rgba(10,26,44,.55);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1.5px solid rgba(255,255,255,.18);box-shadow:0 18px 50px rgba(3,12,24,.5)}
+.cap{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.cap-h{font-size:10px;font-weight:900;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.cap-b{font-family:'Fraunces';font-weight:900;font-size:14px;letter-spacing:.5px;color:#ffd23c}
 
-/* ====== CAROUSEL ====== */
-.selp-row{display:flex;align-items:center;justify-content:center;gap:clamp(12px,4vw,18px);margin-top:4px}
-.arrow{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  border:1.5px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);font-size:19px;color:#f2eef8;
-  cursor:pointer;user-select:none;transition:.15s}
-.arrow:active{transform:scale(.9);background:rgba(255,255,255,.12)}
-.big-ava{width:clamp(96px,28vw,110px);height:clamp(96px,28vw,110px);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:clamp(44px,13vw,52px);
-  background:linear-gradient(135deg,#9d7bff,#ff7a5c);
-  box-shadow:0 0 0 5px rgba(255,255,255,.06),0 0 40px rgba(157,123,255,.4);
-  animation:float 3.5s ease-in-out infinite;transition:background .3s}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.big-ava.swap{animation:swap .3s ease}
-@keyframes swap{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
-.selp-name{font-family:'Oswald',sans-serif;font-size:20px;letter-spacing:2px;text-transform:uppercase;text-align:center;margin-top:12px}
-.selp-count{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#a89cb8;text-align:center;margin-top:3px}
+.q{display:none}
+.q.on{display:block;animation:surgit .5s cubic-bezier(.3,1.15,.4,1)}
+@keyframes surgit{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.q h2{font-family:'Fraunces';font-weight:900;font-size:clamp(21px,6.4vw,27px);line-height:1.15;margin-bottom:4px}
+.q .aide{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:14px;line-height:1.5}
 
-.colors{display:flex;justify-content:center;gap:9px;margin-top:16px;flex-wrap:wrap}
-.sc{width:30px;height:30px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:.15s}
-.sc.s{border-color:#f2eef8;transform:scale(1.15)}
+input{width:100%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.22);border-radius:15px;outline:none;
+  font-family:'Nunito';font-weight:900;font-size:17px;color:#fff;padding:13px 15px;caret-color:#ffd23c;transition:.25s;margin-bottom:12px}
+input:focus{border-color:#ffd23c;background:rgba(255,255,255,.15);box-shadow:0 0 0 4px rgba(255,210,60,.15)}
+input::placeholder{color:rgba(255,255,255,.3)}
 
-/* ====== CLASSES ====== */
-.classes{display:flex;flex-direction:column;gap:10px}
-.classe{display:flex;gap:12px;align-items:center;padding:14px;border-radius:14px;cursor:pointer;
-  border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);transition:.15s;text-align:left}
-.classe.sel{border-color:#ff9a5c;background:rgba(255,122,92,.14)}
-.classe .c-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-.classe .c-nm{font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:1px}
-.classe .c-ds{font-size:11px;color:#a89cb8;margin-top:2px}
-.classe .c-bonus{margin-left:auto;font-size:11px;font-weight:600;color:#5ad48e;white-space:nowrap;flex-shrink:0}
+.opts{display:flex;gap:9px;margin-bottom:13px}
+.op{flex:1;padding:12px 6px;border-radius:16px;cursor:pointer;text-align:center;font-weight:900;font-size:12px;
+  background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);transition:.2s cubic-bezier(.3,1.4,.5,1)}
+.op:active{transform:scale(.93)}
+.op.s{border-color:#ffd23c;background:rgba(255,210,60,.16);transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.op .pt{width:34px;height:34px;border-radius:50%;margin:0 auto 6px;
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.3),inset 0 3px 0 rgba(255,255,255,.35)}
+.op svg{width:52px;height:30px;display:block;margin:0 auto 5px;overflow:visible}
 
-/* Récap joueur sur l'onglet port */
-.recap{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;
-  border:1.5px solid rgba(255,255,255,.1);border-radius:14px;background:rgba(255,255,255,.04)}
-.recap .r-ava{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
-.recap .r-n{font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:1px;text-align:left}
-.recap .r-d{font-size:11px;color:#a89cb8;font-style:italic;text-align:left;margin-top:1px}
+.barre{display:flex;gap:9px}
+.b{flex:1;padding:14px;border:none;border-radius:15px;cursor:pointer;font-family:'Nunito';font-weight:900;font-size:14.5px;
+  letter-spacing:.4px;transition:.12s;position:relative;overflow:hidden}
+.b:active{transform:scale(.96)}
+.b-r{flex:0 0 27%;background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:2px solid rgba(255,255,255,.18)}
+.b-n{background:#ffd23c;color:var(--enc)}
+.b-n::after{content:'';position:absolute;top:0;left:-80%;width:40%;height:100%;transform:skewX(-20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:eclat 3.4s ease-in-out infinite}
+@keyframes eclat{0%,55%{left:-80%}100%{left:130%}}
+.b-go{background:linear-gradient(135deg,#ff6a4e,#f4402e);color:#fff;animation:appel 2.2s ease-in-out infinite}
+@keyframes appel{50%{box-shadow:0 0 26px rgba(255,106,78,.55)}}
 
-/* ====== TOAST ====== */
-.toast{position:fixed;top:calc(20px + env(safe-area-inset-top));left:50%;transform:translateX(-50%) translateY(-100px);
-  background:rgba(30,32,55,.85);backdrop-filter:blur(12px);border:1.5px solid rgba(255,255,255,.12);
-  color:#f2eef8;padding:14px 24px;border-radius:14px;font-size:14px;z-index:1100;transition:.4s;opacity:0;
-  box-shadow:0 8px 30px rgba(0,0,0,.3)}
-.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
-.toast.error{border-color:#ff7a7a;color:#ff7a7a}
-.toast.success{border-color:#5ad48e;color:#5ad48e}
+/* arrivée */
+/* ── cinématique de départ (pilotée en JS) ── */
+.pont{transition:transform .7s cubic-bezier(.5,0,.6,1),opacity .6s}
+.pont.range{transform:translateY(120%);opacity:0;pointer-events:none}
+.bateau.pousse{animation:navigue 1.6s ease-in-out infinite}
+
+.arrivee{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  text-align:center;padding:26px;opacity:0;pointer-events:none;transition:1s;background:rgba(6,14,30,.4);backdrop-filter:blur(4px)}
+.arrivee.on{opacity:1;pointer-events:auto}
+.arrivee h1{font-family:'Fraunces';font-weight:900;font-size:clamp(28px,9vw,42px);text-shadow:0 4px 24px rgba(0,0,0,.5)}
+.arrivee p{font-weight:800;font-size:14.5px;color:rgba(255,255,255,.85);line-height:1.6;max-width:320px}
+.b-port{display:inline-block;text-decoration:none;text-align:center;margin-top:14px;padding:16px 34px;flex:none;
+  border-radius:999px;font-size:16px;animation:appel 2.2s ease-in-out infinite}
+.auto-note{font-size:11.5px!important;color:rgba(255,255,255,.45)!important;font-weight:700!important}
+.arrivee .mo{font-size:56px;animation:navigue 3.4s ease-in-out infinite}
+#feux{position:fixed;inset:0;z-index:39;pointer-events:none}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01s!important}}
 </style>
 </head>
-<body>
+<body data-h="0">
 
-<div class="orb o1"></div><div class="orb o2"></div>
-
-<div class="app">
-  <div class="brand">
-    <div class="b-row"><div class="b-t">BATTLE</div><div class="b-vl"></div><div class="b-d">DOCK</div></div>
-    <div class="b-sub"><span class="bs2">Saison 2</span><i></i><span class="bmrs">Marseille</span></div>
+<div class="monde">
+  <div class="couche" id="pCiel">
+    <div class="astre"><div class="halo"></div></div>
+    <div class="ciel-nuit" id="cielNuit"><div class="fil" style="top:12%;left:66%"></div><div class="fil" style="top:20%;left:82%"></div></div>
+    <div class="nuage n1"></div><div class="nuage n2"></div>
   </div>
 
-  <div class="auth-card">
-    <div class="tabs">
-      <button class="tab active" data-tab="joueur">Ton joueur</button>
-      <button class="tab" data-tab="voie">Ta voie</button>
+  <div class="lointain" id="pLoin">
+    <svg viewBox="0 0 1200 110" preserveAspectRatio="none">
+      <path class="ile" d="M0 110 V64 Q40 34 90 54 Q130 26 180 46 Q230 30 280 50 L280 110 Z"/>
+      <path class="ile" d="M320 110 V70 Q370 40 420 58 Q470 30 530 52 Q580 38 620 56 L620 110 Z"/>
+      <path class="ile" d="M660 110 V60 Q720 26 790 48 Q850 20 920 44 Q980 32 1030 52 L1030 110 Z"/>
+      <g>
+        <rect x="1052" y="26" width="10" height="36" fill="#e84d3d"/>
+        <rect x="1052" y="34" width="10" height="7" fill="#fff"/>
+        <rect x="1052" y="48" width="10" height="7" fill="#fff"/>
+        <rect x="1049" y="21" width="16" height="6" rx="3" fill="#3a4a5c"/>
+        <path class="phare-f" d="M1057 26 L1004 6 L1004 48 Z" fill="rgba(255,222,106,.5)"/>
+      </g>
+      <path class="ile" d="M1080 110 V72 Q1130 46 1200 60 L1200 110 Z"/>
+    </svg>
+  </div>
+
+  <div class="mer">
+    <div class="houle ho1"><svg viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0 30 Q50 8 100 30 T200 30 T300 30 T400 30 T500 30 T600 30 T700 30 T800 30 V60 H0 Z" fill="rgba(255,255,255,.5)"/></svg></div>
+    <div class="houle ho2"><svg viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0 32 Q60 12 120 32 T240 32 T360 32 T480 32 T600 32 T720 32 T840 32 V60 H0 Z" fill="rgba(255,255,255,.5)"/></svg></div>
+    <div class="houle ho3"><svg viewBox="0 0 800 60" preserveAspectRatio="none"><path d="M0 28 Q80 10 160 28 T320 28 T480 28 T640 28 T800 28 V60 H0 Z" fill="rgba(255,255,255,.5)"/></svg></div>
+    <div class="trainee"></div>
+    <div class="caustiques"></div>
+    <div id="planctons"></div>
+  </div>
+
+  <div class="scene-bateau">
+    <div class="bateau"><svg id="svgB" viewBox="0 0 300 160"></svg></div>
+    <div class="reflet-b"><svg id="svgR" viewBox="0 0 300 160"></svg></div>
+    <div class="sillage" id="sillage"></div>
+  </div>
+</div>
+
+<div class="pont">
+  <div class="verre">
+    <div class="cap">
+      <span class="cap-h" id="heure">Départ · plein jour</span>
+      <span class="cap-b" id="etapeTxt">Étape 1 / 4</span>
     </div>
 
-    <!-- ===== PANEL JOUEUR ===== -->
-    <div class="panel active" id="panel-joueur">
-      <div class="selp-row">
-        <div class="arrow" id="prev">‹</div>
-        <div class="big-ava" id="ava">⚓</div>
-        <div class="arrow" id="next">›</div>
-      </div>
-      <div class="selp-name" id="avaName">L'Ancre</div>
-      <div class="selp-count" id="avaCount">Emblème 1 / 12</div>
-      <div class="colors" id="colors"></div>
-
-      <div class="sec">Ton pseudo</div>
-      <div class="field"><input type="text" id="pseudo" maxlength="20" placeholder="Le Fada du Vieux-Port"></div>
-
-      <div class="sec">Ta devise</div>
-      <div class="field"><input type="text" id="devise" maxlength="60" placeholder="Ex : Ici c'est mon quai."></div>
-      <div class="hint">Affichée sur ton profil et tes défaites (surtout tes défaites).</div>
-
-      <button class="btn-primary" id="btnNext">Choisir ma voie →</button>
+    <div class="q on">
+      <h2>Qui prend la barre&nbsp;?</h2>
+      <p class="aide">Ton nom de capitaine — celui que le port va apprendre à craindre.</p>
+      <input id="pseudo" maxlength="20" placeholder="La Terreur de l&#39;Estaque" autocomplete="off">
+      <div class="barre"><button class="b b-n" data-next>Embarquer →</button></div>
     </div>
 
-    <!-- ===== PANEL VOIE ===== -->
-    <div class="panel" id="panel-voie">
-      <div class="recap">
-        <div class="r-ava" id="recapAva">⚓</div>
-        <div>
-          <div class="r-n" id="recapName">Joueur</div>
-          <div class="r-d" id="recapDevise"></div>
-        </div>
+    <div class="q">
+      <h2>La robe de ta coque</h2>
+      <p class="aide">Le soleil se couche — choisis la couleur qu'il éclairera en dernier.</p>
+      <div class="opts" id="cCouleur">
+        <div class="op s" data-v="#e84d3d"><div class="pt" style="background:#e84d3d"></div>Corail</div>
+        <div class="op" data-v="#2a9ec4"><div class="pt" style="background:#2a9ec4"></div>Grande Bleue</div>
+        <div class="op" data-v="#ffd23c"><div class="pt" style="background:#ffd23c"></div>Soleil</div>
       </div>
-      <div class="sec" style="margin-top:0">Ta voie de docker</div>
-      <div class="classes" id="classesGrid"></div>
-      <button class="btn-primary" id="btnSave">Larguer les amarres</button>
+      <div class="barre">
+        <button class="b b-r" data-prev>←</button>
+        <button class="b b-n" data-next>Cap au large →</button>
+      </div>
+    </div>
+
+    <div class="q">
+      <h2>Sa silhouette dans la nuit</h2>
+      <p class="aide">Deux légendes naviguent ces eaux. Laquelle sera la tienne&nbsp;?</p>
+      <div class="opts" id="cForme">
+        <div class="op s" data-v="0"><svg viewBox="0 0 52 30"><path d="M4 13 h44 l-8 12 h-29 z M4 13 l-3 -5 l8 2 z" fill="#fff" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linejoin="round"/></svg>Le Pointu</div>
+        <div class="op" data-v="1"><svg viewBox="0 0 52 30"><path d="M6 12 h40 q5 0 4 5 l-3 9 h-42 l-3 -9 q-1 -5 4 -5 z" fill="#fff" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linejoin="round"/></svg>La Barquette</div>
+      </div>
+      <div class="barre">
+        <button class="b b-r" data-prev>←</button>
+        <button class="b b-n" data-next>Tenir le cap →</button>
+      </div>
+    </div>
+
+    <div class="q">
+      <h2>L'aube du baptême</h2>
+      <p class="aide">Le voyage s'achève. Donne un nom à ce qui t'a porté jusqu'ici.</p>
+      <input id="nomBateau" maxlength="24" placeholder="La Bonne Mère II" autocomplete="off">
+      <div class="barre">
+        <button class="b b-r" data-prev>←</button>
+        <button class="b b-go" data-launch>⚓ Jeter l'ancre au port</button>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<canvas id="feux"></canvas>
+
+<div class="arrivee" id="arrivee">
+  <div class="mo" id="moBateau"><svg viewBox="0 0 300 160" style="width:150px;overflow:visible;filter:drop-shadow(0 8px 12px rgba(5,20,40,.5))"></svg></div>
+  <h1 id="aTitre"></h1>
+  <p id="aTexte"></p>
+  <a class="b b-n b-port" id="versJeu" href="jeu.html">Entrer au port →</a>
+  <p class="auto-note" id="autoNote"></p>
+</div>
 
 <script>
-// === SUPABASE ===
-const SUPABASE_URL='https://jtijmythnvqgquizeizs.supabase.co';
-const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWpteXRobnZxZ3F1aXplaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NjU3NjAsImV4cCI6MjEwMDE0MTc2MH0.7Eo_DZarB7J6BCzRHh5pB7-ZKKwgIlwWkpqUV9MGbUc';
+'use strict';
+const $=s=>document.querySelector(s);
+const qs=[...document.querySelectorAll('.q')];
+let h=0;
+const S={couleur:'#e84d3d',forme:0};
+const HEURES=['Départ · plein jour','En mer · couchant','Grand large · pleine nuit','Arrivée · aube'];
+const feedback=()=>{if(navigator.vibrate)navigator.vibrate(9)};
+const dk=(hex,f=.75)=>{const n=parseInt(hex.slice(1),16);
+  return `rgb(${Math.round((n>>16)*f)},${Math.round(((n>>8)&255)*f)},${Math.round((n&255)*f)})`};
 
-// === SESSION ===
-let session=null;
-try{session=JSON.parse(localStorage.getItem('bd2_session'))}catch(e){}
-if(!session||!session.access_token)location.href='index.html';
-
-// === DATA ===
-const EMBLEMES=[
-  {e:'⚓',n:"L'Ancre"},{e:'🦑',n:'Le Poulpe'},{e:'⛵',n:'Le Voilier'},{e:'🐟',n:'La Sardine'},
-  {e:'🌊',n:'La Vague'},{e:'🏗️',n:'La Grue'},{e:'📦',n:'Le Colis'},{e:'🦀',n:'Le Crabe'},
-  {e:'🐙',n:'La Pieuvre'},{e:'🔱',n:'Le Trident'},{e:'🧭',n:'La Boussole'},{e:'⚙️',n:'La Mécanique'}
-];
-const COLORS=[
-  ['#9d7bff','#ff7a5c'],['#ff7a5c','#ffc24d'],['#4dc9ff','#9d7bff'],['#2ec4a0','#4dc9ff'],
-  ['#ff5c8a','#9d7bff'],['#ffc24d','#2ec4a0'],['#ff5c5c','#ffc24d'],['#7b8cff','#2ec4a0']
-];
-const CLASSES=[
-  {e:'⚔️',n:'Bagarreur',d:'Frappe fort, réfléchit après',b:'+15% attaque',bg:'rgba(255,92,92,.15)'},
-  {e:'💰',n:'Négociant',d:'Tout se vend, même les sardines',b:'+20% revenus',bg:'rgba(255,194,77,.2)'},
-  {e:'🌫️',n:'Contrebandier',d:'Passe partout, surtout où c’est interdit',b:'−25% temps',bg:'rgba(77,201,255,.18)'}
-];
-let idx=0, color=0, classe=0;
-
-const $=id=>document.getElementById(id);
-const grad=i=>`linear-gradient(135deg,${COLORS[i][0]},${COLORS[i][1]})`;
-
-// === TABS ===
-document.querySelectorAll('.tab').forEach(t=>{
-  t.addEventListener('click',()=>switchTab(t.dataset.tab));
-});
-function switchTab(name){
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  $('panel-'+name).classList.add('active');
-  if(name==='voie')refreshRecap();
-}
-$('btnNext').onclick=()=>switchTab('voie');
-
-// === CAROUSEL ===
-function render(anim=false){
-  const a=$('ava');
-  a.textContent=EMBLEMES[idx].e;
-  a.style.background=grad(color);
-  if(anim){a.classList.remove('swap');void a.offsetWidth;a.classList.add('swap')}
-  $('avaName').textContent=EMBLEMES[idx].n;
-  $('avaCount').textContent=`Emblème ${idx+1} / ${EMBLEMES.length}`;
-}
-$('prev').onclick=()=>{idx=(idx-1+EMBLEMES.length)%EMBLEMES.length;render(true)};
-$('next').onclick=()=>{idx=(idx+1)%EMBLEMES.length;render(true)};
-
-// Swipe tactile
-let sx=null;
-$('ava').addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
-$('ava').addEventListener('touchend',e=>{
-  if(sx===null)return;
-  const dx=e.changedTouches[0].clientX-sx;sx=null;
-  if(dx>40)$('prev').click(); else if(dx<-40)$('next').click();
-},{passive:true});
-
-// Couleurs
-COLORS.forEach((c,i)=>{
-  const b=document.createElement('div');b.className='sc'+(i===0?' s':'');b.style.background=grad(i);
-  b.onclick=()=>{color=i;document.querySelectorAll('.sc').forEach((x,j)=>x.classList.toggle('s',j===i));render()};
-  $('colors').appendChild(b);
-});
-
-// Classes
-CLASSES.forEach((c,i)=>{
-  const b=document.createElement('div');b.className='classe'+(i===0?' sel':'');
-  b.innerHTML=`<div class="c-ic" style="background:${c.bg}">${c.e}</div>
-    <div><div class="c-nm">${c.n}</div><div class="c-ds">${c.d}</div></div>
-    <div class="c-bonus">${c.b}</div>`;
-  b.onclick=()=>{classe=i;document.querySelectorAll('.classe').forEach((x,j)=>x.classList.toggle('sel',j===i))};
-  $('classesGrid').appendChild(b);
-});
-
-// Récap sur onglet port
-function refreshRecap(){
-  $('recapAva').textContent=EMBLEMES[idx].e;
-  $('recapAva').style.background=grad(color);
-  $('recapName').textContent=$('pseudo').value.trim()||'Joueur';
-  const d=$('devise').value.trim();
-  $('recapDevise').textContent=d?`« ${d} »`:'';
+/* bateau construit en direct */
+function dessineBateau(){
+  const C=S.couleur;
+  const coque=S.forme===0
+    ?`M42 104 L258 104 Q248 138 212 138 L88 138 Q52 138 42 104 Z M42 104 Q30 98 26 84 L50 94 Z`
+    :`M58 106 L242 106 Q252 106 248 118 L240 138 L60 138 L52 118 Q48 106 58 106 Z`;
+  const svg=`
+    <path d="${coque}" fill="${C}" stroke="var(--enc)" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M42 104 h216 v9 h-216 z" fill="${dk(C)}"/>
+    <path d="M42 104 h216 v4 h-216 z" fill="rgba(255,255,255,.3)"/>
+    <rect x="112" y="66" width="76" height="40" rx="7" fill="#fdf7ec" stroke="var(--enc)" stroke-width="3"/>
+    <rect x="112" y="66" width="76" height="10" rx="5" fill="#e0d5c0"/>
+    <rect x="124" y="80" width="18" height="14" rx="3" fill="#7ec8f0" stroke="var(--enc)" stroke-width="2"/>
+    <rect x="156" y="80" width="18" height="14" rx="3" fill="#7ec8f0" stroke="var(--enc)" stroke-width="2"/>
+    <rect x="147" y="24" width="5" height="44" rx="2.5" fill="#8a6242" stroke="var(--enc)" stroke-width="1.5"/>
+    <path d="M152 28 h40 l-9 9 l9 9 h-40 z" fill="${dk(C,.9)}" stroke="var(--enc)" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M30 142 q34 6 68 2 M170 145 q42 4 78 -3" stroke="rgba(255,255,255,.7)" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
+  $('#svgB').innerHTML=svg;$('#svgR').innerHTML=svg;
 }
 
-// Pré-remplir pseudo depuis le signup
-const meta=session.user&&session.user.user_metadata;
-if(meta&&meta.pseudo)$('pseudo').value=meta.pseudo;
-render();
+/* décor : plancton + écume + étoiles */
+for(let i=0;i<9;i++){
+  const p=document.createElement('div');p.className='plancton';
+  const sz=3+Math.random()*4;
+  p.style.cssText=`width:${sz}px;height:${sz}px;left:${5+Math.random()*90}%;top:${20+Math.random()*70}%;animation-delay:${Math.random()*4}s`;
+  $('#planctons').appendChild(p);
+}
+/* scintillements du soleil sur l'eau */
+const merEl=document.querySelector('.mer');
+for(let i=0;i<16;i++){
+  const s=document.createElement('div');s.className='scint';
+  s.style.cssText=`left:${3+Math.random()*94}%;top:${8+Math.random()*84}%;
+    animation-duration:${2+Math.random()*2.5}s;animation-delay:${Math.random()*3}s`;
+  merEl.appendChild(s);
+}
+for(let i=0;i<8;i++){
+  const b=document.createElement('div');b.className='bulle';
+  const sz=4+Math.random()*5;
+  b.style.cssText=`width:${sz}px;height:${sz}px;left:${3+i*12+Math.random()*5}%;animation-delay:${Math.random()*2.6}s`;
+  $('#sillage').appendChild(b);
+}
+for(let i=0;i<44;i++){
+  const e=document.createElement('div');e.className='et';
+  const sz=Math.random()<.2?3:2;
+  e.style.cssText=`width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*52}%;animation-delay:${Math.random()*2.8}s`;
+  $('#cielNuit').appendChild(e);
+}
 
-// === TOAST ===
-let tt;
-function showToast(m,t=''){const x=$('toast');x.textContent=m;x.className='toast show '+t;clearTimeout(tt);tt=setTimeout(()=>x.classList.remove('show'),3200)}
-
-// === SAVE ===
-$('btnSave').addEventListener('click',async()=>{
-  const pseudo=$('pseudo').value.trim();
-  if(pseudo.length<3){switchTab('joueur');return showToast('Pseudo : 3 caractères minimum','error')}
-  const btn=$('btnSave');btn.disabled=true;
-  const profile={
-    id:session.user.id,
-    pseudo,
-    avatar_emoji:EMBLEMES[idx].e,
-    avatar_color:COLORS[color].join(','),
-    devise:$('devise').value.trim(),
-    classe:CLASSES[classe].n
-  };
-  try{
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=id`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'apikey':SUPABASE_ANON,
-        'Authorization':`Bearer ${session.access_token}`,
-        'Prefer':'resolution=merge-duplicates'
-      },
-      body:JSON.stringify(profile)
-    });
-    if(!res.ok){const e=await res.json();throw new Error(e.message||'Erreur sauvegarde')}
-    localStorage.setItem('bd2_profile',JSON.stringify(profile));
-    showToast('Profil enregistré, cap sur le port !','success');
-    setTimeout(()=>location.href='jeu.html',700);
-  }catch(e){
-    showToast(e.message,'error');
-    btn.disabled=false;
+/* navigation = le monde change d'heure + parallaxe */
+function go(i){
+  h=Math.max(0,Math.min(qs.length-1,i));
+  document.body.dataset.h=h;
+  qs.forEach((q,k)=>q.classList.toggle('on',k===h));
+  $('#heure').textContent=HEURES[h];
+  $('#etapeTxt').textContent=`Étape ${h+1} / ${qs.length}`;
+  $('#pLoin').style.transform=`translateX(-${h*18}%)`;
+  $('#pCiel').style.transform=`translateX(-${h*2.5}%)`;
+  const inp=qs[h].querySelector('input');
+  if(inp)setTimeout(()=>inp.focus(),500);
+}
+document.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{
+  if(h===0&&($('#pseudo').value||'').trim().length<3){
+    $('#pseudo').style.borderColor='#ff6a4e';
+    $('#pseudo').placeholder='3 caractères minimum, capitaine !';return;
   }
+  feedback();go(h+1);
 });
+document.querySelectorAll('[data-prev]').forEach(b=>b.onclick=()=>{feedback();go(h-1)});
+
+/* choix live */
+function bind(id,apply){
+  $(id).addEventListener('click',e=>{
+    const o=e.target.closest('.op');if(!o)return;
+    [...$(id).children].forEach(x=>x.classList.toggle('s',x===o));
+    apply(o.dataset.v);feedback();dessineBateau();
+  });
+}
+bind('#cCouleur',v=>S.couleur=v);
+bind('#cForme',v=>S.forme=+v);
+
+/* ── corne de brume WebAudio ── */
+let audioCtx;
+function corne(){
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const t=audioCtx.currentTime;
+    [82,123].forEach((freq,i)=>{
+      const o=audioCtx.createOscillator(),g=audioCtx.createGain(),lp=audioCtx.createBiquadFilter();
+      o.type='sawtooth';o.frequency.value=freq;
+      lp.type='lowpass';lp.frequency.value=freq*4;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(i?0.07:0.2,t+.08);
+      g.gain.setValueAtTime(i?0.07:0.2,t+1.1);
+      g.gain.linearRampToValueAtTime(0,t+1.6);
+      o.connect(lp);lp.connect(g);g.connect(audioCtx.destination);
+      o.start(t);o.stop(t+1.7);
+    });
+  }catch(e){}
+}
+
+/* ── canvas partagé (sillage + feux) ── */
+function initCanvas(){
+  const cv=$('#feux'),ctx=cv.getContext('2d');
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return ctx;
+}
+
+/* arrivée : feux d'artifice */
+document.querySelector('[data-launch]').onclick=()=>{
+  const pseudo=($('#pseudo').value||'').trim();
+  const nom=($('#nomBateau').value||'').trim()||'Sans nom';
+  if(pseudo.length<3)return go(0);
+  feedback();
+  console.log('PREVIEW — payload Supabase :',{pseudo,nom,couleur:S.couleur,forme:S.forme===0?'Pointu':'Barquette'});
+  localStorage.setItem('bd2_profil',JSON.stringify({pseudo,nom,couleur:S.couleur,forme:S.forme}));
+
+  document.querySelector('.pont').classList.add('range');
+  corne();
+  setTimeout(()=>lanceFeux(),400);
+  setTimeout(()=>{
+    $('#moBateau svg').innerHTML=$('#svgB').innerHTML;
+    $('#aTitre').textContent=`Bon vent, ${pseudo.replace(/[<>&]/g,'')}.`;
+    $('#aTexte').textContent=`« ${nom} » vient de passer la digue. Là-bas, le port t'attend — ses quais, ses clans, et ceux qui pensent déjà pouvoir te couler.`;
+    $('#arrivee').classList.add('on');
+    if(navigator.vibrate)navigator.vibrate([30,50,30,50,90]);
+    let reste=6;
+    const maj=()=>{$('#autoNote').textContent=`Embarquement automatique dans ${reste} s…`};
+    maj();
+    const tick=setInterval(()=>{reste--;if(reste<=0){clearInterval(tick);location.href='jeu.html'}else maj()},1000);
+    $('#versJeu').onclick=()=>clearInterval(tick);
+  },1800);
+};
+
+/* ── feux d'artifice canvas : fusées, explosions, gravité, traînées ── */
+function lanceFeux(){
+  const ctx=initCanvas();
+  const W=innerWidth,H=innerHeight;
+  const COLS=['#ffd23c','#ff6a4e','#5cf0d8','#fff6e0','#7ec8f0'];
+  const fusees=[],etincelles=[];
+  let salves=0,fini=false;
+
+  function tir(){
+    if(salves>=7)return;
+    salves++;
+    fusees.push({
+      x:W*(0.18+Math.random()*0.64), y:H,
+      vx:(Math.random()-.5)*1.2, vy:-(H*0.011+Math.random()*H*0.004),
+      cible:H*(0.16+Math.random()*0.22),
+      col:COLS[salves%COLS.length]
+    });
+    setTimeout(tir,260+Math.random()*420);
+  }
+
+  function explose(f){
+    const n=54+Math.random()*30, base=2.2+Math.random()*1.6;
+    if(navigator.vibrate)navigator.vibrate(18);
+    for(let i=0;i<n;i++){
+      const a=(i/n)*Math.PI*2+Math.random()*.2, v=base*(0.35+Math.random()*0.75);
+      etincelles.push({
+        x:f.x,y:f.y, vx:Math.cos(a)*v, vy:Math.sin(a)*v,
+        vie:1, dec:0.008+Math.random()*0.012,
+        col:Math.random()<.22?'#fff6e0':f.col, tr:[]
+      });
+    }
+  }
+
+  function boucle(){
+    ctx.clearRect(0,0,W,H);
+    ctx.globalCompositeOperation='lighter';
+    /* fusées montantes */
+    for(let i=fusees.length-1;i>=0;i--){
+      const f=fusees[i];
+      f.x+=f.vx;f.y+=f.vy;f.vy+=0.06;
+      ctx.strokeStyle=f.col;ctx.lineWidth=2;ctx.globalAlpha=.9;
+      ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x-f.vx*3,f.y-f.vy*3);ctx.stroke();
+      if(f.y<=f.cible||f.vy>=0){explose(f);fusees.splice(i,1)}
+    }
+    /* étincelles avec gravité + traînée */
+    for(let i=etincelles.length-1;i>=0;i--){
+      const e=etincelles[i];
+      e.tr.push([e.x,e.y]);if(e.tr.length>6)e.tr.shift();
+      e.x+=e.vx;e.y+=e.vy;
+      e.vx*=0.985;e.vy=e.vy*0.985+0.045;
+      e.vie-=e.dec;
+      if(e.vie<=0){etincelles.splice(i,1);continue}
+      ctx.globalAlpha=e.vie;
+      ctx.strokeStyle=e.col;ctx.lineWidth=e.vie*2.4;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(e.tr[0][0],e.tr[0][1]);
+      for(const [x,y] of e.tr)ctx.lineTo(x,y);
+      ctx.stroke();
+      if(e.vie>.6&&Math.random()<.3){
+        ctx.globalAlpha=e.vie*.8;ctx.fillStyle='#fff';
+        ctx.fillRect(e.x-.8,e.y-.8,1.6,1.6);
+      }
+    }
+    ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';
+    if(salves<7||fusees.length||etincelles.length)requestAnimationFrame(boucle);
+    else if(!fini){fini=true;ctx.clearRect(0,0,W,H)}
+  }
+  tir();boucle();
+}
+
+dessineBateau();go(0);
 </script>
 </body>
 </html>
