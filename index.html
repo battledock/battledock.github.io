@@ -208,25 +208,38 @@ document.getElementById('form-signup').addEventListener('submit',async ev=>{
     document.getElementById('signup-pseudo').value.trim()
   );
   btn.disabled=false;
-  if(r.access_token){
-    // Confirmation email désactivée → session directe
-    localStorage.setItem('bd2_session',JSON.stringify(r));
-    showToast('Bienvenue au port !','success');
-    setTimeout(()=>location.href='inscription.html',600);
-  }else if(r.id||r.user){
-    // Confirmation email encore active côté Supabase
-    showToast('Compte créé ! Vérifie tes emails puis connecte-toi.','success');
+  if(r.id||r.user){
+    showToast('Compte créé ! Vérifie tes emails.','success');
+    // Switch vers l'onglet connexion
     document.querySelector('.tab[data-tab="login"]').click();
   }else{
     showToast(r.error_description||r.msg||'Erreur à l\'inscription','error');
   }
 });
 
-// === SESSION ACTIVE → jeu ===
-try{
-  const s=JSON.parse(localStorage.getItem('bd2_session'));
-  if(s&&s.access_token)location.href='jeu.html';
-}catch(e){}
+// === SESSION : vérif Supabase avant redirection (anti-boucle) ===
+(async()=>{
+  try{
+    const s=JSON.parse(localStorage.getItem('bd2_session'));
+    if(!s||!s.access_token)return;
+    let r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{
+      headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${s.access_token}`}
+    });
+    if(r.ok){location.href='jeu.html';return}
+    if(s.refresh_token){
+      r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+        method:'POST',headers:sb.headers,
+        body:JSON.stringify({refresh_token:s.refresh_token})
+      });
+      const d=await r.json();
+      if(d.access_token){
+        localStorage.setItem('bd2_session',JSON.stringify(d));
+        location.href='jeu.html';return
+      }
+    }
+    localStorage.removeItem('bd2_session'); // session morte → on reste sur l'index
+  }catch(e){localStorage.removeItem('bd2_session')}
+})();
 </script>
 </body>
 </html>
