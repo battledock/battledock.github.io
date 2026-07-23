@@ -84,14 +84,15 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%);colo
 .sc{width:30px;height:30px;border-radius:50%;border:2.5px solid transparent;cursor:pointer;transition:.15s}
 .sc.s{border-color:#f2eef8;transform:scale(1.15)}
 
-/* ====== PORTS ====== */
-.ports{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.port-opt{padding:14px 10px;border-radius:12px;cursor:pointer;text-align:center;
-  border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);transition:.15s}
-.port-opt .p-emo{font-size:22px}
-.port-opt .p-name{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-top:5px;color:#c8bede}
-.port-opt.sel{border-color:#ff9a5c;background:rgba(255,122,92,.14)}
-.port-opt.sel .p-name{color:#f2eef8}
+/* ====== CLASSES ====== */
+.classes{display:flex;flex-direction:column;gap:10px}
+.classe{display:flex;gap:12px;align-items:center;padding:14px;border-radius:14px;cursor:pointer;
+  border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);transition:.15s;text-align:left}
+.classe.sel{border-color:#ff9a5c;background:rgba(255,122,92,.14)}
+.classe .c-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.classe .c-nm{font-family:'Oswald',sans-serif;font-size:15px;letter-spacing:1px}
+.classe .c-ds{font-size:11px;color:#a89cb8;margin-top:2px}
+.classe .c-bonus{margin-left:auto;font-size:11px;font-weight:600;color:#5ad48e;white-space:nowrap;flex-shrink:0}
 
 /* Récap joueur sur l'onglet port */
 .recap{display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;
@@ -123,7 +124,7 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%);colo
   <div class="auth-card">
     <div class="tabs">
       <button class="tab active" data-tab="joueur">Ton joueur</button>
-      <button class="tab" data-tab="port">Ton port</button>
+      <button class="tab" data-tab="voie">Ta voie</button>
     </div>
 
     <!-- ===== PANEL JOUEUR ===== -->
@@ -144,11 +145,11 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%);colo
       <div class="field"><input type="text" id="devise" maxlength="60" placeholder="Ex : Ici c'est mon quai."></div>
       <div class="hint">Affichée sur ton profil et tes défaites (surtout tes défaites).</div>
 
-      <button class="btn-primary" id="btnNext">Choisir mon port →</button>
+      <button class="btn-primary" id="btnNext">Choisir ma voie →</button>
     </div>
 
-    <!-- ===== PANEL PORT ===== -->
-    <div class="panel" id="panel-port">
+    <!-- ===== PANEL VOIE ===== -->
+    <div class="panel" id="panel-voie">
       <div class="recap">
         <div class="r-ava" id="recapAva">⚓</div>
         <div>
@@ -156,8 +157,8 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%);colo
           <div class="r-d" id="recapDevise"></div>
         </div>
       </div>
-      <div class="sec" style="margin-top:0">Ton port d'attache</div>
-      <div class="ports" id="portsGrid"></div>
+      <div class="sec" style="margin-top:0">Ta voie de docker</div>
+      <div class="classes" id="classesGrid"></div>
       <button class="btn-primary" id="btnSave">Larguer les amarres</button>
     </div>
   </div>
@@ -185,11 +186,12 @@ const COLORS=[
   ['#9d7bff','#ff7a5c'],['#ff7a5c','#ffc24d'],['#4dc9ff','#9d7bff'],['#2ec4a0','#4dc9ff'],
   ['#ff5c8a','#9d7bff'],['#ffc24d','#2ec4a0'],['#ff5c5c','#ffc24d'],['#7b8cff','#2ec4a0']
 ];
-const PORTS=[
-  {e:'⛵',n:'Vieux-Port'},{e:'🏘️',n:'Le Panier'},{e:'🏗️',n:'La Joliette'},
-  {e:'🎣',n:"L'Estaque"},{e:'🏞️',n:'Les Calanques'},{e:'🌅',n:'Vallon des Auffes'}
+const CLASSES=[
+  {e:'⚔️',n:'Bagarreur',d:'Frappe fort, réfléchit après',b:'+15% attaque',bg:'rgba(255,92,92,.15)'},
+  {e:'💰',n:'Négociant',d:'Tout se vend, même les sardines',b:'+20% revenus',bg:'rgba(255,194,77,.2)'},
+  {e:'🌫️',n:'Contrebandier',d:'Passe partout, surtout où c’est interdit',b:'−25% temps',bg:'rgba(77,201,255,.18)'}
 ];
-let idx=0, color=0, port=0;
+let idx=0, color=0, classe=0;
 
 const $=id=>document.getElementById(id);
 const grad=i=>`linear-gradient(135deg,${COLORS[i][0]},${COLORS[i][1]})`;
@@ -202,9 +204,9 @@ function switchTab(name){
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===name));
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   $('panel-'+name).classList.add('active');
-  if(name==='port')refreshRecap();
+  if(name==='voie')refreshRecap();
 }
-$('btnNext').onclick=()=>switchTab('port');
+$('btnNext').onclick=()=>switchTab('voie');
 
 // === CAROUSEL ===
 function render(anim=false){
@@ -234,12 +236,14 @@ COLORS.forEach((c,i)=>{
   $('colors').appendChild(b);
 });
 
-// Ports
-PORTS.forEach((p,i)=>{
-  const b=document.createElement('div');b.className='port-opt'+(i===0?' sel':'');
-  b.innerHTML=`<div class="p-emo">${p.e}</div><div class="p-name">${p.n}</div>`;
-  b.onclick=()=>{port=i;document.querySelectorAll('.port-opt').forEach((x,j)=>x.classList.toggle('sel',j===i))};
-  $('portsGrid').appendChild(b);
+// Classes
+CLASSES.forEach((c,i)=>{
+  const b=document.createElement('div');b.className='classe'+(i===0?' sel':'');
+  b.innerHTML=`<div class="c-ic" style="background:${c.bg}">${c.e}</div>
+    <div><div class="c-nm">${c.n}</div><div class="c-ds">${c.d}</div></div>
+    <div class="c-bonus">${c.b}</div>`;
+  b.onclick=()=>{classe=i;document.querySelectorAll('.classe').forEach((x,j)=>x.classList.toggle('sel',j===i))};
+  $('classesGrid').appendChild(b);
 });
 
 // Récap sur onglet port
@@ -271,7 +275,7 @@ $('btnSave').addEventListener('click',async()=>{
     avatar_emoji:EMBLEMES[idx].e,
     avatar_color:COLORS[color].join(','),
     devise:$('devise').value.trim(),
-    port_attache:PORTS[port].n
+    classe:CLASSES[classe].n
   };
   try{
     const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=id`,{
