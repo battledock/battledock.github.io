@@ -1043,6 +1043,7 @@ body.vesuve .decor-na{animation:tremble .4s linear infinite}
   pointer-events:none}
 .vj-tag .nv{color:#ffd23c;font-family:'Fraunces';font-size:8.5px}
 
+.zf-go:disabled{opacity:.55;filter:grayscale(.5);pointer-events:none}
 /* ══ fiche port : la longue-vue ══ */
 .zfiche{position:absolute!important;left:0!important;right:0!important;bottom:0!important;
   margin:0!important;padding:0 12px calc(12px + env(safe-area-inset-bottom))!important;
@@ -2916,7 +2917,14 @@ function selPort(id){
     const moy=mesProds.length?mesProds.reduce((a,[mid])=>a+facteurDe(id,mid),0)/mesProds.length:1;
     $('#zfMarche').textContent=moy>1.08?'📈 Haut':moy<0.92?'📉 Bas':'➖ Stable';
   });
-  $('#zfGo').onclick=()=>ouvreCargo(1);
+  if(voyageEnCours()){
+    const g=$('#zfGo');
+    g.disabled=true;
+    g.innerHTML='<span>⛵</span><span>Ton bateau est en mer…</span>';
+    const t=$('#zfTest');if(t)t.style.display='none';
+  }else{
+    $('#zfGo').onclick=()=>ouvreCargo(1);
+  }
   if(navigator.vibrate)navigator.vibrate(6);
 }
 
@@ -2925,7 +2933,11 @@ let CARGO={},CARGO_DIV=1;
 function produitsDe(port){
   return Object.entries(MARCHANDISES).filter(([id,m])=>m.origine===port);
 }
-async function ouvreCargo(div){
+async function ouvreCargo(...a){
+  if(voyageEnCours()){toast('⚠️ Ton bateau est déjà en mer — attends l\'accostage');return}
+  return ouvreCargoReel(...a);
+}
+async function ouvreCargoReel(div){
   CARGO={};CARGO_DIV=div;
   await chargeMarche(PORT_SEL);
   const ici=portActuel(), dest=PORTS[PORT_SEL];
