@@ -2822,7 +2822,11 @@ function normaliseVoyage(v){
 }
 function portActuel(){return (PROFIL&&PROFIL.port&&PORTS[PROFIL.port])?PROFIL.port:'marseille'}
 function voyageEnCours(){return VOYAGE}
-function fmtDuree(sec){return sec<3600?Math.round(sec/60)+' min':(sec/3600)+' h'}
+function fmtDuree(sec){
+  if(sec<3600)return Math.round(sec/60)+' min';
+  const h=Math.floor(sec/3600), m=Math.round((sec%3600)/60);
+  return m?h+' h '+(m<10?'0':'')+m:h+' h';
+}
 
 /* ── décor selon le port ── */
 function appliquePort(id){
@@ -2896,30 +2900,37 @@ function lentilleSvg(id){
 function selPort(id){
   const ici=portActuel();
   if(id===ici){toast('📍 Tu es déjà à '+PORTS[id].nom);return}
+  const voEnCours=voyageEnCours();
+  if(voEnCours&&id===voEnCours.vers){toast('⛵ Tu fais déjà route vers '+PORTS[id].nom);return}
   const NIV=niveauDe(PROFIL.xp??0);
   const P=PORTS[id];
   if(NIV<P.niv){toast('🔒 '+P.nom+' se débloque au niveau '+P.niv);return}
   PORT_SEL=id;
   document.querySelectorAll('.port').forEach(o=>o.classList.toggle('sel',o.dataset.p===id));
-  /* route */
-  const A=PORTS[ici];
-  const rt=$('#routeTrace'), rh=$('#routeHalo');
-  const mx=(A.x+P.x)/2, my=Math.min(A.y,P.y)-24;
-  const dRoute=`M${A.x} ${A.y} Q${mx} ${my} ${P.x} ${P.y}`;
-  rt.setAttribute('d',dRoute);rh.setAttribute('d',dRoute);
-  rt.style.display='';rh.style.display='';
+  const vo=voyageEnCours();
+  /* point de référence : en voyage, la prochaine traversée partira du port d'arrivée */
+  const ref=vo?vo.vers:ici;
+  /* route : jamais pendant un voyage (on ne touche pas au tracé de suivi) */
+  if(!vo){
+    const A=PORTS[ici];
+    const rt=$('#routeTrace'), rh=$('#routeHalo');
+    const mx=(A.x+P.x)/2, my=Math.min(A.y,P.y)-24;
+    const dRoute=`M${A.x} ${A.y} Q${mx} ${my} ${P.x} ${P.y}`;
+    rt.setAttribute('d',dRoute);rh.setAttribute('d',dRoute);
+    rt.style.display='';rh.style.display='';
+  }
   /* fiche */
   $('#zfiche').innerHTML=`
     <div class="lv2-lentille"><svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">${lentilleSvg(id)}</svg><div class="lv2-croix"></div></div>
     <div class="lv2-carte">
       <div class="lv2-t">⚓ ${P.nom}</div>
-      <div class="lv2-st">Terre en vue à ${fmtDuree(dureeRoute(portActuel(),id))} de mer — ${P.pays}</div>
+      <div class="lv2-st">Terre en vue à ${fmtDuree(dureeRoute(ref,id))} de mer — ${P.pays}</div>
       <div class="lv2-desc">${P.desc}</div>
       <div class="lv2-stats">
-        <div class="lv2-s"><b>${fmtDuree(dureeRoute(portActuel(),id))}</b><span>TRAVERSÉE</span></div>
+        <div class="lv2-s"><b>${fmtDuree(dureeRoute(ref,id))}</b><span>TRAVERSÉE</span></div>
         <div class="lv2-s"><b>×${P.mult}</b><span>PRIX</span></div>
         <div class="lv2-s"><b id="zfMarche">…</b><span>MARCHÉ</span></div>
-        <div class="lv2-s"><b>+${xpRoute(portActuel(),id)}</b><span>XP</span></div>
+        <div class="lv2-s"><b>+${xpRoute(ref,id)}</b><span>XP</span></div>
       </div>
       <button class="zf-go" id="zfGo"><span>📦</span><span>Préparer la cargaison</span></button>
     </div>`;
@@ -2932,7 +2943,7 @@ function selPort(id){
     const moy=mesProds.length?mesProds.reduce((a,[mid])=>a+facteurDe(id,mid),0)/mesProds.length:1;
     $('#zfMarche').textContent=moy>1.08?'📈 Haut':moy<0.92?'📉 Bas':'➖ Stable';
   });
-  if(voyageEnCours()){
+  if(vo){
     const g=$('#zfGo');
     g.disabled=true;
     g.innerHTML='<span>⛵</span><span>Ton bateau est en mer…</span>';
