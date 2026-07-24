@@ -101,6 +101,41 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%)}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 .toast.error{border-color:#ff7a7a;color:#ff7a7a}
 .toast.success{border-color:#5ad48e;color:#5ad48e}
+
+/* ── espace temporaire Aurelia ── */
+.aur-lien{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(14px + env(safe-area-inset-bottom));z-index:1050;
+  border:none;background:none;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);padding:8px 14px;transition:.2s}
+.aur-lien:hover,.aur-lien:active{color:rgba(255,255,255,.7)}
+.aur-fond{position:fixed;inset:0;z-index:1150;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,6,18,.75);backdrop-filter:blur(8px);
+  opacity:0;pointer-events:none;transition:.25s}
+.aur-fond.on{opacity:1;pointer-events:auto}
+.aur-boite{width:min(320px,calc(100% - 48px));border-radius:20px;padding:24px 20px;
+  background:linear-gradient(160deg,#181228,#100c1e);
+  border:1px solid rgba(157,123,255,.35);
+  box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 40px rgba(157,123,255,.12);
+  transform:translateY(14px) scale(.97);transition:.25s;text-align:center}
+.aur-fond.on .aur-boite{transform:none}
+.aur-t{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:4px;
+  text-transform:uppercase;
+  background:linear-gradient(90deg,#9d7bff,#ff9a5c);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.aur-st{font-size:11px;color:rgba(255,255,255,.45);margin:6px 0 16px}
+.aur-boite input{width:100%;padding:13px 14px;border-radius:11px;text-align:center;
+  background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);
+  color:#fff;font-size:14px;letter-spacing:2px;outline:none;transition:.2s}
+.aur-boite input:focus{border-color:#9d7bff;box-shadow:0 0 0 3px rgba(157,123,255,.18)}
+.aur-boite input.err{border-color:#ff5c5c;animation:aur-shake .35s}
+@keyframes aur-shake{25%{transform:translateX(-6px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.aur-go{width:100%;margin-top:12px;padding:13px;border:none;border-radius:11px;cursor:pointer;
+  font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  color:#fff;background:linear-gradient(135deg,#9d7bff,#ff7a5c)}
+.aur-go:active{transform:scale(.97)}
+.aur-x{margin-top:10px;border:none;background:none;cursor:pointer;
+  font-size:11px;color:rgba(255,255,255,.35)}
 </style>
 </head>
 <body>
@@ -143,6 +178,19 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%)}
       <div class="field"><input type="password" id="signup-confirm" placeholder="Confirmer" autocomplete="new-password" required><div class="error-msg"></div></div>
       <button type="submit" class="btn-primary">S'inscrire</button>
     </form>
+  </div>
+</div>
+
+
+<!-- espace temporaire Aurelia -->
+<button class="aur-lien" id="aurLien">✦ espace privé</button>
+<div class="aur-fond" id="aurFond">
+  <div class="aur-boite">
+    <div class="aur-t">Espace Aurelia</div>
+    <div class="aur-st">Entre le mot de passe pour continuer</div>
+    <input type="password" id="aurMdp" placeholder="••••••••" autocomplete="off">
+    <button class="aur-go" id="aurGo">Entrer</button>
+    <button class="aur-x" id="aurX">Annuler</button>
   </div>
 </div>
 
@@ -236,6 +284,29 @@ document.getElementById('form-signup').addEventListener('submit',async ev=>{
     showToast(r.error_description||r.msg||'Erreur à l\'inscription','error');
   }
 });
+
+
+// === espace temporaire Aurelia ===
+(function(){
+  const fond=document.getElementById('aurFond');
+  const mdp=document.getElementById('aurMdp');
+  document.getElementById('aurLien').onclick=()=>{
+    fond.classList.add('on');
+    setTimeout(()=>mdp.focus(),260);
+  };
+  document.getElementById('aurX').onclick=()=>{fond.classList.remove('on');mdp.value=''};
+  fond.addEventListener('click',e=>{if(e.target===fond){fond.classList.remove('on');mdp.value=''}});
+  function tente(){
+    if(mdp.value.trim().toLowerCase()==='aurelia'){
+      location.href='aurelia.html';
+    }else{
+      mdp.classList.remove('err');void mdp.offsetWidth;mdp.classList.add('err');
+      mdp.value='';mdp.focus();
+    }
+  }
+  document.getElementById('aurGo').onclick=tente;
+  mdp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();tente()}});
+})();
 
 // === SESSION : vérif Supabase avant redirection (anti-boucle) ===
 (async()=>{
