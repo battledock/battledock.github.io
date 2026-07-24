@@ -2321,33 +2321,53 @@ const SUPABASE_URL='https://jtijmythnvqgquizeizs.supabase.co';
 const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWpteXRobnZxZ3F1aXplaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NjU3NjAsImV4cCI6MjEwMDE0MTc2MH0.7Eo_DZarB7J6BCzRHh5pB7-ZKKwgIlwWkpqUV9MGbUc';
 let SESSION=null,PROFIL=null;
 
+async function rafraichitJeton(){
+  /* renouvelle le jeton avec le refresh_token ; renvoie true si ok */
+  try{
+    const s=SESSION||JSON.parse(localStorage.getItem('bd2_session'));
+    if(!s||!s.refresh_token)return false;
+    const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON},
+      body:JSON.stringify({refresh_token:s.refresh_token})
+    });
+    if(!r.ok)return false;
+    const d=await r.json();
+    if(!d.access_token)return false;
+    localStorage.setItem('bd2_session',JSON.stringify(d));
+    SESSION=d;
+    return true;
+  }catch(e){return false}
+}
+function jetonPerime(s){
+  /* vrai si le jeton expire dans moins de 60 s */
+  return !s.expires_at || (Date.now()/1000) > (s.expires_at - 60);
+}
+function versConnexion(){
+  localStorage.removeItem('bd2_session');
+  location.href='index.html';
+}
 async function garde(){
   try{
     const s=JSON.parse(localStorage.getItem('bd2_session'));
     if(!s||!s.access_token)throw 0;
+    /* jeton visiblement périmé : on rafraîchit direct, sans provoquer de 403 */
+    if(jetonPerime(s)){
+      if(await rafraichitJeton())return;
+      throw 0;
+    }
     let r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${s.access_token}`}});
     if(r.ok){s.user=await r.json();SESSION=s;return}
-    if(s.refresh_token){
-      r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
-        method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON},
-        body:JSON.stringify({refresh_token:s.refresh_token})
-      });
-      const d=await r.json();
-      if(d.access_token){localStorage.setItem('bd2_session',JSON.stringify(d));SESSION=d;return}
-    }
+    if(await rafraichitJeton())return;
     throw 0;
   }catch(e){
-    localStorage.removeItem('bd2_session');
-    location.href='index.html';
+    versConnexion();
     throw new Error('no-session');
   }
 }
 
 async function chargeProfil(){
   const uid=SESSION.user?.id||SESSION.user?.user?.id;
-  const r=await fetch(`${SUPABASE_URL}/rest/v1/profils?id=eq.${uid}&select=*`,{
-    headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`}
-  });
+  const r=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?id=eq.${uid}&select=*`);
   const rows=r.ok?await r.json():[];
   if(!rows.length){location.href='inscription.html';throw new Error('no-profil')}
   PROFIL=rows[0];
@@ -2706,14 +2726,21 @@ const PORTS={
 };
 
 /* ══ marché : cours calculés PAR LE SERVEUR, mis en cache ══ */
-async function rpc(nom,args){
+async function rpc(nom,args,dejaRetente){
   try{
+    /* jeton bientôt périmé : on renouvelle avant d'appeler */
+    if(SESSION&&jetonPerime(SESSION))await rafraichitJeton();
     const r=await fetch(`${SUPABASE_URL}/rest/v1/rpc/${nom}`,{
       method:'POST',
       headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`,
         'Content-Type':'application/json'},
       body:JSON.stringify(args||{})
     });
+    if((r.status===401||r.status===403)&&!dejaRetente){
+      if(await rafraichitJeton())return rpc(nom,args,true);
+      versConnexion();
+      return {erreur:'Session expirée — reconnecte-toi'};
+    }
     if(r.ok)return await r.json();
     let msg='HTTP '+r.status;
     try{const j=await r.json();msg+=' — '+(j.message||j.hint||j.details||JSON.stringify(j)).slice(0,120)}catch(e){}
@@ -2723,6 +2750,17 @@ async function rpc(nom,args){
     if(!navigator.onLine)return {erreur:'Pas de connexion — vérifie ton réseau et réessaie'};
     return {erreur:'Réseau : '+e.message};
   }
+}
+
+async function fetchAuth(url,opts,dejaRetente){
+  if(SESSION&&jetonPerime(SESSION))await rafraichitJeton();
+  const o=opts||{};
+  o.headers={...(o.headers||{}),'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`};
+  const r=await fetch(url,o);
+  if((r.status===401||r.status===403)&&!dejaRetente){
+    if(await rafraichitJeton())return fetchAuth(url,opts,true);
+  }
+  return r;
 }
 const MARCHE={};
 async function chargeMarche(port){
@@ -3166,7 +3204,7 @@ function afficheVoisins(joueurs){
 async function chargeVoisins(){
   try{
     const uid=SESSION.user?.id||SESSION.user?.user?.id;
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/profils?port=eq.${portActuel()}&id=neq.${uid}`+
+    const r=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?port=eq.${portActuel()}&id=neq.${uid}`+
       `&select=pseudo,couleur,forme,xp&order=xp.desc&limit=4`,{
       headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`}
     });
@@ -3296,9 +3334,7 @@ setTimeout(()=>{
 
 async function chargeClassement(){
   try{
-    const r=await fetch(`${SUPABASE_URL}/rest/v1/profils?select=pseudo,couleur,forme,xp,port&order=xp.desc.nullslast&limit=20`,{
-      headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`}
-    });
+    const r=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?select=pseudo,couleur,forme,xp,port&order=xp.desc.nullslast&limit=20`);
     let rows=r.ok?await r.json():[];
     let dansListe=false;
     rows=rows.map((j,i)=>{
@@ -3310,9 +3346,8 @@ async function chargeClassement(){
       /* mon rang réel */
       let rang='—';
       try{
-        const rc=await fetch(`${SUPABASE_URL}/rest/v1/profils?select=id&xp=gt.${PROFIL.xp||0}`,{
-          headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`,
-            'Range':'0-0','Prefer':'count=exact'}
+        const rc=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?select=id&xp=gt.${PROFIL.xp||0}`,{
+          headers:{'Range':'0-0','Prefer':'count=exact'}
         });
         const cr=rc.headers.get('content-range');
         if(cr&&cr.includes('/'))rang=parseInt(cr.split('/')[1])+1;
@@ -3438,17 +3473,7 @@ function majHeader(){
   majSous(PROFIL.sous??0);
 }
 /* ── sauvegarde Supabase : sous, xp et port ── */
-async function sauveGains(){
-  try{
-    const uid=SESSION.user?.id||SESSION.user?.user?.id;
-    await fetch(`${SUPABASE_URL}/rest/v1/profils?id=eq.${uid}`,{
-      method:'PATCH',
-      headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`,
-        'Content-Type':'application/json','Prefer':'return=minimal'},
-      body:JSON.stringify({sous:PROFIL.sous??0,xp:PROFIL.xp??0,port:portActuel()})
-    });
-  }catch(e){}
-}
+
 
 /* ── init ── */
 (async()=>{
