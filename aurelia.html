@@ -197,11 +197,29 @@ input[type=range]{width:100%;accent-color:var(--btn1)}
 .portrait svg{width:60%;max-width:220px}
 .portrait .cert{font-family:'Fraunces',serif;font-style:italic;color:#5a4a2e;font-size:14px;margin-top:6px}
 #fw{position:fixed;inset:0;pointer-events:none;z-index:8}
+/* ambiance flottante */
+.amb{position:fixed;top:-40px;font-size:22px;z-index:2;pointer-events:none;opacity:.55;animation:ambfall linear forwards}
+@keyframes ambfall{to{transform:translateY(115vh) rotate(340deg)}}
+/* transition entre mondes */
+#wipe{position:fixed;inset:0;background:#000;z-index:40;pointer-events:none;opacity:0;transition:opacity .28s}
+#wipe.on{opacity:1}
+/* bouton son */
+#mute{
+  position:fixed;top:14px;right:14px;z-index:60;width:42px;height:42px;border-radius:50%;
+  border:1.5px solid rgba(255,244,230,.25);background:rgba(0,0,0,.3);color:var(--creme);
+  font-size:18px;cursor:pointer;backdrop-filter:blur(4px);
+}
+@media (prefers-reduced-motion:reduce){
+  .amb,.confetti,.fog{display:none}
+}
+
 </style>
 </head>
 <body>
 <div class="stars" id="stars"></div>
 <canvas id="fw"></canvas>
+<div id="wipe"></div>
+<button id="mute" title="Son">🔊</button>
 <div class="progress" id="prog"></div>
 <div id="app"></div>
 
@@ -236,12 +254,90 @@ for(let i=0;i<40;i++){
   st.appendChild(s);
 }
 
+
+/* ---------- SON (WebAudio, zéro fichier) ---------- */
+let AC=null,muted=false,droneNodes=null,heartIv=null;
+function ac(){if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();}if(AC.state==='suspended')AC.resume();return AC;}
+function tone(f,dur=.09,type='sine',vol=.12,when=0){
+  if(muted)return;const a=ac(),o=a.createOscillator(),g=a.createGain();
+  o.type=type;o.frequency.value=f;
+  g.gain.setValueAtTime(vol,a.currentTime+when);
+  g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+when+dur);
+  o.connect(g).connect(a.destination);
+  o.start(a.currentTime+when);o.stop(a.currentTime+when+dur+.02);
+}
+const sTap=()=>tone(520,.06,'triangle',.08);
+const sSel=()=>{tone(620,.07,'triangle',.1);tone(880,.09,'triangle',.08,.06);};
+const sWin=()=>{[523,659,784,1047].forEach((f,i)=>tone(f,.14,'triangle',.11,i*.09));};
+const sBad=()=>tone(160,.18,'sawtooth',.09);
+const sSting=()=>{if(muted)return;const a=ac(),o=a.createOscillator(),g=a.createGain();
+  o.type='sawtooth';o.frequency.setValueAtTime(70,a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(400,a.currentTime+.12);
+  g.gain.setValueAtTime(.28,a.currentTime);g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.7);
+  o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+.75);};
+function droneStart(){
+  if(muted||droneNodes)return;const a=ac();
+  const o1=a.createOscillator(),o2=a.createOscillator(),g=a.createGain();
+  o1.type='sine';o1.frequency.value=55;o2.type='sine';o2.frequency.value=58;
+  g.gain.value=0;g.gain.linearRampToValueAtTime(.05,a.currentTime+1.5);
+  o1.connect(g);o2.connect(g);g.connect(a.destination);o1.start();o2.start();
+  droneNodes={o1,o2,g};
+}
+function droneStop(){
+  if(!droneNodes)return;const a=AC;
+  droneNodes.g.gain.linearRampToValueAtTime(0,a.currentTime+.8);
+  const dn=droneNodes;droneNodes=null;
+  setTimeout(()=>{try{dn.o1.stop();dn.o2.stop();}catch(e){}},900);
+}
+function heartStart(){
+  if(heartIv)return;
+  heartIv=setInterval(()=>{tone(65,.1,'sine',.2);tone(58,.12,'sine',.16,.16);vibr(30);},850);
+}
+function heartStop(){clearInterval(heartIv);heartIv=null;}
+function vibr(ms){try{navigator.vibrate&&navigator.vibrate(ms);}catch(e){}}
+document.getElementById('mute').onclick=function(){
+  muted=!muted;this.textContent=muted?'🔇':'🔊';
+  if(muted){droneStop();heartStop();}
+};
+/* sons globaux sur les interactions */
+document.addEventListener('pointerdown',e=>{
+  const t=e.target.closest('.choice,.tag,.btn,.round,.vs button,.mem,#banane,#target');
+  if(!t)return;
+  ac();vibr(12);
+  if(t.classList.contains('choice')||t.matches('.vs button'))sSel();
+  else sTap();
+},{capture:true});
+
+/* ---------- AMBIANCE flottante par monde ---------- */
+const AMB={'t-jungle':['🍃','🌿'],'t-sorbet':['🍓','🍋'],'t-sunset':['🧡','☀️'],
+  't-savane':['🌾','🦋'],'t-neon':['✦','◈'],'t-rose':['💗','🌸'],
+  't-turq':['🫧','🐚'],'t-elec':['🎵','✨'],'t-cafe':['☕️','🤎'],'t-menthe':['🌱','🍀'],'t-lav':['💜','✨']};
+let ambIv=null;
+function ambiance(theme){
+  clearInterval(ambIv);document.querySelectorAll('.amb').forEach(x=>x.remove());
+  const set=AMB[theme];if(!set)return;
+  ambIv=setInterval(()=>{
+    const a=document.createElement('div');a.className='amb';
+    a.textContent=set[Math.floor(Math.random()*set.length)];
+    a.style.left=Math.random()*96+'vw';
+    a.style.fontSize=(14+Math.random()*16)+'px';
+    a.style.animationDuration=(6+Math.random()*6)+'s';
+    document.body.appendChild(a);
+    setTimeout(()=>a.remove(),12500);
+  },1400);
+}
+
 /* ---------- thèmes ---------- */
 const THEMES=['t-jungle','t-sorbet','t-sunset','t-lav','t-savane','t-neon','t-rose','t-turq','t-elec','t-cafe','t-menthe','t-horror','t-re'];
 function setTheme(t){
   document.body.classList.remove(...THEMES);
   if(t)document.body.classList.add(t);
-  st.style.opacity=(t==='t-horror'||t==='t-re')?'0':'';
+  const horror=(t==='t-horror'||t==='t-re');
+  st.style.opacity=horror?'0':'';
+  ambiance(horror?null:t);
+  if(t==='t-horror'){droneStart();}
+  else if(t==='t-re'){droneStart();heartStart();}
+  else{droneStop();heartStop();}
 }
 
 /* ---------- feux d'artifice ---------- */
@@ -283,15 +379,23 @@ function progBar(){
   const p=document.getElementById('prog');p.innerHTML='';
   steps.forEach((_,i)=>{const b=document.createElement('i');if(i<=idx)b.classList.add('on');p.appendChild(b);});
 }
+const wipe=document.getElementById('wipe');
 function go(i){
-  idx=i;progBar();app.innerHTML='';
-  const d=document.createElement('div');d.className='screen';
-  setTheme(steps[idx].theme||null);
-  steps[idx].fn(d);
-  app.appendChild(d);
+  const doIt=()=>{
+    idx=i;progBar();app.innerHTML='';
+    const d=document.createElement('div');d.className='screen';
+    setTheme(steps[idx].theme||null);
+    steps[idx].fn(d);
+    app.appendChild(d);
+    wipe.classList.remove('on');
+  };
+  if(i===0){doIt();return;}
+  wipe.classList.add('on');
+  setTimeout(doIt,300);
 }
 function next(){ if(idx<steps.length-1) go(idx+1); }
 function confetti(){
+  sWin();vibr(40);
   const emos=['✨','💛','🦒','🌟','🧡','⭐️'];
   for(let i=0;i<26;i++){
     const c=document.createElement('div');c.className='confetti';
@@ -377,6 +481,7 @@ S('t-jungle',d=>{
     t.onpointerdown=()=>{
       if(!run)return;
       score+=isG?1:-1;
+      isG?sSel():sBad();
       sc.textContent=`Score : ${score} ${isG?'✅':'❌ (c\'était pas une girafe !)'}`;
       spawn();
     };
@@ -555,6 +660,7 @@ S('t-horror',d=>{
       R.brouillard=b.textContent.trim();
       d.classList.add('shake');
       setTimeout(()=>{
+        sSting();vibr([80,40,120]);
         const j=document.createElement('div');j.className='jump';
         j.innerHTML=`🦒<div class="cri">BOUH.</div><p class="sub" style="margin-top:10px">C'était la girafe.<br>Elle voulait juste dire bonjour.</p>`;
         document.body.appendChild(j);
@@ -595,7 +701,7 @@ S('t-neon',d=>{
     running=false;cancelAnimationFrame(raf);
     const ok=x>=+zone.dataset.a&&x<=+zone.dataset.b;
     if(ok){wins++;info.innerHTML=`<b style="color:var(--ok)">Dedans ! 🎯</b>`;}
-    else info.innerHTML=`<b style="color:#ff6b6b">Raté de peu… 😅</b>`;
+    else{sBad();info.innerHTML=`<b style="color:#ff6b6b">Raté de peu… 😅</b>`;}
     round++;
     if(round>3){
       R.sangfroid=`${wins}/3 à la jauge`;
@@ -808,7 +914,9 @@ S(null,d=>{
 /* ============ FINAL · feux d'artifice ============ */
 S(null,d=>{
   envoyerReponses();
-  fireworks(8000);
+  droneStop();heartStop();
+  fireworks(9000);
+  setTimeout(()=>sWin(),300);setTimeout(()=>sWin(),1600);
   confetti();setTimeout(confetti,900);
   const j=a=>(a||[]).join(', ');
   d.innerHTML=`
