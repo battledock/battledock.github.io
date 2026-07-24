@@ -82,6 +82,11 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%)}
 .field input:focus{border-color:#9d7bff;background:rgba(255,255,255,.1)}
 .field input::placeholder{color:#8a7f9c}
 .error-msg{font-size:12px;color:#ff7a7a;margin-top:5px;min-height:0}
+.remember{display:flex;align-items:center;gap:9px;margin:2px 2px 10px;font-size:13px;color:#a89cb8;cursor:pointer;user-select:none}
+.remember input{display:none}
+.rbox{width:18px;height:18px;border:1.5px solid rgba(255,255,255,.25);border-radius:5px;flex-shrink:0;position:relative;transition:.2s}
+.remember input:checked+.rbox{background:linear-gradient(135deg,#9d7bff,#ff7a5c);border-color:transparent}
+.remember input:checked+.rbox::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700}
 .btn-primary{width:100%;padding:15px;border:none;border-radius:12px;cursor:pointer;margin-top:6px;
   font-family:'Oswald',sans-serif;font-size:14px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#fff;
   background:linear-gradient(135deg,#9d7bff,#ff7a5c);box-shadow:0 6px 24px rgba(157,123,255,.25);transition:.2s}
@@ -128,6 +133,7 @@ body{background:linear-gradient(180deg,#141625 0%,#1b1e33 45%,#251f3d 100%)}
     <form class="form active" id="form-login" autocomplete="on">
       <div class="field"><input type="email" id="login-email" placeholder="Email" autocomplete="email" required><div class="error-msg"></div></div>
       <div class="field"><input type="password" id="login-password" placeholder="Mot de passe" autocomplete="current-password" required><div class="error-msg"></div></div>
+      <label class="remember"><input type="checkbox" id="remember"><span class="rbox"></span>Se souvenir de moi</label>
       <button type="submit" class="btn-primary">Embarquer</button>
     </form>
     <form class="form" id="form-signup" autocomplete="on">
@@ -178,15 +184,29 @@ const sb={
   async signIn(e,p){return(await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`,{method:'POST',headers:this.headers,body:JSON.stringify({email:e,password:p})})).json()}
 };
 
+// === SE SOUVENIR : préremplissage ===
+try{
+  const cr=JSON.parse(localStorage.getItem('bd2_creds'));
+  if(cr){
+    document.getElementById('login-email').value=cr.e||'';
+    document.getElementById('login-password').value=cr.p||'';
+    document.getElementById('remember').checked=true;
+  }
+}catch(e){}
+
 // === LOGIN ===
 document.getElementById('form-login').addEventListener('submit',async ev=>{
   ev.preventDefault();
   const btn=ev.target.querySelector('.btn-primary');btn.disabled=true;
-  const r=await sb.signIn(
-    document.getElementById('login-email').value.trim(),
-    document.getElementById('login-password').value
-  );
+  const email=document.getElementById('login-email').value.trim();
+  const pass=document.getElementById('login-password').value;
+  const r=await sb.signIn(email,pass);
   btn.disabled=false;
+  if(document.getElementById('remember').checked){
+    localStorage.setItem('bd2_creds',JSON.stringify({e:email,p:pass}));
+  }else{
+    localStorage.removeItem('bd2_creds');
+  }
   if(r.access_token){
     localStorage.setItem('bd2_session',JSON.stringify(r));
     showToast('Connexion réussie !','success');
