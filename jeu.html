@@ -1044,6 +1044,19 @@ body.vesuve .decor-na{animation:tremble .4s linear infinite}
 .vj-tag .nv{color:#ffd23c;font-family:'Fraunces';font-size:8.5px}
 
 .zf-go:disabled{opacity:.55;filter:grayscale(.5);pointer-events:none}
+
+/* ── la flotte des autres capitaines ── */
+#flotte .fj{cursor:pointer}
+#flotte .fj ellipse{fill:rgba(3,12,24,.28)}
+#flotte .fj .fj-coque{stroke:#0d2438;stroke-width:1.6}
+#flotte .fj .fj-voile{fill:#f4efe4;stroke:#0d2438;stroke-width:.9}
+#flotte .fj{animation:fj-houle 3.8s ease-in-out infinite}
+#flotte .fj:nth-child(2n){animation-delay:-1.6s}
+#flotte .fj:nth-child(3n){animation-delay:-2.7s}
+@keyframes fj-houle{50%{translate:0 1.6px}}
+.fj-tag{pointer-events:none}
+.fj-tag rect{fill:rgba(8,20,36,.88);stroke:rgba(255,255,255,.3);stroke-width:.8;rx:7}
+.fj-tag text{font-family:'Nunito';font-weight:900;font-size:8.5px;fill:#fff;text-anchor:middle}
 /* ══ fiche port : la longue-vue ══ */
 .zfiche{position:absolute!important;left:0!important;right:0!important;bottom:0!important;
   margin:0!important;padding:0 12px calc(12px + env(safe-area-inset-bottom))!important;
@@ -2222,6 +2235,7 @@ button{touch-action:manipulation;user-select:none;-webkit-user-select:none}
       <path class="route-halo" id="routeHalo" style="display:none"/>
       <path class="route" id="routeTrace" style="display:none"/>
       <g id="portsG"></g>
+      <g id="flotte"></g>
       <g id="suiviBateau" style="display:none" pointer-events="none">
         <ellipse cx="0" cy="7" rx="11" ry="3" fill="rgba(3,12,24,.3)"/>
         <path d="M-10 0 h20 q-2.5 6.5 -8 6.5 h-4 q-5.5 0 -8 -6.5 z" fill="#e84d3d" stroke="#0d2438" stroke-width="1.8"/>
@@ -3154,6 +3168,7 @@ async function accoste(){
 function ouvreMer(){
   const vo=voyageEnCours();
   construitPorts();
+  chargeFlotte();
   if(vo){
     /* mode suivi : route affichée, bateau qui avance */
     const A=PORTS[vo.de], B=PORTS[vo.vers];
@@ -3175,6 +3190,75 @@ function ouvreMer(){
 }
 
 /* position du bateau sur la route (courbe quadratique) */
+
+/* ══ la flotte : bateaux des autres joueurs en mer ══ */
+let FLOTTE=[];
+function posVoyageCarte(v){
+  const A=PORTS[v.de], B=PORTS[v.vers];
+  if(!A||!B)return null;
+  const t=Math.max(0,Math.min(1,(Date.now()-v.depart)/Math.max(1,(v.fin-v.depart))));
+  const mx=(A.x+B.x)/2, my=Math.min(A.y,B.y)-24;
+  const x=(1-t)*(1-t)*A.x+2*(1-t)*t*mx+t*t*B.x;
+  const y=(1-t)*(1-t)*A.y+2*(1-t)*t*my+t*t*B.y;
+  const dx=2*(1-t)*(mx-A.x)+2*t*(B.x-mx);
+  return {x,y,flip:dx<0?-1:1};
+}
+function dessineFlotte(){
+  const g=$('#flotte');
+  if(!g)return;
+  if(!$('#vmer').classList.contains('on')){g.innerHTML='';return}
+  g.innerHTML=FLOTTE.map((j,i)=>{
+    const p=posVoyageCarte(j.v);
+    if(!p)return '';
+    return `<g class="fj" data-i="${i}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)}) scale(${p.flip*0.82},0.82)">
+      <ellipse cx="0" cy="6" rx="9" ry="2.4"/>
+      <path class="fj-coque" d="M-8 0 h16 q-2 5.2 -6.4 5.2 h-3.2 q-4.4 0 -6.4 -5.2 z" fill="${j.couleur||'#5f9ab4'}"/>
+      <rect x="-1" y="-8" width="2" height="8" fill="#3d2a14"/>
+      <path class="fj-voile" d="M1 -7.4 L6.4 -5.2 L1 -3 Z"/>
+    </g>`;
+  }).join('');
+  g.querySelectorAll('.fj').forEach(el=>{
+    el.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      montreTagFlotte(+el.dataset.i);
+    });
+  });
+}
+let TAG_TIMER=null;
+function montreTagFlotte(i){
+  const j=FLOTTE[i];if(!j)return;
+  const p=posVoyageCarte(j.v);if(!p)return;
+  const vieux=document.querySelector('.fj-tag');if(vieux)vieux.remove();
+  const txt='⛵ '+j.pseudo+' → '+(PORTS[j.v.vers]?PORTS[j.v.vers].nom:'?');
+  const w=Math.max(70,txt.length*5.2+16);
+  const svgNS='http://www.w3.org/2000/svg';
+  const tag=document.createElementNS(svgNS,'g');
+  tag.setAttribute('class','fj-tag');
+  const yTag=p.y<40?p.y+16:p.y-24;
+  tag.innerHTML=`<rect x="${(p.x-w/2).toFixed(1)}" y="${yTag.toFixed(1)}" width="${w.toFixed(1)}" height="15" rx="7"/>
+    <text x="${p.x.toFixed(1)}" y="${(yTag+10.5).toFixed(1)}">${txt}</text>`;
+  $('#flotte').parentNode.appendChild(tag);
+  clearTimeout(TAG_TIMER);
+  TAG_TIMER=setTimeout(()=>tag.remove(),2600);
+  if(navigator.vibrate)navigator.vibrate(5);
+}
+
+async function chargeFlotte(){
+  try{
+    const uid=SESSION.user?.id||SESSION.user?.user?.id;
+    const r=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?select=pseudo,couleur,forme,voyage&id=neq.${uid}&voyage=not.is.null&limit=30`);
+    const rows=r.ok?await r.json():[];
+    FLOTTE=rows.map(j=>{
+      const v=j.voyage||{};
+      return {pseudo:j.pseudo,couleur:j.couleur,forme:j.forme,
+        v:{de:v.de,vers:v.vers,
+           depart:new Date(v.depart).getTime(),
+           fin:new Date(v.fin).getTime()}};
+    }).filter(j=>j.v.de&&j.v.vers&&!isNaN(j.v.fin));
+    dessineFlotte();
+  }catch(e){}
+}
+
 function majSuivi(){
   const vo=voyageEnCours();
   const g=$('#suiviBateau');
@@ -3191,7 +3275,7 @@ function majSuivi(){
   g.style.display='';
   g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${flip},1)`);
 }
-setInterval(()=>{if(!document.hidden)majSuivi()},1000);
+setInterval(()=>{if(!document.hidden){majSuivi();dessineFlotte()}},1000);
 
 
 $('#vmerX').onclick=()=>{
