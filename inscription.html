@@ -287,47 +287,52 @@ input::placeholder{color:rgba(255,255,255,.3)}
 
 <script>
 'use strict';
-/* ── SUPABASE : config + garde de session ── */
-const SUPABASE_URL='https://jtijmythnvqgquizeizs.supabase.co';
-const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWpteXRobnZxZ3F1aXplaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NjU3NjAsImV4cCI6MjEwMDE0MTc2MH0.7Eo_DZarB7J6BCzRHh5pB7-ZKKwgIlwWkpqUV9MGbUc';
-let SESSION=null;
-(async()=>{
-  try{
-    const s=JSON.parse(localStorage.getItem('bd2_session'));
-    if(!s||!s.access_token)throw 0;
-    let r=await fetch(`${SUPABASE_URL}/auth/v1/user`,{headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${s.access_token}`}});
-    if(r.ok){SESSION=s;SESSION.user=await r.json();return}
-    if(s.refresh_token){
-      r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
-        method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON},
-        body:JSON.stringify({refresh_token:s.refresh_token})
-      });
-      const d=await r.json();
-      if(d.access_token){localStorage.setItem('bd2_session',JSON.stringify(d));SESSION=d;return}
-    }
-    throw 0;
-  }catch(e){
-    localStorage.removeItem('bd2_session');
-    location.href='index.html';
-  }
-})();
-async function sauveProfil(profil){
-  const uid=SESSION.user?.id||SESSION.user?.user?.id;
-  const r=await fetch(`${SUPABASE_URL}/rest/v1/profils?on_conflict=id`,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json','apikey':SUPABASE_ANON,
-      'Authorization':`Bearer ${SESSION.access_token}`,
-      'Prefer':'resolution=merge-duplicates,return=minimal'
-    },
-    body:JSON.stringify({id:uid,...profil})
-  });
-  if(!r.ok)throw new Error((await r.text())||r.status);
-}
 const $=s=>document.querySelector(s);
 const qs=[...document.querySelectorAll('.q')];
 let h=0;
 const S={couleur:'#e84d3d',forme:0};
+/* ── Supabase ── */
+const SUPABASE_URL='https://jtijmythnvqgquizeizs.supabase.co';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0aWpteXRobnZxZ3F1aXplaXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1NjU3NjAsImV4cCI6MjEwMDE0MTc2MH0.7Eo_DZarB7J6BCzRHh5pB7-ZKKwgIlwWkpqUV9MGbUc';
+let SESSION=null;
+async function sessionOuIndex(){
+  try{
+    const s=JSON.parse(localStorage.getItem('bd2_session'));
+    if(!s||!s.access_token)throw 0;
+    if(s.expires_at&&(Date.now()/1000)>(s.expires_at-60)&&s.refresh_token){
+      const r=await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,{
+        method:'POST',headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON},
+        body:JSON.stringify({refresh_token:s.refresh_token})
+      });
+      const d=await r.json();
+      if(!d.access_token)throw 0;
+      localStorage.setItem('bd2_session',JSON.stringify(d));
+      SESSION=d;return;
+    }
+    SESSION=s;
+  }catch(e){location.href='index.html'}
+}
+sessionOuIndex();
+async function sauveProfilServeur(pseudo,nom){
+  if(!SESSION)await sessionOuIndex();
+  const uid=SESSION.user?.id||SESSION.user?.user?.id;
+  const corps={id:uid,pseudo,nom_bateau:nom,couleur:S.couleur,
+    forme:S.forme===0?'pointu':'barquette'};
+  const r=await fetch(`${SUPABASE_URL}/rest/v1/profils`,{
+    method:'POST',
+    headers:{'apikey':SUPABASE_ANON,'Authorization':`Bearer ${SESSION.access_token}`,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify(corps)
+  });
+  if(r.ok)return {ok:true};
+  let msg='HTTP '+r.status;
+  try{const j=await r.json();msg=j.message||j.details||msg}catch(e){}
+  if(msg.includes('duplicate')||msg.includes('unique'))msg='Ce pseudo est déjà pris — choisis-en un autre';
+  if(r.status===401||r.status===403)msg='Session expirée — reconnecte-toi';
+  return {ok:false,msg};
+}
+
 const HEURES=['Départ · plein jour','En mer · couchant','Grand large · pleine nuit','Arrivée · aube'];
 const feedback=()=>{if(navigator.vibrate)navigator.vibrate(9)};
 const dk=(hex,f=.75)=>{const n=parseInt(hex.slice(1),16);
@@ -443,21 +448,15 @@ function initCanvas(){
 }
 
 /* arrivée : feux d'artifice */
-document.querySelector('[data-launch]').onclick=async ev=>{
+document.querySelector('[data-launch]').onclick=async(ev)=>{
   const pseudo=($('#pseudo').value||'').trim();
   const nom=($('#nomBateau').value||'').trim()||'Sans nom';
   if(pseudo.length<3)return go(0);
-  if(!SESSION)return; // garde encore en cours → l'utilisateur sera redirigé si session morte
-  const btn=ev.currentTarget;btn.disabled=true;btn.textContent='⚓ Amarrage…';
+  const btn=ev.currentTarget;btn.disabled=true;
+  const res=await sauveProfilServeur(pseudo,nom);
+  btn.disabled=false;
+  if(!res.ok){alert('⚠️ '+res.msg);return}
   feedback();
-  try{
-    await sauveProfil({pseudo,nom_bateau:nom,couleur:S.couleur,forme:S.forme===0?'pointu':'barquette'});
-  }catch(err){
-    btn.disabled=false;btn.textContent='⚓ Jeter l\'ancre au port';
-    $('#pseudo').placeholder='Erreur de sauvegarde — réessaie';
-    console.error('Supabase profils :',err);
-    return;
-  }
   localStorage.setItem('bd2_profil',JSON.stringify({pseudo,nom,couleur:S.couleur,forme:S.forme}));
 
   document.querySelector('.pont').classList.add('range');

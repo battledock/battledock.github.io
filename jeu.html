@@ -2366,11 +2366,26 @@ async function garde(){
   }
 }
 
-async function chargeProfil(){
+async function chargeProfil(dejaRepare){
   const uid=SESSION.user?.id||SESSION.user?.user?.id;
   const r=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils?id=eq.${uid}&select=*`);
   const rows=r.ok?await r.json():[];
-  if(!rows.length){location.href='inscription.html';throw new Error('no-profil')}
+  if(!rows.length){
+    /* auto-réparation : une inscription locale existe mais la ligne serveur manque */
+    const brouillon=(()=>{try{return JSON.parse(localStorage.getItem('bd2_profil'))}catch(e){return null}})();
+    if(brouillon&&brouillon.pseudo&&!dejaRepare){
+      const c=await fetchAuth(`${SUPABASE_URL}/rest/v1/profils`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({id:uid,pseudo:brouillon.pseudo,
+          nom_bateau:brouillon.nom||'Sans nom',
+          couleur:brouillon.couleur||'#e84d3d',
+          forme:(brouillon.forme===1||brouillon.forme==='barquette')?'barquette':'pointu'})
+      });
+      if(c.ok)return chargeProfil(true);
+    }
+    location.href='inscription.html';throw new Error('no-profil');
+  }
   PROFIL=rows[0];
 }
 
