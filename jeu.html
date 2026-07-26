@@ -2067,6 +2067,38 @@ body[data-h="3"] .terre .t-sil{fill:#b0a0b8}
 .mer-region{position:absolute;inset:0;pointer-events:none;z-index:0;
   opacity:0;transition:opacity 2s,background 2s}
 body.en-mer .mer-region{opacity:1}
+
+/* ══ LE GUIDE DU CAPITAINE ══ */
+.af-guide{width:100%;margin:12px 0 2px;border:none;cursor:pointer;padding:13px;
+  border-radius:14px;font-family:'Nunito',sans-serif;font-weight:900;font-size:13px;
+  color:#0d2438;background:linear-gradient(180deg,#ffe9a0,#ffd23c);
+  border:2.5px solid #0d2438;box-shadow:0 4px 0 rgba(13,36,56,.5);
+  -webkit-tap-highlight-color:transparent}
+.af-guide:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(13,36,56,.5)}
+.vguide{position:fixed;inset:0;z-index:36;display:none;flex-direction:column;
+  background:linear-gradient(180deg,#10263e,#0a1a2e)}
+.vguide.on{display:flex}
+.gu-haut{display:flex;align-items:center;gap:12px;flex-shrink:0;
+  padding:calc(12px + env(safe-area-inset-top)) 16px 12px;
+  border-bottom:2px solid rgba(255,255,255,.14)}
+.gu-x{width:34px;height:34px;border-radius:11px;border:2px solid rgba(255,255,255,.3);
+  cursor:pointer;background:rgba(255,255,255,.08);color:#fff;font-size:15px;font-weight:900;flex-shrink:0}
+.gu-titre{font-family:'Fraunces',serif;font-weight:900;font-size:17px;color:#fff}
+.gu-sub{font-size:10px;font-weight:800;color:#8fb0cc;margin-top:1px}
+.gu-corps{flex:1;overflow-y:auto;padding:14px 14px calc(30px + env(safe-area-inset-bottom))}
+.gu-ch{background:rgba(253,247,236,.97);border:2.5px solid #0d2438;border-radius:16px;
+  margin-bottom:10px;overflow:hidden;box-shadow:0 5px 0 rgba(4,14,26,.4)}
+.gu-ch-h{display:flex;align-items:center;gap:10px;padding:13px 14px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.gu-ch-h .em{font-size:19px}
+.gu-ch-h b{font-family:'Fraunces',serif;font-weight:900;font-size:14px;color:#0d2438}
+.gu-ch-h .fl{margin-left:auto;font-weight:900;color:#8a95a4;transition:transform .25s}
+.gu-ch.ouv .gu-ch-h .fl{transform:rotate(90deg)}
+.gu-ch-c{display:none;padding:0 14px 14px;font-size:12px;font-weight:700;color:#2c3e50;line-height:1.65}
+.gu-ch.ouv .gu-ch-c{display:block}
+.gu-ch-c b{color:#0d2438}
+.gu-ch-c .astuce{margin-top:9px;background:rgba(255,210,60,.16);border:1.5px solid rgba(180,140,20,.4);
+  border-radius:10px;padding:8px 10px;font-size:11px;font-weight:800;color:#5a4210}
 </style>
 </head>
 <body data-h="0">
@@ -2975,6 +3007,7 @@ body.en-mer .mer-region{opacity:1}
       <h3>La route des comptoirs</h3>
       <div class="af-route" id="afRoute"></div>
     </div>
+    <button class="af-guide" id="btnGuide">📖 Le Guide du capitaine — comment tout marche</button>
     <button class="af-out" id="btnOut2">🚪 Débarquer (déconnexion)</button>
   </div>
 </div>
@@ -3090,6 +3123,17 @@ body.en-mer .mer-region{opacity:1}
 
 <div class="terre terre-depart" id="terreDep"></div>
 <div class="terre terre-arrivee" id="terreArr"></div>
+
+
+<!-- LE GUIDE DU CAPITAINE -->
+<div class="vguide" id="vguide">
+  <div class="gu-haut">
+    <button class="gu-x" id="guX">✕</button>
+    <div><div class="gu-titre">📖 Le Guide du capitaine</div>
+      <div class="gu-sub">Tout ce qu'il faut savoir pour naviguer — tape un chapitre</div></div>
+  </div>
+  <div class="gu-corps" id="guCorps"></div>
+</div>
 
 <div class="voile-niv" id="voileNiv"></div>
 <div class="pavois" id="pavois"><svg viewBox="0 0 400 90" preserveAspectRatio="none" id="pavoisSvg"></svg></div>
@@ -5402,6 +5446,57 @@ function majTerres(){
   arr.style.transform='scale('+(0.4+va*0.72).toFixed(2)+')';
 }
 setInterval(majTerres,1000);
+
+/* ══ le guide du capitaine ══ */
+const GUIDE=[
+ ['🌊','Voyager',"Tape <b>En mer</b> puis choisis un port sur la carte. Charge ta cale de marchandises au départ, largue les amarres — la traversée dure de vraies minutes (ta <b>voilure</b> la raccourcit). Pendant le voyage, l'écran passe au large : ton bateau navigue, la ville quittée s'éloigne, la destination émerge à l'horizon vers la fin.",
+  "Astuce : charge TOUJOURS ta cale avant de partir — voyager à vide, c'est du vent perdu."],
+ ['🐟','La Criée',"C'est le marché du port où tu es. Chaque port a <b>ses propres prix</b> : achète où c'est bas, vends où c'est haut. Attention à la <b>saturation</b> : chaque caisse débarquée fait baisser le cours local (−3 %/caisse). La <b>commande du jour</b> désigne un port qui réclame une marchandise avec bonus — tu peux y <b>réserver un étal</b>.",
+  "Astuce : si tout le monde vend pareil au même endroit, les prix s'effondrent — prends les routes que les autres ignorent."],
+ ['⚓','Mon Quai',"Ton port d'attache à Marseille. Chaque capitaine qui accoste chez toi te paie une <b>taxe</b> (2 🪙 × niveau du quai), même hors ligne. Améliore ton quai pour taxer plus, et lis ton acte de propriété.",
+  "Astuce : le quai rapporte pendant que tu dors — améliore-le tôt."],
+ ['🔨','Les chantiers',"Chaque ville a SON métier : <b>Marseille</b> façonne les coques (4 silhouettes + carène), <b>Gênes</b> tient la voilerie (voyages plus rapides), <b>Naples</b> agrandit les cales (8 → 12 caisses), <b>Valence</b> vend la peinture (6 robes). Les autres ports n'ont qu'un chantier d'entretien.",
+  "Astuce : les améliorations se voient sur ton bateau, partout, par tous."],
+ ['💨','Le vent arrière',"En mer, tu peux payer pour arriver immédiatement : <b>3 🪙 par minute restante</b>. Payer dès le départ coûte très cher — plus tu patientes, moins c'est cher.",
+  "Astuce : mathématiquement, attendre est presque toujours plus rentable. Le vent arrière, c'est pour les urgences."],
+ ['🎣','La pêche à la traîne',"En traversée, tape l'écoutille 🎣 et lance la ligne. Quand la bouée <b>s'agite</b> (avec la vibration), tape-la vite : petite prise (3-8 🪙), grosse prise (12-20 🪙) ou <b>caisse flottante</b> (+1 marchandise en cale). Trop tôt ou trop tard = il file. La ligne doit se reposer ~75 s entre deux prises.",
+  "Astuce : la pêche paye ta patience — souvent mieux que le vent arrière ne la vend."],
+ ['🗺','La table à cartes',"En mer, l'écoutille 🗺 déroule les cours de <b>toute la Méditerranée</b> : meilleur port de vente pour chaque marchandise, tendance ▲▼, et un badge sur ce que tu transportes. Lecture seule — on ne commerce pas au milieu de l'eau.",
+  "Astuce : consulte-la en début de traversée pour déjà planifier le voyage suivant."],
+ ['👋','Les croisements',"Si un autre capitaine fait ta route <b>en sens inverse</b>, vous vous croisez EN VRAI : son bateau traverse ton écran au moment exact où vos positions se rencontrent. Tape le 👋 au-dessus de lui pour le héler (4 messages au choix) : <b>+2 🪙 pour chacun</b>. Un salut par bateau et par traversée.",
+  "Astuce : les routes fréquentées croisent plus de monde — Marseille ↔ Barcelone est un vrai boulevard."],
+ ['⭐','XP & niveaux',"Chaque voyage rapporte de l'<b>XP</b> selon la destination. Monter de niveau débloque de nouveaux ports sur la carte, de plus en plus lointains et lucratifs. Ton grade de capitaine suit ta progression.",
+  "Astuce : les ports lointains donnent plus d'XP ET de meilleures marges — ose t'éloigner."],
+ ['🍊','Les fonctions de ville',"Chaque port aura sa fonction unique dans la barre : à Marseille c'est <b>Mon Quai</b>, à Valence le <b>Verger</b> (bientôt : 2 oranges gratuites par escale), et d'autres suivront — banque à Gênes, lotto à Naples, souk à Tunis…",
+  "Astuce : quand tu vois un ruban BIENTÔT, c'est que ça arrive dans une prochaine mise à jour."]
+];
+function ouvreGuide(){
+  const v=document.getElementById('vguide');
+  const c=document.getElementById('guCorps');
+  if(!c.dataset.fait){
+    c.innerHTML=GUIDE.map(([em,titre,txt,astuce],i)=>
+      '<div class="gu-ch'+(i===0?' ouv':'')+'"><div class="gu-ch-h"><span class="em">'+em+'</span><b>'+titre+'</b>'+
+      '<span class="fl">›</span></div><div class="gu-ch-c">'+txt+
+      '<div class="astuce">💡 '+astuce+'</div></div></div>').join('');
+    c.querySelectorAll('.gu-ch-h').forEach(h=>{
+      h.onclick=()=>{
+        const ch=h.parentElement;
+        const etait=ch.classList.contains('ouv');
+        c.querySelectorAll('.gu-ch').forEach(x=>x.classList.remove('ouv'));
+        if(!etait)ch.classList.add('ouv');
+        if(navigator.vibrate)navigator.vibrate(5);
+      };
+    });
+    c.dataset.fait='1';
+  }
+  v.classList.add('on');
+}
+setTimeout(()=>{
+  const x=document.getElementById('guX');
+  if(x)x.onclick=()=>document.getElementById('vguide').classList.remove('on');
+  const b=document.getElementById('btnGuide');
+  if(b)b.onclick=ouvreGuide;
+},0);
 </script>
 
 
