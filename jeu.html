@@ -2890,9 +2890,13 @@ function bateauCorps(couleur,forme,nav){
   const nv=p=>Math.max(1,Math.min(5,+(n[p])||1));
   const dl=(nv('cale')-1)*9;                 // la cale allonge la coque
   const x0=42-dl, x1=258+dl;
-  const coque=forme==='pointu'
-    ?`M${x0} 104 L${x1} 104 Q${x1-10} 138 ${x1-46} 138 L${x0+46} 138 Q${x0+10} 138 ${x0} 104 Z M${x0} 104 Q${x0-12} 98 ${x0-16} 84 L${x0+8} 94 Z`
-    :`M${x0+16} 106 L${x1-16} 106 Q${x1-6} 106 ${x1-10} 118 L${x1-18} 138 L${x0+18} 138 L${x0+10} 118 Q${x0+6} 106 ${x0+16} 106 Z`;
+  const COQUES={
+    pointu:`M${x0} 104 L${x1} 104 Q${x1-10} 138 ${x1-46} 138 L${x0+46} 138 Q${x0+10} 138 ${x0} 104 Z M${x0} 104 Q${x0-12} 98 ${x0-16} 84 L${x0+8} 94 Z`,
+    barquette:`M${x0+16} 106 L${x1-16} 106 Q${x1-6} 106 ${x1-10} 118 L${x1-18} 138 L${x0+18} 138 L${x0+10} 118 Q${x0+6} 106 ${x0+16} 106 Z`,
+    tartane:`M${x0-12} 99 Q${(x0+x1)/2} 112 ${x1+12} 99 L${x1-32} 138 L${x0+32} 138 Z`,
+    chalutier:`M${x0+2} 90 L${x0+24} 90 L${x0+28} 104 L${x1-8} 104 Q${x1+4} 104 ${x1} 116 L${x1-14} 138 L${x0+16} 138 L${x0+2} 106 Z`
+  };
+  const coque=COQUES[forme]||COQUES.pointu;
   const v=nv('voile');
   const matY=24-(v-1)*7;                     // la voilure hausse le mât
   const car=nv('carene');
@@ -4075,10 +4079,20 @@ const ROBES=[['#e84d3d','Corail'],['#2a9ec4','Grande Bleue'],['#ffd23c','Soleil'
   ['#7fb495','Calanque'],['#8a5fb4','Figue'],['#f4efe4','Écume']];
 const PRIX_ROBE=60, PRIX_FORME=80;
 /* les spécialistes : chaque ville sait faire une chose */
-const NAV_SPEC={voile:['barcelone','Barcelone'],cale:['genes','Gênes'],carene:['naples','Naples']};
-const ROBE_SPEC={'#ffd23c':['valence','Valence'],'#7fb495':['alger','Alger'],
-  '#8a5fb4':['istanbul','Istanbul'],'#f4efe4':['athenes','Athènes']};
-const FORME_SPEC={barquette:['palerme','Palerme']};
+const NAV_SPEC={voile:['genes','Gênes'],cale:['naples','Naples'],carene:['marseille','Marseille']};
+const ROBE_PORT=['valence','Valence'];
+const FORME_PORT=['marseille','Marseille'];
+const FORMES_CH=[
+  ['pointu','Le Pointu',80,'M4 13 h44 l-8 12 h-29 z M4 13 l-3 -5 l8 2 z'],
+  ['barquette','La Barquette',80,'M6 12 h40 q5 0 4 5 l-3 9 h-42 l-3 -9 q-1 -5 4 -5 z'],
+  ['tartane','La Tartane',140,'M2 12 Q26 19 50 12 L42 26 L10 26 Z'],
+  ['chalutier','Le Chalutier',140,'M4 8 h8 l2 6 h30 q4 0 3 5 l-3 7 h-32 l-8 -12 z']];
+const PRIX_FORMES={pointu:80,barquette:80,tartane:140,chalutier:140};
+const CH_LOCAL={
+  marseille:{t:'Le Radoub de Marseille',s:'Ici on façonne les coques — silhouettes & carène',sec:['carene','forme']},
+  genes:{t:'La Voilerie de Gênes',s:'Les meilleures voiles de la Méditerranée',sec:['voile']},
+  naples:{t:'L\'Arsenal de Naples',s:'On agrandit les cales, à la napolitaine',sec:['cale']},
+  valence:{t:'L\'Atelier de peinture de Valence',s:'Pigments d\'orange et d\'azur',sec:['robe']}};
 function chIci(){return (typeof portActuel==='function')?portActuel():'marseille'}
 let CH_SEL=null; /* {type:'voile'|'cale'|'carene'|'robe'|'forme', val} */
 function chNavApercu(){
@@ -4108,48 +4122,64 @@ function svgChantier(){
 }
 function rendChantier(){
   const corps=$('#chCorps');
-  const pistes=Object.entries(NAV_PISTES).map(([p,P])=>{
+  const ici=chIci();
+  const L=CH_LOCAL[ici];
+  const tEl=document.querySelector('.ch-titre'), sEl=document.querySelector('.ch-sub');
+  if(tEl)tEl.textContent='🔨 '+(L?L.t:'Chantier de '+((PORTS[ici]&&PORTS[ici].nom)||ici));
+  if(sEl)sEl.textContent=L?L.s:'Un petit chantier sans spécialité';
+  if(!L){
+    corps.innerHTML=`
+      <div class="ch-scene">${svgChantier()}</div>
+      <div class="ch-g"><div class="ch-g-h"><span class="e">🗺</span><b>Les grands travaux se font ailleurs</b></div>
+        <div class="ch-pied-inf" style="font-size:11.5px;font-weight:800;color:#d8c8a4;line-height:1.6">
+        🛠 <b style="color:#ffd88a">Marseille</b> — la coque (silhouettes & carène)<br>
+        ⛵ <b style="color:#ffd88a">Gênes</b> — la voilerie<br>
+        📦 <b style="color:#ffd88a">Naples</b> — l'arsenal (la cale)<br>
+        🎨 <b style="color:#ffd88a">Valence</b> — la peinture</div></div>
+      <div class="ch-pied" id="chPied"></div>`;
+    const p=$('#chPied');
+    p.innerHTML=`<div class="inf">Ce port n'a qu'un petit chantier d'entretien — mets le cap sur une ville spécialiste</div>`;
+    return;
+  }
+  const pistes=Object.entries(NAV_PISTES).filter(([p])=>L.sec.includes(p)).map(([p,P])=>{
     const cur=navNiv(p);
     const chips=[1,2,3,4,5].map(i=>{
       const cl=['ch-op'];
       if(i<=cur)cl.push('pose');
       if(CH_SEL&&CH_SEL.type===p&&CH_SEL.val===i)cl.push('sel');
-      const loin=i>cur&&i>=3&&chIci()!==NAV_SPEC[p][0];
       return `<div class="${cl.join(' ')}" data-t="${p}" data-v="${i}">
-        <b>${i}</b><span>${i<=cur?'POSÉ':(loin?'🔒 ':'')+NAV_COUTS[i-1]+' 🪙'}</span></div>`;
+        <b>${i}</b><span>${i<=cur?'POSÉ':NAV_COUTS[i-1]+' 🪙'}</span></div>`;
     }).join('');
     return `<div class="ch-g">
       <div class="ch-g-h"><span class="e">${P.e}</span><b>${P.nom}</b>
-        <span>${P.eff(cur)} · niv 3+ à ${NAV_SPEC[p][1]}</span></div>
+        <span>${P.eff(cur)}</span></div>
       <div class="ch-opts">${chips}</div></div>`;
   }).join('');
-  const robes=ROBES.map(([c,nom])=>{
-    const cl=['ch-op'];
-    if((PROFIL.couleur||'#e84d3d')===c)cl.push('pose');
-    if(CH_SEL&&CH_SEL.type==='robe'&&CH_SEL.val===c)cl.push('sel');
-    const ex=ROBE_SPEC[c], loin=ex&&chIci()!==ex[0];
-    return `<div class="${cl.join(' ')}" data-t="robe" data-v="${c}">
-      <div class="pt" style="background:${c}"></div><span>${(PROFIL.couleur||'#e84d3d')===c?nom.toUpperCase():(loin?'🔒 '+ex[1]:PRIX_ROBE+' 🪙')}</span></div>`;
-  }).join('');
-  const formes=[['pointu','Le Pointu','M4 13 h44 l-8 12 h-29 z M4 13 l-3 -5 l8 2 z'],
-    ['barquette','La Barquette','M6 12 h40 q5 0 4 5 l-3 9 h-42 l-3 -9 q-1 -5 4 -5 z']].map(([v,nom,d])=>{
-    const cl=['ch-op'];
-    if((PROFIL.forme||'pointu')===v)cl.push('pose');
-    if(CH_SEL&&CH_SEL.type==='forme'&&CH_SEL.val===v)cl.push('sel');
-    return `<div class="${cl.join(' ')}" data-t="forme" data-v="${v}" style="min-width:96px">
-      <svg viewBox="0 0 52 30"><path d="${d}" fill="#fff" stroke="rgba(255,255,255,.5)"
-        stroke-width="2" stroke-linejoin="round"/></svg>
-      <span>${(PROFIL.forme||'pointu')===v?nom.toUpperCase():((FORME_SPEC[v]&&chIci()!==FORME_SPEC[v][0])?'🔒 '+FORME_SPEC[v][1]:PRIX_FORME+' 🪙')}</span></div>`;
-  }).join('');
+  const robes=!L.sec.includes('robe')?'':`<div class="ch-g">
+    <div class="ch-g-h"><span class="e">🎨</span><b>La robe</b>
+      <span>60 🪙 le pot, séchage immédiat</span></div>
+    <div class="ch-opts">${ROBES.map(([c,nom])=>{
+      const cl=['ch-op'];
+      if((PROFIL.couleur||'#e84d3d')===c)cl.push('pose');
+      if(CH_SEL&&CH_SEL.type==='robe'&&CH_SEL.val===c)cl.push('sel');
+      return `<div class="${cl.join(' ')}" data-t="robe" data-v="${c}">
+        <div class="pt" style="background:${c}"></div><span>${(PROFIL.couleur||'#e84d3d')===c?nom.toUpperCase():PRIX_ROBE+' 🪙'}</span></div>`;
+    }).join('')}</div></div>`;
+  const formes=!L.sec.includes('forme')?'':`<div class="ch-g">
+    <div class="ch-g-h"><span class="e">⚒️</span><b>La silhouette</b>
+      <span>4 coques au catalogue du radoub</span></div>
+    <div class="ch-opts">${FORMES_CH.map(([v,nom,prix,d])=>{
+      const cl=['ch-op'];
+      if((PROFIL.forme||'pointu')===v)cl.push('pose');
+      if(CH_SEL&&CH_SEL.type==='forme'&&CH_SEL.val===v)cl.push('sel');
+      return `<div class="${cl.join(' ')}" data-t="forme" data-v="${v}" style="min-width:96px">
+        <svg viewBox="0 0 52 30"><path d="${d}" fill="#fff" stroke="rgba(255,255,255,.5)"
+          stroke-width="2" stroke-linejoin="round"/></svg>
+        <span>${(PROFIL.forme||'pointu')===v?nom.toUpperCase():prix+' 🪙'}</span></div>`;
+    }).join('')}</div></div>`;
   corps.innerHTML=`
     <div class="ch-scene">${svgChantier()}</div>
-    ${pistes}
-    <div class="ch-g"><div class="ch-g-h"><span class="e">🎨</span><b>La robe</b>
-      <span>4 teintes exclusives, une par ville</span></div>
-      <div class="ch-opts">${robes}</div></div>
-    <div class="ch-g"><div class="ch-g-h"><span class="e">⚒️</span><b>La silhouette</b>
-      <span>la Barquette se taille à Palerme</span></div>
-      <div class="ch-opts">${formes}</div></div>
+    ${pistes}${robes}${formes}
     <div class="ch-pied" id="chPied"></div>`;
   corps.querySelectorAll('.ch-op').forEach(el=>{
     el.onclick=()=>{
@@ -4169,22 +4199,17 @@ function rendChPied(){
     if(v<=cur)p.innerHTML=`<div class="inf">${P.e} ${P.nom} niveau ${v} — <b>déjà posé</b></div>`;
     else if(v>cur+1)p.innerHTML=`<div class="inf">${P.e} Niveau ${v} aperçu — pose d'abord le niveau ${cur+1}</div>
       <button class="ch-go" disabled>🔒 Niveau ${cur+1} requis</button>`;
-    else if(v>=3&&chIci()!==NAV_SPEC[t][0])p.innerHTML=`<div class="inf">${P.e} Le niveau ${v} de la ${P.nom.toLowerCase()} est un savoir-faire de <b>${NAV_SPEC[t][1]}</b> — mets le cap là-bas</div>
-      <button class="ch-go" disabled>🔒 Au chantier de ${NAV_SPEC[t][1]}</button>`;
     else p.innerHTML=`<div class="inf">${P.e} ${P.nom} ${cur} → ${v} : <b>${P.eff(v)}</b></div>
       <button class="ch-go" id="chGo">🔨 Poser — ${NAV_COUTS[cur]} 🪙</button>`;
   }else if(t==='robe'){
     if((PROFIL.couleur||'#e84d3d')===CH_SEL.val)p.innerHTML=`<div class="inf">🎨 C'est déjà ta robe</div>`;
-    else if(ROBE_SPEC[CH_SEL.val]&&chIci()!==ROBE_SPEC[CH_SEL.val][0])p.innerHTML=`<div class="inf">🎨 Cette teinte ne se mélange qu'au chantier de <b>${ROBE_SPEC[CH_SEL.val][1]}</b></div>
-      <button class="ch-go" disabled>🔒 Chantier de ${ROBE_SPEC[CH_SEL.val][1]}</button>`;
     else p.innerHTML=`<div class="inf">🎨 Nouvelle robe de coque</div>
       <button class="ch-go" id="chGo">🖌 Repeindre — ${PRIX_ROBE} 🪙</button>`;
   }else{
+    const F=FORMES_CH.find(x=>x[0]===CH_SEL.val)||FORMES_CH[0];
     if((PROFIL.forme||'pointu')===CH_SEL.val)p.innerHTML=`<div class="inf">⚒️ C'est déjà ta silhouette</div>`;
-    else if(FORME_SPEC[CH_SEL.val]&&chIci()!==FORME_SPEC[CH_SEL.val][0])p.innerHTML=`<div class="inf">⚒️ La ${CH_SEL.val==='pointu'?'Pointu':'Barquette'} ne se taille qu'au chantier de <b>${FORME_SPEC[CH_SEL.val][1]}</b></div>
-      <button class="ch-go" disabled>🔒 Chantier de ${FORME_SPEC[CH_SEL.val][1]}</button>`;
-    else p.innerHTML=`<div class="inf">⚒️ Retailler la coque en ${CH_SEL.val==='pointu'?'Pointu':'Barquette'}</div>
-      <button class="ch-go" id="chGo">⚒️ Retailler — ${PRIX_FORME} 🪙</button>`;
+    else p.innerHTML=`<div class="inf">⚒️ Retailler la coque en <b>${F[1]}</b></div>
+      <button class="ch-go" id="chGo">⚒️ Retailler — ${F[2]} 🪙</button>`;
   }
   const go=$('#chGo');
   if(go)go.onclick=()=>{
