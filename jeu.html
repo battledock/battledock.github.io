@@ -6082,6 +6082,25 @@ function ouvreOracle(){
     },1500);
   };
 }
+
+/* ══ la solidarité du port : filet anti-blocage ══ */
+let SECOURS_TENTE=false;
+async function verifSecours(){
+  if(SECOURS_TENTE)return;
+  if(!PROFIL||voyageEnCours())return;
+  if((PROFIL.sous||0)>=20)return;
+  if(caleTotal()>0)return;
+  SECOURS_TENTE=true;
+  const r=await rpc('bd2_secours',{});
+  if(r&&r.ok){
+    PROFIL.sous=r.sous;majHeader();
+    toast('🥖 La solidarité du port : les dockers se cotisent — te voilà à 25 🪙, repars du bon pied !');
+    if(navigator.vibrate)navigator.vibrate([10,50,20]);
+    SON.gain();
+  }
+}
+setInterval(()=>{SECOURS_TENTE=false;verifSecours()},30000);
+setTimeout(verifSecours,4000);
 </script>
 
 
