@@ -1828,6 +1828,17 @@ button{touch-action:manipulation;user-select:none;-webkit-user-select:none}
   box-shadow:0 4px 0 #a07c10;-webkit-tap-highlight-color:transparent}
 .ch-go:active{transform:translateY(2px);box-shadow:0 2px 0 #a07c10}
 .ch-go:disabled{background:#4a3e28;color:#8a7a58;box-shadow:none;cursor:default}
+
+/* ══ LE VENT ARRIÈRE ══ */
+.sortie-acc{display:none;width:100%;margin-top:9px;border:none;cursor:pointer;
+  padding:11px 12px;border-radius:12px;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;color:#0d2438;
+  background:linear-gradient(180deg,#ffe9a0,#ffd23c);
+  border:2px solid #0d2438;box-shadow:0 3px 0 rgba(13,36,56,.5);
+  -webkit-tap-highlight-color:transparent}
+.sortie-acc.on{display:block}
+.sortie-acc:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(13,36,56,.5)}
+.sortie-acc small{display:block;font-size:8.5px;font-weight:800;color:#5a4a1e;margin-top:1px}
 </style>
 </head>
 <body data-h="0">
@@ -2704,6 +2715,7 @@ button{touch-action:manipulation;user-select:none;-webkit-user-select:none}
     <text class="p3-pt" x="316" y="32" id="sortieVersEmo">⚓</text>
     <g class="p3-bat" id="sortieBat"><text x="-8" y="4" font-size="13">⛵</text></g>
   </svg></div>
+  <button class="sortie-acc" id="sortieAcc"></button>
 </div>
 
 <!-- ARRIVÉE -->
@@ -3700,11 +3712,19 @@ function majSortie(){
   $('#sortieVersEmo').textContent=EMOS_PORT[vo.vers]||'⚓';
   const reste=vo.fin-Date.now();
   let pct;
+  const acc=$('#sortieAcc');
   if(reste<=0){
     el.classList.add('prete');
     $('#sortieT2').textContent='Accoster ›';
+    if(acc)acc.classList.remove('on');
     pct=1;
   }else{
+    if(acc){
+      acc.classList.add('on');
+      const px=accPrix(vo);
+      acc.innerHTML='💨 Vent arrière : arriver maintenant — <b>'+px+' 🪙</b>'+
+        '<small>'+ACC_TAUX+' 🪙 la minute restante — plus tu patientes, moins c\'est cher</small>';
+    }
     el.classList.remove('prete');
     const h=Math.floor(reste/3600000),m=Math.floor(reste%3600000/60000),sec=Math.floor(reste%60000/1000);
     $('#sortieT2').textContent='Arrivée dans '+(h?h+'h ':'')+(m?m+'min ':'')+(h?'':sec+'s');
@@ -4706,6 +4726,31 @@ function majBarrePort(){
   setTimeout(majBarrePort,600);
   setInterval(majBarrePort,4000);
 })();
+
+/* ── le vent arrière : payer pour arriver plus vite ── */
+const ACC_TAUX=3, ACC_MIN=10;
+function accPrix(vo){return Math.max(ACC_MIN,Math.ceil(Math.max(0,vo.fin-Date.now())/60000)*ACC_TAUX)}
+let ACC_EN_COURS=false;
+setTimeout(()=>{
+  const b=document.getElementById('sortieAcc');
+  if(!b)return;
+  b.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const vo=voyageEnCours();
+    if(!vo||ACC_EN_COURS||vo.fin-Date.now()<=0)return;
+    ACC_EN_COURS=true;b.disabled=true;
+    const res=await rpc('bd2_accelerer',{});
+    ACC_EN_COURS=false;b.disabled=false;
+    if(!res||res.erreur){toast('⚠️ '+((res&&res.erreur)||'Erreur réseau'));return}
+    PROFIL.sous=res.sous;
+    VOYAGE.fin=Date.now();
+    majHeader();
+    if(navigator.vibrate)navigator.vibrate([12,40,30]);
+    SON.gain();
+    toast('💨 Le vent se lève ! Terre en vue — '+res.prix+' 🪙');
+    majSortie();
+  });
+},0);
 </script>
 
 
