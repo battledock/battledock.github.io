@@ -3317,6 +3317,23 @@ body[data-h="2"] .ferryboat{opacity:.55}
 .dx-nom{font-weight:900;font-size:11px;color:#0d2438}
 .dx-prix{font-weight:900;font-size:10px;color:#b09468;margin-top:2px}
 .dx-item.equipe .dx-prix{color:#1e7a44}
+
+/* ══ 🚧 PORT EN TRAVAUX ══ */
+.trvx-badge{pointer-events:none}
+.trvx-badge rect{fill:#f4d84a;stroke:#0d2438;stroke-width:2}
+.trvx-badge text{font-family:'Nunito',sans-serif;font-weight:900;fill:#0d2438}
+.trvx-panneau{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translateX(-50%) rotate(-1.5deg);
+  z-index:8;background:#f4d84a;border:3px solid #0d2438;border-radius:14px;
+  padding:10px 16px;box-shadow:0 5px 0 rgba(13,36,56,.5);text-align:center;display:none;
+  animation:trvx-pop .6s cubic-bezier(.3,1.4,.4,1)}
+@keyframes trvx-pop{from{transform:translateX(-50%) rotate(-1.5deg) scale(.6);opacity:0}}
+body[data-port="marseille"]:not(.en-mer) .trvx-panneau{display:block}
+.trvx-panneau .t1{font-weight:900;font-size:13px;color:#0d2438}
+.trvx-panneau .t2{font-weight:900;font-size:10px;color:#5a4a10;margin-top:2px}
+.trvx-bandes{height:8px;border-radius:5px;margin-top:7px;border:1.5px solid #0d2438;
+  background:repeating-linear-gradient(-45deg,#f4d84a 0 8px,#0d2438 8px 16px)}
+.trvx-cone{display:inline-block;animation:trvx-c 2.4s ease-in-out infinite}
+@keyframes trvx-c{50%{transform:rotate(-6deg)}}
 </style>
 </head>
 <body data-h="0">
@@ -4620,6 +4637,12 @@ body[data-h="2"] .ferryboat{opacity:.55}
       <div class="dx-grille" id="dxGrille"></div>
     </div>
   </div>
+</div>
+
+<div class="trvx-panneau">
+  <div class="t1"><span class="trvx-cone">🚧</span> PORT DE MARSEILLE EN TRAVAUX</div>
+  <div class="t2">Mises à jour en cours — Déviation pour Barcelone !</div>
+  <div class="trvx-bandes"></div>
 </div>
 
 <div class="sortie" id="sortie">
@@ -9788,6 +9811,36 @@ document.addEventListener('click',e=>{
   if(navigator.vibrate)navigator.vibrate(6);
   ouvreDrapeaux();
 });
+
+/* ══ 🚧 MARSEILLE EN TRAVAUX ══ */
+const TRAVAUX_PORTS=['marseille'];
+const TRAVAUX_DEVIATION='barcelone';
+/* blocage de la sélection */
+const __selPortOrig=selPort;
+selPort=function(id){
+  if(TRAVAUX_PORTS.includes(id)&&portActuel()!==id){
+    toast('🚧 Port de '+PORTS[id].nom+' en travaux — déviation pour '+PORTS[TRAVAUX_DEVIATION].nom+' !');
+    if(navigator.vibrate)navigator.vibrate([30,50,30]);
+    return;
+  }
+  return __selPortOrig(id);
+};
+/* badge 🚧 sur la carte des ports */
+const __construitPortsOrig=construitPorts;
+construitPorts=function(){
+  __construitPortsOrig();
+  const g=document.getElementById('portsG');
+  if(!g)return;
+  TRAVAUX_PORTS.forEach(id=>{
+    const P=PORTS[id];if(!P)return;
+    const b=document.createElementNS('http://www.w3.org/2000/svg','g');
+    b.setAttribute('class','trvx-badge');
+    b.setAttribute('transform','translate('+P.x+','+(P.y-30)+')');
+    b.innerHTML='<rect x="-32" y="-11" width="64" height="20" rx="6"/>'+
+      '<text x="0" y="3.5" text-anchor="middle" font-size="8.5">🚧 TRAVAUX</text>';
+    g.appendChild(b);
+  });
+};
 </script>
 
 
