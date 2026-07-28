@@ -338,6 +338,13 @@ body[data-port="marseille"]:not(.en-mer) .eclair.actif .em{display:none}
   font-family:'Nunito';font-weight:900;font-size:8.6px;color:#fff;
   background:#1e88a4;display:inline-block}
 .a-etal.actif{background:#eef7f9;color:#1e88a4;border:1.4px solid #a8d8e4}
+
+/* ports en travaux (fermeture temporaire, indépendante du niveau) */
+.port.travaux .pc{fill:#e0a638;stroke:#a87a12}
+.port.travaux .panc{font-size:8px}
+.port .travaux-badge{fill:#a87a12}
+.port .travaux-badge-t{font-family:'Nunito';font-weight:900;font-size:7px;fill:#fff;
+  text-anchor:middle;letter-spacing:.3px}
 .ville{position:absolute;bottom:41%;left:0;right:0;height:200px}
 .ville svg{overflow:visible}
 /* S2 : la colline domine, la ville n'est qu'un liseré */
@@ -1392,9 +1399,9 @@ body.vesuve .decor-na{animation:tremble .4s linear infinite}
 .aq-t{font-family:'Fraunces';font-weight:900;font-size:21px;text-align:center;margin:2px 0}
 .aq-st{font-family:'Fraunces';font-style:italic;font-weight:700;font-size:11px;text-align:center;
   color:rgba(90,66,20,.75);margin-bottom:11px;padding:0 40px}
-.aq-plan{position:relative;height:120px;margin-bottom:11px;border:1.6px solid rgba(120,90,40,.5);
-  border-radius:6px;background:rgba(255,252,242,.6)}
-.aq-plan svg{position:absolute;inset:0;width:100%;height:100%}
+.aq-plan{position:relative;height:178px;margin-bottom:11px;border-radius:8px;overflow:hidden;
+  box-shadow:0 0 0 5px #fbf3dc,0 0 0 6.5px rgba(140,100,40,.5),0 10px 26px rgba(60,40,10,.22)}
+.aq-plan svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 .aq-cachet{position:absolute;right:8px;top:8px;width:62px;height:62px;border-radius:50%;z-index:2;
   border:2.6px solid rgba(140,40,30,.6);color:rgba(140,40,30,.7);transform:rotate(11deg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -5678,7 +5685,7 @@ const PORTS={
   barcelone:{nom:'Barcelone',pays:'Espagne',x:82.0,y:230.0,niv:1,mult:1.61,duree:30*60,xp:40,lettres:'BARCELONA',
     desc:'La grande rivale catalane. Le savon s\'y arrache.'},
   genes:{nom:'Gênes',pays:'Italie',x:139.3,y:166.2,niv:1,mult:1.88,duree:45*60,xp:55,lettres:'GENOVA',
-    desc:'La Superbe. Les marchands y payent bien.'},
+    desc:'La Superbe. Les marchands y payent bien.',travaux:true},
   valence:{nom:'Valence',pays:'Espagne',x:60.4,y:270.1,niv:3,mult:1.82,duree:2*3600,xp:110,lettres:'VALENCIA',
     desc:'Au sud de la côte espagnole, entre orangers et paella.'},
   naples:{nom:'Naples',pays:'Italie',x:184.4,y:241.1,niv:5,mult:1.35,duree:3*3600,xp:180,lettres:'NAPOLI',
@@ -5907,16 +5914,20 @@ function construitPorts(){
   g.innerHTML='';
   Object.entries(PORTS).forEach(([id,P])=>{
     const locked=NIV<P.niv;
+    const travaux=!!P.travaux;
     const el=document.createElementNS('http://www.w3.org/2000/svg','g');
     el.classList.add('port');
     if(locked)el.classList.add('lock');
+    if(travaux)el.classList.add('travaux');
     if(id===ici)el.classList.add('ici');
     el.dataset.p=id;
+    const icone=travaux?'🚧':(locked?'🔒':'⚓');
     el.innerHTML=`<circle class="phalo" cx="${P.x}" cy="${P.y}" r="13" style="animation-delay:-${(P.x%31)/9}s"/>
       <circle class="pc" cx="${P.x}" cy="${P.y}" r="8"/>
-      <text class="panc" x="${P.x}" y="${P.y+3.2}" text-anchor="middle">${locked?'🔒':'⚓'}</text>
+      <text class="panc" x="${P.x}" y="${P.y+3.2}" text-anchor="middle">${icone}</text>
       <text class="pnom" x="${P.x}" y="${P.y-13}">${P.nom}</text>`+
-      (locked?`<text class="pnom" x="${P.x}" y="${P.y+22}" style="font-size:8px;opacity:.75">Niv. ${P.niv}</text>`:'');
+      (travaux?`<text class="pnom" x="${P.x}" y="${P.y+22}" style="font-size:8px;opacity:.85">Fermé</text>`
+        :(locked?`<text class="pnom" x="${P.x}" y="${P.y+22}" style="font-size:8px;opacity:.75">Niv. ${P.niv}</text>`:''));
     el.addEventListener('click',()=>selPort(id));
     g.appendChild(el);
   });
@@ -5985,6 +5996,7 @@ function selPort(id){
   if(voEnCours&&id===voEnCours.vers){toast('⛵ Tu fais déjà route vers '+PORTS[id].nom);return}
   const NIV=niveauDe(PROFIL.xp??0);
   const P=PORTS[id];
+  if(P.travaux){toast('🚧 '+P.nom+' est fermé pour travaux — retour bientôt');return}
   if(NIV<P.niv){toast('🔒 '+P.nom+' se débloque au niveau '+P.niv);return}
   PORT_SEL=id;
   document.querySelectorAll('.port').forEach(o=>o.classList.toggle('sel',o.dataset.p===id));
@@ -6754,36 +6766,68 @@ function ilYA(iso){
   return 'il y a '+Math.floor(h/24)+' j';
 }
 function svgQuaiActe(niv){
-  /* plan cadastral à l'encre : le quai grandit avec le niveau */
-  const larg=140+niv*36;
-  let s=`<rect x="${340-larg}" y="58" width="${larg}" height="11" rx="2" fill="#b8946a" stroke="#8a6a42" stroke-width="1.6"/>`;
-  for(let i=0;i<2+niv;i++){
-    const px=340-larg+16+i*((larg-26)/(1+niv));
-    s+=`<rect x="${px}" y="69" width="6" height="36" fill="#8a6a42"/>`;
-  }
-  s+=`<path d="M${340-larg+10} 58 v-14 h4 v14z" fill="#6a4a2e"/>
-      <circle cx="${340-larg+12}" cy="41" r="4" fill="#d9a83c"/>`;
-  if(niv>=2)s+=`<rect x="${340-larg+50}" y="34" width="5" height="24" fill="#6a4a2e"/>
-      <circle cx="${340-larg+52.5}" cy="30" r="4.5" fill="#d9a83c"/>`;
-  if(niv>=3)s+=`<g transform="translate(${340-larg+88},58)" stroke="#5a5e66" fill="#5a5e66">
-      <rect x="0" y="-38" width="6" height="38"/><rect x="0" y="-38" width="40" height="5"/>
-      <path d="M36 -33 v12" stroke-width="2" fill="none"/></g>`;
-  if(niv>=4){
-    let ray='';
-    for(let i=0;i<6;i++)ray+=`<rect x="${i*10}" y="0" width="5" height="9" fill="${i%2?'#e8dcc0':'#c07858'}"/>`;
-    s+=`<g transform="translate(${340-larg+142},38)">${ray}
-      <rect x="0" y="9" width="60" height="2.4" fill="#a86848"/>
-      <rect x="1" y="11.4" width="3" height="20" fill="#8a6a42"/>
-      <rect x="56" y="11.4" width="3" height="20" fill="#8a6a42"/></g>`;
-  }
-  if(niv>=5)s+=`<g transform="translate(318,58)">
-      <path d="M0 0 h14 l-2.4 -26 h-9.2 z" fill="#c05a48" stroke="#8a3a2c" stroke-width="1.4"/>
-      <rect x="1.6" y="-32" width="10.8" height="7" rx="1.6" fill="#f4ecd8" stroke="#8a3a2c" stroke-width="1.4"/>
-      <circle cx="7" cy="-28.5" r="2.6" fill="#d9a83c"/></g>`;
-  s+=`<path d="M${340-larg} 78 q-30 8 -60 4 M${340-larg} 92 q-40 10 -84 4"
-        stroke="#9ab8c8" stroke-width="2" fill="none"/>
-      <text x="24" y="40" font-family="Caveat" font-size="14" fill="#7a6636">parcelle n°${1+((PROFIL.pseudo||'').length*7)%89}</text>`;
-  return `<svg viewBox="0 0 340 120" preserveAspectRatio="xMidYMid meet">${s}</svg>`;
+  /* vue de face, style panorama de Marseille — la parcelle vue du quai, pas du ciel */
+  const ND=`<g transform="translate(250,20) scale(.42)">
+    <path d="M-10 66 V32 Q12 14 28 16 Q44 18 66 32 V66 Z" fill="#9db088"/>
+    <rect x="12" y="6" width="30" height="28" fill="#e3d5b2"/>
+    <rect x="19" y="-16" width="16" height="22" fill="#faf3de"/>
+    <rect x="23" y="-30" width="8" height="14" fill="#e9ddbe"/>
+    <circle cx="27" cy="-32" r="2.2" fill="#eec455"/>
+  </g>`;
+  const fanal=`<g transform="translate(48,68)">
+    <rect x="-1.6" y="-30" width="3.2" height="30" fill="#6a4a2e"/>
+    <circle cx="0" cy="-34" r="15" fill="rgba(255,214,110,.3)"/>
+    <circle cx="0" cy="-34" r="6" fill="#ffe9a4"/><circle cx="0" cy="-34" r="3.4" fill="#fff6d8"/>
+  </g>`;
+  const cabanon=niv>=3?`<g transform="translate(88,36)">
+    <rect x="0" y="0" width="46" height="34" fill="#f2e3c0"/>
+    <rect x="0" y="0" width="2.4" height="34" fill="rgba(255,252,244,.5)"/>
+    <path d="M-3 0 h52 v-6 h-52 Z" fill="#cd7357"/>
+    <path d="M-3 -6.4 h52" stroke="rgba(120,52,34,.28)" stroke-width="1"/>
+    <rect x="10" y="8" width="10" height="14" rx="1" fill="#8a7960" opacity=".5"/>
+    <rect x="7.4" y="8" width="2.6" height="14" fill="#7fa3b5"/>
+    <rect x="20.6" y="8" width="2.6" height="14" fill="#7fa3b5"/>
+    <rect x="28" y="8" width="10" height="14" rx="1" fill="#8a7960" opacity=".5"/>
+    <rect x="25.4" y="8" width="2.6" height="14" fill="#84a478"/>
+    <rect x="38.6" y="8" width="2.6" height="14" fill="#84a478"/>
+    <path d="M15 22 v12 h14 v-12 Z" fill="#8a684a"/>
+  </g>`:'';
+  const phare=niv>=5?`<g transform="translate(300,10)">
+    <path d="M0 60 h14 l-2.2 -46 h-9.6 Z" fill="#e7dabb"/>
+    <rect x="1" y="26" width="12" height="4.4" fill="#2d86ac"/>
+    <rect x="1" y="38" width="12" height="4.4" fill="#2d86ac"/>
+    <rect x="1.4" y="6" width="11.2" height="8" rx="1.4" fill="#f4ecd8" stroke="#8a3a2c" stroke-width="1.1"/>
+    <circle cx="7" cy="10" r="2.6" fill="#ffe9a4"/>
+    <circle cx="7" cy="10" r="13" fill="rgba(255,214,110,.28)"/>
+    <path d="M-1.6 6 h18 l-3.6 -5.6 h-10.8 Z" fill="#c05a48"/>
+  </g>`:'';
+  const s=`<rect width="340" height="178" fill="url(#pqCiel)"/>
+    <path d="M0 58 Q90 34 190 42 Q270 48 340 36 V70 H0 Z" fill="#cdd7c6" opacity=".7"/>
+    ${ND}
+    <rect x="0" y="70" width="340" height="108" fill="url(#pqMer)"/>
+    <path d="M0 82 q28 -6 56 0 t56 0 t56 0 t56 0 t56 0 t56 0" stroke="rgba(255,255,255,.32)" stroke-width="1.6" fill="none"/>
+    <path d="M0 96 q34 -5 68 0 t68 0 t68 0 t68 0" stroke="rgba(255,255,255,.2)" stroke-width="1.4" fill="none"/>
+    <rect x="0" y="70" width="340" height="20" fill="#e7dabb"/>
+    <rect x="0" y="70" width="340" height="3" fill="#f8f1dc"/>
+    <rect x="0" y="87" width="340" height="3" fill="rgba(120,96,60,.22)"/>
+    <path d="M28 73 v17 M84 73 v17 M140 73 v17 M196 73 v17 M252 73 v17 M308 73 v17" stroke="rgba(120,96,60,.2)" stroke-width="1.2"/>
+    ${fanal}
+    ${cabanon}
+    ${phare}
+    <circle cx="128" cy="80" r="4.4" fill="#8a6a42"/><circle cx="128" cy="80" r="1.8" fill="#6a4a2e"/>
+    <circle cx="180" cy="80" r="4.4" fill="#8a6a42"/><circle cx="180" cy="80" r="1.8" fill="#6a4a2e"/>
+    <circle cx="232" cy="80" r="4.4" fill="#8a6a42"/><circle cx="232" cy="80" r="1.8" fill="#6a4a2e"/>
+    <path d="M0 92 q30 4 60 0 t60 0 t60 0 t60 0 t60 0" stroke="rgba(255,255,255,.4)" stroke-width="1.6" fill="none"/>`;
+  return `<svg viewBox="0 0 340 178" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <linearGradient id="pqCiel" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#eaf8f8"/><stop offset="1" stop-color="#bdeaf0"/>
+      </linearGradient>
+      <linearGradient id="pqMer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9edce6"/><stop offset=".5" stop-color="#4aaac4"/><stop offset="1" stop-color="#1f6693"/>
+      </linearGradient>
+    </defs>
+    ${s}</svg>`;
 }
 function rendQuai(d){
   const corps=$('#mqCorps');
