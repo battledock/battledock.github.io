@@ -2700,85 +2700,6 @@ body.en-mer .mer-region{opacity:1}
   padding:9px 4px;font-weight:900;font-size:11px;background:#fff;color:#0d2438;font-family:'Nunito',sans-serif}
 .bq-m button.on{background:#ffd23c}
 
-/* — arsenal (le hangar) — */
-const HA_COUTS=[0,150,400,900,1800];
-async function ouvreArsenal(){
-  document.getElementById('varsenal').classList.add('on');
-  if(!MARCHE.genes)await chargeMarche('genes');
-  await rendArsenal();
-}
-async function rendArsenal(){
-  const c=document.getElementById('haCarte');
-  const etat=await rpc('bd2_hangar',{p_action:'etat'});
-  if(!etat||etat.erreur){c.innerHTML='<div style="text-align:center;font-weight:800;color:#a33">⚠️ '+((etat&&etat.erreur)||'Erreur réseau')+'</div>';return}
-  const cap=etat.capacite, occ=etat.occupe, niv=etat.niveau;
-  const contenu=Object.entries(etat.contenu||{}).filter(([,n])=>n>0);
-  const dispoCale=Object.entries(PROFIL.cale||{}).filter(([,n])=>n>0);
-  const pct=Math.min(100,Math.round(occ/cap*100));
-
-  const capHtml=`<div class="ha-cap">
-    <div class="ha-cap-h"><b>📦 Capacité du Hangar</b><span>NIVEAU ${niv} / 5</span></div>
-    <div class="ha-jauge"><i style="width:${pct}%"></i></div>
-    <div class="ha-jauge-t">${occ} / ${cap} caisses stockées</div>
-    ${niv>=5?'<button class="ha-up max" disabled>🏆 Hangar au maximum</button>':
-      `<button class="ha-up" id="haUp">🔨 Agrandir le Hangar — ${HA_COUTS[niv]} 🪙
-        <small>Niveau ${niv+1} : +4 caisses de capacité</small></button>`}
-  </div>`;
-
-  const listeHtml=`<div class="ha-sec">CE QUI EST STOCKÉ ICI</div>
-  <div class="ha-liste">${contenu.length?contenu.map(([m,n])=>{
-    const M=MARCHANDISES[m];
-    const prixEst=prixVente('genes',m);
-    return `<div class="ha-l"><span class="em">${M.emo}</span>
-      <span class="nm">${M.nom}<small>~${prixEst} 🪙 pièce ici</small></span>
-      <span class="qte">×${n}</span>
-      <div class="btns">
-        <button data-act="retirer" data-m="${m}">↩ Reprendre</button>
-        <button class="vendre" data-act="vendre" data-m="${m}">Vendre</button>
-      </div></div>`;
-  }).join(''):'<div class="ha-vide">Le Hangar est vide. Dépose des marchandises depuis ta cale ci-dessous.</div>'}</div>`;
-
-  const depHtml=!dispoCale.length?'':`<div class="ha-deposer">
-    <h4>📥 Déposer depuis ta cale</h4>
-    ${dispoCale.map(([m,n])=>{
-      const M=MARCHANDISES[m];
-      const plein=occ>=cap;
-      return `<div class="ha-dep-l"><span class="em">${M.emo}</span>
-        <span class="nm">${M.nom}<small>×${n} dans ta cale</small></span>
-        <button data-act="deposer" data-m="${m}" ${plein?'disabled':''}>Déposer</button></div>`;
-    }).join('')}
-  </div>`;
-
-  c.innerHTML=capHtml+listeHtml+depHtml;
-
-  const up=document.getElementById('haUp');
-  if(up)up.onclick=async()=>{
-    up.disabled=true;
-    const r=await rpc('bd2_hangar',{p_action:'ameliorer'});
-    if(!r||r.erreur){up.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
-    PROFIL.sous=r.sous;majHeader();SON.gain();
-    toast('🔨 Hangar agrandi — niveau '+r.niveau);
-    rendArsenal();
-  };
-  c.querySelectorAll('[data-act]').forEach(b=>{
-    b.onclick=async()=>{
-      const act=b.dataset.act, m=b.dataset.m;
-      b.disabled=true;
-      const qte=act==='vendre'||act==='retirer'?
-        (etat.contenu[m]||0):(PROFIL.cale[m]||0);
-      const r=await rpc('bd2_hangar',{p_action:act,p_marchandise:m,p_qte:qte});
-      if(!r||r.erreur){b.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
-      if(r.cale)PROFIL.cale=r.cale;
-      if(r.sous!==undefined){PROFIL.sous=r.sous;majHeader();}
-      SON.gain();
-      if(act==='vendre')toast('⚓ Vendu au Hangar : +'+r.vendu+' 🪙');
-      else if(act==='deposer')toast('📥 Déposé au Hangar');
-      else toast('↩ Repris dans ta cale');
-      rendArsenal();
-    };
-  });
-}
-
 /* — lotto — */
 #vlotto{background:linear-gradient(180deg,#2c2030,#1e1624)}
 #vlotto .fo-sc{height:170px;background:
@@ -8487,6 +8408,85 @@ async function ouvreBanque(){
     };
   }
 }
+/* — arsenal (le hangar) — */
+const HA_COUTS=[0,150,400,900,1800];
+async function ouvreArsenal(){
+  document.getElementById('varsenal').classList.add('on');
+  if(!MARCHE.genes)await chargeMarche('genes');
+  await rendArsenal();
+}
+async function rendArsenal(){
+  const c=document.getElementById('haCarte');
+  const etat=await rpc('bd2_hangar',{p_action:'etat'});
+  if(!etat||etat.erreur){c.innerHTML='<div style="text-align:center;font-weight:800;color:#a33">⚠️ '+((etat&&etat.erreur)||'Erreur réseau')+'</div>';return}
+  const cap=etat.capacite, occ=etat.occupe, niv=etat.niveau;
+  const contenu=Object.entries(etat.contenu||{}).filter(([,n])=>n>0);
+  const dispoCale=Object.entries(PROFIL.cale||{}).filter(([,n])=>n>0);
+  const pct=Math.min(100,Math.round(occ/cap*100));
+
+  const capHtml=`<div class="ha-cap">
+    <div class="ha-cap-h"><b>📦 Capacité du Hangar</b><span>NIVEAU ${niv} / 5</span></div>
+    <div class="ha-jauge"><i style="width:${pct}%"></i></div>
+    <div class="ha-jauge-t">${occ} / ${cap} caisses stockées</div>
+    ${niv>=5?'<button class="ha-up max" disabled>🏆 Hangar au maximum</button>':
+      `<button class="ha-up" id="haUp">🔨 Agrandir le Hangar — ${HA_COUTS[niv]} 🪙
+        <small>Niveau ${niv+1} : +4 caisses de capacité</small></button>`}
+  </div>`;
+
+  const listeHtml=`<div class="ha-sec">CE QUI EST STOCKÉ ICI</div>
+  <div class="ha-liste">${contenu.length?contenu.map(([m,n])=>{
+    const M=MARCHANDISES[m];
+    const prixEst=prixVente('genes',m);
+    return `<div class="ha-l"><span class="em">${M.emo}</span>
+      <span class="nm">${M.nom}<small>~${prixEst} 🪙 pièce ici</small></span>
+      <span class="qte">×${n}</span>
+      <div class="btns">
+        <button data-act="retirer" data-m="${m}">↩ Reprendre</button>
+        <button class="vendre" data-act="vendre" data-m="${m}">Vendre</button>
+      </div></div>`;
+  }).join(''):'<div class="ha-vide">Le Hangar est vide. Dépose des marchandises depuis ta cale ci-dessous.</div>'}</div>`;
+
+  const depHtml=!dispoCale.length?'':`<div class="ha-deposer">
+    <h4>📥 Déposer depuis ta cale</h4>
+    ${dispoCale.map(([m,n])=>{
+      const M=MARCHANDISES[m];
+      const plein=occ>=cap;
+      return `<div class="ha-dep-l"><span class="em">${M.emo}</span>
+        <span class="nm">${M.nom}<small>×${n} dans ta cale</small></span>
+        <button data-act="deposer" data-m="${m}" ${plein?'disabled':''}>Déposer</button></div>`;
+    }).join('')}
+  </div>`;
+
+  c.innerHTML=capHtml+listeHtml+depHtml;
+
+  const up=document.getElementById('haUp');
+  if(up)up.onclick=async()=>{
+    up.disabled=true;
+    const r=await rpc('bd2_hangar',{p_action:'ameliorer'});
+    if(!r||r.erreur){up.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
+    PROFIL.sous=r.sous;majHeader();SON.gain();
+    toast('🔨 Hangar agrandi — niveau '+r.niveau);
+    rendArsenal();
+  };
+  c.querySelectorAll('[data-act]').forEach(b=>{
+    b.onclick=async()=>{
+      const act=b.dataset.act, m=b.dataset.m;
+      b.disabled=true;
+      const qte=act==='vendre'||act==='retirer'?
+        (etat.contenu[m]||0):(PROFIL.cale[m]||0);
+      const r=await rpc('bd2_hangar',{p_action:act,p_marchandise:m,p_qte:qte});
+      if(!r||r.erreur){b.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
+      if(r.cale)PROFIL.cale=r.cale;
+      if(r.sous!==undefined){PROFIL.sous=r.sous;majHeader();}
+      SON.gain();
+      if(act==='vendre')toast('⚓ Vendu au Hangar : +'+r.vendu+' 🪙');
+      else if(act==='deposer')toast('📥 Déposé au Hangar');
+      else toast('↩ Repris dans ta cale');
+      rendArsenal();
+    };
+  });
+}
+
 /* — lotto — */
 let LO_MISE=25;
 function ouvreLotto(){
