@@ -2751,6 +2751,21 @@ body.en-mer .mer-region{opacity:1}
 .ga-go{display:block;width:100%;margin-top:9px;border:none;cursor:pointer;padding:11px;border-radius:11px;
   font-family:'Nunito';font-weight:900;font-size:12.5px;color:#2c2004;
   background:linear-gradient(180deg,#f2cf6a,#d9a638)}
+/* — choix de route — */
+#vroute{background:rgba(10,20,36,.7);backdrop-filter:blur(6px);justify-content:center;align-items:center}
+.rt-carte{background:#fdf7ec;border-radius:20px;max-width:340px;width:88%;padding:24px 20px;
+  box-shadow:0 20px 50px rgba(0,0,0,.4)}
+.rt-titre{font-family:'Fraunces',serif;font-weight:900;font-size:18px;color:#2c2416;text-align:center}
+.rt-sub{font-size:11px;font-weight:800;color:#a89468;text-align:center;margin-top:4px;margin-bottom:18px}
+.rt-op{display:flex;align-items:center;gap:12px;width:100%;border:1.6px solid #ecdfc0;background:#faf6ea;
+  border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer;text-align:left}
+.rt-op:disabled{opacity:.5}
+.rt-op:last-child{margin-bottom:0}
+.rt-e{font-size:26px;flex-shrink:0}
+.rt-t b{display:block;font-family:'Fraunces',serif;font-weight:900;font-size:13px;color:#2c2416}
+.rt-t span{display:block;font-size:9.6px;font-weight:700;color:#8a744c;margin-top:3px;line-height:1.5}
+.rt-rapide{border-color:#e0a058}
+.rt-sure{border-color:#5a9a48}
 .bq-registre{font-family:'Fraunces',serif;color:#3a2a12}
 .bq-l{display:flex;justify-content:space-between;align-items:baseline;
   border-bottom:1.5px dashed rgba(90,68,38,.35);padding:7px 2px;font-weight:700;font-size:12.5px}
@@ -5084,6 +5099,21 @@ body[data-port="marseille"] .navette{display:none}
 </div>
 <!-- ⚓ L'ARSENAL : LE HANGAR -->
 <!-- 🏭 LA FABRIQUE (Barcelone) -->
+<!-- ⛵ CHOIX DE ROUTE -->
+<div class="vfonc" id="vroute" style="display:none">
+  <div class="rt-carte">
+    <div class="rt-titre">⛵ Cap sur <span id="rtDest"></span></div>
+    <div class="rt-sub">Quelle route pour cette traversée ?</div>
+    <button class="rt-op rt-rapide" onclick="choisirRoute('rapide')">
+      <div class="rt-e">⚡</div>
+      <div class="rt-t"><b>Route rapide</b><span>−22% de temps de traversée<br>1 chance sur 4 : avarie, un peu de cargaison perdue</span></div>
+    </button>
+    <button class="rt-op rt-sure" onclick="choisirRoute('sure')">
+      <div class="rt-e">🧭</div>
+      <div class="rt-t"><b>Route sûre</b><span>+12% de temps de traversée<br>Aucun risque, la cargaison arrive intacte</span></div>
+    </button>
+  </div>
+</div>
 <!-- 🚧 AVIS DE TRAVAUX -->
 <div class="vfonc" id="vavis" style="display:none">
   <div class="av-carte">
@@ -6650,7 +6680,28 @@ async function larguer(){
   $('#zfiche').classList.remove('on');
   $('#routeTrace').style.display='none';$('#routeHalo').style.display='none';
   PORT_SEL=null;
-  toast('⛵ Cap sur '+dest.nom+' !');
+  ouvreChoixRoute(dest.nom);
+}
+function ouvreChoixRoute(nomDest){
+  document.getElementById('rtDest').textContent=nomDest;
+  document.getElementById('vroute').classList.add('on');
+}
+async function choisirRoute(route){
+  const boutons=document.querySelectorAll('.rt-op');
+  boutons.forEach(b=>b.disabled=true);
+  const res=await rpc('bd2_choisir_route',{p_route:route});
+  document.getElementById('vroute').classList.remove('on');
+  if(!res||res.erreur){
+    toast('⚠️ '+((res&&res.erreur)||'Erreur réseau'));
+  }else{
+    if(VOYAGE)VOYAGE.fin=new Date(res.voyage.fin).getTime();
+    if(res.risque_survenu){
+      PROFIL.cale=res.cale||PROFIL.cale;
+      toast('⛈ Coup dur en mer — une partie de la cargaison a été perdue');
+    }else{
+      toast(route==='rapide'?'⛵ Route rapide choisie — gare aux imprévus !':'🧭 Route sûre choisie — tranquille mais plus long');
+    }
+  }
   SON.depart();
   joueDepart(majSortie);
 }
