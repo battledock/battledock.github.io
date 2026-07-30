@@ -8646,6 +8646,36 @@ function ouvreAvisTravaux(P){
   document.getElementById('vavis').classList.add('on');
 }
 setTimeout(()=>{const x=document.getElementById('avX');if(x)x.onclick=()=>document.getElementById('vavis').classList.remove('on')},0);
+(function(){
+  try{
+    const params=new URLSearchParams(location.search);
+    if(params.get('dev')==='eliasse'){
+      const v=document.getElementById('vmaj');
+      if(v)v.style.display='none';
+    }
+  }catch(e){}
+})();
+
+/* — téléport dev : tape un port pour y aller instantanément, sans xp/argent, sans voyage — */
+(function(){
+  let DEV_ON=false;
+  try{ DEV_ON = new URLSearchParams(location.search).get('dev')==='eliasse'; }catch(e){}
+  if(!DEV_ON)return;
+  document.addEventListener('click', async function(e){
+    const p=e.target.closest && e.target.closest('.port');
+    if(!p)return;
+    const id=p.dataset.p;
+    if(!id || id===portActuel())return;
+    e.stopPropagation();e.preventDefault();
+    const r=await rpc('bd2_dev_teleport',{p_secret:'eliasse-dev-battledock',p_port:id});
+    if(!r||r.erreur){toast('🐛 téléport dev: '+((r&&r.erreur)||'erreur'));return;}
+    PROFIL.port=id;VOYAGE=null;
+    appliquePort(id);
+    if(typeof chargeVoisins==='function')chargeVoisins();
+    if(typeof fermeFiche==='function')fermeFiche();
+    toast('🛠 Téléporté à '+PORTS[id].nom+' (dev, sans xp/argent)');
+  },true);
+})();
 async function ouvreFabrique(){
   document.getElementById('vfabrique').classList.add('on');
   await rendFabrique();
