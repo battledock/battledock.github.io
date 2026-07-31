@@ -2752,20 +2752,23 @@ body.en-mer .mer-region{opacity:1}
   font-family:'Nunito';font-weight:900;font-size:12.5px;color:#2c2004;
   background:linear-gradient(180deg,#f2cf6a,#d9a638)}
 /* — choix de route — */
-#vroute{background:rgba(10,20,36,.7);backdrop-filter:blur(6px);justify-content:center;align-items:center}
-.rt-carte{background:#fdf7ec;border-radius:20px;max-width:340px;width:88%;padding:24px 20px;
-  box-shadow:0 20px 50px rgba(0,0,0,.4)}
-.rt-titre{font-family:'Fraunces',serif;font-weight:900;font-size:18px;color:#2c2416;text-align:center}
-.rt-sub{font-size:11px;font-weight:800;color:#a89468;text-align:center;margin-top:4px;margin-bottom:18px}
-.rt-op{display:flex;align-items:center;gap:12px;width:100%;border:1.6px solid #ecdfc0;background:#faf6ea;
-  border-radius:14px;padding:13px;margin-bottom:10px;cursor:pointer;text-align:left}
-.rt-op:disabled{opacity:.5}
-.rt-op:last-child{margin-bottom:0}
-.rt-e{font-size:26px;flex-shrink:0}
-.rt-t b{display:block;font-family:'Fraunces',serif;font-weight:900;font-size:13px;color:#2c2416}
-.rt-t span{display:block;font-size:9.6px;font-weight:700;color:#8a744c;margin-top:3px;line-height:1.5}
-.rt-rapide{border-color:#e0a058}
-.rt-sure{border-color:#5a9a48}
+#vroute{background:linear-gradient(180deg,#a9d3ec,#4aaac4 55%,#1f6693);justify-content:center;align-items:center}
+.rt-carte{width:100%;max-width:300px;padding:0 4px;text-align:center}
+.rt-nom{font-size:10.5px;font-weight:900;color:rgba(255,255,255,.6);letter-spacing:3px;text-transform:uppercase}
+.rt-titre{font-family:'Fraunces',serif;font-weight:900;font-size:27px;color:#fff;margin-top:6px;margin-bottom:26px}
+.rt-seg{display:flex;background:rgba(255,255,255,.18);border-radius:12px;padding:4px;margin-bottom:20px}
+.rt-seg button{flex:1;border:none;background:none;padding:9px 4px;border-radius:9px;cursor:pointer;
+  font-family:'Nunito';font-weight:900;font-size:11px;color:rgba(255,255,255,.7)}
+.rt-seg button.on{background:#fff;color:#0d3446;box-shadow:0 3px 8px rgba(0,0,0,.15)}
+.rt-detail{background:#fffdf6;border-radius:16px;padding:20px;box-shadow:0 14px 34px rgba(0,20,40,.22)}
+.rt-ic{font-size:28px}
+.rt-detail .rt-t{font-family:'Fraunces',serif;font-weight:900;font-size:16px;color:#2c2416;margin-top:8px}
+.rt-temps{font-family:'Fraunces',serif;font-weight:900;font-size:32px;color:#0d3446;margin-top:6px}
+.rt-temps small{font-size:13px;color:#a89468}
+.rt-d{font-size:9.5px;font-weight:700;color:#a89468;margin-top:8px;line-height:1.6}
+.rt-go{margin-top:16px;width:100%;border:none;background:linear-gradient(180deg,#2aa4c2,#1a7690);
+  color:#fff;font-family:'Nunito';font-weight:900;font-size:12px;padding:12px;border-radius:11px;cursor:pointer}
+.rt-go:disabled{opacity:.6}
 .bq-registre{font-family:'Fraunces',serif;color:#3a2a12}
 .bq-l{display:flex;justify-content:space-between;align-items:baseline;
   border-bottom:1.5px dashed rgba(90,68,38,.35);padding:7px 2px;font-weight:700;font-size:12.5px}
@@ -5102,16 +5105,15 @@ body[data-port="marseille"] .navette{display:none}
 <!-- ⛵ CHOIX DE ROUTE -->
 <div class="vfonc" id="vroute" style="display:none">
   <div class="rt-carte">
-    <div class="rt-titre">⛵ Cap sur <span id="rtDest"></span></div>
-    <div class="rt-sub">Quelle route pour cette traversée ?</div>
-    <button class="rt-op rt-rapide" onclick="choisirRoute('rapide')">
-      <div class="rt-e">⚡</div>
-      <div class="rt-t"><b>Route rapide</b><span>−22% de temps de traversée<br>1 chance sur 4 : avarie, un peu de cargaison perdue</span></div>
-    </button>
-    <button class="rt-op rt-sure" onclick="choisirRoute('sure')">
-      <div class="rt-e">🧭</div>
-      <div class="rt-t"><b>Route sûre</b><span>+12% de temps de traversée<br>Aucun risque, la cargaison arrive intacte</span></div>
-    </button>
+    <div class="rt-nom">Prochaine traversée</div>
+    <div class="rt-titre">Cap sur <span id="rtDest"></span></div>
+    <div class="rt-seg">
+      <button data-route="rapide" onclick="choisirRoute('rapide')">⚡ Rapide</button>
+      <button data-route="normale" onclick="choisirRoute('normale')" class="on">⛵ Normale</button>
+      <button data-route="sure" onclick="choisirRoute('sure')">🧭 Sûre</button>
+    </div>
+    <div class="rt-detail" id="rtDetail"></div>
+    <button class="rt-go" id="rtGo" onclick="confirmeRoute()">Confirmer le départ</button>
   </div>
 </div>
 <!-- 🚧 AVIS DE TRAVAUX -->
@@ -6682,15 +6684,38 @@ async function larguer(){
   PORT_SEL=null;
   ouvreChoixRoute(dest.nom);
 }
+const RT_INFOS={
+  rapide:{ic:'⚡',nom:'Route rapide',pct:-0.22,txt:'1 chance sur 4 : avarie et perte de cargaison'},
+  normale:{ic:'⛵',nom:'Route normale',pct:0,txt:'Ni bonus ni risque — le choix par défaut'},
+  sure:{ic:'🧭',nom:'Route sûre',pct:0.12,txt:'+15 🪙 garantis — aucun risque'}
+};
+let RT_DUREE_BASE=0, RT_CHOISIE='normale';
 function ouvreChoixRoute(nomDest){
   document.getElementById('rtDest').textContent=nomDest;
+  RT_DUREE_BASE = VOYAGE ? Math.round((VOYAGE.fin-VOYAGE.depart)/60000) : 45;
+  RT_CHOISIE='normale';
+  rendChoixRoute();
   document.getElementById('vroute').classList.add('on');
 }
+function rendChoixRoute(){
+  document.querySelectorAll('.rt-seg button').forEach(b=>b.classList.toggle('on',b.dataset.route===RT_CHOISIE));
+  const info=RT_INFOS[RT_CHOISIE];
+  const min=Math.max(1,Math.round(RT_DUREE_BASE*(1+info.pct)));
+  document.getElementById('rtDetail').innerHTML=`
+    <div class="rt-ic">${info.ic}</div>
+    <div class="rt-t">${info.nom}</div>
+    <div class="rt-temps">${min}<small>min</small></div>
+    <div class="rt-d">${info.txt}</div>`;
+}
 async function choisirRoute(route){
-  const boutons=document.querySelectorAll('.rt-op');
-  boutons.forEach(b=>b.disabled=true);
-  const res=await rpc('bd2_choisir_route',{p_route:route});
+  RT_CHOISIE=route;rendChoixRoute();
+}
+async function confirmeRoute(){
+  const go=document.getElementById('rtGo');
+  if(go)go.disabled=true;
+  const res=await rpc('bd2_choisir_route',{p_route:RT_CHOISIE});
   document.getElementById('vroute').classList.remove('on');
+  if(go)go.disabled=false;
   if(!res||res.erreur){
     toast('⚠️ '+((res&&res.erreur)||'Erreur réseau'));
   }else{
@@ -6698,8 +6723,11 @@ async function choisirRoute(route){
     if(res.risque_survenu){
       PROFIL.cale=res.cale||PROFIL.cale;
       toast('⛈ Coup dur en mer — une partie de la cargaison a été perdue');
+    }else if(res.bonus>0){
+      PROFIL.sous=res.sous;majHeader();
+      toast('🧭 Route sûre — +'+res.bonus+' 🪙 garantis');
     }else{
-      toast(route==='rapide'?'⛵ Route rapide choisie — gare aux imprévus !':'🧭 Route sûre choisie — tranquille mais plus long');
+      toast(RT_CHOISIE==='rapide'?'⚡ Route rapide choisie — gare aux imprévus !':'⛵ Cap sur '+document.getElementById('rtDest').textContent+' !');
     }
   }
   SON.depart();
