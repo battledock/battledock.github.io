@@ -455,6 +455,32 @@ body[data-port="genes"]:not(.en-mer) .w.actif .w-t,
 body[data-port="genes"]:not(.en-mer) .eclair.actif{color:#fff;text-shadow:0 1px 6px rgba(20,80,120,.6)}
 body[data-port="genes"]:not(.en-mer) .w.actif .w-t{transform:none}
 body[data-port="genes"]:not(.en-mer) .w.actif::before{display:none}
+/* Barcelone : navbar encre sur l'eau, comme Marseille/Gênes */
+body[data-port="barcelone"]:not(.en-mer) .verre{background:transparent;border-top:none;box-shadow:none;
+  padding-bottom:calc(6px + env(safe-area-inset-bottom))}
+body[data-port="barcelone"]:not(.en-mer) .verre::before,
+body[data-port="barcelone"]:not(.en-mer) .verre::after,
+body[data-port="barcelone"]:not(.en-mer) .vent-nav,
+body[data-port="barcelone"]:not(.en-mer) .deco{display:none!important}
+body[data-port="barcelone"]:not(.en-mer) .w-emo,
+body[data-port="barcelone"]:not(.en-mer) .eclair .em{display:none}
+body[data-port="barcelone"]:not(.en-mer) .w.actif .w-emo,
+body[data-port="marseille"]:not(.en-mer) .w.actif .w-emo{display:none!important;
+  width:auto!important;height:auto!important;background:none!important;border:none!important;
+  box-shadow:none!important;transform:none!important;animation:none!important}
+body[data-port="barcelone"]:not(.en-mer) .w-svg{display:block;width:22px;height:22px;
+  color:rgba(255,255,255,.55);transition:transform .3s cubic-bezier(.3,1.4,.4,1)}
+body[data-port="barcelone"]:not(.en-mer) .w:active .w-svg,
+body[data-port="barcelone"]:not(.en-mer) .eclair:active .w-svg{transform:scale(.86)}
+body[data-port="barcelone"]:not(.en-mer) .w-t,
+body[data-port="barcelone"]:not(.en-mer) .eclair{color:rgba(255,255,255,.5)}
+body[data-port="barcelone"]:not(.en-mer) .w.actif .w-svg,
+body[data-port="barcelone"]:not(.en-mer) .eclair.actif .w-svg{color:#fff;transform:translateY(-1px);
+  filter:drop-shadow(0 1px 6px rgba(20,80,120,.6))}
+body[data-port="barcelone"]:not(.en-mer) .w.actif .w-t,
+body[data-port="barcelone"]:not(.en-mer) .eclair.actif{color:#fff;text-shadow:0 1px 6px rgba(20,80,120,.6)}
+body[data-port="barcelone"]:not(.en-mer) .w.actif .w-t{transform:none}
+body[data-port="barcelone"]:not(.en-mer) .w.actif::before{display:none}
 .ville{position:absolute;bottom:41%;left:0;right:0;height:200px}
 .ville svg{overflow:visible}
 /* S2 : la colline domine, la ville n'est qu'un liseré */
@@ -2717,6 +2743,16 @@ body.en-mer .mer-region{opacity:1}
   font-family:'Nunito';font-weight:900;font-size:11px;color:#2c2004;
   background:linear-gradient(180deg,#f2cf6a,#d9a638)}
 .fa-btn:disabled{background:#ede4cc;color:#c2ac78;cursor:default}
+.fa-prod{background:#fffdf6;border:1.5px solid #ecdfc0;border-radius:16px;padding:20px;text-align:center;
+  box-shadow:0 4px 14px rgba(130,100,40,.08)}
+.fa-prod-h{display:flex;align-items:center;justify-content:center;gap:12px;font-size:30px;margin-bottom:10px}
+.fa-prod-h .fa-fleche{font-size:18px;color:#d9a638}
+.fa-prod-nm{font-family:'Fraunces',serif;font-weight:900;font-size:14px;color:#2c2416;margin-bottom:14px}
+.fa-jauge{height:10px;border-radius:6px;background:#f0e6cc;overflow:hidden;margin-bottom:8px}
+.fa-jauge i{display:block;height:100%;background:linear-gradient(90deg,#2aa4c2,#1a7690);border-radius:6px;transition:width 1s linear}
+.fa-temps{font-family:'Fraunces',serif;font-weight:900;font-size:20px;color:#8a744c;margin-bottom:14px;letter-spacing:1px}
+.fa-accel{background:linear-gradient(180deg,#7fc4d4,#3a9ab4)!important}
+
 /* — la bourse — */
 .bo-carte{background:#fffdf6;border:1.5px solid #ecdfc0;border-radius:16px;padding:16px;margin-bottom:14px;
   box-shadow:0 4px 14px rgba(130,100,40,.08)}
@@ -8864,7 +8900,8 @@ majBarrePort=function(){
 
 /* ══ LES 5 FONCTIONS — branchées Supabase ══ */
 document.querySelectorAll('.fo-x').forEach(x=>{
-  x.onclick=()=>document.getElementById(x.dataset.f).classList.remove('on');
+  x.onclick=()=>{document.getElementById(x.dataset.f).classList.remove('on');
+    if(x.dataset.f==='vfabrique' && typeof faFerme==='function')faFerme();};
 });
 function caleTotal(){let t=0;const c=PROFIL.cale||{};for(const k in c)t+=+c[k]||0;return t}
 /* — verger — */
@@ -8986,21 +9023,64 @@ document.addEventListener('click', async function(e){
   if(typeof fermeFiche==='function')fermeFiche();
   toast('🛠 Téléporté à '+PORTS[id].nom+' (dev, sans xp/argent)');
 },true);
-async function ouvreFabrique(){
-  document.getElementById('vfabrique').classList.add('on');
-  await rendFabrique();
-}
 const RECETTES_FA=[
   ['tissu','vetements',2,1],
   ['citrons','confiture',2,1],
   ['vin','cava',2,1],
   ['olives','huile_raffinee',2,1]
 ];
-const FA_FRAIS=20;
-async function rendFabrique(){
+let FA_TIMER=null;
+async function ouvreFabrique(){
+  document.getElementById('vfabrique').classList.add('on');
+  const etat=await rpc('bd2_fabrique',{p_action:'etat'});
+  PROFIL.fabrication=(etat&&etat.fabrication)||null;
+  rendFabrique();
+  if(FA_TIMER)clearInterval(FA_TIMER);
+  FA_TIMER=setInterval(rendFabrique,1000);
+}
+function faFerme(){if(FA_TIMER){clearInterval(FA_TIMER);FA_TIMER=null;}}
+function rendFabrique(){
   const c=document.getElementById('faCarte');
+  const fab=PROFIL.fabrication;
+  if(fab){
+    const pretA=new Date(fab.pret_a).getTime(), lanceA=new Date(fab.lance_a).getTime();
+    const total=pretA-lanceA, ecoule=Date.now()-lanceA;
+    const pct=Math.max(0,Math.min(100,Math.round(ecoule/total*100)));
+    const pret=Date.now()>=pretA;
+    const M1=MARCHANDISES[fab.brut], M2=MARCHANDISES[fab.fini];
+    const reste=Math.max(0,Math.ceil((pretA-Date.now())/1000));
+    const mm=String(Math.floor(reste/60)).padStart(2,'0'), ss=String(reste%60).padStart(2,'0');
+    c.innerHTML=`<div class="fa-prod">
+      <div class="fa-prod-h"><span class="em">${M1.emo}</span><span class="fa-fleche">→</span><span class="em">${M2.emo}</span></div>
+      <div class="fa-prod-nm">${pret?'C\'est prêt !':'Fabrication de '+M2.nom+' en cours…'}</div>
+      <div class="fa-jauge"><i style="width:${pct}%"></i></div>
+      ${pret?'':`<div class="fa-temps">${mm}:${ss}</div>`}
+      ${pret
+        ? `<button class="fa-btn" id="faRecup">📦 Récupérer ${fab.qf}× ${M2.nom}</button>`
+        : `<button class="fa-btn fa-accel" id="faAccel">⚡ Accélérer — 30 🪙</button>`}
+    </div>`;
+    const recup=document.getElementById('faRecup');
+    if(recup)recup.onclick=async()=>{
+      recup.disabled=true;
+      const r=await rpc('bd2_fabrique',{p_action:'recuperer'});
+      if(!r||r.erreur){recup.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
+      PROFIL.cale=r.cale;PROFIL.fabrication=null;majHeader();SON.gain();
+      toast('🏭 '+r.qf+'× '+MARCHANDISES[r.fini].nom+' récupéré');
+      rendFabrique();
+    };
+    const accel=document.getElementById('faAccel');
+    if(accel)accel.onclick=async()=>{
+      accel.disabled=true;
+      const r=await rpc('bd2_fabrique',{p_action:'accelerer'});
+      if(!r||r.erreur){accel.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
+      PROFIL.sous=r.sous;PROFIL.fabrication=r.fabrication;majHeader();
+      toast('⚡ Production accélérée !');
+      rendFabrique();
+    };
+    return;
+  }
   const cale=PROFIL.cale||{};
-  c.innerHTML=RECETTES_FA.map(([brut,fini,qBrut,qFini])=>{
+  c.innerHTML='<div class="fa-sec">RECETTES DISPONIBLES</div>'+RECETTES_FA.map(([brut,fini,qBrut,qFini])=>{
     const M1=MARCHANDISES[brut], M2=MARCHANDISES[fini];
     const dispo=cale[brut]||0;
     const gain=Math.round((M2.achat/M1.achat-1)*100);
@@ -9011,18 +9091,18 @@ async function rendFabrique(){
         <span class="fa-fleche">→</span>
         <div class="fa-item"><span class="em">${M2.emo}</span><span class="qte">×${qFini}</span><span class="nm">${M2.nom}</span></div>
       </div>
-      <button class="fa-btn" data-brut="${brut}" data-fini="${fini}" data-qbrut="${qBrut}" data-qfini="${qFini}" ${peut?'':'disabled'}>
-        ${peut?'Fabriquer':'Il faut ×'+qBrut}<br><span class="fa-gain" style="display:inline-block;margin-top:3px">+${gain}%</span>
+      <button class="fa-btn" data-brut="${brut}" data-fini="${fini}" ${peut?'':'disabled'}>
+        ${peut?'Lancer — 4 min':'Il faut ×'+qBrut}<br><span class="fa-gain" style="display:inline-block;margin-top:3px">+${gain}%</span>
       </button></div>`;
   }).join('');
   c.querySelectorAll('.fa-btn').forEach(b=>{
     if(b.disabled)return;
     b.onclick=async()=>{
       b.disabled=true;
-      const r=await rpc('bd2_fabrique',{p_brut:b.dataset.brut,p_fini:b.dataset.fini});
+      const r=await rpc('bd2_fabrique',{p_action:'lancer',p_brut:b.dataset.brut,p_fini:b.dataset.fini});
       if(!r||r.erreur){b.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur'));return}
-      PROFIL.cale=r.cale;PROFIL.sous=r.sous;majHeader();SON.gain();
-      toast('🏭 Transformé !');
+      PROFIL.cale=r.cale;PROFIL.sous=r.sous;PROFIL.fabrication=r.fabrication;majHeader();SON.gain();
+      toast('🏭 Production lancée — reviens dans 4 min');
       rendFabrique();
     };
   });
