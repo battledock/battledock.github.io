@@ -5716,6 +5716,8 @@ body[data-h="2"] .halo-fen{opacity:1;fill:rgba(255,220,140,.3)}
   </div>
   </div>
   </div>
+  </div>
+  </div>
 
   </div>
   <div class="zfiche" id="zfiche"></div>
@@ -6902,6 +6904,7 @@ document.addEventListener('pointerdown',function premier(){
 
 /* ── pause du décor quand une UI est ouverte ── */
 setInterval(()=>{
+  if(document.hidden)return;
   const ouverte=['#vmer','#vprof','#vclass','#vcriee','#vquai','#vchant'].some(s=>{const e=$(s);return e&&e.classList.contains('on')})
     ||$('#cargo').classList.contains('on')||$('#retour').classList.contains('on');
   document.body.classList.toggle('ui-ouverte',ouverte);
@@ -7402,6 +7405,7 @@ function mvSuiviVoyage(){
   if(g)g.setAttribute('transform',`translate(${p.x},${p.y}) rotate(${Math.atan2(p2.y-p.y,p2.x-p.x)*180/Math.PI*.3})`);
 }
 setInterval(()=>{
+  if(document.hidden)return;
   const v=document.getElementById('vmer');
   if(v&&v.classList.contains('on')&&voyageEnCours())mvSuiviVoyage();
 },1000);
@@ -7810,12 +7814,11 @@ async function accosteFinal(vendre){
 function ouvreMer(){
   const vo=voyageEnCours();
   construitPorts();
-  chargeFlotte();
   if(vo){
     /* mode suivi : route affichée, bateau qui avance */
     const A=PORTS[vo.de], B=PORTS[vo.vers];
     $('#vmerSub').textContent='En route : '+A.nom+' → '+B.nom;
-    if(typeof frPlaceBateau==='function')frPlaceBateau();
+    if(typeof mvSuiviVoyage==='function')mvSuiviVoyage();
   
     majSuivi();
   }else{
@@ -7912,7 +7915,7 @@ function majSuivi(){
   g.style.display='';
   g.setAttribute('transform',`translate(${x.toFixed(1)},${y.toFixed(1)}) scale(${flip},1)`);
 }
-setInterval(()=>{if(!document.hidden){majSuivi();dessineFlotte()}},1000);
+setInterval(()=>{if(!document.hidden)majSuivi()},1000);
 
 
 $('#vmerX').onclick=()=>{
@@ -8023,23 +8026,9 @@ function joueDepart(cb){
 }
 
 /* ── le Vésuve ── */
-let ERUPT_T=null;
-function eruption(){
-  if(document.body.classList.contains('vesuve'))return;
-  document.body.classList.add('vesuve');
-  if(navigator.vibrate)navigator.vibrate([60,40,80,40,120]);
-  toast('🌋 Le Vésuve gronde !!');
-  clearTimeout(ERUPT_T);
-  ERUPT_T=setTimeout(()=>document.body.classList.remove('vesuve'),8000);
-}
-setTimeout(()=>{
-  const v=document.getElementById('vesuveTap');
-  if(v)v.addEventListener('click',eruption);
-},0);
+
 /* éruption spontanée : ~1 chance sur 9 par minute quand on est à Naples */
-setInterval(()=>{
-  if(portActuel()==='naples'&&Math.random()<.11)eruption();
-},60000);
+
 
 
 /* ── profil : affiche ── */
@@ -9069,7 +9058,7 @@ function majBarrePort(){
     }
   },true);
   setTimeout(()=>majBarrePort(),600);
-  setInterval(()=>majBarrePort(),4000);
+  setInterval(()=>{if(!document.hidden)majBarrePort()},4000);
 })();
 
 /* ── le vent arrière : payer pour arriver plus vite ── */
@@ -9463,7 +9452,7 @@ function croisOuvreChoix(b,el){
   clearTimeout(croisOuvreChoix._t);
   croisOuvreChoix._t=setTimeout(()=>c.classList.remove('on'),6000);
 }
-setInterval(croisTick,1000);
+setInterval(()=>{if(!document.hidden)croisTick()},1000);
 setInterval(()=>{if(voyageEnCours()&&!document.hidden)croisPoll()},20000);
 setTimeout(croisPoll,2500);
 
@@ -9528,7 +9517,7 @@ function majTerres(){
   arr.style.opacity=(va*0.95).toFixed(2);
   arr.style.transform='scale('+(0.4+va*0.72).toFixed(2)+')';
 }
-setInterval(majTerres,1000);
+setInterval(()=>{if(!document.hidden)majTerres()},1000);
 
 /* ══ le guide du capitaine ══ */
 const GUIDE=[
@@ -10559,7 +10548,7 @@ setTimeout(()=>{
     'On fait ton premier voyage ensemble ?',
     '\u{1F9ED} C\'est parti, Bosco !',null);
 },2600);
-setInterval(tutoTick,900);
+setInterval(()=>{if(!document.hidden)tutoTick()},900);
 
 /* ══ le feedback des gains : nombres qui volent + compteur qui compte ══ */
 let FB_SOUS=null, FB_ANIM=null;
@@ -10835,7 +10824,7 @@ function majMerActs(){
   document.getElementById('actCap').classList.toggle('fait',!!vo.cap);
   document.getElementById('actBout').classList.toggle('fait',!!vo.bouteille);
 }
-setInterval(majMerActs,1500);
+setInterval(()=>{if(!document.hidden)majMerActs()},1500);
 /* ══ 🧭 LE CAP PARFAIT ══ */
 let CPG={on:false,ang:-34,vel:0,appui:false,tenu:0,manche:0,raf:0,rafT:0};
 document.addEventListener('pointerdown',e=>{
@@ -10998,6 +10987,7 @@ setTimeout(()=>{
   };
 },0);
 setInterval(()=>{
+  if(document.hidden)return;
   const vo=voyageEnCours();
   if(!vo||vo.trouvaille)return;
   const p=(Date.now()-vo.depart)/Math.max(1,vo.fin-vo.depart);
@@ -11767,6 +11757,7 @@ setTimeout(()=>{
 /* l'ambiance suit l'état : au port ↔ en mer */
 let __ambEtat=null;
 setInterval(()=>{
+  if(document.hidden)return;
   const e=!!voyageEnCours();
   if(e!==__ambEtat){__ambEtat=e;ambianceMaj()}
 },2000);
@@ -12103,6 +12094,7 @@ setTimeout(()=>{
 },0);
 /* rafraîchir la vigie et la cale en tâche de fond */
 setInterval(()=>{
+  if(document.hidden)return;
   if(NM_OPEN==='vigie')nmRenderVigie();
   if(NM_OPEN==='corvees')nmRenderCorvees();
 },5000);
@@ -12207,7 +12199,7 @@ document.getElementById('dvPasser').onclick=()=>{
 };
 /* timer : toutes les 4-7 min en mer, pop une devinette */
 setInterval(()=>{
-  if(!voyageEnCours())return;
+  if(document.hidden||!voyageEnCours())return;
   if(document.getElementById('dvVoile').classList.contains('on'))return;
   if(document.querySelector('.vcorvee.on,.vcapj.on,.vboutj.on'))return;
   if(Math.random()<0.012)dvLance(); /* ~1 toutes les 5 min à 1 tick/s → 0.012 sur un interval de 4s */
@@ -12251,7 +12243,7 @@ function debrisSpawn(){
 }
 /* apparition aléatoire : toutes les 5-9 min */
 setInterval(()=>{
-  if(!voyageEnCours())return;
+  if(document.hidden||!voyageEnCours())return;
   if(Math.random()<0.01)debrisSpawn();
 },4000);
 
