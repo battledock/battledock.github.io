@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Le Port — BattleDock 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Nunito:wght@700;800;900&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
 /* ═══ LE PORT — l'arrivée de la traversée. Même monde, même heure : l'aube devient jour ═══ */
@@ -5210,6 +5212,29 @@ body[data-h="3"] .hl .cap-pastille{border-color:rgba(255,255,255,.5)}
   box-shadow:0 4px 0 color-mix(in srgb,var(--c) 52%,#000),
              0 8px 22px color-mix(in srgb,var(--c) 26%,transparent)}
 .rt-go:active{transform:translateY(3px);box-shadow:0 1px 0 color-mix(in srgb,var(--c) 52%,#000)}
+
+/* ══ FLUIDITÉ : rien ne s'anime hors de l'écran visible ══ */
+.vfonc:not(.on),.vclass:not(.on),.vcriee:not(.on),.vquai:not(.on),
+.vprof:not(.on),.vabs:not(.on),.vmer:not(.on),.vconf:not(.on){
+  content-visibility:hidden}
+.vfonc:not(.on) *,.vclass:not(.on) *,.vcriee:not(.on) *,.vquai:not(.on) *,
+.vprof:not(.on) *,.vabs:not(.on) *,.vconf:not(.on) *{
+  animation-play-state:paused!important}
+/* l'onglet en arrière-plan ne consomme rien */
+body.dort *{animation-play-state:paused!important}
+/* le mouvement réduit désactive tout le décoratif */
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important}
+}
+
+/* — polices : un repli qui ressemble, pour éviter le saut au chargement — */
+:root{
+  --f-titre:'Fraunces',Georgia,'Times New Roman',serif;
+  --f-corps:'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-main:'Caveat','Brush Script MT',cursive;
+}
+body{font-family:var(--f-corps)}
 </style>
 </head>
 <body data-h="0">
@@ -8361,27 +8386,27 @@ function appliquePort(id){
   let lag='';
   T.forEach(t=>lag+=`<path class="lagonM l2" d="${t.getAttribute('d')}"/>`);
   T.forEach(t=>lag+=`<path class="lagonM l1" d="${t.getAttribute('d')}"/>`);
-  $$('#mLagons').innerHTML=lag;
+  $($('#mLagons')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).innerHTML=lag;
   let e='';
   for(let i=0;i<40;i++)e+=`<circle cx="${(Math.random()*390).toFixed(0)}" cy="${(Math.random()*530).toFixed(0)}" r="${(0.5+Math.random()*0.8).toFixed(1)}" style="animation-delay:-${(Math.random()*3.4).toFixed(1)}s" opacity="${(0.25+Math.random()*0.55).toFixed(2)}"/>`;
-  $$('#mEtoiles').innerHTML=e;
+  $($('#mEtoiles')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).innerHTML=e;
   let f='';
   [[60,60],[150,70],[250,66],[330,80],[40,120],[95,175],[130,150],
    [150,235],[200,205],[290,210],[330,190],[70,370],[150,380],[250,400],[330,420],[110,430]].forEach(([x,y])=>{
     for(let i=0;i<3;i++)f+=`<circle cx="${x+i*7}" cy="${y+(i%2)*5}" r="1" style="animation-delay:-${(Math.random()*4).toFixed(1)}s"/>`;
   });
-  $$('#mFenetres').innerHTML=f;
+  $($('#mFenetres')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).innerHTML=f;
   let h='';
   for(let i=0;i<12;i++){
     const y=100+i*40;
     h+=`<path d="M-30 ${y} q15 -4 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0"/>`;
   }
-  $$('#mHoule').innerHTML=h;
+  $($('#mHoule')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).innerHTML=h;
   let cr='';
   [[70,300,180,290],[240,250,200,170],[120,420,230,410],[300,380,350,430],[330,240,300,300]].forEach(([x1,y1,x2,y2])=>{
     cr+=`<path class="mcourant" d="M${x1} ${y1} Q${(x1+x2)/2} ${(y1+y2)/2-22} ${x2} ${y2}"/>`;
   });
-  $$('#mCourants').innerHTML=cr;
+  $($('#mCourants')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).innerHTML=cr;
 })();
 
 
@@ -9846,6 +9871,12 @@ function rendCriee(port,rows){
       Plus la demande est haute, plus ça paye.</div>`;
 }
 
+
+/* — on met tout en pause quand l'onglet passe en arrière-plan — */
+document.addEventListener('visibilitychange',()=>{
+  document.body.classList.toggle('dort',document.hidden);
+});
+
 /* ══════════ LES OPÉRATIONS ══════════ */
 let OPS={ops:[],reste_s:0,en_cours:null}, OP_ONG='ops', OP_TIC=null;
 
@@ -10665,7 +10696,8 @@ majBarrePort=function(){
     if(chIci()==='genes'){wSet(cr,'🏦','Banque',null,'i-ancre');}else if(chIci()==='barcelone'){wSet(cr,'🏭','Fabrique',null,'i-fabrique');}else if(chIci()==='naples'){wSet(cr,'🍕','Pizzeria',null,'i-pizzeria');}else if(chIci()==='valence'){wSet(cr,'📜','Contrats',null,'i-fallas');}else{wSet(cr,'🐟','Criée',null,'i-poisson');}
     if(chIci()==='genes'){wSet(ch,'🔨','Voilerie',null,'i-vague2');}else if(chIci()==='barcelone'){wSet(ch,'🎨','Galerie',null,'i-galerie');}else if(chIci()==='naples'){wSet(ch,'🐚','Corno',null,'i-corno');}else if(chIci()==='valence'){wSet(ch,'📖','Registre',null,'i-ceramique');}else{wSet(ch,'🔨','Chantier',null,'i-marteau');}
     const vp=document.getElementById('vpeche');if(vp)vp.classList.remove('on');
-    const vc=document.getElementById('vcartes');if(vc)vc.classList.remove('on');
+    const vc=document.getElementById('vcartes');
+  if(!vc)return;if(vc)vc.classList.remove('on');
     _majBarrePortPort();
   }
 };
@@ -10687,6 +10719,7 @@ majBarrePort=function(){
 let PE_ETAT='repos', PE_T=null, PE_T2=null;
 function peGeo(){
   const sc=document.getElementById('peScene');
+  if(!sc)return;
   const r=sc.getBoundingClientRect();
   return {w:r.width,h:r.height};
 }
@@ -10740,22 +10773,22 @@ function peEclabousse(){
 }
 function peAttend(){
   PE_ETAT='attend';
-  document.getElementById('peBouee').classList.remove('mord');
-  document.getElementById('peGo').style.display='none';
-  document.getElementById('peEtat').textContent='La ligne traîne dans le sillage…';
+  (document.getElementById('peBouee')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.remove('mord');
+  (document.getElementById('peGo')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).style.display='none';
+  (document.getElementById('peEtat')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).textContent='La ligne traîne dans le sillage…';
   clearTimeout(PE_T);
   PE_T=setTimeout(peMord,6000+Math.random()*16000);
 }
 function peMord(){
-  if(!document.getElementById('vpeche').classList.contains('on')){PE_ETAT='repos';return}
+  if(!(document.getElementById('vpeche')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.contains('on')){PE_ETAT='repos';return}
   PE_ETAT='mord';
-  document.getElementById('peBouee').classList.add('mord');
-  document.getElementById('peEtat').textContent='ÇA MORD !';
+  (document.getElementById('peBouee')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.add('mord');
+  (document.getElementById('peEtat')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).textContent='ÇA MORD !';
   if(navigator.vibrate)navigator.vibrate([14,60,14]);
   clearTimeout(PE_T);
   PE_T=setTimeout(()=>{
     if(PE_ETAT!=='mord')return;
-    document.getElementById('peBouee').classList.remove('mord');
+    (document.getElementById('peBouee')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.remove('mord');
     peBandeau('💨 Trop tard — il a filé avec l\'appât…');
     peAttend();
   },2100);
@@ -10765,7 +10798,7 @@ async function peTape(){
   if(PE_ETAT!=='mord')return;
   PE_ETAT='remonte';
   clearTimeout(PE_T);
-  document.getElementById('peBouee').classList.remove('mord');
+  (document.getElementById('peBouee')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.remove('mord');
   const po=document.getElementById('pePoisson');
   po.classList.remove('saute');void po.offsetWidth;po.classList.add('saute');
   peEclabousse();
@@ -10789,32 +10822,35 @@ async function peTape(){
 }
 function ouvrePeche(){
   if(!voyageEnCours())return;
-  document.getElementById('vpeche').classList.add('on');
+  (document.getElementById('vpeche')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.add('on');
   peDessineBat();peCaustiques();pePlaceBouee();
-  document.getElementById('peGo').style.display='';
-  document.getElementById('peEtat').textContent='';
+  (document.getElementById('peGo')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).style.display='';
+  (document.getElementById('peEtat')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).textContent='';
   PE_ETAT='repos';
 }
 setTimeout(()=>{
   const x=document.getElementById('peX');
-  if(x)x.onclick=()=>{document.getElementById('vpeche').classList.remove('on');
+  if(x)x.onclick=()=>{(document.getElementById('vpeche')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.remove('on');
     clearTimeout(PE_T);PE_ETAT='repos'};
   const go=document.getElementById('peGo');
   if(go)go.onclick=peAttend;
   const b=document.getElementById('peBouee');
   if(b)b.onclick=peTape;
   const sc=document.getElementById('peScene');
+  if(!sc)return;
   if(sc)sc.onclick=e=>{if(e.target.closest('.pe-bouee'))return;
     if(PE_ETAT==='mord')peTape();};
   window.addEventListener('resize',()=>{
-    if(document.getElementById('vpeche').classList.contains('on'))pePlaceBouee()});
+    if((document.getElementById('vpeche')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.contains('on'))pePlaceBouee()});
 },0);
 
 /* ── la table à cartes ── */
 async function ouvreCartes(){
   const v=document.getElementById('vcartes');
+  if(!v)return;
   v.classList.add('on');
   const corps=document.getElementById('caCorps');
+  if(!corps)return;
   corps.innerHTML='<div class="ca-charge">🕯 On déroule les cartes…</div>';
   const ids=Object.keys(PORTS);
   await Promise.all(ids.map(p=>chargeMarche(p)));
@@ -10837,7 +10873,7 @@ async function ouvreCartes(){
 }
 setTimeout(()=>{
   const x=document.getElementById('caX');
-  if(x)x.onclick=()=>document.getElementById('vcartes').classList.remove('on');
+  if(x)x.onclick=()=>(document.getElementById('vcartes')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.remove('on');
 },0);
 
 /* ══ les croisements en mer ══ */
@@ -11287,7 +11323,7 @@ const RECETTES_FA=[
 let FA_TIMER=null;
 /* — naples : la pizzeria, les santons (à construire) — */
 async function ouvrePizzeria(){
-  document.getElementById('vpizzeria').classList.add('on');
+  (document.getElementById('vpizzeria')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.add('on');
   const etat=await rpc('bd2_pizzeria',{p_action:'etat'});
   PZ_RECORD=(etat&&etat.record)||0;
   PZ_DEJA_JOUE=!!(etat&&etat.deja_joue);
@@ -11318,6 +11354,7 @@ function pzScene(n){
 }
 function pzAccueil(){
   const c=document.getElementById('pzCarte');
+  if(!c)return;
   c.innerHTML=`<div class="pz-scene">${pzScene(0)}</div>
     <div class="pz-stats"><div class="pz-stat"><b>${PZ_RECORD}</b><span>MEILLEUR SCORE</span></div></div>
     ${PZ_DEJA_JOUE?
@@ -11334,6 +11371,7 @@ function pzNouvelleCommande(){
 }
 function pzRendJeu(){
   const c=document.getElementById('pzCarte');
+  if(!c)return;
   c.innerHTML=`<div class="pz-scene">${pzScene(PZ_CLIENTS)}</div>
     <div class="pz-stats"><div class="pz-stat"><b>${PZ_CLIENTS}</b><span>CLIENTS SERVIS</span></div>
       <div class="pz-stat"><b>${PZ_RECORD}</b><span>MEILLEUR SCORE</span></div></div>
@@ -11368,6 +11406,7 @@ function pzTick(){
 }
 async function pzFin(){
   const c=document.getElementById('pzCarte');
+  if(!c)return;
   c.innerHTML='<div class="pz-fin"><div style="font-size:34px">🕯</div><div class="pz-record">On compte les pizzas…</div></div>';
   const r=await rpc('bd2_pizzeria',{p_action:'jouer',p_score:PZ_CLIENTS});
   if(!r||r.erreur){c.innerHTML='<div class="pz-fin">⚠️ '+((r&&r.erreur)||'Erreur')+'</div>';return}
@@ -11387,7 +11426,7 @@ function pzDemarrer(){
 }
 function pzFerme(){if(PZ_CHRONO){clearInterval(PZ_CHRONO);PZ_CHRONO=null;}}
 async function ouvreCorno(){
-  document.getElementById('vcorno').classList.add('on');
+  (document.getElementById('vcorno')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.add('on');
   await rendCorno();
 }
 const CORNO_NIVEAUX=[
@@ -11398,6 +11437,7 @@ const CORNO_NIVEAUX=[
 ];
 async function rendCorno(){
   const c=document.getElementById('coCarte');
+  if(!c)return;
   const etat=await rpc('bd2_corno',{p_action:'etat'});
   if(!etat||etat.erreur){c.innerHTML='<div style="text-align:center;font-weight:800;color:#a33">⚠️ '+((etat&&etat.erreur)||'Erreur réseau')+'</div>';return}
   const niv=etat.niveau;
@@ -11427,7 +11467,7 @@ async function rendCorno(){
   };
 }
 async function ouvreSantons(){
-  document.getElementById('vsantons').classList.add('on');
+  (document.getElementById('vsantons')||{style:{},classList:{add(){},remove(){},toggle(){}},dataset:{}}).classList.add('on');
 }
 /* — valence : les fallas, le verger, la céramique (à construire) — */
 /* — contrats chronométrés — */
@@ -12557,7 +12597,7 @@ async function verifSecours(){
     SON.gain();
   }
 }
-setInterval(()=>{SECOURS_TENTE=false;verifSecours()},30000);
+setInterval(()=>{SECOURS_TENTE=false;if(!document.hidden)verifSecours()},30000);
 setTimeout(verifSecours,4000);
 
 /* ══ le premier voyage guidé ══ */
