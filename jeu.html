@@ -7323,19 +7323,21 @@ function construitPorts(){
   const g=document.getElementById('cpListe');
   if(!g)return;
   const NIV=niveauDe(PROFIL.xp??0), ici=portActuel(), vo=voyageEnCours();
+  const refTri = vo ? vo.vers : ici;
   const ids=Object.keys(PORTS).filter(id=>id!==ici)
-    .sort((a,b)=>(PORTS[a].duree||0)-(PORTS[b].duree||0));
+    .sort((a,b)=>dureeRoute(refTri,a)-dureeRoute(refTri,b));
   /* la vedette : la destination en cours, sinon le port ouvert le plus proche */
   let vedette = vo ? vo.vers : ids.find(id=>NIV>=PORTS[id].niv && !PORTS[id].travaux);
   if(!vedette) vedette = ids[0];
   const autres = ids.filter(id=>id!==vedette);
 
+  const ref = vo ? vo.vers : ici;
   function etat(id){
     const P=PORTS[id];
     if(vo && vo.vers===id) return {tag:'⛵ en route', k:'route'};
     if(P.travaux) return {tag:'🚧 travaux', k:'travaux'};
     if(NIV<P.niv) return {tag:'🔒 niv. '+P.niv, k:'lock'};
-    return {tag:cpDuree(P.duree||0), k:''};
+    return {tag:cpDuree(dureeRoute(ref,id)), k:''};
   }
 
   /* ── carte vedette ── */
@@ -7350,9 +7352,9 @@ function construitPorts(){
       ${fondV}<div class="cpg-g"></div>
       <div class="cpg-t"><b>${PV.nom}</b><span>${PV.pays}</span></div>
       <div class="cpg-m">
-        <div class="cpg-c"><i>${cpDuree(PV.duree||0)}</i><s>TRAVERSÉE</s></div>
+        <div class="cpg-c"><i>${cpDuree(dureeRoute(ref,vedette))}</i><s>TRAVERSÉE</s></div>
         <div class="cpg-c"><i>×${PV.mult}</i><s>PRIX</s></div>
-        <div class="cpg-c"><i>+${PV.xp}</i><s>XP</s></div>
+        <div class="cpg-c"><i>+${xpRoute(ref,vedette)}</i><s>XP</s></div>
       </div>
       ${enRoute?'<div class="cpg-nav"><i id="cpNavBar"></i></div>':''}
     </div>`;
