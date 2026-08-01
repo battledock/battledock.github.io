@@ -4935,6 +4935,17 @@ body[data-h="3"] .hl .cap-pastille{border-color:rgba(255,255,255,.5)}
 .cap-pastille svg:not(.av-nav){position:static!important;width:100%!important;height:100%!important;
   transform:none!important;display:block}
 .hl .cap-pastille svg:not(.av-nav){width:100%!important}
+
+/* — le portrait dans le profil — */
+.afa-r{flex:0 0 auto;width:54px;height:54px;border-radius:50%;overflow:hidden;
+  position:relative;background:linear-gradient(180deg,#8fd0e8,#cfe8f0);
+  border:2.5px solid #2c2416;box-shadow:2px 2px 0 rgba(44,36,22,.55)}
+.afa-r svg{width:100%;height:100%;display:block}
+.afa-r svg.av-nav{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);
+  width:88%;height:auto;overflow:visible}
+#btnAvatar .afm-i b{color:#2c2416;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#btnAvatar .afm-i span{color:#a08050}
+.afa-fl{flex:0 0 auto;font-size:20px;font-weight:900;color:#a08050}
 </style>
 </head>
 <body data-h="0">
@@ -6550,11 +6561,12 @@ body[data-h="3"] .hl .cap-pastille{border-color:rgba(255,255,255,.5)}
       <h3>La route des comptoirs</h3>
       <div class="af-route" id="afRoute"></div>
     </div>
-    <div class="af-frise" id="btnAvatar" style="cursor:pointer">
-      <div class="af-avatar">
-        <div class="r" id="afAvatarR"></div>
-        <div class="t"><b id="afAvatarN">Ton portrait</b><span>changer de figure</span></div>
-        <div class="fl">›</div>
+    <div class="af-marque" id="btnAvatar">
+      <h3>Ton portrait</h3>
+      <div class="afm-in">
+        <div class="afa-r" id="afAvatarR"></div>
+        <div class="afm-i"><b id="afAvatarN">Mon navire</b><span>CHANGER DE FIGURE</span></div>
+        <div class="afa-fl">›</div>
       </div>
     </div>
     <div class="af-marque" id="btnMarque">
@@ -7977,7 +7989,16 @@ async function chargeMarche(port){
   const rows=await rpc('bd2_marche',{p_port:port});
   if(Array.isArray(rows)){
     MARCHE[port]={};
-    rows.forEach(r=>MARCHE[port][r.m]={f:+r.f,t:+r.t,s:r.s!==undefined?+r.s:1});
+    rows.forEach(r=>{
+      MARCHE[port][r.m]={f:+r.f,t:+r.t,s:r.s!==undefined?+r.s:1};
+      /* le serveur peut connaître des marchandises que le client ignore
+         (les marques déposées par les joueurs) : on les apprend au vol */
+      if(!MARCHANDISES[r.m] && r.achat!=null){
+        MARCHANDISES[r.m]={nom:r.nom||r.m,emo:r.emo||'📦',
+          achat:+r.achat,origine:r.origine||'marseille',
+          createur:r.createur||null};
+      }
+    });
   }
 }
 function facteurDe(portId,mId){
@@ -9569,10 +9590,12 @@ setTimeout(()=>{const x=$('#crX');if(x)x.onclick=()=>$('#vcriee').classList.remo
 async function chargeCriee(){
   const port=portActuel();
   const [_,cmd]=await Promise.all([chargeMarche(port),rpc('bd2_commande_du_jour'),chargeEvenements(true)]);
-  const rows=Object.entries(MARCHE[port]||{}).map(([m,v])=>({
-    m,t:v.t,s:v.s??1,
-    paye:Math.max(1,Math.round(MARCHANDISES[m].achat*PORTS[port].mult*v.f*(v.s??1)))
-  })).filter(r=>MARCHANDISES[r.m].origine!==port);
+  const rows=Object.entries(MARCHE[port]||{})
+    .filter(([m])=>MARCHANDISES[m])
+    .map(([m,v])=>({
+      m,t:v.t,s:v.s??1,
+      paye:Math.max(1,Math.round(MARCHANDISES[m].achat*PORTS[port].mult*v.f*(v.s??1)))
+    })).filter(r=>MARCHANDISES[r.m].origine!==port);
   rendCriee(port,rows);
   rendCommande(cmd);
   rendCale(port);
@@ -11431,7 +11454,14 @@ async function avChoisit(){
   const go=document.getElementById('avGo');
   go.disabled=true;
   const r=await rpc('bd2_avatar',{p_avatar:AV_SEL});
-  if(!r||r.erreur){go.disabled=false;toast('⚠️ '+((r&&r.erreur)||'Erreur réseau'));return}
+  if(!r||r.erreur){
+    go.disabled=false;
+    const e=(r&&r.erreur)||'';
+    toast(/function|introuvable|does not exist|404/i.test(e)||!r
+      ? '⚠️ Les portraits ne sont pas encore activés côté serveur'
+      : '⚠️ '+e);
+    return;
+  }
   PROFIL.avatar=AV_SEL;
   majAvatar();
   if(navigator.vibrate)navigator.vibrate([20,30,40]);
