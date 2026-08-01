@@ -1958,13 +1958,47 @@ body[data-h="2"] .port circle.pc{stroke:none;filter:drop-shadow(0 0 8px rgba(255
 .cp.travaux .cp-tag{background:#e8b93c;color:#3a2a10}
 .cp-nav{position:absolute;left:0;right:0;bottom:0;height:5px;background:rgba(255,255,255,.14)}
 .cp-nav i{display:block;height:100%;background:var(--a);border-radius:0 3px 3px 0}
+/* — la fiche dépliée dans la carte — */
+.cp.ouvert .cp-w{border-radius:16px 16px 0 0}
+.cp.ouvert{box-shadow:0 12px 30px rgba(0,0,0,.5);border-radius:16px;background:#0f2c44}
+.cp-dep{background:#0f2c44;border-radius:0 0 16px 16px;padding:14px 16px 16px;
+  position:relative;animation:cp-dep .34s cubic-bezier(.3,1.1,.4,1)}
+@keyframes cp-dep{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.cp-dx{position:absolute;right:12px;top:-42px;z-index:6;width:31px;height:31px;border-radius:50%;
+  border:none;background:rgba(8,22,38,.62);backdrop-filter:blur(8px);color:#fff;
+  font-size:14px;font-weight:900;cursor:pointer;font-family:'Nunito'}
+.cp-dx:active{transform:scale(.88)}
+/* la longue-vue et le titre font doublon avec la photo : on les masque */
+.cp-dep .lv2-lentille,.cp-dep .lv2-t,.cp-dep .lv2-st{display:none}
+.cp-dep .lv2-carte{max-height:none;overflow:visible}
+.cp-dep .lv2-desc{font-family:'Caveat',cursive;font-size:15.5px;
+  color:rgba(238,244,248,.62);line-height:1.5;margin:0 0 13px}
+.cp-dep .lv2-stats{display:flex;border-radius:11px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.09);margin-bottom:13px;gap:0}
+.cp-dep .lv2-s{flex:1;padding:10px 3px;text-align:center;background:rgba(255,255,255,.04);
+  border-radius:0;border:none}
+.cp-dep .lv2-s+.lv2-s{border-left:1px solid rgba(255,255,255,.07)}
+.cp-dep .lv2-s b{font-family:'Fraunces',serif;font-weight:900;font-size:15px;display:block}
+.cp-dep .lv2-s span{display:block;font-size:7.4px;font-weight:900;
+  color:rgba(238,244,248,.42);letter-spacing:.6px;margin-top:2px}
+.cp-dep .zf-go{width:100%;border:none;padding:14px;border-radius:12px;cursor:pointer;
+  font-family:'Nunito';font-weight:900;font-size:13.5px;color:#0d2438;
+  background:var(--a,#6ad0e0);display:flex;align-items:center;justify-content:center;gap:7px}
+.cp-dep .zf-go:disabled{opacity:.5}
+.cp-dep .zf-go:active{transform:scale(.985)}
+/* la fiche d'origine reste invisible : elle ne sert plus que de réservoir */
+.zfiche{display:none!important}
 body[data-h="1"] .port circle.pc{filter:drop-shadow(0 0 6px rgba(255,190,80,.7))}
 
 /* ══ fiche port : la longue-vue ══ */
-.zfiche{flex:0 0 auto;margin:0!important;
-  padding:0 12px calc(12px + env(safe-area-inset-bottom))!important;
-  z-index:4;background:none!important;border:none!important;box-shadow:none!important;
+/* la fiche flotte au-dessus de la liste, sans la comprimer ni la masquer */
+.vmer{position:fixed}
+.zfiche{position:absolute!important;left:0!important;right:0!important;bottom:0!important;
+  margin:0!important;padding:0 12px calc(12px + env(safe-area-inset-bottom))!important;
+  z-index:6;background:none!important;border:none!important;box-shadow:none!important;
   overflow:visible!important;max-height:none!important}
+/* quand la fiche est ouverte, la liste garde de la place en bas */
+
 .lv2-carte{max-height:54vh;overflow-y:auto;scrollbar-width:none}
 .lv2-carte::-webkit-scrollbar{display:none}
 .lv2-lentille{position:relative;width:min(200px,54vw);aspect-ratio:1;margin:0 auto -16px;z-index:2;
@@ -7284,6 +7318,7 @@ function construitPorts(){
 }
 /* écouteur unique, posé sur le document : marche quoi qu'il arrive */
 document.addEventListener('click',e=>{
+  if(e.target.closest&&e.target.closest('.cp-dep'))return;   /* clics dans le panneau déplié */
   const c=e.target.closest&&e.target.closest('#cpListe .cp');
   if(!c||!c.dataset.p)return;
   e.stopPropagation();
@@ -7349,8 +7384,30 @@ function lentilleSvg(id){
   return HAUT+(V[id]||'')+MER;
 }
 
+/* — la fiche se déplie dans la carte du port — */
+function cpDeplie(id){
+  cpReplie();
+  const carte=document.querySelector(`#cpListe .cp[data-p="${id}"]`);
+  const zf=document.getElementById('zfiche');
+  if(!carte||!zf)return;
+  const w=carte.querySelector('.cp-w');
+  if(!w)return;
+  const box=document.createElement('div');
+  box.className='cp-dep';
+  box.innerHTML='<button class="cp-dx" aria-label="Fermer">✕</button>'+zf.innerHTML;
+  carte.appendChild(box);
+  carte.classList.add('ouvert');
+  box.querySelector('.cp-dx').addEventListener('click',e=>{e.stopPropagation();fermeFiche();});
+  setTimeout(()=>carte.scrollIntoView({behavior:'smooth',block:'nearest'}),60);
+}
+function cpReplie(){
+  document.querySelectorAll('#cpListe .cp-dep').forEach(e=>e.remove());
+  document.querySelectorAll('#cpListe .cp.ouvert').forEach(e=>e.classList.remove('ouvert'));
+}
 function fermeFiche(){
   const el=$('#zfiche');if(el)el.classList.remove('on');
+  const vm=$('#vmer');if(vm)vm.classList.remove('fiche-ouverte');
+  cpReplie();
   document.querySelectorAll('.cp').forEach(z=>z.classList.remove('sel'));
   PORT_SEL=null;
 }
@@ -7373,7 +7430,6 @@ function selPort(id){
 
   /* fiche */
   $('#zfiche').innerHTML=`
-    <button class="zf-x" onclick="fermeFiche()" aria-label="Fermer">✕</button>
     <div class="lv2-lentille"><svg viewBox="0 0 300 300" preserveAspectRatio="xMidYMid slice">${lentilleSvg(id)}</svg><div class="lv2-croix"></div></div>
     <div class="lv2-carte">
       <div class="lv2-t">⚓ ${P.nom}</div>
@@ -7387,7 +7443,7 @@ function selPort(id){
       </div>
       <button class="zf-go" id="zfGo"><span>📦</span><span>Préparer la cargaison</span></button>
     </div>`;
-  $('#zfiche').classList.add('on');
+  cpDeplie(id);
   /* état moyen du marché de destination pour nos produits (serveur) */
   $('#zfMarche').textContent='…';
   chargeMarche(id).then(()=>{
