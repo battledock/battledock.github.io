@@ -4294,6 +4294,40 @@ body[data-h="2"] .halo-fen{opacity:1;fill:rgba(255,220,140,.3)}
 .mq-vente-i span{font-size:10px;color:rgba(240,232,250,.42)}
 .mq-vente-m{font-family:'Fraunces',serif;font-weight:900;font-size:15px;color:#7ae0a0}
 .mq-rien{text-align:center;color:rgba(240,232,250,.38);font-size:12px;padding:18px 0}
+
+/* — la marque, dans le profil — */
+.af-marque{position:relative;border-radius:18px;border:3px solid #0d2438;
+  background:linear-gradient(160deg,#fdf5e0,#f4e4bc);
+  box-shadow:4px 4px 0 rgba(13,36,56,.85);padding:0;margin-bottom:13px;
+  overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.af-marque:active{transform:translate(2px,2px);box-shadow:2px 2px 0 rgba(13,36,56,.85)}
+.af-marque h3{font-family:'Nunito';font-weight:900;font-size:9.5px;letter-spacing:2px;
+  text-transform:uppercase;color:#8a6a3a;margin:0;padding:11px 14px 0;text-align:left}
+/* — état : marque déposée — */
+.afm-in{display:flex;align-items:center;gap:13px;padding:9px 14px 13px}
+.afm-sceau{flex:0 0 auto;width:54px;height:54px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#f4d477,#c9932c);
+  border:2.5px solid #0d2438;display:flex;align-items:center;justify-content:center;
+  font-size:27px;box-shadow:inset 0 -3px 6px rgba(120,80,10,.3)}
+.afm-i{flex:1;min-width:0}
+.afm-i b{font-family:'Fraunces',serif;font-weight:900;font-size:18px;color:#2c2416;
+  display:block;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.afm-i span{font-size:9.6px;font-weight:900;letter-spacing:1.4px;color:#a08050;
+  text-transform:uppercase;display:block;margin-top:2px}
+.afm-g{flex:0 0 auto;text-align:right}
+.afm-g b{font-family:'Fraunces',serif;font-weight:900;font-size:19px;color:#2c7a4a;display:block;line-height:1}
+.afm-g s{text-decoration:none;font-size:7.4px;font-weight:900;color:#8a6a3a;letter-spacing:.8px}
+/* — état : pas encore de marque — */
+.afm-vide{display:flex;align-items:center;gap:13px;padding:9px 14px 13px}
+.afm-vide .ic{flex:0 0 auto;width:54px;height:54px;border-radius:50%;
+  background:repeating-linear-gradient(45deg,rgba(13,36,56,.07) 0 5px,transparent 5px 10px),#efe2c4;
+  border:2.5px dashed rgba(13,36,56,.4);display:flex;align-items:center;
+  justify-content:center;font-size:24px;opacity:.6}
+.afm-vide .tx{flex:1}
+.afm-vide .tx b{font-family:'Fraunces',serif;font-weight:900;font-size:15.5px;
+  color:#2c2416;display:block;line-height:1.15}
+.afm-vide .tx span{font-size:11px;color:#7a6244;display:block;margin-top:2px;line-height:1.35}
+.afm-fl{flex:0 0 auto;font-size:19px;color:#a08050;font-weight:900}
 </style>
 </head>
 <body data-h="0">
@@ -5909,7 +5943,10 @@ body[data-h="2"] .halo-fen{opacity:1;fill:rgba(255,220,140,.3)}
       <h3>La route des comptoirs</h3>
       <div class="af-route" id="afRoute"></div>
     </div>
-    <button class="af-guide" id="btnMarque" style="margin-bottom:9px">🏷️ Ta Marque — dépose ta signature</button>
+    <div class="af-marque" id="btnMarque">
+      <h3>Ta marque</h3>
+      <div id="afMarqueIn"></div>
+    </div>
     <button class="af-guide" id="btnGuide">📖 Le Guide du capitaine — comment tout marche</button>
     <button class="af-guide" id="btnMur" style="background:linear-gradient(180deg,#f6ecd4,#ecdcb2);color:#3a2a12;border-color:#5a4426">📌 Le Mur du Port — qui est passé par ici ?</button>
     <button class="af-out" id="btnOut2">🚪 Débarquer (déconnexion)</button>
@@ -8131,6 +8168,7 @@ function ouvreProfil(){
     </div>`;
   }).join('');
   $('#vprof').classList.add('on');
+  if(typeof afMajMarque==='function')afMajMarque();
 }
 setTimeout(()=>{const x=$('#vpX');if(x)x.onclick=()=>$('#vprof').classList.remove('on')},0);
 setTimeout(()=>{
@@ -10052,6 +10090,38 @@ function ctRend(){
     ctRend();
   };
   document.getElementById('ctReroll').onclick=()=>{CT_PROPOSITION=ctGenerer();ctRend();};
+}
+
+
+/* — l'encart Marque dans le profil — */
+async function afMajMarque(){
+  const box=document.getElementById('afMarqueIn');
+  if(!box)return;
+  box.innerHTML='<div class="afm-vide"><div class="ic">🏷️</div><div class="tx"><b>…</b></div></div>';
+  let e=null;
+  try{ e=await rpc('bd2_signature',{p_action:'etat'}); }catch(err){}
+  if(!e||e.erreur){
+    box.innerHTML='<div class="afm-vide"><div class="ic">🏷️</div>'+
+      '<div class="tx"><b>Ta marque</b><span>Indisponible pour l\'instant</span></div></div>';
+    return;
+  }
+  if(e.possede){
+    const s=e.signature;
+    box.innerHTML=`<div class="afm-in">
+      <div class="afm-sceau">${s.emo}</div>
+      <div class="afm-i"><b>${s.nom}</b><span>${(PORTS[s.origine]||{}).nom||s.origine}</span></div>
+      <div class="afm-g"><b>+${e.gains}</b><s>SOUS PERÇUS</s></div>
+    </div>`;
+  }else{
+    const niv=e.niveau||0, reste=Math.max(0,(e.niveau_requis||8)-niv);
+    box.innerHTML=`<div class="afm-vide">
+      <div class="ic">🏷️</div>
+      <div class="tx"><b>Pas encore déposée</b><span>${
+        reste>0 ? 'Encore '+reste+' niveau'+(reste>1?'x':'')+' avant de pouvoir la créer'
+                : 'Choisis ton atelier et donne-lui ton nom'}</span></div>
+      <div class="afm-fl">›</div>
+    </div>`;
+  }
 }
 
 /* ══ TA MARQUE ══ */
