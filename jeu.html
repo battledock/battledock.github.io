@@ -5712,15 +5712,15 @@ body[data-port="marseille"]:not(.en-mer) .eclair:active{transform:scale(.94)}
   .tr-etoiles i,.tr-chemin i{animation:none!important}
 }
 
-/* quand la traversée vivante est ouverte, l'ancien décor disparaît */
-body.tr-actif .sortie{display:none!important}
-body.tr-actif .scene-bateau{display:none!important}
-body.tr-actif .scene-ciel{display:none!important}
-body.tr-actif .scene-mer{display:none!important}
-body.tr-actif .nav-mer{display:none!important}
-body.tr-actif .mer-menu{display:none!important}
-body.tr-actif .hl{display:none!important}
-body.tr-actif .grille{display:none!important}
+/* l'ancien décor de mer est remplacé par la traversée vivante */
+body.en-mer .scene-bateau,
+body.en-mer .scene-ciel,
+body.en-mer .scene-mer,
+body.en-mer .nav-mer,
+body.en-mer .mer-menu,
+body.en-mer .hl,
+body.en-mer .grille,
+body.en-mer .sortie{display:none!important}
 </style>
 </head>
 <body data-h="0">
@@ -7289,23 +7289,7 @@ body.tr-actif .grille{display:none!important}
   </div>
 </div>
 
-<div class="sortie" id="sortie">
-  <div class="p3-parch">
-    <div class="p3-rte" id="sortieRte">→ ?</div>
-    <div class="p3-sep"></div>
-    <div class="p3-temps" id="sortieTemps">—<small>minutes</small></div>
-    <div class="p3-barre"><i id="sortieBarre" style="width:0"></i></div>
-  </div>
-  <button class="sortie-acc" id="sortieAcc" style="margin-top:8px"></button>
-  <!-- compat JS -->
-  <span id="sortieT1" style="display:none"></span>
-  <span id="sortieT2" style="display:none"></span>
-  <svg style="display:none" viewBox="0 0 340 34">
-    <path class="p3-fait" id="sortieFait" d="M14 24 Q170 4 326 22"/>
-    <g class="p3-bat" id="sortieBat"></g>
-  </svg>
-  <span id="sortieVersEmo" style="display:none"></span>
-</div>
+<!-- cartouche supprimé, remplacé par la traversée vivante -->
 
 <!-- ══ LA TRAVERSÉE VIVANTE ══ -->
 <div class="vtrav" id="vtrav">
@@ -9390,25 +9374,24 @@ function majSortie(){
     document.body.classList.toggle('en-mer',!!vo);
     if(typeof majBarrePort==='function')majBarrePort();
     if(vo&&typeof croisPoll==='function')setTimeout(croisPoll,800);
-    /* ouvrir la traversée vivante automatiquement */
-    if(vo&&typeof trOuvre==='function'&&!document.getElementById('vtrav').classList.contains('on'))
-      trOuvre();
+    if(vo&&typeof trOuvre==='function')trOuvre();
+    if(!vo&&typeof trFerme==='function')trFerme();
   }
-  const el=$('#sortie');
+  const el=($('#sortie')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   const bateau=document.querySelector('.scene-bateau');
   const anim=bateau&&(bateau.classList.contains('arrive')||bateau.classList.contains('part'));
   if(!vo){el.classList.remove('on','prete');if(bateau&&!anim)bateau.style.opacity='1';return}
   const D=PORTS[vo.vers], A=PORTS[vo.de];
   el.classList.add('on');
   if(bateau&&!anim)bateau.style.opacity='1';
-  $('#sortieT1').textContent='⛵ '+(A?A.nom:'?')+' → '+D.nom;
-  $('#sortieVersEmo').textContent=EMOS_PORT[vo.vers]||'⚓';
+  ($('#sortieT1')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).textContent='⛵ '+(A?A.nom:'?')+' → '+D.nom;
+  ($('#sortieVersEmo')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).textContent=EMOS_PORT[vo.vers]||'⚓';
   const reste=vo.fin-Date.now();
   let pct;
-  const acc=$('#sortieAcc');
+  const acc=($('#sortieAcc')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   if(reste<=0){
     el.classList.add('prete');
-    $('#sortieT2').textContent='Accoster ›';
+    ($('#sortieT2')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).textContent='Accoster ›';
     if(acc)acc.classList.remove('on');
     pct=1;
   }else{
@@ -9419,32 +9402,32 @@ function majSortie(){
     }
     el.classList.remove('prete');
     const h=Math.floor(reste/3600000),m=Math.floor(reste%3600000/60000),sec=Math.floor(reste%60000/1000);
-    $('#sortieT2').textContent='Arrivée dans '+(h?h+'h ':'')+(m?m+'min ':'')+(h?'':sec+'s');
+    ($('#sortieT2')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).textContent='Arrivée dans '+(h?h+'h ':'')+(m?m+'min ':'')+(h?'':sec+'s');
     pct=Math.min(1,(Date.now()-vo.depart)/(vo.fin-vo.depart));
   }
-  const chemin=$('#sortieFait');
+  const chemin=($('#sortieFait')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   if(chemin){
     try{const L=chemin.getTotalLength();
     chemin.style.strokeDasharray=L;
     chemin.style.strokeDashoffset=L*(1-pct);
     const pt=chemin.getPointAtLength(L*pct);
-    $('#sortieBat').setAttribute('transform','translate('+pt.x.toFixed(1)+','+(pt.y-6).toFixed(1)+')');}catch(e){}
+    ($('#sortieBat')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).setAttribute('transform','translate('+pt.x.toFixed(1)+','+(pt.y-6).toFixed(1)+')');}catch(e){}
   }
   /* parchemin épinglé */
-  const barreEl=$('#sortieBarre');
+  const barreEl=($('#sortieBarre')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   if(barreEl)barreEl.style.width=(pct*100).toFixed(1)+'%';
-  const tpsEl=$('#sortieTemps');
+  const tpsEl=($('#sortieTemps')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   if(tpsEl){
     if(reste<=0)tpsEl.innerHTML='<b style="color:#8a2c1c">Accoster !</b>';
     else{const rm=Math.ceil(reste/60000);
       tpsEl.innerHTML=(rm>60?Math.floor(rm/60)+'h'+String(rm%60).padStart(2,'0'):rm)+'<small>'+(rm>60?'':'minutes')+'</small>'}
   }
-  const rteEl=$('#sortieRte');
+  const rteEl=($('#sortieRte')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}});
   if(rteEl&&A&&D)rteEl.innerHTML=(A?A.nom:'?')+' →<br><b>'+D.nom+'</b>';
 }
 
 setInterval(()=>{if(!document.hidden)majSortie()},1000);
-$('#sortie').onclick=()=>{
+($('#sortie')||{style:{},classList:{add(){},remove(){},toggle(){},contains(){return false}},innerHTML:'',textContent:'',setAttribute(){}}).onclick=()=>{
   const vo=voyageEnCours();
   if(!vo)return;
   if(vo.fin-Date.now()>0){toast('⛵ Encore un peu de patience…');return}
@@ -10608,14 +10591,14 @@ function trOuvre(){
   document.getElementById('trMtoE').textContent=TR_METEO[hh][0];
   document.getElementById('trMtoT').textContent=TR_METEO[hh][1];
   document.getElementById('vtrav').classList.add('on');
-  document.body.classList.add('tr-actif');
+  
   trMaj();
   if(TR_TIC)clearInterval(TR_TIC);
   TR_TIC=setInterval(()=>{if(!document.hidden)trMaj()},1000);
 }
 function trFerme(){
   document.getElementById('vtrav').classList.remove('on');
-  document.body.classList.remove('tr-actif');
+  
   if(TR_TIC){clearInterval(TR_TIC);TR_TIC=null}
 }
 function trMaj(){
