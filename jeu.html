@@ -3930,8 +3930,8 @@ body.en-mer .nav-mer{display:block}
 .nm-w.on .tx{color:#ffd23c}
 .nm-w.on{background:rgba(255,210,60,.1)}
 /* ── panneaux mer ── */
-.nm-pan{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom));
-  z-index:8;max-height:52vh;overflow-y:auto;scrollbar-width:none;
+.nm-pan{position:fixed;left:0;right:0;bottom:0;
+  z-index:510;max-height:52vh;overflow-y:auto;scrollbar-width:none;
   background:rgba(8,18,32,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   border-top:1.5px solid rgba(255,255,255,.08);padding:14px;
   transform:translateY(110%);transition:transform .35s cubic-bezier(.3,1.2,.4,1);display:none}
@@ -5721,6 +5721,14 @@ body.en-mer .mer-menu,
 body.en-mer .hl,
 body.en-mer .grille,
 body.en-mer .sortie{display:none!important}
+
+/* les panneaux par-dessus la traversée */
+body.en-mer .nm-pan{bottom:0;padding-bottom:calc(130px + env(safe-area-inset-bottom));
+  max-height:70vh;border-radius:24px 24px 0 0;
+  background:rgba(8,18,32,.95);backdrop-filter:blur(18px)}
+body.en-mer .nm-pan .nm-x{display:block;position:absolute;right:14px;top:14px;
+  width:32px;height:32px;border-radius:10px;border:1.5px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:900;cursor:pointer}
 </style>
 </head>
 <body data-h="0">
@@ -10545,15 +10553,31 @@ function trInit(){
 </svg>`;
 
   /* boutons */
-  document.getElementById('trX').onclick=()=>trFerme();
-  document.getElementById('trAcc').onclick=()=>trAccoster();
+  document.getElementById('trX').onclick=()=>{
+    trFerme();
+    /* on ne rouvre pas la carte mer — on reste sur le port en fond */
+  };
+  document.getElementById('trAcc').onclick=()=>{
+    const vo=voyageEnCours();
+    if(!vo)return;
+    const reste=vo.fin-Date.now();
+    if(reste<=0){
+      /* arrivé : on ferme la traversée et on laisse le flux normal d'accostage */
+      trFerme();
+      if(typeof majSortie==='function')majSortie();
+      return;
+    }
+    trAccoster();
+  };
   document.querySelectorAll('.tr-act button[data-nm]').forEach(b=>{
     b.onclick=()=>{
       const nm=b.dataset.nm;
-      if(nm==='carte'){trFerme();ouvreMer();return}
-      trFerme();
-      const p=document.getElementById('nm'+nm.charAt(0).toUpperCase()+nm.slice(1));
-      if(p)p.classList.add('on');
+      if(nm==='carte'){
+        /* la carte : on ferme, on ouvre la carte de la Méditerranée */
+        trFerme(); ouvreMer(); return;
+      }
+      /* les panneaux s'ouvrent PAR-DESSUS la traversée */
+      nmOuvre(nm);
     };
   });
 }
