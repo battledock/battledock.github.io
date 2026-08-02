@@ -5551,7 +5551,7 @@ body[data-port="marseille"]:not(.en-mer) .eclair:active{transform:scale(.94)}
 .mq-og{font-size:10px;padding:10px 2px}
 
 /* ══════════════ LA TRAVERSÉE VIVANTE ══════════════ */
-.vtrav{position:fixed;inset:0;z-index:32;display:none;overflow:hidden}
+.vtrav{position:fixed;inset:0;z-index:500;display:none;overflow:hidden}
 .vtrav.on{display:block}
 .tr-ec{position:absolute;inset:0;overflow:hidden}
 
@@ -5711,6 +5711,16 @@ body[data-port="marseille"]:not(.en-mer) .eclair:active{transform:scale(.94)}
   .tr-bat,.tr-sill i,.tr-vg,.tr-ecm,.tr-oi,.tr-nuages .nu,
   .tr-etoiles i,.tr-chemin i{animation:none!important}
 }
+
+/* quand la traversée vivante est ouverte, l'ancien décor disparaît */
+body.tr-actif .sortie{display:none!important}
+body.tr-actif .scene-bateau{display:none!important}
+body.tr-actif .scene-ciel{display:none!important}
+body.tr-actif .scene-mer{display:none!important}
+body.tr-actif .nav-mer{display:none!important}
+body.tr-actif .mer-menu{display:none!important}
+body.tr-actif .hl{display:none!important}
+body.tr-actif .grille{display:none!important}
 </style>
 </head>
 <body data-h="0">
@@ -9379,7 +9389,11 @@ function majSortie(){
   if(window.__merFlag!==(!!vo)){window.__merFlag=(!!vo);
     document.body.classList.toggle('en-mer',!!vo);
     if(typeof majBarrePort==='function')majBarrePort();
-    if(vo&&typeof croisPoll==='function')setTimeout(croisPoll,800);}
+    if(vo&&typeof croisPoll==='function')setTimeout(croisPoll,800);
+    /* ouvrir la traversée vivante automatiquement */
+    if(vo&&typeof trOuvre==='function'&&!document.getElementById('vtrav').classList.contains('on'))
+      trOuvre();
+  }
   const el=$('#sortie');
   const bateau=document.querySelector('.scene-bateau');
   const anim=bateau&&(bateau.classList.contains('arrive')||bateau.classList.contains('part'));
@@ -10594,12 +10608,14 @@ function trOuvre(){
   document.getElementById('trMtoE').textContent=TR_METEO[hh][0];
   document.getElementById('trMtoT').textContent=TR_METEO[hh][1];
   document.getElementById('vtrav').classList.add('on');
+  document.body.classList.add('tr-actif');
   trMaj();
   if(TR_TIC)clearInterval(TR_TIC);
   TR_TIC=setInterval(()=>{if(!document.hidden)trMaj()},1000);
 }
 function trFerme(){
   document.getElementById('vtrav').classList.remove('on');
+  document.body.classList.remove('tr-actif');
   if(TR_TIC){clearInterval(TR_TIC);TR_TIC=null}
 }
 function trMaj(){
