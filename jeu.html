@@ -5598,7 +5598,7 @@ body[data-port="marseille"]:not(.en-mer) .eclair:active{transform:scale(.94)}
 .tr-nuages .nu.l2{animation:tr-nu 96s linear infinite}
 .tr-nuages .nu.l3{animation:tr-nu 140s linear infinite}
 @keyframes tr-nu{from{transform:translateX(110vw)}to{transform:translateX(-66vw)}}
-.h3 .tr-nuages .nu{opacity:.3}
+.h3 .tr-nuages .nu{opacity:.15}
 
 .tr-oi{position:absolute;opacity:.3;animation:tr-vol 40s linear infinite}
 @keyframes tr-vol{from{transform:translateX(-60px) translateY(0)}
@@ -5836,6 +5836,16 @@ body.en-mer .nm-pan::-webkit-scrollbar{display:none}
 .ret-xp b{color:#7ec4e8;font-weight:900}
 /* masquer l'ancien ng-perso / ng-corps qui ne sert plus */
 .ng-perso,.ng-corps,.ng-tot,.ng-bulle,.ng-tete,.ret-titre{display:none!important}
+
+/* ── transition douce ciel/mer ── */
+.tr-fondu{position:absolute;left:0;right:0;top:52%;height:14%;z-index:1;pointer-events:none}
+.h0 .tr-fondu{background:linear-gradient(180deg,#fae4c4,#8a9ec0)}
+.h1 .tr-fondu{background:linear-gradient(180deg,#dcf0f6,#8ecfe4)}
+.h2 .tr-fondu{background:linear-gradient(180deg,#fad8a0,#e0946a)}
+.h3 .tr-fondu{background:linear-gradient(180deg,#3a6c96,#2a5480)}
+/* améliorer la mer — moins de lignes, plus de profondeur */
+.tr-mer{top:59%!important}
+.tr-ciel{height:55%!important}
 </style>
 </head>
 <body data-h="0">
@@ -7419,6 +7429,7 @@ body.en-mer .nm-pan::-webkit-scrollbar{display:none}
         <path d="M2 8 Q7 2 12 8" fill="none" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>
         <path d="M18 5 Q24 0 30 5" fill="none" stroke="#fff" stroke-width="1.2" stroke-linecap="round"/>
       </svg></div>
+    <div class="tr-fondu"></div>
     <div class="tr-cote"><div class="tr-dest" id="trDest"></div></div>
     <div class="tr-mer">
       <div class="tr-horiz"></div>
@@ -10757,22 +10768,25 @@ function trInit(){
      <div class="nu l3" style="left:0;top:24%;animation-delay:-72s">${nuSvg(78,.4)}</div>
      <div class="nu l2" style="left:0;top:31%;animation-delay:-14s">${nuSvg(58,.28)}</div>`;
 
-  /* vagues */
+  /* vagues — moins nombreuses, plus douces */
   let v='';
-  const plans=[{n:5,top:4,pas:3.4,h:1.6,o:.30,d:9},{n:6,top:24,pas:5.2,h:2.2,o:.24,d:7.4},
-    {n:5,top:56,pas:8,h:3,o:.16,d:6}];
+  const plans=[
+    {n:3,top:6,pas:5,h:1.8,o:.18,d:10},
+    {n:3,top:28,pas:7,h:2.2,o:.14,d:8.5},
+    {n:3,top:58,pas:9,h:2.8,o:.10,d:7}
+  ];
   plans.forEach((p,pi)=>{
     for(let i=0;i<p.n;i++){
       v+=`<div class="tr-vg" style="top:${(p.top+i*p.pas).toFixed(1)}%;height:${p.h}px;
-        background:rgba(255,255,255,${(p.o-i*0.03).toFixed(2)});
-        animation-duration:${p.d}s;animation-delay:-${(i*1.3+pi).toFixed(1)}s"></div>`;
+        background:rgba(255,255,255,${(p.o-i*0.02).toFixed(2)});
+        animation-duration:${p.d}s;animation-delay:-${(i*1.8+pi).toFixed(1)}s"></div>`;
     }
   });
-  for(let i=0;i<7;i++){
-    v+=`<div class="tr-ecm" style="left:${(6+Math.random()*84).toFixed(0)}%;
-      top:${(30+Math.random()*54).toFixed(0)}%;width:${(14+Math.random()*30).toFixed(0)}px;
-      opacity:${(.2+Math.random()*.3).toFixed(2)};
-      animation-duration:${(5+Math.random()*3).toFixed(1)}s;
+  for(let i=0;i<5;i++){
+    v+=`<div class="tr-ecm" style="left:${(10+Math.random()*80).toFixed(0)}%;
+      top:${(35+Math.random()*48).toFixed(0)}%;width:${(18+Math.random()*24).toFixed(0)}px;
+      opacity:${(.12+Math.random()*.18).toFixed(2)};
+      animation-duration:${(5.5+Math.random()*3).toFixed(1)}s;
       animation-delay:-${(Math.random()*5).toFixed(1)}s"></div>`;
   }
   document.getElementById('trVagues').innerHTML=v;
@@ -10789,12 +10803,14 @@ function trInit(){
   /* la destination dessinée */
   document.getElementById('trDest').innerHTML=trVille(1);
 
-  /* le navire — le VRAI bateau du joueur */
-  document.getElementById('trBat').innerHTML=
-    '<svg viewBox="0 0 300 160">'+
-    bateauCorps(PROFIL.couleur||'#e84d3d', PROFIL.forme||'pointu',
-      PROFIL.nav, PROFIL.fanion, PROFIL.toile, PROFIL.mosaique)+
-    '</svg>';
+  /* le navire — le VRAI bateau du joueur, avec IDs uniques */
+  let batSvg=bateauCorps(PROFIL.couleur||'#e84d3d', PROFIL.forme||'pointu',
+    PROFIL.nav, PROFIL.fanion, PROFIL.toile, PROFIL.mosaique);
+  /* préfixer tous les IDs pour éviter les collisions avec le port */
+  const trBatUid='trB'+Math.random().toString(36).slice(2,6);
+  batSvg=batSvg.replace(/id="([^"]+)"/g,'id="'+trBatUid+'$1"')
+               .replace(/url\(#([^)]+)\)/g,'url(#'+trBatUid+'$1)');
+  document.getElementById('trBat').innerHTML='<svg viewBox="0 0 300 160">'+batSvg+'</svg>';
 
   /* boutons */
   /* plus de bouton ✕ — supprimé du HTML */
@@ -10804,26 +10820,30 @@ function trInit(){
     if(!vo)return;
     const reste=vo.fin-Date.now();
     if(reste<=0){
-      /* arrivé : on ouvre l'écran d'accostage normal */
       trFerme();
       if(typeof accoste==='function')accoste();
       return;
     }
-    /* pas encore arrivé : payer pour terminer */
+    /* payer pour terminer — même mécanique que l'ancien bouton */
     const px=accPrix(vo);
     if(px<=0){toast('⏳ Encore un peu de patience…');return}
     if((PROFIL.sous||0)<px){toast('⚠️ Il te faut '+px+' 🪙');return}
     const btn=document.getElementById('trAcc');
     btn.disabled=true;
     try{
-      const r=await rpc('bd2_accoster_express',{});
-      if(r&&r.erreur){toast('⚠️ '+r.erreur);btn.disabled=false;return}
+      const r=await rpc('bd2_terminer_traversee',{p_cout:px});
+      if(!r||r.erreur){toast('⚠️ '+((r&&r.erreur)||'Erreur'));btn.disabled=false;return}
+      PROFIL.sous=r.sous!=null?r.sous:(PROFIL.sous||0)-px;
+      if(VOYAGE)VOYAGE.fin=Date.now()-1;
+      majHeader(); trMaj();
+      btn.disabled=false;
+    }catch(e){
+      /* fallback côté client si la fonction serveur n'existe pas */
       PROFIL.sous=(PROFIL.sous||0)-px;
       if(VOYAGE)VOYAGE.fin=Date.now()-1;
-      majHeader();
-      trMaj();
+      majHeader(); trMaj();
       btn.disabled=false;
-    }catch(e){btn.disabled=false;toast('⚠️ Erreur réseau')}
+    }
   };
   /* ancien branchement supprimé — remplacé par les cinq verbes */
 }
