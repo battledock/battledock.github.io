@@ -420,6 +420,8 @@ const Etat = {
 
 /* charge (ou recharge) le cinéma depuis Supabase */
 async function chargeCinema(force = false){
+  /* cache d'un ancien schéma (sans id) → on force le rechargement */
+  if(Etat.cinema && !Etat.cinema.id) force = true;
   if(Etat.cinema && !force) return Etat.cinema;
   const session = getSession();
   const data = await sbFetch("cinemas?user_id=eq." + session.user_id + "&select=*");
@@ -640,10 +642,14 @@ function toastBob(t){
 
 
 (async ()=>{
-  const c = await chargeCinema();
-  if(!c) return;
-  initNavigation("prog");
-  await initProgrammation();
+  try{
+    const c = await chargeCinema();
+    if(!c) return;
+    initNavigation("prog");
+    await initProgrammation();
+  }catch(e){
+    document.getElementById("zoneBob").textContent = "Erreur : " + e.message + " — recharge la page.";
+  }
 })();
 </script>
 </body>

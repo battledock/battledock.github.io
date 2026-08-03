@@ -455,6 +455,8 @@ const Etat = {
 
 /* charge (ou recharge) le cinéma depuis Supabase */
 async function chargeCinema(force = false){
+  /* cache d'un ancien schéma (sans id) → on force le rechargement */
+  if(Etat.cinema && !Etat.cinema.id) force = true;
   if(Etat.cinema && !force) return Etat.cinema;
   const session = getSession();
   const data = await sbFetch("cinemas?user_id=eq." + session.user_id + "&select=*");
@@ -582,8 +584,8 @@ const EVENEMENTS_JOUR = [
 
 async function initAccueil(){
   const c = Etat.cinema;
-  await chargeSeancesAccueil();
   dessineFacade(c);
+  try{ await chargeSeancesAccueil(); }catch(e){ Etat.seancesJour = []; }
   rendStatut(c);
   rendActionPrincipale();
   rendResume(c);
@@ -889,11 +891,16 @@ function ditBonjour(c){
 
 
 (async ()=>{
-  const c = await chargeCinema();
-  if(!c) return;
-  initNavigation("jeu");
-  await initAccueil();
-  document.getElementById("deviseBas").textContent = "« " + c.devise + " »";
+  try{
+    const c = await chargeCinema();
+    if(!c) return;
+    initNavigation("jeu");
+    await initAccueil();
+    document.getElementById("deviseBas").textContent = "« " + c.devise + " »";
+  }catch(e){
+    document.getElementById("bulleTexteAccueil").textContent =
+      "« La machine a toussé : " + e.message + ". Recharge la page, ou reconnecte-toi. »";
+  }
 })();
 </script>
 </body>
