@@ -1733,6 +1733,52 @@ async function depense({montant, categorie, salle_id, details}){
 }
 
 /* ============================================================
+   STATUT TEMPS RÉEL DU CINÉMA
+   Le cinéma vit à l'heure du téléphone : ouvert de 13h00 à 23h30,
+   fermé la nuit, partiellement fermé si des salles sont en travaux.
+   ============================================================ */
+const OUVERTURE = {h:13, m:0};
+const FERMETURE = {h:23, m:30};
+
+function estOuvertMaintenant(){
+  const n = new Date();
+  const mins = n.getHours()*60 + n.getMinutes();
+  return mins >= OUVERTURE.h*60 + OUVERTURE.m && mins < FERMETURE.h*60 + FERMETURE.m;
+}
+
+function sallesEnTravaux(){
+  const now = Date.now();
+  return (Etat.salles || []).filter(s =>
+    s.travaux_fin && new Date(s.travaux_fin).getTime() > now);
+}
+
+/* {code, pastille, libelle} — pastille : ouvert | ferme | travaux */
+function statutCinema(){
+  const travaux = sallesEnTravaux();
+  const total = (Etat.salles || []).length || 1;
+
+  if(!estOuvertMaintenant()){
+    return {code:"ferme", pastille:"ferme",
+      libelle:"Fermé — réouverture à " + String(OUVERTURE.h).padStart(2,"0")
+              + "h" + String(OUVERTURE.m).padStart(2,"0")};
+  }
+  if(travaux.length >= total && total > 0){
+    return {code:"travaux_total", pastille:"travaux",
+      libelle:"Fermé pour travaux — " + travaux.map(t=>t.nom).join(", ")};
+  }
+  if(travaux.length > 0){
+    return {code:"travaux_partiel", pastille:"travaux",
+      libelle:"Ouvert — travaux en " + travaux.map(t=>t.nom).join(" et ")};
+  }
+  return {code:"ouvert", pastille:"ouvert", libelle:"Ouvert — les portes sont grandes ouvertes"};
+}
+
+function fmtCompte(ms){
+  const t = Math.max(0, Math.ceil(ms/1000));
+  return Math.floor(t/60) + "m " + String(t%60).padStart(2,"0") + "s";
+}
+
+/* ============================================================
    PROGRESSION — niveaux, XP, déblocages, montée de niveau
    Extensible : ajouter des entrées dans NIVEAUX suffit (11 → 50).
    ============================================================ */
