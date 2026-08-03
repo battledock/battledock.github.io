@@ -253,6 +253,18 @@ button:disabled{opacity:.5}
 .recompense small{display:block;font-size:10.5px;color:#c9a98a;margin-top:1px;line-height:1.35}
 .btnNiveau{position:relative;width:100%;margin-top:18px;padding:13px}
 
+/* ===== statut de sauvegarde ===== */
+.statutSauvegarde{
+  position:fixed;right:12px;bottom:calc(70px + var(--safeB));z-index:130;
+  padding:6px 12px;border-radius:16px;pointer-events:none;
+  font-family:'Courier New',monospace;font-size:10px;letter-spacing:.1em;
+  background:rgba(12,5,9,.82);color:#caa24a;border:1px solid rgba(232,184,75,.35);
+  opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s;
+}
+.statutSauvegarde.visible{opacity:1;transform:none}
+.statutSauvegarde.ok{color:#7fc98a;border-color:rgba(127,201,138,.4)}
+.statutSauvegarde.erreur{color:#e8a04a;border-color:rgba(232,160,74,.5)}
+
 /* ============ accueil (jeu.html) ============ */
 .facadeWrap{
   margin:0 -12px;position:relative;
@@ -1054,45 +1066,6 @@ button:disabled{opacity:.5}
 
 
 <script>
-/* Configuration + helper REST Supabase (partagé par toutes les pages) */
-const SB_URL = "https://zpfkekiavlfphialvphi.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZmtla2lhdmxmcGhpYWx2cGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjc4MzIsImV4cCI6MjEwMTMwMzgzMn0.ORa4y_AMjuWbxboKm3o6Jn7ryYjkOm4mSgLa2Schv98";
-
-/* Requête REST authentifiée.
-   sbFetch("cinemas?user_id=eq."+id)                      → GET
-   sbFetch("cinemas", {method:"POST", body:{...}})        → POST
-   sbFetch("cinemas?id=eq."+id, {method:"PATCH", body:{...}}) */
-async function sbFetch(chemin, options = {}){
-  const session = JSON.parse(localStorage.getItem("rex_session") || "null");
-  const entetes = {
-    "apikey": SB_KEY,
-    "Content-Type": "application/json",
-    "Prefer": options.prefer || "return=representation"
-  };
-  if(session?.access_token) entetes["Authorization"] = "Bearer " + session.access_token;
-  const rep = await fetch(SB_URL + "/rest/v1/" + chemin, {
-    method: options.method || "GET",
-    headers: entetes,
-    body: options.body ? JSON.stringify(options.body) : undefined
-  });
-  if(rep.status === 401){ deconnexion(); return null; }
-  if(options.prefer === "return=minimal") return rep.ok;
-  return rep.json();
-}
-
-/* Garde de session : à inclure sur toutes les pages du jeu */
-function getSession(){
-  return JSON.parse(localStorage.getItem("rex_session") || "null");
-}
-function deconnexion(){
-  localStorage.removeItem("rex_session");
-  localStorage.removeItem("rex_cinema");
-  localStorage.removeItem("rex_dest");
-  location.replace("index.html");
-}
-/* redirection immédiate si pas connecté */
-if(!getSession()) location.replace("index.html");
-
 /* Icônes SVG monochromes (courant: currentColor). Usage : icone("billet") */
 const ICONES = {
   batiment:`<path d="M3 20 L3 8 L12 3 L21 8 L21 20 Z M8 20 L8 13 L16 13 L16 20 M6 9.5 L18 9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>`,
@@ -1114,97 +1087,420 @@ function icone(nom, cls=""){
   return `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONES[nom]||""}</svg>`;
 }
 
-/* État du jeu : cinéma en cache + rafraîchissement + sauvegarde */
-const Etat = {
-  cinema: JSON.parse(localStorage.getItem("rex_cinema") || "null"),
-  reputation: Number(localStorage.getItem("rex_reputation") || 50)
+/* ============================================================
+   CLIENT SUPABASE — point d'entrée réseau unique
+   Toutes les requêtes du jeu passent par ici : renouvellement de
+   session, délais, erreurs normalisées, statut de sauvegarde.
+   ============================================================ */
+const SB_URL = "https://zpfkekiavlfphialvphi.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZmtla2lhdmxmcGhpYWx2cGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjc4MzIsImV4cCI6MjEwMTMwMzgzMn0.ORa4y_AMjuWbxboKm3o6Jn7ryYjkOm4mSgLa2Schv98";
+const DELAI_RESEAU = 12000;
+
+/* ---------- session ---------- */
+function sessionLocale(){
+  try{ return JSON.parse(localStorage.getItem("rex_session") || "null"); }
+  catch(e){ return null; }
+}
+function ecritSession(s){
+  localStorage.setItem("rex_session", JSON.stringify(s));
+  if(typeof Etat !== "undefined") Etat.session = s;
+}
+
+/* renouvellement du jeton — une seule tentative à la fois */
+let renouvellementEnCours = null;
+async function renouvelleSession(){
+  if(renouvellementEnCours) return renouvellementEnCours;
+  const s = sessionLocale();
+  if(!s?.refresh_token) return null;
+  renouvellementEnCours = (async ()=>{
+    try{
+      const rep = await fetch(SB_URL + "/auth/v1/token?grant_type=refresh_token", {
+        method:"POST",
+        headers:{"apikey":SB_KEY, "Content-Type":"application/json"},
+        body: JSON.stringify({refresh_token: s.refresh_token})
+      });
+      if(!rep.ok) return null;
+      const d = await rep.json();
+      if(!d.access_token) return null;
+      const neuve = {...s, access_token:d.access_token, refresh_token:d.refresh_token || s.refresh_token,
+                     user_id: d.user?.id || s.user_id, expire_le: Date.now() + (d.expires_in || 3600)*1000};
+      ecritSession(neuve);
+      return neuve;
+    }catch(e){ return null; }
+    finally{ setTimeout(()=>{ renouvellementEnCours = null; }, 0); }
+  })();
+  return renouvellementEnCours;
+}
+
+/* ---------- erreurs normalisées ---------- */
+class ErreurJeu extends Error {
+  constructor(code, message, details){
+    super(message || code);
+    this.code = code;
+    this.details = details;
+  }
+}
+const MESSAGES_ERREUR = {
+  RESEAU:        "Le réseau a mangé la bobine. Je vérifie que rien n'a été perdu.",
+  DELAI:         "Le serveur met trop de temps à répondre. Je réessaie dans un instant.",
+  SESSION:       "Ta session a expiré. Reconnecte-toi, le cinéma t'attend.",
+  INTERDIT:      "Cette action ne t'est pas permise.",
+  CONFLIT:       "Une autre fenêtre a déjà fait cette action. Je recharge l'état officiel.",
+  FONDS:         "On ne peut pas payer avec des tickets de tombola. Il manque de l'argent en caisse.",
+  ETAT_CONFLIT:  "Ton cinéma a changé ailleurs. Je recharge les données officielles.",
+  SERVEUR:       "La machine a toussé. Rien n'est perdu, réessaie."
 };
-
-/* charge (ou recharge) le cinéma depuis Supabase */
-function sessionCourante(){
-  try{ return JSON.parse(localStorage.getItem("rex_session")); }catch(e){ return null; }
+function messageErreur(e){
+  return MESSAGES_ERREUR[e?.code] || MESSAGES_ERREUR.SERVEUR;
 }
 
-async function chargeCinema(force = false){
-  Etat.session = sessionCourante();
-  /* cache d'un ancien schéma (sans id) → on force le rechargement */
-  if(Etat.cinema && !Etat.cinema.id) force = true;
-  if(Etat.cinema && !force) return Etat.cinema;
-  const session = getSession();
-  const data = await sbFetch("cinemas?user_id=eq." + session.user_id + "&select=*");
-  if(Array.isArray(data) && data.length){
-    Etat.cinema = data[0];
-    localStorage.setItem("rex_cinema", JSON.stringify(data[0]));
-    return Etat.cinema;
+/* ---------- statut de sauvegarde discret ---------- */
+function statutSauvegarde(etat){
+  let el = document.getElementById("statutSauvegarde");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "statutSauvegarde";
+    el.className = "statutSauvegarde";
+    document.body.appendChild(el);
   }
-  location.replace("inscription.html");  /* pas de cinéma → cérémonie */
-  return null;
+  clearTimeout(el._t);
+  if(etat === "encours"){ el.textContent = "Sauvegarde…"; el.className = "statutSauvegarde visible"; }
+  else if(etat === "ok"){ el.textContent = "Sauvegardé"; el.className = "statutSauvegarde visible ok";
+    el._t = setTimeout(()=>{ el.className = "statutSauvegarde"; }, 1400); }
+  else if(etat === "erreur"){ el.textContent = "Erreur de synchronisation"; el.className = "statutSauvegarde visible erreur";
+    el._t = setTimeout(()=>{ el.className = "statutSauvegarde"; }, 3200); }
+  else el.className = "statutSauvegarde";
 }
 
-/* sauvegarde partielle : majCinema({argent: 620, jour: 2}) */
-async function majCinema(champs){
-  Object.assign(Etat.cinema, champs);
-  localStorage.setItem("rex_cinema", JSON.stringify(Etat.cinema));
-  await sbFetch("cinemas?id=eq." + Etat.cinema.id, {
-    method:"PATCH", body:champs, prefer:"return=minimal"
-  });
-}
+/* ---------- requête REST ---------- */
+async function requete(chemin, options = {}, reessai = true){
+  const s = sessionLocale();
+  const entetes = {
+    "apikey": SB_KEY,
+    "Content-Type": "application/json",
+    "Prefer": options.prefer || "return=representation"
+  };
+  if(s?.access_token) entetes["Authorization"] = "Bearer " + s.access_token;
 
-/* format monnaie */
-function fmtArgent(n){ return Math.floor(n).toLocaleString("fr-FR") + " €"; }
-
-/* ==== STATUT TEMPS RÉEL ====
-   Le cinéma vit à l'heure du téléphone :
-   - ouvert de 13h00 à 23h30, fermé la nuit et le matin
-   - une salle en travaux (travaux_fin dans le futur) est indisponible
-   - tout le cinéma en travaux = fermé partiellement ou totalement */
-const OUVERTURE = {h:13, m:0};
-const FERMETURE = {h:23, m:30};
-
-function estOuvertMaintenant(){
-  const n = new Date();
-  const mins = n.getHours()*60 + n.getMinutes();
-  return mins >= OUVERTURE.h*60+OUVERTURE.m && mins < FERMETURE.h*60+FERMETURE.m;
-}
-
-function sallesEnTravaux(){
-  const liste = Etat.salles || [];
-  const now = Date.now();
-  return liste.filter(s => s.travaux_fin && new Date(s.travaux_fin).getTime() > now);
-}
-
-/* renvoie {code, libelle, pastille} — pastille: 'ouvert' | 'ferme' | 'travaux' */
-function statutCinema(){
-  const travaux = sallesEnTravaux();
-  const totalSalles = (Etat.salles || []).length || 1;
-  if(!estOuvertMaintenant()){
-    return {code:"ferme", pastille:"ferme",
-      libelle:"Fermé — réouverture à " + String(OUVERTURE.h).padStart(2,"0") + "h" + String(OUVERTURE.m).padStart(2,"0")};
-  }
-  if(travaux.length >= totalSalles && totalSalles > 0){
-    return {code:"travaux_total", pastille:"travaux",
-      libelle:"Fermé pour travaux — " + travaux.map(t=>t.nom).join(", ")};
-  }
-  if(travaux.length > 0){
-    return {code:"travaux_partiel", pastille:"travaux",
-      libelle:"Ouvert — travaux en " + travaux.map(t=>t.nom).join(" et ")};
-  }
-  return {code:"ouvert", pastille:"ouvert", libelle:"Ouvert — les portes sont grandes ouvertes"};
-}
-
-/* charge les salles dans l'état global (utilisé par toutes les pages pour le statut) */
-async function chargeSallesEtat(){
+  const ctrl = new AbortController();
+  const minuteur = setTimeout(()=>ctrl.abort(), options.delai || DELAI_RESEAU);
+  let rep;
   try{
-    const data = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
-    Etat.salles = Array.isArray(data) ? data : [];
-  }catch(e){ Etat.salles = Etat.salles || []; }
+    rep = await fetch(SB_URL + "/rest/v1/" + chemin, {
+      method: options.method || "GET",
+      headers: entetes,
+      body: options.body ? JSON.stringify(options.body) : undefined,
+      signal: ctrl.signal
+    });
+  }catch(e){
+    clearTimeout(minuteur);
+    throw new ErreurJeu(e.name === "AbortError" ? "DELAI" : "RESEAU");
+  }
+  clearTimeout(minuteur);
+
+  /* jeton expiré : on renouvelle et on rejoue une fois */
+  if(rep.status === 401 && reessai){
+    const neuve = await renouvelleSession();
+    if(neuve) return requete(chemin, options, false);
+    throw new ErreurJeu("SESSION");
+  }
+  if(rep.status === 401) throw new ErreurJeu("SESSION");
+  if(rep.status === 403) throw new ErreurJeu("INTERDIT");
+  if(rep.status === 409) throw new ErreurJeu("CONFLIT");
+  if(!rep.ok){
+    let d = null;
+    try{ d = await rep.json(); }catch(e){}
+    /* on ne laisse jamais fuiter le détail brut de Postgres vers l'écran */
+    throw new ErreurJeu("SERVEUR", MESSAGES_ERREUR.SERVEUR, d?.code || rep.status);
+  }
+  if(options.prefer === "return=minimal") return true;
+  try{ return await rep.json(); }catch(e){ return null; }
+}
+
+/* compatibilité : sbFetch reste l'API utilisée par les modules du jeu.
+   Les lectures renvoient [] en cas d'échec pour ne pas casser l'affichage ;
+   les écritures propagent l'erreur pour être traitées explicitement. */
+async function sbFetch(chemin, options = {}){
+  const ecriture = options.method && options.method !== "GET";
+  try{
+    if(ecriture) statutSauvegarde("encours");
+    const r = await requete(chemin, options);
+    if(ecriture) statutSauvegarde("ok");
+    return r;
+  }catch(e){
+    if(ecriture) statutSauvegarde("erreur");
+    if(e.code === "SESSION"){ deconnexion(); return null; }
+    if(!ecriture) return [];
+    throw e;
+  }
+}
+
+/* ---------- appels de fonctions serveur ---------- */
+async function rpc(nom, params){
+  return requete("rpc/" + nom, {method:"POST", body: params || {}});
+}
+
+/* identifiant d'opération : rejouer le même appel ne l'exécute qu'une fois */
+function idOperation(){
+  if(crypto?.randomUUID) return crypto.randomUUID();
+  return "op-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+}
+
+/* ============================================================
+   APPEL SÉCURISÉ — enveloppe des actions sensibles
+   En cas d'échec on ne suppose jamais que l'action n'a pas eu lieu :
+   on recharge l'état officiel avant de rendre la main.
+   ============================================================ */
+async function appelSecurise(operation, options = {}){
+  const {surErreur, rechargeApresErreur = true} = options;
+  try{
+    return {ok:true, data: await operation()};
+  }catch(e){
+    const msg = messageErreur(e);
+    if(rechargeApresErreur && typeof rafraichirEtat === "function"){
+      try{ await rafraichirEtat(); }catch(_){}
+    }
+    if(typeof surErreur === "function") surErreur(msg, e);
+    return {ok:false, code: e.code || "SERVEUR", message: msg};
+  }
+}
+
+/* ============================================================
+   AUTHENTIFICATION — session, protection des pages, déconnexion
+   ============================================================ */
+function session(){ return sessionLocale(); }
+
+/* la session est-elle utilisable (présente et non expirée) ? */
+function sessionValide(){
+  const s = sessionLocale();
+  if(!s?.access_token) return false;
+  if(s.expire_le && Date.now() > s.expire_le) return false;
+  return true;
+}
+
+/* garde d'entrée : appelée par toutes les pages privées */
+async function protegerPage({cinemaRequis = true, sansCinema = "inscription.html"} = {}){
+  const s = sessionLocale();
+  if(!s?.access_token){ location.replace("index.html"); return null; }
+  /* jeton périmé : on tente de le renouveler avant d'aller plus loin */
+  if(s.expire_le && Date.now() > s.expire_le - 60000){
+    const neuve = await renouvelleSession();
+    if(!neuve){ deconnexion(); return null; }
+  }
+  Etat.session = sessionLocale();
+
+  const cinema = await chargeCinema(true);
+  if(cinemaRequis && !cinema){ location.replace(sansCinema); return null; }
+  return {session: Etat.session, cinema};
+}
+
+/* ---------- déconnexion propre ---------- */
+async function deconnexion(){
+  const s = sessionLocale();
+  try{
+    if(s?.access_token){
+      await fetch(SB_URL + "/auth/v1/logout", {
+        method:"POST",
+        headers:{"apikey":SB_KEY, "Authorization":"Bearer " + s.access_token}
+      });
+    }
+  }catch(e){}
+  /* données de session et caches privés effacés ; préférences conservées */
+  ["rex_session","rex_cinema","rex_cache","rex_dest","rex_reputation"].forEach(k=>localStorage.removeItem(k));
+  location.replace("index.html");
+}
+
+/* ============================================================
+   ÉTAT DU JEU — source de vérité unique côté client
+   Le contenu vient TOUJOURS de Supabase. Le cache local ne sert
+   qu'à afficher rapidement le nom et le logo pendant le chargement ;
+   il n'est jamais utilisé pour valider une dépense.
+   ============================================================ */
+const Etat = {
+  session: null,
+  cinema: null,          /* cinemas */
+  salles: [],            /* salles */
+  journee: null,         /* journees (jour courant) */
+  seancesJour: [],       /* seances du jour courant */
+  progression: null,     /* progression (niveau, xp) */
+  deblocages: [],        /* deblocages */
+  possessions: [],       /* possessions (personnalisations) */
+  perso: null,           /* personnalisation (sélections) */
+  confiserie: null,      /* confiserie */
+  stats: null,           /* stats_cinema */
+  missionsFaites: [],
+  reputation: 50,
+  charge: false,
+  version: 0             /* version optimiste du cinéma */
+};
+/* nom explicite pour les nouveaux modules ; même objet */
+const GameState = Etat;
+
+/* ---------- cache d'affichage, non critique ---------- */
+function litCacheAffichage(){
+  try{ return JSON.parse(localStorage.getItem("rex_cache") || "null"); }catch(e){ return null; }
+}
+function ecritCacheAffichage(){
+  if(!Etat.cinema) return;
+  localStorage.setItem("rex_cache", JSON.stringify({
+    id: Etat.cinema.id, nom: Etat.cinema.nom, logo: Etat.cinema.logo,
+    niveau: Etat.progression?.niveau || 1, maj: Date.now()
+  }));
+}
+
+/* ---------- monnaie ---------- */
+function fmtArgent(n){ return Math.floor(Number(n)||0).toLocaleString("fr-FR") + " €"; }
+
+/* ============================================================
+   CHARGEMENTS — un seul exemplaire de chaque, partagé par les pages
+   ============================================================ */
+async function chargeCinema(force = false){
+  if(Etat.cinema && !force) return Etat.cinema;
+  const s = Etat.session || sessionLocale();
+  if(!s?.user_id) return null;
+  const d = await sbFetch(`cinemas?user_id=eq.${s.user_id}&select=*`);
+  if(!Array.isArray(d) || d.length === 0) return Etat.cinema;   /* réseau KO : on garde l'existant */
+  Etat.cinema = d[0];
+  Etat.version = Number(d[0].version || 1);
+  Etat.reputation = Number(d[0].reputation ?? 50);
+  ecritCacheAffichage();
+  return Etat.cinema;
+}
+
+async function chargeSallesEtat(){
+  if(!Etat.cinema) return [];
+  const d = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
+  if(Array.isArray(d)) Etat.salles = d;
   return Etat.salles;
 }
 
-function fmtCompte(ms){
-  const t = Math.max(0, Math.ceil(ms/1000));
-  const m = Math.floor(t/60), s = t%60;
-  return m + "m " + String(s).padStart(2,"0") + "s";
+async function chargeSeancesEtat(){
+  if(!Etat.cinema) return [];
+  const d = await sbFetch(`seances?cinema_id=eq.${Etat.cinema.id}&jour=eq.${Etat.cinema.jour}&select=*`);
+  if(Array.isArray(d)){
+    Etat.seancesJour = d.slice().sort((a,b)=>
+      (typeof compareHeures === "function" ? compareHeures(a.heure,b.heure) : String(a.heure).localeCompare(String(b.heure))));
+  }
+  return Etat.seancesJour;
+}
+
+/* ============================================================
+   INITIALISATION COMMUNE — une seule fonction pour toutes les pages
+   ============================================================ */
+async function initialiserJeu({onglet = "jeu", cinemaRequis = true} = {}){
+  const garde = await protegerPage({cinemaRequis});
+  if(!garde) return null;
+
+  /* chargements parallèles : plus rapide et moins d'aller-retours */
+  await Promise.all([
+    chargeProgression(),
+    chargeSallesEtat(),
+    chargeSeancesEtat(),
+    chargeJournee(),
+    chargePersonnalisation(),
+    chargeConfiserie(),
+    chargeStats(),
+    chargeMissions()
+  ].map(p => p.catch(()=>null)));
+
+  await synchroniseDeblocages().catch(()=>null);
+  await activeConfiserieSiBesoin().catch(()=>null);
+
+  Etat.charge = true;
+  ecritCacheAffichage();
+  initNavigation(onglet);
+  installeResynchronisation();
+  return Etat;
+}
+
+/* recharge tout depuis Supabase — après une erreur ou un retour d'arrière-plan */
+async function rafraichirEtat(){
+  const avant = {
+    argent: Number(Etat.cinema?.argent || 0),
+    niveau: Etat.progression?.niveau || 1,
+    jour: Etat.cinema?.jour || 1
+  };
+  await chargeCinema(true);
+  await Promise.all([
+    chargeProgression(true), chargeSallesEtat(), chargeSeancesEtat(), chargeJournee(true)
+  ].map(p => (p && p.catch) ? p.catch(()=>null) : p));
+
+  if(typeof majHeaderArgent === "function") majHeaderArgent();
+  if(typeof majBarreXPHeader === "function") majBarreXPHeader();
+  if(typeof majStatutHeader === "function") majStatutHeader();
+
+  return {
+    argentChange: Number(Etat.cinema?.argent || 0) !== avant.argent,
+    niveauChange: (Etat.progression?.niveau || 1) !== avant.niveau,
+    jourChange: (Etat.cinema?.jour || 1) !== avant.jour
+  };
+}
+
+/* ---------- resynchronisation au retour dans l'application ---------- */
+let derniereSynchro = Date.now();
+function installeResynchronisation(){
+  if(window.__resyncInstalle) return;
+  window.__resyncInstalle = true;
+  const resync = async ()=>{
+    if(document.hidden) return;
+    if(Date.now() - derniereSynchro < 20000) return;   /* pas à chaque micro-retour */
+    derniereSynchro = Date.now();
+    if(!sessionValide()){ const n = await renouvelleSession(); if(!n){ deconnexion(); return; } }
+    await rafraichirEtat().catch(()=>null);
+  };
+  document.addEventListener("visibilitychange", resync);
+  window.addEventListener("focus", resync);
+}
+
+/* ============================================================
+   ÉCRITURES SUR LE CINÉMA
+   Les colonnes sensibles (argent, jour, réputation) passent par une
+   opération économique tracée ; les autres sont écrites directement.
+   ============================================================ */
+/* colonnes que le joueur peut encore écrire directement ;
+   argent, jour, réputation, capacité et niveau sont refusés par le serveur */
+const CHAMPS_LIBRES = ["devise","directeur","logo","nom"];
+
+async function majCinema(champs){
+  const refuses = Object.keys(champs).filter(k=>!CHAMPS_LIBRES.includes(k));
+  if(refuses.length){
+    /* on met à jour l'affichage, la base sera corrigée au prochain rafraîchissement */
+    Object.assign(Etat.cinema, champs);
+    return true;
+  }
+  const avant = {...Etat.cinema};
+  Object.assign(Etat.cinema, champs);
+  ecritCacheAffichage();
+  try{
+    const r = await sbFetch("cinemas?id=eq." + Etat.cinema.id, {
+      method:"PATCH", body:{...champs, maj_le:new Date().toISOString()}, prefer:"return=minimal"
+    });
+    if(r === false) throw new ErreurJeu("SERVEUR");
+    return true;
+  }catch(e){
+    /* on ne laisse pas l'écran mentir : on remet l'état d'avant puis on recharge */
+    Etat.cinema = avant;
+    await chargeCinema(true).catch(()=>null);
+    if(typeof majHeaderArgent === "function") majHeaderArgent();
+    throw e;
+  }
+}
+
+/* dépense contrôlée : vérifie les fonds sur les données officielles
+   fraîchement rechargées, puis débite et journalise en une passe. */
+async function depense({montant, categorie, salle_id, details}){
+  const r = await rpc("operation_economique", {
+    p_cinema_id: Etat.cinema.id, p_montant: -Math.abs(montant), p_categorie: categorie,
+    p_salle_id: salle_id || null, p_details: details || null, p_operation_id: idOperation()
+  });
+  if(!r?.success){
+    if(r?.code === "INSUFFICIENT_FUNDS") throw new ErreurJeu("FONDS");
+    throw new ErreurJeu("SERVEUR");
+  }
+  Etat.cinema.argent = r.data.argent;
+  Etat.version = r.data.version;
+  if(typeof majHeaderArgent === "function") majHeaderArgent();
+  return r.data.argent;
 }
 
 /* ============================================================
@@ -1397,7 +1693,8 @@ function niveauDe(cle){
 }
 
 /* ---- chargement / création ---- */
-async function chargeProgression(){
+async function chargeProgression(force = false){
+  if(Etat.progression && !force){ /* déjà chargé */ }
   try{
     const d = await sbFetch(`progression?cinema_id=eq.${Etat.cinema.id}&select=*`);
     if(Array.isArray(d) && d.length){ Etat.progression = d[0]; return d[0]; }
@@ -1457,10 +1754,7 @@ async function gagneXP(montant, raison){
     p.niveau++;
     gagnes.push(infoNiveau(p.niveau));
   }
-  try{
-    await sbFetch(`progression?cinema_id=eq.${Etat.cinema.id}`,
-      {method:"PATCH", body:{niveau:p.niveau, xp:p.xp}, prefer:"return=minimal"});
-  }catch(e){}
+  /* l'XP officielle est écrite par le serveur ; ici on ne fait qu'afficher */
 
   bulleXP(montant, raison);
   majBarreXPHeader();
@@ -1658,10 +1952,10 @@ async function reclameRecompense(cle){
   const d = deblocageEnregistre(cle);
   if(d?.reclame_le) return false;
   try{
-    await sbFetch(`deblocages?cinema_id=eq.${Etat.cinema.id}&cle=eq.${cle}`, {method:"PATCH",
-      prefer:"return=minimal", body:{reclame_le:new Date().toISOString()}});
+    const rep = await rpc("reclamer_recompense", {p_cinema_id: Etat.cinema.id, p_cle: cle});
+    if(!rep?.success) return false;
     if(d) d.reclame_le = new Date().toISOString();
-    if(typeof donnePersonnalisation === "function") await donnePersonnalisation(cle, "niveau_"+r.niveau);
+    await chargePersonnalisation();
     return true;
   }catch(e){ return false; }
 }
@@ -1697,11 +1991,20 @@ async function chargeMissions(){
 async function accomplitMission(cle){
   const m = MISSIONS.find(x=>x.cle===cle);
   if(!m || missionFaite(cle)) return false;
-  const ok = await journaliseXp("mission", m.xp, `${Etat.cinema.id}:mission:${cle}`);
-  if(!ok) return false;
+  let r;
+  try{ r = await rpc("accomplir_mission", {p_cinema_id: Etat.cinema.id, p_mission: cle}); }
+  catch(e){ return false; }
+  if(!r?.success) return false;
   Etat.missionsFaites = [...(Etat.missionsFaites||[]), cle];
-  await gagneXP(m.xp, "Mission : " + m.titre);
+  await chargeProgression(true);
+  majBarreXPHeader();
+  bulleXP(r.data.xp, "Mission");
   toastMission(m);
+  const avant = r.data.niveau_avant, apres = r.data.niveau;
+  for(let n = avant + 1; n <= apres; n++){
+    await montreMonteeNiveau(infoNiveau(n));
+    await synchroniseDeblocages().catch(()=>null);
+  }
   return true;
 }
 function toastMission(m){
@@ -2093,11 +2396,9 @@ async function achetePersonnalisation(cat, id){
   const item = itemPerso(cat, id);
   if(!item || possede(cat, id)) return false;
   if(niveauActuel() < item.niveauRequis) return false;
-  const solde = Number(Etat.cinema.argent);
-  if(solde < item.cout) return {erreur:"argent"};
-  await majCinema({argent: solde - item.cout});
-  await enregistreTransaction({categorie:"personnalisation", montant:-item.cout,
-    solde_avant:solde, solde_apres:solde-item.cout, details:{categorie:cat, item:id}});
+  try{
+    await depense({montant:item.cout, categorie:"personnalisation", details:{categorie:cat, item:id}});
+  }catch(e){ return {erreur:"argent"}; }
   try{
     await sbFetch("possessions", {method:"POST", prefer:"return=minimal", body:{
       cinema_id:Etat.cinema.id, user_id:Etat.session?.user_id,
@@ -2201,16 +2502,12 @@ async function activeConfiserieSiBesoin(){
   await chargeConfiserie();
   if(Etat.confiserie?.active) return false;
   try{
-    if(Etat.confiserie?.cinema_id){
-      await sbFetch(`confiserie?cinema_id=eq.${Etat.cinema.id}`, {method:"PATCH",
-        prefer:"return=minimal", body:{active:true}});
-    }else{
-      await sbFetch("confiserie", {method:"POST", prefer:"return=minimal", body:{
-        cinema_id:Etat.cinema.id, user_id:Etat.session?.user_id, active:true,
-        taux_achat:TAUX_ACHAT_BASE, niveau_popcorn:1, niveau_boissons:1, style_comptoir:"bois"}});
-    }
-    Etat.confiserie = {...(Etat.confiserie||{}), active:true, cinema_id:Etat.cinema.id};
-    return true;
+    /* la ligne est créée par le serveur ; on n'active que le comptoir */
+    if(!Etat.confiserie?.cinema_id) await rpc("reparer_partie", {p_cinema_id: Etat.cinema.id});
+    await sbFetch(`confiserie?cinema_id=eq.${Etat.cinema.id}`, {method:"PATCH",
+      prefer:"return=minimal", body:{active:true}});
+    await chargeConfiserie();
+    return !!Etat.confiserie?.active;
   }catch(e){ return false; }
 }
 
@@ -2234,15 +2531,11 @@ function ventesConfiserie(spectateurs, satisfaction, rng){
 
 /* cumul du popcorn vendu — sert à la mission « vendre 20 popcorns » */
 async function cumuleVentes(bilan){
+  /* le total est incrémenté par le serveur ; on ne vérifie que la mission */
   if(!confiserieActive()) return;
-  const pop = bilan.resultats.reduce((t,r)=>t + (r.confiserie?.detail?.popcorn || 0), 0);
-  const total = Number(Etat.confiserie.total_popcorn || 0) + pop;
-  Etat.confiserie.total_popcorn = total;
-  try{
-    await sbFetch(`confiserie?cinema_id=eq.${Etat.cinema.id}`, {method:"PATCH",
-      prefer:"return=minimal", body:{total_popcorn: total}});
-  }catch(e){}
-  if(total >= 20 && typeof accomplitMission === "function") await accomplitMission("m_popcorn");
+  if(Number(Etat.confiserie?.total_popcorn||0) >= 20 && typeof accomplitMission === "function")
+    await accomplitMission("m_popcorn");
+  return;
 }
 
 /* ---------- cinématique d'inauguration ---------- */
@@ -2782,7 +3075,7 @@ const XP_JOURNEE = {
    ============================================================ */
 
 /* ---------- lecture / création de la journée courante ---------- */
-async function chargeJournee(){
+async function chargeJournee(force = false){
   const c = Etat.cinema;
   try{
     const d = await sbFetch(`journees?cinema_id=eq.${c.id}&jour=eq.${c.jour}&select=*`);
@@ -2812,64 +3105,44 @@ function verifieOuverture(){
   return {ok:true, licences};
 }
 
-/* ---------- ouverture + simulation ---------- */
+/* ---------- ouverture + simulation (calculées par le serveur) ---------- */
 async function ouvreCinema(){
   const v = verifieOuverture();
   if(!v.ok){ parleBob("« " + v.msg + " »"); return; }
 
-  const c = Etat.cinema;
-  const graine = `${c.id}:${c.jour}:${Date.now()}`;
-
-  /* 1. la journée passe en running et les séances sont verrouillées */
-  await sbFetch(`journees?cinema_id=eq.${c.id}&jour=eq.${c.jour}`, {method:"PATCH",
-    body:{statut:"running", graine, demarree_le:new Date().toISOString(), cout_licences:v.licences},
-    prefer:"return=minimal"});
-  await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}`, {method:"PATCH",
-    body:{statut:"running"}, prefer:"return=minimal"});
-
-  /* 2. paiement des licences (une seule fois, à l'ouverture) */
-  const soldeAvant = Number(c.argent);
-  await majCinema({argent: soldeAvant - v.licences});
-  await enregistreTransaction({categorie:"cout_licence", montant:-v.licences,
-    solde_avant:soldeAvant, solde_apres:soldeAvant - v.licences, details:{jour:c.jour}});
-  majHeaderArgent();
-
-  /* 3. simulation — ⚠ côté client pour l'instant, voir simulation.js */
-  const bilan = simuleJournee({
-    cinema:c, salles:Etat.salles||[], seances:Etat.seancesJour||[],
-    reputation:Etat.reputation, graine
-  });
-
-  /* 4. séquence animée, puis sauvegarde */
-  await sequenceOuverture(bilan);
-  await sauveResultats(bilan, graine);
-  location.href = "bilan.html";
-}
-
-/* ---------- sauvegarde des résultats ---------- */
-async function sauveResultats(bilan, graine){
-  const c = Etat.cinema;
-  /* résultats par séance */
-  for(const r of bilan.resultats){
-    await sbFetch("seances?id=eq."+r.seance_id, {method:"PATCH", prefer:"return=minimal", body:{
-      statut:"completed", spectateurs:r.spectateurs, recettes_brutes:r.brut,
-      recettes_nettes:r.net, satisfaction:r.satisfaction, incident_id:r.incident_id,
-      resultat:{publics:r.publics, complete:r.complete, incident:r.incident_texte}
-    }});
+  const op = idOperation();
+  let reponse;
+  try{
+    statutSauvegarde("encours");
+    reponse = await rpc("simuler_journee", {p_cinema_id: Etat.cinema.id, p_operation_id: op});
+    statutSauvegarde("ok");
+  }catch(e){
+    statutSauvegarde("erreur");
+    /* le calcul a peut-être abouti : on recharge avant de conclure */
+    await rafraichirEtat().catch(()=>null);
+    if(Etat.journee?.resultats){ location.href = "bilan.html"; return; }
+    parleBob("« " + messageErreur(e) + " »");
+    return;
   }
-  /* bilan de la journée */
-  await sbFetch(`journees?cinema_id=eq.${c.id}&jour=eq.${c.jour}`, {method:"PATCH", prefer:"return=minimal", body:{
-    evenement_id: bilan.evenement.id,
-    total_spectateurs: bilan.total_spectateurs,
-    recettes_brutes: bilan.recettes_brutes,
-    cout_licences: bilan.cout_licences,
-    benefice_net: bilan.benefice_net,
-    satisfaction_moyenne: bilan.satisfaction_moyenne,
-    variation_reputation: bilan.variation_reputation,
-    graine,
-    resultats: bilan
-  }});
-  Etat.journee = {...(Etat.journee||{}), statut:"running", resultats:bilan, evenement_id:bilan.evenement.id};
+
+  if(!reponse?.success){
+    if(reponse?.code === "ALREADY_RUNNING"){ location.href = "bilan.html"; return; }
+    const M = {
+      INSUFFICIENT_FUNDS:"On ne peut pas louer les films avec des tickets de tombola. Il manque de l'argent dans la caisse.",
+      NO_SCREENINGS:"Aucune séance au programme. On n'ouvre pas un cinéma vide.",
+      NOT_VALIDATED:"Le programme n'est pas validé. Un dernier passage par la cabine.",
+      ALREADY_COMPLETED:"Cette journée est terminée. Passe au jour suivant."
+    };
+    parleBob("« " + (M[reponse?.code] || "La machine a toussé. Réessaie.") + " »");
+    return;
+  }
+
+  const bilan = reponse.data;
+  Etat.journee = {...(Etat.journee||{}), statut:"running", resultats:bilan};
+  await chargeCinema(true);
+  majHeaderArgent();
+  await sequenceOuverture(bilan);
+  location.href = "bilan.html";
 }
 
 /* ---------- séquence animée d'ouverture ---------- */
@@ -2953,67 +3226,19 @@ function sequenceOuverture(bilan){
 }
 
 /* ============================================================
-   XP DE LA JOURNÉE — via le journal xp_events (anti-doublon)
+   XP DE LA JOURNÉE — calculée et attribuée par simuler_journee().
+   Le client se contente de lire le total pour l'afficher.
    ============================================================ */
-async function attribueXpJournee(bilan){
-  const c = Etat.cinema;
-  let total = 0;
-  const donne = async (cle, type, montant, cleUnique)=>{
-    const ok = await journaliseXp(type, montant, cleUnique);
-    if(ok) total += montant;
-  };
+function xpDeLaJournee(bilan){ return Number(bilan?.xp_gagnee || 0); }
 
-  await donne(null, "ouverture", XP_JOURNEE.ouverture.montant, `${c.id}:j${c.jour}:ouverture`);
-  await donne(null, "journee_terminee", XP_JOURNEE.journee_terminee.montant, `${c.id}:j${c.jour}:journee`);
-  await donne(null, "premiere_journee", XP_JOURNEE.premiere_journee.montant, `${c.id}:premiere_journee`);
-
-  for(const r of bilan.resultats){
-    await donne(null, "par_seance", XP_JOURNEE.par_seance.montant, `${c.id}:j${c.jour}:s${r.seance_id}:jouee`);
-    if(r.complete) await donne(null, "salle_complete", XP_JOURNEE.salle_complete.montant, `${c.id}:j${c.jour}:s${r.seance_id}:complete`);
-  }
-  if(bilan.satisfaction_moyenne > 80)
-    await donne(null, "belle_satisfaction", XP_JOURNEE.belle_satisfaction.montant, `${c.id}:j${c.jour}:satisfaction`);
-  if(bilan.total_spectateurs >= 100)
-    await donne(null, "cent_spectateurs", XP_JOURNEE.cent_spectateurs.montant, `${c.id}:j${c.jour}:cent`);
-
-  const record = Number(Etat.stats?.meilleure_journee || 0);
-  const nouveauRecord = bilan.total_spectateurs > record && record > 0;
-  if(nouveauRecord)
-    await donne(null, "record", XP_JOURNEE.record.montant, `${c.id}:j${c.jour}:record`);
-
-  if(total > 0) await gagneXP(total, "Journée terminée");
-  return {total, nouveauRecord};
-}
-
-/* insertion dans le journal ; la contrainte unique empêche tout doublon */
-async function journaliseXp(type, montant, cleUnique){
-  try{
-    const res = await sbFetch("xp_events", {method:"POST", body:{
-      cinema_id: Etat.cinema.id, user_id: Etat.session?.user_id,
-      jour: Etat.cinema.jour, type, montant, cle_unique: cleUnique
-    }});
-    return Array.isArray(res) && res.length > 0;
-  }catch(e){ return false; }   /* 409 = déjà attribué */
-}
+/* les gains d'XP hors journée passent aussi par le serveur */
+async function journaliseXp(type, montant, cleUnique){ return false; }
+async function journaliseXpSimple(type, montant, cleUnique){ return 0; }
 
 /* ---------- statistiques cumulées (futur classement) ---------- */
-async function majStatsCinema(bilan){
-  const c = Etat.cinema;
-  const s = Etat.stats || {};
-  const corps = {
-    cinema_id: c.id,
-    total_spectateurs: Number(s.total_spectateurs||0) + bilan.total_spectateurs,
-    meilleure_journee: Math.max(Number(s.meilleure_journee||0), bilan.total_spectateurs),
-    journees_terminees: Number(s.journees_terminees||0) + 1,
-    total_seances: Number(s.total_seances||0) + bilan.resultats.length,
-    total_recettes: Number(s.total_recettes||0) + bilan.recettes_brutes
-  };
-  try{
-    if(s.cinema_id) await sbFetch("stats_cinema?cinema_id=eq."+c.id, {method:"PATCH", body:corps, prefer:"return=minimal"});
-    else await sbFetch("stats_cinema", {method:"POST", body:corps});
-    Etat.stats = {...s, ...corps};
-  }catch(e){}
-}
+/* les statistiques officielles sont mises à jour par terminer_journee() */
+async function majStatsCinema(){ return; }
+
 async function chargeStats(){
   try{
     const d = await sbFetch(`stats_cinema?cinema_id=eq.${Etat.cinema.id}&select=*`);
@@ -3026,40 +3251,31 @@ async function chargeStats(){
    PASSAGE AU JOUR SUIVANT
    ============================================================ */
 async function passeAuJourSuivant(bilan){
-  const c = Etat.cinema;
-
-  /* réputation (bornée 0-100) et argent */
-  const nouvelleRep = Math.max(0, Math.min(100, Number(Etat.reputation) + bilan.variation_reputation));
-  const soldeAv = Number(c.argent);
-  await enregistreTransaction({categorie:"recette_billetterie", montant:bilan.recettes_brutes,
-    solde_avant:soldeAv, solde_apres:soldeAv + bilan.recettes_brutes, details:{jour:c.jour}});
-  const gainConf = (bilan.recettes_confiserie||0) - (bilan.cout_confiserie||0);
-  if(gainConf !== 0){
-    await enregistreTransaction({categorie:"recette_confiserie", montant:gainConf,
-      solde_avant:soldeAv + bilan.recettes_brutes, solde_apres:soldeAv + bilan.recettes_brutes + gainConf,
-      details:{articles:bilan.articles_confiserie}});
+  const op = idOperation();
+  let r;
+  try{
+    statutSauvegarde("encours");
+    r = await rpc("terminer_journee", {p_cinema_id: Etat.cinema.id, p_operation_id: op});
+    statutSauvegarde("ok");
+  }catch(e){
+    statutSauvegarde("erreur");
+    await rafraichirEtat().catch(()=>null);
+    /* si le jour a avancé, la clôture est passée malgré l'erreur réseau */
+    if(!Etat.journee || Etat.journee.statut === "draft"){ location.href = "jeu.html"; return; }
+    parleBobBilan(messageErreur(e));
+    return;
   }
-  if(typeof cumuleVentes === "function") await cumuleVentes(bilan);
-  await useSalles(bilan);
-  await majCinema({
-    argent: Number(c.argent) + bilan.recettes_brutes + ((bilan.recettes_confiserie||0) - (bilan.cout_confiserie||0)),
-      /* les licences ont déjà été payées à l'ouverture */
-    reputation: nouvelleRep,
-    jour: Number(c.jour) + 1
-  });
-  Etat.reputation = nouvelleRep;
-
-  /* la journée est archivée, une nouvelle est créée */
-  await sbFetch(`journees?cinema_id=eq.${c.id}&jour=eq.${bilan._jour ?? (c.jour-1)}`, {method:"PATCH",
-    body:{statut:"completed", terminee_le:new Date().toISOString(), xp_gagnee:bilan._xp||0},
-    prefer:"return=minimal"});
-  await sbFetch("journees", {method:"POST", body:{
-    cinema_id:c.id, user_id:Etat.session?.user_id, jour:Number(c.jour), statut:"draft"
-  }});
-
+  if(!r?.success && r?.code !== "ALREADY_COMPLETED"){
+    parleBobBilan(r?.message || "La clôture a échoué.");
+    return;
+  }
   Etat.seancesJour = [];
   Etat.journee = null;
   location.href = "jeu.html";
+}
+function parleBobBilan(msg){
+  const b = document.getElementById("btnSuivant");
+  if(b){ b.disabled = false; b.textContent = msg; }
 }
 
 /* ============================================================
@@ -3081,22 +3297,7 @@ async function journaliseXpSimple(type, montant, cleUnique){
   return ok ? montant : 0;
 }
 
-/* ============================================================
-   USURE DES SALLES après une journée jouée
-   ============================================================ */
-async function useSalles(bilan){
-  for(const salle of (Etat.salles||[])){
-    const n = bilan.resultats.filter(r=>String(r.salle_id)===String(salle.id)).length;
-    if(n === 0) continue;
-    const proprete = Math.max(0, Math.min(100, Number(salle.proprete ?? 100) - n*4));
-    const etat     = Math.max(0, Math.min(100, Number(salle.etat ?? 100) - n*0.5));
-    salle.proprete = proprete; salle.etat = etat;
-    try{
-      await sbFetch("salles?id=eq."+salle.id, {method:"PATCH", prefer:"return=minimal",
-        body:{proprete, etat}});
-    }catch(e){}
-  }
-}
+/* l'usure des salles est appliquée par simuler_journee() côté serveur */
 
 
 /* Page "Plus" : fiche du cinéma, à venir, compte */
@@ -3258,19 +3459,12 @@ function confirmeDeconnexion(){
 
 (async ()=>{
   try{
-    const c = await chargeCinema();
-    if(!c) return;
-    await chargeProgression();
-    await chargeSallesEtat();
-    await chargePersonnalisation();
-    await chargeConfiserie();
-    await synchroniseDeblocages();
-    await activeConfiserieSiBesoin();
-    initNavigation("plus");
+    const etat = await initialiserJeu({onglet:"plus"});
+    if(!etat) return;
     initPlus();
   }catch(e){
-    const z = document.getElementById("zoneBob") || document.getElementById("contenuBilan") || document.body;
-    z.textContent = "Erreur : " + e.message + " — recharge la page.";
+    const z = document.getElementById("zoneBob") || document.body;
+    z.textContent = (typeof messageErreur === "function" ? messageErreur(e) : "Erreur") + " Recharge la page.";
   }
 })();
 </script>
