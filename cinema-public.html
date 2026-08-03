@@ -3952,11 +3952,17 @@ function afficheFilm(x, seance){
 }
 
 
-function dessineFacade(c){
-  const pKey = phaseSelonHeure();
-  const A = construireApparenceFacade(c, Etat.perso, Etat.salles || []);
+/* Rendu unique de la façade.
+   opts permet de fournir des données extérieures (cinéma visité)
+   sans jamais dupliquer le SVG :
+   {cible, perso, salles, seances, phase} */
+function dessineFacade(c, opts = {}){
+  const pKey = opts.phase || phaseSelonHeure();
+  const A = construireApparenceFacade(c, opts.perso ?? Etat.perso, opts.salles ?? Etat.salles ?? []);
   const V = A;   /* même objet : aile, affiches, eclairage, entretien */
-  const SF = seancesFacade();
+  const SF = opts.seances
+    ? opts.seances.map(x=>({heure:(x.heure||"").toUpperCase(), titre:x.titre, genre:x.genre || "défaut"}))
+    : seancesFacade();
   const P = PHASES[pKey];
   /* le style de façade choisi remplace la palette de mur de la phase */
   const nuit = (pKey === "nuit" || pKey === "aube");
