@@ -166,6 +166,8 @@ button:disabled{opacity:.5}
   background:#1c070d;border:2px solid var(--or-sombre)}
 .bobMiniTete svg{width:100%;height:100%;display:block}
 .bobMiniTxt{font-size:12.5px;line-height:1.4;color:var(--creme)}
+.entete .pastilleH.travauxH{background:#e8a04a;box-shadow:0 0 6px rgba(232,160,74,.9);animation:cligPart 1.2s steps(2) infinite}
+@keyframes cligPart{50%{opacity:.35}}
 
 /* ============ accueil (jeu.html) ============ */
 .facadeWrap{
@@ -434,6 +436,16 @@ button:disabled{opacity:.5}
 .btnDeco:active{background:rgba(138,108,42,.12)}
 .versionPied{text-align:center;margin-top:14px;font-family:'Courier New',monospace;
   font-size:9.5px;letter-spacing:.2em;opacity:.4;text-transform:uppercase}
+.pastille.travaux{background:#e8a04a;box-shadow:0 0 8px rgba(232,160,74,.8);animation:cligPart 1.2s steps(2) infinite}
+.salleTravaux{position:relative;opacity:.92}
+.bandeauTravaux{
+  display:flex;align-items:center;gap:9px;margin:-4px 0 8px;
+  background:repeating-linear-gradient(45deg,#e8b84b 0 12px,#241a12 12px 24px);
+  border-radius:7px;padding:8px 11px;
+  font-family:'Courier New',monospace;font-size:11px;font-weight:bold;color:#fdf8ec;
+  text-shadow:0 1px 2px rgba(0,0,0,.8);letter-spacing:.06em;
+}
+.bandeauTravaux .compte{margin-left:auto;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:10px}
 
 
 </style>
@@ -546,6 +558,60 @@ async function majCinema(champs){
 /* format monnaie */
 function fmtArgent(n){ return Math.floor(n).toLocaleString("fr-FR") + " €"; }
 
+/* ==== STATUT TEMPS RÉEL ====
+   Le cinéma vit à l'heure du téléphone :
+   - ouvert de 13h00 à 23h30, fermé la nuit et le matin
+   - une salle en travaux (travaux_fin dans le futur) est indisponible
+   - tout le cinéma en travaux = fermé partiellement ou totalement */
+const OUVERTURE = {h:13, m:0};
+const FERMETURE = {h:23, m:30};
+
+function estOuvertMaintenant(){
+  const n = new Date();
+  const mins = n.getHours()*60 + n.getMinutes();
+  return mins >= OUVERTURE.h*60+OUVERTURE.m && mins < FERMETURE.h*60+FERMETURE.m;
+}
+
+function sallesEnTravaux(){
+  const liste = Etat.salles || [];
+  const now = Date.now();
+  return liste.filter(s => s.travaux_fin && new Date(s.travaux_fin).getTime() > now);
+}
+
+/* renvoie {code, libelle, pastille} — pastille: 'ouvert' | 'ferme' | 'travaux' */
+function statutCinema(){
+  const travaux = sallesEnTravaux();
+  const totalSalles = (Etat.salles || []).length || 1;
+  if(!estOuvertMaintenant()){
+    return {code:"ferme", pastille:"ferme",
+      libelle:"Fermé — réouverture à " + String(OUVERTURE.h).padStart(2,"0") + "h" + String(OUVERTURE.m).padStart(2,"0")};
+  }
+  if(travaux.length >= totalSalles && totalSalles > 0){
+    return {code:"travaux_total", pastille:"travaux",
+      libelle:"Fermé pour travaux — " + travaux.map(t=>t.nom).join(", ")};
+  }
+  if(travaux.length > 0){
+    return {code:"travaux_partiel", pastille:"travaux",
+      libelle:"Ouvert — travaux en " + travaux.map(t=>t.nom).join(" et ")};
+  }
+  return {code:"ouvert", pastille:"ouvert", libelle:"Ouvert — les portes sont grandes ouvertes"};
+}
+
+/* charge les salles dans l'état global (utilisé par toutes les pages pour le statut) */
+async function chargeSallesEtat(){
+  try{
+    const data = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
+    Etat.salles = Array.isArray(data) ? data : [];
+  }catch(e){ Etat.salles = Etat.salles || []; }
+  return Etat.salles;
+}
+
+function fmtCompte(ms){
+  const t = Math.max(0, Math.ceil(ms/1000));
+  const m = Math.floor(t/60), s = t%60;
+  return m + "m " + String(s).padStart(2,"0") + "s";
+}
+
 /* Header + nav basse injectés sur chaque page. initNavigation("jeu") */
 const PAGES_NAV = [
   {id:"jeu",   url:"jeu.html",           ic:"batiment",  label:"Cinéma"},
@@ -558,7 +624,7 @@ const PAGES_NAV = [
 function initNavigation(actif){
   const c = Etat.cinema || {logo:"", nom:"…", argent:0};
   const coin = `<svg viewBox="0 0 11 11"><path d="M1 10 L1 4 Q1 1 4 1 L10 1"/></svg>`;
-  const ouvert = Etat.jourStats?.ouvert;
+  const st = (typeof statutCinema==="function") ? statutCinema() : {pastille:"ferme", libelle:"Fermé"};
   const h = document.createElement("header");
   h.className = "entete";
   h.innerHTML = `
@@ -568,7 +634,7 @@ function initNavigation(actif){
       <span class="medaillon">${c.logo}</span>
       <span class="nomBloc">
         <span class="nomCine">${c.nom}</span>
-        <span class="sousH"><span class="pastilleH ${ouvert?'ouvertH':''}"></span>${ouvert?'Ouvert':'Fermé'} · Jour ${c.jour||1}</span>
+        <span class="sousH" id="sousStatut"><span class="pastilleH ${st.pastille==='ouvert'?'ouvertH':st.pastille==='travaux'?'travauxH':''}"></span>${st.pastille==='travaux'?'Travaux':st.pastille==='ouvert'?'Ouvert':'Fermé'} · Jour ${c.jour||1}</span>
       </span>
       <span class="stats">
         <span class="stat" id="statArgent">${icone("piece")} ${fmtArgent(c.argent)}</span>
@@ -583,6 +649,15 @@ function initNavigation(actif){
   ).join("");
   document.body.append(n);
 }
+
+function majStatutHeader(){
+  const el = document.getElementById("sousStatut");
+  if(!el || typeof statutCinema!=="function") return;
+  const st = statutCinema();
+  const c = Etat.cinema || {};
+  el.innerHTML = `<span class="pastilleH ${st.pastille==='ouvert'?'ouvertH':st.pastille==='travaux'?'travauxH':''}"></span>${st.pastille==='travaux'?'Travaux':st.pastille==='ouvert'?'Ouvert':'Fermé'} · Jour ${c.jour||1}`;
+}
+setInterval(()=>{ if(document.getElementById("sousStatut")) majStatutHeader(); }, 30000);
 
 function majHeaderArgent(){
   const el = document.getElementById("statArgent");
@@ -806,6 +881,7 @@ function toastBob(t){
   try{
     const c = await chargeCinema();
     if(!c) return;
+    await chargeSallesEtat();
     initNavigation("studio");
     await initStudio();
   }catch(e){

@@ -166,6 +166,8 @@ button:disabled{opacity:.5}
   background:#1c070d;border:2px solid var(--or-sombre)}
 .bobMiniTete svg{width:100%;height:100%;display:block}
 .bobMiniTxt{font-size:12.5px;line-height:1.4;color:var(--creme)}
+.entete .pastilleH.travauxH{background:#e8a04a;box-shadow:0 0 6px rgba(232,160,74,.9);animation:cligPart 1.2s steps(2) infinite}
+@keyframes cligPart{50%{opacity:.35}}
 
 /* ============ accueil (jeu.html) ============ */
 .facadeWrap{
@@ -434,6 +436,16 @@ button:disabled{opacity:.5}
 .btnDeco:active{background:rgba(138,108,42,.12)}
 .versionPied{text-align:center;margin-top:14px;font-family:'Courier New',monospace;
   font-size:9.5px;letter-spacing:.2em;opacity:.4;text-transform:uppercase}
+.pastille.travaux{background:#e8a04a;box-shadow:0 0 8px rgba(232,160,74,.8);animation:cligPart 1.2s steps(2) infinite}
+.salleTravaux{position:relative;opacity:.92}
+.bandeauTravaux{
+  display:flex;align-items:center;gap:9px;margin:-4px 0 8px;
+  background:repeating-linear-gradient(45deg,#e8b84b 0 12px,#241a12 12px 24px);
+  border-radius:7px;padding:8px 11px;
+  font-family:'Courier New',monospace;font-size:11px;font-weight:bold;color:#fdf8ec;
+  text-shadow:0 1px 2px rgba(0,0,0,.8);letter-spacing:.06em;
+}
+.bandeauTravaux .compte{margin-left:auto;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:10px}
 
 
 </style>
@@ -546,6 +558,60 @@ async function majCinema(champs){
 /* format monnaie */
 function fmtArgent(n){ return Math.floor(n).toLocaleString("fr-FR") + " €"; }
 
+/* ==== STATUT TEMPS RÉEL ====
+   Le cinéma vit à l'heure du téléphone :
+   - ouvert de 13h00 à 23h30, fermé la nuit et le matin
+   - une salle en travaux (travaux_fin dans le futur) est indisponible
+   - tout le cinéma en travaux = fermé partiellement ou totalement */
+const OUVERTURE = {h:13, m:0};
+const FERMETURE = {h:23, m:30};
+
+function estOuvertMaintenant(){
+  const n = new Date();
+  const mins = n.getHours()*60 + n.getMinutes();
+  return mins >= OUVERTURE.h*60+OUVERTURE.m && mins < FERMETURE.h*60+FERMETURE.m;
+}
+
+function sallesEnTravaux(){
+  const liste = Etat.salles || [];
+  const now = Date.now();
+  return liste.filter(s => s.travaux_fin && new Date(s.travaux_fin).getTime() > now);
+}
+
+/* renvoie {code, libelle, pastille} — pastille: 'ouvert' | 'ferme' | 'travaux' */
+function statutCinema(){
+  const travaux = sallesEnTravaux();
+  const totalSalles = (Etat.salles || []).length || 1;
+  if(!estOuvertMaintenant()){
+    return {code:"ferme", pastille:"ferme",
+      libelle:"Fermé — réouverture à " + String(OUVERTURE.h).padStart(2,"0") + "h" + String(OUVERTURE.m).padStart(2,"0")};
+  }
+  if(travaux.length >= totalSalles && totalSalles > 0){
+    return {code:"travaux_total", pastille:"travaux",
+      libelle:"Fermé pour travaux — " + travaux.map(t=>t.nom).join(", ")};
+  }
+  if(travaux.length > 0){
+    return {code:"travaux_partiel", pastille:"travaux",
+      libelle:"Ouvert — travaux en " + travaux.map(t=>t.nom).join(" et ")};
+  }
+  return {code:"ouvert", pastille:"ouvert", libelle:"Ouvert — les portes sont grandes ouvertes"};
+}
+
+/* charge les salles dans l'état global (utilisé par toutes les pages pour le statut) */
+async function chargeSallesEtat(){
+  try{
+    const data = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
+    Etat.salles = Array.isArray(data) ? data : [];
+  }catch(e){ Etat.salles = Etat.salles || []; }
+  return Etat.salles;
+}
+
+function fmtCompte(ms){
+  const t = Math.max(0, Math.ceil(ms/1000));
+  const m = Math.floor(t/60), s = t%60;
+  return m + "m " + String(s).padStart(2,"0") + "s";
+}
+
 /* Header + nav basse injectés sur chaque page. initNavigation("jeu") */
 const PAGES_NAV = [
   {id:"jeu",   url:"jeu.html",           ic:"batiment",  label:"Cinéma"},
@@ -558,7 +624,7 @@ const PAGES_NAV = [
 function initNavigation(actif){
   const c = Etat.cinema || {logo:"", nom:"…", argent:0};
   const coin = `<svg viewBox="0 0 11 11"><path d="M1 10 L1 4 Q1 1 4 1 L10 1"/></svg>`;
-  const ouvert = Etat.jourStats?.ouvert;
+  const st = (typeof statutCinema==="function") ? statutCinema() : {pastille:"ferme", libelle:"Fermé"};
   const h = document.createElement("header");
   h.className = "entete";
   h.innerHTML = `
@@ -568,7 +634,7 @@ function initNavigation(actif){
       <span class="medaillon">${c.logo}</span>
       <span class="nomBloc">
         <span class="nomCine">${c.nom}</span>
-        <span class="sousH"><span class="pastilleH ${ouvert?'ouvertH':''}"></span>${ouvert?'Ouvert':'Fermé'} · Jour ${c.jour||1}</span>
+        <span class="sousH" id="sousStatut"><span class="pastilleH ${st.pastille==='ouvert'?'ouvertH':st.pastille==='travaux'?'travauxH':''}"></span>${st.pastille==='travaux'?'Travaux':st.pastille==='ouvert'?'Ouvert':'Fermé'} · Jour ${c.jour||1}</span>
       </span>
       <span class="stats">
         <span class="stat" id="statArgent">${icone("piece")} ${fmtArgent(c.argent)}</span>
@@ -583,6 +649,15 @@ function initNavigation(actif){
   ).join("");
   document.body.append(n);
 }
+
+function majStatutHeader(){
+  const el = document.getElementById("sousStatut");
+  if(!el || typeof statutCinema!=="function") return;
+  const st = statutCinema();
+  const c = Etat.cinema || {};
+  el.innerHTML = `<span class="pastilleH ${st.pastille==='ouvert'?'ouvertH':st.pastille==='travaux'?'travauxH':''}"></span>${st.pastille==='travaux'?'Travaux':st.pastille==='ouvert'?'Ouvert':'Fermé'} · Jour ${c.jour||1}`;
+}
+setInterval(()=>{ if(document.getElementById("sousStatut")) majStatutHeader(); }, 30000);
 
 function majHeaderArgent(){
   const el = document.getElementById("statArgent");
@@ -627,8 +702,11 @@ const CRENEAUX = ["14h00","17h00","20h00","22h15"];
 function filmParId(id){ return CATALOGUE_FILMS.find(f=>f.id===id); }
 
 
-/* Gestion des salles */
+/* Gestion des salles — les améliorations déclenchent de vrais travaux (temps réel) */
 let salles = [];
+const DUREES_TRAVAUX = { confort:8, ecran:12, son:10, deco:6, clim:20, agrandir:30 };  /* minutes réelles */
+function enTravaux(s){ return s.travaux_fin && new Date(s.travaux_fin).getTime() > Date.now(); }
+function finTravauxDans(s){ return new Date(s.travaux_fin).getTime() - Date.now(); }
 
 const AMELIORATIONS = [
   {id:"confort", nom:"Sièges",       ic:"fauteuil", max:5, cout:n=>120*n, effet:"+ satisfaction"},
@@ -645,13 +723,28 @@ const MAX_SALLES = 3;
 async function initSalles(){
   await chargeSalles();
   if(salles.length === 0) await creePremiereSalle();
+  Etat.salles = salles;
   rendSalles();
   document.getElementById("zoneBob").appendChild(bobCompact(conseilSalles()));
+  setInterval(ticTravaux, 1000);
+}
+
+function ticTravaux(){
+  let redessiner = false;
+  salles.forEach(s=>{
+    const el = document.getElementById("compte-"+s.id);
+    if(enTravaux(s)){
+      if(el) el.textContent = fmtCompte(finTravauxDans(s));
+      else redessiner = true;             /* travaux commencés ailleurs */
+    }else if(el){ redessiner = true; }    /* travaux terminés */
+  });
+  if(redessiner){ rendSalles(); majStatutHeader(); }
 }
 
 async function chargeSalles(){
   const data = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
   salles = Array.isArray(data) ? data : [];
+  Etat.salles = salles;
 }
 
 async function creePremiereSalle(){
@@ -705,10 +798,17 @@ function carteSalle(s){
   const coutAgr = COUT_AGRANDIR((s.agrandissements||0)+1);
   const agrandir = `<div class="ligneAmelio">${icone("batiment")}<span class="amTxt"><b>Agrandir</b><small>+${PLACES_AGRANDIR} places</small></span><button class="btnOr btnAm" onclick="agrandit('${s.id}')">${fmtArgent(coutAgr)}</button></div>`;
 
-  return `<section class="carteEcran carteSalle">
+  const travaux = enTravaux(s);
+  const bandeau = travaux ? `
+    <div class="bandeauTravaux">${icone("outil")} TRAVAUX EN COURS — salle fermée au public
+      <span class="compte" id="compte-${s.id}">${fmtCompte(finTravauxDans(s))}</span>
+    </div>` : "";
+  let html = `<section class="carteEcran carteSalle ${travaux?'salleTravaux':''}">
     <h2>${s.nom}<span class="capBadge">${icone("fauteuil")} ${s.capacite} places</span></h2>
-    ${lignesAm}${clim}${agrandir}
+    ${bandeau}${lignesAm}${clim}${agrandir}
   </section>`;
+  if(travaux) html = html.replaceAll('class="btnOr btnAm" onclick','class="btnOr btnAm" disabled onclick');
+  return html;
 }
 
 function rendNouvelleSalle(){
@@ -746,10 +846,11 @@ async function ameliore(id, quoi){
   if(s[quoi] >= a.max) return;
   const cout = a.cout(s[quoi]+1);
   if(!await paye(cout)) return;
-  await majSalle(id, {[quoi]: s[quoi]+1});
-  rendSalles();
+  const fin = new Date(Date.now() + DUREES_TRAVAUX[quoi]*60000).toISOString();
+  await majSalle(id, {[quoi]: s[quoi]+1, travaux_fin: fin});
+  rendSalles(); majStatutHeader();
   const PHRASES = {
-    confort:"Nouveaux sièges ! Le 12 grince toujours, mais par nostalgie.",
+    confort:"Nouveaux sièges ! 8 minutes de travaux — le 12 négocie son maintien.",
     ecran:"Écran flambant neuf. On voit même les défauts des films, maintenant.",
     son:"Le son ! Les voisins vont se plaindre. Signe de qualité.",
     deco:"Superbe. On dirait presque un cinéma de la capitale. Presque."
@@ -759,19 +860,21 @@ async function ameliore(id, quoi){
 
 async function installeClim(id){
   if(!await paye(COUT_CLIM)) return;
-  await majSalle(id, {clim:true});
-  rendSalles();
-  toastBob("Clim installée ! Elle fait un léger bruit d'avion. J'appelle ça l'immersion.");
+  const finC = new Date(Date.now() + DUREES_TRAVAUX.clim*60000).toISOString();
+  await majSalle(id, {clim:true, travaux_fin: finC});
+  rendSalles(); majStatutHeader();
+  toastBob("Clim en cours d'installation — 20 minutes de travaux. Elle fera un bruit d'avion. L'immersion.");
 }
 
 async function agrandit(id){
   const s = salles.find(x=>String(x.id)===String(id));
   const cout = COUT_AGRANDIR((s.agrandissements||0)+1);
   if(!await paye(cout)) return;
-  await majSalle(id, {capacite: s.capacite + PLACES_AGRANDIR, agrandissements:(s.agrandissements||0)+1});
+  const finA = new Date(Date.now() + DUREES_TRAVAUX.agrandir*60000).toISOString();
+  await majSalle(id, {capacite: s.capacite + PLACES_AGRANDIR, agrandissements:(s.agrandissements||0)+1, travaux_fin: finA});
   await majCinema({capacite: salles.reduce((t,x)=>t+x.capacite,0)});
-  rendSalles();
-  toastBob("+" + PLACES_AGRANDIR + " places ! J'ai poussé le mur moi-même. Enfin, avec des ouvriers. Enfin, je regardais.");
+  rendSalles(); majStatutHeader();
+  toastBob("+" + PLACES_AGRANDIR + " places ! 30 minutes de travaux. Je pousse le mur moi-même. Enfin, je supervise.");
 }
 
 async function construitSalle(){
@@ -794,6 +897,7 @@ async function construitSalle(){
   try{
     const c = await chargeCinema();
     if(!c) return;
+    await chargeSallesEtat();
     initNavigation("salles");
     await initSalles();
   }catch(e){
