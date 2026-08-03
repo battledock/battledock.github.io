@@ -1,3 +1,6 @@
+import { ANIMATIONS_LEGERES, quitteLieu } from "../ambiance.js";
+import { Etat } from "../game-state.js";
+import { confirmeOuverture, parleBob, phaseSelonHeure } from "../cinema.js";
 import { vitrine } from "./palettes.js";
 
 /* ============================================================
@@ -12,8 +15,9 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 let minuteurs = [];
 let vieActive = false;
 
-/* le décor est modeste sur un appareil modeste */
-const DENSITE = ANIMATIONS_LEGERES ? 0.35 : 1;
+/* le décor est modeste sur un appareil modeste.
+   Fonction et non constante : la valeur n'est lue qu'à l'usage. */
+function densite(){ return ANIMATIONS_LEGERES ? 0.35 : 1; }
 
 function planifie(fn, delai){
   const id = setTimeout(()=>{
@@ -51,7 +55,7 @@ function poseMeteo(svg, meteo){
   g.setAttribute("pointer-events", "none");
 
   if(meteo === "pluie"){
-    const n = Math.round(26 * DENSITE);
+    const n = Math.round(26 * densite());
     g.innerHTML = `<g class="pluie">${[...Array(n)].map(()=>{
       const x = Math.random()*520 - 20, d = (0.55 + Math.random()*0.5).toFixed(2);
       const r = (-Math.random()*1.4).toFixed(2), l = 9 + Math.random()*9;
@@ -72,7 +76,7 @@ function poseMeteo(svg, meteo){
     </g>`;
   }
   else if(meteo === "vent"){
-    const n = Math.round(7 * DENSITE);
+    const n = Math.round(7 * densite());
     g.innerHTML = `<g class="feuilles">${[...Array(n)].map((_,i)=>{
       const y = 340 + Math.random()*130, d = 6 + Math.random()*5;
       return `<path d="M0 0 q4 -3 7 0 q-3 4 -7 0Z" fill="#8c6a3a" opacity=".65"
@@ -285,7 +289,6 @@ function bobMeteo(){
 
 /* ---- exports ---- */
 export {
-  DENSITE,
   METEOS,
   SVG_NS,
   ZONES,
@@ -293,6 +296,7 @@ export {
   animeLeCinema,
   arreteLaVie,
   bobMeteo,
+  densite,
   fumee,
   meteoDuJour,
   minuteurs,
