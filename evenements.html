@@ -2466,6 +2466,72 @@ button:disabled{opacity:.5}
   font-family:'Outfit',system-ui,sans-serif;font-weight:300;
 }
 
+/* ============================================================
+   LA FAÇADE ÉVOLUTIVE — animations
+   ============================================================ */
+.facadeRiche{width:100%;display:block}
+
+/* passants */
+.passantR{animation-name:traverseR;animation-timing-function:linear;
+  animation-fill-mode:forwards;will-change:transform}
+@keyframes traverseR{from{transform:translate3d(var(--x0),0,0)}
+  to{transform:translate3d(var(--x1),0,0)}}
+.passantR.lointain{filter:blur(.55px)}
+.passantR .jambeA{animation:pasA var(--cad,.6s) ease-in-out infinite alternate;
+  transform-origin:0 -11.5px}
+.passantR .jambeB{animation:pasB var(--cad,.6s) ease-in-out infinite alternate;
+  transform-origin:0 -11.5px}
+@keyframes pasA{from{transform:rotate(17deg)}to{transform:rotate(-17deg)}}
+@keyframes pasB{from{transform:rotate(-17deg)}to{transform:rotate(17deg)}}
+.passantR .brasA{animation:brasA var(--cad,.6s) ease-in-out infinite alternate;
+  transform-origin:-5px -25.6px}
+.passantR .brasB{animation:brasB var(--cad,.6s) ease-in-out infinite alternate;
+  transform-origin:5px -25.6px}
+@keyframes brasA{from{transform:rotate(-13deg)}to{transform:rotate(13deg)}}
+@keyframes brasB{from{transform:rotate(13deg)}to{transform:rotate(-13deg)}}
+.passantR .corps{animation:tangage var(--cad,.6s) ease-in-out infinite alternate;
+  transform-origin:0 -11px}
+@keyframes tangage{from{transform:translateY(0)}to{transform:translateY(-.7px)}}
+
+/* enseigne et ampoules */
+.amp{animation:clig 3.4s ease-in-out infinite}
+.amp.a1{animation-delay:.85s}.amp.a2{animation-delay:1.7s}.amp.a3{animation-delay:2.55s}
+@keyframes clig{0%,100%{opacity:.42}50%{opacity:1}}
+.chenille{animation:defileAmp 1.4s linear infinite}
+@keyframes defileAmp{0%,100%{opacity:.25}18%{opacity:1}40%{opacity:.3}}
+.neonVivant{animation:respireNeon2 4.6s ease-in-out infinite}
+@keyframes respireNeon2{0%,100%{opacity:.93}50%{opacity:1}}
+.neonFatigue{animation:fatigueNeon 7s steps(2,end) infinite}
+@keyframes fatigueNeon{0%,92%,100%{opacity:1}94%{opacity:.42}96%{opacity:.95}98%{opacity:.55}}
+.lettreBlade{animation:blade 2.6s ease-in-out infinite}
+@keyframes blade{0%,100%{opacity:.85}50%{opacity:1}}
+
+/* ciel */
+.etoiles circle{animation:scintille 4s ease-in-out infinite}
+@keyframes scintille{0%,100%{opacity:.25}50%{opacity:.95}}
+.nuageA{animation:deriveNuage 90s linear infinite}
+.nuageB{animation:deriveNuage 130s linear infinite reverse}
+@keyframes deriveNuage{from{transform:translateX(-40px)}to{transform:translateX(480px)}}
+
+/* horloge, projecteurs, pigeons */
+.aiguilleM{animation:tourneM 60s linear infinite;transform-origin:0 0}
+@keyframes tourneM{to{transform:rotate(360deg)}}
+.faisceauA{transform-origin:112px 452px;animation:balayeA 9s ease-in-out infinite alternate}
+.faisceauB{transform-origin:368px 452px;animation:balayeB 11s ease-in-out infinite alternate}
+@keyframes balayeA{from{transform:rotate(-13deg)}to{transform:rotate(16deg)}}
+@keyframes balayeB{from{transform:rotate(14deg)}to{transform:rotate(-15deg)}}
+.pigeons g{animation:picore 4.2s ease-in-out infinite}
+@keyframes picore{0%,100%{transform:translateY(0)}
+  44%{transform:translateY(1.4px) rotate(6deg)}52%{transform:translateY(0)}}
+.vacille{animation:vacilleLampe 3.2s steps(2,end) infinite}
+@keyframes vacilleLampe{0%,72%,100%{opacity:1}76%{opacity:.15}80%{opacity:.9}86%{opacity:.3}}
+
+.animLegeres .etoiles circle,.animLegeres .nuageA,.animLegeres .nuageB,
+.animLegeres .faisceauA,.animLegeres .faisceauB,.animLegeres .pigeons g,
+.animLegeres .lettreBlade,.animLegeres .chenille{animation:none}
+.enPause .passantR,.enPause .amp,.enPause .faisceauA,.enPause .faisceauB,
+.enPause .etoiles circle,.enPause .nuageA,.enPause .nuageB{animation-play-state:paused}
+
 
 </style>
 </head>
@@ -3109,6 +3175,981 @@ function celebreTrophee(nom, description, icone_ = "etoile"){
     stop(); o.classList.add("sortie");
     setTimeout(()=>o.remove(), 340);
   }, 3400);
+}
+
+/* ============================================================
+   LA FAÇADE — version détaillée
+   viewBox 0 0 480 520. Tout est vectoriel, aucune image.
+   ============================================================ */
+
+const PALETTES = {
+  matin: {
+    ciel:["#8fb4d4","#c5d9e4","#e8dcc8"], soleil:"#fff4d8", soleilY:96, halo:.10,
+    mur:["#c9a882","#a8875f"], murOmbre:"#8a6c48", pierre:"#d8c0a0",
+    toit:"#5a4438", trottoir:["#c8c2b8","#a89e92"], route:["#4a4a4e","#3a3a3e"],
+    fenetres:"#6a8299", lumieres:false, ombreLong:1.6, ombreOpac:.20,
+    brume:"#e8dcc8", brumeOpac:.16, vignette:.22, immeubles:["#a89880","#8a7a64","#6e6050"]
+  },
+  aprem: {
+    ciel:["#6fa8d8","#a8cce0","#dfe4d8"], soleil:"#fffbe8", soleilY:60, halo:.06,
+    mur:["#d8b48c","#b8926a"], murOmbre:"#96745200", pierre:"#e8d4b4",
+    toit:"#63４a3c".replace("４","4"), trottoir:["#d4cec4","#b4aa9e"], route:["#525258","#424248"],
+    fenetres:"#7a92a9", lumieres:false, ombreLong:.7, ombreOpac:.26,
+    brume:"#dfe4d8", brumeOpac:.10, vignette:.18, immeubles:["#b8a890","#9a8a74","#7e7060"]
+  },
+  crepuscule: {
+    ciel:["#2e3a6e","#8a5a7a","#e08a5a"], soleil:"#ffb870", soleilY:300, halo:.34,
+    mur:["#8a6a5a","#6a4a44"], murOmbre:"#4a3230", pierre:"#a08472",
+    toit:"#3a2a2c", trottoir:["#7a6e6a","#5a5250"], route:["#32323a","#26262e"],
+    fenetres:"#ffcf8a", lumieres:true, ombreLong:2.4, ombreOpac:.16,
+    brume:"#c07a5a", brumeOpac:.20, vignette:.34, immeubles:["#5a4a52","#463a44","#332a34"]
+  },
+  nuit: {
+    ciel:["#0a1024","#141c38","#242c4a"], soleil:"#e8eeff", soleilY:80, halo:.52,
+    mur:["#3a2e34","#2a2028"], murOmbre:"#1e1620", pierre:"#4a3c40",
+    toit:"#1a1418", trottoir:["#3a3438","#282428"], route:["#1c1c22","#141418"],
+    fenetres:"#ffd89a", lumieres:true, ombreLong:1.2, ombreOpac:.10,
+    brume:"#3a4a6a", brumeOpac:.14, vignette:.5, immeubles:["#232030","#1a1826","#12111c"]
+  }
+};
+
+/* ------------------------------------------------------------
+   Petites fabriques réutilisables
+   ------------------------------------------------------------ */
+
+/* une fenêtre d'immeuble voisin, allumée ou non */
+function fenetreVoisin(x, y, l, h, P, allumee){
+  return `<rect x="${x}" y="${y}" width="${l}" height="${h}" rx="1"
+    fill="${allumee ? P.fenetres : "#1a1a22"}" opacity="${allumee ? .9 : .55}"/>`;
+}
+
+/* rangée d'ampoules sur un rail */
+function ampoules(x1, x2, y, n, r = 2.4){
+  const pas = (x2 - x1) / (n - 1);
+  return [...Array(n)].map((_,i)=>
+    `<circle cx="${(x1 + i*pas).toFixed(1)}" cy="${y}" r="${r}"
+      fill="url(#ampouleG)" class="amp a${i%4}"/>`).join("");
+}
+
+/* pilastre cannelé art déco */
+function pilastre(x, yHaut, yBas, l, P){
+  const n = 4, pas = l / (n + 1);
+  return `<g>
+    <rect x="${x}" y="${yHaut}" width="${l}" height="${yBas - yHaut}" fill="url(#pierreG)"/>
+    <rect x="${x}" y="${yHaut}" width="${l * .3}" height="${yBas - yHaut}" fill="#fff" opacity=".08"/>
+    <rect x="${x + l*.78}" y="${yHaut}" width="${l * .22}" height="${yBas - yHaut}"
+      fill="#000" opacity=".14"/>
+    ${[...Array(n)].map((_,i)=>
+      `<rect x="${(x + pas*(i+1) - .6).toFixed(1)}" y="${yHaut + 8}" width="1.2"
+        height="${yBas - yHaut - 16}" fill="#000" opacity=".16"/>`).join("")}
+    <!-- chapiteau -->
+    <rect x="${x - 2}" y="${yHaut - 6}" width="${l + 4}" height="6" fill="url(#pierreG)"/>
+    <rect x="${x - 3}" y="${yHaut - 9}" width="${l + 6}" height="3.5" fill="url(#orG)"/>
+    <!-- base -->
+    <rect x="${x - 2}" y="${yBas}" width="${l + 4}" height="7" fill="url(#pierreG)"/>
+    <rect x="${x - 2}" y="${yBas + 7}" width="${l + 4}" height="2" fill="#000" opacity=".2"/>
+  </g>`;
+}
+
+/* vitrine d'affiche avec reflet de verre */
+function vitrine(x, y, l, h, seance, lum){
+  const genre = (seance && seance.genre) || "défaut";
+  const COUL = {"Drame":"#1f3a5c","Aventure":"#1d5c52","Animation":"#4a3f8c",
+    "Documentaire":"#2a6b6b","Thriller familial":"#3a2a52","Comédie":"#c07a1f",
+    "Romance":"#a83a5c","défaut":"#5a2a34"};
+  const c = COUL[genre] || COUL["défaut"];
+  const t = (seance && seance.titre) || "";
+  const lignes = decoupe(t.toUpperCase(), 12).slice(0, 3);
+
+  return `<g>
+    <!-- caisson -->
+    <rect x="${x-4}" y="${y-4}" width="${l+8}" height="${h+8}" rx="2" fill="url(#laitonG)"/>
+    <rect x="${x-2}" y="${y-2}" width="${l+4}" height="${h+4}" rx="1" fill="#1a1218"/>
+    <!-- affiche -->
+    <rect x="${x}" y="${y}" width="${l}" height="${h}" fill="${c}"/>
+    <rect x="${x}" y="${y}" width="${l}" height="${h}" fill="url(#afficheG)"/>
+    ${seance ? `
+      <circle cx="${x + l/2}" cy="${y + h*.3}" r="${l*.22}" fill="#fff" opacity=".16"/>
+      ${lignes.map((ln,i)=>`<text x="${x + l/2}" y="${y + h*.62 + i*9}" text-anchor="middle"
+        font-family="Georgia" font-size="7" font-weight="bold" fill="#fdf3d2"
+        letter-spacing=".4">${ln}</text>`).join("")}
+      <text x="${x + l/2}" y="${y + h - 7}" text-anchor="middle" font-family="Courier New"
+        font-size="6.5" fill="#fdf3d2" opacity=".75" letter-spacing="1">${seance.heure || ""}</text>
+    ` : `<text x="${x + l/2}" y="${y + h/2}" text-anchor="middle" font-family="Courier New"
+        font-size="8" fill="#fdf3d2" opacity=".45" letter-spacing="1.5">PROCHAINEMENT</text>`}
+    <!-- reflet de verre -->
+    <path d="M${x} ${y+h} L${x + l*.55} ${y} L${x + l*.85} ${y} L${x + l*.3} ${y+h} Z"
+      fill="#fff" opacity=".07"/>
+    <path d="M${x + l*.72} ${y+h} L${x + l} ${y + h*.5} L${x+l} ${y + h*.68} L${x + l*.88} ${y+h} Z"
+      fill="#fff" opacity=".05"/>
+    ${lum ? `<rect x="${x}" y="${y}" width="${l}" height="${h}" fill="#ffdf9a" opacity=".07"/>` : ""}
+  </g>`;
+}
+
+function decoupe(t, max){
+  const mots = String(t).split(" "), out = []; let l = "";
+  mots.forEach(m=>{ if((l+" "+m).trim().length <= max) l = (l+" "+m).trim();
+                    else { if(l) out.push(l); l = m; } });
+  if(l) out.push(l);
+  return out;
+}
+
+/* ------------------------------------------------------------
+   LA FAÇADE COMPLÈTE
+   ------------------------------------------------------------ */
+
+/* ============================================================
+   LES DIX ÂGES DU CINÉMA
+   Au niveau 1 le cinéma tourne déjà : modeste, fatigué, mais
+   ouvert. Ensuite il se restaure, puis il devient un palace.
+   ============================================================ */
+
+const AGES = [
+  {
+    seuil:1, cle:"quartier", nom:"Le cinéma de quartier",
+    recit:"Une salle, un projecteur, une enseigne qui grésille un peu. Ça suffit pour ouvrir."
+  },
+  {
+    seuil:5, cle:"remis", nom:"Remis à neuf",
+    recit:"Peinture fraîche, vitres nettoyées. L'enseigne ne grésille plus."
+  },
+  {
+    seuil:10, cle:"auvent", nom:"Le vrai auvent",
+    recit:"L'auvent de tôle laisse place à un marquee en volume. On annonce les séances de loin."
+  },
+  {
+    seuil:15, cle:"lumieres", nom:"Les lumières",
+    recit:"Ampoules sous l'auvent, appliques à l'entrée, laiton poli. Le soir, on nous voit."
+  },
+  {
+    seuil:20, cle:"style", nom:"Le style revient",
+    recit:"Pilastres cannelés, filets dorés, corniche à gradins. Le bâtiment retrouve sa ligne."
+  },
+  {
+    seuil:25, cle:"palace", nom:"Le palace",
+    recit:"Couronnement art déco, éventail doré, tapis rouge et cordons. Le cinéma d'origine est revenu."
+  },
+  {
+    seuil:30, cle:"blade", nom:"L'enseigne verticale",
+    recit:"Une lame de néon monte le long de la façade. On la voit du bout de la rue."
+  },
+  {
+    seuil:35, cle:"guichet", nom:"Le guichet",
+    recit:"Une cabine de billetterie en saillie, une horloge au fronton. On fait la queue dehors."
+  },
+  {
+    seuil:40, cle:"etoiles", nom:"Les étoiles au sol",
+    recit:"Des dalles étoilées sur le trottoir, des portes dorées, une verrière au-dessus de l'entrée."
+  },
+  {
+    seuil:50, cle:"premiere", nom:"Le soir de première",
+    recit:"Deux projecteurs balaient le ciel, l'auvent défile en chenillard. C'est un événement."
+  }
+];
+
+function ageDuCinema(niveau){
+  const n = Math.max(1, Number(niveau) || 1);
+  let age = AGES[0];
+  for(const a of AGES){ if(n >= a.seuil) age = a; }
+  return age;
+}
+
+function etatBatiment(niveau){
+  const n = Math.max(1, Number(niveau) || 1);
+  const age = ageDuCinema(niveau);
+  const i = AGES.indexOf(age);
+  const suivant = AGES[i+1];
+  const dedans = suivant ? (n - age.seuil) / (suivant.seuil - age.seuil) : 1;
+
+  return {
+    age, index:i, dedans, niveau:n,
+
+    /* fatigue du bâtiment : jamais une ruine, juste un lieu qui a vécu */
+    usure: [.55, .34, .22, .14, .07, 0, 0, 0, 0, 0][i],
+
+    /* ---- ce qui existe dès le premier jour ---- */
+    enseigneComplete: true,
+    enseigneAllumee:  true,
+    vitrines:         true,
+    affiches:         true,
+    portes:           true,
+    marquee:          true,
+    lampadaires:      2,
+
+    /* ---- les marques du temps, qui disparaissent ---- */
+    enseigneGresille: i === 0,
+    peintureEcaillee: i <= 1,
+    rouille:          i <= 1,
+    herbes:           i === 0,
+    trottoirFissure:  i <= 1,
+    ampouleMorte:     i <= 1,
+    pigeons:          i <= 1,
+    echafaudage:      i === 1,
+
+    /* ---- ce qui s'ajoute avec les niveaux ---- */
+    marqueeVolume:    i >= 2,
+    texteMarquee:     i >= 2,
+    ampoulesMarquee:  i >= 3,
+    ampoulesEnseigne: i >= 3,
+    vitrinesLaiton:   i >= 3,
+    appliques:        i >= 3,
+    imposte:          i >= 3,
+    plaque:           i >= 2,
+    banc:             i >= 1,
+    jardiniere:       i >= 2,
+    corbeille:        i >= 1,
+    pilastres:        i >= 4,
+    filetsDores:      i >= 4,
+    couronnement:     Math.min(5, Math.max(1, i - 1)),
+    basReliefs:       i >= 5,
+    eventail:         i >= 5,
+    tapis:            i >= 5,
+    potelets:         i >= 5,
+
+    /* ---- au-delà du palace ---- */
+    enseigneVerticale: i >= 6,
+    fenetresEtage:     i >= 6,
+    guichet:           i >= 7,
+    horloge:           i >= 7,
+    fileDehors:        i >= 7,
+    etoilesSol:        i >= 8,
+    portesDorees:      i >= 8,
+    verriere:          i >= 8,
+    projecteursCiel:   i >= 9,
+    chenillard:        i >= 9,
+    tapisLong:         i >= 9
+  };
+}
+
+function murSelonEtat(P, E){
+  const melange = (a, b, t) => {
+    const h = c => [1,3,5].map(i=>parseInt(c.substr(i,2),16));
+    const [r1,g1,b1] = h(a), [r2,g2,b2] = h(b);
+    const m = (x,y)=>Math.round(x + (y-x)*t).toString(16).padStart(2,"0");
+    return "#" + m(r1,r2) + m(g1,g2) + m(b1,b2);
+  };
+  return {
+    clair: melange(P.mur[0], "#8a8272", E.usure * .8),
+    fonce: melange(P.mur[1], "#665e52", E.usure * .8),
+    pierre: melange(P.pierre, "#a09884", E.usure * .7)
+  };
+}
+
+/* ============================================================
+   FAÇADE ÉVOLUTIVE — le même bâtiment à travers six âges
+   ============================================================ */
+
+function dessineFacadeEvolutive(opts = {}){
+  const phase = opts.phase || "nuit";
+  const P = PALETTES[phase];
+  const E = etatBatiment(opts.niveau || 1);
+  const M = murSelonEtat(P, E);
+  const lum = P.lumieres;
+  const nomBrut = (opts.nom || "LE COSMOS").toUpperCase();
+  const logo = opts.logo || "★";
+  const seances = E.affiches ? (opts.seances || []) : [];
+  const tailleNom = nomBrut.length > 15 ? 17 : nomBrut.length > 11 ? 21 : 25;
+
+  /* les lettres tombent quand l'enseigne est ruinée */
+  const nom = nomBrut;
+  const enseigneVive = E.enseigneAllumee && lum;
+
+  /* ---------- fabriques dépendantes de l'état ---------- */
+  const ecaillure = (x, y, l, h) => E.peintureEcaillee
+    ? `<path d="M${x} ${y} l${l*.3} ${-h*.4} l${l*.5} ${h*.2} l${l*.2} ${h*.5} l${-l*.4} ${h*.3} Z"
+        fill="#000" opacity="${(.10 + E.usure*.10).toFixed(2)}"/>` : "";
+
+  const coulure = (x, y, h) => E.rouille
+    ? `<path d="M${x} ${y} q1.5 ${h*.5} 0 ${h}" stroke="#6a4a2a"
+        stroke-width="${(1 + E.usure).toFixed(1)}" fill="none"
+        opacity="${(.18 + E.usure*.22).toFixed(2)}"/>` : "";
+
+  return `
+<svg viewBox="0 0 480 520" class="facadeRiche" xmlns="http://www.w3.org/2000/svg"
+  role="img" aria-label="Façade du cinéma ${nomBrut}, ${E.age.nom}">
+<defs>
+  <linearGradient id="cielG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${P.ciel[0]}"/>
+    <stop offset=".55" stop-color="${P.ciel[1]}"/>
+    <stop offset="1" stop-color="${P.ciel[2]}"/>
+  </linearGradient>
+  <linearGradient id="murG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="${M.fonce}"/>
+    <stop offset=".35" stop-color="${M.clair}"/>
+    <stop offset="1" stop-color="${M.fonce}"/>
+  </linearGradient>
+  <linearGradient id="pierreG" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="${M.pierre}" stop-opacity=".55"/>
+    <stop offset=".4" stop-color="${M.pierre}"/>
+    <stop offset="1" stop-color="${P.murOmbre}"/>
+  </linearGradient>
+  <linearGradient id="orG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${E.usure > .5 ? "#8a7a5a" : "#f7dd9a"}"/>
+    <stop offset=".5" stop-color="${E.usure > .5 ? "#6a5a3a" : "#caa24a"}"/>
+    <stop offset="1" stop-color="${E.usure > .5 ? "#4a3e28" : "#8a6c2a"}"/>
+  </linearGradient>
+  <linearGradient id="laitonG" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="${E.rouille ? "#8a7a52" : "#e8cf8a"}"/>
+    <stop offset=".5" stop-color="${E.rouille ? "#5a4a2a" : "#a8862f"}"/>
+    <stop offset="1" stop-color="${E.rouille ? "#7a6a48" : "#d8bd76"}"/>
+  </linearGradient>
+  <linearGradient id="afficheG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#fff" stop-opacity=".2"/>
+    <stop offset=".5" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".3"/>
+  </linearGradient>
+  <linearGradient id="trottoirG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${P.trottoir[0]}"/><stop offset="1" stop-color="${P.trottoir[1]}"/>
+  </linearGradient>
+  <linearGradient id="routeG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="${P.route[0]}"/><stop offset="1" stop-color="${P.route[1]}"/>
+  </linearGradient>
+  <radialGradient id="ampouleG" cx=".4" cy=".35" r=".7">
+    <stop offset="0" stop-color="#fffdf0"/><stop offset=".5" stop-color="#ffdf9a"/>
+    <stop offset="1" stop-color="#e8a83a"/>
+  </radialGradient>
+  <radialGradient id="haloG" cx=".5" cy=".5" r=".5">
+    <stop offset="0" stop-color="#ffdf9a" stop-opacity=".55"/>
+    <stop offset=".45" stop-color="#ffc76a" stop-opacity=".18"/>
+    <stop offset="1" stop-color="#ffc76a" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="solHaloG" cx=".5" cy=".5" r=".5">
+    <stop offset="0" stop-color="#ffdf9a" stop-opacity=".4"/>
+    <stop offset="1" stop-color="#ffdf9a" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="vitreG" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="${enseigneVive ? "#4a3a28" : "#2a3038"}"/>
+    <stop offset=".5" stop-color="${enseigneVive ? "#7a5a30" : "#3a4048"}"/>
+    <stop offset="1" stop-color="${enseigneVive ? "#3a2a1c" : "#22282e"}"/>
+  </linearGradient>
+  <linearGradient id="tapisG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#a82b3d"/><stop offset="1" stop-color="#6e1424"/>
+  </linearGradient>
+  <linearGradient id="coneG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#ffe9b0" stop-opacity=".3"/>
+    <stop offset="1" stop-color="#ffe9b0" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="planchesG" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#8a6c48"/><stop offset="1" stop-color="#5a4430"/>
+  </linearGradient>
+  <radialGradient id="vignetteG" cx=".5" cy=".45" r=".72">
+    <stop offset=".55" stop-color="#000" stop-opacity="0"/>
+    <stop offset="1" stop-color="#000" stop-opacity="${P.vignette}"/>
+  </radialGradient>
+  <filter id="flouLeger" x="-20%" y="-20%" width="140%" height="140%">
+    <feGaussianBlur stdDeviation="1.6"/>
+  </filter>
+  <filter id="flouFort" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="5"/>
+  </filter>
+  <pattern id="grain" width="60" height="60" patternUnits="userSpaceOnUse">
+    ${[...Array(48)].map(()=>`<circle cx="${(Math.random()*60).toFixed(1)}"
+      cy="${(Math.random()*60).toFixed(1)}" r=".45" fill="#fff" opacity=".05"/>`).join("")}
+  </pattern>
+  <pattern id="salissure" width="80" height="80" patternUnits="userSpaceOnUse">
+    ${[...Array(10)].map(()=>`<ellipse cx="${(Math.random()*80).toFixed(0)}"
+      cy="${(Math.random()*80).toFixed(0)}" rx="${(6+Math.random()*14).toFixed(0)}"
+      ry="${(4+Math.random()*9).toFixed(0)}" fill="#2a2418"
+      opacity="${(.05 + Math.random()*.06).toFixed(3)}"/>`).join("")}
+  </pattern>
+</defs>
+
+<!-- ═══ CIEL ═══ -->
+<rect width="480" height="520" fill="url(#cielG)"/>
+${phase === "nuit" ? `<g class="etoiles">${[...Array(46)].map((_,i)=>
+  `<circle cx="${(Math.random()*480).toFixed(0)}" cy="${(Math.random()*190).toFixed(0)}"
+    r="${(0.5+Math.random()*0.9).toFixed(2)}" fill="#fff"
+    opacity="${(.3+Math.random()*.6).toFixed(2)}"
+    style="animation-delay:${(i*.17).toFixed(2)}s"/>`).join("")}</g>` : ""}
+
+${phase === "nuit"
+  ? `<g><circle cx="392" cy="${P.soleilY}" r="42" fill="#dfe8ff" opacity=".1" filter="url(#flouFort)"/>
+     <circle cx="392" cy="${P.soleilY}" r="19" fill="#eef2ff"/>
+     <circle cx="384" cy="${P.soleilY - 6}" r="17" fill="${P.ciel[0]}"/></g>`
+  : `<g><circle cx="${phase==="crepuscule"?96:368}" cy="${P.soleilY}" r="58"
+       fill="${P.soleil}" opacity=".2" filter="url(#flouFort)"/>
+     <circle cx="${phase==="crepuscule"?96:368}" cy="${P.soleilY}" r="${phase==="crepuscule"?26:19}"
+       fill="${P.soleil}" opacity=".9"/></g>`}
+
+<g opacity="${phase==="nuit"?.22:.5}">
+  <g class="nuageA">
+    <ellipse cx="120" cy="72" rx="46" ry="14" fill="#fff" opacity=".5"/>
+    <ellipse cx="150" cy="66" rx="34" ry="13" fill="#fff" opacity=".42"/>
+    <ellipse cx="96" cy="78" rx="28" ry="10" fill="#fff" opacity=".36"/>
+  </g>
+  <g class="nuageB">
+    <ellipse cx="344" cy="122" rx="54" ry="12" fill="#fff" opacity=".3"/>
+    <ellipse cx="376" cy="116" rx="30" ry="11" fill="#fff" opacity=".26"/>
+  </g>
+</g>
+
+<!-- ═══ VILLE ═══ -->
+<g opacity=".55">
+  <path d="M0 208 L28 208 L28 176 L56 176 L56 196 L92 196 L92 164 L124 164 L124 200
+           L166 200 L166 182 L200 182 L200 206 L246 206 L246 172 L282 172 L282 198
+           L324 198 L324 178 L360 178 L360 202 L410 202 L410 186 L452 186 L452 204
+           L480 204 L480 260 L0 260 Z" fill="${P.immeubles[2]}"/>
+</g>
+<g opacity=".78">
+  <path d="M0 230 L44 230 L44 202 L88 202 L88 222 L132 222 L132 194 L182 194 L182 226
+           L232 226 L232 208 L286 208 L286 232 L340 232 L340 200 L392 200 L392 228
+           L446 228 L446 214 L480 214 L480 280 L0 280 Z" fill="${P.immeubles[1]}"/>
+  ${lum ? [...Array(26)].map(()=>fenetreVoisin((Math.random()*470).toFixed(0),
+    (212+Math.random()*54).toFixed(0), 3, 4, P, Math.random()<.6)).join("") : ""}
+</g>
+<g>
+  <rect x="0" y="188" width="72" height="196" fill="${P.immeubles[0]}"/>
+  <rect x="0" y="184" width="72" height="6" fill="${P.toit}"/>
+  ${[0,1,2,3].map(r=>[0,1,2].map(c=>
+    fenetreVoisin(9 + c*22, 204 + r*40, 13, 22, P, lum && Math.random()<.62)).join("")).join("")}
+  <rect x="408" y="176" width="72" height="208" fill="${P.immeubles[0]}"/>
+  <rect x="408" y="172" width="72" height="6" fill="${P.toit}"/>
+  ${[0,1,2,3,4].map(r=>[0,1].map(c=>
+    fenetreVoisin(422 + c*26, 192 + r*38, 15, 22, P, lum && Math.random()<.55)).join("")).join("")}
+  <rect x="404" y="176" width="4" height="208" fill="${P.toit}" opacity=".7"/>
+</g>
+<rect x="0" y="180" width="480" height="120" fill="${P.brume}" opacity="${P.brumeOpac}"/>
+
+<!-- ═══ LE CINÉMA ═══ -->
+<g>
+  <!-- couronnement : un gradin de plus par âge -->
+  ${E.couronnement >= 1 ? `<rect x="86" y="118" width="308" height="14" fill="url(#pierreG)"/>` : ""}
+  ${E.couronnement >= 2 ? `<rect x="98" y="104" width="284" height="16" fill="url(#pierreG)"/>` : ""}
+  ${E.couronnement >= 3 ? `<rect x="118" y="88" width="244" height="18" fill="url(#pierreG)"/>` : ""}
+  ${E.couronnement >= 4 ? `<rect x="152" y="72" width="176" height="18" fill="url(#pierreG)"/>` : ""}
+  ${E.couronnement >= 5 ? `<rect x="196" y="58" width="88" height="16" fill="url(#pierreG)"/>` : ""}
+  ${E.filetsDores ? `<g fill="url(#orG)">
+    <rect x="86" y="130" width="308" height="3"/>
+    ${E.couronnement>=2?`<rect x="98" y="118" width="284" height="2"/>`:""}
+    ${E.couronnement>=3?`<rect x="118" y="104" width="244" height="2"/>`:""}
+    ${E.couronnement>=4?`<rect x="152" y="88" width="176" height="2"/>`:""}
+    ${E.couronnement>=5?`<rect x="196" y="72" width="88" height="2"/>`:""}
+  </g>` : ""}
+  ${E.eventail ? `<g transform="translate(240 58)">
+    ${[...Array(7)].map((_,i)=>{
+      const a = -90 + (i-3)*15;
+      return `<path d="M0 0 L${(Math.cos(a*Math.PI/180)*30).toFixed(1)}
+        ${(Math.sin(a*Math.PI/180)*30).toFixed(1)}" stroke="url(#orG)" stroke-width="2.4"
+        stroke-linecap="round" opacity=".8"/>`;}).join("")}
+    <circle cx="0" cy="0" r="5" fill="url(#orG)"/>
+  </g>` : ""}
+
+  <!-- corps -->
+  <rect x="86" y="132" width="308" height="248" fill="url(#murG)"/>
+  <g stroke="#000" stroke-opacity=".07" stroke-width="1">
+    ${[...Array(9)].map((_,i)=>`<path d="M86 ${146+i*26} L394 ${146+i*26}"/>`).join("")}
+  </g>
+  ${E.usure > .05 ? `<rect x="86" y="132" width="308" height="248" fill="url(#salissure)"
+    opacity="${(E.usure).toFixed(2)}"/>` : ""}
+  <rect x="86" y="132" width="308" height="16" fill="#000" opacity=".18"/>
+  ${ecaillure(120, 200, 40, 30)}${ecaillure(300, 250, 46, 34)}${ecaillure(180, 320, 34, 26)}
+  ${coulure(96, 148, 60)}${coulure(384, 148, 74)}${coulure(240, 210, 40)}
+
+  <!-- pilastres -->
+  ${E.pilastres ? `
+    ${pilastre(92, 148, 340, 20, {pierre:M.pierre, murOmbre:P.murOmbre})}
+    ${pilastre(368, 148, 340, 20, {pierre:M.pierre, murOmbre:P.murOmbre})}
+    ${pilastre(150, 152, 214, 12, {pierre:M.pierre, murOmbre:P.murOmbre})}
+    ${pilastre(318, 152, 214, 12, {pierre:M.pierre, murOmbre:P.murOmbre})}`
+  : `<g opacity=".5">
+      <rect x="92" y="148" width="20" height="192" fill="url(#pierreG)"/>
+      <rect x="368" y="148" width="20" height="192" fill="url(#pierreG)"/>
+    </g>`}
+  ${E.basReliefs ? `<g opacity=".35" fill="${M.pierre}">
+    <path d="M176 168 l14 -12 l14 12 l-14 12 Z"/>
+    <path d="M276 168 l14 -12 l14 12 l-14 12 Z"/>
+  </g>` : ""}
+
+  <!-- ═══ ENSEIGNE ═══ -->
+  <g>
+    <rect x="118" y="150" width="244" height="52" rx="3"
+      fill="#1a1218" opacity="${E.enseigneComplete ? .85 : .6}"/>
+    <rect x="118" y="150" width="244" height="52" rx="3" fill="none"
+      stroke="url(#orG)" stroke-width="2" opacity="${E.enseigneComplete ? 1 : .5}"/>
+    ${enseigneVive ? `<rect x="122" y="154" width="236" height="44" rx="2"
+      fill="url(#haloG)" filter="url(#flouLeger)"/>` : ""}
+    <text x="240" y="186" text-anchor="middle" font-family="Marcellus, Georgia"
+      font-size="${tailleNom}" letter-spacing="4"
+      fill="${enseigneVive ? "#ffe9b0" : E.enseigneComplete ? "#e8dcc4" : "#7a6e60"}"
+      class="${E.enseigneGresille && lum ? "neonFatigue" : enseigneVive ? "neonVivant" : ""}"
+      ${enseigneVive ? 'style="filter:drop-shadow(0 0 8px rgba(255,200,110,.85))"' : ""}>${logo} ${nom}</text>
+    ${E.ampouleMorte ? `<circle cx="196" cy="150" r="2" fill="#4a4238" opacity=".8"/>
+      <circle cx="301" cy="202" r="2" fill="#4a4238" opacity=".8"/>` : ""}
+    ${E.ampoulesEnseigne ? ampoules(126, 354, 150, 14, 2.2) + ampoules(126, 354, 202, 14, 2.2)
+      : `<g fill="#4a4238" opacity=".6">
+          ${[...Array(14)].map((_,i)=>`<circle cx="${126 + i*17.5}" cy="150" r="2"/>`).join("")}
+        </g>`}
+  </g>
+
+  <!-- ═══ MARQUEE ═══ -->
+  ${E.marquee ? `<g>
+    ${E.marqueeVolume ? `
+      <path d="M96 262 L384 262 L360 284 L120 284 Z"
+        fill="${enseigneVive ? "#4a3418" : "#2a2018"}"/>
+      ${enseigneVive ? `<path d="M96 262 L384 262 L360 284 L120 284 Z" fill="url(#haloG)"/>` : ""}
+      ${E.ampoulesMarquee ? (E.chenillard
+        ? ampoulesChenillard(132, 348, 274, 12, 2.8) : ampoules(132, 348, 274, 12, 2.8)) : ""}
+      <path d="M92 232 L388 232 L384 262 L96 262 Z" fill="url(#pierreG)"/>
+      <rect x="92" y="228" width="296" height="6" rx="2" fill="url(#orG)"/>
+      <path d="M92 232 L96 262 L120 284 L112 284 L88 258 Z" fill="#000" opacity=".22"/>`
+    : `<!-- auvent simple, encore de guingois -->
+      <path d="M96 236 L384 232 L380 258 L100 262 Z" fill="url(#pierreG)" opacity=".92"/>
+      <path d="M96 236 L384 232 L384 236 L96 240 Z" fill="url(#orG)" opacity=".5"/>
+      ${coulure(140, 258, 22)}${coulure(320, 256, 26)}`}
+    ${E.texteMarquee ? `<text x="240" y="252" text-anchor="middle" font-family="Courier New"
+      font-size="11" letter-spacing="2.5" font-weight="bold"
+      fill="${enseigneVive ? "#241a12" : "#3a2c22"}">${seances.length
+        ? "CE SOIR " + (seances[0].heure || "").replace("h","H") : "PROCHAINEMENT"}</text>` : ""}
+  </g>` : ""}
+
+  <!-- ═══ VITRINES ═══ -->
+  ${vitrineEtat(104, 296, 62, 92, seances[0], enseigneVive, E)}
+  ${vitrineEtat(314, 296, 62, 92, seances[1], enseigneVive, E)}
+  ${E.verriere ? `<g>
+    <path d="M170 286 L310 286 L322 272 L158 272 Z" fill="#9fc4d8" opacity=".22"/>
+    <path d="M170 286 L310 286 L322 272 L158 272 Z" fill="none" stroke="url(#orG)" stroke-width="2"/>
+    <g stroke="url(#orG)" stroke-width="1.2" opacity=".7">
+      <path d="M198 286 L192 272"/><path d="M240 286 L240 272"/><path d="M282 286 L288 272"/>
+    </g>
+    ${enseigneVive ? `<path d="M170 286 L310 286 L322 272 L158 272 Z" fill="#ffdf9a" opacity=".1"/>` : ""}
+  </g>` : ""}
+
+  <!-- ═══ ENTRÉE ═══ -->
+  <g>
+    <path d="M178 288 L302 288 L292 300 L188 300 Z" fill="#000" opacity=".3"/>
+    <rect x="180" y="296" width="120" height="92" fill="#100a10"/>
+    ${enseigneVive ? `<rect x="184" y="300" width="112" height="84" fill="#ffdf9a" opacity=".1"/>` : ""}
+    <rect x="184" y="300" width="54" height="84" rx="2" fill="url(#vitreG)"
+      stroke="${E.portesDorees ? "url(#orG)" : "url(#laitonG)"}" stroke-width="${E.portesDorees ? 3 : 2}"/>
+    <rect x="242" y="300" width="54" height="84" rx="2" fill="url(#vitreG)"
+      stroke="${E.portesDorees ? "url(#orG)" : "url(#laitonG)"}" stroke-width="${E.portesDorees ? 3 : 2}"/>
+    <path d="M190 380 L216 304 L226 304 L200 380 Z" fill="#fff" opacity=".08"/>
+    <path d="M248 380 L274 304 L284 304 L258 380 Z" fill="#fff" opacity=".08"/>
+    <rect x="228" y="332" width="4" height="24" rx="2"
+      fill="${E.portesDorees ? "url(#orG)" : "url(#laitonG)"}"/>
+    <rect x="248" y="332" width="4" height="24" rx="2"
+      fill="${E.portesDorees ? "url(#orG)" : "url(#laitonG)"}"/>
+    ${E.portesDorees ? `<g opacity=".55">
+      <path d="M196 314 l10 -8 l10 8 l-10 8 Z M264 314 l10 -8 l10 8 l-10 8 Z" fill="url(#orG)"/>
+    </g>` : ""}
+    ${E.imposte ? `<rect x="184" y="290" width="112" height="8" fill="url(#laitonG)" opacity=".8"/>` : ""}
+    ${E.appliques ? [168, 306].map(x=>`<g transform="translate(${x} 312)">
+      <path d="M0 0 l7 -9 l7 9 l-3 14 l-8 0 Z" fill="url(#laitonG)"/>
+      ${lum ? `<circle cx="7" cy="6" r="9" fill="url(#haloG)"/>
+        <circle cx="7" cy="4" r="3" fill="#fff4d0" class="amp"/>` : ""}
+    </g>`).join("") : ""}
+  </g>
+
+  ${E.plaque ? `<g transform="translate(322 356)">
+    <rect x="0" y="0" width="52" height="17" rx="2" fill="url(#laitonG)"/>
+    <rect x="1.5" y="1.5" width="49" height="14" rx="1.5" fill="none"
+      stroke="#6a5220" stroke-width=".8"/>
+    <text x="26" y="11.5" text-anchor="middle" font-family="Courier New" font-size="5.4"
+      letter-spacing=".3" fill="#3a2408">CINEMA DU QUARTIER</text>
+  </g>` : ""}
+
+
+  <!-- ═══ ENSEIGNE VERTICALE ═══ -->
+  ${E.enseigneVerticale ? `<g>
+    <rect x="60" y="126" width="34" height="196" rx="4" fill="#1a1218"
+      stroke="url(#orG)" stroke-width="2.4"/>
+    <rect x="60" y="126" width="34" height="196" rx="4" fill="none"
+      stroke="url(#orG)" stroke-width="1" opacity=".5" transform="translate(2 2)"/>
+    ${lum ? `<rect x="63" y="129" width="28" height="190" rx="3" fill="url(#haloG)"
+      filter="url(#flouLeger)"/>` : ""}
+    ${(opts.nom || "CINE").toUpperCase().replace(/[^A-Z]/g,"").slice(0,8).split("").map((c,k)=>
+      `<text x="77" y="${152 + k*23}" text-anchor="middle" font-family="Marcellus, Georgia"
+        font-size="17" fill="${lum ? "#ffe9b0" : "#c8bca4"}"
+        ${lum ? 'style="filter:drop-shadow(0 0 6px rgba(255,200,110,.8))"' : ""}
+        class="${lum ? "lettreBlade" : ""}" style="animation-delay:${(k*.22).toFixed(2)}s">${c}</text>`
+      ).join("")}
+    <path d="M60 126 l17 -16 l17 16 Z" fill="url(#orG)"/>
+    ${[...Array(9)].map((_,k)=>`<circle cx="56" cy="${140 + k*21}" r="2"
+      fill="url(#ampouleG)" class="amp a${k%4}"/>
+      <circle cx="98" cy="${140 + k*21}" r="2" fill="url(#ampouleG)" class="amp a${(k+2)%4}"/>`).join("")}
+  </g>` : ""}
+
+  <!-- ═══ HORLOGE DE FRONTON ═══ -->
+  ${E.horloge ? `<g transform="translate(240 106)">
+    <circle cx="0" cy="0" r="21" fill="#1a1218" stroke="url(#orG)" stroke-width="2.6"/>
+    <circle cx="0" cy="0" r="17" fill="${lum ? "#3a2a18" : "#2a2620"}"/>
+    ${[...Array(12)].map((_,k)=>{
+      const a = k*30*Math.PI/180;
+      return `<line x1="${(Math.sin(a)*14).toFixed(1)}" y1="${(-Math.cos(a)*14).toFixed(1)}"
+        x2="${(Math.sin(a)*16).toFixed(1)}" y2="${(-Math.cos(a)*16).toFixed(1)}"
+        stroke="url(#orG)" stroke-width="1.4"/>`;}).join("")}
+    <line x1="0" y1="0" x2="0" y2="-9" stroke="#e8dcc4" stroke-width="2" stroke-linecap="round"
+      class="aiguilleH"/>
+    <line x1="0" y1="0" x2="9" y2="2" stroke="#e8dcc4" stroke-width="1.4" stroke-linecap="round"
+      class="aiguilleM"/>
+    <circle cx="0" cy="0" r="2" fill="url(#orG)"/>
+  </g>` : ""}
+
+  <!-- ═══ FENÊTRES D'ÉTAGE ═══ -->
+  ${E.fenetresEtage ? `<g>
+    ${[126, 186, 246, 306].map(x=>`<g>
+      <rect x="${x}" y="206" width="28" height="18" rx="2" fill="${lum ? "#ffcf8a" : "#4a5058"}"
+        opacity="${lum ? .85 : .6}"/>
+      <rect x="${x-2}" y="204" width="32" height="3" fill="url(#pierreG)"/>
+      <rect x="${x-2}" y="224" width="32" height="3" fill="url(#pierreG)"/>
+      <line x1="${x+14}" y1="206" x2="${x+14}" y2="224" stroke="#2a2620" stroke-width="1.2"/>
+    </g>`).join("")}
+  </g>` : ""}
+
+  ${E.echafaudage ? `<g opacity=".85">
+    <g stroke="#6a6258" stroke-width="2.6" fill="none">
+      <path d="M96 380 L96 210 M136 380 L136 210 M344 380 L344 210 M384 380 L384 210"/>
+      <path d="M92 300 L140 300 M340 300 L388 300"/>
+      <path d="M92 244 L140 244 M340 244 L388 244"/>
+      <path d="M96 300 L136 244 M344 300 L384 244"/>
+    </g>
+    <rect x="92" y="294" width="48" height="6" fill="#8a6c48"/>
+    <rect x="340" y="294" width="48" height="6" fill="#8a6c48"/>
+    <rect x="92" y="238" width="48" height="6" fill="#8a6c48"/>
+    <rect x="340" y="238" width="48" height="6" fill="#8a6c48"/>
+  </g>` : ""}
+</g>
+
+<!-- ═══ TROTTOIR ═══ -->
+<g>
+  <path d="M0 384 L480 384 L480 452 L0 452 Z" fill="url(#trottoirG)"/>
+  <g stroke="#000" stroke-opacity=".12" stroke-width="1.2">
+    ${[...Array(11)].map((_,i)=>{
+      const xh = i*48, xb = (i - 5.5)*72 + 240;
+      return `<path d="M${xh} 384 L${xb.toFixed(0)} 452"/>`;}).join("")}
+    <path d="M0 404 L480 404"/><path d="M0 426 L480 426"/>
+  </g>
+  ${E.trottoirFissure ? `<g stroke="#000" stroke-opacity=".26" stroke-width="1.6" fill="none">
+    <path d="M42 392 l18 14 l-8 12 l22 16"/>
+    <path d="M396 400 l-16 12 l12 14 l-18 14"/>
+    <path d="M150 436 l24 8 l-10 8"/>
+  </g>` : ""}
+  ${E.herbes ? `<g opacity="${(.55 + E.usure*.35).toFixed(2)}">
+    ${[70, 196, 268, 366, 430].map(x=>`<g transform="translate(${x} 388)">
+      <path d="M0 0 q-3 -9 -1 -14 M2 0 q2 -11 5 -15 M-3 0 q-5 -7 -8 -10"
+        stroke="#5a7a3a" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </g>`).join("")}
+    <path d="M86 384 q10 -8 22 -2 q-8 4 -22 2" fill="#4a6b32" opacity=".7"/>
+    <path d="M372 384 q12 -9 24 -3 q-10 5 -24 3" fill="#4a6b32" opacity=".6"/>
+  </g>` : ""}
+  <path d="M0 452 L480 452 L480 462 L0 462 Z" fill="${P.trottoir[1]}"/>
+  <path d="M0 462 L480 462 L480 466 L0 466 Z" fill="#000" opacity=".28"/>
+</g>
+
+<!-- ═══ ÉTOILES DU TROTTOIR ═══ -->
+${E.etoilesSol ? `<g opacity=".8">
+  ${[[112,412],[152,432],[352,414],[392,436],[72,428]].map(([x,y],k)=>`<g transform="translate(${x} ${y})">
+    <circle cx="0" cy="0" r="13" fill="#2a2620" opacity=".55"/>
+    <path d="M0 -10 L2.8 -3 L10 -3 L4.4 1.4 L6.6 8.6 L0 4.4 L-6.6 8.6 L-4.4 1.4 L-10 -3 L-2.8 -3 Z"
+      fill="url(#orG)"/>
+  </g>`).join("")}
+</g>` : ""}
+
+<!-- ═══ GUICHET ═══ -->
+${E.guichet ? `<g transform="translate(206 372)">
+  <ellipse cx="34" cy="46" rx="42" ry="7" fill="#000" opacity=".3"/>
+  <path d="M0 8 L68 8 L62 46 L6 46 Z" fill="url(#pierreG)"/>
+  <path d="M-4 0 L72 0 L68 10 L0 10 Z" fill="url(#orG)"/>
+  <path d="M10 16 L58 16 L54 38 L14 38 Z" fill="${lum ? "#5a4020" : "#2a3038"}"
+    stroke="url(#laitonG)" stroke-width="1.6"/>
+  ${lum ? `<path d="M10 16 L58 16 L54 38 L14 38 Z" fill="#ffdf9a" opacity=".22"/>
+    <circle cx="34" cy="4" r="12" fill="url(#haloG)"/>` : ""}
+  <path d="M22 38 L46 38 L45 42 L23 42 Z" fill="url(#laitonG)"/>
+  <text x="34" y="30" text-anchor="middle" font-family="Courier New" font-size="6.5"
+    letter-spacing=".8" fill="${lum ? "#f7dd9a" : "#8a8278"}">CAISSE</text>
+</g>` : ""}
+
+${E.tapis ? `<g>
+  <path d="M186 388 L294 388 L${E.tapisLong ? 340 : 322} 452 L${E.tapisLong ? 140 : 158} 452 Z"
+    fill="url(#tapisG)"/>
+  <path d="M190 388 L${E.tapisLong ? 144 : 162} 452 M290 388 L${E.tapisLong ? 336 : 318} 452"
+    stroke="#e8b84b" stroke-width="2.4" opacity=".7"/>
+  <path d="M186 388 L294 388 L292 394 L188 394 Z" fill="#fff" opacity=".08"/>
+</g>` : ""}
+
+<!-- ═══ ROUTE ═══ -->
+<g>
+  <path d="M0 466 L480 466 L480 520 L0 520 Z" fill="url(#routeG)"/>
+  <g stroke="#c8c0a8" stroke-opacity="${E.usure > .6 ? ".14" : ".3"}" stroke-width="3"
+     stroke-dasharray="26 22"><path d="M0 500 L480 500"/></g>
+  <ellipse cx="72" cy="478" rx="15" ry="5" fill="#000" opacity=".3"/>
+  <ellipse cx="72" cy="477" rx="13" ry="4" fill="${P.route[0]}"/>
+  ${enseigneVive ? `<g opacity=".2" filter="url(#flouFort)">
+    <ellipse cx="240" cy="486" rx="110" ry="18" fill="#ffdf9a"/>
+    <ellipse cx="240" cy="504" rx="70" ry="11" fill="#ffc76a"/>
+  </g>` : ""}
+</g>
+
+<!-- ═══ MOBILIER ═══ -->
+<g>
+  <!-- lampadaire gauche : cassé au premier âge -->
+  <g transform="translate(56 384)">
+    <ellipse cx="0" cy="4" rx="11" ry="3.5" fill="#000" opacity=".26"/>
+    <rect x="-4" y="-2" width="8" height="6" rx="1.5" fill="#2a2620"/>
+    <rect x="-2" y="-96" width="4" height="96" fill="#2e2a22"/>
+    <rect x="-2" y="-96" width="1.4" height="96" fill="#fff" opacity=".12"/>
+    <path d="M0 -96 q0 -12 14 -12" stroke="#2e2a22" stroke-width="4" fill="none"/>
+    <path d="M8 -108 l14 0 l4 12 l-22 0 Z" fill="#2e2a22"/>
+    ${lum && !E.lampadaireCasse ? `<circle cx="15" cy="-98" r="26" fill="url(#haloG)"/>
+      <path d="M6 -95 L24 -95 L44 -6 L-14 -6 Z" fill="url(#coneG)"/>
+      <ellipse cx="15" cy="-2" rx="34" ry="9" fill="url(#solHaloG)"/>
+      <circle cx="15" cy="-97" r="4" fill="#fff4d0"/>` : ""}
+    ${lum && E.lampadaireCasse ? `<circle cx="15" cy="-98" r="14" fill="url(#haloG)" class="vacille"/>
+      <circle cx="15" cy="-97" r="2.6" fill="#fff4d0" class="vacille"/>
+      <path d="M9 -104 l5 5 M20 -103 l-5 5" stroke="#1a1a1a" stroke-width="1"/>` : ""}
+  </g>
+  ${E.lampadaires >= 2 ? `<g transform="translate(424 384)">
+    <ellipse cx="0" cy="4" rx="11" ry="3.5" fill="#000" opacity=".26"/>
+    <rect x="-4" y="-2" width="8" height="6" rx="1.5" fill="#2a2620"/>
+    <rect x="-2" y="-88" width="4" height="88" fill="#2e2a22"/>
+    <path d="M0 -88 q0 -12 -14 -12" stroke="#2e2a22" stroke-width="4" fill="none"/>
+    <path d="M-8 -100 l-14 0 l-4 12 l22 0 Z" fill="#2e2a22"/>
+    ${lum ? `<circle cx="-15" cy="-90" r="24" fill="url(#haloG)"/>
+      <path d="M-6 -87 L-24 -87 L-42 -6 L14 -6 Z" fill="url(#coneG)"/>
+      <ellipse cx="-15" cy="-2" rx="30" ry="8" fill="url(#solHaloG)"/>
+      <circle cx="-15" cy="-89" r="3.6" fill="#fff4d0"/>` : ""}
+  </g>` : ""}
+
+  ${E.banc ? `<g transform="translate(374 410)">
+    <ellipse cx="20" cy="22" rx="26" ry="4" fill="#000" opacity=".24"/>
+    <rect x="0" y="0" width="40" height="4" rx="2" fill="#7a5a3a"/>
+    <rect x="0" y="6" width="40" height="4" rx="2" fill="#8a6642"/>
+    <rect x="2" y="10" width="4" height="12" fill="#3a3630"/>
+    <rect x="34" y="10" width="4" height="12" fill="#3a3630"/>
+    <rect x="0" y="-10" width="40" height="3.4" rx="1.7" fill="#7a5a3a"/>
+    <rect x="1" y="-10" width="3" height="12" fill="#3a3630"/>
+    <rect x="36" y="-10" width="3" height="12" fill="#3a3630"/>
+  </g>` : ""}
+  ${E.jardiniere ? `<g transform="translate(86 402)">
+    <ellipse cx="14" cy="30" rx="18" ry="4" fill="#000" opacity=".24"/>
+    <path d="M2 12 L26 12 L23 30 L5 30 Z" fill="#8a6a4a"/>
+    <rect x="0" y="9" width="28" height="5" rx="1.5" fill="#9a7a58"/>
+    <path d="M14 12 q-13 -14 -4 -26 q9 9 4 26" fill="#3d6b3a"/>
+    <path d="M14 12 q13 -16 5 -30 q-11 11 -5 30" fill="#4a7d46"/>
+    <path d="M14 12 q-18 -6 -18 -20 q15 6 18 20" fill="#35603a"/>
+  </g>` : ""}
+  ${E.potelets ? `<g>
+    ${[152, 200, 280, 328].map(x=>`<g transform="translate(${x} 400)">
+      <ellipse cx="0" cy="30" rx="6" ry="2.4" fill="#000" opacity=".24"/>
+      <rect x="-2.6" y="0" width="5.2" height="30" rx="2.6" fill="url(#laitonG)"/>
+      <circle cx="0" cy="-2" r="4" fill="url(#laitonG)"/>
+    </g>`).join("")}
+    <path d="M152 398 q24 12 48 0 M280 398 q24 12 48 0" stroke="#8c1f2e"
+      stroke-width="3" fill="none" opacity=".85"/>
+  </g>` : ""}
+  ${E.corbeille ? `<g transform="translate(444 416)">
+    <ellipse cx="8" cy="24" rx="11" ry="3" fill="#000" opacity=".22"/>
+    <path d="M0 0 L16 0 L14 24 L2 24 Z" fill="#3a3630"/>
+    <rect x="-1" y="-2" width="18" height="3.4" rx="1.7" fill="#4a4640"/>
+  </g>` : ""}
+  ${E.pigeons ? `<g class="pigeons">
+    ${[[142,382],[168,381],[402,383]].map(([x,y],i)=>`<g transform="translate(${x} ${y})"
+      style="animation-delay:${(i*1.7).toFixed(1)}s">
+      <ellipse cx="0" cy="-3" rx="5" ry="3.4" fill="#6a6a72"/>
+      <circle cx="4.4" cy="-6" r="2.4" fill="#5a5a64"/>
+      <path d="M6.6 -6.2 l2.4 .8 l-2.4 .8 Z" fill="#c08a3a"/>
+      <path d="M-5 -3 l-3.4 1.4 l3 1.4 Z" fill="#5a5a64"/>
+      <path d="M-1 0 l0 3 M2 0 l0 3" stroke="#c08a3a" stroke-width=".9"/>
+    </g>`).join("")}
+  </g>` : ""}
+</g>
+
+${enseigneVive ? `<g>
+  <ellipse cx="240" cy="424" rx="180" ry="52" fill="url(#solHaloG)" opacity=".7"/>
+  <ellipse cx="240" cy="398" rx="92" ry="24" fill="#ffdf9a" opacity=".12" filter="url(#flouLeger)"/>
+</g>` : ""}
+
+<!-- ═══ PROJECTEURS DE PREMIÈRE ═══ -->
+${E.projecteursCiel && lum ? `<g class="projecteurs" opacity=".5">
+  <path d="M112 452 L46 0 L106 0 Z" fill="url(#coneG)" class="faisceauA"/>
+  <path d="M368 452 L410 0 L470 0 Z" fill="url(#coneG)" class="faisceauB"/>
+  <g transform="translate(104 434)">
+    <ellipse cx="8" cy="12" rx="16" ry="4" fill="#000" opacity=".3"/>
+    <path d="M0 12 L16 12 L13 2 L3 2 Z" fill="#3a3630"/>
+    <ellipse cx="8" cy="2" rx="9" ry="3.4" fill="#fff4d0"/>
+  </g>
+  <g transform="translate(360 434)">
+    <ellipse cx="8" cy="12" rx="16" ry="4" fill="#000" opacity=".3"/>
+    <path d="M0 12 L16 12 L13 2 L3 2 Z" fill="#3a3630"/>
+    <ellipse cx="8" cy="2" rx="9" ry="3.4" fill="#fff4d0"/>
+  </g>
+</g>` : ""}
+
+<g id="planLoin"></g>
+<g id="planMilieu"></g>
+<g id="planProche"></g>
+
+<rect width="480" height="520" fill="url(#grain)" opacity=".5" pointer-events="none"/>
+<rect width="480" height="520" fill="url(#vignetteG)" pointer-events="none"/>
+</svg>`;
+}
+
+/* vitrine : toujours vitrée, le caisson s'anoblit avec les niveaux */
+function vitrineEtat(x, y, l, h, seance, lum, E){
+  const COUL = {"Drame":"#1f3a5c","Aventure":"#1d5c52","Animation":"#4a3f8c",
+    "Documentaire":"#2a6b6b","Thriller familial":"#3a2a52","Comédie":"#c07a1f",
+    "Romance":"#a83a5c","défaut":"#5a2a34"};
+  const c = COUL[(seance && seance.genre)] || COUL["défaut"];
+  const lignes = seance ? decoupe(String(seance.titre).toUpperCase(), 12).slice(0,3) : [];
+
+  return `<g>
+    <rect x="${x-4}" y="${y-4}" width="${l+8}" height="${h+8}" rx="2"
+      fill="${E.vitrinesLaiton ? "url(#laitonG)" : "#5a5044"}"/>
+    <rect x="${x-2}" y="${y-2}" width="${l+4}" height="${h+4}" rx="1" fill="#1a1218"/>
+    ${seance ? `
+      <rect x="${x}" y="${y}" width="${l}" height="${h}" fill="${c}"/>
+      <rect x="${x}" y="${y}" width="${l}" height="${h}" fill="url(#afficheG)"/>
+      <circle cx="${x + l/2}" cy="${y + h*.3}" r="${l*.22}" fill="#fff" opacity=".16"/>
+      ${lignes.map((ln,i)=>`<text x="${x + l/2}" y="${y + h*.62 + i*9}" text-anchor="middle"
+        font-family="Georgia" font-size="7" font-weight="bold" fill="#fdf3d2"
+        letter-spacing=".4">${ln}</text>`).join("")}
+      <text x="${x + l/2}" y="${y + h - 7}" text-anchor="middle" font-family="Courier New"
+        font-size="6.5" fill="#fdf3d2" opacity=".75" letter-spacing="1">${seance.heure || ""}</text>`
+    : `<rect x="${x}" y="${y}" width="${l}" height="${h}" fill="#2a241f"/>
+      <text x="${x + l/2}" y="${y + h/2}" text-anchor="middle" font-family="Courier New"
+        font-size="8" fill="#8a7e70" opacity=".5" letter-spacing="1.5">PROCHAINEMENT</text>`}
+    <path d="M${x} ${y+h} L${x + l*.55} ${y} L${x + l*.85} ${y} L${x + l*.3} ${y+h} Z"
+      fill="#fff" opacity="${E.vitrinesLaiton ? ".07" : ".045"}"/>
+    ${lum ? `<rect x="${x}" y="${y}" width="${l}" height="${h}" fill="#ffdf9a" opacity=".07"/>` : ""}
+  </g>`;
+}
+
+/* ampoules qui défilent, pour les soirs de première */
+function ampoulesChenillard(x1, x2, y, n, r = 2.4){
+  const pas = (x2 - x1) / (n - 1);
+  return [...Array(n)].map((_,i)=>
+    `<circle cx="${(x1 + i*pas).toFixed(1)}" cy="${y}" r="${r}"
+      fill="url(#ampouleG)" class="chenille" style="animation-delay:${(i*.09).toFixed(2)}s"/>`).join("");
+}
+
+/* ============================================================
+   LES PASSANTS — silhouettes articulées, trois plans
+   Proportions retravaillées, ombres au sol, reflet si mouillé.
+   ============================================================ */
+const SVG_NS2 = "http://www.w3.org/2000/svg";
+
+const PLANS_R = [
+  {id:"planLoin",   y:400, k:0.92, opac:.62, duree:[19,25], poids:.32, flou:true},
+  {id:"planMilieu", y:428, k:1.24, opac:.86, duree:[14,19], poids:.34, flou:false},
+  {id:"planProche", y:456, k:1.62, opac:1,   duree:[10,14], poids:.34, flou:false}
+];
+
+const TEINTES_R = {
+  peau:["#f2cfa8","#e4b892","#cb9d72","#ac8156","#8d6242","#6d472c"],
+  habit:["#8ca4c9","#a4c98c","#c98ca4","#c9c28c","#9a8cc9","#c9a48c","#7fb3a8",
+         "#b06a6a","#5f6f9a","#c98f5a","#4a6b7a","#8a5a7a"],
+  bas:["#2a2030","#33283a","#3a2f26","#242a38","#2e2438","#1e2430"],
+  cheveux:["#2a1c14","#4a3527","#7a5a3a","#1c1410","#5c4030","#8a6a4a","#9a9a9a"]
+};
+const pick2 = a => a[Math.floor(Math.random()*a.length)];
+
+function accessoire2(type, hab){
+  switch(type){
+    case "chapeau": return `<path d="M-6.5 -33 L6.5 -33 L8 -31.4 L-8 -31.4 Z" fill="#2a2030"/>
+      <rect x="-4.8" y="-38.5" width="9.6" height="5.8" rx="1.6" fill="#2a2030"/>
+      <rect x="-4.8" y="-34.6" width="9.6" height="1.6" fill="#8a6c2a" opacity=".6"/>`;
+    case "beret": return `<path d="M-6.4 -34 Q0 -40.5 6.4 -34 Q0 -31.8 -6.4 -34 Z" fill="#8c2331"/>
+      <circle cx="0" cy="-40" r="1.2" fill="#8c2331"/>`;
+    case "sac": return `<rect x="5.2" y="-21" width="6" height="7.6" rx="1.3" fill="#6b4a2a"/>
+      <path d="M6.2 -21 Q8.2 -25.4 10.2 -21" stroke="#6b4a2a" stroke-width="1.1" fill="none"/>`;
+    case "popcorn": return `<path d="M5.6 -20.4 L11 -20.4 L10.2 -12.6 L6.4 -12.6 Z" fill="#e8443a"/>
+      <path d="M6.6 -20.4 L6.4 -12.6 M8.4 -20.4 L8.4 -12.6" stroke="#fdf3d2" stroke-width=".7"/>
+      <g fill="#fdf3d2"><circle cx="6.9" cy="-21" r="1.5"/><circle cx="9.2" cy="-21.5" r="1.6"/>
+        <circle cx="8.1" cy="-22.6" r="1.3"/></g>`;
+    case "echarpe": return `<path d="M-4.2 -27.5 Q0 -24.2 4.2 -27.5 L4.8 -23 Q0 -20.2 -4.8 -23 Z"
+      fill="${pick2(TEINTES_R.habit)}"/>`;
+    case "parapluie": return `<path d="M6 -30 L6 -8" stroke="#3a3a44" stroke-width="1"/>
+      <path d="M-2 -30 q8 -11 16 0 q-8 -4 -16 0" fill="#2e4a6b"/>`;
+    case "sacoche": return `<path d="M-9 -20 L-3 -20 L-3.8 -13 L-8.2 -13 Z" fill="#4a3a2a"/>
+      <path d="M-8 -20 Q-6 -26 -4 -22" stroke="#4a3a2a" stroke-width="1" fill="none"/>`;
+    default: return "";
+  }
+}
+const ACC_R = ["chapeau","beret","sac","popcorn","echarpe","parapluie","sacoche","","","",""];
+
+/* silhouette : proportions 7 têtes, épaules marquées, mains visibles */
+function silhouette2(){
+  const peau = pick2(TEINTES_R.peau), hab = pick2(TEINTES_R.habit),
+        bas = pick2(TEINTES_R.bas), chev = pick2(TEINTES_R.cheveux);
+  const acc = pick2(ACC_R);
+  const jupe = Math.random() < .34;
+  const manteau = Math.random() < .3;
+  const corpulence = .9 + Math.random()*.26;
+  const stature = .93 + Math.random()*.2;
+
+  return `<g transform="scale(${corpulence.toFixed(2)} ${stature.toFixed(2)})">
+    <!-- jambes -->
+    <g class="jambeA">
+      <path d="M-3.9 -11.5 L-0.7 -11.5 L-0.4 -1 L-3.6 -1 Z" fill="${bas}"/>
+      <path d="M-4.4 -1.4 L0.4 -1.4 L0.6 .6 L-4.8 .6 Z" fill="#161218"/>
+    </g>
+    <g class="jambeB">
+      <path d="M0.7 -11.5 L3.9 -11.5 L3.6 -1 L0.4 -1 Z" fill="${bas}"/>
+      <path d="M0.2 -1.4 L5 -1.4 L5.2 .6 L-0.2 .6 Z" fill="#161218"/>
+    </g>
+    <g class="corps">
+      ${jupe ? `<path d="M-6.2 -17 L6.2 -17 L7.8 -8.6 L-7.8 -8.6 Z" fill="${hab}"/>
+        <path d="M-6.2 -17 L6.2 -17 L6.6 -14 L-6.6 -14 Z" fill="#000" opacity=".1"/>` : ""}
+      <!-- bras arrière -->
+      <g class="brasA">
+        <path d="M-6.6 -25.6 L-4 -25.6 L-3.4 -15 L-6 -15 Z" fill="${hab}" opacity=".78"/>
+        <circle cx="-4.8" cy="-14.4" r="1.5" fill="${peau}" opacity=".78"/>
+      </g>
+      <!-- torse -->
+      <path d="M-5.4 -27.4 Q0 -29.2 5.4 -27.4 L6.4 -11.4 L-6.4 -11.4 Z" fill="${hab}"/>
+      ${manteau ? `<path d="M-5.4 -27.4 Q0 -29.2 5.4 -27.4 L6.6 -9 L-6.6 -9 Z"
+        fill="${hab}" opacity=".9"/>
+        <path d="M0 -28.4 L0 -9" stroke="#000" stroke-opacity=".18" stroke-width=".9"/>` : ""}
+      <path d="M-5.4 -27.4 Q0 -29.2 5.4 -27.4 L5.7 -22.6 L-5.7 -22.6 Z" fill="#000" opacity=".13"/>
+      <path d="M-5.4 -27.4 Q-2.6 -28.6 0 -28.6 L0 -11.4 L-6.4 -11.4 Z" fill="#fff" opacity=".05"/>
+      <!-- cou et tête -->
+      <path d="M-1.5 -30.8 L1.5 -30.8 L1.5 -27.2 L-1.5 -27.2 Z" fill="${peau}"/>
+      <path d="M-1.5 -30.8 L1.5 -30.8 L1.5 -29.4 L-1.5 -29.4 Z" fill="#000" opacity=".14"/>
+      <ellipse cx="0" cy="-33.6" rx="4.3" ry="4.7" fill="${peau}"/>
+      <path d="M-4.3 -34.6 Q0 -40 4.3 -34.6 Q2.6 -36.4 0 -36.4 Q-2.6 -36.4 -4.3 -34.6 Z"
+        fill="${chev}"/>
+      <path d="M-4.3 -34.6 Q-5.2 -31 -3.6 -29.6 L-3.2 -33.4 Z" fill="${chev}"/>
+      ${accessoire2(acc, hab)}
+      <!-- bras avant -->
+      <g class="brasB">
+        <path d="M3.8 -25.6 L6.6 -25.6 L7 -14.6 L4.2 -14.6 Z" fill="${hab}"/>
+        <circle cx="5.6" cy="-13.8" r="1.7" fill="${peau}"/>
+      </g>
+    </g>
+  </g>`;
+}
+
+function spawnPassant(mouille){
+  const r = Math.random(); let acc = 0, plan = PLANS_R[0];
+  for(const p of PLANS_R){ acc += p.poids; if(r <= acc){ plan = p; break; } }
+
+  const versDroite = Math.random() < .5;
+  const entre = Math.random() < .28 && plan.id !== "planLoin";
+  const s = silhouette2();
+
+  const g = document.createElementNS(SVG_NS2, "g");
+  const x0 = versDroite ? -50 : 530;
+  const x1 = entre ? 240 : (versDroite ? 530 : -50);
+  const duree = plan.duree[0] + Math.random()*(plan.duree[1]-plan.duree[0]);
+  const cadence = (0.60 * (duree/14) / plan.k).toFixed(2);
+
+  g.setAttribute("class", "passantR" + (plan.flou ? " lointain" : ""));
+  g.setAttribute("opacity", plan.opac);
+  g.style.cssText = `--x0:${x0}px;--x1:${x1}px;--cad:${cadence}s;animation-duration:${duree}s`;
+  g.innerHTML = `
+    <g transform="translate(0 ${plan.y}) scale(${(plan.k*(versDroite?1:-1)).toFixed(3)} ${plan.k})">
+      <ellipse cx="0" cy="0.8" rx="7" ry="1.9" fill="#000" opacity=".3"/>
+      ${mouille ? `<g transform="scale(1 -0.55) translate(0 -2)" opacity=".16">${s}</g>` : ""}
+      ${s}
+    </g>`;
+  const cible = document.getElementById(plan.id);
+  if(!cible) return;
+  cible.appendChild(g);
+
+  setTimeout(()=>{
+    if(entre){ g.style.transition = "opacity .6s"; g.style.opacity = "0"; }
+    setTimeout(()=>g.remove(), 900);
+  }, duree*1000 - 300);
 }
 
 /* ============================================================
