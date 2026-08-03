@@ -232,12 +232,6 @@ async function enregistreTransaction({categorie, montant, solde_avant, solde_apr
   }catch(e){}
 }
 
-/* variante simple du journal d'XP : renvoie le montant si nouveau, 0 sinon */
-async function journaliseXpSimple(type, montant, cleUnique){
-  const ok = await journaliseXp(type, montant, cleUnique);
-  return ok ? montant : 0;
-}
-
 /* l'usure des salles est appliquée par simuler_journee() côté serveur */
 
 /* ---- exports ---- */
