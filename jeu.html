@@ -193,8 +193,8 @@ button:disabled{opacity:.5}
   from{transform:translateX(var(--depart))}
   to{transform:translateX(var(--arrivee))}
 }
-.dandine{animation:dandine .5s ease-in-out infinite;transform-origin:0 372px}
-@keyframes dandine{0%,100%{transform:rotate(-2.5deg) translateY(0)}50%{transform:rotate(2.5deg) translateY(-1.2px)}}
+.dandine{animation:dandine .5s ease-in-out infinite;transform-origin:0 0}
+@keyframes dandine{0%,100%{transform:rotate(-2.2deg) translateY(0)}50%{transform:rotate(2.2deg) translateY(-1.2px)}}
 
 /* ===== cartes raffinées ===== */
 .carteEcran{
@@ -767,9 +767,9 @@ const EVENEMENTS_JOUR = [
 
 async function initAccueil(){
   const c = Etat.cinema;
-  dessineFacade(c);
-  try{ await chargeSallesEtat(); }catch(e){}
   try{ await chargeSeancesAccueil(); }catch(e){ Etat.seancesJour = []; }
+  try{ await chargeSallesEtat(); }catch(e){}
+  dessineFacade(c);
   rendStatut(c);
   rendActionPrincipale();
   rendResume(c);
@@ -777,155 +777,350 @@ async function initAccueil(){
   rendEvenement();
   allumage(c);
   setInterval(spawnSpectateur, 2300);
+  let phaseCourante = phaseSelonHeure();
+  setInterval(()=>{
+    const p = phaseSelonHeure();
+    if(p !== phaseCourante){ phaseCourante = p; dessineFacade(Etat.cinema); }
+  }, 60000);
   setInterval(()=>parleBob(CONSEILS_BOB[Math.floor(Math.random()*CONSEILS_BOB.length)]), 14000);
 }
 
-/* ---- façade SVG personnalisée ---- */
+/* ================== FAÇADE VIVANTE (cycle du ciel + programme réel) ================== */
+const PHASES = {
+  matin:{
+    ciel:["#7fb2d9","#b8d8ec","#eef6f2"],
+    astre:{type:"soleil", x:78, y:56, r:15, c:"#fff3c2", halo:"#fff3c2"},
+    voisins:"#c9bda6", fenVois:"#9ab0bf", fenOp:.5,
+    mur:["#b06078","#96485e","#7c3a4e"],
+    vitre:["#9cc0da","#c2dcea","#8cb0ca"],
+    halo:0, lumieres:false, etoiles:false,
+    trottoir:"#cbbda2", joint:"#a6947a", ombre:.14,
+    ambiance:"oiseaux", note:"MATIN · 7h — le cinéma dort encore, le quartier s'éveille"
+  },
+  aprem:{
+    ciel:["#5f9fd6","#8fc3e8","#d8ecf6"],
+    astre:{type:"soleil", x:352, y:44, r:17, c:"#ffe9a0", halo:"#ffe9a0"},
+    voisins:"#d8c9b0", fenVois:"#8fa8bc", fenOp:.7,
+    mur:["#a8506a","#8c3a52","#742e42"],
+    vitre:["#7fa8cc","#a8cce4","#6f98bc"],
+    halo:0, lumieres:false, etoiles:false,
+    trottoir:"#c9baa0", joint:"#a08c6a", ombre:.18,
+    ambiance:"nuages", note:"APRÈS-MIDI · 15h — ouvert, séances de journée"
+  },
+  aube:{
+    ciel:["#3a2c5e","#8a5484","#e8956a"],
+    astre:{type:"soleil", x:215, y:118, r:22, c:"#ffd98a", halo:"#ff9a5c"},
+    voisins:"#4b3852", fenVois:"#ffd98a", fenOp:.85,
+    mur:["#7c3450","#61283e","#4c1f30"],
+    vitre:["#6a5a8c","#9a7ca8","#54476e"],
+    halo:.35, lumieres:true, etoiles:"peu",
+    trottoir:"#5c4a54", joint:"#3f3340", ombre:.3,
+    ambiance:"aucune", note:"CRÉPUSCULE · 20h — l'heure dorée, les enseignes s'allument"
+  },
+  nuit:{
+    ciel:["#05070f","#141a38","#232c54"],
+    astre:{type:"lune", x:374, y:44, r:16},
+    voisins:"#10152b", fenVois:"#f2c96a", fenOp:.85,
+    mur:["#4f2545","#341629","#26101e"],
+    vitre:["#22305a","#3d548c","#1a2547"],
+    halo:.5, lumieres:true, etoiles:"plein",
+    trottoir:"#0a0d1c", joint:"#1c2440", ombre:0,
+    ambiance:"aucune", note:"NUIT · 22h — la pleine séance, le quartier converge"
+  }
+};
+
+
+function phaseSelonHeure(){
+  const h = new Date().getHours();
+  if(h>=6 && h<11) return "matin";
+  if(h>=11 && h<18) return "aprem";
+  if(h>=18 && h<21) return "aube";
+  return "nuit";
+}
+
+
+const COULEURS_GENRE = {
+  "Frisson":["#2a1535","#6a3d8c"], "Comédie":["#8c5a1f","#e8a04a"],
+  "Drame":["#1f3a5c","#5c88b8"], "Action":["#6e1424","#c83a4a"],
+  "SF":["#0f2a38","#2e8ca8"], "Classique":["#3a3126","#8a7a5c"],
+  "défaut":["#8c2331","#c86a4a"]
+};
+
+
+/* séances converties pour la façade */
+function seancesFacade(){
+  return (Etat.seancesJour || []).map(s=>{
+    const f = (typeof filmParId==="function" && filmParId(s.film_id)) || {titre:s.film_id, genre:"défaut"};
+    return {heure:(s.heure||"").toUpperCase(), titre:f.titre, genre:f.genre||"défaut"};
+  });
+}
+
+/* affiche de cinéma miniature avec titre réel */
+function afficheFilm(x, seance){
+  if(!seance){
+    return `
+    <path d="M${x+66} 224 L${x+62} 306 L${x+66} 310 Z" fill="#000" opacity=".3"/>
+    <rect x="${x}" y="222" width="66" height="88" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
+    <rect x="${x+7}" y="229" width="52" height="60" fill="#1c1626"/>
+    <text x="${x+33}" y="255" text-anchor="middle" font-size="16" fill="#8a6c2a">?</text>
+    <text x="${x+33}" y="272" text-anchor="middle" font-size="7" fill="#8a6c2a" font-family="Courier New" letter-spacing="1">PROCHAINEMENT</text>
+    <text x="${x+33}" y="303" text-anchor="middle" font-size="8" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">BIENTOT</text>`;
+  }
+  const cg = COULEURS_GENRE[seance.genre] || COULEURS_GENRE["défaut"];
+  /* titre découpé en lignes de ~11 caractères */
+  const mots = seance.titre.toUpperCase().split(" ");
+  const lignes = [];
+  let l = "";
+  mots.forEach(m=>{ if((l+" "+m).trim().length<=11){ l=(l+" "+m).trim(); } else { lignes.push(l); l=m; } });
+  if(l) lignes.push(l);
+  const affTitre = lignes.slice(0,3).map((t,i)=>
+    `<text x="${x+33}" y="${252+i*9}" text-anchor="middle" font-size="7.5" font-weight="bold" fill="#fdf3d2" font-family="Georgia" letter-spacing=".5">${t}</text>`).join("");
+  return `
+    <path d="M${x+66} 224 L${x+62} 306 L${x+66} 310 Z" fill="#000" opacity=".3"/>
+    <rect x="${x}" y="222" width="66" height="88" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
+    <rect x="${x+7}" y="229" width="52" height="60" fill="${cg[0]}"/>
+    <path d="M${x+7} 289 L${x+7} 269 Q${x+33} 258 ${x+59} 269 L${x+59} 289 Z" fill="${cg[1]}" opacity=".8"/>
+    <circle cx="${x+18}" cy="238" r="4" fill="#f7dd9a" opacity=".9"/>
+    ${affTitre}
+    <path d="M${x+9} 231 L${x+26} 287" stroke="#fff" stroke-opacity=".13" stroke-width="7"/>
+    <rect x="${x+11}" y="292" width="44" height="10" rx="2" fill="#fdf8ea"/>
+    <text x="${x+33}" y="299.5" text-anchor="middle" font-size="7" font-weight="bold" fill="#241a12" font-family="Courier New" letter-spacing="1">${seance.heure}</text>
+    <text x="${x+33}" y="318" text-anchor="middle" font-size="7.5" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">A L'AFFICHE</text>`;
+}
+
+
 function dessineFacade(c){
-  const nomAff = (c.nom || "MON CINEMA").toUpperCase();
-  const taille = nomAff.length > 14 ? 21 : nomAff.length > 10 ? 26 : 31;
+  const pKey = phaseSelonHeure();
+  const SF = seancesFacade();
+  const P = PHASES[pKey];
+  const lum = P.lumieres;
+
+  /* étoiles */
+  let etoiles = "";
+  if(P.etoiles==="plein") etoiles = `
+    <g fill="#fff"><circle cx="30" cy="26" r="1.4" class="clignote"/><circle cx="74" cy="52" r="1"/>
+    <circle cx="126" cy="20" r="1.1" class="clignote d2"/><circle cx="215" cy="12" r="1.2"/>
+    <circle cx="296" cy="24" r="1" class="clignote"/><circle cx="404" cy="20" r="1.4"/></g>`;
+  if(P.etoiles==="peu") etoiles = `
+    <g fill="#fff" opacity=".7"><circle cx="60" cy="24" r="1.2" class="clignote"/><circle cx="340" cy="18" r="1" class="clignote d2"/></g>`;
+
+  /* astre */
+  let astre = "";
+  if(P.astre.type==="soleil") astre = `
+    <circle cx="${P.astre.x}" cy="${P.astre.y}" r="${P.astre.r+8}" fill="${P.astre.halo}" opacity=".25"/>
+    <circle cx="${P.astre.x}" cy="${P.astre.y}" r="${P.astre.r}" fill="${P.astre.c}"/>`;
+  else astre = `
+    <circle cx="374" cy="44" r="16" fill="#fdf6de"/>
+    <circle cx="367" cy="39" r="14.5" fill="url(#cielX)"/>`;
+
+  /* ambiance */
+  let amb = "";
+  if(P.ambiance==="oiseaux") amb = `
+    <g class="oiseau" style="animation-delay:0s"><g stroke="#3a4c60" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M0 40 q4 -5 8 0 M8 40 q4 -5 8 0"/></g></g>
+    <g class="oiseau" style="animation-delay:-11s"><g stroke="#3a4c60" stroke-width="1.4" fill="none" stroke-linecap="round">
+      <path d="M0 62 q3.5 -4.5 7 0 M7 62 q3.5 -4.5 7 0"/></g></g>
+    <g class="fumee"><circle cx="30" cy="66" r="4" fill="#fff" opacity=".5"/></g>`;
+  if(P.ambiance==="nuages") amb = `
+    <g class="nuageDerive" fill="#fff" opacity=".85">
+      <ellipse cx="0" cy="28" rx="34" ry="8"/><ellipse cx="26" cy="23" rx="20" ry="6"/></g>
+    <g class="nuageDerive" style="animation-delay:-30s" fill="#fff" opacity=".6">
+      <ellipse cx="0" cy="52" rx="24" ry="6"/></g>`;
+
+  /* lumières façade */
+  const chenille = lum ? `
+    <g fill="#fff3c9">
+      ${[54,94,134,174,214,254,294,334,374].map((x,i)=>`<circle cx="${x}" cy="131" r="3.4" class="chenille" style="animation-delay:${i*0.11}s"/>`).join("")}
+      ${[46,88,130,172,214,256,298,340,382].map((x,i)=>`<circle cx="${x}" cy="184" r="3.4" class="chenille" style="animation-delay:${(8-i)*0.11}s"/>`).join("")}
+    </g>` : `
+    <g fill="#5c4a3a" opacity=".5">
+      ${[54,94,134,174,214,254,294,334,374].map(x=>`<circle cx="${x}" cy="131" r="3.4"/>`).join("")}
+      ${[46,88,130,172,214,256,298,340,382].map(x=>`<circle cx="${x}" cy="184" r="3.4"/>`).join("")}
+    </g>`;
+
+  const enseigneFill = lum ? "#f7dd9a" : "#fdf3d2";
+  const enseigneFx = lum ? 'style="filter:drop-shadow(0 0 10px rgba(247,221,154,.7))"' : "";
+  const appliques = lum
+    ? `<circle cx="128" cy="204" r="5" fill="#fff3c9" class="clignote"/><circle cx="302" cy="204" r="5" fill="#fff3c9" class="clignote d2"/>`
+    : `<circle cx="128" cy="204" r="5" fill="#6e5a48" opacity=".6"/><circle cx="302" cy="204" r="5" fill="#6e5a48" opacity=".6"/>`;
+  const lueurPortes = lum ? `<rect x="145" y="217" width="140" height="110" fill="#ffdf9a" opacity=".16"/>` : "";
+  const haloSol = P.halo>0 ? `<ellipse cx="215" cy="330" rx="185" ry="105" fill="url(#haloX)" opacity="${P.halo}"/>` : "";
+  const ombreBat = P.ombre>0 ? `<ellipse cx="215" cy="392" rx="200" ry="10" fill="#1c140a" opacity="${P.ombre}"/>` : "";
+
   document.getElementById("facade").innerHTML = `
-  <svg viewBox="0 0 430 400" xmlns="http://www.w3.org/2000/svg">
+  <svg viewBox="0 0 430 430" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="cielA" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#05070f"/><stop offset=".6" stop-color="#141a38"/><stop offset="1" stop-color="#232c54"/>
+      <linearGradient id="cielX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.ciel[0]}"/><stop offset=".6" stop-color="${P.ciel[1]}"/><stop offset="1" stop-color="${P.ciel[2]}"/>
       </linearGradient>
-      <linearGradient id="orA" x1="0" y1="0" x2="0" y2="1">
+      <linearGradient id="orX" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#f6e3a6"/><stop offset=".45" stop-color="#caa24a"/><stop offset="1" stop-color="#7d611f"/>
       </linearGradient>
-      <linearGradient id="murA" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#4f2545"/><stop offset=".7" stop-color="#341629"/><stop offset="1" stop-color="#26101e"/>
+      <linearGradient id="orFonce" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8a6c2a"/><stop offset="1" stop-color="#5c4720"/>
       </linearGradient>
-      <linearGradient id="vitreA" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="#22305a"/><stop offset=".45" stop-color="#3d548c"/><stop offset="1" stop-color="#1a2547"/>
+      <linearGradient id="murX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.mur[0]}"/><stop offset=".7" stop-color="${P.mur[1]}"/><stop offset="1" stop-color="${P.mur[2]}"/>
       </linearGradient>
-      <radialGradient id="haloA" cx=".5" cy=".25" r=".85">
-        <stop offset="0" stop-color="#ffe9a8" stop-opacity=".5"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+      <linearGradient id="vitreX" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${P.vitre[0]}"/><stop offset=".45" stop-color="${P.vitre[1]}"/><stop offset="1" stop-color="${P.vitre[2]}"/>
+      </linearGradient>
+      <radialGradient id="haloX" cx=".5" cy=".25" r=".85">
+        <stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
       </radialGradient>
-      <radialGradient id="luneA" cx=".5" cy=".5" r=".5">
-        <stop offset="0" stop-color="#fdf6de"/><stop offset="1" stop-color="#e8dcae"/>
-      </radialGradient>
-      <linearGradient id="tapisA" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#a82b3d"/><stop offset="1" stop-color="#6e1424"/>
+      <linearGradient id="tapisX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b83145"/><stop offset=".5" stop-color="#8c1f30"/><stop offset="1" stop-color="#5c1220"/>
+      </linearGradient>
+      <linearGradient id="tapisLumX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="solX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.trottoir}"/><stop offset="1" stop-color="${P.joint}"/>
+      </linearGradient>
+      <linearGradient id="renfX" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
       </linearGradient>
     </defs>
 
-    <!-- ciel -->
-    <rect width="430" height="400" fill="url(#cielA)"/>
-    <g fill="#fff">
-      <circle cx="30" cy="26" r="1.4" class="clignote"/><circle cx="74" cy="52" r="1"/>
-      <circle cx="126" cy="20" r="1.1" class="clignote d2"/><circle cx="215" cy="12" r="1.2"/>
-      <circle cx="296" cy="24" r="1" class="clignote"/><circle cx="360" cy="46" r="1.1" class="clignote d2"/>
-      <circle cx="404" cy="20" r="1.4"/>
-    </g>
-    <circle cx="378" cy="42" r="16" fill="url(#luneA)"/>
-    <circle cx="371" cy="37" r="14.5" fill="url(#cielA)"/>
+    <!-- ================== CIEL ================== -->
+    <rect width="430" height="430" fill="url(#cielX)"/>
+    ${etoiles}${astre}${amb}
 
     <!-- immeubles voisins -->
-    <g fill="#10152b">
-      <rect x="0" y="70" width="34" height="330"/><rect x="396" y="62" width="34" height="338"/>
+    <g fill="${P.voisins}">
+      <rect x="0" y="70" width="34" height="360"/><rect x="396" y="62" width="34" height="368"/>
     </g>
-    <g fill="#f2c96a">
-      <rect x="8" y="92" width="9" height="12" rx="1.5" class="fenetreVoisin"/>
-      <rect x="8" y="150" width="9" height="12" rx="1.5" opacity=".35"/>
-      <rect x="8" y="210" width="9" height="12" rx="1.5" class="fenetreVoisin f2"/>
-      <rect x="410" y="84" width="9" height="12" rx="1.5" class="fenetreVoisin f2"/>
-      <rect x="410" y="146" width="9" height="12" rx="1.5" class="fenetreVoisin"/>
-      <rect x="410" y="206" width="9" height="12" rx="1.5" opacity=".3"/>
+    <g fill="${P.fenVois}" opacity="${P.fenOp}">
+      <rect x="8" y="92" width="9" height="12" rx="1.5"/><rect x="8" y="150" width="9" height="12" rx="1.5"/>
+      <rect x="8" y="210" width="9" height="12" rx="1.5"/>
+      <rect x="410" y="84" width="9" height="12" rx="1.5"/><rect x="410" y="146" width="9" height="12" rx="1.5"/>
+      <rect x="410" y="206" width="9" height="12" rx="1.5"/>
     </g>
 
-    <!-- façade -->
-    <rect x="34" y="52" width="362" height="348" fill="url(#murA)"/>
-    <rect x="26" y="44" width="378" height="13" rx="5" fill="url(#orA)"/>
-    <rect x="26" y="57" width="378" height="3" fill="#5c4720"/>
+    <!-- ================== FAÇADE ================== -->
+    <rect x="34" y="52" width="362" height="308" fill="url(#murX)"/>
+    <!-- corniche en volume : face + dessous -->
+    <rect x="24" y="42" width="382" height="13" rx="5" fill="url(#orX)"/>
+    <path d="M24 55 L406 55 L396 61 L34 61 Z" fill="#5c4720"/>
 
-    <!-- enseigne : nom + logo -->
-    <g id="gEnseigne">
+    <!-- enseigne -->
+    <g ${enseigneFx}>
       <text x="215" y="96" text-anchor="middle" font-family="Georgia" font-weight="bold"
-        font-size="${taille}" letter-spacing="4" fill="#f7dd9a"
-        style="text-shadow:0 0 16px rgba(247,221,154,.6)">${c.logo} ${nomAff}</text>
-      <g fill="#f7dd9a">
-        <circle cx="66" cy="86" r="2.8" class="clignote"/><circle cx="364" cy="86" r="2.8" class="clignote d2"/>
-      </g>
-      <line x1="66" y1="108" x2="364" y2="108" stroke="#caa24a" stroke-width="2" opacity=".6"/>
+        font-size="${((c.nom||'').length>14)?20:((c.nom||'').length>10)?23:27}" letter-spacing="4" fill="${enseigneFill}">${c.logo} ${(c.nom||'MON CINEMA').toUpperCase()}</text>
     </g>
+    <line x1="66" y1="108" x2="364" y2="108" stroke="#caa24a" stroke-width="2" opacity=".6"/>
 
-    <!-- marquee -->
+    <!-- ================== MARQUEE EN VOLUME ================== -->
     <g>
-      <path d="M46 122 L384 122 L396 190 L34 190 Z" fill="url(#orA)"/>
-      <path d="M46 122 L384 122 L387 140 L43 140 Z" fill="#f6e3a6" opacity=".5"/>
-      <rect x="62" y="144" width="306" height="38" rx="4" fill="#fdf8ea" stroke="#7d611f" stroke-width="2.5"/>
-      <text id="marqueeTxt" x="215" y="168" text-anchor="middle" font-family="Courier New" font-weight="bold"
-        font-size="13" letter-spacing="1.5" fill="#241a12">AUCUNE SEANCE PROGRAMMEE</text>
-      <g fill="#fff3c9">
-        ${[54,94,134,174,214,254,294,334,374].map((x,i)=>
-          `<circle cx="${x}" cy="131" r="3.4" class="chenille" style="animation-delay:${i*0.11}s"/>`).join("")}
-        ${[46,88,130,172,214,256,298,340,382].map((x,i)=>
-          `<circle cx="${x}" cy="184" r="3.4" class="chenille" style="animation-delay:${(8-i)*0.11}s"/>`).join("")}
-      </g>
+      <!-- face -->
+      <path d="M46 122 L384 122 L398 186 L32 186 Z" fill="url(#orX)"/>
+      <path d="M46 122 L384 122 L387 138 L43 138 Z" fill="#f6e3a6" opacity=".5"/>
+      <!-- épaisseur / dessous -->
+      <path d="M32 186 L398 186 L388 200 L42 200 Z" fill="url(#orFonce)"/>
+      <path d="M42 200 L388 200 L386 204 L44 204 Z" fill="#3a2c10"/>
+      <!-- panneau -->
+      <rect x="62" y="142" width="306" height="36" rx="4" fill="#fdf8ea" stroke="#7d611f" stroke-width="2.5"/>
+      <text x="215" y="165" text-anchor="middle" font-family="Courier New" font-weight="bold"
+        font-size="13" letter-spacing="1.5" fill="#241a12">${SF[0] ? SF[0].heure + " · " + SF[0].titre.toUpperCase().slice(0,26) : "AUCUNE SEANCE PROGRAMMEE"}</text>
+      ${chenille}
+      <!-- ombre portée du marquee sur le mur -->
+      <path d="M42 204 L388 204 L380 216 L50 216 Z" fill="#000" opacity="${P.ombre>0?P.ombre:.22}"/>
     </g>
 
-    <!-- halo au sol -->
-    <ellipse cx="215" cy="330" rx="185" ry="105" fill="url(#haloA)"/>
+    ${haloSol}
+    ${appliques}
 
-    <!-- appliques -->
-    <circle cx="128" cy="204" r="5" fill="#fff3c9" class="clignote"/>
-    <circle cx="302" cy="204" r="5" fill="#fff3c9" class="clignote d2"/>
-
-    <!-- affiches vitrées -->
+    <!-- ================== VITRINES : LE VRAI PROGRAMME ================== -->
     <g>
-      <rect x="48" y="212" width="66" height="94" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
-      <rect x="55" y="219" width="52" height="64" fill="#8c2331"/>
-      <path d="M60 274 L76 244 L88 262 L96 250 L101 274 Z" fill="#f2b544"/>
-      <circle cx="70" cy="234" r="6" fill="#f7dd9a"/>
-      <path d="M56 220 L74 282" stroke="#fff" stroke-opacity=".14" stroke-width="7"/>
-      <text x="81" y="300" text-anchor="middle" font-size="8" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">CE SOIR</text>
-      <rect x="316" y="212" width="66" height="94" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
-      <rect x="323" y="219" width="52" height="64" fill="#1f3a5c"/>
-      <circle cx="349" cy="246" r="14" fill="#fdf8ea"/>
-      <circle cx="349" cy="246" r="14" fill="none" stroke="#0e1626" stroke-width="2.5" stroke-dasharray="4 5"/>
-      <path d="M324 220 L342 282" stroke="#fff" stroke-opacity=".14" stroke-width="7"/>
-      <text x="349" y="300" text-anchor="middle" font-size="8" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">BIENTOT</text>
+      ${afficheFilm(48, SF[0])}
+      ${afficheFilm(316, SF[1])}
     </g>
 
-    <!-- portes -->
+    <!-- ================== ENTRÉE EN RENFONCEMENT ================== -->
     <g>
-      <rect x="136" y="208" width="158" height="126" rx="6" fill="#1c0f1a" stroke="#caa24a" stroke-width="3"/>
-      <rect x="145" y="217" width="66" height="110" rx="4" fill="url(#vitreA)" stroke="#caa24a" stroke-width="2"/>
-      <rect x="219" y="217" width="66" height="110" rx="4" fill="url(#vitreA)" stroke="#caa24a" stroke-width="2"/>
-      <path d="M152 223 L176 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="9"/>
-      <path d="M226 223 L250 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="9"/>
-      <rect x="204" y="258" width="5.5" height="30" rx="2.7" fill="url(#orA)"/>
-      <rect x="221" y="258" width="5.5" height="30" rx="2.7" fill="url(#orA)"/>
-      <!-- lueur chaude intérieure -->
-      <rect x="145" y="217" width="140" height="110" fill="#ffdf9a" opacity=".07"/>
+      <!-- murs latéraux du renfoncement (perspective) -->
+      <path d="M136 216 L150 224 L150 330 L136 342 Z" fill="url(#renfX)"/>
+      <path d="M294 216 L280 224 L280 330 L294 342 Z" fill="url(#renfX)" transform="scale(-1,1) translate(-574,0)"/>
+      <!-- fond du renfoncement -->
+      <rect x="150" y="224" width="130" height="106" fill="#160a12"/>
+      <!-- plafond du renfoncement éclairé -->
+      <path d="M136 216 L294 216 L280 224 L150 224 Z" fill="${lum ? '#3a2a12' : '#241a10'}"/>
+      ${lum ? '<ellipse cx="215" cy="223" rx="46" ry="4" fill="#ffdf9a" opacity=".3"/>' : ''}
+      <!-- portes doubles au fond -->
+      <rect x="156" y="230" width="56" height="96" rx="3" fill="url(#vitreX)" stroke="#caa24a" stroke-width="2"/>
+      <rect x="218" y="230" width="56" height="96" rx="3" fill="url(#vitreX)" stroke="#caa24a" stroke-width="2"/>
+      <path d="M162 235 L182 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="8"/>
+      <path d="M224 235 L244 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="8"/>
+      <rect x="205" y="266" width="5" height="26" rx="2.5" fill="url(#orX)"/>
+      <rect x="220" y="266" width="5" height="26" rx="2.5" fill="url(#orX)"/>
+      ${lueurPortes}
+      <!-- cadre extérieur -->
+      <path d="M136 216 L294 216 L294 342 L136 342 Z" fill="none" stroke="#caa24a" stroke-width="3"/>
+      <!-- marche de seuil -->
+      <path d="M150 330 L280 330 L294 342 L136 342 Z" fill="${P.trottoir}"/>
+      <path d="M136 342 L294 342 L296 346 L134 346 Z" fill="${P.joint}"/>
     </g>
 
-    <!-- tapis rouge + potelets -->
-    <path d="M176 334 L254 334 L272 392 L158 392 Z" fill="url(#tapisA)"/>
-    <path d="M176 334 L254 334 L272 392 L158 392 Z" fill="none" stroke="#f7dd9a" stroke-width="1.5" opacity=".4"/>
-    <g>
-      <rect x="118" y="342" width="6" height="40" rx="3" fill="url(#orA)"/><circle cx="121" cy="340" r="5" fill="url(#orA)"/>
-      <rect x="306" y="342" width="6" height="40" rx="3" fill="url(#orA)"/><circle cx="309" cy="340" r="5" fill="url(#orA)"/>
-      <path d="M124 346 Q152 362 176 350" stroke="#8c2331" stroke-width="4.5" fill="none"/>
-      <path d="M306 346 Q278 362 254 350" stroke="#8c2331" stroke-width="4.5" fill="none"/>
-    </g>
+    ${ombreBat}
 
-    <!-- calque spectateurs -->
+    <!-- ================== SOL EN PERSPECTIVE ================== -->
+    <rect x="0" y="346" width="430" height="84" fill="url(#solX)"/>
+    <!-- joints de dalles fuyant vers les portes -->
+    <g stroke="${P.joint}" stroke-width="1.2" opacity=".7">
+      <path d="M0 368 L430 368"/><path d="M0 396 L430 396"/>
+      <path d="M60 430 L150 346"/><path d="M140 430 L185 346"/>
+      <path d="M215 430 L215 346"/><path d="M290 430 L245 346"/>
+      <path d="M370 430 L280 346"/>
+    </g>
+    <line x1="0" y1="346" x2="430" y2="346" stroke="${P.joint}" stroke-width="2"/>
+
     <g id="calqueSpectateurs"></g>
 
-    <!-- trottoir -->
-    <rect x="0" y="386" width="430" height="14" fill="#0a0d1c"/>
-    <line x1="0" y1="386" x2="430" y2="386" stroke="#33477e" stroke-width="1.5"/>
-    <g stroke="#1c2440" stroke-width="1"><line x1="70" y1="386" x2="66" y2="400"/><line x1="180" y1="386" x2="176" y2="400"/><line x1="290" y1="386" x2="286" y2="400"/><line x1="400" y1="386" x2="396" y2="400"/></g>
+    <!-- ================== TAPIS ROUGE EN VRAIE PERSPECTIVE ================== -->
+    <g>
+      <!-- ombre du tapis -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="#000" opacity=".18" transform="translate(4,3)"/>
+      <!-- tapis : trapèze fuyant depuis les portes -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="url(#tapisX)"/>
+      <!-- liserés dorés qui fuient -->
+      <path d="M184 346 L140 428" stroke="#f7dd9a" stroke-width="2" opacity=".65"/>
+      <path d="M246 346 L290 428" stroke="#f7dd9a" stroke-width="2" opacity=".65"/>
+      <!-- barres transversales de plus en plus larges (profondeur) -->
+      <path d="M187 362 L243 362" stroke="#5c1220" stroke-width="2" opacity=".5"/>
+      <path d="M180 384 L250 384" stroke="#5c1220" stroke-width="2.6" opacity=".5"/>
+      <path d="M171 408 L259 408" stroke="#5c1220" stroke-width="3.2" opacity=".5"/>
+      <!-- reflet de lumière sur le tapis -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="url(#tapisLumX)"/>
+    </g>
+
+    <!-- ================== POTELETS EN PERSPECTIVE (petits au fond, grands devant) ================== -->
+    <g>
+      <!-- rangée gauche -->
+      <rect x="160" y="352" width="4.5" height="26" rx="2.2" fill="url(#orX)"/><circle cx="162" cy="351" r="3.6" fill="url(#orX)"/>
+      <ellipse cx="162" cy="379" rx="6" ry="1.8" fill="#000" opacity=".25"/>
+      <rect x="140" y="372" width="5.5" height="34" rx="2.7" fill="url(#orX)"/><circle cx="142.5" cy="370" r="4.4" fill="url(#orX)"/>
+      <ellipse cx="142.5" cy="407" rx="8" ry="2.2" fill="#000" opacity=".25"/>
+      <rect x="114" y="392" width="7" height="42" rx="3.5" fill="url(#orX)"/><circle cx="117.5" cy="390" r="5.4" fill="url(#orX)"/>
+      <!-- rangée droite -->
+      <rect x="265" y="352" width="4.5" height="26" rx="2.2" fill="url(#orX)"/><circle cx="267" cy="351" r="3.6" fill="url(#orX)"/>
+      <ellipse cx="267" cy="379" rx="6" ry="1.8" fill="#000" opacity=".25"/>
+      <rect x="284" y="372" width="5.5" height="34" rx="2.7" fill="url(#orX)"/><circle cx="286.5" cy="370" r="4.4" fill="url(#orX)"/>
+      <ellipse cx="286.5" cy="407" rx="8" ry="2.2" fill="#000" opacity=".25"/>
+      <rect x="308" y="392" width="7" height="42" rx="3.5" fill="url(#orX)"/><circle cx="311.5" cy="390" r="5.4" fill="url(#orX)"/>
+      <!-- cordons qui suivent la fuite -->
+      <path d="M162 355 Q152 366 142.5 374" stroke="#8c2331" stroke-width="3.4" fill="none"/>
+      <path d="M142.5 376 Q130 386 117.5 394" stroke="#8c2331" stroke-width="4.2" fill="none"/>
+      <path d="M267 355 Q277 366 286.5 374" stroke="#8c2331" stroke-width="3.4" fill="none"/>
+      <path d="M286.5 376 Q299 386 311.5 394" stroke="#8c2331" stroke-width="4.2" fill="none"/>
+    </g>
   </svg>`;
 }
 
+
 /* ---- séquence d'allumage à l'arrivée ---- */
 function allumage(c){
-  const svg = document.querySelector("#facade svg");
-  const ens = document.getElementById("gEnseigne");
-  if(!ens){ ditBonjour(c); return; }
+  const ens = document.querySelector("#facade text");
+  if(!ens || phaseSelonHeure()==="matin" || phaseSelonHeure()==="aprem"){ ditBonjour(c); spawnSpectateur(); return; }
   ens.style.opacity = "0";
   setTimeout(()=>{
     ens.style.transition = "opacity .18s";
@@ -950,19 +1145,23 @@ function spawnSpectateur(){
   const versDroite = Math.random() < .5;
   const entre = Math.random() < .35;
   const s = SILHOUETTES[Math.floor(Math.random()*SILHOUETTES.length)];
-  const echelle = .85 + Math.random()*.3;
+  /* profondeur : plus le passant est bas, plus il est grand */
+  const proche = Math.random() < .5;
+  const yBase = proche ? 424 : 372;
+  const echelle = proche ? 1.15 : .72;
   const g = document.createElementNS("http://www.w3.org/2000/svg","g");
-  const dep = versDroite ? -20 : 450;
-  const arr = entre ? 215 : (versDroite ? 450 : -20);
-  const duree = entre ? 4.5 : 7 + Math.random()*4;
+  const dep = versDroite ? -30 : 460;
+  const arr = entre ? 215 : (versDroite ? 460 : -30);
+  const duree = entre ? 5 : 8 + Math.random()*4;
   g.innerHTML = `
-    <g transform="scale(${echelle})" transform-origin="0 372">
+    <g transform="translate(0 ${yBase}) scale(${echelle})">
       <g class="dandine">
-        <circle cx="0" cy="352" r="5.5" fill="${s.peau}"/>
-        <rect x="-4.5" y="357" width="9" height="16" rx="3.5" fill="${s.habit}"/>
-        <rect x="-4" y="372" width="3.2" height="9" rx="1.6" fill="#241a2e"/>
-        <rect x="1" y="372" width="3.2" height="9" rx="1.6" fill="#241a2e"/>
+        <circle cx="0" cy="-30" r="5.5" fill="${s.peau}"/>
+        <rect x="-4.5" y="-25" width="9" height="16" rx="3.5" fill="${s.habit}"/>
+        <rect x="-4" y="-10" width="3.2" height="9" rx="1.6" fill="#2a2030"/>
+        <rect x="1" y="-10" width="3.2" height="9" rx="1.6" fill="#2a2030"/>
       </g>
+      <ellipse cx="0" cy="1" rx="7" ry="2" fill="#000" opacity=".2"/>
     </g>`;
   g.style.cssText = `--depart:${dep}px;--arrivee:${arr}px;animation-duration:${duree}s`;
   g.setAttribute("class","spectateur");
