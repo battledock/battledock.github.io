@@ -1,5 +1,12 @@
 /* Le studio : bureau, assistant de production, filmothèque. */
 
+import { afficheXpServeur } from "./rooms.js";
+import { brancheBureau, bureauStudio } from "./ui/desk.js";
+import { chargeCinema } from "./game-state.js";
+import { echappe } from "./ui/emblems.js";
+import { idOperation } from "./api.js";
+import { majHeaderArgent } from "./navigation.js";
+import { messageErreur } from "./supabase-client.js";
 import { Etat, fmtArgent } from "./game-state.js";
 import { bobCompact } from "./navigation.js";
 import { niveauActuel } from "./progression.js";
