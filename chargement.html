@@ -57,8 +57,26 @@ body.sort{animation:sortie .7s forwards}
 /* garde : pas de session → retour au guichet */
 if(!localStorage.getItem("rex_session")) location.replace("index.html");
 
-const DESTINATION = "jeu.html";
 const DUREE_MIN = 3200;   /* durée mini d'affichage (ms) */
+let DESTINATION = localStorage.getItem("rex_dest") || "jeu.html";
+
+/* vérifie si le cinéma existe déjà : sinon, cérémonie obligatoire */
+(async ()=>{
+  if(DESTINATION !== "jeu.html") return;
+  if(localStorage.getItem("rex_cinema")) return;
+  try{
+    const sess = JSON.parse(localStorage.getItem("rex_session"));
+    const rep = await fetch("https://zpfkekiavlfphialvphi.supabase.co/rest/v1/cinemas?user_id=eq."+sess.user_id+"&select=*",{
+      headers:{
+        "apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZmtla2lhdmxmcGhpYWx2cGhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjc4MzIsImV4cCI6MjEwMTMwMzgzMn0.ORa4y_AMjuWbxboKm3o6Jn7ryYjkOm4mSgLa2Schv98",
+        "Authorization":"Bearer "+sess.access_token
+      }
+    });
+    const data = await rep.json();
+    if(Array.isArray(data) && data.length) localStorage.setItem("rex_cinema", JSON.stringify(data[0]));
+    else DESTINATION = "inscription.html";
+  }catch(e){ /* réseau KO : on laisse jeu.html gérer */ }
+})();
 
 const VANNES = [
   "« Sens de rotation ? Aucune idée. Ça tourne, c'est déjà Cannes. »",
