@@ -1,3 +1,4 @@
+import { NIVEAUX } from "../../progression.js";
 import { Etat } from "../../game-state.js";
 import {
   MISSIONS,

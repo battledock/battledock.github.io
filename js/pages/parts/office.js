@@ -1,3 +1,4 @@
+import { PRODUITS_CONFISERIE } from "../../data/concessions.js";
 import { deconnexion } from "../../auth.js";
 import { confiserieActive, tauxAchat } from "../../data/concessions.js";
 import { obtenirBonusSalle } from "../../data/upgrades.js";
