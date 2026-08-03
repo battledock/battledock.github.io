@@ -1,5 +1,6 @@
 /* Programmation : mur d'affiches et grille des séances. */
 
+import { CATALOGUE_FILMS } from "./data/films.js";
 import {
   NETTOYAGE_MIN,
   compareHeures,
