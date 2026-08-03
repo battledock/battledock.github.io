@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>Le studio</title>
+<title>Personnalisation</title>
 <style>
 :root{
   --safeT:env(safe-area-inset-top,0px);
@@ -1009,12 +1009,12 @@ button:disabled{opacity:.5}
 
 <main class="contenu">
   <div class="titrePage">
-    <h1>Le studio</h1>
-    <p>La porte du fond. Là où Bob range sa caméra… et ses rêves.</p>
+    <h1>Personnalisation</h1>
+    <p>L'allure de ton cinéma, du trottoir jusqu'aux fauteuils.</p>
   </div>
   <div id="zoneBob"></div>
-  <div id="contenuStudio"></div>
-  <div id="filmographie"></div>
+  <div class="ongletsPerso" id="ongletsPerso"></div>
+  <div id="contenuPerso"></div>
 </main>
 
 
@@ -3064,179 +3064,178 @@ async function useSalles(bilan){
 }
 
 
-/* Studio : production de films maison */
-let filmsProduits = [];
+/* ============================================================
+   PAGE PERSONNALISATION
+   ============================================================ */
+let ongletPerso = "enseigne";
 
-const GENRES_STUDIO = ["Comédie","Drame","Action","Frisson","SF","Documentaire"];
-const BUDGETS = [
-  {id:"fauche",    nom:"Fauché",     cout:150, base:20, duree:2, desc:"Une caméra, deux amis, zéro regret"},
-  {id:"correct",   nom:"Correct",    cout:400, base:35, duree:3, desc:"De vrais acteurs. Enfin, presque tous"},
-  {id:"ambitieux", nom:"Ambitieux",  cout:900, base:52, duree:5, desc:"Le quartier entier en figuration"}
-];
-const TITRES_BOB = [
-  "Le Mystère du Rang 12","Pigeons de Minuit","La Caissière et le Fantôme",
-  "Opération Popcorn","Le Dernier Projectionniste","Un Balai pour l'Éternité",
-  "Les Rois du Trottoir","Minuit au Comptoir","La Bobine Perdue"
-];
-
-function studioDebloque(){
-  const c = Etat.cinema;
-  return c.prod_avancee || c.jour >= 5;
-}
-
-async function initStudio(){
-  await chargeFilmsProduits();
-  if(!studioDebloque()){ rendVerrouille(); return; }
-  rendFormulaire();
-  rendFilmographie();
-  document.getElementById("zoneBob").appendChild(bobCompact(conseilStudio()));
-}
-
-async function chargeFilmsProduits(){
-  const data = await sbFetch(`films_produits?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le.desc`);
-  filmsProduits = Array.isArray(data) ? data : [];
-  Etat.filmsProduits = filmsProduits;
-}
-
-function conseilStudio(){
-  if(filmsProduits.length===0) return "Ma vieille caméra n'attend que toi. Premier conseil : le titre fait 50% du film. L'autre 50%, c'est le titre aussi.";
-  const enCours = filmsProduits.find(f=>f.pret_jour > Etat.cinema.jour);
-  if(enCours) return `« ${enCours.titre} » est en tournage. Je fais la perche. Et le clap. Et le café.`;
-  return "Un film terminé, ça se programme ! File dans la cabine de programmation, il t'attend au catalogue.";
-}
-
-/* ---- verrouillé ---- */
-function rendVerrouille(){
-  document.getElementById("contenuStudio").innerHTML = `
-    <section class="carteEcran studioVerrou">
-      <div class="verrouIco">${icone("camera","icoVerrou")}</div>
-      <h2 style="justify-content:center;border:none">Le studio est fermé</h2>
-      <p class="verrouTxt">La porte du fond est verrouillée. Bob tapote sa poche :
-      « La clé se mérite. Reviens au <b>jour 5</b>… ou trouve quelqu'un qui a une vieille caméra à prêter. »</p>
-      <p class="verrouSous">Débloqué au jour 5 — ou dès le départ avec la vieille caméra de Bob.</p>
-    </section>`;
+async function initPersonnalisation(){
+  await chargePersonnalisation();
+  rendOngletsPerso();
+  rendContenuPerso();
   document.getElementById("zoneBob").appendChild(
-    bobCompact("Entre nous : ceux qui ont choisi la caméra dans mon carton tournent déjà. Je dis ça, je dis rien."));
+    bobCompact("Tout ce qui se voit depuis la rue passe par ici. Choisis bien, le quartier regarde."));
 }
 
-/* ---- formulaire de production ---- */
-let choix = {genre:null, budget:null};
+const ONGLETS = [
+  {id:"enseigne",  nom:"Enseigne"},
+  {id:"facade",    nom:"Façade"},
+  {id:"exterieur", nom:"Extérieur"},
+  {id:"hall",      nom:"Hall"},
+  {id:"sieges",    nom:"Fauteuils"},
+  {id:"plaque",    nom:"Plaques"}
+];
 
-function rendFormulaire(){
-  const enCours = filmsProduits.find(f=>f.pret_jour > Etat.cinema.jour);
-  const el = document.getElementById("contenuStudio");
-  if(enCours){
-    const restant = enCours.pret_jour - Etat.cinema.jour;
-    el.innerHTML = `
-      <section class="carteEcran">
-        <h2>Tournage en cours</h2>
-        <div class="tournage">
-          <div class="tournageTitre">« ${enCours.titre} »</div>
-          <div class="tournageMeta">${enCours.genre} · budget ${enCours.budget}</div>
-          <div class="clap">${icone("camera")} Prêt au jour ${enCours.pret_jour} — encore ${restant} jour${restant>1?"s":""}</div>
-        </div>
-      </section>`;
+function rendOngletsPerso(){
+  document.getElementById("ongletsPerso").innerHTML = ONGLETS.map(o=>{
+    const conf = CATALOGUE_PERSO[o.id];
+    const verrou = conf.cleDeblocage && !estDebloque(conf.cleDeblocage);
+    return `<button class="ongletPerso ${o.id===ongletPerso?'actif':''} ${verrou?'verrou':''}"
+      onclick="changeOnglet('${o.id}')">${o.nom}${verrou?" 🔒".replace("🔒",""):""}</button>`;
+  }).join("");
+}
+function changeOnglet(id){ ongletPerso = id; rendOngletsPerso(); rendContenuPerso(); }
+
+function rendContenuPerso(){
+  const conf = CATALOGUE_PERSO[ongletPerso];
+  const el = document.getElementById("contenuPerso");
+  if(conf.cleDeblocage && !estDebloque(conf.cleDeblocage)){
+    const r = recompenseParCle(conf.cleDeblocage);
+    el.innerHTML = `<section class="carteEcran"><h2>${conf.nom}</h2>
+      <div class="eqVerrou"><b>Verrouillé</b><span>Disponible au niveau ${r ? r.niveau : "?"}.</span></div></section>`;
     return;
   }
-  el.innerHTML = `
-    <section class="carteEcran">
-      <h2>Nouveau film</h2>
-      <label class="lblStudio">Le titre</label>
-      <div class="ligneTitre">
-        <input id="titreFilm" type="text" maxlength="34" placeholder="Ton chef-d'œuvre">
-        <button class="btnRouge btnIdee" onclick="ideeBob()" title="Bob a une idée">?</button>
+  el.innerHTML = conf.emplacements ? rendHall(conf)
+              : conf.multiple      ? rendMultiple(conf)
+              :                      rendSimple(conf);
+}
+
+/* ---------- catégories à choix unique ---------- */
+function rendSimple(conf){
+  const actuel = Etat.perso[conf.champ];
+  return `<section class="carteEcran"><h2>${conf.nom}</h2>
+    <div class="grillePerso">
+      ${conf.items.map(i=>vignettePerso(ongletPerso, i, i.id===actuel)).join("")}
+    </div></section>`;
+}
+function rendMultiple(conf){
+  const liste = Etat.perso.exterieur || [];
+  return `<section class="carteEcran"><h2>${conf.nom}</h2>
+    <p class="sousTitrePerso">Plusieurs éléments peuvent être posés en même temps.</p>
+    <div class="grillePerso">
+      ${conf.items.map(i=>vignettePerso(ongletPerso, i, liste.includes(i.id))).join("")}
+    </div></section>`;
+}
+function rendHall(conf){
+  return conf.zones.map(z=>{
+    const choisi = Etat.perso.hall[z.id] || z.objets[0].id;
+    return `<section class="carteEcran"><h2>${z.nom}</h2>
+      <div class="grillePerso">
+        ${z.objets.map(o=>vignettePerso("hall", o, o.id===choisi, z.id)).join("")}
+      </div></section>`;
+  }).join("");
+}
+
+function vignettePerso(cat, item, actif, zone){
+  const a = accessible(cat, item.id);
+  const etiquette = a.ok ? (actif ? "Sélectionné" : "Appliquer")
+    : a.raison === "niveau" ? "Niveau " + a.niveau
+    : fmtArgent(a.cout);
+  return `<button class="vignettePerso ${actif?'actif':''} ${a.ok?'':'verrouillee'}"
+    onclick="ouvreApercu('${cat}','${item.id}'${zone?`,'${zone}'`:""})">
+    <span class="vpApercu">${apercuVignette(cat, item)}</span>
+    <span class="vpNom">${item.nom}</span>
+    <span class="vpEtat ${actif?'sel':''}">${etiquette}</span>
+  </button>`;
+}
+
+function apercuVignette(cat, item){
+  if(cat === "facade")
+    return `<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="${item.mur?item.mur[1]:'#8c3a52'}"/>
+      <rect x="6" y="6" width="48" height="7" rx="2" fill="${item.filetsOr?'#e8b84b':'#caa24a'}"/>
+      <rect x="18" y="22" width="24" height="18" fill="#22305a" stroke="#caa24a" stroke-width="1.5"/></svg>`;
+  if(cat === "enseigne")
+    return `<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#2a1119"/>
+      <text x="30" y="25" text-anchor="middle" font-family="Georgia" font-weight="bold" font-size="11"
+        fill="${item.couleur}" style="filter:drop-shadow(0 0 5px ${item.halo})">REX</text></svg>`;
+  if(cat === "sieges")
+    return `<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#2a2028"/>
+      ${[12,30,48].map(x=>`<rect x="${x-7}" y="14" width="14" height="15" rx="3" fill="${item.couleur}"/>`).join("")}</svg>`;
+  const ICONES_PERSO = {banc:"fauteuil", lampadaire:"etoile", pot:"maison", panneau:"journal",
+    guirlande:"cloche", plaque_quartier:"etoile", aucune:"porte"};
+  return `<svg viewBox="0 0 60 40"><rect width="60" height="40" fill="#241a20"/>
+    <g transform="translate(18 8) scale(1)">${ICONES[ICONES_PERSO[item.id] || "etoile"]}</g></svg>`;
+}
+
+/* ---------- aperçu avant application ---------- */
+function ouvreApercu(cat, id, zone){
+  const conf = CATALOGUE_PERSO[cat];
+  const item = itemPerso(cat, id);
+  const a = accessible(cat, id);
+  const actuelId = conf.emplacements ? (Etat.perso.hall[zone] || conf.zones.find(z=>z.id===zone).objets[0].id)
+                 : conf.multiple ? null : Etat.perso[conf.champ];
+  const actuel = actuelId ? itemPerso(cat, actuelId) : null;
+  const deja = conf.multiple ? (Etat.perso.exterieur||[]).includes(id) : actuelId === id;
+
+  const o = document.createElement("div");
+  o.className = "voileConfirm";
+  o.innerHTML = `
+    <div class="carteConfirm carteApercu">
+      <div class="apercuGrand">${apercuVignette(cat, item)}</div>
+      <div class="ccTitre">${item.nom}</div>
+      ${item.desc ? `<div class="ccTexte">${item.desc}</div>` : ""}
+      ${actuel ? `<div class="ccResume">
+          <span>Actuellement : <b>${actuel.nom}</b></span>
+          <span>Nouvelle apparence : <b>${item.nom}</b></span>
+        </div>` : ""}
+      ${a.raison === "niveau" ? `<div class="ccAlerte">Disponible au niveau ${a.niveau}.</div>` : ""}
+      ${a.raison === "achat" ? `<div class="ccResume"><span>Prix : <b>${fmtArgent(a.cout)}</b></span>
+        <span>Caisse après achat : <b>${fmtArgent(Math.max(0, Number(Etat.cinema.argent)-a.cout))}</b></span></div>` : ""}
+      <div class="ccBoutons">
+        <button class="btnAnnuler" id="aAnnuler">Annuler</button>
+        ${a.raison === "niveau" ? ""
+          : `<button class="btnOr btnOuvrir" id="aValider">${
+              a.raison === "achat" ? "Acheter et appliquer"
+              : conf.multiple ? (deja ? "Retirer" : "Installer")
+              : deja ? "Déjà appliqué" : "Appliquer"}</button>`}
       </div>
-      <label class="lblStudio">Le genre</label>
-      <div class="pastilles" id="choixGenre">
-        ${GENRES_STUDIO.map(g=>`<button class="pastGenre" onclick="choisitGenre('${g}',this)">${g}</button>`).join("")}
-      </div>
-      <label class="lblStudio">Le budget</label>
-      <div id="choixBudget">
-        ${BUDGETS.map(b=>`
-          <button class="optBudget" onclick="choisitBudget('${b.id}',this)">
-            <span class="obNom">${b.nom}<b>${fmtArgent(b.cout)}</b></span>
-            <span class="obDesc">${b.desc} · ${b.duree} jours de tournage</span>
-          </button>`).join("")}
-      </div>
-      <button class="btnRouge btnTourner" id="btnTourner" onclick="lanceProduction()" disabled>
-        ${icone("camera")} Moteur… ça tourne !
-      </button>
-    </section>`;
+    </div>`;
+  document.body.appendChild(o);
+  o.querySelector("#aAnnuler").onclick = ()=>{ o.classList.add("sortie"); setTimeout(()=>o.remove(),240); };
+  const v = o.querySelector("#aValider");
+  if(v) v.onclick = async ()=>{
+    v.disabled = true; v.textContent = "…";
+    if(a.raison === "achat"){
+      const r = await achetePersonnalisation(cat, id);
+      if(r && r.erreur === "argent"){ o.remove(); bulleP("La caisse dit non. Poliment, mais fermement."); return; }
+    }
+    const res = await appliquePersonnalisation(cat, id, zone);
+    o.remove();
+    if(res && res.erreur){ bulleP("La connexion a lâché. Je recharge l'état officiel."); await chargePersonnalisation(); }
+    rendContenuPerso();
+    await declencheMissionPerso(cat);
+    bulleP(phrasePerso(cat, item));
+  };
 }
-
-function ideeBob(){
-  document.getElementById("titreFilm").value = TITRES_BOB[Math.floor(Math.random()*TITRES_BOB.length)];
-  verifiePret();
-  toastBob("Cadeau. Si le film est mauvais, le titre restera. C'est ça, l'art.");
-}
-function choisitGenre(g, btn){
-  choix.genre = g;
-  document.querySelectorAll(".pastGenre").forEach(b=>b.classList.remove("sel"));
-  btn.classList.add("sel");
-  verifiePret();
-}
-function choisitBudget(id, btn){
-  choix.budget = BUDGETS.find(b=>b.id===id);
-  document.querySelectorAll(".optBudget").forEach(b=>b.classList.remove("sel"));
-  btn.classList.add("sel");
-  verifiePret();
-}
-function verifiePret(){
-  const t = document.getElementById("titreFilm")?.value.trim();
-  document.getElementById("btnTourner").disabled = !(t && choix.genre && choix.budget);
-}
-document.addEventListener("input", e=>{ if(e.target.id==="titreFilm") verifiePret(); });
-
-async function lanceProduction(){
-  const c = Etat.cinema;
-  const titre = document.getElementById("titreFilm").value.trim();
-  const b = choix.budget;
-  if(c.argent < b.cout){ toastBob("Il manque des sous. " + fmtArgent(b.cout) + " le tournage. Le cinéma d'abord, l'art ensuite."); return; }
-
-  /* qualité : base budget × bonus quartier artistique + aléa du tournage */
-  const alea = Math.floor(Math.random()*15) - 4;   /* -4 à +10 */
-  const qualite = Math.max(5, Math.round(b.base * (c.mult_films||1)) + alea);
-
-  const res = await sbFetch("films_produits", {method:"POST", body:{
-    cinema_id:c.id, titre, genre:choix.genre, budget:b.nom,
-    qualite, pret_jour: c.jour + b.duree
-  }});
-  if(!Array.isArray(res) || !res.length){ toastBob("La caméra a calé. Réessaie."); return; }
-  await majCinema({argent: c.argent - b.cout});
-  majHeaderArgent();
-  filmsProduits.unshift(res[0]);
-  choix = {genre:null, budget:null};
-  rendFormulaire();
-  rendFilmographie();
-  await gagneXP(XP.film_produit, "Film en production");
-  toastBob(`« ${titre} », ${choix.genre||res[0].genre}. MOTEUR ! Reviens au jour ${res[0].pret_jour}, je m'occupe du montage. Et du café.`);
-}
-
-/* ---- filmographie ---- */
-function rendFilmographie(){
-  const el = document.getElementById("filmographie");
-  if(filmsProduits.length===0){ el.innerHTML=""; return; }
-  const c = Etat.cinema;
-  el.innerHTML = `
-    <section class="carteEcran">
-      <h2>Ta filmographie</h2>
-      ${filmsProduits.map(f=>{
-        const pret = f.pret_jour <= c.jour;
-        return `<div class="ligneFilmo">
-          ${icone(pret?"pellicule":"camera")}
-          <span class="lfTxt"><b>${f.titre}</b><small>${f.genre} · ${f.budget}</small></span>
-          ${pret
-            ? `<span class="lfEtat pret">À l'affiche possible · qualité ${f.qualite}</span>`
-            : `<span class="lfEtat">Tournage — prêt jour ${f.pret_jour}</span>`}
-        </div>`;
-      }).join("")}
-    </section>`;
-}
-
-function toastBob(t){
+function bulleP(t){
   const z = document.getElementById("zoneBob");
   z.innerHTML = ""; z.appendChild(bobCompact(t));
   window.scrollTo({top:0, behavior:"smooth"});
+}
+function phrasePerso(cat, item){
+  const P = {
+    enseigne:`« ${item.nom} » sur la façade. On nous verra depuis le bout de la rue.`,
+    facade:`Repeint en ${item.nom.toLowerCase()}. J'ai encore de la peinture sur les mains.`,
+    hall:"Le hall change de tête. Les gens vont enfin regarder ailleurs que leurs chaussures.",
+    exterieur:"Installé sur le trottoir. Ne me demande pas comment j'ai porté ça tout seul.",
+    sieges:`Fauteuils ${item.nom.toLowerCase()}. Le rang 12 approuve. Enfin, il grince différemment.`,
+    plaque:"La plaque est posée. Vissée. Bien droite. J'ai vérifié trois fois."
+  };
+  return P[cat] || "C'est fait, patron.";
+}
+async function declencheMissionPerso(cat){
+  const M = {enseigne:"m_enseigne", hall:"m_hall", exterieur:"m_exterieur", facade:"m_facade"};
+  if(M[cat]) await accomplitMission(M[cat]);
 }
 
 
@@ -3250,8 +3249,8 @@ function toastBob(t){
     await chargeConfiserie();
     await synchroniseDeblocages();
     await activeConfiserieSiBesoin();
-    initNavigation("studio");
-    await initStudio();
+    initNavigation("plus");
+    await initPersonnalisation();
   }catch(e){
     const z = document.getElementById("zoneBob") || document.getElementById("contenuBilan") || document.body;
     z.textContent = "Erreur : " + e.message + " — recharge la page.";

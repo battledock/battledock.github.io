@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>Le studio</title>
+<title>Progression</title>
 <style>
 :root{
   --safeT:env(safe-area-inset-top,0px);
@@ -1009,12 +1009,13 @@ button:disabled{opacity:.5}
 
 <main class="contenu">
   <div class="titrePage">
-    <h1>Le studio</h1>
-    <p>La porte du fond. Là où Bob range sa caméra… et ses rêves.</p>
+    <h1>Progression</h1>
+    <p>Ce que tu as débloqué, et ce qui t'attend.</p>
   </div>
-  <div id="zoneBob"></div>
-  <div id="contenuStudio"></div>
-  <div id="filmographie"></div>
+  <div id="enteteProgression"></div>
+  <div id="blocReclamer"></div>
+  <div id="blocMissions"></div>
+  <div id="echelleNiveaux"></div>
 </main>
 
 
@@ -3064,179 +3065,108 @@ async function useSalles(bilan){
 }
 
 
-/* Studio : production de films maison */
-let filmsProduits = [];
-
-const GENRES_STUDIO = ["Comédie","Drame","Action","Frisson","SF","Documentaire"];
-const BUDGETS = [
-  {id:"fauche",    nom:"Fauché",     cout:150, base:20, duree:2, desc:"Une caméra, deux amis, zéro regret"},
-  {id:"correct",   nom:"Correct",    cout:400, base:35, duree:3, desc:"De vrais acteurs. Enfin, presque tous"},
-  {id:"ambitieux", nom:"Ambitieux",  cout:900, base:52, duree:5, desc:"Le quartier entier en figuration"}
-];
-const TITRES_BOB = [
-  "Le Mystère du Rang 12","Pigeons de Minuit","La Caissière et le Fantôme",
-  "Opération Popcorn","Le Dernier Projectionniste","Un Balai pour l'Éternité",
-  "Les Rois du Trottoir","Minuit au Comptoir","La Bobine Perdue"
-];
-
-function studioDebloque(){
-  const c = Etat.cinema;
-  return c.prod_avancee || c.jour >= 5;
+/* ============================================================
+   PAGE PROGRESSION — niveaux 1 à 10 en détail
+   ============================================================ */
+async function initProgressionPage(){
+  await synchroniseDeblocages();
+  await chargeMissions();
+  rendEntetePro();
+  rendMissions();
+  rendRecompensesAReclamer();
+  rendEchelle();
 }
 
-async function initStudio(){
-  await chargeFilmsProduits();
-  if(!studioDebloque()){ rendVerrouille(); return; }
-  rendFormulaire();
-  rendFilmographie();
-  document.getElementById("zoneBob").appendChild(bobCompact(conseilStudio()));
-}
+function rendEntetePro(){
+  const n = niveauActuel();
+  const inf = infoNiveau(n);
+  const p = progressionVersSuivant();
+  const suivant = n < niveauMax() ? infoNiveau(n+1) : null;
 
-async function chargeFilmsProduits(){
-  const data = await sbFetch(`films_produits?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le.desc`);
-  filmsProduits = Array.isArray(data) ? data : [];
-  Etat.filmsProduits = filmsProduits;
-}
-
-function conseilStudio(){
-  if(filmsProduits.length===0) return "Ma vieille caméra n'attend que toi. Premier conseil : le titre fait 50% du film. L'autre 50%, c'est le titre aussi.";
-  const enCours = filmsProduits.find(f=>f.pret_jour > Etat.cinema.jour);
-  if(enCours) return `« ${enCours.titre} » est en tournage. Je fais la perche. Et le clap. Et le café.`;
-  return "Un film terminé, ça se programme ! File dans la cabine de programmation, il t'attend au catalogue.";
-}
-
-/* ---- verrouillé ---- */
-function rendVerrouille(){
-  document.getElementById("contenuStudio").innerHTML = `
-    <section class="carteEcran studioVerrou">
-      <div class="verrouIco">${icone("camera","icoVerrou")}</div>
-      <h2 style="justify-content:center;border:none">Le studio est fermé</h2>
-      <p class="verrouTxt">La porte du fond est verrouillée. Bob tapote sa poche :
-      « La clé se mérite. Reviens au <b>jour 5</b>… ou trouve quelqu'un qui a une vieille caméra à prêter. »</p>
-      <p class="verrouSous">Débloqué au jour 5 — ou dès le départ avec la vieille caméra de Bob.</p>
+  document.getElementById("enteteProgression").innerHTML = `
+    <section class="carteEcran">
+      <div class="blocNiveau">
+        <div class="nivGros">${n}</div>
+        <div class="nivTitre">${inf.titre}</div>
+      </div>
+      <div class="pisteXP"><div class="barreXP" id="barreProPage"></div></div>
+      <div class="legendeXP">
+        <span><b>${xpActuel()}</b> / ${n < niveauMax() ? p.borneHaut : xpActuel()} XP</span>
+        ${n < niveauMax() ? `<span>encore <b>${p.reste}</b> XP</span>` : `<span>Niveau maximum</span>`}
+      </div>
+      ${suivant ? `
+        <div class="prochainNiveau">
+          <div class="pnLabel">Prochain niveau — ${suivant.titre}</div>
+          ${suivant.recompenses.map(r=>`<div class="ligneRecit">${icone(r.ic)}<span><b>${r.nom}</b><br><small>${r.desc}</small></span></div>`).join("")}
+        </div>` : ""}
     </section>`;
-  document.getElementById("zoneBob").appendChild(
-    bobCompact("Entre nous : ceux qui ont choisi la caméra dans mon carton tournent déjà. Je dis ça, je dis rien."));
+  setTimeout(()=>{ const b = document.getElementById("barreProPage"); if(b) b.style.width = p.pct + "%"; }, 120);
 }
 
-/* ---- formulaire de production ---- */
-let choix = {genre:null, budget:null};
+function rendMissions(){
+  const el = document.getElementById("blocMissions");
+  const ouvertes = missionsOuvertes();
+  const faites = MISSIONS.filter(m=>missionFaite(m.cle));
+  if(ouvertes.length === 0 && faites.length === 0){ el.innerHTML = ""; return; }
+  el.innerHTML = `<section class="carteEcran"><h2>Missions de découverte</h2>
+    ${ouvertes.map(m=>`
+      <a class="ligneMission" href="${m.url}">
+        ${icone("etoile")}
+        <span class="lmTxt"><b>${m.titre}</b><small>Récompense : ${m.xp} XP</small></span>
+        <span class="lmFleche">→</span>
+      </a>`).join("")}
+    ${faites.map(m=>`
+      <div class="ligneMission faite">
+        ${icone("etoile")}
+        <span class="lmTxt"><b>${m.titre}</b><small>Accomplie · +${m.xp} XP</small></span>
+      </div>`).join("")}
+  </section>`;
+}
 
-function rendFormulaire(){
-  const enCours = filmsProduits.find(f=>f.pret_jour > Etat.cinema.jour);
-  const el = document.getElementById("contenuStudio");
-  if(enCours){
-    const restant = enCours.pret_jour - Etat.cinema.jour;
-    el.innerHTML = `
-      <section class="carteEcran">
-        <h2>Tournage en cours</h2>
-        <div class="tournage">
-          <div class="tournageTitre">« ${enCours.titre} »</div>
-          <div class="tournageMeta">${enCours.genre} · budget ${enCours.budget}</div>
-          <div class="clap">${icone("camera")} Prêt au jour ${enCours.pret_jour} — encore ${restant} jour${restant>1?"s":""}</div>
-        </div>
-      </section>`;
-    return;
+function rendRecompensesAReclamer(){
+  const el = document.getElementById("blocReclamer");
+  const liste = recompensesAReclamer();
+  if(liste.length === 0){ el.innerHTML = ""; return; }
+  el.innerHTML = `<section class="carteEcran carteCadeau"><h2>À récupérer</h2>
+    ${liste.map(r=>`
+      <div class="ligneRecit">${icone(r.ic)}
+        <span><b>${r.nom}</b><br><small>${r.desc}</small></span>
+        <button class="btnOr btnReclamer" onclick="reclame('${r.cle}')">Récupérer</button>
+      </div>`).join("")}</section>`;
+}
+async function reclame(cle){
+  const ok = await reclameRecompense(cle);
+  if(ok){
+    rendRecompensesAReclamer();
+    const r = recompenseParCle(cle);
+    const d = document.createElement("div");
+    d.className = "toastMission";
+    d.innerHTML = `${icone("etoile")}<span><b>Récompense obtenue</b>${r.nom}</span>`;
+    document.body.appendChild(d);
+    setTimeout(()=>d.remove(), 3600);
   }
-  el.innerHTML = `
-    <section class="carteEcran">
-      <h2>Nouveau film</h2>
-      <label class="lblStudio">Le titre</label>
-      <div class="ligneTitre">
-        <input id="titreFilm" type="text" maxlength="34" placeholder="Ton chef-d'œuvre">
-        <button class="btnRouge btnIdee" onclick="ideeBob()" title="Bob a une idée">?</button>
-      </div>
-      <label class="lblStudio">Le genre</label>
-      <div class="pastilles" id="choixGenre">
-        ${GENRES_STUDIO.map(g=>`<button class="pastGenre" onclick="choisitGenre('${g}',this)">${g}</button>`).join("")}
-      </div>
-      <label class="lblStudio">Le budget</label>
-      <div id="choixBudget">
-        ${BUDGETS.map(b=>`
-          <button class="optBudget" onclick="choisitBudget('${b.id}',this)">
-            <span class="obNom">${b.nom}<b>${fmtArgent(b.cout)}</b></span>
-            <span class="obDesc">${b.desc} · ${b.duree} jours de tournage</span>
-          </button>`).join("")}
-      </div>
-      <button class="btnRouge btnTourner" id="btnTourner" onclick="lanceProduction()" disabled>
-        ${icone("camera")} Moteur… ça tourne !
-      </button>
-    </section>`;
 }
 
-function ideeBob(){
-  document.getElementById("titreFilm").value = TITRES_BOB[Math.floor(Math.random()*TITRES_BOB.length)];
-  verifiePret();
-  toastBob("Cadeau. Si le film est mauvais, le titre restera. C'est ça, l'art.");
-}
-function choisitGenre(g, btn){
-  choix.genre = g;
-  document.querySelectorAll(".pastGenre").forEach(b=>b.classList.remove("sel"));
-  btn.classList.add("sel");
-  verifiePret();
-}
-function choisitBudget(id, btn){
-  choix.budget = BUDGETS.find(b=>b.id===id);
-  document.querySelectorAll(".optBudget").forEach(b=>b.classList.remove("sel"));
-  btn.classList.add("sel");
-  verifiePret();
-}
-function verifiePret(){
-  const t = document.getElementById("titreFilm")?.value.trim();
-  document.getElementById("btnTourner").disabled = !(t && choix.genre && choix.budget);
-}
-document.addEventListener("input", e=>{ if(e.target.id==="titreFilm") verifiePret(); });
-
-async function lanceProduction(){
-  const c = Etat.cinema;
-  const titre = document.getElementById("titreFilm").value.trim();
-  const b = choix.budget;
-  if(c.argent < b.cout){ toastBob("Il manque des sous. " + fmtArgent(b.cout) + " le tournage. Le cinéma d'abord, l'art ensuite."); return; }
-
-  /* qualité : base budget × bonus quartier artistique + aléa du tournage */
-  const alea = Math.floor(Math.random()*15) - 4;   /* -4 à +10 */
-  const qualite = Math.max(5, Math.round(b.base * (c.mult_films||1)) + alea);
-
-  const res = await sbFetch("films_produits", {method:"POST", body:{
-    cinema_id:c.id, titre, genre:choix.genre, budget:b.nom,
-    qualite, pret_jour: c.jour + b.duree
-  }});
-  if(!Array.isArray(res) || !res.length){ toastBob("La caméra a calé. Réessaie."); return; }
-  await majCinema({argent: c.argent - b.cout});
-  majHeaderArgent();
-  filmsProduits.unshift(res[0]);
-  choix = {genre:null, budget:null};
-  rendFormulaire();
-  rendFilmographie();
-  await gagneXP(XP.film_produit, "Film en production");
-  toastBob(`« ${titre} », ${choix.genre||res[0].genre}. MOTEUR ! Reviens au jour ${res[0].pret_jour}, je m'occupe du montage. Et du café.`);
-}
-
-/* ---- filmographie ---- */
-function rendFilmographie(){
-  const el = document.getElementById("filmographie");
-  if(filmsProduits.length===0){ el.innerHTML=""; return; }
-  const c = Etat.cinema;
-  el.innerHTML = `
-    <section class="carteEcran">
-      <h2>Ta filmographie</h2>
-      ${filmsProduits.map(f=>{
-        const pret = f.pret_jour <= c.jour;
-        return `<div class="ligneFilmo">
-          ${icone(pret?"pellicule":"camera")}
-          <span class="lfTxt"><b>${f.titre}</b><small>${f.genre} · ${f.budget}</small></span>
-          ${pret
-            ? `<span class="lfEtat pret">À l'affiche possible · qualité ${f.qualite}</span>`
-            : `<span class="lfEtat">Tournage — prêt jour ${f.pret_jour}</span>`}
+function rendEchelle(){
+  const n = niveauActuel();
+  document.getElementById("echelleNiveaux").innerHTML = `
+    <section class="carteEcran"><h2>Le premier chapitre</h2>
+      ${NIVEAUX.filter(niv=>niv.n <= 10).map(niv=>{
+        const acquis = niv.n <= n;
+        const reste = Math.max(0, niv.xp - xpActuel());
+        return `<div class="paletteNiveau ${acquis?'acquis':''} ${niv.n===n?'courant':''}">
+          <div class="pnEnteteNiv">
+            <span class="pnNum">${niv.n}</span>
+            <span class="pnTitreNiv">${niv.titre}</span>
+            <span class="pnEtat">${acquis ? "Débloqué" : "Encore " + reste + " XP"}</span>
+          </div>
+          <div class="pnRecomp">
+            ${niv.recompenses.map(r=>`<span class="puceRecomp">${icone(r.ic)} ${r.nom}</span>`).join("")}
+          </div>
         </div>`;
       }).join("")}
+      ${niveauMax() > 10 ? `<div class="notePied">Le chapitre suivant commence au niveau 11.</div>` : ""}
     </section>`;
-}
-
-function toastBob(t){
-  const z = document.getElementById("zoneBob");
-  z.innerHTML = ""; z.appendChild(bobCompact(t));
-  window.scrollTo({top:0, behavior:"smooth"});
 }
 
 
@@ -3250,8 +3180,8 @@ function toastBob(t){
     await chargeConfiserie();
     await synchroniseDeblocages();
     await activeConfiserieSiBesoin();
-    initNavigation("studio");
-    await initStudio();
+    initNavigation("plus");
+    await initProgressionPage();
   }catch(e){
     const z = document.getElementById("zoneBob") || document.getElementById("contenuBilan") || document.body;
     z.textContent = "Erreur : " + e.message + " — recharge la page.";
