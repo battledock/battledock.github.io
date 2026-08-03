@@ -1,11 +1,14 @@
 /* Point d'entrée de plus.html */
 
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js";
 import { initAmbiance } from "../ambiance.js";
 import { initialiserJeu } from "../game-state.js";
 import { messageErreur } from "../supabase-client.js";
 import { initPlus } from "./parts/office.js";
 import { majBadgeNotifications } from "./parts/community-social.js";
 
+demarreChargement();
+filetChargement();
 initAmbiance("communaute");
 
 try{
@@ -18,4 +21,7 @@ try{
   console.error("[Rex] plus", e);
   const zone = document.getElementById("zoneBob") || document.body;
   zone.textContent = messageErreur(e) + " Recharge la page.";
+}finally{
+  /* la page ne se montre qu'une fois entièrement dessinée */
+  finChargement();
 }
