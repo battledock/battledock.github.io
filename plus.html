@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>Les salles</title>
+<title>Le bureau</title>
 <style>
 :root{
   --safeT:env(safe-area-inset-top,0px);
@@ -442,12 +442,21 @@ button:disabled{opacity:.5}
 
 <main class="contenu">
   <div class="titrePage">
-    <h1>Les salles</h1>
-    <p>Améliore le confort, l'image, le son — chaque détail compte.</p>
+    <h1>Le bureau du directeur</h1>
+    <p>La fiche du cinéma, et tout le reste.</p>
   </div>
   <div id="zoneBob"></div>
-  <div id="listeSalles"></div>
-  <div id="zoneNouvelle"></div>
+  <div class="plaqueFiche" id="plaqueCine"></div>
+  <section class="carteEcran">
+    <h2>En détail</h2>
+    <div id="ficheDetail"></div>
+  </section>
+  <section class="carteEcran">
+    <h2>Prochainement dans le bâtiment</h2>
+    <div id="aVenir"></div>
+  </section>
+  <button class="btnDeco" id="btnDeco" onclick="confirmeDeconnexion()">Rendre les clés (déconnexion)</button>
+  <div class="versionPied">Le Rex du Quartier · v0.1 · fait avec Bob</div>
 </main>
 
 
@@ -627,166 +636,48 @@ const CRENEAUX = ["14h00","17h00","20h00","22h15"];
 function filmParId(id){ return CATALOGUE_FILMS.find(f=>f.id===id); }
 
 
-/* Gestion des salles */
-let salles = [];
+/* Page "Plus" : fiche du cinéma, à venir, compte */
+const NOMS_QUARTIERS_P = {centre:"Centre-ville",residentiel:"Quartier résidentiel",etudiant:"Quartier étudiant",populaire:"Quartier populaire",artistique:"Quartier artistique"};
+const NOMS_CADEAUX = {popcorn:"Machine à popcorn (+10 % snack)",fauteuils:"Fauteuils restaurés (+5 % satisfaction)",camera:"Vieille caméra de Bob (studio débloqué)"};
 
-const AMELIORATIONS = [
-  {id:"confort", nom:"Sièges",       ic:"fauteuil", max:5, cout:n=>120*n, effet:"+ satisfaction"},
-  {id:"ecran",   nom:"Écran",        ic:"pellicule",max:5, cout:n=>150*n, effet:"+ attrait des séances"},
-  {id:"son",     nom:"Système son",  ic:"cloche",   max:5, cout:n=>100*n, effet:"+ attrait des séances"},
-  {id:"deco",    nom:"Décoration",   ic:"etoile",   max:5, cout:n=>80*n,  effet:"+ réputation"}
-];
-const COUT_CLIM = 300;
-const COUT_AGRANDIR = n => 250*n;   /* n = nb d'agrandissements déjà faits +1 */
-const PLACES_AGRANDIR = 20;
-const COUT_NOUVELLE_SALLE = 1500;
-const MAX_SALLES = 3;
-
-async function initSalles(){
-  await chargeSalles();
-  if(salles.length === 0) await creePremiereSalle();
-  rendSalles();
-  document.getElementById("zoneBob").appendChild(bobCompact(conseilSalles()));
-}
-
-async function chargeSalles(){
-  const data = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
-  salles = Array.isArray(data) ? data : [];
-}
-
-async function creePremiereSalle(){
+function initPlus(){
   const c = Etat.cinema;
-  const res = await sbFetch("salles", {method:"POST", body:{
-    cinema_id:c.id, nom:"Salle 1", capacite:c.capacite||80,
-    confort:1, ecran:1, son:1, deco:1, clim:false, agrandissements:0
-  }});
-  if(Array.isArray(res) && res.length) salles = res;
+  const annee = c.fonde_le ? new Date(c.fonde_le).getFullYear() : new Date().getFullYear();
+
+  document.getElementById("plaqueCine").innerHTML = `
+    <div class="pfLogo">${c.logo}</div>
+    <h2>${c.nom}</h2>
+    <div class="pfLigne">Fondé en <b>${annee}</b> · Jour <b>${c.jour}</b></div>
+    <div class="pfLigne">Directeur : <b>${c.directeur}</b></div>
+    <div class="pfLigne">${NOMS_QUARTIERS_P[c.quartier]||c.quartier} · <b>${c.capacite} places</b></div>
+    <div class="pfDevise">« ${c.devise} »</div>`;
+
+  document.getElementById("ficheDetail").innerHTML = `
+    <div class="ligneRecit">${icone("piece")}<span>En caisse : <b>${fmtArgent(c.argent)}</b></span></div>
+    <div class="ligneRecit">${icone("etoile")}<span>Réputation : <b>${Etat.reputation} / 100</b></span></div>
+    <div class="ligneRecit">${icone("maison")}<span>Loyer : <b>${fmtArgent(c.loyer)}</b> par jour</span></div>
+    <div class="ligneRecit">${icone("billet")}<span>Cadeau d'ouverture : <b>${NOMS_CADEAUX[c.cadeau_depart]||c.cadeau_depart}</b></span></div>`;
+
+  document.getElementById("aVenir").innerHTML = [
+    {ic:"billet",  nom:"La confiserie",  desc:"Popcorn, sodas, marges indécentes"},
+    {ic:"spectateurs", nom:"L'équipe",   desc:"Caissiers, projectionnistes, et Bob (déjà là)"},
+    {ic:"journal", nom:"Les finances",   desc:"Livre de comptes, courbes, sueurs froides"}
+  ].map(x=>`
+    <div class="ligneRecit aVenirLigne">${icone(x.ic)}
+      <span><b>${x.nom}</b><br><small>${x.desc}</small></span>
+      <span class="badgeBientot">Bientôt</span>
+    </div>`).join("");
+
+  document.getElementById("zoneBob").appendChild(
+    bobCompact("La fiche officielle du cinéma. Encadrée dans le hall. Enfin, scotchée, mais avec un beau scotch."));
 }
 
-function conseilSalles(){
-  const s = salles[0];
-  if(!s) return "On inspecte les salles.";
-  if(s.confort <= 1) return "Les sièges datent de l'ouverture. Le 12 grince, les autres réfléchissent à le faire.";
-  if(!s.clim) return "L'été approche. Une clim, et les gens resteront même pour les mauvais films.";
-  return "Belle salle. Presque trop belle pour le quartier. Presque.";
-}
-
-/* ---- rendu ---- */
-function rendSalles(){
-  const el = document.getElementById("listeSalles");
-  el.innerHTML = salles.map(s => carteSalle(s)).join("");
-  rendNouvelleSalle();
-}
-
-function jauge(niveau, max=5){
-  let h = '<span class="jaugeNiv">';
-  for(let i=1;i<=max;i++) h += `<i class="${i<=niveau?'plein':''}"></i>`;
-  return h + '</span>';
-}
-
-function carteSalle(s){
-  const lignesAm = AMELIORATIONS.map(a=>{
-    const niv = s[a.id];
-    const auMax = niv >= a.max;
-    const cout = a.cout(niv+1);
-    return `<div class="ligneAmelio">
-      ${icone(a.ic)}
-      <span class="amTxt"><b>${a.nom}</b>${jauge(niv)}<small>${a.effet}</small></span>
-      ${auMax
-        ? `<span class="amMax">MAX</span>`
-        : `<button class="btnOr btnAm" onclick="ameliore('${s.id}','${a.id}')">${fmtArgent(cout)}</button>`}
-    </div>`;
-  }).join("");
-
-  const clim = s.clim
-    ? `<div class="ligneAmelio">${icone("outil")}<span class="amTxt"><b>Climatisation</b><small>installée — les canicules sont un souvenir</small></span><span class="amMax">✓</span></div>`
-    : `<div class="ligneAmelio">${icone("outil")}<span class="amTxt"><b>Climatisation</b><small>+ fréquentation en été</small></span><button class="btnOr btnAm" onclick="installeClim('${s.id}')">${fmtArgent(COUT_CLIM)}</button></div>`;
-
-  const coutAgr = COUT_AGRANDIR((s.agrandissements||0)+1);
-  const agrandir = `<div class="ligneAmelio">${icone("batiment")}<span class="amTxt"><b>Agrandir</b><small>+${PLACES_AGRANDIR} places</small></span><button class="btnOr btnAm" onclick="agrandit('${s.id}')">${fmtArgent(coutAgr)}</button></div>`;
-
-  return `<section class="carteEcran carteSalle">
-    <h2>${s.nom}<span class="capBadge">${icone("fauteuil")} ${s.capacite} places</span></h2>
-    ${lignesAm}${clim}${agrandir}
-  </section>`;
-}
-
-function rendNouvelleSalle(){
-  const el = document.getElementById("zoneNouvelle");
-  if(salles.length >= MAX_SALLES){
-    el.innerHTML = `<div class="notePied">Le bâtiment est plein — ${MAX_SALLES} salles maximum. Pour l'instant…</div>`;
-    return;
-  }
-  el.innerHTML = `<button class="btnRouge btnNouvSalle" onclick="construitSalle()">
-    Construire la salle ${salles.length+1} — ${fmtArgent(COUT_NOUVELLE_SALLE)}
-  </button>`;
-}
-
-/* ---- actions ---- */
-function toastBob(t){
-  const z = document.getElementById("zoneBob");
-  z.innerHTML = ""; z.appendChild(bobCompact(t));
-  window.scrollTo({top:0, behavior:"smooth"});
-}
-async function paye(cout){
-  if(Etat.cinema.argent < cout){ toastBob("Pas assez en caisse. Il faut " + fmtArgent(cout) + ". Programme des séances, encaisse, reviens."); return false; }
-  await majCinema({argent: Etat.cinema.argent - cout});
-  majHeaderArgent();
-  return true;
-}
-async function majSalle(id, champs){
-  const s = salles.find(x=>String(x.id)===String(id));
-  Object.assign(s, champs);
-  await sbFetch("salles?id=eq."+id, {method:"PATCH", body:champs, prefer:"return=minimal"});
-}
-
-async function ameliore(id, quoi){
-  const s = salles.find(x=>String(x.id)===String(id));
-  const a = AMELIORATIONS.find(x=>x.id===quoi);
-  if(s[quoi] >= a.max) return;
-  const cout = a.cout(s[quoi]+1);
-  if(!await paye(cout)) return;
-  await majSalle(id, {[quoi]: s[quoi]+1});
-  rendSalles();
-  const PHRASES = {
-    confort:"Nouveaux sièges ! Le 12 grince toujours, mais par nostalgie.",
-    ecran:"Écran flambant neuf. On voit même les défauts des films, maintenant.",
-    son:"Le son ! Les voisins vont se plaindre. Signe de qualité.",
-    deco:"Superbe. On dirait presque un cinéma de la capitale. Presque."
-  };
-  toastBob(PHRASES[quoi]);
-}
-
-async function installeClim(id){
-  if(!await paye(COUT_CLIM)) return;
-  await majSalle(id, {clim:true});
-  rendSalles();
-  toastBob("Clim installée ! Elle fait un léger bruit d'avion. J'appelle ça l'immersion.");
-}
-
-async function agrandit(id){
-  const s = salles.find(x=>String(x.id)===String(id));
-  const cout = COUT_AGRANDIR((s.agrandissements||0)+1);
-  if(!await paye(cout)) return;
-  await majSalle(id, {capacite: s.capacite + PLACES_AGRANDIR, agrandissements:(s.agrandissements||0)+1});
-  await majCinema({capacite: salles.reduce((t,x)=>t+x.capacite,0)});
-  rendSalles();
-  toastBob("+" + PLACES_AGRANDIR + " places ! J'ai poussé le mur moi-même. Enfin, avec des ouvriers. Enfin, je regardais.");
-}
-
-async function construitSalle(){
-  if(salles.length >= MAX_SALLES) return;
-  if(!await paye(COUT_NOUVELLE_SALLE)) return;
-  const res = await sbFetch("salles", {method:"POST", body:{
-    cinema_id:Etat.cinema.id, nom:"Salle "+(salles.length+1), capacite:60,
-    confort:1, ecran:1, son:1, deco:1, clim:false, agrandissements:0
-  }});
-  if(Array.isArray(res) && res.length){
-    salles.push(res[0]);
-    await majCinema({capacite: salles.reduce((t,x)=>t+x.capacite,0)});
-    rendSalles();
-    toastBob("Une " + res[0].nom + " ! Le quartier va jaser. En bien, pour une fois.");
-  }
+function confirmeDeconnexion(){
+  const b = document.getElementById("btnDeco");
+  if(b.dataset.confirme){ deconnexion(); return; }
+  b.dataset.confirme = "1";
+  b.textContent = "Sûr ? Bob gardera la caisse. Appuie encore.";
+  setTimeout(()=>{ b.dataset.confirme=""; b.textContent = "Rendre les clés (déconnexion)"; }, 3500);
 }
 
 
@@ -794,8 +685,8 @@ async function construitSalle(){
   try{
     const c = await chargeCinema();
     if(!c) return;
-    initNavigation("salles");
-    await initSalles();
+    initNavigation("plus");
+    initPlus();
   }catch(e){
     const z = document.getElementById("zoneBob") || document.body;
     z.textContent = "Erreur : " + e.message + " — recharge la page.";
