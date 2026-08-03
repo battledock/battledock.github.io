@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-<title>Les salles</title>
+<title>Visite d'un cinéma</title>
 <style>
 :root{
   --safeT:env(safe-area-inset-top,0px);
@@ -1228,14 +1228,12 @@ button:disabled{opacity:.5}
 </head>
 <body>
 
-<main class="contenu">
-  <div class="titrePage">
-    <h1>Les salles</h1>
-    <p>Chaque fauteuil, chaque ampoule compte.</p>
+<main class="contenu contenuVisite">
+  <div class="barreVisite">
+    <a class="retourVitrine" href="communaute.html">← Retour</a>
+    <a class="retourMonCine" href="jeu.html">Mon cinéma</a>
   </div>
-  <div id="zoneBob"></div>
-  <div id="listeSalles"></div>
-  <div id="zoneConstruction"></div>
+  <div id="contenuVisite"></div>
 </main>
 
 
@@ -3666,494 +3664,1083 @@ async function journaliseXpSimple(type, montant, cleUnique){
 /* l'usure des salles est appliquée par simuler_journee() côté serveur */
 
 
-/* ============================================================
-   SALLES — consultation, gestion, achats
-   Toute la configuration vit dans ameliorations.js
-   ============================================================ */
-let salles = [];
-let salleOuverte = null;
-let achatEnCours = false;
+/* Accueil vivant du cinéma (jeu.html) */
 
-async function initSalles(){
-  await chargeSalles();
-  if(salles.length === 0) await creePremiereSalle();
-  Etat.salles = salles;
-  rendListeSalles();
-  bulleSalles(conseilSalles());
-}
+const CONSEILS_BOB = [
+  "La façade, c'est ton premier film. Les gens la regardent avant d'acheter le billet.",
+  "Pense à programmer des séances. Un cinéma sans séance, c'est juste un couloir avec des fauteuils.",
+  "Le popcorn se vend mieux quand ça sent le popcorn. Science exacte.",
+  "Le quartier parle de toi. En bien pour l'instant. Faisons durer.",
+  "Un jour tu produiras tes propres films. J'ai gardé ma caméra au chaud, au cas où.",
+  "Balaye entre les rangs 3 et 4. C'est toujours entre les rangs 3 et 4.",
+  "La réputation monte lentement et descend vite. Comme moi dans l'escalier de la cabine."
+];
 
-async function chargeSalles(){
-  const d = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
-  salles = Array.isArray(d) ? d : [];
-  Etat.salles = salles;
-}
+const EVENEMENTS_JOUR = [
+  {ic:"journal", txt:"Le journal du quartier mentionne ton ouverture."},
+  {ic:"cloche", txt:"Un pigeon a tenté d'entrer. Bob a géré. Fièrement."},
+  {ic:"spectateurs", txt:"Beau temps : les gens flânent devant la façade."},
+  {ic:"billet", txt:"Un enfant a demandé si le cinéma faisait aussi les anniversaires."},
+  {ic:"outil", txt:"Bob a nettoyé le hall. Il précise : « à fond »."}
+];
 
-/* la salle 1 est créée par le serveur (fonction reparer_partie) */
-async function creePremiereSalle(){
-  try{ await rpc("reparer_partie", {p_cinema_id: Etat.cinema.id}); }catch(e){}
-  await chargeSalles();
-}
-
-function bulleSalles(t){
-  const z = document.getElementById("zoneBob");
-  z.innerHTML = ""; z.appendChild(bobCompact(t));
-}
-function conseilSalles(){
-  const sale = salles.find(s=>Number(s.proprete ?? 100) < 60);
-  if(sale) return "Entre les rangs 3 et 4. Toujours. Je ne veux même plus savoir pourquoi.";
-  const abime = salles.find(s=>Number(s.etat ?? 100) < 60);
-  if(abime) return `${abime.nom} fatigue. Une réparation avant que quelque chose lâche en pleine séance ?`;
-  const s = salles[0];
-  if(s && niveauEquipement(s,"sieges") === 0) return "Les fauteuils datent de l'ouverture. Le 12 grince, les autres réfléchissent à le faire.";
-  return "Belle salle. Presque trop belle pour le quartier. Presque.";
-}
-
-/* ============================================================
-   LISTE DES SALLES
-   ============================================================ */
-function rendListeSalles(){
-  document.getElementById("listeSalles").innerHTML = salles.map(s=>carteSalle(s)).join("");
-  rendConstruction();
+async function initAccueil(){
+  const c = Etat.cinema;
+  try{ await chargeSeancesAccueil(); }catch(e){ Etat.seancesJour = []; }
+  try{ await chargeJournee(); }catch(e){}
+  try{ await chargeSallesEtat(); }catch(e){}
+  dessineFacade(c);
+  rendStatut(c);
+  rendActionPrincipale();
+  rendResume(c);
+  rendSeances();
+  rendEvenement();
+  allumage(c);
+  setInterval(spawnSpectateur, 1600);
+  for(let i=0;i<4;i++) setTimeout(spawnSpectateur, 400 + i*550);
+  let phaseCourante = phaseSelonHeure();
+  setInterval(()=>{
+    const p = phaseSelonHeure();
+    if(p !== phaseCourante){ phaseCourante = p; dessineFacade(Etat.cinema); }
+  }, 60000);
+  setInterval(()=>parleBob(CONSEILS_BOB[Math.floor(Math.random()*CONSEILS_BOB.length)]), 14000);
 }
 
-function ligneEquip(salle, cle){
-  const n = niveauEquipement(salle, cle);
-  const a = AMELIORATIONS[cle];
-  return `<div class="eqLigne">
-    ${icone(a.icone)}
-    <span class="eqNom">${a.nom}</span>
-    <span class="eqJauge">${[0,1,2,3].slice(1).map(i=>`<i class="${i<=n?'plein':''}"></i>`).join("")}</span>
-    <span class="eqNiv">${n===0?"—":"niv "+n}</span>
-  </div>`;
+/* ================== FAÇADE VIVANTE (cycle du ciel + programme réel) ================== */
+const PHASES = {
+  matin:{
+    ciel:["#7fb2d9","#b8d8ec","#eef6f2"],
+    astre:{type:"soleil", x:78, y:56, r:15, c:"#fff3c2", halo:"#fff3c2"},
+    voisins:"#c9bda6", fenVois:"#9ab0bf", fenOp:.5,
+    mur:["#b06078","#96485e","#7c3a4e"],
+    vitre:["#9cc0da","#c2dcea","#8cb0ca"],
+    halo:0, lumieres:false, etoiles:false,
+    trottoir:"#cbbda2", joint:"#a6947a", ombre:.14,
+    ambiance:"oiseaux", note:"MATIN · 7h — le cinéma dort encore, le quartier s'éveille"
+  },
+  aprem:{
+    ciel:["#5f9fd6","#8fc3e8","#d8ecf6"],
+    astre:{type:"soleil", x:352, y:44, r:17, c:"#ffe9a0", halo:"#ffe9a0"},
+    voisins:"#d8c9b0", fenVois:"#8fa8bc", fenOp:.7,
+    mur:["#a8506a","#8c3a52","#742e42"],
+    vitre:["#7fa8cc","#a8cce4","#6f98bc"],
+    halo:0, lumieres:false, etoiles:false,
+    trottoir:"#c9baa0", joint:"#a08c6a", ombre:.18,
+    ambiance:"nuages", note:"APRÈS-MIDI · 15h — ouvert, séances de journée"
+  },
+  aube:{
+    ciel:["#3a2c5e","#8a5484","#e8956a"],
+    astre:{type:"soleil", x:215, y:118, r:22, c:"#ffd98a", halo:"#ff9a5c"},
+    voisins:"#4b3852", fenVois:"#ffd98a", fenOp:.85,
+    mur:["#7c3450","#61283e","#4c1f30"],
+    vitre:["#6a5a8c","#9a7ca8","#54476e"],
+    halo:.35, lumieres:true, etoiles:"peu",
+    trottoir:"#5c4a54", joint:"#3f3340", ombre:.3,
+    ambiance:"aucune", note:"CRÉPUSCULE · 20h — l'heure dorée, les enseignes s'allument"
+  },
+  nuit:{
+    ciel:["#05070f","#141a38","#232c54"],
+    astre:{type:"lune", x:374, y:44, r:16},
+    voisins:"#10152b", fenVois:"#f2c96a", fenOp:.85,
+    mur:["#4f2545","#341629","#26101e"],
+    vitre:["#22305a","#3d548c","#1a2547"],
+    halo:.5, lumieres:true, etoiles:"plein",
+    trottoir:"#0a0d1c", joint:"#1c2440", ombre:0,
+    ambiance:"aucune", note:"NUIT · 22h — la pleine séance, le quartier converge"
+  }
+};
+
+
+function phaseSelonHeure(){
+  const h = new Date().getHours();
+  if(h>=6 && h<11) return "matin";
+  if(h>=11 && h<18) return "aprem";
+  if(h>=18 && h<21) return "aube";
+  return "nuit";
 }
 
-function carteSalle(s){
-  const bonus = obtenirBonusSalle(s);
-  const travaux = s.travaux_fin && new Date(s.travaux_fin).getTime() > Date.now();
-  const type = TYPES_SALLES[s.type || "standard"];
-  return `<section class="carteEcran carteSalle">
-    <h2>${s.nom}<span class="capBadge">${icone("fauteuil")} ${s.capacite} places</span></h2>
-    <div class="salleType">${type.nom}</div>
-    ${travaux ? `<div class="bandeauTravaux">${icone("outil")} Travaux en cours — disponible au jour suivant</div>` : ""}
-    <div class="apercuBoite">${apercuSalle(s)}</div>
-    <div class="grilleEquip">
-      ${Object.keys(AMELIORATIONS).map(cle=>ligneEquip(s, cle)).join("")}
-    </div>
-    <div class="etatSalle">
-      <div class="etLigne"><span>Propreté</span>
-        <span class="etPiste"><i class="${classeEtat(s.proprete)}" style="width:${Number(s.proprete ?? 100)}%"></i></span>
-        <b>${Math.round(Number(s.proprete ?? 100))} %</b></div>
-      <div class="etLigne"><span>État général</span>
-        <span class="etPiste"><i class="${classeEtat(s.etat)}" style="width:${Number(s.etat ?? 100)}%"></i></span>
-        <b>${Math.round(Number(s.etat ?? 100))} %</b></div>
-    </div>
-    <div class="resumeBonus">
-      <span>${icone("etoile")} satisfaction <b>+${bonus.satisfaction}</b></span>
-      <span>${icone("cloche")} incident <b>${libelleRisque(bonus.risqueIncident)}</b></span>
-    </div>
-    <button class="btnOr btnGerer" onclick="ouvreSalle('${s.id}')">Gérer la salle</button>
-  </section>`;
-}
-function classeEtat(v){
-  const n = Number(v ?? 100);
-  return n >= 70 ? "bon" : n >= 40 ? "moyen" : "mauvais";
-}
 
-/* ============================================================
-   CONSTRUCTION D'UNE NOUVELLE SALLE
-   ============================================================ */
-function rendConstruction(){
-  const el = document.getElementById("zoneConstruction");
-  const suivante = CONSTRUCTION_SALLES.find(c=>c.index === salles.length + 1);
-  if(!suivante){ el.innerHTML = `<div class="notePied">Le bâtiment est plein. Pour l'instant…</div>`; return; }
-  const ok = debloque(suivante.cleProgression);
-  el.innerHTML = ok
-    ? `<section class="carteEcran carteConstruction">
-        <h2>Salle ${suivante.index}</h2>
-        <div class="ligneRecit">${icone("batiment")}<span>Type standard · <b>${suivante.capacite} places</b> · travaux immédiats</span></div>
-        <div class="ligneRecit">${icone("piece")}<span>Coût de construction : <b>${fmtArgent(suivante.cout)}</b></span></div>
-        <button class="btnRouge btnConstruire" onclick="confirmeConstruction()">Construire la salle ${suivante.index}</button>
-      </section>`
-    : `<div class="notePied">Salle ${suivante.index} : débloquée au niveau ${niveauDe(suivante.cleProgression)}.</div>
-       <div class="typesVerrouilles">
-         ${Object.entries(TYPES_SALLES).filter(([k,t])=>t.niveauRequis>1).map(([k,t])=>`
-           <div class="typeVerrou">${icone("porte")}<span><b>Salle ${t.nom.toLowerCase()}</b><small>${t.desc}</small></span>
-           <span class="badgeNiv">NIV ${t.niveauRequis}</span></div>`).join("")}
-       </div>`;
-}
+const COULEURS_GENRE = {
+  "Frisson":["#2a1535","#6a3d8c"], "Comédie":["#8c5a1f","#e8a04a"],
+  "Drame":["#1f3a5c","#5c88b8"], "Action":["#6e1424","#c83a4a"],
+  "SF":["#0f2a38","#2e8ca8"], "Classique":["#3a3126","#8a7a5c"],
+  "défaut":["#8c2331","#c86a4a"]
+};
 
-function confirmeConstruction(){
-  const suivante = CONSTRUCTION_SALLES.find(c=>c.index === salles.length + 1);
-  if(!suivante) return;
-  ouvreConfirmation({
-    titre:`Construire la salle ${suivante.index} ?`,
-    ico:"batiment",
-    texte:`Type standard, ${suivante.capacite} places. Les travaux sont menés dans la journée.`,
-    cout:suivante.cout,
-    valider:"Lancer le chantier",
-    action:()=>construitSalle(suivante)
+
+/* séances converties pour la façade */
+function seancesFacade(){
+  return (Etat.seancesJour || []).map(s=>{
+    const f = (typeof filmParId==="function" && filmParId(s.film_id)) || {titre:s.film_id, genre:"défaut"};
+    return {heure:(s.heure||"").toUpperCase(), titre:f.titre, genre:f.genre||"défaut"};
   });
 }
 
-async function construitSalle(cfg){
-  if(achatEnCours) return;
-  achatEnCours = true;
-  const op = idOperation();
-  try{
-    const r = await rpc("construire_salle", {p_cinema_id: Etat.cinema.id, p_operation_id: op});
-    if(!r?.success){
-      const M = {INSUFFICIENT_FUNDS:"Les fauteuils sont d'accord pour être remplacés. La caisse, beaucoup moins.",
-                 LEVEL_TOO_LOW:"La salle se débloque au niveau " + (r?.data?.requis || "?") + ".",
-                 MAX_ROOMS:"Le bâtiment est plein."};
-      bulleSalles(M[r?.code] || "Le chantier n'a pas démarré."); return;
-    }
-    await chargeCinema(true); await chargeSalles();
-    majHeaderArgent(); rendListeSalles();
-    if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, "Nouvelle salle");
-    cinematiqueNouvelleSalle(r.data.index);
-  }catch(e){
-    await chargeSalles(); rendListeSalles(); bulleSalles(messageErreur(e));
-  }finally{ achatEnCours = false; }
-}
-
-function cinematiqueNouvelleSalle(index){
-  const o = document.createElement("div");
-  o.className = "voileNiveau";
-  o.innerHTML = `
-    <div class="carteNiveau palier">
-      <div class="rayons"></div>
-      <div class="niveauChiffre"><span>Salle ${index}</span><b>${icone("pellicule","icoGrandEcran")}</b></div>
-      <div class="niveauTitre">Un nouvel écran s'allume</div>
-      <div class="niveauCeremonie">Votre cinéma accueille une salle de plus</div>
-      <div class="niveauBob">
-        <span class="bobRond"><svg viewBox="30 40 60 60">
-          <circle cx="60" cy="70" r="26" fill="#f0c9a0"/>
-          <path d="M40 78 Q50 86 60 79 Q70 86 80 78 Q72 92 60 84 Q48 92 40 78" fill="#4a3527"/>
-          <path d="M44 60 Q51 55 57 59 M63 59 Q69 55 76 60" stroke="#4a3527" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <circle cx="51" cy="66" r="2.6" fill="#1c1210"/><circle cx="69" cy="66" r="2.6" fill="#1c1210"/>
-          <path d="M34 56 Q60 34 86 56 L86 50 Q60 28 34 50 Z" fill="#571520"/>
-          <rect x="52" y="44" width="16" height="7" rx="2" fill="#e8b84b"/>
-        </svg></span>
-        <span class="bobDit">Deux projecteurs, deux salles et toujours un seul Bob. Il va falloir négocier. Ou trouver un stagiaire. Surtout un stagiaire.</span>
-      </div>
-      <button class="btnOr btnNiveau" onclick="this.closest('.voileNiveau').remove()">Continuer</button>
-    </div>`;
-  document.body.appendChild(o);
-  if(typeof sonNiveau === "function") sonNiveau();
-}
-
-/* ============================================================
-   PANNEAU DE GESTION D'UNE SALLE
-   ============================================================ */
-function ouvreSalle(id){
-  salleOuverte = salles.find(s=>String(s.id)===String(id));
-  if(!salleOuverte) return;
-  afficheGestion();
-}
-function fermeGestion(){
-  const o = document.getElementById("voileGestion");
-  if(o){ o.classList.add("sortie"); setTimeout(()=>o.remove(), 260); }
-  salleOuverte = null;
-}
-
-function afficheGestion(){
-  const s = salleOuverte;
-  const anciens = document.getElementById("voileGestion");
-  if(anciens) anciens.remove();
-  const bonus = obtenirBonusSalle(s);
-  const type = TYPES_SALLES[s.type || "standard"];
-
-  const o = document.createElement("div");
-  o.className = "voilePanneau"; o.id = "voileGestion";
-  o.innerHTML = `
-    <div class="panneauSeance panneauSalle">
-      <div class="pnEnteteSalle">
-        <span class="pnTitre">${s.nom}</span>
-        <span class="pnSous">${type.nom} · ${s.capacite} places</span>
-        <button class="pnFermer" onclick="fermeGestion()" aria-label="Fermer">✕</button>
-      </div>
-      <div class="pnCorps">
-        <div class="apercuBoite grand">${apercuSalle(s)}</div>
-
-        <div class="valeurActuelle">
-          <div><span>Capacité</span><b>${s.capacite}</b></div>
-          <div><span>Satisfaction</span><b>+${bonus.satisfaction}</b></div>
-          <div><span>Risque d'incident</span><b>${libelleRisque(bonus.risqueIncident)}</b></div>
-        </div>
-
-        <label class="lblProg">Entretien</label>
-        <div class="entretienBloc">
-          <div class="etLigne"><span>Propreté</span>
-            <span class="etPiste"><i class="${classeEtat(s.proprete)}" style="width:${Number(s.proprete ?? 100)}%"></i></span>
-            <b>${Math.round(Number(s.proprete ?? 100))} %</b></div>
-          <button class="btnEntretien" ${Number(s.proprete??100)>=100?"disabled":""} onclick="confirmeNettoyage()">
-            Nettoyer — ${fmtArgent(COUT_NETTOYAGE)}</button>
-          <div class="etLigne"><span>État général</span>
-            <span class="etPiste"><i class="${classeEtat(s.etat)}" style="width:${Number(s.etat ?? 100)}%"></i></span>
-            <b>${Math.round(Number(s.etat ?? 100))} %</b></div>
-          <button class="btnEntretien" ${Number(s.etat??100)>=100?"disabled":""} onclick="confirmeReparation()">
-            Réparer — ${fmtArgent(coutReparation(s))}</button>
-        </div>
-
-        <label class="lblProg">Équipements</label>
-        <div id="listeEquipements">${Object.keys(AMELIORATIONS).map(cle=>blocEquipement(s, cle)).join("")}</div>
-
-        <label class="lblProg">Capacité</label>
-        <div id="blocCapacite">${blocExtension(s)}</div>
-      </div>
-    </div>`;
-  document.body.appendChild(o);
-}
-
-function blocEquipement(s, cle){
-  const a = AMELIORATIONS[cle];
-  const p = prochaineAmelioration(s, cle);
-  const actuel = a.niveaux[p.actuel];
-
-  let bas;
-  if(p.raison === "max"){
-    bas = `<div class="eqMax">${icone("etoile")} Niveau maximal atteint</div>`;
-  }else if(p.raison === "niveau"){
-    bas = `<div class="eqVerrou">
-      <b>${p.prochain.nom}</b>
-      <span>Verrouillé — disponible au niveau ${p.niveauRequis}</span>
-    </div>`;
-  }else{
-    bas = `<div class="eqSuivant">
-        <div class="eqSuivTitre">${p.prochain.nom}</div>
-        <div class="eqSuivDesc">${p.prochain.desc}</div>
-        <div class="eqCompare">
-          <span>Avant : +${actuel.satisfaction} satisfaction</span>
-          <span class="fleche">→</span>
-          <span class="apres">Après : +${p.prochain.satisfaction} satisfaction</span>
-        </div>
-        ${p.prochain.prixAcceptable ? `<div class="eqPlus">Prix acceptable +${p.prochain.prixAcceptable} €</div>`:""}
-        ${p.prochain.reputation ? `<div class="eqPlus">Réputation quotidienne +${p.prochain.reputation} possible</div>`:""}
-        <button class="btnOr btnAmeliorer" onclick="confirmeAmelioration('${cle}')">
-          Améliorer — ${fmtArgent(p.prochain.cout)}</button>
-      </div>`;
+/* affiche de cinéma miniature avec titre réel */
+function afficheFilm(x, seance){
+  if(!seance){
+    return `
+    <path d="M${x+66} 224 L${x+62} 306 L${x+66} 310 Z" fill="#000" opacity=".3"/>
+    <rect x="${x}" y="222" width="66" height="88" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
+    <rect x="${x+7}" y="229" width="52" height="60" fill="#1c1626"/>
+    <text x="${x+33}" y="255" text-anchor="middle" font-size="16" fill="#8a6c2a">?</text>
+    <text x="${x+33}" y="272" text-anchor="middle" font-size="7" fill="#8a6c2a" font-family="Courier New" letter-spacing="1">PROCHAINEMENT</text>
+    <text x="${x+33}" y="303" text-anchor="middle" font-size="8" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">BIENTOT</text>`;
   }
-
-  return `<div class="blocEquip">
-    <div class="beEntete">${icone(a.icone)}<span class="beNom">${a.nom}</span>
-      <span class="beNiv">Niveau ${p.actuel}</span></div>
-    <div class="beActuel">${actuel.nom} — <i>${actuel.desc}</i></div>
-    ${bas}
-  </div>`;
+  const cg = COULEURS_GENRE[seance.genre] || COULEURS_GENRE["défaut"];
+  /* titre découpé en lignes de ~11 caractères */
+  const mots = seance.titre.toUpperCase().split(" ");
+  const lignes = [];
+  let l = "";
+  mots.forEach(m=>{ if((l+" "+m).trim().length<=11){ l=(l+" "+m).trim(); } else { lignes.push(l); l=m; } });
+  if(l) lignes.push(l);
+  const affTitre = lignes.slice(0,3).map((t,i)=>
+    `<text x="${x+33}" y="${252+i*9}" text-anchor="middle" font-size="7.5" font-weight="bold" fill="#fdf3d2" font-family="Georgia" letter-spacing=".5">${t}</text>`).join("");
+  return `
+    <path d="M${x+66} 224 L${x+62} 306 L${x+66} 310 Z" fill="#000" opacity=".3"/>
+    <rect x="${x}" y="222" width="66" height="88" rx="4" fill="#241a12" stroke="#caa24a" stroke-width="3"/>
+    <rect x="${x+7}" y="229" width="52" height="60" fill="${cg[0]}"/>
+    <path d="M${x+7} 289 L${x+7} 269 Q${x+33} 258 ${x+59} 269 L${x+59} 289 Z" fill="${cg[1]}" opacity=".8"/>
+    <circle cx="${x+18}" cy="238" r="4" fill="#f7dd9a" opacity=".9"/>
+    ${affTitre}
+    <path d="M${x+9} 231 L${x+26} 287" stroke="#fff" stroke-opacity=".13" stroke-width="7"/>
+    <rect x="${x+11}" y="292" width="44" height="10" rx="2" fill="#fdf8ea"/>
+    <text x="${x+33}" y="299.5" text-anchor="middle" font-size="7" font-weight="bold" fill="#241a12" font-family="Courier New" letter-spacing="1">${seance.heure}</text>
+    <text x="${x+33}" y="318" text-anchor="middle" font-size="7.5" fill="#f2e8d5" font-family="Courier New" letter-spacing="1">A L'AFFICHE</text>`;
 }
 
-function blocExtension(s){
-  const e = prochaineExtension(s);
-  if(e.raison === "max") return `<div class="eqMax">${icone("etoile")} Toutes les extensions sont faites</div>`;
-  if(e.raison === "capacite_max") return `<div class="eqVerrou"><b>Capacité maximale</b><span>Ce type de salle ne peut pas dépasser ${TYPES_SALLES[s.type||"standard"].capaciteMax} places.</span></div>`;
-  if(e.raison === "niveau") return `<div class="eqVerrou"><b>Extension +${e.ext.places} places</b><span>Verrouillé — disponible au niveau ${e.niveauRequis}</span></div>`;
-  return `<div class="eqSuivant">
-    <div class="eqSuivTitre">Extension : +${e.ext.places} places</div>
-    <div class="eqCompare"><span>Avant : ${s.capacite} places</span><span class="fleche">→</span>
-      <span class="apres">Après : ${Number(s.capacite)+e.ext.places} places</span></div>
-    <button class="btnOr btnAmeliorer" onclick="confirmeExtension()">Agrandir — ${fmtArgent(e.ext.cout)}</button>
-  </div>`;
+
+function dessineFacade(c){
+  const pKey = phaseSelonHeure();
+  const A = construireApparenceFacade(c, Etat.perso, Etat.salles || []);
+  const V = A;   /* même objet : aile, affiches, eclairage, entretien */
+  const SF = seancesFacade();
+  const P = PHASES[pKey];
+  /* le style de façade choisi remplace la palette de mur de la phase */
+  const nuit = (pKey === "nuit" || pKey === "aube");
+  const MUR = (nuit ? A.murNuit : A.mur) || P.mur;
+  const lum = P.lumieres;
+
+  /* étoiles */
+  let etoiles = "";
+  if(P.etoiles==="plein") etoiles = `
+    <g fill="#fff"><circle cx="30" cy="26" r="1.4" class="clignote"/><circle cx="74" cy="52" r="1"/>
+    <circle cx="126" cy="20" r="1.1" class="clignote d2"/><circle cx="215" cy="12" r="1.2"/>
+    <circle cx="296" cy="24" r="1" class="clignote"/><circle cx="404" cy="20" r="1.4"/></g>`;
+  if(P.etoiles==="peu") etoiles = `
+    <g fill="#fff" opacity=".7"><circle cx="60" cy="24" r="1.2" class="clignote"/><circle cx="340" cy="18" r="1" class="clignote d2"/></g>`;
+
+  /* astre */
+  let astre = "";
+  if(P.astre.type==="soleil") astre = `
+    <circle cx="${P.astre.x}" cy="${P.astre.y}" r="${P.astre.r+8}" fill="${P.astre.halo}" opacity=".25"/>
+    <circle cx="${P.astre.x}" cy="${P.astre.y}" r="${P.astre.r}" fill="${P.astre.c}"/>`;
+  else astre = `
+    <circle cx="374" cy="44" r="16" fill="#fdf6de"/>
+    <circle cx="367" cy="39" r="14.5" fill="url(#cielX)"/>`;
+
+  /* ambiance */
+  let amb = "";
+  if(P.ambiance==="oiseaux") amb = `
+    <g class="oiseau" style="animation-delay:0s"><g stroke="#3a4c60" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M0 40 q4 -5 8 0 M8 40 q4 -5 8 0"/></g></g>
+    <g class="oiseau" style="animation-delay:-11s"><g stroke="#3a4c60" stroke-width="1.4" fill="none" stroke-linecap="round">
+      <path d="M0 62 q3.5 -4.5 7 0 M7 62 q3.5 -4.5 7 0"/></g></g>
+    <g class="fumee"><circle cx="30" cy="66" r="4" fill="#fff" opacity=".5"/></g>`;
+  if(P.ambiance==="nuages") amb = `
+    <g class="nuageDerive" fill="#fff" opacity=".85">
+      <ellipse cx="0" cy="28" rx="34" ry="8"/><ellipse cx="26" cy="23" rx="20" ry="6"/></g>
+    <g class="nuageDerive" style="animation-delay:-30s" fill="#fff" opacity=".6">
+      <ellipse cx="0" cy="52" rx="24" ry="6"/></g>`;
+
+  /* lumières façade */
+  const chenille = lum ? `
+    <g fill="#fff3c9">
+      ${[54,94,134,174,214,254,294,334,374].map((x,i)=>`<circle cx="${x}" cy="131" r="3.4" class="chenille" style="animation-delay:${i*0.11}s"/>`).join("")}
+      ${[46,88,130,172,214,256,298,340,382].map((x,i)=>`<circle cx="${x}" cy="184" r="3.4" class="chenille" style="animation-delay:${(8-i)*0.11}s"/>`).join("")}
+    </g>` : `
+    <g fill="#5c4a3a" opacity=".5">
+      ${[54,94,134,174,214,254,294,334,374].map(x=>`<circle cx="${x}" cy="131" r="3.4"/>`).join("")}
+      ${[46,88,130,172,214,256,298,340,382].map(x=>`<circle cx="${x}" cy="184" r="3.4"/>`).join("")}
+    </g>`;
+
+  const enseigneFill = lum ? A.enseigneCouleur : "#fdf3d2";
+  const enseigneFx = lum ? `style="filter:drop-shadow(0 0 10px ${A.enseigneHalo})"` : "";
+  const appliques = lum
+    ? `<circle cx="128" cy="204" r="5" fill="#fff3c9" class="clignote"/><circle cx="302" cy="204" r="5" fill="#fff3c9" class="clignote d2"/>`
+    : `<circle cx="128" cy="204" r="5" fill="#6e5a48" opacity=".6"/><circle cx="302" cy="204" r="5" fill="#6e5a48" opacity=".6"/>`;
+  const lueurPortes = lum ? `<rect x="145" y="217" width="140" height="110" fill="#ffdf9a" opacity=".16"/>` : "";
+  const haloForce = P.halo * (1 + V.eclairage*0.12);
+  const haloSol = P.halo>0 ? `<ellipse cx="215" cy="330" rx="185" ry="105" fill="url(#haloX)" opacity="${Math.min(1,haloForce)}"/>` : "";
+  const ombreBat = P.ombre>0 ? `<ellipse cx="215" cy="392" rx="200" ry="10" fill="#1c140a" opacity="${P.ombre}"/>` : "";
+
+  document.getElementById(opts.cible || "facade").innerHTML = `
+  <svg viewBox="0 0 430 430" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="cielX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.ciel[0]}"/><stop offset=".6" stop-color="${P.ciel[1]}"/><stop offset="1" stop-color="${P.ciel[2]}"/>
+      </linearGradient>
+      <linearGradient id="orX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f6e3a6"/><stop offset=".45" stop-color="#caa24a"/><stop offset="1" stop-color="#7d611f"/>
+      </linearGradient>
+      <linearGradient id="orFonce" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8a6c2a"/><stop offset="1" stop-color="#5c4720"/>
+      </linearGradient>
+      <linearGradient id="murX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${MUR[0]}"/><stop offset=".7" stop-color="${MUR[1]}"/><stop offset="1" stop-color="${MUR[2]}"/>
+      </linearGradient>
+      <linearGradient id="vitreX" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${P.vitre[0]}"/><stop offset=".45" stop-color="${P.vitre[1]}"/><stop offset="1" stop-color="${P.vitre[2]}"/>
+      </linearGradient>
+      <radialGradient id="haloX" cx=".5" cy=".25" r=".85">
+        <stop offset="0" stop-color="#ffe9a8" stop-opacity="1"/><stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="tapisX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#b83145"/><stop offset=".5" stop-color="#8c1f30"/><stop offset="1" stop-color="#5c1220"/>
+      </linearGradient>
+      <linearGradient id="tapisLumX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/>
+      </linearGradient>
+      <linearGradient id="solX" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${P.trottoir}"/><stop offset="1" stop-color="${P.joint}"/>
+      </linearGradient>
+      <linearGradient id="renfX" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <!-- ================== CIEL ================== -->
+    <rect width="430" height="430" fill="url(#cielX)"/>
+    ${etoiles}${astre}${amb}
+
+    ${V.aile ? `<!-- aile de la deuxième salle -->
+    <rect x="34" y="132" width="46" height="228" fill="url(#murX)"/>
+    <rect x="30" y="124" width="54" height="9" rx="3" fill="url(#orX)"/>
+    <rect x="42" y="150" width="30" height="34" rx="3" fill="url(#vitreX)" stroke="#caa24a" stroke-width="1.5"/>
+    <text x="57" y="200" text-anchor="middle" font-family="Courier New" font-size="7"
+      letter-spacing="1" fill="#f7dd9a" opacity=".8">SALLE 2</text>` : ""}
+
+    <!-- immeubles voisins -->
+    <g fill="${P.voisins}">
+      <rect x="0" y="70" width="34" height="360"/><rect x="396" y="62" width="34" height="368"/>
+    </g>
+    <g fill="${P.fenVois}" opacity="${P.fenOp}">
+      <rect x="8" y="92" width="9" height="12" rx="1.5"/><rect x="8" y="150" width="9" height="12" rx="1.5"/>
+      <rect x="8" y="210" width="9" height="12" rx="1.5"/>
+      <rect x="410" y="84" width="9" height="12" rx="1.5"/><rect x="410" y="146" width="9" height="12" rx="1.5"/>
+      <rect x="410" y="206" width="9" height="12" rx="1.5"/>
+    </g>
+
+    <!-- ================== FAÇADE ================== -->
+    <rect x="34" y="52" width="362" height="308" fill="url(#murX)"/>
+    <!-- corniche en volume : face + dessous -->
+    <rect x="24" y="42" width="382" height="13" rx="5" fill="url(#orX)"/>
+    <path d="M24 55 L406 55 L396 61 L34 61 Z" fill="#5c4720"/>
+
+    <!-- enseigne -->
+    <g ${enseigneFx}>
+      <text x="215" y="96" text-anchor="middle" font-family="Georgia" font-weight="bold"
+        font-size="${((c.nom||'').length>14)?20:((c.nom||'').length>10)?23:27}" letter-spacing="4" fill="${enseigneFill}">${c.logo} ${(c.nom||'MON CINEMA').toUpperCase()}</text>
+    </g>
+    <line x1="66" y1="108" x2="364" y2="108" stroke="#caa24a" stroke-width="2" opacity=".6"/>
+    ${A.filetsOr ? `<g stroke="#e8b84b" stroke-width="1.4" opacity=".8" fill="none">
+      <path d="M40 66 L40 344"/><path d="M390 66 L390 344"/>
+      <path d="M40 66 L390 66"/><path d="M40 344 L390 344"/></g>` : ""}
+
+    <!-- ================== MARQUEE EN VOLUME ================== -->
+    <g>
+      <!-- face -->
+      <path d="M46 122 L384 122 L398 186 L32 186 Z" fill="url(#orX)"/>
+      <path d="M46 122 L384 122 L387 138 L43 138 Z" fill="#f6e3a6" opacity=".5"/>
+      <!-- épaisseur / dessous -->
+      <path d="M32 186 L398 186 L388 200 L42 200 Z" fill="url(#orFonce)"/>
+      <path d="M42 200 L388 200 L386 204 L44 204 Z" fill="#3a2c10"/>
+      <!-- panneau -->
+      <rect x="62" y="142" width="306" height="36" rx="4" fill="#fdf8ea" stroke="#7d611f" stroke-width="2.5"/>
+      <text x="215" y="165" text-anchor="middle" font-family="Courier New" font-weight="bold"
+        font-size="13" letter-spacing="1.5" fill="#241a12">${SF[0] ? SF[0].heure + " · " + SF[0].titre.toUpperCase().slice(0,26) : "AUCUNE SEANCE PROGRAMMEE"}</text>
+      ${chenille}
+      <!-- ombre portée du marquee sur le mur -->
+      <path d="M42 204 L388 204 L380 216 L50 216 Z" fill="#000" opacity="${P.ombre>0?P.ombre:.22}"/>
+    </g>
+
+    ${haloSol}
+    ${appliques}
+
+    <!-- ================== VITRINES : LE VRAI PROGRAMME ================== -->
+    <g>
+      ${afficheFilm(48, SF[0])}
+      ${afficheFilm(316, SF[1])}
+    </g>
+
+    <!-- ================== ENTRÉE EN RENFONCEMENT ================== -->
+    <g>
+      <!-- murs latéraux du renfoncement (perspective) -->
+      <path d="M136 216 L150 224 L150 330 L136 342 Z" fill="url(#renfX)"/>
+      <path d="M294 216 L280 224 L280 330 L294 342 Z" fill="url(#renfX)" transform="scale(-1,1) translate(-574,0)"/>
+      <!-- fond du renfoncement -->
+      <rect x="150" y="224" width="130" height="106" fill="#160a12"/>
+      <!-- plafond du renfoncement éclairé -->
+      <path d="M136 216 L294 216 L280 224 L150 224 Z" fill="${lum ? '#3a2a12' : '#241a10'}"/>
+      ${lum ? '<ellipse cx="215" cy="223" rx="46" ry="4" fill="#ffdf9a" opacity=".3"/>' : ''}
+      <!-- portes doubles au fond -->
+      <rect x="156" y="230" width="56" height="96" rx="3" fill="url(#vitreX)" stroke="#caa24a" stroke-width="2"/>
+      <rect x="218" y="230" width="56" height="96" rx="3" fill="url(#vitreX)" stroke="#caa24a" stroke-width="2"/>
+      <path d="M162 235 L182 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="8"/>
+      <path d="M224 235 L244 320" stroke="#f2e8d5" stroke-opacity=".14" stroke-width="8"/>
+      <rect x="205" y="266" width="5" height="26" rx="2.5" fill="url(#orX)"/>
+      <rect x="220" y="266" width="5" height="26" rx="2.5" fill="url(#orX)"/>
+      ${lueurPortes}
+      <!-- cadre extérieur -->
+      <path d="M136 216 L294 216 L294 342 L136 342 Z" fill="none" stroke="#caa24a" stroke-width="3"/>
+      <!-- marche de seuil -->
+      <path d="M150 330 L280 330 L294 342 L136 342 Z" fill="${P.trottoir}"/>
+      <path d="M136 342 L294 342 L296 346 L134 346 Z" fill="${P.joint}"/>
+    </g>
+
+    ${V.entretien < 60 ? `<g fill="#2a1c10" opacity="${V.entretien<40?.18:.09}">
+      <ellipse cx="90" cy="300" rx="30" ry="46"/><ellipse cx="340" cy="270" rx="26" ry="40"/>
+    </g>` : ""}
+    ${plaqueFacade(A)}
+    ${ombreBat}
+
+    <!-- ================== SOL EN PERSPECTIVE ================== -->
+    <rect x="0" y="346" width="430" height="84" fill="url(#solX)"/>
+    <!-- joints de dalles fuyant vers les portes -->
+    <g stroke="${P.joint}" stroke-width="1.2" opacity=".7">
+      <path d="M0 368 L430 368"/><path d="M0 396 L430 396"/>
+      <path d="M60 430 L150 346"/><path d="M140 430 L185 346"/>
+      <path d="M215 430 L215 346"/><path d="M290 430 L245 346"/>
+      <path d="M370 430 L280 346"/>
+    </g>
+    <line x1="0" y1="346" x2="430" y2="346" stroke="${P.joint}" stroke-width="2"/>
+
+    <g id="planLoin"></g>
+
+    ${decorsExterieurs(A, lum)}
+
+    <!-- ================== TAPIS ROUGE EN VRAIE PERSPECTIVE ================== -->
+    <g>
+      <!-- ombre du tapis -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="#000" opacity=".18" transform="translate(4,3)"/>
+      <!-- tapis : trapèze fuyant depuis les portes -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="url(#tapisX)"/>
+      <!-- liserés dorés qui fuient -->
+      <path d="M184 346 L140 428" stroke="#f7dd9a" stroke-width="2" opacity=".65"/>
+      <path d="M246 346 L290 428" stroke="#f7dd9a" stroke-width="2" opacity=".65"/>
+      <!-- barres transversales de plus en plus larges (profondeur) -->
+      <path d="M187 362 L243 362" stroke="#5c1220" stroke-width="2" opacity=".5"/>
+      <path d="M180 384 L250 384" stroke="#5c1220" stroke-width="2.6" opacity=".5"/>
+      <path d="M171 408 L259 408" stroke="#5c1220" stroke-width="3.2" opacity=".5"/>
+      <!-- reflet de lumière sur le tapis -->
+      <path d="M180 346 L250 346 L296 428 L134 428 Z" fill="url(#tapisLumX)"/>
+    </g>
+
+    <!-- ================== POTELETS EN PERSPECTIVE (petits au fond, grands devant) ================== -->
+    <g>
+      <!-- rangée gauche -->
+      <rect x="160" y="352" width="4.5" height="26" rx="2.2" fill="url(#orX)"/><circle cx="162" cy="351" r="3.6" fill="url(#orX)"/>
+      <ellipse cx="162" cy="379" rx="6" ry="1.8" fill="#000" opacity=".25"/>
+      <rect x="140" y="372" width="5.5" height="34" rx="2.7" fill="url(#orX)"/><circle cx="142.5" cy="370" r="4.4" fill="url(#orX)"/>
+      <ellipse cx="142.5" cy="407" rx="8" ry="2.2" fill="#000" opacity=".25"/>
+      <rect x="114" y="392" width="7" height="42" rx="3.5" fill="url(#orX)"/><circle cx="117.5" cy="390" r="5.4" fill="url(#orX)"/>
+      <!-- rangée droite -->
+      <rect x="265" y="352" width="4.5" height="26" rx="2.2" fill="url(#orX)"/><circle cx="267" cy="351" r="3.6" fill="url(#orX)"/>
+      <ellipse cx="267" cy="379" rx="6" ry="1.8" fill="#000" opacity=".25"/>
+      <rect x="284" y="372" width="5.5" height="34" rx="2.7" fill="url(#orX)"/><circle cx="286.5" cy="370" r="4.4" fill="url(#orX)"/>
+      <ellipse cx="286.5" cy="407" rx="8" ry="2.2" fill="#000" opacity=".25"/>
+      <rect x="308" y="392" width="7" height="42" rx="3.5" fill="url(#orX)"/><circle cx="311.5" cy="390" r="5.4" fill="url(#orX)"/>
+      <!-- cordons qui suivent la fuite -->
+      <path d="M162 355 Q152 366 142.5 374" stroke="#8c2331" stroke-width="3.4" fill="none"/>
+      <path d="M142.5 376 Q130 386 117.5 394" stroke="#8c2331" stroke-width="4.2" fill="none"/>
+      <path d="M267 355 Q277 366 286.5 374" stroke="#8c2331" stroke-width="3.4" fill="none"/>
+      <path d="M286.5 376 Q299 386 311.5 394" stroke="#8c2331" stroke-width="4.2" fill="none"/>
+    </g>
+
+    <g id="planMilieu"></g>
+    <g id="planProche"></g>
+  </svg>`;
 }
 
-/* ============================================================
-   CONFIRMATIONS ET ACHATS
-   ============================================================ */
-function ouvreConfirmation({titre, ico, texte, cout, effets, valider, action}){
-  const solde = Number(Etat.cinema.argent);
-  const apres = solde - cout;
-  const assez = apres >= 0;
+
+/* ---- séquence d'allumage à l'arrivée ---- */
+function allumage(c){
+  const ens = document.querySelector("#facade text");
+  if(!ens || phaseSelonHeure()==="matin" || phaseSelonHeure()==="aprem"){ ditBonjour(c); spawnSpectateur(); return; }
+  ens.style.opacity = "0";
+  setTimeout(()=>{
+    ens.style.transition = "opacity .18s";
+    let n = 0;
+    const t = setInterval(()=>{
+      ens.style.opacity = ens.style.opacity === "1" ? ".25" : "1";
+      if(++n >= 5){ clearInterval(t); ens.style.opacity = "1"; ditBonjour(c); }
+    }, 160);
+  }, 500);
+  spawnSpectateur();
+}
+
+/* ---- spectateurs animés (petites silhouettes qui marchent) ---- */
+/* ============ PASSANTS : 3 plans de profondeur, marche articulée ============ */
+const PLANS = [
+  {id:"planLoin",   y:358, k:1.30, opac:.78, duree:[16,21], poids:.34},
+  {id:"planMilieu", y:390, k:1.72, opac:.93, duree:[12,16], poids:.34},
+  {id:"planProche", y:426, k:2.15, opac:1,   duree:[9,12],  poids:.32}
+];
+
+const TEINTES = {
+  peau:  ["#f0c9a0","#e0b088","#c9986a","#a87a4e","#8a5c3a","#6b4128"],
+  habit: ["#8ca4c9","#a4c98c","#c98ca4","#c9c28c","#9a8cc9","#c9a48c","#7fb3a8","#b06a6a","#5f6f9a","#c98f5a"],
+  bas:   ["#2a2030","#33283a","#3a2f26","#242a38","#2e2438"],
+  cheveux:["#2a1c14","#4a3527","#7a5a3a","#1c1410","#5c4030","#8a6a4a"]
+};
+const pick = a => a[Math.floor(Math.random()*a.length)];
+
+/* accessoires : chapeau, sac, popcorn, parapluie, écharpe */
+function accessoire(type, hab){
+  switch(type){
+    case "chapeau": return `<path d="M-6 -31 L6 -31 L7.5 -29.5 L-7.5 -29.5 Z" fill="#2a2030"/><rect x="-4.5" y="-36" width="9" height="5.5" rx="1.5" fill="#2a2030"/>`;
+    case "beret":   return `<path d="M-6 -32 Q0 -38 6 -32 Q0 -30 -6 -32 Z" fill="#8c2331"/>`;
+    case "sac":     return `<rect x="5" y="-20" width="5.5" height="7" rx="1.2" fill="#6b4a2a"/><path d="M6 -20 Q7.7 -24 9.5 -20" stroke="#6b4a2a" stroke-width="1" fill="none"/>`;
+    case "popcorn": return `<rect x="5.5" y="-19" width="5" height="7" rx="1" fill="#e8443a"/><g fill="#fdf3d2"><circle cx="6.8" cy="-19.6" r="1.5"/><circle cx="9" cy="-20" r="1.6"/><circle cx="8" cy="-21.3" r="1.3"/></g>`;
+    case "echarpe": return `<path d="M-4 -26 Q0 -23 4 -26 L4.5 -22 Q0 -19.5 -4.5 -22 Z" fill="${pick(TEINTES.habit)}"/>`;
+    default: return "";
+  }
+}
+const ACCESSOIRES = ["chapeau","beret","sac","popcorn","echarpe","","",""];
+
+/* silhouette articulée, dessinée à l'origine (0,0) = pieds */
+function silhouette(){
+  const peau = pick(TEINTES.peau), hab = pick(TEINTES.habit),
+        bas = pick(TEINTES.bas), chev = pick(TEINTES.cheveux);
+  const acc = pick(ACCESSOIRES);
+  const jupe = Math.random() < .35;
+  const corpulence = .88 + Math.random()*.3;
+  const taille = .92 + Math.random()*.22;   /* variations de stature */
+
+  const bassin = jupe
+    ? `<path d="M-6 -16 L6 -16 L7.5 -8.5 L-7.5 -8.5 Z" fill="${hab}"/>`
+    : "";
+  return {html:`
+  <g transform="scale(${corpulence} ${taille})">
+    <!-- jambes -->
+    <g class="jambeA"><rect x="-3.6" y="-11" width="3.2" height="11.5" rx="1.5" fill="${bas}"/>
+      <rect x="-4.2" y="-1.2" width="4.4" height="2" rx="1" fill="#1a1418"/></g>
+    <g class="jambeB"><rect x="0.4" y="-11" width="3.2" height="11.5" rx="1.5" fill="${bas}"/>
+      <rect x="-0.2" y="-1.2" width="4.4" height="2" rx="1" fill="#1a1418"/></g>
+    <g class="corps">
+      ${bassin}
+      <!-- bras arrière -->
+      <g class="brasA"><rect x="-6.4" y="-25" width="2.6" height="10" rx="1.3" fill="${hab}" opacity=".82"/></g>
+      <!-- torse -->
+      <path d="M-5 -26.5 Q0 -28 5 -26.5 L6 -11 L-6 -11 Z" fill="${hab}"/>
+      <path d="M-5 -26.5 Q0 -28 5 -26.5 L5.3 -22 L-5.3 -22 Z" fill="#000" opacity=".12"/>
+      <!-- cou + tête -->
+      <rect x="-1.4" y="-30" width="2.8" height="3.5" fill="${peau}"/>
+      <circle cx="0" cy="-32.6" r="4.4" fill="${peau}"/>
+      <path d="M-4.4 -33.4 Q0 -38.6 4.4 -33.4 Q0 -35.4 -4.4 -33.4 Z" fill="${chev}"/>
+      ${accessoire(acc, hab)}
+      <!-- bras avant -->
+      <g class="brasB"><rect x="3.8" y="-25" width="2.8" height="10.5" rx="1.4" fill="${hab}"/>
+        <circle cx="5.2" cy="-14.2" r="1.5" fill="${peau}"/></g>
+    </g>
+  </g>`, acc};
+}
+
+
+function spawnSpectateur(){
+  /* choix du plan pondéré */
+  const r = Math.random(); let acc = 0, plan = PLANS[0];
+  for(const p of PLANS){ acc += p.poids; if(r <= acc){ plan = p; break; } }
+
+  const versDroite = Math.random() < .5;
+  const entre = Math.random() < .3 && plan.id !== "planLoin";   /* seuls les proches entrent */
+  const s = silhouette();
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+  const x0 = versDroite ? -40 : 470;
+  const x1 = entre ? 215 : (versDroite ? 470 : -40);
+  const duree = plan.duree[0] + Math.random()*(plan.duree[1]-plan.duree[0]);
+  /* cadence de pas cohérente avec la vitesse apparente */
+  const cadence = (0.62 * (duree/12) / plan.k).toFixed(2);
+
+  g.setAttribute("class","passant");
+  g.setAttribute("opacity", plan.opac);
+  g.style.cssText = `--x0:${x0}px;--x1:${x1}px;--cad:${cadence}s;animation-duration:${duree}s`;
+  g.innerHTML = `
+    <g transform="translate(0 ${plan.y}) scale(${(plan.k * (versDroite?1:-1)).toFixed(3)} ${plan.k})">
+      <ellipse cx="0" cy="0.5" rx="6.5" ry="1.8" fill="#000" opacity=".28"/>
+      ${s.html}
+    </g>`;
+  const cible = document.getElementById(plan.id);
+  if(!cible) return;
+  cible.appendChild(g);
+
+  setTimeout(()=>{
+    if(entre){ g.style.transition="opacity .6s"; g.style.opacity="0"; }
+    setTimeout(()=>g.remove(), 900);
+  }, duree*1000 - 300);
+}
+
+
+/* ==== ÉTAT DU JOUR ==== */
+async function chargeSeancesAccueil(){
+  const c = Etat.cinema;
+  const data = await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}&select=*&order=heure`);
+  Etat.seancesJour = Array.isArray(data) ? data : [];
+}
+function statsDuJour(){
+  const seances = (Etat.seancesJour || [])
+    .slice().sort((a,b)=>compareHeures(a.heure,b.heure))
+    .map(s=>{
+      const f = (typeof filmParId==="function" && filmParId(s.film_id)) || {titre:s.film_id, genre:"défaut"};
+      return {heure:s.heure, titre:f.titre, genre:f.genre, salle:s.salle || "Salle 1",
+              duree:s.duree_min, prix:s.prix, statut:s.statut};
+    });
+  const base = Etat.jourStats || { spectateurs:0, recettes:0, satisfaction:null, ouvert:false };
+  return { ...base, seances };
+}
+
+/* ==== ACTION PRINCIPALE : évolue selon la situation ==== */
+function actionPrincipale(){
+  const st = statsDuJour();
+  const rt = statutCinema();
+  if(rt.code==="travaux_total")
+    return {ic:"outil", titre:"Travaux en cours",
+            sous:"Le cinéma rouvrira à la fin du chantier", url:"salles.html"};
+  if(rt.code==="ferme" && st.seances.length>0)
+    return {ic:"horloge", titre:"Le cinéma est fermé",
+            sous:rt.libelle.replace("Fermé — ",""), url:null};
+  if(st.seances.length === 0)
+    return {ic:"pellicule", titre:"Programmer la première séance",
+            sous:"Le marquee est vide, le quartier attend", url:"programmation.html"};
+  const sj = (typeof statutJournee === "function") ? statutJournee() : "draft";
+  if(sj === "running")
+    return {ic:"journal", titre:"Voir le bilan de la journée",
+            sous:"La journée est jouée — Bob t'attend", url:"bilan.html"};
+  const valide = st.seances.every(s=>s.statut === "validated" || s.statut === "running" || s.statut === "completed");
+  if(!valide)
+    return {ic:"pellicule", titre:"Terminer le programme",
+            sous:st.seances.length + " séance(s) en brouillon — à valider", url:"programmation.html"};
+  const licences = (Etat.seancesJour||[]).reduce((t,x)=>t+Number(x.cout_licence||0),0);
+  return {ic:"porte", titre:"Ouvrir le cinéma",
+          sous:`${st.seances.length} séance(s) · licences ${fmtArgent(licences)}`,
+          url:null, action:"ouvrir"};
+  return {ic:"horloge", titre:"Lancer la journée",
+          sous:"Les spectateurs arrivent", url:null, action:"journee"};
+}
+function rendActionPrincipale(){
+  const a = actionPrincipale();
+  const el = document.getElementById("actionPrincipale");
+  el.innerHTML = `${icone(a.ic,"icoAction")}<span class="apTxt"><span class="apTitre">${a.titre}</span><span class="apSous">${a.sous}</span></span>`;
+  el.onclick = ()=>{
+    if(a.url){ location.href = a.url; return; }
+    if(a.action === "ouvrir") confirmeOuverture();
+  };
+}
+
+/* ==== CONFIRMATION D'OUVERTURE ==== */
+function confirmeOuverture(){
+  const v = verifieOuverture();
+  if(!v.ok){
+    parleBob("« " + v.msg + " »");
+    if(v.code === "argent")
+      parleBob("« " + v.msg + " Il faut " + fmtArgent(v.licences) + ", tu n'as que " + fmtArgent(Etat.cinema.argent) + ". »");
+    return;
+  }
+  const n = (Etat.seancesJour||[]).length;
   const o = document.createElement("div");
   o.className = "voileConfirm";
   o.innerHTML = `
     <div class="carteConfirm">
-      <div class="ccIco">${icone(ico || "piece","icoConfirm")}</div>
-      <div class="ccTitre">${titre}</div>
-      ${texte ? `<div class="ccTexte">${texte}</div>` : ""}
-      ${effets ? `<div class="ccEffets">${effets}</div>` : ""}
+      <div class="ccIco">${icone("porte","icoConfirm")}</div>
+      <div class="ccTitre">Ouvrir le cinéma ?</div>
+      <div class="ccTexte">Une fois le cinéma ouvert, le programme ne pourra plus être modifié.</div>
       <div class="ccResume">
-        <span>Coût : <b>${fmtArgent(cout)}</b></span>
-        <span>Votre caisse après achat : <b class="${assez?'':'negatif'}">${fmtArgent(Math.max(0,apres))}</b></span>
+        <span>${n} séance${n>1?"s":""} programmée${n>1?"s":""}</span>
+        <span>Coûts de licence : <b>${fmtArgent(v.licences)}</b></span>
       </div>
-      ${assez ? "" : `<div class="ccAlerte">Les fauteuils sont d'accord pour être remplacés. La caisse, beaucoup moins.</div>`}
       <div class="ccBoutons">
-        <button class="btnAnnuler" id="cAnnuler">Annuler</button>
-        <button class="btnOr btnOuvrir" id="cValider" ${assez?"":"disabled"}>${valider}</button>
+        <button class="btnAnnuler" id="ccAnnuler">Annuler</button>
+        <button class="btnOr btnOuvrir" id="ccOuvrir">Ouvrir les portes</button>
       </div>
     </div>`;
   document.body.appendChild(o);
-  o.querySelector("#cAnnuler").onclick = ()=>{ o.classList.add("sortie"); setTimeout(()=>o.remove(),240); };
-  o.querySelector("#cValider").onclick = async ()=>{
-    const b = o.querySelector("#cValider");
-    if(b.disabled) return;
-    b.disabled = true; b.textContent = "Bob s'en occupe…";
+  o.querySelector("#ccAnnuler").onclick = ()=>{ o.classList.add("sortie"); setTimeout(()=>o.remove(),260); };
+  o.querySelector("#ccOuvrir").onclick = async ()=>{
+    o.querySelector("#ccOuvrir").disabled = true;
+    o.querySelector("#ccOuvrir").textContent = "Bob ouvre…";
     o.remove();
-    await action();
+    await ouvreCinema();
   };
 }
 
-function confirmeAmelioration(cle){
-  const s = salleOuverte;
-  const p = prochaineAmelioration(s, cle);
-  if(!p.possible) return;
-  ouvreConfirmation({
-    titre:p.prochain.nom, ico:AMELIORATIONS[cle].icone,
-    texte:p.prochain.desc,
-    effets:`+${p.prochain.satisfaction} satisfaction<br>Nouvelle apparence de la salle`,
-    cout:p.prochain.cout, valider:"Commencer les travaux",
-    action:()=>acheteAmelioration(cle)
-  });
+/* ==== STATUT + RÉSUMÉ NARRATIF ==== */
+function rendStatut(c){
+  const st = statutCinema();
+  document.getElementById("statutCine").innerHTML = `
+    <span class="pastille ${st.pastille}"></span>
+    ${st.libelle}
+    <span class="statutJour">Jour ${c.jour}</span>`;
+}
+setInterval(()=>{ if(document.getElementById("statutCine")) rendStatut(Etat.cinema); }, 15000);
+function rendResume(c){
+  const st = statsDuJour();
+  const j = Etat.journee;
+  if(j && j.resultats){
+    const b = j.resultats;
+    document.getElementById("resumeJour").innerHTML =
+      ligneResume("spectateurs", `<b>${b.total_spectateurs} spectateurs</b> sont venus aujourd'hui`) +
+      ligneResume("piece", `<b>${fmtArgent(b.recettes_brutes)}</b> de recettes`) +
+      ligneResume("etoile", `Satisfaction : <b>${b.satisfaction_moyenne} %</b>`) +
+      ligneResume("journal", `Le bilan t'attend.`);
+    return;
+  }
+  const lignes = [];
+  lignes.push(ligneResume("spectateurs",
+    st.spectateurs > 0 ? `<b>${st.spectateurs} spectateurs</b> sont venus aujourd'hui`
+                       : `Personne n'est encore venu aujourd'hui`));
+  lignes.push(ligneResume("piece",
+    st.recettes > 0 ? `<b>${fmtArgent(st.recettes)}</b> de recettes`
+                    : `La caisse contient <b>${fmtArgent(c.argent)}</b>`));
+  if(st.satisfaction !== null)
+    lignes.push(ligneResume("etoile", `Satisfaction : <b>${st.satisfaction} %</b>`));
+  lignes.push(ligneResume("maison", `Le loyer du ${nomQuartier(c.quartier).toLowerCase()} coûte <b>${fmtArgent(c.loyer)}</b> par jour`));
+  document.getElementById("resumeJour").innerHTML = lignes.join("");
+}
+function ligneResume(ic, html){
+  return `<div class="ligneRecit">${icone(ic)}<span>${html}</span></div>`;
+}
+const NOMS_QUARTIERS = {centre:"Centre-ville",residentiel:"Quartier résidentiel",etudiant:"Quartier étudiant",populaire:"Quartier populaire",artistique:"Quartier artistique"};
+function nomQuartier(q){ return NOMS_QUARTIERS[q] || q; }
+
+/* ==== SÉANCES ==== */
+function rendSeances(){
+  const st = statsDuJour();
+  const el = document.getElementById("listeSeances");
+  if(st.seances.length === 0){
+    el.innerHTML = `<div class="vide">Le projecteur est froid. Aucune séance au programme.</div>`;
+    return;
+  }
+  el.innerHTML = st.seances.map(s =>
+    `<div class="seance"><span class="heure">${s.heure}</span>
+      <span class="titreF">${s.titre}<small>${s.salle}${s.prix?" · "+fmtArgent(s.prix):""}</small></span>
+      <span class="salleF">${s.duree?fmtDuree(s.duree):""}</span></div>`
+  ).join("");
 }
 
-/* Achat officiel : le serveur lit le tarif, vérifie le niveau, débite,
-   applique l'amélioration et attribue l'XP dans une seule transaction. */
-async function acheteAmelioration(cle){
-  if(achatEnCours) return;
-  achatEnCours = true;
-  const op = idOperation();
-  try{
-    const r = await rpc("acheter_amelioration", {
-      p_salle_id: salleOuverte.id, p_equipement: cle, p_operation_id: op});
-    if(!r?.success){
-      const M = {
-        INSUFFICIENT_FUNDS:"Les fauteuils sont d'accord pour être remplacés. La caisse, beaucoup moins.",
-        LEVEL_TOO_LOW:"Il faut le niveau " + (r?.data?.requis || "?") + " pour cette amélioration.",
-        MAX_LEVEL:"Déjà au maximum. On ne peut pas faire mieux."
-      };
-      bulleSalles(M[r?.code] || "La machine a toussé. Réessaie.");
-      return;
-    }
-    await rafraichirApresAchat();
-    if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, AMELIORATIONS[cle].nom);
-    bulleSalles(phraseAchat(cle));
-    if(cle === "sieges" && r.data?.niveau === 1) await accomplitMission("m_sieges");
-    if(cle === "ecran"  && r.data?.niveau === 1) await accomplitMission("m_ecran");
-  }catch(e){
-    await rafraichirApresAchat();
-    bulleSalles(messageErreur(e));
-  }finally{ achatEnCours = false; }
+/* ==== ÉVÉNEMENT ==== */
+function rendEvenement(){
+  const ev = EVENEMENTS_JOUR[Math.floor(Math.random()*EVENEMENTS_JOUR.length)];
+  document.getElementById("listeEvenements").innerHTML =
+    `<div class="ligneRecit">${icone(ev.ic)}<span>${ev.txt}</span></div>`;
 }
 
-/* recharge l'état officiel puis redessine */
-async function rafraichirApresAchat(){
-  await chargeCinema(true);
-  await chargeProgression(true);
-  await chargeSalles();
-  const s = salles.find(x=>String(x.id)===String(salleOuverte?.id));
-  if(s) salleOuverte = s;
-  majHeaderArgent(); majBarreXPHeader();
-  rendListeSalles();
-  if(document.getElementById("voileGestion") && salleOuverte) afficheGestion();
+/* ============================================================
+   FAÇADE PUBLIQUE — même fonction, données du profil visité
+   ============================================================ */
+function rendreFacadePublique(cible, d){
+  /* visite : pas de boucle d'animation permanente, moins de silhouettes */
+  const cinema = {nom:d.nomCinema, logo:d.logo || "⭐", quartier:d.quartier};
+  const perso = {
+    style_facade: d.styleFacade || "bordeaux",
+    style_enseigne: d.styleEnseigne || "classic",
+    plaque: d.plaque || "aucune",
+    exterieur: Array.isArray(d.exterieur) ? d.exterieur : [],
+    hall: {}, couleur_sieges: "rouge"
+  };
+  /* on simule le nombre de salles pour l'aile visible, sans donnée privée */
+  const salles = Array.from({length: Math.max(1, Number(d.nbSalles||1))}, (_,i)=>({
+    id:"pub"+i, capacite:60, confort:0, ecran:0, son:0, deco:0, clim_niveau:0, proprete:100, etat:100
+  }));
+  dessineFacade(cinema, {cible, perso, salles, seances: d.films || []});
 }
 
-/* la montée de niveau est décidée par le serveur : on l'affiche a posteriori */
-async function afficheXpServeur(montant, raison){
-  const avant = niveauActuel();
-  bulleXP(montant, raison);
-  await chargeProgression(true);
-  majBarreXPHeader();
-  const apres = niveauActuel();
-  for(let n = avant + 1; n <= apres; n++){
-    await montreMonteeNiveau(infoNiveau(n));
-    await synchroniseDeblocages().catch(()=>null);
-    if(infoNiveau(n).recompenses.some(r=>r.cle === "confiserie")){
-      const ouvert = await activeConfiserieSiBesoin();
-      if(ouvert) inaugurationConfiserie();
-    }
+/* décors du trottoir, choisis dans personnalisation.html */
+function decorsExterieurs(A, lum){
+  const d = A.exterieur || [];
+  let out = "";
+  if(d.includes("banc")) out += `
+    <rect x="46" y="382" width="34" height="4" rx="2" fill="#6b4a2a"/>
+    <rect x="49" y="386" width="3" height="9" fill="#4a3520"/><rect x="74" y="386" width="3" height="9" fill="#4a3520"/>
+    <rect x="46" y="376" width="34" height="3" rx="1.5" fill="#7d5730"/>`;
+  if(d.includes("lampadaire")) out += `
+    <rect x="352" y="378" width="5" height="30" rx="2.5" fill="url(#orX)"/>
+    <circle cx="354.5" cy="374" r="7" fill="${lum?'#ffdf9a':'#8a7a5c'}" opacity="${lum?'.95':'.5'}"/>
+    ${lum?`<circle cx="354.5" cy="374" r="14" fill="#ffdf9a" opacity=".18"/>`:""}`;
+  if(d.includes("pot")) out += `
+    <ellipse cx="330" cy="396" rx="11" ry="5" fill="#5c4a2a"/>
+    <path d="M330 392 q-6 -10 0 -14 q6 4 0 14" fill="#3d6b3a"/>
+    <path d="M326 391 q-7 -6 -3 -11 q6 3 3 11" fill="#4a7d46"/>`;
+  if(d.includes("panneau")) out += `
+    <path d="M96 396 L110 366 L124 396 Z" fill="none" stroke="#5c4720" stroke-width="2.5"/>
+    <rect x="99" y="370" width="22" height="20" rx="1.5" fill="#241a12"/>
+    <path d="M102 375 h16 M102 380 h13 M102 385 h16" stroke="#caa24a" stroke-width="1"/>`;
+  if(d.includes("guirlande")) out += `
+    <path d="M120 202 Q167 220 215 206 Q263 220 310 202" stroke="${lum?'#caa24a':'#6e5a48'}" stroke-width="1.6" fill="none"/>
+    ${[138,166,194,215,238,266,292].map((x,i)=>{
+      const y = 209 + Math.round(7*Math.sin((i/6)*Math.PI));
+      return lum ? `<circle cx="${x}" cy="${y}" r="2.8" fill="#ffdf9a" class="clignote" style="animation-delay:${i*.2}s"/>`
+                 : `<circle cx="${x}" cy="${y}" r="2.8" fill="#6e5a48" opacity=".6"/>`;
+    }).join("")}`;
+  return out;
+}
+
+/* plaque de niveau apposée près de l'entrée */
+function plaqueFacade(A){
+  if(!A.plaque) return "";
+  return `<g transform="translate(300 250)">
+    <rect x="0" y="0" width="46" height="26" rx="3" fill="url(#orX)" stroke="#5c4720" stroke-width="1.5"/>
+    <text x="23" y="11" text-anchor="middle" font-family="Courier New" font-size="5.5"
+      letter-spacing=".6" fill="#3a2408">CINEMA RECONNU</text>
+    <text x="23" y="20" text-anchor="middle" font-family="Courier New" font-size="5.5"
+      letter-spacing=".6" fill="#3a2408">DU QUARTIER</text>
+  </g>`;
+}
+
+/* ---- Bob ---- */
+function parleBob(t){
+  const b = document.getElementById("bulleAccueil");
+  const txt = document.getElementById("bulleTexteAccueil");
+  b.classList.add("fondu");
+  setTimeout(()=>{txt.textContent = t; b.classList.remove("fondu")},180);
+}
+function ditBonjour(c){
+  const st = statsDuJour();
+  if(st.seances.length && !st.seances.every(s=>s.statut==="validated")){
+    parleBob(`Le programme est prêt mais pas validé, ${c.directeur}. Un dernier coup d'œil et on allume ?`);
+    return;
+  }
+  if(st.seances.length === 0)
+    parleBob(`${c.directeur}… le marquee est vide. Un cinéma sans séance, c'est un couloir avec des fauteuils. On programme ?`);
+  else
+    parleBob(`Bienvenue chez toi, ${c.directeur}. ${c.nom}, jour ${c.jour}. Ça sonne bien, non ?`);
+}
+
+/* ============================================================
+   VISITE IMMERSIVE — lecture seule, une seule requête serveur
+   ============================================================ */
+let visite = null;
+let espaceActuel = "facade";
+let visiteEnregistree = false;
+
+const ESPACES = [
+  {id:"facade",   nom:"Façade",   ic:"batiment"},
+  {id:"hall",     nom:"Hall",     ic:"maison"},
+  {id:"salles",   nom:"Salles",   ic:"fauteuil"},
+  {id:"films",    nom:"Films",    ic:"pellicule"},
+  {id:"trophees", nom:"Trophées", ic:"etoile"}
+];
+
+async function initVisite(){
+  const id = new URLSearchParams(location.search).get("cinema")
+          || new URLSearchParams(location.search).get("id");
+  if(!id){ messageVisite("Aucun cinéma demandé.", "Reviens à la communauté pour en chercher un."); return; }
+
+  let r;
+  try{ r = await rpc("get_cinema_visit_data", {p_public_id: id}); }
+  catch(e){ messageVisite("Le réseau a mangé la bobine.", "Réessaie dans un instant."); return; }
+
+  if(!r?.success){
+    const M = {
+      PROFILE_PRIVATE:["Portes fermées",
+        "On dirait que le propriétaire a tiré les rideaux. On reviendra après l'entracte."],
+      VISITS_DISABLED:["Visites suspendues",
+        "Ce cinéma n'accepte pas encore les visiteurs. Le hall n'est pas prêt."],
+      PROFILE_NOT_FOUND:["Adresse inconnue",
+        "Il n'y a aucun cinéma à cette adresse. Un lampadaire, un panneau, rien de plus."]
+    };
+    const [t, m] = M[r?.code] || ["Visite impossible", "Reviens plus tard."];
+    messageVisite(t, m);
+    return;
+  }
+
+  visite = r;
+  rendArrivee();
+
+  /* la visite n'est comptée qu'une fois par jour, et jamais pour le propriétaire */
+  if(!r.proprietaire && !visiteEnregistree){
+    visiteEnregistree = true;
+    rpc("record_cinema_visit", {p_public_id: id}).catch(()=>null);
   }
 }
 
-const PHRASES_ACHAT = {
-  sieges:"Regarde-moi ça ! On pourrait presque s'asseoir sans entendre un ressort supplier.",
-  ecran:"L'image est tellement nette que j'ai enfin vu la poussière sur l'objectif.",
-  son:"Le son ! Les voisins vont se plaindre. Signe de qualité.",
-  climatisation:"On respire. Littéralement. J'avais oublié l'effet que ça faisait.",
-  decoration:"Superbe. On dirait presque un cinéma de la capitale. Presque."
-};
-function phraseAchat(cle){ return PHRASES_ACHAT[cle] || "Travaux terminés, patron."; }
-
-function confirmeExtension(){
-  const e = prochaineExtension(salleOuverte);
-  if(!e.possible) return;
-  ouvreConfirmation({
-    titre:`Extension : +${e.ext.places} places`, ico:"batiment",
-    texte:"On pousse le mur du fond. Enfin, des ouvriers le poussent.",
-    effets:`Capacité ${salleOuverte.capacite} → ${Number(salleOuverte.capacite)+e.ext.places} places`,
-    cout:e.ext.cout, valider:"Lancer les travaux",
-    action:acheteExtension
-  });
+/* ---------- écran d'erreur narratif ---------- */
+function messageVisite(titre, message){
+  document.getElementById("contenuVisite").innerHTML = `
+    <section class="carteEcran vitrineFermee">
+      <div class="vfIco">${icone("porte","icoVerrou")}</div>
+      <h2 style="justify-content:center;border:none" id="vfTitre"></h2>
+      <div class="blocBob bilanBob">
+        <div class="bobMiniTete grand">${svgBobVisite()}</div>
+        <div class="bulle"><b>Bob</b><span id="vfMsg"></span></div>
+      </div>
+      <a class="btnOr btnRetourJeu" href="communaute.html">Retour à la communauté</a>
+    </section>`;
+  texteSur(document.getElementById("vfTitre"), titre);
+  texteSur(document.getElementById("vfMsg"), message);
 }
-async function acheteExtension(){
-  if(achatEnCours) return;
-  achatEnCours = true;
-  const op = idOperation();
-  try{
-    const r = await rpc("acheter_extension", {p_salle_id: salleOuverte.id, p_operation_id: op});
-    if(!r?.success){
-      const M = {INSUFFICIENT_FUNDS:"Pas assez en caisse pour pousser les murs.",
-                 LEVEL_TOO_LOW:"Extension disponible au niveau " + (r?.data?.requis || "?") + ".",
-                 MAX_LEVEL:"Toutes les extensions sont faites."};
-      bulleSalles(M[r?.code] || "La machine a toussé."); return;
-    }
-    await rafraichirApresAchat();
-    if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, "Première extension");
-    bulleSalles("+" + r.data.places + " places. J'ai supervisé. De loin, mais j'ai supervisé.");
-  }catch(e){
-    await rafraichirApresAchat(); bulleSalles(messageErreur(e));
-  }finally{ achatEnCours = false; }
+function svgBobVisite(){
+  return `<svg viewBox="30 40 60 60" role="img" aria-label="Bob">
+    <circle cx="60" cy="70" r="26" fill="#f0c9a0"/>
+    <path d="M40 78 Q50 86 60 79 Q70 86 80 78 Q72 92 60 84 Q48 92 40 78" fill="#4a3527"/>
+    <path d="M44 60 Q51 55 57 59 M63 59 Q69 55 76 60" stroke="#4a3527" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="51" cy="66" r="2.6" fill="#1c1210"/><circle cx="69" cy="66" r="2.6" fill="#1c1210"/>
+    <path d="M34 56 Q60 34 86 56 L86 50 Q60 28 34 50 Z" fill="#571520"/>
+    <rect x="52" y="44" width="16" height="7" rx="2" fill="#e8b84b"/></svg>`;
 }
 
-/* ---------- entretien ---------- */
-function confirmeNettoyage(){
-  ouvreConfirmation({
-    titre:"Nettoyer la salle", ico:"outil",
-    texte:"Bob sort le grand balai. Et la serpillière du rang 3.",
-    effets:"Propreté restaurée à 100 %",
-    cout:COUT_NETTOYAGE, valider:"Nettoyer",
-    action:()=>entretien("proprete", COUT_NETTOYAGE, "nettoyage_salle", "Impeccable. Enfin, sauf entre les rangs 3 et 4.")
+/* ============================================================
+   ARRIVÉE DEVANT LA FAÇADE
+   ============================================================ */
+function rendArrivee(){
+  const p = visite.profile;
+  document.getElementById("contenuVisite").innerHTML = `
+    ${visite.proprietaire ? `
+      <div class="bandeauApercu">
+        ${icone("etoile")}
+        <span><b>Aperçu visiteur</b><br>Voici ce que les autres joueurs voient.</span>
+        <a class="btnApercu" href="profil.html">Modifier la visibilité</a>
+      </div>` : ""}
+
+    <div class="facadeVisite" id="facadeVisite"></div>
+
+    <section class="carteEcran carteArrivee">
+      <div class="apercuProfil">
+        <div class="apEmbleme">${embleme(p.embleme, 54)}</div>
+        <div class="apTexte">
+          <div class="apCine"><span class="apLogo"></span><b id="vNom"></b></div>
+          <div class="apPar">Cinéma de <b id="vPseudo"></b></div>
+          <div class="apNiveau">Niveau ${Number(p.niveau)||1} · <i id="vTitre"></i></div>
+        </div>
+      </div>
+      <div class="metaVitrine">
+        <span>${icone("etoile")} Réputation ${Number(p.reputation)||0}</span>
+        <span>${icone("fauteuil")} ${Number(p.nbSalles)||1} salle${(Number(p.nbSalles)||1)>1?"s":""}</span>
+        ${p.activite ? `<span>${icone("horloge")} Actif ${echappe(p.activite)}</span>` : ""}
+        ${p.visiteurs != null ? `<span>${icone("spectateurs")} ${p.visiteurs} visiteur${p.visiteurs>1?"s":""} cette semaine</span>` : ""}
+      </div>
+      <div class="apDevise" id="vDevise"></div>
+      <button class="btnOr btnEntrer" id="btnEntrer">${icone("porte")} Entrer dans le cinéma</button>
+    </section>`;
+
+  texteSur(document.getElementById("vNom"), p.nomCinema);
+  texteSur(document.getElementById("vPseudo"), p.pseudo || "—");
+  texteSur(document.getElementById("vTitre"), p.titreChoisi || p.titreNiveau || "");
+  texteSur(document.getElementById("vDevise"), p.devise ? "« " + p.devise + " »" : "");
+  document.querySelector(".apLogo").textContent = p.logo || "";
+
+  rendreFacadePublique("facadeVisite", {
+    nomCinema:p.nomCinema, logo:p.logo, quartier:p.quartier, nbSalles:p.nbSalles,
+    styleFacade:visite.facade.styleFacade, styleEnseigne:visite.facade.styleEnseigne,
+    plaque:visite.facade.plaque, exterieur:visite.facade.exterieur,
+    films: visite.currentMovies || []
   });
+  document.getElementById("btnEntrer").onclick = entreDansLeCinema;
 }
-function confirmeReparation(){
-  const c = coutReparation(salleOuverte);
-  if(c <= 0) return;
-  ouvreConfirmation({
-    titre:"Réparer la salle", ico:"outil",
-    texte:"Sièges, moquette, ampoules, tout ce qui pendouille.",
-    effets:"État général restauré à 100 %",
-    cout:c, valider:"Réparer",
-    action:()=>entretien("etat", c, "reparation_salle", "Tout retient à nouveau. Ça se sentira dès la prochaine séance.")
-  });
+
+/* ---------- transition d'entrée ---------- */
+function entreDansLeCinema(){
+  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(reduit){ ouvreEspaces("hall"); return; }
+  const o = document.createElement("div");
+  o.className = "voileEntree";
+  o.innerHTML = `<div class="veTexte">Les portes s'ouvrent…</div>`;
+  document.body.appendChild(o);
+  setTimeout(()=>{ ouvreEspaces("hall"); }, 420);
+  setTimeout(()=>{ o.classList.add("sortie"); setTimeout(()=>o.remove(), 320); }, 620);
 }
-async function entretien(champ, cout, categorie, phrase){
-  if(achatEnCours) return;
-  achatEnCours = true;
-  const type = categorie === "reparation_salle" ? "reparation" : "nettoyage";
-  const op = idOperation();
-  try{
-    const r = await rpc("entretenir_salle", {
-      p_salle_id: salleOuverte.id, p_type: type, p_operation_id: op});
-    if(!r?.success){
-      const M = {INSUFFICIENT_FUNDS:"Même le balai coûte de l'argent, patron.",
-                 ALREADY_CLEAN:"La salle est déjà impeccable.",
-                 ALREADY_REPAIRED:"Rien à réparer pour l'instant."};
-      bulleSalles(M[r?.code] || "La machine a toussé."); return;
-    }
-    await rafraichirApresAchat();
-    if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, "Première réparation");
-    bulleSalles(phrase);
-  }catch(e){
-    await rafraichirApresAchat(); bulleSalles(messageErreur(e));
-  }finally{ achatEnCours = false; }
+
+/* ============================================================
+   ESPACES DE LA VISITE
+   ============================================================ */
+function ouvreEspaces(espace){
+  espaceActuel = espace || "hall";
+  document.getElementById("contenuVisite").innerHTML = `
+    ${visite.proprietaire ? `
+      <div class="bandeauApercu compact">${icone("etoile")}
+        <span><b>Aperçu visiteur</b></span>
+        <a class="btnApercu" href="profil.html">Visibilité</a></div>` : ""}
+    <div class="enteteVisite">
+      <div class="evNom"><span class="apLogo"></span><b id="evNom"></b></div>
+      <div class="evPar" id="evPar"></div>
+    </div>
+    <nav class="ongletsVisite" id="ongletsVisite" role="tablist"></nav>
+    <div id="espaceVisite"></div>`;
+  texteSur(document.getElementById("evNom"), visite.profile.nomCinema);
+  texteSur(document.getElementById("evPar"), "Cinéma de " + (visite.profile.pseudo || "—"));
+  document.querySelector(".apLogo").textContent = visite.profile.logo || "";
+  rendOngletsVisite();
+  rendEspace();
+}
+
+function rendOngletsVisite(){
+  const s = visite.visitSettings || {};
+  const dispo = {hall: s.montreHall !== false, salles: s.montreSalles !== false,
+                 films: s.montreFilms !== false, trophees: s.montreTrophees !== false,
+                 facade: true};
+  document.getElementById("ongletsVisite").innerHTML = ESPACES.map(e=>`
+    <button class="ongletVisite ${e.id===espaceActuel?'actif':''} ${dispo[e.id]?'':'ferme'}"
+      role="tab" aria-selected="${e.id===espaceActuel}"
+      onclick="changeEspace('${e.id}')">${icone(e.ic)}<span>${e.nom}</span></button>`).join("");
+}
+function changeEspace(id){
+  espaceActuel = id;
+  rendOngletsVisite();
+  rendEspace();
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function rendEspace(){
+  const el = document.getElementById("espaceVisite");
+  const s = visite.visitSettings || {};
+  if(espaceActuel === "facade"){
+    el.innerHTML = `<div class="facadeVisite" id="facadeEspace"></div>
+      <button class="btnOr btnEntrer" onclick="changeEspace('hall')">${icone("porte")} Entrer dans le hall</button>`;
+    const p = visite.profile;
+    rendreFacadePublique("facadeEspace", {
+      nomCinema:p.nomCinema, logo:p.logo, quartier:p.quartier, nbSalles:p.nbSalles,
+      styleFacade:visite.facade.styleFacade, styleEnseigne:visite.facade.styleEnseigne,
+      plaque:visite.facade.plaque, exterieur:visite.facade.exterieur,
+      films: visite.currentMovies || []});
+    return;
+  }
+  if(espaceActuel === "hall")     return rendEspaceHall(el, s);
+  if(espaceActuel === "salles")   return rendEspaceSalles(el, s);
+  if(espaceActuel === "films")    return rendEspaceFilms(el, s);
+  if(espaceActuel === "trophees") return rendEspaceTrophees(el, s);
+}
+
+function espaceFerme(el, titre, texte){
+  el.innerHTML = `<section class="carteEcran espaceFerme">
+    <div class="vfIco">${icone("porte","icoVerrou")}</div>
+    <h2 style="justify-content:center;border:none">${titre}</h2>
+    <div class="vide">${texte}</div></section>`;
+}
+
+/* ---------- hall ---------- */
+function rendEspaceHall(el, s){
+  if(s.montreHall === false)
+    return espaceFerme(el, "Hall fermé", "Le propriétaire préfère garder son hall pour lui.");
+  const h = visite.hall;
+  el.innerHTML = `
+    <div class="hallBoite">${rendreHallPublic(h)}</div>
+    <section class="carteEcran">
+      <h2>Dans le hall</h2>
+      <div id="descHall"></div>
+    </section>`;
+  const lignes = [];
+  const z = (h && h.zones) || {};
+  const NOMS = {
+    cadres:"Des cadres anciens couvrent le mur principal.",
+    affiches:"De vieilles affiches sont accrochées au mur.",
+    fresque:"Une fresque peinte occupe tout le mur du fond.",
+    plante:"Une grande plante veille dans un coin.",
+    fauteuil:"Un fauteuil d'attente est posé près de l'entrée.",
+    vitrine:"Une vitrine expose quelques souvenirs.",
+    horloge:"Une horloge murale rythme l'attente.",
+    tapis:"Un tapis rouge mène vers les salles.",
+    damier:"Le sol en damier claque sous les pas.",
+    parquet:"Le parquet d'origine grince un peu."
+  };
+  Object.values(z).forEach(v=>{ if(NOMS[v]) lignes.push(NOMS[v]); });
+  if(h && h.confiserie) lignes.push("Une odeur de popcorn flotte dans le hall.");
+  if(h && h.plaque) lignes.push("Une plaque dorée rappelle que ce cinéma est reconnu du quartier.");
+  if(lignes.length === 0) lignes.push("Le hall est sobre. Quelques pas résonnent, c'est tout.");
+  document.getElementById("descHall").innerHTML = lignes.map(t=>
+    `<div class="ligneRecit">${icone("etoile")}<span>${echappe(t)}</span></div>`).join("");
+}
+
+/* ---------- salles ---------- */
+function rendEspaceSalles(el, s){
+  if(s.montreSalles === false)
+    return espaceFerme(el, "Salles fermées", "Le propriétaire ne montre pas ses salles pour l'instant.");
+  const salles = visite.rooms || [];
+  if(salles.length === 0)
+    return espaceFerme(el, "Aucune salle visible", "Il n'y a rien à voir de ce côté-là.");
+  el.innerHTML = salles.map(r=>rendreSallePublique({room:r})).join("");
+}
+
+/* ---------- films ---------- */
+function rendEspaceFilms(el, s){
+  if(s.montreFilms === false)
+    return espaceFerme(el, "Programme privé", "Le propriétaire garde sa programmation secrète.");
+  const films = visite.currentMovies || [];
+  if(films.length === 0)
+    return espaceFerme(el, "Écran éteint", "Ce cinéma prépare actuellement sa prochaine séance.");
+  el.innerHTML = `<section class="carteEcran"><h2>À l'affiche</h2>
+    ${films.map(f=>`
+      <div class="ficheFilm">
+        <div class="ffAffiche" style="background:${couleurGenreVisite(f.genre)}">
+          <span class="ffAffTitre">${echappe(f.titre)}</span>
+          <span class="ffAffGenre">${echappe(f.genre)}</span>
+        </div>
+        <div class="ffCorps">
+          <div class="ffTitre">${echappe(f.titre)}</div>
+          <div class="ffMeta"><span>${icone("pellicule")} ${echappe(f.genre)}</span>
+            <span>${icone("horloge")} ${Number(f.duree)||0} min</span></div>
+          <div class="ffMeta"><span>${f.en_cours
+            ? icone("etoile") + " Projection en cours"
+            : icone("horloge") + " Prochaine séance : " + echappe(f.heure)}</span></div>
+          <div class="ffMeta"><span>${icone("fauteuil")} ${echappe(f.salle || "Salle 1")}</span></div>
+        </div>
+      </div>`).join("")}
+    <div class="notePied">Trois prochaines séances au maximum.</div>
+  </section>`;
+}
+function couleurGenreVisite(g){
+  const C = {"Drame":"#1f3a5c","Aventure":"#1d5c52","Animation":"#4a3f8c","Documentaire":"#2a6b6b",
+    "Thriller familial":"#3a2a52","Comédie":"#c07a1f","Romance":"#a83a5c","Film noir":"#22262e",
+    "Western":"#8c5a2a","Musical":"#b53a4a","Fantastique":"#3a2a6b","Culte":"#1f5c3a"};
+  return C[g] || "#7c1c2e";
+}
+
+/* ---------- trophées et statistiques ---------- */
+function rendEspaceTrophees(el, s){
+  const t = visite.achievements || [];
+  const st = visite.stats || {};
+  const col = visite.collection;
+  el.innerHTML = `
+    <section class="carteEcran">
+      <h2>Le cinéma en chiffres</h2>
+      <div class="grilleStats">
+        <div><b>${Number(st.journeesTerminees)||0}</b><span>Journées terminées</span></div>
+        <div><b>${(Number(st.totalSpectateurs)||0).toLocaleString("fr-FR")}</b><span>Spectateurs accueillis</span></div>
+        <div><b>${Number(st.meilleureJournee)||0}</b><span>Record sur une journée</span></div>
+        <div><b>${Number(st.totalSeances)||0}</b><span>Séances projetées</span></div>
+      </div>
+    </section>
+    ${s.montreTrophees === false ? "" : `<section class="carteEcran">
+      <h2>Trophées</h2>
+      ${t.length ? t.map(x=>`<div class="ligneRecit">${icone(x.icone||"etoile")}
+        <span><b>${echappe(x.nom)}</b><br><small>${echappe(x.description)}</small></span></div>`).join("")
+        : `<div class="vide">Aucun trophée exposé.</div>`}
+    </section>`}
+    ${col ? `<section class="carteEcran">
+      <h2>Collection</h2>
+      <div class="grilleStats">
+        <div><b>${Number(col.trophees)||0}</b><span>Trophées</span></div>
+        <div><b>${Number(col.personnalisations)||0}</b><span>Personnalisations</span></div>
+        <div><b>${Number(col.filmsProduits)||0}</b><span>Films produits</span></div>
+        <div><b>${Number(col.niveauxAtteints)||1}</b><span>Niveau atteint</span></div>
+      </div>
+    </section>` : ""}
+    <section class="carteEcran zoneSociale">
+      <h2>Livre d'or</h2>
+      <div class="vide">Les visiteurs pourront bientôt laisser un bravo.<br>
+        <small>Interactions disponibles prochainement.</small></div>
+    </section>
+    <div class="piedVitrine">Cinéma ouvert depuis le ${echappe(visite.profile.arriveLe || "—")}</div>`;
 }
 
 
 (async ()=>{
   try{
-    const etat = await initialiserJeu({onglet:"salles"});
-    if(!etat) return;
-    await initSalles();
+    const garde = await protegerPage({cinemaRequis:false});
+    if(!garde) return;
+    await initVisite();
   }catch(e){
-    const z = document.getElementById("zoneBob") || document.body;
-    z.textContent = (typeof messageErreur === "function" ? messageErreur(e) : "Erreur") + " Recharge la page.";
+    document.getElementById("contenuVisite").textContent =
+      (typeof messageErreur === "function" ? messageErreur(e) : "Erreur") + " Recharge la page.";
   }
 })();
 </script>
