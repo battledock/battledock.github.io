@@ -1,7 +1,8 @@
+import { echappe } from "../ui/emblems.js";
+import { icone } from "../ui/icons.js";
 import { couleurSieges } from "./customization.js";
 import { debloque, niveauActuel } from "../progression.js";
 import { salles } from "../rooms.js";
-import { fauteuil } from "../ui/room-view.js";
 
 /* ============================================================
    CONFIGURATION CENTRALE DES AMÉLIORATIONS
