@@ -1,6 +1,8 @@
 import { parleBob } from "../cinema.js";
 import { Etat, chargeCinema, fmtArgent, rafraichirEtat } from "../game-state.js";
 import { majHeaderArgent } from "../navigation.js";
+import { bulleConseil } from "../screenings.js";
+import { toastSocial } from "../social.js";
 import {
   idOperation,
   messageErreur,
@@ -38,7 +40,9 @@ function verifieOuverture(){
   if(statutJournee() === "running")   return {ok:false, code:"deja_lancee", msg:"La journée est déjà lancée. Va voir le bilan."};
   if(statutJournee() === "completed") return {ok:false, code:"deja_terminee", msg:"Cette journée est terminée. Passe au jour suivant."};
   if(s.length === 0)                  return {ok:false, code:"aucune_seance", msg:"Aucune séance au programme. On n'ouvre pas un cinéma vide."};
-  if(!s.every(x=>x.statut === "validated")) return {ok:false, code:"brouillon", msg:"Le programme n'est pas validé. Un dernier passage par la cabine."};
+  /* Le joueur ne valide plus : ouvrir vaut validation, et c'est le
+     serveur qui fait passer les séances en « validated ». Exiger ici
+     un statut que plus rien ne pose bloquait toute ouverture. */
   const licences = s.reduce((t,x)=>t + Number(x.cout_licence||0), 0);
   if(Number(Etat.cinema.argent) < licences)
     return {ok:false, code:"argent", licences,
@@ -47,9 +51,19 @@ function verifieOuverture(){
 }
 
 /* ---------- ouverture + simulation (calculées par le serveur) ---------- */
+/* Bob n'a pas de bulle sur toutes les pages d'où l'on peut ouvrir :
+   on dit le refus là où le joueur regarde. */
+function refusOuverture(msg){
+  if(typeof parleBob === "function" && document.getElementById("bulleTexteAccueil"))
+    return parleBob("« " + msg + " »");
+  if(typeof bulleConseil === "function") return bulleConseil(msg);
+  if(typeof toastSocial === "function") return toastSocial(msg, "cloche");
+  alert(msg);
+}
+
 async function ouvreCinema(){
   const v = verifieOuverture();
-  if(!v.ok){ parleBob("« " + v.msg + " »"); return; }
+  if(!v.ok){ refusOuverture(v.msg); return; }
 
   const op = idOperation();
   let reponse;
@@ -62,7 +76,7 @@ async function ouvreCinema(){
     /* le calcul a peut-être abouti : on recharge avant de conclure */
     await rafraichirEtat().catch(()=>null);
     if(Etat.journee?.resultats){ location.href = "bilan.html"; return; }
-    parleBob("« " + messageErreur(e) + " »");
+    refusOuverture(messageErreur(e));
     return;
   }
 
@@ -71,10 +85,9 @@ async function ouvreCinema(){
     const M = {
       INSUFFICIENT_FUNDS:"On ne peut pas louer les films avec des tickets de tombola. Il manque de l'argent dans la caisse.",
       NO_SCREENINGS:"Aucune séance au programme. On n'ouvre pas un cinéma vide.",
-      NOT_VALIDATED:"Le programme n'est pas validé. Un dernier passage par la cabine.",
       ALREADY_COMPLETED:"Cette journée est terminée. Passe au jour suivant."
     };
-    parleBob("« " + (M[reponse?.code] || "La machine a toussé. Réessaie.") + " »");
+    refusOuverture(M[reponse?.code] || "La machine a toussé. Réessaie.");
     return;
   }
 
@@ -246,6 +259,7 @@ export {
   ouvreCinema,
   parleBobBilan,
   passeAuJourSuivant,
+  refusOuverture,
   sequenceOuverture,
   statutJournee,
   verifieOuverture,
