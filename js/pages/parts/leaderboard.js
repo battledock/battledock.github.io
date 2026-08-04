@@ -136,7 +136,9 @@ function rendMaPosition(moi, c){
         `<a class="lienReglage" href="profil.html">Activer ma participation</a>`],
       NOT_RANKED:["Pas encore de score dans cette catégorie.",
         `<small>Termine une journée pour apparaître.</small>`],
-      NOT_ELIGIBLE:["Ton classement est en cours de vérification.", ""]
+      NOT_ELIGIBLE:["Ton classement est en cours de vérification.", ""],
+      CLASSEMENT_SUSPENDU:["Ton cinéma est momentanément hors classement.",
+        "Écris-nous si tu penses que c'est une erreur."]
     };
     const [t, a] = M[moi.code] || [moi.message || "", ""];
     el.innerHTML = `<div class="carteMaPosition absente">${icone("cloche")}
