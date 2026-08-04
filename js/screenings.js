@@ -731,7 +731,7 @@ async function rendVueEvenements(){
   if(!evenementsProg.length){
     piste.innerHTML = `<div class="pisteVide">On regarde…</div>`;
     try{
-      const r = await rpc("get_active_community_events", {p_cinema_id: Etat.cinema.id});
+      const r = await rpc("get_active_community_events");   /* sans paramètre */
       evenementsProg = Array.isArray(r) ? r : (r?.evenements || []);
     }catch(e){ evenementsProg = []; }
   }
