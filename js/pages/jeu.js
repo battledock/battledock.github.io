@@ -7,6 +7,8 @@ import { messageErreur } from "../supabase-client.js";
 import { initAccueil } from "../cinema.js";
 import { majStatutHeader } from "../navigation.js";
 import { majBarreXPHeader } from "../progression.js";
+import "../facade/lobby.js";
+import "../ui/room-view.js";
 import "../facade/life.js";
 import "../facade/vitality.js";
 
