@@ -1,7 +1,7 @@
 import { ouvreCinema } from "./engine/day.js";
 import { Etat, fmtArgent } from "./game-state.js";
 import { toastSocial } from "./social.js";
-import { appelSecurise, messageErreur, rpc } from "./supabase-client.js";
+import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
 import { icone } from "./ui/icons.js";
 
@@ -204,30 +204,57 @@ function etiquetteCategorie(c){
 async function choisitOption(cle){
   const zone = document.querySelector(".doOptions");
   if(zone) zone.classList.add("enCours");
-  try{
-    const r = await appelSecurise("resolve_daily_situation", {
-      params: op => ({p_situation_id: prep.situation.id, p_option_key: cle, p_operation_id: op})
-    });
-    if(!r || r.success === false){
-      if(zone) zone.classList.remove("enCours");
-      toastSocial(r?.message || "Ce choix n'a pas pu être appliqué.", "cloche");
-      /* l'état a changé : on recharge tout plutôt que de deviner */
-      await chargePreparation();
-      return;
-    }
-    await chargePreparation();
-    etape = "dossier";
-    rendEtape();
-  }catch(e){
-    if(zone) zone.classList.remove("enCours");
-    toastSocial(messageErreur(e), "cloche");
+
+  /* appelSecurise attend une FONCTION à exécuter, pas un nom de RPC.
+     L'identifiant d'opération rend l'appel rejouable sans double effet. */
+  const appel = await appelSecurise(
+    () => rpc("resolve_daily_situation", {
+      p_situation_id: prep.situation.id,
+      p_option_key: cle,
+      p_operation_id: idOperation()
+    }),
+    {rechargeApresErreur: false}
+  );
+
+  if(zone) zone.classList.remove("enCours");
+
+  /* deux niveaux d'échec : le réseau, puis le refus du serveur */
+  if(!appel.ok){
+    montreEchec(appel.message || "La connexion a lâché. Réessaie.");
+    return;
   }
+  const r = appel.data;
+  if(!r || r.success !== true){
+    montreEchec(r?.message || "Ce choix n'a pas pu être appliqué.");
+    await chargePreparation();   /* l'état a changé : on repart du serveur */
+    etape = "dossier"; rendEtape();
+    return;
+  }
+
+  await chargePreparation();
+  etape = "dossier";
+  rendEtape();
+}
+
+/* un refus doit se voir : le bandeau reste jusqu'au prochain écran */
+function montreEchec(message){
+  const d = document.querySelector(".dossier");
+  if(!d){ if(typeof toastSocial === "function") toastSocial(message, "cloche"); return; }
+  let b = d.querySelector(".doEchec");
+  if(!b){
+    b = document.createElement("div");
+    b.className = "doEchec";
+    d.insertBefore(b, d.querySelector(".doOptions"));
+  }
+  b.textContent = message;
+  b.scrollIntoView({behavior:"smooth", block:"center"});
 }
 
 async function ignoreDossier(){
-  try{
-    await rpc("ignorer_situation", {p_situation_id: prep.situation.id});
-  }catch(e){}
+  const appel = await appelSecurise(
+    () => rpc("ignorer_situation", {p_situation_id: prep.situation.id}),
+    {rechargeApresErreur: false});
+  if(!appel.ok){ montreEchec(appel.message); return; }
   await chargePreparation();
   vaA("resume");
 }
@@ -310,6 +337,7 @@ export {
   initPreparation,
   ligneResa,
   majFilAriane,
+  montreEchec,
   ouvreLesPortes,
   prep,
   rendBriefing,
