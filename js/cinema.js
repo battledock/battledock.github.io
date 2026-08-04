@@ -84,9 +84,21 @@ function brancheOnglets(){
         x.classList.remove("on"); x.setAttribute("aria-selected","false"); });
       b.classList.add("on"); b.setAttribute("aria-selected","true");
       vueCourante = b.dataset.v;
+      placeCurseurVue();
       rendVueCine();
     });
   });
+  placeCurseurVue();
+  window.addEventListener("resize", placeCurseurVue);
+}
+
+/* le velours glisse d'un onglet à l'autre au lieu de sauter */
+function placeCurseurVue(){
+  const cur = document.getElementById("vueCurseur");
+  const actif = document.querySelector("#vueOnglets button.on");
+  if(!cur || !actif) return;
+  cur.style.width = actif.offsetWidth + "px";
+  cur.style.transform = "translateX(" + actif.offsetLeft + "px)";
 }
 
 function rendVueCine(){
@@ -130,13 +142,20 @@ function rendEtatVue(){
 }
 
 /* ---------- les trois chiffres ---------- */
+/* L'anneau se remplit en neuf dixièmes de seconde plutôt que
+   d'apparaître déjà plein : on voit la valeur arriver. */
 function anneauChiffre(pct, couleur){
   const c = Math.max(0, Math.min(100, pct));
+  const tour = 106.8;
   return `<svg viewBox="0 0 40 40" aria-hidden="true">
     <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(36,26,18,.1)" stroke-width="3.4"/>
     <circle cx="20" cy="20" r="17" fill="none" stroke="${couleur}" stroke-width="3.4"
-      stroke-dasharray="${(c*1.068).toFixed(0)} 107" stroke-linecap="round"
-      transform="rotate(-90 20 20)"/></svg>`;
+      stroke-linecap="round" transform="rotate(-90 20 20)"
+      stroke-dasharray="${tour}" stroke-dashoffset="${tour}">
+      <animate attributeName="stroke-dashoffset" from="${tour}"
+        to="${(tour * (1 - c/100)).toFixed(1)}" dur="0.9s" fill="freeze"
+        calcMode="spline" keySplines="0.2 0.9 0.3 1" keyTimes="0;1"/>
+    </circle></svg>`;
 }
 
 function rendChiffres(){
@@ -737,6 +756,7 @@ export {
   nomQuartier,
   parleBob,
   phaseSelonHeure,
+  placeCurseurVue,
   plaqueFacade,
   remarqueBob,
   rendActionPrincipale,
