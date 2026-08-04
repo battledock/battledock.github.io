@@ -268,10 +268,13 @@ function actionPrincipale(){
             sous:st.seances.length + " séance(s) en brouillon — à valider",
             url:"programmation.html"};
 
+  /* le briefing du matin est accessible dès que le programme tient debout */
+
   const licences = (Etat.seancesJour||[]).reduce((t,x)=>t+Number(x.cout_licence||0),0);
-  return {ic:"porte", titre:"Ouvrir le cinéma",
+  /* on ne saute plus directement à l'ouverture : le matin se prépare */
+  return {ic:"porte", titre:"Préparer la journée",
           sous:`${st.seances.length} séance(s) · licences ${fmtArgent(licences)}`,
-          url:null, action:"ouvrir"};
+          url:"preparation.html"};
 }
 
 function rendActionPrincipale(){
