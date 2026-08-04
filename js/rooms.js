@@ -1,9 +1,12 @@
 /* Les salles : vue en coupe et améliorations. */
 
+import { accomplitMission, bulleXP, chargeProgression, infoNiveau, majBarreXPHeader, montreMonteeNiveau, synchroniseDeblocages } from "./progression.js";
 import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js";
+import { chargeCinema } from "./game-state.js";
+import { majHeaderArgent } from "./navigation.js";
+import { messageErreur } from "./supabase-client.js";
 import {
   AMELIORATIONS,
-  CONSTRUCTION_SALLES,
   COUT_NETTOYAGE,
   TYPES_SALLES,
   apercuSalle,
@@ -14,25 +17,13 @@ import {
   prochaineAmelioration,
   prochaineExtension
 } from "./data/upgrades.js";
-import { Etat, chargeCinema, fmtArgent } from "./game-state.js";
-import { bobCompact, majHeaderArgent } from "./navigation.js";
-import {
-  accomplitMission,
-  bulleXP,
-  chargeProgression,
-  debloque,
-  infoNiveau,
-  majBarreXPHeader,
-  montreMonteeNiveau,
-  niveauActuel,
-  niveauDe,
-  sonNiveau,
-  synchroniseDeblocages
-} from "./progression.js";
-import { idOperation, messageErreur, rpc, sbFetch } from "./supabase-client.js";
-import { echappe, texteSur } from "./ui/emblems.js";
+import { Etat, fmtArgent, rafraichirEtat } from "./game-state.js";
+import { bobCompact } from "./navigation.js";
+import { niveauActuel, sonNiveau } from "./progression.js";
+import { appelSecurise, idOperation, rpc, sbFetch } from "./supabase-client.js";
+import { echappe } from "./ui/emblems.js";
 import { icone } from "./ui/icons.js";
-import { brancheZonesSalle, salleEnCoupe } from "./ui/room-view.js";
+import { apercuEquipement, brancheZonesSalle, salleEnCoupe } from "./ui/room-view.js";
 
 /* ============================================================
    SALLES — consultation, gestion, achats
@@ -40,15 +31,28 @@ import { brancheZonesSalle, salleEnCoupe } from "./ui/room-view.js";
    ============================================================ */
 let salles = [];
 let salleOuverte = null;
+let salleCourante = null;
+/* salleCourante porte l'identifiant de l'onglet ouvert ; laSalle() rend l'objet */
+function laSalle(){
+  const l = Etat.salles || salles || [];
+  return l.find(s => String(s.id) === String(salleCourante)) || l[0] || null;
+}
 let achatEnCours = false;
 
 async function initSalles(){
   await chargeSalles();
   if(salles.length === 0) await creePremiereSalle();
   Etat.salles = salles;
-  rendListeSalles();
-  bulleSalles(conseilSalles());
+  if(!salleCourante && salles.length) salleCourante = salles[0].id;
+  salleOuverte = laSalle();
+
+  rendOngletsSalles();
+  rendVueSalle();
+  rendEtatSalle(laSalle());
+  rendConstruction();
 }
+
+
 
 async function chargeSalles(){
   const d = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
@@ -81,7 +85,7 @@ function conseilSalles(){
    ============================================================ */
 /* On ne liste plus les salles : on en visite une, en coupe.
    Les onglets servent à passer de l'une à l'autre. */
-let salleCourante = null;
+
 
 function rendListeSalles(){
   if(!salles.length){ rendConstruction(); return; }
@@ -95,63 +99,123 @@ function rendListeSalles(){
 function rendOngletsSalles(){
   const el = document.getElementById("ongletsSalles");
   if(!el) return;
+  const salles = Etat.salles || [];
   el.innerHTML = salles.map(s=>`
-    <button class="ongletSalle ${String(s.id)===String(salleCourante)?'actif':''}"
-      role="tab" aria-selected="${String(s.id)===String(salleCourante)}"
-      onclick="changeSalle('${s.id}')">
-      ${icone("fauteuil")}<span class="osNom" data-t="${echappe(s.nom)}"></span>
-      <small>${Number(s.capacite)||0} pl.</small>
-    </button>`).join("");
-  [...el.querySelectorAll(".osNom")].forEach(n=>texteSur(n, n.dataset.t));
+    <button class="${s.id === salleCourante ? "on" : ""}" onclick="changeSalle('${s.id}')">
+      ${icone(s.type === "4dx" ? "etoile" : "fauteuil")}${echappe(s.nom)}
+      <small>${s.capacite} pl.</small></button>`).join("")
+    + (salles.length < 5
+       ? `<button class="plus" onclick="vaConstruire()">+ Construire</button>` : "");
+}
+
+function vaConstruire(){
+  const z = document.getElementById("zoneConstruction");
+  if(z) z.scrollIntoView({behavior:"smooth", block:"center"});
 }
 function changeSalle(id){
   salleCourante = id;
+  salleOuverte = laSalle();
   rendOngletsSalles();
   rendVueSalle();
+  rendEtatSalle(laSalle());
+  if(typeof douxDebut === "function") douxDebut(document.getElementById("carteSalle"));
 }
 
 function rendVueSalle(){
-  const s = salles.find(x=>String(x.id) === String(salleCourante));
-  if(!s) return;
-  salleOuverte = s;
+  const s = laSalle();
   const el = document.getElementById("vueSalle");
-  el.innerHTML = salleEnCoupe(s);
+  if(!el || !s) return;
+
+  /* la salle est montrée telle qu'elle sera ce soir : remplissage prévu */
+  const prevue = (Etat.seancesJour || []).find(x => x.salle_id === s.id);
+  el.innerHTML = salleEnCoupe(s, {
+    lumiere: (Etat.journee && Etat.journee.statut === "running") ? "projection" : "tamise",
+    public: prevue && s.capacite
+      ? Math.round((Number(prevue.spectateurs) || 0) / s.capacite * 100) : 0
+  });
   brancheZonesSalle(el, s);
-  rendEtatSalle(s);
+
+  const b = document.getElementById("badgeSalle");
+  if(b){
+    const sale = Number(s.proprete) < 45, use = Number(s.etat) < 50;
+    b.className = "badgeSalle";
+    b.innerHTML = `<i style="background:${sale || use ? "#b5762c" : "#3f9e5c"}"></i>` +
+      (sale ? "Salle à nettoyer" : use ? "Salle fatiguée"
+       : s.type === "4dx" ? "Salle 4DX" : "Salle en état");
+  }
 }
 
 /* sous la salle : propreté, état, entretien — en langage clair */
+function anneauSalle(pct, couleur){
+  const c = Math.max(0, Math.min(100, pct));
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(36,26,18,.1)" stroke-width="3.4"/>
+    <circle cx="20" cy="20" r="17" fill="none" stroke="${couleur}" stroke-width="3.4"
+      stroke-dasharray="${(c*1.068).toFixed(0)} 107" stroke-linecap="round"
+      transform="rotate(-90 20 20)"/></svg>`;
+}
+
 function rendEtatSalle(s){
-  const el = document.getElementById("etatSalle");
-  const prop = Number(s.proprete ?? 100), etat = Number(s.etat ?? 100);
+  if(!s) return;
+  const prop = Number(s.proprete) || 0, etat = Number(s.etat) || 0;
   const motProp = prop >= 85 ? "Impeccable" : prop >= 70 ? "Correcte"
-                : prop >= 45 ? "Ça se voit un peu" : "Il faut passer le balai";
+                : prop >= 45 ? "Ça se voit" : "À nettoyer";
   const motEtat = etat >= 85 ? "Comme neuve" : etat >= 70 ? "Bon état"
-                : etat >= 50 ? "Quelques grincements" : "Réparations nécessaires";
-  el.innerHTML = `
-    <div class="carteSecondaire">
-      <h3>L'état de la salle</h3>
-      <div class="ligneEtatSalle">
-        <span>${icone("outil")} Propreté</span>
-        <span class="etPiste"><i class="${prop>=70?'bon':prop>=45?'moyen':'mauvais'}"
-          style="width:${prop}%"></i></span>
-        <b>${motProp}</b>
-      </div>
-      <div class="ligneEtatSalle">
-        <span>${icone("batiment")} Usure</span>
-        <span class="etPiste"><i class="${etat>=70?'bon':etat>=50?'moyen':'mauvais'}"
-          style="width:${etat}%"></i></span>
-        <b>${motEtat}</b>
-      </div>
-      <div class="actionsEntretien">
-        ${prop < 100 ? `<button class="btnMiniOr" onclick="entretien('proprete', 25, 'nettoyage_salle',
-          'Sol lavé, fauteuils époussetés. Ça sent le propre.')">Nettoyer · ${fmtArgent(25)}</button>` : ""}
-        ${etat < 100 ? `<button class="btnMiniGris" onclick="entretien('etat', 0, 'reparation_salle',
-          'Les grincements ont disparu. Provisoirement.')">Réparer</button>` : ""}
-        ${(s.extensions||0) < 3 ? `<button class="btnMiniGris" onclick="acheteExtension()">
-          Agrandir</button>` : ""}
-      </div>
-    </div>`;
+                : etat >= 50 ? "Grincements" : "À réparer";
+  const coul = v => v < 45 ? "#a83a2a" : v < 70 ? "#b5762c" : "#2f7d4a";
+
+  document.getElementById("chiffresSalle").innerHTML = `
+    <div class="chiffre">${anneauSalle(prop, coul(prop))}
+      <b>${prop} %</b><span>${motProp}</span></div>
+    <div class="chiffre">${anneauSalle(etat, coul(etat))}
+      <b>${etat} %</b><span>${motEtat}</span></div>
+    <div class="chiffre">${anneauSalle(Math.min(100, s.capacite / 1.25), "#8c2331")}
+      <b>${s.capacite}</b><span>Places</span></div>`;
+
+  /* les équipements */
+  const cles = Object.keys(AMELIORATIONS);
+  const auMax = cles.filter(c => niveauEquipement(s, c) >= 3).length;
+  document.getElementById("compteEquip").textContent =
+    auMax > 0 ? auMax + " au maximum" : cles.length + " à faire évoluer";
+
+  document.getElementById("equipements").innerHTML = cles.map(cle=>{
+    const a = AMELIORATIONS[cle];
+    const n = niveauEquipement(s, cle), suiv = n + 1;
+    const max = suiv >= a.niveaux.length;
+    const p = max ? null : a.niveaux[suiv];
+    const requis = p && p.niveauJoueurRequis ? p.niveauJoueurRequis : 0;
+    const bloque = !max && niveauActuel() < requis;
+    return `<button class="equip ${max?"max":""} ${bloque?"bloque":""}"
+      onclick="ouvrePanneauEquipement('${cle}')">
+      <span class="prix">${max ? "Au max" : bloque ? "Niv " + requis : fmtArgent(p.cout)}</span>
+      ${icone(a.icone)}
+      <b>${echappe(a.nom)}</b><small>${echappe(a.niveaux[n].nom)}</small>
+      <span class="points">${[1,2,3].map(k=>
+        `<i class="${k<=n?"plein":""}"></i>`).join("")}</span>
+    </button>`;}).join("");
+
+  /* l'entretien, au tarif de cette salle */
+  const nettoyage = s.type === "4dx" ? 60 : 25;
+  const reparation = Math.ceil((100 - etat) * 5 * (s.type === "4dx" ? 2 : 1));
+  const ext = Number(s.extensions) || 0;
+  const placesExt = [10, 15, 20][ext];
+
+  document.getElementById("entretien").innerHTML = `
+    <button class="btnEntretien" ${prop >= 100 ? "disabled" : ""}
+      onclick="entretien('nettoyage')">${icone("outil")}
+      <span><b>Nettoyer</b><small>${prop >= 100 ? "déjà propre"
+        : fmtArgent(nettoyage) + " · remet à 100 %"}</small></span></button>
+
+    <button class="btnEntretien" ${etat >= 100 ? "disabled" : ""}
+      onclick="entretien('reparation')">${icone("batiment")}
+      <span><b>Réparer</b><small>${etat >= 100 ? "en bon état"
+        : fmtArgent(reparation) + " · remet à neuf"}</small></span></button>
+
+    <button class="btnEntretien large" ${ext >= 3 ? "disabled" : ""}
+      onclick="acheteExtension()">${icone("spectateurs")}
+      <span><b>Agrandir la salle</b><small>${ext >= 3
+        ? "trois extensions faites, c'est le maximum"
+        : "+" + placesExt + " places · extension " + (ext+1) + " sur 3"}</small></span></button>`;
 }
 
 
@@ -202,57 +266,90 @@ function classeEtat(v){
    CONSTRUCTION D'UNE NOUVELLE SALLE
    ============================================================ */
 function rendConstruction(){
-  const el = document.getElementById("zoneConstruction");
-  const suivante = CONSTRUCTION_SALLES.find(c=>c.index === salles.length + 1);
-  if(!suivante){ el.innerHTML = `<div class="notePied">Le bâtiment est plein. Pour l'instant…</div>`; return; }
-  const ok = debloque(suivante.cleProgression);
-  el.innerHTML = ok
-    ? `<section class="carteEcran carteConstruction">
-        <h2>Salle ${suivante.index}</h2>
-        <div class="ligneRecit">${icone("batiment")}<span>Type standard · <b>${suivante.capacite} places</b> · travaux immédiats</span></div>
-        <div class="ligneRecit">${icone("piece")}<span>Coût de construction : <b>${fmtArgent(suivante.cout)}</b></span></div>
-        <button class="btnRouge btnConstruire" onclick="confirmeConstruction()">Construire la salle ${suivante.index}</button>
-      </section>`
-    : `<div class="notePied">Salle ${suivante.index} : débloquée au niveau ${niveauDe(suivante.cleProgression)}.</div>
-       <div class="typesVerrouilles">
-         ${Object.entries(TYPES_SALLES).filter(([k,t])=>t.niveauRequis>1).map(([k,t])=>`
-           <div class="typeVerrou">${icone("porte")}<span><b>Salle ${t.nom.toLowerCase()}</b><small>${t.desc}</small></span>
-           <span class="badgeNiv">NIV ${t.niveauRequis}</span></div>`).join("")}
-       </div>`;
+  const z = document.getElementById("zoneConstruction");
+  if(!z) return;
+  const n = (Etat.salles || []).length;
+  if(n >= 5){
+    z.innerHTML = `<div class="batimentPlein">Le bâtiment est plein.
+      Cinq salles, c'est tout ce que le Rex peut contenir.</div>`;
+    return;
+  }
+
+  const niveau = niveauActuel();
+  const suite = tarifSalle(n + 1);
+  const dejaDx = (Etat.salles || []).some(s => s.type === "4dx");
+  const dx = dejaDx ? null : tarif4dx();
+
+  z.innerHTML = `
+    <div class="titreSection"><h2>Construire</h2><span>${5 - n} emplacement(s)</span></div>
+
+    <button class="construire" ${niveau < suite.niveau ? "disabled" : ""}
+      onclick="confirmeConstruction('standard')">
+      <span class="agIco">${icone("batiment")}</span>
+      <span><b>Salle ${n + 1}</b><small>${suite.capacite} places · ${fmtArgent(suite.cout)}${
+        niveau < suite.niveau ? " · niveau " + suite.niveau + " requis" : ""}</small></span>
+      <span class="agFleche">›</span></button>
+
+    ${dx ? `<button class="construire quatred" ${niveau < dx.niveau ? "disabled" : ""}
+      onclick="confirmeConstruction('4dx')">
+      <span class="agIco">${icone("etoile")}</span>
+      <span><b>Salle 4DX</b><small>${dx.capacite} places · ${fmtArgent(dx.cout)}${
+        niveau < dx.niveau ? " · niveau " + dx.niveau + " requis" : ""}</small></span>
+      <span class="agFleche">›</span></button>
+      <p class="noteDx">Fauteuils sur vérins, effets d'eau et de vent. Peu de places,
+        mais le public y accepte un tarif bien plus élevé — et elle s'use deux fois plus vite.</p>`
+    : dejaDx ? `<p class="noteDx">Tu as déjà ta salle 4DX. Une suffit.</p>` : ""}`;
 }
 
-function confirmeConstruction(){
-  const suivante = CONSTRUCTION_SALLES.find(c=>c.index === salles.length + 1);
-  if(!suivante) return;
-  ouvreConfirmation({
-    titre:`Construire la salle ${suivante.index} ?`,
-    ico:"batiment",
-    texte:`Type standard, ${suivante.capacite} places. Les travaux sont menés dans la journée.`,
-    cout:suivante.cout,
-    valider:"Lancer le chantier",
-    action:()=>construitSalle(suivante)
-  });
+/* les tarifs officiels, lus sur le serveur et mis en cache */
+function tarifSalle(index){
+  const t = (Etat.tarifs || {});
+  return {
+    cout: Number(t["salle_" + index + "_cout"] ?? [0,0,3500,9000,18000,32000][index] ?? 0),
+    capacite: Number(t["salle_" + index + "_capacite"] ?? [0,0,40,50,60,70][index] ?? 0),
+    niveau: Number(t["salle_" + index + "_niveau"] ?? [0,0,10,20,30,40][index] ?? 1)
+  };
+}
+function tarif4dx(){
+  const t = (Etat.tarifs || {});
+  return {
+    cout: Number(t["salle_4dx_cout"] ?? 4500),
+    capacite: Number(t["salle_4dx_capacite"] ?? 55),
+    niveau: Number(t["salle_4dx_niveau"] ?? 15)
+  };
+}
+
+function confirmeConstruction(type){
+  const n = (Etat.salles || []).length;
+  const cfg = type === "4dx" ? tarif4dx() : tarifSalle(n + 1);
+  if(Number(Etat.cinema.argent) < cfg.cout){
+    bulleSalles("Il manque " + fmtArgent(cfg.cout - Number(Etat.cinema.argent))
+                + " pour ce chantier.");
+    return;
+  }
+  construitSalle({...cfg, type});
 }
 
 async function construitSalle(cfg){
-  if(achatEnCours) return;
-  achatEnCours = true;
-  const op = idOperation();
-  try{
-    const r = await rpc("construire_salle", {p_cinema_id: Etat.cinema.id, p_operation_id: op});
-    if(!r?.success){
-      const M = {INSUFFICIENT_FUNDS:"Les fauteuils sont d'accord pour être remplacés. La caisse, beaucoup moins.",
-                 LEVEL_TOO_LOW:"La salle se débloque au niveau " + (r?.data?.requis || "?") + ".",
-                 MAX_ROOMS:"Le bâtiment est plein."};
-      bulleSalles(M[r?.code] || "Le chantier n'a pas démarré."); return;
-    }
-    await chargeCinema(true); await chargeSalles();
-    majHeaderArgent(); rendListeSalles();
-    if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, "Nouvelle salle");
-    cinematiqueNouvelleSalle(r.data.index);
-  }catch(e){
-    await chargeSalles(); rendListeSalles(); bulleSalles(messageErreur(e));
-  }finally{ achatEnCours = false; }
+  const appel = await appelSecurise(
+    () => rpc("construire_salle", {
+      p_cinema_id: Etat.cinema.id,
+      p_operation_id: idOperation(),
+      p_type: cfg.type || "standard"
+    }), {rechargeApresErreur: false});
+
+  if(!appel.ok){ bulleSalles(appel.message); return; }
+  const r = appel.data;
+  if(!r || r.success !== true){
+    bulleSalles(r && r.message ? r.message : "Le chantier n'a pas pu démarrer.");
+    return;
+  }
+  await rafraichirEtat();
+  await chargeSalles();
+  salleCourante = r.data && r.data.salle_id ? r.data.salle_id : salleCourante;
+  cinematiqueNouvelleSalle(r.data ? r.data.index : (Etat.salles || []).length,
+                           r.data && r.data.type === "4dx");
+  rendOngletsSalles(); rendVueSalle(); rendEtatSalle(laSalle()); rendConstruction();
 }
 
 function cinematiqueNouvelleSalle(index){
@@ -480,7 +577,10 @@ async function rafraichirApresAchat(){
   const s = salles.find(x=>String(x.id)===String(salleOuverte?.id));
   if(s) salleOuverte = s;
   majHeaderArgent(); majBarreXPHeader();
-  rendListeSalles();
+  /* la page a changé de forme : on redessine les blocs qui existent */
+  if(document.getElementById("ongletsSalles")){
+    rendOngletsSalles(); rendVueSalle(); rendEtatSalle(laSalle()); rendConstruction();
+  }
   if(document.getElementById("voileGestion") && salleOuverte) afficheGestion();
 }
 
@@ -565,7 +665,14 @@ function confirmeReparation(){
 async function entretien(champ, cout, categorie, phrase){
   if(achatEnCours) return;
   achatEnCours = true;
-  const type = categorie === "reparation_salle" ? "reparation" : "nettoyage";
+  /* la page appelle entretien("nettoyage") ou entretien("reparation") ;
+     l'ancienne signature reste acceptée pour ne rien casser ailleurs */
+  const type = (champ === "reparation" || categorie === "reparation_salle")
+    ? "reparation" : "nettoyage";
+  phrase = phrase || (type === "reparation"
+    ? "C'est réparé. Ça ne grince plus."
+    : "La salle est nette. On peut ouvrir.");
+  salleOuverte = salleOuverte || laSalle();
   const op = idOperation();
   try{
     const r = await rpc("entretenir_salle", {
@@ -577,11 +684,122 @@ async function entretien(champ, cout, categorie, phrase){
       bulleSalles(M[r?.code] || "La machine a toussé."); return;
     }
     await rafraichirApresAchat();
+    await chargeSalles();
+    salleOuverte = laSalle();
+    rendVueSalle(); rendEtatSalle(laSalle()); rendOngletsSalles();
     if(r.data?.xp > 0) await afficheXpServeur(r.data.xp, "Première réparation");
     bulleSalles(phrase);
   }catch(e){
     await rafraichirApresAchat(); bulleSalles(messageErreur(e));
   }finally{ achatEnCours = false; }
+}
+
+/* ------------------------------------------------------------
+   LE PANNEAU DE TRAVAUX
+   Une feuille qui monte du bas : le mot de Bob, l'avant/après,
+   les effets en clair, et un bouton qui dit ce qui manque.
+   ------------------------------------------------------------ */
+function ouvrePanneauEquipement(cle, salle){
+  const s = salle || laSalle();
+  const a = AMELIORATIONS[cle];
+  if(!s || !a) return;
+
+  const n = niveauEquipement(s, cle);
+  const suiv = n + 1;
+  const max = suiv >= a.niveaux.length;
+  const p = max ? null : a.niveaux[suiv];
+  const requis = p && p.niveauJoueurRequis ? p.niveauJoueurRequis : 0;
+  const bloque = !max && niveauActuel() < requis;
+  const argent = Number(Etat.cinema.argent) || 0;
+  const payable = !max && !bloque && argent >= p.cout;
+
+  const v = document.createElement("div");
+  v.className = "voileEquip";
+  v.id = "voileEquip";
+  v.innerHTML = `<div class="feuilleEquip">
+    <div class="poigneeEquip"></div>
+    <h3>${echappe(a.nom)}</h3>
+    <div class="sousEquip">Niveau ${n} sur ${a.niveaux.length - 1}</div>
+
+    <div class="motBobEquip">
+      <span class="teteBobEquip">${teteBobSalles()}</span>
+      <span>${echappe(a.niveaux[n].desc || "")}</span></div>
+
+    ${max
+      ? `<div class="avantApres" style="justify-content:center">
+          <div class="aaVolet apres" style="max-width:190px">
+            <span class="aaEtiq">Au maximum</span>
+            ${apercuEquipement(cle, a.niveaux.length - 1)}
+            <span class="aaNom">${echappe(a.niveaux[a.niveaux.length - 1].nom)}</span></div></div>`
+      : `<div class="avantApres">
+          <div class="aaVolet"><span class="aaEtiq">Aujourd'hui</span>
+            ${apercuEquipement(cle, n)}
+            <span class="aaNom">${echappe(a.niveaux[n].nom)}</span></div>
+          <span class="aaFleche">→</span>
+          <div class="aaVolet apres"><span class="aaEtiq">Après travaux</span>
+            ${apercuEquipement(cle, suiv)}
+            <span class="aaNom">${echappe(p.nom)}</span></div>
+        </div>
+        <div class="effetsEquip">
+          ${p.satisfaction ? `<div class="effetEquip">${icone("etoile")}
+            <span>+${p.satisfaction} de satisfaction à chaque séance</span></div>` : ""}
+          ${p.prixAcceptable ? `<div class="effetEquip">${icone("piece")}
+            <span>Le public accepte ${p.prixAcceptable} ₣ de plus</span></div>` : ""}
+          <div class="effetEquip">${icone("outil")}
+            <span>${echappe(p.desc || "")}</span></div>
+        </div>
+        <button class="btnTravaux" ${payable ? "" : "disabled"}
+          onclick="lanceTravaux('${cle}')">
+          ${bloque ? "Niveau " + requis + " requis"
+            : !payable ? "Il manque " + fmtArgent(p.cout - argent)
+            : "Lancer les travaux · " + fmtArgent(p.cout)}</button>
+        <div class="caisseEquip">En caisse : ${fmtArgent(argent)}</div>`}
+
+    <button class="fermerEquip" onclick="fermePanneauEquipement()">Fermer</button>
+  </div>`;
+
+  document.body.appendChild(v);
+  v.addEventListener("click", e=>{ if(e.target === v) fermePanneauEquipement(); });
+}
+
+function fermePanneauEquipement(){
+  const v = document.getElementById("voileEquip");
+  if(v) v.remove();
+}
+
+async function lanceTravaux(cle){
+  const s = laSalle();
+  if(!s) return;
+  const btn = document.querySelector("#voileEquip .btnTravaux");
+  if(btn){ btn.disabled = true; btn.textContent = "Travaux en cours…"; }
+
+  const appel = await appelSecurise(
+    () => rpc("acheter_amelioration", {
+      p_salle_id: s.id, p_equipement: cle, p_operation_id: idOperation()
+    }), {rechargeApresErreur: false});
+
+  if(!appel.ok){ bulleSalles(appel.message); fermePanneauEquipement(); return; }
+  const r = appel.data;
+  if(!r || r.success !== true){
+    bulleSalles(r && r.message ? r.message : "Les travaux n'ont pas pu commencer.");
+    fermePanneauEquipement();
+    return;
+  }
+  fermePanneauEquipement();
+  await rafraichirApresAchat();
+  if(r.data && r.data.xp > 0) await afficheXpServeur(r.data.xp, "Travaux terminés");
+  bulleSalles("C'est installé. Va voir la différence.");
+}
+
+function teteBobSalles(){
+  return `<svg viewBox="30 40 60 60" aria-hidden="true">
+    <circle cx="60" cy="70" r="26" fill="#f0c9a0"/>
+    <path d="M40 78 Q50 86 60 79 Q70 86 80 78 Q72 92 60 84 Q48 92 40 78" fill="#4a3527"/>
+    <path d="M44 60 Q51 55 57 59 M63 59 Q69 55 76 60" stroke="#4a3527" stroke-width="4"
+      fill="none" stroke-linecap="round"/>
+    <circle cx="51" cy="66" r="2.6" fill="#1c1210"/><circle cx="69" cy="66" r="2.6" fill="#1c1210"/>
+    <path d="M34 56 Q60 34 86 56 L86 50 Q60 28 34 50 Z" fill="#571520"/>
+    <rect x="52" y="44" width="16" height="7" rx="2" fill="#e8b84b"/></svg>`;
 }
 
 /* ---- exports ---- */
@@ -592,6 +810,7 @@ export {
   acheteExtension,
   afficheGestion,
   afficheXpServeur,
+  anneauSalle,
   blocEquipement,
   blocExtension,
   bulleSalles,
@@ -610,9 +829,13 @@ export {
   creePremiereSalle,
   entretien,
   fermeGestion,
+  fermePanneauEquipement,
   initSalles,
+  laSalle,
+  lanceTravaux,
   ligneEquip,
   ouvreConfirmation,
+  ouvrePanneauEquipement,
   ouvreSalle,
   phraseAchat,
   rafraichirApresAchat,
@@ -623,7 +846,11 @@ export {
   rendVueSalle,
   salleCourante,
   salleOuverte,
-  salles
+  salles,
+  tarif4dx,
+  tarifSalle,
+  teteBobSalles,
+  vaConstruire
 };
 
 /* ---- gestionnaires en attribut ---- */
@@ -640,5 +867,9 @@ Object.assign(window, {
   confirmeReparation,
   entretien,
   fermeGestion,
-  ouvreSalle
+  fermePanneauEquipement,
+  lanceTravaux,
+  ouvrePanneauEquipement,
+  ouvreSalle,
+  vaConstruire
 });
