@@ -1,6 +1,7 @@
 import { parleBob } from "../cinema.js";
 import { Etat, chargeCinema, fmtArgent, rafraichirEtat } from "../game-state.js";
 import { majHeaderArgent } from "../navigation.js";
+import { declencheEvenement } from "../progression.js";
 import { bulleConseil } from "../screenings.js";
 import { toastSocial } from "../social.js";
 import {
@@ -93,6 +94,16 @@ async function ouvreCinema(){
 
   const bilan = reponse.data;
   Etat.journee = {...(Etat.journee||{}), statut:"running", resultats:bilan};
+
+  /* L'XP qui récompensait la validation suit le geste qui l'a remplacée :
+     composer un programme et ouvrir, c'est la même chose désormais. */
+  try{
+    if(typeof declencheEvenement === "function"){
+      await declencheEvenement("PROGRAMME_VALIDE");
+      if((Etat.seancesJour || []).length >= 3)
+        await declencheEvenement("TROIS_SEANCES_PROGRAMMEES");
+    }
+  }catch(e){}
   await chargeCinema(true);
   majHeaderArgent();
   await sequenceOuverture(bilan);
