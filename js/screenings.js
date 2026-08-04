@@ -1,7 +1,7 @@
 /* Programmation : mur d'affiches et grille des séances. */
 
-import { CATALOGUE_FILMS } from "./data/films.js";
 import {
+  CATALOGUE_FILMS,
   NETTOYAGE_MIN,
   compareHeures,
   filmDebloque,
@@ -19,7 +19,7 @@ import { Etat, fmtArgent } from "./game-state.js";
 import { bobCompact } from "./navigation.js";
 import { accomplitMission, debloque, declencheEvenement } from "./progression.js";
 import { toastSocial } from "./social.js";
-import { rpc, sbFetch } from "./supabase-client.js";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
 import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
@@ -40,6 +40,7 @@ let vueProg = "affiche";
 let evenementsProg = [];
 
 async function initProgrammation(){
+  await chargeCatalogue();
   await chargeJournee();
   await chargeSallesProg();
   await chargeFilmsMaison();
@@ -139,7 +140,65 @@ async function chargeFilmsMaison(){
     resume:"Une production maison, tournée ici même. Aucune licence à payer."
   }));
 }
-function catalogueComplet(){ return [...(Etat.filmsMaisonCat||[]), ...CATALOGUE_FILMS]; }
+/* ------------------------------------------------------------
+   LE CATALOGUE DU JOUR
+   Il ne vient plus d'une liste figée : le serveur rend l'état de
+   chaque film à cette date — nouveauté, semaine d'exploitation,
+   reprise — avec la popularité et la licence du moment.
+   ------------------------------------------------------------ */
+let catalogueServeur = null;
+
+async function chargeCatalogue(){
+  const appel = await appelSecurise(
+    () => rpc("get_catalogue", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  catalogueServeur = (appel.ok && appel.data && appel.data.success) ? appel.data.data : null;
+}
+
+/* on ramène la forme du serveur à celle qu'attend le reste de la page */
+function filmDepuisServeur(e){
+  const base = CATALOGUE_FILMS.find(f => String(f.id) === String(e.film_id)) || {};
+  return {
+    ...base,
+    id: e.film_id, titre: e.titre, genre: e.genre,
+    duree: Number(e.duree) || base.duree || 100,
+    popularite: Number(e.popularite),
+    populariteBase: Number(e.popularite_base),
+    qualite: Number(e.qualite),
+    coutLicence: Number(e.cout_licence),
+    licenceBase: Number(e.licence_base),
+    niveauRequis: Number(e.niveau_requis) || 1,
+    publicCible: e.public_cible || base.publicCible || ["adultes"],
+    statutSortie: e.statut,
+    semaineExploitation: e.semaine_exploitation,
+    exceptionnel: !!e.exceptionnel,
+    tendance: e.tendance
+  };
+}
+
+function catalogueComplet(){
+  if(!catalogueServeur) return [...(Etat.filmsMaisonCat||[]), ...CATALOGUE_FILMS];
+  const films = []
+    .concat(catalogueServeur.nouveautes || [])
+    .concat(catalogueServeur.a_l_affiche || [])
+    .concat(catalogueServeur.reprises || [])
+    .map(filmDepuisServeur);
+  return [...(Etat.filmsMaisonCat||[]), ...films];
+}
+
+/* le mot qui décrit où en est un film */
+function mentionSortie(f){
+  if(f.maison) return {texte:"Production maison", classe:"maison"};
+  switch(f.statutSortie){
+    case "nouveaute": return f.exceptionnel
+      ? {texte:"Événement · cette semaine", classe:"evenement"}
+      : {texte:"Nouveauté de la semaine", classe:"nouveaute"};
+    case "affiche": return {texte:f.semaineExploitation + "e semaine · en baisse", classe:"affiche"};
+    case "fin_affiche": return {texte:"Dernière semaine", classe:"fin"};
+    case "reprise": return {texte:"Reprise · licence réduite", classe:"reprise"};
+    default: return null;
+  }
+}
 
 /* ---------- règles métier ---------- */
 function coutLicence(f){ return Math.round((f.coutLicence||0) * (debloque("partenariat") ? .8 : 1)); }
@@ -575,27 +634,62 @@ function rendVueCatalogue(){
   const films = catalogueComplet();
   const ouverts = films.filter(f=>filmDebloque(f));
   const fermes  = films.filter(f=>!filmDebloque(f));
+  const cat = catalogueServeur;
+
+  /* les nouveautés en tête du carrousel : c'est l'information du jour */
+  const rang = f => f.exceptionnel ? 0 : f.statutSortie === "nouveaute" ? 1
+    : f.maison ? 2 : f.statutSortie === "affiche" ? 3
+    : f.statutSortie === "fin_affiche" ? 4 : 5;
+  const tries = [...(ouverts.length ? ouverts : films)].sort((a,b)=>rang(a) - rang(b));
 
   document.getElementById("pisteAffiches").innerHTML =
-    (ouverts.length ? ouverts : films).slice(0, 12).map(f=>carteAffiche({
-      genre: f.genre, titre: f.titre,
-      ligne: f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre de droits",
-      etat: filmDebloque(f) ? "Disponible" : "Niveau " + (f.niveauRequis||"?"),
-      classe: filmDebloque(f) ? "libre" : "ferme",
-      action: filmDebloque(f) ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`,
-      maison: !!f.maison
-    })).join("");
+    tries.slice(0, 14).map(f=>{
+      const m = mentionSortie(f);
+      return carteAffiche({
+        genre: f.genre, titre: f.titre,
+        ligne: f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre de droits",
+        etat: filmDebloque(f) ? (m ? m.texte : "Disponible")
+                              : "Niveau " + (f.niveauRequis || "?"),
+        classe: filmDebloque(f) ? (m ? m.classe : "libre") : "ferme",
+        action: filmDebloque(f) ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`,
+        maison: !!f.maison
+      });
+    }).join("");
 
-  document.getElementById("tableauProg").innerHTML =
-    ouverts.map(f=>`
-      <div class="rangProg" onclick="ouvrePanneau('${f.id}')">
-        <span class="rpHeure">${f.coutLicence ? fmtArgent(coutLicence(f)) : "—"}</span>
-        <span class="rpMid"><b>${echappe(f.titre.toUpperCase())}</b>
-          <span>${echappe(f.genre)} • ${fmtDuree(f.duree)}${f.maison ? " • production maison" : ""}</span></span>
-        <span class="rpDr"><b class="${classeTaux(f.popularite)}">${f.popularite}</b>
-          <span>Popularité</span></span>
-        <span class="rpChev">›</span>
-      </div>`).join("") +
+  /* le bandeau du haut : où en est la semaine */
+  const enTete = cat ? `
+    <div class="semaineProg">
+      <div class="spGauche">
+        <b>Semaine ${cat.semaine}</b>
+        <span>${cat.jours_avant_sorties === 7
+          ? "Les nouveautés viennent d'arriver"
+          : cat.jours_avant_sorties + " jour" + (cat.jours_avant_sorties > 1 ? "s" : "")
+            + " avant les prochaines sorties"}</span>
+      </div>
+      ${(cat.prochaines_sorties || []).length ? `<div class="spDroite">
+        <span>La semaine prochaine</span>
+        <b>${cat.prochaines_sorties.map(p=>
+          echappe(p.titre) + (p.exceptionnel ? " ★" : "")).join(" · ")}</b>
+      </div>` : ""}
+    </div>` : "";
+
+  /* le tableau, groupé par état plutôt qu'en vrac */
+  const groupe = (titre, liste, note) => liste.length ? `
+    <div class="grpProg">
+      <div class="grpTitre">${titre}<span>${note || ""}</span></div>
+      ${liste.map(f=>ligneCatalogue(f)).join("")}
+    </div>` : "";
+
+  document.getElementById("tableauProg").innerHTML = enTete +
+    groupe("Nouveautés", ouverts.filter(f=>f.statutSortie === "nouveaute"),
+           "à ne pas manquer cette semaine") +
+    groupe("Productions maison", ouverts.filter(f=>f.maison), "aucune licence à payer") +
+    groupe("À l'affiche", ouverts.filter(f=>f.statutSortie === "affiche"),
+           "sorties les semaines passées") +
+    groupe("Dernière semaine", ouverts.filter(f=>f.statutSortie === "fin_affiche"),
+           "elles quittent l'écran dimanche") +
+    groupe("Le fonds de reprise", ouverts.filter(f=>f.statutSortie === "reprise"),
+           "moins de monde, mais presque rien à payer") +
     (fermes.length ? `<div class="aVenirProg">${icone("porte")}
       ${fermes.length} film${fermes.length>1?"s":""} se débloque${fermes.length>1?"nt":""}
       avec les niveaux suivants.</div>` : "") + `
@@ -604,6 +698,21 @@ function rendVueCatalogue(){
       <button class="btnVideProg" onclick="location.href='studio.html'">Mes productions</button>
     </div>`;
   document.getElementById("zoneValidation").innerHTML = "";
+}
+
+function ligneCatalogue(f){
+  const m = mentionSortie(f);
+  const baisse = f.populariteBase && f.popularite < f.populariteBase;
+  return `<div class="rangProg ${f.exceptionnel ? "evenementProg" : ""}"
+      onclick="ouvrePanneau('${f.id}')">
+    <span class="rpHeure">${f.coutLicence ? fmtArgent(coutLicence(f)) : "—"}</span>
+    <span class="rpMid"><b>${echappe(f.titre.toUpperCase())}</b>
+      <span>${echappe(f.genre)} • ${fmtDuree(f.duree)}${
+        m && !f.maison ? " • " + echappe(m.texte) : ""}</span></span>
+    <span class="rpDr"><b class="${classeTaux(f.popularite)}">${f.popularite}</b>
+      <span>${baisse ? "au lieu de " + f.populariteBase : "Popularité"}</span></span>
+    <span class="rpChev">›</span>
+  </div>`;
 }
 
 function allerAuProgramme(){
@@ -749,8 +858,10 @@ export {
   capaciteSalle,
   carteAffiche,
   catalogueComplet,
+  catalogueServeur,
   changePrix,
   changePrixDirect,
+  chargeCatalogue,
   chargeFilmsMaison,
   chargeSallesProg,
   chargeSeances,
@@ -765,13 +876,16 @@ export {
   evenementsProg,
   fermeAffiche,
   fermePanneau,
+  filmDepuisServeur,
   initProgrammation,
   installeFleches,
   intervalle,
   journeeLancee,
+  ligneCatalogue,
   limiteSeances,
   majFleches,
   majPanneau,
+  mentionSortie,
   modifieSeance,
   ouvrePanneau,
   premierHoraireLibre,
