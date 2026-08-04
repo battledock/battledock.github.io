@@ -1,7 +1,6 @@
 import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js";
 import { bobBilan } from "../../engine/simulation.js";
 import { Etat, fmtArgent } from "../../game-state.js";
-import { XP } from "../../progression.js";
 import { sbFetch } from "../../supabase-client.js";
 import { icone } from "../../ui/icons.js";
 
@@ -132,3 +131,11 @@ export {
   validerBilan,
   xpAttribuee
 };
+
+/* ---- gestionnaires en attribut ---- */
+/* Ces fonctions sont appelées depuis des attributs onclick écrits
+   dans le HTML généré. Un module ES n'expose rien globalement :
+   on les rend accessibles explicitement. */
+Object.assign(window, {
+  validerBilan
+});

@@ -203,3 +203,11 @@ export {
   rendPaliers,
   rendTaches
 };
+
+/* ---- gestionnaires en attribut ---- */
+/* Ces fonctions sont appelées depuis des attributs onclick écrits
+   dans le HTML généré. Un module ES n'expose rien globalement :
+   on les rend accessibles explicitement. */
+Object.assign(window, {
+  reclameRecompenseEv
+});
