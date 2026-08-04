@@ -4,7 +4,7 @@ import { deconnexion, protegerPage, sessionValide } from "./auth.js";
 import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js";
 import { chargePersonnalisation } from "./data/customization.js";
 import { compareHeures } from "./data/films.js";
-import { chargeJournee, chargeStats } from "./engine/day.js";
+import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js";
 import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js";
 import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js";
 import {
@@ -220,6 +220,9 @@ async function depense({montant, categorie, salle_id, details}){
 const OUVERTURE = {h:13, m:0};
 const FERMETURE = {h:23, m:30};
 
+/* Les horaires d'affichage du cinéma. Ils servent à raconter — la
+   dernière séance, l'ambiance du soir — mais ne bloquent jamais le jeu :
+   on joue quand on veut, y compris à trois heures du matin. */
 function estOuvertMaintenant(){
   const n = new Date();
   const mins = n.getHours()*60 + n.getMinutes();
@@ -232,25 +235,40 @@ function sallesEnTravaux(){
     s.travaux_fin && new Date(s.travaux_fin).getTime() > now);
 }
 
-/* {code, pastille, libelle} — pastille : ouvert | ferme | travaux */
+/* L'état du cinéma suit la partie, pas l'horloge du téléphone.
+   {code, pastille, libelle} — pastille : ouvert | ferme | travaux */
 function statutCinema(){
   const travaux = sallesEnTravaux();
   const total = (Etat.salles || []).length || 1;
+  const seances = Etat.seancesJour || [];
+  const jour = (typeof statutJournee === "function") ? statutJournee() : "draft";
 
-  if(!estOuvertMaintenant()){
-    return {code:"ferme", pastille:"ferme",
-      libelle:"Fermé — réouverture à " + String(OUVERTURE.h).padStart(2,"0")
-              + "h" + String(OUVERTURE.m).padStart(2,"0")};
-  }
   if(travaux.length >= total && total > 0){
     return {code:"travaux_total", pastille:"travaux",
       libelle:"Fermé pour travaux — " + travaux.map(t=>t.nom).join(", ")};
   }
-  if(travaux.length > 0){
+  if(travaux.length > 0 && jour === "running"){
     return {code:"travaux_partiel", pastille:"travaux",
       libelle:"Ouvert — travaux en " + travaux.map(t=>t.nom).join(" et ")};
   }
-  return {code:"ouvert", pastille:"ouvert", libelle:"Ouvert — les portes sont grandes ouvertes"};
+  if(jour === "running"){
+    return {code:"ouvert", pastille:"ouvert",
+      libelle:"Ouvert — les portes sont grandes ouvertes"};
+  }
+  if(jour === "completed"){
+    return {code:"termine", pastille:"ferme",
+      libelle:"Journée terminée — le bilan t'attend"};
+  }
+  if(seances.length && seances.every(x=>x.statut === "validated")){
+    return {code:"pret", pastille:"ouvert",
+      libelle:"Prêt à ouvrir — " + seances.length + " séance"
+              + (seances.length > 1 ? "s" : "") + " au programme"};
+  }
+  if(seances.length){
+    return {code:"brouillon", pastille:"travaux",
+      libelle:"Programme en cours — il reste à valider"};
+  }
+  return {code:"ferme", pastille:"ferme", libelle:"Fermé — aucune séance au programme"};
 }
 
 function fmtCompte(ms){

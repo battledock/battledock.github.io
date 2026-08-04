@@ -2,7 +2,13 @@
 
 import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js";
 import { compareHeures, filmParId } from "./data/films.js";
-import { chargeJournee, ouvreCinema, statutJournee, verifieOuverture } from "./engine/day.js";
+import {
+  chargeJournee,
+  ouvreCinema,
+  passeAuJourSuivant,
+  statutJournee,
+  verifieOuverture
+} from "./engine/day.js";
 import { animeLeCinema, bobMeteo } from "./facade/life.js";
 import { spawnPassant } from "./facade/pedestrians.js";
 import { dessineFacadeEvolutive } from "./facade/render.js";
@@ -231,33 +237,43 @@ function statsDuJour(){
 }
 
 /* ==== ACTION PRINCIPALE : évolue selon la situation ==== */
+/* Le bouton principal ne mène jamais dans le vide : à chaque situation
+   correspond une action possible. L'heure du téléphone n'y intervient pas. */
 function actionPrincipale(){
   const st = statsDuJour();
   const rt = statutCinema();
-  if(rt.code==="travaux_total")
+  const sj = (typeof statutJournee === "function") ? statutJournee() : "draft";
+
+  if(rt.code === "travaux_total")
     return {ic:"outil", titre:"Travaux en cours",
             sous:"Le cinéma rouvrira à la fin du chantier", url:"salles.html"};
-  if(rt.code==="ferme" && st.seances.length>0)
-    return {ic:"horloge", titre:"Le cinéma est fermé",
-            sous:rt.libelle.replace("Fermé — ",""), url:null};
-  if(st.seances.length === 0)
-    return {ic:"pellicule", titre:"Programmer la première séance",
-            sous:"Le marquee est vide, le quartier attend", url:"programmation.html"};
-  const sj = (typeof statutJournee === "function") ? statutJournee() : "draft";
+
   if(sj === "running")
     return {ic:"journal", titre:"Voir le bilan de la journée",
             sous:"La journée est jouée — Bob t'attend", url:"bilan.html"};
-  const valide = st.seances.every(s=>s.statut === "validated" || s.statut === "running" || s.statut === "completed");
+
+  if(sj === "completed")
+    return {ic:"horloge", titre:"Passer au jour suivant",
+            sous:"La journée est close — on remet le compteur à zéro",
+            url:null, action:"jourSuivant"};
+
+  if(st.seances.length === 0)
+    return {ic:"pellicule", titre:"Programmer la première séance",
+            sous:"Le marquee est vide, le quartier attend", url:"programmation.html"};
+
+  const valide = st.seances.every(s=>
+    ["validated","running","completed"].includes(s.statut));
   if(!valide)
     return {ic:"pellicule", titre:"Terminer le programme",
-            sous:st.seances.length + " séance(s) en brouillon — à valider", url:"programmation.html"};
+            sous:st.seances.length + " séance(s) en brouillon — à valider",
+            url:"programmation.html"};
+
   const licences = (Etat.seancesJour||[]).reduce((t,x)=>t+Number(x.cout_licence||0),0);
   return {ic:"porte", titre:"Ouvrir le cinéma",
           sous:`${st.seances.length} séance(s) · licences ${fmtArgent(licences)}`,
           url:null, action:"ouvrir"};
-  return {ic:"horloge", titre:"Lancer la journée",
-          sous:"Les spectateurs arrivent", url:null, action:"journee"};
 }
+
 function rendActionPrincipale(){
   const a = actionPrincipale();
   rendHero(a);
@@ -266,6 +282,8 @@ function rendActionPrincipale(){
   el.onclick = ()=>{
     if(a.url){ location.href = a.url; return; }
     if(a.action === "ouvrir") confirmeOuverture();
+    else if(a.action === "jourSuivant" && typeof passeAuJourSuivant === "function")
+      passeAuJourSuivant();
   };
 }
 
