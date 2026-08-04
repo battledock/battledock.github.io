@@ -259,14 +259,16 @@ function statutCinema(){
     return {code:"termine", pastille:"ferme",
       libelle:"Journée terminée — le bilan t'attend"};
   }
-  if(seances.length && seances.every(x=>x.statut === "validated")){
+  /* Il n'y a plus de programme « à valider » : dès qu'une séance
+     existe et que les licences sont payables, le cinéma peut ouvrir. */
+  if(seances.length){
+    const licences = seances.reduce((t,x)=>t + Number(x.cout_licence||0), 0);
+    if(Number(Etat.cinema && Etat.cinema.argent) < licences)
+      return {code:"cher", pastille:"travaux",
+        libelle:"Licences trop chères — il manque de l'argent"};
     return {code:"pret", pastille:"ouvert",
       libelle:"Prêt à ouvrir — " + seances.length + " séance"
               + (seances.length > 1 ? "s" : "") + " au programme"};
-  }
-  if(seances.length){
-    return {code:"brouillon", pastille:"travaux",
-      libelle:"Programme en cours — il reste à valider"};
   }
   return {code:"ferme", pastille:"ferme", libelle:"Fermé — aucune séance au programme"};
 }

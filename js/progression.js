@@ -233,7 +233,7 @@ async function chargeProgression(force = false){
    à l'étape « simulation de journée ».
    ============================================================ */
 const EVENEMENTS_XP = {
-  PROGRAMME_VALIDE:            {xp:0, unique:"jour",  libelle:"Programme validé"},
+  PROGRAMME_VALIDE:            {xp:0, unique:"jour",  libelle:"Programme composé"},
   PREMIERE_SEANCE_PROGRAMMEE:  {xp:0, unique:"global",libelle:"Première séance programmée"},
   TROIS_SEANCES_PROGRAMMEES:   {xp:0, unique:"global",libelle:"Trois séances le même jour"},
   NOUVEAU_FILM_PROGRAMME:      {xp:0, unique:"valeur",libelle:"Nouveau film à l'affiche"}

@@ -696,8 +696,9 @@ function parleBob(t){
 }
 function ditBonjour(c){
   const st = statsDuJour();
-  if(st.seances.length && !st.seances.every(s=>s.statut==="validated")){
-    parleBob(`Le programme est prêt mais pas validé, ${c.directeur}. Un dernier coup d'œil et on allume ?`);
+  /* on ne valide plus : soit il y a un programme, soit il n'y en a pas */
+  if(st.seances.length && !(Etat.journee && Etat.journee.preparee_le)){
+    parleBob(`Le programme est là, ${c.directeur}, mais je ne t'ai pas encore dit le temps qu'il fait.`);
     return;
   }
   if(st.seances.length === 0)

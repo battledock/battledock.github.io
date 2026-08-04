@@ -17,7 +17,7 @@ import { niveauEquipement } from "./data/upgrades.js";
 import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js";
 import { Etat, fmtArgent } from "./game-state.js";
 import { bobCompact } from "./navigation.js";
-import { accomplitMission, debloque, declencheEvenement } from "./progression.js";
+import { accomplitMission, debloque } from "./progression.js";
 import { toastSocial } from "./social.js";
 import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
@@ -290,10 +290,15 @@ function bulleConseil(t){
 function conseilProg(){
   if(journeeLancee()) return "Les portes sont ouvertes, on ne change plus rien. Le bilan arrive.";
   if(sallesDispo.length === 0) return "Pas encore de salle ? Passe par l'onglet Salles, je t'attends ici.";
+  /* Bob parlait encore de valider et de retourner à l'accueil — deux
+     gestes qui n'existent plus. On ouvre depuis cette page. */
   if(seancesJour.length === 0) return "Le marquee est vide. Commence par la séance de 20h30 : c'est là que le quartier sort.";
-  if(programmeValide()) return "Programme validé ! Retourne à l'accueil et ouvre les portes quand tu veux.";
-  if(seancesJour.length >= limiteSeances()) return "Journée complète. Valide le programme, et on allume le projecteur.";
-  return "Bon début. Les séances de journée remplissent moins, mais elles font tourner la machine.";
+  const licences = seancesJour.reduce((t,x)=>t + Number(x.cout_licence||0), 0);
+  if(Number(Etat.cinema.argent) < licences)
+    return "Il manque de quoi payer les licences. Retire une séance, ou baisse tes ambitions.";
+  if(seancesJour.length >= limiteSeances())
+    return "Journée complète. Quand tu veux, on ouvre les portes.";
+  return "Bon début. Tu peux encore ajouter une séance, ou ouvrir comme ça.";
 }
 
 
@@ -906,29 +911,10 @@ function bulleProgTexte(t){
   if(el) texteSur(el, t);
 }
 
-/* ---------- validation du programme ---------- */
-async function validerProgramme(){
-  if(seancesJour.length === 0) return;
-  const c = Etat.cinema;
-  await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}`,
-    {method:"PATCH", body:{statut:"validated"}, prefer:"return=minimal"});
-  seancesJour.forEach(s=>s.statut = "validated");
-  Etat.seancesJour = seancesJour;
-  rendVue();
-  bulleConseil("Programme validé ! Retourne à l'accueil : le marquee est allumé, il ne reste qu'à ouvrir les portes.");
-  /* XP : voir EVENEMENTS_XP — attribution branchée à l'étape suivante */
-  await declencheEvenement("PROGRAMME_VALIDE");
-  if(seancesJour.length >= 3) await declencheEvenement("TROIS_SEANCES_PROGRAMMEES");
-}
-
-async function repasseEnBrouillon(){
-  const c = Etat.cinema;
-  await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}`,
-    {method:"PATCH", body:{statut:"draft"}, prefer:"return=minimal"});
-  seancesJour.forEach(s=>s.statut = "draft");
-  rendVue();
-  bulleConseil("Programme rouvert. Tu peux encore tout changer.");
-}
+/* La validation n'existe plus : ouvrir vaut validation, et c'est le
+   serveur qui fait passer les séances. Les deux fonctions qui
+   servaient à valider puis à revenir en arrière sont retirées.
+   L'XP « programme validé » est désormais donnée à l'ouverture. */
 
 /* ---- exports ---- */
 export {
@@ -995,7 +981,6 @@ export {
   rendVueAffiche,
   rendVueCatalogue,
   rendVueEvenements,
-  repasseEnBrouillon,
   resumeAvantOuverture,
   sallesDispo,
   seanceCommencee,
@@ -1003,7 +988,6 @@ export {
   supprimeSeance,
   trieSeances,
   valideSeance,
-  validerProgramme,
   verifieSeance,
   vueProg
 };
@@ -1025,7 +1009,6 @@ Object.assign(window, {
   modifieSeance,
   ouvrePanneau,
   refuseFilm,
-  repasseEnBrouillon,
   supprimeSeance,
   valideSeance
 });
