@@ -510,3 +510,25 @@ export {
   studioData,
   titreAuHasard
 };
+
+/* ---- gestionnaires en attribut ---- */
+/* Ces fonctions sont appelées depuis des attributs onclick écrits
+   dans le HTML généré. Un module ES n'expose rien globalement :
+   on les rend accessibles explicitement. */
+Object.assign(window, {
+  autresScenarios,
+  choisitAffiche,
+  choisitBudget,
+  choisitGenre,
+  choisitScenario,
+  choisitTalent,
+  etapePrecedente,
+  fermeAssistant,
+  fermeFiche,
+  majTitre,
+  majVisibiliteFilm,
+  ouvreAssistant,
+  ouvreFicheFilm,
+  reprendProjet,
+  titreAuHasard
+});
