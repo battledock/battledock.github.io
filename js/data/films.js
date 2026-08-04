@@ -121,6 +121,13 @@ function obtenirLimiteSeances(cinema, salles){
   return base + bonus;
 }
 
+/* durée en heures, lisible : « 3 j 4 h », « 12 h », « 40 min » */
+function fmtDureeHeures(h){
+  const j = Math.floor(h/24), r = h % 24;
+  if(j >= 1) return j + " jour" + (j>1?"s":"") + (r ? " " + r + " h" : "");
+  return Math.max(0, h) + " heure" + (h>1?"s":"");
+}
+
 /* ---- exports ---- */
 export {
   CATALOGUE_FILMS,
@@ -132,6 +139,7 @@ export {
   filmDebloque,
   filmParId,
   fmtDuree,
+  fmtDureeHeures,
   heureEnMinutes,
   horairesDisponibles,
   minutesEnHeure,
