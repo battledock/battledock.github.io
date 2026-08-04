@@ -33,7 +33,7 @@ async function chargePreparation(){
       return;
     }
     prep = r.data;
-    rendEtape();
+    rendMatin();
   }catch(e){
     console.error("[Rex] préparation", e);
     zone.innerHTML = `<div class="prepRefus"><p>${echappe(messageErreur(e))}</p>
@@ -44,13 +44,15 @@ async function chargePreparation(){
 /* ------------------------------------------------------------
    L'enchaînement : on n'avance que d'un écran à la fois
    ------------------------------------------------------------ */
-function rendEtape(){
+/* nommée « rendMatin » et non « rendEtape » : le studio a déjà une
+   fonction de ce nom, et deux homonymes finissent par se croiser. */
+function rendMatin(){
   majFilAriane();
   if(etape === "briefing") return rendBriefing();
   return rendDossier();
 }
 
-function vaA(e){ etape = e; rendEtape(); window.scrollTo({top:0, behavior:"smooth"}); }
+function vaA(e){ etape = e; rendMatin(); window.scrollTo({top:0, behavior:"smooth"}); }
 
 function majFilAriane(){
   const ordre = ["briefing","dossier"];
@@ -174,13 +176,13 @@ async function choisitOption(cle){
   if(!r || r.success !== true){
     montreEchec(r?.message || "Ce choix n'a pas pu être appliqué.");
     await chargePreparation();   /* l'état a changé : on repart du serveur */
-    etape = "dossier"; rendEtape();
+    etape = "dossier"; rendMatin();
     return;
   }
 
   await chargePreparation();
   etape = "dossier";
-  rendEtape();
+  rendMatin();
   /* le dossier réglé, il ne reste qu'à composer */
   setTimeout(()=>{
     const b = document.querySelector(".dossier.resolu");
@@ -242,7 +244,7 @@ export {
   prep,
   rendBriefing,
   rendDossier,
-  rendEtape,
+  rendMatin,
   teteBob,
   vaA
 };

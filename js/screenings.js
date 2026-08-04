@@ -674,12 +674,16 @@ function resumeAvantOuverture(){
           <span>${echappe(a.texte)}</span></div>`).join("")
       : `<div class="roLigne">${icone("outil")}<span>Salles en état</span></div>`}
 
-    <button class="btnPortesProg" ${payable ? "" : "disabled"} onclick="ouvreLesPortes()">
+    <button class="btnPortesProg" ${payable ? "" : "disabled"} onclick="lanceLaJournee()">
       ${icone("porte")} Ouvrir les portes</button>
   </div>`;
 }
 
-async function ouvreLesPortes(){
+/* Attention au nom : « ouvreLesPortes » existe déjà dans facade/life.js
+   où elle anime les battants du dessin. Deux fonctions homonymes dans
+   deux modules, et le générateur en expose une seule — le bouton
+   appelait l'animation de la façade au lieu de lancer la journée. */
+async function lanceLaJournee(){
   const b = document.querySelector(".btnPortesProg");
   if(b){ b.disabled = true; b.textContent = "On ouvre…"; }
   try{
@@ -960,13 +964,13 @@ export {
   installeFleches,
   intervalle,
   journeeLancee,
+  lanceLaJournee,
   ligneCatalogue,
   limiteSeances,
   majFleches,
   majPanneau,
   mentionSortie,
   modifieSeance,
-  ouvreLesPortes,
   ouvrePanneau,
   premierHoraireLibre,
   prepDuJour,
@@ -1006,6 +1010,7 @@ Object.assign(window, {
   choisitSalle,
   fermeAffiche,
   fermePanneau,
+  lanceLaJournee,
   modifieSeance,
   ouvrePanneau,
   refuseFilm,
