@@ -146,6 +146,8 @@ function poussiere(n){
    MISE EN PLACE
    ============================================================ */
 function initAmbiance(lieu){
+  /* une classe par lieu : elle permet à une page de neutraliser le décor */
+  document.body.classList.add("lieu" + lieu.charAt(0).toUpperCase() + lieu.slice(1));
   document.body.dataset.lieu = lieu || "jeu";
   if(ANIMATIONS_LEGERES) document.body.classList.add("animLegeres");
 

@@ -10,17 +10,20 @@ import {
   verifieOuverture
 } from "./engine/day.js";
 import { animeLeCinema, bobMeteo } from "./facade/life.js";
+import { dessineHallEvolutif } from "./facade/lobby.js";
 import { spawnPassant } from "./facade/pedestrians.js";
 import { dessineFacadeEvolutive } from "./facade/render.js";
 import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js";
 import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js";
+import { phraseStatut } from "./navigation.js";
 import { bandeauEvenement } from "./pages/parts/events.js";
-import { niveauActuel } from "./progression.js";
+import { niveauActuel, progressionVersSuivant } from "./progression.js";
 import { salles } from "./rooms.js";
 import { sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
 import { A } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
+import { salleEnCoupe } from "./ui/room-view.js";
 
 /* Accueil vivant du cinéma (jeu.html) */
 
@@ -42,35 +45,140 @@ const EVENEMENTS_JOUR = [
   {ic:"outil", txt:"Bob a nettoyé le hall. Il précise : « à fond »."}
 ];
 
+let vueCourante = "facade";
+
 async function initAccueil(){
   const c = Etat.cinema;
   try{ await chargeSeancesAccueil(); }catch(e){ Etat.seancesJour = []; }
   try{ await chargeJournee(); }catch(e){}
   try{ await chargeSallesEtat(); }catch(e){}
-  dessineFacade(c);
-  rendStatut(c);
+
   rendActionPrincipale();
-  rendResume(c);
-  rendSeances();
+  brancheOnglets();
+  rendVueCine();
+  rendChiffres();
+  rendRaccourcis();
   rendEvenement();
-  if(typeof animeLeCinema === "function") rendBandeauMeteo(animeLeCinema());
-  /* une fois sur trois, Bob parle du temps plutôt que du cinéma */
+
+  /* Bob dit une seule chose : l'état du cinéma, ou le temps qu'il fait */
   const surEtat = (typeof remarqueVitalite === "function") ? remarqueVitalite() : null;
   const surMeteo = Math.random() < .3 && typeof bobMeteo === "function";
-  parleBob("« " + (surEtat && Math.random() < .55 ? surEtat
-           : surMeteo ? bobMeteo() : remarqueBob()) + " »");
+  parleBob(surEtat && Math.random() < .55 ? surEtat
+           : surMeteo ? bobMeteo() : remarqueBob());
   if(typeof bandeauEvenement === "function") bandeauEvenement();
-  allumage(c);
-  /* la rue vit au rythme du cinéma, pas à une cadence fixe */
-  if(typeof animeLaVitalite === "function") animeLaVitalite();
-  else { setInterval(spawnSpectateur, 1600);
-         for(let i=0;i<4;i++) setTimeout(spawnSpectateur, 400 + i*550); }
+
+  /* la façade continue de vivre, mais seulement quand on la regarde */
   let phaseCourante = phaseSelonHeure();
   setInterval(()=>{
     const p = phaseSelonHeure();
-    if(p !== phaseCourante){ phaseCourante = p; dessineFacade(Etat.cinema); }
+    if(p !== phaseCourante){ phaseCourante = p; if(vueCourante === "facade") rendVueCine(); }
   }, 60000);
-  setInterval(()=>parleBob(CONSEILS_BOB[Math.floor(Math.random()*CONSEILS_BOB.length)]), 14000);
+}
+
+/* ---------- les trois vues du cinéma ---------- */
+function brancheOnglets(){
+  document.querySelectorAll("#vueOnglets button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      if(vueCourante === b.dataset.v) return;
+      document.querySelectorAll("#vueOnglets button").forEach(x=>{
+        x.classList.remove("on"); x.setAttribute("aria-selected","false"); });
+      b.classList.add("on"); b.setAttribute("aria-selected","true");
+      vueCourante = b.dataset.v;
+      rendVueCine();
+    });
+  });
+}
+
+function rendVueCine(){
+  const c = Etat.cinema;
+  const cible = document.getElementById("vueCine");
+  if(!cible) return;
+  const niveau = (typeof niveauActuel === "function") ? niveauActuel() : 1;
+
+  if(vueCourante === "facade"){
+    dessineFacade(c, {cible:"vueCine"});
+    if(typeof animeLeCinema === "function") animeLeCinema();
+    if(typeof animeLaVitalite === "function") animeLaVitalite();
+  }
+  else if(vueCourante === "hall"){
+    cible.innerHTML = dessineHallEvolutif({
+      niveau, phase: phaseSelonHeure(),
+      confiserie: !!(Etat.confiserie && Etat.confiserie.active),
+      boissons: Number(Etat.confiserie?.niveau_boissons || 0),
+      salles: (Etat.salles || []).length,
+      reputation: Number(c.reputation || 50),
+      seances: (Etat.seancesJour || []).slice(0,3)
+        .map(s => String(s.heure || "").toUpperCase().replace("H", "H"))
+    });
+  }
+  else{
+    const salle = (Etat.salles || [])[0];
+    cible.innerHTML = salle && typeof salleEnCoupe === "function"
+      ? salleEnCoupe(salle)
+      : `<div class="vueVide">Aucune salle construite.</div>`;
+  }
+  rendEtatVue();
+}
+
+/* le bandeau d'état, posé sur la vue */
+function rendEtatVue(){
+  const el = document.getElementById("vueEtat");
+  if(!el) return;
+  const p = phraseStatut();
+  el.className = "vueEtat " + p.pastille;
+  el.innerHTML = `<i></i>${echappe(p.txt)}`;
+}
+
+/* ---------- les trois chiffres ---------- */
+function anneauChiffre(pct, couleur){
+  const c = Math.max(0, Math.min(100, pct));
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(36,26,18,.1)" stroke-width="3.4"/>
+    <circle cx="20" cy="20" r="17" fill="none" stroke="${couleur}" stroke-width="3.4"
+      stroke-dasharray="${(c*1.068).toFixed(0)} 107" stroke-linecap="round"
+      transform="rotate(-90 20 20)"/></svg>`;
+}
+
+function rendChiffres(){
+  const c = Etat.cinema;
+  const niveau = (typeof niveauActuel === "function") ? niveauActuel() : 1;
+  const versSuivant = (typeof progressionVersSuivant === "function")
+    ? Math.round(progressionVersSuivant() * 100) : 0;
+  const sat = Number(Etat.journee?.satisfaction_moyenne ?? 0);
+
+  document.getElementById("chiffres").innerHTML = `
+    <button class="chiffre" onclick="location.href='profil.html'">
+      ${anneauChiffre(Number(c.reputation) || 0, "#8c2331")}
+      <b>${Number(c.reputation) || 0}</b><span>Réputation</span></button>
+    <button class="chiffre" onclick="location.href='progression.html'">
+      ${anneauChiffre(versSuivant, "#c9982f")}
+      <b>${niveau}</b><span>Niveau</span></button>
+    <button class="chiffre" onclick="location.href='bilan.html'">
+      ${anneauChiffre(sat, "#2f7d4a")}
+      <b>${sat > 0 ? sat + " %" : "—"}</b><span>Satisfaction</span></button>`;
+}
+
+/* ---------- les raccourcis ---------- */
+function rendRaccourcis(){
+  const salles = Etat.salles || [];
+  const seances = Etat.seancesJour || [];
+  const places = salles.reduce((t,s)=>t + (Number(s.capacite)||0), 0);
+
+  document.getElementById("raccourcis").innerHTML = `
+    <button class="raccourci" onclick="location.href='programmation.html'">
+      ${icone("pellicule")}
+      <span><b>Séances</b><small>${seances.length
+        ? seances.length + " au programme" : "aucune pour l'instant"}</small></span></button>
+
+    <button class="raccourci" onclick="location.href='salles.html'">
+      ${icone("fauteuil")}
+      <span><b>Salles</b><small>${salles.length} salle${salles.length>1?"s":""}
+        · ${places} places</small></span></button>
+
+    <button class="raccourci pleine" onclick="location.href='communaute.html'">
+      ${icone("etoile")}
+      <span><b>Le quartier</b><small>Classements, amis, festivals</small></span>
+      <span class="badgeNotif" style="display:none"></span></button>`;
 }
 
 /* ================== FAÇADE VIVANTE (cycle du ciel + programme réel) ================== */
@@ -279,9 +387,12 @@ function actionPrincipale(){
 
 function rendActionPrincipale(){
   const a = actionPrincipale();
-  rendHero(a);
   const el = document.getElementById("actionPrincipale");
-  el.innerHTML = `${icone(a.ic,"icoAction")}<span class="apTxt"><span class="apTitre">${a.titre}</span><span class="apSous">${a.sous}</span></span>`;
+  if(!el) return;
+  el.innerHTML = `
+    <span class="agIco">${icone(a.ic)}</span>
+    <span class="agTxt"><b>${echappe(a.titre)}</b><small>${echappe(a.sous)}</small></span>
+    <span class="agFleche">›</span>`;
   el.onclick = ()=>{
     if(a.url){ location.href = a.url; return; }
     if(a.action === "ouvrir") confirmeOuverture();
@@ -451,6 +562,8 @@ function plaqueFacade(A){
 
 /* ---- Bob ---- */
 function parleBob(t){
+  const p = document.getElementById("bulleTexteAccueil");
+  if(p){ texteSur(p, String(t).replace(/^«\s*|\s*»$/g, "")); return; }
   const b = document.getElementById("bulleAccueil");
   const txt = document.getElementById("bulleTexteAccueil");
   b.classList.add("fondu");
@@ -574,6 +687,8 @@ export {
   actionPrincipale,
   afficheFilm,
   allumage,
+  anneauChiffre,
+  brancheOnglets,
   capaciteTotale,
   chargeSeancesAccueil,
   confirmeOuverture,
@@ -589,13 +704,18 @@ export {
   remarqueBob,
   rendActionPrincipale,
   rendBandeauMeteo,
+  rendChiffres,
+  rendEtatVue,
   rendEvenement,
   rendHero,
+  rendRaccourcis,
   rendResume,
   rendSeances,
   rendStatut,
+  rendVueCine,
   rendreFacadePublique,
   seancesFacade,
   spawnSpectateur,
-  statsDuJour
+  statsDuJour,
+  vueCourante
 };
