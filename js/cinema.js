@@ -13,6 +13,7 @@ import { niveauActuel } from "./progression.js";
 import { salles } from "./rooms.js";
 import { sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
+import { A } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
 
 /* Accueil vivant du cinéma (jeu.html) */
