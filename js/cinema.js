@@ -53,6 +53,11 @@ async function initAccueil(){
   try{ await chargeJournee(); }catch(e){}
   try{ await chargeSallesEtat(); }catch(e){}
 
+  /* deux lectures de plus : ce qui sort cette semaine, et ce que
+     le cinéma est devenu. Elles ne bloquent pas l'affichage. */
+  chargeSorties();
+  chargeStyle();
+
   rendActionPrincipale();
   brancheOnglets();
   rendVueCine();
@@ -73,6 +78,65 @@ async function initAccueil(){
     const p = phaseSelonHeure();
     if(p !== phaseCourante){ phaseCourante = p; if(vueCourante === "facade") rendVueCine(); }
   }, 60000);
+}
+
+/* ------------------------------------------------------------
+   LES SORTIES DE LA SEMAINE
+   L'information qui donne envie de revenir était enfermée dans
+   l'onglet catalogue. Elle remonte ici, en une ligne.
+   ------------------------------------------------------------ */
+async function chargeSorties(){
+  const el = document.getElementById("bandeauSorties");
+  if(!el) return;
+  const appel = await appelSecurise(
+    () => rpc("get_catalogue", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  if(!appel.ok || !appel.data || appel.data.success !== true){ el.innerHTML = ""; return; }
+  const d = appel.data.data || {};
+  const nouv = d.nouveautes || [];
+  const suite = d.prochaines_sorties || [];
+  const jours = Number(d.jours_avant_sorties);
+
+  /* trois cas : elles viennent d'arriver, elles approchent, ou rien à dire */
+  let titre, detail, evenement = false;
+  if(nouv.length && jours >= 6){
+    evenement = nouv.some(f => f.exceptionnel);
+    titre = nouv.length + " nouveauté" + (nouv.length > 1 ? "s" : "") + " à l'affiche";
+    detail = nouv.map(f => f.titre).join(" · ");
+  }else if(suite.length){
+    evenement = suite.some(f => f.exceptionnel);
+    titre = jours <= 1 ? "Les sorties arrivent demain"
+          : jours + " jours avant les prochaines sorties";
+    detail = suite.map(f => f.titre + (f.exceptionnel ? " ★" : "")).join(" · ");
+  }else{ el.innerHTML = ""; return; }
+
+  el.innerHTML = `
+    <button class="bandeauSorties ${evenement ? "evenement" : ""}"
+      onclick="location.href='programmation.html'">
+      ${icone("pellicule")}
+      <span><b>${echappe(titre)}</b><small>${echappe(detail)}</small></span>
+      <span class="bsChev">›</span>
+    </button>`;
+}
+
+/* ------------------------------------------------------------
+   LE STYLE DU CINÉMA
+   Ce que le jeu retient de la façon de jouer. Il n'apparaissait
+   nulle part alors que c'est le portrait du joueur.
+   ------------------------------------------------------------ */
+async function chargeStyle(){
+  const el = document.getElementById("vueStyle");
+  if(!el) return;
+  const appel = await appelSecurise(
+    () => rpc("get_cinema_memory", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  if(!appel.ok || !appel.data || appel.data.success !== true){ el.innerHTML = ""; return; }
+  const d = appel.data.data || {};
+  /* avant quatre journées observées, le cinéma n'a pas encore de style :
+     l'annoncer trop tôt serait faux */
+  if(Number(d.jours_observes) < 4){ el.innerHTML = ""; return; }
+  el.innerHTML = `<span class="blason">${icone("etoile")}
+    ${echappe(d.style_nom || "")}</span>`;
 }
 
 /* ---------- les trois vues du cinéma ---------- */
@@ -182,6 +246,10 @@ function rendRaccourcis(){
   const salles = Etat.salles || [];
   const seances = Etat.seancesJour || [];
   const places = salles.reduce((t,s)=>t + (Number(s.capacite)||0), 0);
+  /* une salle sale ou fatiguée se voit depuis l'accueil, pas seulement
+     dans le briefing du matin */
+  const aSoigner = salles.filter(s =>
+    Number(s.proprete) < 45 || Number(s.etat) < 50);
 
   document.getElementById("raccourcis").innerHTML = `
     <button class="raccourci" onclick="location.href='programmation.html'">
@@ -191,8 +259,11 @@ function rendRaccourcis(){
 
     <button class="raccourci" onclick="location.href='salles.html'">
       ${icone("fauteuil")}
-      <span><b>Salles</b><small>${salles.length} salle${salles.length>1?"s":""}
-        · ${places} places</small></span></button>
+      <span><b>Salles</b><small>${aSoigner.length
+        ? aSoigner.map(x=>x.nom).join(", ") + " à soigner"
+        : salles.length + " salle" + (salles.length>1?"s":"") + " · " + places + " places"}</small></span>
+      ${aSoigner.length ? `<span class="badgeNotif alerte">${aSoigner.length}</span>` : ""}
+    </button>
 
     <button class="raccourci pleine" onclick="location.href='communaute.html'">
       ${icone("etoile")}
@@ -747,6 +818,8 @@ export {
   brancheOnglets,
   capaciteTotale,
   chargeSeancesAccueil,
+  chargeSorties,
+  chargeStyle,
   confirmeOuverture,
   decorsExterieurs,
   dessineFacade,
