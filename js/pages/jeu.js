@@ -22,7 +22,10 @@ try{
   await initAccueil();
   majStatutHeader();
   majBarreXPHeader();
-  document.getElementById("deviseBas").textContent = "« " + Etat.cinema.devise + " »";
+  /* la devise n'a plus de place sur l'accueil refondu : on ne l'écrit
+     que si l'élément existe encore, pour ne pas casser la page */
+  const dev = document.getElementById("deviseBas");
+  if(dev && Etat.cinema.devise) dev.textContent = "« " + Etat.cinema.devise + " »";
   }
 }catch(e){
   console.error("[Rex] jeu", e);
