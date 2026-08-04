@@ -244,7 +244,8 @@ function mentionSortie(f){
 /* ---------- règles métier ---------- */
 function coutLicence(f){ return Math.round((f.coutLicence||0) * (debloque("partenariat") ? .8 : 1)); }
 function limiteSeances(){ return obtenirLimiteSeances(Etat.cinema, sallesDispo); }
-function programmeValide(){ return seancesJour.length > 0 && seancesJour.every(s=>s.statut === "validated"); }
+/* Le programme se retouche tant que les portes sont fermées. Le seul
+   verrou est l'ouverture — c'est elle qui fige les séances. */
 function journeeLancee(){ return ["running","completed"].includes(statutJournee()); }
 
 /* intervalle occupé par une séance : début → fin + nettoyage */
@@ -564,7 +565,7 @@ function modifieSeance(id){
    ============================================================ */
 function rendVueAffiche(){
   const limite = limiteSeances();
-  const valide = programmeValide() || journeeLancee();
+  const valide = journeeLancee();   /* verrouillé seulement une fois ouvert */
 
   /* le carrousel montre une affiche par séance */
   const piste = document.getElementById("pisteAffiches");
@@ -971,7 +972,6 @@ export {
   prepDuJour,
   previsionDe,
   previsionsJour,
-  programmeValide,
   rafraichitPrevisions,
   refuseFilm,
   rendChoixHoraires,
