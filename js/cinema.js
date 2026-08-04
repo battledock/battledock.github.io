@@ -19,7 +19,7 @@ import { phraseStatut } from "./navigation.js";
 import { bandeauEvenement } from "./pages/parts/events.js";
 import { niveauActuel, progressionVersSuivant } from "./progression.js";
 import { salles } from "./rooms.js";
-import { sbFetch } from "./supabase-client.js";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
 import { A } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
@@ -58,7 +58,7 @@ async function initAccueil(){
   rendVueCine();
   rendChiffres();
   rendRaccourcis();
-  rendEvenement();
+  rendEvenement();   /* asynchrone : il se remplit quand il peut */
 
   /* Bob dit une seule chose : l'état du cinéma, ou le temps qu'il fait */
   const surEtat = (typeof remarqueVitalite === "function") ? remarqueVitalite() : null;
@@ -439,6 +439,8 @@ function confirmeOuverture(){
 
 /* ==== STATUT + RÉSUMÉ NARRATIF ==== */
 function rendStatut(c){
+  /* la refonte de l'accueil a retiré cet élément : on ne fait rien s'il manque */
+  if(!document.getElementById("statutCine")) return;
   const st = statutCinema();
   document.getElementById("statutCine").innerHTML = `
     <span class="pastille ${st.pastille}"></span>
@@ -447,6 +449,8 @@ function rendStatut(c){
 }
 setInterval(()=>{ if(document.getElementById("statutCine")) rendStatut(Etat.cinema); }, 15000);
 function rendResume(c){
+  /* la refonte de l'accueil a retiré cet élément : on ne fait rien s'il manque */
+  if(!document.getElementById("resumeJour")) return;
   const st = statsDuJour();
   const j = Etat.journee;
   if(j && j.resultats){
@@ -500,10 +504,41 @@ function rendSeances(){
 }
 
 /* ==== ÉVÉNEMENT ==== */
-function rendEvenement(){
-  const ev = EVENEMENTS_JOUR[Math.floor(Math.random()*EVENEMENTS_JOUR.length)];
-  document.getElementById("listeEvenements").innerHTML =
-    `<div class="ligneRecit">${icone(ev.ic)}<span>${ev.txt}</span></div>`;
+/* ------------------------------------------------------------
+   LE BANDEAU DU JOUR
+   Il montrait un texte tiré au hasard dans une liste, sans rapport
+   avec la journée réelle — et écrivait dans un élément que la
+   refonte de l'accueil a supprimé.
+
+   Il affiche désormais la météo et l'événement officiels, ceux-là
+   mêmes que la simulation applique. S'il n'y a rien à dire, il ne
+   dit rien : un jour ordinaire n'a pas besoin de bandeau.
+   ------------------------------------------------------------ */
+async function rendEvenement(){
+  const el = document.getElementById("bandeauEvenement");
+  if(!el) return;
+
+  const appel = await appelSecurise(
+    () => rpc("get_day_context", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  if(!appel.ok || !appel.data || appel.data.success !== true){ el.innerHTML = ""; return; }
+
+  const d = appel.data.data || {};
+  const meteo = d.meteo || {};
+  const ev = d.evenement || {};
+  const redondant = (meteo.id === "clair" && ev.id === "beau")
+                 || (meteo.id === "pluie" && ev.id === "pluie");
+  const montrerEv = ev.id && ev.id !== "aucun" && !redondant;
+
+  el.innerHTML = `
+    <div class="bandeauJour">
+      <div class="bjLigne">${icone("meteo")}
+        <span><b>${echappe(meteo.nom || "")}</b>
+          <small>${echappe(meteo.phrase || "")}</small></span></div>
+      ${montrerEv ? `<div class="bjLigne">${icone("journal")}
+        <span><b>${echappe(ev.nom)}</b>
+          <small>${echappe(ev.description || "")}</small></span></div>` : ""}
+    </div>`;
 }
 
 /* ============================================================
@@ -587,6 +622,8 @@ function ditBonjour(c){
    Une phrase d'ambiance devant, les chiffres derrière.
    ============================================================ */
 function rendHero(a){
+  /* la refonte de l'accueil a retiré cet élément : on ne fait rien s'il manque */
+  if(!document.getElementById("heroChiffres")) return;
   const c = Etat.cinema;
   const st = statutCinema();
   const seances = (Etat.seancesJour || []).length;
