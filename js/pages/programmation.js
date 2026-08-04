@@ -5,6 +5,7 @@ import { initAmbiance } from "../ambiance.js";
 import { initialiserJeu } from "../game-state.js";
 import { messageErreur } from "../supabase-client.js";
 import { initProgrammation } from "../screenings.js";
+import "../ui/genre-posters.js";
 
 demarreChargement();
 filetChargement();
