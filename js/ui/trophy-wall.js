@@ -99,5 +99,6 @@ export {
    on les rend accessibles explicitement. */
 Object.assign(window, {
   fermeTrophee,
-  ouvreTrophee
+  ouvreTrophee,
+  trophéeMystere
 });
