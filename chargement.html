@@ -42,6 +42,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;
 .titre{position:relative;z-index:2;font-family:'Marcellus',Georgia,serif;font-size:19px;
   letter-spacing:.26em;text-transform:uppercase;color:#f7dd9a;
   text-shadow:0 0 20px rgba(247,221,154,.4)}
+.sousTitre{position:relative;z-index:2;font-family:'Outfit',system-ui,sans-serif;font-size:9px;
+  font-weight:300;letter-spacing:.24em;text-transform:uppercase;color:#8a7e68;margin-top:-6px}
 .vanne{position:relative;z-index:2;font-family:'Outfit',system-ui,sans-serif;font-size:11.5px;
   font-weight:300;letter-spacing:.06em;color:#c9bda6;text-align:center;max-width:72vw;
   line-height:1.65;min-height:38px;transition:opacity .3s}
@@ -89,6 +91,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;
 </div>
 
 <div class="titre">Séance</div>
+<div class="sousTitre" id="sousTitre"></div>
 <div class="vanne" id="vanne">« Sens de rotation ? Aucune idée. Ça tourne, c'est déjà Cannes. »</div>
 <div class="piste"><i id="piste"></i></div>
 <div class="pct" id="pct">0 %</div>
@@ -118,19 +121,33 @@ let DESTINATION = localStorage.getItem("rex_dest") || "jeu.html";
   }catch(e){ /* réseau KO : on laisse jeu.html gérer */ }
 })();
 
-const VANNES = [
+/* Bob ne dit pas la même chose à un inconnu et à un habitué.
+   La destination est déjà connue : autant s'en servir. */
+const VANNES_RETOUR = [
   "« Sens de rotation ? Aucune idée. Ça tourne, c'est déjà Cannes. »",
   "« La pellicule fait 2 km. J'ai compté. Une fois. Jamais deux. »",
   "« Je graisse la manivelle. Avec du beurre. On fait avec ce qu'on a. »",
   "« Le projecteur chauffe. Moi aussi. On est une équipe. »",
+  "« Je rallume la salle. Le rang 12 grince toujours, rassure-toi. »",
   "« Ta salle arrive. Je passe un coup de balai entre les rangs 3 et 4. »"
 ];
+const VANNES_PREMIERE = [
+  "« Un nouveau patron ! Je descends chercher les clés. Elles sont quelque part. »",
+  "« J'époussette le comptoir. Il n'a pas servi depuis un moment. »",
+  "« Attends, je remonte le rideau. À la main. Comme en 1953. »",
+  "« Je cherche une ampoule pour l'enseigne. Il m'en reste une. Peut-être. »",
+  "« On va bien s'entendre. Enfin, je crois. Je dis ça à tout le monde. »"
+];
+const PREMIERE = DESTINATION === "inscription.html";
+const VANNES = PREMIERE ? VANNES_PREMIERE : VANNES_RETOUR;
 const VANNE_GLISSE = "« 87%… retour à 40. La bobine a glissé, on en parle plus. »";
 
 const elPct = document.getElementById("pct");
 const elVanne = document.getElementById("vanne");
 const elPiste = document.getElementById("piste");
 elVanne.textContent = VANNES[Math.floor(Math.random()*VANNES.length)];
+const elSous = document.getElementById("sousTitre");
+if(elSous) elSous.textContent = PREMIERE ? "Première ouverture" : "On rallume la salle";
 
 /* la vanne change en fondu plutôt que d'un coup */
 function ditVanne(t){
@@ -151,7 +168,7 @@ let derniereVanne = Date.now();
 const timer = setInterval(()=>{
   p += Math.random()*9;
   /* une seule glissade possible, pour le gag */
-  if(!aGlisse && p>82 && p<92 && Math.random()<.4){
+  if(!PREMIERE && !aGlisse && p>82 && p<92 && Math.random()<.4){
     p = 40; aGlisse = true;
     ditVanne(VANNE_GLISSE);
     derniereVanne = Date.now();

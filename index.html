@@ -122,6 +122,36 @@ body{font-family:'Outfit',system-ui,sans-serif;background:var(--papier);color:va
 .mention{text-align:center;font-size:9.5px;font-weight:300;letter-spacing:.13em;
   text-transform:uppercase;color:var(--gris);margin-top:6px}
 
+/* ═════════ LES ÉTATS DE L'ATTENTE ═════════
+   Sur un réseau lent, un bouton qui pâlit ne dit pas si l'appui a
+   été pris en compte : le réflexe est d'appuyer encore. Trois
+   signaux valent mieux qu'un — la bobine, le filet, les champs figés.
+   ───────────────────────────────────────── */
+.filetAuth{height:2px;border-radius:2px;background:rgba(201,152,47,.16);overflow:hidden;
+  margin:0 -20px 14px;opacity:0;transition:opacity .3s}
+.filetAuth.actif{opacity:1}
+.filetAuth i{display:block;height:100%;width:34%;border-radius:2px;
+  background:linear-gradient(90deg,transparent,#f7dd9a,transparent);
+  animation:courtFilet 1.25s ease-in-out infinite}
+@keyframes courtFilet{0%{transform:translateX(-110%)}100%{transform:translateX(400%)}}
+
+.bobineBtn{width:20px;height:20px;flex:none;display:none}
+.bobineBtn svg{width:100%;height:100%;display:block;animation:tourneBtn 1.5s linear infinite}
+@keyframes tourneBtn{to{transform:rotate(360deg)}}
+
+.btnAuth{display:flex;align-items:center;justify-content:center;gap:10px;min-height:56px}
+.btnAuth.occupe{box-shadow:0 1px 0 var(--orSombre);transform:translateY(4px);
+  background:linear-gradient(180deg,#f0d89a,#b8892a)}
+.btnAuth.occupe .bobineBtn{display:block}
+.btnAuth.fini{background:linear-gradient(180deg,#8fd6a6,#2f7d4a);color:#06240f;
+  box-shadow:0 5px 0 #1d5230;transform:none}
+
+.feuille.gele .champ{opacity:.5;pointer-events:none}
+.feuille.gele .bascule{opacity:.35;pointer-events:none}
+.bobMot{transition:background .3s,border-color .3s}
+.bobMot.erreur{background:rgba(168,58,42,.08);border-color:rgba(168,58,42,.35)}
+.bobMot.reussi{background:rgba(47,125,74,.08);border-color:rgba(47,125,74,.35)}
+
 /* ═════════ LA FEUILLE D'IDENTIFICATION ═════════ */
 .voileAuth{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;
   background:rgba(20,12,10,.55);animation:paraitre .25s ease-out}
@@ -432,7 +462,58 @@ const teteBob = `<svg viewBox="30 40 60 60" aria-hidden="true">
   <path d="M34 56 Q60 34 86 56 L86 50 Q60 28 34 50 Z" fill="#571520"/>
   <rect x="52" y="44" width="16" height="7" rx="2" fill="#e8b84b"/></svg>`;
 
+const bobinePetite = `<svg viewBox="0 0 24 24" aria-hidden="true">
+  <circle cx="12" cy="12" r="10" fill="none" stroke="#2a1704" stroke-width="2"/>
+  <circle cx="12" cy="12" r="2.4" fill="#2a1704"/>
+  <g fill="#2a1704" opacity=".75">
+    <circle cx="12" cy="5.4" r="1.9"/><circle cx="17.7" cy="15.3" r="1.9"/>
+    <circle cx="6.3" cy="15.3" r="1.9"/></g></svg>`;
+
 let mode = "inscription", voile = null;
+
+/* ── les trois états de l'attente ── */
+function etatAttente(){
+  const f = voile && voile.querySelector(".feuille");
+  const b = document.getElementById("btnAuth");
+  const fil = voile && voile.querySelector(".filetAuth");
+  if(!f || !b) return;
+  f.classList.add("gele");
+  b.classList.add("occupe"); b.classList.remove("fini");
+  b.querySelector(".libelle").textContent = mode === "inscription"
+    ? "On imprime…" : "On vérifie…";
+  if(fil) fil.classList.add("actif");
+  voile.querySelectorAll("input").forEach(i=>i.disabled = true);
+}
+
+function etatRefus(){
+  const f = voile && voile.querySelector(".feuille");
+  const b = document.getElementById("btnAuth");
+  const fil = voile && voile.querySelector(".filetAuth");
+  const mot = voile && voile.querySelector(".bobMot");
+  if(!f || !b) return;
+  f.classList.remove("gele");
+  b.classList.remove("occupe");
+  b.querySelector(".libelle").textContent = mode === "inscription"
+    ? "Ouvrir le cinéma" : "Entrer";
+  if(fil) fil.classList.remove("actif");
+  if(mot){ mot.classList.add("erreur"); mot.classList.remove("reussi"); }
+  voile.querySelectorAll("input").forEach(i=>i.disabled = false);
+  /* un mouvement bref : un texte qui change ne se remarque pas quand on lit vite */
+  if(f.animate) f.animate([{transform:"translateX(0)"},{transform:"translateX(-6px)"},
+    {transform:"translateX(5px)"},{transform:"translateX(-2px)"},{transform:"translateX(0)"}],
+    {duration:340, easing:"ease-out"});
+}
+
+function etatReussite(){
+  const b = document.getElementById("btnAuth");
+  const fil = voile && voile.querySelector(".filetAuth");
+  const mot = voile && voile.querySelector(".bobMot");
+  if(!b) return;
+  b.classList.remove("occupe"); b.classList.add("fini");
+  b.querySelector(".libelle").textContent = "C'est parti";
+  if(fil) fil.classList.remove("actif");
+  if(mot){ mot.classList.remove("erreur"); mot.classList.add("reussi"); }
+}
 
 function parle(t){
   const p = document.getElementById("motBob");
@@ -447,6 +528,7 @@ function ouvreAuth(m){
   voile.innerHTML = `<div class="feuille">
     <button class="fermerAuth" id="fermerAuth" aria-label="Fermer">✕</button>
     <div class="poignee"></div>
+    <div class="filetAuth"><i></i></div>
     <h3>${inscrit ? "Ouvrir ton cinéma" : "Te reconnecter"}</h3>
 
     <div class="bobMot"><span class="bobTete">${teteBob}</span>
@@ -464,7 +546,9 @@ function ouvreAuth(m){
       <input id="mdp" type="password" placeholder="six caractères au minimum"
         autocomplete="${inscrit ? "new-password" : "current-password"}"></div>
 
-    <button class="btnAuth" id="btnAuth">${inscrit ? "Ouvrir le cinéma" : "Entrer"}</button>
+    <button class="btnAuth" id="btnAuth">
+      <span class="bobineBtn">${bobinePetite}</span>
+      <span class="libelle">${inscrit ? "Ouvrir le cinéma" : "Entrer"}</span></button>
     <button class="bascule" id="bascule">${inscrit
       ? "J'ai déjà un cinéma · me reconnecter"
       : "Je n'ai pas encore de cinéma · en ouvrir un"}</button>
@@ -499,10 +583,11 @@ async function envoie(){
   const pseudo = inscrit ? (document.getElementById("pseudo").value || "").trim() : "";
   const btn = document.getElementById("btnAuth");
 
-  if(!email || !mdp || (inscrit && !pseudo)){ parle(REPLIQUES.vide); return; }
-  if(mdp.length < 6){ parle(REPLIQUES.courtMdp); return; }
+  if(!email || !mdp || (inscrit && !pseudo)){ parle(REPLIQUES.vide); etatRefus(); return; }
+  if(mdp.length < 6){ parle(REPLIQUES.courtMdp); etatRefus(); return; }
 
   btn.disabled = true;
+  etatAttente();
   parle(inscrit ? REPLIQUES.impression : REPLIQUES.verif);
 
   const endpoint = SB_URL + (inscrit ? "/auth/v1/signup" : "/auth/v1/token?grant_type=password");
@@ -520,6 +605,7 @@ async function envoie(){
       else if(err.includes("already registered")) parle(REPLIQUES.dejaLa);
       else parle("La machine dit : « " + (data.error_description || data.msg || rep.status)
                  + " ». J'y comprends rien non plus, elle est belge.");
+      etatRefus();
       btn.disabled = false;
       return;
     }
@@ -532,6 +618,7 @@ async function envoie(){
         pseudo: data.user?.user_metadata?.pseudo || pseudo || ""
       }));
       localStorage.setItem("rex_dest", inscrit ? "inscription.html" : "jeu.html");
+      etatReussite();
       parle(REPLIQUES.bienvenue);
       /* la salle s'éteint : la lumière baisse avant que l'écran s'allume */
       setTimeout(()=>{
@@ -542,9 +629,11 @@ async function envoie(){
     }
     /* inscription sans jeton : l'email doit être confirmé */
     parle(REPLIQUES.confirme);
+    etatRefus();
     btn.disabled = false;
   }catch(err){
     parle(REPLIQUES.reseau);
+    etatRefus();
     btn.disabled = false;
   }
 }
