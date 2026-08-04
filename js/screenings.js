@@ -7,6 +7,7 @@ import {
   filmDebloque,
   filmParId,
   fmtDuree,
+  fmtDureeHeures,
   heureEnMinutes,
   horairesDisponibles,
   minutesEnHeure,
@@ -20,6 +21,7 @@ import { accomplitMission, debloque, declencheEvenement } from "./progression.js
 import { toastSocial } from "./social.js";
 import { rpc, sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
 
 /* ============================================================
@@ -34,14 +36,74 @@ let sallesDispo  = [];     /* salles du cinéma */
 let brouillon    = null;   /* séance en cours d'édition */
 
 /* ---------- initialisation ---------- */
+let vueProg = "affiche";
+let evenementsProg = [];
+
 async function initProgrammation(){
   await chargeJournee();
   await chargeSallesProg();
   await chargeFilmsMaison();
   await chargeSeances();
-  rendProgrammeDuJour();
-  rendCatalogue();
-  bulleConseil(conseilProg());
+  brancheSegments();
+  rendVue();
+  installeFleches();
+}
+
+/* les trois onglets du haut */
+function brancheSegments(){
+  document.querySelectorAll("#segments button").forEach(b=>{
+    b.addEventListener("click", ()=>{
+      if(vueProg === b.dataset.vue) return;
+      document.querySelectorAll("#segments button").forEach(x=>{
+        x.classList.remove("on"); x.setAttribute("aria-selected","false");
+      });
+      b.classList.add("on"); b.setAttribute("aria-selected","true");
+      vueProg = b.dataset.vue;
+      rendVue();
+      const piste = document.getElementById("pisteAffiches");
+      if(piste) piste.scrollTo({left:0, behavior:"smooth"});
+    });
+  });
+}
+
+const SOUS_TITRES = {
+  affiche:"À l'affiche aujourd'hui",
+  catalogue:"Au catalogue cette semaine",
+  evenements:"Ce qui se passe dans le quartier"
+};
+const PLAQUES = {affiche:"Aujourd'hui", catalogue:"Au catalogue", evenements:"Le quartier"};
+
+/* rendu complet d'une vue : fronton, carrousel, tableau, Bob */
+async function rendVue(){
+  const st = document.getElementById("sousTitre");
+  if(st) texteSur(st, SOUS_TITRES[vueProg]);
+  const pl = document.getElementById("plaqueJour");
+  if(pl) texteSur(pl, PLAQUES[vueProg]);
+  const bj = document.getElementById("badgeJourTxt");
+  if(bj) bj.textContent = "Jour " + (Etat.cinema?.jour || 1);
+
+  if(vueProg === "affiche"){ rendVueAffiche(); }
+  else if(vueProg === "catalogue"){ rendVueCatalogue(); }
+  else{ await rendVueEvenements(); }
+
+  bulleConseil(conseilDeLaVue());
+  majFleches();
+}
+
+function conseilDeLaVue(){
+  if(vueProg === "catalogue"){
+    const dispo = catalogueComplet().filter(f=>filmDebloque(f)).length;
+    return dispo > 0
+      ? `${dispo} films sont à ta portée. Regarde la popularité avant le prix : un film cher qui remplit vaut mieux qu'un film gratuit qui vide la salle.`
+      : "Le catalogue s'étoffera avec les niveaux. Pour l'instant, on fait avec ce qu'on a.";
+  }
+  if(vueProg === "evenements"){
+    const actifs = evenementsProg.filter(e=>e.actif).length;
+    return actifs > 0
+      ? "Un événement est en cours dans le quartier. C'est le moment de remplir les salles."
+      : "Rien en ce moment dans le quartier. Ça ne saurait tarder, il y a toujours quelque chose.";
+  }
+  return conseilProg();
 }
 
 async function chargeSallesProg(){
@@ -120,6 +182,8 @@ function estimeAudience(s){
 
 /* ---------- Bob ---------- */
 function bulleConseil(t){
+  const nouvelle = document.getElementById("bulleProg");
+  if(nouvelle){ texteSur(nouvelle, t); return; }
   const z = document.getElementById("zoneBob");
   z.innerHTML = ""; z.appendChild(bobCompact(t));
 }
@@ -132,55 +196,7 @@ function conseilProg(){
   return "Bon début. Les séances de journée remplissent moins, mais elles font tourner la machine.";
 }
 
-/* ============================================================
-   CATALOGUE
-   ============================================================ */
-/* Le catalogue devient un mur : des affiches punaisées, qu'on touche
-   pour les faire grandir. Plus de liste de fiches. */
-function rendCatalogue(){
-  const el = document.getElementById("listeFilms");
-  const films = catalogueComplet();
-  el.innerHTML = films.map((f,i)=>afficheMur(f,i)).join("");
-  [...el.querySelectorAll(".amTitre")].forEach(n=>texteSur(n, n.dataset.t));
-}
 
-function afficheMur(f, i){
-  const ouvert = filmDebloque(f);
-  const incline = ((i * 37) % 5 - 2) * 0.8;      /* chaque affiche pend un peu de travers */
-  return `<button class="afficheMur ${ouvert?'':'verrouillee'} ${f.maison?'maison':''}"
-    style="--incline:${incline.toFixed(1)}deg"
-    onclick="${ouvert ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`}"
-    aria-label="${echappe(f.titre)}">
-    <span class="amPunaise"></span>
-    <span class="amPapier" style="background:${f.couleurAffiche}">
-      ${f.maison ? `<span class="amMaison">Production maison</span>` : ""}
-      <span class="amMotif">${motifAffiche(f.genre)}</span>
-      <span class="amTitre" data-t="${echappe(f.titre)}"></span>
-      <span class="amGenre">${echappe(f.genre)}</span>
-      ${ouvert ? "" : `<span class="amCadenas">${icone("porte")}</span>`}
-    </span>
-    <span class="amPop"><i style="width:${Math.max(4,Math.min(100,f.popularite))}%"></i></span>
-  </button>`;
-}
-
-/* un motif SVG simple, différent par genre */
-function motifAffiche(genre){
-  const M = {
-    "Drame":`<circle cx="30" cy="26" r="13" fill="#fff" opacity=".2"/>`,
-    "Aventure":`<path d="M8 44 L24 20 L38 34 L52 12" stroke="#fff" stroke-opacity=".28"
-      stroke-width="3" fill="none"/>`,
-    "Animation":`<circle cx="20" cy="28" r="9" fill="#fff" opacity=".22"/>
-      <circle cx="40" cy="22" r="12" fill="#fff" opacity=".16"/>`,
-    "Documentaire":`<rect x="12" y="14" width="36" height="28" fill="none" stroke="#fff"
-      stroke-opacity=".28" stroke-width="2.5"/>`,
-    "Comédie":`<path d="M14 22 Q30 44 46 22" stroke="#fff" stroke-opacity=".3"
-      stroke-width="3" fill="none"/>`,
-    "Romance":`<path d="M30 42 Q10 26 20 16 Q30 10 30 22 Q30 10 40 16 Q50 26 30 42Z"
-      fill="#fff" opacity=".2"/>`
-  };
-  return `<svg viewBox="0 0 60 56" class="amSvg">${M[genre] ||
-    `<path d="M14 40 L30 14 L46 40 Z" fill="#fff" opacity=".18"/>`}</svg>`;
-}
 
 function refuseFilm(id){
   const f = catalogueComplet().find(x=>String(x.id)===String(id));
@@ -197,8 +213,9 @@ function agranditAffiche(id){
   o.innerHTML = `
     <div class="afficheGrande">
       <button class="agFermer" onclick="fermeAffiche()" aria-label="Fermer">✕</button>
-      <div class="agPapier" style="background:${f.couleurAffiche}">
-        <span class="amMotif grand">${motifAffiche(f.genre)}</span>
+      <div class="agPapier">
+        ${afficheDeGenre(genreConnu(f.genre))}
+        <span class="agVoile"></span>
         <span class="agTitre" id="agTitre"></span>
         <span class="agGenre">${echappe(f.genre)}</span>
       </div>
@@ -222,37 +239,7 @@ function fermeAffiche(){
   if(o){ o.classList.add("sortie"); setTimeout(()=>o.remove(), 260); }
 }
 
-function jaugePopularite(p){
-  return `<span class="jaugePop"><i style="width:${Math.max(4,Math.min(100,p))}%"></i></span><span class="popVal">${p}</span>`;
-}
 
-function ficheFilm(f){
-  const ouvert = filmDebloque(f);
-  const cout = coutLicence(f);
-  return `<div class="ficheFilm ${ouvert?'':'verrouille'}">
-    <div class="ffAffiche" style="background:${f.couleurAffiche}">
-      <span class="ffAffTitre">${f.titre}</span>
-      <span class="ffAffGenre">${f.genre}</span>
-      ${ouvert ? "" : `<span class="ffCadenas">${icone("porte")}</span>`}
-    </div>
-    <div class="ffCorps">
-      <div class="ffHaut">
-        <span class="ffTitre">${f.maison?"★ ":""}${f.titre}</span>
-        <span class="ffGenre">${f.genre}</span>
-      </div>
-      <div class="ffResume">${f.resume}</div>
-      <div class="ffMeta">
-        <span>${icone("horloge")} ${fmtDuree(f.duree)}</span>
-        <span>${icone("piece")} ${f.maison ? "licence offerte" : fmtArgent(cout)}</span>
-      </div>
-      <div class="ffPop">${icone("spectateurs")} Popularité ${jaugePopularite(f.popularite)}</div>
-      ${ouvert
-        ? `<button class="btnOr btnProg" onclick="ouvrePanneau('${f.id}')">Programmer</button>`
-        : `<div class="ffVerrou">Verrouillé · disponible au niveau ${f.niveauRequis}</div>
-           <button class="btnOr btnProg" disabled>Programmer</button>`}
-    </div>
-  </div>`;
-}
 
 /* ============================================================
    PANNEAU DE CRÉATION / MODIFICATION D'UNE SÉANCE
@@ -445,7 +432,7 @@ async function valideSeance(){
   }
   trieSeances();
   fermePanneau();
-  rendProgrammeDuJour();
+  rendVue();
   if((f.genre||"").toLowerCase() === "comédie") await accomplitMission("m_comedie");
 }
 
@@ -456,7 +443,7 @@ async function supprimeSeance(id){
   await sbFetch("seances?id=eq."+id, {method:"DELETE", prefer:"return=minimal"});
   seancesJour = seancesJour.filter(x=>String(x.id)!==String(id));
   Etat.seancesJour = seancesJour;
-  rendProgrammeDuJour();
+  rendVue();
   bulleConseil(`« ${f?f.titre:"La séance"} » retirée du programme.`);
 }
 function modifieSeance(id){
@@ -467,14 +454,39 @@ function modifieSeance(id){
 /* ============================================================
    PROGRAMME DU JOUR
    ============================================================ */
-function rendProgrammeDuJour(){
-  const el = document.getElementById("programmeJour");
+/* ============================================================
+   VUE 1 — À L'AFFICHE : les séances du jour
+   ============================================================ */
+function rendVueAffiche(){
   const limite = limiteSeances();
   const valide = programmeValide() || journeeLancee();
 
+  /* le carrousel montre une affiche par séance */
+  const piste = document.getElementById("pisteAffiches");
   if(seancesJour.length === 0){
-    el.innerHTML = `<div class="vide">Le projecteur est froid.<br>Aucune séance au programme.</div>
-      <div class="bilanProg"><span>0 / ${limite} séances</span></div>`;
+    piste.innerHTML = `<div class="pisteVide">Le projecteur est froid.<br>
+      <small>Aucune séance au programme.</small></div>`;
+  }else{
+    piste.innerHTML = seancesJour.map(s=>{
+      const f = filmParId(s.film_id);
+      const passee = seanceCommencee(s);
+      return carteAffiche({
+        genre: f ? f.genre : "Drame",
+        titre: f ? f.titre : s.film_id,
+        ligne: s.heure,
+        etat: passee ? "En cours" : "À venir",
+        classe: passee ? "cours" : "venir",
+        action: valide ? "" : `modifieSeance('${s.id}')`
+      });
+    }).join("");
+  }
+
+  /* le tableau reprend le détail, ligne à ligne */
+  const tab = document.getElementById("tableauProg");
+  if(seancesJour.length === 0){
+    tab.innerHTML = `<div class="videProg">Rien à l'affiche pour l'instant.<br>
+      <small>Choisis un film dans « Prochains films » pour ouvrir ta première séance.</small></div>
+      ${boutonsProg(valide)}`;
     document.getElementById("zoneValidation").innerHTML = "";
     return;
   }
@@ -482,39 +494,218 @@ function rendProgrammeDuJour(){
   const totalLicence = seancesJour.reduce((t,s)=>t + Number(s.cout_licence||0), 0);
   const totalAudience = seancesJour.reduce((t,s)=>t + estimeAudience(s), 0);
 
-  el.innerHTML = seancesJour.map(s=>{
+  tab.innerHTML = seancesJour.map(s=>{
     const f = filmParId(s.film_id);
-    const i = intervalle(s);
-    return `<div class="ligneSeance ${valide?'validee':''}">
-      <div class="lsHeure">${s.heure}</div>
-      <div class="lsCorps">
-        <div class="lsTitre">${f?f.titre:s.film_id}</div>
-        <div class="lsMeta">${s.salle||"Salle"} · ${fmtDuree(s.duree_min||0)} · billet ${fmtArgent(s.prix)}</div>
-        <div class="lsMeta2">Fin prévue ${minutesEnHeure(i.fin)} · licence ${fmtArgent(s.cout_licence)} · ≈ ${estimeAudience(s)} spectateurs</div>
-      </div>
-      ${valide ? `<span class="lsVerrou">${icone("etoile")}</span>` : `
-      <div class="lsActions">
-        <button class="btnMini" onclick="modifieSeance('${s.id}')" aria-label="Modifier">${icone("outil")}</button>
-        <button class="btnMini danger" onclick="supprimeSeance('${s.id}')" aria-label="Supprimer">✕</button>
-      </div>`}
+    const cap = capaciteSalle(s.salle_id);
+    const taux = cap ? Math.min(100, Math.round(estimeAudience(s) / cap * 100)) : 0;
+    return `<div class="rangProg ${valide?'verrouille':''}"
+      onclick="${valide ? '' : `modifieSeance('${s.id}')`}">
+      <span class="rpHeure">${echappe(s.heure)}</span>
+      <span class="rpMid">
+        <b>${echappe((f ? f.titre : s.film_id).toUpperCase())}</b>
+        <span>${echappe(f ? f.genre : "")} • ${fmtDuree(s.duree_min||0)} • ${echappe(s.salle||"Salle")}</span>
+      </span>
+      <span class="rpDr">
+        <b class="${classeTaux(taux)}">${taux}%</b>
+        <span>${cap} places</span>
+      </span>
+      <span class="rpChev">${valide ? icone("etoile") : "›"}</span>
     </div>`;
   }).join("") + `
     <div class="bilanProg">
       <span>${seancesJour.length} / ${limite} séances</span>
-      <span>Licences : <b>${fmtArgent(totalLicence)}</b></span>
-      <span>Potentiel : <b>≈ ${totalAudience}</b> spectateurs</span>
-    </div>`;
+      <span>Licences <b>${fmtArgent(totalLicence)}</b></span>
+      <span>Potentiel <b>≈ ${totalAudience}</b></span>
+    </div>
+    ${boutonsProg(valide)}`;
 
+  rendValidation(valide);
+}
+
+function boutonsProg(valide){
+  if(valide) return "";
+  const plein = seancesJour.length >= limiteSeances();
+  return `<div class="actionsProg">
+    <button class="btnOrProg" onclick="allerAuCatalogue()" ${plein?"disabled":""}>
+      ${plein ? "Toutes les séances sont posées" : "+ Ajouter une séance"}</button>
+    ${seancesJour.length ? `<button class="btnVideProg" onclick="validerProgramme()">
+      Valider le programme</button>` : ""}
+  </div>`;
+}
+
+function rendValidation(valide){
+  const z = document.getElementById("zoneValidation");
+  if(!z) return;
   if(journeeLancee()){
-    document.getElementById("zoneValidation").innerHTML =
-      `<div class="programmeValide">${icone("porte")} Le cinéma est ouvert — programme verrouillé.
-        <button class="btnRouvrir" onclick="location.href='bilan.html'">Voir le bilan</button></div>`;
+    z.innerHTML = `<div class="programmeValide">${icone("porte")}
+      Le cinéma est ouvert — programme verrouillé.
+      <button class="btnRouvrir" onclick="location.href='bilan.html'">Voir le bilan</button></div>`;
+  }else if(valide){
+    z.innerHTML = `<div class="programmeValide">${icone("etoile")}
+      Programme validé — le cinéma peut ouvrir.
+      <button class="btnRouvrir" onclick="repasseEnBrouillon()">Modifier encore</button></div>`;
+  }else{
+    z.innerHTML = "";
+  }
+}
+
+function allerAuCatalogue(){
+  const b = document.querySelector('#segments button[data-vue="catalogue"]');
+  if(b) b.click();
+}
+
+/* une séance a-t-elle déjà commencé ? */
+function seanceCommencee(s){
+  if(!journeeLancee()) return false;
+  const now = new Date();
+  const [h,m] = String(s.heure||"0:0").split(/[h:]/).map(n=>parseInt(n,10)||0);
+  return (now.getHours()*60 + now.getMinutes()) >= (h*60 + m);
+}
+
+function capaciteSalle(id){
+  const s = (sallesDispo||[]).find(x=>String(x.id) === String(id));
+  return s ? Number(s.capacite)||0 : 0;
+}
+function classeTaux(t){ return t >= 70 ? "haut" : t >= 40 ? "moyen" : "bas"; }
+
+/* ============================================================
+   VUE 2 — PROCHAINS FILMS : le catalogue
+   ============================================================ */
+function rendVueCatalogue(){
+  const films = catalogueComplet();
+  const ouverts = films.filter(f=>filmDebloque(f));
+  const fermes  = films.filter(f=>!filmDebloque(f));
+
+  document.getElementById("pisteAffiches").innerHTML =
+    (ouverts.length ? ouverts : films).slice(0, 12).map(f=>carteAffiche({
+      genre: f.genre, titre: f.titre,
+      ligne: f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre de droits",
+      etat: filmDebloque(f) ? "Disponible" : "Niveau " + (f.niveauRequis||"?"),
+      classe: filmDebloque(f) ? "libre" : "ferme",
+      action: filmDebloque(f) ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`,
+      maison: !!f.maison
+    })).join("");
+
+  document.getElementById("tableauProg").innerHTML =
+    ouverts.map(f=>`
+      <div class="rangProg" onclick="ouvrePanneau('${f.id}')">
+        <span class="rpHeure">${f.coutLicence ? fmtArgent(coutLicence(f)) : "—"}</span>
+        <span class="rpMid"><b>${echappe(f.titre.toUpperCase())}</b>
+          <span>${echappe(f.genre)} • ${fmtDuree(f.duree)}${f.maison ? " • production maison" : ""}</span></span>
+        <span class="rpDr"><b class="${classeTaux(f.popularite)}">${f.popularite}</b>
+          <span>Popularité</span></span>
+        <span class="rpChev">›</span>
+      </div>`).join("") +
+    (fermes.length ? `<div class="aVenirProg">${icone("porte")}
+      ${fermes.length} film${fermes.length>1?"s":""} se débloque${fermes.length>1?"nt":""}
+      avec les niveaux suivants.</div>` : "") + `
+    <div class="actionsProg">
+      <button class="btnOrProg" onclick="allerAuProgramme()">Voir mon programme</button>
+      <button class="btnVideProg" onclick="location.href='studio.html'">Mes productions</button>
+    </div>`;
+  document.getElementById("zoneValidation").innerHTML = "";
+}
+
+function allerAuProgramme(){
+  const b = document.querySelector('#segments button[data-vue="affiche"]');
+  if(b) b.click();
+}
+
+/* ============================================================
+   VUE 3 — ÉVÉNEMENTS : ce qui se passe dans le quartier
+   ============================================================ */
+async function rendVueEvenements(){
+  const piste = document.getElementById("pisteAffiches");
+  const tab = document.getElementById("tableauProg");
+  document.getElementById("zoneValidation").innerHTML = "";
+
+  if(!evenementsProg.length){
+    piste.innerHTML = `<div class="pisteVide">On regarde…</div>`;
+    try{
+      const r = await rpc("get_active_community_events", {p_cinema_id: Etat.cinema.id});
+      evenementsProg = Array.isArray(r) ? r : (r?.evenements || []);
+    }catch(e){ evenementsProg = []; }
+  }
+
+  if(!evenementsProg.length){
+    piste.innerHTML = `<div class="pisteVide">Rien à l'horizon.<br>
+      <small>Le quartier est calme cette semaine.</small></div>`;
+    tab.innerHTML = `<div class="videProg">Aucun événement en cours.<br>
+      <small>Les festivals reviennent régulièrement, reste à l'écoute.</small></div>
+      <div class="actionsProg">
+        <button class="btnOrProg" onclick="location.href='evenements.html'">
+          Voir les festivals passés</button>
+      </div>`;
     return;
   }
-  document.getElementById("zoneValidation").innerHTML = valide
-    ? `<div class="programmeValide">${icone("etoile")} Programme validé — le cinéma peut ouvrir.
-         <button class="btnRouvrir" onclick="repasseEnBrouillon()">Modifier encore</button></div>`
-    : `<button class="btnRouge btnValider" onclick="validerProgramme()">Valider le programme</button>`;
+
+  piste.innerHTML = evenementsProg.slice(0, 8).map(e=>carteAffiche({
+    genre: e.genre_favori || "Culte",
+    titre: e.nom || "Événement",
+    ligne: e.actif ? "En cours" : "Bientôt",
+    etat: e.heures_restantes ? fmtDureeHeures(e.heures_restantes) : (e.actif ? "En cours" : "À venir"),
+    classe: e.actif ? "cours" : "venir",
+    action: `location.href='evenements.html'`
+  })).join("");
+
+  tab.innerHTML = evenementsProg.map(e=>`
+    <div class="rangProg" onclick="location.href='evenements.html'">
+      <span class="rpHeure">${e.actif ? "Actif" : "Bientôt"}</span>
+      <span class="rpMid"><b>${echappe((e.nom||"Événement").toUpperCase())}</b>
+        <span>${echappe(e.description || e.resume || "")}</span></span>
+      <span class="rpDr"><b class="${e.actif ? "haut" : "moyen"}">
+        ${Number(e.participants||0)}</b><span>participants</span></span>
+      <span class="rpChev">›</span>
+    </div>`).join("") + `
+    <div class="actionsProg">
+      <button class="btnOrProg" onclick="location.href='evenements.html'">Participer</button>
+      <button class="btnVideProg" onclick="location.href='progression.html'">Mes récompenses</button>
+    </div>`;
+}
+
+/* ============================================================
+   LA CARTE D'AFFICHE, commune aux trois vues
+   ============================================================ */
+function carteAffiche(o){
+  return `<button class="carteAff ${o.classe === "ferme" ? "verrouillee" : ""}"
+    ${o.action ? `onclick="${o.action}"` : ""} aria-label="${echappe(o.titre)}">
+    <span class="cadreAff">
+      ${afficheDeGenre(genreConnu(o.genre))}
+      <span class="genreEt">${echappe(o.genre)}</span>
+      ${o.maison ? `<span class="maisonEt">Maison</span>` : ""}
+      ${o.classe === "ferme" ? `<span class="voileVerrou">${icone("porte")}</span>` : ""}
+    </span>
+    <span class="titreAff">${echappe(o.titre)}</span>
+    <span class="ligneAff">${echappe(o.ligne)}</span>
+    <span class="etatAff ${o.classe}">${echappe(o.etat)}</span>
+  </button>`;
+}
+
+/* ---------- les flèches du carrousel ---------- */
+function installeFleches(){
+  const piste = document.getElementById("pisteAffiches");
+  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
+  if(!piste || !g || !d) return;
+  g.addEventListener("click", ()=>piste.scrollBy({left:-138, behavior:"smooth"}));
+  d.addEventListener("click", ()=>piste.scrollBy({left: 138, behavior:"smooth"}));
+  piste.addEventListener("scroll", majFleches, {passive:true});
+  window.addEventListener("resize", majFleches);
+}
+
+/* elles s'éteignent quand il n'y a rien à faire défiler */
+function majFleches(){
+  const p = document.getElementById("pisteAffiches");
+  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
+  if(!p || !g || !d) return;
+  const debord = p.scrollWidth > p.clientWidth + 4;
+  g.classList.toggle("eteinte", !debord || p.scrollLeft < 6);
+  d.classList.toggle("eteinte", !debord || p.scrollLeft > p.scrollWidth - p.clientWidth - 6);
+}
+
+/* la bulle de Bob */
+function bulleProgTexte(t){
+  const el = document.getElementById("bulleProg");
+  if(el) texteSur(el, t);
 }
 
 /* ---------- validation du programme ---------- */
@@ -525,7 +716,7 @@ async function validerProgramme(){
     {method:"PATCH", body:{statut:"validated"}, prefer:"return=minimal"});
   seancesJour.forEach(s=>s.statut = "validated");
   Etat.seancesJour = seancesJour;
-  rendProgrammeDuJour();
+  rendVue();
   bulleConseil("Programme validé ! Retourne à l'accueil : le marquee est allumé, il ne reste qu'à ouvrir les portes.");
   /* XP : voir EVENEMENTS_XP — attribution branchée à l'étape suivante */
   await declencheEvenement("PROGRAMME_VALIDE");
@@ -537,18 +728,26 @@ async function repasseEnBrouillon(){
   await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}`,
     {method:"PATCH", body:{statut:"draft"}, prefer:"return=minimal"});
   seancesJour.forEach(s=>s.statut = "draft");
-  rendProgrammeDuJour();
+  rendVue();
   bulleConseil("Programme rouvert. Tu peux encore tout changer.");
 }
 
 /* ---- exports ---- */
 export {
+  PLAQUES,
   PRIX_MIN,
-  afficheMur,
+  SOUS_TITRES,
   afficherPanneau,
   agranditAffiche,
+  allerAuCatalogue,
+  allerAuProgramme,
+  boutonsProg,
+  brancheSegments,
   brouillon,
   bulleConseil,
+  bulleProgTexte,
+  capaciteSalle,
+  carteAffiche,
   catalogueComplet,
   changePrix,
   changePrixDirect,
@@ -558,36 +757,43 @@ export {
   chercheConflit,
   choisitHoraire,
   choisitSalle,
+  classeTaux,
+  conseilDeLaVue,
   conseilProg,
   coutLicence,
   estimeAudience,
+  evenementsProg,
   fermeAffiche,
   fermePanneau,
-  ficheFilm,
   initProgrammation,
+  installeFleches,
   intervalle,
-  jaugePopularite,
   journeeLancee,
   limiteSeances,
+  majFleches,
   majPanneau,
   modifieSeance,
-  motifAffiche,
   ouvrePanneau,
   premierHoraireLibre,
   programmeValide,
   refuseFilm,
-  rendCatalogue,
   rendChoixHoraires,
   rendChoixSalles,
-  rendProgrammeDuJour,
+  rendValidation,
+  rendVue,
+  rendVueAffiche,
+  rendVueCatalogue,
+  rendVueEvenements,
   repasseEnBrouillon,
   sallesDispo,
+  seanceCommencee,
   seancesJour,
   supprimeSeance,
   trieSeances,
   valideSeance,
   validerProgramme,
-  verifieSeance
+  verifieSeance,
+  vueProg
 };
 
 /* ---- gestionnaires en attribut ---- */
@@ -596,6 +802,8 @@ export {
    on les rend accessibles explicitement. */
 Object.assign(window, {
   agranditAffiche,
+  allerAuCatalogue,
+  allerAuProgramme,
   changePrix,
   changePrixDirect,
   choisitHoraire,
@@ -604,6 +812,7 @@ Object.assign(window, {
   fermePanneau,
   modifieSeance,
   ouvrePanneau,
+  refuseFilm,
   repasseEnBrouillon,
   supprimeSeance,
   valideSeance,
