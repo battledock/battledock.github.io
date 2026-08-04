@@ -1,3 +1,4 @@
+import { fmtDureeHeures } from "../../data/films.js";
 import { Etat } from "../../game-state.js";
 import { actionSoc, toastSocial } from "../../social.js";
 import { rpc } from "../../supabase-client.js";
@@ -23,11 +24,7 @@ function infoRecompense(cle){
   return RECOMPENSES_EVENEMENT[cle] || {nom:cle, ic:"etoile", desc:"Récompense cosmétique."};
 }
 function fmtNb(n){ return (Number(n)||0).toLocaleString("fr-FR"); }
-function fmtDureeHeures(h){
-  const j = Math.floor(h/24), r = h % 24;
-  if(j >= 1) return j + " jour" + (j>1?"s":"") + (r ? " " + r + " h" : "");
-  return Math.max(0, h) + " heure" + (h>1?"s":"");
-}
+
 
 async function initEvenements(){
   const el = document.getElementById("contenuEvenements");
@@ -192,7 +189,6 @@ export {
   RECOMPENSES_EVENEMENT,
   bandeauEvenement,
   evenementCourant,
-  fmtDureeHeures,
   fmtNb,
   infoRecompense,
   initEvenements,
