@@ -6,6 +6,7 @@ import {
   fenetreVoisin,
   pilastre
 } from "./palettes.js";
+import { A } from "../ui/genre-posters.js";
 
 /* ============================================================
    FAÇADE ÉVOLUTIVE — le même bâtiment à travers six âges

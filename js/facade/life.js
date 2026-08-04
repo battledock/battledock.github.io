@@ -1,7 +1,6 @@
 import { ANIMATIONS_LEGERES, quitteLieu } from "../ambiance.js";
 import { Etat } from "../game-state.js";
 import { confirmeOuverture, parleBob, phaseSelonHeure } from "../cinema.js";
-import { vitrine } from "./palettes.js";
 
 /* ============================================================
    LA VIE DU CINÉMA
@@ -106,13 +105,14 @@ let refPortes = null;
 function ouvreLesPortes(){
   if(!refPortes || ANIMATIONS_LEGERES) return;
   refPortes.g.classList.add("battante");
-  refPortes.d.classList.add("battante");
   refPortes.lueur.classList.add("visible");
+  /* le second battant suit de peu : deux personnes ne poussent jamais ensemble */
+  planifie(()=>refPortes.d.classList.add("battante"), 110);
   planifie(()=>{
     refPortes.g.classList.remove("battante");
-    refPortes.d.classList.remove("battante");
     refPortes.lueur.classList.remove("visible");
-  }, 1600);
+  }, 1500);
+  planifie(()=>refPortes.d.classList.remove("battante"), 1640);
 }
 
 /* ============================================================
