@@ -1,7 +1,8 @@
 import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js";
 import { bobBilan } from "../../engine/simulation.js";
 import { Etat, fmtArgent } from "../../game-state.js";
-import { sbFetch } from "../../supabase-client.js";
+import { appelSecurise, rpc, sbFetch } from "../../supabase-client.js";
+import { echappe } from "../../ui/emblems.js";
 import { icone } from "../../ui/icons.js";
 
 /* ============================================================
@@ -12,11 +13,91 @@ let bilanCourant = null;
 let xpAttribuee = 0;
 let recordBattu = false;
 
+let situationDuJour = null;
+
+async function chargeSituationBilan(jour){
+  const appel = await appelSecurise(
+    () => rpc("get_day_situation", {p_cinema_id: Etat.cinema.id, p_jour: jour ?? null}),
+    {rechargeApresErreur: false});
+  situationDuJour = (appel.ok && appel.data && appel.data.success) ? appel.data.data : null;
+}
+
+/* ------------------------------------------------------------
+   LE CHOIX DU JOUR
+   Il n'apparaît que si une décision a été prise. Une situation
+   ignorée le dit aussi : le joueur doit voir ce qu'il a laissé
+   passer, sinon ignorer ne coûte rien.
+   ------------------------------------------------------------ */
+function blocSituation(){
+  const s = situationDuJour;
+  if(!s) return "";
+
+  if(s.statut === "ignoree"){
+    return `<section class="carteEcran carteChoix laissee">
+      <h2>Le dossier du jour</h2>
+      <div class="choixTitre">${echappe(s.titre || "")}</div>
+      <p class="choixResume">Tu n'as pas répondu. L'occasion est passée.</p>
+    </section>`;
+  }
+  if(s.statut !== "resolue") return "";
+
+  const effets = Array.isArray(s.effets) ? s.effets : [];
+  const differe = s.differe || {};
+  const suites = phrasesDiffere(differe);
+
+  return `<section class="carteEcran carteChoix">
+    <h2>Ton choix du jour</h2>
+    <div class="choixTitre">${echappe(s.titre || "")}</div>
+    <p class="choixResume">${echappe(s.resume || s.titre_option || "")}</p>
+
+    ${effets.length ? `<div class="choixEffets">
+      ${effets.map(e=>`<div class="choixEffet">${icone("etoile")}
+        <span>${echappe(e)}</span></div>`).join("")}
+    </div>` : ""}
+
+    ${suites.length ? `<div class="choixSuites">
+      <div class="csTitre">Ce que ça laisse derrière</div>
+      ${suites.map(t=>`<div class="choixEffet suite">${icone("horloge")}
+        <span>${echappe(t)}</span></div>`).join("")}
+    </div>` : ""}
+  </section>`;
+}
+
+/* la traduction, la même que côté serveur — utilisée quand le
+   serveur n'a rendu que le bloc technique */
+function phrasesDiffere(d){
+  const out = [];
+  const n = c => Number(d[c]);
+  if(n("affinite_familles"))
+    out.push(n("affinite_familles") > 0
+      ? "Les familles du quartier s'en souviendront"
+      : "Les familles retiendront le refus");
+  if(n("affinite_etudiants"))
+    out.push(n("affinite_etudiants") > 0
+      ? "Le bouche-à-oreille passe par les étudiants"
+      : "Les étudiants iront voir ailleurs");
+  if(n("affinite_cinephiles"))
+    out.push(n("affinite_cinephiles") > 0
+      ? "Les cinéphiles ont noté l'adresse"
+      : "Les cinéphiles resteront distants");
+  if(n("reputation"))
+    out.push(n("reputation") > 0
+      ? "Réputation en hausse de " + n("reputation")
+      : "Réputation en baisse de " + Math.abs(n("reputation")));
+  return out;
+}
+
 async function initBilan(){
   await chargeStats();
   const c = Etat.cinema;
   const d = await sbFetch(`journees?cinema_id=eq.${c.id}&jour=eq.${c.jour}&select=*`);
   const j = Array.isArray(d) && d[0];
+
+  /* la décision du jour, si une situation s'est présentée.
+     On la lit d'abord dans le bilan archivé — il survit à
+     l'archivage de la situation — et sinon on la demande. */
+  situationDuJour = (j && j.resultats && j.resultats.situation) || null;
+  if(!situationDuJour) await chargeSituationBilan(c.jour);
 
   if(!j || !j.resultats){
     document.getElementById("contenuBilan").innerHTML = `
@@ -74,6 +155,8 @@ function rendBilan(b, dejaValide){
       ${dejaValide ? "" : `<div class="ligneRecit">${icone("camera")}<span>XP gagnée : <b class="positif">+${xpAttribuee}</b></span></div>`}
     </section>
 
+    ${blocSituation()}
+
     <div class="blocBob bilanBob">
       <div class="bobMiniTete grand"><svg viewBox="30 40 60 60">
         <circle cx="60" cy="70" r="26" fill="#f0c9a0"/>
@@ -124,10 +207,14 @@ async function validerBilan(){
 /* ---- exports ---- */
 export {
   bilanCourant,
+  blocSituation,
+  chargeSituationBilan,
   initBilan,
   mentionSatisfaction,
+  phrasesDiffere,
   recordBattu,
   rendBilan,
+  situationDuJour,
   validerBilan,
   xpAttribuee
 };
