@@ -271,7 +271,7 @@ function rendConstruction(){
   const n = (Etat.salles || []).length;
   if(n >= 5){
     z.innerHTML = `<div class="batimentPlein">Le bâtiment est plein.
-      Cinq salles, c'est tout ce que le Rex peut contenir.</div>`;
+      Cinq salles, c'est tout ce que le bâtiment peut contenir.</div>`;
     return;
   }
 

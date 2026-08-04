@@ -347,6 +347,9 @@ function statsDuJour(){
 /* ==== ACTION PRINCIPALE : évolue selon la situation ==== */
 /* Le bouton principal ne mène jamais dans le vide : à chaque situation
    correspond une action possible. L'heure du téléphone n'y intervient pas. */
+/* Un seul bouton, qui reprend là où le joueur s'est arrêté.
+   L'accueil n'est plus traversé au milieu de la boucle : on y va
+   pour regarder son cinéma, et on en repart une fois. */
 function actionPrincipale(){
   const st = statsDuJour();
   const rt = statutCinema();
@@ -365,24 +368,21 @@ function actionPrincipale(){
             sous:"La journée est close — on remet le compteur à zéro",
             url:null, action:"jourSuivant"};
 
+  /* le matin a-t-il déjà été lu ? le serveur le sait, on le mémorise ici */
+  const matinLu = Etat.journee && Etat.journee.preparee_le;
+
+  if(!matinLu)
+    return {ic:"cloche", titre:"Commencer la journée",
+            sous:"Bob a des nouvelles du quartier", url:"preparation.html"};
+
   if(st.seances.length === 0)
-    return {ic:"pellicule", titre:"Programmer la première séance",
+    return {ic:"pellicule", titre:"Composer le programme",
             sous:"Le marquee est vide, le quartier attend", url:"programmation.html"};
 
-  const valide = st.seances.every(s=>
-    ["validated","running","completed"].includes(s.statut));
-  if(!valide)
-    return {ic:"pellicule", titre:"Terminer le programme",
-            sous:st.seances.length + " séance(s) en brouillon — à valider",
-            url:"programmation.html"};
-
-  /* le briefing du matin est accessible dès que le programme tient debout */
-
   const licences = (Etat.seancesJour||[]).reduce((t,x)=>t+Number(x.cout_licence||0),0);
-  /* on ne saute plus directement à l'ouverture : le matin se prépare */
-  return {ic:"porte", titre:"Préparer la journée",
+  return {ic:"porte", titre:"Ouvrir les portes",
           sous:`${st.seances.length} séance(s) · licences ${fmtArgent(licences)}`,
-          url:"preparation.html"};
+          url:"programmation.html"};
 }
 
 function rendActionPrincipale(){

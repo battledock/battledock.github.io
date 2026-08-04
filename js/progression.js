@@ -5,7 +5,24 @@ import { chargePersonnalisation } from "./data/customization.js";
 import { Etat } from "./game-state.js";
 import { rpc, sbFetch } from "./supabase-client.js";
 import { celebreNiveau } from "./ui/celebration.js";
+import { echappe } from "./ui/emblems.js";
 import { icone } from "./ui/icons.js";
+
+/* ------------------------------------------------------------
+   LE NOM DU CINÉMA
+   Les textes de progression disaient « Le Rex » — le nom du jeu,
+   pas celui du joueur. Un patron dont la salle s'appelle Le Club
+   lisait « Le Rex devient un complexe » et ne s'y reconnaissait pas.
+   ------------------------------------------------------------ */
+/* un libellé peut être une chaîne ou une fonction qui dépend du cinéma */
+function texteLibelle(v){
+  return typeof v === "function" ? v() : (v || "");
+}
+
+function nomDuCinema(){
+  const n = (Etat && Etat.cinema && Etat.cinema.nom || "").trim();
+  return n || "Ton cinéma";
+}
 
 /* ============================================================
    PROGRESSION — niveaux, XP, déblocages, montée de niveau
@@ -93,7 +110,7 @@ const NIVEAUX = [
   {n:30, xp:29575, titre:"Complexe",          recompenses:[
     {cle:"salle_4",        ic:"fauteuil",  nom:"Quatrième salle",                desc:"Un vrai complexe de quartier"},
     {cle:"salle_vip",      ic:"etoile",    nom:"Places premium",                 desc:"Un rang privilégié, vendu plus cher"}],
-    ceremonie:"Le Rex devient un complexe", palier:true},
+    ceremonie:() => nomDuCinema() + " devient un complexe", palier:true},
   {n:31, xp:31900, titre:"Hôte",              recompenses:[
     {cle:"equipe_accueil", ic:"spectateurs",nom:"Agent d'accueil",               desc:"Personne ne se perd · satisfaction en hausse"}]},
   {n:32, xp:34300, titre:"Éclectique",        recompenses:[
@@ -117,7 +134,7 @@ const NIVEAUX = [
   {n:40, xp:62850, titre:"Grand exploitant",  recompenses:[
     {cle:"salle_5",        ic:"fauteuil",  nom:"Cinquième salle",                desc:"Le Rex n'a plus rien d'un cinéma de quartier"},
     {cle:"creneaux_10",    ic:"horloge",   nom:"Dix créneaux par jour",          desc:"Séances en continu, du matin à l'aube"}],
-    ceremonie:"Cinq salles au Rex", palier:true},
+    ceremonie:() => "Cinq salles à " + nomDuCinema(), palier:true},
   {n:41, xp:67360, titre:"Régisseur",         recompenses:[
     {cle:"equipe_regie",   ic:"outil",     nom:"Régisseur général",              desc:"Travaux deux fois plus rapides"}]},
   {n:42, xp:71980, titre:"Cinéphile",         recompenses:[
@@ -139,8 +156,8 @@ const NIVEAUX = [
   {n:49, xp:107400,titre:"Passeur",           recompenses:[
     {cle:"ecole",          ic:"spectateurs",nom:"École de cinéma",               desc:"Tu formes la relève · bonus sur toute la production"}]},
   {n:50, xp:112900,titre:"Palace",            recompenses:[
-    {cle:"palace",         ic:"etoile",    nom:"Le Rex, palace du quartier",     desc:"Tout est débloqué. Le vieux cinéma est devenu une légende."}],
-    ceremonie:"Le Rex est une légende", palier:true}
+    {cle:"palace",         ic:"etoile",    nom:"Le palace du quartier",     desc:"Tout est débloqué. Le vieux cinéma est devenu une légende."}],
+    ceremonie:() => nomDuCinema() + " est une légende", palier:true}
 ];
 
 /* ---- gains d'XP par action ---- */
@@ -350,12 +367,15 @@ const BOB_NIVEAUX = {
   45:"Niveau 45 ! UN FESTIVAL. Notre festival. Le quartier a son nom sur les affiches.",
   46:"Niveau 46 ! L'écran le plus grand de la ville. On voit les pores. C'est peut-être trop.",
   47:"Niveau 47 ! Nos films passent ailleurs. Ailleurs ! Des gens qu'on ne connaît pas nous regardent.",
-  48:"Niveau 48 ! Le Rex est classé. Personne ne pourra jamais le démolir. Jamais.",
+  48:() => "Niveau 48 ! " + nomDuCinema() + " est classé. Personne ne pourra jamais le démolir. Jamais.",
   49:"Niveau 49 ! Une école. Des gamins vont apprendre ici. Comme moi, en son temps. En pire.",
-  50:"Niveau 50. Patron… regarde ce qu'on a fait. Le vieux Rex. Une légende. Merci."
+  50:() => "Niveau 50. Patron… regarde ce qu'on a fait. " + nomDuCinema()
+        + ". Une légende. Merci."
 };
 function phraseBob(n){
-  return BOB_NIVEAUX[n] || `Niveau ${n} ! Le cinéma monte, et moi je suis toujours là. Fidèle comme le rang 12.`;
+  /* certains messages dépendent du nom du cinéma : ce sont des fonctions */
+  return texteLibelle(BOB_NIVEAUX[n])
+    || `Niveau ${n} ! Le cinéma monte, et moi je suis toujours là. Fidèle comme le rang 12.`;
 }
 
 /* ---- fenêtre de montée de niveau ---- */
@@ -376,7 +396,7 @@ function montreMonteeNiveauSimple(niv){
         <div class="rayons"></div>
         <div class="niveauChiffre"><span>NIVEAU</span><b>${niv.n}</b></div>
         <div class="niveauTitre">${niv.titre}</div>
-        ${niv.ceremonie ? `<div class="niveauCeremonie">${niv.ceremonie}</div>` : ""}
+        ${niv.ceremonie ? `<div class="niveauCeremonie">${echappe(texteLibelle(niv.ceremonie))}</div>` : ""}
         <div class="niveauBob">
           <span class="bobRond"><svg viewBox="30 40 60 60">
             <circle cx="60" cy="70" r="26" fill="#f0c9a0"/>
@@ -554,6 +574,7 @@ export {
   niveauActuel,
   niveauDe,
   niveauMax,
+  nomDuCinema,
   phraseBob,
   progressionVersSuivant,
   reclameRecompense,
@@ -563,6 +584,7 @@ export {
   seuilNiveau,
   sonNiveau,
   synchroniseDeblocages,
+  texteLibelle,
   toastMission,
   xpActuel
 };

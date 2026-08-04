@@ -148,6 +148,12 @@ function poussiere(n){
 function initAmbiance(lieu){
   /* une classe par lieu : elle permet à une page de neutraliser le décor */
   document.body.classList.add("lieu" + lieu.charAt(0).toUpperCase() + lieu.slice(1));
+
+  /* Les pages refondues en clair le signalent par une classe sur leur
+     contenu. On la remonte sur le body pour teindre le fond — en visant
+     la page et non le lieu, car deux pages peuvent partager un lieu. */
+  if(document.querySelector(".accueilClair, .sallesClair"))
+    document.body.classList.add("pageClaire");
   document.body.dataset.lieu = lieu || "jeu";
   if(ANIMATIONS_LEGERES) document.body.classList.add("animLegeres");
 

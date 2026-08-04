@@ -1,4 +1,3 @@
-import { ouvreCinema } from "./engine/day.js";
 import { Etat, fmtArgent } from "./game-state.js";
 import { toastSocial } from "./social.js";
 import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js";
@@ -13,7 +12,7 @@ import { icone } from "./ui/icons.js";
    ============================================================ */
 
 let prep = null;          /* la réponse de preparer_journee */
-let etape = "briefing";   /* briefing · previsions · dossier · resume */
+let etape = "briefing";   /* briefing · dossier — le reste a migré */
 
 async function initPreparation(){
   await chargePreparation();
@@ -47,16 +46,14 @@ async function chargePreparation(){
    ------------------------------------------------------------ */
 function rendEtape(){
   majFilAriane();
-  if(etape === "briefing")   return rendBriefing();
-  if(etape === "previsions") return rendPrevisions();
-  if(etape === "dossier")    return rendDossier();
-  return rendResume();
+  if(etape === "briefing") return rendBriefing();
+  return rendDossier();
 }
 
 function vaA(e){ etape = e; rendEtape(); window.scrollTo({top:0, behavior:"smooth"}); }
 
 function majFilAriane(){
-  const ordre = ["briefing","previsions","dossier","resume"];
+  const ordre = ["briefing","dossier"];
   const el = document.getElementById("filAriane");
   if(!el) return;
   const i = ordre.indexOf(etape);
@@ -87,73 +84,22 @@ function rendBriefing(){
           </li>`).join("")}
       </ul>
     </div>
-    <button class="btnOrProg btnEtape" onclick="vaA('previsions')">
-      Voir les réservations</button>`;
+    ${prep.situation && prep.situation.statut === "en_attente"
+      ? `<button class="btnOrProg btnEtape" onclick="vaA('dossier')">
+          Ouvrir le dossier du jour</button>`
+      : `<button class="btnOrProg btnEtape" onclick="location.href='programmation.html'">
+          Composer le programme</button>`}`;
   texteSur(document.getElementById("jmSalut"), prep.salutation || "");
 }
 
-/* ------------------------------------------------------------
-   2. LES RÉSERVATIONS PRÉVISIONNELLES
-   ------------------------------------------------------------ */
-function rendPrevisions(){
-  const p = prep.previsions || [];
-  const suite = prep.situation && prep.situation.statut === "en_attente" ? "dossier" : "resume";
 
-  document.getElementById("zonePrep").innerHTML = `
-    <div class="panneauResa">
-      <div class="prEntete">
-        <span>Réservations attendues</span>
-        <b>${prep.total_bas} à ${prep.total_haut}</b>
-      </div>
-      ${p.length === 0 ? `
-        <div class="videProg">Aucune séance au programme.<br>
-          <small>Sans programme, il n'y a rien à ouvrir.</small></div>
-        <button class="btnVideProg" onclick="location.href='programmation.html'">
-          Programmer une séance</button>`
-      : p.map(s=>ligneResa(s)).join("") + `
-        <div class="prTotaux">
-          <span>Licences <b>${fmtArgent(prep.cout_licences)}</b></span>
-          <span>Recette estimée <b>${fmtArgent(prep.recette_estimee)}</b></span>
-          <span class="${Number(prep.benefice_estime) < 0 ? 'negatif' : ''}">
-            Bénéfice <b>${fmtArgent(prep.benefice_estime)}</b></span>
-        </div>`}
-    </div>
-    ${p.length ? `<button class="btnOrProg btnEtape" onclick="vaA('${suite}')">
-      ${suite === "dossier" ? "Un dossier attend" : "Voir le résumé"}</button>` : ""}
-    <button class="btnVideProg btnEtape" onclick="vaA('briefing')">Revenir au journal</button>`;
-}
 
-function ligneResa(s){
-  const taux = Number(s.taux_estime) || 0;
-  const plus = (s.facteurs || []).filter(f=>f.signe === "+").slice(0, 2);
-  const moins = (s.facteurs || []).filter(f=>f.signe === "-").slice(0, 2);
-  return `<div class="ligneResa" onclick="this.classList.toggle('ouverte')">
-    <div class="lrHaut">
-      <span class="lrHeure">${echappe(s.heure)}</span>
-      <span class="lrTitre"><b>${echappe(s.titre)}</b>
-        <small>${echappe(s.salle || "")} · ${fmtArgent(s.prix)}</small></span>
-      <span class="lrChiffre ${classeTendance(s.tendance)}">
-        <b>${s.prevision_basse}–${s.prevision_haute}</b>
-        <small>sur ${s.capacite}</small></span>
-    </div>
-    <div class="lrJauge"><i class="${classeTendance(s.tendance)}"
-      style="width:${Math.min(100, taux)}%"></i></div>
-    <div class="lrRaisons">
-      ${plus.map(f=>`<span class="rPlus">+ ${echappe(f.texte)}</span>`).join("")}
-      ${moins.map(f=>`<span class="rMoins">− ${echappe(f.texte)}</span>`).join("")}
-      ${plus.length + moins.length === 0 ? `<span class="rNeutre">Rien de marquant</span>` : ""}
-    </div>
-  </div>`;
-}
 
-function classeTendance(t){
-  if(t === "excellente" || t === "bonne") return "haut";
-  if(t === "correcte") return "moyen";
-  return "bas";
-}
 
 /* ------------------------------------------------------------
-   3. LE DOSSIER DU JOUR
+   2. LE DOSSIER DU JOUR
+   Les réservations et le résumé ont migré vers la programmation :
+   ils n'ont de sens qu'une fois le programme composé.
    ------------------------------------------------------------ */
 function rendDossier(){
   const s = prep.situation;
@@ -168,7 +114,8 @@ function rendDossier(){
         ${(s.resultat?.effets || []).map(e=>`<div class="doEffet">${icone("etoile")}
           <span>${echappe(e)}</span></div>`).join("")}
       </div>
-      <button class="btnOrProg btnEtape" onclick="vaA('resume')">Continuer</button>`;
+      <button class="btnOrProg btnEtape"
+        onclick="location.href='programmation.html'">Composer le programme</button>`;
     return;
   }
 
@@ -189,7 +136,7 @@ function rendDossier(){
             ${Number(o.cout) > 0 ? `<em>Coûte ${fmtArgent(o.cout)}</em>` : ""}
           </button>`).join("")}
       </div>
-      <button class="doPlusTard" onclick="ignoreDossier()">Décider plus tard</button>
+
     </div>`;
   texteSur(document.getElementById("doTitre"), s.titre || "");
   texteSur(document.getElementById("doRecit"), s.recit || "");
@@ -234,6 +181,11 @@ async function choisitOption(cle){
   await chargePreparation();
   etape = "dossier";
   rendEtape();
+  /* le dossier réglé, il ne reste qu'à composer */
+  setTimeout(()=>{
+    const b = document.querySelector(".dossier.resolu");
+    if(b) b.scrollIntoView({behavior:"smooth", block:"center"});
+  }, 120);
 }
 
 /* un refus doit se voir : le bandeau reste jusqu'au prochain écran */
@@ -250,6 +202,9 @@ function montreEchec(message){
   b.scrollIntoView({behavior:"smooth", block:"center"});
 }
 
+/* Il n'y a plus d'« après » où décider : le dossier se traite ou se
+   refuse, mais ne se reporte plus. La fonction reste pour les parties
+   en cours qui auraient une situation déjà mise de côté. */
 async function ignoreDossier(){
   const appel = await appelSecurise(
     () => rpc("ignorer_situation", {p_situation_id: prep.situation.id}),
@@ -259,59 +214,7 @@ async function ignoreDossier(){
   vaA("resume");
 }
 
-/* ------------------------------------------------------------
-   4. LE RÉSUMÉ, PUIS LES PORTES
-   ------------------------------------------------------------ */
-function rendResume(){
-  const c = prep.cinema || {};
-  const sit = prep.situation;
-  const alertes = (prep.alertes || []).filter(a=>Number(a.urgence) >= 3);
-  const prete = prep.prete_a_ouvrir === true;
 
-  document.getElementById("zonePrep").innerHTML = `
-    <div class="resumePrep">
-      <div class="rpTitre">Programme prêt</div>
-      <div class="rpLigne">${icone("pellicule")}
-        <span>${prep.previsions?.length || 0} séance(s) au programme</span></div>
-      <div class="rpLigne">${icone("spectateurs")}
-        <span>${prep.total_bas} à ${prep.total_haut} réservations attendues</span></div>
-      <div class="rpLigne">${icone("piece")}
-        <span>${fmtArgent(prep.cout_licences)} de licences à régler</span></div>
-      ${sit ? `<div class="rpLigne">${icone("cloche")}
-        <span>${sit.statut === "resolue" ? "Dossier traité" :
-                sit.statut === "ignoree" ? "Dossier laissé de côté" :
-                "Un dossier attend encore une réponse"}</span></div>` : ""}
-      ${alertes.length ? alertes.map(a=>`<div class="rpLigne alerte">${icone("outil")}
-        <span>${echappe(a.texte)}</span></div>`).join("")
-        : `<div class="rpLigne">${icone("outil")}<span>Salles en état</span></div>`}
-      ${Number(prep.ajustements_restants) >= 0 ? `<div class="rpLigne discret">${icone("outil")}
-        <span>${prep.ajustements_restants} ajustement(s) gratuit(s) restant(s)</span></div>` : ""}
-    </div>
-
-    ${!prete ? `<div class="prepAvertit">${
-      (prep.previsions?.length || 0) === 0
-        ? "Aucune séance au programme — il n'y a rien à ouvrir."
-        : "Les licences dépassent ce qu'il y a en caisse."}</div>` : ""}
-
-    <button class="btnPortes" ${prete ? "" : "disabled"} onclick="ouvreLesPortes()">
-      ${icone("porte")} Ouvrir les portes</button>
-    <button class="btnVideProg btnEtape" onclick="location.href='programmation.html'">
-      Modifier le programme</button>
-    <button class="btnVideProg btnEtape" onclick="vaA('previsions')">
-      Revoir les réservations</button>`;
-}
-
-async function ouvreLesPortes(){
-  const b = document.querySelector(".btnPortes");
-  if(b){ b.disabled = true; b.textContent = "On ouvre…"; }
-  try{
-    if(typeof ouvreCinema === "function"){ await ouvreCinema(); return; }
-    location.href = "jeu.html";
-  }catch(e){
-    if(b){ b.disabled = false; }
-    toastSocial(messageErreur(e), "cloche");
-  }
-}
 
 /* la tête de Bob, la même que partout ailleurs */
 function teteBob(){
@@ -330,21 +233,16 @@ function teteBob(){
 export {
   chargePreparation,
   choisitOption,
-  classeTendance,
   etape,
   etiquetteCategorie,
   ignoreDossier,
   initPreparation,
-  ligneResa,
   majFilAriane,
   montreEchec,
-  ouvreLesPortes,
   prep,
   rendBriefing,
   rendDossier,
   rendEtape,
-  rendPrevisions,
-  rendResume,
   teteBob,
   vaA
 };
@@ -356,7 +254,5 @@ export {
 Object.assign(window, {
   chargePreparation,
   choisitOption,
-  ignoreDossier,
-  ouvreLesPortes,
   vaA
 });

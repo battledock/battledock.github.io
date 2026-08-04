@@ -14,12 +14,12 @@ import {
   obtenirLimiteSeances
 } from "./data/films.js";
 import { niveauEquipement } from "./data/upgrades.js";
-import { chargeJournee, statutJournee } from "./engine/day.js";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js";
 import { Etat, fmtArgent } from "./game-state.js";
 import { bobCompact } from "./navigation.js";
 import { accomplitMission, debloque, declencheEvenement } from "./progression.js";
 import { toastSocial } from "./social.js";
-import { appelSecurise, rpc, sbFetch } from "./supabase-client.js";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js";
 import { echappe, texteSur } from "./ui/emblems.js";
 import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js";
 import { icone } from "./ui/icons.js";
@@ -41,6 +41,8 @@ let evenementsProg = [];
 
 async function initProgrammation(){
   await chargeCatalogue();
+  await chargePrevisions();
+  await chargeMatin();
   await chargeJournee();
   await chargeSallesProg();
   await chargeFilmsMaison();
@@ -75,6 +77,12 @@ const SOUS_TITRES = {
 const PLAQUES = {affiche:"Aujourd'hui", catalogue:"Au catalogue", evenements:"Le quartier"};
 
 /* rendu complet d'une vue : fronton, carrousel, tableau, Bob */
+/* les prévisions changent à chaque retouche : on les relit avant de peindre */
+async function rafraichitPrevisions(){
+  await chargePrevisions();
+  await rendVue();
+}
+
 async function rendVue(){
   const st = document.getElementById("sousTitre");
   if(st) texteSur(st, SOUS_TITRES[vueProg]);
@@ -113,12 +121,15 @@ async function chargeSallesProg(){
   Etat.salles = sallesDispo;
 }
 
+/* Toute retouche passe par ici. On en profite pour relire les
+   prévisions : le joueur baisse un prix et voit la fourchette bouger. */
 async function chargeSeances(){
   const c = Etat.cinema;
   const d = await sbFetch(`seances?cinema_id=eq.${c.id}&jour=eq.${c.jour}&select=*`);
   seancesJour = Array.isArray(d) ? d : [];
   trieSeances();
   Etat.seancesJour = seancesJour;
+  try{ await chargePrevisions(); }catch(e){}
 }
 function trieSeances(){ seancesJour.sort((a,b)=>compareHeures(a.heure,b.heure)); }
 
@@ -147,6 +158,36 @@ async function chargeFilmsMaison(){
    reprise — avec la popularité et la licence du moment.
    ------------------------------------------------------------ */
 let catalogueServeur = null;
+let previsionsJour = null;      /* ce que le serveur attend, séance par séance */
+let prepDuJour = null;          /* le matin : dossier, alertes, mémoire */
+
+async function chargePrevisions(){
+  const appel = await appelSecurise(
+    () => rpc("get_day_forecast", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  previsionsJour = (appel.ok && appel.data && appel.data.success) ? appel.data.data : null;
+}
+
+/* le matin a déjà tout calculé : on le relit pour le résumé */
+async function chargeMatin(){
+  const appel = await appelSecurise(
+    () => rpc("preparer_journee", {p_cinema_id: Etat.cinema.id}),
+    {rechargeApresErreur: false});
+  prepDuJour = (appel.ok && appel.data && appel.data.success) ? appel.data.data : null;
+}
+
+function previsionDe(seanceId){
+  if(!previsionsJour) return null;
+  return (previsionsJour.seances || []).find(p =>
+    String(p.seance_id) === String(seanceId)) || null;
+}
+
+function classeTendance(t){
+  if(t === "excellente" || t === "bonne") return "haut";
+  if(t === "correcte") return "moyen";
+  return "bas";
+}
+
 
 async function chargeCatalogue(){
   const appel = await appelSecurise(
@@ -557,6 +598,7 @@ function rendVueAffiche(){
     const f = filmParId(s.film_id);
     const cap = capaciteSalle(s.salle_id);
     const taux = cap ? Math.min(100, Math.round(estimeAudience(s) / cap * 100)) : 0;
+    const pv = previsionDe(s.id);
     return `<div class="rangProg ${valide?'verrouille':''}"
       onclick="${valide ? '' : `modifieSeance('${s.id}')`}">
       <span class="rpHeure">${echappe(s.heure)}</span>
@@ -565,10 +607,17 @@ function rendVueAffiche(){
         <span>${echappe(f ? f.genre : "")} • ${fmtDuree(s.duree_min||0)} • ${echappe(s.salle||"Salle")}</span>
       </span>
       <span class="rpDr">
-        <b class="${classeTaux(taux)}">${taux}%</b>
-        <span>${cap} places</span>
+        ${pv ? `<b class="${classeTendance(pv.tendance)}">${pv.prevision_basse}–${pv.prevision_haute}</b>
+               <span>sur ${pv.capacite}</span>`
+             : `<b class="${classeTaux(taux)}">${taux}%</b><span>${cap} places</span>`}
       </span>
       <span class="rpChev">${valide ? icone("etoile") : "›"}</span>
+      ${pv ? `<span class="rpRaisons">
+        ${(pv.facteurs || []).filter(x=>x.signe === "+").slice(0,2)
+          .map(x=>`<span class="rPlus">+ ${echappe(x.texte)}</span>`).join("")}
+        ${(pv.facteurs || []).filter(x=>x.signe === "-").slice(0,2)
+          .map(x=>`<span class="rMoins">− ${echappe(x.texte)}</span>`).join("")}
+      </span>` : ""}
     </div>`;
   }).join("") + `
     <div class="bilanProg">
@@ -576,20 +625,64 @@ function rendVueAffiche(){
       <span>Licences <b>${fmtArgent(totalLicence)}</b></span>
       <span>Potentiel <b>≈ ${totalAudience}</b></span>
     </div>
-    ${boutonsProg(valide)}`;
+    ${boutonsProg(valide)}
+    ${seancesJour.length && !journeeLancee() ? resumeAvantOuverture() : ""}`;
 
   rendValidation(valide);
 }
 
+/* Plus de « valider » : on ajoute des séances tant qu'on veut, puis
+   on ouvre. Ouvrir vaut validation — c'est le serveur qui s'en charge. */
 function boutonsProg(valide){
-  if(valide) return "";
+  if(journeeLancee()) return "";
   const plein = seancesJour.length >= limiteSeances();
   return `<div class="actionsProg">
-    <button class="btnOrProg" onclick="allerAuCatalogue()" ${plein?"disabled":""}>
-      ${plein ? "Toutes les séances sont posées" : "+ Ajouter une séance"}</button>
-    ${seancesJour.length ? `<button class="btnVideProg" onclick="validerProgramme()">
-      Valider le programme</button>` : ""}
+    ${plein ? "" : `<button class="btnVideProg" onclick="allerAuCatalogue()">
+      + Ajouter une séance</button>`}
   </div>`;
+}
+
+/* le résumé d'avant-ouverture, posé sous le programme */
+function resumeAvantOuverture(){
+  const p = previsionsJour;
+  const sit = prepDuJour && prepDuJour.situation;
+  const alertes = (prepDuJour && prepDuJour.alertes || []).filter(a=>Number(a.urgence) >= 3);
+  const licences = seancesJour.reduce((t,s)=>t + Number(s.cout_licence||0), 0);
+  const payable = Number(Etat.cinema.argent) >= licences;
+
+  return `<div class="resumeOuvre">
+    <div class="roTitre">Prêt à ouvrir</div>
+    <div class="roLigne">${icone("pellicule")}
+      <span>${seancesJour.length} séance${seancesJour.length>1?"s":""} au programme</span></div>
+    ${p ? `<div class="roLigne">${icone("spectateurs")}
+      <span>${p.total_bas} à ${p.total_haut} spectateurs attendus</span></div>` : ""}
+    <div class="roLigne ${payable ? "" : "alerte"}">${icone("piece")}
+      <span>${fmtArgent(licences)} de licences${payable ? "" : " — il manque "
+        + fmtArgent(licences - Number(Etat.cinema.argent))}</span></div>
+    ${sit ? `<div class="roLigne">${icone("cloche")}
+      <span>${sit.statut === "resolue" ? "Dossier du jour traité"
+             : sit.statut === "ignoree" ? "Dossier laissé de côté"
+             : "Un dossier attend encore"}</span></div>` : ""}
+    ${alertes.length
+      ? alertes.map(a=>`<div class="roLigne alerte">${icone("outil")}
+          <span>${echappe(a.texte)}</span></div>`).join("")
+      : `<div class="roLigne">${icone("outil")}<span>Salles en état</span></div>`}
+
+    <button class="btnPortesProg" ${payable ? "" : "disabled"} onclick="ouvreLesPortes()">
+      ${icone("porte")} Ouvrir les portes</button>
+  </div>`;
+}
+
+async function ouvreLesPortes(){
+  const b = document.querySelector(".btnPortesProg");
+  if(b){ b.disabled = true; b.textContent = "On ouvre…"; }
+  try{
+    if(typeof ouvreCinema === "function"){ await ouvreCinema(); return; }
+    location.href = "bilan.html";
+  }catch(e){
+    if(b) b.disabled = false;
+    bulleConseil(messageErreur(e));
+  }
 }
 
 function rendValidation(valide){
@@ -599,10 +692,6 @@ function rendValidation(valide){
     z.innerHTML = `<div class="programmeValide">${icone("porte")}
       Le cinéma est ouvert — programme verrouillé.
       <button class="btnRouvrir" onclick="location.href='bilan.html'">Voir le bilan</button></div>`;
-  }else if(valide){
-    z.innerHTML = `<div class="programmeValide">${icone("etoile")}
-      Programme validé — le cinéma peut ouvrir.
-      <button class="btnRouvrir" onclick="repasseEnBrouillon()">Modifier encore</button></div>`;
   }else{
     z.innerHTML = "";
   }
@@ -863,12 +952,15 @@ export {
   changePrixDirect,
   chargeCatalogue,
   chargeFilmsMaison,
+  chargeMatin,
+  chargePrevisions,
   chargeSallesProg,
   chargeSeances,
   chercheConflit,
   choisitHoraire,
   choisitSalle,
   classeTaux,
+  classeTendance,
   conseilDeLaVue,
   conseilProg,
   coutLicence,
@@ -887,9 +979,14 @@ export {
   majPanneau,
   mentionSortie,
   modifieSeance,
+  ouvreLesPortes,
   ouvrePanneau,
   premierHoraireLibre,
+  prepDuJour,
+  previsionDe,
+  previsionsJour,
   programmeValide,
+  rafraichitPrevisions,
   refuseFilm,
   rendChoixHoraires,
   rendChoixSalles,
@@ -899,6 +996,7 @@ export {
   rendVueCatalogue,
   rendVueEvenements,
   repasseEnBrouillon,
+  resumeAvantOuverture,
   sallesDispo,
   seanceCommencee,
   seancesJour,
@@ -929,6 +1027,5 @@ Object.assign(window, {
   refuseFilm,
   repasseEnBrouillon,
   supprimeSeance,
-  valideSeance,
-  validerProgramme
+  valideSeance
 });
