@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=92b49fe3";
-import { chargePersonnalisation } from "./data/customization.js?v=92b49fe3";
-import { AMELIORATIONS } from "./data/upgrades.js?v=92b49fe3";
-import { Etat } from "./game-state.js?v=92b49fe3";
-import { rpc, sbFetch } from "./supabase-client.js?v=92b49fe3";
-import { celebreNiveau } from "./ui/celebration.js?v=92b49fe3";
-import { echappe } from "./ui/emblems.js?v=92b49fe3";
-import { icone } from "./ui/icons.js?v=92b49fe3";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=3c723c08";
+import { chargePersonnalisation } from "./data/customization.js?v=3c723c08";
+import { AMELIORATIONS } from "./data/upgrades.js?v=3c723c08";
+import { Etat } from "./game-state.js?v=3c723c08";
+import { rpc, sbFetch } from "./supabase-client.js?v=3c723c08";
+import { celebreNiveau } from "./ui/celebration.js?v=3c723c08";
+import { echappe } from "./ui/emblems.js?v=3c723c08";
+import { icone } from "./ui/icons.js?v=3c723c08";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -569,6 +569,11 @@ function toastMission(m){
    présenté comme tel : un horizon annoncé, pas une promesse.
    ============================================================ */
 
+/* ce que l'on obtient EXACTEMENT à ce niveau — rien de promis */
+function deblocagesDuNiveau(n){
+  return deblocagesReels().filter(d => Number(d.niv) === Number(n));
+}
+
 /* les récompenses qui existent vraiment, avec leur palier exact */
 function deblocagesReels(){
   const out = [];
@@ -690,20 +695,6 @@ function deblocagesReels(){
   return out.sort((a,b)=>a.niv - b.niv || a.nom.localeCompare(b.nom));
 }
 
-/* ce qui est annoncé dans NIVEAUX sans mécanique derrière */
-function deblocagesPrevus(){
-  const reels = new Set(deblocagesReels().map(d=>d.cle));
-  const out = [];
-  (typeof NIVEAUX !== "undefined" ? NIVEAUX : []).forEach(niv=>{
-    (niv.recompenses || []).forEach(r=>{
-      if(reels.has(r.cle)) return;
-      if(String(r.cle).startsWith("genre_")) return;   /* couverts ci-dessus */
-      out.push({...r, niv: niv.n});
-    });
-  });
-  return out.sort((a,b)=>a.niv - b.niv);
-}
-
 /* ---- exports ---- */
 export {
   BOB_NIVEAUX,
@@ -718,7 +709,7 @@ export {
   chargeProgression,
   cleEvenement,
   deblocageEnregistre,
-  deblocagesPrevus,
+  deblocagesDuNiveau,
   deblocagesReels,
   debloque,
   declencheEvenement,

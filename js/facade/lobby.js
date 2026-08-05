@@ -1,6 +1,6 @@
-import { etatBatiment, murSelonEtat } from "./ages.js?v=92b49fe3";
-import { ampoules, pilastre } from "./palettes.js?v=92b49fe3";
-import { salles } from "../rooms.js?v=92b49fe3";
+import { etatBatiment, murSelonEtat } from "./ages.js?v=3c723c08";
+import { ampoules, pilastre } from "./palettes.js?v=3c723c08";
+import { salles } from "../rooms.js?v=3c723c08";
 
 /* ============================================================
    LE HALL ÉVOLUTIF — même langage graphique que la façade
@@ -36,10 +36,6 @@ function dessineHallEvolutif(o = {}){
   const E = etatBatiment(o.niveau || 1);
   const M = murSelonEtat({mur:P.mur, pierre:P.pierre}, E);
   const lum = phase === "nuit" || phase === "crepuscule";
-
-  /* les objets posés par le joueur, zone par zone */
-  const H = o.hall || {};
-  const h = (zone, id) => H[zone] === id;
 
   const salles = Math.max(1, Math.min(3, o.salles || 1));
   const conf = !!o.confiserie;
@@ -308,139 +304,6 @@ ${conf ? `<g>
     <text x="42" y="23" text-anchor="middle" font-family="Courier New" font-size="11"
       letter-spacing="1.4" fill="#c8bca4">CAISSE</text></g>
 </g>`}
-
-<!-- ═══ CE QUE LE JOUEUR A INSTALLÉ ═══ -->
-<g>
-  ${h("mur","cadres") ? `<g>
-    ${[[132,196],[184,190],[236,196],[288,190]].map(([x,y],i)=>`
-      <g transform="translate(${x} ${y})">
-        <rect x="-17" y="-22" width="34" height="44" rx="1.5" fill="#3a2a1c"
-          stroke="#8a6c2a" stroke-width="1.6"/>
-        <rect x="-13" y="-18" width="26" height="36" fill="${["#6d1a26","#2a4a66","#4a3a24","#3a4a2a"][i]}"/>
-        <circle cx="0" cy="-6" r="6" fill="#e8dcbe" opacity=".28"/>
-      </g>`).join("")}
-  </g>` : ""}
-
-  ${h("mur","affiches") ? `<g>
-    ${[[140,198],[210,192],[280,198]].map(([x,y],i)=>`
-      <g transform="translate(${x} ${y}) rotate(${i === 1 ? 0 : i === 0 ? -1.5 : 1.5})">
-        <rect x="-24" y="-32" width="48" height="64" rx="1" fill="${["#7c1424","#26506d","#5a3a1c"][i]}"
-          stroke="#caa24a" stroke-width="1.4"/>
-        <circle cx="0" cy="-12" r="11" fill="#f0d89a" opacity=".38"/>
-        <path d="M-19 18 L0 0 L19 18 Z" fill="#f0d89a" opacity=".26"/>
-        <rect x="-18" y="22" width="36" height="2.4" rx="1.2" fill="#f0d89a" opacity=".7"/>
-      </g>`).join("")}
-  </g>` : ""}
-
-  ${h("mur","fresque") ? `<g>
-    <rect x="104" y="158" width="232" height="86" fill="#5e4a2e" opacity=".22"/>
-    <g opacity=".85">
-      <path d="M104 244 L150 186 L188 214 L232 168 L276 206 L336 158 L336 244 Z" fill="#3f5a4a"/>
-      <circle cx="286" cy="184" r="15" fill="#e8c86a" opacity=".7"/>
-      <path d="M104 244 q58 -16 116 0 q58 16 116 0 L336 244 Z" fill="#2e4438"/>
-      <g fill="#caa24a" opacity=".55">
-        <path d="M150 232 l6 -18 l6 18z"/><path d="M198 236 l5 -14 l5 14z"/>
-        <path d="M262 230 l6 -17 l6 17z"/></g>
-    </g>
-    <rect x="104" y="158" width="232" height="86" fill="none" stroke="#8a6c2a" stroke-width="2"/>
-    <rect x="104" y="240" width="232" height="4" fill="#8a6c2a" opacity=".6"/>
-  </g>` : ""}
-
-  ${h("mur","fresques_origine") ? `<g>
-    <rect x="98" y="150" width="244" height="98" fill="#e8dcbe"/>
-    <g opacity=".9">
-      <path d="M98 248 L98 150 L342 150 L342 248 Z" fill="#d9c9a4"/>
-      <g fill="#8a6c2a" opacity=".5">
-        <path d="M120 248 q22 -70 48 -70 q26 0 30 70 Z"/>
-        <path d="M200 248 q18 -84 42 -84 q24 0 28 84 Z"/>
-        <path d="M282 248 q14 -58 32 -58 q18 0 22 58 Z"/></g>
-      <circle cx="168" cy="192" r="13" fill="#c9982f" opacity=".65"/>
-      <circle cx="242" cy="180" r="10" fill="#a83a2a" opacity=".5"/>
-      <g stroke="#571520" stroke-width="1.4" fill="none" opacity=".45">
-        <path d="M110 236 q40 -14 82 0 q40 14 82 0 q30 -10 58 0"/>
-        <path d="M110 222 q40 -12 82 0 q40 12 82 0 q30 -9 58 0"/></g>
-      <g fill="#3f5a4a" opacity=".55">
-        <ellipse cx="140" cy="244" rx="26" ry="7"/><ellipse cx="228" cy="245" rx="30" ry="7"/>
-        <ellipse cx="308" cy="244" rx="22" ry="6"/></g>
-    </g>
-    <rect x="98" y="150" width="244" height="98" fill="none" stroke="#8a6c2a" stroke-width="2.4"/>
-    <g fill="#8a6c2a" opacity=".7">
-      <rect x="98" y="150" width="244" height="4"/><rect x="98" y="244" width="244" height="4"/></g>
-  </g>` : ""}
-
-  ${h("gauche","plante") ? `<g transform="translate(78 322)">
-    <ellipse cx="0" cy="6" rx="17" ry="5" fill="#000" opacity=".22"/>
-    <path d="M-12 -16 L12 -16 L9 6 L-9 6 Z" fill="#8a5f42"/>
-    <rect x="-14" y="-19" width="28" height="5" rx="2" fill="#a3714f"/>
-    <g fill="#3f6b42">
-      <path d="M0 -19 q-16 -22 -6 -38 q10 12 6 38"/>
-      <path d="M0 -19 q17 -26 7 -42 q-11 14 -7 42"/>
-      <path d="M0 -19 q-4 -30 3 -40 q4 14 -3 40"/>
-      <path d="M0 -19 q11 -18 20 -22 q-8 12 -20 22"/></g>
-  </g>` : ""}
-
-  ${h("gauche","fauteuil") ? `<g transform="translate(74 326)">
-    <ellipse cx="0" cy="8" rx="22" ry="5" fill="#000" opacity=".22"/>
-    <rect x="-18" y="-26" width="36" height="22" rx="5" fill="#7c1424"/>
-    <rect x="-20" y="-8" width="40" height="12" rx="4" fill="#8c2331"/>
-    <rect x="-20" y="-8" width="40" height="3" rx="1.5" fill="#fff" opacity=".12"/>
-    <rect x="-17" y="2" width="4" height="8" fill="#3a2a1c"/>
-    <rect x="13" y="2" width="4" height="8" fill="#3a2a1c"/>
-  </g>` : ""}
-
-  ${h("droite","vitrine") ? `<g transform="translate(366 300)">
-    <rect x="-20" y="-38" width="40" height="58" rx="2" fill="#3a2a1c"
-      stroke="#8a6c2a" stroke-width="1.6"/>
-    <rect x="-16" y="-34" width="32" height="24" fill="#cfe4f0" opacity=".3"/>
-    <rect x="-16" y="-6" width="32" height="22" fill="#cfe4f0" opacity=".3"/>
-    <path d="M-20 -10 L20 -10" stroke="#8a6c2a" stroke-width="1.4"/>
-    <g fill="#caa24a"><circle cx="-8" cy="-22" r="3"/><rect x="2" y="-26" width="9" height="8" rx="1"/>
-      <circle cx="-4" cy="4" r="3.4"/><rect x="4" y="0" width="8" height="9" rx="1"/></g>
-  </g>` : ""}
-
-  ${h("droite","horloge") ? `<g transform="translate(368 214)">
-    <circle r="17" fill="#f2e7cf" stroke="#8a6c2a" stroke-width="2.4"/>
-    <circle r="13" fill="none" stroke="#c9bda6" stroke-width=".8"/>
-    <g stroke="#3a2a1c" stroke-width="1.8" stroke-linecap="round">
-      <path d="M0 0 L0 -9"/><path d="M0 0 L6 4"/></g>
-    <circle r="1.8" fill="#8a6c2a"/>
-  </g>` : ""}
-
-  ${h("sol","tapis") ? `<g>
-    <path d="M170 356 L270 356 L296 396 L144 396 Z" fill="#7c1424"/>
-    <path d="M180 362 L260 362 L282 390 L158 390 Z" fill="none"
-      stroke="#caa24a" stroke-width="1.6"/>
-  </g>` : ""}
-
-  ${h("sol","damier") ? `<g opacity=".8">
-    ${[0,1,2,3,4,5,6,7].map(i=>[0,1,2,3].map(j=>
-      (i + j) % 2 === 0 ? `<path d="M${112 + i*27} ${350 + j*14}
-        l27 0 l${3 + j} 14 l${-27 - 1} 0 Z" fill="#1a120c" opacity=".55"/>` : "").join("")).join("")}
-  </g>` : ""}
-
-  ${h("plafond","lustre") ? `<g transform="translate(220 150)">
-    <path d="M0 0 L0 22" stroke="#8a6c2a" stroke-width="2"/>
-    <g class="lustreEclat">
-      <ellipse cx="0" cy="30" rx="26" ry="9" fill="#f0d89a" opacity=".28"/>
-      <path d="M-24 30 Q0 14 24 30 Q0 46 -24 30 Z" fill="#e8c86a" opacity=".5"/>
-      ${[-18,-9,0,9,18].map(x=>`<g>
-        <path d="M${x} 30 L${x} ${40 + Math.abs(x) / 3}" stroke="#caa24a" stroke-width="1"/>
-        <circle cx="${x}" cy="${42 + Math.abs(x) / 3}" r="3.2" fill="#fff4d0"/></g>`).join("")}
-      ${lum ? `<circle cx="0" cy="34" r="46" fill="url(#halo)" opacity=".5"/>` : ""}
-    </g>
-  </g>` : ""}
-
-  ${h("plafond","bar") ? `<g transform="translate(300 300)">
-    <ellipse cx="0" cy="26" rx="46" ry="7" fill="#000" opacity=".2"/>
-    <rect x="-44" y="-14" width="88" height="40" rx="3" fill="#5e3a24"/>
-    <rect x="-46" y="-18" width="92" height="6" rx="2.4" fill="#8a5f3a"/>
-    <rect x="-46" y="-18" width="92" height="2" fill="#fff" opacity=".16"/>
-    <g fill="#caa24a" opacity=".8">
-      ${[-30,-16,-2,14,28].map(x=>`<rect x="${x}" y="-30" width="4" height="12" rx="1.4"/>`).join("")}</g>
-    <g fill="#e8dcbe" opacity=".5">
-      <circle cx="-24" cy="-24" r="2.4"/><circle cx="10" cy="-25" r="2.4"/></g>
-  </g>` : ""}
-</g>
 
 <!-- ═══ MOBILIER ═══ -->
 ${E.banc ? `<g transform="translate(346 ${SOL-40})">

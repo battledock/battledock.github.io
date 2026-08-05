@@ -1,10 +1,10 @@
 /* Point d'entrée de communaute.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=92b49fe3";
-import { initAmbiance } from "../ambiance.js?v=92b49fe3";
-import { initialiserJeu } from "../game-state.js?v=92b49fe3";
-import { messageErreur } from "../supabase-client.js?v=92b49fe3";
-import { initCommunaute } from "./parts/community.js?v=92b49fe3";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=3c723c08";
+import { initAmbiance } from "../ambiance.js?v=3c723c08";
+import { initialiserJeu } from "../game-state.js?v=3c723c08";
+import { messageErreur } from "../supabase-client.js?v=3c723c08";
+import { initCommunaute } from "./parts/community.js?v=3c723c08";
 
 demarreChargement();
 filetChargement();

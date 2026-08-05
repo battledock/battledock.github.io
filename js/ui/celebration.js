@@ -1,7 +1,7 @@
-import { ANIMATIONS_LEGERES } from "../ambiance.js?v=92b49fe3";
-import { phraseBob, sonNiveau } from "../progression.js?v=92b49fe3";
-import { echappe, texteSur } from "./emblems.js?v=92b49fe3";
-import { icone } from "./icons.js?v=92b49fe3";
+import { ANIMATIONS_LEGERES } from "../ambiance.js?v=3c723c08";
+import { deblocagesDuNiveau, phraseBob, sonNiveau } from "../progression.js?v=3c723c08";
+import { echappe, texteSur } from "./emblems.js?v=3c723c08";
+import { icone } from "./icons.js?v=3c723c08";
 
 /* ============================================================
    CÉLÉBRATION — la récompense qu'on regarde, pas qu'on lit.
@@ -154,6 +154,12 @@ function bobApplaudit(){
    LA CÉRÉMONIE
    ------------------------------------------------------------ */
 function celebreNiveau(niv){
+  /* On n'annonce que ce qui existe vraiment. La table NIVEAUX décrit
+     une feuille de route ; annoncer un bar ou une terrasse qui ne
+     sont pas construits revient à promettre pour rien. */
+  const recompensesReelles = typeof deblocagesDuNiveau === "function"
+    ? deblocagesDuNiveau(niv.n) : [];
+
   return new Promise(resolve=>{
     if(typeof sonNiveau === "function") sonNiveau();
 
@@ -181,10 +187,10 @@ function celebreNiveau(niv){
           <div class="celBulle"><b>Bob</b><span id="celBobDit"></span></div>
         </div>
 
-        ${(niv.recompenses || []).length ? `
+        ${(recompensesReelles || []).length ? `
           <div class="celDebloque">Débloqué</div>
           <div class="celListe">
-            ${niv.recompenses.map((r,i)=>`
+            ${recompensesReelles.map((r,i)=>`
               <div class="celRecompense" style="animation-delay:${(1.1 + i*.22).toFixed(2)}s">
                 ${icone(r.ic)}<span><b>${echappe(r.nom)}</b><small>${echappe(r.desc)}</small></span>
               </div>`).join("")}

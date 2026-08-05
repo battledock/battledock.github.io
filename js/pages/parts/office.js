@@ -1,13 +1,12 @@
-import { PRODUITS_CONFISERIE } from "../../data/concessions.js?v=92b49fe3";
-import { deconnexion } from "../../auth.js?v=92b49fe3";
-import { confiserieActive, tauxAchat } from "../../data/concessions.js?v=92b49fe3";
-import { obtenirBonusSalle } from "../../data/upgrades.js?v=92b49fe3";
-import { Etat, fmtArgent } from "../../game-state.js?v=92b49fe3";
-import { bobCompact } from "../../navigation.js?v=92b49fe3";
-import { majBadgeNotifications } from "./community-social.js?v=92b49fe3";
+import { PRODUITS_CONFISERIE } from "../../data/concessions.js?v=3c723c08";
+import { deconnexion } from "../../auth.js?v=3c723c08";
+import { confiserieActive, tauxAchat } from "../../data/concessions.js?v=3c723c08";
+import { obtenirBonusSalle } from "../../data/upgrades.js?v=3c723c08";
+import { Etat, fmtArgent } from "../../game-state.js?v=3c723c08";
+import { bobCompact } from "../../navigation.js?v=3c723c08";
+import { majBadgeNotifications } from "./community-social.js?v=3c723c08";
 import {
   XP,
-  deblocagesPrevus,
   deblocagesReels,
   estDebloque,
   infoNiveau,
@@ -16,11 +15,11 @@ import {
   progressionVersSuivant,
   recompenseParCle,
   xpActuel
-} from "../../progression.js?v=92b49fe3";
-import { salles } from "../../rooms.js?v=92b49fe3";
-import { sbFetch } from "../../supabase-client.js?v=92b49fe3";
-import { echappe } from "../../ui/emblems.js?v=92b49fe3";
-import { icone } from "../../ui/icons.js?v=92b49fe3";
+} from "../../progression.js?v=3c723c08";
+import { salles } from "../../rooms.js?v=3c723c08";
+import { sbFetch } from "../../supabase-client.js?v=3c723c08";
+import { echappe } from "../../ui/emblems.js?v=3c723c08";
+import { icone } from "../../ui/icons.js?v=3c723c08";
 
 /* Page "Plus" : fiche du cinéma, à venir, compte */
 const NOMS_QUARTIERS_P = {centre:"Centre-ville",residentiel:"Quartier résidentiel",etudiant:"Quartier étudiant",populaire:"Quartier populaire",artistique:"Quartier artistique"};
@@ -95,7 +94,6 @@ function rendProgression(){
      mécanique est présenté à part, comme un horizon annoncé.
      ------------------------------------------------------------ */
   const reels = deblocagesReels();
-  const prevus = deblocagesPrevus();
 
   const ligne = (l, acquis) => `
     <div class="ligneDeblocage ${acquis ? "" : "verrouille"}">
@@ -118,32 +116,9 @@ function rendProgression(){
       <button class="btnToutVoir" id="btnToutVoir" onclick="basculeDeblocages()">
         Voir les ${reste.length} déblocages suivants — jusqu'au niveau ${aVenir[aVenir.length-1].niv}
       </button>` : "") +
-    (prevus.length ? `
-      <div class="titrePrevus">Prévu, pas encore construit</div>
-      <div class="notePrevus">Ces idées font partie de la feuille de route.
-        Elles ne sont pas encore dans le jeu — ne compte pas dessus pour l'instant.</div>
-      <div id="restePrevus" style="display:none">
-        ${prevus.map(l => `
-          <div class="ligneDeblocage prevu">
-            ${icone(l.ic)}
-            <span class="dbTxt"><b>${echappe(l.nom)}</b><small>${echappe(l.desc || "")}</small></span>
-            <span class="badgeNiv prevu">PRÉVU</span>
-          </div>`).join("")}</div>
-      <button class="btnToutVoir" id="btnVoirPrevus" onclick="basculePrevus()">
-        Voir les ${prevus.length} idées prévues
-      </button>` : "");
+    "";
 }
 
-function basculePrevus(){
-  const z = document.getElementById("restePrevus");
-  const b = document.getElementById("btnVoirPrevus");
-  if(!z || !b) return;
-  const ouvert = z.style.display !== "none";
-  z.style.display = ouvert ? "none" : "block";
-  b.textContent = ouvert
-    ? "Voir les " + z.children.length + " idées prévues"
-    : "Masquer";
-}
 
 function rendConfiserie(){
   const el = document.getElementById("blocConfiserie");
@@ -214,7 +189,6 @@ export {
   NOMS_CADEAUX,
   NOMS_QUARTIERS_P,
   basculeDeblocages,
-  basculePrevus,
   confirmeDeconnexion,
   initPlus,
   rendConfiserie,
@@ -228,6 +202,5 @@ export {
    on les rend accessibles explicitement. */
 Object.assign(window, {
   basculeDeblocages,
-  basculePrevus,
   confirmeDeconnexion
 });

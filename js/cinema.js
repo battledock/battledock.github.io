@@ -1,29 +1,29 @@
 /* L'accueil : façade vivante, héros, statut du jour. */
 
-import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=92b49fe3";
-import { compareHeures, filmParId } from "./data/films.js?v=92b49fe3";
+import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=3c723c08";
+import { compareHeures, filmParId } from "./data/films.js?v=3c723c08";
 import {
   chargeJournee,
   ouvreCinema,
   passeAuJourSuivant,
   statutJournee,
   verifieOuverture
-} from "./engine/day.js?v=92b49fe3";
-import { animeLeCinema, bobMeteo } from "./facade/life.js?v=92b49fe3";
-import { dessineHallEvolutif } from "./facade/lobby.js?v=92b49fe3";
-import { spawnPassant } from "./facade/pedestrians.js?v=92b49fe3";
-import { dessineFacadeEvolutive } from "./facade/render.js?v=92b49fe3";
-import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=92b49fe3";
-import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=92b49fe3";
-import { phraseStatut } from "./navigation.js?v=92b49fe3";
-import { bandeauEvenement } from "./pages/parts/events.js?v=92b49fe3";
-import { niveauActuel, progressionVersSuivant } from "./progression.js?v=92b49fe3";
-import { salles } from "./rooms.js?v=92b49fe3";
-import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=92b49fe3";
-import { echappe, texteSur } from "./ui/emblems.js?v=92b49fe3";
-import { A } from "./ui/genre-posters.js?v=92b49fe3";
-import { icone } from "./ui/icons.js?v=92b49fe3";
-import { salleEnCoupe } from "./ui/room-view.js?v=92b49fe3";
+} from "./engine/day.js?v=3c723c08";
+import { animeLeCinema, bobMeteo } from "./facade/life.js?v=3c723c08";
+import { dessineHallEvolutif } from "./facade/lobby.js?v=3c723c08";
+import { spawnPassant } from "./facade/pedestrians.js?v=3c723c08";
+import { dessineFacadeEvolutive } from "./facade/render.js?v=3c723c08";
+import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=3c723c08";
+import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=3c723c08";
+import { phraseStatut } from "./navigation.js?v=3c723c08";
+import { bandeauEvenement } from "./pages/parts/events.js?v=3c723c08";
+import { niveauActuel, progressionVersSuivant } from "./progression.js?v=3c723c08";
+import { salles } from "./rooms.js?v=3c723c08";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=3c723c08";
+import { echappe, texteSur } from "./ui/emblems.js?v=3c723c08";
+import { A } from "./ui/genre-posters.js?v=3c723c08";
+import { icone } from "./ui/icons.js?v=3c723c08";
+import { salleEnCoupe } from "./ui/room-view.js?v=3c723c08";
 
 /* Accueil vivant du cinéma (jeu.html) */
 
@@ -190,9 +190,6 @@ function rendVueCine(){
       boissons: Number(Etat.confiserie?.niveau_boissons || 0),
       salles: (Etat.salles || []).length,
       reputation: Number(c.reputation || 50),
-      /* ce que le joueur a installé : sans ça, le hall était
-         meublé dans le catalogue et vide à l'écran */
-      hall: (Etat.perso && Etat.perso.hall) || {},
       seances: (Etat.seancesJour || []).slice(0,3)
         .map(s => String(s.heure || "").toUpperCase().replace("H", "H"))
     });
@@ -398,10 +395,7 @@ function dessineFacade(c, opts = {}){
     : (typeof niveauActuel === "function" ? niveauActuel() : 1);
   cible.innerHTML = dessineFacadeEvolutive({
     phase: opts.phase || phaseSelonHeure(),
-    niveau, nom: c.nom, logo: c.logo, seances,
-    /* ce que le joueur a acheté : sans ça, le mobilier extérieur
-       était vendu puis jamais dessiné */
-    exterieur: (Etat.perso && Etat.perso.exterieur) || []
+    niveau, nom: c.nom, logo: c.logo, seances
   });
 }
 

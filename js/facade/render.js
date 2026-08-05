@@ -1,12 +1,12 @@
-import { etatBatiment, murSelonEtat } from "./ages.js?v=92b49fe3";
+import { etatBatiment, murSelonEtat } from "./ages.js?v=3c723c08";
 import {
   PALETTES,
   ampoules,
   decoupe,
   fenetreVoisin,
   pilastre
-} from "./palettes.js?v=92b49fe3";
-import { A } from "../ui/genre-posters.js?v=92b49fe3";
+} from "./palettes.js?v=3c723c08";
+import { A } from "../ui/genre-posters.js?v=3c723c08";
 
 /* ============================================================
    FAÇADE ÉVOLUTIVE — le même bâtiment à travers six âges
@@ -21,9 +21,6 @@ function dessineFacadeEvolutive(opts = {}){
   const nomBrut = (opts.nom || "LE COSMOS").toUpperCase();
   const logo = opts.logo || "★";
   const seances = E.affiches ? (opts.seances || []) : [];
-  /* le mobilier acheté par le joueur, posé sur le trottoir */
-  const dehors = Array.isArray(opts.exterieur) ? opts.exterieur : [];
-  const a = id => dehors.includes(id);
   const tailleNom = nomBrut.length > 15 ? 17 : nomBrut.length > 11 ? 21 : 25;
 
   /* les lettres tombent quand l'enseigne est ruinée */
@@ -455,101 +452,6 @@ ${E.tapis ? `<g>
     <ellipse cx="240" cy="504" rx="70" ry="11" fill="#ffc76a"/>
   </g>` : ""}
 </g>
-
-<!-- ═══ CE QUE LE JOUEUR A POSÉ DEHORS ═══ -->
-<g>
-  ${a("banc") ? `<g transform="translate(146 388)">
-    <ellipse cx="18" cy="6" rx="30" ry="4" fill="#000" opacity=".22"/>
-    <rect x="-2" y="-4" width="4" height="10" rx="1" fill="#3a2e22"/>
-    <rect x="34" y="-4" width="4" height="10" rx="1" fill="#3a2e22"/>
-    <rect x="-6" y="-8" width="48" height="5" rx="2" fill="#8a5f3a"/>
-    <rect x="-6" y="-15" width="48" height="4" rx="2" fill="#7d5533"/>
-    <rect x="-6" y="-22" width="48" height="4" rx="2" fill="#8a5f3a"/>
-    <rect x="-6" y="-8" width="48" height="1.4" fill="#fff" opacity=".14"/>
-  </g>` : ""}
-
-  ${a("pot") ? `<g transform="translate(330 390)">
-    <ellipse cx="0" cy="4" rx="13" ry="3.4" fill="#000" opacity=".22"/>
-    <path d="M-9 -12 L9 -12 L7 4 L-7 4 Z" fill="#9a5f42"/>
-    <rect x="-10" y="-14" width="20" height="4" rx="1.5" fill="#b0714f"/>
-    <g fill="#3f6b42">
-      <path d="M0 -14 q-9 -12 -3 -20 q5 6 3 20"/>
-      <path d="M0 -14 q9 -14 4 -22 q-6 8 -4 22"/>
-      <path d="M0 -14 q-2 -16 2 -22 q2 8 -2 22"/></g>
-    <circle cx="-3" cy="-32" r="2.4" fill="#d4557a"/>
-    <circle cx="4" cy="-35" r="2" fill="#e0708c"/>
-  </g>` : ""}
-
-  ${a("panneau") ? `<g transform="translate(268 390)">
-    <ellipse cx="0" cy="4" rx="16" ry="3.6" fill="#000" opacity=".22"/>
-    <path d="M-12 4 L-7 -30 M12 4 L7 -30" stroke="#4a3626" stroke-width="3"/>
-    <rect x="-15" y="-46" width="30" height="20" rx="2" fill="#2a241e"
-      stroke="#8a6c2a" stroke-width="1.6"/>
-    <g stroke="#e8dcbe" stroke-width="1.1" stroke-linecap="round" opacity=".85">
-      <path d="M-10 -41h20M-10 -37h14M-10 -33h17"/></g>
-  </g>` : ""}
-
-  ${a("lampadaire") ? `<g transform="translate(360 386)">
-    <ellipse cx="0" cy="4" rx="9" ry="3" fill="#000" opacity=".24"/>
-    <rect x="-3" y="-2" width="6" height="6" rx="1.4" fill="#2a2620"/>
-    <rect x="-1.6" y="-74" width="3.2" height="74" fill="#2e2a22"/>
-    <path d="M0 -74 q0 -10 -12 -10" stroke="#2e2a22" stroke-width="3.4" fill="none"/>
-    <path d="M-7 -84 l-12 0 l-3.4 10 l19 0 Z" fill="#2e2a22"/>
-    ${lum ? `<circle cx="-13" cy="-76" r="20" fill="url(#haloG)"/>
-      <ellipse cx="-13" cy="-2" rx="26" ry="7" fill="url(#solHaloG)"/>
-      <circle cx="-13" cy="-75" r="3.2" fill="#fff4d0"/>` : ""}
-  </g>` : ""}
-
-  ${a("guirlande") ? `<g>
-    <path d="M118 300 Q240 330 362 300" fill="none" stroke="#2e2a22" stroke-width="1.6"/>
-    ${[0,1,2,3,4,5,6,7,8,9,10].map(i=>{
-      const t = i / 10, x = 118 + t * 244;
-      const y = 300 + Math.sin(Math.PI * t) * 30;
-      return `<circle cx="${x.toFixed(1)}" cy="${(y + 4).toFixed(1)}" r="3.2"
-        fill="${lum ? "#ffe9a8" : "#7d7160"}"
-        ${lum ? `class="guirlandeVive" style="animation-delay:${(i * .18).toFixed(2)}s"` : ""}/>`;
-    }).join("")}
-  </g>` : ""}
-</g>
-
-  ${a("parvis") ? `<g>
-    <path d="M108 396 L372 396 L392 424 L88 424 Z" fill="#c9bda6"/>
-    <g stroke="#a89c88" stroke-width="1" opacity=".7">
-      <path d="M136 396 L124 424M180 396 L172 424M240 396 L240 424M300 396 L308 424M344 396 L356 424"/>
-      <path d="M98 410 L382 410"/></g>
-    <path d="M108 396 L372 396" stroke="#b0a48e" stroke-width="1.6"/>
-    <g><rect x="118" y="286" width="244" height="9" rx="2" fill="#571520"/>
-      <path d="M118 295 L362 295 L352 306 L128 306 Z" fill="#7c1424"/>
-      <path d="M128 306 q28 8 56 0 q28 -8 56 0 q28 8 56 0 q28 -8 56 0"
-        fill="none" stroke="#caa24a" stroke-width="1.6"/>
-      ${lum ? `<ellipse cx="240" cy="316" rx="126" ry="16" fill="url(#solHaloG)"/>` : ""}
-    </g>
-  </g>` : ""}
-
-  ${a("terrasse") ? `<g transform="translate(0 -8)">
-    <rect x="126" y="150" width="228" height="6" rx="2" fill="#8a6c2a" opacity=".85"/>
-    <g stroke="#8a6c2a" stroke-width="1.6" opacity=".7">
-      ${[0,1,2,3,4,5,6,7].map(i=>`<path d="M${140 + i*30} 150 v-14"/>`).join("")}
-      <path d="M140 136 L350 136"/></g>
-    <g fill="#3a2e22">
-      <rect x="162" y="120" width="12" height="16" rx="2"/>
-      <rect x="196" y="120" width="12" height="16" rx="2"/>
-      <rect x="288" y="120" width="12" height="16" rx="2"/></g>
-    <rect x="224" y="108" width="46" height="28" rx="2" fill="#efe7d4" stroke="#8a6c2a" stroke-width="1.4"/>
-    ${lum ? `<rect x="226" y="110" width="42" height="24" fill="#cfe4f0" opacity=".5"/>
-      <ellipse cx="247" cy="122" rx="52" ry="20" fill="url(#haloG)" opacity=".5"/>` : ""}
-  </g>` : ""}
-
-  ${a("neons") && lum ? `<g class="neonsFacade">
-    <path d="M104 196 L376 196" stroke="#ff5a8a" stroke-width="2.6" stroke-linecap="round"
-      opacity=".9" filter="url(#flouF)"/>
-    <path d="M104 196 L376 196" stroke="#ffd0e0" stroke-width="1.1" stroke-linecap="round"/>
-    <path d="M104 344 L376 344" stroke="#3ad8f0" stroke-width="2.6" stroke-linecap="round"
-      opacity=".9" filter="url(#flouF)"/>
-    <path d="M104 344 L376 344" stroke="#c8f4fb" stroke-width="1.1" stroke-linecap="round"/>
-    <path d="M104 196 L104 344M376 196 L376 344" stroke="#ff5a8a" stroke-width="2"
-      opacity=".7" filter="url(#flouF)"/>
-  </g>` : ""}
 
 <!-- ═══ MOBILIER ═══ -->
 <g>

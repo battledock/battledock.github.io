@@ -1,9 +1,10 @@
-import { NIVEAUX } from "../../progression.js?v=92b49fe3";
-import { Etat } from "../../game-state.js?v=92b49fe3";
+import { NIVEAUX } from "../../progression.js?v=3c723c08";
+import { Etat } from "../../game-state.js?v=3c723c08";
 import {
   MISSIONS,
   XP,
   chargeMissions,
+  deblocagesDuNiveau,
   infoNiveau,
   missionFaite,
   missionsOuvertes,
@@ -15,11 +16,11 @@ import {
   recompensesAReclamer,
   synchroniseDeblocages,
   xpActuel
-} from "../../progression.js?v=92b49fe3";
-import { sbFetch } from "../../supabase-client.js?v=92b49fe3";
-import { texteSur } from "../../ui/emblems.js?v=92b49fe3";
-import { icone } from "../../ui/icons.js?v=92b49fe3";
-import { murDesTrophees } from "../../ui/trophy-wall.js?v=92b49fe3";
+} from "../../progression.js?v=3c723c08";
+import { sbFetch } from "../../supabase-client.js?v=3c723c08";
+import { texteSur } from "../../ui/emblems.js?v=3c723c08";
+import { icone } from "../../ui/icons.js?v=3c723c08";
+import { murDesTrophees } from "../../ui/trophy-wall.js?v=3c723c08";
 
 /* ============================================================
    PAGE PROGRESSION — niveaux 1 à 10 en détail
@@ -70,7 +71,7 @@ function rendEntetePro(){
       ${suivant ? `
         <div class="prochainNiveau">
           <div class="pnLabel">Prochain niveau — ${suivant.titre}</div>
-          ${suivant.recompenses.map(r=>`<div class="ligneRecit">${icone(r.ic)}<span><b>${r.nom}</b><br><small>${r.desc}</small></span></div>`).join("")}
+          ${deblocagesDuNiveau(suivant.n).map(r=>`<div class="ligneRecit">${icone(r.ic)}<span><b>${r.nom}</b><br><small>${r.desc}</small></span></div>`).join("")}
         </div>` : ""}
     </section>`;
   setTimeout(()=>{ const b = document.getElementById("barreProPage"); if(b) b.style.width = p.pct + "%"; }, 120);
@@ -134,7 +135,7 @@ function rendEchelle(){
             <span class="pnEtat">${acquis ? "Débloqué" : "Encore " + reste + " XP"}</span>
           </div>
           <div class="pnRecomp">
-            ${niv.recompenses.map(r=>`<span class="puceRecomp">${icone(r.ic)} ${r.nom}</span>`).join("")}
+            ${deblocagesDuNiveau(niv.n).map(r=>`<span class="puceRecomp">${icone(r.ic)} ${r.nom}</span>`).join("")}
           </div>
         </div>`;
       }).join("")}

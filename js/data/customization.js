@@ -1,9 +1,9 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=92b49fe3";
-import { Etat, depense } from "../game-state.js?v=92b49fe3";
-import { majHeaderArgent } from "../navigation.js?v=92b49fe3";
-import { niveauActuel } from "../progression.js?v=92b49fe3";
-import { salles } from "../rooms.js?v=92b49fe3";
-import { sbFetch } from "../supabase-client.js?v=92b49fe3";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=3c723c08";
+import { Etat, depense } from "../game-state.js?v=3c723c08";
+import { majHeaderArgent } from "../navigation.js?v=3c723c08";
+import { niveauActuel } from "../progression.js?v=3c723c08";
+import { salles } from "../rooms.js?v=3c723c08";
+import { sbFetch } from "../supabase-client.js?v=3c723c08";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
@@ -32,22 +32,12 @@ const CATALOGUE_PERSO = {
   hall: {
     nom:"Hall", ic:"maison", cleDeblocage:"deco_hall", champ:"hall",  emplacements:true,
     zones:[
-      {id:"plafond", nom:"Plafond et fond de hall", objets:[
-        {id:"aucun",  nom:"Rien de particulier", cout:0,    niveauRequis:1},
-        {id:"bar",    nom:"Bar à l'ancienne",    cout:1800, niveauRequis:24,
-         desc:"Les gens arrivent plus tôt et repartent plus tard.", cleDeblocage:"bar_hall"},
-        {id:"lustre", nom:"Le grand lustre restauré", cout:3200, niveauRequis:34,
-         desc:"La pièce d'origine, retrouvée au grenier.", cleDeblocage:"lustre"}]},
 
       {id:"mur",      nom:"Mur principal", objets:[
         {id:"aucun", nom:"Mur nu", cout:0, niveauRequis:1},
         {id:"cadres", nom:"Cadres anciens", cout:0,  niveauRequis:3},
         {id:"affiches", nom:"Affiches d'époque", cout:120, niveauRequis:3},
-        {id:"fresque", nom:"Fresque peinte", cout:450, niveauRequis:7,
-         desc:"Une fresque commandée à un peintre du quartier."},
-        {id:"fresques_origine", nom:"Fresques d'origine", cout:4200, niveauRequis:39,
-         desc:"Les peintures murales de 1932, dégagées sous six couches de badigeon.",
-         cleDeblocage:"fresques"}]},
+        {id:"fresque", nom:"Fresque peinte", cout:450, niveauRequis:7}]},
       {id:"gauche",   nom:"Coin gauche", objets:[
         {id:"aucun", nom:"Rien", cout:0, niveauRequis:1},
         {id:"plante", nom:"Grande plante", cout:0, niveauRequis:3},
@@ -73,26 +63,7 @@ const CATALOGUE_PERSO = {
       {id:"lampadaire", nom:"Lampadaire",          desc:"Lumière chaude sur le trottoir.", niveauRequis:6, cout:0},
       {id:"pot",        nom:"Pot de fleurs",       desc:"Bob l'arrose. Parfois.",          niveauRequis:6, cout:80},
       {id:"panneau",    nom:"Panneau sur trottoir",desc:"Le programme, écrit à la craie.", niveauRequis:6, cout:120},
-      {id:"guirlande",  nom:"Guirlande lumineuse", desc:"Suspendue au-dessus de l'entrée.",niveauRequis:6, cout:200},
-      {id:"neons",      nom:"Néons animés",        desc:"La façade s'anime la nuit. On la voit du bout de la rue.",
-       niveauRequis:17, cout:900,  cleDeblocage:"neons_facade"},
-      {id:"parvis",     nom:"Parvis aménagé",      desc:"Une esplanade pavée devant l'entrée, et une marquise.",
-       niveauRequis:28, cout:2400, cleDeblocage:"parvis"},
-      {id:"terrasse",   nom:"Terrasse sur le toit",desc:"Des chaises, un écran, et le ciel de Marseille l'été.",
-       niveauRequis:44, cout:6800, cleDeblocage:"terrasse"}
-    ]
-  },
-  salle: {
-    nom:"Décoration de salle", ic:"fauteuil", cleDeblocage:"deco_salle_1", champ:"deco_salle",
-    items:[
-      {id:"nue",       nom:"Murs nus",            desc:"Le plâtre d'origine, tel quel.",
-       niveauRequis:1,  cout:0},
-      {id:"cadres",    nom:"Cadres et affiches anciennes", desc:"Des photos de tournage le long des murs.",
-       niveauRequis:3,  cout:0,   cleDeblocage:"deco_salle_1"},
-      {id:"moulures",  nom:"Moulures art déco",   desc:"Rosaces et filets dorés sur les parois latérales.",
-       niveauRequis:7,  cout:520, cleDeblocage:"deco_salle_2"},
-      {id:"prestige",  nom:"Tentures et appliques", desc:"Velours tendu, appliques en verre dépoli.",
-       niveauRequis:17, cout:1600}
+      {id:"guirlande",  nom:"Guirlande lumineuse", desc:"Suspendue au-dessus de l'entrée.",niveauRequis:6, cout:200}
     ]
   },
   sieges: {
