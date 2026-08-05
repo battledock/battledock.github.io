@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=cbbef1bf";
-import { niveauEquipement } from "./data/upgrades.js?v=cbbef1bf";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=cbbef1bf";
-import { Etat, fmtArgent } from "./game-state.js?v=cbbef1bf";
-import { bobCompact } from "./navigation.js?v=cbbef1bf";
-import { accomplitMission, debloque } from "./progression.js?v=cbbef1bf";
-import { toastSocial } from "./social.js?v=cbbef1bf";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=cbbef1bf";
-import { echappe, texteSur } from "./ui/emblems.js?v=cbbef1bf";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=cbbef1bf";
-import { icone } from "./ui/icons.js?v=cbbef1bf";
+} from "./data/films.js?v=9b3fc701";
+import { niveauEquipement } from "./data/upgrades.js?v=9b3fc701";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=9b3fc701";
+import { Etat, fmtArgent } from "./game-state.js?v=9b3fc701";
+import { bobCompact } from "./navigation.js?v=9b3fc701";
+import { accomplitMission, debloque } from "./progression.js?v=9b3fc701";
+import { toastSocial } from "./social.js?v=9b3fc701";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=9b3fc701";
+import { echappe, texteSur } from "./ui/emblems.js?v=9b3fc701";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=9b3fc701";
+import { icone } from "./ui/icons.js?v=9b3fc701";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES
@@ -49,7 +49,6 @@ async function initProgrammation(){
   await chargeSeances();
   brancheSegments();
   rendVue();
-  installeFleches();
 }
 
 /* les trois onglets du haut */
@@ -96,7 +95,6 @@ async function rendVue(){
   else{ await rendVueEvenements(); }
 
   bulleConseil(conseilDeLaVue());
-  majFleches();
 }
 
 function conseilDeLaVue(){
@@ -756,32 +754,32 @@ function rendVueCatalogue(){
   const fermes  = films.filter(f=>!filmDebloque(f));
   const cat = catalogueServeur;
 
-  /* Les nouveautés en tête : c'est l'information du jour. Les films
-     hors de portée ferment la marche plutôt que de disparaître —
-     voir passer ce qu'on ne peut pas encore programmer donne une
-     raison de monter. */
-  const rang = f => !filmDebloque(f) ? 9
-    : f.exceptionnel ? 0 : f.statutSortie === "nouveaute" ? 1
-    : f.maison ? 2 : f.statutSortie === "affiche" ? 3
-    : f.statutSortie === "fin_affiche" ? 4 : 5;
-  const tries = [...films].sort((a,b)=>rang(a) - rang(b));
+  /* ------------------------------------------------------------
+     Le catalogue en journal : une ligne par film, groupée par état.
 
-  /* Plus de troncature. Elle coupait à quatorze : sur cinquante-trois
-     films, l'essentiel du catalogue restait invisible, et le joueur
-     voyait « la liste des anciens films s'effacer ». */
+     Le carrousel montrait une carte à la fois sur cinquante-trois
+     films — il fallait glisser cinquante-trois fois sans jamais
+     savoir où on en était. Une ligne tient quinze films à l'écran,
+     et le prix de licence, aligné à droite, se compare d'un coup
+     d'œil : c'est la décision qu'on prend ici.
+     ------------------------------------------------------------ */
+  const rubrique = (liste, titre) => !liste.length ? "" : `
+    <div class="titreCat"><b>${titre}</b><i></i><small>${liste.length} film${
+      liste.length > 1 ? "s" : ""}</small></div>
+    ${liste.map(ligneFilm).join("")}`;
+
+  const nouveautes = ouverts.filter(f => f.statutSortie === "nouveaute" || f.exceptionnel);
+  const maison     = ouverts.filter(f => f.maison);
+  const affiche    = ouverts.filter(f => ["affiche","fin_affiche"].includes(f.statutSortie));
+  const reprises   = ouverts.filter(f => !nouveautes.includes(f) && !maison.includes(f)
+                                      && !affiche.includes(f));
+
   document.getElementById("pisteAffiches").innerHTML =
-    tries.map(f=>{
-      const m = mentionSortie(f);
-      return carteAffiche({
-        genre: f.genre, titre: f.titre,
-        ligne: f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre de droits",
-        etat: filmDebloque(f) ? (m ? m.texte : "Disponible")
-                              : "Niveau " + (f.niveauRequis || "?"),
-        classe: filmDebloque(f) ? (m ? m.classe : "libre") : "ferme",
-        action: filmDebloque(f) ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`,
-        maison: !!f.maison
-      });
-    }).join("");
+      rubrique(nouveautes, "Cette semaine")
+    + rubrique(maison,     "Tes productions")
+    + rubrique(affiche,    "Encore à l'affiche")
+    + rubrique(reprises,   "Reprises")
+    + rubrique(fermes,     "Bientôt");
 
   /* le bandeau du haut : où en est la semaine */
   const enTete = cat ? `
@@ -902,6 +900,28 @@ async function rendVueEvenements(){
 /* ============================================================
    LA CARTE D'AFFICHE, commune aux trois vues
    ============================================================ */
+/* une ligne du journal : vignette, titre, état, prix */
+function ligneFilm(f){
+  const m = mentionSortie(f);
+  const ouvert = filmDebloque(f);
+  const cl = !m ? "" : m.classe;
+  return `<button class="ligneFilm ${ouvert ? "" : "verrou"}"
+      onclick="${ouvert ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`}"
+      aria-label="${echappe(f.titre)}">
+    <span class="vignFilm">${afficheDeGenre(genreConnu(f.genre))}</span>
+    <span class="txtFilm">
+      <b>${echappe(f.titre)}</b>
+      <span class="genreFilm">${echappe(f.genre)}${
+        f.duree ? " · " + f.duree + " min" : ""}</span>
+      <span class="etatFilm ${cl}">${ouvert ? (m ? m.texte : "Disponible")
+        : "Niveau " + (f.niveauRequis || "?")}</span>
+    </span>
+    <span class="prixFilm">${ouvert
+      ? `<b>${f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre"}</b><small>licence</small>`
+      : `<b>—</b><small>verrouillé</small>`}</span>
+  </button>`;
+}
+
 function carteAffiche(o){
   return `<button class="carteAff ${o.classe === "ferme" ? "verrouillee" : ""}"
     ${o.action ? `onclick="${o.action}"` : ""} aria-label="${echappe(o.titre)}">
@@ -917,26 +937,7 @@ function carteAffiche(o){
   </button>`;
 }
 
-/* ---------- les flèches du carrousel ---------- */
-function installeFleches(){
-  const piste = document.getElementById("pisteAffiches");
-  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
-  if(!piste || !g || !d) return;
-  g.addEventListener("click", ()=>piste.scrollBy({left:-138, behavior:"smooth"}));
-  d.addEventListener("click", ()=>piste.scrollBy({left: 138, behavior:"smooth"}));
-  piste.addEventListener("scroll", majFleches, {passive:true});
-  window.addEventListener("resize", majFleches);
-}
 
-/* elles s'éteignent quand il n'y a rien à faire défiler */
-function majFleches(){
-  const p = document.getElementById("pisteAffiches");
-  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
-  if(!p || !g || !d) return;
-  const debord = p.scrollWidth > p.clientWidth + 4;
-  g.classList.toggle("eteinte", !debord || p.scrollLeft < 6);
-  d.classList.toggle("eteinte", !debord || p.scrollLeft > p.scrollWidth - p.clientWidth - 6);
-}
 
 /* la bulle de Bob */
 function bulleProgTexte(t){
@@ -989,13 +990,12 @@ export {
   fermePanneau,
   filmDepuisServeur,
   initProgrammation,
-  installeFleches,
   intervalle,
   journeeLancee,
   lanceLaJournee,
   ligneCatalogue,
+  ligneFilm,
   limiteSeances,
-  majFleches,
   majPanneau,
   mentionSortie,
   modifieSeance,
