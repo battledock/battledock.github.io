@@ -655,6 +655,14 @@ function resumeAvantOuverture(){
   const alertes = (prepDuJour && prepDuJour.alertes || []).filter(a=>Number(a.urgence) >= 3);
   const licences = seancesJour.reduce((t,s)=>t + Number(s.cout_licence||0), 0);
   const payable = Number(Etat.cinema.argent) >= licences;
+  /* loyer et salaires tombent tous les jours : les annoncer avant l'ouverture
+     évite de découvrir au bilan une dépense qu'on n'a pas vue venir */
+  const charges = prepDuJour && prepDuJour.charges;
+  const recettePrevue = p
+    ? Math.round((Number(p.total_bas) + Number(p.total_haut)) / 2
+        * (seancesJour.reduce((t,s)=>t + Number(s.prix||0), 0) / Math.max(1, seancesJour.length)))
+    : 0;
+  const beneficePrevu = recettePrevue - licences - Number(charges ? charges.total : 0);
 
   return `<div class="resumeOuvre">
     <div class="roTitre">Prêt à ouvrir</div>
@@ -665,6 +673,12 @@ function resumeAvantOuverture(){
     <div class="roLigne ${payable ? "" : "alerte"}">${icone("piece")}
       <span>${fmtArgent(licences)} de licences${payable ? "" : " — il manque "
         + fmtArgent(licences - Number(Etat.cinema.argent))}</span></div>
+    ${charges ? `<div class="roLigne">${icone("batiment")}
+      <span>${fmtArgent(charges.total)} de charges — ${echappe(charges.detail || "")}</span></div>
+      <div class="roLigne bilanAttendu ${beneficePrevu >= 0 ? "" : "alerte"}">
+        ${icone("etoile")}
+        <span>Journée attendue : <b>${beneficePrevu >= 0 ? "+" : ""}${fmtArgent(beneficePrevu)}</b>
+          ${beneficePrevu >= 0 ? "" : " — le compte n'y sera pas"}</span></div>` : ""}
     ${sit ? `<div class="roLigne">${icone("cloche")}
       <span>${sit.statut === "resolue" ? "Dossier du jour traité"
              : sit.statut === "ignoree" ? "Dossier laissé de côté"

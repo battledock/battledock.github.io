@@ -66,7 +66,17 @@ function majFilAriane(){
    1. LE JOURNAL DU MATIN
    ------------------------------------------------------------ */
 function rendBriefing(){
-  const lignes = prep.lignes || [];
+  /* Les charges tombent tous les jours, qu'il y ait du monde ou non.
+     Bob les annonce en tête : une dépense connue le matin est une
+     contrainte, la même découverte au bilan est une punition. */
+  const lignes = [
+    ...(prep.charges ? [{
+      cle:"charges", icone:"piece",
+      texte: fmtArgent(prep.charges.total) + " de charges aujourd'hui",
+      detail: prep.charges.detail || ""
+    }] : []),
+    ...(prep.lignes || [])
+  ];
   document.getElementById("zonePrep").innerHTML = `
     <div class="journalMatin">
       <div class="jmEntete">
