@@ -1,10 +1,10 @@
-import { PRODUITS_CONFISERIE } from "../../data/concessions.js";
-import { deconnexion } from "../../auth.js";
-import { confiserieActive, tauxAchat } from "../../data/concessions.js";
-import { obtenirBonusSalle } from "../../data/upgrades.js";
-import { Etat, fmtArgent } from "../../game-state.js";
-import { bobCompact } from "../../navigation.js";
-import { majBadgeNotifications } from "./community-social.js";
+import { PRODUITS_CONFISERIE } from "../../data/concessions.js?v=9c211464";
+import { deconnexion } from "../../auth.js?v=9c211464";
+import { confiserieActive, tauxAchat } from "../../data/concessions.js?v=9c211464";
+import { obtenirBonusSalle } from "../../data/upgrades.js?v=9c211464";
+import { Etat, fmtArgent } from "../../game-state.js?v=9c211464";
+import { bobCompact } from "../../navigation.js?v=9c211464";
+import { majBadgeNotifications } from "./community-social.js?v=9c211464";
 import {
   NIVEAUX,
   XP,
@@ -15,10 +15,10 @@ import {
   progressionVersSuivant,
   recompenseParCle,
   xpActuel
-} from "../../progression.js";
-import { salles } from "../../rooms.js";
-import { sbFetch } from "../../supabase-client.js";
-import { icone } from "../../ui/icons.js";
+} from "../../progression.js?v=9c211464";
+import { salles } from "../../rooms.js?v=9c211464";
+import { sbFetch } from "../../supabase-client.js?v=9c211464";
+import { icone } from "../../ui/icons.js?v=9c211464";
 
 /* Page "Plus" : fiche du cinéma, à venir, compte */
 const NOMS_QUARTIERS_P = {centre:"Centre-ville",residentiel:"Quartier résidentiel",etudiant:"Quartier étudiant",populaire:"Quartier populaire",artistique:"Quartier artistique"};
