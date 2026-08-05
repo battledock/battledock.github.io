@@ -157,7 +157,7 @@ async function choisitOption(cle){
   /* appelSecurise attend une FONCTION à exécuter, pas un nom de RPC.
      L'identifiant d'opération rend l'appel rejouable sans double effet. */
   const appel = await appelSecurise(
-    () => rpc("resolve_daily_situation", {
+    () => rpc("resoudre_dossier", {
       p_situation_id: prep.situation.id,
       p_option_key: cle,
       p_operation_id: idOperation()
@@ -174,7 +174,11 @@ async function choisitOption(cle){
   }
   const r = appel.data;
   if(!r || r.success !== true){
-    montreEchec(r?.message || "Ce choix n'a pas pu être appliqué.");
+    /* le serveur enveloppe désormais ses pannes : s'il donne un état
+       SQL, on le montre — c'est ce qui permet de me le rapporter. */
+    if(r && r.sqlstate) console.warn("[Séance] dossier :", r.sqlstate, r.detail);
+    montreEchec((r?.message || "Ce choix n'a pas pu être appliqué.")
+      + (r?.sqlstate ? " (" + r.sqlstate + ")" : ""));
     await chargePreparation();   /* l'état a changé : on repart du serveur */
     etape = "dossier"; rendMatin();
     return;
@@ -209,7 +213,7 @@ function montreEchec(message){
    en cours qui auraient une situation déjà mise de côté. */
 async function ignoreDossier(){
   const appel = await appelSecurise(
-    () => rpc("ignorer_situation", {p_situation_id: prep.situation.id}),
+    () => rpc("ignorer_dossier", {p_situation_id: prep.situation.id}),
     {rechargeApresErreur: false});
   if(!appel.ok){ montreEchec(appel.message); return; }
   await chargePreparation();

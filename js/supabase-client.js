@@ -68,9 +68,16 @@ const MESSAGES_ERREUR = {
 };
 function messageErreur(e){
   const base = MESSAGES_ERREUR[e?.code] || MESSAGES_ERREUR.SERVEUR;
-  /* code technique court, utile pour signaler un problème */
   const d = e?.details;
-  return d?.code ? base + " (" + d.code + ")" : base;
+  if(!d) return base;
+
+  /* Le code seul ne dit rien — ni au joueur, ni à moi quand il me le
+     rapporte. On ajoute la phrase du serveur quand elle existe : c'est
+     souvent notre propre texte, et c'est ce qui permet de comprendre. */
+  const dit = (d.message || d.hint || "").trim();
+  const tech = [d.code, dit].filter(Boolean).join(" · ");
+  if(tech) console.warn("[Séance] erreur serveur :", d);
+  return tech ? base + " (" + tech + ")" : base;
 }
 
 /* ---------- statut de sauvegarde discret ---------- */
