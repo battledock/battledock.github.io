@@ -1,7 +1,7 @@
-import { ventesConfiserie } from "../data/concessions.js?v=9b3fc701";
-import { compareHeures, filmParId, heureEnMinutes } from "../data/films.js?v=9b3fc701";
-import { malusProprete, niveauEquipement, obtenirBonusSalle } from "../data/upgrades.js?v=9b3fc701";
-import { salles } from "../rooms.js?v=9b3fc701";
+import { ventesConfiserie } from "../data/concessions.js?v=45d24569";
+import { compareHeures, filmParId, heureEnMinutes } from "../data/films.js?v=45d24569";
+import { malusProprete, niveauEquipement, obtenirBonusSalle } from "../data/upgrades.js?v=45d24569";
+import { salles } from "../rooms.js?v=45d24569";
 
 /* ============================================================
    SIMULATION D'UNE JOURNÉE

@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=9b3fc701";
-import { niveauEquipement } from "./data/upgrades.js?v=9b3fc701";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=9b3fc701";
-import { Etat, fmtArgent } from "./game-state.js?v=9b3fc701";
-import { bobCompact } from "./navigation.js?v=9b3fc701";
-import { accomplitMission, debloque } from "./progression.js?v=9b3fc701";
-import { toastSocial } from "./social.js?v=9b3fc701";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=9b3fc701";
-import { echappe, texteSur } from "./ui/emblems.js?v=9b3fc701";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=9b3fc701";
-import { icone } from "./ui/icons.js?v=9b3fc701";
+} from "./data/films.js?v=45d24569";
+import { niveauEquipement } from "./data/upgrades.js?v=45d24569";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=45d24569";
+import { Etat, fmtArgent } from "./game-state.js?v=45d24569";
+import { bobCompact } from "./navigation.js?v=45d24569";
+import { accomplitMission, debloque } from "./progression.js?v=45d24569";
+import { toastSocial } from "./social.js?v=45d24569";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=45d24569";
+import { echappe, texteSur } from "./ui/emblems.js?v=45d24569";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=45d24569";
+import { icone } from "./ui/icons.js?v=45d24569";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES
@@ -754,33 +754,6 @@ function rendVueCatalogue(){
   const fermes  = films.filter(f=>!filmDebloque(f));
   const cat = catalogueServeur;
 
-  /* ------------------------------------------------------------
-     Le catalogue en journal : une ligne par film, groupée par état.
-
-     Le carrousel montrait une carte à la fois sur cinquante-trois
-     films — il fallait glisser cinquante-trois fois sans jamais
-     savoir où on en était. Une ligne tient quinze films à l'écran,
-     et le prix de licence, aligné à droite, se compare d'un coup
-     d'œil : c'est la décision qu'on prend ici.
-     ------------------------------------------------------------ */
-  const rubrique = (liste, titre) => !liste.length ? "" : `
-    <div class="titreCat"><b>${titre}</b><i></i><small>${liste.length} film${
-      liste.length > 1 ? "s" : ""}</small></div>
-    ${liste.map(ligneFilm).join("")}`;
-
-  const nouveautes = ouverts.filter(f => f.statutSortie === "nouveaute" || f.exceptionnel);
-  const maison     = ouverts.filter(f => f.maison);
-  const affiche    = ouverts.filter(f => ["affiche","fin_affiche"].includes(f.statutSortie));
-  const reprises   = ouverts.filter(f => !nouveautes.includes(f) && !maison.includes(f)
-                                      && !affiche.includes(f));
-
-  document.getElementById("pisteAffiches").innerHTML =
-      rubrique(nouveautes, "Cette semaine")
-    + rubrique(maison,     "Tes productions")
-    + rubrique(affiche,    "Encore à l'affiche")
-    + rubrique(reprises,   "Reprises")
-    + rubrique(fermes,     "Bientôt");
-
   /* le bandeau du haut : où en est la semaine */
   const enTete = cat ? `
     <div class="semaineProg">
@@ -815,9 +788,7 @@ function rendVueCatalogue(){
            "elles quittent l'écran dimanche") +
     groupe("Le fonds de reprise", ouverts.filter(f=>f.statutSortie === "reprise"),
            "moins de monde, mais presque rien à payer") +
-    (fermes.length ? `<div class="aVenirProg">${icone("porte")}
-      ${fermes.length} film${fermes.length>1?"s":""} se débloque${fermes.length>1?"nt":""}
-      avec les niveaux suivants.</div>` : "") + `
+    groupe("Bientôt", fermes, "ils s'ouvrent avec les niveaux suivants") + `
     <div class="actionsProg">
       <button class="btnOrProg" onclick="allerAuProgramme()">Voir mon programme</button>
       <button class="btnVideProg" onclick="location.href='studio.html'">Mes productions</button>
@@ -827,6 +798,20 @@ function rendVueCatalogue(){
 
 function ligneCatalogue(f){
   const m = mentionSortie(f);
+
+  /* Un film hors de portée garde sa ligne : voir passer ce qu'on ne
+     peut pas encore programmer donne une raison de monter. Avant, il
+     n'était qu'un chiffre en bas de page. */
+  if(!filmDebloque(f)){
+    return `<div class="rangProg verrouProg" onclick="refuseFilm('${f.id}')">
+      <span class="rpHeure">Niv ${f.niveauRequis || "?"}</span>
+      <span class="rpMid"><b>${echappe(f.titre.toUpperCase())}</b>
+        <span>${echappe(f.genre)} • ${fmtDuree(f.duree)}</span></span>
+      <span class="rpDr"><b>—</b><span>verrouillé</span></span>
+      <span class="rpChev">${icone("porte")}</span>
+    </div>`;
+  }
+
   const baisse = f.populariteBase && f.popularite < f.populariteBase;
   return `<div class="rangProg ${f.exceptionnel ? "evenementProg" : ""}"
       onclick="ouvrePanneau('${f.id}')">
@@ -900,28 +885,6 @@ async function rendVueEvenements(){
 /* ============================================================
    LA CARTE D'AFFICHE, commune aux trois vues
    ============================================================ */
-/* une ligne du journal : vignette, titre, état, prix */
-function ligneFilm(f){
-  const m = mentionSortie(f);
-  const ouvert = filmDebloque(f);
-  const cl = !m ? "" : m.classe;
-  return `<button class="ligneFilm ${ouvert ? "" : "verrou"}"
-      onclick="${ouvert ? `agranditAffiche('${f.id}')` : `refuseFilm('${f.id}')`}"
-      aria-label="${echappe(f.titre)}">
-    <span class="vignFilm">${afficheDeGenre(genreConnu(f.genre))}</span>
-    <span class="txtFilm">
-      <b>${echappe(f.titre)}</b>
-      <span class="genreFilm">${echappe(f.genre)}${
-        f.duree ? " · " + f.duree + " min" : ""}</span>
-      <span class="etatFilm ${cl}">${ouvert ? (m ? m.texte : "Disponible")
-        : "Niveau " + (f.niveauRequis || "?")}</span>
-    </span>
-    <span class="prixFilm">${ouvert
-      ? `<b>${f.coutLicence ? fmtArgent(coutLicence(f)) : "Libre"}</b><small>licence</small>`
-      : `<b>—</b><small>verrouillé</small>`}</span>
-  </button>`;
-}
-
 function carteAffiche(o){
   return `<button class="carteAff ${o.classe === "ferme" ? "verrouillee" : ""}"
     ${o.action ? `onclick="${o.action}"` : ""} aria-label="${echappe(o.titre)}">
@@ -994,7 +957,6 @@ export {
   journeeLancee,
   lanceLaJournee,
   ligneCatalogue,
-  ligneFilm,
   limiteSeances,
   majPanneau,
   mentionSortie,

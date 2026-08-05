@@ -1,7 +1,7 @@
 /* Session, garde de page, déconnexion. */
 
-import { Etat, chargeCinema } from "./game-state.js?v=9b3fc701";
-import { SB_KEY, SB_URL, renouvelleSession, sessionLocale } from "./supabase-client.js?v=9b3fc701";
+import { Etat, chargeCinema } from "./game-state.js?v=45d24569";
+import { SB_KEY, SB_URL, renouvelleSession, sessionLocale } from "./supabase-client.js?v=45d24569";
 
 /* ============================================================
    AUTHENTIFICATION — session, protection des pages, déconnexion

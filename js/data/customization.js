@@ -1,9 +1,9 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=9b3fc701";
-import { Etat, depense } from "../game-state.js?v=9b3fc701";
-import { majHeaderArgent } from "../navigation.js?v=9b3fc701";
-import { niveauActuel } from "../progression.js?v=9b3fc701";
-import { salles } from "../rooms.js?v=9b3fc701";
-import { sbFetch } from "../supabase-client.js?v=9b3fc701";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=45d24569";
+import { Etat, depense } from "../game-state.js?v=45d24569";
+import { majHeaderArgent } from "../navigation.js?v=45d24569";
+import { niveauActuel } from "../progression.js?v=45d24569";
+import { salles } from "../rooms.js?v=45d24569";
+import { sbFetch } from "../supabase-client.js?v=45d24569";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
