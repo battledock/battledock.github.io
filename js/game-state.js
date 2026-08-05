@@ -1,19 +1,19 @@
 /* État courant du jeu et chargements officiels. */
 
-import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=0e9c6475";
-import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=0e9c6475";
-import { chargePersonnalisation } from "./data/customization.js?v=0e9c6475";
-import { compareHeures } from "./data/films.js?v=0e9c6475";
-import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=0e9c6475";
-import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=0e9c6475";
-import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=0e9c6475";
+import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=5897dbca";
+import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=5897dbca";
+import { chargePersonnalisation } from "./data/customization.js?v=5897dbca";
+import { compareHeures } from "./data/films.js?v=5897dbca";
+import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=5897dbca";
+import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=5897dbca";
+import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=5897dbca";
 import {
   idOperation,
   renouvelleSession,
   rpc,
   sbFetch,
   sessionLocale
-} from "./supabase-client.js?v=0e9c6475";
+} from "./supabase-client.js?v=5897dbca";
 
 /* ============================================================
    ÉTAT DU JEU — source de vérité unique côté client
@@ -113,8 +113,12 @@ async function chargeCatalogueJour(){
    ------------------------------------------------------------ */
 async function chargePaliersStudio(){
   try{
-    const d = await sbFetch("production_genres?select=cle,libelle,niveau_requis&order=niveau_requis");
-    if(Array.isArray(d) && d.length) Etat.paliersStudio = d;
+    const [g, t] = await Promise.all([
+      sbFetch("production_genres?select=cle,libelle,niveau_requis&order=niveau_requis"),
+      sbFetch("production_talents?select=id,nom,role,popularite,cout,niveau_requis&order=niveau_requis")
+    ]);
+    if(Array.isArray(g) && g.length) Etat.paliersStudio = g;
+    if(Array.isArray(t) && t.length) Etat.talentsStudio = t;
   }catch(e){ /* la liste s'affichera sans le studio */ }
 }
 

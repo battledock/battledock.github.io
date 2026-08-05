@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=0e9c6475";
-import { chargePersonnalisation } from "./data/customization.js?v=0e9c6475";
-import { AMELIORATIONS } from "./data/upgrades.js?v=0e9c6475";
-import { Etat } from "./game-state.js?v=0e9c6475";
-import { rpc, sbFetch } from "./supabase-client.js?v=0e9c6475";
-import { celebreNiveau } from "./ui/celebration.js?v=0e9c6475";
-import { echappe } from "./ui/emblems.js?v=0e9c6475";
-import { icone } from "./ui/icons.js?v=0e9c6475";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=5897dbca";
+import { chargePersonnalisation } from "./data/customization.js?v=5897dbca";
+import { AMELIORATIONS } from "./data/upgrades.js?v=5897dbca";
+import { Etat } from "./game-state.js?v=5897dbca";
+import { rpc, sbFetch } from "./supabase-client.js?v=5897dbca";
+import { celebreNiveau } from "./ui/celebration.js?v=5897dbca";
+import { echappe } from "./ui/emblems.js?v=5897dbca";
+import { icone } from "./ui/icons.js?v=5897dbca";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -626,6 +626,32 @@ function deblocagesReels(){
         nom:"Production : " + g.libelle,
         desc:"Un genre de plus à tourner au studio",
         niv:n, ou:"Studio"});
+    });
+  }
+
+  /* 4b. les talents du studio, qui arrivent par vagues */
+  const tal = Array.isArray(Etat?.talentsStudio) ? Etat.talentsStudio : null;
+  if(tal && tal.length){
+    const ouverture = Math.min(...tal.map(t => Number(t.niveau_requis) || 1));
+    const ROLE = {acteur:"Acteur", realisateur:"Réalisateur", technicien:"Technicien"};
+    /* une entrée par palier, pas une par personne : sinon la liste
+       se remplit de neuf lignes identiques au même niveau */
+    const paliers = {};
+    tal.forEach(t=>{
+      const n = Number(t.niveau_requis) || 1;
+      if(n <= ouverture) return;
+      paliers[n] = paliers[n] || [];
+      paliers[n].push(t);
+    });
+    Object.entries(paliers).forEach(([n, gens])=>{
+      const roles = [...new Set(gens.map(g => ROLE[g.role] || g.role))];
+      const vedette = gens.reduce((a,b)=>
+        (Number(b.popularite)||0) > (Number(a.popularite)||0) ? b : a);
+      out.push({cle:"talents_" + n, ic:"etoile",
+        nom: Number(n) >= 33 ? "Talents de renom" : "Talents confirmés",
+        desc: roles.join(", ") + " — " + vedette.nom
+              + (Number(vedette.popularite) > 40 ? ", un nom qui remplit les salles" : ""),
+        niv: Number(n), ou:"Studio"});
     });
   }
 

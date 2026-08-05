@@ -1,8 +1,8 @@
 /* Header et navigation basse, injectés sur chaque page. */
 
-import { Etat, fmtArgent, statutCinema } from "./game-state.js?v=0e9c6475";
-import { majBarreXPHeader, niveauActuel } from "./progression.js?v=0e9c6475";
-import { icone } from "./ui/icons.js?v=0e9c6475";
+import { Etat, fmtArgent, statutCinema } from "./game-state.js?v=5897dbca";
+import { majBarreXPHeader, niveauActuel } from "./progression.js?v=5897dbca";
+import { icone } from "./ui/icons.js?v=5897dbca";
 
 /* Header + nav basse injectés sur chaque page. initNavigation("jeu") */
 const PAGES_NAV = [
