@@ -1,29 +1,29 @@
 /* L'accueil : façade vivante, héros, statut du jour. */
 
-import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js";
-import { compareHeures, filmParId } from "./data/films.js";
+import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=9c211464";
+import { compareHeures, filmParId } from "./data/films.js?v=9c211464";
 import {
   chargeJournee,
   ouvreCinema,
   passeAuJourSuivant,
   statutJournee,
   verifieOuverture
-} from "./engine/day.js";
-import { animeLeCinema, bobMeteo } from "./facade/life.js";
-import { dessineHallEvolutif } from "./facade/lobby.js";
-import { spawnPassant } from "./facade/pedestrians.js";
-import { dessineFacadeEvolutive } from "./facade/render.js";
-import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js";
-import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js";
-import { phraseStatut } from "./navigation.js";
-import { bandeauEvenement } from "./pages/parts/events.js";
-import { niveauActuel, progressionVersSuivant } from "./progression.js";
-import { salles } from "./rooms.js";
-import { appelSecurise, rpc, sbFetch } from "./supabase-client.js";
-import { echappe, texteSur } from "./ui/emblems.js";
-import { A } from "./ui/genre-posters.js";
-import { icone } from "./ui/icons.js";
-import { salleEnCoupe } from "./ui/room-view.js";
+} from "./engine/day.js?v=9c211464";
+import { animeLeCinema, bobMeteo } from "./facade/life.js?v=9c211464";
+import { dessineHallEvolutif } from "./facade/lobby.js?v=9c211464";
+import { spawnPassant } from "./facade/pedestrians.js?v=9c211464";
+import { dessineFacadeEvolutive } from "./facade/render.js?v=9c211464";
+import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=9c211464";
+import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=9c211464";
+import { phraseStatut } from "./navigation.js?v=9c211464";
+import { bandeauEvenement } from "./pages/parts/events.js?v=9c211464";
+import { niveauActuel, progressionVersSuivant } from "./progression.js?v=9c211464";
+import { salles } from "./rooms.js?v=9c211464";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=9c211464";
+import { echappe, texteSur } from "./ui/emblems.js?v=9c211464";
+import { A } from "./ui/genre-posters.js?v=9c211464";
+import { icone } from "./ui/icons.js?v=9c211464";
+import { salleEnCoupe } from "./ui/room-view.js?v=9c211464";
 
 /* Accueil vivant du cinéma (jeu.html) */
 
