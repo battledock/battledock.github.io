@@ -1,8 +1,8 @@
-import { echappe } from "../ui/emblems.js?v=9b852109";
-import { icone } from "../ui/icons.js?v=9b852109";
-import { couleurSieges } from "./customization.js?v=9b852109";
-import { debloque, niveauActuel } from "../progression.js?v=9b852109";
-import { salles } from "../rooms.js?v=9b852109";
+import { echappe } from "../ui/emblems.js?v=0e9c6475";
+import { icone } from "../ui/icons.js?v=0e9c6475";
+import { couleurSieges } from "./customization.js?v=0e9c6475";
+import { debloque, niveauActuel } from "../progression.js?v=0e9c6475";
+import { salles } from "../rooms.js?v=0e9c6475";
 
 /* ============================================================
    CONFIGURATION CENTRALE DES AMÉLIORATIONS

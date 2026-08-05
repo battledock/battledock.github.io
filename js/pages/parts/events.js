@@ -1,9 +1,9 @@
-import { fmtDureeHeures } from "../../data/films.js?v=9b852109";
-import { Etat } from "../../game-state.js?v=9b852109";
-import { actionSoc, toastSocial } from "../../social.js?v=9b852109";
-import { rpc } from "../../supabase-client.js?v=9b852109";
-import { echappe, texteSur } from "../../ui/emblems.js?v=9b852109";
-import { icone } from "../../ui/icons.js?v=9b852109";
+import { fmtDureeHeures } from "../../data/films.js?v=0e9c6475";
+import { Etat } from "../../game-state.js?v=0e9c6475";
+import { actionSoc, toastSocial } from "../../social.js?v=0e9c6475";
+import { rpc } from "../../supabase-client.js?v=0e9c6475";
+import { echappe, texteSur } from "../../ui/emblems.js?v=0e9c6475";
+import { icone } from "../../ui/icons.js?v=0e9c6475";
 
 /* ============================================================
    ÉVÉNEMENTS COMMUNAUTAIRES — lecture seule, contributions serveur

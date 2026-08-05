@@ -1,8 +1,8 @@
-import { Etat, fmtArgent } from "./game-state.js?v=9b852109";
-import { toastSocial } from "./social.js?v=9b852109";
-import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=9b852109";
-import { echappe, texteSur } from "./ui/emblems.js?v=9b852109";
-import { icone } from "./ui/icons.js?v=9b852109";
+import { Etat, fmtArgent } from "./game-state.js?v=0e9c6475";
+import { toastSocial } from "./social.js?v=0e9c6475";
+import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=0e9c6475";
+import { echappe, texteSur } from "./ui/emblems.js?v=0e9c6475";
+import { icone } from "./ui/icons.js?v=0e9c6475";
 
 /* ============================================================
    LA PRÉPARATION DU MATIN

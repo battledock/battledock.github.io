@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=9b852109";
-import { chargePersonnalisation } from "./data/customization.js?v=9b852109";
-import { AMELIORATIONS } from "./data/upgrades.js?v=9b852109";
-import { Etat } from "./game-state.js?v=9b852109";
-import { rpc, sbFetch } from "./supabase-client.js?v=9b852109";
-import { celebreNiveau } from "./ui/celebration.js?v=9b852109";
-import { echappe } from "./ui/emblems.js?v=9b852109";
-import { icone } from "./ui/icons.js?v=9b852109";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=0e9c6475";
+import { chargePersonnalisation } from "./data/customization.js?v=0e9c6475";
+import { AMELIORATIONS } from "./data/upgrades.js?v=0e9c6475";
+import { Etat } from "./game-state.js?v=0e9c6475";
+import { rpc, sbFetch } from "./supabase-client.js?v=0e9c6475";
+import { celebreNiveau } from "./ui/celebration.js?v=0e9c6475";
+import { echappe } from "./ui/emblems.js?v=0e9c6475";
+import { icone } from "./ui/icons.js?v=0e9c6475";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -612,7 +612,24 @@ function deblocagesReels(){
     desc:"Fauteuils sur vérins, effets d'eau et de vent · le public accepte 6 € de plus",
     niv:15, ou:"Salles"});
 
-  /* 4. les genres, lus dans le catalogue du jour */
+  /* 4. le studio et ses genres de production */
+  const st = Array.isArray(Etat?.paliersStudio) ? Etat.paliersStudio : null;
+  if(st && st.length){
+    const ouverture = Math.min(...st.map(g => Number(g.niveau_requis) || 1));
+    out.push({cle:"studio", ic:"camera", nom:"Le studio de production",
+      desc:"Tourne tes propres films : scénario, réalisateur, acteurs, budget",
+      niv: ouverture, ou:"Studio"});
+    st.forEach(g=>{
+      const n = Number(g.niveau_requis) || 1;
+      if(n <= ouverture) return;         /* disponible dès l'ouverture */
+      out.push({cle:"prod_" + g.cle, ic:"camera",
+        nom:"Production : " + g.libelle,
+        desc:"Un genre de plus à tourner au studio",
+        niv:n, ou:"Studio"});
+    });
+  }
+
+  /* 5. les genres de films, lus dans le catalogue du jour */
   const cat = Array.isArray(Etat?.catalogueJour) ? Etat.catalogueJour : null;
   if(cat && cat.length){
     const parGenre = {};

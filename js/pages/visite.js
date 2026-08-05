@@ -1,10 +1,10 @@
 /* Point d'entrée de visite.html — page publique, sans navigation privée */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=9b852109";
-import { initAmbiance } from "../ambiance.js?v=9b852109";
-import { protegerPage } from "../auth.js?v=9b852109";
-import { messageErreur } from "../supabase-client.js?v=9b852109";
-import { initVisite } from "./parts/visit.js?v=9b852109";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=0e9c6475";
+import { initAmbiance } from "../ambiance.js?v=0e9c6475";
+import { protegerPage } from "../auth.js?v=0e9c6475";
+import { messageErreur } from "../supabase-client.js?v=0e9c6475";
+import { initVisite } from "./parts/visit.js?v=0e9c6475";
 
 demarreChargement();
 filetChargement();

@@ -1,9 +1,9 @@
 /* Réactions, abonnements, amitiés, blocage. */
 
-import { rafraichirSocial } from "./pages/parts/community-social.js?v=9b852109";
-import { messageErreur, rpc } from "./supabase-client.js?v=9b852109";
-import { echappe, texteSur } from "./ui/emblems.js?v=9b852109";
-import { icone } from "./ui/icons.js?v=9b852109";
+import { rafraichirSocial } from "./pages/parts/community-social.js?v=0e9c6475";
+import { messageErreur, rpc } from "./supabase-client.js?v=0e9c6475";
+import { echappe, texteSur } from "./ui/emblems.js?v=0e9c6475";
+import { icone } from "./ui/icons.js?v=0e9c6475";
 
 /* ============================================================
    SOCIAL — réactions, abonnements, amis

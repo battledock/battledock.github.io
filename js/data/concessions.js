@@ -1,7 +1,7 @@
-import { Etat } from "../game-state.js?v=9b852109";
-import { accomplitMission, estDebloque, sonNiveau } from "../progression.js?v=9b852109";
-import { rpc, sbFetch } from "../supabase-client.js?v=9b852109";
-import { icone } from "../ui/icons.js?v=9b852109";
+import { Etat } from "../game-state.js?v=0e9c6475";
+import { accomplitMission, estDebloque, sonNiveau } from "../progression.js?v=0e9c6475";
+import { rpc, sbFetch } from "../supabase-client.js?v=0e9c6475";
+import { icone } from "../ui/icons.js?v=0e9c6475";
 
 /* ============================================================
    CONFISERIE — débloquée au niveau 5

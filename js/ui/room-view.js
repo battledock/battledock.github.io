@@ -1,6 +1,6 @@
-import { couleurSiegesCle } from "../data/customization.js?v=9b852109";
-import { bulleSalles, ouvrePanneauEquipement } from "../rooms.js?v=9b852109";
-import { A } from "./genre-posters.js?v=9b852109";
+import { couleurSiegesCle } from "../data/customization.js?v=0e9c6475";
+import { bulleSalles, ouvrePanneauEquipement } from "../rooms.js?v=0e9c6475";
+import { A } from "./genre-posters.js?v=0e9c6475";
 
 /* ============================================================
    LES QUATRE SALLES

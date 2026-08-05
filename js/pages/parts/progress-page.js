@@ -1,5 +1,5 @@
-import { NIVEAUX } from "../../progression.js?v=9b852109";
-import { Etat } from "../../game-state.js?v=9b852109";
+import { NIVEAUX } from "../../progression.js?v=0e9c6475";
+import { Etat } from "../../game-state.js?v=0e9c6475";
 import {
   MISSIONS,
   XP,
@@ -15,11 +15,11 @@ import {
   recompensesAReclamer,
   synchroniseDeblocages,
   xpActuel
-} from "../../progression.js?v=9b852109";
-import { sbFetch } from "../../supabase-client.js?v=9b852109";
-import { texteSur } from "../../ui/emblems.js?v=9b852109";
-import { icone } from "../../ui/icons.js?v=9b852109";
-import { murDesTrophees } from "../../ui/trophy-wall.js?v=9b852109";
+} from "../../progression.js?v=0e9c6475";
+import { sbFetch } from "../../supabase-client.js?v=0e9c6475";
+import { texteSur } from "../../ui/emblems.js?v=0e9c6475";
+import { icone } from "../../ui/icons.js?v=0e9c6475";
+import { murDesTrophees } from "../../ui/trophy-wall.js?v=0e9c6475";
 
 /* ============================================================
    PAGE PROGRESSION — niveaux 1 à 10 en détail

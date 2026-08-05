@@ -1,19 +1,19 @@
 /* État courant du jeu et chargements officiels. */
 
-import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=9b852109";
-import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=9b852109";
-import { chargePersonnalisation } from "./data/customization.js?v=9b852109";
-import { compareHeures } from "./data/films.js?v=9b852109";
-import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=9b852109";
-import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=9b852109";
-import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=9b852109";
+import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=0e9c6475";
+import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=0e9c6475";
+import { chargePersonnalisation } from "./data/customization.js?v=0e9c6475";
+import { compareHeures } from "./data/films.js?v=0e9c6475";
+import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=0e9c6475";
+import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=0e9c6475";
+import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=0e9c6475";
 import {
   idOperation,
   renouvelleSession,
   rpc,
   sbFetch,
   sessionLocale
-} from "./supabase-client.js?v=9b852109";
+} from "./supabase-client.js?v=0e9c6475";
 
 /* ============================================================
    ÉTAT DU JEU — source de vérité unique côté client
@@ -104,6 +104,20 @@ async function chargeCatalogueJour(){
   }catch(e){ /* le secours reste la liste figée */ }
 }
 
+/* ------------------------------------------------------------
+   LES PALIERS DU STUDIO
+
+   Le studio et ses genres de production ont leurs propres niveaux,
+   décidés côté serveur. Les recopier dans le client serait repartir
+   dans la dérive qu'on vient de corriger : on les lit.
+   ------------------------------------------------------------ */
+async function chargePaliersStudio(){
+  try{
+    const d = await sbFetch("production_genres?select=cle,libelle,niveau_requis&order=niveau_requis");
+    if(Array.isArray(d) && d.length) Etat.paliersStudio = d;
+  }catch(e){ /* la liste s'affichera sans le studio */ }
+}
+
 async function chargeSallesEtat(){
   if(!Etat.cinema) return [];
   const d = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
@@ -138,7 +152,8 @@ async function initialiserJeu({onglet = "jeu", cinemaRequis = true} = {}){
     chargeConfiserie(),
     chargeStats(),
     chargeMissions(),
-    chargeCatalogueJour()
+    chargeCatalogueJour(),
+    chargePaliersStudio()
   ].map(p => p.catch(()=>null)));
 
   await synchroniseDeblocages().catch(e=>console.warn("[Rex] deblocages", e));
@@ -329,6 +344,7 @@ export {
   OUVERTURE,
   chargeCatalogueJour,
   chargeCinema,
+  chargePaliersStudio,
   chargeSallesEtat,
   chargeSeancesEtat,
   depense,
