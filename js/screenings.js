@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=45d24569";
-import { niveauEquipement } from "./data/upgrades.js?v=45d24569";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=45d24569";
-import { Etat, fmtArgent } from "./game-state.js?v=45d24569";
-import { bobCompact } from "./navigation.js?v=45d24569";
-import { accomplitMission, debloque } from "./progression.js?v=45d24569";
-import { toastSocial } from "./social.js?v=45d24569";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=45d24569";
-import { echappe, texteSur } from "./ui/emblems.js?v=45d24569";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=45d24569";
-import { icone } from "./ui/icons.js?v=45d24569";
+} from "./data/films.js?v=d6efe228";
+import { niveauEquipement } from "./data/upgrades.js?v=d6efe228";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=d6efe228";
+import { Etat, fmtArgent } from "./game-state.js?v=d6efe228";
+import { bobCompact } from "./navigation.js?v=d6efe228";
+import { accomplitMission, debloque } from "./progression.js?v=d6efe228";
+import { toastSocial } from "./social.js?v=d6efe228";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=d6efe228";
+import { echappe, texteSur } from "./ui/emblems.js?v=d6efe228";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=d6efe228";
+import { icone } from "./ui/icons.js?v=d6efe228";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES
@@ -48,6 +48,7 @@ async function initProgrammation(){
   await chargeFilmsMaison();
   await chargeSeances();
   brancheSegments();
+  installeFleches();
   rendVue();
 }
 
@@ -62,10 +63,34 @@ function brancheSegments(){
       b.classList.add("on"); b.setAttribute("aria-selected","true");
       vueProg = b.dataset.vue;
       rendVue();
+      majFleches();
       const piste = document.getElementById("pisteAffiches");
       if(piste) piste.scrollTo({left:0, behavior:"smooth"});
     });
   });
+}
+
+/* ---------- les flèches du carrousel ---------- */
+function installeFleches(){
+  const p = document.getElementById("pisteAffiches");
+  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
+  if(!p || !g || !d) return;
+  const pas = () => Math.max(140, Math.round(p.clientWidth * .8));
+  g.onclick = () => p.scrollBy({left: -pas(), behavior:"smooth"});
+  d.onclick = () => p.scrollBy({left:  pas(), behavior:"smooth"});
+  p.addEventListener("scroll", majFleches, {passive:true});
+  window.addEventListener("resize", majFleches);
+  majFleches();
+}
+
+/* elles s'éteignent quand il n'y a rien à faire défiler */
+function majFleches(){
+  const p = document.getElementById("pisteAffiches");
+  const g = document.getElementById("flecheG"), d = document.getElementById("flecheD");
+  if(!p || !g || !d) return;
+  const debord = p.scrollWidth > p.clientWidth + 4;
+  g.classList.toggle("eteinte", !debord || p.scrollLeft < 6);
+  d.classList.toggle("eteinte", !debord || p.scrollLeft > p.scrollWidth - p.clientWidth - 6);
 }
 
 const SOUS_TITRES = {
@@ -574,6 +599,7 @@ function rendVueAffiche(){
 
   /* le carrousel montre une affiche par séance */
   const piste = document.getElementById("pisteAffiches");
+  if(!piste) return;
   if(seancesJour.length === 0){
     piste.innerHTML = `<div class="pisteVide">Le projecteur est froid.<br>
       <small>Aucune séance au programme.</small></div>`;
@@ -836,6 +862,7 @@ function allerAuProgramme(){
 async function rendVueEvenements(){
   const piste = document.getElementById("pisteAffiches");
   const tab = document.getElementById("tableauProg");
+  if(!piste || !tab) return;
   document.getElementById("zoneValidation").innerHTML = "";
 
   if(!evenementsProg.length){
@@ -953,11 +980,13 @@ export {
   fermePanneau,
   filmDepuisServeur,
   initProgrammation,
+  installeFleches,
   intervalle,
   journeeLancee,
   lanceLaJournee,
   ligneCatalogue,
   limiteSeances,
+  majFleches,
   majPanneau,
   mentionSortie,
   modifieSeance,

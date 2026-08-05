@@ -1,6 +1,6 @@
-import { ANIMATIONS_LEGERES, quitteLieu } from "../ambiance.js?v=45d24569";
-import { Etat } from "../game-state.js?v=45d24569";
-import { confirmeOuverture, parleBob, phaseSelonHeure } from "../cinema.js?v=45d24569";
+import { ANIMATIONS_LEGERES, quitteLieu } from "../ambiance.js?v=d6efe228";
+import { Etat } from "../game-state.js?v=d6efe228";
+import { confirmeOuverture, parleBob, phaseSelonHeure } from "../cinema.js?v=d6efe228";
 
 /* ============================================================
    LA VIE DU CINÉMA

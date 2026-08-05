@@ -1,5 +1,5 @@
-import { bobCompact } from "../../navigation.js?v=45d24569";
-import { rendDefis } from "./challenges.js?v=45d24569";
+import { bobCompact } from "../../navigation.js?v=d6efe228";
+import { rendDefis } from "./challenges.js?v=d6efe228";
 import {
   majBadgeNotifications,
   marqueToutLu,
@@ -7,10 +7,10 @@ import {
   rendAmis,
   rendNotifications,
   rendSuggestions
-} from "./community-social.js?v=45d24569";
-import { initClassement } from "./leaderboard.js?v=45d24569";
-import { rpc } from "../../supabase-client.js?v=45d24569";
-import { embleme, texteSur } from "../../ui/emblems.js?v=45d24569";
+} from "./community-social.js?v=d6efe228";
+import { initClassement } from "./leaderboard.js?v=d6efe228";
+import { rpc } from "../../supabase-client.js?v=d6efe228";
+import { embleme, texteSur } from "../../ui/emblems.js?v=d6efe228";
 
 /* ============================================================
    COMMUNAUTÉ — recherche de cinémas publics

@@ -1,8 +1,8 @@
-import { rendreFacadePublique } from "../../cinema.js?v=45d24569";
-import { chargeRelation, conteneurSocialActuel, rendActionsSociales } from "../../social.js?v=45d24569";
-import { rpc, sbFetch } from "../../supabase-client.js?v=45d24569";
-import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=45d24569";
-import { icone } from "../../ui/icons.js?v=45d24569";
+import { rendreFacadePublique } from "../../cinema.js?v=d6efe228";
+import { chargeRelation, conteneurSocialActuel, rendActionsSociales } from "../../social.js?v=d6efe228";
+import { rpc, sbFetch } from "../../supabase-client.js?v=d6efe228";
+import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=d6efe228";
+import { icone } from "../../ui/icons.js?v=d6efe228";
 
 /* ============================================================
    VITRINE PUBLIQUE — lecture seule, données filtrées par le serveur
