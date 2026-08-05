@@ -5,16 +5,16 @@ import {
   appliquePersonnalisation,
   chargePersonnalisation,
   itemPerso
-} from "../../data/customization.js?v=3c723c08";
-import { Etat, fmtArgent } from "../../game-state.js?v=3c723c08";
-import { bobCompact } from "../../navigation.js?v=3c723c08";
-import { accomplitMission, estDebloque, recompenseParCle } from "../../progression.js?v=3c723c08";
-import { ICONES } from "../../ui/icons.js?v=3c723c08";
+} from "../../data/customization.js?v=b1e4da88";
+import { Etat, fmtArgent } from "../../game-state.js?v=b1e4da88";
+import { bobCompact } from "../../navigation.js?v=b1e4da88";
+import { accomplitMission, estDebloque, recompenseParCle } from "../../progression.js?v=b1e4da88";
+import { ICONES } from "../../ui/icons.js?v=b1e4da88";
 
 /* ============================================================
    PAGE PERSONNALISATION
    ============================================================ */
-let ongletPerso = "enseigne";
+let ongletPerso = (ONGLETS[0] && ONGLETS[0].id) || "sieges";
 
 async function initPersonnalisation(){
   await chargePersonnalisation();
@@ -24,14 +24,11 @@ async function initPersonnalisation(){
     bobCompact("Tout ce qui se voit depuis la rue passe par ici. Choisis bien, le quartier regarde."));
 }
 
-const ONGLETS = [
-  {id:"enseigne",  nom:"Enseigne"},
-  {id:"facade",    nom:"Façade"},
-  {id:"exterieur", nom:"Extérieur"},
-  {id:"hall",      nom:"Hall"},
-  {id:"sieges",    nom:"Fauteuils"},
-  {id:"plaque",    nom:"Plaques"}
-];
+/* Les onglets suivent le catalogue au lieu d'être écrits à part :
+   retirer une catégorie ne peut plus laisser un onglet qui pointe
+   dans le vide. */
+const ONGLETS = Object.entries(CATALOGUE_PERSO).map(([id, c]) => ({id, nom: c.nom}));
+
 
 function rendOngletsPerso(){
   document.getElementById("ongletsPerso").innerHTML = ONGLETS.map(o=>{
@@ -45,6 +42,7 @@ function changeOnglet(id){ ongletPerso = id; rendOngletsPerso(); rendContenuPers
 
 function rendContenuPerso(){
   const conf = CATALOGUE_PERSO[ongletPerso];
+  if(!conf){ ongletPerso = ONGLETS[0] && ONGLETS[0].id; return rendContenuPerso(); }
   const el = document.getElementById("contenuPerso");
   if(conf.cleDeblocage && !estDebloque(conf.cleDeblocage)){
     const r = recompenseParCle(conf.cleDeblocage);

@@ -1,4 +1,4 @@
-import { entreeDePage, installeTransitions, quitteLieu } from "./transitions.js?v=3c723c08";
+import { entreeDePage, installeTransitions, quitteLieu } from "./transitions.js?v=b1e4da88";
 
 /* Décors de lieu, transitions entre pages, narration. */
 

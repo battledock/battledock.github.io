@@ -1,71 +1,26 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=3c723c08";
-import { Etat, depense } from "../game-state.js?v=3c723c08";
-import { majHeaderArgent } from "../navigation.js?v=3c723c08";
-import { niveauActuel } from "../progression.js?v=3c723c08";
-import { salles } from "../rooms.js?v=3c723c08";
-import { sbFetch } from "../supabase-client.js?v=3c723c08";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=b1e4da88";
+import { Etat, depense } from "../game-state.js?v=b1e4da88";
+import { majHeaderArgent } from "../navigation.js?v=b1e4da88";
+import { niveauActuel } from "../progression.js?v=b1e4da88";
+import { salles } from "../rooms.js?v=b1e4da88";
+import { sbFetch } from "../supabase-client.js?v=b1e4da88";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
    Cosmétique uniquement : aucun bonus de gameplay ici.
    ============================================================ */
-const CATALOGUE_PERSO = {
-  enseigne: {
-    nom:"Enseigne", ic:"batiment", cleDeblocage:"enseigne", champ:"style_enseigne",
-    items:[
-      {id:"classic",  nom:"Classique dorée", desc:"Lettres d'or sur velours.",        niveauRequis:1, cout:0, couleur:"#f7dd9a", halo:"#f7dd9a"},
-      {id:"rouge",    nom:"Lettres rouges",  desc:"Néon rubis, façon années 50.",     niveauRequis:2, cout:0, couleur:"#ff7a6a", halo:"#ff4a3a"},
-      {id:"creme",    nom:"Enseigne crème",  desc:"Sobre, laiteuse, élégante.",       niveauRequis:2, cout:0, couleur:"#fdf6e0", halo:"#fff4c8"},
-      {id:"turquoise",nom:"Néon turquoise",  desc:"Le quartier la verra de loin.",    niveauRequis:17,cout:400,couleur:"#7fe8dc", halo:"#3ad8c8"}
-    ]
-  },
-  facade: {
-    nom:"Façade", ic:"outil", cleDeblocage:"facade_couleurs", champ:"style_facade",
-    items:[
-      {id:"bordeaux", nom:"Bordeaux classique", desc:"La couleur d'origine du Rex.",  niveauRequis:1, cout:0, mur:["#a8506a","#8c3a52","#742e42"], murNuit:["#4f2545","#341629","#26101e"]},
-      {id:"bleunuit", nom:"Bleu nuit",          desc:"Profond, avec détails dorés.",  niveauRequis:7, cout:0, mur:["#3a5a8c","#2a4268","#1e3050"], murNuit:["#243a5e","#182742","#101c30"]},
-      {id:"vert",     nom:"Vert impérial",      desc:"Un vert sombre et cossu.",      niveauRequis:7, cout:0, mur:["#3a6b52","#2a5040","#1e3a2e"], murNuit:["#22402f","#16301f","#0e2016"]},
-      {id:"creme",    nom:"Crème parisien",     desc:"Pierre claire et zinc.",        niveauRequis:7, cout:250,mur:["#d8c4a0","#c0aa86","#a8926e"], murNuit:["#6a5a44","#4c4030","#342a20"]},
-      {id:"artdeco",  nom:"Art déco noir et or",desc:"Laque noire, filets dorés.",    niveauRequis:7, cout:600,mur:["#3a3436","#262224","#171416"], murNuit:["#241f22","#161314","#0c0a0b"], filetsOr:true}
-    ]
-  },
-  hall: {
-    nom:"Hall", ic:"maison", cleDeblocage:"deco_hall", champ:"hall",  emplacements:true,
-    zones:[
+/* ------------------------------------------------------------
+   Le catalogue s'est réduit à ce qui se voit réellement.
 
-      {id:"mur",      nom:"Mur principal", objets:[
-        {id:"aucun", nom:"Mur nu", cout:0, niveauRequis:1},
-        {id:"cadres", nom:"Cadres anciens", cout:0,  niveauRequis:3},
-        {id:"affiches", nom:"Affiches d'époque", cout:120, niveauRequis:3},
-        {id:"fresque", nom:"Fresque peinte", cout:450, niveauRequis:7}]},
-      {id:"gauche",   nom:"Coin gauche", objets:[
-        {id:"aucun", nom:"Rien", cout:0, niveauRequis:1},
-        {id:"plante", nom:"Grande plante", cout:0, niveauRequis:3},
-        {id:"fauteuil", nom:"Fauteuil d'attente", cout:180, niveauRequis:3}]},
-      {id:"droite",   nom:"Coin droit", objets:[
-        {id:"aucun", nom:"Rien", cout:0, niveauRequis:1},
-        {id:"vitrine", nom:"Vitrine à souvenirs", cout:150, niveauRequis:3},
-        {id:"horloge", nom:"Horloge murale", cout:90, niveauRequis:3}]},
-      {id:"sol",      nom:"Sol", objets:[
-        {id:"parquet", nom:"Parquet d'origine", cout:0, niveauRequis:1},
-        {id:"tapis", nom:"Tapis d'entrée", cout:0, niveauRequis:3},
-        {id:"damier", nom:"Carrelage damier", cout:300, niveauRequis:7}]},
-      {id:"comptoir", nom:"Comptoir", objets:[
-        {id:"bois", nom:"Comptoir en bois", cout:0, niveauRequis:1},
-        {id:"laiton", nom:"Comptoir laiton", cout:220, niveauRequis:5},
-        {id:"marbre", nom:"Comptoir marbre", cout:700, niveauRequis:17}]}
-    ]
-  },
-  exterieur: {
-    nom:"Extérieur", ic:"maison", cleDeblocage:"deco_exterieur", champ:"exterieur", multiple:true,
-    items:[
-      {id:"banc",       nom:"Banc",                desc:"Pour patienter avant la séance.", niveauRequis:6, cout:0},
-      {id:"lampadaire", nom:"Lampadaire",          desc:"Lumière chaude sur le trottoir.", niveauRequis:6, cout:0},
-      {id:"pot",        nom:"Pot de fleurs",       desc:"Bob l'arrose. Parfois.",          niveauRequis:6, cout:80},
-      {id:"panneau",    nom:"Panneau sur trottoir",desc:"Le programme, écrit à la craie.", niveauRequis:6, cout:120},
-      {id:"guirlande",  nom:"Guirlande lumineuse", desc:"Suspendue au-dessus de l'entrée.",niveauRequis:6, cout:200}
-    ]
-  },
+   Quatre catégories en ont été retirées — enseigne, façade, hall,
+   extérieur : trente options, jusqu'à 700 €, dont AUCUNE n'était
+   lue par un dessin. Le joueur payait pour un changement qui ne
+   se produisait nulle part.
+
+   Elles reviendront quand elles seront branchées, pas avant.
+   Les choix déjà faits restent en base : rien n'est perdu.
+   ------------------------------------------------------------ */
+const CATALOGUE_PERSO = {
   sieges: {
     nom:"Fauteuils", ic:"fauteuil", cleDeblocage:"couleurs_sieges", champ:"couleur_sieges",
     items:[
@@ -74,15 +29,9 @@ const CATALOGUE_PERSO = {
       {id:"bleu",     nom:"Bleu nuit",      desc:"Inattendu et chic.",       niveauRequis:4, cout:0, couleur:"#2a3a6b"},
       {id:"vert",     nom:"Vert bouteille", desc:"Comme un vieux fumoir.",   niveauRequis:4, cout:0, couleur:"#2a5a42"}
     ]
-  },
-  plaque: {
-    nom:"Plaques", ic:"etoile", cleDeblocage:null, champ:"plaque",
-    items:[
-      {id:"aucune",          nom:"Aucune plaque", desc:"Discret.", niveauRequis:1, cout:0},
-      {id:"plaque_quartier", nom:"Cinéma reconnu du quartier", desc:"Récompense du niveau 10.", niveauRequis:10, cout:0, reclamee:true}
-    ]
   }
 };
+
 
 /* ---------- état ---------- */
 const PERSO_DEFAUT = {style_enseigne:"classic", style_facade:"bordeaux", couleur_sieges:"rouge",

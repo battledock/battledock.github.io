@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=3c723c08";
-import { chargePersonnalisation } from "./data/customization.js?v=3c723c08";
-import { AMELIORATIONS } from "./data/upgrades.js?v=3c723c08";
-import { Etat } from "./game-state.js?v=3c723c08";
-import { rpc, sbFetch } from "./supabase-client.js?v=3c723c08";
-import { celebreNiveau } from "./ui/celebration.js?v=3c723c08";
-import { echappe } from "./ui/emblems.js?v=3c723c08";
-import { icone } from "./ui/icons.js?v=3c723c08";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=b1e4da88";
+import { chargePersonnalisation } from "./data/customization.js?v=b1e4da88";
+import { AMELIORATIONS } from "./data/upgrades.js?v=b1e4da88";
+import { Etat } from "./game-state.js?v=b1e4da88";
+import { rpc, sbFetch } from "./supabase-client.js?v=b1e4da88";
+import { celebreNiveau } from "./ui/celebration.js?v=b1e4da88";
+import { echappe } from "./ui/emblems.js?v=b1e4da88";
+import { icone } from "./ui/icons.js?v=b1e4da88";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -496,12 +496,8 @@ async function reclameRecompense(cle){
    MISSIONS DE DÉCOUVERTE — une par déblocage majeur, non répétables
    ============================================================ */
 const MISSIONS = [
-  {cle:"m_enseigne",   niveau:2,  xp:15,  titre:"Changer le style de l'enseigne",   dep:"enseigne",        url:"personnalisation.html"},
-  {cle:"m_hall",       niveau:3,  xp:15,  titre:"Placer une décoration dans le hall",dep:"deco_hall",      url:"personnalisation.html"},
   {cle:"m_sieges",     niveau:4,  xp:20,  titre:"Restaurer les fauteuils",          dep:"confort_1",       url:"salles.html"},
   {cle:"m_popcorn",    niveau:5,  xp:30,  titre:"Vendre 20 popcorns",               dep:"confiserie",      url:"jeu.html"},
-  {cle:"m_exterieur",  niveau:6,  xp:15,  titre:"Installer un décor sur le trottoir",dep:"deco_exterieur", url:"personnalisation.html"},
-  {cle:"m_facade",     niveau:7,  xp:20,  titre:"Repeindre la façade",              dep:"facade_couleurs", url:"personnalisation.html"},
   {cle:"m_comedie",    niveau:8,  xp:25,  titre:"Programmer une comédie",           dep:"genre_comedie",   url:"programmation.html"},
   {cle:"m_ecran",      niveau:9,  xp:20,  titre:"Restaurer l'écran",                dep:"ecran_sup",       url:"salles.html"},
   {cle:"m_salle2",     niveau:10, xp:100, titre:"Construire la deuxième salle",     dep:"salle_2",         url:"salles.html"}
