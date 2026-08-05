@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=b1e4da88";
-import { niveauEquipement } from "./data/upgrades.js?v=b1e4da88";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=b1e4da88";
-import { Etat, fmtArgent } from "./game-state.js?v=b1e4da88";
-import { bobCompact } from "./navigation.js?v=b1e4da88";
-import { accomplitMission, debloque } from "./progression.js?v=b1e4da88";
-import { toastSocial } from "./social.js?v=b1e4da88";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=b1e4da88";
-import { echappe, texteSur } from "./ui/emblems.js?v=b1e4da88";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=b1e4da88";
-import { icone } from "./ui/icons.js?v=b1e4da88";
+} from "./data/films.js?v=cbbef1bf";
+import { niveauEquipement } from "./data/upgrades.js?v=cbbef1bf";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=cbbef1bf";
+import { Etat, fmtArgent } from "./game-state.js?v=cbbef1bf";
+import { bobCompact } from "./navigation.js?v=cbbef1bf";
+import { accomplitMission, debloque } from "./progression.js?v=cbbef1bf";
+import { toastSocial } from "./social.js?v=cbbef1bf";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=cbbef1bf";
+import { echappe, texteSur } from "./ui/emblems.js?v=cbbef1bf";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=cbbef1bf";
+import { icone } from "./ui/icons.js?v=cbbef1bf";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES
@@ -756,14 +756,21 @@ function rendVueCatalogue(){
   const fermes  = films.filter(f=>!filmDebloque(f));
   const cat = catalogueServeur;
 
-  /* les nouveautés en tête du carrousel : c'est l'information du jour */
-  const rang = f => f.exceptionnel ? 0 : f.statutSortie === "nouveaute" ? 1
+  /* Les nouveautés en tête : c'est l'information du jour. Les films
+     hors de portée ferment la marche plutôt que de disparaître —
+     voir passer ce qu'on ne peut pas encore programmer donne une
+     raison de monter. */
+  const rang = f => !filmDebloque(f) ? 9
+    : f.exceptionnel ? 0 : f.statutSortie === "nouveaute" ? 1
     : f.maison ? 2 : f.statutSortie === "affiche" ? 3
     : f.statutSortie === "fin_affiche" ? 4 : 5;
-  const tries = [...(ouverts.length ? ouverts : films)].sort((a,b)=>rang(a) - rang(b));
+  const tries = [...films].sort((a,b)=>rang(a) - rang(b));
 
+  /* Plus de troncature. Elle coupait à quatorze : sur cinquante-trois
+     films, l'essentiel du catalogue restait invisible, et le joueur
+     voyait « la liste des anciens films s'effacer ». */
   document.getElementById("pisteAffiches").innerHTML =
-    tries.slice(0, 14).map(f=>{
+    tries.map(f=>{
       const m = mentionSortie(f);
       return carteAffiche({
         genre: f.genre, titre: f.titre,

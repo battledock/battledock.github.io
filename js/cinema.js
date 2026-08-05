@@ -1,29 +1,29 @@
 /* L'accueil : façade vivante, héros, statut du jour. */
 
-import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=b1e4da88";
-import { compareHeures, filmParId } from "./data/films.js?v=b1e4da88";
+import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=cbbef1bf";
+import { compareHeures, filmParId } from "./data/films.js?v=cbbef1bf";
 import {
   chargeJournee,
   ouvreCinema,
   passeAuJourSuivant,
   statutJournee,
   verifieOuverture
-} from "./engine/day.js?v=b1e4da88";
-import { animeLeCinema, bobMeteo } from "./facade/life.js?v=b1e4da88";
-import { dessineHallEvolutif } from "./facade/lobby.js?v=b1e4da88";
-import { spawnPassant } from "./facade/pedestrians.js?v=b1e4da88";
-import { dessineFacadeEvolutive } from "./facade/render.js?v=b1e4da88";
-import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=b1e4da88";
-import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=b1e4da88";
-import { phraseStatut } from "./navigation.js?v=b1e4da88";
-import { bandeauEvenement } from "./pages/parts/events.js?v=b1e4da88";
-import { niveauActuel, progressionVersSuivant } from "./progression.js?v=b1e4da88";
-import { salles } from "./rooms.js?v=b1e4da88";
-import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=b1e4da88";
-import { echappe, texteSur } from "./ui/emblems.js?v=b1e4da88";
-import { A } from "./ui/genre-posters.js?v=b1e4da88";
-import { icone } from "./ui/icons.js?v=b1e4da88";
-import { salleEnCoupe } from "./ui/room-view.js?v=b1e4da88";
+} from "./engine/day.js?v=cbbef1bf";
+import { animeLeCinema, bobMeteo } from "./facade/life.js?v=cbbef1bf";
+import { dessineHallEvolutif } from "./facade/lobby.js?v=cbbef1bf";
+import { spawnPassant } from "./facade/pedestrians.js?v=cbbef1bf";
+import { dessineFacadeEvolutive } from "./facade/render.js?v=cbbef1bf";
+import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=cbbef1bf";
+import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=cbbef1bf";
+import { phraseStatut } from "./navigation.js?v=cbbef1bf";
+import { bandeauEvenement } from "./pages/parts/events.js?v=cbbef1bf";
+import { niveauActuel, progressionVersSuivant } from "./progression.js?v=cbbef1bf";
+import { salles } from "./rooms.js?v=cbbef1bf";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=cbbef1bf";
+import { echappe, texteSur } from "./ui/emblems.js?v=cbbef1bf";
+import { A } from "./ui/genre-posters.js?v=cbbef1bf";
+import { icone } from "./ui/icons.js?v=cbbef1bf";
+import { salleEnCoupe } from "./ui/room-view.js?v=cbbef1bf";
 
 /* Accueil vivant du cinéma (jeu.html) */
 

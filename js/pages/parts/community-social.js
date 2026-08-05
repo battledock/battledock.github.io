@@ -1,7 +1,7 @@
-import { actionSoc, toastSocial } from "../../social.js?v=b1e4da88";
-import { rpc } from "../../supabase-client.js?v=b1e4da88";
-import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=b1e4da88";
-import { icone } from "../../ui/icons.js?v=b1e4da88";
+import { actionSoc, toastSocial } from "../../social.js?v=cbbef1bf";
+import { rpc } from "../../supabase-client.js?v=cbbef1bf";
+import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=cbbef1bf";
+import { icone } from "../../ui/icons.js?v=cbbef1bf";
 
 /* ============================================================
    COMMUNAUTÉ — onglets Abonnements, Amis, Notifications

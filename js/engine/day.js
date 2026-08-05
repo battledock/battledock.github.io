@@ -1,17 +1,17 @@
-import { parleBob } from "../cinema.js?v=b1e4da88";
-import { Etat, chargeCinema, fmtArgent, rafraichirEtat } from "../game-state.js?v=b1e4da88";
-import { majHeaderArgent } from "../navigation.js?v=b1e4da88";
-import { declencheEvenement } from "../progression.js?v=b1e4da88";
-import { bulleConseil } from "../screenings.js?v=b1e4da88";
-import { toastSocial } from "../social.js?v=b1e4da88";
+import { parleBob } from "../cinema.js?v=cbbef1bf";
+import { Etat, chargeCinema, fmtArgent, rafraichirEtat } from "../game-state.js?v=cbbef1bf";
+import { majHeaderArgent } from "../navigation.js?v=cbbef1bf";
+import { declencheEvenement } from "../progression.js?v=cbbef1bf";
+import { bulleConseil } from "../screenings.js?v=cbbef1bf";
+import { toastSocial } from "../social.js?v=cbbef1bf";
 import {
   idOperation,
   messageErreur,
   rpc,
   sbFetch,
   statutSauvegarde
-} from "../supabase-client.js?v=b1e4da88";
-import { icone } from "../ui/icons.js?v=b1e4da88";
+} from "../supabase-client.js?v=cbbef1bf";
+import { icone } from "../ui/icons.js?v=cbbef1bf";
 
 /* ============================================================
    CYCLE DE LA JOURNÉE — ouverture, exécution, bilan, jour suivant
