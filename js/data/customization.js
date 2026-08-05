@@ -1,9 +1,9 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=19ec6c6b";
-import { Etat, depense } from "../game-state.js?v=19ec6c6b";
-import { majHeaderArgent } from "../navigation.js?v=19ec6c6b";
-import { niveauActuel } from "../progression.js?v=19ec6c6b";
-import { salles } from "../rooms.js?v=19ec6c6b";
-import { sbFetch } from "../supabase-client.js?v=19ec6c6b";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=d8ca144d";
+import { Etat, depense } from "../game-state.js?v=d8ca144d";
+import { majHeaderArgent } from "../navigation.js?v=d8ca144d";
+import { niveauActuel } from "../progression.js?v=d8ca144d";
+import { salles } from "../rooms.js?v=d8ca144d";
+import { sbFetch } from "../supabase-client.js?v=d8ca144d";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
@@ -62,7 +62,13 @@ const CATALOGUE_PERSO = {
       {id:"lampadaire", nom:"Lampadaire",          desc:"Lumière chaude sur le trottoir.", niveauRequis:6, cout:0},
       {id:"pot",        nom:"Pot de fleurs",       desc:"Bob l'arrose. Parfois.",          niveauRequis:6, cout:80},
       {id:"panneau",    nom:"Panneau sur trottoir",desc:"Le programme, écrit à la craie.", niveauRequis:6, cout:120},
-      {id:"guirlande",  nom:"Guirlande lumineuse", desc:"Suspendue au-dessus de l'entrée.",niveauRequis:6, cout:200}
+      {id:"guirlande",  nom:"Guirlande lumineuse", desc:"Suspendue au-dessus de l'entrée.",niveauRequis:6, cout:200},
+      {id:"neons",      nom:"Néons animés",        desc:"La façade s'anime la nuit. On la voit du bout de la rue.",
+       niveauRequis:17, cout:900,  cleDeblocage:"neons_facade"},
+      {id:"parvis",     nom:"Parvis aménagé",      desc:"Une esplanade pavée devant l'entrée, et une marquise.",
+       niveauRequis:28, cout:2400, cleDeblocage:"parvis"},
+      {id:"terrasse",   nom:"Terrasse sur le toit",desc:"Des chaises, un écran, et le ciel de Marseille l'été.",
+       niveauRequis:44, cout:6800, cleDeblocage:"terrasse"}
     ]
   },
   sieges: {

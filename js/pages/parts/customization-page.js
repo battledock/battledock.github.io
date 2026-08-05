@@ -5,11 +5,11 @@ import {
   appliquePersonnalisation,
   chargePersonnalisation,
   itemPerso
-} from "../../data/customization.js?v=19ec6c6b";
-import { Etat, fmtArgent } from "../../game-state.js?v=19ec6c6b";
-import { bobCompact } from "../../navigation.js?v=19ec6c6b";
-import { accomplitMission, estDebloque, recompenseParCle } from "../../progression.js?v=19ec6c6b";
-import { ICONES } from "../../ui/icons.js?v=19ec6c6b";
+} from "../../data/customization.js?v=d8ca144d";
+import { Etat, fmtArgent } from "../../game-state.js?v=d8ca144d";
+import { bobCompact } from "../../navigation.js?v=d8ca144d";
+import { accomplitMission, estDebloque, recompenseParCle } from "../../progression.js?v=d8ca144d";
+import { ICONES } from "../../ui/icons.js?v=d8ca144d";
 
 /* ============================================================
    PAGE PERSONNALISATION

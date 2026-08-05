@@ -1,11 +1,11 @@
 /* Point d'entrée de programmation.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=19ec6c6b";
-import { initAmbiance } from "../ambiance.js?v=19ec6c6b";
-import { initialiserJeu } from "../game-state.js?v=19ec6c6b";
-import { messageErreur } from "../supabase-client.js?v=19ec6c6b";
-import { initProgrammation } from "../screenings.js?v=19ec6c6b";
-import "../ui/genre-posters.js?v=19ec6c6b";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=d8ca144d";
+import { initAmbiance } from "../ambiance.js?v=d8ca144d";
+import { initialiserJeu } from "../game-state.js?v=d8ca144d";
+import { messageErreur } from "../supabase-client.js?v=d8ca144d";
+import { initProgrammation } from "../screenings.js?v=d8ca144d";
+import "../ui/genre-posters.js?v=d8ca144d";
 
 demarreChargement();
 filetChargement();
