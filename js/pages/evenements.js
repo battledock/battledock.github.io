@@ -1,11 +1,11 @@
 /* Point d'entrée de evenements.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=7ec6c189";
-import { initAmbiance } from "../ambiance.js?v=7ec6c189";
-import { initialiserJeu } from "../game-state.js?v=7ec6c189";
-import { messageErreur } from "../supabase-client.js?v=7ec6c189";
-import { initEvenements } from "./parts/events.js?v=7ec6c189";
-import { bobCompact } from "../navigation.js?v=7ec6c189";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=df10ae9b";
+import { initAmbiance } from "../ambiance.js?v=df10ae9b";
+import { initialiserJeu } from "../game-state.js?v=df10ae9b";
+import { messageErreur } from "../supabase-client.js?v=df10ae9b";
+import { initEvenements } from "./parts/events.js?v=df10ae9b";
+import { bobCompact } from "../navigation.js?v=df10ae9b";
 
 demarreChargement();
 filetChargement();

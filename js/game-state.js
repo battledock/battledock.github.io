@@ -1,19 +1,19 @@
 /* État courant du jeu et chargements officiels. */
 
-import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=7ec6c189";
-import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=7ec6c189";
-import { chargePersonnalisation } from "./data/customization.js?v=7ec6c189";
-import { compareHeures } from "./data/films.js?v=7ec6c189";
-import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=7ec6c189";
-import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=7ec6c189";
-import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=7ec6c189";
+import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=df10ae9b";
+import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=df10ae9b";
+import { chargePersonnalisation } from "./data/customization.js?v=df10ae9b";
+import { compareHeures } from "./data/films.js?v=df10ae9b";
+import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=df10ae9b";
+import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=df10ae9b";
+import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=df10ae9b";
 import {
   idOperation,
   renouvelleSession,
   rpc,
   sbFetch,
   sessionLocale
-} from "./supabase-client.js?v=7ec6c189";
+} from "./supabase-client.js?v=df10ae9b";
 
 /* ============================================================
    ÉTAT DU JEU — source de vérité unique côté client
@@ -125,6 +125,14 @@ async function chargePaliersStudio(){
 /* ------------------------------------------------------------
    LES CAMPAGNES D'AFFICHAGE
    ------------------------------------------------------------ */
+async function chargeSoirees(){
+  try{
+    if(!Etat.cinema || !Etat.cinema.id) return;
+    const r = await rpc("get_soirees", {p_cinema_id: Etat.cinema.id});
+    if(r && r.success === true) Etat.soirees = r.data;
+  }catch(e){ /* l'écran s'affichera sans */ }
+}
+
 async function chargeCampagnes(){
   try{
     if(!Etat.cinema || !Etat.cinema.id) return;
@@ -169,7 +177,8 @@ async function initialiserJeu({onglet = "jeu", cinemaRequis = true} = {}){
     chargeMissions(),
     chargeCatalogueJour(),
     chargePaliersStudio(),
-    chargeCampagnes()
+    chargeCampagnes(),
+    chargeSoirees()
   ].map(p => p.catch(()=>null)));
 
   await synchroniseDeblocages().catch(e=>console.warn("[Rex] deblocages", e));
@@ -364,6 +373,7 @@ export {
   chargePaliersStudio,
   chargeSallesEtat,
   chargeSeancesEtat,
+  chargeSoirees,
   depense,
   derniereSynchro,
   ecritCacheAffichage,

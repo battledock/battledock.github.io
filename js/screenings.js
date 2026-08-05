@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=7ec6c189";
-import { niveauEquipement } from "./data/upgrades.js?v=7ec6c189";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=7ec6c189";
-import { Etat, fmtArgent } from "./game-state.js?v=7ec6c189";
-import { bobCompact } from "./navigation.js?v=7ec6c189";
-import { accomplitMission, debloque } from "./progression.js?v=7ec6c189";
-import { toastSocial } from "./social.js?v=7ec6c189";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=7ec6c189";
-import { echappe, texteSur } from "./ui/emblems.js?v=7ec6c189";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=7ec6c189";
-import { icone } from "./ui/icons.js?v=7ec6c189";
+} from "./data/films.js?v=df10ae9b";
+import { niveauEquipement } from "./data/upgrades.js?v=df10ae9b";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=df10ae9b";
+import { Etat, fmtArgent } from "./game-state.js?v=df10ae9b";
+import { bobCompact } from "./navigation.js?v=df10ae9b";
+import { accomplitMission, debloque } from "./progression.js?v=df10ae9b";
+import { toastSocial } from "./social.js?v=df10ae9b";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=df10ae9b";
+import { echappe, texteSur } from "./ui/emblems.js?v=df10ae9b";
+import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=df10ae9b";
+import { icone } from "./ui/icons.js?v=df10ae9b";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES

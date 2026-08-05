@@ -1,8 +1,15 @@
-import { Etat, chargeCampagnes, fmtArgent, rafraichirEtat } from "./game-state.js?v=7ec6c189";
-import { toastSocial } from "./social.js?v=7ec6c189";
-import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=7ec6c189";
-import { echappe, texteSur } from "./ui/emblems.js?v=7ec6c189";
-import { icone } from "./ui/icons.js?v=7ec6c189";
+import { filmParId } from "./data/films.js?v=df10ae9b";
+import {
+  Etat,
+  chargeCampagnes,
+  chargeSoirees,
+  fmtArgent,
+  rafraichirEtat
+} from "./game-state.js?v=df10ae9b";
+import { toastSocial } from "./social.js?v=df10ae9b";
+import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=df10ae9b";
+import { echappe, texteSur } from "./ui/emblems.js?v=df10ae9b";
+import { icone } from "./ui/icons.js?v=df10ae9b";
 
 /* ============================================================
    LA PRÉPARATION DU MATIN
@@ -70,7 +77,15 @@ function rendBriefing(){
      Bob les annonce en tête : une dépense connue le matin est une
      contrainte, la même découverte au bilan est une punition. */
   const camp = Etat.campagnes && Etat.campagnes.en_cours;
+  const soir = Etat.soirees && Etat.soirees.choisie;
   const lignes = [
+    ...(soir ? [{
+      cle:"soiree", icone:"etoile",
+      texte: soir.nom + " ce soir",
+      detail: "+" + Math.round((Number(soir.bonus) - 1) * 100) + " % sur "
+              + (soir.genres || []).join(", ")
+              + " · −" + Math.round((1 - Number(soir.malus)) * 100) + " % sur le reste"
+    }] : []),
     ...(camp ? [{
       cle:"campagne", icone:"etoile",
       texte: camp.nom + " en cours",
@@ -104,6 +119,14 @@ function rendBriefing(){
           </li>`).join("")}
       </ul>
     </div>
+    ${(Etat.soirees && !Etat.soirees.choisie
+       && (Etat.soirees.themes || []).some(t=>t.accessible))
+      ? `<button class="btnQuartier" onclick="ouvreSoirees()">
+          ${icone("etoile")}
+          <span><b>Annoncer une soirée</b>
+            <small>Un genre à l'honneur — le reste passe au second plan</small></span>
+          <span class="bqChev">›</span></button>` : ""}
+
     ${(Etat.campagnes && !Etat.campagnes.en_cours
        && (Etat.campagnes.formules || []).some(f=>f.accessible))
       ? `<button class="btnQuartier" onclick="ouvreCampagnes()">
@@ -553,31 +576,184 @@ function compteChiffresCamp(){
   });
 }
 
+
+/* ============================================================
+   LES SOIRÉES À THÈME
+
+   Annoncer un genre, c'est renoncer aux autres : le thème pousse
+   les séances qui lui correspondent et freine le reste. C'est le
+   premier choix qui récompense la cohérence d'un programme entier
+   plutôt que la qualité de chaque séance prise à part.
+   ============================================================ */
+let soireeChoisie = null;
+
+function ouvreSoirees(){
+  if(!Etat.soirees){ montreEchec("Les soirées ne sont pas disponibles."); return; }
+  const v = document.createElement("div");
+  v.className = "voileCamp"; v.id = "voileSoiree";
+  v.innerHTML = `<div class="feuilleCamp" id="feuilleSoiree"></div>`;
+  document.body.appendChild(v);
+  v.addEventListener("click", e=>{ if(e.target === v) fermeSoirees(); });
+  rendSoirees();
+}
+
+function fermeSoirees(){
+  const v = document.getElementById("voileSoiree");
+  if(v) v.remove();
+}
+
+function rendSoirees(){
+  const el = document.getElementById("feuilleSoiree");
+  if(!el) return;
+  const d = Etat.soirees || {};
+  const themes = d.themes || [];
+
+  if(d.choisie){
+    el.innerHTML = `
+      <div class="poigneeCamp"></div>
+      <h3>Ce soir au Rex</h3>
+      <div class="sousCamp">Le thème est annoncé</div>
+      <div class="enCoursCamp">
+        <div class="ecNomCamp">${echappe(d.choisie.nom)}</div>
+        <div class="ecEffetCamp">+${Math.round((Number(d.choisie.bonus)-1)*100)} % sur
+          ${(d.choisie.genres || []).join(", ")}</div>
+        <div class="ecAffichesCamp">${[1,2,3,4,5].map(i=>`<i class="a${i}"></i>`).join("")}</div>
+        <div class="ecJoursCamp">−${Math.round((1-Number(d.choisie.malus))*100)} % sur les autres genres</div>
+      </div>
+      <div class="bobCamp" style="margin-top:14px"><span class="bobTeteCamp">${teteBob()}</span>
+        <p>C'est annoncé, patron. Maintenant il faut que le programme suive —
+           sinon les gens vont trouver le compte pas très rond.</p></div>
+      <button class="lienCamp" onclick="fermeSoirees()">Retour</button>`;
+    return;
+  }
+
+  const dispo = themes.filter(t=>t.accessible);
+  if(!soireeChoisie && dispo.length) soireeChoisie = dispo[0].cle;
+  const t = themes.find(x=>x.cle === soireeChoisie) || dispo[0];
+
+  el.innerHTML = `
+    <div class="poigneeCamp"></div>
+    <h3>Annoncer une soirée</h3>
+    <div class="sousCamp">Un genre à l'honneur</div>
+    ${t ? `<div class="bobCamp"><span class="bobTeteCamp">${teteBob()}</span>
+      <p>${echappe(t.description || "")}</p></div>` : ""}
+    ${themes.map(x=>carteSoiree(x, x.cle === (t && t.cle))).join("")}
+    ${t ? accordSoiree(t) : ""}
+    <button class="btnCamp" ${t && Number(Etat.cinema.argent) >= Number(t.cout)
+        ? `onclick="lanceSoiree('${t.cle}')"` : "disabled"}>
+      ${!t ? "Aucun thème accessible"
+        : Number(Etat.cinema.argent) >= Number(t.cout)
+          ? "Annoncer · " + fmtArgent(t.cout)
+          : "Il manque " + fmtArgent(Number(t.cout) - Number(Etat.cinema.argent))}
+    </button>
+    <button class="lienCamp" onclick="fermeSoirees()">Plus tard</button>`;
+}
+
+function carteSoiree(t, choisie){
+  const bloque = !t.accessible;
+  return `<button class="formuleCamp soiree ${choisie?"choisie":""} ${bloque?"bloquee":""}"
+      ${bloque ? "" : `onclick="choisitSoiree('${t.cle}')"`}>
+    <span class="fcTxt">
+      <b>${echappe(t.nom)}</b>
+      <span class="fcDesc">${echappe(t.description || "")}</span>
+      <span class="fcChiffres">
+        <span class="fcChip prix">${fmtArgent(t.cout)}</span>
+        <span class="fcChip gain">+${t.bonus} % · ${(t.genres||[]).join(", ")}</span>
+        <span class="fcChip malus">−${t.malus} % sur le reste</span>
+      </span>
+    </span>
+    ${bloque ? `<span class="fcVerrou">Niveau ${t.niveau_requis}</span>` : ""}
+  </button>`;
+}
+
+/* ce que le programme du jour donnerait avec ce thème */
+function accordSoiree(t){
+  const seances = Etat.seancesJour || [];
+  if(!seances.length){
+    return `<div class="calculCamp"><div class="calNoteCamp">
+      Tu n'as encore rien programmé. Annonce le thème d'abord si tu veux,
+      mais compose ensuite autour — sinon il te coûtera plus qu'il ne rapporte.
+    </div></div>`;
+  }
+  const genres = t.genres || [];
+  const dans = seances.filter(s=>{
+    const f = typeof filmParId === "function" ? filmParId(s.film_id) : null;
+    return f && genres.includes(f.genre);
+  }).length;
+  const hors = seances.length - dans;
+  const accorde = dans === seances.length;
+
+  return `<div class="calculCamp">
+    <div class="calTitreCamp">Ton programme du jour</div>
+    <div class="calLigneCamp"><span>Séances dans le thème</span><b>${dans}</b></div>
+    <div class="calLigneCamp"><span>Séances hors thème</span>
+      <b class="${hors ? "perte" : ""}">${hors}</b></div>
+    <div class="calLigneCamp total"><span>${accorde ? "Tout est accordé"
+      : hors === seances.length ? "Rien ne correspond" : "Programme partagé"}</span>
+      <b class="${accorde ? "" : "perte"}">${accorde ? "+" + t.bonus + " %"
+        : hors === seances.length ? "−" + t.malus + " %" : "mitigé"}</b></div>
+    <div class="calNoteCamp">${accorde
+      ? "Le quartier vient pour ça. C'est le moment de monter un peu les prix."
+      : "Chaque séance hors thème perd " + t.malus + " % de public. Change de film, ou de thème."}</div>
+  </div>`;
+}
+
+function choisitSoiree(cle){ soireeChoisie = cle; rendSoirees(); }
+
+async function lanceSoiree(cle){
+  const b = document.querySelector(".btnCamp");
+  if(b){ b.disabled = true; b.textContent = "On annonce…"; }
+  const appel = await appelSecurise(
+    () => rpc("choisir_soiree", {
+      p_cinema_id: Etat.cinema.id, p_cle: cle, p_operation_id: idOperation()
+    }), {rechargeApresErreur: false});
+  if(!appel.ok){ montreEchec(appel.message); fermeSoirees(); return; }
+  const r = appel.data;
+  if(!r || r.success !== true){
+    montreEchec(r && r.message ? r.message : "Le thème n'a pas pu être annoncé.");
+    if(b) b.disabled = false;
+    return;
+  }
+  await rafraichirEtat();
+  if(typeof chargeSoirees === "function") await chargeSoirees();
+  rendSoirees();
+  await chargePreparation();
+  rendMatin();
+}
+
 /* ---- exports ---- */
 export {
   SCENE,
+  accordSoiree,
   campagneChoisie,
   campagneEnCours,
   carteFormule,
+  carteSoiree,
   chargePreparation,
   choisitCampagne,
   choisitOption,
+  choisitSoiree,
   compteChiffresCamp,
   estimationCampagne,
   etape,
   etiquetteCategorie,
   fermeCampagnes,
+  fermeSoirees,
   ignoreDossier,
   initPreparation,
   lanceCampagne,
+  lanceSoiree,
   majFilAriane,
   montreEchec,
   ouvreCampagnes,
+  ouvreSoirees,
   prep,
   rendBriefing,
   rendCampagnes,
   rendDossier,
   rendMatin,
+  rendSoirees,
+  soireeChoisie,
   teteBob,
   vaA
 };
@@ -590,8 +766,12 @@ Object.assign(window, {
   chargePreparation,
   choisitCampagne,
   choisitOption,
+  choisitSoiree,
   fermeCampagnes,
+  fermeSoirees,
   lanceCampagne,
+  lanceSoiree,
   ouvreCampagnes,
+  ouvreSoirees,
   vaA
 });
