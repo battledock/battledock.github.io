@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=df10ae9b";
-import { chargePersonnalisation } from "./data/customization.js?v=df10ae9b";
-import { AMELIORATIONS } from "./data/upgrades.js?v=df10ae9b";
-import { Etat } from "./game-state.js?v=df10ae9b";
-import { rpc, sbFetch } from "./supabase-client.js?v=df10ae9b";
-import { celebreNiveau } from "./ui/celebration.js?v=df10ae9b";
-import { echappe } from "./ui/emblems.js?v=df10ae9b";
-import { icone } from "./ui/icons.js?v=df10ae9b";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=b3263716";
+import { chargePersonnalisation } from "./data/customization.js?v=b3263716";
+import { AMELIORATIONS } from "./data/upgrades.js?v=b3263716";
+import { Etat } from "./game-state.js?v=b3263716";
+import { rpc, sbFetch } from "./supabase-client.js?v=b3263716";
+import { celebreNiveau } from "./ui/celebration.js?v=b3263716";
+import { echappe } from "./ui/emblems.js?v=b3263716";
+import { icone } from "./ui/icons.js?v=b3263716";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA

@@ -1,15 +1,16 @@
-import { filmParId } from "./data/films.js?v=df10ae9b";
+import { filmParId } from "./data/films.js?v=b3263716";
 import {
   Etat,
   chargeCampagnes,
+  chargePersonnel,
   chargeSoirees,
   fmtArgent,
   rafraichirEtat
-} from "./game-state.js?v=df10ae9b";
-import { toastSocial } from "./social.js?v=df10ae9b";
-import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=df10ae9b";
-import { echappe, texteSur } from "./ui/emblems.js?v=df10ae9b";
-import { icone } from "./ui/icons.js?v=df10ae9b";
+} from "./game-state.js?v=b3263716";
+import { toastSocial } from "./social.js?v=b3263716";
+import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=b3263716";
+import { echappe, texteSur } from "./ui/emblems.js?v=b3263716";
+import { icone } from "./ui/icons.js?v=b3263716";
 
 /* ============================================================
    LA PRÉPARATION DU MATIN
@@ -119,6 +120,15 @@ function rendBriefing(){
           </li>`).join("")}
       </ul>
     </div>
+    ${(Etat.personnel && (Etat.personnel.postes || []).some(x=>x.accessible))
+      ? `<button class="btnQuartier" onclick="ouvrePersonnel()">
+          ${icone("spectateurs")}
+          <span><b>L'équipe</b>
+            <small>${(Etat.personnel.equipe && Number(Etat.personnel.equipe.effectif)) || 0}
+              personne(s) · ${fmtArgent((Etat.personnel.equipe
+                && Etat.personnel.equipe.salaires) || 0)} par jour</small></span>
+          <span class="bqChev">›</span></button>` : ""}
+
     ${(Etat.soirees && !Etat.soirees.choisie
        && (Etat.soirees.themes || []).some(t=>t.accessible))
       ? `<button class="btnQuartier" onclick="ouvreSoirees()">
@@ -721,23 +731,132 @@ async function lanceSoiree(cle){
   rendMatin();
 }
 
+
+/* ============================================================
+   L'ÉQUIPE
+
+   Les salaires tombaient déjà chaque jour sans que personne ne soit
+   nommé. Embaucher donne un visage à cette dépense et un effet
+   qu'on choisit : moins d'incidents, plus de satisfaction, et des
+   gens qui reviennent.
+   ============================================================ */
+function ouvrePersonnel(){
+  if(!Etat.personnel){ montreEchec("L'équipe n'est pas disponible."); return; }
+  const v = document.createElement("div");
+  v.className = "voileCamp"; v.id = "voilePerso";
+  v.innerHTML = `<div class="feuilleCamp" id="feuillePerso"></div>`;
+  document.body.appendChild(v);
+  v.addEventListener("click", e=>{ if(e.target === v) fermePersonnel(); });
+  rendPersonnel();
+}
+
+function fermePersonnel(){
+  const v = document.getElementById("voilePerso");
+  if(v) v.remove();
+}
+
+function rendPersonnel(){
+  const el = document.getElementById("feuillePerso");
+  if(!el) return;
+  const d = Etat.personnel || {};
+  const eq = d.equipe || {};
+  const postes = d.postes || [];
+  const embauches = postes.filter(p=>p.embauche);
+
+  el.innerHTML = `
+    <div class="poigneeCamp"></div>
+    <h3>L'équipe</h3>
+    <div class="sousCamp">${embauches.length
+      ? embauches.length + " personne" + (embauches.length > 1 ? "s" : "")
+        + " · " + fmtArgent(eq.salaires || 0) + " par jour"
+      : "Bob tient tout, tout seul"}</div>
+
+    ${embauches.length ? `<div class="calculCamp" style="margin-top:14px">
+      <div class="calTitreCamp">Ce qu'elle apporte</div>
+      <div class="calLigneCamp"><span>Satisfaction à chaque séance</span>
+        <b>+${eq.satisfaction || 0}</b></div>
+      <div class="calLigneCamp"><span>Risque d'incident</span>
+        <b>−${Math.round((Number(eq.reduit_incident) || 0) * 100)} %</b></div>
+      <div class="calLigneCamp"><span>Des gens qui reviennent</span>
+        <b>+${Math.round(((Number(eq.demande) || 1) - 1) * 100)} %</b></div>
+      <div class="calLigneCamp total"><span>Ce qu'elle coûte, tous les jours</span>
+        <b class="perte">− ${eq.salaires || 0} €</b></div>
+    </div>` : ""}
+
+    ${postes.map(cartePoste).join("")}
+    <button class="lienCamp" onclick="fermePersonnel()">Retour</button>`;
+  requestAnimationFrame(compteChiffresCamp);
+}
+
+function cartePoste(p){
+  const bloque = !p.accessible;
+  return `<button class="formuleCamp soiree ${p.embauche ? "choisie" : ""} ${bloque ? "bloquee" : ""}"
+      ${bloque ? "" : `onclick="${p.embauche ? `congedie('${p.cle}')` : `embauche('${p.cle}')`}"`}>
+    <span class="fcTxt">
+      <b>${echappe(p.nom)}${p.embauche ? " — en poste" : ""}</b>
+      <span class="fcDesc">${echappe(p.description || "")}</span>
+      <span class="fcChiffres">
+        <span class="fcChip prix">${p.salaire_jour} € / jour</span>
+        ${p.satisfaction ? `<span class="fcChip gain">+${p.satisfaction} satisfaction</span>` : ""}
+        ${p.reduit_incident ? `<span class="fcChip gain">−${p.reduit_incident} % d'incidents</span>` : ""}
+        ${p.travaux ? `<span class="fcChip gain">travaux −${p.travaux} %</span>` : ""}
+      </span>
+    </span>
+    ${bloque ? `<span class="fcVerrou">Niveau ${p.niveau_requis}</span>`
+             : p.embauche ? `<span class="fcVerrou">Congédier</span>` : ""}
+  </button>`;
+}
+
+async function embauche(cle){
+  const appel = await appelSecurise(
+    () => rpc("embaucher", {p_cinema_id: Etat.cinema.id, p_cle: cle,
+                            p_operation_id: idOperation()}),
+    {rechargeApresErreur: false});
+  await apresPersonnel(appel);
+}
+
+async function congedie(cle){
+  const appel = await appelSecurise(
+    () => rpc("congedier", {p_cinema_id: Etat.cinema.id, p_cle: cle}),
+    {rechargeApresErreur: false});
+  await apresPersonnel(appel);
+}
+
+async function apresPersonnel(appel){
+  if(!appel.ok){ montreEchec(appel.message); return; }
+  const r = appel.data;
+  if(!r || r.success !== true){
+    montreEchec(r && r.message ? r.message : "Impossible pour l'instant."); return;
+  }
+  await rafraichirEtat();
+  if(typeof chargePersonnel === "function") await chargePersonnel();
+  rendPersonnel();
+  await chargePreparation();
+  rendMatin();
+}
+
 /* ---- exports ---- */
 export {
   SCENE,
   accordSoiree,
+  apresPersonnel,
   campagneChoisie,
   campagneEnCours,
   carteFormule,
+  cartePoste,
   carteSoiree,
   chargePreparation,
   choisitCampagne,
   choisitOption,
   choisitSoiree,
   compteChiffresCamp,
+  congedie,
+  embauche,
   estimationCampagne,
   etape,
   etiquetteCategorie,
   fermeCampagnes,
+  fermePersonnel,
   fermeSoirees,
   ignoreDossier,
   initPreparation,
@@ -746,12 +865,14 @@ export {
   majFilAriane,
   montreEchec,
   ouvreCampagnes,
+  ouvrePersonnel,
   ouvreSoirees,
   prep,
   rendBriefing,
   rendCampagnes,
   rendDossier,
   rendMatin,
+  rendPersonnel,
   rendSoirees,
   soireeChoisie,
   teteBob,
@@ -767,11 +888,15 @@ Object.assign(window, {
   choisitCampagne,
   choisitOption,
   choisitSoiree,
+  congedie,
+  embauche,
   fermeCampagnes,
+  fermePersonnel,
   fermeSoirees,
   lanceCampagne,
   lanceSoiree,
   ouvreCampagnes,
+  ouvrePersonnel,
   ouvreSoirees,
   vaA
 });

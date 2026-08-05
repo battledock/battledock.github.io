@@ -1,9 +1,9 @@
-import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js?v=df10ae9b";
-import { bobBilan } from "../../engine/simulation.js?v=df10ae9b";
-import { Etat, fmtArgent } from "../../game-state.js?v=df10ae9b";
-import { appelSecurise, rpc, sbFetch } from "../../supabase-client.js?v=df10ae9b";
-import { echappe } from "../../ui/emblems.js?v=df10ae9b";
-import { icone } from "../../ui/icons.js?v=df10ae9b";
+import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js?v=b3263716";
+import { bobBilan } from "../../engine/simulation.js?v=b3263716";
+import { Etat, fmtArgent } from "../../game-state.js?v=b3263716";
+import { appelSecurise, rpc, sbFetch } from "../../supabase-client.js?v=b3263716";
+import { echappe } from "../../ui/emblems.js?v=b3263716";
+import { icone } from "../../ui/icons.js?v=b3263716";
 
 /* ============================================================
    BILAN DE FIN DE JOURNÉE
