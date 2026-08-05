@@ -1,9 +1,9 @@
-import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js?v=b3263716";
-import { bobBilan } from "../../engine/simulation.js?v=b3263716";
-import { Etat, fmtArgent } from "../../game-state.js?v=b3263716";
-import { appelSecurise, rpc, sbFetch } from "../../supabase-client.js?v=b3263716";
-import { echappe } from "../../ui/emblems.js?v=b3263716";
-import { icone } from "../../ui/icons.js?v=b3263716";
+import { chargeStats, passeAuJourSuivant, xpDeLaJournee } from "../../engine/day.js?v=19ec6c6b";
+import { bobBilan } from "../../engine/simulation.js?v=19ec6c6b";
+import { Etat, fmtArgent } from "../../game-state.js?v=19ec6c6b";
+import { appelSecurise, rpc, sbFetch } from "../../supabase-client.js?v=19ec6c6b";
+import { echappe } from "../../ui/emblems.js?v=19ec6c6b";
+import { icone } from "../../ui/icons.js?v=19ec6c6b";
 
 /* ============================================================
    BILAN DE FIN DE JOURNÉE
@@ -28,6 +28,55 @@ async function chargeSituationBilan(jour){
    ignorée le dit aussi : le joueur doit voir ce qu'il a laissé
    passer, sinon ignorer ne coûte rien.
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   CE QUE LA JOURNÉE DOIT AUX DÉCISIONS
+
+   Le joueur paie un loyer, des salaires, parfois une campagne ou
+   une soirée. Sans ce bloc, il voit un bénéfice net sans savoir
+   d'où vient la différence — et il cesse de décider.
+   ------------------------------------------------------------ */
+function blocLeviers(b){
+  const l = b && b.leviers;
+  if(!l) return "";
+  const out = [];
+
+  if(l.charges && Number(l.charges.total) > 0){
+    out.push(`<div class="ligneRecit">${icone("batiment")}
+      <span>Charges du jour : <b class="negatif">−${fmtArgent(l.charges.total)}</b>
+        <small>${echappe(l.charges.detail || "")}</small></span></div>`);
+  }
+
+  if(l.campagne){
+    const c = l.campagne;
+    out.push(`<div class="ligneRecit">${icone("journal")}
+      <span>${echappe(c.nom)} — jour ${c.jour_sur} sur ${c.duree} :
+        <b class="positif">+${fmtArgent(c.apport)}</b>
+        <small>de recette attribuable au renfort de fréquentation</small></span></div>`);
+  }
+
+  if(l.soiree){
+    const s = l.soiree;
+    const tout = Number(s.accordees) === Number(s.total);
+    out.push(`<div class="ligneRecit">${icone("etoile")}
+      <span>${echappe(s.nom)} :
+        <b class="${tout ? "positif" : "negatif"}">${s.accordees} séance(s) sur ${s.total}
+        dans le thème</b>
+        <small>${tout ? "tout était accordé — le public a suivi"
+                      : "les séances hors thème ont perdu du monde"}</small></span></div>`);
+  }
+
+  if(l.equipe){
+    const e = l.equipe;
+    out.push(`<div class="ligneRecit">${icone("spectateurs")}
+      <span>L'équipe : <b>+${e.satisfaction} de satisfaction</b>
+        <small>${e.effectif} personne(s) · ${fmtArgent(e.salaires)} par jour ·
+          risque d'incident réduit de ${Math.round(Number(e.reduit_incident) * 100)} %</small></span></div>`);
+  }
+
+  return out.length ? `<div class="blocLeviers">
+    <div class="titreLeviers">Ce que tu as décidé</div>${out.join("")}</div>` : "";
+}
+
 function blocSituation(){
   const s = situationDuJour;
   if(!s) return "";
@@ -152,6 +201,7 @@ function rendBilan(b, dejaValide){
       <div class="ligneRecit">${icone("piece")}<span>Bénéfice net : <b class="${b.benefice_net<0?'negatif':'positif'}">${b.benefice_net<0?"−":"+"}${fmtArgent(Math.abs(b.benefice_net))}</b></span></div>
       <div class="ligneRecit">${icone("etoile")}<span>Satisfaction moyenne : <b>${b.satisfaction_moyenne} %</b> <small>${mentionSatisfaction(b.satisfaction_moyenne)}</small></span></div>
       <div class="ligneRecit">${icone("journal")}<span>Réputation : <b class="${b.variation_reputation<0?'negatif':'positif'}">${b.variation_reputation>0?"+":""}${b.variation_reputation}</b></span></div>
+      ${blocLeviers(b)}
       ${dejaValide ? "" : `<div class="ligneRecit">${icone("camera")}<span>XP gagnée : <b class="positif">+${xpAttribuee}</b></span></div>`}
     </section>
 
@@ -207,6 +257,7 @@ async function validerBilan(){
 /* ---- exports ---- */
 export {
   bilanCourant,
+  blocLeviers,
   blocSituation,
   chargeSituationBilan,
   initBilan,

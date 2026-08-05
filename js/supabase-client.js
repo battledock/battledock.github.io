@@ -1,8 +1,8 @@
 /* Accès Supabase : requêtes, RPC, session, erreurs typées. */
 
 
-import { Etat, rafraichirEtat } from "./game-state.js?v=b3263716";
-import { deconnexion } from "./auth.js?v=b3263716";
+import { Etat, rafraichirEtat } from "./game-state.js?v=19ec6c6b";
+import { deconnexion } from "./auth.js?v=19ec6c6b";
 /* ============================================================
    CLIENT SUPABASE — point d'entrée réseau unique
    Toutes les requêtes du jeu passent par ici : renouvellement de
