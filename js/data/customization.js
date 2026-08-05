@@ -1,9 +1,9 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=d8ca144d";
-import { Etat, depense } from "../game-state.js?v=d8ca144d";
-import { majHeaderArgent } from "../navigation.js?v=d8ca144d";
-import { niveauActuel } from "../progression.js?v=d8ca144d";
-import { salles } from "../rooms.js?v=d8ca144d";
-import { sbFetch } from "../supabase-client.js?v=d8ca144d";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=22580e0f";
+import { Etat, depense } from "../game-state.js?v=22580e0f";
+import { majHeaderArgent } from "../navigation.js?v=22580e0f";
+import { niveauActuel } from "../progression.js?v=22580e0f";
+import { salles } from "../rooms.js?v=22580e0f";
+import { sbFetch } from "../supabase-client.js?v=22580e0f";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
@@ -32,11 +32,22 @@ const CATALOGUE_PERSO = {
   hall: {
     nom:"Hall", ic:"maison", cleDeblocage:"deco_hall", champ:"hall",  emplacements:true,
     zones:[
+      {id:"plafond", nom:"Plafond et fond de hall", objets:[
+        {id:"aucun",  nom:"Rien de particulier", cout:0,    niveauRequis:1},
+        {id:"bar",    nom:"Bar à l'ancienne",    cout:1800, niveauRequis:24,
+         desc:"Les gens arrivent plus tôt et repartent plus tard.", cleDeblocage:"bar_hall"},
+        {id:"lustre", nom:"Le grand lustre restauré", cout:3200, niveauRequis:34,
+         desc:"La pièce d'origine, retrouvée au grenier.", cleDeblocage:"lustre"}]},
+
       {id:"mur",      nom:"Mur principal", objets:[
         {id:"aucun", nom:"Mur nu", cout:0, niveauRequis:1},
         {id:"cadres", nom:"Cadres anciens", cout:0,  niveauRequis:3},
         {id:"affiches", nom:"Affiches d'époque", cout:120, niveauRequis:3},
-        {id:"fresque", nom:"Fresque peinte", cout:450, niveauRequis:7}]},
+        {id:"fresque", nom:"Fresque peinte", cout:450, niveauRequis:7,
+         desc:"Une fresque commandée à un peintre du quartier."},
+        {id:"fresques_origine", nom:"Fresques d'origine", cout:4200, niveauRequis:39,
+         desc:"Les peintures murales de 1932, dégagées sous six couches de badigeon.",
+         cleDeblocage:"fresques"}]},
       {id:"gauche",   nom:"Coin gauche", objets:[
         {id:"aucun", nom:"Rien", cout:0, niveauRequis:1},
         {id:"plante", nom:"Grande plante", cout:0, niveauRequis:3},

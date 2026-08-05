@@ -1,6 +1,6 @@
-import { Etat } from "../game-state.js?v=d8ca144d";
-import { debloque, niveauActuel } from "../progression.js?v=d8ca144d";
-import { salles } from "../rooms.js?v=d8ca144d";
+import { Etat } from "../game-state.js?v=22580e0f";
+import { debloque, niveauActuel } from "../progression.js?v=22580e0f";
+import { salles } from "../rooms.js?v=22580e0f";
 
 /* ============================================================
    CATALOGUE DE FILMS — données fictives, titres originaux

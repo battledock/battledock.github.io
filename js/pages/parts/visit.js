@@ -1,11 +1,11 @@
-import { rendreFacadePublique } from "../../cinema.js?v=d8ca144d";
-import { rendreSallePublique } from "../../data/upgrades.js?v=d8ca144d";
-import { salles } from "../../rooms.js?v=d8ca144d";
-import { chargeRelation, conteneurSocialActuel, rendActionsSociales } from "../../social.js?v=d8ca144d";
-import { rpc } from "../../supabase-client.js?v=d8ca144d";
-import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=d8ca144d";
-import { rendreHallPublic } from "../../ui/hall.js?v=d8ca144d";
-import { icone } from "../../ui/icons.js?v=d8ca144d";
+import { rendreFacadePublique } from "../../cinema.js?v=22580e0f";
+import { rendreSallePublique } from "../../data/upgrades.js?v=22580e0f";
+import { salles } from "../../rooms.js?v=22580e0f";
+import { chargeRelation, conteneurSocialActuel, rendActionsSociales } from "../../social.js?v=22580e0f";
+import { rpc } from "../../supabase-client.js?v=22580e0f";
+import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=22580e0f";
+import { rendreHallPublic } from "../../ui/hall.js?v=22580e0f";
+import { icone } from "../../ui/icons.js?v=22580e0f";
 
 /* ============================================================
    VISITE IMMERSIVE — lecture seule, une seule requête serveur

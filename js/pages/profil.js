@@ -1,10 +1,10 @@
 /* Point d'entrée de profil.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=d8ca144d";
-import { initAmbiance } from "../ambiance.js?v=d8ca144d";
-import { initialiserJeu } from "../game-state.js?v=d8ca144d";
-import { messageErreur } from "../supabase-client.js?v=d8ca144d";
-import { initProfil } from "./parts/profile.js?v=d8ca144d";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=22580e0f";
+import { initAmbiance } from "../ambiance.js?v=22580e0f";
+import { initialiserJeu } from "../game-state.js?v=22580e0f";
+import { messageErreur } from "../supabase-client.js?v=22580e0f";
+import { initProfil } from "./parts/profile.js?v=22580e0f";
 
 demarreChargement();
 filetChargement();
