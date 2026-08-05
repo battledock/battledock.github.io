@@ -1,8 +1,8 @@
 /* Accès Supabase : requêtes, RPC, session, erreurs typées. */
 
 
-import { Etat, rafraichirEtat } from "./game-state.js?v=9c211464";
-import { deconnexion } from "./auth.js?v=9c211464";
+import { Etat, rafraichirEtat } from "./game-state.js?v=1e9eaaa6";
+import { deconnexion } from "./auth.js?v=1e9eaaa6";
 /* ============================================================
    CLIENT SUPABASE — point d'entrée réseau unique
    Toutes les requêtes du jeu passent par ici : renouvellement de
@@ -79,6 +79,77 @@ function messageErreur(e){
   if(tech) console.warn("[Séance] erreur serveur :", d);
   return tech ? base + " (" + tech + ")" : base;
 }
+
+/* ------------------------------------------------------------
+   VIDER LE CACHE ET REPARTIR PROPRE
+
+   Les fichiers portent un tampon de version, ce qui suffit dans
+   presque tous les cas. Reste le cas où c'est la PAGE elle-même
+   qui est en cache : elle pointe alors vers d'anciens tampons, et
+   le jeu tourne avec un mélange d'ancien et de neuf.
+
+   On ne peut pas forcer un navigateur à vider son cache depuis du
+   JavaScript. Ce qu'on peut faire :
+     · supprimer les caches applicatifs et les service workers ;
+     · recharger la page avec une adresse jamais vue, ce qui oblige
+       à la retélécharger, et avec elle les bons tampons.
+
+   La session n'est pas touchée : le joueur reste connecté.
+   ------------------------------------------------------------ */
+async function videLeCache(){
+  try{
+    if(window.caches && caches.keys){
+      const noms = await caches.keys();
+      await Promise.all(noms.map(n => caches.delete(n)));
+    }
+  }catch(e){}
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+      const rs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(rs.map(r => r.unregister()));
+    }
+  }catch(e){}
+
+  /* une adresse jamais vue : le navigateur ne peut pas la servir
+     depuis son cache, et la page fraîche porte les bons tampons */
+  const base = location.pathname;
+  location.replace(base + "?frais=" + Date.now());
+}
+
+/* Le bouton de secours, proposé quand quelque chose coince. */
+function proposeVidageCache(raison){
+  if(document.getElementById("secoursCache")) return;
+  const d = document.createElement("div");
+  d.id = "secoursCache";
+  d.className = "secoursCache";
+  d.innerHTML = `
+    <div class="scTexte"><b>Le jeu semble bloqué</b>
+      <span>${raison || "Une version ancienne est peut-être en mémoire."}</span></div>
+    <button class="scBtn" id="scBtn">Vider le cache et recharger</button>
+    <button class="scFermer" id="scFermer">Plus tard</button>`;
+  document.body.appendChild(d);
+  document.getElementById("scBtn").onclick = () => {
+    document.getElementById("scBtn").textContent = "On nettoie…";
+    videLeCache();
+  };
+  document.getElementById("scFermer").onclick = () => d.remove();
+}
+
+/* Deux échecs de suite sur le même écran : on le propose de nous-mêmes. */
+let echecsDeSuite = 0;
+function compteEchec(){
+  echecsDeSuite += 1;
+  if(echecsDeSuite >= 2) proposeVidageCache();
+}
+function oublieEchecs(){ echecsDeSuite = 0; }
+
+/* Une erreur de chargement de module — le symptôme exact d'un fichier
+   ancien resté en cache — déclenche l'offre immédiatement. */
+window.addEventListener("error", e => {
+  const m = String(e?.message || "");
+  if(/Can't find variable|is not defined|Failed to fetch dynamically|error loading/i.test(m))
+    proposeVidageCache("Un fichier ancien est peut-être resté en mémoire.");
+}, true);
 
 /* ---------- statut de sauvegarde discret ---------- */
 function statutSauvegarde(etat){
@@ -183,13 +254,17 @@ function idOperation(){
 async function appelSecurise(operation, options = {}){
   const {surErreur, rechargeApresErreur = true} = options;
   try{
-    return {ok:true, data: await operation()};
+    const r = {ok:true, data: await operation()};
+    oublieEchecs();
+    return r;
   }catch(e){
     const msg = messageErreur(e);
     if(rechargeApresErreur && typeof rafraichirEtat === "function"){
       try{ await rafraichirEtat(); }catch(_){}
     }
     if(typeof surErreur === "function") surErreur(msg, e);
+    /* deux échecs de suite : on propose de repartir propre */
+    compteEchec();
     return {ok:false, code: e.code || "SERVEUR", message: msg};
   }
 }
@@ -201,14 +276,28 @@ export {
   SB_KEY,
   SB_URL,
   appelSecurise,
+  compteEchec,
+  echecsDeSuite,
   ecritSession,
   idOperation,
   messageErreur,
+  oublieEchecs,
+  proposeVidageCache,
   renouvelleSession,
   renouvellementEnCours,
   requete,
   rpc,
   sbFetch,
   sessionLocale,
-  statutSauvegarde
+  statutSauvegarde,
+  videLeCache
 };
+
+/* ---- gestionnaires en attribut ---- */
+/* Ces fonctions sont appelées depuis des attributs onclick écrits
+   dans le HTML généré. Un module ES n'expose rien globalement :
+   on les rend accessibles explicitement. */
+Object.assign(window, {
+  proposeVidageCache,
+  videLeCache
+});
