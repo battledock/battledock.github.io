@@ -1,7 +1,7 @@
-import { ANIMATIONS_LEGERES } from "../ambiance.js?v=22580e0f";
-import { phraseBob, sonNiveau } from "../progression.js?v=22580e0f";
-import { echappe, texteSur } from "./emblems.js?v=22580e0f";
-import { icone } from "./icons.js?v=22580e0f";
+import { ANIMATIONS_LEGERES } from "../ambiance.js?v=92b49fe3";
+import { phraseBob, sonNiveau } from "../progression.js?v=92b49fe3";
+import { echappe, texteSur } from "./emblems.js?v=92b49fe3";
+import { icone } from "./icons.js?v=92b49fe3";
 
 /* ============================================================
    CÉLÉBRATION — la récompense qu'on regarde, pas qu'on lit.

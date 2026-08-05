@@ -1,20 +1,20 @@
 /* Le studio : bureau, assistant de production, filmothèque. */
 
-import { afficheXpServeur } from "./rooms.js?v=22580e0f";
-import { brancheBureau, bureauStudio } from "./ui/desk.js?v=22580e0f";
-import { chargeCinema } from "./game-state.js?v=22580e0f";
-import { echappe } from "./ui/emblems.js?v=22580e0f";
-import { idOperation } from "./api.js?v=22580e0f";
-import { majHeaderArgent } from "./navigation.js?v=22580e0f";
-import { messageErreur } from "./supabase-client.js?v=22580e0f";
-import { Etat, fmtArgent } from "./game-state.js?v=22580e0f";
-import { bobCompact } from "./navigation.js?v=22580e0f";
-import { niveauActuel } from "./progression.js?v=22580e0f";
-import { toastSocial } from "./social.js?v=22580e0f";
-import { appelSecurise, rpc } from "./supabase-client.js?v=22580e0f";
-import { texteSur } from "./ui/emblems.js?v=22580e0f";
-import { icone } from "./ui/icons.js?v=22580e0f";
-import { afficheFilmSVG, propositionsAffiche } from "./ui/poster.js?v=22580e0f";
+import { afficheXpServeur } from "./rooms.js?v=92b49fe3";
+import { brancheBureau, bureauStudio } from "./ui/desk.js?v=92b49fe3";
+import { chargeCinema } from "./game-state.js?v=92b49fe3";
+import { echappe } from "./ui/emblems.js?v=92b49fe3";
+import { idOperation } from "./api.js?v=92b49fe3";
+import { majHeaderArgent } from "./navigation.js?v=92b49fe3";
+import { messageErreur } from "./supabase-client.js?v=92b49fe3";
+import { Etat, fmtArgent } from "./game-state.js?v=92b49fe3";
+import { bobCompact } from "./navigation.js?v=92b49fe3";
+import { niveauActuel } from "./progression.js?v=92b49fe3";
+import { toastSocial } from "./social.js?v=92b49fe3";
+import { appelSecurise, rpc } from "./supabase-client.js?v=92b49fe3";
+import { texteSur } from "./ui/emblems.js?v=92b49fe3";
+import { icone } from "./ui/icons.js?v=92b49fe3";
+import { afficheFilmSVG, propositionsAffiche } from "./ui/poster.js?v=92b49fe3";
 
 /* ============================================================
    STUDIO — production de courts-métrages

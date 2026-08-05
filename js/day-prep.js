@@ -1,4 +1,4 @@
-import { filmParId } from "./data/films.js?v=22580e0f";
+import { filmParId } from "./data/films.js?v=92b49fe3";
 import {
   Etat,
   chargeCampagnes,
@@ -6,11 +6,11 @@ import {
   chargeSoirees,
   fmtArgent,
   rafraichirEtat
-} from "./game-state.js?v=22580e0f";
-import { toastSocial } from "./social.js?v=22580e0f";
-import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=22580e0f";
-import { echappe, texteSur } from "./ui/emblems.js?v=22580e0f";
-import { icone } from "./ui/icons.js?v=22580e0f";
+} from "./game-state.js?v=92b49fe3";
+import { toastSocial } from "./social.js?v=92b49fe3";
+import { appelSecurise, idOperation, messageErreur, rpc } from "./supabase-client.js?v=92b49fe3";
+import { echappe, texteSur } from "./ui/emblems.js?v=92b49fe3";
+import { icone } from "./ui/icons.js?v=92b49fe3";
 
 /* ============================================================
    LA PRÉPARATION DU MATIN

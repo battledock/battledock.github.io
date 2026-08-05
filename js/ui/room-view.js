@@ -1,6 +1,7 @@
-import { couleurSiegesCle } from "../data/customization.js?v=22580e0f";
-import { bulleSalles, ouvrePanneauEquipement } from "../rooms.js?v=22580e0f";
-import { A } from "./genre-posters.js?v=22580e0f";
+import { couleurSiegesCle } from "../data/customization.js?v=92b49fe3";
+import { Etat } from "../game-state.js?v=92b49fe3";
+import { bulleSalles, ouvrePanneauEquipement } from "../rooms.js?v=92b49fe3";
+import { A } from "./genre-posters.js?v=92b49fe3";
 
 /* ============================================================
    LES QUATRE SALLES
@@ -103,6 +104,10 @@ const AMBIANCES_S = {
 
 
 function dessineSalleType(o = {}){
+  /* ce que le joueur a fait poser sur les parois : sans lecture ici,
+     la décoration de salle était vendue et jamais visible */
+  const deco = o.deco || (typeof Etat !== "undefined"
+    && Etat.perso && Etat.perso.deco_salle) || "nue";
   const salle = o.salle || {capacite: o.capacite || 80, type: o.type};
   const type = o.type && PROFILS[o.type] ? o.type : profilSalle(salle);
   const P = PROFILS[type];
@@ -257,6 +262,47 @@ function dessineSalleType(o = {}){
         <path d="M0 ${ySol} L26 ${ySol+12} L26 352 L0 374 Z"/>
         <path d="M480 ${ySol} L454 ${ySol+12} L454 352 L480 374 Z"/></g>`;
 
+  /* ---------- ce que le joueur a fait poser sur les parois ---------- */
+  const decoMurs =
+    deco === "cadres"
+    ? `<g>${[0,1,2].map(k=>{ const y = ySol + 40 + k * 78; return `
+        <g><rect x="6" y="${y}" width="18" height="24" rx="1.4" fill="#241820"
+            stroke="#8a6c2a" stroke-width="1.2"/>
+          <rect x="9" y="${y + 3}" width="12" height="18" fill="#6d5238" opacity=".7"/></g>
+        <g><rect x="456" y="${y}" width="18" height="24" rx="1.4" fill="#241820"
+            stroke="#8a6c2a" stroke-width="1.2"/>
+          <rect x="459" y="${y + 3}" width="12" height="18" fill="#6d5238" opacity=".7"/></g>`;
+      }).join("")}</g>`
+
+    : deco === "moulures"
+    ? `<g stroke="#8a6c2a" stroke-width="1.4" fill="none" opacity=".75">
+        <path d="M4 ${ySol + 26} L28 ${ySol + 36} L28 344 L4 362"/>
+        <path d="M476 ${ySol + 26} L452 ${ySol + 36} L452 344 L476 362"/>
+       </g>
+       <g fill="#c9982f" opacity=".6">
+        ${[0,1,2].map(k=>{ const y = ySol + 60 + k * 82; return `
+          <circle cx="16" cy="${y}" r="6"/><circle cx="16" cy="${y}" r="2.4" fill="#241820"/>
+          <circle cx="464" cy="${y}" r="6"/><circle cx="464" cy="${y}" r="2.4" fill="#241820"/>`;
+        }).join("")}
+       </g>`
+
+    : deco === "prestige"
+    ? `<g fill="#4a1522">
+        <path d="M0 ${ySol} L30 ${ySol + 14} L30 350 L0 372 Z"/>
+        <path d="M480 ${ySol} L450 ${ySol + 14} L450 350 L480 372 Z"/></g>
+       <g stroke="#2e0d16" stroke-width="1.2" opacity=".55" fill="none">
+        ${[0,1,2,3].map(k=>`<path d="M${6 + k * 6} ${ySol + 8} L${6 + k * 6} 366"/>
+          <path d="M${474 - k * 6} ${ySol + 8} L${474 - k * 6} 366"/>`).join("")}</g>
+       <g>${[0,1,2].map(k=>{ const y = ySol + 56 + k * 84; return `
+        <g><path d="M14 ${y} l10 -8 l0 16 Z" fill="#caa24a"/>
+          <ellipse cx="20" cy="${y}" rx="7" ry="9" fill="#fff4d0" opacity=".55"/>
+          <ellipse cx="20" cy="${y}" rx="16" ry="22" fill="#ffe9b0" opacity=".1"/></g>
+        <g><path d="M466 ${y} l-10 -8 l0 16 Z" fill="#caa24a"/>
+          <ellipse cx="460" cy="${y}" rx="7" ry="9" fill="#fff4d0" opacity=".55"/>
+          <ellipse cx="460" cy="${y}" rx="16" ry="22" fill="#ffe9b0" opacity=".1"/></g>`;
+       }).join("")}</g>`
+    : "";
+
   /* ---------- les équipements 4DX ---------- */
   const effets4d = !P.buses ? "" : `
     <g class="s4d">
@@ -325,6 +371,7 @@ ${ecran}
 <path d="M240 360 L70 ${yE+4} L410 ${yE+4} Z" fill="url(#sFaisceau)"/>
 
 ${murs}
+  ${decoMurs}
 
 <path d="M0 ${ySol} L480 ${ySol} L480 380 L0 380 Z" fill="url(#sSol)"/>
 ${P.allee ? `<path d="M216 ${ySol+8} L264 ${ySol+8} L292 380 L188 380 Z"

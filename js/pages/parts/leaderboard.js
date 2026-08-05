@@ -1,8 +1,8 @@
-import { bobCompact } from "../../navigation.js?v=22580e0f";
-import { fmtNb } from "./events.js?v=22580e0f";
-import { rpc } from "../../supabase-client.js?v=22580e0f";
-import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=22580e0f";
-import { icone } from "../../ui/icons.js?v=22580e0f";
+import { bobCompact } from "../../navigation.js?v=92b49fe3";
+import { fmtNb } from "./events.js?v=92b49fe3";
+import { rpc } from "../../supabase-client.js?v=92b49fe3";
+import { echappe, embleme, texteSur } from "../../ui/emblems.js?v=92b49fe3";
+import { icone } from "../../ui/icons.js?v=92b49fe3";
 
 /* ============================================================
    CLASSEMENTS — lecture seule, scores calculés par le serveur

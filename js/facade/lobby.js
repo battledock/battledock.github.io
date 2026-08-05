@@ -1,6 +1,6 @@
-import { etatBatiment, murSelonEtat } from "./ages.js?v=22580e0f";
-import { ampoules, pilastre } from "./palettes.js?v=22580e0f";
-import { salles } from "../rooms.js?v=22580e0f";
+import { etatBatiment, murSelonEtat } from "./ages.js?v=92b49fe3";
+import { ampoules, pilastre } from "./palettes.js?v=92b49fe3";
+import { salles } from "../rooms.js?v=92b49fe3";
 
 /* ============================================================
    LE HALL ÉVOLUTIF — même langage graphique que la façade

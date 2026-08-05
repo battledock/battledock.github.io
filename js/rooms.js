@@ -1,10 +1,10 @@
 /* Les salles : vue en coupe et améliorations. */
 
-import { accomplitMission, bulleXP, chargeProgression, infoNiveau, majBarreXPHeader, montreMonteeNiveau, synchroniseDeblocages } from "./progression.js?v=22580e0f";
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=22580e0f";
-import { chargeCinema } from "./game-state.js?v=22580e0f";
-import { majHeaderArgent } from "./navigation.js?v=22580e0f";
-import { messageErreur } from "./supabase-client.js?v=22580e0f";
+import { accomplitMission, bulleXP, chargeProgression, infoNiveau, majBarreXPHeader, montreMonteeNiveau, synchroniseDeblocages } from "./progression.js?v=92b49fe3";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=92b49fe3";
+import { chargeCinema } from "./game-state.js?v=92b49fe3";
+import { majHeaderArgent } from "./navigation.js?v=92b49fe3";
+import { messageErreur } from "./supabase-client.js?v=92b49fe3";
 import {
   AMELIORATIONS,
   COUT_NETTOYAGE,
@@ -16,14 +16,14 @@ import {
   obtenirBonusSalle,
   prochaineAmelioration,
   prochaineExtension
-} from "./data/upgrades.js?v=22580e0f";
-import { Etat, fmtArgent, rafraichirEtat } from "./game-state.js?v=22580e0f";
-import { bobCompact } from "./navigation.js?v=22580e0f";
-import { niveauActuel, sonNiveau } from "./progression.js?v=22580e0f";
-import { appelSecurise, idOperation, rpc, sbFetch } from "./supabase-client.js?v=22580e0f";
-import { echappe } from "./ui/emblems.js?v=22580e0f";
-import { icone } from "./ui/icons.js?v=22580e0f";
-import { apercuEquipement, brancheZonesSalle, salleEnCoupe } from "./ui/room-view.js?v=22580e0f";
+} from "./data/upgrades.js?v=92b49fe3";
+import { Etat, fmtArgent, rafraichirEtat } from "./game-state.js?v=92b49fe3";
+import { bobCompact } from "./navigation.js?v=92b49fe3";
+import { niveauActuel, sonNiveau } from "./progression.js?v=92b49fe3";
+import { appelSecurise, idOperation, rpc, sbFetch } from "./supabase-client.js?v=92b49fe3";
+import { echappe } from "./ui/emblems.js?v=92b49fe3";
+import { icone } from "./ui/icons.js?v=92b49fe3";
+import { apercuEquipement, brancheZonesSalle, salleEnCoupe } from "./ui/room-view.js?v=92b49fe3";
 
 /* ============================================================
    SALLES — consultation, gestion, achats

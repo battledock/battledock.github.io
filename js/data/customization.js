@@ -1,9 +1,9 @@
-import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=22580e0f";
-import { Etat, depense } from "../game-state.js?v=22580e0f";
-import { majHeaderArgent } from "../navigation.js?v=22580e0f";
-import { niveauActuel } from "../progression.js?v=22580e0f";
-import { salles } from "../rooms.js?v=22580e0f";
-import { sbFetch } from "../supabase-client.js?v=22580e0f";
+import { obtenirNiveauVisuelCinema } from "./upgrades.js?v=92b49fe3";
+import { Etat, depense } from "../game-state.js?v=92b49fe3";
+import { majHeaderArgent } from "../navigation.js?v=92b49fe3";
+import { niveauActuel } from "../progression.js?v=92b49fe3";
+import { salles } from "../rooms.js?v=92b49fe3";
+import { sbFetch } from "../supabase-client.js?v=92b49fe3";
 
 /* ============================================================
    PERSONNALISATION — catalogue, possession, sélection
@@ -80,6 +80,19 @@ const CATALOGUE_PERSO = {
        niveauRequis:28, cout:2400, cleDeblocage:"parvis"},
       {id:"terrasse",   nom:"Terrasse sur le toit",desc:"Des chaises, un écran, et le ciel de Marseille l'été.",
        niveauRequis:44, cout:6800, cleDeblocage:"terrasse"}
+    ]
+  },
+  salle: {
+    nom:"Décoration de salle", ic:"fauteuil", cleDeblocage:"deco_salle_1", champ:"deco_salle",
+    items:[
+      {id:"nue",       nom:"Murs nus",            desc:"Le plâtre d'origine, tel quel.",
+       niveauRequis:1,  cout:0},
+      {id:"cadres",    nom:"Cadres et affiches anciennes", desc:"Des photos de tournage le long des murs.",
+       niveauRequis:3,  cout:0,   cleDeblocage:"deco_salle_1"},
+      {id:"moulures",  nom:"Moulures art déco",   desc:"Rosaces et filets dorés sur les parois latérales.",
+       niveauRequis:7,  cout:520, cleDeblocage:"deco_salle_2"},
+      {id:"prestige",  nom:"Tentures et appliques", desc:"Velours tendu, appliques en verre dépoli.",
+       niveauRequis:17, cout:1600}
     ]
   },
   sieges: {
