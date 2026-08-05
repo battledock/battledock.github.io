@@ -102,9 +102,32 @@ function fmtDuree(min){
 }
 
 const NETTOYAGE_MIN = 20;                         /* temps de remise en état */
+/* ------------------------------------------------------------
+   RETROUVER UN FILM PAR SON IDENTIFIANT
+
+   CATALOGUE_FILMS est une liste figée de dix-huit titres, écrite
+   avant que le catalogue serveur n'en compte cinquante-trois. Un
+   film récent n'y figurait pas : le chercher là revenait à ne rien
+   trouver — le clic sortait en silence, et les lignes du programme
+   comme le bilan affichaient un identifiant brut.
+
+   On interroge donc d'abord ce que le serveur a envoyé pour
+   aujourd'hui : il porte les vraies popularités, licences et
+   niveaux requis. La liste figée ne sert plus que de secours,
+   quand le serveur n'a rien dit.
+   ------------------------------------------------------------ */
 function filmParId(id){
   if(String(id).startsWith("maison_") && Array.isArray(Etat?.filmsMaisonCat))
     return Etat.filmsMaisonCat.find(f=>f.id===id);
+
+  /* On ne va PAS chercher la page de programmation : elle importe
+     déjà ce fichier, et l'inverse créerait un cycle d'imports —
+     avec des liaisons indéfinies au chargement. Le catalogue du
+     jour est déposé dans Etat par game-state, accessible partout. */
+  if(Array.isArray(Etat?.catalogueJour)){
+    const f = Etat.catalogueJour.find(x=>String(x.id) === String(id));
+    if(f) return f;
+  }
   return CATALOGUE_FILMS.find(f=>f.id===id);
 }
 function filmDebloque(f){ return f.maison || (f.niveauRequis||1) <= (typeof niveauActuel==="function" ? niveauActuel() : 1); }
