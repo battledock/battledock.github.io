@@ -72,6 +72,38 @@ async function chargeCinema(force = false){
   return Etat.cinema;
 }
 
+/* ------------------------------------------------------------
+   LE CATALOGUE DU JOUR, PARTAGÉ PAR TOUTES LES PAGES
+
+   Les titres, popularités et licences dépendent de la semaine
+   d'exploitation : seul le serveur les connaît. Sans ce
+   chargement, l'accueil et le bilan retombaient sur une liste
+   figée de dix-huit films et ne savaient rien des trente-cinq
+   autres — ni titre, ni genre, ni licence.
+   ------------------------------------------------------------ */
+async function chargeCatalogueJour(){
+  try{
+    if(!Etat.cinema || !Etat.cinema.id) return;
+    const r = await rpc("get_catalogue", {p_cinema_id: Etat.cinema.id});
+    if(!r || r.success !== true) return;
+    const d = r.data || {};
+    Etat.catalogueJour = [].concat(d.nouveautes || [], d.a_l_affiche || [], d.reprises || [])
+      .map(e => ({
+        id: e.film_id, titre: e.titre, genre: e.genre,
+        duree: Number(e.duree) || 100,
+        popularite: Number(e.popularite), populariteBase: Number(e.popularite_base),
+        qualite: Number(e.qualite),
+        coutLicence: Number(e.cout_licence), licenceBase: Number(e.licence_base),
+        niveauRequis: Number(e.niveau_requis) || 1,
+        publicCible: e.public_cible || ["adultes"],
+        statutSortie: e.statut, semaineExploitation: e.semaine_exploitation,
+        exceptionnel: !!e.exceptionnel, tendance: e.tendance
+      }));
+    Etat.semaineJeu = d.semaine;
+    Etat.joursAvantSorties = d.jours_avant_sorties;
+  }catch(e){ /* le secours reste la liste figée */ }
+}
+
 async function chargeSallesEtat(){
   if(!Etat.cinema) return [];
   const d = await sbFetch(`salles?cinema_id=eq.${Etat.cinema.id}&select=*&order=cree_le`);
@@ -295,6 +327,7 @@ export {
   FERMETURE,
   GameState,
   OUVERTURE,
+  chargeCatalogueJour,
   chargeCinema,
   chargeSallesEtat,
   chargeSeancesEtat,
