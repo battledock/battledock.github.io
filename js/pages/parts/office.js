@@ -1,13 +1,14 @@
-import { PRODUITS_CONFISERIE } from "../../data/concessions.js?v=1e9eaaa6";
-import { deconnexion } from "../../auth.js?v=1e9eaaa6";
-import { confiserieActive, tauxAchat } from "../../data/concessions.js?v=1e9eaaa6";
-import { obtenirBonusSalle } from "../../data/upgrades.js?v=1e9eaaa6";
-import { Etat, fmtArgent } from "../../game-state.js?v=1e9eaaa6";
-import { bobCompact } from "../../navigation.js?v=1e9eaaa6";
-import { majBadgeNotifications } from "./community-social.js?v=1e9eaaa6";
+import { PRODUITS_CONFISERIE } from "../../data/concessions.js?v=9b852109";
+import { deconnexion } from "../../auth.js?v=9b852109";
+import { confiserieActive, tauxAchat } from "../../data/concessions.js?v=9b852109";
+import { obtenirBonusSalle } from "../../data/upgrades.js?v=9b852109";
+import { Etat, fmtArgent } from "../../game-state.js?v=9b852109";
+import { bobCompact } from "../../navigation.js?v=9b852109";
+import { majBadgeNotifications } from "./community-social.js?v=9b852109";
 import {
-  NIVEAUX,
   XP,
+  deblocagesPrevus,
+  deblocagesReels,
   estDebloque,
   infoNiveau,
   niveauActuel,
@@ -15,10 +16,11 @@ import {
   progressionVersSuivant,
   recompenseParCle,
   xpActuel
-} from "../../progression.js?v=1e9eaaa6";
-import { salles } from "../../rooms.js?v=1e9eaaa6";
-import { sbFetch } from "../../supabase-client.js?v=1e9eaaa6";
-import { icone } from "../../ui/icons.js?v=1e9eaaa6";
+} from "../../progression.js?v=9b852109";
+import { salles } from "../../rooms.js?v=9b852109";
+import { sbFetch } from "../../supabase-client.js?v=9b852109";
+import { echappe } from "../../ui/emblems.js?v=9b852109";
+import { icone } from "../../ui/icons.js?v=9b852109";
 
 /* Page "Plus" : fiche du cinéma, à venir, compte */
 const NOMS_QUARTIERS_P = {centre:"Centre-ville",residentiel:"Quartier résidentiel",etudiant:"Quartier étudiant",populaire:"Quartier populaire",artistique:"Quartier artistique"};
@@ -87,33 +89,60 @@ function rendProgression(){
     if(b) b.style.width = p.pct + "%";
   }, 120);
 
-  /* liste des déblocages : acquis puis à venir */
-  const lignes = [];
-  NIVEAUX.forEach(niv=>{
-    niv.recompenses.forEach(r=>{
-      const acquis = niv.n <= n;
-      lignes.push({niv:niv.n, acquis, ...r});
-    });
-  });
-  lignes.sort((a,b)=>a.niv-b.niv);
-  const ligne = l => `
-    <div class="ligneDeblocage ${l.acquis?'':'verrouille'}">
+  /* ------------------------------------------------------------
+     La liste ne recopie plus une table écrite à la main : elle lit
+     les paliers là où ils sont décidés. Ce qui n'a pas encore de
+     mécanique est présenté à part, comme un horizon annoncé.
+     ------------------------------------------------------------ */
+  const reels = deblocagesReels();
+  const prevus = deblocagesPrevus();
+
+  const ligne = (l, acquis) => `
+    <div class="ligneDeblocage ${acquis ? "" : "verrouille"}">
       ${icone(l.ic)}
-      <span class="dbTxt"><b>${l.nom}</b><small>${l.desc}</small></span>
-      <span class="badgeNiv ${l.acquis?'acquis':''}">${l.acquis?'ACQUIS':'NIV '+l.niv}</span>
+      <span class="dbTxt"><b>${echappe(l.nom)}</b><small>${echappe(l.desc || "")}</small></span>
+      <span class="badgeNiv ${acquis ? "acquis" : ""}">${acquis ? "ACQUIS" : "NIV " + l.niv}</span>
     </div>`;
-  const acquis = lignes.filter(l=>l.acquis);
-  const aVenir = lignes.filter(l=>!l.acquis);
-  const prochains = aVenir.slice(0,4);
+
+  const acquis = reels.filter(l => l.niv <= n);
+  const aVenir = reels.filter(l => l.niv > n);
+  const prochains = aVenir.slice(0, 4);
   const reste = aVenir.slice(4);
+
   document.getElementById("listeDeblocages").innerHTML =
-    acquis.map(ligne).join("") +
-    prochains.map(ligne).join("") +
+    acquis.map(l => ligne(l, true)).join("") +
+    prochains.map(l => ligne(l, false)).join("") +
     (reste.length ? `
-      <div id="resteDeblocages" style="display:none">${reste.map(ligne).join("")}</div>
+      <div id="resteDeblocages" style="display:none">
+        ${reste.map(l => ligne(l, false)).join("")}</div>
       <button class="btnToutVoir" id="btnToutVoir" onclick="basculeDeblocages()">
-        Voir les ${reste.length} déblocages suivants — jusqu'au niveau ${niveauMax()}
+        Voir les ${reste.length} déblocages suivants — jusqu'au niveau ${aVenir[aVenir.length-1].niv}
+      </button>` : "") +
+    (prevus.length ? `
+      <div class="titrePrevus">Prévu, pas encore construit</div>
+      <div class="notePrevus">Ces idées font partie de la feuille de route.
+        Elles ne sont pas encore dans le jeu — ne compte pas dessus pour l'instant.</div>
+      <div id="restePrevus" style="display:none">
+        ${prevus.map(l => `
+          <div class="ligneDeblocage prevu">
+            ${icone(l.ic)}
+            <span class="dbTxt"><b>${echappe(l.nom)}</b><small>${echappe(l.desc || "")}</small></span>
+            <span class="badgeNiv prevu">PRÉVU</span>
+          </div>`).join("")}</div>
+      <button class="btnToutVoir" id="btnVoirPrevus" onclick="basculePrevus()">
+        Voir les ${prevus.length} idées prévues
       </button>` : "");
+}
+
+function basculePrevus(){
+  const z = document.getElementById("restePrevus");
+  const b = document.getElementById("btnVoirPrevus");
+  if(!z || !b) return;
+  const ouvert = z.style.display !== "none";
+  z.style.display = ouvert ? "none" : "block";
+  b.textContent = ouvert
+    ? "Voir les " + z.children.length + " idées prévues"
+    : "Masquer";
 }
 
 function rendConfiserie(){
@@ -185,6 +214,7 @@ export {
   NOMS_CADEAUX,
   NOMS_QUARTIERS_P,
   basculeDeblocages,
+  basculePrevus,
   confirmeDeconnexion,
   initPlus,
   rendConfiserie,
@@ -198,5 +228,6 @@ export {
    on les rend accessibles explicitement. */
 Object.assign(window, {
   basculeDeblocages,
+  basculePrevus,
   confirmeDeconnexion
 });

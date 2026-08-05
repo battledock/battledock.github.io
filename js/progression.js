@@ -1,12 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=1e9eaaa6";
-import { chargePersonnalisation } from "./data/customization.js?v=1e9eaaa6";
-import { Etat } from "./game-state.js?v=1e9eaaa6";
-import { rpc, sbFetch } from "./supabase-client.js?v=1e9eaaa6";
-import { celebreNiveau } from "./ui/celebration.js?v=1e9eaaa6";
-import { echappe } from "./ui/emblems.js?v=1e9eaaa6";
-import { icone } from "./ui/icons.js?v=1e9eaaa6";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=9b852109";
+import { chargePersonnalisation } from "./data/customization.js?v=9b852109";
+import { AMELIORATIONS } from "./data/upgrades.js?v=9b852109";
+import { Etat } from "./game-state.js?v=9b852109";
+import { rpc, sbFetch } from "./supabase-client.js?v=9b852109";
+import { celebreNiveau } from "./ui/celebration.js?v=9b852109";
+import { echappe } from "./ui/emblems.js?v=9b852109";
+import { icone } from "./ui/icons.js?v=9b852109";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -546,6 +547,106 @@ function toastMission(m){
   setTimeout(()=>d.remove(), 3600);
 }
 
+/* ============================================================
+   LES DÉBLOCAGES RÉELS
+
+   La table NIVEAUX décrit ce qu'on VOULAIT offrir. Elle a été
+   écrite d'un bloc, puis les mécaniques ont bougé sans elle :
+   sur soixante-sept récompenses annoncées, neuf seulement
+   conditionnaient quelque chose, et quatre paliers d'équipement
+   sur sept indiquaient un niveau faux — le son immersif était
+   annoncé au 38, il arrive au 19.
+
+   On cesse donc de recopier. Chaque déblocage est désormais LU
+   là où il est réellement décidé :
+
+     · les équipements   → AMELIORATIONS, champ niveauJoueurRequis
+     · les salles        → les tarifs de construction
+     · les genres        → le catalogue du jour, film le moins exigeant
+     · la 4DX            → son propre palier
+
+   Ce qui n'a de mécanique nulle part est marqué « prévu » et
+   présenté comme tel : un horizon annoncé, pas une promesse.
+   ============================================================ */
+
+/* les récompenses qui existent vraiment, avec leur palier exact */
+function deblocagesReels(){
+  const out = [];
+
+  /* 1. les équipements de salle
+     On parcourt TOUS les paliers, pas seulement ceux qui ont une
+     clé de progression : la climatisation n'en avait aucune, ses
+     trois paliers disparaissaient de la liste. */
+  if(typeof AMELIORATIONS === "object"){
+    Object.entries(AMELIORATIONS).forEach(([cleEquip, a])=>{
+      (a.niveaux || []).forEach((n, i)=>{
+        if(i === 0) return;                       /* le palier de départ */
+        const niv = Number(n.niveauJoueurRequis) || 1;
+        if(niv <= 1) return;                      /* rien à annoncer */
+        const cle = (a.cleProgression || [])[i - 1] || (cleEquip + "_" + i);
+        out.push({
+          cle, ic: a.icone || "outil",
+          nom: n.nom,
+          desc: (n.desc || "") + " · " + a.nom + " palier " + i,
+          niv, ou: "Salles"
+        });
+      });
+    });
+  }
+
+  /* 2. les salles supplémentaires */
+  const NIVEAU_SALLE = {2:10, 3:20, 4:30, 5:40};
+  const PLACES_SALLE = {2:50, 3:60, 4:70, 5:80};
+  Object.entries(NIVEAU_SALLE).forEach(([i, niv])=>{
+    out.push({
+      cle: "salle_" + i, ic: "fauteuil",
+      nom: ["", "", "Deuxième salle", "Troisième salle",
+            "Quatrième salle", "Cinquième salle"][i],
+      desc: PLACES_SALLE[i] + " places de plus · une programmation en parallèle",
+      niv, ou: "Salles"
+    });
+  });
+
+  /* 3. la salle 4DX */
+  out.push({cle:"salle_4dx", ic:"etoile", nom:"Salle 4DX",
+    desc:"Fauteuils sur vérins, effets d'eau et de vent · le public accepte 6 € de plus",
+    niv:15, ou:"Salles"});
+
+  /* 4. les genres, lus dans le catalogue du jour */
+  const cat = Array.isArray(Etat?.catalogueJour) ? Etat.catalogueJour : null;
+  if(cat && cat.length){
+    const parGenre = {};
+    cat.forEach(f=>{
+      const g = f.genre; if(!g) return;
+      const n = Number(f.niveauRequis) || 1;
+      if(!parGenre[g] || n < parGenre[g].niv) parGenre[g] = {niv:n, nb:1};
+      else parGenre[g].nb += 1;
+    });
+    Object.entries(parGenre).forEach(([g, v])=>{
+      if(v.niv <= 1) return;          /* disponible depuis toujours */
+      out.push({cle:"genre_" + g.toLowerCase().replace(/\s+/g,"_"), ic:"pellicule",
+        nom:"Genre : " + g, desc:"De nouveaux films au catalogue",
+        niv:v.niv, ou:"Programmation"});
+    });
+  }
+
+  return out.sort((a,b)=>a.niv - b.niv || a.nom.localeCompare(b.nom));
+}
+
+/* ce qui est annoncé dans NIVEAUX sans mécanique derrière */
+function deblocagesPrevus(){
+  const reels = new Set(deblocagesReels().map(d=>d.cle));
+  const out = [];
+  (typeof NIVEAUX !== "undefined" ? NIVEAUX : []).forEach(niv=>{
+    (niv.recompenses || []).forEach(r=>{
+      if(reels.has(r.cle)) return;
+      if(String(r.cle).startsWith("genre_")) return;   /* couverts ci-dessus */
+      out.push({...r, niv: niv.n});
+    });
+  });
+  return out.sort((a,b)=>a.niv - b.niv);
+}
+
 /* ---- exports ---- */
 export {
   BOB_NIVEAUX,
@@ -560,6 +661,8 @@ export {
   chargeProgression,
   cleEvenement,
   deblocageEnregistre,
+  deblocagesPrevus,
+  deblocagesReels,
   debloque,
   declencheEvenement,
   estDebloque,
