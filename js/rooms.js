@@ -744,7 +744,7 @@ function ouvrePanneauEquipement(cle, salle){
           ${p.satisfaction ? `<div class="effetEquip">${icone("etoile")}
             <span>+${p.satisfaction} de satisfaction à chaque séance</span></div>` : ""}
           ${p.prixAcceptable ? `<div class="effetEquip">${icone("piece")}
-            <span>Le public accepte ${p.prixAcceptable} ₣ de plus</span></div>` : ""}
+            <span>Le public accepte ${p.prixAcceptable} € de plus</span></div>` : ""}
           <div class="effetEquip">${icone("outil")}
             <span>${echappe(p.desc || "")}</span></div>
         </div>
