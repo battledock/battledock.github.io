@@ -1,16 +1,16 @@
 /* Point d'entrée de jeu.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=5897dbca";
-import { initAmbiance } from "../ambiance.js?v=5897dbca";
-import { initialiserJeu, Etat } from "../game-state.js?v=5897dbca";
-import { messageErreur } from "../supabase-client.js?v=5897dbca";
-import { initAccueil } from "../cinema.js?v=5897dbca";
-import { majStatutHeader } from "../navigation.js?v=5897dbca";
-import { majBarreXPHeader } from "../progression.js?v=5897dbca";
-import "../facade/lobby.js?v=5897dbca";
-import "../ui/room-view.js?v=5897dbca";
-import "../facade/life.js?v=5897dbca";
-import "../facade/vitality.js?v=5897dbca";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=7ec6c189";
+import { initAmbiance } from "../ambiance.js?v=7ec6c189";
+import { initialiserJeu, Etat } from "../game-state.js?v=7ec6c189";
+import { messageErreur } from "../supabase-client.js?v=7ec6c189";
+import { initAccueil } from "../cinema.js?v=7ec6c189";
+import { majStatutHeader } from "../navigation.js?v=7ec6c189";
+import { majBarreXPHeader } from "../progression.js?v=7ec6c189";
+import "../facade/lobby.js?v=7ec6c189";
+import "../ui/room-view.js?v=7ec6c189";
+import "../facade/life.js?v=7ec6c189";
+import "../facade/vitality.js?v=7ec6c189";
 
 demarreChargement();
 filetChargement();

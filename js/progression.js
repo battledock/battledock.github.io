@@ -1,13 +1,13 @@
 /* Niveaux, XP, déblocages, missions. */
 
-import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=5897dbca";
-import { chargePersonnalisation } from "./data/customization.js?v=5897dbca";
-import { AMELIORATIONS } from "./data/upgrades.js?v=5897dbca";
-import { Etat } from "./game-state.js?v=5897dbca";
-import { rpc, sbFetch } from "./supabase-client.js?v=5897dbca";
-import { celebreNiveau } from "./ui/celebration.js?v=5897dbca";
-import { echappe } from "./ui/emblems.js?v=5897dbca";
-import { icone } from "./ui/icons.js?v=5897dbca";
+import { activeConfiserieSiBesoin, inaugurationConfiserie } from "./data/concessions.js?v=7ec6c189";
+import { chargePersonnalisation } from "./data/customization.js?v=7ec6c189";
+import { AMELIORATIONS } from "./data/upgrades.js?v=7ec6c189";
+import { Etat } from "./game-state.js?v=7ec6c189";
+import { rpc, sbFetch } from "./supabase-client.js?v=7ec6c189";
+import { celebreNiveau } from "./ui/celebration.js?v=7ec6c189";
+import { echappe } from "./ui/emblems.js?v=7ec6c189";
+import { icone } from "./ui/icons.js?v=7ec6c189";
 
 /* ------------------------------------------------------------
    LE NOM DU CINÉMA
@@ -652,6 +652,20 @@ function deblocagesReels(){
         desc: roles.join(", ") + " — " + vedette.nom
               + (Number(vedette.popularite) > 40 ? ", un nom qui remplit les salles" : ""),
         niv: Number(n), ou:"Studio"});
+    });
+  }
+
+  /* 4c. les campagnes d'affichage */
+  const camps = Etat?.campagnes && Array.isArray(Etat.campagnes.formules)
+    ? Etat.campagnes.formules : null;
+  if(camps && camps.length){
+    const paliers = {};
+    camps.forEach(f=>{ (paliers[f.niveau_requis] = paliers[f.niveau_requis] || []).push(f); });
+    Object.entries(paliers).forEach(([n, fs])=>{
+      out.push({cle:"campagne_" + n, ic:"journal",
+        nom: fs.length > 1 ? "Campagnes d'affichage" : fs[0].nom,
+        desc: fs.map(f => f.nom + " · " + f.cout + " € · " + f.gain).join(" — "),
+        niv: Number(n), ou:"Quartier"});
     });
   }
 

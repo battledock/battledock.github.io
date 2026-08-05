@@ -1,12 +1,12 @@
-import { etatBatiment, murSelonEtat } from "./ages.js?v=5897dbca";
+import { etatBatiment, murSelonEtat } from "./ages.js?v=7ec6c189";
 import {
   PALETTES,
   ampoules,
   decoupe,
   fenetreVoisin,
   pilastre
-} from "./palettes.js?v=5897dbca";
-import { A } from "../ui/genre-posters.js?v=5897dbca";
+} from "./palettes.js?v=7ec6c189";
+import { A } from "../ui/genre-posters.js?v=7ec6c189";
 
 /* ============================================================
    FAÇADE ÉVOLUTIVE — le même bâtiment à travers six âges
