@@ -154,6 +154,13 @@ function brancheOnglets(){
   });
   placeCurseurVue();
   window.addEventListener("resize", placeCurseurVue);
+
+  /* Les polices arrivent après le premier rendu : mesurer avant leur
+     chargement donne une largeur fausse, et le curseur déborde de la
+     carte. On repositionne quand elles sont prêtes. */
+  if(document.fonts && document.fonts.ready)
+    document.fonts.ready.then(placeCurseurVue).catch(()=>{});
+  requestAnimationFrame(placeCurseurVue);
 }
 
 /* le velours glisse d'un onglet à l'autre au lieu de sauter */

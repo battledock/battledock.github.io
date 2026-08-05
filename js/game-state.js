@@ -105,7 +105,8 @@ async function initialiserJeu({onglet = "jeu", cinemaRequis = true} = {}){
     chargePersonnalisation(),
     chargeConfiserie(),
     chargeStats(),
-    chargeMissions()
+    chargeMissions(),
+    chargeCatalogueJour()
   ].map(p => p.catch(()=>null)));
 
   await synchroniseDeblocages().catch(e=>console.warn("[Rex] deblocages", e));
@@ -131,7 +132,8 @@ async function rafraichirEtat(){
   };
   await chargeCinema(true);
   await Promise.all([
-    chargeProgression(true), chargeSallesEtat(), chargeSeancesEtat(), chargeJournee(true)
+    chargeProgression(true), chargeSallesEtat(), chargeSeancesEtat(), chargeJournee(true),
+    chargeCatalogueJour()
   ].map(p => (p && p.catch) ? p.catch(()=>null) : p));
 
   if(typeof majHeaderArgent === "function") majHeaderArgent();

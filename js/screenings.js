@@ -194,6 +194,13 @@ async function chargeCatalogue(){
     () => rpc("get_catalogue", {p_cinema_id: Etat.cinema.id}),
     {rechargeApresErreur: false});
   catalogueServeur = (appel.ok && appel.data && appel.data.success) ? appel.data.data : null;
+
+  /* on le partage : l'accueil, le bilan et la simulation cherchent
+     des films par identifiant sans passer par cette page */
+  Etat.catalogueJour = catalogueServeur
+    ? [].concat(catalogueServeur.nouveautes || [], catalogueServeur.a_l_affiche || [],
+                catalogueServeur.reprises || []).map(filmDepuisServeur)
+    : null;
 }
 
 /* on ramène la forme du serveur à celle qu'attend le reste de la page */
