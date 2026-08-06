@@ -1,8 +1,8 @@
-import { echappe } from "../ui/emblems.js?v=d7fcde07";
-import { icone } from "../ui/icons.js?v=d7fcde07";
-import { couleurSieges } from "./customization.js?v=d7fcde07";
-import { debloque, niveauActuel } from "../progression.js?v=d7fcde07";
-import { salles } from "../rooms.js?v=d7fcde07";
+import { echappe } from "../ui/emblems.js?v=2ab9afab";
+import { icone } from "../ui/icons.js?v=2ab9afab";
+import { couleurSieges } from "./customization.js?v=2ab9afab";
+import { debloque, niveauActuel } from "../progression.js?v=2ab9afab";
+import { salles } from "../rooms.js?v=2ab9afab";
 
 /* ============================================================
    CONFIGURATION CENTRALE DES AMÉLIORATIONS
@@ -25,7 +25,7 @@ const AMELIORATIONS = {
       {niveau:0, nom:"Fauteuils usés",      desc:"Dépareillés, grinçants, attachants.",           cout:0,    satisfaction:0},
       {niveau:1, nom:"Fauteuils restaurés", desc:"Velours rouge remis à neuf.",                   cout:300,  satisfaction:4,  niveauJoueurRequis:4},
       {niveau:2, nom:"Fauteuils confort",   desc:"Plus larges, plus profonds.",                   cout:900,  satisfaction:8,  niveauJoueurRequis:13},
-      {niveau:3, nom:"Fauteuils premium",   desc:"Accoudoirs dorés, dossiers inclinables.",       cout:2500, satisfaction:13, niveauJoueurRequis:24, prixAcceptable:1}
+      {niveau:3, nom:"Fauteuils premium",   desc:"Accoudoirs dorés, dossiers inclinables.",       cout:2500, satisfaction:13, niveauJoueurRequis: 18, prixAcceptable:1}
     ]
   },
   ecran: {
@@ -33,8 +33,8 @@ const AMELIORATIONS = {
     niveaux:[
       {niveau:0, nom:"Écran ancien",          desc:"Une tache dans le coin depuis 1978.",         cout:0,    satisfaction:0},
       {niveau:1, nom:"Écran restauré",        desc:"Propre, lumineux, enfin blanc.",              cout:500,  satisfaction:3,  niveauJoueurRequis:9,  reputation:1},
-      {niveau:2, nom:"Écran haute luminosité",desc:"Les noirs sont noirs, les blancs éclatants.", cout:1500, satisfaction:6,  niveauJoueurRequis:19},
-      {niveau:3, nom:"Projection premium",    desc:"On voit les pores. C'est peut-être trop.",    cout:4000, satisfaction:10, niveauJoueurRequis:46, reputation:1}
+      {niveau:2, nom:"Écran haute luminosité",desc:"Les noirs sont noirs, les blancs éclatants.", cout:1500, satisfaction:6,  niveauJoueurRequis: 16},
+      {niveau:3, nom:"Projection premium",    desc:"On voit les pores. C'est peut-être trop.",    cout:4000, satisfaction:10, niveauJoueurRequis: 32, reputation:1}
     ]
   },
   son: {
@@ -42,8 +42,8 @@ const AMELIORATIONS = {
     niveaux:[
       {niveau:0, nom:"Son mono ancien",   desc:"Un haut-parleur. Courageux.",                     cout:0,    satisfaction:0},
       {niveau:1, nom:"Son stéréo restauré",desc:"Deux canaux, deux fois plus d'émotion.",         cout:450,  satisfaction:3,  niveauJoueurRequis:6},
-      {niveau:2, nom:"Son immersif",      desc:"Le son vient de partout. Surtout de derrière.",   cout:1700, satisfaction:7,  niveauJoueurRequis:19},
-      {niveau:3, nom:"Son prestige",      desc:"Les murs tremblent, les voisins écrivent.",       cout:4500, satisfaction:11, niveauJoueurRequis:34, reputation:1}
+      {niveau:2, nom:"Son immersif",      desc:"Le son vient de partout. Surtout de derrière.",   cout:1700, satisfaction:7,  niveauJoueurRequis: 16},
+      {niveau:3, nom:"Son prestige",      desc:"Les murs tremblent, les voisins écrivent.",       cout:4500, satisfaction:11, niveauJoueurRequis: 26, reputation:1}
     ]
   },
   climatisation: {
@@ -52,7 +52,7 @@ const AMELIORATIONS = {
       {niveau:0, nom:"Ventilateur de Bob",  desc:"Il tourne. Parfois dans le bon sens.",          cout:0,    satisfaction:0},
       {niveau:1, nom:"Ventilation réparée", desc:"L'air circule enfin.",                          cout:350,  satisfaction:2,  niveauJoueurRequis:6,  meteo:0.5},
       {niveau:2, nom:"Climatisation",       desc:"Fraîche l'été, tiède l'hiver.",                 cout:1200, satisfaction:5,  niveauJoueurRequis:14, meteo:0.75},
-      {niveau:3, nom:"Contrôle thermique",  desc:"Vingt degrés, toute l'année, sans discuter.",   cout:3500, satisfaction:8,  niveauJoueurRequis:28, meteo:1}
+      {niveau:3, nom:"Contrôle thermique",  desc:"Vingt degrés, toute l'année, sans discuter.",   cout:3500, satisfaction:8,  niveauJoueurRequis: 22, meteo:1}
     ]
   },
   decoration: {
@@ -61,7 +61,7 @@ const AMELIORATIONS = {
       {niveau:0, nom:"Murs défraîchis",     desc:"Le beige d'origine. Enfin, ce qu'il en reste.", cout:0,    satisfaction:0},
       {niveau:1, nom:"Décoration classique",desc:"Cadres, affiches anciennes, une plante.",       cout:250,  satisfaction:2,  niveauJoueurRequis:3},
       {niveau:2, nom:"Décoration Art déco", desc:"Moulures, dorures, géométrie.",                 cout:700,  satisfaction:4,  niveauJoueurRequis:7,  reputation:1},
-      {niveau:3, nom:"Décoration prestige", desc:"Éclairage indirect et velours mural.",          cout:2000, satisfaction:7,  niveauJoueurRequis:17, reputation:1}
+      {niveau:3, nom:"Décoration prestige", desc:"Éclairage indirect et velours mural.",          cout:2000, satisfaction:7,  niveauJoueurRequis: 13, reputation:1}
     ]
   }
 };

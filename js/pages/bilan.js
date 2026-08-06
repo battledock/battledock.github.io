@@ -1,10 +1,10 @@
 /* Point d'entrée de bilan.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=d7fcde07";
-import { initAmbiance } from "../ambiance.js?v=d7fcde07";
-import { initialiserJeu } from "../game-state.js?v=d7fcde07";
-import { messageErreur } from "../supabase-client.js?v=d7fcde07";
-import { initBilan } from "./parts/report.js?v=d7fcde07";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=2ab9afab";
+import { initAmbiance } from "../ambiance.js?v=2ab9afab";
+import { initialiserJeu } from "../game-state.js?v=2ab9afab";
+import { messageErreur } from "../supabase-client.js?v=2ab9afab";
+import { initBilan } from "./parts/report.js?v=2ab9afab";
 
 demarreChargement();
 filetChargement();
