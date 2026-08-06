@@ -1,7 +1,7 @@
-import { Etat } from "../game-state.js?v=d6efe228";
-import { toastSocial } from "../social.js?v=d6efe228";
-import { echappe, texteSur } from "./emblems.js?v=d6efe228";
-import { icone } from "./icons.js?v=d6efe228";
+import { Etat } from "../game-state.js?v=a0ff21a2";
+import { toastSocial } from "../social.js?v=a0ff21a2";
+import { echappe, texteSur } from "./emblems.js?v=a0ff21a2";
+import { icone } from "./icons.js?v=a0ff21a2";
 
 /* ============================================================
    LE MUR DES TROPHÉES

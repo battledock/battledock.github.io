@@ -1,4 +1,4 @@
-import { echappe } from "./emblems.js?v=d6efe228";
+import { echappe } from "./emblems.js?v=a0ff21a2";
 
 /* ============================================================
    AFFICHES DE FILM — SVG généré, aucune image externe

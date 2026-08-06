@@ -1,19 +1,19 @@
 /* État courant du jeu et chargements officiels. */
 
-import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=d6efe228";
-import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=d6efe228";
-import { chargePersonnalisation } from "./data/customization.js?v=d6efe228";
-import { compareHeures } from "./data/films.js?v=d6efe228";
-import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=d6efe228";
-import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=d6efe228";
-import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=d6efe228";
+import { deconnexion, protegerPage, sessionValide } from "./auth.js?v=a0ff21a2";
+import { activeConfiserieSiBesoin, chargeConfiserie } from "./data/concessions.js?v=a0ff21a2";
+import { chargePersonnalisation } from "./data/customization.js?v=a0ff21a2";
+import { compareHeures } from "./data/films.js?v=a0ff21a2";
+import { chargeJournee, chargeStats, statutJournee } from "./engine/day.js?v=a0ff21a2";
+import { initNavigation, majHeaderArgent, majStatutHeader } from "./navigation.js?v=a0ff21a2";
+import { chargeMissions, chargeProgression, majBarreXPHeader, synchroniseDeblocages } from "./progression.js?v=a0ff21a2";
 import {
   idOperation,
   renouvelleSession,
   rpc,
   sbFetch,
   sessionLocale
-} from "./supabase-client.js?v=d6efe228";
+} from "./supabase-client.js?v=a0ff21a2";
 
 /* ============================================================
    ÉTAT DU JEU — source de vérité unique côté client

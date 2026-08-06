@@ -12,17 +12,17 @@ import {
   horairesDisponibles,
   minutesEnHeure,
   obtenirLimiteSeances
-} from "./data/films.js?v=d6efe228";
-import { niveauEquipement } from "./data/upgrades.js?v=d6efe228";
-import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=d6efe228";
-import { Etat, fmtArgent } from "./game-state.js?v=d6efe228";
-import { bobCompact } from "./navigation.js?v=d6efe228";
-import { accomplitMission, debloque } from "./progression.js?v=d6efe228";
-import { toastSocial } from "./social.js?v=d6efe228";
-import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=d6efe228";
-import { echappe, texteSur } from "./ui/emblems.js?v=d6efe228";
-import { afficheDeGenre, genreConnu } from "./ui/genre-posters.js?v=d6efe228";
-import { icone } from "./ui/icons.js?v=d6efe228";
+} from "./data/films.js?v=a0ff21a2";
+import { niveauEquipement } from "./data/upgrades.js?v=a0ff21a2";
+import { chargeJournee, ouvreCinema, statutJournee } from "./engine/day.js?v=a0ff21a2";
+import { Etat, fmtArgent } from "./game-state.js?v=a0ff21a2";
+import { bobCompact } from "./navigation.js?v=a0ff21a2";
+import { accomplitMission, debloque } from "./progression.js?v=a0ff21a2";
+import { toastSocial } from "./social.js?v=a0ff21a2";
+import { appelSecurise, messageErreur, rpc, sbFetch } from "./supabase-client.js?v=a0ff21a2";
+import { echappe, texteSur } from "./ui/emblems.js?v=a0ff21a2";
+import { afficheDuFilm } from "./ui/genre-posters.js?v=a0ff21a2";
+import { icone } from "./ui/icons.js?v=a0ff21a2";
 
 /* ============================================================
    PROGRAMMATION DES SÉANCES
@@ -350,10 +350,7 @@ function agranditAffiche(id){
     <div class="afficheGrande">
       <button class="agFermer" onclick="fermeAffiche()" aria-label="Fermer">✕</button>
       <div class="agPapier">
-        ${afficheDeGenre(genreConnu(f.genre))}
-        <span class="agVoile"></span>
-        <span class="agTitre" id="agTitre"></span>
-        <span class="agGenre">${echappe(f.genre)}</span>
+        ${afficheDuFilm(f, true)}
       </div>
       <div class="agInfos">
         <div class="agResume" id="agResume"></div>
@@ -367,7 +364,7 @@ function agranditAffiche(id){
         Punaiser au programme</button>
     </div>`;
   document.body.appendChild(o);
-  texteSur(document.getElementById("agTitre"), f.titre);
+  /* le titre est imprimé sur l'affiche elle-même : plus d'étiquette par-dessus */
   texteSur(document.getElementById("agResume"), f.resume || "");
 }
 function fermeAffiche(){
@@ -916,7 +913,7 @@ function carteAffiche(o){
   return `<button class="carteAff ${o.classe === "ferme" ? "verrouillee" : ""}"
     ${o.action ? `onclick="${o.action}"` : ""} aria-label="${echappe(o.titre)}">
     <span class="cadreAff">
-      ${afficheDeGenre(genreConnu(o.genre))}
+      ${afficheDuFilm({id:o.id, titre:o.titre, genre:o.genre}, false)}
       <span class="genreEt">${echappe(o.genre)}</span>
       ${o.maison ? `<span class="maisonEt">Maison</span>` : ""}
       ${o.classe === "ferme" ? `<span class="voileVerrou">${icone("porte")}</span>` : ""}

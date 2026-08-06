@@ -1,10 +1,10 @@
 /* Point d'entrée de salles.html */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=d6efe228";
-import { initAmbiance } from "../ambiance.js?v=d6efe228";
-import { initialiserJeu } from "../game-state.js?v=d6efe228";
-import { messageErreur } from "../supabase-client.js?v=d6efe228";
-import { initSalles } from "../rooms.js?v=d6efe228";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=a0ff21a2";
+import { initAmbiance } from "../ambiance.js?v=a0ff21a2";
+import { initialiserJeu } from "../game-state.js?v=a0ff21a2";
+import { messageErreur } from "../supabase-client.js?v=a0ff21a2";
+import { initSalles } from "../rooms.js?v=a0ff21a2";
 
 demarreChargement();
 filetChargement();

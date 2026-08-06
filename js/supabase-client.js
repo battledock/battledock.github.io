@@ -1,8 +1,8 @@
 /* Accès Supabase : requêtes, RPC, session, erreurs typées. */
 
 
-import { Etat, rafraichirEtat } from "./game-state.js?v=d6efe228";
-import { deconnexion } from "./auth.js?v=d6efe228";
+import { Etat, rafraichirEtat } from "./game-state.js?v=a0ff21a2";
+import { deconnexion } from "./auth.js?v=a0ff21a2";
 /* ============================================================
    CLIENT SUPABASE — point d'entrée réseau unique
    Toutes les requêtes du jeu passent par ici : renouvellement de
@@ -117,7 +117,7 @@ async function videLeCache(){
 }
 
 /* Le bouton de secours, proposé quand quelque chose coince. */
-function proposeVidageCache(raison){
+function proposeVidageCache(raison, detail){
   if(document.getElementById("secoursCache")) return;
   const d = document.createElement("div");
   d.id = "secoursCache";
@@ -125,6 +125,9 @@ function proposeVidageCache(raison){
   d.innerHTML = `
     <div class="scTexte"><b>Le jeu semble bloqué</b>
       <span>${raison || "Une version ancienne est peut-être en mémoire."}</span></div>
+    ${detail ? `<div class="scDetail" id="scDetail">${
+      String(detail).replace(/&/g,"&amp;").replace(/</g,"&lt;").slice(0, 300)}</div>
+      <button class="scCopier" id="scCopier">Copier le message</button>` : ""}
     <button class="scBtn" id="scBtn">Vider le cache et recharger</button>
     <button class="scFermer" id="scFermer">Plus tard</button>`;
   document.body.appendChild(d);
@@ -133,6 +136,20 @@ function proposeVidageCache(raison){
     videLeCache();
   };
   document.getElementById("scFermer").onclick = () => d.remove();
+
+  /* le message exact, copiable : sans lui on cherche à l'aveugle */
+  const c = document.getElementById("scCopier");
+  if(c) c.onclick = async () => {
+    try{
+      await navigator.clipboard.writeText(document.getElementById("scDetail").textContent);
+      c.textContent = "Copié";
+    }catch(e){
+      const r = document.createRange();
+      r.selectNodeContents(document.getElementById("scDetail"));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      c.textContent = "Sélectionné — copie à la main";
+    }
+  };
 }
 
 /* Deux échecs de suite sur le même écran : on le propose de nous-mêmes. */
@@ -147,9 +164,23 @@ function oublieEchecs(){ echecsDeSuite = 0; }
    ancien resté en cache — déclenche l'offre immédiatement. */
 window.addEventListener("error", e => {
   const m = String(e?.message || "");
-  if(/Can't find variable|is not defined|Failed to fetch dynamically|error loading/i.test(m))
-    proposeVidageCache("Un fichier ancien est peut-être resté en mémoire.");
+  /* un fichier ancien resté en cache donne toujours l'une de ces erreurs */
+  if(!/Can't find variable|is not defined|Failed to fetch dynamically|error loading|undefined is not/i.test(m))
+    return;
+  const ou = e.filename
+    ? String(e.filename).split("/").pop().split("?")[0] + ":" + (e.lineno || "?")
+    : "";
+  proposeVidageCache("Un fichier ancien est peut-être resté en mémoire.",
+    m + (ou ? "  ·  " + ou : ""));
 }, true);
+
+/* une promesse qui échoue sans être rattrapée : même symptôme */
+window.addEventListener("unhandledrejection", e => {
+  const m = String(e?.reason?.message || e?.reason || "");
+  if(!/Can't find variable|is not defined|Failed to fetch dynamically|null is not an object|undefined is not/i.test(m))
+    return;
+  proposeVidageCache("Quelque chose n'a pas répondu.", m);
+});
 
 /* ---------- statut de sauvegarde discret ---------- */
 function statutSauvegarde(etat){
