@@ -1,8 +1,8 @@
-import { majBadgeNotifications } from "./community-social.js?v=a0ff21a2";
-import { actionSoc, toastSocial } from "../../social.js?v=a0ff21a2";
-import { messageErreur, rpc } from "../../supabase-client.js?v=a0ff21a2";
-import { echappe, texteSur } from "../../ui/emblems.js?v=a0ff21a2";
-import { icone } from "../../ui/icons.js?v=a0ff21a2";
+import { majBadgeNotifications } from "./community-social.js?v=d7fcde07";
+import { actionSoc, toastSocial } from "../../social.js?v=d7fcde07";
+import { messageErreur, rpc } from "../../supabase-client.js?v=d7fcde07";
+import { echappe, texteSur } from "../../ui/emblems.js?v=d7fcde07";
+import { icone } from "../../ui/icons.js?v=d7fcde07";
 
 /* ============================================================
    DÉFIS ENTRE AMIS — modèles officiels, progression serveur

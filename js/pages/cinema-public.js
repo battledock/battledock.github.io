@@ -1,10 +1,10 @@
 /* Point d'entrée de cinema-public.html — page publique, sans navigation privée */
 
-import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=a0ff21a2";
-import { initAmbiance } from "../ambiance.js?v=a0ff21a2";
-import { protegerPage } from "../auth.js?v=a0ff21a2";
-import { messageErreur } from "../supabase-client.js?v=a0ff21a2";
-import { initCinemaPublic } from "./parts/public-cinema.js?v=a0ff21a2";
+import { demarreChargement, finChargement, filetChargement } from "../ui/loading.js?v=d7fcde07";
+import { initAmbiance } from "../ambiance.js?v=d7fcde07";
+import { protegerPage } from "../auth.js?v=d7fcde07";
+import { messageErreur } from "../supabase-client.js?v=d7fcde07";
+import { initCinemaPublic } from "./parts/public-cinema.js?v=d7fcde07";
 
 demarreChargement();
 filetChargement();

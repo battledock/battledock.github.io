@@ -18,9 +18,89 @@ const ICONES = {
 function icone(nom, cls=""){
   return `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONES[nom]||""}</svg>`;
 }
+/* ============================================================
+   BOB — l'ouvreur du Club
+
+   L'ancien portrait était une tête plate, sans corps ni caractère.
+   Celui-ci a ses épaules, sa veste d'ouvreur à galons, son nœud
+   papillon, sa moustache et sa casquette. Il cligne des yeux et
+   respire — très lentement, pour qu'on le remarque sans être
+   dérangé.
+   ============================================================ */
+function bobPortrait(taille){
+  const t = taille || 96;
+  return `<svg viewBox="0 0 120 120" width="${t}" height="${t}" class="bobSvg"
+    role="img" aria-label="Bob, l'ouvreur">
+  <defs>
+    <linearGradient id="bVeste" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a02a3c"/><stop offset=".55" stop-color="#7c1424"/>
+      <stop offset="1" stop-color="#5a0e1a"/></linearGradient>
+    <linearGradient id="bPeau" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6d3ac"/><stop offset="1" stop-color="#e0b085"/></linearGradient>
+    <linearGradient id="bCasq" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8c2331"/><stop offset="1" stop-color="#4a0c16"/></linearGradient>
+    <radialGradient id="bHalo" cx=".5" cy=".42" r=".5">
+      <stop offset="0" stop-color="#ffdf9a" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#ffdf9a" stop-opacity="0"/></radialGradient>
+  </defs>
+
+  <circle cx="60" cy="56" r="52" fill="url(#bHalo)"/>
+
+  <g class="bobBuste">
+    <!-- épaules et veste -->
+    <path d="M18 120 q2 -32 20 -40 q10 -5 22 -5 q12 0 22 5 q18 8 20 40 Z" fill="url(#bVeste)"/>
+    <path d="M46 78 q14 12 28 0 l6 4 q-20 18 -40 0 Z" fill="#f2e4cc" opacity=".95"/>
+    <!-- revers -->
+    <path d="M46 78 L60 96 L52 100 L40 84 Z" fill="#5a0e1a" opacity=".55"/>
+    <path d="M74 78 L60 96 L68 100 L80 84 Z" fill="#5a0e1a" opacity=".55"/>
+    <!-- nœud papillon -->
+    <path d="M60 92 L48 86 L48 100 Z" fill="#caa24a"/>
+    <path d="M60 92 L72 86 L72 100 Z" fill="#caa24a"/>
+    <circle cx="60" cy="93" r="3.4" fill="#e8c86a"/>
+    <!-- galons -->
+    <g fill="#e8c86a" opacity=".9">
+      <circle cx="38" cy="104" r="2.4"/><circle cx="38" cy="113" r="2.4"/>
+      <rect x="76" y="98" width="14" height="3" rx="1.5"/>
+      <rect x="76" y="105" width="14" height="3" rx="1.5"/></g>
+
+    <!-- cou -->
+    <path d="M50 66 h20 v14 q-10 6 -20 0 Z" fill="#e0b085"/>
+
+    <!-- tête -->
+    <ellipse cx="60" cy="46" rx="25" ry="26" fill="url(#bPeau)"/>
+    <!-- oreilles -->
+    <ellipse cx="35" cy="48" rx="4.5" ry="6" fill="#e8bd93"/>
+    <ellipse cx="85" cy="48" rx="4.5" ry="6" fill="#e8bd93"/>
+    <!-- sourcils -->
+    <path d="M45 36 q7 -4 13 0" stroke="#4a3527" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M62 36 q7 -4 13 0" stroke="#4a3527" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <!-- yeux -->
+    <g class="bobYeux">
+      <ellipse cx="51" cy="45" rx="4.2" ry="4.6" fill="#fff"/>
+      <ellipse cx="69" cy="45" rx="4.2" ry="4.6" fill="#fff"/>
+      <circle cx="52" cy="45.6" r="2.4" fill="#3a2416"/>
+      <circle cx="70" cy="45.6" r="2.4" fill="#3a2416"/>
+      <circle cx="53" cy="44.4" r=".9" fill="#fff"/>
+      <circle cx="71" cy="44.4" r=".9" fill="#fff"/></g>
+    <!-- nez -->
+    <path d="M60 47 q-3 7 1 9" stroke="#c99a72" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <!-- moustache -->
+    <path d="M60 59 q-11 -5 -15 2 q8 3 15 -1 q7 4 15 1 q-4 -7 -15 -2 Z" fill="#4a3527"/>
+    <!-- sourire -->
+    <path d="M52 64 q8 5 16 0" stroke="#8a5a3a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- casquette -->
+    <path d="M32 34 q28 -24 56 0 l0 -5 q-28 -22 -56 0 Z" fill="url(#bCasq)"/>
+    <path d="M31 33 q29 -22 58 0 q-4 5 -29 5 q-25 0 -29 -5 Z" fill="url(#bCasq)"/>
+    <rect x="50" y="20" width="20" height="8" rx="2.5" fill="#e8c86a"/>
+    <path d="M50 24 h20" stroke="#8a6c2a" stroke-width="1.2"/>
+    <path d="M28 34 q32 8 64 0 l0 4 q-32 8 -64 0 Z" fill="#4a0c16"/>
+  </g>
+</svg>`;
+}
 
 /* ---- exports ---- */
 export {
   ICONES,
+  bobPortrait,
   icone
 };

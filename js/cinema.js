@@ -1,29 +1,28 @@
 /* L'accueil : façade vivante, héros, statut du jour. */
 
-import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=a0ff21a2";
-import { compareHeures, filmParId } from "./data/films.js?v=a0ff21a2";
+import { phraseFrequentation, phraseNiveau, phraseRecette } from "./ambiance.js?v=d7fcde07";
+import { compareHeures, filmParId } from "./data/films.js?v=d7fcde07";
 import {
   chargeJournee,
   ouvreCinema,
   passeAuJourSuivant,
   statutJournee,
   verifieOuverture
-} from "./engine/day.js?v=a0ff21a2";
-import { animeLeCinema, bobMeteo } from "./facade/life.js?v=a0ff21a2";
-import { dessineHallEvolutif } from "./facade/lobby.js?v=a0ff21a2";
-import { spawnPassant } from "./facade/pedestrians.js?v=a0ff21a2";
-import { dessineFacadeEvolutive } from "./facade/render.js?v=a0ff21a2";
-import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=a0ff21a2";
-import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=a0ff21a2";
-import { phraseStatut } from "./navigation.js?v=a0ff21a2";
-import { bandeauEvenement } from "./pages/parts/events.js?v=a0ff21a2";
-import { niveauActuel, progressionVersSuivant } from "./progression.js?v=a0ff21a2";
-import { salles } from "./rooms.js?v=a0ff21a2";
-import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=a0ff21a2";
-import { echappe, texteSur } from "./ui/emblems.js?v=a0ff21a2";
-import { A } from "./ui/genre-posters.js?v=a0ff21a2";
-import { icone } from "./ui/icons.js?v=a0ff21a2";
-import { salleEnCoupe } from "./ui/room-view.js?v=a0ff21a2";
+} from "./engine/day.js?v=d7fcde07";
+import { animeLeCinema, bobMeteo } from "./facade/life.js?v=d7fcde07";
+import { dessineHallEvolutif } from "./facade/lobby.js?v=d7fcde07";
+import { spawnPassant } from "./facade/pedestrians.js?v=d7fcde07";
+import { dessineFacadeEvolutive } from "./facade/render.js?v=d7fcde07";
+import { animeLaVitalite, remarqueVitalite } from "./facade/vitality.js?v=d7fcde07";
+import { Etat, chargeSallesEtat, fmtArgent, statutCinema } from "./game-state.js?v=d7fcde07";
+import { bandeauEvenement } from "./pages/parts/events.js?v=d7fcde07";
+import { niveauActuel, progressionVersSuivant } from "./progression.js?v=d7fcde07";
+import { salles } from "./rooms.js?v=d7fcde07";
+import { appelSecurise, rpc, sbFetch } from "./supabase-client.js?v=d7fcde07";
+import { echappe, texteSur } from "./ui/emblems.js?v=d7fcde07";
+import { A } from "./ui/genre-posters.js?v=d7fcde07";
+import { icone } from "./ui/icons.js?v=d7fcde07";
+import { salleEnCoupe } from "./ui/room-view.js?v=d7fcde07";
 
 /* Accueil vivant du cinéma (jeu.html) */
 
@@ -61,8 +60,8 @@ async function initAccueil(){
   rendActionPrincipale();
   brancheOnglets();
   rendVueCine();
+  rendJournalAccueil();
   rendChiffres();
-  rendRaccourcis();
   rendEvenement();   /* asynchrone : il se remplit quand il peut */
 
   /* Bob dit une seule chose : l'état du cinéma, ou le temps qu'il fait */
@@ -205,11 +204,76 @@ function rendVueCine(){
 
 /* le bandeau d'état, posé sur la vue */
 function rendEtatVue(){
-  const el = document.getElementById("vueEtat");
+  /* L'état ne tient plus dans une pastille de coin : il se pose sur
+     le dessin, dans le dégradé, comme un générique. */
+  const el = document.getElementById("surScene");
   if(!el) return;
-  const p = phraseStatut();
-  el.className = "vueEtat " + p.pastille;
-  el.innerHTML = `<i></i>${echappe(p.txt)}`;
+  const p = etatDuJour();
+  const n = (Etat.seancesJour || []).length;
+  el.innerHTML = `
+    <span class="ssEt">${p.moment}</span>
+    <h2>${echappe(p.titre)}</h2>
+    <p>${echappe(p.phrase)}</p>`;
+}
+
+/* ------------------------------------------------------------
+   LE JOURNAL DU MATIN
+
+   Tout ce qu'on a construit — charges, sorties, entretien — se
+   retrouvait éparpillé sur trois écrans. Ici il tient en quatre
+   lignes, avant la décision.
+   ------------------------------------------------------------ */
+function rendJournalAccueil(){
+  const el = document.getElementById("journalAcc");
+  if(!el) return;
+  const L = [];
+
+  const m = Etat.journee && Etat.journee.meteo;
+  const cat = typeof rex_meteo !== "undefined" ? null : null;
+  if(m) L.push({i:"meteo", t: phraseMeteo(m), d:"La demande du jour s'en ressent"});
+
+  const ch = Etat.charges;
+  if(ch && Number(ch.total) > 0)
+    L.push({i:"piece", t: fmtArgent(ch.total) + " de charges aujourd'hui",
+            d: ch.detail || ""});
+
+  const camp = Etat.campagnes && Etat.campagnes.en_cours;
+  if(camp) L.push({i:"journal", t: camp.nom + " en cours",
+    d: "+" + Math.round((Number(camp.effet) - 1) * 100) + " % de fréquentation · "
+       + camp.jours_restants + " jour(s) restant(s)"});
+
+  const sale = (Etat.salles || []).find(s => Number(s.proprete) < 70 || Number(s.etat) < 60);
+  if(sale) L.push({i:"batiment", t: sale.nom + " demande un coup de balai",
+    d: "Propreté " + Math.round(Number(sale.proprete)) + " % — la satisfaction en pâtira",
+    alerte:true});
+
+  if(!L.length) L.push({i:"etoile", t:"Rien à signaler ce matin",
+    d:"Le quartier est calme, la salle est prête"});
+
+  el.innerHTML = L.map(l=>`
+    <div class="jlAcc ${l.alerte ? "alerte" : ""}">${icone(l.i)}
+      <span><b>${echappe(l.t)}</b>${l.d ? `<small>${echappe(l.d)}</small>` : ""}</span>
+    </div>`).join("");
+}
+
+function phraseMeteo(id){
+  return ({clair:"Beau temps sur le quartier", nuages:"Ciel couvert",
+    pluie:"Il pleut sur le quartier", vent:"Du vent aujourd'hui",
+    brume:"Brume sur le port"})[id] || "Le temps est incertain";
+}
+
+/* ce que le cinéma raconte de lui-même, ce soir */
+function etatDuJour(){
+  const n = (Etat.seancesJour || []).length;
+  const st = typeof statutJournee === "function" ? statutJournee() : "draft";
+  if(st === "completed") return {moment:"Ce soir", titre:"Les portes sont fermées",
+    phrase:"La journée est finie. Le bilan t'attend."};
+  if(st === "running") return {moment:"En ce moment", titre:"La séance a commencé",
+    phrase:"Le projecteur tourne. On verra le résultat tout à l'heure."};
+  if(n === 0) return {moment:"Ce soir", titre:"Rien à l'affiche",
+    phrase:"Le marquee est éteint. Le quartier passe devant sans s'arrêter."};
+  return {moment:"Ce soir", titre: n + " séance" + (n > 1 ? "s" : "") + " au programme",
+    phrase:"Les affiches sont posées. Il ne reste qu'à ouvrir."};
 }
 
 /* ---------- les trois chiffres ---------- */
@@ -236,7 +300,8 @@ function rendChiffres(){
     ? Math.round(progressionVersSuivant() * 100) : 0;
   const sat = Number(Etat.journee?.satisfaction_moyenne ?? 0);
 
-  document.getElementById("chiffres").innerHTML = `
+  const el0 = document.getElementById("chiffres");
+  if(el0) el0.innerHTML = `
     <button class="chiffre" onclick="location.href='profil.html'">
       ${anneauChiffre(Number(c.reputation) || 0, "#8c2331")}
       <b>${Number(c.reputation) || 0}</b><span>Réputation</span></button>
@@ -248,35 +313,6 @@ function rendChiffres(){
       <b>${sat > 0 ? sat + " %" : "—"}</b><span>Satisfaction</span></button>`;
 }
 
-/* ---------- les raccourcis ---------- */
-function rendRaccourcis(){
-  const salles = Etat.salles || [];
-  const seances = Etat.seancesJour || [];
-  const places = salles.reduce((t,s)=>t + (Number(s.capacite)||0), 0);
-  /* une salle sale ou fatiguée se voit depuis l'accueil, pas seulement
-     dans le briefing du matin */
-  const aSoigner = salles.filter(s =>
-    Number(s.proprete) < 45 || Number(s.etat) < 50);
-
-  document.getElementById("raccourcis").innerHTML = `
-    <button class="raccourci" onclick="location.href='programmation.html'">
-      ${icone("pellicule")}
-      <span><b>Séances</b><small>${seances.length
-        ? seances.length + " au programme" : "aucune pour l'instant"}</small></span></button>
-
-    <button class="raccourci" onclick="location.href='salles.html'">
-      ${icone("fauteuil")}
-      <span><b>Salles</b><small>${aSoigner.length
-        ? aSoigner.map(x=>x.nom).join(", ") + " à soigner"
-        : salles.length + " salle" + (salles.length>1?"s":"") + " · " + places + " places"}</small></span>
-      ${aSoigner.length ? `<span class="badgeNotif alerte">${aSoigner.length}</span>` : ""}
-    </button>
-
-    <button class="raccourci pleine" onclick="location.href='communaute.html'">
-      ${icone("etoile")}
-      <span><b>Le quartier</b><small>Classements, amis, festivals</small></span>
-      <span class="badgeNotif" style="display:none"></span></button>`;
-}
 
 /* ================== FAÇADE VIVANTE (cycle du ciel + programme réel) ================== */
 const PHASES = {
@@ -539,7 +575,8 @@ function rendStatut(c){
   /* la refonte de l'accueil a retiré cet élément : on ne fait rien s'il manque */
   if(!document.getElementById("statutCine")) return;
   const st = statutCinema();
-  document.getElementById("statutCine").innerHTML = `
+  const el1 = document.getElementById("statutCine");
+  if(el1) el1.innerHTML = `
     <span class="pastille ${st.pastille}"></span>
     ${st.libelle}
     <span class="statutJour">Jour ${c.jour}</span>`;
@@ -552,7 +589,8 @@ function rendResume(c){
   const j = Etat.journee;
   if(j && j.resultats){
     const b = j.resultats;
-    document.getElementById("resumeJour").innerHTML =
+    const el2 = document.getElementById("resumeJour");
+    if(el2) el2.innerHTML = 
       ligneResume("spectateurs", `<b>${b.total_spectateurs} spectateurs</b> sont venus aujourd'hui`) +
       ligneResume("piece", `<b>${fmtArgent(b.recettes_brutes)}</b> de recettes`) +
       ligneResume("etoile", `Satisfaction : <b>${b.satisfaction_moyenne} %</b>`) +
@@ -569,7 +607,8 @@ function rendResume(c){
   if(st.satisfaction !== null)
     lignes.push(ligneResume("etoile", `Satisfaction : <b>${st.satisfaction} %</b>`));
   lignes.push(ligneResume("maison", `Le loyer du ${nomQuartier(c.quartier).toLowerCase()} coûte <b>${fmtArgent(c.loyer)}</b> par jour`));
-  document.getElementById("resumeJour").innerHTML = lignes.join("");
+  const el3 = document.getElementById("resumeJour");
+  if(el3) el3.innerHTML = lignes.join("");
 }
 function ligneResume(ic, html){
   return `<div class="ligneRecit">${icone(ic)}<span>${html}</span></div>`;
@@ -586,6 +625,7 @@ function rendSeances(){
 
   const st = statsDuJour();
   const el = document.getElementById("listeSeances");
+  if(!el) return;
   if(st.seances.length === 0){
     el.innerHTML = `<div class="psVide">Le panneau est éteint.<br>
       <small>Aucune séance au programme aujourd'hui.</small></div>`;
@@ -744,7 +784,8 @@ function rendHero(a){
   }
   texteSur(document.getElementById("heroPhrase"), phrase);
 
-  document.getElementById("heroChiffres").innerHTML = `
+  const el4 = document.getElementById("heroChiffres");
+  if(el4) el4.innerHTML = `
     <div><b>${fmtArgent(c.argent)}</b><span>en caisse</span></div>
     <div><b>${c.reputation}</b><span>réputation</span></div>
     <div><b>${seances}</b><span>séance${seances>1?"s":""}</span></div>`;
@@ -832,11 +873,13 @@ export {
   decorsExterieurs,
   dessineFacade,
   ditBonjour,
+  etatDuJour,
   initAccueil,
   ligneResume,
   nomQuartier,
   parleBob,
   phaseSelonHeure,
+  phraseMeteo,
   placeCurseurVue,
   plaqueFacade,
   remarqueBob,
@@ -846,7 +889,7 @@ export {
   rendEtatVue,
   rendEvenement,
   rendHero,
-  rendRaccourcis,
+  rendJournalAccueil,
   rendResume,
   rendSeances,
   rendStatut,
