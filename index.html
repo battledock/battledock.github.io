@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f4f1ea">
+<title>Battle Dock Life</title>
+<style>
+:root{
+  --fond:#f3f1ec; --carte:#ffffff; --encre:#2b2a27; --doux:#8a867e;
+  --vert:#4fa832; --vert-f:#3d8626; --champ:#f4f2ec; --bord:#e4e0d6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--fond);color:var(--encre);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px 18px;
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#cfe9f6 0%,#e6f2f7 30%,#f7ecd6 48%,#e3f0d2 58%,#c6e2ac 100%)}
+#fond{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+#fond svg{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:max(100vw,760px);height:auto;min-height:100%}
+@keyframes derive{from{transform:translateX(-260px)}to{transform:translateX(880px)}}
+@keyframes tourne{to{transform:rotate(360deg)}}
+@keyframes vole{0%{transform:translate(-60px,0)}50%{transform:translate(380px,-26px)}
+  100%{transform:translate(820px,6px)}}
+@keyframes fumee{0%{transform:translate(0,0) scale(1);opacity:.55}
+  100%{transform:translate(-18px,-70px) scale(1.8);opacity:0}}
+@keyframes broute{0%,100%{transform:translateX(0)}50%{transform:translateX(26px)}}
+.nuage{animation:derive 78s linear infinite}
+.nuage.b{animation-duration:112s;animation-delay:-40s}
+.nuage.c{animation-duration:94s;animation-delay:-70s}
+.pales{transform-origin:212px 274px;animation:tourne 11s linear infinite}
+.oiseaux{animation:vole 34s linear infinite}
+.f1{animation:fumee 6s ease-out infinite}
+.f2{animation:fumee 6s ease-out infinite;animation-delay:2s}
+.f3{animation:fumee 6s ease-out infinite;animation-delay:4s}
+.mouton{animation:broute 9s ease-in-out infinite}
+.mouton.d{animation-duration:12s;animation-delay:-3s}
+.carte{position:relative;z-index:1;backdrop-filter:blur(2px)}
+button,input{font-family:inherit;font-size:16px}
+
+.carte{width:100%;max-width:380px;background:var(--carte);border-radius:26px;padding:28px 22px 24px;
+  box-shadow:0 1px 2px rgba(43,42,39,.05),0 16px 40px rgba(50,60,45,.2)}
+
+.marque{text-align:center;margin-bottom:24px}
+.marque h1{font-size:26px;font-weight:650;letter-spacing:-.4px}
+.marque p{font-size:14px;color:var(--doux);margin-top:5px}
+
+.onglets{display:flex;background:var(--champ);border-radius:14px;padding:4px;margin-bottom:18px}
+.onglets button{flex:1;border:0;background:none;color:var(--doux);padding:10px;border-radius:11px;
+  font-weight:600;font-size:14.5px;cursor:pointer;transition:.18s}
+.onglets button.on{background:var(--carte);color:var(--encre);
+  box-shadow:0 1px 2px rgba(43,42,39,.08),0 2px 8px rgba(43,42,39,.06)}
+
+label{display:block;font-size:13px;color:var(--doux);margin:0 0 6px 3px}
+.champ{position:relative;margin-bottom:14px}
+.champ input{width:100%;background:var(--champ);border:1.5px solid transparent;border-radius:15px;
+  padding:15px 44px 15px 15px;color:var(--encre);outline:none;transition:.18s}
+.champ input::placeholder{color:#b3aea4}
+.champ input:focus{background:var(--carte);border-color:var(--vert)}
+.champ .oeil{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;
+  border:0;background:none;color:var(--doux);cursor:pointer;font-size:15px}
+
+.jouer{width:100%;border:0;border-radius:16px;padding:16px;margin-top:6px;
+  background:linear-gradient(180deg,#67c447,var(--vert));color:#fff;font-size:17px;font-weight:650;
+  cursor:pointer;box-shadow:0 5px 0 var(--vert-f),0 10px 22px rgba(79,168,50,.28);transition:.06s}
+.jouer:active{transform:translateY(4px);box-shadow:0 1px 0 var(--vert-f)}
+.jouer:disabled{opacity:.6;box-shadow:0 5px 0 #b9b5ac}
+
+.sep{display:flex;align-items:center;gap:12px;margin:20px 0 16px}
+.sep i{flex:1;height:1px;background:var(--bord)}
+.sep span{font-size:12px;color:#b3aea4;font-style:normal}
+
+.invite{width:100%;border:1.5px solid var(--bord);background:none;border-radius:15px;padding:14px;
+  color:var(--encre);font-size:14.5px;font-weight:600;cursor:pointer}
+.invite:active{background:var(--champ)}
+
+.msg{font-size:13.5px;line-height:1.5;border-radius:12px;padding:11px 13px;margin-bottom:14px;display:none}
+.msg.on{display:block}
+.msg.err{background:#fdeceb;color:#a3312a}
+.msg.ok{background:#eaf5e4;color:#2f6b22}
+.pied{text-align:center;font-size:12.5px;color:#b3aea4;margin-top:18px}
+</style>
+</head>
+<body>
+<div id="fond" aria-hidden="true">
+<svg viewBox="0 0 760 900" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#7fc7ee"/><stop offset=".42" stop-color="#bfe4f4"/>
+   <stop offset=".62" stop-color="#f6e7c4"/>
+  </linearGradient>
+  <radialGradient id="halo"><stop offset="0" stop-color="#fff6c8" stop-opacity=".95"/>
+   <stop offset="1" stop-color="#fff6c8" stop-opacity="0"/></radialGradient>
+  <linearGradient id="pre1" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#a8d47f"/><stop offset="1" stop-color="#7fb85c"/></linearGradient>
+  <linearGradient id="pre2" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#8fc76a"/><stop offset="1" stop-color="#5fa246"/></linearGradient>
+  <linearGradient id="riv" x1="0" y1="0" x2="0" y2="1">
+   <stop offset="0" stop-color="#8fd6ef"/><stop offset="1" stop-color="#54b0d6"/></linearGradient>
+ </defs>
+
+ <rect width="760" height="900" fill="url(#ciel)"/>
+ <circle cx="610" cy="120" r="170" fill="url(#halo)"/>
+ <circle cx="610" cy="120" r="52" fill="#fff3b0"/>
+
+ <g class="nuage" fill="#ffffff" opacity=".95">
+   <ellipse cx="90" cy="112" rx="54" ry="22"/><ellipse cx="128" cy="98" rx="38" ry="24"/>
+   <ellipse cx="52" cy="106" rx="30" ry="17"/></g>
+ <g class="nuage b" fill="#ffffff" opacity=".8">
+   <ellipse cx="300" cy="66" rx="46" ry="18"/><ellipse cx="330" cy="54" rx="30" ry="19"/></g>
+ <g class="nuage c" fill="#ffffff" opacity=".7">
+   <ellipse cx="180" cy="176" rx="40" ry="15"/><ellipse cx="208" cy="166" rx="26" ry="16"/></g>
+
+ <g class="oiseaux" stroke="#4a6b7a" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7">
+   <path d="M0 150 q9-9 18 0 q9-9 18 0"/><path d="M40 168 q7-7 14 0 q7-7 14 0"/>
+   <path d="M22 190 q6-6 12 0 q6-6 12 0"/></g>
+
+ <path d="M0 400 q120-70 250-24 q120 42 250-10 q140-56 260-6 v60 H0z" fill="#9ec9a0" opacity=".85"/>
+ <path d="M0 430 q160-52 300-6 q130 42 260-16 q110-48 200-4 v80 H0z" fill="#8bbd8d"/>
+
+ <g>
+   <rect x="204" y="274" width="16" height="150" fill="#e8ddc4"/>
+   <rect x="196" y="256" width="32" height="26" rx="6" fill="#c9563a"/>
+   <g class="pales" stroke="#8a5a2e" stroke-width="9" stroke-linecap="round">
+     <path d="M212 274 L212 194"/><path d="M212 274 L292 274"/>
+     <path d="M212 274 L212 354"/><path d="M212 274 L132 274"/>
+   </g>
+   <circle cx="212" cy="274" r="9" fill="#8a5a2e"/>
+ </g>
+
+ <g>
+   <rect x="470" y="352" width="120" height="86" rx="8" fill="#f7ecd8"/>
+   <path d="M462 356 L530 306 L598 356 Z" fill="#d9694a"/>
+   <rect x="512" y="392" width="36" height="46" rx="5" fill="#8a5a2e"/>
+   <rect x="482" y="374" width="24" height="24" rx="5" fill="#9fd6ef"/>
+   <rect x="556" y="374" width="24" height="24" rx="5" fill="#9fd6ef"/>
+   <rect x="566" y="300" width="18" height="34" rx="4" fill="#c98f6a"/>
+   <g fill="#ffffff" opacity=".6">
+     <circle class="f1" cx="575" cy="296" r="9"/><circle class="f2" cx="575" cy="296" r="7"/>
+     <circle class="f3" cx="575" cy="296" r="8"/></g>
+ </g>
+
+ <g>
+   <rect x="94" y="386" width="86" height="60" rx="7" fill="#f2e6d0"/>
+   <path d="M88 390 L137 356 L186 390 Z" fill="#6aa8c9"/>
+   <rect x="124" y="412" width="26" height="34" rx="4" fill="#8a5a2e"/>
+ </g>
+
+ <path d="M0 900 V470 q160-40 300 4 q140 42 260-8 q110-40 200 2 V900z" fill="url(#pre1)"/>
+ <path d="M0 900 V590 q180-52 340 0 q160 52 420-16 V900z" fill="url(#pre2)"/>
+
+ <g opacity=".5" stroke="#6fae54" stroke-width="10">
+   <path d="M-20 660 q200-42 420 4"/><path d="M-20 700 q220-44 460 6"/>
+   <path d="M-20 742 q240-46 500 8"/></g>
+
+ <path d="M760 470 q-120 60-150 140 q-30 84-160 140 q-120 52-170 150 h-60 q40-140 180-200
+          q120-52 150-130 q28-74 150-118z" fill="url(#riv)" opacity=".92"/>
+ <path d="M690 520 q-90 60-120 130" stroke="#ffffff" stroke-width="5" fill="none" opacity=".35"/>
+
+ <g fill="#4e9145">
+   <circle cx="60" cy="536" r="34"/><rect x="52" y="560" width="14" height="40" fill="#8a5a2e"/>
+   <circle cx="332" cy="566" r="42"/><rect x="324" y="596" width="16" height="46" fill="#8a5a2e"/>
+   <circle cx="640" cy="612" r="38"/><rect x="632" y="640" width="15" height="44" fill="#8a5a2e"/>
+ </g>
+
+ <g class="mouton">
+   <ellipse cx="180" cy="640" rx="26" ry="19" fill="#fdfaf2"/>
+   <circle cx="202" cy="632" r="11" fill="#e8dcc6"/>
+   <rect x="166" y="654" width="6" height="14" fill="#c9b79a"/>
+   <rect x="188" y="654" width="6" height="14" fill="#c9b79a"/>
+ </g>
+ <g class="mouton d" transform="translate(72 62)">
+   <ellipse cx="180" cy="640" rx="22" ry="16" fill="#fdfaf2"/>
+   <circle cx="198" cy="634" r="9" fill="#e8dcc6"/>
+   <rect x="168" y="652" width="5" height="12" fill="#c9b79a"/>
+   <rect x="186" y="652" width="5" height="12" fill="#c9b79a"/>
+ </g>
+
+ <g fill="#c9563a">
+   <rect x="500" y="700" width="70" height="46" rx="8"/><rect x="500" y="700" width="70" height="8" rx="4" fill="#e08a6a"/>
+ </g>
+ <g fill="#f2b134">
+   <rect x="586" y="716" width="54" height="34" rx="7"/><rect x="586" y="716" width="54" height="7" rx="3" fill="#ffd57a"/>
+ </g>
+</svg>
+</div>
+<div class="carte">
+  <div class="marque">
+    <h1>Battle Dock Life</h1>
+    <p id="sous">Content de te revoir.</p>
+  </div>
+
+  <div class="onglets">
+    <button id="t-co" class="on">Connexion</button>
+    <button id="t-in">Inscription</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <div id="bloc-pseudo" style="display:none">
+    <label for="pseudo">Pseudo</label>
+    <div class="champ"><input id="pseudo" autocomplete="nickname" maxlength="20" placeholder="Comment on t'appelle"></div>
+  </div>
+
+  <label for="email">Adresse e-mail</label>
+  <div class="champ"><input id="email" type="email" autocomplete="email" placeholder="toi@exemple.fr"></div>
+
+  <label for="mdp">Mot de passe</label>
+  <div class="champ">
+    <input id="mdp" type="password" autocomplete="current-password" placeholder="••••••••">
+    <button class="oeil" id="oeil" aria-label="Afficher le mot de passe">👁</button>
+  </div>
+
+  <button class="jouer" id="valider">Jouer</button>
+
+  <div class="sep"><i></i><span>ou</span><i></i></div>
+  <button class="invite" id="invite">Continuer sans compte</button>
+
+  <div class="pied">Ta partie est sauvegardée sur ton compte.</div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const SB_URL='https://zpfkekiavlfphialvphi.supabase.co';
+const SB_KEY='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+const sb=createClient(SB_URL,SB_KEY);
+
+const $=id=>document.getElementById(id);
+let mode='co';
+
+function afficher(t,type){const m=$('msg');m.textContent=t;m.className='msg on '+(type||'');}
+function cacher(){$('msg').className='msg';}
+
+function basculer(m){
+  mode=m;cacher();
+  $('t-co').classList.toggle('on',m==='co');
+  $('t-in').classList.toggle('on',m==='in');
+  $('bloc-pseudo').style.display=m==='in'?'block':'none';
+  $('sous').textContent=m==='co'?'Content de te revoir.':'Deux champs et c’est parti.';
+  $('valider').textContent=m==='co'?'Jouer':'Créer mon compte';
+  $('mdp').autocomplete=m==='co'?'current-password':'new-password';
+}
+$('t-co').onclick=()=>basculer('co');
+$('t-in').onclick=()=>basculer('in');
+$('oeil').onclick=()=>{const c=$('mdp');c.type=c.type==='password'?'text':'password';};
+
+$('valider').onclick=async()=>{
+  const email=$('email').value.trim(), mdp=$('mdp').value, pseudo=$('pseudo').value.trim();
+  if(!email||!mdp){afficher('Il manque l’e-mail ou le mot de passe.','err');return;}
+  if(mode==='in'&&pseudo.length<3){afficher('Choisis un pseudo d’au moins 3 caractères.','err');return;}
+  if(mode==='in'&&mdp.length<8){afficher('Le mot de passe doit faire au moins 8 caractères.','err');return;}
+  const b=$('valider');b.disabled=true;b.textContent='Un instant…';cacher();
+  try{
+    if(mode==='co'){
+      const {error}=await sb.auth.signInWithPassword({email,password:mdp});
+      if(error)throw error;
+      location.href='jeu.html';
+    }else{
+      const {error}=await sb.auth.signUp({email,password:mdp,options:{data:{pseudo}}});
+      if(error)throw error;
+      afficher('Compte créé. Vérifie ta boîte mail pour confirmer, puis connecte-toi.','ok');
+      basculer('co');
+    }
+  }catch(e){
+    const t=(e&&e.message)||'';
+    afficher(/Invalid login/i.test(t)?'E-mail ou mot de passe incorrect.':
+      /already registered/i.test(t)?'Cette adresse a déjà un compte.':
+      'Ça n’a pas marché : '+t,'err');
+  }finally{b.disabled=false;b.textContent=mode==='co'?'Jouer':'Créer mon compte';}
+};
+$('invite').onclick=()=>{try{localStorage.setItem('bdl.invite','1');}catch(x){}location.href='jeu.html';};
+document.addEventListener('keydown',e=>{if(e.key==='Enter')$('valider').click();});
+sb.auth.getSession().then(({data})=>{if(data.session)location.href='jeu.html';});
+</script>
+</body>
+</html>
