@@ -134,8 +134,8 @@ const BATS=[
  {id:'coop',   x:26,y:7, l:6,h:4,nom:'Coopérative',em:'🏪',mur:'#f2ddbe',toit:'#d99a4a'},
  {id:'banque', x:35,y:9, l:5,h:5,nom:'Banque',     em:'🏦',mur:'#e6e6df',toit:'#7d838c'},
  {id:'conserve',x:7,y:22,l:5,h:4,nom:'Conserverie',em:'🥫',mur:'#dcc9ac',toit:'#5f8f57'},
- {id:'maison1',x:26,y:23,l:4,h:3,nom:'Chez Odile', em:'🏠',mur:'#e9cfd6',toit:'#a8607a'},
- {id:'maison2',x:14,y:27,l:4,h:3,nom:'Chez Karim', em:'🏠',mur:'#d6e2ec',toit:'#4f7d8f'}
+ {id:'maison1',x:26,y:23,l:5,h:3,nom:'Chez Odile', em:'🏠',mur:'#e9cfd6',toit:'#a8607a'},
+ {id:'maison2',x:14,y:27,l:5,h:3,nom:'Chez Karim', em:'🏠',mur:'#d6e2ec',toit:'#4f7d8f'}
 ];
 const PANNEAU={x:19,y:19};              // panneau des commandes sur la place
 const FONTAINE={x:21,y:15};
@@ -384,58 +384,226 @@ function perso(x,y,dir,pas,corps,peau,cheveux,nom,nt){
   }
 }
 
-function batiment(b,nt){
-  const sx=b.x*T-camX, sy=b.y*T-camY, w=b.l*T, h=b.h*T;
-  if(sx+w<-20||sy+h<-60||sx>W+20||sy>H+20)return;
-  // ombre
-  px(sx+4,sy+h-6,w,10,'rgba(20,30,20,.2)');
-  // murs
-  px(sx,sy+18,w,h-18,b.mur);
-  px(sx,sy+18,w,4,'rgba(255,255,255,.3)');
-  px(sx,sy+h-8,w,8,'rgba(0,0,0,.12)');
-  for(let i=0;i<w;i+=8)px(sx+i,sy+22,1,h-30,'rgba(0,0,0,.05)');
-  // toit
-  g.fillStyle=b.toit;
-  g.beginPath();g.moveTo(sx-9,sy+22);g.lineTo(sx+w/2,sy-16);g.lineTo(sx+w+9,sy+22);g.closePath();g.fill();
-  g.fillStyle='rgba(255,255,255,.16)';
-  g.beginPath();g.moveTo(sx-9,sy+22);g.lineTo(sx+w/2,sy-16);g.lineTo(sx+w/2,sy+22);g.closePath();g.fill();
-  for(let i=0;i<5;i++)px(sx-6+i*(w/4.4),sy+22-i*2,3,2,'rgba(0,0,0,.10)');
-  // fenêtres
-  const nf=Math.max(1,Math.floor(w/64));
-  for(let i=0;i<nf;i++){
-    const fx=sx+18+i*64, fy=sy+34;
-    px(fx,fy,26,22,nt?'#ffdf8a':'#a9d6ef');
-    px(fx,fy,26,3,'#8a6a4a');px(fx+12,fy,2,22,'#8a6a4a');
-    if(nt){g.fillStyle='rgba(255,223,138,.18)';g.fillRect(fx-10,fy+22,46,40);}
+/* ================= bâtiments, chacun le sien ================= */
+function toitTuiles(sx,sy,w,c1,c2,pente){
+  // toit à deux pans, avec rangées de tuiles
+  g.fillStyle=c1;
+  g.beginPath();g.moveTo(sx-11,sy+22);g.lineTo(sx+w/2,sy-pente);g.lineTo(sx+w+11,sy+22);g.closePath();g.fill();
+  g.save();g.beginPath();g.moveTo(sx-11,sy+22);g.lineTo(sx+w/2,sy-pente);g.lineTo(sx+w+11,sy+22);
+  g.closePath();g.clip();
+  for(let r=0;r<7;r++){
+    const y=sy+20-r*7;
+    g.fillStyle=r%2?c2:melange(c1,'#000000',.10);
+    for(let x=sx-12;x<sx+w+12;x+=12)g.fillRect(x+((r%2)?6:0),y,10,5);
   }
-  // porte, qui s'entrouvre quand on est devant
+  g.fillStyle='rgba(255,255,255,.14)';
+  g.beginPath();g.moveTo(sx-11,sy+22);g.lineTo(sx+w/2,sy-pente);g.lineTo(sx+w/2,sy+22);g.closePath();g.fill();
+  g.restore();
+  g.fillStyle=melange(c1,'#000000',.35);g.fillRect(sx-13,sy+20,w+26,5);
+}
+function cheminee(sx,sy,c,nt,fume){
+  px(sx,sy-26,13,30,c);px(sx-2,sy-30,17,7,melange(c,'#000000',.25));
+  if(fume)for(let i=0;i<3;i++){
+    const t=((Date.now()/26)+i*40)%120, a=(1-t/120)*0.45;
+    g.globalAlpha=a;g.fillStyle='#f4f1ea';
+    g.beginPath();g.arc(sx+6+Math.sin(t/18+i)*7,sy-34-t*0.55,4+t*0.09,0,7);g.fill();
+  }
+  g.globalAlpha=1;
+}
+function fenetreBois(x,y,w,h,nt,volets){
+  px(x,y,w,h,nt?'#ffdf8a':'#a9d6ef');
+  px(x,y,w,3,'#8a6a4a');px(x+w/2-1,y,2,h,'#8a6a4a');px(x,y+h/2-1,w,2,'#8a6a4a');
+  px(x-2,y-2,w+4,3,'#7d5934');px(x-2,y+h-1,w+4,3,'#7d5934');
+  if(volets){px(x-8,y-2,7,h+4,volets);px(x+w+1,y-2,7,h+4,volets);
+    px(x-8,y+4,7,2,melange(volets,'#000000',.3));px(x+w+1,y+4,7,2,melange(volets,'#000000',.3));}
+  if(nt){g.fillStyle='rgba(255,223,138,.16)';g.fillRect(x-12,y+h,w+24,42);}
+}
+function jardiniere(x,y,nt){
+  px(x,y,26,9,'#8a5a2e');px(x,y,26,3,'#a8703a');
+  const c=['#e8607a','#f2c14e','#c98fe0','#fff'];
+  for(let i=0;i<4;i++)px(x+3+i*6,y-5+((i%2)?1:0),4,5,nt?melange(c[i],'#000000',.45):c[i]);
+}
+function porteBat(b,sx,sy,h,nt){
   const dx=b.px*T-camX+2, dy=sy+h-30;
   const devant=proche&&proche.type==='bat'&&proche.b===b;
+  px(dx-4,dy-4,36,4,melange(b.toit,'#000000',.2));   // linteau
   px(dx,dy,28,30,'#6f4520');
   if(devant){
-    px(dx+3,dy+3,8,27,'#2a1d12');
-    px(dx+11,dy+3,14,27,'#a8703a');
-    px(dx+22,dy+16,3,3,'#f2d47a');
+    px(dx+3,dy+3,8,27,'#2a1d12');px(dx+11,dy+3,14,27,'#a8703a');px(dx+22,dy+16,3,3,'#f2d47a');
     g.fillStyle='rgba(255,226,150,.35)';
-    g.beginPath();g.moveTo(dx+3,dy+30);g.lineTo(dx+11,dy+30);g.lineTo(dx+18,dy+52);g.lineTo(dx-6,dy+52);g.closePath();g.fill();
-  }else{
-    px(dx+3,dy+3,22,27,'#a8703a');
-    px(dx+20,dy+16,3,3,'#f2d47a');
-  }
-  px(dx-4,dy+30,36,4,'#b9b3a4');
-  // enseigne
-  g.font='600 12px -apple-system,Arial';g.textAlign='center';
-  const cx=sx+w/2, ty=sy+2;
-  const lw=g.measureText(b.nom).width+34;
-  g.fillStyle='rgba(255,253,248,.95)';
-  if(g.roundRect){g.beginPath();g.roundRect(cx-lw/2,ty-16,lw,20,7);g.fill();}
-  else g.fillRect(cx-lw/2,ty-16,lw,20);
-  g.fillStyle='#2b2a27';g.font='13px serif';g.fillText(b.em,cx-lw/2+13,ty-1);
-  g.font='600 12px -apple-system,Arial';g.fillText(b.nom,cx+7,ty-2);
-  const n=alerte(b);
-  if(n){g.beginPath();g.arc(cx+lw/2-2,ty-18,10,0,7);g.fillStyle='#d9694a';g.fill();
-    g.fillStyle='#fff';g.font='700 12px -apple-system,Arial';g.fillText(n,cx+lw/2-2,ty-14);}
+    g.beginPath();g.moveTo(dx+3,dy+30);g.lineTo(dx+11,dy+30);g.lineTo(dx+18,dy+52);g.lineTo(dx-6,dy+52);
+    g.closePath();g.fill();
+  }else{px(dx+3,dy+3,22,27,'#a8703a');px(dx+3,dy+3,22,3,'#c08a52');px(dx+20,dy+16,3,3,'#f2d47a');}
+  px(dx-5,dy+30,38,5,'#b9b3a4');px(dx-5,dy+30,38,2,'#cbc5b7');
 }
+function enseigneBat(b,sx,sy,w,nt){
+  const cx=sx+w/2, ty=sy+6;
+  // potence en fer
+  px(cx-1,ty-26,2,14,'#4a4a52');px(cx-14,ty-26,28,2,'#4a4a52');
+  g.font='600 12px -apple-system,Arial';g.textAlign='center';
+  const lw=g.measureText(b.nom).width+32;
+  px(cx-lw/2,ty-12,lw,21,'#6f4520');
+  px(cx-lw/2+2,ty-10,lw-4,17,'#f4e6c8');
+  g.fillStyle='#2b2a27';g.font='12px serif';g.fillText(b.em,cx-lw/2+13,ty+3);
+  g.font='600 11.5px -apple-system,Arial';g.fillText(b.nom,cx+7,ty+2);
+  const n=alerte(b);
+  if(n){g.beginPath();g.arc(cx+lw/2-1,ty-14,10,0,7);g.fillStyle='#d9694a';g.fill();
+    g.fillStyle='#fff';g.font='700 12px -apple-system,Arial';g.fillText(n,cx+lw/2-1,ty-10);}
+}
+
+function batiment(b,nt){
+  const sx=b.x*T-camX, sy=b.y*T-camY, w=b.l*T, h=b.h*T;
+  if(sx+w<-40||sy+h<-90||sx>W+40||sy>H+40)return;
+  px(sx+5,sy+h-6,w,11,'rgba(20,30,20,.2)');    // ombre au sol
+
+  if(b.id==='pain'){
+    // colombages, auvent rayé, vitrine à pains
+    px(sx,sy+18,w,h-18,'#f0e2c2');
+    for(let i=0;i<w;i+=26)px(sx+i,sy+22,5,h-30,'#8a5a34');
+    px(sx,sy+34,w,5,'#8a5a34');px(sx,sy+h-16,w,5,'#8a5a34');
+    for(let i=0;i<w-26;i+=52){g.strokeStyle='#8a5a34';g.lineWidth=4;
+      g.beginPath();g.moveTo(sx+i+6,sy+39);g.lineTo(sx+i+28,sy+h-16);g.stroke();}
+    toitTuiles(sx,sy,w,'#c9553a','#b34430',22);
+    cheminee(sx+w-26,sy+8,'#a8703a',nt,true);
+    fenetreBois(sx+16,sy+44,34,26,nt,'#7a9c5c');
+    // vitrine avec pains
+    px(sx+w-70,sy+44,52,30,nt?'#ffdf8a':'#cfe6f2');
+    px(sx+w-70,sy+44,52,3,'#8a6a4a');
+    for(let i=0;i<3;i++){px(sx+w-64+i*16,sy+58,12,7,'#d9a95a');px(sx+w-62+i*16,sy+56,8,4,'#e8c07a');}
+    // auvent rayé
+    for(let i=0;i<w;i+=16){px(sx+i,sy+h-30,16,12,(i/16)%2?'#f4e6c8':'#c9553a');}
+    px(sx-4,sy+h-32,w+8,4,'#8a5a34');
+    jardiniere(sx+14,sy+h-14,nt);
+    porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+    return;
+  }
+  if(b.id==='fromage'){
+    // pierre claire, toit d'ardoise, œil-de-bœuf, tonneaux
+    px(sx,sy+18,w,h-18,'#e2ddcb');
+    for(let y=sy+22;y<sy+h;y+=11)for(let x=sx+((y/11|0)%2?0:9);x<sx+w;x+=19)
+      px(x,y,17,9,'#d8d2be');
+    toitTuiles(sx,sy,w,'#6f88b0','#5c7599',20);
+    // œil-de-bœuf
+    g.beginPath();g.arc(sx+w/2,sy+14,11,0,7);g.fillStyle='#8a6a4a';g.fill();
+    g.beginPath();g.arc(sx+w/2,sy+14,8,0,7);g.fillStyle=nt?'#ffdf8a':'#a9d6ef';g.fill();
+    fenetreBois(sx+18,sy+42,30,26,nt,'#4f7d8f');
+    fenetreBois(sx+w-48,sy+42,30,26,nt,'#4f7d8f');
+    // meule de fromage suspendue
+    g.beginPath();g.arc(sx+w-24,sy+h-46,13,0,7);g.fillStyle='#f2d47a';g.fill();
+    g.fillStyle='#e0bd58';g.beginPath();g.arc(sx+w-24,sy+h-46,13,-0.6,0.6);g.lineTo(sx+w-24,sy+h-46);g.fill();
+    // tonneaux
+    px(sx+6,sy+h-4,20,26,'#a8703a');px(sx+6,sy+h+2,20,4,'#7d5934');
+    px(sx+30,sy+h+2,17,22,'#a8703a');
+    porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+    return;
+  }
+  if(b.id==='conserve'){
+    // brique, toit métal en tôle, cheminée d'usine, caisses
+    px(sx,sy+18,w,h-18,'#b5654a');
+    for(let y=sy+22;y<sy+h;y+=9)for(let x=sx+((y/9|0)%2?0:8);x<sx+w;x+=17)
+      px(x,y,15,7,'#a55a42');
+    px(sx-4,sy+14,w+8,10,'#7d8f5f');
+    for(let i=0;i<w+8;i+=10)px(sx-4+i,sy+14,5,10,'#6b7d50');
+    // toit plat en tôle ondulée
+    px(sx-8,sy-4,w+16,20,'#7d8f5f');
+    for(let i=0;i<w+16;i+=8)px(sx-8+i,sy-4,4,20,'#6b7d50');
+    // cheminée haute
+    px(sx+w-30,sy-46,15,50,'#8a5a4a');px(sx+w-33,sy-50,21,7,'#6b463a');
+    for(let i=0;i<3;i++){const t=((Date.now()/24)+i*40)%140;
+      g.globalAlpha=(1-t/140)*.4;g.fillStyle='#e8e4da';
+      g.beginPath();g.arc(sx+w-23+Math.sin(t/20+i)*9,sy-54-t*0.6,5+t*0.1,0,7);g.fill();}
+    g.globalAlpha=1;
+    fenetreBois(sx+18,sy+44,28,24,nt,null);
+    fenetreBois(sx+w-46,sy+44,28,24,nt,null);
+    // caisses empilées
+    px(sx+w-34,sy+h-6,26,24,'#c08a52');px(sx+w-34,sy+h+2,26,4,'#8a5a2e');
+    px(sx+w-30,sy+h-26,20,20,'#c08a52');px(sx+w-30,sy+h-18,20,4,'#8a5a2e');
+    porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+    return;
+  }
+  if(b.id==='coop'){
+    // grange : bardage vertical, grande porte double, girouette, ballots
+    px(sx,sy+18,w,h-18,'#d99a4a');
+    for(let i=0;i<w;i+=13)px(sx+i,sy+22,3,h-26,'#c2872f');
+    px(sx,sy+18,w,6,'#f2c98a');
+    toitTuiles(sx,sy,w,'#8a5a34','#7a4c2c',26);
+    // girouette
+    px(sx+w/2-1,sy-46,3,24,'#4a4a52');
+    px(sx+w/2-9,sy-46,20,3,'#4a4a52');
+    px(sx+w/2+8,sy-52,10,9,'#4a4a52');
+    // grande porte double au centre
+    const gx=sx+w/2-34;
+    px(gx,sy+h-52,68,52,'#8a5a2e');
+    px(gx+3,sy+h-49,30,46,'#a8703a');px(gx+35,sy+h-49,30,46,'#a8703a');
+    g.strokeStyle='#7d5934';g.lineWidth=3;
+    g.beginPath();g.moveTo(gx+4,sy+h-48);g.lineTo(gx+32,sy+h-6);
+    g.moveTo(gx+32,sy+h-48);g.lineTo(gx+4,sy+h-6);
+    g.moveTo(gx+36,sy+h-48);g.lineTo(gx+64,sy+h-6);
+    g.moveTo(gx+64,sy+h-48);g.lineTo(gx+36,sy+h-6);g.stroke();
+    // lucarne
+    px(sx+w/2-14,sy+2,28,20,'#8a5a34');px(sx+w/2-10,sy+6,20,14,nt?'#ffdf8a':'#3a2f24');
+    // ballots de paille
+    px(sx-2,sy+h+2,24,18,'#e0c07a');px(sx-2,sy+h+8,24,3,'#c9a85a');
+    px(sx+24,sy+h+6,20,14,'#e0c07a');
+    porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+    return;
+  }
+  if(b.id==='banque'){
+    // pierre de taille, fronton, colonnes, horloge, perron
+    px(sx,sy+18,w,h-18,'#e4e2d8');
+    for(let y=sy+24;y<sy+h;y+=13)px(sx,y,w,1,'rgba(0,0,0,.10)');
+    // fronton triangulaire
+    g.fillStyle='#cfcdc2';
+    g.beginPath();g.moveTo(sx-12,sy+20);g.lineTo(sx+w/2,sy-24);g.lineTo(sx+w+12,sy+20);g.closePath();g.fill();
+    g.fillStyle='#dbd9ce';
+    g.beginPath();g.moveTo(sx-4,sy+16);g.lineTo(sx+w/2,sy-16);g.lineTo(sx+w+4,sy+16);g.closePath();g.fill();
+    px(sx-14,sy+18,w+28,7,'#bcbab0');
+    // horloge dans le fronton
+    g.beginPath();g.arc(sx+w/2,sy+2,11,0,7);g.fillStyle='#f4f1e6';g.fill();
+    g.strokeStyle='#8a8f96';g.lineWidth=2;g.stroke();
+    const hh=heureJeu();
+    g.strokeStyle='#2b2a27';g.lineWidth=2;
+    g.beginPath();g.moveTo(sx+w/2,sy+2);
+    g.lineTo(sx+w/2+Math.cos((hh/12)*6.283-1.57)*6,sy+2+Math.sin((hh/12)*6.283-1.57)*6);g.stroke();
+    // colonnes
+    for(let i=0;i<4;i++){const cxp=sx+14+i*((w-28)/3);
+      px(cxp-6,sy+26,12,h-40,'#f0eee4');px(cxp-8,sy+24,16,5,'#d6d4c8');
+      px(cxp-8,sy+h-16,16,6,'#d6d4c8');px(cxp-3,sy+30,3,h-48,'rgba(0,0,0,.07)');}
+    // perron
+    px(sx+w/2-32,sy+h,64,7,'#cfcdc2');px(sx+w/2-38,sy+h+7,76,7,'#c2c0b5');
+    // lanternes
+    [sx+8,sx+w-14].forEach(lx=>{px(lx,sy+h-24,5,26,'#4a4a52');
+      px(lx-4,sy+h-32,13,10,nt?'#ffe08a':'#8a8f96');});
+    porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+    return;
+  }
+  // maisons de village
+  const rose=b.id==='maison1';
+  px(sx,sy+18,w,h-18,b.mur);
+  for(let i=0;i<w;i+=11)px(sx+i,sy+22,2,h-28,'rgba(0,0,0,.05)');
+  px(sx,sy+h-12,w,12,melange(b.mur,'#000000',.14));
+  toitTuiles(sx,sy,w,b.toit,melange(b.toit,'#000000',.14),24);
+  cheminee(sx+10,sy+10,'#a8703a',nt,true);
+  fenetreBois(sx+16,sy+42,26,22,nt,rose?'#c96a82':'#4f7d8f');
+  fenetreBois(sx+w-42,sy+42,26,22,nt,rose?'#c96a82':'#4f7d8f');
+  jardiniere(sx+14,sy+66,nt);jardiniere(sx+w-40,sy+66,nt);
+  // petit jardin devant
+  px(sx-6,sy+h+4,w+12,4,'#9a6f42');
+  for(let i=0;i<w+12;i+=14)px(sx-6+i,sy+h,4,10,'#7d5934');
+  if(rose){ // chat sur le perron
+    const b2=Math.sin(Date.now()/700)*1;
+    px(sx+w-22,sy+h+2+b2,14,8,'#4a4a52');px(sx+w-10,sy+h-2+b2,7,7,'#4a4a52');
+    px(sx+w-24,sy+h-2+b2,4,8,'#4a4a52');
+  }else{ // corde à linge
+    g.strokeStyle='#c9c3bb';g.lineWidth=2;
+    g.beginPath();g.moveTo(sx-4,sy+30);g.quadraticCurveTo(sx+w/2,sy+40,sx+w+4,sy+30);g.stroke();
+    ['#e8607a','#8fd0ef','#f2c14e'].forEach((c,i)=>{
+      const t=Math.sin(Date.now()/900+i)*2;
+      px(sx+16+i*26,sy+35+i*1.5+t,12,14,c);});
+  }
+  porteBat(b,sx,sy,h,nt);enseigneBat(b,sx,sy,w,nt);
+}
+
 function arbre(a,nt){
   const sx=a.x*T-camX+16, sy=a.y*T-camY+26;
   if(sx<-40||sy<-60||sx>W+40||sy>H+40)return;
