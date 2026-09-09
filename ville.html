@@ -809,13 +809,18 @@ const jc=$('joy'),jg=jc.getContext('2d');
 let joyX=0,joyY=0,jid=null,jdx=0,jdy=0,jactif=false;
 const R=54,JCX=66,JCY=66;
 function joyPose(x,y){
-  const dx=x-JCX,dy=y-JCY,d=Math.hypot(dx,dy),m=Math.min(d,R),a=Math.atan2(dy,dx);
-  jdx=Math.cos(a)*m;jdy=Math.sin(a)*m;
-  joyX=(jdx/R);joyY=(jdy/R);
+  const dx=x-JCX, dy=y-JCY, d=Math.hypot(dx,dy);
+  const m=Math.min(d,R-20);              // le pouce reste dans l'anneau
+  const a=Math.atan2(dy,dx);
+  jdx=d<0.001?0:Math.cos(a)*m;
+  jdy=d<0.001?0:Math.sin(a)*m;
+  const n=Math.min(1,d/(R-20));
+  joyX=d<0.001?0:Math.cos(a)*n;
+  joyY=d<0.001?0:Math.sin(a)*n;
   if(Math.hypot(joyX,joyY)<0.18){joyX=joyY=0;}
 }
 const jpos=t=>{const r=jc.getBoundingClientRect();
-  return[(t.clientX-r.left)*jc.width/r.width,(t.clientY-r.top)*jc.height/r.height];};
+  return[(t.clientX-r.left)*132/r.width,(t.clientY-r.top)*132/r.height];};
 jc.addEventListener('touchstart',ev=>{ev.preventDefault();const t=ev.changedTouches[0];jid=t.identifier;
   jactif=true;joyPose(...jpos(t));$('bulle').classList.add('off');},{passive:false});
 jc.addEventListener('touchmove',ev=>{ev.preventDefault();
@@ -829,23 +834,23 @@ function dessinerJoy(){
   jg.clearRect(0,0,132,132);
   // socle
   jg.beginPath();jg.arc(JCX,JCY,R,0,7);
-  const f=jg.createRadialGradient(JCX,JCY-14,8,JCX,JCY,R);
-  f.addColorStop(0,'rgba(255,253,248,.62)');f.addColorStop(1,'rgba(236,232,222,.42)');
+  const f=jg.createRadialGradient(JCX,JCY-16,6,JCX,JCY,R);
+  f.addColorStop(0,'rgba(255,253,248,.88)');f.addColorStop(1,'rgba(226,222,210,.72)');
   jg.fillStyle=f;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle='rgba(43,42,39,.55)';jg.stroke();
-  jg.lineWidth=1;jg.strokeStyle='rgba(255,255,255,.7)';
-  jg.beginPath();jg.arc(JCX,JCY,R-3,0,7);jg.stroke();
+  jg.lineWidth=3;jg.strokeStyle='rgba(43,42,39,.7)';jg.stroke();
+  jg.lineWidth=1.5;jg.strokeStyle='rgba(255,255,255,.85)';
+  jg.beginPath();jg.arc(JCX,JCY,R-4,0,7);jg.stroke();
   // repères
   jg.fillStyle='rgba(43,42,39,.28)';
   [[0,-1],[1,0],[0,1],[-1,0]].forEach(([dx,dy])=>{
     jg.beginPath();jg.arc(JCX+dx*(R-13),JCY+dy*(R-13),2.4,0,7);jg.fill();});
   // pouce
   const kx=JCX+jdx, ky=JCY+jdy;
-  jg.beginPath();jg.arc(kx,ky+3,22,0,7);jg.fillStyle='rgba(30,40,25,.28)';jg.fill();
-  const k=jg.createRadialGradient(kx-6,ky-9,3,kx,ky,23);
+  jg.beginPath();jg.arc(kx,ky+3,20,0,7);jg.fillStyle='rgba(30,40,25,.3)';jg.fill();
+  const k=jg.createRadialGradient(kx-5,ky-8,3,kx,ky,21);
   if(jactif){k.addColorStop(0,'#8ede63');k.addColorStop(1,'#3d8626');}
   else{k.addColorStop(0,'#ffffff');k.addColorStop(1,'#e2ded2');}
-  jg.beginPath();jg.arc(kx,ky,22,0,7);jg.fillStyle=k;jg.fill();
+  jg.beginPath();jg.arc(kx,ky,20,0,7);jg.fillStyle=k;jg.fill();
   jg.lineWidth=2.5;jg.strokeStyle=jactif?'#2f6b1c':'rgba(43,42,39,.6)';jg.stroke();
   jg.beginPath();jg.arc(kx-6,ky-8,7,0,7);jg.fillStyle='rgba(255,255,255,.45)';jg.fill();
 }
