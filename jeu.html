@@ -101,6 +101,33 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
 #fen p{font-size:13.5px;color:var(--doux);line-height:1.55}
 .fermer{width:100%;margin-top:14px;border-radius:15px;padding:14px;font-weight:650;font-size:15px;
   background:var(--champ);color:var(--encre)}
+#ville{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;
+  background:linear-gradient(180deg,#9adcf2 0%,#cfeaf7 22%,#f3e6cc 34%,#cdd3d8 42%,#b7bec4 100%)}
+#ville.on{display:flex}
+#ville .rue{position:absolute;left:0;right:0;bottom:0;height:26%;background:#9aa3ab}
+#ville .rue::after{content:"";position:absolute;left:0;right:0;top:46%;height:5px;
+  background:repeating-linear-gradient(90deg,#fff 0 22px,transparent 22px 44px);opacity:.6}
+#ville .maisons{position:absolute;left:0;right:0;bottom:24%;height:34%}
+#ville .m{position:absolute;bottom:0;border-radius:8px 8px 0 0}
+#ville .liste{position:relative;margin-top:auto;padding:12px;display:grid;gap:10px;
+  max-height:68%;overflow-y:auto}
+.lieu{display:flex;align-items:center;gap:11px;background:rgba(255,253,248,.96);border-radius:18px;
+  padding:11px;box-shadow:0 5px 16px rgba(40,50,60,.22);text-align:left;width:100%}
+.lieu .em{width:46px;height:46px;border-radius:14px;background:var(--champ);display:flex;
+  align-items:center;justify-content:center;font-size:24px;flex:0 0 auto}
+.lieu .t{flex:1;min-width:0}
+.lieu .n{font-size:14.5px;font-weight:650}
+.lieu .d{font-size:12px;color:var(--doux);margin-top:2px}
+.lieu .fl{color:var(--doux);font-size:18px}
+.lieu .pastille{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--rouge);
+  color:#fff;font-size:12px;font-weight:650;display:flex;align-items:center;justify-content:center}
+.cmd{border:1px solid var(--bord);border-radius:16px;padding:12px;margin-bottom:10px}
+.cmd .h{display:flex;align-items:center;gap:9px}
+.cmd .h .q{flex:1;font-size:14px;font-weight:600}
+.cmd .items{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+.cmd .it{background:var(--champ);border-radius:10px;padding:6px 9px;font-size:13px}
+.cmd .it.ok{background:#e7f5df;color:#2f6b22}
+.cmd .it.non{background:#fdeceb;color:#a3312a}
 .toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);
   background:rgba(43,42,39,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13.5px;
   z-index:40;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
@@ -113,6 +140,7 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
     <div class="jeton"><span class="p or">€</span><span id="j-or">0</span></div>
     <div class="jeton"><span class="p xp">★</span><span id="j-niv">1</span></div>
     <div class="esp"></div>
+    <button class="rond" id="aller-ville">🏙️</button>
     <button class="rond" id="aide">?</button>
   </div>
 
@@ -158,6 +186,21 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
     </div>
 
     <div class="grille" id="grille"></div>
+
+    <div id="ville">
+      <div class="maisons">
+        <div class="m" style="left:4%;width:22%;height:76%;background:#e9c9a0"></div>
+        <div class="m" style="left:4%;width:22%;height:14%;background:#c9694a;border-radius:8px"></div>
+        <div class="m" style="left:29%;width:18%;height:94%;background:#cfd9e8"></div>
+        <div class="m" style="left:29%;width:18%;height:12%;background:#7f97bd;border-radius:8px"></div>
+        <div class="m" style="left:50%;width:24%;height:66%;background:#f0dcc0"></div>
+        <div class="m" style="left:50%;width:24%;height:13%;background:#d99a4a;border-radius:8px"></div>
+        <div class="m" style="left:77%;width:20%;height:88%;background:#dcc9dd"></div>
+        <div class="m" style="left:77%;width:20%;height:12%;background:#9a7ba8;border-radius:8px"></div>
+      </div>
+      <div class="rue"></div>
+      <div class="liste" id="liste-ville"></div>
+    </div>
   </div>
 
   <div class="bas">
@@ -188,9 +231,16 @@ const GRAINES=[
 const PRODUITS={ble:{em:'🌾',nom:'Blé',vend:26},carotte:{em:'🥕',nom:'Carotte',vend:58},
   mais:{em:'🌽',nom:'Maïs',vend:124},tomate:{em:'🍅',nom:'Tomate',vend:255},
   citrouille:{em:'🎃',nom:'Citrouille',vend:520},
-  oeuf:{em:'🥚',nom:'Œuf',vend:34},lait:{em:'🥛',nom:'Lait',vend:72}};
+  oeuf:{em:'🥚',nom:'Œuf',vend:34},lait:{em:'🥛',nom:'Lait',vend:72},
+  pain:{em:'🥖',nom:'Pain',vend:130},fromage:{em:'🧀',nom:'Fromage',vend:230},
+  conserve:{em:'🥫',nom:'Conserve',vend:480}};
 
-const neuf=()=>({or:150,xp:0,niv:1,parcelles:3,
+const ATELIERS=[
+  {id:'pain',nom:'Boulangerie',em:'🥖',entree:{ble:3},sortie:'pain',duree:90,niv:1,d:'3 blé → 1 pain'},
+  {id:'fromage',nom:'Fromagerie',em:'🧀',entree:{lait:2},sortie:'fromage',duree:180,niv:3,d:'2 laits → 1 fromage'},
+  {id:'conserve',nom:'Conserverie',em:'🥫',entree:{carotte:2,tomate:1},sortie:'conserve',duree:300,niv:5,d:'2 carottes + 1 tomate → 1 conserve'}
+];
+const neuf=()=>({or:150,xp:0,niv:1,parcelles:3,ville:false,ateliers:{},commandes:null,
   cases:Array.from({length:9},()=>({graine:null,fin:0})),
   poule:0,vache:0,derniere:Date.now(),stock:{},vus:false});
 let e=neuf();
@@ -199,6 +249,7 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(neuf(),JSON.parse(b))
 const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
 
 const XP_NIV=n=>Math.round(40*Math.pow(1.55,n-1));
+const coutParcelle=()=>Math.round(120*Math.pow(1.75,e.parcelles-3));
 const stock=k=>e.stock[k]||0;
 const ajouter=(k,n)=>{e.stock[k]=stock(k)+n;};
 function gagnerXp(n){
@@ -228,7 +279,10 @@ function semer(i,g){
   sauver();rendre();
 }
 function toucherCase(i){
-  if(i>=e.parcelles){onglet('boutique');toast('Achète cette parcelle dans la boutique');return;}
+  if(i>=e.parcelles){
+    const c=coutParcelle();onglet('boutique');
+    toast(e.or>=c?('Défrichable pour '+c+' €'):('Il te manque '+(c-e.or)+' € pour défricher'));
+    return;}
   const c=e.cases[i];
   if(!c.graine){choisirGraine(i);return;}
   if(Date.now()<c.fin){
@@ -303,7 +357,7 @@ function rendrePanneau(){
       sauver();rendre();});
   }
   if(ongletActif==='boutique'){
-    const coutP=Math.round(220*Math.pow(1.9,e.parcelles-3));
+    const coutP=coutParcelle();
     const coutPo=Math.round(320*Math.pow(1.8,e.poule));
     const coutV=Math.round(900*Math.pow(1.85,e.vache));
     const l=(em,n,d,prix,id,bloque)=>'<div class="ligne"><div class="em">'+em+'</div>'+
@@ -359,17 +413,124 @@ function rendre(){
              :'<div class="pret">✓</div>');
   }
   rendrePanneau();
+  if(e.ville)rendreVille();
+}
+function basculerVille(v){
+  e.ville=v;$('ville').classList.toggle('on',v);
+  $('aller-ville').textContent=v?'🌾':'🏙️';
+  sauver();rendre();
+}
+$('aller-ville').onclick=()=>basculerVille(!e.ville);
+
+function etatAtelier(a){
+  const w=e.ateliers[a.id];
+  if(!w)return{libre:true};
+  if(Date.now()>=w.fin)return{pret:true};
+  return{reste:Math.ceil((w.fin-Date.now())/1000)};
+}
+function ouvrirAtelier(a){
+  const st=etatAtelier(a);
+  const manque=Object.entries(a.entree).some(([k,n])=>stock(k)<n);
+  let corps;
+  if(st.pret)corps='<p>Ta fournée est prête.</p>';
+  else if(st.reste)corps='<p>En cours — prêt dans '+duree(st.reste)+'.</p>';
+  else corps='<p>'+a.d+' · '+duree(a.duree)+'<br>Revente : '+PRODUITS[a.sortie].vend+' €</p>'+
+    '<div class="cmd"><div class="items">'+Object.entries(a.entree).map(([k,n])=>
+      '<span class="it '+(stock(k)>=n?'ok':'non')+'">'+PRODUITS[k].em+' '+stock(k)+'/'+n+'</span>').join('')+
+    '</div></div>';
+  $('fen-b').innerHTML='<h2>'+a.em+' '+a.nom+'</h2>'+corps+
+    (st.reste?'':'<button class="btp v" id="a-go" style="width:100%;margin-top:12px;padding:14px"'+
+      ((!st.pret&&manque)?' disabled':'')+'>'+(st.pret?'Récupérer':'Lancer la fabrication')+'</button>')+
+    '<button class="fermer" id="f-x">Fermer</button>';
+  $('fen').classList.add('on');
+  $('f-x').onclick=()=>$('fen').classList.remove('on');
+  const go=$('a-go');
+  if(go)go.onclick=()=>{
+    if(st.pret){ajouter(a.sortie,1);gagnerXp(6);delete e.ateliers[a.id];
+      toast('+1 '+PRODUITS[a.sortie].nom);}
+    else{Object.entries(a.entree).forEach(([k,n])=>{e.stock[k]=stock(k)-n;});
+      e.ateliers[a.id]={fin:Date.now()+a.duree*1000};toast('C’est en route');}
+    $('fen').classList.remove('on');sauver();rendre();};
+}
+function nouvelleCommande(){
+  const dispo=Object.keys(PRODUITS).filter(k=>{
+    const g=GRAINES.find(x=>x.id===k);
+    if(g)return g.niv<=e.niv;
+    if(k==='oeuf')return e.poule>0;
+    if(k==='lait')return e.vache>0;
+    const a=ATELIERS.find(x=>x.sortie===k);
+    return a?a.niv<=e.niv:false;});
+  if(!dispo.length)return null;
+  const n=1+Math.min(2,Math.floor(e.niv/3)),items={};
+  for(let i=0;i<n;i++){const k=dispo[Math.random()*dispo.length|0];
+    items[k]=(items[k]||0)+1+Math.floor(Math.random()*3);}
+  const val=Object.entries(items).reduce((s,[k,q])=>s+PRODUITS[k].vend*q,0);
+  const cl=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim'];
+  return{client:cl[Math.random()*cl.length|0],items,or:Math.round(val*1.5),xp:Math.max(4,Math.round(val/22))};
+}
+function assurerCommandes(){
+  if(!e.commandes)e.commandes=[];
+  while(e.commandes.length<3){const c=nouvelleCommande();if(!c)break;e.commandes.push(c);}
+}
+function ouvrirCommandes(){
+  assurerCommandes();
+  const html=(e.commandes||[]).map((c,i)=>{
+    const ok=Object.entries(c.items).every(([k,q])=>stock(k)>=q);
+    return '<div class="cmd"><div class="h"><span>📋</span><span class="q">Pour '+c.client+'</span>'+
+      '<span style="font-weight:650;color:#c98f13">'+c.or+' €</span></div><div class="items">'+
+      Object.entries(c.items).map(([k,q])=>'<span class="it '+(stock(k)>=q?'ok':'non')+'">'+
+        PRODUITS[k].em+' '+stock(k)+'/'+q+'</span>').join('')+
+      '</div><button class="btp v" data-c="'+i+'" style="width:100%;margin-top:10px;padding:12px"'+
+      (ok?'':' disabled')+'>Livrer</button></div>';}).join('')||
+    '<p>Reviens quand tu auras des produits.</p>';
+  $('fen-b').innerHTML='<h2>📋 Tableau des commandes</h2>'+
+    '<p>Les habitants paient 50 % de plus que le marché.</p>'+html+
+    '<button class="fermer" id="f-x">Fermer</button>';
+  $('fen').classList.add('on');
+  $('f-x').onclick=()=>$('fen').classList.remove('on');
+  $('fen-b').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.c,c=e.commandes[i];
+    if(!Object.entries(c.items).every(([k,q])=>stock(k)>=q))return;
+    Object.entries(c.items).forEach(([k,q])=>{e.stock[k]=stock(k)-q;});
+    e.or+=c.or;gagnerXp(c.xp);e.commandes.splice(i,1);assurerCommandes();
+    toast('Livré · +'+c.or+' €');sauver();rendre();ouvrirCommandes();});
+}
+function rendreVille(){
+  const z=$('liste-ville');if(!z)return;
+  assurerCommandes();
+  const pretes=(e.commandes||[]).filter(c=>Object.entries(c.items).every(([k,q])=>stock(k)>=q)).length;
+  let h='<button class="lieu" id="l-cmd"><span class="em">📋</span><span class="t">'+
+    '<span class="n">Tableau des commandes</span><span class="d">'+(e.commandes||[]).length+
+    ' demandes · payées 50 % de plus</span></span>'+
+    (pretes?'<span class="pastille">'+pretes+'</span>':'<span class="fl">›</span>')+'</button>';
+  ATELIERS.forEach(a=>{
+    const st=etatAtelier(a);
+    const d=a.niv>e.niv?('Niveau '+a.niv+' requis'):
+      st.pret?'Fournée prête':st.reste?('Prêt dans '+duree(st.reste)):a.d;
+    h+='<button class="lieu" data-at="'+a.id+'"'+(a.niv>e.niv?' style="opacity:.55"':'')+'>'+
+      '<span class="em">'+a.em+'</span><span class="t"><span class="n">'+a.nom+'</span>'+
+      '<span class="d">'+d+'</span></span>'+
+      (st.pret?'<span class="pastille">1</span>':'<span class="fl">›</span>')+'</button>';});
+  z.innerHTML=h;
+  $('l-cmd').onclick=ouvrirCommandes;
+  z.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{
+    const a=ATELIERS.find(x=>x.id===b.dataset.at);
+    if(a.niv>e.niv){toast('Niveau '+a.niv+' requis');return;}
+    ouvrirAtelier(a);});
 }
 $('aide').onclick=()=>{
   $('fen-b').innerHTML='<h2>Comment ça marche</h2>'+
     '<p>Touche un champ pour semer, reviens quand la plante est mûre pour récolter. '+
     'Le poulailler et l’étable produisent tout seuls, même quand tu fermes le jeu — '+
     'il suffit de toucher le bâtiment pour ramasser.<br><br>'+
+    'En ville, tu transformes tes récoltes en pain, fromage ou conserves, et tu livres les '+
+    'commandes des habitants, payées 50 % de plus.<br><br>'+
     'Vends tes récoltes au marché pour acheter des parcelles et des animaux. '+
     'Chaque récolte donne de l’expérience, et les nouvelles graines arrivent avec les niveaux.</p>'+
     '<button class="fermer" id="f-x">Compris</button>';
   $('fen').classList.add('on');$('f-x').onclick=()=>$('fen').classList.remove('on');
 };
+if(e.ville)basculerVille(true);
 rendre();
 setInterval(()=>{auto();rendre();sauver();},1000);
 </script>
