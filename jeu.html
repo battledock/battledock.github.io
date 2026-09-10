@@ -106,6 +106,16 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 #action.on{display:block}
 #action b{display:block;font:600 11px system-ui;opacity:.75;margin-top:2px}
 
+#monde{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;
+  background:rgba(10,16,12,.82);backdrop-filter:blur(6px);padding:18px}
+#monde.on{display:flex}
+#monde .mb{width:100%;max-width:420px;background:#f3ead6;border-radius:20px;padding:16px;
+  box-shadow:0 20px 50px rgba(0,0,0,.5);border:1px solid #d8c9a8}
+#monde h3{font:400 20px Georgia,serif;color:#3f3524;text-align:center}
+#monde .sous{font:400 12px/1.5 system-ui;color:#8a7c5c;text-align:center;margin-top:5px}
+#monde .plan{position:relative;margin:14px 0;border-radius:14px;overflow:hidden;border:1px solid #cfbf9c}
+#monde .fermerm{width:100%;border-radius:13px;padding:13px;background:#e2d6ba;color:#4a3f2c;
+  font:600 13.5px system-ui}
 #depart{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;
   background:#141c16}
 #depart.on{display:flex}
@@ -148,6 +158,10 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   </div>
   <canvas id="joy" width="132" height="132"></canvas>
   <button id="action"></button>
+  <button class="retour" id="c-monde" style="bottom:calc(80px + env(safe-area-inset-bottom));left:auto;right:12px">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+      <path d="M9 4 3 6.5v13L9 17l6 3 6-2.5v-13L15 7z"/><path d="M9 4v13M15 7v13"/></svg></button>
+  <div id="monde"><div class="mb" id="monde-b"></div></div>
   <button class="retour" id="c-retour">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 4 4 20h16z"/><path d="M9 20l3-7 3 7"/></svg></button>
@@ -157,6 +171,10 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 <div class="toast" id="toast"></div>
 
 <script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+let sb=null;
+try{sb=createClient('https://zpfkekiavlfphialvphi.supabase.co',
+  'sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP');}catch(x){}
 const $=id=>document.getElementById(id);
 const duree=s=>s<60?Math.round(s)+' s':(s<3600?Math.round(s/60)+' min':(Math.round(s/360)/10)+' h');
 /* ================= les quatre origines ================= */
@@ -344,6 +362,8 @@ const pretZone=z=>{const t=e.zones[z.id]||0;return Date.now()>=t;};
 const resteZone=z=>Math.max(0,Math.ceil(((e.zones[z.id]||0)-Date.now())/1000));
 function fouiller(z){
   if(!pretZone(z))return toast('Épuisé pour ' + duree(resteZone(z)));
+  if(typeof charge==='function'&&charge()>=chargeMax())
+    return toast('Ton sac est plein · '+charge()+'/'+chargeMax());
   if(e.chaleur<=0||e.soif<=0)return toast('Tu es trop faible pour partir');
   const m=meteo();
   if(m.id==='tempete'&&Math.random()<.35){
@@ -464,7 +484,10 @@ function vueCamp(){
       :'<p class="p">Tu n’as rien pour la nuit. Un feu serait un début.</p>')+
     `<p class="p" style="margin-top:8px">${m.d}. ${n?'Il fait nuit, mieux vaut rester près du feu.':'Le jour est le moment de fouiller.'}</p></div>`;
 
-  s+='<div class="titre">TON SAC</div><div class="carte sac">';
+  if(e.compagnon)
+    s+=`<div class="titre">TON COMPAGNON</div><div class="carte">
+      <p class="p"><b>Un ${e.compagnon.nom}</b> te suit partout et porte 40 de charge en plus.</p></div>`;
+  s+=`<div class="titre">TON SAC · ${charge()}/${chargeMax()}</div><div class="carte sac">`;
   const cles=Object.keys(RESSOURCES).filter(k=>sac(k)>0);
   s+=cles.length?cles.map(k=>`<span class="res">${ICO_RES[k]}<b>${sac(k)}</b>${RESSOURCES[k].nom}</span>`).join('')
     :'<p class="p">Vide. Il faut sortir.</p>';
@@ -538,7 +561,7 @@ const FAUNE={
 
 let OBJETS=null, SOL=null, BETES=[], PARTICULES=[], TEXTES=[];
 let joueur={x:MONDE/2,y:MONDE/2,dir:'bas',pas:0,souffle:0};
-let boucleCarte=null, joyX=0, joyY=0, procheObjet=null;
+let boucleCarte=null, joyX=0, joyY=0, procheObjet=null, procheBete=null;
 
 /* ---------- construction du monde ---------- */
 function construireMonde(){
@@ -564,8 +587,15 @@ function construireMonde(){
     const x=90+alea(g+i*17)*(MONDE-180), y=90+alea(g+i*23)*(MONDE-180);
     objets.push({id:'caisse'+i,type:'caisse',nom:'Caisse abandonnée',x,y,w:36,h:30,solide:true,ph:alea(i)*6});
   }
-  /* on dégage la clairière de départ : rien de solide autour du point d'arrivée */
-  return objets.filter(o=>!o.solide||Math.hypot(o.x-MONDE/2,o.y-MONDE/2)>110);
+  /* on dégage la clairière de départ et la route qui monte vers le nord */
+  return objets
+    .filter(o=>!o.solide||Math.hypot(o.x-MONDE/2,o.y-MONDE/2)>110)
+    .map(o=>{
+      if(o.solide&&Math.abs(o.x-MONDE/2)<105){
+        o.x+=o.x<MONDE/2?-135:135;              // on l'écarte de la route
+      }
+      return o;})
+    .filter(o=>o.x>30&&o.x<MONDE-30);
 }
 function construireSol(){
   const b=biome();
@@ -656,7 +686,12 @@ const pretObjet=o=>{
   return Date.now()>=(e.zones[o.id]||0);
 };
 function bloque(x,y){
-  if(x<24||y<24||x>MONDE-24||y>MONDE-24)return true;
+  if(x<24||x>MONDE-24||y>MONDE-24)return true;
+  if(y<MONDE_HAUT+40)return true;                 // le nord s'ouvre sur le carrefour
+  if(y<24){                                        // le couloir qui y mène
+    if(Math.abs(x-MONDE/2)>150)return true;
+    if(y<CARREFOUR.y+CARREFOUR.r)return false;
+  }
   return OBJETS.some(o=>o.solide&&Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7);
 }
 function teinte(h){
@@ -798,16 +833,28 @@ function dessinerJoueur(g,x,y,nt){
 function dessinerCarte(W,H,g){
   const b=biome(), h=heure(), nt=nuit();
   const camX=Math.max(0,Math.min(MONDE-W,joueur.x-W/2));
-  const camY=Math.max(0,Math.min(MONDE-H,joueur.y-H/2));
+  const camY=Math.max(MONDE_HAUT,Math.min(MONDE-H,joueur.y-H/2));
   if(!SOL)SOL=construireSol();
-  g.drawImage(SOL,camX,camY,Math.min(W,MONDE),Math.min(H,MONDE),0,0,Math.min(W,MONDE),Math.min(H,MONDE));
+  /* au nord du monde : la lande qui mène au carrefour */
+  g.fillStyle=nuit()?'#26362c':'#7f9a68';g.fillRect(0,0,W,H);
+  if(camY+H>0)g.drawImage(SOL,camX,Math.max(0,camY),Math.min(W,MONDE),
+    Math.min(H,MONDE-Math.max(0,camY)),0,Math.max(0,-camY),Math.min(W,MONDE),
+    Math.min(H,MONDE-Math.max(0,camY)));
+  if(camY<CARREFOUR.y+CARREFOUR.r)dessinerCarrefour(g,camX,camY);
+  if(camY<200){                                   /* le couloir de terre vers le nord */
+    g.fillStyle='#c9b48a';
+    g.fillRect(MONDE/2-camX-70,CARREFOUR.y-camY,140,Math.abs(CARREFOUR.y)+40);}
 
   const dedans=(x,y,mx)=>x>camX-mx&&x<camX+W+mx&&y>camY-mx&&y<camY+H+mx;
   const liste=[];
   OBJETS.forEach(o=>{if(dedans(o.x,o.y,150))liste.push({y:o.y,f:g2=>dessinerObjet(g2,o,o.x-camX,o.y-camY,nt)});});
   BETES.forEach(bt=>{if(dedans(bt.x,bt.y,120))liste.push({y:bt.y,f:g2=>silhouetteBete(g2,bt,bt.x-camX,bt.y-camY,nt)});});
+  if(e.compagnon)liste.push({y:e.compagnon.y,f:g2=>silhouetteBete(g2,
+    {...e.compagnon,pas:e.compagnon.pas||0},e.compagnon.x-camX,e.compagnon.y-camY,nt)});
+  AUTRES.forEach(s2=>liste.push({y:s2.y,f:()=>{}}));
   liste.push({y:joueur.y,f:g2=>dessinerJoueur(g2,joueur.x-camX,joueur.y-camY,nt)});
   liste.sort((p,q)=>p.y-q.y).forEach(o=>o.f(g));
+  dessinerAutres(g,camX,camY);
 
   /* particules */
   PARTICULES.forEach(p=>{
@@ -877,6 +924,13 @@ function majJoueur(dt){
     joueur.dir=Math.abs(joyX)>Math.abs(joyY)?(joyX>0?'droite':'gauche'):(joyY>0?'bas':'haut');
     if(Math.random()<dt*7)poussiere(joueur.x+(Math.random()-.5)*8,joueur.y+8);
   }else joueur.pas=0;
+  /* une bête proche devient la cible : on peut la nourrir */
+  procheBete=null;
+  if(!e.compagnon){
+    let db=64;
+    BETES.forEach(b=>{const d=Math.hypot(b.x-joueur.x,b.y-joueur.y);
+      if(d<db&&b.t!=='oiseau'){db=d;procheBete=b;}});
+  }
   procheObjet=null;let d0=78;
   OBJETS.forEach(o=>{
     if(['arbre','rocher','buisson','herbe'].includes(o.type))return;
@@ -909,6 +963,141 @@ function fouillerObjet(o){
     if(g>0){texteVolant(o.x,o.y-o.h/2-dy,'+'+g+' '+RESSOURCES[k].nom.toLowerCase(),'#e6f5c8');dy+=16;}
   });
   sauver();
+}
+
+/* ================= le carrefour et les autres survivants ================= */
+const CARREFOUR={x:MONDE/2,y:-620,r:420};      // au nord de chaque biome, un lieu commun
+const MONDE_HAUT=-1000;                        // la carte s'étend au nord jusqu'au carrefour
+let AUTRES=[], monId=null, dernierEnvoi=0;
+
+function idJoueur(){
+  if(monId)return monId;
+  let v=null;try{v=localStorage.getItem('bdl.id');}catch(x){}
+  if(!v){v='s'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('bdl.id',v);}catch(x){}}
+  monId=v;return v;
+}
+const auCarrefour=()=>joueur.y<CARREFOUR.y+CARREFOUR.r;
+
+async function envoyerPosition(){
+  if(!sb)return;
+  const now=Date.now();
+  if(now-dernierEnvoi<3000)return;
+  dernierEnvoi=now;
+  try{
+    await sb.from('survivants').upsert({
+      id:idJoueur(),pseudo:e.nom||'Survivant',biome:e.biome,niv:e.niv,
+      x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
+      compagnon:e.compagnon?e.compagnon.nom:null,maj:new Date().toISOString()});
+    const {data}=await sb.from('survivants').select('*')
+      .gt('maj',new Date(now-90000).toISOString()).limit(30);
+    if(data)AUTRES=data.filter(s=>s.id!==idJoueur()&&s.y<CARREFOUR.y+CARREFOUR.r+200);
+  }catch(x){}
+}
+function dessinerAutres(g,camX,camY){
+  AUTRES.forEach(s=>{
+    const x=s.x-camX, y=s.y-camY;
+    if(x<-60||y<-80||x>4000||y>4000)return;
+    g.fillStyle='rgba(28,38,22,.28)';
+    g.beginPath();g.ellipse(x,y+11,10,3.6,0,0,7);g.fill();
+    g.fillStyle='#231f1a';g.fillRect(x-10,y-21,20,21);
+    g.fillStyle='#6a5f8f';g.fillRect(x-9,y-20,18,19);
+    g.fillStyle='#231f1a';g.fillRect(x-8,y-36,16,16);
+    g.fillStyle='#e8c49a';g.fillRect(x-7,y-35,14,14);
+    g.fillStyle='#3a2a1c';g.fillRect(x-8,y-38,16,6);
+    g.textAlign='center';g.font='600 11px -apple-system,system-ui,Arial';
+    g.fillStyle='rgba(15,22,14,.6)';g.fillText(s.pseudo,x+1,y-42);
+    g.fillStyle='#dfe9dc';g.fillText(s.pseudo,x,y-43);
+    g.font='600 9px -apple-system,system-ui,Arial';g.fillStyle='#a9c0a6';
+    g.fillText('niv '+s.niv+' · '+(BIOMES.find(b=>b.id===s.biome)||{nom:''}).nom.toLowerCase(),x,y-31);
+  });
+}
+function dessinerCarrefour(g,camX,camY){
+  const cx=CARREFOUR.x-camX, cy=CARREFOUR.y-camY;
+  /* place de terre battue, grand feu au centre, quatre poteaux indicateurs */
+  g.fillStyle='#c9b48a';g.beginPath();g.ellipse(cx,cy,CARREFOUR.r*0.8,CARREFOUR.r*0.55,0,0,7);g.fill();
+  g.fillStyle='rgba(214,196,150,.6)';g.beginPath();g.ellipse(cx,cy,CARREFOUR.r*0.55,CARREFOUR.r*0.38,0,0,7);g.fill();
+  /* le grand feu */
+  const f=Math.sin(Date.now()/160)*3;
+  g.fillStyle='#5a4632';
+  for(let i=0;i<5;i++){const a2=i*1.25;
+    g.save();g.translate(cx,cy);g.rotate(a2);g.fillRect(-4,-26,8,52);g.restore();}
+  g.fillStyle='#e8702c';g.beginPath();g.ellipse(cx,cy-14,15,20+f,0,0,7);g.fill();
+  g.fillStyle='#f2a83c';g.beginPath();g.ellipse(cx,cy-12,10,14+f,0,0,7);g.fill();
+  g.fillStyle='#ffe08a';g.beginPath();g.ellipse(cx,cy-10,5,8+f*.6,0,0,7);g.fill();
+  const gr=g.createRadialGradient(cx,cy-10,20,cx,cy-10,260);
+  gr.addColorStop(0,'rgba(255,180,90,.22)');gr.addColorStop(1,'rgba(255,180,90,0)');
+  g.fillStyle=gr;g.fillRect(cx-270,cy-280,540,540);
+  /* poteau indicateur */
+  g.fillStyle='#7d5934';g.fillRect(cx+150,cy-70,7,74);
+  BIOMES.forEach((b,i)=>{
+    g.fillStyle=b.id===e.biome?'#c9a24a':'#a8967a';
+    g.fillRect(cx+130,cy-64+i*15,54,11);
+    g.fillStyle='#3a2f22';g.font='600 8px -apple-system,system-ui,Arial';g.textAlign='left';
+    g.fillText(b.nom,cx+134,cy-56+i*15);
+  });
+}
+
+/* ================= le compagnon ================= */
+const APPRIVOISER=3;                      // trois repas pour gagner sa confiance
+let repas={};
+function nourrir(bete){
+  if(sac('nourriture')<1)return toast('Il te faut des vivres');
+  e.sacs.nourriture=sac('nourriture')-1;
+  repas[bete.n]=(repas[bete.n]||0)+1;
+  bete.attente=200;bete.apprivoise=repas[bete.n];
+  etincelle(bete.x,bete.y-10,'#ffd08a');
+  if(repas[bete.n]>=APPRIVOISER){
+    e.compagnon={nom:bete.n,c:bete.c,t:bete.t,x:joueur.x,y:joueur.y};
+    BETES=BETES.filter(b=>b!==bete);
+    noter('Un '+bete.n+' te suit désormais. Il porte une partie de ton butin.');
+    toast(bete.n+' t’a adopté');
+    gagnerXp(20);
+  }else{
+    texteVolant(bete.x,bete.y-24,'confiance '+repas[bete.n]+'/'+APPRIVOISER,'#ffd08a');
+    toast('Il s’approche un peu · '+repas[bete.n]+'/'+APPRIVOISER);
+  }
+  sauver();
+}
+function majCompagnon(dt){
+  const c=e.compagnon;if(!c)return;
+  const dx=joueur.x-c.x, dy=joueur.y-c.y, d=Math.hypot(dx,dy)||1;
+  if(d>52){const v=Math.min(126,d*2)*dt;c.x+=dx/d*v;c.y+=dy/d*v;c.pas=(c.pas||0)+v*.1;c.gauche=dx<0;}
+  else c.pas=0;
+}
+/* la charge : le sac a une limite, le compagnon la repousse */
+const CHARGE_BASE=60;
+const chargeMax=()=>CHARGE_BASE+(e.compagnon?40:0)+(a('gourde')?10:0);
+const charge=()=>Object.keys(RESSOURCES).reduce((s,k)=>s+sac(k),0);
+
+/* ================= la carte du monde ================= */
+function planMonde(){
+  const b=biome();
+  const px=(x,y)=>[(x/MONDE)*300, ((y-MONDE_HAUT)/(MONDE-MONDE_HAUT))*300];
+  const [jx,jy]=px(joueur.x,joueur.y);
+  const [cx,cy]=px(CARREFOUR.x,CARREFOUR.y);
+  let lieux='';
+  (OBJETS||[]).filter(o=>o.zone).forEach(o=>{
+    const [x,y]=px(o.x,o.y);
+    lieux+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="4" fill="#8a6a44"/>
+      <text x="${x.toFixed(0)}" y="${(y-7).toFixed(0)}" font-size="7" fill="#5a4a32"
+        text-anchor="middle" font-family="system-ui">${o.nom}</text>`;
+  });
+  let gens='';
+  AUTRES.forEach(s=>{const [x,y]=px(s.x,s.y);
+    gens+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="4" fill="#7a4fd6"/>`;});
+  const [hy]=[((0-MONDE_HAUT)/(MONDE-MONDE_HAUT))*300];
+  return `<svg viewBox="0 0 300 300" style="display:block;width:100%;background:#e6dcc0">
+    <rect x="0" y="${hy.toFixed(0)}" width="300" height="${(300-hy).toFixed(0)}" fill="#cfe0b4"/>
+    <rect x="0" y="0" width="300" height="${hy.toFixed(0)}" fill="#dfe4c8"/>
+    <rect x="${(150-14)}" y="${(cy).toFixed(0)}" width="28" height="${(hy-cy+6).toFixed(0)}" fill="#e0cfa8"/>
+    <circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="26" fill="#e0cfa8"/>
+    <circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="6" fill="#e8702c"/>
+    <text x="${cx.toFixed(0)}" y="${(cy-30).toFixed(0)}" font-size="9" fill="#5a4a32" text-anchor="middle"
+      font-family="Georgia,serif">Le carrefour</text>
+    ${lieux}${gens}
+    <circle cx="${jx.toFixed(0)}" cy="${jy.toFixed(0)}" r="6" fill="#c8434f" stroke="#f3ead6" stroke-width="2"/>
+    <text x="150" y="294" font-size="8" fill="#7a6a4a" text-anchor="middle" font-family="system-ui">${b.nom}</text>
+  </svg>`;
 }
 
 /* ================= l'écran de carte ================= */
@@ -976,7 +1165,13 @@ function majHud(){
     .map(([k,v,c])=>`<div class="mj"><span style="color:${c}">${ICO[k]}</span>
       <span class="b"><i style="width:${Math.round(v)}%;background:${c}"></i></span></div>`).join('');
   const a2=$('action');
-  if(procheObjet){
+  if(procheBete&&!procheObjet){
+    a2.classList.add('on');
+    const c=(procheBete.apprivoise||0);
+    a2.innerHTML='Nourrir<b>'+procheBete.n+' · '+c+'/'+APPRIVOISER+'</b>';
+    a2.style.background=sac('nourriture')?'#d9a441':'rgba(20,28,22,.7)';
+    a2.style.color=sac('nourriture')?'#2a1c08':'#c9d2c2';
+  }else if(procheObjet){
     a2.classList.add('on');
     const pret=pretObjet(procheObjet);
     a2.innerHTML=(pret?'Fouiller':'Vidé')+`<b>${procheObjet.nom||'Caisse'}</b>`;
@@ -984,7 +1179,9 @@ function majHud(){
     a2.style.color=pret?'#0f1a10':'#c9d2c2';
   }else a2.classList.remove('on');
 }
-$('action').onclick=()=>{if(procheObjet)fouillerObjet(procheObjet);};
+$('action').onclick=()=>{
+  if(procheObjet)fouillerObjet(procheObjet);
+  else if(procheBete)nourrir(procheBete);};
 $('c-retour').onclick=()=>fermerCarte();
 
 function ouvrirCarte(){
@@ -1000,7 +1197,8 @@ function ouvrirCarte(){
     if(!enCarte)return;
     boucleCarte=requestAnimationFrame(boucle);
     const dt=Math.min(.05,(t-dernierT)/1000);dernierT=t;
-    ecouler();majJoueur(dt);majBetes(dt);majParticules(dt);
+    ecouler();majJoueur(dt);majBetes(dt);majCompagnon(dt);majParticules(dt);
+    if(auCarrefour())envoyerPosition();
     const r=cv.getBoundingClientRect();
     dessinerCarte(r.width,r.height,ctx);
     dessinerJoy();majHud();
@@ -1017,6 +1215,18 @@ function fermerCarte(){
   rendre(true);
 }
 setInterval(()=>{if(enCarte)sauver();},4000);
+
+/* ---- la carte du monde ---- */
+$('c-monde').onclick=async()=>{
+  await envoyerPosition();
+  $('monde-b').innerHTML=`<h3>Où tu te trouves</h3>
+    <div class="sous">Au nord, un chemin mène au carrefour. Tous les survivants y arrivent, quel que soit leur point de départ.</div>
+    <div class="plan">${planMonde()}</div>
+    <div class="sous">${AUTRES.length?AUTRES.length+' survivant'+(AUTRES.length>1?'s':'')+' au carrefour en ce moment.':'Personne au carrefour pour l’instant.'}</div>
+    <button class="fermerm" id="m-x" style="margin-top:12px">Fermer</button>`;
+  $('monde').classList.add('on');
+  $('m-x').onclick=()=>$('monde').classList.remove('on');
+};
 
 
 /* ================= le départ ================= */
