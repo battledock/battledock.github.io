@@ -14,8 +14,8 @@
   --terre:#b98d55; --terre-f:#9a7342;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{height:100%}
-body{min-height:100vh;min-height:100dvh;background:var(--fond);color:var(--encre);
+html{height:100%;overflow-x:hidden}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden;background:var(--fond);color:var(--encre);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
@@ -35,7 +35,10 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 .xp .niv{font-size:11px;color:#b7c4d6;font-weight:600;letter-spacing:.4px}
 
 /* ---------- contenu ---------- */
-.corps{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 96px}
+.corps{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:14px 14px 96px;
+  overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+body.fige{overflow:hidden;position:fixed;inset:0;width:100%}
+body.fige .corps{overflow:hidden}
 .titre{font:600 12px system-ui;letter-spacing:1.6px;color:var(--doux);margin:2px 0 10px}
 
 /* la ferme */
@@ -121,11 +124,12 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 
 /* ---------- bienvenue ---------- */
 #accueil{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
-  padding:16px;background:#e9e3d6;animation:fondu .35s ease-out}
+  padding:16px;background:#e9e3d6;animation:fondu .35s ease-out;
+  overflow:hidden;overscroll-behavior:contain;touch-action:none}
 #accueil.on{display:flex}
 @keyframes fondu{from{opacity:0}}
 @keyframes monteC{from{transform:translateY(20px) scale(.985);opacity:0}}
-.carte-postale{width:100%;max-width:420px;background:#fffdf7;border-radius:20px;padding:13px 13px 0;
+.carte-postale{width:100%;max-width:420px;touch-action:none;background:#fffdf7;border-radius:20px;padding:13px 13px 0;
   box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 3px 8px rgba(70,56,32,.10),0 26px 60px rgba(70,56,32,.30);
   animation:monteC .45s cubic-bezier(.2,.8,.3,1);display:flex;flex-direction:column;
   max-height:calc(100dvh - 32px)}
@@ -151,8 +155,6 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 .nuage.n1{animation-duration:120s}
 .nuage.n2{animation-duration:170s;animation-delay:-60s}
 .nuage.n3{animation-duration:210s;animation-delay:-120s}
-@keyframes vol{0%{transform:translate(0,0)}50%{transform:translate(70px,-14px)}100%{transform:translate(150px,4px)}}
-.oiseaux{animation:vol 26s linear infinite}
 @keyframes monteFumee{0%{transform:translate(0,0) scale(.7);opacity:.55}
   100%{transform:translate(-7px,-26px) scale(1.9);opacity:0}}
 .fumee circle{animation:monteFumee 5s ease-out infinite}
@@ -160,7 +162,8 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 @keyframes balance{0%,100%{transform:rotate(-2.2deg)}50%{transform:rotate(2.2deg)}}
 .epi{animation:balance 4.4s ease-in-out infinite}
 
-#tuto{position:fixed;inset:0;z-index:55;display:none;pointer-events:none}
+#tuto{position:fixed;inset:0;z-index:55;display:none;pointer-events:none;
+  overflow:hidden;touch-action:none;overscroll-behavior:contain}
 #tuto.on{display:block}
 #tuto .trou{position:absolute;border-radius:16px;box-shadow:0 0 0 9999px rgba(15,25,45,.72);
   transition:all .28s cubic-bezier(.3,.8,.4,1);border:2px solid var(--vert-c)}
@@ -683,10 +686,6 @@ function ILLUSTRATION(){
    return `<ellipse cx="${196-t*10}" cy="${y}" rx="${2+t*4}" ry="${1+t*1.6}" fill="#bfa madeup"/>`;}).join('').replace(/bfa madeup/g,'bfa87e')}</g>
  ${cloture}
 
- <!-- oiseaux -->
- <g class="oiseaux" stroke="#5b6a6e" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".65">
-   <path d="M232 64 q5-5 10 0 q5-5 10 0"/><path d="M256 76 q4-4 8 0 q4-4 8 0"/>
-   <path d="M244 88 q3.4-3.4 6.8 0 q3.4-3.4 6.8 0"/></g>
 
  <!-- premier plan : herbes et épis -->
  <path d="M-10 286 Q80 272 170 288 Q260 304 410 282 L410 300 L-10 300Z" fill="#7d9a58"/>
@@ -704,6 +703,8 @@ const ICO_PANIER=`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" st
 const ICO_MAISON=`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#24406b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
   <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>`;
 
+function ouvrirVoile(){document.body.classList.add('fige');$('accueil').classList.add('on');}
+function fermerVoile(){$('accueil').classList.remove('on');document.body.classList.remove('fige');}
 function ouvrirAccueil(){
   $('accueil-b').outerHTML=`<div class="carte-postale" id="accueil-b">
       <div class="vue">${ILLUSTRATION()}</div>
@@ -716,12 +717,12 @@ function ouvrirAccueil(){
         <button class="saut" id="a-skip">passer</button>
       </div>
     </div>`;
-  $('accueil').classList.add('on');
+  ouvrirVoile();
   $('a-go').onclick=()=>{e.accueilVu=true;e.tuto=1;sauver();
-    $('accueil').classList.remove('on');rendre();
+    fermerVoile();rendre();
     const p=document.querySelector('.parc');if(p)p.click();};
   $('a-skip').onclick=()=>{e.accueilVu=true;e.tuto=-1;sauver();
-    $('accueil').classList.remove('on');rendre();};
+    fermerVoile();rendre();};
 }
 
 /* ================= tutoriel ================= */
@@ -804,8 +805,8 @@ function avancerTuto(){
         <p>Le reste t’appartient.</p>
         <button class="cta vert" id="a-fin" style="background:var(--vert)">Continuer</button>
       </div></div>`;
-    $('accueil').classList.add('on');
-    $('a-fin').onclick=()=>{$('accueil').classList.remove('on');rendre();};
+    ouvrirVoile();
+    $('a-fin').onclick=()=>{fermerVoile();rendre();};
     return;
   }
   // l'étape 2 accélère la première pousse pour ne pas faire attendre
