@@ -102,6 +102,10 @@ const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','lo
 const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
 const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
+const SILHOUETTES=['masculine','féminine','fine','robuste'];
+const HAUTS=['veste','t-shirt','chemise','pull','débardeur','manteau','gilet','tunique'];
+const BAS=['pantalon','short','jupe','treillis','longue jupe','bermuda'];
+const SOULIERS=['bottes','baskets','sandales','bottillons'];
 const SOURCILS=['fins','epais','arques','fronces'];
 const NEZ=['petit','droit','large','retrousse'];
 const BOUCHES=['neutre','sourire','severe','entrouverte'];
@@ -109,7 +113,8 @@ const MARQUES=['aucune','taches','cicatrice','grain','fard','peinture'];
 const BOUCLES=['aucune','anneau','perle','plume'];
 const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
               chaussures:0,chapeau:0,sac:1,
-              sourcils:0,nez:1,bouche:0,marque:0,boucle:0};
+              sourcils:0,nez:1,bouche:0,marque:0,boucle:0,
+              corps:0,haut:0,bas:0,souliers:0};
 const teint=(c,k)=>{
   const n=parseInt(c.slice(1),16);
   const f=v=>Math.max(0,Math.min(255,v+k));
@@ -133,6 +138,16 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const bouche=BOUCHES[p.bouche]||'neutre';
   const marque=MARQUES[p.marque]||'aucune';
   const boucle=BOUCLES[p.boucle]||'aucune';
+  const silhouette=SILHOUETTES[p.corps]||'masculine';
+  const hautT=HAUTS[p.haut]||'veste';
+  const basT=BAS[p.bas]||'pantalon';
+  const soulier=SOULIERS[p.souliers]||'bottes';
+  /* la silhouette : largeur d'épaules, taille, hanches */
+  const SIL={'masculine':{ep:8,ta:7,ha:7},
+             'féminine' :{ep:7,ta:5,ha:8},
+             'fine'     :{ep:6,ta:5,ha:6},
+             'robuste'  :{ep:9,ta:9,ha:8}}[silhouette];
+  const EP=SIL.ep, TA=SIL.ta, HA=SIL.ha;   /* demi-largeurs */
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
@@ -150,6 +165,8 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
   const reb=bouge?AN.reb[F]:0;
   const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
+  const MANCHE_AR={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
+                   'gilet':0,'t-shirt':4,'débardeur':0}[HAUTS[p.haut]||'veste'];
   const s=dir==='droite'?1:-1;
 
   /* ---- mesures du corps (quatre têtes) ----
@@ -173,24 +190,33 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 
   /* ---- jambes ---- */
+  /* jusqu'où le tissu descend, selon le bas porté */
+  const TISSU={'pantalon':JH,'short':6,'jupe':5,'treillis':JH,'longue jupe':10,'bermuda':8}[basT];
   const jambeProfil=(dec,plie,col,botte)=>{
     const h=JH-plie;
-    R(-2+dec,-JH,4,h,col);
-    R(-2+dec,-JH,4,1,teint(col,10));
-    R(-2+dec,-4,4,4,teint(col,-12));           /* mollet plus sombre */
+    R(-2+dec,-JH,4,h,peau);                    /* la jambe nue */
+    if(TISSU>0)R(-2+dec,-JH,4,Math.min(h,TISSU),col);
+    if(TISSU>=h)R(-2+dec,-4,4,4,teint(col,-12));
+    if(basT==='treillis'){R(-2+dec,-JH+5,4,1,teint(col,-22));R(-1+dec,-JH+6,2,2,teint(col,14));}
     R(-3+dec,-JH+h,5,3,botte);
     R(-3+dec,-JH+h,5,1,teint(botte,18));
+    if(soulier==='baskets')R(-3+dec,-JH+h+2,5,1,'#e8e4d8');
+    if(soulier==='sandales'){R(-2+dec,-JH+h,3,1,teint(botte,20));}
   };
   const jambeFace=(cx,phase,col,botte)=>{
-    /* la jambe part toujours de la hanche : c'est le pied qui monte ou descend,
-       jamais le haut de la cuisse — sinon un trou s'ouvre sous le torse */
     const avance=phase>0;
-    const h=avance?JH:JH-2;                    /* recule : le pied se lève de 2 */
+    const h=avance?JH:JH-2;
     const ec=Math.abs(phase)>1?(avance?-1:1):0;
-    R(cx+ec,-JH,4,h,avance?teint(col,8):teint(col,-10));
-    R(cx+ec,-JH,4,1,pantC);
+    R(cx+ec,-JH,4,h,avance?teint(peau,4):teint(peau,-14));   /* la jambe */
+    if(TISSU>0){
+      R(cx+ec,-JH,4,Math.min(h,TISSU),avance?teint(col,8):teint(col,-10));
+      R(cx+ec,-JH,4,1,pantC);
+    }
+    if(basT==='treillis'){R(cx+ec,-JH+5,4,1,teint(col,-22));R(cx+1+ec,-JH+6,2,2,teint(col,14));}
     R(cx-1+ec,-JH+h,5,3,avance?botte:teint(botte,-14));
     R(cx-1+ec,-JH+h,5,1,chauC);
+    if(soulier==='baskets')R(cx-1+ec,-JH+h+2,5,1,'#e8e4d8');
+    if(soulier==='sandales')R(cx+ec,-JH+h,3,1,teint(botte,22));
   };
   if(cote){
     jambeProfil(jdP*0.9-1,jdL,pantO,teint(chau,-14));
@@ -200,41 +226,95 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     else{jambeFace(-5,jgP,pant,chau);jambeFace(1,jdP,pantO,teint(chau,-14));}
   }
 
+  /* jupe : un trapèze par-dessus le haut des jambes */
+  if(basT==='jupe'||basT==='longue jupe'){
+    const hj=basT==='jupe'?6:9;
+    for(let i=0;i<hj;i++){
+      const w2=HA-1+Math.round(i*(basT==='jupe'?0.7:0.55));
+      R(-w2,-JH+i,w2*2,1,i<2?pantC:pant);
+    }
+    R(-(HA+3),-JH+hj-1,(HA+3)*2,1,pantO);
+  }
+
   /* hanches : elles ferment la jonction entre le torse et les jambes */
-  R(-7,-JH-2,14,3,N);
-  R(-6,-JH-1,12,2,pantO);
-  R(-6,-JH-1,12,1,pant);
+  R(-(HA+1),-JH-2,(HA+1)*2,3,N);
+  R(-HA,-JH-1,HA*2,2,pantO);
+  R(-HA,-JH-1,HA*2,1,pant);
 
   /* ---- bras arrière (profil) ---- */
   if(cote){
     const ar=bgP;
-    R((s>0?-6:3)-ar*s,yT+2,3,11,vesteT);
-    R((s>0?-6:3)-ar*s,yT+13,3,3,peauT);
+    const bx=(s>0?-6:3)-ar*s;
+    R(bx,yT+2,3,11,peauT);
+    if(MANCHE_AR>0)R(bx,yT+2,3,MANCHE_AR,vesteT);
+    R(bx,yT+13,3,3,peauT);
   }
 
-  /* ---- torse ---- */
-  R(-8,yT-1,16,TH+1,N);
-  R(-7,yT,14,TH-1,veste);
-  R(-7,yT,14,2,vesteC);
-  R(-7,yT,3,TH-1,vesteT);
-  R(-7,yT+TH-4,14,2,vesteO);                  /* ceinture */
+  /* ---- torse : la coupe du vêtement suit la silhouette ---- */
+  const colH=veste, colHC=vesteC, colHO=vesteO, colHT=vesteT;
+  R(-EP,yT-1,EP*2,TH+1,N);                       /* contour aux épaules */
+  R(-EP+1,yT,EP*2-2,3,colH);                     /* les épaules */
+  R(-EP+1,yT,EP*2-2,2,colHC);
+  for(let i=3;i<TH-1;i++){                       /* le buste, resserré à la taille */
+    const w2=Math.round(EP-1-(EP-TA)*Math.min(1,(i-2)/(TH-5)));
+    R(-w2,yT+i,w2*2,1,colH);
+    R(-w2,yT+i,2,1,colHT);
+    R(w2-2,yT+i,2,1,colHO);
+  }
+  R(-TA,yT+TH-4,TA*2,2,colHO);                   /* ceinture */
   R(-1,yT+TH-4,2,2,'#c9a24a');
-  if(!prof){R(-1,yT,2,TH-5,vesteO);R(-5,yT,3,2,vesteC);R(2,yT,3,2,vesteC);}
-  R(-7,yT+TH-2,14,1,vesteT);
+  /* les détails propres à chaque haut */
+  if(hautT==='veste'&&!prof){R(-1,yT,2,TH-5,colHO);R(-4,yT,3,2,colHC);R(1,yT,3,2,colHC);}
+  if(hautT==='chemise'&&!prof){
+    R(-1,yT,2,TH-5,colHT);
+    R(-4,yT,4,3,colHC);R(0,yT,4,3,colHC);        /* col ouvert */
+    for(let i=0;i<3;i++)R(0,yT+4+i*3,1,1,'#f2efe4');
+  }
+  if(hautT==='pull'&&!prof){
+    R(-3,yT-2,6,3,colHC);R(-3,yT-2,6,1,colH);    /* col montant */
+    for(let i=4;i<TH-4;i+=3)R(-EP+2,yT+i,EP*2-4,1,teint(colH,-12));
+  }
+  if(hautT==='t-shirt'&&!prof){R(-3,yT,6,2,peau);R(-3,yT,6,1,peauC);}
+  if(hautT==='débardeur'){
+    R(-4,yT,8,3,peau);R(-4,yT,8,1,peauC);        /* décolleté */
+    R(-EP+1,yT,2,4,colH);R(EP-3,yT,2,4,colHO);   /* bretelles */
+  }
+  if(hautT==='gilet'&&!prof){
+    R(-2,yT,4,TH-5,peau);R(-2,yT,4,1,peauC);
+    R(-2,yT+TH-6,4,2,colHO);
+  }
+  if(hautT==='manteau'){
+    R(-TA,yT+TH-2,TA*2,6,colH);                  /* les pans descendent */
+    R(-TA,yT+TH-2,TA*2,1,colHC);
+    R(-TA,yT+TH+3,TA*2,1,colHT);
+    if(!prof)R(-1,yT+TH-2,2,6,colHT);
+  }
+  if(hautT==='tunique'){
+    R(-TA,yT+TH-2,TA*2,4,colH);
+    R(-TA,yT+TH-2,TA*2,1,colHC);
+    R(-TA,yT+TH+1,TA*2,1,colHT);
+    if(!prof){R(-4,yT,8,2,colHC);R(-1,yT,2,4,colHO);}
+  }
+  R(-EP+1,yT+TH-2,EP*2-2,1,colHT);
 
-  /* ---- bras ---- */
+  /* ---- bras : la manche s'arrête selon le vêtement ---- */
+  const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
+                'gilet':0,'t-shirt':4,'débardeur':0}[hautT];
+  const brasCol=(dev)=>dev?veste:vesteT;
+  const bras=(bx,by,dev)=>{
+    R(bx,by,3,11,dev?teint(peau,2):peauO);       /* le bras nu */
+    if(MANCHE>0){
+      R(bx,by,3,MANCHE,brasCol(dev));
+      R(bx,by,3,2,dev?vesteC:vesteO);
+      if(MANCHE<11)R(bx,by+MANCHE-1,3,1,teint(brasCol(dev),-20));
+    }
+    R(bx,by+11,3,3,dev?peau:peauO);              /* la main */
+  };
   if(cote){
-    const av=bdP;
-    const bx=(s>0?1:-4)+av*s;
-    R(bx,yT+1,3,11,veste);
-    R(bx,yT+1,3,2,vesteC);
-    R(bx,yT+12,3,3,peau);
+    bras((s>0?1:-4)+bdP*s,yT+1,true);
   }else{
-    const gAv=bgP>0, dAv=bdP>0;
-    R(-10,yT+1,3,11,gAv?vesteO:vesteT);
-    R(-10,yT+12,3,3+(gAv?1:0),gAv?peau:peauO);
-    R(7,yT+1,3,11,dAv?veste:vesteO);
-    R(7,yT+12,3,3+(dAv?1:0),dAv?peau:peauO);
+    bras(-(EP+2),yT+1,bgP>0);
+    bras(EP-1,yT+1,bdP>0);
   }
 
   /* ---- tête ---- */
@@ -624,7 +704,8 @@ function dessinerJoy(){
 
 /* ================= la personnalisation ================= */
 const GROUPES=[
- {c:'peau',      t:'Teint',      o:'Visage', l:()=>PALETTES.peau,      k:'couleur'},
+ {c:'corps',     t:'Silhouette', o:'Corps',  l:()=>SILHOUETTES,        k:'mot'},
+ {c:'peau',      t:'Teint',      o:'Corps',  l:()=>PALETTES.peau,      k:'couleur'},
  {c:'yeux',      t:'Yeux',       o:'Visage', l:()=>PALETTES.yeux,      k:'couleur'},
  {c:'formeYeux', t:'Regard',     o:'Visage', l:()=>YEUX_F,             k:'mot'},
  {c:'sourcils',  t:'Sourcils',   o:'Visage', l:()=>SOURCILS,           k:'mot'},
@@ -634,16 +715,19 @@ const GROUPES=[
  {c:'cheveux',   t:'Couleur',    o:'Cheveux',l:()=>PALETTES.cheveux,   k:'couleur'},
  {c:'coiffe',    t:'Coupe',      o:'Cheveux',l:()=>COIFFES,            k:'mot'},
  {c:'barbe',     t:'Barbe',      o:'Cheveux',l:()=>BARBES,             k:'mot'},
- {c:'veste',     t:'Veste',      o:'Tenue',  l:()=>PALETTES.veste,     k:'couleur'},
- {c:'pantalon',  t:'Pantalon',   o:'Tenue',  l:()=>PALETTES.pantalon,  k:'couleur'},
- {c:'chaussures',t:'Chaussures', o:'Tenue',  l:()=>PALETTES.chaussures,k:'couleur'},
+ {c:'haut',      t:'Haut',       o:'Tenue',  l:()=>HAUTS,              k:'mot'},
+ {c:'veste',     t:'Couleur du haut',o:'Tenue',l:()=>PALETTES.veste,   k:'couleur'},
+ {c:'bas',       t:'Bas',        o:'Tenue',  l:()=>BAS,                k:'mot'},
+ {c:'pantalon',  t:'Couleur du bas',o:'Tenue',l:()=>PALETTES.pantalon, k:'couleur'},
+ {c:'souliers',  t:'Chaussures', o:'Tenue',  l:()=>SOULIERS,           k:'mot'},
+ {c:'chaussures',t:'Couleur des chaussures',o:'Tenue',l:()=>PALETTES.chaussures,k:'couleur'},
  {c:'chapeau',   t:'Sur la tête',o:'Objets', l:()=>CHAPEAUX,           k:'mot'},
  {c:'sac',       t:'Sac à dos',  o:'Objets', l:()=>PALETTES.sac,       k:'sac'},
  {c:'boucle',    t:'Boucle d’oreille',o:'Objets',l:()=>BOUCLES,        k:'mot'}
 ];
-const ONGLETS=['Visage','Cheveux','Tenue','Objets'];
+const ONGLETS=['Corps','Visage','Cheveux','Tenue','Objets'];
 
-let LOOK={ap:null, onglet:'Visage', dir:'bas', marche:true, t0:0};
+let LOOK={ap:null, onglet:'Corps', dir:'bas', marche:true, t0:0};
 function dessinerApercu(){
   const c=$('vg-c');if(!c)return;
   const g=c.getContext('2d');
