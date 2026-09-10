@@ -765,7 +765,7 @@ function taille(){
   const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
   ECH=dpr*ZOOM;
   const w=window.innerWidth, h=window.innerHeight;
-  VW=Math.ceil(w/ZOOM);VH=Math.ceil(h/ZOOM);
+  VW=Math.ceil(w/ZOOM)+1;VH=Math.ceil(h/ZOOM)+1;
   cv.width=VW*ECH;cv.height=VH*ECH;
   cv.style.width=(VW*ZOOM)+'px';cv.style.height=(VH*ZOOM)+'px';
   ctx.setTransform(ECH,0,0,ECH,0,0);
@@ -775,15 +775,26 @@ addEventListener('resize',taille);
 
 function dessiner(){
   if(!SOL)SOL=construireSol();
-  /* on arrondit la position du joueur, puis on en déduit la caméra :
-     décor et personnage partagent ainsi exactement le même repère entier */
-  const jx=Math.round(joueur.x), jy=Math.round(joueur.y);
-  const camX=Math.max(0,Math.min(MONDE-VW,jx-(VW>>1)));
-  const camY=Math.max(0,Math.min(MONDE-VH,jy-(VH>>1)));
-  ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW,VH);
-  const lw=Math.min(VW,MONDE-camX), lh=Math.min(VH,MONDE-camY);
+  /* La caméra avance en sous-pixels.
+     Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
+     ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
+  const camXf=Math.max(0,Math.min(MONDE-VW,joueur.x-VW/2));
+  const camYf=Math.max(0,Math.min(MONDE-VH,joueur.y-VH/2));
+  const camX=Math.floor(camXf), camY=Math.floor(camYf);
+  const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
+  const fy=Math.round((camYf-camY)*ECH)/ECH;
+
+  ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH),Math.round(-fy*ECH));
+  ctx.imageSmoothingEnabled=false;
+
+  ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
+  const lw=Math.min(VW+2,MONDE-camX), lh=Math.min(VH+2,MONDE-camY);
   ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
-  sprite(ctx,jx-camX,jy-camY,e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
+
+  /* le personnage suit exactement le même repère : il ne bouge donc pas par rapport au sol */
+  const px=Math.round((joueur.x-camX)*ECH)/ECH;
+  const py=Math.round((joueur.y-camY)*ECH)/ECH;
+  sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
 }
 
 /* ================= déplacement ================= */
