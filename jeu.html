@@ -748,12 +748,219 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 }
 
+/* ================= le décor, en pixels de jeu =================
+   Repère de chaque élément : x au milieu du pied, y au sol.
+   Tailles réelles, à l'échelle du personnage (42 px de haut).   */
+const VERTS={
+ fonce:'#25542a', moyen:'#2f6b34', clair:'#3d7d3f', vif:'#4a944a', lumiere:'#5aa855',
+ tronc:'#6b4a28', troncC:'#8a6238', troncO:'#4f3520',
+ pierre:'#7b8288', pierreC:'#8b939a', pierreH:'#a2a9b0', pierreO:'#5f666c', pierreE:'#b7bec4',
+ ombre:'rgba(40,60,28,.34)'
+};
+
+/* --- l'arbre : 26 de large, 46 de haut, tronc de 5 --- */
+function dessinerArbre(g,x,y,gr){
+  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const s=gr||0;                              /* trois tailles */
+  const h=[0,4,8][s];
+  g.fillStyle=V.ombre;
+  g.beginPath();g.ellipse(x+1,y-1,10+s*2,3,0,0,7);g.fill();
+  /* tronc, avec ses racines et deux branches */
+  R(-2,-16-h,5,16+h,V.tronc);
+  R(-2,-16-h,1,16+h,V.troncC);
+  R(2,-13-h,1,13+h,V.troncO);
+  R(-5,-4,3,2,V.tronc);R(3,-3,3,2,V.tronc);   /* racines */
+  R(-6,-13-h,4,1,V.tronc);R(3,-16-h,4,1,V.tronc);
+  /* houppier : quatre étages, du plus sombre en bas au plus clair au sommet */
+  R(-11,-30-h,22,12,V.moyen);
+  R(-13,-27-h,2,7,V.moyen);R(11,-27-h,2,7,V.fonce);
+  R(-11,-22-h,22,4,V.fonce);
+  R(-9,-35-h,18,6,V.clair);
+  R(-6,-39-h,12,5,V.vif);
+  R(-4,-42-h,8,3,V.lumiere);
+  R(-9,-26-h,3,1,V.vif);R(5,-32-h,3,1,V.vif);  /* éclats de lumière */
+  R(-2,-41-h,3,1,'#6fbb66');
+}
+
+/* --- le rocher : 19 de large, 17 de haut --- */
+function dessinerRocher(g,x,y,gr){
+  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const s=gr||0;
+  g.fillStyle=V.ombre;
+  g.beginPath();g.ellipse(x+1,y-1,8+s*2,3,0,0,7);g.fill();
+  R(-7-s,-9,15+s*2,9,V.pierre);
+  R(-5-s,-13,11+s,4,V.pierreC);
+  R(-3,-16,6,4,V.pierreH);
+  R(-7-s,-4,15+s*2,4,V.pierreO);
+  R(4+s,-12,3,9,'#666d73');                   /* la facette à l'ombre */
+  R(-4,-12,2,1,V.pierreE);                    /* le reflet */
+  R(-10-s,-4,4,4,V.pierre);                   /* un éclat au pied */
+  R(-10-s,-2,4,2,V.pierreO);
+}
+
+/* --- le buisson : 20 de large, 16 de haut --- */
+function dessinerBuisson(g,x,y,gr){
+  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const s=gr||0;
+  g.fillStyle=V.ombre;
+  g.beginPath();g.ellipse(x+1,y-1,8+s,2.5,0,0,7);g.fill();
+  R(-8-s,-9,17+s*2,9,V.clair);
+  R(-6,-13,12,5,V.vif);
+  R(-3,-16,7,4,V.lumiere);
+  R(-8-s,-4,17+s*2,4,V.moyen);
+  R(-10-s,-7,2,5,V.clair);R(9+s,-7,2,5,V.moyen);
+  R(-5,-11,2,2,'#c94a4a');R(2,-7,2,2,'#c94a4a');R(-1,-14,2,2,'#e2604a');
+}
+
+/* --- le massif de fleurs : 26 de large, 11 de haut --- */
+function dessinerFleurs(g,x,y,gr){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const tons=['#e8d76a','#f0f4f2','#e8607a','#c98fe0'];
+  const clairs=['#fff8c8','#ffffff','#ffd3dc','#e6c4f2'];
+  g.fillStyle='rgba(125,179,93,.5)';
+  g.beginPath();g.ellipse(x,y-1,12,4,0,0,7);g.fill();
+  for(let i=0;i<6;i++){
+    const dx=-11+i*4+((i*7)%3), dy=-(3+((i*5)%5));
+    R(dx,dy,1,-dy,'#5e8a47');
+    R(dx-1,dy-2,3,2,tons[i%4]);
+    R(dx,dy-2,1,1,clairs[i%4]);
+  }
+  R(-8,-1,2,1,'#6faa55');R(5,-2,2,1,'#6faa55');
+}
+
+/* --- une souche, quand on aura la récolte --- */
+function dessinerSouche(g,x,y){
+  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  g.fillStyle=V.ombre;g.beginPath();g.ellipse(x+1,y-1,6,2,0,0,7);g.fill();
+  R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.troncO);
+}
+
 /* ================= le monde ================= */
 const MONDE=1024;                 // en pixels de jeu
 const ZOOM=3;                     // chaque pixel du jeu fait 3 pixels d'écran
 let SOL=null;
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
+/* ================= ce qui pousse sur la carte ================= */
+const BORD=40;                                  /* la lisière, infranchissable */
+let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
+
+const TAILLES={
+ arbre:  [{w:16,h:8},{w:18,h:9},{w:20,h:10}],   /* zone qui bloque, au pied */
+ rocher: [{w:16,h:8},{w:18,h:9},{w:20,h:10}],
+ buisson:[{w:14,h:6},{w:16,h:7},{w:18,h:7}],
+ fleurs: null                                    /* on marche dedans */
+};
+
+function semerDecor(){
+  DECOR=[];
+  const A=alea;
+  const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
+  const dedans=(x,y)=>x>BORD+16&&x<MONDE-BORD-16&&y>BORD+30&&y<MONDE-BORD-10;
+  const depart=(x,y)=>Math.hypot(x-MONDE/2,y-MONDE/2)<90;   /* clairière d'arrivée */
+
+  /* trois bosquets d'arbres, pour donner des repères */
+  const bosquets=[[240,260],[790,330],[360,780],[820,790]];
+  bosquets.forEach((b,k)=>{
+    for(let i=0;i<14;i++){
+      const x=Math.round(b[0]+(A(k*9+i)-.5)*230);
+      const y=Math.round(b[1]+(A(k*13+i)-.5)*200);
+      if(!dedans(x,y)||depart(x,y)||!libre(x,y,34))continue;
+      DECOR.push({t:'arbre',x,y,gr:Math.floor(A(k+i*3)*3)});
+    }
+  });
+  /* des arbres isolés, partout ailleurs */
+  for(let i=0;i<40;i++){
+    const x=Math.round(BORD+20+A(i*1.7)*(MONDE-2*BORD-40));
+    const y=Math.round(BORD+40+A(i*2.9)*(MONDE-2*BORD-60));
+    if(!dedans(x,y)||depart(x,y)||!libre(x,y,40))continue;
+    DECOR.push({t:'arbre',x,y,gr:Math.floor(A(i*5)*3)});
+  }
+  /* rochers, souvent groupés par deux ou trois */
+  for(let i=0;i<26;i++){
+    const x=Math.round(BORD+20+A(i*3.3)*(MONDE-2*BORD-40));
+    const y=Math.round(BORD+40+A(i*4.1)*(MONDE-2*BORD-60));
+    if(!dedans(x,y)||depart(x,y)||!libre(x,y,30))continue;
+    DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
+    if(A(i*11)>.5){
+      const x2=x+18+Math.round(A(i*13)*10), y2=y+Math.round((A(i*17)-.5)*14);
+      if(dedans(x2,y2)&&!depart(x2,y2)&&libre(x2,y2,20))DECOR.push({t:'rocher',x:x2,y:y2,gr:0});
+    }
+  }
+  /* buissons */
+  for(let i=0;i<55;i++){
+    const x=Math.round(BORD+18+A(i*5.7)*(MONDE-2*BORD-36));
+    const y=Math.round(BORD+34+A(i*6.3)*(MONDE-2*BORD-50));
+    if(!dedans(x,y)||depart(x,y)||!libre(x,y,26))continue;
+    DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
+  }
+  /* massifs de fleurs : on peut marcher dessus */
+  for(let i=0;i<40;i++){
+    const x=Math.round(BORD+16+A(i*7.1)*(MONDE-2*BORD-32));
+    const y=Math.round(BORD+30+A(i*8.9)*(MONDE-2*BORD-44));
+    if(!dedans(x,y)||!libre(x,y,22))continue;
+    DECOR.push({t:'fleurs',x,y,gr:0});
+  }
+  /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
+  DECOR.sort((a,b)=>a.y-b.y);
+}
+
+/* ---- la lisière : une forêt dense qu'on ne traverse pas ---- */
+let LISIERE=null;
+function construireLisiere(){
+  const c=document.createElement('canvas');
+  c.width=MONDE;c.height=MONDE;
+  const g=c.getContext('2d');
+  const A=alea;
+  const bande=(x0,y0,x1,y1)=>{
+    for(let i=0;i<520;i++){
+      const x=Math.round(x0+A(i*1.3)*(x1-x0));
+      const y=Math.round(y0+A(i*2.7)*(y1-y0));
+      const t=A(i*3.9);
+      /* des couronnes d'arbres serrées, trois valeurs */
+      g.fillStyle=t<.34?'#25542a':(t<.68?'#2f6b34':'#1e4522');
+      g.fillRect(x-9,y-7,18,14);
+      g.fillStyle=t<.5?'#3d7d3f':'#2f6b34';
+      g.fillRect(x-6,y-11,12,5);
+      g.fillStyle='#4a944a';
+      g.fillRect(x-3,y-13,6,3);
+      g.fillStyle='#1a3d1e';
+      g.fillRect(x-9,y+4,18,3);
+    }
+  };
+  bande(-6,-6,MONDE+6,BORD+8);                  /* haut */
+  bande(-6,MONDE-BORD-8,MONDE+6,MONDE+6);       /* bas */
+  bande(-6,-6,BORD+8,MONDE+6);                  /* gauche */
+  bande(MONDE-BORD-8,-6,MONDE+6,MONDE+6);       /* droite */
+  return c;
+}
+
+/* ---- ce qui bloque le passage ---- */
+function bloque(x,y){
+  if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
+  for(const o of DECOR){
+    const t=TAILLES[o.t];if(!t)continue;
+    const d=t[o.gr||0];
+    if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;
+  }
+  return false;
+}
+
+/* ---- dessin, avec la profondeur ---- */
+function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
+  let posé=false;
+  for(const o of DECOR){
+    if(!posé&&o.y>joueurY){dessinerJoueur();posé=true;}    /* le joueur passe devant */
+    const x=o.x-camX, y=o.y-camY;
+    if(x<-30||y<-50||x>VW2+30||y>VH2+30)continue;
+    if(o.t==='arbre')dessinerArbre(g,x,y,o.gr);
+    else if(o.t==='rocher')dessinerRocher(g,x,y,o.gr);
+    else if(o.t==='buisson')dessinerBuisson(g,x,y,o.gr);
+    else if(o.t==='fleurs')dessinerFleurs(g,x,y,o.gr);
+  }
+  if(!posé)dessinerJoueur();
+}
+
 function construireSol(){
   const c=document.createElement('canvas');c.width=MONDE;c.height=MONDE;
   const g=c.getContext('2d');
@@ -863,7 +1070,7 @@ function taille(){
 addEventListener('resize',taille);
 
 function dessiner(){
-  if(!SOL)SOL=construireSol();
+  if(!SOL){SOL=construireSol();semerDecor();LISIERE=construireLisiere();}
   /* La caméra avance en sous-pixels.
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
@@ -880,10 +1087,13 @@ function dessiner(){
   const lw=Math.min(VW+2,MONDE-camX), lh=Math.min(VH+2,MONDE-camY);
   ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 
-  /* le personnage suit exactement le même repère : il ne bouge donc pas par rapport au sol */
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
-  sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche);
+  /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
+  dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
+    ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
+
+  if(LISIERE)ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 }
 
 /* ================= déplacement ================= */
@@ -903,11 +1113,12 @@ function majJoueur(dt){
 
   const v=Math.hypot(vx,vy);
   if(v>1.2){
+    /* on essaie chaque axe séparément : on glisse le long des obstacles */
     const nx=joueur.x+vx*dt, ny=joueur.y+vy*dt;
-    const ax=Math.max(10,Math.min(MONDE-10,nx));
-    const ay=Math.max(16,Math.min(MONDE-6,ny));
-    /* 5. contre un bord, on n'anime plus la marche pour rien */
-    bloqueBord=(ax!==nx&&Math.abs(vx)>Math.abs(vy))||(ay!==ny&&Math.abs(vy)>=Math.abs(vx));
+    let ax=joueur.x, ay=joueur.y;
+    if(!bloque(nx,joueur.y))ax=nx;
+    if(!bloque(ax,ny))ay=ny;
+    bloqueBord=(ax===joueur.x&&Math.abs(vx)>2)||(ay===joueur.y&&Math.abs(vy)>2);
     joueur.x=ax;joueur.y=ay;
     /* 2. la cadence suit la vitesse réelle */
     if(!bloqueBord)joueur.pas+=v*dt*0.5;
