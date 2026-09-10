@@ -12,7 +12,8 @@ html,body{height:100%;overflow:hidden;background:#2b3a26}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer}
-#cv{position:fixed;inset:0;width:100%;height:100%;display:block;image-rendering:pixelated}
+#cv{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);display:block;
+  image-rendering:pixelated;image-rendering:crisp-edges}
 #joy{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:132px;height:132px;
   touch-action:none;z-index:3}
 .rond{position:fixed;right:14px;z-index:3;width:54px;height:54px;border-radius:16px;
@@ -348,24 +349,32 @@ let joyX=0,joyY=0;
 /* ================= rendu ================= */
 const cv=$('cv'), ctx=cv.getContext('2d');
 let VW=0,VH=0;
+let ECH=ZOOM;
 function taille(){
-  const dpr=Math.min(2,window.devicePixelRatio||1);
+  /* l'échelle doit être un nombre entier de pixels physiques,
+     sinon un pixel du jeu tombe entre deux pixels de l'écran et l'image tremble */
+  const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
+  ECH=dpr*ZOOM;
   const w=cv.clientWidth, h=cv.clientHeight;
-  cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);
-  ctx.setTransform(dpr*ZOOM,0,0,dpr*ZOOM,0,0);
+  VW=Math.ceil(w/ZOOM);VH=Math.ceil(h/ZOOM);   // vue en pixels de jeu, entière
+  cv.width=VW*ECH;cv.height=VH*ECH;
+  cv.style.width=(VW*ZOOM)+'px';cv.style.height=(VH*ZOOM)+'px';
+  ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
-  VW=w/ZOOM;VH=h/ZOOM;                       // vue en pixels de jeu
 }
 addEventListener('resize',taille);
 
 function dessiner(){
   if(!SOL)SOL=construireSol();
-  const camX=Math.round(Math.max(0,Math.min(MONDE-VW,joueur.x-VW/2)));
-  const camY=Math.round(Math.max(0,Math.min(MONDE-VH,joueur.y-VH/2)));
+  /* on arrondit la position du joueur, puis on en déduit la caméra :
+     décor et personnage partagent ainsi exactement le même repère entier */
+  const jx=Math.round(joueur.x), jy=Math.round(joueur.y);
+  const camX=Math.max(0,Math.min(MONDE-VW,jx-(VW>>1)));
+  const camY=Math.max(0,Math.min(MONDE-VH,jy-(VH>>1)));
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW,VH);
-  ctx.drawImage(SOL,camX,camY,Math.min(VW,MONDE),Math.min(VH,MONDE),
-                0,0,Math.min(VW,MONDE),Math.min(VH,MONDE));
-  sprite(ctx,Math.round(joueur.x-camX),Math.round(joueur.y-camY),e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
+  const lw=Math.min(VW,MONDE-camX), lh=Math.min(VH,MONDE-camY);
+  ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
+  sprite(ctx,jx-camX,jy-camY,e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
 }
 
 /* ================= déplacement ================= */
