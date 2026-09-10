@@ -29,10 +29,10 @@ body{overflow:hidden}
   max-height:88dvh;overflow-y:auto;animation:m .28s cubic-bezier(.2,.85,.3,1)}
 @keyframes m{from{transform:translateY(26px)}}
 .tete{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.vign{width:96px;height:132px;border-radius:14px;flex:0 0 auto;background:#72a154;
+.vign{width:96px;height:150px;border-radius:14px;flex:0 0 auto;background:#72a154;
   display:flex;align-items:center;justify-content:center;overflow:hidden;
   box-shadow:inset 0 2px 8px rgba(20,40,15,.28)}
-.vign canvas{image-rendering:pixelated;width:96px;height:132px}
+.vign canvas{image-rendering:pixelated;width:96px;height:150px}
 .tete h2{font:400 20px Georgia,serif}
 .tete p{font:400 12px/1.5 system-ui;color:var(--doux);margin-top:4px}
 .hasard{margin-top:10px;width:100%;border-radius:12px;padding:10px;background:#f0ede2;
@@ -60,7 +60,9 @@ body{overflow:hidden}
 
 <script type="module">
 const $=id=>document.getElementById(id);
-/* ================= le personnage, en pixels ================= */
+/* ================= le personnage, en pixels =================
+   Proportions : 40 pixels de haut, quatre têtes.
+   Repère : x au milieu des pieds, y au sol.                     */
 const PALETTES={
  peau:['#f6ddc0','#f0d0ae','#e8c49a','#d8a878','#c08a58','#a2683c','#7d4e2a','#5a3720'],
  cheveux:['#1c140d','#2b1d12','#4a3220','#6b4726','#8a5f30','#b58a4a','#d9c48a','#f2e6c8',
@@ -77,7 +79,6 @@ const COIFFES=['courts','longs','mi-longs','queue','chignon','crete','crane','fr
 const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
 const YEUX_F=['normaux','plisses','ronds','fatigues'];
-
 const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
               chaussures:0,chapeau:0,sac:1};
 const teint=(c,k)=>{
@@ -86,15 +87,13 @@ const teint=(c,k)=>{
   return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
 };
 
-/* dessine le sprite dans un contexte, en pixels de jeu.
-   Repère : x = milieu des pieds, y = sol. Corps 16 de large, 32 de haut. */
 function sprite(g,x,y,ap0,dir,pas,bouge){
   const p=Object.assign({},DEF_AP,ap0||{});
   const P=PALETTES;
   const peau=P.peau[p.peau]||P.peau[2], peauO=teint(peau,-24), peauC=teint(peau,14), peauT=teint(peau,-52);
   const chev=P.cheveux[p.cheveux]||P.cheveux[2], chevC=teint(chev,22), chevO=teint(chev,-22);
   const veste=P.veste[p.veste]||P.veste[0], vesteC=teint(veste,20), vesteO=teint(veste,-26), vesteT=teint(veste,-48);
-  const pant=P.pantalon[p.pantalon]||P.pantalon[0], pantO=teint(pant,-18);
+  const pant=P.pantalon[p.pantalon]||P.pantalon[0], pantO=teint(pant,-18), pantC=teint(pant,12);
   const chau=P.chaussures[p.chaussures]||P.chaussures[0], chauC=teint(chau,20);
   const oeil=P.yeux[p.yeux]||P.yeux[0];
   const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
@@ -103,194 +102,170 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
-  /* ---- marche souple : huit temps, mouvement discret ---- */
+  /* marche souple, huit temps */
   const F=bouge?(Math.floor(pas)%8):-1;
-  const AN={
-    corps:[0,0,-1,0,0,0,-1,0],          /* à peine un pas glissé */
-    jg:[2,1,-1,-2,-2,-1,1,2],
-    jd:[-2,-1,1,2,2,1,-1,-2],
-    pg:[0,0,1,0,0,0,0,0],
-    pd:[0,0,0,0,0,0,1,0],
-    bg:[-2,-1,1,2,2,1,-1,-2],
-    bd:[2,1,-1,-2,-2,-1,1,2],
-    tete:[0,0,0,0,0,0,0,0],             /* la tête reste stable */
-    reb:[0,0,1,0,0,0,1,0]
-  };
+  const AN={corps:[0,0,-1,0,0,0,-1,0],
+            jg:[2,1,-1,-2,-2,-1,1,2], jd:[-2,-1,1,2,2,1,-1,-2],
+            pg:[0,0,1,0,0,0,0,0],     pd:[0,0,0,0,0,0,1,0],
+            bg:[-2,-1,1,2,2,1,-1,-2], bd:[2,1,-1,-2,-2,-1,1,2],
+            reb:[0,0,1,0,0,0,1,0]};
   const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
   const Y=bouge?AN.corps[F]:souffle;
   const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
   const jgL=bouge?AN.pg[F]:0, jdL=bouge?AN.pd[F]:0;
   const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
-  const teteY=0;
   const reb=bouge?AN.reb[F]:0;
-  const contact=bouge&&(F===0||F===4);
   const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
   const s=dir==='droite'?1:-1;
 
-  /* ombre : elle se resserre quand les jambes se croisent */
-  R(-7,1,14,2,'rgba(40,60,28,.42)');
+  /* ---- mesures du corps (quatre têtes) ----
+     pieds 0 · jambes 13 · torse 15 · tête 11, sommet à -40 */
+  const JH=13, TH=15, HT=11;
+  const yT=-JH-TH;                 /* haut du torse  = -28 */
+  const yTete=yT-HT+1;             /* haut de la tête = -38 */
 
-  /* sac à dos, il rebondit */
-  if(sacC!=='aucun'&&prof){                    /* de dos, le sac est bien visible au centre */
-    R(-5,Y-16-reb,10,11,teint(sacC,-8));
-    R(-5,Y-16-reb,10,2,teint(sacC,16));
-    R(-5,Y-8-reb,10,2,teint(sacC,-26));
-    R(-2,Y-13-reb,4,4,teint(sacC,10));
-  }
-  if(sacC!=='aucun'&&!prof){
-    const sx=cote?(s>0?-9:4):-8;
-    R(sx,Y-15-reb,5,9,teint(sacC,-16));
-    R(sx,Y-15-reb,5,2,teint(sacC,14));
-    R(sx+1,Y-9-reb,3,1,teint(sacC,-30));
+  R(-6,1,12,2,'rgba(40,60,28,.42)');
+
+  /* sac */
+  if(sacC!=='aucun'&&prof){
+    R(-5,yT+3-reb,10,13,teint(sacC,-8));
+    R(-5,yT+3-reb,10,2,teint(sacC,16));
+    R(-5,yT+13-reb,10,2,teint(sacC,-26));
+    R(-2,yT+7-reb,4,4,teint(sacC,10));
+  }else if(sacC!=='aucun'&&!prof){
+    const sx=cote?(s>0?-8:3):-7;
+    R(sx,yT+3-reb,5,11,teint(sacC,-16));
+    R(sx,yT+3-reb,5,2,teint(sacC,14));
   }
 
-  /* jambes.
-     De profil : une jambe devant, une derrière, décalées horizontalement.
-     De face et de dos : la jambe qui avance paraît plus longue et son pied descend,
-     celle qui recule se raccourcit et remonte — c'est ce qu'on voit vraiment d'en haut. */
+  /* ---- jambes ---- */
   const jambeProfil=(dec,plie,col,botte)=>{
-    const h=7-plie;
-    R(-2+dec,Y-7,4,h,col);
-    R(-2+dec,Y-7,4,1,teint(col,10));
-    R(-3+dec,Y-7+h,5,3,botte);
-    R(-3+dec,Y-7+h,5,1,teint(botte,18));
+    const h=JH-plie;
+    R(-2+dec,-JH,4,h,col);
+    R(-2+dec,-JH,4,1,teint(col,10));
+    R(-2+dec,-4,4,4,teint(col,-12));           /* mollet plus sombre */
+    R(-3+dec,-JH+h,5,3,botte);
+    R(-3+dec,-JH+h,5,1,teint(botte,18));
   };
   const jambeFace=(cx,phase,col,botte)=>{
-    /* phase > 0 : la jambe est en avant */
     const avance=phase>0;
-    const h=avance?8:6;                       /* elle s'allonge en avant, se raccourcit en arrière */
-    const dy=avance?1:-1;                     /* et le pied suit */
-    const ec=Math.abs(phase)>1?(avance?-1:1):0;  /* léger rapprochement du centre en avant */
-    R(cx+ec,Y-8,4,h,avance?teint(col,8):teint(col,-10));
-    R(cx+ec,Y-8,4,1,teint(col,14));
-    R(cx-1+ec,Y-8+h,5,3,avance?botte:teint(botte,-14));
-    R(cx-1+ec,Y-8+h,5,1,teint(botte,18));
+    const h=avance?JH+1:JH-2;
+    const ec=Math.abs(phase)>1?(avance?-1:1):0;
+    R(cx+ec,-h,4,h,avance?teint(col,8):teint(col,-10));
+    R(cx+ec,-h,4,1,pantC);
+    R(cx-1+ec,-3,5,3,avance?botte:teint(botte,-14));
+    R(cx-1+ec,-3,5,1,chauC);
   };
   if(cote){
     jambeProfil(jdP*0.9-1,jdL,pantO,teint(chau,-14));
     jambeProfil(jgP*0.9-1,jgL,pant,chau);
   }else{
-    /* on dessine d'abord la jambe arrière, puis celle qui avance passe devant */
     if(jgP>=jdP){jambeFace(1,jdP,pantO,teint(chau,-14));jambeFace(-5,jgP,pant,chau);}
     else{jambeFace(-5,jgP,pant,chau);jambeFace(1,jdP,pantO,teint(chau,-14));}
   }
 
-  /* bras arrière : de profil il passe derrière le corps, on n'en voit qu'un bout */
+  /* ---- bras arrière (profil) ---- */
   if(cote){
     const ar=bgP;
-    R((s>0?-6:3)-ar*s,Y-18,3,9,vesteT);
-    R((s>0?-6:3)-ar*s,Y-9,3,3,peauT);
+    R((s>0?-6:3)-ar*s,yT+2,3,11,vesteT);
+    R((s>0?-6:3)-ar*s,yT+13,3,3,peauT);
   }
 
-  /* torse */
-  const pen=0;
-  R(-8+pen,Y-19,16,13,N);
-  R(-7+pen,Y-18,14,11,veste);
-  R(-7+pen,Y-18,14,2,vesteC);
-  R(-7+pen,Y-18,3,11,vesteT);
-  R(-7+pen,Y-10,14,2,vesteO);
-  R(-1+pen,Y-9,2,2,'#c9a24a');
-  if(!prof){R(-1+pen,Y-18,2,8,vesteO);R(-5+pen,Y-18,3,2,vesteC);R(2+pen,Y-18,3,2,vesteC);}
+  /* ---- torse ---- */
+  R(-8,yT-1,16,TH+1,N);
+  R(-7,yT,14,TH-1,veste);
+  R(-7,yT,14,2,vesteC);
+  R(-7,yT,3,TH-1,vesteT);
+  R(-7,yT+TH-4,14,2,vesteO);                  /* ceinture */
+  R(-1,yT+TH-4,2,2,'#c9a24a');
+  if(!prof){R(-1,yT,2,TH-5,vesteO);R(-5,yT,3,2,vesteC);R(2,yT,3,2,vesteC);}
+  R(-7,yT+TH-2,14,1,vesteT);
 
-  /* bras : un seul visible de profil, posé sur le torse ; deux de face, le long du corps */
+  /* ---- bras ---- */
   if(cote){
     const av=bdP;
-    const bx=(s>0?1:-4)+av*s;                 /* il balance devant, par-dessus la veste */
-    R(bx,Y-17,3,9,veste);
-    R(bx,Y-17,3,2,vesteC);
-    R(bx,Y-8,3,3,peau);
+    const bx=(s>0?1:-4)+av*s;
+    R(bx,yT+1,3,11,veste);
+    R(bx,yT+1,3,2,vesteC);
+    R(bx,yT+12,3,3,peau);
   }else{
-    /* de face et de dos : les bras ne quittent jamais l'épaule.
-       Le pas se lit à la main qui descend d'un pixel et à la teinte, rien d'autre. */
     const gAv=bgP>0, dAv=bdP>0;
-    const bg=Y-18, bd=Y-18;
-    R(-10,bg,3,9,gAv?vesteO:vesteT);          /* collé au contour du torse */
-    R(-10,bg+9,3,3+(gAv?1:0),gAv?peau:peauO);
-    R(7,bd,3,9,dAv?veste:vesteO);
-    R(7,bd+9,3,3+(dAv?1:0),dAv?peau:peauO);
+    R(-10,yT+1,3,11,gAv?vesteO:vesteT);
+    R(-10,yT+12,3,3+(gAv?1:0),gAv?peau:peauO);
+    R(7,yT+1,3,11,dAv?veste:vesteO);
+    R(7,yT+12,3,3+(dAv?1:0),dAv?peau:peauO);
   }
 
-  /* tête, avec son léger retard */
-  const YT=Y+teteY;
-  R(-7,YT-31,14,12,N);
-  R(-6,YT-30,12,10,peau);
-  R(-6,YT-30,3,10,peauO);
-  R(-6,YT-30,12,1,peauC);
-  if(!prof){R(-8,YT-26,2,3,peauO);R(6,YT-26,2,3,peau);}
+  /* ---- tête ---- */
+  const YT=yTete+Y;
+  R(-2,yT-2,4,2,peauO);                        /* cou */
+  R(-6,YT,12,HT,N);
+  R(-5,YT+1,10,HT-1,peau);
+  R(-5,YT+1,3,HT-1,peauO);
+  R(-5,YT+1,10,1,peauC);
+  if(!prof){R(-7,YT+5,2,3,peauO);R(5,YT+5,2,3,peau);}
   /* barbe */
   if(!prof){
-    if(barbe==='pleine'){R(-5,YT-24,10,6,chev);R(-3,YT-19,6,2,chevO);}
-    else if(barbe==='courte')R(-5,YT-22,10,4,chev);
-    else if(barbe==='fine')R(-5,YT-22,10,2,chevO);
-    else if(barbe==='bouc')R(-2,YT-22,4,4,chev);
-    else if(barbe==='moustache')R(-3,YT-23,6,1,chev);
-    else if(barbe==='collier'){R(-6,YT-26,2,7,chev);R(4,YT-26,2,7,chev);R(-5,YT-21,10,2,chev);}
+    if(barbe==='pleine'){R(-5,YT+6,10,5,chev);R(-3,YT+10,6,2,chevO);}
+    else if(barbe==='courte')R(-5,YT+7,10,4,chev);
+    else if(barbe==='fine')R(-5,YT+8,10,2,chevO);
+    else if(barbe==='bouc')R(-2,YT+8,4,4,chev);
+    else if(barbe==='moustache')R(-3,YT+7,6,1,chev);
+    else if(barbe==='collier'){R(-6,YT+4,2,7,chev);R(4,YT+4,2,7,chev);R(-5,YT+9,10,2,chev);}
   }
-  /* cheveux : les longueurs traînent d'un pixel dans le sens opposé à la marche */
+  /* cheveux */
   const tr=bouge?(cote?-s:0):0;
   const masse=()=>{
-    R(-7,YT-33,14,4,chev);R(-7,YT-32,4,1,chevC);
-    R(-7,YT-30,2,4,chev);R(5,YT-30,2,4,chevO);
+    R(-6,YT-2,12,4,chev);R(-6,YT-1,4,1,chevC);
+    R(-6,YT+1,2,4,chev);R(4,YT+1,2,4,chevO);
   };
-  if(coiffe==='crane')R(-7,YT-33,14,2,chevO);
-  else if(coiffe==='crete'){R(-7,YT-31,14,2,chevO);R(-2,YT-37-reb,4,6,chev);R(-2,YT-37-reb,2,6,chevC);}
-  else if(coiffe==='afro'){R(-9,YT-37,18,8,chev);R(-9,YT-36,5,3,chevC);
-    R(-9,YT-31,3,5,chev);R(6,YT-31,3,5,chevO);}
-  else if(coiffe==='hirsute'){masse();R(-9,YT-34,3,3,chev);R(6,YT-35,3,3,chev);
-    R(-3,YT-36-reb,3,3,chev);R(2,YT-37-reb,2,3,chevC);}
+  if(coiffe==='crane')R(-6,YT-2,12,2,chevO);
+  else if(coiffe==='crete'){R(-6,YT,12,2,chevO);R(-2,YT-8-reb,4,7,chev);R(-2,YT-8-reb,2,7,chevC);}
+  else if(coiffe==='afro'){R(-8,YT-6,16,8,chev);R(-8,YT-5,5,3,chevC);R(-8,YT,3,5,chev);R(5,YT,3,5,chevO);}
+  else if(coiffe==='hirsute'){masse();R(-8,YT-3,3,3,chev);R(5,YT-4,3,3,chev);R(-3,YT-5-reb,3,3,chev);R(2,YT-6-reb,2,3,chevC);}
   else{
     masse();
-    if(coiffe==='longs'){R(-9+tr,YT-31,2,14,chev);R(7+tr,YT-31,2,14,chevO);}
-    if(coiffe==='mi-longs'){R(-9+tr,YT-31,2,9,chev);R(7+tr,YT-31,2,9,chevO);}
-    if(coiffe==='queue'){R(7+tr,YT-30,3,11,chev);R(7+tr,YT-21,3,2,chevO);}
-    if(coiffe==='chignon'){R(-3,YT-38-reb,6,5,chev);R(-3,YT-38-reb,3,2,chevC);}
-    if(coiffe==='frange')R(-7,YT-29,14,2,chevO);
-    if(coiffe==='tresses'){R(-9+tr,YT-31,3,5,chev);R(-9+tr,YT-25,3,5,chev);
-      R(6+tr,YT-31,3,5,chevO);R(6+tr,YT-25,3,5,chevO);}
-    if(coiffe==='ondules'){R(-9+tr,YT-31,2,6,chev);R(7+tr,YT-31,2,6,chevO);
-      R(-10+tr,YT-26,2,4,chev);R(8+tr,YT-26,2,4,chevO);}
+    if(coiffe==='longs'){R(-8+tr,YT,2,15,chev);R(6+tr,YT,2,15,chevO);}
+    if(coiffe==='mi-longs'){R(-8+tr,YT,2,10,chev);R(6+tr,YT,2,10,chevO);}
+    if(coiffe==='queue'){R(6+tr,YT+1,3,12,chev);R(6+tr,YT+10,3,2,chevO);}
+    if(coiffe==='chignon'){R(-3,YT-7-reb,6,5,chev);R(-3,YT-7-reb,3,2,chevC);}
+    if(coiffe==='frange')R(-6,YT+2,12,2,chevO);
+    if(coiffe==='tresses'){R(-8+tr,YT,3,5,chev);R(-8+tr,YT+6,3,5,chev);R(5+tr,YT,3,5,chevO);R(5+tr,YT+6,3,5,chevO);}
+    if(coiffe==='ondules'){R(-8+tr,YT,2,6,chev);R(6+tr,YT,2,6,chevO);R(-9+tr,YT+5,2,4,chev);R(7+tr,YT+5,2,4,chevO);}
   }
   /* chapeau */
-  if(chapeau==='casquette'){R(-8,YT-36,16,4,'#3f5f6b');R(-8,YT-36,16,1,'#547a88');
-    R(cote?(s>0?0:-14):-8,YT-32,14,2,'#33505a');}
-  else if(chapeau==='bandana'){R(-8,YT-34,16,3,'#a8524a');R(-8,YT-34,16,1,'#c46a5e');
-    R(6+tr,YT-31,3,5,'#8f4038');}
-  else if(chapeau==='bonnet'){R(-8,YT-38,16,6,'#8a4a3a');R(-8,YT-38,16,1,'#a85c48');
-    R(-8,YT-33,16,2,'#a85c48');R(-2,YT-41-reb,4,3,'#c07260');}
-  else if(chapeau==='capuche'){R(-9,YT-37,18,10,'#54606b');R(-9,YT-37,18,2,'#68757f');
-    R(-9,YT-28,2,7,'#465059');R(7,YT-28,2,7,'#465059');
-    R(-6,YT-30,12,10,peau);R(-6,YT-30,3,10,peauO);}
-  else if(chapeau==='chapeau'){R(-11,YT-33,22,2,'#5a4a2c');R(-7,YT-38,14,5,'#8f7a49');
-    R(-7,YT-35,14,2,'#5a4a2c');}
-  else if(chapeau==='beret'){R(-8,YT-36,15,4,'#2f4a5c');R(-8,YT-36,7,2,'#3f6076');
-    R(5,YT-38-reb,2,2,'#2f4a5c');}
-  else if(chapeau==='cagoule'){R(-8,YT-34,16,14,'#3a3a44');R(-8,YT-34,16,2,'#4a4a56');
-    R(-5,YT-26,4,3,peau);R(1,YT-26,4,3,peau);}
-
+  if(chapeau==='casquette'){R(-7,YT-5,14,4,'#3f5f6b');R(-7,YT-5,14,1,'#547a88');
+    R(cote?(s>0?1:-13):-7,YT-1,13,2,'#33505a');}
+  else if(chapeau==='bandana'){R(-7,YT-3,14,3,'#a8524a');R(-7,YT-3,14,1,'#c46a5e');R(5+tr,YT,3,5,'#8f4038');}
+  else if(chapeau==='bonnet'){R(-7,YT-7,14,6,'#8a4a3a');R(-7,YT-7,14,1,'#a85c48');R(-7,YT-2,14,2,'#a85c48');
+    R(-2,YT-10-reb,4,3,'#c07260');}
+  else if(chapeau==='capuche'){R(-8,YT-6,16,11,'#54606b');R(-8,YT-6,16,2,'#68757f');
+    R(-8,YT+3,2,8,'#465059');R(6,YT+3,2,8,'#465059');R(-5,YT+1,10,HT-1,peau);R(-5,YT+1,3,HT-1,peauO);}
+  else if(chapeau==='chapeau'){R(-10,YT-2,20,2,'#5a4a2c');R(-6,YT-7,12,5,'#8f7a49');R(-6,YT-4,12,2,'#5a4a2c');}
+  else if(chapeau==='beret'){R(-7,YT-5,13,4,'#2f4a5c');R(-7,YT-5,6,2,'#3f6076');R(4,YT-7-reb,2,2,'#2f4a5c');}
+  else if(chapeau==='cagoule'){R(-7,YT-3,14,14,'#3a3a44');R(-7,YT-3,14,2,'#4a4a56');
+    R(-4,YT+4,4,3,peau);R(1,YT+4,4,3,peau);}
   /* visage */
-  const Yv=Y+teteY;
   if(dir==='bas'){
     const clin=(Date.now()+x*53)%4600<130;
     if(chapeau!=='cagoule'){
-      R(-5,Yv-27,3,1,chevO);R(2,Yv-27,3,1,chevO);
-      if(clin){R(-5,Yv-25,3,1,oeil);R(2,Yv-25,3,1,oeil);}
-      else{
-        if(fy==='ronds'){R(-5,Yv-26,3,3,'#f4f1ea');R(2,Yv-26,3,3,'#f4f1ea');
-          R(-4,Yv-26,2,3,oeil);R(3,Yv-26,2,3,oeil);}
-        else if(fy==='plisses'){R(-5,Yv-25,3,1,oeil);R(2,Yv-25,3,1,oeil);}
-        else if(fy==='fatigues'){R(-5,Yv-25,3,2,'#f4f1ea');R(2,Yv-25,3,2,'#f4f1ea');
-          R(-4,Yv-25,2,2,oeil);R(3,Yv-25,2,2,oeil);R(-5,Yv-23,3,1,peauT);R(2,Yv-23,3,1,peauT);}
-        else{R(-5,Yv-26,3,2,'#f4f1ea');R(2,Yv-26,3,2,'#f4f1ea');
-          R(-4,Yv-26,2,2,oeil);R(3,Yv-26,2,2,oeil);}
-      }
-      R(0,Yv-23,1,1,peauT);
-      R(-2,Yv-21,4,1,peauT);
-    }else{R(-5,Yv-26,3,2,oeil);R(2,Yv-26,3,2,oeil);}
+      R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
+      if(clin){R(-4,YT+5,3,1,oeil);R(2,YT+5,3,1,oeil);}
+      else if(fy==='ronds'){R(-4,YT+4,3,3,'#f4f1ea');R(2,YT+4,3,3,'#f4f1ea');
+        R(-3,YT+4,2,3,oeil);R(3,YT+4,2,3,oeil);}
+      else if(fy==='plisses'){R(-4,YT+5,3,1,oeil);R(2,YT+5,3,1,oeil);}
+      else if(fy==='fatigues'){R(-4,YT+5,3,2,'#f4f1ea');R(2,YT+5,3,2,'#f4f1ea');
+        R(-3,YT+5,2,2,oeil);R(3,YT+5,2,2,oeil);R(-4,YT+7,3,1,peauT);R(2,YT+7,3,1,peauT);}
+      else{R(-4,YT+5,3,2,'#f4f1ea');R(2,YT+5,3,2,'#f4f1ea');
+        R(-3,YT+5,2,2,oeil);R(3,YT+5,2,2,oeil);}
+      R(0,YT+7,1,1,peauT);
+      R(-2,YT+9,4,1,peauT);
+    }else{R(-4,YT+5,3,2,oeil);R(2,YT+5,3,2,oeil);}
   }else if(cote){
     const dx=s>0?2:-4;
-    R(dx,Yv-27,2,1,chevO);
-    R(dx,Yv-26,2,2,'#f4f1ea');R(dx+(s>0?1:0),Yv-26,1,2,oeil);
-    R(s>0?6:-7,Yv-24,1,1,peauT);
+    R(dx,YT+3,2,1,chevO);
+    R(dx,YT+5,2,2,'#f4f1ea');R(dx+(s>0?1:0),YT+5,1,2,oeil);
+    R(s>0?5:-6,YT+7,1,1,peauT);
   }
 }
 
@@ -453,16 +428,16 @@ const GROUPES=[
 ];
 function apercu(ap){
   const c=document.createElement('canvas');
-  c.width=96;c.height=132;
+  c.width=96;c.height=150;
   const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
   g.setTransform(3,0,0,3,0,0);
-  g.fillStyle='#72a154';g.fillRect(0,0,32,44);
+  g.fillStyle='#72a154';g.fillRect(0,0,32,50);
   for(let i=0;i<70;i++){
-    const x=Math.floor(alea(i*3.3)*32), y=Math.floor(alea(i*5.1)*44);
+    const x=Math.floor(alea(i*3.3)*32), y=Math.floor(alea(i*5.1)*50);
     g.fillStyle=alea(i)<.5?'#7db35d':'#63914b';g.fillRect(x,y,1,2);
   }
-  sprite(g,16,40,ap,'bas',0,false);
+  sprite(g,16,46,ap,'bas',0,false);
   return c;
 }
 function ouvrirLook(){
