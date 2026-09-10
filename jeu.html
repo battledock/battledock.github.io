@@ -935,6 +935,19 @@ function construireLisiere(){
   return c;
 }
 
+/* ---- si on se retrouve coincé, on cherche la place libre la plus proche ---- */
+function degager(x,y){
+  if(!bloque(x,y))return [x,y];
+  for(let r=6;r<=260;r+=6){
+    for(let a=0;a<16;a++){
+      const t=a/16*6.283;
+      const nx=Math.round(x+Math.cos(t)*r), ny=Math.round(y+Math.sin(t)*r);
+      if(!bloque(nx,ny))return [nx,ny];
+    }
+  }
+  return [MONDE/2,MONDE/2];                    /* au pire, la clairière du centre */
+}
+
 /* ---- ce qui bloque le passage ---- */
 function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
@@ -1069,8 +1082,14 @@ function taille(){
 }
 addEventListener('resize',taille);
 
+function preparerMonde(){
+  if(SOL)return;
+  SOL=construireSol();semerDecor();LISIERE=construireLisiere();
+  const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
+  joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
+}
 function dessiner(){
-  if(!SOL){SOL=construireSol();semerDecor();LISIERE=construireLisiere();}
+  preparerMonde();
   /* La caméra avance en sous-pixels.
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
@@ -1111,6 +1130,10 @@ function majJoueur(dt){
   vx+=(cibleX-vx)*k;
   vy+=(cibleY-vy)*k;
 
+  if(SOL&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
+    const [dx,dy]=degager(joueur.x,joueur.y);
+    joueur.x=dx;joueur.y=dy;
+  }
   const v=Math.hypot(vx,vy);
   if(v>1.2){
     /* on essaie chaque axe séparément : on glisse le long des obstacles */
@@ -1361,6 +1384,7 @@ async function ouvrirPorte(){
 }
 function entrer(){
   $('porte').classList.add('parti');
+  preparerMonde();
   taille();garderAllume();
   fondu=1;                                   /* le jeu apparaît en fondu */
 }
