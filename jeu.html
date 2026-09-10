@@ -74,8 +74,9 @@ const PALETTES={
  chaussures:['#4a3524','#2f2a24','#5a4a3a','#6b4a28','#3f4a53','#7d5934'],
  sac:['aucun','#7d5934','#4a5c6b','#6b4a4a','#4f6b4a','#8a6a44','#54606b']
 };
-const COIFFES=['courts','longs','mi-longs','queue','chignon','crete','crane','frange',
-               'tresses','ondules','afro','hirsute'];
+const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','longs','très longs',
+               'queue','couettes','chignon','chignon haut','tresse','tresses','ondulés','bouclés',
+               'afro','dreads','banane','crête','crâne','hirsute'];
 const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
 const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
@@ -224,6 +225,8 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   R(-5,YT+1,10,HT-1,peau);
   R(-5,YT+1,3,HT-1,peauO);
   R(-5,YT+1,10,1,peauC);
+  if(prof){R(-5,YT+1,10,HT-1,teint(peau,-12));  /* de dos : la nuque, un peu plus sombre */
+           R(-5,YT+HT-3,10,2,teint(peau,-30));}
   if(!prof){R(-7,YT+5,2,3,peauO);R(5,YT+5,2,3,peau);}
   /* barbe */
   if(!prof){
@@ -234,26 +237,158 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     else if(barbe==='moustache')R(-3,YT+7,6,1,chev);
     else if(barbe==='collier'){R(-6,YT+4,2,7,chev);R(4,YT+4,2,7,chev);R(-5,YT+9,10,2,chev);}
   }
-  /* cheveux */
-  const tr=bouge?(cote?-s:0):0;
-  const masse=()=>{
-    R(-6,YT-2,12,4,chev);R(-6,YT-1,4,1,chevC);
-    R(-6,YT+1,2,4,chev);R(4,YT+1,2,4,chevO);
+  /* ---- les cheveux ----
+     Trois valeurs : masse, mèche éclairée dessus, pointes plus sombres.
+     Chaque coupe se dessine différemment de face, de dos et de profil. */
+  const tr=bouge?(cote?-s:0):0;              /* les longueurs traînent d'un pixel */
+  const C=chev, CC=chevC, CO=chevO;
+  const calotte=(hh)=>{                       /* le dessus du crâne */
+    R(-6,YT-2,12,hh,C);
+    R(-6,YT-1,4,1,CC);                        /* mèche éclairée */
+    R(4,YT-2,2,hh,CO);                        /* côté à l'ombre */
   };
-  if(coiffe==='crane')R(-6,YT-2,12,2,chevO);
-  else if(coiffe==='crete'){R(-6,YT,12,2,chevO);R(-2,YT-8-reb,4,7,chev);R(-2,YT-8-reb,2,7,chevC);}
-  else if(coiffe==='afro'){R(-8,YT-6,16,8,chev);R(-8,YT-5,5,3,chevC);R(-8,YT,3,5,chev);R(5,YT,3,5,chevO);}
-  else if(coiffe==='hirsute'){masse();R(-8,YT-3,3,3,chev);R(5,YT-4,3,3,chev);R(-3,YT-5-reb,3,3,chev);R(2,YT-6-reb,2,3,chevC);}
-  else{
-    masse();
-    if(coiffe==='longs'){R(-8+tr,YT,2,15,chev);R(6+tr,YT,2,15,chevO);}
-    if(coiffe==='mi-longs'){R(-8+tr,YT,2,10,chev);R(6+tr,YT,2,10,chevO);}
-    if(coiffe==='queue'){R(6+tr,YT+1,3,12,chev);R(6+tr,YT+10,3,2,chevO);}
-    if(coiffe==='chignon'){R(-3,YT-7-reb,6,5,chev);R(-3,YT-7-reb,3,2,chevC);}
-    if(coiffe==='frange')R(-6,YT+2,12,2,chevO);
-    if(coiffe==='tresses'){R(-8+tr,YT,3,5,chev);R(-8+tr,YT+6,3,5,chev);R(5+tr,YT,3,5,chevO);R(5+tr,YT+6,3,5,chevO);}
-    if(coiffe==='ondules'){R(-8+tr,YT,2,6,chev);R(6+tr,YT,2,6,chevO);R(-9+tr,YT+5,2,4,chev);R(7+tr,YT+5,2,4,chevO);}
+  const tempes=(bas)=>{                       /* les côtés, le long du visage */
+    R(-6,YT+1,2,bas,C);
+    R(4,YT+1,2,bas,CO);
+  };
+  const arriere=(h2,larg)=>{                  /* la masse vue de dos */
+    R(-(larg/2)|0,YT-2,larg,h2,C);
+    R(-(larg/2)|0,YT-1,3,1,CC);
+    R(((larg/2)|0)-3,YT-2,3,h2,CO);
+  };
+  const meche=(dx,dy,w2,h2,col)=>R(dx+tr,YT+dy,w2,h2,col);
+
+  if(coiffe==='crâne'){
+    R(-6,YT-2,12,2,CO);
+    if(prof)R(-6,YT-2,12,5,CO);
   }
+  else if(coiffe==='très courts'){
+    calotte(4);tempes(2);
+    if(prof)arriere(7,12);
+  }
+  else if(coiffe==='courts'){
+    calotte(4);tempes(4);
+    meche(-6,2,3,1,CO);                       /* petite frange sur le front */
+    if(prof)arriere(9,12);
+  }
+  else if(coiffe==='dégradé'){
+    calotte(4);
+    R(-6,YT+1,2,2,C);R(4,YT+1,2,2,CO);        /* rasé sur les côtés */
+    R(-5,YT-3,10,2,C);R(-5,YT-3,4,1,CC);      /* volume sur le dessus */
+    if(prof)arriere(6,12);
+  }
+  else if(coiffe==='bol'){
+    calotte(4);tempes(5);
+    meche(-6,2,12,2,CO);                      /* frange droite qui couvre le front */
+    if(prof)arriere(9,12);
+  }
+  else if(coiffe==='carré'){
+    calotte(4);
+    R(-7,YT+1,2,9,C);R(5,YT+1,2,9,CO);        /* deux pans nets */
+    R(-7,YT+9,2,1,CO);R(5,YT+9,2,1,CO);
+    meche(-6,2,5,2,CO);
+    if(prof)arriere(11,14);
+  }
+  else if(coiffe==='mi-longs'){
+    calotte(4);tempes(3);
+    R(-7+tr,YT+1,2,8,C);R(5+tr,YT+1,2,8,CO);
+    if(prof)arriere(10,14);
+  }
+  else if(coiffe==='longs'){
+    calotte(4);tempes(3);
+    R(-7+tr,YT+1,2,14,C);R(5+tr,YT+1,2,14,CO);
+    R(-7+tr,YT+13,2,2,CO);R(5+tr,YT+13,2,2,teint(C,-34));
+    if(prof)arriere(16,14);
+  }
+  else if(coiffe==='très longs'){
+    calotte(4);tempes(3);
+    R(-7+tr,YT+1,2,20,C);R(5+tr,YT+1,2,20,CO);
+    R(-7+tr,YT+18,2,3,CO);R(5+tr,YT+18,2,3,teint(C,-34));
+    if(prof)arriere(22,14);
+  }
+  else if(coiffe==='queue'){
+    calotte(4);tempes(2);
+    R(5+tr,YT+1,3,13,C);                      /* la queue part en arrière */
+    R(5+tr,YT+1,3,1,CC);
+    R(5+tr,YT+11,3,3,CO);
+    R(3+tr,YT,3,2,C);                         /* l'attache */
+    if(prof){arriere(7,12);R(-2,YT+5,4,14,C);R(-2,YT+16,4,3,CO);}
+  }
+  else if(coiffe==='couettes'){
+    calotte(4);tempes(2);
+    R(-9+tr,YT+2,3,7,C);R(6+tr,YT+2,3,7,CO);
+    R(-9+tr,YT+7,3,2,CO);R(6+tr,YT+7,3,2,teint(C,-30));
+    if(prof){arriere(7,12);R(-9,YT+2,3,8,C);R(6,YT+2,3,8,CO);}
+  }
+  else if(coiffe==='chignon'){
+    calotte(4);tempes(2);
+    R(-3,YT-6-reb,6,5,C);R(-3,YT-6-reb,3,2,CC);R(1,YT-6-reb,2,5,CO);
+    if(prof){arriere(8,12);R(-3,YT-6-reb,6,5,C);}
+  }
+  else if(coiffe==='chignon haut'){
+    calotte(3);tempes(2);
+    R(-2,YT-9-reb,5,6,C);R(-2,YT-9-reb,2,2,CC);
+    R(-3,YT-4,7,2,C);
+    if(prof){arriere(7,12);R(-2,YT-9-reb,5,6,C);}
+  }
+  else if(coiffe==='tresse'){
+    calotte(4);tempes(3);
+    for(let i=0;i<5;i++)R(5+tr,YT+2+i*3,3,2,i%2?CO:C);
+    R(5+tr,YT+17,3,1,teint(C,-40));
+    if(prof){arriere(8,12);for(let i=0;i<5;i++)R(-2,YT+5+i*3,4,2,i%2?CO:C);}
+  }
+  else if(coiffe==='tresses'){
+    calotte(4);tempes(2);
+    for(let i=0;i<4;i++){R(-8+tr,YT+2+i*3,3,2,i%2?CO:C);R(5+tr,YT+2+i*3,3,2,i%2?C:CO);}
+    if(prof){arriere(7,12);for(let i=0;i<4;i++){R(-8,YT+2+i*3,3,2,i%2?CO:C);R(5,YT+2+i*3,3,2,i%2?C:CO);}}
+  }
+  else if(coiffe==='ondulés'){
+    calotte(4);tempes(3);
+    R(-8+tr,YT+1,2,5,C);R(6+tr,YT+1,2,5,CO);
+    R(-7+tr,YT+5,2,5,C);R(5+tr,YT+5,2,5,CO);
+    R(-8+tr,YT+9,2,4,CO);R(6+tr,YT+9,2,4,teint(C,-30));
+    if(prof)arriere(13,14);
+  }
+  else if(coiffe==='bouclés'){
+    R(-7,YT-4,14,6,C);
+    R(-7,YT-3,4,2,CC);R(4,YT-4,3,6,CO);
+    R(-8,YT+1,3,4,C);R(5,YT+1,3,4,CO);
+    R(-6,YT-5,3,2,CC);R(1,YT-6,3,2,C);R(4,YT-5,2,2,CO);
+    if(prof){arriere(9,14);R(-7,YT-6,4,3,C);R(2,YT-6,4,3,CO);}
+  }
+  else if(coiffe==='afro'){
+    R(-9,YT-7,18,9,C);
+    R(-9,YT-6,6,3,CC);
+    R(5,YT-7,4,9,CO);
+    R(-9,YT+1,3,5,C);R(6,YT+1,3,5,CO);
+    R(-7,YT-9,6,2,C);R(1,YT-9,6,2,CO);
+    if(prof)arriere(9,18);
+  }
+  else if(coiffe==='dreads'){
+    calotte(4);
+    for(let i=-3;i<=3;i++)R(i*2,YT+1,2,6+((i+3)%3)*3,i%2?CO:C);
+    R(-8+tr,YT+1,2,9,C);R(6+tr,YT+1,2,9,CO);
+    if(prof){arriere(6,12);for(let i=-3;i<=3;i++)R(i*2,YT+4,2,8+((i+3)%3)*3,i%2?CO:C);}
+  }
+  else if(coiffe==='banane'){
+    calotte(3);tempes(2);
+    R(-5,YT-6,9,4,C);R(-5,YT-6,4,2,CC);R(2,YT-6,2,4,CO);
+    R(-2,YT-8,6,3,C);R(-2,YT-8,3,1,CC);
+    if(prof)arriere(6,12);
+  }
+  else if(coiffe==='crête'){
+    R(-6,YT,12,2,CO);
+    R(-2,YT-9-reb,4,8,C);R(-2,YT-9-reb,2,8,CC);
+    if(prof){R(-6,YT,12,4,CO);R(-2,YT-9-reb,4,8,C);}
+  }
+  else{                                       /* hirsute */
+    calotte(4);tempes(3);
+    R(-8,YT-3,3,3,C);R(5,YT-4,3,3,CO);
+    R(-3,YT-5-reb,3,3,C);R(2,YT-6-reb,2,3,CC);
+    R(-7+tr,YT+3,2,4,C);R(5+tr,YT+3,2,4,CO);
+    if(prof)arriere(9,14);
+  }
+
   /* chapeau */
   if(chapeau==='casquette'){R(-7,YT-5,14,4,'#3f5f6b');R(-7,YT-5,14,1,'#547a88');
     R(cote?(s>0?1:-13):-7,YT-1,13,2,'#33505a');}
@@ -517,7 +652,7 @@ function ouvrirLook(){
     let h=`<div class="tete">
       <span class="vign" id="vg"></span>
       <span><h2>Ton allure</h2>
-        <p>Seize réglages, dont sept pour le seul visage.</p>
+        <p>Seize réglages, vingt-deux coupes de cheveux.</p>
         <button class="hasard" id="hasard">Au hasard</button></span></div>`;
     GROUPES.forEach(gr=>{
       const liste=gr.l();
