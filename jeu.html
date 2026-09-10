@@ -22,6 +22,21 @@ body{overflow:hidden}
   color:#eaf2e4;display:flex;align-items:center;justify-content:center}
 #b-look{bottom:calc(16px + env(safe-area-inset-bottom))}
 
+#porte{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#8ec96f,#5f8c48);padding:22px}
+#porte.parti{display:none}
+.pCarte{width:100%;max-width:320px;background:var(--carte);border-radius:20px;
+  padding:22px 20px;box-shadow:0 14px 34px rgba(20,40,15,.3);text-align:center}
+.pCarte h1{font:400 30px Georgia,serif;color:var(--encre)}
+.pCarte p{font:400 12.5px/1.6 system-ui;color:var(--doux);margin:8px 0 16px}
+.pCarte input{width:100%;border:1.5px solid var(--filet);border-radius:12px;padding:13px 14px;
+  font:400 16px system-ui;color:var(--encre);background:#fbfaf3;text-align:center}
+.pCarte input:focus{outline:none;border-color:var(--vert)}
+.pCarte button{width:100%;margin-top:11px;border-radius:13px;padding:14px;
+  background:var(--vert);color:#fdfbf4;font:600 14.5px system-ui}
+.pCarte button:disabled{opacity:.45}
+.pEtat{font:400 11.5px system-ui;color:var(--doux);margin-top:10px;min-height:16px}
+
 #pan{position:fixed;inset:0;z-index:20;display:none}
 #pan.on{display:block}
 .feuille{position:absolute;inset:0;background:linear-gradient(180deg,#96d177,#6f9e52);
@@ -75,6 +90,16 @@ body{overflow:hidden}
     <circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.6-4 4.4-6 7.5-6s5.9 2 7.5 6"/></svg></button>
 
 <div id="pan"><div class="feuille" id="feuille"></div></div>
+
+<div id="porte">
+  <div class="pCarte">
+    <h1>Survivre</h1>
+    <p id="p-mot">Choisis le nom que les autres verront.</p>
+    <input id="p-nom" maxlength="14" placeholder="ton nom" autocomplete="off" spellcheck="false">
+    <button id="p-ok">Entrer</button>
+    <div class="pEtat" id="p-etat"></div>
+  </div>
+</div>
 
 <script type="module">
 const $=id=>document.getElementById(id);
@@ -684,13 +709,60 @@ function construireSol(){
   return c;
 }
 
-/* ================= état ================= */
-const CLE='bdl.pix.v1';
-let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP)};
+/* ================= état, gardé sur l'appareil et en ligne ================= */
+const CLE='bdl.pix.v2';
+let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:''};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
+if(!e.id){                                  /* un identifiant qui ne bouge plus */
+  e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+}
 const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
 
-let joueur={x:e.x,y:e.y,dir:'bas',pas:0};
+const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+const sbEntetes={'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,
+                 'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'};
+let enVol=false, dernierEnvoi=0;
+
+async function monterEnLigne(force){
+  if(enVol)return;
+  const now=Date.now();
+  if(!force&&now-dernierEnvoi<8000)return;
+  dernierEnvoi=now;enVol=true;
+  try{
+    await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
+      body:JSON.stringify({id:e.id,pseudo:e.pseudo||'sans nom',apparence:e.ap,
+        x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
+        maj:new Date().toISOString()})});
+  }catch(x){}
+  enVol=false;
+}
+async function descendreDeLigne(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs?id=eq.'+encodeURIComponent(e.id)+'&select=*',
+      {headers:sbEntetes});
+    const d=await r.json();
+    if(Array.isArray(d)&&d[0]){
+      const j=d[0];
+      if(j.apparence&&Object.keys(j.apparence).length)e.ap=Object.assign({},DEF_AP,j.apparence);
+      if(j.pseudo)e.pseudo=j.pseudo;
+      if(typeof j.x==='number'){e.x=j.x;e.y=j.y;}
+      sauver();
+      return true;
+    }
+  }catch(x){}
+  return false;
+}
+async function nomLibre(nom){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs?pseudo=eq.'+encodeURIComponent(nom)+'&select=id',
+      {headers:sbEntetes});
+    const d=await r.json();
+    return !(Array.isArray(d)&&d.some(j=>j.id!==e.id));
+  }catch(x){return true;}
+}
+
+let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0};
 let joyX=0,joyY=0;
 
 /* ================= rendu ================= */
@@ -875,12 +947,44 @@ function ouvrirLook(){
     majChoix();dessinerApercu();
   };
   $('annul').onclick=()=>$('pan').classList.remove('on');
-  $('ok').onclick=()=>{e.ap=LOOK.ap;sauver();$('pan').classList.remove('on');};
+  $('ok').onclick=()=>{e.ap=LOOK.ap;sauver();monterEnLigne(true);$('pan').classList.remove('on');};
   listeOnglet();dessinerApercu();
   $('pan').classList.add('on');
 }
 $('b-look').onclick=ouvrirLook;
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
+
+/* ================= la porte d'entrée ================= */
+async function ouvrirPorte(){
+  const champ=$('p-nom'), bouton=$('p-ok'), etat=$('p-etat');
+  etat.textContent='On regarde si tu as déjà une partie…';
+  const retrouve=await descendreDeLigne();
+  if(retrouve&&e.pseudo){
+    joueur.x=e.x;joueur.y=e.y;
+    etat.textContent='';
+    entrer();
+    return;
+  }
+  etat.textContent='';
+  champ.value=e.pseudo||'';
+  bouton.onclick=async()=>{
+    const nom=(champ.value||'').trim().replace(/\s+/g,' ');
+    if(nom.length<2)return etat.textContent='Il faut au moins deux lettres.';
+    bouton.disabled=true;etat.textContent='Un instant…';
+    const libre=await nomLibre(nom);
+    if(!libre){bouton.disabled=false;return etat.textContent='Ce nom est déjà pris.';}
+    e.pseudo=nom;sauver();
+    await monterEnLigne(true);
+    entrer();
+  };
+  champ.addEventListener('keydown',ev=>{if(ev.key==='Enter')bouton.click();});
+}
+function entrer(){
+  $('porte').classList.add('parti');
+  taille();
+  if(!e.pseudo)return;
+}
+ouvrirPorte();
 
 /* ================= boucle ================= */
 taille();
@@ -891,7 +995,7 @@ let t0=performance.now();
   majJoueur(dt);dessiner();dessinerJoy();
   if($('pan').classList.contains('on'))dessinerApercu();
 })(t0);
-setInterval(sauver,4000);
+setInterval(()=>{sauver();monterEnLigne();},4000);
 </script>
 </body>
 </html>
