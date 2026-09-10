@@ -78,9 +78,15 @@ const COIFFES=['courts','longs','mi-longs','queue','chignon','crete','crane','fr
                'tresses','ondules','afro','hirsute'];
 const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
-const YEUX_F=['normaux','plisses','ronds','fatigues'];
+const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
+const SOURCILS=['fins','epais','arques','fronces'];
+const NEZ=['petit','droit','large','retrousse'];
+const BOUCHES=['neutre','sourire','severe','entrouverte'];
+const MARQUES=['aucune','taches','cicatrice','grain','fard','peinture'];
+const BOUCLES=['aucune','anneau','perle','plume'];
 const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
-              chaussures:0,chapeau:0,sac:1};
+              chaussures:0,chapeau:0,sac:1,
+              sourcils:0,nez:1,bouche:0,marque:0,boucle:0};
 const teint=(c,k)=>{
   const n=parseInt(c.slice(1),16);
   const f=v=>Math.max(0,Math.min(255,v+k));
@@ -99,6 +105,11 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
   const chapeau=CHAPEAUX[p.chapeau]||'aucun', sacC=P.sac[p.sac]||'aucun';
   const fy=YEUX_F[p.formeYeux]||'normaux';
+  const sourcil=SOURCILS[p.sourcils]||'fins';
+  const nez=NEZ[p.nez]||'droit';
+  const bouche=BOUCHES[p.bouche]||'neutre';
+  const marque=MARQUES[p.marque]||'aucune';
+  const boucle=BOUCLES[p.boucle]||'aucune';
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
@@ -204,9 +215,9 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 
   /* ---- tête ---- */
-  const YT=yTete+Y;
-  R(-3,yT-3,6,4,N);                            /* contour du cou */
-  R(-2,yT-2,4,3,peau);                         /* cou */
+  const YT=yTete;                              /* la tête reste stable : seul le corps s'enfonce */
+  R(-3,yT-3+Y,6,4-Y,N);                        /* le cou s'étire d'un pixel quand le corps descend */
+  R(-2,yT-2+Y,4,3-Y,peau);                     /* cou */
   R(-2,yT-2,4,1,peauT);                        /* ombre du menton dessus */
   R(-2,yT-2,2,3,peauO);                        /* côté à l'ombre */
   R(-6,YT,12,HT,N);
@@ -255,27 +266,72 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   else if(chapeau==='beret'){R(-7,YT-5,13,4,'#2f4a5c');R(-7,YT-5,6,2,'#3f6076');R(4,YT-7-reb,2,2,'#2f4a5c');}
   else if(chapeau==='cagoule'){R(-7,YT-3,14,14,'#3a3a44');R(-7,YT-3,14,2,'#4a4a56');
     R(-4,YT+4,4,3,peau);R(1,YT+4,4,3,peau);}
-  /* visage */
-  if(dir==='bas'){
+  /* ---- le visage ----
+     Il tient dans dix pixels de large : chaque pixel compte. */
+  const blanc='#f6f3ec', ombreOeil=teint(peau,-38);
+  if(dir==='bas'&&chapeau==='cagoule'){
+    R(-4,YT+5,3,2,oeil);R(2,YT+5,3,2,oeil);      /* on ne voit que les yeux */
+  }else if(dir==='bas'){
     const clin=(Date.now()+x*53)%4600<130;
-    if(chapeau!=='cagoule'){
-      R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
-      if(clin){R(-4,YT+5,3,1,oeil);R(2,YT+5,3,1,oeil);}
-      else if(fy==='ronds'){R(-4,YT+4,3,3,'#f4f1ea');R(2,YT+4,3,3,'#f4f1ea');
-        R(-3,YT+4,2,3,oeil);R(3,YT+4,2,3,oeil);}
+    /* sourcils */
+    if(sourcil==='fins'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);}
+    if(sourcil==='epais'){R(-4,YT+2,3,2,chevO);R(2,YT+2,3,2,chevO);}
+    if(sourcil==='arques'){R(-4,YT+3,2,1,chevO);R(-2,YT+2,1,1,chevO);
+                           R(3,YT+3,2,1,chevO);R(2,YT+2,1,1,chevO);}
+    if(sourcil==='fronces'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
+                            R(-1,YT+3,2,1,chevO);}
+    /* creux des orbites */
+    R(-4,YT+4,3,1,ombreOeil);R(2,YT+4,3,1,ombreOeil);
+    /* yeux */
+    if(clin){R(-4,YT+6,3,1,chevO);R(2,YT+6,3,1,chevO);}
+    else{
+      const dessine=(gx,h,ty)=>{
+        R(gx,YT+ty,3,h,blanc);
+        R(gx+1,YT+ty,1,h,oeil);                 /* iris */
+        R(gx+1,YT+ty,1,1,teint(oeil,40));       /* reflet */
+      };
+      if(fy==='ronds'){dessine(-4,3,4);dessine(2,3,4);}
       else if(fy==='plisses'){R(-4,YT+5,3,1,oeil);R(2,YT+5,3,1,oeil);}
-      else if(fy==='fatigues'){R(-4,YT+5,3,2,'#f4f1ea');R(2,YT+5,3,2,'#f4f1ea');
-        R(-3,YT+5,2,2,oeil);R(3,YT+5,2,2,oeil);R(-4,YT+7,3,1,peauT);R(2,YT+7,3,1,peauT);}
-      else{R(-4,YT+5,3,2,'#f4f1ea');R(2,YT+5,3,2,'#f4f1ea');
-        R(-3,YT+5,2,2,oeil);R(3,YT+5,2,2,oeil);}
-      R(0,YT+7,1,1,peauT);
-      R(-2,YT+9,4,1,peauT);
-    }else{R(-4,YT+5,3,2,oeil);R(2,YT+5,3,2,oeil);}
+      else if(fy==='fatigues'){dessine(-4,2,5);dessine(2,2,5);
+        R(-4,YT+7,3,1,peauT);R(2,YT+7,3,1,peauT);}
+      else if(fy==='doux'){dessine(-4,2,5);dessine(2,2,5);
+        R(-4,YT+4,3,1,peau);R(2,YT+4,3,1,peau);}
+      else if(fy==='severes'){dessine(-4,2,5);dessine(2,2,5);
+        R(-4,YT+4,3,1,chevO);R(2,YT+4,3,1,chevO);}
+      else{dessine(-4,2,5);dessine(2,2,5);}
+    }
+    /* nez */
+    if(nez==='petit'){R(0,YT+7,1,1,peauT);}
+    if(nez==='droit'){R(0,YT+6,1,2,ombreOeil);R(0,YT+8,1,1,peauT);}
+    if(nez==='large'){R(-1,YT+7,3,1,ombreOeil);R(-1,YT+8,3,1,peauT);}
+    if(nez==='retrousse'){R(0,YT+6,1,2,ombreOeil);R(-1,YT+8,2,1,peauT);}
+    /* bouche */
+    if(bouche==='neutre'){R(-2,YT+9,4,1,teint(peau,-64));}
+    if(bouche==='sourire'){R(-2,YT+9,4,1,teint(peau,-64));R(-3,YT+8,1,1,peauO);R(2,YT+8,1,1,peauO);
+      R(-1,YT+10,2,1,teint(peau,-30));}
+    if(bouche==='severe'){R(-3,YT+9,6,1,teint(peau,-70));}
+    if(bouche==='entrouverte'){R(-2,YT+9,4,1,teint(peau,-70));R(-1,YT+10,2,1,'#8a4a4a');}
+    /* marques */
+    if(marque==='taches'){R(-4,YT+7,1,1,peauT);R(-2,YT+8,1,1,peauT);R(3,YT+7,1,1,peauT);R(2,YT+6,1,1,peauT);}
+    if(marque==='cicatrice'){R(3,YT+2,1,5,teint(peau,-46));R(2,YT+3,1,1,teint(peau,-46));}
+    if(marque==='grain'){R(-3,YT+8,1,1,teint(peau,-70));}
+    if(marque==='fard'){R(-4,YT+8,3,1,'#c9707a');R(2,YT+8,3,1,'#c9707a');}
+    if(marque==='peinture'){R(-4,YT+4,3,3,'#a8524a');R(2,YT+4,3,3,'#a8524a');
+      R(-4,YT+4,3,1,'#c46a5e');R(2,YT+4,3,1,'#c46a5e');}
+    /* boucles d'oreille */
+    if(boucle==='anneau'){R(-7,YT+7,1,2,'#c9a24a');R(6,YT+7,1,2,'#c9a24a');}
+    if(boucle==='perle'){R(-7,YT+7,1,1,'#f2efe4');R(6,YT+7,1,1,'#f2efe4');}
+    if(boucle==='plume'){R(6,YT+7,1,4,'#4a7d7d');R(6,YT+10,1,1,'#7fbdbd');}
   }else if(cote){
     const dx=s>0?2:-4;
-    R(dx,YT+3,2,1,chevO);
-    R(dx,YT+5,2,2,'#f4f1ea');R(dx+(s>0?1:0),YT+5,1,2,oeil);
-    R(s>0?5:-6,YT+7,1,1,peauT);
+    if(sourcil==='epais')R(dx,YT+2,2,2,chevO);else R(dx,YT+3,2,1,chevO);
+    R(dx,YT+4,2,1,ombreOeil);
+    R(dx,YT+5,2,2,blanc);
+    R(dx+(s>0?1:0),YT+5,1,2,oeil);
+    R(s>0?5:-6,YT+6,1,2,peauT);                 /* le nez dépasse du profil */
+    R(s>0?4:-5,YT+9,2,1,teint(peau,-64));       /* bouche */
+    if(boucle!=='aucune')R(s>0?-4:3,YT+7,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
+    if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
   }
 }
 
@@ -431,6 +487,11 @@ const GROUPES=[
  {c:'chapeau',   t:'Sur la tête',l:()=>CHAPEAUX,          k:'mot'},
  {c:'yeux',      t:'Yeux',      l:()=>PALETTES.yeux,      k:'couleur'},
  {c:'formeYeux', t:'Regard',    l:()=>YEUX_F,             k:'mot'},
+ {c:'sourcils',  t:'Sourcils',  l:()=>SOURCILS,           k:'mot'},
+ {c:'nez',       t:'Nez',       l:()=>NEZ,                k:'mot'},
+ {c:'bouche',    t:'Bouche',    l:()=>BOUCHES,            k:'mot'},
+ {c:'marque',    t:'Signe particulier',l:()=>MARQUES,     k:'mot'},
+ {c:'boucle',    t:'Boucle d’oreille', l:()=>BOUCLES,     k:'mot'},
  {c:'veste',     t:'Veste',     l:()=>PALETTES.veste,     k:'couleur'},
  {c:'pantalon',  t:'Pantalon',  l:()=>PALETTES.pantalon,  k:'couleur'},
  {c:'chaussures',t:'Chaussures',l:()=>PALETTES.chaussures,k:'couleur'},
@@ -456,7 +517,7 @@ function ouvrirLook(){
     let h=`<div class="tete">
       <span class="vign" id="vg"></span>
       <span><h2>Ton allure</h2>
-        <p>Onze réglages, plus de quatorze milliards de combinaisons.</p>
+        <p>Seize réglages, dont sept pour le seul visage.</p>
         <button class="hasard" id="hasard">Au hasard</button></span></div>`;
     GROUPES.forEach(gr=>{
       const liste=gr.l();
