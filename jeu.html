@@ -3,536 +3,497 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#8fc76a">
+<meta name="theme-color" content="#24406b">
 <title>Ta ferme</title>
 <style>
 :root{
-  --encre:#2b2a27;--doux:#8a867e;--carte:#fffdf8;--champ:#f4f2ec;--bord:#e4e0d6;
-  --vert:#4fa832;--vert-f:#3d8626;--vert-c:#67c447;
-  --or:#f0b02e;--or-f:#c98f13;--rouge:#d9694a;--bleu:#5aa8c9;
+  --nuit:#24406b; --nuit-f:#14213f;
+  --vert:#2f6b1f; --vert-c:#63a84a; --vert-p:#eaf4e6;
+  --or:#b5822a; --or-p:#f7efdd;
+  --carte:#fffdf9; --fond:#f4f2ec; --encre:#1e2735; --doux:#93a1b5; --pale:#a5adba; --filet:#e4e2d8;
+  --terre:#b98d55; --terre-f:#9a7342;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;color:var(--encre);
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+html{height:100%}
+body{min-height:100vh;min-height:100dvh;background:var(--fond);color:var(--encre);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
-button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer;font-size:15px}
-.app{position:fixed;inset:0;display:flex;flex-direction:column;
-  background:linear-gradient(180deg,#8ed4ef 0%,#c8e9f6 16%,#f2e7c8 26%,#a8d47f 34%,#7fb85c 100%)}
+button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
+.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
 
-/* ---------- barre ---------- */
-.haut{flex:0 0 auto;display:flex;gap:8px;align-items:center;
-  padding:calc(9px + env(safe-area-inset-top)) 12px 9px}
-.jeton{display:flex;align-items:center;gap:7px;background:rgba(255,253,248,.94);border-radius:999px;
-  padding:6px 13px 6px 7px;box-shadow:0 3px 10px rgba(40,60,30,.18);font-weight:650;font-size:14px}
-.jeton .p{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-  font-size:13px;color:#fff}
-.jeton .or{background:linear-gradient(180deg,#ffd76b,var(--or))}
-.jeton .xp{background:linear-gradient(180deg,#8fd0ef,var(--bleu))}
-.haut .esp{flex:1}
-.rond{width:38px;height:38px;border-radius:50%;background:rgba(255,253,248,.94);
-  display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(40,60,30,.18)}
+/* ---------- barre du haut ---------- */
+.haut{flex:0 0 auto;background:linear-gradient(180deg,#2b4a78,var(--nuit));color:#f7fafc;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 12px}
+.haut .ligne{display:flex;align-items:center;gap:10px}
+.haut h1{font:400 17px/1 Georgia,serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pastille{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border-radius:999px;
+  padding:5px 11px;font-size:13px;font-weight:600}
+.pastille svg{flex:0 0 auto}
+.xp{display:flex;align-items:center;gap:9px;margin-top:9px}
+.xp .barre{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,.18);overflow:hidden}
+.xp .barre i{display:block;height:100%;background:linear-gradient(90deg,var(--vert-c),#8ed36a)}
+.xp .niv{font-size:11px;color:#b7c4d6;font-weight:600;letter-spacing:.4px}
 
-/* ---------- scène ---------- */
-.scene{flex:1;position:relative;min-height:0;overflow:hidden}
-.deco{position:absolute;inset:0;pointer-events:none}
-.deco svg{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:max(100%,620px);height:auto}
-.grille{position:absolute;left:0;right:0;top:44%;bottom:12px;display:grid;
-  grid-template-columns:repeat(3,1fr);gap:10px;padding:0 14px;align-content:start;overflow-y:auto}
-.case{position:relative;aspect-ratio:1/.82;border-radius:16px;border:3px solid #7a5a34;
-  background:linear-gradient(180deg,#a8794a,#8a5f34);box-shadow:0 5px 0 #5f4224;
-  display:flex;align-items:center;justify-content:center;overflow:hidden}
-.case:active{transform:translateY(3px);box-shadow:0 2px 0 #5f4224}
-.case .sillons{position:absolute;inset:6px;border-radius:10px;
-  background:repeating-linear-gradient(90deg,rgba(0,0,0,.10) 0 5px,transparent 5px 15px)}
-.case .plante{position:relative;font-size:30px;line-height:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.2))}
-.case .jauge{position:absolute;left:8px;right:8px;bottom:8px;height:6px;border-radius:4px;
-  background:rgba(0,0,0,.28);overflow:hidden}
-.case .jauge i{display:block;height:100%;background:linear-gradient(90deg,#a8e07a,var(--vert-c))}
-.case .pret{position:absolute;top:-8px;right:-6px;width:30px;height:30px;border-radius:50%;
-  background:linear-gradient(180deg,#ffd76b,var(--or));border:2px solid #fff;display:flex;
-  align-items:center;justify-content:center;font-size:14px;box-shadow:0 3px 8px rgba(0,0,0,.25);
-  animation:pop 1.4s ease-in-out infinite}
-@keyframes pop{50%{transform:translateY(-5px)}}
-.case.vide{background:linear-gradient(180deg,#c4a276,#a8875c);border-style:dashed;color:#5f4224}
-.case.verrou{background:rgba(255,253,248,.5);border:3px dashed rgba(95,66,36,.5);
-  box-shadow:none;color:#5f4224;font-size:12px;text-align:center;padding:8px;font-weight:600}
+/* ---------- contenu ---------- */
+.corps{flex:1;min-height:0;overflow-y:auto;padding:14px 14px 96px}
+.titre{font:600 12px system-ui;letter-spacing:1.6px;color:var(--doux);margin:2px 0 10px}
 
-/* ---------- bâtiments ---------- */
-.batiments{position:absolute;left:12px;right:12px;top:12px;display:flex;gap:10px}
-.bat{position:relative;flex:1;background:rgba(255,253,248,.94);border-radius:16px;padding:9px;
-  display:flex;align-items:center;gap:9px;box-shadow:0 4px 12px rgba(40,60,30,.2)}
-.bat .em{font-size:24px}
-.bat .t{flex:1;min-width:0}
-.bat .n{font-size:12.5px;font-weight:650}
+/* la ferme */
+.ferme{background:linear-gradient(180deg,#dfeef5,#eef3e6 46%,#e8eddb);border:1px solid var(--filet);
+  border-radius:20px;padding:14px;margin-bottom:16px}
+.parcelles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.parc{position:relative;aspect-ratio:1/.88;border-radius:14px;overflow:hidden;border:1px solid #a98a5f;
+  background:repeating-linear-gradient(96deg,var(--terre) 0 7px,var(--terre-f) 7px 14px);
+  box-shadow:inset 0 -8px 14px rgba(90,60,25,.18);display:flex;align-items:flex-end;justify-content:center}
+.parc.libre{background:repeating-linear-gradient(96deg,#c8a271 0 7px,#b8955f 7px 14px)}
+.parc.verrou{background:#e9e6dc;border:1px dashed #b9b3a4;box-shadow:none;align-items:center}
+.parc svg{display:block;margin-bottom:6px}
+.parc .jauge{position:absolute;left:8px;right:8px;bottom:6px;height:5px;border-radius:3px;
+  background:rgba(40,28,12,.35);overflow:hidden}
+.parc .jauge i{display:block;height:100%;background:linear-gradient(90deg,#9fd07a,var(--vert-c))}
+.parc .pret{position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
+  background:var(--vert-c);box-shadow:0 0 0 3px rgba(99,168,74,.28)}
+.parc .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font:600 11.5px system-ui;color:#6b5a3c}
+.parc .prix{font:600 11.5px system-ui;color:#8a867e}
+
+/* animaux */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.bat{background:var(--carte);border:1px solid var(--filet);border-radius:14px;padding:10px;
+  display:flex;align-items:center;gap:9px;text-align:left}
+.bat .ic{width:34px;height:34px;border-radius:10px;background:var(--or-p);display:flex;
+  align-items:center;justify-content:center;flex:0 0 auto}
+.bat .n{font-size:12.5px;font-weight:600}
 .bat .d{font-size:11px;color:var(--doux);margin-top:2px}
-.bat .pastille{position:absolute;top:-7px;right:-5px;min-width:24px;height:24px;padding:0 6px;
-  border-radius:12px;background:var(--rouge);color:#fff;font-size:12px;font-weight:650;
-  display:flex;align-items:center;justify-content:center;border:2px solid #fff}
+.bat .jauge{height:5px;border-radius:3px;background:#eae7dd;margin-top:5px;overflow:hidden}
+.bat .jauge i{display:block;height:100%;background:linear-gradient(90deg,#e6c877,var(--or))}
 
-/* ---------- bas ---------- */
-.bas{flex:0 0 auto;background:var(--carte);border-radius:22px 22px 0 0;
-  padding:12px 12px calc(12px + env(safe-area-inset-bottom));
-  box-shadow:0 -6px 24px rgba(40,60,30,.2)}
-.onglets{display:flex;gap:8px}
-.onglets button{flex:1;border-radius:14px;padding:11px 4px;font-size:12.5px;font-weight:650;
-  background:var(--champ);color:var(--doux)}
-.onglets button.on{background:linear-gradient(180deg,var(--vert-c),var(--vert));color:#fff;
-  box-shadow:0 4px 0 var(--vert-f)}
-.panneau{margin-top:11px;max-height:32vh;overflow-y:auto}
-.ligne{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--bord)}
-.ligne:last-child{border-bottom:0}
-.ligne .em{width:40px;height:40px;border-radius:12px;background:var(--champ);display:flex;
-  align-items:center;justify-content:center;font-size:20px;flex:0 0 auto}
+/* carnet */
+.ligne{display:flex;align-items:center;gap:12px;background:var(--carte);border:1px solid var(--filet);
+  border-left:4px solid var(--filet);border-radius:14px;padding:12px;margin-bottom:9px;text-align:left;width:100%}
+.ligne.pret{border-left-color:var(--vert-c)}
+.ligne.pousse{border-left-color:var(--or)}
+.ligne .ic{width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;
+  align-items:center;justify-content:center;flex:0 0 auto}
 .ligne .t{flex:1;min-width:0}
-.ligne .n{font-size:14px;font-weight:600}
+.ligne .n{font-size:13.5px;font-weight:600}
 .ligne .d{font-size:12px;color:var(--doux);margin-top:2px}
-.btp{border-radius:12px;padding:9px 13px;font-size:13px;font-weight:650;flex:0 0 auto;
-  background:linear-gradient(180deg,#ffd76b,var(--or));color:#4a3208;box-shadow:0 4px 0 var(--or-f)}
-.btp.v{background:linear-gradient(180deg,var(--vert-c),var(--vert));color:#fff;box-shadow:0 4px 0 var(--vert-f)}
-.btp:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
-.btp:disabled{filter:grayscale(.7);opacity:.55}
-.vide-txt{font-size:13px;color:var(--doux);padding:14px 2px}
+.ligne .jauge{height:6px;border-radius:4px;background:#eae7dd;margin-top:6px;overflow:hidden}
+.ligne .jauge i{display:block;height:100%;background:linear-gradient(90deg,#e6c877,var(--or))}
+.agir{border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;flex:0 0 auto;
+  background:var(--vert);color:#fdfbf4}
+.agir.sec{background:var(--vert-p);color:var(--vert)}
+.agir:active{transform:translateY(1px)}
+.agir:disabled{opacity:.45}
 
-/* ---------- fenêtre ---------- */
-#fen{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(40,50,30,.55)}
+/* listes marché / boutique */
+.item{display:flex;align-items:center;gap:12px;background:var(--carte);border:1px solid var(--filet);
+  border-radius:14px;padding:12px;margin-bottom:9px}
+.item .t{flex:1;min-width:0}
+.prixb{border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;background:var(--or-p);color:var(--or)}
+.prixb.plein{background:var(--nuit);color:#f7fafc}
+.prixb:disabled{opacity:.45}
+.vide{font-size:13px;color:var(--doux);text-align:center;padding:26px 10px;line-height:1.6}
+
+/* commandes */
+.cmd{background:var(--carte);border:1px solid var(--filet);border-radius:16px;padding:13px;margin-bottom:10px}
+.cmd .h{display:flex;align-items:baseline;gap:8px}
+.cmd .h .q{flex:1;font-size:13.5px;font-weight:600}
+.cmd .h .g{font-size:13px;font-weight:600;color:var(--or)}
+.jetons{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+.jeton{display:flex;align-items:center;gap:5px;border:1px solid var(--filet);border-radius:9px;
+  padding:5px 8px;font-size:12px;font-weight:600;color:var(--doux)}
+.jeton.ok{background:var(--vert-p);border-color:#cbe5c0;color:var(--vert)}
+
+/* barre du bas */
+.bas{position:fixed;left:0;right:0;bottom:0;background:var(--carte);border-top:1px solid var(--filet);
+  display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom));z-index:5}
+.bas button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:600;color:var(--pale);padding:4px 0;position:relative}
+.bas button.on{color:var(--nuit)}
+.bas .point{position:absolute;top:1px;right:calc(50% - 16px);width:7px;height:7px;border-radius:50%;
+  background:#d9694a}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(80px + env(safe-area-inset-bottom));
+  background:rgba(30,39,53,.94);color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;
+  z-index:20;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,-6px)}
+
+#fen{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(20,33,63,.45)}
 #fen.on{display:flex}
-#fen .b{width:100%;background:var(--carte);border-radius:24px 24px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto}
-#fen h2{font-size:18px;font-weight:650;margin-bottom:5px}
-#fen p{font-size:13.5px;color:var(--doux);line-height:1.55}
-.fermer{width:100%;margin-top:14px;border-radius:15px;padding:14px;font-weight:650;font-size:15px;
-  background:var(--champ);color:var(--encre)}
-#ville{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden;
-  background:linear-gradient(180deg,#9adcf2 0%,#cfeaf7 22%,#f3e6cc 34%,#cdd3d8 42%,#b7bec4 100%)}
-#ville.on{display:flex}
-#ville .rue{position:absolute;left:0;right:0;bottom:0;height:26%;background:#9aa3ab}
-#ville .rue::after{content:"";position:absolute;left:0;right:0;top:46%;height:5px;
-  background:repeating-linear-gradient(90deg,#fff 0 22px,transparent 22px 44px);opacity:.6}
-#ville .maisons{position:absolute;left:0;right:0;bottom:24%;height:34%}
-#ville .m{position:absolute;bottom:0;border-radius:8px 8px 0 0}
-#ville .liste{position:relative;margin-top:auto;padding:12px;display:grid;gap:10px;
-  max-height:68%;overflow-y:auto}
-.lieu{display:flex;align-items:center;gap:11px;background:rgba(255,253,248,.96);border-radius:18px;
-  padding:11px;box-shadow:0 5px 16px rgba(40,50,60,.22);text-align:left;width:100%}
-.lieu .em{width:46px;height:46px;border-radius:14px;background:var(--champ);display:flex;
-  align-items:center;justify-content:center;font-size:24px;flex:0 0 auto}
-.lieu .t{flex:1;min-width:0}
-.lieu .n{font-size:14.5px;font-weight:650}
-.lieu .d{font-size:12px;color:var(--doux);margin-top:2px}
-.lieu .fl{color:var(--doux);font-size:18px}
-.lieu .pastille{min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--rouge);
-  color:#fff;font-size:12px;font-weight:650;display:flex;align-items:center;justify-content:center}
-.cmd{border:1px solid var(--bord);border-radius:16px;padding:12px;margin-bottom:10px}
-.cmd .h{display:flex;align-items:center;gap:9px}
-.cmd .h .q{flex:1;font-size:14px;font-weight:600}
-.cmd .items{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
-.cmd .it{background:var(--champ);border-radius:10px;padding:6px 9px;font-size:13px}
-.cmd .it.ok{background:#e7f5df;color:#2f6b22}
-.cmd .it.non{background:#fdeceb;color:#a3312a}
-.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);
-  background:rgba(43,42,39,.92);color:#fff;padding:10px 16px;border-radius:999px;font-size:13.5px;
-  z-index:40;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
-.toast.on{opacity:1;transform:translate(-50%,-8px)}
+#fen .b{width:100%;background:var(--carte);border-radius:24px 24px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto}
+#fen h2{font:400 20px Georgia,serif;margin-bottom:4px}
+#fen p{font-size:13px;color:var(--doux);line-height:1.55}
+.fermer{width:100%;margin-top:12px;border-radius:14px;padding:13px;font-weight:600;
+  background:#f2f0ea;color:var(--encre)}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="haut">
-    <div class="jeton"><span class="p or">€</span><span id="j-or">0</span></div>
-    <div class="jeton"><span class="p xp">★</span><span id="j-niv">1</span></div>
-    <div class="esp"></div>
-    <button class="rond" id="aller-ville">🏙️</button>
-    <button class="rond" id="aide">?</button>
-  </div>
-
-  <div class="scene">
-    <div class="deco">
-      <svg viewBox="0 0 620 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
-        <circle cx="520" cy="46" r="34" fill="#fff3b0"/>
-        <g fill="#fff" opacity=".92">
-          <ellipse cx="90" cy="44" rx="42" ry="17"/><ellipse cx="120" cy="34" rx="28" ry="18"/>
-          <ellipse cx="300" cy="30" rx="30" ry="12"/></g>
-        <path d="M0 120 q120-46 240-8 q120 38 240-10 q80-32 140-4 v40 H0z" fill="#9ec9a0" opacity=".8"/>
-        <g>
-          <rect x="70" y="118" width="86" height="58" rx="7" fill="#f7ecd8"/>
-          <path d="M62 122 L113 88 L164 122 Z" fill="#d9694a"/>
-          <rect x="100" y="146" width="26" height="30" rx="4" fill="#8a5a2e"/>
-        </g>
-        <g>
-          <rect x="420" y="130" width="70" height="46" rx="6" fill="#f2e0bd"/>
-          <path d="M414 134 L455 106 L496 134 Z" fill="#c98f4a"/>
-          <rect x="446" y="152" width="20" height="24" rx="3" fill="#8a5a2e"/>
-        </g>
-        <g fill="#4e9145">
-          <circle cx="250" cy="140" r="22"/><rect x="244" y="156" width="10" height="24" fill="#8a5a2e"/>
-          <circle cx="560" cy="150" r="18"/><rect x="555" y="162" width="9" height="20" fill="#8a5a2e"/>
-        </g>
-        <rect x="0" y="176" width="620" height="130" fill="#8fc76a"/>
-        <g stroke="#7fb85c" stroke-width="8" opacity=".6">
-          <path d="M-10 200 q160-24 320 2"/><path d="M-10 226 q180-26 380 4"/></g>
-      </svg>
-    </div>
-
-    <div class="batiments">
-      <button class="bat" id="bat-poule">
-        <span class="em">🐔</span>
-        <span class="t"><span class="n">Poulailler</span><span class="d" id="d-poule">—</span></span>
-        <span class="pastille" id="p-poule" style="display:none">0</span>
-      </button>
-      <button class="bat" id="bat-vache">
-        <span class="em">🐄</span>
-        <span class="t"><span class="n">Étable</span><span class="d" id="d-vache">—</span></span>
-        <span class="pastille" id="p-vache" style="display:none">0</span>
-      </button>
-    </div>
-
-    <div class="grille" id="grille"></div>
-
-    <div id="ville">
-      <div class="maisons">
-        <div class="m" style="left:4%;width:22%;height:76%;background:#e9c9a0"></div>
-        <div class="m" style="left:4%;width:22%;height:14%;background:#c9694a;border-radius:8px"></div>
-        <div class="m" style="left:29%;width:18%;height:94%;background:#cfd9e8"></div>
-        <div class="m" style="left:29%;width:18%;height:12%;background:#7f97bd;border-radius:8px"></div>
-        <div class="m" style="left:50%;width:24%;height:66%;background:#f0dcc0"></div>
-        <div class="m" style="left:50%;width:24%;height:13%;background:#d99a4a;border-radius:8px"></div>
-        <div class="m" style="left:77%;width:20%;height:88%;background:#dcc9dd"></div>
-        <div class="m" style="left:77%;width:20%;height:12%;background:#9a7ba8;border-radius:8px"></div>
+    <div class="ligne">
+      <h1 id="nom-ferme">Ta ferme</h1>
+      <div class="pastille">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f0d089" stroke-width="2">
+          <circle cx="12" cy="12" r="8"/><path d="M12 8v8M9.5 10h5M9.5 14h5" stroke-linecap="round"/></svg>
+        <span id="or">0</span>
       </div>
-      <div class="rue"></div>
-      <div class="liste" id="liste-ville"></div>
+    </div>
+    <div class="xp">
+      <div class="niv">NIV <span id="niv">1</span></div>
+      <div class="barre"><i id="xp-barre" style="width:0%"></i></div>
+      <div class="niv" id="xp-txt">0/40</div>
     </div>
   </div>
 
-  <div class="bas">
-    <div class="onglets">
-      <button data-o="graines" class="on">Semer</button>
-      <button data-o="marche">Marché</button>
-      <button data-o="boutique">Boutique</button>
-      <button data-o="stock">Grange</button>
-    </div>
-    <div class="panneau" id="panneau"></div>
+  <div class="corps" id="corps"></div>
+
+  <div class="bas" id="nav">
+    <button data-v="ferme" class="on">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>Ferme</button>
+    <button data-v="marche">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 8h16l-1.5 11.5H5.5z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>Marché</button>
+    <button data-v="boutique">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l1.6-4h14.8L21 9"/><path d="M4.5 9v10.5h15V9"/><path d="M3 9c0 1.6 1.3 2.8 3 2.8S9 10.6 9 9c0 1.6 1.3 2.8 3 2.8S15 10.6 15 9c0 1.6 1.3 2.8 3 2.8S21 10.6 21 9"/></svg>Boutique</button>
+    <button data-v="commandes">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 8.5h6M9 12.5h6M9 16.5h3"/></svg>Commandes
+      <span class="point" id="pt-cmd" style="display:none"></span></button>
   </div>
 </div>
 
 <div id="fen"><div class="b" id="fen-b"></div></div>
 <div class="toast" id="toast"></div>
 
-<script>
-'use strict';
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+const sb=createClient('https://zpfkekiavlfphialvphi.supabase.co',
+                      'sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP');
 const $=id=>document.getElementById(id);
 
-const GRAINES=[
-  {id:'ble',   nom:'Blé',      em:'🌾',cout:12, duree:45,  vend:26, xp:2, niv:1},
-  {id:'carotte',nom:'Carotte', em:'🥕',cout:24, duree:110, vend:58, xp:4, niv:1},
-  {id:'mais',  nom:'Maïs',     em:'🌽',cout:48, duree:240, vend:124,xp:7, niv:3},
-  {id:'tomate',nom:'Tomate',   em:'🍅',cout:96, duree:480, vend:255,xp:12,niv:5},
-  {id:'citrouille',nom:'Citrouille',em:'🎃',cout:190,duree:900,vend:520,xp:20,niv:8}
-];
-const PRODUITS={ble:{em:'🌾',nom:'Blé',vend:26},carotte:{em:'🥕',nom:'Carotte',vend:58},
-  mais:{em:'🌽',nom:'Maïs',vend:124},tomate:{em:'🍅',nom:'Tomate',vend:255},
-  citrouille:{em:'🎃',nom:'Citrouille',vend:520},
-  oeuf:{em:'🥚',nom:'Œuf',vend:34},lait:{em:'🥛',nom:'Lait',vend:72},
-  pain:{em:'🥖',nom:'Pain',vend:130},fromage:{em:'🧀',nom:'Fromage',vend:230},
-  conserve:{em:'🥫',nom:'Conserve',vend:480}};
+/* ================= dessins ================= */
+const D={
+  ble:(t)=>`<svg width="34" height="${20+t*14}" viewBox="0 0 34 48"><g stroke="#8a9a3c" stroke-width="2.4" fill="none" stroke-linecap="round">
+      <path d="M11 46V${34-t*12}"/><path d="M23 46V${37-t*12}"/></g>
+      <g fill="${t>1?'#d9b45a':'#a8b45c'}"><ellipse cx="11" cy="${30-t*12}" rx="5" ry="8"/>
+      <ellipse cx="23" cy="${33-t*12}" rx="4.4" ry="7"/></g>
+      <g fill="${t>1?'#c39a3f':'#93a04e'}"><path d="M11 ${22-t*12}v16" stroke="#8a7434" stroke-width="1.2"/></g></svg>`,
+  carotte:(t)=>`<svg width="34" height="${18+t*12}" viewBox="0 0 34 44">
+      <g stroke="#5aa350" stroke-width="3" fill="none" stroke-linecap="round">
+      <path d="M17 42V${28-t*10}"/><path d="M17 ${32-t*10}L9 ${24-t*10}"/><path d="M17 ${32-t*10}L25 ${24-t*10}"/></g>
+      ${t>1?'<path d="M12 42h10l-5 8z" fill="#e08a3c"/>':''}</svg>`,
+  tomate:(t)=>`<svg width="34" height="${20+t*14}" viewBox="0 0 34 48">
+      <path d="M17 46V${26-t*10}" stroke="#4e8f42" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M17 ${34-t*10}l-8-6M17 ${28-t*10}l8-5" stroke="#4e8f42" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      ${t>1?'<circle cx="10" cy="34" r="5.5" fill="#cf4433"/><circle cx="24" cy="30" r="5" fill="#cf4433"/>':
+             '<circle cx="11" cy="34" r="3" fill="#8fbb5c"/>'}</svg>`,
+  mais:(t)=>`<svg width="34" height="${22+t*16}" viewBox="0 0 34 52">
+      <path d="M17 50V${20-t*8}" stroke="#6ba03c" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M17 ${36-t*8}c-9 0-11-6-11-9 5 0 11 3 11 9z" fill="#7fb44c"/>
+      <path d="M17 ${30-t*8}c9 0 11-6 11-9-5 0-11 3-11 9z" fill="#6ba03c"/>
+      ${t>1?'<ellipse cx="21" cy="34" rx="4.5" ry="8" fill="#e2b93f"/>':''}</svg>`,
+  citrouille:(t)=>`<svg width="36" height="${20+t*14}" viewBox="0 0 36 48">
+      <path d="M18 44c-6 0-9-4-9-8" stroke="#4e8f42" stroke-width="3" fill="none" stroke-linecap="round"/>
+      ${t>1?`<g><ellipse cx="18" cy="36" rx="13" ry="10" fill="#e08a3c"/>
+        <ellipse cx="18" cy="36" rx="5" ry="10" fill="#d9782c"/>
+        <path d="M18 26v-5" stroke="#4e8f42" stroke-width="3" stroke-linecap="round"/></g>`
+        :'<ellipse cx="18" cy="40" rx="6" ry="4" fill="#8fbb5c"/>'}</svg>`,
+  oeuf:()=>`<svg width="20" height="24" viewBox="0 0 20 24"><ellipse cx="10" cy="14" rx="8" ry="10" fill="#f0e2c8"/>
+      <ellipse cx="7" cy="10" rx="3" ry="4" fill="#fbf4e6"/></svg>`,
+  lait:()=>`<svg width="20" height="24" viewBox="0 0 20 24"><path d="M6 2h8v4l3 5v11H3V11l3-5z" fill="#e8eef2" stroke="#b9c6d0" stroke-width="1.4"/>
+      <path d="M3 14h14v4H3z" fill="#c9d8e2"/></svg>`,
+  pain:()=>`<svg width="24" height="20" viewBox="0 0 24 20"><ellipse cx="12" cy="11" rx="11" ry="7" fill="#d9a95a"/>
+      <path d="M6 8l3 5M11 7l3 5M16 8l3 5" stroke="#b5843c" stroke-width="1.6" stroke-linecap="round"/></svg>`,
+  poule:()=>`<svg width="22" height="22" viewBox="0 0 24 24"><ellipse cx="12" cy="15" rx="8" ry="6.5" fill="#f2e6d0"/>
+      <circle cx="17" cy="9" r="4" fill="#f2e6d0"/><path d="M17 5.5c0-2 2-2 2 0" stroke="#cf4433" stroke-width="2" fill="none"/>
+      <path d="M20 9h3l-3 2z" fill="#e2a33c"/><circle cx="18" cy="8.6" r="1" fill="#3a3a3a"/></svg>`,
+  vache:()=>`<svg width="24" height="22" viewBox="0 0 26 24"><ellipse cx="13" cy="14" rx="10" ry="7" fill="#f2f0ea"/>
+      <ellipse cx="8" cy="12" rx="3.4" ry="2.6" fill="#4a4a52"/><ellipse cx="17" cy="16" rx="3" ry="2.2" fill="#4a4a52"/>
+      <circle cx="20" cy="9" r="4.2" fill="#f2f0ea"/><circle cx="21" cy="8.4" r="1" fill="#3a3a3a"/>
+      <path d="M17 6l-2-2M23 6l2-2" stroke="#c9bda8" stroke-width="2" stroke-linecap="round"/></svg>`,
+  parcelle:()=>`<svg width="26" height="20" viewBox="0 0 26 20"><rect width="26" height="20" rx="4" fill="#b98d55"/>
+      <path d="M4 3v14M10 3v14M16 3v14M22 3v14" stroke="#9a7342" stroke-width="2"/></svg>`
+};
+const ICONE={ble:D.ble,carotte:D.carotte,tomate:D.tomate,mais:D.mais,citrouille:D.citrouille,
+  oeuf:D.oeuf,lait:D.lait,pain:D.pain};
 
-const ATELIERS=[
-  {id:'pain',nom:'Boulangerie',em:'🥖',entree:{ble:3},sortie:'pain',duree:90,niv:1,d:'3 blé → 1 pain'},
-  {id:'fromage',nom:'Fromagerie',em:'🧀',entree:{lait:2},sortie:'fromage',duree:180,niv:3,d:'2 laits → 1 fromage'},
-  {id:'conserve',nom:'Conserverie',em:'🥫',entree:{carotte:2,tomate:1},sortie:'conserve',duree:300,niv:5,d:'2 carottes + 1 tomate → 1 conserve'}
+/* ================= données ================= */
+const CULTURES=[
+  {id:'ble',nom:'Blé',cout:12,duree:45,vend:26,xp:2,niv:1},
+  {id:'carotte',nom:'Carotte',cout:24,duree:110,vend:58,xp:4,niv:1},
+  {id:'mais',nom:'Maïs',cout:48,duree:240,vend:124,xp:7,niv:3},
+  {id:'tomate',nom:'Tomate',cout:96,duree:480,vend:255,xp:12,niv:5},
+  {id:'citrouille',nom:'Citrouille',cout:190,duree:900,vend:520,xp:20,niv:8}
 ];
-const neuf=()=>({or:150,xp:0,niv:1,parcelles:3,ville:false,ateliers:{},commandes:null,
-  cases:Array.from({length:9},()=>({graine:null,fin:0})),
-  poule:0,vache:0,derniere:Date.now(),stock:{},vus:false});
+const PRODUITS={};CULTURES.forEach(c=>PRODUITS[c.id]={nom:c.nom,vend:c.vend});
+PRODUITS.oeuf={nom:'Œuf',vend:34};PRODUITS.lait={nom:'Lait',vend:72};
+const CLIENTS=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim'];
+
+const CLE='bdl.ferme.v2';
+const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:4,
+  cases:Array.from({length:9},()=>({c:null,fin:0})),
+  poule:0,vache:0,attente:{oeuf:0,lait:0},derniere:Date.now(),stock:{},commandes:null});
 let e=neuf();
-const CLE='bdl.ferme.v1';
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(neuf(),JSON.parse(b));}catch(x){}
 const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
 
+const stock=k=>e.stock[k]||0, ajouter=(k,n)=>{e.stock[k]=stock(k)+n;};
 const XP_NIV=n=>Math.round(40*Math.pow(1.55,n-1));
-const coutParcelle=()=>Math.round(120*Math.pow(1.75,e.parcelles-3));
-const stock=k=>e.stock[k]||0;
-const ajouter=(k,n)=>{e.stock[k]=stock(k)+n;};
-function gagnerXp(n){
-  e.xp+=n;
-  while(e.xp>=XP_NIV(e.niv)){e.xp-=XP_NIV(e.niv);e.niv++;
-    toast('Niveau '+e.niv+' ! Nouvelles graines débloquées');}
-}
-let tt=null;
-function toast(t){const z=$('toast');z.textContent=t;z.classList.add('on');
-  clearTimeout(tt);tt=setTimeout(()=>z.classList.remove('on'),2200);}
+const coutParcelle=()=>Math.round(120*Math.pow(1.75,e.parcelles-4));
+const coutPoule=()=>Math.round(320*Math.pow(1.8,e.poule));
+const coutVache=()=>Math.round(900*Math.pow(1.85,e.vache));
+const euros=n=>Math.round(n).toLocaleString('fr-FR')+' €';
+const duree=s=>s<60?s+' s':(s<3600?Math.round(s/60)+' min':(Math.round(s/360)/10)+' h');
+function gagnerXp(n){e.xp+=n;while(e.xp>=XP_NIV(e.niv)){e.xp-=XP_NIV(e.niv);e.niv++;
+  toast('Niveau '+e.niv+' atteint');}}
+let tt;const toast=t=>{const z=$('toast');z.textContent=t;z.classList.add('on');
+  clearTimeout(tt);tt=setTimeout(()=>z.classList.remove('on'),2100);};
 
-/* ---------------- production auto ---------------- */
-const TAUX_POULE=1/90, TAUX_VACHE=1/240;   // par seconde et par bâtiment
+const TAUX_POULE=1/90, TAUX_VACHE=1/240;
 function auto(){
   const now=Date.now(), s=(now-e.derniere)/1000;
-  if(s<=0)return;
-  e.derniere=now;
-  e.enAttente=e.enAttente||{oeuf:0,lait:0};
-  e.enAttente.oeuf=Math.min(e.poule*12,(e.enAttente.oeuf||0)+e.poule*TAUX_POULE*s);
-  e.enAttente.lait=Math.min(e.vache*8,(e.enAttente.lait||0)+e.vache*TAUX_VACHE*s);
+  if(s<=0)return;e.derniere=now;
+  e.attente.oeuf=Math.min(e.poule*12,(e.attente.oeuf||0)+e.poule*TAUX_POULE*s);
+  e.attente.lait=Math.min(e.vache*8,(e.attente.lait||0)+e.vache*TAUX_VACHE*s);
 }
 
-/* ---------------- champs ---------------- */
-function semer(i,g){
-  if(e.or<g.cout){toast('Pas assez de pièces');return;}
-  e.or-=g.cout;e.cases[i]={graine:g.id,fin:Date.now()+g.duree*1000};
-  sauver();rendre();
-}
-function toucherCase(i){
-  if(i>=e.parcelles){
-    const c=coutParcelle();onglet('boutique');
-    toast(e.or>=c?('Défrichable pour '+c+' €'):('Il te manque '+(c-e.or)+' € pour défricher'));
-    return;}
-  const c=e.cases[i];
-  if(!c.graine){choisirGraine(i);return;}
-  if(Date.now()<c.fin){
-    const r=Math.ceil((c.fin-Date.now())/1000);
-    toast('Prêt dans '+(r>60?Math.ceil(r/60)+' min':r+' s'));return;
-  }
-  const g=GRAINES.find(x=>x.id===c.graine);
-  ajouter(g.id,1);gagnerXp(g.xp);e.cases[i]={graine:null,fin:0};
-  toast('+1 '+g.nom);sauver();rendre();
-}
-function choisirGraine(i){
-  const dispo=GRAINES.filter(g=>g.niv<=e.niv);
-  $('fen-b').innerHTML='<h2>Que semer ?</h2><p>Chaque graine met un temps différent à pousser.</p>'+
-    dispo.map(g=>'<div class="ligne"><div class="em">'+g.em+'</div>'+
-      '<div class="t"><div class="n">'+g.nom+'</div>'+
-      '<div class="d">'+duree(g.duree)+' · revend '+g.vend+' €</div></div>'+
-      '<button class="btp" data-g="'+g.id+'"'+(e.or<g.cout?' disabled':'')+'>'+g.cout+' €</button></div>').join('')+
-    '<button class="fermer" id="f-x">Annuler</button>';
-  $('fen').classList.add('on');
-  $('f-x').onclick=()=>$('fen').classList.remove('on');
-  $('fen-b').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
-    semer(i,GRAINES.find(g=>g.id===b.dataset.g));$('fen').classList.remove('on');});
-}
-const duree=s=>s<60?s+' s':(s<3600?Math.round(s/60)+' min':Math.round(s/360)/10+' h');
-
-/* ---------------- bâtiments ---------------- */
-$('bat-poule').onclick=()=>{
-  if(!e.poule){onglet('boutique');toast('Construis un poulailler');return;}
-  const n=Math.floor((e.enAttente&&e.enAttente.oeuf)||0);
-  if(n<1){toast('Les poules travaillent…');return;}
-  e.enAttente.oeuf-=n;ajouter('oeuf',n);gagnerXp(n);toast('+'+n+' œuf'+(n>1?'s':''));sauver();rendre();
-};
-$('bat-vache').onclick=()=>{
-  if(!e.vache){onglet('boutique');toast('Construis une étable');return;}
-  const n=Math.floor((e.enAttente&&e.enAttente.lait)||0);
-  if(n<1){toast('Ça vient…');return;}
-  e.enAttente.lait-=n;ajouter('lait',n);gagnerXp(n*2);toast('+'+n+' lait');sauver();rendre();
-};
-
-/* ---------------- panneaux ---------------- */
-let ongletActif='graines';
-function onglet(o){ongletActif=o;
-  document.querySelectorAll('.onglets button').forEach(b=>b.classList.toggle('on',b.dataset.o===o));
-  rendrePanneau();}
-document.querySelectorAll('.onglets button').forEach(b=>b.onclick=()=>onglet(b.dataset.o));
-
-function rendrePanneau(){
-  const z=$('panneau');z.innerHTML='';
-  if(ongletActif==='graines'){
-    GRAINES.forEach(g=>{
-      const ok=g.niv<=e.niv;
-      z.insertAdjacentHTML('beforeend','<div class="ligne"><div class="em">'+g.em+'</div>'+
-        '<div class="t"><div class="n">'+g.nom+(ok?'':' 🔒')+'</div>'+
-        '<div class="d">'+(ok?duree(g.duree)+' · achat '+g.cout+' € · revend '+g.vend+' €'
-          :'Niveau '+g.niv+' requis')+'</div></div>'+
-        (ok?'<div class="d" style="font-size:12px;color:#8a867e">Touche un champ</div>':'')+'</div>');
-    });
-  }
-  if(ongletActif==='marche'){
-    const cles=Object.keys(e.stock).filter(k=>stock(k)>0);
-    if(!cles.length){z.innerHTML='<div class="vide-txt">Ta grange est vide. Récolte d’abord.</div>';return;}
-    cles.forEach(k=>{
-      const p=PRODUITS[k];
-      z.insertAdjacentHTML('beforeend','<div class="ligne"><div class="em">'+p.em+'</div>'+
-        '<div class="t"><div class="n">'+p.nom+' ×'+stock(k)+'</div>'+
-        '<div class="d">'+p.vend+' € l’unité</div></div>'+
-        '<button class="btp v" data-v="'+k+'">Vendre '+(p.vend*stock(k))+' €</button></div>');
-    });
-    z.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
-      const k=b.dataset.v,n=stock(k);
-      e.or+=PRODUITS[k].vend*n;e.stock[k]=0;toast('+'+(PRODUITS[k].vend*n)+' €');
-      sauver();rendre();});
-  }
-  if(ongletActif==='boutique'){
-    const coutP=coutParcelle();
-    const coutPo=Math.round(320*Math.pow(1.8,e.poule));
-    const coutV=Math.round(900*Math.pow(1.85,e.vache));
-    const l=(em,n,d,prix,id,bloque)=>'<div class="ligne"><div class="em">'+em+'</div>'+
-      '<div class="t"><div class="n">'+n+'</div><div class="d">'+d+'</div></div>'+
-      '<button class="btp" data-a="'+id+'"'+((e.or<prix||bloque)?' disabled':'')+'>'+prix+' €</button></div>';
-    z.innerHTML=
-      l('🟫','Nouvelle parcelle','Tu en as '+e.parcelles+' sur 9',coutP,'parcelle',e.parcelles>=9)+
-      l('🐔','Poulailler','Œufs en continu · '+e.poule+' construit'+(e.poule>1?'s':''),coutPo,'poule',e.niv<2)+
-      l('🐄','Étable','Lait en continu · '+e.vache+' construite'+(e.vache>1?'s':''),coutV,'vache',e.niv<4);
-    if(e.niv<2)z.insertAdjacentHTML('beforeend','<div class="vide-txt">Le poulailler se débloque au niveau 2, l’étable au niveau 4.</div>');
-    z.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
-      const a=b.dataset.a;
-      if(a==='parcelle'&&e.or>=coutP&&e.parcelles<9){e.or-=coutP;e.parcelles++;toast('Parcelle défrichée');}
-      if(a==='poule'&&e.or>=coutPo&&e.niv>=2){e.or-=coutPo;e.poule++;toast('Poulailler construit');}
-      if(a==='vache'&&e.or>=coutV&&e.niv>=4){e.or-=coutV;e.vache++;toast('Étable construite');}
-      sauver();rendre();});
-  }
-  if(ongletActif==='stock'){
-    const cles=Object.keys(e.stock).filter(k=>stock(k)>0);
-    if(!cles.length){z.innerHTML='<div class="vide-txt">Rien en grange pour l’instant.</div>';return;}
-    cles.forEach(k=>{const p=PRODUITS[k];
-      z.insertAdjacentHTML('beforeend','<div class="ligne"><div class="em">'+p.em+'</div>'+
-        '<div class="t"><div class="n">'+p.nom+'</div><div class="d">×'+stock(k)+'</div></div></div>');});
-  }
-}
-
-/* ---------------- rendu ---------------- */
-function rendre(){
-  auto();
-  $('j-or').textContent=e.or.toLocaleString('fr-FR');
-  $('j-niv').textContent=e.niv;
-  const oe=Math.floor((e.enAttente&&e.enAttente.oeuf)||0),
-        la=Math.floor((e.enAttente&&e.enAttente.lait)||0);
-  $('d-poule').textContent=e.poule?e.poule+' · '+(oe?oe+' œuf'+(oe>1?'s':'')+' prêts':'en cours'):'à construire';
-  $('d-vache').textContent=e.vache?e.vache+' · '+(la?la+' lait prêt':'en cours'):'à construire';
-  $('p-poule').style.display=oe?'flex':'none';$('p-poule').textContent=oe;
-  $('p-vache').style.display=la?'flex':'none';$('p-vache').textContent=la;
-
-  const g=$('grille');
-  if(g.children.length!==9){g.innerHTML='';
-    for(let i=0;i<9;i++){const b=document.createElement('button');b.className='case';
-      b.onclick=()=>toucherCase(i);g.appendChild(b);}}
-  for(let i=0;i<9;i++){
-    const b=g.children[i],c=e.cases[i];
-    if(i>=e.parcelles){b.className='case verrou';b.innerHTML='À défricher';continue;}
-    if(!c.graine){b.className='case vide';b.innerHTML='<div class="sillons"></div>';continue;}
-    const gr=GRAINES.find(x=>x.id===c.graine);
-    const reste=c.fin-Date.now(), tot=gr.duree*1000, p=Math.max(0,Math.min(1,1-reste/tot));
-    b.className='case';
-    b.innerHTML='<div class="sillons"></div>'+
-      '<div class="plante" style="opacity:'+(0.45+p*0.55)+';transform:scale('+(0.6+p*0.4)+')">'+gr.em+'</div>'+
-      (reste>0?'<div class="jauge"><i style="width:'+(p*100)+'%"></i></div>'
-             :'<div class="pret">✓</div>');
-  }
-  rendrePanneau();
-  if(e.ville)rendreVille();
-}
-function basculerVille(v){
-  e.ville=v;$('ville').classList.toggle('on',v);
-  $('aller-ville').textContent=v?'🌾':'🏙️';
-  sauver();rendre();
-}
-$('aller-ville').onclick=()=>{sauver();location.href='ville.html';};
-
-function etatAtelier(a){
-  const w=e.ateliers[a.id];
-  if(!w)return{libre:true};
-  if(Date.now()>=w.fin)return{pret:true};
-  return{reste:Math.ceil((w.fin-Date.now())/1000)};
-}
-function ouvrirAtelier(a){
-  const st=etatAtelier(a);
-  const manque=Object.entries(a.entree).some(([k,n])=>stock(k)<n);
-  let corps;
-  if(st.pret)corps='<p>Ta fournée est prête.</p>';
-  else if(st.reste)corps='<p>En cours — prêt dans '+duree(st.reste)+'.</p>';
-  else corps='<p>'+a.d+' · '+duree(a.duree)+'<br>Revente : '+PRODUITS[a.sortie].vend+' €</p>'+
-    '<div class="cmd"><div class="items">'+Object.entries(a.entree).map(([k,n])=>
-      '<span class="it '+(stock(k)>=n?'ok':'non')+'">'+PRODUITS[k].em+' '+stock(k)+'/'+n+'</span>').join('')+
-    '</div></div>';
-  $('fen-b').innerHTML='<h2>'+a.em+' '+a.nom+'</h2>'+corps+
-    (st.reste?'':'<button class="btp v" id="a-go" style="width:100%;margin-top:12px;padding:14px"'+
-      ((!st.pret&&manque)?' disabled':'')+'>'+(st.pret?'Récupérer':'Lancer la fabrication')+'</button>')+
-    '<button class="fermer" id="f-x">Fermer</button>';
-  $('fen').classList.add('on');
-  $('f-x').onclick=()=>$('fen').classList.remove('on');
-  const go=$('a-go');
-  if(go)go.onclick=()=>{
-    if(st.pret){ajouter(a.sortie,1);gagnerXp(6);delete e.ateliers[a.id];
-      toast('+1 '+PRODUITS[a.sortie].nom);}
-    else{Object.entries(a.entree).forEach(([k,n])=>{e.stock[k]=stock(k)-n;});
-      e.ateliers[a.id]={fin:Date.now()+a.duree*1000};toast('C’est en route');}
-    $('fen').classList.remove('on');sauver();rendre();};
-}
+/* ================= commandes ================= */
 function nouvelleCommande(){
   const dispo=Object.keys(PRODUITS).filter(k=>{
-    const g=GRAINES.find(x=>x.id===k);
-    if(g)return g.niv<=e.niv;
+    const c=CULTURES.find(x=>x.id===k);
+    if(c)return c.niv<=e.niv;
     if(k==='oeuf')return e.poule>0;
     if(k==='lait')return e.vache>0;
-    const a=ATELIERS.find(x=>x.sortie===k);
-    return a?a.niv<=e.niv:false;});
+    return false;});
   if(!dispo.length)return null;
   const n=1+Math.min(2,Math.floor(e.niv/3)),items={};
   for(let i=0;i<n;i++){const k=dispo[Math.random()*dispo.length|0];
     items[k]=(items[k]||0)+1+Math.floor(Math.random()*3);}
   const val=Object.entries(items).reduce((s,[k,q])=>s+PRODUITS[k].vend*q,0);
-  const cl=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim'];
-  return{client:cl[Math.random()*cl.length|0],items,or:Math.round(val*1.5),xp:Math.max(4,Math.round(val/22))};
+  return{client:CLIENTS[Math.random()*CLIENTS.length|0],items,
+    or:Math.round(val*1.5),xp:Math.max(4,Math.round(val/22))};
 }
-function assurerCommandes(){
-  if(!e.commandes)e.commandes=[];
-  while(e.commandes.length<3){const c=nouvelleCommande();if(!c)break;e.commandes.push(c);}
+function assurerCommandes(){if(!e.commandes)e.commandes=[];
+  while(e.commandes.length<3){const c=nouvelleCommande();if(!c)break;e.commandes.push(c);}}
+const livrable=c=>Object.entries(c.items).every(([k,q])=>stock(k)>=q);
+
+/* ================= vues ================= */
+let vue='ferme';
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
+  vue=b.dataset.v;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
+  $('corps').scrollTop=0;rendre();});
+
+function etatParcelle(i){
+  const c=e.cases[i];
+  if(i>=e.parcelles)return{type:'verrou'};
+  if(!c.c)return{type:'libre'};
+  const cu=CULTURES.find(x=>x.id===c.c);
+  const reste=c.fin-Date.now(), tot=cu.duree*1000;
+  if(reste<=0)return{type:'pret',cu};
+  return{type:'pousse',cu,reste:Math.ceil(reste/1000),p:1-reste/tot};
 }
-function ouvrirCommandes(){
+
+function vueFerme(){
+  let h='<div class="ferme"><div class="parcelles">';
+  for(let i=0;i<9;i++){
+    const s=etatParcelle(i);
+    if(s.type==='verrou'){
+      h+=`<button class="parc verrou" data-p="${i}"><span class="prix">${euros(coutParcelle())}</span></button>`;
+    }else if(s.type==='libre'){
+      h+=`<button class="parc libre" data-p="${i}"><span class="txt">Semer</span></button>`;
+    }else{
+      const t=s.type==='pret'?2:(s.p>.5?1:0);
+      h+=`<button class="parc" data-p="${i}">${ICONE[s.cu.id](t)}
+        ${s.type==='pret'?'<span class="pret"></span>'
+          :`<span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span>`}</button>`;
+    }
+  }
+  h+='</div><div class="duo">';
+  const oe=Math.floor(e.attente.oeuf||0), la=Math.floor(e.attente.lait||0);
+  h+=`<button class="bat" data-b="poule"><span class="ic">${D.poule()}</span>
+      <span class="t"><span class="n">Poulailler</span>
+      <span class="d">${e.poule?(oe?oe+(oe>1?' œufs prêts':' œuf prêt'):'les poules pondent'):'à construire'}</span>
+      ${e.poule?`<span class="jauge"><i style="width:${Math.min(100,(e.attente.oeuf/(e.poule*12))*100)}%"></i></span>`:''}
+      </span></button>`;
+  h+=`<button class="bat" data-b="vache"><span class="ic">${D.vache()}</span>
+      <span class="t"><span class="n">Étable</span>
+      <span class="d">${e.vache?(la?la+' lait prêt':'la traite avance'):'à construire'}</span>
+      ${e.vache?`<span class="jauge"><i style="width:${Math.min(100,(e.attente.lait/(e.vache*8))*100)}%"></i></span>`:''}
+      </span></button>`;
+  h+='</div></div>';
+
+  // carnet
+  h+='<div class="titre">LE CARNET</div>';
+  let lignes='';
+  for(let i=0;i<e.parcelles;i++){
+    const s=etatParcelle(i);
+    if(s.type==='libre'){
+      lignes+=`<button class="ligne" data-p="${i}"><span class="ic">${D.parcelle()}</span>
+        <span class="t"><span class="n">Parcelle ${i+1}</span><span class="d">libre</span></span>
+        <span class="agir sec">Semer</span></button>`;
+    }else if(s.type==='pret'){
+      lignes+=`<button class="ligne pret" data-p="${i}"><span class="ic">${ICONE[s.cu.id](2)}</span>
+        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">prêt à récolter</span></span>
+        <span class="agir">Récolter</span></button>`;
+    }else{
+      lignes+=`<div class="ligne pousse"><span class="ic">${ICONE[s.cu.id](s.p>.5?1:0)}</span>
+        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">encore ${duree(s.reste)}</span>
+        <span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span></span></div>`;
+    }
+  }
+  if(e.poule&&oe)lignes+=`<button class="ligne pret" data-b="poule"><span class="ic">${D.poule()}</span>
+    <span class="t"><span class="n">Poulailler</span><span class="d">${oe} à ramasser</span></span>
+    <span class="agir">Ramasser</span></button>`;
+  if(e.vache&&la)lignes+=`<button class="ligne pret" data-b="vache"><span class="ic">${D.vache()}</span>
+    <span class="t"><span class="n">Étable</span><span class="d">${la} à traire</span></span>
+    <span class="agir">Traire</span></button>`;
+  h+=lignes||'<div class="vide">Rien à faire pour l’instant.<br>Sème quelque chose.</div>';
+  return h;
+}
+
+function vueMarche(){
+  const cles=Object.keys(e.stock).filter(k=>stock(k)>0);
+  if(!cles.length)return '<div class="titre">MARCHÉ</div><div class="vide">Ta grange est vide.<br>Récolte d’abord.</div>';
+  const total=cles.reduce((s,k)=>s+PRODUITS[k].vend*stock(k),0);
+  let h='<div class="titre">MARCHÉ</div>';
+  cles.forEach(k=>{
+    h+=`<div class="item"><span class="ic" style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${(ICONE[k]||D.pain)(2)}</span>
+      <span class="t"><span class="n" style="font-size:13.5px;font-weight:600">${PRODUITS[k].nom}</span>
+      <span class="d" style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${stock(k)} en grange · ${euros(PRODUITS[k].vend)} pièce</span></span>
+      <button class="prixb" data-v="${k}">${euros(PRODUITS[k].vend*stock(k))}</button></div>`;
+  });
+  h+=`<button class="prixb plein" data-v="tout" style="width:100%;padding:15px;margin-top:6px">Tout vendre · ${euros(total)}</button>`;
+  return h;
+}
+
+function vueBoutique(){
+  let h='<div class="titre">BOUTIQUE</div>';
+  const l=(ic,n,d,prix,id,bloque,note)=>`<div class="item">
+    <span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ic}</span>
+    <span class="t"><span style="font-size:13.5px;font-weight:600">${n}</span>
+    <span style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${bloque?note:d}</span></span>
+    <button class="prixb" data-a="${id}" ${(bloque||e.or<prix)?'disabled':''}>${bloque?'—':euros(prix)}</button></div>`;
+  h+=l(D.parcelle(),'Nouvelle parcelle',`tu en as ${e.parcelles} sur 9`,coutParcelle(),'parcelle',e.parcelles>=9,'toutes défrichées');
+  h+=l(D.poule(),'Poulailler',`${e.poule} construit${e.poule>1?'s':''} · œufs en continu`,coutPoule(),'poule',e.niv<2,'niveau 2 requis');
+  h+=l(D.vache(),'Étable',`${e.vache} construite${e.vache>1?'s':''} · lait en continu`,coutVache(),'vache',e.niv<4,'niveau 4 requis');
+  h+='<div class="titre" style="margin-top:18px">GRAINES DISPONIBLES</div>';
+  CULTURES.forEach(c=>{
+    const ok=c.niv<=e.niv;
+    h+=`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ICONE[c.id](ok?2:0)}</span>
+      <span class="t"><span style="font-size:13.5px;font-weight:600">${c.nom}</span>
+      <span style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${ok?duree(c.duree)+' · achat '+euros(c.cout)+' · vente '+euros(c.vend):'niveau '+c.niv+' requis'}</span></span></div>`;
+  });
+  return h;
+}
+
+function vueCommandes(){
   assurerCommandes();
-  const html=(e.commandes||[]).map((c,i)=>{
-    const ok=Object.entries(c.items).every(([k,q])=>stock(k)>=q);
-    return '<div class="cmd"><div class="h"><span>📋</span><span class="q">Pour '+c.client+'</span>'+
-      '<span style="font-weight:650;color:#c98f13">'+c.or+' €</span></div><div class="items">'+
-      Object.entries(c.items).map(([k,q])=>'<span class="it '+(stock(k)>=q?'ok':'non')+'">'+
-        PRODUITS[k].em+' '+stock(k)+'/'+q+'</span>').join('')+
-      '</div><button class="btp v" data-c="'+i+'" style="width:100%;margin-top:10px;padding:12px"'+
-      (ok?'':' disabled')+'>Livrer</button></div>';}).join('')||
-    '<p>Reviens quand tu auras des produits.</p>';
-  $('fen-b').innerHTML='<h2>📋 Tableau des commandes</h2>'+
-    '<p>Les habitants paient 50 % de plus que le marché.</p>'+html+
-    '<button class="fermer" id="f-x">Fermer</button>';
+  let h='<div class="titre">COMMANDES</div>';
+  if(!e.commandes.length)return h+'<div class="vide">Personne ne commande encore.<br>Reviens quand tu produiras.</div>';
+  e.commandes.forEach((c,i)=>{
+    h+=`<div class="cmd"><div class="h"><span class="q">Pour ${c.client}</span><span class="g">${euros(c.or)}</span></div>
+      <div class="jetons">${Object.entries(c.items).map(([k,q])=>
+        `<span class="jeton ${stock(k)>=q?'ok':''}">${PRODUITS[k].nom} ${Math.min(stock(k),q)}/${q}</span>`).join('')}</div>
+      <button class="agir" data-c="${i}" style="width:100%;margin-top:11px;padding:12px" ${livrable(c)?'':'disabled'}>Livrer</button></div>`;
+  });
+  return h;
+}
+
+/* ================= actions ================= */
+function semer(i){
+  const dispo=CULTURES.filter(c=>c.niv<=e.niv);
+  $('fen-b').innerHTML='<h2>Que semer ?</h2><p>Choisis ta culture pour cette parcelle.</p>'+
+    dispo.map(c=>`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ICONE[c.id](2)}</span>
+      <span class="t"><span style="font-size:13.5px;font-weight:600">${c.nom}</span>
+      <span style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${duree(c.duree)} · rapporte ${euros(c.vend)}</span></span>
+      <button class="prixb" data-g="${c.id}" ${e.or<c.cout?'disabled':''}>${euros(c.cout)}</button></div>`).join('')+
+    '<button class="fermer" id="f-x">Annuler</button>';
   $('fen').classList.add('on');
   $('f-x').onclick=()=>$('fen').classList.remove('on');
-  $('fen-b').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-    const i=+b.dataset.c,c=e.commandes[i];
-    if(!Object.entries(c.items).every(([k,q])=>stock(k)>=q))return;
+  $('fen-b').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
+    const c=CULTURES.find(x=>x.id===b.dataset.g);
+    if(e.or<c.cout)return;
+    e.or-=c.cout;e.cases[i]={c:c.id,fin:Date.now()+c.duree*1000};
+    $('fen').classList.remove('on');sauver();rendre();});
+}
+function toucherParcelle(i){
+  const s=etatParcelle(i);
+  if(s.type==='verrou'){
+    const c=coutParcelle();
+    if(e.or<c)return toast('Il te manque '+euros(c-e.or)+' pour défricher');
+    e.or-=c;e.parcelles++;toast('Parcelle défrichée');sauver();rendre();return;
+  }
+  if(s.type==='libre')return semer(i);
+  if(s.type==='pousse')return toast('Prêt dans '+duree(s.reste));
+  ajouter(s.cu.id,1);gagnerXp(s.cu.xp);e.cases[i]={c:null,fin:0};
+  toast('+1 '+s.cu.nom);sauver();rendre();
+}
+function toucherBat(id){
+  if(id==='poule'){
+    if(!e.poule)return toast('Construis un poulailler en boutique');
+    const n=Math.floor(e.attente.oeuf||0);
+    if(n<1)return toast('Les poules travaillent');
+    e.attente.oeuf-=n;ajouter('oeuf',n);gagnerXp(n);toast('+'+n+(n>1?' œufs':' œuf'));
+  }else{
+    if(!e.vache)return toast('Construis une étable en boutique');
+    const n=Math.floor(e.attente.lait||0);
+    if(n<1)return toast('La traite avance');
+    e.attente.lait-=n;ajouter('lait',n);gagnerXp(n*2);toast('+'+n+' lait');
+  }
+  sauver();rendre();
+}
+
+function brancher(){
+  const z=$('corps');
+  z.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>toucherParcelle(+b.dataset.p));
+  z.querySelectorAll('[data-b]').forEach(b=>b.onclick=()=>toucherBat(b.dataset.b));
+  z.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.v;
+    if(k==='tout'){
+      let t=0;Object.keys(e.stock).forEach(x=>{t+=PRODUITS[x].vend*stock(x);e.stock[x]=0;});
+      if(t)toast('+'+euros(t));e.or+=t;
+    }else{const n=stock(k);e.or+=PRODUITS[k].vend*n;e.stock[k]=0;toast('+'+euros(PRODUITS[k].vend*n));}
+    sauver();rendre();});
+  z.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
+    const a=b.dataset.a;
+    if(a==='parcelle'){const c=coutParcelle();if(e.or<c||e.parcelles>=9)return;
+      e.or-=c;e.parcelles++;toast('Parcelle défrichée');}
+    if(a==='poule'){const c=coutPoule();if(e.or<c||e.niv<2)return;e.or-=c;e.poule++;toast('Poulailler construit');}
+    if(a==='vache'){const c=coutVache();if(e.or<c||e.niv<4)return;e.or-=c;e.vache++;toast('Étable construite');}
+    sauver();rendre();});
+  z.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
+    const c=e.commandes[+b.dataset.c];if(!livrable(c))return;
     Object.entries(c.items).forEach(([k,q])=>{e.stock[k]=stock(k)-q;});
-    e.or+=c.or;gagnerXp(c.xp);e.commandes.splice(i,1);assurerCommandes();
-    toast('Livré · +'+c.or+' €');sauver();rendre();ouvrirCommandes();});
+    e.or+=c.or;gagnerXp(c.xp);e.commandes.splice(+b.dataset.c,1);assurerCommandes();
+    toast('Livré · +'+euros(c.or));sauver();rendre();});
 }
-function rendreVille(){
-  const z=$('liste-ville');if(!z)return;
+
+/* ================= rendu ================= */
+function rendre(){
+  auto();
+  $('or').textContent=e.or.toLocaleString('fr-FR');
+  $('niv').textContent=e.niv;
+  $('xp-barre').style.width=Math.round(e.xp/XP_NIV(e.niv)*100)+'%';
+  $('xp-txt').textContent=e.xp+'/'+XP_NIV(e.niv);
+  $('nom-ferme').textContent=e.ferme;
   assurerCommandes();
-  const pretes=(e.commandes||[]).filter(c=>Object.entries(c.items).every(([k,q])=>stock(k)>=q)).length;
-  let h='<button class="lieu" id="l-cmd"><span class="em">📋</span><span class="t">'+
-    '<span class="n">Tableau des commandes</span><span class="d">'+(e.commandes||[]).length+
-    ' demandes · payées 50 % de plus</span></span>'+
-    (pretes?'<span class="pastille">'+pretes+'</span>':'<span class="fl">›</span>')+'</button>';
-  ATELIERS.forEach(a=>{
-    const st=etatAtelier(a);
-    const d=a.niv>e.niv?('Niveau '+a.niv+' requis'):
-      st.pret?'Fournée prête':st.reste?('Prêt dans '+duree(st.reste)):a.d;
-    h+='<button class="lieu" data-at="'+a.id+'"'+(a.niv>e.niv?' style="opacity:.55"':'')+'>'+
-      '<span class="em">'+a.em+'</span><span class="t"><span class="n">'+a.nom+'</span>'+
-      '<span class="d">'+d+'</span></span>'+
-      (st.pret?'<span class="pastille">1</span>':'<span class="fl">›</span>')+'</button>';});
-  z.innerHTML=h;
-  $('l-cmd').onclick=ouvrirCommandes;
-  z.querySelectorAll('[data-at]').forEach(b=>b.onclick=()=>{
-    const a=ATELIERS.find(x=>x.id===b.dataset.at);
-    if(a.niv>e.niv){toast('Niveau '+a.niv+' requis');return;}
-    ouvrirAtelier(a);});
+  const pretes=(e.commandes||[]).filter(livrable).length;
+  $('pt-cmd').style.display=pretes?'block':'none';
+  $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
+                       vue==='boutique'?vueBoutique():vueCommandes();
+  brancher();
 }
-$('aide').onclick=()=>{
-  $('fen-b').innerHTML='<h2>Comment ça marche</h2>'+
-    '<p>Touche un champ pour semer, reviens quand la plante est mûre pour récolter. '+
-    'Le poulailler et l’étable produisent tout seuls, même quand tu fermes le jeu — '+
-    'il suffit de toucher le bâtiment pour ramasser.<br><br>'+
-    'En ville, tu transformes tes récoltes en pain, fromage ou conserves, et tu livres les '+
-    'commandes des habitants, payées 50 % de plus.<br><br>'+
-    'Vends tes récoltes au marché pour acheter des parcelles et des animaux. '+
-    'Chaque récolte donne de l’expérience, et les nouvelles graines arrivent avec les niveaux.</p>'+
-    '<button class="fermer" id="f-x">Compris</button>';
-  $('fen').classList.add('on');$('f-x').onclick=()=>$('fen').classList.remove('on');
-};
-e.ville=false;
 rendre();
-setInterval(()=>{auto();rendre();sauver();},1000);
+setInterval(()=>{auto();if(vue==='ferme')rendre();sauver();},1000);
+
+sb.auth.getUser().then(({data})=>{
+  const f=data&&data.user&&data.user.user_metadata&&data.user.user_metadata.ferme;
+  if(f&&e.ferme!=='...'&&e.ferme!==f){e.ferme=f;sauver();$('nom-ferme').textContent=f;}
+}).catch(()=>{});
 </script>
 </body>
 </html>
