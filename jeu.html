@@ -119,6 +119,48 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   z-index:20;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
 .toast.on{opacity:1;transform:translate(-50%,-6px)}
 
+/* ---------- bienvenue et tutoriel ---------- */
+#accueil{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+  padding:18px;background:radial-gradient(120% 90% at 25% 0%,#3c5b86 0%,#24406b 45%,#14213f 100%);
+  animation:fondu .3s ease-out}
+#accueil.on{display:flex}
+@keyframes fondu{from{opacity:0}}
+@keyframes monteC{from{transform:translateY(18px);opacity:0}}
+#accueil .carte-a{width:100%;max-width:420px;background:var(--carte);border-radius:26px;
+  padding:26px 22px 22px;box-shadow:0 20px 46px rgba(6,14,32,.5);animation:monteC .35s ease-out;
+  max-height:calc(100dvh - 36px);overflow-y:auto}
+#accueil h2{font:400 24px/1.3 Georgia,serif;text-align:center}
+#accueil .intro{font:400 13.5px/1.6 system-ui;color:var(--doux);text-align:center;margin-top:9px}
+.point{display:flex;gap:13px;align-items:flex-start;margin-top:16px}
+.point .ic{width:38px;height:38px;border-radius:11px;flex:0 0 auto;display:flex;
+  align-items:center;justify-content:center}
+.point .n{font:600 13.5px system-ui}
+.point .d{font:400 12.5px/1.5 system-ui;color:var(--doux);margin-top:2px}
+.cta{width:100%;margin-top:24px;border-radius:16px;padding:16px;background:var(--nuit);color:#f7fafc;
+  font-size:15.5px;font-weight:600;box-shadow:0 6px 18px rgba(36,64,107,.35)}
+.cta.vert{background:var(--vert);box-shadow:0 6px 18px rgba(47,107,31,.32)}
+.saut{width:100%;margin-top:10px;padding:12px;font-size:13px;font-weight:600;color:var(--doux)}
+
+#tuto{position:fixed;inset:0;z-index:55;display:none;pointer-events:none}
+#tuto.on{display:block}
+#tuto .trou{position:absolute;border-radius:16px;box-shadow:0 0 0 9999px rgba(15,25,45,.72);
+  transition:all .28s cubic-bezier(.3,.8,.4,1);border:2px solid var(--vert-c)}
+#tuto .bulle{position:absolute;left:12px;right:12px;background:#1e2735;color:#fdfbf4;border-radius:18px;
+  padding:15px 16px;box-shadow:0 14px 34px rgba(0,0,0,.45);pointer-events:auto;
+  transition:top .28s cubic-bezier(.3,.8,.4,1)}
+#tuto .fleche{position:absolute;width:15px;height:15px;background:#1e2735;transform:rotate(45deg)}
+#tuto .etiq{font:600 10.5px system-ui;letter-spacing:1.6px;color:#8ea9c9}
+#tuto h3{font:600 15px system-ui;margin-top:5px}
+#tuto p{font:400 13px/1.6 system-ui;color:#b7c4d6;margin-top:5px}
+#tuto .pied{display:flex;align-items:center;gap:10px;margin-top:13px}
+#tuto .pastilles{display:flex;gap:5px;flex:1}
+#tuto .pastilles i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.28)}
+#tuto .pastilles i.on{background:var(--vert-c);width:16px;border-radius:3px}
+#tuto .suite{background:var(--vert);color:#fdfbf4;border-radius:12px;padding:10px 16px;
+  font-size:13px;font-weight:600}
+#tuto .suite.attente{background:rgba(255,255,255,.12);color:#b7c4d6}
+#tuto .passer{font-size:12px;font-weight:600;color:#8ea9c9;padding:8px}
+
 #fen{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(20,33,63,.45)}
 #fen.on{display:flex}
 #fen .b{width:100%;background:var(--carte);border-radius:24px 24px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));max-height:82vh;overflow-y:auto}
@@ -164,6 +206,9 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
       <span class="point" id="pt-cmd" style="display:none"></span></button>
   </div>
 </div>
+
+<div id="accueil"><div class="carte-a" id="accueil-b"></div></div>
+<div id="tuto"><div class="trou" id="trou"></div><div class="bulle" id="bulle"></div></div>
 
 <div id="fen"><div class="b" id="fen-b"></div></div>
 <div class="toast" id="toast"></div>
@@ -233,7 +278,7 @@ PRODUITS.oeuf={nom:'Œuf',vend:34};PRODUITS.lait={nom:'Lait',vend:72};
 const CLIENTS=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim'];
 
 const CLE='bdl.ferme.v2';
-const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:4,
+const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:4,tuto:0,accueilVu:false,
   cases:Array.from({length:9},()=>({c:null,fin:0})),
   poule:0,vache:0,attente:{oeuf:0,lait:0},derniere:Date.now(),stock:{},commandes:null});
 let e=neuf();
@@ -405,7 +450,8 @@ function vueCommandes(){
 
 /* ================= actions ================= */
 function semer(i){
-  const dispo=CULTURES.filter(c=>c.niv<=e.niv);
+  let dispo=CULTURES.filter(c=>c.niv<=e.niv);
+  if(e.tuto===1)dispo=dispo.filter(c=>c.id==='ble');
   $('fen-b').innerHTML='<h2>Que semer ?</h2><p>Choisis ta culture pour cette parcelle.</p>'+
     dispo.map(c=>`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ICONE[c.id](2)}</span>
       <span class="t"><span style="font-size:13.5px;font-weight:600">${c.nom}</span>
@@ -455,8 +501,9 @@ function brancher(){
     const k=b.dataset.v;
     if(k==='tout'){
       let t=0;Object.keys(e.stock).forEach(x=>{t+=PRODUITS[x].vend*stock(x);e.stock[x]=0;});
-      if(t)toast('+'+euros(t));e.or+=t;
-    }else{const n=stock(k);e.or+=PRODUITS[k].vend*n;e.stock[k]=0;toast('+'+euros(PRODUITS[k].vend*n));}
+      if(t){toast('+'+euros(t));e.venduUneFois=true;}e.or+=t;
+    }else{const n=stock(k);e.or+=PRODUITS[k].vend*n;e.stock[k]=0;e.venduUneFois=true;
+      toast('+'+euros(PRODUITS[k].vend*n));}
     sauver();rendre();});
   z.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{
     const a=b.dataset.a;
@@ -472,6 +519,134 @@ function brancher(){
     toast('Livré · +'+euros(c.or));sauver();rendre();});
 }
 
+/* ================= bienvenue ================= */
+const ICO_GRAINE=`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2f6b1f" stroke-width="1.9" stroke-linecap="round">
+  <path d="M12 21V9"/><path d="M12 12C8 12 6 9 6 6c4 0 6 3 6 6z"/><path d="M12 14c4 0 6-3 6-6-4 0-6 3-6 6z"/></svg>`;
+const ICO_PANIER=`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b5822a" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M4 8h16l-1.5 11.5H5.5z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>`;
+const ICO_MAISON=`<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#24406b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>`;
+
+function ouvrirAccueil(){
+  $('accueil-b').innerHTML=`
+    <div style="text-align:center">
+      <svg width="46" height="46" viewBox="0 0 40 40" style="display:block;margin:0 auto 12px">
+        <circle cx="20" cy="20" r="19" fill="none" stroke="#2f6b1f" stroke-width="2"/>
+        <path d="M20 30 L20 15" stroke="#2f6b1f" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M20 18 C14 18 12 13 12 10 C17 10 20 13 20 18Z" fill="#2f6b1f"/>
+        <path d="M20 21 C26 21 28 16 28 13 C23 13 20 16 20 21Z" fill="#63a84a"/></svg>
+      <h2>${e.ferme}<br>est à toi</h2>
+      <div class="intro">Quatre parcelles, cent cinquante euros, et de quoi commencer.</div>
+    </div>
+    <div class="point"><span class="ic" style="background:var(--vert-p)">${ICO_GRAINE}</span>
+      <span><span class="n">Sème, attends, récolte</span>
+      <span class="d">Le blé est prêt en 45 secondes. La citrouille demande un quart d’heure, mais rapporte vingt fois plus.</span></span></div>
+    <div class="point"><span class="ic" style="background:var(--or-p)">${ICO_PANIER}</span>
+      <span><span class="n">Vends ou livre</span>
+      <span class="d">Le marché rachète tout de suite. Les habitants paient moitié plus cher, mais réclament des produits précis.</span></span></div>
+    <div class="point"><span class="ic" style="background:#e9eef7">${ICO_MAISON}</span>
+      <span><span class="n">Agrandis la ferme</span>
+      <span class="d">Parcelles, poulailler, étable. Les animaux produisent même quand le jeu est fermé.</span></span></div>
+    <button class="cta" id="a-go">Commencer</button>
+    <button class="saut" id="a-skip">Je connais déjà, passer</button>`;
+  $('accueil').classList.add('on');
+  $('a-go').onclick=()=>{e.accueilVu=true;e.tuto=1;sauver();
+    $('accueil').classList.remove('on');rendre();};
+  $('a-skip').onclick=()=>{e.accueilVu=true;e.tuto=-1;sauver();
+    $('accueil').classList.remove('on');rendre();};
+}
+
+/* ================= tutoriel ================= */
+const ETAPES=[
+  null,
+  {cible:()=>document.querySelector('.parcelles'),
+   etiq:'ÉTAPE 1 SUR 5',titre:'Tes quatre parcelles',
+   texte:'Chaque carré de terre accueille une culture. Touches-en un pour choisir ce que tu sèmes — commence par du blé, c’est le plus rapide.',
+   attente:'Sème quelque chose',
+   fait:()=>e.cases.some(c=>c.c)},
+  {cible:()=>{const i=e.cases.findIndex(c=>c.c);
+     return (i>=0&&document.querySelectorAll('.parc')[i])||document.querySelector('.parcelles');},
+   etiq:'ÉTAPE 2 SUR 5',titre:'Ça pousse tout seul',
+   texte:'La jauge se remplit même si tu fermes le jeu. Quand la plante est mûre, un point vert apparaît sur la parcelle.',
+   bouton:'Compris'},
+  {cible:()=>{const i=e.cases.findIndex(c=>c.c);
+     return (i>=0&&document.querySelectorAll('.parc')[i])||document.querySelector('.parcelles');},
+   etiq:'ÉTAPE 3 SUR 5',titre:'La récolte',
+   texte:'Touche la parcelle mûre pour rentrer ta production. Elle part en grange, et tu gagnes de l’expérience.',
+   attente:'Récolte ta première culture',
+   fait:()=>Object.values(e.stock).some(v=>v>0)},
+  {cible:()=>document.querySelector('#nav button[data-v="marche"]'),
+   etiq:'ÉTAPE 4 SUR 5',titre:'Le marché',
+   texte:'C’est ici que la grange se transforme en argent. Ouvre le marché et vends ta récolte.',
+   attente:'Vends au marché',
+   fait:()=>e.venduUneFois},
+  {cible:()=>document.querySelector('#nav button[data-v="commandes"]'),
+   etiq:'ÉTAPE 5 SUR 5',titre:'Les commandes',
+   texte:'Les habitants réclament des produits précis et paient 50 % de plus que le marché. Une pastille rouge s’allume quand tu peux livrer.',
+   bouton:'Terminer'}
+];
+
+function majTuto(){
+  const t=$('tuto');
+  if(!e.tuto||e.tuto<0||e.tuto>=ETAPES.length){t.classList.remove('on');return;}
+  const et=ETAPES[e.tuto];
+  const cible=et.cible();
+  if(!cible){t.classList.remove('on');return;}
+  t.classList.add('on');
+  const r=cible.getBoundingClientRect();
+  const m=8;
+  const trou=$('trou');
+  trou.style.left=(r.left-m)+'px';trou.style.top=(r.top-m)+'px';
+  trou.style.width=(r.width+m*2)+'px';trou.style.height=(r.height+m*2)+'px';
+
+  const dessous=r.top<innerHeight*0.55;
+  const b=$('bulle');
+  const pastilles=ETAPES.slice(1).map((_,i)=>`<i class="${i+1===e.tuto?'on':''}"></i>`).join('');
+  const pret=et.fait?et.fait():true;
+  b.innerHTML=`<div class="fleche"></div>
+    <div class="etiq">${et.etiq}</div><h3>${et.titre}</h3><p>${et.texte}</p>
+    <div class="pied"><div class="pastilles">${pastilles}</div>
+      ${et.bouton?`<button class="suite" id="t-next">${et.bouton}</button>`
+        :`<span class="suite ${pret?'':'attente'}" id="t-next">${pret?'Continuer':et.attente}</span>`}
+      <button class="passer" id="t-skip">Passer</button></div>`;
+  if(dessous){b.style.top=Math.round(r.bottom+18)+'px';b.style.bottom='auto';}
+  else{b.style.bottom=Math.round(innerHeight-r.top+18)+'px';b.style.top='auto';}
+  const f=b.querySelector('.fleche');
+  const rb=b.getBoundingClientRect();
+  const cx=Math.min(Math.max(r.left+r.width/2-rb.left-7,20),rb.width-34);
+  f.style.left=Math.round(cx)+'px';
+  if(dessous){f.style.top='-7px';f.style.bottom='auto';}
+  else{f.style.bottom='-7px';f.style.top='auto';}
+  const n=$('t-next');
+  if(n&&(et.bouton||pret))n.onclick=()=>{avancerTuto();};
+  const sk=$('t-skip');if(sk)sk.onclick=()=>{e.tuto=-1;sauver();majTuto();};
+}
+function avancerTuto(){
+  e.tuto++;
+  if(e.tuto>=ETAPES.length){
+    e.tuto=-1;e.or+=100;sauver();rendre();
+    $('accueil-b').innerHTML=`
+      <div style="text-align:center">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#2f6b1f" stroke-width="1.8"
+          style="display:block;margin:0 auto 12px"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.6 2.6L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <h2>Te voilà fermier</h2>
+        <div class="intro">Cent euros pour la route. À partir d’ici, tu fais comme tu veux : agrandir, livrer, élever.</div>
+      </div>
+      <button class="cta vert" id="a-fin">Jouer</button>`;
+    $('accueil').classList.add('on');
+    $('a-fin').onclick=()=>{$('accueil').classList.remove('on');rendre();};
+    return;
+  }
+  // l'étape 2 accélère la première pousse pour ne pas faire attendre
+  if(e.tuto===2){
+    const i=e.cases.findIndex(c=>c.c);
+    if(i>=0&&e.cases[i].fin>Date.now()+9000)e.cases[i].fin=Date.now()+9000;
+  }
+  if(e.tuto===4&&vue!=='marche'){/* laisse le joueur ouvrir le marché */}
+  sauver();rendre();
+}
+addEventListener('resize',()=>majTuto());
+
 /* ================= rendu ================= */
 function rendre(){
   auto();
@@ -486,8 +661,14 @@ function rendre(){
   $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
                        vue==='boutique'?vueBoutique():vueCommandes();
   brancher();
+  // le tutoriel avance dès que la condition est remplie
+  if(e.tuto>0&&ETAPES[e.tuto]&&ETAPES[e.tuto].fait&&ETAPES[e.tuto].fait()){
+    if(!ETAPES[e.tuto]._vu){ETAPES[e.tuto]._vu=true;setTimeout(avancerTuto,420);}
+  }
+  requestAnimationFrame(majTuto);
 }
 rendre();
+if(!e.accueilVu)ouvrirAccueil();
 setInterval(()=>{auto();if(vue==='ferme')rendre();sauver();},1000);
 
 sb.auth.getUser().then(({data})=>{
