@@ -154,6 +154,10 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 .pastilleV b{position:absolute;left:0;right:0;bottom:6px;font:600 11px system-ui}
 .pastilleV.eau::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235fd6d0' stroke-width='2.2' stroke-linejoin='round'%3E%3Cpath d='M12 3s6 6.5 6 10.5A6 6 0 0 1 6 13.5C6 9.5 12 3 12 3z'/%3E%3C/svg%3E")}
 .pastilleV.miam::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e8c06a' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M7 3v8a3 3 0 0 0 6 0V3'/%3E%3Cpath d='M10 11v10'/%3E%3Cpath d='M17 3c-1.6 2-2 4-2 7h4c0-3-.4-5-2-7z'/%3E%3Cpath d='M17 10v11'/%3E%3C/svg%3E")}
+.batir{position:absolute;left:12px;bottom:calc(88px + env(safe-area-inset-bottom));
+  display:none;border-radius:16px;padding:12px 15px;background:#8a6a44;color:#fdf3e2;
+  font:600 13.5px system-ui;box-shadow:0 8px 20px rgba(0,0,0,.4)}
+.batir.on{display:block}
 .versJoueur{position:absolute;left:50%;transform:translateX(-50%);
   bottom:calc(88px + env(safe-area-inset-bottom));display:none;border-radius:16px;padding:12px 16px;
   background:#7a4fd6;color:#f4ecff;font:600 13.5px system-ui;box-shadow:0 8px 20px rgba(0,0,0,.4)}
@@ -241,6 +245,7 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   </div>
   <div id="c-gens" class="gens"></div>
   <button id="c-joueur" class="versJoueur"></button>
+  <button id="c-batir" class="batir"></button>
   <div id="emotes" class="emotes"></div>
   <button class="retour" id="c-monde" style="bottom:calc(80px + env(safe-area-inset-bottom));left:auto;right:12px">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
@@ -518,12 +523,13 @@ const CLE='bdl.survie.v1';
 const neuf=()=>({
   biome:null, nom:'Survivant', jour:1, debut:Date.now(), derniere:Date.now(),
   faim:100, soif:100, chaleur:100, sante:100, xp:0, niv:1,
-  apparence:null, traits:[], quetes:{}, avance:{},
+  apparence:null, traits:[], quetes:{}, avance:{}, constructions:[],
   sacs:{}, objets:{}, zones:{}, meteo:'clair', meteoFin:0,
   journal:[], nuitsPassees:0, mortes:0, vu:false});
 let e=neuf();
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(neuf(),JSON.parse(b));}catch(x){}
-const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
+const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}
+  if(typeof sauverEnLigne==='function')sauverEnLigne();};
 try{const n=localStorage.getItem('bdl.nom');if(n&&(!e.nom||e.nom==='Survivant'))e.nom=n;}catch(x){}
 const sac=k=>e.sacs[k]||0;
 const ajouter=(k,n)=>{e.sacs[k]=sac(k)+n;};
@@ -697,6 +703,8 @@ const QUETES=[
  {id:'entrer', nom:'Sous un toit',     d:'Entre dans un bâtiment',    cible:1, verbe:'entrer',   xp:25, or:{eau:2}},
  {id:'abri',   nom:'Tenir debout',     d:'Fabrique un abri',          cible:1, verbe:'fabriquer:abri', xp:60, or:{metal:2}},
  {id:'bete',   nom:'Une présence',     d:'Apprivoise un animal',      cible:1, verbe:'apprivoiser', xp:70, or:{nourriture:2}},
+ {id:'batir',  nom:'Un endroit à toi', d:'Bâtis un feu de camp sur le terrain', cible:1, verbe:'batir', xp:50, or:{bois:4}},
+ {id:'chasser',nom:'Se défendre',      d:'Abats une bête hostile',               cible:1, verbe:'chasser', xp:80, or:{nourriture:3}},
  {id:'jour5',  nom:'Cinq jours',       d:'Survis jusqu’au jour 5',    cible:5, verbe:'jour',     xp:120, or:{metal:3,tissu:3}}
 ];
 const quete=()=>QUETES.find(q=>!(e.quetes||{})[q.id]);
@@ -1169,8 +1177,12 @@ const estDecor=o=>!!TRAVAIL[o.type];
 const pretObjet=o=>Date.now()>=(e.zones[o.id]||0);
 function bloque(x,y){
   if(x<BORD||x>MONDE-BORD||y<BORD||y>MONDE-BORD)return true;   // le carré de pelouse
-  return OBJETS.some(o=>o.solide&&pretObjet(o)&&
-    Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7);
+  if(OBJETS.some(o=>o.solide&&pretObjet(o)&&
+    Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7))return true;
+  return (e.constructions||[]).some(c=>{
+    if(c.t==='feu')return false;                    /* on peut s'approcher du feu */
+    const d=(typeof CONSTRUCTIBLES!=='undefined'&&CONSTRUCTIBLES.find(z=>z.id===c.t))||{w:40,h:34};
+    return Math.abs(c.x-x)<d.w/2+7&&Math.abs(c.y-y)<d.h/2+6;});
 }
 function teinte(){return ['rgba(255,246,214,.06)','#fff6d0'];}
 function silhouetteBete(g,b,x,y,nt){
@@ -1712,11 +1724,16 @@ function dessinerCarte(W,H,g){
   const liste=[];
   OBJETS.forEach(o=>{if(dedans(o.x,o.y,150))liste.push({y:o.y,f:g2=>dessinerObjet(g2,o,o.x-camX,o.y-camY,nt)});});
   BETES.forEach(bt=>{if(dedans(bt.x,bt.y,120))liste.push({y:bt.y,f:g2=>silhouetteBete(g2,bt,bt.x-camX,bt.y-camY,nt)});});
+  (e.constructions||[]).forEach(c=>{if(dedans(c.x,c.y,120))
+    liste.push({y:c.y,f:g2=>dessinerConstruction(g2,c,c.x-camX,c.y-camY,false)});});
+  BETES_H.forEach(b=>{if(dedans(b.x,b.y,120))liste.push({y:b.y,f:()=>{}});});
   if(e.compagnon)liste.push({y:e.compagnon.y,f:g2=>silhouetteBete(g2,
     {...e.compagnon,pas:e.compagnon.pas||0},e.compagnon.x-camX,e.compagnon.y-camY,nt)});
 
   liste.push({y:joueur.y,f:g2=>dessinerJoueur(g2,joueur.x-camX,joueur.y-camY,nt)});
   liste.sort((p,q)=>p.y-q.y).forEach(o=>o.f(g));
+  dessinerHostiles(g,camX,camY,W,H);
+  if(modePose)dessinerConstruction(g,{t:modePose.def.id},modePose.x-camX,modePose.y-camY,true);
   dessinerLisiere(g,camX,camY,W,H);
   dessinerAutres(g,camX,camY,W,H);
   dessinerBulles(g,camX,camY);
@@ -1855,6 +1872,332 @@ function fouillerObjet(o){
     if(g>0){texteVolant(o.x,o.y-o.h/2-dy,'+'+g+' '+RESSOURCES[k].nom.toLowerCase(),'#e6f5c8');dy+=16;}
   });
   sauver();
+}
+
+/* ================= construire sur le terrain ================= */
+const CONSTRUCTIBLES=[
+ {id:'feu',   nom:'Feu de camp', d:'réchauffe, éloigne les bêtes', cout:{bois:6,fibre:2},   w:44,h:36,niv:1},
+ {id:'abri',  nom:'Abri',        d:'protège la nuit',              cout:{bois:12,fibre:8},  w:78,h:60,niv:2},
+ {id:'coffre',nom:'Coffre',      d:'range ce que tu ne portes pas',cout:{bois:8,metal:1},   w:38,h:30,niv:2},
+ {id:'sechoir',nom:'Séchoir',    d:'transforme 2 vivres en 3',     cout:{bois:6,fibre:6},   w:46,h:40,niv:3},
+ {id:'palissade',nom:'Palissade',d:'bloque le passage',            cout:{bois:6,pierre:2},  w:54,h:22,niv:3},
+ {id:'tonneau',nom:'Récupérateur',d:'recueille l’eau de pluie',    cout:{bois:8,metal:2},   w:34,h:34,niv:4}
+];
+let modePose=null;             /* {def, x, y} */
+
+function peutPayer(c){return Object.entries(c.cout).every(([k,n])=>sac(k)>=n);}
+function ouvrirConstruction(){
+  $('fen-b').innerHTML='<h2>Construire</h2><p>Choisis, puis place l’ouvrage devant toi.</p>'+
+    CONSTRUCTIBLES.map(c=>{
+      const ok=peutPayer(c)&&c.niv<=e.niv;
+      const cout=Object.entries(c.cout).map(([k,n])=>
+        `<span class="g${sac(k)>=n?' ok':''}">${n} ${RESSOURCES[k].nom.toLowerCase()}</span>`).join('');
+      return `<div class="ligne${ok?' pret':''}">
+        <span class="ic">${ICO_RES[Object.keys(c.cout)[0]]}</span>
+        <span class="t"><span class="n">${c.nom}</span>
+        <span class="d">${c.niv>e.niv?'niveau '+c.niv+' requis':c.d}</span>
+        <span class="gains">${cout}</span></span>
+        <button class="agir" data-bat="${c.id}" ${ok?'':'disabled'}>Placer</button></div>`;
+    }).join('')+'<button class="fermer" id="f-x">Fermer</button>';
+  $('fen').classList.add('on');
+  $('f-x').onclick=()=>$('fen').classList.remove('on');
+  $('fen-b').querySelectorAll('[data-bat]').forEach(b=>b.onclick=()=>{
+    const def=CONSTRUCTIBLES.find(c=>c.id===b.dataset.bat);
+    if(!def||!peutPayer(def))return;
+    modePose={def,x:joueur.x,y:joueur.y+50};
+    $('fen').classList.remove('on');
+    toast('Place l’ouvrage, puis valide');
+  });
+}
+function majPose(){
+  if(!modePose)return;
+  const d=60;
+  const dx=joueur.dir==='gauche'?-d:joueur.dir==='droite'?d:0;
+  const dy=joueur.dir==='haut'?-d:joueur.dir==='bas'?d:0;
+  modePose.x=joueur.x+dx;modePose.y=joueur.y+dy;
+  modePose.ok=poseValide(modePose);
+}
+function poseValide(m){
+  const {def,x,y}=m;
+  if(x<BORD+20||x>MONDE-BORD-20||y<BORD+20||y>MONDE-BORD-20)return false;
+  if(OBJETS.some(o=>o.solide&&pretObjet(o)&&
+    Math.abs(o.x-x)<(o.w+def.w)/2&&Math.abs(o.y-y)<(o.h+def.h)/2))return false;
+  if((e.constructions||[]).some(c=>{
+    const d2=CONSTRUCTIBLES.find(z=>z.id===c.t)||{w:40,h:40};
+    return Math.abs(c.x-x)<(d2.w+def.w)/2&&Math.abs(c.y-y)<(d2.h+def.h)/2;}))return false;
+  return true;
+}
+function poser(){
+  if(!modePose)return;
+  if(!modePose.ok)return toast('Pas de place ici');
+  const def=modePose.def;
+  if(!peutPayer(def))return toast('Il te manque des matériaux');
+  Object.entries(def.cout).forEach(([k,n])=>{e.sacs[k]=sac(k)-n;});
+  if(!e.constructions)e.constructions=[];
+  e.constructions.push({t:def.id,x:Math.round(modePose.x),y:Math.round(modePose.y),
+    id:'b'+Date.now().toString(36),stock:{},pose:Date.now()});
+  gagnerXp(14);etincelle(modePose.x,modePose.y-10,'#e8c06a');
+  noter('Tu as bâti : '+def.nom.toLowerCase()+'.');
+  toast(def.nom+' bâti');
+  avancerQuete('batir');
+  modePose=null;sauver();
+}
+function annulerPose(){modePose=null;}
+function construireProche(){
+  let d0=64,res=null;
+  (e.constructions||[]).forEach(c=>{
+    const d=Math.hypot(c.x-joueur.x,c.y-joueur.y);
+    if(d<d0){d0=d;res=c;}});
+  return res;
+}
+function utiliserConstruction(c){
+  const now=Date.now();
+  if(c.t==='feu'){
+    if(now<(c.attente||0))return toast('Tu viens de te réchauffer');
+    e.chaleur=Math.min(100,e.chaleur+35);e.sante=Math.min(100,e.sante+8);
+    c.attente=now+240000;gagnerXp(3);
+    etincelle(c.x,c.y-10,'#ffb254');toast('Réchauffé');sauver();return;
+  }
+  if(c.t==='abri'){
+    if(now<(c.attente||0))return toast('Tu t’es déjà reposé');
+    e.sante=Math.min(100,e.sante+18);e.chaleur=Math.min(100,e.chaleur+20);
+    c.attente=now+420000;gagnerXp(5);
+    noter('Tu t’es reposé sous ton abri.');toast('Reposé');sauver();return;
+  }
+  if(c.t==='tonneau'){
+    const dispo=Math.floor((now-(c.vide||c.pose))/90000);
+    if(dispo<1)return toast('Le tonneau se remplit');
+    const q=Math.min(dispo,6,chargeMax()-charge());
+    if(q<1)return toast('Ton sac est plein');
+    ajouter('eau',q);c.vide=now;gagnerXp(2);
+    texteVolant(joueur.x,joueur.y-40,'+'+q+' eau','#8fe4dc');toast('+'+q+' eau');sauver();return;
+  }
+  if(c.t==='sechoir'){
+    if(sac('nourriture')<2)return toast('Il faut 2 vivres');
+    if(now<(c.attente||0))return toast('Ça sèche encore');
+    e.sacs.nourriture=sac('nourriture')-2;
+    c.attente=now+120000;c.pret=now+120000;
+    toast('Mise à sécher · reviens dans 2 min');
+    noter('Tu as mis des vivres à sécher.');sauver();return;
+  }
+  if(c.t==='palissade')return toast('Elle tient bon');
+  if(c.t==='coffre')return ouvrirCoffre(c);
+}
+function ouvrirCoffre(c){
+  const dessine=()=>{
+    const dedans=Object.entries(c.stock||{}).filter(([,n])=>n>0);
+    const sur=Object.keys(RESSOURCES).filter(k=>sac(k)>0);
+    $('fen-b').innerHTML=`<h2>Coffre</h2><p>Ce que tu y ranges ne compte plus dans ta charge.</p>
+      <div class="titre">DANS LE COFFRE</div>`+
+      (dedans.length?dedans.map(([k,n])=>`<div class="ligne">
+        <span class="ic">${ICO_RES[k]}</span>
+        <span class="t"><span class="n">${RESSOURCES[k].nom}</span><span class="d">${n} en réserve</span></span>
+        <button class="agir" data-prendre="${k}">Prendre</button></div>`).join('')
+        :'<div class="vide">Vide.</div>')+
+      '<div class="titre">SUR TOI</div>'+
+      (sur.length?sur.map(k=>`<div class="ligne">
+        <span class="ic">${ICO_RES[k]}</span>
+        <span class="t"><span class="n">${RESSOURCES[k].nom}</span><span class="d">${sac(k)} sur toi</span></span>
+        <button class="agir sec" data-ranger="${k}">Ranger</button></div>`).join('')
+        :'<div class="vide">Ton sac est vide.</div>')+
+      '<button class="fermer" id="f-x">Fermer</button>';
+    $('f-x').onclick=()=>{$('fen').classList.remove('on');sauver();};
+    $('fen-b').querySelectorAll('[data-ranger]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.ranger, n=sac(k);
+      c.stock[k]=(c.stock[k]||0)+n;e.sacs[k]=0;dessine();});
+    $('fen-b').querySelectorAll('[data-prendre]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.prendre;
+      const q=Math.min(c.stock[k],Math.max(0,chargeMax()-charge()));
+      if(q<1)return toast('Ton sac est plein');
+      c.stock[k]-=q;ajouter(k,q);dessine();});
+  };
+  dessine();$('fen').classList.add('on');
+}
+
+/* ---- dessin des ouvrages ---- */
+function dessinerConstruction(g,c,x,y,fantome){
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(a,b,w,h);};
+  if(fantome)g.globalAlpha=.55;
+  g.fillStyle='rgba(24,34,18,.28)';
+  g.beginPath();g.ellipse(x+3,y+8,20,7,0,0,7);g.fill();
+  if(c.t==='feu'){
+    g.fillStyle='#5c5148';
+    for(let i=0;i<5;i++){const a2=i/5*6.283;
+      g.beginPath();g.ellipse(x+Math.cos(a2)*17,y+4+Math.sin(a2)*8,6,4,0,0,7);g.fill();}
+    R(x-13,y-4,26,6,'#4a3a28');R(x-4,y-10,8,16,'#3a2c1e');
+    const f=Math.sin(Date.now()/160)*3;
+    g.fillStyle='#d94f18';g.beginPath();g.ellipse(x,y-12,10,14+f,0,0,7);g.fill();
+    g.fillStyle='#f5952a';g.beginPath();g.ellipse(x,y-10,6,9+f*.6,0,0,7);g.fill();
+    g.fillStyle='#ffe08a';g.beginPath();g.ellipse(x,y-7,3,5,0,0,7);g.fill();
+  }else if(c.t==='abri'){
+    R(x-30,y-20,60,28,'#1b1712');
+    g.fillStyle='#7d6a4a';
+    g.beginPath();g.moveTo(x-34,y-16);g.lineTo(x,y-38);g.lineTo(x+34,y-16);g.fill();
+    g.fillStyle='#96805c';
+    g.beginPath();g.moveTo(x-34,y-16);g.lineTo(x,y-38);g.lineTo(x,y-16);g.fill();
+    R(x-28,y-16,56,24,'#8a6a44');
+    for(let i=0;i<7;i++)R(x-28+i*8,y-16,3,24,'#6f5334');
+    R(x-9,y-10,18,18,'#3a2c1e');
+    R(x-30,y-18,60,3,'#5a4630');
+  }else if(c.t==='coffre'){
+    R(x-16,y-14,32,24,'#1b1712');
+    R(x-15,y-13,30,22,'#8a6a44');
+    R(x-15,y-13,30,7,'#a37f52');
+    R(x-15,y-4,30,3,'#5a4630');
+    R(x-3,y-6,6,7,'#c9a24a');
+  }else if(c.t==='sechoir'){
+    R(x-20,y-4,4,14,'#6b5334');R(x+16,y-4,4,14,'#6b5334');
+    R(x-22,y-8,44,4,'#7d6a4a');
+    for(let i=0;i<4;i++)R(x-16+i*10,y-6,6,10,'#c96a4a');
+    R(x-22,y-20,44,3,'#7d6a4a');
+    for(let i=0;i<4;i++)R(x-16+i*10,y-18,6,9,'#d9884a');
+  }else if(c.t==='palissade'){
+    for(let i=0;i<6;i++){
+      R(x-26+i*9,y-18,7,26,'#1b1712');
+      R(x-25+i*9,y-17,5,24,'#7d5934');
+      R(x-25+i*9,y-17,5,3,'#96703f');
+      g.fillStyle='#6b4a28';
+      g.beginPath();g.moveTo(x-25+i*9,y-17);g.lineTo(x-22.5+i*9,y-21);g.lineTo(x-20+i*9,y-17);g.fill();
+    }
+    R(x-26,y-8,52,3,'#5a4227');
+  }else if(c.t==='tonneau'){
+    R(x-14,y-18,28,28,'#1b1712');
+    R(x-13,y-17,26,26,'#8a6a44');
+    R(x-13,y-10,26,3,'#5a4630');R(x-13,y-1,26,3,'#5a4630');
+    g.fillStyle='#4f93b4';g.beginPath();g.ellipse(x,y-17,13,5,0,0,7);g.fill();
+    g.fillStyle='#78b6d2';g.beginPath();g.ellipse(x-3,y-18,7,2.6,0,0,7);g.fill();
+  }
+  if(fantome){
+    g.globalAlpha=1;
+    g.strokeStyle=modePose&&modePose.ok?'rgba(142,211,106,.9)':'rgba(226,80,79,.9)';
+    g.lineWidth=2;g.setLineDash([6,5]);
+    const d=CONSTRUCTIBLES.find(z=>z.id===c.t)||{w:40,h:40};
+    g.strokeRect(x-d.w/2,y-d.h/2,d.w,d.h);g.setLineDash([]);
+  }
+}
+
+/* ================= ce qui rôde ================= */
+const ROdeurs={
+ ile:     {nom:'crabe géant', c:'#b5432c', vie:26, deg:7,  vit:52, t:'bas'},
+ foret:   {nom:'loup',        c:'#6b6660', vie:34, deg:10, vit:74, t:'bas'},
+ ville:   {nom:'rôdeur',      c:'#5f6b58', vie:40, deg:12, vit:58, t:'haut'},
+ banquise:{nom:'ours blanc',  c:'#dfe6ea', vie:52, deg:15, vit:62, t:'haut'}
+};
+let BETES_H=[];               /* les hostiles */
+let dernierCoup=0;
+
+function espece(){return ROdeurs[e.biome]||ROdeurs.foret;}
+function apparaitreHostile(){
+  const sp=espece();
+  /* elles surgissent loin de toi, jamais dans ton dos immédiat */
+  let x,y,essais=0;
+  do{
+    x=BORD+40+Math.random()*(MONDE-2*BORD-80);
+    y=BORD+40+Math.random()*(MONDE-2*BORD-80);
+    essais++;
+  }while(essais<20&&Math.hypot(x-joueur.x,y-joueur.y)<320);
+  BETES_H.push({x,y,vx:0,vy:0,pas:0,vie:sp.vie,vieMax:sp.vie,gauche:false,
+    etat:'rode',cx:x,cy:y,attente:0,touche:0,recul:0});
+}
+function majHostiles(dt){
+  const sp=espece();
+  /* le nombre monte avec les jours, plafonné */
+  const voulu=Math.min(4,1+Math.floor(jourNo()/2));
+  if(BETES_H.length<voulu&&Math.random()<dt*0.08)apparaitreHostile();
+
+  for(let i=BETES_H.length-1;i>=0;i--){
+    const b=BETES_H[i];
+    if(b.vie<=0){                       /* elle s'effondre */
+      for(let k=0;k<8;k++)PARTICULES.push({x:b.x,y:b.y-8,vx:(Math.random()-.5)*70,
+        vy:-20-Math.random()*40,vie:1,t:'eclat',c:sp.c});
+      const q=1+Math.floor(Math.random()*2);
+      if(charge()+q<=chargeMax()){ajouter('nourriture',q);
+        texteVolant(b.x,b.y-24,'+'+q+' vivres','#e6f5c8');}
+      gagnerXp(18);avancerQuete('chasser');
+      noter('Tu as abattu un '+sp.nom+'.');
+      BETES_H.splice(i,1);continue;
+    }
+    const d=Math.hypot(joueur.x-b.x,joueur.y-b.y);
+    /* elle repère, poursuit, attaque, puis renonce */
+    if(b.etat==='rode'&&d<230)b.etat='chasse';
+    if(b.etat==='chasse'&&d>420)b.etat='rode';
+    if(b.vie<b.vieMax*0.3&&b.etat==='chasse'&&Math.random()<dt*0.4)b.etat='fuit';
+    if(b.etat==='fuit'&&d>430)b.etat='rode';
+
+    let vx=0,vy=0;
+    if(b.etat==='chasse'&&d>1){vx=(joueur.x-b.x)/d;vy=(joueur.y-b.y)/d;}
+    else if(b.etat==='fuit'&&d>1){vx=-(joueur.x-b.x)/d;vy=-(joueur.y-b.y)/d;}
+    else{
+      if(b.attente>0)b.attente-=dt*60;
+      else{
+        if(!b.cx||Math.hypot(b.cx-b.x,b.cy-b.y)<14){
+          if(Math.random()<.4){b.attente=40+Math.random()*140;}
+          else{b.cx=Math.max(BORD+30,Math.min(MONDE-BORD-30,b.x+(Math.random()-.5)*400));
+               b.cy=Math.max(BORD+30,Math.min(MONDE-BORD-30,b.y+(Math.random()-.5)*400));}
+        }
+        const dd=Math.hypot(b.cx-b.x,b.cy-b.y)||1;
+        vx=(b.cx-b.x)/dd;vy=(b.cy-b.y)/dd;
+      }
+    }
+    if(b.recul>0){b.recul-=dt;vx=-vx*2;vy=-vy*2;}
+    const v=sp.vit*(b.etat==='chasse'?1:b.etat==='fuit'?1.15:.55)*dt;
+    const nx=b.x+vx*v, ny=b.y+vy*v;
+    if(!bloque(nx,b.y))b.x=nx;
+    if(!bloque(b.x,ny))b.y=ny;
+    if(vx||vy)b.pas+=v*.12;
+    b.gauche=vx<0;
+
+    /* morsure au contact */
+    if(d<34&&b.etat==='chasse'&&Date.now()-b.touche>1600){
+      b.touche=Date.now();
+      const feu=(e.constructions||[]).some(c=>c.t==='feu'&&Math.hypot(c.x-joueur.x,c.y-joueur.y)<90);
+      let deg=sp.deg*(feu?0.4:1)*(a('abri')?0.85:1);
+      if(aTrait('robuste'))deg*=0.7;
+      deg=Math.round(deg);
+      e.sante=Math.max(0,e.sante-deg);
+      texteVolant(joueur.x,joueur.y-40,'−'+deg,'#ff8b78');
+      etincelle(joueur.x,joueur.y-16,'#e2504f');
+      toast('Un '+sp.nom+' te mord');
+      if(e.sante<=0)mourir();
+      sauver();
+    }
+  }
+}
+function hostileProche(){
+  let d0=70,res=null;
+  BETES_H.forEach(b=>{const d=Math.hypot(b.x-joueur.x,b.y-joueur.y);
+    if(d<d0){d0=d;res=b;}});
+  return res;
+}
+function frapper(b){
+  const now=Date.now();
+  if(now-dernierCoup<650)return;
+  dernierCoup=now;
+  const sp=espece();
+  let deg=a('lance')?16:9;
+  if(a('hache'))deg+=4;
+  b.vie-=deg;b.recul=.22;b.etat=b.vie<b.vieMax*.3?'fuit':'chasse';
+  e.faim=Math.max(0,e.faim-1);e.soif=Math.max(0,e.soif-1.5);
+  for(let k=0;k<6;k++)PARTICULES.push({x:b.x,y:b.y-10,vx:(Math.random()-.5)*60,
+    vy:-15-Math.random()*35,vie:1,t:'eclat',c:'#e2504f'});
+  texteVolant(b.x,b.y-26,'−'+deg,'#ffd08a');
+}
+function dessinerHostiles(g,camX,camY,W,H){
+  const sp=espece();
+  BETES_H.forEach(b=>{
+    const x=b.x-camX,y=b.y-camY;
+    if(x<-60||y<-70||x>W+60||y>H+70)return;
+    silhouetteBete(g,{n:sp.nom,c:sp.c,t:sp.t,pas:b.pas,gauche:b.gauche,ph:0},x,y,false);
+    /* barre de vie et humeur */
+    if(b.vie<b.vieMax){
+      g.fillStyle='rgba(10,16,10,.6)';g.fillRect(x-16,y-34,32,5);
+      g.fillStyle='#e2504f';g.fillRect(x-15,y-33,30*(b.vie/b.vieMax),3);
+    }
+    if(b.etat==='chasse'){
+      g.fillStyle='#e2504f';g.textAlign='center';g.font='700 13px system-ui';
+      g.fillText('!',x,y-40);
+    }
+  });
 }
 
 /* ================= le carrefour : un vrai village d'étape ================= */
@@ -2648,6 +2991,42 @@ async function partagerRessource(id,jusqua){
   }catch(x){}
 }
 
+/* ================= sauvegarde en ligne ================= */
+let dernierNuage=0, nuageOccupe=false;
+const CHAMPS_SAUVES=['biome','nom','jour','debut','faim','soif','chaleur','sante','xp','niv',
+  'sacs','objets','zones','meteo','meteoFin','journal','nuitsPassees','mortes','vu',
+  'apparence','traits','quetes','avance','compagnon','constructions','pos','venduUneFois','derniere'];
+function etatAEnvoyer(){
+  const o={};CHAMPS_SAUVES.forEach(k=>{if(e[k]!==undefined)o[k]=e[k];});
+  return o;
+}
+async function sauverEnLigne(force){
+  if(!sb||nuageOccupe)return;
+  const now=Date.now();
+  if(!force&&now-dernierNuage<20000)return;
+  dernierNuage=now;nuageOccupe=true;
+  try{
+    await sb.from('sauvegardes').upsert({id:idJoueur(),etat:etatAEnvoyer(),
+      maj:new Date().toISOString()});
+  }catch(x){}
+  nuageOccupe=false;
+}
+async function chargerEnLigne(){
+  if(!sb)return false;
+  try{
+    const {data}=await sb.from('sauvegardes').select('etat,maj').eq('id',idJoueur()).maybeSingle();
+    if(!data||!data.etat)return false;
+    const distant=data.etat, tD=distant.derniere||0, tL=e.derniere||0;
+    if(tD>tL+2000){                      /* la partie en ligne est plus récente */
+      Object.assign(e,distant);
+      sauver();
+      toast('Partie retrouvée en ligne');
+      return true;
+    }
+  }catch(x){}
+  return false;
+}
+
 /* ================= l'écran de carte ================= */
 const cv=$('cv'), ctx=cv.getContext('2d');
 const jc=$('joy'), jg=jc.getContext('2d');
@@ -2711,6 +3090,7 @@ function majHud(){
                     jauge('SOIF',e.soif,'#2f9bb5')+jauge('CHALEUR',e.chaleur,'#8a5fd6');
 
   if(INT){                                   /* à l'intérieur : fouiller ou sortir */
+    $('c-batir').classList.remove('on');
     const a2=$('action');
     a2.classList.add('on');
     if(INT.surPorte){a2.innerHTML='Sortir<b>'+INT.nom+'</b>';
@@ -2745,6 +3125,34 @@ function majHud(){
   }else bj.classList.remove('on');
 
   const a2=$('action');
+  const bb=$('c-batir');
+  if(modePose){
+    bb.classList.add('on');bb.innerHTML='Annuler';
+    bb.style.background='rgba(20,28,22,.75)';bb.style.color='#dfe9dc';
+    a2.classList.add('on');
+    a2.innerHTML=(modePose.ok?'Poser ici':'Impossible')+'<b>'+modePose.def.nom+'</b>';
+    a2.style.background=modePose.ok?'#63a84a':'#a8443c';a2.style.color='#0f1a10';
+    return;
+  }
+  bb.classList.add('on');bb.innerHTML='Bâtir';
+  bb.style.background='#8a6a44';bb.style.color='#fdf3e2';
+  const host=hostileProche();
+  if(host){
+    a2.classList.add('on');
+    a2.innerHTML='Frapper<b>'+espece().nom+'</b>';
+    a2.style.background='#c2413a';a2.style.color='#fff2ee';
+    return;
+  }
+  const cst=construireProche();
+  if(cst&&!procheObjet){
+    const d=CONSTRUCTIBLES.find(z=>z.id===cst.t)||{nom:'Ouvrage'};
+    const verbes={feu:'Se réchauffer',abri:'Se reposer',coffre:'Ouvrir',
+                  sechoir:'Faire sécher',tonneau:'Puiser',palissade:'Regarder'};
+    a2.classList.add('on');
+    a2.innerHTML=(verbes[cst.t]||'Utiliser')+'<b>'+d.nom+'</b>';
+    a2.style.background='#c9a24a';a2.style.color='#2a1d08';
+    return;
+  }
   if(procheBete&&!procheObjet){
     a2.classList.add('on');
     const c=(procheBete.apprivoise||0);
@@ -2777,7 +3185,14 @@ function majHud(){
     }
   }else a2.classList.remove('on');
 }
+$('c-batir').onclick=()=>{if(modePose)poser();else ouvrirConstruction();};
+$('c-batir').oncontextmenu=(ev)=>{ev.preventDefault();annulerPose();};
 $('action').onclick=()=>{
+  if(modePose)return poser();
+  const h=hostileProche();
+  if(h)return frapper(h);
+  const c=construireProche();
+  if(c&&!procheObjet)return utiliserConstruction(c);
   if(INT){
     if(INT.surPorte)sortirBati();
     else if(INT.cible)fouillerMeuble(INT.cible);
@@ -2794,7 +3209,7 @@ $('c-retour').onclick=()=>{if(INT)return sortirBati();fermerCarte();};
 
 function ouvrirCarte(){
   if(!OBJETS){OBJETS=construireMonde();peuplerBetes();}
-  ouvrirCanal();chargerRessources();
+  ouvrirCanal();chargerRessources();chargerEnLigne();
   if(e.pos){joueur.x=e.pos.x;joueur.y=e.pos.y;}
   if(bloque(joueur.x,joueur.y)){          // position héritée invalide : on repart du centre
     joueur.x=MONDE/2;joueur.y=MONDE/2;
@@ -2811,7 +3226,8 @@ function ouvrirCarte(){
     if(INT){
       majInterieur(dt);dessinerInterieur(r.width,r.height,ctx);
     }else{
-      majJoueur(dt);majBetes(dt);majCompagnon(dt);majAutres(dt);chercherJoueur();envoyerPosition();
+      majJoueur(dt);majBetes(dt);majHostiles(dt);majCompagnon(dt);majAutres(dt);
+      chercherJoueur();majPose();envoyerPosition();sauverEnLigne();
       dessinerCarte(r.width,r.height,ctx);
     }
     dessinerJoy();majHud();
