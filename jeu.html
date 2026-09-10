@@ -650,8 +650,7 @@ const QUETES=[
  {id:'feu',    nom:'La première nuit', d:'Fabrique un feu de camp',   cible:1, verbe:'fabriquer:feu', xp:40, or:{nourriture:2}},
  {id:'entrer', nom:'Sous un toit',     d:'Entre dans un bâtiment',    cible:1, verbe:'entrer',   xp:25, or:{eau:2}},
  {id:'abri',   nom:'Tenir debout',     d:'Fabrique un abri',          cible:1, verbe:'fabriquer:abri', xp:60, or:{metal:2}},
- {id:'bete',   nom:'Une présence',     d:'Apprivoise un animal',      cible:1, verbe:'apprivoiser', xp:70},
- {id:'carrefour',nom:'Ne pas rester seul',d:'Rejoins le carrefour au nord', cible:1, verbe:'carrefour', xp:90, or:{nourriture:3,eau:3}},
+ {id:'bete',   nom:'Une présence',     d:'Apprivoise un animal',      cible:1, verbe:'apprivoiser', xp:70, or:{nourriture:2}},
  {id:'jour5',  nom:'Cinq jours',       d:'Survis jusqu’au jour 5',    cible:5, verbe:'jour',     xp:120, or:{metal:3,tissu:3}}
 ];
 const quete=()=>QUETES.find(q=>!(e.quetes||{})[q.id]);
@@ -684,8 +683,6 @@ function veillerQuetes(){
   const j=jourNo();
   if(!e.quetes.jour5&&j>=5)finirQuete(QUETES.find(q=>q.id==='jour5'));
   else if(!e.quetes.jour5)e.avance.jour5=j;
-  if(!e.quetes.carrefour&&typeof auCarrefour==='function'&&auCarrefour())
-    finirQuete(QUETES.find(q=>q.id==='carrefour'));
 }
 function vueQuetes(){
   const faites=QUETES.filter(q=>(e.quetes||{})[q.id]).length;
@@ -975,10 +972,10 @@ function construireMonde(){
       x:MONDE/2+Math.cos(ang)*d, y:MONDE/2+Math.sin(ang)*d,
       w:bati?104:70,h:bati?84:58,solide:true,zone:z,ph:alea(g+i*3)*6});
   });
-  for(let i=0;i<260;i++){
+  for(let i=0;i<190;i++){
     const x=BORD+10+alea(g+i*3.1)*(MONDE-2*BORD-20), y=BORD+10+alea(g+i*5.7)*(MONDE-2*BORD-20);
     if(objets.some(o=>o.zone&&Math.abs(o.x-x)<110&&Math.abs(o.y-y)<110))continue;
-    if(Math.abs(x-MONDE/2)<70&&y<220)continue;      // on laisse la route libre
+    if(Math.hypot(x-MONDE/2,y-MONDE/2)<130)continue;   // une clairière au centre
     const t=alea(g+i*11);
     const type=t<.5?'arbre':(t<.74?'rocher':(t<.92?'buisson':'herbe'));
     objets.push({id:'d'+i,type,x,y,
@@ -990,7 +987,6 @@ function construireMonde(){
     const x=BORD+30+alea(g+i*17)*(MONDE-2*BORD-60), y=BORD+30+alea(g+i*23)*(MONDE-2*BORD-60);
     objets.push({id:'caisse'+i,type:'caisse',nom:'Caisse abandonnée',x,y,w:36,h:30,solide:true,ph:alea(i)*6});
   }
-  if(typeof lieuxCarrefour==='function')lieuxCarrefour().forEach(l=>objets.push(l));
   /* on dégage la clairière de départ et la route qui monte vers le nord */
   return objets
     .filter(o=>!o.solide||Math.hypot(o.x-MONDE/2,o.y-MONDE/2)>110)
@@ -1002,95 +998,69 @@ function construireMonde(){
     .filter(o=>o.type==='lieuC'||(o.x>30&&o.x<MONDE-30));
 }
 function construireSol(){
-  const b=biome();
+  const b=biome(), A=alea;
   const c=document.createElement('canvas');
   c.width=MONDE;c.height=MONDE;
   const g=c.getContext('2d');
-  const A=alea;
+  const neige=b.id==='banquise';
+  const base=neige?['#e6eef4','#d6e2ea','#f2f7fa','#c9d8e2']
+                  :['#8ec46a','#7fb85e','#9bd077','#74ab55'];
 
-  /* 1. fond en dégradé doux, du plus clair en haut au plus profond en bas */
-  const fond=g.createLinearGradient(0,0,0,MONDE);
-  fond.addColorStop(0,b.sol[0]);fond.addColorStop(1,b.sol[1]);
+  /* 1. fond */
+  const fond=g.createLinearGradient(0,0,MONDE*0.3,MONDE);
+  fond.addColorStop(0,base[2]);fond.addColorStop(.55,base[0]);fond.addColorStop(1,base[3]);
   g.fillStyle=fond;g.fillRect(0,0,MONDE,MONDE);
 
-  /* 2. grandes taches de teintes voisines, pour casser l'uniformité */
-  const tons=b.id==='banquise'?['#eef4f8','#dde7ef','#f6fafc','#d2dee8']
-           :b.id==='ville'   ?['#8fb26a','#7ca35a','#9cc077','#6f9450']
-           :b.id==='ile'     ?['#9cc472','#8ab463','#a8cf80','#7ba75a']
-                             :['#82bb63','#72ad54','#94c974','#679f4c'];
-  for(let i=0;i<260;i++){
-    const x=A(i*1.3)*MONDE, y=A(i*2.1)*MONDE;
-    const r=40+A(i*3.3)*130;
-    g.globalAlpha=.16+A(i*4.7)*.18;
-    g.fillStyle=tons[i%tons.length];
-    g.beginPath();g.ellipse(x,y,r,r*(.5+A(i*5.9)*.5),A(i*6.1)*3,0,7);g.fill();
+  /* 2. bandes de tonte, très douces, en diagonale */
+  g.save();g.translate(MONDE/2,MONDE/2);g.rotate(-0.22);g.translate(-MONDE,-MONDE);
+  for(let i=0;i<60;i++){
+    g.fillStyle=i%2?'rgba(255,255,255,.05)':'rgba(30,60,20,.045)';
+    g.fillRect(0,i*54,MONDE*2,54);
+  }
+  g.restore();
+
+  /* 3. nuances larges, pour que ça respire */
+  for(let i=0;i<120;i++){
+    const x=A(i*1.3)*MONDE, y=A(i*2.1)*MONDE, r=70+A(i*3.3)*150;
+    g.globalAlpha=.12+A(i*4.7)*.12;
+    g.fillStyle=base[i%base.length];
+    g.beginPath();g.ellipse(x,y,r,r*(.6+A(i*5.9)*.4),A(i*6.1)*3,0,7);g.fill();
   }
   g.globalAlpha=1;
 
-  /* 3. plaques de terre nue, avec leur liseré */
-  for(let i=0;i<40;i++){
-    const x=A(i*7.7)*MONDE, y=A(i*8.3)*MONDE, r=26+A(i*9.1)*44;
-    g.fillStyle=b.id==='banquise'?'rgba(190,206,218,.5)':'rgba(164,132,78,.3)';
-    g.beginPath();g.ellipse(x,y,r,r*.62,A(i)*3,0,7);g.fill();
-    g.fillStyle=b.id==='banquise'?'rgba(210,224,234,.4)':'rgba(176,148,100,.22)';
-    g.beginPath();g.ellipse(x-3,y-3,r*.66,r*.4,A(i)*3,0,7);g.fill();
-  }
-
-  /* 4. sentiers vers chaque lieu : trois passes pour un bord fondu */
-  const trace=(w,col)=>{
-    g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';
-    OBJETS.filter(o=>o.zone).forEach(o=>{
-      g.beginPath();g.moveTo(MONDE/2,MONDE/2);
-      g.quadraticCurveTo((MONDE/2+o.x)/2+A(o.x)*90-45,(MONDE/2+o.y)/2+A(o.y)*90-45,o.x,o.y);
-      g.stroke();});
-  };
-  trace(34,'rgba(174,152,108,.30)');
-  trace(22,'rgba(198,178,132,.55)');
-  trace(11,'rgba(220,204,162,.55)');
-  /* cailloux le long des sentiers */
-  for(let i=0;i<420;i++){
-    const o=OBJETS.filter(x=>x.zone);if(!o.length)break;
-    const z=o[i%o.length], t=A(i*2.7);
-    const mx=(MONDE/2+z.x)/2+A(z.x)*90-45, my=(MONDE/2+z.y)/2+A(z.y)*90-45;
-    const px=(1-t)*(1-t)*MONDE/2+2*(1-t)*t*mx+t*t*z.x;
-    const py=(1-t)*(1-t)*MONDE/2+2*(1-t)*t*my+t*t*z.y;
-    const dx=(A(i*3.9)-.5)*26, dy=(A(i*4.3)-.5)*26;
-    g.fillStyle='rgba(120,104,74,.22)';
-    g.beginPath();g.ellipse(px+dx,py+dy,2+A(i)*2,1.4+A(i)*1.4,0,0,7);g.fill();
-  }
-
-  /* 5. la végétation : touffes à trois valeurs, orientées, plus denses hors des chemins */
-  const vert=b.id==='banquise'?['rgba(255,255,255,.5)','rgba(226,238,246,.45)','rgba(196,214,228,.4)']
-                              :['rgba(96,148,62,.55)','rgba(126,180,84,.5)','rgba(74,120,46,.5)'];
-  for(let i=0;i<9000;i++){
+  /* 4. l'herbe : trois valeurs, brins courbés, semés partout */
+  const vert=neige?['rgba(255,255,255,.55)','rgba(226,238,246,.5)','rgba(196,214,228,.45)']
+                  :['rgba(96,150,60,.5)','rgba(132,186,88,.45)','rgba(72,120,44,.45)'];
+  for(let i=0;i<14000;i++){
     const x=A(i*1.7)*MONDE, y=A(i*2.9)*MONDE;
-    const h=4+A(i*3.1)*5, pen=(A(i*4.1)-.5)*4;
-    g.strokeStyle=vert[i%3];g.lineWidth=1.1+A(i*5.3)*.9;
+    const h=4+A(i*3.1)*5, pen=(A(i*4.1)-.5)*3.6;
+    g.strokeStyle=vert[i%3];g.lineWidth=1+A(i*5.3)*.9;
     g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+pen*.5,y-h*.6,x+pen,y-h);g.stroke();
   }
-  /* 6. fleurs et cailloux épars */
-  const fleurs=['#e8607a','#f2c14e','#c98fe0','#fdfaf2','#ff9a5c'];
-  for(let i=0;i<340;i++){
-    const x=A(i*6.1)*MONDE, y=A(i*7.3)*MONDE;
-    if(A(i*8.9)<.45){
-      const c2=fleurs[i%fleurs.length];
-      g.fillStyle='rgba(90,120,60,.5)';g.fillRect(x,y-3,1,4);
-      g.fillStyle=c2;
-      g.beginPath();g.arc(x+.5,y-4,1.9,0,7);g.fill();
-      g.fillStyle='rgba(255,255,255,.5)';g.fillRect(x,y-4.6,1,1);
-    }else{
-      g.fillStyle='rgba(80,72,54,.2)';
-      g.beginPath();g.ellipse(x,y,2.6+A(i)*2,1.8+A(i)*1.2,0,0,7);g.fill();
-      g.fillStyle='rgba(255,255,255,.14)';
-      g.beginPath();g.ellipse(x-.8,y-.8,1.4,.9,0,0,7);g.fill();
+  /* 5. touffes plus denses, ici et là */
+  for(let i=0;i<300;i++){
+    const cx=A(i*7.1)*MONDE, cy=A(i*8.3)*MONDE;
+    for(let k=0;k<7;k++){
+      const x=cx+(A(i*9+k)-.5)*16, y=cy+(A(i*11+k)-.5)*12;
+      g.strokeStyle=vert[k%3];g.lineWidth=1.4;
+      g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+1,y-5,x+2.4,y-9);g.stroke();
     }
   }
-  /* 7. léger grain sur l'ensemble */
-  for(let i=0;i<5000;i++){
-    const x=A(i*9.7)*MONDE, y=A(i*10.3)*MONDE;
-    g.fillStyle=A(i*11.1)<.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.04)';
-    g.fillRect(x,y,2,2);
+  /* 6. quelques fleurs, pour la couleur */
+  if(!neige){
+    const fleurs=['#f2e06a','#f0f4f2','#e8607a','#c98fe0'];
+    for(let i=0;i<220;i++){
+      const x=A(i*6.1)*MONDE, y=A(i*7.3)*MONDE, c2=fleurs[i%fleurs.length];
+      g.strokeStyle='rgba(80,120,50,.5)';g.lineWidth=1;
+      g.beginPath();g.moveTo(x,y);g.lineTo(x,y-4);g.stroke();
+      g.fillStyle=c2;g.beginPath();g.arc(x,y-5,2,0,7);g.fill();
+      g.fillStyle='rgba(255,255,255,.6)';g.fillRect(x-.6,y-5.8,1.2,1.2);
+    }
   }
+  /* 7. voile de lumière du bord vers le centre */
+  const lum=g.createRadialGradient(MONDE*0.35,MONDE*0.3,MONDE*0.1,MONDE/2,MONDE/2,MONDE*0.8);
+  lum.addColorStop(0,'rgba(255,250,220,.16)');lum.addColorStop(1,'rgba(40,60,30,.12)');
+  g.fillStyle=lum;g.fillRect(0,0,MONDE,MONDE);
   return c;
 }
 function peuplerBetes(){
@@ -1152,13 +1122,7 @@ const TRAVAIL={
 const estDecor=o=>!!TRAVAIL[o.type];
 const pretObjet=o=>Date.now()>=(e.zones[o.id]||0);
 function bloque(x,y){
-  if(y<MONDE_HAUT+60)return true;                  // au-delà du carrefour, rien
-  if(y<0){                                         // la route du nord, puis la clairière
-    const surRoute=Math.abs(x-MONDE/2)<130;
-    const dansClairiere=Math.hypot(x-CARREFOUR.x,y-CARREFOUR.y)<CARREFOUR.r*0.92;
-    return !(surRoute||dansClairiere);
-  }
-  if(x<BORD||x>MONDE-BORD||y>MONDE-BORD)return true;   // la lisière
+  if(x<BORD||x>MONDE-BORD||y<BORD||y>MONDE-BORD)return true;   // le carré de pelouse
   return OBJETS.some(o=>o.solide&&pretObjet(o)&&
     Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7);
 }
@@ -1562,7 +1526,6 @@ function dessinerLisiere(g,camX,camY,W,H){
   ];
   const dedans=(bx,by,bw,bh)=>bx-camX<W&&bx+bw-camX>0&&by-camY<H&&by+bh-camY>0;
   bandes.forEach((bd,k)=>{
-    if(k===0)return;                              /* le nord est ouvert : c'est la route */
     if(!dedans(bd.x,bd.y,bd.w,bd.h))return;
     const X=bd.x-camX, Y=bd.y-camY;
     if(b.id==='ile'){                             /* la mer */
@@ -1626,17 +1589,9 @@ function dessinerLisiere(g,camX,camY,W,H){
 function dessinerCarte(W,H,g){
   const b=biome(), h=heure(), nt=nuit();
   const camX=Math.max(0,Math.min(MONDE-W,joueur.x-W/2));
-  const camY=Math.max(MONDE_HAUT,Math.min(MONDE-H,joueur.y-H/2));
+  const camY=Math.max(0,Math.min(MONDE-H,joueur.y-H/2));
   if(!SOL)SOL=construireSol();
-  /* au nord du monde : la lande qui mène au carrefour */
-  g.fillStyle=nuit()?'#26362c':'#7f9a68';g.fillRect(0,0,W,H);
-  if(camY+H>0)g.drawImage(SOL,camX,Math.max(0,camY),Math.min(W,MONDE),
-    Math.min(H,MONDE-Math.max(0,camY)),0,Math.max(0,-camY),Math.min(W,MONDE),
-    Math.min(H,MONDE-Math.max(0,camY)));
-  if(camY<CARREFOUR.y+CARREFOUR.r)dessinerClairiere(g,camX,camY);
-  if(camY<200){                                   /* le couloir de terre vers le nord */
-    g.fillStyle='#c9b48a';
-    g.fillRect(MONDE/2-camX-70,CARREFOUR.y-camY,140,Math.abs(CARREFOUR.y)+40);}
+  g.drawImage(SOL,camX,camY,Math.min(W,MONDE),Math.min(H,MONDE),0,0,Math.min(W,MONDE),Math.min(H,MONDE));
 
   const dedans=(x,y,mx)=>x>camX-mx&&x<camX+W+mx&&y>camY-mx&&y<camY+H+mx;
   const liste=[];
@@ -2224,8 +2179,8 @@ function dessinerMeuble(g,m){
 }
 
 /* ================= le carrefour et les autres survivants ================= */
-const CARREFOUR={x:MONDE/2,y:-430,r:300};      // au nord de chaque biome, un lieu commun
-const MONDE_HAUT=-760;                        // la carte s'étend au nord jusqu'au carrefour
+const CARREFOUR={x:MONDE/2,y:-9999,r:0};   // plus de carrefour      // au nord de chaque biome, un lieu commun
+const MONDE_HAUT=0;                       // le monde est un carré                        // la carte s'étend au nord jusqu'au carrefour
 let AUTRES=[], monId=null, dernierEnvoi=0;
 
 function idJoueur(){
@@ -2234,7 +2189,7 @@ function idJoueur(){
   if(!v){v='s'+Math.random().toString(36).slice(2,10);try{localStorage.setItem('bdl.id',v);}catch(x){}}
   monId=v;return v;
 }
-const auCarrefour=()=>joueur.y<CARREFOUR.y+CARREFOUR.r;
+const auCarrefour=()=>false;
 
 /* ---- présence en direct : un canal temps réel, plus la base pour le classement ---- */
 let canal=null, dernierBase=0, dernierBrd=0;
@@ -2246,7 +2201,7 @@ function ouvrirCanal(){
     canal=sb.channel('monde',{config:{broadcast:{self:false},presence:{key:idJoueur()}}});
     canal.on('broadcast',{event:'pos'},({payload:p})=>{
       if(!p||p.id===idJoueur())return;
-      if(p.biome!==e.biome && p.y>CARREFOUR.y+CARREFOUR.r)return;   // hors de ta vue
+      if(p.biome!==e.biome)return;                 // chacun son terrain
       const a=AUTRES_MAP.get(p.id)||{x:p.x,y:p.y,vx:p.x,vy:p.y,pas:0,dir:'bas'};
       a.x=p.x;a.y=p.y;                       // cible
       a.pseudo=p.pseudo;a.niv=p.niv;a.biome=p.biome;a.apparence=p.apparence;
@@ -2390,12 +2345,8 @@ const charge=()=>Object.keys(RESSOURCES).reduce((s,k)=>s+sac(k),0);
 /* ================= la carte du monde ================= */
 function planMonde(){
   const b=biome();
-  const H=MONDE-MONDE_HAUT;
-  const px=(x,y)=>[(x/MONDE)*300,((y-MONDE_HAUT)/H)*300];
+  const px=(x,y)=>[(x/MONDE)*300,(y/MONDE)*300];
   const [jx,jy]=px(joueur.x,joueur.y);
-  const [cx,cy]=px(CARREFOUR.x,CARREFOUR.y);
-  const [,hy]=px(0,0);
-  const [,by]=px(0,MONDE);
   const bord=(BORD/MONDE)*300;
   let lieux='';
   (OBJETS||[]).filter(o=>o.zone).forEach(o=>{
@@ -2408,21 +2359,11 @@ function planMonde(){
   AUTRES.forEach(s2=>{const [x,y]=px(s2.vx||s2.x,s2.vy||s2.y);
     gens+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="4" fill="#7a4fd6"/>`;});
   const lisiere=b.id==='ile'?'#7fc4d9':b.id==='banquise'?'#8fb6cc':b.id==='ville'?'#7a8472':'#2c4a29';
-  return `<svg viewBox="0 0 300 300" style="display:block;width:100%;background:#e6dcc0">
-    <rect x="0" y="${hy.toFixed(0)}" width="300" height="${(by-hy).toFixed(0)}" fill="${lisiere}"/>
-    <rect x="${bord.toFixed(0)}" y="${hy.toFixed(0)}" width="${(300-bord*2).toFixed(0)}"
-      height="${(by-hy-bord).toFixed(0)}" fill="#bcd9a0"/>
-    <rect x="0" y="0" width="300" height="${hy.toFixed(0)}" fill="#dfe4c8"/>
-    <rect x="136" y="${cy.toFixed(0)}" width="28" height="${(hy-cy+6).toFixed(0)}" fill="#e0cfa8"/>
-    <ellipse cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" rx="30" ry="22" fill="#e0cfa8"/>
-    <circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="5" fill="#e8702c"/>
-    <rect x="${(cx-24).toFixed(0)}" y="${(cy-8).toFixed(0)}" width="12" height="8" fill="#a8703a"/>
-    <rect x="${(cx+14).toFixed(0)}" y="${(cy-12).toFixed(0)}" width="11" height="9" fill="#7a6a5c"/>
-    <text x="${cx.toFixed(0)}" y="${(cy-26).toFixed(0)}" font-size="9" fill="#4a3f2c" text-anchor="middle"
-      font-family="Georgia,serif">Le carrefour</text>
+  return `<svg viewBox="0 0 300 300" style="display:block;width:100%;background:${lisiere}">
+    <rect x="${bord.toFixed(0)}" y="${bord.toFixed(0)}"
+      width="${(300-bord*2).toFixed(0)}" height="${(300-bord*2).toFixed(0)}" rx="4" fill="#a8cf80"/>
     ${lieux}${gens}
     <circle cx="${jx.toFixed(0)}" cy="${jy.toFixed(0)}" r="6" fill="#c8434f" stroke="#f3ead6" stroke-width="2"/>
-    <text x="150" y="294" font-size="8" fill="#f3ead6" text-anchor="middle" font-family="system-ui">${b.nom}</text>
   </svg>`;
 }
 
