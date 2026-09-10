@@ -82,9 +82,20 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   animation:monteF .3s cubic-bezier(.2,.85,.3,1)}
 @keyframes monteF{from{transform:translateY(26px)}}
 #fen h2{font:400 21px Georgia,serif}
+.apEntete{display:flex;gap:14px;align-items:center;margin-bottom:6px}
+.apVue{width:132px;height:180px;flex:0 0 auto;border-radius:18px;overflow:hidden;
+  background:linear-gradient(180deg,#f4f1e4,#e4dfcd);display:flex;align-items:center;justify-content:center;
+  box-shadow:inset 0 2px 6px rgba(90,80,50,.12)}
+.apCote{flex:1;min-width:0}
+.apCote h2{font:400 21px Georgia,serif}
+.apHasard{margin-top:12px;width:100%;border-radius:13px;padding:11px;background:#f0ede2;
+  font:600 12.5px system-ui;color:var(--encre)}
+.apReglages{margin-top:6px}
+.sec{font:600 10px system-ui;letter-spacing:1.8px;color:var(--doux);margin:16px 2px 8px}
 .choix{display:flex;flex-wrap:wrap;gap:8px}
-.pastille{width:38px;height:38px;border-radius:12px;border:2px solid transparent;
+.pastille{width:36px;height:36px;border-radius:12px;border:2px solid transparent;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 3px rgba(60,60,40,.2)}
+.pastille.vide{background:#f0ede2;color:var(--pale);font:600 15px system-ui}
 .pastille.on{border-color:var(--vert);box-shadow:0 0 0 3px rgba(63,125,74,.18)}
 .motchoix{padding:9px 13px;border-radius:12px;background:#f0ede2;font:600 12.5px system-ui;color:var(--doux)}
 .motchoix.on{background:var(--vert);color:#fdfbf4}
@@ -296,12 +307,27 @@ const METEOS=[
 ];
 
 /* ================= apparence et caractéristiques ================= */
-const PEAUX=['#f0d0ae','#e8c49a','#d3a274','#b07c4e','#8a5a34','#5f3d24'];
-const CHEVEUX=['#2b1d12','#4a3220','#7d5a34','#b58a4a','#d9c48a','#8a8f96','#a8402c','#f2efe4'];
-const COIFFES=['courts','longs','queue','crane','crete','bonnet'];
-const BARBES=['aucune','courte','pleine'];
-const VESTES=['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#54606b'];
-const YEUX=['#2b2a27','#3f5f6b','#4a6b3f','#6b4a3f'];
+const PEAUX=['#f6ddc0','#f0d0ae','#e8c49a','#d8a878','#c08a58','#a2683c','#7d4e2a','#5a3720'];
+const CHEVEUX=['#1c140d','#2b1d12','#4a3220','#6b4726','#8a5f30','#b58a4a','#d9c48a','#f2e6c8',
+               '#8a8f96','#c9c9c9','#a8402c','#6b3f8f','#2f6b8f','#3f7d4a'];
+const COIFFES=['courts','longs','queue','crane','crete','chignon','ondules','tresses','mi-longs','frange'];
+const BARBES=['aucune','fine','courte','pleine','bouc','moustache'];
+const VESTES=['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#54606b',
+              '#a8524a','#3f7d4a','#c2a04a','#2f3a4a'];
+const PANTALONS=['#39435a','#4a4038','#2f3a2f','#5a4a3a','#3a3a44','#6b5f4a'];
+const YEUX=['#2b2a27','#3f5f6b','#4a6b3f','#6b4a3f','#5a4a6b','#7d6a3f'];
+const ACCESSOIRES=['aucun','casquette','bandana','bonnet','capuche','lunettes','chapeau'];
+const SACS=['aucun','#7d5934','#4a5c6b','#6b4a4a','#4f6b4a'];
+
+const DEFAUT={peau:1,cheveux:2,coiffe:0,barbe:0,veste:0,pantalon:0,yeux:0,accessoire:0,sac:1};
+const apr=()=>Object.assign({},DEFAUT,e.apparence||{});
+const teinter=(c,k)=>{
+  const n=parseInt(c.slice(1),16);
+  const r=Math.max(0,Math.min(255,((n>>16)&255)+k)),
+        v=Math.max(0,Math.min(255,((n>>8)&255)+k)),
+        b=Math.max(0,Math.min(255,(n&255)+k));
+  return '#'+((1<<24)+(r<<16)+(v<<8)+b).toString(16).slice(1);
+};
 
 const TRAITS=[
  {id:'robuste',nom:'Robuste',d:'La vie descend moins vite',ic:'♦'},
@@ -317,44 +343,113 @@ const TRAITS=[
 const POINTS_TRAITS=3;
 const aTrait=id=>(e.traits||[]).includes(id);
 
-/* le portrait, dessiné pour la fiche comme pour la carte */
-function PORTRAIT(ap,taille){
-  const t=taille||1, p=ap||e.apparence||{};
-  const peau=PEAUX[p.peau||0], chev=CHEVEUX[p.cheveux||0], veste=VESTES[p.veste||0], oeil=YEUX[p.yeux||0];
-  const coiffe=COIFFES[p.coiffe||0], barbe=BARBES[p.barbe||0];
-  const ombre=c=>c;
-  let cheveuxSvg='';
-  if(coiffe==='courts')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="7" fill="${chev}"/>
-    <rect x="-8" y="-36" width="3" height="8" fill="${chev}"/><rect x="5" y="-36" width="3" height="8" fill="${chev}"/>`;
-  if(coiffe==='longs')cheveuxSvg=`<rect x="-9" y="-38" width="18" height="8" fill="${chev}"/>
-    <rect x="-10" y="-36" width="4" height="18" fill="${chev}"/><rect x="6" y="-36" width="4" height="18" fill="${chev}"/>`;
-  if(coiffe==='queue')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="7" fill="${chev}"/>
-    <rect x="6" y="-34" width="5" height="14" fill="${chev}"/>`;
-  if(coiffe==='crane')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="3" fill="${chev}" opacity=".6"/>`;
-  if(coiffe==='crete')cheveuxSvg=`<rect x="-3" y="-43" width="6" height="12" fill="${chev}"/>
-    <rect x="-8" y="-36" width="16" height="3" fill="${chev}" opacity=".7"/>`;
-  if(coiffe==='bonnet')cheveuxSvg=`<rect x="-9" y="-40" width="18" height="9" fill="#8a4a3a"/>
-    <rect x="-9" y="-33" width="18" height="3" fill="#a85c48"/>`;
-  let barbeSvg='';
-  if(barbe==='courte')barbeSvg=`<rect x="-6" y="-25" width="12" height="4" fill="${chev}" opacity=".85"/>`;
-  if(barbe==='pleine')barbeSvg=`<rect x="-7" y="-27" width="14" height="8" fill="${chev}" opacity=".9"/>
-    <rect x="-5" y="-19" width="10" height="3" fill="${chev}" opacity=".9"/>`;
-  return `<g transform="scale(${t})">
-    <ellipse cx="0" cy="12" rx="12" ry="4" fill="rgba(0,0,0,.28)"/>
-    <rect x="-6" y="-1" width="5" height="12" fill="#39435a"/><rect x="1" y="-1" width="5" height="12" fill="#39435a"/>
-    <rect x="-7" y="9" width="6" height="3" fill="#5a3f2a"/><rect x="1" y="9" width="6" height="3" fill="#5a3f2a"/>
-    <rect x="-10" y="-21" width="20" height="21" fill="#231f1a"/>
-    <rect x="-9" y="-20" width="18" height="19" fill="${veste}"/>
-    <rect x="-9" y="-20" width="18" height="4" fill="${veste}" opacity=".7"/>
-    <rect x="-13" y="-19" width="4" height="12" fill="${ombre(veste)}"/>
-    <rect x="9" y="-19" width="4" height="12" fill="${veste}"/>
-    <rect x="-13" y="-8" width="4" height="4" fill="${peau}"/><rect x="9" y="-8" width="4" height="4" fill="${peau}"/>
-    <rect x="-8" y="-36" width="16" height="16" fill="#231f1a"/>
-    <rect x="-7" y="-35" width="14" height="14" fill="${peau}"/>
-    <rect x="-7" y="-35" width="4" height="14" fill="${peau}" opacity=".75"/>
-    ${barbeSvg}${cheveuxSvg}
-    <rect x="-4" y="-30" width="3" height="3" fill="${oeil}"/><rect x="2" y="-30" width="3" height="3" fill="${oeil}"/>
-  </g>`;
+/* ================= le personnage, dessiné en SVG =================
+   Repère : les pieds sont en 0, la tête monte vers le négatif.
+   Cadre utile : x de -26 à 26, y de -62 à 16. */
+function PORTRAIT(ap0,ech,face){
+  const p=Object.assign({},DEFAUT,ap0||{});
+  const peau=PEAUX[p.peau]||PEAUX[1], peauO=teinter(peau,-26), peauC=teinter(peau,16);
+  const chev=CHEVEUX[p.cheveux]||CHEVEUX[2], chevO=teinter(chev,-24), chevC=teinter(chev,22);
+  const veste=VESTES[p.veste]||VESTES[0], vesteO=teinter(veste,-28), vesteC=teinter(veste,20);
+  const pant=PANTALONS[p.pantalon]||PANTALONS[0], pantO=teinter(pant,-22);
+  const oeil=YEUX[p.yeux]||YEUX[0];
+  const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
+  const acc=ACCESSOIRES[p.accessoire]||'aucun', sacC=SACS[p.sac]||'aucun';
+  const t=ech||1;
+  let g='';
+
+  /* ombre au sol */
+  g+=`<ellipse cx="0" cy="13" rx="15" ry="4.5" fill="rgba(20,30,16,.26)"/>`;
+  /* sac à dos, derrière */
+  if(sacC!=='aucun'){
+    g+=`<rect x="-16" y="-32" width="9" height="20" rx="3" fill="${teinter(sacC,-18)}"/>
+        <rect x="-15" y="-30" width="7" height="7" rx="2" fill="${teinter(sacC,14)}"/>`;
+  }
+  /* jambes */
+  g+=`<rect x="-8" y="-2" width="7" height="15" rx="1.5" fill="${pant}"/>
+      <rect x="1" y="-2" width="7" height="15" rx="1.5" fill="${pantO}"/>
+      <rect x="-9" y="11" width="9" height="4" rx="1.5" fill="#4a3524"/>
+      <rect x="0" y="11" width="9" height="4" rx="1.5" fill="#3d2c1e"/>`;
+  /* torse */
+  g+=`<rect x="-12" y="-30" width="24" height="29" rx="4" fill="${vesteO}"/>
+      <rect x="-11" y="-29" width="22" height="27" rx="3.5" fill="${veste}"/>
+      <path d="M-11 -29 h22 v6 h-22z" fill="${vesteC}" opacity=".55"/>
+      <rect x="-2" y="-29" width="4" height="27" fill="${vesteO}" opacity=".5"/>
+      <rect x="-11" y="-9" width="22" height="4" fill="${vesteO}" opacity=".55"/>`;
+  /* bras */
+  g+=`<rect x="-17" y="-28" width="6" height="18" rx="2.5" fill="${vesteO}"/>
+      <rect x="11" y="-28" width="6" height="18" rx="2.5" fill="${veste}"/>
+      <rect x="-17" y="-11" width="6" height="5" rx="2" fill="${peauO}"/>
+      <rect x="11" y="-11" width="6" height="5" rx="2" fill="${peau}"/>`;
+  /* cou et tête */
+  g+=`<rect x="-4" y="-36" width="8" height="7" fill="${peauO}"/>
+      <rect x="-10" y="-52" width="20" height="18" rx="6" fill="${peau}"/>
+      <path d="M-10 -46 a6 6 0 0 1 6 -6 h2 v18 h-2 a6 6 0 0 1 -6 -6z" fill="${peauO}" opacity=".45"/>
+      <ellipse cx="-10.5" cy="-42" rx="2" ry="2.6" fill="${peauO}"/>
+      <ellipse cx="10.5" cy="-42" rx="2" ry="2.6" fill="${peau}"/>`;
+  /* barbe */
+  if(barbe==='fine')g+=`<path d="M-7 -39 q7 5 14 0 v3 q-7 5 -14 0z" fill="${chev}" opacity=".55"/>`;
+  if(barbe==='courte')g+=`<path d="M-8 -40 q8 7 16 0 v4 q-8 7 -16 0z" fill="${chev}" opacity=".85"/>`;
+  if(barbe==='pleine')g+=`<path d="M-9 -42 q9 10 18 0 v7 q-9 10 -18 0z" fill="${chev}"/>
+      <rect x="-5" y="-34" width="10" height="4" rx="2" fill="${chevO}"/>`;
+  if(barbe==='bouc')g+=`<rect x="-3.5" y="-38" width="7" height="6" rx="2" fill="${chev}"/>`;
+  if(barbe==='moustache')g+=`<rect x="-5" y="-41" width="10" height="2.6" rx="1.3" fill="${chev}"/>`;
+  /* yeux, nez, bouche */
+  if(face!==false){
+    g+=`<rect x="-6" y="-45" width="4" height="3.4" rx="1" fill="${oeil}"/>
+        <rect x="2" y="-45" width="4" height="3.4" rx="1" fill="${oeil}"/>
+        <rect x="-6" y="-46.6" width="4" height="1.4" fill="${chevO}"/>
+        <rect x="2" y="-46.6" width="4" height="1.4" fill="${chevO}"/>
+        <rect x="-1" y="-42.5" width="2" height="2" fill="${peauO}"/>
+        <path d="M-3 -38.5 q3 2 6 0" stroke="${teinter(peau,-52)}" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
+  }
+  /* cheveux */
+  const arriere=(c)=>`<path d="M-10 -46 q0 -9 10 -9 q10 0 10 9 v3 q-3 -6 -10 -6 q-7 0 -10 6z" fill="${c}"/>`;
+  if(coiffe==='courts')g+=arriere(chev)+`<path d="M-10 -46 q2 -4 5 -4 q-1 3 0 4z" fill="${chevC}" opacity=".6"/>`;
+  if(coiffe==='longs')g+=arriere(chev)+
+    `<path d="M-11 -47 q-2 12 0 19 h4 q-2 -9 -1 -19z" fill="${chev}"/>
+     <path d="M11 -47 q2 12 0 19 h-4 q2 -9 1 -19z" fill="${chevO}"/>`;
+  if(coiffe==='mi-longs')g+=arriere(chev)+
+    `<path d="M-11 -47 q-2 8 0 13 h3 q-2 -6 -1 -13z" fill="${chev}"/>
+     <path d="M11 -47 q2 8 0 13 h-3 q2 -6 1 -13z" fill="${chevO}"/>`;
+  if(coiffe==='queue')g+=arriere(chev)+
+    `<path d="M9 -48 q9 3 8 12 q-1 6 -5 7 q3 -8 -1 -13 q-2 -4 -4 -5z" fill="${chev}"/>`;
+  if(coiffe==='chignon')g+=arriere(chev)+`<circle cx="0" cy="-57" r="5.5" fill="${chev}"/>
+     <circle cx="-1.5" cy="-58.5" r="2.4" fill="${chevC}" opacity=".6"/>`;
+  if(coiffe==='ondules')g+=arriere(chev)+
+    `<path d="M-11 -47 q-3 6 1 10 q-4 3 -1 7 h4 q-3 -9 0 -17z" fill="${chev}"/>
+     <path d="M11 -47 q3 6 -1 10 q4 3 1 7 h-4 q3 -9 0 -17z" fill="${chevO}"/>`;
+  if(coiffe==='tresses')g+=arriere(chev)+
+    `<g fill="${chev}"><rect x="-13" y="-47" width="4" height="6" rx="2"/><rect x="-13" y="-40" width="4" height="6" rx="2"/>
+     <rect x="-13" y="-33" width="4" height="6" rx="2"/><rect x="9" y="-47" width="4" height="6" rx="2"/>
+     <rect x="9" y="-40" width="4" height="6" rx="2"/><rect x="9" y="-33" width="4" height="6" rx="2"/></g>`;
+  if(coiffe==='frange')g+=arriere(chev)+
+    `<path d="M-10 -48 q10 -4 20 0 v4 q-10 -3 -20 0z" fill="${chevO}"/>`;
+  if(coiffe==='crete')g+=`<path d="M-10 -46 q0 -6 10 -6 q10 0 10 6 v2 q-4 -4 -10 -4 q-6 0 -10 4z" fill="${chevO}" opacity=".7"/>
+     <path d="M-3 -50 q3 -12 6 0 q-3 -3 -6 0z" fill="${chev}"/>
+     <rect x="-3" y="-56" width="6" height="8" rx="2.5" fill="${chev}"/>`;
+  if(coiffe==='crane')g+=`<path d="M-10 -46 q0 -8 10 -8 q10 0 10 8 v1 q-4 -5 -10 -5 q-6 0 -10 5z" fill="${chev}" opacity=".38"/>`;
+  /* accessoires */
+  if(acc==='casquette')g+=`<path d="M-11 -50 q0 -7 11 -7 q11 0 11 7 v2 h-22z" fill="#3f5f6b"/>
+     <path d="M-11 -48 h24 q4 0 4 3 h-28z" fill="#33505a"/>
+     <circle cx="0" cy="-56" r="1.6" fill="#5d818f"/>`;
+  if(acc==='bandana')g+=`<path d="M-11 -49 q11 -5 22 0 v4 q-11 -4 -22 0z" fill="#a8524a"/>
+     <path d="M9 -47 q7 2 8 7 q-6 -3 -9 -3z" fill="#8f4038"/>`;
+  if(acc==='bonnet')g+=`<path d="M-11 -48 q0 -10 11 -10 q11 0 11 10 v3 h-22z" fill="#8a4a3a"/>
+     <rect x="-11" y="-46" width="22" height="4.5" rx="2" fill="#a85c48"/>
+     <circle cx="0" cy="-59" r="3" fill="#c07260"/>`;
+  if(acc==='capuche')g+=`<path d="M-13 -40 q-1 -18 13 -18 q14 0 13 18 q-3 -10 -13 -10 q-10 0 -13 10z" fill="#54606b"/>
+     <path d="M-13 -42 q2 8 5 11 l-4 2 q-3 -6 -3 -13z" fill="#465059"/>
+     <path d="M13 -42 q-2 8 -5 11 l4 2 q3 -6 3 -13z" fill="#465059"/>`;
+  if(acc==='lunettes')g+=`<g fill="none" stroke="#2b2f33" stroke-width="1.6">
+     <rect x="-7.5" y="-46.5" width="7" height="5.5" rx="2"/><rect x="1" y="-46.5" width="7" height="5.5" rx="2"/>
+     <path d="M-0.5 -44 h1.5M-7.5 -44.5 h-3M8 -44.5 h3"/></g>
+     <rect x="-7" y="-46" width="6" height="2" fill="#8fb6c9" opacity=".5"/>
+     <rect x="1.5" y="-46" width="6" height="2" fill="#8fb6c9" opacity=".5"/>`;
+  if(acc==='chapeau')g+=`<ellipse cx="0" cy="-49" rx="17" ry="4.5" fill="#7d6a3f"/>
+     <path d="M-8 -50 q0 -9 8 -9 q8 0 8 9z" fill="#8f7a49"/>
+     <rect x="-8.5" y="-53" width="17" height="3" fill="#5a4a2c"/>`;
+  return `<g transform="scale(${t})">${g}</g>`;
 }
 /* effets des caractéristiques */
 const modFaim=()=>aTrait('endurant')?.7:1;
@@ -369,7 +464,6 @@ const bonusFouille=(k)=>{
   if(['bois','pierre','metal','fibre','tissu'].includes(k)&&aTrait('debrouillard'))return 1;
   return 0;
 };
-/* score public */
 const score=()=>Math.round(e.niv*120+jourNo()*45+e.xp-e.mortes*60);
 
 /* ================= sauvegarde ================= */
@@ -712,9 +806,9 @@ function vueFiche(){
   const pris=(e.traits||[]).length;
   let s=`<div class="titre">TON SURVIVANT</div>
   <div class="carte" style="display:flex;gap:14px;align-items:center">
-    <span style="width:82px;height:96px;border-radius:14px;background:#eae6d8;display:flex;
-      align-items:flex-end;justify-content:center;flex:0 0 auto;overflow:hidden">
-      <svg width="78" height="94" viewBox="-24 -46 48 60">${PORTRAIT(ap,1.05)}</svg></span>
+    <span style="width:86px;height:112px;border-radius:14px;flex:0 0 auto;overflow:hidden;
+      background:linear-gradient(180deg,#f2efe2,#e2ddcb);display:flex;align-items:center;justify-content:center">
+      <svg width="80" height="108" viewBox="-30 -64 60 82">${PORTRAIT(ap,1)}</svg></span>
     <span style="flex:1;min-width:0">
       <span style="display:block;font:400 19px Georgia,serif">${e.nom||'Sans nom'}</span>
       <span style="display:block;font:400 12.5px system-ui;color:var(--doux);margin-top:3px">
@@ -747,34 +841,59 @@ function vueFiche(){
   return s;
 }
 function ouvrirApparence(){
-  const ap=Object.assign({peau:0,cheveux:0,coiffe:0,barbe:0,veste:0,yeux:0},e.apparence||{});
-  const rangee=(cle,liste,titre,couleurs)=>`
-    <div class="titre" style="margin:14px 2px 8px">${titre}</div>
-    <div class="choix">${liste.map((v,i)=>couleurs
-      ? `<button class="pastille${ap[cle]===i?' on':''}" data-ch="${cle}" data-i="${i}"
-          style="background:${v}"></button>`
-      : `<button class="motchoix${ap[cle]===i?' on':''}" data-ch="${cle}" data-i="${i}">${v}</button>`
-    ).join('')}</div>`;
-  const html=()=>`<h2 style="text-align:center">Ton visage</h2>
-    <div style="display:flex;justify-content:center;margin:12px 0 4px">
-      <span style="width:120px;height:140px;border-radius:16px;background:#eae6d8;display:flex;
-        align-items:flex-end;justify-content:center;overflow:hidden">
-        <svg width="116" height="138" viewBox="-24 -46 48 60">${PORTRAIT(ap,1.5)}</svg></span></div>
-    ${rangee('peau',PEAUX,'PEAU',true)}
-    ${rangee('cheveux',CHEVEUX,'CHEVEUX',true)}
-    ${rangee('coiffe',COIFFES,'COIFFURE',false)}
-    ${rangee('barbe',BARBES,'BARBE',false)}
-    ${rangee('veste',VESTES,'VESTE',true)}
-    ${rangee('yeux',YEUX,'YEUX',true)}
-    <button class="valider2" id="ap-ok">Garder ce visage</button>`;
+  const ap=apr();
+  const CADRE='viewBox="-30 -64 60 82"';
+  const groupes=[
+    {cle:'peau',      titre:'Teint',      liste:PEAUX,      type:'couleur'},
+    {cle:'cheveux',   titre:'Cheveux',    liste:CHEVEUX,    type:'couleur'},
+    {cle:'coiffe',    titre:'Coiffure',   liste:COIFFES,    type:'mot'},
+    {cle:'barbe',     titre:'Barbe',      liste:BARBES,     type:'mot'},
+    {cle:'accessoire',titre:'Sur la tête',liste:ACCESSOIRES,type:'mot'},
+    {cle:'veste',     titre:'Veste',      liste:VESTES,     type:'couleur'},
+    {cle:'pantalon',  titre:'Pantalon',   liste:PANTALONS,  type:'couleur'},
+    {cle:'yeux',      titre:'Yeux',       liste:YEUX,       type:'couleur'},
+    {cle:'sac',       titre:'Sac à dos',  liste:SACS,       type:'sac'}
+  ];
+  const rangee=gr=>`
+    <div class="sec">${gr.titre}</div>
+    <div class="choix">${gr.liste.map((v,i)=>{
+      const on=ap[gr.cle]===i?' on':'';
+      if(gr.type==='couleur')
+        return `<button class="pastille${on}" data-ch="${gr.cle}" data-i="${i}" style="background:${v}"></button>`;
+      if(gr.type==='sac')
+        return v==='aucun'
+          ? `<button class="pastille vide${on}" data-ch="${gr.cle}" data-i="${i}">∅</button>`
+          : `<button class="pastille${on}" data-ch="${gr.cle}" data-i="${i}" style="background:${v}"></button>`;
+      return `<button class="motchoix${on}" data-ch="${gr.cle}" data-i="${i}">${v}</button>`;
+    }).join('')}</div>`;
+  const html=()=>`
+    <div class="apEntete">
+      <div class="apVue">
+        <svg width="132" height="180" ${CADRE}>
+          <rect x="-30" y="-64" width="60" height="82" fill="none"/>
+          ${PORTRAIT(ap,1)}
+        </svg>
+      </div>
+      <div class="apCote">
+        <h2>Ton allure</h2>
+        <p style="font:400 12.5px/1.5 system-ui;color:var(--doux);margin-top:5px">
+          Tout se voit sur la carte, et les autres joueurs te voient ainsi.</p>
+        <button class="apHasard" id="ap-hasard">Au hasard</button>
+      </div>
+    </div>
+    <div class="apReglages">${groupes.map(rangee).join('')}</div>
+    <button class="valider2" id="ap-ok">Garder cette allure</button>`;
   const dessiner=()=>{
     $('fen-b').innerHTML=html();
     $('fen-b').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{
       ap[b.dataset.ch]=+b.dataset.i;dessiner();});
+    $('ap-hasard').onclick=()=>{
+      groupes.forEach(gr=>{ap[gr.cle]=Math.floor(Math.random()*gr.liste.length);});
+      dessiner();};
     $('ap-ok').onclick=()=>{
       e.apparence=ap;sauver();$('fen').classList.remove('on');
       toast('Te voilà');rendre(true);
-      if(typeof envoyerPosition==='function')envoyerPosition();
+      if(typeof envoyerPosition==='function')envoyerPosition(true);
     };
   };
   dessiner();
@@ -812,8 +931,8 @@ function vueClassement(){
     const b=BIOMES.find(x=>x.id===r.biome);
     s+=`<div class="ligne${moi?' pret':''}">
       <span class="rang${i<3?' podium':''}">${i+1}</span>
-      <span class="ic" style="background:#eae6d8;overflow:hidden;align-items:flex-end">
-        <svg width="40" height="46" viewBox="-24 -46 48 60">${PORTRAIT(r.apparence||{},0.78)}</svg></span>
+      <span class="ic" style="background:linear-gradient(180deg,#f2efe2,#e2ddcb);overflow:hidden">
+        <svg width="42" height="56" viewBox="-30 -64 60 82">${PORTRAIT(r.apparence||{},1)}</svg></span>
       <span class="t"><span class="n">${(r.pseudo||'Sans nom')}${moi?' · toi':''}</span>
       <span class="d">niveau ${r.niv} · jour ${r.jours||1} · ${(b||{nom:'?'}).nom.toLowerCase()}</span>
       ${(r.traits||[]).length?`<span class="gains">${r.traits.map(t=>{
@@ -1204,64 +1323,97 @@ function dessinerObjet(g,o,x,y,nt){
     for(let i=0;i<o.coups;i++)g.fillRect(x-6+i*4,y-6,3,5);
   }
 }
-function dessinerJoueur(g,x,y,nt){
-  const ap=e.apparence||{};
-  const PEAU=PEAUX[ap.peau||0], CHEV=CHEVEUX[ap.cheveux||0],
-        VESTE=VESTES[ap.veste||0], OEIL=YEUX[ap.yeux||0],
-        COIFFE=COIFFES[ap.coiffe||0], BARBE=BARBES[ap.barbe||0];
-  const bouge=joueur.pas>0;
-  const f=bouge?[0,1,0,2][Math.floor(joueur.pas)%4]:0;
-  const bob=bouge?(f===0?0:-1):(Math.sin(joueur.souffle)>0?0:-1);
-  const jamb=bouge?(Math.floor(joueur.pas)%4<2?1:-1):0;
+/* dessine n'importe quel survivant sur la carte : toi ou un autre */
+function corpsSurCarte(g,x,y,ap0,dir,pas,bouge){
+  const p=Object.assign({},DEFAUT,ap0||{});
+  const peau=PEAUX[p.peau]||PEAUX[1], peauO=teinter(peau,-26);
+  const chev=CHEVEUX[p.cheveux]||CHEVEUX[2], chevO=teinter(chev,-24);
+  const veste=VESTES[p.veste]||VESTES[0], vesteO=teinter(veste,-28), vesteC=teinter(veste,20);
+  const pant=PANTALONS[p.pantalon]||PANTALONS[0], pantO=teinter(pant,-20);
+  const oeil=YEUX[p.yeux]||YEUX[0];
+  const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
+  const acc=ACCESSOIRES[p.accessoire]||'aucun', sacC=SACS[p.sac]||'aucun';
+  const f=bouge?[0,1,0,2][Math.floor(pas)%4]:0;
+  const bob=bouge?(f===0?0:-1):(Math.sin(Date.now()/900+x)>0?0:-1);
+  const jamb=bouge?(Math.floor(pas)%4<2?1:-1):0;
   const bras=bouge?-jamb:0;
-  const yb=y+bob;
-  g.fillStyle='rgba(28,38,22,.28)';
+  const yb=y+bob, prof=dir==='haut';
+  const R=(cx,cy,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(cx),Math.round(cy),w,h);};
+
+  g.fillStyle='rgba(24,34,18,.3)';
   g.beginPath();g.ellipse(x,y+11,10,3.6,0,0,7);g.fill();
+  /* sac, visible de dos ou de côté */
+  if(sacC!=='aucun'&&dir!=='bas'){
+    const sx=dir==='gauche'?x+7:(dir==='droite'?x-13:x-7);
+    R(sx,yb-24,6,15,teinter(sacC,-14));R(sx+1,yb-22,4,5,teinter(sacC,16));
+  }
   /* jambes */
-  g.fillStyle='#39435a';
-  g.fillRect(x-6,yb-1,5,12-Math.abs(jamb)*2);g.fillRect(x+1,yb-1,5,12-Math.abs(-jamb)*2);
-  g.fillStyle='#5a3f2a';
-  g.fillRect(x-7,yb+9+Math.max(0,jamb),6,3);g.fillRect(x+1,yb+9+Math.max(0,-jamb),6,3);
+  R(x-6,yb-1,5,12-Math.abs(jamb)*2,pant);
+  R(x+1,yb-1,5,12-Math.abs(-jamb)*2,pantO);
+  R(x-7,yb+9+Math.max(0,jamb),6,3,'#4a3524');
+  R(x+1,yb+9+Math.max(0,-jamb),6,3,'#3d2c1e');
   /* torse */
-  g.fillStyle='#231f1a';g.fillRect(x-10,yb-21,20,21);
-  g.fillStyle=VESTE;g.fillRect(x-9,yb-20,18,19);
-  g.globalAlpha=.35;g.fillStyle='#ffffff';g.fillRect(x-9,yb-20,18,4);g.globalAlpha=1;
-  g.globalAlpha=.25;g.fillStyle='#000000';g.fillRect(x-9,yb-7,18,3);g.globalAlpha=1;
-  /* sac à dos */
-  if(joueur.dir!=='haut'){g.fillStyle='#7d5934';g.fillRect(x+(joueur.dir==='gauche'?-13:8),yb-18,5,13);}
+  R(x-10,yb-21,20,21,'#1e1a16');
+  R(x-9,yb-20,18,19,veste);
+  g.globalAlpha=.5;R(x-9,yb-20,18,4,vesteC);g.globalAlpha=1;
+  R(x-9,yb-7,18,3,vesteO);
   /* bras */
-  g.fillStyle=VESTE;g.fillRect(x-13,yb-19+bras*2,4,12);g.fillRect(x+9,yb-19-bras*2,4,12);
-  g.fillStyle=PEAU;g.fillRect(x-13,yb-8+bras*2,4,4);g.fillRect(x+9,yb-8-bras*2,4,4);
+  R(x-13,yb-19+bras*2,4,12,vesteO);
+  R(x+9,yb-19-bras*2,4,12,veste);
+  R(x-13,yb-8+bras*2,4,4,peauO);
+  R(x+9,yb-8-bras*2,4,4,peau);
   /* tête */
-  g.fillStyle='#231f1a';g.fillRect(x-8,yb-36,16,16);
-  g.fillStyle=PEAU;g.fillRect(x-7,yb-35,14,14);
-  g.globalAlpha=.18;g.fillStyle='#000000';g.fillRect(x-7,yb-35,4,14);g.globalAlpha=1;
-  if(BARBE!=='aucune'){g.fillStyle=CHEV;
-    g.fillRect(x-6,yb-25,12,BARBE==='pleine'?8:4);}
-  g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;
-  if(COIFFE==='crete'){g.fillRect(x-3,yb-43,6,12);g.fillRect(x-8,yb-36,16,3);}
-  else if(COIFFE==='crane'){g.globalAlpha=.6;g.fillRect(x-8,yb-38,16,3);g.globalAlpha=1;}
-  else{g.fillRect(x-8,yb-38,16,7);
-    if(COIFFE==='longs'){g.fillRect(x-10,yb-36,3,16);g.fillRect(x+7,yb-36,3,16);}
-    if(COIFFE==='queue')g.fillRect(x+7,yb-34,4,12);
-    if(COIFFE==='courts'){g.fillRect(x-8,yb-36,2,7);g.fillRect(x+6,yb-36,2,7);}}
-  if(joueur.dir==='bas'){
-    const clin=(Date.now()%4200<130);
-    g.fillStyle=OEIL;
-    if(clin){g.fillRect(x-4,yb-29,3,1);g.fillRect(x+2,yb-29,3,1);}
-    else{g.fillRect(x-4,yb-30,3,3);g.fillRect(x+2,yb-30,3,3);}
-  }else if(joueur.dir==='haut'){g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x-8,yb-36,16,10);}
-  else{const s=joueur.dir==='droite'?1:-1;
-    g.fillStyle=OEIL;g.fillRect(x+(s>0?2:-5),yb-30,3,3);
-    g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x+(s>0?-8:5),yb-34,3,9);}
-  /* lanterne la nuit */
-  if(nt){
-    const lx=x+(joueur.dir==='gauche'?-12:12), ly=yb-10;
-    g.fillStyle='#4a4a52';g.fillRect(lx-3,ly-4,6,8);
-    g.fillStyle='#ffe08a';g.fillRect(lx-2,ly-3,4,6);
+  R(x-8,yb-36,16,16,'#1e1a16');
+  R(x-7,yb-35,14,14,peau);
+  g.globalAlpha=.22;R(x-7,yb-35,4,14,'#000');g.globalAlpha=1;
+  if(!prof){
+    if(barbe==='pleine'){R(x-6,yb-27,12,8,chev);R(x-4,yb-20,8,3,chevO);}
+    else if(barbe==='courte')R(x-6,yb-25,12,5,chev);
+    else if(barbe==='fine'){g.globalAlpha=.6;R(x-6,yb-25,12,3,chev);g.globalAlpha=1;}
+    else if(barbe==='bouc')R(x-2,yb-24,5,5,chev);
+    else if(barbe==='moustache')R(x-4,yb-26,8,2,chev);
+  }
+  /* cheveux */
+  const cheveux=(c)=>{
+    R(x-8,yb-38,16,7,c);
+    if(coiffe==='longs'){R(x-10,yb-36,3,17,c);R(x+7,yb-36,3,17,c);}
+    if(coiffe==='mi-longs'){R(x-10,yb-36,3,11,c);R(x+7,yb-36,3,11,c);}
+    if(coiffe==='ondules'){R(x-10,yb-36,3,8,c);R(x+7,yb-36,3,8,c);R(x-11,yb-29,3,6,c);R(x+8,yb-29,3,6,c);}
+    if(coiffe==='tresses'){R(x-11,yb-36,4,5,c);R(x-11,yb-29,4,5,c);R(x+7,yb-36,4,5,c);R(x+7,yb-29,4,5,c);}
+    if(coiffe==='queue')R(x+7,yb-34,4,13,c);
+    if(coiffe==='chignon'){g.fillStyle=c;g.beginPath();g.arc(x,yb-42,5,0,7);g.fill();}
+    if(coiffe==='frange')R(x-8,yb-33,16,3,teinter(c,-18));
+    if(coiffe==='courts'){R(x-8,yb-36,2,7,c);R(x+6,yb-36,2,7,c);}
+  };
+  if(coiffe==='crete'){R(x-8,yb-36,16,3,chevO);R(x-3,yb-44,6,10,chev);}
+  else if(coiffe==='crane'){g.globalAlpha=.5;R(x-8,yb-38,16,3,chev);g.globalAlpha=1;}
+  else cheveux(chev);
+  /* accessoire */
+  if(acc==='casquette'){R(x-9,yb-42,18,6,'#3f5f6b');
+    R(dir==='gauche'?x-15:x-9,yb-37,dir==='bas'?18:15,3,'#33505a');}
+  if(acc==='bandana')R(x-9,yb-39,18,5,'#a8524a');
+  if(acc==='bonnet'){R(x-9,yb-43,18,8,'#8a4a3a');R(x-9,yb-36,18,3,'#a85c48');}
+  if(acc==='capuche'){R(x-11,yb-42,22,12,'#54606b');R(x-11,yb-31,3,8,'#465059');R(x+8,yb-31,3,8,'#465059');
+    R(x-7,yb-35,14,12,peau);}
+  if(acc==='chapeau'){g.fillStyle='#7d6a3f';g.beginPath();g.ellipse(x,yb-37,14,4,0,0,7);g.fill();
+    R(x-7,yb-45,14,8,'#8f7a49');R(x-7,yb-40,14,3,'#5a4a2c');}
+  /* visage */
+  if(dir==='bas'){
+    const clin=(Date.now()+x*97)%4200<130;
+    g.fillStyle=oeil;
+    if(clin){R(x-4,yb-29,3,1,oeil);R(x+2,yb-29,3,1,oeil);}
+    else{R(x-4,yb-30,3,3,oeil);R(x+2,yb-30,3,3,oeil);}
+    if(acc==='lunettes'){R(x-6,yb-31,5,5,'#2b2f33');R(x+1,yb-31,5,5,'#2b2f33');
+      R(x-5,yb-30,3,3,'#8fb6c9');R(x+2,yb-30,3,3,'#8fb6c9');}
+  }else if(dir!=='haut'){
+    const d2=dir==='droite'?1:-1;
+    R(x+(d2>0?2:-5),yb-30,3,3,oeil);
+    if(acc==='lunettes')R(x+(d2>0?1:-6),yb-31,5,5,'#2b2f33');
   }
 }
-
+function dessinerJoueur(g,x,y,nt){
+  corpsSurCarte(g,x,y,e.apparence,joueur.dir,joueur.pas,joueur.pas>0);
+}
 /* ---------- la scène complète ---------- */
 function dessinerCarte(W,H,g){
   const b=biome(), h=heure(), nt=nuit();
@@ -1560,19 +1712,9 @@ function dessinerInterieur(W,H,g){
   /* meubles, triés par profondeur avec le joueur */
   const liste=INT.meubles.map(m=>({y:m.y,f:()=>dessinerMeuble(g,m)}));
   liste.push({y:INT.jy,f:()=>{
-    const bouge=INT.pas>0;
-    const jamb=bouge?(Math.floor(INT.pas)%4<2?1:-1):0;
-    const ap=e.apparence||{};
-    const x=INT.jx,y=INT.jy;
-    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y+9,9,3.2,0,0,7);g.fill();
-    g.fillStyle='#39435a';g.fillRect(x-5,y-1,4,10-Math.abs(jamb)*2);g.fillRect(x+1,y-1,4,10-Math.abs(jamb)*2);
-    g.fillStyle='#231f1a';g.fillRect(x-8,y-18,16,18);
-    g.fillStyle=VESTES[ap.veste||0];g.fillRect(x-7,y-17,14,16);
-    g.fillStyle='#231f1a';g.fillRect(x-7,y-30,14,13);
-    g.fillStyle=PEAUX[ap.peau||0];g.fillRect(x-6,y-29,12,11);
-    g.fillStyle=COIFFES[ap.coiffe||0]==='bonnet'?'#8a4a3a':CHEVEUX[ap.cheveux||0];
-    g.fillRect(x-7,y-32,14,6);
-    if(INT.dir==='bas'){g.fillStyle=YEUX[ap.yeux||0];g.fillRect(x-3,y-25,2,2);g.fillRect(x+2,y-25,2,2);}
+    g.save();g.translate(INT.jx,INT.jy);g.scale(.86,.86);
+    corpsSurCarte(g,0,0,e.apparence,INT.dir,INT.pas,INT.pas>0);
+    g.restore();
   }});
   liste.sort((a2,b2)=>a2.y-b2.y).forEach(o=>o.f());
 
@@ -1753,45 +1895,13 @@ function dessinerAutres(g,camX,camY,W,H){
   AUTRES.forEach(s2=>{
     const x=s2.vx-camX, y=s2.vy-camY;
     if(x<-70||y<-90||x>(W||420)+70||y>(H||900)+90)return;
-    const ap=s2.apparence||{};
-    const bouge=s2.bouge;
-    const f=bouge?[0,1,0,2][Math.floor(s2.pas)%4]:0;
-    const bob=bouge&&f!==0?-1:0;
-    const jamb=bouge?(Math.floor(s2.pas)%4<2?1:-1):0;
-    const yb=y+bob;
-    const PEAU=PEAUX[ap.peau||0], CHEV=CHEVEUX[ap.cheveux||0],
-          VESTE=VESTES[ap.veste||0], OEIL=YEUX[ap.yeux||0],
-          COIFFE=COIFFES[ap.coiffe||0], BARBE=BARBES[ap.barbe||0];
-    g.fillStyle='rgba(28,38,22,.28)';
-    g.beginPath();g.ellipse(x,y+11,10,3.6,0,0,7);g.fill();
-    g.fillStyle='#39435a';
-    g.fillRect(x-6,yb-1,5,12-Math.abs(jamb)*2);g.fillRect(x+1,yb-1,5,12-Math.abs(jamb)*2);
-    g.fillStyle='#5a3f2a';
-    g.fillRect(x-7,yb+9+Math.max(0,jamb),6,3);g.fillRect(x+1,yb+9+Math.max(0,-jamb),6,3);
-    g.fillStyle='#231f1a';g.fillRect(x-10,yb-21,20,21);
-    g.fillStyle=VESTE;g.fillRect(x-9,yb-20,18,19);
-    g.globalAlpha=.3;g.fillStyle='#fff';g.fillRect(x-9,yb-20,18,4);g.globalAlpha=1;
-    g.fillStyle=VESTE;g.fillRect(x-13,yb-19-jamb*2,4,12);g.fillRect(x+9,yb-19+jamb*2,4,12);
-    g.fillStyle=PEAU;g.fillRect(x-13,yb-8-jamb*2,4,4);g.fillRect(x+9,yb-8+jamb*2,4,4);
-    g.fillStyle='#231f1a';g.fillRect(x-8,yb-36,16,16);
-    g.fillStyle=PEAU;g.fillRect(x-7,yb-35,14,14);
-    if(BARBE!=='aucune'){g.fillStyle=CHEV;g.fillRect(x-6,yb-25,12,BARBE==='pleine'?8:4);}
-    g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;
-    if(COIFFE==='crete'){g.fillRect(x-3,yb-43,6,12);g.fillRect(x-8,yb-36,16,3);}
-    else if(COIFFE==='crane'){g.globalAlpha=.6;g.fillRect(x-8,yb-38,16,3);g.globalAlpha=1;}
-    else{g.fillRect(x-8,yb-38,16,7);
-      if(COIFFE==='longs'){g.fillRect(x-10,yb-36,3,16);g.fillRect(x+7,yb-36,3,16);}
-      if(COIFFE==='queue')g.fillRect(x+7,yb-34,4,12);}
-    if(s2.dir==='bas'){g.fillStyle=OEIL;g.fillRect(x-4,yb-30,3,3);g.fillRect(x+2,yb-30,3,3);}
-    else if(s2.dir==='haut'){g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x-8,yb-36,16,10);}
-    else{const d2=s2.dir==='droite'?1:-1;g.fillStyle=OEIL;g.fillRect(x+(d2>0?2:-5),yb-30,3,3);}
-    /* étiquette */
+    corpsSurCarte(g,x,y,s2.apparence,s2.dir||'bas',s2.pas||0,!!s2.bouge);
     g.textAlign='center';g.font='600 11px -apple-system,system-ui,Arial';
-    g.fillStyle='rgba(12,20,12,.6)';g.fillText(s2.pseudo||'?',x+1,yb-43);
-    g.fillStyle='#e6efe2';g.fillText(s2.pseudo||'?',x,yb-44);
+    g.fillStyle='rgba(12,20,12,.55)';g.fillText(s2.pseudo||'?',x+1,y-45);
+    g.fillStyle='#e9f2e4';g.fillText(s2.pseudo||'?',x,y-46);
     g.font='600 9px -apple-system,system-ui,Arial';
     g.fillStyle=s2.biome===e.biome?'#a9c0a6':'#d9b8ff';
-    g.fillText('niv '+(s2.niv||1)+(s2.biome===e.biome?'':' · '+((BIOMES.find(b=>b.id===s2.biome)||{}).nom||'')),x,yb-32);
+    g.fillText('niv '+(s2.niv||1)+(s2.biome===e.biome?'':' · '+((BIOMES.find(b=>b.id===s2.biome)||{}).nom||'')),x,y-34);
   });
 }
 function dessinerCarrefour(g,camX,camY){
