@@ -15,8 +15,7 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
 #cv{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);display:block;
   image-rendering:pixelated;image-rendering:crisp-edges}
 body{overflow:hidden}
-#joy{position:fixed;left:14px;bottom:calc(16px + env(safe-area-inset-bottom));width:132px;height:132px;
-  touch-action:none;z-index:3}
+#joy{position:fixed;inset:0;width:100%;height:100%;touch-action:none;z-index:2}
 .rond{position:fixed;right:14px;z-index:3;width:54px;height:54px;border-radius:16px;
   background:rgba(20,28,20,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);
   color:#eaf2e4;display:flex;align-items:center;justify-content:center}
@@ -801,48 +800,100 @@ function majJoueur(dt){
   e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);
 }
 
-/* ================= joystick ================= */
+/* ================= le joystick, flottant =================
+   Il n'a pas de place fixe : il apparaît là où le pouce se pose,
+   dans toute la moitié gauche de l'écran, et s'efface quand on lâche. */
 const jc=$('joy'), jg=jc.getContext('2d');
-(function(){const d=Math.min(3,window.devicePixelRatio||1);
-  jc.width=132*d;jc.height=132*d;jg.setTransform(d,0,0,d,0,0);})();
-const R=54,JCX=66,JCY=66;
-let jdx=0,jdy=0,jactif=false,jid=null;
-const jpos=t=>{const r=jc.getBoundingClientRect();
-  return[(t.clientX-r.left)*132/r.width,(t.clientY-r.top)*132/r.height];};
-function joyPose(x,y){
-  const dx=x-JCX,dy=y-JCY,d=Math.hypot(dx,dy);
-  const m=Math.min(d,R-20),ang=Math.atan2(dy,dx);
-  jdx=d<.01?0:Math.cos(ang)*m;jdy=d<.01?0:Math.sin(ang)*m;
-  const nn=Math.min(1,d/(R-20));
-  joyX=d<.01?0:Math.cos(ang)*nn;joyY=d<.01?0:Math.sin(ang)*nn;
-  if(Math.hypot(joyX,joyY)<.15)joyX=joyY=0;
+let JDPR=1;
+function tailleJoy(){
+  JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  jc.width=Math.round(window.innerWidth*JDPR);
+  jc.height=Math.round(window.innerHeight*JDPR);
+  jg.setTransform(JDPR,0,0,JDPR,0,0);
 }
-jc.addEventListener('touchstart',ev=>{ev.preventDefault();const t=ev.changedTouches[0];
-  jid=t.identifier;jactif=true;joyPose(...jpos(t));},{passive:false});
-jc.addEventListener('touchmove',ev=>{ev.preventDefault();
-  for(const t of ev.changedTouches)if(t.identifier===jid)joyPose(...jpos(t));},{passive:false});
-['touchend','touchcancel'].forEach(k=>jc.addEventListener(k,ev=>{ev.preventDefault();
-  for(const t of ev.changedTouches)if(t.identifier===jid){jactif=false;jid=null;jdx=jdy=joyX=joyY=0;}},{passive:false}));
-jc.addEventListener('mousedown',ev=>{jactif=true;joyPose(...jpos(ev));});
-addEventListener('mousemove',ev=>{if(jactif)joyPose(...jpos(ev));});
-addEventListener('mouseup',()=>{if(jactif){jactif=false;jdx=jdy=joyX=joyY=0;}});
+addEventListener('resize',tailleJoy);
+tailleJoy();
+
+const RAYON=52, POUCE=22;
+let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
+
+const pointDe=t=>[t.clientX,t.clientY];
+function prendre(x,y){
+  J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
+  joyX=joyY=0;
+}
+function tirer(x,y){
+  const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
+  const a=Math.atan2(dy,dx);
+  const m=Math.min(d,RAYON);
+  J.x=J.ox+Math.cos(a)*m;J.y=J.oy+Math.sin(a)*m;
+  /* si le pouce s'éloigne trop, le manche se déplace avec lui */
+  if(d>RAYON){J.ox=x-Math.cos(a)*RAYON;J.oy=y-Math.sin(a)*RAYON;}
+  const n=Math.min(1,d/RAYON);
+  joyX=d<1?0:Math.cos(a)*n;joyY=d<1?0:Math.sin(a)*n;
+  if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
+}
+function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
+
+/* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
+const zoneGauche=x=>x<window.innerWidth*0.62;
+
+jc.addEventListener('touchstart',ev=>{
+  for(const t of ev.changedTouches){
+    if(J.actif)continue;
+    const [x,y]=pointDe(t);
+    if(!zoneGauche(x))continue;
+    ev.preventDefault();
+    J.id=t.identifier;prendre(x,y);
+  }
+},{passive:false});
+jc.addEventListener('touchmove',ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){
+    ev.preventDefault();
+    const [x,y]=pointDe(t);tirer(x,y);
+  }
+},{passive:false});
+['touchend','touchcancel'].forEach(k=>jc.addEventListener(k,ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();lacher();}
+},{passive:false}));
+
+jc.addEventListener('mousedown',ev=>{if(zoneGauche(ev.clientX)){prendre(ev.clientX,ev.clientY);}});
+addEventListener('mousemove',ev=>{if(J.actif)tirer(ev.clientX,ev.clientY);});
+addEventListener('mouseup',()=>{if(J.actif)lacher();});
+
 addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
   z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){joyX=k[0];joyY=k[1];}});
 addEventListener('keyup',()=>{joyX=joyY=0;});
-function dessinerJoy(){
-  jg.clearRect(0,0,132,132);
-  jg.beginPath();jg.arc(JCX,JCY,R,0,7);
-  const f=jg.createRadialGradient(JCX,JCY-16,6,JCX,JCY,R);
-  f.addColorStop(0,'rgba(240,246,238,.3)');f.addColorStop(1,'rgba(200,212,198,.16)');
+
+function dessinerJoy(dt){
+  /* il s'efface doucement quand on lâche */
+  if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
+  jg.clearRect(0,0,window.innerWidth,window.innerHeight);
+  if(J.vie<=0)return;
+  jg.save();
+  jg.globalAlpha=J.vie;
+  /* la couronne */
+  jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
+  const f=jg.createRadialGradient(J.ox,J.oy-14,6,J.ox,J.oy,RAYON);
+  f.addColorStop(0,'rgba(240,246,238,.26)');f.addColorStop(1,'rgba(200,212,198,.12)');
   jg.fillStyle=f;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,246,238,.4)';jg.stroke();
-  const kx=JCX+jdx,ky=JCY+jdy;
-  jg.beginPath();jg.arc(kx,ky+3,20,0,7);jg.fillStyle='rgba(10,18,12,.3)';jg.fill();
-  const k=jg.createRadialGradient(kx-5,ky-8,3,kx,ky,21);
-  if(jactif){k.addColorStop(0,'#a9e88a');k.addColorStop(1,'#3f7d4a');}
+  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,246,238,.38)';jg.stroke();
+  /* le sens, en léger */
+  const d=Math.hypot(J.x-J.ox,J.y-J.oy);
+  if(d>6){
+    const a=Math.atan2(J.y-J.oy,J.x-J.ox);
+    jg.beginPath();
+    jg.arc(J.ox,J.oy,RAYON-2,a-0.5,a+0.5);
+    jg.lineWidth=4;jg.strokeStyle='rgba(169,232,138,.5)';jg.stroke();
+  }
+  /* le manche */
+  jg.beginPath();jg.arc(J.x,J.y+3,POUCE,0,7);jg.fillStyle='rgba(10,18,12,.22)';jg.fill();
+  const k=jg.createRadialGradient(J.x-5,J.y-8,3,J.x,J.y,POUCE+1);
+  if(d>6){k.addColorStop(0,'#a9e88a');k.addColorStop(1,'#3f7d4a');}
   else{k.addColorStop(0,'#f4f7f0');k.addColorStop(1,'#c9d2c2');}
-  jg.beginPath();jg.arc(kx,ky,20,0,7);jg.fillStyle=k;jg.fill();
-  jg.lineWidth=2.5;jg.strokeStyle=jactif?'#2c6b32':'rgba(40,50,40,.45)';jg.stroke();
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k;jg.fill();
+  jg.lineWidth=2.5;jg.strokeStyle=d>6?'#2c6b32':'rgba(40,50,40,.4)';jg.stroke();
+  jg.restore();
 }
 
 /* ================= la personnalisation ================= */
@@ -987,7 +1038,7 @@ let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoueur(dt);dessiner();dessinerJoy();
+  majJoueur(dt);dessiner();dessinerJoy(dt);
 })(t0);
 setInterval(()=>{sauver();monterEnLigne();},4000);
 </script>
