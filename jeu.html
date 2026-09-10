@@ -1085,32 +1085,37 @@ function construireSol(){
   g.globalAlpha=1;
 
   /* 4. l'herbe : trois valeurs, brins courbés, semés partout */
-  const vert=neige?['rgba(255,255,255,.55)','rgba(226,238,246,.5)','rgba(196,214,228,.45)']
-                  :['rgba(96,150,60,.5)','rgba(132,186,88,.45)','rgba(72,120,44,.45)'];
-  for(let i=0;i<14000;i++){
+  /* 4. le grain de l'herbe : des touches courtes et douces, jamais des brins raides */
+  const vert=neige?['rgba(255,255,255,.3)','rgba(226,238,246,.26)','rgba(200,218,230,.24)']
+                  :['rgba(104,158,66,.26)','rgba(140,192,96,.22)','rgba(84,132,52,.24)'];
+  for(let i=0;i<26000;i++){
     const x=A(i*1.7)*MONDE, y=A(i*2.9)*MONDE;
-    const h=4+A(i*3.1)*5, pen=(A(i*4.1)-.5)*3.6;
-    g.strokeStyle=vert[i%3];g.lineWidth=1+A(i*5.3)*.9;
-    g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+pen*.5,y-h*.6,x+pen,y-h);g.stroke();
+    const l=2.2+A(i*3.1)*2.6, pen=(A(i*4.1)-.5)*1.6;
+    g.strokeStyle=vert[i%3];
+    g.lineWidth=.7+A(i*5.3)*.5;
+    g.beginPath();g.moveTo(x,y);g.lineTo(x+pen,y-l);g.stroke();
   }
-  /* 5. touffes plus denses, ici et là */
-  for(let i=0;i<300;i++){
+  /* 5. quelques bouquets un peu plus fournis, très doux */
+  for(let i=0;i<420;i++){
     const cx=A(i*7.1)*MONDE, cy=A(i*8.3)*MONDE;
-    for(let k=0;k<7;k++){
-      const x=cx+(A(i*9+k)-.5)*16, y=cy+(A(i*11+k)-.5)*12;
-      g.strokeStyle=vert[k%3];g.lineWidth=1.4;
-      g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+1,y-5,x+2.4,y-9);g.stroke();
+    g.globalAlpha=.18;
+    g.fillStyle=neige?'#f2f8fb':'#7fb45e';
+    g.beginPath();g.ellipse(cx,cy,7+A(i*3)*5,4+A(i*5)*3,0,0,7);g.fill();
+    g.globalAlpha=1;
+    for(let k=0;k<5;k++){
+      const x=cx+(A(i*9+k)-.5)*13, y=cy+(A(i*11+k)-.5)*9;
+      g.strokeStyle=vert[k%3];g.lineWidth=.9;
+      g.beginPath();g.moveTo(x,y);g.lineTo(x+(A(i+k)-.5)*2,y-4.5);g.stroke();
     }
   }
   /* 6. quelques fleurs, pour la couleur */
   if(!neige){
-    const fleurs=['#f2e06a','#f0f4f2','#e8607a','#c98fe0'];
-    for(let i=0;i<220;i++){
+    const fleurs=['#f0e28a','#f4f6f0','#e89aa8','#cfa8e0'];
+    for(let i=0;i<160;i++){
       const x=A(i*6.1)*MONDE, y=A(i*7.3)*MONDE, c2=fleurs[i%fleurs.length];
-      g.strokeStyle='rgba(80,120,50,.5)';g.lineWidth=1;
-      g.beginPath();g.moveTo(x,y);g.lineTo(x,y-4);g.stroke();
-      g.fillStyle=c2;g.beginPath();g.arc(x,y-5,2,0,7);g.fill();
-      g.fillStyle='rgba(255,255,255,.6)';g.fillRect(x-.6,y-5.8,1.2,1.2);
+      g.globalAlpha=.75;
+      g.fillStyle=c2;g.beginPath();g.arc(x,y-2,1.5,0,7);g.fill();
+      g.globalAlpha=1;
     }
   }
   /* 7. voile de lumière du bord vers le centre */
@@ -1412,7 +1417,7 @@ function dessinerBatiment(g,o,x,y){
   }
 }
 function dessinerObjet(g,o,x,y,nt){
-  let sway=Math.sin(Date.now()/1100+o.ph)*1.8+RAFALE*(meteo().id==='tempete'?7:meteo().id==='vent'?4:1);
+  let sway=Math.sin(Date.now()/1100+o.ph)*1.6+RAFALE*(meteo().id==='tempete'?4:meteo().id==='vent'?2.4:.6);
   if(o.secousse){
     const dt=Date.now()-o.secousse;
     if(dt<340)sway+=Math.sin(dt/26)*(5*(1-dt/340));
@@ -1769,24 +1774,6 @@ function dessinerCarte(W,H,g){
   g.globalAlpha=1;
 
   dessinerVolants(g,camX,camY,W,H);
-  /* premier plan : quelques touffes qui défilent plus vite */
-  const b2=biome();
-  if(b2.id!=='banquise'){
-    const pk=1.18;
-    for(let i=0;i<26;i++){
-      const bx=((i*263)%MONDE), by=((i*457)%MONDE);
-      const x=(bx-camX*pk), y=(by-camY*pk);
-      if(x<-40||y<-40||x>W+40||y>H+40)continue;
-      g.globalAlpha=.5;
-      g.strokeStyle='#3f7336';g.lineWidth=3;
-      const pen=Math.sin(Date.now()/900+i)*3+RAFALE*7;
-      for(let k=-2;k<=2;k++){
-        g.beginPath();g.moveTo(x+k*6,y+16);
-        g.quadraticCurveTo(x+k*6+pen*.5,y,x+k*6+pen,y-18);g.stroke();
-      }
-      g.globalAlpha=1;
-    }
-  }
   /* lumière du jour : un voile chaud, très léger */
   g.fillStyle='rgba(255,246,214,.06)';g.fillRect(0,0,W,H);
   dessinerMeteo(g,W,H);
@@ -1929,22 +1916,15 @@ function ombreAuSol(g,x,y,rx,ry,haut){
   g.restore();
 }
 
-/* ---- caméra vivante ---- */
+/* ---- caméra : elle reste collée au joueur, sans avance ni retard ---- */
 let CAM={x:MONDE/2,y:MONDE/2,sec:0,secX:0,secY:0};
-function secouer(force){CAM.sec=Math.max(CAM.sec,force);}
-function majCamera(dt,W,H){
-  const av=60;                              // elle regarde devant toi
-  const vx=joueur.dir==='gauche'?-av:joueur.dir==='droite'?av:0;
-  const vy=joueur.dir==='haut'?-av:joueur.dir==='bas'?av:0;
-  const cibleX=joueur.x+(joueur.pas>0?vx*0.5:0);
-  const cibleY=joueur.y+(joueur.pas>0?vy*0.5:0);
-  const k=Math.min(1,dt*6.5);               // retard élastique
-  CAM.x+=(cibleX-CAM.x)*k;
-  CAM.y+=(cibleY-CAM.y)*k;
-  if(CAM.sec>0.01){
-    CAM.secX=(Math.random()-.5)*CAM.sec*14;
-    CAM.secY=(Math.random()-.5)*CAM.sec*14;
-    CAM.sec*=Math.pow(0.001,dt);
+function secouer(force){CAM.sec=Math.max(CAM.sec,Math.min(force,1));}
+function majCamera(dt){
+  CAM.x=joueur.x;CAM.y=joueur.y;
+  if(CAM.sec>0.01){                       /* une secousse courte et discrète */
+    CAM.secX=(Math.random()-.5)*CAM.sec*6;
+    CAM.secY=(Math.random()-.5)*CAM.sec*6;
+    CAM.sec*=Math.pow(0.00002,dt);
   }else{CAM.secX=CAM.secY=0;CAM.sec=0;}
 }
 
@@ -1970,30 +1950,24 @@ function dessinerTraces(g,camX,camY){
   g.globalAlpha=1;
 }
 
-/* ---- l'herbe se couche sur ton passage ---- */
+/* ---- ton passage marque l'herbe, discrètement ---- */
 let COUCHEES=[];
 function coucherHerbe(x,y){
-  COUCHEES.push({x,y,vie:1,ang:Math.random()*6.283});
-  if(COUCHEES.length>70)COUCHEES.shift();
+  COUCHEES.push({x,y,vie:1});
+  if(COUCHEES.length>40)COUCHEES.shift();
 }
 function majCouchees(dt){
   for(let i=COUCHEES.length-1;i>=0;i--){
-    COUCHEES[i].vie-=dt*0.5;
+    COUCHEES[i].vie-=dt*0.8;
     if(COUCHEES[i].vie<=0)COUCHEES.splice(i,1);
   }
 }
 function dessinerCouchees(g,camX,camY){
-  const b=biome();
-  if(b.id==='banquise')return;
+  if(biome().id==='banquise')return;
   COUCHEES.forEach(c=>{
-    const x=c.x-camX,y=c.y-camY, k=1-c.vie;
-    g.globalAlpha=c.vie*0.5;
-    g.strokeStyle='#5f9a4a';g.lineWidth=1.4;
-    for(let i=-1;i<=1;i++){
-      g.beginPath();g.moveTo(x+i*4,y);
-      g.quadraticCurveTo(x+i*4+Math.cos(c.ang)*6*k,y-4+k*3,x+i*4+Math.cos(c.ang)*11*k,y-1+k*4);
-      g.stroke();
-    }
+    g.globalAlpha=c.vie*0.16;
+    g.fillStyle='#4e7a3c';
+    g.beginPath();g.ellipse(c.x-camX,c.y-camY,9,4,0,0,7);g.fill();
   });
   g.globalAlpha=1;
 }
@@ -3489,7 +3463,7 @@ function ouvrirCarte(){
     }else{
       majJoueur(dt);majBetes(dt);majHostiles(dt);majCompagnon(dt);majAutres(dt);
       chercherJoueur();majPose();envoyerPosition();sauverEnLigne();
-      majCamera(dt,rc.width,rc.height);
+      majCamera(dt);
       dessinerCarte(r.width,r.height,ctx);
     }
     dessinerJoy();majHud();
