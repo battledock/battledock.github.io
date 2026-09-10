@@ -22,7 +22,7 @@ body{overflow:hidden}
 #b-look{bottom:calc(16px + env(safe-area-inset-bottom))}
 
 #porte{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#8ec96f,#5f8c48);padding:22px}
+  background:#0c140c;padding:22px}
 #porte.parti{display:none}
 .pCarte{width:100%;max-width:320px;background:var(--carte);border-radius:20px;
   padding:22px 20px;box-shadow:0 14px 34px rgba(20,40,15,.3);text-align:center}
@@ -31,7 +31,6 @@ body{overflow:hidden}
 .pCarte button{width:100%;margin-top:11px;border-radius:13px;padding:14px;
   background:var(--vert);color:#fdfbf4;font:600 14.5px system-ui}
 .pCarte button:disabled{opacity:.45}
-.pEtat{font:400 11.5px system-ui;color:var(--doux);margin-top:10px;min-height:16px}
 
 #pan{position:fixed;inset:0;z-index:20;display:none}
 #pan.on{display:block}
@@ -90,14 +89,11 @@ body{overflow:hidden}
 <div id="pan"><div class="feuille" id="feuille"></div></div>
 
 <div id="porte">
-  <div class="pCarte">
+  <div class="pCarte" id="pCarte" style="display:none">
     <h1>Survivre</h1>
-    <p id="p-mot">Un instant…</p>
-    <button id="p-ok" style="display:none">Se connecter</button>
-    <div class="pEtat" id="p-etat"></div>
+    <p>Connecte-toi pour retrouver ton survivant.</p>
+    <button id="p-ok">Se connecter</button>
   </div>
-</div>
-
 </div>
 
 <script type="module">
@@ -120,7 +116,8 @@ const PALETTES={
 const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','longs','très longs',
                'queue','couettes','chignon','chignon haut','tresse','tresses','ondulés','bouclés',
                'afro','dreads','banane','crête','crâne','hirsute'];
-const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
+const BARBES=['aucune','naissante','fine','courte','pleine','longue','bouc','moustache',
+              'collier','favoris','impériale','fourchue'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
 const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
 const SILHOUETTES=['fine','svelte','moyenne','athlétique','forte'];
@@ -388,15 +385,102 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
   if(prof){R(-LT,YT+1,LT*2,HT-1,teint(peau,-12));           /* nuque */
            R(-LT,YT+HT-3,LT*2,2,teint(peau,-30));}
-  /* barbe */
-  if(!prof){
-    if(barbe==='pleine'){R(-5,YT+6,10,5,chev);R(-3,YT+10,6,2,chevO);}
-    else if(barbe==='courte')R(-5,YT+7,10,4,chev);
-    else if(barbe==='fine')R(-5,YT+8,10,2,chevO);
-    else if(barbe==='bouc')R(-2,YT+8,4,4,chev);
-    else if(barbe==='moustache')R(-3,YT+7,6,1,chev);
-    else if(barbe==='collier'){R(-6,YT+4,2,7,chev);R(4,YT+4,2,7,chev);R(-5,YT+9,10,2,chev);}
+  /* ---- la barbe ----
+     Elle épouse la mâchoire : plus large en haut des joues, resserrée sous le menton.
+     Trois valeurs, comme les cheveux, et une version propre au profil. */
+  if(barbe!=='aucune'&&!prof){
+    const LB=SIL.tete;                          /* demi-largeur du visage */
+    const bas=YT+HT-1;                          /* le bas du menton */
+    const B=chev, BC=chevC, BO=chevO, BT=teint(chev,-40);
+    const joue=(y0,h2,ep)=>{                    /* les côtés, le long de la mâchoire */
+      for(let i=0;i<h2;i++){
+        const w2=LB-(i>=h2-2?1:0);
+        R(-w2,y0+i,ep,1,B);
+        R(w2-ep,y0+i,ep,1,BO);
+      }
+    };
+    const menton=(y0,h2,larg)=>{                /* la masse sous la bouche */
+      for(let i=0;i<h2;i++){
+        const w2=Math.max(1,larg-(i>=h2-2?1:0)-(i>=h2-1?1:0));
+        R(-w2,y0+i,w2*2,1,i<1?BC:(i>h2-2?BT:B));
+      }
+    };
+    if(cote){
+      /* de profil : la barbe suit le bord avant du visage */
+      const av=s>0?1:-4;
+      if(barbe==='naissante'){g.globalAlpha=.5;R(av-1,YT+7,5,4,BO);g.globalAlpha=1;}
+      else if(barbe==='fine'){R(av-1,YT+7,5,3,BO);R(av,YT+10,3,1,BT);}
+      else if(barbe==='courte'){R(av-2,YT+6,6,5,B);R(av-1,YT+10,4,1,BO);}
+      else if(barbe==='pleine'){R(av-3,YT+5,7,7,B);R(av-3,YT+5,2,7,BO);R(av-2,YT+11,5,2,BT);}
+      else if(barbe==='longue'){R(av-3,YT+5,7,7,B);R(av-2,YT+11,5,6,B);R(av-2,YT+15,5,2,BT);}
+      else if(barbe==='bouc'){R(av-1,YT+8,4,5,B);R(av-1,YT+11,4,2,BO);}
+      else if(barbe==='moustache'){R(av-1,YT+7,4,1,B);R(av+2,YT+7,1,1,BO);}
+      else if(barbe==='collier'){R(av-4,YT+4,2,8,B);R(av-3,YT+10,6,2,B);}
+      else if(barbe==='favoris'){R(av-4,YT+3,2,6,B);}
+      else if(barbe==='impériale'){R(av-1,YT+7,4,1,B);R(av,YT+9,3,3,B);}
+      else if(barbe==='fourchue'){R(av-3,YT+5,7,7,B);R(av-2,YT+11,2,5,B);R(av+1,YT+11,2,4,BO);}
+    }else{
+      if(barbe==='naissante'){                  /* juste une ombre sur la mâchoire */
+        g.globalAlpha=.42;
+        joue(YT+6,5,2);menton(YT+9,3,3);
+        g.globalAlpha=1;
+      }
+      else if(barbe==='fine'){
+        joue(YT+7,4,1);
+        R(-3,YT+10,6,1,BO);R(-2,YT+11,4,1,BT);
+      }
+      else if(barbe==='courte'){
+        joue(YT+6,5,2);
+        menton(YT+9,3,4);
+        R(-3,YT+8,6,1,BC);                      /* le sillon sous la lèvre */
+      }
+      else if(barbe==='pleine'){
+        joue(YT+4,7,2);
+        menton(YT+8,5,LB-1);
+        R(-LB+1,YT+4,LB*2-2,1,BC);              /* le haut des joues, éclairé */
+        R(-2,YT+8,4,1,teint(peau,-30));         /* la bouche reste lisible */
+      }
+      else if(barbe==='longue'){
+        joue(YT+4,7,2);
+        menton(YT+8,5,LB-1);
+        for(let i=0;i<6;i++){                   /* elle descend sur la poitrine */
+          const w2=Math.max(1,4-Math.floor(i/2));
+          R(-w2,YT+HT+i-1,w2*2,1,i<4?B:BT);
+        }
+        R(-LB+1,YT+4,LB*2-2,1,BC);
+        R(-2,YT+8,4,1,teint(peau,-30));
+      }
+      else if(barbe==='bouc'){
+        R(-2,YT+10,4,3,B);R(-2,YT+10,2,3,BC);R(-1,YT+12,2,1,BT);
+        R(-3,YT+7,6,1,B);                       /* avec sa moustache */
+      }
+      else if(barbe==='moustache'){
+        R(-3,YT+7,6,1,B);R(-4,YT+7,1,1,BO);R(3,YT+7,1,1,BO);
+        R(-3,YT+8,2,1,BO);R(1,YT+8,2,1,BO);
+      }
+      else if(barbe==='collier'){               /* le tour du visage, joues rasées */
+        R(-LB,YT+4,1,7,B);R(LB-1,YT+4,1,7,BO);
+        menton(YT+10,2,4);
+        R(-3,YT+7,6,1,B);
+      }
+      else if(barbe==='favoris'){               /* seulement devant les oreilles */
+        R(-LB,YT+3,2,5,B);R(LB-2,YT+3,2,5,BO);
+        R(-LB,YT+7,2,1,BT);R(LB-2,YT+7,2,1,BT);
+      }
+      else if(barbe==='impériale'){             /* moustache et touffe sous la lèvre */
+        R(-4,YT+7,8,1,B);R(-5,YT+6,1,1,BO);R(4,YT+6,1,1,BO);
+        R(-1,YT+10,3,3,B);R(-1,YT+10,1,3,BC);
+      }
+      else if(barbe==='fourchue'){
+        joue(YT+4,7,2);
+        menton(YT+8,4,LB-1);
+        R(-4,YT+HT-1,3,5,B);R(1,YT+HT-1,3,4,BO);   /* les deux pointes */
+        R(-4,YT+HT+3,3,1,BT);R(1,YT+HT+2,3,1,BT);
+        R(-LB+1,YT+4,LB*2-2,1,BC);
+      }
+    }
   }
+
   /* ---- les cheveux ----
      Une même coupe se décline en trois vues :
        de face  : calotte + frange + pans qui pendent de chaque côté du visage
@@ -1037,18 +1121,14 @@ $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');
 const sb=createClient(URL_SB,CLE_SB);
 
 async function ouvrirPorte(){
-  const mot=$('p-mot'), bouton=$('p-ok'), etat=$('p-etat');
   let session=null;
   try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
 
   if(!session||!session.user){                 /* pas de compte : on renvoie à l'inscription */
-    mot.textContent='Connecte-toi pour retrouver ton survivant.';
-    bouton.style.display='';
-    bouton.onclick=()=>{location.href='index.html';};
+    $('pCarte').style.display='';
+    $('p-ok').onclick=()=>{location.href='index.html';};
     return;
   }
-
-  /* le nom vient du compte, jamais d'une saisie */
   e.id=session.user.id;
   const m=session.user.user_metadata||{};
   let nom=m.nom||m.pseudo||'';
@@ -1061,7 +1141,7 @@ async function ouvrirPorte(){
       if(Array.isArray(d2)&&d2[0]&&d2[0].pseudo)nom=d2[0].pseudo;
     }catch(x){}
   }
-  e.pseudo=nom||('Survivant '+e.id.slice(0,4));
+  e.pseudo=nom||'Survivant';
   sauver();
   await descendreDeLigne();
   joueur.x=e.x;joueur.y=e.y;
