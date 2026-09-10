@@ -14,17 +14,16 @@
   --filet:#e4e2d8; --papier:#e9e3d6;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{height:100%;overflow-x:hidden}
-body{min-height:100vh;min-height:100dvh;overflow-x:hidden;overflow-y:auto;
-  -webkit-overflow-scrolling:touch;background:var(--fond);color:var(--encre);
+html,body{height:100%;overflow:hidden}
+body{background:var(--fond);color:var(--encre);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
-.app{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
 body.fige{overflow:hidden;position:fixed;inset:0;width:100%}
 
 /* ---------- bandeau ---------- */
-.haut{flex:0 0 auto;position:sticky;top:0;z-index:6;overflow:hidden;
+.haut{flex:0 0 auto;position:relative;z-index:6;overflow:hidden;
   padding:calc(15px + env(safe-area-inset-top)) 15px 24px;
   box-shadow:0 2px 16px rgba(120,85,40,.18)}
 .haut .ciel{position:absolute;inset:0;width:100%;height:100%}
@@ -44,7 +43,8 @@ body.fige{overflow:hidden;position:fixed;inset:0;width:100%}
 .haut .xpt{font:600 9.5px system-ui;color:#a08a64;white-space:nowrap}
 
 /* ---------- corps ---------- */
-.corps{flex:1;min-height:0;padding:14px 14px 98px}
+.corps{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;padding:14px 14px 104px}
 .titre{font:600 11px system-ui;letter-spacing:2px;color:var(--doux);margin:18px 2px 9px}
 .titre:first-child{margin-top:2px}
 
@@ -1335,7 +1335,7 @@ let vue='ferme';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   vue=b.dataset.v;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
-  window.scrollTo(0,0);rendre(true);});
+  $('corps').scrollTop=0;rendre(true);});
 
 function brancher(){
   const z=$('corps');
@@ -1384,11 +1384,11 @@ function rendre(force){
   const sig=signature();
   if(force||sig!==derniereSignature){
     derniereSignature=sig;
-    const y=window.scrollY;                       // on garde la position de lecture
+    const y=$('corps').scrollTop;                 // on garde la position de lecture
     $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
                          vue==='boutique'?vueBoutique():vueCommandes();
     brancher();
-    if(vue==='ferme')window.scrollTo(0,y);
+    $('corps').scrollTop=y;
   }
   if(e.tuto>0&&ETAPES[e.tuto]&&ETAPES[e.tuto].fait&&ETAPES[e.tuto].fait()&&!ETAPES[e.tuto]._ok){
     ETAPES[e.tuto]._ok=true;setTimeout(avancerTuto,420);
