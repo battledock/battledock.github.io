@@ -22,37 +22,37 @@ body{overflow:hidden}
   color:#eaf2e4;display:flex;align-items:center;justify-content:center}
 #b-look{bottom:calc(16px + env(safe-area-inset-bottom))}
 
-#pan{position:fixed;inset:0;z-index:20;display:none;background:rgba(16,24,16,.72)}
+#pan{position:fixed;inset:0;z-index:20;display:none}
 #pan.on{display:block}
-.feuille{position:absolute;inset:0;background:var(--carte);display:flex;
+.feuille{position:absolute;inset:0;background:linear-gradient(180deg,#96d177,#6f9e52);
   animation:m .26s cubic-bezier(.2,.85,.3,1)}
-@keyframes m{from{opacity:.6;transform:scale(.98)}}
+@keyframes m{from{opacity:.5}}
 
-/* la colonne de gauche : le personnage, toujours là */
-.gauche{width:40%;max-width:190px;background:linear-gradient(180deg,#8ec96f,#6f9e52);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
-  padding:calc(14px + env(safe-area-inset-top)) 10px calc(14px + env(safe-area-inset-bottom));
-  position:relative}
-.gauche canvas{image-rendering:pixelated;display:block}
-.vues{display:flex;gap:4px}
-.vues button{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.28);
-  color:#fff;font:600 10px system-ui;display:flex;align-items:center;justify-content:center}
-.vues button.on{background:rgba(255,255,255,.9);color:#3f5f4a}
-.gBas{display:flex;flex-direction:column;gap:6px;width:100%}
-.gBas button{border-radius:10px;padding:9px;font:600 10.5px system-ui;letter-spacing:.6px;
-  background:rgba(255,255,255,.22);color:#fff}
-.gBas button.vert{background:#fdfbf4;color:#2f5a38}
+/* la scène : le personnage en grand, dans la moitié haute */
+.scene{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top));height:48%;
+  display:flex;align-items:center;justify-content:center}
+.scene canvas{image-rendering:pixelated;display:block}
+.deVous{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;
+  padding:9px 13px;border-radius:12px;background:rgba(255,253,248,.92);
+  font:600 11px system-ui;color:#2f5a38;box-shadow:0 4px 12px rgba(20,40,15,.25)}
+.fermerX{position:absolute;top:calc(12px + env(safe-area-inset-top));left:14px;
+  width:34px;height:34px;border-radius:50%;background:rgba(255,253,248,.92);
+  color:#5f6b58;font:600 13px system-ui;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 12px rgba(20,40,15,.25)}
 
-/* la colonne de droite : les réglages */
-.droite{flex:1;display:flex;flex-direction:column;min-width:0}
-.ongs{display:flex;gap:5px;overflow-x:auto;padding:calc(12px + env(safe-area-inset-top)) 12px 10px;
+/* la feuille qui remonte par-dessus */
+.tiroir{position:absolute;left:0;right:0;bottom:0;top:46%;background:var(--carte);
+  border-radius:22px 22px 0 0;box-shadow:0 -8px 24px rgba(20,40,15,.28);
+  display:flex;flex-direction:column;overflow:hidden}
+.poignee{width:36px;height:4px;border-radius:3px;background:#ddd9c9;margin:9px auto 5px}
+.ongs{display:flex;gap:5px;overflow-x:auto;padding:2px 12px 10px;
   border-bottom:1px solid var(--filet);scrollbar-width:none}
 .ongs::-webkit-scrollbar{display:none}
 .ong{flex:0 0 auto;padding:7px 12px;border-radius:10px;background:#f0ede2;
   font:600 11px system-ui;color:var(--doux);white-space:nowrap}
 .ong.on{background:var(--encre);color:#fdfbf4}
-.corps{flex:1;overflow-y:auto;padding:10px 12px calc(72px + env(safe-area-inset-bottom))}
-.sec{font:600 9px system-ui;letter-spacing:1.6px;color:var(--pale);margin:12px 2px 7px}
+.corps{flex:1;overflow-y:auto;padding:11px 12px 12px}
+.sec{font:600 8.5px system-ui;letter-spacing:1.5px;color:var(--pale);margin:13px 2px 7px}
 .sec:first-child{margin-top:0}
 .ch{display:flex;flex-wrap:wrap;gap:6px}
 .pa{width:30px;height:30px;border-radius:9px;border:2px solid transparent;
@@ -61,8 +61,8 @@ body{overflow:hidden}
 .pa.vide{background:#f0ede2;color:var(--pale);font:600 13px system-ui}
 .mo{padding:7px 11px;border-radius:10px;background:#f0ede2;font:600 11px system-ui;color:var(--doux)}
 .mo.on{background:var(--vert);color:#fdfbf4}
-.bas{position:absolute;right:0;bottom:0;left:40%;padding:10px 12px calc(10px + env(safe-area-inset-bottom));
-  background:linear-gradient(180deg,rgba(255,253,248,0),var(--carte) 40%);display:flex;gap:7px}
+.bas{display:flex;gap:7px;padding:9px 12px calc(11px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--filet);background:var(--carte)}
 .ok{flex:1;border-radius:14px;padding:14px;background:var(--vert);color:#fdfbf4;font:600 14.5px system-ui}
 .annul{border-radius:14px;padding:14px 16px;background:#f0ede2;color:var(--doux);font:600 13px system-ui}
 </style>
@@ -813,19 +813,14 @@ function dessinerApercu(){
   const c=$('vg-c');if(!c)return;
   const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
-  const Z=3, L=Math.round(c.width/Z), H2=Math.round(c.height/Z);
+  const Z=4, L=Math.round(c.width/Z), H2=Math.round(c.height/Z);
   g.setTransform(Z,0,0,Z,0,0);
-  for(let y=0;y<H2;y+=8)for(let x=0;x<L;x+=8){
-    g.fillStyle='#72a154';g.fillRect(x,y,8,8);
-    g.fillStyle='#85b664';g.fillRect(x+1,y+2,1,2);
-    g.fillStyle='#5e8a47';g.fillRect(x+5,y+5,1,2);
-  }
-  for(let i=0;i<60;i++){
-    const x=Math.floor(alea(i*3.3)*L), y=Math.floor(alea(i*5.1)*H2);
-    g.fillStyle=alea(i)<.5?'#7db35d':'#63914b';g.fillRect(x,y,5,3);
-  }
-  const pas=LOOK.marche?(Date.now()-LOOK.t0)/125:0;
-  sprite(g,L>>1,H2-6,LOOK.ap,LOOK.dir,pas,LOOK.marche);
+  g.clearRect(0,0,L,H2);
+  /* il tourne lentement sur lui-même pour qu'on le voie sous tous les angles */
+  const t=(Date.now()-LOOK.t0)/1000;
+  const tour=['bas','droite','haut','gauche'][Math.floor(t/2.6)%4];
+  const pas=t*7.5;
+  sprite(g,L>>1,H2-4,LOOK.ap,tour,pas,true);
 }
 function majChoix(){
   /* on ne redessine pas la liste : on déplace seulement la sélection,
@@ -857,23 +852,17 @@ function listeOnglet(){
 }
 function ouvrirLook(){
   LOOK.ap=Object.assign({},DEF_AP,e.ap||{});
-  LOOK.t0=Date.now();
+  LOOK.t0=Date.now();LOOK.dir='bas';LOOK.marche=true;
   $('feuille').innerHTML=
-   '<div class="gauche">'+
-     '<canvas id="vg-c" width="126" height="180"></canvas>'+
-     '<span class="vues">'+
-       '<button data-dir="bas">face</button><button data-dir="haut">dos</button>'+
-       '<button data-dir="gauche">◀</button><button data-dir="droite">▶</button></span>'+
-     '<span class="gBas">'+
-       '<button id="mv-m">marche</button>'+
-       '<button id="hasard">au hasard</button></span>'+
-   '</div>'+
-   '<div class="droite">'+
+   '<div class="scene"><canvas id="vg-c" width="180" height="240"></canvas></div>'+
+   '<button class="fermerX" id="annul">✕</button>'+
+   '<button class="deVous" id="hasard">au hasard</button>'+
+   '<div class="tiroir">'+
+     '<div class="poignee"></div>'+
      '<div class="ongs" id="ongs"></div>'+
      '<div class="corps" id="pan-b"></div>'+
-   '</div>'+
-   '<div class="bas"><button class="annul" id="annul">Annuler</button>'+
-     '<button class="ok" id="ok">Garder</button></div>';
+     '<div class="bas"><button class="ok" id="ok">Garder cette allure</button></div>'+
+   '</div>';
   $('ongs').innerHTML=ONGLETS.map(o=>
     '<button class="ong'+(o===LOOK.onglet?' on':'')+'" data-ong="'+o+'">'+o+'</button>').join('');
   $('ongs').querySelectorAll('[data-ong]').forEach(b=>b.onclick=()=>{
@@ -881,15 +870,6 @@ function ouvrirLook(){
     $('ongs').querySelectorAll('[data-ong]').forEach(x=>x.classList.toggle('on',x.dataset.ong===LOOK.onglet));
     listeOnglet();$('pan-b').scrollTop=0;
   });
-  $('feuille').querySelectorAll('[data-dir]').forEach(b=>{
-    b.classList.toggle('on',b.dataset.dir===LOOK.dir);
-    b.onclick=()=>{LOOK.dir=b.dataset.dir;
-      $('feuille').querySelectorAll('[data-dir]').forEach(x=>x.classList.toggle('on',x.dataset.dir===LOOK.dir));
-      dessinerApercu();};
-  });
-  const mm=$('mv-m');
-  mm.classList.toggle('vert',LOOK.marche);
-  mm.onclick=()=>{LOOK.marche=!LOOK.marche;mm.classList.toggle('vert',LOOK.marche);LOOK.t0=Date.now();dessinerApercu();};
   $('hasard').onclick=()=>{
     GROUPES.forEach(gr=>{LOOK.ap[gr.c]=Math.floor(Math.random()*gr.l().length);});
     majChoix();dessinerApercu();
@@ -909,7 +889,7 @@ let t0=performance.now();
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
   majJoueur(dt);dessiner();dessinerJoy();
-  if($('pan').classList.contains('on')&&LOOK.marche)dessinerApercu();
+  if($('pan').classList.contains('on'))dessinerApercu();
 })(t0);
 setInterval(sauver,4000);
 </script>
