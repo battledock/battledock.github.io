@@ -1061,10 +1061,10 @@ function dessinerCarte(W,H,g){
   BETES.forEach(bt=>{if(dedans(bt.x,bt.y,120))liste.push({y:bt.y,f:g2=>silhouetteBete(g2,bt,bt.x-camX,bt.y-camY,nt)});});
   if(e.compagnon)liste.push({y:e.compagnon.y,f:g2=>silhouetteBete(g2,
     {...e.compagnon,pas:e.compagnon.pas||0},e.compagnon.x-camX,e.compagnon.y-camY,nt)});
-  AUTRES.forEach(s2=>liste.push({y:s2.y,f:()=>{}}));
+
   liste.push({y:joueur.y,f:g2=>dessinerJoueur(g2,joueur.x-camX,joueur.y-camY,nt)});
   liste.sort((p,q)=>p.y-q.y).forEach(o=>o.f(g));
-  dessinerAutres(g,camX,camY);
+  dessinerAutres(g,camX,camY,W,H);
 
   /* particules */
   PARTICULES.forEach(p=>{
@@ -1188,11 +1188,52 @@ function idJoueur(){
 }
 const auCarrefour=()=>joueur.y<CARREFOUR.y+CARREFOUR.r;
 
+/* ---- présence en direct : un canal temps réel, plus la base pour le classement ---- */
+let canal=null, dernierBase=0, dernierBrd=0;
+const AUTRES_MAP=new Map();
+
+function ouvrirCanal(){
+  if(canal||!sb)return;
+  try{
+    canal=sb.channel('monde',{config:{broadcast:{self:false},presence:{key:idJoueur()}}});
+    canal.on('broadcast',{event:'pos'},({payload:p})=>{
+      if(!p||p.id===idJoueur())return;
+      if(p.biome!==e.biome && p.y>CARREFOUR.y+CARREFOUR.r)return;   // hors de ta vue
+      const a=AUTRES_MAP.get(p.id)||{x:p.x,y:p.y,vx:p.x,vy:p.y,pas:0,dir:'bas'};
+      a.x=p.x;a.y=p.y;                       // cible
+      a.pseudo=p.pseudo;a.niv=p.niv;a.biome=p.biome;a.apparence=p.apparence;
+      a.compagnon=p.compagnon;a.vu=Date.now();
+      AUTRES_MAP.set(p.id,a);
+    });
+    canal.on('presence',{event:'leave'},({leftPresences})=>{
+      (leftPresences||[]).forEach(pr=>{if(pr.id)AUTRES_MAP.delete(pr.id);});
+    });
+    canal.subscribe(st=>{
+      if(st==='SUBSCRIBED')canal.track({id:idJoueur(),pseudo:e.nom||'Sans nom'});
+    });
+  }catch(x){canal=null;}
+}
+/* on diffuse la position six fois par seconde, c'est léger : rien n'est stocké */
+function diffuser(){
+  if(!canal)return ouvrirCanal();
+  const now=Date.now();
+  if(now-dernierBrd<160)return;
+  dernierBrd=now;
+  try{
+    canal.send({type:'broadcast',event:'pos',payload:{
+      id:idJoueur(),pseudo:e.nom||'Sans nom',niv:e.niv,biome:e.biome,
+      x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
+      bouge:joueur.pas>0,apparence:e.apparence||{},
+      compagnon:e.compagnon?e.compagnon.nom:null}});
+  }catch(x){}
+}
+/* la base ne sert plus qu'au classement et aux absents : une écriture toutes les dix secondes */
 async function envoyerPosition(force){
+  diffuser();
   if(!sb)return;
   const now=Date.now();
-  if(!force&&now-dernierEnvoi<3000)return;
-  dernierEnvoi=now;
+  if(!force&&now-dernierBase<10000)return;
+  dernierBase=now;
   try{
     await sb.from('survivants').upsert({
       id:idJoueur(),pseudo:e.nom||'Sans nom',biome:e.biome,niv:e.niv,
@@ -1201,32 +1242,68 @@ async function envoyerPosition(force){
       apparence:e.apparence||{},traits:e.traits||[],
       jours:jourNo(),score:score(),mortes:e.mortes||0,
       maj:new Date().toISOString()});
-    const {data}=await sb.from('survivants').select('*')
-      .gt('maj',new Date(now-45000).toISOString()).limit(40);
-    if(data)AUTRES=data.filter(s=>s.id!==idJoueur()&&
-      (s.biome===e.biome || s.y<CARREFOUR.y+CARREFOUR.r));   // ton monde, ou la clairière commune
   }catch(x){}
 }
-function dessinerAutres(g,camX,camY){
-  AUTRES.forEach(s=>{
-    const x=s.x-camX, y=s.y-camY;
-    if(x<-60||y<-80||x>4000||y>4000)return;
+/* interpolation : entre deux messages, les autres continuent de marcher */
+function majAutres(dt){
+  const now=Date.now();
+  AUTRES=[];
+  AUTRES_MAP.forEach((a,id)=>{
+    if(now-(a.vu||0)>12000){AUTRES_MAP.delete(id);return;}
+    const dx=a.x-a.vx, dy=a.y-a.vy, d=Math.hypot(dx,dy);
+    if(d>1.5){
+      const v=Math.min(d, Math.max(130,d*4)*dt);
+      a.vx+=dx/d*v;a.vy+=dy/d*v;
+      a.pas=(a.pas||0)+v*0.085;
+      a.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'droite':'gauche'):(dy>0?'bas':'haut');
+      a.bouge=true;
+    }else{a.vx=a.x;a.vy=a.y;a.pas=0;a.bouge=false;}
+    AUTRES.push(a);
+  });
+}
+function dessinerAutres(g,camX,camY,W,H){
+  AUTRES.forEach(s2=>{
+    const x=s2.vx-camX, y=s2.vy-camY;
+    if(x<-70||y<-90||x>(W||420)+70||y>(H||900)+90)return;
+    const ap=s2.apparence||{};
+    const bouge=s2.bouge;
+    const f=bouge?[0,1,0,2][Math.floor(s2.pas)%4]:0;
+    const bob=bouge&&f!==0?-1:0;
+    const jamb=bouge?(Math.floor(s2.pas)%4<2?1:-1):0;
+    const yb=y+bob;
+    const PEAU=PEAUX[ap.peau||0], CHEV=CHEVEUX[ap.cheveux||0],
+          VESTE=VESTES[ap.veste||0], OEIL=YEUX[ap.yeux||0],
+          COIFFE=COIFFES[ap.coiffe||0], BARBE=BARBES[ap.barbe||0];
     g.fillStyle='rgba(28,38,22,.28)';
     g.beginPath();g.ellipse(x,y+11,10,3.6,0,0,7);g.fill();
-    g.fillStyle='#231f1a';g.fillRect(x-10,y-21,20,21);
-    const ap=s.apparence||{};
-    g.fillStyle=VESTES[ap.veste||0];g.fillRect(x-9,y-20,18,19);
-    g.fillStyle='#231f1a';g.fillRect(x-8,y-36,16,16);
-    g.fillStyle=PEAUX[ap.peau||0];g.fillRect(x-7,y-35,14,14);
-    g.fillStyle=COIFFES[ap.coiffe||0]==='bonnet'?'#8a4a3a':CHEVEUX[ap.cheveux||0];
-    g.fillRect(x-8,y-38,16,7);
-    g.fillStyle=YEUX[ap.yeux||0];g.fillRect(x-4,y-30,3,3);g.fillRect(x+2,y-30,3,3);
+    g.fillStyle='#39435a';
+    g.fillRect(x-6,yb-1,5,12-Math.abs(jamb)*2);g.fillRect(x+1,yb-1,5,12-Math.abs(jamb)*2);
+    g.fillStyle='#5a3f2a';
+    g.fillRect(x-7,yb+9+Math.max(0,jamb),6,3);g.fillRect(x+1,yb+9+Math.max(0,-jamb),6,3);
+    g.fillStyle='#231f1a';g.fillRect(x-10,yb-21,20,21);
+    g.fillStyle=VESTE;g.fillRect(x-9,yb-20,18,19);
+    g.globalAlpha=.3;g.fillStyle='#fff';g.fillRect(x-9,yb-20,18,4);g.globalAlpha=1;
+    g.fillStyle=VESTE;g.fillRect(x-13,yb-19-jamb*2,4,12);g.fillRect(x+9,yb-19+jamb*2,4,12);
+    g.fillStyle=PEAU;g.fillRect(x-13,yb-8-jamb*2,4,4);g.fillRect(x+9,yb-8+jamb*2,4,4);
+    g.fillStyle='#231f1a';g.fillRect(x-8,yb-36,16,16);
+    g.fillStyle=PEAU;g.fillRect(x-7,yb-35,14,14);
+    if(BARBE!=='aucune'){g.fillStyle=CHEV;g.fillRect(x-6,yb-25,12,BARBE==='pleine'?8:4);}
+    g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;
+    if(COIFFE==='crete'){g.fillRect(x-3,yb-43,6,12);g.fillRect(x-8,yb-36,16,3);}
+    else if(COIFFE==='crane'){g.globalAlpha=.6;g.fillRect(x-8,yb-38,16,3);g.globalAlpha=1;}
+    else{g.fillRect(x-8,yb-38,16,7);
+      if(COIFFE==='longs'){g.fillRect(x-10,yb-36,3,16);g.fillRect(x+7,yb-36,3,16);}
+      if(COIFFE==='queue')g.fillRect(x+7,yb-34,4,12);}
+    if(s2.dir==='bas'){g.fillStyle=OEIL;g.fillRect(x-4,yb-30,3,3);g.fillRect(x+2,yb-30,3,3);}
+    else if(s2.dir==='haut'){g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x-8,yb-36,16,10);}
+    else{const d2=s2.dir==='droite'?1:-1;g.fillStyle=OEIL;g.fillRect(x+(d2>0?2:-5),yb-30,3,3);}
+    /* étiquette */
     g.textAlign='center';g.font='600 11px -apple-system,system-ui,Arial';
-    g.fillStyle='rgba(15,22,14,.6)';g.fillText(s.pseudo,x+1,y-42);
-    g.fillStyle='#dfe9dc';g.fillText(s.pseudo,x,y-43);
+    g.fillStyle='rgba(12,20,12,.6)';g.fillText(s2.pseudo||'?',x+1,yb-43);
+    g.fillStyle='#e6efe2';g.fillText(s2.pseudo||'?',x,yb-44);
     g.font='600 9px -apple-system,system-ui,Arial';
-    g.fillStyle=s.biome===e.biome?'#a9c0a6':'#d9b8ff';
-    g.fillText('niv '+s.niv+(s.biome===e.biome?'':' · '+(BIOMES.find(b=>b.id===s.biome)||{nom:''}).nom.toLowerCase()),x,y-31);
+    g.fillStyle=s2.biome===e.biome?'#a9c0a6':'#d9b8ff';
+    g.fillText('niv '+(s2.niv||1)+(s2.biome===e.biome?'':' · '+((BIOMES.find(b=>b.id===s2.biome)||{}).nom||'')),x,yb-32);
   });
 }
 function dessinerCarrefour(g,camX,camY){
@@ -1411,6 +1488,7 @@ $('c-retour').onclick=()=>fermerCarte();
 
 function ouvrirCarte(){
   if(!OBJETS){OBJETS=construireMonde();peuplerBetes();}
+  ouvrirCanal();
   if(e.pos){joueur.x=e.pos.x;joueur.y=e.pos.y;}
   if(bloque(joueur.x,joueur.y)){          // position héritée invalide : on repart du centre
     joueur.x=MONDE/2;joueur.y=MONDE/2;
@@ -1423,7 +1501,7 @@ function ouvrirCarte(){
     boucleCarte=requestAnimationFrame(boucle);
     const dt=Math.min(.05,(t-dernierT)/1000);dernierT=t;
     ecouler();majJoueur(dt);majBetes(dt);majCompagnon(dt);majParticules(dt);
-    envoyerPosition();
+    majAutres(dt);envoyerPosition();
     const r=cv.getBoundingClientRect();
     dessinerCarte(r.width,r.height,ctx);
     dessinerJoy();majHud();
