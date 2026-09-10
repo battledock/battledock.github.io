@@ -375,22 +375,52 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   R(-2,yT-2+Y,4,1,peauT);                      /* ombre du menton */
   R(-2,yT-2+Y,2,3-Y,peauO);
 
-  /* le crâne, ligne par ligne : plus étroit et au menton arrondi si la silhouette est fine */
   const LT=SIL.tete;                            /* demi-largeur de la tête */
-  for(let i=0;i<HT;i++){
-    let w2=LT;
-    if(i>=HT-SIL.menton)w2=LT-1;                /* le menton se resserre */
-    if(i===0)w2=LT-1;                           /* le sommet du crâne s'arrondit */
-    R(-w2-1,YT+i,(w2+1)*2,1,N);                 /* contour */
-    R(-w2,YT+i,w2*2,1,peau);
-    R(-w2,YT+i,Math.min(3,w2),1,peauO);         /* la moitié à l'ombre */
+  if(cote){
+    /* ---- de profil : le crâne a sa propre silhouette ----
+       front bombé, arête du nez qui avance, mâchoire puis menton en retrait */
+    const D2=s;                                 /* le sens du regard */
+    const profil=[            /* [recul arrière, avancée avant] ligne par ligne */
+      [LT-1,LT-2],[LT,LT-1],[LT,LT],[LT,LT+1],[LT,LT+1],
+      [LT,LT],[LT,LT-1],[LT,LT-1],[LT-1,LT-2],[LT-1,LT-3],[LT-2,LT-3]];
+    for(let i=0;i<HT;i++){
+      const pr=profil[Math.min(i,profil.length-1)];
+      const ar=pr[0], av=pr[1];
+      const g0=D2>0?-ar:-av, larg=ar+av;
+      R(g0-1,YT+i,larg+2,1,N);
+      R(g0,YT+i,larg,1,peau);
+      R(D2>0?g0:g0+larg-3,YT+i,3,1,peauO);      /* l'arrière du crâne à l'ombre */
+    }
+    /* le nez dépasse franchement */
+    R(D2>0?LT:-LT-3,YT+4,3,1,N);
+    R(D2>0?LT:-LT-2,YT+4,2,1,peau);
+    R(D2>0?LT:-LT-3,YT+5,4,1,N);
+    R(D2>0?LT:-LT-2,YT+5,3,1,peau);
+    R(D2>0?LT:-LT-3,YT+6,3,1,N);
+    R(D2>0?LT:-LT-2,YT+6,2,1,peau);
+    R(D2>0?LT+1:-LT-2,YT+6,1,1,peauT);          /* la narine */
+    /* l'oreille, au milieu du crâne */
+    R(-1,YT+5,2,3,peauO);
+    R(D2>0?-1:0,YT+6,1,1,teint(peau,-40));
+    /* la mâchoire et le front */
+    R(-LT+1,YT+HT-3,LT*2-2,1,peauO);
+    R(-LT,YT,LT*2,1,peauC);
+  }else{
+    for(let i=0;i<HT;i++){
+      let w2=LT;
+      if(i>=HT-SIL.menton)w2=LT-1;              /* le menton se resserre */
+      if(i===0)w2=LT-1;                         /* le sommet du crâne s'arrondit */
+      R(-w2-1,YT+i,(w2+1)*2,1,N);
+      R(-w2,YT+i,w2*2,1,peau);
+      R(-w2,YT+i,Math.min(3,w2),1,peauO);
+    }
+    R(-LT,YT,LT*2,1,peauC);                     /* front éclairé */
+    if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
   }
-  R(-LT,YT,LT*2,1,peauC);                       /* front éclairé */
-  if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
   if(prof){R(-LT,YT+1,LT*2,HT-1,teint(peau,-12));           /* nuque */
            R(-LT,YT+HT-3,LT*2,2,teint(peau,-30));}
   /* barbe */
-  if(!prof){
+  if(dir==='bas'){
     if(barbe==='pleine'){R(-5,YT+6,10,5,chev);R(-3,YT+10,6,2,chevO);}
     else if(barbe==='courte')R(-5,YT+7,10,4,chev);
     else if(barbe==='fine')R(-5,YT+8,10,2,chevO);
@@ -653,15 +683,22 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(boucle==='perle'){R(-ox,oy,1,1,'#f2efe4');R(ox-1,oy,1,1,'#f2efe4');}
     if(boucle==='plume'){R(ox-1,oy,1,4,'#4a7d7d');R(ox-1,oy+3,1,1,'#7fbdbd');}
   }else if(cote){
-    const dx=s>0?2:-4;
-    if(sourcil==='epais')R(dx,YT+2,2,2,chevO);else R(dx,YT+3,2,1,chevO);
-    R(dx,YT+4,2,1,ombreOeil);
-    R(dx,YT+5,2,2,blanc);
-    R(dx+(s>0?1:0),YT+5,1,2,oeil);
-    R(s>0?5:-6,YT+6,1,2,peauT);                 /* le nez dépasse du profil */
-    R(s>0?4:-5,YT+9,2,1,teint(peau,-64));       /* bouche */
-    if(boucle!=='aucune')R(s>0?-4:3,YT+7,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
-    if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
+    const av=s>0?1:-3;                          /* tout est ramené vers l'avant du visage */
+    if(sourcil==='epais')R(av,YT+2,3,2,chevO);
+    else R(av,YT+3,3,1,chevO);
+    R(av,YT+4,3,1,ombreOeil);
+    R(av,YT+5,2,2,blanc);
+    R(av+(s>0?1:0),YT+5,1,2,oeil);
+    if(fy==='doux'||fy==='ronds')R(av+(s>0?2:-1),YT+4,1,1,chevO);   /* le cil */
+    R(s>0?2:-3,YT+9,3,1,teint(peau,-64));       /* la bouche, en retrait */
+    if(bouche==='lèvres')R(s>0?2:-3,YT+9,3,1,'#b06a68');
+    if(barbe==='pleine'){R(-2,YT+6,6,5,chev);R(0,YT+10,4,2,chevO);}
+    else if(barbe==='courte')R(-2,YT+7,6,4,chev);
+    else if(barbe==='bouc')R(s>0?1:-2,YT+8,3,4,chev);
+    else if(barbe==='moustache')R(s>0?1:-3,YT+7,3,1,chev);
+    if(boucle!=='aucune')R(0,YT+8,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
+    if(marque==='fard')R(av,YT+8,3,1,'#c9707a');
+    if(marque==='cicatrice')R(av+1,YT+2,1,4,teint(peau,-46));
   }
 }
 
