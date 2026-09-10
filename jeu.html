@@ -778,9 +778,11 @@ function construireMonde(){
     const x=40+alea(g+i*3.1)*(MONDE-80), y=40+alea(g+i*5.7)*(MONDE-80);
     if(objets.some(o=>Math.abs(o.x-x)<140&&Math.abs(o.y-y)<140))continue;
     const t=alea(g+i*11);
-    objets.push({type:t<.5?'arbre':(t<.74?'rocher':(t<.92?'buisson':'herbe')),x,y,
-      w:t<.5?36:(t<.74?30:24),h:t<.5?42:24,solide:t<.74,ph:alea(g+i*17)*6,
-      taille:.8+alea(g+i*23)*.5});
+    const type=t<.5?'arbre':(t<.74?'rocher':(t<.92?'buisson':'herbe'));
+    objets.push({id:'d'+i,type,x,y,
+      w:type==='arbre'?36:(type==='rocher'?30:24),
+      h:type==='arbre'?42:24,solide:t<.74,ph:alea(g+i*17)*6,
+      taille:.8+alea(g+i*23)*.5,coups:0});
   }
   for(let i=0;i<16;i++){
     const x=90+alea(g+i*17)*(MONDE-180), y=90+alea(g+i*23)*(MONDE-180);
@@ -880,10 +882,14 @@ function majBetes(dt){
 }
 
 /* ---------- dessin ---------- */
-const pretObjet=o=>{
-  if(['arbre','rocher','buisson','herbe'].includes(o.type))return false;
-  return Date.now()>=(e.zones[o.id]||0);
+const TRAVAIL={
+  arbre:  {verbe:'Couper', coups:4, recolte:{bois:3},     repousse:[8,14],  outil:'hache', eclat:'#a8763f'},
+  rocher: {verbe:'Casser', coups:5, recolte:{pierre:3},   repousse:[10,18], outil:null,    eclat:'#9aa2a8'},
+  buisson:{verbe:'Fouiller',coups:2,recolte:{fibre:2,nourriture:1},repousse:[5,9], outil:null, eclat:'#63a84a'},
+  herbe:  {verbe:'Arracher',coups:1,recolte:{fibre:2},    repousse:[3,6],   outil:null,    eclat:'#7fb44c'}
 };
+const estDecor=o=>!!TRAVAIL[o.type];
+const pretObjet=o=>Date.now()>=(e.zones[o.id]||0);
 function bloque(x,y){
   if(x<24||x>MONDE-24||y>MONDE-24)return true;
   if(y<MONDE_HAUT+40)return true;                 // le nord s'ouvre sur le carrefour
@@ -891,7 +897,8 @@ function bloque(x,y){
     if(Math.abs(x-MONDE/2)>150)return true;
     if(y<CARREFOUR.y+CARREFOUR.r)return false;
   }
-  return OBJETS.some(o=>o.solide&&Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7);
+  return OBJETS.some(o=>o.solide&&pretObjet(o)&&
+    Math.abs(o.x-x)<o.w/2+8&&Math.abs(o.y-y)<o.h/2+7);
 }
 function teinte(h){
   if(h<5)return['rgba(16,26,44,.62)','#8fb0d8'];
@@ -924,7 +931,29 @@ function silhouetteBete(g,b,x,y,nt){
   g.fillRect(x+tx+(b.gauche?-3:1),y-h-2,1.6,1.6);
 }
 function dessinerObjet(g,o,x,y,nt){
-  const sway=Math.sin(Date.now()/1100+o.ph)*1.8;
+  let sway=Math.sin(Date.now()/1100+o.ph)*1.8;
+  if(o.secousse){
+    const dt=Date.now()-o.secousse;
+    if(dt<340)sway+=Math.sin(dt/26)*(5*(1-dt/340));
+    else o.secousse=0;
+  }
+  /* abattu : il ne reste que la souche jusqu'à la repousse */
+  if(estDecor(o)&&!pretObjet(o)){
+    g.fillStyle='rgba(28,38,22,.22)';
+    g.beginPath();g.ellipse(x+2,y+4,o.w*0.4,o.h*0.14,0,0,7);g.fill();
+    if(o.type==='arbre'){
+      g.fillStyle='#6b4a2c';g.beginPath();g.ellipse(x,y-2,9,6,0,0,7);g.fill();
+      g.fillStyle='#8a6440';g.beginPath();g.ellipse(x,y-4,7,4.6,0,0,7);g.fill();
+      g.strokeStyle='#6b4a2c';g.lineWidth=1;
+      g.beginPath();g.ellipse(x,y-4,4,2.6,0,0,7);g.stroke();
+    }else if(o.type==='rocher'){
+      g.fillStyle='#6b7278';g.beginPath();g.ellipse(x,y+1,10,5,0,0,7);g.fill();
+      g.fillStyle='#838a90';g.beginPath();g.ellipse(x-2,y-1,6,3,0,0,7);g.fill();
+    }else{
+      g.fillStyle='#4a6b3c';g.beginPath();g.ellipse(x,y+1,7,3.4,0,0,7);g.fill();
+    }
+    return;
+  }
   g.fillStyle='rgba(28,38,22,.22)';
   g.beginPath();g.ellipse(x+2,y+o.h*0.34,o.w*0.48,o.h*0.16,0,0,7);g.fill();
   const b=biome();
@@ -975,10 +1004,14 @@ function dessinerObjet(g,o,x,y,nt){
     g.fillStyle='#7d5228';g.fillRect(x-9,y+h/2-24,18,24);
     g.fillStyle='#f2d47a';g.fillRect(x+5,y+h/2-14,3,3);
   }
-  if(pretObjet(o)){
+  if(pretObjet(o)&&!estDecor(o)){
     const p=6+Math.sin(Date.now()/380)*2;
     g.fillStyle='rgba(142,211,106,.25)';g.beginPath();g.arc(x+o.w/2-2,y-o.h/2-8,p+5,0,7);g.fill();
     g.fillStyle='#8ed36a';g.beginPath();g.arc(x+o.w/2-2,y-o.h/2-8,5,0,7);g.fill();
+  }
+  if(o.coups>0){                       /* entailles visibles pendant le travail */
+    g.fillStyle='#5a3f28';
+    for(let i=0;i<o.coups;i++)g.fillRect(x-6+i*4,y-6,3,5);
   }
 }
 function dessinerJoueur(g,x,y,nt){
@@ -1143,13 +1176,51 @@ function majJoueur(dt){
   }
   procheObjet=null;let d0=78;
   OBJETS.forEach(o=>{
-    if(['arbre','rocher','buisson','herbe'].includes(o.type))return;
+    if(!o.id)return;
     const d=Math.hypot(o.x-joueur.x,o.y-joueur.y);
-    if(d<d0){d0=d;procheObjet=o;}
+    const port=estDecor(o)?58:78;                  // il faut être plus près pour travailler
+    if(d<port&&d<d0){d0=d;procheObjet=o;}
   });
   e.pos={x:Math.round(joueur.x),y:Math.round(joueur.y)};
 }
+function travailler(o){
+  const t=TRAVAIL[o.type];
+  if(!pretObjet(o))return toast('Il repousse · '+duree(Math.ceil(((e.zones[o.id]||0)-Date.now())/1000)));
+  if(e.chaleur<=0||e.soif<=0)return toast('Tu es trop faible');
+  const outilOk=t.outil&&a(t.outil);
+  const total=Math.max(1,outilOk?Math.ceil(t.coups/2):t.coups);
+  o.coups=(o.coups||0)+1;
+  o.secousse=Date.now();
+  for(let i=0;i<7;i++)PARTICULES.push({x:o.x+(Math.random()-.5)*16,y:o.y-o.h*0.3,
+    vx:(Math.random()-.5)*80,vy:-30-Math.random()*50,vie:1,t:'eclat',c:t.eclat});
+  e.faim=Math.max(0,e.faim-0.8);e.soif=Math.max(0,e.soif-1);
+  if(o.coups<total){
+    texteVolant(o.x,o.y-o.h*0.6,o.coups+'/'+total,'#e8e0c8');
+    return;
+  }
+  /* l'objet cède */
+  o.coups=0;o.tombe=Date.now();
+  const [mn,mx]=t.repousse;
+  e.zones[o.id]=Date.now()+(mn+Math.random()*(mx-mn))*60000;
+  const pris=[];
+  Object.entries(t.recolte).forEach(([k,n])=>{
+    let q=n+(Math.random()<.3?1:0)+bonusFouille(k);
+    if(outilOk)q+=1;
+    if(charge()+q>chargeMax())q=Math.max(0,chargeMax()-charge());
+    if(q>0){ajouter(k,q);pris.push(q+' '+RESSOURCES[k].nom.toLowerCase());}
+  });
+  if(!pris.length)return toast('Ton sac est plein');
+  gagnerXp(Math.max(2,total*2));
+  let dy=0;
+  Object.entries(t.recolte).forEach(([k])=>{
+    texteVolant(o.x,o.y-o.h*0.6-dy,'+'+pris.filter(p=>p.includes(RESSOURCES[k].nom.toLowerCase()))[0],'#e6f5c8');
+    dy+=16;});
+  noter(t.verbe.toLowerCase()+' : '+pris.join(', ')+'.');
+  toast(pris.join(' · '));
+  sauver();
+}
 function fouillerObjet(o){
+  if(estDecor(o))return travailler(o);
   if(!pretObjet(o))return toast('Déjà vidé · revient dans '+duree(Math.ceil(((e.zones[o.id]||0)-Date.now())/1000)));
   const avant={...e.sacs};
   if(o.zone){fouiller(o.zone);}
@@ -1474,9 +1545,19 @@ function majHud(){
   }else if(procheObjet){
     a2.classList.add('on');
     const pret=pretObjet(procheObjet);
-    a2.innerHTML=(pret?'Fouiller':'Vidé')+`<b>${procheObjet.nom||'Caisse'}</b>`;
-    a2.style.background=pret?'#63a84a':'rgba(20,28,22,.7)';
-    a2.style.color=pret?'#0f1a10':'#c9d2c2';
+    if(estDecor(procheObjet)){
+      const t=TRAVAIL[procheObjet.type];
+      const total=Math.max(1,(t.outil&&a(t.outil))?Math.ceil(t.coups/2):t.coups);
+      const noms={arbre:'Arbre',rocher:'Rocher',buisson:'Buisson',herbe:'Herbes'};
+      a2.innerHTML=(pret?t.verbe:'Repousse')+
+        `<b>${noms[procheObjet.type]}${pret?' · '+(procheObjet.coups||0)+'/'+total:''}</b>`;
+      a2.style.background=pret?'#b5763a':'rgba(20,28,22,.7)';
+      a2.style.color=pret?'#2a1a08':'#c9d2c2';
+    }else{
+      a2.innerHTML=(pret?'Fouiller':'Vidé')+`<b>${procheObjet.nom||'Caisse'}</b>`;
+      a2.style.background=pret?'#63a84a':'rgba(20,28,22,.7)';
+      a2.style.color=pret?'#0f1a10':'#c9d2c2';
+    }
   }else a2.classList.remove('on');
 }
 $('action').onclick=()=>{
