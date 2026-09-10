@@ -102,6 +102,7 @@ body{overflow:hidden}
 </div>
 
 <script type="module">
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
 const $=id=>document.getElementById(id);
 /* ================= le personnage, en pixels =================
    Proportions : 40 pixels de haut, quatre têtes.
@@ -376,51 +377,20 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   R(-2,yT-2+Y,2,3-Y,peauO);
 
   const LT=SIL.tete;                            /* demi-largeur de la tête */
-  if(cote){
-    /* ---- de profil : le crâne a sa propre silhouette ----
-       front bombé, arête du nez qui avance, mâchoire puis menton en retrait */
-    const D2=s;                                 /* le sens du regard */
-    const profil=[            /* [recul arrière, avancée avant] ligne par ligne */
-      [LT-1,LT-2],[LT,LT-1],[LT,LT],[LT,LT+1],[LT,LT+1],
-      [LT,LT],[LT,LT-1],[LT,LT-1],[LT-1,LT-2],[LT-1,LT-3],[LT-2,LT-3]];
-    for(let i=0;i<HT;i++){
-      const pr=profil[Math.min(i,profil.length-1)];
-      const ar=pr[0], av=pr[1];
-      const g0=D2>0?-ar:-av, larg=ar+av;
-      R(g0-1,YT+i,larg+2,1,N);
-      R(g0,YT+i,larg,1,peau);
-      R(D2>0?g0:g0+larg-3,YT+i,3,1,peauO);      /* l'arrière du crâne à l'ombre */
-    }
-    /* le nez dépasse franchement */
-    R(D2>0?LT:-LT-3,YT+4,3,1,N);
-    R(D2>0?LT:-LT-2,YT+4,2,1,peau);
-    R(D2>0?LT:-LT-3,YT+5,4,1,N);
-    R(D2>0?LT:-LT-2,YT+5,3,1,peau);
-    R(D2>0?LT:-LT-3,YT+6,3,1,N);
-    R(D2>0?LT:-LT-2,YT+6,2,1,peau);
-    R(D2>0?LT+1:-LT-2,YT+6,1,1,peauT);          /* la narine */
-    /* l'oreille, au milieu du crâne */
-    R(-1,YT+5,2,3,peauO);
-    R(D2>0?-1:0,YT+6,1,1,teint(peau,-40));
-    /* la mâchoire et le front */
-    R(-LT+1,YT+HT-3,LT*2-2,1,peauO);
-    R(-LT,YT,LT*2,1,peauC);
-  }else{
-    for(let i=0;i<HT;i++){
-      let w2=LT;
-      if(i>=HT-SIL.menton)w2=LT-1;              /* le menton se resserre */
-      if(i===0)w2=LT-1;                         /* le sommet du crâne s'arrondit */
-      R(-w2-1,YT+i,(w2+1)*2,1,N);
-      R(-w2,YT+i,w2*2,1,peau);
-      R(-w2,YT+i,Math.min(3,w2),1,peauO);
-    }
-    R(-LT,YT,LT*2,1,peauC);                     /* front éclairé */
-    if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
+  for(let i=0;i<HT;i++){
+    let w2=LT;
+    if(i>=HT-SIL.menton)w2=LT-1;                /* le menton se resserre */
+    if(i===0)w2=LT-1;                           /* le sommet du crâne s'arrondit */
+    R(-w2-1,YT+i,(w2+1)*2,1,N);
+    R(-w2,YT+i,w2*2,1,peau);
+    R(-w2,YT+i,Math.min(3,w2),1,peauO);
   }
+  R(-LT,YT,LT*2,1,peauC);                       /* front éclairé */
+  if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
   if(prof){R(-LT,YT+1,LT*2,HT-1,teint(peau,-12));           /* nuque */
            R(-LT,YT+HT-3,LT*2,2,teint(peau,-30));}
   /* barbe */
-  if(dir==='bas'){
+  if(!prof){
     if(barbe==='pleine'){R(-5,YT+6,10,5,chev);R(-3,YT+10,6,2,chevO);}
     else if(barbe==='courte')R(-5,YT+7,10,4,chev);
     else if(barbe==='fine')R(-5,YT+8,10,2,chevO);
@@ -683,22 +653,15 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(boucle==='perle'){R(-ox,oy,1,1,'#f2efe4');R(ox-1,oy,1,1,'#f2efe4');}
     if(boucle==='plume'){R(ox-1,oy,1,4,'#4a7d7d');R(ox-1,oy+3,1,1,'#7fbdbd');}
   }else if(cote){
-    const av=s>0?1:-3;                          /* tout est ramené vers l'avant du visage */
-    if(sourcil==='epais')R(av,YT+2,3,2,chevO);
-    else R(av,YT+3,3,1,chevO);
-    R(av,YT+4,3,1,ombreOeil);
-    R(av,YT+5,2,2,blanc);
-    R(av+(s>0?1:0),YT+5,1,2,oeil);
-    if(fy==='doux'||fy==='ronds')R(av+(s>0?2:-1),YT+4,1,1,chevO);   /* le cil */
-    R(s>0?2:-3,YT+9,3,1,teint(peau,-64));       /* la bouche, en retrait */
-    if(bouche==='lèvres')R(s>0?2:-3,YT+9,3,1,'#b06a68');
-    if(barbe==='pleine'){R(-2,YT+6,6,5,chev);R(0,YT+10,4,2,chevO);}
-    else if(barbe==='courte')R(-2,YT+7,6,4,chev);
-    else if(barbe==='bouc')R(s>0?1:-2,YT+8,3,4,chev);
-    else if(barbe==='moustache')R(s>0?1:-3,YT+7,3,1,chev);
-    if(boucle!=='aucune')R(0,YT+8,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
-    if(marque==='fard')R(av,YT+8,3,1,'#c9707a');
-    if(marque==='cicatrice')R(av+1,YT+2,1,4,teint(peau,-46));
+    const dx=s>0?2:-4;
+    if(sourcil==='epais')R(dx,YT+2,2,2,chevO);else R(dx,YT+3,2,1,chevO);
+    R(dx,YT+4,2,1,ombreOeil);
+    R(dx,YT+5,2,2,blanc);
+    R(dx+(s>0?1:0),YT+5,1,2,oeil);
+    R(s>0?5:-6,YT+6,1,2,peauT);                 /* le nez dépasse du profil */
+    R(s>0?4:-5,YT+9,2,1,teint(peau,-64));       /* bouche */
+    if(boucle!=='aucune')R(s>0?-4:3,YT+7,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
+    if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
   }
 }
 
@@ -987,26 +950,60 @@ function ouvrirLook(){
 $('b-look').onclick=ouvrirLook;
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
 
-/* ================= la porte d'entrée ================= */
+/* ================= l'entrée : on se sert du compte existant ================= */
+const sb=createClient(URL_SB,CLE_SB);
+
 async function ouvrirPorte(){
-  const champ=$('p-nom'), bouton=$('p-ok'), etat=$('p-etat');
-  etat.textContent='On regarde si tu as déjà une partie…';
-  const retrouve=await descendreDeLigne();
-  if(retrouve&&e.pseudo){
+  const etat=$('p-etat'), champ=$('p-nom'), bouton=$('p-ok');
+  etat.textContent='Un instant…';
+  let session=null;
+  try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
+
+  if(session&&session.user){
+    /* connecté : on prend l'identifiant et le nom du compte, sans rien demander */
+    e.id=session.user.id;
+    const m=session.user.user_metadata||{};
+    let nom=m.nom||m.pseudo||'';
+    if(!nom){try{nom=localStorage.getItem('bdl.nom')||'';}catch(x){}}
+    if(!nom){
+      /* le nom vit peut-être déjà dans la table des survivants */
+      try{
+        const r=await fetch(URL_SB+'/rest/v1/survivants?id=eq.'+encodeURIComponent(e.id)+'&select=pseudo',
+          {headers:sbEntetes});
+        const d2=await r.json();
+        if(Array.isArray(d2)&&d2[0]&&d2[0].pseudo)nom=d2[0].pseudo;
+      }catch(x){}
+    }
+    e.pseudo=nom||('Survivant '+e.id.slice(0,4));
+    sauver();
+    await descendreDeLigne();          /* apparence et position déjà enregistrées */
     joueur.x=e.x;joueur.y=e.y;
+    await monterEnLigne(true);
+    return entrer();
+  }
+
+  /* pas de compte : on laisse entrer en visiteur, avec un nom choisi une fois */
+  let invite=false;
+  try{invite=localStorage.getItem('bdl.invite')==='1';}catch(x){}
+  if(!invite&&!e.pseudo){
     etat.textContent='';
-    entrer();
-    return;
+    $('p-mot').textContent='Connecte-toi pour retrouver ton survivant, ou choisis un nom pour jouer en visiteur.';
+  }
+  if(e.pseudo){                        /* visiteur déjà nommé : on entre directement */
+    await descendreDeLigne();
+    joueur.x=e.x;joueur.y=e.y;
+    await monterEnLigne(true);
+    return entrer();
   }
   etat.textContent='';
-  champ.value=e.pseudo||'';
+  champ.value='';
   bouton.onclick=async()=>{
     const nom=(champ.value||'').trim().replace(/\s+/g,' ');
     if(nom.length<2)return etat.textContent='Il faut au moins deux lettres.';
     bouton.disabled=true;etat.textContent='Un instant…';
-    const libre=await nomLibre(nom);
-    if(!libre){bouton.disabled=false;return etat.textContent='Ce nom est déjà pris.';}
+    if(!await nomLibre(nom)){bouton.disabled=false;return etat.textContent='Ce nom est déjà pris.';}
     e.pseudo=nom;sauver();
+    try{localStorage.setItem('bdl.invite','1');}catch(x){}
     await monterEnLigne(true);
     entrer();
   };
@@ -1015,7 +1012,6 @@ async function ouvrirPorte(){
 function entrer(){
   $('porte').classList.add('parti');
   taille();
-  if(!e.pseudo)return;
 }
 ouvrirPorte();
 
