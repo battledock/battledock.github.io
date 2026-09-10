@@ -101,42 +101,34 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
-  /* ---- cycle de marche à huit temps ----
-     0 contact  1 amorti  2 passage  3 propulsion
-     4 contact  5 amorti  6 passage  7 propulsion            */
+  /* ---- marche souple : huit temps, mouvement discret ---- */
   const F=bouge?(Math.floor(pas)%8):-1;
   const AN={
-    /* décalage vertical du corps : il s'enfonce à l'amorti, remonte au passage */
-    corps:[0,1,-1,-1,0,1,-1,-1],
-    /* jambe gauche puis droite : position avant/arrière */
-    jg:[3,1,-2,-3,-3,-1,2,3],
-    jd:[-3,-1,2,3,3,1,-2,-3],
-    /* pliure du genou : la jambe se raccourcit au passage */
-    pg:[0,1,2,1,0,0,0,0],
-    pd:[0,0,0,0,0,1,2,1],
-    /* bras, en opposition */
-    bg:[-3,-1,2,3,3,1,-2,-3],
-    bd:[3,1,-2,-3,-3,-1,2,3],
-    /* la tête suit avec un temps de retard */
-    tete:[0,1,0,-1,0,1,0,-1],
-    /* les cheveux et le sac rebondissent */
-    reb:[0,1,1,0,0,1,1,0]
+    corps:[0,0,-1,0,0,0,-1,0],          /* à peine un pas glissé */
+    jg:[2,1,-1,-2,-2,-1,1,2],
+    jd:[-2,-1,1,2,2,1,-1,-2],
+    pg:[0,0,1,0,0,0,0,0],
+    pd:[0,0,0,0,0,0,1,0],
+    bg:[-2,-1,1,2,2,1,-1,-2],
+    bd:[2,1,-1,-2,-2,-1,1,2],
+    tete:[0,0,0,0,0,0,0,0],             /* la tête reste stable */
+    reb:[0,0,1,0,0,0,1,0]
   };
-  const souffle=bouge?0:((Date.now()/1000|0)%3===0?1:0);
-  const Y=(bouge?AN.corps[F]:souffle*1)|0;
+  const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
+  const Y=bouge?AN.corps[F]:souffle;
   const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
   const jgL=bouge?AN.pg[F]:0, jdL=bouge?AN.pd[F]:0;
   const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
-  const teteY=bouge?AN.tete[F]:0;
+  const teteY=0;
   const reb=bouge?AN.reb[F]:0;
   const contact=bouge&&(F===0||F===4);
   const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
   const s=dir==='droite'?1:-1;
+  const N='#1b1712';
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
   /* ombre : elle se resserre quand les jambes se croisent */
-  const larg=7-Math.abs(jgP)*0.3;
-  R(-larg,1,larg*2,2,'rgba(40,60,28,.42)');
-  if(contact)R(-larg-1,2,larg*2+2,1,'rgba(40,60,28,.22)');
+  R(-7,1,14,2,'rgba(40,60,28,.42)');
 
   /* sac à dos, il rebondit */
   if(sacC!=='aucun'&&!prof){
@@ -163,7 +155,7 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 
   /* torse, légèrement penché en avant quand on marche */
-  const pen=bouge?(cote?s:0):0;
+  const pen=0;                              /* pas d'inclinaison : c'est une marche calme */
   R(-8+pen,Y-19,16,13,N);
   R(-7+pen,Y-18,14,11,veste);
   R(-7+pen,Y-18,14,2,vesteC);
@@ -355,12 +347,6 @@ function dessiner(){
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW,VH);
   ctx.drawImage(SOL,camX,camY,Math.min(VW,MONDE),Math.min(VH,MONDE),
                 0,0,Math.min(VW,MONDE),Math.min(VH,MONDE));
-  POUSSIERE.forEach(p=>{
-    ctx.globalAlpha=Math.max(0,p.vie)*.5;
-    ctx.fillStyle='#c9bfa0';
-    ctx.fillRect(Math.round(p.x-camX),Math.round(p.y-camY),1,1);
-  });
-  ctx.globalAlpha=1;
   sprite(ctx,Math.round(joueur.x-camX),Math.round(joueur.y-camY),e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
 }
 
@@ -372,11 +358,7 @@ function majJoueur(dt){
     const nx=joueur.x+(joyX/n)*v, ny=joueur.y+(joyY/n)*v;
     joueur.x=Math.max(10,Math.min(MONDE-10,nx));
     joueur.y=Math.max(16,Math.min(MONDE-6,ny));
-    const avant=Math.floor(joueur.pas)%8;
-    joueur.pas+=v*0.62;                       // huit images par foulée
-    const apres=Math.floor(joueur.pas)%8;
-    if(apres!==avant&&(apres===0||apres===4))  // à chaque pose du pied
-      for(let k=0;k<2;k++)poussiere(joueur.x+(Math.random()-.5)*6,joueur.y);
+    joueur.pas+=v*0.5;                        // cadence calme
     joueur.dir=Math.abs(joyX)>Math.abs(joyY)?(joyX>0?'droite':'gauche'):(joyY>0?'bas':'haut');
   }else joueur.pas=0;
   e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);
@@ -495,7 +477,7 @@ let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoueur(dt);majPoussiere(dt);dessiner();dessinerJoy();
+  majJoueur(dt);dessiner();dessinerJoy();
 })(t0);
 setInterval(sauver,4000);
 </script>
