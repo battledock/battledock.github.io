@@ -37,7 +37,7 @@ body{overflow:hidden}
 #pan.on{display:block}
 .feuille{position:absolute;inset:0;background:linear-gradient(180deg,#96d177,#6f9e52);
   animation:m .26s cubic-bezier(.2,.85,.3,1)}
-@keyframes m{from{opacity:.5}}
+@keyframes m{from{opacity:0;transform:scale(1.04)}}
 
 /* la scène : le personnage en grand, dans la moitié haute */
 .scene{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top));height:48%;
@@ -53,8 +53,10 @@ body{overflow:hidden}
 
 /* la feuille qui remonte par-dessus */
 .tiroir{position:absolute;left:0;right:0;bottom:0;top:46%;background:var(--carte);
+  animation:mt .3s cubic-bezier(.2,.85,.3,1);
   border-radius:22px 22px 0 0;box-shadow:0 -8px 24px rgba(20,40,15,.28);
   display:flex;flex-direction:column;overflow:hidden}
+@keyframes mt{from{transform:translateY(22px);opacity:.4}}
 .poignee{width:36px;height:4px;border-radius:3px;background:#ddd9c9;margin:9px auto 5px}
 .ongs{display:flex;gap:5px;overflow-x:auto;padding:2px 12px 10px;
   border-bottom:1px solid var(--filet);scrollbar-width:none}
@@ -751,7 +753,7 @@ async function descendreDeLigne(){
   return false;
 }
 
-let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0};
+let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 
 /* ================= rendu ================= */
@@ -767,7 +769,10 @@ function taille(){
   const w=window.innerWidth, h=window.innerHeight;
   VW=Math.ceil(w/ZOOM)+1;VH=Math.ceil(h/ZOOM)+1;
   cv.width=VW*ECH;cv.height=VH*ECH;
+  /* on affiche la toile à sa taille réelle en points, sans déborder de l'écran */
   cv.style.width=(VW*ZOOM)+'px';cv.style.height=(VH*ZOOM)+'px';
+  cv.style.marginLeft=Math.round((w-VW*ZOOM)/2)+'px';
+  cv.style.marginTop=Math.round((h-VH*ZOOM)/2)+'px';
   ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
 }
@@ -794,20 +799,45 @@ function dessiner(){
   /* le personnage suit exactement le même repère : il ne bouge donc pas par rapport au sol */
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
-  sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!(joyX||joyY));
+  sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche);
 }
 
 /* ================= déplacement ================= */
+const VITESSE=55;                 /* pixels de jeu par seconde, à fond */
+let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
+let bloqueBord=false;
+
 function majJoueur(dt){
   const n=Math.hypot(joyX,joyY);
-  if(n>0.15){
-    const v=55*Math.min(1,n)*dt;              // en pixels de jeu par seconde
-    const nx=joueur.x+(joyX/n)*v, ny=joueur.y+(joyY/n)*v;
-    joueur.x=Math.max(10,Math.min(MONDE-10,nx));
-    joueur.y=Math.max(16,Math.min(MONDE-6,ny));
-    joueur.pas+=v*0.46;                       // la foulée suit, sans s'emballer
-    joueur.dir=Math.abs(joyX)>Math.abs(joyY)?(joyX>0?'droite':'gauche'):(joyY>0?'bas':'haut');
-  }else joueur.pas=0;
+  const pousse=Math.min(1,n);
+  /* 1. on accélère et on freine au lieu de sauter d'un état à l'autre */
+  const cibleX=n>0.16?(joyX/n)*VITESSE*pousse:0;
+  const cibleY=n>0.16?(joyY/n)*VITESSE*pousse:0;
+  const k=Math.min(1,dt*(n>0.16?11:16));       /* le freinage est plus vif que la relance */
+  vx+=(cibleX-vx)*k;
+  vy+=(cibleY-vy)*k;
+
+  const v=Math.hypot(vx,vy);
+  if(v>1.2){
+    const nx=joueur.x+vx*dt, ny=joueur.y+vy*dt;
+    const ax=Math.max(10,Math.min(MONDE-10,nx));
+    const ay=Math.max(16,Math.min(MONDE-6,ny));
+    /* 5. contre un bord, on n'anime plus la marche pour rien */
+    bloqueBord=(ax!==nx&&Math.abs(vx)>Math.abs(vy))||(ay!==ny&&Math.abs(vy)>=Math.abs(vx));
+    joueur.x=ax;joueur.y=ay;
+    /* 2. la cadence suit la vitesse réelle */
+    if(!bloqueBord)joueur.pas+=v*dt*0.5;
+    /* 3. une zone morte : il ne se retourne que si la direction change nettement */
+    const versX=Math.abs(vx)>Math.abs(vy)*1.35;
+    const versY=Math.abs(vy)>Math.abs(vx)*1.35;
+    if(versX)joueur.dir=vx>0?'droite':'gauche';
+    else if(versY)joueur.dir=vy>0?'bas':'haut';
+  }else{
+    vx=vy=0;bloqueBord=false;
+    /* 4. il revient à la pose debout, pieds joints */
+    joueur.pas=0;
+  }
+  joueur.marche=v>4&&!bloqueBord;
   e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);
 }
 
@@ -832,6 +862,7 @@ const pointDe=t=>[t.clientX,t.clientY];
 function prendre(x,y){
   J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
   joyX=joyY=0;
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}   /* un petit clic sous le doigt */
 }
 function tirer(x,y){
   const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
@@ -1039,17 +1070,43 @@ async function ouvrirPorte(){
 }
 function entrer(){
   $('porte').classList.add('parti');
-  taille();
+  taille();garderAllume();
+  fondu=1;                                   /* le jeu apparaît en fondu */
 }
 ouvrirPorte();
 
+/* ================= l'écran ne s'éteint pas en pleine partie ================= */
+let veilleur=null;
+async function garderAllume(){
+  try{
+    if('wakeLock' in navigator&&!veilleur){
+      veilleur=await navigator.wakeLock.request('screen');
+      veilleur.addEventListener('release',()=>{veilleur=null;});
+    }
+  }catch(x){}
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible')garderAllume();
+  else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
+});
+addEventListener('pagehide',()=>{sauver();monterEnLigne(true);});
+addEventListener('beforeunload',()=>{sauver();});
+
 /* ================= boucle ================= */
+let fondu=0;
 taille();
 let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoueur(dt);dessiner();dessinerJoy(dt);
+  majJoueur(dt);dessiner();
+  if(fondu>0){                                /* voile noir qui s'efface au départ */
+    fondu=Math.max(0,fondu-dt*1.6);
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.fillStyle='rgba(12,20,12,'+fondu.toFixed(3)+')';
+    ctx.fillRect(0,0,cv.width,cv.height);
+  }
+  dessinerJoy(dt);
 })(t0);
 setInterval(()=>{sauver();monterEnLigne();},4000);
 </script>
