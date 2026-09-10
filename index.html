@@ -3,152 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#e9e3d6">
-<title>Battle Dock · Ferme</title>
+<meta name="theme-color" content="#7ba35c">
+<title>Battle Dock · La Ferme</title>
 <style>
 :root{
-  --papier:#e9e3d6; --carte:#fffdf7; --encre:#2f3830; --doux:#8a9083; --pale:#a8a08e;
-  --filet:#e2ddcd; --vert:#2f6b1f; --vert-p:#eef4e9; --or:#b5822a;
+  --carte:#fffdf7; --encre:#2c3a26; --doux:#8a9083; --pale:#a8a08e; --filet:#e6e0d2;
+  --vert:#2f6b1f; --vert-f:#255816; --vert-p:#eef4e9;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{height:100%;overflow-x:hidden}
-body{min-height:100vh;min-height:100svh;min-height:100dvh;overflow-x:hidden;
-  display:flex;align-items:center;justify-content:center;
-  padding:max(12px,env(safe-area-inset-top)) 14px max(12px,env(safe-area-inset-bottom));
-  background:var(--papier);color:var(--encre);
+html{height:100%;overflow:hidden}
+body{height:100vh;height:100svh;height:100dvh;overflow:hidden;background:#7ba35c;color:var(--encre);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none;
+  touch-action:manipulation}
 button,input{font-family:inherit;font-size:15px}
 
-.carte-postale{width:100%;max-width:420px;background:var(--carte);border-radius:20px;
-  padding:12px 12px 0;display:flex;flex-direction:column;max-height:calc(100dvh - 24px);
-  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 3px 8px rgba(70,56,32,.10),0 26px 60px rgba(70,56,32,.28);
-  animation:monte .5s cubic-bezier(.2,.8,.3,1)}
-@keyframes monte{from{transform:translateY(18px) scale(.99);opacity:0}}
+#scene{position:fixed;inset:0;z-index:0}
+#scene svg{display:block;width:100%;height:100%}
 
-.vue{position:relative;border-radius:13px;overflow:hidden;flex:0 0 auto;height:33vh;max-height:230px;min-height:130px;
-  box-shadow:0 1px 3px rgba(70,56,32,.26)}
-.vue svg{display:block;width:100%;height:100%}
-.vue::after{content:"";position:absolute;inset:0;border-radius:13px;pointer-events:none;
-  box-shadow:inset 0 0 0 1px rgba(70,56,32,.16)}
+.plaque{position:fixed;left:26px;right:26px;top:max(16vh,92px);z-index:2;text-align:center;
+  background:rgba(253,251,244,.94);border-radius:4px;padding:22px 18px;
+  box-shadow:0 18px 40px rgba(30,40,20,.42);animation:pose .6s cubic-bezier(.2,.8,.3,1)}
+@keyframes pose{from{transform:translateY(-14px) rotate(-.6deg);opacity:0}}
+.plaque .marque{font:600 10px system-ui;letter-spacing:7px;color:var(--pale)}
+.plaque h1{font:400 40px/1 Georgia,"Times New Roman",serif;margin-top:11px;letter-spacing:-.4px}
 
-.mot{padding:18px 8px 16px;flex:1 1 auto;overflow-y:auto;overscroll-behavior:contain}
-.kicker{font:600 10px system-ui;letter-spacing:5.5px;color:var(--pale);text-align:center}
-h1{font:400 30px/1.1 Georgia,"Times New Roman",serif;text-align:center;margin-top:9px;letter-spacing:-.3px}
-.filet{width:34px;height:1px;background:#cfc4ac;margin:14px auto 16px}
+.actions{position:fixed;left:20px;right:20px;bottom:max(22px,env(safe-area-inset-bottom));z-index:2;
+  animation:remonte .6s .1s cubic-bezier(.2,.8,.3,1) backwards}
+@keyframes remonte{from{transform:translateY(20px);opacity:0}}
+.gros{width:100%;border:0;border-radius:16px;padding:16px;font-size:15.5px;font-weight:600;cursor:pointer;
+  transition:transform .07s}
+.gros:active{transform:translateY(2px)}
+.gros.vert{background:var(--vert);color:#fdfbf4;box-shadow:0 12px 28px rgba(20,40,12,.45)}
+.gros.clair{background:rgba(253,251,244,.94);color:var(--encre);margin-top:10px;
+  box-shadow:0 10px 24px rgba(30,40,20,.3)}
+.sans{display:block;width:100%;border:0;background:none;margin-top:13px;padding:6px;
+  font-size:12.5px;font-weight:600;color:#f0f4e8;text-shadow:0 1px 3px rgba(20,30,15,.55);cursor:pointer}
 
-.onglets{display:flex;gap:24px;justify-content:center;border-bottom:1px solid var(--filet);margin-bottom:16px}
-.onglets button{border:0;background:none;padding:0 0 9px;font-size:13.5px;font-weight:600;color:var(--pale);
-  border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;transition:color .15s}
-.onglets button.on{color:var(--encre);border-bottom-color:var(--vert)}
+#voile{position:fixed;inset:0;z-index:5;background:rgba(22,32,18,.5);opacity:0;pointer-events:none;
+  transition:opacity .28s}
+#voile.on{opacity:1;pointer-events:auto}
+#feuille{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--carte);
+  border-radius:24px 24px 0 0;padding:14px 18px calc(22px + env(safe-area-inset-bottom));
+  box-shadow:0 -16px 40px rgba(20,30,15,.42);transform:translateY(102%);
+  transition:transform .34s cubic-bezier(.2,.85,.3,1);max-height:92dvh;overflow-y:auto;
+  overscroll-behavior:contain}
+#feuille.on{transform:none}
+.poignee{width:42px;height:4px;border-radius:2px;background:#e0dac9;margin:0 auto 16px}
+#feuille h2{font:400 22px Georgia,serif;text-align:center}
+#feuille .sous{font:400 12.5px system-ui;color:var(--doux);text-align:center;margin-top:6px}
 
-label{display:block;font-size:11.5px;color:var(--doux);margin:0 0 5px 3px}
-.champ{display:flex;align-items:center;gap:11px;border:1px solid var(--filet);border-radius:13px;
-  padding:0 12px;margin-bottom:11px;background:#fffefa;transition:border-color .16s,box-shadow .16s}
-.champ:focus-within{border-color:var(--vert);box-shadow:0 0 0 3px rgba(47,107,31,.09)}
+label{display:block;font-size:11.5px;color:var(--doux);margin:14px 0 5px 3px}
+.champ{display:flex;align-items:center;gap:10px;border:1px solid var(--filet);border-radius:13px;
+  padding:0 12px;background:#fffefa;transition:border-color .16s,box-shadow .16s}
+.champ:focus-within{border-color:var(--vert);box-shadow:0 0 0 3px rgba(47,107,31,.1)}
 .champ input{flex:1;min-width:0;border:0;outline:none;background:none;padding:13px 0;color:var(--encre)}
 .champ input::placeholder{color:var(--pale)}
 .oeil{border:0;background:none;padding:6px;display:flex;color:var(--pale);cursor:pointer}
-.lien{display:block;width:100%;text-align:right;border:0;background:none;font-size:11.5px;color:var(--doux);
-  cursor:pointer;margin:-3px 0 2px}
-
-.entrer{width:100%;border:0;border-radius:15px;padding:15px;margin-top:12px;background:var(--vert);
-  color:#fdfbf4;font-size:15.5px;font-weight:600;cursor:pointer;
-  box-shadow:0 6px 18px rgba(47,107,31,.26);transition:transform .07s,filter .16s}
-.entrer:active{transform:translateY(2px)}
-.entrer:disabled{filter:grayscale(.4);opacity:.6}
-.sep{display:flex;align-items:center;gap:11px;margin:16px 0 12px}
-.sep i{flex:1;height:1px;background:var(--filet)}
-.sep span{font-size:11px;color:var(--pale);font-style:normal;letter-spacing:1px}
-.invite{width:100%;border:1px solid var(--filet);background:none;border-radius:13px;padding:12px;
-  font-size:13.5px;font-weight:600;color:var(--encre);cursor:pointer}
-.invite:active{background:#f6f3ea}
-.bas{text-align:center;font-size:12.5px;color:var(--doux);margin-top:14px;padding-bottom:4px}
-.bas b{color:var(--vert);font-weight:600;cursor:pointer}
-.msg{font-size:12.5px;line-height:1.5;border-radius:11px;padding:10px 12px;margin-bottom:12px;display:none}
+.oubli{display:block;width:100%;text-align:right;border:0;background:none;font-size:11.5px;
+  color:var(--doux);margin-top:9px;cursor:pointer}
+.valider{width:100%;border:0;border-radius:15px;padding:15px;margin-top:14px;background:var(--vert);
+  color:#fdfbf4;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(47,107,31,.26)}
+.valider:active{transform:translateY(2px)}
+.valider:disabled{opacity:.6}
+.bascule{text-align:center;font-size:12.5px;color:var(--doux);margin-top:13px}
+.bascule b{color:var(--vert);font-weight:600;cursor:pointer}
+.msg{font-size:12.5px;line-height:1.5;border-radius:11px;padding:10px 12px;margin-top:12px;display:none}
 .msg.on{display:block}
 .msg.err{background:#fbeceb;color:#93312a}
 .msg.ok{background:var(--vert-p);color:var(--vert)}
 
-/* animations de l'illustration */
-@keyframes derive{from{transform:translateX(-60px)}to{transform:translateX(460px)}}
-.nuage{animation:derive linear infinite}
-.nuage.n1{animation-duration:120s}
-.nuage.n2{animation-duration:170s;animation-delay:-60s}
-.nuage.n3{animation-duration:210s;animation-delay:-120s}
-@keyframes monteFumee{0%{transform:translate(0,0) scale(.7);opacity:.55}
-  100%{transform:translate(-7px,-26px) scale(1.9);opacity:0}}
-.fumee circle{animation:monteFumee 5s ease-out infinite}
-.fumee circle.f2{animation-delay:2.5s}
-@keyframes balance{0%,100%{transform:rotate(-2.2deg)}50%{transform:rotate(2.2deg)}}
-.epi{animation:balance 4.4s ease-in-out infinite}
+@keyframes ombreNuage{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,12px)}}
+.ombre-nuage{animation:ombreNuage 26s ease-in-out infinite}
 
-@media (max-height:700px){
-  .vue{height:26vh;min-height:112px}
-  .mot{padding:14px 6px 12px}
-  h1{font-size:25px}
-  .filet{margin:11px auto 13px}
-  .champ{margin-bottom:9px}
-  .champ input{padding:11px 0}
-  .entrer{padding:13px;margin-top:9px}
-  .sep{margin:12px 0 9px}
-}
-@media (max-height:590px){
-  .vue{display:none}
-  .sep,.invite{display:none}
+@media (max-height:660px){
+  .plaque{top:max(10vh,62px);padding:16px 14px}
+  .plaque h1{font-size:32px}
 }
 </style>
 </head>
 <body>
-<div class="carte-postale">
-  <div class="vue" id="vue"></div>
-  <div class="mot">
-    <div class="kicker">BATTLE DOCK</div>
-    <h1>La ferme</h1>
-    <div class="filet"></div>
+<div id="scene"></div>
 
-    <div class="onglets">
-      <button id="t-co" class="on">Connexion</button>
-      <button id="t-in">Inscription</button>
-    </div>
-
-    <div class="msg" id="msg"></div>
-
-    <div id="bloc-ferme" style="display:none">
-      <label for="pseudo">Nom de ta ferme</label>
-      <div class="champ">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>
-        <input id="pseudo" maxlength="24" autocomplete="nickname" placeholder="Les Trois Chênes">
-      </div>
-    </div>
-
-    <label for="email">Adresse e-mail</label>
-    <div class="champ">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round">
-        <circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.6-4 4.4-6 7.5-6s5.9 2 7.5 6"/></svg>
-      <input id="email" type="email" autocomplete="email" placeholder="toi@exemple.fr">
-    </div>
-
-    <label for="mdp">Mot de passe</label>
-    <div class="champ">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round">
-        <rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
-      <input id="mdp" type="password" autocomplete="current-password" placeholder="••••••••">
-      <button class="oeil" id="oeil" aria-label="Afficher le mot de passe">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
-          <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>
-      </button>
-    </div>
-
-    <button class="lien" id="oubli">Mot de passe oublié ?</button>
-    <button class="entrer" id="valider">Entrer</button>
-
-    <div class="sep"><i></i><span>OU</span><i></i></div>
-    <button class="invite" id="invite">Jouer sans compte</button>
-    <div class="bas" id="bascule">Première visite ? <b>Créer une ferme</b></div>
-  </div>
+<div class="plaque">
+  <div class="marque">BATTLE DOCK</div>
+  <h1>La Ferme</h1>
 </div>
+
+<div class="actions">
+  <button class="gros vert" id="b-entrer">Entrer dans ma ferme</button>
+  <button class="gros clair" id="b-creer">Créer une ferme</button>
+  <button class="sans" id="b-invite">jouer sans compte</button>
+</div>
+
+<div id="voile"></div>
+<div id="feuille"><div class="poignee"></div><div id="feuille-b"></div></div>
 
 <script type="module">
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -156,188 +105,193 @@ const sb=createClient('https://zpfkekiavlfphialvphi.supabase.co',
                       'sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP');
 const $=id=>document.getElementById(id);
 
-function ILLUSTRATION(){
-  const R=(a,b,s)=>{const v=Math.sin(s*127.1+a*311.7+b*74.7)*43758.5;return v-Math.floor(v);};
-
-  /* --- rangs de culture en perspective : chaque bande se resserre vers l'horizon --- */
-  let rangs='';
-  for(let i=0;i<26;i++){
-    const t=i/25;
-    const y=176+Math.pow(t,1.7)*104;              // espacement qui s'ouvre vers le bas
-    const ep=0.6+t*2.6;
-    const dec=Math.sin(t*3.1)*6;
-    rangs+=`<path d="M${-20+dec} ${y} Q200 ${y-7+dec*.6} ${420+dec} ${y-3}" stroke="rgba(108,142,74,${0.16+t*0.30})" stroke-width="${ep}" fill="none"/>`;
+/* ================= la vue du ciel ================= */
+function SCENE(){
+  const A=(a,b,s)=>{const v=Math.sin(a*127.1+b*311.7+s*74.7)*43758.5;return v-Math.floor(v);};
+  const H=860;                        // hauteur de référence
+  /* bandes de parcelles : deux colonnes, cinq rangées, bords irréguliers */
+  const yG=[-10,132,286,438,590,742,H+20];   // limites côté gauche
+  const yD=[-10,108,258,412,566,720,H+20];   // limites côté droit
+  const xM=[186,152,168,186,204,214,222];    // ligne de séparation centrale
+  const teintes=[['#c9ad63','p1'],['#8fae5e','p2'],['#a3843f','p3'],['#d8c07e','p1'],
+                 ['#8aa85a','p2'],['#6f9a4e','p3'],['#c2a05a','p1'],['#9cb867','p2'],
+                 ['#7f9c52','p3'],['#b59a56','p1']];
+  let parcelles='';
+  for(let r=0;r<6;r++){
+    const [cg,pg]=teintes[(r*2)%teintes.length];
+    const [cd,pd]=teintes[(r*2+1)%teintes.length];
+    parcelles+=`<path d="M-14 ${yG[r]} L${xM[r]} ${yG[r]-((yG[r]-yD[r])*0)} L${xM[r+1]} ${yG[r+1]} L-14 ${yG[r+1]}Z" fill="${cg}"/>
+      <path d="M-14 ${yG[r]} L${xM[r]} ${yG[r]} L${xM[r+1]} ${yG[r+1]} L-14 ${yG[r+1]}Z" fill="url(#${pg})"/>
+      <path d="M${xM[r]} ${yG[r]} L414 ${yD[r]} L414 ${yD[r+1]} L${xM[r+1]} ${yG[r+1]}Z" fill="${cd}"/>
+      <path d="M${xM[r]} ${yG[r]} L414 ${yD[r]} L414 ${yD[r+1]} L${xM[r+1]} ${yG[r+1]}Z" fill="url(#${pd})"/>`;
   }
-  /* --- épis du premier plan, dessinés un par un --- */
-  let epis='';
-  for(let i=0;i<46;i++){
-    const x=-10+i*9.2+R(i,1,3)*6;
-    const h=26+R(i,2,7)*26;
-    const base=302;
-    const pen=(R(i,3,11)-0.5)*10;
-    const vert=`hsl(${72+R(i,4,13)*18} ${30+R(i,5,17)*18}% ${28+R(i,6,19)*14}%)`;
-    epis+=`<g class="epi" style="animation-delay:${(-R(i,7,23)*4).toFixed(2)}s;transform-origin:${x}px ${base}px">
-      <path d="M${x} ${base} Q${x+pen*.4} ${base-h*.6} ${x+pen} ${base-h}" stroke="${vert}" stroke-width="1.9" fill="none" stroke-linecap="round"/>
-      <ellipse cx="${(x+pen).toFixed(1)}" cy="${(base-h-4).toFixed(1)}" rx="2.6" ry="5.4" fill="hsl(${44+R(i,8,29)*10} ${52+R(i,9,31)*14}% ${54+R(i,10,37)*10}%)" transform="rotate(${(pen*1.4).toFixed(1)} ${(x+pen).toFixed(1)} ${(base-h-4).toFixed(1)})"/>
-      </g>`;
+  /* haies : les limites en vert foncé, plus un semis de buissons dessus */
+  let haies='';
+  for(let r=1;r<6;r++){
+    haies+=`<path d="M-14 ${yG[r]} L${xM[r]} ${yG[r]} L414 ${yD[r]}" stroke="#4f6b3a" stroke-width="5" fill="none" opacity=".85"/>`;
+    for(let i=0;i<9;i++){
+      const t=i/8, x=-14+t*428;
+      const yy=(x<xM[r]) ? yG[r] : yG[r]+(x-xM[r])/(414-xM[r])*(yD[r]-yG[r]);
+      haies+=`<circle cx="${x.toFixed(0)}" cy="${(yy+A(i,r,3)*4-2).toFixed(0)}" r="${(3.4+A(i,r,7)*2.6).toFixed(1)}" fill="#456035" opacity=".9"/>`;
+    }
   }
-  /* --- feuillage : amas de cercles pour un houppier crédible --- */
-  const houppier=(cx,cy,s,c1,c2,c3)=>{
-    let g='';
-    const amas=[[0,-s*.55,s*.62],[-s*.5,-s*.2,s*.46],[s*.5,-s*.25,s*.44],[-s*.2,-s*.75,s*.4],[s*.25,-s*.7,s*.38],[0,-s*.15,s*.55]];
-    amas.forEach(([dx,dy,r],i)=>{g+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${r}" fill="${i<2?c1:(i<4?c2:c3)}"/>`;});
-    return g;
-  };
-  /* --- piquets de clôture le long du chemin --- */
-  let cloture='';
-  for(let i=0;i<11;i++){
-    const t=i/10;
-    const x=18+t*370, y=236+Math.pow(t,1.6)*44, h=9+t*13;
-    cloture+=`<rect x="${x}" y="${y-h}" width="${1.6+t*2.2}" height="${h}" rx="1" fill="#7d6a4a" opacity="${0.5+t*0.4}"/>`;
-    if(i<10)cloture+=`<path d="M${x} ${y-h*0.72} L${18+((i+1)/10)*370} ${236+Math.pow((i+1)/10,1.6)*44-(9+((i+1)/10)*13)*0.72}" stroke="#7d6a4a" stroke-width="${0.8+t*1.2}" opacity="${0.35+t*0.35}"/>`;
-  }
+  haies+=`<path d="M186 -14 L152 132 L168 286 L186 438 L204 590 L214 742 L222 ${H+20}" stroke="#4f6b3a" stroke-width="5" fill="none" opacity=".85"/>`;
+  /* chemin de terre en diagonale, avec ornières */
+  const chemin=`
+    <path d="M-18 118 Q120 214 214 372 Q308 528 424 640 L424 690 Q292 572 190 402 Q96 244 -18 152Z" fill="#d9c9a2"/>
+    <path d="M-18 132 Q118 224 210 378 Q302 530 424 652" stroke="#c8b489" stroke-width="3.4" fill="none" opacity=".75"/>
+    <path d="M-18 146 Q116 236 204 386 Q296 536 424 664" stroke="#cbb78d" stroke-width="2.4" fill="none" opacity=".55"/>`;
+  /* bosquets dispersés */
+  let bois='';
+  const amas=[[62,352],[96,372],[336,470],[358,492],[78,652],[318,196],[300,686]];
+  amas.forEach(([x,y],i)=>{
+    bois+=`<g><ellipse cx="${x+3}" cy="${y+9}" rx="17" ry="7" fill="rgba(30,45,20,.2)"/>
+      <circle cx="${x}" cy="${y}" r="${11+A(i,1,5)*4}" fill="#4f7a44"/>
+      <circle cx="${x+12}" cy="${y+8}" r="${8+A(i,2,9)*3}" fill="#598a4c"/>
+      <circle cx="${x-10}" cy="${y+7}" r="${7+A(i,3,11)*3}" fill="#446b3c"/></g>`;
+  });
+  /* la ferme, vue de dessus */
+  const ferme=`
+   <g>
+     <ellipse cx="272" cy="176" rx="46" ry="12" fill="rgba(35,50,22,.2)"/>
+     <g transform="rotate(-7 272 152)">
+       <rect x="240" y="126" width="64" height="46" rx="3" fill="#b64f34"/>
+       <rect x="240" y="126" width="64" height="10" rx="3" fill="#d2694a"/>
+       <rect x="268" y="126" width="8" height="46" fill="#9c422b" opacity=".7"/>
+       <rect x="246" y="176" width="52" height="7" rx="2" fill="#c9bda0"/>
+     </g>
+     <g transform="rotate(-7 322 186)">
+       <rect x="306" y="170" width="34" height="28" rx="3" fill="#9a7f5e"/>
+       <rect x="306" y="170" width="34" height="7" rx="3" fill="#b39a72"/>
+     </g>
+     <circle cx="236" cy="196" r="10" fill="#6f8f50"/>
+     <ellipse cx="300" cy="210" rx="18" ry="13" fill="#7fa055"/>
+     <rect x="316" y="140" width="16" height="16" rx="8" fill="#d9d3c4"/>
+   </g>`;
+  /* la mare */
+  const mare=`
+   <g><ellipse cx="118" cy="536" rx="38" ry="21" fill="#4f93b4"/>
+     <ellipse cx="118" cy="532" rx="29" ry="14" fill="#68adc9" opacity=".8"/>
+     <ellipse cx="106" cy="527" rx="10" ry="4" fill="#a8d6e6" opacity=".55"/>
+     <ellipse cx="118" cy="556" rx="38" ry="7" fill="#5f7f3f" opacity=".35"/></g>`;
+  /* troupeau */
+  let betes='';
+  [[196,650],[210,664],[184,668],[228,646]].forEach(([x,y],i)=>{
+    betes+=`<g><ellipse cx="${x+2}" cy="${y+4}" rx="7" ry="3" fill="rgba(30,45,20,.22)"/>
+      <ellipse cx="${x}" cy="${y}" rx="6.5" ry="4" fill="#f4f1e6"/>
+      <ellipse cx="${x-3}" cy="${y-1}" rx="2.6" ry="1.8" fill="#4a4a52"/></g>`;
+  });
 
   return `
-<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<svg viewBox="0 0 400 860" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
  <defs>
-  <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#8fb8d4"/><stop offset=".38" stop-color="#c9dce4"/>
-    <stop offset=".68" stop-color="#f3e0c0"/><stop offset="1" stop-color="#f7d9a8"/></linearGradient>
-  <radialGradient id="halo" cx=".5" cy=".5" r=".5">
-    <stop offset="0" stop-color="#fff6d8" stop-opacity=".95"/>
-    <stop offset=".45" stop-color="#ffe6a8" stop-opacity=".45"/>
-    <stop offset="1" stop-color="#ffdf9a" stop-opacity="0"/></radialGradient>
-  <linearGradient id="pre1" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#a9c98a"/><stop offset="1" stop-color="#8fb672"/></linearGradient>
-  <linearGradient id="pre2" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#8cb46c"/><stop offset="1" stop-color="#6f9c56"/></linearGradient>
-  <linearGradient id="champ" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#d8c07e"/><stop offset="1" stop-color="#c2a760"/></linearGradient>
-  <linearGradient id="toit" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#d0714f"/><stop offset="1" stop-color="#a94f36"/></linearGradient>
-  <filter id="doux"><feGaussianBlur stdDeviation="3"/></filter>
+  <pattern id="p1" width="7" height="7" patternTransform="rotate(24)" patternUnits="userSpaceOnUse">
+    <rect width="7" height="3.2" fill="rgba(0,0,0,.075)"/></pattern>
+  <pattern id="p2" width="6" height="6" patternTransform="rotate(-38)" patternUnits="userSpaceOnUse">
+    <rect width="6" height="2.6" fill="rgba(0,0,0,.085)"/></pattern>
+  <pattern id="p3" width="9" height="9" patternTransform="rotate(70)" patternUnits="userSpaceOnUse">
+    <rect width="9" height="3.6" fill="rgba(0,0,0,.065)"/></pattern>
+  <radialGradient id="lum" cx=".28" cy=".16" r=".95">
+    <stop offset="0" stop-color="rgba(255,246,206,.34)"/><stop offset="1" stop-color="rgba(255,246,206,0)"/></radialGradient>
+  <radialGradient id="vign" cx=".5" cy=".45" r=".82">
+    <stop offset=".48" stop-color="rgba(0,0,0,0)"/><stop offset="1" stop-color="rgba(28,40,18,.42)"/></radialGradient>
   <filter id="grain">
     <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/>
     <feColorMatrix type="saturate" values="0"/>
-    <feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
-  <radialGradient id="vign" cx=".5" cy=".45" r=".78">
-    <stop offset=".55" stop-color="rgba(0,0,0,0)"/><stop offset="1" stop-color="rgba(60,45,25,.22)"/></radialGradient>
+    <feComponentTransfer><feFuncA type="linear" slope=".12"/></feComponentTransfer></filter>
  </defs>
-
- <rect width="400" height="300" fill="url(#ciel)"/>
-
- <!-- soleil bas, halo large -->
- <circle cx="298" cy="112" r="96" fill="url(#halo)"/>
- <circle cx="298" cy="112" r="21" fill="#fff3cf"/>
- <circle cx="298" cy="112" r="21" fill="none" stroke="#ffe9ae" stroke-width="6" opacity=".55" filter="url(#doux)"/>
-
- <!-- nuages en bandes, deux vitesses -->
- <g class="nuage n1" opacity=".92" fill="#fdfaf3">
-   <ellipse cx="70" cy="46" rx="42" ry="9"/><ellipse cx="96" cy="39" rx="26" ry="10"/>
-   <ellipse cx="44" cy="42" rx="20" ry="7"/></g>
- <g class="nuage n2" opacity=".7" fill="#fdfaf3">
-   <ellipse cx="250" cy="30" rx="34" ry="7"/><ellipse cx="270" cy="25" rx="20" ry="8"/></g>
- <g class="nuage n3" opacity=".55" fill="#fdfaf3">
-   <ellipse cx="150" cy="66" rx="30" ry="6"/><ellipse cx="168" cy="62" rx="18" ry="6.5"/></g>
-
- <!-- reliefs lointains, perspective atmosphérique -->
- <path d="M-10 150 Q60 122 130 142 Q200 162 270 138 Q330 118 410 146 L410 190 L-10 190Z" fill="#9fb6b0" opacity=".55"/>
- <path d="M-10 158 Q70 138 150 156 Q230 174 300 152 Q360 134 410 158 L410 200 L-10 200Z" fill="#8aa894" opacity=".7"/>
-
- <!-- rideau d'arbres à l'horizon -->
- <g opacity=".9">
-   ${[18,52,86,118,150,182,214,246,278,310,342,376].map((x,i)=>{
-     const s=9+((i*7)%5);
-     return `<g>${houppier(x,172,s,'#6e8f63','#5f8156','#527247')}<rect x="${x-1.4}" y="168" width="2.8" height="9" fill="#5a4a34"/></g>`;
-   }).join('')}
- </g>
-
- <!-- prairies -->
- <path d="M-10 176 Q100 166 200 178 Q300 190 410 174 L410 210 L-10 210Z" fill="url(#pre1)"/>
- <path d="M-10 196 Q110 186 210 200 Q310 214 410 196 L410 240 L-10 240Z" fill="url(#pre2)"/>
-
- <!-- champ de blé au centre, avec ses rangs -->
- <path d="M-10 206 Q120 196 250 210 Q330 218 410 206 L410 300 L-10 300Z" fill="url(#champ)"/>
- <g>${rangs}</g>
-
- <!-- ferme -->
- <g>
-   <ellipse cx="118" cy="196" rx="46" ry="7" fill="rgba(70,60,35,.16)"/>
-   <!-- grange -->
-   <rect x="86" y="158" width="64" height="38" rx="2" fill="#f6ecd8"/>
-   <rect x="86" y="158" width="64" height="4" fill="#fffaf0"/>
-   <rect x="86" y="188" width="64" height="8" fill="#e2d4ba"/>
-   <path d="M80 160 L118 134 L156 160 Z" fill="url(#toit)"/>
-   <path d="M80 160 L118 134 L118 160 Z" fill="#e0855f" opacity=".55"/>
-   <rect x="78" y="158" width="80" height="4" rx="1.5" fill="#8a5a2e"/>
-   <rect x="110" y="176" width="16" height="20" rx="1.5" fill="#a8703a"/>
-   <rect x="112" y="178" width="12" height="18" fill="#c08a52"/>
-   <rect x="93" y="167" width="12" height="10" rx="1.5" fill="#bcd9e6"/>
-   <rect x="131" y="167" width="12" height="10" rx="1.5" fill="#bcd9e6"/>
-   <rect x="140" y="133" width="7" height="14" fill="#b5624a"/>
-   <g class="fumee" fill="#fdfaf3" opacity=".55">
-     <circle cx="143" cy="128" r="4"/><circle class="f2" cx="143" cy="128" r="3.4"/>
-   </g>
-   <!-- petite remise -->
-   <rect x="160" y="176" width="30" height="20" rx="2" fill="#efe2c8"/>
-   <path d="M156 178 L175 166 L194 178 Z" fill="#9a7f5e"/>
-   <rect x="171" y="186" width="9" height="10" fill="#a8703a"/>
-   <!-- silo -->
-   <rect x="196" y="164" width="14" height="32" rx="7" fill="#d9d3c4"/>
-   <path d="M196 172 q7 -10 14 0" fill="#b9b3a4"/>
-   <rect x="196" y="180" width="14" height="1.6" fill="#c2bcae"/>
-   <rect x="196" y="188" width="14" height="1.6" fill="#c2bcae"/>
- </g>
-
- <!-- arbres isolés, plus près -->
- <g><rect x="298" y="186" width="5" height="18" fill="#6b5334"/>${houppier(300,190,17,'#77a065','#658c57','#57794a')}</g>
- <g><rect x="344" y="196" width="4" height="14" fill="#6b5334"/>${houppier(346,200,12,'#7fa96b','#6b915b','#5c7f4e')}</g>
-
- <!-- chemin qui s'ouvre vers le bas -->
- <path d="M182 206 Q176 250 128 300 L268 300 Q216 250 210 206 Z" fill="#d9c49a"/>
- <path d="M182 206 Q176 250 128 300 L152 300 Q192 248 192 206 Z" fill="#e3d1ab" opacity=".8"/>
- <g opacity=".5">${[0,1,2,3,4,5].map(i=>{const t=i/5,y=214+t*t*80;
-   return `<ellipse cx="${196-t*10}" cy="${y}" rx="${2+t*4}" ry="${1+t*1.6}" fill="#bfa madeup"/>`;}).join('').replace(/bfa madeup/g,'bfa87e')}</g>
- ${cloture}
-
-
- <!-- premier plan : herbes et épis -->
- <path d="M-10 286 Q80 272 170 288 Q260 304 410 282 L410 300 L-10 300Z" fill="#7d9a58"/>
- <g>${epis}</g>
-
- <rect width="400" height="300" fill="url(#vign)"/>
- <rect width="400" height="300" filter="url(#grain)" opacity=".55" style="mix-blend-mode:multiply"/>
+ <rect width="400" height="860" fill="#7ba35c"/>
+ ${parcelles}
+ ${haies}
+ ${chemin}
+ ${bois}
+ ${ferme}
+ ${mare}
+ ${betes}
+ <g class="ombre-nuage" opacity=".15">
+   <ellipse cx="150" cy="330" rx="130" ry="66" fill="#1e2a16"/>
+   <ellipse cx="250" cy="292" rx="86" ry="44" fill="#1e2a16"/>
+   <ellipse cx="96" cy="386" rx="70" ry="36" fill="#1e2a16"/></g>
+ <rect width="400" height="860" fill="url(#lum)"/>
+ <rect width="400" height="860" fill="url(#vign)"/>
+ <rect width="400" height="860" filter="url(#grain)" opacity=".5" style="mix-blend-mode:multiply"/>
 </svg>`;
 }
+$('scene').innerHTML=SCENE();
 
-
-$('vue').innerHTML=ILLUSTRATION();
-
+/* ================= la feuille ================= */
 let mode='co';
-const afficher=(t,type)=>{const m=$('msg');m.textContent=t;m.className='msg on '+(type||'');};
-const cacher=()=>{$('msg').className='msg';};
-function basculer(m){
-  mode=m;cacher();
-  $('t-co').classList.toggle('on',m==='co');
-  $('t-in').classList.toggle('on',m==='in');
-  $('bloc-ferme').style.display=m==='in'?'block':'none';
-  $('oubli').style.display=m==='co'?'block':'none';
-  $('valider').textContent=m==='co'?'Entrer':'Créer ma ferme';
-  $('mdp').autocomplete=m==='co'?'current-password':'new-password';
-  $('bascule').innerHTML=m==='co'?'Première visite ? <b>Créer une ferme</b>'
-                                 :'Déjà un compte ? <b>Se connecter</b>';
-}
-$('t-co').onclick=()=>basculer('co');
-$('t-in').onclick=()=>basculer('in');
-$('bascule').onclick=()=>basculer(mode==='co'?'in':'co');
-$('oeil').onclick=()=>{const c=$('mdp');c.type=c.type==='password'?'text':'password';};
+const champEmail=`<label for="email">Adresse e-mail</label>
+  <div class="champ">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round">
+      <circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.6-4 4.4-6 7.5-6s5.9 2 7.5 6"/></svg>
+    <input id="email" type="email" autocomplete="email" placeholder="toi@exemple.fr"></div>`;
+const champMdp=(neuf)=>`<label for="mdp">Mot de passe</label>
+  <div class="champ">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round">
+      <rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>
+    <input id="mdp" type="password" autocomplete="${neuf?'new-password':'current-password'}" placeholder="••••••••">
+    <button class="oeil" id="oeil" aria-label="Afficher">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9">
+        <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>
+    </button></div>`;
 
-$('valider').onclick=async()=>{
-  const email=$('email').value.trim(), mdp=$('mdp').value, ferme=$('pseudo').value.trim();
+function ouvrir(m){
+  mode=m;
+  $('feuille-b').innerHTML = m==='co'
+   ? `<h2>Content de te revoir</h2><div class="sous">Entre pour reprendre ta ferme</div>
+      ${champEmail}${champMdp(false)}
+      <button class="oubli" id="oubli">Mot de passe oublié ?</button>
+      <div class="msg" id="msg"></div>
+      <button class="valider" id="valider">Entrer</button>
+      <div class="bascule">Pas encore de ferme ? <b id="vers-in">En créer une</b></div>`
+   : `<h2>Une nouvelle ferme</h2><div class="sous">Choisis son nom, il s’affichera partout</div>
+      <label for="ferme">Nom de la ferme</label>
+      <div class="champ">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#a8a08e" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>
+        <input id="ferme" maxlength="24" placeholder="Les Trois Chênes"></div>
+      ${champEmail}${champMdp(true)}
+      <div class="msg" id="msg"></div>
+      <button class="valider" id="valider">Créer ma ferme</button>
+      <div class="bascule">Déjà une ferme ? <b id="vers-co">Se connecter</b></div>`;
+  $('voile').classList.add('on');$('feuille').classList.add('on');
+  brancher();
+  setTimeout(()=>{const c=$(m==='co'?'email':'ferme');if(c)c.focus();},340);
+}
+function fermer(){$('voile').classList.remove('on');$('feuille').classList.remove('on');}
+$('voile').onclick=fermer;
+$('b-entrer').onclick=()=>ouvrir('co');
+$('b-creer').onclick=()=>ouvrir('in');
+$('b-invite').onclick=()=>{try{localStorage.setItem('bdl.invite','1');}catch(x){}location.href='jeu.html';};
+
+const afficher=(t,type)=>{const m=$('msg');if(!m)return;m.textContent=t;m.className='msg on '+(type||'');};
+const cacher=()=>{const m=$('msg');if(m)m.className='msg';};
+
+function brancher(){
+  const oe=$('oeil');
+  if(oe)oe.onclick=()=>{const c=$('mdp');c.type=c.type==='password'?'text':'password';};
+  const vi=$('vers-in');if(vi)vi.onclick=()=>ouvrir('in');
+  const vc=$('vers-co');if(vc)vc.onclick=()=>ouvrir('co');
+  const ou=$('oubli');
+  if(ou)ou.onclick=async()=>{
+    const email=($('email').value||'').trim();
+    if(!email)return afficher('Écris ton adresse, je t’envoie un lien.','err');
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin});
+    afficher(error?('Échec : '+error.message):'Lien de réinitialisation envoyé.',error?'err':'ok');
+  };
+  $('valider').onclick=valider;
+  [$('email'),$('mdp'),$('ferme')].forEach(c=>{if(c)c.addEventListener('keydown',ev=>{
+    if(ev.key==='Enter')valider();});});
+}
+
+async function valider(){
+  const email=($('email').value||'').trim(), mdp=$('mdp').value;
+  const ferme=$('ferme')?$('ferme').value.trim():'';
   if(!email||!mdp)return afficher('Il manque l’adresse ou le mot de passe.','err');
   if(mode==='in'&&ferme.length<3)return afficher('Donne un nom d’au moins 3 lettres à ta ferme.','err');
   if(mode==='in'&&mdp.length<8)return afficher('Le mot de passe doit faire au moins 8 caractères.','err');
-  const b=$('valider');b.disabled=true;b.textContent='Un instant…';cacher();
+  const b=$('valider');b.disabled=true;const av=b.textContent;b.textContent='Un instant…';cacher();
   try{
     if(mode==='co'){
       const {error}=await sb.auth.signInWithPassword({email,password:mdp});
@@ -347,24 +301,16 @@ $('valider').onclick=async()=>{
       if(error)throw error;
       if(data.session){location.href='jeu.html';return;}
       afficher('Ferme créée. Confirme ton adresse par e-mail, puis connecte-toi.','ok');
-      basculer('co');
     }
   }catch(err){
     const t=(err&&err.message)||'';
     afficher(/Invalid login/i.test(t)?'Adresse ou mot de passe incorrect.':
       /already registered/i.test(t)?'Cette adresse a déjà une ferme.':
       'Ça n’a pas marché : '+t,'err');
-  }finally{b.disabled=false;b.textContent=mode==='co'?'Entrer':'Créer ma ferme';}
-};
-$('oubli').onclick=async()=>{
-  const email=$('email').value.trim();
-  if(!email)return afficher('Écris ton adresse, je t’envoie un lien.','err');
-  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin});
-  afficher(error?('Échec : '+error.message):'Lien de réinitialisation envoyé.',error?'err':'ok');
-};
-$('invite').onclick=()=>{try{localStorage.setItem('bdl.invite','1');}catch(x){}location.href='jeu.html';};
-document.addEventListener('keydown',ev=>{if(ev.key==='Enter')$('valider').click();});
-sb.auth.getSession().then(({data})=>{if(data.session)location.href='jeu.html';});
+  }finally{b.disabled=false;b.textContent=av;}
+}
+
+sb.auth.getSession().then(({data})=>{if(data&&data.session)location.href='jeu.html';});
 </script>
 </body>
 </html>
