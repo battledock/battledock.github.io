@@ -3,1335 +3,509 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#24406b">
-<title>Ta ferme</title>
+<meta name="theme-color" content="#1f2a24">
+<title>Survivre</title>
 <style>
-:root{
-  --nuit:#24406b; --nuit2:#2b4a78; --nuit-f:#14213f;
-  --vert:#2f6b1f; --vert-c:#63a84a; --vert-p:#eef4e9;
-  --or:#b5822a; --or-p:#f7efdd;
-  --carte:#fffdf9; --fond:#f2f0e8; --encre:#1e2735; --doux:#93a1b5; --pale:#a5adba;
-  --filet:#e4e2d8; --papier:#e9e3d6;
-}
+:root{--fond:#f1efe7;--carte:#fffdf8;--encre:#1f2620;--doux:#8a9083;--pale:#a8ab9e;
+  --filet:#e4e2d6;--vert:#3f7d4a;--vert-c:#63a84a;--or:#b5822a;--rouge:#b8503c;--nuit:#1f2a24}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;overflow:hidden}
 body{background:var(--fond);color:var(--encre);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
 button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
-.app{display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
-body.fige{overflow:hidden;position:fixed;inset:0;width:100%}
-
-/* ---------- bandeau ---------- */
-.haut{flex:0 0 auto;position:relative;z-index:6;overflow:hidden;
-  padding:calc(15px + env(safe-area-inset-top)) 15px 24px;
-  box-shadow:0 2px 16px rgba(120,85,40,.18)}
-.haut .ciel{position:absolute;inset:0;width:100%;height:100%}
-.haut .dedans{position:relative}
-.haut .kicker{font:600 8.5px system-ui;letter-spacing:3.4px;color:#a9814a}
-.haut .ligne1{display:flex;align-items:baseline;gap:10px;margin-top:4px}
-.haut h1{flex:1;min-width:0;font:400 23px/1.1 Georgia,serif;color:#42311e;
-  text-shadow:0 1px 0 rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.haut .caisse{font:400 19px Georgia,serif;color:#a1741f;white-space:nowrap}
-.haut .filet{height:1px;margin:12px 0 10px;
-  background:linear-gradient(90deg,rgba(180,140,70,0),rgba(180,140,70,.65),rgba(180,140,70,0))}
-.haut .rang{display:flex;align-items:center;gap:10px}
-.haut .niv{font:600 9.5px system-ui;letter-spacing:1.6px;color:#8a6a3c;white-space:nowrap}
-.haut .barre{flex:1;height:5px;border-radius:3px;background:rgba(120,85,35,.22);overflow:hidden}
-.haut .barre i{display:block;height:100%;border-radius:3px;
-  background:linear-gradient(90deg,var(--vert),#8ed36a);transition:width .5s}
-.haut .xpt{font:600 9.5px system-ui;color:#a08a64;white-space:nowrap}
-
-/* ---------- corps ---------- */
-.corps{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-  overscroll-behavior:contain;padding:14px 14px 104px}
+.app{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+.corps{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;padding:0 14px 100px}
 .titre{font:600 11px system-ui;letter-spacing:2px;color:var(--doux);margin:18px 2px 9px}
-.titre:first-child{margin-top:2px}
+.carte{background:var(--carte);border:1px solid var(--filet);border-radius:16px;padding:14px}
+.p{font:400 13px/1.6 system-ui;color:var(--doux)}
+.p b{color:var(--encre);font-weight:600}
+.note{font:400 12px/1.55 system-ui;color:var(--doux);margin:10px 3px}
+.vide{font:400 13px/1.6 system-ui;color:var(--doux);text-align:center;padding:26px 10px}
 
-/* ---------- le domaine vu de haut ---------- */
-.scene{position:relative;width:100%;aspect-ratio:400/900;touch-action:pan-y;border-radius:20px;overflow:hidden;
-  border:1px solid #cdd6c0;box-shadow:0 2px 0 rgba(120,140,100,.22),0 12px 30px rgba(60,80,50,.16);
-  margin-bottom:4px}
-.scene .decor{position:absolute;inset:0;width:100%;height:100%}
-.lot{position:absolute;touch-action:pan-y;border-radius:12px;overflow:hidden;padding:0;
-  border:1px solid rgba(66,56,26,.45);background:#b98d55;
-  box-shadow:0 2px 0 rgba(50,45,20,.32),0 6px 14px rgba(40,50,25,.26),
-    inset 0 1px 0 rgba(255,240,200,.28),inset 0 -7px 13px rgba(80,55,20,.2);
-  transition:transform .08s,box-shadow .2s}
-.lot.mur{box-shadow:0 2px 0 rgba(50,45,20,.32),0 6px 16px rgba(40,50,25,.26),
-    0 0 0 2px rgba(142,211,106,.55),0 0 18px rgba(142,211,106,.4),
-    inset 0 1px 0 rgba(255,240,200,.3)}
-.lot:active{transform:translateY(1px)}
-.lot.herbe{background:#8fb26a;border-color:rgba(70,90,50,.4);
-  box-shadow:0 2px 0 rgba(50,70,40,.28),0 4px 10px rgba(40,50,25,.2)}
-.lot.herbe .fond{position:absolute;inset:0;width:100%;height:100%}
-.lot.vide{background:rgba(255,253,247,.28);border-style:dashed;box-shadow:none}
-.lot.verrou{background:rgba(236,238,226,.86);border-style:dashed;box-shadow:none;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
-  font:600 10.5px system-ui;color:#5b6b4c}
-.lot .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font:600 10.5px system-ui;color:#4f4327;background:rgba(255,253,247,.24);text-align:center;padding:0 6px}
-.lot.herbe .txt{color:#3f5432;background:rgba(255,253,247,.3)}
-.lot .jauge{position:absolute;left:6px;right:6px;bottom:5px;height:4px;border-radius:3px;
-  background:rgba(30,25,10,.45);overflow:hidden}
-.lot .jauge i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#a9e07a,var(--vert-c))}
-.lot .pastille{position:absolute;top:5px;right:5px;width:9px;height:9px;border-radius:50%;background:#8ed36a;
-  box-shadow:0 0 0 3px rgba(142,211,106,.3),0 1px 3px rgba(0,0,0,.35);animation:respire 2s ease-in-out infinite}
-@keyframes respire{50%{transform:scale(1.25)}}
-@keyframes monteFum{0%{transform:translate(0,0) scale(.7);opacity:.5}
-  100%{transform:translate(-10px,-34px) scale(1.9);opacity:0}}
-.fumee-f circle{animation:monteFum 5.5s ease-out infinite}
-.fumee-f circle.f2{animation-delay:2.7s}
-.lot .compte{position:absolute;top:4px;left:5px;background:rgba(30,39,53,.75);color:#fdfbf4;
-  border-radius:7px;padding:1px 5px;font:600 9.5px system-ui}
-.lot .nom{position:absolute;left:0;right:0;bottom:0;padding:11px 4px 3px;text-align:center;
-  font:600 9.5px system-ui;color:#fdfbf4;background:linear-gradient(180deg,transparent,rgba(25,35,20,.6))}
-.repere{position:absolute;left:0;right:0;text-align:center;font:600 9.5px system-ui;letter-spacing:2.4px;
-  color:rgba(255,253,247,.9);text-shadow:0 1px 4px rgba(25,40,18,.65);pointer-events:none}
-.reste-enclos{position:absolute;left:0;right:0;bottom:4px;text-align:center;
-  font:600 10px system-ui;color:rgba(255,253,247,.85);text-shadow:0 1px 3px rgba(20,35,15,.6)}
+.scene{position:relative;margin:0 -14px;height:26dvh;min-height:150px;max-height:220px;overflow:hidden}
+.scene .ciel{position:absolute;inset:0;width:100%;height:100%}
+.bandeau{position:absolute;left:14px;right:14px;bottom:12px;display:flex;align-items:flex-end;gap:10px}
+.jour{font:600 10px system-ui;letter-spacing:2.6px;color:#fdfbf2;text-shadow:0 1px 4px rgba(15,25,15,.6);flex:1}
+.meteo{font:400 15px Georgia,serif;color:#fdfbf2;text-shadow:0 2px 6px rgba(15,25,15,.6)}
 
-/* ---------- carnet ---------- */
+.jauges{display:grid;gap:11px}
+.jauge-l{display:flex;align-items:center;gap:10px}
+.jauge-l .ic{flex:0 0 auto;display:flex}
+.jauge-l .b{flex:1;height:8px;border-radius:5px;background:#eae7dc;overflow:hidden}
+.jauge-l .b i{display:block;height:100%;border-radius:5px;transition:width .4s}
+.jauge-l .v{font:600 12px system-ui;color:var(--doux);width:26px;text-align:right}
+
+.deux{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.gros{background:var(--carte);border:1px solid var(--filet);border-radius:14px;padding:13px;
+  font:600 14px system-ui;display:flex;flex-direction:column;align-items:center;gap:3px}
+.gros span{font:400 11.5px system-ui;color:var(--doux)}
+.gros:disabled{opacity:.45}
+.gros:active{transform:translateY(1px)}
+
+.sac{display:flex;flex-wrap:wrap;gap:9px}
+.res{display:flex;align-items:center;gap:6px;background:#f5f2e9;border-radius:11px;padding:7px 10px;
+  font:400 12px system-ui;color:var(--doux)}
+.res b{font:600 13px system-ui;color:var(--encre)}
+
 .ligne{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--carte);
-  border:1px solid var(--filet);border-left:4px solid var(--filet);border-radius:14px;padding:11px;margin-bottom:8px}
+  border:1px solid var(--filet);border-left:4px solid var(--filet);border-radius:14px;padding:12px;margin-bottom:8px}
 .ligne.pret{border-left-color:var(--vert-c)}
-.ligne.pousse{border-left-color:var(--or)}
-.ligne .ic{width:46px;height:46px;border-radius:12px;background:#f4f1e8;display:flex;
-  align-items:center;justify-content:center;flex:0 0 auto;overflow:hidden}
+.ligne .ic{width:42px;height:42px;border-radius:12px;background:#f5f2e9;display:flex;align-items:center;
+  justify-content:center;flex:0 0 auto}
 .ligne .t{flex:1;min-width:0}
 .ligne .n{font:600 13.5px system-ui}
 .ligne .d{font:400 12px system-ui;color:var(--doux);margin-top:2px}
-.ligne .jauge{height:5px;border-radius:3px;background:#eae7dd;margin-top:6px;overflow:hidden}
-.ligne .jauge i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#e6c877,var(--or))}
-.agir{border-radius:11px;padding:10px 14px;font:600 13px system-ui;flex:0 0 auto;
-  background:var(--vert);color:#fdfbf4;box-shadow:0 3px 10px rgba(47,107,31,.24)}
-.agir.sec{background:var(--vert-p);color:var(--vert);box-shadow:none}
-.agir:active{transform:translateY(1px)}
-.vide{font:400 13px/1.6 system-ui;color:var(--doux);text-align:center;padding:26px 10px}
+.gains{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.g{font:600 10.5px system-ui;color:var(--doux);background:#f0ede2;border-radius:7px;padding:3px 7px}
+.g.ok{background:#e8f2e2;color:var(--vert)}
+.agir{border-radius:11px;padding:10px 13px;font:600 12.5px system-ui;flex:0 0 auto;
+  background:var(--vert);color:#fdfbf4}
+.agir.off{background:#f0ede2;color:var(--pale)}
+.agir:disabled{opacity:.45}
 
-/* ---------- listes ---------- */
-.item{display:flex;align-items:center;gap:12px;background:var(--carte);border:1px solid var(--filet);
-  border-radius:14px;padding:11px;margin-bottom:8px}
-.item .ic{width:46px;height:46px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;
-  justify-content:center;flex:0 0 auto;overflow:hidden}
-.item .t{flex:1;min-width:0}
-.item .n{font:600 13.5px system-ui}
-.item .d{font:400 12px/1.45 system-ui;color:var(--doux);margin-top:2px}
-.prixb{border-radius:11px;padding:10px 13px;font:600 13px system-ui;flex:0 0 auto;
-  background:var(--or-p);color:var(--or)}
-.prixb.plein{background:var(--nuit);color:#f7fafc;width:100%;padding:15px;text-align:center;font-size:14.5px}
-.prixb:disabled{opacity:.42}
-.note{font:400 12px/1.5 system-ui;color:var(--doux);margin:6px 3px 2px}
-.rayons{display:flex;gap:7px;margin-bottom:4px}
-.rayons button{flex:1;border-radius:12px;padding:10px 4px;font:600 13px system-ui;
-  background:#e7e5da;color:var(--doux)}
-.rayons button.on{background:var(--nuit);color:#f7fafc}
-.paliers{display:flex;gap:4px;margin-top:7px}
-.paliers i{width:19px;height:5px;border-radius:3px;background:#e6e2d6}
-.paliers i.on{background:var(--vert-c)}
+.entree{display:flex;gap:11px;padding:11px 3px;border-bottom:1px solid var(--filet)}
+.entree .q{font:600 10.5px system-ui;color:var(--pale);width:82px;flex:0 0 auto;padding-top:2px}
+.entree .x{font:400 13px/1.5 system-ui;flex:1}
 
-/* ---------- commandes ---------- */
-.cmd{background:var(--carte);border:1px solid var(--filet);border-radius:16px;padding:13px;margin-bottom:9px}
-.cmd .h{display:flex;align-items:baseline;gap:8px}
-.cmd .h .q{flex:1;font:600 13.5px system-ui}
-.cmd .h .g{font:600 13px system-ui;color:var(--or)}
-.jetons{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
-.jeton{display:flex;align-items:center;gap:6px;border:1px solid var(--filet);border-radius:9px;
-  padding:5px 8px;font:600 11.5px system-ui;color:var(--doux)}
-.jeton.ok{background:var(--vert-p);border-color:#cbe5c0;color:var(--vert)}
-.jeton svg{flex:0 0 auto}
-
-/* ---------- barre du bas ---------- */
-.bas{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--carte);
-  border-top:1px solid var(--filet);display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
-.bas button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;
+.bas{position:fixed;left:0;right:0;bottom:0;z-index:7;background:var(--carte);border-top:1px solid var(--filet);
+  display:flex;padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+.bas button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
   font:600 10.5px system-ui;color:var(--pale);padding:4px 0}
 .bas button.on{color:var(--nuit)}
-.bas .pt{position:absolute;top:0;right:calc(50% - 17px);width:7px;height:7px;border-radius:50%;background:#d9694a}
 
-/* ---------- fenêtres ---------- */
-#fen{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(20,33,63,.5)}
-#fen.on{display:flex}
-#fen .b{width:100%;background:var(--carte);border-radius:24px 24px 0 0;
-  padding:20px 16px calc(18px + env(safe-area-inset-bottom));max-height:84dvh;overflow-y:auto;
-  animation:monteF .3s cubic-bezier(.2,.85,.3,1)}
-@keyframes monteF{from{transform:translateY(26px)}}
-#fen h2{font:400 21px Georgia,serif;margin-bottom:4px}
-#fen p{font:400 13px/1.55 system-ui;color:var(--doux)}
-.fermer{width:100%;margin-top:14px;border-radius:14px;padding:14px;font:600 14.5px system-ui;
-  background:#f1efe8;color:var(--encre)}
-.palier{text-align:center;padding:4px 2px}
-.palier .rond{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;
-  background:linear-gradient(180deg,#8ed36a,var(--vert));color:#fdfbf4;display:flex;align-items:center;
-  justify-content:center;font:600 25px system-ui;box-shadow:0 10px 24px rgba(47,107,31,.34)}
-.palier .prime{font:600 27px system-ui;color:var(--or);margin:14px 0 12px}
-.ouvre{display:flex;align-items:center;gap:10px;border-top:1px solid var(--filet);padding:11px 2px;text-align:left}
-.ouvre .q{font:600 10.5px system-ui;letter-spacing:1.2px;color:var(--doux);text-transform:uppercase}
-.ouvre .v{flex:1;text-align:right;font:400 14px Georgia,serif}
-
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));
-  background:rgba(30,39,53,.94);color:#fff;padding:10px 16px;border-radius:999px;font:600 13px system-ui;
-  z-index:40;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));
+  background:rgba(31,38,32,.94);color:#fff;padding:10px 16px;border-radius:999px;font:600 13px system-ui;
+  z-index:40;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
 .toast.on{opacity:1;transform:translate(-50%,-6px)}
 
-/* ---------- accueil et tutoriel ---------- */
-#accueil{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
-  padding:16px;background:var(--papier);overflow:hidden;touch-action:none;animation:fondu .35s}
-#accueil.on{display:flex}
-@keyframes fondu{from{opacity:0}}
-.postale{width:100%;max-width:420px;background:var(--carte);border-radius:20px;padding:13px 13px 0;
-  display:flex;flex-direction:column;max-height:calc(100dvh - 32px);
-  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 3px 8px rgba(70,56,32,.1),0 26px 60px rgba(70,56,32,.3);
-  animation:monteC .45s cubic-bezier(.2,.8,.3,1)}
-@keyframes monteC{from{transform:translateY(20px) scale(.985);opacity:0}}
-.vue{position:relative;border-radius:13px;overflow:hidden;flex:1 1 auto;min-height:140px;
-  box-shadow:0 1px 3px rgba(70,56,32,.28)}
-.vue svg{display:block;width:100%;height:100%}
-.mot{padding:20px 8px 18px;text-align:center;flex:0 0 auto}
-.mot .kicker{font:600 10px system-ui;letter-spacing:5.5px;color:#a89c84}
-.mot h2{font:400 29px/1.12 Georgia,serif;color:#2f3830;margin-top:9px}
-.mot .filet{width:34px;height:1px;background:#cfc4ac;margin:14px auto}
-.mot p{font:400 13.5px/1.55 system-ui;color:#8a9083}
-.cta{width:100%;margin-top:18px;border-radius:15px;padding:16px;background:var(--vert);color:#fdfbf4;
-  font:600 15.5px system-ui;box-shadow:0 6px 18px rgba(47,107,31,.28)}
-.saut{width:100%;margin-top:10px;padding:11px;font:600 12.5px system-ui;color:#a89c84}
-
-#tuto{position:fixed;inset:0;z-index:55;display:none;pointer-events:none;overflow:hidden;touch-action:none}
-#tuto.on{display:block}
-#tuto .trou{position:absolute;border-radius:14px;box-shadow:0 0 0 9999px rgba(15,25,45,.74);
-  border:2px solid var(--vert-c);transition:all .3s cubic-bezier(.3,.8,.4,1)}
-#tuto .bulle{position:absolute;left:12px;right:12px;background:#1e2735;color:#fdfbf4;border-radius:20px;
-  padding:16px;box-shadow:0 16px 36px rgba(0,0,0,.5);pointer-events:auto;transition:top .3s,bottom .3s}
-#tuto .fleche{position:absolute;width:15px;height:15px;background:#1e2735;transform:rotate(45deg)}
-#tuto .rang{display:flex;align-items:center;gap:10px}
-#tuto .pts{display:flex;gap:5px;flex:1}
-#tuto .pts i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25)}
-#tuto .pts i.on{width:18px;border-radius:3px;background:var(--vert-c)}
-#tuto h3{font:600 19px system-ui;margin-top:10px}
-#tuto .gains{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap}
-#tuto .gain{background:rgba(142,222,99,.16);color:#a9e88a;border-radius:10px;padding:6px 10px;font:600 12.5px system-ui}
-#tuto .gain.gris{background:rgba(255,255,255,.1);color:#b7c4d6}
-#tuto .passer{font:600 12px system-ui;color:#7f92ab;padding:6px}
+#depart{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;
+  background:#141c16}
+#depart.on{display:flex}
+.dep{width:100%;max-width:420px;text-align:center;color:#f2efe4}
+.dep .k{font:600 10px system-ui;letter-spacing:6px;color:#7f9a80}
+.dep h1{font:400 30px/1.2 Georgia,serif;margin-top:12px}
+.dep p{font:400 14px/1.65 system-ui;color:#a9b6a6;margin-top:12px}
+.dep .lieu{margin-top:22px;border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:18px;
+  background:rgba(255,255,255,.05)}
+.dep .lieu .n{font:400 24px Georgia,serif}
+.dep .cta{width:100%;margin-top:20px;border-radius:15px;padding:16px;background:var(--vert-c);color:#0f1a10;
+  font:600 15.5px system-ui}
+.dep .relance{width:100%;margin-top:10px;padding:12px;font:600 12.5px system-ui;color:#7f9a80}
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <pattern id="terre" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
-    <circle cx="2" cy="3" r="0.9" fill="#8a6a42"/><circle cx="6.5" cy="7" r="0.7" fill="#a2794a"/>
-    <circle cx="7" cy="2" r="0.6" fill="#96703f"/></pattern>
-  <pattern id="herbe" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(-14)">
-    <path d="M2 8v-3M5 9v-4M8 7v-3" stroke="#7ba35c" stroke-width="1.1" stroke-linecap="round"/></pattern>
-</defs></svg>
-
 <div class="app">
-  <div class="haut">
-    <svg class="ciel" viewBox="0 0 400 150" preserveAspectRatio="none" aria-hidden="true">
-      <defs>
-        <linearGradient id="aurore" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#f8dfc0"/><stop offset=".4" stop-color="#f4cfa4"/>
-          <stop offset="1" stop-color="#e9be8e"/></linearGradient>
-        <filter id="flouH"><feGaussianBlur stdDeviation="5"/></filter>
-      </defs>
-      <rect width="400" height="150" fill="url(#aurore)"/>
-      <circle cx="66" cy="44" r="58" fill="#fff2cf" opacity=".55" filter="url(#flouH)"/>
-      <circle cx="66" cy="44" r="16" fill="#fff8de"/>
-      <path d="M0 104 Q100 88 200 102 Q300 116 400 98 L400 150 L0 150Z" fill="#bcd2a0" opacity=".9"/>
-      <path d="M0 124 Q120 110 240 124 Q320 133 400 120 L400 150 L0 150Z" fill="#9cbd7c"/>
-      <g fill="#7ea45f"><ellipse cx="330" cy="118" rx="10" ry="7"/><ellipse cx="346" cy="124" rx="7" ry="5"/></g>
-      <ellipse cx="120" cy="116" rx="130" ry="9" fill="#fdf6e8" opacity=".55" filter="url(#flouH)"/>
-      <ellipse cx="300" cy="132" rx="120" ry="7" fill="#fdf6e8" opacity=".4" filter="url(#flouH)"/>
-    </svg>
-    <div class="dedans">
-      <div class="kicker">BIENVENUE À</div>
-      <div class="ligne1">
-        <h1 id="nom-ferme">Ta ferme</h1>
-        <div class="caisse"><span id="or">0</span> €</div>
-      </div>
-      <div class="filet"></div>
-      <div class="rang">
-        <div class="niv">NIVEAU <span id="niv">1</span></div>
-        <div class="barre"><i id="xp-b" style="width:0%"></i></div>
-        <div class="xpt" id="xp-t">0/55</div>
-      </div>
-    </div>
-  </div>
-
   <div class="corps" id="corps"></div>
-
   <div class="bas" id="nav">
-    <button data-v="ferme" class="on">
+    <button data-v="camp" class="on">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M12 4 4 20h16z"/><path d="M9 20l3-7 3 7"/></svg>Camp</button>
+    <button data-v="explorer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>Explorer</button>
+    <button data-v="atelier">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 20V11l9-6 9 6v9"/><path d="M9 20v-6h6v6"/></svg>Ferme</button>
-    <button data-v="marche">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 8h16l-1.5 11.5H5.5z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>Marché</button>
-    <button data-v="boutique">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 9l1.6-4h14.8L21 9"/><path d="M4.5 9v10.5h15V9"/>
-        <path d="M3 9c0 1.5 1.3 2.7 3 2.7S9 10.5 9 9c0 1.5 1.3 2.7 3 2.7S15 10.5 15 9c0 1.5 1.3 2.7 3 2.7S21 10.5 21 9"/></svg>Boutique</button>
-    <button data-v="commandes">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="5" y="3.5" width="14" height="17" rx="2.5"/><path d="M9 8.5h6M9 12.5h6M9 16.5h3"/></svg>Commandes
-      <span class="pt" id="pt-cmd" style="display:none"></span></button>
+        <path d="M14.5 5.5a4 4 0 0 0 5 5L21 12l-9 9-4-4 9-9z"/><path d="M7 17l-3 3"/></svg>Atelier</button>
+    <button data-v="journal">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Journal</button>
   </div>
 </div>
 
-<div id="accueil"><div class="postale" id="accueil-b"></div></div>
-<div id="tuto"><div class="trou" id="trou"></div><div class="bulle" id="bulle"></div></div>
-<div id="fen"><div class="b" id="fen-b"></div></div>
+<div id="depart"><div class="dep" id="depart-b"></div></div>
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-const sb=createClient('https://zpfkekiavlfphialvphi.supabase.co',
-                      'sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP');
 const $=id=>document.getElementById(id);
-/* ================= les douze cultures ================= */
-const CULTURES=[
- {id:'radis',   nom:'Radis',        duree:30,  cout:8,   vend:16,  xp:1, niv:1, recoltes:1},
- {id:'salade',  nom:'Salade',       duree:60,  cout:14,  vend:32,  xp:2, niv:1, recoltes:1},
- {id:'ble',     nom:'Blé',          duree:45,  cout:12,  vend:26,  xp:2, niv:1, recoltes:1},
- {id:'carotte', nom:'Carotte',      duree:120, cout:24,  vend:58,  xp:4, niv:2, recoltes:1},
- {id:'mais',    nom:'Maïs',         duree:240, cout:48,  vend:124, xp:7, niv:3, recoltes:1},
- {id:'courgette',nom:'Courgette',   duree:300, cout:62,  vend:158, xp:9, niv:4, recoltes:1, double:true},
- {id:'patate',  nom:'Pomme de terre',duree:360,cout:70,  vend:186, xp:10,niv:4, recoltes:1, lot:2},
- {id:'tomate',  nom:'Tomate',       duree:480, cout:96,  vend:118, xp:12,niv:5, recoltes:3, repousse:.45},
- {id:'fraise',  nom:'Fraise',       duree:600, cout:120, vend:104, xp:13,niv:6, recoltes:4, repousse:.35},
- {id:'citrouille',nom:'Citrouille', duree:900, cout:190, vend:520, xp:20,niv:8, recoltes:1},
- {id:'vigne',   nom:'Vigne',        duree:1200,cout:240, vend:300, xp:24,niv:9, recoltes:6, repousse:.4},
- {id:'pommier', nom:'Pommier',      duree:1800,cout:420, vend:280, xp:28,niv:10,recoltes:0, repousse:1}
+const duree=s=>s<60?Math.round(s)+' s':(s<3600?Math.round(s/60)+' min':(Math.round(s/360)/10)+' h');
+/* ================= les quatre origines ================= */
+const BIOMES=[
+ {id:'ile',nom:'L’île',intro:'La mer t’a recraché sur une plage blanche.',
+  ciel:['#8fd0ef','#bfe4f2','#f2e2bd'],sol:['#e2d3a8','#c9b98a'],accent:'#2f8fa8',
+  froid:.5, zones:[
+   {id:'plage',nom:'La plage',d:'sable, bois flotté, coquillages',ressources:{bois:2,fibre:1},duree:40},
+   {id:'cocotiers',nom:'Les cocotiers',d:'noix de coco et palmes',ressources:{nourriture:2,fibre:2},duree:70},
+   {id:'source',nom:'La source',d:'eau douce entre les rochers',ressources:{eau:3},duree:60},
+   {id:'recif',nom:'Le récif',d:'poissons et crustacés',ressources:{nourriture:3},duree:110},
+   {id:'jungle',nom:'La jungle',d:'bois dur, lianes, fruits',ressources:{bois:3,fibre:2,nourriture:1},duree:150},
+   {id:'epave',nom:'L’épave',d:'métal, toile, outils rouillés',ressources:{metal:2,tissu:2},duree:220}]},
+ {id:'foret',nom:'La forêt',intro:'L’avion s’est ouvert au-dessus des sapins.',
+  ciel:['#a8c4d8','#c9dbe2','#e6e2c8'],sol:['#8fae72','#6f9256'],accent:'#3f7d4a',
+  froid:1, zones:[
+   {id:'clairiere',nom:'La clairière',d:'branches et herbes sèches',ressources:{bois:2,fibre:2},duree:45},
+   {id:'ruisseau',nom:'Le ruisseau',d:'eau claire, truites',ressources:{eau:3,nourriture:1},duree:70},
+   {id:'sousbois',nom:'Le sous-bois',d:'baies, champignons',ressources:{nourriture:2,fibre:1},duree:90},
+   {id:'pins',nom:'La pinède',d:'troncs, résine',ressources:{bois:4},duree:130},
+   {id:'carlingue',nom:'La carlingue',d:'tôle, sangles, trousse',ressources:{metal:2,tissu:3},duree:210},
+   {id:'grotte',nom:'La grotte',d:'silex, abri de secours',ressources:{metal:1,pierre:3},duree:170}]},
+ {id:'ville',nom:'La ville',intro:'Les rues sont vides depuis longtemps.',
+  ciel:['#9aa3ac','#c2c6c2','#ddd6c2'],sol:['#b7b3a6','#9a968b'],accent:'#8a5a4a',
+  froid:.8, zones:[
+   {id:'rue',nom:'La rue',d:'débris, ferraille',ressources:{metal:2,pierre:1},duree:50},
+   {id:'epicerie',nom:'L’épicerie',d:'conserves oubliées',ressources:{nourriture:3},duree:120},
+   {id:'chateau',nom:'Le château d’eau',d:'une réserve encore pleine',ressources:{eau:4},duree:100},
+   {id:'immeuble',nom:'L’immeuble',d:'tissus, meubles à casser',ressources:{tissu:3,bois:2},duree:140},
+   {id:'atelier',nom:'L’atelier',d:'outils et pièces',ressources:{metal:4},duree:200},
+   {id:'jardins',nom:'Les jardins ouvriers',d:'légumes redevenus sauvages',ressources:{nourriture:2,fibre:2},duree:160}]},
+ {id:'banquise',nom:'Le grand froid',intro:'Le vent souffle depuis trois jours.',
+  ciel:['#cfe4f2','#e6f0f7','#f2f6fa'],sol:['#e8eef4','#cfdae4'],accent:'#4a7d9c',
+  froid:2, zones:[
+   {id:'congere',nom:'La congère',d:'neige à faire fondre',ressources:{eau:3},duree:55},
+   {id:'crevasse',nom:'La crevasse',d:'glace et pierres',ressources:{pierre:3},duree:95},
+   {id:'trou',nom:'Le trou de pêche',d:'poisson sous la glace',ressources:{nourriture:3},duree:140},
+   {id:'bois',nom:'Le bois mort',d:'quelques troncs échoués',ressources:{bois:3},duree:120},
+   {id:'campement',nom:'Le campement',d:'toile, peaux, restes',ressources:{tissu:3,nourriture:1},duree:180},
+   {id:'balise',nom:'La balise',d:'métal, batteries',ressources:{metal:3},duree:230}]}
+];
+const RESSOURCES={
+ bois:{nom:'Bois'},fibre:{nom:'Fibre'},pierre:{nom:'Pierre'},metal:{nom:'Métal'},
+ tissu:{nom:'Tissu'},eau:{nom:'Eau'},nourriture:{nom:'Vivres'}};
+
+/* ================= artisanat ================= */
+const RECETTES=[
+ {id:'feu',nom:'Feu de camp',d:'réchauffe et éloigne les bêtes',cout:{bois:6,fibre:2},niv:1,type:'abri',effet:'chaleur'},
+ {id:'gourde',nom:'Gourde',d:'garde 3 rations d’eau',cout:{tissu:2,fibre:2},niv:1,type:'objet'},
+ {id:'lance',nom:'Lance',d:'de quoi te défendre la nuit',cout:{bois:4,pierre:2,fibre:2},niv:2,type:'arme',force:2},
+ {id:'abri',nom:'Abri',d:'te protège du vent et des rôdeurs',cout:{bois:10,fibre:6},niv:2,type:'abri',effet:'abri'},
+ {id:'filtre',nom:'Filtre à eau',d:'l’eau ne rend plus malade',cout:{tissu:3,pierre:2,metal:1},niv:3,type:'objet'},
+ {id:'hache',nom:'Hache',d:'+1 bois à chaque récolte',cout:{metal:2,bois:3},niv:3,type:'outil'},
+ {id:'manteau',nom:'Manteau',d:'la chaleur descend deux fois moins vite',cout:{tissu:5,fibre:3},niv:4,type:'habit'},
+ {id:'palissade',nom:'Palissade',d:'les rôdeurs passent rarement',cout:{bois:16,pierre:8},niv:5,type:'abri',effet:'abri'},
+ {id:'radio',nom:'Radio',d:'permet de retrouver les autres survivants',cout:{metal:6,tissu:2,pierre:2},niv:6,type:'radio'}
 ];
 
-/* ---- dessin d'un plant, quatre stades : 0 semis · 1 jeune · 2 formé · 3 mûr ---- */
-const PLANT={
- radis:(t)=>t===0?`<path d="M0 0v-3" stroke="#5f8f4a" stroke-width="1.4"/>`:
-   `<g><path d="M0 0v-${3+t*2}" stroke="#4e8f42" stroke-width="1.4"/>
-    <path d="M0 -${2+t*2} l-${2+t} -${2+t} M0 -${2+t*2} l${2+t} -${2+t}" stroke="#5aa350" stroke-width="1.3" stroke-linecap="round"/>
-    ${t>2?'<circle cx="0" cy="1" r="2.6" fill="#d94f5c"/><circle cx="-0.8" cy="0.3" r="0.9" fill="#e87b84"/>':''}</g>`,
- salade:(t)=>`<g><circle cx="0" cy="0" r="${1.6+t*1.9}" fill="#6fae4e"/>
-   <circle cx="-${0.6+t*.6}" cy="-${0.4+t*.4}" r="${1+t*1.2}" fill="#87c25f"/>
-   ${t>1?`<circle cx="${0.8+t*.5}" cy="${0.5}" r="${0.8+t*.9}" fill="#9ad06c"/>`:''}</g>`,
- ble:(t)=>t===0?`<path d="M0 0v-3" stroke="#8aa84a" stroke-width="1.3"/>`:
-   `<g><path d="M-1 0 v-${4+t*3}" stroke="${t>2?'#c9a83f':'#8aa84a'}" stroke-width="1.3"/>
-    <path d="M1.6 0 v-${3+t*3}" stroke="${t>2?'#c9a83f':'#8aa84a'}" stroke-width="1.3"/>
-    ${t>1?`<ellipse cx="-1" cy="-${5+t*3}" rx="1.5" ry="${2+t}" fill="${t>2?'#e0bd58':'#a8bb5c'}"/>
-       <ellipse cx="1.6" cy="-${4+t*3}" rx="1.3" ry="${1.8+t}" fill="${t>2?'#d9b44a':'#9fb254'}"/>`:''}</g>`,
- carotte:(t)=>`<g><path d="M0 0v-${3+t*2.6}" stroke="#4e8f42" stroke-width="1.5"/>
-   <path d="M0 -${2+t*2} l-${2+t*1.2} -${2+t} M0 -${1+t*2} l${2+t*1.2} -${2.4+t}" stroke="#5aa350" stroke-width="1.4" stroke-linecap="round"/>
-   ${t>2?'<path d="M-2 1 h4 l-2 3.4z" fill="#e08a3c"/>':''}</g>`,
- mais:(t)=>`<g><path d="M0 0v-${5+t*4}" stroke="#6ba03c" stroke-width="1.6"/>
-   <path d="M0 -${4+t*3} q-${3+t*1.6} -1 -${4+t*2} -4" stroke="#7fb44c" stroke-width="1.5" fill="none"/>
-   <path d="M0 -${6+t*3} q${3+t*1.6} -1 ${4+t*2} -4" stroke="#7fb44c" stroke-width="1.5" fill="none"/>
-   ${t>2?'<ellipse cx="2" cy="-6" rx="1.7" ry="3.6" fill="#e2b93f"/>':''}</g>`,
- courgette:(t)=>`<g><ellipse cx="0" cy="0" rx="${2+t*2.2}" ry="${1.4+t*1.4}" fill="#4f8f42"/>
-   <ellipse cx="-${1+t}" cy="-${0.6+t*.6}" rx="${1.4+t*1.4}" ry="${1+t}" fill="#63a84a"/>
-   ${t>2?'<ellipse cx="2.4" cy="1.6" rx="3.4" ry="1.5" fill="#3f7d34" transform="rotate(-18 2.4 1.6)"/>':''}</g>`,
- patate:(t)=>`<g><path d="M0 0v-${3+t*2}" stroke="#4e8f42" stroke-width="1.4"/>
-   <ellipse cx="-${1.6+t}" cy="-${3+t*1.6}" rx="${1.4+t*.8}" ry="${1+t*.6}" fill="#5aa350"/>
-   <ellipse cx="${1.6+t}" cy="-${2+t*1.6}" rx="${1.4+t*.8}" ry="${1+t*.6}" fill="#4e8f42"/>
-   ${t>2?'<ellipse cx="0" cy="2" rx="3" ry="2" fill="#c9a06a"/>':''}</g>`,
- tomate:(t)=>`<g><path d="M0 1v-${4+t*3}" stroke="#4e8f42" stroke-width="1.5"/>
-   <path d="M0 -${3+t*2} l-${2+t} -2 M0 -${5+t*2} l${2+t} -2" stroke="#4e8f42" stroke-width="1.4" stroke-linecap="round"/>
-   ${t>2?'<circle cx="-1.8" cy="-2" r="2.2" fill="#cf4433"/><circle cx="2" cy="-4.4" r="1.9" fill="#d9553f"/>':
-     (t>1?'<circle cx="-1.6" cy="-2" r="1.4" fill="#8fbb5c"/>':'')}</g>`,
- fraise:(t)=>`<g><circle cx="0" cy="0" r="${1.6+t*1.5}" fill="#4f8f42"/>
-   <circle cx="-${1+t*.8}" cy="-${0.6+t*.5}" r="${1+t}" fill="#63a84a"/>
-   ${t>2?'<circle cx="1.8" cy="1.6" r="1.7" fill="#d33f4f"/><circle cx="-1.6" cy="2" r="1.3" fill="#e0566a"/>':''}</g>`,
- citrouille:(t)=>`<g><path d="M0 0 q-${3+t*2} -1 -${4+t*2} -4" stroke="#4e8f42" stroke-width="1.5" fill="none"/>
-   <ellipse cx="0" cy="0" rx="${1.6+t*1.4}" ry="${1.2+t}" fill="#4f8f42"/>
-   ${t>2?'<g><ellipse cx="0" cy="1" rx="5" ry="3.8" fill="#e08a3c"/><ellipse cx="0" cy="1" rx="1.8" ry="3.8" fill="#d9782c"/><path d="M0 -2.6v-2" stroke="#4e8f42" stroke-width="1.4"/></g>':''}</g>`,
- vigne:(t)=>`<g><path d="M0 2v-${5+t*4}" stroke="#7d5934" stroke-width="1.6"/>
-   <path d="M0 -${4+t*3} q-4 -1 -5 -4 M0 -${6+t*3} q4 -1 5 -4" stroke="#5aa350" stroke-width="1.4" fill="none"/>
-   ${t>2?'<g fill="#7a4a8f"><circle cx="-2" cy="-2" r="1.2"/><circle cx="0" cy="-1" r="1.2"/><circle cx="2" cy="-2.4" r="1.1"/><circle cx="-1" cy="0.6" r="1.1"/><circle cx="1" cy="0.8" r="1"/></g>':''}</g>`,
- pommier:(t)=>`<g><rect x="-1.4" y="-${3+t*3}" width="2.8" height="${4+t*3}" fill="#7d5934"/>
-   <circle cx="0" cy="-${6+t*4}" r="${3+t*2.4}" fill="#4f8f42"/>
-   <circle cx="-${2+t}" cy="-${5+t*3.4}" r="${2+t*1.6}" fill="#5aa350"/>
-   <circle cx="${2+t}" cy="-${5.6+t*3.4}" r="${1.8+t*1.5}" fill="#448040"/>
-   ${t>2?'<circle cx="-2.4" cy="-8" r="1.5" fill="#d94f4f"/><circle cx="2.6" cy="-9.4" r="1.4" fill="#d94f4f"/><circle cx="0" cy="-6" r="1.3" fill="#e06a5a"/>':''}</g>`
-};
-
-/* ================= verger et élevage ================= */
-const ARBRES=[
- {id:'pommier', nom:'Pommier',  fruit:'pomme',  nomF:'Pomme',   cout:420,  cycle:1800, vend:280, xp:14, niv:5},
- {id:'cerisier',nom:'Cerisier', fruit:'cerise', nomF:'Cerise',  cout:640,  cycle:2400, vend:420, xp:18, niv:7},
- {id:'poirier', nom:'Poirier',  fruit:'poire',  nomF:'Poire',   cout:880,  cycle:3000, vend:560, xp:22, niv:9},
- {id:'oranger', nom:'Oranger',  fruit:'orange', nomF:'Orange',  cout:1250, cycle:3600, vend:760, xp:28, niv:11},
- {id:'olivier', nom:'Olivier',  fruit:'olive',  nomF:'Olive',   cout:1700, cycle:4800, vend:1020,xp:34, niv:13}
+/* ================= météo ================= */
+const METEOS=[
+ {id:'clair',nom:'Ciel clair',d:'rien à signaler',poids:5,soif:1.2,chaleur:1},
+ {id:'pluie',nom:'Pluie',d:'l’eau se récupère seule',poids:3,soif:.6,chaleur:1.4,eau:1},
+ {id:'vent',nom:'Grand vent',d:'la chaleur file',poids:3,soif:1.1,chaleur:1.8},
+ {id:'tempete',nom:'Tempête',d:'sortir devient dangereux',poids:1,soif:1.3,chaleur:2.4,danger:1.6},
+ {id:'canicule',nom:'Chaleur écrasante',d:'la soif double',poids:2,soif:2.2,chaleur:.5}
 ];
-const ELEVAGES=[
- {id:'poules',  nom:'Poulailler', bete:'Poule',  produit:'oeuf',  nomP:'Œuf',
-  cout:320,  cycle:90,  capacite:12, vend:34,  xp:1, niv:2, mange:'mais'},
- {id:'vaches',  nom:'Étable',     bete:'Vache',  produit:'lait',  nomP:'Lait',
-  cout:900,  cycle:240, capacite:8,  vend:72,  xp:2, niv:4, mange:'ble'},
- {id:'chevres', nom:'Chèvrerie',  bete:'Chèvre', produit:'chevre',nomP:'Lait de chèvre',
-  cout:1400, cycle:200, capacite:9,  vend:96,  xp:3, niv:6, mange:'carotte'},
- {id:'moutons', nom:'Bergerie',   bete:'Mouton', produit:'laine', nomP:'Laine',
-  cout:2100, cycle:420, capacite:6,  vend:210, xp:5, niv:8, mange:'salade'},
- {id:'cochons', nom:'Porcherie',  bete:'Cochon', produit:'truffe',nomP:'Truffe',
-  cout:3200, cycle:900, capacite:4,  vend:640, xp:9, niv:12,mange:'patate'}
-];
-
-/* ---- arbres vus de haut : houppier en amas, fruits au stade mûr ---- */
-const ARBRE_SVG=(a,mur,ph)=>{
-  const F={pommier:['#4f8f42','#5fa350','#3f7d35','#d94f4f'],
-           cerisier:['#57944a','#69ab58','#457a3c','#c9304a'],
-           poirier:['#4a8a48','#5b9f56','#3c7340','#d9c14f'],
-           oranger:['#3f8447','#4f9a55','#33703b','#e8842c'],
-           olivier:['#7f9a6a','#93ab7c','#6b8459','#3f4a5c']}[a.id];
-  const r=(i)=>{const v=Math.sin(i*127.1+ph*311.7)*43758.5;return v-Math.floor(v);};
-  let fr='';
-  if(mur)for(let i=0;i<7;i++){
-    const ang=r(i)*6.283, d=4+r(i+9)*9;
-    fr+=`<circle cx="${(Math.cos(ang)*d).toFixed(1)}" cy="${(Math.sin(ang)*d).toFixed(1)}" r="2.3" fill="${F[3]}"/>`;
-  }
-  return `<g>
-    <ellipse cx="2" cy="4" rx="15" ry="6" fill="rgba(45,60,30,.22)"/>
-    <circle cx="0" cy="0" r="13" fill="${F[2]}"/>
-    <circle cx="-4" cy="-3" r="9.5" fill="${F[0]}"/>
-    <circle cx="5" cy="-1" r="8.5" fill="${F[1]}"/>
-    <circle cx="0" cy="5" r="8" fill="${F[2]}"/>
-    <circle cx="-1" cy="-6" r="7" fill="${F[1]}"/>
-    ${fr}</g>`;
-};
-/* ---- animaux vus de haut ---- */
-const BETE={
- poules:(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})">
-   <ellipse cx="1" cy="1.6" rx="4.2" ry="2.4" fill="rgba(40,50,25,.2)"/>
-   <ellipse cx="0" cy="0" rx="4" ry="3" fill="#f6ecd8"/>
-   <circle cx="3" cy="-1.4" r="1.8" fill="#f6ecd8"/>
-   <path d="M3.4 -3c0-1.2 1.2-1.2 1.2 0" stroke="#cf4433" stroke-width="1" fill="none"/>
-   <path d="M4.6 -1.4l1.8 .6-1.8 .8z" fill="#e2a33c"/>
-   <ellipse cx="-1.4" cy="0.4" rx="2" ry="1.6" fill="#e6d8bd"/></g>`,
- vaches:(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})">
-   <ellipse cx="1.5" cy="3" rx="8" ry="3.4" fill="rgba(40,50,25,.2)"/>
-   <ellipse cx="0" cy="0" rx="7.5" ry="4.6" fill="#f6f3ec"/>
-   <ellipse cx="-3" cy="-1" rx="2.6" ry="1.9" fill="#4a4a52"/>
-   <ellipse cx="2.4" cy="1.4" rx="2.2" ry="1.6" fill="#4a4a52"/>
-   <ellipse cx="6.6" cy="-1.6" rx="3" ry="2.4" fill="#f6f3ec"/>
-   <circle cx="7.6" cy="-2" r="0.7" fill="#3a3a3a"/>
-   <path d="M5 -3.6l-1.4-1.6M8.4 -3.6l1.4-1.6" stroke="#cfc4ac" stroke-width="1.1" stroke-linecap="round"/></g>`,
- chevres:(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})">
-   <ellipse cx="1" cy="2.4" rx="6" ry="2.6" fill="rgba(40,50,25,.2)"/>
-   <ellipse cx="0" cy="0" rx="5.6" ry="3.4" fill="#e8dcc6"/>
-   <ellipse cx="5" cy="-1.4" rx="2.4" ry="1.9" fill="#e8dcc6"/>
-   <circle cx="5.9" cy="-1.7" r="0.6" fill="#3a3a3a"/>
-   <path d="M4 -3.2q-1-2.4-2.6-3M6.4 -3.2q0-2.4 1.6-3.2" stroke="#a8987c" stroke-width="1.1" fill="none" stroke-linecap="round"/>
-   <path d="M-4.6 1.6q-1.6 1-1.4 2.6" stroke="#cfc0a4" stroke-width="1.1" fill="none" stroke-linecap="round"/></g>`,
- moutons:(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})">
-   <ellipse cx="1" cy="2.8" rx="7" ry="3" fill="rgba(40,50,25,.2)"/>
-   <circle cx="-2.4" cy="0" r="3.6" fill="#f8f4ec"/><circle cx="1.6" cy="-0.8" r="3.9" fill="#fbf8f2"/>
-   <circle cx="0" cy="2" r="3.2" fill="#f4f0e6"/>
-   <ellipse cx="5.4" cy="0.4" rx="2.4" ry="2" fill="#4a4238"/>
-   <circle cx="6.2" cy="0.1" r="0.6" fill="#1e1e1e"/></g>`,
- cochons:(x,y,s)=>`<g transform="translate(${x} ${y}) scale(${s})">
-   <ellipse cx="1" cy="2.6" rx="7" ry="2.8" fill="rgba(40,50,25,.2)"/>
-   <ellipse cx="0" cy="0" rx="6.6" ry="4" fill="#eab5b0"/>
-   <ellipse cx="5.8" cy="-1" rx="2.8" ry="2.2" fill="#e5a8a2"/>
-   <ellipse cx="7.6" cy="-0.8" rx="1.3" ry="1" fill="#d98f8c"/>
-   <path d="M4.4 -3.2l-1-1.8 2 .6zM7.4 -3l1.4-1.4.2 2z" fill="#e5a8a2"/>
-   <path d="M-6 0.6q-1.6 .6-1.2 2" stroke="#d98f8c" stroke-width="1.1" fill="none" stroke-linecap="round"/></g>`
-};
-/* ---- l'enclos vu de haut ---- */
-function ENCLOS(el,nb,pret){
-  const A=(a,b)=>{const v=Math.sin(a*127.1+b*311.7)*43758.5;return v-Math.floor(v);};
-  let betes='';
-  const n=Math.min(nb,6);
-  for(let i=0;i<n;i++){
-    const x=20+ (i%3)*30 + (A(i,1)-.5)*8;
-    const y=34+ Math.floor(i/3)*26 + (A(i,2)-.5)*7;
-    betes+=BETE[el.id](x.toFixed(1),y.toFixed(1),1.5);
-  }
-  return `<svg viewBox="0 0 100 88" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
-    <rect width="100" height="88" fill="#8fb26a"/>
-    <rect width="100" height="88" fill="url(#herbe)" opacity=".5"/>
-    <g stroke="#8a6a44" stroke-width="2.6" fill="none" opacity=".85">
-      <rect x="4" y="4" width="92" height="80" rx="5"/>
-      <path d="M4 26h92M4 62h92" opacity=".35"/></g>
-    <g>
-      <rect x="6" y="6" width="30" height="20" rx="3" fill="#c9583c"/>
-      <rect x="6" y="6" width="30" height="6" rx="3" fill="#dd6f4f"/>
-      <rect x="16" y="18" width="10" height="8" fill="#7d5228"/>
-    </g>
-    ${betes}
-    ${pret?'<circle cx="88" cy="12" r="6" fill="#8ed36a" stroke="#2f6b1f" stroke-width="2"/>':''}
-  </svg>`;
-}
-
-/* ================= les outils, cinq paliers chacun ================= */
-const OUTILS=[
- {id:'arrosoir',nom:'Arrosoir',niv:1,
-  d:'Les cultures poussent plus vite',
-  effet:n=>`-${n*5} % de temps de pousse`,
-  cout:n=>Math.round(180*Math.pow(2.2,n)),
-  ic:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4a7d8f" stroke-width="1.7" stroke-linejoin="round">
-      <path d="M5 10h9v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M14 12l5-4v8z"/><path d="M8 10V8a3 3 0 0 1 3-3"/></svg>`},
- {id:'faux',nom:'Faux',niv:2,
-  d:'Parfois une récolte double',
-  effet:n=>`${n*8} % de chance de doubler`,
-  cout:n=>Math.round(260*Math.pow(2.3,n)),
-  ic:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#8a6a44" stroke-width="1.7" stroke-linecap="round">
-      <path d="M4 20L16 8"/><path d="M8 8q7-3 11 1-6 2-11-1z"/></svg>`},
- {id:'secateur',nom:'Sécateur',niv:5,
-  d:'Les arbres refont leurs fruits plus vite',
-  effet:n=>`-${n*6} % entre deux cueillettes`,
-  cout:n=>Math.round(420*Math.pow(2.3,n)),
-  ic:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.7" stroke-linecap="round">
-      <path d="M6 4l7 9M18 4l-7 9"/><circle cx="8" cy="18" r="2.6"/><circle cx="16" cy="18" r="2.6"/></svg>`},
- {id:'seau',nom:'Seau',niv:4,
-  d:'Les enclos stockent davantage',
-  effet:n=>`+${n*3} de réserve par bête`,
-  cout:n=>Math.round(340*Math.pow(2.25,n)),
-  ic:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#7d8f9c" stroke-width="1.7" stroke-linejoin="round">
-      <path d="M5 8h14l-1.6 11.4a2 2 0 0 1-2 1.6H8.6a2 2 0 0 1-2-1.6z"/><path d="M7 8a5 5 0 0 1 10 0"/></svg>`},
- {id:'carriole',nom:'Carriole',niv:3,
-  d:'Tout se revend plus cher',
-  effet:n=>`+${n*7} % au marché`,
-  cout:n=>Math.round(500*Math.pow(2.35,n)),
-  ic:`<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#8a6a44" stroke-width="1.7" stroke-linejoin="round">
-      <path d="M4 7h11l2 7H5z"/><circle cx="8" cy="18" r="2"/><circle cx="15" cy="18" r="2"/><path d="M17 9h3"/></svg>`}
-];
-
-const PRODUITS={};
-CULTURES.forEach(c=>PRODUITS[c.id]={nom:c.nom,vend:c.vend});
-ARBRES.forEach(a=>PRODUITS[a.fruit]={nom:a.nomF,vend:a.vend});
-ELEVAGES.forEach(el=>PRODUITS[el.produit]={nom:el.nomP,vend:el.vend});
-function ILLUSTRATION(){
-  const R=(a,b,s)=>{const v=Math.sin(s*127.1+a*311.7+b*74.7)*43758.5;return v-Math.floor(v);};
-
-  /* --- rangs de culture en perspective : chaque bande se resserre vers l'horizon --- */
-  let rangs='';
-  for(let i=0;i<26;i++){
-    const t=i/25;
-    const y=176+Math.pow(t,1.7)*104;              // espacement qui s'ouvre vers le bas
-    const ep=0.6+t*2.6;
-    const dec=Math.sin(t*3.1)*6;
-    rangs+=`<path d="M${-20+dec} ${y} Q200 ${y-7+dec*.6} ${420+dec} ${y-3}" stroke="rgba(108,142,74,${0.16+t*0.30})" stroke-width="${ep}" fill="none"/>`;
-  }
-  /* --- épis du premier plan, dessinés un par un --- */
-  let epis='';
-  for(let i=0;i<46;i++){
-    const x=-10+i*9.2+R(i,1,3)*6;
-    const h=26+R(i,2,7)*26;
-    const base=302;
-    const pen=(R(i,3,11)-0.5)*10;
-    const vert=`hsl(${72+R(i,4,13)*18} ${30+R(i,5,17)*18}% ${28+R(i,6,19)*14}%)`;
-    epis+=`<g class="epi" style="animation-delay:${(-R(i,7,23)*4).toFixed(2)}s;transform-origin:${x}px ${base}px">
-      <path d="M${x} ${base} Q${x+pen*.4} ${base-h*.6} ${x+pen} ${base-h}" stroke="${vert}" stroke-width="1.9" fill="none" stroke-linecap="round"/>
-      <ellipse cx="${(x+pen).toFixed(1)}" cy="${(base-h-4).toFixed(1)}" rx="2.6" ry="5.4" fill="hsl(${44+R(i,8,29)*10} ${52+R(i,9,31)*14}% ${54+R(i,10,37)*10}%)" transform="rotate(${(pen*1.4).toFixed(1)} ${(x+pen).toFixed(1)} ${(base-h-4).toFixed(1)})"/>
-      </g>`;
-  }
-  /* --- feuillage : amas de cercles pour un houppier crédible --- */
-  const houppier=(cx,cy,s,c1,c2,c3)=>{
-    let g='';
-    const amas=[[0,-s*.55,s*.62],[-s*.5,-s*.2,s*.46],[s*.5,-s*.25,s*.44],[-s*.2,-s*.75,s*.4],[s*.25,-s*.7,s*.38],[0,-s*.15,s*.55]];
-    amas.forEach(([dx,dy,r],i)=>{g+=`<circle cx="${cx+dx}" cy="${cy+dy}" r="${r}" fill="${i<2?c1:(i<4?c2:c3)}"/>`;});
-    return g;
-  };
-  /* --- piquets de clôture le long du chemin --- */
-  let cloture='';
-  for(let i=0;i<11;i++){
-    const t=i/10;
-    const x=18+t*370, y=236+Math.pow(t,1.6)*44, h=9+t*13;
-    cloture+=`<rect x="${x}" y="${y-h}" width="${1.6+t*2.2}" height="${h}" rx="1" fill="#7d6a4a" opacity="${0.5+t*0.4}"/>`;
-    if(i<10)cloture+=`<path d="M${x} ${y-h*0.72} L${18+((i+1)/10)*370} ${236+Math.pow((i+1)/10,1.6)*44-(9+((i+1)/10)*13)*0.72}" stroke="#7d6a4a" stroke-width="${0.8+t*1.2}" opacity="${0.35+t*0.35}"/>`;
-  }
-
-  return `
-<svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
- <defs>
-  <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#8fb8d4"/><stop offset=".38" stop-color="#c9dce4"/>
-    <stop offset=".68" stop-color="#f3e0c0"/><stop offset="1" stop-color="#f7d9a8"/></linearGradient>
-  <radialGradient id="halo" cx=".5" cy=".5" r=".5">
-    <stop offset="0" stop-color="#fff6d8" stop-opacity=".95"/>
-    <stop offset=".45" stop-color="#ffe6a8" stop-opacity=".45"/>
-    <stop offset="1" stop-color="#ffdf9a" stop-opacity="0"/></radialGradient>
-  <linearGradient id="pre1" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#a9c98a"/><stop offset="1" stop-color="#8fb672"/></linearGradient>
-  <linearGradient id="pre2" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#8cb46c"/><stop offset="1" stop-color="#6f9c56"/></linearGradient>
-  <linearGradient id="champ" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#d8c07e"/><stop offset="1" stop-color="#c2a760"/></linearGradient>
-  <linearGradient id="toit" x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stop-color="#d0714f"/><stop offset="1" stop-color="#a94f36"/></linearGradient>
-  <filter id="doux"><feGaussianBlur stdDeviation="3"/></filter>
-  <filter id="grain">
-    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" stitchTiles="stitch"/>
-    <feColorMatrix type="saturate" values="0"/>
-    <feComponentTransfer><feFuncA type="linear" slope=".13"/></feComponentTransfer></filter>
-  <radialGradient id="vign" cx=".5" cy=".45" r=".78">
-    <stop offset=".55" stop-color="rgba(0,0,0,0)"/><stop offset="1" stop-color="rgba(60,45,25,.22)"/></radialGradient>
- </defs>
-
- <rect width="400" height="300" fill="url(#ciel)"/>
-
- <!-- soleil bas, halo large -->
- <circle cx="298" cy="112" r="96" fill="url(#halo)"/>
- <circle cx="298" cy="112" r="21" fill="#fff3cf"/>
- <circle cx="298" cy="112" r="21" fill="none" stroke="#ffe9ae" stroke-width="6" opacity=".55" filter="url(#doux)"/>
-
- <!-- nuages en bandes, deux vitesses -->
- <g class="nuage n1" opacity=".92" fill="#fdfaf3">
-   <ellipse cx="70" cy="46" rx="42" ry="9"/><ellipse cx="96" cy="39" rx="26" ry="10"/>
-   <ellipse cx="44" cy="42" rx="20" ry="7"/></g>
- <g class="nuage n2" opacity=".7" fill="#fdfaf3">
-   <ellipse cx="250" cy="30" rx="34" ry="7"/><ellipse cx="270" cy="25" rx="20" ry="8"/></g>
- <g class="nuage n3" opacity=".55" fill="#fdfaf3">
-   <ellipse cx="150" cy="66" rx="30" ry="6"/><ellipse cx="168" cy="62" rx="18" ry="6.5"/></g>
-
- <!-- reliefs lointains, perspective atmosphérique -->
- <path d="M-10 150 Q60 122 130 142 Q200 162 270 138 Q330 118 410 146 L410 190 L-10 190Z" fill="#9fb6b0" opacity=".55"/>
- <path d="M-10 158 Q70 138 150 156 Q230 174 300 152 Q360 134 410 158 L410 200 L-10 200Z" fill="#8aa894" opacity=".7"/>
-
- <!-- rideau d'arbres à l'horizon -->
- <g opacity=".9">
-   ${[18,52,86,118,150,182,214,246,278,310,342,376].map((x,i)=>{
-     const s=9+((i*7)%5);
-     return `<g>${houppier(x,172,s,'#6e8f63','#5f8156','#527247')}<rect x="${x-1.4}" y="168" width="2.8" height="9" fill="#5a4a34"/></g>`;
-   }).join('')}
- </g>
-
- <!-- prairies -->
- <path d="M-10 176 Q100 166 200 178 Q300 190 410 174 L410 210 L-10 210Z" fill="url(#pre1)"/>
- <path d="M-10 196 Q110 186 210 200 Q310 214 410 196 L410 240 L-10 240Z" fill="url(#pre2)"/>
-
- <!-- champ de blé au centre, avec ses rangs -->
- <path d="M-10 206 Q120 196 250 210 Q330 218 410 206 L410 300 L-10 300Z" fill="url(#champ)"/>
- <g>${rangs}</g>
-
- <!-- ferme -->
- <g>
-   <ellipse cx="118" cy="196" rx="46" ry="7" fill="rgba(70,60,35,.16)"/>
-   <!-- grange -->
-   <rect x="86" y="158" width="64" height="38" rx="2" fill="#f6ecd8"/>
-   <rect x="86" y="158" width="64" height="4" fill="#fffaf0"/>
-   <rect x="86" y="188" width="64" height="8" fill="#e2d4ba"/>
-   <path d="M80 160 L118 134 L156 160 Z" fill="url(#toit)"/>
-   <path d="M80 160 L118 134 L118 160 Z" fill="#e0855f" opacity=".55"/>
-   <rect x="78" y="158" width="80" height="4" rx="1.5" fill="#8a5a2e"/>
-   <rect x="110" y="176" width="16" height="20" rx="1.5" fill="#a8703a"/>
-   <rect x="112" y="178" width="12" height="18" fill="#c08a52"/>
-   <rect x="93" y="167" width="12" height="10" rx="1.5" fill="#bcd9e6"/>
-   <rect x="131" y="167" width="12" height="10" rx="1.5" fill="#bcd9e6"/>
-   <rect x="140" y="133" width="7" height="14" fill="#b5624a"/>
-   <g class="fumee" fill="#fdfaf3" opacity=".55">
-     <circle cx="143" cy="128" r="4"/><circle class="f2" cx="143" cy="128" r="3.4"/>
-   </g>
-   <!-- petite remise -->
-   <rect x="160" y="176" width="30" height="20" rx="2" fill="#efe2c8"/>
-   <path d="M156 178 L175 166 L194 178 Z" fill="#9a7f5e"/>
-   <rect x="171" y="186" width="9" height="10" fill="#a8703a"/>
-   <!-- silo -->
-   <rect x="196" y="164" width="14" height="32" rx="7" fill="#d9d3c4"/>
-   <path d="M196 172 q7 -10 14 0" fill="#b9b3a4"/>
-   <rect x="196" y="180" width="14" height="1.6" fill="#c2bcae"/>
-   <rect x="196" y="188" width="14" height="1.6" fill="#c2bcae"/>
- </g>
-
- <!-- arbres isolés, plus près -->
- <g><rect x="298" y="186" width="5" height="18" fill="#6b5334"/>${houppier(300,190,17,'#77a065','#658c57','#57794a')}</g>
- <g><rect x="344" y="196" width="4" height="14" fill="#6b5334"/>${houppier(346,200,12,'#7fa96b','#6b915b','#5c7f4e')}</g>
-
- <!-- chemin qui s'ouvre vers le bas -->
- <path d="M182 206 Q176 250 128 300 L268 300 Q216 250 210 206 Z" fill="#d9c49a"/>
- <path d="M182 206 Q176 250 128 300 L152 300 Q192 248 192 206 Z" fill="#e3d1ab" opacity=".8"/>
- <g opacity=".5">${[0,1,2,3,4,5].map(i=>{const t=i/5,y=214+t*t*80;
-   return `<ellipse cx="${196-t*10}" cy="${y}" rx="${2+t*4}" ry="${1+t*1.6}" fill="#bfa madeup"/>`;}).join('').replace(/bfa madeup/g,'bfa87e')}</g>
- ${cloture}
-
-
- <!-- premier plan : herbes et épis -->
- <path d="M-10 286 Q80 272 170 288 Q260 304 410 282 L410 300 L-10 300Z" fill="#7d9a58"/>
- <g>${epis}</g>
-
- <rect width="400" height="300" fill="url(#vign)"/>
- <rect width="400" height="300" filter="url(#grain)" opacity=".55" style="mix-blend-mode:multiply"/>
-</svg>`;
-}
 
 /* ================= sauvegarde ================= */
-const CLE='bdl.ferme.v3';
-const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:3,
-  cases:Array.from({length:9},()=>({c:null,fin:0})),
-  vergers:[null,null,null],enclos:{},outils:{},stock:{},commandes:null,
-  derniere:Date.now(),accueilVu:false,tuto:0,venduUneFois:false});
+const CLE='bdl.survie.v1';
+const neuf=()=>({
+  biome:null, nom:'Survivant', jour:1, debut:Date.now(), derniere:Date.now(),
+  faim:100, soif:100, chaleur:100, sante:100, xp:0, niv:1,
+  sacs:{}, objets:{}, zones:{}, meteo:'clair', meteoFin:0,
+  journal:[], nuitsPassees:0, mortes:0, vu:false});
 let e=neuf();
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(neuf(),JSON.parse(b));}catch(x){}
 const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
-
-const stock=k=>e.stock[k]||0, ajouter=(k,n)=>{e.stock[k]=stock(k)+n;};
-const euros=n=>Math.round(n).toLocaleString('fr-FR')+' €';
-const duree=s=>s<60?Math.round(s)+' s':(s<3600?Math.round(s/60)+' min':(Math.round(s/360)/10)+' h');
+const sac=k=>e.sacs[k]||0;
+const ajouter=(k,n)=>{e.sacs[k]=sac(k)+n;};
+const a=(id)=>!!e.objets[id];
+const biome=()=>BIOMES.find(b=>b.id===e.biome)||BIOMES[0];
 let tt;const toast=t=>{const z=$('toast');z.textContent=t;z.classList.add('on');
-  clearTimeout(tt);tt=setTimeout(()=>z.classList.remove('on'),2100);};
+  clearTimeout(tt);tt=setTimeout(()=>z.classList.remove('on'),2200);};
+const noter=(t)=>{e.journal.unshift({t,q:Date.now()});if(e.journal.length>40)e.journal.pop();};
 
-/* ================= outils ================= */
-const palier=id=>(e.outils&&e.outils[id])||0;
-const MAX_PALIER=5;
-const bonusPousse=()=>1-0.05*palier('arrosoir');
-const bonusArbre=()=>1-0.06*palier('secateur');
-const bonusPrix=()=>1+0.07*palier('carriole');
-const bonusCapacite=()=>3*palier('seau');
-const chanceDouble=()=>0.08*palier('faux');
-const prixVente=k=>Math.round(PRODUITS[k].vend*bonusPrix());
+/* ================= temps, jour et nuit ================= */
+const JOUR_MS=60*60*1000;                  // une heure réelle vaut une journée
+const heure=()=>((Date.now()-e.debut)%JOUR_MS)/JOUR_MS*24;
+const nuit=()=>{const h=heure();return h<6||h>=20;};
+const jourNo=()=>1+Math.floor((Date.now()-e.debut)/JOUR_MS);
+const meteo=()=>METEOS.find(m=>m.id===e.meteo)||METEOS[0];
+
+function tirerMeteo(){
+  const total=METEOS.reduce((s,m)=>s+m.poids,0);
+  let r=Math.random()*total;
+  for(const m of METEOS){r-=m.poids;if(r<=0)return m;}
+  return METEOS[0];
+}
+
+/* ================= usure des jauges ================= */
+/* une jauge pleine tient huit heures pour la faim, six pour la soif, cinq pour le froid.
+   Hors ligne, l'usure ne compte qu'à moitié : on ne punit pas d'avoir une vie. */
+const USURE={faim:100/(8*3600), soif:100/(6*3600), chaleur:100/(5*3600)};
+function ecouler(){
+  const now=Date.now();
+  let dt=(now-e.derniere)/1000;
+  if(dt<=0)return;
+  if(dt>36000)dt=36000;                    // on plafonne à dix heures d'absence
+  const absence=dt>180;                    // au-delà de trois minutes, on était parti
+  if(absence)dt*=0.5;
+  e.derniere=now;
+
+  if(now>e.meteoFin){const m=tirerMeteo();e.meteo=m.id;
+    e.meteoFin=now+(4+Math.random()*6)*60000;}
+  const m=meteo(), b=biome();
+
+  e.faim=Math.max(0,e.faim-USURE.faim*dt);
+  e.soif=Math.max(0,e.soif-USURE.soif*dt*(m.soif||1));
+  const protege=(a('abri')?.45:1)*(a('manteau')?.5:1)*(a('feu')?.7:1);
+  e.chaleur=Math.max(0,e.chaleur-USURE.chaleur*dt*(m.chaleur||1)*b.froid*protege);
+  if(m.eau&&Math.random()<dt/600)ajouter('eau',1);
+
+  /* la santé se dégrade quand une jauge tombe à zéro, remonte quand tout va bien */
+  let mal=0;
+  if(e.faim<=0)mal+=1.2;
+  if(e.soif<=0)mal+=1.8;
+  if(e.chaleur<=0)mal+=1.5;
+  if(mal)e.sante=Math.max(0,e.sante-mal*dt/240);
+  else if(e.faim>40&&e.soif>40&&e.chaleur>40)e.sante=Math.min(100,e.sante+dt/90);
+
+  /* les nuits passées comptent : les rôdeurs frappent une fois par nuit */
+  const nuitsTotal=Math.floor((now-e.debut)/JOUR_MS);
+  let aTraiter=nuitsTotal-e.nuitsPassees;
+  if(aTraiter>0){
+    const sautees=Math.max(0,aTraiter-3);      // on ne rejoue jamais plus de trois nuits
+    if(sautees){e.nuitsPassees+=sautees;
+      noter(sautees+' nuits sont passées sans incident notable.');}
+    for(let k=0;k<Math.min(3,aTraiter);k++){e.nuitsPassees++;passerNuit();}
+  }
+  if(e.sante<=0)mourir();
+}
+function passerNuit(){
+  const b=biome(), m=meteo();
+  const defense=(a('palissade')?3:0)+(a('abri')?2:0)+(a('feu')?1:0)+(a('lance')?2:0);
+  const menace=(1.2+Math.min(e.nuitsPassees,12)*0.2)*(m.danger||1);
+  if(defense>=menace){
+    noter('Nuit '+e.nuitsPassees+' : rien n’a franchi ton campement.');
+    gagnerXp(6);
+  }else{
+    const degats=Math.min(28,Math.round((menace-defense)*8));
+    e.sante=Math.max(0,e.sante-degats);
+    const qui=b.id==='ville'?'Des rôdeurs':'Des bêtes';
+    noter('Nuit '+e.nuitsPassees+' : '+qui.toLowerCase()+' ont tourné autour. −'+degats+' de santé.');
+    if(Object.keys(e.sacs).length&&Math.random()<.5){
+      const k=Object.keys(e.sacs).filter(x=>sac(x)>0)[0];
+      if(k){const perte=Math.max(1,Math.round(sac(k)/3));e.sacs[k]=sac(k)-perte;
+        noter('Ils ont emporté '+perte+' '+RESSOURCES[k].nom.toLowerCase()+'.');}
+    }
+  }
+}
+function mourir(){
+  e.mortes++;
+  noter('Tu t’es effondré. Quelqu’un t’a traîné jusqu’à l’abri.');
+  e.sante=45;e.faim=40;e.soif=40;e.chaleur=50;
+  const perdu=Math.round(e.xp/2);e.xp=Math.max(0,e.xp-perdu);
+  Object.keys(e.sacs).forEach(k=>{e.sacs[k]=Math.floor(sac(k)/2);});
+  toast('Tu as failli y rester');
+}
 
 /* ================= niveaux ================= */
-const XP_NIV=n=>Math.round(55*Math.pow(1.28,n-1));
-const PRIME=n=>Math.round(90*Math.pow(1.34,n-1));
-function ouvertures(n){
-  const l=[];
-  CULTURES.filter(c=>c.niv===n).forEach(c=>l.push({t:'Nouvelle culture',n:c.nom}));
-  ARBRES.filter(a=>a.niv===n).forEach(a=>l.push({t:'Nouvel arbre',n:a.nom}));
-  ELEVAGES.filter(x=>x.niv===n).forEach(x=>l.push({t:'Nouvel élevage',n:x.nom}));
-  OUTILS.filter(o=>o.niv===n).forEach(o=>l.push({t:'Nouvel outil',n:o.nom}));
-  return l;
-}
-let filePalier=[], fenetreXp={t:0,total:0};
-const PLAFOND_XP=45;
+const XP_NIV=n=>Math.round(60*Math.pow(1.3,n-1));
 function gagnerXp(n){
-  if(!(n>0))return;
-  const now=Date.now();
-  if(now-fenetreXp.t>10000)fenetreXp={t:now,total:0};
-  n=Math.min(n,Math.max(0,PLAFOND_XP-fenetreXp.total));
-  if(n<=0)return;
-  fenetreXp.total+=n;e.xp+=n;
+  e.xp+=n;
   while(e.xp>=XP_NIV(e.niv)){
     e.xp-=XP_NIV(e.niv);e.niv++;
-    const prime=PRIME(e.niv);e.or+=prime;
-    filePalier.push({niv:e.niv,prime,ouvre:ouvertures(e.niv)});
+    noter('Tu tiens le coup : niveau '+e.niv+'.');
+    const nouvelles=RECETTES.filter(r=>r.niv===e.niv).map(r=>r.nom);
+    if(nouvelles.length)toast('Niveau '+e.niv+' · '+nouvelles.join(', '));
+    else toast('Niveau '+e.niv);
   }
-  if(filePalier.length)setTimeout(montrerPalier,500);
-}
-function montrerPalier(){
-  if(!filePalier.length)return;
-  const p=filePalier.shift();
-  const liste=p.ouvre.length?p.ouvre.map(o=>
-    `<div class="ouvre"><span class="q">${o.t}</span><span class="v">${o.n}</span></div>`).join('')
-    :`<div class="ouvre"><span class="q">Rien de neuf</span><span class="v">mais la prime est là</span></div>`;
-  $('fen-b').innerHTML=`<div class="palier"><div class="rond">${p.niv}</div>
-    <h2>Niveau ${p.niv}</h2><p>Ta ferme prend de la valeur.</p>
-    <div class="prime">+${p.prime.toLocaleString('fr-FR')} €</div>${liste}</div>
-    <button class="fermer" id="f-x">Continuer</button>`;
-  $('fen').classList.add('on');
-  $('f-x').onclick=()=>{$('fen').classList.remove('on');sauver();rendre(true);
-    if(filePalier.length)setTimeout(montrerPalier,240);};
 }
 
-/* ================= production continue ================= */
-function auto(){
-  const now=Date.now(), dt=(now-e.derniere)/1000;
-  if(dt<=0)return;e.derniere=now;
-  ELEVAGES.forEach(el=>{
-    const en=e.enclos[el.id];if(!en||!en.nb)return;
-    const cap=(el.capacite+bonusCapacite())*en.nb;
-    en.attente=Math.min(cap,(en.attente||0)+en.nb*dt/el.cycle);
+/* ================= récolte ================= */
+const pretZone=z=>{const t=e.zones[z.id]||0;return Date.now()>=t;};
+const resteZone=z=>Math.max(0,Math.ceil(((e.zones[z.id]||0)-Date.now())/1000));
+function fouiller(z){
+  if(!pretZone(z))return toast('Épuisé pour ' + duree(resteZone(z)));
+  if(e.chaleur<=0||e.soif<=0)return toast('Tu es trop faible pour partir');
+  const m=meteo();
+  if(m.id==='tempete'&&Math.random()<.35){
+    e.sante=Math.max(0,e.sante-6);
+    noter('La tempête t’a rabattu vers l’abri. −6 de santé.');
+    toast('La tempête t’en empêche');sauver();rendre(true);return;
+  }
+  let recolte=[];
+  Object.entries(z.ressources).forEach(([k,n])=>{
+    let q=n+(Math.random()<.35?1:0);
+    if(k==='bois'&&a('hache'))q+=1;
+    ajouter(k,q);recolte.push(q+' '+RESSOURCES[k].nom.toLowerCase());
   });
+  e.faim=Math.max(0,e.faim-4);
+  e.soif=Math.max(0,e.soif-5);
+  e.zones[z.id]=Date.now()+z.duree*1000;
+  gagnerXp(Math.max(2,Math.round(z.duree/25)));
+  noter('Tu as fouillé '+z.nom.toLowerCase()+' : '+recolte.join(', ')+'.');
+  toast(recolte.join(' · '));
+  sauver();rendre(true);
 }
-const coutParcelle=()=>Math.round(110*Math.pow(1.7,e.parcelles-3));
-const coutEnclos=el=>Math.round(el.cout*Math.pow(1.85,(e.enclos[el.id]&&e.enclos[el.id].nb)||0));
-
-/* ================= état des cases ================= */
-function etatCase(i){
-  if(i>=e.parcelles)return{type:'verrou'};
-  const c=e.cases[i];
-  if(!c||!c.c)return{type:'libre'};
-  const cu=CULTURES.find(x=>x.id===c.c);
-  if(!cu)return{type:'libre'};
-  const cycle=(c.cycle||cu.duree)*1000, reste=c.fin-Date.now();
-  if(reste<=0)return{type:'pret',cu,restes:c.restes};
-  return{type:'pousse',cu,restes:c.restes,reste:Math.ceil(reste/1000),p:Math.max(0,1-reste/cycle)};
+function boire(){
+  if(sac('eau')<1)return toast('Pas d’eau');
+  e.sacs.eau=sac('eau')-1;
+  const sale=!a('filtre')&&Math.random()<.18;
+  e.soif=Math.min(100,e.soif+34);
+  if(sale){e.sante=Math.max(0,e.sante-8);noter('L’eau était trouble. −8 de santé.');toast('Elle avait un goût étrange');}
+  else toast('+34 de soif');
+  gagnerXp(1);sauver();rendre(true);
 }
-const stade=p=>p>=1?3:(p>.66?2:(p>.3?1:0));
-
-/* ================= commandes ================= */
-const CLIENTS=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim','la crèche'];
-function dispoProduits(){
-  return Object.keys(PRODUITS).filter(k=>{
-    const c=CULTURES.find(x=>x.id===k);if(c)return c.niv<=e.niv;
-    const el=ELEVAGES.find(x=>x.produit===k);if(el)return !!(e.enclos[el.id]&&e.enclos[el.id].nb);
-    const a=ARBRES.find(x=>x.fruit===k);if(a)return (e.vergers||[]).some(v=>v&&v.id===a.id);
-    return false;});
+function manger(){
+  if(sac('nourriture')<1)return toast('Rien à manger');
+  e.sacs.nourriture=sac('nourriture')-1;
+  e.faim=Math.min(100,e.faim+32);
+  toast('+32 de faim');gagnerXp(1);sauver();rendre(true);
 }
-function nouvelleCommande(){
-  const d=dispoProduits();if(!d.length)return null;
-  const n=1+Math.min(2,Math.floor(e.niv/4)),items={};
-  for(let i=0;i<n;i++){const k=d[Math.random()*d.length|0];
-    items[k]=(items[k]||0)+1+Math.floor(Math.random()*3);}
-  const val=Object.entries(items).reduce((s,[k,q])=>s+PRODUITS[k].vend*q,0);
-  return{client:CLIENTS[Math.random()*CLIENTS.length|0],items,
-    or:Math.round(val*1.5),xp:Math.max(4,Math.round(val/14))};
-}
-function assurerCommandes(){
-  if(!e.commandes)e.commandes=[];
-  while(e.commandes.length<3){const c=nouvelleCommande();if(!c)break;e.commandes.push(c);}
-}
-const livrable=c=>Object.entries(c.items).every(([k,q])=>stock(k)>=q);
-
-/* ================= dessins réutilisables ================= */
-function CHAMP(cu,t,p){
-  const A=(a,b,s)=>{const v=Math.sin(a*127.1+b*311.7+s*74.7)*43758.5;return v-Math.floor(v);};
-  let sol='';
-  for(let r=0;r<9;r++)sol+=`<rect x="0" y="${5+r*8.6}" width="100" height="4.4" fill="#a87c48" opacity=".5"/>`;
-  let pl='';
-  if(cu)for(let r=0;r<3;r++)for(let c=0;c<3;c++){
-    const x=22+c*28+(A(r,c,3)-.5)*5, y=30+r*25+(A(r,c,7)-.5)*4;
-    pl+=`<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(1.2)">${PLANT[cu.id](t)}</g>`;
-  }
-  return `<svg viewBox="0 0 100 90" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
-    <rect width="100" height="90" fill="#b98d55"/>${sol}
-    <rect width="100" height="90" fill="url(#terre)" opacity=".22"/>${pl}</svg>`;
-}
-const HERBE=()=>`<rect width="100" height="90" fill="#8fb26a"/><rect width="100" height="90" fill="url(#herbe)" opacity=".45"/>`;
-const VERGER_VIDE=()=>`<svg viewBox="0 0 100 90" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
-  ${HERBE()}<circle cx="50" cy="46" r="15" fill="none" stroke="#6f8f52" stroke-width="2" stroke-dasharray="5 5"/></svg>`;
-const VERGER=(a,mur,ph)=>`<svg viewBox="0 0 100 90" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
-  ${HERBE()}<g transform="translate(50 46) scale(2.1)">${ARBRE_SVG(a,mur,ph)}</g></svg>`;
-const MINI_ARBRE=(a,ph)=>`<svg width="38" height="38" viewBox="-17 -17 34 34"><g transform="scale(1.1)">${ARBRE_SVG(a,true,ph||0)}</g></svg>`;
-const MINI_BETE=el=>`<svg width="38" height="30" viewBox="0 0 30 22">${BETE[el.id](14,11,1.5)}</svg>`;
-const vignette=(cu,t)=>`<svg width="36" height="36" viewBox="-14 -22 28 28"><g transform="scale(1.5)">${PLANT[cu.id](t===undefined?3:t)}</g></svg>`;
-function icone(k){
-  const c=CULTURES.find(x=>x.id===k);if(c)return vignette(c,3);
-  const a=ARBRES.find(x=>x.fruit===k);if(a)return MINI_ARBRE(a,0);
-  const el=ELEVAGES.find(x=>x.produit===k);if(el)return MINI_BETE(el);
-  return '';
+function fabriquer(r){
+  if(r.niv>e.niv)return toast('Niveau '+r.niv+' requis');
+  if(a(r.id)&&r.type!=='objet')return toast('Déjà en place');
+  const manque=Object.entries(r.cout).filter(([k,n])=>sac(k)<n);
+  if(manque.length)return toast('Il manque '+manque.map(([k,n])=>(n-sac(k))+' '+RESSOURCES[k].nom.toLowerCase()).join(', '));
+  Object.entries(r.cout).forEach(([k,n])=>{e.sacs[k]=sac(k)-n;});
+  e.objets[r.id]=true;
+  gagnerXp(12);
+  noter('Tu as fabriqué : '+r.nom.toLowerCase()+'.');
+  toast(r.nom+' prêt');
+  sauver();rendre(true);
 }
 
-function DECOR(){
-  const A=(a,b,s)=>{const v=Math.sin(a*127.1+b*311.7+s*74.7)*43758.5;return v-Math.floor(v);};
-  const haie=(x,y,w,h,g)=>{
-    let o='';const pas=14;
-    const bosse=(cx,cy,r,c)=>`<circle cx="${cx.toFixed(0)}" cy="${cy.toFixed(0)}" r="${r.toFixed(1)}" fill="${c}"/>`;
-    for(let i=0;i<=w;i+=pas){
-      o+=bosse(x+i,y+2,6+A(i,g,1)*2.4,'#3f6b38')+bosse(x+i-3,y,5.4+A(i,g,5)*2,'#57904a')+bosse(x+i+3,y-1.6,3.6,'#6aa757');
-      o+=bosse(x+i,y+h+2,6+A(i,g,2)*2.4,'#38602f')+bosse(x+i-3,y+h,5.2+A(i,g,6)*2,'#4f8442');
-    }
-    for(let j=pas;j<h;j+=pas){
-      o+=bosse(x,y+j+2,6+A(j,g,3)*2,'#3f6b38')+bosse(x-2,y+j,5.2,'#548c47');
-      o+=bosse(x+w,y+j+2,6+A(j,g,4)*2,'#38602f')+bosse(x+w-2,y+j,5.2,'#4f8442');
-    }
-    return o;
+/* ================= dessins ================= */
+function CIEL(){
+  const b=biome(), h=heure(), n=nuit();
+  const [c1,c2,c3]=b.ciel;
+  const nuitC=['#1b2740','#26354f','#33415c'];
+  const [d1,d2,d3]=n?nuitC:[c1,c2,c3];
+  const soleilX=6+((h-6)/14)*88;
+  return `<svg viewBox="0 0 400 150" preserveAspectRatio="none" class="ciel">
+    <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${d1}"/><stop offset=".45" stop-color="${d2}"/>
+      <stop offset="1" stop-color="${d3}"/></linearGradient>
+      <filter id="fl"><feGaussianBlur stdDeviation="6"/></filter></defs>
+    <rect width="400" height="150" fill="url(#cg)"/>
+    ${n?`<g fill="#fdfbf2" opacity=".85">
+        <circle cx="316" cy="42" r="15"/><circle cx="309" cy="37" r="13" fill="${d1}"/></g>
+        ${Array.from({length:22},(_,i)=>`<circle cx="${(i*57)%390+8}" cy="${(i*37)%92+10}" r="1.3" fill="#fff" opacity="${.3+((i*13)%7)/12}"/>`).join('')}`
+       :`<circle cx="${(soleilX*4).toFixed(0)}" cy="46" r="46" fill="#fff3c8" opacity=".5" filter="url(#fl)"/>
+         <circle cx="${(soleilX*4).toFixed(0)}" cy="46" r="15" fill="#fff8de"/>`}
+    <path d="M0 106 Q100 92 200 106 Q300 120 400 100 L400 150 L0 150Z" fill="${n?'#1e2c22':b.sol[0]}" opacity=".9"/>
+    <path d="M0 126 Q120 112 240 126 Q320 135 400 122 L400 150 L0 150Z" fill="${n?'#182318':b.sol[1]}"/>
+  </svg>`;
+}
+const ICO={
+ faim:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M7 3v8a3 3 0 0 0 6 0V3"/><path d="M10 11v10"/><path d="M17 3c-1.6 2-2 4-2 7h4c0-3-.4-5-2-7z"/><path d="M17 10v11"/></svg>`,
+ soif:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3s6 6.5 6 10.5A6 6 0 0 1 6 13.5C6 9.5 12 3 12 3z"/></svg>`,
+ chaleur:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 21c3.3 0 6-2.4 6-5.4 0-4.5-6-12.6-6-12.6S6 11.1 6 15.6C6 18.6 8.7 21 12 21z"/></svg>`,
+ sante:`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9.4A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 7 2.6c0 5-7 9.4-7 9.4z"/></svg>`
+};
+const ICO_RES={
+ bois:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8a5a2e" stroke-width="1.9" stroke-linecap="round"><path d="M5 18 19 6"/><path d="M8 21 4 17"/><ellipse cx="18" cy="6" rx="3" ry="2" transform="rotate(-40 18 6)"/></svg>`,
+ fibre:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7d9a4a" stroke-width="1.9" stroke-linecap="round"><path d="M6 20c0-6 3-10 6-14M12 20c0-5 2-9 5-12M4 20c1-4 2-6 4-8"/></svg>`,
+ pierre:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7d8590" stroke-width="1.9" stroke-linejoin="round"><path d="M4 15l4-7 6-2 6 5-3 7H7z"/></svg>`,
+ metal:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.9" stroke-linejoin="round"><path d="M4 9h16v7H4z"/><path d="M8 9V6h8v3"/></svg>`,
+ tissu:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a8607a" stroke-width="1.9" stroke-linejoin="round"><path d="M4 6q4 3 8 0t8 0v12q-4-3-8 0t-8 0z"/></svg>`,
+ eau:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3f8fb0" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3s6 6.5 6 10.5A6 6 0 0 1 6 13.5C6 9.5 12 3 12 3z"/></svg>`,
+ nourriture:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#b5822a" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20c-4 0-7-3-7-7 0-4 3-6 7-6s7 2 7 6c0 4-3 7-7 7z"/><path d="M12 7V4"/></svg>`
+};
+const jauge=(cle,val,couleur)=>`<div class="jauge-l">
+  <span class="ic" style="color:${couleur}">${ICO[cle]}</span>
+  <span class="b"><i style="width:${Math.round(val)}%;background:${couleur}"></i></span>
+  <span class="v">${Math.round(val)}</span></div>`;
+
+/* ================= le camp ================= */
+function vueCamp(){
+  const b=biome(), m=meteo(), h=heure(), n=nuit();
+  const hh=String(Math.floor(h)).padStart(2,'0')+':'+String(Math.floor((h%1)*60)).padStart(2,'0');
+  let s=`<div class="scene">${CIEL()}
+    <div class="bandeau">
+      <div class="jour">JOUR ${jourNo()} · ${hh}</div>
+      <div class="meteo">${n?'Nuit':'Jour'} · ${m.nom}</div>
+    </div></div>`;
+
+  s+='<div class="titre">TON ÉTAT</div><div class="carte jauges">'+
+    jauge('faim',e.faim,'#c98f3a')+jauge('soif',e.soif,'#3f8fb0')+
+    jauge('chaleur',e.chaleur,'#c9563a')+jauge('sante',e.sante,'#4f9a52')+'</div>';
+
+  s+='<div class="deux">'+
+    `<button class="gros" data-act="boire" ${sac('eau')?'':'disabled'}>Boire<span>${sac('eau')} eau</span></button>`+
+    `<button class="gros" data-act="manger" ${sac('nourriture')?'':'disabled'}>Manger<span>${sac('nourriture')} vivres</span></button>`+
+    '</div>';
+
+  const abri=[];
+  if(a('feu'))abri.push('feu');
+  if(a('abri'))abri.push('abri');
+  if(a('palissade'))abri.push('palissade');
+  if(a('lance'))abri.push('lance');
+  s+='<div class="titre">TON CAMPEMENT</div><div class="carte">'+
+    (abri.length?`<p class="p">Cette nuit tu comptes sur : ${abri.join(', ')}.</p>`
+      :'<p class="p">Tu n’as rien pour la nuit. Un feu serait un début.</p>')+
+    `<p class="p" style="margin-top:8px">${m.d}. ${n?'Il fait nuit, mieux vaut rester près du feu.':'Le jour est le moment de fouiller.'}</p></div>`;
+
+  s+='<div class="titre">TON SAC</div><div class="carte sac">';
+  const cles=Object.keys(RESSOURCES).filter(k=>sac(k)>0);
+  s+=cles.length?cles.map(k=>`<span class="res">${ICO_RES[k]}<b>${sac(k)}</b>${RESSOURCES[k].nom}</span>`).join('')
+    :'<p class="p">Vide. Il faut sortir.</p>';
+  s+='</div>';
+  return s;
+}
+
+/* ================= explorer ================= */
+function vueExplorer(){
+  const b=biome();
+  let s=`<div class="titre">${b.nom.toUpperCase()}</div>`;
+  b.zones.forEach(z=>{
+    const pret=pretZone(z);
+    s+=`<button class="ligne${pret?' pret':''}" data-zone="${z.id}">
+      <span class="ic">${ICO_RES[Object.keys(z.ressources)[0]]}</span>
+      <span class="t"><span class="n">${z.nom}</span>
+      <span class="d">${pret?z.d:'épuisé · revient dans '+duree(resteZone(z))}</span>
+      <span class="gains">${Object.entries(z.ressources).map(([k,n])=>
+        `<span class="g">${n} ${RESSOURCES[k].nom.toLowerCase()}</span>`).join('')}</span></span>
+      <span class="agir${pret?'':' off'}">${pret?'Fouiller':'—'}</span></button>`;
+  });
+  s+='<p class="note">Fouiller coûte un peu de faim et de soif. Chaque lieu se reconstitue avec le temps.</p>';
+  return s;
+}
+
+/* ================= atelier ================= */
+function vueAtelier(){
+  let s='<div class="titre">CE QUE TU PEUX FABRIQUER</div>';
+  RECETTES.forEach(r=>{
+    const fait=a(r.id), bloque=r.niv>e.niv;
+    const cout=Object.entries(r.cout).map(([k,n])=>
+      `<span class="g${sac(k)>=n?' ok':''}">${n} ${RESSOURCES[k].nom.toLowerCase()}</span>`).join('');
+    s+=`<div class="ligne${fait?' pret':''}">
+      <span class="ic">${ICO_RES[Object.keys(r.cout)[0]]}</span>
+      <span class="t"><span class="n">${r.nom}</span>
+      <span class="d">${bloque?'niveau '+r.niv+' requis':r.d}</span>
+      ${bloque?'':`<span class="gains">${cout}</span>`}</span>
+      ${fait?'<span class="agir off">En place</span>'
+        :`<button class="agir" data-fab="${r.id}" ${bloque?'disabled':''}>Fabriquer</button>`}</div>`;
+  });
+  return s;
+}
+
+/* ================= journal ================= */
+function vueJournal(){
+  let s=`<div class="titre">TON HISTOIRE</div><div class="carte">
+    <p class="p"><b>${biome().nom}</b> · jour ${jourNo()} · niveau ${e.niv}</p>
+    <p class="p" style="margin-top:6px">${biome().intro}</p></div>`;
+  s+='<div class="titre">CE QUI S’EST PASSÉ</div>';
+  if(!e.journal.length)return s+'<div class="vide">Rien encore. Sors, fouille, construis.</div>';
+  e.journal.forEach(j=>{
+    const min=Math.round((Date.now()-j.q)/60000);
+    s+=`<div class="entree"><span class="q">${min<1?'à l’instant':'il y a '+duree(min*60)}</span><span class="x">${j.t}</span></div>`;
+  });
+  return s;
+}
+
+
+/* ================= le départ ================= */
+function tirerBiome(){
+  const b=BIOMES[Math.floor(Math.random()*BIOMES.length)];
+  $('depart-b').innerHTML=`
+    <div class="k">TU T’ES RÉVEILLÉ</div>
+    <h1>Quelque part</h1>
+    <p>Chaque survivant échoue dans un endroit différent. Un jour, avec une radio, vous vous retrouverez.</p>
+    <div class="lieu"><div class="n">${b.nom}</div>
+      <p style="margin-top:8px">${b.intro}</p></div>
+    <button class="cta" id="d-ok">Commencer ici</button>
+    <button class="relance" id="d-re">tirer un autre endroit</button>`;
+  $('depart').classList.add('on');
+  $('d-ok').onclick=()=>{
+    e.biome=b.id;e.debut=Date.now();e.derniere=Date.now();e.vu=true;
+    noter('Tu ouvres les yeux. '+b.intro);
+    sauver();$('depart').classList.remove('on');rendre(true);
   };
-  let touffes='',fleurs='';
-  for(let i=0;i<110;i++){
-    const x=A(i,1,5)*400, y=A(i,2,7)*900;
-    touffes+=`<path d="M${x.toFixed(0)} ${y.toFixed(0)}v-5" stroke="#79a35a" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>`;
-  }
-  for(let i=0;i<26;i++){
-    const x=A(i,3,11)*400, y=A(i,4,13)*900;
-    const c=['#e8607a','#f2c14e','#c98fe0','#fdfaf2'][i%4];
-    fleurs+=`<circle cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" r="2.1" fill="${c}" opacity=".85"/>`;
-  }
-  return `<svg viewBox="0 0 400 900" preserveAspectRatio="none" class="decor" aria-hidden="true">
-  <defs>
-    <linearGradient id="prairie" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#a2c97f"/><stop offset=".55" stop-color="#8bb768"/>
-      <stop offset="1" stop-color="#79a75c"/></linearGradient>
-    <linearGradient id="terreCh" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#cbb88f"/><stop offset=".5" stop-color="#ddcaa2"/>
-      <stop offset="1" stop-color="#c9b58b"/></linearGradient>
-    <radialGradient id="lumF" cx=".26" cy=".06" r=".95">
-      <stop offset="0" stop-color="rgba(255,248,214,.34)"/><stop offset="1" stop-color="rgba(255,248,214,0)"/></radialGradient>
-    <radialGradient id="vignF" cx=".5" cy=".45" r=".85">
-      <stop offset=".52" stop-color="rgba(0,0,0,0)"/><stop offset="1" stop-color="rgba(35,50,25,.34)"/></radialGradient>
-    <radialGradient id="eau" cx=".38" cy=".32" r=".7">
-      <stop offset="0" stop-color="#8ecbe0"/><stop offset="1" stop-color="#4f97b8"/></radialGradient>
-    <filter id="grainF">
-      <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="3" stitchTiles="stitch"/>
-      <feColorMatrix type="saturate" values="0"/>
-      <feComponentTransfer><feFuncA type="linear" slope=".1"/></feComponentTransfer></filter>
-    <filter id="ombreDouce"><feDropShadow dx="2" dy="4" stdDeviation="3" flood-color="#2c3a1e" flood-opacity=".3"/></filter>
-  </defs>
-
-  <rect width="400" height="900" fill="url(#prairie)"/>
-  ${touffes}${fleurs}
-
-  <!-- chemins -->
-  <path d="M184 -10 L216 -10 L214 900 L186 900Z" fill="url(#terreCh)"/>
-  <path d="M-10 292 L410 292 L410 320 L-10 320Z" fill="url(#terreCh)"/>
-  <path d="M-10 470 L410 470 L410 496 L-10 496Z" fill="url(#terreCh)"/>
-  <path d="M-10 646 L410 646 L410 672 L-10 672Z" fill="url(#terreCh)"/>
-  <g opacity=".4" fill="#b9a47a">
-    <ellipse cx="199" cy="70" rx="4" ry="2"/><ellipse cx="197" cy="190" rx="5" ry="2.4"/>
-    <ellipse cx="201" cy="400" rx="5" ry="2.4"/><ellipse cx="198" cy="580" rx="6" ry="2.6"/>
-    <ellipse cx="200" cy="760" rx="6" ry="2.6"/></g>
-  <g opacity=".3" stroke="#b9a47a" stroke-width="2" fill="none">
-    <path d="M-10 302 H410"/><path d="M-10 482 H410"/><path d="M-10 658 H410"/></g>
-
-  ${haie(16,20,368,258,1)}
-  ${haie(16,336,368,120,2)}
-  ${haie(16,514,368,120,3)}
-
-  <!-- la cour de ferme, en bas -->
-  <g filter="url(#ombreDouce)">
-    <rect x="34" y="712" width="118" height="72" rx="4" fill="#f6ecd8"/>
-    <path d="M26 716 L93 676 L160 716 Z" fill="#c9583c"/>
-    <path d="M26 716 L93 676 L93 716 Z" fill="#dd6f4f"/>
-    <rect x="80" y="748" width="26" height="36" rx="2" fill="#a8703a"/>
-    <rect x="46" y="726" width="20" height="16" rx="2" fill="#bcd9e6"/>
-    <rect x="120" y="726" width="20" height="16" rx="2" fill="#bcd9e6"/>
-    <rect x="134" y="672" width="12" height="26" fill="#b5624a"/>
-  </g>
-  <g class="fumee-f" fill="#fdfaf3" opacity=".5">
-    <circle cx="140" cy="664" r="7"/><circle class="f2" cx="140" cy="664" r="5.5"/></g>
-  <g filter="url(#ombreDouce)">
-    <rect x="176" y="748" width="62" height="42" rx="3" fill="#efe2c8"/>
-    <path d="M170 750 L207 726 L244 750 Z" fill="#9a7f5e"/>
-    <rect x="198" y="766" width="18" height="24" rx="2" fill="#a8703a"/>
-    <rect x="254" y="726" width="26" height="64" rx="13" fill="#d9d3c4"/>
-    <path d="M254 740 q13 -18 26 0" fill="#c2bcae"/>
-  </g>
-  <!-- la mare -->
-  <g filter="url(#ombreDouce)">
-    <ellipse cx="318" cy="812" rx="58" ry="34" fill="#6f9a53"/>
-    <ellipse cx="318" cy="810" rx="50" ry="28" fill="url(#eau)"/>
-    <ellipse cx="300" cy="800" rx="16" ry="6" fill="#b8e2f0" opacity=".5"/>
-    <ellipse cx="330" cy="818" rx="10" ry="4" fill="#b8e2f0" opacity=".35"/></g>
-  <g fill="#4f7a44">
-    <circle cx="52" cy="828" r="15"/><circle cx="70" cy="840" r="11"/><circle cx="36" cy="842" r="10"/>
-    <circle cx="150" cy="856" r="12"/><circle cx="166" cy="864" r="9"/></g>
-  <g fill="#e6d9b8">
-    <rect x="196" y="820" width="22" height="16" rx="3"/><rect x="222" y="828" width="18" height="13" rx="3"/></g>
-
-  <rect width="400" height="900" fill="url(#lumF)"/>
-  <rect width="400" height="900" fill="url(#vignF)"/>
-  <rect width="400" height="900" filter="url(#grainF)" opacity=".42" style="mix-blend-mode:multiply"/>
- </svg>`;
-}
-const POS_CHAMPS=[
- {l:8,t:3.4},{l:38,t:3.4},{l:68,t:3.4},
- {l:8,t:13.2},{l:38,t:13.2},{l:68,t:13.2},
- {l:8,t:23},{l:38,t:23},{l:68,t:23}];
-const L_CHAMP=24, H_CHAMP=8.4;
-const POS_ARBRES=[{l:8,t:38.4},{l:38,t:38.4},{l:68,t:38.4}];
-const L_ARBRE=24, H_ARBRE=9.6;
-const POS_ENCLOS=[{l:8,t:58},{l:52,t:58}];
-const L_ENCLOS=40, H_ENCLOS=10.6;
-
-function vueFerme(){
-  let h='<div class="scene">'+DECOR();
-  h+=`<div class="repere" style="top:0.6%">LES CHAMPS</div>
-      <div class="repere" style="top:34.4%">LE VERGER</div>
-      <div class="repere" style="top:53.6%">L’ÉLEVAGE</div>
-      <div class="repere" style="top:74%">LA COUR</div>`;
-
-  for(let i=0;i<9;i++){
-    const s=etatCase(i), p=POS_CHAMPS[i];
-    const st=`left:${p.l}%;top:${p.t}%;width:${L_CHAMP}%;height:${H_CHAMP}%`;
-    if(s.type==='verrou'){
-      h+=`<button class="lot verrou" style="${st}" data-p="${i}">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6d7f5c" stroke-width="2">
-          <rect x="5" y="10.5" width="14" height="9" rx="2.5"/><path d="M8.5 10.5V7.5a3.5 3.5 0 0 1 7 0v3"/></svg>
-        <span>${euros(coutParcelle())}</span></button>`;
-    }else if(s.type==='libre'){
-      h+=`<button class="lot" style="${st}" data-p="${i}">${CHAMP(null,0)}<span class="txt">Semer</span></button>`;
-    }else if(s.type==='pret'){
-      h+=`<button class="lot mur" style="${st}" data-p="${i}">${CHAMP(s.cu,3)}<span class="pastille"></span>
-        ${s.cu.recoltes>1?`<span class="compte">${s.restes}</span>`:''}</button>`;
-    }else{
-      h+=`<button class="lot" style="${st}" data-p="${i}">${CHAMP(s.cu,stade(s.p))}
-        <span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span></button>`;
-    }
-  }
-
-  for(let i=0;i<3;i++){
-    const v=(e.vergers||[])[i], p=POS_ARBRES[i];
-    const st=`left:${p.l}%;top:${p.t}%;width:${L_ARBRE}%;height:${H_ARBRE}%`;
-    if(!v){h+=`<button class="lot herbe" style="${st}" data-arbre="${i}">
-      <svg viewBox="0 0 100 90" preserveAspectRatio="none" class="fond">
-        <circle cx="50" cy="46" r="16" fill="none" stroke="#6f8f52" stroke-width="2.4" stroke-dasharray="5 5"/></svg>
-      <span class="txt">Planter</span></button>`;}
-    else{
-      const a=ARBRES.find(x=>x.id===v.id);
-      const reste=(v.fin||0)-Date.now(), mur=reste<=0;
-      const p2=mur?1:Math.max(0,1-reste/(Math.round(a.cycle*bonusArbre())*1000));
-      h+=`<button class="lot herbe${mur?' mur':''}" style="${st}" data-arbre="${i}">
-        <svg viewBox="0 0 100 90" preserveAspectRatio="none" class="fond">
-          <g transform="translate(50 48) scale(2.2)">${ARBRE_SVG(a,mur,i)}</g></svg>
-        ${mur?'<span class="pastille"></span>':`<span class="jauge"><i style="width:${Math.round(p2*100)}%"></i></span>`}
-        <span class="nom">${a.nom}</span></button>`;
-    }
-  }
-
-  const ouverts=ELEVAGES.filter(el=>e.enclos[el.id]&&e.enclos[el.id].nb);
-  POS_ENCLOS.forEach((p,i)=>{
-    const st=`left:${p.l}%;top:${p.t}%;width:${L_ENCLOS}%;height:${H_ENCLOS}%`;
-    const el=ouverts[i];
-    if(!el){
-      const prochain=ELEVAGES.find(x=>!(e.enclos[x.id]&&e.enclos[x.id].nb));
-      h+=`<button class="lot herbe vide" style="${st}" data-rayonferme="1">
-        <span class="txt">${prochain&&prochain.niv<=e.niv?'Construire '+prochain.nom.toLowerCase():'Enclos à venir'}</span></button>`;
-      return;
-    }
-    const en=e.enclos[el.id], pret=Math.floor(en.attente||0);
-    const cap=(el.capacite+bonusCapacite())*en.nb;
-    h+=`<button class="lot${pret?' mur':''}" style="${st}" data-elevage="${el.id}">${ENCLOS(el,en.nb,pret>0)}
-      ${pret?`<span class="pastille"></span><span class="compte">${pret}</span>`
-           :`<span class="jauge"><i style="width:${Math.round((en.attente||0)/cap*100)}%"></i></span>`}
-      <span class="nom">${el.nom} · ${en.nb}</span></button>`;
-  });
-  if(ouverts.length>2){
-    h+=`<div class="reste-enclos">+${ouverts.length-2} autre${ouverts.length>3?'s':''} enclos dans le carnet</div>`;
-  }
-  h+='</div>';
-
-  /* ---- le carnet ---- */
-  let l='';
-  for(let i=0;i<e.parcelles;i++){
-    const s=etatCase(i);
-    if(s.type==='libre')
-      l+=`<button class="ligne" data-p="${i}"><span class="ic">
-        <svg width="30" height="24" viewBox="0 0 30 24"><rect width="30" height="24" rx="5" fill="#b98d55"/>
-        <path d="M5 4v16M11 4v16M17 4v16M23 4v16" stroke="#9a7342" stroke-width="2.2"/></svg></span>
-        <span class="t"><span class="n">Parcelle ${i+1}</span><span class="d">libre</span></span>
-        <span class="agir sec">Semer</span></button>`;
-    else if(s.type==='pret'){
-      const suite=s.cu.recoltes>1?` · ${s.restes} récolte${s.restes>1?'s':''} restante${s.restes>1?'s':''}`:'';
-      l+=`<button class="ligne pret" data-p="${i}"><span class="ic">${vignette(s.cu,3)}</span>
-        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">prêt${suite}</span></span>
-        <span class="agir">Récolter</span></button>`;
-    }else
-      l+=`<div class="ligne pousse"><span class="ic">${vignette(s.cu,stade(s.p))}</span>
-        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">encore ${duree(s.reste)}</span>
-        <span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span></span></div>`;
-  }
-  ELEVAGES.forEach(el=>{
-    const en=e.enclos[el.id];if(!en||!en.nb)return;
-    const n=Math.floor(en.attente||0);if(!n)return;
-    l+=`<button class="ligne pret" data-elevage="${el.id}"><span class="ic">${MINI_BETE(el)}</span>
-      <span class="t"><span class="n">${el.nom}</span>
-      <span class="d">${n} ${PRODUITS[el.produit].nom.toLowerCase()}${n>1?'s':''} à ramasser</span></span>
-      <span class="agir">Ramasser</span></button>`;
-  });
-  (e.vergers||[]).forEach((v,i)=>{
-    if(!v)return;const a=ARBRES.find(x=>x.id===v.id);if(!a)return;
-    const reste=(v.fin||0)-Date.now();
-    if(reste>0)l+=`<div class="ligne pousse"><span class="ic">${MINI_ARBRE(a,i)}</span>
-      <span class="t"><span class="n">${a.nom}</span><span class="d">fruits dans ${duree(Math.ceil(reste/1000))}</span></span></div>`;
-    else l+=`<button class="ligne pret" data-arbre="${i}"><span class="ic">${MINI_ARBRE(a,i)}</span>
-      <span class="t"><span class="n">${a.nom}</span><span class="d">fruits mûrs</span></span>
-      <span class="agir">Cueillir</span></button>`;
-  });
-  h+='<div class="titre">LE CARNET</div>'+(l||'<div class="vide">Rien à faire pour l’instant.<br>Sème quelque chose.</div>');
-  return h;
+  $('d-re').onclick=tirerBiome;
 }
 
-/* ================= marché ================= */
-function vueMarche(){
-  const cles=Object.keys(e.stock).filter(k=>stock(k)>0&&PRODUITS[k]);
-  if(!cles.length)return '<div class="titre">LE MARCHÉ</div><div class="vide">Ta grange est vide.<br>Récolte d’abord.</div>';
-  const total=cles.reduce((s,k)=>s+prixVente(k)*stock(k),0);
-  let h='<div class="titre">LA GRANGE</div>';
-  cles.forEach(k=>{
-    h+=`<div class="item"><span class="ic">${icone(k)}</span>
-      <span class="t"><span class="n">${PRODUITS[k].nom}</span>
-      <span class="d">${stock(k)} en réserve · ${euros(prixVente(k))} l’unité</span></span>
-      <button class="prixb" data-v="${k}">${euros(prixVente(k)*stock(k))}</button></div>`;
-  });
-  h+=`<button class="prixb plein" data-v="tout" style="margin-top:6px">Tout vendre · ${euros(total)}</button>`;
-  if(palier('carriole'))h+=`<div class="note">La carriole ajoute ${palier('carriole')*7} % à chaque vente.</div>`;
-  return h;
-}
-
-/* ================= boutique ================= */
-let rayon='graines';
-function vueBoutique(){
-  const ong=(id,t)=>`<button class="rayon${rayon===id?' on':''}" data-rayon="${id}">${t}</button>`;
-  let h=`<div class="rayons">${ong('graines','Graines')}${ong('outils','Outils')}${ong('ferme','Ferme')}</div>`;
-  const item=(ic,n,d,b)=>`<div class="item"><span class="ic">${ic}</span>
-    <span class="t"><span class="n">${n}</span><span class="d">${d}</span></span>${b}</div>`;
-
-  if(rayon==='graines'){
-    h+='<div class="titre">CE QUE TU PEUX SEMER</div>';
-    CULTURES.forEach(c=>{
-      const ok=c.niv<=e.niv;
-      const d=ok?`${duree(Math.round(c.duree*bonusPousse()))} · achat ${euros(c.cout)} · vente ${euros(prixVente(c.id))}`+
-        (c.recoltes>1?` · ${c.recoltes} récoltes`:'')+(c.lot>1?` · récolte par ${c.lot}`:'')
-        :`s’ouvre au niveau ${c.niv}`;
-      h+=item(vignette(c,ok?3:1),c.nom,d,`<span class="prixb" style="opacity:${ok?1:.45}">${ok?euros(c.cout):'—'}</span>`);
-    });
-    h+='<div class="note">On sème en touchant une parcelle libre, sur l’écran de la ferme.</div>';
-    h+='<div class="titre">LES ARBRES</div>';
-    ARBRES.forEach(a=>{
-      const ok=a.niv<=e.niv;
-      h+=item(MINI_ARBRE(a,0),a.nom,
-        ok?`une cueillette toutes les ${duree(Math.round(a.cycle*bonusArbre()))} · ${euros(a.vend)}`:`s’ouvre au niveau ${a.niv}`,
-        `<span class="prixb" style="opacity:${ok?1:.45}">${ok?euros(a.cout):'—'}</span>`);
-    });
-    h+='<div class="note">On plante depuis le verger.</div>';
-  }
-  if(rayon==='outils'){
-    h+='<div class="titre">TON MATÉRIEL</div>';
-    OUTILS.forEach(o=>{
-      const n=palier(o.id), max=n>=MAX_PALIER, bloque=o.niv>e.niv, prix=o.cout(n);
-      const d=bloque?`s’ouvre au niveau ${o.niv}`:(n?`${o.d} · ${o.effet(n)}`:o.d);
-      h+=`<div class="item"><span class="ic">${o.ic}</span>
-        <span class="t"><span class="n">${o.nom}</span><span class="d">${d}</span>
-        ${bloque?'':`<span class="paliers">${Array.from({length:MAX_PALIER},(_,k)=>`<i class="${k<n?'on':''}"></i>`).join('')}</span>`}</span>
-        <button class="prixb" data-outil="${o.id}" ${(bloque||max||e.or<prix)?'disabled':''}>${bloque?'—':(max?'au max':euros(prix))}</button></div>`;
-    });
-    h+='<div class="note">Cinq paliers par outil. Chacun améliore l’effet.</div>';
-  }
-  if(rayon==='ferme'){
-    h+='<div class="titre">AGRANDIR</div>';
-    const cp=coutParcelle();
-    h+=item(`<svg width="30" height="24" viewBox="0 0 30 24"><rect width="30" height="24" rx="5" fill="#b98d55"/>
-      <path d="M5 4v16M11 4v16M17 4v16M23 4v16" stroke="#9a7342" stroke-width="2.2"/></svg>`,
-      'Nouvelle parcelle', e.parcelles>=9?'les neuf sont défrichées':`tu en as ${e.parcelles} sur 9`,
-      `<button class="prixb" data-a="parcelle" ${(e.parcelles>=9||e.or<cp)?'disabled':''}>${e.parcelles>=9?'—':euros(cp)}</button>`);
-    h+='<div class="titre">L’ÉLEVAGE</div>';
-    ELEVAGES.forEach(el=>{
-      const nb=(e.enclos[el.id]&&e.enclos[el.id].nb)||0, prix=coutEnclos(el), bloque=el.niv>e.niv;
-      const d=bloque?`s’ouvre au niveau ${el.niv}`
-        :(nb?`${nb} ${el.bete.toLowerCase()}${nb>1?'s':''} · un ${PRODUITS[el.produit].nom.toLowerCase()} toutes les ${duree(el.cycle)}`
-            :`${PRODUITS[el.produit].nom} en continu, même hors ligne`);
-      h+=item(MINI_BETE(el),el.nom+(nb?` · ${nb}`:''),d,
-        `<button class="prixb" data-a="enclos:${el.id}" ${(bloque||e.or<prix)?'disabled':''}>${bloque?'—':euros(prix)}</button>`);
-    });
-  }
-  return h;
-}
-
-/* ================= commandes ================= */
-function vueCommandes(){
-  assurerCommandes();
-  let h='<div class="titre">LES HABITANTS</div>';
-  if(!e.commandes.length)return h+'<div class="vide">Personne ne commande encore.<br>Produis quelque chose.</div>';
-  e.commandes.forEach((c,i)=>{
-    h+=`<div class="cmd"><div class="h"><span class="q">Pour ${c.client}</span><span class="g">${euros(c.or)}</span></div>
-      <div class="jetons">${Object.entries(c.items).map(([k,q])=>
-        `<span class="jeton${stock(k)>=q?' ok':''}">${PRODUITS[k].nom} ${Math.min(stock(k),q)}/${q}</span>`).join('')}</div>
-      <button class="agir" data-c="${i}" style="width:100%;margin-top:11px;padding:12px" ${livrable(c)?'':'disabled'}>
-        Livrer · +${c.xp} xp</button></div>`;
-  });
-  h+='<div class="note">Les habitants paient 50 % de plus que le marché.</div>';
-  return h;
-}
-
-/* ================= accueil et tutoriel ================= */
-function ouvrirVoile(){document.body.classList.add('fige');$('accueil').classList.add('on');}
-function fermerVoile(){$('accueil').classList.remove('on');document.body.classList.remove('fige');}
-function ouvrirAccueil(){
-  $('accueil-b').innerHTML=`
-    <div class="vue">${ILLUSTRATION()}</div>
-    <div class="mot">
-      <div class="kicker">BIENVENUE À</div>
-      <h2>${e.ferme}</h2>
-      <div class="filet"></div>
-      <p>Trois parcelles. À toi de jouer.</p>
-      <button class="cta" id="a-go">Semer mon premier blé</button>
-      <button class="saut" id="a-skip">passer</button>
-    </div>`;
-  ouvrirVoile();
-  $('a-go').onclick=()=>{e.accueilVu=true;e.tuto=1;sauver();fermerVoile();rendre();
-    const p=document.querySelector('.case');if(p)p.click();};
-  $('a-skip').onclick=()=>{e.accueilVu=true;e.tuto=-1;sauver();fermerVoile();rendre();};
-}
-const ETAPES=[null,
- {cible:()=>document.querySelector('.case'),
-  titre:'Touche la terre',
-  gains:()=>[`+${prixVente('ble')} dans ${duree(Math.round(45*bonusPousse()))}`,'coûte 12 €'],
-  attente:'Sème du blé', fait:()=>e.cases.some(c=>c&&c.c)},
- {cible:()=>{const i=e.cases.findIndex(c=>c&&c.c);
-    return document.querySelectorAll('.case')[i>=0?i:0];},
-  titre:'Ça pousse même hors ligne',
-  gains:()=>['la jauge avance toute seule'],
-  bouton:'Compris'},
- {cible:()=>{const i=e.cases.findIndex(c=>c&&c.c);
-    return document.querySelectorAll('.case')[i>=0?i:0];},
-  titre:'Encaisse ta récolte',
-  gains:()=>['touche la parcelle mûre'],
-  attente:'Récolte', fait:()=>Object.values(e.stock).some(v=>v>0)},
- {cible:()=>document.querySelector('#nav button[data-v="marche"]'),
-  titre:'Vends au marché',
-  gains:()=>['la grange devient de l’argent'],
-  attente:'Vends', fait:()=>e.venduUneFois},
- {cible:()=>document.querySelector('#nav button[data-v="commandes"]'),
-  titre:'Les habitants paient plus',
-  gains:()=>['+50 % par rapport au marché'],
-  bouton:'Terminer'}
-];
-function majTuto(){
-  const t=$('tuto');
-  if(!(e.tuto>0)||e.tuto>=ETAPES.length){t.classList.remove('on');return;}
-  const et=ETAPES[e.tuto], cible=et.cible&&et.cible();
-  if(!cible){t.classList.remove('on');return;}
-  t.classList.add('on');
-  const r=cible.getBoundingClientRect(), m=8;
-  const trou=$('trou');
-  trou.style.left=(r.left-m)+'px';trou.style.top=(r.top-m)+'px';
-  trou.style.width=(r.width+m*2)+'px';trou.style.height=(r.height+m*2)+'px';
-  const dessous=r.top<innerHeight*0.5;
-  const b=$('bulle'), pret=et.fait?et.fait():true;
-  b.innerHTML=`<div class="fleche"></div>
-    <div class="rang"><div class="pts">${ETAPES.slice(1).map((_,i)=>
-      `<i class="${i+1===e.tuto?'on':''}"></i>`).join('')}</div>
-      <button class="passer" id="t-skip">passer</button></div>
-    <h3>${et.titre}</h3>
-    <div class="gains">${et.gains().map((g,i)=>`<span class="gain${i?' gris':''}">${g}</span>`).join('')}</div>
-    ${(et.bouton||pret)?`<button class="cta" id="t-next" style="margin-top:13px;padding:13px">${et.bouton||'Continuer'}</button>`
-      :`<div class="gain gris" style="margin-top:13px;text-align:center;padding:12px">${et.attente}</div>`}`;
-  if(dessous){b.style.top=Math.round(r.bottom+18)+'px';b.style.bottom='auto';}
-  else{b.style.bottom=Math.round(innerHeight-r.top+18)+'px';b.style.top='auto';}
-  const rb=b.getBoundingClientRect(), f=b.querySelector('.fleche');
-  const cx=Math.min(Math.max(r.left+r.width/2-rb.left-7,20),rb.width-34);
-  f.style.left=Math.round(cx)+'px';
-  if(dessous){f.style.top='-7px';f.style.bottom='auto';}else{f.style.bottom='-7px';f.style.top='auto';}
-  const n=$('t-next');if(n)n.onclick=avancerTuto;
-  const sk=$('t-skip');if(sk)sk.onclick=()=>{e.tuto=-1;sauver();majTuto();};
-}
-function avancerTuto(){
-  e.tuto++;
-  if(e.tuto>=ETAPES.length){
-    e.tuto=-1;e.or+=100;sauver();rendre(true);
-    $('accueil-b').innerHTML=`<div class="mot" style="padding:28px 12px 22px">
-      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#2f6b1f" stroke-width="1.7"
-        style="display:block;margin:0 auto 14px"><circle cx="12" cy="12" r="10"/>
-        <path d="M8 12.5l2.6 2.6L16 9.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <div class="kicker">TA FERME TOURNE</div>
-      <h2 style="font-size:34px">+100 €</h2><div class="filet"></div>
-      <p>Le reste t’appartient.</p>
-      <button class="cta" id="a-fin">Continuer</button></div>`;
-    ouvrirVoile();
-    $('a-fin').onclick=()=>{fermerVoile();rendre();};
-    return;
-  }
-  if(e.tuto===2){
-    const i=e.cases.findIndex(c=>c&&c.c);
-    if(i>=0&&e.cases[i].fin>Date.now()+9000)e.cases[i].fin=Date.now()+9000;
-  }
-  sauver();rendre(true);
-}
-addEventListener('resize',majTuto);
-
-/* ================= actions ================= */
-function semer(i){
-  const dispo=CULTURES.filter(c=>c.niv<=e.niv).filter(c=>e.tuto===1?c.id==='ble':true);
-  $('fen-b').innerHTML='<h2>Que semer ?</h2><p>Choisis la culture de cette parcelle.</p>'+
-    dispo.map(c=>`<div class="item"><span class="ic">${vignette(c,3)}</span>
-      <span class="t"><span class="n">${c.nom}</span>
-      <span class="d">${duree(Math.round(c.duree*bonusPousse()))} · rapporte ${euros(prixVente(c.id))}${
-        c.recoltes>1?` · ${c.recoltes} récoltes`:''}</span></span>
-      <button class="prixb" data-g="${c.id}" ${e.or<c.cout?'disabled':''}>${euros(c.cout)}</button></div>`).join('')+
-    '<button class="fermer" id="f-x">Annuler</button>';
-  $('fen').classList.add('on');
-  $('f-x').onclick=()=>$('fen').classList.remove('on');
-  $('fen-b').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
-    const c=CULTURES.find(x=>x.id===b.dataset.g);
-    if(!c||e.or<c.cout)return;
-    e.or-=c.cout;
-    const d=Math.round(c.duree*bonusPousse());
-    e.cases[i]={c:c.id,fin:Date.now()+d*1000,cycle:d,restes:c.recoltes};
-    $('fen').classList.remove('on');sauver();rendre(true);});
-}
-function toucherCase(i){
-  const s=etatCase(i);
-  if(s.type==='verrou'){
-    const c=coutParcelle();
-    if(e.or<c)return toast('Il te manque '+euros(c-e.or));
-    e.or-=c;e.parcelles++;toast('Parcelle défrichée');sauver();rendre(true);return;
-  }
-  if(s.type==='libre')return semer(i);
-  if(s.type==='pousse')return toast('Prêt dans '+duree(s.reste));
-  const cu=s.cu;
-  let gain=(cu.lot||1)*(cu.double?2:1);
-  if(Math.random()<chanceDouble()){gain*=2;setTimeout(()=>toast('La faux a doublé la récolte'),750);}
-  ajouter(cu.id,gain);gagnerXp(cu.xp);
-  const restes=(e.cases[i].restes||1)-1;
-  if(restes>0){
-    const cycle=Math.round(cu.duree*(cu.repousse||.5)*bonusPousse());
-    e.cases[i]={c:cu.id,fin:Date.now()+cycle*1000,cycle,restes};
-    toast('+'+gain+' '+cu.nom.toLowerCase()+' · ça repousse');
-  }else{
-    e.cases[i]={c:null,fin:0};
-    toast('+'+gain+' '+cu.nom.toLowerCase());
-  }
-  sauver();rendre(true);
-}
-function toucherArbre(i){
-  const v=(e.vergers||[])[i];
-  if(!v){
-    const ouverts=ARBRES.filter(a=>a.niv<=e.niv);
-    if(!ouverts.length)return toast('Le verger ouvre au niveau '+ARBRES[0].niv);
-    $('fen-b').innerHTML='<h2>Planter un arbre</h2><p>Un arbre ne s’épuise jamais : il redonne des fruits sans fin.</p>'+
-      ARBRES.map(a=>{const ok=a.niv<=e.niv;
-        return `<div class="item"><span class="ic">${MINI_ARBRE(a,0)}</span>
-        <span class="t"><span class="n">${a.nom}</span>
-        <span class="d">${ok?`une cueillette toutes les ${duree(Math.round(a.cycle*bonusArbre()))} · ${euros(a.vend)}`
-          :`niveau ${a.niv} requis`}</span></span>
-        <button class="prixb" data-plante="${a.id}" ${(!ok||e.or<a.cout)?'disabled':''}>${euros(a.cout)}</button></div>`;
-      }).join('')+'<button class="fermer" id="f-x">Annuler</button>';
-    $('fen').classList.add('on');
-    $('f-x').onclick=()=>$('fen').classList.remove('on');
-    $('fen-b').querySelectorAll('[data-plante]').forEach(b=>b.onclick=()=>{
-      const a=ARBRES.find(x=>x.id===b.dataset.plante);
-      if(!a||e.or<a.cout||a.niv>e.niv)return;
-      e.or-=a.cout;
-      e.vergers[i]={id:a.id,fin:Date.now()+Math.round(a.cycle*bonusArbre())*1000};
-      $('fen').classList.remove('on');toast(a.nom+' planté');sauver();rendre(true);});
-    return;
-  }
-  const a=ARBRES.find(x=>x.id===v.id);
-  if((v.fin||0)>Date.now())return toast('Fruits dans '+duree(Math.ceil((v.fin-Date.now())/1000)));
-  const lot=1+Math.floor(Math.random()*2);
-  ajouter(a.fruit,lot);gagnerXp(a.xp);
-  e.vergers[i]={id:a.id,fin:Date.now()+Math.round(a.cycle*bonusArbre())*1000};
-  toast('+'+lot+' '+PRODUITS[a.fruit].nom.toLowerCase()+(lot>1?'s':''));
-  sauver();rendre(true);
-}
-function toucherElevage(id){
-  const el=ELEVAGES.find(x=>x.id===id), en=e.enclos[id];
-  if(!en||!en.nb)return;
-  const n=Math.floor(en.attente||0);
-  if(n<1)return toast('Ça arrive');
-  en.attente-=n;ajouter(el.produit,n);gagnerXp(el.xp*Math.min(n,4));
-  toast('+'+n+' '+PRODUITS[el.produit].nom.toLowerCase()+(n>1?'s':''));
-  sauver();rendre(true);
-}
-function vendre(k){
-  if(k==='tout'){
-    let t=0;Object.keys(e.stock).forEach(x=>{if(!PRODUITS[x])return;t+=prixVente(x)*stock(x);e.stock[x]=0;});
-    if(t){e.or+=t;e.venduUneFois=true;toast('+'+euros(t));}
-  }else{
-    const n=stock(k);if(!n)return;
-    const g=prixVente(k)*n;e.or+=g;e.stock[k]=0;e.venduUneFois=true;toast('+'+euros(g));
-  }
-  sauver();rendre(true);
-}
-function acheter(a){
-  if(a==='parcelle'){
-    const c=coutParcelle();
-    if(e.or<c||e.parcelles>=9)return;
-    e.or-=c;e.parcelles++;toast('Parcelle défrichée');
-  }
-  if(a.startsWith('enclos:')){
-    const el=ELEVAGES.find(x=>x.id===a.slice(7));
-    const c=coutEnclos(el);
-    if(!el||e.or<c||el.niv>e.niv)return;
-    e.or-=c;
-    const en=e.enclos[el.id]||{nb:0,attente:0};
-    en.nb++;e.enclos[el.id]=en;
-    toast(en.nb===1?el.nom+' construit':'+1 '+el.bete.toLowerCase());
-  }
-  sauver();rendre(true);
-}
-function ameliorer(id){
-  const o=OUTILS.find(x=>x.id===id);
-  const n=palier(id), prix=o.cout(n);
-  if(!o||o.niv>e.niv||n>=MAX_PALIER||e.or<prix)return;
-  e.or-=prix;e.outils[id]=n+1;
-  toast(o.nom+' · '+o.effet(n+1));sauver();rendre(true);
-}
-function livrer(i){
-  const c=e.commandes[i];
-  if(!c||!livrable(c))return;
-  Object.entries(c.items).forEach(([k,q])=>{e.stock[k]=stock(k)-q;});
-  e.or+=c.or;gagnerXp(c.xp);
-  e.commandes.splice(i,1);assurerCommandes();
-  toast('Livré · +'+euros(c.or));sauver();rendre(true);
-}
-
-/* ================= navigation et rendu ================= */
-let vue='ferme';
+/* ================= navigation ================= */
+let vue='camp';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   vue=b.dataset.v;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
@@ -1339,71 +513,37 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
 
 function brancher(){
   const z=$('corps');
-  z.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>toucherCase(+b.dataset.p));
-  z.querySelectorAll('[data-arbre]').forEach(b=>b.onclick=()=>toucherArbre(+b.dataset.arbre));
-  z.querySelectorAll('[data-elevage]').forEach(b=>b.onclick=()=>toucherElevage(b.dataset.elevage));
-  z.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>vendre(b.dataset.v));
-  z.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>acheter(b.dataset.a));
-  z.querySelectorAll('[data-outil]').forEach(b=>b.onclick=()=>ameliorer(b.dataset.outil));
-  z.querySelectorAll('[data-rayon]').forEach(b=>b.onclick=()=>{rayon=b.dataset.rayon;rendre();});
-  z.querySelectorAll('[data-rayonferme]').forEach(b=>b.onclick=()=>{
-    rayon='ferme';vue='boutique';
-    document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x.dataset.v==='boutique'));
-    rendre();});
-  z.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>livrer(+b.dataset.c));
+  z.querySelectorAll('[data-zone]').forEach(b=>b.onclick=()=>{
+    const zn=biome().zones.find(x=>x.id===b.dataset.zone);if(zn)fouiller(zn);});
+  z.querySelectorAll('[data-fab]').forEach(b=>b.onclick=()=>{
+    const r=RECETTES.find(x=>x.id===b.dataset.fab);if(r)fabriquer(r);});
+  z.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.act==='boire')boire();else manger();});
 }
-/* signature de l'écran : on ne redessine que si quelque chose a bougé */
 function signature(){
-  let g=vue+'|'+rayon+'|'+e.or+'|'+e.xp+'|'+e.niv+'|'+e.parcelles;
-  for(let i=0;i<9;i++){
-    const s=etatCase(i);
-    g+='|'+s.type+(s.cu?s.cu.id:'')+(s.type==='pousse'?Math.round(s.p*40):'')+(s.restes||'');
-  }
-  (e.vergers||[]).forEach(v=>{
-    if(!v)return g+='|-';
-    const a=ARBRES.find(x=>x.id===v.id);
-    const reste=(v.fin||0)-Date.now();
-    g+='|'+v.id+(reste<=0?'*':Math.round((1-reste/(a.cycle*1000))*40));
-  });
-  ELEVAGES.forEach(el=>{const en=e.enclos[el.id];
-    g+='|'+(en?en.nb+':'+Math.round((en.attente||0)*4):'-');});
-  Object.keys(e.stock).sort().forEach(k=>{if(stock(k))g+='|'+k+stock(k);});
-  (e.commandes||[]).forEach(c=>g+='|'+c.client+livrable(c));
+  let g=vue+'|'+Math.round(e.faim)+'|'+Math.round(e.soif)+'|'+Math.round(e.chaleur)+'|'+Math.round(e.sante);
+  g+='|'+e.niv+'|'+e.meteo+'|'+(nuit()?'n':'j')+'|'+jourNo()+'|'+Math.floor(heure()*6);
+  Object.keys(RESSOURCES).forEach(k=>g+='|'+sac(k));
+  g+='|'+Object.keys(e.objets).join(',');
+  biome().zones.forEach(z=>g+='|'+(pretZone(z)?1:Math.ceil(resteZone(z)/5)));
+  g+='|'+e.journal.length;
   return g;
 }
-let derniereSignature='';
+let sig='';
 function rendre(force){
-  auto();
-  $('or').textContent=e.or.toLocaleString('fr-FR');
-  $('niv').textContent=e.niv;
-  $('xp-b').style.width=Math.round(e.xp/XP_NIV(e.niv)*100)+'%';
-  $('xp-t').textContent=e.xp+'/'+XP_NIV(e.niv);
-  $('nom-ferme').textContent=e.ferme;
-  assurerCommandes();
-  $('pt-cmd').style.display=(e.commandes||[]).some(livrable)?'block':'none';
-  const sig=signature();
-  if(force||sig!==derniereSignature){
-    derniereSignature=sig;
-    const y=$('corps').scrollTop;                 // on garde la position de lecture
-    $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
-                         vue==='boutique'?vueBoutique():vueCommandes();
-    brancher();
-    $('corps').scrollTop=y;
-  }
-  if(e.tuto>0&&ETAPES[e.tuto]&&ETAPES[e.tuto].fait&&ETAPES[e.tuto].fait()&&!ETAPES[e.tuto]._ok){
-    ETAPES[e.tuto]._ok=true;setTimeout(avancerTuto,420);
-  }
-  requestAnimationFrame(majTuto);
+  ecouler();
+  if(!e.biome){$('depart').classList.contains('on')||tirerBiome();return;}
+  const s=signature();
+  if(!force&&s===sig)return;
+  sig=s;
+  const y=$('corps').scrollTop;
+  $('corps').innerHTML=vue==='camp'?vueCamp():vue==='explorer'?vueExplorer():
+                       vue==='atelier'?vueAtelier():vueJournal();
+  brancher();
+  $('corps').scrollTop=y;
 }
 rendre(true);
-setInterval(()=>{auto();rendre();sauver();},1000);
-if(!e.accueilVu)ouvrirAccueil();
-
-sb.auth.getUser().then(({data})=>{
-  const f=data&&data.user&&data.user.user_metadata&&data.user.user_metadata.ferme;
-  if(f&&e.ferme!==f){e.ferme=f;sauver();$('nom-ferme').textContent=f;}
-}).catch(()=>{});
-
+setInterval(()=>{ecouler();rendre();sauver();},1000);
 </script>
 </body>
 </html>
