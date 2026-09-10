@@ -15,7 +15,8 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;overflow-x:hidden}
-body{min-height:100vh;min-height:100dvh;overflow-x:hidden;background:var(--fond);color:var(--encre);
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;background:var(--fond);color:var(--encre);
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior:none}
 button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
@@ -48,11 +49,11 @@ body.fige{overflow:hidden;position:fixed;inset:0;width:100%}
 .titre:first-child{margin-top:2px}
 
 /* ---------- le domaine vu de haut ---------- */
-.scene{position:relative;width:100%;aspect-ratio:400/900;border-radius:20px;overflow:hidden;
+.scene{position:relative;width:100%;aspect-ratio:400/900;touch-action:pan-y;border-radius:20px;overflow:hidden;
   border:1px solid #cdd6c0;box-shadow:0 2px 0 rgba(120,140,100,.22),0 12px 30px rgba(60,80,50,.16);
   margin-bottom:4px}
 .scene .decor{position:absolute;inset:0;width:100%;height:100%}
-.lot{position:absolute;border-radius:12px;overflow:hidden;padding:0;
+.lot{position:absolute;touch-action:pan-y;border-radius:12px;overflow:hidden;padding:0;
   border:1px solid rgba(66,56,26,.45);background:#b98d55;
   box-shadow:0 2px 0 rgba(50,45,20,.32),0 6px 14px rgba(40,50,25,.26),
     inset 0 1px 0 rgba(255,240,200,.28),inset 0 -7px 13px rgba(80,55,20,.2);
@@ -712,7 +713,7 @@ function montrerPalier(){
     <div class="prime">+${p.prime.toLocaleString('fr-FR')} €</div>${liste}</div>
     <button class="fermer" id="f-x">Continuer</button>`;
   $('fen').classList.add('on');
-  $('f-x').onclick=()=>{$('fen').classList.remove('on');sauver();rendre();
+  $('f-x').onclick=()=>{$('fen').classList.remove('on');sauver();rendre(true);
     if(filePalier.length)setTimeout(montrerPalier,240);};
 }
 
@@ -1181,7 +1182,7 @@ function majTuto(){
 function avancerTuto(){
   e.tuto++;
   if(e.tuto>=ETAPES.length){
-    e.tuto=-1;e.or+=100;sauver();rendre();
+    e.tuto=-1;e.or+=100;sauver();rendre(true);
     $('accueil-b').innerHTML=`<div class="mot" style="padding:28px 12px 22px">
       <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#2f6b1f" stroke-width="1.7"
         style="display:block;margin:0 auto 14px"><circle cx="12" cy="12" r="10"/>
@@ -1198,7 +1199,7 @@ function avancerTuto(){
     const i=e.cases.findIndex(c=>c&&c.c);
     if(i>=0&&e.cases[i].fin>Date.now()+9000)e.cases[i].fin=Date.now()+9000;
   }
-  sauver();rendre();
+  sauver();rendre(true);
 }
 addEventListener('resize',majTuto);
 
@@ -1220,14 +1221,14 @@ function semer(i){
     e.or-=c.cout;
     const d=Math.round(c.duree*bonusPousse());
     e.cases[i]={c:c.id,fin:Date.now()+d*1000,cycle:d,restes:c.recoltes};
-    $('fen').classList.remove('on');sauver();rendre();});
+    $('fen').classList.remove('on');sauver();rendre(true);});
 }
 function toucherCase(i){
   const s=etatCase(i);
   if(s.type==='verrou'){
     const c=coutParcelle();
     if(e.or<c)return toast('Il te manque '+euros(c-e.or));
-    e.or-=c;e.parcelles++;toast('Parcelle défrichée');sauver();rendre();return;
+    e.or-=c;e.parcelles++;toast('Parcelle défrichée');sauver();rendre(true);return;
   }
   if(s.type==='libre')return semer(i);
   if(s.type==='pousse')return toast('Prêt dans '+duree(s.reste));
@@ -1244,7 +1245,7 @@ function toucherCase(i){
     e.cases[i]={c:null,fin:0};
     toast('+'+gain+' '+cu.nom.toLowerCase());
   }
-  sauver();rendre();
+  sauver();rendre(true);
 }
 function toucherArbre(i){
   const v=(e.vergers||[])[i];
@@ -1266,7 +1267,7 @@ function toucherArbre(i){
       if(!a||e.or<a.cout||a.niv>e.niv)return;
       e.or-=a.cout;
       e.vergers[i]={id:a.id,fin:Date.now()+Math.round(a.cycle*bonusArbre())*1000};
-      $('fen').classList.remove('on');toast(a.nom+' planté');sauver();rendre();});
+      $('fen').classList.remove('on');toast(a.nom+' planté');sauver();rendre(true);});
     return;
   }
   const a=ARBRES.find(x=>x.id===v.id);
@@ -1275,7 +1276,7 @@ function toucherArbre(i){
   ajouter(a.fruit,lot);gagnerXp(a.xp);
   e.vergers[i]={id:a.id,fin:Date.now()+Math.round(a.cycle*bonusArbre())*1000};
   toast('+'+lot+' '+PRODUITS[a.fruit].nom.toLowerCase()+(lot>1?'s':''));
-  sauver();rendre();
+  sauver();rendre(true);
 }
 function toucherElevage(id){
   const el=ELEVAGES.find(x=>x.id===id), en=e.enclos[id];
@@ -1284,7 +1285,7 @@ function toucherElevage(id){
   if(n<1)return toast('Ça arrive');
   en.attente-=n;ajouter(el.produit,n);gagnerXp(el.xp*Math.min(n,4));
   toast('+'+n+' '+PRODUITS[el.produit].nom.toLowerCase()+(n>1?'s':''));
-  sauver();rendre();
+  sauver();rendre(true);
 }
 function vendre(k){
   if(k==='tout'){
@@ -1294,7 +1295,7 @@ function vendre(k){
     const n=stock(k);if(!n)return;
     const g=prixVente(k)*n;e.or+=g;e.stock[k]=0;e.venduUneFois=true;toast('+'+euros(g));
   }
-  sauver();rendre();
+  sauver();rendre(true);
 }
 function acheter(a){
   if(a==='parcelle'){
@@ -1311,14 +1312,14 @@ function acheter(a){
     en.nb++;e.enclos[el.id]=en;
     toast(en.nb===1?el.nom+' construit':'+1 '+el.bete.toLowerCase());
   }
-  sauver();rendre();
+  sauver();rendre(true);
 }
 function ameliorer(id){
   const o=OUTILS.find(x=>x.id===id);
   const n=palier(id), prix=o.cout(n);
   if(!o||o.niv>e.niv||n>=MAX_PALIER||e.or<prix)return;
   e.or-=prix;e.outils[id]=n+1;
-  toast(o.nom+' · '+o.effet(n+1));sauver();rendre();
+  toast(o.nom+' · '+o.effet(n+1));sauver();rendre(true);
 }
 function livrer(i){
   const c=e.commandes[i];
@@ -1326,7 +1327,7 @@ function livrer(i){
   Object.entries(c.items).forEach(([k,q])=>{e.stock[k]=stock(k)-q;});
   e.or+=c.or;gagnerXp(c.xp);
   e.commandes.splice(i,1);assurerCommandes();
-  toast('Livré · +'+euros(c.or));sauver();rendre();
+  toast('Livré · +'+euros(c.or));sauver();rendre(true);
 }
 
 /* ================= navigation et rendu ================= */
@@ -1334,7 +1335,7 @@ let vue='ferme';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   vue=b.dataset.v;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
-  window.scrollTo(0,0);rendre();});
+  window.scrollTo(0,0);rendre(true);});
 
 function brancher(){
   const z=$('corps');
@@ -1351,7 +1352,27 @@ function brancher(){
     rendre();});
   z.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>livrer(+b.dataset.c));
 }
-function rendre(){
+/* signature de l'écran : on ne redessine que si quelque chose a bougé */
+function signature(){
+  let g=vue+'|'+rayon+'|'+e.or+'|'+e.xp+'|'+e.niv+'|'+e.parcelles;
+  for(let i=0;i<9;i++){
+    const s=etatCase(i);
+    g+='|'+s.type+(s.cu?s.cu.id:'')+(s.type==='pousse'?Math.round(s.p*40):'')+(s.restes||'');
+  }
+  (e.vergers||[]).forEach(v=>{
+    if(!v)return g+='|-';
+    const a=ARBRES.find(x=>x.id===v.id);
+    const reste=(v.fin||0)-Date.now();
+    g+='|'+v.id+(reste<=0?'*':Math.round((1-reste/(a.cycle*1000))*40));
+  });
+  ELEVAGES.forEach(el=>{const en=e.enclos[el.id];
+    g+='|'+(en?en.nb+':'+Math.round((en.attente||0)*4):'-');});
+  Object.keys(e.stock).sort().forEach(k=>{if(stock(k))g+='|'+k+stock(k);});
+  (e.commandes||[]).forEach(c=>g+='|'+c.client+livrable(c));
+  return g;
+}
+let derniereSignature='';
+function rendre(force){
   auto();
   $('or').textContent=e.or.toLocaleString('fr-FR');
   $('niv').textContent=e.niv;
@@ -1360,16 +1381,22 @@ function rendre(){
   $('nom-ferme').textContent=e.ferme;
   assurerCommandes();
   $('pt-cmd').style.display=(e.commandes||[]).some(livrable)?'block':'none';
-  $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
-                       vue==='boutique'?vueBoutique():vueCommandes();
-  brancher();
+  const sig=signature();
+  if(force||sig!==derniereSignature){
+    derniereSignature=sig;
+    const y=window.scrollY;                       // on garde la position de lecture
+    $('corps').innerHTML=vue==='ferme'?vueFerme():vue==='marche'?vueMarche():
+                         vue==='boutique'?vueBoutique():vueCommandes();
+    brancher();
+    if(vue==='ferme')window.scrollTo(0,y);
+  }
   if(e.tuto>0&&ETAPES[e.tuto]&&ETAPES[e.tuto].fait&&ETAPES[e.tuto].fait()&&!ETAPES[e.tuto]._ok){
     ETAPES[e.tuto]._ok=true;setTimeout(avancerTuto,420);
   }
   requestAnimationFrame(majTuto);
 }
-rendre();
-setInterval(()=>{auto();if(vue==='ferme')rendre();sauver();},1000);
+rendre(true);
+setInterval(()=>{auto();rendre();sauver();},1000);
 if(!e.accueilVu)ouvrirAccueil();
 
 sb.auth.getUser().then(({data})=>{
