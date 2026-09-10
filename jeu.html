@@ -75,6 +75,24 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   font:600 10.5px system-ui;color:var(--pale);padding:4px 0}
 .bas button.on{color:var(--nuit)}
 
+#fen{position:fixed;inset:0;z-index:30;display:none;align-items:flex-end;background:rgba(12,18,14,.6)}
+#fen.on{display:flex}
+#fen .fb{width:100%;background:var(--carte);border-radius:24px 24px 0 0;
+  padding:20px 16px calc(18px + env(safe-area-inset-bottom));max-height:88dvh;overflow-y:auto;
+  animation:monteF .3s cubic-bezier(.2,.85,.3,1)}
+@keyframes monteF{from{transform:translateY(26px)}}
+#fen h2{font:400 21px Georgia,serif}
+.choix{display:flex;flex-wrap:wrap;gap:8px}
+.pastille{width:38px;height:38px;border-radius:12px;border:2px solid transparent;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 3px rgba(60,60,40,.2)}
+.pastille.on{border-color:var(--vert);box-shadow:0 0 0 3px rgba(63,125,74,.18)}
+.motchoix{padding:9px 13px;border-radius:12px;background:#f0ede2;font:600 12.5px system-ui;color:var(--doux)}
+.motchoix.on{background:var(--vert);color:#fdfbf4}
+.valider2{width:100%;margin-top:18px;border-radius:15px;padding:15px;background:var(--vert);
+  color:#fdfbf4;font:600 15px system-ui}
+.rang{width:26px;flex:0 0 auto;text-align:center;font:600 14px system-ui;color:var(--pale)}
+.rang.podium{color:var(--or);font-size:16px}
+.pts{flex:0 0 auto;font:600 13px system-ui;color:var(--or)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom));
   background:rgba(31,38,32,.94);color:#fff;padding:10px 16px;border-radius:999px;font:600 13px system-ui;
   z-index:40;opacity:0;transition:.2s;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
@@ -147,6 +165,13 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
     <button data-v="journal">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
         <path d="M5 4h11l3 3v13H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Journal</button>
+    <button data-v="fiche">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <circle cx="12" cy="8" r="4"/><path d="M4.5 20c1.6-4 4.4-6 7.5-6s5.9 2 7.5 6"/></svg>Fiche</button>
+    <button data-v="classement">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <path d="M8 21h8"/><path d="M12 17v4"/><path d="M6 4h12v5a6 6 0 0 1-12 0z"/>
+        <path d="M6 6H3v2a4 4 0 0 0 3 3.8M18 6h3v2a4 4 0 0 1-3 3.8"/></svg>Classement</button>
   </div>
 </div>
 
@@ -167,6 +192,7 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
       <path d="M12 4 4 20h16z"/><path d="M9 20l3-7 3 7"/></svg></button>
 </div>
 
+<div id="fen"><div class="fb" id="fen-b"></div></div>
 <div id="depart"><div class="dep" id="depart-b"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -242,16 +268,95 @@ const METEOS=[
  {id:'canicule',nom:'Chaleur écrasante',d:'la soif double',poids:2,soif:2.2,chaleur:.5}
 ];
 
+/* ================= apparence et caractéristiques ================= */
+const PEAUX=['#f0d0ae','#e8c49a','#d3a274','#b07c4e','#8a5a34','#5f3d24'];
+const CHEVEUX=['#2b1d12','#4a3220','#7d5a34','#b58a4a','#d9c48a','#8a8f96','#a8402c','#f2efe4'];
+const COIFFES=['courts','longs','queue','crane','crete','bonnet'];
+const BARBES=['aucune','courte','pleine'];
+const VESTES=['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#54606b'];
+const YEUX=['#2b2a27','#3f5f6b','#4a6b3f','#6b4a3f'];
+
+const TRAITS=[
+ {id:'robuste',nom:'Robuste',d:'La vie descend moins vite',ic:'♦'},
+ {id:'endurant',nom:'Endurant',d:'La faim tient plus longtemps',ic:'▲'},
+ {id:'chameau',nom:'Chameau',d:'La soif tient plus longtemps',ic:'●'},
+ {id:'sangfroid',nom:'Sang-froid',d:'Tu résistes mieux au froid',ic:'✳'},
+ {id:'chasseur',nom:'Chasseur',d:'Plus de vivres en fouillant',ic:'✜'},
+ {id:'debrouillard',nom:'Débrouillard',d:'Plus de matériaux en fouillant',ic:'✕'},
+ {id:'marcheur',nom:'Marcheur',d:'Tu te déplaces plus vite',ic:'➤'},
+ {id:'porteur',nom:'Porteur',d:'+25 de charge dans ton sac',ic:'▣'},
+ {id:'veilleur',nom:'Veilleur',d:'Tu te défends mieux la nuit',ic:'☾'}
+];
+const POINTS_TRAITS=3;
+const aTrait=id=>(e.traits||[]).includes(id);
+
+/* le portrait, dessiné pour la fiche comme pour la carte */
+function PORTRAIT(ap,taille){
+  const t=taille||1, p=ap||e.apparence||{};
+  const peau=PEAUX[p.peau||0], chev=CHEVEUX[p.cheveux||0], veste=VESTES[p.veste||0], oeil=YEUX[p.yeux||0];
+  const coiffe=COIFFES[p.coiffe||0], barbe=BARBES[p.barbe||0];
+  const ombre=c=>c;
+  let cheveuxSvg='';
+  if(coiffe==='courts')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="7" fill="${chev}"/>
+    <rect x="-8" y="-36" width="3" height="8" fill="${chev}"/><rect x="5" y="-36" width="3" height="8" fill="${chev}"/>`;
+  if(coiffe==='longs')cheveuxSvg=`<rect x="-9" y="-38" width="18" height="8" fill="${chev}"/>
+    <rect x="-10" y="-36" width="4" height="18" fill="${chev}"/><rect x="6" y="-36" width="4" height="18" fill="${chev}"/>`;
+  if(coiffe==='queue')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="7" fill="${chev}"/>
+    <rect x="6" y="-34" width="5" height="14" fill="${chev}"/>`;
+  if(coiffe==='crane')cheveuxSvg=`<rect x="-8" y="-38" width="16" height="3" fill="${chev}" opacity=".6"/>`;
+  if(coiffe==='crete')cheveuxSvg=`<rect x="-3" y="-43" width="6" height="12" fill="${chev}"/>
+    <rect x="-8" y="-36" width="16" height="3" fill="${chev}" opacity=".7"/>`;
+  if(coiffe==='bonnet')cheveuxSvg=`<rect x="-9" y="-40" width="18" height="9" fill="#8a4a3a"/>
+    <rect x="-9" y="-33" width="18" height="3" fill="#a85c48"/>`;
+  let barbeSvg='';
+  if(barbe==='courte')barbeSvg=`<rect x="-6" y="-25" width="12" height="4" fill="${chev}" opacity=".85"/>`;
+  if(barbe==='pleine')barbeSvg=`<rect x="-7" y="-27" width="14" height="8" fill="${chev}" opacity=".9"/>
+    <rect x="-5" y="-19" width="10" height="3" fill="${chev}" opacity=".9"/>`;
+  return `<g transform="scale(${t})">
+    <ellipse cx="0" cy="12" rx="12" ry="4" fill="rgba(0,0,0,.28)"/>
+    <rect x="-6" y="-1" width="5" height="12" fill="#39435a"/><rect x="1" y="-1" width="5" height="12" fill="#39435a"/>
+    <rect x="-7" y="9" width="6" height="3" fill="#5a3f2a"/><rect x="1" y="9" width="6" height="3" fill="#5a3f2a"/>
+    <rect x="-10" y="-21" width="20" height="21" fill="#231f1a"/>
+    <rect x="-9" y="-20" width="18" height="19" fill="${veste}"/>
+    <rect x="-9" y="-20" width="18" height="4" fill="${veste}" opacity=".7"/>
+    <rect x="-13" y="-19" width="4" height="12" fill="${ombre(veste)}"/>
+    <rect x="9" y="-19" width="4" height="12" fill="${veste}"/>
+    <rect x="-13" y="-8" width="4" height="4" fill="${peau}"/><rect x="9" y="-8" width="4" height="4" fill="${peau}"/>
+    <rect x="-8" y="-36" width="16" height="16" fill="#231f1a"/>
+    <rect x="-7" y="-35" width="14" height="14" fill="${peau}"/>
+    <rect x="-7" y="-35" width="4" height="14" fill="${peau}" opacity=".75"/>
+    ${barbeSvg}${cheveuxSvg}
+    <rect x="-4" y="-30" width="3" height="3" fill="${oeil}"/><rect x="2" y="-30" width="3" height="3" fill="${oeil}"/>
+  </g>`;
+}
+/* effets des caractéristiques */
+const modFaim=()=>aTrait('endurant')?.7:1;
+const modSoif=()=>aTrait('chameau')?.7:1;
+const modFroid=()=>aTrait('sangfroid')?.65:1;
+const modVie=()=>aTrait('robuste')?.6:1;
+const modVitesse=()=>aTrait('marcheur')?1.25:1;
+const bonusDefense=()=>aTrait('veilleur')?2:0;
+const bonusCharge=()=>aTrait('porteur')?25:0;
+const bonusFouille=(k)=>{
+  if(k==='nourriture'&&aTrait('chasseur'))return 1;
+  if(['bois','pierre','metal','fibre','tissu'].includes(k)&&aTrait('debrouillard'))return 1;
+  return 0;
+};
+/* score public */
+const score=()=>Math.round(e.niv*120+jourNo()*45+e.xp-e.mortes*60);
+
 /* ================= sauvegarde ================= */
 const CLE='bdl.survie.v1';
 const neuf=()=>({
   biome:null, nom:'Survivant', jour:1, debut:Date.now(), derniere:Date.now(),
   faim:100, soif:100, chaleur:100, sante:100, xp:0, niv:1,
+  apparence:null, traits:[],
   sacs:{}, objets:{}, zones:{}, meteo:'clair', meteoFin:0,
   journal:[], nuitsPassees:0, mortes:0, vu:false});
 let e=neuf();
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(neuf(),JSON.parse(b));}catch(x){}
 const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
+try{const n=localStorage.getItem('bdl.nom');if(n&&(!e.nom||e.nom==='Survivant'))e.nom=n;}catch(x){}
 const sac=k=>e.sacs[k]||0;
 const ajouter=(k,n)=>{e.sacs[k]=sac(k)+n;};
 const a=(id)=>!!e.objets[id];
@@ -291,9 +396,9 @@ function ecouler(){
     e.meteoFin=now+(4+Math.random()*6)*60000;}
   const m=meteo(), b=biome();
 
-  e.faim=Math.max(0,e.faim-USURE.faim*dt);
-  e.soif=Math.max(0,e.soif-USURE.soif*dt*(m.soif||1));
-  const protege=(a('abri')?.45:1)*(a('manteau')?.5:1)*(a('feu')?.7:1);
+  e.faim=Math.max(0,e.faim-USURE.faim*dt*modFaim());
+  e.soif=Math.max(0,e.soif-USURE.soif*dt*(m.soif||1)*modSoif());
+  const protege=(a('abri')?.45:1)*(a('manteau')?.5:1)*(a('feu')?.7:1)*modFroid();
   e.chaleur=Math.max(0,e.chaleur-USURE.chaleur*dt*(m.chaleur||1)*b.froid*protege);
   if(m.eau&&Math.random()<dt/600)ajouter('eau',1);
 
@@ -302,7 +407,7 @@ function ecouler(){
   if(e.faim<=0)mal+=1.2;
   if(e.soif<=0)mal+=1.8;
   if(e.chaleur<=0)mal+=1.5;
-  if(mal)e.sante=Math.max(0,e.sante-mal*dt/240);
+  if(mal)e.sante=Math.max(0,e.sante-mal*dt/240*modVie());
   else if(e.faim>40&&e.soif>40&&e.chaleur>40)e.sante=Math.min(100,e.sante+dt/90);
 
   /* les nuits passées comptent : les rôdeurs frappent une fois par nuit */
@@ -318,7 +423,7 @@ function ecouler(){
 }
 function passerNuit(){
   const b=biome(), m=meteo();
-  const defense=(a('palissade')?3:0)+(a('abri')?2:0)+(a('feu')?1:0)+(a('lance')?2:0);
+  const defense=(a('palissade')?3:0)+(a('abri')?2:0)+(a('feu')?1:0)+(a('lance')?2:0)+bonusDefense();
   const menace=(1.2+Math.min(e.nuitsPassees,12)*0.2)*(m.danger||1);
   if(defense>=menace){
     noter('Nuit '+e.nuitsPassees+' : rien n’a franchi ton campement.');
@@ -373,7 +478,7 @@ function fouiller(z){
   }
   let recolte=[];
   Object.entries(z.ressources).forEach(([k,n])=>{
-    let q=n+(Math.random()<.35?1:0);
+    let q=n+(Math.random()<.35?1:0)+bonusFouille(k);
     if(k==='bois'&&a('hache'))q+=1;
     ajouter(k,q);recolte.push(q+' '+RESSOURCES[k].nom.toLowerCase());
   });
@@ -542,6 +647,115 @@ function vueJournal(){
     const min=Math.round((Date.now()-j.q)/60000);
     s+=`<div class="entree"><span class="q">${min<1?'à l’instant':'il y a '+duree(min*60)}</span><span class="x">${j.t}</span></div>`;
   });
+  return s;
+}
+
+/* ================= la fiche du survivant ================= */
+function vueFiche(){
+  const ap=e.apparence||{};
+  const pris=(e.traits||[]).length;
+  let s=`<div class="titre">TON SURVIVANT</div>
+  <div class="carte" style="display:flex;gap:14px;align-items:center">
+    <span style="width:82px;height:96px;border-radius:14px;background:#eae6d8;display:flex;
+      align-items:flex-end;justify-content:center;flex:0 0 auto;overflow:hidden">
+      <svg width="78" height="94" viewBox="-24 -46 48 60">${PORTRAIT(ap,1.05)}</svg></span>
+    <span style="flex:1;min-width:0">
+      <span style="display:block;font:400 19px Georgia,serif">${e.nom||'Sans nom'}</span>
+      <span style="display:block;font:400 12.5px system-ui;color:var(--doux);margin-top:3px">
+        ${biome().nom} · jour ${jourNo()} · niveau ${e.niv}</span>
+      <span style="display:block;font:600 12px system-ui;color:var(--vert);margin-top:6px">
+        ${score().toLocaleString('fr-FR')} points</span>
+    </span>
+  </div>
+  <button class="gros" id="f-modifier" style="margin-top:10px;flex-direction:row;justify-content:center">
+    Changer d’apparence</button>`;
+
+  s+=`<div class="titre">TES CARACTÉRISTIQUES · ${pris}/${POINTS_TRAITS}</div>`;
+  TRAITS.forEach(t=>{
+    const on=aTrait(t.id);
+    s+=`<button class="ligne${on?' pret':''}" data-trait="${t.id}">
+      <span class="ic" style="font-size:19px;color:${on?'#3f7d4a':'#a8ab9e'}">${t.ic}</span>
+      <span class="t"><span class="n">${t.nom}</span><span class="d">${t.d}</span></span>
+      <span class="agir${on?'':' off'}">${on?'Acquis':(pris<POINTS_TRAITS?'Choisir':'—')}</span></button>`;
+  });
+  s+='<p class="note">Trois choix, définitifs tant que tu survis. Ils changent vraiment le jeu.</p>';
+  return s;
+}
+function ouvrirApparence(){
+  const ap=Object.assign({peau:0,cheveux:0,coiffe:0,barbe:0,veste:0,yeux:0},e.apparence||{});
+  const rangee=(cle,liste,titre,couleurs)=>`
+    <div class="titre" style="margin:14px 2px 8px">${titre}</div>
+    <div class="choix">${liste.map((v,i)=>couleurs
+      ? `<button class="pastille${ap[cle]===i?' on':''}" data-ch="${cle}" data-i="${i}"
+          style="background:${v}"></button>`
+      : `<button class="motchoix${ap[cle]===i?' on':''}" data-ch="${cle}" data-i="${i}">${v}</button>`
+    ).join('')}</div>`;
+  const html=()=>`<h2 style="text-align:center">Ton visage</h2>
+    <div style="display:flex;justify-content:center;margin:12px 0 4px">
+      <span style="width:120px;height:140px;border-radius:16px;background:#eae6d8;display:flex;
+        align-items:flex-end;justify-content:center;overflow:hidden">
+        <svg width="116" height="138" viewBox="-24 -46 48 60">${PORTRAIT(ap,1.5)}</svg></span></div>
+    ${rangee('peau',PEAUX,'PEAU',true)}
+    ${rangee('cheveux',CHEVEUX,'CHEVEUX',true)}
+    ${rangee('coiffe',COIFFES,'COIFFURE',false)}
+    ${rangee('barbe',BARBES,'BARBE',false)}
+    ${rangee('veste',VESTES,'VESTE',true)}
+    ${rangee('yeux',YEUX,'YEUX',true)}
+    <button class="valider2" id="ap-ok">Garder ce visage</button>`;
+  const dessiner=()=>{
+    $('fen-b').innerHTML=html();
+    $('fen-b').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>{
+      ap[b.dataset.ch]=+b.dataset.i;dessiner();});
+    $('ap-ok').onclick=()=>{
+      e.apparence=ap;sauver();$('fen').classList.remove('on');
+      toast('Te voilà');rendre(true);
+      if(typeof envoyerPosition==='function')envoyerPosition();
+    };
+  };
+  dessiner();
+  $('fen').classList.add('on');
+}
+function choisirTrait(id){
+  if(aTrait(id))return toast('Déjà acquis');
+  if((e.traits||[]).length>=POINTS_TRAITS)return toast('Tu as déjà tes trois caractéristiques');
+  e.traits=(e.traits||[]).concat(id);
+  const t=TRAITS.find(x=>x.id===id);
+  noter('Tu deviens '+t.nom.toLowerCase()+'.');
+  toast(t.nom+' · '+t.d.toLowerCase());
+  sauver();rendre(true);
+}
+
+/* ================= le classement ================= */
+let CLASSEMENT=null, chargementCl=false;
+async function chargerClassement(){
+  if(!sb||chargementCl)return;
+  chargementCl=true;
+  try{
+    await envoyerPosition(true);
+    const {data}=await sb.from('survivants').select('*').order('score',{ascending:false}).limit(25);
+    CLASSEMENT=data||[];
+  }catch(x){CLASSEMENT=[];}
+  chargementCl=false;rendre(true);
+}
+function vueClassement(){
+  let s='<div class="titre">LES SURVIVANTS</div>';
+  if(CLASSEMENT===null){chargerClassement();
+    return s+'<div class="vide">On rassemble les nouvelles…</div>';}
+  if(!CLASSEMENT.length)return s+'<div class="vide">Personne d’autre pour l’instant.</div>';
+  CLASSEMENT.forEach((r,i)=>{
+    const moi=r.id===idJoueur();
+    const b=BIOMES.find(x=>x.id===r.biome);
+    s+=`<div class="ligne${moi?' pret':''}">
+      <span class="rang${i<3?' podium':''}">${i+1}</span>
+      <span class="ic" style="background:#eae6d8;overflow:hidden;align-items:flex-end">
+        <svg width="40" height="46" viewBox="-24 -46 48 60">${PORTRAIT(r.apparence||{},0.78)}</svg></span>
+      <span class="t"><span class="n">${(r.pseudo||'Sans nom')}${moi?' · toi':''}</span>
+      <span class="d">niveau ${r.niv} · jour ${r.jours||1} · ${(b||{nom:'?'}).nom.toLowerCase()}</span>
+      ${(r.traits||[]).length?`<span class="gains">${r.traits.map(t=>{
+        const tr=TRAITS.find(x=>x.id===t);return tr?`<span class="g">${tr.nom}</span>`:'';}).join('')}</span>`:''}</span>
+      <span class="pts">${(r.score||0).toLocaleString('fr-FR')}</span></div>`;
+  });
+  s+='<p class="note">Le score compte ton niveau, les jours tenus et ton expérience. Chaque mort en retire.</p>';
   return s;
 }
 
@@ -783,6 +997,10 @@ function dessinerObjet(g,o,x,y,nt){
   }
 }
 function dessinerJoueur(g,x,y,nt){
+  const ap=e.apparence||{};
+  const PEAU=PEAUX[ap.peau||0], CHEV=CHEVEUX[ap.cheveux||0],
+        VESTE=VESTES[ap.veste||0], OEIL=YEUX[ap.yeux||0],
+        COIFFE=COIFFES[ap.coiffe||0], BARBE=BARBES[ap.barbe||0];
   const bouge=joueur.pas>0;
   const f=bouge?[0,1,0,2][Math.floor(joueur.pas)%4]:0;
   const bob=bouge?(f===0?0:-1):(Math.sin(joueur.souffle)>0?0:-1);
@@ -798,29 +1016,36 @@ function dessinerJoueur(g,x,y,nt){
   g.fillRect(x-7,yb+9+Math.max(0,jamb),6,3);g.fillRect(x+1,yb+9+Math.max(0,-jamb),6,3);
   /* torse */
   g.fillStyle='#231f1a';g.fillRect(x-10,yb-21,20,21);
-  g.fillStyle='#4f7d5c';g.fillRect(x-9,yb-20,18,19);
-  g.fillStyle='#5f8f6a';g.fillRect(x-9,yb-20,18,4);
-  g.fillStyle='#3f6349';g.fillRect(x-9,yb-7,18,3);
+  g.fillStyle=VESTE;g.fillRect(x-9,yb-20,18,19);
+  g.globalAlpha=.35;g.fillStyle='#ffffff';g.fillRect(x-9,yb-20,18,4);g.globalAlpha=1;
+  g.globalAlpha=.25;g.fillStyle='#000000';g.fillRect(x-9,yb-7,18,3);g.globalAlpha=1;
   /* sac à dos */
   if(joueur.dir!=='haut'){g.fillStyle='#7d5934';g.fillRect(x+(joueur.dir==='gauche'?-13:8),yb-18,5,13);}
   /* bras */
-  g.fillStyle='#3f6349';g.fillRect(x-13,yb-19+bras*2,4,12);
-  g.fillStyle='#4f7d5c';g.fillRect(x+9,yb-19-bras*2,4,12);
-  g.fillStyle='#e8c49a';g.fillRect(x-13,yb-8+bras*2,4,4);g.fillRect(x+9,yb-8-bras*2,4,4);
+  g.fillStyle=VESTE;g.fillRect(x-13,yb-19+bras*2,4,12);g.fillRect(x+9,yb-19-bras*2,4,12);
+  g.fillStyle=PEAU;g.fillRect(x-13,yb-8+bras*2,4,4);g.fillRect(x+9,yb-8-bras*2,4,4);
   /* tête */
   g.fillStyle='#231f1a';g.fillRect(x-8,yb-36,16,16);
-  g.fillStyle='#e8c49a';g.fillRect(x-7,yb-35,14,14);
-  g.fillStyle='#d3ac83';g.fillRect(x-7,yb-35,4,14);
-  g.fillStyle='#3a2a1c';g.fillRect(x-8,yb-38,16,6);
+  g.fillStyle=PEAU;g.fillRect(x-7,yb-35,14,14);
+  g.globalAlpha=.18;g.fillStyle='#000000';g.fillRect(x-7,yb-35,4,14);g.globalAlpha=1;
+  if(BARBE!=='aucune'){g.fillStyle=CHEV;
+    g.fillRect(x-6,yb-25,12,BARBE==='pleine'?8:4);}
+  g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;
+  if(COIFFE==='crete'){g.fillRect(x-3,yb-43,6,12);g.fillRect(x-8,yb-36,16,3);}
+  else if(COIFFE==='crane'){g.globalAlpha=.6;g.fillRect(x-8,yb-38,16,3);g.globalAlpha=1;}
+  else{g.fillRect(x-8,yb-38,16,7);
+    if(COIFFE==='longs'){g.fillRect(x-10,yb-36,3,16);g.fillRect(x+7,yb-36,3,16);}
+    if(COIFFE==='queue')g.fillRect(x+7,yb-34,4,12);
+    if(COIFFE==='courts'){g.fillRect(x-8,yb-36,2,7);g.fillRect(x+6,yb-36,2,7);}}
   if(joueur.dir==='bas'){
     const clin=(Date.now()%4200<130);
-    g.fillStyle='#2b2a27';
+    g.fillStyle=OEIL;
     if(clin){g.fillRect(x-4,yb-29,3,1);g.fillRect(x+2,yb-29,3,1);}
     else{g.fillRect(x-4,yb-30,3,3);g.fillRect(x+2,yb-30,3,3);}
-  }else if(joueur.dir==='haut'){g.fillStyle='#3a2a1c';g.fillRect(x-8,yb-36,16,10);}
+  }else if(joueur.dir==='haut'){g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x-8,yb-36,16,10);}
   else{const s=joueur.dir==='droite'?1:-1;
-    g.fillStyle='#2b2a27';g.fillRect(x+(s>0?2:-5),yb-30,3,3);
-    g.fillStyle='#3a2a1c';g.fillRect(x+(s>0?-8:5),yb-34,3,9);}
+    g.fillStyle=OEIL;g.fillRect(x+(s>0?2:-5),yb-30,3,3);
+    g.fillStyle=COIFFE==='bonnet'?'#8a4a3a':CHEV;g.fillRect(x+(s>0?-8:5),yb-34,3,9);}
   /* lanterne la nuit */
   if(nt){
     const lx=x+(joueur.dir==='gauche'?-12:12), ly=yb-10;
@@ -915,7 +1140,7 @@ function majJoueur(dt){
   const n=Math.hypot(joyX,joyY);
   joueur.souffle+=dt*1.6;
   if(n>0.15){
-    const v=118*Math.min(1,n)*dt;
+    const v=118*modVitesse()*Math.min(1,n)*dt;
     const nx=joueur.x+(joyX/n)*v, ny=joueur.y+(joyY/n)*v;
     const coince=bloque(joueur.x,joueur.y);   // jamais bloqué si on est déjà dans un obstacle
     if(coince||!bloque(nx,joueur.y))joueur.x=nx;
@@ -978,16 +1203,19 @@ function idJoueur(){
 }
 const auCarrefour=()=>joueur.y<CARREFOUR.y+CARREFOUR.r;
 
-async function envoyerPosition(){
+async function envoyerPosition(force){
   if(!sb)return;
   const now=Date.now();
-  if(now-dernierEnvoi<3000)return;
+  if(!force&&now-dernierEnvoi<3000)return;
   dernierEnvoi=now;
   try{
     await sb.from('survivants').upsert({
-      id:idJoueur(),pseudo:e.nom||'Survivant',biome:e.biome,niv:e.niv,
+      id:idJoueur(),pseudo:e.nom||'Sans nom',biome:e.biome,niv:e.niv,
       x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
-      compagnon:e.compagnon?e.compagnon.nom:null,maj:new Date().toISOString()});
+      compagnon:e.compagnon?e.compagnon.nom:null,
+      apparence:e.apparence||{},traits:e.traits||[],
+      jours:jourNo(),score:score(),mortes:e.mortes||0,
+      maj:new Date().toISOString()});
     const {data}=await sb.from('survivants').select('*')
       .gt('maj',new Date(now-90000).toISOString()).limit(30);
     if(data)AUTRES=data.filter(s=>s.id!==idJoueur()&&s.y<CARREFOUR.y+CARREFOUR.r+200);
@@ -1066,7 +1294,7 @@ function majCompagnon(dt){
 }
 /* la charge : le sac a une limite, le compagnon la repousse */
 const CHARGE_BASE=60;
-const chargeMax=()=>CHARGE_BASE+(e.compagnon?40:0)+(a('gourde')?10:0);
+const chargeMax=()=>CHARGE_BASE+(e.compagnon?40:0)+(a('gourde')?10:0)+bonusCharge();
 const charge=()=>Object.keys(RESSOURCES).reduce((s,k)=>s+sac(k),0);
 
 /* ================= la carte du monde ================= */
@@ -1253,6 +1481,7 @@ function tirerBiome(){
 let vue='camp';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   if(b.dataset.v==='explorer'){ouvrirCarte();return;}
+  if(b.dataset.v==='classement')CLASSEMENT=null;
   vue=b.dataset.v;
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   $('corps').scrollTop=0;rendre(true);});
@@ -1265,9 +1494,12 @@ function brancher(){
     const r=RECETTES.find(x=>x.id===b.dataset.fab);if(r)fabriquer(r);});
   z.querySelectorAll('[data-act]').forEach(b=>b.onclick=()=>{
     if(b.dataset.act==='boire')boire();else manger();});
+  z.querySelectorAll('[data-trait]').forEach(b=>b.onclick=()=>choisirTrait(b.dataset.trait));
+  const mo=$('f-modifier');if(mo)mo.onclick=ouvrirApparence;
 }
 function signature(){
-  let g=vue+'|'+Math.round(e.faim)+'|'+Math.round(e.soif)+'|'+Math.round(e.chaleur)+'|'+Math.round(e.sante);
+  if(vue==='classement')return 'cl|'+(CLASSEMENT?CLASSEMENT.length:'-')+'|'+e.niv;
+  let g=vue+'|'+(e.traits||[]).join(',')+'|'+JSON.stringify(e.apparence||{})+'|'+Math.round(e.faim)+'|'+Math.round(e.soif)+'|'+Math.round(e.chaleur)+'|'+Math.round(e.sante);
   g+='|'+e.niv+'|'+e.meteo+'|'+(nuit()?'n':'j')+'|'+jourNo()+'|'+Math.floor(heure()*6);
   Object.keys(RESSOURCES).forEach(k=>g+='|'+sac(k));
   g+='|'+Object.keys(e.objets).join(',');
@@ -1284,7 +1516,8 @@ function rendre(force){
   sig=s;
   const y=$('corps').scrollTop;
   $('corps').innerHTML=vue==='camp'?vueCamp():vue==='explorer'?vueExplorer():
-                       vue==='atelier'?vueAtelier():vueJournal();
+                       vue==='atelier'?vueAtelier():vue==='fiche'?vueFiche():
+                       vue==='classement'?vueClassement():vueJournal();
   brancher();
   $('corps').scrollTop=y;
 }
