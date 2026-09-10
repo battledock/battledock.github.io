@@ -29,9 +29,6 @@ body{overflow:hidden}
   padding:22px 20px;box-shadow:0 14px 34px rgba(20,40,15,.3);text-align:center}
 .pCarte h1{font:400 30px Georgia,serif;color:var(--encre)}
 .pCarte p{font:400 12.5px/1.6 system-ui;color:var(--doux);margin:8px 0 16px}
-.pCarte input{width:100%;border:1.5px solid var(--filet);border-radius:12px;padding:13px 14px;
-  font:400 16px system-ui;color:var(--encre);background:#fbfaf3;text-align:center}
-.pCarte input:focus{outline:none;border-color:var(--vert)}
 .pCarte button{width:100%;margin-top:11px;border-radius:13px;padding:14px;
   background:var(--vert);color:#fdfbf4;font:600 14.5px system-ui}
 .pCarte button:disabled{opacity:.45}
@@ -94,11 +91,12 @@ body{overflow:hidden}
 <div id="porte">
   <div class="pCarte">
     <h1>Survivre</h1>
-    <p id="p-mot">Choisis le nom que les autres verront.</p>
-    <input id="p-nom" maxlength="14" placeholder="ton nom" autocomplete="off" spellcheck="false">
-    <button id="p-ok">Entrer</button>
+    <p id="p-mot">Un instant…</p>
+    <button id="p-ok" style="display:none">Se connecter</button>
     <div class="pEtat" id="p-etat"></div>
   </div>
+</div>
+
 </div>
 
 <script type="module">
@@ -753,14 +751,6 @@ async function descendreDeLigne(){
   }catch(x){}
   return false;
 }
-async function nomLibre(nom){
-  try{
-    const r=await fetch(URL_SB+'/rest/v1/joueurs?pseudo=eq.'+encodeURIComponent(nom)+'&select=id',
-      {headers:sbEntetes});
-    const d=await r.json();
-    return !(Array.isArray(d)&&d.some(j=>j.id!==e.id));
-  }catch(x){return true;}
-}
 
 let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0};
 let joyX=0,joyY=0;
@@ -950,64 +940,40 @@ function ouvrirLook(){
 $('b-look').onclick=ouvrirLook;
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
 
-/* ================= l'entrée : on se sert du compte existant ================= */
+/* ================= l'entrée : le compte, et rien d'autre ================= */
 const sb=createClient(URL_SB,CLE_SB);
 
 async function ouvrirPorte(){
-  const etat=$('p-etat'), champ=$('p-nom'), bouton=$('p-ok');
-  etat.textContent='Un instant…';
+  const mot=$('p-mot'), bouton=$('p-ok'), etat=$('p-etat');
   let session=null;
   try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
 
-  if(session&&session.user){
-    /* connecté : on prend l'identifiant et le nom du compte, sans rien demander */
-    e.id=session.user.id;
-    const m=session.user.user_metadata||{};
-    let nom=m.nom||m.pseudo||'';
-    if(!nom){try{nom=localStorage.getItem('bdl.nom')||'';}catch(x){}}
-    if(!nom){
-      /* le nom vit peut-être déjà dans la table des survivants */
-      try{
-        const r=await fetch(URL_SB+'/rest/v1/survivants?id=eq.'+encodeURIComponent(e.id)+'&select=pseudo',
-          {headers:sbEntetes});
-        const d2=await r.json();
-        if(Array.isArray(d2)&&d2[0]&&d2[0].pseudo)nom=d2[0].pseudo;
-      }catch(x){}
-    }
-    e.pseudo=nom||('Survivant '+e.id.slice(0,4));
-    sauver();
-    await descendreDeLigne();          /* apparence et position déjà enregistrées */
-    joueur.x=e.x;joueur.y=e.y;
-    await monterEnLigne(true);
-    return entrer();
+  if(!session||!session.user){                 /* pas de compte : on renvoie à l'inscription */
+    mot.textContent='Connecte-toi pour retrouver ton survivant.';
+    bouton.style.display='';
+    bouton.onclick=()=>{location.href='index.html';};
+    return;
   }
 
-  /* pas de compte : on laisse entrer en visiteur, avec un nom choisi une fois */
-  let invite=false;
-  try{invite=localStorage.getItem('bdl.invite')==='1';}catch(x){}
-  if(!invite&&!e.pseudo){
-    etat.textContent='';
-    $('p-mot').textContent='Connecte-toi pour retrouver ton survivant, ou choisis un nom pour jouer en visiteur.';
+  /* le nom vient du compte, jamais d'une saisie */
+  e.id=session.user.id;
+  const m=session.user.user_metadata||{};
+  let nom=m.nom||m.pseudo||'';
+  if(!nom){try{nom=localStorage.getItem('bdl.nom')||'';}catch(x){}}
+  if(!nom){
+    try{
+      const r=await fetch(URL_SB+'/rest/v1/survivants?id=eq.'+encodeURIComponent(e.id)+'&select=pseudo',
+        {headers:sbEntetes});
+      const d2=await r.json();
+      if(Array.isArray(d2)&&d2[0]&&d2[0].pseudo)nom=d2[0].pseudo;
+    }catch(x){}
   }
-  if(e.pseudo){                        /* visiteur déjà nommé : on entre directement */
-    await descendreDeLigne();
-    joueur.x=e.x;joueur.y=e.y;
-    await monterEnLigne(true);
-    return entrer();
-  }
-  etat.textContent='';
-  champ.value='';
-  bouton.onclick=async()=>{
-    const nom=(champ.value||'').trim().replace(/\s+/g,' ');
-    if(nom.length<2)return etat.textContent='Il faut au moins deux lettres.';
-    bouton.disabled=true;etat.textContent='Un instant…';
-    if(!await nomLibre(nom)){bouton.disabled=false;return etat.textContent='Ce nom est déjà pris.';}
-    e.pseudo=nom;sauver();
-    try{localStorage.setItem('bdl.invite','1');}catch(x){}
-    await monterEnLigne(true);
-    entrer();
-  };
-  champ.addEventListener('keydown',ev=>{if(ev.key==='Enter')bouton.click();});
+  e.pseudo=nom||('Survivant '+e.id.slice(0,4));
+  sauver();
+  await descendreDeLigne();
+  joueur.x=e.x;joueur.y=e.y;
+  await monterEnLigne(true);
+  entrer();
 }
 function entrer(){
   $('porte').classList.add('parti');
