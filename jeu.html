@@ -159,14 +159,34 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
   background:#7a4fd6;color:#f4ecff;font:600 13.5px system-ui;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 .versJoueur.on{display:block}
 .versJoueur b{display:block;font:600 11px system-ui;opacity:.8;margin-top:2px}
-.emotes{position:absolute;left:12px;right:12px;bottom:calc(150px + env(safe-area-inset-bottom));
-  display:none;grid-template-columns:1fr 1fr;gap:8px;z-index:12}
-.emotes.on{display:grid}
-.em{display:flex;align-items:center;gap:9px;background:rgba(16,24,18,.86);backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:11px 12px;
+.emotes{position:absolute;left:10px;right:10px;bottom:calc(96px + env(safe-area-inset-bottom));
+  display:none;z-index:14;background:rgba(14,22,16,.9);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:12px;
+  box-shadow:0 16px 40px rgba(0,0,0,.5);max-height:52dvh;overflow-y:auto}
+.emotes.on{display:block}
+.emTete{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+.emQui{font:400 17px Georgia,serif;color:#f2efe4}
+.emNiv{font:600 9.5px system-ui;letter-spacing:1.2px;color:#9fb59c}
+.emX{margin-left:auto;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1);
+  color:#dfe9dc;font:600 13px system-ui}
+.emOngs{display:flex;gap:6px;margin-bottom:11px}
+.emOng{flex:1;border-radius:11px;padding:9px 4px;font:600 12px system-ui;
+  background:rgba(255,255,255,.08);color:#9fb59c}
+.emOng.on{background:#63a84a;color:#0f1a10}
+.emCorps{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.em{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);border-radius:13px;padding:10px 11px;
   font:600 12.5px system-ui;color:#e8efe4;text-align:left}
 .em span{font-size:20px}
-.em.fermer-em{grid-column:1 / -1;justify-content:center;color:#9fb59c}
+.em.large{grid-column:1 / -1;justify-content:flex-start;font-weight:400;font-size:13.5px}
+.emDon{grid-column:1 / -1;display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.07);
+  border-radius:13px;padding:9px 11px}
+.emDonN{flex:1;display:flex;align-items:center;gap:8px;font:400 12.5px system-ui;color:#cfe0c8}
+.emDonN b{font:600 13px system-ui;color:#f2efe4}
+.emDonB{display:flex;gap:5px}
+.emDonB button{background:#63a84a;color:#0f1a10;border-radius:9px;padding:7px 10px;font:600 11.5px system-ui}
+.emDonB button:disabled{opacity:.35}
+.emVide{grid-column:1 / -1;text-align:center;font:400 12.5px system-ui;color:#9fb59c;padding:14px}
 .gens{position:absolute;left:14px;bottom:calc(160px + env(safe-area-inset-bottom));
   font:600 10.5px system-ui;letter-spacing:1px;color:#cfe0c8;text-shadow:0 1px 4px rgba(10,20,12,.7)}
 #depart{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:18px;
@@ -2208,14 +2228,8 @@ function ouvrirCanal(){
       a.compagnon=p.compagnon;a.vu=Date.now();
       AUTRES_MAP.set(p.id,a);
     });
-    canal.on('broadcast',{event:'emote'},({payload:p})=>{
-      if(!p||p.id===idJoueur())return;
-      const a=AUTRES_MAP.get(p.id);
-      const em=EMOTES.find(x=>x.id===p.emote);
-      if(!em)return;
-      bulle(a?a.vx:p.x,(a?a.vy:p.y)-20,em.txt,p.pseudo);
-      if(p.vers===idJoueur())toast(p.pseudo+' : '+em.nom.toLowerCase());
-    });
+    ['emote','dire','don'].forEach(ev=>
+      canal.on('broadcast',{event:ev},({payload:p})=>recevoirSocial(ev,p)));
     canal.on('broadcast',{event:'res'},({payload:p})=>{
       if(!p||p.par===idJoueur()||p.biome!==e.biome)return;
       e.zones[p.id]=Math.max(e.zones[p.id]||0,p.jusqua);   // l'arbre tombe pour tout le monde
@@ -2370,65 +2384,150 @@ function planMonde(){
 /* ================= interagir avec les autres ================= */
 const EMOTES=[
  {id:'salut', txt:'👋', nom:'Saluer'},
- {id:'bisou', txt:'😘', nom:'Faire un bisou'},
- {id:'coeur', txt:'❤️', nom:'Envoyer un cœur'},
+ {id:'bisou', txt:'😘', nom:'Bisou'},
+ {id:'coeur', txt:'❤️', nom:'Cœur'},
  {id:'rire',  txt:'😂', nom:'Rire'},
  {id:'danse', txt:'🕺', nom:'Danser'},
  {id:'pouce', txt:'👍', nom:'Approuver'},
- {id:'aide',  txt:'🆘', nom:'Demander de l’aide'},
- {id:'partage',txt:'🎁', nom:'Proposer un échange'}
+ {id:'aide',  txt:'🆘', nom:'À l’aide'},
+ {id:'trinque',txt:'🍻', nom:'Trinquer'}
 ];
-let BULLES=[];                          // {x,y,txt,vie,nom}
-let procheJoueur=null;
+const PHRASES=[
+ 'Salut !','Tu as de l’eau ?','Suis-moi','Attention derrière toi',
+ 'Merci !','On échange ?','J’ai besoin d’aide','Bonne route'
+];
+let BULLES=[];                 /* {x,y,txt,emoji,vie,nom,pour} */
+let procheJoueur=null, DONS=[];
 
-function bulle(x,y,txt,nom){BULLES.push({x,y,txt,vie:1,nom});}
+function bulle(x,y,txt,nom,emoji){BULLES.push({x,y,txt,nom,emoji,vie:1});}
 function majBulles(dt){
   for(let i=BULLES.length-1;i>=0;i--){
-    const b=BULLES[i];b.y-=8*dt;b.vie-=dt*0.36;
+    const b=BULLES[i];b.y-=7*dt;b.vie-=dt*(b.emoji?0.36:0.26);
     if(b.vie<=0)BULLES.splice(i,1);
   }
 }
 function dessinerBulles(g,camX,camY){
-  g.textAlign='center';
   BULLES.forEach(b=>{
     const x=b.x-camX, y=b.y-camY;
-    g.globalAlpha=Math.min(1,b.vie*1.6);
-    const t=Math.max(0,1-b.vie)*4;
-    g.font='26px -apple-system,system-ui,Arial';
-    g.fillStyle='rgba(12,20,12,.45)';
-    g.beginPath();g.roundRect?g.roundRect(x-22,y-56,44,40,12):g.rect(x-22,y-56,44,40);g.fill();
-    g.fillText(b.txt,x,y-26-t);
+    g.globalAlpha=Math.min(1,b.vie*1.7);
+    if(b.emoji){
+      g.textAlign='center';g.font='27px -apple-system,system-ui,Arial';
+      g.fillStyle='rgba(255,253,244,.92)';
+      g.beginPath();
+      if(g.roundRect)g.roundRect(x-23,y-62,46,42,14);else g.rect(x-23,y-62,46,42);
+      g.fill();
+      g.beginPath();g.moveTo(x-6,y-22);g.lineTo(x,y-14);g.lineTo(x+6,y-22);g.fill();
+      g.fillText(b.emoji,x,y-31);
+    }else{
+      g.font='600 12px -apple-system,system-ui,Arial';
+      const w=Math.min(190,g.measureText(b.txt).width+22);
+      g.fillStyle='rgba(255,253,244,.94)';
+      g.beginPath();
+      if(g.roundRect)g.roundRect(x-w/2,y-58,w,28,12);else g.rect(x-w/2,y-58,w,28);
+      g.fill();
+      g.beginPath();g.moveTo(x-6,y-31);g.lineTo(x,y-23);g.lineTo(x+6,y-31);g.fill();
+      g.textAlign='center';g.fillStyle='#2f3830';g.fillText(b.txt,x,y-39);
+    }
     g.globalAlpha=1;
   });
-  g.globalAlpha=1;
+}
+/* ---- envois ---- */
+function diffuserSocial(event,payload){
+  try{canal&&canal.send({type:'broadcast',event,payload:Object.assign(
+    {id:idJoueur(),pseudo:e.nom||'Sans nom',x:Math.round(joueur.x),y:Math.round(joueur.y)},payload)});}catch(x){}
 }
 function envoyerEmote(id,cible){
   const em=EMOTES.find(x=>x.id===id);if(!em)return;
-  bulle(joueur.x,joueur.y-20,em.txt,e.nom);
-  try{canal&&canal.send({type:'broadcast',event:'emote',payload:{
-    id:idJoueur(),pseudo:e.nom||'Sans nom',x:Math.round(joueur.x),y:Math.round(joueur.y),
-    emote:id,vers:cible||null}});}catch(x){}
+  bulle(joueur.x,joueur.y-20,null,e.nom,em.txt);
+  diffuserSocial('emote',{emote:id,vers:cible?cible.id:null});
   if(cible)toast(em.nom+' à '+cible.pseudo);
   gagnerXp(1);
 }
+function envoyerPhrase(txt,cible){
+  bulle(joueur.x,joueur.y-20,txt,e.nom);
+  diffuserSocial('dire',{txt,vers:cible?cible.id:null});
+}
+function proposerDon(k,n,cible){
+  if(!cible)return toast('Approche-toi de quelqu’un');
+  if(sac(k)<n)return toast('Tu n’en as pas assez');
+  e.sacs[k]=sac(k)-n;
+  diffuserSocial('don',{vers:cible.id,quoi:k,combien:n});
+  bulle(joueur.x,joueur.y-20,'donne '+n+' '+RESSOURCES[k].nom.toLowerCase(),e.nom);
+  noter('Tu as donné '+n+' '+RESSOURCES[k].nom.toLowerCase()+' à '+cible.pseudo+'.');
+  toast('Donné à '+cible.pseudo);
+  gagnerXp(4);sauver();
+}
+/* ---- réception ---- */
+function recevoirSocial(ev,p){
+  if(!p||p.id===idJoueur())return;
+  const a=AUTRES_MAP.get(p.id);
+  const bx=a?a.vx:p.x, by=(a?a.vy:p.y)-20;
+  if(ev==='emote'){
+    const em=EMOTES.find(x=>x.id===p.emote);if(!em)return;
+    bulle(bx,by,null,p.pseudo,em.txt);
+    if(p.vers===idJoueur())toast(p.pseudo+' : '+em.nom.toLowerCase());
+  }
+  if(ev==='dire'){
+    bulle(bx,by,p.txt,p.pseudo);
+    if(p.vers===idJoueur())toast(p.pseudo+' te parle');
+  }
+  if(ev==='don'&&p.vers===idJoueur()){
+    const q=Math.min(p.combien,Math.max(0,chargeMax()-charge()));
+    if(q>0){ajouter(p.quoi,q);
+      texteVolant(joueur.x,joueur.y-46,'+'+q+' '+RESSOURCES[p.quoi].nom.toLowerCase(),'#e6f5c8');
+      noter(p.pseudo+' t’a donné '+q+' '+RESSOURCES[p.quoi].nom.toLowerCase()+'.');
+      toast(p.pseudo+' t’a donné '+q+' '+RESSOURCES[p.quoi].nom.toLowerCase());
+      sauver();
+    }else toast('Ton sac est plein, tu n’as rien pu prendre');
+  }
+}
+/* ---- le menu ---- */
+let ongletSocial='gestes';
 function ouvrirEmotes(cible){
-  $('emotes').innerHTML=EMOTES.map(em=>
-    `<button class="em" data-em="${em.id}"><span>${em.txt}</span>${em.nom}</button>`).join('')+
-    '<button class="em fermer-em" id="em-x">Fermer</button>';
+  const dessine=()=>{
+    const ong=(id,t)=>`<button class="emOng${ongletSocial===id?' on':''}" data-ong="${id}">${t}</button>`;
+    let h=`<div class="emTete">
+      <span class="emQui">${cible?cible.pseudo:'Autour de toi'}</span>
+      ${cible?`<span class="emNiv">niveau ${cible.niv||1}</span>`:''}
+      <button class="emX" id="em-x">✕</button></div>
+      <div class="emOngs">${ong('gestes','Gestes')}${ong('parler','Parler')}${ong('donner','Donner')}</div>
+      <div class="emCorps">`;
+    if(ongletSocial==='gestes')
+      h+=EMOTES.map(em=>`<button class="em" data-em="${em.id}"><span>${em.txt}</span>${em.nom}</button>`).join('');
+    if(ongletSocial==='parler')
+      h+=PHRASES.map((t,i)=>`<button class="em large" data-dire="${i}">${t}</button>`).join('');
+    if(ongletSocial==='donner'){
+      const cles=Object.keys(RESSOURCES).filter(k=>sac(k)>0);
+      h+=cles.length?cles.map(k=>`<div class="emDon">
+        <span class="emDonN">${ICO_RES[k]}<b>${sac(k)}</b> ${RESSOURCES[k].nom}</span>
+        <span class="emDonB">
+          <button data-don="${k}" data-n="1">1</button>
+          <button data-don="${k}" data-n="5" ${sac(k)<5?'disabled':''}>5</button>
+          <button data-don="${k}" data-n="${sac(k)}">tout</button></span></div>`).join('')
+        :'<div class="emVide">Ton sac est vide.</div>';
+    }
+    h+='</div>';
+    $('emotes').innerHTML=h;
+    $('em-x').onclick=()=>$('emotes').classList.remove('on');
+    $('emotes').querySelectorAll('[data-ong]').forEach(b=>b.onclick=()=>{ongletSocial=b.dataset.ong;dessine();});
+    $('emotes').querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{
+      envoyerEmote(b.dataset.em,cible);$('emotes').classList.remove('on');});
+    $('emotes').querySelectorAll('[data-dire]').forEach(b=>b.onclick=()=>{
+      envoyerPhrase(PHRASES[+b.dataset.dire],cible);$('emotes').classList.remove('on');});
+    $('emotes').querySelectorAll('[data-don]').forEach(b=>b.onclick=()=>{
+      proposerDon(b.dataset.don,+b.dataset.n,cible);dessine();});
+  };
+  dessine();
   $('emotes').classList.add('on');
-  $('emotes').querySelectorAll('[data-em]').forEach(b=>b.onclick=()=>{
-    envoyerEmote(b.dataset.em,cible);$('emotes').classList.remove('on');});
-  $('em-x').onclick=()=>$('emotes').classList.remove('on');
 }
 /* qui est à portée de main */
 function chercherJoueur(){
-  procheJoueur=null;let d0=90;
+  procheJoueur=null;let d0=100;
   AUTRES.forEach(s2=>{
     const d=Math.hypot(s2.vx-joueur.x,s2.vy-joueur.y);
     if(d<d0){d0=d;procheJoueur=s2;}
   });
 }
-
 /* ================= ressources partagées ================= */
 const CLE_RES=id=>e.biome+':'+id;
 let ressourcesChargees=false;
@@ -2544,9 +2643,11 @@ function majHud(){
   $('c-boire').style.opacity=sac('eau')?1:.4;
   $('c-manger').style.opacity=sac('nourriture')?1:.4;
   const bj=$('c-joueur');
-  if(procheJoueur){bj.classList.add('on');
-    bj.innerHTML='Interagir<b>'+(procheJoueur.pseudo||'?')+'</b>';}
-  else bj.classList.remove('on');
+  if(procheJoueur){
+    bj.classList.add('on');
+    const d=Math.round(Math.hypot(procheJoueur.vx-joueur.x,procheJoueur.vy-joueur.y));
+    bj.innerHTML='Interagir<b>'+(procheJoueur.pseudo||'?')+' · '+d+' m</b>';
+  }else bj.classList.remove('on');
 
   const a2=$('action');
   if(procheBete&&!procheObjet){
