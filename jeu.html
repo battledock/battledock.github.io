@@ -1460,9 +1460,10 @@ function dessinerObjet(g,o,x,y,nt){
     g.fillStyle='#54994a';g.beginPath();g.ellipse(x-4+sway,y-4,9,7,0,0,7);g.fill();
     g.fillStyle='#e8607a';g.fillRect(x+4+sway,y-2,3,3);
   }else if(o.type==='herbe'){
-    g.strokeStyle='#5f9a4a';g.lineWidth=2;
-    for(let i=-2;i<=2;i++){g.beginPath();g.moveTo(x+i*4,y+4);
-      g.quadraticCurveTo(x+i*4+sway,y-4,x+i*4+sway*1.6,y-11);g.stroke();}
+    for(let i=-3;i<=3;i++){
+      g.strokeStyle=i%2?'#5f9a4a':'#6faa55';g.lineWidth=1.1;
+      g.beginPath();g.moveTo(x+i*3,y+4);
+      g.quadraticCurveTo(x+i*3+sway*.6,y-3,x+i*3+sway*1.2,y-7-Math.abs(i));g.stroke();}
   }else if(o.type==='caisse'){
     const vide=!pretObjet(o);
     g.fillStyle=vide?'#8d8579':'#b5834c';g.fillRect(x-18,y-15,36,30);
@@ -1919,12 +1920,12 @@ function ombreAuSol(g,x,y,rx,ry,haut){
 /* ---- caméra : elle reste collée au joueur, sans avance ni retard ---- */
 let CAM={x:MONDE/2,y:MONDE/2,sec:0,secX:0,secY:0};
 function secouer(force){CAM.sec=Math.max(CAM.sec,Math.min(force,1));}
-function majCamera(dt){
-  CAM.x=joueur.x;CAM.y=joueur.y;
-  if(CAM.sec>0.01){                       /* une secousse courte et discrète */
-    CAM.secX=(Math.random()-.5)*CAM.sec*6;
-    CAM.secY=(Math.random()-.5)*CAM.sec*6;
-    CAM.sec*=Math.pow(0.00002,dt);
+function majCamera(dt,W,H){
+  CAM.x=joueur.x;CAM.y=joueur.y;          /* centrée sur toi, sans retard ni anticipation */
+  if(CAM.sec>0.01){                        /* une secousse très courte aux coups */
+    CAM.secX=(Math.random()-.5)*CAM.sec*5;
+    CAM.secY=(Math.random()-.5)*CAM.sec*5;
+    CAM.sec*=Math.pow(0.00005,dt);
   }else{CAM.secX=CAM.secY=0;CAM.sec=0;}
 }
 
@@ -1965,9 +1966,10 @@ function majCouchees(dt){
 function dessinerCouchees(g,camX,camY){
   if(biome().id==='banquise')return;
   COUCHEES.forEach(c=>{
-    g.globalAlpha=c.vie*0.16;
-    g.fillStyle='#4e7a3c';
-    g.beginPath();g.ellipse(c.x-camX,c.y-camY,9,4,0,0,7);g.fill();
+    const x=c.x-camX,y=c.y-camY,k=1-c.vie;
+    g.globalAlpha=c.vie*0.26;
+    g.fillStyle='#5f8f46';
+    g.beginPath();g.ellipse(x,y,7+k*3,2.4,0,0,7);g.fill();
   });
   g.globalAlpha=1;
 }
