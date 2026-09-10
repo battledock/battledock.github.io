@@ -102,13 +102,13 @@ const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','lo
 const BARBES=['aucune','fine','courte','pleine','bouc','moustache','collier'];
 const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
 const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
-const SILHOUETTES=['masculine','féminine','fine','robuste'];
+const SILHOUETTES=['fine','svelte','moyenne','athlétique','forte'];
 const HAUTS=['veste','t-shirt','chemise','pull','débardeur','manteau','gilet','tunique'];
 const BAS=['pantalon','short','jupe','treillis','longue jupe','bermuda'];
 const SOULIERS=['bottes','baskets','sandales','bottillons'];
 const SOURCILS=['fins','epais','arques','fronces'];
 const NEZ=['petit','droit','large','retrousse'];
-const BOUCHES=['neutre','sourire','severe','entrouverte'];
+const BOUCHES=['neutre','sourire','severe','entrouverte','lèvres','pincée'];
 const MARQUES=['aucune','taches','cicatrice','grain','fard','peinture'];
 const BOUCLES=['aucune','anneau','perle','plume'];
 const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
@@ -143,10 +143,11 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const basT=BAS[p.bas]||'pantalon';
   const soulier=SOULIERS[p.souliers]||'bottes';
   /* la silhouette : largeur d'épaules, taille, hanches */
-  const SIL={'masculine':{ep:8,ta:7,ha:7,tete:6,menton:2,cils:0,levres:0,sourcilEp:1,poitrine:0},
-             'féminine' :{ep:7,ta:5,ha:8,tete:5,menton:1,cils:1,levres:1,sourcilEp:0,poitrine:1},
-             'fine'     :{ep:6,ta:5,ha:6,tete:5,menton:1,cils:1,levres:1,sourcilEp:0,poitrine:0},
-             'robuste'  :{ep:9,ta:9,ha:8,tete:6,menton:3,cils:0,levres:0,sourcilEp:1,poitrine:0}}[silhouette];
+  const SIL={'fine'      :{ep:6,ta:5,ha:6,tete:5,menton:1},
+             'svelte'    :{ep:7,ta:5,ha:7,tete:5,menton:1},
+             'moyenne'   :{ep:8,ta:7,ha:7,tete:6,menton:2},
+             'athlétique':{ep:9,ta:7,ha:7,tete:6,menton:2},
+             'forte'     :{ep:9,ta:9,ha:9,tete:6,menton:3}}[silhouette]||{ep:8,ta:7,ha:7,tete:6,menton:2};
   const EP=SIL.ep, TA=SIL.ta, HA=SIL.ha;   /* demi-largeurs */
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
@@ -178,18 +179,46 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   R(-6,1,12,2,'rgba(40,60,28,.42)');
 
   /* sac */
-  if(sacC!=='aucun'&&prof){
-    R(-5,yT+3-reb,10,13,teint(sacC,-8));
-    R(-5,yT+3-reb,10,2,teint(sacC,16));
-    R(-5,yT+13-reb,10,2,teint(sacC,-26));
-    R(-2,yT+7-reb,4,4,teint(sacC,10));
-  }else if(sacC!=='aucun'&&!prof){
-    const sx=cote?(s>0?-8:3):-7;
-    R(sx,yT+3-reb,5,11,teint(sacC,-16));
-    R(sx,yT+3-reb,5,2,teint(sacC,14));
+  if(sacC!=='aucun'&&prof){                     /* de dos : le sac, bien posé entre les épaules */
+    const w2=Math.min(10,EP*2-4);
+    R(-(w2>>1),yT+2-reb,w2,13,teint(sacC,-8));
+    R(-(w2>>1),yT+2-reb,w2,2,teint(sacC,16));
+    R(-(w2>>1),yT+12-reb,w2,2,teint(sacC,-26));
+    R(-2,yT+6-reb,4,4,teint(sacC,10));          /* la poche */
+    R(-2,yT+6-reb,4,1,teint(sacC,-30));
+  }else if(sacC!=='aucun'&&cote){               /* de profil : il dépasse dans le dos */
+    const sx=s>0?-(EP+1):EP-2;
+    R(sx,yT+2-reb,4,12,teint(sacC,-16));
+    R(sx,yT+2-reb,4,2,teint(sacC,10));
+    R(sx,yT+12-reb,4,1,teint(sacC,-30));
   }
 
   /* ---- jambes ---- */
+  /* la chaussure, dessinée selon son type */
+  const pied=(px2,py,col)=>{
+    if(soulier==='bottes'){
+      R(px2,py-2,5,2,teint(col,-16));              /* la tige monte sur la cheville */
+      R(px2,py,5,3,col);
+      R(px2,py,5,1,teint(col,20));
+      R(px2,py+2,5,1,teint(col,-26));             /* la semelle */
+    }else if(soulier==='bottillons'){
+      R(px2,py-1,5,1,teint(col,-16));
+      R(px2,py,5,3,col);
+      R(px2,py,5,1,teint(col,18));
+      R(px2,py+2,5,1,teint(col,-30));
+    }else if(soulier==='baskets'){
+      R(px2,py,5,2,col);
+      R(px2,py,5,1,teint(col,22));
+      R(px2+1,py,2,1,'#f2efe4');                   /* le lacet */
+      R(px2,py+2,5,1,'#e8e4d8');                   /* la semelle claire */
+    }else{                                          /* sandales : le pied reste visible */
+      R(px2+1,py,3,2,peauO);
+      R(px2,py+1,5,1,col);
+      R(px2+1,py,3,1,col);
+      R(px2,py+2,5,1,teint(col,-22));
+    }
+  };
+
   /* jusqu'où le tissu descend, selon le bas porté */
   const TISSU={'pantalon':JH,'short':6,'jupe':5,'treillis':JH,'longue jupe':10,'bermuda':8}[basT];
   const jambeProfil=(dec,plie,col,botte)=>{
@@ -198,10 +227,7 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(TISSU>0)R(-2+dec,-JH,4,Math.min(h,TISSU),col);
     if(TISSU>=h)R(-2+dec,-4,4,4,teint(col,-12));
     if(basT==='treillis'){R(-2+dec,-JH+5,4,1,teint(col,-22));R(-1+dec,-JH+6,2,2,teint(col,14));}
-    R(-3+dec,-JH+h,5,3,botte);
-    R(-3+dec,-JH+h,5,1,teint(botte,18));
-    if(soulier==='baskets')R(-3+dec,-JH+h+2,5,1,'#e8e4d8');
-    if(soulier==='sandales'){R(-2+dec,-JH+h,3,1,teint(botte,20));}
+    pied(-3+dec,-JH+h,botte);
   };
   const jambeFace=(cx,phase,col,botte)=>{
     const avance=phase>0;
@@ -213,10 +239,7 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
       R(cx+ec,-JH,4,1,pantC);
     }
     if(basT==='treillis'){R(cx+ec,-JH+5,4,1,teint(col,-22));R(cx+1+ec,-JH+6,2,2,teint(col,14));}
-    R(cx-1+ec,-JH+h,5,3,avance?botte:teint(botte,-14));
-    R(cx-1+ec,-JH+h,5,1,chauC);
-    if(soulier==='baskets')R(cx-1+ec,-JH+h+2,5,1,'#e8e4d8');
-    if(soulier==='sandales')R(cx+ec,-JH+h,3,1,teint(botte,22));
+    pied(cx-1+ec,-JH+h,avance?botte:teint(botte,-14));
   };
   if(cote){
     jambeProfil(jdP*0.9-1,jdL,pantO,teint(chau,-14));
@@ -261,10 +284,6 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     R(-w2,yT+i,2,1,colHT);
     R(w2-2,yT+i,2,1,colHO);
   }
-  if(SIL.poitrine&&!prof&&hautT!=='manteau'){    /* juste une ombre, pas de forme appuyée */
-    R(-4,yT+4,3,2,colHC);R(1,yT+4,3,2,colHC);
-    R(-4,yT+6,3,1,colHO);R(1,yT+6,3,1,colHO);
-  }
   R(-TA,yT+TH-4,TA*2,2,colHO);                   /* ceinture */
   R(-1,yT+TH-4,2,2,'#c9a24a');
   /* les détails propres à chaque haut */
@@ -300,6 +319,13 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(!prof){R(-4,yT,8,2,colHC);R(-1,yT,2,4,colHO);}
   }
   R(-EP+1,yT+TH-2,EP*2-2,1,colHT);
+
+  /* de face : on ne voit du sac que les deux sangles sur la poitrine */
+  if(sacC!=='aucun'&&dir==='bas'){
+    R(-EP+2,yT+2,2,8,teint(sacC,-6));
+    R(EP-4,yT+2,2,8,teint(sacC,-18));
+    R(-EP+2,yT+6,EP*2-6,1,teint(sacC,-24));
+  }
 
   /* ---- bras : la manche s'arrête selon le vêtement ---- */
   const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
@@ -490,18 +516,59 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     }
   }
 
-  /* chapeau */
-  if(chapeau==='casquette'){R(-7,YT-5,14,4,'#3f5f6b');R(-7,YT-5,14,1,'#547a88');
-    R(cote?(s>0?1:-13):-7,YT-1,13,2,'#33505a');}
-  else if(chapeau==='bandana'){R(-7,YT-3,14,3,'#a8524a');R(-7,YT-3,14,1,'#c46a5e');R(5+tr,YT,3,5,'#8f4038');}
-  else if(chapeau==='bonnet'){R(-7,YT-7,14,6,'#8a4a3a');R(-7,YT-7,14,1,'#a85c48');R(-7,YT-2,14,2,'#a85c48');
-    R(-2,YT-10-reb,4,3,'#c07260');}
-  else if(chapeau==='capuche'){R(-8,YT-6,16,11,'#54606b');R(-8,YT-6,16,2,'#68757f');
-    R(-8,YT+3,2,8,'#465059');R(6,YT+3,2,8,'#465059');R(-5,YT+1,10,HT-1,peau);R(-5,YT+1,3,HT-1,peauO);}
-  else if(chapeau==='chapeau'){R(-10,YT-2,20,2,'#5a4a2c');R(-6,YT-7,12,5,'#8f7a49');R(-6,YT-4,12,2,'#5a4a2c');}
-  else if(chapeau==='beret'){R(-7,YT-5,13,4,'#2f4a5c');R(-7,YT-5,6,2,'#3f6076');R(4,YT-7-reb,2,2,'#2f4a5c');}
-  else if(chapeau==='cagoule'){R(-7,YT-3,14,14,'#3a3a44');R(-7,YT-3,14,2,'#4a4a56');
-    R(-4,YT+4,4,3,peau);R(1,YT+4,4,3,peau);}
+  /* ---- ce qu'on porte sur la tête : ajusté à la largeur du crâne ---- */
+  const LTc=SIL.tete;                              /* demi-largeur de la tête */
+  if(chapeau==='casquette'){
+    R(-LTc-1,YT-4,(LTc+1)*2,4,'#3f5f6b');          /* la calotte épouse le crâne */
+    R(-LTc-1,YT-4,(LTc+1)*2,1,'#547a88');
+    R(-LTc,YT-1,LTc*2,1,'#33505a');
+    const vx=cote?(s>0?1:-LTc*2-1):-LTc-1;         /* la visière part vers l'avant */
+    R(vx,YT,LTc*2+1,2,'#33505a');
+    R(vx,YT,LTc*2+1,1,'#456a76');
+  }
+  else if(chapeau==='bandana'){
+    R(-LTc-1,YT-2,(LTc+1)*2,3,'#a8524a');
+    R(-LTc-1,YT-2,(LTc+1)*2,1,'#c46a5e');
+    R(-LTc+1,YT-1,3,1,'#8f4038');                  /* le nœud */
+    R(LTc-1+tr,YT,3,5,'#8f4038');                  /* les pans qui pendent */
+    R(LTc-1+tr,YT+4,3,1,'#71322c');
+  }
+  else if(chapeau==='bonnet'){
+    R(-LTc-1,YT-6,(LTc+1)*2,6,'#8a4a3a');
+    R(-LTc-1,YT-6,(LTc+1)*2,1,'#a85c48');
+    R(-LTc-1,YT-1,(LTc+1)*2,2,'#a85c48');          /* le revers */
+    R(-LTc-1,YT+1,(LTc+1)*2,1,'#71392c');
+    R(-2,YT-9-reb,4,3,'#c07260');                  /* le pompon */
+    R(-2,YT-9-reb,2,1,'#d9897a');
+  }
+  else if(chapeau==='capuche'){
+    R(-LTc-2,YT-5,(LTc+2)*2,HT+3,'#54606b');       /* le tissu enveloppe la tête */
+    R(-LTc-2,YT-5,(LTc+2)*2,2,'#68757f');
+    R(-LTc-2,YT+3,2,HT-5,'#465059');
+    R(LTc,YT+3,2,HT-5,'#465059');
+    R(-LTc,YT+1,LTc*2,HT-2,peau);                  /* le visage reste dégagé */
+    R(-LTc,YT+1,3,HT-2,peauO);
+    R(-LTc,YT+1,LTc*2,1,teint(peau,-30));          /* l'ombre de la capuche */
+  }
+  else if(chapeau==='chapeau'){
+    R(-LTc-4,YT-1,(LTc+4)*2,2,'#5a4a2c');          /* le bord large */
+    R(-LTc-4,YT-1,(LTc+4)*2,1,'#7a663c');
+    R(-LTc,YT-6,LTc*2,5,'#8f7a49');                /* la calotte */
+    R(-LTc,YT-6,LTc*2,1,'#a08a56');
+    R(-LTc,YT-3,LTc*2,2,'#5a4a2c');                /* le ruban */
+  }
+  else if(chapeau==='beret'){
+    R(-LTc-1,YT-4,(LTc+1)*2-1,4,'#2f4a5c');
+    R(-LTc-1,YT-4,LTc,2,'#3f6076');
+    R(LTc-2,YT-6-reb,2,2,'#2f4a5c');               /* la queue sur le dessus */
+  }
+  else if(chapeau==='cagoule'){
+    R(-LTc-1,YT-2,(LTc+1)*2,HT+2,'#3a3a44');
+    R(-LTc-1,YT-2,(LTc+1)*2,2,'#4a4a56');
+    if(!prof){R(-4,YT+4,3,3,peau);R(1,YT+4,3,3,peau);}   /* les deux fentes */
+    R(-LTc-1,YT+HT-2,(LTc+1)*2,1,'#2b2b33');
+  }
+
   /* ---- le visage ----
      Il tient dans dix pixels de large : chaque pixel compte. */
   const blanc='#f6f3ec', ombreOeil=teint(peau,-38);
@@ -510,9 +577,8 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }else if(dir==='bas'){
     const clin=(Date.now()+x*53)%4600<130;
     /* sourcils */
-    const ep=SIL.sourcilEp;                    /* la silhouette épaissit ou affine le sourcil */
-    if(sourcil==='fins'){R(-4,YT+3,3,1+ep,chevO);R(2,YT+3,3,1+ep,chevO);}
-    if(sourcil==='epais'){R(-4,YT+2,3,2+ep,chevO);R(2,YT+2,3,2+ep,chevO);}
+    if(sourcil==='fins'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);}
+    if(sourcil==='epais'){R(-4,YT+2,3,2,chevO);R(2,YT+2,3,2,chevO);}
     if(sourcil==='arques'){R(-4,YT+3,2,1,chevO);R(-2,YT+2,1,1,chevO);
                            R(3,YT+3,2,1,chevO);R(2,YT+2,1,1,chevO);}
     if(sourcil==='fronces'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
@@ -542,15 +608,17 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(nez==='droit'){R(0,YT+6,1,2,ombreOeil);R(0,YT+8,1,1,peauT);}
     if(nez==='large'){R(-1,YT+7,3,1,ombreOeil);R(-1,YT+8,3,1,peauT);}
     if(nez==='retrousse'){R(0,YT+6,1,2,ombreOeil);R(-1,YT+8,2,1,peauT);}
-    /* cils, sur les silhouettes fines */
-    if(SIL.cils&&!clin){R(-5,YT+4,1,1,chevO);R(4,YT+4,1,1,chevO);}
+    /* cils : c'est le regard qui les porte, pas la carrure */
+    if((fy==='doux'||fy==='ronds')&&!clin){R(-5,YT+4,1,1,chevO);R(4,YT+4,1,1,chevO);}
     /* bouche */
-    if(bouche==='neutre'){R(-2,YT+9,4,1,SIL.levres?'#b06a68':teint(peau,-64));
-      if(SIL.levres)R(-2,YT+10,4,1,teint(peau,-24));}
+    const lev=(bouche==='lèvres');
+    if(bouche==='neutre')R(-2,YT+9,4,1,teint(peau,-64));
+    if(lev){R(-2,YT+9,4,1,'#b06a68');R(-2,YT+10,4,1,teint(peau,-24));R(-1,YT+8,2,1,'#c47f7c');}
     if(bouche==='sourire'){R(-2,YT+9,4,1,SIL.levres?'#b06a68':teint(peau,-64));
       R(-3,YT+8,1,1,peauO);R(2,YT+8,1,1,peauO);R(-1,YT+10,2,1,teint(peau,-30));}
     if(bouche==='severe'){R(-3,YT+9,6,1,teint(peau,-70));}
     if(bouche==='entrouverte'){R(-2,YT+9,4,1,teint(peau,-70));R(-1,YT+10,2,1,'#8a4a4a');}
+    if(bouche==='pincée'){R(-1,YT+9,3,1,teint(peau,-70));R(-2,YT+9,1,1,peauT);R(2,YT+9,1,1,peauT);}
     /* marques */
     if(marque==='taches'){R(-4,YT+7,1,1,peauT);R(-2,YT+8,1,1,peauT);R(3,YT+7,1,1,peauT);R(2,YT+6,1,1,peauT);}
     if(marque==='cicatrice'){R(3,YT+2,1,5,teint(peau,-46));R(2,YT+3,1,1,teint(peau,-46));}
@@ -559,9 +627,10 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(marque==='peinture'){R(-4,YT+4,3,3,'#a8524a');R(2,YT+4,3,3,'#a8524a');
       R(-4,YT+4,3,1,'#c46a5e');R(2,YT+4,3,1,'#c46a5e');}
     /* boucles d'oreille */
-    if(boucle==='anneau'){R(-7,YT+7,1,2,'#c9a24a');R(6,YT+7,1,2,'#c9a24a');}
-    if(boucle==='perle'){R(-7,YT+7,1,1,'#f2efe4');R(6,YT+7,1,1,'#f2efe4');}
-    if(boucle==='plume'){R(6,YT+7,1,4,'#4a7d7d');R(6,YT+10,1,1,'#7fbdbd');}
+    const oy=YT+7, ox=SIL.tete+1;
+    if(boucle==='anneau'){R(-ox,oy,1,2,'#c9a24a');R(ox-1,oy,1,2,'#c9a24a');}
+    if(boucle==='perle'){R(-ox,oy,1,1,'#f2efe4');R(ox-1,oy,1,1,'#f2efe4');}
+    if(boucle==='plume'){R(ox-1,oy,1,4,'#4a7d7d');R(ox-1,oy+3,1,1,'#7fbdbd');}
   }else if(cote){
     const dx=s>0?2:-4;
     if(sourcil==='epais')R(dx,YT+2,2,2,chevO);else R(dx,YT+3,2,1,chevO);
@@ -720,7 +789,7 @@ function dessinerJoy(){
 
 /* ================= la personnalisation ================= */
 const GROUPES=[
- {c:'corps',     t:'Silhouette', o:'Corps',  l:()=>SILHOUETTES,        k:'mot'},
+ {c:'corps',     t:'Carrure',    o:'Corps',  l:()=>SILHOUETTES,        k:'mot'},
  {c:'peau',      t:'Teint',      o:'Corps',  l:()=>PALETTES.peau,      k:'couleur'},
  {c:'yeux',      t:'Yeux',       o:'Visage', l:()=>PALETTES.yeux,      k:'couleur'},
  {c:'formeYeux', t:'Regard',     o:'Visage', l:()=>YEUX_F,             k:'mot'},
