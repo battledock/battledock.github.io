@@ -564,7 +564,8 @@ function construireMonde(){
     const x=90+alea(g+i*17)*(MONDE-180), y=90+alea(g+i*23)*(MONDE-180);
     objets.push({id:'caisse'+i,type:'caisse',nom:'Caisse abandonnée',x,y,w:36,h:30,solide:true,ph:alea(i)*6});
   }
-  return objets;
+  /* on dégage la clairière de départ : rien de solide autour du point d'arrivée */
+  return objets.filter(o=>!o.solide||Math.hypot(o.x-MONDE/2,o.y-MONDE/2)>110);
 }
 function construireSol(){
   const b=biome();
@@ -869,8 +870,9 @@ function majJoueur(dt){
   if(n>0.15){
     const v=118*Math.min(1,n)*dt;
     const nx=joueur.x+(joyX/n)*v, ny=joueur.y+(joyY/n)*v;
-    if(!bloque(nx,joueur.y))joueur.x=nx;
-    if(!bloque(joueur.x,ny))joueur.y=ny;
+    const coince=bloque(joueur.x,joueur.y);   // jamais bloqué si on est déjà dans un obstacle
+    if(coince||!bloque(nx,joueur.y))joueur.x=nx;
+    if(coince||!bloque(joueur.x,ny))joueur.y=ny;
     joueur.pas+=v*0.085;
     joueur.dir=Math.abs(joyX)>Math.abs(joyY)?(joyX>0?'droite':'gauche'):(joyY>0?'bas':'haut');
     if(Math.random()<dt*7)poussiere(joueur.x+(Math.random()-.5)*8,joueur.y+8);
@@ -988,6 +990,9 @@ $('c-retour').onclick=()=>fermerCarte();
 function ouvrirCarte(){
   if(!OBJETS){OBJETS=construireMonde();peuplerBetes();}
   if(e.pos){joueur.x=e.pos.x;joueur.y=e.pos.y;}
+  if(bloque(joueur.x,joueur.y)){          // position héritée invalide : on repart du centre
+    joueur.x=MONDE/2;joueur.y=MONDE/2;
+  }
   enCarte=true;$('carte').classList.add('on');
   document.querySelector('.app').style.display='none';
   tailleCarte();dernierT=performance.now();
