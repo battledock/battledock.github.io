@@ -143,10 +143,10 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const basT=BAS[p.bas]||'pantalon';
   const soulier=SOULIERS[p.souliers]||'bottes';
   /* la silhouette : largeur d'épaules, taille, hanches */
-  const SIL={'masculine':{ep:8,ta:7,ha:7},
-             'féminine' :{ep:7,ta:5,ha:8},
-             'fine'     :{ep:6,ta:5,ha:6},
-             'robuste'  :{ep:9,ta:9,ha:8}}[silhouette];
+  const SIL={'masculine':{ep:8,ta:7,ha:7,tete:6,menton:2,cils:0,levres:0,sourcilEp:1,poitrine:0},
+             'féminine' :{ep:7,ta:5,ha:8,tete:5,menton:1,cils:1,levres:1,sourcilEp:0,poitrine:1},
+             'fine'     :{ep:6,ta:5,ha:6,tete:5,menton:1,cils:1,levres:1,sourcilEp:0,poitrine:0},
+             'robuste'  :{ep:9,ta:9,ha:8,tete:6,menton:3,cils:0,levres:0,sourcilEp:1,poitrine:0}}[silhouette];
   const EP=SIL.ep, TA=SIL.ta, HA=SIL.ha;   /* demi-largeurs */
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
@@ -261,6 +261,10 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     R(-w2,yT+i,2,1,colHT);
     R(w2-2,yT+i,2,1,colHO);
   }
+  if(SIL.poitrine&&!prof&&hautT!=='manteau'){    /* juste une ombre, pas de forme appuyée */
+    R(-4,yT+4,3,2,colHC);R(1,yT+4,3,2,colHC);
+    R(-4,yT+6,3,1,colHO);R(1,yT+6,3,1,colHO);
+  }
   R(-TA,yT+TH-4,TA*2,2,colHO);                   /* ceinture */
   R(-1,yT+TH-4,2,2,'#c9a24a');
   /* les détails propres à chaque haut */
@@ -318,18 +322,26 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 
   /* ---- tête ---- */
-  const YT=yTete;                              /* la tête reste stable : seul le corps s'enfonce */
-  R(-3,yT-3+Y,6,4-Y,N);                        /* le cou s'étire d'un pixel quand le corps descend */
-  R(-2,yT-2+Y,4,3-Y,peau);                     /* cou */
-  R(-2,yT-2,4,1,peauT);                        /* ombre du menton dessus */
-  R(-2,yT-2,2,3,peauO);                        /* côté à l'ombre */
-  R(-6,YT,12,HT,N);
-  R(-5,YT+1,10,HT-1,peau);
-  R(-5,YT+1,3,HT-1,peauO);
-  R(-5,YT+1,10,1,peauC);
-  if(prof){R(-5,YT+1,10,HT-1,teint(peau,-12));  /* de dos : la nuque */
-           R(-5,YT+HT-3,10,2,teint(peau,-30));}
-  if(!prof){R(-7,YT+5,2,3,peauO);R(5,YT+5,2,3,peau);}
+  const YT=yTete;                              /* la tête reste stable */
+  R(-3,yT-3+Y,6,4-Y,N);                        /* le cou s'étire quand le corps descend */
+  R(-2,yT-2+Y,4,3-Y,peau);
+  R(-2,yT-2+Y,4,1,peauT);                      /* ombre du menton */
+  R(-2,yT-2+Y,2,3-Y,peauO);
+
+  /* le crâne, ligne par ligne : plus étroit et au menton arrondi si la silhouette est fine */
+  const LT=SIL.tete;                            /* demi-largeur de la tête */
+  for(let i=0;i<HT;i++){
+    let w2=LT;
+    if(i>=HT-SIL.menton)w2=LT-1;                /* le menton se resserre */
+    if(i===0)w2=LT-1;                           /* le sommet du crâne s'arrondit */
+    R(-w2-1,YT+i,(w2+1)*2,1,N);                 /* contour */
+    R(-w2,YT+i,w2*2,1,peau);
+    R(-w2,YT+i,Math.min(3,w2),1,peauO);         /* la moitié à l'ombre */
+  }
+  R(-LT,YT,LT*2,1,peauC);                       /* front éclairé */
+  if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
+  if(prof){R(-LT,YT+1,LT*2,HT-1,teint(peau,-12));           /* nuque */
+           R(-LT,YT+HT-3,LT*2,2,teint(peau,-30));}
   /* barbe */
   if(!prof){
     if(barbe==='pleine'){R(-5,YT+6,10,5,chev);R(-3,YT+10,6,2,chevO);}
@@ -498,8 +510,9 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }else if(dir==='bas'){
     const clin=(Date.now()+x*53)%4600<130;
     /* sourcils */
-    if(sourcil==='fins'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);}
-    if(sourcil==='epais'){R(-4,YT+2,3,2,chevO);R(2,YT+2,3,2,chevO);}
+    const ep=SIL.sourcilEp;                    /* la silhouette épaissit ou affine le sourcil */
+    if(sourcil==='fins'){R(-4,YT+3,3,1+ep,chevO);R(2,YT+3,3,1+ep,chevO);}
+    if(sourcil==='epais'){R(-4,YT+2,3,2+ep,chevO);R(2,YT+2,3,2+ep,chevO);}
     if(sourcil==='arques'){R(-4,YT+3,2,1,chevO);R(-2,YT+2,1,1,chevO);
                            R(3,YT+3,2,1,chevO);R(2,YT+2,1,1,chevO);}
     if(sourcil==='fronces'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
@@ -529,10 +542,13 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(nez==='droit'){R(0,YT+6,1,2,ombreOeil);R(0,YT+8,1,1,peauT);}
     if(nez==='large'){R(-1,YT+7,3,1,ombreOeil);R(-1,YT+8,3,1,peauT);}
     if(nez==='retrousse'){R(0,YT+6,1,2,ombreOeil);R(-1,YT+8,2,1,peauT);}
+    /* cils, sur les silhouettes fines */
+    if(SIL.cils&&!clin){R(-5,YT+4,1,1,chevO);R(4,YT+4,1,1,chevO);}
     /* bouche */
-    if(bouche==='neutre'){R(-2,YT+9,4,1,teint(peau,-64));}
-    if(bouche==='sourire'){R(-2,YT+9,4,1,teint(peau,-64));R(-3,YT+8,1,1,peauO);R(2,YT+8,1,1,peauO);
-      R(-1,YT+10,2,1,teint(peau,-30));}
+    if(bouche==='neutre'){R(-2,YT+9,4,1,SIL.levres?'#b06a68':teint(peau,-64));
+      if(SIL.levres)R(-2,YT+10,4,1,teint(peau,-24));}
+    if(bouche==='sourire'){R(-2,YT+9,4,1,SIL.levres?'#b06a68':teint(peau,-64));
+      R(-3,YT+8,1,1,peauO);R(2,YT+8,1,1,peauO);R(-1,YT+10,2,1,teint(peau,-30));}
     if(bouche==='severe'){R(-3,YT+9,6,1,teint(peau,-70));}
     if(bouche==='entrouverte'){R(-2,YT+9,4,1,teint(peau,-70));R(-1,YT+10,2,1,'#8a4a4a');}
     /* marques */
