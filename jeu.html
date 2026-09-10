@@ -45,9 +45,11 @@ body.fige .corps{overflow:hidden}
 .ferme{background:linear-gradient(180deg,#dfeef5,#eef3e6 46%,#e8eddb);border:1px solid var(--filet);
   border-radius:20px;padding:14px;margin-bottom:16px}
 .parcelles{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
-.parc{position:relative;aspect-ratio:1/.88;border-radius:14px;overflow:hidden;border:1px solid #a98a5f;
-  background:repeating-linear-gradient(96deg,var(--terre) 0 7px,var(--terre-f) 7px 14px);
-  box-shadow:inset 0 -8px 14px rgba(90,60,25,.18);display:flex;align-items:flex-end;justify-content:center}
+.parc{position:relative;aspect-ratio:1/.88;border-radius:14px;overflow:hidden;border:1px solid #9d7f52;
+  background:#b98d55;box-shadow:inset 0 -10px 16px rgba(90,60,25,.22),0 2px 0 rgba(120,90,45,.35);
+  display:flex;align-items:flex-end;justify-content:center;padding:0}
+.parc .restes{position:absolute;top:5px;left:6px;background:rgba(30,39,53,.72);color:#fdfbf4;
+  border-radius:9px;padding:2px 7px;font:600 10.5px system-ui}
 .parc.libre{background:repeating-linear-gradient(96deg,#c8a271 0 7px,#b8955f 7px 14px)}
 .parc.verrou{background:#e9e6dc;border:1px dashed #b9b3a4;box-shadow:none;align-items:center}
 .parc svg{display:block;margin-bottom:6px}
@@ -57,7 +59,7 @@ body.fige .corps{overflow:hidden}
 .parc .pret{position:absolute;top:6px;right:6px;width:9px;height:9px;border-radius:50%;
   background:var(--vert-c);box-shadow:0 0 0 3px rgba(99,168,74,.28)}
 .parc .txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-  font:600 11.5px system-ui;color:#6b5a3c}
+  font:600 11.5px system-ui;color:#6b5a3c;background:rgba(255,253,247,.18)}
 .parc .prix{font:600 11.5px system-ui;color:#8a867e}
 
 /* animaux */
@@ -193,6 +195,12 @@ body.fige .corps{overflow:hidden}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <pattern id="terre" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+    <rect width="9" height="9" fill="none"/>
+    <circle cx="2" cy="3" r="0.9" fill="#8a6a42"/><circle cx="6.5" cy="7" r="0.7" fill="#a2794a"/>
+    <circle cx="7" cy="2" r="0.6" fill="#96703f"/></pattern>
+</defs></svg>
 <div class="app">
   <div class="haut">
     <div class="ligne">
@@ -289,18 +297,72 @@ const ICONE={ble:D.ble,carotte:D.carotte,tomate:D.tomate,mais:D.mais,citrouille:
 
 /* ================= données ================= */
 const CULTURES=[
-  {id:'ble',nom:'Blé',cout:12,duree:45,vend:26,xp:2,niv:1},
-  {id:'carotte',nom:'Carotte',cout:24,duree:110,vend:58,xp:4,niv:1},
-  {id:'mais',nom:'Maïs',cout:48,duree:240,vend:124,xp:7,niv:3},
-  {id:'tomate',nom:'Tomate',cout:96,duree:480,vend:255,xp:12,niv:5},
-  {id:'citrouille',nom:'Citrouille',cout:190,duree:900,vend:520,xp:20,niv:8}
+ {id:'radis',   nom:'Radis',        duree:30,  cout:8,   vend:16,  xp:1, niv:1, recoltes:1},
+ {id:'salade',  nom:'Salade',       duree:60,  cout:14,  vend:32,  xp:2, niv:1, recoltes:1},
+ {id:'ble',     nom:'Blé',          duree:45,  cout:12,  vend:26,  xp:2, niv:1, recoltes:1},
+ {id:'carotte', nom:'Carotte',      duree:120, cout:24,  vend:58,  xp:4, niv:2, recoltes:1},
+ {id:'mais',    nom:'Maïs',         duree:240, cout:48,  vend:124, xp:7, niv:3, recoltes:1},
+ {id:'courgette',nom:'Courgette',   duree:300, cout:62,  vend:158, xp:9, niv:4, recoltes:1, double:true},
+ {id:'patate',  nom:'Pomme de terre',duree:360,cout:70,  vend:186, xp:10,niv:4, recoltes:1, lot:2},
+ {id:'tomate',  nom:'Tomate',       duree:480, cout:96,  vend:118, xp:12,niv:5, recoltes:3, repousse:.45},
+ {id:'fraise',  nom:'Fraise',       duree:600, cout:120, vend:104, xp:13,niv:6, recoltes:4, repousse:.35},
+ {id:'citrouille',nom:'Citrouille', duree:900, cout:190, vend:520, xp:20,niv:8, recoltes:1},
+ {id:'vigne',   nom:'Vigne',        duree:1200,cout:240, vend:300, xp:24,niv:9, recoltes:6, repousse:.4},
+ {id:'pommier', nom:'Pommier',      duree:1800,cout:420, vend:280, xp:28,niv:10,recoltes:0, repousse:1}
 ];
-const PRODUITS={};CULTURES.forEach(c=>PRODUITS[c.id]={nom:c.nom,vend:c.vend});
-PRODUITS.oeuf={nom:'Œuf',vend:34};PRODUITS.lait={nom:'Lait',vend:72};
+
+/* ---- dessin d'un plant, quatre stades : 0 semis · 1 jeune · 2 formé · 3 mûr ---- */
+const PLANT={
+ radis:(t)=>t===0?`<path d="M0 0v-3" stroke="#5f8f4a" stroke-width="1.4"/>`:
+   `<g><path d="M0 0v-${3+t*2}" stroke="#4e8f42" stroke-width="1.4"/>
+    <path d="M0 -${2+t*2} l-${2+t} -${2+t} M0 -${2+t*2} l${2+t} -${2+t}" stroke="#5aa350" stroke-width="1.3" stroke-linecap="round"/>
+    ${t>2?'<circle cx="0" cy="1" r="2.6" fill="#d94f5c"/><circle cx="-0.8" cy="0.3" r="0.9" fill="#e87b84"/>':''}</g>`,
+ salade:(t)=>`<g><circle cx="0" cy="0" r="${1.6+t*1.9}" fill="#6fae4e"/>
+   <circle cx="-${0.6+t*.6}" cy="-${0.4+t*.4}" r="${1+t*1.2}" fill="#87c25f"/>
+   ${t>1?`<circle cx="${0.8+t*.5}" cy="${0.5}" r="${0.8+t*.9}" fill="#9ad06c"/>`:''}</g>`,
+ ble:(t)=>t===0?`<path d="M0 0v-3" stroke="#8aa84a" stroke-width="1.3"/>`:
+   `<g><path d="M-1 0 v-${4+t*3}" stroke="${t>2?'#c9a83f':'#8aa84a'}" stroke-width="1.3"/>
+    <path d="M1.6 0 v-${3+t*3}" stroke="${t>2?'#c9a83f':'#8aa84a'}" stroke-width="1.3"/>
+    ${t>1?`<ellipse cx="-1" cy="-${5+t*3}" rx="1.5" ry="${2+t}" fill="${t>2?'#e0bd58':'#a8bb5c'}"/>
+       <ellipse cx="1.6" cy="-${4+t*3}" rx="1.3" ry="${1.8+t}" fill="${t>2?'#d9b44a':'#9fb254'}"/>`:''}</g>`,
+ carotte:(t)=>`<g><path d="M0 0v-${3+t*2.6}" stroke="#4e8f42" stroke-width="1.5"/>
+   <path d="M0 -${2+t*2} l-${2+t*1.2} -${2+t} M0 -${1+t*2} l${2+t*1.2} -${2.4+t}" stroke="#5aa350" stroke-width="1.4" stroke-linecap="round"/>
+   ${t>2?'<path d="M-2 1 h4 l-2 3.4z" fill="#e08a3c"/>':''}</g>`,
+ mais:(t)=>`<g><path d="M0 0v-${5+t*4}" stroke="#6ba03c" stroke-width="1.6"/>
+   <path d="M0 -${4+t*3} q-${3+t*1.6} -1 -${4+t*2} -4" stroke="#7fb44c" stroke-width="1.5" fill="none"/>
+   <path d="M0 -${6+t*3} q${3+t*1.6} -1 ${4+t*2} -4" stroke="#7fb44c" stroke-width="1.5" fill="none"/>
+   ${t>2?'<ellipse cx="2" cy="-6" rx="1.7" ry="3.6" fill="#e2b93f"/>':''}</g>`,
+ courgette:(t)=>`<g><ellipse cx="0" cy="0" rx="${2+t*2.2}" ry="${1.4+t*1.4}" fill="#4f8f42"/>
+   <ellipse cx="-${1+t}" cy="-${0.6+t*.6}" rx="${1.4+t*1.4}" ry="${1+t}" fill="#63a84a"/>
+   ${t>2?'<ellipse cx="2.4" cy="1.6" rx="3.4" ry="1.5" fill="#3f7d34" transform="rotate(-18 2.4 1.6)"/>':''}</g>`,
+ patate:(t)=>`<g><path d="M0 0v-${3+t*2}" stroke="#4e8f42" stroke-width="1.4"/>
+   <ellipse cx="-${1.6+t}" cy="-${3+t*1.6}" rx="${1.4+t*.8}" ry="${1+t*.6}" fill="#5aa350"/>
+   <ellipse cx="${1.6+t}" cy="-${2+t*1.6}" rx="${1.4+t*.8}" ry="${1+t*.6}" fill="#4e8f42"/>
+   ${t>2?'<ellipse cx="0" cy="2" rx="3" ry="2" fill="#c9a06a"/>':''}</g>`,
+ tomate:(t)=>`<g><path d="M0 1v-${4+t*3}" stroke="#4e8f42" stroke-width="1.5"/>
+   <path d="M0 -${3+t*2} l-${2+t} -2 M0 -${5+t*2} l${2+t} -2" stroke="#4e8f42" stroke-width="1.4" stroke-linecap="round"/>
+   ${t>2?'<circle cx="-1.8" cy="-2" r="2.2" fill="#cf4433"/><circle cx="2" cy="-4.4" r="1.9" fill="#d9553f"/>':
+     (t>1?'<circle cx="-1.6" cy="-2" r="1.4" fill="#8fbb5c"/>':'')}</g>`,
+ fraise:(t)=>`<g><circle cx="0" cy="0" r="${1.6+t*1.5}" fill="#4f8f42"/>
+   <circle cx="-${1+t*.8}" cy="-${0.6+t*.5}" r="${1+t}" fill="#63a84a"/>
+   ${t>2?'<circle cx="1.8" cy="1.6" r="1.7" fill="#d33f4f"/><circle cx="-1.6" cy="2" r="1.3" fill="#e0566a"/>':''}</g>`,
+ citrouille:(t)=>`<g><path d="M0 0 q-${3+t*2} -1 -${4+t*2} -4" stroke="#4e8f42" stroke-width="1.5" fill="none"/>
+   <ellipse cx="0" cy="0" rx="${1.6+t*1.4}" ry="${1.2+t}" fill="#4f8f42"/>
+   ${t>2?'<g><ellipse cx="0" cy="1" rx="5" ry="3.8" fill="#e08a3c"/><ellipse cx="0" cy="1" rx="1.8" ry="3.8" fill="#d9782c"/><path d="M0 -2.6v-2" stroke="#4e8f42" stroke-width="1.4"/></g>':''}</g>`,
+ vigne:(t)=>`<g><path d="M0 2v-${5+t*4}" stroke="#7d5934" stroke-width="1.6"/>
+   <path d="M0 -${4+t*3} q-4 -1 -5 -4 M0 -${6+t*3} q4 -1 5 -4" stroke="#5aa350" stroke-width="1.4" fill="none"/>
+   ${t>2?'<g fill="#7a4a8f"><circle cx="-2" cy="-2" r="1.2"/><circle cx="0" cy="-1" r="1.2"/><circle cx="2" cy="-2.4" r="1.1"/><circle cx="-1" cy="0.6" r="1.1"/><circle cx="1" cy="0.8" r="1"/></g>':''}</g>`,
+ pommier:(t)=>`<g><rect x="-1.4" y="-${3+t*3}" width="2.8" height="${4+t*3}" fill="#7d5934"/>
+   <circle cx="0" cy="-${6+t*4}" r="${3+t*2.4}" fill="#4f8f42"/>
+   <circle cx="-${2+t}" cy="-${5+t*3.4}" r="${2+t*1.6}" fill="#5aa350"/>
+   <circle cx="${2+t}" cy="-${5.6+t*3.4}" r="${1.8+t*1.5}" fill="#448040"/>
+   ${t>2?'<circle cx="-2.4" cy="-8" r="1.5" fill="#d94f4f"/><circle cx="2.6" cy="-9.4" r="1.4" fill="#d94f4f"/><circle cx="0" cy="-6" r="1.3" fill="#e06a5a"/>':''}</g>`
+};
+
 const CLIENTS=['Mme Ferrand','le café du coin','la cantine','Odile','le marché couvert','l’épicerie','Karim'];
 
 const CLE='bdl.ferme.v2';
-const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:4,tuto:0,accueilVu:false,
+const neuf=()=>({ferme:'Ta ferme',or:150,xp:0,niv:1,parcelles:3,tuto:0,accueilVu:false,
   cases:Array.from({length:9},()=>({c:null,fin:0})),
   poule:0,vache:0,attente:{oeuf:0,lait:0},derniere:Date.now(),stock:{},commandes:null});
 let e=neuf();
@@ -309,7 +371,7 @@ const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
 
 const stock=k=>e.stock[k]||0, ajouter=(k,n)=>{e.stock[k]=stock(k)+n;};
 const XP_NIV=n=>Math.round(40*Math.pow(1.55,n-1));
-const coutParcelle=()=>Math.round(120*Math.pow(1.75,e.parcelles-4));
+const coutParcelle=()=>Math.round(110*Math.pow(1.7,e.parcelles-3));
 const coutPoule=()=>Math.round(320*Math.pow(1.8,e.poule));
 const coutVache=()=>Math.round(900*Math.pow(1.85,e.vache));
 const euros=n=>Math.round(n).toLocaleString('fr-FR')+' €';
@@ -347,6 +409,9 @@ function assurerCommandes(){if(!e.commandes)e.commandes=[];
   while(e.commandes.length<3){const c=nouvelleCommande();if(!c)break;e.commandes.push(c);}}
 const livrable=c=>Object.entries(c.items).every(([k,q])=>stock(k)>=q);
 
+const vignette=(cu,t)=>`<svg width="34" height="34" viewBox="-14 -22 28 28">
+  <g transform="scale(1.5)">${PLANT[cu.id](t===undefined?3:t)}</g></svg>`;
+
 /* ================= vues ================= */
 let vue='ferme';
 document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
@@ -354,15 +419,40 @@ document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on',x===b));
   $('corps').scrollTop=0;rendre();});
 
+/* ---- une parcelle dessinée de haut : terre labourée + neuf plants ---- */
+function PARCELLE(cu,t,pousse){
+  const A=(a,b,s)=>{const v=Math.sin(a*127.1+b*311.7+s*74.7)*43758.5;return v-Math.floor(v);};
+  let sol='';
+  for(let r=0;r<9;r++)
+    sol+=`<rect x="0" y="${6+r*8.4}" width="100" height="4.6" fill="#a87c48" opacity=".55"/>`;
+  let plants='';
+  if(cu){
+    for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+      const x=22+c*28+(A(r,c,3)-.5)*5, y=30+r*26+(A(r,c,7)-.5)*4;
+      const ech=(cu.id==='pommier'||cu.id==='vigne')?1.35:1.15;
+      plants+=`<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${ech})">${PLANT[cu.id](t)}</g>`;
+    }
+  }
+  return `<svg viewBox="0 0 100 88" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+    <rect width="100" height="88" fill="#b98d55"/>${sol}
+    <rect width="100" height="88" fill="url(#terre)" opacity=".25"/>
+    ${plants}
+    ${pousse!==null?`<rect x="6" y="78" width="88" height="5" rx="2.5" fill="rgba(40,28,12,.45)"/>
+      <rect x="7" y="79" width="${86*pousse}" height="3" rx="1.5" fill="#8ed36a"/>`:''}
+  </svg>`;
+}
 function etatParcelle(i){
   const c=e.cases[i];
   if(i>=e.parcelles)return{type:'verrou'};
   if(!c.c)return{type:'libre'};
   const cu=CULTURES.find(x=>x.id===c.c);
-  const reste=c.fin-Date.now(), tot=cu.duree*1000;
-  if(reste<=0)return{type:'pret',cu};
-  return{type:'pousse',cu,reste:Math.ceil(reste/1000),p:1-reste/tot};
+  if(!cu)return{type:'libre'};
+  const cycle=(c.cycle||cu.duree)*1000;
+  const reste=c.fin-Date.now();
+  if(reste<=0)return{type:'pret',cu,restes:c.restes};
+  return{type:'pousse',cu,restes:c.restes,reste:Math.ceil(reste/1000),p:Math.max(0,1-reste/cycle)};
 }
+const stade=p=>p>=1?3:(p>.66?2:(p>.3?1:0));
 
 function vueFerme(){
   let h='<div class="ferme"><div class="parcelles">';
@@ -371,12 +461,13 @@ function vueFerme(){
     if(s.type==='verrou'){
       h+=`<button class="parc verrou" data-p="${i}"><span class="prix">${euros(coutParcelle())}</span></button>`;
     }else if(s.type==='libre'){
-      h+=`<button class="parc libre" data-p="${i}"><span class="txt">Semer</span></button>`;
+      h+=`<button class="parc libre" data-p="${i}">${PARCELLE(null,0,null)}<span class="txt">Semer</span></button>`;
+    }else if(s.type==='pret'){
+      h+=`<button class="parc" data-p="${i}">${PARCELLE(s.cu,3,null)}
+        <span class="pret"></span>
+        ${s.cu.recoltes>1||s.cu.recoltes===0?`<span class="restes">${s.cu.recoltes===0?'∞':s.restes}</span>`:''}</button>`;
     }else{
-      const t=s.type==='pret'?2:(s.p>.5?1:0);
-      h+=`<button class="parc" data-p="${i}">${ICONE[s.cu.id](t)}
-        ${s.type==='pret'?'<span class="pret"></span>'
-          :`<span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span>`}</button>`;
+      h+=`<button class="parc" data-p="${i}">${PARCELLE(s.cu,stade(s.p),s.p)}</button>`;
     }
   }
   h+='</div><div class="duo">';
@@ -403,11 +494,13 @@ function vueFerme(){
         <span class="t"><span class="n">Parcelle ${i+1}</span><span class="d">libre</span></span>
         <span class="agir sec">Semer</span></button>`;
     }else if(s.type==='pret'){
-      lignes+=`<button class="ligne pret" data-p="${i}"><span class="ic">${ICONE[s.cu.id](2)}</span>
-        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">prêt à récolter</span></span>
+      const suite=s.cu.recoltes===0?' · repousse ensuite':
+        (s.cu.recoltes>1?` · ${s.restes} récolte${s.restes>1?'s':''} restante${s.restes>1?'s':''}`:'');
+      lignes+=`<button class="ligne pret" data-p="${i}"><span class="ic">${vignette(s.cu,3)}</span>
+        <span class="t"><span class="n">${s.cu.nom}</span><span class="d">prêt${suite}</span></span>
         <span class="agir">Récolter</span></button>`;
     }else{
-      lignes+=`<div class="ligne pousse"><span class="ic">${ICONE[s.cu.id](s.p>.5?1:0)}</span>
+      lignes+=`<div class="ligne pousse"><span class="ic">${vignette(s.cu,stade(s.p))}</span>
         <span class="t"><span class="n">${s.cu.nom}</span><span class="d">encore ${duree(s.reste)}</span>
         <span class="jauge"><i style="width:${Math.round(s.p*100)}%"></i></span></span></div>`;
     }
@@ -428,7 +521,7 @@ function vueMarche(){
   const total=cles.reduce((s,k)=>s+PRODUITS[k].vend*stock(k),0);
   let h='<div class="titre">MARCHÉ</div>';
   cles.forEach(k=>{
-    h+=`<div class="item"><span class="ic" style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${(ICONE[k]||D.pain)(2)}</span>
+    h+=`<div class="item"><span class="ic" style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${PRODUITS[k]&&PLANT[k]?vignette(CULTURES.find(c=>c.id===k)):(D[k]?D[k]():D.pain())}</span>
       <span class="t"><span class="n" style="font-size:13.5px;font-weight:600">${PRODUITS[k].nom}</span>
       <span class="d" style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${stock(k)} en grange · ${euros(PRODUITS[k].vend)} pièce</span></span>
       <button class="prixb" data-v="${k}">${euros(PRODUITS[k].vend*stock(k))}</button></div>`;
@@ -450,7 +543,7 @@ function vueBoutique(){
   h+='<div class="titre" style="margin-top:18px">GRAINES DISPONIBLES</div>';
   CULTURES.forEach(c=>{
     const ok=c.niv<=e.niv;
-    h+=`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ICONE[c.id](ok?2:0)}</span>
+    h+=`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${vignette(c,ok?3:1)}</span>
       <span class="t"><span style="font-size:13.5px;font-weight:600">${c.nom}</span>
       <span style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${ok?duree(c.duree)+' · achat '+euros(c.cout)+' · vente '+euros(c.vend):'niveau '+c.niv+' requis'}</span></span></div>`;
   });
@@ -475,7 +568,7 @@ function semer(i){
   let dispo=CULTURES.filter(c=>c.niv<=e.niv);
   if(e.tuto===1)dispo=dispo.filter(c=>c.id==='ble');
   $('fen-b').innerHTML='<h2>Que semer ?</h2><p>Choisis ta culture pour cette parcelle.</p>'+
-    dispo.map(c=>`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${ICONE[c.id](2)}</span>
+    dispo.map(c=>`<div class="item"><span style="width:44px;height:44px;border-radius:12px;background:#f4f1e8;display:flex;align-items:center;justify-content:center">${vignette(c,3)}</span>
       <span class="t"><span style="font-size:13.5px;font-weight:600">${c.nom}</span>
       <span style="display:block;font-size:12px;color:var(--doux);margin-top:2px">${duree(c.duree)} · rapporte ${euros(c.vend)}</span></span>
       <button class="prixb" data-g="${c.id}" ${e.or<c.cout?'disabled':''}>${euros(c.cout)}</button></div>`).join('')+
@@ -485,7 +578,9 @@ function semer(i){
   $('fen-b').querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{
     const c=CULTURES.find(x=>x.id===b.dataset.g);
     if(e.or<c.cout)return;
-    e.or-=c.cout;e.cases[i]={c:c.id,fin:Date.now()+c.duree*1000};
+    e.or-=c.cout;
+    e.cases[i]={c:c.id,fin:Date.now()+c.duree*1000,cycle:c.duree,
+      restes:c.recoltes===0?Infinity:c.recoltes};
     $('fen').classList.remove('on');sauver();rendre();});
 }
 function toucherParcelle(i){
@@ -497,8 +592,21 @@ function toucherParcelle(i){
   }
   if(s.type==='libre')return semer(i);
   if(s.type==='pousse')return toast('Prêt dans '+duree(s.reste));
-  ajouter(s.cu.id,1);gagnerXp(s.cu.xp);e.cases[i]={c:null,fin:0};
-  toast('+1 '+s.cu.nom);sauver();rendre();
+  const cu=s.cu;
+  const lot=cu.lot||1, gain=cu.double?lot*2:lot;
+  ajouter(cu.id,gain);gagnerXp(cu.xp);
+  const c=e.cases[i];
+  const infini=cu.recoltes===0;
+  const restes=infini?Infinity:(c.restes||1)-1;
+  if(infini||restes>0){
+    const cycle=Math.round(cu.duree*(cu.repousse||.5));
+    e.cases[i]={c:cu.id,fin:Date.now()+cycle*1000,cycle,restes};
+    toast('+'+gain+' '+cu.nom+' · ça repousse');
+  }else{
+    e.cases[i]={c:null,fin:0};
+    toast('+'+gain+' '+cu.nom);
+  }
+  sauver();rendre();
 }
 function toucherBat(id){
   if(id==='poule'){
