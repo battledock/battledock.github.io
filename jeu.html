@@ -112,18 +112,19 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 #carte{position:fixed;left:0;right:0;top:0;bottom:0;z-index:5;display:none;background:#141c16}
 #carte.on{display:block}
 #carte canvas.jeu{position:absolute;inset:0;width:100%;height:100%;display:block}
-#carte .hud{position:absolute;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));
-  display:flex;gap:8px;align-items:flex-start;pointer-events:none}
-#carte .mini{background:rgba(20,28,22,.62);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.12);
-  border-radius:14px;padding:8px 11px;display:grid;gap:6px;min-width:120px}
-#carte .mj{display:flex;align-items:center;gap:7px}
-#carte .mj .b{width:52px;height:5px;border-radius:3px;background:rgba(255,255,255,.16);overflow:hidden}
-#carte .mj .b i{display:block;height:100%;border-radius:3px}
-#carte .mj span{font:600 10px system-ui;color:#dfe7dc}
-#carte .info{margin-left:auto;background:rgba(20,28,22,.62);backdrop-filter:blur(8px);
-  border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:8px 12px;text-align:right}
-#carte .info .j{font:600 9.5px system-ui;letter-spacing:1.8px;color:#9fb59c}
-#carte .info .m{font:400 14px Georgia,serif;color:#f2efe4;margin-top:2px}
+#carte .hud{position:absolute;left:0;right:0;top:0;background:#fdfbf4;
+  padding:calc(10px + env(safe-area-inset-top)) 14px 11px;
+  box-shadow:0 6px 18px rgba(20,40,15,.28);pointer-events:none}
+#carte .hudJour{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+#carte .hudJour>span:first-child{font:400 15px Georgia,serif;color:#2f3830}
+#carte .hudJour .gens{margin-left:auto;font:600 10px system-ui;color:#8a9083}
+#carte .hudJauges{display:flex;gap:10px}
+#carte .jg{flex:1;min-width:0}
+#carte .jg .t{display:flex;align-items:baseline}
+#carte .jg .t b{font:600 8px system-ui;letter-spacing:1.2px;color:#a8ab9e}
+#carte .jg .t i{font:600 10px system-ui;color:#2f3830;margin-left:auto;font-style:normal}
+#carte .jg .b{height:6px;border-radius:4px;background:#e8e5da;margin-top:4px;overflow:hidden}
+#carte .jg .b i{display:block;height:100%;border-radius:4px;transition:width .4s}
 #carte .retour{position:absolute;right:12px;bottom:calc(20px + env(safe-area-inset-bottom));
   width:52px;height:52px;border-radius:50%;background:rgba(20,28,22,.7);backdrop-filter:blur(8px);
   border:1px solid rgba(255,255,255,.14);color:#e8efe4;display:flex;align-items:center;justify-content:center}
@@ -208,9 +209,9 @@ button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit
 
 <div id="carte">
   <canvas id="cv" class="jeu"></canvas>
-  <div class="hud">
-    <div class="mini" id="mini"></div>
-    <div class="info"><div class="j" id="c-jour">JOUR 1</div><div class="m" id="c-meteo">Ciel clair</div></div>
+  <div class="hud" id="hud">
+    <div class="hudJour"><span id="c-jour">Jour 1 · 8 h</span><span class="gens" id="c-gens"></span></div>
+    <div class="hudJauges" id="mini"></div>
   </div>
   <canvas id="joy" width="132" height="132"></canvas>
   <button id="action"></button>
@@ -2569,8 +2570,12 @@ function dessinerJoy(){
 }
 
 function majHud(){
-  const m=meteo();
-  if(INT){                                   /* à l'intérieur : bouton fouiller ou sortir */
+  const jauge=(nom,val,c)=>`<div class="jg"><div class="t"><b>${nom}</b><i>${Math.round(val)}</i></div>
+    <div class="b"><i style="width:${Math.max(0,Math.min(100,val))}%;background:${c}"></i></div></div>`;
+  const barres=()=>jauge('VIE',e.sante,'#e2504f')+jauge('FAIM',e.faim,'#d99a3e')+
+                    jauge('SOIF',e.soif,'#2f9bb5')+jauge('CHALEUR',e.chaleur,'#8a5fd6');
+
+  if(INT){                                   /* à l'intérieur : fouiller ou sortir */
     const a2=$('action');
     a2.classList.add('on');
     if(INT.surPorte){a2.innerHTML='Sortir<b>'+INT.nom+'</b>';
@@ -2578,35 +2583,30 @@ function majHud(){
     else if(INT.cible){const v=INT.cible.fouille;
       a2.innerHTML=(v?'Fouiller':'Vide')+'<b>'+({caisse:'Caisse',etagere:'Étagère',tonneau:'Tonneau',
         table:'Table',canape:'Canapé',plan:'Plan de travail',etabli:'Établi',couchage:'Couchage',
-        feu:'Foyer',pierre2:'Pierre',tuyau:'Tuyau',lampe:'Lampe',chaise:'Chaise'}[INT.cible.t]||'Meuble')+'</b>';
+        feu:'Foyer',pierre2:'Pierre',tuyau:'Tuyau',lampe:'Lampe',chaise:'Chaise',enclume:'Enclume'}[INT.cible.t]||'Meuble')+'</b>';
       a2.style.background=v?'#63a84a':'rgba(20,28,22,.7)';a2.style.color=v?'#0f1a10':'#c9d2c2';}
-    else{a2.classList.remove('on');}
-    $('c-gens').textContent='';
-    $('c-jour').textContent='JOUR '+jourNo()+' · '+String(Math.floor(heureJour())).padStart(2,'0')+' h';
-    $('c-meteo').textContent='À l’abri';
+    else a2.classList.remove('on');
+    $('c-joueur').classList.remove('on');
+    $('c-jour').textContent='Jour '+jourNo()+' · '+String(Math.floor(heureJour())).padStart(2,'0')+' h';
+    $('c-gens').textContent=INT.nom;
+    $('mini').innerHTML=barres();
     $('c-boire').innerHTML='<b>'+sac('eau')+'</b>';
     $('c-manger').innerHTML='<b>'+sac('nourriture')+'</b>';
-    $('mini').innerHTML=[['faim',e.faim,'#c98f3a'],['soif',e.soif,'#5fb3d6'],
-      ['chaleur',e.chaleur,'#e0765a'],['sante',e.sante,'#7ecf72']]
-      .map(([k,v,c])=>`<div class="mj"><span style="color:${c}">${ICO[k]}</span>
-        <span class="b"><i style="width:${Math.round(v)}%;background:${c}"></i></span></div>`).join('');
     return;
   }
-  $('c-jour').textContent='JOUR '+jourNo()+' · '+String(Math.floor(heureJour())).padStart(2,'0')+' h';
-  $('c-meteo').textContent=m.nom;
+
+  $('c-jour').textContent='Jour '+jourNo()+' · '+String(Math.floor(heureJour())).padStart(2,'0')+' h';
+  $('c-gens').textContent=AUTRES.length?AUTRES.length+' en ligne':'';
+  $('mini').innerHTML=barres();
   $('c-boire').innerHTML='<b>'+sac('eau')+'</b>';
   $('c-manger').innerHTML='<b>'+sac('nourriture')+'</b>';
   $('c-boire').style.opacity=sac('eau')?1:.4;
   $('c-manger').style.opacity=sac('nourriture')?1:.4;
-  $('c-gens').textContent=AUTRES.length?AUTRES.length+' en ligne':'';
   const bj=$('c-joueur');
   if(procheJoueur){bj.classList.add('on');
     bj.innerHTML='Interagir<b>'+(procheJoueur.pseudo||'?')+'</b>';}
   else bj.classList.remove('on');
-  $('mini').innerHTML=[['faim',e.faim,'#c98f3a'],['soif',e.soif,'#5fb3d6'],
-    ['chaleur',e.chaleur,'#e0765a'],['sante',e.sante,'#7ecf72']]
-    .map(([k,v,c])=>`<div class="mj"><span style="color:${c}">${ICO[k]}</span>
-      <span class="b"><i style="width:${Math.round(v)}%;background:${c}"></i></span></div>`).join('');
+
   const a2=$('action');
   if(procheBete&&!procheObjet){
     a2.classList.add('on');
@@ -2617,24 +2617,24 @@ function majHud(){
   }else if(procheObjet){
     a2.classList.add('on');
     const pret=pretObjet(procheObjet);
-    if(estDecor(procheObjet)){
-      const t=TRAVAIL[procheObjet.type];
-      const total=Math.max(1,(t.outil&&a(t.outil))?Math.ceil(t.coups/2):t.coups);
-      const noms={arbre:'Arbre',rocher:'Rocher',buisson:'Buisson',herbe:'Herbes'};
-      a2.innerHTML=(pret?t.verbe:'Repousse')+
-        `<b>${noms[procheObjet.type]}${pret?' · '+(procheObjet.coups||0)+'/'+total:''}</b>`;
-      a2.style.background=pret?'#b5763a':'rgba(20,28,22,.7)';
-      a2.style.color=pret?'#2a1a08':'#c9d2c2';
-    }else if(procheObjet.type==='lieuC'){
+    if(procheObjet.type==='lieuC'){
       const verbes={marche:'Échanger',puits:'Puiser',forge:'Entrer',abri:'Entrer',
                     feu:'Se réchauffer',panneau:'Lire'};
       a2.innerHTML=verbes[procheObjet.sous]+'<b>'+procheObjet.nom+'</b>';
       a2.style.background='#c9a24a';a2.style.color='#2a1d08';
+    }else if(estDecor(procheObjet)){
+      const t=TRAVAIL[procheObjet.type];
+      const total=Math.max(1,(t.outil&&a(t.outil))?Math.ceil(t.coups/2):t.coups);
+      const noms={arbre:'Arbre',rocher:'Rocher',buisson:'Buisson',herbe:'Herbes'};
+      a2.innerHTML=(pret?t.verbe:'Repousse')+
+        '<b>'+noms[procheObjet.type]+(pret?' · '+(procheObjet.coups||0)+'/'+total:'')+'</b>';
+      a2.style.background=pret?'#b5763a':'rgba(20,28,22,.7)';
+      a2.style.color=pret?'#2a1a08':'#c9d2c2';
     }else if(procheObjet.type==='batiment'&&BATIS[procheObjet.id]){
       a2.innerHTML='Entrer<b>'+procheObjet.nom+'</b>';
       a2.style.background='#c9a24a';a2.style.color='#2a1d08';
     }else{
-      a2.innerHTML=(pret?'Fouiller':'Vidé')+`<b>${procheObjet.nom||'Caisse'}</b>`;
+      a2.innerHTML=(pret?'Fouiller':'Vidé')+'<b>'+(procheObjet.nom||'Caisse')+'</b>';
       a2.style.background=pret?'#63a84a':'rgba(20,28,22,.7)';
       a2.style.color=pret?'#0f1a10':'#c9d2c2';
     }
