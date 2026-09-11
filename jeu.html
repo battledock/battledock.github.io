@@ -1201,9 +1201,6 @@ function semerDecor(){
     if(!dedans(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'fleurs',x,y,gr:0});
   }
-  /* le coffre du départ, à quelques pas de la clairière */
-  DECOR=DECOR.filter(o=>Math.hypot(o.x-(MONDE/2+70),o.y-(MONDE/2+54))>44);
-  DECOR.push({t:'coffre',x:MONDE/2+70,y:MONDE/2+54,gr:0});
 
   /* les rochers déjà cassés ne repoussent pas */
   const casses=new Set(e.casses||[]);
@@ -1296,7 +1293,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
 let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
-       outils:{},coffreOuvert:false,casses:[]};
+       outils:{},coffreOuvert:false,casses:[],coffre:null};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -1370,6 +1367,24 @@ function preparerMonde(){
   SOL=construireSol();semerDecor();LISIERE=construireLisiere();
   const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
   joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
+  poserCoffre();
+}
+/* le coffre se place à quelques pas de l'endroit où tu te trouves,
+   pour que tu tombes dessus dès la première partie */
+function poserCoffre(){
+  if(e.coffreOuvert)return;                   /* déjà fouillé : plus besoin */
+  if(!e.coffre){
+    let p=null;
+    for(const [dx,dy] of [[46,26],[-46,26],[46,-26],[-46,-26],[0,52],[0,-52],[62,0],[-62,0]]){
+      const x=Math.round(joueur.x+dx), y=Math.round(joueur.y+dy);
+      if(x>BORD+30&&x<MONDE-BORD-30&&y>BORD+40&&y<MONDE-BORD-20&&!bloque(x,y)){p=[x,y];break;}
+    }
+    if(!p)p=[Math.round(joueur.x),Math.round(joueur.y+46)];
+    e.coffre=p;sauver();
+  }
+  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');
+  DECOR.push({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
+  DECOR.sort((a,b)=>a.y-b.y);
 }
 function dessiner(){
   preparerMonde();
@@ -1395,6 +1410,25 @@ function dessiner(){
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
   dessinerParts(ctx,camX,camY);
+  /* tant que le coffre n'est pas ouvert, une flèche indique où il est */
+  if(!e.coffreOuvert&&e.coffre){
+    const cx=e.coffre[0]-camX, cy=e.coffre[1]-camY;
+    const dehors=cx<6||cy<10||cx>VW-6||cy>VH-6;
+    if(dehors){
+      const ax=Math.max(10,Math.min(VW-10,cx)), ay=Math.max(16,Math.min(VH-14,cy));
+      const a=Math.atan2(cy-VH/2,cx-VW/2);
+      ctx.save();ctx.translate(ax,ay);ctx.rotate(a);
+      ctx.fillStyle='#c9a24a';
+      ctx.fillRect(-5,-2,7,4);
+      ctx.beginPath();ctx.moveTo(2,-5);ctx.lineTo(8,0);ctx.lineTo(2,5);ctx.fill();
+      ctx.restore();
+    }else{
+      const h=Math.round(Math.sin(Date.now()/300)*2);
+      ctx.fillStyle='#c9a24a';
+      ctx.beginPath();
+      ctx.moveTo(cx-4,cy-30+h);ctx.lineTo(cx+4,cy-30+h);ctx.lineTo(cx,cy-24+h);ctx.fill();
+    }
+  }
 
   if(LISIERE)ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 }
