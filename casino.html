@@ -94,6 +94,11 @@ html,body{height:100%;overflow:hidden;background:#1a1108;font-family:system-ui,s
 .ech button{padding:10px 13px;border-radius:11px;background:#c9a24a;border:1px solid #8a6a2a;
   font:600 11px system-ui;color:#2b1d12}
 .ech button:disabled{background:#3d2c1e;color:#7d6b50;border-color:#4f3d29}
+.casWrap{margin:0 -4px 6px;border-radius:14px;overflow:hidden;
+  background:radial-gradient(120% 70% at 50% -10%,rgba(180,120,255,.16),transparent 60%),
+             linear-gradient(180deg,#141021,#0a0810 60%);
+  border:1px solid #2e2742}
+.casWrap canvas{display:block;width:100%;touch-action:none}
 .misesel{display:flex;gap:7px;justify-content:center;margin:12px 0 4px}
 .misesel button{flex:1;padding:11px 0;border-radius:11px;background:#3d2c1e;border:1px solid #5c452e;
   font:700 12px system-ui;color:#a89070}
@@ -904,6 +909,21 @@ try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}cat
 if(!e.jetons)e.jetons=0;
 if(e.jetons<50&&!e.premiersJetons){e.jetons=50;e.premiersJetons=true;}   /* de quoi jouer */
 function sauver(){try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}}
+/* on prévient le serveur qu'on est à l'intérieur : les autres ne nous voient plus dehors */
+const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
+const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
+const sbEntetes={apikey:CLE_SB,Authorization:'Bearer '+CLE_SB,
+  'Content-Type':'application/json',Prefer:'resolution=merge-duplicates'};
+async function direOuJeSuis(lieu){
+  if(!e.id)return;
+  try{
+    await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
+      body:JSON.stringify([{id:e.id,pseudo:e.pseudo||'survivant',lieu,
+        maj:new Date().toISOString()}])});
+  }catch(x){}
+}
+direOuJeSuis('casino');
+setInterval(()=>direOuJeSuis('casino'),15000);
 function majJetons(){$('jetons').textContent=e.jetons;}
 majJetons();
 
@@ -1472,6 +1492,8 @@ function meubler(){
     MEUBLES.push({t:'slot',x:170,y:420+i*58,k:i+4,bloc:[24,18],jeu:'slot'});
   }
   MEUBLES.push({t:'roue',x:280,y:470,bloc:[28,10],jeu:'roue'});
+  MEUBLES.push({t:'cascade',x:280,y:370,bloc:[44,16],jeu:'cascade'});
+  MEUBLES.push({t:'cascade',x:280,y:570,bloc:[44,16],jeu:'cascade'});
   MEUBLES.push({t:'enseigne',x:190,y:318,txt:'MACHINES',coul:'#f0cf7d',bloc:[0,0],haut:true});
 
   /* --- salle CARTES, en bas à droite --- */
@@ -1600,6 +1622,7 @@ function dessiner(){
     else if(m.t==='black')mBlack(ctx,x,y);
     else if(m.t==='des')mDes(ctx,x,y);
     else if(m.t==='roue')mRoue(ctx,x,y);
+    else if(m.t==='cascade')mCascade(ctx,x,y);
     else if(m.t==='bar')mBar(ctx,x,y);
     else if(m.t==='caisse')mCaisse(ctx,x,y);
     else if(m.t==='fontaine')mFontaine(ctx,x,y);
@@ -1685,18 +1708,20 @@ function majAction(){
   else if(m.jeu==='roulette')b.innerHTML='Miser<small>ROULETTE · 10 JETONS</small>';
   else if(m.jeu==='black')b.innerHTML='S’asseoir<small>BLACK-JACK · 10 JETONS</small>';
   else if(m.jeu==='des')b.innerHTML='Lancer<small>LES DÉS · 10 JETONS</small>';
-  else if(m.jeu==='roue')b.innerHTML='Tourner<small>ROUE DE LA FORTUNE · 20 JETONS</small>';
+  else if(m.jeu==='roue')b.innerHTML='Tourner<small>ROUE DE LA FORTUNE</small>';
+  else if(m.jeu==='cascade')b.innerHTML='Jouer<small>LA CASCADE · JUSQU’À ×45</small>';
   else b.innerHTML='Échanger<small>LA CAISSE</small>';
   b.classList.add('on');
 }
 $('action').onclick=()=>{
   const m=cible();if(!m)return;
-  if(m.sortie){sauver();location.href='jeu.html';return;}
+  if(m.sortie){sauver();direOuJeSuis('terrain');location.href='jeu.html';return;}
   if(m.jeu==='slot')ouvrirSlot();
   else if(m.jeu==='roulette')ouvrirRoulette();
   else if(m.jeu==='black')ouvrirBlack();
   else if(m.jeu==='des')ouvrirDes();
   else if(m.jeu==='roue')ouvrirRoue();
+  else if(m.jeu==='cascade')ouvrirCascade();
   else if(m.jeu==='caisse')ouvrirCaisse();
 };
 
@@ -1707,7 +1732,7 @@ function ouvrirPage(titre,sous,corps){
      '<span><span class="t1">'+titre+'</span><span class="t2">'+sous+'</span></span>'+
      '<span class="jet"><b id="p-jet">'+e.jetons+'</b><i>JETONS</i></span></div>'+
    '<div class="corps">'+corps+'</div>';
-  $('p-x').onclick=()=>{$('page').classList.remove('on');};
+  $('p-x').onclick=()=>{if(CAS)CAS.vivant=false;CAS=null;$('page').classList.remove('on');};
   $('page').classList.add('on');
 }
 function majPageJetons(){
@@ -2150,6 +2175,211 @@ function tournerRoue(){
       else $('res').textContent='Secteur vide. Perdu.';
     }
   },80);
+}
+
+/* ================= La Cascade ================= */
+let CAS=null;
+function ouvrirCascade(){
+  ouvrirPage('La Cascade','VISE · LÂCHE · REGARDE',
+   '<div class="casWrap"><canvas id="casCv" width="760" height="880"></canvas></div>'+
+   '<div class="res" id="res">Fais glisser au-dessus du plateau pour viser</div>'+
+   barreMise()+
+   '<button class="go" id="casGo">Lâcher le jeton</button>');
+  brancherMise();
+  demarrerCascade();
+  $('casGo').onclick=()=>lacherJeton();
+}
+function demarrerCascade(){
+  const cv=$('casCv');if(!cv||!cv.getContext)return;
+  const g=cv.getContext('2d'), W=cv.width, H=cv.height;
+  const LIGNES=11, ESP=54, HAUT=170;
+  const picots=[];
+  for(let l=0;l<LIGNES;l++){
+    const n=l+3, y=HAUT+l*ESP;
+    for(let i=0;i<n;i++)picots.push({x:W/2+(i-(n-1)/2)*ESP,y,lum:0});
+  }
+  const MULT=[24,7,2.4,1.1,.6,.4,.2,.4,.6,1.1,2.4,7,24];
+  const COUL=['#b91c1c','#c2410c','#b45309','#8a6a2a','#4b4470','#33304c','#282540',
+              '#33304c','#4b4470','#8a6a2a','#b45309','#c2410c','#b91c1c'];
+  const larg=ESP, baseY=HAUT+(LIGNES-1)*ESP+62;
+  const cases=MULT.map((m,i)=>({x:W/2+(i-(MULT.length-1)/2)*larg,m,c:COUL[i],lum:0}));
+  CAS={cv,g,W,H,picots,cases,larg,baseY,jetons:[],etincelles:[],viseur:W/2,vivant:true};
+
+  const pos=(ev)=>{
+    const r=cv.getBoundingClientRect();
+    const cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-r.left;
+    return Math.max(W/2-90,Math.min(W/2+90,cx/r.width*W));   /* on vise le centre du plateau */
+  };
+  const viser=(ev)=>{CAS.viseur=pos(ev);ev.preventDefault();};
+  cv.addEventListener('pointerdown',viser);
+  cv.addEventListener('pointermove',(ev)=>{if(ev.buttons)viser(ev);});
+  cv.addEventListener('touchmove',viser,{passive:false});
+  boucleCascade();
+}
+function lacherJeton(){
+  if(!CAS)return;
+  if(e.jetons<MISE){$('res').textContent='Pas assez de jetons.';return;}
+  e.jetons-=MISE;majPageJetons();
+  CAS.jetons.push({x:CAS.viseur+(Math.random()-.5)*6,y:60,vx:(Math.random()-.5)*.6,vy:0,
+    r:15,mise:MISE,traine:[],rot:0,vrot:0,fini:false});
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+}
+let casT0=0;
+function boucleCascade(){
+  if(!CAS||!CAS.vivant)return;
+  if(!$('casCv')){CAS=null;return;}
+  requestAnimationFrame(boucleCascade);
+  const t=performance.now();
+  const dt=Math.min(.032,(t-(casT0||t))/1000);casT0=t;
+  pasCascade(dt);dessinerCascade();
+}
+function pasCascade(dt){
+  const C=CAS;
+  for(let k=C.jetons.length-1;k>=0;k--){
+    const j=C.jetons[k];
+    j.vy+=1500*dt;j.vx*=Math.pow(0.009,dt);     /* frottement, pour que le jeton se recentre */
+    j.x+=j.vx*dt;j.y+=j.vy*dt;
+    j.rot+=j.vrot*dt;j.vrot*=0.99;
+    j.traine.push({x:j.x,y:j.y});
+    if(j.traine.length>14)j.traine.shift();
+    for(const p of C.picots){
+      const dx=j.x-p.x, dy=j.y-p.y, d=Math.hypot(dx,dy), min=j.r+7;
+      if(d<min&&d>0){
+        const nx=dx/d, ny=dy/d;
+        j.x=p.x+nx*min;j.y=p.y+ny*min;
+        const vn=j.vx*nx+j.vy*ny;
+        j.vx-=1.5*vn*nx;j.vy-=1.5*vn*ny;
+        /* le jeton part d'un côté ou de l'autre, comme sur un vrai plateau */
+        j.vx=(Math.random()<.5?-1:1)*(44+Math.random()*26);   /* à gauche ou à droite, au hasard */
+        j.vy=Math.max(145,j.vy*.56);
+        j.vrot=(Math.random()-.5)*14;
+        p.lum=1;
+        for(let i=0;i<5;i++)C.etincelles.push({x:p.x,y:p.y,
+          vx:(Math.random()-.5)*220,vy:(Math.random()-.5)*220,vie:1,c:'rgba(200,170,255,'});
+        if(Math.abs(vn)>120){try{navigator.vibrate&&navigator.vibrate(5);}catch(x){}}
+      }
+    }
+    if(j.x<j.r+8){j.x=j.r+8;j.vx=Math.abs(j.vx)*.6;}
+    if(j.x>C.W-j.r-8){j.x=C.W-j.r-8;j.vx=-Math.abs(j.vx)*.6;}
+    if(j.y>C.baseY-10&&!j.fini){
+      j.fini=true;
+      let best=C.cases[0], dmin=1e9;
+      C.cases.forEach(c=>{const d=Math.abs(c.x-j.x);if(d<dmin){dmin=d;best=c;}});
+      best.lum=1;
+      const gain=Math.round(j.mise*best.m);
+      const r=$('res');
+      if(gain>=j.mise){gagne(gain);if(r)r.innerHTML='<span style="color:#7ee29a">×'+best.m+' — '+gain+' jetons</span>';}
+      else{e.jetons+=gain;majPageJetons();
+        if(r)r.innerHTML='<span style="color:#e08a8a">×'+best.m+' — '+gain+' jetons</span>';}
+      for(let i=0;i<26;i++)C.etincelles.push({x:j.x,y:C.baseY-16,
+        vx:(Math.random()-.5)*400,vy:-Math.random()*420,vie:1.2,
+        c:gain>=j.mise?'rgba(246,217,138,':'rgba(150,140,190,'});
+      C.jetons.splice(k,1);
+    }
+    if(j.y>C.H+60)C.jetons.splice(k,1);
+  }
+  for(let i=C.etincelles.length-1;i>=0;i--){
+    const x=C.etincelles[i];
+    x.x+=x.vx*dt;x.y+=x.vy*dt;x.vy+=900*dt;x.vie-=dt*1.6;
+    if(x.vie<=0)C.etincelles.splice(i,1);
+  }
+  C.picots.forEach(p=>p.lum=Math.max(0,p.lum-dt*2.4));
+  C.cases.forEach(c=>c.lum=Math.max(0,c.lum-dt*1.5));
+}
+function eclaircir(hex,k){
+  const n=parseInt(hex.slice(1),16);
+  const r=Math.min(255,(n>>16)+k*170), v=Math.min(255,((n>>8)&255)+k*170), b=Math.min(255,(n&255)+k*170);
+  return 'rgb('+(r|0)+','+(v|0)+','+(b|0)+')';
+}
+function dessinerCascade(){
+  const C=CAS, g=C.g, W=C.W, H=C.H, baseY=C.baseY, larg=C.larg;
+  g.clearRect(0,0,W,H);
+  const gr=g.createLinearGradient(0,40,0,baseY);
+  gr.addColorStop(0,'rgba(246,217,138,.22)');gr.addColorStop(1,'rgba(246,217,138,0)');
+  g.fillStyle=gr;g.fillRect(C.viseur-16,40,32,baseY-40);
+  g.fillStyle='rgba(255,255,255,.06)';
+  g.beginPath();g.roundRect(30,46,W-60,14,7);g.fill();
+  const jg=g.createRadialGradient(C.viseur-4,52,2,C.viseur,56,16);
+  jg.addColorStop(0,'#fff6dd');jg.addColorStop(1,'#c9a24a');
+  g.fillStyle=jg;g.beginPath();g.arc(C.viseur,53,13,0,7);g.fill();
+  g.strokeStyle='rgba(255,246,221,.5)';g.lineWidth=2;g.stroke();
+  C.picots.forEach(p=>{
+    if(p.lum>0){
+      const h=g.createRadialGradient(p.x,p.y,0,p.x,p.y,26);
+      h.addColorStop(0,'rgba(196,164,255,'+(p.lum*.5)+')');
+      h.addColorStop(1,'rgba(196,164,255,0)');
+      g.fillStyle=h;g.beginPath();g.arc(p.x,p.y,26,0,7);g.fill();
+    }
+    const d=g.createRadialGradient(p.x-2,p.y-3,1,p.x,p.y,8);
+    d.addColorStop(0,p.lum>0?'#f0e6ff':'#9c92bd');
+    d.addColorStop(1,p.lum>0?'#a78bfa':'#4a4370');
+    g.fillStyle=d;g.beginPath();g.arc(p.x,p.y,7,0,7);g.fill();
+  });
+  C.cases.forEach(c=>{
+    const x=c.x-larg/2+3, y=baseY, w=larg-6, h=52;
+    if(c.lum>0){
+      const h2=g.createRadialGradient(c.x,y+26,4,c.x,y+26,70);
+      h2.addColorStop(0,'rgba(246,217,138,'+(c.lum*.45)+')');
+      h2.addColorStop(1,'rgba(246,217,138,0)');
+      g.fillStyle=h2;g.fillRect(c.x-70,y-40,140,120);
+    }
+    g.fillStyle='rgba(0,0,0,.45)';
+    g.beginPath();g.roundRect(x,y+4,w,h,10);g.fill();
+    const d=g.createLinearGradient(0,y,0,y+h);
+    d.addColorStop(0,eclaircir(c.c,c.lum*.5+.14));d.addColorStop(1,c.c);
+    g.fillStyle=d;g.beginPath();g.roundRect(x,y-c.lum*4,w,h,10);g.fill();
+    g.fillStyle='rgba(255,255,255,.14)';
+    g.beginPath();g.roundRect(x+3,y+3-c.lum*4,w-6,10,5);g.fill();
+    g.fillStyle=c.m>=5?'#fff8e6':'#d8d2ea';
+    g.font='700 19px system-ui';g.textAlign='center';
+    g.fillText('×'+c.m,c.x,y+34-c.lum*4);
+  });
+  g.textAlign='left';
+  C.jetons.forEach(j=>{
+    j.traine.forEach((t,i)=>{
+      g.fillStyle='rgba(246,217,138,'+(i/j.traine.length*.35)+')';
+      g.beginPath();g.arc(t.x,t.y,j.r*(i/j.traine.length)*.9,0,7);g.fill();
+    });
+    g.save();g.translate(j.x,j.y);g.rotate(j.rot);
+    g.fillStyle='rgba(0,0,0,.4)';g.beginPath();g.arc(2,3,j.r,0,7);g.fill();
+    const d=g.createRadialGradient(-5,-6,2,0,0,j.r);
+    d.addColorStop(0,'#fff8e2');d.addColorStop(.5,'#f0cf7d');d.addColorStop(1,'#9a7225');
+    g.fillStyle=d;g.beginPath();g.arc(0,0,j.r,0,7);g.fill();
+    g.strokeStyle='rgba(255,250,230,.85)';g.lineWidth=2.4;
+    g.setLineDash([5,5]);g.beginPath();g.arc(0,0,j.r-4,0,7);g.stroke();g.setLineDash([]);
+    g.fillStyle='#7d5f22';g.beginPath();g.arc(0,0,4,0,7);g.fill();
+    g.restore();
+  });
+  C.etincelles.forEach(x=>{
+    g.fillStyle=x.c+Math.max(0,x.vie)+')';
+    g.beginPath();g.arc(x.x,x.y,2.6*x.vie+1,0,7);g.fill();
+  });
+}
+
+/* --- la borne de la Cascade, dans la salle --- */
+function mCascade(g,x,y){
+  const t=Date.now()/1000;
+  ombre(g,x,y+3,26,8,.45);
+  const c=g.createLinearGradient(0,y-60,0,y);
+  c.addColorStop(0,'#3b2f56');c.addColorStop(.5,'#2a2140');c.addColorStop(1,'#171126');
+  g.fillStyle=c;g.beginPath();g.roundRect(x-22,y-60,44,60,6);g.fill();
+  g.strokeStyle=OR(g,x-22,y-60,x+22,y);g.lineWidth=2;g.stroke();
+  /* l'écran */
+  g.fillStyle='#0d0a14';g.beginPath();g.roundRect(x-17,y-54,34,40,4);g.fill();
+  for(let l=0;l<4;l++)for(let i=0;i<=l+2;i++){
+    g.fillStyle='rgba(167,139,250,'+(0.4+0.3*Math.sin(t*2+l+i))+')';
+    g.beginPath();g.arc(x+(i-(l+2)/2)*6,y-48+l*7,1.3,0,7);g.fill();
+  }
+  /* le jeton qui tombe, en boucle */
+  const jy=y-52+((t*26)%34);
+  g.fillStyle='#f0cf7d';g.beginPath();g.arc(x+Math.sin(t*3)*7,jy,2.6,0,7);g.fill();
+  /* cases du bas */
+  ['#b91c1c','#8a6a2a','#33304c','#8a6a2a','#b91c1c'].forEach((col,i)=>{
+    g.fillStyle=col;g.fillRect(x-15+i*6.2,y-13,5.4,4);
+  });
+  g.fillStyle=OR(g,x-14,y-8,x+14,y-3);
+  g.beginPath();g.roundRect(x-14,y-8,28,5,2.5);g.fill();
+  halo(g,x,y-40,34,'rgb(167,139,250)',.16+Math.sin(t*2)*0.04);
 }
 
 /* ---- la caisse : on échange ce qu'on a récolté ---- */
