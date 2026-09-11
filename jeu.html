@@ -54,6 +54,34 @@ body{overflow:hidden}
 
 /* ---- la page du sac : une toile ouverte ---- */
 #sacPage{position:fixed;inset:0;z-index:22;display:none}
+#page2{position:fixed;inset:0;z-index:22;display:none}
+#page2.on{display:block}
+.ligne{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:12px;
+  background:linear-gradient(180deg,#3d2c1e,#31241a);border:1px solid #5c452e;margin-bottom:8px}
+.ligne .rang{width:26px;text-align:center;font:400 17px Georgia,serif;color:#c9a24a}
+.ligne .rang.or{color:#f0cf7d}.ligne .rang.arg{color:#d8dde2}.ligne .rang.bro{color:#c98a5e}
+.ligne .vig{width:34px;height:46px;border-radius:8px;background:#4a7d3f;overflow:hidden;flex:0 0 auto;
+  display:flex;align-items:flex-end;justify-content:center}
+.ligne .vig canvas{image-rendering:pixelated;display:block}
+.ligne .tx{flex:1;min-width:0}
+.ligne .tx b{display:block;font:600 12.5px system-ui;color:#f2e6cc;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.ligne .tx span{display:block;font:400 10px system-ui;color:#a89070;margin-top:2px}
+.ligne .pts{font:400 16px Georgia,serif;color:#e8c06a}
+.ligne.toi{border-color:#c9a24a;box-shadow:0 0 0 2px rgba(201,162,74,.3)}
+.recette{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:12px;
+  background:linear-gradient(180deg,#3d2c1e,#31241a);border:1px solid #5c452e;margin-bottom:8px}
+.recette .tx{flex:1;min-width:0}
+.recette .tx b{display:block;font:600 12.5px system-ui;color:#f2e6cc}
+.recette .tx span{display:block;font:400 10px/1.4 system-ui;color:#a89070;margin-top:2px}
+.cout{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.cout i{font:600 9.5px system-ui;font-style:normal;padding:3px 7px;border-radius:7px;
+  background:rgba(0,0,0,.35);color:#a89070;border:1px solid #4f3d29}
+.cout i.ok{color:#a9c96a;border-color:#5c7a34}
+.recette button{padding:9px 12px;border-radius:10px;background:#241a12;border:1px solid #6b5136;
+  font:600 10.5px system-ui;color:#c9a24a}
+.recette button:disabled{opacity:.45}
+.vide2{text-align:center;font:400 11.5px/1.6 system-ui;color:#a89070;padding:26px 12px}
 #sacPage.on{display:block}
 .sacFond{position:absolute;inset:0;background:#33291f;display:flex;flex-direction:column;
   animation:sm .24s cubic-bezier(.2,.85,.3,1)}
@@ -198,6 +226,7 @@ body{overflow:hidden}
 
 <div id="pan"><div class="feuille" id="feuille"></div></div>
 <div id="sacPage"><div class="sacFond" id="sacFond"></div></div>
+<div id="page2"><div class="sacFond" id="page2Fond"></div></div>
 
 <div id="porte">
   <div class="pCarte" id="pCarte" style="display:none">
@@ -1144,7 +1173,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
 
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
-let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{}};
+let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -1166,6 +1195,7 @@ async function monterEnLigne(force){
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
       body:JSON.stringify({id:e.id,pseudo:e.pseudo||'sans nom',apparence:e.ap,
         x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
+        score:e.score||0,recolte:e.recolte||0,
         maj:new Date().toISOString()})});
   }catch(x){}
   enVol=false;
@@ -1329,10 +1359,10 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 
 /* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
-                    ||!$('porte').classList.contains('parti');
+                    ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
-const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#pan,#sacPage,#porte'));
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#pan,#sacPage,#page2,#porte'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
 /* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
@@ -1490,8 +1520,8 @@ function ouvrirLook(){
 }
 $('b-look').onclick=ouvrirLook;
 $('b-sac').onclick=()=>ouvrirSac();
-$('b-batir').onclick=()=>{};
-$('b-class').onclick=()=>{};
+$('b-batir').onclick=()=>ouvrirBatir();
+$('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
 
 /* ================= le sac ================= */
@@ -1569,6 +1599,96 @@ function ouvrirSac(){
     sauver();majPastille();ouvrirSac();
   };
   $('sacPage').classList.add('on');
+}
+
+/* ================= une page, même toile que le sac ================= */
+function ouvrirPage(titre,sous,corps){
+  $('page2Fond').innerHTML=
+   '<div class="rabat"><button class="sacX" id="p2-x">✕</button>'+
+     '<span><span class="sacT">'+titre+'</span><span class="sacS">'+sous+'</span></span>'+
+     '<span class="boucle"></span></div>'+
+   '<div class="sacCorps" style="padding-top:14px">'+corps+'</div>';
+  $('p2-x').onclick=()=>$('page2').classList.remove('on');
+  $('page2').classList.add('on');
+}
+
+/* ================= bâtir ================= */
+const RECETTES=[
+ {id:'feu',   nom:'Feu de camp', d:'Réchauffe et éclaire. Les autres le voient de loin.',
+  cout:{bois:6,fibre:2}},
+ {id:'abri',  nom:'Abri',        d:'Un toit pour la nuit.',            cout:{bois:14,fibre:8}},
+ {id:'coffre',nom:'Coffre',      d:'Range ce que tu ne portes pas.',   cout:{bois:10,pierre:2}},
+ {id:'muret', nom:'Muret',       d:'Bloque le passage.',               cout:{pierre:8}},
+ {id:'sechoir',nom:'Séchoir',    d:'Fait sécher les baies.',           cout:{bois:6,fibre:6}}
+];
+const peutBatir=r=>Object.entries(r.cout).every(([k,n])=>combien(k)>=n);
+function ouvrirBatir(){
+  const corps=RECETTES.map(r=>{
+    const ok=peutBatir(r);
+    const cout=Object.entries(r.cout).map(([k,n])=>
+      '<i class="'+(combien(k)>=n?'ok':'')+'">'+n+' '+OBJETS[k].nom.toLowerCase()+'</i>').join('');
+    return '<div class="recette">'+
+      '<span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
+        'border:1px solid #6b5136;display:flex;align-items:center;justify-content:center;flex:0 0 auto">'+
+        '<svg viewBox="0 0 16 16" width="26">'+ICONES[Object.keys(r.cout)[0]]+'</svg></span>'+
+      '<span class="tx"><b>'+r.nom+'</b><span>'+r.d+'</span><span class="cout">'+cout+'</span></span>'+
+      '<button data-bat="'+r.id+'" '+(ok?'':'disabled')+'>Bâtir</button></div>';
+  }).join('')+
+  '<div class="vide2">La pose sur le terrain arrive à l’étape suivante.<br>'+
+  'Pour l’instant, cette page montre ce que tu pourras construire et ce qu’il te manque.</div>';
+  ouvrirPage('Bâtir','CE QUE TU PEUX CONSTRUIRE',corps);
+}
+
+/* ================= le classement ================= */
+let CLASSEMENT=null, classementEnCours=false;
+async function chargerClassement(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,score,recolte,maj'+
+      '&order=score.desc&limit=30',{headers:sbEntetes});
+    const d=await r.json();
+    CLASSEMENT=Array.isArray(d)?d:[];
+  }catch(x){CLASSEMENT=[];}
+}
+function vignette(ap){
+  const c=document.createElement('canvas');
+  c.width=34;c.height=46;
+  const g=c.getContext('2d');
+  g.imageSmoothingEnabled=false;
+  g.setTransform(1,0,0,1,0,0);
+  for(let y=0;y<46;y+=8)for(let x=0;x<34;x+=8){
+    g.fillStyle='#4a7d3f';g.fillRect(x,y,8,8);
+    g.fillStyle='#59914b';g.fillRect(x+1,y+2,1,2);
+  }
+  sprite(g,17,45,Object.assign({},DEF_AP,ap||{}),'bas',0,false);
+  return c;
+}
+async function ouvrirClassement(){
+  if(classementEnCours)return;
+  classementEnCours=true;
+  ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',
+    '<div class="vide2">On rassemble les survivants…</div>');
+  await chargerClassement();
+  classementEnCours=false;
+  if(!CLASSEMENT.length){
+    return ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',
+      '<div class="vide2">Personne n’est encore enregistré.<br>Reviens quand d’autres auront joué.</div>');
+  }
+  const corps=CLASSEMENT.map((j,i)=>{
+    const moi=j.id===e.id;
+    const cl=i===0?' or':i===1?' arg':i===2?' bro':'';
+    const vu=j.maj?Math.round((Date.now()-new Date(j.maj).getTime())/60000):null;
+    const quand=vu===null?'':(vu<3?'en ligne':vu<60?'il y a '+vu+' min':
+      vu<1440?'il y a '+Math.round(vu/60)+' h':'il y a '+Math.round(vu/1440)+' j');
+    return '<div class="ligne'+(moi?' toi':'')+'">'+
+      '<span class="rang'+cl+'">'+(i+1)+'</span>'+
+      '<span class="vig" data-ap="'+i+'"></span>'+
+      '<span class="tx"><b>'+(j.pseudo||'sans nom')+(moi?' · toi':'')+'</b><span>'+quand+'</span></span>'+
+      '<span class="pts">'+(j.score||0)+'</span></div>';
+  }).join('');
+  ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',corps);
+  $('page2Fond').querySelectorAll('[data-ap]').forEach(sp=>{
+    sp.appendChild(vignette(CLASSEMENT[+sp.dataset.ap].apparence));
+  });
 }
 
 /* ================= l'entrée : le compte, et rien d'autre ================= */
