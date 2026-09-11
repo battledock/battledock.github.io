@@ -16,6 +16,20 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
   image-rendering:pixelated;image-rendering:crisp-edges}
 body{overflow:hidden}
 #joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#hublot{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:4;
+  width:108px;height:108px;border-radius:50%;padding:5px;
+  background:conic-gradient(#e8c06a,#8a6a2a,#f0cf7d,#7d5f26,#e8c06a,#8a6a2a,#f0cf7d);
+  box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#hublot .verre{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;
+  box-shadow:inset 0 0 0 2px #4a3420;background:#6f9e52}
+#hublot canvas{image-rendering:pixelated;width:100%;height:100%;display:block}
+#hublot .reflet{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:
+  linear-gradient(150deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.05) 34%,transparent 52%)}
+#hublot .creux{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  box-shadow:inset 0 -8px 18px rgba(20,40,15,.4)}
+#hublot .attache{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:14px;height:9px;
+  border-radius:3px;background:#c9a24a;box-shadow:0 1px 3px rgba(0,0,0,.45)}
+
 #action{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
   display:none;flex-direction:column;align-items:center;gap:2px;
   padding:12px 16px;border-radius:16px;border:1px solid #4f3520;
@@ -215,6 +229,11 @@ body{overflow:hidden}
 <body>
 <canvas id="cv"></canvas>
 <canvas id="joy" width="132" height="132"></canvas>
+<div id="hublot">
+  <div class="verre"><canvas id="mini" width="216" height="216"></canvas>
+    <span class="reflet"></span><span class="creux"></span></div>
+  <span class="attache"></span>
+</div>
 <button id="action"></button>
 <div id="barre">
   <button class="latte" id="b-sac">
@@ -1646,7 +1665,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
-const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#pan,#sacPage,#page2,#porte'));
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#hublot,#pan,#sacPage,#page2,#porte'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
 /* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
@@ -1808,6 +1827,64 @@ $('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirBatir();
 $('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
+
+/* ================= la mini-carte, dans son hublot ================= */
+const RAYON_VUE=190;
+let mctx=null, dernierMini=0;
+function dessinerMini(){
+  const c=$('mini');if(!c||!c.getContext)return;
+  if(!mctx){mctx=c.getContext('2d');mctx.imageSmoothingEnabled=false;}
+  const g=mctx, T=c.width;
+  const k=T/(RAYON_VUE*2);
+  const px=(x)=>Math.round((x-joueur.x)*k+T/2);
+  const py=(y)=>Math.round((y-joueur.y)*k+T/2);
+
+  g.fillStyle='#7db35d';g.fillRect(0,0,T,T);
+  for(let i=0;i<90;i++){
+    const a=alea(i*3.1)*T, b=alea(i*5.7)*T;
+    g.fillStyle=i%2?'#8ec96f':'#6f9e52';
+    g.fillRect(a|0,b|0,6,4);
+  }
+  g.fillStyle='#3d6b34';
+  const b0=py(BORD), b1=py(MONDE-BORD), g0=px(BORD), g1=px(MONDE-BORD);
+  if(b0>0)g.fillRect(0,0,T,b0);
+  if(b1<T)g.fillRect(0,b1,T,T-b1);
+  if(g0>0)g.fillRect(0,0,g0,T);
+  if(g1<T)g.fillRect(g1,0,T-g1,T);
+
+  for(const o of DECOR){
+    if(Math.abs(o.x-joueur.x)>RAYON_VUE||Math.abs(o.y-joueur.y)>RAYON_VUE)continue;
+    const x=px(o.x), y=py(o.y);
+    if(o.t==='arbre'){g.fillStyle='#4a7d3f';
+      g.beginPath();g.arc(x,y-2,[7,8,10][o.gr||0],0,7);g.fill();}
+    else if(o.t==='rocher'){g.fillStyle='#9aa2a8';g.fillRect(x-4,y-4,8,7);}
+    else if(o.t==='buisson'){
+      const vide=o.cueilli&&Date.now()-o.cueilli<240000;
+      g.fillStyle=vide?'#5e9e4a':'#d9576b';
+      g.beginPath();g.arc(x,y-2,4,0,7);g.fill();}
+    else if(o.t==='souche'||o.t==='gravats'){g.fillStyle='#8a7a62';g.fillRect(x-3,y-2,6,4);}
+    else if(o.t==='coffre'){g.fillStyle='#f0cf7d';g.fillRect(x-5,y-5,10,8);
+      g.strokeStyle='#8a6a2a';g.lineWidth=1.5;g.strokeRect(x-5,y-5,10,8);}
+  }
+  g.strokeStyle='rgba(255,255,255,.32)';g.lineWidth=2;
+  g.beginPath();
+  g.moveTo(T/2,4);g.lineTo(T/2,16);g.moveTo(T/2,T-16);g.lineTo(T/2,T-4);
+  g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
+  g.stroke();
+
+  g.fillStyle='rgba(255,255,255,.14)';
+  g.beginPath();g.arc(T/2,T/2,20,0,7);g.fill();
+  g.fillStyle='#c8434f';
+  g.beginPath();g.arc(T/2,T/2,9,0,7);g.fill();
+  g.strokeStyle='#fff';g.lineWidth=3;g.stroke();
+  const d={bas:[0,1],haut:[0,-1],gauche:[-1,0],droite:[1,0]}[joueur.dir]||[0,1];
+  g.fillStyle='#fff';
+  g.beginPath();
+  g.moveTo(T/2+d[0]*22,T/2+d[1]*22);
+  g.lineTo(T/2+d[0]*11-d[1]*8,T/2+d[1]*11+d[0]*8);
+  g.lineTo(T/2+d[0]*11+d[1]*8,T/2+d[1]*11-d[0]*8);
+  g.fill();
+}
 
 /* ================= petites fonctions d'aisance ================= */
 const doux    =t=>t*t*(3-2*t);                 /* départ et arrivée adoucis */
@@ -2363,6 +2440,7 @@ let t0=performance.now();
     ctx.fillRect(0,0,cv.width,cv.height);
   }
   dessinerJoy(dt);
+  if(t-dernierMini>90){dernierMini=t;dessinerMini();}   /* la mini-carte, dix fois par seconde */
 })(t0);
 setInterval(()=>{sauver();monterEnLigne();},4000);
 </script>
