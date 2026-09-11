@@ -1308,6 +1308,8 @@ let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
 
 const pointDe=t=>[t.clientX,t.clientY];
 function prendre(x,y){
+  const limite=window.innerHeight-96;          /* la barre du bas */
+  if(y>limite)y=limite;
   J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
   joyX=joyY=0;
   try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}   /* un petit clic sous le doigt */
@@ -1328,7 +1330,10 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 /* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
                     ||!$('porte').classList.contains('parti');
-const zoneGauche=(x,y)=>!pageOuverte()&&x<window.innerWidth*0.62&&y<window.innerHeight-104;
+/* le joystick se prend n'importe où sur la carte, des deux côtés.
+   On ne l'ignore que si le doigt touche un bouton de l'interface. */
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#pan,#sacPage,#porte'));
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
 /* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
    ailleurs, le toucher passe normalement aux boutons */
@@ -1336,7 +1341,7 @@ document.addEventListener('touchstart',ev=>{
   for(const t of ev.changedTouches){
     if(J.actif)continue;
     const [x,y]=pointDe(t);
-    if(!zoneGauche(x,y))continue;
+    if(!zoneMarche(x,y,ev.target))continue;
     ev.preventDefault();
     J.id=t.identifier;prendre(x,y);
   }
@@ -1351,7 +1356,8 @@ document.addEventListener('touchmove',ev=>{
   for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();lacher();}
 },{passive:false}));
 
-document.addEventListener('mousedown',ev=>{if(zoneGauche(ev.clientX,ev.clientY)){prendre(ev.clientX,ev.clientY);}});
+document.addEventListener('mousedown',ev=>{
+  if(zoneMarche(ev.clientX,ev.clientY,ev.target))prendre(ev.clientX,ev.clientY);});
 addEventListener('mousemove',ev=>{if(J.actif)tirer(ev.clientX,ev.clientY);});
 addEventListener('mouseup',()=>{if(J.actif)lacher();});
 
