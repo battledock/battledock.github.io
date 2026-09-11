@@ -1348,7 +1348,8 @@ function dessinerSouche(g,x,y,gr,neuf){
 
 /* ================= le monde ================= */
 const MONDE=1024;                 // en pixels de jeu
-const ZOOM=3;                     // chaque pixel du jeu fait 3 pixels d'écran
+const ZOOM=2;                     /* chaque pixel du jeu fait 2 pixels d'écran :
+                                     la caméra est plus haute, on voit plus large */
 let SOL=null;
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
@@ -1505,7 +1506,12 @@ function semerDecor(){
     e.casino=[Math.max(BORD+90,Math.min(MONDE-BORD-90,cx)),
               Math.max(BORD+170,Math.min(MONDE-BORD-30,cy))];
   }
-  DECOR=DECOR.filter(o=>!(Math.abs(o.x-e.casino[0])<74&&o.y>e.casino[1]-150&&o.y<e.casino[1]+14));
+  /* une esplanade dégagée autour du casino : ni arbre, ni rocher, ni buisson */
+  DECOR=DECOR.filter(o=>{
+    if(o.t==='fleurs')return true;                     /* les fleurs, on les garde */
+    const dx=Math.abs(o.x-e.casino[0]), dy=o.y-e.casino[1];
+    return !(dx<118&&dy>-170&&dy<86);
+  });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
 
   /* les deux ponts, posés en travers de la rivière */
@@ -2063,7 +2069,7 @@ $('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
 
 /* ================= la mini-carte, dans son hublot ================= */
-const RAYON_VUE=190;
+const RAYON_VUE=230;
 let mctx=null, dernierMini=0;
 function dessinerMini(){
   const c=$('mini');if(!c||!c.getContext)return;
