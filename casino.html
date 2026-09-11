@@ -54,6 +54,38 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 .ech button{padding:11px 14px;border-radius:11px;border:1px solid #8a6a2a;
   background:linear-gradient(180deg,#e2ba69,#b4892f);font:600 11.5px system-ui;color:#2b1d12}
 .ech button:disabled{background:#3d2c1e;color:#7d6b50;border-color:#4f3d29}
+.caisseVue{border-radius:16px;padding:14px 12px 12px;margin-bottom:16px;
+  background:linear-gradient(180deg,#3a2a1c,#241608);border:1px solid #6b5136;
+  box-shadow:inset 0 1px 0 rgba(255,220,170,.2)}
+.tiroir{display:flex;gap:10px;justify-content:center;padding:10px 8px 14px;border-radius:12px;
+  background:linear-gradient(180deg,#1d1208,#150c05);box-shadow:inset 0 3px 10px rgba(0,0,0,.6)}
+.rang{display:flex;flex-direction:column;align-items:center;gap:4px}
+.pileC{position:relative;width:36px;height:48px;display:block}
+.jc{position:absolute;left:0;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.nom{font:700 9px system-ui;color:#a89070}
+.mot{font:400 12.5px/1.6 Georgia,serif;color:#e8dcc0;text-align:center;padding:12px 6px 2px}
+.titreP{font:600 8.5px system-ui;letter-spacing:2px;color:#a89070;margin:4px 0 10px}
+.ech{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:14px;
+  background:linear-gradient(180deg,#3d2c1e,#2b1f14);border:1px solid #5c452e;margin-bottom:9px}
+.ech.gris{opacity:.5}
+.ech .ic{width:40px;height:40px;border-radius:11px;background:#241a12;border:1px solid #6b5136;
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.ech .tx{flex:1;min-width:0}
+.ech .tx b{display:block;font:600 13px system-ui;color:#f2e6cc}
+.ech .tx span{display:block;font:400 10.5px system-ui;color:#a89070;margin-top:2px}
+.ech .val{font:400 17px Georgia,serif;color:#f0cf7d;margin-right:2px}
+.ech button{padding:10px 13px;border-radius:11px;border:1px solid #8a6a2a;
+  background:linear-gradient(180deg,#e2ba69,#b4892f);font:600 11.5px system-ui;color:#2b1d12}
+.ech button:disabled{background:#3d2c1e;color:#7d6b50;border-color:#4f3d29}
+.tout{display:block;width:100%;margin-top:6px;padding:15px;border-radius:14px;
+  border:1px solid #6b4a28;background:linear-gradient(180deg,#e2ba69,#b4892f);
+  font:700 14px system-ui;color:#2b1d12;box-shadow:0 4px 0 #6b5020}
+.tout:active{transform:translateY(3px);box-shadow:0 1px 0 #6b5020}
+.vide{text-align:center;font:400 11.5px/1.6 system-ui;color:#8d7d64;padding:14px}
+.pluie{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pluie i{position:absolute;top:-32px;animation:tombeJ 1.8s cubic-bezier(.4,0,.7,1) forwards}
+@keyframes tombeJ{60%{transform:translateY(56vh) rotate(220deg)}
+  75%{transform:translateY(50vh) rotate(250deg)}100%{transform:translateY(54vh) rotate(260deg);opacity:.85}}
 .res{text-align:center;font:600 12px system-ui;color:#f0cf7d;min-height:20px;margin-top:10px}
 </style></head>
 <body>
@@ -942,20 +974,164 @@ const ombreSous=(g,x,y,rx,ry,a)=>{
   g.save();g.translate(x,y);g.scale(1,ry/rx);
   g.fillStyle=d;g.beginPath();g.arc(0,0,rx,0,7);g.fill();g.restore();};
 
-/* le comptoir : un rectangle vu d'au-dessus, avec son épaisseur vers le bas */
+/* ================= le guichet, vu de dessus ================= */
+
+/* le plateau de marbre du comptoir, avec ses veines */
 function comptoir(g,x,y,w,h){
-  g.fillStyle='rgba(0,0,0,.38)';
-  g.beginPath();g.roundRect(x-w/2+3,y-h/2+9,w,h,9);g.fill();
-  const cot=g.createLinearGradient(0,y-h/2,0,y+h/2+8);
-  cot.addColorStop(0,'#6b4526');cot.addColorStop(.6,'#4a2e17');cot.addColorStop(1,'#2e1c0e');
-  g.fillStyle=cot;g.beginPath();g.roundRect(x-w/2,y-h/2,w,h+8,9);g.fill();
-  const dess=g.createLinearGradient(x-w/2,y-h/2,x+w/2,y+h/2);
-  dess.addColorStop(0,'#8a5c33');dess.addColorStop(.5,'#70492a');dess.addColorStop(1,'#5c3a20');
-  g.fillStyle=dess;g.beginPath();g.roundRect(x-w/2+3,y-h/2+3,w-6,h-6,7);g.fill();
-  g.strokeStyle=orDe(g,x-w/2,y-h/2,x+w/2,y+h/2);g.lineWidth=2;
-  g.beginPath();g.roundRect(x-w/2,y-h/2,w,h,9);g.stroke();
-  g.save();g.globalAlpha=.14;g.fillStyle='#fff';
-  g.beginPath();g.roundRect(x-w/2+5,y-h/2+5,w-10,7,4);g.fill();g.restore();
+  /* l'ombre portée au sol */
+  g.fillStyle='rgba(0,0,0,.42)';
+  g.beginPath();g.roundRect(x-w/2+4,y-h/2+11,w,h,10);g.fill();
+  /* la façade, vue en biais : le bois */
+  const cot=g.createLinearGradient(0,y+h/2-4,0,y+h/2+11);
+  cot.addColorStop(0,'#5c3a20');cot.addColorStop(.5,'#41280f');cot.addColorStop(1,'#291809');
+  g.fillStyle=cot;g.beginPath();g.roundRect(x-w/2,y-h/2,w,h+11,10);g.fill();
+  /* les panneaux sculptés de la façade */
+  g.save();g.strokeStyle='rgba(255,220,170,.16)';g.lineWidth=1;
+  for(let i=0;i<5;i++)g.strokeRect(x-w/2+10+i*(w-20)/5,y+h/2+2,(w-20)/5-6,7);
+  g.restore();
+  /* le plateau : marbre clair */
+  const mar=g.createLinearGradient(x-w/2,y-h/2,x+w/2,y+h/2);
+  mar.addColorStop(0,'#e6e1d6');mar.addColorStop(.4,'#cdc7ba');
+  mar.addColorStop(.75,'#b4ada0');mar.addColorStop(1,'#9d968a');
+  g.fillStyle=mar;g.beginPath();g.roundRect(x-w/2+3,y-h/2+3,w-6,h-5,7);g.fill();
+  /* veines du plateau */
+  g.save();
+  g.beginPath();g.roundRect(x-w/2+3,y-h/2+3,w-6,h-5,7);g.clip();
+  g.globalAlpha=.22;g.strokeStyle='#6f6a60';g.lineCap='round';
+  for(let i=0;i<5;i++){
+    const yy=y-h/2+7+i*7;
+    g.lineWidth=.5+alea(i*3)*1.1;
+    g.beginPath();g.moveTo(x-w/2,yy);
+    for(let k=0;k<=w;k+=28)
+      g.quadraticCurveTo(x-w/2+k+14,yy+(alea(i*7+k)-.5)*9,x-w/2+k+28,yy+(alea(i*5+k)-.5)*5);
+    g.stroke();
+  }
+  g.restore();
+  /* le chant de laiton, tout le tour du plateau */
+  g.strokeStyle=orDe(g,x-w/2,y-h/2,x+w/2,y+h/2);g.lineWidth=2.4;
+  g.beginPath();g.roundRect(x-w/2+3,y-h/2+3,w-6,h-5,7);g.stroke();
+  /* la barre d'appui en laiton, côté client */
+  g.strokeStyle=orDe(g,x-w/2,y+h/2,x+w/2,y+h/2+6);g.lineWidth=3;g.lineCap='round';
+  g.beginPath();g.moveTo(x-w/2+12,y+h/2+6);g.lineTo(x+w/2-12,y+h/2+6);g.stroke();
+  [-1,1].forEach(s=>{
+    g.fillStyle=orDe(g,x+s*(w/2-14),y+h/2+2,x+s*(w/2-8),y+h/2+10);
+    g.beginPath();g.arc(x+s*(w/2-12),y+h/2+6,3.2,0,7);g.fill();
+  });
+  /* reflet sur le marbre */
+  g.save();g.globalAlpha=.3;
+  const ref=g.createLinearGradient(x-w/2,y-h/2,x-w/4,y+h/2);
+  ref.addColorStop(0,'rgba(255,255,255,.9)');ref.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=ref;g.beginPath();g.roundRect(x-w/2+5,y-h/2+5,w*0.4,h-9,6);g.fill();
+  g.restore();
+}
+
+/* un casier à jetons : un plateau de bois à rainures, avec ses piles */
+function casier(g,x,y,couleurs){
+  g.fillStyle='rgba(0,0,0,.35)';
+  g.beginPath();g.roundRect(x-27,y-11,56,24,4);g.fill();
+  const b=g.createLinearGradient(0,y-13,0,y+11);
+  b.addColorStop(0,'#4a3218');b.addColorStop(1,'#2c1c0c');
+  g.fillStyle=b;g.beginPath();g.roundRect(x-28,y-13,56,24,4);g.fill();
+  g.strokeStyle=orDe(g,x-28,y-13,x+28,y+11);g.lineWidth=1.2;g.stroke();
+  /* les rainures et leurs piles */
+  couleurs.forEach((c,i)=>{
+    const cx=x-20+i*13.5;
+    g.fillStyle='rgba(0,0,0,.45)';
+    g.beginPath();g.roundRect(cx-5.5,y-9,11,16,3);g.fill();
+    for(let k=0;k<3;k++){
+      const yy=y+4-k*4.4;
+      g.fillStyle=k%2?c[1]:c[0];
+      g.beginPath();g.ellipse(cx,yy,5.2,2.4,0,0,7);g.fill();
+      g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=.6;
+      g.beginPath();g.ellipse(cx,yy,4,1.7,0,0,7);g.stroke();
+    }
+  });
+}
+
+/* le registre ouvert, avec sa plume */
+function registre(g,x,y){
+  g.fillStyle='rgba(0,0,0,.3)';
+  g.beginPath();g.roundRect(x-15,y-9,32,18,2);g.fill();
+  const p=g.createLinearGradient(0,y-11,0,y+7);
+  p.addColorStop(0,'#f4efe0');p.addColorStop(1,'#d8d0bb');
+  g.fillStyle=p;g.beginPath();g.roundRect(x-16,y-11,32,18,2);g.fill();
+  g.strokeStyle='#8a7a58';g.lineWidth=.7;g.stroke();
+  g.fillStyle='#6b5a3a';g.fillRect(x-0.6,y-11,1.2,18);
+  g.save();g.globalAlpha=.45;g.strokeStyle='#5f5240';g.lineWidth=.6;
+  for(let i=0;i<4;i++){
+    g.beginPath();g.moveTo(x-13,y-7+i*4);g.lineTo(x-3,y-7+i*4);
+    g.moveTo(x+3,y-7+i*4);g.lineTo(x+13,y-7+i*4);g.stroke();
+  }
+  g.restore();
+  /* la plume */
+  g.strokeStyle='#d8d2c2';g.lineWidth=1.4;g.lineCap='round';
+  g.beginPath();g.moveTo(x+9,y+6);g.lineTo(x+16,y-6);g.stroke();
+  g.fillStyle='#c9a24a';
+  g.beginPath();g.arc(x+9,y+6,1.4,0,7);g.fill();
+}
+
+/* la sonnette de comptoir */
+function sonnette(g,x,y){
+  g.fillStyle='rgba(0,0,0,.35)';
+  g.beginPath();g.ellipse(x+1.5,y+3,8,4,0,0,7);g.fill();
+  g.fillStyle=orDe(g,x-8,y-6,x+8,y+6);
+  g.beginPath();g.ellipse(x,y,8,5.4,0,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.45)';
+  g.beginPath();g.ellipse(x-2.4,y-1.6,3,1.8,0,0,7);g.fill();
+  g.fillStyle='#8a6a2a';
+  g.beginPath();g.ellipse(x,y+1,8,5.4,0,0,3.14);g.fill();
+  g.fillStyle=orDe(g,x-2,y-8,x+2,y-4);
+  g.beginPath();g.arc(x,y-5.5,1.8,0,7);g.fill();
+}
+
+/* la lampe de comptoir, à abat-jour vert */
+function lampe(g,x,y){
+  g.fillStyle='rgba(0,0,0,.4)';
+  g.beginPath();g.ellipse(x+2,y+4,13,6,0,0,7);g.fill();
+  const a=g.createRadialGradient(x-4,y-4,2,x,y,14);
+  a.addColorStop(0,'#4f9e72');a.addColorStop(.6,'#2f7050');a.addColorStop(1,'#1c4a33');
+  g.fillStyle=a;g.beginPath();g.ellipse(x,y,13,8,0,0,7);g.fill();
+  g.strokeStyle=orDe(g,x-13,y-8,x+13,y+8);g.lineWidth=1.4;g.stroke();
+  g.fillStyle='rgba(255,255,255,.18)';
+  g.beginPath();g.ellipse(x-4,y-2.4,5,2.6,0,0,7);g.fill();
+  /* la lumière qu'elle pose sur le comptoir */
+  const h=g.createRadialGradient(x,y+6,2,x,y+6,34);
+  h.addColorStop(0,'rgba(255,232,180,.34)');h.addColorStop(1,'rgba(255,232,180,0)');
+  g.fillStyle=h;g.beginPath();g.arc(x,y+6,34,0,7);g.fill();
+}
+
+/* la vitrine derrière l'hôtesse : une desserte avec ses casiers */
+function desserte(g,x,y,w){
+  g.fillStyle='rgba(0,0,0,.4)';
+  g.beginPath();g.roundRect(x-w/2+3,y-12,w,26,5);g.fill();
+  const d=g.createLinearGradient(0,y-14,0,y+14);
+  d.addColorStop(0,'#4a3218');d.addColorStop(.55,'#331f0d');d.addColorStop(1,'#241407');
+  g.fillStyle=d;g.beginPath();g.roundRect(x-w/2,y-14,w,28,5);g.fill();
+  g.strokeStyle=orDe(g,x-w/2,y-14,x+w/2,y+14);g.lineWidth=1.6;g.stroke();
+  /* le dessus, en marbre sombre */
+  const m=g.createLinearGradient(x-w/2,y-12,x+w/2,y+6);
+  m.addColorStop(0,'#4a4650');m.addColorStop(.6,'#33303a');m.addColorStop(1,'#26242d');
+  g.fillStyle=m;g.beginPath();g.roundRect(x-w/2+3,y-11,w-6,17,4);g.fill();
+  /* le coffre, encastré */
+  g.fillStyle='#22222a';g.beginPath();g.roundRect(x-16,y-8,32,12,2);g.fill();
+  g.strokeStyle='#6b6b78';g.lineWidth=1;g.stroke();
+  g.fillStyle=orDe(g,x-4,y-4,x+4,y+2);
+  g.beginPath();g.arc(x,y-2,3.4,0,7);g.fill();
+  g.strokeStyle='#3a3a44';g.lineWidth=1;
+  g.beginPath();g.arc(x,y-2,1.6,0,7);g.stroke();
+}
+
+/* la plaque gravée, posée sur le comptoir */
+function plaque(g,x,y,txt){
+  g.fillStyle='rgba(0,0,0,.45)';
+  g.beginPath();g.roundRect(x-33,y-6,68,15,3);g.fill();
+  const d=g.createLinearGradient(0,y-8,0,y+7);
+  d.addColorStop(0,'#3a2a1c');d.addColorStop(1,'#20140c');
+  g.fillStyle=d;g.beginPath();g.roundRect(x-34,y-8,68,15,3);g.fill();
+  g.strokeStyle=orDe(g,x-34,y-8,x+34,y+7);g.lineWidth=1.4;g.stroke();
+  g.fillStyle=orDe(g,x-30,y-4,x+30,y+4);
+  g.font='700 8px Georgia,serif';g.textAlign='center';
+  g.fillText(txt,x,y+3.5);g.textAlign='left';
 }
 
 /* une pile de jetons, vue de dessus */
@@ -965,20 +1141,6 @@ function pileJetons(g,x,y,c1,c2){
   g.fillStyle=c2;g.beginPath();g.arc(x,y,3.6,0,7);g.fill();
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.8;
   g.beginPath();g.arc(x,y,5,0,7);g.stroke();
-}
-
-/* la caisse enregistreuse, vue de dessus */
-function caisseHaut(g,x,y){
-  ombreSous(g,x+2,y+4,16,7,.4);
-  const d=g.createLinearGradient(x-11,y-9,x+11,y+9);
-  d.addColorStop(0,'#4a4a56');d.addColorStop(.5,'#35353f');d.addColorStop(1,'#23232b');
-  g.fillStyle=d;g.beginPath();g.roundRect(x-11,y-9,22,18,3);g.fill();
-  g.strokeStyle='rgba(255,255,255,.16)';g.lineWidth=1;g.stroke();
-  const ec=g.createLinearGradient(x-8,y-6,x+8,y+1);
-  ec.addColorStop(0,'#9fe6f5');ec.addColorStop(1,'#4a9ab5');
-  g.fillStyle=ec;g.beginPath();g.roundRect(x-8,y-6,16,7,2);g.fill();
-  g.fillStyle='#1b1b22';
-  for(let i=0;i<3;i++)for(let k=0;k<4;k++)g.fillRect(x-7+k*4,y+2+i*2,3,1.2);
 }
 
 /* une plante, vue de dessus : le feuillage s'étale */
@@ -1037,9 +1199,9 @@ function porteBas(g,x,y){
 
 /* ================= ce qu'il y a dans le hall ================= */
 const CX=SALLE_L/2;
-const HOTESSE={x:CX,y:150,ap:{peau:1,cheveux:4,coiffe:10,yeux:2,veste:0,haut:2,pantalon:3,bas:4,
+const HOTESSE={x:CX,y:160,ap:{peau:1,cheveux:4,coiffe:10,yeux:2,veste:0,haut:2,pantalon:3,bas:4,
   souliers:1,chapeau:0,sourcils:1,nez:1,bouche:2,corps:1}};
-const COMPTOIR={x:CX,y:186,w:170,h:40};
+const COMPTOIR={x:CX,y:196,w:208,h:38};
 const PORTE={x:CX,y:SALLE_H-MUR/2};
 
 function bloque(x,y){
@@ -1120,14 +1282,17 @@ function dessiner(){
 
   /* le mobilier et les personnages, triés par profondeur */
   const objets=[
-    {y:150,f:()=>dessinerHotesse(iX,iY)},
-    {y:186,f:()=>{comptoir(ctx,COMPTOIR.x-iX,COMPTOIR.y-iY,COMPTOIR.w,COMPTOIR.h);
-      pileJetons(ctx,CX-56-iX,COMPTOIR.y-8-iY,'#dc5044','#b93327');
-      pileJetons(ctx,CX-40-iX,COMPTOIR.y-8-iY,'#4a8fd4','#2b6cb0');
-      pileJetons(ctx,CX+44-iX,COMPTOIR.y-8-iY,'#f0cf7d','#c9a24a');
-      pileJetons(ctx,CX+60-iX,COMPTOIR.y-8-iY,'#dc5044','#b93327');
-      caisseHaut(ctx,CX-iX,COMPTOIR.y-4-iY);
-      panneau(ctx,CX-iX,COMPTOIR.y+26-iY,'JETONS');}},
+    {y:126,f:()=>desserte(ctx,CX-iX,126-iY,150)},
+    {y:160,f:()=>dessinerHotesse(iX,iY)},
+    {y:196,f:()=>{
+      comptoir(ctx,COMPTOIR.x-iX,COMPTOIR.y-iY,COMPTOIR.w,COMPTOIR.h);
+      /* ce qui est posé dessus */
+      casier(ctx,CX-62-iX,COMPTOIR.y-3-iY,[['#dc5044','#b93327'],['#4a8fd4','#2b6cb0'],
+                                           ['#f0cf7d','#c9a24a'],['#8fd8a0','#3f8a5c']]);
+      registre(ctx,CX+34-iX,COMPTOIR.y-3-iY);
+      sonnette(ctx,CX+72-iX,COMPTOIR.y-4-iY);
+      lampe(ctx,CX-iX,COMPTOIR.y-6-iY);
+      plaque(ctx,CX-iX,COMPTOIR.y+24-iY,'CHANGE · JETONS');}},
     {y:300,f:()=>{planteHaut(ctx,MUR+30-iX,300-iY);planteHaut(ctx,SALLE_L-MUR-30-iX,300-iY);}},
     {y:470,f:()=>{planteHaut(ctx,MUR+30-iX,470-iY);planteHaut(ctx,SALLE_L-MUR-30-iX,470-iY);}},
     {y:SALLE_H-MUR/2,f:()=>porteBas(ctx,PORTE.x-iX,PORTE.y-iY)},
@@ -1183,33 +1348,93 @@ const ICONES={
  baies:'<rect x="4" y="7" width="4" height="4" fill="#c94a4a"/><rect x="8" y="9" width="4" height="4" fill="#a83a3a"/>'+
       '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/>'
 };
+const VALEURS=[{v:1,c1:'#f3f0e6',c2:'#c9c3b2',n:'blanc'},
+               {v:5,c1:'#dc5044',c2:'#8f2a22',n:'rouge'},
+               {v:25,c1:'#4a8fd4',c2:'#255184',n:'bleu'},
+               {v:100,c1:'#f0cf7d',c2:'#9a7225',n:'or'}];
+/* on décompose une somme en jetons, comme au vrai guichet */
+function enJetons(n){
+  const out=[];
+  [100,25,5,1].forEach(v=>{
+    const q=Math.floor(n/v);
+    if(q){out.push({v,q:Math.min(q,9)});n-=q*v;}
+  });
+  return out;
+}
+function svgJeton(v,taille){
+  const j=VALEURS.find(x=>x.v===v)||VALEURS[0];
+  const t=taille||30;
+  return '<svg viewBox="0 0 40 40" width="'+t+'" height="'+t+'">'+
+   '<circle cx="20" cy="20" r="18" fill="'+j.c2+'"/>'+
+   '<circle cx="20" cy="20" r="15.5" fill="'+j.c1+'"/>'+
+   '<circle cx="20" cy="20" r="11" fill="none" stroke="'+j.c2+'" stroke-width="2.6"/>'+
+   [0,45,90,135,180,225,270,315].map(a=>
+     '<rect x="18.6" y="1.4" width="2.8" height="5" fill="'+j.c2+'" transform="rotate('+a+' 20 20)"/>').join('')+
+   '<text x="20" y="24.5" font-size="10" font-family="Georgia,serif" font-weight="700" '+
+   'fill="'+j.c2+'" text-anchor="middle">'+v+'</text></svg>';
+}
 function ouvrirGuichet(){
+  const total=Object.keys(TAUX).reduce((a,k)=>a+((e.sac&&e.sac[k])||0)*TAUX[k],0);
   const lignes=Object.keys(TAUX).map(k=>{
     const n=(e.sac&&e.sac[k])||0;
-    return '<div class="ech"><span class="ic"><svg viewBox="0 0 16 16" width="26" '+
-      'style="image-rendering:pixelated">'+ICONES[k]+'</svg></span>'+
-      '<span class="tx"><b>'+NOMS[k]+'</b><span>'+n+' en réserve · '+TAUX[k]+' jetons pièce</span></span>'+
-      '<button data-e="'+k+'"'+(n?'':' disabled')+'>Échanger</button></div>';
+    return '<div class="ech'+(n?'':' gris')+'">'+
+      '<span class="ic"><svg viewBox="0 0 16 16" width="26" style="image-rendering:pixelated">'+
+        ICONES[k]+'</svg></span>'+
+      '<span class="tx"><b>'+NOMS[k]+'</b>'+
+        '<span>'+n+' en réserve · '+TAUX[k]+' jetons pièce</span></span>'+
+      '<span class="val">'+(n*TAUX[k])+'</span>'+
+      '<button data-e="'+k+'"'+(n?'':' disabled')+'>Changer</button></div>';
   }).join('');
   $('pageFond').innerHTML=
    '<div class="tete"><button class="x" id="p-x">✕</button>'+
      '<span><span class="t1">Le guichet</span><span class="t2">CHANGE ET JETONS</span></span>'+
      '<span class="jet"><b id="p-jet">'+e.jetons+'</b><i>JETONS</i></span></div>'+
    '<div class="corps">'+
-     '<div class="mot">« Bonsoir. Posez votre butin sur le comptoir,<br>je vous le change en jetons. »</div>'+
-     lignes+'<div class="res" id="res"></div></div>';
+     '<div class="caisseVue">'+
+       '<div class="tiroir">'+
+         VALEURS.map(j=>'<span class="rang">'+
+           '<span class="pileC">'+Array.from({length:3},(_,i)=>
+             '<span class="jc" style="bottom:'+(i*7)+'px">'+svgJeton(j.v,34)+'</span>').join('')+'</span>'+
+           '<span class="nom">'+j.v+'</span></span>').join('')+
+       '</div>'+
+       '<div class="mot">« Bonsoir. Posez votre butin sur le comptoir,<br>'+
+         'je vous le change au cours du jour. »</div>'+
+     '</div>'+
+     '<div class="titreP">TON BUTIN</div>'+
+     lignes+
+     (total? '<button class="tout" id="tout">Tout changer · '+total+' jetons</button>'
+           : '<div class="vide">Ton sac est vide. Reviens avec du bois, de la pierre ou des baies.</div>')+
+     '<div class="res" id="res"></div>'+
+     '<div class="pluie" id="pluie"></div>'+
+   '</div>';
   $('p-x').onclick=()=>$('page').classList.remove('on');
-  $('pageFond').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.e, n=(e.sac&&e.sac[k])||0;
-    if(!n)return;
-    const g2=n*TAUX[k];
-    e.sac[k]=0;e.jetons+=g2;
-    sauver();majJetons();
-    ouvrirGuichet();
-    const r=$('res');if(r)r.textContent=n+' '+NOMS[k].toLowerCase()+' → '+g2+' jetons.';
-    try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
-  });
+  $('pageFond').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>changer(b.dataset.e));
+  const t=$('tout');
+  if(t)t.onclick=()=>{Object.keys(TAUX).forEach(k=>{if((e.sac&&e.sac[k])>0)changer(k,true);});
+    ouvrirGuichet();const r=$('res');if(r)r.textContent='Tout le butin est changé.';};
   $('page').classList.add('on');
+}
+function changer(k,muet){
+  const n=(e.sac&&e.sac[k])||0;
+  if(!n)return;
+  const gain=n*TAUX[k];
+  e.sac[k]=0;e.jetons+=gain;
+  sauver();majJetons();
+  if(muet)return;
+  ouvrirGuichet();
+  const r=$('res');
+  if(r)r.innerHTML=n+' '+NOMS[k].toLowerCase()+' → <b>'+gain+' jetons</b>';
+  pluieDeJetons(gain);
+  try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
+}
+/* les jetons rendus tombent sur le comptoir */
+function pluieDeJetons(gain){
+  const zone=$('pluie');if(!zone)return;
+  const lot=enJetons(gain).flatMap(x=>Array.from({length:x.q},()=>x.v)).slice(0,14);
+  zone.innerHTML=lot.map((v,i)=>
+    '<i style="left:'+(8+Math.random()*84)+'%;animation-delay:'+(i*0.06).toFixed(2)+'s">'+
+    svgJeton(v,26)+'</i>').join('');
+  setTimeout(()=>{if(zone)zone.innerHTML='';},2000);
 }
 
 /* ================= le bouton d'action ================= */
