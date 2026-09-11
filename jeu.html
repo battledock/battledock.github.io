@@ -1473,39 +1473,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     const x=o.x-camX, y=o.y-camY;
     if(x<-30||y<-50||x>VW2+30||y>VH2+30)continue;
     if(o.t==='arbre'){
-      if(o.tombe){
-        const T=(Date.now()-o.tombe)/1000;
-        const sens=o.sens||1;
-        const H=[50,64,79][o.gr||0];
-        let a;
-        if(T<0.22){                                   /* il hésite, penche à l'envers */
-          a=-sens*0.07*Math.sin(T/0.22*Math.PI);
-        }else if(T<1.05){                             /* il bascule, de plus en plus vite */
-          const t=(T-0.22)/0.83;
-          a=sens*(Math.PI/2)*entreRap(t);
-        }else{                                        /* au sol, il rebondit deux fois */
-          const t=Math.min(1,(T-1.05)/0.5);
-          a=sens*(Math.PI/2 - Math.exp(-t*7)*Math.abs(Math.sin(t*15))*0.16);
-        }
-        g.save();g.translate(x,y);g.rotate(a);
-        /* il se cintre légèrement pendant la chute */
-        if(T>0.22&&T<1.05)g.transform(1,0,-sens*0.05,1,0,0);
-        dessinerArbre(g,0,0,o.gr);
-        g.restore();
-        /* des feuilles se détachent tout au long de la chute */
-        if(T<1.1&&Math.random()<0.4){
-          const d=Math.random()*H*0.8;
-          PARTS.push({x:o.x+sens*Math.sin(a)*d,y:o.y-Math.cos(a)*d,
-            vx:(Math.random()-.5)*30+sens*20,vy:-6+Math.random()*14,
-            vie:1.5,taille:2,rot:Math.random()*6,vrot:(Math.random()-.5)*6,
-            c:['#4a944a','#3d7d3f','#2f6b34'][Math.floor(Math.random()*3)],rebondi:true});
-        }
-        /* l'ombre portée s'allonge et s'affaiblit à mesure qu'il se couche */
-        g.globalAlpha=.18*(1-Math.abs(a)/(Math.PI/2)*0.6);
-        g.fillStyle='#1c2a14';
-        g.beginPath();g.ellipse(x+sens*Math.sin(a)*H*0.4,y-1,10+Math.sin(a)*H*0.35,4,0,0,7);g.fill();
-        g.globalAlpha=1;
-      }else{
+      {
         let dx=0;
         if(o.frappe){
           const e2=(Date.now()-o.frappe)/420;
@@ -1699,20 +1667,6 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
-  /* l'eau vit : des reflets glissent au fil du courant */
-  {
-    const t=Date.now()/1000;
-    ctx.globalAlpha=.35;ctx.fillStyle='#e2f4fa';
-    for(let i=0;i<26;i++){
-      const y=((i*97+t*22)%(VH+40))-20+camY;
-      const cx=rivX(y);
-      if(cx-camX<-30||cx-camX>VW+30)continue;
-      const dec=(alea(i*3.7)-.5)*RIV_LARGE*1.4;
-      const l=3+Math.round(alea(i*5.1)*6);
-      ctx.fillRect(Math.round(cx+dec-camX),Math.round(y-camY),l,1);
-    }
-    ctx.globalAlpha=1;
-  }
   dessinerParts(ctx,camX,camY);
   dessinerTextes(ctx,camX,camY);
   /* tant que le coffre n'est pas ouvert, une flèche indique où il est */
@@ -1779,14 +1733,6 @@ function majJoueur(dt){
     joueur.pas=0;
   }
   joueur.marche=v>4&&!bloqueBord;
-  /* les pieds dans l'eau, au gué : des gouttes sautent */
-  if(joueur.marche&&SOL&&dansRiviere(joueur.x,joueur.y)&&surGue(joueur.y)){
-    if(Math.random()<0.35){
-      for(let i=0;i<2;i++)PARTS.push({x:joueur.x+(Math.random()-.5)*8,y:joueur.y,
-        vx:(Math.random()-.5)*40,vy:-30-Math.random()*30,vie:.55,taille:2,
-        rot:0,vrot:0,c:Math.random()<.5?'#bfe6f2':'#8fc9dd',rebondi:false});
-    }
-  }
   /* en traversant un buisson, il froisse et lâche quelques feuilles */
   if(joueur.marche&&SOL){
     for(const o of DECOR){
@@ -2317,43 +2263,42 @@ function couper(o){
   secouer(0.5);ARRET=0.05;
   try{navigator.vibrate&&navigator.vibrate(16);}catch(x){}
   if(o.coups>=5){
-    /* il bascule du côté opposé au joueur */
-    o.tombe=Date.now();
-    o.sens=(o.x>=joueur.x)?1:-1;
-    secouer(0.8);
-    texteVolant(o.x,o.y-H*0.5,'timber !','#e8dcc0');
-    /* l'impact au sol : il arrive quand la cime touche terre, pas à la fin */
-    setTimeout(()=>{
-      const H=[50,64,79][o.gr||0];
-      secouer(1.5);ARRET=0.09;
-      const cx=o.x+(o.sens||1)*H*0.72, cy=o.y-4;
-      eclats(cx,cy,20,'#6b8a4e',1.3);          /* le houppier s'écrase */
-      poussiere(cx,cy,22);
-      poussiere(o.x,o.y,10);
-      for(let i2=0;i2<14;i2++)PARTS.push({x:cx+(Math.random()-.5)*40,y:cy,
-        vx:(Math.random()-.5)*90,vy:-20-Math.random()*50,vie:1.3,taille:2,
-        rot:Math.random()*6,vrot:(Math.random()-.5)*10,
-        c:['#4a944a','#3d7d3f','#2f6b34'][i2%3],rebondi:false});
-      try{navigator.vibrate&&navigator.vibrate([18,50,34]);}catch(x){}
-    },1050);
-    setTimeout(()=>{
-      const i=DECOR.indexOf(o);
-      if(i>=0){
-        DECOR.splice(i,1);
-        DECOR.push({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now()});
-        DECOR.sort((a,b)=>a.y-b.y);
-      }
-      eclats(o.x,o.y-6,10,'#8a6238',1.1);
-      const q=3+Math.floor(Math.random()*3);
-      const pris=ajouter('bois',q);
-      const fib=ajouter('fibre',1);
-      e.recolte=(e.recolte||0)+pris+fib;e.score=(e.score||0)+8;
-      e.casses.push('a'+o.x+','+o.y);
-      texteVolant(o.x,o.y-24,'+'+pris+' bois','#d9b98a');
-      texteVolant(o.x,o.y-36,'+8 pts','#a9c96a');
-      for(let i2=0;i2<pris;i2++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'bois'),i2*80);
-      sauver();monterEnLigne(true);
-    },1700);
+    /* il ne bascule pas : il cède, et le bois vole en morceaux */
+    secouer(1.2);ARRET=0.07;
+    try{navigator.vibrate&&navigator.vibrate([14,40,26]);}catch(x){}
+    /* de gros éclats de tronc qui retombent au sol */
+    for(let i=0;i<16;i++){
+      const a=Math.random()*6.283;
+      PARTS.push({x:o.x+(Math.random()-.5)*10,y:o.y-10-Math.random()*H*0.5,
+        vx:Math.cos(a)*(40+Math.random()*90),vy:-40-Math.random()*70,
+        vie:1+Math.random()*.6,taille:2+Math.floor(Math.random()*3),
+        rot:Math.random()*6,vrot:(Math.random()-.5)*16,
+        c:['#a5764a','#8a6238','#6b4a28','#5b3f21'][i%4],rebondi:false});
+    }
+    /* le feuillage se disperse */
+    for(let i=0;i<18;i++){
+      PARTS.push({x:o.x+(Math.random()-.5)*36,y:o.y-H*0.7+(Math.random()-.5)*20,
+        vx:(Math.random()-.5)*70,vy:-10+Math.random()*40,
+        vie:1.3,taille:2,rot:Math.random()*6,vrot:(Math.random()-.5)*8,
+        c:['#4a944a','#3d7d3f','#2f6b34'][i%3],rebondi:true});
+    }
+    poussiere(o.x,o.y,14);
+    /* la souche prend la place tout de suite */
+    const i=DECOR.indexOf(o);
+    if(i>=0){
+      DECOR.splice(i,1);
+      DECOR.push({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now()});
+      DECOR.sort((a,b)=>a.y-b.y);
+    }
+    const q=3+Math.floor(Math.random()*3);
+    const pris=ajouter('bois',q);
+    const fib=ajouter('fibre',1);
+    e.recolte=(e.recolte||0)+pris+fib;e.score=(e.score||0)+8;
+    e.casses.push('a'+o.x+','+o.y);
+    texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
+    texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
+    for(let i2=0;i2<pris;i2++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'bois'),i2*80);
+    sauver();monterEnLigne(true);
   }else{
     texteVolant(o.x,o.y-H*0.35,(5-o.coups)+' coup'+(o.coups<4?'s':''),'#d9c9a8');
   }
@@ -2619,10 +2564,15 @@ async function garderAllume(){
   }catch(x){}
 }
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible')garderAllume();
+  if(document.visibilityState==='visible'){
+    garderAllume();
+    /* le navigateur vide parfois les toiles en arrière-plan : on les refait */
+    SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();
+  }
   else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
 });
 addEventListener('pagehide',()=>{sauver();monterEnLigne(true);});
+addEventListener('pageshow',()=>{SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();});
 addEventListener('beforeunload',()=>{sauver();});
 
 /* ================= boucle ================= */
