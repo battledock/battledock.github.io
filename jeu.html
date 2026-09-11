@@ -588,28 +588,68 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     bras(-(EP+2),yT+1,bgP>0);
     bras(EP-1,yT+1,bdP>0);
   }
-  /* la pioche, et le bras qui la porte */
-  if(fr>0&&typeof dessinerPioche==='function'){
-    const sens=dir==='gauche'?-1:1;
-    const epx=sens>0?EP-1:-(EP+2);
-    const ey=yT+1-Math.round(tasse*3);            /* l'épaule monte à l'élan, plonge au coup */
-    R(epx,ey,3,9,veste);
-    R(epx,ey,3,2,vesteC);
-    R(epx,ey+9,3,3,peau);
-    if(typeGeste!=='cueille'){
-      g.save();
-      g.translate(x+epx+1.5,y+ey+2);
-      g.rotate(sens*arc);
-      if(typeGeste==='hache')dessinerHache(g,0,0,1);else dessinerPioche(g,0,0,1);
-      if(phase===2){                              /* traînée pendant l'abattage */
-        g.globalAlpha=.3;g.fillStyle='#f2f5f8';
-        g.fillRect(-1,-15,2,13);g.globalAlpha=1;
+  /* ---- l'outil et les bras, selon l'angle sous lequel on regarde ----
+     De profil : grand arc de côté, un seul bras visible.
+     De face   : l'outil s'abat vers nous, les deux mains le tiennent, il se raccourcit.
+     De dos    : il part en arrière au-dessus des épaules, on voit le dos des mains. */
+  if(fr>0){
+    const outil=(gg,ech)=>{
+      if(typeGeste==='hache')dessinerHache(gg,0,0,ech||1);
+      else dessinerPioche(gg,0,0,ech||1);
+    };
+    if(cote){
+      const sens=dir==='gauche'?-1:1;
+      const epx=sens>0?EP-1:-(EP+2);
+      const ey=yT+1-Math.round(tasse*3);
+      R(epx,ey,3,9,veste);R(epx,ey,3,2,vesteC);R(epx,ey+9,3,3,peau);
+      if(typeGeste!=='cueille'){
+        g.save();
+        g.translate(x+epx+1.5,y+ey+2);
+        g.rotate(sens*arc);
+        outil(g,1);
+        if(phase===2){g.globalAlpha=.3;g.fillStyle='#f2f5f8';g.fillRect(-1,-15,2,13);g.globalAlpha=1;}
+        g.restore();
+      }else{
+        const av=Math.round(arc*3);
+        R(epx+(sens>0?av:-av),ey+7,3,3,peau);
       }
-      g.restore();
+    }else if(dir==='bas'){
+      /* de face : l'outil passe au-dessus de la tête puis descend vers nous.
+         On l'écrase verticalement pour simuler le raccourci. */
+      const t=(arc+1.9)/3.6;                       /* 0 en arrière, 1 en avant */
+      const haut=yT-14+Math.round((1-t)*-8);
+      const ey=yT+1-Math.round(tasse*3);
+      if(typeGeste!=='cueille'){
+        g.save();
+        g.translate(x,y+haut+t*24);
+        g.scale(1.15,0.45+t*0.75);                 /* il grandit en venant vers nous */
+        g.rotate(Math.PI*(1-t)*0.12);
+        outil(g,1.2);
+        if(phase===2){g.globalAlpha=.26;g.fillStyle='#f2f5f8';
+          g.fillRect(-8,-4,16,4);g.globalAlpha=1;}
+        g.restore();
+      }
+      /* les deux bras tiennent l'outil, ils se rapprochent devant le corps */
+      const ecart=Math.round(3+ (1-t)*3);
+      R(-EP-2+ecart,ey,3,9,vesteT);R(-EP-2+ecart,ey+9,3,3,peauO);
+      R(EP-1-ecart,ey,3,9,veste);  R(EP-1-ecart,ey+9,3,3,peau);
+      if(typeGeste==='cueille'){                   /* la main s'avance vers le bas */
+        R(-2,ey+10+Math.round(arc*3),4,3,peau);
+      }
     }else{
-      /* la main nue s'avance vers le buisson */
-      const av=Math.round(arc*3);
-      R(epx+(sens>0?av:-av),ey+7,3,3,peau);
+      /* de dos : l'outil part derrière les épaules, on ne voit que sa tête dépasser */
+      const t=(arc+1.9)/3.6;
+      const ey=yT+1-Math.round(tasse*3);
+      if(typeGeste!=='cueille'){
+        g.save();
+        g.translate(x,y+yT-10-(1-t)*10);
+        g.scale(1.1,0.5+(1-t)*0.6);
+        outil(g,1.1);
+        g.restore();
+      }
+      const ecart=Math.round(3+(1-t)*3);
+      R(-EP-2+ecart,ey,3,9,vesteT);R(-EP-2+ecart,ey+9,3,3,peauO);
+      R(EP-1-ecart,ey,3,9,veste);  R(EP-1-ecart,ey+9,3,3,peau);
     }
   }
 
@@ -1224,7 +1264,7 @@ let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
 const TAILLES={
  arbre:  [{w:10,h:7},{w:12,h:8},{w:12,h:8}],   /* seulement le pied du tronc */
  rocher: [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
- buisson:[{w:24,h:9},{w:30,h:10},{w:24,h:9}],
+ buisson:null,                                  /* on les traverse, ça remue au passage */
  fleurs: null,                                   /* on marche dedans */
  coffre: [{w:22,h:10}],
  gravats:null,
@@ -1619,6 +1659,20 @@ function majJoueur(dt){
     joueur.pas=0;
   }
   joueur.marche=v>4&&!bloqueBord;
+  /* en traversant un buisson, il froisse et lâche quelques feuilles */
+  if(joueur.marche&&SOL){
+    for(const o of DECOR){
+      if(o.t!=='buisson')continue;
+      if(Math.abs(o.x-joueur.x)>14||Math.abs(o.y-joueur.y)>10)continue;
+      if(!o.froisse||Date.now()-o.froisse>420){
+        o.froisse=Date.now();o.frappe=Date.now();
+        for(let i=0;i<3;i++)PARTS.push({x:o.x+(Math.random()-.5)*16,y:o.y-12,
+          vx:(Math.random()-.5)*26,vy:-12-Math.random()*16,vie:.9,taille:2,
+          rot:Math.random()*6,vrot:(Math.random()-.5)*8,
+          c:Math.random()<.5?'#4a944a':'#3d7d3f',rebondi:false});
+      }
+    }
+  }
   e.x=Math.round(joueur.x);e.y=Math.round(joueur.y);
 }
 
