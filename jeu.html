@@ -16,6 +16,16 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
   image-rendering:pixelated;image-rendering:crisp-edges}
 body{overflow:hidden}
 #joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#action{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
+  display:none;flex-direction:column;align-items:center;gap:2px;
+  padding:12px 16px;border-radius:16px;border:1px solid #4f3520;
+  background:linear-gradient(180deg,#a5764a,#7d5934);
+  box-shadow:inset 0 1px 0 rgba(255,225,180,.32),0 3px 0 #3d2a17;
+  font:600 12.5px system-ui;color:#2b1d12;letter-spacing:.4px}
+#action.on{display:flex}
+#action:active{transform:translateY(3px);box-shadow:inset 0 1px 0 rgba(255,225,180,.2),0 0 0 #3d2a17}
+#action small{font:600 8.5px system-ui;letter-spacing:1.2px;color:#5f4223}
+
 #barre{position:fixed;left:0;right:0;bottom:0;z-index:4;display:grid;
   grid-template-columns:repeat(4,1fr);gap:8px;
   padding:10px 9px calc(13px + env(safe-area-inset-bottom));
@@ -205,6 +215,7 @@ body{overflow:hidden}
 <body>
 <canvas id="cv"></canvas>
 <canvas id="joy" width="132" height="132"></canvas>
+<button id="action"></button>
 <div id="barre">
   <button class="latte" id="b-sac">
     <svg viewBox="0 0 20 18" width="30">
@@ -514,6 +525,10 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     R(-EP+2,yT+6,EP*2-6,1,teint(sacC,-24));
   }
 
+  /* ---- le geste de frappe : le bras et la pioche se lèvent puis s'abattent ---- */
+  const fr=(typeof GESTE!=='undefined'&&GESTE.t>0)?GESTE.t:0;   /* 1 → 0 pendant le coup */
+  const lever=fr>0?(fr>0.55?(1-fr)/0.45:fr/0.55):0;             /* 0 en haut, 1 à l'impact */
+
   /* ---- bras : la manche s'arrête selon le vêtement ---- */
   const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
                 'gilet':0,'t-shirt':4,'débardeur':0}[hautT];
@@ -532,6 +547,19 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }else{
     bras(-(EP+2),yT+1,bgP>0);
     bras(EP-1,yT+1,bdP>0);
+  }
+  /* la pioche, tenue et balancée */
+  if(fr>0&&typeof dessinerPioche==='function'){
+    const sens=dir==='gauche'?-1:1;
+    const ang=-1.2+lever*2.2;                                   /* du haut vers l'avant */
+    g.save();
+    g.translate(x+sens*(EP+2),y+yT+4);
+    g.rotate(sens*ang);
+    dessinerPioche(g,0,0,1);
+    g.restore();
+    /* le bras qui tient suit le mouvement */
+    R(sens>0?EP-1:-(EP+2),yT+1-Math.round((1-lever)*4),3,9,veste);
+    R(sens>0?EP-1:-(EP+2),yT+10-Math.round((1-lever)*4),3,3,peau);
   }
 
   /* ---- tête ---- */
@@ -1016,6 +1044,50 @@ function dessinerFleurs(g,x,y,gr){
   R(-10,-1,3,1,'#6faa55');R(6,-2,3,1,'#6faa55');
 }
 
+/* --- le coffre : il contient la première pioche --- */
+function dessinerCoffre(g,x,y,ouvert){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3.5,0,0,7);g.fill();
+  R(-11,-14,22,14,'#3a2a1c');                 /* caisse */
+  R(-10,-13,20,12,'#8a6238');
+  R(-10,-13,20,2,'#a5764a');
+  R(-10,-4,20,3,'#6b4a28');
+  R(-10,-9,20,2,'#5f4223');                   /* cerclage */
+  R(-2,-9,4,6,'#c9a24a');                     /* serrure */
+  R(-2,-9,4,1,'#e8c06a');
+  if(ouvert){
+    R(-11,-24,22,10,'#3a2a1c');               /* couvercle relevé */
+    R(-10,-23,20,8,'#7d5934');
+    R(-10,-23,20,2,'#96703f');
+    R(-10,-17,20,2,'#5f4223');
+    R(-6,-13,12,4,'#241a12');                 /* l'intérieur, vide */
+  }else{
+    R(-11,-20,22,7,'#3a2a1c');                /* couvercle fermé, bombé */
+    R(-10,-19,20,5,'#96703f');
+    R(-10,-19,20,2,'#a5764a');
+    R(-10,-15,20,1,'#5f4223');
+  }
+}
+
+/* --- la pioche, posée ou en main --- */
+function dessinerPioche(g,x,y,ech){
+  const k=ech||1;
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a*k,y+b*k,w*k,h*k);};
+  R(-1,-12,2,12,'#8a6238');                   /* manche */
+  R(-1,-12,1,12,'#a5764a');
+  R(-6,-14,12,2,'#7b8288');                   /* fer */
+  R(-6,-14,12,1,'#a2a9b0');
+  R(-7,-13,2,2,'#5f666c');R(5,-13,2,2,'#5f666c');
+}
+
+/* --- les fêlures qui apparaissent sur un rocher frappé --- */
+function felures(g,x,y,part){
+  const R=(a,b,w,h)=>{g.fillStyle='#4a5057';g.fillRect(x+a,y+b,w,h);};
+  if(part>0){R(-2,-14,1,5);R(-1,-10,1,3);}
+  if(part>1){R(3,-17,1,4);R(2,-13,1,4);R(-6,-9,3,1);}
+  if(part>2){R(-5,-16,1,6);R(5,-11,2,1);R(0,-20,1,4);}
+}
+
 /* --- une souche, quand on aura la récolte --- */
 function dessinerSouche(g,x,y){
   const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
@@ -1075,7 +1147,9 @@ const TAILLES={
  arbre:  [{w:10,h:7},{w:12,h:8},{w:12,h:8}],   /* seulement le pied du tronc */
  rocher: [{w:22,h:9},{w:26,h:10},{w:30,h:11}],
  buisson:[{w:24,h:9},{w:30,h:10},{w:24,h:9}],
- fleurs: null                                    /* on marche dedans */
+ fleurs: null,                                   /* on marche dedans */
+ coffre: [{w:22,h:10}],
+ gravats:null
 };
 
 function semerDecor(){
@@ -1127,6 +1201,14 @@ function semerDecor(){
     if(!dedans(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'fleurs',x,y,gr:0});
   }
+  /* le coffre du départ, à quelques pas de la clairière */
+  DECOR=DECOR.filter(o=>Math.hypot(o.x-(MONDE/2+70),o.y-(MONDE/2+54))>44);
+  DECOR.push({t:'coffre',x:MONDE/2+70,y:MONDE/2+54,gr:0});
+
+  /* les rochers déjà cassés ne repoussent pas */
+  const casses=new Set(e.casses||[]);
+  DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has(o.x+','+o.y)));
+
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);
 }
@@ -1193,16 +1275,28 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     const x=o.x-camX, y=o.y-camY;
     if(x<-30||y<-50||x>VW2+30||y>VH2+30)continue;
     if(o.t==='arbre')dessinerArbre(g,x,y,o.gr);
-    else if(o.t==='rocher')dessinerRocher(g,x,y,o.gr);
+    else if(o.t==='rocher'){
+      const sec=(o.frappe&&Date.now()-o.frappe<260)?Math.round(Math.sin(Date.now()/22)*2):0;
+      dessinerRocher(g,x+sec,y,o.gr);
+      if(o.coups)felures(g,x+sec,y,o.coups);
+    }
     else if(o.t==='buisson')dessinerBuisson(g,x,y,o.gr);
     else if(o.t==='fleurs')dessinerFleurs(g,x,y,o.gr);
+    else if(o.t==='coffre')dessinerCoffre(g,x,y,!!e.coffreOuvert);
+    else if(o.t==='gravats'){
+      g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,9,3,0,0,7);g.fill();
+      g.fillStyle='#7b8288';g.fillRect(x-7,y-4,6,4);g.fillRect(x+1,y-5,6,5);
+      g.fillStyle='#8b939a';g.fillRect(x-7,y-4,6,1);g.fillRect(x+1,y-5,6,1);
+      g.fillStyle='#5f666c';g.fillRect(x-7,y-1,14,1);
+    }
   }
   if(!posé)dessinerJoueur();
 }
 
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
-let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0};
+let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
+       outils:{},coffreOuvert:false,casses:[]};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -1300,6 +1394,7 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
+  dessinerParts(ctx,camX,camY);
 
   if(LISIERE)ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
 }
@@ -1391,7 +1486,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
-const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#pan,#sacPage,#page2,#porte'));
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#pan,#sacPage,#page2,#porte'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
 /* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
@@ -1549,9 +1644,104 @@ function ouvrirLook(){
 }
 $('b-look').onclick=ouvrirLook;
 $('b-sac').onclick=()=>ouvrirSac();
+$('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirBatir();
 $('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
+
+/* ================= frapper, ramasser ================= */
+let GESTE={t:0,cible:null};
+let PARTS=[];                                   /* éclats de pierre */
+function eclats(x,y,n,col){
+  for(let i=0;i<n;i++)PARTS.push({x,y,vx:(Math.random()-.5)*70,vy:-20-Math.random()*50,
+    vie:1,c:col||'#8b939a'});
+}
+function majParts(dt){
+  for(let i=PARTS.length-1;i>=0;i--){
+    const p=PARTS[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=120*dt;p.vie-=dt*1.4;
+    if(p.vie<=0)PARTS.splice(i,1);
+  }
+}
+function dessinerParts(g,camX,camY){
+  PARTS.forEach(p=>{
+    g.globalAlpha=Math.max(0,p.vie);
+    g.fillStyle=p.c;
+    g.fillRect(Math.round(p.x-camX),Math.round(p.y-camY),2,2);
+  });
+  g.globalAlpha=1;
+}
+/* ce qui est à portée de main */
+function cible(){
+  let d0=46,res=null;
+  for(const o of DECOR){
+    if(o.t!=='rocher'&&o.t!=='coffre')continue;
+    const d=Math.hypot(o.x-joueur.x,o.y-joueur.y-6);
+    if(d<d0){d0=d;res=o;}
+  }
+  return res;
+}
+function majAction(){
+  const b=$('action');
+  const o=cible();
+  if(!o||GESTE.t>0){b.classList.remove('on');return;}
+  if(o.t==='coffre'){
+    if(e.coffreOuvert){b.classList.remove('on');return;}
+    b.innerHTML='Ouvrir<small>LE COFFRE</small>';
+  }else{
+    if(!e.outils.pioche){b.innerHTML='Il faut une pioche<small>ROCHER</small>';}
+    else b.innerHTML='Casser<small>ROCHER · '+(3-(o.coups||0))+' COUPS</small>';
+  }
+  b.classList.add('on');
+}
+function agir(){
+  const o=cible();if(!o||GESTE.t>0)return;
+  if(o.t==='coffre'){
+    if(e.coffreOuvert)return;
+    e.coffreOuvert=true;e.outils.pioche=true;
+    sauver();majPastille();majAction();
+    eclats(o.x,o.y-14,10,'#e8c06a');
+    ouvrirPage('Le coffre','TU L’AS OUVERT',
+      '<div class="recette"><span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
+      'border:1px solid #6b5136;display:flex;align-items:center;justify-content:center;flex:0 0 auto">'+
+      '<svg viewBox="0 0 16 16" width="26">'+ICONES.pioche+'</svg></span>'+
+      '<span class="tx"><b>Pioche</b><span>Une vieille pioche, encore solide. '+
+      'Approche-toi d’un rocher et frappe : trois coups suffisent.</span></span></div>',false);
+    return;
+  }
+  /* un rocher : on frappe */
+  if(!e.outils.pioche)return;
+  GESTE={t:1,cible:o};
+  joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
+            :(o.y>joueur.y?'bas':'haut');
+  try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
+}
+function majGeste(dt){
+  if(GESTE.t<=0)return;
+  const avant=GESTE.t;
+  GESTE.t=Math.max(0,GESTE.t-dt*2.6);
+  /* l'impact se produit au milieu du geste */
+  if(avant>0.45&&GESTE.t<=0.45){
+    const o=GESTE.cible;
+    if(o&&DECOR.includes(o)){
+      o.coups=(o.coups||0)+1;o.frappe=Date.now();
+      eclats(o.x,o.y-12,7);
+      try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
+      if(o.coups>=3){
+        eclats(o.x,o.y-10,18);
+        const q=2+Math.floor(Math.random()*2);
+        const pris=ajouter('pierre',q);
+        e.recolte=(e.recolte||0)+pris;
+        e.score=(e.score||0)+5;
+        e.casses.push(o.x+','+o.y);
+        DECOR.splice(DECOR.indexOf(o),1);
+        DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0});
+        sauver();monterEnLigne(true);
+      }
+    }
+  }
+  if(GESTE.t<=0){GESTE.cible=null;majAction();}
+}
 
 /* ================= le sac ================= */
 const OBJETS={
@@ -1570,12 +1760,17 @@ const ICONES={
  fibre:'<rect x="6" y="3" width="4" height="10" fill="#a8b06a"/><rect x="6" y="3" width="2" height="10" fill="#c2c983"/>'+
       '<rect x="4" y="6" width="2" height="6" fill="#98a05e"/><rect x="10" y="5" width="2" height="7" fill="#98a05e"/>'+
       '<rect x="6" y="12" width="4" height="1" fill="#7d8449"/>',
+pioche:'<rect x="7" y="4" width="2" height="9" fill="#8a6238"/><rect x="7" y="4" width="1" height="9" fill="#a5764a"/>'+
+      '<rect x="3" y="2" width="10" height="2" fill="#7b8288"/><rect x="3" y="2" width="10" height="1" fill="#a2a9b0"/>'+
+      '<rect x="2" y="3" width="2" height="2" fill="#5f666c"/><rect x="12" y="3" width="2" height="2" fill="#5f666c"/>',
  baies:'<rect x="4" y="7" width="4" height="4" fill="#c94a4a"/><rect x="4" y="7" width="2" height="2" fill="#e2604a"/>'+
       '<rect x="8" y="9" width="4" height="4" fill="#a83a3a"/><rect x="8" y="9" width="2" height="2" fill="#c94a4a"/>'+
       '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/><rect x="7" y="3" width="2" height="2" fill="#7db35d"/>'
 };
 const CHARGE_MAX=60;
 if(!e.sac)e.sac={};
+if(!e.outils)e.outils={};
+if(!e.casses)e.casses=[];
 const combien=k=>e.sac[k]||0;
 const charge=()=>Object.entries(e.sac).reduce((a,[k,n])=>a+n*((OBJETS[k]||{poids:1}).poids),0);
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
@@ -1614,7 +1809,9 @@ function ouvrirSac(){
      '<div class="sacTit">RESSOURCES</div>'+
      '<div class="grille">'+pleines.join('')+vides.join('')+'</div>'+
      '<div class="sacTit">OUTILS</div>'+
-     '<div class="grille">'+Array.from({length:4},()=>'<span class="kase vide"></span>').join('')+'</div>'+
+     '<div class="grille">'+
+       (e.outils.pioche?'<span class="kase on"><svg viewBox="0 0 16 16" width="32">'+ICONES.pioche+'</svg></span>':'')+
+       Array.from({length:e.outils.pioche?3:4},()=>'<span class="kase vide"></span>').join('')+'</div>'+
    '</div>'+
    (o?'<div class="fiche"><span class="ic"><svg viewBox="0 0 16 16" width="28">'+ICONES[choisi]+'</svg></span>'+
       '<span class="tx"><b>'+o.nom+'</b><span>'+o.d+'</span></span>'+
@@ -1798,7 +1995,7 @@ let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoueur(dt);dessiner();
+  majJoueur(dt);majGeste(dt);majParts(dt);majAction();dessiner();
   if(fondu>0){                                /* voile noir qui s'efface au départ */
     fondu=Math.max(0,fondu-dt*1.6);
     ctx.setTransform(1,0,0,1,0,0);
