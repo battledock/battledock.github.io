@@ -374,6 +374,25 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const yT=-JH-TH;                 /* haut du torse  = -28 */
   const yTete=yT-HT-2;             /* la tête est décollée du torse : le cou apparaît */
 
+  /* ---- le geste de frappe, en trois temps ----
+     1 → 0,58 : l'élan, la pioche part en arrière
+     0,58 → 0,42 : l'abattage, très rapide
+     0,42 → 0   : la reprise, le corps se redresse                */
+  const fr=(typeof GESTE!=='undefined'&&GESTE.t>0)?GESTE.t:0;
+  let phase=0, arc=0, penche=0, tasse=0;
+  if(fr>0){
+    if(fr>0.58){
+      const t=(1-fr)/0.42;
+      arc=-1.45*doux(t);penche=-doux(t)*1.6;tasse=doux(t)*1.2;phase=1;
+    }else if(fr>0.42){
+      const t=(0.58-fr)/0.16;
+      arc=-1.45+entreRap(t)*2.75;penche=-1.6+t*4.4;tasse=1.2-t*2.4;phase=2;
+    }else{
+      const t=1-fr/0.42;
+      arc=1.3*(1-sortRap(t));penche=2.8*(1-sortRap(t));tasse=-1.2*(1-sortRap(t));phase=3;
+    }
+  }
+
   R(-6,1,12,2,'rgba(40,60,28,.42)');
 
   /* sac */
@@ -473,7 +492,9 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
 
   /* ---- torse : la coupe du vêtement suit la silhouette ---- */
   const colH=veste, colHC=vesteC, colHO=vesteO, colHT=vesteT;
-  R(-EP,yT-1,EP*2,TH+1,N);                       /* contour aux épaules */
+  const pen=fr>0?Math.round(penche*(dir==='gauche'?-1:1)):0;   /* il se penche dans l'effort */
+  const tas=fr>0?Math.max(0,Math.round(tasse)):0;              /* et se tasse */
+  R(-EP+pen,yT-1+tas,EP*2,TH+1-tas,N);           /* contour aux épaules */
   R(-EP+1,yT,EP*2-2,3,colH);                     /* les épaules */
   R(-EP+1,yT,EP*2-2,2,colHC);
   for(let i=3;i<TH-1;i++){                       /* le buste, resserré à la taille */
@@ -525,10 +546,6 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     R(-EP+2,yT+6,EP*2-6,1,teint(sacC,-24));
   }
 
-  /* ---- le geste de frappe : le bras et la pioche se lèvent puis s'abattent ---- */
-  const fr=(typeof GESTE!=='undefined'&&GESTE.t>0)?GESTE.t:0;   /* 1 → 0 pendant le coup */
-  const lever=fr>0?(fr>0.55?(1-fr)/0.45:fr/0.55):0;             /* 0 en haut, 1 à l'impact */
-
   /* ---- bras : la manche s'arrête selon le vêtement ---- */
   const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
                 'gilet':0,'t-shirt':4,'débardeur':0}[hautT];
@@ -548,22 +565,27 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     bras(-(EP+2),yT+1,bgP>0);
     bras(EP-1,yT+1,bdP>0);
   }
-  /* la pioche, tenue et balancée */
+  /* la pioche, et le bras qui la porte */
   if(fr>0&&typeof dessinerPioche==='function'){
     const sens=dir==='gauche'?-1:1;
-    const ang=-1.2+lever*2.2;                                   /* du haut vers l'avant */
+    const epx=sens>0?EP-1:-(EP+2);
+    const ey=yT+1-Math.round(tasse*3);            /* l'épaule monte à l'élan, plonge au coup */
+    R(epx,ey,3,9,veste);
+    R(epx,ey,3,2,vesteC);
+    R(epx,ey+9,3,3,peau);
     g.save();
-    g.translate(x+sens*(EP+2),y+yT+4);
-    g.rotate(sens*ang);
+    g.translate(x+epx+1.5,y+ey+2);
+    g.rotate(sens*arc);
     dessinerPioche(g,0,0,1);
+    if(phase===2){                                /* traînée pendant l'abattage */
+      g.globalAlpha=.3;g.fillStyle='#f2f5f8';
+      g.fillRect(-1,-15,2,13);g.globalAlpha=1;
+    }
     g.restore();
-    /* le bras qui tient suit le mouvement */
-    R(sens>0?EP-1:-(EP+2),yT+1-Math.round((1-lever)*4),3,9,veste);
-    R(sens>0?EP-1:-(EP+2),yT+10-Math.round((1-lever)*4),3,3,peau);
   }
 
   /* ---- tête ---- */
-  const YT=yTete;                              /* la tête reste stable */
+  const YT=yTete+(fr>0?Math.round(tasse*1.2):0);  /* la tête plonge avec le buste */
   R(-3,yT-3+Y,6,4-Y,N);                        /* le cou s'étire quand le corps descend */
   R(-2,yT-2+Y,4,3-Y,peau);
   R(-2,yT-2+Y,4,1,peauT);                      /* ombre du menton */
@@ -1045,8 +1067,9 @@ function dessinerFleurs(g,x,y,gr){
 }
 
 /* --- le coffre : il contient la première pioche --- */
-function dessinerCoffre(g,x,y,ouvert){
+function dessinerCoffre(g,x,y,ouvert,ouverture){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const k=ouverture===undefined?(ouvert?1:0):ouverture;
   g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3.5,0,0,7);g.fill();
   R(-11,-14,22,14,'#3a2a1c');                 /* caisse */
   R(-10,-13,20,12,'#8a6238');
@@ -1055,18 +1078,20 @@ function dessinerCoffre(g,x,y,ouvert){
   R(-10,-9,20,2,'#5f4223');                   /* cerclage */
   R(-2,-9,4,6,'#c9a24a');                     /* serrure */
   R(-2,-9,4,1,'#e8c06a');
-  if(ouvert){
-    R(-11,-24,22,10,'#3a2a1c');               /* couvercle relevé */
-    R(-10,-23,20,8,'#7d5934');
-    R(-10,-23,20,2,'#96703f');
-    R(-10,-17,20,2,'#5f4223');
-    R(-6,-13,12,4,'#241a12');                 /* l'intérieur, vide */
-  }else{
-    R(-11,-20,22,7,'#3a2a1c');                /* couvercle fermé, bombé */
-    R(-10,-19,20,5,'#96703f');
-    R(-10,-19,20,2,'#a5764a');
-    R(-10,-15,20,1,'#5f4223');
+  /* le couvercle bascule : il s'écrase puis se relève en arrière */
+  const h=Math.round(7-4*k);                  /* il se raccourcit en pivotant */
+  const dy=Math.round(-13-8*k);
+  if(k>0.15)R(-8,-13,16,4,'#241a12');         /* l'intérieur apparaît */
+  if(k>0.45){
+    g.globalAlpha=Math.min(.5,(k-0.45)*1.6);  /* une lueur sort du coffre */
+    g.fillStyle='#f0cf7d';
+    g.fillRect(x-7,y-15,14,4);
+    g.globalAlpha=1;
   }
+  R(-11,dy-1,22,h+2,'#3a2a1c');
+  R(-10,dy,20,h,k>0.5?'#7d5934':'#96703f');
+  R(-10,dy,20,2,k>0.5?'#96703f':'#a5764a');
+  R(-10,dy+h-1,20,1,'#5f4223');
 }
 
 /* --- la pioche, posée ou en main --- */
@@ -1273,18 +1298,44 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     if(x<-30||y<-50||x>VW2+30||y>VH2+30)continue;
     if(o.t==='arbre')dessinerArbre(g,x,y,o.gr);
     else if(o.t==='rocher'){
-      const sec=(o.frappe&&Date.now()-o.frappe<260)?Math.round(Math.sin(Date.now()/22)*2):0;
-      dessinerRocher(g,x+sec,y,o.gr);
-      if(o.coups)felures(g,x+sec,y,o.coups);
+      let dx=0,dy=0,ecrase=0;
+      if(o.frappe){
+        const e2=(Date.now()-o.frappe)/320;               /* 0 → 1 après le coup */
+        if(e2<1){
+          const amorti=Math.exp(-e2*6)*Math.cos(e2*26);   /* il vibre puis se calme */
+          dx=Math.round(amorti*3);
+          dy=Math.round(Math.abs(amorti)*2);
+          ecrase=amorti*0.12;
+        }
+      }
+      g.save();
+      g.translate(x+dx,y+dy);
+      if(ecrase)g.scale(1+ecrase,1-ecrase);              /* il s'écrase à l'impact */
+      dessinerRocher(g,0,0,o.gr);
+      if(o.coups)felures(g,0,0,o.coups);
+      g.restore();
+      /* un éclair blanc au moment du coup */
+      if(o.frappe&&Date.now()-o.frappe<70){
+        g.globalAlpha=.5;g.fillStyle='#fff';
+        g.fillRect(x-12,y-22,24,20);g.globalAlpha=1;
+      }
     }
     else if(o.t==='buisson')dessinerBuisson(g,x,y,o.gr);
     else if(o.t==='fleurs')dessinerFleurs(g,x,y,o.gr);
-    else if(o.t==='coffre')dessinerCoffre(g,x,y,!!e.coffreOuvert);
+    else if(o.t==='coffre'){
+      let k=e.coffreOuvert?1:0;
+      if(e.coffreQuand){const t=Math.min(1,(Date.now()-e.coffreQuand)/500);k=rebond(t)*0.94;}
+      dessinerCoffre(g,x,y,!!e.coffreOuvert,k);
+    }
     else if(o.t==='gravats'){
-      g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,9,3,0,0,7);g.fill();
-      g.fillStyle='#7b8288';g.fillRect(x-7,y-4,6,4);g.fillRect(x+1,y-5,6,5);
-      g.fillStyle='#8b939a';g.fillRect(x-7,y-4,6,1);g.fillRect(x+1,y-5,6,1);
-      g.fillStyle='#5f666c';g.fillRect(x-7,y-1,14,1);
+      let k=1;
+      if(o.neuf){const t=Math.min(1,(Date.now()-o.neuf)/420);k=rebond(t);}
+      g.save();g.translate(x,y);g.scale(1,k);
+      g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(1,-1,9,3,0,0,7);g.fill();
+      g.fillStyle='#7b8288';g.fillRect(-7,-4,6,4);g.fillRect(1,-5,6,5);
+      g.fillStyle='#8b939a';g.fillRect(-7,-4,6,1);g.fillRect(1,-5,6,1);
+      g.fillStyle='#5f666c';g.fillRect(-7,-1,14,1);
+      g.restore();
     }
   }
   if(!posé)dessinerJoueur();
@@ -1397,7 +1448,9 @@ function dessiner(){
   const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
   const fy=Math.round((camYf-camY)*ECH)/ECH;
 
-  ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH),Math.round(-fy*ECH));
+  const sx=SECOUSSE>0.01?Math.round((Math.random()-.5)*SECOUSSE*4)*ECH:0;
+  const sy=SECOUSSE>0.01?Math.round((Math.random()-.5)*SECOUSSE*4)*ECH:0;
+  ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH)+sx,Math.round(-fy*ECH)+sy);
   ctx.imageSmoothingEnabled=false;
 
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
@@ -1410,6 +1463,7 @@ function dessiner(){
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
   dessinerParts(ctx,camX,camY);
+  dessinerTextes(ctx,camX,camY);
   /* tant que le coffre n'est pas ouvert, une flèche indique où il est */
   if(!e.coffreOuvert&&e.coffre){
     const cx=e.coffre[0]-camX, cy=e.coffre[1]-camY;
@@ -1683,25 +1737,91 @@ $('b-batir').onclick=()=>ouvrirBatir();
 $('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
 
+/* ================= petites fonctions d'aisance ================= */
+const doux    =t=>t*t*(3-2*t);                 /* départ et arrivée adoucis */
+const sortRap =t=>1-Math.pow(1-t,3);           /* part vite, finit lentement */
+const entreRap=t=>t*t*t;                       /* part lentement, finit vite */
+const rebond  =t=>{const n=7.5625,d=2.75;
+  if(t<1/d)return n*t*t;
+  if(t<2/d){t-=1.5/d;return n*t*t+.75;}
+  if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
+  t-=2.625/d;return n*t*t+.984375;};
+
 /* ================= frapper, ramasser ================= */
+let SECOUSSE=0, ARRET=0;                        /* secousse de l'image, et micro-arrêt à l'impact */
+function secouer(f){SECOUSSE=Math.max(SECOUSSE,f);}
+
+let TEXTES=[];                                  /* les gains qui montent */
+function texteVolant(x,y,txt,col){TEXTES.push({x,y,txt,col:col||'#f2e6cc',vie:1});}
+function majTextes(dt){
+  for(let i=TEXTES.length-1;i>=0;i--){
+    TEXTES[i].y-=26*dt;TEXTES[i].vie-=dt*0.9;
+    if(TEXTES[i].vie<=0)TEXTES.splice(i,1);
+  }
+}
+function dessinerTextes(g,camX,camY){
+  TEXTES.forEach(t=>{
+    g.globalAlpha=Math.min(1,t.vie*1.6);
+    g.font='700 9px ui-monospace,monospace';g.textAlign='center';
+    g.fillStyle='rgba(10,16,10,.55)';g.fillText(t.txt,t.x-camX+1,t.y-camY+1);
+    g.fillStyle=t.col;g.fillText(t.txt,t.x-camX,t.y-camY);
+  });
+  g.globalAlpha=1;g.textAlign='left';
+}
+
+/* les objets qui filent vers le sac, en arc */
+let VOLS=[];
+function volVersSac(xEcran,yEcran,icone){VOLS.push({x:xEcran,y:yEcran,t:0,ic:icone});}
+function majVols(dt){
+  for(let i=VOLS.length-1;i>=0;i--){VOLS[i].t+=dt*1.8;if(VOLS[i].t>=1)VOLS.splice(i,1);}
+}
+function dessinerVols(g,W,H){
+  const cible={x:W*0.12,y:H-52};                /* la latte du sac */
+  VOLS.forEach(v=>{
+    const t=doux(Math.min(1,v.t));
+    const x=v.x+(cible.x-v.x)*t;
+    const y=v.y+(cible.y-v.y)*t-Math.sin(t*Math.PI)*30;   /* la cloche */
+    const k=1-t*0.5;
+    g.save();g.translate(x,y);g.scale(k,k);g.rotate(t*4);
+    g.fillStyle='#8b939a';g.fillRect(-3,-3,6,6);
+    g.fillStyle='#b7bec4';g.fillRect(-3,-3,6,2);
+    g.restore();
+  });
+}
 let GESTE={t:0,cible:null};
 let PARTS=[];                                   /* éclats de pierre */
-function eclats(x,y,n,col){
-  for(let i=0;i<n;i++)PARTS.push({x,y,vx:(Math.random()-.5)*70,vy:-20-Math.random()*50,
-    vie:1,c:col||'#8b939a'});
+const TEINTES_PIERRE=['#a2a9b0','#8b939a','#7b8288','#5f666c'];
+function eclats(x,y,n,col,force){
+  const f=force||1;
+  for(let i=0;i<n;i++){
+    const a=Math.random()*6.283, v=(30+Math.random()*90)*f;
+    PARTS.push({x,y,vx:Math.cos(a)*v,vy:-Math.abs(Math.sin(a))*v-20*f,
+      vie:.7+Math.random()*.6,taille:1+Math.floor(Math.random()*3),
+      rot:Math.random()*6.28,vrot:(Math.random()-.5)*14,
+      c:col||TEINTES_PIERRE[Math.floor(Math.random()*4)],rebondi:false});
+  }
 }
 function majParts(dt){
   for(let i=PARTS.length-1;i>=0;i--){
     const p=PARTS[i];
-    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=120*dt;p.vie-=dt*1.4;
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=220*dt;
+    p.rot+=p.vrot*dt;
+    p.vie-=dt*1.1;
+    if(p.vy>0&&!p.rebondi&&p.vy>40&&Math.random()<dt*7){   /* un rebond au sol */
+      p.vy*=-0.35;p.vx*=0.6;p.rebondi=true;
+    }
     if(p.vie<=0)PARTS.splice(i,1);
   }
 }
 function dessinerParts(g,camX,camY){
   PARTS.forEach(p=>{
-    g.globalAlpha=Math.max(0,p.vie);
-    g.fillStyle=p.c;
-    g.fillRect(Math.round(p.x-camX),Math.round(p.y-camY),2,2);
+    g.globalAlpha=Math.min(1,Math.max(0,p.vie)*1.5);
+    const t=p.taille;
+    g.save();
+    g.translate(Math.round(p.x-camX),Math.round(p.y-camY));
+    g.rotate(p.rot);
+    g.fillStyle=p.c;g.fillRect(-t/2,-t/2,t,t);
+    g.restore();
   });
   g.globalAlpha=1;
 }
@@ -1732,9 +1852,12 @@ function agir(){
   const o=cible();if(!o||GESTE.t>0)return;
   if(o.t==='coffre'){
     if(e.coffreOuvert)return;
-    e.coffreOuvert=true;e.outils.pioche=true;
+    e.coffreOuvert=true;e.outils.pioche=true;e.coffreQuand=Date.now();
     sauver();majPastille();majAction();
-    eclats(o.x,o.y-14,10,'#e8c06a');
+    eclats(o.x,o.y-14,14,'#f0cf7d',1.2);
+    secouer(0.35);
+    texteVolant(o.x,o.y-30,'pioche !','#f0cf7d');
+    try{navigator.vibrate&&navigator.vibrate([10,40,20]);}catch(x){}
     ouvrirPage('Le coffre','TU L’AS OUVERT',
       '<div class="recette"><span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
       'border:1px solid #6b5136;display:flex;align-items:center;justify-content:center;flex:0 0 auto">'+
@@ -1745,36 +1868,55 @@ function agir(){
   }
   /* un rocher : on frappe */
   if(!e.outils.pioche)return;
-  GESTE={t:1,cible:o};
+  GESTE={t:1,cible:o,impact:false};
   joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
             :(o.y>joueur.y?'bas':'haut');
-  try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
+  try{navigator.vibrate&&navigator.vibrate(10);}catch(x){}
 }
 function majGeste(dt){
   if(GESTE.t<=0)return;
   const avant=GESTE.t;
-  GESTE.t=Math.max(0,GESTE.t-dt*2.6);
-  /* l'impact se produit au milieu du geste */
-  if(avant>0.45&&GESTE.t<=0.45){
+  GESTE.t=Math.max(0,GESTE.t-dt*2.3);
+  /* l'impact tombe aux deux tiers du geste, après l'élan */
+  if(avant>0.42&&GESTE.t<=0.42){
     const o=GESTE.cible;
     if(o&&DECOR.includes(o)){
-      o.coups=(o.coups||0)+1;o.frappe=Date.now();
-      eclats(o.x,o.y-12,7);
-      try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
+      o.coups=(o.coups||0)+1;o.frappe=Date.now();o.recul=1;
+      eclats(o.x,o.y-12,9,null,1);
+      poussiere(o.x,o.y,6);
+      secouer(0.6);ARRET=0.055;                      /* l'image se fige un instant */
+      try{navigator.vibrate&&navigator.vibrate(16);}catch(x){}
       if(o.coups>=3){
-        eclats(o.x,o.y-10,18);
+        eclats(o.x,o.y-10,24,null,1.6);
+        poussiere(o.x,o.y,14);
+        secouer(1.3);ARRET=0.085;
+        try{navigator.vibrate&&navigator.vibrate([12,30,26]);}catch(x){}
         const q=2+Math.floor(Math.random()*2);
         const pris=ajouter('pierre',q);
         e.recolte=(e.recolte||0)+pris;
         e.score=(e.score||0)+5;
         e.casses.push(o.x+','+o.y);
         DECOR.splice(DECOR.indexOf(o),1);
-        DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0});
+        DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
+        texteVolant(o.x,o.y-22,'+'+pris+' pierre','#cfd6db');
+        texteVolant(o.x,o.y-34,'+5 pts','#a9c96a');
+        for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'pierre'),i*90);
         sauver();monterEnLigne(true);
+      }else{
+        texteVolant(o.x,o.y-20,(3-o.coups)+' coup'+(o.coups<2?'s':''),'#c9cfd4');
       }
     }
   }
   if(GESTE.t<=0){GESTE.cible=null;majAction();}
+}
+/* la poussière soulevée au pied d'un rocher */
+function poussiere(x,y,n){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*3.14-3.14;
+    PARTS.push({x:x+(Math.random()-.5)*14,y,vx:Math.cos(a)*40,vy:-Math.random()*22,
+      vie:.5+Math.random()*.5,taille:2+Math.floor(Math.random()*2),rot:0,vrot:0,
+      c:'rgba(190,178,150,.7)',rebondi:true});
+  }
 }
 
 /* ================= le sac ================= */
@@ -2029,7 +2171,16 @@ let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoueur(dt);majGeste(dt);majParts(dt);majAction();dessiner();
+  /* micro-arrêt à l'impact : tout se fige un instant, ça donne du poids */
+  if(ARRET>0){ARRET-=dt;}
+  else{
+    majJoueur(dt);majGeste(dt);
+  }
+  majParts(dt);majTextes(dt);majVols(dt);majAction();
+  if(SECOUSSE>0.01)SECOUSSE*=Math.pow(0.0009,dt);else SECOUSSE=0;
+  dessiner();
+  ctx.setTransform(1,0,0,1,0,0);
+  dessinerVols(ctx,cv.width,cv.height);
   if(fondu>0){                                /* voile noir qui s'efface au départ */
     fondu=Math.max(0,fondu-dt*1.6);
     ctx.setTransform(1,0,0,1,0,0);
