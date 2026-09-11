@@ -82,6 +82,35 @@ body{overflow:hidden}
   font:600 10.5px system-ui;color:#c9a24a}
 .recette button:disabled{opacity:.45}
 .vide2{text-align:center;font:400 11.5px/1.6 system-ui;color:#a89070;padding:26px 12px}
+
+/* ---- page claire : le classement ---- */
+.clair{background:#f7f7f3}
+.clair .rabat{background:#fff;border-bottom:1px solid #edece6;box-shadow:none}
+.clair .rabat::after{display:none}
+.clair .sacX{background:#f2f2ee;border:0;color:#63635c}
+.clair .sacT{color:#14170f}
+.clair .sacS{color:#a8a89e}
+.clair .boucle{display:none}
+.clair::before{display:none}
+.fiche2{display:flex;gap:12px;padding:11px 12px;border-radius:16px;background:#fff;
+  box-shadow:0 2px 8px rgba(30,35,25,.09);position:relative;overflow:hidden;margin-bottom:9px}
+.fiche2 .lis{position:absolute;left:0;top:0;bottom:0;width:5px}
+.fiche2 .vig{width:48px;height:62px;border-radius:10px;background:#8ec96f;margin-left:4px;
+  display:flex;align-items:flex-end;justify-content:center;overflow:hidden;flex:0 0 auto;
+  box-shadow:inset 0 1px 3px rgba(20,50,15,.2)}
+.fiche2 .vig canvas{image-rendering:pixelated;display:block}
+.fiche2 .tx{flex:1;min-width:0}
+.fiche2 .nom{font:400 16px Georgia,serif;color:#1b1f19}
+.fiche2 .rg{font:600 8.5px system-ui;letter-spacing:1.4px}
+.fiche2 .ets{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.fiche2 .et{font:600 9px system-ui;font-style:normal;padding:3px 8px;border-radius:8px;
+  background:#f4f3ee;color:#8a8a82;border:1px solid #e7e5dd}
+.fiche2 .et.vert{background:#f1f8ef;color:#3f8a4e;border-color:#cde6c8}
+.fiche2 .pts{display:block;font:400 21px Georgia,serif;color:#63635c;line-height:1;text-align:right}
+.fiche2 .ptsL{display:block;font:600 8px system-ui;letter-spacing:1px;color:#a8a89e;margin-top:3px;text-align:right}
+.fiche2.toi{border:2px solid #3f7d4a;box-shadow:0 3px 10px rgba(63,125,74,.18)}
+.fiche2.toi .pts{color:#3f7d4a}
+.vide3{text-align:center;font:400 11.5px/1.6 system-ui;color:#8a8a82;padding:30px 14px}
 #sacPage.on{display:block}
 .sacFond{position:absolute;inset:0;background:#33291f;display:flex;flex-direction:column;
   animation:sm .24s cubic-bezier(.2,.85,.3,1)}
@@ -1602,7 +1631,8 @@ function ouvrirSac(){
 }
 
 /* ================= une page, même toile que le sac ================= */
-function ouvrirPage(titre,sous,corps){
+function ouvrirPage(titre,sous,corps,clair){
+  $('page2Fond').className='sacFond'+(clair?' clair':'');
   $('page2Fond').innerHTML=
    '<div class="rabat"><button class="sacX" id="p2-x">✕</button>'+
      '<span><span class="sacT">'+titre+'</span><span class="sacS">'+sous+'</span></span>'+
@@ -1636,7 +1666,7 @@ function ouvrirBatir(){
   }).join('')+
   '<div class="vide2">La pose sur le terrain arrive à l’étape suivante.<br>'+
   'Pour l’instant, cette page montre ce que tu pourras construire et ce qu’il te manque.</div>';
-  ouvrirPage('Bâtir','CE QUE TU PEUX CONSTRUIRE',corps);
+  ouvrirPage('Bâtir','CE QUE TU PEUX CONSTRUIRE',corps,false);
 }
 
 /* ================= le classement ================= */
@@ -1652,41 +1682,53 @@ async function chargerClassement(){
 }
 function vignette(ap){
   const c=document.createElement('canvas');
-  c.width=34;c.height=46;
+  c.width=48;c.height=62;
   const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
   g.setTransform(1,0,0,1,0,0);
-  for(let y=0;y<46;y+=8)for(let x=0;x<34;x+=8){
-    g.fillStyle='#4a7d3f';g.fillRect(x,y,8,8);
-    g.fillStyle='#59914b';g.fillRect(x+1,y+2,1,2);
+  for(let y=0;y<62;y+=8)for(let x=0;x<48;x+=8){
+    g.fillStyle='#8ec96f';g.fillRect(x,y,8,8);
+    g.fillStyle='#9ed47c';g.fillRect(x+1,y+2,1,2);
+    g.fillStyle='#7db35d';g.fillRect(x+5,y+5,1,2);
   }
-  sprite(g,17,45,Object.assign({},DEF_AP,ap||{}),'bas',0,false);
+  g.save();g.translate(24,60);g.scale(1.15,1.15);
+  sprite(g,0,0,Object.assign({},DEF_AP,ap||{}),'bas',0,false);
+  g.restore();
   return c;
 }
 async function ouvrirClassement(){
   if(classementEnCours)return;
   classementEnCours=true;
-  ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',
-    '<div class="vide2">On rassemble les survivants…</div>');
+  ouvrirPage('Classement','LES SURVIVANTS','<div class="vide3">On rassemble les survivants…</div>',true);
   await chargerClassement();
   classementEnCours=false;
   if(!CLASSEMENT.length){
-    return ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',
-      '<div class="vide2">Personne n’est encore enregistré.<br>Reviens quand d’autres auront joué.</div>');
+    return ouvrirPage('Classement','LES SURVIVANTS',
+      '<div class="vide3">Personne n’est encore enregistré.<br>Reviens quand d’autres auront joué.</div>',true);
   }
+  const liserés=['linear-gradient(180deg,#f0c75a,#c2952f)',
+                 'linear-gradient(180deg,#d4d9de,#a8b0b7)',
+                 'linear-gradient(180deg,#dda86e,#b5793f)'];
+  const couleursRang=['#c2952f','#9aa1a8','#b5793f'];
+  const rangs=['1ᵉʳ','2ᵉ','3ᵉ'];
   const corps=CLASSEMENT.map((j,i)=>{
     const moi=j.id===e.id;
-    const cl=i===0?' or':i===1?' arg':i===2?' bro':'';
     const vu=j.maj?Math.round((Date.now()-new Date(j.maj).getTime())/60000):null;
-    const quand=vu===null?'':(vu<3?'en ligne':vu<60?'il y a '+vu+' min':
-      vu<1440?'il y a '+Math.round(vu/60)+' h':'il y a '+Math.round(vu/1440)+' j');
-    return '<div class="ligne'+(moi?' toi':'')+'">'+
-      '<span class="rang'+cl+'">'+(i+1)+'</span>'+
+    const enLigne=vu!==null&&vu<3;
+    const quand=vu===null?'':(enLigne?'● en ligne':vu<60?'vu il y a '+vu+' min':
+      vu<1440?'vu il y a '+Math.round(vu/60)+' h':'vu il y a '+Math.round(vu/1440)+' j');
+    const ets='<i class="et'+(enLigne?' vert':'')+'">'+quand+'</i>'+
+      ((j.recolte||0)>0?'<i class="et">'+j.recolte+' récolté</i>':'');
+    return '<div class="fiche2'+(moi?' toi':'')+'">'+
+      '<span class="lis" style="background:'+(liserés[i]||'#e7e5dd')+'"></span>'+
       '<span class="vig" data-ap="'+i+'"></span>'+
-      '<span class="tx"><b>'+(j.pseudo||'sans nom')+(moi?' · toi':'')+'</b><span>'+quand+'</span></span>'+
-      '<span class="pts">'+(j.score||0)+'</span></div>';
+      '<span class="tx"><span style="display:flex;align-items:baseline;gap:8px">'+
+        '<span class="nom">'+(j.pseudo||'sans nom')+(moi?' · toi':'')+'</span>'+
+        '<span class="rg" style="color:'+(couleursRang[i]||'#a8a89e')+'">'+(rangs[i]||(i+1)+'ᵉ')+'</span></span>'+
+        '<span class="ets">'+ets+'</span></span>'+
+      '<span><b class="pts">'+(j.score||0)+'</b><span class="ptsL">POINTS</span></span></div>';
   }).join('');
-  ouvrirPage('Classement','LES SURVIVANTS DU SERVEUR',corps);
+  ouvrirPage('Classement',CLASSEMENT.length+' SURVIVANT'+(CLASSEMENT.length>1?'S':''),corps,true);
   $('page2Fond').querySelectorAll('[data-ap]').forEach(sp=>{
     sp.appendChild(vignette(CLASSEMENT[+sp.dataset.ap].apparence));
   });
