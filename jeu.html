@@ -1683,6 +1683,7 @@ async function monterEnLigne(force){
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
       body:JSON.stringify({id:e.id,pseudo:e.pseudo||'sans nom',apparence:e.ap,
         x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
+        geste:(GESTE.t>0?(GESTE.type||'pioche'):null),lieu:'terrain',
         score:e.score||0,recolte:e.recolte||0,
         maj:new Date().toISOString()})});
   }catch(x){}
@@ -1777,6 +1778,7 @@ function dessiner(){
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
+  dessinerAutres(ctx,camX,camY);
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
   dessinerParts(ctx,camX,camY);
@@ -2125,6 +2127,15 @@ function dessinerMini(){
   g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
   g.stroke();
 
+  /* les autres survivants à portée */
+  for(const [,a] of AUTRES){
+    if(Math.abs(a.x-joueur.x)>RAYON_VUE||Math.abs(a.y-joueur.y)>RAYON_VUE)continue;
+    const ax=px(a.x), ay=py(a.y);
+    g.fillStyle='rgba(127,216,232,.25)';g.beginPath();g.arc(ax,ay,10,0,7);g.fill();
+    g.fillStyle='#7fd8e8';g.beginPath();g.arc(ax,ay,5,0,7);g.fill();
+    g.strokeStyle='#fff';g.lineWidth=2;g.stroke();
+  }
+
   g.fillStyle='rgba(255,255,255,.14)';
   g.beginPath();g.arc(T/2,T/2,20,0,7);g.fill();
   g.fillStyle='#c8434f';
@@ -2148,6 +2159,71 @@ const rebond  =t=>{const n=7.5625,d=2.75;
   if(t<2/d){t-=1.5/d;return n*t*t+.75;}
   if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
   t-=2.625/d;return n*t*t+.984375;};
+
+/* ================= les autres survivants, en temps réel ================= */
+let AUTRES=new Map();
+let derniereEcoute=0, envoiRapide=0;
+
+async function ecouterLesAutres(){
+  if(!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,x,y,dir,geste,lieu,maj'+
+      '&maj=gt.'+new Date(Date.now()-45000).toISOString()+'&limit=40',{headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d))return;
+    const vus=new Set();
+    d.forEach(j=>{
+      if(j.id===e.id)return;
+      if(j.lieu&&j.lieu!=='terrain')return;
+      vus.add(j.id);
+      const a=AUTRES.get(j.id)||{x:j.x,y:j.y,pas:0,marche:false,gesteT:0};
+      a.cx=j.x;a.cy=j.y;
+      a.ap=j.apparence||{};
+      a.pseudo=j.pseudo||'survivant';
+      if(j.geste&&j.geste!==a.geste)a.gesteT=1;
+      a.geste=j.geste;
+      a.vu=Date.now();
+      AUTRES.set(j.id,a);
+    });
+    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>20000)AUTRES.delete(id);
+  }catch(x){}
+}
+
+function majAutres(dt){
+  for(const [,a] of AUTRES){
+    if(a.cx===undefined)continue;
+    const dx=a.cx-a.x, dy=a.cy-a.y, d=Math.hypot(dx,dy);
+    if(d>1){
+      const v=Math.min(d,Math.max(60,d*4)*dt);
+      a.x+=dx/d*v;a.y+=dy/d*v;
+      a.pas+=v*0.34;a.marche=true;
+      if(d>3){
+        if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
+        else a.dir=dy>0?'bas':'haut';
+      }
+    }else{a.marche=false;a.pas=0;}
+    if(a.gesteT>0)a.gesteT=Math.max(0,a.gesteT-dt*2.3);
+  }
+}
+
+function dessinerAutres(g,camX,camY){
+  const sauve=GESTE;
+  for(const [,a] of AUTRES){
+    const x=a.x-camX, y=a.y-camY;
+    if(x<-40||y<-70||x>VW+40||y>VH+40)continue;
+    GESTE=a.gesteT>0
+      ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
+      :{t:0};
+    sprite(g,Math.round(x),Math.round(y),Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
+    g.font='700 7px ui-monospace,monospace';g.textAlign='center';
+    g.fillStyle='rgba(10,16,10,.55)';
+    g.fillText(a.pseudo,Math.round(x)+1,Math.round(y)-49);
+    g.fillStyle='#f2efe4';
+    g.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
+    g.textAlign='left';
+  }
+  GESTE=sauve;
+}
 
 /* ================= frapper, ramasser ================= */
 let SECOUSSE=0, ARRET=0;                        /* secousse de l'image, et micro-arrêt à l'impact */
@@ -2711,7 +2787,12 @@ let t0=performance.now();
   else{
     majJoueur(dt);majGeste(dt);
   }
-  majParts(dt);majTextes(dt);majVols(dt);majAction();
+  majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
+  const maintenant=Date.now();
+  if(maintenant-derniereEcoute>1200){derniereEcoute=maintenant;ecouterLesAutres();}
+  if(maintenant-envoiRapide>1100&&(joueur.marche||GESTE.t>0)){
+    envoiRapide=maintenant;monterEnLigne(true);
+  }
   if(SECOUSSE>0.01)SECOUSSE*=Math.pow(0.0009,dt);else SECOUSSE=0;
   dessiner();
   ctx.setTransform(1,0,0,1,0,0);
