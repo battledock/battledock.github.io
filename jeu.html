@@ -869,38 +869,42 @@ const VERTS={
  ombre:'rgba(40,60,28,.34)'
 };
 
-/* --- l'arbre : 1,4 à 2,2 fois la taille du personnage (60, 78 ou 94 px) --- */
+/* --- l'arbre : 1,2 à 1,9 fois la taille du personnage --- */
 function dessinerArbre(g,x,y,gr){
   const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const s=gr||0;
-  const H=[60,78,94][s];                       /* hauteur totale */
-  const LT=[3,4,4][s];                         /* demi-largeur du tronc */
-  const ht=Math.round(H*0.42);                 /* hauteur du tronc nu */
-  const LF=[15,18,21][s];                      /* demi-largeur du houppier */
-
+  const H=[60,78,94][s];
+  const LT=[3,4,4][s];                          /* demi-largeur du tronc */
+  const LF=[15,18,21][s];                       /* demi-largeur du houppier */
+  const ht=Math.round(H*0.42);                  /* hauteur du tronc */
+  const bas=-Math.round(H*0.34);                /* le feuillage descend jusque-là :
+                                                   il recouvre le haut du tronc */
   g.fillStyle=V.ombre;
   g.beginPath();g.ellipse(x+2,y-1,LF*0.75,3.5,0,0,7);g.fill();
 
-  /* tronc : évasé au pied, avec ses racines et deux branches */
-  R(-LT,-ht,LT*2,ht,V.tronc);
-  R(-LT,-ht,1,ht,V.troncC);
+  /* tronc, du sol jusque dans le feuillage */
+  R(-LT,-ht-4,LT*2,ht+4,V.tronc);
+  R(-LT,-ht-4,1,ht+4,V.troncC);
   R(LT-1,-ht+3,1,ht-3,V.troncO);
-  R(-LT-2,-5,2,5,V.tronc);R(LT,-4,2,4,V.tronc);       /* racines */
+  R(-LT-2,-5,2,5,V.tronc);R(LT,-4,2,4,V.tronc);
   R(-LT-1,-2,LT*2+2,2,V.troncO);
-  R(-LT-4,-ht+6,4,2,V.tronc);R(LT,-ht+11,4,2,V.tronc);/* branches */
+  R(-LT-4,-ht+6,4,2,V.tronc);R(LT,-ht+11,4,2,V.tronc);
 
-  /* houppier : cinq masses, de la plus sombre en bas à la plus claire au sommet */
-  const y0=-ht;
-  R(-LF,y0-Math.round(H*0.30),LF*2,Math.round(H*0.22),V.moyen);
-  R(-LF-2,y0-Math.round(H*0.26),2,Math.round(H*0.14),V.moyen);
-  R(LF,y0-Math.round(H*0.26),2,Math.round(H*0.14),V.fonce);
-  R(-LF,y0-Math.round(H*0.12),LF*2,Math.round(H*0.08),V.fonce);
-  R(-LF+3,y0-Math.round(H*0.40),LF*2-6,Math.round(H*0.12),V.clair);
-  R(-LF+7,y0-Math.round(H*0.48),LF*2-14,Math.round(H*0.10),V.vif);
-  R(-LF+11,y0-Math.round(H*0.53),LF*2-22,Math.round(H*0.06),V.lumiere);
-  R(-LF+2,y0-Math.round(H*0.22),4,2,V.vif);
-  R(LF-7,y0-Math.round(H*0.34),4,2,V.vif);
-  R(-2,y0-Math.round(H*0.52),4,2,'#6fbb66');
+  /* houppier : chaque masse repose sur la précédente, sans interstice */
+  const m=(dy,hh,larg,col)=>R(-larg,dy,larg*2,hh,col);
+  const h1=Math.round(H*0.16), h2=Math.round(H*0.16), h3=Math.round(H*0.12), h4=Math.round(H*0.08);
+  const y1=bas-h1;                               /* masse basse, la plus sombre */
+  const y2=y1-h2+2;                              /* elles se chevauchent de 2 px */
+  const y3=y2-h3+2;
+  const y4=y3-h4+2;
+  m(y1,h1+4,LF,V.fonce);                         /* elle mord sur le tronc */
+  m(y2,h2+3,LF,V.moyen);
+  R(-LF-2,y2+2,2,h2,V.moyen);R(LF,y2+2,2,h2,V.fonce);
+  m(y3,h3+3,LF-3,V.clair);
+  m(y4,h4+3,LF-8,V.vif);
+  m(y4-3,5,Math.max(3,LF-13),V.lumiere);
+  R(-LF+2,y2+3,4,2,V.vif);R(LF-7,y1+1,4,2,V.vif);
+  R(-2,y4-4,4,2,'#6fbb66');
 }
 
 /* --- le rocher : à hauteur de hanche (22 à 30 px) --- */
