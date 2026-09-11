@@ -60,6 +60,32 @@ html,body{height:100%;overflow:hidden;background:#1a1108;font-family:system-ui,s
 .rouleau{width:62px;height:80px;border-radius:10px;background:#e8dcc0;border:2px solid #8a6a2a;
   display:flex;align-items:center;justify-content:center;font-size:34px;
   box-shadow:inset 0 3px 8px rgba(0,0,0,.25)}
+.tapisv.bleu{background:#2b4d7d}.tapisv.rouge{background:#6b2f3a}.tapisv.violet{background:#4a2b6b}
+.lab2{font:600 8.5px system-ui;letter-spacing:1.8px;color:rgba(255,255,255,.6);text-align:center;margin-bottom:8px}
+.main{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.carte{width:44px;height:62px;border-radius:7px;background:#f7f4ec;border:2px solid #d8d2c2;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font:700 17px Georgia,serif;color:#241a12;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.carte i{font-style:normal;font-size:13px}
+.carte.rouge{color:#a83a3a}
+.carte.dos{background:repeating-linear-gradient(45deg,#7d2b2b 0 4px,#a83a3a 4px 8px);border-color:#5f1f1f}
+.des2{display:flex;gap:14px;justify-content:center}
+.de{width:64px;height:64px;border-radius:12px;background:#f7f4ec;border:2px solid #d8d2c2;
+  display:flex;align-items:center;justify-content:center;font-size:44px;color:#241a12;
+  box-shadow:0 3px 7px rgba(0,0,0,.3)}
+.roue{height:86px;display:flex;align-items:center;justify-content:center;
+  font:700 34px Georgia,serif;color:#f0cf7d}
+.deux{display:flex;gap:10px}
+.go.sec{background:linear-gradient(180deg,#5f666c,#454b50);color:#f2efe4;border-color:#3a3f44;
+  box-shadow:0 3px 0 #2b2f33}
+.ech{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:13px;
+  background:linear-gradient(180deg,#3d2c1e,#31241a);border:1px solid #5c452e;margin-bottom:9px}
+.ech .tx{flex:1}
+.ech .tx b{display:block;font:600 13px system-ui;color:#f2e6cc}
+.ech .tx span{display:block;font:400 10px system-ui;color:#a89070;margin-top:2px}
+.ech button{padding:10px 13px;border-radius:11px;background:#c9a24a;border:1px solid #8a6a2a;
+  font:600 11px system-ui;color:#2b1d12}
+.ech button:disabled{background:#3d2c1e;color:#7d6b50;border-color:#4f3d29}
 .res{text-align:center;font:600 13px system-ui;color:#f0cf7d;margin-top:12px;min-height:20px}
 .grille2{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:10px}
 .num{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;
@@ -840,232 +866,333 @@ function majJetons(){$('jetons').textContent=e.jetons;}
 majJetons();
 
 /* ================= la salle du casino ================= */
-const SALLE_L=520, SALLE_H=420;                 /* en pixels de jeu */
+const SALLE_L=860, SALLE_H=620;
 let TAPIS=null;
 
 function construireTapis(){
   const c=document.createElement('canvas');
   c.width=SALLE_L;c.height=SALLE_H;
   const g=c.getContext('2d');
-  /* le parquet sous le tapis */
-  for(let y=0;y<SALLE_H;y++)for(let x=0;x<SALLE_L;x+=1){
-    const v=alea(x*0.3+y*1.7);
-    g.fillStyle=v<.5?'#4a3420':'#523a24';
-    g.fillRect(x,y,1,1);
-    if(y%14===0){g.fillStyle='#3d2a17';g.fillRect(x,y,1,1);}
-  }
-  /* le grand tapis rouge, à motif */
-  const mx=34, my=46, mw=SALLE_L-68, mh=SALLE_H-96;
-  for(let y=0;y<mh;y++)for(let x=0;x<mw;x++){
-    const v=alea(x*1.1+y*0.7);
-    let col='#7d2b2b';
-    if((x+y)%36<2||(x-y+9999)%36<2)col='#8f3636';
-    if(v<.07)col='#6b2424';
-    g.fillStyle=col;g.fillRect(mx+x,my+y,1,1);
-  }
-  /* bordure dorée du tapis */
-  for(let i=0;i<3;i++){
-    g.fillStyle=i===1?'#c9a24a':'#8a6a2a';
-    g.fillRect(mx-3+i,my-3+i,mw+6-i*2,1);
-    g.fillRect(mx-3+i,my+mh+2-i,mw+6-i*2,1);
-    g.fillRect(mx-3+i,my-3+i,1,mh+6-i*2);
-    g.fillRect(mx+mw+2-i,my-3+i,1,mh+6-i*2);
-  }
-  /* médaillons dorés dans le tapis */
-  [[0.25,0.3],[0.75,0.3],[0.25,0.72],[0.75,0.72],[0.5,0.5]].forEach(([px,py])=>{
-    const cx=Math.round(mx+mw*px), cy=Math.round(my+mh*py);
-    for(let a=0;a<28;a++){
-      const an=a/28*6.283;
-      g.fillStyle='#a8813a';
-      g.fillRect(Math.round(cx+Math.cos(an)*13),Math.round(cy+Math.sin(an)*9),2,2);
-    }
-    g.fillStyle='#c9a24a';g.fillRect(cx-2,cy-2,4,4);
-  });
 
-  /* les murs : lambris et papier peint */
-  for(let y=0;y<40;y++)for(let x=0;x<SALLE_L;x++){
-    const v=alea(x*0.9+y*2.1);
-    let col=y<8?'#3a2a1c':(y<26?'#6b2f3a':'#4a3420');
-    if(y>=8&&y<26&&((x+y*2)%22<2))col='#7d3a46';       /* rayures du papier */
-    if(y>=8&&y<26&&v<.06)col='#8a4450';
+  /* --- le marbre du sol, en damier --- */
+  for(let y=0;y<SALLE_H;y++)for(let x=0;x<SALLE_L;x++){
+    const dal=(Math.floor(x/26)+Math.floor(y/26))%2;
+    const v=alea(x*0.31+y*1.7);
+    let col=dal?'#2a2018':'#332720';
+    if(v<.14)col=dal?'#312519':'#3a2d24';
+    if(x%26===0||y%26===0)col='#1f1810';
     g.fillStyle=col;g.fillRect(x,y,1,1);
   }
-  g.fillStyle='#c9a24a';g.fillRect(0,38,SALLE_L,2);     /* cimaise dorée */
-  g.fillStyle='#e8c06a';g.fillRect(0,38,SALLE_L,1);
-  /* plinthes sur les côtés et en bas */
-  g.fillStyle='#3a2a1c';
-  g.fillRect(0,0,6,SALLE_H);g.fillRect(SALLE_L-6,0,6,SALLE_H);
-  g.fillRect(0,SALLE_H-10,SALLE_L,10);
+
+  /* --- trois tapis, un par salon --- */
+  const tapis=(mx,my,mw,mh,base,clair,sombre)=>{
+    for(let y=0;y<mh;y++)for(let x=0;x<mw;x++){
+      const v=alea((mx+x)*1.1+(my+y)*0.7);
+      let col=base;
+      if((x+y)%40<2||(x-y+9999)%40<2)col=clair;
+      if(v<.07)col=sombre;
+      g.fillStyle=col;g.fillRect(mx+x,my+y,1,1);
+    }
+    for(let i=0;i<3;i++){
+      g.fillStyle=i===1?'#c9a24a':'#8a6a2a';
+      g.fillRect(mx-3+i,my-3+i,mw+6-i*2,1);
+      g.fillRect(mx-3+i,my+mh+2-i,mw+6-i*2,1);
+      g.fillRect(mx-3+i,my-3+i,1,mh+6-i*2);
+      g.fillRect(mx+mw+2-i,my-3+i,1,mh+6-i*2);
+    }
+  };
+  tapis(40,300,300,264,'#7d2b2b','#8f3636','#6b2424');      /* salon rouge, à gauche */
+  tapis(520,300,300,264,'#2b3d7d','#36468f','#242f6b');     /* salon bleu, à droite */
+  tapis(300,80,260,190,'#4a2b6b','#5a3680','#3a2154');      /* salon violet, au fond */
+
+  /* médaillons dorés */
+  [[190,432],[670,432],[430,175]].forEach(([cx,cy])=>{
+    for(let r=20;r<=30;r+=5)
+      for(let a=0;a<50;a++){
+        const an=a/50*6.283;
+        g.fillStyle=r===25?'#c9a24a':'#a8813a';
+        g.fillRect(Math.round(cx+Math.cos(an)*r),Math.round(cy+Math.sin(an)*r*0.68),2,2);
+      }
+    g.fillStyle='#e8c06a';g.fillRect(cx-4,cy-3,8,6);
+  });
+
+  /* --- les murs --- */
+  for(let y=0;y<52;y++)for(let x=0;x<SALLE_L;x++){
+    const v=alea(x*0.9+y*2.1);
+    let col=y<10?'#241a12':(y<34?'#5a2430':'#3a2a1c');
+    if(y>=10&&y<34&&((x+y*2)%26<2))col='#6f2f3c';
+    if(y>=10&&y<34&&v<.05)col='#7d3a46';
+    g.fillStyle=col;g.fillRect(x,y,1,1);
+  }
+  /* arcades dorées le long du mur */
+  for(let i=0;i<9;i++){
+    const cx=52+i*97;
+    for(let a=0;a<36;a++){
+      const an=Math.PI+a/36*Math.PI;
+      g.fillStyle='#c9a24a';
+      g.fillRect(Math.round(cx+Math.cos(an)*20),Math.round(40+Math.sin(an)*16),2,2);
+    }
+    g.fillStyle='#8a6a2a';g.fillRect(cx-22,40,3,12);g.fillStyle='#8a6a2a';g.fillRect(cx+19,40,3,12);
+  }
+  g.fillStyle='#c9a24a';g.fillRect(0,50,SALLE_L,2);
+  g.fillStyle='#e8c06a';g.fillRect(0,50,SALLE_L,1);
+
+  /* --- plinthes --- */
+  g.fillStyle='#241a12';
+  g.fillRect(0,0,8,SALLE_H);g.fillRect(SALLE_L-8,0,8,SALLE_H);g.fillRect(0,SALLE_H-12,SALLE_L,12);
   g.fillStyle='#c9a24a';
-  g.fillRect(0,SALLE_H-10,SALLE_L,1);
+  g.fillRect(0,SALLE_H-12,SALLE_L,1);
+  g.fillRect(6,0,2,SALLE_H);g.fillRect(SALLE_L-8,0,2,SALLE_H);
+
+  /* --- allée centrale de marbre clair --- */
+  for(let y=270;y<SALLE_H-12;y++)for(let x=396;x<464;x++){
+    const v=alea(x*0.7+y*1.3);
+    g.fillStyle=v<.5?'#6b6258':'#776e63';
+    g.fillRect(x,y,1,1);
+    if(y%26===0){g.fillStyle='#544c44';g.fillRect(x,y,1,1);}
+  }
+  g.fillStyle='#c9a24a';g.fillRect(394,270,2,SALLE_H-282);g.fillRect(464,270,2,SALLE_H-282);
   return c;
 }
 
-
-/* ================= le mobilier, en pixels ================= */
-function mSlot(g,x,y,k){                        /* une machine à sous */
+/* ================= le mobilier ================= */
+function mSlot(g,x,y,k){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const t=Date.now()/1000, cli=((t+k*0.21)%1.2)<0.6;
-  g.fillStyle='rgba(20,10,10,.35)';g.beginPath();g.ellipse(x,y-1,12,3,0,0,7);g.fill();
-  R(-11,-38,22,38,'#2f2419');                   /* caisse */
-  R(-9,-36,18,34,'#a83a3a');
-  R(-9,-36,18,3,'#c94a4a');
-  R(-9,-36,3,34,'#c94a4a');
-  R(6,-34,3,32,'#7d2b2b');
-  R(-8,-31,16,10,'#241a12');                    /* les rouleaux */
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,13,4,0,0,7);g.fill();
+  const C=['#a83a3a','#3f5f9b','#7d3f9b','#3f8a6b'][k%4];
+  const C2=['#c94a4a','#5a7ec0','#9b5ac0','#4aa885'][k%4];
+  R(-11,-40,22,40,'#2f2419');
+  R(-9,-38,18,36,C);R(-9,-38,18,3,C2);R(-9,-38,3,36,C2);R(6,-36,3,34,'#241a12');
+  R(-8,-33,16,11,'#241a12');
   ['#f0cf7d','#f2efe4','#7fd8e8'].forEach((c,i)=>{
-    R(-7+i*5,-30,4,8,'#e8dcc0');
-    R(-7+i*5,-28+((k+i)%3),4,3,c);
-  });
-  R(-8,-19,16,5,'#3d2a17');                     /* le bandeau */
-  R(-6,-18,12,3,cli?'#f0cf7d':'#8a6a32');
-  R(-7,-12,14,7,'#5f666c');                     /* le tiroir à jetons */
-  R(-7,-12,14,2,'#7b8288');
-  R(9,-26,3,10,'#8b939a');                      /* le bras */
-  R(9,-30,3,4,cli?'#e85a5a':'#a83a3a');
-  R(-4,-42,8,4,cli?'#f0cf7d':'#7d5f2a');        /* la lampe du dessus */
-  R(-2,-45,4,3,'#c9a24a');
+    R(-7+i*5,-32,4,9,'#e8dcc0');R(-7+i*5,-30+((k+i)%3),4,3,c);});
+  R(-8,-20,16,5,'#3d2a17');R(-6,-19,12,3,cli?'#f0cf7d':'#8a6a32');
+  R(-7,-13,14,8,'#5f666c');R(-7,-13,14,2,'#7b8288');R(-3,-9,6,2,'#241a12');
+  R(9,-28,3,11,'#8b939a');R(9,-32,3,4,cli?'#e85a5a':'#a83a3a');
+  R(-5,-45,10,5,cli?'#f0cf7d':'#7d5f2a');R(-2,-48,4,3,'#c9a24a');
+  g.globalAlpha=cli?.14:.06;g.fillStyle='#f0cf7d';
+  g.beginPath();g.ellipse(x,y-20,20,22,0,0,7);g.fill();g.globalAlpha=1;
 }
 
-function mRoulette(g,x,y){                      /* la table de roulette */
+function mRoulette(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const t=Date.now()/700;
-  g.fillStyle='rgba(20,10,10,.35)';g.beginPath();g.ellipse(x,y-1,34,7,0,0,7);g.fill();
-  R(-34,-22,68,22,'#3d2a17');                   /* le plateau */
-  R(-32,-20,64,18,'#2f6b34');
-  R(-32,-20,64,2,'#3d7d3f');
-  for(let i=0;i<9;i++){                         /* les cases de mise */
-    R(-28+i*6,-16,4,10,i%3===0?'#a83a3a':(i%3===1?'#241a12':'#2f6b34'));
-    R(-28+i*6,-16,4,1,'#4a944a');
-  }
-  R(-34,-22,68,1,'#c9a24a');                    /* liseré doré */
-  /* la roue, qui tourne */
-  g.save();g.translate(x+20,y-16);
-  for(let i=0;i<12;i++){
-    const a=t+i/12*6.283;
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,38,8,0,0,7);g.fill();
+  R(-38,-26,76,26,'#3d2a17');R(-36,-24,72,22,'#2f6b34');R(-36,-24,72,2,'#3d7d3f');
+  for(let i=0;i<11;i++){R(-32+i*6,-20,4,12,i%3===0?'#a83a3a':(i%3===1?'#241a12':'#2f6b34'));
+    R(-32+i*6,-20,4,1,'#4a944a');}
+  R(-38,-26,76,1,'#c9a24a');R(-38,-1,76,2,'#4a3218');
+  g.save();g.translate(x+22,y-18);
+  for(let i=0;i<14;i++){const a=t+i/14*6.283;
     g.fillStyle=i%2?'#a83a3a':'#241a12';
-    g.fillRect(Math.round(Math.cos(a)*9)-1,Math.round(Math.sin(a)*5)-1,3,3);
-  }
-  g.fillStyle='#c9a24a';g.fillRect(-3,-2,6,4);
+    g.fillRect(Math.round(Math.cos(a)*11)-1,Math.round(Math.sin(a)*6)-1,3,3);}
+  g.fillStyle='#c9a24a';g.fillRect(-4,-3,8,5);
   g.fillStyle='#f2efe4';
-  g.fillRect(Math.round(Math.cos(-t*1.7)*7)-1,Math.round(Math.sin(-t*1.7)*4)-1,2,2);
+  g.fillRect(Math.round(Math.cos(-t*1.7)*8)-1,Math.round(Math.sin(-t*1.7)*5)-1,2,2);
   g.restore();
-  /* pieds */
-  R(-30,-3,5,4,'#4a3218');R(25,-3,5,4,'#4a3218');
+  R(-34,-4,5,5,'#4a3218');R(29,-4,5,5,'#4a3218');
 }
 
-function mBlackjack(g,x,y){                     /* la table de cartes */
+function mBlack(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle='rgba(20,10,10,.35)';g.beginPath();g.ellipse(x,y-1,26,6,0,0,7);g.fill();
-  R(-26,-18,52,18,'#3d2a17');
-  R(-24,-16,48,14,'#2f6b34');
-  R(-24,-16,48,2,'#3d7d3f');
-  R(-24,-16,48,1,'#c9a24a');
-  for(let i=0;i<5;i++){                          /* les emplacements */
-    R(-20+i*9,-12,7,7,'#25542a');
-    R(-20+i*9,-12,7,1,'#4a944a');
-  }
-  R(-4,-11,8,5,'#f2efe4');                       /* deux cartes posées */
-  R(-3,-10,2,3,'#a83a3a');
-  R(2,-13,8,5,'#f2efe4');
-  R(3,-12,2,3,'#241a12');
-  R(-22,-3,5,4,'#4a3218');R(17,-3,5,4,'#4a3218');
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,30,7,0,0,7);g.fill();
+  R(-30,-20,60,20,'#3d2a17');R(-28,-18,56,16,'#2b4d7d');R(-28,-18,56,2,'#3a6199');
+  R(-28,-18,56,1,'#c9a24a');
+  for(let i=0;i<5;i++){R(-23+i*10,-14,8,8,'#24406b');R(-23+i*10,-14,8,1,'#4a72ad');}
+  R(-5,-13,9,6,'#f2efe4');R(-4,-12,2,3,'#a83a3a');
+  R(3,-15,9,6,'#f2efe4');R(4,-14,2,3,'#241a12');
+  R(-26,-4,5,5,'#4a3218');R(21,-4,5,5,'#4a3218');
 }
 
-function mBar(g,x,y){                            /* le bar, au fond */
+function mDes(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const t=Date.now()/1000;
-  g.fillStyle='rgba(20,10,10,.3)';g.beginPath();g.ellipse(x,y-1,44,6,0,0,7);g.fill();
-  R(-44,-26,88,26,'#3d2a17');                    /* le comptoir */
-  R(-42,-24,84,22,'#8a6238');
-  R(-42,-24,84,3,'#a5764a');
-  R(-42,-8,84,2,'#5b3f21');
-  R(-44,-27,88,2,'#c9a24a');                     /* le chant doré */
-  /* les bouteilles en vitrine */
-  for(let i=0;i<9;i++){
-    const bx=-38+i*9;
-    const c=['#7d2b2b','#4a7d3f','#c9a24a','#3f5f6b','#8a4450'][i%5];
-    R(bx,-38,4,10,c);
-    R(bx+1,-41,2,4,'#5f666c');
-    R(bx,-38,4,1,'#f2efe4');
-  }
-  R(-44,-28,88,2,'#4a3218');                     /* l'étagère */
-  /* deux verres qui brillent */
-  [(-16),(12)].forEach((a,i)=>{
-    const b=((t+i*0.5)%2)<1;
-    R(a,-30,4,5,b?'#e8dcc0':'#c9bda0');
-    R(a,-30,4,1,'#f2efe4');
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,26,6,0,0,7);g.fill();
+  R(-26,-20,52,20,'#3d2a17');R(-24,-18,48,16,'#6b2f3a');R(-24,-18,48,2,'#8a3f4c');
+  R(-24,-18,48,1,'#c9a24a');
+  /* deux dés posés */
+  const t=Math.floor(Date.now()/900)%6+1;
+  [[-9,-13,t],[3,-14,(t%6)+1]].forEach(([a,b,n])=>{
+    R(a,b,9,9,'#f2efe4');R(a,b,9,1,'#fff');
+    const pts={1:[[4,4]],2:[[2,2],[6,6]],3:[[2,2],[4,4],[6,6]],
+               4:[[2,2],[6,2],[2,6],[6,6]],5:[[2,2],[6,2],[4,4],[2,6],[6,6]],
+               6:[[2,2],[6,2],[2,4],[6,4],[2,6],[6,6]]}[n];
+    pts.forEach(([px,py])=>R(a+px-1,b+py-1,2,2,'#241a12'));
   });
+  R(-22,-4,5,5,'#4a3218');R(17,-4,5,5,'#4a3218');
 }
 
-function mLustre(g,x,y){                         /* un lustre suspendu */
+function mRoue(g,x,y){                          /* la grande roue de la fortune */
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/2600;
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,20,5,0,0,7);g.fill();
+  R(-6,-30,12,30,'#5f4223');R(-6,-30,4,30,'#7d5934');
+  R(-16,-2,32,4,'#4a3218');
+  g.save();g.translate(x,y-52);
+  g.fillStyle='#3d2a17';g.beginPath();g.arc(0,0,25,0,7);g.fill();
+  const cols=['#a83a3a','#f0cf7d','#2f6b34','#e8dcc0','#3f5f9b','#c9a24a','#7d3f9b','#f2efe4'];
+  for(let i=0;i<12;i++){
+    const a0=t+i/12*6.283, a1=t+(i+1)/12*6.283;
+    g.beginPath();g.moveTo(0,0);
+    g.arc(0,0,22,a0,a1);g.closePath();
+    g.fillStyle=cols[i%8];g.fill();
+  }
+  g.fillStyle='#c9a24a';g.beginPath();g.arc(0,0,5,0,7);g.fill();
+  g.fillStyle='#241a12';g.beginPath();g.arc(0,0,2,0,7);g.fill();
+  g.restore();
+  R(-3,-80,6,5,'#f2efe4');                       /* le taquet */
+  g.globalAlpha=.12;g.fillStyle='#f0cf7d';
+  g.beginPath();g.ellipse(x,y-50,40,40,0,0,7);g.fill();g.globalAlpha=1;
+}
+
+function mBar(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const t=Date.now()/1000;
-  const cli=(t%1.6)<0.8;
-  R(-1,-30,2,14,'#5f4223');
-  R(-9,-17,18,4,'#c9a24a');
-  R(-9,-17,18,1,'#e8c06a');
-  for(let i=0;i<5;i++)R(-8+i*4,-13,3,4,cli||i%2?'#f0cf7d':'#a8813a');
-  R(-5,-9,10,2,'#c9a24a');
-  /* le halo */
-  g.globalAlpha=.13+Math.sin(t*2)*0.03;
-  g.fillStyle='#f0cf7d';
-  g.beginPath();g.ellipse(x,y+22,40,26,0,0,7);g.fill();
-  g.globalAlpha=1;
+  g.fillStyle='rgba(10,6,4,.35)';g.beginPath();g.ellipse(x,y-1,52,7,0,0,7);g.fill();
+  R(-52,-28,104,28,'#3d2a17');R(-50,-26,100,24,'#8a6238');R(-50,-26,100,3,'#a5764a');
+  R(-50,-9,100,2,'#5b3f21');R(-52,-29,104,2,'#c9a24a');
+  for(let i=0;i<11;i++){
+    const bx=-46+i*9, c=['#7d2b2b','#4a7d3f','#c9a24a','#3f5f6b','#8a4450'][i%5];
+    R(bx,-42,4,11,c);R(bx+1,-45,2,4,'#5f666c');R(bx,-42,4,1,'#f2efe4');
+  }
+  R(-52,-32,104,3,'#4a3218');
+  [(-20),(14)].forEach((a,i)=>{const b=((t+i*0.5)%2)<1;
+    R(a,-34,4,5,b?'#e8dcc0':'#c9bda0');R(a,-34,4,1,'#f2efe4');});
+  /* tabourets */
+  [-34,-12,12,34].forEach(a=>{R(a-4,-8,8,3,'#a83a3a');R(a-1,-5,2,5,'#5f666c');R(a-3,0,6,2,'#4a3218');});
 }
 
-function mPorte(g,x,y){                          /* la sortie */
+function mCaisse(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  R(-14,-36,28,36,'#3d2a17');
-  R(-12,-34,24,34,'#6b4a28');
-  R(-12,-34,24,3,'#8a6238');
-  R(-1,-34,2,34,'#4a3218');
-  R(-6,-18,3,3,'#c9a24a');R(3,-18,3,3,'#c9a24a');
-  R(-16,-40,32,5,'#c9a24a');
-  R(-16,-40,32,2,'#e8c06a');
-  g.fillStyle='#241a12';g.font='700 7px Georgia,serif';g.textAlign='center';
-  g.fillText('SORTIE',x,y-41);g.textAlign='left';
+  const t=Date.now()/1000, cli=(t%1.4)<0.7;
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,26,6,0,0,7);g.fill();
+  R(-26,-34,52,34,'#3d2a17');R(-24,-32,48,30,'#6b4a28');R(-24,-32,48,3,'#8a6238');
+  R(-24,-16,48,3,'#4a3218');
+  R(-20,-28,40,11,'#241a12');                    /* le guichet */
+  R(-18,-26,36,7,'#7fd8e8');
+  R(-14,-12,10,8,'#c9a24a');R(-14,-12,10,2,'#f0cf7d');   /* piles de jetons */
+  R(2,-10,10,6,'#a83a3a');R(2,-10,10,2,'#c94a4a');
+  R(-6,-40,12,6,cli?'#f0cf7d':'#8a6a32');
+  g.fillStyle='#241a12';g.font='700 5px system-ui';g.textAlign='center';
+  g.fillText('CAISSE',x,y-35);g.textAlign='left';
+}
+
+function mLustre(g,x,y,k){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/1000, cli=((t+(k||0)*0.4)%1.6)<0.8;
+  R(-1,-34,2,16,'#5f4223');
+  R(-11,-19,22,4,'#c9a24a');R(-11,-19,22,1,'#e8c06a');
+  for(let i=0;i<6;i++)R(-10+i*4,-15,3,5,cli||i%2?'#f0cf7d':'#a8813a');
+  R(-6,-10,12,2,'#c9a24a');R(-2,-8,4,2,'#e8c06a');
+  g.globalAlpha=.14+Math.sin(t*2+(k||0))*0.03;
+  g.fillStyle='#f0cf7d';g.beginPath();g.ellipse(x,y+26,46,30,0,0,7);g.fill();g.globalAlpha=1;
+}
+
+function mFontaine(g,x,y){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/400;
+  g.fillStyle='rgba(10,6,4,.4)';g.beginPath();g.ellipse(x,y-1,26,7,0,0,7);g.fill();
+  R(-24,-14,48,14,'#8b939a');R(-24,-14,48,3,'#a2a9b0');
+  R(-21,-11,42,9,'#3f8aac');
+  for(let i=0;i<7;i++){const a=(t+i)%7;
+    R(-18+i*6,-11+Math.round(Math.sin(a)*1),4,1,'#7dbcd2');}
+  R(-5,-30,10,18,'#a2a9b0');R(-5,-30,10,3,'#c0c7cd');
+  R(-10,-34,20,5,'#8b939a');R(-10,-34,20,2,'#c0c7cd');
+  for(let i=0;i<5;i++){                           /* les jets */
+    const h=6+Math.round(Math.sin(t*1.4+i)*3);
+    R(-8+i*4,-34-h,2,h,'#9ad0e2');
+  }
+  R(-2,-42,4,8,'#c9a24a');
+}
+
+function mCorde(g,x,y){                           /* cordon de velours */
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  R(-2,-18,4,18,'#c9a24a');R(-2,-18,4,3,'#f0cf7d');R(-4,-1,8,2,'#8a6a2a');
+  R(2,-15,26,3,'#7d2b2b');R(2,-15,26,1,'#a83a3a');
 }
 
 function mPlante(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle='rgba(20,10,10,.3)';g.beginPath();g.ellipse(x,y-1,9,3,0,0,7);g.fill();
-  R(-7,-10,14,10,'#8a6238');R(-7,-10,14,2,'#a5764a');R(-7,-3,14,3,'#6b4a28');
-  R(-3,-18,6,9,'#2f6b34');R(-8,-22,7,8,'#3d7d3f');R(2,-24,7,9,'#3d7d3f');
-  R(-5,-27,5,7,'#4a944a');R(1,-29,5,7,'#4a944a');R(-2,-31,4,5,'#5aa855');
+  g.fillStyle='rgba(10,6,4,.35)';g.beginPath();g.ellipse(x,y-1,10,3,0,0,7);g.fill();
+  R(-8,-12,16,12,'#8a6238');R(-8,-12,16,2,'#a5764a');R(-8,-4,16,4,'#6b4a28');
+  R(-3,-22,6,11,'#2f6b34');R(-10,-27,8,10,'#3d7d3f');R(2,-29,8,11,'#3d7d3f');
+  R(-6,-33,6,8,'#4a944a');R(1,-35,6,8,'#4a944a');R(-2,-38,5,6,'#5aa855');
 }
 
+function mPorte(g,x,y){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  R(-18,-40,36,40,'#3d2a17');R(-16,-38,32,38,'#6b4a28');R(-16,-38,32,3,'#8a6238');
+  R(-1,-38,2,38,'#4a3218');R(-8,-20,3,3,'#c9a24a');R(5,-20,3,3,'#c9a24a');
+  R(-20,-45,40,6,'#c9a24a');R(-20,-45,40,2,'#e8c06a');
+  g.fillStyle='#241a12';g.font='700 8px Georgia,serif';g.textAlign='center';
+  g.fillText('SORTIE',x,y-46);g.textAlign='left';
+}
+
+function mEnseigne(g,x,y,txt,coul){               /* néon accroché au mur */
+  const t=Date.now()/1000;
+  const cli=((t+txt.length*0.1)%1.5)<1.1;
+  g.fillStyle='#241a12';g.fillRect(x-30,y-12,60,16);
+  g.fillStyle=cli?coul:'#4a3f2a';
+  g.font='700 9px Georgia,serif';g.textAlign='center';
+  g.fillText(txt,x,y);
+  g.textAlign='left';
+  if(cli){g.globalAlpha=.18;g.fillStyle=coul;g.fillRect(x-32,y-14,64,20);g.globalAlpha=1;}
+}
 
 /* ================= ce qu'il y a dans la salle ================= */
 const MEUBLES=[];
 function meubler(){
   MEUBLES.length=0;
-  /* rangée de machines à sous à gauche et à droite */
-  for(let i=0;i<5;i++){
-    MEUBLES.push({t:'slot',x:62,y:104+i*58,k:i,bloc:[24,18],jeu:'slot'});
-    MEUBLES.push({t:'slot',x:SALLE_L-62,y:104+i*58,k:i+5,bloc:[24,18],jeu:'slot'});
+  /* --- salon rouge, à gauche : les machines à sous --- */
+  for(let i=0;i<6;i++){
+    MEUBLES.push({t:'slot',x:70,y:330+i*44,k:i,bloc:[24,18],jeu:'slot'});
+    MEUBLES.push({t:'slot',x:150,y:330+i*44,k:i+6,bloc:[24,18],jeu:'slot'});
   }
-  /* deux roulettes au centre */
-  MEUBLES.push({t:'roulette',x:SALLE_L/2,y:168,bloc:[72,24],jeu:'roulette'});
-  MEUBLES.push({t:'roulette',x:SALLE_L/2,y:322,bloc:[72,24],jeu:'roulette'});
-  /* une table de cartes */
-  MEUBLES.push({t:'black',x:SALLE_L/2,y:246,bloc:[56,20],jeu:'black'});
-  /* le bar, au fond */
-  MEUBLES.push({t:'bar',x:SALLE_L/2,y:74,bloc:[92,28]});
-  /* plantes dans les coins */
-  [[26,70],[SALLE_L-26,70],[26,SALLE_H-40],[SALLE_L-26,SALLE_H-40]].forEach(([x,y])=>
-    MEUBLES.push({t:'plante',x,y,bloc:[16,10]}));
-  /* la sortie, en bas */
-  MEUBLES.push({t:'porte',x:SALLE_L/2,y:SALLE_H-6,bloc:[0,0],sortie:true});
-  /* les lustres */
-  [[SALLE_L/2,120],[SALLE_L/2,270],[130,196],[SALLE_L-130,196]].forEach(([x,y])=>
-    MEUBLES.push({t:'lustre',x,y,bloc:[0,0],haut:true}));
+  MEUBLES.push({t:'enseigne',x:110,y:300,txt:'MACHINES',coul:'#f0cf7d',bloc:[0,0],haut:true});
+  MEUBLES.push({t:'roue',x:250,y:400,bloc:[28,10],jeu:'roue'});
+  MEUBLES.push({t:'enseigne',x:250,y:318,txt:'LA ROUE',coul:'#e85aa8',bloc:[0,0],haut:true});
+
+  /* --- salon bleu, à droite : cartes et dés --- */
+  MEUBLES.push({t:'black',x:600,y:360,bloc:[60,20],jeu:'black'});
+  MEUBLES.push({t:'black',x:760,y:360,bloc:[60,20],jeu:'black'});
+  MEUBLES.push({t:'des',x:600,y:470,bloc:[52,18],jeu:'des'});
+  MEUBLES.push({t:'des',x:760,y:470,bloc:[52,18],jeu:'des'});
+  MEUBLES.push({t:'enseigne',x:680,y:300,txt:'CARTES',coul:'#7fd8e8',bloc:[0,0],haut:true});
+
+  /* --- salon violet, au fond : les roulettes --- */
+  MEUBLES.push({t:'roulette',x:360,y:170,bloc:[76,26],jeu:'roulette'});
+  MEUBLES.push({t:'roulette',x:510,y:170,bloc:[76,26],jeu:'roulette'});
+  MEUBLES.push({t:'roulette',x:435,y:250,bloc:[76,26],jeu:'roulette'});
+  MEUBLES.push({t:'enseigne',x:435,y:96,txt:'ROULETTE',coul:'#c8a0ff',bloc:[0,0],haut:true});
+
+  /* --- le bar et la caisse --- */
+  MEUBLES.push({t:'bar',x:140,y:150,bloc:[110,32]});
+  MEUBLES.push({t:'enseigne',x:140,y:96,txt:'BAR',coul:'#f2a05a',bloc:[0,0],haut:true});
+  MEUBLES.push({t:'caisse',x:720,y:150,bloc:[56,24],jeu:'caisse'});
+  MEUBLES.push({t:'enseigne',x:720,y:96,txt:'CAISSE',coul:'#a9e88a',bloc:[0,0],haut:true});
+
+  /* --- la fontaine, au centre de l'allée --- */
+  MEUBLES.push({t:'fontaine',x:430,y:540,bloc:[50,16]});
+
+  /* --- cordons et plantes --- */
+  [[300,300],[560,300],[300,566],[560,566]].forEach(([x,y])=>
+    MEUBLES.push({t:'corde',x,y,bloc:[28,6]}));
+  [[30,300],[30,566],[830,300],[830,566],[30,90],[830,90],[300,90],[560,90]].forEach(([x,y])=>
+    MEUBLES.push({t:'plante',x,y,bloc:[18,12]}));
+
+  /* --- la sortie --- */
+  MEUBLES.push({t:'porte',x:430,y:SALLE_H-8,bloc:[0,0],sortie:true});
+
+  /* --- les lustres, au-dessus de tout --- */
+  [[140,210],[430,190],[720,210],[150,420],[680,420],[430,470]].forEach(([x,y],i)=>
+    MEUBLES.push({t:'lustre',x,y,k:i,bloc:[0,0],haut:true}));
+
   MEUBLES.sort((a,b)=>a.y-b.y);
 }
 meubler();
 
 function bloque(x,y){
-  if(x<16||x>SALLE_L-16||y<48||y>SALLE_H-14)return true;
+  if(x<20||x>SALLE_L-20||y<62||y>SALLE_H-16)return true;
   for(const m of MEUBLES){
     if(!m.bloc||!m.bloc[0])continue;
     if(Math.abs(m.x-x)<m.bloc[0]/2+4&&Math.abs(m.y-y)<m.bloc[1]/2+3)return true;
@@ -1088,9 +1215,9 @@ function taille(){
 }
 addEventListener('resize',taille);
 
-let joueur={x:SALLE_L/2,y:SALLE_H-40,dir:'haut',pas:0,marche:false};
+let joueur={x:430,y:SALLE_H-60,dir:'haut',pas:0,marche:false};
 let vx=0,vy=0;
-const VITESSE=52;
+const VITESSE=88;
 function majJoueur(dt){
   const n=Math.hypot(joyX,joyY), pousse=Math.min(1,n);
   const cx=n>0.16?(joyX/n)*VITESSE*pousse:0;
@@ -1104,7 +1231,7 @@ function majJoueur(dt){
     if(!bloque(nx,joueur.y))ax=nx;
     if(!bloque(ax,ny))ay=ny;
     joueur.x=ax;joueur.y=ay;
-    joueur.pas+=v*dt*0.5;
+    joueur.pas+=v*dt*0.34;
     if(Math.abs(vx)>Math.abs(vy)*1.35)joueur.dir=vx>0?'droite':'gauche';
     else if(Math.abs(vy)>Math.abs(vx)*1.35)joueur.dir=vy>0?'bas':'haut';
   }else{vx=vy=0;joueur.pas=0;}
@@ -1133,14 +1260,22 @@ function dessiner(){
     if(x<-70||y<-60||x>VW+70||y>VH+50)continue;
     if(m.t==='slot')mSlot(ctx,x,y,m.k);
     else if(m.t==='roulette')mRoulette(ctx,x,y);
-    else if(m.t==='black')mBlackjack(ctx,x,y);
+    else if(m.t==='black')mBlack(ctx,x,y);
+    else if(m.t==='des')mDes(ctx,x,y);
+    else if(m.t==='roue')mRoue(ctx,x,y);
     else if(m.t==='bar')mBar(ctx,x,y);
+    else if(m.t==='caisse')mCaisse(ctx,x,y);
+    else if(m.t==='fontaine')mFontaine(ctx,x,y);
+    else if(m.t==='corde')mCorde(ctx,x,y);
     else if(m.t==='plante')mPlante(ctx,x,y);
     else if(m.t==='porte')mPorte(ctx,x,y);
   }
   if(!pose)dessinerJoueur();
   /* les lustres passent au-dessus de tout */
-  MEUBLES.filter(m=>m.haut).forEach(m=>mLustre(ctx,m.x-iX,m.y-iY));
+  MEUBLES.filter(m=>m.haut).forEach(m=>{
+    if(m.t==='enseigne')mEnseigne(ctx,m.x-iX,m.y-iY,m.txt,m.coul);
+    else mLustre(ctx,m.x-iX,m.y-iY,m.k);
+  });
   /* vignettage, pour l'ambiance */
   ctx.setTransform(1,0,0,1,0,0);
   const gr=ctx.createRadialGradient(cv.width/2,cv.height/2,cv.height*0.3,
@@ -1164,8 +1299,11 @@ function majAction(){
   if(!m||$('page').classList.contains('on')){b.classList.remove('on');return;}
   if(m.sortie)b.innerHTML='Sortir<small>RETOUR AU TERRAIN</small>';
   else if(m.jeu==='slot')b.innerHTML='Jouer<small>MACHINE À SOUS · 5 JETONS</small>';
-  else if(m.jeu==='roulette')b.innerHTML='Miser<small>ROULETTE</small>';
-  else b.innerHTML='S’asseoir<small>TABLE DE CARTES</small>';
+  else if(m.jeu==='roulette')b.innerHTML='Miser<small>ROULETTE · 10 JETONS</small>';
+  else if(m.jeu==='black')b.innerHTML='S’asseoir<small>BLACK-JACK · 10 JETONS</small>';
+  else if(m.jeu==='des')b.innerHTML='Lancer<small>LES DÉS · 10 JETONS</small>';
+  else if(m.jeu==='roue')b.innerHTML='Tourner<small>ROUE DE LA FORTUNE · 20 JETONS</small>';
+  else b.innerHTML='Échanger<small>LA CAISSE</small>';
   b.classList.add('on');
 }
 $('action').onclick=()=>{
@@ -1173,7 +1311,10 @@ $('action').onclick=()=>{
   if(m.sortie){sauver();location.href='jeu.html';return;}
   if(m.jeu==='slot')ouvrirSlot();
   else if(m.jeu==='roulette')ouvrirRoulette();
-  else ouvrirBientot();
+  else if(m.jeu==='black')ouvrirBlack();
+  else if(m.jeu==='des')ouvrirDes();
+  else if(m.jeu==='roue')ouvrirRoue();
+  else if(m.jeu==='caisse')ouvrirCaisse();
 };
 
 /* ================= les jeux ================= */
@@ -1329,6 +1470,193 @@ function finRoulette(s){
   }else{
     r.textContent='Le '+s+' '+coul+'. Perdu.';
   }
+}
+
+/* ---- le black-jack, pour de vrai ---- */
+let BJ=null;
+const CARTES=['A','2','3','4','5','6','7','8','9','10','V','D','R'];
+const COULEURS=['♠','♥','♦','♣'];
+function tirerCarte(){
+  return {v:CARTES[Math.floor(Math.random()*13)],c:COULEURS[Math.floor(Math.random()*4)]};
+}
+function valeur(main){
+  let t=0,as=0;
+  main.forEach(k=>{
+    if(k.v==='A'){t+=11;as++;}
+    else if(['V','D','R'].includes(k.v))t+=10;
+    else t+=+k.v;
+  });
+  while(t>21&&as>0){t-=10;as--;}
+  return t;
+}
+const carteHTML=(k,cache)=>cache
+  ? '<span class="carte dos"></span>'
+  : '<span class="carte'+(['♥','♦'].includes(k.c)?' rouge':'')+'">'+k.v+'<i>'+k.c+'</i></span>';
+function ouvrirBlack(){
+  BJ={joueur:[],croupier:[],fini:false,mise:10};
+  if(e.jetons<10)return ouvrirPage('Black-jack','IL FAUT 10 JETONS',
+    '<div class="msg">Passe à la caisse : tu peux échanger ton bois, ta pierre et tes baies contre des jetons.</div>');
+  e.jetons-=10;majJetons();
+  BJ.joueur=[tirerCarte(),tirerCarte()];
+  BJ.croupier=[tirerCarte(),tirerCarte()];
+  dessinerBlack('À toi de jouer.');
+  sauver();
+}
+function dessinerBlack(msg){
+  const vj=valeur(BJ.joueur), vc=valeur(BJ.croupier);
+  ouvrirPage('Black-jack','APPROCHE 21 SANS LE DÉPASSER',
+   '<div class="tapisv bleu">'+
+     '<div class="lab2">CROUPIER'+(BJ.fini?' · '+vc:'')+'</div>'+
+     '<div class="main">'+BJ.croupier.map((k,i)=>carteHTML(k,!BJ.fini&&i===1)).join('')+'</div>'+
+     '<div class="lab2" style="margin-top:14px">TOI · '+vj+'</div>'+
+     '<div class="main">'+BJ.joueur.map(k=>carteHTML(k)).join('')+'</div>'+
+   '</div>'+
+   '<div class="res" id="res">'+msg+'</div>'+
+   (BJ.fini
+     ? '<button class="go" id="rejouer">Rejouer · 10 jetons</button>'
+     : '<div class="deux"><button class="go" id="tirer">Carte</button>'+
+       '<button class="go sec" id="rester">Rester</button></div>'));
+  if(BJ.fini){const r=$('rejouer');if(r)r.onclick=ouvrirBlack;}
+  else{
+    $('tirer').onclick=()=>{
+      BJ.joueur.push(tirerCarte());
+      const v=valeur(BJ.joueur);
+      if(v>21){BJ.fini=true;dessinerBlack('Tu dépasses 21. Perdu.');}
+      else if(v===21)resterBlack();
+      else dessinerBlack('À toi.');
+    };
+    $('rester').onclick=resterBlack;
+  }
+}
+function resterBlack(){
+  while(valeur(BJ.croupier)<17)BJ.croupier.push(tirerCarte());
+  BJ.fini=true;
+  const vj=valeur(BJ.joueur), vc=valeur(BJ.croupier);
+  let msg;
+  if(vj===21&&BJ.joueur.length===2){e.jetons+=25;msg='Black-jack ! Tu gagnes 25 jetons.';}
+  else if(vc>21){e.jetons+=20;msg='Le croupier dépasse. Tu gagnes 20 jetons.';}
+  else if(vj>vc){e.jetons+=20;msg=vj+' contre '+vc+' — tu gagnes 20 jetons.';}
+  else if(vj===vc){e.jetons+=10;msg='Égalité. La mise est rendue.';}
+  else msg=vc+' contre '+vj+'. Le croupier l’emporte.';
+  sauver();majJetons();
+  dessinerBlack(msg);
+  if(/gagnes|Black-jack/.test(msg)){try{navigator.vibrate&&navigator.vibrate([14,50,30]);}catch(x){}}
+}
+
+/* ---- les dés ---- */
+let misedes=null;
+function ouvrirDes(){
+  ouvrirPage('Les dés','DEUX DÉS, UN PARI',
+   '<div class="tapisv rouge">'+
+     '<div class="des2"><span class="de" id="d0">⚀</span><span class="de" id="d1">⚁</span></div>'+
+   '</div>'+
+   '<div class="mise">'+
+     '<button data-d="bas">2 à 6 · ×2</button>'+
+     '<button data-d="sept">7 · ×5</button>'+
+     '<button data-d="haut">8 à 12 · ×2</button>'+
+   '</div>'+
+   '<div class="res" id="res">Mise de 10 jetons</div>'+
+   '<button class="go" id="lancerdes">Lancer</button>');
+  $('pageFond').querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{
+    misedes=b.dataset.d;
+    $('pageFond').querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('on',x===b));
+    $('res').textContent='Mise : '+b.textContent;
+  });
+  $('lancerdes').onclick=lancerDes;
+}
+const FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
+let desEnCours=false;
+function lancerDes(){
+  if(desEnCours)return;
+  if(!misedes){$('res').textContent='Choisis d’abord ton pari.';return;}
+  if(e.jetons<10){$('res').textContent='Pas assez de jetons.';return;}
+  desEnCours=true;e.jetons-=10;majPageJetons();
+  $('lancerdes').disabled=true;
+  const a=1+Math.floor(Math.random()*6), b=1+Math.floor(Math.random()*6);
+  let n=0;
+  const tour=setInterval(()=>{
+    $('d0').textContent=FACES[Math.floor(Math.random()*6)];
+    $('d1').textContent=FACES[Math.floor(Math.random()*6)];
+    $('res').textContent='Les dés roulent…';
+    if(++n>20){
+      clearInterval(tour);
+      $('d0').textContent=FACES[a-1];$('d1').textContent=FACES[b-1];
+      finDes(a+b);
+    }
+  },70);
+}
+function finDes(s){
+  desEnCours=false;
+  const b=$('lancerdes');if(b)b.disabled=false;
+  let gain=0;
+  if(misedes==='sept'&&s===7)gain=50;
+  else if(misedes==='bas'&&s<7)gain=20;
+  else if(misedes==='haut'&&s>7)gain=20;
+  if(gain){e.jetons+=gain;majPageJetons();
+    $('res').textContent='Total '+s+' — tu gagnes '+gain+' jetons !';
+    try{navigator.vibrate&&navigator.vibrate([14,50,30]);}catch(x){}}
+  else $('res').textContent='Total '+s+'. Perdu.';
+}
+
+/* ---- la roue de la fortune ---- */
+const SECTEURS=[0,0,0,1,0,1,0,2,0,0,2,5];   /* la maison garde un léger avantage */
+let roueEnCours=false;
+function ouvrirRoue(){
+  ouvrirPage('Roue de la fortune','20 JETONS LE TOUR',
+   '<div class="tapisv violet">'+
+     '<div class="roue" id="roue">—</div>'+
+   '</div>'+
+   '<div class="res" id="res">Douze secteurs : sept vides, ×1, ×1, ×2, ×2 et un ×5.</div>'+
+   '<button class="go" id="tourner">Faire tourner</button>');
+  $('tourner').onclick=tournerRoue;
+}
+function tournerRoue(){
+  if(roueEnCours)return;
+  if(e.jetons<20){$('res').textContent='Il faut 20 jetons.';return;}
+  roueEnCours=true;e.jetons-=20;majPageJetons();
+  $('tourner').disabled=true;
+  const fin=Math.floor(Math.random()*SECTEURS.length);
+  let n=0;
+  const tour=setInterval(()=>{
+    const s=SECTEURS[n%SECTEURS.length];
+    $('roue').textContent=s?'×'+s:'—';
+    $('res').textContent='La roue tourne…';
+    if(++n>30&&(n%SECTEURS.length)===fin){
+      clearInterval(tour);
+      const m=SECTEURS[fin];
+      $('roue').textContent=m?'×'+m:'—';
+      roueEnCours=false;
+      $('tourner').disabled=false;
+      if(m){const g=20*m;e.jetons+=g;majPageJetons();
+        $('res').textContent='×'+m+' — tu remportes '+g+' jetons !';
+        try{navigator.vibrate&&navigator.vibrate([14,50,30]);}catch(x){}}
+      else $('res').textContent='Secteur vide. Perdu.';
+    }
+  },80);
+}
+
+/* ---- la caisse : on échange ce qu'on a récolté ---- */
+const TAUX={bois:3,pierre:5,fibre:2,baies:2};
+const NOMS={bois:'Bois',pierre:'Pierre',fibre:'Fibre',baies:'Baies'};
+function ouvrirCaisse(){
+  const lignes=Object.keys(TAUX).map(k=>{
+    const n=(e.sac&&e.sac[k])||0;
+    return '<div class="ech">'+
+      '<span class="tx"><b>'+NOMS[k]+'</b><span>'+n+' en réserve · '+TAUX[k]+' jetons pièce</span></span>'+
+      '<button data-e="'+k+'"'+(n?'':' disabled')+'>Tout vendre</button></div>';
+  }).join('');
+  ouvrirPage('La caisse','TON BUTIN CONTRE DES JETONS',
+    lignes+'<div class="res" id="res">Ce que tu ramasses dehors se change ici.</div>');
+  $('pageFond').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.e, n=(e.sac&&e.sac[k])||0;
+    if(!n)return;
+    const g=n*TAUX[k];
+    e.sac[k]=0;e.jetons+=g;
+    sauver();majJetons();
+    ouvrirCaisse();
+    const r=$('res');if(r)r.textContent=n+' '+NOMS[k].toLowerCase()+' vendus — '+g+' jetons.';
+    try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
+  });
 }
 
 function ouvrirBientot(){
