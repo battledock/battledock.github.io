@@ -1780,12 +1780,8 @@ function semerDecor(){
     if(o.t!=='arbre'||!casses.has('a'+o.x+','+o.y))return true;
     DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});return false;});
 
-  /* le casino, planté une fois pour toutes */
-  if(!e.casino){
-    const cx=Math.round(joueur.x+96), cy=Math.round(joueur.y-10);
-    e.casino=[Math.max(BORD+90,Math.min(MONDE-BORD-90,cx)),
-              Math.max(BORD+170,Math.min(MONDE-BORD-30,cy))];
-  }
+  /* le casino : au même endroit pour tous les joueurs */
+  e.casino=CASINO_FIXE;
   /* une esplanade dégagée autour du casino : ni arbre, ni rocher, ni buisson */
   DECOR=DECOR.filter(o=>{
     if(o.t==='fleurs')return true;                     /* les fleurs, on les garde */
@@ -1794,18 +1790,8 @@ function semerDecor(){
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
 
-  /* le campement : four et établi, près du coffre de départ */
-  if(!e.camp){
-    const base=e.coffre?[e.coffre[0],e.coffre[1]]:[Math.round(joueur.x),Math.round(joueur.y)];
-    let p=null;
-    for(const [dx,dy] of [[-70,10],[70,10],[-70,-40],[70,-40],[0,70],[0,-70]]){
-      const x=Math.max(BORD+40,Math.min(MONDE-BORD-40,base[0]+dx));
-      const y=Math.max(BORD+70,Math.min(MONDE-BORD-30,base[1]+dy));
-      if(!bloque(x,y)&&!bloque(x+46,y)){p=[Math.round(x),Math.round(y)];break;}
-    }
-    if(!p)p=[Math.round(base[0]-70),Math.round(base[1]+10)];
-    e.camp=p;sauver();
-  }
+  /* le campement : au même endroit pour tous, lui aussi */
+  e.camp=CAMP_FIXE;
   DECOR=DECOR.filter(o=>o.t==='fleurs'||
     !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));
   DECOR.push({t:'four',  x:e.camp[0],    y:e.camp[1],gr:0});
@@ -2003,6 +1989,9 @@ let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},sc
        four:null,           /* {recette, fin} : ce qui cuit en ce moment */
        sacMax:60};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
+/* Les bâtiments étaient autrefois placés autour de chaque joueur : on
+   efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
+e.casino=null;e.camp=null;e.coffre=null;
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
@@ -2046,6 +2035,11 @@ async function descendreDeLigne(){
   return false;
 }
 
+/* Les bâtiments sont plantés aux mêmes coordonnées pour tout le monde :
+   c'est la même carte, donc le même casino au même endroit. */
+const CASINO_FIXE=[660,430];
+const CAMP_FIXE=[700,624];
+const COFFRE_FIXE=[596,560];
 let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 
@@ -2081,15 +2075,7 @@ function preparerMonde(){
 /* le coffre se place à quelques pas de l'endroit où tu te trouves,
    pour que tu tombes dessus dès la première partie */
 function poserCoffre(){
-  if(!e.coffre){                              /* on ne choisit l'endroit qu'une fois */
-    let p=null;
-    for(const [dx,dy] of [[46,26],[-46,26],[46,-26],[-46,-26],[0,52],[0,-52],[62,0],[-62,0]]){
-      const x=Math.round(joueur.x+dx), y=Math.round(joueur.y+dy);
-      if(x>BORD+30&&x<MONDE-BORD-30&&y>BORD+40&&y<MONDE-BORD-20&&!bloque(x,y)){p=[x,y];break;}
-    }
-    if(!p)p=[Math.round(joueur.x),Math.round(joueur.y+46)];
-    e.coffre=p;sauver();
-  }
+  e.coffre=COFFRE_FIXE;                       /* le même coffre, au même endroit */
   /* le coffre reste sur la carte même une fois vidé : couvercle ouvert */
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');
   DECOR.push({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
