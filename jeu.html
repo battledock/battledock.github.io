@@ -30,6 +30,24 @@ body{overflow:hidden}
 #hublot .attache{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:14px;height:9px;
   border-radius:3px;background:#c9a24a;box-shadow:0 1px 3px rgba(0,0,0,.45)}
 
+#parler{position:fixed;right:16px;bottom:calc(104px + env(safe-area-inset-bottom));z-index:5;
+  width:52px;height:52px;border-radius:50%;display:none;align-items:center;justify-content:center;
+  border:1px solid #4a5540;background:linear-gradient(180deg,#5f7a4c,#3f5432);
+  box-shadow:0 4px 0 #2e3f25,0 6px 14px rgba(0,0,0,.4)}
+#parler.on{display:flex}
+#parler:active{transform:translateY(3px);box-shadow:0 1px 0 #2e3f25}
+#parler.qqn{animation:respire 1.6s ease-in-out infinite}
+@keyframes respire{50%{box-shadow:0 4px 0 #2e3f25,0 0 0 7px rgba(127,216,232,.3)}}
+.phrases{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.phrases button{padding:14px 8px;border-radius:12px;border:1px solid #5c452e;
+  background:linear-gradient(180deg,#3d2c1e,#2b1f14);color:#f2e6cc;font:600 12.5px system-ui}
+.phrases button:active{transform:translateY(2px)}
+.libre{display:flex;gap:8px}
+.libre input{flex:1;min-width:0;padding:13px 12px;border-radius:12px;border:1px solid #5c452e;
+  background:#241a12;color:#f2e6cc;font:400 13px system-ui}
+.libre input::placeholder{color:#8d7d64}
+.libre button{padding:13px 18px;border-radius:12px;border:1px solid #8a6a2a;
+  background:linear-gradient(180deg,#e2ba69,#b4892f);color:#2b1d12;font:700 12.5px system-ui}
 #action{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
   display:none;flex-direction:column;align-items:center;gap:2px;
   padding:12px 16px;border-radius:16px;border:1px solid #4f3520;
@@ -242,6 +260,15 @@ body{overflow:hidden}
   <span class="attache"></span>
 </div>
 <button id="action"></button>
+<button id="parler" title="Parler">
+  <svg viewBox="0 0 22 18" width="24">
+    <rect x="1" y="1" width="20" height="13" rx="4" fill="#f4f1e8"/>
+    <rect x="5" y="6" width="3" height="3" fill="#4a5540"/>
+    <rect x="10" y="6" width="3" height="3" fill="#4a5540"/>
+    <rect x="15" y="6" width="3" height="3" fill="#4a5540"/>
+    <path d="M6 14 L6 18 L10 14z" fill="#f4f1e8"/>
+  </svg>
+</button>
 <div id="barre">
   <button class="latte" id="b-sac">
     <svg viewBox="0 0 20 18" width="30">
@@ -2106,6 +2133,9 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
   dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
+  nettoyerBulles();
+  const maBulle=BULLES.get('moi');
+  if(maBulle)dessinerBulle(ctx,px,py,maBulle.txt,true);
   dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
     ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
   dessinerParts(ctx,camX,camY);
@@ -2392,6 +2422,7 @@ function ouvrirLook(){
 }
 $('b-look').onclick=ouvrirLook;
 $('b-sac').onclick=()=>ouvrirSac();
+$('parler').onclick=()=>ouvrirParler();
 $('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirBatir();
 $('b-class').onclick=()=>ouvrirClassement();
@@ -2578,7 +2609,7 @@ function ouvrirCanal(){
   CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
     if(!p||p.id===e.id)return;
     const a=AUTRES.get(p.id)||{x:p.x,y:p.y,pas:0,marche:false,gesteT:0};
-    a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
+    a.id=p.id;a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
     a.ap=p.ap||a.ap||{};
     a.pseudo=p.n||a.pseudo||'survivant';
     if(p.g&&p.g!==a.geste)a.gesteT=1;
@@ -2587,6 +2618,10 @@ function ouvrirCanal(){
   });
   CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{
     if(p&&p.id)AUTRES.delete(p.id);
+  });
+  CANAL.on('broadcast',{event:'dit'},({payload:p})=>{
+    if(!p||p.id===e.id)return;
+    BULLES.set(p.id,{txt:String(p.txt||'').slice(0,60),jusqua:Date.now()+5000});
   });
   CANAL.on('broadcast',{event:'monde'},({payload:p})=>{
     if(!p||!p.cle)return;
@@ -2630,7 +2665,7 @@ async function ecouterLesAutres(){
       if(j.lieu==='casino')return;                      /* il est à l'intérieur */
       vus.add(j.id);
       const a=AUTRES.get(j.id)||{x:j.x,y:j.y,pas:0,marche:false,gesteT:0};
-      a.cx=j.x;a.cy=j.y;
+      a.id=j.id;a.cx=j.x;a.cy=j.y;
       a.ap=j.apparence||{};
       a.pseudo=j.pseudo||'survivant';
       if(j.geste&&j.geste!==a.geste)a.gesteT=1;
@@ -2703,6 +2738,8 @@ function dessinerAutres(g,camX,camY){
     g.fillStyle='#f2efe4';
     g.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
     g.textAlign='left';
+    const b=BULLES.get(a.id);            /* ce qu'il vient de dire */
+    if(b)dessinerBulle(g,x,y,b.txt,false);
   }
   GESTE=sauve;
 }
@@ -3429,6 +3466,62 @@ function ouvrirEtabli(){
   });
 }
 
+/* ================= se parler quand on se croise ================= */
+const BULLES=new Map();                         /* id → {txt, jusqu'a} */
+const PHRASES=['Salut !','Ça va ?','Viens par ici','Attention !','Bien joué',
+               'Tu mines quoi ?','On va au casino ?','À plus','Merci !','Aide-moi'];
+let clavierOuvert=false;
+
+function direQuelqueChose(txt){
+  txt=String(txt||'').slice(0,60).trim();
+  if(!txt)return;
+  BULLES.set('moi',{txt,jusqua:Date.now()+5000});
+  try{CANAL&&CANAL.send({type:'broadcast',event:'dit',
+    payload:{id:e.id,n:e.pseudo||'survivant',txt}});}catch(x){}
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+}
+
+/* la bulle au-dessus de la tête */
+function dessinerBulle(g,x,y,txt,mienne){
+  g.font='700 8px ui-monospace,monospace';
+  const l=Math.min(150,g.measureText(txt).width+14);
+  const h=15, bx=Math.round(x-l/2), by=Math.round(y-66);
+  g.fillStyle=mienne?'rgba(240,207,125,.94)':'rgba(244,241,232,.94)';
+  g.beginPath();g.roundRect(bx,by,l,h,5);g.fill();
+  g.beginPath();
+  g.moveTo(x-4,by+h);g.lineTo(x,by+h+5);g.lineTo(x+4,by+h);g.closePath();g.fill();
+  g.strokeStyle='rgba(20,26,18,.35)';g.lineWidth=1;
+  g.beginPath();g.roundRect(bx,by,l,h,5);g.stroke();
+  g.fillStyle='#1c2418';g.textAlign='center';
+  g.fillText(txt,x,by+10.5);g.textAlign='left';
+}
+function nettoyerBulles(){
+  const t=Date.now();
+  for(const [k,b] of BULLES)if(t>b.jusqua)BULLES.delete(k);
+}
+
+/* le petit clavier de phrases toutes faites */
+function ouvrirParler(){
+  const autres=[...AUTRES.values()].filter(a=>
+    Math.hypot(a.x-joueur.x,a.y-joueur.y)<120).map(a=>a.pseudo);
+  ouvrirPage('Parler',
+    autres.length?'À '+autres.join(', '):'PERSONNE À PORTÉE DE VOIX',
+    '<div class="phrases">'+PHRASES.map((p,i)=>
+      '<button data-dire="'+i+'">'+p+'</button>').join('')+'</div>'+
+    '<div class="libre"><input id="monTexte" maxlength="60" placeholder="Écris autre chose…">'+
+    '<button id="envoyer">Dire</button></div>');
+  $('page2Fond').querySelectorAll('[data-dire]').forEach(b=>b.onclick=()=>{
+    direQuelqueChose(PHRASES[+b.dataset.dire]);
+    $('page2').classList.remove('on');
+  });
+  const inp=$('monTexte');
+  if($('envoyer'))$('envoyer').onclick=()=>{
+    direQuelqueChose(inp?inp.value:'');
+    if(inp)inp.value='';
+    $('page2').classList.remove('on');
+  };
+}
+
 /* ================= le classement ================= */
 let CLASSEMENT=null, classementEnCours=false;
 async function chargerClassement(){
@@ -3570,6 +3663,13 @@ let t0=performance.now();
     majJoueur(dt);majGeste(dt);
   }
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
+  const bp=$('parler');
+  if(bp){
+    const proche=[...AUTRES.values()].some(a=>Math.hypot(a.x-joueur.x,a.y-joueur.y)<120);
+    bp.classList.toggle('on',AUTRES.size>0&&!$('page2').classList.contains('on')
+      &&!$('page').classList.contains('on'));
+    bp.classList.toggle('qqn',proche);
+  }
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   ouvrirCanal();
