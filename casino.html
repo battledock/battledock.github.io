@@ -995,10 +995,10 @@ direOuJeSuis('casino');
 /* ================= le hall, vu de dessus =================
    Sol plat, murs en bordure, meubles vus d'au-dessus.
    Le décor est peint en triple résolution : aucun pixel visible. */
-const JEU_L=400;                                  /* la salle de black-jack, à gauche */
-const SALLE_L=820, SALLE_H=560;
-const HALL0=JEU_L;                                /* le hall commence ici */
-const PASSAGE=[250,310];                          /* l'ouverture entre les deux */
+const HALL0=400;                                  /* fin de la salle de roulette */
+const HALL1=820;                                  /* fin du hall */
+const SALLE_L=1220, SALLE_H=560;                  /* roulette | hall | black-jack */
+const PASSAGE=[250,310];                          /* les deux ouvertures */
 const SUR=3;
 const MUR=18;                                   /* l'épaisseur de la bordure */
 let SOL=null;
@@ -1014,32 +1014,44 @@ function construireSol(){
     et.forEach(([p,col])=>d.addColorStop(p,col));return d;};
 
   /* le marbre clair du hall */
-  g.fillStyle=lin(HALL0,0,SALLE_L,SALLE_H,
+  g.fillStyle=lin(HALL0,0,HALL1,SALLE_H,
     [[0,'#c2bcb2'],[.4,'#a49e95'],[.75,'#8e887f'],[1,'#79736b']]);
-  g.fillRect(HALL0-MUR,0,SALLE_L-HALL0+MUR,SALLE_H);
-  /* le marbre vert de la salle de jeu */
-  g.fillStyle=lin(0,0,JEU_L,SALLE_H,
-    [[0,'#46524a'],[.4,'#354036'],[.78,'#2a332c'],[1,'#202721']]);
-  g.fillRect(0,0,JEU_L,SALLE_H);
-  g.save();g.globalAlpha=.12;g.strokeStyle='#e4ece6';g.lineCap='round';
-  for(let i=0;i<14;i++){
-    const y=26+i*38+alea(i*5)*16;
-    g.lineWidth=.7+alea(i*3)*1.4;
-    g.beginPath();g.moveTo(-20,y);
-    for(let k=0;k<=JEU_L+20;k+=60)
-      g.quadraticCurveTo(k+30,y+(alea(i*7+k)-.5)*26,k+60,y+(alea(i*5+k)-.5)*16);
-    g.stroke();
-  }
-  g.restore();
-  /* le tapis vert sous la table */
-  g.fillStyle=lin(0,150,0,360,[[0,'#2c4a3a'],[1,'#1b3226']]);
-  g.fillRect(CJ-146,150,292,210);
-  g.strokeStyle=lin(0,0,JEU_L,SALLE_H,[[0,'#fff3cd'],[.4,'#e2ba69'],[1,'#9a7225']]);
-  g.lineWidth=2.4;g.strokeRect(CJ-144,152,288,206);
-  g.save();g.globalAlpha=.4;g.lineWidth=1;g.strokeRect(CJ-136,160,272,190);g.restore();
+  g.fillRect(HALL0-MUR,0,HALL1-HALL0+MUR*2,SALLE_H);
+  /* les deux salles de jeu, en marbre vert */
+  const salleVerte=(x0,larg)=>{
+    g.fillStyle=lin(x0,0,x0+larg,SALLE_H,
+      [[0,'#46524a'],[.4,'#354036'],[.78,'#2a332c'],[1,'#202721']]);
+    g.fillRect(x0,0,larg,SALLE_H);
+    g.save();
+    g.beginPath();g.rect(x0,0,larg,SALLE_H);g.clip();
+    g.globalAlpha=.12;g.strokeStyle='#e4ece6';g.lineCap='round';
+    for(let i=0;i<14;i++){
+      const y=26+i*38+alea(i*5+x0)*16;
+      g.lineWidth=.7+alea(i*3)*1.4;
+      g.beginPath();g.moveTo(x0-20,y);
+      for(let k=0;k<=larg+20;k+=60)
+        g.quadraticCurveTo(x0+k+30,y+(alea(i*7+k)-.5)*26,x0+k+60,y+(alea(i*5+k)-.5)*16);
+      g.stroke();
+    }
+    g.restore();
+  };
+  salleVerte(0,HALL0);
+  salleVerte(HALL1,SALLE_L-HALL1);
+  /* les tapis, sous chaque table */
+  const tapis=(cx,y0,w,h)=>{
+    g.fillStyle=lin(0,y0,0,y0+h,[[0,'#2c4a3a'],[1,'#1b3226']]);
+    g.fillRect(cx-w/2,y0,w,h);
+    g.strokeStyle=lin(cx-w/2,y0,cx+w/2,y0+h,
+      [[0,'#fff3cd'],[.35,'#e2ba69'],[.62,'#9a7225'],[1,'#f0d79a']]);
+    g.lineWidth=2.4;g.strokeRect(cx-w/2+2,y0+2,w-4,h-4);
+    g.save();g.globalAlpha=.4;g.lineWidth=1;
+    g.strokeRect(cx-w/2+10,y0+10,w-20,h-20);g.restore();
+  };
+  tapis(CJ,162,292,206);
+  tapis(CB,150,292,210);
   /* les veines, dans le plan du sol */
   g.save();
-  g.beginPath();g.rect(HALL0-MUR,0,SALLE_L-HALL0+MUR,SALLE_H);g.clip();
+  g.beginPath();g.rect(HALL0,0,HALL1-HALL0,SALLE_H);g.clip();
   g.globalAlpha=.17;g.strokeStyle='#f4f1eb';g.lineCap='round';
   for(let i=0;i<16;i++){
     const y=30+i*36+alea(i)*18;
@@ -1061,7 +1073,7 @@ function construireSol(){
   g.restore();
 
   /* la rosace incrustée, au centre du hall */
-  const cx=CX, cy=470;
+  const cx=CX, cy=360;
   const or=lin(cx-60,cy-60,cx+60,cy+60,
     [[0,'#fff3cd'],[.35,'#e2ba69'],[.62,'#9a7225'],[1,'#f0d79a']]);
   g.save();g.globalAlpha=.6;g.strokeStyle=or;
@@ -1083,17 +1095,20 @@ function construireSol(){
   /* la bordure : les murs, vus d'en haut */
   const bois=lin(0,0,0,MUR,[[0,'#3a2a1c'],[.5,'#2a1c12'],[1,'#1d130c']]);
   g.fillStyle=bois;
-  g.fillRect(HALL0,0,(SALLE_L-HALL0-LOGE.w)/2,MUR+LOGE.h);   /* mur à gauche de la loge */
-  g.fillRect(LOGE.x+LOGE.w/2,0,(SALLE_L-HALL0-LOGE.w)/2,MUR+LOGE.h);
+  g.fillRect(HALL0,0,LOGE.x-LOGE.w/2-HALL0,MUR+LOGE.h);      /* mur à gauche de la loge */
+  g.fillRect(LOGE.x+LOGE.w/2,0,HALL1-(LOGE.x+LOGE.w/2),MUR+LOGE.h);
   g.fillRect(0,0,SALLE_L,MUR*0.7);
-  /* la cloison entre la salle de jeu et le hall */
-  g.fillRect(HALL0-MUR/2,0,MUR,PASSAGE[0]);
-  g.fillRect(HALL0-MUR/2,PASSAGE[1],MUR,SALLE_H-PASSAGE[1]);
-  g.fillStyle=or;
-  g.fillRect(HALL0+MUR/2-2.5,0,2.5,PASSAGE[0]);
-  g.fillRect(HALL0+MUR/2-2.5,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
-  g.fillRect(HALL0-MUR/2,0,2.5,PASSAGE[0]);
-  g.fillRect(HALL0-MUR/2,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
+  /* les deux cloisons du hall, percées d'un passage */
+  [HALL0,HALL1].forEach(cx=>{
+    g.fillStyle=bois;
+    g.fillRect(cx-MUR/2,0,MUR,PASSAGE[0]);
+    g.fillRect(cx-MUR/2,PASSAGE[1],MUR,SALLE_H-PASSAGE[1]);
+    g.fillStyle=or;
+    g.fillRect(cx+MUR/2-2.5,0,2.5,PASSAGE[0]);
+    g.fillRect(cx+MUR/2-2.5,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
+    g.fillRect(cx-MUR/2,0,2.5,PASSAGE[0]);
+    g.fillRect(cx-MUR/2,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
+  });
   g.fillStyle=bois;
   g.fillRect(0,SALLE_H-MUR,SALLE_L,MUR);
   g.fillRect(0,0,MUR,SALLE_H);
@@ -1110,11 +1125,14 @@ function construireSol(){
   g.fillRect(MUR,MUR,SALLE_L-MUR*2,SALLE_H-MUR*2);
   g.restore();
 
-  /* le nom de la salle, gravé au sol */
-  g.save();g.globalAlpha=.45;g.fillStyle=or;
-  g.font='600 27px Georgia,serif';g.textAlign='center';
-  g.fillText('BLACK-JACK',CJ,108);
-  g.globalAlpha=.3;g.fillRect(CJ-80,118,160,1.6);
+  /* le nom de chaque salle, gravé au sol */
+  g.save();g.fillStyle=or;g.textAlign='center';
+  g.globalAlpha=.45;g.font='600 27px Georgia,serif';
+  g.fillText('LA ROULETTE',CJ,116);
+  g.globalAlpha=.3;g.fillRect(CJ-82,126,164,1.6);
+  g.globalAlpha=.45;
+  g.fillText('BLACK-JACK',CB,108);
+  g.globalAlpha=.3;g.fillRect(CB-80,118,160,1.6);
   g.restore();
 
   /* la loge du guichet, creusée dans le mur du haut */
@@ -1147,8 +1165,8 @@ const ombreSous=(g,x,y,rx,ry,a)=>{
 /* ================= le guichet, vu de dessus ================= */
 
 /* ================= la loge du guichet, creusée dans le mur ================= */
-const LOGE={x:620, y:34, w:150, h:96};     /* le renfoncement */
-const COMPTOIR={x:620, y:132, w:150, h:26};
+const LOGE={x:610, y:34, w:150, h:96};     /* le renfoncement */
+const COMPTOIR={x:610, y:132, w:150, h:26};
 
 /* on peint la loge dans la toile du sol : parquet, étagères, ombres */
 function peindreLoge(g,or,lin,rad){
@@ -1561,11 +1579,14 @@ function porteBas(g,x,y){
 
 
 /* ================= ce qu'il y a dans le hall ================= */
-const CX=HALL0+(SALLE_L-HALL0)/2;
-const CJ=JEU_L/2;      /* le centre de la salle de jeu */
-const TABLE={x:200, y:250, rx:96, ry:58};
-const ROULETTE={x:620, y:340, rx:86, ry:52};
-const CROUPIER={x:200, y:216, ap:{peau:1,cheveux:2,coiffe:3,yeux:1,veste:2,haut:0,
+const CX=HALL0+(HALL1-HALL0)/2;                   /* le centre du hall */
+const CJ=HALL0/2;                                 /* la salle de roulette */
+const CB=HALL1+(SALLE_L-HALL1)/2;                 /* la salle de black-jack */
+const TABLE={x:1020, y:250, rx:96, ry:58};        /* le black-jack, à droite */
+const ROULETTE={x:200, y:262, rx:92, ry:56};      /* la roulette, à gauche */
+const CHAISES_R=[[ROULETTE.x-58,332],[ROULETTE.x,342],[ROULETTE.x+58,332]];
+const CHAISES_B=[[TABLE.x-52,316],[TABLE.x,326],[TABLE.x+52,316]];
+const CROUPIER={x:1020, y:216, ap:{peau:1,cheveux:2,coiffe:3,yeux:1,veste:2,haut:0,
   pantalon:2,bas:2,souliers:1,chapeau:0,sourcils:1,nez:1,bouche:1,corps:1}};
 const HOTESSE={x:CX,y:106,ap:{peau:1,cheveux:4,coiffe:10,yeux:2,veste:0,haut:2,pantalon:3,bas:4,
   souliers:1,chapeau:0,sourcils:1,nez:1,bouche:2,corps:1}};
@@ -1573,23 +1594,25 @@ const PORTE={x:CX,y:SALLE_H-MUR/2};
 
 function bloque(x,y){
   if(x<MUR+10||x>SALLE_L-MUR-10)return true;
-  /* la cloison entre les deux salles, sauf le passage */
-  if(Math.abs(x-HALL0)<MUR/2+9&&(y<PASSAGE[0]+8||y>PASSAGE[1]-8))return true;
-  /* la table de roulette, dans le hall */
-  if(x>=HALL0){
+  /* les deux cloisons, sauf leur passage */
+  for(const cx of [HALL0,HALL1])
+    if(Math.abs(x-cx)<MUR/2+9&&(y<PASSAGE[0]+8||y>PASSAGE[1]-8))return true;
+  /* la salle de roulette, à gauche */
+  if(x<HALL0){
     const dx=(x-ROULETTE.x)/(ROULETTE.rx+9), dy=(y-(ROULETTE.y-4))/(ROULETTE.ry+9);
     if(y<ROULETTE.y+12&&dx*dx+dy*dy<1)return true;
-    for(const [cx,cy] of [[ROULETTE.x-56,402],[ROULETTE.x,412],[ROULETTE.x+56,402]])
+    for(const [cx,cy] of CHAISES_R)
       if(Math.hypot(cx-x,(cy-y)*1.5)<13)return true;
+    if(y<MUR+30||y>SALLE_H-MUR-10)return true;
+    return false;
   }
-  /* la table de black-jack */
-  if(x<HALL0){
+  /* la salle de black-jack, à droite */
+  if(x>HALL1){
     const dx=(x-TABLE.x)/(TABLE.rx+9), dy=(y-(TABLE.y-4))/(TABLE.ry+9);
     if(y<TABLE.y+12&&dx*dx+dy*dy<1)return true;
-    if(y<MUR+30)return true;
-    for(const [cx,cy] of [[TABLE.x-52,316],[TABLE.x,326],[TABLE.x+52,316]])
+    for(const [cx,cy] of CHAISES_B)
       if(Math.hypot(cx-x,(cy-y)*1.5)<13)return true;
-    if(y>SALLE_H-MUR-10)return true;
+    if(y<MUR+30||y>SALLE_H-MUR-10)return true;
     return false;
   }
   /* la loge est réservée à l'hôtesse : on s'arrête au comptoir */
@@ -1661,7 +1684,8 @@ function dessiner(){
 
   /* les halos des lustres, au sol */
   halo(ctx,CX-iX,86-iY,72,.2);                   /* la lampe de la loge */
-  lampeBJ(ctx,TABLE.x-iX,TABLE.y-34-iY);          /* la lampe au-dessus du tapis */
+  lampeBJ(ctx,TABLE.x-iX,TABLE.y-34-iY);          /* au-dessus du black-jack */
+  lampeBJ(ctx,ROULETTE.x-iX,ROULETTE.y-38-iY);    /* au-dessus de la roulette */
   halo(ctx,CX-iX,330-iY,100,.17);
   halo(ctx,MUR+60-iX,470-iY,56,.1);
   halo(ctx,SALLE_L-MUR-60-iX,470-iY,56,.1);
@@ -1670,13 +1694,9 @@ function dessiner(){
   const objets=[
     {y:186,f:()=>dessinerCroupier(iX,iY)},
     {y:250,f:()=>tableBJ(ctx,TABLE.x-iX,TABLE.y-iY)},
-    {y:340,f:()=>tableRoulette(ctx,ROULETTE.x-iX,ROULETTE.y-iY)},
-    {y:404,f:()=>{chaiseBJ(ctx,ROULETTE.x-56-iX,402-iY);
-                  chaiseBJ(ctx,ROULETTE.x-iX,412-iY);
-                  chaiseBJ(ctx,ROULETTE.x+56-iX,402-iY);}},
-    {y:318,f:()=>{chaiseBJ(ctx,TABLE.x-52-iX,316-iY);
-                  chaiseBJ(ctx,TABLE.x-iX,326-iY);
-                  chaiseBJ(ctx,TABLE.x+52-iX,316-iY);}},
+    {y:ROULETTE.y,f:()=>tableRoulette(ctx,ROULETTE.x-iX,ROULETTE.y-iY)},
+    {y:344,f:()=>CHAISES_R.forEach(([cx,cy])=>chaiseBJ(ctx,cx-iX,cy-iY))},
+    {y:328,f:()=>CHAISES_B.forEach(([cx,cy])=>chaiseBJ(ctx,cx-iX,cy-iY))},
     {y:62,f:()=>etageres(ctx,CX-iX,62-iY,LOGE.w-18)},
     {y:96,f:()=>chaise(ctx,CX-iX,96-iY)},
     {y:106,f:()=>dessinerHotesse(iX,iY)},
@@ -2184,13 +2204,13 @@ function majAction(){
   const b=$('action');
   if($('page').classList.contains('on')){b.classList.remove('on');return;}
   /* devant la table de black-jack */
-  if(joueur.x<HALL0&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
+  if(joueur.x>HALL1&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
      joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70){
     b.innerHTML='S’asseoir<small>BLACK-JACK</small>';b.classList.add('on');return;
   }
   /* devant la roulette */
-  if(joueur.x>=HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
-     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+64){
+  if(joueur.x<HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
+     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+70){
     b.innerHTML='Miser<small>ROULETTE · TOUS ENSEMBLE</small>';b.classList.add('on');return;
   }
   const pres=Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70;
@@ -2200,10 +2220,10 @@ function majAction(){
   b.classList.remove('on');
 }
 $('action').onclick=()=>{
-  if(joueur.x<HALL0&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
+  if(joueur.x>HALL1&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
      joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70)return ouvrirBJ();
-  if(joueur.x>=HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
-     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+64)return ouvrirRoulette();
+  if(joueur.x<HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
+     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+70)return ouvrirRoulette();
   if(Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70)return ouvrirGuichet();
   if(Math.hypot(joueur.x-PORTE.x,joueur.y-PORTE.y)<50&&!sortie){sortie=true;sortir();}
 };
