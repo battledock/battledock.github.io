@@ -42,7 +42,31 @@ body{overflow:hidden}
 .panApercu{border:2px solid;border-radius:12px;padding:16px 14px;text-align:center;margin-bottom:14px}
 .panApercu b{display:block;font:700 15px/1.4 system-ui;word-break:break-word}
 .panApercu span{display:block;margin-top:8px;font:600 10px system-ui;color:rgba(255,255,255,.45)}
-.choixC{display:flex;gap:9px;margin:12px 0}
+.titreC{font:700 8.5px system-ui;letter-spacing:1.6px;color:#8d7d64;margin:14px 0 7px}
+.choixC{display:flex;gap:9px;margin:0 0 4px}
+.choixL{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.choixL button{padding:7px 2px 5px;border-radius:11px;border:1px solid #5c452e;
+  background:#3d2c1e;display:flex;flex-direction:column;align-items:center;gap:3px}
+.choixL button.on{border-color:#f0cf7d;box-shadow:0 0 0 1px #f0cf7d}
+.choixL canvas{width:18px;height:18px;image-rendering:pixelated}
+.choixL u{width:18px;height:18px;display:flex;align-items:center;justify-content:center;
+  color:#8d7d64;text-decoration:none;font:700 13px system-ui}
+.choixL span{font:600 7px system-ui;color:#c6b38a;letter-spacing:.2px}
+.choixM{display:flex;flex-wrap:wrap;gap:7px}
+.choixM button{flex:1 1 30%;padding:10px 4px;border-radius:11px;border:1px solid #5c452e;
+  background:#3d2c1e;color:#c6b38a;font:600 10.5px system-ui}
+.choixM button.on{border-color:#f0cf7d;color:#f2e6cc}
+.panApercu{position:relative;overflow:hidden}
+.panApercu .panLogo{width:22px;height:22px;image-rendering:pixelated;display:block;margin:0 auto 8px}
+.panApercu.rayures::before{content:'';position:absolute;inset:0;opacity:.16;
+  background:repeating-linear-gradient(135deg,var(--tr) 0 5px,transparent 5px 12px)}
+.panApercu.damier::before{content:'';position:absolute;inset:0;opacity:.14;
+  background:repeating-conic-gradient(var(--tr) 0 25%,transparent 0 50%) 0 0/16px 16px}
+.panApercu.eclats::before{content:'';position:absolute;inset:0;opacity:.2;
+  background:radial-gradient(var(--tr) 1px,transparent 1.6px) 0 0/13px 13px}
+.panApercu.cadre::after{content:'';position:absolute;inset:6px;border:1px solid var(--tr);
+  opacity:.55;border-radius:7px}
+.panApercu b,.panApercu span,.panApercu canvas{position:relative;z-index:1}
 .choixC button{flex:1;height:42px;border-radius:12px;border:2px solid;
   display:flex;align-items:center;justify-content:center}
 .choixC button.on{box-shadow:0 0 0 2px #f0cf7d}
@@ -1221,11 +1245,64 @@ function dessinerFleurs(g,x,y,gr){
    Tout le monde le voit, où qu'il soit sur la carte. */
 let PANNEAU={libre:true,prix:100}, panneauVu=0;
 const COUL_PAN={
-  or:   {fond:'#3d2a17',cadre:'#e2ba69',texte:'#f0cf7d'},
-  rouge:{fond:'#3a1418',cadre:'#d14a3a',texte:'#f2a48f'},
-  vert: {fond:'#12301f',cadre:'#4f9e72',texte:'#9fdfb8'},
-  bleu: {fond:'#131f36',cadre:'#5b8fc9',texte:'#a8cdf0'}
+  or:    {fond:'#3d2a17',cadre:'#e2ba69',texte:'#f0cf7d',nom:'Or'},
+  rouge: {fond:'#3a1418',cadre:'#d14a3a',texte:'#f2a48f',nom:'Rouge'},
+  vert:  {fond:'#12301f',cadre:'#4f9e72',texte:'#9fdfb8',nom:'Vert'},
+  bleu:  {fond:'#131f36',cadre:'#5b8fc9',texte:'#a8cdf0',nom:'Bleu'},
+  violet:{fond:'#261a36',cadre:'#9a6fc9',texte:'#d3b8f0',nom:'Violet'},
+  nuit:  {fond:'#14161c',cadre:'#8d93a0',texte:'#e6e9ee',nom:'Nuit'}
 };
+/* les petits logos, dessinés au pixel */
+const LOGOS={
+  aucun:null,
+  pioche:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-1,y-4,2,10);g.fillRect(x-5,y-6,11,2);
+    g.fillRect(x-6,y-5,2,2);g.fillRect(x+4,y-5,2,2);},
+  hache:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-1,y-5,2,11);g.fillRect(x,y-6,5,6);
+    g.fillRect(x+4,y-5,2,4);},
+  jeton:(g,x,y,c)=>{g.fillStyle=c;g.beginPath();g.arc(x,y,5,0,7);g.fill();
+    g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.arc(x,y,2.4,0,7);g.fill();},
+  coeur:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-5,y-4,4,3);g.fillRect(x+1,y-4,4,3);
+    g.fillRect(x-5,y-1,10,3);g.fillRect(x-3,y+2,6,2);g.fillRect(x-1,y+4,2,2);},
+  etoile:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-1,y-6,2,12);g.fillRect(x-6,y-1,12,2);
+    g.fillRect(x-3,y-3,6,6);},
+  crane:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-4,y-5,8,7);g.fillRect(x-3,y+2,6,3);
+    g.fillStyle='rgba(0,0,0,.55)';g.fillRect(x-3,y-3,2,3);g.fillRect(x+1,y-3,2,3);},
+  poisson:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-5,y-2,8,5);g.fillRect(x-3,y-4,5,2);
+    g.fillRect(x-3,y+3,5,2);g.fillRect(x+3,y-4,3,9);
+    g.fillStyle='rgba(0,0,0,.5)';g.fillRect(x-3,y-1,2,2);},
+  feuille:(g,x,y,c)=>{g.fillStyle=c;g.fillRect(x-1,y-1,2,7);g.fillRect(x-5,y-5,5,5);
+    g.fillRect(x,y-6,5,5);}
+};
+const NOMS_LOGO={aucun:'Aucun',pioche:'Pioche',hache:'Hache',jeton:'Jeton',coeur:'Cœur',
+  etoile:'Étoile',crane:'Crâne',poisson:'Poisson',feuille:'Feuille'};
+const MOTIFS={uni:'Uni',rayures:'Rayures',damier:'Damier',cadre:'Double cadre',eclats:'Éclats'};
+/* le fond du panneau, selon le motif choisi */
+function fondPanneau(g,x,y,w,h,C,motif){
+  g.fillStyle=C.fond;g.fillRect(x,y,w,h);
+  g.save();
+  g.beginPath();g.rect(x,y,w,h);g.clip();
+  g.globalAlpha=.16;g.fillStyle=C.cadre;
+  if(motif==='rayures'){
+    for(let i=-h;i<w;i+=10){
+      g.beginPath();g.moveTo(x+i,y+h);g.lineTo(x+i+h,y);
+      g.lineTo(x+i+h+4,y);g.lineTo(x+i+4,y+h);g.closePath();g.fill();
+    }
+  }else if(motif==='damier'){
+    for(let a=0;a<w;a+=11)for(let b=0;b<h;b+=11)
+      if(((a/11)+(b/11))%2===0)g.fillRect(x+a,y+b,11,11);
+  }else if(motif==='eclats'){
+    for(let i=0;i<14;i++){
+      const a=x+alea(i*3.7)*w, b=y+alea(i*5.1)*h;
+      g.fillRect(a,b,3,3);g.fillRect(a+4,b+5,2,2);
+    }
+  }
+  g.restore();
+  if(motif==='cadre'){
+    g.strokeStyle=C.cadre;g.globalAlpha=.55;g.lineWidth=1;
+    g.strokeRect(x+4,y+4,w-8,h-8);g.globalAlpha=1;
+  }
+}
+
 async function lirePanneau(){
   try{
     const r=await fetch(URL_SB+'/rest/v1/rpc/lire_panneau',
@@ -1256,7 +1333,7 @@ function dessinerPanneau(g,x,y){
   g.moveTo(x+26,y-6);g.lineTo(x+38,y-1);g.stroke();
   /* le cadre */
   R(-44,-86,88,50,'#4f3520');
-  R(-42,-84,84,46,C.fond);
+  fondPanneau(g,x-42,y-84,84,46,C,PANNEAU.motif||'uni');
   g.strokeStyle=C.cadre;g.lineWidth=2;
   g.strokeRect(x-42,y-84,84,46);
   /* les clous d'angle */
@@ -1283,9 +1360,11 @@ function dessinerPanneau(g,x,y){
     });
     if(l)lignes.push(l);
     const trois=lignes.slice(0,3);
+    const L=LOGOS[PANNEAU.logo];
+    if(L)L(g,x,y-74,C.texte);                    /* le logo, en haut */
     g.fillStyle=C.texte;
     g.font='700 9px system-ui';g.textAlign='center';
-    const y0=-70+(3-trois.length)*5;
+    const y0=(L?-62:-70)+(3-trois.length)*5;
     trois.forEach((li,i)=>g.fillText(li,x,y+y0+i*11));
     g.font='600 6px system-ui';
     g.fillStyle='rgba(255,255,255,.4)';
@@ -1308,13 +1387,14 @@ function dessinerPanneau(g,x,y){
 }
 
 /* ---- la fiche : louer ou regarder ---- */
-let panTexte='', panCouleur='or';
+let panTexte='', panCouleur='or', panLogo='aucun', panMotif='uni';
 async function ouvrirPanneau(){
   await lirePanneau();
   let corps;
   if(!PANNEAU.libre){
     const C=COUL_PAN[PANNEAU.couleur]||COUL_PAN.or;
-    corps='<div class="panApercu" style="background:'+C.fond+';border-color:'+C.cadre+'">'+
+    corps='<div class="panApercu '+(PANNEAU.motif||'uni')+'" style="background:'+C.fond+
+      ';border-color:'+C.cadre+';--tr:'+C.cadre+'">'+
       '<b style="color:'+C.texte+'">'+echapper(PANNEAU.texte)+'</b>'+
       '<span>— '+echapper(PANNEAU.pseudo||'un survivant')+'</span></div>'+
       '<div class="vide2">Le panneau est pris encore '+resteEnClair(PANNEAU.reste)+'.<br>'+
@@ -1323,16 +1403,28 @@ async function ouvrirPanneau(){
       corps+='<div class="vide2">C’est le tien.</div>';
   }else{
     const C=COUL_PAN[panCouleur];
-    corps='<div class="panApercu" style="background:'+C.fond+';border-color:'+C.cadre+'">'+
+    corps='<div class="panApercu '+panMotif+'" style="background:'+C.fond+
+      ';border-color:'+C.cadre+';--tr:'+C.cadre+'">'+
+      (panLogo!=='aucun'?'<canvas class="panLogo" width="44" height="44"></canvas>':'')+
       '<b style="color:'+C.texte+'">'+(panTexte?echapper(panTexte):'ton message ici')+'</b>'+
       '<span>— '+echapper(e.pseudo||'toi')+'</span></div>';
     corps+='<div class="libre"><input id="panTexte" maxlength="40" value="'+
       echapper(panTexte)+'" placeholder="Ce que tout le monde va lire…"></div>'+
       '<div class="compteC"><span id="panReste">'+(40-panTexte.length)+'</span> caractères restants</div>';
-    corps+='<div class="choixC">'+Object.keys(COUL_PAN).map(k=>
+    corps+='<div class="titreC">COULEUR</div><div class="choixC">'+
+      Object.keys(COUL_PAN).map(k=>
       '<button data-coul="'+k+'" class="'+(k===panCouleur?'on':'')+'" '+
       'style="background:'+COUL_PAN[k].fond+';border-color:'+COUL_PAN[k].cadre+'">'+
       '<i style="background:'+COUL_PAN[k].texte+'"></i></button>').join('')+'</div>';
+    corps+='<div class="titreC">LOGO</div><div class="choixL">'+
+      Object.keys(LOGOS).map(k=>
+      '<button data-logo="'+k+'" class="'+(k===panLogo?'on':'')+'">'+
+      (k==='aucun'?'<u>—</u>':'<canvas class="lg" data-dessine="'+k+'" width="36" height="36"></canvas>')+
+      '<span>'+NOMS_LOGO[k]+'</span></button>').join('')+'</div>';
+    corps+='<div class="titreC">FOND</div><div class="choixM">'+
+      Object.keys(MOTIFS).map(k=>
+      '<button data-motif="'+k+'" class="'+(k===panMotif?'on':'')+'">'+MOTIFS[k]+'</button>').join('')+
+      '</div>';
     const assez=e.jetons>=100;
     corps+='<button class="tout" id="louer"'+(assez?'':' disabled')+'>'+
       (assez?'Louer une heure · 100 jetons':'Il te manque '+(100-e.jetons)+' jetons')+'</button>';
@@ -1350,10 +1442,31 @@ async function ouvrirPanneau(){
         r.style.color=40-panTexte.length<6?'#e08a8a':'#8d7d64';}
     });
   }
+  const garderTexte=()=>{const i=$('panTexte');if(i)panTexte=i.value;};
   $('page2Fond').querySelectorAll('[data-coul]').forEach(b=>b.onclick=()=>{
-    const i=$('panTexte');if(i)panTexte=i.value;
-    panCouleur=b.dataset.coul;ouvrirPanneau();
-  });
+    garderTexte();panCouleur=b.dataset.coul;ouvrirPanneau();});
+  $('page2Fond').querySelectorAll('[data-logo]').forEach(b=>b.onclick=()=>{
+    garderTexte();panLogo=b.dataset.logo;ouvrirPanneau();});
+  $('page2Fond').querySelectorAll('[data-motif]').forEach(b=>b.onclick=()=>{
+    garderTexte();panMotif=b.dataset.motif;ouvrirPanneau();});
+  /* on dessine les logos dans leurs petites cases */
+  setTimeout(()=>{
+    const C2=COUL_PAN[panCouleur];
+    $('page2Fond').querySelectorAll('[data-dessine]').forEach(cv=>{
+      if(!cv.getContext)return;
+      const g2=cv.getContext('2d');
+      g2.setTransform(2,0,0,2,0,0);g2.clearRect(0,0,18,18);
+      const L=LOGOS[cv.dataset.dessine];
+      if(L)L(g2,9,9,C2.texte);
+    });
+    const ap=$('page2Fond').querySelectorAll('.panLogo')[0];
+    if(ap&&ap.getContext){
+      const g3=ap.getContext('2d');
+      g3.setTransform(2,0,0,2,0,0);g3.clearRect(0,0,22,22);
+      const L2=LOGOS[panLogo];
+      if(L2)L2(g3,11,11,C2.texte);
+    }
+  },0);
   if($('louer'))$('louer').onclick=louerPanneau;
 }
 const echapper=(t)=>String(t||'').replace(/[<>&"]/g,c=>
@@ -1366,7 +1479,7 @@ async function louerPanneau(){
     const r=$('res');if(r)r.textContent='Écris quelque chose d’abord.';return;
   }
   const d=await appelRPC('louer_panneau',{p_joueur:e.id,p_pseudo:e.pseudo||'un survivant',
-    p_texte:panTexte,p_couleur:panCouleur});
+    p_texte:panTexte,p_couleur:panCouleur,p_logo:panLogo,p_motif:panMotif});
   if(d&&d.erreur){const r=$('res');if(r)r.textContent=d.erreur;return;}
   if(d&&typeof d.jetons==='number'){e.jetons=d.jetons;sauver();}
   panTexte='';
@@ -3203,7 +3316,9 @@ async function chargerLaCarte(){
     const d=await r.json();
     if(!Array.isArray(d)||!d.length)return false;
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
-    const garder=['pont','casino','comptoir','panneau','four','etabli','coffre','souche','gravats'];
+    /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
+       en attendant, sinon il y en aurait deux. */
+    const garder=['pont','casino','comptoir','four','etabli','coffre','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));
     d.forEach(m=>DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle}));
     DECOR.sort((a,b)=>a.y-b.y);
