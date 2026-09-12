@@ -1773,8 +1773,8 @@ function semerDecor(){
   }
 
   /* les rochers déjà cassés ne repoussent pas */
-  const casses=new Set(e.casses||[]);
-  DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has(o.x+','+o.y)));
+  const casses=new Set((e.casses||[]).map(c=>/^[a-z]/.test(c)?c:'r'+c));
+  DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has('r'+o.x+','+o.y)));
   DECOR=DECOR.filter(o=>!(['fer','cuivre','charbon'].includes(o.t)&&casses.has('m'+o.x+','+o.y)));
   DECOR=DECOR.filter(o=>{
     if(o.t!=='arbre'||!casses.has('a'+o.x+','+o.y))return true;
@@ -2506,6 +2506,66 @@ const rebond  =t=>{const n=7.5625,d=2.75;
   if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
   t-=2.625/d;return n*t*t+.984375;};
 
+/* ================= le monde partagé =================
+   Ce que l'un casse ou cueille disparaît chez tous les autres.
+   Le direct passe par le canal, la base garde la trace pour ceux
+   qui arrivent après. */
+const CUEILLI=new Map();                        /* clé → heure de la cueillette */
+const REPOUSSE={cueillette:210000, buisson:240000, resine:180000};
+
+function cleDe(o){
+  const p={rocher:'r',arbre:'a',fer:'m',cuivre:'m',charbon:'m',
+           buisson:'b',resine:'s'}[o.t]||'c';
+  return p+o.x+','+o.y;
+}
+async function chargerLeMonde(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/monde?select=cle,genre,quand&limit=2000',
+      {headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d))return;
+    const maintenant=Date.now();
+    d.forEach(m=>{
+      const t=new Date(m.quand).getTime();
+      const duree=REPOUSSE[m.genre];
+      if(duree&&maintenant-t>duree)return;       /* ça a déjà repoussé */
+      if(duree)CUEILLI.set(m.cle,t);
+      else if(!e.casses.includes(m.cle))e.casses.push(m.cle);
+    });
+    appliquerLeMonde();
+  }catch(x){}
+}
+/* on enlève de la carte ce qui n'y est plus */
+function appliquerLeMonde(){
+  const casses=new Set(e.casses||[]);
+  let change=false;
+  for(let i=DECOR.length-1;i>=0;i--){
+    const o=DECOR[i];
+    const c=cleDe(o);
+    if(['rocher','fer','cuivre','charbon'].includes(o.t)&&casses.has(c)){
+      DECOR.splice(i,1);
+      DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0});change=true;
+    }else if(o.t==='arbre'&&casses.has(c)){
+      DECOR.splice(i,1);
+      DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});change=true;
+    }else if(CUEILLI.has(c)&&!o.cueilli){
+      o.cueilli=CUEILLI.get(c);change=true;
+    }
+  }
+  if(change)DECOR.sort((a,b)=>a.y-b.y);
+}
+/* on prévient les autres, tout de suite puis dans la base */
+function signalerLeMonde(o,genre){
+  const cle=cleDe(o);
+  try{CANAL&&CANAL.send({type:'broadcast',event:'monde',
+    payload:{cle,genre,quand:Date.now()}});}catch(x){}
+  try{
+    fetch(URL_SB+'/rest/v1/monde',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
+      body:JSON.stringify([{cle,genre,quand:new Date().toISOString(),par:e.id}])});
+  }catch(x){}
+}
+
 /* ================= les autres survivants, en temps réel =================
    On passe par un canal ouvert en permanence (websocket) : la position
    part 10 fois par seconde et arrive chez les autres en quelques
@@ -2528,7 +2588,13 @@ function ouvrirCanal(){
   CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{
     if(p&&p.id)AUTRES.delete(p.id);
   });
-  CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
+  CANAL.on('broadcast',{event:'monde'},({payload:p})=>{
+    if(!p||!p.cle)return;
+    if(REPOUSSE[p.genre])CUEILLI.set(p.cle,p.quand||Date.now());
+    else if(!e.casses.includes(p.cle))e.casses.push(p.cle);
+    appliquerLeMonde();
+  });
+  CANAL.subscribe(st=>{if(st==='SUBSCRIBED'){bipPosition(true);chargerLeMonde();}});
 }
 function bipPosition(force){
   if(!CANAL||!e.id)return;
@@ -2848,7 +2914,7 @@ function majGeste(dt){
         const pris=ajouter('pierre',q);
         e.recolte=(e.recolte||0)+pris;
         e.score=(e.score||0)+5;
-        e.casses.push(o.x+','+o.y);
+        e.casses.push(o.x+','+o.y);signalerLeMonde(o,'rocher');
         DECOR.splice(DECOR.indexOf(o),1);
         DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
         texteVolant(o.x,o.y-22,'+'+pris+' pierre','#cfd6db');
@@ -2893,7 +2959,7 @@ function miner(o){
     const cailloux=ajouter('pierre',1);
     e.recolte=(e.recolte||0)+pris+cailloux;
     e.score=(e.score||0)+R.pts;
-    e.casses.push('m'+o.x+','+o.y);
+    e.casses.push('m'+o.x+','+o.y);signalerLeMonde(o,'minerai');
     DECOR.splice(DECOR.indexOf(o),1);
     DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
     DECOR.sort((a,b)=>a.y-b.y);
@@ -2910,6 +2976,7 @@ function miner(o){
 
 /* ---- la résine : on entaille l'arbre au lieu de l'abattre ---- */
 function recolterResine(o){
+  signalerLeMonde(o,'resine');
   o.saigne=Date.now();o.frappe=Date.now();
   for(let i=0;i<9;i++){
     const a=-1.1-Math.random()*0.8;
@@ -2941,6 +3008,7 @@ const RECOLTES={
 function ramasser(o){
   const R=RECOLTES[o.t];
   o.cueilli=Date.now();o.frappe=Date.now();
+  signalerLeMonde(o,'cueillette');
   for(let i=0;i<8;i++){
     const a=-1.2-Math.random()*0.7;
     PARTS.push({x:o.x+(Math.random()-.5)*16,y:o.y-10,
@@ -2963,6 +3031,7 @@ function ramasser(o){
 
 /* ---- cueillir un buisson : rien ne casse, ça remue et ça donne ---- */
 function cueillir(o){
+  signalerLeMonde(o,'buisson');
   o.cueilli=Date.now();o.frappe=Date.now();o.secoue=1;
   /* les baies sautent du buisson */
   for(let i=0;i<9;i++){
@@ -3044,7 +3113,7 @@ function couper(o){
     const pris=ajouter('bois',q);
     const fib=ajouter('fibre',1);
     e.recolte=(e.recolte||0)+pris+fib;e.score=(e.score||0)+8;
-    e.casses.push('a'+o.x+','+o.y);
+    e.casses.push('a'+o.x+','+o.y);signalerLeMonde(o,'arbre');
     texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
     texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
     for(let i2=0;i2<pris;i2++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'bois'),i2*80);
