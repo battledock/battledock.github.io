@@ -163,6 +163,7 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 <div id="page"><div class="fond" id="pageFond"></div></div>
 
 <script type="module">
+import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
 const $=id=>document.getElementById(id);
 const cv=$('cv'), ctx=cv.getContext('2d');
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
@@ -937,8 +938,38 @@ async function direOuJeSuis(lieu){
   }catch(x){}
 }
 
-/* ---- qui d'autre est dans le casino en ce moment ---- */
+/* ---- qui d'autre est dans le casino en ce moment ----
+   Le direct passe par un canal ouvert en permanence : la position part
+   dix fois par seconde. La base ne sert qu'à retrouver ceux qui étaient
+   déjà là à l'arrivée. */
+const sb=createClient(URL_SB,CLE_SB);
 let AUTRES=new Map(), derniereEcoute=0, dernierEnvoi=0;
+let CANAL=null, dernierBip=0;
+function ouvrirCanal(){
+  if(CANAL||!e.id)return;
+  CANAL=sb.channel('casino',{config:{broadcast:{self:false}}});
+  CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
+    if(!p||p.id===e.id)return;
+    const a=AUTRES.get(p.id)||{x:p.x,y:p.y,pas:0,marche:false};
+    a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
+    a.ap=p.ap||a.ap||{};
+    a.pseudo=p.n||a.pseudo||'joueur';a.vu=Date.now();
+    AUTRES.set(p.id,a);
+  });
+  CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{if(p&&p.id)AUTRES.delete(p.id);});
+  CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
+}
+function bipPosition(force){
+  if(!CANAL||!e.id)return;
+  const now=Date.now();
+  if(!force&&now-dernierBip<100)return;
+  dernierBip=now;
+  try{
+    CANAL.send({type:'broadcast',event:'pos',payload:{
+      id:e.id,n:e.pseudo||'joueur',ap:e.ap,
+      x:Math.round(joueur.x),y:Math.round(joueur.y),d:joueur.dir}});
+  }catch(x){}
+}
 async function ecouterLesAutres(){
   if(!e.id)return;
   try{
