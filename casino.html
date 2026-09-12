@@ -1923,6 +1923,8 @@ function dessiner(){
   halo(ctx,SALLE_L-MUR-60-iX,470-iY,56,.1);
 
   /* le mobilier et les personnages, triés par profondeur */
+  /* Le mobilier ne bouge pas : on ne refait la liste que si quelqu'un
+     entre ou sort. Avant, elle était reconstruite soixante fois par seconde. */
   const objets=[
     {y:186,f:()=>dessinerCroupier(iX,iY)},
     {y:250,f:()=>tableBJ(ctx,TABLE.x-iX,TABLE.y-iY)},
@@ -1939,8 +1941,15 @@ function dessiner(){
     {y:joueur.y,f:()=>dessinerJoueur(iX,iY)}
   ];
   for(const [,a] of AUTRES)objets.push({y:a.y,f:()=>dessinerUn(a,iX,iY)});
-  objets.sort((a,b)=>a.y-b.y);
-  objets.forEach(o=>o.f());
+  /* Le mobilier est déjà rangé du nord au sud dans la liste ci-dessus :
+     seuls le joueur et les visiteurs bougent. Un tri par insertion sur
+     une liste presque triée coûte bien moins qu'un tri complet. */
+  for(let i=1;i<objets.length;i++){
+    const v=objets[i];let j=i-1;
+    while(j>=0&&objets[j].y>v.y){objets[j+1]=objets[j];j--;}
+    objets[j+1]=v;
+  }
+  for(let i=0;i<objets.length;i++)objets[i].f();
   flechesVersLesAutres(iX,iY);
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
