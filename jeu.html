@@ -2856,12 +2856,12 @@ function majAction(){
       : 'Il faut une pioche<small>'+n+'</small>';
   }else if(o.t==='arbre'){
     if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
-    else if(o.saigne){
-      const pret=Date.now()-o.saigne>180000;
-      b.innerHTML=pret?'Récolter<small>RÉSINE</small>'
-                      :'La résine coule…<small>'+Math.ceil((180000-(Date.now()-o.saigne))/60000)+' MIN</small>';
+    else if(o.saigne&&Date.now()-o.saigne>=180000&&!o.coups){
+      b.innerHTML='Récolter<small>RÉSINE · OU COUPE-LE</small>';
+    }else{
+      const reste=(e.outils.hacheFer?3:5)-(o.coups||0);
+      b.innerHTML='Couper<small>ARBRE · '+reste+' COUP'+(reste>1?'S':'')+'</small>';
     }
-    else b.innerHTML='Couper<small>ARBRE · '+((e.outils.hacheFer?3:5)-(o.coups||0))+' COUPS</small>';
   }else if(o.t==='four'){
     if(e.four&&Date.now()<e.four.fin){
       const s2=Math.ceil((e.four.fin-Date.now())/1000);
@@ -2912,12 +2912,13 @@ function agir(){
   }
   if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
   if(o.t==='arbre'&&!e.outils.hache)return;
-  /* un arbre déjà entaillé : on récolte la résine, on ne le coupe plus */
-  if(o.t==='arbre'&&o.saigne){
-    if(Date.now()-o.saigne<180000)return;
+  /* un arbre entaillé dont la résine a coulé : on la récolte, sinon on continue de couper */
+  if(o.t==='arbre'&&o.saigne&&Date.now()-o.saigne>=180000&&!o.coups)
     return recolterResine(o);
-  }
   /* le geste dépend de ce qu'on vise */
+  if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='four'&&o.t!=='etabli'){
+    prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
+  }
   const aLaMain=['buisson','argile','roseaux','champignons','herbes','plumes'].includes(o.t);
   GESTE={t:1,cible:o,impact:false,
          type:aLaMain?'cueille':(o.t==='arbre'?'hache':'pioche')};
@@ -3159,8 +3160,8 @@ function couper(o){
     texteVolant(o.x,o.y-H*0.35,(5-o.coups)+' coup'+(o.coups<4?'s':''),'#d9c9a8');
     /* au premier coup, la sève affleure : l'arbre devient saignable */
     if(o.coups===1&&!o.saigne){
-      o.saigne=Date.now()-180000;                /* prête tout de suite, la première fois */
-      texteVolant(o.x,o.y-H*0.5,'la sève perle','#f7cf7d');
+      o.saigne=Date.now();                       /* elle mettra trois minutes à couler */
+      texteVolant(o.x,o.y-H*0.5,'la sève commence à perler','#f7cf7d');
     }
   }
 }
@@ -3265,6 +3266,12 @@ if(!e.casses)e.casses=[];
 const combien=k=>e.sac[k]||0;
 const charge=()=>Object.entries(e.sac).reduce((a,[k,n])=>a+n*((OBJETS[k]||{poids:1}).poids),0);
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
+const sacPlein=()=>charge()>=chargeMax();
+function prevenirSacPlein(o){
+  texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-28,'Sac plein','#e08a8a');
+  texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-40,'change-le au casino','#d8c9a8');
+  try{navigator.vibrate&&navigator.vibrate([8,50,8]);}catch(x){}
+}
 function ajouter(k,n){
   const place=chargeMax()-charge();
   const q=Math.max(0,Math.min(n,Math.floor(place/(OBJETS[k].poids||1))));
