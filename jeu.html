@@ -2121,7 +2121,11 @@ e.casino=null;e.camp=null;e.coffre=null;
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
-const sauver=()=>{try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}};
+const sauver=()=>{
+  e.quand=Date.now();
+  try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}
+  if(typeof aSauver==='function')aSauver();     /* et ça partira sur le serveur */
+};
 
 const URL_SB='https://zpfkekiavlfphialvphi.supabase.co';
 const CLE_SB='sb_publishable__dfR2lEOwKjhhtavvJEvGw_KVACZnHP';
@@ -2794,6 +2798,64 @@ function refletsRiviere(g,camX,camY){
 /* ---- une lueur douce vers le centre de l'écran ---- */
 function ambiance(g){
   g.fillStyle=degradeAmbiance(g);g.fillRect(0,0,VW,VH);
+}
+
+/* ================= la sauvegarde en ligne =================
+   Tout ce qui compte — le sac, les jetons, les outils, le score —
+   part sur le serveur. On peut changer de téléphone, vider son
+   navigateur : la partie est retrouvée. */
+const A_GARDER=['sac','jetons','outils','sacMax','score','recolte','casses',
+                'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
+let derniereSauv=0, sauvEnVol=false, sauvSale=false;
+
+function etatAGarder(){
+  const o={};
+  A_GARDER.forEach(k=>{if(e[k]!==undefined)o[k]=e[k];});
+  o.quand=Date.now();
+  return o;
+}
+/* on marque la partie comme « à envoyer » ; l'envoi part peu après */
+function aSauver(){sauvSale=true;}
+
+async function envoyerSauvegarde(force){
+  if(!e.id||sauvEnVol)return;
+  const now=Date.now();
+  if(!force&&(!sauvSale||now-derniereSauv<12000))return;
+  sauvEnVol=true;derniereSauv=now;sauvSale=false;
+  try{
+    await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify([{id:e.id,etat:etatAGarder(),maj:new Date().toISOString()}])});
+  }catch(x){sauvSale=true;}
+  sauvEnVol=false;
+}
+
+/* au démarrage : on compare ce qu'il y a sur le serveur et sur le téléphone */
+async function recupererSauvegarde(){
+  if(!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/sauvegardes?id=eq.'+encodeURIComponent(e.id)+
+      '&select=etat,maj',{headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d)||!d[0]||!d[0].etat)return;
+    const dist=d[0].etat;
+    const local=(()=>{try{return JSON.parse(localStorage.getItem(CLE)||'{}');}catch(x){return {};}})();
+    const qLocal=local.quand||0, qDist=dist.quand||0;
+    /* Règle : on ne remplace jamais une partie locale plus avancée.
+       Le score et la récolte ne baissent jamais : ils mesurent l'avancement. */
+    const avanceL=(local.score||0)+(local.recolte||0);
+    const avanceD=(dist.score||0)+(dist.recolte||0);
+    const prendre=avanceD>avanceL||(qDist>qLocal&&avanceD>=avanceL);
+    if(prendre){
+      A_GARDER.forEach(k=>{if(dist[k]!==undefined)e[k]=dist[k];});
+      if(e.ap)e.ap=Object.assign({},DEF_AP,e.ap);
+      if(!e.sac)e.sac={};
+      if(!e.outils)e.outils={};
+      if(!e.casses)e.casses=[];
+      joueur.x=e.x||joueur.x;joueur.y=e.y||joueur.y;
+      sauver();
+    }
+  }catch(x){}
 }
 
 /* ================= le monde partagé =================
@@ -3954,6 +4016,7 @@ async function ouvrirPorte(){
   e.pseudo=nom||'Survivant';
   sauver();
   await descendreDeLigne();
+  await recupererSauvegarde();    /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
   entrer();
@@ -3986,6 +4049,7 @@ document.addEventListener('visibilitychange',()=>{
   else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
 });
 addEventListener('pagehide',()=>{
+  envoyerSauvegarde(true);
   try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}sauver();monterEnLigne(true);});
 addEventListener('pageshow',()=>{SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();});
 addEventListener('beforeunload',()=>{sauver();});
@@ -4019,6 +4083,7 @@ let t0=performance.now();
   }
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
+  envoyerSauvegarde();                            /* la partie, sur le serveur */
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
   if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
