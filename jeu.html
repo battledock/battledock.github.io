@@ -39,6 +39,15 @@ body{overflow:hidden}
   background:#241a12;color:#f2e6cc;font:400 13px system-ui}
 .libre input::placeholder{color:#8d7d64}
 .compteC{text-align:right;font:600 10px system-ui;color:#8d7d64;margin-top:8px}
+.panApercu{border:2px solid;border-radius:12px;padding:16px 14px;text-align:center;margin-bottom:14px}
+.panApercu b{display:block;font:700 15px/1.4 system-ui;word-break:break-word}
+.panApercu span{display:block;margin-top:8px;font:600 10px system-ui;color:rgba(255,255,255,.45)}
+.choixC{display:flex;gap:9px;margin:12px 0}
+.choixC button{flex:1;height:42px;border-radius:12px;border:2px solid;
+  display:flex;align-items:center;justify-content:center}
+.choixC button.on{box-shadow:0 0 0 2px #f0cf7d}
+.choixC i{width:16px;height:16px;border-radius:50%;display:block}
+.tout:disabled{opacity:.45}
 .libre button{padding:13px 18px;border-radius:12px;border:1px solid #8a6a2a;
   background:linear-gradient(180deg,#e2ba69,#b4892f);color:#2b1d12;font:700 12.5px system-ui}
 #action{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
@@ -1207,6 +1216,166 @@ function dessinerFleurs(g,x,y,gr){
 }
 
 /* --- le casino : un palace de pierre, éclairé --- */
+/* ================= le panneau d'affichage =================
+   Cent jetons, une heure d'affichage, quarante caractères.
+   Tout le monde le voit, où qu'il soit sur la carte. */
+let PANNEAU={libre:true,prix:100}, panneauVu=0;
+const COUL_PAN={
+  or:   {fond:'#3d2a17',cadre:'#e2ba69',texte:'#f0cf7d'},
+  rouge:{fond:'#3a1418',cadre:'#d14a3a',texte:'#f2a48f'},
+  vert: {fond:'#12301f',cadre:'#4f9e72',texte:'#9fdfb8'},
+  bleu: {fond:'#131f36',cadre:'#5b8fc9',texte:'#a8cdf0'}
+};
+async function lirePanneau(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/rpc/lire_panneau',
+      {method:'POST',headers:sbEntetes,body:'{}'});
+    const d=await r.json();
+    if(d&&typeof d==='object')PANNEAU=d;
+  }catch(x){}
+}
+const resteEnClair=(s)=>{
+  if(s<60)return 'moins d’une minute';
+  const m=Math.round(s/60);
+  return m<60?m+' min':'1 h';
+};
+
+function dessinerPanneau(g,x,y){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/1000;
+  const C=COUL_PAN[PANNEAU.couleur]||COUL_PAN.or;
+
+  g.fillStyle=VERTS.ombre;
+  g.beginPath();g.ellipse(x+2,y-2,44,9,0,0,7);g.fill();
+  /* les deux pieds */
+  R(-30,-38,9,38,'#6b4a28');R(-30,-38,3,38,'#8a6238');
+  R(21,-38,9,38,'#5b3f21');R(21,-38,3,38,'#7d5934');
+  /* les jambes de force */
+  g.strokeStyle='#5b3f21';g.lineWidth=4;
+  g.beginPath();g.moveTo(x-26,y-6);g.lineTo(x-38,y-1);
+  g.moveTo(x+26,y-6);g.lineTo(x+38,y-1);g.stroke();
+  /* le cadre */
+  R(-44,-86,88,50,'#4f3520');
+  R(-42,-84,84,46,C.fond);
+  g.strokeStyle=C.cadre;g.lineWidth=2;
+  g.strokeRect(x-42,y-84,84,46);
+  /* les clous d'angle */
+  g.fillStyle=C.cadre;
+  [[-39,-81],[36,-81],[-39,-44],[36,-44]].forEach(([a,b])=>g.fillRect(x+a,y+b,3,3));
+  /* le fronton */
+  R(-48,-92,96,7,'#3d2a17');
+  R(-48,-92,96,2,'#7d5934');
+
+  if(PANNEAU.libre){
+    g.fillStyle='rgba(240,230,200,.5)';
+    g.font='700 9px system-ui';g.textAlign='center';
+    g.fillText('À LOUER',x,y-66);
+    g.font='600 7px system-ui';
+    g.fillText('100 jetons · 1 h',x,y-54);
+    g.textAlign='left';
+  }else{
+    /* le texte, coupé en deux lignes */
+    const mots=String(PANNEAU.texte||'').split(' ');
+    const lignes=[];let l='';
+    mots.forEach(m=>{
+      if((l+' '+m).trim().length<=18)l=(l?l+' ':'')+m;
+      else{lignes.push(l);l=m;}
+    });
+    if(l)lignes.push(l);
+    const trois=lignes.slice(0,3);
+    g.fillStyle=C.texte;
+    g.font='700 9px system-ui';g.textAlign='center';
+    const y0=-70+(3-trois.length)*5;
+    trois.forEach((li,i)=>g.fillText(li,x,y+y0+i*11));
+    g.font='600 6px system-ui';
+    g.fillStyle='rgba(255,255,255,.4)';
+    g.fillText('— '+(PANNEAU.pseudo||'un survivant'),x,y-42);
+    g.textAlign='left';
+  }
+  /* les deux lampes qui l'éclairent */
+  [[-34,0.2],[28,0.8]].forEach(([a,d])=>{
+    const on=((t+d)%2.4)<1.6;
+    R(a,-96,7,5,'#5b3f21');
+    R(a+1,-92,5,3,on?'#fff3cd':'#8a7544');
+    if(on){
+      g.save();g.globalAlpha=.14;
+      g.fillStyle='#ffe9b0';
+      g.beginPath();
+      g.moveTo(x+a+3,y-90);g.lineTo(x+a+18,y-40);g.lineTo(x+a-12,y-40);
+      g.closePath();g.fill();g.restore();
+    }
+  });
+}
+
+/* ---- la fiche : louer ou regarder ---- */
+let panTexte='', panCouleur='or';
+async function ouvrirPanneau(){
+  await lirePanneau();
+  let corps;
+  if(!PANNEAU.libre){
+    const C=COUL_PAN[PANNEAU.couleur]||COUL_PAN.or;
+    corps='<div class="panApercu" style="background:'+C.fond+';border-color:'+C.cadre+'">'+
+      '<b style="color:'+C.texte+'">'+echapper(PANNEAU.texte)+'</b>'+
+      '<span>— '+echapper(PANNEAU.pseudo||'un survivant')+'</span></div>'+
+      '<div class="vide2">Le panneau est pris encore '+resteEnClair(PANNEAU.reste)+'.<br>'+
+      'Reviens quand il se libère.</div>';
+    if(PANNEAU.auteur===e.id)
+      corps+='<div class="vide2">C’est le tien.</div>';
+  }else{
+    const C=COUL_PAN[panCouleur];
+    corps='<div class="panApercu" style="background:'+C.fond+';border-color:'+C.cadre+'">'+
+      '<b style="color:'+C.texte+'">'+(panTexte?echapper(panTexte):'ton message ici')+'</b>'+
+      '<span>— '+echapper(e.pseudo||'toi')+'</span></div>';
+    corps+='<div class="libre"><input id="panTexte" maxlength="40" value="'+
+      echapper(panTexte)+'" placeholder="Ce que tout le monde va lire…"></div>'+
+      '<div class="compteC"><span id="panReste">'+(40-panTexte.length)+'</span> caractères restants</div>';
+    corps+='<div class="choixC">'+Object.keys(COUL_PAN).map(k=>
+      '<button data-coul="'+k+'" class="'+(k===panCouleur?'on':'')+'" '+
+      'style="background:'+COUL_PAN[k].fond+';border-color:'+COUL_PAN[k].cadre+'">'+
+      '<i style="background:'+COUL_PAN[k].texte+'"></i></button>').join('')+'</div>';
+    const assez=e.jetons>=100;
+    corps+='<button class="tout" id="louer"'+(assez?'':' disabled')+'>'+
+      (assez?'Louer une heure · 100 jetons':'Il te manque '+(100-e.jetons)+' jetons')+'</button>';
+    corps+='<div class="vide2">Ton message s’affiche sur la carte pour tout le monde,<br>'+
+      'pendant une heure.</div>';
+  }
+  ouvrirPage('Le panneau',PANNEAU.libre?'À LOUER · 100 JETONS':'OCCUPÉ',
+    corps+'<div class="res" id="res"></div>');
+  const inp=$('panTexte');
+  if(inp){
+    inp.addEventListener('input',()=>{
+      panTexte=inp.value;
+      const r=$('panReste');
+      if(r){r.textContent=40-panTexte.length;
+        r.style.color=40-panTexte.length<6?'#e08a8a':'#8d7d64';}
+    });
+  }
+  $('page2Fond').querySelectorAll('[data-coul]').forEach(b=>b.onclick=()=>{
+    const i=$('panTexte');if(i)panTexte=i.value;
+    panCouleur=b.dataset.coul;ouvrirPanneau();
+  });
+  if($('louer'))$('louer').onclick=louerPanneau;
+}
+const echapper=(t)=>String(t||'').replace(/[<>&"]/g,c=>
+  ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+async function louerPanneau(){
+  const inp=$('panTexte');
+  if(inp)panTexte=inp.value;
+  if(panTexte.trim().length<2){
+    const r=$('res');if(r)r.textContent='Écris quelque chose d’abord.';return;
+  }
+  const d=await appelRPC('louer_panneau',{p_joueur:e.id,p_pseudo:e.pseudo||'un survivant',
+    p_texte:panTexte,p_couleur:panCouleur});
+  if(d&&d.erreur){const r=$('res');if(r)r.textContent=d.erreur;return;}
+  if(d&&typeof d.jetons==='number'){e.jetons=d.jetons;sauver();}
+  panTexte='';
+  await lirePanneau();
+  ouvrirPanneau();
+  const r=$('res');if(r)r.textContent='C’est affiché. À toi la une pendant une heure.';
+  try{navigator.vibrate&&navigator.vibrate([12,34,20]);}catch(x){}
+}
+
 function dessinerComptoir(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const P=(pts,c)=>{g.fillStyle=c;g.beginPath();
@@ -1880,6 +2049,7 @@ const TAILLES={
  pont:   null,
  casino: null,                                  /* traité à part : il a de la profondeur */
  comptoir: null,                                /* pareil */
+ panneau: [{w:78,h:12}],
  four:   [{w:34,h:12}],
  etabli: [{w:42,h:12}]
 };
@@ -2022,6 +2192,9 @@ function semerDecor(){
   e.comptoir=COMPTOIR_FIXE;
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.comptoir[0],o.y-e.comptoir[1])>110||o.t==='fleurs');
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
+  e.panneau=PANNEAU_FIXE;
+  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.panneau[0],o.y-e.panneau[1])>56||o.t==='fleurs');
+  DECOR.push({t:'panneau',x:e.panneau[0],y:e.panneau[1],gr:0});
 
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
@@ -2211,6 +2384,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
     else if(o.t==='comptoir')dessinerComptoir(g,x,y);
+    else if(o.t==='panneau')dessinerPanneau(g,x,y);
     else if(o.t==='coffre'){
       /* Une fois vidé, il s'enfonce dans l'herbe et disparaît.
          Il n'appartient qu'à toi : chacun trouve le sien en arrivant. */
@@ -2312,7 +2486,8 @@ async function descendreDeLigne(){
 const CASINO_FIXE=[660,430];
 const CAMP_FIXE=[700,624];
 const COFFRE_FIXE=[596,560];
-const COMPTOIR_FIXE=[150,470];                  /* rive ouest, en face du casino */
+const COMPTOIR_FIXE=[150,470];
+const PANNEAU_FIXE=[512,452];                   /* sur le chemin du départ */                  /* rive ouest, en face du casino */
 let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 
@@ -3028,7 +3203,7 @@ async function chargerLaCarte(){
     const d=await r.json();
     if(!Array.isArray(d)||!d.length)return false;
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
-    const garder=['pont','casino','comptoir','four','etabli','coffre','souche','gravats'];
+    const garder=['pont','casino','comptoir','panneau','four','etabli','coffre','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));
     d.forEach(m=>DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle}));
     DECOR.sort((a,b)=>a.y-b.y);
@@ -3375,7 +3550,7 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='comptoir'&&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
+       &&o.t!=='comptoir'&&o.t!=='panneau'&&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -3423,6 +3598,9 @@ function majAction(){
     b.innerHTML='Entrer<small>CASINO</small>';
   }else if(o.t==='comptoir'){
     b.innerHTML='Entrer<small>LE COMPTOIR</small>';
+  }else if(o.t==='panneau'){
+    b.innerHTML=PANNEAU.libre?'Afficher<small>100 JETONS · 1 H</small>'
+                             :'Lire<small>LE PANNEAU</small>';
   }else if(o.t==='buisson'){
     b.innerHTML='Cueillir<small>BUISSON</small>';
   }else{
@@ -3463,6 +3641,7 @@ function agir(){
   }
   if(o.t==='four')return ouvrirFour();
   if(o.t==='etabli')return ouvrirEtabli();
+  if(o.t==='panneau'){ouvrirPanneau();return;}
   if(o.t==='comptoir'){
     sauver();envoyerSauvegarde(true);
     try{direOuJeSuis&&direOuJeSuis('comptoir');}catch(x){}
@@ -4265,7 +4444,8 @@ async function ouvrirPorte(){
   await descendreDeLigne();
   await recupererSauvegarde();
   await lireSacServeur();       /* le sac vient du serveur */
-  await chargerLaCarte();       /* et la carte aussi */    /* on retrouve sa partie, d'où qu'on vienne */
+  await chargerLaCarte();       /* et la carte aussi */
+  await lirePanneau();          /* ce qui est affiché en ce moment */    /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
   entrer();
@@ -4333,6 +4513,7 @@ let t0=performance.now();
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   envoyerSauvegarde();                            /* la partie, sur le serveur */
+  if(maintenant-panneauVu>45000){panneauVu=maintenant;lirePanneau();}
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
   if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
