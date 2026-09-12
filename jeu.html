@@ -1761,7 +1761,7 @@ const TAILLES={
  argile:null, roseaux:null, champignons:null, herbes:null, plumes:null,
  souche: null,
  pont:   null,
- casino: [{w:178,h:18}],
+ casino: null,                                  /* traité à part : il a de la profondeur */
  four:   [{w:34,h:12}],
  etabli: [{w:42,h:12}]
 };
@@ -1898,7 +1898,7 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>{
     if(o.t==='fleurs')return true;                     /* les fleurs, on les garde */
     const dx=Math.abs(o.x-e.casino[0]), dy=o.y-e.casino[1];
-    return !(dx<118&&dy>-170&&dy<86);
+    return !(dx<128&&dy>-180&&dy<92);
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
 
@@ -1970,6 +1970,13 @@ function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
+  /* le casino occupe un vrai terrain : on ne passe pas derrière */
+  if(e.casino){
+    const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
+    if(dx<90&&dy>-56&&dy<10)return true;
+    /* les deux vasques, de part et d'autre des marches */
+    if(dx>48&&dx<66&&dy>-20&&dy<4)return true;
+  }
   for(const o of DECOR){
     const t=TAILLES[o.t];if(!t)continue;
     const d=t[o.gr||0];
