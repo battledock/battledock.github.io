@@ -41,6 +41,58 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 .jet i{display:block;font:600 7.5px system-ui;letter-spacing:1.4px;color:#a29c92;font-style:normal}
 .corps{position:relative;flex:1;padding:14px;overflow-y:auto}
 
+.tapis{border-radius:16px;padding:16px 12px 12px;margin-bottom:12px;position:relative;
+  background:radial-gradient(120% 80% at 50% 18%,#2f8a5e,#165536 62%,#0f3d26);
+  box-shadow:inset 0 2px 20px rgba(0,0,0,.4)}
+.rang{display:flex;align-items:center;gap:9px;min-height:74px}
+.qui{font:700 7.5px system-ui;letter-spacing:1.5px;color:rgba(255,255,255,.5);width:52px;flex:0 0 auto}
+.mains{flex:1;display:flex;gap:5px;flex-wrap:wrap}
+.mains.brule{opacity:.45}
+.carte{position:relative;display:block;width:46px;height:64px;border-radius:6px;flex:0 0 auto;
+  background:linear-gradient(150deg,#fffdf7,#e6e0d0);box-shadow:0 2px 5px rgba(0,0,0,.4);
+  color:#1a1a1a;animation:pose .28s cubic-bezier(.2,.9,.3,1)}
+.carte:nth-child(2){transform:rotate(4deg)}
+.carte:nth-child(3){transform:rotate(-4deg)}
+.carte:nth-child(4){transform:rotate(6deg)}
+@keyframes pose{from{transform:translate(-60px,-20px) rotate(-20deg);opacity:0}}
+.carte.rouge{color:#9c3232}
+.carte b{position:absolute;top:4px;left:5px;font:700 14px Georgia,serif}
+.carte em{position:absolute;top:20px;left:6px;font-size:10px;font-style:normal}
+.carte u{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:22px;text-decoration:none}
+.carte.dos{background:linear-gradient(150deg,#9c3232,#6b1f1f)}
+.carte.dos i{position:absolute;inset:4px;border-radius:3px;border:1px solid rgba(255,235,200,.45);
+  background:repeating-linear-gradient(45deg,rgba(255,235,200,.14) 0 3px,transparent 3px 7px)}
+.tot{font:700 15px Georgia,serif;color:#eaf4ec;background:rgba(0,0,0,.34);
+  padding:5px 10px;border-radius:11px;min-width:34px;text-align:center}
+.tot.or{background:#f0cf7d;color:#241a12}
+.tot.mal{background:#9c3232;color:#fff}
+.arc{text-align:center;font:400 8px Georgia,serif;letter-spacing:2px;
+  color:rgba(255,255,255,.28);padding:6px 0}
+.miseP{display:flex;align-items:center;gap:8px;padding-top:8px}
+.miseP span{font:600 8px system-ui;letter-spacing:1.4px;color:rgba(255,255,255,.45)}
+.vide3{text-align:center;font:400 13px/1.6 Georgia,serif;color:rgba(255,255,255,.7);padding:42px 14px}
+.issue{text-align:center;font:600 12.5px system-ui;padding:10px;border-radius:12px;margin-bottom:12px}
+.issue b{display:block;font:400 20px Georgia,serif;margin-top:4px}
+.issue.bon{background:#eaf7ee;color:#1f7a45}
+.issue.nul{background:#f1efe9;color:#5f5b54}
+.issue.mauvais{background:#fbeceb;color:#9c3232}
+.mises{display:flex;gap:7px;margin-bottom:9px}
+.mises button{flex:1;padding:11px 0;border-radius:11px;border:1px solid #e0ddd4;
+  background:#fff;color:#7d786c;font:700 12px system-ui}
+.mises button.on{background:#16140f;color:#f6f5f1;border-color:#16140f}
+.mises button:disabled{opacity:.4}
+.go{display:block;width:100%;padding:15px;border-radius:13px;border:0;background:#16140f;
+  font:700 14px system-ui;color:#f6f5f1;box-shadow:0 3px 10px rgba(20,18,12,.22)}
+.go:active{transform:translateY(2px)}
+.actes{display:flex;gap:8px;margin-bottom:8px}
+.actes button.gros{flex:1;padding:16px 0;border-radius:13px;border:0;background:#f0cf7d;
+  font:700 14px system-ui;color:#241a12;box-shadow:0 3px 0 #b08a2e}
+.actes button.gros.creux{background:#fff;border:1px solid #e0ddd4;color:#16140f;box-shadow:0 3px 0 #e0ddd4}
+.actes button.gros:active{transform:translateY(2px);box-shadow:none}
+.actes.petits button{flex:1;padding:11px 0;border-radius:11px;border:1px solid #e0ddd4;
+  background:#fff;font:600 11.5px system-ui;color:#5f5b54}
+.actes.petits button:disabled{opacity:.4}
 .caisseVue{border-radius:16px;padding:14px 12px 12px;margin-bottom:4px;background:#fff;
   border:1px solid #eceae3;box-shadow:0 2px 10px rgba(40,35,25,.08)}
 .tiroir{display:flex;gap:12px;justify-content:center;padding:4px 0 10px}
@@ -860,7 +912,10 @@ setInterval(()=>direOuJeSuis('casino'),15000);
 /* ================= le hall, vu de dessus =================
    Sol plat, murs en bordure, meubles vus d'au-dessus.
    Le décor est peint en triple résolution : aucun pixel visible. */
-const SALLE_L=420, SALLE_H=560;
+const JEU_L=400;                                  /* la salle de black-jack, à gauche */
+const SALLE_L=820, SALLE_H=560;
+const HALL0=JEU_L;                                /* le hall commence ici */
+const PASSAGE=[250,310];                          /* l'ouverture entre les deux */
 const SUR=3;
 const MUR=18;                                   /* l'épaisseur de la bordure */
 let SOL=null;
@@ -875,12 +930,34 @@ function construireSol(){
   const rad=(x,y,r,et)=>{const d=g.createRadialGradient(x,y,0,x,y,r);
     et.forEach(([p,col])=>d.addColorStop(p,col));return d;};
 
-  /* le marbre, en diagonale douce */
-  g.fillStyle=lin(0,0,SALLE_L,SALLE_H,
+  /* le marbre clair du hall */
+  g.fillStyle=lin(HALL0,0,SALLE_L,SALLE_H,
     [[0,'#c2bcb2'],[.4,'#a49e95'],[.75,'#8e887f'],[1,'#79736b']]);
-  g.fillRect(0,0,SALLE_L,SALLE_H);
+  g.fillRect(HALL0-MUR,0,SALLE_L-HALL0+MUR,SALLE_H);
+  /* le marbre vert de la salle de jeu */
+  g.fillStyle=lin(0,0,JEU_L,SALLE_H,
+    [[0,'#46524a'],[.4,'#354036'],[.78,'#2a332c'],[1,'#202721']]);
+  g.fillRect(0,0,JEU_L,SALLE_H);
+  g.save();g.globalAlpha=.12;g.strokeStyle='#e4ece6';g.lineCap='round';
+  for(let i=0;i<14;i++){
+    const y=26+i*38+alea(i*5)*16;
+    g.lineWidth=.7+alea(i*3)*1.4;
+    g.beginPath();g.moveTo(-20,y);
+    for(let k=0;k<=JEU_L+20;k+=60)
+      g.quadraticCurveTo(k+30,y+(alea(i*7+k)-.5)*26,k+60,y+(alea(i*5+k)-.5)*16);
+    g.stroke();
+  }
+  g.restore();
+  /* le tapis vert sous la table */
+  g.fillStyle=lin(0,150,0,360,[[0,'#2c4a3a'],[1,'#1b3226']]);
+  g.fillRect(CJ-146,150,292,210);
+  g.strokeStyle=lin(0,0,JEU_L,SALLE_H,[[0,'#fff3cd'],[.4,'#e2ba69'],[1,'#9a7225']]);
+  g.lineWidth=2.4;g.strokeRect(CJ-144,152,288,206);
+  g.save();g.globalAlpha=.4;g.lineWidth=1;g.strokeRect(CJ-136,160,272,190);g.restore();
   /* les veines, dans le plan du sol */
-  g.save();g.globalAlpha=.17;g.strokeStyle='#f4f1eb';g.lineCap='round';
+  g.save();
+  g.beginPath();g.rect(HALL0-MUR,0,SALLE_L-HALL0+MUR,SALLE_H);g.clip();
+  g.globalAlpha=.17;g.strokeStyle='#f4f1eb';g.lineCap='round';
   for(let i=0;i<16;i++){
     const y=30+i*36+alea(i)*18;
     g.lineWidth=.7+alea(i*3)*1.6;
@@ -901,7 +978,7 @@ function construireSol(){
   g.restore();
 
   /* la rosace incrustée, au centre du hall */
-  const cx=SALLE_L/2, cy=340;
+  const cx=CX, cy=340;
   const or=lin(cx-60,cy-60,cx+60,cy+60,
     [[0,'#fff3cd'],[.35,'#e2ba69'],[.62,'#9a7225'],[1,'#f0d79a']]);
   g.save();g.globalAlpha=.6;g.strokeStyle=or;
@@ -923,9 +1000,18 @@ function construireSol(){
   /* la bordure : les murs, vus d'en haut */
   const bois=lin(0,0,0,MUR,[[0,'#3a2a1c'],[.5,'#2a1c12'],[1,'#1d130c']]);
   g.fillStyle=bois;
-  g.fillRect(0,0,(SALLE_L-LOGE.w)/2,MUR+LOGE.h);          /* mur à gauche de la loge */
-  g.fillRect((SALLE_L+LOGE.w)/2,0,(SALLE_L-LOGE.w)/2,MUR+LOGE.h);
+  g.fillRect(HALL0,0,(SALLE_L-HALL0-LOGE.w)/2,MUR+LOGE.h);   /* mur à gauche de la loge */
+  g.fillRect(LOGE.x+LOGE.w/2,0,(SALLE_L-HALL0-LOGE.w)/2,MUR+LOGE.h);
   g.fillRect(0,0,SALLE_L,MUR*0.7);
+  /* la cloison entre la salle de jeu et le hall */
+  g.fillRect(HALL0-MUR/2,0,MUR,PASSAGE[0]);
+  g.fillRect(HALL0-MUR/2,PASSAGE[1],MUR,SALLE_H-PASSAGE[1]);
+  g.fillStyle=or;
+  g.fillRect(HALL0+MUR/2-2.5,0,2.5,PASSAGE[0]);
+  g.fillRect(HALL0+MUR/2-2.5,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
+  g.fillRect(HALL0-MUR/2,0,2.5,PASSAGE[0]);
+  g.fillRect(HALL0-MUR/2,PASSAGE[1],2.5,SALLE_H-PASSAGE[1]);
+  g.fillStyle=bois;
   g.fillRect(0,SALLE_H-MUR,SALLE_L,MUR);
   g.fillRect(0,0,MUR,SALLE_H);
   g.fillRect(SALLE_L-MUR,0,MUR,SALLE_H);
@@ -939,6 +1025,13 @@ function construireSol(){
   g.save();
   g.fillStyle=rad(cx,cy,300,[[.62,'rgba(0,0,0,0)'],[1,'rgba(0,0,0,.5)']]);
   g.fillRect(MUR,MUR,SALLE_L-MUR*2,SALLE_H-MUR*2);
+  g.restore();
+
+  /* le nom de la salle, gravé au sol */
+  g.save();g.globalAlpha=.45;g.fillStyle=or;
+  g.font='600 27px Georgia,serif';g.textAlign='center';
+  g.fillText('BLACK-JACK',CJ,108);
+  g.globalAlpha=.3;g.fillRect(CJ-80,118,160,1.6);
   g.restore();
 
   /* la loge du guichet, creusée dans le mur du haut */
@@ -971,8 +1064,8 @@ const ombreSous=(g,x,y,rx,ry,a)=>{
 /* ================= le guichet, vu de dessus ================= */
 
 /* ================= la loge du guichet, creusée dans le mur ================= */
-const LOGE={x:SALLE_L/2, y:34, w:150, h:96};     /* le renfoncement */
-const COMPTOIR={x:SALLE_L/2, y:132, w:150, h:26};
+const LOGE={x:620, y:34, w:150, h:96};     /* le renfoncement */
+const COMPTOIR={x:620, y:132, w:150, h:26};
 
 /* on peint la loge dans la toile du sol : parquet, étagères, ombres */
 function peindreLoge(g,or,lin,rad){
@@ -1070,6 +1163,61 @@ function chaise(g,x,y){
   g.strokeStyle=orDe(g,x-11,y-8,x+11,y+8);g.lineWidth=1.2;g.stroke();
   g.save();g.globalAlpha=.22;g.fillStyle='#fff';
   g.beginPath();g.ellipse(x-3.4,y-2.4,4.6,2.4,0,0,7);g.fill();g.restore();
+}
+
+
+function tableBJ(g,x,y){
+  const T=TABLE, or=orDe(g,x-T.rx,y-T.ry,x+T.rx,y+T.ry);
+  /* l'ombre au sol */
+  g.fillStyle='rgba(0,0,0,.45)';
+  g.beginPath();g.ellipse(x+3,y+12,T.rx,T.ry*0.62,0,0,Math.PI);g.fill();
+  /* la tranche */
+  g.fillStyle='#33200f';
+  g.beginPath();g.moveTo(x-T.rx,y);
+  g.ellipse(x,y,T.rx,T.ry,0,0,Math.PI);
+  g.lineTo(x+T.rx,y+11);
+  g.ellipse(x,y+11,T.rx,T.ry,0,Math.PI,0,true);
+  g.closePath();g.fill();
+  /* le feutre */
+  const f=g.createRadialGradient(x-20,y+10,8,x,y+20,T.rx*1.1);
+  f.addColorStop(0,'#3b9469');f.addColorStop(.55,'#22664a');f.addColorStop(1,'#123b2a');
+  g.fillStyle=f;
+  g.beginPath();g.ellipse(x,y,T.rx,T.ry,0,0,Math.PI);g.closePath();g.fill();
+  g.strokeStyle=or;g.lineWidth=2.4;g.stroke();
+  /* le rebord droit, côté croupier */
+  g.fillStyle='#3d2614';
+  g.beginPath();g.roundRect(x-T.rx,y-4,T.rx*2,5,2);g.fill();
+  g.fillStyle=or;g.fillRect(x-T.rx,y-4,T.rx*2,1.6);
+  /* l'arc imprimé et les trois places */
+  g.save();g.globalAlpha=.45;g.strokeStyle='#eaf3ee';g.lineWidth=1;
+  g.beginPath();g.ellipse(x,y,T.rx*0.7,T.ry*0.66,0,0,Math.PI);g.stroke();
+  [-1,0,1].forEach(k=>{
+    g.beginPath();
+    g.ellipse(x+k*46,y+(k?34:44),13,6,0,0,7);g.stroke();
+  });
+  g.globalAlpha=.42;g.fillStyle='#eaf3ee';
+  g.font='600 8px Georgia,serif';g.textAlign='center';
+  g.fillText('LE BLACK-JACK PAIE 3 POUR 2',x,y+22);
+  g.textAlign='left';g.restore();
+  /* le sabot */
+  g.fillStyle='#2a1a10';g.beginPath();g.roundRect(x-T.rx+16,y+8,24,15,3);g.fill();
+  g.strokeStyle=or;g.lineWidth=1.2;g.stroke();
+  g.fillStyle='#4a3218';g.beginPath();g.roundRect(x-T.rx+19,y+11,18,10,2);g.fill();
+  g.fillStyle='#f7f4ec';g.beginPath();g.roundRect(x-T.rx+22,y+13,12,6,1.5);g.fill();
+  /* le bac à jetons */
+  g.fillStyle='#2a1a10';g.beginPath();g.roundRect(x+T.rx-44,y+8,28,15,3);g.fill();
+  g.strokeStyle=or;g.lineWidth=1.2;g.stroke();
+  [['#dc5044','#8f2a22'],['#4a8fd4','#255184'],['#f0cf7d','#9a7225']].forEach((c,i)=>{
+    g.fillStyle=c[1];g.beginPath();g.arc(x+T.rx-37+i*9,y+15,3.6,0,7);g.fill();
+    g.fillStyle=c[0];g.beginPath();g.arc(x+T.rx-37+i*9,y+15,2.4,0,7);g.fill();
+  });
+  /* deux cartes posées, pour montrer que la table est en jeu */
+  [[-9,36,-8],[2,38,7]].forEach(([dx,dy,rot])=>{
+    g.save();g.translate(x+dx,y+dy);g.rotate(rot*Math.PI/180);
+    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.roundRect(-4,-5,10,13,1.5);g.fill();
+    g.fillStyle='#f7f4ec';g.beginPath();g.roundRect(-5,-6,10,13,1.5);g.fill();
+    g.restore();
+  });
 }
 
 /* le comptoir du guichet : il ferme la loge */
@@ -1235,13 +1383,27 @@ function porteBas(g,x,y){
 
 
 /* ================= ce qu'il y a dans le hall ================= */
-const CX=SALLE_L/2;
+const CX=HALL0+(SALLE_L-HALL0)/2;
+const CJ=JEU_L/2;      /* le centre de la salle de jeu */
+const TABLE={x:200, y:250, rx:96, ry:58};
+const CROUPIER={x:200, y:216, ap:{peau:1,cheveux:2,coiffe:3,yeux:1,veste:2,haut:0,
+  pantalon:2,bas:2,souliers:1,chapeau:0,sourcils:1,nez:1,bouche:1,corps:1}};
 const HOTESSE={x:CX,y:106,ap:{peau:1,cheveux:4,coiffe:10,yeux:2,veste:0,haut:2,pantalon:3,bas:4,
   souliers:1,chapeau:0,sourcils:1,nez:1,bouche:2,corps:1}};
 const PORTE={x:CX,y:SALLE_H-MUR/2};
 
 function bloque(x,y){
   if(x<MUR+10||x>SALLE_L-MUR-10)return true;
+  /* la cloison entre les deux salles, sauf le passage */
+  if(Math.abs(x-HALL0)<MUR/2+9&&(y<PASSAGE[0]+8||y>PASSAGE[1]-8))return true;
+  /* la table de black-jack */
+  if(x<HALL0){
+    const dx=(x-TABLE.x)/(TABLE.rx+9), dy=(y-(TABLE.y-4))/(TABLE.ry+9);
+    if(y<TABLE.y+12&&dx*dx+dy*dy<1)return true;
+    if(y<MUR+30)return true;
+    if(y>SALLE_H-MUR-10)return true;
+    return false;
+  }
   /* la loge est réservée à l'hôtesse : on s'arrête au comptoir */
   if(y<COMPTOIR.y+COMPTOIR.h/2+8)return true;
   if(y>SALLE_H-MUR-8&&Math.abs(x-CX)>20)return true;   /* on ne passe que par la porte */
@@ -1311,12 +1473,15 @@ function dessiner(){
 
   /* les halos des lustres, au sol */
   halo(ctx,CX-iX,86-iY,72,.2);                   /* la lampe de la loge */
+  halo(ctx,TABLE.x-iX,TABLE.y-6-iY,120,.2);      /* le lustre au-dessus de la table */
   halo(ctx,CX-iX,330-iY,100,.17);
   halo(ctx,MUR+60-iX,470-iY,56,.1);
   halo(ctx,SALLE_L-MUR-60-iX,470-iY,56,.1);
 
   /* le mobilier et les personnages, triés par profondeur */
   const objets=[
+    {y:186,f:()=>dessinerCroupier(iX,iY)},
+    {y:250,f:()=>tableBJ(ctx,TABLE.x-iX,TABLE.y-iY)},
     {y:62,f:()=>etageres(ctx,CX-iX,62-iY,LOGE.w-18)},
     {y:96,f:()=>chaise(ctx,CX-iX,96-iY)},
     {y:106,f:()=>dessinerHotesse(iX,iY)},
@@ -1351,6 +1516,14 @@ function dessinerJoueur(iX,iY){
   ctx.restore();
   pixel(()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
 }
+function dessinerCroupier(iX,iY){
+  const x=CROUPIER.x-iX, y=CROUPIER.y-iY;
+  const om=ctx.createRadialGradient(x,y,0,x,y,12);
+  om.addColorStop(0,'rgba(0,0,0,.45)');om.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=om;ctx.beginPath();ctx.ellipse(x,y,12,4,0,0,7);ctx.fill();
+  const t=Date.now()/1000;
+  pixel(()=>sprite(ctx,x,y+Math.sin(t*0.8)*0.6,CROUPIER.ap,'bas',0,false));
+}
 let clinT=0;
 function dessinerHotesse(iX,iY){
   const x=HOTESSE.x-iX, y=HOTESSE.y-iY;
@@ -1366,6 +1539,183 @@ function dessinerHotesse(iX,iY){
   pixel(()=>sprite(ctx,x,y+9+bal,HOTESSE.ap,'bas',0,false));
   ctx.restore();
 }
+
+/* ================= les briques communes aux jeux ================= */
+let MISE=25;
+const MISES=[10,25,50,100];
+function majPageJetons(){
+  majJetons();
+  const p=$('p-jet');if(p)p.textContent=e.jetons;
+}
+function gagne(n){e.jetons+=n;sauver();majPageJetons();}
+function barreMise(){
+  return '<div class="mises">'+MISES.map(m=>
+    '<button data-mise="'+m+'"'+(m===MISE?' class="on"':'')+(e.jetons<m?' disabled':'')+'>'+m+'</button>'
+  ).join('')+'</div>';
+}
+function brancherMise(apres){
+  $('pageFond').querySelectorAll('[data-mise]').forEach(b=>b.onclick=()=>{
+    MISE=+b.dataset.mise;if(apres)apres();
+  });
+}
+function ouvrirPage(titre,sous,corps,avecJetons){
+  $('pageFond').innerHTML=
+   '<div class="tete"><button class="x" id="p-x">✕</button>'+
+     '<span><span class="t1">'+titre+'</span><span class="t2">'+sous+'</span></span>'+
+     (avecJetons!==false?'<span class="jet"><b id="p-jet">'+e.jetons+'</b><i>JETONS</i></span>':'')+
+   '</div><div class="corps">'+corps+'</div>';
+  $('p-x').onclick=()=>$('page').classList.remove('on');
+  $('page').classList.add('on');
+}
+
+/* ================= le black-jack ================= */
+const COULEURS=[{s:'♠',r:false},{s:'♥',r:true},{s:'♦',r:true},{s:'♣',r:false}];
+const FIGURES=['A','2','3','4','5','6','7','8','9','10','V','D','R'];
+let BJ=null;
+
+function neufSabot(){
+  const s=[];
+  for(let p=0;p<6;p++)                            /* six jeux, comme au casino */
+    for(let c=0;c<4;c++)for(let f=0;f<13;f++)s.push({c,f});
+  for(let i=s.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [s[i],s[j]]=[s[j],s[i]];
+  }
+  return s;
+}
+function valeurBJ(main){
+  let t=0, as=0;
+  main.forEach(k=>{
+    if(k.f===0){as++;t+=11;}
+    else t+=Math.min(10,k.f+1);
+  });
+  while(t>21&&as){t-=10;as--;}
+  return t;
+}
+const estBJ=(m)=>m.length===2&&valeurBJ(m)===21;
+
+function ouvrirBJ(){
+  if(!BJ||!BJ.sabot||BJ.sabot.length<60)
+    BJ={sabot:neufSabot(),phase:'mise',joueur:[],croupier:[],mains:null,active:0,gain:0,msg:''};
+  BJ.phase='mise';BJ.joueur=[];BJ.croupier=[];BJ.mains=null;BJ.gain=0;BJ.msg='';
+  rendreBJ();
+}
+function donnerBJ(){
+  if(e.jetons<MISE){BJ.msg='Pas assez de jetons.';return rendreBJ();}
+  e.jetons-=MISE;majPageJetons();
+  BJ.mise=MISE;BJ.phase='jeu';BJ.joueur=[];BJ.croupier=[];BJ.gain=0;BJ.msg='';
+  BJ.anim=0;
+  BJ.joueur.push(BJ.sabot.pop());
+  BJ.croupier.push(BJ.sabot.pop());
+  BJ.joueur.push(BJ.sabot.pop());
+  BJ.croupier.push(BJ.sabot.pop());
+  BJ.double=false;
+  if(estBJ(BJ.joueur)){
+    if(estBJ(BJ.croupier))return finirBJ('egalite');
+    return finirBJ('blackjack');
+  }
+  if(estBJ(BJ.croupier))return finirBJ('perdu');
+  rendreBJ();
+}
+function carteBJ(){
+  BJ.joueur.push(BJ.sabot.pop());
+  if(valeurBJ(BJ.joueur)>21)return finirBJ('brule');
+  rendreBJ();
+}
+function doublerBJ(){
+  if(e.jetons<BJ.mise)return;
+  e.jetons-=BJ.mise;BJ.mise*=2;BJ.double=true;majPageJetons();
+  BJ.joueur.push(BJ.sabot.pop());
+  if(valeurBJ(BJ.joueur)>21)return finirBJ('brule');
+  resterBJ();
+}
+function resterBJ(){
+  while(valeurBJ(BJ.croupier)<17)BJ.croupier.push(BJ.sabot.pop());
+  const j=valeurBJ(BJ.joueur), c=valeurBJ(BJ.croupier);
+  if(c>21)return finirBJ('gagne');
+  if(c>j)return finirBJ('perdu');
+  if(c<j)return finirBJ('gagne');
+  finirBJ('egalite');
+}
+function finirBJ(issue){
+  BJ.phase='fin';BJ.issue=issue;
+  const m=BJ.mise||MISE;
+  if(issue==='blackjack'){BJ.gain=Math.round(m*2.5);BJ.msg='Black-jack ! Payé 3 pour 2.';}
+  else if(issue==='gagne'){BJ.gain=m*2;BJ.msg='Gagné.';}
+  else if(issue==='egalite'){BJ.gain=m;BJ.msg='Égalité, ta mise revient.';}
+  else if(issue==='brule'){BJ.gain=0;BJ.msg='Brûlé à '+valeurBJ(BJ.joueur)+'.';}
+  else {BJ.gain=0;BJ.msg='Le croupier l’emporte.';}
+  if(BJ.gain){
+    if(issue==='egalite'){e.jetons+=BJ.gain;majPageJetons();}
+    else gagne(BJ.gain);
+  }
+  try{navigator.vibrate&&navigator.vibrate(
+    issue==='blackjack'?[14,40,26]:(BJ.gain?12:[8,40]));}catch(x){}
+  rendreBJ();
+}
+
+/* --- une carte, en SVG --- */
+function carteSVG(k,cachee){
+  if(cachee)
+    return '<span class="carte dos"><i></i></span>';
+  const C=COULEURS[k.c], f=FIGURES[k.f];
+  return '<span class="carte'+(C.r?' rouge':'')+'">'+
+    '<b>'+f+'</b><em>'+C.s+'</em><u>'+C.s+'</u></span>';
+}
+function rendreBJ(){
+  const enJeu=BJ.phase==='jeu', fini=BJ.phase==='fin';
+  const cacher=enJeu;                              /* la deuxième carte du croupier */
+  const vc=cacher?valeurBJ([BJ.croupier[0]]):valeurBJ(BJ.croupier);
+  const vj=valeurBJ(BJ.joueur);
+  let corps='<div class="tapis">';
+  if(BJ.phase==='mise'){
+    corps+='<div class="vide3">Pose ta mise et le croupier distribue.</div>';
+  }else{
+    corps+='<div class="rang"><span class="qui">CROUPIER</span>'+
+      '<span class="mains">'+BJ.croupier.map((k,i)=>carteSVG(k,cacher&&i===1)).join('')+'</span>'+
+      '<span class="tot'+(vc>21?' mal':'')+'">'+(cacher?vc+'+':vc)+'</span></div>';
+    corps+='<div class="arc">LE BLACK-JACK PAIE 3 POUR 2</div>';
+    corps+='<div class="rang"><span class="qui">TOI</span>'+
+      '<span class="mains'+(BJ.issue==='brule'?' brule':'')+'">'+
+        BJ.joueur.map(k=>carteSVG(k,false)).join('')+'</span>'+
+      '<span class="tot or'+(vj>21?' mal':'')+'">'+vj+'</span></div>';
+    corps+='<div class="miseP">'+jetonSVG(BJ.mise||MISE)+'<span>mise</span></div>';
+  }
+  corps+='</div>';
+  if(fini)corps+='<div class="issue '+(BJ.gain?(BJ.issue==='egalite'?'nul':'bon'):'mauvais')+'">'+
+    BJ.msg+(BJ.gain?'<b>+'+BJ.gain+' jetons</b>':'')+'</div>';
+  else if(BJ.msg)corps+='<div class="issue mauvais">'+BJ.msg+'</div>';
+
+  if(BJ.phase==='mise'||fini){
+    corps+=barreMise()+'<button class="go" id="bjGo">Distribuer · '+MISE+' jetons</button>';
+  }else{
+    corps+='<div class="actes">'+
+      '<button class="gros" id="bjT">Tirer</button>'+
+      '<button class="gros creux" id="bjR">Rester</button></div>'+
+      '<div class="actes petits">'+
+      '<button id="bjD"'+((BJ.joueur.length===2&&e.jetons>=BJ.mise)?'':' disabled')+'>Doubler</button>'+
+      '</div>';
+  }
+  ouvrirPage('Black-jack','LE CROUPIER TIRE À 16, RESTE À 17',corps,true);
+  if($('bjGo')){brancherMise(rendreBJ);$('bjGo').onclick=donnerBJ;}
+  if($('bjT'))$('bjT').onclick=carteBJ;
+  if($('bjR'))$('bjR').onclick=resterBJ;
+  if($('bjD'))$('bjD').onclick=doublerBJ;
+}
+function jetonSVG(v){
+  const J=[{v:1,c1:'#fbf9f2',c2:'#ddd8cb',t:'#7d786c'},{v:5,c1:'#d9534f',c2:'#9c3232',t:'#fff'},
+           {v:10,c1:'#4a8fd4',c2:'#2a5f96',t:'#fff'},{v:25,c1:'#4a8fd4',c2:'#2a5f96',t:'#fff'},
+           {v:50,c1:'#8fd8a0',c2:'#2f7050',t:'#14321f'},{v:100,c1:'#f0cf7d',c2:'#b08a2e',t:'#7d5f22'}];
+  const j=J.find(x=>x.v===v)||J[5];
+  return '<svg viewBox="0 0 40 40" width="34" height="34">'+
+    '<circle cx="20" cy="20" r="18" fill="'+j.c2+'"/><circle cx="20" cy="20" r="15" fill="'+j.c1+'"/>'+
+    '<circle cx="20" cy="20" r="11" fill="none" stroke="'+j.c2+'" stroke-width="2.4"/>'+
+    [0,45,90,135,180,225,270,315].map(a=>
+      '<rect x="18.6" y="1.6" width="2.8" height="5" fill="'+j.c2+'" transform="rotate('+a+' 20 20)"/>').join('')+
+    '<text x="20" y="24.5" font-size="11" font-family="Georgia,serif" font-weight="700" '+
+    'fill="'+j.t+'" text-anchor="middle">'+v+'</text></svg>';
+}
+
 
 /* ================= le guichet ================= */
 const TAUX={lingotFer:52,lingotCuivre:34,fer:14,brique:11,resine:10,charbon:9,cuivre:8,
@@ -1450,11 +1800,7 @@ function ouvrirGuichet(){
       '<span class="val">'+(n*TAUX[k])+'</span>'+
       '<button data-e="'+k+'"'+(n?'':' disabled')+'>Changer</button></div>';
   }).join('');
-  $('pageFond').innerHTML=
-   '<div class="tete"><button class="x" id="p-x">✕</button>'+
-     '<span><span class="t1">Le guichet</span><span class="t2">CHANGE ET JETONS</span></span>'+
-     '<span class="jet"><b id="p-jet">'+e.jetons+'</b><i>JETONS</i></span></div>'+
-   '<div class="corps">'+
+  ouvrirPage('Le guichet','CHANGE ET JETONS',
      '<div class="caisseVue">'+
        '<div class="tiroir">'+
          VALEURS.map(j=>'<span class="rang">'+
@@ -1470,9 +1816,7 @@ function ouvrirGuichet(){
      (total? '<button class="tout" id="tout">Tout changer · '+total+' jetons</button>'
            : '<div class="vide">Ton sac est vide. Reviens avec du bois, de la pierre ou des baies.</div>')+
      '<div class="res" id="res"></div>'+
-     '<div class="pluie" id="pluie"></div>'+
-   '</div>';
-  $('p-x').onclick=()=>$('page').classList.remove('on');
+     '<div class="pluie" id="pluie"></div>',true);
   $('pageFond').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>changer(b.dataset.e));
   const t=$('tout');
   if(t)t.onclick=()=>{Object.keys(TAUX).forEach(k=>{if((e.sac&&e.sac[k])>0)changer(k,true);});
@@ -1506,6 +1850,11 @@ function pluieDeJetons(gain){
 function majAction(){
   const b=$('action');
   if($('page').classList.contains('on')){b.classList.remove('on');return;}
+  /* devant la table de black-jack */
+  if(joueur.x<HALL0&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
+     joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70){
+    b.innerHTML='S’asseoir<small>BLACK-JACK</small>';b.classList.add('on');return;
+  }
   const pres=Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70;
   if(pres){b.innerHTML='Parler<small>GUICHET · CHANGER SON BUTIN</small>';b.classList.add('on');return;}
   const sort=Math.hypot(joueur.x-PORTE.x,joueur.y-PORTE.y)<50;
@@ -1513,6 +1862,8 @@ function majAction(){
   b.classList.remove('on');
 }
 $('action').onclick=()=>{
+  if(joueur.x<HALL0&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
+     joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70)return ouvrirBJ();
   if(Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70)return ouvrirGuichet();
   if(Math.hypot(joueur.x-PORTE.x,joueur.y-PORTE.y)<50&&!sortie){sortie=true;sortir();}
 };
