@@ -187,8 +187,34 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 </button>
 <div id="page"><div class="fond" id="pageFond"></div></div>
 
+<script>
+/* filetDeSecurite : si le jeu ne démarre pas, on affiche pourquoi au lieu
+   de laisser un écran vide. */
+window.addEventListener('error',ev=>{
+  if(document.getElementById('pepin'))return;
+  const d=document.createElement('div');d.id='pepin';
+  d.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:99;padding:12px 14px;'+
+    'border-radius:12px;background:#2b1618;border:1px solid #7d3a3a;color:#f2d9d9;'+
+    'font:600 12px/1.5 system-ui;box-shadow:0 6px 20px rgba(0,0,0,.5)';
+  d.textContent='Le jeu n’a pas pu démarrer : '+(ev.message||'erreur inconnue');
+  document.body.appendChild(d);
+});
+</script>
 <script type="module">
-import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
+/* Le jeu ne doit jamais dépendre d'un fichier distant pour s'afficher :
+   on charge Supabase en arrière-plan, et le décor s'affiche même s'il manque. */
+let createClient=null, sb=null, SB_PRET=false;
+async function chargerSupabase(){
+  for(const url of ["https://esm.sh/@supabase/supabase-js@2",
+                    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"]){
+    try{
+      const m=await import(url);
+      createClient=m.createClient;
+      sb=createClient(URL_SB,CLE_SB);       /* URL_SB est défini plus bas dans la page */
+      SB_PRET=true;return;
+    }catch(x){}
+  }
+}
 const $=id=>document.getElementById(id);
 const cv=$('cv'), ctx=cv.getContext('2d');
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
@@ -967,11 +993,11 @@ async function direOuJeSuis(lieu){
    Le direct passe par un canal ouvert en permanence : la position part
    dix fois par seconde. La base ne sert qu'à retrouver ceux qui étaient
    déjà là à l'arrivée. */
-const sb=createClient(URL_SB,CLE_SB);
+
 let AUTRES=new Map(), derniereEcoute=0, dernierEnvoi=0;
 let CANAL=null, dernierBip=0;
 function ouvrirCanal(){
-  if(CANAL||!e.id)return;
+  if(CANAL||!e.id||!SB_PRET||!sb)return;
   CANAL=sb.channel('casino',{config:{broadcast:{self:false}}});
   CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
     if(!p||p.id===e.id)return;
@@ -2573,6 +2599,7 @@ function dessinerJoy(dt){
 
 
 /* ================= la boucle ================= */
+chargerSupabase();
 taille();
 let t0=performance.now();
 (function boucle(t){
