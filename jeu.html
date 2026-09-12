@@ -2460,6 +2460,7 @@ const GROUPES=[
 ];
 const ONGLETS=['Corps','Visage','Cheveux','Tenue','Objets'];
 
+let fermeA=0;
 let LOOK={ap:null, onglet:'Corps', dir:'bas', marche:true, t0:0};
 function dessinerApercu(){
   const c=$('vg-c');if(!c)return;
@@ -2522,8 +2523,8 @@ function ouvrirLook(){
     GROUPES.forEach(gr=>{LOOK.ap[gr.c]=Math.floor(Math.random()*gr.l().length);});
     majChoix();dessinerApercu();
   };
-  $('annul').onclick=()=>$('pan').classList.remove('on');
-  $('ok').onclick=()=>{e.ap=LOOK.ap;sauver();monterEnLigne(true);$('pan').classList.remove('on');};
+  $('annul').onclick=()=>{fermeA=Date.now();$('pan').classList.remove('on');};
+  $('ok').onclick=()=>{fermeA=Date.now();e.ap=LOOK.ap;sauver();monterEnLigne(true);$('pan').classList.remove('on');};
   listeOnglet();dessinerApercu();
   $('pan').classList.add('on');
 }
@@ -2533,7 +2534,7 @@ $('b-parler').onclick=()=>ouvrirParler();
 $('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirBatir();
 $('b-class').onclick=()=>ouvrirClassement();
-$('pan').onclick=(ev)=>{if(ev.target===$('pan'))$('pan').classList.remove('on');};
+$('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 
 /* ================= la mini-carte, dans son hublot ================= */
 const RAYON_VUE=230;
@@ -2920,15 +2921,44 @@ function appliquerLeMonde(){
   if(change)DECOR.sort((a,b)=>a.y-b.y);
 }
 /* on prévient les autres, tout de suite puis dans la base */
-function signalerLeMonde(o,genre){
+async function appelRPC(nom,corps){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/rpc/'+nom,
+      {method:'POST',headers:sbEntetes,body:JSON.stringify(corps)});
+    return await r.json();
+  }catch(x){return null;}
+}
+/* le sac tel que le serveur le connaît */
+function adopterSac(d){
+  if(!d||d.erreur||!d.sac)return false;
+  e.sac=d.sac;
+  if(d.max)e.sacMax=d.max;
+  sauver();majPastille();
+  return true;
+}
+async function lireSacServeur(){
+  if(!e.id)return;
+  adopterSac(await appelRPC('lire_sac',{p_joueur:e.id}));
+}
+
+/* Quand on récolte, c'est le serveur qui tranche : il vérifie que la
+   chose n'a pas déjà été prise, applique le poids, et renvoie le sac. */
+function signalerLeMonde(o,genre,quoi){
   const cle=cleDe(o);
   try{CANAL&&CANAL.send({type:'broadcast',event:'monde',
     payload:{cle,genre,quand:Date.now()}});}catch(x){}
-  try{
-    fetch(URL_SB+'/rest/v1/monde',{method:'POST',
-      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
-      body:JSON.stringify([{cle,genre,quand:new Date().toISOString(),par:e.id}])});
-  }catch(x){}
+  (async()=>{
+    const d=await appelRPC('recolter',{p_joueur:e.id,p_cle:cle,p_genre:quoi||genre});
+    if(d&&d.sac)adopterSac(d);
+    else{
+      /* le serveur n'a rien à dire pour ce genre : on garde la trace du monde */
+      try{
+        fetch(URL_SB+'/rest/v1/monde',{method:'POST',
+          headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
+          body:JSON.stringify([{cle,genre,quand:new Date().toISOString(),par:e.id}])});
+      }catch(x){}
+    }
+  })();
 }
 
 /* ================= les autres survivants, en temps réel =================
@@ -3232,6 +3262,9 @@ function majAction(){
   b.classList.add('on');
 }
 function agir(){
+  /* En fermant une fiche, le navigateur envoie parfois le clic au bouton
+     qui se trouve dessous : on l'ignore pendant un demi-seconde. */
+  if(pageOuverte()||Date.now()-fermeA<500)return;
   const o=cible();if(!o||GESTE.t>0)return;
   if(o.t==='coffre'){
     if(e.coffreOuvert)return;
@@ -3302,7 +3335,7 @@ function majGeste(dt){
         const pris=ajouter('pierre',q);
         e.recolte=(e.recolte||0)+pris;
         e.score=(e.score||0)+5;
-        e.casses.push(o.x+','+o.y);signalerLeMonde(o,'rocher');
+        e.casses.push(o.x+','+o.y);signalerLeMonde(o,'rocher',o.t);
         DECOR.splice(DECOR.indexOf(o),1);
         DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
         texteVolant(o.x,o.y-22,'+'+pris+' pierre','#cfd6db');
@@ -3349,7 +3382,7 @@ function miner(o){
     const cailloux=ajouter('pierre',1);
     e.recolte=(e.recolte||0)+pris+cailloux;
     e.score=(e.score||0)+R.pts;
-    e.casses.push('m'+o.x+','+o.y);signalerLeMonde(o,'minerai');
+    e.casses.push('m'+o.x+','+o.y);signalerLeMonde(o,'minerai',o.t);
     DECOR.splice(DECOR.indexOf(o),1);
     DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
     DECOR.sort((a,b)=>a.y-b.y);
@@ -3366,7 +3399,7 @@ function miner(o){
 
 /* ---- la résine : on entaille l'arbre au lieu de l'abattre ---- */
 function recolterResine(o){
-  signalerLeMonde(o,'resine');
+  signalerLeMonde(o,'resine','resine');
   o.saigne=Date.now();o.frappe=Date.now();
   for(let i=0;i<9;i++){
     const a=-1.1-Math.random()*0.8;
@@ -3398,7 +3431,7 @@ const RECOLTES={
 function ramasser(o){
   const R=RECOLTES[o.t];
   o.cueilli=Date.now();o.frappe=Date.now();
-  signalerLeMonde(o,'cueillette');
+  signalerLeMonde(o,'cueillette',o.t);
   for(let i=0;i<8;i++){
     const a=-1.2-Math.random()*0.7;
     PARTS.push({x:o.x+(Math.random()-.5)*16,y:o.y-10,
@@ -3430,7 +3463,7 @@ function ramasser(o){
 
 /* ---- cueillir un buisson : rien ne casse, ça remue et ça donne ---- */
 function cueillir(o){
-  signalerLeMonde(o,'buisson');
+  signalerLeMonde(o,'buisson','buisson');
   const fibreBuisson=Math.random()<0.5?1:0;    /* une chance sur deux d'arracher de la fibre */
   o.cueilli=Date.now();o.frappe=Date.now();o.secoue=1;
   /* les baies sautent du buisson */
@@ -3520,7 +3553,7 @@ function couper(o){
     const pris=ajouter('bois',q);
     const fib=ajouter('fibre',1);
     e.recolte=(e.recolte||0)+pris+fib;e.score=(e.score||0)+8;
-    e.casses.push('a'+o.x+','+o.y);signalerLeMonde(o,'arbre');
+    e.casses.push('a'+o.x+','+o.y);signalerLeMonde(o,'arbre','arbre');
     texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
     texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
     for(let i2=0;i2<pris;i2++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'bois'),i2*80);
@@ -3686,7 +3719,7 @@ function ouvrirSac(){
    (o?'<div class="fiche"><span class="ic"><svg viewBox="0 0 16 16" width="28">'+ICONES[choisi]+'</svg></span>'+
       '<span class="tx"><b>'+o.nom+'</b><span>'+o.d+'</span></span>'+
       '<button id="sac-jeter">Jeter</button></div>':'');
-  $('sac-x').onclick=()=>$('sacPage').classList.remove('on');
+  $('sac-x').onclick=()=>{fermeA=Date.now();$('sacPage').classList.remove('on');};
   $('sacFond').querySelectorAll('[data-obj]').forEach(b=>b.onclick=()=>{choisi=b.dataset.obj;ouvrirSac();});
   const j=$('sac-jeter');
   if(j&&OBJETS[choisi]&&OBJETS[choisi].outil){j.style.display='none';}
@@ -3706,7 +3739,7 @@ function ouvrirPage(titre,sous,corps,clair){
      '<span><span class="sacT">'+titre+'</span><span class="sacS">'+sous+'</span></span>'+
      '<span class="boucle"></span></div>'+
    '<div class="sacCorps" style="padding-top:14px">'+corps+'</div>';
-  $('p2-x').onclick=()=>$('page2').classList.remove('on');
+  $('p2-x').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2').classList.add('on');
 }
 
@@ -3766,6 +3799,8 @@ function ouvrirFour(){
     /* c'est prêt */
     const f=FONTES.find(x=>x.id===e.four.recette);
     Object.entries(f.rend).forEach(([k,n])=>ajouter(k,n));
+    Object.entries(f.rend).forEach(([k,n])=>
+      appelRPC('livrer',{p_joueur:e.id,p_type:k,p_nb:n}).then(d=>adopterSac(d)));
     const quoi=Object.entries(f.rend).map(([k,n])=>n+' '+OBJETS[k].nom.toLowerCase()).join(', ');
     e.score=(e.score||0)+12;
     e.four=null;sauver();majPastille();monterEnLigne(true);
@@ -3795,6 +3830,7 @@ function ouvrirFour(){
     const f=FONTES.find(x=>x.id===b.dataset.fondre);
     if(!assez(f.cout))return;
     Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+    appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout}).then(d=>adopterSac(d));
     e.four={recette:f.id,fin:Date.now()+f.duree*1000};
     sauver();majPastille();monterEnLigne(true);
     try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
@@ -3832,6 +3868,10 @@ function ouvrirEtabli(){
     const f=FORGES.find(x=>x.id===b.dataset.forger);
     if(!assez(f.cout)||f.fait())return;
     Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+    appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout}).then(d=>{
+      adopterSac(d);
+      if(f.id==='grandSac')appelRPC('agrandir_sac',{p_joueur:e.id,p_max:110}).then(adopterSac);
+    });
     f.faire();
     e.score=(e.score||0)+20;
     sauver();majPastille();monterEnLigne(true);
@@ -4043,7 +4083,8 @@ async function ouvrirPorte(){
   e.pseudo=nom||'Survivant';
   sauver();
   await descendreDeLigne();
-  await recupererSauvegarde();    /* on retrouve sa partie, d'où qu'on vienne */
+  await recupererSauvegarde();
+  await lireSacServeur();       /* le sac vient du serveur */    /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
   entrer();
