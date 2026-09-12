@@ -105,6 +105,13 @@ body{overflow:hidden}
 .recette button{padding:9px 12px;border-radius:10px;background:#241a12;border:1px solid #6b5136;
   font:600 10.5px system-ui;color:#c9a24a}
 .recette button:disabled{opacity:.45}
+.chauffe{padding:8px 4px 4px}
+.barre{height:16px;border-radius:9px;background:#241a12;border:1px solid #5c452e;overflow:hidden}
+.barre i{display:block;height:100%;background:linear-gradient(180deg,#ffb347,#d9711c);
+  transition:width .4s linear}
+.reste{text-align:center;font:600 12px system-ui;color:#f0cf7d;margin-top:10px}
+.gagne2{text-align:center;font:400 22px Georgia,serif;color:#ffc65a;padding:22px 10px 6px;
+  text-shadow:0 0 18px rgba(255,198,90,.35)}
 .vide2{text-align:center;font:400 11.5px/1.6 system-ui;color:#a89070;padding:26px 12px}
 
 /* ---- page claire : le classement ---- */
@@ -1463,6 +1470,83 @@ function dessinerEntaille(g,x,y,ht,pret){
   else{R(-5,-4,9,3,'#3a3f44');}
 }
 
+/* ---- le four : pierre appareillée, cheminée, feu qui bat ---- */
+function dessinerFour(g,x,y,gr,allume){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/1000;
+  const bat=allume?(Math.sin(t*7)*0.5+0.5):0;
+  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,18,4.5,0,0,7);g.fill();
+  if(allume){                                    /* la lueur au sol */
+    g.globalAlpha=.12+bat*0.06;g.fillStyle='#ff9d45';
+    g.beginPath();g.ellipse(x,y-10,30,20,0,0,7);g.fill();g.globalAlpha=1;
+  }
+  R(-16,-10,32,10,'#5f666c');
+  R(-16,-10,32,2,'#7b8288');
+  R(-14,-26,28,16,'#6f767d');
+  R(-14,-26,28,2,'#8b939a');
+  R(-14,-26,4,16,'#8b939a');
+  R(-10,-22,7,4,'#5a6067');R(-1,-22,7,4,'#5a6067');
+  R(-6,-16,7,4,'#5a6067');R(4,-16,7,4,'#5a6067');
+  /* la gueule */
+  R(-7,-19,14,9,'#1c1a18');
+  if(allume){
+    R(-6,-17,12,7,bat>0.5?'#c9421c':'#a8330f');
+    R(-4,-16,8,5,bat>0.4?'#ff9d45':'#e8802c');
+    R(-2,-15,4,3,bat>0.6?'#ffe08a':'#ffc65a');
+    R(-9,-2,18,2,'#ff9d45');
+  }else{
+    R(-5,-16,10,5,'#2b2724');
+  }
+  /* la cheminée */
+  R(-6,-36,12,10,'#5f666c');
+  R(-6,-36,12,2,'#7b8288');
+  R(-8,-38,16,3,'#4a5056');
+  if(allume){                                    /* la fumée */
+    for(let i=0;i<3;i++){
+      const h=((t*14+i*16)%48);
+      g.globalAlpha=Math.max(0,.55-h/60);
+      g.fillStyle='#9a958e';
+      g.fillRect(Math.round(x-3+Math.sin(t+i)*4),Math.round(y-42-h),5+i,4+i);
+    }
+    g.globalAlpha=1;
+  }
+}
+
+/* ---- l'établi : plateau, étau, panneau d'outils ---- */
+function dessinerEtabli(g,x,y){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,20,4.5,0,0,7);g.fill();
+  /* le panneau, derrière */
+  R(-16,-42,32,18,'#5b3f21');
+  R(-16,-42,32,2,'#7d5934');
+  R(-12,-39,3,10,'#8a6238');R(-14,-40,7,3,'#7b8288');
+  R(-3,-39,2,11,'#8a6238');R(-6,-40,8,2,'#7b8288');
+  R(7,-38,6,8,'#7b8288');R(7,-38,6,2,'#a2a9b0');
+  /* les pieds */
+  R(-17,-12,5,12,'#5b3f21');R(12,-12,5,12,'#5b3f21');
+  /* le plateau */
+  R(-20,-20,40,9,'#6b4a28');
+  R(-20,-20,40,3,'#a5764a');
+  R(-20,-13,40,2,'#4a3218');
+  /* l'étau */
+  R(-19,-24,7,5,'#5f666c');
+  R(-19,-24,7,2,'#8b939a');
+  /* ce qui traîne dessus */
+  R(-8,-24,10,3,'#7b8288');
+  R(-8,-24,10,1,'#a2a9b0');
+  R(-4,-27,2,4,'#8a6238');
+  R(5,-25,9,6,'#8a6238');
+  R(5,-25,9,2,'#a5764a');
+}
+
+/* ---- un lingot, posé ---- */
+function dessinerLingot(g,x,y,c1,c2){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  R(-7,-5,14,5,c1);
+  R(-7,-5,14,2,c2);
+  R(-5,-8,10,3,c2);
+}
+
 /* --- une souche, quand on aura la récolte --- */
 function dessinerSouche(g,x,y,gr,neuf){
   const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
@@ -1567,7 +1651,9 @@ const TAILLES={
  argile:null, roseaux:null, champignons:null, herbes:null, plumes:null,
  souche: null,
  pont:   null,
- casino: [{w:126,h:16}]
+ casino: [{w:126,h:16}],
+ four:   [{w:34,h:12}],
+ etabli: [{w:42,h:12}]
 };
 
 function semerDecor(){
@@ -1707,6 +1793,23 @@ function semerDecor(){
     return !(dx<118&&dy>-170&&dy<86);
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
+
+  /* le campement : four et établi, près du coffre de départ */
+  if(!e.camp){
+    const base=e.coffre?[e.coffre[0],e.coffre[1]]:[Math.round(joueur.x),Math.round(joueur.y)];
+    let p=null;
+    for(const [dx,dy] of [[-70,10],[70,10],[-70,-40],[70,-40],[0,70],[0,-70]]){
+      const x=Math.max(BORD+40,Math.min(MONDE-BORD-40,base[0]+dx));
+      const y=Math.max(BORD+70,Math.min(MONDE-BORD-30,base[1]+dy));
+      if(!bloque(x,y)&&!bloque(x+46,y)){p=[Math.round(x),Math.round(y)];break;}
+    }
+    if(!p)p=[Math.round(base[0]-70),Math.round(base[1]+10)];
+    e.camp=p;sauver();
+  }
+  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+    !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));
+  DECOR.push({t:'four',  x:e.camp[0],    y:e.camp[1],gr:0});
+  DECOR.push({t:'etabli',x:e.camp[0]+48, y:e.camp[1],gr:0});
 
   /* les deux ponts, posés en travers de la rivière */
   PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
@@ -1866,6 +1969,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
       }
     }
     else if(o.t==='pont')dessinerPont(g,x,y);
+    else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
+    else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
     else if(o.t==='coffre'){
       let k=e.coffreOuvert?1:0;
@@ -1894,7 +1999,9 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
 let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
-       outils:{},coffreOuvert:false,casses:[],coffre:null,casino:null};
+       outils:{},coffreOuvert:false,casses:[],coffre:null,casino:null,camp:null,
+       four:null,           /* {recette, fin} : ce qui cuit en ce moment */
+       sacMax:60};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -2555,7 +2662,7 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&!cueillable&&!minerai)continue;
+       &&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -2578,7 +2685,7 @@ function majAction(){
   }else if(['fer','cuivre','charbon'].includes(o.t)){
     const n={fer:'FILON DE FER',cuivre:'FILON DE CUIVRE',charbon:'VEINE DE CHARBON'}[o.t];
     b.innerHTML=e.outils.pioche
-      ? 'Extraire<small>'+n+' · '+(4-(o.coups||0))+' COUPS</small>'
+      ? 'Extraire<small>'+n+' · '+((e.outils.piocheFer?2:4)-(o.coups||0))+' COUPS</small>'
       : 'Il faut une pioche<small>'+n+'</small>';
   }else if(o.t==='arbre'){
     if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
@@ -2587,7 +2694,15 @@ function majAction(){
       b.innerHTML=pret?'Récolter<small>RÉSINE</small>'
                       :'La résine coule…<small>'+Math.ceil((180000-(Date.now()-o.saigne))/60000)+' MIN</small>';
     }
-    else b.innerHTML='Couper<small>ARBRE · '+(5-(o.coups||0))+' COUPS</small>';
+    else b.innerHTML='Couper<small>ARBRE · '+((e.outils.hacheFer?3:5)-(o.coups||0))+' COUPS</small>';
+  }else if(o.t==='four'){
+    if(e.four&&Date.now()<e.four.fin){
+      const s2=Math.ceil((e.four.fin-Date.now())/1000);
+      b.innerHTML='Le four chauffe…<small>'+(s2>60?Math.ceil(s2/60)+' MIN':s2+' S')+'</small>';
+    }else if(e.four){b.innerHTML='Retirer<small>C’EST PRÊT</small>';}
+    else b.innerHTML='Allumer<small>LE FOUR</small>';
+  }else if(o.t==='etabli'){
+    b.innerHTML='Forger<small>L’ÉTABLI</small>';
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
   }else if(o.t==='buisson'){
@@ -2621,6 +2736,8 @@ function agir(){
       '<div class="vide2">Les buissons se cueillent à la main.</div>',false);
     return;
   }
+  if(o.t==='four')return ouvrirFour();
+  if(o.t==='etabli')return ouvrirEtabli();
   if(o.t==='casino'){
     sauver();monterEnLigne(true);
     location.href='casino.html';                 /* on entre dans la salle */
@@ -2696,7 +2813,7 @@ function miner(o){
   poussiere(o.x,o.y,6);
   secouer(0.65);ARRET=0.06;
   try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
-  if(o.coups>=4){
+  if(o.coups>=(e.outils.piocheFer?2:4)){
     for(let i=0;i<20;i++){
       const a=Math.random()*6.283, v=(60+Math.random()*120);
       PARTS.push({x:o.x,y:o.y-10,vx:Math.cos(a)*v,vy:-Math.abs(Math.sin(a))*v-30,
@@ -2722,7 +2839,8 @@ function miner(o){
     for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,o.t),i*80);
     sauver();monterEnLigne(true);
   }else{
-    texteVolant(o.x,o.y-20,(4-o.coups)+' coup'+(o.coups<3?'s':''),'#c9cfd4');
+    const reste=(e.outils.piocheFer?2:4)-o.coups;
+    texteVolant(o.x,o.y-20,reste+' coup'+(reste>1?'s':''),'#c9cfd4');
   }
 }
 
@@ -2830,7 +2948,7 @@ function couper(o){
   }
   secouer(0.5);ARRET=0.05;
   try{navigator.vibrate&&navigator.vibrate(16);}catch(x){}
-  if(o.coups>=5){
+  if(o.coups>=(e.outils.hacheFer?3:5)){
     /* il ne bascule pas : il cède, et le bois vole en morceaux */
     secouer(1.2);ARRET=0.07;
     try{navigator.vibrate&&navigator.vibrate([14,40,26]);}catch(x){}
@@ -2902,6 +3020,10 @@ const OBJETS={
  cuivre: {nom:'Cuivre', d:'Veines vertes dans la roche. Malléable.',                 poids:3},
  charbon:{nom:'Charbon',d:'Roche noire et cassante. De quoi chauffer un four.',      poids:2},
  resine: {nom:'Résine', d:'Récoltée en entaillant un arbre. Colle et torches.',      poids:1},
+ lingotFer:{nom:'Lingot de fer',   d:'Sorti du four. De quoi forger du solide.', poids:2},
+ lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',     poids:2},
+ brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
+ torche: {nom:'Torche', d:'Résine et bois. Éclaire la nuit.',                     poids:1},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
  hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
 };
@@ -2945,11 +3067,26 @@ fer:'<rect x="2" y="6" width="12" height="8" fill="#4e4a48"/><rect x="2" y="6" w
       '<rect x="5" y="7" width="3" height="3" fill="#6d6a74"/><rect x="10" y="9" width="2" height="2" fill="#a7a3b0"/>',
  resine:'<rect x="4" y="3" width="8" height="9" fill="#e8a94a"/><rect x="4" y="3" width="8" height="2" fill="#f7cf7d"/>'+
       '<rect x="6" y="5" width="2" height="5" fill="#f7cf7d"/><rect x="5" y="12" width="6" height="2" fill="#c98a2c"/>',
+lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y="7" width="14" height="2" fill="#b7bec4"/>'+
+      '<rect x="3" y="4" width="10" height="3" fill="#a2a9b0"/><rect x="3" y="4" width="10" height="1" fill="#d0d6db"/>',
+ lingotCuivre:'<rect x="1" y="7" width="14" height="6" fill="#b06a3a"/><rect x="1" y="7" width="14" height="2" fill="#d4884c"/>'+
+      '<rect x="3" y="4" width="10" height="3" fill="#c47a44"/><rect x="3" y="4" width="10" height="1" fill="#e8a05c"/>',
+ brique:'<rect x="2" y="5" width="12" height="4" fill="#a8563c"/><rect x="2" y="5" width="12" height="1" fill="#c46b4c"/>'+
+      '<rect x="2" y="10" width="12" height="4" fill="#96492f"/><rect x="2" y="10" width="12" height="1" fill="#b25c3e"/>',
+ torche:'<rect x="7" y="5" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="4" fill="#e8802c"/>'+
+      '<rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>',
+ piocheFer:'<rect x="7" y="4" width="2" height="10" fill="#8a6238"/><rect x="3" y="2" width="10" height="2" fill="#b7bec4"/>'+
+      '<rect x="2" y="3" width="2" height="2" fill="#8a8f96"/><rect x="12" y="3" width="2" height="2" fill="#8a8f96"/>',
+ hacheFer:'<rect x="7" y="3" width="2" height="11" fill="#8a6238"/><rect x="8" y="2" width="5" height="6" fill="#b7bec4"/>'+
+      '<rect x="12" y="3" width="2" height="4" fill="#e0e6ea"/>',
+ grandSac:'<rect x="3" y="5" width="10" height="9" fill="#6b4a28"/><rect x="3" y="5" width="10" height="2" fill="#8a6238"/>'+
+      '<rect x="5" y="2" width="6" height="3" fill="#5b3f21"/><rect x="7" y="8" width="2" height="3" fill="#c9a24a"/>',
  baies:'<rect x="4" y="7" width="4" height="4" fill="#c94a4a"/><rect x="4" y="7" width="2" height="2" fill="#e2604a"/>'+
       '<rect x="8" y="9" width="4" height="4" fill="#a83a3a"/><rect x="8" y="9" width="2" height="2" fill="#c94a4a"/>'+
       '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/><rect x="7" y="3" width="2" height="2" fill="#7db35d"/>'
 };
 const CHARGE_MAX=60;
+const chargeMax=()=>e.sacMax||CHARGE_MAX;
 if(!e.sac)e.sac={};
 if(!e.outils)e.outils={};
 /* les parties ouvertes avant l'arrivée de la hache la reçoivent quand même */
@@ -2959,7 +3096,7 @@ const combien=k=>e.sac[k]||0;
 const charge=()=>Object.entries(e.sac).reduce((a,[k,n])=>a+n*((OBJETS[k]||{poids:1}).poids),0);
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
 function ajouter(k,n){
-  const place=CHARGE_MAX-charge();
+  const place=chargeMax()-charge();
   const q=Math.max(0,Math.min(n,Math.floor(place/(OBJETS[k].poids||1))));
   if(q>0){e.sac[k]=combien(k)+q;sauver();majPastille();}
   return q;
@@ -2986,7 +3123,7 @@ function ouvrirSac(){
    '<div class="rabat"><button class="sacX" id="sac-x">✕</button>'+
      '<span><span class="sacT">Ton sac</span>'+
      '<span class="sacS">SAC DE TOILE · '+nbObjets()+' OBJET'+(nbObjets()>1?'S':'')+'</span></span>'+
-     '<span class="sacCh"><b>'+charge()+'</b><i>/ '+CHARGE_MAX+'</i></span>'+
+     '<span class="sacCh"><b>'+charge()+'</b><i>/ '+chargeMax()+'</i></span>'+
      '<span class="boucle"></span></div>'+
    '<div class="lanière"><i style="width:'+Math.round(charge()/CHARGE_MAX*100)+'%"></i></div>'+
    '<div class="sacCorps">'+
@@ -3052,6 +3189,111 @@ function ouvrirBatir(){
   '<div class="vide2">La pose sur le terrain arrive à l’étape suivante.<br>'+
   'Pour l’instant, cette page montre ce que tu pourras construire et ce qu’il te manque.</div>';
   ouvrirPage('Bâtir','CE QUE TU PEUX CONSTRUIRE',corps,false);
+}
+
+/* ================= le four ================= */
+const FONTES=[
+ {id:'lingotFer',   nom:'Lingot de fer',    cout:{fer:2,charbon:1},    rend:{lingotFer:1},   duree:90},
+ {id:'lingotCuivre',nom:'Lingot de cuivre', cout:{cuivre:2,charbon:1}, rend:{lingotCuivre:1},duree:75},
+ {id:'brique',      nom:'Brique',           cout:{argile:3,charbon:1}, rend:{brique:2},      duree:60}
+];
+function assez(cout){return Object.entries(cout).every(([k,n])=>combien(k)>=n);}
+function coutHTML(cout){
+  return '<span class="cout">'+Object.entries(cout).map(([k,n])=>
+    '<i class="'+(combien(k)>=n?'ok':'')+'">'+n+' '+OBJETS[k].nom.toLowerCase()+'</i>').join('')+'</span>';
+}
+function ouvrirFour(){
+  /* une fournée est en cours ou terminée */
+  if(e.four){
+    const reste=e.four.fin-Date.now();
+    if(reste>0){
+      const f=FONTES.find(x=>x.id===e.four.recette);
+      const total=f.duree*1000, fait=Math.max(0,total-reste);
+      return ouvrirPage('Le four','EN CHAUFFE',
+        '<div class="chauffe"><div class="barre"><i style="width:'+
+          Math.round(fait/total*100)+'%"></i></div>'+
+        '<div class="reste">'+(reste>60000?Math.ceil(reste/60000)+' min restantes'
+                                          :Math.ceil(reste/1000)+' s restantes')+'</div></div>'+
+        '<div class="vide2">Il continue de chauffer même si tu t’éloignes<br>ou que tu fermes le jeu.</div>',
+        false);
+    }
+    /* c'est prêt */
+    const f=FONTES.find(x=>x.id===e.four.recette);
+    Object.entries(f.rend).forEach(([k,n])=>ajouter(k,n));
+    const quoi=Object.entries(f.rend).map(([k,n])=>n+' '+OBJETS[k].nom.toLowerCase()).join(', ');
+    e.score=(e.score||0)+12;
+    e.four=null;sauver();majPastille();monterEnLigne(true);
+    const c=cible();
+    if(c&&c.t==='four'){
+      texteVolant(c.x,c.y-34,'+'+quoi,'#ffc65a');
+      eclats(c.x,c.y-14,14,'#ff9d45',1.2);
+      secouer(0.4);
+    }
+    try{navigator.vibrate&&navigator.vibrate([12,34,20]);}catch(x){}
+    return ouvrirPage('Le four','FOURNÉE TERMINÉE',
+      '<div class="gagne2">'+quoi+'</div>'+
+      '<div class="vide2">Le métal est dans ton sac.</div>',false);
+  }
+  /* on choisit quoi fondre */
+  const corps=FONTES.map(f=>{
+    const ok=assez(f.cout);
+    return '<div class="recette"><span class="ic"><svg viewBox="0 0 16 16" width="26">'+
+      ICONES[Object.keys(f.rend)[0]]+'</svg></span>'+
+      '<span class="tx"><b>'+f.nom+'</b><span>'+f.duree+' secondes de chauffe</span>'+
+      coutHTML(f.cout)+'</span>'+
+      '<button data-fondre="'+f.id+'"'+(ok?'':' disabled')+'>Fondre</button></div>';
+  }).join('')+
+  '<div class="vide2">Le four garde sa chaleur : tu peux partir récolter<br>pendant que le métal fond.</div>';
+  ouvrirPage('Le four','QUE VEUX-TU FONDRE ?',corps,false);
+  $('page2Fond').querySelectorAll('[data-fondre]').forEach(b=>b.onclick=()=>{
+    const f=FONTES.find(x=>x.id===b.dataset.fondre);
+    if(!assez(f.cout))return;
+    Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+    e.four={recette:f.id,fin:Date.now()+f.duree*1000};
+    sauver();majPastille();monterEnLigne(true);
+    try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
+    ouvrirFour();
+  });
+}
+
+/* ================= l'établi ================= */
+const FORGES=[
+ {id:'piocheFer',nom:'Pioche de fer',   d:'Deux coups au lieu de quatre sur les filons.',
+  cout:{lingotFer:2,bois:1}, coul:'#b06a3a', fait:()=>e.outils.piocheFer,
+  faire:()=>{e.outils.piocheFer=true;}},
+ {id:'hacheFer', nom:'Hache de fer',    d:'Trois coups au lieu de cinq sur les arbres.',
+  cout:{lingotFer:2,bois:1}, coul:'#8a6238', fait:()=>e.outils.hacheFer,
+  faire:()=>{e.outils.hacheFer=true;}},
+ {id:'grandSac', nom:'Grand sac',       d:'Ta charge passe de 60 à 110.',
+  cout:{fibre:8,roseaux:6,resine:2}, coul:'#8a9a4a', fait:()=>e.sacMax>=110,
+  faire:()=>{e.sacMax=110;}},
+ {id:'torche',   nom:'Torche',          d:'De quoi éclairer. Trois d’un coup.',
+  cout:{resine:2,bois:2}, coul:'#e8a94a', fait:()=>false,
+  faire:()=>{ajouter('torche',3);}}
+];
+function ouvrirEtabli(){
+  const corps=FORGES.map(f=>{
+    const ok=assez(f.cout), deja=f.fait();
+    return '<div class="recette"'+(deja?' style="opacity:.5"':'')+'>'+
+      '<span class="ic"><svg viewBox="0 0 16 16" width="26">'+
+        (ICONES[f.id]||ICONES.pioche)+'</svg></span>'+
+      '<span class="tx"><b>'+f.nom+'</b><span>'+f.d+'</span>'+coutHTML(f.cout)+'</span>'+
+      '<button data-forger="'+f.id+'"'+((ok&&!deja)?'':' disabled')+'>'+
+        (deja?'Déjà fait':'Forger')+'</button></div>';
+  }).join('');
+  ouvrirPage('L’établi','FORGER SES OUTILS',corps,false);
+  $('page2Fond').querySelectorAll('[data-forger]').forEach(b=>b.onclick=()=>{
+    const f=FORGES.find(x=>x.id===b.dataset.forger);
+    if(!assez(f.cout)||f.fait())return;
+    Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
+    f.faire();
+    e.score=(e.score||0)+20;
+    sauver();majPastille();monterEnLigne(true);
+    const c=cible();
+    if(c){texteVolant(c.x,c.y-34,f.nom+' !','#ffe08a');eclats(c.x,c.y-14,16,'#c9a24a',1.3);secouer(0.5);}
+    try{navigator.vibrate&&navigator.vibrate([14,40,26]);}catch(x){}
+    ouvrirEtabli();
+  });
 }
 
 /* ================= le classement ================= */
