@@ -1922,8 +1922,8 @@ function semerDecor(){
 
   /* les rochers déjà cassés ne repoussent pas */
   const casses=new Set((e.casses||[]).map(c=>/^[a-z]/.test(c)?c:'r'+c));
-  DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has('r'+o.x+','+o.y)));
-  DECOR=DECOR.filter(o=>!(['fer','cuivre','charbon'].includes(o.t)&&casses.has('m'+o.x+','+o.y)));
+  DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has('r'+o.x+','+o.y)));invaliderGrille();
+  DECOR=DECOR.filter(o=>!(['fer','cuivre','charbon'].includes(o.t)&&casses.has('m'+o.x+','+o.y)));invaliderGrille();
   DECOR=DECOR.filter(o=>{
     if(o.t!=='arbre'||!casses.has('a'+o.x+','+o.y))return true;
     DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});return false;});
@@ -1942,7 +1942,7 @@ function semerDecor(){
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
   DECOR=DECOR.filter(o=>o.t==='fleurs'||
-    !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));
+    !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));invaliderGrille();
   DECOR.push({t:'four',  x:e.camp[0],    y:e.camp[1],gr:0});
   DECOR.push({t:'etabli',x:e.camp[0]+48, y:e.camp[1],gr:0});
 
@@ -1956,7 +1956,7 @@ function semerDecor(){
   PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
 
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
-  DECOR.sort((a,b)=>a.y-b.y);
+  DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 
 /* ---- la lisière : une forêt dense qu'on ne traverse pas ---- */
@@ -2003,6 +2003,36 @@ function degager(x,y){
 }
 
 /* ---- ce qui bloque le passage ---- */
+/* ================= la grille du décor =================
+   Sans elle, chaque pas comparait le joueur aux 220 objets de la carte,
+   trois fois par image. On range tout dans des cases de 80 px et on ne
+   regarde que les neuf cases autour de soi. */
+const CASE=80;
+let GRILLE=null, grilleValide=false;
+const caseDe=(x,y)=>((y/CASE)|0)*64+((x/CASE)|0);
+function construireGrille(){
+  GRILLE=new Map();
+  for(const o of DECOR){
+    if(!TAILLES[o.t]&&!o.bati)continue;          /* ce qu'on traverse ne compte pas */
+    const c=caseDe(o.x,o.y);
+    let l=GRILLE.get(c);
+    if(!l){l=[];GRILLE.set(c,l);}
+    l.push(o);
+  }
+  grilleValide=true;
+}
+function autourDe(x,y){
+  if(!grilleValide||!GRILLE)construireGrille();
+  const cx=(x/CASE)|0, cy=(y/CASE)|0;
+  const out=[];
+  for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){
+    const l=GRILLE.get((cy+b)*64+(cx+a));
+    if(l)for(const o of l)out.push(o);
+  }
+  return out;
+}
+const invaliderGrille=()=>{grilleValide=false;};
+
 function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
@@ -2014,7 +2044,7 @@ function bloque(x,y){
     /* les deux vasques, de part et d'autre des marches */
     if(dx>48&&dx<66&&dy>-20&&dy<4)return true;
   }
-  for(const o of DECOR){
+  for(const o of autourDe(x,y)){
     const t=TAILLES[o.t];if(!t)continue;
     const d=t[o.gr||0];
     if(Math.abs(o.x-x)<d.w/2+3&&Math.abs(o.y-y)<d.h/2+2)return true;
@@ -2023,9 +2053,24 @@ function bloque(x,y){
 }
 
 /* ---- dessin, avec la profondeur ---- */
+/* Le décor est trié du nord au sud : on cherche par dichotomie la
+   première ligne visible, et on s'arrête dès qu'on est passé sous
+   l'écran. Inutile de parcourir les 220 objets à chaque image. */
+function premierVisible(yMin){
+  let a=0,b=DECOR.length;
+  while(a<b){const m=(a+b)>>1;if(DECOR[m].y<yMin)a=m+1;else b=m;}
+  return a;
+}
 function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
   let posé=false;
-  for(const o of DECOR){
+  const yHaut=camY-300, yBas=camY+VH2+40;
+  const debut=premierVisible(yHaut);
+  for(let i=debut;i<DECOR.length;i++){
+    const o=DECOR[i];
+    if(o.y>yBas){                                  /* on est sorti par le bas */
+      if(!posé){dessinerJoueur();posé=true;}
+      break;
+    }
     if(!posé&&o.y>joueurY){dessinerJoueur();posé=true;}    /* le joueur passe devant */
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
@@ -2136,7 +2181,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
         else if(age<2600)k=0.94;                            /* il reste un instant */
         else{
           const f=Math.min(1,(age-2600)/900);                /* puis il s'efface */
-          if(f>=1){DECOR.splice(DECOR.indexOf(o),1);continue;}
+          if(f>=1){DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();continue;}
           g.save();g.globalAlpha=1-f;
           g.translate(0,f*9);
           dessinerCoffre(g,x,y,true,0.94*(1-f*0.35));
@@ -2266,9 +2311,9 @@ function poserCoffre(){
   e.coffre=COFFRE_FIXE;                       /* le même coffre, au même endroit */
   if(e.coffreOuvert)return;                   /* déjà vidé : il n'y en a plus */
   /* le coffre reste sur la carte même une fois vidé : couvercle ouvert */
-  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');
+  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');invaliderGrille();
   DECOR.push({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
-  DECOR.sort((a,b)=>a.y-b.y);
+  DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 function dessiner(){
   preparerMonde();
@@ -2996,10 +3041,10 @@ async function chargerLeBati(force){
 }
 /* on les met dans le décor pour qu'elles soient triées par profondeur */
 function poserLeBati(){
-  DECOR=DECOR.filter(o=>!o.bati);
+  DECOR=DECOR.filter(o=>!o.bati);invaliderGrille();
   for(const [,c] of BATI)
     DECOR.push({t:c.genre,x:c.x,y:c.y,gr:c.gr||0,bati:c.id,par:c.proprietaire});
-  DECOR.sort((a,b)=>a.y-b.y);
+  DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 /* chez qui suis-je ? */
 function parcelleIci(x,y){
@@ -3256,12 +3301,12 @@ async function chargerLaCarte(){
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','four','etabli','coffre','souche','gravats'];
-    DECOR=DECOR.filter(o=>garder.includes(o.t));
+    DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
       DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle});
     });
-    DECOR.sort((a,b)=>a.y-b.y);
+    DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
     CARTE_RECUE=true;
     appliquerLeMonde();
     const [dx,dy]=degager(joueur.x,joueur.y);
@@ -3307,16 +3352,16 @@ function appliquerLeMonde(){
     const o=DECOR[i];
     const c=cleDe(o);
     if(['rocher','fer','cuivre','charbon'].includes(o.t)&&casses.has(c)){
-      DECOR.splice(i,1);
+      DECOR.splice(i,1);invaliderGrille();
       DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0});change=true;
     }else if(o.t==='arbre'&&casses.has(c)){
-      DECOR.splice(i,1);
+      DECOR.splice(i,1);invaliderGrille();
       DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});change=true;
     }else if(CUEILLI.has(c)&&!o.cueilli){
       o.cueilli=CUEILLI.get(c);change=true;
     }
   }
-  if(change)DECOR.sort((a,b)=>a.y-b.y);
+  if(change)DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 /* on prévient les autres, tout de suite puis dans la base */
 async function appelRPC(nom,corps){
@@ -3630,7 +3675,7 @@ function dessinerParts(g,camX,camY){
 /* ce qui est à portée de main */
 function cible(){
   let d0=48,res=null;
-  for(const o of DECOR){
+  for(const o of autourDe(joueur.x,joueur.y)){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
@@ -3780,7 +3825,7 @@ function majGeste(dt){
         e.recolte=(e.recolte||0)+pris;
         e.score=(e.score||0)+5;
         noterCasse(o.x+','+o.y);signalerLeMonde(o,'rocher',o.t);
-        DECOR.splice(DECOR.indexOf(o),1);
+        DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
         DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
         texteVolant(o.x,o.y-22,'+'+pris+' pierre','#cfd6db');
         texteVolant(o.x,o.y-34,'+5 pts','#a9c96a');
@@ -3827,9 +3872,9 @@ function miner(o){
     e.recolte=(e.recolte||0)+pris+cailloux;
     e.score=(e.score||0)+R.pts;
     noterCasse('m'+o.x+','+o.y);signalerLeMonde(o,'minerai',o.t);
-    DECOR.splice(DECOR.indexOf(o),1);
+    DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
     DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
-    DECOR.sort((a,b)=>a.y-b.y);
+    DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
     const nom={fer:'fer',cuivre:'cuivre',charbon:'charbon'}[o.t];
     texteVolant(o.x,o.y-26,'+'+pris+' '+nom,M.eclat);
     texteVolant(o.x,o.y-38,'+'+R.pts+' pts','#a9c96a');
@@ -3989,9 +4034,9 @@ function couper(o){
     /* la souche prend la place tout de suite */
     const i=DECOR.indexOf(o);
     if(i>=0){
-      DECOR.splice(i,1);
+      DECOR.splice(i,1);invaliderGrille();
       DECOR.push({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now()});
-      DECOR.sort((a,b)=>a.y-b.y);
+      DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
     }
     const q=3+Math.floor(Math.random()*3);
     const pris=ajouter('bois',q);
