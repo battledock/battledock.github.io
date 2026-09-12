@@ -2487,6 +2487,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     else if(o.t==='pont')dessinerPont(g,x,y);
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
+    else if(o.bati)dessinerBati(g,o,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
 
     else if(o.t==='coffre'){
@@ -2657,12 +2658,14 @@ function dessiner(){
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
+  dessinerParcelles(ctx,camX,camY);
   if(QUALITE>=0.5)refletsRiviere(ctx,camX,camY);
   dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
+  dessinerFantome(ctx,px,py);
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
   if(maBulle)dessinerBulle(ctx,px,py,maBulle.txt,true,maBulle.ne);
@@ -3282,6 +3285,288 @@ async function recupererSauvegarde(){
   }catch(x){}
 }
 
+/* ================= chez soi : la parcelle et les constructions =================
+   On ne charge jamais toutes les constructions du monde : seulement
+   celles du carré autour de nous, et seulement quand on a bougé. */
+let MA_PARCELLE=null;
+const BATI=new Map();                            /* id → construction */
+let zoneVue={x:1e9,y:1e9}, chargeEnVol=false, parcellesVues=[];
+
+const PLANS=[
+ {id:'feu',     nom:'Feu de camp', cout:{bois:6,pierre:3},         d:'Il réchauffe et éclaire.'},
+ {id:'cabane',  nom:'Cabane',      cout:{bois:18,fibre:8},         d:'Un toit à toi.'},
+ {id:'cloture', nom:'Clôture',     cout:{bois:3},                  d:'Pour délimiter.'},
+ {id:'torchere',nom:'Torchère',    cout:{bois:2,resine:2},         d:'Une flamme sur un mât.'},
+ {id:'coffre',  nom:'Coffre',      cout:{bois:10,fer:2},           d:'Décoratif, pour l’instant.'},
+ {id:'banc',    nom:'Banc',        cout:{bois:5},                  d:'Pour s’asseoir à deux.'},
+ {id:'table',   nom:'Table',       cout:{bois:8},                  d:'Une table de camp.'},
+ {id:'puits',   nom:'Puits',       cout:{pierre:14,bois:4},        d:'En pierre, avec sa margelle.'},
+ {id:'statue',  nom:'Statue',      cout:{pierre:20,lingotFer:2},   d:'À ta gloire.'},
+ {id:'jardin',  nom:'Jardin',      cout:{argile:6,herbes:6},       d:'Un carré de fleurs.'}
+];
+
+async function lireMaParcelle(){
+  if(!e.id)return;
+  const d=await appelRPC('ma_parcelle',{p_joueur:e.id,p_pseudo:e.pseudo||'un survivant'});
+  if(d&&!d.erreur&&typeof d.cx==='number'){
+    MA_PARCELLE=d;e.parcelle=[d.cx,d.cy,d.demi];sauver();
+  }
+}
+/* les constructions autour de nous : une seule requête, et seulement
+   quand on a franchi un demi-écran. */
+async function chargerLeBati(force){
+  if(chargeEnVol||!SB_PRET)return;
+  const R=520;
+  if(!force&&Math.abs(joueur.x-zoneVue.x)<200&&Math.abs(joueur.y-zoneVue.y)<200)return;
+  chargeEnVol=true;
+  zoneVue={x:joueur.x,y:joueur.y};
+  try{
+    const q='?select=id,proprietaire,genre,x,y,gr'+
+      '&x=gte.'+Math.round(joueur.x-R)+'&x=lte.'+Math.round(joueur.x+R)+
+      '&y=gte.'+Math.round(joueur.y-R)+'&y=lte.'+Math.round(joueur.y+R)+'&limit=400';
+    const r=await fetch(URL_SB+'/rest/v1/constructions'+q,{headers:sbEntetes});
+    const d=await r.json();
+    if(Array.isArray(d)){
+      BATI.clear();
+      d.forEach(c=>BATI.set(c.id,c));
+      poserLeBati();
+    }
+    /* les bornes des parcelles voisines, pour savoir chez qui on est */
+    const r2=await fetch(URL_SB+'/rest/v1/parcelles?select=proprietaire,pseudo,cx,cy'+
+      '&cx=gte.'+Math.round(joueur.x-R)+'&cx=lte.'+Math.round(joueur.x+R)+
+      '&cy=gte.'+Math.round(joueur.y-R)+'&cy=lte.'+Math.round(joueur.y+R)+'&limit=60',
+      {headers:sbEntetes});
+    const d2=await r2.json();
+    if(Array.isArray(d2))parcellesVues=d2;
+  }catch(x){}
+  chargeEnVol=false;
+}
+/* on les met dans le décor pour qu'elles soient triées par profondeur */
+function poserLeBati(){
+  DECOR=DECOR.filter(o=>!o.bati);
+  for(const [,c] of BATI)
+    DECOR.push({t:c.genre,x:c.x,y:c.y,gr:c.gr||0,bati:c.id,par:c.proprietaire});
+  DECOR.sort((a,b)=>a.y-b.y);
+}
+/* chez qui suis-je ? */
+function parcelleIci(x,y){
+  const d=(MA_PARCELLE&&MA_PARCELLE.demi)||76;
+  for(const p of parcellesVues)
+    if(Math.abs(x-p.cx)<=d&&Math.abs(y-p.cy)<=d)return p;
+  return null;
+}
+const chezMoi=(x,y)=>{
+  if(!MA_PARCELLE)return false;
+  const d=MA_PARCELLE.demi-10;
+  return Math.abs(x-MA_PARCELLE.cx)<=d&&Math.abs(y-MA_PARCELLE.cy)<=d;
+};
+
+/* ---- le contour de la parcelle, dessiné au sol ---- */
+function dessinerParcelles(g,camX,camY){
+  const t=Date.now()/1000;
+  parcellesVues.forEach(p=>{
+    const d=(MA_PARCELLE&&MA_PARCELLE.demi)||76;
+    const x=p.cx-camX, y=p.cy-camY;
+    if(x+d<-20||y+d<-20||x-d>VW+20||y-d>VH+20)return;
+    const mien=MA_PARCELLE&&p.proprietaire===e.id;
+    g.save();
+    g.strokeStyle=mien?'rgba(240,207,125,.5)':'rgba(230,236,240,.26)';
+    g.lineWidth=mien?2:1.4;
+    g.setLineDash([7,6]);
+    g.lineDashOffset=mien?-t*9:0;
+    g.strokeRect(Math.round(x-d),Math.round(y-d),d*2,d*2);
+    g.setLineDash([]);
+    /* les quatre bornes */
+    g.fillStyle=mien?'#c9a24a':'rgba(210,220,228,.5)';
+    [[-d,-d],[d-4,-d],[-d,d-4],[d-4,d-4]].forEach(([a,b])=>
+      g.fillRect(Math.round(x+a),Math.round(y+b),4,4));
+    /* le nom du propriétaire, en haut */
+    g.font='700 8px ui-monospace,monospace';g.textAlign='center';
+    g.fillStyle='rgba(12,22,10,.5)';
+    g.fillText((mien?'CHEZ TOI':'chez '+(p.pseudo||'quelqu’un')),x+1,y-d-5);
+    g.fillStyle=mien?'#f0cf7d':'rgba(235,240,244,.6)';
+    g.fillText((mien?'CHEZ TOI':'chez '+(p.pseudo||'quelqu’un')),x,y-d-6);
+    g.textAlign='left';
+    g.restore();
+  });
+}
+
+/* ---- bâtir : on choisit, puis on pose ---- */
+let planChoisi=null, modeBatir=false;
+function ouvrirBatir(){
+  if(!MA_PARCELLE){
+    ouvrirPage('Bâtir','TON TERRAIN',
+      '<div class="vide">On te cherche un terrain…</div>');
+    lireMaParcelle().then(()=>ouvrirBatir());
+    return;
+  }
+  const miennes=[...BATI.values()].filter(c=>c.proprietaire===e.id).length;
+  let corps='<div class="mot">Ton terrain fait 152 pas de côté. '+
+    'Personne d’autre ne peut y bâtir ni y casser quoi que ce soit.</div>';
+  corps+='<div class="titreP">'+miennes+' CONSTRUCTION'+(miennes>1?'S':'')+' · 60 AU MAXIMUM</div>';
+  corps+=PLANS.map(pl=>{
+    const ok=Object.entries(pl.cout).every(([k,n])=>combien(k)>=n);
+    const manque=Object.entries(pl.cout).filter(([k,n])=>combien(k)<n)
+      .map(([k,n])=>(n-combien(k))+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k));
+    return '<div class="ech'+(ok?'':' gris')+'" style="border-left-color:'+
+      (ok?'#8a6238':'#d8d4ca')+'">'+
+      '<span class="tx"><b>'+pl.nom+'</b><span'+(ok?'':' style="color:#b9463e"')+'>'+
+        (ok?Object.entries(pl.cout).map(([k,n])=>n+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k)).join(' · ')
+           :'il manque '+manque.join(', '))+'</span></span>'+
+      '<button data-plan="'+pl.id+'"'+(ok?'':' disabled')+'>Poser</button></div>';
+  }).join('');
+  corps+='<div class="res" id="res"></div>';
+  ouvrirPage('Bâtir','CHEZ TOI',corps);
+  $('page2Fond').querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{
+    planChoisi=PLANS.find(p=>p.id===b.dataset.plan);
+    modeBatir=true;
+    $('page2').classList.remove('on');fermeA=Date.now();
+    texteVolant(joueur.x,joueur.y-40,'place-toi et pose','#f0cf7d');
+  });
+}
+/* le fantôme de ce qu'on va poser */
+function dessinerFantome(g,px,py){
+  if(!modeBatir||!planChoisi)return;
+  const ok=chezMoi(joueur.x,joueur.y+16)&&!placePrise(joueur.x,joueur.y+16);
+  g.save();
+  g.globalAlpha=.55;
+  g.strokeStyle=ok?'#9fdfb8':'#e08a8a';
+  g.lineWidth=2;g.setLineDash([5,4]);
+  g.strokeRect(px-18,py-2,36,20);
+  g.setLineDash([]);
+  g.globalAlpha=.9;
+  g.font='700 8px ui-monospace,monospace';g.textAlign='center';
+  g.fillStyle=ok?'#9fdfb8':'#e08a8a';
+  g.fillText(ok?planChoisi.nom:'pas ici',px,py-8);
+  g.textAlign='left';
+  g.restore();
+}
+const placePrise=(x,y)=>[...BATI.values()].some(c=>
+  Math.abs(c.x-x)<22&&Math.abs(c.y-y)<18);
+
+async function poserLa(){
+  if(!planChoisi)return;
+  const x=Math.round(joueur.x), y=Math.round(joueur.y+16);
+  const d=await appelRPC('batir',{p_joueur:e.id,p_genre:planChoisi.id,p_x:x,p_y:y,p_gr:0});
+  if(d&&d.erreur){texteVolant(joueur.x,joueur.y-40,d.erreur,'#e08a8a');return;}
+  if(d&&d.sac)adopterSac(d);
+  modeBatir=false;
+  await chargerLeBati(true);
+  texteVolant(x,y-30,planChoisi.nom+' posé','#9fdfb8');
+  eclats(x,y-4,8,'#c6b38a',0.9);
+  try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x2){}
+}
+async function demolirCa(o){
+  const d=await appelRPC('demolir',{p_joueur:e.id,p_id:o.bati});
+  if(d&&d.erreur){texteVolant(o.x,o.y-30,d.erreur,'#e08a8a');return;}
+  if(d&&d.sac)adopterSac(d);
+  await chargerLeBati(true);
+  texteVolant(o.x,o.y-30,'démoli','#c6b38a');
+  eclats(o.x,o.y-4,10,'#8a6238',0.9);
+}
+
+/* ================= le dessin des constructions ================= */
+function dessinerBati(g,o,x,y){
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const t=Date.now()/1000;
+  const om=(rx,ry)=>{g.fillStyle=VERTS.ombre;
+    g.beginPath();g.ellipse(x+1,y-1,rx,ry,0,0,7);g.fill();};
+  switch(o.t){
+    case 'feu':{
+      om(15,5);
+      R(-13,-6,26,5,'#6f767d');R(-13,-6,26,2,'#8b939a');
+      R(-9,-9,7,4,'#7d5934');R(2,-10,7,4,'#6b4a28');
+      const h=6+Math.round(Math.sin(t*6)*2);
+      R(-4,-12-h,8,h,'#e8802c');
+      R(-2,-15-h,4,4,'#ffc65a');
+      g.save();g.globalAlpha=.14+Math.sin(t*3)*0.04;
+      g.fillStyle='#ffd27a';
+      g.beginPath();g.arc(x,y-10,34,0,7);g.fill();g.restore();
+      break;}
+    case 'cabane':{
+      om(30,9);
+      R(-26,-34,52,34,'#8a6238');
+      R(-26,-34,52,3,'#a5764a');
+      R(-26,-4,52,4,'#5b3f21');
+      g.fillStyle='#6b4a28';
+      for(let i=-24;i<24;i+=8)g.fillRect(x+i,y-34,3,30);
+      /* le toit */
+      g.fillStyle='#9c4a32';
+      g.beginPath();g.moveTo(x-32,y-32);g.lineTo(x,y-52);g.lineTo(x+32,y-32);g.closePath();g.fill();
+      g.fillStyle='#bb5e42';
+      g.beginPath();g.moveTo(x-32,y-32);g.lineTo(x,y-52);g.lineTo(x,y-48);g.lineTo(x-26,y-30);g.closePath();g.fill();
+      R(-8,-22,16,22,'#5b3f21');R(-6,-20,12,20,'#7d5934');
+      R(2,-12,2,2,'#c9a24a');
+      break;}
+    case 'cloture':{
+      om(16,4);
+      R(-15,-14,4,14,'#6b4a28');R(11,-14,4,14,'#6b4a28');
+      R(-2,-13,4,13,'#7d5934');
+      R(-16,-11,32,3,'#8a6238');R(-16,-11,32,1,'#a5764a');
+      R(-16,-5,32,3,'#7d5934');
+      break;}
+    case 'torchere':{
+      om(8,3);
+      R(-2,-26,4,26,'#6b4a28');R(-2,-26,1,26,'#8a6238');
+      R(-5,-32,10,7,'#5b3f21');
+      const f=((t*3)%1)<.5;
+      R(-3,-36,6,5,f?'#e8802c':'#d4701f');
+      R(-2,-39,4,4,f?'#ffc65a':'#ffb03a');
+      g.save();g.globalAlpha=.12;g.fillStyle='#ffd27a';
+      g.beginPath();g.arc(x,y-32,28,0,7);g.fill();g.restore();
+      break;}
+    case 'coffre':{
+      om(13,4);
+      R(-12,-13,24,13,'#7d5934');R(-12,-13,24,3,'#96703f');
+      R(-12,-18,24,6,'#6b4a28');R(-12,-18,24,2,'#8a6238');
+      R(-2,-13,5,8,'#c9a24a');
+      break;}
+    case 'banc':{
+      om(15,4);
+      R(-14,-8,28,4,'#8a6238');R(-14,-8,28,1,'#a5764a');
+      R(-14,-14,28,3,'#7d5934');
+      R(-12,-4,3,4,'#5b3f21');R(9,-4,3,4,'#5b3f21');
+      break;}
+    case 'table':{
+      om(16,5);
+      R(-16,-14,32,8,'#8a6238');R(-16,-14,32,3,'#a5764a');
+      R(-13,-6,3,6,'#5b3f21');R(10,-6,3,6,'#5b3f21');
+      R(-2,-6,3,6,'#5b3f21');
+      break;}
+    case 'puits':{
+      om(16,5);
+      R(-15,-14,30,14,'#7b8288');R(-15,-14,30,3,'#a2a9b0');
+      g.fillStyle='#5f666c';
+      for(let i=-13;i<13;i+=7)g.fillRect(x+i,y-11,5,9);
+      R(-11,-12,22,5,'#2a3238');
+      R(-13,-30,3,17,'#6b4a28');R(10,-30,3,17,'#6b4a28');
+      R(-15,-33,30,4,'#8a5f34');
+      R(-4,-24,8,5,'#5b3f21');
+      break;}
+    case 'statue':{
+      om(13,5);
+      R(-13,-8,26,8,'#8b939a');R(-13,-8,26,3,'#b7bec4');
+      R(-9,-14,18,6,'#7b8288');
+      R(-6,-32,12,18,'#a2a9b0');R(-6,-32,4,18,'#c9d0d6');
+      R(-5,-42,10,10,'#b7bec4');R(-5,-42,3,10,'#d0d6db');
+      R(-7,-44,14,3,'#c9a24a');
+      break;}
+    case 'jardin':{
+      om(17,6);
+      R(-17,-8,34,8,'#9c4a32');R(-17,-8,34,2,'#bb5e42');
+      R(-17,-8,34,1,'#c76b4c');
+      const fl=[[-12,-12,'#f6e7a0'],[-4,-14,'#e8b8e0'],[5,-12,'#f2a48f'],[12,-13,'#a8cdf0']];
+      fl.forEach(([a,b,c],i)=>{
+        const w=Math.round(Math.sin(t*1.4+i)*1);
+        R(a+w,b+3,1,5,'#4a944a');
+        R(a+w-1,b,3,3,c);
+      });
+      break;}
+    default: return false;
+  }
+  return true;
+}
+
 /* ================= le monde partagé =================
    Ce que l'un casse ou cueille disparaît chez tous les autres.
    Le direct passe par le canal, la base garde la trace pour ceux
@@ -3659,7 +3944,8 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
+       &&o.t!=='four'&&o.t!=='etabli'&&!o.bati&&!cueillable&&!minerai)continue;
+    if(o.bati&&o.par!==e.id)continue;             /* on ne touche pas chez les autres */
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -3671,6 +3957,12 @@ function cible(){
 }
 function majAction(){
   const b=$('action');
+  if(modeBatir&&planChoisi){                     /* on est en train de poser */
+    const ok=chezMoi(joueur.x,joueur.y+16)&&!placePrise(joueur.x,joueur.y+16);
+    b.innerHTML=ok?('Poser<small>'+planChoisi.nom.toUpperCase()+'</small>')
+                  :'Pas ici<small>VA CHEZ TOI</small>';
+    b.classList.add('on');return;
+  }
   const o=cible();
   if(!o||GESTE.t>0){b.classList.remove('on');return;}
   if(o.t==='coffre'){
@@ -3703,6 +3995,8 @@ function majAction(){
     else b.innerHTML='Allumer<small>LE FOUR</small>';
   }else if(o.t==='etabli'){
     b.innerHTML='Forger<small>L’ÉTABLI</small>';
+  }else if(o.bati){
+    b.innerHTML='Démolir<small>'+((PLANS.find(p=>p.id===o.t)||{nom:o.t}).nom.toUpperCase())+'</small>';
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
   
@@ -3716,6 +4010,7 @@ function majAction(){
   b.classList.add('on');
 }
 function agir(){
+  if(modeBatir&&planChoisi){poserLa();return;}
   /* En fermant une fiche, le navigateur envoie parfois le clic au bouton
      qui se trouve dessous : on l'ignore pendant un demi-seconde. */
   if(pageOuverte()||Date.now()-fermeA<500)return;
@@ -3746,6 +4041,7 @@ function agir(){
   }
   if(o.t==='four')return ouvrirFour();
   if(o.t==='etabli')return ouvrirEtabli();
+  if(o.bati){demolirCa(o);return;}
   if(o.t==='casino'){
     sauver();monterEnLigne(true);
     location.href='casino.html';                 /* on entre dans la salle */
@@ -4202,31 +4498,7 @@ function ouvrirPage(titre,sous,corps,clair){
 }
 
 /* ================= bâtir ================= */
-const RECETTES=[
- {id:'feu',   nom:'Feu de camp', d:'Réchauffe et éclaire. Les autres le voient de loin.',
-  cout:{bois:6,fibre:2}},
- {id:'abri',  nom:'Abri',        d:'Un toit pour la nuit.',            cout:{bois:14,fibre:8}},
- {id:'coffre',nom:'Coffre',      d:'Range ce que tu ne portes pas.',   cout:{bois:10,pierre:2}},
- {id:'muret', nom:'Muret',       d:'Bloque le passage.',               cout:{pierre:8}},
- {id:'sechoir',nom:'Séchoir',    d:'Fait sécher les baies.',           cout:{bois:6,fibre:6}}
-];
-const peutBatir=r=>Object.entries(r.cout).every(([k,n])=>combien(k)>=n);
-function ouvrirBatir(){
-  const corps=RECETTES.map(r=>{
-    const ok=peutBatir(r);
-    const cout=Object.entries(r.cout).map(([k,n])=>
-      '<i class="'+(combien(k)>=n?'ok':'')+'">'+n+' '+OBJETS[k].nom.toLowerCase()+'</i>').join('');
-    return '<div class="recette">'+
-      '<span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
-        'border:1px solid #6b5136;display:flex;align-items:center;justify-content:center;flex:0 0 auto">'+
-        '<svg viewBox="0 0 16 16" width="26">'+ICONES[Object.keys(r.cout)[0]]+'</svg></span>'+
-      '<span class="tx"><b>'+r.nom+'</b><span>'+r.d+'</span><span class="cout">'+cout+'</span></span>'+
-      '<button data-bat="'+r.id+'" '+(ok?'':'disabled')+'>Bâtir</button></div>';
-  }).join('')+
-  '<div class="vide2">La pose sur le terrain arrive à l’étape suivante.<br>'+
-  'Pour l’instant, cette page montre ce que tu pourras construire et ce qu’il te manque.</div>';
-  ouvrirPage('Bâtir','CE QUE TU PEUX CONSTRUIRE',corps,false);
-}
+
 
 /* ================= le four ================= */
 const FONTES=[
@@ -4544,6 +4816,8 @@ async function ouvrirPorte(){
   await recupererSauvegarde();
   await lireSacServeur();       /* le sac vient du serveur */
   await chargerLaCarte();       /* et la carte aussi */
+  await lireMaParcelle();       /* on te trouve un terrain */
+  await chargerLeBati(true);    /* et ce qui est bâti autour */
     /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
@@ -4612,6 +4886,7 @@ let t0=performance.now();
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   envoyerSauvegarde();                            /* la partie, sur le serveur */
+  chargerLeBati();                                /* ce qui est bâti autour */
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
   if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
