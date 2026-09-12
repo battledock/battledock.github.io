@@ -958,7 +958,7 @@ async function ecouterLesAutres(){
       a.pseudo=j.pseudo||'joueur';a.vu=Date.now();
       AUTRES.set(j.id,a);
     });
-    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>20000)AUTRES.delete(id);
+    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>12000)AUTRES.delete(id);
   }catch(x){}
 }
 function majAutres(dt){
@@ -966,9 +966,10 @@ function majAutres(dt){
     if(a.cx===undefined)continue;
     const dx=a.cx-a.x, dy=a.cy-a.y, d=Math.hypot(dx,dy);
     if(d>1){
-      const v=Math.min(d,Math.max(60,d*4)*dt);
+      const v=Math.min(d,Math.max(95,d*9)*dt);
       a.x+=dx/d*v;a.y+=dy/d*v;a.pas+=v*0.34;a.marche=true;
-      if(d>3){
+      a.dir=a.dirEnvoyee||a.dir||'bas';
+      if(!a.dirEnvoyee&&d>3){
         if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
         else a.dir=dy>0?'bas':'haut';
       }
@@ -2369,17 +2370,19 @@ let t0=performance.now();
   if(!pageOuverte()&&!sortie)majJoueur(dt);
   majAutres(dt);
   const maintenant=Date.now();
-  if(maintenant-derniereEcoute>1200){derniereEcoute=maintenant;ecouterLesAutres();}
+  ouvrirCanal();bipPosition();                    /* le direct */
+  if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   if(ROU&&pageOuverte()){
     if(maintenant-rouTic>1000){rouTic=maintenant;rafraichirRoulette();}
     else rendreRoulette();
   }else if(ROU&&!pageOuverte())ROU=null;
-  if(maintenant-dernierEnvoi>1100){dernierEnvoi=maintenant;direOuJeSuis('casino');}
+  if(maintenant-dernierEnvoi>6000){dernierEnvoi=maintenant;direOuJeSuis('casino');}
   if(fondu>0)fondu=Math.max(0,fondu-dt*2);
   else if(fondu<0)fondu=Math.max(-1.2,fondu-dt*3);
   majAction();dessiner();dessinerJoy(dt);
 })(t0);
 addEventListener('pagehide',()=>{sauver();
+  try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}
   /* si on ferme la page dans le casino, on ne reste pas invisible pour toujours */
   try{navigator.sendBeacon&&navigator.sendBeacon(URL_SB+'/rest/v1/joueurs?apikey='+CLE_SB,
     new Blob([JSON.stringify([{id:e.id,pseudo:e.pseudo||'survivant',lieu:'terrain',
