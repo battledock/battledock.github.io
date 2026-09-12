@@ -3025,6 +3025,22 @@ function dessinerMini(){
   g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
   g.stroke();
 
+  /* les terrains : le tien en doré, ceux des autres en pointillés */
+  parcellesVues.forEach(pc=>{
+    const dp=76;
+    const mien=pc.proprietaire===e.id;
+    const X=px(pc.cx-dp), Y=py(pc.cy-dp), T2=Math.max(4,Math.round(dp*2*k));
+    if(X+T2<0||Y+T2<0||X>T||Y>T)return;
+    g.save();
+    if(mien){g.globalAlpha=.18;g.fillStyle='#f0cf7d';g.fillRect(X,Y,T2,T2);}
+    g.globalAlpha=mien?.9:.5;
+    g.strokeStyle=mien?'#f0cf7d':'#dfe6ec';
+    g.lineWidth=mien?2:1.2;
+    g.setLineDash(mien?[]:[3,3]);
+    g.strokeRect(X,Y,T2,T2);
+    g.restore();
+  });
+
   /* les autres survivants : à portée on les pose, au loin on les colle au bord */
   for(const [,a] of AUTRES){
     const dx=a.x-joueur.x, dy=a.y-joueur.y, d=Math.hypot(dx,dy);
@@ -3290,7 +3306,7 @@ async function recupererSauvegarde(){
    celles du carré autour de nous, et seulement quand on a bougé. */
 let MA_PARCELLE=null;
 const BATI=new Map();                            /* id → construction */
-let zoneVue={x:1e9,y:1e9}, chargeEnVol=false, parcellesVues=[];
+let zoneVue={x:1e9,y:1e9}, chargeEnVol=false, parcellesVues=[], parcellesLues=0;
 
 const PLANS=[
  {id:'feu',     nom:'Feu de camp', cout:{bois:6,pierre:3},         d:'Il réchauffe et éclaire.'},
@@ -3331,13 +3347,15 @@ async function chargerLeBati(force){
       d.forEach(c=>BATI.set(c.id,c));
       poserLeBati();
     }
-    /* les bornes des parcelles voisines, pour savoir chez qui on est */
-    const r2=await fetch(URL_SB+'/rest/v1/parcelles?select=proprietaire,pseudo,cx,cy'+
-      '&cx=gte.'+Math.round(joueur.x-R)+'&cx=lte.'+Math.round(joueur.x+R)+
-      '&cy=gte.'+Math.round(joueur.y-R)+'&cy=lte.'+Math.round(joueur.y+R)+'&limit=60',
-      {headers:sbEntetes});
-    const d2=await r2.json();
-    if(Array.isArray(d2))parcellesVues=d2;
+    /* Les parcelles de tout le monde : une ligne par joueur, ça tient
+       largement, et ça permet de les montrer sur la boussole. */
+    if(!parcellesVues.length||Date.now()-parcellesLues>60000){
+      parcellesLues=Date.now();
+      const r2=await fetch(URL_SB+'/rest/v1/parcelles?select=proprietaire,pseudo,cx,cy&limit=400',
+        {headers:sbEntetes});
+      const d2=await r2.json();
+      if(Array.isArray(d2))parcellesVues=d2;
+    }
   }catch(x){}
   chargeEnVol=false;
 }
@@ -4845,7 +4863,7 @@ async function ouvrirPorte(){
   await recupererSauvegarde();
   await lireSacServeur();       /* le sac vient du serveur */
   await chargerLaCarte();       /* et la carte aussi */
-  await lireMaParcelle();       /* on te trouve un terrain */
+  await lireMaParcelle();       /* ton terrain t'appartient depuis l'inscription */
   await chargerLeBati(true);    /* et ce qui est bâti autour */
     /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
