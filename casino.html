@@ -1169,6 +1169,8 @@ recupererSauvegarde();
 (async()=>{
   const j=await appelRPC('compte',{p_id:e.id});
   if(typeof j==='number'){e.jetons=j;sauver();majJetons();}
+  const sc=await appelRPC('lire_sac',{p_joueur:e.id});
+  if(sc&&sc.sac){e.sac=sc.sac;if(sc.max)e.sacMax=sc.max;sauver();}
 })();
 
 /* ================= le hall, vu de dessus =================
@@ -2566,15 +2568,18 @@ let ongletG='changer';
 const ARTICLES=[
  {id:'sacVoyage', nom:'Sac de voyage', d:'Charge 110 → 170.', prix:320, coul:'#8a6238',
   exige:()=>e.sacMax>=110, exigeTxt:'Fabrique d’abord le grand sac à l’établi.',
-  fait:()=>e.sacMax>=170, faire:()=>{e.sacMax=170;}},
+  fait:()=>e.sacMax>=170, faire:()=>{e.sacMax=170;
+    appelRPC('agrandir_sac',{p_joueur:e.id,p_max:170});}},
  {id:'pioche', nom:'Pioche de rechange', d:'Si tu as perdu la tienne.', prix:90, coul:'#b7bec4',
   fait:()=>!!e.outils.pioche, faire:()=>{e.outils.pioche=true;}},
  {id:'hache', nom:'Hache de rechange', d:'Pour repartir couper du bois.', prix:90, coul:'#8a6238',
   fait:()=>!!e.outils.hache, faire:()=>{e.outils.hache=true;}},
  {id:'torches', nom:'Lot de 5 torches', d:'Résine et bois, tout prêts.', prix:60, coul:'#e8a94a',
-  faire:()=>{e.sac.torche=(e.sac.torche||0)+5;}},
+  faire:()=>{e.sac.torche=(e.sac.torche||0)+5;
+    appelRPC('livrer',{p_joueur:e.id,p_type:'torche',p_nb:5}).then(d=>{if(d&&d.sac)e.sac=d.sac;});}},
  {id:'lingotFer', nom:'Lingot de fer', d:'Sans passer par le four.', prix:75, coul:'#a2a9b0',
-  faire:()=>{e.sac.lingotFer=(e.sac.lingotFer||0)+1;}},
+  faire:()=>{e.sac.lingotFer=(e.sac.lingotFer||0)+1;
+    appelRPC('livrer',{p_joueur:e.id,p_type:'lingotFer',p_nb:1}).then(d=>{if(d&&d.sac)e.sac=d.sac;});}},
  {id:'habit', nom:'Habit du casino', d:'Une tenue que seuls les gagnants portent.', prix:450, coul:'#c9a24a',
   fait:()=>!!e.habitCasino, faire:()=>{e.habitCasino=true;
     e.ap=Object.assign({},e.ap,{veste:3,haut:1,pantalon:2,chapeau:2});}}
@@ -2692,8 +2697,10 @@ async function changer(k,muet){
   const gain=n*TAUX[k];
   e.sac[k]=0;
   /* c'est le serveur qui crédite : le cours est le sien, pas le nôtre */
-  const d=await appelRPC('echanger',{p_joueur:e.id,p_type:k,p_nb:n});
+  /* le serveur vide la ligne du sac et crédite au cours du jour */
+  const d=await appelRPC('vider_sac',{p_joueur:e.id,p_type:k});
   if(d&&typeof d.jetons==='number')e.jetons=d.jetons;else e.jetons+=gain;
+  if(d&&d.sac)e.sac=d.sac;
   sauver();majJetons();
   if(muet)return;
   ouvrirGuichet();
