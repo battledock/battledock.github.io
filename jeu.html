@@ -1389,7 +1389,6 @@ function dessinerPanneau(g,x,y){
 /* ---- la fiche : louer ou regarder ---- */
 let panTexte='', panCouleur='or', panLogo='aucun', panMotif='uni';
 async function ouvrirPanneau(){
-  await lirePanneau();
   let corps;
   if(!PANNEAU.libre){
     const C=COUL_PAN[PANNEAU.couleur]||COUL_PAN.or;
@@ -2302,12 +2301,7 @@ function semerDecor(){
     return !(dx<128&&dy>-180&&dy<92);
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
-  e.comptoir=COMPTOIR_FIXE;
-  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.comptoir[0],o.y-e.comptoir[1])>110||o.t==='fleurs');
-  DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
-  e.panneau=PANNEAU_FIXE;
-  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.panneau[0],o.y-e.panneau[1])>56||o.t==='fleurs');
-  DECOR.push({t:'panneau',x:e.panneau[0],y:e.panneau[1],gr:0});
+  e.comptoir=null;e.panneau=null;
 
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
@@ -2377,11 +2371,6 @@ function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
-  /* le comptoir aussi occupe du terrain */
-  if(e.comptoir){
-    const dx=Math.abs(x-e.comptoir[0]), dy=y-e.comptoir[1];
-    if(dx<52&&dy>-46&&dy<6)return true;
-  }
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   if(e.casino){
     const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
@@ -2403,7 +2392,10 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
   for(const o of DECOR){
     if(!posé&&o.y>joueurY){dessinerJoueur();posé=true;}    /* le joueur passe devant */
     const x=o.x-camX, y=o.y-camY;
-    if(x<-30||y<-50||x>VW2+30||y>VH2+30)continue;
+    /* Les bâtiments sont hauts : leur toit se voit bien après que leur
+       pied soit sorti de l'écran. On leur laisse donc large. */
+    const haut=(o.t==='casino')?230:0;
+    if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
         let dx=0;
@@ -2496,8 +2488,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
-    else if(o.t==='comptoir')dessinerComptoir(g,x,y);
-    else if(o.t==='panneau')dessinerPanneau(g,x,y);
+
     else if(o.t==='coffre'){
       /* Une fois vidé, il s'enfonce dans l'herbe et disparaît.
          Il n'appartient qu'à toi : chacun trouve le sien en arrivant. */
@@ -3320,7 +3311,10 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','comptoir','four','etabli','coffre','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));
-    d.forEach(m=>DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle}));
+    d.forEach(m=>{
+      if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
+      DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle});
+    });
     DECOR.sort((a,b)=>a.y-b.y);
     CARTE_RECUE=true;
     appliquerLeMonde();
@@ -3665,7 +3659,7 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='comptoir'&&o.t!=='panneau'&&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
+       &&o.t!=='four'&&o.t!=='etabli'&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -3711,11 +3705,7 @@ function majAction(){
     b.innerHTML='Forger<small>L’ÉTABLI</small>';
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
-  }else if(o.t==='comptoir'){
-    b.innerHTML='Entrer<small>LE COMPTOIR</small>';
-  }else if(o.t==='panneau'){
-    b.innerHTML=PANNEAU.libre?'Afficher<small>100 JETONS · 1 H</small>'
-                             :'Lire<small>LE PANNEAU</small>';
+  
   }else if(o.t==='buisson'){
     b.innerHTML='Cueillir<small>BUISSON</small>';
   }else{
@@ -3756,12 +3746,6 @@ function agir(){
   }
   if(o.t==='four')return ouvrirFour();
   if(o.t==='etabli')return ouvrirEtabli();
-  if(o.t==='panneau'){ouvrirPanneau();return;}
-  if(o.t==='comptoir'){
-    sauver();envoyerSauvegarde(true);
-    try{direOuJeSuis&&direOuJeSuis('comptoir');}catch(x){}
-    location.href='comptoir.html';return;
-  }
   if(o.t==='casino'){
     sauver();monterEnLigne(true);
     location.href='casino.html';                 /* on entre dans la salle */
@@ -4560,7 +4544,7 @@ async function ouvrirPorte(){
   await recupererSauvegarde();
   await lireSacServeur();       /* le sac vient du serveur */
   await chargerLaCarte();       /* et la carte aussi */
-  await lirePanneau();          /* ce qui est affiché en ce moment */    /* on retrouve sa partie, d'où qu'on vienne */
+    /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
   entrer();
@@ -4628,7 +4612,6 @@ let t0=performance.now();
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   envoyerSauvegarde();                            /* la partie, sur le serveur */
-  if(maintenant-panneauVu>45000){panneauVu=maintenant;lirePanneau();}
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
   if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
