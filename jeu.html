@@ -1129,8 +1129,13 @@ function dessinerArbre(g,x,y,gr){
   R(-LT-1,-2,LT*2+2,2,V.troncO);
   R(-LT-4,-ht+6,4,2,V.tronc);R(LT,-ht+11,4,2,V.tronc);
 
-  /* houppier : chaque masse repose sur la précédente, sans interstice */
-  const m=(dy,hh,larg,col)=>R(-larg,dy,larg*2,hh,col);
+  /* houppier : chaque masse repose sur la précédente, sans interstice.
+     Plus c'est haut, plus ça penche : l'arbre ondule. */
+  const pen=penche(x,y,0.9);
+  const m=(dy,hh,larg,col)=>{
+    const d=Math.round(pen*(1-(dy+ht)/(-H))*1.1);
+    R(-larg+d,dy,larg*2,hh,col);
+  };
   const h1=Math.round(H*0.16), h2=Math.round(H*0.16), h3=Math.round(H*0.12), h4=Math.round(H*0.08);
   const y1=bas-h1;                               /* masse basse, la plus sombre */
   const y2=y1-h2+2;                              /* elles se chevauchent de 2 px */
@@ -1165,6 +1170,7 @@ function dessinerRocher(g,x,y,gr){
 
 /* --- le buisson : à hauteur de taille (24 à 30 px) --- */
 function dessinerBuisson(g,x,y,gr,vide){
+  const penB=Math.round(penche(x,y,0.5));x+=penB;
   const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const s=gr||0;
   const H=[24,30][s]||24, L=[12,15][s]||12;
@@ -1421,15 +1427,16 @@ function dessinerRoseaux(g,x,y,gr){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const t=Date.now()/900;
   g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3,0,0,7);g.fill();
+  const souffle=penche(x,y,1.3);
   const tiges=[[-9,22],[-4,28],[1,25],[6,19]];
   tiges.forEach(([dx,h],i)=>{
-    const pen=Math.round(Math.sin(t+i)*1.4);        /* elles ondulent */
+    const pen=Math.round(Math.sin(t+i)*1.4+souffle);  /* elles ondulent avec le vent */
     R(dx+pen,-h,2,h,'#5e8a47');
     R(dx+pen,-h,1,h,'#7db35d');
   });
   const epis=[[-5,-33,4,6],[0,-30,4,6],[-10,-27,4,5]];
   epis.forEach(([a,b,w,h],i)=>{
-    const pen=Math.round(Math.sin(t+i)*1.4);
+    const pen=Math.round(Math.sin(t+i)*1.4+souffle*1.3);
     R(a+pen,b,w,h,'#8a6238');
     R(a+pen,b,w,2,'#a5764a');
   });
@@ -1452,7 +1459,8 @@ function dessinerChampignons(g,x,y,gr){
 function dessinerHerbes(g,x,y,gr){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3,0,0,7);g.fill();
-  [[-8,12],[-3,16],[2,13],[6,10]].forEach(([a,h])=>R(a,-h,2,h,'#4a944a'));
+  const so=Math.round(penche(x,y,0.9));
+  [[-8,12],[-3,16],[2,13],[6,10]].forEach(([a,h])=>R(a+so,-h,2,h,'#4a944a'));
   R(-10,-9,2,2,'#7db35d');R(-5,-13,2,2,'#7db35d');
   R(4,-11,2,2,'#7db35d');R(8,-8,2,2,'#7db35d');
   R(-4,-19,3,3,'#c98fe0');R(1,-16,3,3,'#c98fe0');
@@ -1771,6 +1779,8 @@ function semerDecor(){
       DECOR.push({t:type,x,y,gr:Math.floor(A(i*graine*3)*3)});
     }
   };
+  if(!NUAGES.length)semerNuages();
+  if(!PAPILLONS.length)setTimeout(semerPapillons,0);
   semerMinerai('fer',34,2.7,'bord');
   semerMinerai('cuivre',40,3.9,null);
   semerMinerai('charbon',32,5.3,'clair');
@@ -2159,8 +2169,12 @@ function dessiner(){
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
+  refletsRiviere(ctx,camX,camY);
   dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
+  dessinerNuages(ctx,camX,camY);          /* leur ombre glisse sur le décor */
+  dessinerPapillons(ctx,camX,camY);
+  ambiance(ctx);                          /* une lueur douce vers le centre */
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
   if(maBulle)dessinerBulle(ctx,px,py,maBulle.txt,true);
@@ -2564,6 +2578,118 @@ const rebond  =t=>{const n=7.5625,d=2.75;
   if(t<2/d){t-=1.5/d;return n*t*t+.75;}
   if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
   t-=2.625/d;return n*t*t+.984375;};
+
+/* ================= le vent, la lumière et la vie =================
+   Rien de tout cela ne change le jeu : ça le rend seulement vivant. */
+let VENT=0, VENT_RAF=0;
+function majVent(dt){
+  const t=Date.now()/1000;
+  /* deux souffles superposés : un lent, une risée plus vive */
+  VENT=Math.sin(t*0.45)*1.6+Math.sin(t*1.31+1.2)*0.7;
+  VENT_RAF=Math.max(0,Math.sin(t*0.21-0.6))*Math.sin(t*2.7)*1.1;
+}
+/* de combien penche ce qui est planté ici */
+const penche=(x,y,force)=>
+  (VENT+VENT_RAF)*force*(0.7+alea((x*7+y*13)%997)*0.6);
+
+/* ---- les nuages : on ne voit que leur ombre glisser sur le sol ---- */
+const NUAGES=[];
+function semerNuages(){
+  for(let i=0;i<7;i++)NUAGES.push({
+    x:alea(i*11.3)*MONDE, y:alea(i*17.7)*MONDE,
+    rx:70+alea(i*5.1)*90, ry:44+alea(i*7.9)*56,
+    v:5+alea(i*3.3)*7, a:0.07+alea(i*13.1)*0.06});
+}
+function majNuages(dt){
+  NUAGES.forEach(n=>{
+    n.x+=n.v*dt;n.y+=n.v*dt*0.26;
+    if(n.x-n.rx>MONDE+120){n.x=-160;n.y=alea(n.ry*7)*MONDE;}
+    if(n.y-n.ry>MONDE+120)n.y=-160;
+  });
+}
+function dessinerNuages(g,camX,camY){
+  g.save();
+  NUAGES.forEach(n=>{
+    const x=n.x-camX, y=n.y-camY;
+    if(x+n.rx<-40||y+n.ry<-40||x-n.rx>VW+40||y-n.ry>VH+40)return;
+    const d=g.createRadialGradient(x,y,n.rx*0.2,x,y,n.rx);
+    d.addColorStop(0,'rgba(24,44,18,'+n.a+')');
+    d.addColorStop(1,'rgba(24,44,18,0)');
+    g.fillStyle=d;
+    g.beginPath();g.ellipse(x,y,n.rx,n.ry,0,0,7);g.fill();
+  });
+  g.restore();
+}
+
+/* ---- les papillons, autour des massifs de fleurs ---- */
+const PAPILLONS=[];
+function semerPapillons(){
+  const fleurs=DECOR.filter(o=>o.t==='fleurs');
+  for(let i=0;i<10&&fleurs.length;i++){
+    const f=fleurs[Math.floor(alea(i*23.1)*fleurs.length)];
+    PAPILLONS.push({x:f.x,y:f.y,bx:f.x,by:f.y,
+      p:alea(i*3.7)*6.28, v:0.6+alea(i*9.1)*0.5,
+      r:14+alea(i*5.3)*22, c:alea(i*7.1)<0.5?'#f6e7a0':'#e8b8e0'});
+  }
+}
+function majPapillons(dt){
+  const t=Date.now()/1000;
+  PAPILLONS.forEach((p,i)=>{
+    p.p+=dt*p.v;
+    p.x=p.bx+Math.cos(p.p)*p.r+Math.sin(t*2.1+i)*4;
+    p.y=p.by+Math.sin(p.p*1.3)*p.r*0.5+Math.cos(t*1.7+i)*3;
+  });
+}
+function dessinerPapillons(g,camX,camY){
+  const t=Date.now()/1000;
+  PAPILLONS.forEach((p,i)=>{
+    const x=Math.round(p.x-camX), y=Math.round(p.y-camY-14);
+    if(x<-8||y<-8||x>VW+8||y>VH+8)return;
+    const bat=Math.sin(t*11+i)>0;                /* les ailes battent */
+    g.fillStyle=p.c;
+    if(bat){g.fillRect(x-2,y,2,2);g.fillRect(x+1,y,2,2);}
+    else{g.fillRect(x-2,y+1,2,1);g.fillRect(x+1,y+1,2,1);}
+    g.fillStyle='rgba(60,50,30,.7)';g.fillRect(x,y,1,2);
+  });
+}
+
+/* ---- la poussière sous les pas ---- */
+let pasPrec=0;
+function poussiereDePas(){
+  if(!joueur.marche)return;
+  if(joueur.pas-pasPrec<1.6)return;
+  pasPrec=joueur.pas;
+  const dansEau=dansRiviere(joueur.x,joueur.y);
+  for(let i=0;i<(dansEau?4:2);i++){
+    PARTS.push({x:joueur.x+(Math.random()-.5)*8,y:joueur.y-1,
+      vx:(Math.random()-.5)*16,vy:-6-Math.random()*10,
+      vie:.34+Math.random()*.2,taille:1,rot:0,vrot:0,
+      c:dansEau?'#bfe6f5':'#cdbb92',rebondi:true});
+  }
+}
+
+/* ---- les reflets qui glissent sur la rivière ---- */
+function refletsRiviere(g,camX,camY){
+  const t=Date.now()/1000;
+  g.save();g.globalAlpha=.18;g.fillStyle='#dff4ff';
+  for(let i=0;i<26;i++){
+    const yy=((i*79+t*13)%MONDE);
+    if(yy<camY-20||yy>camY+VH+20)continue;
+    const cx=rivX(yy);
+    if(surPont(yy))continue;
+    const dx=Math.sin(t*1.7+i)*RIV_LARGE*0.5;
+    g.fillRect(Math.round(cx+dx-camX),Math.round(yy-camY),Math.round(3+alea(i)*5),1);
+  }
+  g.restore();
+}
+
+/* ---- une lueur douce vers le centre de l'écran ---- */
+function ambiance(g){
+  const d=g.createRadialGradient(VW/2,VH*0.42,VH*0.2,VW/2,VH*0.5,VH*0.78);
+  d.addColorStop(0,'rgba(255,248,214,.07)');
+  d.addColorStop(1,'rgba(10,24,8,.26)');
+  g.fillStyle=d;g.fillRect(0,0,VW,VH);
+}
 
 /* ================= le monde partagé =================
    Ce que l'un casse ou cueille disparaît chez tous les autres.
@@ -3701,6 +3827,7 @@ let t0=performance.now();
   else{
     majJoueur(dt);majGeste(dt);
   }
+  majVent(dt);majNuages(dt);majPapillons(dt);poussiereDePas();
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
   const bp=$('b-parler');
   if(bp){
