@@ -1302,41 +1302,61 @@ function dessinerCasino(g,x,y){
 
 /* --- un pont de planches, posé en travers de la rivière --- */
 function dessinerPont(g,cx,cy){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(cx+a,cy+b,w,h);};
-  const L=RIV_LARGE+11;                        /* il déborde sur les deux berges */
+  /* La rivière serpente : un tablier droit se retrouverait à côté de l'eau.
+     On le dessine donc rangée par rangée, en suivant le fil du courant. */
   const H=PONT_DEMI;                           /* demi-largeur du tablier */
-  /* piliers plantés dans l'eau, dessinés en premier */
-  [-8,8].forEach(d=>{
-    R(-L+6,d-2,4,7,'#3a2a15');
-    R(L-10,d-2,4,7,'#3a2a15');
+  const L=RIV_LARGE+12;                        /* il déborde sur les deux berges */
+  const dec=(dy)=>Math.round(rivX(cy+dy)-rivX(cy));   /* de combien l'eau se décale ici */
+  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(cx+a,cy+b,w,h);};
+
+  /* les piliers, plantés dans l'eau aux deux bouts */
+  [-9,9].forEach(dy=>{
+    const o=dec(dy);
+    R(-L+6+o,dy-2,4,7,'#3a2a15');
+    R(L-10+o,dy-2,4,7,'#3a2a15');
   });
   /* l'ombre du tablier sur l'eau */
   g.fillStyle='rgba(12,34,48,.3)';
-  g.fillRect(cx-L,cy-H+3,L*2,H*2);
-  /* le tablier : des planches dans le sens de la traversée */
-  R(-L-1,-H-1,L*2+2,H*2+2,'#5f4223');
-  for(let i=0;i<H*2;i+=4){
-    R(-L,-H+i,L*2,3,i%8?'#8a6238':'#96703f');
-    R(-L,-H+i,L*2,1,'#a5764a');
-    R(-L,-H+i+3,L*2,1,'#4a3218');
+  for(let dy=-H+3;dy<H+3;dy++){
+    const o=dec(dy-3);
+    g.fillRect(cx-L+o,cy+dy,L*2,1);
   }
-  /* les deux longerons */
-  R(-L,-H,3,H*2,'#6b4a28');
-  R(L-3,-H,3,H*2,'#6b4a28');
-  /* rambardes : une lisse et ses piquets, de chaque côté */
-  R(-L-2,-H-5,L*2+4,3,'#6b4a28');
-  R(-L-2,-H-5,L*2+4,1,'#96703f');
-  R(-L-2,H+2,L*2+4,3,'#5b3f21');
-  R(-L-2,H+2,L*2+4,1,'#7d5934');
+  /* le tablier, planche par planche, chacune calée sur le courant */
+  for(let dy=-H-1;dy<=H;dy++){
+    const o=dec(dy);
+    const i=dy+H+1;
+    let col;
+    if(i%4===0)col='#a5764a';                  /* le liseré clair de la planche */
+    else if(i%4===3)col='#4a3218';             /* le joint sombre */
+    else col=(i%8<4)?'#8a6238':'#96703f';
+    R(-L-1+o,dy,L*2+2,1,col);
+  }
+  /* les deux longerons, qui suivent eux aussi */
+  for(let dy=-H;dy<=H;dy++){
+    const o=dec(dy);
+    R(-L+o,dy,3,1,'#6b4a28');
+    R(L-3+o,dy,3,1,'#6b4a28');
+  }
+  /* les rambardes, en haut et en bas */
+  [[-H-5,'#6b4a28','#96703f'],[H+2,'#5b3f21','#7d5934']].forEach(([dy,c1,c2])=>{
+    const o=dec(dy);
+    R(-L-2+o,dy,L*2+4,3,c1);
+    R(-L-2+o,dy,L*2+4,1,c2);
+  });
+  const oh=dec(-H-5), ob=dec(H);
   for(let x=-L;x<=L-3;x+=11){
-    R(x,-H-5,3,7,'#4f3520');
-    R(x,H,3,7,'#4f3520');
-    R(x,-H-5,3,1,'#7d5934');
+    R(x+oh,-H-5,3,7,'#4f3520');
+    R(x+oh,-H-5,3,1,'#7d5934');
+    R(x+ob,H,3,7,'#4f3520');
   }
-  /* planches d'accès, sur la berge */
-  R(-L-5,-H+2,5,H*2-4,'#7d5934');
-  R(L,-H+2,5,H*2-4,'#7d5934');
+  /* les planches d'accès, sur chaque berge */
+  for(let dy=-H+2;dy<H-2;dy++){
+    const o=dec(dy);
+    R(-L-5+o,dy,5,1,'#7d5934');
+    R(L+o,dy,5,1,'#7d5934');
+  }
 }
+
 
 /* --- le coffre : il contient la première pioche --- */
 function dessinerCoffre(g,x,y,ouvert,ouverture){
@@ -1697,6 +1717,10 @@ const rivX=(y)=>330+Math.sin(y/150)*78+Math.sin(y/47)*12;
 const PONTS=[300,700];                           /* deux ponts de planches */
 const PONT_DEMI=17;                              /* demi-longueur du tablier, dans l'axe nord-sud */
 function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
+/* le tablier suit la rivière : on est dessus si on est dans sa largeur */
+function surTablier(x,y){
+  return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI&&Math.abs(x-rivX(y))<RIV_LARGE+12);
+}
 const surGue=surPont;                            /* on ne traverse que par les ponts */
 function dansRiviere(x,y){return Math.abs(x-rivX(y))<RIV_LARGE;}                                  /* la lisière, infranchissable */
 let DECOR=[];                                   /* {t,x,y,gr,cx,cy,cw,ch} */
@@ -1915,7 +1939,7 @@ function degager(x,y){
 /* ---- ce qui bloque le passage ---- */
 function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
-  if(dansRiviere(x,y)&&!surPont(y))return true;  /* l'eau est trop profonde, sauf sur les ponts */
+  if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
   for(const o of DECOR){
     const t=TAILLES[o.t];if(!t)continue;
     const d=t[o.gr||0];
@@ -2491,7 +2515,7 @@ function dessinerMini(){
   for(let yy=joueur.y-RAYON_VUE;yy<joueur.y+RAYON_VUE;yy+=3){
     const cx=rivX(yy);
     const x=px(cx), y=py(yy);
-    g.fillStyle=surPont(yy)?'#8a6238':'#3a83a4';
+    g.fillStyle=surPont(yy)?'#8a6238':'#3a83a4';   /* le pont se voit en brun */
     g.fillRect(x-Math.round(RIV_LARGE*k),y,Math.round(RIV_LARGE*2*k),Math.ceil(3*k)+1);
   }
 
