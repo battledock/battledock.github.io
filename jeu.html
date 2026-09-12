@@ -329,8 +329,34 @@ body{overflow:hidden}
   </div>
 </div>
 
+<script>
+/* filetDeSecurite : si le jeu ne démarre pas, on affiche pourquoi au lieu
+   de laisser un écran vide. */
+window.addEventListener('error',ev=>{
+  if(document.getElementById('pepin'))return;
+  const d=document.createElement('div');d.id='pepin';
+  d.style.cssText='position:fixed;left:12px;right:12px;top:12px;z-index:99;padding:12px 14px;'+
+    'border-radius:12px;background:#2b1618;border:1px solid #7d3a3a;color:#f2d9d9;'+
+    'font:600 12px/1.5 system-ui;box-shadow:0 6px 20px rgba(0,0,0,.5)';
+  d.textContent='Le jeu n’a pas pu démarrer : '+(ev.message||'erreur inconnue');
+  document.body.appendChild(d);
+});
+</script>
 <script type="module">
-import {createClient} from "https://esm.sh/@supabase/supabase-js@2";
+/* Le jeu ne doit jamais dépendre d'un fichier distant pour s'afficher :
+   on charge Supabase en arrière-plan, et le décor s'affiche même s'il manque. */
+let createClient=null, sb=null, SB_PRET=false;
+async function chargerSupabase(){
+  for(const url of ["https://esm.sh/@supabase/supabase-js@2",
+                    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"]){
+    try{
+      const m=await import(url);
+      createClient=m.createClient;
+      sb=createClient(URL_SB,CLE_SB);       /* URL_SB est défini plus bas dans la page */
+      SB_PRET=true;return;
+    }catch(x){}
+  }
+}
 const $=id=>document.getElementById(id);
 /* ================= le personnage, en pixels =================
    Proportions : 40 pixels de haut, quatre têtes.
@@ -2604,7 +2630,7 @@ function signalerLeMonde(o,genre){
    ceux qui étaient déjà là quand on arrive. */
 let CANAL=null, dernierBip=0;
 function ouvrirCanal(){
-  if(CANAL||!e.id)return;
+  if(CANAL||!e.id||!SB_PRET||!sb)return;
   CANAL=sb.channel('terrain',{config:{broadcast:{self:false}}});
   CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
     if(!p||p.id===e.id)return;
@@ -3595,7 +3621,7 @@ async function ouvrirClassement(){
 }
 
 /* ================= l'entrée : le compte, et rien d'autre ================= */
-const sb=createClient(URL_SB,CLE_SB);
+
 
 async function ouvrirPorte(){
   let session=null;
@@ -3629,7 +3655,7 @@ function entrer(){
   majPastille();
   $('porte').classList.add('parti');
   preparerMonde();
-  taille();garderAllume();
+  taille();garderAllume();chargerSupabase();
   fondu=1;                                   /* le jeu apparaît en fondu */
 }
 ouvrirPorte();
