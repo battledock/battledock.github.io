@@ -17,6 +17,20 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 #hud b{font:400 18px Georgia,serif;color:#16140f}
 #hud i{font:600 8px system-ui;letter-spacing:1.6px;color:#a29c92;font-style:normal}
 
+#parler{position:fixed;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
+  width:52px;height:52px;border-radius:50%;display:none;align-items:center;justify-content:center;
+  border:0;background:#16140f;box-shadow:0 5px 18px rgba(0,0,0,.45)}
+#parler.on{display:flex}
+#parler:active{transform:translateY(2px)}
+#parler.qqn{box-shadow:0 5px 18px rgba(0,0,0,.45),0 0 0 6px rgba(127,216,232,.25)}
+.phrases{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.phrases button{padding:14px 8px;border-radius:12px;border:0;background:#fff;
+  box-shadow:0 2px 7px rgba(40,35,25,.07);color:#16140f;font:600 12.5px system-ui}
+.libre{display:flex;gap:8px}
+.libre input{flex:1;min-width:0;padding:13px 12px;border-radius:12px;border:1px solid #e0ddd4;
+  background:#fff;color:#16140f;font:400 13px system-ui}
+.libre button{padding:13px 18px;border-radius:12px;border:0;background:#16140f;
+  color:#f6f5f1;font:700 12.5px system-ui}
 #action{position:fixed;right:14px;bottom:calc(26px + env(safe-area-inset-bottom));z-index:5;
   display:none;flex-direction:column;align-items:center;gap:2px;padding:13px 17px;border-radius:15px;
   border:0;background:#16140f;box-shadow:0 5px 18px rgba(0,0,0,.45);
@@ -160,6 +174,15 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 <canvas id="joy"></canvas>
 <div id="hud"><b id="jetons">0</b><i>JETONS</i></div>
 <button id="action"></button>
+<button id="parler" title="Parler">
+  <svg viewBox="0 0 22 18" width="24">
+    <rect x="1" y="1" width="20" height="13" rx="4" fill="#f4f1e8"/>
+    <rect x="5" y="6" width="3" height="3" fill="#4a5540"/>
+    <rect x="10" y="6" width="3" height="3" fill="#4a5540"/>
+    <rect x="15" y="6" width="3" height="3" fill="#4a5540"/>
+    <path d="M6 14 L6 18 L10 14z" fill="#f4f1e8"/>
+  </svg>
+</button>
 <div id="page"><div class="fond" id="pageFond"></div></div>
 
 <script type="module">
@@ -951,12 +974,16 @@ function ouvrirCanal(){
   CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
     if(!p||p.id===e.id)return;
     const a=AUTRES.get(p.id)||{x:p.x,y:p.y,pas:0,marche:false};
-    a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
+    a.id=p.id;a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
     a.ap=p.ap||a.ap||{};
     a.pseudo=p.n||a.pseudo||'joueur';a.vu=Date.now();
     AUTRES.set(p.id,a);
   });
   CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{if(p&&p.id)AUTRES.delete(p.id);});
+  CANAL.on('broadcast',{event:'dit'},({payload:p})=>{
+    if(!p||p.id===e.id)return;
+    BULLES.set(p.id,{txt:String(p.txt||'').slice(0,60),jusqua:Date.now()+5000});
+  });
   CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
 }
 function bipPosition(force){
@@ -1045,6 +1072,8 @@ function dessinerUn(a,iX,iY){
   ctx.fillStyle='#f2efe4';
   ctx.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
   ctx.textAlign='left';
+  const b=BULLES.get(a.id);
+  if(b)dessinerBulle(ctx,x,y,b.txt,false);
 }
 direOuJeSuis('casino');
 
@@ -1765,6 +1794,9 @@ function dessiner(){
    .sort((a,b)=>a.y-b.y);
   objets.forEach(o=>o.f());
   flechesVersLesAutres(iX,iY);
+  nettoyerBulles();
+  const maBulle=BULLES.get('moi');
+  if(maBulle)dessinerBulle(ctx,Math.round(joueur.x-iX),Math.round(joueur.y-iY),maBulle.txt,true);
 
   /* le fondu d'entrée et de sortie */
   if(fondu!==0){
@@ -2127,6 +2159,62 @@ function pluieJetons(gain){
   setTimeout(()=>{try{d.remove();}catch(x){}},2000);
 }
 
+/* ================= se parler quand on se croise ================= */
+const BULLES=new Map();                         /* id → {txt, jusqu'a} */
+const PHRASES=['Salut !','Ça va ?','Viens par ici','Attention !','Bien joué',
+               'Tu mines quoi ?','On va au casino ?','À plus','Merci !','Aide-moi'];
+let clavierOuvert=false;
+
+function direQuelqueChose(txt){
+  txt=String(txt||'').slice(0,60).trim();
+  if(!txt)return;
+  BULLES.set('moi',{txt,jusqua:Date.now()+5000});
+  try{CANAL&&CANAL.send({type:'broadcast',event:'dit',
+    payload:{id:e.id,n:e.pseudo||'joueur',txt}});}catch(x){}
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+}
+
+/* la bulle au-dessus de la tête */
+function dessinerBulle(g,x,y,txt,mienne){
+  g.font='700 8px ui-monospace,monospace';
+  const l=Math.min(150,g.measureText(txt).width+14);
+  const h=15, bx=Math.round(x-l/2), by=Math.round(y-66);
+  g.fillStyle=mienne?'rgba(240,207,125,.94)':'rgba(244,241,232,.94)';
+  g.beginPath();g.roundRect(bx,by,l,h,5);g.fill();
+  g.beginPath();
+  g.moveTo(x-4,by+h);g.lineTo(x,by+h+5);g.lineTo(x+4,by+h);g.closePath();g.fill();
+  g.strokeStyle='rgba(20,26,18,.35)';g.lineWidth=1;
+  g.beginPath();g.roundRect(bx,by,l,h,5);g.stroke();
+  g.fillStyle='#1c2418';g.textAlign='center';
+  g.fillText(txt,x,by+10.5);g.textAlign='left';
+}
+function nettoyerBulles(){
+  const t=Date.now();
+  for(const [k,b] of BULLES)if(t>b.jusqua)BULLES.delete(k);
+}
+
+/* le petit clavier de phrases toutes faites */
+function ouvrirParler(){
+  const autres=[...AUTRES.values()].filter(a=>
+    Math.hypot(a.x-joueur.x,a.y-joueur.y)<120).map(a=>a.pseudo);
+  ouvrirPage('Parler',
+    autres.length?'À '+autres.join(', '):'PERSONNE À PORTÉE DE VOIX',
+    '<div class="phrases">'+PHRASES.map((p,i)=>
+      '<button data-dire="'+i+'">'+p+'</button>').join('')+'</div>'+
+    '<div class="libre"><input id="monTexte" maxlength="60" placeholder="Écris autre chose…">'+
+    '<button id="envoyer">Dire</button></div>');
+  $('pageFond').querySelectorAll('[data-dire]').forEach(b=>b.onclick=()=>{
+    direQuelqueChose(PHRASES[+b.dataset.dire]);
+    $('page').classList.remove('on');
+  });
+  const inp=$('monTexte');
+  if($('envoyer'))$('envoyer').onclick=()=>{
+    direQuelqueChose(inp?inp.value:'');
+    if(inp)inp.value='';
+    $('page').classList.remove('on');
+  };
+}
+
 /* ================= le guichet ================= */
 const TAUX={lingotFer:52,lingotCuivre:34,fer:14,brique:11,resine:10,charbon:9,cuivre:8,
   pierre:5,champignons:4,plumes:4,bois:3,herbes:3,fibre:2,baies:2,argile:2,roseaux:2};
@@ -2276,6 +2364,7 @@ function majAction(){
   if(sort){b.innerHTML='Sortir<small>RETOUR AU TERRAIN</small>';b.classList.add('on');return;}
   b.classList.remove('on');
 }
+$('parler').onclick=()=>ouvrirParler();
 $('action').onclick=()=>{
   if(joueur.x>HALL1&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
      joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70)return ouvrirBJ();
@@ -2401,7 +2490,13 @@ let t0=performance.now();
   if(!pageOuverte()&&!sortie)majJoueur(dt);
   majAutres(dt);
   const maintenant=Date.now();
-  ouvrirCanal();bipPosition();                    /* le direct */
+  ouvrirCanal();bipPosition();
+  const bp=$('parler');
+  if(bp){
+    const proche=[...AUTRES.values()].some(a=>Math.hypot(a.x-joueur.x,a.y-joueur.y)<120);
+    bp.classList.toggle('on',AUTRES.size>0&&!pageOuverte());
+    bp.classList.toggle('qqn',proche);
+  }                    /* le direct */
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   if(ROU&&pageOuverte()){
     if(maintenant-rouTic>1000){rouTic=maintenant;rafraichirRoulette();}
