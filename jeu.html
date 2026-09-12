@@ -1304,51 +1304,45 @@ function dessinerCasino(g,x,y){
 function dessinerPont(g,cx,cy){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(cx+a,cy+b,w,h);};
   const H=PONT_DEMI;                           /* demi-hauteur du tablier */
-  const L=RIV_LARGE+12;                        /* il déborde sur les deux berges */
+  const L=RIV_LARGE+9;                         /* il déborde juste ce qu'il faut */
   /* les piliers, plantés dans l'eau */
-  [-9,9].forEach(dy=>{
-    R(-L+6,dy-2,4,7,'#3a2a15');
-    R(L-10,dy-2,4,7,'#3a2a15');
+  [-11,11].forEach(dy=>{
+    R(-L+5,dy-2,3,6,'#3a2a15');
+    R(L-8,dy-2,3,6,'#3a2a15');
   });
   /* l'ombre du tablier sur l'eau */
-  g.fillStyle='rgba(12,34,48,.32)';
+  g.fillStyle='rgba(12,34,48,.28)';
   g.fillRect(cx-L,cy-H+3,L*2,H*2);
-  /* le tablier : des planches en travers */
-  R(-L-1,-H-1,L*2+2,H*2+2,'#5f4223');
-  for(let i=0;i<H*2;i+=4){
-    R(-L,-H+i,L*2,3,(i%8)?'#8a6238':'#96703f');
-    R(-L,-H+i,L*2,1,'#a5764a');
-    R(-L,-H+i+3,L*2,1,'#4a3218');
+  /* le tablier : des planches fines, deux pixels chacune */
+  R(-L,-H,L*2,H*2,'#6b4a28');
+  for(let i=0;i<H*2-1;i+=3){
+    R(-L+1,-H+i,L*2-2,2,(i%6)?'#96703f':'#a5764a');
+    R(-L+1,-H+i+2,L*2-2,1,'#5f4223');
   }
-  /* les longerons */
-  R(-L,-H,3,H*2,'#6b4a28');
-  R(L-3,-H,3,H*2,'#6b4a28');
+  /* les longerons, discrets */
+  R(-L,-H,2,H*2,'#5b3f21');
+  R(L-2,-H,2,H*2,'#5b3f21');
 
-  /* les rambardes : une vraie barrière, on ne passe pas au travers */
-  const rambarde=(dy,haut)=>{
-    R(-L-2,dy,L*2+4,4,'#5b3f21');                /* la lisse basse */
-    R(-L-2,dy,L*2+4,1,'#8a6238');
-    R(-L-2,dy-4,L*2+4,3,'#6b4a28');              /* la lisse haute */
-    R(-L-2,dy-4,L*2+4,1,'#a5764a');
-    for(let x=-L;x<=L-3;x+=9){                   /* les piquets */
-      R(x,dy-5,3,9,'#4f3520');
-      R(x,dy-5,3,1,'#96703f');
-    }
-    /* les deux poteaux d'angle, plus épais */
-    R(-L-3,dy-7,5,12,'#3d2a17');
-    R(-L-3,dy-7,5,2,'#7d5934');
-    R(L-2,dy-7,5,12,'#3d2a17');
-    R(L-2,dy-7,5,2,'#7d5934');
+  /* les rambardes : une seule lisse, des piquets fins */
+  const rambarde=(dy)=>{
+    R(-L-1,dy,L*2+2,2,'#5b3f21');
+    R(-L-1,dy,L*2+2,1,'#96703f');
+    for(let x=-L;x<=L-2;x+=10)R(x,dy-3,2,5,'#4f3520');
+    R(-L-2,dy-4,3,8,'#3d2a17');                 /* les poteaux d'angle */
+    R(L-1,dy-4,3,8,'#3d2a17');
+    R(-L-2,dy-4,3,1,'#7d5934');
+    R(L-1,dy-4,3,1,'#7d5934');
   };
-  rambarde(-H-3);                                 /* côté nord */
-  rambarde(H+1);                                  /* côté sud */
+  rambarde(-H-2);                                /* côté nord */
+  rambarde(H);                                   /* côté sud */
 
   /* les planches d'accès, sur chaque berge */
-  R(-L-6,-H+2,6,H*2-4,'#7d5934');
-  R(-L-6,-H+2,6,1,'#96703f');
-  R(L,-H+2,6,H*2-4,'#7d5934');
-  R(L,-H+2,6,1,'#96703f');
+  R(-L-4,-H+3,4,H*2-6,'#7d5934');
+  R(-L-4,-H+3,4,1,'#96703f');
+  R(L,-H+3,4,H*2-6,'#7d5934');
+  R(L,-H+3,4,1,'#96703f');
 }
+
 
 
 
@@ -1728,7 +1722,7 @@ function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
 /* le tablier suit la rivière : on est dessus si on est dans sa largeur */
 /* Le pont, vu par les collisions : un couloir de planches entre deux
    barrières pleines. On n'y entre que par l'est ou par l'ouest. */
-const PONT_LARGE=RIV_LARGE+16;                 /* demi-longueur du tablier, d'une berge à l'autre */
+const PONT_LARGE=RIV_LARGE+11;                 /* demi-longueur du tablier, d'une berge à l'autre */
 const PONT_PASSAGE=9;                          /* demi-largeur du couloir où l'on marche */
 const PONT_CENTRE=17;                          /* on marche au sud du tablier : la tête reste dessus */
 function surTablier(x,y){
@@ -1906,6 +1900,12 @@ function semerDecor(){
     !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));
   DECOR.push({t:'four',  x:e.camp[0],    y:e.camp[1],gr:0});
   DECOR.push({t:'etabli',x:e.camp[0]+48, y:e.camp[1],gr:0});
+
+  /* on dégage les abords des ponts : rien ne doit gêner le passage */
+  DECOR=DECOR.filter(o=>{
+    if(o.t==='fleurs')return true;
+    return !PONTS.some(py=>Math.hypot(o.x-rivX(py),o.y-py)<46);
+  });
 
   /* les deux ponts, posés en travers de la rivière */
   PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
