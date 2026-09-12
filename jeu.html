@@ -2867,9 +2867,33 @@ const CUEILLI=new Map();                        /* clé → heure de la cueillet
 const REPOUSSE={cueillette:210000, buisson:240000, resine:180000};
 
 function cleDe(o){
+  if(o.cle)return o.cle;                        /* la clé de la carte du serveur */
   const p={rocher:'r',arbre:'a',fer:'m',cuivre:'m',charbon:'m',
            buisson:'b',resine:'s'}[o.t]||'c';
   return p+o.x+','+o.y;
+}
+
+/* ================= la carte vient du serveur =================
+   Les arbres, les filons et les buissons ne sont plus tirés au sort
+   sur le téléphone : c'est la base qui dit ce qu'il y a, et où. */
+let CARTE_RECUE=false;
+async function chargerLaCarte(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/carte?select=cle,genre,x,y,gr&limit=500',
+      {headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d)||!d.length)return false;
+    /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
+    const garder=['pont','casino','four','etabli','coffre','souche','gravats'];
+    DECOR=DECOR.filter(o=>garder.includes(o.t));
+    d.forEach(m=>DECOR.push({t:m.genre,x:m.x,y:m.y,gr:m.gr||0,cle:m.cle}));
+    DECOR.sort((a,b)=>a.y-b.y);
+    CARTE_RECUE=true;
+    appliquerLeMonde();
+    const [dx,dy]=degager(joueur.x,joueur.y);
+    joueur.x=dx;joueur.y=dy;
+    return true;
+  }catch(x){return false;}
 }
 /* une ligne de la table monde, appliquée tout de suite */
 function appliquerLigneMonde(m){
@@ -4084,7 +4108,8 @@ async function ouvrirPorte(){
   sauver();
   await descendreDeLigne();
   await recupererSauvegarde();
-  await lireSacServeur();       /* le sac vient du serveur */    /* on retrouve sa partie, d'où qu'on vienne */
+  await lireSacServeur();       /* le sac vient du serveur */
+  await chargerLaCarte();       /* et la carte aussi */    /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
   entrer();
