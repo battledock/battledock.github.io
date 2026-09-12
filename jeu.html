@@ -3624,10 +3624,14 @@ async function ouvrirClassement(){
 
 
 async function ouvrirPorte(){
+  await chargerSupabase();                     /* il faut le compte avant d'entrer */
   let session=null;
-  try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
-
-  if(!session||!session.user){                 /* pas de compte : on renvoie à l'inscription */
+  if(SB_PRET&&sb){
+    try{const {data}=await sb.auth.getSession();session=data&&data.session;}catch(x){}
+  }
+  if(!session||!session.user){
+    /* déjà venu sur ce téléphone : on entre quand même, hors ligne */
+    if(e.id&&e.pseudo){joueur.x=e.x||joueur.x;joueur.y=e.y||joueur.y;return entrer();}
     $('pCarte').style.display='';
     $('p-ok').onclick=()=>{location.href='index.html';};
     return;
@@ -3655,7 +3659,7 @@ function entrer(){
   majPastille();
   $('porte').classList.add('parti');
   preparerMonde();
-  taille();garderAllume();chargerSupabase();
+  taille();garderAllume();
   fondu=1;                                   /* le jeu apparaît en fondu */
 }
 ouvrirPorte();
