@@ -1209,95 +1209,89 @@ function dessinerFleurs(g,x,y,gr){
 /* --- le casino : un palace de pierre, éclairé --- */
 function dessinerCasino(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
+  const P=(pts,c)=>{g.fillStyle=c;g.beginPath();
+    g.moveTo(x+pts[0][0],y+pts[0][1]);
+    for(let i=1;i<pts.length;i++)g.lineTo(x+pts[i][0],y+pts[i][1]);
+    g.closePath();g.fill();};
   const t=Date.now()/1000;
-  const cli =(d)=>((t+d)%1.1)<0.55;              /* ampoules qui battent */
-  const cli2=(d)=>((t+d)%1.1)>=0.55;
+  const cli=(d)=>((t+d)%1.1)<0.55;
 
-  /* halo au sol, qui respire */
+  /* le halo au sol, qui respire */
+  g.save();
   g.globalAlpha=.10+Math.sin(t*1.6)*0.03;
   g.fillStyle='#f0cf7d';
-  g.beginPath();g.ellipse(x,y-2,74,17,0,0,7);g.fill();
-  g.globalAlpha=1;
-  g.fillStyle='rgba(20,30,14,.4)';
-  g.beginPath();g.ellipse(x,y-1,52,7,0,0,7);g.fill();
+  g.beginPath();g.ellipse(x,y-4,96,26,0,0,7);g.fill();
+  g.restore();
+  /* l'ombre portée du bâtiment */
+  g.fillStyle=VERTS.ombre;
+  g.beginPath();g.ellipse(x+6,y-2,74,15,0,0,7);g.fill();
 
-  const H=148;                                    /* hauteur totale */
-  const b=-6;                                     /* le pied du bâtiment */
+  const L=60;                                   /* demi-largeur de la façade */
+  const HT=-120;                                /* le haut des murs */
 
-  /* corps : trois niveaux de pierre */
-  R(-61,b-88,122,88,'#4a4f57');
-  R(-58,b-85,116,83,'#7b8288');
-  R(-58,b-85,116,4,'#8b939a');
-  R(-58,b-54,116,4,'#8b939a');
-  R(-58,b-28,116,4,'#8b939a');
-  /* pierres appareillées */
-  [[-55,-78],[-35,-78],[24,-78],[44,-78],[-45,-46],[29,-46]].forEach(([a,c])=>
-    R(a,b+c,16,8,'#6f767d'));
+  /* le pan de mur latéral : c'est lui qui donne l'épaisseur */
+  P([[L,HT+14],[L+18,HT+26],[L+18,-6],[L,-2]],'#5f666c');
+  P([[L,HT+14],[L+18,HT+26],[L+18,HT+30],[L,HT+18]],'#6f767d');
 
-  /* fenêtres, deux rangées, certaines qui clignotent */
-  const fen=(a,c,w,h,col)=>{R(a-2,b+c-2,w+4,h+4,'#2f2419');R(a,b+c,w,h,col);};
-  fen(-51,-76,10,12,'#f0cf7d');
-  fen(-29,-76,10,12,cli2(0)?'#f0cf7d':'#8a6a32');
-  fen(17,-76,10,12,'#f0cf7d');
-  fen(39,-76,10,12,cli2(.3)?'#f0cf7d':'#8a6a32');
-  fen(-51,-46,10,10,'#e8a94a');
-  fen(-29,-46,10,10,cli(0)?'#f0cf7d':'#7d5f2a');
-  fen(17,-46,10,10,cli(.4)?'#f0cf7d':'#7d5f2a');
-  fen(39,-46,10,10,'#e8a94a');
+  /* la façade */
+  R(-L,HT+14,L*2,-HT-16,'#8b939a');
+  R(-L,HT+14,L*2,3,'#a2a9b0');
+  R(-L,-6,L*2,4,'#6f767d');                     /* le soubassement */
 
-  /* colonnes du porche */
-  [-15,7].forEach(a=>{
-    R(a,b-42,8,42,'#c0c7cd');
-    R(a-2,b-45,12,4,'#a2a9b0');
-    R(a-2,b-4,12,4,'#a2a9b0');
-  });
+  /* le toit en surplomb, avec son épaisseur */
+  P([[-L-6,HT+4],[L-2,HT+4],[L+18,HT+16],[-L+10,HT+16]],'#a2a9b0');
+  P([[-L+10,HT+16],[L+18,HT+16],[L+18,HT+21],[-L+10,HT+21]],'#7b8288');
+  P([[-L-6,HT+4],[-L+10,HT+16],[-L+10,HT+21],[-L-6,HT+9]],'#8b939a');
 
-  /* porte : la lumière sort */
-  R(-7,b-36,14,36,'#2f2419');
-  R(-6,b-34,12,34,'#f0cf7d');
-  R(-2,b-22,4,6,'#8a6a2a');
-  g.globalAlpha=.18;g.fillStyle='#f0cf7d';
-  g.fillRect(x-14,y+b-36,28,40);g.globalAlpha=1;
-
-  /* tapis rouge */
-  R(-9,b,18,6,'#a83a3a');
-  R(-7,b,14,6,'#c94a4a');
-
-  /* marquise et ses ampoules */
-  R(-23,b-52,46,8,'#8a2f2f');
-  R(-23,b-52,46,3,'#c94a4a');
-  for(let i=0;i<5;i++)R(-21+i*10,b-44,3,3,cli(i*0.13)?'#f0cf7d':'#7d5f2a');
-
-  /* corniche, fronton, dôme */
-  R(-67,b-96,134,10,'#a2a9b0');
-  R(-67,b-96,134,3,'#c0c7cd');
-  for(let i=0;i<18;i++){                          /* le fronton, en escalier */
-    const w=66-i*3.6;
-    R(-w/2,b-96-i,w,1,i<6?'#8b939a':'#6f767d');
-  }
-  for(let i=0;i<10;i++){                          /* le dôme doré */
-    const w=38-i*3.4;
-    R(-w/2,b-114-i,w,1,i<4?'#e8c06a':'#c9a24a');
-  }
-  R(-3,b-128,6,6,cli(0)?'#f0cf7d':'#8a6a32');     /* la lanterne du sommet */
-  R(-2,b-122,4,4,'#c9a24a');
-
-  /* l'enseigne */
-  R(-39,b-110,78,16,'#241a12');
-  R(-37,b-108,74,12,'#3d2a17');
+  /* l'enseigne, en relief au-dessus du toit */
+  R(-46,HT-26,92,26,'#3a2418');
+  P([[46,HT-26],[58,HT-18],[58,HT+6],[46,HT]],'#2a1810');
+  R(-46,HT-26,92,3,'#5b3f21');
   g.fillStyle='#f0cf7d';
-  g.font='700 11px Georgia,serif';g.textAlign='center';
-  g.fillText('CASINO',x,y+b-99);
+  g.font='700 15px Georgia,serif';g.textAlign='center';
+  g.fillText('CASINO',x,y+HT-7);
   g.textAlign='left';
-  for(let i=0;i<7;i++)R(-37+i*12,b-113,3,3,cli(i*0.09)?'#f0cf7d':'#7d5f2a');
-  for(let i=0;i<6;i++)R(-31+i*12,b-97,3,3,cli2(i*0.09)?'#e8804a':'#6b3f20');
+  /* les ampoules du cadre */
+  for(let i=-42;i<=42;i+=12){
+    R(i,HT-24,3,3,cli(i*0.11)?'#fff3cd':'#8a6a2a');
+    R(i,HT-5,3,3,cli(i*0.11+0.5)?'#fff3cd':'#8a6a2a');
+  }
 
-  /* braseros */
-  [-47,39].forEach((a,k)=>{
-    R(a,b-14,8,14,'#5f666c');
-    R(a,b-14,8,3,'#7b8288');
-    R(a+1,b-20,6,6,cli(k*0.4)?'#e8804a':'#a8552c');
-    R(a+2,b-24,4,4,cli2(k*0.4)?'#f0cf7d':'#c9732c');
+  /* les fenêtres, creusées dans le mur */
+  const fen=(a,b,allume)=>{
+    R(a,b,20,18,'#5f666c');                     /* l'embrasure */
+    R(a+2,b+2,16,14,allume?'#e8c46a':'#7d6a3a');
+    R(a+2,b+2,16,3,allume?'#f6dc9a':'#8a7544');
+    R(a+9,b+2,2,14,'#4f5560');                  /* le meneau */
+  };
+  fen(-L+8,HT+30,cli(0.2));fen(-L+34,HT+30,cli(0.7));
+  fen(L-54,HT+30,cli(1.3));fen(L-28,HT+30,cli(0.4));
+  fen(-L+8,HT+62,cli(0.9));fen(L-28,HT+62,cli(1.6));
+
+  /* le porche en saillie, avec son auvent */
+  P([[-26,-44],[26,-44],[32,-36],[-20,-36]],'#b93327');
+  P([[-26,-44],[-20,-36],[-20,-32],[-26,-40]],'#8f2a22');
+  R(-20,-36,52,34,'#7b8288');
+  R(-20,-36,52,3,'#8b939a');
+  /* les deux colonnes du porche */
+  R(-18,-33,7,31,'#b7bec4');R(-18,-33,2,31,'#d0d6db');
+  R(24,-33,7,31,'#9aa2a8');
+  /* la porte */
+  R(-7,-30,18,28,'#c9a24a');
+  R(-7,-30,4,28,'#e0b860');
+  R(-7,-30,18,3,'#e0b860');
+  R(2,-18,3,3,'#7d5f22');                       /* la poignée */
+
+  /* les marches */
+  R(-24,-4,60,3,'#a2a9b0');
+  R(-28,-1,68,3,'#8b939a');
+
+  /* les deux lanternes de part et d'autre */
+  [-40,44].forEach((a,i)=>{
+    R(a,-26,7,24,'#6f767d');
+    R(a,-26,2,24,'#8b939a');
+    R(a-1,-34,9,9,cli(i*0.6)?'#ffd27a':'#8a6a2a');
+    R(a+1,-32,5,5,cli(i*0.6)?'#fff3cd':'#a98a3a');
   });
 }
 
@@ -1754,7 +1748,7 @@ const TAILLES={
  argile:null, roseaux:null, champignons:null, herbes:null, plumes:null,
  souche: null,
  pont:   null,
- casino: [{w:126,h:16}],
+ casino: [{w:134,h:18}],
  four:   [{w:34,h:12}],
  etabli: [{w:42,h:12}]
 };
