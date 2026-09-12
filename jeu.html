@@ -2520,7 +2520,42 @@ const rebond  =t=>{const n=7.5625,d=2.75;
   if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
   t-=2.625/d;return n*t*t+.984375;};
 
-/* ================= les autres survivants, en temps réel ================= */
+/* ================= les autres survivants, en temps réel =================
+   On passe par un canal ouvert en permanence (websocket) : la position
+   part 10 fois par seconde et arrive chez les autres en quelques
+   dizaines de millisecondes. La base ne sert plus qu'à retrouver
+   ceux qui étaient déjà là quand on arrive. */
+let CANAL=null, dernierBip=0;
+function ouvrirCanal(){
+  if(CANAL||!e.id)return;
+  CANAL=sb.channel('terrain',{config:{broadcast:{self:false}}});
+  CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
+    if(!p||p.id===e.id)return;
+    const a=AUTRES.get(p.id)||{x:p.x,y:p.y,pas:0,marche:false,gesteT:0};
+    a.cx=p.x;a.cy=p.y;a.dirEnvoyee=p.d;
+    a.ap=p.ap||a.ap||{};
+    a.pseudo=p.n||a.pseudo||'survivant';
+    if(p.g&&p.g!==a.geste)a.gesteT=1;
+    a.geste=p.g;a.vu=Date.now();
+    AUTRES.set(p.id,a);
+  });
+  CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{
+    if(p&&p.id)AUTRES.delete(p.id);
+  });
+  CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
+}
+function bipPosition(force){
+  if(!CANAL||!e.id)return;
+  const now=Date.now();
+  if(!force&&now-dernierBip<100)return;           /* 10 fois par seconde */
+  dernierBip=now;
+  CANAL.send({type:'broadcast',event:'pos',payload:{
+    id:e.id,n:e.pseudo||'survivant',ap:e.ap,
+    x:Math.round(joueur.x),y:Math.round(joueur.y),d:joueur.dir,
+    g:(GESTE.t>0?(GESTE.type||'pioche'):null)}});
+}
+
+
 let AUTRES=new Map();
 let derniereEcoute=0, envoiRapide=0;
 
@@ -2551,7 +2586,7 @@ async function ecouterLesAutres(){
       a.vu=Date.now();
       AUTRES.set(j.id,a);
     });
-    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>20000)AUTRES.delete(id);
+    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>12000)AUTRES.delete(id);
   }catch(x){}
 }
 
@@ -2560,10 +2595,11 @@ function majAutres(dt){
     if(a.cx===undefined)continue;
     const dx=a.cx-a.x, dy=a.cy-a.y, d=Math.hypot(dx,dy);
     if(d>1){
-      const v=Math.min(d,Math.max(60,d*4)*dt);
+      const v=Math.min(d,Math.max(95,d*9)*dt);   /* il glisse vite vers sa vraie place */
       a.x+=dx/d*v;a.y+=dy/d*v;
       a.pas+=v*0.34;a.marche=true;
-      if(d>3){
+      a.dir=a.dirEnvoyee||a.dir||'bas';
+      if(!a.dirEnvoyee&&d>3){
         if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
         else a.dir=dy>0?'bas':'haut';
       }
@@ -3461,7 +3497,8 @@ document.addEventListener('visibilitychange',()=>{
   }
   else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
 });
-addEventListener('pagehide',()=>{sauver();monterEnLigne(true);});
+addEventListener('pagehide',()=>{
+  try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}sauver();monterEnLigne(true);});
 addEventListener('pageshow',()=>{SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();});
 addEventListener('beforeunload',()=>{sauver();});
 
@@ -3479,8 +3516,10 @@ let t0=performance.now();
   }
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
   const maintenant=Date.now();
-  if(maintenant-derniereEcoute>1200){derniereEcoute=maintenant;ecouterLesAutres();}
-  if(maintenant-envoiRapide>1100){          /* on signale sa position en continu */
+  if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
+  ouvrirCanal();
+  bipPosition();                                  /* le direct, 10 fois par seconde */
+  if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
     envoiRapide=maintenant;monterEnLigne(true);
   }
   if(SECOUSSE>0.01)SECOUSSE*=Math.pow(0.0009,dt);else SECOUSSE=0;
