@@ -135,6 +135,10 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 .actes.petits button{flex:1;padding:11px 0;border-radius:11px;border:1px solid #e0ddd4;
   background:#fff;font:600 11.5px system-ui;color:#5f5b54}
 .actes.petits button:disabled{opacity:.4}
+.ongsG{display:flex;gap:6px;margin:-4px 0 14px}
+.ongsG button{flex:1;padding:12px 0;border-radius:12px;border:1px solid #e0ddd4;background:#fff;
+  font:700 12.5px system-ui;color:#a29c92}
+.ongsG button.on{background:#16140f;color:#f6f5f1;border-color:#16140f}
 .caisseVue{border-radius:16px;padding:14px 12px 12px;margin-bottom:4px;background:#fff;
   border:1px solid #eceae3;box-shadow:0 2px 10px rgba(40,35,25,.08)}
 .tiroir{display:flex;gap:12px;justify-content:center;padding:4px 0 10px}
@@ -2399,6 +2403,82 @@ function svgJeton(v,taille){
    '<text x="20" y="24.5" font-size="10" font-family="Georgia,serif" font-weight="700" '+
    'fill="'+j.c2+'" text-anchor="middle">'+v+'</text></svg>';
 }
+/* ================= la boutique du guichet ================= */
+let ongletG='changer';
+const ARTICLES=[
+ {id:'sacVoyage', nom:'Sac de voyage', d:'Charge 110 → 170.', prix:320, coul:'#8a6238',
+  exige:()=>e.sacMax>=110, exigeTxt:'Fabrique d’abord le grand sac à l’établi.',
+  fait:()=>e.sacMax>=170, faire:()=>{e.sacMax=170;}},
+ {id:'pioche', nom:'Pioche de rechange', d:'Si tu as perdu la tienne.', prix:90, coul:'#b7bec4',
+  fait:()=>!!e.outils.pioche, faire:()=>{e.outils.pioche=true;}},
+ {id:'hache', nom:'Hache de rechange', d:'Pour repartir couper du bois.', prix:90, coul:'#8a6238',
+  fait:()=>!!e.outils.hache, faire:()=>{e.outils.hache=true;}},
+ {id:'torches', nom:'Lot de 5 torches', d:'Résine et bois, tout prêts.', prix:60, coul:'#e8a94a',
+  faire:()=>{e.sac.torche=(e.sac.torche||0)+5;}},
+ {id:'lingotFer', nom:'Lingot de fer', d:'Sans passer par le four.', prix:75, coul:'#a2a9b0',
+  faire:()=>{e.sac.lingotFer=(e.sac.lingotFer||0)+1;}},
+ {id:'habit', nom:'Habit du casino', d:'Une tenue que seuls les gagnants portent.', prix:450, coul:'#c9a24a',
+  fait:()=>!!e.habitCasino, faire:()=>{e.habitCasino=true;
+    e.ap=Object.assign({},e.ap,{veste:3,haut:1,pantalon:2,chapeau:2});}}
+];
+const ICO_ART={
+ sacVoyage:'<rect x="2" y="5" width="12" height="10" fill="#6b4a28"/><rect x="2" y="5" width="12" height="2" fill="#8a6238"/>'+
+   '<rect x="5" y="2" width="6" height="3" fill="#5b3f21"/><rect x="6" y="9" width="4" height="3" fill="#c9a24a"/>',
+ pioche:'<rect x="7" y="4" width="2" height="10" fill="#8a6238"/><rect x="3" y="2" width="10" height="2" fill="#b7bec4"/>'+
+   '<rect x="2" y="3" width="2" height="2" fill="#8a8f96"/><rect x="12" y="3" width="2" height="2" fill="#8a8f96"/>',
+ hache:'<rect x="7" y="3" width="2" height="11" fill="#8a6238"/><rect x="8" y="2" width="5" height="6" fill="#b7bec4"/>'+
+   '<rect x="12" y="3" width="2" height="4" fill="#e0e6ea"/>',
+ torches:'<rect x="7" y="5" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="4" fill="#e8802c"/>'+
+   '<rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>',
+ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y="7" width="14" height="2" fill="#b7bec4"/>'+
+   '<rect x="3" y="4" width="10" height="3" fill="#a2a9b0"/>',
+ habit:'<rect x="4" y="5" width="8" height="9" fill="#7d2434"/><rect x="4" y="5" width="8" height="2" fill="#a03a4a"/>'+
+   '<rect x="6" y="2" width="4" height="3" fill="#c9a24a"/><rect x="7" y="8" width="2" height="4" fill="#f0cf7d"/>'
+};
+
+function onglets(){
+  return '<div class="ongsG">'+
+    ['changer','acheter'].map(o=>
+      '<button data-ong="'+o+'" class="'+(o===ongletG?'on':'')+'">'+
+      (o==='changer'?'Changer':'Acheter')+'</button>').join('')+'</div>';
+}
+function pageBoutique(){
+  const lignes=ARTICLES.map(a=>{
+    const deja=a.fait&&a.fait();
+    const bloque=a.exige&&!a.exige();
+    const assez=e.jetons>=a.prix;
+    const dispo=!deja&&!bloque&&assez;
+    let sous=a.d;
+    if(deja)sous='Tu l’as déjà.';
+    else if(bloque)sous=a.exigeTxt;
+    else if(!assez)sous='Il te manque '+(a.prix-e.jetons)+' jetons';
+    return '<div class="ech'+(dispo?'':' gris')+'" style="border-left-color:'+(dispo?a.coul:'#d8d4ca')+'">'+
+      '<span class="ic"><svg viewBox="0 0 16 16" width="26" style="image-rendering:pixelated">'+
+        ICO_ART[a.id]+'</svg></span>'+
+      '<span class="tx"><b>'+a.nom+'</b><span'+((!assez&&!deja&&!bloque)?' style="color:#b9463e"':'')+'>'+
+        sous+'</span></span>'+
+      '<span class="val">'+a.prix+'</span>'+
+      '<button data-achat="'+a.id+'"'+(dispo?'':' disabled')+'>'+(deja?'Acquis':'Acheter')+'</button></div>';
+  }).join('');
+  return '<div class="mot">« Avec des jetons, je peux aussi vous équiper. »</div>'+
+    '<div class="titreP">LA BOUTIQUE</div>'+lignes+
+    '<div class="res" id="res"></div>';
+}
+function acheter(id){
+  const a=ARTICLES.find(x=>x.id===id);
+  if(!a||e.jetons<a.prix)return;
+  if(a.fait&&a.fait())return;
+  if(a.exige&&!a.exige())return;
+  e.jetons-=a.prix;
+  a.faire();
+  sauver();majPageJetons();
+  try{navigator.vibrate&&navigator.vibrate([12,34,20]);}catch(x){}
+  ouvrirGuichet();
+  const r=$('res');
+  if(r)r.innerHTML='<b>'+a.nom+'</b> est à toi.';
+  pluieDeJetons(a.prix);
+}
+
 function ouvrirGuichet(){
   const total=Object.keys(TAUX).reduce((a,k)=>a+((e.sac&&e.sac[k])||0)*TAUX[k],0);
   const lignes=Object.keys(TAUX).map(k=>{
@@ -2415,7 +2495,7 @@ function ouvrirGuichet(){
       '<span class="val">'+(n*TAUX[k])+'</span>'+
       '<button data-e="'+k+'"'+(n?'':' disabled')+'>Changer</button></div>';
   }).join('');
-  ouvrirPage('Le guichet','CHANGE ET JETONS',
+  const corpsChanger=
      '<div class="caisseVue">'+
        '<div class="tiroir">'+
          VALEURS.map(j=>'<span class="rang">'+
@@ -2430,9 +2510,16 @@ function ouvrirGuichet(){
      lignes+
      (total? '<button class="tout" id="tout">Tout changer · '+total+' jetons</button>'
            : '<div class="vide">Ton sac est vide. Reviens avec du bois, de la pierre ou des baies.</div>')+
-     '<div class="res" id="res"></div>'+
+     '<div class="res" id="res"></div>';
+  ouvrirPage('Le guichet','CHANGE ET BOUTIQUE',
+     onglets()+
+     (ongletG==='changer'?corpsChanger:pageBoutique())+
      '<div class="pluie" id="pluie"></div>',true);
+  $('pageFond').querySelectorAll('[data-ong]').forEach(b=>b.onclick=()=>{
+    ongletG=b.dataset.ong;ouvrirGuichet();
+  });
   $('pageFond').querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>changer(b.dataset.e));
+  $('pageFond').querySelectorAll('[data-achat]').forEach(b=>b.onclick=()=>acheter(b.dataset.achat));
   const t=$('tout');
   if(t)t.onclick=()=>{Object.keys(TAUX).forEach(k=>{if((e.sac&&e.sac[k])>0)changer(k,true);});
     ouvrirGuichet();const r=$('res');if(r)r.textContent='Tout le butin est changé.';};
