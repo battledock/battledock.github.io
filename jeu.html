@@ -1302,60 +1302,54 @@ function dessinerCasino(g,x,y){
 
 /* --- un pont de planches, posé en travers de la rivière --- */
 function dessinerPont(g,cx,cy){
-  /* La rivière serpente : un tablier droit se retrouverait à côté de l'eau.
-     On le dessine donc rangée par rangée, en suivant le fil du courant. */
-  const H=PONT_DEMI;                           /* demi-largeur du tablier */
-  const L=RIV_LARGE+12;                        /* il déborde sur les deux berges */
-  const dec=(dy)=>Math.round(rivX(cy+dy)-rivX(cy));   /* de combien l'eau se décale ici */
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(cx+a,cy+b,w,h);};
-
-  /* les piliers, plantés dans l'eau aux deux bouts */
+  const H=PONT_DEMI;                           /* demi-hauteur du tablier */
+  const L=RIV_LARGE+12;                        /* il déborde sur les deux berges */
+  /* les piliers, plantés dans l'eau */
   [-9,9].forEach(dy=>{
-    const o=dec(dy);
-    R(-L+6+o,dy-2,4,7,'#3a2a15');
-    R(L-10+o,dy-2,4,7,'#3a2a15');
+    R(-L+6,dy-2,4,7,'#3a2a15');
+    R(L-10,dy-2,4,7,'#3a2a15');
   });
   /* l'ombre du tablier sur l'eau */
-  g.fillStyle='rgba(12,34,48,.3)';
-  for(let dy=-H+3;dy<H+3;dy++){
-    const o=dec(dy-3);
-    g.fillRect(cx-L+o,cy+dy,L*2,1);
+  g.fillStyle='rgba(12,34,48,.32)';
+  g.fillRect(cx-L,cy-H+3,L*2,H*2);
+  /* le tablier : des planches en travers */
+  R(-L-1,-H-1,L*2+2,H*2+2,'#5f4223');
+  for(let i=0;i<H*2;i+=4){
+    R(-L,-H+i,L*2,3,(i%8)?'#8a6238':'#96703f');
+    R(-L,-H+i,L*2,1,'#a5764a');
+    R(-L,-H+i+3,L*2,1,'#4a3218');
   }
-  /* le tablier, planche par planche, chacune calée sur le courant */
-  for(let dy=-H-1;dy<=H;dy++){
-    const o=dec(dy);
-    const i=dy+H+1;
-    let col;
-    if(i%4===0)col='#a5764a';                  /* le liseré clair de la planche */
-    else if(i%4===3)col='#4a3218';             /* le joint sombre */
-    else col=(i%8<4)?'#8a6238':'#96703f';
-    R(-L-1+o,dy,L*2+2,1,col);
-  }
-  /* les deux longerons, qui suivent eux aussi */
-  for(let dy=-H;dy<=H;dy++){
-    const o=dec(dy);
-    R(-L+o,dy,3,1,'#6b4a28');
-    R(L-3+o,dy,3,1,'#6b4a28');
-  }
-  /* les rambardes, en haut et en bas */
-  [[-H-5,'#6b4a28','#96703f'],[H+2,'#5b3f21','#7d5934']].forEach(([dy,c1,c2])=>{
-    const o=dec(dy);
-    R(-L-2+o,dy,L*2+4,3,c1);
-    R(-L-2+o,dy,L*2+4,1,c2);
-  });
-  const oh=dec(-H-5), ob=dec(H);
-  for(let x=-L;x<=L-3;x+=11){
-    R(x+oh,-H-5,3,7,'#4f3520');
-    R(x+oh,-H-5,3,1,'#7d5934');
-    R(x+ob,H,3,7,'#4f3520');
-  }
+  /* les longerons */
+  R(-L,-H,3,H*2,'#6b4a28');
+  R(L-3,-H,3,H*2,'#6b4a28');
+
+  /* les rambardes : une vraie barrière, on ne passe pas au travers */
+  const rambarde=(dy,haut)=>{
+    R(-L-2,dy,L*2+4,4,'#5b3f21');                /* la lisse basse */
+    R(-L-2,dy,L*2+4,1,'#8a6238');
+    R(-L-2,dy-4,L*2+4,3,'#6b4a28');              /* la lisse haute */
+    R(-L-2,dy-4,L*2+4,1,'#a5764a');
+    for(let x=-L;x<=L-3;x+=9){                   /* les piquets */
+      R(x,dy-5,3,9,'#4f3520');
+      R(x,dy-5,3,1,'#96703f');
+    }
+    /* les deux poteaux d'angle, plus épais */
+    R(-L-3,dy-7,5,12,'#3d2a17');
+    R(-L-3,dy-7,5,2,'#7d5934');
+    R(L-2,dy-7,5,12,'#3d2a17');
+    R(L-2,dy-7,5,2,'#7d5934');
+  };
+  rambarde(-H-5);                                 /* côté nord */
+  rambarde(H+2);                                  /* côté sud */
+
   /* les planches d'accès, sur chaque berge */
-  for(let dy=-H+2;dy<H-2;dy++){
-    const o=dec(dy);
-    R(-L-5+o,dy,5,1,'#7d5934');
-    R(L+o,dy,5,1,'#7d5934');
-  }
+  R(-L-6,-H+2,6,H*2-4,'#7d5934');
+  R(-L-6,-H+2,6,1,'#96703f');
+  R(L,-H+2,6,H*2-4,'#7d5934');
+  R(L,-H+2,6,1,'#96703f');
 }
+
 
 
 /* --- le coffre : il contient la première pioche --- */
@@ -1714,12 +1708,24 @@ const BORD=56;
 /* ---- la rivière : elle descend du nord au sud en serpentant ---- */
 const RIV_LARGE=17;                              /* demi-largeur de l'eau */
 const rivX=(y)=>330+Math.sin(y/150)*78+Math.sin(y/47)*12;
-const PONTS=[300,700];                           /* deux ponts de planches */
+/* Un pont se pose là où la rivière coule droit : sinon le tablier
+   se déforme pour suivre l'eau, et c'est laid. */
+const PONTS=[210,766];                           /* deux ponts de planches */
 const PONT_DEMI=17;                              /* demi-longueur du tablier, dans l'axe nord-sud */
 function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
 /* le tablier suit la rivière : on est dessus si on est dans sa largeur */
 function surTablier(x,y){
-  return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI&&Math.abs(x-rivX(y))<RIV_LARGE+12);
+  /* on est sur les planches : entre les deux rambardes, et pas au-delà */
+  return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI-1&&
+    Math.abs(x-rivX(py))<RIV_LARGE+16);
+}
+/* la rambarde est en dur : on ne la franchit pas */
+function contreRambarde(x,y){
+  return PONTS.some(py=>{
+    if(Math.abs(x-rivX(py))>RIV_LARGE+18)return false;
+    const d=y-py;
+    return (d>=-PONT_DEMI-10&&d<=-PONT_DEMI+1)||(d>=PONT_DEMI-1&&d<=PONT_DEMI+11);
+  });
 }
 const surGue=surPont;                            /* on ne traverse que par les ponts */
 function dansRiviere(x,y){return Math.abs(x-rivX(y))<RIV_LARGE;}                                  /* la lisière, infranchissable */
@@ -1805,9 +1811,9 @@ function semerDecor(){
   };
   if(!NUAGES.length)semerNuages();
   if(!PAPILLONS.length)setTimeout(semerPapillons,0);
-  semerMinerai('fer',34,2.7,'bord');
-  semerMinerai('cuivre',40,3.9,null);
-  semerMinerai('charbon',32,5.3,'clair');
+  semerMinerai('fer',22,2.7,'bord');
+  semerMinerai('cuivre',26,3.9,null);
+  semerMinerai('charbon',20,5.3,'clair');
 
   /* --- l'argile, sur les berges de la rivière --- */
   for(let i=0;i<22;i++){
@@ -1939,6 +1945,7 @@ function degager(x,y){
 /* ---- ce qui bloque le passage ---- */
 function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
+  if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
   for(const o of DECOR){
     const t=TAILLES[o.t];if(!t)continue;
@@ -3073,8 +3080,10 @@ function majAction(){
       : 'Il faut une pioche<small>ROCHER</small>';
   }else if(['fer','cuivre','charbon'].includes(o.t)){
     const n={fer:'FILON DE FER',cuivre:'FILON DE CUIVRE',charbon:'VEINE DE CHARBON'}[o.t];
+    const dur={fer:7,cuivre:6,charbon:5}[o.t];
+    const reste=Math.max(2,dur-(e.outils.piocheFer?3:0))-(o.coups||0);
     b.innerHTML=e.outils.pioche
-      ? 'Extraire<small>'+n+' · '+((e.outils.piocheFer?2:4)-(o.coups||0))+' COUPS</small>'
+      ? 'Extraire<small>'+n+' · '+reste+' COUP'+(reste>1?'S':'')+'</small>'
       : 'Il faut une pioche<small>'+n+'</small>';
   }else if(o.t==='arbre'){
     if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
@@ -3203,7 +3212,9 @@ function miner(o){
   poussiere(o.x,o.y,6);
   secouer(0.65);ARRET=0.06;
   try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
-  if(o.coups>=(e.outils.piocheFer?2:4)){
+  const DUR={fer:7,cuivre:6,charbon:5};
+  const aFaire=Math.max(2,DUR[o.t]-(e.outils.piocheFer?3:0));
+  if(o.coups>=aFaire){
     for(let i=0;i<20;i++){
       const a=Math.random()*6.283, v=(60+Math.random()*120);
       PARTS.push({x:o.x,y:o.y-10,vx:Math.cos(a)*v,vy:-Math.abs(Math.sin(a))*v-30,
@@ -3229,7 +3240,7 @@ function miner(o){
     for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,o.t),i*80);
     sauver();monterEnLigne(true);
   }else{
-    const reste=(e.outils.piocheFer?2:4)-o.coups;
+    const reste=aFaire-o.coups;
     texteVolant(o.x,o.y-20,reste+' coup'+(reste>1?'s':''),'#c9cfd4');
   }
 }
