@@ -41,6 +41,30 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 .jet i{display:block;font:600 7.5px system-ui;letter-spacing:1.4px;color:#a29c92;font-style:normal}
 .corps{position:relative;flex:1;padding:14px;overflow-y:auto}
 
+.roue{border-radius:16px;padding:18px 14px 14px;margin-bottom:12px;text-align:center;
+  background:radial-gradient(120% 80% at 50% 10%,#2f8a5e,#165536 62%,#0f3d26);
+  box-shadow:inset 0 2px 20px rgba(0,0,0,.4)}
+.numero{width:76px;height:76px;margin:0 auto 12px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font:400 34px Georgia,serif;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.numero.rouge{background:linear-gradient(180deg,#d9534f,#9c3232)}
+.numero.noir{background:linear-gradient(180deg,#3a3a42,#1b1b22)}
+.numero.vert{background:linear-gradient(180deg,#3b9469,#14512f)}
+.numero.vide{background:rgba(255,255,255,.08);color:rgba(255,255,255,.35)}
+.compte{font:600 12px system-ui;color:#eaf4ec}
+.barreT{height:6px;border-radius:4px;background:rgba(0,0,0,.3);margin:9px 20px 8px;overflow:hidden}
+.barreT i{display:block;height:100%;background:#f0cf7d;transition:width .9s linear}
+.gens{font:400 10.5px system-ui;color:rgba(255,255,255,.55)}
+.paris{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.pari{padding:13px 8px;border-radius:12px;border:1px solid #e0ddd4;background:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:3px}
+.pari b{font:700 13px system-ui;color:#16140f}
+.pari .mien{font:600 9.5px system-ui;color:#1f7a45}
+.pari .tous{font:400 9px system-ui;color:#a29c92}
+.pari.pose{border-color:#16140f;box-shadow:0 0 0 2px rgba(22,20,15,.1)}
+.pari.rouge b{color:#9c3232}
+.pari.noir b{color:#2b2b33}
+.pari:disabled{opacity:.45}
 .tapis{border-radius:16px;padding:16px 12px 12px;margin-bottom:12px;position:relative;
   background:radial-gradient(120% 80% at 50% 18%,#2f8a5e,#165536 62%,#0f3d26);
   box-shadow:inset 0 2px 20px rgba(0,0,0,.4)}
@@ -905,11 +929,68 @@ const sbEntetes={apikey:CLE_SB,Authorization:'Bearer '+CLE_SB,
 async function direOuJeSuis(lieu){
   if(!e.id)return;
   try{await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
-    body:JSON.stringify([{id:e.id,pseudo:e.pseudo||'survivant',lieu,maj:new Date().toISOString()}])});
+    body:JSON.stringify([{id:e.id,pseudo:e.pseudo||'survivant',lieu,apparence:e.ap,
+      x:Math.round(typeof joueur!=='undefined'?joueur.x:0),
+      y:Math.round(typeof joueur!=='undefined'?joueur.y:0),
+      dir:(typeof joueur!=='undefined'?joueur.dir:'bas'),
+      maj:new Date().toISOString()}])});
   }catch(x){}
 }
+
+/* ---- qui d'autre est dans le casino en ce moment ---- */
+let AUTRES=new Map(), derniereEcoute=0, dernierEnvoi=0;
+async function ecouterLesAutres(){
+  if(!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs'+
+      '?select=id,pseudo,apparence,x,y,dir,lieu,maj&order=maj.desc&limit=40',
+      {headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d)||!d.length)return;
+    const tMax=Math.max(...d.map(j=>new Date(j.maj).getTime()));
+    const vus=new Set();
+    d.forEach(j=>{
+      if(j.id===e.id||j.lieu!=='casino')return;
+      if(tMax-new Date(j.maj).getTime()>60000)return;
+      vus.add(j.id);
+      const a=AUTRES.get(j.id)||{x:j.x,y:j.y,pas:0,marche:false};
+      a.cx=j.x;a.cy=j.y;a.ap=j.apparence||{};
+      a.pseudo=j.pseudo||'joueur';a.vu=Date.now();
+      AUTRES.set(j.id,a);
+    });
+    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>20000)AUTRES.delete(id);
+  }catch(x){}
+}
+function majAutres(dt){
+  for(const [,a] of AUTRES){
+    if(a.cx===undefined)continue;
+    const dx=a.cx-a.x, dy=a.cy-a.y, d=Math.hypot(dx,dy);
+    if(d>1){
+      const v=Math.min(d,Math.max(60,d*4)*dt);
+      a.x+=dx/d*v;a.y+=dy/d*v;a.pas+=v*0.34;a.marche=true;
+      if(d>3){
+        if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
+        else a.dir=dy>0?'bas':'haut';
+      }
+    }else{a.marche=false;a.pas=0;}
+  }
+}
+function dessinerUn(a,iX,iY){
+  const x=a.x-iX, y=a.y-iY;
+  if(x<-40||y<-70||x>VW+40||y>VH+40)return;
+  const om=ctx.createRadialGradient(x,y,0,x,y,12);
+  om.addColorStop(0,'rgba(0,0,0,.45)');om.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=om;ctx.beginPath();ctx.ellipse(x,y,12,4,0,0,7);ctx.fill();
+  pixel(()=>sprite(ctx,Math.round(x),Math.round(y),
+    Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche));
+  ctx.font='700 7px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillStyle='rgba(12,10,14,.6)';
+  ctx.fillText(a.pseudo,Math.round(x)+1,Math.round(y)-49);
+  ctx.fillStyle='#f2efe4';
+  ctx.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
+  ctx.textAlign='left';
+}
 direOuJeSuis('casino');
-setInterval(()=>direOuJeSuis('casino'),15000);
 
 /* ================= le hall, vu de dessus =================
    Sol plat, murs en bordure, meubles vus d'au-dessus.
@@ -980,7 +1061,7 @@ function construireSol(){
   g.restore();
 
   /* la rosace incrustée, au centre du hall */
-  const cx=CX, cy=340;
+  const cx=CX, cy=470;
   const or=lin(cx-60,cy-60,cx+60,cy+60,
     [[0,'#fff3cd'],[.35,'#e2ba69'],[.62,'#9a7225'],[1,'#f0d79a']]);
   g.save();g.globalAlpha=.6;g.strokeStyle=or;
@@ -1233,6 +1314,58 @@ function tableBJ(g,x,y){
   });
 }
 
+/* ---- la table de roulette, dans le hall ---- */
+function tableRoulette(g,x,y){
+  const R=ROULETTE, or=orDe(g,x-R.rx,y-R.ry,x+R.rx,y+R.ry);
+  const t=Date.now()/900;
+  g.fillStyle='rgba(0,0,0,.45)';
+  g.beginPath();g.ellipse(x+3,y+12,R.rx,R.ry*0.6,0,0,Math.PI);g.fill();
+  g.fillStyle='#33200f';
+  g.beginPath();g.moveTo(x-R.rx,y);
+  g.ellipse(x,y,R.rx,R.ry,0,0,Math.PI);
+  g.lineTo(x+R.rx,y+11);
+  g.ellipse(x,y+11,R.rx,R.ry,0,Math.PI,0,true);
+  g.closePath();g.fill();
+  const f=g.createRadialGradient(x-16,y+10,8,x,y+18,R.rx*1.1);
+  f.addColorStop(0,'#3b9469');f.addColorStop(.55,'#22664a');f.addColorStop(1,'#123b2a');
+  g.fillStyle=f;
+  g.beginPath();g.ellipse(x,y,R.rx,R.ry,0,0,Math.PI);g.closePath();g.fill();
+  g.strokeStyle=or;g.lineWidth=2.4;g.stroke();
+  g.fillStyle='#3d2614';g.beginPath();g.roundRect(x-R.rx,y-4,R.rx*2,5,2);g.fill();
+  g.fillStyle=or;g.fillRect(x-R.rx,y-4,R.rx*2,1.6);
+  /* le cylindre, qui tourne */
+  g.fillStyle='#241509';g.beginPath();g.ellipse(x-46,y+18,22,11,0,0,7);g.fill();
+  g.fillStyle=or;g.beginPath();g.ellipse(x-46,y+17,20,10,0,0,7);g.fill();
+  g.save();
+  g.beginPath();g.ellipse(x-46,y+17,14,7,0,0,7);g.clip();
+  for(let i=0;i<16;i++){
+    const a0=t+i/16*6.283;
+    g.fillStyle=i%2?'#9c2b2b':'#18120f';
+    g.beginPath();g.moveTo(x-46,y+17);
+    g.ellipse(x-46,y+17,15,7.4,0,a0,a0+0.4);g.closePath();g.fill();
+  }
+  g.restore();
+  g.fillStyle='#e8dcc0';
+  g.beginPath();g.arc(x-46+Math.cos(-t*1.7)*11,y+17+Math.sin(-t*1.7)*5,2,0,7);g.fill();
+  /* le tapis de mise imprimé */
+  g.save();g.globalAlpha=.5;g.strokeStyle='#eaf3ee';g.lineWidth=1;
+  g.strokeRect(x-6,y+10,72,26);
+  g.beginPath();
+  g.moveTo(x-6,y+23);g.lineTo(x+66,y+23);
+  g.moveTo(x+18,y+10);g.lineTo(x+18,y+36);
+  g.moveTo(x+42,y+10);g.lineTo(x+42,y+36);g.stroke();
+  g.globalAlpha=.42;g.fillStyle='#eaf3ee';
+  g.font='600 7px Georgia,serif';g.textAlign='center';
+  g.fillText('ROUGE',x+6,y+19);g.fillText('NOIR',x+30,y+19);g.fillText('PAIR',x+54,y+19);
+  g.fillText('1-18',x+6,y+32);g.fillText('IMPAIR',x+30,y+32);g.fillText('19-36',x+54,y+32);
+  g.textAlign='left';g.restore();
+  /* quelques jetons posés */
+  [[0,16,'#dc5044','#8f2a22'],[24,30,'#4a8fd4','#255184'],[48,16,'#f0cf7d','#9a7225']].forEach(([dx,dy,c1,c2])=>{
+    g.fillStyle=c2;g.beginPath();g.ellipse(x+6+dx,y+dy,5.4,2.4,0,0,7);g.fill();
+    g.fillStyle=c1;g.beginPath();g.ellipse(x+6+dx,y+dy-2.4,5.4,2.4,0,0,7);g.fill();
+  });
+}
+
 /* ---- une chaise de joueur, vue de dessus ---- */
 function chaiseBJ(g,x,y){
   g.fillStyle='rgba(0,0,0,.38)';
@@ -1431,6 +1564,7 @@ function porteBas(g,x,y){
 const CX=HALL0+(SALLE_L-HALL0)/2;
 const CJ=JEU_L/2;      /* le centre de la salle de jeu */
 const TABLE={x:200, y:250, rx:96, ry:58};
+const ROULETTE={x:620, y:340, rx:86, ry:52};
 const CROUPIER={x:200, y:216, ap:{peau:1,cheveux:2,coiffe:3,yeux:1,veste:2,haut:0,
   pantalon:2,bas:2,souliers:1,chapeau:0,sourcils:1,nez:1,bouche:1,corps:1}};
 const HOTESSE={x:CX,y:106,ap:{peau:1,cheveux:4,coiffe:10,yeux:2,veste:0,haut:2,pantalon:3,bas:4,
@@ -1441,6 +1575,13 @@ function bloque(x,y){
   if(x<MUR+10||x>SALLE_L-MUR-10)return true;
   /* la cloison entre les deux salles, sauf le passage */
   if(Math.abs(x-HALL0)<MUR/2+9&&(y<PASSAGE[0]+8||y>PASSAGE[1]-8))return true;
+  /* la table de roulette, dans le hall */
+  if(x>=HALL0){
+    const dx=(x-ROULETTE.x)/(ROULETTE.rx+9), dy=(y-(ROULETTE.y-4))/(ROULETTE.ry+9);
+    if(y<ROULETTE.y+12&&dx*dx+dy*dy<1)return true;
+    for(const [cx,cy] of [[ROULETTE.x-56,402],[ROULETTE.x,412],[ROULETTE.x+56,402]])
+      if(Math.hypot(cx-x,(cy-y)*1.5)<13)return true;
+  }
   /* la table de black-jack */
   if(x<HALL0){
     const dx=(x-TABLE.x)/(TABLE.rx+9), dy=(y-(TABLE.y-4))/(TABLE.ry+9);
@@ -1529,6 +1670,10 @@ function dessiner(){
   const objets=[
     {y:186,f:()=>dessinerCroupier(iX,iY)},
     {y:250,f:()=>tableBJ(ctx,TABLE.x-iX,TABLE.y-iY)},
+    {y:340,f:()=>tableRoulette(ctx,ROULETTE.x-iX,ROULETTE.y-iY)},
+    {y:404,f:()=>{chaiseBJ(ctx,ROULETTE.x-56-iX,402-iY);
+                  chaiseBJ(ctx,ROULETTE.x-iX,412-iY);
+                  chaiseBJ(ctx,ROULETTE.x+56-iX,402-iY);}},
     {y:318,f:()=>{chaiseBJ(ctx,TABLE.x-52-iX,316-iY);
                   chaiseBJ(ctx,TABLE.x-iX,326-iY);
                   chaiseBJ(ctx,TABLE.x+52-iX,316-iY);}},
@@ -1540,7 +1685,8 @@ function dessiner(){
     {y:470,f:()=>{planteHaut(ctx,MUR+30-iX,470-iY);planteHaut(ctx,SALLE_L-MUR-30-iX,470-iY);}},
     {y:SALLE_H-MUR/2,f:()=>porteBas(ctx,PORTE.x-iX,PORTE.y-iY)},
     {y:joueur.y,f:()=>dessinerJoueur(iX,iY)}
-  ].sort((a,b)=>a.y-b.y);
+  ].concat([...AUTRES.values()].map(a=>({y:a.y,f:()=>dessinerUn(a,iX,iY)})))
+   .sort((a,b)=>a.y-b.y);
   objets.forEach(o=>o.f());
 
   /* le fondu d'entrée et de sortie */
@@ -1772,6 +1918,137 @@ function jetonSVG(v){
 }
 
 
+/* ================= la roulette commune =================
+   Le numéro est tiré par le serveur : tout le monde voit le même. */
+const ROUGES=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const PARIS=[
+ {t:'rouge', nom:'Rouge',  paie:2},
+ {t:'noir',  nom:'Noir',   paie:2},
+ {t:'pair',  nom:'Pair',   paie:2},
+ {t:'impair',nom:'Impair', paie:2},
+ {t:'manque',nom:'1 à 18', paie:2},
+ {t:'passe', nom:'19 à 36',paie:2}
+];
+let ROU=null, rouTic=0;
+
+async function tourCourant(){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/rpc/tour_courant',
+      {method:'POST',headers:sbEntetes,body:'{}'});
+    const d=await r.json();
+    return Array.isArray(d)?d[0]:null;
+  }catch(x){return null;}
+}
+async function misesDuTour(id){
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/mises?select=joueur_id,pseudo,type,montant,gain'+
+      '&tour_id=eq.'+id,{headers:sbEntetes});
+    const d=await r.json();
+    return Array.isArray(d)?d:[];
+  }catch(x){return [];}
+}
+async function ouvrirRoulette(){
+  ROU={tour:null,mises:[],mesMises:{},vue:0,dernier:null,annonce:''};
+  rendreRoulette();
+  await rafraichirRoulette();
+}
+async function rafraichirRoulette(){
+  const t=await tourCourant();
+  if(!t)return;
+  if(ROU&&ROU.tour&&t.id!==ROU.tour.id){
+    /* le tour précédent vient d'être tiré : on encaisse */
+    const anciennes=await misesDuTour(ROU.tour.id);
+    const miennes=anciennes.filter(m=>m.joueur_id===e.id);
+    const gain=miennes.reduce((a,m)=>a+(m.gain||0),0);
+    if(miennes.length){
+      ROU.dernier={numero:ROU.numeroVu,gain,mise:miennes.reduce((a,m)=>a+m.montant,0)};
+      if(gain){gagne(gain);pluieJetons(gain);}
+      ROU.annonce=gain?'Tu gagnes '+gain+' jetons.':'Perdu pour ce tour.';
+      try{navigator.vibrate&&navigator.vibrate(gain?[12,34,20]:[8,40]);}catch(x){}
+    }
+    ROU.mesMises={};
+  }
+  if(t.tire&&t.numero!==null)ROU.numeroVu=t.numero;
+  ROU.tour=t;
+  ROU.mises=await misesDuTour(t.id);
+  if(ROU)rendreRoulette();
+}
+async function miser(type){
+  if(!ROU||!ROU.tour||ROU.tour.tire)return;
+  if(e.jetons<MISE){ROU.annonce='Pas assez de jetons.';return rendreRoulette();}
+  e.jetons-=MISE;majPageJetons();
+  ROU.mesMises[type]=(ROU.mesMises[type]||0)+MISE;
+  ROU.annonce='';
+  rendreRoulette();
+  try{navigator.vibrate&&navigator.vibrate(9);}catch(x){}
+  try{
+    await fetch(URL_SB+'/rest/v1/mises',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'return=minimal'}),
+      body:JSON.stringify([{tour_id:ROU.tour.id,joueur_id:e.id,
+        pseudo:e.pseudo||'joueur',type,montant:MISE}])});
+  }catch(x){}
+  ROU.mises=await misesDuTour(ROU.tour.id);
+  if(ROU)rendreRoulette();
+}
+function rendreRoulette(){
+  if(!ROU)return;
+  const t=ROU.tour;
+  const secs=(ROU.resteVu!==undefined)
+    ?Math.max(0,Math.ceil(ROU.resteVu-(Date.now()-ROU.vuA)/1000)):0;
+  const n=ROU.numeroVu;
+  const coul=n===0?'vert':(ROUGES.has(n)?'rouge':'noir');
+  /* les mises de tout le monde, regroupées */
+  const parType={};
+  ROU.mises.forEach(m=>{
+    parType[m.type]=parType[m.type]||{total:0,gens:new Set()};
+    parType[m.type].total+=m.montant;
+    parType[m.type].gens.add(m.pseudo||'joueur');
+  });
+  const joueurs=new Set(ROU.mises.map(m=>m.pseudo||'joueur'));
+
+  let corps='<div class="roue">'+
+    '<div class="numero '+(n===undefined?'vide':coul)+'">'+
+      (n===undefined?'—':n)+'</div>'+
+    '<div class="compte">'+(t&&t.tire?'Nouveau tour dans un instant…'
+      :(secs>0?'Mises ouvertes · '+secs+' s':'Ça tourne…'))+'</div>'+
+    '<div class="barreT"><i style="width:'+
+      Math.max(0,Math.min(100,Math.round(secs/30*100)))+'%"></i></div>'+
+    (joueurs.size?'<div class="gens">'+joueurs.size+' joueur'+(joueurs.size>1?'s':'')+
+      ' à la table · '+ROU.mises.reduce((a,m)=>a+m.montant,0)+' jetons en jeu</div>':
+      '<div class="gens">Personne n’a encore misé.</div>')+
+  '</div>';
+
+  if(ROU.annonce)corps+='<div class="issue '+(/gagne/.test(ROU.annonce)?'bon':'mauvais')+'">'+
+    ROU.annonce+'</div>';
+
+  corps+=barreMise();
+  corps+='<div class="paris">'+PARIS.map(p=>{
+    const mien=ROU.mesMises[p.t]||0;
+    const tous=parType[p.t];
+    return '<button class="pari '+p.t+(mien?' pose':'')+'" data-pari="'+p.t+'"'+
+      ((t&&!t.tire&&secs>0)?'':' disabled')+'>'+
+      '<b>'+p.nom+'</b>'+
+      (mien?'<span class="mien">toi : '+mien+'</span>':'')+
+      (tous?'<span class="tous">'+tous.total+' jetons · '+tous.gens.size+'</span>':'')+
+      '</button>';
+  }).join('')+'</div>';
+  corps+='<div class="vide2">Tout le monde mise sur le même tirage.<br>'+
+    'Le numéro est tiré par la table, pas par ton téléphone.</div>';
+  ouvrirPage('La roulette','TOUS SUR LE MÊME TIRAGE',corps,true);
+  brancherMise(rendreRoulette);
+  $('pageFond').querySelectorAll('[data-pari]').forEach(b=>b.onclick=()=>miser(b.dataset.pari));
+}
+function pluieJetons(gain){
+  const z=$('pageFond');if(!z)return;
+  const d=document.createElement('div');
+  d.className='pluie';
+  d.innerHTML=Array.from({length:12},(_,i)=>
+    '<i style="left:'+(8+Math.random()*84)+'%;animation-delay:'+(i*0.06).toFixed(2)+'s">'+
+    jetonSVG(25)+'</i>').join('');
+  z.appendChild(d);
+  setTimeout(()=>{try{d.remove();}catch(x){}},2000);
+}
+
 /* ================= le guichet ================= */
 const TAUX={lingotFer:52,lingotCuivre:34,fer:14,brique:11,resine:10,charbon:9,cuivre:8,
   pierre:5,champignons:4,plumes:4,bois:3,herbes:3,fibre:2,baies:2,argile:2,roseaux:2};
@@ -1910,6 +2187,11 @@ function majAction(){
      joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70){
     b.innerHTML='S’asseoir<small>BLACK-JACK</small>';b.classList.add('on');return;
   }
+  /* devant la roulette */
+  if(joueur.x>=HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
+     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+64){
+    b.innerHTML='Miser<small>ROULETTE · TOUS ENSEMBLE</small>';b.classList.add('on');return;
+  }
   const pres=Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70;
   if(pres){b.innerHTML='Parler<small>GUICHET · CHANGER SON BUTIN</small>';b.classList.add('on');return;}
   const sort=Math.hypot(joueur.x-PORTE.x,joueur.y-PORTE.y)<50;
@@ -1919,6 +2201,8 @@ function majAction(){
 $('action').onclick=()=>{
   if(joueur.x<HALL0&&Math.abs(joueur.x-TABLE.x)<TABLE.rx&&
      joueur.y>TABLE.y+6&&joueur.y<TABLE.y+70)return ouvrirBJ();
+  if(joueur.x>=HALL0&&Math.abs(joueur.x-ROULETTE.x)<ROULETTE.rx&&
+     joueur.y>ROULETTE.y+6&&joueur.y<ROULETTE.y+64)return ouvrirRoulette();
   if(Math.abs(joueur.x-COMPTOIR.x)<COMPTOIR.w/2+10&&joueur.y-COMPTOIR.y<70)return ouvrirGuichet();
   if(Math.hypot(joueur.x-PORTE.x,joueur.y-PORTE.y)<50&&!sortie){sortie=true;sortir();}
 };
@@ -2037,6 +2321,14 @@ let t0=performance.now();
   requestAnimationFrame(boucle);
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
   if(!pageOuverte()&&!sortie)majJoueur(dt);
+  majAutres(dt);
+  const maintenant=Date.now();
+  if(maintenant-derniereEcoute>1200){derniereEcoute=maintenant;ecouterLesAutres();}
+  if(ROU&&pageOuverte()){
+    if(maintenant-rouTic>1000){rouTic=maintenant;rafraichirRoulette();}
+    else rendreRoulette();
+  }else if(ROU&&!pageOuverte())ROU=null;
+  if(maintenant-dernierEnvoi>1100){dernierEnvoi=maintenant;direOuJeSuis('casino');}
   if(fondu>0)fondu=Math.max(0,fondu-dt*2);
   else if(fondu<0)fondu=Math.max(-1.2,fondu-dt*3);
   majAction();dessiner();dessinerJoy(dt);
