@@ -2870,6 +2870,19 @@ function cleDe(o){
            buisson:'b',resine:'s'}[o.t]||'c';
   return p+o.x+','+o.y;
 }
+/* une ligne de la table monde, appliquée tout de suite */
+function appliquerLigneMonde(m){
+  if(!m||!m.cle)return;
+  if(m.par===e.id)return;                        /* c'est nous, c'est déjà fait */
+  const t=m.quand?new Date(m.quand).getTime():Date.now();
+  const duree=REPOUSSE[m.genre];
+  if(duree){
+    if(Date.now()-t>duree)return;                /* ça a déjà repoussé */
+    CUEILLI.set(m.cle,t);
+  }else if(!e.casses.includes(m.cle))e.casses.push(m.cle);
+  appliquerLeMonde();
+}
+
 async function chargerLeMonde(){
   try{
     const r=await fetch(URL_SB+'/rest/v1/monde?select=cle,genre,quand&limit=2000',
@@ -2950,6 +2963,20 @@ function ouvrirCanal(){
     else if(!e.casses.includes(p.cle))e.casses.push(p.cle);
     appliquerLeMonde();
   });
+  /* Realtime : on écoute la table elle-même. Un joueur qui casse un
+     rocher depuis n'importe où le fait disparaître ici dans la seconde,
+     même s'il n'est pas sur le même canal. */
+  CANAL.on('postgres_changes',
+    {event:'INSERT',schema:'public',table:'monde'},
+    ({new:m})=>appliquerLigneMonde(m));
+  CANAL.on('postgres_changes',
+    {event:'UPDATE',schema:'public',table:'monde'},
+    ({new:m})=>appliquerLigneMonde(m));
+  CANAL.on('postgres_changes',
+    {event:'DELETE',schema:'public',table:'monde'},
+    ({old:m})=>{ if(m&&m.cle){CUEILLI.delete(m.cle);
+      e.casses=(e.casses||[]).filter(c=>c!==m.cle);
+      preparerMonde();appliquerLeMonde();} });
   CANAL.subscribe(st=>{if(st==='SUBSCRIBED'){bipPosition(true);chargerLeMonde();}});
 }
 function bipPosition(force){
