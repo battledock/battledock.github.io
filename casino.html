@@ -29,6 +29,7 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 .libre{display:flex;gap:8px}
 .libre input{flex:1;min-width:0;padding:13px 12px;border-radius:12px;border:1px solid #e0ddd4;
   background:#fff;color:#16140f;font:400 13px system-ui}
+.compteC{text-align:right;font:600 10px system-ui;color:#a29c92;margin-top:8px}
 .libre button{padding:13px 18px;border-radius:12px;border:0;background:#16140f;
   color:#f6f5f1;font:700 12.5px system-ui}
 #hublot{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:4;
@@ -1032,7 +1033,7 @@ function ouvrirCanal(){
   CANAL.on('broadcast',{event:'sortie'},({payload:p})=>{if(p&&p.id)AUTRES.delete(p.id);});
   CANAL.on('broadcast',{event:'dit'},({payload:p})=>{
     if(!p||p.id===e.id)return;
-    BULLES.set(p.id,{txt:String(p.txt||'').slice(0,60),jusqua:Date.now()+5000});
+    BULLES.set(p.id,{txt:String(p.txt||'').slice(0,48),jusqua:Date.now()+6000,ne:Date.now()});
   });
   CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
 }
@@ -1121,7 +1122,7 @@ function dessinerUn(a,iX,iY){
   ctx.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
   ctx.textAlign='left';
   const b=BULLES.get(a.id);
-  if(b)dessinerBulle(ctx,x,y,b.txt,false);
+  if(b)dessinerBulle(ctx,x,y,b.txt,false,b.ne);
 }
 direOuJeSuis('casino');
 
@@ -1863,7 +1864,7 @@ function dessiner(){
   flechesVersLesAutres(iX,iY);
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
-  if(maBulle)dessinerBulle(ctx,Math.round(joueur.x-iX),Math.round(joueur.y-iY),maBulle.txt,true);
+  if(maBulle)dessinerBulle(ctx,Math.round(joueur.x-iX),Math.round(joueur.y-iY),maBulle.txt,true,maBulle.ne);
 
   /* le fondu d'entrée et de sortie */
   if(fondu!==0){
@@ -2397,32 +2398,73 @@ const PHRASES=['Salut !','Ça va ?','Viens par ici','Attention !','Bien joué',
 let clavierOuvert=false;
 
 function direQuelqueChose(txt){
-  txt=String(txt||'').slice(0,60).trim();
+  txt=String(txt||'').slice(0,48).trim();
   if(!txt)return;
-  BULLES.set('moi',{txt,jusqua:Date.now()+5000});
+  BULLES.set('moi',{txt,jusqua:Date.now()+6000,ne:Date.now()});
   try{CANAL&&CANAL.send({type:'broadcast',event:'dit',
     payload:{id:e.id,n:e.pseudo||'joueur',txt}});}catch(x){}
   try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
 }
 
 /* la bulle au-dessus de la tête */
-function dessinerBulle(g,x,y,txt,mienne){
+/* ---- la bulle au-dessus de la tête : elle se découpe en lignes,
+       apparaît en grandissant et s'efface en douceur ---- */
+const BULLE_LIGNE=17;                            /* caractères par ligne */
+function couperEnLignes(txt){
+  const mots=String(txt).split(/\s+/);
+  const lignes=[];let l='';
+  mots.forEach(m=>{
+    if(m.length>BULLE_LIGNE){                    /* un mot trop long se coupe */
+      if(l){lignes.push(l);l='';}
+      for(let i=0;i<m.length;i+=BULLE_LIGNE)lignes.push(m.slice(i,i+BULLE_LIGNE));
+      return;
+    }
+    if((l+' '+m).trim().length<=BULLE_LIGNE)l=(l?l+' ':'')+m;
+    else{lignes.push(l);l=m;}
+  });
+  if(l)lignes.push(l);
+  return lignes.slice(0,3);                      /* trois lignes au maximum */
+}
+function dessinerBulle(g,x,y,txt,mienne,ne){
+  const lignes=couperEnLignes(txt);
   g.font='700 8px ui-monospace,monospace';
-  const l=Math.min(150,g.measureText(txt).width+14);
-  const h=15, bx=Math.round(x-l/2), by=Math.round(y-66);
-  g.fillStyle=mienne?'rgba(240,207,125,.94)':'rgba(244,241,232,.94)';
-  g.beginPath();g.roundRect(bx,by,l,h,5);g.fill();
+  let larg=0;
+  lignes.forEach(t=>{larg=Math.max(larg,g.measureText(t).width);});
+  const l=Math.round(larg+16), h=10+lignes.length*10;
+  /* elle grandit en apparaissant, et rétrécit en partant */
+  const age=Date.now()-(ne||0);
+  const p2=Math.min(1,age/220);
+  const k=age<220?(1-Math.pow(1-p2,3)):1;
+  const ech=0.6+k*0.4;
+  const bx=Math.round(x-l/2), by=Math.round(y-52-h);
+
+  g.save();
+  g.translate(x,by+h+6);g.scale(ech,ech);g.translate(-x,-(by+h+6));
+  g.globalAlpha=k;
+  /* l'ombre portée */
+  g.fillStyle='rgba(12,22,10,.28)';
+  g.beginPath();g.roundRect(bx+1,by+2,l,h,6);g.fill();
+  /* le fond */
+  g.fillStyle=mienne?'#f6dc9a':'#f7f4ec';
+  g.beginPath();g.roundRect(bx,by,l,h,6);g.fill();
+  /* la pointe, vers la tête */
   g.beginPath();
-  g.moveTo(x-4,by+h);g.lineTo(x,by+h+5);g.lineTo(x+4,by+h);g.closePath();g.fill();
-  g.strokeStyle='rgba(20,26,18,.35)';g.lineWidth=1;
-  g.beginPath();g.roundRect(bx,by,l,h,5);g.stroke();
+  g.moveTo(x-5,by+h-1);g.lineTo(x,by+h+6);g.lineTo(x+5,by+h-1);g.closePath();g.fill();
+  /* le liseré */
+  g.strokeStyle=mienne?'rgba(120,86,20,.5)':'rgba(20,26,18,.28)';
+  g.lineWidth=1;
+  g.beginPath();g.roundRect(bx,by,l,h,6);g.stroke();
+  /* le texte, ligne par ligne */
   g.fillStyle='#1c2418';g.textAlign='center';
-  g.fillText(txt,x,by+10.5);g.textAlign='left';
+  lignes.forEach((t,i)=>g.fillText(t,x,by+14+i*10));
+  g.textAlign='left';
+  g.restore();
 }
 function nettoyerBulles(){
   const t=Date.now();
   for(const [k,b] of BULLES)if(t>b.jusqua)BULLES.delete(k);
 }
+
 
 /* le petit clavier de phrases toutes faites */
 function ouvrirParler(){
@@ -2432,13 +2474,19 @@ function ouvrirParler(){
     autres.length?'À '+autres.join(', '):'PERSONNE À PORTÉE DE VOIX',
     '<div class="phrases">'+PHRASES.map((p,i)=>
       '<button data-dire="'+i+'">'+p+'</button>').join('')+'</div>'+
-    '<div class="libre"><input id="monTexte" maxlength="60" placeholder="Écris autre chose…">'+
-    '<button id="envoyer">Dire</button></div>');
+    '<div class="libre"><input id="monTexte" maxlength="48" placeholder="Écris autre chose…">'+
+    '<button id="envoyer">Dire</button></div>'+
+    '<div class="compteC"><span id="resteC">48</span> caractères restants</div>');
   $('pageFond').querySelectorAll('[data-dire]').forEach(b=>b.onclick=()=>{
     direQuelqueChose(PHRASES[+b.dataset.dire]);
     $('page').classList.remove('on');
   });
   const inp=$('monTexte');
+  if(inp)inp.addEventListener('input',()=>{
+    const r=$('resteC');
+    if(r){const n=48-inp.value.length;r.textContent=n;
+      r.style.color=n<10?'#b9463e':'#a29c92';}
+  });
   if($('envoyer'))$('envoyer').onclick=()=>{
     direQuelqueChose(inp?inp.value:'');
     if(inp)inp.value='';
