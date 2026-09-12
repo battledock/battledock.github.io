@@ -31,6 +31,19 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
   background:#fff;color:#16140f;font:400 13px system-ui}
 .libre button{padding:13px 18px;border-radius:12px;border:0;background:#16140f;
   color:#f6f5f1;font:700 12.5px system-ui}
+#hublot{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:4;
+  width:108px;height:108px;border-radius:50%;padding:5px;
+  background:conic-gradient(#e8c06a,#8a6a2a,#f0cf7d,#7d5f26,#e8c06a,#8a6a2a,#f0cf7d);
+  box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#hublot .verre{position:relative;width:100%;height:100%;border-radius:50%;overflow:hidden;
+  box-shadow:inset 0 0 0 2px #4a3420;background:#35303c}
+#hublot canvas{image-rendering:pixelated;width:100%;height:100%;display:block}
+#hublot .reflet{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:
+  linear-gradient(150deg,rgba(255,255,255,.26) 0%,rgba(255,255,255,.05) 34%,transparent 52%)}
+#hublot .creux{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  box-shadow:inset 0 -8px 18px rgba(10,8,14,.45)}
+#hublot .attache{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:14px;height:9px;
+  border-radius:3px;background:#c9a24a;box-shadow:0 1px 3px rgba(0,0,0,.45)}
 #action{position:fixed;right:14px;bottom:calc(26px + env(safe-area-inset-bottom));z-index:5;
   display:none;flex-direction:column;align-items:center;gap:2px;padding:13px 17px;border-radius:15px;
   border:0;background:#16140f;box-shadow:0 5px 18px rgba(0,0,0,.45);
@@ -179,6 +192,11 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
 <canvas id="cv"></canvas>
 <canvas id="joy"></canvas>
 <div id="hud"><b id="jetons">0</b><i>JETONS</i></div>
+<div id="hublot">
+  <div class="verre"><canvas id="mini" width="216" height="216"></canvas>
+    <span class="reflet"></span><span class="creux"></span></div>
+  <span class="attache"></span>
+</div>
 <button id="action"></button>
 <button id="parler" title="Parler">
   <svg viewBox="0 0 22 18" width="24">
@@ -1877,6 +1895,83 @@ function dessinerHotesse(iX,iY){
   ctx.restore();
 }
 
+/* ================= le plan du casino, dans le hublot ================= */
+let mctx=null;
+const RAYON_PLAN=200;
+function dessinerMini(){
+  const c=$('mini');if(!c||!c.getContext)return;
+  if(!mctx){mctx=c.getContext('2d');mctx.imageSmoothingEnabled=false;}
+  const g=mctx, T=c.width;
+  const k=T/(RAYON_PLAN*2);
+  const px=(x)=>Math.round((x-joueur.x)*k+T/2);
+  const py=(y)=>Math.round((y-joueur.y)*k+T/2);
+  const rect=(x,y,w,h,col)=>{g.fillStyle=col;
+    g.fillRect(px(x),py(y),Math.max(1,Math.round(w*k)),Math.max(1,Math.round(h*k)));};
+
+  /* le fond : ce qu'il y a au-delà des murs */
+  g.fillStyle='#17141c';g.fillRect(0,0,T,T);
+  /* les trois salles */
+  rect(0,0,HALL0,SALLE_H,'#3a463c');                    /* roulette, marbre vert */
+  rect(HALL0,0,HALL1-HALL0,SALLE_H,'#a49e95');          /* le hall, marbre clair */
+  rect(HALL1,0,SALLE_L-HALL1,SALLE_H,'#3a463c');        /* black-jack */
+  /* les tapis */
+  rect(CJ-146,162,292,206,'#274235');
+  rect(CB-146,150,292,210,'#274235');
+  rect(CX-42,SALLE_H-52,84,40,'#6f1f2c');               /* le tapis d'entrée */
+  /* les murs */
+  const MURC='#241a12';
+  rect(0,0,SALLE_L,MUR,MURC);rect(0,SALLE_H-MUR,SALLE_L,MUR,MURC);
+  rect(0,0,MUR,SALLE_H,MURC);rect(SALLE_L-MUR,0,MUR,SALLE_H,MURC);
+  /* les deux cloisons, percées de leur passage */
+  [HALL0,HALL1].forEach(cx=>{
+    rect(cx-MUR/2,0,MUR,PASSAGE[0],MURC);
+    rect(cx-MUR/2,PASSAGE[1],MUR,SALLE_H-PASSAGE[1],MURC);
+  });
+  /* la loge du guichet */
+  rect(LOGE.x-LOGE.w/2,MUR,LOGE.w,LOGE.h,'#5a3a1e');
+  rect(COMPTOIR.x-COMPTOIR.w/2,COMPTOIR.y-6,COMPTOIR.w,10,'#c9a24a');
+  /* les deux tables */
+  const ovale=(cx,cy,rx,ry,col)=>{
+    g.fillStyle=col;g.beginPath();
+    g.ellipse(px(cx),py(cy),Math.max(2,rx*k),Math.max(2,ry*k),0,0,7);g.fill();};
+  ovale(ROULETTE.x,ROULETTE.y+6,ROULETTE.rx,ROULETTE.ry*0.6,'#2f7d58');
+  ovale(TABLE.x,TABLE.y+6,TABLE.rx,TABLE.ry*0.6,'#2f7d58');
+  g.fillStyle='#c9a24a';
+  g.beginPath();g.arc(px(ROULETTE.x-46),py(ROULETTE.y+18),3,0,7);g.fill();
+  /* la sortie */
+  rect(PORTE.x-20,SALLE_H-MUR,40,MUR,'#8a6238');
+
+  /* les autres joueurs */
+  for(const [,a] of AUTRES){
+    const dx=a.x-joueur.x, dy=a.y-joueur.y, d=Math.hypot(dx,dy);
+    let ax,ay,loin=false;
+    if(d<RAYON_PLAN-14){ax=px(a.x);ay=py(a.y);}
+    else{loin=true;const k2=(T/2-14)/d;ax=T/2+dx*k2;ay=T/2+dy*k2;}
+    g.fillStyle='rgba(127,216,232,.25)';g.beginPath();g.arc(ax,ay,11,0,7);g.fill();
+    g.fillStyle='#7fd8e8';g.beginPath();g.arc(ax,ay,5.5,0,7);g.fill();
+    g.strokeStyle='#fff';g.lineWidth=2;g.stroke();
+    if(loin){
+      const a2=Math.atan2(dy,dx);
+      g.save();g.translate(ax,ay);g.rotate(a2);
+      g.fillStyle='#7fd8e8';
+      g.beginPath();g.moveTo(9,0);g.lineTo(3,-5);g.lineTo(3,5);g.closePath();g.fill();
+      g.restore();
+    }
+  }
+  /* toi, au centre */
+  g.fillStyle='rgba(255,255,255,.16)';
+  g.beginPath();g.arc(T/2,T/2,20,0,7);g.fill();
+  g.fillStyle='#c8434f';
+  g.beginPath();g.arc(T/2,T/2,9,0,7);g.fill();
+  g.strokeStyle='#fff';g.lineWidth=3;g.stroke();
+  /* le nom de la salle où tu te trouves */
+  const salle=joueur.x<HALL0?'ROULETTE':(joueur.x>HALL1?'BLACK-JACK':'LE HALL');
+  g.font='700 15px system-ui';g.textAlign='center';
+  g.fillStyle='rgba(10,8,14,.6)';g.fillText(salle,T/2+1,T-15);
+  g.fillStyle='#f2efe4';g.fillText(salle,T/2,T-16);
+  g.textAlign='left';
+}
+
 /* ================= les briques communes aux jeux ================= */
 let MISE=25;
 const MISES=[10,25,50,100];
@@ -2711,7 +2806,7 @@ let t0=performance.now();
   if(maintenant-dernierEnvoi>6000){dernierEnvoi=maintenant;direOuJeSuis('casino');}
   if(fondu>0)fondu=Math.max(0,fondu-dt*2);
   else if(fondu<0)fondu=Math.max(-1.2,fondu-dt*3);
-  majAction();dessiner();dessinerJoy(dt);
+  majAction();dessiner();dessinerMini();dessinerJoy(dt);
 })(t0);
 addEventListener('pagehide',()=>{sauver();
   try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}
