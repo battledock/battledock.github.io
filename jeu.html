@@ -2128,7 +2128,7 @@ function taille(){
   ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
 }
-addEventListener('resize',taille);
+addEventListener('resize',()=>{videCache();taille();});
 
 function preparerMonde(){
   if(SOL)return;
@@ -2169,11 +2169,11 @@ function dessiner(){
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
-  refletsRiviere(ctx,camX,camY);
+  if(QUALITE>=0.5)refletsRiviere(ctx,camX,camY);
   dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
-  dessinerNuages(ctx,camX,camY);          /* leur ombre glisse sur le décor */
-  dessinerPapillons(ctx,camX,camY);
+  if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
+  if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
@@ -2579,6 +2579,54 @@ const rebond  =t=>{const n=7.5625,d=2.75;
   if(t<2.5/d){t-=2.25/d;return n*t*t+.9375;}
   t-=2.625/d;return n*t*t+.984375;};
 
+/* ================= la fluidité =================
+   Trois choses : on ne recalcule pas ce qui ne change pas,
+   on ne dessine pas ce qu'on ne voit pas, et si le téléphone
+   peine, on allège tout seul. */
+let QUALITE=1;                 /* 1 = tout, 0.5 = allégé, 0 = l'essentiel */
+let msMoyen=16, imagesLentes=0, imagesRapides=0;
+function mesurer(ms){
+  msMoyen=msMoyen*0.9+ms*0.1;
+  if(msMoyen>26){
+    imagesLentes++;imagesRapides=0;
+    if(imagesLentes>40&&QUALITE>0){QUALITE=QUALITE===1?0.5:0;imagesLentes=0;}
+  }else if(msMoyen<15){
+    imagesRapides++;imagesLentes=0;
+    if(imagesRapides>240&&QUALITE<1){QUALITE=QUALITE===0?0.5:1;imagesRapides=0;}
+  }
+}
+
+/* les dégradés coûtent cher : on les fabrique une fois */
+const CACHE={};
+function degradeAmbiance(g){
+  const cle='amb'+VW+'x'+VH;
+  if(!CACHE[cle]){
+    const d=g.createRadialGradient(VW/2,VH*0.42,VH*0.2,VW/2,VH*0.5,VH*0.78);
+    d.addColorStop(0,'rgba(255,248,214,.07)');
+    d.addColorStop(1,'rgba(10,24,8,.26)');
+    CACHE[cle]=d;
+  }
+  return CACHE[cle];
+}
+function degradeNuage(g,rx,a){
+  const cle='n'+Math.round(rx)+'_'+a.toFixed(2);
+  if(!CACHE[cle]){
+    /* un dégradé centré en 0 : on le déplace ensuite avec la caméra */
+    const d=g.createRadialGradient(0,0,rx*0.2,0,0,rx);
+    d.addColorStop(0,'rgba(24,44,18,'+a+')');
+    d.addColorStop(1,'rgba(24,44,18,0)');
+    CACHE[cle]=d;
+  }
+  return CACHE[cle];
+}
+function videCache(){for(const k in CACHE)delete CACHE[k];}
+
+/* on borne le nombre de particules : au-delà, les plus vieilles s'effacent */
+const MAX_PARTS=240;
+function bornerParts(){
+  if(PARTS.length>MAX_PARTS)PARTS.splice(0,PARTS.length-MAX_PARTS);
+}
+
 /* ================= le vent, la lumière et la vie =================
    Rien de tout cela ne change le jeu : ça le rend seulement vivant. */
 let VENT=0, VENT_RAF=0;
@@ -2612,11 +2660,10 @@ function dessinerNuages(g,camX,camY){
   NUAGES.forEach(n=>{
     const x=n.x-camX, y=n.y-camY;
     if(x+n.rx<-40||y+n.ry<-40||x-n.rx>VW+40||y-n.ry>VH+40)return;
-    const d=g.createRadialGradient(x,y,n.rx*0.2,x,y,n.rx);
-    d.addColorStop(0,'rgba(24,44,18,'+n.a+')');
-    d.addColorStop(1,'rgba(24,44,18,0)');
-    g.fillStyle=d;
-    g.beginPath();g.ellipse(x,y,n.rx,n.ry,0,0,7);g.fill();
+    g.save();g.translate(x,y);
+    g.fillStyle=degradeNuage(g,n.rx,n.a);
+    g.beginPath();g.ellipse(0,0,n.rx,n.ry,0,0,7);g.fill();
+    g.restore();
   });
   g.restore();
 }
@@ -2685,10 +2732,7 @@ function refletsRiviere(g,camX,camY){
 
 /* ---- une lueur douce vers le centre de l'écran ---- */
 function ambiance(g){
-  const d=g.createRadialGradient(VW/2,VH*0.42,VH*0.2,VW/2,VH*0.5,VH*0.78);
-  d.addColorStop(0,'rgba(255,248,214,.07)');
-  d.addColorStop(1,'rgba(10,24,8,.26)');
-  g.fillStyle=d;g.fillRect(0,0,VW,VH);
+  g.fillStyle=degradeAmbiance(g);g.fillRect(0,0,VW,VH);
 }
 
 /* ================= le monde partagé =================
@@ -3821,13 +3865,16 @@ taille();
 let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
-  const dt=Math.min(.05,(t-t0)/1000);t0=t;
+  const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);t0=t;
   /* micro-arrêt à l'impact : tout se fige un instant, ça donne du poids */
   if(ARRET>0){ARRET-=dt;}
   else{
     majJoueur(dt);majGeste(dt);
   }
-  majVent(dt);majNuages(dt);majPapillons(dt);poussiereDePas();
+  majVent(dt);
+  if(QUALITE>=0.5)majNuages(dt);
+  if(QUALITE>=1)majPapillons(dt);
+  poussiereDePas();bornerParts();
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
   const bp=$('b-parler');
   if(bp){
