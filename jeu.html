@@ -1910,7 +1910,7 @@ let enVol=false, dernierEnvoi=0;
 async function monterEnLigne(force){
   if(enVol)return;
   const now=Date.now();
-  if(!force&&now-dernierEnvoi<8000)return;
+  if(!force&&now-dernierEnvoi<4000)return;
   dernierEnvoi=now;enVol=true;
   try{
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
@@ -2406,14 +2406,20 @@ let derniereEcoute=0, envoiRapide=0;
 async function ecouterLesAutres(){
   if(!e.id)return;
   try{
-    const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,x,y,dir,geste,lieu,maj'+
-      '&maj=gt.'+new Date(Date.now()-45000).toISOString()+'&limit=40',{headers:sbEntetes});
+    /* on prend les 40 dernières lignes, et on juge la fraîcheur les unes
+       par rapport aux autres : l'horloge du téléphone peut être décalée. */
+    const r=await fetch(URL_SB+'/rest/v1/joueurs'+
+      '?select=id,pseudo,apparence,x,y,dir,geste,lieu,maj&order=maj.desc&limit=40',
+      {headers:sbEntetes});
     const d=await r.json();
-    if(!Array.isArray(d))return;
+    if(!Array.isArray(d)||!d.length)return;
+    const tMax=Math.max(...d.map(j=>new Date(j.maj).getTime()));
+    const FRAIS=60000;                              /* une minute de tolérance */
     const vus=new Set();
     d.forEach(j=>{
       if(j.id===e.id)return;
-      if(j.lieu&&j.lieu!=='terrain')return;
+      if(tMax-new Date(j.maj).getTime()>FRAIS)return;   /* trop vieux : il est parti */
+      if(j.lieu==='casino')return;                      /* il est à l'intérieur */
       vus.add(j.id);
       const a=AUTRES.get(j.id)||{x:j.x,y:j.y,pas:0,marche:false,gesteT:0};
       a.cx=j.x;a.cy=j.y;
@@ -3206,7 +3212,7 @@ let t0=performance.now();
   dessinerJoy(dt);
   if(t-dernierMini>90){dernierMini=t;dessinerMini();}   /* la mini-carte, dix fois par seconde */
 })(t0);
-setInterval(()=>{sauver();monterEnLigne();},4000);
+setInterval(()=>{sauver();monterEnLigne(true);},4000);   /* on signale sa présence même immobile */
 </script>
 </body>
 </html>
