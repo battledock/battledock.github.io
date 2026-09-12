@@ -3830,8 +3830,11 @@ function majAction(){
       : 'Il faut une pioche<small>'+n+'</small>';
   }else if(o.t==='arbre'){
     if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
-    else if(o.saigne&&Date.now()-o.saigne>=180000&&!o.coups){
-      b.innerHTML='Récolter<small>RÉSINE · OU COUPE-LE</small>';
+    else if(resinePrete(o)){
+      b.innerHTML='Recueillir<small>LA RÉSINE</small>';
+    }else if(o.saigne&&!o.coups){
+      const m=Math.ceil((180000-(Date.now()-o.saigne))/60000);
+      b.innerHTML='Entaillé<small>RÉSINE DANS '+m+' MIN</small>';
     }else{
       const reste=(e.outils.hacheFer?3:5)-(o.coups||0);
       b.innerHTML='Couper<small>ARBRE · '+reste+' COUP'+(reste>1?'S':'')+'</small>';
@@ -3898,9 +3901,8 @@ function agir(){
   }
   if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
   if(o.t==='arbre'&&!e.outils.hache)return;
-  /* un arbre entaillé dont la résine a coulé : on la récolte, sinon on continue de couper */
-  if(o.t==='arbre'&&o.saigne&&Date.now()-o.saigne>=180000&&!o.coups)
-    return recolterResine(o);
+  /* un arbre dont la résine a coulé : on la recueille, et il reste debout */
+  if(o.t==='arbre'&&resinePrete(o))return recolterResine(o);
   /* le geste dépend de ce qu'on vise */
   if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='four'&&o.t!=='etabli'){
     prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
@@ -4001,9 +4003,16 @@ function miner(o){
 }
 
 /* ---- la résine : on entaille l'arbre au lieu de l'abattre ---- */
+/* La résine coule trois minutes après la première entaille.
+   L'arbre n'a pas besoin d'être abattu : il reste debout et
+   on peut revenir le saigner. */
+const resinePrete=(o)=>o.t==='arbre'&&e.outils.hache&&
+  o.saigne&&Date.now()-o.saigne>=180000;
+
 function recolterResine(o){
   signalerLeMonde(o,'resine','resine');
   o.saigne=Date.now();o.frappe=Date.now();
+  o.coups=0;                                   /* l'entaille cicatrise */
   for(let i=0;i<9;i++){
     const a=-1.1-Math.random()*0.8;
     PARTS.push({x:o.x+(Math.random()-.5)*10,y:o.y-[50,64,79][o.gr||0]*0.3,
@@ -4166,7 +4175,7 @@ function couper(o){
     /* au premier coup, la sève affleure : l'arbre devient saignable */
     if(o.coups===1&&!o.saigne){
       o.saigne=Date.now();                       /* elle mettra trois minutes à couler */
-      texteVolant(o.x,o.y-H*0.5,'la sève commence à perler','#f7cf7d');
+      texteVolant(o.x,o.y-H*0.5,'la sève perle · reviens dans 3 min','#f7cf7d');
     }
   }
 }
