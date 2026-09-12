@@ -2085,8 +2085,23 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
     else if(o.t==='coffre'){
+      /* Une fois vidé, il s'enfonce dans l'herbe et disparaît.
+         Il n'appartient qu'à toi : chacun trouve le sien en arrivant. */
       let k=e.coffreOuvert?1:0;
-      if(e.coffreQuand){const t=Math.min(1,(Date.now()-e.coffreQuand)/500);k=rebond(t)*0.94;}
+      if(e.coffreQuand){
+        const age=Date.now()-e.coffreQuand;
+        if(age<500)k=rebond(Math.min(1,age/500))*0.94;      /* le couvercle s'ouvre */
+        else if(age<2600)k=0.94;                            /* il reste un instant */
+        else{
+          const f=Math.min(1,(age-2600)/900);                /* puis il s'efface */
+          if(f>=1){DECOR.splice(DECOR.indexOf(o),1);continue;}
+          g.save();g.globalAlpha=1-f;
+          g.translate(0,f*9);
+          dessinerCoffre(g,x,y,true,0.94*(1-f*0.35));
+          g.restore();
+          continue;
+        }
+      }
       dessinerCoffre(g,x,y,!!e.coffreOuvert,k);
     }
     else if(o.t==='souche'){
@@ -2206,6 +2221,7 @@ function preparerMonde(){
    pour que tu tombes dessus dès la première partie */
 function poserCoffre(){
   e.coffre=COFFRE_FIXE;                       /* le même coffre, au même endroit */
+  if(e.coffreOuvert)return;                   /* déjà vidé : il n'y en a plus */
   /* le coffre reste sur la carte même une fois vidé : couvercle ouvert */
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');
   DECOR.push({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
@@ -3297,6 +3313,10 @@ function agir(){
     eclats(o.x,o.y-14,14,'#f0cf7d',1.2);
     secouer(0.35);
     texteVolant(o.x,o.y-30,'pioche !','#f0cf7d');
+    setTimeout(()=>{                            /* il s'efface dans l'herbe */
+      eclats(o.x,o.y-6,10,'#8a6238',0.9);
+      texteVolant(o.x,o.y-20,'le coffre se referme','#c6b38a');
+    },2600);
     try{navigator.vibrate&&navigator.vibrate([10,40,20]);}catch(x){}
     ouvrirPage('Le coffre','TU L’AS OUVERT',
       '<div class="recette"><span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
