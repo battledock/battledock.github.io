@@ -71,7 +71,9 @@ html,body{height:100%;overflow:hidden;background:#0d0a0e;font-family:system-ui,s
   color:rgba(255,255,255,.28);padding:6px 0}
 .miseP{display:flex;align-items:center;gap:8px;padding-top:8px}
 .miseP span{font:600 8px system-ui;letter-spacing:1.4px;color:rgba(255,255,255,.45)}
-.vide3{text-align:center;font:400 13px/1.6 Georgia,serif;color:rgba(255,255,255,.7);padding:42px 14px}
+.vide3{text-align:center;font:400 15px/1.6 Georgia,serif;color:rgba(255,255,255,.85);padding:40px 14px}
+.vide3 span{display:block;font:400 12px/1.6 system-ui;color:rgba(255,255,255,.5);margin-top:8px}
+.actes.petits button{font:600 10.5px system-ui}
 .issue{text-align:center;font:600 12.5px system-ui;padding:10px;border-radius:12px;margin-bottom:12px}
 .issue b{display:block;font:400 20px Georgia,serif;margin-top:4px}
 .issue.bon{background:#eaf7ee;color:#1f7a45}
@@ -1211,13 +1213,56 @@ function tableBJ(g,x,y){
     g.fillStyle=c[1];g.beginPath();g.arc(x+T.rx-37+i*9,y+15,3.6,0,7);g.fill();
     g.fillStyle=c[0];g.beginPath();g.arc(x+T.rx-37+i*9,y+15,2.4,0,7);g.fill();
   });
-  /* deux cartes posées, pour montrer que la table est en jeu */
-  [[-9,36,-8],[2,38,7]].forEach(([dx,dy,rot])=>{
+  /* des jetons posés sur deux des trois places */
+  [[-46,34],[46,34]].forEach(([dx,dy],k)=>{
+    const c=k?['#4a8fd4','#255184']:['#dc5044','#8f2a22'];
+    for(let i=0;i<2+k;i++){
+      g.fillStyle=i%2?c[0]:c[1];
+      g.beginPath();g.ellipse(x+dx,y+dy-i*2.4,5.4,2.4,0,0,7);g.fill();
+      g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=.6;
+      g.beginPath();g.ellipse(x+dx,y+dy-i*2.4,4,1.6,0,0,7);g.stroke();
+    }
+  });
+  /* deux cartes en éventail à la place du milieu */
+  [[-7,44,-10],[3,46,8]].forEach(([dx,dy,rot])=>{
     g.save();g.translate(x+dx,y+dy);g.rotate(rot*Math.PI/180);
-    g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.roundRect(-4,-5,10,13,1.5);g.fill();
-    g.fillStyle='#f7f4ec';g.beginPath();g.roundRect(-5,-6,10,13,1.5);g.fill();
+    g.fillStyle='rgba(0,0,0,.32)';g.beginPath();g.roundRect(-4,-5,11,14,1.6);g.fill();
+    g.fillStyle='#f7f4ec';g.beginPath();g.roundRect(-5,-6,11,14,1.6);g.fill();
+    g.fillStyle='#9c3232';g.fillRect(-3.4,-4.4,2.6,3.4);
     g.restore();
   });
+}
+
+/* ---- une chaise de joueur, vue de dessus ---- */
+function chaiseBJ(g,x,y){
+  g.fillStyle='rgba(0,0,0,.38)';
+  g.beginPath();g.ellipse(x+1.5,y+4,11,5,0,0,7);g.fill();
+  const d=g.createLinearGradient(0,y+3,0,y+11);
+  d.addColorStop(0,'#7d2434');d.addColorStop(1,'#4f1420');
+  g.fillStyle=d;g.beginPath();g.roundRect(x-10,y+3,20,6,3);g.fill();
+  const a=g.createRadialGradient(x-3,y-3,2,x,y,11);
+  a.addColorStop(0,'#a03a4a');a.addColorStop(.65,'#7d2434');a.addColorStop(1,'#54141f');
+  g.fillStyle=a;g.beginPath();g.ellipse(x,y,10,7,0,0,7);g.fill();
+  g.strokeStyle=orDe(g,x-10,y-7,x+10,y+7);g.lineWidth=1.2;g.stroke();
+  g.save();g.globalAlpha=.2;g.fillStyle='#fff';
+  g.beginPath();g.ellipse(x-3,y-2.2,4.4,2.2,0,0,7);g.fill();g.restore();
+}
+
+/* ---- la lampe suspendue : on n'en voit que le halo et l'abat-jour ---- */
+function lampeBJ(g,x,y){
+  const t=Date.now()/1000, br=.9+Math.sin(t*1.4)*0.08;
+  const h=g.createRadialGradient(x,y,4,x,y,70);
+  h.addColorStop(0,'rgba(255,232,180,'+(0.26*br)+')');
+  h.addColorStop(1,'rgba(255,232,180,0)');
+  g.fillStyle=h;g.beginPath();g.arc(x,y,70,0,7);g.fill();
+  const a=g.createRadialGradient(x-5,y-5,2,x,y,18);
+  a.addColorStop(0,'#4f9e72');a.addColorStop(.6,'#2f7050');a.addColorStop(1,'#1c4a33');
+  g.fillStyle=a;g.beginPath();g.ellipse(x,y,18,11,0,0,7);g.fill();
+  g.strokeStyle=orDe(g,x-18,y-11,x+18,y+11);g.lineWidth=1.6;g.stroke();
+  g.fillStyle='rgba(255,255,255,.16)';
+  g.beginPath();g.ellipse(x-5,y-3,6,3,0,0,7);g.fill();
+  g.fillStyle='rgba(255,244,214,'+br+')';
+  g.beginPath();g.arc(x,y,3.4,0,7);g.fill();
 }
 
 /* le comptoir du guichet : il ferme la loge */
@@ -1401,6 +1446,8 @@ function bloque(x,y){
     const dx=(x-TABLE.x)/(TABLE.rx+9), dy=(y-(TABLE.y-4))/(TABLE.ry+9);
     if(y<TABLE.y+12&&dx*dx+dy*dy<1)return true;
     if(y<MUR+30)return true;
+    for(const [cx,cy] of [[TABLE.x-52,316],[TABLE.x,326],[TABLE.x+52,316]])
+      if(Math.hypot(cx-x,(cy-y)*1.5)<13)return true;
     if(y>SALLE_H-MUR-10)return true;
     return false;
   }
@@ -1473,7 +1520,7 @@ function dessiner(){
 
   /* les halos des lustres, au sol */
   halo(ctx,CX-iX,86-iY,72,.2);                   /* la lampe de la loge */
-  halo(ctx,TABLE.x-iX,TABLE.y-6-iY,120,.2);      /* le lustre au-dessus de la table */
+  lampeBJ(ctx,TABLE.x-iX,TABLE.y-34-iY);          /* la lampe au-dessus du tapis */
   halo(ctx,CX-iX,330-iY,100,.17);
   halo(ctx,MUR+60-iX,470-iY,56,.1);
   halo(ctx,SALLE_L-MUR-60-iX,470-iY,56,.1);
@@ -1482,6 +1529,9 @@ function dessiner(){
   const objets=[
     {y:186,f:()=>dessinerCroupier(iX,iY)},
     {y:250,f:()=>tableBJ(ctx,TABLE.x-iX,TABLE.y-iY)},
+    {y:318,f:()=>{chaiseBJ(ctx,TABLE.x-52-iX,316-iY);
+                  chaiseBJ(ctx,TABLE.x-iX,326-iY);
+                  chaiseBJ(ctx,TABLE.x+52-iX,316-iY);}},
     {y:62,f:()=>etageres(ctx,CX-iX,62-iY,LOGE.w-18)},
     {y:96,f:()=>chaise(ctx,CX-iX,96-iY)},
     {y:106,f:()=>dessinerHotesse(iX,iY)},
@@ -1640,11 +1690,15 @@ function resterBJ(){
 function finirBJ(issue){
   BJ.phase='fin';BJ.issue=issue;
   const m=BJ.mise||MISE;
-  if(issue==='blackjack'){BJ.gain=Math.round(m*2.5);BJ.msg='Black-jack ! Payé 3 pour 2.';}
-  else if(issue==='gagne'){BJ.gain=m*2;BJ.msg='Gagné.';}
-  else if(issue==='egalite'){BJ.gain=m;BJ.msg='Égalité, ta mise revient.';}
-  else if(issue==='brule'){BJ.gain=0;BJ.msg='Brûlé à '+valeurBJ(BJ.joueur)+'.';}
-  else {BJ.gain=0;BJ.msg='Le croupier l’emporte.';}
+  const vj=valeurBJ(BJ.joueur), vc=valeurBJ(BJ.croupier);
+  if(issue==='blackjack'){BJ.gain=Math.round(m*2.5);BJ.msg='21 du premier coup !';}
+  else if(issue==='gagne'){
+    BJ.gain=m*2;
+    BJ.msg=vc>21?'Le croupier a dépassé 21.':'Tu as '+vj+', lui '+vc+'.';}
+  else if(issue==='egalite'){BJ.gain=m;BJ.msg='Même total. Ta mise revient.';}
+  else if(issue==='brule'){BJ.gain=0;BJ.msg='Tu as dépassé 21.';}
+  else {BJ.gain=0;BJ.msg=vc===21&&BJ.croupier.length===2
+        ?'Le croupier avait 21.':'Il a '+vc+', toi '+vj+'.';}
   if(BJ.gain){
     if(issue==='egalite'){e.jetons+=BJ.gain;majPageJetons();}
     else gagne(BJ.gain);
@@ -1669,12 +1723,13 @@ function rendreBJ(){
   const vj=valeurBJ(BJ.joueur);
   let corps='<div class="tapis">';
   if(BJ.phase==='mise'){
-    corps+='<div class="vide3">Pose ta mise et le croupier distribue.</div>';
+    corps+='<div class="vide3">Choisis ta mise.<br><span>Le croupier donne deux cartes,'+
+      ' puis tu tires autant que tu veux.</span></div>';
   }else{
-    corps+='<div class="rang"><span class="qui">CROUPIER</span>'+
+    corps+='<div class="rang"><span class="qui">LUI</span>'+
       '<span class="mains">'+BJ.croupier.map((k,i)=>carteSVG(k,cacher&&i===1)).join('')+'</span>'+
-      '<span class="tot'+(vc>21?' mal':'')+'">'+(cacher?vc+'+':vc)+'</span></div>';
-    corps+='<div class="arc">LE BLACK-JACK PAIE 3 POUR 2</div>';
+      '<span class="tot'+(vc>21?' mal':'')+'">'+(cacher?vc+'+?':vc)+'</span></div>';
+    corps+='<div class="arc">'+(enJeu?'À TOI DE JOUER':'21 DU PREMIER COUP PAIE UNE FOIS ET DEMIE')+'</div>';
     corps+='<div class="rang"><span class="qui">TOI</span>'+
       '<span class="mains'+(BJ.issue==='brule'?' brule':'')+'">'+
         BJ.joueur.map(k=>carteSVG(k,false)).join('')+'</span>'+
@@ -1687,16 +1742,16 @@ function rendreBJ(){
   else if(BJ.msg)corps+='<div class="issue mauvais">'+BJ.msg+'</div>';
 
   if(BJ.phase==='mise'||fini){
-    corps+=barreMise()+'<button class="go" id="bjGo">Distribuer · '+MISE+' jetons</button>';
+    corps+=barreMise()+'<button class="go" id="bjGo">Jouer · '+MISE+' jetons</button>';
   }else{
     corps+='<div class="actes">'+
-      '<button class="gros" id="bjT">Tirer</button>'+
-      '<button class="gros creux" id="bjR">Rester</button></div>'+
+      '<button class="gros" id="bjT">Une carte de plus</button>'+
+      '<button class="gros creux" id="bjR">Je m’arrête</button></div>'+
       '<div class="actes petits">'+
-      '<button id="bjD"'+((BJ.joueur.length===2&&e.jetons>=BJ.mise)?'':' disabled')+'>Doubler</button>'+
-      '</div>';
+      '<button id="bjD"'+((BJ.joueur.length===2&&e.jetons>=BJ.mise)?'':' disabled')+
+        '>Doubler la mise et tirer une seule carte</button></div>';
   }
-  ouvrirPage('Black-jack','LE CROUPIER TIRE À 16, RESTE À 17',corps,true);
+  ouvrirPage('Black-jack','APPROCHE 21 SANS DÉPASSER',corps,true);
   if($('bjGo')){brancherMise(rendreBJ);$('bjGo').onclick=donnerBJ;}
   if($('bjT'))$('bjT').onclick=carteBJ;
   if($('bjR'))$('bjR').onclick=resterBJ;
