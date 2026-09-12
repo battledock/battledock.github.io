@@ -992,7 +992,46 @@ let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolt
        outils:{},jetons:0};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 if(!e.jetons)e.jetons=0;
-function sauver(){try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}}
+function sauver(){
+  e.quand=Date.now();
+  try{localStorage.setItem(CLE,JSON.stringify(e));}catch(x){}
+  sauvSale=true;
+}
+/* ---- la partie part sur le serveur : jetons, sac, outils ---- */
+const A_GARDER=['sac','jetons','outils','sacMax','score','recolte','casses',
+                'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
+let derniereSauv=0, sauvEnVol=false, sauvSale=false;
+function etatAGarder(){
+  const o={};A_GARDER.forEach(k=>{if(e[k]!==undefined)o[k]=e[k];});
+  o.quand=Date.now();return o;
+}
+async function envoyerSauvegarde(force){
+  if(!e.id||sauvEnVol)return;
+  const now=Date.now();
+  if(!force&&(!sauvSale||now-derniereSauv<10000))return;
+  sauvEnVol=true;derniereSauv=now;sauvSale=false;
+  try{
+    await fetch(URL_SB+'/rest/v1/sauvegardes',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates,return=minimal'}),
+      body:JSON.stringify([{id:e.id,etat:etatAGarder(),maj:new Date().toISOString()}])});
+  }catch(x){sauvSale=true;}
+  sauvEnVol=false;
+}
+async function recupererSauvegarde(){
+  if(!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/sauvegardes?id=eq.'+encodeURIComponent(e.id)+
+      '&select=etat',{headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d)||!d[0]||!d[0].etat)return;
+    const dist=d[0].etat;
+    if((dist.quand||0)>(e.quand||0)){
+      A_GARDER.forEach(k=>{if(dist[k]!==undefined)e[k]=dist[k];});
+      if(!e.sac)e.sac={};if(!e.outils)e.outils={};
+      majJetons();
+    }
+  }catch(x){}
+}
 function majJetons(){$('jetons').textContent=e.jetons;}
 majJetons();
 
@@ -1125,6 +1164,7 @@ function dessinerUn(a,iX,iY){
   if(b)dessinerBulle(ctx,x,y,b.txt,false,b.ne);
 }
 direOuJeSuis('casino');
+recupererSauvegarde();
 
 /* ================= le hall, vu de dessus =================
    Sol plat, murs en bordure, meubles vus d'au-dessus.
@@ -1818,7 +1858,7 @@ function majJoueur(dt){
 }
 let sortie=false, fondu=1;
 function sortir(){
-  sauver();direOuJeSuis('terrain');
+  sauver();envoyerSauvegarde(true);direOuJeSuis('terrain');
   fondu=-1;                                    /* on ferme au noir, puis on s'en va */
   setTimeout(()=>{location.href='jeu.html';},420);
 }
@@ -2853,7 +2893,7 @@ let t0=performance.now();
   if(!pageOuverte()&&!sortie)majJoueur(dt);
   majAutres(dt);
   const maintenant=Date.now();
-  ouvrirCanal();bipPosition();
+  ouvrirCanal();bipPosition();envoyerSauvegarde();
   const bp=$('parler');
   if(bp){
     const proche=[...AUTRES.values()].some(a=>Math.hypot(a.x-joueur.x,a.y-joueur.y)<120);
@@ -2873,7 +2913,7 @@ let t0=performance.now();
   if(t-dernierPlan>90){dernierPlan=t;dessinerMini();}
   dessinerJoy(dt);
 })(t0);
-addEventListener('pagehide',()=>{sauver();
+addEventListener('pagehide',()=>{sauver();envoyerSauvegarde(true);
   try{CANAL&&CANAL.send({type:'broadcast',event:'sortie',payload:{id:e.id}});}catch(x){}
   /* si on ferme la page dans le casino, on ne reste pas invisible pour toujours */
   try{navigator.sendBeacon&&navigator.sendBeacon(URL_SB+'/rest/v1/joueurs?apikey='+CLE_SB,
