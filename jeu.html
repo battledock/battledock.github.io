@@ -1340,8 +1340,8 @@ function dessinerPont(g,cx,cy){
     R(L-2,dy-7,5,12,'#3d2a17');
     R(L-2,dy-7,5,2,'#7d5934');
   };
-  rambarde(-H-5);                                 /* côté nord */
-  rambarde(H+2);                                  /* côté sud */
+  rambarde(-H-3);                                 /* côté nord */
+  rambarde(H+1);                                  /* côté sud */
 
   /* les planches d'accès, sur chaque berge */
   R(-L-6,-H+2,6,H*2-4,'#7d5934');
@@ -1424,16 +1424,20 @@ function felures(g,x,y,part){
 /* ---- argile : une veine grise et humide, sur les berges ---- */
 function dessinerArgile(g,x,y,gr){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,16,4.5,0,0,7);g.fill();
-  R(-15,-6,30,6,'#6f7a80');
-  R(-15,-6,30,2,'#88939a');
-  R(-12,-11,23,5,'#7d888f');
-  R(-12,-11,23,2,'#95a0a7');
-  R(-7,-15,13,4,'#8b969d');
-  R(-7,-15,13,1,'#a3aeb5');
-  /* l'eau qui perle dans les creux */
-  R(-9,-8,5,1,'#9fd0dd');R(2,-5,6,1,'#9fd0dd');R(-3,-12,4,1,'#9fd0dd');
-  R(-13,-3,4,1,'#59636a');R(6,-9,4,1,'#59636a');
+  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,17,4.5,0,0,7);g.fill();
+  /* de la terre rouge, en couches, comme une berge entaillée */
+  R(-16,-6,32,6,'#9c4a32');
+  R(-16,-6,32,2,'#bb5e42');
+  R(-13,-12,26,6,'#ab553a');
+  R(-13,-12,26,2,'#c76b4c');
+  R(-8,-17,16,5,'#bb5e42');
+  R(-8,-17,16,2,'#d47a58');
+  /* les stries laissées par ceux qui ont creusé */
+  R(-11,-10,7,1,'#7d3826');R(1,-15,6,1,'#7d3826');
+  R(-6,-4,8,1,'#7d3826');R(6,-9,5,1,'#7d3826');
+  /* quelques luisances d'humidité */
+  R(-11,-11,4,1,'#e0977a');R(2,-16,3,1,'#e0977a');
+  R(8,-5,3,1,'#e0977a');
 }
 
 /* ---- roseaux : hautes tiges au bord de l'eau ---- */
@@ -1711,20 +1715,26 @@ const rivX=(y)=>330+Math.sin(y/150)*78+Math.sin(y/47)*12;
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
 const PONTS=[210,766];                           /* deux ponts de planches */
-const PONT_DEMI=17;                              /* demi-longueur du tablier, dans l'axe nord-sud */
+/* Le personnage fait 40 px de haut : si le pont est plus court que lui,
+   son corps dépasse par-dessus la rambarde et on croit qu'il est dans l'eau.
+   Le tablier fait donc 62 px du nord au sud. */
+const PONT_DEMI=33;
 function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
 /* le tablier suit la rivière : on est dessus si on est dans sa largeur */
+/* Le pont, vu par les collisions : un couloir de planches entre deux
+   barrières pleines. On n'y entre que par l'est ou par l'ouest. */
+const PONT_LARGE=RIV_LARGE+16;                 /* demi-longueur du tablier, d'une berge à l'autre */
+const PONT_PASSAGE=9;                          /* demi-largeur du couloir où l'on marche */
+const PONT_CENTRE=17;                          /* on marche au sud du tablier : la tête reste dessus */
 function surTablier(x,y){
-  /* on est sur les planches : entre les deux rambardes, et pas au-delà */
-  return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI-1&&
-    Math.abs(x-rivX(py))<RIV_LARGE+16);
+  return PONTS.some(py=>Math.abs(y-(py+PONT_CENTRE))<=PONT_PASSAGE&&
+    Math.abs(x-rivX(py))<PONT_LARGE);
 }
-/* la rambarde est en dur : on ne la franchit pas */
 function contreRambarde(x,y){
   return PONTS.some(py=>{
-    if(Math.abs(x-rivX(py))>RIV_LARGE+18)return false;
-    const d=y-py;
-    return (d>=-PONT_DEMI-10&&d<=-PONT_DEMI+1)||(d>=PONT_DEMI-1&&d<=PONT_DEMI+11);
+    if(Math.abs(x-rivX(py))>PONT_LARGE+4)return false;
+    const d=Math.abs(y-(py+PONT_CENTRE));
+    return d>PONT_PASSAGE&&d<=PONT_DEMI+14;    /* la barrière, des deux côtés */
   });
 }
 const surGue=surPont;                            /* on ne traverse que par les ponts */
@@ -3270,7 +3280,7 @@ function recolterResine(o){
 
 /* ---- ramasser une ressource posée au sol ---- */
 const RECOLTES={
- argile:      {nom:'argile',      q:[2,3], pts:2, col:['#8b969d','#6f7a80'], vole:false},
+ argile:      {nom:'argile',      q:[2,3], pts:2, col:['#bb5e42','#9c4a32'], vole:false},
  roseaux:     {nom:'roseaux',     q:[2,4], pts:2, col:['#5e8a47','#8a6238'], vole:true},
  champignons: {nom:'champignons', q:[1,3], pts:3, col:['#a83a3a','#e8dcc0'], vole:false},
  herbes:      {nom:'herbes',      q:[2,3], pts:2, col:['#4a944a','#c98fe0'], vole:true},
@@ -3447,9 +3457,9 @@ pioche:'<rect x="7" y="4" width="2" height="9" fill="#8a6238"/><rect x="7" y="4"
 hache:'<rect x="7" y="3" width="2" height="10" fill="#8a6238"/><rect x="7" y="3" width="1" height="10" fill="#a5764a"/>'+
       '<rect x="8" y="2" width="5" height="6" fill="#7b8288"/><rect x="8" y="2" width="5" height="1" fill="#a2a9b0"/>'+
       '<rect x="12" y="3" width="2" height="4" fill="#c0c7cd"/><rect x="6" y="2" width="2" height="5" fill="#5f666c"/>',
-argile:'<rect x="1" y="8" width="14" height="5" fill="#6f7a80"/><rect x="1" y="8" width="14" height="2" fill="#88939a"/>'+
-      '<rect x="3" y="5" width="10" height="3" fill="#7d888f"/><rect x="3" y="5" width="10" height="1" fill="#95a0a7"/>'+
-      '<rect x="6" y="3" width="5" height="2" fill="#8b969d"/><rect x="4" y="9" width="3" height="1" fill="#9fd0dd"/>',
+argile:'<rect x="1" y="8" width="14" height="5" fill="#9c4a32"/><rect x="1" y="8" width="14" height="2" fill="#bb5e42"/>'+
+      '<rect x="3" y="5" width="10" height="3" fill="#ab553a"/><rect x="3" y="5" width="10" height="1" fill="#c76b4c"/>'+
+      '<rect x="6" y="3" width="5" height="2" fill="#bb5e42"/><rect x="4" y="9" width="4" height="1" fill="#7d3826"/>',
  roseaux:'<rect x="3" y="4" width="2" height="10" fill="#5e8a47"/><rect x="7" y="2" width="2" height="12" fill="#5e8a47"/>'+
       '<rect x="11" y="5" width="2" height="9" fill="#5e8a47"/><rect x="3" y="4" width="1" height="10" fill="#7db35d"/>'+
       '<rect x="6" y="0" width="4" height="4" fill="#8a6238"/><rect x="6" y="0" width="4" height="1" fill="#a5764a"/>',
