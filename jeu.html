@@ -38,6 +38,43 @@ body{overflow:hidden}
 .libre input{flex:1;min-width:0;padding:13px 12px;border-radius:12px;border:1px solid #5c452e;
   background:#241a12;color:#f2e6cc;font:400 13px system-ui}
 .libre input::placeholder{color:#8d7d64}
+
+/* ---- la page Bâtir ---- */
+.terrainCarte{border:1px solid #5c452e;border-radius:14px;padding:12px 13px;margin-bottom:14px;
+  background:linear-gradient(180deg,#3d2c1e,#31241a)}
+.tRang{display:flex;align-items:baseline;justify-content:space-between}
+.tNom{font:700 9px system-ui;letter-spacing:1.6px;color:#f0cf7d}
+.tPos{font:600 9.5px ui-monospace,monospace;color:#8d7d64}
+.tPetit{font:400 10.5px system-ui;color:#c6b38a}
+.tEtat{font:700 9px system-ui;letter-spacing:.8px}
+.tEtat.ok{color:#9fdfb8}
+.tEtat.loin{color:#e0b07a}
+.tJauge{height:5px;border-radius:3px;background:#241a12;margin:9px 0 7px;overflow:hidden}
+.tJauge i{display:block;height:100%;background:linear-gradient(90deg,#8a6238,#f0cf7d)}
+.familles{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px}
+.familles button{flex:0 0 auto;padding:8px 13px;border-radius:11px;border:1px solid #5c452e;
+  background:#3d2c1e;color:#c6b38a;font:600 11px system-ui;white-space:nowrap}
+.familles button.on{background:#f0cf7d;border-color:#f0cf7d;color:#2b1d12}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.plan{padding:0 0 9px;border-radius:13px;border:1px solid #5c452e;overflow:hidden;
+  background:linear-gradient(180deg,#3d2c1e,#31241a);display:flex;flex-direction:column;
+  align-items:center;gap:6px}
+.plan:active{transform:translateY(2px)}
+.plan.gris{opacity:.5}
+.plan .vue{width:100%;height:70px;overflow:hidden;border-bottom:1px solid #5c452e}
+.plan canvas{image-rendering:pixelated;display:block}
+.plan .nom{font:600 12px system-ui;color:#f2e6cc}
+.plan .cout{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.mat{display:inline-flex;align-items:center;gap:3px;font:600 10px system-ui;color:#c6b38a}
+.mat svg{image-rendering:pixelated}
+.mat.manque{color:#e08a8a}
+.mat.manque svg{opacity:.5}
+.rappel{font:400 10.5px/1.5 system-ui;color:#8d7d64;margin-top:14px;text-align:center}
+.attente{display:flex;flex-direction:column;align-items:center;gap:10px;padding:30px 0;
+  font:400 12px system-ui;color:#8d7d64}
+.attente i{width:22px;height:22px;border-radius:50%;border:2px solid #5c452e;
+  border-top-color:#f0cf7d;animation:tourne 0.9s linear infinite}
+@keyframes tourne{to{transform:rotate(360deg)}}
 .compteC{text-align:right;font:600 10px system-ui;color:#8d7d64;margin-top:8px}
 .panApercu{border:2px solid;border-radius:12px;padding:16px 14px;text-align:center;margin-bottom:14px}
 .panApercu b{display:block;font:700 15px/1.4 system-ui;word-break:break-word}
@@ -3091,37 +3128,114 @@ function dessinerParcelles(g,camX,camY){
 
 /* ---- bâtir : on choisit, puis on pose ---- */
 let planChoisi=null, modeBatir=false;
+/* ================= la page Bâtir ================= */
+const PIX=Math.max(1,Math.min(3,Math.floor((typeof window!=='undefined'&&window.devicePixelRatio)||1)));
+const FAMILLES=[
+ {id:'tous',   nom:'Tout'},
+ {id:'feu',    nom:'Chaleur',   plans:['feu','torchere']},
+ {id:'abri',   nom:'Abri',      plans:['cabane','coffre']},
+ {id:'jardin', nom:'Jardin',    plans:['jardin','cloture','puits']},
+ {id:'confort',nom:'Confort',   plans:['banc','table','statue']}
+];
+let familleVue='tous';
+
+/* un aperçu dessiné de la construction, dans une vignette */
+function vignette(cv,id){
+  if(!cv||!cv.getContext)return;
+  const g=cv.getContext('2d');
+  const d=Math.max(1,Math.floor(window.devicePixelRatio||1));
+  g.setTransform(d,0,0,d,0,0);
+  g.imageSmoothingEnabled=false;
+  const L=cv.width/d, H=cv.height/d;
+  g.clearRect(0,0,L,H);
+  /* un carré d'herbe, pour poser l'objet */
+  g.fillStyle='#74a851';g.fillRect(0,0,L,H);
+  for(let i=0;i<40;i++){
+    const x=alea(i*1.7)*L, y=alea(i*3.1)*H;
+    g.fillStyle=alea(i*5.3)<.5?'#6b9a4a':'#7fb45a';
+    g.fillRect(x|0,y|0,2,3);
+  }
+  const ech=id==='cabane'?0.8:1;
+  g.save();
+  g.translate(L/2,H-11);
+  g.scale(ech,ech);
+  try{dessinerBati(g,{t:id,gr:0},0,0);}catch(x){}
+  g.restore();
+}
+
 function ouvrirBatir(){
   if(!MA_PARCELLE){
     ouvrirPage('Bâtir','TON TERRAIN',
-      '<div class="vide">On te cherche un terrain…</div>');
+      '<div class="attente"><i></i><span>On te cherche un terrain…</span></div>');
     lireMaParcelle().then(()=>ouvrirBatir());
     return;
   }
   const miennes=[...BATI.values()].filter(c=>c.proprietaire===e.id).length;
-  let corps='<div class="mot">Ton terrain fait 152 pas de côté. '+
-    'Personne d’autre ne peut y bâtir ni y casser quoi que ce soit.</div>';
-  corps+='<div class="titreP">'+miennes+' CONSTRUCTION'+(miennes>1?'S':'')+' · 60 AU MAXIMUM</div>';
-  corps+=PLANS.map(pl=>{
+  const loin=Math.round(Math.hypot(joueur.x-MA_PARCELLE.cx,joueur.y-MA_PARCELLE.cy));
+  const chez=chezMoi(joueur.x,joueur.y+16);
+
+  /* le bandeau du haut : où tu es, ce que tu as déjà bâti */
+  let corps='<div class="terrainCarte">'+
+    '<div class="tRang"><span class="tNom">TON TERRAIN</span>'+
+      '<span class="tPos">'+MA_PARCELLE.cx+' · '+MA_PARCELLE.cy+'</span></div>'+
+    '<div class="tJauge"><i style="width:'+Math.min(100,miennes/60*100)+'%"></i></div>'+
+    '<div class="tRang"><span class="tPetit">'+miennes+' construction'+(miennes>1?'s':'')+
+      ' sur 60</span>'+
+      '<span class="tEtat '+(chez?'ok':'loin')+'">'+
+      (chez?'tu es chez toi':(loin<400?'à '+loin+' pas':'loin de chez toi'))+'</span></div>'+
+    '</div>';
+
+  /* les familles */
+  corps+='<div class="familles">'+FAMILLES.map(f=>
+    '<button data-fam="'+f.id+'" class="'+(f.id===familleVue?'on':'')+'">'+f.nom+'</button>'
+  ).join('')+'</div>';
+
+  /* les plans, en vignettes */
+  const fam=FAMILLES.find(f=>f.id===familleVue);
+  const liste=familleVue==='tous'?PLANS:PLANS.filter(p=>fam.plans.includes(p.id));
+  corps+='<div class="plans">'+liste.map(pl=>{
     const ok=Object.entries(pl.cout).every(([k,n])=>combien(k)>=n);
-    const manque=Object.entries(pl.cout).filter(([k,n])=>combien(k)<n)
-      .map(([k,n])=>(n-combien(k))+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k));
-    return '<div class="ech'+(ok?'':' gris')+'" style="border-left-color:'+
-      (ok?'#8a6238':'#d8d4ca')+'">'+
-      '<span class="tx"><b>'+pl.nom+'</b><span'+(ok?'':' style="color:#b9463e"')+'>'+
-        (ok?Object.entries(pl.cout).map(([k,n])=>n+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k)).join(' · ')
-           :'il manque '+manque.join(', '))+'</span></span>'+
-      '<button data-plan="'+pl.id+'"'+(ok?'':' disabled')+'>Poser</button></div>';
-  }).join('');
+    const cout=Object.entries(pl.cout).map(([k,n])=>{
+      const assez=combien(k)>=n;
+      return '<span class="mat'+(assez?'':' manque')+'">'+
+        '<svg viewBox="0 0 16 16" width="15">'+(ICONES[k]||'')+'</svg>'+
+        '<b>'+n+'</b></span>';
+    }).join('');
+    return '<button class="plan'+(ok?'':' gris')+'" data-plan="'+pl.id+'">'+
+      '<span class="vue"><canvas data-vue="'+pl.id+'" width="'+(96*PIX)+'" height="'+(70*PIX)+
+        '" style="width:96px;height:70px"></canvas></span>'+
+      '<span class="nom">'+pl.nom+'</span>'+
+      '<span class="cout">'+cout+'</span>'+
+      '</button>';
+  }).join('')+'</div>';
+
+  corps+='<div class="rappel">Tu ne peux bâtir que sur ton terrain. '+
+    'Choisis, puis place-toi où tu veux poser.</div>';
   corps+='<div class="res" id="res"></div>';
+
   ouvrirPage('Bâtir','CHEZ TOI',corps);
+
+  /* on peint les vignettes */
+  $('page2Fond').querySelectorAll('[data-vue]').forEach(cv=>vignette(cv,cv.dataset.vue));
+  $('page2Fond').querySelectorAll('[data-fam]').forEach(b=>b.onclick=()=>{
+    familleVue=b.dataset.fam;ouvrirBatir();});
   $('page2Fond').querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{
-    planChoisi=PLANS.find(p=>p.id===b.dataset.plan);
-    modeBatir=true;
+    const pl=PLANS.find(p=>p.id===b.dataset.plan);
+    const ok=Object.entries(pl.cout).every(([k,n])=>combien(k)>=n);
+    if(!ok){
+      const r=$('res');
+      if(r)r.innerHTML='Il te manque '+Object.entries(pl.cout)
+        .filter(([k,n])=>combien(k)<n)
+        .map(([k,n])=>(n-combien(k))+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k)).join(', ')+'.';
+      return;
+    }
+    planChoisi=pl;modeBatir=true;
     $('page2').classList.remove('on');fermeA=Date.now();
-    texteVolant(joueur.x,joueur.y-40,'place-toi et pose','#f0cf7d');
+    texteVolant(joueur.x,joueur.y-40,chezMoi(joueur.x,joueur.y+16)
+      ?'place-toi et pose':'rentre chez toi','#f0cf7d');
   });
 }
+
 /* le fantôme de ce qu'on va poser */
 function dessinerFantome(g,px,py){
   if(!modeBatir||!planChoisi)return;
