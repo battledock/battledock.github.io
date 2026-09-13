@@ -49,7 +49,7 @@ body{overflow:hidden}
   background:rgba(255,255,255,.93);font:600 11px system-ui;color:#2b1d12;
   box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #repond button:active{transform:translateY(1px)}
-#bandeau{position:fixed;left:0;right:0;bottom:0;z-index:14;display:none;
+#bandeau{position:fixed;left:0;right:0;bottom:0;z-index:14;display:none;transition:bottom .12s;
   background:linear-gradient(180deg,rgba(20,26,16,0),rgba(20,26,16,.72) 22%,rgba(20,26,16,.93));
   padding:26px 10px calc(10px + env(safe-area-inset-bottom))}
 #bandeau.on{display:block}
@@ -69,7 +69,13 @@ body{overflow:hidden}
   animation:battreM 1.1s ease-in-out infinite}
 #micro.absent{opacity:.4}
 @keyframes battreM{50%{box-shadow:0 0 0 7px rgba(201,74,74,.25)}}
-.compteB{text-align:right;font:600 9px system-ui;color:#9fb08f;margin-top:5px}
+.champ{position:relative;flex:1;min-width:0;display:flex}
+.compteB{position:absolute;right:11px;top:50%;transform:translateY(-50%);
+  font:600 9px system-ui;color:#b6ab8e;font-style:normal;pointer-events:none}
+.ligne input{padding-right:32px}
+/* clavier ouvert : la barre du bas s'efface */
+body.clavier #barre{opacity:0;pointer-events:none;transition:opacity .15s}
+body.clavier #bandeau{padding-bottom:9px}
 .onde{position:fixed;left:0;right:0;bottom:calc(116px + env(safe-area-inset-bottom));z-index:15;
   display:none;justify-content:center;gap:3px;align-items:flex-end;height:34px;pointer-events:none}
 .onde.on{display:flex}
@@ -463,10 +469,12 @@ body{overflow:hidden}
       <path d="M4.5 9.5 a5.5 5.5 0 0 0 11 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
       <rect x="9" y="15" width="2" height="3" fill="currentColor"/>
       <rect x="6.5" y="17.4" width="7" height="1.8" rx=".9" fill="currentColor"/></svg></button>
-    <input id="saisie" maxlength="48" placeholder="Écris ou dicte…" autocomplete="off">
+    <span class="champ">
+      <input id="saisie" maxlength="48" placeholder="Écris ou dicte…" autocomplete="off">
+      <i class="compteB" id="resteC">48</i>
+    </span>
     <button id="envoyer">Dire</button>
   </div>
-  <div class="compteB"><span id="resteC">48</span> caractères</div>
 </div>
 <div id="barre">
   <button class="latte" id="b-sac">
@@ -2474,7 +2482,31 @@ function taille(){
   ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
 }
-addEventListener('resize',()=>{videCache();taille();});
+/* Le clavier qui s'ouvre change la hauteur de la fenêtre. Redessiner tout le
+   terrain à ce moment-là l'écrase et coûte cher pour rien : on ne refait la
+   toile que si la largeur change vraiment (rotation, changement d'écran). */
+let largeurVue=window.innerWidth;
+addEventListener('resize',()=>{
+  if(window.innerWidth===largeurVue&&bandeauOuvert())return;   /* c'est le clavier */
+  largeurVue=window.innerWidth;
+  videCache();taille();
+});
+
+/* Le bandeau se cale juste au-dessus du clavier, et la barre du bas s'efface
+   pendant qu'on écrit : elle ne sert à rien, clavier ouvert. */
+function suivreLeClavier(){
+  const vv=window.visualViewport;
+  const b=$('bandeau');
+  if(!b)return;
+  if(!bandeauOuvert()){b.style.bottom='0px';document.body.classList.remove('clavier');return;}
+  const sous=vv?Math.max(0,window.innerHeight-vv.height-vv.offsetTop):0;
+  b.style.bottom=sous+'px';
+  document.body.classList.toggle('clavier',sous>90);
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize',suivreLeClavier);
+  window.visualViewport.addEventListener('scroll',suivreLeClavier);
+}
 
 function preparerMonde(){
   if(SOL)return;
@@ -4398,11 +4430,14 @@ function ouvrirBandeau(){
     direQuelqueChose(x.textContent);fermerBandeau();});
   nonLus=0;
   setTimeout(()=>{const i=$('saisie');if(i&&i.focus)i.focus();},40);
+  setTimeout(suivreLeClavier,60);setTimeout(suivreLeClavier,320);
 }
 function fermerBandeau(){
   const b=$('bandeau');if(!b)return;
   arreterDictee();
   b.classList.remove('on');
+  b.style.bottom='0px';
+  document.body.classList.remove('clavier');
   const i=$('saisie');
   if(i){if(i.blur)i.blur();i.value='';}
   const r=$('resteC');if(r)r.textContent='48';
