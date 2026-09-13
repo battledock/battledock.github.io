@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1827';
+  var MA_VERSION='2026-09-13-1851';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2118,111 +2119,79 @@ function dessinerEntaille(g,x,y,ht,pret){
 }
 
 /* ---- le four : pierre appareillée, cheminée, feu qui bat ---- */
-function dessinerForge(g,x,y,allume){
-  /* Vue de dessus, comme tout le terrain : on voit d'abord le TOIT, en
-     perspective, et seulement la façade sud sous l'avancée. Le bâtiment est
-     posé sur son emprise : on en fait le tour, on entre par la porte. */
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h));};
+/* ================= LA FORGE =================
+   Le bâtiment ne bouge pas : toit, murs, porte, enclume, baquet, charbon.
+   On le grave UNE FOIS sur un calque, puis on recopie ce calque à chaque
+   image. Seuls le feu, la fumée et les étincelles sont repeints.
+   Avant cette séparation, le bâtiment coûtait 4 700 traits par image à lui
+   seul — cinq fois le reste du terrain réuni. */
+let CALQUE_FORGE=null;
+const FORGE_L=92, FORGE_H=110;        /* l'emprise du calque, en points */
+function graverLaForge(){
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)))*2;
+  c.width=(FORGE_L+40)*D;c.height=(FORGE_H+40)*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  /* on dessine autour d'un point d'ancrage : le pied du bâtiment */
+  const x=(FORGE_L+40)/2, y=FORGE_H+8;
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),Math.round(w),Math.round(h));};
   const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
-  const t=Date.now()/1000;
-  const L=92;                       /* la largeur du bâtiment */
+  const L=FORGE_L;
 
-  /* l'ombre portée sur l'herbe, au nord-est comme partout dans le jeu */
-  g.fillStyle='rgba(30,48,26,.26)';
-  g.beginPath();g.ellipse(x+6,y-6,L*0.62,30,0,0,7);g.fill();
-
-  /* ---- le toit, vu de dessus : deux pans qui fuient vers le nord ---- */
-  const faite=y-64;                 /* la ligne de faîtage, au fond */
-  const bas=y-22;                   /* le bas du pan, au-dessus de la façade */
+  /* le toit, deux pans qui fuient vers le nord */
+  const faite=y-64, bas=y-22;
   for(let j=0;j<bas-faite;j++){
-    const k=j/(bas-faite);
-    const larg=L*(0.74+k*0.26);     /* le pan s'élargit vers nous */
-    const yy=faite+j;
-    /* les rangs de tuiles, un sur quatre plus sombre */
-    const rang=(j/4)|0;
-    let c=rang%2?'#8a4a3a':'#9a5644';
-    if(j%4===0)c='#6b372b';
-    if(j%4===1)c='#a25b47';
+    const k=j/(bas-faite), larg=L*(0.74+k*0.26), yy=faite+j, rang=(j/4)|0;
+    let c2=rang%2?'#8a4a3a':'#9a5644';
+    if(j%4===0)c2='#6b372b';
+    if(j%4===1)c2='#a25b47';
     for(let i=0;i<larg;i++){
-      const xx=x-larg/2+i;
-      /* le décalage d'une rangée à l'autre, et le joint entre deux tuiles */
-      let cc=c;
+      let cc=c2;
       if(((i+rang*4)%9)===0)cc='#5e2f26';
       if((i*3+j*5)%29===0)cc='#b06a52';
-      g.fillStyle=cc;g.fillRect(Math.round(xx),yy,1,1);
+      g.fillStyle=cc;g.fillRect(Math.round(x-larg/2+i),yy,1,1);
     }
   }
-  /* le faîtage, et l'avancée du bas qui porte l'ombre */
   R(x-L*0.38,faite-3,L*0.76,4,'#5e2f26');
   R(x-L*0.38,faite-3,L*0.76,1.4,'#b5674f');
   R(x-L/2,bas-1,L,4,'#6b372b');
   R(x-L/2,bas-1,L,1.4,'#a25b47');
-  /* l'ombre que l'avancée jette sur la façade */
   const om=g.createLinearGradient(0,bas+3,0,bas+12);
   om.addColorStop(0,'rgba(0,0,0,.42)');om.addColorStop(1,'rgba(0,0,0,0)');
   g.fillStyle=om;g.fillRect(x-L/2,bas+3,L,12);
 
-  /* ---- la façade sud, sous le toit : une seule assise visible ---- */
+  /* la façade */
   const fy=bas+3, fh=(y-4)-fy;
-  for(let j=0;j<fh;j++){
-    for(let i=0;i<L-8;i++){
-      const xx=x-(L-8)/2+i, yy=fy+j;
-      const bloc=(((i+((j/7|0)%2)*7)/14|0));
-      let c=bloc%2?'#8a8175':'#7d7468';
-      if(j%7===0)c='#5e564d';
-      if(j%7===1)c='#9e9488';
-      if(((i+((j/7|0)%2)*7)%14)===0)c='#5e564d';
-      if((i*5+j*7)%31===0)c='#6b6359';
-      g.fillStyle=c;g.fillRect(Math.round(xx),yy,1,1);
-    }
+  for(let j=0;j<fh;j++)for(let i=0;i<L-8;i++){
+    const bloc=(((i+((j/7|0)%2)*7)/14|0));
+    let c2=bloc%2?'#8a8175':'#7d7468';
+    if(j%7===0)c2='#5e564d';
+    if(j%7===1)c2='#9e9488';
+    if(((i+((j/7|0)%2)*7)%14)===0)c2='#5e564d';
+    if((i*5+j*7)%31===0)c2='#6b6359';
+    g.fillStyle=c2;g.fillRect(Math.round(x-(L-8)/2+i),fy+j,1,1);
   }
-  R(x-L/2+4,y-5,L-8,3,'#4f4a42');       /* le soubassement */
+  R(x-L/2+4,y-5,L-8,3,'#4f4a42');
 
-  /* ---- la porte, au milieu, ouverte sur la lueur ---- */
+  /* la porte et son encadrement */
   const px=x-13, py=y-30;
   R(px-3,py-3,32,28,'#5b3f21');
   R(px-3,py-3,32,2,'#7d5934');
   R(px,py,26,26,'#241a12');
-  if(allume){
-    const l=g.createLinearGradient(0,py,0,py+26);
-    l.addColorStop(0,'rgba(255,150,60,.12)');
-    l.addColorStop(1,'rgba(255,176,58,'+(0.36+Math.sin(t*6)*0.06)+')');
-    g.fillStyle=l;g.fillRect(px,py,26,26);
-    /* la lumière qui coule sur le seuil, devant la porte */
-    const sg=g.createLinearGradient(0,y-6,0,y+22);
-    sg.addColorStop(0,'rgba(255,176,58,.34)');
-    sg.addColorStop(1,'rgba(255,176,58,0)');
-    g.fillStyle=sg;
-    g.beginPath();g.moveTo(px,y-6);g.lineTo(px+26,y-6);g.lineTo(px+36,y+22);g.lineTo(px-10,y+22);
-    g.closePath();g.fill();
-  }
   R(px+1,py+2,2,22,'#4a4038');R(px+23,py+2,2,22,'#4a4038');
-  /* le seuil de pierre */
   R(px-4,y-6,34,5,'#8a8175');
   R(px-4,y-6,34,1.4,'#9e9488');
 
-  /* ---- la cheminée, sur le pan de toit ---- */
+  /* la cheminée */
   const cx=x+30, cy=faite+4;
   R(cx-8,cy-14,16,22,'#7d7468');
   R(cx-8,cy-14,16,2,'#9e9488');
   R(cx-8,cy-6,16,1.4,'#5e564d');
   R(cx-10,cy-17,20,4,'#6b6359');
   R(cx-10,cy-17,20,1.4,'#8a8175');
-  if(allume){
-    g.fillStyle='rgba(255,150,60,'+(0.5+Math.sin(t*7)*0.2)+')';
-    g.fillRect(cx-5,cy-18,10,2);
-    for(let i=0;i<5;i++){
-      const k=((t*0.42+i*0.2)%1);
-      g.globalAlpha=(1-k)*0.4;
-      g.fillStyle='#cfc8ba';
-      const w=3+k*13;
-      g.beginPath();
-      g.ellipse(cx+Math.sin(k*5+i)*9,cy-22-k*54,w,w*0.78,0,0,7);g.fill();
-      g.globalAlpha=1;
-    }
-  }
 
-  /* ---- ce qui traîne devant : l'enclume, le baquet, le charbon ---- */
+  /* l'enclume, le baquet, le charbon, l'enseigne */
   const ax=x-52, ay=y+10;
   g.fillStyle='rgba(30,48,26,.3)';
   g.beginPath();g.ellipse(ax,ay+1,11,4,0,0,7);g.fill();
@@ -2231,13 +2200,6 @@ function dessinerForge(g,x,y,allume){
   R(ax-4,ay-13,8,3,'#4a4650');
   g.fillStyle='#4a4650';
   g.beginPath();g.moveTo(ax+8,ay-9.4);g.lineTo(ax+15,ay-7.6);g.lineTo(ax+8,ay-6);g.closePath();g.fill();
-  if(allume&&((t*2)%1)<0.12){
-    for(let i=0;i<5;i++){
-      const a=-0.4-alea(i)*2.2, d=4+alea(i*3)*9;
-      g.fillStyle=alea(i*7)<.5?'#ffe9a8':'#ffb03a';
-      g.fillRect(ax+Math.cos(a)*d,ay-12+Math.sin(a)*d,1.4,1.4);
-    }
-  }
   const bx=x+52, by=y+8;
   g.fillStyle='rgba(30,48,26,.28)';
   g.beginPath();g.ellipse(bx,by+1,9,3.4,0,0,7);g.fill();
@@ -2252,18 +2214,61 @@ function dessinerForge(g,x,y,allume){
     g.fillStyle=u<.4?'#3a373c':(u<.75?'#2e2c30':'#4a464e');
     g.fillRect(gx-9+u*17,gy-2-w*6,2.6+u*2,2.2+w*1.6);
   }
-  /* l'enseigne, accrochée à l'avancée du toit */
   const sx=x+16, sy=bas+2;
   R(sx-1,sy,2,9,'#4a4038');
   R(sx-9,sy+9,18,8,'#7d5934');
   R(sx-9,sy+9,18,1.4,'#96703f');
   R(sx-6,sy+11.4,8,3,'#4a4650');
   R(sx+1,sy+10.6,4,1.6,'#6b6675');
-  if(allume){
-    g.save();g.globalAlpha=.10+Math.sin(t*3)*0.03;
-    g.fillStyle='#ffb03a';
-    g.beginPath();g.arc(x,y-22,86,0,7);g.fill();g.restore();
+
+  CALQUE_FORGE={img:c,ox:x,oy:y,w:(FORGE_L+40),h:(FORGE_H+40)};
+}
+function dessinerForge(g,x,y,allume){
+  if(!CALQUE_FORGE)graverLaForge();
+  const C=CALQUE_FORGE, t=Date.now()/1000;
+  /* l'ombre sur l'herbe */
+  g.fillStyle='rgba(30,48,26,.26)';
+  g.beginPath();g.ellipse(x+6,y-6,57,30,0,0,7);g.fill();
+  /* le bâtiment, en une seule recopie */
+  g.drawImage(C.img,x-C.ox,y-C.oy,C.w,C.h);
+  if(!allume)return;
+  /* ---- ce qui bouge, et rien d'autre ---- */
+  const px=x-13, py=y-30;
+  const l=g.createLinearGradient(0,py,0,py+26);
+  l.addColorStop(0,'rgba(255,150,60,.12)');
+  l.addColorStop(1,'rgba(255,176,58,'+(0.36+Math.sin(t*6)*0.06)+')');
+  g.fillStyle=l;g.fillRect(px,py,26,26);
+  const sg=g.createLinearGradient(0,y-6,0,y+22);
+  sg.addColorStop(0,'rgba(255,176,58,.34)');
+  sg.addColorStop(1,'rgba(255,176,58,0)');
+  g.fillStyle=sg;
+  g.beginPath();g.moveTo(px,y-6);g.lineTo(px+26,y-6);g.lineTo(px+36,y+22);g.lineTo(px-10,y+22);
+  g.closePath();g.fill();
+  /* la fumée */
+  const cx=x+30, cy=y-60;
+  g.fillStyle='rgba(255,150,60,'+(0.5+Math.sin(t*7)*0.2)+')';
+  g.fillRect(cx-5,cy-18,10,2);
+  for(let i=0;i<5;i++){
+    const k=((t*0.42+i*0.2)%1);
+    g.globalAlpha=(1-k)*0.4;
+    g.fillStyle='#cfc8ba';
+    const w=3+k*13;
+    g.beginPath();g.ellipse(cx+Math.sin(k*5+i)*9,cy-22-k*54,w,w*0.78,0,0,7);g.fill();
+    g.globalAlpha=1;
   }
+  /* le marteau qui frappe, et ses étincelles */
+  if(((t*2)%1)<0.12){
+    const ax=x-52, ay=y+10;
+    for(let i=0;i<5;i++){
+      const a=-0.4-Math.random()*2.2, d=4+Math.random()*9;
+      g.fillStyle=Math.random()<.5?'#ffe9a8':'#ffb03a';
+      g.fillRect(ax+Math.cos(a)*d,ay-12+Math.sin(a)*d,1.4,1.4);
+    }
+  }
+  /* le halo chaud */
+  g.save();g.globalAlpha=.10+Math.sin(t*3)*0.03;
+  g.fillStyle='#ffb03a';
+  g.beginPath();g.arc(x,y-22,86,0,7);g.fill();g.restore();
 }
 function dessinerFour(g,x,y,gr,allume){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
