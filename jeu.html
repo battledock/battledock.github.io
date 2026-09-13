@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-2040';
+  var MA_VERSION='2026-09-13-2046';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2678,8 +2679,14 @@ function dessinerSouche(g,x,y,gr,neuf){
 
 /* ================= le monde ================= */
 const MONDE=600;                  // en pixels de jeu (resserré : plus de désert)
-const ZOOM=2;                     /* chaque pixel du jeu fait 2 pixels d'écran :
-                                     la caméra est plus haute, on voit plus large */
+/* ================= LA MÊME VUE POUR TOUT LE MONDE =================
+   Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
+   de jeu de large, une tablette 384. Deux joueurs ne jouaient pas au même jeu.
+   Maintenant c'est l'inverse : la VUE est fixe, et l'échelle s'adapte.
+   On borne les deux côtés — jamais plus de VUE_L de large ni de VUE_H de haut —
+   donc un écran très allongé ne voit pas la carte entière. */
+const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
+const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null;
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
@@ -3551,19 +3558,24 @@ let joyX=0,joyY=0;
 const cv=$('cv'), ctx=cv.getContext('2d');
 let VW=0,VH=0;
 let ECH=ZOOM;
+let ECH_CSS=ZOOM;                 /* combien de points d'écran pour un point de jeu */
 function taille(){
-  /* on mesure la fenêtre, pas le canevas : sa taille dépend justement de ce calcul.
-     L'échelle reste un nombre entier de pixels physiques pour que l'image ne tremble pas,
-     et la vue est arrondie au pixel de jeu supérieur pour couvrir tout l'écran. */
-  const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
-  ECH=dpr*ZOOM;
   const w=window.innerWidth, h=window.innerHeight;
-  VW=Math.ceil(w/ZOOM)+1;VH=Math.ceil(h/ZOOM)+1;
-  cv.width=VW*ECH;cv.height=VH*ECH;
-  /* on affiche la toile à sa taille réelle en points, sans déborder de l'écran */
-  cv.style.width=(VW*ZOOM)+'px';cv.style.height=(VH*ZOOM)+'px';
-  cv.style.marginLeft=Math.round((w-VW*ZOOM)/2)+'px';
-  cv.style.marginTop=Math.round((h-VH*ZOOM)/2)+'px';
+  /* L'échelle est celle qui cadre la vue de référence. On prend la plus
+     contraignante des deux : ainsi on ne voit JAMAIS plus que la vue prévue,
+     ni en largeur ni en hauteur. */
+  let e=Math.max(w/VUE_L,h/VUE_H);
+  /* on arrondit au huitième de point : le pixel reste régulier à l'œil,
+     et l'écart de cadrage entre deux téléphones reste sous 2 % */
+  e=Math.max(1.2,Math.round(e*8)/8);
+  ECH_CSS=e;
+  const dpr=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  ECH=e*dpr;
+  VW=Math.ceil(w/e)+1;VH=Math.ceil(h/e)+1;
+  cv.width=Math.round(VW*ECH);cv.height=Math.round(VH*ECH);
+  cv.style.width=(VW*e)+'px';cv.style.height=(VH*e)+'px';
+  cv.style.marginLeft=Math.round((w-VW*e)/2)+'px';
+  cv.style.marginTop=Math.round((h-VH*e)/2)+'px';
   ctx.setTransform(ECH,0,0,ECH,0,0);
   ctx.imageSmoothingEnabled=false;
 }
