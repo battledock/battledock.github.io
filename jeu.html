@@ -2182,7 +2182,7 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>!(['fer','cuivre','charbon'].includes(o.t)&&casses.has('m'+o.x+','+o.y)));invaliderGrille();
   DECOR=DECOR.filter(o=>{
     if(o.t!=='arbre'||!casses.has('a'+o.x+','+o.y))return true;
-    DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});return false;});
+    poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0});return false;});
 
   /* le casino : au même endroit pour tous les joueurs */
   e.casino=CASINO_FIXE;
@@ -2315,22 +2315,37 @@ function bloque(x,y){
 /* Le décor est trié du nord au sud : on cherche par dichotomie la
    première ligne visible, et on s'arrête dès qu'on est passé sous
    l'écran. Inutile de parcourir les 220 objets à chaque image. */
+/* Le décor doit rester trié du nord au sud, sinon un objet ajouté en cours
+   de partie se dessine par-dessus le joueur alors qu'il est derrière lui.
+   On l'insère donc directement à sa place. */
+function poserDansLeDecor(o){
+  let a=0,b=DECOR.length;
+  while(a<b){const m=(a+b)>>1;if(DECOR[m].y<o.y)a=m+1;else b=m;}
+  DECOR.splice(a,0,o);
+  invaliderGrille();
+  return o;
+}
 function premierVisible(yMin){
   let a=0,b=DECOR.length;
   while(a<b){const m=(a+b)>>1;if(DECOR[m].y<yMin)a=m+1;else b=m;}
   return a;
 }
-function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
-  let posé=false;
+/* Tout ce qui vit — toi et les autres survivants — est mêlé au décor et trié
+   par sa profondeur. Avant, les autres joueurs étaient peints avant le décor :
+   ils passaient sous les rochers même quand ils étaient devant. */
+function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
+  const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
+  let iG=0;
+  const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
   const yHaut=camY-300, yBas=camY+VH2+40;
   const debut=premierVisible(yHaut);
   for(let i=debut;i<DECOR.length;i++){
     const o=DECOR[i];
     if(o.y>yBas){                                  /* on est sorti par le bas */
-      if(!posé){dessinerJoueur();posé=true;}
+      poserGens(1e9);
       break;
     }
-    if(!posé&&o.y>joueurY){dessinerJoueur();posé=true;}    /* le joueur passe devant */
+    poserGens(o.y);
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
@@ -2465,7 +2480,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
       g.restore();
     }
   }
-  if(!posé)dessinerJoueur();
+  poserGens(1e9);
 }
 
 /* ================= état, gardé sur l'appareil et en ligne ================= */
@@ -2594,7 +2609,7 @@ function poserCoffre(){
   if(e.coffreOuvert)return;                   /* déjà vidé : il n'y en a plus */
   /* le coffre reste sur la carte même une fois vidé : couvercle ouvert */
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');invaliderGrille();
-  DECOR.push({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
+  poserDansLeDecor({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
 }
 function dessiner(){
@@ -2622,16 +2637,22 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
 
   if(QUALITE>=0.5)refletsRiviere(ctx,camX,camY);
-  dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
   nettoyerBulles();
-  const maBulle=BULLES.get('moi');
-  if(maBulle)dessinerBulle(ctx,px,py,maBulle.txt,true,maBulle.ne);
-  dessinerDecor(ctx,camX,camY,VW,VH,joueur.y,
-    ()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche));
+  /* les acteurs : moi et les autres, chacun à sa profondeur */
+  const acteurs=[{y:joueur.y,
+    f:()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche)}];
+  for(const [,a] of AUTRES){
+    const ax=a.x-camX, ay=a.y-camY;
+    if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
+    acteurs.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});
+  }
+  dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
+  /* les bulles par-dessus tout : un mot ne doit jamais passer sous un caillou */
+  dessinerBulles(ctx,camX,camY,px,py);
   dessinerParts(ctx,camX,camY);
   dessinerTextes(ctx,camX,camY);
   /* tant que le coffre n'est pas ouvert, une flèche indique où il est */
@@ -3368,10 +3389,10 @@ function appliquerLeMonde(){
     const c=cleDe(o);
     if(['rocher','fer','cuivre','charbon'].includes(o.t)&&casses.has(c)){
       DECOR.splice(i,1);invaliderGrille();
-      DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0});change=true;
+      poserDansLeDecor({t:'gravats',x:o.x,y:o.y,gr:0});change=true;
     }else if(o.t==='arbre'&&casses.has(c)){
       DECOR.splice(i,1);invaliderGrille();
-      DECOR.push({t:'souche',x:o.x,y:o.y,gr:0});change=true;
+      poserDansLeDecor({t:'souche',x:o.x,y:o.y,gr:0});change=true;
     }else if(CUEILLI.has(c)&&!o.cueilli){
       o.cueilli=CUEILLI.get(c);change=true;
     }
@@ -3581,33 +3602,31 @@ function flechesVersLesAutres(camX,camY){
   }
 }
 
-function dessinerAutres(g,camX,camY){
+/* un survivant, dessiné à sa place dans le tri des profondeurs */
+function dessinerUnAutre(g,a,camX,camY){
+  const x=Math.round(a.x-camX), y=Math.round(a.y-camY);
   const sauve=GESTE;
-  /* S'il y a foule, on ne dessine en détail que les plus proches :
-     les autres restent visibles mais coûtent moins cher. */
-  let liste=[...AUTRES.values()];
-  if(liste.length>8){
-    liste.sort((p,q)=>Math.hypot(p.x-joueur.x,p.y-joueur.y)
-                     -Math.hypot(q.x-joueur.x,q.y-joueur.y));
-    liste=liste.slice(0,12);
-  }
-  for(const a of liste){
-    const x=a.x-camX, y=a.y-camY;
-    if(x<-40||y<-70||x>VW+40||y>VH+40)continue;
-    GESTE=a.gesteT>0
-      ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
-      :{t:0};
-    sprite(g,Math.round(x),Math.round(y),Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
-    g.font='700 7px ui-monospace,monospace';g.textAlign='center';
-    g.fillStyle='rgba(10,16,10,.55)';
-    g.fillText(a.pseudo,Math.round(x)+1,Math.round(y)-49);
-    g.fillStyle='#f2efe4';
-    g.fillText(a.pseudo,Math.round(x),Math.round(y)-50);
-    g.textAlign='left';
-    const b=BULLES.get(a.id);            /* ce qu'il vient de dire */
-    if(b)dessinerBulle(g,x,y,b.txt,false,b.ne);
-  }
+  GESTE=a.gesteT>0
+    ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
+    :{t:0};
+  sprite(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
   GESTE=sauve;
+  g.font='700 7px ui-monospace,monospace';g.textAlign='center';
+  g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,y-49);
+  g.fillStyle='#f2efe4';g.fillText(a.pseudo,x,y-50);
+  g.textAlign='left';
+}
+/* les bulles passent par-dessus tout le reste */
+function dessinerBulles(g,camX,camY,px,py){
+  const mienne=BULLES.get('moi');
+  if(mienne)dessinerBulle(g,px,py,mienne.txt,true,mienne.ne);
+  for(const [,a] of AUTRES){
+    const b=BULLES.get(a.id);
+    if(!b)continue;
+    const x=a.x-camX, y=a.y-camY;
+    if(x<-60||y<-90||x>VW+60||y>VH+60)continue;
+    dessinerBulle(g,x,y,b.txt,false,b.ne);
+  }
 }
 
 /* ================= frapper, ramasser ================= */
