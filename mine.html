@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1658';
+  var MA_VERSION='2026-09-13-1700';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 <meta charset="utf-8">
@@ -2158,7 +2159,7 @@ function boucle(t){
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
   majJoy();
   const d=Math.hypot(joyX,joyY);
-  if(d>0.08&&GESTE.t<=0){
+  if(d>0.08&&GESTE.t<=0&&MUR.length){
     const v=78*dt*Math.min(1,d);
     const nx=joueur.x+joyX/d*v, ny=joueur.y+joyY/d*v;
     if(!bloque(nx,joueur.y))joueur.x=nx;
@@ -2175,7 +2176,7 @@ function boucle(t){
       else if(GESTE.cible&&!GESTE.cible.mort)impact(GESTE.cible);
     }
   }
-  if(!mortJoueur)majBetes(dt);
+  if(MUR.length&&!mortJoueur)majBetes(dt);
   if(malSoi>0)malSoi-=dt;
   /* ta vie, affichée */
   $('vieB').style.width=Math.max(0,vie/vieMax*100)+'%';
@@ -2201,12 +2202,18 @@ function boucle(t){
   for(let i=TEXTES.length-1;i>=0;i--){TEXTES[i].t+=dt;TEXTES[i].y-=dt*18;
     if(TEXTES[i].t>1.4)TEXTES.splice(i,1);}
   if(secousse>0)secousse=Math.max(0,secousse-dt*18);
-  dessiner();majAction();
+  dessiner();if(MUR.length)majAction();
   requestAnimationFrame(boucle);
 }
 
 function dessiner(){
   const g=ctx, P=palier();
+  /* La galerie n'existe qu'après la réponse du serveur : tant qu'elle n'est
+     pas creusée, on peint le fond et on attend, plutôt que de planter. */
+  if(!MUR.length||!DALLE.length){
+    g.fillStyle=nuance().fond;g.fillRect(0,0,VW,VH);
+    return;
+  }
   if(NIV_GRAVE!==niveau||!JEU_TUILES)graver();
   const sx=secousse?Math.round((Math.random()-.5)*secousse):0;
   const camX=Math.max(0,Math.min(L*CASE-VW,joueur.x-VW/2))+sx;
