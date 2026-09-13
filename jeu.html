@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1947';
+  var MA_VERSION='2026-09-13-2003';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1729,25 +1730,73 @@ function dessinerRocher(g,x,y,gr){
   R(-L-5,-Math.round(H*0.12),5,Math.round(H*0.12),V.pierreO);
 }
 
-/* --- le buisson : à hauteur de taille (24 à 30 px) --- */
-function dessinerBuisson(g,x,y,gr,vide){
-  const penB=Math.round(penche(x,y,0.5));x+=penB;
-  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const s=gr||0;
-  const H=[24,30][s]||24, L=[12,15][s]||12;
-  g.fillStyle=V.ombre;
-  g.beginPath();g.ellipse(x+1,y-1,L*0.85,3,0,0,7);g.fill();
-  R(-L,-Math.round(H*0.6),L*2,Math.round(H*0.6),V.clair);
-  R(-L+3,-Math.round(H*0.84),L*2-6,Math.round(H*0.3),V.vif);
-  R(-L+7,-H,L*2-14,Math.round(H*0.22),V.lumiere);
-  R(-L,-Math.round(H*0.22),L*2,Math.round(H*0.22),V.moyen);
-  R(-L-2,-Math.round(H*0.5),2,Math.round(H*0.32),V.clair);
-  R(L,-Math.round(H*0.5),2,Math.round(H*0.32),V.moyen);
-  if(!vide){
-    R(-L+4,-Math.round(H*0.66),3,3,'#c94a4a');
-    R(L-7,-Math.round(H*0.34),3,3,'#c94a4a');
-    R(-1,-Math.round(H*0.86),3,3,'#e2604a');
-  }
+/* --- le buisson : à hauteur de taille, gravé une fois --- */
+/* Trois variétés — mûrier, framboisier, myrtille — bâties en nuage : une
+   réunion de boules. Pour chaque colonne on cherche la boule la plus haute
+   qui la traverse, et on remplit la colonne d'un seul trait. Contour rond,
+   masse en aplat, aucun pixel isolé. Chaque variété est gravée dans ses
+   deux états, plein et cueilli : la cueillette ne recalcule rien. */
+const VAR_BUISSON=[
+ {id:'mure',      V:['#2f6b34','#3d7d3f','#4a944a','#5aa855','#6fbb66'],
+  baie:['#2e2438','#5a4a68'],nb:5,h:26,l:13},
+ {id:'framboise', V:['#3a7a3a','#4a8a44','#59a052','#68b25f','#7cc470'],
+  baie:['#b8344a','#d4506a'],nb:6,h:30,l:11},
+ {id:'myrtille',  V:['#2a5c30','#36703c','#427f46','#4e9152','#5ea45f'],
+  baie:['#3a4a8a','#6478bc'],nb:7,h:20,l:15}
+];
+let BUISSONS_GRAVES=null;
+function graverBuissons(){
+  BUISSONS_GRAVES={};
+  const A=(n)=>alea(n);
+  VAR_BUISSON.forEach(B=>{
+    BUISSONS_GRAVES[B.id]=[0,1].map(gr=>{
+      const k=gr?1:0.8;
+      const HT=Math.round(B.h*k), L=Math.round(B.l*k), W=L*2+8, HC=HT+8;
+      const corps=(R,ombre,baies)=>{
+        const cx=W/2, sol=HC-4, r=L*0.52;
+        ombre(cx+1,sol,L*0.9,3);
+        const lobes=[[cx-L*0.52,sol-r*0.9,r],[cx+L*0.5,sol-r*0.82,r*0.96],
+                     [cx-L*0.16,sol-HT*0.56,r*1.06],[cx+L*0.3,sol-HT*0.72,r*0.8]];
+        for(let x=0;x<W;x++){
+          let y=null;
+          lobes.forEach(([lx,ly,lr])=>{
+            const dx=x+0.5-lx;
+            if(Math.abs(dx)>=lr)return;
+            const t=ly-Math.sqrt(lr*lr-dx*dx);
+            if(y===null||t<y)y=t;
+          });
+          if(y===null)continue;
+          y=Math.round(y);
+          const h=sol-y;if(h<=0)continue;
+          R(x,y,1,h,B.V[1]);                                 /* la masse */
+          R(x,y,1,Math.max(2,Math.round(h*0.34)),B.V[2]);    /* le haut, plus clair */
+          if(x<W*0.56)R(x,y,1,2,B.V[3]);                     /* la lumière à gauche */
+          R(x,sol-3,1,3,B.V[0]);                             /* l'ombre au pied */
+        }
+        if(baies)for(let i=0;i<B.nb;i++){
+          const [lx,ly,lr]=lobes[i%lobes.length];
+          const bx=Math.round(lx+(A(i*5.3+B.nb)-0.5)*lr*1.1);
+          const by=Math.round(ly+(A(i*9.1+B.nb)-0.2)*lr*0.9);
+          R(bx,by,3,3,B.baie[0]);R(bx,by,2,1,B.baie[1]);
+        }
+      };
+      return {
+        plein:  toilePetit(W,HC,({R,ombre})=>corps(R,ombre,true)),
+        cueilli:toilePetit(W,HC,({R,ombre})=>corps(R,ombre,false)),
+        W,HC};
+    });
+  });
+}
+/* la variété vient de la place : un buisson garde toujours la sienne */
+const varieteBuisson=(x,y)=>VAR_BUISSON[Math.floor(alea((x*17+y*11)%997)*VAR_BUISSON.length)];
+
+function dessinerBuisson(g,x,y,gr,vide,mx,my){
+  if(!BUISSONS_GRAVES)graverBuissons();
+  const B=varieteBuisson(mx||x,my||y);
+  const A=BUISSONS_GRAVES[B.id][gr||0];
+  const so=Math.round(penche(mx||x,my||y,0.5));
+  g.drawImage(vide?A.cueilli:A.plein,
+    Math.round(x-A.W/2+so),Math.round(y-A.HC+4),A.W,A.HC);
 }
 
 /* --- le massif de fleurs : à la cheville (14 px) --- */
@@ -3101,7 +3150,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       }
       g.save();g.translate(x,y);
       if(ec)g.scale(1+ec,1-ec);
-      dessinerBuisson(g,0,0,o.gr,o.cueilli&&Date.now()-o.cueilli<240000);
+      dessinerBuisson(g,0,0,o.gr,o.cueilli&&Date.now()-o.cueilli<240000,o.x,o.y);
       g.restore();
     }
     else if(o.t==='fleurs')dessinerFleurs(g,x,y,o.gr);
