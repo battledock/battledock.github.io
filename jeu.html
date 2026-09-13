@@ -2207,9 +2207,12 @@ const caseDe=(x,y)=>((y/CASE)|0)*64+((x/CASE)|0);
 const invaliderGrille=()=>{grilleValide=false;};
 
 function construireGrille(){
+  /* La grille range TOUT le décor, pas seulement ce qui bloque le passage :
+     elle sert aussi à viser. En n'y mettant que les objets solides, les fleurs,
+     les herbes, les champignons et même le casino devenaient invisibles au
+     bouton d'action. */
   GRILLE=new Map();
   for(const o of DECOR){
-    if(!TAILLES[o.t])continue;   /* ce qu'on traverse ne compte pas */
     const c=caseDe(o.x,o.y);
     let l=GRILLE.get(c);
     if(!l){l=[];GRILLE.set(c,l);}
@@ -3626,7 +3629,10 @@ function dessinerParts(g,camX,camY){
 /* ce qui est à portée de main */
 function cible(){
   let d0=48,res=null;
-  for(const o of autourDe(joueur.x,joueur.y)){
+  /* les bâtiments sont larges : on élargit la fouille pour eux */
+  const autour=autourDe(joueur.x,joueur.y);
+  for(const o of DECOR)if(o.t==='casino'&&autour.indexOf(o)<0)autour.push(o);
+  for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
@@ -3662,12 +3668,16 @@ function majAction(){
     if(!e.outils.hache){b.innerHTML='Il faut une hache<small>ARBRE</small>';}
     else if(resinePrete(o)){
       b.innerHTML='Recueillir<small>LA RÉSINE</small>';
-    }else if(o.saigne&&!o.coups){
-      const m=Math.ceil((180000-(Date.now()-o.saigne))/60000);
-      b.innerHTML='Entaillé<small>RÉSINE DANS '+m+' MIN</small>';
     }else{
       const reste=(e.outils.hacheFer?3:5)-(o.coups||0);
-      b.innerHTML='Couper<small>ARBRE · '+reste+' COUP'+(reste>1?'S':'')+'</small>';
+      /* si la sève coule, on rappelle combien de temps il reste :
+         sans ça, on entaillait l'arbre et plus rien ne le disait. */
+      let seve='';
+      if(o.saigne){
+        const ms=180000-(Date.now()-o.saigne);
+        seve=' · SÈVE '+(ms>60000?Math.ceil(ms/60000)+' MIN':Math.max(1,Math.ceil(ms/1000))+' S');
+      }
+      b.innerHTML='Couper<small>'+reste+' COUP'+(reste>1?'S':'')+seve+'</small>';
     }
   }else if(o.t==='four'){
     if(e.four&&Date.now()<e.four.fin){
