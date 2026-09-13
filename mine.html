@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1753';
+  var MA_VERSION='2026-09-13-1800';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -191,15 +192,12 @@
       <rect x="5" y="2" width="6" height="5" rx="1" fill="#e8802c"/></svg>
     <span class="creux"><i id="torcheB" style="width:100%;background:linear-gradient(90deg,#e8802c,#ffc65a)"></i></span>
     <b id="torcheT" style="color:#ffcd8a">2:00</b></div>
-  <div class="sacL" id="sacH"></div>
 </div>
 <div id="prof">NIVEAU 1<small>les premières galeries</small></div>
 <div id="msg"></div>
 <div id="aide">pose le doigt n’importe où pour marcher · le bouton s’allume près d’un filon ou d’une bête</div>
 <button id="action"></button>
 <div id="menus">
-  <button class="menuB" id="b-sac">SAC</button>
-  <button class="menuB" id="b-forge">FORGE</button>
   <button class="menuB feu" id="b-torche">TORCHE</button>
   <button class="menuB" id="b-sortir">SORTIR</button>
 </div>
@@ -1025,7 +1023,7 @@ const monAp=()=>Object.assign({},DEF_AP,(e&&e.ap)||{});
    puis leur face, et l'ombre qu'ils jettent sur le sol. Chaque niveau a
    sa teinte, ses accidents et ses trouvailles. */
 const CASE=16, L=52, H=46;
-let MUR=[], DALLE=[], OMBRE=[], OBJETS=[], niveau=1;
+let MUR=[], DALLE=[], OMBRE=[], OBJETS=[], BANDES={}, niveau=1;
 const alea2=(a,b)=>alea(a*7.13+b*3.71+niveau*13.7);
 
 /* les cinq paliers de profondeur */
@@ -1127,7 +1125,7 @@ function creuser(){
   const genres=niveau<=4?['fer','charbon']:niveau<=8?['fer','cuivre','charbon']
     :niveau<=12?['cuivre','argent','charbon']:niveau<=16?['argent','or','cuivre']:['or','gemme','argent'];
   genres.forEach(t=>poser(t,10+((alea(niveau+t.length)*5)|0)));
-  poser('caillou',30);
+  poser('caillou',52);          /* la pierre se ramasse ici, plus à la surface */
   poser('stalagmite',16);
   poser('tonneau',8);
   poser('caisse',7);
@@ -1164,6 +1162,10 @@ function creuser(){
   if(EST_RELAIS(niveau))OBJETS.push({t:'ascenseur',a:pre[0]+2,b:pre[1]});
 
   OBJETS.sort((x,y)=>x.b-y.b);
+  /* on range les objets par bande horizontale : à chaque image on ne parcourt
+     plus les 200 objets du niveau, seulement ceux des bandes visibles */
+  BANDES={};
+  OBJETS.forEach(o=>{(BANDES[o.b]=BANDES[o.b]||[]).push(o);});
   /* on naît toujours sur une case libre : jamais dans un tonneau ni dans la roche */
   joueur.x=pre[0]*CASE+CASE/2;joueur.y=pre[1]*CASE+CASE/2;
   if(bloque(joueur.x,joueur.y)){
@@ -1228,7 +1230,7 @@ function toile(w,h,f){
       P(x+i,y+j,met?a:b);
     }
   };
-  f({g,P,R:Rq,trame,w,h});
+  f({g,P,R:Rq,trame,w,h,g2:g});
   return c;
 }
 
@@ -1361,7 +1363,22 @@ function graver(){
     for(let k=0;k<CASE;k++){P(k,0,c0);P(k,1,c1);P(k,2,(k%3)?c2:c3);}
   });
 
+  /* les huit facons dont la roche peut ombrer une case : nord, ouest, est,
+     et leurs melanges. Gravees une fois, recopiees ensuite. */
+  const ombres=[];
+  for(let m=0;m<8;m++)ombres.push(toile(CASE,CASE,({g})=>{
+    if(m&1){const d=g.createLinearGradient(0,0,0,7);
+      d.addColorStop(0,'rgba(0,0,0,.45)');d.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=d;g.fillRect(0,0,CASE,7);}
+    if(m&2){const d=g.createLinearGradient(0,0,5,0);
+      d.addColorStop(0,'rgba(0,0,0,.34)');d.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=d;g.fillRect(0,0,5,CASE);}
+    if(m&4){const d=g.createLinearGradient(CASE,0,CASE-5,0);
+      d.addColorStop(0,'rgba(0,0,0,.28)');d.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=d;g.fillRect(CASE-5,0,5,CASE);}
+  }));
   JEU_TUILES={
+    ombres,
     dalles:[dalle(0),dalle(1),dalle(2),dalle(3)],
     dessus:[dessus(0),dessus(1),dessus(2),dessus(3)],
     faces:[face(0),face(1),face(2)],
@@ -1915,10 +1932,19 @@ function dessinerBete(g,m,x,y){
   }
 }
 /* ton coup d'épée, quand une bête est à portée */
+/* l'arc que trace la lame, peint juste après le corps du mineur */
+let TAILLADE=null;
 function frapperBete(m){
   const E=EPEES[epee]||EPEES[0];
   m.vie-=E.deg;m.mal=0.22;
   const x=m.x, y=m.y;
+  /* la lame balaie un quart de cercle dans la direction du coup */
+  TAILLADE={t:0,dir:joueur.dir,x:joueur.x,y:joueur.y,coul:E.coul[0],
+    vif:E.coul[1]||'#fff6d8',portee:E.deg>=14?22:E.deg>=9?19:16};
+  /* la bête recule sous le choc */
+  const a=Math.atan2(m.y-joueur.y,m.x-joueur.x);
+  m.x+=Math.cos(a)*5;m.y+=Math.sin(a)*5;
+  secousse=Math.max(secousse,2.4);
   for(let i=0;i<8;i++)PARTS.push({x,y:y-6,vx:(Math.random()-.5)*90,
     vy:-30-Math.random()*60,t:0,c:m.B.coul[0]});
   volant(x,y-20,'-'+E.deg,'#ffd9a8');
@@ -2129,14 +2155,11 @@ function ouvrirAscenseur(){
   });
   $('pageA').classList.add('on');
 }
+/* Le sac ne s'affiche plus en haut : ce qu'on ramasse apparaît en texte
+   volant au-dessus du filon, et la charge se lit quand elle devient serrée. */
 function majSac(){
-  const cles=Object.keys(SAC).filter(k=>SAC[k]>0&&k!=='torche').sort((a,b)=>SAC[b]-SAC[a]);
   const ch=Object.entries(SAC).reduce((a,[k,n])=>a+n*(POIDS[k]||1),0);
-  $('sacH').innerHTML=(cles.slice(0,4).map(k=>
-    '<span><svg viewBox="0 0 16 16" width="13">'+ICO[k]+'</svg>'+SAC[k]+'</span>').join('')
-    ||'<span style="color:#9b8a70;font-weight:400">sac vide</span>')+
-    (cles.length>4?'<span style="color:#9b8a70">+'+(cles.length-4)+'</span>':'')+
-    '<b>'+ch+'/'+CHARGE_MAX+'</b>';
+  if(ch>CHARGE_MAX*0.8)dire('sac chargé — '+ch+' sur '+CHARGE_MAX);
 }
 
 /* ================= le joystick du jeu, repris tel quel ================= */
@@ -2306,6 +2329,7 @@ function boucle(t){
   }
   for(let i=ETINCELLES.length-1;i>=0;i--){ETINCELLES[i].t+=dt;
     if(ETINCELLES[i].t>0.26)ETINCELLES.splice(i,1);}
+  if(TAILLADE){TAILLADE.t+=dt;if(TAILLADE.t>0.26)TAILLADE=null;}
   for(let i=TEXTES.length-1;i>=0;i--){TEXTES[i].t+=dt;TEXTES[i].y-=dt*18;
     if(TEXTES[i].t>1.4)TEXTES.splice(i,1);}
   if(secousse>0)secousse=Math.max(0,secousse-dt*18);
@@ -2335,17 +2359,9 @@ function dessiner(){
     if(MUR[b][a])continue;
     const x=Math.round(a*CASE-camX), y=Math.round(b*CASE-camY);
     g.drawImage(T.dalles[DALLE[b][a]],x,y,CASE,CASE);
+    /* l'ombre de la roche : sept bandes déjà gravées, on les recopie */
     const o=OMBRE[b][a];
-    if(!o)continue;
-    if(o&1){const d=g.createLinearGradient(0,y,0,y+7);
-      d.addColorStop(0,'rgba(0,0,0,.45)');d.addColorStop(1,'rgba(0,0,0,0)');
-      g.fillStyle=d;g.fillRect(x,y,CASE,7);}
-    if(o&2){const d=g.createLinearGradient(x,0,x+5,0);
-      d.addColorStop(0,'rgba(0,0,0,.34)');d.addColorStop(1,'rgba(0,0,0,0)');
-      g.fillStyle=d;g.fillRect(x,y,5,CASE);}
-    if(o&4){const d=g.createLinearGradient(x+CASE,0,x+CASE-5,0);
-      d.addColorStop(0,'rgba(0,0,0,.28)');d.addColorStop(1,'rgba(0,0,0,0)');
-      g.fillStyle=d;g.fillRect(x+CASE-5,y,5,CASE);}
+    if(o)g.drawImage(T.ombres[o],x,y,CASE,CASE);
   }
   /* les murs : le dessus, puis la face visible sous le bord */
   for(let b=b0;b<b1;b++)for(let a=a0;a<a1;a++){
@@ -2361,10 +2377,13 @@ function dessiner(){
   }
   /* ce qui est posé dessus, trié du nord au sud */
   const liste=[];
-  OBJETS.forEach(o=>{
-    if(o.mort)return;
+  for(let b=b0-2;b<b1+2;b++){
+    const bande=BANDES[b];
+    if(!bande)continue;
+    for(const o of bande){
+    if(o.mort)continue;
     const x=o.a*CASE+CASE/2-camX, y=o.b*CASE+CASE/2-camY;
-    if(x<-40||y<-50||x>VW+40||y>VH+40)return;
+    if(x<-40||x>VW+40)continue;
     liste.push({y:o.b*CASE,f:()=>{
       const yy=y+4;
       if(o.t==='rail')rail(g,x,y,o.sens);
@@ -2383,7 +2402,8 @@ function dessiner(){
       else if(o.t==='ascenseur')ascenseur(g,x,yy);
       else nodule(g,x,yy,o);
     }});
-  });
+    }
+  }
   BETES.forEach(m=>{
     if(m.vie<=0)return;
     const x=m.x-camX, y=m.y-camY;
@@ -2394,6 +2414,36 @@ function dessiner(){
     monAp(),joueur.dir,joueur.pas,joueur.marche)});
   liste.sort((p,q)=>p.y-q.y);
   liste.forEach(o=>o.f());
+  /* le coup d'épée : un arc qui s'ouvre, s'éclaire, puis s'efface */
+  if(TAILLADE){
+    const k=TAILLADE.t/0.26;
+    if(k<1){
+      const x=TAILLADE.x-camX, y=TAILLADE.y-camY-10;
+      const base={droite:0,gauche:Math.PI,haut:-Math.PI/2,bas:Math.PI/2}[TAILLADE.dir]||0;
+      const ouvre=1.5;                       /* l'angle balayé */
+      const a0=base-ouvre/2, a1=a0+ouvre*Math.min(1,k*1.5);
+      const r=TAILLADE.portee*(0.7+k*0.45);
+      g.save();
+      /* la traîne, large et pâle */
+      g.globalAlpha=(1-k)*0.55;
+      g.lineWidth=7;g.lineCap='round';
+      g.strokeStyle=TAILLADE.coul;
+      g.beginPath();g.arc(x,y,r,a0,a1);g.stroke();
+      /* le fil de la lame, fin et clair */
+      g.globalAlpha=(1-k)*0.95;
+      g.lineWidth=2.4;
+      g.strokeStyle=TAILLADE.vif;
+      g.beginPath();g.arc(x,y,r+1.4,a0,a1);g.stroke();
+      /* l'éclat au bout du geste */
+      if(k<0.5){
+        const bx=x+Math.cos(a1)*r, by=y+Math.sin(a1)*r;
+        g.globalAlpha=(1-k*2)*0.9;
+        g.fillStyle='#fff6d8';
+        g.beginPath();g.arc(bx,by,2.6,0,7);g.fill();
+      }
+      g.restore();
+    }
+  }
   /* les éclats */
   PARTS.forEach(p=>{
     g.globalAlpha=Math.max(0,1-p.t/0.9);
@@ -2450,8 +2500,6 @@ function dessiner(){
   g.textAlign='left';
 }
 
-$('b-sac').onclick=ouvrirSac;
-$('b-forge').onclick=ouvrirForge;
 $('b-torche').onclick=rallumer;
 $('b-sortir').onclick=remonterAuJour;
 $('mortOk').onclick=()=>{$('mort').classList.remove('on');mortJoueur=false;
