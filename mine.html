@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1302';
+  var MA_VERSION='2026-09-13-1333';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 <meta charset="utf-8">
@@ -223,7 +224,7 @@ const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h
 const CASE=16;                    /* la maille, en points de jeu */
 const LARG=260, HAUT=34;          /* la galerie : longue et basse */
 let SOL=[], PLATEFORMES=[], FILONS=[], LAMPES=[], DECORS=[], BETES=[];
-let SORTIE=null, PUITS=null;
+let SORTIE=null, PUITS=null, DEPART=null;
 let niveau=1;
 let FILONS_GENRES=['fer','charbon'];
 
@@ -301,7 +302,8 @@ function creuser(){
       deg:Math.round(B.deg*k),t:alea(i)*6,touche:0,frappe:0}));
   }
   /* la sortie tout à gauche, le puits tout à droite */
-  SORTIE={x:4*CASE,y:SOL[4]*CASE};
+  SORTIE={x:5*CASE,y:SOL[5]*CASE};
+  DEPART={x:10*CASE,y:SOL[10]*CASE};        /* on arrive dix pas plus loin */
   PUITS=niveau<PROFOND?{x:(LARG-5)*CASE,y:SOL[LARG-5]*CASE}:null;
 }
 const solEn=(xp)=>{
@@ -1040,9 +1042,10 @@ async function changerNiveau(vers,remonte){
     if(d&&d.erreur)return dire(d.erreur);
   }
   niveau=vers;creuser();
-  if(remonte&&PUITS){moi.x=PUITS.x-30;}
-  else moi.x=SORTIE.x+30;
+  /* en descendant on arrive près de la sortie, en remontant près du puits */
+  moi.x=remonte&&PUITS?PUITS.x-64:DEPART.x;
   moi.y=solEn(moi.x);moi.vx=0;moi.vy=0;
+  armeSortie=false;armePuits=false;    /* il faudra s'en éloigner d'abord */
   dire('niveau '+niveau+' · '+nomNiveau(niveau));
 }
 function remonterAuJour(){
@@ -1051,6 +1054,7 @@ function remonterAuJour(){
   setTimeout(()=>{location.href='jeu.html';},420);
 }
 let fondu=0, repos=0, soin=0, enChangement=false;
+let armeSortie=false, armePuits=false;
 function majSac(){
   const cles=Object.keys(SAC).filter(k=>SAC[k]>0);
   $('sacH').innerHTML=cles.length?cles.map(k=>
@@ -1110,14 +1114,19 @@ function boucle(t){
       }
     }
   });
-  /* la sortie et le puits, quand on marche dessus */
-  if(!mort){
-    if(PUITS&&Math.abs(moi.x-PUITS.x)<14&&Math.abs(moi.y-PUITS.y)<20&&!enChangement){
-      enChangement=true;changerNiveau(niveau+1,false).then(()=>{enChangement=false;});
-    }
-    if(SORTIE&&Math.abs(moi.x-SORTIE.x)<14&&Math.abs(moi.y-SORTIE.y)<20&&!enChangement){
-      enChangement=true;
-      if(niveau===1){remonterAuJour();}
+  /* La sortie et le puits ne s'ouvrent qu'une fois qu'on s'en est éloigné :
+     sinon celui sur lequel on vient d'arriver se redéclenche aussitôt. */
+  if(!mort&&!enChangement){
+    const surSortie=SORTIE&&Math.abs(moi.x-SORTIE.x)<22&&Math.abs(moi.y-SORTIE.y)<26;
+    const surPuits =PUITS &&Math.abs(moi.x-PUITS.x) <22&&Math.abs(moi.y-PUITS.y) <26;
+    if(!surSortie)armeSortie=true;
+    if(!surPuits) armePuits=true;
+    if(surPuits&&armePuits){
+      armePuits=false;enChangement=true;
+      changerNiveau(niveau+1,false).then(()=>{enChangement=false;});
+    }else if(surSortie&&armeSortie){
+      armeSortie=false;enChangement=true;
+      if(niveau===1)remonterAuJour();
       else changerNiveau(niveau-1,true).then(()=>{enChangement=false;});
     }
   }
@@ -1291,7 +1300,7 @@ $('mortOk').onclick=()=>{
 async function arriver(){
   if(!e.id){
     enLigne=false;SAC={torche:3};dire('mode découverte — rien n’est enregistré');
-    creuser();moi.y=solEn(moi.x);majSac();return;
+    creuser();moi.x=DEPART.x;moi.y=solEn(moi.x);majSac();return;
   }
   const d=await appel('mine_entrer',{p_joueur:e.id});
   if(d&&!d.erreur){niveau=d.niveau;moi.vie=d.vie;moi.vieMax=d.vieMax||30;
@@ -1305,7 +1314,7 @@ async function arriver(){
 }
 
 creuser();
-moi.y=solEn(moi.x);
+moi.x=DEPART.x;moi.y=solEn(moi.x);
 majSac();
 taille();
 arriver();
