@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1750';
+  var MA_VERSION='2026-09-13-1753';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1063,24 +1064,40 @@ function creuser(){
   DALLE=Array.from({length:H},()=>Array.from({length:L},()=>0));
   const creux=(x,y)=>{if(x>1&&y>2&&x<L-2&&y<H-2)MUR[y][x]=0;};
   const salles=[];
-  const n=6+((alea(niveau*3)*4)|0);
+  const n=7+((alea(niveau*3)*4)|0);
   for(let i=0;i<n;i++){
-    const w=4+((alea(i*3.1+niveau)*6)|0), h=3+((alea(i*7.7+niveau)*5)|0);
-    const cx=5+((alea(i*5.3+niveau)*(L-12))|0), cy=6+((alea(i*9.1+niveau)*(H-14))|0);
+    /* de vraies salles : on doit pouvoir s'y déplacer, pas s'y faufiler */
+    const w=7+((alea(i*3.1+niveau)*7)|0), h=5+((alea(i*7.7+niveau)*6)|0);
+    const cx=8+((alea(i*5.3+niveau)*(L-17))|0), cy=8+((alea(i*9.1+niveau)*(H-18))|0);
     salles.push([cx,cy]);
     for(let a=-w;a<=w;a++)for(let b=-h;b<=h;b++){
       /* les salles ne sont pas des rectangles : on ronge les angles */
-      if(Math.abs(a)===w&&Math.abs(b)>=h-1)continue;
-      if(Math.abs(b)===h&&Math.abs(a)>=w-1)continue;
+      if(Math.abs(a)>=w-1&&Math.abs(b)>=h-1)continue;
+      if(Math.abs(a)===w&&Math.abs(b)>=h-2)continue;
+      if(Math.abs(b)===h&&Math.abs(a)>=w-2)continue;
       creux(cx+a,cy+b);
     }
   }
+  /* les couloirs font trois cases de large : on y croise une bête sans être coincé */
   for(let i=1;i<salles.length;i++){
     let [x,y]=salles[i-1];const [tx,ty]=salles[i];
-    while(x!==tx){x+=Math.sign(tx-x);creux(x,y);creux(x,y+1);
-      if(alea2(x,y)<.2)creux(x,y-1);}
-    while(y!==ty){y+=Math.sign(ty-y);creux(x,y);creux(x+1,y);
-      if(alea2(x*3,y)<.2)creux(x-1,y);}
+    while(x!==tx){x+=Math.sign(tx-x);
+      creux(x,y-1);creux(x,y);creux(x,y+1);
+      if(alea2(x,y)<.28)creux(x,y+2);}
+    while(y!==ty){y+=Math.sign(ty-y);
+      creux(x-1,y);creux(x,y);creux(x+1,y);
+      if(alea2(x*3,y)<.28)creux(x+2,y);}
+  }
+  /* on abat les piliers isolés : une seule case de roche au milieu du vide
+     n'apporte rien, elle hache la vue */
+  for(let b=2;b<H-2;b++)for(let a=2;a<L-2;a++){
+    if(!MUR[b][a])continue;
+    let voisins=0;
+    if(MUR[b-1][a])voisins++;
+    if(MUR[b+1][a])voisins++;
+    if(MUR[b][a-1])voisins++;
+    if(MUR[b][a+1])voisins++;
+    if(voisins<=1)MUR[b][a]=0;
   }
   /* le sol : dalles, gravier, flaques */
   for(let b=0;b<H;b++)for(let a=0;a<L;a++){
@@ -1105,18 +1122,20 @@ function creuser(){
   const poser=(t,n,extra)=>{for(let i=0;i<n;i++){const p=prend();
     if(p)OBJETS.push(Object.assign({t,a:p[0],b:p[1],coups:0,g:(alea2(p[0],p[1])*3)|0},extra||{}));}};
 
+  /* les galeries sont deux fois plus vastes : il faut de quoi les remplir,
+     sinon on marche longtemps sans rien trouver */
   const genres=niveau<=4?['fer','charbon']:niveau<=8?['fer','cuivre','charbon']
     :niveau<=12?['cuivre','argent','charbon']:niveau<=16?['argent','or','cuivre']:['or','gemme','argent'];
-  genres.forEach(t=>poser(t,5+((alea(niveau+t.length)*3)|0)));
-  poser('caillou',16);
-  poser('stalagmite',9);
-  poser('tonneau',5);
-  poser('caisse',4);
-  poser('champi',8);
-  poser('gravats',10);
-  if(palier().eau)poser('flaque',7);
-  if(palier().cristaux)poser('cristal',8);
-  if(palier().mousse)poser('mousse',9);
+  genres.forEach(t=>poser(t,10+((alea(niveau+t.length)*5)|0)));
+  poser('caillou',30);
+  poser('stalagmite',16);
+  poser('tonneau',8);
+  poser('caisse',7);
+  poser('champi',14);
+  poser('gravats',18);
+  if(palier().eau)poser('flaque',12);
+  if(palier().cristaux)poser('cristal',14);
+  if(palier().mousse)poser('mousse',16);
 
   /* le wagonnet abandonné, une fois par niveau */
   const w=prend();if(w)OBJETS.push({t:'wagonnet',a:w[0],b:w[1]});
@@ -1130,7 +1149,7 @@ function creuser(){
   /* les torches, contre les murs du nord */
   for(let b=3;b<H-2;b++)for(let a=2;a<L-2;a++){
     if(MUR[b][a]||!mur(a,b-1))continue;
-    if(alea2(a*3,b*5)<0.06)OBJETS.push({t:'torche',a,b});
+    if(alea2(a*3,b*5)<0.09)OBJETS.push({t:'torche',a,b});
   }
   /* les étais, dans les couloirs étroits */
   for(let b=4;b<H-3;b++)for(let a=3;a<L-3;a++){
