@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-2024';
+  var MA_VERSION='2026-09-13-2040';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1960,7 +1961,7 @@ function dessinerMine(g,x,y){
   roche( 2, 62,'#7b6f62','#6b6055',64);        /* devant */
 
   /* les éboulis au pied */
-  for(let i=0;i<14;i++){
+  for(let i=0;i<22;i++){
     const a=-70+alea(i*3.1)*140, b=-4+alea(i*7.7)*8;
     const s2=3+((alea(i*5)*4)|0);
     R2(a,b,s2,s2*0.8,alea(i*11)<.5?'#8b8378':'#79716a');
@@ -2676,7 +2677,7 @@ function dessinerSouche(g,x,y,gr,neuf){
 }
 
 /* ================= le monde ================= */
-const MONDE=1024;                 // en pixels de jeu
+const MONDE=600;                  // en pixels de jeu (resserré : plus de désert)
 const ZOOM=2;                     /* chaque pixel du jeu fait 2 pixels d'écran :
                                      la caméra est plus haute, on voit plus large */
 let SOL=null;
@@ -2811,16 +2812,21 @@ function construireSol(){
     }
   }
   return c;
+
+  /* les chemins de terre, gravés par-dessus l'herbe et les berges */
+  graverChemins(g);
 }
 
 /* ================= ce qui pousse sur la carte ================= */
-const BORD=56;
+const BORD=34;
 /* ---- la rivière : elle descend du nord au sud en serpentant ---- */
-const RIV_LARGE=17;                              /* demi-largeur de l'eau */
-const rivX=(y)=>330+Math.sin(y/150)*78+Math.sin(y/47)*12;
+const RIV_LARGE=13;                              /* demi-largeur de l'eau */
+/* elle traverse en diagonale du nord-ouest au sud-est : elle coupe
+   vraiment la carte en deux moitiés qu'on utilise toutes les deux */
+const rivX=(y)=>150+y*0.16+Math.sin(y/90)*22;
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
-const PONTS=[210,766];                           /* deux ponts de planches */
+const PONTS=[149,421];                           /* deux ponts de planches */
 /* Le personnage fait 40 px de haut : si le pont est plus court que lui,
    son corps dépasse par-dessus la rambarde et on croit qu'il est dans l'eau.
    Le tablier fait donc 62 px du nord au sud. */
@@ -2867,38 +2873,210 @@ const TAILLES={
  etabli: [{w:42,h:12}]
 };
 
+
+/* ================= LES CHEMINS DE TERRE =================
+   Des sentiers relient le camp à chaque lieu. Ils sont tracés par le plus
+   court chemin, avec une pénalité à chaque virage — sinon le tracé optimal
+   zigzague en escalier au lieu de faire une route. Ils sont gravés UNE FOIS
+   dans le calque du sol, comme les fleurs : zéro coût à l'écran. */
+const PAS_CH=5, N_CH=Math.ceil(MONDE/PAS_CH);
+let SURCHEMIN=null, ROUTES=[];
+function tracerChemin(a,b){
+  const dur=new Uint8Array(N_CH*N_CH);
+  /* seuls l'eau et le bord arrêtent le tracé : le décor, on le déblaie */
+  for(let y=0;y<MONDE;y++){
+    if(surGue(y))continue;
+    for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
+      const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
+      if(gx>=0&&gy>=0&&gx<N_CH&&gy<N_CH)dur[gy*N_CH+gx]=1;
+    }
+  }
+  for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
+    if(i*PAS_CH<BORD-8||j*PAS_CH<BORD-8||i*PAS_CH>MONDE-BORD+8||j*PAS_CH>MONDE-BORD+8)
+      dur[j*N_CH+i]=1;
+  const dep=Math.round(a[1]/PAS_CH)*N_CH+Math.round(a[0]/PAS_CH);
+  const arr=Math.round(b[1]/PAS_CH)*N_CH+Math.round(b[0]/PAS_CH);
+  const cout=new Float32Array(N_CH*N_CH).fill(1e9);
+  const prev=new Int32Array(N_CH*N_CH).fill(-1);
+  const dd=new Int8Array(N_CH*N_CH).fill(-1);
+  const v=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  cout[dep]=0;
+  let front=[dep],tours=0;
+  while(front.length&&tours++<N_CH*4){
+    const suite=[];
+    for(const i of front){
+      const x=i%N_CH,y=(i/N_CH)|0;
+      v.forEach(([dx,dy],k)=>{
+        const nx=x+dx,ny=y+dy;
+        if(nx<0||ny<0||nx>=N_CH||ny>=N_CH)return;
+        const j=ny*N_CH+nx;if(dur[j])return;
+        const c=cout[i]+(dx&&dy?1.42:1)+(dd[i]>=0&&dd[i]!==k?1.8:0);
+        if(c<cout[j]-0.001){cout[j]=c;prev[j]=i;dd[j]=k;suite.push(j);}
+      });
+    }
+    front=suite;
+  }
+  const route=[];let k=arr,garde=0;
+  while(k>=0&&garde++<N_CH*N_CH){route.push([(k%N_CH)*PAS_CH,((k/N_CH)|0)*PAS_CH]);k=prev[k];}
+  return route.reverse();
+}
+function calculerChemins(){
+  const pontN=[Math.round(rivX(PONTS[0])),PONTS[0]];
+  const pontS=[Math.round(rivX(PONTS[1])),PONTS[1]];
+  ROUTES=[[CAMP_FIXE,COFFRE_FIXE],[CAMP_FIXE,FORGE_FIXE],[CAMP_FIXE,CASINO_FIXE],
+          [CAMP_FIXE,MINE_FIXE],[CAMP_FIXE,pontN],[FORGE_FIXE,pontS],
+          [FORGE_FIXE,MINE_FIXE]].map(([a,b])=>tracerChemin(a,b));
+  SURCHEMIN=new Uint8Array(N_CH*N_CH);
+  ROUTES.forEach(r=>r.forEach(([x,y])=>{
+    const gx=Math.round(x/PAS_CH),gy=Math.round(y/PAS_CH);
+    for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++){
+      const k=(gy+b)*N_CH+(gx+a);
+      if(k>=0&&k<N_CH*N_CH)SURCHEMIN[k]=1;
+    }
+  }));
+}
+const TERRE_CH=['#a8926a','#b9a37a','#96805c','#c4b18c','#87734f'];
+function graverChemins(g){
+  if(!ROUTES.length)calculerChemins();
+  ROUTES.forEach(route=>route.forEach(([x,y],i)=>{
+    const larg=5+Math.round(alea(x*0.11+y*0.07)*2);      /* la largeur respire */
+    for(let dy=-larg;dy<=larg;dy++)for(let dx=-larg;dx<=larg;dx++){
+      const d=Math.hypot(dx,dy);if(d>larg)continue;
+      const px=x+dx,py=y+dy;
+      if(px<0||py<0||px>=MONDE||py>=MONDE)continue;
+      if(Math.abs(px-rivX(py))<RIV_LARGE+2)continue;      /* jamais dans l'eau */
+      /* le bord est rongé : la terre se fond dans l'herbe */
+      if(d>larg-2&&alea(px*0.7+py*1.3)<0.45)continue;
+      const t=alea(px*0.31+py*0.19);
+      g.fillStyle=d<2?TERRE_CH[3]:(t<0.2?TERRE_CH[2]:(t<0.75?TERRE_CH[0]:TERRE_CH[1]));
+      g.fillRect(px,py,1,1);
+    }
+    if(i%3===0){                                          /* les deux ornières */
+      g.fillStyle=TERRE_CH[4];g.fillRect(x-2,y,1,1);g.fillRect(x+2,y,1,1);
+    }
+  }));
+}
+/* ce qui tombe sur un sentier est déblayé : on dégage le passage */
+function deblayerChemins(){
+  if(!SURCHEMIN)calculerChemins();
+  const avant=DECOR.length;
+  DECOR=DECOR.filter(o=>{
+    if(o.t==='fleurs')return true;
+    if(['casino','mine','forge','coffre','pont','comptoir'].includes(o.t))return true;
+    const k=Math.round(o.y/PAS_CH)*N_CH+Math.round(o.x/PAS_CH);
+    return k<0||k>=N_CH*N_CH||!SURCHEMIN[k];
+  });
+  return avant-DECOR.length;
+}
+/* ================= LE TEST D'ACCÈS =================
+   Un parcours en largeur depuis le camp : tout ce qui n'est pas atteint est
+   une poche fermée. On le fait tourner au chargement ; s'il trouve quelque
+   chose, on retire les objets qui bouchent plutôt que de laisser un joueur
+   devant un mur. */
+function verifierAcces(){
+  const bloque=new Uint8Array(N_CH*N_CH);
+  const coupables=new Map();
+  DECOR.forEach((o,idx)=>{
+    const t=TAILLES[o.t];if(!t)return;
+    const b=t[Math.min(t.length-1,o.gr||0)];
+    for(let dy=-b.h;dy<=2;dy++)for(let dx=-b.w/2;dx<=b.w/2;dx++){
+      const gx=Math.round((o.x+dx)/PAS_CH),gy=Math.round((o.y+dy)/PAS_CH);
+      if(gx<0||gy<0||gx>=N_CH||gy>=N_CH)continue;
+      const k=gy*N_CH+gx;bloque[k]=1;
+      if(!coupables.has(k))coupables.set(k,idx);
+    }
+  });
+  for(let y=0;y<MONDE;y++){
+    if(surGue(y))continue;
+    for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
+      const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
+      if(gx>=0&&gy>=0&&gx<N_CH&&gy<N_CH)bloque[gy*N_CH+gx]=1;
+    }
+  }
+  for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
+    if(i*PAS_CH<BORD||j*PAS_CH<BORD||i*PAS_CH>MONDE-BORD||j*PAS_CH>MONDE-BORD)
+      bloque[j*N_CH+i]=1;
+  if(SURCHEMIN)for(let i=0;i<N_CH*N_CH;i++)if(SURCHEMIN[i])bloque[i]=0;
+  const vu=new Uint8Array(N_CH*N_CH);
+  const i0=Math.round(CAMP_FIXE[0]/PAS_CH),j0=Math.round((CAMP_FIXE[1]+30)/PAS_CH);
+  let front=[j0*N_CH+i0];vu[front[0]]=1;
+  while(front.length){
+    const suite=[];
+    for(const i of front){
+      const x=i%N_CH,y=(i/N_CH)|0;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
+        const nx=x+dx,ny=y+dy;
+        if(nx<0||ny<0||nx>=N_CH||ny>=N_CH)return;
+        const k=ny*N_CH+nx;if(vu[k]||bloque[k])return;
+        vu[k]=1;suite.push(k);
+      });
+    }
+    front=suite;
+  }
+  let enfermees=0;
+  const aRetirer=new Set();
+  for(let i=0;i<N_CH*N_CH;i++){
+    if(bloque[i]||vu[i])continue;
+    enfermees++;
+    /* la case est libre mais inatteignable : on cherche un objet voisin qui
+       la mure, et on le retire */
+    const x=i%N_CH,y=(i/N_CH)|0;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{
+      const k=(y+dy)*N_CH+(x+dx);
+      if(coupables.has(k))aRetirer.add(coupables.get(k));
+    });
+  }
+  if(aRetirer.size){
+    DECOR=DECOR.filter((o,i)=>!aRetirer.has(i));invaliderGrille();
+  }
+  return {enfermees,retires:aRetirer.size};
+}
+
 function semerDecor(){
   DECOR=[];
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
-  const dedans=(x,y)=>x>BORD+24&&x<MONDE-BORD-24&&y>BORD+60&&y<MONDE-BORD-14
-                     &&Math.abs(x-rivX(y))>RIV_LARGE+10;
-  const depart=(x,y)=>Math.hypot(x-MONDE/2,y-MONDE/2)<90;   /* clairière d'arrivée */
+  const dedans=(x,y)=>x>BORD+16&&x<MONDE-BORD-16&&y>BORD+30&&y<MONDE-BORD-12
+                     &&Math.abs(x-rivX(y))>RIV_LARGE+8;
+  const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
+  /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
+     plus profonde au sud du bâtiment : c'est par là qu'on entre. */
+  const LIEUX_FIXES=[[CAMP_FIXE,34],[COFFRE_FIXE,20],[FORGE_FIXE,30],
+                     [CASINO_FIXE,36],[MINE_FIXE,32]];
+  const surLieu=(x,y)=>LIEUX_FIXES.some(([L,r])=>{
+    const dy=y-L[1];
+    return Math.hypot(x-L[0],dy<0?dy:dy*0.6)<r+14;
+  });
 
   /* trois bosquets d'arbres, pour donner des repères */
-  const bosquets=[[240,260],[790,330],[360,780],[820,790]];
+  const bosquets=[[140,110],[470,105],[120,470],[480,380],[300,510],[95,300]];
   bosquets.forEach((b,k)=>{
-    for(let i=0;i<14;i++){
+    for(let i=0;i<11;i++){
       const x=Math.round(b[0]+(A(k*9+i)-.5)*230);
       const y=Math.round(b[1]+(A(k*13+i)-.5)*200);
-      if(!dedans(x,y)||depart(x,y)||!libre(x,y,46))continue;
+      if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,34))continue;
       DECOR.push({t:'arbre',x,y,gr:Math.floor(A(k+i*3)*3)});
     }
   });
   /* des arbres isolés, partout ailleurs */
-  for(let i=0;i<40;i++){
+  for(let i=0;i<90;i++){
     const x=Math.round(BORD+20+A(i*1.7)*(MONDE-2*BORD-40));
     const y=Math.round(BORD+40+A(i*2.9)*(MONDE-2*BORD-60));
-    if(!dedans(x,y)||depart(x,y)||!libre(x,y,54))continue;
+    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
     DECOR.push({t:'arbre',x,y,gr:Math.floor(A(i*5)*3)});
   }
-  /* Plus de rochers à la surface : la pierre se ramasse à la mine.
-     Le terrain est un camp, pas une carrière. */
+  /* --- les pierres : de petits tas, par endroits --- */
+  for(let i=0;i<90;i++){
+    const x=Math.round(BORD+14+A(i*3.1)*(MONDE-2*BORD-28));
+    const y=Math.round(BORD+24+A(i*4.3)*(MONDE-2*BORD-40));
+    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
+    DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
+  }
   /* buissons */
-  for(let i=0;i<55;i++){
+  for(let i=0;i<150;i++){
     const x=Math.round(BORD+18+A(i*5.7)*(MONDE-2*BORD-36));
     const y=Math.round(BORD+34+A(i*6.3)*(MONDE-2*BORD-50));
-    if(!dedans(x,y)||depart(x,y)||!libre(x,y,34))continue;
+    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
   }
   /* --- les rochers à minerai --- */
@@ -2909,7 +3087,7 @@ function semerDecor(){
      La pierre reste : elle vient des rochers. */
 
   /* --- l'argile, sur les berges de la rivière --- */
-  for(let i=0;i<13;i++){
+  for(let i=0;i<14;i++){
     const y=Math.round(BORD+60+A(i*2.3)*(MONDE-2*BORD-120));
     const cote=A(i*3.7)<.5?-1:1;
     const x=Math.round(rivX(y)+cote*(RIV_LARGE+7+A(i*5.1)*5));
@@ -2917,7 +3095,7 @@ function semerDecor(){
     DECOR.push({t:'argile',x,y,gr:0});
   }
   /* --- les roseaux, au bord de l'eau --- */
-  for(let i=0;i<30;i++){
+  for(let i=0;i<48;i++){
     const y=Math.round(BORD+50+A(i*4.7)*(MONDE-2*BORD-100));
     const cote=A(i*6.1)<.5?-1:1;
     const x=Math.round(rivX(y)+cote*(RIV_LARGE+16+A(i*7.3)*12));
@@ -3000,6 +3178,12 @@ function semerDecor(){
 
   /* les deux ponts, posés en travers de la rivière */
   PONTS.forEach(py=>DECOR.push({t:'pont',x:Math.round(rivX(py)),y:py,gr:0}));
+
+  /* on dégage les sentiers, puis on vérifie qu'on peut aller partout */
+  const deblayes=deblayerChemins();
+  const acces=verifierAcces();
+  if(acces.enfermees)
+    console.warn('carte : '+acces.enfermees+' cases enfermées, '+acces.retires+' objets retirés');
 
   /* on garde la liste triée : ce qui est en bas se dessine par-dessus */
   DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
@@ -3348,13 +3532,19 @@ async function descendreDeLigne(){
 
 /* Les bâtiments sont plantés aux mêmes coordonnées pour tout le monde :
    c'est la même carte, donc le même casino au même endroit. */
-const CASINO_FIXE=[660,430];
-const CAMP_FIXE=[700,624];
-const COFFRE_FIXE=[596,560];
-const MINE_FIXE  =[830,236];                    /* la carrière, au nord-est */
-const FORGE_FIXE =[430,520];                    /* la forge, sur la rive est */                    /* la carrière, au nord-est */
-                  /* rive ouest, en face du casino */
-let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
+/* Chaque lieu occupe sa part de la carte, au lieu de s'entasser au centre.
+   La forge est au bord de l'eau, la mine adossée au coin sud-est pour que
+   sa falaise ait un fond, le casino au nord-est loin du travail. */
+const CAMP_FIXE  =[330,300];                    /* le campement, au centre */
+const COFFRE_FIXE=[352,212];                    /* à 91 du camp */
+const FORGE_FIXE =[222,368];                    /* à 18 de la berge */
+const CASINO_FIXE=[452,196];                    /* au nord-est */
+const MINE_FIXE  =[516,470];                    /* la carrière, au sud-est */
+/* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
+   serait coincé hors du monde. On le ramène au camp. */
+const dansLaCarte=(v)=>typeof v==='number'&&v>BORD&&v<MONDE-BORD;
+let joueur={x:dansLaCarte(e.x)?e.x:CAMP_FIXE[0],
+            y:dansLaCarte(e.y)?e.y:CAMP_FIXE[1]+30,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 
 /* ================= rendu ================= */
