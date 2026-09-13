@@ -1502,6 +1502,146 @@ function dessinerFleurs(g,x,y,gr){
 
 /* les petits logos, dessinés au pixel */
 
+/* ================= l'entrée de la mine =================
+   Une carrière taillée dans la roche : le front de taille, l'étai de bois,
+   les rails qui sortent du noir, le wagonnet et la lanterne du contremaître. */
+function dessinerMine(g,x,y){
+  const t=Date.now()/1000;
+  const R2=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+
+  /* l'ombre au sol, large : c'est une falaise */
+  g.fillStyle=VERTS.ombre;
+  g.beginPath();g.ellipse(x+2,y-2,74,15,0,0,7);g.fill();
+
+  /* ---- la falaise : trois plans de roche, du plus lointain au plus proche ---- */
+  const roche=(dy,h,c1,c2,larg)=>{
+    g.fillStyle=c1;
+    g.beginPath();
+    g.moveTo(x-larg,y+dy);
+    g.lineTo(x-larg+8,y+dy-h*0.74);
+    g.lineTo(x-larg*0.42,y+dy-h);
+    g.lineTo(x+larg*0.30,y+dy-h*0.92);
+    g.lineTo(x+larg-10,y+dy-h*0.58);
+    g.lineTo(x+larg,y+dy);
+    g.closePath();g.fill();
+    /* les strates */
+    g.fillStyle=c2;
+    for(let i=1;i<4;i++){
+      const yy=y+dy-h*(i/4.6);
+      g.fillRect(x-larg+6*i,yy,larg*2-12*i,2);
+    }
+  };
+  roche(-6,104,'#5b5148','#4c433b',88);        /* le fond */
+  roche(-2, 86,'#6b6055','#5b5148',76);        /* le milieu */
+  roche( 2, 62,'#7b6f62','#6b6055',64);        /* devant */
+
+  /* les éboulis au pied */
+  for(let i=0;i<14;i++){
+    const a=-70+alea(i*3.1)*140, b=-4+alea(i*7.7)*8;
+    const s2=3+((alea(i*5)*4)|0);
+    R2(a,b,s2,s2*0.8,alea(i*11)<.5?'#8b8378':'#79716a');
+  }
+
+  /* ---- la galerie : un trou vraiment noir ---- */
+  g.fillStyle='#0d0a08';
+  g.beginPath();
+  g.moveTo(x-26,y+2);
+  g.lineTo(x-26,y-40);
+  g.quadraticCurveTo(x,y-58,x+26,y-40);
+  g.lineTo(x+26,y+2);
+  g.closePath();g.fill();
+  /* la profondeur : un dégradé qui avale la lumière */
+  const d=g.createRadialGradient(x,y-14,4,x,y-14,34);
+  d.addColorStop(0,'rgba(0,0,0,1)');
+  d.addColorStop(1,'rgba(28,22,16,0)');
+  g.fillStyle=d;
+  g.beginPath();g.ellipse(x,y-16,26,26,0,0,7);g.fill();
+
+  /* ---- l'encadrement de bois : deux montants et un linteau ---- */
+  R2(-34,-46,9,48,'#6b4a28');R2(-34,-46,3,48,'#8a6238');
+  R2(25,-46,9,48,'#5b3f21');R2(25,-46,3,48,'#7d5934');
+  R2(-38,-52,76,8,'#7d5934');R2(-38,-52,76,3,'#96703f');
+  /* les clous */
+  g.fillStyle='#3d2a17';
+  [[-32,-49],[28,-49],[-32,-8],[28,-8]].forEach(([a,b])=>g.fillRect(x+a,y+b,3,3));
+  /* l'étai en diagonale, qui soutient le linteau */
+  g.strokeStyle='#6b4a28';g.lineWidth=5;
+  g.beginPath();
+  g.moveTo(x-32,y-44);g.lineTo(x-20,y-50);
+  g.moveTo(x+32,y-44);g.lineTo(x+20,y-50);
+  g.stroke();
+
+  /* ---- les rails qui sortent de la galerie ---- */
+  g.fillStyle='#5b4a38';
+  for(let i=0;i<5;i++){
+    const b=2+i*7;
+    g.fillRect(x-14-i*2,y+b,28+i*4,3);        /* les traverses */
+  }
+  g.fillStyle='#8b939a';
+  g.beginPath();g.moveTo(x-9,y+2);g.lineTo(x-19,y+36);g.lineTo(x-15,y+36);g.lineTo(x-6,y+2);
+  g.closePath();g.fill();
+  g.beginPath();g.moveTo(x+6,y+2);g.lineTo(x+15,y+36);g.lineTo(x+19,y+36);g.lineTo(x+9,y+2);
+  g.closePath();g.fill();
+
+  /* ---- le wagonnet, garé sur le côté ---- */
+  const wx=-56, wy=6;
+  R2(wx-13,wy-14,26,12,'#6b5a4a');
+  R2(wx-13,wy-14,26,3,'#84705c');
+  R2(wx-13,wy-6,26,3,'#4f4238');
+  g.fillStyle='#3a3430';
+  g.beginPath();g.arc(x+wx-8,y+wy,4,0,7);g.fill();
+  g.beginPath();g.arc(x+wx+8,y+wy,4,0,7);g.fill();
+  g.fillStyle='#6b6055';
+  g.beginPath();g.arc(x+wx-8,y+wy,1.6,0,7);g.fill();
+  g.beginPath();g.arc(x+wx+8,y+wy,1.6,0,7);g.fill();
+  /* du minerai qui dépasse */
+  R2(wx-8,wy-18,5,5,'#b06a3a');
+  R2(wx-1,wy-19,5,5,'#8b939a');
+  R2(wx+5,wy-18,4,4,'#3a373c');
+
+  /* ---- la lanterne accrochée au linteau, qui se balance ---- */
+  const bal=Math.sin(t*1.1)*0.07;
+  g.save();
+  g.translate(x+30,y-50);
+  g.rotate(bal);
+  R2(0,0,0,0,'#000');
+  g.fillStyle='#4f3520';g.fillRect(-1,0,2,9);
+  g.fillStyle='#c9a24a';g.fillRect(-6,9,12,12);
+  const cl=((t*2.4)%1)<.7;
+  g.fillStyle=cl?'#ffe9a8':'#e8a94a';g.fillRect(-4,11,8,8);
+  g.fillStyle='#9a7225';g.fillRect(-7,8,14,2);
+  g.restore();
+  /* son halo */
+  g.save();g.globalAlpha=.12+Math.sin(t*2.4)*0.03;
+  g.fillStyle='#ffd27a';
+  g.beginPath();g.arc(x+30,y-38,30,0,7);g.fill();g.restore();
+
+  /* ---- l'écriteau planté devant ---- */
+  const px=48, py=6;
+  R2(px,py-16,3,16,'#6b4a28');
+  R2(px-14,py-30,31,15,'#3d2a17');
+  R2(px-13,py-29,29,13,'#c9b48a');
+  g.fillStyle='#4a3420';g.font='700 7px system-ui';g.textAlign='center';
+  g.fillText('LA MINE',x+px+1,y+py-20);
+  g.textAlign='left';
+  /* une pioche croisée dessous */
+  g.strokeStyle='#8a6238';g.lineWidth=2;
+  g.beginPath();
+  g.moveTo(x+px-9,y+py-15);g.lineTo(x+px+11,y+py-9);
+  g.stroke();
+  g.fillStyle='#a2a9b0';
+  g.fillRect(x+px+9,y+py-12,5,3);
+
+  /* ---- la poussière qui sort de la galerie ---- */
+  for(let i=0;i<3;i++){
+    const p=((t*0.26+i*0.33)%1);
+    g.globalAlpha=(1-p)*0.22;
+    g.fillStyle='#b9a88f';
+    g.fillRect(x-6+Math.sin(p*6+i)*9, y-14-p*30, 4, 3);
+  }
+  g.globalAlpha=1;
+}
+
 function dessinerCasino(g,x,y){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const P=(pts,c)=>{g.fillStyle=c;g.beginPath();
@@ -2053,6 +2193,7 @@ const TAILLES={
  souche: null,
  pont:   null,
  casino: null,                                  /* traité à part : il a de la profondeur */
+ mine: null,                                    /* pareil : la falaise est dessinée à la main */
  comptoir: null,                                /* pareil */
  four:   [{w:34,h:12}],
  etabli: [{w:42,h:12}]
@@ -2193,6 +2334,9 @@ function semerDecor(){
     return !(dx<128&&dy>-180&&dy<92);
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
+  e.mine=MINE_FIXE;
+  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
+  DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
 
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
@@ -2296,6 +2440,11 @@ function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
+  /* la falaise de la mine : on ne passe pas au travers, sauf par la galerie */
+  if(e.mine){
+    const dx=x-e.mine[0], dy=y-e.mine[1];
+    if(Math.abs(dx)<76&&dy>-20&&dy<8&&!(Math.abs(dx)<22&&dy>-6))return true;
+  }
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   if(e.casino){
     const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
@@ -2349,7 +2498,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
-    const haut=(o.t==='casino')?230:0;
+    const haut=(o.t==='casino')?230:(o.t==='mine'?150:0);
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -2443,6 +2592,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
+    else if(o.t==='mine')dessinerMine(g,x,y);
 
     else if(o.t==='coffre'){
       /* Une fois vidé, il s'enfonce dans l'herbe et disparaît.
@@ -2545,6 +2695,7 @@ async function descendreDeLigne(){
 const CASINO_FIXE=[660,430];
 const CAMP_FIXE=[700,624];
 const COFFRE_FIXE=[596,560];
+const MINE_FIXE  =[830,236];                    /* la carrière, au nord-est */
                   /* rive ouest, en face du casino */
 let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
@@ -3035,6 +3186,16 @@ function dessinerMini(){
   g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
   g.stroke();
 
+  /* l'entrée de la mine, sur la boussole */
+  if(e.mine){
+    const X=px(e.mine[0]), Y=py(e.mine[1]);
+    if(X>-8&&Y>-8&&X<T+8&&Y<T+8){
+      g.fillStyle='#5b5148';g.fillRect(X-6,Y-5,12,9);
+      g.fillStyle='#0d0a08';g.fillRect(X-3,Y-3,6,7);
+      g.fillStyle='#c9a24a';g.fillRect(X-6,Y-7,12,2);
+    }
+  }
+
   /* les autres survivants : à portée on les pose, au loin on les colle au bord */
   for(const [,a] of AUTRES){
     const dx=a.x-joueur.x, dy=a.y-joueur.y, d=Math.hypot(dx,dy);
@@ -3336,7 +3497,7 @@ async function chargerLaCarte(){
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
-    const garder=['pont','casino','four','etabli','coffre','souche','gravats'];
+    const garder=['pont','casino','mine','four','etabli','coffre','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -3717,12 +3878,12 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='four'&&o.t!=='etabli'&&!o.bati&&!cueillable&&!minerai)continue;
+       &&o.t!=='mine'&&o.t!=='four'&&o.t!=='etabli'&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
     const d=Math.hypot(o.x-joueur.x,o.y-joueur.y-6);
-    const portee=(o.t==='casino'||o.t==='comptoir')?62:48;   /* on les voit de plus loin */
+    const portee=(o.t==='casino'||o.t==='mine')?62:48;   /* on les voit de plus loin */
     if(d<portee&&d<d0){d0=d;res=o;}
   }
   return res;
@@ -3770,6 +3931,8 @@ function majAction(){
     b.innerHTML='Forger<small>L’ÉTABLI</small>';
   }else if(o.bati){
     b.innerHTML='';b.classList.remove('on');return;
+  }else if(o.t==='mine'){
+    b.innerHTML='Descendre<small>LA MINE</small>';
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
   
@@ -3813,6 +3976,11 @@ function agir(){
   }
   if(o.t==='four')return ouvrirFour();
   if(o.t==='etabli')return ouvrirEtabli();
+  if(o.t==='mine'){
+    sauver();envoyerSauvegarde(true);
+    try{direOuJeSuis&&direOuJeSuis('mine');}catch(x){}
+    location.href='mine.html';return;
+  }
   if(o.t==='casino'){
     sauver();monterEnLigne(true);
     location.href='casino.html';                 /* on entre dans la salle */
