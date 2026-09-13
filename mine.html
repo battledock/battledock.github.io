@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1700';
+  var MA_VERSION='2026-09-13-1750';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -82,7 +83,7 @@
   html,body{height:100%;overflow:hidden;background:#07090a;touch-action:none;
     font-family:system-ui,-apple-system,sans-serif;color:#e8dcc0}
   canvas#jeu{display:block;width:100%;height:100%;image-rendering:pixelated}
-  #joy{position:fixed;left:0;bottom:0;width:60%;height:48%;z-index:3}
+  #joy{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
 
   #haut{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:6;display:grid;gap:5px}
   .jauge{display:flex;align-items:center;gap:8px;padding:6px 11px 6px 8px;border-radius:13px;
@@ -178,7 +179,7 @@
 </head>
 <body>
 <canvas id="jeu"></canvas>
-<div id="joy"></div>
+<canvas id="joy"></canvas>
 <div id="haut">
   <div class="jauge">
     <svg viewBox="0 0 16 16" width="13"><path d="M8 14 L2 8 A3.4 3.4 0 0 1 8 4 A3.4 3.4 0 0 1 14 8z" fill="#e05a5a"/></svg>
@@ -193,7 +194,7 @@
 </div>
 <div id="prof">NIVEAU 1<small>les premières galeries</small></div>
 <div id="msg"></div>
-<div id="aide">glisse le doigt n’importe où à gauche pour marcher · le bouton s’allume près d’un filon ou d’une bête</div>
+<div id="aide">pose le doigt n’importe où pour marcher · le bouton s’allume près d’un filon ou d’une bête</div>
 <button id="action"></button>
 <div id="menus">
   <button class="menuB" id="b-sac">SAC</button>
@@ -2119,27 +2120,115 @@ function majSac(){
     '<b>'+ch+'/'+CHARGE_MAX+'</b>';
 }
 
-/* ================= le joystick, comme sur le terrain ================= */
-let joyX=0,joyY=0,J=null;
-const zone=$('joy');
-zone.addEventListener('touchstart',(ev)=>{const t=ev.changedTouches[0];
-  J={id:t.identifier,ox:t.clientX,oy:t.clientY,x:t.clientX,y:t.clientY};ev.preventDefault();},{passive:false});
-zone.addEventListener('touchmove',(ev)=>{if(!J)return;
-  for(const t of ev.changedTouches)if(t.identifier===J.id){J.x=t.clientX;J.y=t.clientY;}
-  ev.preventDefault();},{passive:false});
-const lacher=()=>{J=null;joyX=0;joyY=0;};
-zone.addEventListener('touchend',lacher);zone.addEventListener('touchcancel',lacher);
-const touches={};
-addEventListener('keydown',e=>{touches[e.key]=true;if(e.key==='e')$('action').onclick();});
-addEventListener('keyup',e=>{touches[e.key]=false;});
-function majJoy(){
-  if(J){const dx=J.x-J.ox, dy=J.y-J.oy, d=Math.hypot(dx,dy);
-    if(d>6){const k=Math.min(1,d/52)/d;joyX=dx*k;joyY=dy*k;}else{joyX=0;joyY=0;}
-  }else{
-    joyX=(touches.ArrowRight||touches.d?1:0)-(touches.ArrowLeft||touches.q?1:0);
-    joyY=(touches.ArrowDown||touches.s?1:0)-(touches.ArrowUp||touches.z?1:0);
-  }
+/* ================= le joystick du jeu, repris tel quel ================= */
+let joyX=0,joyY=0;
+/* ================= le joystick, flottant =================
+   Il n'a pas de place fixe : il apparaît là où le pouce se pose,
+   dans toute la moitié gauche de l'écran, et s'efface quand on lâche. */
+const jc=$('joy'), jg=jc.getContext('2d');
+let JDPR=1;
+function tailleJoy(){
+  JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  jc.width=Math.round(window.innerWidth*JDPR);
+  jc.height=Math.round(window.innerHeight*JDPR);
+  jg.setTransform(JDPR,0,0,JDPR,0,0);
 }
+addEventListener('resize',tailleJoy);
+tailleJoy();
+
+const RAYON=52, POUCE=22;
+let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
+
+const pointDe=t=>[t.clientX,t.clientY];
+function prendre(x,y){
+  const limite=window.innerHeight-96;          /* la barre du bas */
+  if(y>limite)y=limite;
+  J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
+  joyX=joyY=0;
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}   /* un petit clic sous le doigt */
+}
+function tirer(x,y){
+  const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
+  const a=Math.atan2(dy,dx);
+  const m=Math.min(d,RAYON);
+  J.x=J.ox+Math.cos(a)*m;J.y=J.oy+Math.sin(a)*m;
+  /* si le pouce s'éloigne trop, le manche se déplace avec lui */
+  if(d>RAYON){J.ox=x-Math.cos(a)*RAYON;J.oy=y-Math.sin(a)*RAYON;}
+  const n=Math.min(1,d/RAYON);
+  joyX=d<1?0:Math.cos(a)*n;joyY=d<1?0:Math.sin(a)*n;
+  if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
+}
+function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
+
+/* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
+const pageOuverte=()=>$('page').classList.contains('on')||$('pageA').classList.contains('on')
+                    ||$('mort').classList.contains('on');
+/* le joystick se prend n'importe où sur la carte, des deux côtés.
+   On ne l'ignore que si le doigt touche un bouton de l'interface. */
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('button,#menus,#action,#page,#pageA,#mort,#haut,#prof'));
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
+
+/* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
+   ailleurs, le toucher passe normalement aux boutons */
+document.addEventListener('touchstart',ev=>{
+  for(const t of ev.changedTouches){
+    if(J.actif)continue;
+    const [x,y]=pointDe(t);
+    if(!zoneMarche(x,y,ev.target))continue;
+    ev.preventDefault();
+    J.id=t.identifier;prendre(x,y);
+  }
+},{passive:false});
+document.addEventListener('touchmove',ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){
+    ev.preventDefault();
+    const [x,y]=pointDe(t);tirer(x,y);
+  }
+},{passive:false});
+['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();lacher();}
+},{passive:false}));
+
+document.addEventListener('mousedown',ev=>{
+  if(zoneMarche(ev.clientX,ev.clientY,ev.target))prendre(ev.clientX,ev.clientY);});
+addEventListener('mousemove',ev=>{if(J.actif)tirer(ev.clientX,ev.clientY);});
+addEventListener('mouseup',()=>{if(J.actif)lacher();});
+
+addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+  z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){joyX=k[0];joyY=k[1];}});
+addEventListener('keyup',()=>{joyX=joyY=0;});
+
+function dessinerJoy(dt){
+  /* il s'efface doucement quand on lâche */
+  if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
+  jg.clearRect(0,0,window.innerWidth,window.innerHeight);
+  if(J.vie<=0)return;
+  jg.save();
+  jg.globalAlpha=J.vie;
+  /* la couronne */
+  jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
+  const f=jg.createRadialGradient(J.ox,J.oy-14,6,J.ox,J.oy,RAYON);
+  f.addColorStop(0,'rgba(240,246,238,.26)');f.addColorStop(1,'rgba(200,212,198,.12)');
+  jg.fillStyle=f;jg.fill();
+  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,246,238,.38)';jg.stroke();
+  /* le sens, en léger */
+  const d=Math.hypot(J.x-J.ox,J.y-J.oy);
+  if(d>6){
+    const a=Math.atan2(J.y-J.oy,J.x-J.ox);
+    jg.beginPath();
+    jg.arc(J.ox,J.oy,RAYON-2,a-0.5,a+0.5);
+    jg.lineWidth=4;jg.strokeStyle='rgba(169,232,138,.5)';jg.stroke();
+  }
+  /* le manche */
+  jg.beginPath();jg.arc(J.x,J.y+3,POUCE,0,7);jg.fillStyle='rgba(10,18,12,.22)';jg.fill();
+  const k=jg.createRadialGradient(J.x-5,J.y-8,3,J.x,J.y,POUCE+1);
+  if(d>6){k.addColorStop(0,'#a9e88a');k.addColorStop(1,'#3f7d4a');}
+  else{k.addColorStop(0,'#f4f7f0');k.addColorStop(1,'#c9d2c2');}
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k;jg.fill();
+  jg.lineWidth=2.5;jg.strokeStyle=d>6?'#2c6b32':'rgba(40,50,40,.4)';jg.stroke();
+  jg.restore();
+}
+
 
 /* ================= la boucle ================= */
 function taille(){
@@ -2157,7 +2246,6 @@ addEventListener('resize',taille);
 let t0=performance.now();
 function boucle(t){
   const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  majJoy();
   const d=Math.hypot(joyX,joyY);
   if(d>0.08&&GESTE.t<=0&&MUR.length){
     const v=78*dt*Math.min(1,d);
@@ -2203,6 +2291,7 @@ function boucle(t){
     if(TEXTES[i].t>1.4)TEXTES.splice(i,1);}
   if(secousse>0)secousse=Math.max(0,secousse-dt*18);
   dessiner();if(MUR.length)majAction();
+  dessinerJoy(dt);
   requestAnimationFrame(boucle);
 }
 
