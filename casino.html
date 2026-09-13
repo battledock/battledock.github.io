@@ -1,5 +1,43 @@
 <!doctype html>
 <html lang="fr"><head>
+<!-- ===== la mise à jour : le jeu ne reste jamais bloqué sur une vieille version ===== -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* Ajouté au signet, un navigateur garde la page en mémoire et ne va plus
+   jamais la rechercher. On lui demande donc, à chaque ouverture, quelle est
+   la version publiée : si elle a changé, on recharge une seule fois avec une
+   adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
+(function(){
+  var MA_VERSION='2026-09-13-1210';
+  var cle='bdl.version.vue';
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v||d.v===MA_VERSION)return;
+        /* on ne recharge qu'une fois par version, sinon on bouclerait */
+        var deja=null;
+        try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        var u=location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v);
+        location.replace(u);
+      })
+      .catch(function(){});
+  }
+  verifier();
+  /* et quand on revient sur l'onglet après un moment */
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu<60000)return;
+    vu=Date.now();verifier();
+  });
+})();
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
 <title>Casino — Survivre</title>
