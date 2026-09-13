@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1225';
+  var MA_VERSION='2026-09-13-1235';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 <meta charset="utf-8">
@@ -1146,48 +1147,384 @@ function pixelNet(f){const a=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled
   ctx.imageSmoothingEnabled=a;}
 
 /* ================= les bêtes ================= */
+/* ================= les bêtes =================
+   Chacune a sa silhouette : on doit la reconnaître à sa forme, même
+   au bord du halo, sans lire son nom. */
 function bete(g,b,x,y){
-  const t=Date.now()/1000;
-  const T=b.taille, saute=b.vole?Math.sin(t*4+b.t)*4:0;
-  const cl=b.touche>0?'#ffd2d2':b.coul[0];
-  g.fillStyle='rgba(0,0,0,.4)';
-  g.beginPath();g.ellipse(x,y,11*T,4*T,0,0,7);g.fill();
-  const yy=y-saute;
-  if(b.vole){
-    const bat=Math.sin(t*13+b.t)>0?1:-1;
-    g.fillStyle=b.coul[1];
-    g.beginPath();g.moveTo(x,yy-14*T);g.lineTo(x-15*T,yy-18*T-bat*3);
-    g.lineTo(x-6*T,yy-9*T);g.closePath();g.fill();
-    g.beginPath();g.moveTo(x,yy-14*T);g.lineTo(x+15*T,yy-18*T+bat*3);
-    g.lineTo(x+6*T,yy-9*T);g.closePath();g.fill();
-  }
-  R(g,x-7*T,yy-16*T,14*T,12*T,cl);
-  R(g,x-7*T,yy-16*T,14*T,3*T,b.touche>0?'#fff':b.coul[1]);
-  if(!b.vole){
-    R(g,x-6*T,yy-4*T,3*T,4*T,b.coul[1]);
-    R(g,x+3*T,yy-4*T,3*T,4*T,b.coul[1]);
-  }
-  /* les yeux, rouges quand il te poursuit */
-  const oeil=b.chasse?'#ff5a4a':'#ffd27a';
-  R(g,x-4*T,yy-12*T,3*T,3*T,oeil);
-  R(g,x+2*T,yy-12*T,3*T,3*T,oeil);
-  if(b.nom==='araignée'){
-    g.strokeStyle=b.coul[1];g.lineWidth=1.4;
-    for(let i=-1;i<=1;i+=2)for(let k=0;k<3;k++){
-      g.beginPath();g.moveTo(x+i*5*T,yy-10*T+k*3);
-      g.lineTo(x+i*(12+k*2)*T,yy-6*T+k*4);g.stroke();
+  const t=Date.now()/1000, T=b.taille;
+  const touche=b.touche>0;
+  const pas=Math.sin(t*7+b.t);              /* le pas, ou le battement d'aile */
+  const flotte=b.vole?Math.sin(t*3.4+b.t)*5:0;
+  const yy=y-flotte;
+  const cl=touche?'#ffdede':b.coul[0];
+  const so=touche?'#ffb9b9':b.coul[1];
+  const oeil=b.chasse?'#ff4a3a':'#ffcf6a';
+
+  /* l'ombre, plus resserrée quand la bête vole */
+  g.fillStyle='rgba(0,0,0,'+(b.vole?.28:.42)+')';
+  g.beginPath();g.ellipse(x,y,11*T*(b.vole?.7:1),4*T,0,0,7);g.fill();
+
+  g.save();
+  if(touche){g.save();g.globalAlpha=.5;}
+
+  switch(b.nom){
+  /* ---- le rat : long, bas sur pattes, la queue qui fouette ---- */
+  case 'rat des galeries':{
+    const q=Math.sin(t*6+b.t)*4;
+    g.strokeStyle=so;g.lineWidth=2*T;
+    g.beginPath();g.moveTo(x-9*T,yy-5*T);
+    g.quadraticCurveTo(x-18*T,yy-7*T+q,x-22*T,yy-2*T+q);g.stroke();
+    R(g,x-4*T,yy-3*T+Math.abs(pas),3*T,4*T,so);      /* les pattes */
+    R(g,x+3*T,yy-3*T-Math.abs(pas),3*T,4*T,so);
+    g.fillStyle=cl;                                   /* le corps */
+    g.beginPath();g.ellipse(x-1*T,yy-8*T,10*T,6*T,0,0,7);g.fill();
+    g.fillStyle=so;
+    g.beginPath();g.ellipse(x-1*T,yy-6*T,10*T,3.4*T,0,0,7);g.fill();
+    g.fillStyle=cl;                                   /* la tête */
+    g.beginPath();g.ellipse(x+9*T,yy-9*T,6*T,5*T,0,0,7);g.fill();
+    g.fillStyle=so;                                   /* l'oreille */
+    g.beginPath();g.ellipse(x+7*T,yy-13*T,3*T,3.4*T,0,0,7);g.fill();
+    g.fillStyle='#e8b2b6';
+    g.beginPath();g.ellipse(x+7*T,yy-13*T,1.4*T,1.8*T,0,0,7);g.fill();
+    R(g,x+12*T,yy-10*T,2*T,2*T,oeil);                 /* l'œil */
+    R(g,x+14*T,yy-8*T,2*T,1.4*T,'#f0c4c8');           /* le museau */
+    g.fillStyle='#fff';                               /* la dent */
+    g.fillRect(x+13*T,yy-6.6*T,1.4*T,2*T);
+    break;}
+
+  /* ---- la chauve-souris : deux grandes ailes membranées ---- */
+  case 'chauve-souris':{
+    const bat=Math.sin(t*11+b.t);
+    for(const s of [-1,1]){
+      g.fillStyle=so;
+      g.beginPath();
+      g.moveTo(x+s*3*T,yy-12*T);
+      g.quadraticCurveTo(x+s*13*T,yy-20*T-bat*6*T,x+s*20*T,yy-13*T-bat*3*T);
+      g.quadraticCurveTo(x+s*15*T,yy-11*T,x+s*16*T,yy-6*T);
+      g.quadraticCurveTo(x+s*11*T,yy-9*T,x+s*10*T,yy-4*T);
+      g.quadraticCurveTo(x+s*7*T,yy-8*T,x+s*3*T,yy-8*T);
+      g.closePath();g.fill();
+      g.strokeStyle=cl;g.lineWidth=1*T;                /* les nervures */
+      g.beginPath();
+      g.moveTo(x+s*4*T,yy-11*T);g.lineTo(x+s*18*T,yy-13*T-bat*3*T);
+      g.moveTo(x+s*4*T,yy-10*T);g.lineTo(x+s*13*T,yy-6*T);
+      g.stroke();
     }
+    g.fillStyle=cl;                                    /* le corps */
+    g.beginPath();g.ellipse(x,yy-11*T,5*T,7*T,0,0,7);g.fill();
+    for(const s of [-1,1]){                            /* les oreilles */
+      g.fillStyle=cl;
+      g.beginPath();g.moveTo(x+s*2*T,yy-16*T);
+      g.lineTo(x+s*5*T,yy-23*T);g.lineTo(x+s*6*T,yy-15*T);g.closePath();g.fill();
+    }
+    R(g,x-3*T,yy-15*T,2.4*T,2.4*T,oeil);
+    R(g,x+1*T,yy-15*T,2.4*T,2.4*T,oeil);
+    g.fillStyle='#fff';                                /* les crocs */
+    g.fillRect(x-2*T,yy-11*T,1.2*T,2*T);g.fillRect(x+1*T,yy-11*T,1.2*T,2*T);
+    break;}
+
+  /* ---- l'araignée : huit pattes articulées, l'abdomen rayé ---- */
+  case 'araignée':{
+    g.strokeStyle=so;g.lineWidth=1.8*T;
+    for(const s of [-1,1])for(let i=0;i<4;i++){
+      const ph=Math.sin(t*8+i*1.3+b.t)*2;
+      const base=yy-9*T;
+      g.beginPath();
+      g.moveTo(x+s*4*T,base);
+      g.lineTo(x+s*(10+i*3)*T,base-6*T-ph);
+      g.lineTo(x+s*(13+i*4)*T,base+4*T+ph*0.5);
+      g.stroke();
+    }
+    g.fillStyle=cl;                                    /* l'abdomen */
+    g.beginPath();g.ellipse(x-5*T,yy-10*T,8*T,7*T,0,0,7);g.fill();
+    g.fillStyle=so;                                    /* les rayures */
+    g.beginPath();g.ellipse(x-5*T,yy-12*T,6*T,2.4*T,0,0,7);g.fill();
+    g.fillStyle=cl;                                    /* le céphalothorax */
+    g.beginPath();g.ellipse(x+5*T,yy-9*T,5*T,4.6*T,0,0,7);g.fill();
+    for(const s of [-1,1]){                            /* les yeux, en grappe */
+      R(g,x+(6+s*2)*T,yy-11*T,2*T,2*T,oeil);
+      R(g,x+(8+s*1.6)*T,yy-9*T,1.4*T,1.4*T,oeil);
+    }
+    g.strokeStyle=so;g.lineWidth=1.4*T;                /* les crochets */
+    g.beginPath();g.moveTo(x+9*T,yy-7*T);g.lineTo(x+12*T,yy-4*T);
+    g.moveTo(x+8*T,yy-6*T);g.lineTo(x+10*T,yy-3*T);g.stroke();
+    break;}
+
+  /* ---- le gobelin : trapu, un gourdin, un pagne ---- */
+  case 'gobelin':{
+    const br=Math.sin(t*5+b.t)*3;
+    R(g,x-5*T,yy-6*T,4*T,6*T,so);                      /* les jambes */
+    R(g,x+2*T,yy-6*T,4*T,6*T,so);
+    g.fillStyle=cl;                                    /* le torse */
+    g.beginPath();g.ellipse(x,yy-12*T,8*T,7*T,0,0,7);g.fill();
+    R(g,x-8*T,yy-8*T,16*T,4*T,'#8a5a30');              /* le pagne */
+    R(g,x-8*T,yy-8*T,16*T,1.4*T,'#a5764a');
+    g.fillStyle=cl;                                    /* la tête */
+    g.beginPath();g.ellipse(x,yy-21*T,6.4*T,5.6*T,0,0,7);g.fill();
+    for(const s of [-1,1]){                            /* les grandes oreilles */
+      g.fillStyle=so;
+      g.beginPath();g.moveTo(x+s*5*T,yy-22*T);
+      g.lineTo(x+s*13*T,yy-26*T);g.lineTo(x+s*6*T,yy-18*T);g.closePath();g.fill();
+    }
+    R(g,x-4*T,yy-23*T,3*T,2.4*T,oeil);
+    R(g,x+1*T,yy-23*T,3*T,2.4*T,oeil);
+    g.fillStyle='#fff';                                /* les dents */
+    g.fillRect(x-2*T,yy-19*T,1.6*T,2.4*T);
+    g.fillRect(x+1*T,yy-19*T,1.6*T,2*T);
+    R(g,x+7*T,yy-16*T+br,3*T,9*T,so);                  /* le bras */
+    R(g,x+8*T,yy-26*T+br,3*T,11*T,'#7d5934');          /* le gourdin */
+    g.fillStyle='#6b4a28';
+    g.beginPath();g.ellipse(x+9.5*T,yy-27*T+br,5*T,4*T,0,0,7);g.fill();
+    for(let i=0;i<3;i++)R(g,x+(6+i*2.4)*T,yy-29*T+br,1.6*T,1.6*T,'#a2a9b0');
+    break;}
+
+  /* ---- le rampant : un mille-pattes qui ondule ---- */
+  case 'rampant':{
+    g.strokeStyle=so;g.lineWidth=1.6*T;
+    for(let i=0;i<7;i++){
+      const seg=x-(i*6)*T, on=Math.sin(t*5-i*0.7+b.t)*3;
+      g.beginPath();g.moveTo(seg,yy-8*T+on);g.lineTo(seg-3*T,yy-1*T+on);g.stroke();
+      g.beginPath();g.moveTo(seg,yy-8*T+on);g.lineTo(seg+2*T,yy-14*T+on);g.stroke();
+    }
+    for(let i=6;i>=0;i--){
+      const seg=x-(i*6)*T, on=Math.sin(t*5-i*0.7+b.t)*3;
+      g.fillStyle=i%2?so:cl;
+      g.beginPath();g.ellipse(seg,yy-8*T+on,5.4*T,4.6*T,0,0,7);g.fill();
+    }
+    g.fillStyle=cl;                                    /* la tête cuirassée */
+    g.beginPath();g.ellipse(x+7*T,yy-9*T,6.4*T,5.4*T,0,0,7);g.fill();
+    g.fillStyle=so;
+    g.beginPath();g.ellipse(x+7*T,yy-11*T,5*T,2.4*T,0,0,7);g.fill();
+    R(g,x+8*T,yy-11*T,2.4*T,2.4*T,oeil);
+    R(g,x+11*T,yy-9*T,2*T,2*T,oeil);
+    g.strokeStyle='#e8e2d4';g.lineWidth=1.6*T;         /* les mandibules */
+    g.beginPath();g.moveTo(x+12*T,yy-8*T);g.lineTo(x+17*T,yy-10*T);
+    g.moveTo(x+12*T,yy-6*T);g.lineTo(x+17*T,yy-4*T);g.stroke();
+    break;}
+
+  /* ---- le spectre : un linceul flottant, sans jambes ---- */
+  case 'spectre':{
+    g.save();
+    g.globalAlpha=touche?.6:.82;
+    const on=Math.sin(t*2.2+b.t)*3;
+    g.fillStyle=cl;                                    /* le drap */
+    g.beginPath();
+    g.moveTo(x-9*T,yy-16*T);
+    g.quadraticCurveTo(x,yy-30*T,x+9*T,yy-16*T);
+    g.lineTo(x+9*T,yy-2*T);
+    for(let i=0;i<4;i++){                              /* le bas déchiré */
+      const xx=x+9*T-(i*4.5)*T;
+      g.quadraticCurveTo(xx-2*T,yy+2*T+on,xx-4.5*T,yy-3*T);
+    }
+    g.closePath();g.fill();
+    g.fillStyle=so;                                    /* le creux du capuchon */
+    g.beginPath();g.ellipse(x,yy-20*T,6*T,6.4*T,0,0,7);g.fill();
+    g.restore();
+    /* les yeux, seuls nets */
+    g.fillStyle=b.chasse?'#ff6a4a':'#9fe0ff';
+    g.beginPath();g.ellipse(x-3*T,yy-21*T,2*T,2.6*T,0,0,7);g.fill();
+    g.beginPath();g.ellipse(x+3*T,yy-21*T,2*T,2.6*T,0,0,7);g.fill();
+    g.save();g.globalAlpha=.25;
+    g.fillStyle=b.chasse?'#ff6a4a':'#9fe0ff';
+    g.beginPath();g.arc(x,yy-21*T,11*T,0,7);g.fill();g.restore();
+    /* les bras tendus */
+    g.strokeStyle=cl;g.lineWidth=2.4*T;g.globalAlpha=.7;
+    g.beginPath();
+    g.moveTo(x-7*T,yy-17*T);g.lineTo(x-13*T,yy-11*T+on);
+    g.moveTo(x+7*T,yy-17*T);g.lineTo(x+13*T,yy-11*T-on);
+    g.stroke();g.globalAlpha=1;
+    break;}
+
+  /* ---- le golem : des blocs assemblés, un cœur brûlant ---- */
+  case 'golem de pierre':{
+    const bat2=0.6+Math.sin(t*2.4+b.t)*0.4;
+    R(g,x-9*T,yy-9*T,7*T,9*T,so);                      /* les jambes */
+    R(g,x+2*T,yy-9*T,7*T,9*T,so);
+    R(g,x-11*T,yy-26*T,22*T,18*T,cl);                  /* le torse */
+    R(g,x-11*T,yy-26*T,22*T,3*T,touche?'#fff':'#9aa1a8');
+    R(g,x-11*T,yy-18*T,22*T,1.6*T,so);                 /* le joint */
+    R(g,x-15*T,yy-25*T,5*T,14*T,so);                   /* les bras */
+    R(g,x+11*T,yy-25*T,5*T,14*T,so);
+    R(g,x-17*T,yy-13*T,8*T,7*T,cl);                    /* les poings */
+    R(g,x+10*T,yy-13*T,8*T,7*T,cl);
+    R(g,x-7*T,yy-36*T,14*T,11*T,cl);                   /* la tête */
+    R(g,x-7*T,yy-36*T,14*T,2.4*T,touche?'#fff':'#9aa1a8');
+    R(g,x-5*T,yy-32*T,4*T,3*T,oeil);
+    R(g,x+1*T,yy-32*T,4*T,3*T,oeil);
+    /* le cœur, qui bat sous la pierre */
+    g.save();g.globalAlpha=bat2;
+    g.fillStyle='#ff8a3a';
+    g.beginPath();g.arc(x,yy-17*T,4.4*T,0,7);g.fill();
+    g.globalAlpha=bat2*0.32;
+    g.beginPath();g.arc(x,yy-17*T,11*T,0,7);g.fill();
+    g.restore();
+    /* la mousse sur les épaules */
+    g.fillStyle='rgba(96,140,70,.5)';
+    g.fillRect(x-11*T,yy-26*T,7*T,2.4*T);
+    g.fillRect(x+5*T,yy-26*T,6*T,2*T);
+    break;}
+
+  /* ---- l'ombre du fond : une forme qui n'a pas de contour net ---- */
+  default:{
+    const on=Math.sin(t*1.8+b.t)*4;
+    g.save();
+    for(let i=3;i>0;i--){                              /* des voiles superposés */
+      g.globalAlpha=0.18*i;
+      g.fillStyle=cl;
+      g.beginPath();
+      g.ellipse(x+Math.sin(t*1.2+i)*3,yy-16*T,(10+i*3)*T,(15+i*2)*T,0,0,7);
+      g.fill();
+    }
+    g.globalAlpha=touche?.7:.95;
+    g.fillStyle=cl;
+    g.beginPath();
+    g.moveTo(x-10*T,yy-14*T);
+    g.quadraticCurveTo(x,yy-34*T,x+10*T,yy-14*T);
+    for(let i=0;i<5;i++){
+      const xx=x+10*T-(i*5)*T;
+      g.quadraticCurveTo(xx-2*T,yy+1*T+on*Math.sin(i),xx-5*T,yy-5*T);
+    }
+    g.closePath();g.fill();
+    g.restore();
+    /* trois yeux */
+    g.fillStyle=b.chasse?'#ff3a2a':'#c88aff';
+    [[-5,-22],[5,-22],[0,-16]].forEach(([a,c])=>{
+      g.beginPath();g.ellipse(x+a*T,yy+c*T,2.2*T,3*T,0,0,7);g.fill();});
+    g.save();g.globalAlpha=.3;
+    g.fillStyle=b.chasse?'#ff3a2a':'#c88aff';
+    g.beginPath();g.arc(x,yy-20*T,14*T,0,7);g.fill();g.restore();
+    break;}
   }
-  if(b.nom==='golem de pierre'){
-    R(g,x-9*T,yy-14*T,4*T,8*T,b.coul[1]);
-    R(g,x+5*T,yy-14*T,4*T,8*T,b.coul[1]);
-  }
-  /* sa barre de vie, au-dessus */
+  if(touche)g.restore();
+  g.restore();
+
+  /* sa vie, au-dessus */
   if(b.vie<b.vieMax){
-    const w=20*T;
-    R(g,x-w/2,yy-24*T,w,3,'rgba(0,0,0,.6)');
-    R(g,x-w/2,yy-24*T,w*(b.vie/b.vieMax),3,'#e0705a');
+    const w=22*T, h=3.4;
+    const hy=yy-(b.nom==='golem de pierre'?42:30)*T;
+    g.fillStyle='rgba(0,0,0,.62)';g.fillRect(x-w/2-1,hy-1,w+2,h+2);
+    g.fillStyle='#3a1c18';g.fillRect(x-w/2,hy,w,h);
+    g.fillStyle=touche?'#ffd2d2':'#e0705a';
+    g.fillRect(x-w/2,hy,w*Math.max(0,b.vie/b.vieMax),h);
+    g.fillStyle='rgba(255,255,255,.3)';
+    g.fillRect(x-w/2,hy,w*Math.max(0,b.vie/b.vieMax),1);
   }
+}
+
+
+/* ================= la roche =================
+   Chaque case de mur est un bloc taillé : on l'ombre selon ses voisines,
+   on y casse des fissures, et selon la profondeur elle se couvre de mousse,
+   d'humidité, puis de cristaux. */
+const nSol=(a,b)=>alea(a*7.13+b*3.71);
+function caseMur(g,x,y,a,b,teintes,p){
+  const [clair,moyen,sombre,accent]=teintes;
+  /* le bloc, en trois tons */
+  g.fillStyle=moyen;g.fillRect(x,y,CASE,CASE);
+  /* les pierres de taille : deux assises décalées */
+  const rang=(b%2)?0:CASE/2;
+  g.fillStyle=sombre;
+  g.fillRect(x,y+CASE/2-1,CASE,1.5);
+  g.fillRect(x+((rang+8)%CASE),y,1.5,CASE/2);
+  g.fillRect(x+((rang+22)%CASE),y+CASE/2,1.5,CASE/2);
+  /* la lumière sur l'arête haute de chaque pierre */
+  g.fillStyle=clair;
+  g.fillRect(x,y,CASE,1.5);
+  g.fillRect(x,y+CASE/2+0.5,CASE,1);
+  /* le grain : des éclats plus clairs, toujours au même endroit */
+  for(let i=0;i<3;i++){
+    const u=nSol(a*3+i,b), v=nSol(a,b*5+i);
+    g.fillStyle=u<.5?clair:sombre;
+    g.fillRect(x+2+u*(CASE-6),y+2+v*(CASE-6),2+((u*3)|0),2);
+  }
+  /* une fissure, de temps en temps */
+  if(nSol(a,b)<.22){
+    g.strokeStyle=sombre;g.lineWidth=1;
+    const u=nSol(a+9,b);
+    g.beginPath();
+    g.moveTo(x+4+u*20,y+3);
+    g.lineTo(x+7+u*16,y+12);
+    g.lineTo(x+3+u*22,y+21);
+    g.stroke();
+  }
+  /* ce qui pousse ou brille, selon la profondeur */
+  if(p<0.3&&nSol(a*2,b*2)<.18){            /* la mousse, près du jour */
+    g.fillStyle='rgba(96,140,70,.5)';
+    g.fillRect(x+3,y+CASE-5,CASE-6,4);
+    g.fillStyle='rgba(120,168,86,.4)';
+    g.fillRect(x+6,y+CASE-8,6,3);
+  }else if(p>0.62&&nSol(a*4,b*4)<.14){     /* les cristaux, au fond */
+    const cx2=x+6+nSol(a,b+3)*18, cy2=y+6+nSol(a+3,b)*16;
+    g.fillStyle=accent;
+    g.beginPath();g.moveTo(cx2,cy2-6);g.lineTo(cx2+3,cy2);g.lineTo(cx2,cy2+5);
+    g.lineTo(cx2-3,cy2);g.closePath();g.fill();
+    g.fillStyle='rgba(255,255,255,.55)';
+    g.fillRect(cx2-1,cy2-4,1.5,4);
+  }
+}
+/* On grave huit pierres et huit sols sur de petites toiles, une seule fois
+   par niveau. Ensuite on ne fait plus que les recopier : mille quatre cents
+   traits par image deviennent cent cinquante recopies. */
+let PIERRES=null, SOLS=null, PIERRES_NIV=-1;
+/* la part de profondeur, de 0 en haut à 1 tout au fond */
+const profondeur=()=>(niveau-1)/(PROFOND-1);
+/* on mêle deux couleurs selon cette part : la roche vire du brun au bleu */
+function mel(a,b){
+  const p=profondeur();
+  return '#'+[0,1,2].map(i=>{
+    const va=parseInt(a.substr(1+i*2,2),16), vb=parseInt(b.substr(1+i*2,2),16);
+    return Math.round(va+(vb-va)*p).toString(16).padStart(2,'0');}).join('');
+}
+function graverLesPierres(p){
+  const fab=(f)=>{
+    const c=document.createElement('canvas');
+    c.width=CASE*DPR;c.height=CASE*DPR;
+    const h=c.getContext('2d');
+    h.setTransform(DPR,0,0,DPR,0,0);
+    h.imageSmoothingEnabled=false;
+    f(h);
+    return c;
+  };
+  const TM=[mel('#8a7a63','#4a4458'),mel('#6b5c47','#332f42'),
+            mel('#4a3f30','#1e1c2a'),mel('#c9a24a','#8fd8e8')];
+  const TS=[mel('#5a4d3c','#2a2636'),mel('#42382b','#1d1a26'),
+            mel('#2e271e','#12101a')];
+  PIERRES=[];SOLS=[];
+  for(let i=0;i<8;i++){
+    PIERRES.push(fab(h=>caseMur(h,0,0,i*3+1,(i%2)?0:1,TM,p)));
+    SOLS.push(fab(h=>caseSol(h,0,0,i*5+2,i*2,TS,p)));
+  }
+  PIERRES_NIV=niveau;
+}
+/* le sol : terre battue, gravillons, et des flaques en profondeur */
+function caseSol(g,x,y,a,b,teintes,p){
+  const [clair,moyen,sombre]=teintes;
+  g.fillStyle=moyen;g.fillRect(x,y,CASE,CASE);
+  /* des plaques plus claires, comme la poussière qu'on a piétinée */
+  if(nSol(a,b)<.4){
+    g.fillStyle=clair;
+    g.fillRect(x+2+nSol(a,b*2)*10,y+3+nSol(a*2,b)*12,10+nSol(a,b)*10,7);
+  }
+  /* les gravillons */
+  for(let i=0;i<4;i++){
+    const u=nSol(a*5+i,b*3), v=nSol(a*2,b*7+i);
+    g.fillStyle=u<.4?sombre:clair;
+    g.fillRect(x+u*(CASE-3),y+v*(CASE-3),1+((v*2)|0),1+((u*2)|0));
+  }
+  /* une flaque, dans les niveaux humides */
+  if(p>0.35&&nSol(a*3,b*9)<.09){
+    g.fillStyle='rgba(60,90,110,.34)';
+    g.beginPath();g.ellipse(x+CASE/2,y+CASE/2,9,5,0,0,7);g.fill();
+    g.fillStyle='rgba(150,200,230,.16)';
+    g.beginPath();g.ellipse(x+CASE/2-2,y+CASE/2-1,4,2,0,0,7);g.fill();
+  }
+}
+/* l'ombre portée par la roche sur le sol : c'est elle qui donne le relief */
+function ombrePied(g,x,y){
+  const d=g.createLinearGradient(0,y,0,y+7);
+  d.addColorStop(0,'rgba(0,0,0,.42)');
+  d.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=d;g.fillRect(x,y,CASE,7);
 }
 
 /* ================= le décor ================= */
@@ -1593,27 +1930,20 @@ function dessiner(){
   const camX=Math.max(0,Math.min(L*CASE-VW,joueur.x-VW/2))+sx;
   const camY=Math.max(0,Math.min(H*CASE-VH,joueur.y-VH*0.55));
   /* la roche s'assombrit avec la profondeur */
-  const p=(niveau-1)/(PROFOND-1);
-  const mel=(a,b)=>'#'+[0,1,2].map(i=>{
-    const va=parseInt(a.substr(1+i*2,2),16), vb=parseInt(b.substr(1+i*2,2),16);
-    return Math.round(va+(vb-va)*p).toString(16).padStart(2,'0');}).join('');
-  const FOND=mel('#3a2e24','#1a1418'), ROCHE=mel('#4a3b2d','#241d24');
+  const p=profondeur();
+
   g.fillStyle='#0a0806';g.fillRect(0,0,VW,VH);
   const a0=Math.max(0,(camX/CASE|0)-1), a1=Math.min(L,(camX+VW)/CASE+1);
   const b0=Math.max(0,(camY/CASE|0)-1), b1=Math.min(H,(camY+VH)/CASE+1);
+  if(PIERRES_NIV!==niveau||!PIERRES)graverLesPierres(p);
   for(let b=b0;b<b1;b++)for(let a=a0;a<a1;a++){
-    const x=a*CASE-camX, y=b*CASE-camY;
-    if(MUR[b][a]){
-      g.fillStyle=ROCHE;g.fillRect(x,y,CASE,CASE);
-      g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x,y,CASE,3);g.fillRect(x,y,3,CASE);
-      g.fillStyle='rgba(255,230,190,.045)';
-      g.fillRect(x+4+((alea(a*3+b)*8)|0),y+5+((alea(a+b*5)*10)|0),7,4);
-    }else{
-      g.fillStyle=FOND;g.fillRect(x,y,CASE,CASE);
-      g.fillStyle='rgba(0,0,0,.16)';if((a+b)%2)g.fillRect(x,y,CASE,CASE);
-      g.fillStyle='rgba(255,235,200,.05)';
-      g.fillRect(x+((alea(a*7+b*3)*26)|0),y+((alea(a*11+b)*26)|0),2,2);
-    }
+    const x=Math.round(a*CASE-camX), y=Math.round(b*CASE-camY);
+    const v=(a*7+b*13)&7;
+    g.drawImage(MUR[b][a]?PIERRES[v]:SOLS[v],x,y,CASE,CASE);
+  }
+  /* l'ombre que la roche jette sur le sol, sous chaque mur */
+  for(let b=b0;b<b1;b++)for(let a=a0;a<a1;a++){
+    if(MUR[b][a]&&b+1<H&&!MUR[b+1][a])ombrePied(g,a*CASE-camX,(b+1)*CASE-camY);
   }
   const objets=[];
   DECOR.forEach(o=>{
