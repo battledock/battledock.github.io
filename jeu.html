@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1932';
+  var MA_VERSION='2026-09-13-1947';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2168,45 +2169,106 @@ function dessinerRoseaux(g,x,y,gr){
   });
 }
 
-/* ---- champignons : à l'ombre des bosquets ---- */
-function dessinerChampignons(g,x,y,gr){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,11,3,0,0,7);g.fill();
-  R(-7,-9,3,9,'#e8dcc0');R(-7,-9,1,9,'#f6f3ec');
-  R(-11,-14,11,5,'#a83a3a');R(-11,-14,11,2,'#c94a4a');
-  R(-9,-16,7,2,'#c94a4a');
-  R(-8,-13,2,2,'#f2efe4');R(-4,-15,2,2,'#f2efe4');
-  R(3,-6,3,6,'#e8dcc0');R(3,-6,1,6,'#f6f3ec');
-  R(0,-10,9,4,'#8a4450');R(0,-10,9,2,'#a8545e');
-  R(2,-9,2,1,'#f2efe4');
+/* ================= LES PETITS OBJETS, GRAVÉS =================
+   Champignons, plumes et touffes d'herbe. Même méthode que les arbres :
+   des aplats francs, gravés une fois, recopiés ensuite. Les plumes sont
+   gravées DÉJÀ PENCHÉES — plus une seule rotation à l'écran. Les herbes
+   sont en deux morceaux, le pied et la tête, pour se balancer au vent. */
+let PETITS_GRAVES=null;
+function toilePetit(w,h,f){
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=w*D;c.height=h*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  f({g,R:(x,y,w2,h2,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w2|0),Math.max(1,h2|0));},
+     ombre:(cx,cy,rx,ry)=>{g.fillStyle=VERTS.ombre;
+       g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();}});
+  return c;
 }
+function graverPetits(){
+  PETITS_GRAVES={champignons:[],plumes:[],herbes:[]};
+  const CH={chapeau:['#a83a3a','#c94a4a','#8a2e2e'],pied:['#e8dcc0','#f6f3ec','#c9bda2'],
+            pois:'#f2efe4'};
+  const PL={tige:'#d8d2c2',barbe:['#f2efe4','#c9c2b0']};
+  const HE={brins:['#4a944a','#3d7d3f','#5aa855']};
 
-/* ---- herbes : en clairière ---- */
-function dessinerHerbes(g,x,y,gr){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3,0,0,7);g.fill();
-  const so=Math.round(penche(x,y,0.9));
-  [[-8,12],[-3,16],[2,13],[6,10]].forEach(([a,h])=>R(a+so,-h,2,h,'#4a944a'));
-  R(-10,-9,2,2,'#7db35d');R(-5,-13,2,2,'#7db35d');
-  R(4,-11,2,2,'#7db35d');R(8,-8,2,2,'#7db35d');
-  R(-4,-19,3,3,'#c98fe0');R(1,-16,3,3,'#c98fe0');
-  R(-4,-19,1,1,'#e6c4f2');R(1,-16,1,1,'#e6c4f2');
+  /* --- l'amanite : chapeau rouge à pois, pied clair --- */
+  for(let v=0;v<2;v++){
+    const W=30,HT=24;
+    PETITS_GRAVES.champignons.push({c:toilePetit(W,HT,({R,ombre})=>{
+      const cx=W/2;ombre(cx+1,HT-3,11,3);
+      const un=(dx,ech)=>{
+        const lp=Math.max(2,Math.round(3*ech)),hp=Math.round(9*ech);
+        const lc=Math.round(11*ech),hc=Math.round(5*ech);
+        const bx=Math.round(cx+dx),by=HT-4;
+        R(bx-lp/2,by-hp,lp,hp,CH.pied[0]);
+        R(bx-lp/2,by-hp,1,hp,CH.pied[1]);
+        R(bx+lp/2-1,by-hp+2,1,hp-2,CH.pied[2]);
+        R(bx-lc/2,by-hp-hc+1,lc,hc,CH.chapeau[0]);
+        R(bx-lc/2,by-hp-hc+1,lc,2,CH.chapeau[1]);
+        R(bx-lc/2,by-hp-1,lc,1,CH.chapeau[2]);
+        R(bx-lc/2+2,by-hp-hc-1,lc-4,2,CH.chapeau[1]);
+        R(bx-lc/2+2,by-hp-hc+2,2,2,CH.pois);
+        R(bx+1,by-hp-hc,2,2,CH.pois);
+      };
+      un(-5,v?0.85:1);un(4,v?0.62:0.7);
+    }),W,HT});
+  }
+  /* --- la plume blanche, gravée penchée --- */
+  for(let v=0;v<2;v++){
+    const W=26,HT=20;
+    PETITS_GRAVES.plumes.push({c:toilePetit(W,HT,({R,ombre})=>{
+      ombre(W/2+1,HT-3,9,2.6);
+      const une=(bx,by,sens,lg)=>{
+        for(let i=0;i<lg;i++){
+          const x=bx+Math.round(i*0.42)*sens,y=by-i;
+          R(x,y,1,1,PL.tige);
+          if(i>1&&i<lg-1){
+            const l=Math.round(3*Math.sin(i/lg*3.14));
+            if(l>0){R(x-l*sens,y,l,1,PL.barbe[0]);R(x+1,y,l,1,PL.barbe[1]);}
+          }
+        }
+      };
+      une(Math.round(W*0.34),HT-4,-1,13);
+      une(Math.round(W*0.62),HT-4,1,v?9:11);
+    }),W,HT});
+  }
+  /* --- la touffe d'herbe, en deux morceaux --- */
+  for(let v=0;v<2;v++){
+    const W=28,HT=26;
+    const pied=toilePetit(W,10,({R,ombre})=>{
+      ombre(W/2+1,6,12,3);R(W/2-6,2,12,2,HE.brins[1]);});
+    const tete=toilePetit(W,HT,({R})=>{
+      const cx=W/2;
+      [[-8,13],[-3,17+(v?2:0)],[2,14],[6,11]].forEach(([dx,h],i)=>{
+        R(cx+dx,HT-3-h,2,h,HE.brins[i%2?0:1]);
+        R(cx+dx,HT-3-h,1,Math.round(h*0.4),HE.brins[2]);
+      });
+      R(cx-6,HT-18,2,2,HE.brins[2]);R(cx+4,HT-15,2,2,HE.brins[2]);
+    });
+    PETITS_GRAVES.herbes.push({pied,tete,W,HT});
+  }
 }
+/* la variante vient de la place : un objet garde toujours la sienne */
+const variantePetit=(x,y)=>alea((x*13+y*7)%997)<0.5?0:1;
 
-/* ---- plumes : au pied des arbres ---- */
-function dessinerPlumes(g,x,y,gr){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,10,2.6,0,0,7);g.fill();
-  g.save();g.translate(x,y);g.rotate(-0.32);
-  g.fillStyle='#d8d2c2';g.fillRect(-6,-13,2,13);
-  g.fillStyle='#f2efe4';g.fillRect(-9,-12,3,8);
-  g.fillStyle='#c9c2b0';g.fillRect(-4,-12,3,8);
-  g.restore();
-  g.save();g.translate(x+6,y);g.rotate(0.42);
-  g.fillStyle='#8a939a';g.fillRect(-2,-10,2,10);
-  g.fillStyle='#a2a9b0';g.fillRect(-5,-9,3,6);
-  g.fillStyle='#7b8288';g.fillRect(0,-9,3,6);
-  g.restore();
+function dessinerChampignons(g,x,y,gr,mx,my){
+  if(!PETITS_GRAVES)graverPetits();
+  const A=PETITS_GRAVES.champignons[variantePetit(mx||x,my||y)];
+  g.drawImage(A.c,Math.round(x-A.W/2),Math.round(y-A.HT+4),A.W,A.HT);
+}
+function dessinerPlumes(g,x,y,gr,mx,my){
+  if(!PETITS_GRAVES)graverPetits();
+  const A=PETITS_GRAVES.plumes[variantePetit(mx||x,my||y)];
+  g.drawImage(A.c,Math.round(x-A.W/2),Math.round(y-A.HT+4),A.W,A.HT);
+}
+function dessinerHerbes(g,x,y,gr,mx,my){
+  if(!PETITS_GRAVES)graverPetits();
+  const A=PETITS_GRAVES.herbes[variantePetit(mx||x,my||y)];
+  g.drawImage(A.pied,Math.round(x-A.W/2),Math.round(y-7),A.W,10);
+  const so=penche(mx||x,my||y,0.9);
+  g.drawImage(A.tete,Math.round(x-A.W/2+so),Math.round(y-A.HT+3),A.W,A.HT);
 }
 
 /* ---- les rochers à minerai : même silhouette, autre matière ---- */
@@ -3055,7 +3117,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
         g.save();g.translate(x,y);
         if(ec)g.scale(1+ec,1-ec);
         ({argile:dessinerArgile,roseaux:dessinerRoseaux,champignons:dessinerChampignons,
-          herbes:dessinerHerbes,plumes:dessinerPlumes})[o.t](g,0,0,o.gr);
+          herbes:dessinerHerbes,plumes:dessinerPlumes})[o.t](g,0,0,o.gr,o.x,o.y);
         g.restore();
       }
     }
