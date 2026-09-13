@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1913';
+  var MA_VERSION='2026-09-13-1927';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1529,47 +1530,170 @@ const VERTS={
 };
 
 /* --- l'arbre : 1,2 à 1,9 fois la taille du personnage --- */
-function dessinerArbre(g,x,y,gr){
-  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const s=gr||0;
-  const H=[60,78,94][s];
-  const LT=[3,4,4][s];                          /* demi-largeur du tronc */
-  const LF=[15,18,21][s];                       /* demi-largeur du houppier */
-  const ht=Math.round(H*0.42);                  /* hauteur du tronc */
-  const bas=-Math.round(H*0.34);                /* le feuillage descend jusque-là :
-                                                   il recouvre le haut du tronc */
-  g.fillStyle=V.ombre;
-  g.beginPath();g.ellipse(x+2,y-1,LF*0.75,3.5,0,0,7);g.fill();
-
-  /* tronc, du sol jusque dans le feuillage */
-  R(-LT,-ht-4,LT*2,ht+4,V.tronc);
-  R(-LT,-ht-4,1,ht+4,V.troncC);
-  R(LT-1,-ht+3,1,ht-3,V.troncO);
-  R(-LT-2,-5,2,5,V.tronc);R(LT,-4,2,4,V.tronc);
-  R(-LT-1,-2,LT*2+2,2,V.troncO);
-  R(-LT-4,-ht+6,4,2,V.tronc);R(LT,-ht+11,4,2,V.tronc);
-
-  /* houppier : chaque masse repose sur la précédente, sans interstice.
-     Plus c'est haut, plus ça penche : l'arbre ondule. */
-  const pen=penche(x,y,0.9);
-  const m=(dy,hh,larg,col)=>{
-    const d=Math.round(pen*(1-(dy+ht)/(-H))*1.1);
-    R(-larg+d,dy,larg*2,hh,col);
-  };
-  const h1=Math.round(H*0.16), h2=Math.round(H*0.16), h3=Math.round(H*0.12), h4=Math.round(H*0.08);
-  const y1=bas-h1;                               /* masse basse, la plus sombre */
-  const y2=y1-h2+2;                              /* elles se chevauchent de 2 px */
-  const y3=y2-h3+2;
-  const y4=y3-h4+2;
-  m(y1,h1+4,LF,V.fonce);                         /* elle mord sur le tronc */
-  m(y2,h2+3,LF,V.moyen);
-  R(-LF-2,y2+2,2,h2,V.moyen);R(LF,y2+2,2,h2,V.fonce);
-  m(y3,h3+3,LF-3,V.clair);
-  m(y4,h4+3,LF-8,V.vif);
-  m(y4-3,5,Math.max(3,LF-13),V.lumiere);
-  R(-LF+2,y2+3,4,2,V.vif);R(LF-7,y1+1,4,2,V.vif);
-  R(-2,y4-4,4,2,'#6fbb66');
+/* ================= LES CINQ ESSENCES =================
+   Chêne, bouleau, saule, pommier, cyprès. Chacune est gravée UNE FOIS en
+   trois âges et en deux morceaux — le pied et le houppier — pour que le
+   feuillage se balance au vent sans rien redessiner. */
+const ESSENCES=[
+{id:'chene',nom:'chêne', h:94,larg:46,
+ feuille:['#3d7d3f','#4a944a','#2f6b34','#5aa855'],ecorce:['#6b4a28','#8a6238','#4f3520']},
+{id:'bouleau',nom:'bouleau', h:96,larg:34,
+ feuille:['#6fa84a','#82bd5a','#5a8f3a','#9ad46a'],ecorce:['#d8d4c6','#f0ece0','#8a8578']},
+{id:'saule',nom:'saule', h:82,larg:52,
+ feuille:['#6f9e52','#82b062','#5a8442','#9ac47a'],ecorce:['#6b5a3a','#8a7650','#4f422a']},
+{id:'pommier',nom:'pommier', h:80,larg:42,
+ feuille:['#4f8a40','#5f9c4e','#3d7334','#78b163'],ecorce:['#6b4a2a','#8a6238','#4f3520'],
+ fruits:true},
+{id:'cypres',nom:'cyprès', h:104,larg:22,
+ feuille:['#2f5638','#3a6844','#24422a','#487a52'],ecorce:['#5b4a32','#75603f','#42351f']}
+];
+/* l'essence d'un arbre vient de sa place : un même arbre garde toujours la
+   sienne, et les essences poussent en bosquets plutôt qu'en mélange */
+function essenceDe(x,y){
+  const n=(Math.sin(x*0.021+y*0.017)*0.5+0.5)*0.72+alea((x*7+y*13)%997)*0.28;
+  return Math.min(ESSENCES.length-1,Math.floor(n*ESSENCES.length));
 }
+let ARBRES_GRAVES=null;
+function toileArbre(w,h,f){
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=w*D;c.height=h*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  f({g,P:(x,y,col)=>{if(x<0||y<0||x>=w||y>=h)return;g.fillStyle=col;g.fillRect(x|0,y|0,1,1);},
+     R:(x,y,w2,h2,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w2|0,h2|0);}});
+  return c;
+}
+/* ---- la gravure, en aplats francs ----
+   Pas un pixel semé au hasard : des masses rectangulaires franches, empilées,
+   qui se chevauchent de deux pixels pour qu'aucun trou n'apparaisse. Quatre
+   tons par arbre, du plus sombre en bas au plus clair en haut — c'est le
+   langage des arbres du jeu, et c'est lui qu'on garde. */
+function graverArbres(){
+  ARBRES_GRAVES={};
+  ESSENCES.forEach(E=>{
+    ARBRES_GRAVES[E.id]=[0,1,2].map(age=>{
+      const k=[0.64,0.82,1][age];
+      const h=Math.round(E.h*k), larg=Math.round(E.larg*k);
+      const W=larg+10, HT=h+12;
+      const F=E.feuille, EC=E.ecorce;
+
+      /* --- le pied : l'ombre et le tronc --- */
+      const ep=Math.max(3,Math.round(larg*(E.id==='cypres'?0.1:0.14)));
+      const pied=toileArbre(W,28,({R,g})=>{
+        g.fillStyle='rgba(40,56,30,.28)';
+        g.beginPath();g.ellipse(W/2+1,22,larg*0.36,larg*0.12,0,0,7);g.fill();
+        const x0=Math.round(W/2-ep/2);
+        R(x0,0,ep,22,EC[0]);
+        R(x0,0,1,22,EC[1]);                 /* la lumière à gauche */
+        R(x0+ep-1,2,1,20,EC[2]);            /* l'ombre à droite */
+        R(x0-1,20,ep+2,2,EC[2]);            /* le pied qui s'évase */
+        if(E.id==='bouleau'){               /* les stries du bouleau, franches */
+          R(x0,4,ep-1,2,EC[2]);R(x0+1,11,ep-2,2,EC[2]);R(x0,17,ep-1,1,EC[2]);
+        }
+      });
+
+      /* --- le houppier, en masses empilées --- */
+      const tete=toileArbre(W,HT,({R,P,g})=>{
+        const cx=Math.round(W/2);
+        /* une masse : un rectangle, avec ses coins mangés pour l'arrondir */
+        const masse=(dy,hh,lg,col,coins)=>{
+          R(cx-lg,dy,lg*2,hh,col);
+          const c=coins===undefined?2:coins;
+          if(c>0){
+            /* on ronge les quatre coins d'un cran : ça suffit à faire rond */
+            R(cx-lg,dy,c,1,'rgba(0,0,0,0)');
+            g.clearRect(cx-lg,dy,c,1);g.clearRect(cx+lg-c,dy,c,1);
+            g.clearRect(cx-lg,dy+hh-1,c,1);g.clearRect(cx+lg-c,dy+hh-1,c,1);
+          }
+        };
+        if(!F){
+          /* l'arbre mort : le tronc monte, des branches en équerre */
+          R(cx-2,HT*0.12,4,HT*0.88,EC[0]);
+          R(cx-2,HT*0.12,1,HT*0.88,EC[1]);
+          const br=(y,dx,lg,ht2)=>{
+            R(cx+(dx<0?dx-lg:2),y,lg,2,EC[0]);
+            R(cx+(dx<0?dx-lg:lg),y-ht2,2,ht2+2,EC[1]);
+          };
+          br(Math.round(HT*0.5),-3,Math.round(larg*0.36),Math.round(HT*0.2));
+          br(Math.round(HT*0.62),3,Math.round(larg*0.32),Math.round(HT*0.16));
+          br(Math.round(HT*0.3),-3,Math.round(larg*0.24),Math.round(HT*0.14));
+          return;
+        }
+        if(E.id==='pin'||E.id==='cypres'){
+          /* des étages francs, chacun plus étroit que celui du dessous */
+          const n=E.id==='cypres'?6:5;
+          for(let i=0;i<n;i++){
+            const t=i/(n-1);
+            const hh=Math.round(HT/n)+3;
+            const dy=Math.round(HT*0.9-((i+1)*HT*0.86/n));
+            const lg=Math.max(2,Math.round(larg/2*(1-t*0.62)));
+            masse(dy,hh,lg,i===0?F[2]:(i<n-2?F[0]:(i===n-2?F[1]:F[3])),1);
+          }
+          R(cx-1,Math.round(HT*0.06),2,3,F[3]);
+        }else if(E.id==='saule'){
+          masse(Math.round(HT*0.18),Math.round(HT*0.2),Math.round(larg*0.42),F[1],3);
+          masse(Math.round(HT*0.3),Math.round(HT*0.22),Math.round(larg*0.5),F[0],3);
+          masse(Math.round(HT*0.44),Math.round(HT*0.16),Math.round(larg*0.46),F[2],3);
+          /* les rideaux : des bandes franches de deux pixels */
+          for(let i=0;i<7;i++){
+            const x=Math.round(cx-larg*0.44+i*(larg*0.147));
+            const bas2=Math.round(HT*0.58+((i*37)%5)*HT*0.07);
+            R(x,Math.round(HT*0.52),2,bas2-Math.round(HT*0.52),i%2?F[0]:F[2]);
+            R(x,bas2,2,2,F[1]);
+          }
+        }else if(E.id==='olivier'){
+          /* trois masses séparées, claires */
+          masse(Math.round(HT*0.34),Math.round(HT*0.22),Math.round(larg*0.3),F[0],2);
+          masse(Math.round(HT*0.26),Math.round(HT*0.2),Math.round(larg*0.24),F[1],2);
+          R(cx-Math.round(larg*0.3),Math.round(HT*0.4),4,Math.round(HT*0.16),F[2]);
+          R(cx+Math.round(larg*0.2),Math.round(HT*0.36),Math.round(larg*0.24),
+            Math.round(HT*0.18),F[0]);
+          R(cx-Math.round(larg*0.1),Math.round(HT*0.18),Math.round(larg*0.26),
+            Math.round(HT*0.14),F[3]);
+        }else{
+          /* le chêne, le bouleau, le pommier : quatre masses empilées,
+             de la plus sombre et la plus large en bas à la plus claire en haut */
+          const h1=Math.round(HT*0.2), h2=Math.round(HT*0.2),
+                h3=Math.round(HT*0.16), h4=Math.round(HT*0.12);
+          const y1=Math.round(HT*0.68)-h1;
+          masse(y1,h1+4,Math.round(larg*0.5),F[2],2);
+          masse(y1-h2+2,h2+3,Math.round(larg*0.5),F[0],2);
+          masse(y1-h2-h3+4,h3+3,Math.round(larg*0.42),F[1],2);
+          masse(y1-h2-h3-h4+6,h4+3,Math.round(larg*0.3),F[3],1);
+          /* deux éclats de lumière, posés francs */
+          R(cx-Math.round(larg*0.4),y1-h2+5,Math.round(larg*0.2),3,F[1]);
+          R(cx+Math.round(larg*0.14),y1+2,Math.round(larg*0.18),3,F[1]);
+          /* les côtés qui débordent, pour casser la symétrie */
+          R(cx-Math.round(larg*0.56),y1-h2+4,3,h2-2,F[0]);
+          R(cx+Math.round(larg*0.5),y1-2,3,h1,F[2]);
+        }
+        /* les pommes : deux pixels sur deux, francs */
+        if(E.fruits){
+          const pos=[[-0.3,0.42],[0.24,0.36],[-0.12,0.26],[0.34,0.5],[-0.42,0.5],[0.06,0.5]];
+          pos.slice(0,4+age).forEach(([fx,fy])=>{
+            const x=Math.round(cx+fx*larg), y=Math.round(HT*fy);
+            R(x,y,3,3,'#c14a3e');R(x,y,2,1,'#d9584f');R(x+2,y+2,1,1,'#8f332c');
+          });
+        }
+      });
+      return {pied,tete,W,HT,h};
+    });
+  });
+}
+
+
+/* On ne dessine plus l'arbre : on recopie son calque. Le pied ne bouge
+   jamais, le houppier se décale au vent — deux recopies par arbre. */
+function dessinerArbre(g,x,y,gr,essence){
+  if(!ARBRES_GRAVES)graverArbres();
+  const E=ESSENCES[essence||0];
+  const A=ARBRES_GRAVES[E.id][gr||0];
+  g.drawImage(A.pied,Math.round(x-A.W/2),Math.round(y-22),A.W,28);
+  const souffle=penche(x,y,0.9);
+  g.drawImage(A.tete,Math.round(x-A.W/2+souffle),Math.round(y-A.h-10),A.W,A.HT);
+}
+
 
 /* --- le rocher : à hauteur de hanche (22 à 30 px) --- */
 function dessinerRocher(g,x,y,gr){
@@ -2840,7 +2964,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
         }
         g.save();g.translate(x,y);
         if(dx)g.transform(1,0,dx*0.03,1,0,0);              /* le tronc se cintre */
-        dessinerArbre(g,0,0,o.gr);
+        dessinerArbre(g,0,0,o.gr,essenceDe(o.x,o.y));
         g.restore();
         if(o.coups)entailles(g,x,y,o.coups,[50,64,79][o.gr||0]);
         if(o.saigne){
