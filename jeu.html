@@ -50,11 +50,13 @@ body{overflow:hidden}
   box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #repond button:active{transform:translateY(1px)}
 #bandeau{position:fixed;left:0;right:0;bottom:0;z-index:14;display:none;transition:bottom .12s;
+  pointer-events:none;
   background:linear-gradient(180deg,rgba(20,26,16,0),rgba(20,26,16,.72) 22%,rgba(20,26,16,.93));
   padding:26px 10px calc(10px + env(safe-area-inset-bottom))}
 #bandeau.on{display:block}
 .suggest{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
 .suggest::-webkit-scrollbar{display:none}
+.suggest,.ligne,#suggest button,.ligne *{pointer-events:auto}
 .suggest button{flex:0 0 auto;padding:7px 13px;border-radius:14px;border:1px solid #8a6a3a;
   background:rgba(253,250,240,.94);font:600 11px system-ui;color:#3d2a17;white-space:nowrap}
 .ligne{display:flex;gap:7px}
@@ -2691,7 +2693,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
-const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#hublot,#pan,#sacPage,#page2,#porte'));
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#hublot,#pan,#sacPage,#page2,#porte,#bandeau,#repond'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
 /* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
@@ -2867,7 +2869,13 @@ if($('saisie')){
 if($('envoyer'))$('envoyer').onclick=()=>{direQuelqueChose($('saisie').value);fermerBandeau();};
 if($('micro'))$('micro').onclick=()=>{envoiAuto=true;dicter();};
 /* on referme en touchant le terrain */
-if($('cv'))$('cv').addEventListener('touchstart',()=>{if(bandeauOuvert())fermerBandeau();},{passive:true});
+/* Toucher le terrain sert à marcher, pas à fermer le chat : on peut donc
+   parler et marcher en même temps. Le clavier, lui, se referme dès qu'on
+   pose le doigt sur le terrain — sinon il mange l'écran pendant qu'on court. */
+if($('cv'))$('cv').addEventListener('touchstart',()=>{
+  const i=$('saisie');
+  if(i&&document.activeElement===i&&i.blur)i.blur();
+},{passive:true});
 $('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirPage('Bâtir','BIENTÔT',
   '<div class="rappel">La construction revient plus tard.<br>'+
