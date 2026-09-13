@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1235';
+  var MA_VERSION='2026-09-13-1300';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -39,79 +39,50 @@
 })();
 </script>
 
-
-
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>La mine — Survivre</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;overflow:hidden;background:#0a0806;
-    font-family:system-ui,-apple-system,sans-serif;touch-action:none}
-  canvas#jeu{display:block;width:100%;height:100%;image-rendering:pixelated}
-  #joy{position:fixed;left:0;bottom:0;width:58%;height:44%;z-index:3}
+    font-family:system-ui,-apple-system,sans-serif;touch-action:none;user-select:none}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
 
-  /* en haut à gauche : la vie et la torche */
-  #etat{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:6;
-    display:grid;gap:5px}
+  /* les commandes : gauche/droite à gauche, sauter et piocher à droite */
+  .btn{position:fixed;z-index:5;border-radius:16px;border:1px solid #4f3520;
+    background:linear-gradient(180deg,rgba(165,118,74,.92),rgba(125,89,52,.92));
+    box-shadow:inset 0 1px 0 rgba(255,225,180,.34),0 3px 0 rgba(45,30,16,.9);
+    display:flex;align-items:center;justify-content:center;color:#2b1d12}
+  .btn:active{transform:translateY(3px);box-shadow:inset 0 1px 0 rgba(255,225,180,.34)}
+  #gauche{left:14px;bottom:calc(20px + env(safe-area-inset-bottom));width:70px;height:70px}
+  #droite{left:96px;bottom:calc(20px + env(safe-area-inset-bottom));width:70px;height:70px}
+  #sauter{right:14px;bottom:calc(96px + env(safe-area-inset-bottom));width:74px;height:74px;
+    background:linear-gradient(180deg,rgba(111,145,83,.94),rgba(74,102,54,.94));
+    border-color:#2e4020;box-shadow:inset 0 1px 0 rgba(220,255,200,.3),0 3px 0 #25361a;color:#e7f3dd}
+  #piocher{right:98px;bottom:calc(20px + env(safe-area-inset-bottom));width:74px;height:74px}
+  #piocher.pret{background:linear-gradient(180deg,#e0a94a,#b07f28);border-color:#7d5410;
+    animation:respire 1.4s ease-in-out infinite}
+  @keyframes respire{50%{box-shadow:inset 0 1px 0 rgba(255,240,200,.4),0 3px 0 #6b4508,
+    0 0 0 6px rgba(224,169,74,.16)}}
+  .btn svg{image-rendering:pixelated}
+
+  /* l'état, en haut */
+  #haut{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top));z-index:6;display:grid;gap:5px}
   .jauge{display:flex;align-items:center;gap:8px;padding:6px 11px 6px 8px;border-radius:13px;
-    background:rgba(20,14,8,.62);border:1px solid rgba(255,255,255,.14)}
-  .jauge svg{image-rendering:pixelated;flex:0 0 auto}
-  .creux{width:76px;height:6px;border-radius:3px;background:#2a1d12;overflow:hidden}
+    background:rgba(16,12,8,.62);border:1px solid rgba(255,255,255,.13)}
+  .creux{width:74px;height:6px;border-radius:3px;background:#2a1d12;overflow:hidden}
   .creux i{display:block;height:100%;transition:width .25s}
-  .jauge b{font:700 9px system-ui;letter-spacing:.5px;min-width:34px;text-align:right}
-  #vieJ b{color:#ff9d9d}
-  #torcheJ b{color:#ffcd8a}
-  #vieJ.mal{border-color:#c94a4a;animation:pulseV 1s ease-in-out infinite}
-  @keyframes pulseV{50%{box-shadow:0 0 0 5px rgba(201,74,74,.18)}}
-
-  /* en haut à droite : la profondeur */
+  .jauge b{font:700 9px system-ui;min-width:32px;text-align:right}
   #prof{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:6;
-    padding:7px 12px;border-radius:14px;background:rgba(20,14,8,.62);
-    border:1px solid rgba(255,255,255,.14);font:700 11px system-ui;color:#e8dcc0;
-    text-align:right;letter-spacing:.4px}
-  #prof small{display:block;font:400 8px system-ui;color:#9b8a70;letter-spacing:.4px;
-    margin-top:2px;text-transform:uppercase}
-
-  /* le monstre visé */
-  #ennemi{position:fixed;left:50%;transform:translateX(-50%);z-index:6;
-    top:calc(74px + env(safe-area-inset-top));display:none;text-align:center;
-    padding:7px 14px;border-radius:13px;background:rgba(30,10,10,.68);
-    border:1px solid rgba(255,120,120,.35)}
-  #ennemi.on{display:block}
-  #ennemi b{display:block;font:700 10px system-ui;color:#ffc9c9;letter-spacing:.6px}
-  #ennemi .creux{width:120px;margin-top:5px}
-
-  #fuir{position:fixed;right:12px;top:calc(64px + env(safe-area-inset-top));z-index:6;
-  padding:8px 13px;border-radius:12px;border:1px solid #5c452e;
-  background:rgba(40,28,18,.82);color:#e8dcc0;font:600 10px system-ui}
-#fuir:active{transform:translateY(1px)}
-#action{position:fixed;right:14px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:5;
-    display:none;flex-direction:column;align-items:center;gap:2px;padding:13px 17px;
-    border-radius:16px;border:1px solid #4f3520;
-    background:linear-gradient(180deg,#8a6238,#6b4a28);
-    box-shadow:inset 0 1px 0 rgba(255,232,190,.3),0 4px 0 #3d2a17;
-    font:700 15px system-ui;color:#2b1d12}
-  #action.on{display:flex}
-  #action.combat{background:linear-gradient(180deg,#c35a4a,#8f3226);border-color:#66200f;
-    box-shadow:inset 0 1px 0 rgba(255,200,180,.3),0 4px 0 #5b1a0c;color:#fff0ea}
-  #action small{font:700 7px system-ui;letter-spacing:1.4px;color:#5b3f21}
-  #action.combat small{color:#f6c3b4}
-
-  #barre{position:fixed;left:0;right:0;bottom:0;z-index:6;
-    background:linear-gradient(180deg,#6b4a28,#48301a);border-top:3px solid #2e1f10;
-    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
-    padding:9px 9px calc(9px + env(safe-area-inset-bottom))}
-  .latte{padding:9px 4px 7px;border-radius:5px;border:1px solid #3d2a17;
-    background:linear-gradient(180deg,#8a6238,#6b4a28);
-    box-shadow:inset 0 1px 0 rgba(255,225,180,.26),0 2px 0 #2e1f10;
-    display:flex;flex-direction:column;align-items:center;gap:2px}
-  .latte:active{transform:translateY(2px)}
-  .latte b{font:600 7.5px system-ui;letter-spacing:.5px;color:#2e1f10}
-  .latte.feu{background:linear-gradient(180deg,#c07a35,#8f5520);border-color:#5b3410}
-  .latte.feu b{color:#fdecd0}
-  .latte svg{image-rendering:pixelated}
-
+    padding:7px 12px;border-radius:13px;background:rgba(16,12,8,.62);
+    border:1px solid rgba(255,255,255,.13);font:700 11px system-ui;color:#e8dcc0;text-align:right}
+  #prof small{display:block;font:400 8px system-ui;color:#9b8a70;margin-top:2px;
+    text-transform:uppercase;letter-spacing:.6px}
+  #sacH{position:fixed;left:50%;transform:translateX(-50%);top:calc(12px + env(safe-area-inset-top));
+    z-index:6;display:flex;gap:7px;padding:6px 11px;border-radius:13px;
+    background:rgba(16,12,8,.62);border:1px solid rgba(255,255,255,.13)}
+  #sacH span{display:flex;align-items:center;gap:4px;font:700 10px system-ui;color:#e8dcc0}
+  #sacH svg{image-rendering:pixelated}
   #page{position:fixed;inset:0;z-index:20;display:none;background:#f7f1df;overflow-y:auto}
   #page.on{display:block}
   .rabat{position:sticky;top:0;display:flex;align-items:center;gap:12px;
@@ -143,62 +114,59 @@
     background:linear-gradient(180deg,#6f9153,#4a6636);color:#e7f3dd;font:700 11px system-ui}
   .ligneI .nope{margin-left:auto;font:600 9.5px system-ui;color:#b9463e;text-align:right}
 
-  #msg{position:fixed;left:14px;right:14px;bottom:calc(152px + env(safe-area-inset-bottom));
-    z-index:9;text-align:center;font:700 12px system-ui;color:#ffd9a8;
+  #menus{position:fixed;right:12px;top:calc(58px + env(safe-area-inset-top));z-index:6;
+    display:grid;gap:5px;justify-items:end}
+  .menuB{padding:7px 12px;border-radius:11px;border:1px solid #5c452e;
+    background:rgba(40,28,18,.82);color:#e8dcc0;font:700 9.5px system-ui;letter-spacing:.6px}
+  .menuB:active{transform:translateY(1px)}
+  .menuB.feu{background:rgba(150,88,32,.86);border-color:#8f5520;color:#fdecd0}
+  #msg{position:fixed;left:14px;right:14px;top:calc(58px + env(safe-area-inset-top));z-index:7;
+    text-align:center;font:700 12px system-ui;color:#ffd9a8;
     text-shadow:0 2px 6px rgba(0,0,0,.85);pointer-events:none;opacity:0;transition:opacity .35s}
   #msg.on{opacity:1}
-  /* l'écran de mort */
-  #mort{position:fixed;inset:0;z-index:30;display:none;background:rgba(10,4,4,.92);
-    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px}
-  #mort.on{display:flex;animation:fondu .8s ease both}
-  @keyframes fondu{from{opacity:0}}
-  #mort h2{font:400 26px Georgia,serif;color:#f2d4d4}
-  #mort p{font:400 12.5px/1.7 system-ui;color:#c9a9a4;text-align:center;max-width:300px}
-  #mort .perdu{font:700 11px system-ui;color:#ff9d9d;text-align:center}
-  #mort button{margin-top:6px;padding:14px 26px;border-radius:12px;border:1px solid #5c452e;
-    background:linear-gradient(180deg,#8a6238,#6b4a28);color:#f6ecd2;font:700 13px system-ui}
+  #aide{position:fixed;left:14px;right:14px;bottom:calc(180px + env(safe-area-inset-bottom));
+    z-index:5;text-align:center;font:600 10px system-ui;color:rgba(255,255,255,.72);
+    text-shadow:0 1px 4px rgba(0,0,0,.8);pointer-events:none;transition:opacity .6s}
 </style>
 </head>
 <body>
 <canvas id="jeu"></canvas>
-<div id="joy"></div>
-<div id="etat">
-  <div class="jauge" id="vieJ">
-    <svg viewBox="0 0 16 16" width="14">
-      <path d="M8 14 L2 8 A3.4 3.4 0 0 1 8 4 A3.4 3.4 0 0 1 14 8z" fill="#e05a5a"/>
-      <path d="M5 6 A1.6 1.6 0 0 1 7 6" stroke="#ff9d9d" stroke-width="1.2" fill="none"/></svg>
+<div id="haut">
+  <div class="jauge">
+    <svg viewBox="0 0 16 16" width="13"><path d="M8 14 L2 8 A3.4 3.4 0 0 1 8 4 A3.4 3.4 0 0 1 14 8z" fill="#e05a5a"/></svg>
     <span class="creux"><i id="vieB" style="width:100%;background:linear-gradient(90deg,#c94a4a,#ff8a8a)"></i></span>
-    <b id="vieT">30/30</b>
+    <b id="vieT" style="color:#ff9d9d">30</b>
   </div>
-  <div class="jauge" id="torcheJ">
-    <svg viewBox="0 0 16 18" width="14">
-      <rect x="7" y="6" width="2" height="11" fill="#8a6238"/>
+  <div class="jauge">
+    <svg viewBox="0 0 16 18" width="13"><rect x="7" y="6" width="2" height="11" fill="#8a6238"/>
       <rect x="5" y="2" width="6" height="5" rx="1" fill="#e8802c"/>
       <rect x="6" y="0" width="4" height="3" rx="1" fill="#ffc65a"/></svg>
     <span class="creux"><i id="torcheB" style="width:100%;background:linear-gradient(90deg,#e8802c,#ffc65a)"></i></span>
-    <b id="torcheT">2:00</b>
+    <b id="torcheT" style="color:#ffcd8a">2:00</b>
   </div>
 </div>
-<div id="prof">NIVEAU 1<small>dix pas sous terre</small></div>
-<button id="fuir">Remonter au jour</button>
-<div id="ennemi"><b id="ennemiN">rat des galeries</b>
-  <span class="creux"><i id="ennemiB" style="width:100%;background:linear-gradient(90deg,#8f3226,#e0705a)"></i></span></div>
-<button id="action"></button>
+<div id="sacH"></div>
+<div id="prof">NIVEAU 1<small>les premières galeries</small></div>
 <div id="msg"></div>
-<div id="barre">
-  <button class="latte" id="b-sac"><svg viewBox="0 0 22 20" width="26">
-    <rect x="4" y="5" width="14" height="12" rx="2" fill="#c9b48a"/>
-    <rect x="4" y="5" width="14" height="3" fill="#a5764a"/>
-    <rect x="9" y="2" width="4" height="4" fill="#8a6238"/></svg><b>SAC</b></button>
-  <button class="latte feu" id="b-torche"><svg viewBox="0 0 22 20" width="26">
-    <rect x="10" y="8" width="2" height="10" fill="#8a6238"/>
-    <rect x="8" y="3" width="6" height="6" rx="1" fill="#e8802c"/>
-    <rect x="9" y="1" width="4" height="3" rx="1" fill="#ffc65a"/></svg><b>TORCHE</b></button>
-  <button class="latte" id="b-forge"><svg viewBox="0 0 22 20" width="26">
-    <rect x="10" y="9" width="2" height="9" fill="#8a6238"/>
-    <path d="M11 2 L14 7 L11 12 L8 7z" fill="#c0c7cd"/>
-    <rect x="8" y="8" width="6" height="2" fill="#8b939a"/></svg><b>LA FORGE</b></button>
+<div id="aide">◀ ▶ pour marcher · ▲ pour sauter · la pioche s’allume près d’un filon</div>
+
+<div id="menus">
+  <button class="menuB" id="b-sac">SAC</button>
+  <button class="menuB" id="b-forge">FORGE</button>
+  <button class="menuB feu" id="b-torche">TORCHE</button>
+  <button class="menuB" id="b-sortir">SORTIR</button>
 </div>
+<button class="btn" id="gauche"><svg viewBox="0 0 20 20" width="28">
+  <path d="M13 3 L6 10 L13 17z" fill="currentColor"/></svg></button>
+<button class="btn" id="droite"><svg viewBox="0 0 20 20" width="28">
+  <path d="M7 3 L14 10 L7 17z" fill="currentColor"/></svg></button>
+<button class="btn" id="sauter"><svg viewBox="0 0 20 20" width="28">
+  <path d="M10 3 L17 11 L12 11 L12 17 L8 17 L8 11 L3 11z" fill="currentColor"/></svg></button>
+<button class="btn" id="piocher"><svg viewBox="0 0 22 22" width="30">
+  <rect x="10" y="8" width="2.4" height="12" fill="#8a6238" transform="rotate(18 11 14)"/>
+  <path d="M3 7 Q11 2 19 7 Q11 6 3 7z" fill="#c0c7cd"/>
+  <path d="M3 7 Q11 2 19 7 Q11 4.6 3 7z" fill="#e4eaef"/></svg></button>
+
 <div id="page"><div id="fond"></div></div>
 <div id="mort">
   <h2>Tu t’effondres</h2>
@@ -208,6 +176,7 @@
     Le minerai, lui, est resté au fond.</p>
   <button id="mortOk">Remonter au jour</button>
 </div>
+
 
 <script>
 const $=(i)=>document.getElementById(i);
@@ -228,56 +197,6 @@ async function appel(nom,corps){
   }catch(x){return {erreur:'la mine ne répond pas'};}
 }
 let enLigne=true;      /* faux si le serveur est injoignable : on joue quand même */
-
-const cv=$('jeu'), ctx=cv.getContext('2d');
-let VW=0,VH=0,ECH=2,DPR=1;
-const alea=(n)=>{const x=Math.sin(n*127.1)*43758.5453;return x-Math.floor(x);};
-const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);};
-
-/* ================= vingt niveaux =================
-   Plus on descend : la roche s'assombrit, le halo rétrécit,
-   les filons s'enrichissent et les monstres deviennent méchants. */
-const PROFOND=20;
-const BESTIAIRE=[
-  {nom:'rat des galeries',vie:6, deg:4, vit:34,coul:['#6b5a4a','#4a3c30'],taille:0.8},
-  {nom:'chauve-souris',   vie:8, deg:5, vit:52,coul:['#4a3a52','#2f2436'],taille:0.85,vole:true},
-  {nom:'araignée',        vie:11,deg:7, vit:44,coul:['#3a2f3f','#231c26'],taille:0.95},
-  {nom:'gobelin',         vie:16,deg:9, vit:40,coul:['#5f7a3a','#3f5124'],taille:1.05},
-  {nom:'rampant',         vie:22,deg:11,vit:38,coul:['#6a4a2a','#452f18'],taille:1.1},
-  {nom:'spectre',         vie:30,deg:14,vit:46,coul:['#7a8fa8','#4a5a70'],taille:1.15,vole:true},
-  {nom:'golem de pierre', vie:42,deg:18,vit:26,coul:['#6f767d','#4a5056'],taille:1.35},
-  {nom:'ombre du fond',   vie:60,deg:24,vit:50,coul:['#2a2030','#16101c'],taille:1.4}
-];
-const TROUVAILLES=[
-  {jusqua:4, quoi:[['fer',7],['charbon',5]]},
-  {jusqua:8, quoi:[['fer',5],['cuivre',6],['charbon',3]]},
-  {jusqua:12,quoi:[['cuivre',6],['argent',4],['charbon',3]]},
-  {jusqua:16,quoi:[['argent',5],['or',3],['cuivre',3]]},
-  {jusqua:20,quoi:[['or',4],['gemme',2],['argent',3]]}
-];
-const bande=(n)=>Math.min(BESTIAIRE.length-1,Math.floor((n-1)/PROFOND*BESTIAIRE.length));
-const trouvaille=(n)=>TROUVAILLES.find(t=>n<=t.jusqua).quoi;
-const durete=(n)=>1+(n-1)*0.16;
-const nomNiveau=(n)=>n<=4?'les premières galeries':n<=8?'la roche dure':
-  n<=12?'les veines profondes':n<=16?'sous la nappe':'le fond du monde';
-
-/* ================= toi ================= */
-let SAC={};                       /* le sac vient du serveur */
-let epeeMax=0;
-const POIDS={fer:2,cuivre:2,charbon:2,argent:2,or:2,gemme:1,pierre:2,bois:1,torche:1};
-const NOMS={fer:'Fer',cuivre:'Cuivre',charbon:'Charbon',argent:'Argent',or:'Or',
-  gemme:'Gemme',pierre:'Pierre',bois:'Bois',torche:'Torche'};
-const ICONES={
- fer:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/><rect x="5" y="5" width="6" height="4" fill="#b06a3a"/><rect x="6" y="6" width="3" height="2" fill="#d08a5a"/>',
- cuivre:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/><rect x="5" y="5" width="6" height="4" fill="#3f9e7a"/><rect x="6" y="6" width="3" height="2" fill="#5fc79c"/>',
- charbon:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/><rect x="5" y="5" width="6" height="4" fill="#3a373c"/><rect x="6" y="6" width="2" height="2" fill="#5d5a62"/>',
- argent:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/><rect x="5" y="5" width="6" height="4" fill="#c3ccd4"/><rect x="6" y="6" width="3" height="2" fill="#eef3f7"/>',
- or:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/><rect x="5" y="5" width="6" height="4" fill="#d9a63f"/><rect x="6" y="6" width="3" height="2" fill="#ffe9a8"/>',
- gemme:'<path d="M8 2 L13 7 L8 14 L3 7z" fill="#6fd8e0"/><path d="M8 2 L13 7 L8 7z" fill="#b6f2f7"/><path d="M3 7 L8 7 L8 14z" fill="#3fa8b8"/>',
- pierre:'<path d="M3 12 L5 7 L11 7 L13 12z" fill="#8b939a"/><path d="M5 7 L8 4 L11 7z" fill="#a2a9b0"/>',
- bois:'<rect x="5" y="2" width="6" height="12" fill="#8a6238"/><rect x="5" y="2" width="2" height="12" fill="#a5764a"/>',
- torche:'<rect x="7" y="6" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="5" rx="1" fill="#e8802c"/><rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>'
-};
 /* les épées : celle du coffre, puis les forgées */
 const EPEES=[
   {id:'bois',  nom:'Épée de bois',   deg:4, cout:null,                    coul:['#a5764a','#7d5934']},
@@ -289,868 +208,294 @@ const EPEES=[
 ];
 let epee=0;                       /* rang de ta lame, donné par le serveur */
 let VIE_MAX_S=30, CHARGE_MAX=60;
-let vie=30, niveau=1, mort=false;
-const VIE_MAX=30;
-const DUREE=120;
-let reste=DUREE, allumee=true, prevenu=false;
+let vie=30, mort=false;
+const PROFOND=20;
 
-/* ================= la galerie ================= */
-const L=44, H=36, CASE=32;
-let MUR=[], DECOR=[], BETES=[], SORTIE=null, PUITS=null;
+const cv=$('jeu'), ctx=cv.getContext('2d');
+let VW=0,VH=0,ECH=3,DPR=1;
+const alea=(n)=>{const x=Math.sin(n*127.1)*43758.5453;return x-Math.floor(x);};
+const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),w,h);};
+
+/* ================= la galerie, vue de profil =================
+   Un couloir qui s'enfonce vers la droite. Le sol monte et descend,
+   il y a des plateformes, des échelles, et des filons dans la roche. */
+const CASE=16;                    /* la maille, en points de jeu */
+const LARG=260, HAUT=34;          /* la galerie : longue et basse */
+let SOL=[], PLATEFORMES=[], FILONS=[], LAMPES=[], DECORS=[], BETES=[];
+let SORTIE=null, PUITS=null;
+let niveau=1;
+let FILONS_GENRES=['fer','charbon'];
+
+const NIVEAUX=[
+  {nom:'les premières galeries',roche:['#8a7a63','#6b5c47','#4a3f30'],fond:'#3a2e24'},
+  {nom:'la roche dure',         roche:['#7a6a58','#5b4d3d','#3d3428'],fond:'#2f2620'},
+  {nom:'les veines profondes',  roche:['#6a5f58','#4b423c','#332c28'],fond:'#241f1e'},
+  {nom:'sous la nappe',         roche:['#5c5a62','#42414c','#2c2b34'],fond:'#1c1b24'},
+  {nom:'le fond du monde',      roche:['#4a4458','#332f42','#1e1c2a'],fond:'#15131e'}
+];
+const bandeNiv=()=>NIVEAUX[Math.min(NIVEAUX.length-1,Math.floor((niveau-1)/4))];
+/* ce qui vit à chaque profondeur */
+const BESTIAIRE=[
+  {nom:'rat des galeries',vie:6, deg:4, vit:26,coul:['#6b5a4a','#4a3c30'],taille:0.8},
+  {nom:'chauve-souris',   vie:8, deg:5, vit:38,coul:['#4a3a52','#2f2436'],taille:0.85,vole:true},
+  {nom:'araignée',        vie:11,deg:7, vit:32,coul:['#3a2f3f','#231c26'],taille:0.95},
+  {nom:'gobelin',         vie:16,deg:9, vit:30,coul:['#5f7a3a','#3f5124'],taille:1.05},
+  {nom:'rampant',         vie:22,deg:11,vit:28,coul:['#6a4a2a','#452f18'],taille:1.1},
+  {nom:'spectre',         vie:30,deg:14,vit:34,coul:['#7a8fa8','#4a5a70'],taille:1.15,vole:true},
+  {nom:'golem de pierre', vie:42,deg:18,vit:18,coul:['#6f767d','#4a5056'],taille:1.35},
+  {nom:'ombre du fond',   vie:60,deg:24,vit:36,coul:['#2a2030','#16101c'],taille:1.4}
+];
+const bande=(n)=>Math.min(BESTIAIRE.length-1,Math.floor((n-1)/PROFOND*BESTIAIRE.length));
+const durete=(n)=>1+(n-1)*0.16;
+const nomNiveau=(n)=>n<=4?'les premières galeries':n<=8?'la roche dure':
+  n<=12?'les veines profondes':n<=16?'sous la nappe':'le fond du monde';
+
 function creuser(){
-  MUR=Array.from({length:H},()=>Array.from({length:L},()=>1));
-  const g=(x,y)=>{if(x>0&&y>0&&x<L-1&&y<H-1)MUR[y][x]=0;};
-  let x=2,y=(H/2)|0;
-  const graine=niveau*97+13;
-  for(let i=0;i<L*3;i++){
-    g(x,y);g(x,y-1);
-    if(alea(i*1.7+graine)<.18)g(x,y-2);
-    if(alea(i*3.1+graine)<.16)g(x,y+1);
-    if(alea(i*5.3+graine)<.3)y+=alea(i*7+graine)<.5?1:-1;
-    else x++;
-    y=Math.max(2,Math.min(H-3,y));
-    if(x>=L-2)break;
+  const gr=niveau*137;
+  SOL=[];PLATEFORMES=[];FILONS=[];LAMPES=[];DECORS=[];BETES=[];
+  /* le sol : une ligne qui ondule, avec parfois un ressaut */
+  let h=HAUT-8;
+  for(let i=0;i<LARG;i++){
+    if(i>6&&alea(i*1.7+gr)<.10)h+=alea(i*3+gr)<.5?-1:1;
+    if(i>6&&alea(i*5.3+gr)<.035)h+=alea(i*7+gr)<.5?-2:2;   /* un ressaut à franchir */
+    h=Math.max(HAUT-16,Math.min(HAUT-4,h));
+    SOL.push(h);
   }
-  for(let s=0;s<4+Math.min(6,niveau);s++){
-    const cx=4+((alea(s*11+graine)*(L-9))|0), cy=3+((alea(s*13+graine)*(H-7))|0);
-    const w=2+((alea(s*3+graine)*3)|0), h=2+((alea(s*7+graine)*2)|0);
-    for(let a=-w;a<=w;a++)for(let b=-h;b<=h;b++)g(cx+a,cy+b);
+  /* les plateformes suspendues */
+  for(let i=10;i<LARG-10;i+=4){
+    if(alea(i*2.1+gr)>.22)continue;
+    const l=2+((alea(i*3.3+gr)*3)|0);
+    const y=SOL[i]-4-((alea(i*4.7+gr)*4)|0);
+    PLATEFORMES.push({x:i,y,l});
   }
-  DECOR=[];BETES=[];
-  const libres=[];
-  for(let b=1;b<H-1;b++)for(let a=1;a<L-1;a++)if(!MUR[b][a])libres.push([a,b]);
-  const prend=()=>libres.splice((Math.random()*libres.length)|0,1)[0];
-  trouvaille(niveau).forEach(([t,n])=>{
-    for(let i=0;i<n;i++){const p=prend();if(!p)return;
-      DECOR.push({t,x:p[0]*CASE+CASE/2,y:p[1]*CASE+CASE,coups:0});}
-  });
-  const lampes=Math.max(1,6-Math.floor(niveau/4));
-  for(let i=0;i<lampes;i++){const p=prend();if(!p)continue;
-    DECOR.push({t:'lampe',x:p[0]*CASE+CASE/2,y:p[1]*CASE+CASE});}
-  for(let i=0;i<6;i++){const p=prend();if(!p)continue;
-    DECOR.push({t:'poutre',x:p[0]*CASE+CASE/2,y:p[1]*CASE+CASE});}
-  /* les bêtes : de plus en plus nombreuses */
-  const combien=Math.min(9,1+Math.floor(niveau/2));
+  /* les filons : dans le sol, dans les parois, sous les plateformes */
+  const genres=niveau<=4?['fer','charbon']:niveau<=8?['fer','cuivre','charbon']
+    :niveau<=12?['cuivre','argent','charbon']:niveau<=16?['argent','or','cuivre']:['or','gemme','argent'];
+  FILONS_GENRES=genres;
+  for(let i=8;i<LARG-6;i+=3){
+    if(alea(i*6.1+gr)>.30)continue;
+    const t=genres[(alea(i*8.3+gr)*genres.length)|0];
+    const surSol=alea(i*9.7+gr)<.55;
+    const y=surSol?SOL[i]:(SOL[i]-3-((alea(i*2.9+gr)*6)|0));
+    FILONS.push({t,x:i,y,coups:0});
+  }
+  /* les lampes accrochées à la paroi, tous les 12 pas */
+  for(let i=6;i<LARG;i+=12)LAMPES.push({x:i,y:SOL[i]-6});
+  /* le décor : étais, wagonnets, rails, champignons */
+  for(let i=4;i<LARG;i+=5){
+    const r=alea(i*11.3+gr);
+    if(r<.30)DECORS.push({t:'etai',x:i,y:SOL[i]});
+    else if(r<.38)DECORS.push({t:'wagon',x:i,y:SOL[i]});
+    else if(r<.52)DECORS.push({t:'champi',x:i,y:SOL[i]});
+    else if(r<.62)DECORS.push({t:'caisse',x:i,y:SOL[i]});
+  }
+  /* les bêtes de cette profondeur */
   const B=BESTIAIRE[bande(niveau)], k=durete(niveau);
+  const combien=Math.min(8,1+Math.floor(niveau/2));
   for(let i=0;i<combien;i++){
-    const p=prend();if(!p)continue;
-    BETES.push({...B,x:p[0]*CASE+CASE/2,y:p[1]*CASE+CASE,
+    const x=24+(((LARG-40)*(i+1)/(combien+1))|0);
+    BETES.push(Object.assign({},B,{x:x*CASE,y:SOL[x]*CASE,
+      vx:(alea(i*3+gr)<.5?-1:1)*B.vit*0.5,
       vie:Math.round(B.vie*k),vieMax:Math.round(B.vie*k),
-      deg:Math.round(B.deg*k),dir:1,t:Math.random()*6,frappe:0,touche:0});
+      deg:Math.round(B.deg*k),t:alea(i)*6,touche:0,frappe:0}));
   }
-  let e1=null;for(let b=1;b<H-1&&!e1;b++)if(!MUR[b][2])e1=[2,b];
-  SORTIE={x:(e1?e1[0]:2)*CASE+CASE/2,y:(e1?e1[1]:2)*CASE+CASE};
-  let p1=null;for(let b=H-2;b>0&&!p1;b--)if(!MUR[b][L-3])p1=[L-3,b];
-  PUITS=niveau<PROFOND?{x:(p1?p1[0]:L-3)*CASE+CASE/2,y:(p1?p1[1]:H-3)*CASE+CASE}:null;
-  DECOR.sort((a,b)=>a.y-b.y);
-  joueur.x=SORTIE.x;joueur.y=SORTIE.y-6;
+  /* la sortie tout à gauche, le puits tout à droite */
+  SORTIE={x:4*CASE,y:SOL[4]*CASE};
+  PUITS=niveau<PROFOND?{x:(LARG-5)*CASE,y:SOL[LARG-5]*CASE}:null;
 }
-const solide=(x,y)=>{
-  const a=(x/CASE)|0, b=(y/CASE)|0;
-  if(a<0||b<0||a>=L||b>=H)return true;
-  return MUR[b][a]===1;
+const solEn=(xp)=>{
+  const i=Math.max(0,Math.min(LARG-1,Math.round(xp/CASE)));
+  return SOL[i]*CASE;
 };
 
-/* ================= le joueur ================= */
-const doux    =t=>t*t*(3-2*t);                 /* départ et arrivée adoucis */
-const sortRap =t=>1-Math.pow(1-t,3);           /* part vite, finit lentement */
-
-const entreRap=t=>t*t*t;
-function dessinerHache(g,x,y,ech){
-  const k=ech||1;
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a*k,y+b*k,w*k,h*k);};
-  R(-1,-13,2,13,'#8a6238');                   /* manche */
-  R(-1,-13,1,13,'#a5764a');
-  R(0,-14,5,6,'#7b8288');                     /* fer */
-  R(0,-14,5,1,'#a2a9b0');
-  R(4,-13,2,4,'#c0c7cd');                     /* tranchant */
-  R(-2,-14,2,6,'#5f666c');                    /* talon */
+/* ================= le fond, en quatre couches =================
+   C'est lui qui fait la profondeur : plus une couche est loin,
+   moins elle défile, et plus elle est bleue. */
+let COUCHES=null;
+function graverLeFond(){
+  const N=bandeNiv();
+  const fab=(w,h,f)=>{
+    const c=document.createElement('canvas');
+    c.width=w;c.height=h;
+    const g=c.getContext('2d');g.imageSmoothingEnabled=false;f(g,w,h);
+    return c;
+  };
+  /* 1 · la roche lointaine : de grandes masses sombres */
+  const loin=fab(420,300,(g,w,h)=>{
+    g.fillStyle=N.fond;g.fillRect(0,0,w,h);
+    for(let i=0;i<26;i++){
+      const x=alea(i*3.1)*w, y=alea(i*7.7)*h*0.8;
+      const rx=30+alea(i*2)*60, ry=20+alea(i*5)*40;
+      g.fillStyle='rgba(255,255,255,'+(0.012+alea(i)*0.02)+')';
+      g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();
+    }
+  });
+  /* 2 · des piliers de roche */
+  const piliers=fab(380,300,(g,w,h)=>{
+    for(let i=0;i<7;i++){
+      const x=20+i*54+alea(i)*14, lg=18+alea(i*3)*16;
+      const d=g.createLinearGradient(x,0,x+lg,0);
+      d.addColorStop(0,'rgba(0,0,0,.34)');
+      d.addColorStop(.5,N.roche[2]);
+      d.addColorStop(1,'rgba(0,0,0,.4)');
+      g.fillStyle=d;
+      g.beginPath();
+      g.moveTo(x,0);g.lineTo(x+lg,0);
+      g.lineTo(x+lg-3,h*0.78);g.lineTo(x+3,h*0.78);g.closePath();g.fill();
+      /* les anneaux de taille */
+      g.fillStyle='rgba(0,0,0,.18)';
+      for(let k=1;k<7;k++)g.fillRect(x+1,h*0.11*k,lg-2,2);
+    }
+  });
+  /* 3 · une galerie parallèle, avec ses lampes */
+  const galerie=fab(340,300,(g,w,h)=>{
+    g.fillStyle='rgba(0,0,0,.55)';
+    g.fillRect(0,h*0.30,w,h*0.26);
+    g.fillStyle=N.roche[2];
+    g.fillRect(0,h*0.30,w,5);
+    g.fillRect(0,h*0.52,w,6);
+    for(let i=0;i<5;i++){
+      const x=30+i*66;
+      g.fillStyle='#5b3f21';g.fillRect(x,h*0.32,4,h*0.20);   /* les étais */
+      g.fillRect(x+26,h*0.32,4,h*0.20);
+      g.fillStyle='#6b4a28';g.fillRect(x-2,h*0.30,36,4);
+      /* une lampe qui brille au loin */
+      g.fillStyle='rgba(255,190,110,.5)';
+      g.beginPath();g.arc(x+15,h*0.38,9,0,7);g.fill();
+      g.fillStyle='#ffc65a';g.fillRect(x+13,h*0.36,4,4);
+    }
+  });
+  /* 4 · les stalactites, tout près */
+  const stal=fab(300,300,(g,w,h)=>{
+    for(let i=0;i<16;i++){
+      const x=alea(i*5.7)*w, lg=5+alea(i*2)*9, ht=14+alea(i*3)*40;
+      const d=g.createLinearGradient(0,0,0,ht);
+      d.addColorStop(0,N.roche[1]);
+      d.addColorStop(1,'rgba(0,0,0,.7)');
+      g.fillStyle=d;
+      g.beginPath();g.moveTo(x-lg/2,0);g.lineTo(x+lg/2,0);g.lineTo(x,ht);g.closePath();g.fill();
+      /* la goutte au bout */
+      if(alea(i*9)<.4){g.fillStyle='rgba(150,200,230,.5)';g.fillRect(x-1,ht,2,3);}
+    }
+  });
+  COUCHES=[{img:loin,v:0.12,y:0},{img:piliers,v:0.26,y:0},
+           {img:galerie,v:0.44,y:0},{img:stal,v:0.66,y:0}];
 }
-function dessinerPioche(g,x,y,ech){
-  const k=ech||1;
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a*k,y+b*k,w*k,h*k);};
-  R(-1,-12,2,12,'#8a6238');                   /* manche */
-  R(-1,-12,1,12,'#a5764a');
-  R(-6,-14,12,2,'#7b8288');                   /* fer */
-  R(-6,-14,12,1,'#a2a9b0');
-  R(-7,-13,2,2,'#5f666c');R(5,-13,2,2,'#5f666c');
+
+/* ================= les pierres du premier plan ================= */
+let PIERRES=null, PIERRES_NIV=-1;
+function graverLesPierres(){
+  const N=bandeNiv();
+  PIERRES=[];
+  for(let v=0;v<6;v++){
+    const c=document.createElement('canvas');
+    c.width=CASE*DPR*2;c.height=CASE*DPR*2;
+    const g=c.getContext('2d');
+    g.setTransform(DPR*2,0,0,DPR*2,0,0);g.imageSmoothingEnabled=false;
+    g.fillStyle=N.roche[1];g.fillRect(0,0,CASE,CASE);
+    g.fillStyle=N.roche[0];g.fillRect(0,0,CASE,1.5);        /* la lumière du dessus */
+    g.fillStyle=N.roche[2];
+    g.fillRect(0,CASE-2,CASE,2);
+    g.fillRect((v*5)%CASE,0,1.2,CASE);                      /* le joint vertical */
+    for(let i=0;i<3;i++){
+      const u=alea(v*3+i), w2=alea(v*7+i);
+      g.fillStyle=u<.5?N.roche[0]:N.roche[2];
+      g.fillRect(2+u*(CASE-5),2+w2*(CASE-5),2,1.6);
+    }
+    PIERRES.push(c);
+  }
+  PIERRES_NIV=niveau;
 }
 
-const BARBES=['aucune','naissante','fine','courte','pleine','longue','bouc','moustache',
-              'collier','favoris','impériale','fourchue'];
-let GRILLE=null, grilleValide=false;
-const caseDe=(x,y)=>((y/CASE)|0)*64+((x/CASE)|0);
+/* ================= toi ================= */
+let SAC={};
+const NOMS={fer:'Fer',charbon:'Charbon',cuivre:'Cuivre',argent:'Argent',or:'Or',gemme:'Gemme',
+  pierre:'Pierre',bois:'Bois',torche:'Torche'};
+const POIDS={fer:2,cuivre:2,charbon:2,argent:2,or:2,gemme:1,pierre:2,bois:1,torche:1};
+const COUL={fer:['#b06a3a','#d08a5a'],charbon:['#3a373c','#5d5a62'],cuivre:['#3f9e7a','#5fc79c'],
+  argent:['#c3ccd4','#eef3f7'],or:['#d9a63f','#ffe9a8'],gemme:['#3fa8b8','#b6f2f7']};
+const ICONES={fer:'<rect x="4" y="6" width="8" height="6" rx="1" fill="#b06a3a"/><rect x="5" y="7" width="3" height="2" fill="#d08a5a"/>',
+ charbon:'<rect x="4" y="6" width="8" height="6" rx="1" fill="#3a373c"/><rect x="5" y="7" width="3" height="2" fill="#5d5a62"/>',
+ cuivre:'<rect x="4" y="6" width="8" height="6" rx="1" fill="#3f9e7a"/><rect x="5" y="7" width="3" height="2" fill="#5fc79c"/>',
+ argent:'<rect x="4" y="6" width="8" height="6" rx="1" fill="#c3ccd4"/><rect x="5" y="7" width="3" height="2" fill="#eef3f7"/>',
+ or:'<rect x="4" y="6" width="8" height="6" rx="1" fill="#d9a63f"/><rect x="5" y="7" width="3" height="2" fill="#ffe9a8"/>',
+ gemme:'<path d="M8 3 L12 7 L8 13 L4 7z" fill="#6fd8e0"/><path d="M8 3 L12 7 L8 7z" fill="#b6f2f7"/>'};
 
-const invaliderGrille=()=>{grilleValide=false;};
-const chargeMax=()=>e.sacMax||CHARGE_MAX;
-if(!e.sac)e.sac={};
-const COIFFES=['courts','très courts','dégradé','bol','carré','mi-longs','longs','très longs',
-               'queue','couettes','chignon','chignon haut','tresse','tresses','ondulés','bouclés',
-               'afro','dreads','banane','crête','crâne','hirsute'];
-const PALETTES={
- peau:['#f6ddc0','#f0d0ae','#e8c49a','#d8a878','#c08a58','#a2683c','#7d4e2a','#5a3720'],
- cheveux:['#1c140d','#2b1d12','#4a3220','#6b4726','#8a5f30','#b58a4a','#d9c48a','#f2e6c8',
-          '#8a8f96','#c9c9c9','#a8402c','#c2604a','#6b3f8f','#2f6b8f','#3f7d4a','#b53f6b'],
- yeux:['#26241f','#3f5f6b','#4a6b3f','#6b4a3f','#5a4a6b','#7d6a3f','#2f6b8f','#8f4a3f'],
- veste:['#4f7d5c','#5a6b8f','#8a5a4a','#6b5f8f','#7d6a3f','#3f5f6b','#8f6a3f','#54606b',
-        '#a8524a','#3f7d4a','#c2a04a','#2f3a4a','#7a4f6b','#4a7d7d','#9c5f2f','#5f5f5f'],
- pantalon:['#3a4358','#4a4038','#2f3a2f','#5a4a3a','#3a3a44','#6b5f4a','#2b3340','#7d6a4a'],
- chaussures:['#4a3524','#2f2a24','#5a4a3a','#6b4a28','#3f4a53','#7d5934'],
- sac:['aucun','#7d5934','#4a5c6b','#6b4a4a','#4f6b4a','#8a6a44','#54606b']
-};
-let GESTE={t:0};
-const CHAPEAUX=['aucun','casquette','bandana','bonnet','capuche','chapeau','beret','cagoule'];
-const YEUX_F=['normaux','plisses','ronds','fatigues','doux','severes'];
-const SILHOUETTES=['fine','svelte','moyenne','athlétique','forte'];
-const HAUTS=['veste','t-shirt','chemise','pull','débardeur','manteau','gilet','tunique'];
-const BAS=['pantalon','short','jupe','treillis','longue jupe','bermuda'];
-const SOULIERS=['bottes','baskets','sandales','bottillons'];
-const SOURCILS=['fins','epais','arques','fronces'];
-const NEZ=['petit','droit','large','retrousse'];
-const BOUCHES=['neutre','sourire','severe','entrouverte','lèvres','pincée'];
-const MARQUES=['aucune','taches','cicatrice','grain','fard','peinture'];
-const BOUCLES=['aucune','anneau','perle','plume'];
-const DEF_AP={peau:2,cheveux:2,coiffe:0,barbe:0,yeux:0,formeYeux:0,veste:0,pantalon:0,
-              chaussures:0,chapeau:0,sac:1,
-              sourcils:0,nez:1,bouche:0,marque:0,boucle:0,
-              corps:0,haut:0,bas:0,souliers:0};
-const teint=(c,k)=>{
-  const n=parseInt(c.slice(1),16);
-  const f=v=>Math.max(0,Math.min(255,v+k));
-  return '#'+((1<<24)+(f((n>>16)&255)<<16)+(f((n>>8)&255)<<8)+f(n&255)).toString(16).slice(1);
-};
+const moi={x:60,y:0,vx:0,vy:0,sol:false,sens:1,pas:0,coup:0,vie:30,vieMax:30,mal:0};
+let torche=120, allumee=true;
 
-function sprite(g,x,y,ap0,dir,pas,bouge){
-  const p=Object.assign({},DEF_AP,ap0||{});
-  const P=PALETTES;
-  const peau=P.peau[p.peau]||P.peau[2], peauO=teint(peau,-24), peauC=teint(peau,14), peauT=teint(peau,-52);
-  const chev=P.cheveux[p.cheveux]||P.cheveux[2], chevC=teint(chev,22), chevO=teint(chev,-22);
-  const veste=P.veste[p.veste]||P.veste[0], vesteC=teint(veste,20), vesteO=teint(veste,-26), vesteT=teint(veste,-48);
-  const pant=P.pantalon[p.pantalon]||P.pantalon[0], pantO=teint(pant,-18), pantC=teint(pant,12);
-  const chau=P.chaussures[p.chaussures]||P.chaussures[0], chauC=teint(chau,20);
-  const oeil=P.yeux[p.yeux]||P.yeux[0];
-  const coiffe=COIFFES[p.coiffe]||'courts', barbe=BARBES[p.barbe]||'aucune';
-  const chapeau=CHAPEAUX[p.chapeau]||'aucun', sacC=P.sac[p.sac]||'aucun';
-  const fy=YEUX_F[p.formeYeux]||'normaux';
-  const sourcil=SOURCILS[p.sourcils]||'fins';
-  const nez=NEZ[p.nez]||'droit';
-  const bouche=BOUCHES[p.bouche]||'neutre';
-  const marque=MARQUES[p.marque]||'aucune';
-  const boucle=BOUCLES[p.boucle]||'aucune';
-  const silhouette=SILHOUETTES[p.corps]||'masculine';
-  const hautT=HAUTS[p.haut]||'veste';
-  const basT=BAS[p.bas]||'pantalon';
-  const soulier=SOULIERS[p.souliers]||'bottes';
-  /* la silhouette : largeur d'épaules, taille, hanches */
-  const SIL={'fine'      :{ep:6,ta:5,ha:6,tete:5,menton:1},
-             'svelte'    :{ep:7,ta:5,ha:7,tete:5,menton:1},
-             'moyenne'   :{ep:8,ta:7,ha:7,tete:6,menton:2},
-             'athlétique':{ep:9,ta:7,ha:7,tete:6,menton:2},
-             'forte'     :{ep:9,ta:9,ha:9,tete:6,menton:3}}[silhouette]||{ep:8,ta:7,ha:7,tete:6,menton:2};
-  const EP=SIL.ep, TA=SIL.ta, HA=SIL.ha;   /* demi-largeurs */
-  const N='#1b1712';
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-
-  /* marche souple, huit temps */
-  const F=bouge?(Math.floor(pas)%8):-1;
-  const AN={corps:[0,0,-1,0,0,0,-1,0],
-            jg:[2,1,-1,-2,-2,-1,1,2], jd:[-2,-1,1,2,2,1,-1,-2],
-            pg:[0,0,1,0,0,0,0,0],     pd:[0,0,0,0,0,0,1,0],
-            bg:[-2,-1,1,2,2,1,-1,-2], bd:[2,1,-1,-2,-2,-1,1,2],
-            reb:[0,0,1,0,0,0,1,0]};
-  const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
-  const Y=bouge?AN.corps[F]:souffle;
-  const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
-  const jgL=bouge?AN.pg[F]:0, jdL=bouge?AN.pd[F]:0;
-  const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
-  const reb=bouge?AN.reb[F]:0;
-  const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
-  const MANCHE_AR={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
-                   'gilet':0,'t-shirt':4,'débardeur':0}[HAUTS[p.haut]||'veste'];
-  const s=dir==='droite'?1:-1;
-
-  /* ---- mesures du corps (quatre têtes) ----
-     pieds 0 · jambes 13 · torse 15 · tête 11, sommet à -40 */
-  const JH=13, TH=15, HT=11;
-  const yT=-JH-TH;                 /* haut du torse  = -28 */
-  const yTete=yT-HT-2;             /* la tête est décollée du torse : le cou apparaît */
-
-  /* ---- le geste de frappe, en trois temps ----
-     1 → 0,58 : l'élan, la pioche part en arrière
-     0,58 → 0,42 : l'abattage, très rapide
-     0,42 → 0   : la reprise, le corps se redresse                */
-  const fr=(typeof GESTE!=='undefined'&&GESTE.t>0)?GESTE.t:0;
-  const typeGeste=(typeof GESTE!=='undefined'&&GESTE.type)||'pioche';
-  let phase=0, arc=0, penche=0, tasse=0;
-  if(fr>0&&typeGeste==='cueille'){
-    /* la cueillette : on se penche, le bras part vers le buisson, on se relève */
-    if(fr>0.55){const t=(1-fr)/0.45;penche=doux(t)*2.6;tasse=doux(t)*1.6;arc=1.1*doux(t);phase=1;}
-    else if(fr>0.3){const t=(0.55-fr)/0.25;penche=2.6;tasse=1.6;arc=1.1+t*0.5;phase=2;}
-    else{const t=1-fr/0.3;penche=2.6*(1-sortRap(t));tasse=1.6*(1-sortRap(t));arc=1.6*(1-sortRap(t));phase=3;}
-  }else if(fr>0&&typeGeste==='hache'){
-    /* la hache : élan haut, balayage large, reprise lente */
-    if(fr>0.62){const t=(1-fr)/0.38;arc=-1.9*doux(t);penche=-doux(t)*2;tasse=doux(t)*1.4;phase=1;}
-    else if(fr>0.42){const t=(0.62-fr)/0.2;arc=-1.9+entreRap(t)*3.3;penche=-2+t*5.2;tasse=1.4-t*2.8;phase=2;}
-    else{const t=1-fr/0.42;arc=1.4*(1-sortRap(t));penche=3.2*(1-sortRap(t));tasse=-1.4*(1-sortRap(t));phase=3;}
-  }else if(fr>0){
-    if(fr>0.58){const t=(1-fr)/0.42;arc=-1.45*doux(t);penche=-doux(t)*1.6;tasse=doux(t)*1.2;phase=1;}
-    else if(fr>0.42){const t=(0.58-fr)/0.16;arc=-1.45+entreRap(t)*2.75;penche=-1.6+t*4.4;tasse=1.2-t*2.4;phase=2;}
-    else{const t=1-fr/0.42;arc=1.3*(1-sortRap(t));penche=2.8*(1-sortRap(t));tasse=-1.2*(1-sortRap(t));phase=3;}
-  }
-
-  R(-6,1,12,2,'rgba(40,60,28,.42)');
-
-  /* sac */
-  if(sacC!=='aucun'&&prof){                     /* de dos : le sac, bien posé entre les épaules */
-    const w2=Math.min(10,EP*2-4);
-    R(-(w2>>1),yT+2-reb,w2,13,teint(sacC,-8));
-    R(-(w2>>1),yT+2-reb,w2,2,teint(sacC,16));
-    R(-(w2>>1),yT+12-reb,w2,2,teint(sacC,-26));
-    R(-2,yT+6-reb,4,4,teint(sacC,10));          /* la poche */
-    R(-2,yT+6-reb,4,1,teint(sacC,-30));
-  }else if(sacC!=='aucun'&&cote){               /* de profil : il dépasse dans le dos */
-    const sx=s>0?-(EP+1):EP-2;
-    R(sx,yT+2-reb,4,12,teint(sacC,-16));
-    R(sx,yT+2-reb,4,2,teint(sacC,10));
-    R(sx,yT+12-reb,4,1,teint(sacC,-30));
-  }
-
-  /* ---- jambes ---- */
-  /* la chaussure, dessinée selon son type */
-  const pied=(px2,py,col)=>{
-    if(soulier==='bottes'){
-      R(px2,py-2,5,2,teint(col,-16));              /* la tige monte sur la cheville */
-      R(px2,py,5,3,col);
-      R(px2,py,5,1,teint(col,20));
-      R(px2,py+2,5,1,teint(col,-26));             /* la semelle */
-    }else if(soulier==='bottillons'){
-      R(px2,py-1,5,1,teint(col,-16));
-      R(px2,py,5,3,col);
-      R(px2,py,5,1,teint(col,18));
-      R(px2,py+2,5,1,teint(col,-30));
-    }else if(soulier==='baskets'){
-      R(px2,py,5,2,col);
-      R(px2,py,5,1,teint(col,22));
-      R(px2+1,py,2,1,'#f2efe4');                   /* le lacet */
-      R(px2,py+2,5,1,'#e8e4d8');                   /* la semelle claire */
-    }else{                                          /* sandales : le pied reste visible */
-      R(px2+1,py,3,2,peauO);
-      R(px2,py+1,5,1,col);
-      R(px2+1,py,3,1,col);
-      R(px2,py+2,5,1,teint(col,-22));
-    }
-  };
-
-  /* jusqu'où le tissu descend, selon le bas porté */
-  const TISSU={'pantalon':JH,'short':6,'jupe':5,'treillis':JH,'longue jupe':10,'bermuda':8}[basT];
-  const jambeProfil=(dec,plie,col,botte)=>{
-    const h=JH-plie;
-    R(-2+dec,-JH,4,h,peau);                    /* la jambe nue */
-    if(TISSU>0)R(-2+dec,-JH,4,Math.min(h,TISSU),col);
-    if(TISSU>=h)R(-2+dec,-4,4,4,teint(col,-12));
-    if(basT==='treillis'){R(-2+dec,-JH+5,4,1,teint(col,-22));R(-1+dec,-JH+6,2,2,teint(col,14));}
-    pied(-3+dec,-JH+h,botte);
-  };
-  const jambeFace=(cx,phase,col,botte)=>{
-    const avance=phase>0;
-    const h=avance?JH:JH-2;
-    const ec=Math.abs(phase)>1?(avance?-1:1):0;
-    R(cx+ec,-JH,4,h,avance?teint(peau,4):teint(peau,-14));   /* la jambe */
-    if(TISSU>0){
-      R(cx+ec,-JH,4,Math.min(h,TISSU),avance?teint(col,8):teint(col,-10));
-      R(cx+ec,-JH,4,1,pantC);
-    }
-    if(basT==='treillis'){R(cx+ec,-JH+5,4,1,teint(col,-22));R(cx+1+ec,-JH+6,2,2,teint(col,14));}
-    pied(cx-1+ec,-JH+h,avance?botte:teint(botte,-14));
-  };
-  if(cote){
-    jambeProfil(jdP*0.9-1,jdL,pantO,teint(chau,-14));
-    jambeProfil(jgP*0.9-1,jgL,pant,chau);
-  }else{
-    if(jgP>=jdP){jambeFace(1,jdP,pantO,teint(chau,-14));jambeFace(-5,jgP,pant,chau);}
-    else{jambeFace(-5,jgP,pant,chau);jambeFace(1,jdP,pantO,teint(chau,-14));}
-  }
-
-  /* jupe : un trapèze par-dessus le haut des jambes */
-  if(basT==='jupe'||basT==='longue jupe'){
-    const hj=basT==='jupe'?6:9;
-    for(let i=0;i<hj;i++){
-      const w2=HA-1+Math.round(i*(basT==='jupe'?0.7:0.55));
-      R(-w2,-JH+i,w2*2,1,i<2?pantC:pant);
-    }
-    R(-(HA+3),-JH+hj-1,(HA+3)*2,1,pantO);
-  }
-
-  /* hanches : elles ferment la jonction entre le torse et les jambes */
-  R(-(HA+1),-JH-2,(HA+1)*2,3,N);
-  R(-HA,-JH-1,HA*2,2,pantO);
-  R(-HA,-JH-1,HA*2,1,pant);
-
-  /* ---- bras arrière (profil) ---- */
-  if(cote){
-    const ar=bgP;
-    const bx=(s>0?-6:3)-ar*s;
-    R(bx,yT+2,3,11,peauT);
-    if(MANCHE_AR>0)R(bx,yT+2,3,MANCHE_AR,vesteT);
-    R(bx,yT+13,3,3,peauT);
-  }
-
-  /* ---- torse : la coupe du vêtement suit la silhouette ---- */
-  const colH=veste, colHC=vesteC, colHO=vesteO, colHT=vesteT;
-  const pen=fr>0?Math.round(penche*(dir==='gauche'?-1:1)):0;   /* il se penche dans l'effort */
-  const tas=fr>0?Math.max(0,Math.round(tasse)):0;              /* et se tasse */
-  R(-EP+pen,yT-1+tas,EP*2,TH+1-tas,N);           /* contour aux épaules */
-  R(-EP+1,yT,EP*2-2,3,colH);                     /* les épaules */
-  R(-EP+1,yT,EP*2-2,2,colHC);
-  for(let i=3;i<TH-1;i++){                       /* le buste, resserré à la taille */
-    const w2=Math.round(EP-1-(EP-TA)*Math.min(1,(i-2)/(TH-5)));
-    R(-w2,yT+i,w2*2,1,colH);
-    R(-w2,yT+i,2,1,colHT);
-    R(w2-2,yT+i,2,1,colHO);
-  }
-  R(-TA,yT+TH-4,TA*2,2,colHO);                   /* ceinture */
-  R(-1,yT+TH-4,2,2,'#c9a24a');
-  /* les détails propres à chaque haut */
-  if(hautT==='veste'&&!prof){R(-1,yT,2,TH-5,colHO);R(-4,yT,3,2,colHC);R(1,yT,3,2,colHC);}
-  if(hautT==='chemise'&&!prof){
-    R(-1,yT,2,TH-5,colHT);
-    R(-4,yT,4,3,colHC);R(0,yT,4,3,colHC);        /* col ouvert */
-    for(let i=0;i<3;i++)R(0,yT+4+i*3,1,1,'#f2efe4');
-  }
-  if(hautT==='pull'&&!prof){
-    R(-3,yT-2,6,3,colHC);R(-3,yT-2,6,1,colH);    /* col montant */
-    for(let i=4;i<TH-4;i+=3)R(-EP+2,yT+i,EP*2-4,1,teint(colH,-12));
-  }
-  if(hautT==='t-shirt'&&!prof){R(-3,yT,6,2,peau);R(-3,yT,6,1,peauC);}
-  if(hautT==='débardeur'){
-    R(-4,yT,8,3,peau);R(-4,yT,8,1,peauC);        /* décolleté */
-    R(-EP+1,yT,2,4,colH);R(EP-3,yT,2,4,colHO);   /* bretelles */
-  }
-  if(hautT==='gilet'&&!prof){
-    R(-2,yT,4,TH-5,peau);R(-2,yT,4,1,peauC);
-    R(-2,yT+TH-6,4,2,colHO);
-  }
-  if(hautT==='manteau'){
-    R(-TA,yT+TH-2,TA*2,6,colH);                  /* les pans descendent */
-    R(-TA,yT+TH-2,TA*2,1,colHC);
-    R(-TA,yT+TH+3,TA*2,1,colHT);
-    if(!prof)R(-1,yT+TH-2,2,6,colHT);
-  }
-  if(hautT==='tunique'){
-    R(-TA,yT+TH-2,TA*2,4,colH);
-    R(-TA,yT+TH-2,TA*2,1,colHC);
-    R(-TA,yT+TH+1,TA*2,1,colHT);
-    if(!prof){R(-4,yT,8,2,colHC);R(-1,yT,2,4,colHO);}
-  }
-  R(-EP+1,yT+TH-2,EP*2-2,1,colHT);
-
-  /* de face : on ne voit du sac que les deux sangles sur la poitrine */
-  if(sacC!=='aucun'&&dir==='bas'){
-    R(-EP+2,yT+2,2,8,teint(sacC,-6));
-    R(EP-4,yT+2,2,8,teint(sacC,-18));
-    R(-EP+2,yT+6,EP*2-6,1,teint(sacC,-24));
-  }
-
-  /* ---- bras : la manche s'arrête selon le vêtement ---- */
-  const MANCHE={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
-                'gilet':0,'t-shirt':4,'débardeur':0}[hautT];
-  const brasCol=(dev)=>dev?veste:vesteT;
-  const bras=(bx,by,dev)=>{
-    R(bx,by,3,11,dev?teint(peau,2):peauO);       /* le bras nu */
-    if(MANCHE>0){
-      R(bx,by,3,MANCHE,brasCol(dev));
-      R(bx,by,3,2,dev?vesteC:vesteO);
-      if(MANCHE<11)R(bx,by+MANCHE-1,3,1,teint(brasCol(dev),-20));
-    }
-    R(bx,by+11,3,3,dev?peau:peauO);              /* la main */
-  };
-  if(cote){
-    bras((s>0?1:-4)+bdP*s,yT+1,true);
-  }else{
-    bras(-(EP+2),yT+1,bgP>0);
-    bras(EP-1,yT+1,bdP>0);
-  }
-  /* ---- l'outil et les bras, selon l'angle sous lequel on regarde ----
-     De profil : grand arc de côté, un seul bras visible.
-     De face   : l'outil s'abat vers nous, les deux mains le tiennent, il se raccourcit.
-     De dos    : il part en arrière au-dessus des épaules, on voit le dos des mains. */
-  if(fr>0){
-    const outil=(gg,ech)=>{
-      if(typeGeste==='hache')dessinerHache(gg,0,0,ech||1);
-      else dessinerPioche(gg,0,0,ech||1);
-    };
-    if(cote){
-      const sens=dir==='gauche'?-1:1;
-      const epx=sens>0?EP-1:-(EP+2);
-      const ey=yT+1-Math.round(tasse*3);
-      R(epx,ey,3,9,veste);R(epx,ey,3,2,vesteC);R(epx,ey+9,3,3,peau);
-      if(typeGeste!=='cueille'){
-        g.save();
-        g.translate(x+epx+1.5,y+ey+2);
-        g.rotate(sens*arc);
-        outil(g,1);
-        if(phase===2){g.globalAlpha=.3;g.fillStyle='#f2f5f8';g.fillRect(-1,-15,2,13);g.globalAlpha=1;}
-        g.restore();
-      }else{
-        const av=Math.round(arc*3);
-        R(epx+(sens>0?av:-av),ey+7,3,3,peau);
-      }
-    }else if(dir==='bas'){
-      /* de face : l'outil passe au-dessus de la tête puis descend vers nous.
-         On l'écrase verticalement pour simuler le raccourci. */
-      const t=(arc+1.9)/3.6;                       /* 0 en arrière, 1 en avant */
-      const haut=yT-14+Math.round((1-t)*-8);
-      const ey=yT+1-Math.round(tasse*3);
-      if(typeGeste!=='cueille'){
-        g.save();
-        g.translate(x,y+haut+t*24);
-        g.scale(1.15,0.45+t*0.75);                 /* il grandit en venant vers nous */
-        g.rotate(Math.PI*(1-t)*0.12);
-        outil(g,1.2);
-        if(phase===2){g.globalAlpha=.26;g.fillStyle='#f2f5f8';
-          g.fillRect(-8,-4,16,4);g.globalAlpha=1;}
-        g.restore();
-      }
-      /* les deux bras tiennent l'outil, ils se rapprochent devant le corps */
-      const ecart=Math.round(3+ (1-t)*3);
-      R(-EP-2+ecart,ey,3,9,vesteT);R(-EP-2+ecart,ey+9,3,3,peauO);
-      R(EP-1-ecart,ey,3,9,veste);  R(EP-1-ecart,ey+9,3,3,peau);
-      if(typeGeste==='cueille'){                   /* la main s'avance vers le bas */
-        R(-2,ey+10+Math.round(arc*3),4,3,peau);
-      }
-    }else{
-      /* de dos : l'outil part derrière les épaules, on ne voit que sa tête dépasser */
-      const t=(arc+1.9)/3.6;
-      const ey=yT+1-Math.round(tasse*3);
-      if(typeGeste!=='cueille'){
-        g.save();
-        g.translate(x,y+yT-10-(1-t)*10);
-        g.scale(1.1,0.5+(1-t)*0.6);
-        outil(g,1.1);
-        g.restore();
-      }
-      const ecart=Math.round(3+(1-t)*3);
-      R(-EP-2+ecart,ey,3,9,vesteT);R(-EP-2+ecart,ey+9,3,3,peauO);
-      R(EP-1-ecart,ey,3,9,veste);  R(EP-1-ecart,ey+9,3,3,peau);
-    }
-  }
-
-  /* ---- tête ---- */
-  const YT=yTete+(fr>0?Math.round(tasse*1.2):0);  /* la tête plonge avec le buste */
-  R(-3,yT-3+Y,6,4-Y,N);                        /* le cou s'étire quand le corps descend */
-  R(-2,yT-2+Y,4,3-Y,peau);
-  R(-2,yT-2+Y,4,1,peauT);                      /* ombre du menton */
-  R(-2,yT-2+Y,2,3-Y,peauO);
-
-  const LT=SIL.tete;                            /* demi-largeur de la tête */
-  for(let i=0;i<HT;i++){
-    let w2=LT;
-    if(i>=HT-SIL.menton)w2=LT-1;                /* le menton se resserre */
-    if(i===0)w2=LT-1;                           /* le sommet du crâne s'arrondit */
-    R(-w2-1,YT+i,(w2+1)*2,1,N);
-    R(-w2,YT+i,w2*2,1,peau);
-    R(-w2,YT+i,Math.min(3,w2),1,peauO);
-  }
-  R(-LT,YT,LT*2,1,peauC);                       /* front éclairé */
-  if(!prof){R(-LT-2,YT+5,2,3,peauO);R(LT,YT+5,2,3,peau);}   /* oreilles */
-  if(prof){R(-LT,YT+1,LT*2,HT-1,teint(peau,-12));           /* nuque */
-           R(-LT,YT+HT-3,LT*2,2,teint(peau,-30));}
-  /* ---- la barbe ----
-     Elle épouse la mâchoire : plus large en haut des joues, resserrée sous le menton.
-     Trois valeurs, comme les cheveux, et une version propre au profil. */
-  if(barbe!=='aucune'&&!prof){
-    const LB=SIL.tete;                          /* demi-largeur du visage */
-    const bas=YT+HT-1;                          /* le bas du menton */
-    const B=chev, BC=chevC, BO=chevO, BT=teint(chev,-40);
-    const joue=(y0,h2,ep)=>{                    /* les côtés, le long de la mâchoire */
-      for(let i=0;i<h2;i++){
-        const w2=LB-(i>=h2-2?1:0);
-        R(-w2,y0+i,ep,1,B);
-        R(w2-ep,y0+i,ep,1,BO);
-      }
-    };
-    const menton=(y0,h2,larg)=>{                /* la masse sous la bouche */
-      for(let i=0;i<h2;i++){
-        const w2=Math.max(1,larg-(i>=h2-2?1:0)-(i>=h2-1?1:0));
-        R(-w2,y0+i,w2*2,1,i<1?BC:(i>h2-2?BT:B));
-      }
-    };
-    if(cote){
-      /* de profil : la barbe suit le bord avant du visage */
-      const av=s>0?1:-4;
-      if(barbe==='naissante'){g.globalAlpha=.5;R(av-1,YT+7,5,4,BO);g.globalAlpha=1;}
-      else if(barbe==='fine'){R(av-1,YT+7,5,3,BO);R(av,YT+10,3,1,BT);}
-      else if(barbe==='courte'){R(av-2,YT+6,6,5,B);R(av-1,YT+10,4,1,BO);}
-      else if(barbe==='pleine'){R(av-3,YT+5,7,7,B);R(av-3,YT+5,2,7,BO);R(av-2,YT+11,5,2,BT);}
-      else if(barbe==='longue'){R(av-3,YT+5,7,7,B);R(av-2,YT+11,5,6,B);R(av-2,YT+15,5,2,BT);}
-      else if(barbe==='bouc'){R(av-1,YT+8,4,5,B);R(av-1,YT+11,4,2,BO);}
-      else if(barbe==='moustache'){R(av-1,YT+7,4,1,B);R(av+2,YT+7,1,1,BO);}
-      else if(barbe==='collier'){R(av-4,YT+4,2,8,B);R(av-3,YT+10,6,2,B);}
-      else if(barbe==='favoris'){R(av-4,YT+3,2,6,B);}
-      else if(barbe==='impériale'){R(av-1,YT+7,4,1,B);R(av,YT+9,3,3,B);}
-      else if(barbe==='fourchue'){R(av-3,YT+5,7,7,B);R(av-2,YT+11,2,5,B);R(av+1,YT+11,2,4,BO);}
-    }else{
-      if(barbe==='naissante'){                  /* juste une ombre sur la mâchoire */
-        g.globalAlpha=.42;
-        joue(YT+6,5,2);menton(YT+9,3,3);
-        g.globalAlpha=1;
-      }
-      else if(barbe==='fine'){
-        joue(YT+7,4,1);
-        R(-3,YT+10,6,1,BO);R(-2,YT+11,4,1,BT);
-      }
-      else if(barbe==='courte'){
-        joue(YT+6,5,2);
-        menton(YT+9,3,4);
-        R(-3,YT+8,6,1,BC);                      /* le sillon sous la lèvre */
-      }
-      else if(barbe==='pleine'){
-        joue(YT+4,7,2);
-        menton(YT+8,5,LB-1);
-        R(-LB+1,YT+4,LB*2-2,1,BC);              /* le haut des joues, éclairé */
-        R(-2,YT+8,4,1,teint(peau,-30));         /* la bouche reste lisible */
-      }
-      else if(barbe==='longue'){
-        joue(YT+4,7,2);
-        menton(YT+8,5,LB-1);
-        for(let i=0;i<6;i++){                   /* elle descend sur la poitrine */
-          const w2=Math.max(1,4-Math.floor(i/2));
-          R(-w2,YT+HT+i-1,w2*2,1,i<4?B:BT);
-        }
-        R(-LB+1,YT+4,LB*2-2,1,BC);
-        R(-2,YT+8,4,1,teint(peau,-30));
-      }
-      else if(barbe==='bouc'){
-        R(-2,YT+10,4,3,B);R(-2,YT+10,2,3,BC);R(-1,YT+12,2,1,BT);
-        R(-3,YT+7,6,1,B);                       /* avec sa moustache */
-      }
-      else if(barbe==='moustache'){
-        R(-3,YT+7,6,1,B);R(-4,YT+7,1,1,BO);R(3,YT+7,1,1,BO);
-        R(-3,YT+8,2,1,BO);R(1,YT+8,2,1,BO);
-      }
-      else if(barbe==='collier'){               /* le tour du visage, joues rasées */
-        R(-LB,YT+4,1,7,B);R(LB-1,YT+4,1,7,BO);
-        menton(YT+10,2,4);
-        R(-3,YT+7,6,1,B);
-      }
-      else if(barbe==='favoris'){               /* seulement devant les oreilles */
-        R(-LB,YT+3,2,5,B);R(LB-2,YT+3,2,5,BO);
-        R(-LB,YT+7,2,1,BT);R(LB-2,YT+7,2,1,BT);
-      }
-      else if(barbe==='impériale'){             /* moustache et touffe sous la lèvre */
-        R(-4,YT+7,8,1,B);R(-5,YT+6,1,1,BO);R(4,YT+6,1,1,BO);
-        R(-1,YT+10,3,3,B);R(-1,YT+10,1,3,BC);
-      }
-      else if(barbe==='fourchue'){
-        joue(YT+4,7,2);
-        menton(YT+8,4,LB-1);
-        R(-4,YT+HT-1,3,5,B);R(1,YT+HT-1,3,4,BO);   /* les deux pointes */
-        R(-4,YT+HT+3,3,1,BT);R(1,YT+HT+2,3,1,BT);
-        R(-LB+1,YT+4,LB*2-2,1,BC);
-      }
-    }
-  }
-
-  /* ---- les cheveux ----
-     Une même coupe se décline en trois vues :
-       de face  : calotte + frange + pans qui pendent de chaque côté du visage
-       de dos   : la masse couvre tout le crâne, les longueurs tombent dans le dos
-       de profil: calotte + un seul pan, derrière la tête                        */
-  const C=chev, CC=chevC, CO=chevO, CT=teint(chev,-42);
-  const tr=bouge?(cote?-s:0):0;
-
-  /* description de chaque coupe :
-     vol  volume au-dessus du crâne · fr  frange · pan longueur des pans latéraux
-     dos  longueur dans le dos      · ras côtés rasés                            */
-  const D={
-   'courts'      :{vol:2,fr:'courte',pan:3, dos:12},
-   'très courts' :{vol:1,fr:'rase',  pan:2, dos:12},
-   'dégradé'     :{vol:3,fr:'cote',  pan:1, dos:12,ras:1},
-   'bol'         :{vol:2,fr:'droite',pan:5, dos:14},
-   'carré'       :{vol:2,fr:'droite',pan:9, dos:17},
-   'mi-longs'    :{vol:2,fr:'cote',  pan:8, dos:18},
-   'longs'       :{vol:2,fr:'cote',  pan:14,dos:24,large:14},
-   'très longs'  :{vol:2,fr:'cote',  pan:20,dos:30,large:14},
-   'queue'       :{vol:2,fr:'courte',pan:2, dos:12,queue:14},
-   'couettes'    :{vol:2,fr:'droite',pan:2, dos:12,couettes:9},
-   'chignon'     :{vol:2,fr:'courte',pan:2, dos:12,chignon:1},
-   'chignon haut':{vol:1,fr:'courte',pan:1, dos:12,chignon:2},
-   'tresse'      :{vol:2,fr:'cote',  pan:3, dos:12,tresse:1},
-   'tresses'     :{vol:2,fr:'droite',pan:2, dos:12,tresses:1},
-   'ondulés'     :{vol:2,fr:'cote',  pan:12,dos:21,onde:1,large:14},
-   'bouclés'     :{vol:4,fr:'boucle',pan:5, dos:16,boucle:1,large:16},
-   'afro'        :{vol:6,fr:'rase',  pan:5, dos:16,afro:1,large:18},
-   'dreads'      :{vol:2,fr:'rase',  pan:9, dos:20,dreads:1,large:14},
-   'banane'      :{vol:5,fr:'arriere',pan:2,dos:12},
-   'crête'       :{vol:0,fr:'rase',  pan:0, dos:0, crete:1},
-   'crâne'       :{vol:0,fr:'rase',  pan:0, dos:0, rase:1},
-   'hirsute'     :{vol:3,fr:'meche', pan:4, dos:14,hirsute:1}
-  }[coiffe]||{vol:2,fr:'courte',pan:3,dos:3};
-
-  if(D.rase){
-    R(-6,YT-1,12,2,CO);
-    if(prof)R(-6,YT-1,12,6,CO);
-  }else{
-    /* le dessus du crâne, commun aux trois vues */
-    if(!D.crete){
-      R(-6,YT-1-D.vol,12,2+D.vol,C);
-      R(-6,YT-D.vol,4,1,CC);                    /* la lumière tombe à gauche */
-      R(4,YT-1-D.vol,2,2+D.vol,CO);
-    }
-    if(prof){
-      /* ---- de dos ---- */
-      const y0=YT-1-D.vol;                      /* le sommet du crâne */
-      const hd=Math.max(HT+2+D.vol,D.dos);      /* jamais moins que le crâne entier */
-      const lg=D.large||12;                     /* largeur de la masse */
-      const g0=-(lg>>1);
-      /* une masse aux angles adoucis, pas un bloc */
-      R(g0+1,y0,lg-2,hd,C);                     /* corps */
-      R(g0,y0+1,lg,hd-2,C);                     /* flancs, un pixel plus bas */
-      R(g0+1,y0+1,4,3,CC);                      /* la lumière en haut à gauche */
-      R(g0+lg-4,y0+1,3,hd-2,CO);                /* le côté à l'ombre */
-      R(g0+2,y0+hd-2,lg-4,2,CT);                /* les pointes */
-      if(D.queue){R(-3,YT+2,6,3,C);                 /* l'attache */
-        R(-2,YT+4,4,D.queue,C);R(-2,YT+4,2,D.queue,CC);R(-2,YT+D.queue+1,4,3,CT);}
-      if(D.couettes){R(-9,YT+1,3,D.couettes,C);R(6,YT+1,3,D.couettes,CO);
-        R(-9,YT+D.couettes-1,3,2,CT);R(6,YT+D.couettes-1,3,2,CT);}
-      if(D.tresse)for(let i=0;i<6;i++)R(-2,YT+2+i*3,4,3,i%2?CO:C);
-      if(D.tresses)for(let i=0;i<5;i++){R(-8,YT+1+i*3,3,3,i%2?CO:C);R(5,YT+1+i*3,3,3,i%2?C:CO);}
-      if(D.chignon===1)R(-3,YT-5-D.vol-reb,6,5,C);
-      if(D.chignon===2){R(-2,YT-8-reb,5,6,C);R(-2,YT-8-reb,2,2,CC);}
-      if(D.crete){R(-6,YT-1,12,5,CO);R(-2,YT-9-reb,4,9,C);R(-2,YT-9-reb,2,9,CC);}
-    }else if(cote){
-      /* ---- de profil : un seul pan, derrière la tête ---- */
-      const der=s>0?-8:6;                        /* le côté opposé au regard */
-      if(D.pan>1){
-        R(der+tr,YT+1,3,D.pan,C);
-        if(D.pan>6)R(der+tr,YT+D.pan-2,3,3,CT);
-      }
-      if(D.fr==='droite')R(s>0?-6:0,YT+1,6,2,CO);
-      if(D.fr==='cote')R(s>0?-2:-4,YT+1,6,2,CO);
-      if(D.fr==='courte')R(s>0?-1:-5,YT+1,6,1,CO);
-      if(D.fr==='arriere')R(s>0?-5:0,YT-2-D.vol,6,2,CC);
-      if(!D.ras&&D.pan>=2)R(s>0?-6:2,YT+1,4,3,C);   /* la tempe visible */
-      if(D.queue){R(der+tr,YT+1,3,D.queue,C);R(der+tr,YT+D.queue-2,3,3,CT);}
-      if(D.couettes)R(der+tr,YT+2,3,D.couettes,C);
-      if(D.tresse)for(let i=0;i<5;i++)R(der+tr,YT+2+i*3,3,3,i%2?CO:C);
-      if(D.tresses)for(let i=0;i<4;i++)R(der+tr,YT+2+i*3,3,3,i%2?CO:C);
-      if(D.chignon===1)R(der+2,YT-4-reb,5,5,C);
-      if(D.chignon===2)R(-1,YT-8-reb,5,6,C);
-      if(D.crete){R(-6,YT-1,12,4,CO);R(-2,YT-9-reb,4,9,C);}
-      if(D.afro){R(der-1,YT-6,5,10,C);R(-6,YT-7,12,7,C);R(-6,YT-6,4,3,CC);}
-      if(D.dreads)for(let i=0;i<4;i++)R(der+tr,YT+1+i*3,3,7,i%2?CO:C);
-      if(D.boucle){R(der,YT-4,4,7,C);R(-6,YT-5,12,5,C);R(-6,YT-4,4,2,CC);}
-    }else{
-      /* ---- de face ---- */
-      if(D.fr==='droite')R(-6,YT+1,12,2,CO);     /* frange qui barre le front */
-      if(D.fr==='cote'){R(-6,YT+1,7,2,CO);R(1,YT+1,5,1,CO);}
-      if(D.fr==='courte')R(-6,YT+1,12,1,CO);
-      if(D.fr==='meche'){R(-6,YT+1,5,2,CO);R(2,YT+1,4,1,CO);}
-      if(D.fr==='boucle'){R(-6,YT+1,4,2,C);R(-1,YT+1,3,2,CO);R(3,YT+1,3,2,C);}
-      if(!D.ras&&D.pan>=2){                       /* les tempes, seulement si la coupe les a */
-        const ht=Math.max(3,Math.min(5,D.pan));
-        R(-6,YT+1,2,ht,C);
-        R(4,YT+1,2,ht,CO);
-      }
-      if(D.pan>4){                                /* les pans qui pendent */
-        R(-7+tr,YT+1,2,D.pan,C);
-        R(5+tr,YT+1,2,D.pan,CO);
-        R(-7+tr,YT+D.pan-2,2,3,CT);
-        R(5+tr,YT+D.pan-2,2,3,CT);
-      }
-      if(D.onde){R(-8+tr,YT+4,2,5,C);R(6+tr,YT+4,2,5,CO);}
-      if(D.queue){R(5+tr,YT+1,2,3,C);R(6+tr,YT+2,1,3,CO);}  /* elle dépasse à peine */
-      if(D.couettes){
-        R(-8+tr,YT,3,D.couettes,C);      R(5+tr,YT,3,D.couettes,CO);
-        R(-8+tr,YT,3,1,CC);
-        R(-8+tr,YT+D.couettes,2,2,CT);   R(6+tr,YT+D.couettes,2,2,CT);}
-      if(D.tresse){R(5+tr,YT+1,3,4,CO);}
-      if(D.tresses)for(let i=0;i<4;i++){R(-8+tr,YT+1+i*3,3,3,i%2?CO:C);R(5+tr,YT+1+i*3,3,3,i%2?C:CO);}
-      if(D.chignon===1){R(-3,YT-3-D.vol-reb,5,3,C);R(-3,YT-3-D.vol-reb,2,1,CC);R(1,YT-3-D.vol-reb,1,3,CO);}
-      if(D.chignon===2){R(-2,YT-8-reb,5,6,C);R(-2,YT-8-reb,2,2,CC);R(-3,YT-3,7,2,C);}
-      if(D.afro){R(-9,YT-6,18,8,C);R(-9,YT-5,6,3,CC);R(5,YT-6,4,8,CO);
-        R(-9,YT+1,3,5,C);R(6,YT+1,3,5,CO);}
-      if(D.boucle){R(-7,YT-4,14,5,C);R(-7,YT-3,4,2,CC);R(4,YT-4,3,5,CO);
-        R(-8,YT+1,3,4,C);R(5,YT+1,3,4,CO);R(-5,YT-6,4,2,CC);R(1,YT-6,4,2,C);}
-      if(D.dreads){                              /* elles encadrent le visage, sans le couvrir */
-        for(let i=0;i<3;i++){
-          R(-8+tr,YT+1+i*4,3,5,i%2?CO:C);
-          R(5+tr,YT+1+i*4,3,5,i%2?C:CO);
-        }
-        R(-6,YT+1,12,2,CO);                       /* la racine sur le front */
-        R(-8+tr,YT+11,3,2,CT);R(5+tr,YT+11,3,2,CT);
-      }
-      if(D.crete){R(-6,YT-1,12,2,CO);R(-2,YT-9-reb,4,9,C);R(-2,YT-9-reb,2,9,CC);}
-      if(D.hirsute){R(-8,YT-3,3,3,C);R(5,YT-4,3,3,CO);R(-3,YT-4-reb,3,3,C);R(2,YT-5-reb,2,3,CC);}
-      if(D.fr==='arriere'){
-        R(-5,YT-2-D.vol,10,2,C);
-        R(-4,YT-4-D.vol,8,2,C);
-        R(-2,YT-5-D.vol,6,1,CC);
-        R(3,YT-4-D.vol,2,4,CO);}
-    }
-  }
-
-  /* ---- ce qu'on porte sur la tête : ajusté à la largeur du crâne ---- */
-  const LTc=SIL.tete;                              /* demi-largeur de la tête */
-  if(chapeau==='casquette'){
-    R(-LTc-1,YT-4,(LTc+1)*2,4,'#3f5f6b');          /* la calotte épouse le crâne */
-    R(-LTc-1,YT-4,(LTc+1)*2,1,'#547a88');
-    R(-LTc,YT-1,LTc*2,1,'#33505a');
-    const vx=cote?(s>0?1:-LTc*2-1):-LTc-1;         /* la visière part vers l'avant */
-    R(vx,YT,LTc*2+1,2,'#33505a');
-    R(vx,YT,LTc*2+1,1,'#456a76');
-  }
-  else if(chapeau==='bandana'){
-    R(-LTc-1,YT-2,(LTc+1)*2,3,'#a8524a');
-    R(-LTc-1,YT-2,(LTc+1)*2,1,'#c46a5e');
-    R(-LTc+1,YT-1,3,1,'#8f4038');                  /* le nœud */
-    R(LTc-1+tr,YT,3,5,'#8f4038');                  /* les pans qui pendent */
-    R(LTc-1+tr,YT+4,3,1,'#71322c');
-  }
-  else if(chapeau==='bonnet'){
-    R(-LTc-1,YT-6,(LTc+1)*2,6,'#8a4a3a');
-    R(-LTc-1,YT-6,(LTc+1)*2,1,'#a85c48');
-    R(-LTc-1,YT-1,(LTc+1)*2,2,'#a85c48');          /* le revers */
-    R(-LTc-1,YT+1,(LTc+1)*2,1,'#71392c');
-    R(-2,YT-9-reb,4,3,'#c07260');                  /* le pompon */
-    R(-2,YT-9-reb,2,1,'#d9897a');
-  }
-  else if(chapeau==='capuche'){
-    R(-LTc-2,YT-5,(LTc+2)*2,HT+3,'#54606b');       /* le tissu enveloppe la tête */
-    R(-LTc-2,YT-5,(LTc+2)*2,2,'#68757f');
-    R(-LTc-2,YT+3,2,HT-5,'#465059');
-    R(LTc,YT+3,2,HT-5,'#465059');
-    R(-LTc,YT+1,LTc*2,HT-2,peau);                  /* le visage reste dégagé */
-    R(-LTc,YT+1,3,HT-2,peauO);
-    R(-LTc,YT+1,LTc*2,1,teint(peau,-30));          /* l'ombre de la capuche */
-  }
-  else if(chapeau==='chapeau'){
-    R(-LTc-4,YT-1,(LTc+4)*2,2,'#5a4a2c');          /* le bord large */
-    R(-LTc-4,YT-1,(LTc+4)*2,1,'#7a663c');
-    R(-LTc,YT-6,LTc*2,5,'#8f7a49');                /* la calotte */
-    R(-LTc,YT-6,LTc*2,1,'#a08a56');
-    R(-LTc,YT-3,LTc*2,2,'#5a4a2c');                /* le ruban */
-  }
-  else if(chapeau==='beret'){
-    R(-LTc-1,YT-4,(LTc+1)*2-1,4,'#2f4a5c');
-    R(-LTc-1,YT-4,LTc,2,'#3f6076');
-    R(LTc-2,YT-6-reb,2,2,'#2f4a5c');               /* la queue sur le dessus */
-  }
-  else if(chapeau==='cagoule'){
-    R(-LTc-1,YT-2,(LTc+1)*2,HT+2,'#3a3a44');
-    R(-LTc-1,YT-2,(LTc+1)*2,2,'#4a4a56');
-    if(!prof){R(-4,YT+4,3,3,peau);R(1,YT+4,3,3,peau);}   /* les deux fentes */
-    R(-LTc-1,YT+HT-2,(LTc+1)*2,1,'#2b2b33');
-  }
-
-  /* ---- le visage ----
-     Il tient dans dix pixels de large : chaque pixel compte. */
-  const blanc='#f6f3ec', ombreOeil=teint(peau,-38);
-  if(dir==='bas'&&chapeau==='cagoule'){
-    R(-4,YT+5,3,2,oeil);R(2,YT+5,3,2,oeil);      /* on ne voit que les yeux */
-  }else if(dir==='bas'){
-    const clin=(Date.now()+x*53)%4600<130;
-    /* sourcils */
-    if(sourcil==='fins'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);}
-    if(sourcil==='epais'){R(-4,YT+2,3,2,chevO);R(2,YT+2,3,2,chevO);}
-    if(sourcil==='arques'){R(-4,YT+3,2,1,chevO);R(-2,YT+2,1,1,chevO);
-                           R(3,YT+3,2,1,chevO);R(2,YT+2,1,1,chevO);}
-    if(sourcil==='fronces'){R(-4,YT+3,3,1,chevO);R(2,YT+3,3,1,chevO);
-                            R(-1,YT+3,2,1,chevO);}
-    /* creux des orbites */
-    R(-4,YT+4,3,1,ombreOeil);R(2,YT+4,3,1,ombreOeil);
-    /* yeux */
-    if(clin){R(-4,YT+6,3,1,chevO);R(2,YT+6,3,1,chevO);}
-    else{
-      const dessine=(gx,h,ty)=>{
-        R(gx,YT+ty,3,h,blanc);
-        R(gx+1,YT+ty,1,h,oeil);                 /* iris */
-        R(gx+1,YT+ty,1,1,teint(oeil,40));       /* reflet */
-      };
-      if(fy==='ronds'){dessine(-4,3,4);dessine(2,3,4);}
-      else if(fy==='plisses'){R(-4,YT+5,3,1,oeil);R(2,YT+5,3,1,oeil);}
-      else if(fy==='fatigues'){dessine(-4,2,5);dessine(2,2,5);
-        R(-4,YT+7,3,1,peauT);R(2,YT+7,3,1,peauT);}
-      else if(fy==='doux'){dessine(-4,2,5);dessine(2,2,5);
-        R(-4,YT+4,3,1,peau);R(2,YT+4,3,1,peau);}
-      else if(fy==='severes'){dessine(-4,2,5);dessine(2,2,5);
-        R(-4,YT+4,3,1,chevO);R(2,YT+4,3,1,chevO);}
-      else{dessine(-4,2,5);dessine(2,2,5);}
-    }
-    /* nez */
-    if(nez==='petit'){R(0,YT+7,1,1,peauT);}
-    if(nez==='droit'){R(0,YT+6,1,2,ombreOeil);R(0,YT+8,1,1,peauT);}
-    if(nez==='large'){R(-1,YT+7,3,1,ombreOeil);R(-1,YT+8,3,1,peauT);}
-    if(nez==='retrousse'){R(0,YT+6,1,2,ombreOeil);R(-1,YT+8,2,1,peauT);}
-    /* cils : c'est le regard qui les porte, pas la carrure */
-    if((fy==='doux'||fy==='ronds')&&!clin){R(-5,YT+4,1,1,chevO);R(4,YT+4,1,1,chevO);}
-    /* bouche */
-    const lev=(bouche==='lèvres');
-    if(bouche==='neutre')R(-2,YT+9,4,1,teint(peau,-64));
-    if(lev){R(-2,YT+9,4,1,'#b06a68');R(-2,YT+10,4,1,teint(peau,-24));R(-1,YT+8,2,1,'#c47f7c');}
-    if(bouche==='sourire'){R(-2,YT+9,4,1,SIL.levres?'#b06a68':teint(peau,-64));
-      R(-3,YT+8,1,1,peauO);R(2,YT+8,1,1,peauO);R(-1,YT+10,2,1,teint(peau,-30));}
-    if(bouche==='severe'){R(-3,YT+9,6,1,teint(peau,-70));}
-    if(bouche==='entrouverte'){R(-2,YT+9,4,1,teint(peau,-70));R(-1,YT+10,2,1,'#8a4a4a');}
-    if(bouche==='pincée'){R(-1,YT+9,3,1,teint(peau,-70));R(-2,YT+9,1,1,peauT);R(2,YT+9,1,1,peauT);}
-    /* marques */
-    if(marque==='taches'){R(-4,YT+7,1,1,peauT);R(-2,YT+8,1,1,peauT);R(3,YT+7,1,1,peauT);R(2,YT+6,1,1,peauT);}
-    if(marque==='cicatrice'){R(3,YT+2,1,5,teint(peau,-46));R(2,YT+3,1,1,teint(peau,-46));}
-    if(marque==='grain'){R(-3,YT+8,1,1,teint(peau,-70));}
-    if(marque==='fard'){R(-4,YT+8,3,1,'#c9707a');R(2,YT+8,3,1,'#c9707a');}
-    if(marque==='peinture'){R(-4,YT+4,3,3,'#a8524a');R(2,YT+4,3,3,'#a8524a');
-      R(-4,YT+4,3,1,'#c46a5e');R(2,YT+4,3,1,'#c46a5e');}
-    /* boucles d'oreille */
-    const oy=YT+7, ox=SIL.tete+1;
-    if(boucle==='anneau'){R(-ox,oy,1,2,'#c9a24a');R(ox-1,oy,1,2,'#c9a24a');}
-    if(boucle==='perle'){R(-ox,oy,1,1,'#f2efe4');R(ox-1,oy,1,1,'#f2efe4');}
-    if(boucle==='plume'){R(ox-1,oy,1,4,'#4a7d7d');R(ox-1,oy+3,1,1,'#7fbdbd');}
-  }else if(cote){
-    const dx=s>0?2:-4;
-    if(sourcil==='epais')R(dx,YT+2,2,2,chevO);else R(dx,YT+3,2,1,chevO);
-    R(dx,YT+4,2,1,ombreOeil);
-    R(dx,YT+5,2,2,blanc);
-    R(dx+(s>0?1:0),YT+5,1,2,oeil);
-    R(s>0?5:-6,YT+6,1,2,peauT);                 /* le nez dépasse du profil */
-    R(s>0?4:-5,YT+9,2,1,teint(peau,-64));       /* bouche */
-    if(boucle!=='aucune')R(s>0?-4:3,YT+7,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
-    if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
-  }
-}
-const joueur={x:80,y:80,dir:'bas',pas:0,marche:false,coup:0,recule:0};
-/* on le dessine avec son apparence du jeu, et son épée à la main */
-function perso(g,x,y){
-  const b=joueur.marche?Math.round(Math.sin(joueur.pas*0.5)*2):0;
-  pixelNet(()=>sprite(g,x,y,Object.assign({},DEF_AP,e.ap||{}),
-    joueur.dir,joueur.pas,!!joueur.marche));
-  const E=EPEES[epee];
-  const cote=joueur.dir==='gauche'?-1:1;
+/* le personnage, de profil, avec sa pioche */
+function dessinerMoi(g,x,y){
+  const t=Date.now()/1000;
+  const marche=Math.abs(moi.vx)>4&&moi.sol;
+  const p=marche?Math.sin(moi.pas):0;
+  const saut=!moi.sol;
   g.save();
-  g.translate(x+cote*10,y-24+b);
-  const a=joueur.coup>0?(-1.1+(1-joueur.coup/0.26)*2.2):(-0.35);
-  g.rotate(cote*a);
-  R(g,-1,-2,2,7,'#6b4a28');
-  R(g,-3,-3,6,2,'#c9a24a');
-  R(g,-1.5,-15,3,12,E.coul[0]);
-  R(g,-1.5,-15,1.5,12,E.coul[1]);
-  g.restore();
+  g.translate(x,y);
+  g.scale(moi.sens,1);
+  /* l'ombre */
+  g.fillStyle='rgba(0,0,0,.4)';
+  g.beginPath();g.ellipse(0,0,7,2.4,0,0,7);g.fill();
+  /* les jambes */
+  const j1=saut?-3:p*3, j2=saut?2:-p*3;
+  R(g,-4,-9,3.4,9+j1,'#2f3a4e');
+  R(g,1,-9,3.4,9+j2,'#3a4358');
+  R(g,-4.4,-1+j1,4.4,2,'#4a3420');            /* les bottes */
+  R(g,0.6,-1+j2,4.4,2,'#4a3420');
+  /* le torse */
+  const b=marche?Math.round(Math.abs(p)*1.2):0;
+  R(g,-5,-20+b,10,11,'#4f7d5c');
+  R(g,-5,-20+b,10,2,'#689973');
+  R(g,-5,-13+b,10,2,'#3a5c44');               /* la ceinture */
+  R(g,-6,-19+b,2,4,'#8a6238');                /* la bretelle du sac */
+  /* le sac à dos */
+  R(g,-9,-19+b,4,8,'#7d5934');
+  R(g,-9,-19+b,4,2,'#96703f');
+  /* la tête */
+  R(g,-4,-28+b,8,8,'#e8c49a');
+  R(g,-4,-30+b,8,3,'#5b3f21');                /* les cheveux */
+  R(g,1,-25+b,2,2,'#26241f');                 /* l'œil */
+  R(g,-1,-22+b,4,1.4,'#c99a74');              /* la barbe */
+  /* le casque de mineur, avec sa lampe */
+  R(g,-5,-32+b,10,3,'#c9a24a');
+  R(g,-4,-34+b,8,2.4,'#e2ba69');
+  R(g,3,-32+b,3,2.6,'#ffe9a8');
   if(allumee){
-    const t=Date.now()/1000;
-    const px=x-cote*11, py=y-26+b;
-    R(g,px,py,2,9,'#8a6238');
-    const fl=((t*6)%1)<.5;
-    R(g,px-2,py-5,6,5,fl?'#e8802c':'#d4701f');
-    R(g,px-1,py-8,4,4,fl?'#ffc65a':'#ffb03a');
+    /* le faisceau du casque */
+    g.save();
+    const d=g.createLinearGradient(5,-31+b,40,-20+b);
+    d.addColorStop(0,'rgba(255,220,150,.30)');
+    d.addColorStop(1,'rgba(255,220,150,0)');
+    g.fillStyle=d;
+    g.beginPath();g.moveTo(5,-32+b);g.lineTo(44,-40+b);g.lineTo(44,-6+b);g.closePath();g.fill();
+    g.restore();
   }
+  /* la pioche : au repos sur l'épaule, ou en plein coup */
+  g.save();
+  if(moi.coup>0){
+    const k=1-moi.coup/0.3;
+    g.translate(5,-16+b);
+    g.rotate(-1.5+k*2.4);
+  }else{
+    g.translate(-2,-20+b);
+    g.rotate(-0.9+(marche?Math.sin(moi.pas)*0.06:0));
+  }
+  R(g,-1,-2,2.4,15,'#8a6238');                /* le manche */
+  R(g,-1,-2,1,15,'#a5764a');
+  g.fillStyle='#a2a9b0';                      /* le fer */
+  g.beginPath();
+  g.moveTo(-7,-3);g.quadraticCurveTo(0,-8,7,-3);
+  g.quadraticCurveTo(0,-5.4,-7,-3);g.closePath();g.fill();
+  g.fillStyle='#d0d6db';
+  g.beginPath();
+  g.moveTo(-7,-3);g.quadraticCurveTo(0,-8,7,-3);
+  g.quadraticCurveTo(0,-6.4,-7,-3);g.closePath();g.fill();
+  g.restore();
+  g.restore();
 }
-function pixelNet(f){const a=ctx.imageSmoothingEnabled;ctx.imageSmoothingEnabled=false;f();
-  ctx.imageSmoothingEnabled=a;}
 
-/* ================= les bêtes ================= */
-/* ================= les bêtes =================
-   Chacune a sa silhouette : on doit la reconnaître à sa forme, même
-   au bord du halo, sans lire son nom. */
-function bete(g,b,x,y){
+/* ================= les bêtes, de profil ================= */
+function dessinerBete(g,b,x,y){
   const t=Date.now()/1000, T=b.taille;
   const touche=b.touche>0;
   const pas=Math.sin(t*7+b.t);              /* le pas, ou le battement d'aile */
@@ -1411,344 +756,207 @@ function bete(g,b,x,y){
   }
 }
 
-
-/* ================= la roche =================
-   Chaque case de mur est un bloc taillé : on l'ombre selon ses voisines,
-   on y casse des fissures, et selon la profondeur elle se couvre de mousse,
-   d'humidité, puis de cristaux. */
-const nSol=(a,b)=>alea(a*7.13+b*3.71);
-function caseMur(g,x,y,a,b,teintes,p){
-  const [clair,moyen,sombre,accent]=teintes;
-  /* le bloc, en trois tons */
-  g.fillStyle=moyen;g.fillRect(x,y,CASE,CASE);
-  /* les pierres de taille : deux assises décalées */
-  const rang=(b%2)?0:CASE/2;
-  g.fillStyle=sombre;
-  g.fillRect(x,y+CASE/2-1,CASE,1.5);
-  g.fillRect(x+((rang+8)%CASE),y,1.5,CASE/2);
-  g.fillRect(x+((rang+22)%CASE),y+CASE/2,1.5,CASE/2);
-  /* la lumière sur l'arête haute de chaque pierre */
-  g.fillStyle=clair;
-  g.fillRect(x,y,CASE,1.5);
-  g.fillRect(x,y+CASE/2+0.5,CASE,1);
-  /* le grain : des éclats plus clairs, toujours au même endroit */
+/* ================= le décor de la galerie ================= */
+function etai(g,x,y){
+  R(g,x-11,y-30,4,30,'#6b4a28');R(g,x+7,y-30,4,30,'#5b3f21');
+  R(g,x-13,y-34,26,5,'#7d5934');R(g,x-13,y-34,26,2,'#96703f');
+  R(g,x-10,y-29,2,2,'#3d2a17');R(g,x+8,y-29,2,2,'#3d2a17');
+}
+function wagon(g,x,y){
+  R(g,x-11,y-13,22,10,'#6b5a4a');
+  R(g,x-11,y-13,22,2.4,'#84705c');
+  R(g,x-11,y-6,22,2.4,'#4f4238');
+  g.fillStyle='#3a3430';
+  g.beginPath();g.arc(x-6,y-1,3.4,0,7);g.fill();
+  g.beginPath();g.arc(x+6,y-1,3.4,0,7);g.fill();
+  R(g,x-7,y-17,4,4,'#b06a3a');R(g,x-1,y-18,4,4,'#8b939a');R(g,x+4,y-17,3,3,'#3a373c');
+}
+function caisse(g,x,y){
+  R(g,x-8,y-14,16,14,'#7d5934');
+  R(g,x-8,y-14,16,2,'#96703f');
+  R(g,x-8,y-8,16,1.6,'#5b3f21');
+  R(g,x-2,y-14,2,14,'#5b3f21');
+}
+function champi(g,x,y){
+  const t=Date.now()/1000;
+  const lu=0.5+Math.sin(t*1.6+x)*0.2;
   for(let i=0;i<3;i++){
-    const u=nSol(a*3+i,b), v=nSol(a,b*5+i);
-    g.fillStyle=u<.5?clair:sombre;
-    g.fillRect(x+2+u*(CASE-6),y+2+v*(CASE-6),2+((u*3)|0),2);
+    const dx=(i-1)*5, h=5+i%2*3;
+    R(g,x+dx,y-h,2,h,'#e8dcc0');
+    g.fillStyle='#6fd8e0';
+    g.beginPath();g.ellipse(x+dx+1,y-h,4,2.6,0,0,7);g.fill();
   }
-  /* une fissure, de temps en temps */
-  if(nSol(a,b)<.22){
-    g.strokeStyle=sombre;g.lineWidth=1;
-    const u=nSol(a+9,b);
-    g.beginPath();
-    g.moveTo(x+4+u*20,y+3);
-    g.lineTo(x+7+u*16,y+12);
-    g.lineTo(x+3+u*22,y+21);
-    g.stroke();
-  }
-  /* ce qui pousse ou brille, selon la profondeur */
-  if(p<0.3&&nSol(a*2,b*2)<.18){            /* la mousse, près du jour */
-    g.fillStyle='rgba(96,140,70,.5)';
-    g.fillRect(x+3,y+CASE-5,CASE-6,4);
-    g.fillStyle='rgba(120,168,86,.4)';
-    g.fillRect(x+6,y+CASE-8,6,3);
-  }else if(p>0.62&&nSol(a*4,b*4)<.14){     /* les cristaux, au fond */
-    const cx2=x+6+nSol(a,b+3)*18, cy2=y+6+nSol(a+3,b)*16;
-    g.fillStyle=accent;
-    g.beginPath();g.moveTo(cx2,cy2-6);g.lineTo(cx2+3,cy2);g.lineTo(cx2,cy2+5);
-    g.lineTo(cx2-3,cy2);g.closePath();g.fill();
-    g.fillStyle='rgba(255,255,255,.55)';
-    g.fillRect(cx2-1,cy2-4,1.5,4);
-  }
-}
-/* On grave huit pierres et huit sols sur de petites toiles, une seule fois
-   par niveau. Ensuite on ne fait plus que les recopier : mille quatre cents
-   traits par image deviennent cent cinquante recopies. */
-let PIERRES=null, SOLS=null, PIERRES_NIV=-1;
-/* la part de profondeur, de 0 en haut à 1 tout au fond */
-const profondeur=()=>(niveau-1)/(PROFOND-1);
-/* on mêle deux couleurs selon cette part : la roche vire du brun au bleu */
-function mel(a,b){
-  const p=profondeur();
-  return '#'+[0,1,2].map(i=>{
-    const va=parseInt(a.substr(1+i*2,2),16), vb=parseInt(b.substr(1+i*2,2),16);
-    return Math.round(va+(vb-va)*p).toString(16).padStart(2,'0');}).join('');
-}
-function graverLesPierres(p){
-  const fab=(f)=>{
-    const c=document.createElement('canvas');
-    c.width=CASE*DPR;c.height=CASE*DPR;
-    const h=c.getContext('2d');
-    h.setTransform(DPR,0,0,DPR,0,0);
-    h.imageSmoothingEnabled=false;
-    f(h);
-    return c;
-  };
-  const TM=[mel('#8a7a63','#4a4458'),mel('#6b5c47','#332f42'),
-            mel('#4a3f30','#1e1c2a'),mel('#c9a24a','#8fd8e8')];
-  const TS=[mel('#5a4d3c','#2a2636'),mel('#42382b','#1d1a26'),
-            mel('#2e271e','#12101a')];
-  PIERRES=[];SOLS=[];
-  for(let i=0;i<8;i++){
-    PIERRES.push(fab(h=>caseMur(h,0,0,i*3+1,(i%2)?0:1,TM,p)));
-    SOLS.push(fab(h=>caseSol(h,0,0,i*5+2,i*2,TS,p)));
-  }
-  PIERRES_NIV=niveau;
-}
-/* le sol : terre battue, gravillons, et des flaques en profondeur */
-function caseSol(g,x,y,a,b,teintes,p){
-  const [clair,moyen,sombre]=teintes;
-  g.fillStyle=moyen;g.fillRect(x,y,CASE,CASE);
-  /* des plaques plus claires, comme la poussière qu'on a piétinée */
-  if(nSol(a,b)<.4){
-    g.fillStyle=clair;
-    g.fillRect(x+2+nSol(a,b*2)*10,y+3+nSol(a*2,b)*12,10+nSol(a,b)*10,7);
-  }
-  /* les gravillons */
-  for(let i=0;i<4;i++){
-    const u=nSol(a*5+i,b*3), v=nSol(a*2,b*7+i);
-    g.fillStyle=u<.4?sombre:clair;
-    g.fillRect(x+u*(CASE-3),y+v*(CASE-3),1+((v*2)|0),1+((u*2)|0));
-  }
-  /* une flaque, dans les niveaux humides */
-  if(p>0.35&&nSol(a*3,b*9)<.09){
-    g.fillStyle='rgba(60,90,110,.34)';
-    g.beginPath();g.ellipse(x+CASE/2,y+CASE/2,9,5,0,0,7);g.fill();
-    g.fillStyle='rgba(150,200,230,.16)';
-    g.beginPath();g.ellipse(x+CASE/2-2,y+CASE/2-1,4,2,0,0,7);g.fill();
-  }
-}
-/* l'ombre portée par la roche sur le sol : c'est elle qui donne le relief */
-function ombrePied(g,x,y){
-  const d=g.createLinearGradient(0,y,0,y+7);
-  d.addColorStop(0,'rgba(0,0,0,.42)');
-  d.addColorStop(1,'rgba(0,0,0,0)');
-  g.fillStyle=d;g.fillRect(x,y,CASE,7);
-}
-
-/* ================= le décor ================= */
-function filon(g,x,y,t,coups){
-  const c={fer:['#b06a3a','#d08a5a'],cuivre:['#3f9e7a','#5fc79c'],
-           charbon:['#3a373c','#5d5a62'],argent:['#c3ccd4','#eef3f7'],
-           or:['#d9a63f','#ffe9a8'],gemme:['#3fa8b8','#b6f2f7']}[t];
-  g.fillStyle='rgba(0,0,0,.35)';
-  g.beginPath();g.ellipse(x,y,13,4,0,0,7);g.fill();
-  g.fillStyle='#5d4c3c';
-  g.beginPath();g.moveTo(x-13,y);g.lineTo(x-9,y-16);g.lineTo(x+8,y-18);
-  g.lineTo(x+13,y-4);g.lineTo(x+10,y);g.closePath();g.fill();
-  g.fillStyle='#6f5c49';
-  g.beginPath();g.moveTo(x-9,y-16);g.lineTo(x+8,y-18);g.lineTo(x+6,y-11);
-  g.lineTo(x-7,y-9);g.closePath();g.fill();
-  const n=3-Math.min(2,coups||0);
-  const pos=[[-5,-12],[2,-8],[-1,-14],[6,-6]];
-  for(let i=0;i<n+1;i++){
-    const [a,b]=pos[i%4];
-    g.fillStyle=c[0];g.fillRect(x+a,y+b,4,4);
-    g.fillStyle=c[1];g.fillRect(x+a,y+b,2,2);
-  }
-  if(t==='or'||t==='gemme'){
-    const t2=Date.now()/1000;
-    if(((t2*1.6)%2)<.6){g.fillStyle='#fff6d8';g.fillRect(x-4,y-13,1,1);g.fillRect(x+4,y-7,1,1);}
-  }
+  g.save();g.globalAlpha=lu*0.3;g.fillStyle='#6fd8e0';
+  g.beginPath();g.arc(x,y-7,13,0,7);g.fill();g.restore();
 }
 function lampeMur(g,x,y){
-  const t=Date.now()/1000, f=((t*5+x)%1)<.55;
-  R(g,x-2,y-26,4,10,'#5b3f21');
-  R(g,x-5,y-32,10,7,'#4a3a2a');
-  R(g,x-3,y-30,6,4,f?'#ffc65a':'#e8802c');
+  const t=Date.now()/1000, f=((t*5+x)%1)<.6;
+  R(g,x-1.4,y-8,3,8,'#5b3f21');
+  R(g,x-4,y-13,8,6,'#4a3a2a');
+  R(g,x-2.4,y-11.4,5,3.4,f?'#ffc65a':'#e8802c');
   g.save();g.globalAlpha=.16;g.fillStyle='#ffb45a';
-  g.beginPath();g.arc(x,y-28,30,0,7);g.fill();g.restore();
-}
-function poutre(g,x,y){
-  R(g,x-16,y-34,5,34,'#6b4a28');R(g,x+11,y-34,5,34,'#5b3f21');
-  R(g,x-18,y-38,36,6,'#7d5934');R(g,x-18,y-38,36,2,'#96703f');
-}
-function puitsD(g,x,y){
-  const t=Date.now()/1000;
-  g.fillStyle='#0d0a08';g.beginPath();g.ellipse(x,y-4,17,8,0,0,7);g.fill();
-  g.fillStyle='#241c16';g.beginPath();g.ellipse(x,y-6,17,8,0,0,7);g.fill();
-  g.fillStyle='#0d0a08';g.beginPath();g.ellipse(x,y-6,13,6,0,0,7);g.fill();
-  R(g,x-6,y-10,2,12,'#7d5934');R(g,x+4,y-10,2,12,'#7d5934');
-  for(let i=0;i<3;i++)R(g,x-6,y-8+i*4,12,1.6,'#96703f');
-  g.font='700 7px ui-monospace,monospace';g.textAlign='center';
-  g.fillStyle='rgba(255,205,140,'+(0.5+Math.sin(t*2)*0.2)+')';
-  g.fillText('DESCENDRE',x,y-22);g.textAlign='left';
+  g.beginPath();g.arc(x,y-10,26,0,7);g.fill();g.restore();
 }
 function sortieD(g,x,y){
   const t=Date.now()/1000;
-  const d=ctx.createRadialGradient(x,y-14,4,x,y-14,54);
-  d.addColorStop(0,'rgba(210,235,255,.45)');d.addColorStop(1,'rgba(210,235,255,0)');
-  g.fillStyle=d;g.beginPath();g.arc(x,y-14,54,0,7);g.fill();
-  R(g,x-16,y-36,5,36,'#6b4a28');R(g,x+11,y-36,5,36,'#5b3f21');
-  R(g,x-18,y-40,36,6,'#7d5934');
-  g.fillStyle=niveau===1?'#cfe6f2':'#2a2018';
-  g.beginPath();g.moveTo(x-10,y);g.lineTo(x-10,y-28);g.lineTo(x+10,y-28);g.lineTo(x+10,y);
-  g.closePath();g.fill();
-  if(niveau>1){R(g,x-6,y-10,2,12,'#7d5934');R(g,x+4,y-10,2,12,'#7d5934');
-    for(let i=0;i<3;i++)R(g,x-6,y-8+i*4,12,1.6,'#96703f');}
-  g.font='700 7px ui-monospace,monospace';g.textAlign='center';
+  if(x<-80||x>VW+80)return;
+  const d=g.createRadialGradient(x,y-18,4,x,y-18,46);
+  d.addColorStop(0,niveau===1?'rgba(210,235,255,.45)':'rgba(255,205,140,.3)');
+  d.addColorStop(1,'rgba(210,235,255,0)');
+  g.fillStyle=d;g.beginPath();g.arc(x,y-18,46,0,7);g.fill();
+  R(g,x-14,y-34,4,34,'#6b4a28');R(g,x+10,y-34,4,34,'#5b3f21');
+  R(g,x-16,y-38,32,5,'#7d5934');R(g,x-16,y-38,32,2,'#96703f');
+  g.fillStyle=niveau===1?'#cfe6f2':'#241c16';
+  g.fillRect(x-10,y-33,20,33);
+  if(niveau>1){R(g,x-4,y-30,2,30,'#7d5934');R(g,x+2,y-30,2,30,'#7d5934');
+    for(let i=0;i<6;i++)R(g,x-4,y-28+i*5,8,1.4,'#96703f');}
+  g.font='700 6px ui-monospace,monospace';g.textAlign='center';
   g.fillStyle='rgba(255,255,255,'+(0.6+Math.sin(t*2)*0.2)+')';
-  g.fillText(niveau===1?'SORTIR':'REMONTER',x,y-34);g.textAlign='left';
+  g.fillText(niveau===1?'SORTIR':'REMONTER',x,y-42);g.textAlign='left';
 }
-
-/* ================= joystick ================= */
-let joyX=0,joyY=0,J=null;
-const zone=$('joy');
-zone.addEventListener('touchstart',(ev)=>{const t=ev.changedTouches[0];
-  J={id:t.identifier,ox:t.clientX,oy:t.clientY,x:t.clientX,y:t.clientY};ev.preventDefault();},{passive:false});
-zone.addEventListener('touchmove',(ev)=>{if(!J)return;
-  for(const t of ev.changedTouches)if(t.identifier===J.id){J.x=t.clientX;J.y=t.clientY;}
-  ev.preventDefault();},{passive:false});
-const lacher=(ev)=>{if(!J)return;
-  for(const t of ev.changedTouches)if(t.identifier===J.id){J=null;joyX=0;joyY=0;}};
-zone.addEventListener('touchend',lacher);zone.addEventListener('touchcancel',lacher);
-const touches={};
-addEventListener('keydown',e=>{touches[e.key]=true;
-  if(e.key===' '&&$('action').classList.contains('on'))$('action').onclick();});
-addEventListener('keyup',e=>{touches[e.key]=false;});
-function majJoystick(){
-  if(J){const dx=J.x-J.ox, dy=J.y-J.oy, d=Math.hypot(dx,dy);
-    if(d>6){const k=Math.min(1,d/52)/d;joyX=dx*k;joyY=dy*k;}else{joyX=0;joyY=0;}
-  }else{
-    joyX=(touches.ArrowRight||touches.d?1:0)-(touches.ArrowLeft||touches.q?1:0);
-    joyY=(touches.ArrowDown||touches.s?1:0)-(touches.ArrowUp||touches.z?1:0);
+function puitsD(g,x,y){
+  const t=Date.now()/1000;
+  if(x<-80||x>VW+80)return;
+  R(g,x-16,y-36,4,36,'#6b4a28');R(g,x+12,y-36,4,36,'#5b3f21');
+  R(g,x-18,y-40,36,5,'#7d5934');
+  g.fillStyle='#0d0a08';g.fillRect(x-12,y-35,24,35);
+  R(g,x-5,y-33,2,33,'#7d5934');R(g,x+3,y-33,2,33,'#7d5934');
+  for(let i=0;i<7;i++)R(g,x-5,y-31+i*4.6,10,1.4,'#96703f');
+  g.font='700 6px ui-monospace,monospace';g.textAlign='center';
+  g.fillStyle='rgba(255,205,140,'+(0.5+Math.sin(t*2)*0.2)+')';
+  g.fillText('DESCENDRE',x,y-44);g.textAlign='left';
+}
+function filon(g,f,x,y){
+  const c=COUL[f.t];
+  const n=3-Math.min(2,f.coups);
+  /* la gangue */
+  g.fillStyle='#5d4c3c';
+  g.beginPath();
+  g.moveTo(x-9,y);g.lineTo(x-7,y-11);g.lineTo(x+6,y-12);g.lineTo(x+9,y-3);g.lineTo(x+7,y);
+  g.closePath();g.fill();
+  g.fillStyle='#6f5c49';
+  g.beginPath();g.moveTo(x-7,y-11);g.lineTo(x+6,y-12);g.lineTo(x+4,y-7);g.lineTo(x-5,y-6);
+  g.closePath();g.fill();
+  const pos=[[-4,-8],[1,-5],[-1,-10],[4,-4]];
+  for(let i=0;i<n+1;i++){
+    const [a,b]=pos[i%4];
+    R(g,x+a,y+b,3.4,3.4,c[0]);
+    R(g,x+a,y+b,1.8,1.8,c[1]);
+  }
+  if(f.t==='or'||f.t==='gemme'){
+    const t=Date.now()/1000;
+    if(((t*1.7+x)%2)<.6){R(g,x-3,y-9,1,1,'#fff6d8');R(g,x+3,y-5,1,1,'#fff6d8');}
   }
 }
 
-/* ================= viser, miner, frapper ================= */
-const TEXTES=[];
-function volant(x,y,txt,col){TEXTES.push({x,y,txt,col,t:0});}
-function dire(t){$('msg').textContent=t;$('msg').classList.add('on');
-  clearTimeout(dire.t);dire.t=setTimeout(()=>$('msg').classList.remove('on'),2400);}
-let secousse=0;
-
+/* ================= les commandes ================= */
+const app={g:false,d:false};
+const presse=(id,f)=>{
+  const b=$(id);
+  b.addEventListener('touchstart',(e)=>{e.preventDefault();f(true);},{passive:false});
+  b.addEventListener('touchend',(e)=>{e.preventDefault();f(false);},{passive:false});
+  b.addEventListener('touchcancel',()=>f(false));
+  b.addEventListener('mousedown',()=>f(true));
+  addEventListener('mouseup',()=>f(false));
+};
+presse('gauche',v=>app.g=v);
+presse('droite',v=>app.d=v);
+$('sauter').addEventListener('touchstart',(e)=>{e.preventDefault();sauter();},{passive:false});
+$('sauter').addEventListener('mousedown',sauter);
+$('piocher').addEventListener('touchstart',(e)=>{e.preventDefault();piocher();},{passive:false});
+$('piocher').addEventListener('mousedown',piocher);
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'||e.key==='q')app.g=true;
+  if(e.key==='ArrowRight'||e.key==='d')app.d=true;
+  if(e.key===' '||e.key==='ArrowUp'||e.key==='z')sauter();
+  if(e.key==='e'||e.key==='Enter')piocher();
+});
+addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft'||e.key==='q')app.g=false;
+  if(e.key==='ArrowRight'||e.key==='d')app.d=false;
+});
+function sauter(){
+  if(!moi.sol)return;
+  moi.vy=-232;moi.sol=false;
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+}
+function filonVise(){
+  let d0=20,res=null;
+  FILONS.forEach(f=>{
+    if(f.mort)return;
+    const fx=f.x*CASE, fy=f.y*CASE;
+    const d=Math.hypot(fx-moi.x,fy-moi.y-8);
+    if(d<d0){d0=d;res=f;}
+  });
+  return res;
+}
 function beteProche(){
-  let d0=44,res=null;
+  let d0=18,res=null;
   BETES.forEach(b=>{if(b.vie<=0)return;
-    const d=Math.hypot(b.x-joueur.x,b.y-joueur.y);
+    const d=Math.hypot(b.x-moi.x,b.y-moi.y);
     if(d<d0){d0=d;res=b;}});
   return res;
 }
-function cible(){
-  if(!SORTIE)return null;                /* rien tant que la galerie n'existe pas */
+function piocher(){
+  if(moi.coup>0)return;
+  moi.coup=0.3;
   const b=beteProche();
-  if(b)return {t:'bete',b};
-  let d0=40,res=null;
-  for(const o of DECOR){
-    if(o.t==='lampe'||o.t==='poutre'||o.mort)continue;
-    const d=Math.hypot(o.x-joueur.x,o.y-joueur.y-6);
-    if(d<d0){d0=d;res=o;}
-  }
-  if(PUITS&&Math.hypot(PUITS.x-joueur.x,PUITS.y-joueur.y)<32)return {t:'puits'};
-  if(Math.hypot(SORTIE.x-joueur.x,SORTIE.y-joueur.y)<30)return {t:'sortie'};
-  return res;
-}
-function majAction(){
-  const b=$('action');
-  if($('page').classList.contains('on')||mort){b.classList.remove('on');return;}
-  const o=cible();
-  if(!o){b.classList.remove('on');b.classList.remove('combat');$('ennemi').classList.remove('on');return;}
-  if(o.t==='bete'){
-    b.innerHTML='Frapper<small>'+o.b.nom.toUpperCase()+' · '+EPEES[epee].deg+' DÉGÂTS</small>';
-    b.classList.add('on','combat');
-    $('ennemi').classList.add('on');
-    $('ennemiN').textContent=o.b.nom;
-    $('ennemiB').style.width=Math.max(0,o.b.vie/o.b.vieMax*100)+'%';
+  if(b){
+    const d=EPEES[epee].deg;
+    b.vie-=d;b.touche=0.2;b.chasse=true;secousse=4;
+    volant(b.x,b.y-30,'-'+d,'#ffd2d2');
+    if(b.vie<=0)volant(b.x,b.y-38,b.nom+' tombe','#9fdfb8');
+    try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
     return;
   }
-  b.classList.remove('combat');$('ennemi').classList.remove('on');
-  if(o.t==='puits')b.innerHTML='Descendre<small>NIVEAU '+(niveau+1)+'</small>';
-  else if(o.t==='sortie')b.innerHTML=(niveau===1?'Sortir':'Remonter')+
-    '<small>'+(niveau===1?'AU GRAND JOUR':'NIVEAU '+(niveau-1))+'</small>';
-  else{
-    const r=3-(o.coups||0);
-    b.innerHTML='Miner<small>'+NOMS[o.t].toUpperCase()+' · '+r+' COUP'+(r>1?'S':'')+'</small>';
+  const f=filonVise();
+  if(!f)return dire('rien à piocher ici');
+  if(!allumee)return dire('il fait trop noir');
+  f.coups++;
+  secousse=3;
+  if(f.coups>=3){
+    f.mort=true;
+    ramasser(f);
+  }else{
+    volant(f.x*CASE,f.y*CASE-12,'...','#b9ae9a');
+    for(let i=0;i<5;i++)PARTS.push({x:f.x*CASE,y:f.y*CASE-6,
+      vx:(Math.random()-.5)*40,vy:-30-Math.random()*40,t:0,c:COUL[f.t][0]});
+    try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
   }
-  b.classList.add('on');
 }
-$('action').onclick=()=>{
-  if(mort)return;
-  const o=cible();if(!o)return;
-  if(o.t==='bete')return frapper(o.b);
-  if(o.t==='puits')return changerNiveau(niveau+1,false);
-  if(o.t==='sortie'){
-    if(niveau===1)return remonterAuJour();
-    return changerNiveau(niveau-1,true);
-  }
-  if(!allumee)return dire('il fait trop noir pour miner');
-  o.coups=(o.coups||0)+1;secousse=3;
-  if(o.coups>=3){
-    o.mort=true;
-    ramasser(o);
-  }else{volant(o.x,o.y-20,'...','#b9ae9a');
-    try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}}
-};
-/* c'est le serveur qui décide ce qu'on trouve, et combien */
-async function ramasser(o){
+/* c'est le serveur qui dit ce qu'on trouve, et combien */
+async function ramasser(f){
   if(!enLigne){
-    SAC[o.t]=(SAC[o.t]||0)+1;
-    volant(o.x,o.y-24,'+1 '+NOMS[o.t].toLowerCase(),COUL_MIN[o.t]);
+    SAC[f.t]=(SAC[f.t]||0)+1;majSac();
+    volant(f.x*CASE,f.y*CASE-16,'+1 '+NOMS[f.t].toLowerCase(),COUL[f.t][1]);
     return;
   }
-  const d=await appel('mine_recolter',{p_joueur:e.id,p_genre:o.t});
+  const d=await appel('mine_recolter',{p_joueur:e.id,p_genre:f.t});
   if(d&&d.erreur){
-    if(d.erreur==='sac plein'){
-      dire('sac plein — remonte vendre au guichet');
-      o.mort=false;o.coups=2;
-    }
+    if(d.erreur==='sac plein'){dire('sac plein — remonte vendre');f.mort=false;f.coups=2;}
     else dire(d.erreur);
     return;
   }
-  SAC=d.sac||SAC;
-  volant(o.x,o.y-24,'+'+d.pris+' '+NOMS[o.t].toLowerCase(),COUL_MIN[o.t]);
-  try{navigator.vibrate&&navigator.vibrate([8,26,14]);}catch(x){}
+  SAC=d.sac||SAC;majSac();
+  volant(f.x*CASE,f.y*CASE-16,'+'+d.pris+' '+NOMS[f.t].toLowerCase(),COUL[f.t][1]);
+  try{navigator.vibrate&&navigator.vibrate([8,24,14]);}catch(x){}
 }
-const COUL_MIN={fer:'#d08a5a',cuivre:'#5fc79c',charbon:'#8d8a92',argent:'#eef3f7',
-  or:'#ffe9a8',gemme:'#b6f2f7',pierre:'#cfd6db'};
-
-async function changerNiveau(vers,remonte){
-  if(enLigne&&e.id){
-    const d=await appel('mine_niveau',{p_joueur:e.id,p_vers:vers});
-    if(d&&d.erreur)return dire(d.erreur);
-  }
-  niveau=vers;creuser();
-  if(remonte&&PUITS){joueur.x=PUITS.x;joueur.y=PUITS.y-6;}
-  dire('niveau '+niveau+' · '+nomNiveau(niveau));
-}
-function remonterAuJour(){
-  if(enLigne&&e.id)appel('mine_sortir',{p_joueur:e.id});
-  fondu=1;
-  setTimeout(()=>{location.href='jeu.html';},420);
-}
-let fondu=0, repos=0, soin=0;
-
-function frapper(b){
-  if(joueur.coup>0)return;
-  joueur.coup=0.26;
-  const d=EPEES[epee].deg;
-  b.vie-=d;b.touche=0.18;b.chasse=true;
-  secousse=4;
-  volant(b.x,b.y-30,'-'+d,'#ffd2d2');
-  try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
-  if(b.vie<=0){
-    volant(b.x,b.y-38,b.nom+' tombe','#9fdfb8');
-    const gain=Math.max(1,Math.round(niveau/3));
-    SAC.charbon+=gain;
-    volant(b.x,b.y-50,'+'+gain+' charbon','#8d8a92');
-  }
-}
+const TEXTES=[],PARTS=[];
+function volant(x,y,txt,c){TEXTES.push({x,y,txt,c,t:0});}
+function dire(t){$('msg').textContent=t;$('msg').classList.add('on');
+  clearTimeout(dire.t);dire.t=setTimeout(()=>$('msg').classList.remove('on'),2000);}
+let secousse=0;
 async function blesser(d,qui){
-  joueur.recule=0.18;secousse=5;repos=0;soin=0;
-  volant(joueur.x,joueur.y-44,'-'+d,'#ff8a8a');
+  moi.mal=0.3;repos=0;soin=0;
+  volant(moi.x,moi.y-44,'-'+d,'#ff8a8a');
   try{navigator.vibrate&&navigator.vibrate([14,40,18]);}catch(x){}
   if(!enLigne){
-    vie=Math.max(0,vie-d);
-    if(vie<=0)tomber(qui,null);
+    moi.vie=Math.max(0,moi.vie-d);
+    if(moi.vie<=0)tomber(qui,null);
     return;
   }
   const r=await appel('mine_degat',{p_joueur:e.id,p_montant:d});
-  if(r&&typeof r.vie==='number')vie=r.vie;
+  if(r&&typeof r.vie==='number')moi.vie=r.vie;
   if(r&&r.mort)tomber(qui,r.perdu);
 }
 function tomber(qui,perduServeur){
@@ -1756,19 +964,20 @@ function tomber(qui,perduServeur){
   const src=perduServeur||SAC;
   const perdu=Object.keys(src).filter(k=>k!=='torche'&&src[k]>0)
     .map(k=>src[k]+' '+(NOMS[k]||k).toLowerCase());
-  $('mortQui').textContent=(qui?'Le '+qui+' a eu raison de toi, au niveau '+niveau+'.'
+  const art=/^[aeiouéè]/i.test(qui||'')?'L’':'Le ';
+  $('mortQui').textContent=(qui?art+qui+' a eu raison de toi, au niveau '+niveau+'.'
     :'Tu t’es effondré au niveau '+niveau+'.');
   $('mortPerdu').innerHTML=perdu.length?'Tu perds '+perdu.join(', ')+'.':'Ton sac était vide.';
   const t=SAC.torche||0;SAC={};if(t)SAC.torche=t;
   $('mort').classList.add('on');
 }
-$('mortOk').onclick=()=>{
-  /* on ressort vraiment : la mine se referme et on revient au terrain */
-  if(enLigne&&e.id)appel('mine_sortir',{p_joueur:e.id});
-  location.href='jeu.html';
-};
-
-/* ================= les pages ================= */
+function ouvrirPage(titre,sous,corps){
+  $('fond').innerHTML='<div class="rabat"><button class="x" id="p-x">✕</button>'+
+    '<span class="t"><b>'+titre+'</b><i>'+sous+'</i></span></div>'+
+    '<div class="corps">'+corps+'</div>';
+  $('p-x').onclick=()=>$('page').classList.remove('on');
+  $('page').classList.add('on');
+}
 function ouvrirSac(){
   const cles=Object.keys(SAC).filter(k=>SAC[k]>0);
   let c='<div class="ligneI"><span style="width:38px;height:38px;border-radius:9px;'+
@@ -1818,21 +1027,251 @@ function ouvrirForge(){
     if(!enLigne){epee=i;ouvrirForge();return dire(E.nom+' forgée');}
     const d=await appel('forger_epee',{p_joueur:e.id,p_rang:i});
     if(d&&d.erreur){dire(d.erreur);return;}
-    epee=d.epee;SAC=d.sac||SAC;
+    epee=(typeof d.epee==='number')?d.epee:i;
+    SAC=d.sac||SAC;majSac();
     ouvrirForge();dire(E.nom+' forgée');
     try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
   });
 }
-function ouvrirPage(titre,sous,corps){
-  $('fond').innerHTML='<div class="rabat"><button class="x" id="p-x">✕</button>'+
-    '<span class="t"><b>'+titre+'</b><i>'+sous+'</i></span></div>'+
-    '<div class="corps">'+corps+'</div>';
-  $('p-x').onclick=()=>$('page').classList.remove('on');
-  $('page').classList.add('on');
+async function changerNiveau(vers,remonte){
+  if(enLigne&&e.id){
+    const d=await appel('mine_niveau',{p_joueur:e.id,p_vers:vers});
+    if(d&&d.erreur)return dire(d.erreur);
+  }
+  niveau=vers;creuser();
+  if(remonte&&PUITS){moi.x=PUITS.x-30;}
+  else moi.x=SORTIE.x+30;
+  moi.y=solEn(moi.x);moi.vx=0;moi.vy=0;
+  dire('niveau '+niveau+' · '+nomNiveau(niveau));
 }
-$('fuir').onclick=remonterAuJour;
+function remonterAuJour(){
+  if(enLigne&&e.id)appel('mine_sortir',{p_joueur:e.id});
+  fondu=1;
+  setTimeout(()=>{location.href='jeu.html';},420);
+}
+let fondu=0, repos=0, soin=0, enChangement=false;
+function majSac(){
+  const cles=Object.keys(SAC).filter(k=>SAC[k]>0);
+  $('sacH').innerHTML=cles.length?cles.map(k=>
+    '<span><svg viewBox="0 0 16 16" width="14">'+ICONES[k]+'</svg>'+SAC[k]+'</span>').join('')
+    :'<span style="color:#9b8a70;font-weight:400">sac vide</span>';
+}
+
+/* ================= la boucle ================= */
+function taille(){
+  DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  cv.width=innerWidth*DPR;cv.height=innerHeight*DPR;
+  ECH=DPR*3;VW=cv.width/ECH;VH=cv.height/ECH;
+  ctx.setTransform(ECH,0,0,ECH,0,0);
+  ctx.imageSmoothingEnabled=false;
+  PIERRES_NIV=-1;
+}
+addEventListener('resize',taille);
+let t0=performance.now();
+function boucle(t){
+  const dt=Math.min(.045,(t-t0)/1000);t0=t;
+  /* toi */
+  const acc=(app.d?1:0)-(app.g?1:0);
+  if(acc){moi.vx+=acc*560*dt;moi.sens=acc>0?1:-1;}
+  else moi.vx*=Math.pow(0.0012,dt);
+  moi.vx=Math.max(-78,Math.min(78,moi.vx));
+  moi.x=Math.max(20,Math.min(LARG*CASE-20,moi.x+moi.vx*dt));
+  if(Math.abs(moi.vx)>4&&moi.sol)moi.pas+=dt*13;
+  moi.vy+=620*dt;
+  moi.y+=moi.vy*dt;
+  /* le sol et les plateformes */
+  let sol=solEn(moi.x);
+  PLATEFORMES.forEach(p=>{
+    const x0=p.x*CASE-CASE/2, x1=(p.x+p.l)*CASE;
+    const py=p.y*CASE;
+    if(moi.x>x0&&moi.x<x1&&moi.vy>=0&&moi.y<=py+8&&moi.y>=py-14)sol=Math.min(sol,py);
+  });
+  if(moi.y>=sol){moi.y=sol;moi.vy=0;moi.sol=true;}
+  else moi.sol=false;
+  if(moi.coup>0)moi.coup=Math.max(0,moi.coup-dt);
+  if(moi.mal>0)moi.mal=Math.max(0,moi.mal-dt);
+  /* les bêtes */
+  BETES.forEach(b=>{
+    if(b.vie<=0)return;
+    if(b.touche>0)b.touche=Math.max(0,b.touche-dt);
+    const d=moi.x-b.x;
+    if(Math.abs(d)<150&&allumee)b.chasse=true;
+    if(b.chasse)b.vx=Math.sign(d)*26;
+    b.x+=b.vx*dt;
+    b.y=solEn(b.x);
+    if(Math.abs(d)<12&&Math.abs(moi.y-b.y)<14){
+      b.frappe=(b.frappe||0)-dt;
+      if(b.frappe<=0){b.frappe=1.2;
+        moi.mal=0.3;secousse=5;repos=0;
+        volant(moi.x,moi.y-34,'-'+b.deg,'#ff8a8a');
+        moi.vx=-Math.sign(d)*70;moi.vy=-70;
+        blesser(b.deg,b.nom);
+      }
+    }
+  });
+  /* la sortie et le puits, quand on marche dessus */
+  if(!mort){
+    if(PUITS&&Math.abs(moi.x-PUITS.x)<14&&Math.abs(moi.y-PUITS.y)<20&&!enChangement){
+      enChangement=true;changerNiveau(niveau+1,false).then(()=>{enChangement=false;});
+    }
+    if(SORTIE&&Math.abs(moi.x-SORTIE.x)<14&&Math.abs(moi.y-SORTIE.y)<20&&!enChangement){
+      enChangement=true;
+      if(niveau===1){remonterAuJour();}
+      else changerNiveau(niveau-1,true).then(()=>{enChangement=false;});
+    }
+  }
+  /* le souffle qui revient */
+  repos+=dt;
+  if(repos>8&&moi.vie<VIE_MAX_S){
+    soin+=dt;
+    if(soin>=4){soin=0;moi.vie=Math.min(VIE_MAX_S,moi.vie+1);
+      volant(moi.x,moi.y-40,'+1','#9fdfb8');}
+  }
+  /* la torche */
+  if(allumee){torche-=dt;if(torche<=0){torche=0;allumee=false;dire('ta lampe s’éteint');}}
+  $('vieB').style.width=(moi.vie/moi.vieMax*100)+'%';
+  $('vieT').textContent=moi.vie;
+  $('torcheB').style.width=(torche/120*100)+'%';
+  $('torcheT').textContent=allumee?(Math.floor(torche/60)+':'+String(Math.floor(torche%60)).padStart(2,'0')):'éteinte';
+  $('prof').innerHTML='NIVEAU '+niveau+'<small>'+nomNiveau(niveau)+'</small>';
+  $('piocher').classList.toggle('pret',!!(filonVise()||beteProche()));
+  /* les particules */
+  for(let i=PARTS.length-1;i>=0;i--){
+    const p=PARTS[i];p.t+=dt;p.vy+=400*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;
+    if(p.t>0.9)PARTS.splice(i,1);
+  }
+  for(let i=TEXTES.length-1;i>=0;i--){TEXTES[i].t+=dt;TEXTES[i].y-=dt*18;
+    if(TEXTES[i].t>1.4)TEXTES.splice(i,1);}
+  if(secousse>0)secousse=Math.max(0,secousse-dt*20);
+  dessiner();
+  requestAnimationFrame(boucle);
+}
+
+function dessiner(){
+  const g=ctx;
+  const N=bandeNiv();
+  if(!COUCHES)graverLeFond();
+  if(PIERRES_NIV!==niveau||!PIERRES)graverLesPierres();
+  const sx=secousse?Math.round((Math.random()-.5)*secousse):0;
+  const camX=Math.max(0,Math.min(LARG*CASE-VW,moi.x-VW*0.42))+sx;
+  const camY=Math.max(-20,Math.min(HAUT*CASE-VH+20,moi.y-VH*0.62));
+
+  g.fillStyle=N.fond;g.fillRect(0,0,VW,VH);
+  /* les quatre couches du fond */
+  COUCHES.forEach((c,i)=>{
+    const w=c.img.width, h=c.img.height;
+    const dx=-((camX*c.v)%w);
+    const dy=-camY*c.v*0.5-10;
+    g.save();
+    g.globalAlpha=[0.55,0.7,0.85,1][i];
+    for(let x=dx;x<VW;x+=w)g.drawImage(c.img,Math.round(x),Math.round(dy),w,h);
+    g.restore();
+  });
+  /* un voile sombre entre le fond et le premier plan */
+  const voile=g.createLinearGradient(0,0,0,VH);
+  voile.addColorStop(0,'rgba(0,0,0,.42)');
+  voile.addColorStop(.55,'rgba(0,0,0,.18)');
+  voile.addColorStop(1,'rgba(0,0,0,.5)');
+  g.fillStyle=voile;g.fillRect(0,0,VW,VH);
+
+  /* ---- le premier plan : le sol, les plateformes ---- */
+  const a0=Math.max(0,((camX/CASE)|0)-2), a1=Math.min(LARG,((camX+VW)/CASE)+2);
+  /* le plafond */
+  for(let a=a0;a<a1;a++){
+    const x=a*CASE-camX;
+    const hp=Math.round((SOL[a]-13-Math.sin(a*0.4)*1.5))*CASE;
+    for(let y=-CASE*3;y<hp-camY;y+=CASE)
+      g.drawImage(PIERRES[(a+((y/CASE)|0))%6],Math.round(x),Math.round(y),CASE,CASE);
+    /* l'arête éclairée du plafond */
+    R(g,x,hp-camY-2,CASE,2,N.roche[0]);
+  }
+  /* le sol */
+  for(let a=a0;a<a1;a++){
+    const x=a*CASE-camX, y=SOL[a]*CASE-camY;
+    R(g,x,y,CASE,3,N.roche[0]);                      /* l'arête claire */
+    for(let k=0;k<10;k++)
+      g.drawImage(PIERRES[(a+k)%6],Math.round(x),Math.round(y+3+k*CASE),CASE,CASE);
+  }
+  /* les plateformes */
+  PLATEFORMES.forEach(p=>{
+    const x=p.x*CASE-camX, y=p.y*CASE-camY;
+    if(x<-80||x>VW+80)return;
+    for(let k=0;k<p.l;k++)R(g,x+k*CASE,y,CASE,5,'#7d5934');
+    R(g,x,y,p.l*CASE,2,'#96703f');
+    R(g,x,y+5,p.l*CASE,2,'#4a3218');
+    /* les cordes de soutien */
+    g.strokeStyle='#6b5334';g.lineWidth=1;
+    g.beginPath();g.moveTo(x+3,y);g.lineTo(x+3,y-14);
+    g.moveTo(x+p.l*CASE-3,y);g.lineTo(x+p.l*CASE-3,y-14);g.stroke();
+  });
+  /* le décor */
+  DECORS.forEach(d=>{
+    const x=d.x*CASE-camX, y=d.y*CASE-camY;
+    if(x<-60||x>VW+60)return;
+    if(d.t==='etai')etai(g,x,y);
+    else if(d.t==='wagon')wagon(g,x,y);
+    else if(d.t==='caisse')caisse(g,x,y);
+    else champi(g,x,y);
+  });
+  LAMPES.forEach(l=>{
+    const x=l.x*CASE-camX, y=l.y*CASE-camY;
+    if(x<-40||x>VW+40)return;
+    lampeMur(g,x,y);
+  });
+  /* la sortie, à gauche, et le puits, à droite */
+  if(SORTIE)sortieD(g,SORTIE.x-camX,SORTIE.y-camY);
+  if(PUITS)puitsD(g,PUITS.x-camX,PUITS.y-camY);
+  /* les filons */
+  FILONS.forEach(f=>{
+    if(f.mort)return;
+    const x=f.x*CASE-camX, y=f.y*CASE-camY;
+    if(x<-40||x>VW+40)return;
+    filon(g,f,x,y);
+  });
+  /* les bêtes */
+  BETES.forEach(b=>{if(b.vie<=0)return;
+    const x=b.x-camX, y=b.y-camY;
+    if(x<-50||x>VW+50)return;
+    dessinerBete(g,b,x,y);});
+  /* toi */
+  dessinerMoi(g,Math.round(moi.x-camX),Math.round(moi.y-camY));
+  /* les éclats de roche */
+  PARTS.forEach(p=>{
+    g.globalAlpha=Math.max(0,1-p.t/0.9);
+    R(g,p.x-camX,p.y-camY,2,2,p.c);
+    g.globalAlpha=1;
+  });
+  /* la lumière : le halo du casque, plus le noir autour */
+  const px=moi.x-camX, py=moi.y-camY-16;
+  const rayon=allumee?128:38;
+  const d2=g.createRadialGradient(px,py,rayon*0.3,px,py,rayon);
+  d2.addColorStop(0,'rgba(0,0,0,0)');
+  d2.addColorStop(.6,'rgba(8,6,4,.35)');
+  d2.addColorStop(1,'rgba(5,4,3,.88)');
+  g.fillStyle=d2;g.fillRect(0,0,VW,VH);
+  if(allumee){
+    const t=Date.now()/1000, vac=1+Math.sin(t*7)*0.03;
+    const d3=g.createRadialGradient(px,py,2,px,py,rayon*0.6*vac);
+    d3.addColorStop(0,'rgba(255,200,130,.17)');
+    d3.addColorStop(1,'rgba(255,200,130,0)');
+    g.fillStyle=d3;g.fillRect(0,0,VW,VH);
+  }
+  /* le rouge quand on encaisse */
+  if(moi.mal>0){g.fillStyle='rgba(190,40,40,'+(moi.mal*0.8)+')';g.fillRect(0,0,VW,VH);}
+  /* les textes */
+  g.font='700 7px ui-monospace,monospace';g.textAlign='center';
+  TEXTES.forEach(t2=>{
+    g.globalAlpha=Math.max(0,1-t2.t/1.4);
+    g.fillStyle='rgba(0,0,0,.6)';g.fillText(t2.txt,t2.x-camX+1,t2.y-camY+1);
+    g.fillStyle=t2.c;g.fillText(t2.txt,t2.x-camX,t2.y-camY);
+    g.globalAlpha=1;
+  });
+  g.textAlign='left';
+}
+
 $('b-sac').onclick=ouvrirSac;
 $('b-forge').onclick=ouvrirForge;
+$('b-sortir').onclick=remonterAuJour;
 $('b-torche').onclick=async()=>{
   if(!(SAC.torche>0))return dire('plus de torche ! le casino en vend');
   if(enLigne&&e.id){
@@ -1840,183 +1279,36 @@ $('b-torche').onclick=async()=>{
     if(d&&d.erreur)return dire(d.erreur);
     SAC=d.sac||SAC;
   }else SAC.torche--;
-  reste=DUREE;allumee=true;prevenu=false;dire('torche allumée');
-  try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
+  torche=120;allumee=true;majSac();dire('lampe rechargée');
+};
+$('mortOk').onclick=()=>{
+  if(enLigne&&e.id)appel('mine_sortir',{p_joueur:e.id});
+  location.href='jeu.html';
 };
 
-/* ================= la boucle ================= */
-function taille(){
-  DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
-  cv.width=innerWidth*DPR;cv.height=innerHeight*DPR;
-  ECH=2*DPR;VW=cv.width/ECH;VH=cv.height/ECH;
-  ctx.setTransform(ECH,0,0,ECH,0,0);
-  ctx.imageSmoothingEnabled=false;
-}
-addEventListener('resize',taille);
-let t0=performance.now();
-function boucle(t){
-  const dt=Math.min(.05,(t-t0)/1000);t0=t;
-  if(!mort&&MUR.length){
-    majJoystick();
-    const d=Math.hypot(joyX,joyY);
-    if(d>0.08&&!$('page').classList.contains('on')){
-      const v=(allumee?106:52)*dt*Math.min(1,d);
-      const nx=joueur.x+joyX/d*v, ny=joueur.y+joyY/d*v;
-      if(!solide(nx,joueur.y)&&!solide(nx,joueur.y-10))joueur.x=nx;
-      if(!solide(joueur.x,ny)&&!solide(joueur.x,ny-10))joueur.y=ny;
-      joueur.marche=true;joueur.pas+=v*0.5;
-      joueur.dir=Math.abs(joyX)>Math.abs(joyY)?(joyX>0?'droite':'gauche'):(joyY>0?'bas':'haut');
-    }else{joueur.marche=false;joueur.pas=0;}
-    if(joueur.coup>0)joueur.coup=Math.max(0,joueur.coup-dt);
-    if(joueur.recule>0)joueur.recule=Math.max(0,joueur.recule-dt);
-    /* les bêtes */
-    BETES.forEach(b=>{
-      if(b.vie<=0)return;
-      if(b.touche>0)b.touche=Math.max(0,b.touche-dt);
-      const dx=joueur.x-b.x, dy=joueur.y-b.y, dd=Math.hypot(dx,dy);
-      const portee=allumee?190:90;
-      if(dd<portee)b.chasse=true;
-      if(dd>360)b.chasse=false;
-      if(b.chasse&&dd>18){
-        const v=b.vit*dt;
-        const nx=b.x+dx/dd*v, ny=b.y+dy/dd*v;
-        if(b.vole||!solide(nx,b.y))b.x=nx;
-        if(b.vole||!solide(b.x,ny))b.y=ny;
-      }
-      if(dd<24){
-        b.frappe-=dt;
-        if(b.frappe<=0){b.frappe=1.1;blesser(b.deg,b.nom);}
-      }
-    });
-    /* on reprend son souffle quand rien ne nous touche depuis huit secondes */
-    repos+=dt;
-    if(repos>8&&vie<VIE_MAX_S){
-      soin+=dt;
-      if(soin>=4){soin=0;vie=Math.min(VIE_MAX_S,vie+1);
-        volant(joueur.x,joueur.y-40,'+1','#9fdfb8');}
-    }
-    /* la torche */
-    if(allumee){
-      reste-=dt;
-      if(reste<=30&&!prevenu){prevenu=true;dire('ta torche faiblit');}
-      if(reste<=0){allumee=false;reste=0;prevenu=false;
-        dire('ta torche s’est éteinte — les bêtes te voient encore');}
-    }
-    if(secousse>0)secousse=Math.max(0,secousse-dt*18);
-    for(let i=TEXTES.length-1;i>=0;i--){TEXTES[i].t+=dt;TEXTES[i].y-=dt*20;
-      if(TEXTES[i].t>1.5)TEXTES.splice(i,1);}
-  }
-  /* les jauges */
-  $('vieB').style.width=(vie/VIE_MAX*100)+'%';
-  $('vieT').textContent=vie+'/'+VIE_MAX;
-  $('vieJ').classList.toggle('mal',vie<VIE_MAX*0.35);
-  $('torcheB').style.width=(reste/DUREE*100)+'%';
-  const m=Math.floor(reste/60), s=Math.floor(reste%60);
-  $('torcheT').textContent=allumee?(m+':'+String(s).padStart(2,'0')):'éteinte';
-  $('prof').innerHTML='NIVEAU '+niveau+'<small>'+nomNiveau(niveau)+'</small>';
-  dessiner();majAction();
-  requestAnimationFrame(boucle);
-}
-function dessiner(){
-  const g=ctx;
-  if(!MUR.length){                       /* la galerie n'est pas encore creusée */
-    g.fillStyle='#0a0806';g.fillRect(0,0,VW,VH);
-    g.font='700 10px system-ui';g.textAlign='center';
-    g.fillStyle='#8a7c5e';
-    g.fillText('on descend…',VW/2,VH/2);
-    g.textAlign='left';return;
-  }
-  const sx=secousse?Math.round((Math.random()-.5)*secousse):0;
-  const camX=Math.max(0,Math.min(L*CASE-VW,joueur.x-VW/2))+sx;
-  const camY=Math.max(0,Math.min(H*CASE-VH,joueur.y-VH*0.55));
-  /* la roche s'assombrit avec la profondeur */
-  const p=profondeur();
-
-  g.fillStyle='#0a0806';g.fillRect(0,0,VW,VH);
-  const a0=Math.max(0,(camX/CASE|0)-1), a1=Math.min(L,(camX+VW)/CASE+1);
-  const b0=Math.max(0,(camY/CASE|0)-1), b1=Math.min(H,(camY+VH)/CASE+1);
-  if(PIERRES_NIV!==niveau||!PIERRES)graverLesPierres(p);
-  for(let b=b0;b<b1;b++)for(let a=a0;a<a1;a++){
-    const x=Math.round(a*CASE-camX), y=Math.round(b*CASE-camY);
-    const v=(a*7+b*13)&7;
-    g.drawImage(MUR[b][a]?PIERRES[v]:SOLS[v],x,y,CASE,CASE);
-  }
-  /* l'ombre que la roche jette sur le sol, sous chaque mur */
-  for(let b=b0;b<b1;b++)for(let a=a0;a<a1;a++){
-    if(MUR[b][a]&&b+1<H&&!MUR[b+1][a])ombrePied(g,a*CASE-camX,(b+1)*CASE-camY);
-  }
-  const objets=[];
-  DECOR.forEach(o=>{
-    if(o.mort&&o.t!=='lampe'&&o.t!=='poutre')return;
-    objets.push({y:o.y,f:()=>{
-      const x=o.x-camX, y=o.y-camY;
-      if(x<-60||y<-80||x>VW+60||y>VH+40)return;
-      if(o.t==='lampe')lampeMur(g,x,y);
-      else if(o.t==='poutre')poutre(g,x,y);
-      else filon(g,x,y,o.t,o.coups);
-    }});
-  });
-  BETES.forEach(b=>{if(b.vie<=0)return;
-    objets.push({y:b.y,f:()=>{
-      const x=b.x-camX, y=b.y-camY;
-      if(x<-60||y<-80||x>VW+60||y>VH+40)return;
-      bete(g,b,x,y);
-    }});});
-  objets.push({y:SORTIE.y,f:()=>sortieD(g,SORTIE.x-camX,SORTIE.y-camY)});
-  if(PUITS)objets.push({y:PUITS.y,f:()=>puitsD(g,PUITS.x-camX,PUITS.y-camY)});
-  const rec=joueur.recule>0?Math.round(joueur.recule*20):0;
-  objets.push({y:joueur.y,f:()=>perso(g,Math.round(joueur.x-camX)+rec,
-    Math.round(joueur.y-camY))});
-  objets.sort((a,b)=>a.y-b.y);
-  objets.forEach(o=>o.f());
-  /* le noir, qui se resserre avec la profondeur */
-  const rayon=allumee?Math.max(74,158-niveau*4):32;
-  const px=joueur.x-camX, py=joueur.y-camY-16;
-  const d2=g.createRadialGradient(px,py,rayon*0.25,px,py,rayon);
-  d2.addColorStop(0,'rgba(0,0,0,0)');
-  d2.addColorStop(.55,'rgba(6,4,3,.45)');
-  d2.addColorStop(1,'rgba(3,2,2,.97)');
-  g.fillStyle=d2;g.fillRect(0,0,VW,VH);
-  if(allumee){
-    const t=Date.now()/1000, vac=1+Math.sin(t*7)*0.04;
-    const d3=g.createRadialGradient(px,py,2,px,py,rayon*0.62*vac);
-    d3.addColorStop(0,'rgba(255,190,110,.2)');
-    d3.addColorStop(1,'rgba(255,190,110,0)');
-    g.fillStyle=d3;g.fillRect(0,0,VW,VH);
-  }
-  /* le rouge quand on encaisse */
-  if(joueur.recule>0){
-    g.fillStyle='rgba(190,40,40,'+(joueur.recule*0.9)+')';
-    g.fillRect(0,0,VW,VH);
-  }
-  if(fondu>0){g.fillStyle='rgba(6,4,3,'+fondu+')';g.fillRect(0,0,VW,VH);}
-  g.font='700 8px ui-monospace,monospace';g.textAlign='center';
-  TEXTES.forEach(t2=>{
-    g.globalAlpha=Math.max(0,1-t2.t/1.5);
-    g.fillStyle='rgba(0,0,0,.6)';g.fillText(t2.txt,t2.x-camX+1,t2.y-camY+1);
-    g.fillStyle=t2.col;g.fillText(t2.txt,t2.x-camX,t2.y-camY);
-    g.globalAlpha=1;
-  });
-  g.textAlign='left';
-}
+/* ================= l'arrivée ================= */
 async function arriver(){
-  if(!e.id){       /* pas de compte : on regarde la mine sans y toucher */
-    enLigne=false;dire('mode découverte — rien n’est enregistré');
-    SAC={torche:3};creuser();return;
+  if(!e.id){
+    enLigne=false;SAC={torche:3};dire('mode découverte — rien n’est enregistré');
+    creuser();moi.y=solEn(moi.x);majSac();return;
   }
   const d=await appel('mine_entrer',{p_joueur:e.id});
-  if(d&&!d.erreur){
-    niveau=d.niveau;vie=d.vie;VIE_MAX_S=d.vieMax||30;epee=d.epee||0;
-  }else{enLigne=false;}
+  if(d&&!d.erreur){niveau=d.niveau;moi.vie=d.vie;moi.vieMax=d.vieMax||30;
+    VIE_MAX_S=d.vieMax||30;epee=d.epee||0;}
+  else enLigne=false;
   const s2=await appel('lire_sac',{p_joueur:e.id});
   if(s2&&!s2.erreur){SAC=s2.sac||{};CHARGE_MAX=s2.max||60;}
-  creuser();
-  if(!(SAC.torche>0))
-    dire('tu n’as pas de torche — deux minutes, et il fera noir');
+  creuser();moi.y=solEn(moi.x);majSac();
+  if(!(SAC.torche>0))dire('pas de torche — deux minutes, et il fera noir');
   else dire('niveau 1 · '+nomNiveau(1));
 }
-arriver();
+
+creuser();
+moi.y=solEn(moi.x);
+majSac();
 taille();
+arriver();
+setTimeout(()=>{$('aide').style.opacity='0';},9000);
 requestAnimationFrame(boucle);
 </script>
 </body>
