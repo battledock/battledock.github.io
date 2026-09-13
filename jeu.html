@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-2014';
+  var MA_VERSION='2026-09-13-2024';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1715,21 +1716,120 @@ function dessinerArbre(g,x,y,gr,essence){
 }
 
 
-/* --- le rocher : à hauteur de hanche (22 à 30 px) --- */
+/* --- les pierres, l'argile et les roseaux, gravés une fois ---
+   Même méthode que les buissons : une réunion de boules, remplie colonne
+   par colonne. Contour rond, masse en aplat, aucun pixel isolé. */
+const P_PIERRE={pierre:'#7b8288',clair:'#8b939a',haut:'#a2a9b0',ombre:'#5f666c',eclat:'#b7bec4'};
+const P_ARG={fonce:'#7d3826',bas:'#9c4a32',moyen:'#a85039',clair:'#bb5e42',
+             haut:'#c76b4c',luisant:'#e0977a'};
+const P_ROS={tige:'#5e8a47',tigeC:'#7db35d',tigeO:'#48703a',epi:'#8a6238',epiC:'#a5764a'};
+const TAILLES_PIERRE=[{id:0,h:22,l:11},{id:1,h:26,l:13},{id:2,h:30,l:15}];
+const T_ROSEAUX=[{n:4,h:20,epis:0},{n:6,h:28,epis:3},{n:8,h:36,epis:5}];
+
+/* le contour : pour chaque colonne, la boule la plus haute qui la traverse */
+function hautDeLobes(lobes,W){
+  const h=new Array(W).fill(null);
+  for(let x=0;x<W;x++){
+    let y=null;
+    lobes.forEach(([cx,cy,r])=>{
+      const dx=x+0.5-cx;if(Math.abs(dx)>=r)return;
+      const t=cy-Math.sqrt(r*r-dx*dx);
+      if(y===null||t<y)y=t;
+    });
+    h[x]=y===null?null:Math.round(y);
+  }
+  return h;
+}
+let SOL_GRAVE=null;
+function graverSolides(){
+  SOL_GRAVE={pierres:[],argile:null,roseaux:[]};
+
+  TAILLES_PIERRE.forEach(S=>{
+    const HT=S.h,L=S.l,W=L*2+10,HC=HT+8;
+    SOL_GRAVE.pierres.push({c:toilePetit(W,HC,({R,ombre})=>{
+      const cx=W/2,sol=HC-4,r=L*0.62;
+      ombre(cx+1,sol,L*0.95,3);
+      const haut=hautDeLobes([[cx-L*0.42,sol-r*0.72,r],[cx+L*0.46,sol-r*0.64,r*0.92],
+                              [cx-L*0.06,sol-HT*0.58,r*1.04]],W);
+      for(let x=0;x<W;x++){
+        const y=haut[x];if(y===null)continue;
+        const h=sol-y;if(h<=0)continue;
+        R(x,y,1,h,P_PIERRE.pierre);
+        R(x,y,1,Math.max(2,Math.round(h*0.36)),P_PIERRE.clair);
+        if(x<W*0.5)R(x,y,1,2,P_PIERRE.haut);
+        R(x,sol-3,1,3,P_PIERRE.ombre);
+      }
+      const x0=Math.round(cx-L*0.2);                    /* la cassure */
+      for(let i=0;i<Math.round(HT*0.34);i++)R(x0+Math.round(i*0.5),sol-6-i,2,1,P_PIERRE.eclat);
+      R(cx-L-4,sol-5,5,3,P_PIERRE.pierre);              /* l'éclat au pied */
+      R(cx-L-4,sol-5,5,1,P_PIERRE.clair);
+    }),W,HC});
+  });
+
+  const W=38,HC=24;
+  const argile=(pleine)=>toilePetit(W,HC,({R,ombre})=>{
+    const cx=W/2,sol=HC-4;
+    ombre(cx+1,sol,15,4.5);
+    const haut=hautDeLobes(pleine
+      ? [[cx-8,sol-5,7],[cx+7,sol-5.5,7.4],[cx-1,sol-11,7.8]]
+      : [[cx-7,sol-3.5,5.4],[cx+6,sol-3,5]],W);
+    for(let x=0;x<W;x++){
+      const y=haut[x];if(y===null)continue;
+      const h=sol-y;if(h<=0)continue;
+      R(x,y,1,h,P_ARG.moyen);
+      R(x,y,1,Math.max(2,Math.round(h*0.4)),P_ARG.clair);
+      if(x<W*0.5)R(x,y,1,2,P_ARG.haut);
+      R(x,sol-3,1,3,P_ARG.bas);R(x,sol-1,1,1,P_ARG.fonce);
+    }
+    if(pleine){R(cx-6,sol-14,4,1,P_ARG.luisant);R(cx+3,sol-7,4,1,P_ARG.luisant);
+               R(cx-11,sol-6,3,1,P_ARG.luisant);}
+    else{R(cx-8,sol-6,3,1,P_ARG.luisant);R(cx-2,sol-4,5,2,P_ARG.fonce);}
+  });
+  SOL_GRAVE.argile={pleine:argile(true),prise:argile(false),W,HC};
+
+  T_ROSEAUX.forEach((E,v)=>{
+    const HT=E.h,W2=30,HC2=HT+12;
+    const pied=toilePetit(W2,10,({R,ombre})=>{ombre(W2/2+1,6,12,3);
+      R(W2/2-7,2,14,2,P_ROS.tigeO);});
+    const tete=toilePetit(W2,HC2,({R})=>{
+      const cx=W2/2,sol=HC2-2;
+      for(let i=0;i<E.n;i++){
+        const dx=Math.round((i-(E.n-1)/2)*(22/E.n));
+        const h=Math.round(HT*(0.74+alea(i*3.1+v)*0.3));
+        R(cx+dx,sol-h,2,h,P_ROS.tige);
+        R(cx+dx,sol-h,1,Math.round(h*0.6),P_ROS.tigeC);
+        R(cx+dx,sol-4,2,4,P_ROS.tigeO);
+      }
+      for(let i=0;i<E.epis;i++){
+        const dx=Math.round((i-(E.epis-1)/2)*6);
+        const h=Math.round(HT*(0.86+alea(i*7.3+v)*0.22));
+        R(cx+dx-1,sol-h-6,4,7,P_ROS.epi);
+        R(cx+dx-1,sol-h-6,4,2,P_ROS.epiC);
+        R(cx+dx,sol-h-7,2,1,P_ROS.epiC);
+      }
+    });
+    SOL_GRAVE.roseaux.push({pied,tete,W:W2,HC:HC2});
+  });
+}
+const borne=(L,i)=>L[Math.min(L.length-1,Math.max(0,i|0))];
+
 function dessinerRocher(g,x,y,gr){
-  const V=VERTS, R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const s=gr||0;
-  const H=[22,26,30][s], L=[11,13,15][s];
-  g.fillStyle=V.ombre;
-  g.beginPath();g.ellipse(x+1,y-1,L*0.9,3,0,0,7);g.fill();
-  R(-L,-Math.round(H*0.55),L*2,Math.round(H*0.55),V.pierre);
-  R(-L+3,-Math.round(H*0.8),L*2-6,Math.round(H*0.28),V.pierreC);
-  R(-L+6,-H,L*2-12,Math.round(H*0.24),V.pierreH);
-  R(-L,-Math.round(H*0.22),L*2,Math.round(H*0.22),V.pierreO);
-  R(L-5,-Math.round(H*0.72),4,Math.round(H*0.6),'#666d73');
-  R(-L+5,-Math.round(H*0.66),3,2,V.pierreE);
-  R(-L-5,-Math.round(H*0.3),5,Math.round(H*0.3),V.pierre);   /* éclat au pied */
-  R(-L-5,-Math.round(H*0.12),5,Math.round(H*0.12),V.pierreO);
+  if(!SOL_GRAVE)graverSolides();
+  const A=borne(SOL_GRAVE.pierres,gr);
+  g.drawImage(A.c,Math.round(x-A.W/2),Math.round(y-A.HC+4),A.W,A.HC);
+}
+function dessinerArgile(g,x,y,gr,vide){
+  if(!SOL_GRAVE)graverSolides();
+  const A=SOL_GRAVE.argile;
+  g.drawImage(vide?A.prise:A.pleine,Math.round(x-A.W/2),Math.round(y-A.HC+4),A.W,A.HC);
+}
+function dessinerRoseaux(g,x,y,gr,mx,my){
+  if(!SOL_GRAVE)graverSolides();
+  const A=borne(SOL_GRAVE.roseaux,gr);
+  g.drawImage(A.pied,Math.round(x-A.W/2),Math.round(y-7),A.W,10);
+  /* les tiges sont gravées droites : c'est la recopie qui les incline */
+  const so=penche(mx||x,my||y,1.3)+Math.sin(Date.now()/900+(mx||x)*0.05)*1.2;
+  g.drawImage(A.tete,Math.round(x-A.W/2+so),Math.round(y-A.HC+4),A.W,A.HC);
 }
 
 /* --- le buisson : à hauteur de taille, gravé une fois --- */
@@ -2180,47 +2280,10 @@ function felures(g,x,y,part){
 }
 
 /* ---- argile : une veine grise et humide, sur les berges ---- */
-function dessinerArgile(g,x,y,gr){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,16,4.5,0,0,7);g.fill();
-  /* trois boules de terre molle, posées les unes sur les autres */
-  R(-13,-7,10,7,'#9c4a32');
-  R(-13,-7,10,2,'#bb5e42');
-  R(-13,-7,2,7,'#ab553a');
-  R(-2,-8,11,8,'#a85039');
-  R(-2,-8,11,2,'#c76b4c');
-  R(-2,-8,2,8,'#bb5e42');
-  R(-8,-14,11,7,'#bb5e42');
-  R(-8,-14,11,2,'#d47a58');
-  R(-8,-14,2,7,'#c76b4c');
-  /* les luisances d'humidité */
-  R(-6,-13,3,1,'#e0977a');
-  R(2,-6,3,1,'#e0977a');
-  R(-11,-5,2,1,'#e0977a');
-  /* le creux entre les boules */
-  R(-3,-7,1,6,'#7d3826');
-  R(-4,-8,2,1,'#7d3826');
-}
+
 
 /* ---- roseaux : hautes tiges au bord de l'eau ---- */
-function dessinerRoseaux(g,x,y,gr){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const t=Date.now()/900;
-  g.fillStyle=VERTS.ombre;g.beginPath();g.ellipse(x+1,y-1,12,3,0,0,7);g.fill();
-  const souffle=penche(x,y,1.3);
-  const tiges=[[-9,22],[-4,28],[1,25],[6,19]];
-  tiges.forEach(([dx,h],i)=>{
-    const pen=Math.round(Math.sin(t+i)*1.4+souffle);  /* elles ondulent avec le vent */
-    R(dx+pen,-h,2,h,'#5e8a47');
-    R(dx+pen,-h,1,h,'#7db35d');
-  });
-  const epis=[[-5,-33,4,6],[0,-30,4,6],[-10,-27,4,5]];
-  epis.forEach(([a,b,w,h],i)=>{
-    const pen=Math.round(Math.sin(t+i)*1.4+souffle*1.3);
-    R(a+pen,b,w,h,'#8a6238');
-    R(a+pen,b,w,2,'#a5764a');
-  });
-}
+
 
 /* ================= LES PETITS OBJETS, GRAVÉS =================
    Champignons, plumes et touffes d'herbe. Même méthode que les arbres :
@@ -3164,7 +3227,9 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='argile'||o.t==='roseaux'||o.t==='champignons'
           ||o.t==='herbes'||o.t==='plumes'){
       const vide=o.cueilli&&Date.now()-o.cueilli<210000;   /* repousse en 3 min 30 */
-      if(!vide){
+      /* l'argile ne disparaît plus une fois prise : il reste le tas entamé
+         et le creux de la main. Les autres s'effacent, comme avant. */
+      if(!vide||o.t==='argile'){
         let ec=0;
         if(o.frappe){
           const e2=(Date.now()-o.frappe)/520;
@@ -3172,7 +3237,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
         }
         g.save();g.translate(x,y);
         if(ec)g.scale(1+ec,1-ec);
-        ({argile:dessinerArgile,roseaux:dessinerRoseaux,champignons:dessinerChampignons,
+        if(o.t==='argile')dessinerArgile(g,0,0,o.gr,vide);
+        else ({roseaux:dessinerRoseaux,champignons:dessinerChampignons,
           herbes:dessinerHerbes,plumes:dessinerPlumes})[o.t](g,0,0,o.gr,o.x,o.y);
         g.restore();
       }
