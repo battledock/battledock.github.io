@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1800';
+  var MA_VERSION='2026-09-13-1822';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2116,6 +2117,158 @@ function dessinerEntaille(g,x,y,ht,pret){
 }
 
 /* ---- le four : pierre appareillée, cheminée, feu qui bat ---- */
+function dessinerForge(g,x,y,allume){
+  /* le jeu n'a pas de raccourci global : on se le donne ici */
+  const R=(g2,a,b,w,h,c)=>{g2.fillStyle=c;g2.fillRect(Math.round(a),Math.round(b),w,h);};
+  const alea=(n)=>{const v=Math.sin(n*127.1)*43758.5453;return v-Math.floor(v);};
+  const t=Date.now()/1000;
+  const P={mur:'#8a8175',murC:'#9e9488',murO:'#6b6359',
+           toit:'#8a4a3a',toitC:'#a25b47',toitO:'#6b372b',
+           bois:'#6b4a28',boisC:'#8a6238'};
+  /* l'ombre portée au sol */
+  g.fillStyle='rgba(30,40,22,.3)';
+  g.beginPath();g.ellipse(x,y+4,52,15,0,0,7);g.fill();
+
+  /* ---- le corps, en pierre appareillée ---- */
+  const L=88, H=44, x0=x-L/2, y0=y-H;
+  for(let j=0;j<H;j+=8){
+    for(let i=0;i<L;i+=(j%16?14:11)){
+      const w=Math.min((j%16?14:11),L-i);
+      R(g,x0+i,y0+j,w-1,7,(i+j)%3?P.mur:P.murC);
+      R(g,x0+i,y0+j,w-1,1,P.murC);
+      R(g,x0+i,y0+j+6,w-1,1,P.murO);
+    }
+  }
+  R(g,x0,y0,L,1.4,P.murC);
+  R(g,x0,y-1.4,L,1.4,P.murO);
+
+  /* ---- la porte, grande ouverte sur la lueur ---- */
+  const px=x-11, py=y-28;
+  R(g,px-2,py-2,26,30,P.bois);
+  R(g,px,py,22,28,'#241a12');
+  if(allume){
+    const l=g.createLinearGradient(0,py,0,py+28);
+    l.addColorStop(0,'rgba(255,150,60,.10)');
+    l.addColorStop(1,'rgba(255,176,58,'+(0.34+Math.sin(t*6)*0.06)+')');
+    g.fillStyle=l;g.fillRect(px,py,22,28);
+    /* la lumière qui coule sur le seuil */
+    const s=g.createLinearGradient(0,y,0,y+16);
+    s.addColorStop(0,'rgba(255,176,58,.30)');
+    s.addColorStop(1,'rgba(255,176,58,0)');
+    g.fillStyle=s;
+    g.beginPath();g.moveTo(px,y);g.lineTo(px+22,y);g.lineTo(px+30,y+16);g.lineTo(px-8,y+16);
+    g.closePath();g.fill();
+  }
+  /* le linteau et ses ferrures */
+  R(g,px-3,py-4,28,4,P.boisC);
+  R(g,px-3,py-4,28,1.2,'#a5764a');
+  R(g,px-1,py+2,2,24,'#4a4038');R(g,px+21,py+2,2,24,'#4a4038');
+
+  /* ---- le toit, à deux pans, qui déborde ---- */
+  const ty=y-H-22;
+  for(let j=0;j<22;j+=4){
+    const larg=L+16-j*0.8;
+    const tx=x-larg/2;
+    for(let i=0;i<larg;i+=9){
+      const w=Math.min(9,larg-i);
+      R(g,tx+i+((j/4)%2?4:0),ty+j,w-1.4,3.4,(i+j)%2?P.toit:P.toitC);
+      R(g,tx+i+((j/4)%2?4:0),ty+j,w-1.4,1,P.toitC);
+    }
+    R(g,tx,ty+j+3.2,larg,.8,P.toitO);
+  }
+  /* le faîtage */
+  R(g,x-(L+16)/2,ty-2,L+16,3,P.toitO);
+  R(g,x-(L+16)/2,ty-2,L+16,1.2,'#b5674f');
+
+  /* ---- la cheminée, et sa fumée ---- */
+  const cx=x+28, cy=ty-14;
+  R(g,cx-7,cy,14,18,P.murO);
+  R(g,cx-7,cy,14,2,P.mur);
+  R(g,cx-8.4,cy-3,17,4,'#5e564d');
+  R(g,cx-8.4,cy-3,17,1.2,'#7d746a');
+  if(allume){
+    /* des braises au sommet */
+    g.fillStyle='rgba(255,150,60,'+(0.5+Math.sin(t*7)*0.2)+')';
+    g.fillRect(cx-4,cy-4,8,2);
+    for(let i=0;i<4;i++){
+      const k=((t*0.5+i*0.25)%1);
+      g.globalAlpha=(1-k)*0.42;
+      g.fillStyle='#cfc8ba';
+      const w=3+k*11;
+      g.beginPath();
+      g.ellipse(cx+Math.sin(k*5+i)*7,cy-8-k*46,w,w*0.8,0,0,7);g.fill();
+      g.globalAlpha=1;
+    }
+  }
+
+  /* ---- l'enclume, devant la porte ---- */
+  const ax=x-40, ay=y+8;
+  g.fillStyle='rgba(30,40,22,.34)';
+  g.beginPath();g.ellipse(ax,ay+1,11,4,0,0,7);g.fill();
+  R(g,ax-6,ay-5,12,5,'#5e564d');        /* le billot */
+  R(g,ax-6,ay-5,12,1.2,'#7d746a');
+  R(g,ax-8,ay-10,16,5,'#4a4650');       /* le corps */
+  R(g,ax-8,ay-10,16,1.4,'#6b6675');
+  R(g,ax-4,ay-13,8,3,'#4a4650');
+  g.fillStyle='#4a4650';                /* la corne */
+  g.beginPath();g.moveTo(ax+8,ay-9.4);g.lineTo(ax+15,ay-7.6);g.lineTo(ax+8,ay-6);g.closePath();g.fill();
+  if(allume){
+    /* le marteau frappe, et les étincelles giclent */
+    const bat=(t*2)%1;
+    if(bat<0.12){
+      for(let i=0;i<5;i++){
+        const a=-0.4-alea(i)*2.2, d=4+alea(i*3)*9;
+        g.fillStyle=alea(i*7)<.5?'#ffe9a8':'#ffb03a';
+        g.fillRect(ax+Math.cos(a)*d,ay-12+Math.sin(a)*d,1.4,1.4);
+      }
+      g.fillStyle='rgba(255,200,120,.5)';
+      g.beginPath();g.arc(ax,ay-12,7,0,7);g.fill();
+    }
+  }
+
+  /* ---- le baquet à tremper ---- */
+  const bx=x+40, by=y+6;
+  g.fillStyle='rgba(30,40,22,.3)';
+  g.beginPath();g.ellipse(bx,by+1,9,3.4,0,0,7);g.fill();
+  R(g,bx-8,by-11,16,11,P.bois);
+  R(g,bx-8,by-11,16,1.6,P.boisC);
+  R(g,bx-9,by-8,18,2,'#4a4038');
+  R(g,bx-9,by-3,18,2,'#4a4038');
+  g.fillStyle='#3f6b7d';
+  g.beginPath();g.ellipse(bx,by-11,6.6,2.4,0,0,7);g.fill();
+  g.fillStyle='rgba(150,205,225,'+(0.3+Math.sin(t*1.6)*0.1)+')';
+  g.beginPath();g.ellipse(bx-1.4,by-11.6,3.4,1.2,0,0,7);g.fill();
+
+  /* ---- le tas de charbon ---- */
+  const gx=x+18, gy=y+12;
+  g.fillStyle='rgba(30,40,22,.3)';
+  g.beginPath();g.ellipse(gx,gy+1,12,4,0,0,7);g.fill();
+  for(let i=0;i<11;i++){
+    const u=alea(i*3.1), w=alea(i*7.7);
+    g.fillStyle=u<.4?'#3a373c':(u<.75?'#2e2c30':'#4a464e');
+    g.fillRect(gx-10+u*19,gy-2-w*6,2.6+u*2,2.2+w*1.6);
+  }
+  /* les bûches, rangées contre le mur */
+  for(let i=0;i<4;i++){
+    const lx=x-46+i*0.6, ly=y-14+i*5;
+    R(g,lx,ly,13,4.4,i%2?'#6b4a28':'#7d5934');
+    R(g,lx,ly,13,1.2,'#8a6238');
+    R(g,lx+11,ly,2,4.4,'#5b3f21');
+  }
+
+  /* ---- l'enseigne : un marteau et une enclume ---- */
+  const sx=x+13, sy=y-34;
+  R(g,sx-1,sy-10,2,10,'#4a4038');
+  R(g,sx-9,sy-16,18,8,'#7d5934');
+  R(g,sx-9,sy-16,18,1.4,'#96703f');
+  R(g,sx-6,sy-13.6,8,3,'#4a4650');
+  R(g,sx+1,sy-14.4,4,1.6,'#6b6675');
+  if(allume){
+    g.save();g.globalAlpha=.12+Math.sin(t*3)*0.04;
+    g.fillStyle='#ffb03a';
+    g.beginPath();g.arc(x,y-16,74,0,7);g.fill();g.restore();
+  }
+}
 function dessinerFour(g,x,y,gr,allume){
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
   const t=Date.now()/1000;
@@ -2443,8 +2596,12 @@ function semerDecor(){
   e.camp=CAMP_FIXE;
   DECOR=DECOR.filter(o=>o.t==='fleurs'||
     !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));invaliderGrille();
-  DECOR.push({t:'four',  x:e.camp[0],    y:e.camp[1],gr:0});
-  DECOR.push({t:'etabli',x:e.camp[0]+48, y:e.camp[1],gr:0});
+  /* La forge : un vrai bâtiment, au bord de l'eau. Elle remplace le petit
+     four et l'établi qu'on posait par terre au camp. */
+  e.forge=FORGE_FIXE;
+  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+    !(Math.abs(o.x-e.forge[0])<88&&Math.abs(o.y-e.forge[1])<78));invaliderGrille();
+  DECOR.push({t:'forge',x:e.forge[0],y:e.forge[1],gr:0});
 
   /* on dégage les abords des ponts : rien ne doit gêner le passage */
   DECOR=DECOR.filter(o=>{
@@ -2690,6 +2847,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       }
     }
     else if(o.t==='pont')dessinerPont(g,x,y);
+    else if(o.t==='forge')dessinerForge(g,x,y,true);
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
@@ -2797,6 +2955,7 @@ const CASINO_FIXE=[660,430];
 const CAMP_FIXE=[700,624];
 const COFFRE_FIXE=[596,560];
 const MINE_FIXE  =[830,236];                    /* la carrière, au nord-est */
+const FORGE_FIXE =[430,520];                    /* la forge, sur la rive est */                    /* la carrière, au nord-est */
                   /* rive ouest, en face du casino */
 let joueur={x:e.x||MONDE/2,y:e.y||MONDE/2,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
@@ -3598,7 +3757,7 @@ async function chargerLaCarte(){
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
-    const garder=['pont','casino','mine','four','etabli','coffre','souche','gravats'];
+    const garder=['pont','casino','mine','forge','coffre','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -3990,7 +4149,7 @@ function cible(){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='mine'&&o.t!=='four'&&o.t!=='etabli'&&!o.bati&&!cueillable&&!minerai)continue;
+       &&o.t!=='mine'&&o.t!=='forge'&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -4033,6 +4192,8 @@ function majAction(){
       }
       b.innerHTML='Couper<small>'+reste+' COUP'+(reste>1?'S':'')+seve+'</small>';
     }
+  }else if(o.t==='forge'){
+    return {verbe:'Entrer',sous:'LA FORGE'};
   }else if(o.t==='four'){
     if(e.four&&Date.now()<e.four.fin){
       const s2=Math.ceil((e.four.fin-Date.now())/1000);
@@ -4086,8 +4247,7 @@ function agir(){
       '<div class="vide2">Les buissons se cueillent à la main.</div>',false);
     return;
   }
-  if(o.t==='four')return ouvrirFour();
-  if(o.t==='etabli')return ouvrirEtabli();
+  if(o.t==='forge'){location.href='forge.html';return;}
   if(o.t==='mine'){
     sauver();envoyerSauvegarde(true);
     try{direOuJeSuis&&direOuJeSuis('mine');}catch(x){}
@@ -4103,7 +4263,7 @@ function agir(){
   /* un arbre dont la résine a coulé : on la recueille, et il reste debout */
   if(o.t==='arbre'&&resinePrete(o))return recolterResine(o);
   /* le geste dépend de ce qu'on vise */
-  if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='four'&&o.t!=='etabli'){
+  if(sacPlein()&&o.t!=='coffre'&&o.t!=='casino'&&o.t!=='forge'){
     prevenirSacPlein(o);return;                  /* inutile de taper : rien ne rentrerait */
   }
   const aLaMain=['buisson','argile','roseaux','champignons','herbes','plumes'].includes(o.t);
