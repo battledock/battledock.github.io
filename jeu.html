@@ -255,6 +255,10 @@ body.clavier #bandeau{padding-bottom:9px}
 .outilC.on{border:2px solid #c9a24a;background:#fffaea}
 .outilC svg{image-rendering:pixelated;flex:0 0 auto}
 .outilC b{font:600 11.5px system-ui;color:#3d2a17}
+.lameC{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding:11px 13px;
+  border-radius:11px;background:linear-gradient(180deg,#fdf8e9,#f6efdc);
+  border:1px solid #ddd0ad;border-left:3px solid #8a7c5e}
+.lameC .icC{background:#f3ebd6}
 .ficheC{display:flex;align-items:center;gap:11px;margin-top:16px;padding:12px 13px;
   border-radius:11px;background:#fdf8e9;border:1px solid #ddd0ad;border-left:3px solid #c9a24a}
 .icC{width:40px;height:40px;border-radius:9px;flex:0 0 auto;background:#f3ebd6;
@@ -3402,7 +3406,7 @@ function ambiance(g){
    Tout ce qui compte — le sac, les jetons, les outils, le score —
    part sur le serveur. On peut changer de téléphone, vider son
    navigateur : la partie est retrouvée. */
-const A_GARDER=['sac','jetons','outils','sacMax','score','recolte','casses',
+const A_GARDER=['sac','jetons','outils','sacMax','score','recolte','casses','epee',
                 'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false;
 
@@ -3576,8 +3580,19 @@ function adopterSac(d){
   sauver();majPastille();
   return true;
 }
+/* quelle lame porte-t-on ? le serveur seul le sait */
+async function lireEpee(){
+  if(!e.id)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/comptes?select=epee&id=eq.'+encodeURIComponent(e.id),
+      {headers:sbEntetes});
+    const d=await r.json();
+    if(Array.isArray(d)&&d.length&&typeof d[0].epee==='number'){e.epee=d[0].epee;sauver();}
+  }catch(x){}
+}
 async function lireSacServeur(){
   if(!e.id)return;
+  lireEpee();
   adopterSac(await appelRPC('lire_sac',{p_joueur:e.id}));
 }
 
@@ -4292,6 +4307,9 @@ const OBJETS={
  cuivre: {nom:'Cuivre', d:'Veines vertes dans la roche. Malléable.',                 poids:3},
  charbon:{nom:'Charbon',d:'Roche noire et cassante. De quoi chauffer un four.',      poids:2},
  resine: {nom:'Résine', d:'Récoltée en entaillant un arbre. Colle et torches.',      poids:1},
+ argent: {nom:'Argent', d:'Remonté de la mine, vers le neuvième niveau.',            poids:2},
+ or:     {nom:'Or',     d:'Remonté du fond de la mine. Le guichet en donne 70.',     poids:2},
+ gemme:  {nom:'Gemme',  d:'Le trésor des derniers niveaux. Rien ne vaut plus cher.', poids:1},
  lingotFer:{nom:'Lingot de fer',   d:'Sorti du four. De quoi forger du solide.', poids:2},
  lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',     poids:2},
  brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
@@ -4345,6 +4363,12 @@ lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y
       '<rect x="3" y="4" width="10" height="3" fill="#c47a44"/><rect x="3" y="4" width="10" height="1" fill="#e8a05c"/>',
  brique:'<rect x="2" y="5" width="12" height="4" fill="#a8563c"/><rect x="2" y="5" width="12" height="1" fill="#c46b4c"/>'+
       '<rect x="2" y="10" width="12" height="4" fill="#96492f"/><rect x="2" y="10" width="12" height="1" fill="#b25c3e"/>',
+ argent:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/>'+
+   '<rect x="5" y="5" width="6" height="4" fill="#c3ccd4"/><rect x="6" y="6" width="3" height="2" fill="#eef3f7"/>',
+ or:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/>'+
+   '<rect x="5" y="5" width="6" height="4" fill="#d9a63f"/><rect x="6" y="6" width="3" height="2" fill="#ffe9a8"/>',
+ gemme:'<path d="M8 2 L13 7 L8 14 L3 7z" fill="#6fd8e0"/><path d="M8 2 L13 7 L8 7z" fill="#b6f2f7"/>'+
+   '<path d="M3 7 L8 7 L8 14z" fill="#3fa8b8"/>',
  torche:'<rect x="7" y="5" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="4" fill="#e8802c"/>'+
       '<rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>',
  piocheFer:'<rect x="7" y="4" width="2" height="10" fill="#8a6238"/><rect x="3" y="2" width="10" height="2" fill="#b7bec4"/>'+
@@ -4404,6 +4428,17 @@ function ouvrirSac(){
   const outils=['pioche','hache','piocheFer','hacheFer'].filter(k=>e.outils[k]);
   const o=choisi&&(combien(choisi)||e.outils[choisi])?OBJETS[choisi]:null;
 
+  const LAMES=[['Épée de bois',4,'#a5764a','#7d5934'],['Épée de fer',8,'#c0c7cd','#8b939a'],
+    ['Épée de cuivre',14,'#5fc79c','#3f9e7a'],['Épée d’argent',22,'#eef3f7','#c3ccd4'],
+    ['Épée d’or',34,'#ffe9a8','#d9a63f'],['Lame de gemme',52,'#b6f2f7','#3fa8b8']];
+  const L2=LAMES[Math.min(LAMES.length-1,e.epee||0)];
+  const lame='<div class="lameC">'+
+    '<span class="icC"><svg viewBox="0 0 16 16" width="26">'+
+      '<rect x="7" y="9" width="2" height="6" fill="#6b4a28"/>'+
+      '<rect x="5" y="8" width="6" height="2" fill="#c9a24a"/>'+
+      '<rect x="7" y="1" width="2" height="8" fill="'+L2[2]+'"/>'+
+      '<rect x="7" y="1" width="1" height="8" fill="'+L2[3]+'"/></svg></span>'+
+    '<span class="txC"><b>'+L2[0]+'</b><span>'+L2[1]+' dégâts par coup · à la ceinture</span></span></div>';
   $('sacFond').className='sacFond clairS';
   $('sacFond').innerHTML=
    '<div class="rabatC">'+
@@ -4414,6 +4449,7 @@ function ouvrirSac(){
        '<span class="barC"><i style="width:'+part+'%;background:'+teinte+'"></i></span></span>'+
    '</div>'+
    '<div class="corpsC">'+
+     lame+
      (pleines.length?'<div class="titC">RESSOURCES</div><div class="grilleC">'+pleines.join('')+'</div>'
        :'<div class="videC">Ton sac est vide.<br>Va récolter du bois, de la pierre, des baies…</div>')+
      (outils.length?'<div class="titC">OUTILS</div><div class="outilsC">'+outils.map(k=>

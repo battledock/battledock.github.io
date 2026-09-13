@@ -252,7 +252,7 @@ let VIE_MAX_S=30, CHARGE_MAX=60;
 let vie=30, niveau=1, mort=false;
 const VIE_MAX=30;
 const DUREE=120;
-let reste=DUREE, allumee=true;
+let reste=DUREE, allumee=true, prevenu=false;
 
 /* ================= la galerie ================= */
 const L=44, H=36, CASE=32;
@@ -1282,7 +1282,10 @@ async function ramasser(o){
   }
   const d=await appel('mine_recolter',{p_joueur:e.id,p_genre:o.t});
   if(d&&d.erreur){
-    if(d.erreur==='sac plein'){dire('ton sac est plein');o.mort=false;o.coups=2;}
+    if(d.erreur==='sac plein'){
+      dire('sac plein — remonte vendre au guichet');
+      o.mort=false;o.coups=2;
+    }
     else dire(d.erreur);
     return;
   }
@@ -1307,7 +1310,7 @@ function remonterAuJour(){
   fondu=1;
   setTimeout(()=>{location.href='jeu.html';},420);
 }
-let fondu=0;
+let fondu=0, repos=0, soin=0;
 
 function frapper(b){
   if(joueur.coup>0)return;
@@ -1325,7 +1328,7 @@ function frapper(b){
   }
 }
 async function blesser(d,qui){
-  joueur.recule=0.18;secousse=5;
+  joueur.recule=0.18;secousse=5;repos=0;soin=0;
   volant(joueur.x,joueur.y-44,'-'+d,'#ff8a8a');
   try{navigator.vibrate&&navigator.vibrate([14,40,18]);}catch(x){}
   if(!enLigne){
@@ -1426,7 +1429,7 @@ $('b-torche').onclick=async()=>{
     if(d&&d.erreur)return dire(d.erreur);
     SAC=d.sac||SAC;
   }else SAC.torche--;
-  reste=DUREE;allumee=true;dire('torche allumée');
+  reste=DUREE;allumee=true;prevenu=false;dire('torche allumée');
   try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
 };
 
@@ -1474,10 +1477,19 @@ function boucle(t){
         if(b.frappe<=0){b.frappe=1.1;blesser(b.deg,b.nom);}
       }
     });
+    /* on reprend son souffle quand rien ne nous touche depuis huit secondes */
+    repos+=dt;
+    if(repos>8&&vie<VIE_MAX_S){
+      soin+=dt;
+      if(soin>=4){soin=0;vie=Math.min(VIE_MAX_S,vie+1);
+        volant(joueur.x,joueur.y-40,'+1','#9fdfb8');}
+    }
     /* la torche */
     if(allumee){
       reste-=dt;
-      if(reste<=0){allumee=false;reste=0;dire('ta torche s’est éteinte');}
+      if(reste<=30&&!prevenu){prevenu=true;dire('ta torche faiblit');}
+      if(reste<=0){allumee=false;reste=0;prevenu=false;
+        dire('ta torche s’est éteinte — les bêtes te voient encore');}
     }
     if(secousse>0)secousse=Math.max(0,secousse-dt*18);
     for(let i=TEXTES.length-1;i>=0;i--){TEXTES[i].t+=dt;TEXTES[i].y-=dt*20;
@@ -1595,7 +1607,9 @@ async function arriver(){
   const s2=await appel('lire_sac',{p_joueur:e.id});
   if(s2&&!s2.erreur){SAC=s2.sac||{};CHARGE_MAX=s2.max||60;}
   creuser();
-  dire('niveau 1 · '+nomNiveau(1));
+  if(!(SAC.torche>0))
+    dire('tu n’as pas de torche — deux minutes, et il fera noir');
+  else dire('niveau 1 · '+nomNiveau(1));
 }
 arriver();
 taille();
