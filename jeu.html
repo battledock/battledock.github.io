@@ -2743,7 +2743,10 @@ $('action').onclick=agir;
 $('b-batir').onclick=()=>ouvrirPage('Bâtir','BIENTÔT',
   '<div class="rappel">La construction revient plus tard.<br>'+
   'Pour l’instant, récolte, fabrique et va au casino.</div>');
-$('b-class').onclick=()=>ouvrirClassement();
+$('b-class').onclick=()=>{
+  sauver();envoyerSauvegarde(true);            /* on part avec un score à jour */
+  location.href='classement.html';
+};
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 
 /* ================= la mini-carte, dans son hublot ================= */
@@ -4259,165 +4262,6 @@ function ouvrirParler(){
     $('page2').classList.remove('on');
   };
 }
-
-/* ================= le classement ================= */
-let CLASSEMENT=null, classementEnCours=false;
-async function chargerClassement(){
-  try{
-    const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,pseudo,apparence,score,recolte,maj'+
-      '&order=score.desc,maj.desc&limit=30',{headers:sbEntetes});
-    const d=await r.json();
-    CLASSEMENT=(Array.isArray(d)?d:[]).filter(j=>
-      j.pseudo&&j.pseudo!=='sans nom'&&/^[0-9a-f]{8}-/.test(j.id));   /* seulement les comptes */
-  }catch(x){CLASSEMENT=[];}
-}
-function vignette(ap){
-  const c=document.createElement('canvas');
-  c.width=48;c.height=62;
-  const g=c.getContext('2d');
-  g.imageSmoothingEnabled=false;
-  g.setTransform(1,0,0,1,0,0);
-  for(let y=0;y<62;y+=8)for(let x=0;x<48;x+=8){
-    g.fillStyle='#8ec96f';g.fillRect(x,y,8,8);
-    g.fillStyle='#9ed47c';g.fillRect(x+1,y+2,1,2);
-    g.fillStyle='#7db35d';g.fillRect(x+5,y+5,1,2);
-  }
-  g.save();g.translate(24,60);g.scale(1.15,1.15);
-  sprite(g,0,0,Object.assign({},DEF_AP,ap||{}),'bas',0,false);
-  g.restore();
-  return c;
-}
-/* ================= le classement : une page d'enluminure ================= */
-/* la couronne du premier, dessinée au pixel et posée sur son cadre */
-const COURONNE='<svg viewBox="0 0 34 14" class="cour" aria-hidden="true">'+
-  '<defs><linearGradient id="orCour" x1="0" y1="0" x2="1" y2="1">'+
-   '<stop offset="0" stop-color="#fff6d8"/><stop offset=".35" stop-color="#e4be62"/>'+
-   '<stop offset=".62" stop-color="#a8791f"/><stop offset="1" stop-color="#f4dca0"/></linearGradient></defs>'+
-  '<path d="M2 12 L2 4 L8 8 L13 1 L17 8 L21 1 L26 8 L32 4 L32 12z" fill="url(#orCour)" '+
-   'stroke="#8a6a1e" stroke-width=".7" stroke-linejoin="round"/>'+
-  '<rect x="2" y="10" width="30" height="3" fill="#c9a24a"/>'+
-  '<circle cx="13" cy="1.6" r="1.4" fill="#c3465a"/>'+
-  '<circle cx="21" cy="1.6" r="1.4" fill="#3e5f9e"/></svg>';
-
-/* l'en-tête : lettrine, vignes des marges, devise */
-const ENTETE_MANUSCRIT=
- '<svg viewBox="0 0 380 122" class="enlum" aria-hidden="true">'+
- '<defs>'+
-  '<linearGradient id="feuilleOr" x1="0" y1="0" x2="1" y2="1">'+
-   '<stop offset="0" stop-color="#fff6d8"/><stop offset=".35" stop-color="#e4be62"/>'+
-   '<stop offset=".62" stop-color="#a8791f"/><stop offset="1" stop-color="#f4dca0"/></linearGradient>'+
-  '<linearGradient id="azurL" x1="0" y1="0" x2="0" y2="1">'+
-   '<stop offset="0" stop-color="#3e5f9e"/><stop offset="1" stop-color="#27407a"/></linearGradient>'+
-  '<pattern id="damasL" width="14" height="14" patternUnits="userSpaceOnUse">'+
-   '<path d="M7 1 L13 7 L7 13 L1 7z" fill="none" stroke="#5a79bb" stroke-width=".8" opacity=".55"/></pattern>'+
- '</defs>'+
- '<g stroke="#8fa85e" stroke-width="1.6" fill="none" opacity=".85">'+
-  '<path d="M16 112 C10 80 24 62 16 32 C12 20 20 13 26 11"/>'+
-  '<path d="M364 112 C370 80 356 62 364 32 C368 20 360 13 354 11"/></g>'+
- '<g fill="#8fa85e" opacity=".8">'+
-  '<ellipse cx="11" cy="68" rx="5" ry="3.2" transform="rotate(-28 11 68)"/>'+
-  '<ellipse cx="22" cy="52" rx="5" ry="3.2" transform="rotate(28 22 52)"/>'+
-  '<ellipse cx="12" cy="36" rx="4.4" ry="2.8" transform="rotate(-20 12 36)"/>'+
-  '<ellipse cx="369" cy="68" rx="5" ry="3.2" transform="rotate(28 369 68)"/>'+
-  '<ellipse cx="358" cy="52" rx="5" ry="3.2" transform="rotate(-28 358 52)"/>'+
-  '<ellipse cx="368" cy="36" rx="4.4" ry="2.8" transform="rotate(20 368 36)"/></g>'+
- '<g fill="#c3465a"><circle cx="17" cy="60" r="2.6"/><circle cx="363" cy="60" r="2.6"/>'+
-  '<circle cx="19" cy="26" r="2.2"/><circle cx="361" cy="26" r="2.2"/></g>'+
- '<rect x="36" y="26" width="62" height="66" rx="3" fill="url(#azurL)"/>'+
- '<rect x="36" y="26" width="62" height="66" rx="3" fill="url(#damasL)"/>'+
- '<rect x="36" y="26" width="62" height="66" rx="3" fill="none" stroke="url(#feuilleOr)" stroke-width="2.5"/>'+
- '<text x="67" y="78" font-size="54" font-family="Georgia,serif" fill="url(#feuilleOr)" text-anchor="middle">C</text>'+
- '<text x="112" y="52" font-size="21" font-family="Georgia,serif" fill="#2b2418" letter-spacing="2">lassement</text>'+
- '<text x="112" y="72" font-size="11.5" font-family="Georgia,serif" fill="#a8791f" font-style="italic">'+
-  'Que le meilleur gagne&#8239;!</text>'+
- '<path d="M112 80 H300" stroke="#d8c69a"/><path d="M112 84 H268" stroke="#e6d8b4"/></svg>';
-
-const RANGS_MOT=['premier au registre','deuxième','troisième','quatrième','cinquième',
-  'sixième','septième','huitième','neuvième','dixième'];
-const enLettres=(n)=>({1:'un',2:'deux',3:'trois',4:'quatre',5:'cinq',6:'six',7:'sept',
-  8:'huit',9:'neuf',10:'dix'}[n]||n);
-
-async function ouvrirClassement(){
-  if(classementEnCours)return;
-  classementEnCours=true;
-  ouvrirManuscrit('<div class="attenteM">On rassemble les survivants…</div>');
-  await chargerClassement();
-  classementEnCours=false;
-  if(!CLASSEMENT.length)
-    return ouvrirManuscrit('<div class="attenteM">Personne n’est encore au registre.<br>'+
-      'Reviens quand d’autres auront joué.</div>');
-
-  const tete=CLASSEMENT[0]?(CLASSEMENT[0].score||0):0;
-  const corps=CLASSEMENT.map((j,i)=>{
-    const moi=j.id===e.id;
-    const vu=j.maj?Math.round((Date.now()-new Date(j.maj).getTime())/60000):null;
-    const enLigne=vu!==null&&vu<3;
-    const quand=vu===null?'':(enLigne?'':vu<60?'vu il y a '+vu+' min':
-      vu<1440?'vu il y a '+Math.round(vu/60)+' h':'vu il y a '+Math.round(vu/1440)+' j');
-    const part=tete>0?Math.max(2,Math.round((j.score||0)/tete*100)):0;
-    const marque=enLigne?'<span class="enLigneM"><em></em>en ligne</span>':'';
-    const detail=[quand,((j.recolte||0)>0?j.recolte+' récoltés':'')].filter(Boolean).join(' · ');
-
-    /* le premier : grand cadre doré et couronne posée dessus */
-    if(i===0){
-      return '<div class="lgn premier'+(moi?' toi':'')+'" style="animation-delay:.04s">'+
-        '<span class="porte grande">'+COURONNE+
-          '<span class="cadre or" data-ap="0"></span></span>'+
-        '<span class="txt"><b class="nomM gros">'+(j.pseudo||'sans nom')+
-          (moi?'<i class="vous"> — vous</i>':'')+'</b>'+
-          '<span class="ditM">'+(moi?'vous tenez la tête':RANGS_MOT[0])+
-            (detail?' · '+detail:'')+'</span>'+
-          (marque?'<span class="ditM">'+marque+'</span>':'')+
-          '<span class="jge"><i class="or" style="width:'+part+'%"></i></span></span>'+
-        '<span class="scr"><b class="ptsM or">'+(j.score||0)+'</b>'+
-          '<i class="ptsL">points</i></span></div>';
-    }
-    /* toi : surligné d'azur, avec l'écart au premier */
-    if(moi){
-      const ecart=tete-(j.score||0);
-      return '<div class="lgn toi" style="animation-delay:'+(0.04+i*0.08).toFixed(2)+'s">'+
-        '<span class="porte moyenne"><span class="cadre azur" data-ap="'+i+'"></span></span>'+
-        '<span class="txt"><b class="nomM">'+(j.pseudo||'sans nom')+
-          '<i class="vous"> — vous</i></b>'+
-          '<span class="ditM">'+marque+(detail?(marque?' · ':'')+detail:'')+'</span>'+
-          '<span class="jge"><i class="azur" style="width:'+part+'%"></i></span>'+
-          (ecart>0?'<span class="ecartM">il s’en faut de '+enLettres(ecart)+
-            ' point'+(ecart>1?'s':'')+'</span>':
-            '<span class="ecartM">vous tenez la tête</span>')+
-        '</span>'+
-        '<span class="scr"><b class="ptsM azur">'+(j.score||0)+'</b></span></div>';
-    }
-    /* les autres : à l'encre */
-    return '<div class="lgn" style="animation-delay:'+(0.04+i*0.08).toFixed(2)+'s">'+
-      '<span class="porte petite"><span class="cadre" data-ap="'+i+'"></span></span>'+
-      '<span class="txt"><b class="nomM moyen">'+(j.pseudo||'sans nom')+'</b>'+
-        '<span class="ditM">'+(RANGS_MOT[i]||(i+1)+'ᵉ')+(detail?' · '+detail:'')+'</span>'+
-        (marque?'<span class="ditM">'+marque+'</span>':'')+'</span>'+
-      '<span class="scr"><b class="ptsM">'+(j.score||0)+'</b></span></div>';
-  }).join('');
-
-  ouvrirManuscrit(corps+
-    '<button class="retourJeu" id="cl-retour">Retour au jeu</button>');
-  /* on peint les portraits */
-  $('page2Fond').querySelectorAll('[data-ap]').forEach(sp=>{
-    const j=CLASSEMENT[+sp.dataset.ap];
-    if(j)sp.appendChild(vignette(j.apparence));
-  });
-  const b=$('cl-retour');
-  if(b)b.onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-}
-
-/* la page de manuscrit, avec son grain et sa lumière */
-function ouvrirManuscrit(corps){
-  $('page2Fond').className='sacFond manuscrit';
-  $('page2Fond').innerHTML=
-    '<button class="sacX manX" id="p2-x">✕</button>'+
-    ENTETE_MANUSCRIT+
-    '<div class="manCorps">'+corps+'</div>';
-  $('p2-x').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
-  $('page2').classList.add('on');
-}
-
 
 /* ================= l'entrée : le compte, et rien d'autre ================= */
 
