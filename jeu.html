@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-13-1927';
+  var MA_VERSION='2026-09-13-1932';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1543,9 +1544,7 @@ const ESSENCES=[
  feuille:['#6f9e52','#82b062','#5a8442','#9ac47a'],ecorce:['#6b5a3a','#8a7650','#4f422a']},
 {id:'pommier',nom:'pommier', h:80,larg:42,
  feuille:['#4f8a40','#5f9c4e','#3d7334','#78b163'],ecorce:['#6b4a2a','#8a6238','#4f3520'],
- fruits:true},
-{id:'cypres',nom:'cyprès', h:104,larg:22,
- feuille:['#2f5638','#3a6844','#24422a','#487a52'],ecorce:['#5b4a32','#75603f','#42351f']}
+ fruits:true}
 ];
 /* l'essence d'un arbre vient de sa place : un même arbre garde toujours la
    sienne, et les essences poussent en bosquets plutôt qu'en mélange */
@@ -1564,6 +1563,20 @@ function toileArbre(w,h,f){
      R:(x,y,w2,h2,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w2|0,h2|0);}});
   return c;
 }
+
+/* Où s'arrête vraiment le feuillage ? On lit le calque une fois et on
+   descend jusqu'à la dernière ligne peinte. C'est ce point-là qu'on vient
+   poser sur le haut du tronc : le houppier mord sur l'écorce, plus de trou. */
+function basDuFeuillage(c,w,h){
+  try{
+    const g=c.getContext('2d'), D=c.height/h;
+    const d=g.getImageData(0,0,c.width,c.height).data;
+    for(let y=c.height-1;y>=0;y--){
+      for(let x=0;x<c.width;x++) if(d[(y*c.width+x)*4+3]>8) return (y+1)/D;
+    }
+  }catch(e){}
+  return h*0.86;   /* si la lecture est refusée, on retombe sur une valeur sûre */
+}
 /* ---- la gravure, en aplats francs ----
    Pas un pixel semé au hasard : des masses rectangulaires franches, empilées,
    qui se chevauchent de deux pixels pour qu'aucun trou n'apparaisse. Quatre
@@ -1579,7 +1592,7 @@ function graverArbres(){
       const F=E.feuille, EC=E.ecorce;
 
       /* --- le pied : l'ombre et le tronc --- */
-      const ep=Math.max(3,Math.round(larg*(E.id==='cypres'?0.1:0.14)));
+      const ep=Math.max(3,Math.round(larg*(0.14)));
       const pied=toileArbre(W,28,({R,g})=>{
         g.fillStyle='rgba(40,56,30,.28)';
         g.beginPath();g.ellipse(W/2+1,22,larg*0.36,larg*0.12,0,0,7);g.fill();
@@ -1620,9 +1633,9 @@ function graverArbres(){
           br(Math.round(HT*0.3),-3,Math.round(larg*0.24),Math.round(HT*0.14));
           return;
         }
-        if(E.id==='pin'||E.id==='cypres'){
+        if(E.id==='pin'){
           /* des étages francs, chacun plus étroit que celui du dessous */
-          const n=E.id==='cypres'?6:5;
+          const n=5;
           for(let i=0;i<n;i++){
             const t=i/(n-1);
             const hh=Math.round(HT/n)+3;
@@ -1677,7 +1690,8 @@ function graverArbres(){
           });
         }
       });
-      return {pied,tete,W,HT,h};
+      const bas=basDuFeuillage(tete,W,HT);
+      return {pied,tete,W,HT,h,bas};
     });
   });
 }
@@ -1691,7 +1705,9 @@ function dessinerArbre(g,x,y,gr,essence){
   const A=ARBRES_GRAVES[E.id][gr||0];
   g.drawImage(A.pied,Math.round(x-A.W/2),Math.round(y-22),A.W,28);
   const souffle=penche(x,y,0.9);
-  g.drawImage(A.tete,Math.round(x-A.W/2+souffle),Math.round(y-A.h-10),A.W,A.HT);
+  /* le bas du feuillage vient se poser six points au-dessus du sol, donc
+     six points dans le tronc : les deux morceaux se recouvrent toujours */
+  g.drawImage(A.tete,Math.round(x-A.W/2+souffle),Math.round(y-6-A.bas),A.W,A.HT);
 }
 
 
