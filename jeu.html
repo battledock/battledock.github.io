@@ -1279,7 +1279,6 @@ function dessinerFleurs(g,x,y,gr){
    Cent jetons, une heure d'affichage, quarante caractères.
    Tout le monde le voit, où qu'il soit sur la carte. */
 
-
 /* les petits logos, dessinés au pixel */
 
 function dessinerCasino(g,x,y){
@@ -1517,7 +1516,6 @@ function dessinerArgile(g,x,y,gr){
   R(-3,-7,1,6,'#7d3826');
   R(-4,-8,2,1,'#7d3826');
 }
-
 
 /* ---- roseaux : hautes tiges au bord de l'eau ---- */
 function dessinerRoseaux(g,x,y,gr){
@@ -1783,7 +1781,6 @@ function construireSol(){
     g.fillStyle=fl[i%4];g.fillRect(x,y-1,2,1);
     g.fillStyle='#ffffff';g.fillRect(x,y-1,1,1);
   }
-  peindreLaRue(g);                               /* la chaussée du village */
   return c;
 }
 
@@ -1976,7 +1973,6 @@ function semerDecor(){
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
 
-
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
   DECOR=DECOR.filter(o=>o.t==='fleurs'||
@@ -2048,10 +2044,13 @@ function degager(x,y){
 const CASE=80;
 let GRILLE=null, grilleValide=false;
 const caseDe=(x,y)=>((y/CASE)|0)*64+((x/CASE)|0);
+
+const invaliderGrille=()=>{grilleValide=false;};
+
 function construireGrille(){
   GRILLE=new Map();
   for(const o of DECOR){
-    if(!TAILLES[o.t]&&!o.bati)continue;          /* ce qu'on traverse ne compte pas */
+    if(!TAILLES[o.t])continue;   /* ce qu'on traverse ne compte pas */
     const c=caseDe(o.x,o.y);
     let l=GRILLE.get(c);
     if(!l){l=[];GRILLE.set(c,l);}
@@ -2069,17 +2068,10 @@ function autourDe(x,y){
   }
   return out;
 }
-const invaliderGrille=()=>{grilleValide=false;};
-
 function bloque(x,y){
   if(x<BORD+8||x>MONDE-BORD-8||y<BORD+14||y>MONDE-BORD-4)return true;
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
-  /* les maisons du village */
-  for(const p of parcellesVues){
-    if(p.rang===null||p.rang===undefined)continue;
-    if(Math.abs(x-p.cx)<32&&Math.abs(y-p.cy)<12)return true;
-  }
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   if(e.casino){
     const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
@@ -2106,24 +2098,14 @@ function premierVisible(yMin){
 }
 function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
   let posé=false;
-  /* les maisons du village viennent se glisser dans le tri, par leur y */
-  let iM=0;
-  const poserMaisons=(jusqua)=>{
-    while(iM<MAISONS.length&&MAISONS[iM].y<=jusqua){
-      const m=MAISONS[iM++];
-      if(Math.abs(m.y-camY-VH2/2)<VH2/2+200)m.f(g,camX,camY);
-    }
-  };
   const yHaut=camY-300, yBas=camY+VH2+40;
   const debut=premierVisible(yHaut);
   for(let i=debut;i<DECOR.length;i++){
     const o=DECOR[i];
     if(o.y>yBas){                                  /* on est sorti par le bas */
-      if(!posé){poserMaisons(joueurY);dessinerJoueur();posé=true;}
-      poserMaisons(1e9);
+      if(!posé){dessinerJoueur();posé=true;}
       break;
     }
-    poserMaisons(o.y);
     if(!posé&&o.y>joueurY){dessinerJoueur();posé=true;}    /* le joueur passe devant */
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
@@ -2221,7 +2203,6 @@ function dessinerDecor(g,camX,camY,VW2,VH2,joueurY,dessinerJoueur){
     else if(o.t==='pont')dessinerPont(g,x,y);
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
-    else if(o.bati)dessinerBati(g,o,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
 
     else if(o.t==='coffre'){
@@ -2391,15 +2372,13 @@ function dessiner(){
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
-  dessinerParcelles(ctx,camX,camY);
-  MAISONS=maisonsDuVillage();
+
   if(QUALITE>=0.5)refletsRiviere(ctx,camX,camY);
   dessinerAutres(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
-  dessinerFantome(ctx,px,py);
   nettoyerBulles();
   const maBulle=BULLES.get('moi');
   if(maBulle)dessinerBulle(ctx,px,py,maBulle.txt,true,maBulle.ne);
@@ -2692,7 +2671,9 @@ $('b-look').onclick=ouvrirLook;
 $('b-sac').onclick=()=>ouvrirSac();
 $('b-parler').onclick=()=>ouvrirParler();
 $('action').onclick=agir;
-$('b-batir').onclick=()=>ouvrirBatir();
+$('b-batir').onclick=()=>ouvrirPage('Bâtir','BIENTÔT',
+  '<div class="rappel">La construction revient plus tard.<br>'+
+  'Pour l’instant, récolte, fabrique et va au casino.</div>');
 $('b-class').onclick=()=>ouvrirClassement();
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 
@@ -2758,27 +2739,6 @@ function dessinerMini(){
   g.moveTo(T/2,4);g.lineTo(T/2,16);g.moveTo(T/2,T-16);g.lineTo(T/2,T-4);
   g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
   g.stroke();
-
-  /* le village : la rue et les maisons */
-  {
-    const y=py(RUE_Y);
-    const x1=px(RUE_X0-120), x2=px(RUE_L+60);
-    if(y>-10&&y<T+10){
-      g.fillStyle='#c9ae7c';
-      g.fillRect(Math.max(0,x1),y-Math.max(2,Math.round(86*k/2)),
-        Math.min(T,x2)-Math.max(0,x1),Math.max(3,Math.round(86*k)));
-    }
-    parcellesVues.forEach(pc=>{
-      if(pc.rang===null||pc.rang===undefined)return;
-      const X=px(pc.cx), Y=py(pc.cy);
-      if(X<-6||Y<-6||X>T+6||Y>T+6)return;
-      const mien=pc.proprietaire===e.id;
-      g.fillStyle=mien?'#f0cf7d':'#d7cdb8';
-      g.fillRect(X-4,Y-4,8,7);
-      g.fillStyle=mien?'#b58a3a':'#9a8f79';
-      g.fillRect(X-5,Y-6,10,3);
-    });
-  }
 
   /* les autres survivants : à portée on les pose, au loin on les colle au bord */
   for(const [,a] of AUTRES){
@@ -3043,532 +3003,8 @@ async function recupererSauvegarde(){
 /* ================= le village : une rue et ses maisons =================
    La chaussée et les bords sont dessinés par le jeu, pas stockés.
    Seules les maisons des joueurs viennent du serveur. */
-const RUE_X0=430, RUE_Y=880, RUE_PAS=128, RUE_RANGS=15;
-const RUE_L=RUE_X0+RUE_RANGS*RUE_PAS;
-const MURS_M=[['#e8ddc4','#cfc3a4'],['#ddc7a8','#c3ac8a'],['#d3dad6','#b7c0bb'],
-              ['#e4c9b8','#c8aa99'],['#d1dce4','#b1bec8'],['#dcd6c1','#c0b9a2']];
-const TOITS_M=[['#b94b35','#8f3526'],['#4f7d5c','#33513f'],['#5b6f8f','#3e4f68'],
-               ['#8a6238','#5b3f21'],['#7d5a8f','#5a3f68'],['#b58a3a','#87642a']];
-const PORTES_M=['#8a6238','#3d5a80','#7d2434','#2f7050','#5b3f21','#a06a2a'];
-const dansLaRue=(x,y)=>x>RUE_X0-150&&x<RUE_L+80&&Math.abs(y-RUE_Y)<190;
 
 /* la chaussée, peinte une fois dans le sol */
-function peindreLaRue(g){
-  const H=86;
-  g.fillStyle='#c9ae7c';g.fillRect(RUE_X0-120,RUE_Y-H/2,RUE_L-RUE_X0+200,H);
-  for(let i=0;i<2600;i++){
-    const a=RUE_X0-120+alea(i*3.3)*(RUE_L-RUE_X0+200), b=RUE_Y-H/2+alea(i*7.1)*H;
-    g.fillStyle=alea(i*9.1)<.5?'#b89f6e':'#d4baa0';
-    g.fillRect(a|0,b|0,3,2);
-  }
-  g.fillStyle='rgba(150,125,80,.34)';
-  g.fillRect(RUE_X0-120,RUE_Y-16,RUE_L-RUE_X0+200,4);
-  g.fillRect(RUE_X0-120,RUE_Y+12,RUE_L-RUE_X0+200,4);
-  /* les pierres du bord */
-  for(let x=RUE_X0-124;x<RUE_L+80;x+=17){
-    const h1=4+((alea(x)*3)|0);
-    g.fillStyle=alea(x*1.3)<.5?'#aca597':'#989180';
-    g.fillRect(x,RUE_Y-H/2-h1,15,h1);
-    g.fillStyle='#c2bba9';g.fillRect(x,RUE_Y-H/2-h1,15,1);
-    const h2=4+((alea(x*2.1)*3)|0);
-    g.fillStyle=alea(x*3.7)<.5?'#aca597':'#989180';
-    g.fillRect(x+7,RUE_Y+H/2,15,h2);
-    g.fillStyle='#c2bba9';g.fillRect(x+7,RUE_Y+H/2,15,1);
-  }
-  /* l'allée qui mène à chaque porte */
-  for(let r=0;r<RUE_RANGS;r++)['nord','sud'].forEach(cote=>{
-    const x=RUE_X0+r*RUE_PAS+(cote==='sud'?RUE_PAS/2:0);
-    const y1=cote==='nord'?RUE_Y-74+4:RUE_Y+H/2;
-    const y2=cote==='nord'?RUE_Y-H/2:RUE_Y+74-4;
-    for(let y=y1;y<y2;y+=11){
-      g.fillStyle='#cdbb95';g.fillRect(x-11,y,22,8);
-      g.fillStyle='rgba(255,248,228,.22)';g.fillRect(x-11,y,22,2);
-    }
-  });
-}
-
-/* une maison, aux couleurs de son habitant */
-function dessinerMaison(g,x,y,p){
-  const M=MURS_M[p.mur||0], T=TOITS_M[p.toit||0], P=PORTES_M[p.porte||0];
-  const t=Date.now()/1000, i=p.rang||0;
-  g.fillStyle=VERTS.ombre;
-  g.beginPath();g.ellipse(x+3,y-2,40,9,0,0,7);g.fill();
-  /* le pignon */
-  g.fillStyle='#7b6650';
-  g.beginPath();g.moveTo(x+26,y-52);g.lineTo(x+38,y-44);g.lineTo(x+38,y-2);g.lineTo(x+26,y-5);
-  g.closePath();g.fill();
-  /* les murs */
-  g.fillStyle=M[0];g.fillRect(x-28,y-52,54,47);
-  g.fillStyle='#f7f0dd';g.fillRect(x-28,y-52,54,3);
-  g.fillStyle=M[1];g.fillRect(x-28,y-10,54,5);
-  for(let a=-28;a<26;a+=10){
-    g.fillStyle=alea(a+x)<.5?'#a9a292':'#968f7e';
-    g.fillRect(x+a,y-10,9,6);
-  }
-  /* le colombage */
-  g.fillStyle='#6b4a28';
-  g.fillRect(x-28,y-52,4,42);g.fillRect(x+22,y-52,4,42);
-  g.fillRect(x-28,y-32,54,4);
-  g.strokeStyle='#7d5934';g.lineWidth=2.5;
-  g.beginPath();
-  g.moveTo(x-24,y-50);g.lineTo(x-6,y-34);g.moveTo(x-6,y-50);g.lineTo(x-24,y-34);
-  g.moveTo(x+4,y-50);g.lineTo(x+21,y-34);g.moveTo(x+21,y-50);g.lineTo(x+4,y-34);
-  g.stroke();
-  /* le toit */
-  g.fillStyle=T[0];
-  g.beginPath();g.moveTo(x-38,y-50);g.lineTo(x+34,y-50);g.lineTo(x+46,y-41);g.lineTo(x-26,y-41);
-  g.closePath();g.fill();
-  g.fillStyle=T[1];
-  g.beginPath();g.moveTo(x-26,y-41);g.lineTo(x+46,y-41);g.lineTo(x+46,y-37);g.lineTo(x-26,y-37);
-  g.closePath();g.fill();
-  g.fillStyle=T[1];
-  g.beginPath();g.moveTo(x-38,y-50);g.lineTo(x-2,y-74);g.lineTo(x+34,y-50);g.closePath();g.fill();
-  g.fillStyle=T[0];
-  g.beginPath();g.moveTo(x-33,y-50);g.lineTo(x-2,y-71);g.lineTo(x+29,y-50);g.closePath();g.fill();
-  g.fillStyle=T[1];
-  for(let r=0;r<2;r++)for(let a=-32;a<32;a+=10)g.fillRect(x+a+(r%2?4:0),y-48-r*7,7,5);
-  g.fillStyle='rgba(255,255,255,.16)';g.fillRect(x-38,y-50,72,3);
-  /* la cheminée */
-  g.fillStyle='#96795c';g.fillRect(x+12,y-80,8,14);
-  g.fillStyle='#ad8f70';g.fillRect(x+10,y-83,12,4);
-  g.fillStyle='rgba(248,248,244,'+(0.22+Math.sin(t*1.3+i)*0.06)+')';
-  const f=Math.sin(t*0.7+i)*3;
-  g.fillRect(x+15,y-89,4,4);
-  g.fillRect(x+13+f,y-96,5,4);
-  g.fillRect(x+16+f*1.5,y-103,6,4);
-  /* les fenêtres à volets */
-  const fen=(a)=>{
-    g.fillStyle='#6b4a28';g.fillRect(x+a-3,y-30,18,16);
-    g.fillStyle='#3a4a52';g.fillRect(x+a,y-28,12,12);
-    g.fillStyle='#5f7a86';g.fillRect(x+a,y-28,12,4);
-    g.fillStyle='#6b4a28';g.fillRect(x+a+5,y-28,1,12);g.fillRect(x+a,y-23,12,1);
-    g.fillStyle=PORTES_M[(p.porte+2)%6];
-    g.fillRect(x+a-7,y-30,4,16);g.fillRect(x+a+14,y-30,4,16);
-    g.fillStyle='#7d5934';g.fillRect(x+a-2,y-15,17,3);
-    [[1,'#f2a48f'],[6,'#f6e7a0'],[11,'#e8b8e0']].forEach(([d,c],k)=>{
-      const w=Math.round(Math.sin(t*1.6+k+i)*1);
-      g.fillStyle='#4a944a';g.fillRect(x+a+d+w,y-19,2,4);
-      g.fillStyle=c;g.fillRect(x+a+d+w-1,y-21,3,3);
-    });
-  };
-  fen(-23);fen(9);
-  /* la porte */
-  g.fillStyle='#5b3f21';g.fillRect(x-9,y-30,20,25);
-  g.fillStyle=P;g.fillRect(x-7,y-28,16,23);
-  g.fillStyle='rgba(255,255,255,.16)';g.fillRect(x-7,y-28,5,23);
-  g.fillStyle='#e2ba69';g.fillRect(x+5,y-18,2,2);
-  g.fillStyle=T[1];
-  g.beginPath();g.moveTo(x-12,y-32);g.lineTo(x+14,y-32);g.lineTo(x+17,y-28);g.lineTo(x-9,y-28);
-  g.closePath();g.fill();
-  g.fillStyle='#b8b09a';g.fillRect(x-11,y-5,22,3);
-  /* l'écriteau au nom */
-  if(p.pseudo){
-    g.fillStyle='#4f3520';g.fillRect(x+17,y-42,3,8);
-    g.fillStyle='#3d2a17';g.fillRect(x+6,y-36,30,12);
-    g.fillStyle='#e8dcc0';g.fillRect(x+7,y-35,28,10);
-    g.fillStyle='#5b3f21';g.font='700 7px system-ui';g.textAlign='center';
-    g.fillText(p.pseudo.slice(0,9),x+21,y-27);g.textAlign='left';
-  }
-}
-/* une place encore libre */
-function placeLibre(g,x,y){
-  const t=Date.now()/1000;
-  g.save();
-  g.strokeStyle='rgba(255,255,255,.3)';g.lineWidth=1.4;
-  g.setLineDash([6,6]);g.lineDashOffset=-t*8;
-  g.strokeRect(x-42,y-56,84,60);
-  g.setLineDash([]);
-  g.fillStyle='rgba(255,255,255,.5)';
-  g.font='700 8px system-ui';g.textAlign='center';
-  g.fillText('PLACE LIBRE',x,y-30);
-  g.textAlign='left';g.restore();
-  g.fillStyle=VERTS.ombre;
-  g.beginPath();g.ellipse(x,y,7,3,0,0,7);g.fill();
-  g.fillStyle='#7d5934';g.fillRect(x-2,y-16,4,16);
-  g.fillStyle='#8a6238';g.fillRect(x-7,y-20,14,7);
-}
-
-/* ================= chez soi : la parcelle et les constructions =================
-   On ne charge jamais toutes les constructions du monde : seulement
-   celles du carré autour de nous, et seulement quand on a bougé. */
-let MA_PARCELLE=null, MAISONS=[];
-const BATI=new Map();                            /* id → construction */
-let zoneVue={x:1e9,y:1e9}, chargeEnVol=false, parcellesVues=[], parcellesLues=0;
-
-const PLANS=[
- {id:'feu',     nom:'Feu de camp', cout:{bois:6,pierre:3},         d:'Il réchauffe et éclaire.'},
- {id:'cabane',  nom:'Cabane',      cout:{bois:18,fibre:8},         d:'Un toit à toi.'},
- {id:'cloture', nom:'Clôture',     cout:{bois:3},                  d:'Pour délimiter.'},
- {id:'torchere',nom:'Torchère',    cout:{bois:2,resine:2},         d:'Une flamme sur un mât.'},
- {id:'coffre',  nom:'Coffre',      cout:{bois:10,fer:2},           d:'Décoratif, pour l’instant.'},
- {id:'banc',    nom:'Banc',        cout:{bois:5},                  d:'Pour s’asseoir à deux.'},
- {id:'table',   nom:'Table',       cout:{bois:8},                  d:'Une table de camp.'},
- {id:'puits',   nom:'Puits',       cout:{pierre:14,bois:4},        d:'En pierre, avec sa margelle.'},
- {id:'statue',  nom:'Statue',      cout:{pierre:20,lingotFer:2},   d:'À ta gloire.'},
- {id:'jardin',  nom:'Jardin',      cout:{argile:6,herbes:6},       d:'Un carré de fleurs.'}
-];
-
-async function lireMaParcelle(){
-  if(!e.id)return;
-  const d=await appelRPC('ma_parcelle',{p_joueur:e.id,p_pseudo:e.pseudo||'un survivant'});
-  if(d&&!d.erreur&&typeof d.cx==='number'){
-    MA_PARCELLE=d;e.parcelle=[d.cx,d.cy];sauver();
-  }
-}
-/* les constructions autour de nous : une seule requête, et seulement
-   quand on a franchi un demi-écran. */
-async function chargerLeBati(force){
-  if(chargeEnVol||!SB_PRET)return;
-  const R=520;
-  if(!force&&Math.abs(joueur.x-zoneVue.x)<200&&Math.abs(joueur.y-zoneVue.y)<200)return;
-  chargeEnVol=true;
-  zoneVue={x:joueur.x,y:joueur.y};
-  try{
-    const q='?select=id,proprietaire,genre,x,y,gr'+
-      '&x=gte.'+Math.round(joueur.x-R)+'&x=lte.'+Math.round(joueur.x+R)+
-      '&y=gte.'+Math.round(joueur.y-R)+'&y=lte.'+Math.round(joueur.y+R)+'&limit=400';
-    const r=await fetch(URL_SB+'/rest/v1/constructions'+q,{headers:sbEntetes});
-    const d=await r.json();
-    if(Array.isArray(d)){
-      BATI.clear();
-      d.forEach(c=>BATI.set(c.id,c));
-      poserLeBati();
-    }
-    /* Les parcelles de tout le monde : une ligne par joueur, ça tient
-       largement, et ça permet de les montrer sur la boussole. */
-    if(!parcellesVues.length||Date.now()-parcellesLues>60000){
-      parcellesLues=Date.now();
-      const r2=await fetch(URL_SB+
-        '/rest/v1/parcelles?select=proprietaire,pseudo,cx,cy,rang,cote,mur,toit,porte,deco&limit=400',
-        {headers:sbEntetes});
-      const d2=await r2.json();
-      if(Array.isArray(d2))parcellesVues=d2;
-    }
-  }catch(x){}
-  chargeEnVol=false;
-}
-/* on les met dans le décor pour qu'elles soient triées par profondeur */
-function poserLeBati(){
-  DECOR=DECOR.filter(o=>!o.bati);invaliderGrille();
-  for(const [,c] of BATI)
-    DECOR.push({t:c.genre,x:c.x,y:c.y,gr:c.gr||0,bati:c.id,par:c.proprietaire});
-  DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
-}
-/* chez qui suis-je ? */
-function parcelleIci(x,y){
-  const d=(MA_PARCELLE&&MA_PARCELLE.demi)||76;
-  for(const p of parcellesVues)
-    if(Math.abs(x-p.cx)<=d&&Math.abs(y-p.cy)<=d)return p;
-  return null;
-}
-/* chez toi, c'est le jardin entre ta maison et la rue */
-const chezMoi=(x,y)=>{
-  if(!MA_PARCELLE||MA_PARCELLE.rang===undefined||MA_PARCELLE.rang===null)return false;
-  if(Math.abs(x-MA_PARCELLE.cx)>52)return false;
-  const d=y-MA_PARCELLE.cy;
-  return MA_PARCELLE.cote==='nord'?(d>8&&d<56):(d<-8&&d>-56);
-};
-
-/* les maisons du village, triées avec le reste du décor */
-function maisonsDuVillage(){
-  const out=[];
-  const prises=new Set();
-  parcellesVues.forEach(p=>{
-    if(p.rang===null||p.rang===undefined)return;
-    prises.add(p.rang+':'+p.cote);
-    out.push({y:p.cy,f:(g,camX,camY)=>dessinerMaison(g,p.cx-camX,p.cy-camY,p)});
-  });
-  /* les places encore vides, jusqu'à deux rangs après la dernière prise */
-  let dernier=0;
-  parcellesVues.forEach(p=>{if(p.rang>dernier)dernier=p.rang;});
-  for(let r=0;r<=Math.min(RUE_RANGS-1,dernier+2);r++)['nord','sud'].forEach(cote=>{
-    if(prises.has(r+':'+cote))return;
-    const x=RUE_X0+r*RUE_PAS+(cote==='sud'?RUE_PAS/2:0);
-    const y=RUE_Y+(cote==='nord'?-74:74);
-    out.push({y,f:(g,camX,camY)=>placeLibre(g,x-camX,y-camY)});
-  });
-  return out;
-}
-
-/* ---- le jardin devant chez toi ---- */
-function dessinerParcelles(g,camX,camY){
-  const t=Date.now()/1000;
-  parcellesVues.forEach(p=>{
-    if(p.rang===null||p.rang===undefined)return;
-    const mien=p.proprietaire===e.id;
-    const haut=p.cote==='nord';
-    /* le jardin : la bande entre la maison et la rue */
-    const x=p.cx-camX;
-    const y0=(haut?p.cy+6:p.cy-58)-camY;
-    if(x+56<-20||y0+52<-20||x-56>VW+20||y0>VH+20)return;
-    g.save();
-    if(mien){
-      g.globalAlpha=.12;g.fillStyle='#f0cf7d';
-      g.fillRect(Math.round(x-56),Math.round(y0),112,52);
-      g.globalAlpha=1;
-    }
-    g.strokeStyle=mien?'rgba(240,207,125,.55)':'rgba(230,236,240,.2)';
-    g.lineWidth=mien?2:1.2;
-    g.setLineDash([7,6]);
-    g.lineDashOffset=mien?-t*9:0;
-    g.strokeRect(Math.round(x-56),Math.round(y0),112,52);
-    g.setLineDash([]);
-    g.restore();
-  });
-}
-
-/* ---- bâtir : on choisit, puis on pose ---- */
-let planChoisi=null, modeBatir=false;
-/* ================= la page Bâtir ================= */
-const PIX=Math.max(1,Math.min(3,Math.floor((typeof window!=='undefined'&&window.devicePixelRatio)||1)));
-const FAMILLES=[
- {id:'tous',   nom:'Tout'},
- {id:'feu',    nom:'Chaleur',   plans:['feu','torchere']},
- {id:'abri',   nom:'Abri',      plans:['cabane','coffre']},
- {id:'jardin', nom:'Jardin',    plans:['jardin','cloture','puits']},
- {id:'confort',nom:'Confort',   plans:['banc','table','statue']}
-];
-let familleVue='tous';
-
-/* un aperçu dessiné de la construction, dans une vignette */
-function apercuPlan(cv,id){
-  if(!cv||!cv.getContext)return;
-  const g=cv.getContext('2d');
-  const d=Math.max(1,Math.floor(window.devicePixelRatio||1));
-  g.setTransform(d,0,0,d,0,0);
-  g.imageSmoothingEnabled=false;
-  const L=cv.width/d, H=cv.height/d;
-  g.clearRect(0,0,L,H);
-  /* un carré d'herbe, pour poser l'objet */
-  g.fillStyle='#74a851';g.fillRect(0,0,L,H);
-  for(let i=0;i<40;i++){
-    const x=alea(i*1.7)*L, y=alea(i*3.1)*H;
-    g.fillStyle=alea(i*5.3)<.5?'#6b9a4a':'#7fb45a';
-    g.fillRect(x|0,y|0,2,3);
-  }
-  const ech=id==='cabane'?0.8:1;
-  g.save();
-  g.translate(L/2,H-11);
-  g.scale(ech,ech);
-  try{dessinerBati(g,{t:id,gr:0},0,0);}catch(x){}
-  g.restore();
-}
-
-function ouvrirBatir(){
-  if(!MA_PARCELLE){
-    ouvrirPage('Bâtir','TON TERRAIN',
-      '<div class="attente"><i></i><span>On te cherche un terrain…</span></div>');
-    lireMaParcelle().then(()=>ouvrirBatir());
-    return;
-  }
-  const miennes=[...BATI.values()].filter(c=>c.proprietaire===e.id).length;
-  const loin=Math.round(Math.hypot(joueur.x-MA_PARCELLE.cx,joueur.y-MA_PARCELLE.cy));
-  const chez=chezMoi(joueur.x,joueur.y+16);
-
-  /* le bandeau du haut : où tu es, ce que tu as déjà bâti */
-  let corps='<div class="terrainCarte">'+
-    '<div class="tRang"><span class="tNom">TON TERRAIN</span>'+
-      '<span class="tPos">'+MA_PARCELLE.cx+' · '+MA_PARCELLE.cy+'</span></div>'+
-    '<div class="tJauge"><i style="width:'+Math.min(100,miennes/60*100)+'%"></i></div>'+
-    '<div class="tRang"><span class="tPetit">'+miennes+' construction'+(miennes>1?'s':'')+
-      ' sur 60</span>'+
-      '<span class="tEtat '+(chez?'ok':'loin')+'">'+
-      (chez?'tu es chez toi':(loin<400?'à '+loin+' pas':'loin de chez toi'))+'</span></div>'+
-    '</div>';
-
-  /* les familles */
-  corps+='<div class="familles">'+FAMILLES.map(f=>
-    '<button data-fam="'+f.id+'" class="'+(f.id===familleVue?'on':'')+'">'+f.nom+'</button>'
-  ).join('')+'</div>';
-
-  /* les plans, en vignettes */
-  const fam=FAMILLES.find(f=>f.id===familleVue);
-  const liste=familleVue==='tous'?PLANS:PLANS.filter(p=>fam.plans.includes(p.id));
-  corps+='<div class="plans">'+liste.map(pl=>{
-    const ok=Object.entries(pl.cout).every(([k,n])=>combien(k)>=n);
-    const cout=Object.entries(pl.cout).map(([k,n])=>{
-      const assez=combien(k)>=n;
-      return '<span class="mat'+(assez?'':' manque')+'">'+
-        '<svg viewBox="0 0 16 16" width="15">'+(ICONES[k]||'')+'</svg>'+
-        '<b>'+n+'</b></span>';
-    }).join('');
-    return '<button class="plan'+(ok?'':' gris')+'" data-plan="'+pl.id+'">'+
-      '<span class="vue"><canvas data-vue="'+pl.id+'" width="'+(96*PIX)+'" height="'+(70*PIX)+
-        '" style="width:96px;height:70px"></canvas></span>'+
-      '<span class="nom">'+pl.nom+'</span>'+
-      '<span class="cout">'+cout+'</span>'+
-      '</button>';
-  }).join('')+'</div>';
-
-  corps+='<div class="rappel">Tu ne peux bâtir que sur ton terrain. '+
-    'Choisis, puis place-toi où tu veux poser.</div>';
-  corps+='<div class="res" id="res"></div>';
-
-  ouvrirPage('Bâtir','CHEZ TOI',corps);
-
-  /* on peint les vignettes */
-  $('page2Fond').querySelectorAll('[data-vue]').forEach(cv=>apercuPlan(cv,cv.dataset.vue));
-  $('page2Fond').querySelectorAll('[data-fam]').forEach(b=>b.onclick=()=>{
-    familleVue=b.dataset.fam;ouvrirBatir();});
-  $('page2Fond').querySelectorAll('[data-plan]').forEach(b=>b.onclick=()=>{
-    const pl=PLANS.find(p=>p.id===b.dataset.plan);
-    const ok=Object.entries(pl.cout).every(([k,n])=>combien(k)>=n);
-    if(!ok){
-      const r=$('res');
-      if(r)r.innerHTML='Il te manque '+Object.entries(pl.cout)
-        .filter(([k,n])=>combien(k)<n)
-        .map(([k,n])=>(n-combien(k))+' '+(OBJETS[k]?OBJETS[k].nom.toLowerCase():k)).join(', ')+'.';
-      return;
-    }
-    planChoisi=pl;modeBatir=true;
-    $('page2').classList.remove('on');fermeA=Date.now();
-    texteVolant(joueur.x,joueur.y-40,chezMoi(joueur.x,joueur.y+16)
-      ?'place-toi et pose':'rentre chez toi','#f0cf7d');
-  });
-}
-
-/* le fantôme de ce qu'on va poser */
-function dessinerFantome(g,px,py){
-  if(!modeBatir||!planChoisi)return;
-  const ok=chezMoi(joueur.x,joueur.y+16)&&!placePrise(joueur.x,joueur.y+16);
-  g.save();
-  g.globalAlpha=.55;
-  g.strokeStyle=ok?'#9fdfb8':'#e08a8a';
-  g.lineWidth=2;g.setLineDash([5,4]);
-  g.strokeRect(px-18,py-2,36,20);
-  g.setLineDash([]);
-  g.globalAlpha=.9;
-  g.font='700 8px ui-monospace,monospace';g.textAlign='center';
-  g.fillStyle=ok?'#9fdfb8':'#e08a8a';
-  g.fillText(ok?planChoisi.nom:'pas ici',px,py-8);
-  g.textAlign='left';
-  g.restore();
-}
-const placePrise=(x,y)=>[...BATI.values()].some(c=>
-  Math.abs(c.x-x)<22&&Math.abs(c.y-y)<18);
-
-async function poserLa(){
-  if(!planChoisi)return;
-  const x=Math.round(joueur.x), y=Math.round(joueur.y+16);
-  const d=await appelRPC('batir',{p_joueur:e.id,p_genre:planChoisi.id,p_x:x,p_y:y,p_gr:0});
-  if(d&&d.erreur){texteVolant(joueur.x,joueur.y-40,d.erreur,'#e08a8a');return;}
-  if(d&&d.sac)adopterSac(d);
-  modeBatir=false;
-  await chargerLeBati(true);
-  texteVolant(x,y-30,planChoisi.nom+' posé','#9fdfb8');
-  eclats(x,y-4,8,'#c6b38a',0.9);
-  try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x2){}
-}
-async function demolirCa(o){
-  const d=await appelRPC('demolir',{p_joueur:e.id,p_id:o.bati});
-  if(d&&d.erreur){texteVolant(o.x,o.y-30,d.erreur,'#e08a8a');return;}
-  if(d&&d.sac)adopterSac(d);
-  await chargerLeBati(true);
-  texteVolant(o.x,o.y-30,'démoli','#c6b38a');
-  eclats(o.x,o.y-4,10,'#8a6238',0.9);
-}
-
-/* ================= le dessin des constructions ================= */
-function dessinerBati(g,o,x,y){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const t=Date.now()/1000;
-  const om=(rx,ry)=>{g.fillStyle=VERTS.ombre;
-    g.beginPath();g.ellipse(x+1,y-1,rx,ry,0,0,7);g.fill();};
-  switch(o.t){
-    case 'feu':{
-      om(15,5);
-      R(-13,-6,26,5,'#6f767d');R(-13,-6,26,2,'#8b939a');
-      R(-9,-9,7,4,'#7d5934');R(2,-10,7,4,'#6b4a28');
-      const h=6+Math.round(Math.sin(t*6)*2);
-      R(-4,-12-h,8,h,'#e8802c');
-      R(-2,-15-h,4,4,'#ffc65a');
-      g.save();g.globalAlpha=.14+Math.sin(t*3)*0.04;
-      g.fillStyle='#ffd27a';
-      g.beginPath();g.arc(x,y-10,34,0,7);g.fill();g.restore();
-      break;}
-    case 'cabane':{
-      om(30,9);
-      R(-26,-34,52,34,'#8a6238');
-      R(-26,-34,52,3,'#a5764a');
-      R(-26,-4,52,4,'#5b3f21');
-      g.fillStyle='#6b4a28';
-      for(let i=-24;i<24;i+=8)g.fillRect(x+i,y-34,3,30);
-      /* le toit */
-      g.fillStyle='#9c4a32';
-      g.beginPath();g.moveTo(x-32,y-32);g.lineTo(x,y-52);g.lineTo(x+32,y-32);g.closePath();g.fill();
-      g.fillStyle='#bb5e42';
-      g.beginPath();g.moveTo(x-32,y-32);g.lineTo(x,y-52);g.lineTo(x,y-48);g.lineTo(x-26,y-30);g.closePath();g.fill();
-      R(-8,-22,16,22,'#5b3f21');R(-6,-20,12,20,'#7d5934');
-      R(2,-12,2,2,'#c9a24a');
-      break;}
-    case 'cloture':{
-      om(16,4);
-      R(-15,-14,4,14,'#6b4a28');R(11,-14,4,14,'#6b4a28');
-      R(-2,-13,4,13,'#7d5934');
-      R(-16,-11,32,3,'#8a6238');R(-16,-11,32,1,'#a5764a');
-      R(-16,-5,32,3,'#7d5934');
-      break;}
-    case 'torchere':{
-      om(8,3);
-      R(-2,-26,4,26,'#6b4a28');R(-2,-26,1,26,'#8a6238');
-      R(-5,-32,10,7,'#5b3f21');
-      const f=((t*3)%1)<.5;
-      R(-3,-36,6,5,f?'#e8802c':'#d4701f');
-      R(-2,-39,4,4,f?'#ffc65a':'#ffb03a');
-      g.save();g.globalAlpha=.12;g.fillStyle='#ffd27a';
-      g.beginPath();g.arc(x,y-32,28,0,7);g.fill();g.restore();
-      break;}
-    case 'coffre':{
-      om(13,4);
-      R(-12,-13,24,13,'#7d5934');R(-12,-13,24,3,'#96703f');
-      R(-12,-18,24,6,'#6b4a28');R(-12,-18,24,2,'#8a6238');
-      R(-2,-13,5,8,'#c9a24a');
-      break;}
-    case 'banc':{
-      om(15,4);
-      R(-14,-8,28,4,'#8a6238');R(-14,-8,28,1,'#a5764a');
-      R(-14,-14,28,3,'#7d5934');
-      R(-12,-4,3,4,'#5b3f21');R(9,-4,3,4,'#5b3f21');
-      break;}
-    case 'table':{
-      om(16,5);
-      R(-16,-14,32,8,'#8a6238');R(-16,-14,32,3,'#a5764a');
-      R(-13,-6,3,6,'#5b3f21');R(10,-6,3,6,'#5b3f21');
-      R(-2,-6,3,6,'#5b3f21');
-      break;}
-    case 'puits':{
-      om(16,5);
-      R(-15,-14,30,14,'#7b8288');R(-15,-14,30,3,'#a2a9b0');
-      g.fillStyle='#5f666c';
-      for(let i=-13;i<13;i+=7)g.fillRect(x+i,y-11,5,9);
-      R(-11,-12,22,5,'#2a3238');
-      R(-13,-30,3,17,'#6b4a28');R(10,-30,3,17,'#6b4a28');
-      R(-15,-33,30,4,'#8a5f34');
-      R(-4,-24,8,5,'#5b3f21');
-      break;}
-    case 'statue':{
-      om(13,5);
-      R(-13,-8,26,8,'#8b939a');R(-13,-8,26,3,'#b7bec4');
-      R(-9,-14,18,6,'#7b8288');
-      R(-6,-32,12,18,'#a2a9b0');R(-6,-32,4,18,'#c9d0d6');
-      R(-5,-42,10,10,'#b7bec4');R(-5,-42,3,10,'#d0d6db');
-      R(-7,-44,14,3,'#c9a24a');
-      break;}
-    case 'jardin':{
-      om(17,6);
-      R(-17,-8,34,8,'#9c4a32');R(-17,-8,34,2,'#bb5e42');
-      R(-17,-8,34,1,'#c76b4c');
-      const fl=[[-12,-12,'#f6e7a0'],[-4,-14,'#e8b8e0'],[5,-12,'#f2a48f'],[12,-13,'#a8cdf0']];
-      fl.forEach(([a,b,c],i)=>{
-        const w=Math.round(Math.sin(t*1.4+i)*1);
-        R(a+w,b+3,1,5,'#4a944a');
-        R(a+w-1,b,3,3,c);
-      });
-      break;}
-    default: return false;
-  }
-  return true;
-}
 
 /* ================= le monde partagé =================
    Ce que l'un casse ou cueille disparaît chez tous les autres.
@@ -3780,7 +3216,6 @@ function bipPosition(force){
     g:(GESTE.t>0?(GESTE.type||'pioche'):null)}});
 }
 
-
 let AUTRES=new Map();
 let derniereEcoute=0, envoiRapide=0;
 
@@ -3985,7 +3420,6 @@ function cible(){
     const minerai=['fer','cuivre','charbon'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
        &&o.t!=='four'&&o.t!=='etabli'&&!o.bati&&!cueillable&&!minerai)continue;
-    if(o.bati&&o.par!==e.id)continue;             /* on ne touche pas chez les autres */
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
@@ -3997,12 +3431,6 @@ function cible(){
 }
 function majAction(){
   const b=$('action');
-  if(modeBatir&&planChoisi){                     /* on est en train de poser */
-    const ok=chezMoi(joueur.x,joueur.y+16)&&!placePrise(joueur.x,joueur.y+16);
-    b.innerHTML=ok?('Poser<small>'+planChoisi.nom.toUpperCase()+'</small>')
-                  :'Pas ici<small>VA CHEZ TOI</small>';
-    b.classList.add('on');return;
-  }
   const o=cible();
   if(!o||GESTE.t>0){b.classList.remove('on');return;}
   if(o.t==='coffre'){
@@ -4039,7 +3467,7 @@ function majAction(){
   }else if(o.t==='etabli'){
     b.innerHTML='Forger<small>L’ÉTABLI</small>';
   }else if(o.bati){
-    b.innerHTML='Démolir<small>'+((PLANS.find(p=>p.id===o.t)||{nom:o.t}).nom.toUpperCase())+'</small>';
+    b.innerHTML='';b.classList.remove('on');return;
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
   
@@ -4053,7 +3481,6 @@ function majAction(){
   b.classList.add('on');
 }
 function agir(){
-  if(modeBatir&&planChoisi){poserLa();return;}
   /* En fermant une fiche, le navigateur envoie parfois le clic au bouton
      qui se trouve dessous : on l'ignore pendant un demi-seconde. */
   if(pageOuverte()||Date.now()-fermeA<500)return;
@@ -4084,7 +3511,6 @@ function agir(){
   }
   if(o.t==='four')return ouvrirFour();
   if(o.t==='etabli')return ouvrirEtabli();
-  if(o.bati){demolirCa(o);return;}
   if(o.t==='casino'){
     sauver();monterEnLigne(true);
     location.href='casino.html';                 /* on entre dans la salle */
@@ -4549,7 +3975,6 @@ function ouvrirPage(titre,sous,corps,clair){
 
 /* ================= bâtir ================= */
 
-
 /* ================= le four ================= */
 const FONTES=[
  {id:'lingotFer',   nom:'Lingot de fer',    cout:{fer:2,charbon:1},    rend:{lingotFer:1},   duree:90},
@@ -4735,7 +4160,6 @@ function nettoyerBulles(){
   for(const [k,b] of BULLES)if(t>b.jusqua)BULLES.delete(k);
 }
 
-
 /* le petit clavier de phrases toutes faites */
 function ouvrirParler(){
   const autres=[...AUTRES.values()].filter(a=>
@@ -4834,7 +4258,6 @@ async function ouvrirClassement(){
 
 /* ================= l'entrée : le compte, et rien d'autre ================= */
 
-
 async function ouvrirPorte(){
   await chargerSupabase();                     /* il faut le compte avant d'entrer */
   let session=null;
@@ -4866,8 +4289,6 @@ async function ouvrirPorte(){
   await recupererSauvegarde();
   await lireSacServeur();       /* le sac vient du serveur */
   await chargerLaCarte();       /* et la carte aussi */
-  await lireMaParcelle();       /* ton terrain t'appartient depuis l'inscription */
-  await chargerLeBati(true);    /* et ce qui est bâti autour */
     /* on retrouve sa partie, d'où qu'on vienne */
   joueur.x=e.x;joueur.y=e.y;
   await monterEnLigne(true);
@@ -4936,7 +4357,6 @@ let t0=performance.now();
   const maintenant=Date.now();
   if(maintenant-derniereEcoute>8000){derniereEcoute=maintenant;ecouterLesAutres();}
   envoyerSauvegarde();                            /* la partie, sur le serveur */
-  chargerLeBati();                                /* ce qui est bâti autour */
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
   if(maintenant-envoiRapide>6000){                /* la base, juste pour la mémoire */
