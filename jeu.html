@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-2128';
+  var MA_VERSION='2026-09-14-2130';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4103,14 +4104,15 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
         g.restore();
       }
     }
-    else if(o.t==='forge')dessinerForge(g,x,y,true);
+    else if(o.t==='forge'){dessinerForge(g,x,y,true);lueurNuit(g,x,y-18,42,'rgba(255,140,50,§)');}
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
-    else if(o.t==='casino')dessinerCasino(g,x,y);
-    else if(o.t==='comptoir')dessinerComptoir(g,x,y);
-    else if(o.t==='panneau')dessinerPanneau(g,x,y);
-    else if(o.t==='fete')dessinerFete(g,x,y);
-    else if(o.t==='mine')dessinerMine(g,x,y);
+    else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
+    else if(o.t==='comptoir'){dessinerComptoir(g,x,y);
+      [-78,0,78].forEach(dx=>lueurNuit(g,x+dx,y-22,34,'rgba(255,190,90,§)'));}
+    else if(o.t==='panneau'){dessinerPanneau(g,x,y);lueurNuit(g,x,y-14,18,'rgba(255,200,120,§)');}
+    else if(o.t==='fete'){dessinerFete(g,x,y);lueurNuit(g,x,y-30,58,'rgba(255,170,70,§)');}
+    else if(o.t==='mine'){dessinerMine(g,x,y);lueurNuit(g,x,y-16,30,'rgba(255,180,90,§)');}
 
     else if(o.t==='coffre'){
       /* Une fois vidé, il s'enfonce dans l'herbe et disparaît.
@@ -4971,6 +4973,32 @@ function cielDuMoment(){
   }
   return CIEL[0];
 }
+/* LES LUEURS : ce qui fait la nuit, ce n'est pas le noir, ce sont les points
+   chauds dedans. Chaque bâtiment éclairé pose un halo, d'autant plus fort que
+   la lumière du ciel baisse. Un dégradé par bâtiment, fabriqué une fois. */
+const HALOS={};
+function halo(g,rayon,teinte){
+  const cle=rayon+teinte;
+  if(!HALOS[cle]){
+    const d=g.createRadialGradient(0,0,1,0,0,rayon);
+    d.addColorStop(0,teinte.replace('§','.42'));
+    d.addColorStop(0.45,teinte.replace('§','.16'));
+    d.addColorStop(1,teinte.replace('§','0'));
+    HALOS[cle]=d;
+  }
+  return HALOS[cle];
+}
+function lueurNuit(g,x,y,rayon,teinte){
+  const C=cielDuMoment();
+  if(!C||C.lampes<0.05)return;
+  g.save();
+  g.translate(x,y);
+  g.globalAlpha=C.lampes;
+  g.fillStyle=halo(g,rayon,teinte||'rgba(255,190,90,§)');
+  g.fillRect(-rayon,-rayon,rayon*2,rayon*2);
+  g.restore();
+}
+
 /* la teinte, posée par-dessus tout le reste */
 function poserLeCiel(g){
   const C=cielDuMoment();
