@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-2154';
+  var MA_VERSION='2026-09-14-2156';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3516,7 +3517,7 @@ function calculerChemins(){
   /* en étoile depuis la place, plus les deux amorces vers les gués */
   /* il ne reste que trois lieux : le camp, le coffre et le comptoir, plus
      les deux amorces vers les gués */
-  ROUTES=[[CAMP_FIXE,COMPTOIR_FIXE],[CAMP_FIXE,COFFRE_FIXE],
+  ROUTES=[[CAMP_FIXE,COMPTOIR_FIXE],
           [CAMP_FIXE,pontN],[CAMP_FIXE,pontS]].map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
@@ -4167,7 +4168,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
-       outils:{},coffreOuvert:false,casses:[],coffre:null,casino:null,camp:null,
+       outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
+       casses:[],coffre:null,casino:null,camp:null,
        four:null,           /* {recette, fin} : ce qui cuit en ce moment */
        sacMax:60};
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
@@ -4300,18 +4302,10 @@ function preparerMonde(){
   LISIERE=construireLisiere();SOL=construireSol();semerDecor();
   const [dx,dy]=degager(joueur.x,joueur.y);   /* on ne démarre jamais dans un tronc */
   joueur.x=dx;joueur.y=dy;e.x=dx;e.y=dy;
-  poserCoffre();
 }
-/* le coffre se place à quelques pas de l'endroit où tu te trouves,
-   pour que tu tombes dessus dès la première partie */
-function poserCoffre(){
-  e.coffre=COFFRE_FIXE;                       /* le même coffre, au même endroit */
-  if(e.coffreOuvert)return;                   /* déjà vidé : il n'y en a plus */
-  /* le coffre reste sur la carte même une fois vidé : couvercle ouvert */
-  DECOR=DECOR.filter(o=>BATI(o.t)||Math.hypot(o.x-e.coffre[0],o.y-e.coffre[1])>40||o.t==='fleurs');invaliderGrille();
-  poserDansLeDecor({t:'coffre',x:e.coffre[0],y:e.coffre[1],gr:0});
-  DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
-}
+/* LE COFFRE A DISPARU. Il ne servait qu'à donner la pioche et la hache à
+   l'arrivée : chacun naît maintenant équipé, c'est plus direct. */
+function poserCoffre(){ e.coffre=null; }
 function dessiner(){
   preparerMonde();
   /* La caméra avance en sous-pixels.
@@ -5308,7 +5302,12 @@ async function recupererSauvegarde(){
       A_GARDER.forEach(k=>{if(dist[k]!==undefined)e[k]=dist[k];});
       if(e.ap)e.ap=Object.assign({},DEF_AP,e.ap);
       if(!e.sac)e.sac={};
-      if(!e.outils)e.outils={};
+      /* Chacun a sa hache, sa pioche et son épée dès le départ — y compris les
+   parties déjà commencées avant ce changement. */
+if(!e.outils)e.outils={};
+e.outils.pioche=true;e.outils.hache=true;
+if(typeof e.epee!=='number')e.epee=0;
+e.coffreOuvert=true;
       if(!e.casses)e.casses=[];
       joueur.x=e.x||joueur.x;joueur.y=e.y||joueur.y;
       sauver();
