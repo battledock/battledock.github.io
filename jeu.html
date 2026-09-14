@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0548';
+  var MA_VERSION='2026-09-14-0552';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -426,16 +427,16 @@ body.clavier #bandeau{padding-bottom:9px}
    mêmes huit fleurs que le jeu. Avant c'était du CSS : des ellipses et des
    dégradés flous, le seul endroit du jeu qui n'était pas en pixel art. */
 #voile{position:fixed;inset:0;z-index:60;background:#0d1410;overflow:hidden;
-  display:flex;flex-direction:column;justify-content:flex-end;
+  display:flex;flex-direction:column;justify-content:center;
   transition:opacity .5s ease}
 #voile.parti{opacity:0;pointer-events:none}
 #vPre{position:absolute;inset:0;width:100%;height:100%;display:block;
   image-rendering:pixelated}
 /* le bandeau sombre derrière le titre : sans lui, il se perd dans les fleurs */
-.vVoileTexte{position:absolute;left:0;right:0;bottom:0;height:46%;
-  background:linear-gradient(180deg,rgba(18,24,14,0),rgba(18,24,14,.62) 46%,rgba(18,24,14,.82))}
-.vBas{position:relative;z-index:2;padding:0 26px calc(42px + env(safe-area-inset-bottom));
-  text-align:center}
+.vVoileTexte{position:absolute;left:0;right:0;top:34%;height:32%;
+  background:linear-gradient(180deg,rgba(18,24,14,0),rgba(18,24,14,.66) 44%,
+    rgba(18,24,14,.66) 60%,rgba(18,24,14,0))}
+.vBas{position:relative;z-index:2;padding:0 26px;text-align:center}
 .vTitre{font:400 27px Georgia,serif;color:#f6ecd2;letter-spacing:2.4px;
   text-shadow:0 2px 12px rgba(0,0,0,.7);margin-bottom:16px}
 .vRail{height:6px;border-radius:3px;background:rgba(0,0,0,.44);overflow:hidden;
@@ -2866,7 +2867,10 @@ function construireSol(){
       g.fillStyle=a>RIV_LARGE+4?(v<.4?'#7d8c58':'#889d5e')
                 : (v<.14?'#96805c':(v<.5?'#b9a37a':'#a8926a'));
       g.fillRect(x,y,1,1);
-      if(v<0.03&&a<RIV_LARGE+4){g.fillStyle='#8b939a';g.fillRect(x,y,2,2);}
+      /* du gravier, de la couleur de la berge : en gris il passait pour un
+         rocher tombé à l'eau */
+      if(v<0.025&&a>RIV_LARGE+2&&a<RIV_LARGE+5){
+        g.fillStyle='#96805c';g.fillRect(x,y,1,1);}
     }
     /* le lit */
     for(let dx=-RIV_LARGE;dx<=RIV_LARGE;dx++){
@@ -3226,15 +3230,20 @@ function semerDecor(){
     if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
     DECOR.push({t:'argile',x,y,gr:0});
   }
-  /* --- les roseaux, au bord de l'eau --- */
-  for(let i=0;i<80;i++){
-    const y=Math.round(BORD+50+A(i*4.7)*(MONDE-2*BORD-100));
-    const cote=A(i*6.1)<.5?-1:1;
-    /* les seuls à toucher l'eau : ils poussent les pieds dedans, serrés
-       contre la berge, et leur feuillage déborde sur le courant */
-    const x=Math.round(rivX(y)+cote*(RIV_LARGE+3+A(i*7.3)*7));
-    if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,14))continue;
-    DECOR.push({t:'roseaux',x,y,gr:0});
+  /* --- les roseaux : en roselières, pas un par un ---
+     Ils sont les seuls à toucher l'eau. On tire douze emplacements le long de
+     la rive, et à chacun pousse une touffe de trois à six pieds serrés : c'est
+     ce qui fait qu'on les voit. */
+  for(let b=0;b<26;b++){
+    const yb=Math.round(BORD+40+A(b*4.7)*(MONDE-2*BORD-80));
+    const cote=A(b*6.1)<.5?-1:1;
+    const n=3+Math.floor(A(b*8.3)*4);
+    for(let k=0;k<n;k++){
+      const y=Math.round(yb+(k-n/2)*8+A(b*3+k)*5);
+      const x=Math.round(rivX(y)+cote*(RIV_LARGE+2+A(b*7.3+k)*6));
+      if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,7))continue;
+      DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
+    }
   }
   /* --- les champignons, à l'ombre des bosquets --- */
   for(let i=0;i<50;i++){
