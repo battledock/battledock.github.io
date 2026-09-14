@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0552';
+  var MA_VERSION='2026-09-14-0605';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3446,7 +3447,9 @@ const CASE=80;
 let GRILLE=null, grilleValide=false;
 const caseDe=(x,y)=>((y/CASE)|0)*64+((x/CASE)|0);
 
-const invaliderGrille=()=>{grilleValide=false;};
+/* le décor a changé : la grille de collision ET la mini-carte sont à refaire */
+const invaliderGrille=()=>{grilleValide=false;
+  if(typeof salirMini==='function')salirMini();};
 
 function construireGrille(){
   /* La grille range TOUT le décor, pas seulement ce qui bloque le passage :
@@ -4181,112 +4184,131 @@ $('b-class').onclick=()=>{
 };
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 
-/* ================= la mini-carte, dans son hublot ================= */
+/* ================= la mini-carte, dans son hublot =================
+   AVANT : tout était redessiné dix fois par seconde — le fond, la rivière,
+   les bords, et chacun des objets à portée. Près d'un bosquet, ça montait
+   à 296 traits par passage, pour une image qui ne change presque jamais.
+   MAINTENANT : le monde entier est gravé UNE FOIS à l'échelle du hublot.
+   Chaque passage se réduit à une découpe du calque et aux seules choses qui
+   bougent : toi, les autres, la boussole. */
 const RAYON_VUE=230;
 let mctx=null, dernierMini=0;
-function dessinerMini(){
-  const c=$('mini');if(!c||!c.getContext)return;
-  if(!mctx){mctx=c.getContext('2d');mctx.imageSmoothingEnabled=false;}
-  const g=mctx, T=c.width;
-  const k=T/(RAYON_VUE*2);
-  const px=(x)=>Math.round((x-joueur.x)*k+T/2);
-  const py=(y)=>Math.round((y-joueur.y)*k+T/2);
+let MINI=null, MINI_K=1, miniSale=true;
+function salirMini(){miniSale=true;}          /* à appeler quand le décor change */
 
-  g.fillStyle='#7db35d';g.fillRect(0,0,T,T);
+function graverMini(T){
+  MINI_K=T/(RAYON_VUE*2);
+  const k=MINI_K, D=Math.ceil(MONDE*k);
+  const c=document.createElement('canvas');
+  c.width=D;c.height=D;
+  const g=c.getContext('2d');
+  g.imageSmoothingEnabled=false;
+  const px=(x)=>Math.round(x*k), py=(y)=>Math.round(y*k);
+  /* l'herbe, avec ses nuances */
+  g.fillStyle='#7db35d';g.fillRect(0,0,D,D);
   for(let i=0;i<90;i++){
-    const a=alea(i*3.1)*T, b=alea(i*5.7)*T;
     g.fillStyle=i%2?'#8ec96f':'#6f9e52';
-    g.fillRect(a|0,b|0,6,4);
+    g.fillRect((alea(i*3.1)*D)|0,(alea(i*5.7)*D)|0,6,4);
   }
-  /* la rivière, vue du dessus */
-  for(let yy=joueur.y-RAYON_VUE;yy<joueur.y+RAYON_VUE;yy+=3){
-    const cx=rivX(yy);
-    const x=px(cx), y=py(yy);
-    g.fillStyle=surPont(yy)?'#8a6238':'#3a83a4';   /* le pont se voit en brun */
-    g.fillRect(x-Math.round(RIV_LARGE*k),y,Math.round(RIV_LARGE*2*k),Math.ceil(3*k)+1);
+  /* les chemins de terre, comme au sol */
+  if(ROUTES&&ROUTES.length){
+    g.fillStyle='#b9a37a';
+    ROUTES.forEach(r=>r.forEach(([x,y])=>g.fillRect(px(x)-2,py(y)-2,5,5)));
   }
-
+  /* la rivière et les ponts */
+  for(let yy=0;yy<MONDE;yy+=2){
+    g.fillStyle=surPont(yy)?'#8a6238':'#3a83a4';
+    g.fillRect(px(rivX(yy)-RIV_LARGE),py(yy),Math.round(RIV_LARGE*2*k)+1,Math.ceil(2*k)+1);
+  }
+  /* la forêt du pourtour */
   g.fillStyle='#3d6b34';
-  const b0=py(BORD), b1=py(MONDE-BORD), g0=px(BORD), g1=px(MONDE-BORD);
-  if(b0>0)g.fillRect(0,0,T,b0);
-  if(b1<T)g.fillRect(0,b1,T,T-b1);
-  if(g0>0)g.fillRect(0,0,g0,T);
-  if(g1<T)g.fillRect(g1,0,T-g1,T);
-
+  const b=Math.round(BARRIERE*k);
+  g.fillRect(0,0,D,b);g.fillRect(0,D-b,D,b);
+  g.fillRect(0,0,b,D);g.fillRect(D-b,0,b,D);
+  /* et tout le décor qui ne bouge pas */
   for(const o of DECOR){
-    if(Math.abs(o.x-joueur.x)>RAYON_VUE||Math.abs(o.y-joueur.y)>RAYON_VUE)continue;
     const x=px(o.x), y=py(o.y);
     if(o.t==='arbre'){g.fillStyle='#4a7d3f';
       g.beginPath();g.arc(x,y-2,[7,8,10][o.gr||0],0,7);g.fill();}
     else if(o.t==='rocher'){g.fillStyle='#9aa2a8';g.fillRect(x-4,y-4,8,7);}
-    else if(o.t==='fer'){g.fillStyle='#4e4a48';g.fillRect(x-4,y-4,8,7);
-      g.fillStyle='#d4884c';g.fillRect(x-2,y-2,4,2);}
-    else if(o.t==='cuivre'){g.fillStyle='#6f7480';g.fillRect(x-4,y-4,8,7);
-      g.fillStyle='#6fd8a8';g.fillRect(x-2,y-2,4,2);}
-    else if(o.t==='charbon'){g.fillStyle='#2e2c30';g.fillRect(x-4,y-4,8,7);
-      g.fillStyle='#a7a3b0';g.fillRect(x-2,y-2,3,2);}
-    else if(o.t==='buisson'){
-      const vide=o.cueilli&&Date.now()-o.cueilli<240000;
-      g.fillStyle=vide?'#5e9e4a':'#d9576b';
+    else if(o.t==='buisson'){g.fillStyle='#d9576b';
       g.beginPath();g.arc(x,y-2,4,0,7);g.fill();}
+    else if(o.t==='roseaux'){g.fillStyle='#5e8a47';g.fillRect(x-3,y-3,6,6);}
+    else if(o.t==='argile'){g.fillStyle='#a85039';g.fillRect(x-3,y-2,6,5);}
     else if(o.t==='souche'||o.t==='gravats'){g.fillStyle='#8a7a62';g.fillRect(x-3,y-2,6,4);}
     else if(o.t==='casino'){
       g.fillStyle='#c9a24a';g.fillRect(x-11,y-9,22,11);
       g.fillStyle='#f0cf7d';g.fillRect(x-11,y-9,22,3);
-      g.fillStyle='#3d2a17';g.fillRect(x-2,y-4,4,6);
-    }
+      g.fillStyle='#3d2a17';g.fillRect(x-2,y-4,4,6);}
+    else if(o.t==='forge'){
+      g.fillStyle='#8a6238';g.fillRect(x-10,y-8,20,10);
+      g.fillStyle='#c17a3c';g.fillRect(x-10,y-8,20,3);}
+    else if(o.t==='mine'){
+      g.fillStyle='#5b5148';g.fillRect(x-6,y-5,12,9);
+      g.fillStyle='#0d0a08';g.fillRect(x-3,y-3,6,7);
+      g.fillStyle='#c9a24a';g.fillRect(x-6,y-7,12,2);}
     else if(o.t==='coffre'){g.fillStyle='#f0cf7d';g.fillRect(x-5,y-5,10,8);
       g.strokeStyle='#8a6a2a';g.lineWidth=1.5;g.strokeRect(x-5,y-5,10,8);}
   }
+  MINI=c;miniSale=false;
+}
+function dessinerMini(){
+  const c=$('mini');if(!c||!c.getContext)return;
+  if(!mctx){mctx=c.getContext('2d');mctx.imageSmoothingEnabled=false;}
+  const g=mctx, T=c.width;
+  if(!MINI||miniSale||Math.abs(MINI_K-T/(RAYON_VUE*2))>0.001)graverMini(T);
+  const k=MINI_K;
+  /* la découpe du calque, centrée sur toi : UNE recopie */
+  const sx=joueur.x*k-T/2, sy=joueur.y*k-T/2;
+  g.fillStyle='#3d6b34';g.fillRect(0,0,T,T);        /* au-delà du monde */
+  const dx=Math.max(0,-sx), dy=Math.max(0,-sy);
+  const sx2=Math.max(0,sx), sy2=Math.max(0,sy);
+  const w=Math.min(T-dx,MINI.width-sx2), h=Math.min(T-dy,MINI.height-sy2);
+  if(w>0&&h>0)g.drawImage(MINI,sx2,sy2,w,h,dx,dy,w,h);
+  const px=(x)=>Math.round((x-joueur.x)*k+T/2);
+  const py=(y)=>Math.round((y-joueur.y)*k+T/2);
+  /* les buissons cueillis : les seuls objets dont l'état change */
+  for(const o of DECOR){
+    if(o.t!=='buisson'||!o.cueilli||Date.now()-o.cueilli>240000)continue;
+    if(Math.abs(o.x-joueur.x)>RAYON_VUE||Math.abs(o.y-joueur.y)>RAYON_VUE)continue;
+    g.fillStyle='#5e9e4a';
+    g.beginPath();g.arc(px(o.x),py(o.y)-2,4,0,7);g.fill();
+  }
+  /* la boussole */
   g.strokeStyle='rgba(255,255,255,.32)';g.lineWidth=2;
   g.beginPath();
   g.moveTo(T/2,4);g.lineTo(T/2,16);g.moveTo(T/2,T-16);g.lineTo(T/2,T-4);
   g.moveTo(4,T/2);g.lineTo(16,T/2);g.moveTo(T-16,T/2);g.lineTo(T-4,T/2);
   g.stroke();
-
-  /* l'entrée de la mine, sur la boussole */
-  if(e.mine){
-    const X=px(e.mine[0]), Y=py(e.mine[1]);
-    if(X>-8&&Y>-8&&X<T+8&&Y<T+8){
-      g.fillStyle='#5b5148';g.fillRect(X-6,Y-5,12,9);
-      g.fillStyle='#0d0a08';g.fillRect(X-3,Y-3,6,7);
-      g.fillStyle='#c9a24a';g.fillRect(X-6,Y-7,12,2);
-    }
-  }
-
   /* les autres survivants : à portée on les pose, au loin on les colle au bord */
   for(const [,a] of AUTRES){
-    const dx=a.x-joueur.x, dy=a.y-joueur.y, d=Math.hypot(dx,dy);
+    const ex=a.x-joueur.x, ey=a.y-joueur.y, d=Math.hypot(ex,ey);
     let ax,ay,loin=false;
     if(d<RAYON_VUE-14){ax=px(a.x);ay=py(a.y);}
-    else{
-      loin=true;
-      const k2=(T/2-14)/d;
-      ax=T/2+dx*k2;ay=T/2+dy*k2;
-    }
+    else{loin=true;const k2=(T/2-14)/d;ax=T/2+ex*k2;ay=T/2+ey*k2;}
     g.fillStyle='rgba(127,216,232,.25)';g.beginPath();g.arc(ax,ay,11,0,7);g.fill();
     g.fillStyle='#7fd8e8';g.beginPath();g.arc(ax,ay,5.5,0,7);g.fill();
     g.strokeStyle='#fff';g.lineWidth=2;g.stroke();
-    if(loin){                                   /* une petite pointe vers lui */
-      const a2=Math.atan2(dy,dx);
+    if(loin){
+      const a2=Math.atan2(ey,ex);
       g.save();g.translate(ax,ay);g.rotate(a2);
       g.fillStyle='#7fd8e8';
       g.beginPath();g.moveTo(9,0);g.lineTo(3,-5);g.lineTo(3,5);g.closePath();g.fill();
       g.restore();
     }
   }
-
+  /* toi, au centre */
   g.fillStyle='rgba(255,255,255,.14)';
   g.beginPath();g.arc(T/2,T/2,20,0,7);g.fill();
   g.fillStyle='#c8434f';
   g.beginPath();g.arc(T/2,T/2,9,0,7);g.fill();
   g.strokeStyle='#fff';g.lineWidth=3;g.stroke();
-  const d={bas:[0,1],haut:[0,-1],gauche:[-1,0],droite:[1,0]}[joueur.dir]||[0,1];
+  const d2={bas:[0,1],haut:[0,-1],gauche:[-1,0],droite:[1,0]}[joueur.dir]||[0,1];
   g.fillStyle='#fff';
   g.beginPath();
-  g.moveTo(T/2+d[0]*22,T/2+d[1]*22);
-  g.lineTo(T/2+d[0]*11-d[1]*8,T/2+d[1]*11+d[0]*8);
-  g.lineTo(T/2+d[0]*11+d[1]*8,T/2+d[1]*11-d[0]*8);
+  g.moveTo(T/2+d2[0]*22,T/2+d2[1]*22);
+  g.lineTo(T/2+d2[0]*11-d2[1]*8,T/2+d2[1]*11+d2[0]*8);
+  g.lineTo(T/2+d2[0]*11+d2[1]*8,T/2+d2[1]*11-d2[0]*8);
   g.fill();
 }
 
@@ -5977,7 +5999,7 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
     garderAllume();
     /* le navigateur vide parfois les toiles en arrière-plan : on les refait */
-    SOL=construireSol();LISIERE=construireLisiere();mctx=null;taille();
+    SOL=construireSol();LISIERE=construireLisiere();mctx=null;MINI=null;taille();
   }
   else{sauver();monterEnLigne(true);}       /* on enregistre en quittant */
 });
