@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0529';
+  var MA_VERSION='2026-09-14-0534';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3118,13 +3119,18 @@ function semerDecor(){
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
   const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)
-                     &&x>BORD+10&&x<MONDE-BORD-10&&y>BORD+16&&y<MONDE-BORD-10
-                     &&Math.abs(x-rivX(y))>RIV_LARGE+8;
+                     &&x>BORD+10&&x<MONDE-BORD-10&&y>BORD+16&&y<MONDE-BORD-10;
   const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
   /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
      plus profonde au sud du bâtiment : c'est par là qu'on entre. */
   const LIEUX_FIXES=[[CAMP_FIXE,34],[COFFRE_FIXE,20],[FORGE_FIXE,30],
                      [CASINO_FIXE,36],[MINE_FIXE,32]];
+  /* la largeur réellement dessinée, par famille : c'est elle qui décide
+     de la distance à l'eau, pas la position du pied */
+  const DEMI={arbre:28,buisson:19,rocher:20,champignons:15,herbes:14,
+              plumes:13,fleurs:7};
+  /* seuls les roseaux et l'argile ont le droit de toucher l'eau */
+  const loinDeLEau=(x,y,t)=>Math.abs(x-rivX(y))-(DEMI[t]||14) > RIV_LARGE+3;
   const surLieu=(x,y)=>LIEUX_FIXES.some(([L,r])=>{
     const dy=y-L[1];
     return Math.hypot(x-L[0],dy<0?dy:dy*0.6)<r+14;
@@ -3136,7 +3142,7 @@ function semerDecor(){
     for(let i=0;i<11;i++){
       const x=Math.round(b[0]+(A(k*9+i)-.5)*230);
       const y=Math.round(b[1]+(A(k*13+i)-.5)*200);
-      if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,34))continue;
+      if(!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,34))continue;
       DECOR.push({t:'arbre',x,y,gr:Math.floor(A(k+i*3)*3)});
     }
   });
@@ -3144,21 +3150,21 @@ function semerDecor(){
   for(let i=0;i<90;i++){
     const x=Math.round(BORD+20+A(i*1.7)*(MONDE-2*BORD-40));
     const y=Math.round(BORD+40+A(i*2.9)*(MONDE-2*BORD-60));
-    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
+    if(!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
     DECOR.push({t:'arbre',x,y,gr:Math.floor(A(i*5)*3)});
   }
   /* --- les pierres : de petits tas, par endroits --- */
   for(let i=0;i<90;i++){
     const x=Math.round(BORD+14+A(i*3.1)*(MONDE-2*BORD-28));
     const y=Math.round(BORD+24+A(i*4.3)*(MONDE-2*BORD-40));
-    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
+    if(!loinDeLEau(x,y,'rocher')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
     DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
   }
   /* buissons */
   for(let i=0;i<150;i++){
     const x=Math.round(BORD+18+A(i*5.7)*(MONDE-2*BORD-36));
     const y=Math.round(BORD+34+A(i*6.3)*(MONDE-2*BORD-50));
-    if(!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
+    if(!loinDeLEau(x,y,'buisson')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
   }
   /* --- les rochers à minerai --- */
@@ -3169,36 +3175,38 @@ function semerDecor(){
      La pierre reste : elle vient des rochers. */
 
   /* --- l'argile, sur les berges de la rivière --- */
-  for(let i=0;i<14;i++){
+  for(let i=0;i<46;i++){
     const y=Math.round(BORD+60+A(i*2.3)*(MONDE-2*BORD-120));
     const cote=A(i*3.7)<.5?-1:1;
-    const x=Math.round(rivX(y)+cote*(RIV_LARGE+7+A(i*5.1)*5));
-    if(x<BORD+20||x>MONDE-BORD-20)continue;
+    const x=Math.round(rivX(y)+cote*(RIV_LARGE+21+A(i*5.1)*5));
+    if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
     DECOR.push({t:'argile',x,y,gr:0});
   }
   /* --- les roseaux, au bord de l'eau --- */
-  for(let i=0;i<48;i++){
+  for(let i=0;i<80;i++){
     const y=Math.round(BORD+50+A(i*4.7)*(MONDE-2*BORD-100));
     const cote=A(i*6.1)<.5?-1:1;
-    const x=Math.round(rivX(y)+cote*(RIV_LARGE+16+A(i*7.3)*12));
-    if(x<BORD+20||x>MONDE-BORD-20)continue;
+    /* les seuls à toucher l'eau : ils poussent les pieds dedans, serrés
+       contre la berge, et leur feuillage déborde sur le courant */
+    const x=Math.round(rivX(y)+cote*(RIV_LARGE+3+A(i*7.3)*7));
+    if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,14))continue;
     DECOR.push({t:'roseaux',x,y,gr:0});
   }
   /* --- les champignons, à l'ombre des bosquets --- */
-  for(let i=0;i<26;i++){
+  for(let i=0;i<50;i++){
     const a=DECOR.filter(o=>o.t==='arbre');
     if(!a.length)break;
     const arbre=a[Math.floor(A(i*9.7)*a.length)];
     const x=Math.round(arbre.x+(A(i*11.3)-.5)*54);
     const y=Math.round(arbre.y+14+A(i*13.1)*26);
-    if(!dedans(x,y)||libre(x,y,16)===false)continue;
+    if(!loinDeLEau(x,y,'champignons')||!dedans(x,y)||libre(x,y,16)===false)continue;
     DECOR.push({t:'champignons',x,y,gr:0});
   }
   /* --- les herbes, en clairière --- */
-  for(let i=0;i<34;i++){
+  for(let i=0;i<110;i++){
     const x=Math.round(BORD+22+A(i*15.7)*(MONDE-2*BORD-44));
     const y=Math.round(BORD+40+A(i*17.3)*(MONDE-2*BORD-60));
-    if(!dedans(x,y)||!libre(x,y,26))continue;
+    if(!loinDeLEau(x,y,'herbes')||!dedans(x,y)||!libre(x,y,15))continue;
     DECOR.push({t:'herbes',x,y,gr:0});
   }
   /* --- les plumes, au pied des arbres --- */
@@ -3208,15 +3216,15 @@ function semerDecor(){
     const arbre=a[Math.floor(A(i*19.1)*a.length)];
     const x=Math.round(arbre.x+(A(i*21.7)-.5)*44);
     const y=Math.round(arbre.y+10+A(i*23.3)*22);
-    if(!dedans(x,y))continue;
+    if(!loinDeLEau(x,y,'plumes')||!dedans(x,y))continue;
     DECOR.push({t:'plumes',x,y,gr:0});
   }
 
   /* massifs de fleurs : on peut marcher dessus */
-  for(let i=0;i<40;i++){
+  for(let i=0;i<110;i++){
     const x=Math.round(BORD+16+A(i*7.1)*(MONDE-2*BORD-32));
     const y=Math.round(BORD+30+A(i*8.9)*(MONDE-2*BORD-44));
-    if(!dedans(x,y)||!libre(x,y,22))continue;
+    if(!loinDeLEau(x,y,'fleurs')||!dedans(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'fleurs',x,y,gr:0});
   }
 
