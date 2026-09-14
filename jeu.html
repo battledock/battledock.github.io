@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-2130';
+  var MA_VERSION='2026-09-14-2136';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2551,12 +2552,20 @@ function graverLeComptoir(){
   });
   CALQUE_COMPTOIR={corps,on:lum(true),off:lum(false),W,H,sol};
 }
+/* les lampes du comptoir ne clignotent plus : elles sont allumées de 18 h à
+   7 h, éteintes le reste du temps. Un commerce n'a pas de guirlande. */
+function lampesAllumees(){
+  const m=minuteDuJour();
+  if(m===null)return false;
+  const h=m/60;
+  return h>=18||h<7;
+}
 function dessinerComptoir(g,x,y){
   if(!CALQUE_COMPTOIR)graverLeComptoir();
-  const C=CALQUE_COMPTOIR, t=Date.now()/1000;
+  const C=CALQUE_COMPTOIR;
   const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
   g.drawImage(C.corps,ox,oy,C.W,C.H);
-  g.drawImage(((t+0.6)%1.4)<0.9?C.on:C.off,ox,oy,C.W,C.H);
+  g.drawImage(lampesAllumees()?C.on:C.off,ox,oy,C.W,C.H);
 }
 
 /* --- le casino : une maison de jeu en bois, gravée ---
@@ -4109,7 +4118,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
     else if(o.t==='comptoir'){dessinerComptoir(g,x,y);
-      [-78,0,78].forEach(dx=>lueurNuit(g,x+dx,y-22,34,'rgba(255,190,90,§)'));}
+      if(lampesAllumees())[-78,0,78].forEach(dx=>lueurNuit(g,x+dx,y-22,34,'rgba(255,190,90,§)'));}
     else if(o.t==='panneau'){dessinerPanneau(g,x,y);lueurNuit(g,x,y-14,18,'rgba(255,200,120,§)');}
     else if(o.t==='fete'){dessinerFete(g,x,y);lueurNuit(g,x,y-30,58,'rgba(255,170,70,§)');}
     else if(o.t==='mine'){dessinerMine(g,x,y);lueurNuit(g,x,y-16,30,'rgba(255,180,90,§)');}
