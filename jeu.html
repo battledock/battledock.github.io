@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1506';
+  var MA_VERSION='2026-09-14-1606';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2213,6 +2214,92 @@ function dessinerMine(g,x,y){
   g.globalAlpha=1;
 }
 
+/* --- la fête foraine : un petit bâtiment très coloré, près du casino ---
+   Bandes de couleur, ampoules tout autour, enseigne peinte, et une auto
+   tamponneuse posée devant en guise d'enseigne. Gravé en trois morceaux :
+   le corps, les ampoules allumées, les ampoules éteintes. */
+const FETE_FIXE=[900,476];   /* au sud-est, dégagée du coffre */
+const FETE_L=112, FETE_H=96;
+let CALQUE_FETE=null;
+function graverLaFete(){
+  const W=FETE_L+40, H=FETE_H+44, cx=W/2, sol=H-16, HT=sol-FETE_H;
+  const C=['#b93327','#e8a33a','#3f8fc4','#5fc79c','#b98bd9','#e8cf4e'];
+  const toile=(f)=>{
+    const c=document.createElement('canvas');
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    c.width=W*D;c.height=H*D;
+    const g=c.getContext('2d');
+    g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    f({g,R:(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));},
+       T:(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+         for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}});
+    return c;
+  };
+  const corps=toile(({R,T,g})=>{
+    g.fillStyle=VERTS.ombre;
+    g.beginPath();g.ellipse(cx+2,sol+2,FETE_L*0.48,11,0,0,7);g.fill();
+    /* la façade : de larges bandes verticales de couleur */
+    for(let i=0;i<8;i++){
+      const x=cx-52+i*13, col=C[i%C.length];
+      R(x,HT+26,13,sol-HT-30,col);
+      R(x,HT+26,13,3,'rgba(255,255,255,.35)');
+      R(x+11,HT+26,2,sol-HT-30,'rgba(0,0,0,.18)');
+    }
+    R(cx-52,sol-6,104,6,'#2a2d31');                 /* le soubassement */
+    R(cx-52,sol-6,104,2,'#4a5158');
+    /* le toit en dents de scie, rouge et blanc */
+    for(let i=0;i<9;i++){
+      const x=cx-58+i*13;
+      T([[x,HT+26],[x+13,HT+26],[x+6,HT+10]],i%2?'#fdfbf4':'#b93327');
+    }
+    R(cx-58,HT+24,116,5,'#2a2d31');
+    /* l'enseigne peinte, bombée */
+    R(cx-50,HT-10,100,26,'#2a2d31');
+    R(cx-50,HT-10,100,3,'#4a5158');
+    R(cx-47,HT-7,94,20,'#1a1c20');
+    g.fillStyle='#ffd77a';g.font='700 13px Georgia,serif';g.textAlign='center';
+    g.fillText('AUTOS',cx,HT+1);
+    g.fillStyle='#ff9d45';g.font='700 11px Georgia,serif';
+    g.fillText('TAMPONNEUSES',cx,HT+12);
+    g.textAlign='left';
+    /* l'entrée, grande ouverte, avec son rideau relevé */
+    R(cx-20,sol-44,40,38,'#141310');
+    R(cx-22,sol-48,44,5,'#2a2d31');
+    for(let i=0;i<5;i++)R(cx-20+i*8,sol-44,8,4,C[i%C.length]);
+    /* une auto posée devant, en guise d'enseigne */
+    R(cx+30,sol-16,26,12,'#b93327');
+    R(cx+30,sol-16,26,3,'#e0666f');
+    R(cx+28,sol-13,4,8,'#2a2d31');R(cx+54,sol-13,4,8,'#2a2d31');
+    R(cx+38,sol-13,10,7,'#4a5158');
+    R(cx+41,sol-19,5,4,'#e8c49a');
+    R(cx+42,sol-24,2,6,'#6b737a');
+  });
+  const lum=(on)=>toile(({R})=>{
+    /* les ampoules : tout le tour de l'enseigne et le long du toit */
+    for(let i=0;i<=20;i++){
+      const x=cx-50+i*5;
+      R(x,HT-13,3,3,on?((i%2)?'#ffd77a':'#ff9d45'):'#6b5a35');
+      R(x,HT+16,3,3,on?((i%2)?'#ff9d45':'#ffd77a'):'#6b5a35');
+    }
+    [-53,50].forEach(a=>{for(let k=0;k<5;k++)
+      R(cx+a,HT-9+k*6,3,3,on?'#ffd77a':'#6b5a35');});
+    for(let i=0;i<9;i++)R(cx-56+i*13,HT+20,3,3,on?((i%2)?'#ffd77a':'#b93327'):'#5b4a2a');
+    /* la lueur qui sort de l'entrée */
+    R(cx-18,sol-42,36,34,on?'#3a2418':'#1a1410');
+    R(cx-14,sol-24,28,16,on?'#5b3020':'#241a12');
+    R(cx-24,sol-5,48,4,on?'rgba(255,170,80,.26)':'rgba(255,170,80,.10)');
+  });
+  CALQUE_FETE={corps,on:lum(true),off:lum(false),W,H,sol};
+}
+function dessinerFete(g,x,y){
+  if(!CALQUE_FETE)graverLaFete();
+  const F=CALQUE_FETE, t=Date.now()/1000;
+  const ox=Math.round(x-F.W/2), oy=Math.round(y-F.sol);
+  g.drawImage(F.corps,ox,oy,F.W,F.H);
+  /* les ampoules clignotent vite : c'est une fête foraine */
+  g.drawImage((t%0.7)<0.35?F.on:F.off,ox,oy,F.W,F.H);
+}
+
 /* --- le panneau, près du casino ---
    Un chevalet de bois avec une affiche : la photo, réduite à 54 x 72 points
    et ramenée à vingt couleurs, et le texte dessous. Le tout est gravé une
@@ -2222,7 +2309,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp',
-                 'panneau','souche','gravats'].includes(t);
+                 'panneau','fete','souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
 const PHOTO_PANNEAU=document.createElement('img');
@@ -3575,6 +3662,7 @@ function semerDecor(){
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
   DECOR.push({t:'panneau',x:PANNEAU_FIXE[0],y:PANNEAU_FIXE[1],gr:0});
+  DECOR.push({t:'fete',x:FETE_FIXE[0],y:FETE_FIXE[1],gr:0});
   e.mine=MINE_FIXE;
   DECOR=DECOR.filter(o=>BATI(o.t)||Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
   DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
@@ -3768,6 +3856,11 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
+  /* la fête foraine : plein, sauf l'entrée au milieu */
+  {
+    const dx=x-FETE_FIXE[0], dy=y-FETE_FIXE[1];
+    if(Math.abs(dx)<58&&dy>-104&&dy<6&&!(Math.abs(dx)<18&&dy>-8))return true;
+  }
   /* le chevalet : un petit obstacle, on le contourne */
   {
     const dx=Math.abs(x-PANNEAU_FIXE[0]), dy=y-PANNEAU_FIXE[1];
@@ -3834,7 +3927,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
-    const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='mine'?150:0));
+    const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:0)));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -3933,6 +4026,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='casino')dessinerCasino(g,x,y);
     else if(o.t==='comptoir')dessinerComptoir(g,x,y);
     else if(o.t==='panneau')dessinerPanneau(g,x,y);
+    else if(o.t==='fete')dessinerFete(g,x,y);
     else if(o.t==='mine')dessinerMine(g,x,y);
 
     else if(o.t==='coffre'){
@@ -5074,7 +5168,7 @@ async function chargerLaCarte(){
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
-    const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','souche','gravats'];
+    const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -5461,7 +5555,7 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  for(const o of DECOR)if((o.t==='casino'||o.t==='forge'||o.t==='comptoir')&&autour.indexOf(o)<0)autour.push(o);
+  for(const o of DECOR)if((o.t==='casino'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
@@ -5476,9 +5570,9 @@ function cible(){
     const demi=o.t==='comptoir'?118:0;
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
-    const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?66:48;  /* on les voit de plus loin */
+    const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')?66:48;  /* on les voit de plus loin */
     /* un bâtiment passe avant un brin d'herbe : on ne rate pas sa porte */
-    const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?0.45:1;
+    const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')?0.45:1;
     const dd=d*prio;
     if(d<portee&&dd<d0){d0=dd;res=o;continue;}
   }
@@ -5536,6 +5630,8 @@ function majAction(){
     b.innerHTML='';b.classList.remove('on');return;
   }else if(o.t==='mine'){
     b.innerHTML='Descendre<small>LA MINE</small>';
+  }else if(o.t==='fete'){
+    b.innerHTML='Entrer<small>AUTOS TAMPONNEUSES · GRATUIT</small>';
   }else if(o.t==='comptoir'){
     b.innerHTML='Entrer<small>COMPTOIR · VENDRE</small>';
   }else if(o.t==='casino'){
@@ -5579,6 +5675,7 @@ function agir(){
       '<div class="vide2">Les buissons se cueillent à la main.</div>',false);
     return;
   }
+  if(o.t==='fete'){location.href='fete.html';return;}
   if(o.t==='comptoir'){ouvrirLeComptoir();return;}
   if(o.t==='forge'){location.href='forge.html';return;}
   if(o.t==='mine'){

@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<!-- ===== la mise à jour : le jeu ne reste jamais bloqué sur une vieille version ===== -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* Ajouté au signet, un navigateur garde la page en mémoire et ne va plus
+   jamais la rechercher. On lui demande donc, à chaque ouverture, quelle est
+   la version publiée : si elle a changé, on recharge une seule fois avec une
+   adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
+(function(){
+  var MA_VERSION='2026-09-14-1606';
+  var cle='bdl.version.vue';
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v||d.v===MA_VERSION)return;
+        /* on ne recharge qu'une fois par version, sinon on bouclerait */
+        var deja=null;
+        try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        var u=location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v);
+        location.replace(u);
+      })
+      .catch(function(){});
+  }
+  verifier();
+  /* et quand on revient sur l'onglet après un moment */
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu<60000)return;
+    vu=Date.now();verifier();
+  });
+})();
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Les autos tamponneuses</title>
+<script>
+/* Ajouté au signet, un navigateur garde la page en mémoire et ne va plus
+   jamais la rechercher. On lui demande donc, à chaque ouverture, quelle est
+   la version publiée : si elle a changé, on recharge une seule fois avec une
+   adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
+(function(){
+  var MA_VERSION='2026-09-14-1506';
+  var cle='bdl.version.vue';
+  function verifier(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(!d||!d.v||d.v===MA_VERSION)return;
+        /* on ne recharge qu'une fois par version, sinon on bouclerait */
+        var deja=null;
+        try{deja=sessionStorage.getItem(cle);}catch(e){}
+        if(deja===d.v)return;
+        try{sessionStorage.setItem(cle,d.v);}catch(e){}
+        var u=location.pathname.split('?')[0]+'?v='+encodeURIComponent(d.v);
+        location.replace(u);
+      })
+      .catch(function(){});
+  }
+  verifier();
+  /* et quand on revient sur l'onglet après un moment */
+  var vu=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState!=='visible')return;
+    if(Date.now()-vu<60000)return;
+    vu=Date.now();verifier();
+  });
+})();
+</script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:#12100d;color:#e8dcc0;touch-action:none;
+    font-family:system-ui,-apple-system,sans-serif}
+  #scene{position:fixed;inset:0}
+  canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+  #haut{position:absolute;left:0;right:0;top:0;padding:14px 18px;display:flex;
+    align-items:flex-start;pointer-events:none;z-index:3}
+  #haut .col{display:flex;flex-direction:column;gap:2px}
+  #haut .col.d{align-items:flex-end;text-align:right}
+  #haut .sep{flex:1}
+  #haut .gd{font:400 19px Georgia,serif;color:#fdfbf4;letter-spacing:.8px;
+    text-shadow:0 2px 10px rgba(0,0,0,.9)}
+  #haut .pt{font:400 8.5px Georgia,serif;font-style:italic;color:rgba(253,251,244,.78);
+    text-shadow:0 1px 6px rgba(0,0,0,.9)}
+  #haut .fil{width:26px;height:1px;margin:4px 0 3px;
+    background:linear-gradient(90deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
+  #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
+  #fin{position:absolute;inset:0;display:none;place-items:center;z-index:5;
+    background:rgba(10,8,6,.72)}
+  #fin.on{display:grid}
+  #fin .carte{background:linear-gradient(180deg,rgba(253,251,244,.96),rgba(238,232,214,.96));
+    border-radius:4px;padding:18px 26px;min-width:230px;text-align:center;
+    box-shadow:0 8px 26px rgba(0,0,0,.5)}
+  #fin h2{font:400 20px Georgia,serif;color:#33291b;letter-spacing:1.4px;margin-bottom:4px}
+  #fin .ligne{display:flex;justify-content:space-between;gap:16px;
+    font:400 13px Georgia,serif;color:#4a3a22;padding:4px 0;
+    border-bottom:1px solid rgba(90,72,44,.16)}
+  #fin .ligne b{font-weight:400;color:#8a6a2a}
+  #fin button{margin-top:14px;background:none;border:0;font:400 15px Georgia,serif;
+    color:#8a6a2a;letter-spacing:2px}
+  #action{position:absolute;right:16px;bottom:18px;z-index:4;
+    min-width:158px;padding:11px 20px 13px;border:0;border-radius:3px;text-align:right;
+    background:linear-gradient(180deg,rgba(253,251,244,.95),rgba(238,232,214,.95));
+    box-shadow:0 6px 18px rgba(0,0,0,.4);
+    font:400 18px Georgia,serif;color:#33291b;letter-spacing:.6px;
+    opacity:0;transform:translateY(8px);pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease}
+  #action::before{content:'';position:absolute;left:9px;right:9px;top:6px;height:1px;
+    background:rgba(90,72,44,.22)}
+  #action small{display:block;font:600 7px system-ui;letter-spacing:2.4px;
+    color:rgba(51,41,27,.58);margin-top:3px}
+  #action.on{opacity:1;transform:none;pointer-events:auto}
+  #bas{position:fixed;left:0;right:0;bottom:0;
+    padding:10px 12px calc(12px + env(safe-area-inset-bottom));
+    display:flex;gap:8px;pointer-events:none}
+  .tit{font:700 8px system-ui;letter-spacing:1.7px;color:#8a7c5e;margin:1px 0 7px}
+  .rang{display:flex;gap:6px;margin-bottom:9px;flex-wrap:wrap}
+  .b{pointer-events:auto;padding:9px 16px;border-radius:3px;border:0;
+    background:linear-gradient(180deg,rgba(253,251,244,.94),rgba(238,232,214,.94));
+    color:#33291b;font:400 13px Georgia,serif;letter-spacing:1.2px;
+    box-shadow:0 5px 16px rgba(0,0,0,.4)}
+  .b.on{background:#3a4a26;border-color:#9fd67a;color:#eaf6dc}
+  .fiche{padding:10px 12px;border-radius:11px;background:#221d17;border:1px solid #3a332b}
+  .fiche b{display:block;font:400 14px Georgia,serif;color:#f6ecd2;margin-bottom:4px}
+  .fiche p{font:400 10px/1.55 system-ui;color:#a1957a;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div id="scene">
+  <canvas id="cv"></canvas>
+  <div id="haut">
+    <span class="col"><span class="pt">la fête foraine</span>
+      <span class="gd" id="hTitre">Les tamponneuses</span><span class="fil"></span></span>
+    <span class="sep"></span>
+    <span class="col d"><span class="pt" id="hLibre">c’est gratuit</span></span>
+  </div>
+  <div id="fin"><div class="carte" id="carteFin"></div></div>
+  <button id="action"></button>
+</div>
+<div id="bas">
+  <button class="b" id="sortir">← Sortir de la fête</button>
+  <button class="b" id="son">♪ Musique : non</button>
+</div>
+</div>
+<script>
+const $=(i)=>document.getElementById(i);
+const cv=$('cv'),ctx=cv.getContext('2d');
+let VW=0,VH=0,ECH=2,DPR=1,PIX=0;
+const alea=(n)=>{const v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);};
+
+
+/* ================= LA MUSIQUE DE FÊTE FORAINE =================
+   Pas de fichier son : tout est fabriqué à la volée. Un orgue de Barbarie,
+   c'est trois choses — une basse qui fait la pompe (temps 1), deux accords
+   piqués (temps 2 et 3), et une mélodie par-dessus, le tout en valse. On
+   empile des ondes carrées légèrement désaccordées : c'est ce désaccord qui
+   donne le grain de l'orgue. */
+let AUDIO=null, sonOn=false, pulse=null;
+const NOTE=(n)=>440*Math.pow(2,(n-69)/12);
+/* une valse en do : la mélodie, puis la basse et les accords */
+const AIR=[72,76,79,76,72,67,69,71,72,72,79,84,83,79,76,72,
+           74,77,81,77,74,69,71,74,72,76,79,76,72,72,0,0];
+const BASSE=[48,55,52,55,48,55,53,55,50,57,53,57,48,55,55,55];
+function demarrerSon(){
+  if(AUDIO)return;
+  try{AUDIO=new (window.AudioContext||window.webkitAudioContext)();}catch(x){return;}
+  const maitre=AUDIO.createGain();
+  maitre.gain.value=0.16;maitre.connect(AUDIO.destination);
+  /* une note d'orgue : deux carrés désaccordés et une attaque très nette */
+  const jouer=(freq,t,duree,vol,type)=>{
+    [0,7].forEach((cents,k)=>{
+      const o=AUDIO.createOscillator(), g=AUDIO.createGain();
+      o.type=type||'square';
+      o.frequency.setValueAtTime(freq*Math.pow(2,cents/1200),t);
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(vol*(k?0.5:1),t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0008,t+duree);
+      o.connect(g);g.connect(maitre);o.start(t);o.stop(t+duree+0.05);
+    });
+  };
+  const TEMPS=0.24;                       /* une noire, en valse rapide */
+  let mesure=0, prochaine=AUDIO.currentTime+0.1;
+  pulse=setInterval(()=>{
+    if(!sonOn)return;
+    while(prochaine<AUDIO.currentTime+0.6){
+      const m=mesure%16, t=prochaine;
+      /* la pompe : basse sur le 1, accords sur le 2 et le 3 */
+      jouer(NOTE(BASSE[m]),t,TEMPS*0.9,0.5,'triangle');
+      [1,2].forEach(k=>{
+        [0,4,7].forEach(d=>jouer(NOTE(BASSE[m]+12+d),t+TEMPS*k,TEMPS*0.42,0.13));
+      });
+      /* la mélodie : deux notes par mesure */
+      const a1=AIR[(mesure*2)%AIR.length], a2=AIR[(mesure*2+1)%AIR.length];
+      if(a1)jouer(NOTE(a1),t,TEMPS*1.1,0.30);
+      if(a2)jouer(NOTE(a2),t+TEMPS*1.5,TEMPS*1.1,0.26);
+      /* un grelot toutes les quatre mesures */
+      if(m%4===3)jouer(NOTE(96),t+TEMPS*2,0.18,0.10,'sine');
+      prochaine+=TEMPS*3;mesure++;
+    }
+  },120);
+}
+function basculerSon(){
+  demarrerSon();
+  if(AUDIO&&AUDIO.state==='suspended')AUDIO.resume();
+  sonOn=!sonOn;
+  $('son').textContent=sonOn?'♪ Musique : oui':'♪ Musique : non';
+  $('son').classList.toggle('on',sonOn);
+}
+
+/* ================= LA PISTE =================
+   Une salle du casino transformée en piste : un plancher de métal, une
+   barrière tout autour, et des autos qui se rentrent dedans. Tout ce qui ne
+   bouge pas est gravé une fois ; les autos sont gravées en seize orientations
+   et par couleur, puis recopiées. */
+const L=760, H=520;            /* le circuit, en points de jeu */
+/* l'îlot central : c'est lui qui fait un circuit et non une arène.
+   On tourne autour, et c'est dans les virages qu'on se rentre dedans. */
+const ILOT={x:380,y:260,rx:132,ry:74};
+const BORD=34;                 /* la barrière */
+const ORI=16;                  /* seize orientations gravées */
+const COUL=[
+ {nom:'toi',    c:'#c8434f',h:'#e0666f',o:'#8f2a34'},
+ {nom:'Tony',   c:'#4a8ac2',h:'#6fa9d9',o:'#2f5f8a'},
+ {nom:'Chloé',  c:'#e8cf4e',h:'#f6e persist',o:'#b09a2c'},
+ {nom:'Aurélia',c:'#5fc79c',h:'#86e0bb',o:'#3f8f6f'},
+ {nom:'Sam',    c:'#b98bd9',h:'#d0aae8',o:'#8a5faa'},
+ {nom:'Nour',   c:'#e8934e',h:'#f6b077',o:'#b06a2c'},
+ {nom:'Kader',  c:'#8b939a',h:'#b0b8be',o:'#5f666c'}
+];
+COUL[2].h='#f6e79a';
+
+let PISTE=null, AUTOS=null;
+function toile(w,h,f){
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=w*D;c.height=h*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  let n=0;
+  f({g,R:(x,y,w2,h2,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w2|0),Math.max(1,h2|0));n++;}});
+  PIX+=n;return c;
+}
+function graverPiste(){
+  PISTE=toile(L,H,({R,g})=>{
+    /* le plancher de métal : des plaques rivetées */
+    R(0,0,L,H,'#3a3f44');
+    for(let y=0;y<H;y+=14)for(let x=((y/14)%2?7:0);x<L;x+=28){
+      R(x,y,27,13,(x+y)%3?'#434950':'#3f454b');
+      R(x,y,27,1,'#4f565c');
+      R(x,y,1,13,'#4f565c');
+      R(x+2,y+2,1,1,'#6b737a');R(x+24,y+2,1,1,'#6b737a');
+      R(x+2,y+10,1,1,'#6b737a');R(x+24,y+10,1,1,'#6b737a');
+    }
+    /* les traces de pneus, gravées : elles racontent les parties d'avant */
+    for(let i=0;i<40;i++){
+      const x=BORD+alea(i*3.1)*(L-BORD*2), y=BORD+alea(i*5.7)*(H-BORD*2);
+      const a=alea(i*7.3)*6.28, lg=14+alea(i*9.1)*30;
+      for(let k=0;k<lg;k++){
+        R(x+Math.cos(a)*k,y+Math.sin(a)*k*0.6,2,1,'rgba(20,22,24,.34)');
+        R(x+Math.cos(a)*k+3,y+Math.sin(a)*k*0.6+3,2,1,'rgba(20,22,24,.26)');
+      }
+    }
+    /* la barrière : un muret matelassé, rouge et blanc */
+    const mur=(x,y,w,h,horiz)=>{
+      R(x,y,w,h,'#2a2d31');
+      if(horiz)for(let i=0;i<w;i+=16){
+        R(x+i,y,15,h,(i/16)%2?'#b93327':'#e8dcc0');
+        R(x+i,y,15,2,(i/16)%2?'#d14a3a':'#fdfbf4');
+      }
+      else for(let i=0;i<h;i+=16){
+        R(x,y+i,w,15,(i/16)%2?'#b93327':'#e8dcc0');
+        R(x,y+i,2,15,(i/16)%2?'#d14a3a':'#fdfbf4');
+      }
+    };
+    mur(0,0,L,BORD,true);mur(0,H-BORD,L,BORD,true);
+    mur(0,0,BORD,H,false);mur(L-BORD,0,BORD,H,false);
+    /* L'ÎLOT CENTRAL : un terre-plein matelassé, avec son enseigne.
+       C'est lui qui transforme l'arène en circuit. */
+    for(let y=-ILOT.ry;y<=ILOT.ry;y++)for(let x=-ILOT.rx;x<=ILOT.rx;x++){
+      if((x*x)/(ILOT.rx*ILOT.rx)+(y*y)/(ILOT.ry*ILOT.ry)>1)continue;
+      const bord=(x*x)/(ILOT.rx*ILOT.rx)+(y*y)/(ILOT.ry*ILOT.ry)>0.86;
+      R(ILOT.x+x,ILOT.y+y,1,1,bord?((x+y)%16<8?'#b93327':'#e8dcc0'):'#2a2d31');
+    }
+    for(let x=-ILOT.rx+12;x<ILOT.rx-12;x+=26)
+      R(ILOT.x+x,ILOT.y-ILOT.ry+4,3,3,'#ffd77a');
+    g.fillStyle='#f0cf7d';g.font='700 15px Georgia,serif';g.textAlign='center';
+    g.fillText('TAMPONNEUSES',ILOT.x,ILOT.y+4);
+    g.font='700 8px Georgia,serif';g.fillStyle='rgba(253,251,244,.7)';
+    g.fillText('· UN POINT PAR CHOC ·',ILOT.x,ILOT.y+18);
+    g.textAlign='left';
+    /* les quatre coins arrondis, pour qu'on glisse au lieu de se coincer */
+    [[BORD,BORD,1,1],[L-BORD,BORD,-1,1],[BORD,H-BORD,1,-1],[L-BORD,H-BORD,-1,-1]]
+      .forEach(([cx,cy,sx,sy])=>{
+        for(let i=0;i<18;i++)R(cx+sx*i,cy+sy*(17-i),Math.abs(sx*2),2,'#2a2d31');
+      });
+    /* les guirlandes au plafond, vues de dessus */
+    for(let x=BORD+10;x<L-BORD;x+=22){
+      R(x,BORD+2,2,2,'#ffd77a');R(x+11,BORD+2,2,2,'#e8802c');
+      R(x,H-BORD-4,2,2,'#ffd77a');R(x+11,H-BORD-4,2,2,'#e8802c');
+    }
+  });
+}
+/* une auto, gravée dans seize orientations : on ne fait jamais tourner le
+   canevas à l'écran, on choisit la bonne image */
+function graverAutos(){
+  AUTOS=COUL.map(C=>{
+    const L2=[];
+    for(let o=0;o<ORI;o++){
+      const a=o/ORI*6.2832;
+      L2.push(toile(86,86,({R,g})=>{
+        g.save();g.translate(43,43);g.rotate(a);
+        const P=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x,y,w,h);};
+        P(-28,12,56,9,'rgba(0,0,0,.30)');       /* l'ombre au sol */
+        P(-26,-19,52,38,C.c);                   /* la coque */
+        P(-26,-19,52,7,C.h);                    /* le reflet du dessus */
+        P(-26,11,52,8,C.o);                     /* l'ombre du bas */
+        P(-26,-19,4,38,C.h);                    /* le flanc éclairé */
+        P(22,-19,4,38,C.o);
+        for(let k=-24;k<24;k+=8)P(k,-19,3,38,'rgba(255,255,255,.05)');
+        /* le pare-chocs matelassé, tout autour */
+        P(-32,-16,6,32,'#2a2d31');P(26,-16,6,32,'#2a2d31');
+        P(-24,-25,48,6,'#2a2d31');P(-24,19,48,6,'#2a2d31');
+        for(let k=-21;k<21;k+=9){P(k,-25,6,3,'#4a5158');P(k,22,6,3,'#4a5158');}
+        P(-32,-16,6,4,'#4a5158');P(26,-16,6,4,'#4a5158');
+        /* l'habitacle : plancher, siège, volant */
+        P(-16,-13,32,25,'#2a2d31');
+        P(-13,-10,26,18,'#4a5158');
+        P(-13,-10,26,3,'#5f666c');
+        P(8,-6,4,12,'#6b737a');                 /* le volant, vu de dessus */
+        P(6,-2,8,3,'#6b737a');
+        /* le conducteur : tête, épaules, bras, mains sur le volant */
+        P(-7,-15,14,9,'#e8c49a');               /* la tête */
+        P(-7,-15,14,3,'#4a3220');               /* les cheveux */
+        P(-9,-7,18,11,C.o);                     /* les épaules */
+        P(-9,-7,18,3,C.c);
+        P(2,-9,7,4,'#e8c49a');P(2,3,7,4,'#e8c49a');   /* les bras */
+        /* les phares, les feux et la perche */
+        P(23,-11,8,7,'#ffd77a');P(23,4,8,7,'#ffd77a');
+        P(-30,-9,4,6,'#b93327');P(-30,3,4,6,'#b93327');
+        P(-4,-4,8,8,'#6b737a');
+        P(-2,-2,4,4,'#8b939a');
+        g.restore();
+      }));
+    }
+    return L2;
+  });
+}
+
+/* ================= À PIED, PUIS AU VOLANT =================
+   On entre dans la piste à pied. Les autos attendent, rangées le long du
+   mur. On s'approche, la plaque propose de monter ; on conduit ; on
+   redescend. Les autres joueurs font pareil, chacun dans la sienne. */
+const pieton={x:L/2,y:H-52,dir:'bas',pas:0,marche:false,dedans:null};
+function bonhomme(g,x,y,pas,marche,coul){
+  const p=marche?Math.sin(pas):0;
+  g.fillStyle='rgba(10,12,14,.34)';
+  g.beginPath();g.ellipse(x,y,7,2.6,0,0,7);g.fill();
+  g.fillStyle='#3a4358';g.fillRect(x-4,y-9+Math.round(p),3.6,9);
+  g.fillStyle='#2f3a4a';g.fillRect(x+0.6,y-9-Math.round(p),3.6,9);
+  g.fillStyle=coul||'#4f7d5c';g.fillRect(x-5,y-20,10,11);
+  g.fillStyle='#e8c49a';g.fillRect(x-4,y-28,8,8);
+  g.fillStyle='#4a3220';g.fillRect(x-4.4,y-29.6,8.8,2.6);
+}
+/* l'auto la plus proche, si l'on est assez près pour y monter */
+function autoProche(){
+  if(pieton.dedans)return null;
+  let d0=34,res=null;
+  autos.forEach(a=>{
+    if(a.pilote)return;                       /* déjà occupée */
+    const d=Math.hypot(a.x-pieton.x,a.y-pieton.y);
+    if(d<d0){d0=d;res=a;}
+  });
+  return res;
+}
+function monter(a){
+  pieton.dedans=a;a.pilote='moi';a.moi=true;a.chocs=a.chocs||0;
+  if(!enCours)lancerPartie();
+  maj();
+}
+function descendre(){
+  const a=pieton.dedans;if(!a)return;
+  pieton.x=a.x;pieton.y=a.y+26;
+  a.pilote=null;a.moi=false;pieton.dedans=null;
+  maj();
+}
+function majAction(){
+  const b=$('action');
+  if(pieton.dedans){
+    b.innerHTML='Descendre<small>QUITTER L’AUTO</small>';
+    b.classList.add('on');b.onclick=descendre;return;
+  }
+  const a=autoProche();
+  if(!a){b.classList.remove('on');return;}
+  b.innerHTML='Monter<small>AUTO TAMPONNEUSE · C’EST GRATUIT</small>';
+  b.classList.add('on');
+  b.onclick=()=>monter(a);
+}
+
+/* ================= LES AUTOS ================= */
+let autos=[],chrono=60,fini=false,nbAutos=6,enCours=false;
+function depart(){
+  autos=[];
+  const n=Math.min(COUL.length,nbAutos+1);
+  /* les autos attendent en épi le long du mur du fond */
+  for(let i=0;i<n;i++){
+    autos.push({i,x:BORD+70+i*((L-BORD*2-140)/(n-1)),y:BORD+64,
+      vx:0,vy:0,ang:1.5708,chocs:0,secousse:0,moi:false,pilote:null});
+  }
+  pieton.x=L/2;pieton.y=H-52;pieton.dedans=null;
+  fini=false;enCours=false;$('fin').classList.remove('on');
+  maj();
+}
+/* la partie démarre quand quelqu'un monte : les autres autos se réveillent */
+function lancerPartie(){
+  enCours=true;fini=false;
+  autos.forEach(a=>{if(!a.pilote)a.pilote='auto';});
+}
+let joyX=0,joyY=0,J=null;
+addEventListener('touchstart',e=>{const t=e.changedTouches[0];
+  if(t.clientY>innerHeight-218)return;J={id:t.identifier,ox:t.clientX,oy:t.clientY};
+  e.preventDefault();},{passive:false});
+addEventListener('touchmove',e=>{if(!J)return;
+  for(const t of e.changedTouches)if(t.identifier===J.id){
+    const dx=t.clientX-J.ox,dy=t.clientY-J.oy,d=Math.hypot(dx,dy);
+    if(d>6){const k=Math.min(1,d/46)/d;joyX=dx*k;joyY=dy*k;}else{joyX=joyY=0;}
+  }e.preventDefault();},{passive:false});
+['touchend','touchcancel'].forEach(k=>addEventListener(k,()=>{J=null;joyX=joyY=0;}));
+
+const ETINCELLES=[];
+function choc(x,y,force){
+  for(let i=0;i<Math.round(4+force*8);i++)
+    ETINCELLES.push({x,y,vx:(Math.random()-.5)*90*force,vy:(Math.random()-.5)*90*force,
+      t:0.32+Math.random()*0.22,c:Math.random()<.5?'#ffd77a':'#ff9d45'});
+}
+function majAutos(dt,t){
+  autos.forEach(a=>{
+    if(!enCours){a.vx*=0.9;a.vy*=0.9;a.x+=a.vx*dt;a.y+=a.vy*dt;return;}
+    if(a.moi){
+      const d=Math.hypot(joyX,joyY);
+      if(d>0.08&&!fini){
+        a.vx+=joyX/d*260*dt*Math.min(1,d);
+        a.vy+=joyY/d*260*dt*Math.min(1,d);
+      }
+    }else if(!fini&&a.pilote==='auto'){
+      /* les autres visent l'auto la plus proche : elles cherchent le choc */
+      let cible=null,dm=1e9;
+      autos.forEach(b=>{if(b===a)return;const d=Math.hypot(b.x-a.x,b.y-a.y);
+        if(d<dm){dm=d;cible=b;}});
+      if(cible){
+        const d=Math.max(1,dm);
+        const zig=Math.sin(t*2+a.i)*0.5;
+        a.vx+=((cible.x-a.x)/d+zig*0.4)*190*dt;
+        a.vy+=((cible.y-a.y)/d-zig*0.4)*190*dt;
+      }
+    }
+    /* le frottement : une auto tamponneuse glisse, elle ne freine pas net */
+    a.vx*=0.985;a.vy*=0.985;
+    const v=Math.hypot(a.vx,a.vy);
+    if(v>186){a.vx*=186/v;a.vy*=186/v;}
+    a.x+=a.vx*dt;a.y+=a.vy*dt;
+    if(v>6)a.ang=Math.atan2(a.vy,a.vx);
+    a.secousse=Math.max(0,a.secousse-dt*4);
+    /* la barrière renvoie */
+    const m=BORD+30;
+    if(a.x<m){a.x=m;a.vx=Math.abs(a.vx)*0.72;choc(a.x-8,a.y,0.5);}
+    if(a.x>L-m){a.x=L-m;a.vx=-Math.abs(a.vx)*0.72;choc(a.x+8,a.y,0.5);}
+    if(a.y<m){a.y=m;a.vy=Math.abs(a.vy)*0.72;choc(a.x,a.y-8,0.5);}
+    if(a.y>H-m){a.y=H-m;a.vy=-Math.abs(a.vy)*0.72;choc(a.x,a.y+8,0.5);}
+    /* l'îlot central : on rebondit dessus comme sur la barrière */
+    const ex=(a.x-ILOT.x)/(ILOT.rx+30), ey=(a.y-ILOT.y)/(ILOT.ry+30);
+    const dd=ex*ex+ey*ey;
+    if(dd<1&&dd>0.0001){
+      const k=1/Math.sqrt(dd);
+      a.x=ILOT.x+ex*(ILOT.rx+30)*k;a.y=ILOT.y+ey*(ILOT.ry+30)*k;
+      const nx=ex*k,ny=ey*k, pr=a.vx*nx+a.vy*ny;
+      if(pr<0){a.vx-=2*pr*nx*0.78;a.vy-=2*pr*ny*0.78;choc(a.x,a.y,0.5);}
+    }
+  });
+  /* les chocs entre autos : un vrai rebond, et le point va au plus rapide */
+  for(let i=0;i<autos.length;i++)for(let j=i+1;j<autos.length;j++){
+    const a=autos[i],b=autos[j];
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d>54||d<0.01)continue;
+    const nx=dx/d,ny=dy/d;
+    const chev=54-d;
+    a.x-=nx*chev/2;a.y-=ny*chev/2;b.x+=nx*chev/2;b.y+=ny*chev/2;
+    const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+    if(rel>0)continue;
+    const imp=-rel*0.92;
+    a.vx-=nx*imp;a.vy-=ny*imp;b.vx+=nx*imp;b.vy+=ny*imp;
+    const force=Math.min(1,Math.abs(rel)/150);
+    if(force>0.12){
+      /* on ne compte rien : le choc se voit et se sent, ça suffit */
+      a.secousse=b.secousse=force;
+      choc((a.x+b.x)/2,(a.y+b.y)/2,force);
+      if(a.moi||b.moi){try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}}
+    }
+  }
+  for(let i=ETINCELLES.length-1;i>=0;i--){
+    const p=ETINCELLES[i];
+    p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;
+    if(p.t<=0)ETINCELLES.splice(i,1);
+  }
+}
+function taille(){
+  DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  const r=$('scene').getBoundingClientRect();
+  cv.width=r.width*DPR;cv.height=r.height*DPR;
+  /* La caméra suit le joueur, à la même échelle que le jeu : c'est ce qui
+     rend les autos grandes. Avant, toute la piste tenait dans l'écran et
+     tout paraissait minuscule. */
+  let e=Math.max(r.width/196,r.height/400);
+  e=Math.max(1.2,Math.round(e*8)/8)*DPR;
+  ECH=e;VW=cv.width/ECH;VH=cv.height/ECH;
+  ctx.setTransform(ECH,0,0,ECH,0,0);
+  ctx.imageSmoothingEnabled=false;
+  PIX=0;graverPiste();graverAutos();
+}
+addEventListener('resize',taille);
+let t0=performance.now();
+function boucle(t){
+  const dt=Math.min(.05,(t-t0)/1000);t0=t;
+  /* Pas de chrono, pas de points, pas de mise : on monte quand on veut,
+     on tourne tant qu'on veut, on redescend quand on veut. C'est un manège,
+     pas un jeu d'argent. */
+  if(!pieton.dedans){
+    const d=Math.hypot(joyX,joyY);
+    if(d>0.08){
+      const v=78*dt*Math.min(1,d);
+      const nx=pieton.x+joyX/d*v, ny=pieton.y+joyY/d*v;
+      const m=BORD+10;
+      pieton.x=Math.max(m,Math.min(L-m,nx));
+      pieton.y=Math.max(m,Math.min(H-m,ny));
+      pieton.marche=true;pieton.pas+=v*0.5;
+    }else pieton.marche=false;
+  }
+  majAutos(dt,t/1000);
+  majAction();
+  dessiner(t/1000);
+
+  requestAnimationFrame(boucle);
+}
+function dessiner(t){
+  const g=ctx;
+  const suivi=pieton.dedans||pieton;
+  const camX=Math.max(0,Math.min(L-VW,suivi.x-VW/2));
+  const camY=Math.max(0,Math.min(H-VH,suivi.y-VH*0.52));
+  g.setTransform(ECH,0,0,ECH,Math.round(-camX*ECH),Math.round(-camY*ECH));
+  g.fillStyle='#12100d';g.fillRect(camX,camY,VW,VH);
+  g.drawImage(PISTE,0,0,L,H);
+  const tout=autos.slice();
+  if(!pieton.dedans)tout.push({pieton:true,y:pieton.y});
+  tout.sort((a,b)=>a.y-b.y).forEach(a=>{
+    if(a.pieton){bonhomme(g,Math.round(pieton.x),Math.round(pieton.y),pieton.pas,pieton.marche);return;}
+    let o=Math.round((a.ang/6.2832)*ORI);o=((o%ORI)+ORI)%ORI;
+    const s=a.secousse>0?Math.round(Math.sin(t*60)*a.secousse*2):0;
+    g.drawImage(AUTOS[a.i][o],Math.round(a.x-43+s),Math.round(a.y-43),86,86);
+    /* une auto vide : on marque la place libre d'un liseré clair */
+    if(!a.pilote){
+      g.fillStyle='rgba(253,251,244,.5)';
+      g.fillRect(Math.round(a.x-3),Math.round(a.y-34),6,2);
+    }
+  });
+  ETINCELLES.forEach(p=>{g.fillStyle=p.c;g.fillRect(p.x|0,p.y|0,2,2);});
+}
+function maj(){
+  const dedans=autos.filter(a=>a.pilote).length;
+  $('hLibre').textContent=pieton.dedans?'tourne tant que tu veux'
+    :(dedans?dedans+' autos en piste':'c’est gratuit');
+}
+/* il n'y a plus de fin : le manège tourne tant qu'on est dedans */
+
+$('son').onclick=basculerSon;
+$('sortir').onclick=()=>{location.href='jeu.html';};
+
+taille();depart();requestAnimationFrame(boucle);
+</script>
+</body>
+</html>
