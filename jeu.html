@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0909';
+  var MA_VERSION='2026-09-14-0912';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3665,7 +3666,7 @@ function bloque(x,y){
      Seules les trois portes de chargement laissent entrer. */
   if(e.comptoir){
     const dx=x-e.comptoir[0], dy=y-e.comptoir[1];
-    if(Math.abs(dx)<131&&dy>-70&&dy<6){
+    if(Math.abs(dx)<131&&dy>-118&&dy<6){
       const porte=[-78,0,78].some(px=>Math.abs(dx-px)<20);
       if(!(porte&&dy>-10))return true;
     }
@@ -5202,12 +5203,17 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'&&o.t!=='casino'
-       &&o.t!=='mine'&&o.t!=='forge'&&!o.bati&&!cueillable&&!minerai)continue;
+    const batiment=['casino','mine','forge','comptoir'].includes(o.t);
+    if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
+       &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
-    const d=Math.hypot(o.x-joueur.x,o.y-joueur.y-6);
+    /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
+       sinon les portes des extrémités restent hors de portée */
+    const demi=o.t==='comptoir'?118:0;
+    const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
+    const d=Math.hypot(ecart,joueur.y-o.y+6);
     const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?66:48;  /* on les voit de plus loin */
     /* un bâtiment passe avant un brin d'herbe : on ne rate pas sa porte */
     const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?0.45:1;
