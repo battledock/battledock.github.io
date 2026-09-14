@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0731';
+  var MA_VERSION='2026-09-14-0800';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2738,7 +2739,11 @@ function dessinerSouche(g,x,y,gr,neuf){
 }
 
 /* ================= le monde ================= */
-const MONDE=600;                  // en pixels de jeu (resserré : plus de désert)
+/* Le monde n'est plus carré : on a ajouté 400 points à l'ouest, là où la
+   rive gauche était trop étroite. Tout le contenu a glissé d'autant. */
+const MONDE_L=1000;               // largeur, en pixels de jeu
+const MONDE_H=600;                // hauteur
+const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
    Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
    de jeu de large, une tablette 384. Deux joueurs ne jouaient pas au même jeu.
@@ -2815,7 +2820,7 @@ function construireSol(){
      Les fleurs poussent en MASSIFS, comme dans la nature : de grandes
      zones nues, puis des îlots serrés. Leur place vient du bruit, pas
      d'un motif : rien ne se répète. */
-  const c=document.createElement('canvas');c.width=MONDE;c.height=MONDE;
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
   const g=c.getContext('2d');
   const OLIVE={base:'#8fa464',moyen:'#889d5e',fonce:'#819658',ombre:'#70844b',clair:'#9cb072'};
 
@@ -2828,20 +2833,20 @@ function construireSol(){
   };
 
   /* 1. le fond, tramé en damier serré entre deux tons très proches */
-  for(let y=0;y<MONDE;y+=2)for(let x=0;x<MONDE;x+=2){
+  for(let y=0;y<MONDE_H;y+=2)for(let x=0;x<MONDE_L;x+=2){
     g.fillStyle=((x+y)&2)?OLIVE.base:OLIVE.moyen;
     g.fillRect(x,y,2,2);
   }
   /* 2. les grandes nuances : des zones plus claires et plus sombres qui se
      fondent, pour qu'aucun damier ne se voie à l'œil */
-  for(let y=0;y<MONDE;y+=8)for(let x=0;x<MONDE;x+=8){
+  for(let y=0;y<MONDE_H;y+=8)for(let x=0;x<MONDE_L;x+=8){
     const n=lisse(x/90,y/90);
     if(n<0.38){g.fillStyle='rgba(112,132,75,.34)';g.fillRect(x,y,8,8);}
     else if(n>0.68){g.fillStyle='rgba(156,176,114,.28)';g.fillRect(x,y,8,8);}
   }
   /* 3. quelques plaques de terre sèche, rares */
   for(let i=0;i<26;i++){
-    const cx=Math.floor(alea(i*5.9)*MONDE), cy=Math.floor(alea(i*6.1)*MONDE);
+    const cx=Math.floor(alea(i*5.9)*MONDE_L), cy=Math.floor(alea(i*6.1)*MONDE_H);
     for(let k=0;k<5;k++){
       const w=10+Math.floor(alea(cx+k*3)*22), h=8+Math.floor(alea(cy+k*7)*14);
       g.fillStyle='rgba(168,146,106,.30)';
@@ -2850,13 +2855,13 @@ function construireSol(){
   }
   /* 4. les brins d'herbe : un pixel sombre, un clair au-dessus */
   for(let i=0;i<9000;i++){
-    const x=Math.floor(alea(i*1.3)*MONDE), y=Math.floor(alea(i*2.9)*MONDE);
+    const x=Math.floor(alea(i*1.3)*MONDE_L), y=Math.floor(alea(i*2.9)*MONDE_H);
     g.fillStyle=OLIVE.ombre;g.fillRect(x,y,1,2);
     g.fillStyle=OLIVE.clair;g.fillRect(x,y-1,1,1);
   }
   /* 5. les touffes, plus hautes, semées plus rarement */
   for(let i=0;i<1400;i++){
-    const x=Math.floor(alea(i*4.1)*MONDE), y=Math.floor(alea(i*5.3)*MONDE);
+    const x=Math.floor(alea(i*4.1)*MONDE_L), y=Math.floor(alea(i*5.3)*MONDE_H);
     g.fillStyle=OLIVE.ombre;
     g.fillRect(x,y,1,3);g.fillRect(x-1,y+1,1,2);g.fillRect(x+1,y+1,1,2);
     g.fillStyle=OLIVE.clair;
@@ -2868,12 +2873,12 @@ function construireSol(){
      vers les bords. Des reflets FIXES, posés une fois. Plus aucun bruit par
      pixel, et plus rien à recalculer à l'écran. */
   const EAU=['#2a5f7d','#357291','#4189a8','#55a0bd'], VIF='#7fc4dd', ECUME='#dff4ff';
-  for(let y=0;y<MONDE;y++){
+  for(let y=0;y<MONDE_H;y++){
     const cx=rivX(y), gue=surGue(y);
     /* la berge : terre, galets épars, frange d'herbe mouillée */
     for(let dx=-RIV_LARGE-6;dx<=RIV_LARGE+6;dx++){
       const a=Math.abs(dx);if(a<=RIV_LARGE)continue;
-      const x=Math.round(cx+dx);if(x<0||x>=MONDE)continue;
+      const x=Math.round(cx+dx);if(x<0||x>=MONDE_L)continue;
       const v=alea(x*0.7+y*1.3);
       g.fillStyle=a>RIV_LARGE+4?(v<.4?'#7d8c58':'#889d5e')
                 : (v<.14?'#96805c':(v<.5?'#b9a37a':'#a8926a'));
@@ -2886,7 +2891,7 @@ function construireSol(){
     /* le lit */
     for(let dx=-RIV_LARGE;dx<=RIV_LARGE;dx++){
       const x=Math.round(cx+dx), a=Math.abs(dx);
-      if(x<0||x>=MONDE)continue;
+      if(x<0||x>=MONDE_L)continue;
       let col;
       if(gue)col=a>RIV_LARGE-4?'#9ec6d4':'#83b7c9';
       else if(a>RIV_LARGE-2)col=EAU[3];
@@ -2928,10 +2933,10 @@ function construireSol(){
   ];
   const MAILLE=28;
   const P=(x,y,col)=>{
-    if(x<0||y<0||x>=MONDE||y>=MONDE)return;
+    if(x<0||y<0||x>=MONDE_L||y>=MONDE_H)return;
     g.fillStyle=col;g.fillRect(x,y,1,1);
   };
-  for(let b=0;b<MONDE/MAILLE;b++)for(let a=0;a<MONDE/MAILLE;a++){
+  for(let b=0;b<MONDE_H/MAILLE;b++)for(let a=0;a<MONDE_L/MAILLE;a++){
     /* fleurie ou nue ? le bruit doux tranche par grandes zones */
     if(lisse(a/5,b/5)<=0.58)continue;
     if(bruit(a*1.7,b*2.3)>0.9)continue;
@@ -2964,7 +2969,7 @@ const BORD=34;
 const RIV_LARGE=13;                              /* demi-largeur de l'eau */
 /* elle traverse en diagonale du nord-ouest au sud-est : elle coupe
    vraiment la carte en deux moitiés qu'on utilise toutes les deux */
-const rivX=(y)=>150+y*0.16+Math.sin(y/90)*22;
+const rivX=(y)=>550+y*0.16+Math.sin(y/90)*22;   /* +400 : la rive ouest respire */
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
 const PONTS=[149,421];                           /* deux ponts de planches */
@@ -3020,12 +3025,12 @@ const TAILLES={
    court chemin, avec une pénalité à chaque virage — sinon le tracé optimal
    zigzague en escalier au lieu de faire une route. Ils sont gravés UNE FOIS
    dans le calque du sol, comme les fleurs : zéro coût à l'écran. */
-const PAS_CH=5, N_CH=Math.ceil(MONDE/PAS_CH);
+const PAS_CH=5, N_CH=Math.ceil(MONDE_L/PAS_CH), M_CH=Math.ceil(MONDE_H/PAS_CH);
 let SURCHEMIN=null, ROUTES=[];
 function tracerChemin(a,b){
   const dur=new Uint8Array(N_CH*N_CH);
   /* seuls l'eau et le bord arrêtent le tracé : le décor, on le déblaie */
-  for(let y=0;y<MONDE;y++){
+  for(let y=0;y<MONDE_H;y++){
     if(surGue(y))continue;
     for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
       const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
@@ -3033,7 +3038,7 @@ function tracerChemin(a,b){
     }
   }
   for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
-    if(i*PAS_CH<BORD-8||j*PAS_CH<BORD-8||i*PAS_CH>MONDE-BORD+8||j*PAS_CH>MONDE-BORD+8)
+    if(i*PAS_CH<BORD-8||j*PAS_CH<BORD-8||i*PAS_CH>MONDE_L-BORD+8||j*PAS_CH>MONDE_H-BORD+8)
       dur[j*N_CH+i]=1;
   const dep=Math.round(a[1]/PAS_CH)*N_CH+Math.round(a[0]/PAS_CH);
   const arr=Math.round(b[1]/PAS_CH)*N_CH+Math.round(b[0]/PAS_CH);
@@ -3084,7 +3089,7 @@ function graverChemins(g){
     for(let dy=-larg;dy<=larg;dy++)for(let dx=-larg;dx<=larg;dx++){
       const d=Math.hypot(dx,dy);if(d>larg)continue;
       const px=x+dx,py=y+dy;
-      if(px<0||py<0||px>=MONDE||py>=MONDE)continue;
+      if(px<0||py<0||px>=MONDE_L||py>=MONDE_H)continue;
       if(Math.abs(px-rivX(py))<RIV_LARGE+2)continue;      /* jamais dans l'eau */
       /* le bord est rongé : la terre se fond dans l'herbe */
       if(d>larg-2&&alea(px*0.7+py*1.3)<0.45)continue;
@@ -3127,7 +3132,7 @@ function verifierAcces(){
       if(!coupables.has(k))coupables.set(k,idx);
     }
   });
-  for(let y=0;y<MONDE;y++){
+  for(let y=0;y<MONDE_H;y++){
     if(surGue(y))continue;
     for(let d=-RIV_LARGE;d<=RIV_LARGE;d++){
       const gx=Math.round((rivX(y)+d)/PAS_CH),gy=Math.round(y/PAS_CH);
@@ -3135,7 +3140,7 @@ function verifierAcces(){
     }
   }
   for(let j=0;j<N_CH;j++)for(let i=0;i<N_CH;i++)
-    if(i*PAS_CH<BORD||j*PAS_CH<BORD||i*PAS_CH>MONDE-BORD||j*PAS_CH>MONDE-BORD)
+    if(i*PAS_CH<BORD||j*PAS_CH<BORD||i*PAS_CH>MONDE_L-BORD||j*PAS_CH>MONDE_H-BORD)
       bloque[j*N_CH+i]=1;
   if(SURCHEMIN)for(let i=0;i<N_CH*N_CH;i++)if(SURCHEMIN[i])bloque[i]=0;
   const vu=new Uint8Array(N_CH*N_CH);
@@ -3178,7 +3183,7 @@ function semerDecor(){
   const A=alea;
   const libre=(x,y,r)=>DECOR.every(o=>Math.hypot(o.x-x,o.y-y)>r);
   const dedans=(x,y)=>!dansLisiere(x,y)&&!dansLisiere(x,y-16)
-                     &&x>BORD+10&&x<MONDE-BORD-10&&y>BORD+16&&y<MONDE-BORD-10;
+                     &&x>BORD+10&&x<MONDE_L-BORD-10&&y>BORD+16&&y<MONDE_H-BORD-10;
   const depart=(x,y)=>Math.hypot(x-CAMP_FIXE[0],y-CAMP_FIXE[1])<60;  /* la clairière du camp */
   /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
      plus profonde au sud du bâtiment : c'est par là qu'on entre. */
@@ -3207,22 +3212,22 @@ function semerDecor(){
   });
   /* des arbres isolés, partout ailleurs */
   for(let i=0;i<90;i++){
-    const x=Math.round(BORD+20+A(i*1.7)*(MONDE-2*BORD-40));
-    const y=Math.round(BORD+40+A(i*2.9)*(MONDE-2*BORD-60));
+    const x=Math.round(BORD+20+A(i*1.7)*(MONDE_L-2*BORD-40));
+    const y=Math.round(BORD+40+A(i*2.9)*(MONDE_H-2*BORD-60));
     if(!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
     DECOR.push({t:'arbre',x,y,gr:Math.floor(A(i*5)*3)});
   }
   /* --- les pierres : de petits tas, par endroits --- */
   for(let i=0;i<90;i++){
-    const x=Math.round(BORD+14+A(i*3.1)*(MONDE-2*BORD-28));
-    const y=Math.round(BORD+24+A(i*4.3)*(MONDE-2*BORD-40));
+    const x=Math.round(BORD+14+A(i*3.1)*(MONDE_L-2*BORD-28));
+    const y=Math.round(BORD+24+A(i*4.3)*(MONDE_H-2*BORD-40));
     if(!loinDeLEau(x,y,'rocher')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
     DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
   }
   /* buissons */
   for(let i=0;i<150;i++){
-    const x=Math.round(BORD+18+A(i*5.7)*(MONDE-2*BORD-36));
-    const y=Math.round(BORD+34+A(i*6.3)*(MONDE-2*BORD-50));
+    const x=Math.round(BORD+18+A(i*5.7)*(MONDE_L-2*BORD-36));
+    const y=Math.round(BORD+34+A(i*6.3)*(MONDE_H-2*BORD-50));
     if(!loinDeLEau(x,y,'buisson')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
   }
@@ -3235,10 +3240,10 @@ function semerDecor(){
 
   /* --- l'argile, sur les berges de la rivière --- */
   for(let i=0;i<46;i++){
-    const y=Math.round(BORD+60+A(i*2.3)*(MONDE-2*BORD-120));
+    const y=Math.round(BORD+60+A(i*2.3)*(MONDE_H-2*BORD-120));
     const cote=A(i*3.7)<.5?-1:1;
     const x=Math.round(rivX(y)+cote*(RIV_LARGE+21+A(i*5.1)*5));
-    if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
+    if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
     DECOR.push({t:'argile',x,y,gr:0});
   }
   /* --- les roseaux : en roselières, pas un par un ---
@@ -3246,13 +3251,13 @@ function semerDecor(){
      la rive, et à chacun pousse une touffe de trois à six pieds serrés : c'est
      ce qui fait qu'on les voit. */
   for(let b=0;b<26;b++){
-    const yb=Math.round(BORD+40+A(b*4.7)*(MONDE-2*BORD-80));
+    const yb=Math.round(BORD+40+A(b*4.7)*(MONDE_H-2*BORD-80));
     const cote=A(b*6.1)<.5?-1:1;
     const n=3+Math.floor(A(b*8.3)*4);
     for(let k=0;k<n;k++){
       const y=Math.round(yb+(k-n/2)*8+A(b*3+k)*5);
       const x=Math.round(rivX(y)+cote*(RIV_LARGE+2+A(b*7.3+k)*6));
-      if(x<BORD+20||x>MONDE-BORD-20||surLieu(x,y)||!libre(x,y,7))continue;
+      if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,7))continue;
       DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
     }
   }
@@ -3268,8 +3273,8 @@ function semerDecor(){
   }
   /* --- les herbes, en clairière --- */
   for(let i=0;i<110;i++){
-    const x=Math.round(BORD+22+A(i*15.7)*(MONDE-2*BORD-44));
-    const y=Math.round(BORD+40+A(i*17.3)*(MONDE-2*BORD-60));
+    const x=Math.round(BORD+22+A(i*15.7)*(MONDE_L-2*BORD-44));
+    const y=Math.round(BORD+40+A(i*17.3)*(MONDE_H-2*BORD-60));
     if(!loinDeLEau(x,y,'herbes')||!dedans(x,y)||!libre(x,y,15))continue;
     DECOR.push({t:'herbes',x,y,gr:0});
   }
@@ -3286,8 +3291,8 @@ function semerDecor(){
 
   /* massifs de fleurs : on peut marcher dessus */
   for(let i=0;i<110;i++){
-    const x=Math.round(BORD+16+A(i*7.1)*(MONDE-2*BORD-32));
-    const y=Math.round(BORD+30+A(i*8.9)*(MONDE-2*BORD-44));
+    const x=Math.round(BORD+16+A(i*7.1)*(MONDE_L-2*BORD-32));
+    const y=Math.round(BORD+30+A(i*8.9)*(MONDE_H-2*BORD-44));
     if(!loinDeLEau(x,y,'fleurs')||!dedans(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'fleurs',x,y,gr:0});
   }
@@ -3391,9 +3396,9 @@ function segmentProfil(){
   return c;
 }
 function construireLisiere(){
-  const c=document.createElement('canvas');c.width=MONDE;c.height=MONDE;
+  const c=document.createElement('canvas');c.width=MONDE_L;c.height=MONDE_H;
   const g=c.getContext('2d');
-  const sud=document.createElement('canvas');sud.width=MONDE;sud.height=MONDE;
+  const sud=document.createElement('canvas');sud.width=MONDE_L;sud.height=MONDE_H;
   const gs=sud.getContext('2d');
   const A=alea;
   /* --- la forêt, semée comme avant --- */
@@ -3410,20 +3415,20 @@ function construireLisiere(){
       cible.fillStyle='#1a3d1e';cible.fillRect(x-13,y+6,26,4);
     }
   };
-  bande(g,-6,-6,MONDE+6,LIS_PROF,0);                        /* nord */
-  bande(g,-6,-6,LIS_PROF,MONDE+6,77);                       /* ouest */
-  bande(g,MONDE-LIS_PROF,-6,MONDE+6,MONDE+6,131);           /* est */
-  bande(gs,-6,MONDE-LIS_PROF,MONDE+6,MONDE+6,193);          /* sud : devant le joueur */
+  bande(g,-6,-6,MONDE_L+6,LIS_PROF,0);                      /* nord */
+  bande(g,-6,-6,LIS_PROF,MONDE_H+6,77);                     /* ouest */
+  bande(g,MONDE_L-LIS_PROF,-6,MONDE_L+6,MONDE_H+6,131);     /* est */
+  bande(gs,-6,MONDE_H-LIS_PROF,MONDE_L+6,MONDE_H+6,193);    /* sud : devant le joueur */
   /* --- la palissade, recopiée le long des quatre bords --- */
   const S=segmentPalissade(), P=segmentProfil();
   const D=S.width/20;
-  for(let x=0;x<MONDE;x+=20){
+  for(let x=0;x<MONDE_L;x+=20){
     g.drawImage(S,x,BARRIERE-31,20,34);                     /* nord */
-    gs.drawImage(S,x,MONDE-BARRIERE-31+34,20,34);           /* sud */
+    gs.drawImage(S,x,MONDE_H-BARRIERE-31+34,20,34);         /* sud */
   }
-  for(let y=0;y<MONDE;y+=20){
+  for(let y=0;y<MONDE_H;y+=20){
     g.drawImage(P,BARRIERE-9,y,12,20);                      /* ouest */
-    g.drawImage(P,MONDE-BARRIERE-3,y,12,20);                /* est */
+    g.drawImage(P,MONDE_L-BARRIERE-3,y,12,20);              /* est */
   }
   graverRambardesSud(gs);
   LISIERE_SUD=sud;
@@ -3431,8 +3436,8 @@ function construireLisiere(){
 }
 /* le mur : la ligne de la palissade, et rien d'autre */
 function dansLisiere(x,y){
-  return y<BARRIERE+2 || y>MONDE-BARRIERE-2
-      || x<BARRIERE+2 || x>MONDE-BARRIERE-2;
+  return y<BARRIERE+2 || y>MONDE_H-BARRIERE-2
+      || x<BARRIERE+2 || x>MONDE_L-BARRIERE-2;
 }
 
 /* ---- si on se retrouve coincé, on cherche la place libre la plus proche ---- */
@@ -3445,7 +3450,7 @@ function degager(x,y){
       if(!bloque(nx,ny))return [nx,ny];
     }
   }
-  return [MONDE/2,MONDE/2];                    /* au pire, la clairière du centre */
+  return [MONDE_L/2,MONDE_H/2];                /* au pire, le milieu du monde */
 }
 
 /* ---- ce qui bloque le passage ---- */
@@ -3691,7 +3696,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
-let e={x:MONDE/2,y:MONDE/2,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
+let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
        outils:{},coffreOuvert:false,casses:[],coffre:null,casino:null,camp:null,
        four:null,           /* {recette, fin} : ce qui cuit en ce moment */
        sacMax:60};
@@ -3751,16 +3756,18 @@ async function descendreDeLigne(){
 /* Chaque lieu occupe sa part de la carte, au lieu de s'entasser au centre.
    La forge est au bord de l'eau, la mine adossée au coin sud-est pour que
    sa falaise ait un fond, le casino au nord-est loin du travail. */
-const CAMP_FIXE  =[330,300];                    /* le campement, au centre */
-const COFFRE_FIXE=[352,212];                    /* à 91 du camp */
-const FORGE_FIXE =[222,368];                    /* à 18 de la berge */
-const CASINO_FIXE=[496,122];                    /* en haut à droite, adossé à la forêt */
-const MINE_FIXE  =[516,470];                    /* la carrière, au sud-est */
+const CAMP_FIXE  =[730,300];                    /* le campement, au centre */
+const COFFRE_FIXE=[752,212];                    /* à 91 du camp */
+const FORGE_FIXE =[622,368];                    /* à 18 de la berge */
+const CASINO_FIXE=[896,122];                    /* en haut à droite, adossé à la forêt */
+const MINE_FIXE  =[916,470];                    /* la carrière, au sud-est */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
-const dansLaCarte=(v)=>typeof v==='number'&&v>BORD&&v<MONDE-BORD;
-let joueur={x:dansLaCarte(e.x)?e.x:CAMP_FIXE[0],
-            y:dansLaCarte(e.y)?e.y:CAMP_FIXE[1]+30,dir:'bas',pas:0,marche:false};
+const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
+/* Le monde s'est élargi vers l'ouest : une partie enregistrée avant garde
+   des x de l'ancien repère. On les décale d'autant, une fois. */
+let joueur={x:dansLaCarte(e.x,MONDE_L)?(e.x<400?e.x+400:e.x):CAMP_FIXE[0],
+            y:dansLaCarte(e.y,MONDE_H)?e.y:CAMP_FIXE[1]+30,dir:'bas',pas:0,marche:false};
 let joyX=0,joyY=0;
 
 /* ================= rendu ================= */
@@ -3836,8 +3843,8 @@ function dessiner(){
   /* La caméra avance en sous-pixels.
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
-  const camXf=Math.max(0,Math.min(MONDE-VW,joueur.x-VW/2));
-  const camYf=Math.max(0,Math.min(MONDE-VH,joueur.y-VH/2));
+  const camXf=Math.max(0,Math.min(MONDE_L-VW,joueur.x-VW/2));
+  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH/2));
   const camX=Math.floor(camXf), camY=Math.floor(camYf);
   const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
   const fy=Math.round((camYf-camY)*ECH)/ECH;
@@ -3848,7 +3855,7 @@ function dessiner(){
   ctx.imageSmoothingEnabled=false;
 
   ctx.fillStyle='#2b3a26';ctx.fillRect(0,0,VW+2,VH+2);
-  const lw=Math.min(VW+2,MONDE-camX), lh=Math.min(VH+2,MONDE-camY);
+  const lw=Math.min(VW+2,MONDE_L-camX), lh=Math.min(VH+2,MONDE_H-camY);
   ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 
   const px=Math.round((joueur.x-camX)*ECH)/ECH;
@@ -4232,17 +4239,17 @@ function salirMini(){miniSale=true;}          /* à appeler quand le décor chan
 
 function graverMini(T){
   MINI_K=T/(RAYON_VUE*2);
-  const k=MINI_K, D=Math.ceil(MONDE*k);
+  const k=MINI_K, D=Math.ceil(MONDE_L*k), DH=Math.ceil(MONDE_H*k);
   const c=document.createElement('canvas');
-  c.width=D;c.height=D;
+  c.width=D;c.height=DH;
   const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
   const px=(x)=>Math.round(x*k), py=(y)=>Math.round(y*k);
   /* l'herbe, avec ses nuances */
-  g.fillStyle='#7db35d';g.fillRect(0,0,D,D);
+  g.fillStyle='#7db35d';g.fillRect(0,0,D,DH);
   for(let i=0;i<90;i++){
     g.fillStyle=i%2?'#8ec96f':'#6f9e52';
-    g.fillRect((alea(i*3.1)*D)|0,(alea(i*5.7)*D)|0,6,4);
+    g.fillRect((alea(i*3.1)*D)|0,(alea(i*5.7)*DH)|0,6,4);
   }
   /* les chemins de terre, comme au sol */
   if(ROUTES&&ROUTES.length){
@@ -4250,15 +4257,15 @@ function graverMini(T){
     ROUTES.forEach(r=>r.forEach(([x,y])=>g.fillRect(px(x)-2,py(y)-2,5,5)));
   }
   /* la rivière et les ponts */
-  for(let yy=0;yy<MONDE;yy+=2){
+  for(let yy=0;yy<MONDE_H;yy+=2){
     g.fillStyle=surPont(yy)?'#8a6238':'#3a83a4';
     g.fillRect(px(rivX(yy)-RIV_LARGE),py(yy),Math.round(RIV_LARGE*2*k)+1,Math.ceil(2*k)+1);
   }
   /* la forêt du pourtour */
   g.fillStyle='#3d6b34';
   const b=Math.round(BARRIERE*k);
-  g.fillRect(0,0,D,b);g.fillRect(0,D-b,D,b);
-  g.fillRect(0,0,b,D);g.fillRect(D-b,0,b,D);
+  g.fillRect(0,0,D,b);g.fillRect(0,DH-b,D,b);
+  g.fillRect(0,0,b,DH);g.fillRect(D-b,0,b,DH);
   /* et tout le décor qui ne bouge pas */
   for(const o of DECOR){
     const x=px(o.x), y=py(o.y);
@@ -4432,15 +4439,15 @@ const penche=(x,y,force)=>
 const NUAGES=[];
 function semerNuages(){
   for(let i=0;i<7;i++)NUAGES.push({
-    x:alea(i*11.3)*MONDE, y:alea(i*17.7)*MONDE,
+    x:alea(i*11.3)*MONDE_L, y:alea(i*17.7)*MONDE_H,
     rx:70+alea(i*5.1)*90, ry:44+alea(i*7.9)*56,
     v:5+alea(i*3.3)*7, a:0.07+alea(i*13.1)*0.06});
 }
 function majNuages(dt){
   NUAGES.forEach(n=>{
     n.x+=n.v*dt;n.y+=n.v*dt*0.26;
-    if(n.x-n.rx>MONDE+120){n.x=-160;n.y=alea(n.ry*7)*MONDE;}
-    if(n.y-n.ry>MONDE+120)n.y=-160;
+    if(n.x-n.rx>MONDE_L+120){n.x=-160;n.y=alea(n.ry*7)*MONDE_H;}
+    if(n.y-n.ry>MONDE_H+120)n.y=-160;
   });
 }
 function dessinerNuages(g,camX,camY){
@@ -4508,7 +4515,7 @@ function refletsRiviere(g,camX,camY){
   const t=Date.now()/1000;
   g.save();g.globalAlpha=.18;g.fillStyle='#dff4ff';
   for(let i=0;i<26;i++){
-    const yy=((i*79+t*13)%MONDE);
+    const yy=((i*79+t*13)%MONDE_H);
     if(yy<camY-20||yy>camY+VH+20)continue;
     const cx=rivX(yy);
     if(surPont(yy))continue;
