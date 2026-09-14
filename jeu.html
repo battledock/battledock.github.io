@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0852';
+  var MA_VERSION='2026-09-14-0903';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -116,6 +117,21 @@ body{overflow:hidden}
 #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
 #haut .pet{font:400 8.5px Georgia,serif;font-style:italic;color:rgba(253,251,244,.62);
   text-shadow:0 1px 6px rgba(0,0,0,.9)}
+
+/* ---- la page du comptoir ---- */
+.listeVente{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.ligneVente{display:flex;align-items:center;gap:10px;width:100%;
+  padding:11px 13px;border-radius:12px;border:1px solid #cbb98f;
+  background:#f6eed8;text-align:left}
+.ligneVente:active{background:#efe3c4}
+.lvNom{flex:1;font:400 14px Georgia,serif;color:#4a3a22}
+.lvNb{font:600 11px ui-monospace,monospace;color:#8a7c5e}
+.lvPrix{font:600 13px Georgia,serif;color:#6b6a1e}
+.toutVendre{width:100%;padding:13px;border-radius:13px;border:0;
+  background:linear-gradient(180deg,#7d8c58,#5f6f42);color:#f6ecd2;
+  font:400 16px Georgia,serif;letter-spacing:1px}
+.toutVendre small{display:block;font:600 11px ui-monospace,monospace;
+  color:rgba(246,236,210,.8);margin-top:3px}
 #joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
 #hublot{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:4;
   width:120px;height:120px;border-radius:50%;padding:5px;
@@ -2153,6 +2169,122 @@ function dessinerMine(g,x,y){
   g.globalAlpha=1;
 }
 
+/* --- le comptoir : le long entrepôt du quai, gravé ---
+   On le voit d'un peu plus haut : le toit s'enfonce derrière la façade, ses
+   rangs de tuiles se resserrent en montant. Gravé en trois morceaux comme les
+   autres — le corps, les lumières allumées, les lumières éteintes. */
+const COMPT_L=250, COMPT_H=96, COMPT_TOIT=26;
+let CALQUE_COMPTOIR=null;
+function graverLeComptoir(){
+  const W=COMPT_L+40, H=COMPT_H+COMPT_TOIT+40, cx=W/2, sol=H-16;
+  const HT=sol-COMPT_H, L2=COMPT_L;
+  const PI={o:'#4f565c',s:'#5f666c',p:'#7b8288',c:'#8b939a',h:'#a2a9b0',e:'#b7bec4'};
+  const BR={o:'#7d3a28',s:'#8f4630',p:'#a3543a',c:'#b56448',h:'#c47a5c'};
+  const TU={o:'#6b3320',s:'#7d3d26',p:'#8f4a2e',c:'#a35a38',h:'#b56b46',faite:'#c98a5e'};
+  const B={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17'};
+  const toile=(f)=>{
+    const c=document.createElement('canvas');
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    c.width=W*D;c.height=H*D;
+    const g=c.getContext('2d');
+    g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    f({g,R:(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));},
+       T:(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+         for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}});
+    return c;
+  };
+  const corps=toile(({R,T,g})=>{
+    g.fillStyle=VERTS.ombre;
+    g.beginPath();g.ellipse(cx+4,sol+3,L2*0.5,13,0,0,7);g.fill();
+    const briques=(x0,y0,larg,haut2)=>{
+      for(let y=0;y<haut2;y+=4){
+        const dec=(y/4)%2?4:0;
+        for(let x=0;x<larg;x+=9){
+          const t=((x+y*3)*7)%4;
+          R(x0+x+dec,y0+y,8,3,[BR.p,BR.c,BR.s,BR.p][t]);
+          R(x0+x+dec,y0+y,8,1,BR.h);
+        }
+      }
+    };
+    /* LE TOIT : chaque rang monte de 4 points et se resserre de part et d'autre */
+    const basToit=HT+30, rangs=Math.round(COMPT_TOIT/4);
+    for(let rg=rangs-1;rg>=0;rg--){
+      const t=rg/rangs, y=basToit-rg*4, retrait=Math.round(t*14);
+      const x0=cx-L2/2-12+retrait, larg=L2+24-retrait*2;
+      for(let x=x0;x<x0+larg;x+=6){
+        const q=(x*7+rg*13)%4;
+        R(x,y,6,5,q===0?TU.p:(q===1?TU.c:(q===2?TU.s:TU.p)));
+        R(x,y,6,1,rg>rangs*0.6?TU.h:TU.c);
+        R(x+5,y,1,5,TU.o);
+      }
+      R(x0,y+4,larg,1,TU.o);
+      if(rg===rangs-1){R(x0-2,y-4,larg+4,5,TU.o);R(x0-2,y-4,larg+4,2,TU.faite);}
+    }
+    T([[cx-L2/2-12,basToit+4],[cx-L2/2+2,basToit-COMPT_TOIT+2],[cx-L2/2+2,basToit+4]],TU.s);
+    T([[cx+L2/2+12,basToit+4],[cx+L2/2-2,basToit-COMPT_TOIT+2],[cx+L2/2-2,basToit+4]],TU.o);
+    R(cx-L2/2-14,basToit+3,L2+28,4,PI.o);
+    R(cx-L2/2-14,basToit+3,L2+28,1,PI.c);
+    /* LA FAÇADE */
+    briques(cx-L2/2,basToit+6,L2,sol-basToit-14);
+    R(cx-L2/2,basToit+6,L2,3,BR.h);
+    R(cx-L2/2,sol-8,L2,8,PI.s);
+    R(cx-L2/2,sol-8,L2,2,PI.h);
+    for(let i=0;i<=6;i++){
+      const x=Math.round(cx-L2/2+i*(L2/6));
+      R(x-4,basToit+6,8,sol-basToit-14,PI.p);
+      R(x-4,basToit+6,2,sol-basToit-14,PI.h);
+    }
+    [-1,0,1].forEach(k=>{
+      const x=cx+k*Math.round(L2/3.2);
+      R(x-22,sol-46,44,38,'#241a12');
+      R(x-24,sol-50,48,5,B.boisO);R(x-24,sol-50,48,2,B.boisC);
+      R(x-22,sol-46,6,38,B.bois);R(x+16,sol-46,6,38,B.bois);
+      for(let y=0;y<38;y+=5){R(x-22,sol-46+y,6,1,B.boisO);R(x+16,sol-46+y,6,1,B.boisO);}
+      R(x-4,sol-30,8,3,'#4a4a52');
+    });
+    R(cx-L2/2-6,sol-8,L2+12,7,B.bois);
+    for(let x=0;x<L2+12;x+=7)R(cx-L2/2-6+x,sol-8,1,7,B.boisO);
+    R(cx-L2/2-6,sol-8,L2+12,2,B.boisH);
+    R(cx-L2/2-6,sol-1,L2+12,3,B.boisS);
+    R(cx+L2/2-26,sol-78,6,70,B.boisO);            /* la grue */
+    R(cx+L2/2-48,sol-78,28,5,B.boisO);
+    R(cx+L2/2-48,sol-78,28,2,B.boisC);
+    R(cx+L2/2-47,sol-73,2,18,'#4a4a52');
+    R(cx+L2/2-52,sol-55,12,10,B.bois);
+    const caisse=(x,y)=>{R(x,y,14,11,B.bois);R(x,y,14,2,B.boisH);
+      R(x,y+5,14,2,B.boisO);R(x+6,y,2,11,B.boisO);};
+    const tonneau=(x,y)=>{R(x,y,11,14,B.boisO);R(x+1,y,9,14,B.bois);
+      R(x,y+3,11,2,'#4a4a52');R(x,y+9,11,2,'#4a4a52');R(x+1,y,9,2,B.boisH);};
+    caisse(cx-L2/2+6,sol-22);caisse(cx-L2/2+22,sol-22);caisse(cx-L2/2+14,sol-33);
+    tonneau(cx+L2/2-74,sol-22);tonneau(cx+L2/2-62,sol-22);
+    R(cx-34,basToit+10,68,15,B.boisS);
+    R(cx-34,basToit+10,68,2,B.boisC);
+    g.fillStyle='#f0cf7d';g.font='700 11px Georgia,serif';g.textAlign='center';
+    g.fillText('COMPTOIR',cx,basToit+21);g.textAlign='left';
+  });
+  const lum=(on)=>toile(({R})=>{
+    [-1,0,1].forEach(k=>{
+      const x=cx+k*Math.round(L2/3.2);
+      R(x-16,sol-42,32,32,on?'#5b4a2a':'#241a12');
+      R(x-12,sol-30,24,18,on?'#8a6a2a':'#2f2418');
+    });
+    for(let i=0;i<5;i++){
+      const x=Math.round(cx-L2/2+14+i*((L2-28)/4));
+      R(x-3,sol-58,6,8,on?'#ffd27a':'#8a7544');
+      R(x-4,sol-61,8,3,'#3d2a17');
+      if(on)R(x-7,sol-60,14,14,'rgba(255,210,122,.12)');
+    }
+  });
+  CALQUE_COMPTOIR={corps,on:lum(true),off:lum(false),W,H,sol};
+}
+function dessinerComptoir(g,x,y){
+  if(!CALQUE_COMPTOIR)graverLeComptoir();
+  const C=CALQUE_COMPTOIR, t=Date.now()/1000;
+  const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
+  g.drawImage(C.corps,ox,oy,C.W,C.H);
+  g.drawImage(((t+0.6)%1.4)<0.9?C.on:C.off,ox,oy,C.W,C.H);
+}
+
 /* --- le casino : une maison de jeu en bois, gravée ---
    AVANT : 100 lignes redessinées à chaque image, dont cinq polygones.
    MAINTENANT : gravé en trois morceaux — le corps, les lumières allumées,
@@ -3318,6 +3450,12 @@ function semerDecor(){
     return !(dx<128&&dy>-180&&dy<92);
   });
   DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
+
+  /* le comptoir : le long entrepôt, en haut de la rive est */
+  e.comptoir=COMPTOIR_FIXE;
+  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+    !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
+  DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
   e.mine=MINE_FIXE;
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
   DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
@@ -3509,6 +3647,15 @@ function bloque(x,y){
     if(dx<46&&dy>-46&&dy<6&&!(dx<13&&dy>-12))return true;
   }
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
+  /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
+     Seules les trois portes de chargement laissent entrer. */
+  if(e.comptoir){
+    const dx=x-e.comptoir[0], dy=y-e.comptoir[1];
+    if(Math.abs(dx)<131&&dy>-70&&dy<6){
+      const porte=[-78,0,78].some(px=>Math.abs(dx-px)<20);
+      if(!(porte&&dy>-10))return true;
+    }
+  }
   if(e.casino){
     const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
     /* le mur, sauf la porte à deux battants au milieu */
@@ -3560,7 +3707,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
-    const haut=(o.t==='casino')?230:(o.t==='mine'?150:0);
+    const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='mine'?150:0));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -3657,6 +3804,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
+    else if(o.t==='comptoir')dessinerComptoir(g,x,y);
     else if(o.t==='mine')dessinerMine(g,x,y);
 
     else if(o.t==='coffre'){
@@ -3707,7 +3855,7 @@ let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolt
 try{const b=localStorage.getItem(CLE);if(b)e=Object.assign(e,JSON.parse(b));}catch(x){}
 /* Les bâtiments étaient autrefois placés autour de chaque joueur : on
    efface ces vieilles coordonnées pour que tout le monde partage la même carte. */
-e.casino=null;e.camp=null;e.coffre=null;
+e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
 if(!e.id){                                  /* un identifiant qui ne bouge plus */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
@@ -3763,7 +3911,8 @@ async function descendreDeLigne(){
 const CAMP_FIXE  =[730,300];                    /* le campement, au centre */
 const COFFRE_FIXE=[752,212];                    /* à 91 du camp */
 const FORGE_FIXE =[622,368];                    /* à 18 de la berge */
-const CASINO_FIXE=[896,122];                    /* en haut à droite, adossé à la forêt */
+const COMPTOIR_FIXE=[782,134];                  /* le long entrepôt, en haut */
+const CASINO_FIXE  =[880,332];                  /* le casino descend, au milieu de la rive */
 const MINE_FIXE  =[916,470];                    /* la carrière, au sud-est */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
@@ -5035,7 +5184,7 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  for(const o of DECOR)if((o.t==='casino'||o.t==='forge')&&autour.indexOf(o)<0)autour.push(o);
+  for(const o of DECOR)if((o.t==='casino'||o.t==='forge'||o.t==='comptoir')&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
@@ -5045,9 +5194,9 @@ function cible(){
     if(o.t==='buisson'&&o.cueilli&&Date.now()-o.cueilli<240000)continue;   /* repousse en 4 min */
     if(o.tombe)continue;
     const d=Math.hypot(o.x-joueur.x,o.y-joueur.y-6);
-    const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge')?66:48;  /* on les voit de plus loin */
+    const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?66:48;  /* on les voit de plus loin */
     /* un bâtiment passe avant un brin d'herbe : on ne rate pas sa porte */
-    const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge')?0.45:1;
+    const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir')?0.45:1;
     const dd=d*prio;
     if(d<portee&&dd<d0){d0=dd;res=o;continue;}
   }
@@ -5100,6 +5249,8 @@ function majAction(){
     b.innerHTML='';b.classList.remove('on');return;
   }else if(o.t==='mine'){
     b.innerHTML='Descendre<small>LA MINE</small>';
+  }else if(o.t==='comptoir'){
+    b.innerHTML='Entrer<small>COMPTOIR · VENDRE</small>';
   }else if(o.t==='casino'){
     b.innerHTML='Entrer<small>CASINO</small>';
   
@@ -5141,6 +5292,7 @@ function agir(){
       '<div class="vide2">Les buissons se cueillent à la main.</div>',false);
     return;
   }
+  if(o.t==='comptoir'){ouvrirLeComptoir();return;}
   if(o.t==='forge'){location.href='forge.html';return;}
   if(o.t==='mine'){
     sauver();envoyerSauvegarde(true);
@@ -5635,6 +5787,61 @@ function ouvrirPage(titre,sous,corps,clair){
    '<div class="sacCorps" style="padding-top:14px">'+corps+'</div>';
   $('p2-x').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2').classList.add('on');
+}
+
+
+/* ================= LE COMPTOIR : on y vend sa récolte =================
+   Les prix viennent du serveur (la fonction `cours`), en centimes. On vend
+   une pile entière d'un coup : le serveur retire du sac et crédite l'argent,
+   c'est lui qui fait foi. */
+const PRIX_COMPTOIR={lingotFer:52,lingotCuivre:34,gemme:120,or:70,argent:36,
+  fer:14,cuivre:8,charbon:9,brique:11,resine:10,pierre:5,champignons:4,plumes:4,
+  bois:3,herbes:3,fibre:2,baies:2,argile:2,roseaux:2};
+
+function ouvrirLeComptoir(){
+  const lignes=Object.entries(e.sac||{})
+    .filter(([k,n])=>n>0&&PRIX_COMPTOIR[k])
+    .sort((a,b)=>PRIX_COMPTOIR[b[0]]*b[1]-PRIX_COMPTOIR[a[0]]*a[1]);
+  const total=lignes.reduce((t,[k,n])=>t+PRIX_COMPTOIR[k]*n,0);
+  const sou=(c)=>(c/100).toFixed(2).replace('.',',')+' €';
+  let corps;
+  if(!lignes.length){
+    corps='<div class="vide2">Ton sac est vide.<br>Traverse le gué : tout pousse '+
+          'sur l’autre rive.</div>';
+  }else{
+    corps='<div class="listeVente">'+lignes.map(([k,n])=>
+      '<button class="ligneVente" data-vendre="'+k+'">'+
+        '<span class="lvNom">'+(OBJETS[k]?OBJETS[k].nom:k)+'</span>'+
+        '<span class="lvNb">×'+n+'</span>'+
+        '<span class="lvPrix">'+sou(PRIX_COMPTOIR[k]*n)+'</span>'+
+      '</button>').join('')+'</div>'+
+      '<button class="toutVendre" id="toutVendre">Tout vendre'+
+      '<small>'+sou(total)+'</small></button>';
+  }
+  ouvrirPage('Le comptoir','ON ACHÈTE TA RÉCOLTE',corps,false);
+  document.querySelectorAll('[data-vendre]').forEach(b=>
+    b.onclick=()=>vendreAuComptoir([b.dataset.vendre]));
+  const tv=$('toutVendre');
+  if(tv)tv.onclick=()=>vendreAuComptoir(lignes.map(([k])=>k));
+}
+async function vendreAuComptoir(types){
+  let gagne=0;
+  for(const k of types){
+    const n=(e.sac||{})[k]||0;
+    if(!n||!PRIX_COMPTOIR[k])continue;
+    const d=await appelRPC('echanger',{p_joueur:e.id,p_type:k,p_nb:n});
+    if(!d||d.erreur)continue;
+    gagne+=d.gain||0;
+    if(typeof d.euros==='number')e.euros=d.euros;
+    await appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}}).then(r=>adopterSac(r));
+  }
+  if(gagne){
+    sauver();majHaut();majPastille();
+    const c=cible();
+    if(c)texteVolant(c.x,c.y-54,'+'+(gagne/100).toFixed(2).replace('.',',')+' €','#ffd77a');
+    try{navigator.vibrate&&navigator.vibrate([10,30,16]);}catch(x){}
+  }
+  ouvrirLeComptoir();
 }
 
 /* ================= bâtir ================= */
