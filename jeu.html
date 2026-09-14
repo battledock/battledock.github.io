@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0800';
+  var MA_VERSION='2026-09-14-0827';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3195,6 +3196,10 @@ function semerDecor(){
               plumes:13,fleurs:7};
   /* seuls les roseaux et l'argile ont le droit de toucher l'eau */
   const loinDeLEau=(x,y,t)=>Math.abs(x-rivX(y))-(DEMI[t]||14) > RIV_LARGE+3;
+  /* LES DEUX RIVES : tout ce qui se récolte pousse à l'ouest. La rive est
+     est celle des bâtiments — on y vit, on n'y ramasse rien. C'est ce qui
+     donne son sens au gué. */
+  const rivEst=(x,y)=>x>rivX(y);
   const surLieu=(x,y)=>LIEUX_FIXES.some(([L,r])=>{
     const dy=y-L[1];
     return Math.hypot(x-L[0],dy<0?dy:dy*0.6)<r+14;
@@ -3206,7 +3211,7 @@ function semerDecor(){
     for(let i=0;i<11;i++){
       const x=Math.round(b[0]+(A(k*9+i)-.5)*230);
       const y=Math.round(b[1]+(A(k*13+i)-.5)*200);
-      if(!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,34))continue;
+      if(rivEst(x,y)||!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,34))continue;
       DECOR.push({t:'arbre',x,y,gr:Math.floor(A(k+i*3)*3)});
     }
   });
@@ -3214,21 +3219,21 @@ function semerDecor(){
   for(let i=0;i<90;i++){
     const x=Math.round(BORD+20+A(i*1.7)*(MONDE_L-2*BORD-40));
     const y=Math.round(BORD+40+A(i*2.9)*(MONDE_H-2*BORD-60));
-    if(!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'arbre')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,38))continue;
     DECOR.push({t:'arbre',x,y,gr:Math.floor(A(i*5)*3)});
   }
   /* --- les pierres : de petits tas, par endroits --- */
   for(let i=0;i<90;i++){
     const x=Math.round(BORD+14+A(i*3.1)*(MONDE_L-2*BORD-28));
     const y=Math.round(BORD+24+A(i*4.3)*(MONDE_H-2*BORD-40));
-    if(!loinDeLEau(x,y,'rocher')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'rocher')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,24))continue;
     DECOR.push({t:'rocher',x,y,gr:Math.floor(A(i*7)*3)});
   }
   /* buissons */
   for(let i=0;i<150;i++){
     const x=Math.round(BORD+18+A(i*5.7)*(MONDE_L-2*BORD-36));
     const y=Math.round(BORD+34+A(i*6.3)*(MONDE_H-2*BORD-50));
-    if(!loinDeLEau(x,y,'buisson')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'buisson')||!dedans(x,y)||depart(x,y)||surLieu(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'buisson',x,y,gr:Math.floor(A(i*9)*2)});
   }
   /* --- les rochers à minerai --- */
@@ -3241,8 +3246,7 @@ function semerDecor(){
   /* --- l'argile, sur les berges de la rivière --- */
   for(let i=0;i<46;i++){
     const y=Math.round(BORD+60+A(i*2.3)*(MONDE_H-2*BORD-120));
-    const cote=A(i*3.7)<.5?-1:1;
-    const x=Math.round(rivX(y)+cote*(RIV_LARGE+21+A(i*5.1)*5));
+    const x=Math.round(rivX(y)-(RIV_LARGE+21+A(i*5.1)*5));   /* toujours la rive ouest */
     if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,16))continue;
     DECOR.push({t:'argile',x,y,gr:0});
   }
@@ -3252,11 +3256,10 @@ function semerDecor(){
      ce qui fait qu'on les voit. */
   for(let b=0;b<26;b++){
     const yb=Math.round(BORD+40+A(b*4.7)*(MONDE_H-2*BORD-80));
-    const cote=A(b*6.1)<.5?-1:1;
     const n=3+Math.floor(A(b*8.3)*4);
     for(let k=0;k<n;k++){
       const y=Math.round(yb+(k-n/2)*8+A(b*3+k)*5);
-      const x=Math.round(rivX(y)+cote*(RIV_LARGE+2+A(b*7.3+k)*6));
+      const x=Math.round(rivX(y)-(RIV_LARGE+2+A(b*7.3+k)*6));  /* rive ouest */
       if(x<BORD+20||x>MONDE_L-BORD-20||surLieu(x,y)||!libre(x,y,7))continue;
       DECOR.push({t:'roseaux',x,y,gr:Math.floor(A(b*11+k)*3)});
     }
@@ -3268,14 +3271,14 @@ function semerDecor(){
     const arbre=a[Math.floor(A(i*9.7)*a.length)];
     const x=Math.round(arbre.x+(A(i*11.3)-.5)*54);
     const y=Math.round(arbre.y+14+A(i*13.1)*26);
-    if(!loinDeLEau(x,y,'champignons')||!dedans(x,y)||libre(x,y,16)===false)continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'champignons')||!dedans(x,y)||libre(x,y,16)===false)continue;
     DECOR.push({t:'champignons',x,y,gr:0});
   }
   /* --- les herbes, en clairière --- */
   for(let i=0;i<110;i++){
     const x=Math.round(BORD+22+A(i*15.7)*(MONDE_L-2*BORD-44));
     const y=Math.round(BORD+40+A(i*17.3)*(MONDE_H-2*BORD-60));
-    if(!loinDeLEau(x,y,'herbes')||!dedans(x,y)||!libre(x,y,15))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'herbes')||!dedans(x,y)||!libre(x,y,15))continue;
     DECOR.push({t:'herbes',x,y,gr:0});
   }
   /* --- les plumes, au pied des arbres --- */
@@ -3285,7 +3288,7 @@ function semerDecor(){
     const arbre=a[Math.floor(A(i*19.1)*a.length)];
     const x=Math.round(arbre.x+(A(i*21.7)-.5)*44);
     const y=Math.round(arbre.y+10+A(i*23.3)*22);
-    if(!loinDeLEau(x,y,'plumes')||!dedans(x,y))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'plumes')||!dedans(x,y))continue;
     DECOR.push({t:'plumes',x,y,gr:0});
   }
 
@@ -3293,7 +3296,7 @@ function semerDecor(){
   for(let i=0;i<110;i++){
     const x=Math.round(BORD+16+A(i*7.1)*(MONDE_L-2*BORD-32));
     const y=Math.round(BORD+30+A(i*8.9)*(MONDE_H-2*BORD-44));
-    if(!loinDeLEau(x,y,'fleurs')||!dedans(x,y)||!libre(x,y,22))continue;
+    if(rivEst(x,y)||!loinDeLEau(x,y,'fleurs')||!dedans(x,y)||!libre(x,y,22))continue;
     DECOR.push({t:'fleurs',x,y,gr:0});
   }
 
