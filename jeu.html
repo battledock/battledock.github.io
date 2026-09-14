@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1139';
+  var MA_VERSION='2026-09-14-1202';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -429,6 +430,16 @@ body.clavier #bandeau{padding-bottom:9px}
 .tout:disabled{opacity:.45}
 .libre button{padding:13px 18px;border-radius:12px;border:1px solid #8a6a2a;
   background:linear-gradient(180deg,#e2ba69,#b4892f);color:#2b1d12;font:700 12.5px system-ui}
+
+/* ---- le compteur : à n'afficher que pour mesurer ---- */
+#perf{position:fixed;left:14px;top:calc(58px + env(safe-area-inset-top));z-index:6;
+  display:none;padding:8px 11px;border-radius:10px;
+  background:rgba(10,14,10,.78);border:1px solid rgba(255,255,255,.12);
+  font:600 10px ui-monospace,monospace;color:#9fd67a;line-height:1.55;
+  pointer-events:none;white-space:pre}
+#perf.on{display:block}
+#perf b{color:#f6ecd2;font-weight:700}
+#perf u{color:#e8a06a;text-decoration:none}
 /* ---- le bouton d'action : une plaque d'ivoire, comme le bandeau du haut ----
    Même ivoire, même serif, même intitulé en petites capitales. Le filet gravé
    en haut rappelle la plaque, et les coups restants remplissent un trait de
@@ -683,6 +694,7 @@ body.clavier #bandeau{padding-bottom:9px}
 <body>
 <canvas id="cv"></canvas>
 <canvas id="joy" width="132" height="132"></canvas>
+<div id="perf"></div>
 <div id="haut">
   <span class="col">
     <span class="pt">le sac</span><span class="gd" id="hSac">0/60</span><span class="fil"></span>
@@ -3727,6 +3739,7 @@ function premierVisible(yMin){
    par sa profondeur. Avant, les autres joueurs étaient peints avant le décor :
    ils passaient sous les rochers même quand ils étaient devant. */
 function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
+  if(PERF.on)PERF.objets=0;
   const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
   let iG=0;
   const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
@@ -3738,6 +3751,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       poserGens(1e9);
       break;
     }
+    if(PERF.on)PERF.objets++;
     poserGens(o.y);
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
@@ -4636,6 +4650,64 @@ const rebond  =t=>{const n=7.5625,d=2.75;
    peine, on allège tout seul. */
 let QUALITE=1;                 /* 1 = tout, 0.5 = allégé, 0 = l'essentiel */
 let msMoyen=16, imagesLentes=0, imagesRapides=0;
+
+/* ================= LE COMPTEUR D'IMAGES =================
+   Mon banc d'essai mesure du javascript ; ton téléphone a un vrai canevas et
+   un vrai GPU. Tant qu'on n'a pas le chiffre sur ton écran, on devine.
+   Trois touches rapides sur le bandeau du haut l'allument ou l'éteignent. */
+const PERF={on:false,n:0,depuis:0,pire:0,traits:0,derniers:[],objets:0};
+function basculerPerf(){
+  PERF.on=!PERF.on;
+  $('perf').classList.toggle('on',PERF.on);
+  if(PERF.on){
+    PERF.depuis=performance.now();PERF.n=0;PERF.pire=0;PERF.derniers=[];
+    /* on ne compte les traits QUE quand le compteur est allumé :
+       le comptage lui-même coûterait sinon plus cher que ce qu'il mesure */
+    if(!ctx.__vraiFill){
+      ctx.__vraiFill=ctx.fillRect.bind(ctx);
+      ctx.__vraiCopie=ctx.drawImage.bind(ctx);
+      ctx.fillRect=function(a,b,c,d){PERF.traits++;return ctx.__vraiFill(a,b,c,d);};
+      ctx.drawImage=function(){PERF.traits++;return ctx.__vraiCopie.apply(ctx,arguments);};
+    }
+  }else if(ctx.__vraiFill){
+    ctx.fillRect=ctx.__vraiFill;ctx.drawImage=ctx.__vraiCopie;
+    ctx.__vraiFill=null;ctx.__vraiCopie=null;
+  }
+  try{navigator.vibrate&&navigator.vibrate(14);}catch(x){}
+}
+function majPerf(ms){
+  if(!PERF.on)return;
+  PERF.n++;
+  PERF.derniers.push(ms);
+  if(PERF.derniers.length>120)PERF.derniers.shift();
+  if(ms>PERF.pire)PERF.pire=ms;
+  const t=performance.now();
+  if(t-PERF.depuis<500)return;
+  const fps=Math.round(PERF.n*1000/(t-PERF.depuis));
+  const tri=PERF.derniers.slice().sort((a,b)=>a-b);
+  const median=tri[tri.length>>1]||0;
+  const p95=tri[Math.floor(tri.length*0.95)]||0;
+  $('perf').innerHTML=
+    '<b>'+fps+'</b> images/s\n'+
+    'milieu  '+median.toFixed(1)+' ms\n'+
+    'lentes  <u>'+p95.toFixed(1)+' ms</u>\n'+
+    'pire    '+PERF.pire.toFixed(1)+' ms\n'+
+    'traits  '+PERF.traits+'\n'+
+    'objets  '+PERF.objets+'\n'+
+    'qualité '+QUALITE;
+  PERF.depuis=t;PERF.n=0;PERF.pire=0;
+}
+/* trois touches rapides sur le bandeau du haut */
+(function(){
+  let n=0,quand=0;
+  addEventListener('pointerdown',(ev)=>{
+    if(ev.clientY>110)return;
+    const t=Date.now();
+    n=(t-quand<600)?n+1:1;quand=t;
+    if(n>=3){n=0;basculerPerf();}
+  },true);
+})();
+
 function mesurer(ms){
   msMoyen=msMoyen*0.9+ms*0.1;
   if(msMoyen>26){
@@ -6391,7 +6463,9 @@ taille();
 let t0=performance.now();
 (function boucle(t){
   requestAnimationFrame(boucle);
-  const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);t0=t;
+  const dt=Math.min(.05,(t-t0)/1000);mesurer(t-t0);majPerf(t-t0);
+  if(PERF.on)PERF.traits=0;
+  t0=t;
   /* micro-arrêt à l'impact : tout se fige un instant, ça donne du poids */
   if(ARRET>0){ARRET-=dt;}
   else{
