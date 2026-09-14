@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1107';
+  var MA_VERSION='2026-09-14-1139';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4059,7 +4060,7 @@ function dessiner(){
   nettoyerBulles();
   /* les acteurs : moi et les autres, chacun à sa profondeur */
   const acteurs=[{y:joueur.y,
-    f:()=>sprite(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche)}];
+    f:()=>personne(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche)}];
   for(const [,a] of AUTRES){
     const ax=a.x-camX, ay=a.y-camY;
     if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -4094,6 +4095,56 @@ function dessiner(){
   }
 
   if(LISIERE_SUD)ctx.drawImage(LISIERE_SUD,camX,camY,lw,lh,0,0,lw,lh);
+}
+
+
+/* ================= LE PERSONNAGE, GRAVÉ =================
+   AVANT : 114 traits redessinés à chaque image, par personne. À sept, plus
+   de 800 traits rien que pour les joueurs.
+   MAINTENANT : les poses sont gravées à la demande — quatre directions, une
+   pose immobile et six images de marche — puis recopiées. Une recopie par
+   personne au lieu de 114 traits.
+   Pendant un geste (pioche, hache, cueillette) on redessine comme avant :
+   ce sont des mouvements continus, pas des poses, et ça ne dure qu'un instant. */
+const PASM=6;                         /* six images pour un cycle de marche */
+const CASE_L=64, CASE_H=80;           /* la boîte d'une pose */
+const POSES=new Map();                /* une planche par apparence rencontrée */
+const clePose=(ap)=>{
+  let c='';for(const k in ap)c+=ap[k]+',';
+  return c;
+};
+function planche(ap){
+  const cle=clePose(ap);
+  let P=POSES.get(cle);
+  if(!P){
+    if(POSES.size>9)POSES.clear();     /* on ne garde pas les partis */
+    P={cle,dirs:{}};POSES.set(cle,P);
+  }
+  return P;
+}
+function poseDe(ap,dir,i){
+  const P=planche(ap);
+  let L=P.dirs[dir];
+  if(!L){L=P.dirs[dir]=[];}
+  if(L[i])return L[i];
+  /* on ne grave que la pose qu'on demande : rien n'est gravé pour rien */
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=CASE_L*D;c.height=CASE_H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const sauve=GESTE;GESTE={t:0};
+  sprite(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)*(6.2832/PASM):0,i>0);
+  GESTE=sauve;
+  L[i]=c;
+  return c;
+}
+/* le personnage à l'écran : une recopie si aucun geste, sinon l'ancien dessin */
+function personne(g,x,y,ap,dir,pas,marche){
+  if(GESTE&&GESTE.t>0){sprite(g,x,y,ap,dir,pas,marche);return;}
+  const i=marche?1+(Math.floor(pas/(6.2832/PASM))%PASM):0;
+  const c=poseDe(ap,dir||'bas',i);
+  g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
 }
 
 /* ================= déplacement ================= */
@@ -5118,7 +5169,7 @@ function dessinerUnAutre(g,a,camX,camY){
   GESTE=a.gesteT>0
     ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
     :{t:0};
-  sprite(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
+  personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
   GESTE=sauve;
   g.font='700 7px ui-monospace,monospace';g.textAlign='center';
   g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,y-49);
