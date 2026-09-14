@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0915';
+  var MA_VERSION='2026-09-14-1107';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3206,7 +3207,7 @@ function tracerChemin(a,b){
         const nx=x+dx,ny=y+dy;
         if(nx<0||ny<0||nx>=N_CH||ny>=N_CH)return;
         const j=ny*N_CH+nx;if(dur[j])return;
-        const c=cout[i]+(dx&&dy?1.42:1)+(dd[i]>=0&&dd[i]!==k?1.8:0);
+        const c=cout[i]+(dx&&dy?1.42:1)+(dd[i]>=0&&dd[i]!==k?2.2:0);
         if(c<cout[j]-0.001){cout[j]=c;prev[j]=i;dd[j]=k;suite.push(j);}
       });
     }
@@ -3219,9 +3220,10 @@ function tracerChemin(a,b){
 function calculerChemins(){
   const pontN=[Math.round(rivX(PONTS[0])),PONTS[0]];
   const pontS=[Math.round(rivX(PONTS[1])),PONTS[1]];
-  ROUTES=[[CAMP_FIXE,COFFRE_FIXE],[CAMP_FIXE,FORGE_FIXE],[CAMP_FIXE,CASINO_FIXE],
-          [CAMP_FIXE,MINE_FIXE],[CAMP_FIXE,pontN],[FORGE_FIXE,pontS],
-          [FORGE_FIXE,MINE_FIXE]].map(([a,b])=>tracerChemin(a,b));
+  /* en étoile depuis la place, plus les deux amorces vers les gués */
+  ROUTES=[[CAMP_FIXE,COMPTOIR_FIXE],[CAMP_FIXE,CASINO_FIXE],[CAMP_FIXE,COFFRE_FIXE],
+          [CAMP_FIXE,FORGE_FIXE],[CAMP_FIXE,MINE_FIXE],
+          [COMPTOIR_FIXE,pontN],[FORGE_FIXE,pontS]].map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
     const gx=Math.round(x/PAS_CH),gy=Math.round(y/PAS_CH);
@@ -3234,21 +3236,33 @@ function calculerChemins(){
 const TERRE_CH=['#a8926a','#b9a37a','#96805c','#c4b18c','#87734f'];
 function graverChemins(g){
   if(!ROUTES.length)calculerChemins();
-  ROUTES.forEach(route=>route.forEach(([x,y],i)=>{
-    const larg=5+Math.round(alea(x*0.11+y*0.07)*2);      /* la largeur respire */
+  ROUTES.forEach((route,nr)=>route.forEach(([x,y],i)=>{
+    /* les routes qui partent de la place sont larges ; les amorces vers les
+       gués le sont un peu moins */
+    const base=nr<5?8:7;
+    const larg=base+Math.round(alea(x*0.11+y*0.07)*2);
     for(let dy=-larg;dy<=larg;dy++)for(let dx=-larg;dx<=larg;dx++){
       const d=Math.hypot(dx,dy);if(d>larg)continue;
       const px=x+dx,py=y+dy;
       if(px<0||py<0||px>=MONDE_L||py>=MONDE_H)continue;
       if(Math.abs(px-rivX(py))<RIV_LARGE+2)continue;      /* jamais dans l'eau */
-      /* le bord est rongé : la terre se fond dans l'herbe */
-      if(d>larg-2&&alea(px*0.7+py*1.3)<0.45)continue;
+      /* le bord se fond dans l'herbe en deux crans : la lisière est irrégulière */
+      if(d>larg-1&&alea(px*0.7+py*1.3)<0.62)continue;
+      if(d>larg-3&&alea(px*1.7+py*0.9)<0.24)continue;
       const t=alea(px*0.31+py*0.19);
-      g.fillStyle=d<2?TERRE_CH[3]:(t<0.2?TERRE_CH[2]:(t<0.75?TERRE_CH[0]:TERRE_CH[1]));
+      g.fillStyle=d<2.5?TERRE_CH[3]:(t<0.18?TERRE_CH[2]:(t<0.72?TERRE_CH[0]:TERRE_CH[1]));
       g.fillRect(px,py,1,1);
     }
-    if(i%3===0){                                          /* les deux ornières */
-      g.fillStyle=TERRE_CH[4];g.fillRect(x-2,y,1,1);g.fillRect(x+2,y,1,1);
+    /* les deux ornières creusées par les charrettes, avec leur fond plus sombre */
+    if(i%2===0){
+      const e=Math.round(larg*0.45);
+      g.fillStyle=TERRE_CH[4];g.fillRect(x-e,y,2,1);g.fillRect(x+e-1,y,2,1);
+      if(i%6===0){g.fillStyle='#7a6647';g.fillRect(x-e,y+1,2,1);g.fillRect(x+e-1,y+1,2,1);}
+    }
+    /* quelques cailloux, au bord de la route */
+    if(alea(x*3.1+y*5.7)<0.05){
+      g.fillStyle='#8b939a';
+      g.fillRect(x+(alea(x)<0.5?-larg:larg)-1,y,2,2);
     }
   }));
 }
@@ -3469,7 +3483,10 @@ function semerDecor(){
 
   /* le comptoir : le long entrepôt, en haut de la rive est */
   e.comptoir=COMPTOIR_FIXE;
-  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+  /* on dégage autour de l'entrepôt, mais jamais un autre bâtiment :
+     le casino est à 124 points de lui, il se faisait effacer */
+  const BATIS=['casino','mine','forge','coffre','pont','comptoir','camp'];
+  DECOR=DECOR.filter(o=>o.t==='fleurs'||BATIS.includes(o.t)||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
   e.mine=MINE_FIXE;
@@ -3925,12 +3942,15 @@ async function descendreDeLigne(){
 /* Chaque lieu occupe sa part de la carte, au lieu de s'entasser au centre.
    La forge est au bord de l'eau, la mine adossée au coin sud-est pour que
    sa falaise ait un fond, le casino au nord-est loin du travail. */
-const CAMP_FIXE  =[730,300];                    /* le campement, au centre */
-const COFFRE_FIXE=[752,212];                    /* à 91 du camp */
-const FORGE_FIXE =[622,368];                    /* à 18 de la berge */
-const COMPTOIR_FIXE=[782,134];                  /* le long entrepôt, en haut */
-const CASINO_FIXE  =[880,332];                  /* le casino descend, au milieu de la rive */
-const MINE_FIXE  =[916,470];                    /* la carrière, au sud-est */
+/* La rive est est rangée en PLACE : le camp au milieu, les cinq autres tout
+   autour à peu près à égale distance, et des routes en étoile. Le comptoir
+   reste en haut, centré, comme un fronton. */
+const CAMP_FIXE  =[780,300];                    /* le campement, au centre */
+const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
+const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
+const COMPTOIR_FIXE=[782,134];                  /* le long entrepôt, en haut, centré */
+const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
+const MINE_FIXE  =[770,494];                    /* plein sud, au bout de la place */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
