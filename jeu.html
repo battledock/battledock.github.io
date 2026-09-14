@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1212';
+  var MA_VERSION='2026-09-14-1357';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2202,6 +2203,57 @@ function dessinerMine(g,x,y){
   g.globalAlpha=1;
 }
 
+/* --- le panneau, près du casino ---
+   Un chevalet de bois avec une affiche : la photo, réduite à 54 x 72 points
+   et ramenée à vingt couleurs, et le texte dessous. Le tout est gravé une
+   fois — dès que la photo est chargée — puis recopié. */
+const PANNEAU_FIXE=[836,300];
+const PHOTO_PANNEAU=new Image();
+let CALQUE_PANNEAU=null;
+PHOTO_PANNEAU.onload=()=>{CALQUE_PANNEAU=null;};
+PHOTO_PANNEAU.src='data:image/png;base64,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';
+function graverLePanneau(){
+  const W=96,H=124,cx=W/2,sol=H-8;
+  const B={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17',
+           or:'#c9a24a',orC:'#f0cf7d'};
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  g.fillStyle=VERTS.ombre;
+  g.beginPath();g.ellipse(cx,sol,24,6,0,0,7);g.fill();
+  /* les deux pieds en A, et leur traverse */
+  R(cx-20,sol-30,5,30,B.boisO);
+  R(cx+15,sol-30,5,30,B.boisO);
+  R(cx-20,sol-30,2,30,B.bois);
+  R(cx-18,sol-16,38,4,B.boisO);
+  R(cx-18,sol-16,38,1,B.boisC);
+  /* le panneau incliné */
+  R(cx-30,sol-98,60,70,B.boisS);
+  R(cx-30,sol-98,60,3,B.boisC);
+  R(cx-27,sol-95,54,54,'#241a12');
+  R(cx-32,sol-102,64,5,B.bois);
+  R(cx-32,sol-102,64,2,B.boisH);
+  /* la photo, dans le cadre */
+  if(PHOTO_PANNEAU.complete&&PHOTO_PANNEAU.naturalWidth)
+    g.drawImage(PHOTO_PANNEAU,cx-26,sol-94,52,46);
+  /* le bandeau du texte, sous l'image */
+  R(cx-27,sol-48,54,7,B.boisS);
+  g.fillStyle=B.orC;g.font='700 7px Georgia,serif';g.textAlign='center';
+  g.fillText('BANNI DU CASINO',cx,sol-42);
+  g.textAlign='left';
+  /* deux clous */
+  R(cx-25,sol-93,2,2,'#c0c7cd');R(cx+23,sol-93,2,2,'#c0c7cd');
+  CALQUE_PANNEAU={img:c,W,H,sol};
+}
+function dessinerPanneau(g,x,y){
+  if(!CALQUE_PANNEAU)graverLePanneau();
+  const C=CALQUE_PANNEAU;
+  g.drawImage(C.img,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+}
+
 /* --- le comptoir : le long entrepôt du quai, gravé ---
    On le voit d'un peu plus haut : le toit s'enfonce derrière la façade, ses
    rangs de tuiles se resserrent en montant. Gravé en trois morceaux comme les
@@ -3500,10 +3552,11 @@ function semerDecor(){
   e.comptoir=COMPTOIR_FIXE;
   /* on dégage autour de l'entrepôt, mais jamais un autre bâtiment :
      le casino est à 124 points de lui, il se faisait effacer */
-  const BATIS=['casino','mine','forge','coffre','pont','comptoir','camp'];
+  const BATIS=['casino','mine','forge','coffre','pont','comptoir','camp','panneau'];
   DECOR=DECOR.filter(o=>o.t==='fleurs'||BATIS.includes(o.t)||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
+  DECOR.push({t:'panneau',x:PANNEAU_FIXE[0],y:PANNEAU_FIXE[1],gr:0});
   e.mine=MINE_FIXE;
   DECOR=DECOR.filter(o=>Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
   DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
@@ -3697,6 +3750,11 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
+  /* le chevalet : un petit obstacle, on le contourne */
+  {
+    const dx=Math.abs(x-PANNEAU_FIXE[0]), dy=y-PANNEAU_FIXE[1];
+    if(dx<15&&dy>-12&&dy<5)return true;
+  }
   if(e.comptoir){
     const dx=x-e.comptoir[0], dy=y-e.comptoir[1];
     /* Aucune poche : le bâtiment est plein, portes comprises. On ne les
@@ -3856,6 +3914,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino')dessinerCasino(g,x,y);
     else if(o.t==='comptoir')dessinerComptoir(g,x,y);
+    else if(o.t==='panneau')dessinerPanneau(g,x,y);
     else if(o.t==='mine')dessinerMine(g,x,y);
 
     else if(o.t==='coffre'){
@@ -4986,7 +5045,7 @@ async function chargerLaCarte(){
     /* on garde ce qui n'est pas une ressource : ponts, bâtiments, coffre */
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
-    const garder=['pont','casino','mine','forge','coffre','comptoir','souche','gravats'];
+    const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
