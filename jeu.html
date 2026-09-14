@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0540';
+  var MA_VERSION='2026-09-14-0548';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -420,49 +421,19 @@ body.clavier #bandeau{padding-bottom:9px}
   justify-content:center;padding:0 4px;border:1px solid #7d2b2b;font-style:normal}
 .pastille.on{display:flex}
 
-/* ---- le voile du lancement : il couvre tout jusqu'à ce que le monde soit prêt ---- */
+/* ---- le voile du lancement : il couvre tout jusqu'à ce que le monde soit prêt ----
+   La prairie est maintenant GRAVÉE sur un canevas, avec le même sol et les
+   mêmes huit fleurs que le jeu. Avant c'était du CSS : des ellipses et des
+   dégradés flous, le seul endroit du jeu qui n'était pas en pixel art. */
 #voile{position:fixed;inset:0;z-index:60;background:#0d1410;overflow:hidden;
   display:flex;flex-direction:column;justify-content:flex-end;
   transition:opacity .5s ease}
 #voile.parti{opacity:0;pointer-events:none}
-.vScene{position:absolute;inset:0;overflow:hidden}
-.vCiel{position:absolute;inset:0;
-  background:linear-gradient(180deg,#101a18 0%,#1d2a22 42%,#2f3a26 72%,#3a4426 100%)}
-.vCiel::after{content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at 50% 88%,rgba(255,176,58,.22),transparent 42%)}
-.vColline{position:absolute;left:-10%;right:-10%;border-radius:50% 50% 0 0}
-.vLoin{bottom:33%;height:26%;background:#243021;opacity:.9}
-.vPres{bottom:27%;height:20%;background:#2d3c25}
-.vSol{position:absolute;left:0;right:0;bottom:0;height:28%;
-  background:linear-gradient(180deg,#3b4a2a,#2a3520)}
-.vSol::after{content:'';position:absolute;inset:0;
-  background:repeating-linear-gradient(90deg,rgba(0,0,0,.06) 0 2px,transparent 2px 9px)}
-.vArbre{position:absolute;bottom:27%;width:0;height:0;
-  border-left:13px solid transparent;border-right:13px solid transparent;
-  border-bottom:34px solid #1e2a1b}
-.vArbre::after{content:'';position:absolute;left:-2px;top:34px;width:4px;height:10px;
-  background:#2a1f14}
-.v1{left:12%;transform:scale(.9)}
-.v2{left:78%;transform:scale(1.15)}
-.v3{left:64%;transform:scale(.7);opacity:.8}
-/* le feu de camp, au centre */
-.vFeu{position:absolute;left:50%;bottom:23%;transform:translateX(-50%);
-  width:34px;height:30px}
-.vFeu i{position:absolute;bottom:0;left:50%;transform:translateX(-50%);
-  border-radius:50% 50% 46% 46%;animation:vFlamme 1.1s ease-in-out infinite}
-.vFeu i:nth-child(1){width:26px;height:26px;background:#c9531c;opacity:.9}
-.vFeu i:nth-child(2){width:17px;height:19px;background:#e8802c;animation-delay:.16s}
-.vFeu i:nth-child(3){width:9px;height:11px;background:#ffc65a;animation-delay:.33s}
-@keyframes vFlamme{50%{transform:translateX(-50%) scaleY(1.22) scaleX(.92)}}
-.vFumee{position:absolute;left:50%;bottom:30%;transform:translateX(-50%);width:30px;height:80px}
-.vFumee i{position:absolute;left:50%;width:5px;height:5px;border-radius:50%;
-  background:rgba(220,215,200,.16);animation:vMonte 3.4s linear infinite}
-.vFumee i:nth-child(2){animation-delay:1.1s}
-.vFumee i:nth-child(3){animation-delay:2.2s}
-@keyframes vMonte{
-  0%{transform:translate(-50%,0) scale(.6);opacity:0}
-  20%{opacity:.7}
-  100%{transform:translate(calc(-50% + 14px),-78px) scale(2.1);opacity:0}}
+#vPre{position:absolute;inset:0;width:100%;height:100%;display:block;
+  image-rendering:pixelated}
+/* le bandeau sombre derrière le titre : sans lui, il se perd dans les fleurs */
+.vVoileTexte{position:absolute;left:0;right:0;bottom:0;height:46%;
+  background:linear-gradient(180deg,rgba(18,24,14,0),rgba(18,24,14,.62) 46%,rgba(18,24,14,.82))}
 .vBas{position:relative;z-index:2;padding:0 26px calc(42px + env(safe-area-inset-bottom));
   text-align:center}
 .vTitre{font:400 27px Georgia,serif;color:#f6ecd2;letter-spacing:2.4px;
@@ -741,21 +712,93 @@ body.clavier #bandeau{padding-bottom:9px}
 <div id="page2"><div class="sacFond" id="page2Fond"></div></div>
 
 <div id="voile">
-  <div class="vScene">
-    <div class="vCiel"></div>
-    <div class="vColline vLoin"></div>
-    <div class="vColline vPres"></div>
-    <div class="vSol"></div>
-    <div class="vArbre v1"></div><div class="vArbre v2"></div><div class="vArbre v3"></div>
-    <div class="vFeu"><i></i><i></i><i></i></div>
-    <div class="vFumee"><i></i><i></i><i></i></div>
-  </div>
+  <canvas id="vPre"></canvas>
+  <div class="vVoileTexte"></div>
   <div class="vBas">
     <div class="vTitre">Battle Dock</div>
     <div class="vRail"><i id="vJauge"></i></div>
-    <div class="vMot" id="vMot">On rallume le feu…</div>
+    <div class="vMot" id="vMot">On allume le feu…</div>
   </div>
 </div>
+<script>
+/* ---- la prairie du voile, gravée une fois au couchant ----
+   Le même sol et les mêmes huit fleurs que le jeu, plus une lumière rase
+   qui dore tout. On la grave sur un canevas dès l'ouverture : 20 000 traits
+   en une dizaine de millisecondes, puis plus rien à faire. */
+(function(){
+  function alea2(n){var v=Math.sin(n*12.9898)*43758.5453;return v-Math.floor(v);}
+  function lisse2(x,y){
+    var x0=Math.floor(x),y0=Math.floor(y),fx=x-x0,fy=y-y0;
+    function h(a,b){return alea2(a*127.1+b*311.7);}
+    function m(a,b,t){return a+(b-a)*(t*t*(3-2*t));}
+    return m(m(h(x0,y0),h(x0+1,y0),fx),m(h(x0,y0+1),h(x0+1,y0+1),fx),fy);
+  }
+  var FL=[['#d9584f','#f7d98a','#a83c39',1],['#e8cf4e','#fdf3bd','#bfa32c',0],
+          ['#6285c9','#f7e6a8','#44629e',1],['#f2efe4','#e8cf4e','#c9c2b0',0],
+          ['#9a6fc0','#f7e6a8','#6f4e91',0],['#e8934e','#fdf3bd','#bf6f2c',1],
+          ['#e0a8c8','#f7e6a8','#b07a9c',0],['#c9dd8a','#f7e6a8','#9ab063',0]];
+  var BASE=['#8a9450','#96a05a','#9caa60','#a8b46e','#7d8748'];
+  function graver(){
+    var cv=document.getElementById('vPre');if(!cv)return;
+    var ZO=3;                                   /* un point de jeu = 3 points d'écran */
+    var W=Math.ceil(window.innerWidth/ZO), H=Math.ceil(window.innerHeight/ZO);
+    cv.width=W;cv.height=H;
+    var g=cv.getContext('2d');g.imageSmoothingEnabled=false;
+    function R(x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,w<1?1:w|0,h<1?1:h|0);}
+    R(0,0,W,H,BASE[1]);
+    for(var y=0;y<H;y+=2)for(var x=((y/2)%2?0:2);x<W;x+=4)R(x,y,2,2,BASE[2]);
+    for(y=0;y<H;y+=3)for(x=0;x<W;x+=3){
+      var v=lisse2(x/34,y/34);
+      if(v>0.62)R(x,y,3,3,BASE[3]); else if(v<0.36)R(x,y,3,3,BASE[0]);
+    }
+    for(var i=0;i<5;i++){                        /* les plaques de terre sèche */
+      var cx=alea2(i*3.1)*W, cy=alea2(i*5.7)*H, r=12+alea2(i*7.3)*16;
+      for(y=-r;y<=r;y++)for(x=-r;x<=r;x++){
+        if(x*x+y*y>r*r*(0.7+alea2(x*0.3+y*0.7)*0.3))continue;
+        R(cx+x,cy+y,1,1,'#a8946a');
+      }
+    }
+    for(i=0;i<2600;i++)R(alea2(i*1.7)*W,alea2(i*2.9)*H,1,2,BASE[(i%2)?4:0]);
+    for(i=0;i<420;i++){                          /* les touffes */
+      var tx=alea2(i*3.7)*W, ty=alea2(i*4.3)*H;
+      R(tx,ty,2,3,BASE[4]);R(tx+2,ty+1,2,2,BASE[0]);R(tx-2,ty+1,2,2,BASE[3]);
+    }
+    var MA=26;                                   /* LES FLEURS, en massifs */
+    for(var my=0;my<H/MA+1;my++)for(var mx=0;mx<W/MA+1;mx++){
+      if(lisse2(mx/2.2,my/2.2)<0.46)continue;
+      var e=FL[Math.floor(alea2(mx*7.1+my*3.3)*FL.length)];
+      var nb=2+Math.floor(alea2(mx*5.7+my*9.1)*4);
+      for(var k=0;k<nb;k++){
+        var fx=Math.round(mx*MA+alea2(mx*11+my*13+k*3)*MA);
+        var fy=Math.round(my*MA+alea2(mx*17+my*19+k*5)*MA);
+        if(fx<2||fy<4||fx>W-3||fy>H-3)continue;
+        R(fx,fy+2,1,3,'#5f7a3c');
+        R(fx-1,fy-1,3,3,e[0]);R(fx,fy-2,1,1,e[0]);R(fx,fy+1,1,1,e[0]);
+        R(fx-2,fy,1,1,e[2]);R(fx+2,fy,1,1,e[2]);
+        if(e[3]){R(fx-1,fy-2,1,1,e[0]);R(fx+1,fy+1,1,1,e[0]);}
+        R(fx,fy,1,1,e[1]);
+        R(fx-1,fy-1,1,1,'#fbe8b0');              /* la lumière rase */
+      }
+    }
+    for(i=0;i<7;i++){                            /* les papillons posés */
+      var px=Math.round(alea2(i*13.1)*W), py=Math.round(alea2(i*17.7)*H*0.7);
+      var c=['#f2efe4','#e8cf4e','#e0a8c8'][i%3];
+      R(px,py,2,2,c);R(px+3,py,2,2,c);R(px+2,py,1,2,'#4a3220');
+    }
+    var grd=g.createRadialGradient(W*0.72,H*0.18,10,W*0.72,H*0.18,H*0.9);
+    grd.addColorStop(0,'rgba(255,214,122,.34)');
+    grd.addColorStop(0.5,'rgba(255,186,96,.12)');
+    grd.addColorStop(1,'rgba(180,110,40,0)');
+    g.fillStyle=grd;g.fillRect(0,0,W,H);
+  }
+  try{graver();}catch(x){}
+  /* si l'écran tourne pendant le chargement */
+  window.addEventListener('resize',function(){
+    var v=document.getElementById('voile');
+    if(v&&!v.classList.contains('parti')){try{graver();}catch(x){}}
+  });
+})();
+</script>
 <div id="porte">
   <div class="pCarte" id="pCarte" style="display:none">
     <h1>Battle Dock</h1>
@@ -5829,7 +5872,7 @@ function arreterDictee(){
    la carte, et la première image dessinée. Avant, on regardait un écran
    noir en se demandant si le jeu avait planté. */
 const ETAPES=[
-  ['On rallume le feu…',        0.10],
+  ['On allume le feu…',         0.10],
   ['On retrouve ton compte',    0.28],
   ['On déplie ta partie',       0.46],
   ['On compte ce qu’il y a dans ton sac', 0.62],
