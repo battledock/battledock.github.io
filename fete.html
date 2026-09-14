@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1614';
+  var MA_VERSION='2026-09-14-1617';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -108,6 +109,7 @@
   #fin .ligne b{font-weight:400;color:#8a6a2a}
   #fin button{margin-top:14px;background:none;border:0;font:400 15px Georgia,serif;
     color:#8a6a2a;letter-spacing:2px}
+  #joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
   #action{position:absolute;right:16px;bottom:18px;z-index:4;
     min-width:158px;padding:11px 20px 13px;border:0;border-radius:3px;text-align:right;
     background:linear-gradient(180deg,rgba(253,251,244,.95),rgba(238,232,214,.95));
@@ -136,6 +138,7 @@
 </style>
 </head>
 <body>
+<canvas id="joy" width="132" height="132"></canvas>
 <div id="scene">
   <canvas id="cv"></canvas>
   <div id="haut">
@@ -1197,93 +1200,113 @@ function lancerPartie(){
   enCours=true;fini=false;
   autos.forEach(a=>{if(!a.pilote)a.pilote='auto';});
 }
-let joyX=0,joyY=0,J=null;
-addEventListener('touchstart',e=>{const t=e.changedTouches[0];
-  if(t.clientY>innerHeight-218)return;J={id:t.identifier,ox:t.clientX,oy:t.clientY};
-  e.preventDefault();},{passive:false});
-addEventListener('touchmove',e=>{if(!J)return;
-  for(const t of e.changedTouches)if(t.identifier===J.id){
-    const dx=t.clientX-J.ox,dy=t.clientY-J.oy,d=Math.hypot(dx,dy);
-    if(d>6){const k=Math.min(1,d/46)/d;joyX=dx*k;joyY=dy*k;}else{joyX=joyY=0;}
-  }e.preventDefault();},{passive:false});
-['touchend','touchcancel'].forEach(k=>addEventListener(k,()=>{J=null;joyX=joyY=0;}));
+let joyX=0,joyY=0;
+/* ================= le joystick, flottant =================
+   Il n'a pas de place fixe : il apparaît là où le pouce se pose,
+   dans toute la moitié gauche de l'écran, et s'efface quand on lâche. */
+const jc=$('joy'), jg=jc.getContext('2d');
+let JDPR=1;
+function tailleJoy(){
+  JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
+  jc.width=Math.round(window.innerWidth*JDPR);
+  jc.height=Math.round(window.innerHeight*JDPR);
+  jg.setTransform(JDPR,0,0,JDPR,0,0);
+}
+addEventListener('resize',tailleJoy);
+tailleJoy();
 
-const ETINCELLES=[];
-function choc(x,y,force){
-  for(let i=0;i<Math.round(4+force*8);i++)
-    ETINCELLES.push({x,y,vx:(Math.random()-.5)*90*force,vy:(Math.random()-.5)*90*force,
-      t:0.32+Math.random()*0.22,c:Math.random()<.5?'#ffd77a':'#ff9d45'});
+const RAYON=52, POUCE=22;
+let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
+
+const pointDe=t=>[t.clientX,t.clientY];
+function prendre(x,y){
+  const limite=window.innerHeight-70;          /* les deux boutons du bas */
+  if(y>limite)y=limite;
+  J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
+  joyX=joyY=0;
+  try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}   /* un petit clic sous le doigt */
 }
-function majAutos(dt,t){
-  autos.forEach(a=>{
-    if(!enCours){a.vx*=0.9;a.vy*=0.9;a.x+=a.vx*dt;a.y+=a.vy*dt;return;}
-    if(a.moi){
-      const d=Math.hypot(joyX,joyY);
-      if(d>0.08&&!fini){
-        a.vx+=joyX/d*260*dt*Math.min(1,d);
-        a.vy+=joyY/d*260*dt*Math.min(1,d);
-      }
-    }else if(!fini&&a.pilote==='auto'){
-      /* les autres visent l'auto la plus proche : elles cherchent le choc */
-      let cible=null,dm=1e9;
-      autos.forEach(b=>{if(b===a)return;const d=Math.hypot(b.x-a.x,b.y-a.y);
-        if(d<dm){dm=d;cible=b;}});
-      if(cible){
-        const d=Math.max(1,dm);
-        const zig=Math.sin(t*2+a.i)*0.5;
-        a.vx+=((cible.x-a.x)/d+zig*0.4)*190*dt;
-        a.vy+=((cible.y-a.y)/d-zig*0.4)*190*dt;
-      }
-    }
-    /* le frottement : une auto tamponneuse glisse, elle ne freine pas net */
-    a.vx*=0.985;a.vy*=0.985;
-    const v=Math.hypot(a.vx,a.vy);
-    if(v>186){a.vx*=186/v;a.vy*=186/v;}
-    a.x+=a.vx*dt;a.y+=a.vy*dt;
-    if(v>6)a.ang=Math.atan2(a.vy,a.vx);
-    a.secousse=Math.max(0,a.secousse-dt*4);
-    /* la barrière renvoie */
-    const m=BORD+30;
-    if(a.x<m){a.x=m;a.vx=Math.abs(a.vx)*0.72;choc(a.x-8,a.y,0.5);}
-    if(a.x>L-m){a.x=L-m;a.vx=-Math.abs(a.vx)*0.72;choc(a.x+8,a.y,0.5);}
-    if(a.y<m){a.y=m;a.vy=Math.abs(a.vy)*0.72;choc(a.x,a.y-8,0.5);}
-    if(a.y>H-m){a.y=H-m;a.vy=-Math.abs(a.vy)*0.72;choc(a.x,a.y+8,0.5);}
-    /* l'îlot central : on rebondit dessus comme sur la barrière */
-    const ex=(a.x-ILOT.x)/(ILOT.rx+30), ey=(a.y-ILOT.y)/(ILOT.ry+30);
-    const dd=ex*ex+ey*ey;
-    if(dd<1&&dd>0.0001){
-      const k=1/Math.sqrt(dd);
-      a.x=ILOT.x+ex*(ILOT.rx+30)*k;a.y=ILOT.y+ey*(ILOT.ry+30)*k;
-      const nx=ex*k,ny=ey*k, pr=a.vx*nx+a.vy*ny;
-      if(pr<0){a.vx-=2*pr*nx*0.78;a.vy-=2*pr*ny*0.78;choc(a.x,a.y,0.5);}
-    }
-  });
-  /* les chocs entre autos : un vrai rebond, et le point va au plus rapide */
-  for(let i=0;i<autos.length;i++)for(let j=i+1;j<autos.length;j++){
-    const a=autos[i],b=autos[j];
-    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
-    if(d>54||d<0.01)continue;
-    const nx=dx/d,ny=dy/d;
-    const chev=54-d;
-    a.x-=nx*chev/2;a.y-=ny*chev/2;b.x+=nx*chev/2;b.y+=ny*chev/2;
-    const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-    if(rel>0)continue;
-    const imp=-rel*0.92;
-    a.vx-=nx*imp;a.vy-=ny*imp;b.vx+=nx*imp;b.vy+=ny*imp;
-    const force=Math.min(1,Math.abs(rel)/150);
-    if(force>0.12){
-      /* on ne compte rien : le choc se voit et se sent, ça suffit */
-      a.secousse=b.secousse=force;
-      choc((a.x+b.x)/2,(a.y+b.y)/2,force);
-      if(a.moi||b.moi){try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}}
-    }
-  }
-  for(let i=ETINCELLES.length-1;i>=0;i--){
-    const p=ETINCELLES[i];
-    p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;
-    if(p.t<=0)ETINCELLES.splice(i,1);
-  }
+function tirer(x,y){
+  const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
+  const a=Math.atan2(dy,dx);
+  const m=Math.min(d,RAYON);
+  J.x=J.ox+Math.cos(a)*m;J.y=J.oy+Math.sin(a)*m;
+  /* si le pouce s'éloigne trop, le manche se déplace avec lui */
+  if(d>RAYON){J.ox=x-Math.cos(a)*RAYON;J.oy=y-Math.sin(a)*RAYON;}
+  const n=Math.min(1,d/RAYON);
+  joyX=d<1?0:Math.cos(a)*n;joyY=d<1?0:Math.sin(a)*n;
+  if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
 }
+function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
+
+/* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
+const pageOuverte=()=>false;      /* pas de pages ici : la piste est le seul écran */
+/* le joystick se prend n'importe où sur la carte, des deux côtés.
+   On ne l'ignore que si le doigt touche un bouton de l'interface. */
+const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('button,#action,#bas'));
+const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
+
+/* on écoute la page entière, mais on ne prend le doigt que dans la zone de marche :
+   ailleurs, le toucher passe normalement aux boutons */
+document.addEventListener('touchstart',ev=>{
+  for(const t of ev.changedTouches){
+    if(J.actif)continue;
+    const [x,y]=pointDe(t);
+    if(!zoneMarche(x,y,ev.target))continue;
+    ev.preventDefault();
+    J.id=t.identifier;prendre(x,y);
+  }
+},{passive:false});
+document.addEventListener('touchmove',ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){
+    ev.preventDefault();
+    const [x,y]=pointDe(t);tirer(x,y);
+  }
+},{passive:false});
+['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
+  for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();lacher();}
+},{passive:false}));
+
+document.addEventListener('mousedown',ev=>{
+  if(zoneMarche(ev.clientX,ev.clientY,ev.target))prendre(ev.clientX,ev.clientY);});
+addEventListener('mousemove',ev=>{if(J.actif)tirer(ev.clientX,ev.clientY);});
+addEventListener('mouseup',()=>{if(J.actif)lacher();});
+
+addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
+  z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){joyX=k[0];joyY=k[1];}});
+addEventListener('keyup',()=>{joyX=joyY=0;});
+
+function dessinerJoy(dt){
+  /* il s'efface doucement quand on lâche */
+  if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
+  jg.clearRect(0,0,window.innerWidth,window.innerHeight);
+  if(J.vie<=0)return;
+  jg.save();
+  jg.globalAlpha=J.vie;
+  /* la couronne */
+  jg.beginPath();jg.arc(J.ox,J.oy,RAYON,0,7);
+  const f=jg.createRadialGradient(J.ox,J.oy-14,6,J.ox,J.oy,RAYON);
+  f.addColorStop(0,'rgba(240,246,238,.26)');f.addColorStop(1,'rgba(200,212,198,.12)');
+  jg.fillStyle=f;jg.fill();
+  jg.lineWidth=2.5;jg.strokeStyle='rgba(240,246,238,.38)';jg.stroke();
+  /* le sens, en léger */
+  const d=Math.hypot(J.x-J.ox,J.y-J.oy);
+  if(d>6){
+    const a=Math.atan2(J.y-J.oy,J.x-J.ox);
+    jg.beginPath();
+    jg.arc(J.ox,J.oy,RAYON-2,a-0.5,a+0.5);
+    jg.lineWidth=4;jg.strokeStyle='rgba(169,232,138,.5)';jg.stroke();
+  }
+  /* le manche */
+  jg.beginPath();jg.arc(J.x,J.y+3,POUCE,0,7);jg.fillStyle='rgba(10,18,12,.22)';jg.fill();
+  const k=jg.createRadialGradient(J.x-5,J.y-8,3,J.x,J.y,POUCE+1);
+  if(d>6){k.addColorStop(0,'#a9e88a');k.addColorStop(1,'#3f7d4a');}
+  else{k.addColorStop(0,'#f4f7f0');k.addColorStop(1,'#c9d2c2');}
+  jg.beginPath();jg.arc(J.x,J.y,POUCE,0,7);jg.fillStyle=k;jg.fill();
+  jg.lineWidth=2.5;jg.strokeStyle=d>6?'#2c6b32':'rgba(40,50,40,.4)';jg.stroke();
+  jg.restore();
+}
+
 function taille(){
   DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   const r=$('scene').getBoundingClientRect();
@@ -1321,6 +1344,7 @@ function boucle(t){
   majAutos(dt,t/1000);
   majAction();
   dessiner(t/1000);
+  dessinerJoy(dt);
 
   requestAnimationFrame(boucle);
 }
