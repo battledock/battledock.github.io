@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0827';
+  var MA_VERSION='2026-09-14-0852';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -654,8 +655,8 @@ body.clavier #bandeau{padding-bottom:9px}
   </span>
   <span class="sep"></span>
   <span class="col d">
-    <span class="pt">les jetons</span><span class="gd" id="hJetons">0</span><span class="fil"></span>
-    <span class="pet" id="hGens">seul</span>
+    <span class="pt">l’argent</span><span class="gd" id="hArgent">0,00 €</span><span class="fil"></span>
+    <span class="pet" id="hJetons">0 jeton</span>
   </span>
 </div>
 
@@ -4204,27 +4205,42 @@ $('b-class').onclick=()=>{
 $('pan').onclick=(ev)=>{if(ev.target===$('pan')){fermeA=Date.now();$('pan').classList.remove('on');}};
 
 
+/* ---- l'argent : les euros sont tenus par le serveur, on lui demande ----
+   Les centimes sont des entiers : on ne divise qu'au moment d'afficher. */
+let dernierSolde=0;
+async function lireLeSolde(){
+  if(!e.id)return;
+  const d=await appelRPC('change_infos',{p_joueur:e.id});
+  if(!d||d.erreur)return;
+  if(typeof d.euros==='number')e.euros=d.euros;      /* en centimes */
+  if(typeof d.jetons==='number')e.jetons=d.jetons;
+  if(typeof d.cote==='number')e.cote=d.cote;
+  sauver();majHaut();
+}
+const enEuros=(c)=>((c||0)/100).toFixed(2).replace('.',',')+' €';
+
 /* ---- le bandeau du haut se met à jour quand les chiffres bougent ---- */
-let hVu={sac:-1,jetons:-1,gens:-1};
+let hVu={sac:-1,argent:-1,jetons:-1};
 function majHaut(){
-  const s=$('hSac'), j=$('hJetons'), g=$('hGens');
+  const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
   const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*((OBJETS[k]||{}).poids||1),0);
   const max=e.sacMax||60;
-  const gens=(typeof AUTRES!=='undefined'?AUTRES.size:0)+1;
+
   if(charge!==hVu.sac){
     s.textContent=charge+'/'+max;
     if(hVu.sac>=0){s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');}
     hVu.sac=charge;
   }
-  if((e.jetons||0)!==hVu.jetons){
-    j.textContent=e.jetons||0;
-    if(hVu.jetons>=0){j.classList.remove('flash');void j.offsetWidth;j.classList.add('flash');}
-    hVu.jetons=e.jetons||0;
+  if((e.euros||0)!==hVu.argent){
+    a.textContent=enEuros(e.euros);
+    if(hVu.argent>=0){a.classList.remove('flash');void a.offsetWidth;a.classList.add('flash');}
+    hVu.argent=e.euros||0;
   }
-  if(gens!==hVu.gens){
-    g.textContent=gens<2?'seul':(gens+' en ligne');
-    hVu.gens=gens;
+  if((e.jetons||0)!==hVu.jetons){
+    const n=e.jetons||0;
+    j.textContent=n+(n>1?' jetons':' jeton');
+    hVu.jetons=n;
   }
 }
 
@@ -4537,7 +4553,7 @@ function ambiance(g){
    Tout ce qui compte — le sac, les jetons, les outils, le score —
    part sur le serveur. On peut changer de téléphone, vider son
    navigateur : la partie est retrouvée. */
-const A_GARDER=['sac','jetons','outils','sacMax','score','recolte','casses','epee',
+const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses','epee',
                 'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false;
 
@@ -6082,6 +6098,7 @@ let t0=performance.now();
   poussiereDePas();bornerParts();
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
   if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
+  if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
   const bp=$('b-parler');
   if(bp){
     const proche=[...AUTRES.values()].some(a=>Math.hypot(a.x-joueur.x,a.y-joueur.y)<120);
