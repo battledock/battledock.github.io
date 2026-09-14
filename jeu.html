@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-2151';
+  var MA_VERSION='2026-09-14-2154';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3513,9 +3514,10 @@ function calculerChemins(){
   const pontN=[Math.round(rivX(PONTS[0])),PONTS[0]];
   const pontS=[Math.round(rivX(PONTS[1])),PONTS[1]];
   /* en étoile depuis la place, plus les deux amorces vers les gués */
-  ROUTES=[[CAMP_FIXE,COMPTOIR_FIXE],[CAMP_FIXE,CASINO_FIXE],[CAMP_FIXE,COFFRE_FIXE],
-          [CAMP_FIXE,FORGE_FIXE],[CAMP_FIXE,MINE_FIXE],
-          [COMPTOIR_FIXE,pontN],[FORGE_FIXE,pontS]].map(([a,b])=>tracerChemin(a,b));
+  /* il ne reste que trois lieux : le camp, le coffre et le comptoir, plus
+     les deux amorces vers les gués */
+  ROUTES=[[CAMP_FIXE,COMPTOIR_FIXE],[CAMP_FIXE,COFFRE_FIXE],
+          [CAMP_FIXE,pontN],[CAMP_FIXE,pontS]].map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
     const gx=Math.round(x/PAS_CH),gy=Math.round(y/PAS_CH);
@@ -3771,7 +3773,9 @@ function semerDecor(){
     const dx=Math.abs(o.x-e.casino[0]), dy=o.y-e.casino[1];
     return !(dx<128&&dy>-180&&dy<92);
   });
-  DECOR.push({t:'casino',x:e.casino[0],y:e.casino[1],gr:0});
+  /* le casino, la forge, la mine, la fête et le panneau sont retirés :
+     on repart sur le camp, le coffre et le comptoir. Leur code reste en
+     place, il suffira de remettre ces lignes pour les faire revenir. */
 
   /* le comptoir : le long entrepôt, en haut de la rive est */
   e.comptoir=COMPTOIR_FIXE;
@@ -3781,22 +3785,13 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
-  DECOR.push({t:'panneau',x:PANNEAU_FIXE[0],y:PANNEAU_FIXE[1],gr:0});
-  DECOR.push({t:'fete',x:FETE_FIXE[0],y:FETE_FIXE[1],gr:0});
-  e.mine=MINE_FIXE;
-  DECOR=DECOR.filter(o=>BATI(o.t)||Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
-  DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
+
+
 
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
   DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));invaliderGrille();
-  /* La forge : un vrai bâtiment, au bord de l'eau. Elle remplace le petit
-     four et l'établi qu'on posait par terre au camp. */
-  e.forge=FORGE_FIXE;
-  DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
-    !(Math.abs(o.x-e.forge[0])<88&&Math.abs(o.y-e.forge[1])<78));invaliderGrille();
-  DECOR.push({t:'forge',x:e.forge[0],y:e.forge[1],gr:0});
 
   /* on dégage les abords des ponts : rien ne doit gêner le passage */
   DECOR=DECOR.filter(o=>{
@@ -3964,28 +3959,10 @@ function bloque(x,y){
   if(contreRambarde(x,y))return true;                  /* la rambarde du pont */
   if(dansRiviere(x,y)&&!surTablier(x,y))return true;   /* l'eau est trop profonde, sauf sur les ponts */
   /* la falaise de la mine : on ne passe pas au travers, sauf par la galerie */
-  if(e.mine){
-    const dx=x-e.mine[0], dy=y-e.mine[1];
-    if(Math.abs(dx)<76&&dy>-20&&dy<8&&!(Math.abs(dx)<22&&dy>-6))return true;
-  }
   /* la forge : un vrai bâtiment. On ne passe pas au travers, on entre par la porte. */
-  if(e.forge){
-    const dx=Math.abs(x-e.forge[0]), dy=y-e.forge[1];
-    if(dx<46&&dy>-46&&dy<6&&!(dx<13&&dy>-12))return true;
-  }
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
-  /* la fête foraine : plein, sauf l'entrée au milieu */
-  {
-    const dx=x-FETE_FIXE[0], dy=y-FETE_FIXE[1];
-    if(Math.abs(dx)<58&&dy>-104&&dy<6&&!(Math.abs(dx)<18&&dy>-8))return true;
-  }
-  /* le chevalet : un petit obstacle, on le contourne */
-  {
-    const dx=Math.abs(x-PANNEAU_FIXE[0]), dy=y-PANNEAU_FIXE[1];
-    if(dx<15&&dy>-12&&dy<5)return true;
-  }
   if(e.comptoir){
     const dx=x-e.comptoir[0], dy=y-e.comptoir[1];
     /* Aucune poche : le bâtiment est plein, portes comprises. On ne les
@@ -3993,11 +3970,6 @@ function bloque(x,y){
        Avant, l'embrasure laissait entrer de six points : assez pour se
        glisser derrière la façade, qui se dessine par-dessus le joueur. */
     if(Math.abs(dx)<131&&dy>-118&&dy<10)return true;
-  }
-  if(e.casino){
-    const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
-    /* le mur, sauf la porte à deux battants au milieu */
-    if(dx<44&&dy>-52&&dy<4&&!(dx<12&&dy>-8))return true;
   }
   for(const o of autourDe(x,y)){
     const t=TAILLES[o.t];if(!t)continue;
