@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1209';
+  var MA_VERSION='2026-09-14-1212';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -434,11 +435,11 @@ body.clavier #bandeau{padding-bottom:9px}
   background:linear-gradient(180deg,#e2ba69,#b4892f);color:#2b1d12;font:700 12.5px system-ui}
 
 /* ---- le compteur : à n'afficher que pour mesurer ---- */
-#perf{position:fixed;left:14px;top:calc(58px + env(safe-area-inset-top));z-index:6;
+#perf{position:fixed;left:14px;top:calc(58px + env(safe-area-inset-top));z-index:9;
   display:none;padding:8px 11px;border-radius:10px;
   background:rgba(10,14,10,.78);border:1px solid rgba(255,255,255,.12);
   font:600 10px ui-monospace,monospace;color:#9fd67a;line-height:1.55;
-  pointer-events:none;white-space:pre}
+  white-space:pre}
 #perf.on{display:block}
 #perf b{color:#f6ecd2;font-weight:700}
 #perf u{color:#e8a06a;text-decoration:none}
@@ -4656,7 +4657,15 @@ let msMoyen=16, imagesLentes=0, imagesRapides=0;
    Mon banc d'essai mesure du javascript ; ton téléphone a un vrai canevas et
    un vrai GPU. Tant qu'on n'a pas le chiffre sur ton écran, on devine.
    Trois touches rapides sur le bandeau du haut l'allument ou l'éteignent. */
-const PERF={on:false,n:0,depuis:0,pire:0,traits:0,derniers:[],objets:0};
+const PERF={on:true,pose:false,n:0,depuis:0,pire:0,traits:0,derniers:[],objets:0};
+/* le compteur est allumé au départ : on le branche dès que le canevas existe */
+function brancherPerf(){
+  if(!PERF.on||ctx.__vraiFill)return;
+  ctx.__vraiFill=ctx.fillRect.bind(ctx);
+  ctx.__vraiCopie=ctx.drawImage.bind(ctx);
+  ctx.fillRect=function(a,b,c,d){PERF.traits++;return ctx.__vraiFill(a,b,c,d);};
+  ctx.drawImage=function(){PERF.traits++;return ctx.__vraiCopie.apply(ctx,arguments);};
+}
 function basculerPerf(){
   PERF.on=!PERF.on;
   $('perf').classList.toggle('on',PERF.on);
@@ -4678,6 +4687,7 @@ function basculerPerf(){
 }
 function majPerf(ms){
   if(!PERF.on)return;
+  if(!PERF.pose){PERF.pose=true;$('perf').classList.add('on');}
   PERF.n++;
   PERF.derniers.push(ms);
   if(PERF.derniers.length>120)PERF.derniers.shift();
@@ -4702,7 +4712,7 @@ function majPerf(ms){
 (function(){
   let n=0,quand=0;
   const touche=(y)=>{
-    if(y>150)return;                    /* seulement le haut de l'écran */
+    if(y>220)return;                    /* le haut de l'écran, largement */
     const t=Date.now();
     n=(t-quand<700)?n+1:1;quand=t;
     if(n>=3){n=0;basculerPerf();}
@@ -4712,6 +4722,10 @@ function majPerf(ms){
      ATTENTION : sur téléphone, un toucher peut aussi produire un mousedown
      de compatibilité — sans garde, chaque touche comptait DEUX fois et le
      compteur s'allumait puis s'éteignait aussitôt. */
+  const pan=$('perf');
+  if(pan)pan.addEventListener('touchstart',(ev)=>{
+    ev.stopPropagation();basculerPerf();
+  },{passive:true});
   let dernierToucher=0;
   addEventListener('touchstart',(ev)=>{
     dernierToucher=Date.now();
@@ -6491,6 +6505,7 @@ let t0=performance.now();
   if(QUALITE>=1)majPapillons(dt);
   poussiereDePas();bornerParts();
   majParts(dt);majTextes(dt);majVols(dt);majAction();majAutres(dt);
+  brancherPerf();
   if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
   if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
   const bp=$('b-parler');
