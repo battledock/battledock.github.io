@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1703';
+  var MA_VERSION='2026-09-14-1722';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -149,6 +150,13 @@
     border:1px solid rgba(201,162,74,.7);
     box-shadow:0 7px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,200,.14)}
   .valider:active{transform:translateY(1px)}
+  /* le bouton de musique : une petite note, en haut à droite */
+  #note{position:fixed;right:14px;top:calc(14px + env(safe-area-inset-top));z-index:3;
+    width:38px;height:38px;border-radius:50%;border:1px solid rgba(253,251,244,.28);
+    background:rgba(20,26,18,.5);color:rgba(253,251,244,.62);
+    font:400 16px Georgia,serif;display:grid;place-items:center;
+    transition:color .2s,border-color .2s}
+  #note.on{color:#f0cf7d;border-color:rgba(240,207,125,.65)}
   .valider i{position:absolute;width:6px;height:6px;border:1px solid rgba(201,162,74,.85)}
   .valider .c1{left:4px;top:4px;border-right:0;border-bottom:0}
   .valider .c2{right:4px;top:4px;border-left:0;border-bottom:0}
@@ -160,6 +168,8 @@
 <div id="scene"></div>
 
 <canvas id="pre"></canvas>
+<audio id="air" src="musique.mp3" loop preload="none"></audio>
+<button id="note" aria-label="Musique">♪</button>
 <canvas id="vie"></canvas>
 <div class="voile"></div>
 
@@ -635,6 +645,49 @@ function boucle(t){
 addEventListener('resize',()=>{graver();});
 graver();requestAnimationFrame(boucle);
 
+</script>
+<script>
+/* ================= LA MUSIQUE DE L'ACCUEIL =================
+   Une boucle de 52 secondes, prise dans la bibliothèque audio de YouTube.
+   Les navigateurs interdisent le son avant un geste : elle démarre donc au
+   premier contact avec la page, et le choix est retenu d'une fois sur
+   l'autre. Elle ne joue que sur cet écran — entrer dans le jeu la coupe. */
+(function(){
+  const air=$('air'), note=$('note');
+  if(!air||!note)return;
+  let veut=localStorage.getItem('bdl.musique')!=='non';   /* oui par défaut */
+  const montrer=()=>note.classList.toggle('on',veut&&!air.paused);
+  const lancer=()=>{
+    if(!veut)return;
+    air.volume=0;
+    const p=air.play();
+    if(p&&p.catch)p.catch(()=>{});
+    /* elle monte doucement au lieu d'entrer en trombe */
+    let v=0;
+    const monte=setInterval(()=>{
+      v=Math.min(0.5,v+0.02);air.volume=v;
+      if(v>=0.5)clearInterval(monte);
+    },70);
+    montrer();
+  };
+  /* le premier contact, quel qu'il soit, débloque le son */
+  ['pointerdown','touchstart','keydown'].forEach(ev=>
+    addEventListener(ev,function un(){lancer();
+      ['pointerdown','touchstart','keydown'].forEach(e2=>removeEventListener(e2,un));
+    },{once:false,passive:true}));
+  note.onclick=(ev)=>{
+    ev.stopPropagation();
+    veut=!veut;
+    localStorage.setItem('bdl.musique',veut?'oui':'non');
+    if(veut)lancer(); else {air.pause();}
+    montrer();
+  };
+  air.addEventListener('playing',montrer);
+  air.addEventListener('pause',montrer);
+  /* en quittant l'accueil, on baisse le son au lieu de le couper net */
+  addEventListener('pagehide',()=>{try{air.pause();}catch(x){}});
+  montrer();
+})();
 </script>
 </body>
 </html>
