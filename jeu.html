@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1943';
+  var MA_VERSION='2026-09-14-2038';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1036,13 +1037,28 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const N='#1b1712';
   const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
 
-  /* marche souple, huit temps */
-  const F=bouge?(Math.floor(pas)%8):-1;
-  const AN={corps:[0,0,-1,0,0,0,-1,0],
-            jg:[2,1,-1,-2,-2,-1,1,2], jd:[-2,-1,1,2,2,1,-1,-2],
-            pg:[0,0,1,0,0,0,0,0],     pd:[0,0,0,0,0,0,1,0],
-            bg:[-2,-1,1,2,2,1,-1,-2], bd:[2,1,-1,-2,-2,-1,1,2],
-            reb:[0,0,1,0,0,0,1,0]};
+  /* LA MARCHE, SEIZE TEMPS.
+     Avant : huit temps, deux pixels d'amplitude, aucun genou. Le personnage
+     bougeait les pieds sans marcher.
+     Maintenant : seize temps, quatre pixels d'amplitude, et surtout la jambe
+     arrière se LÈVE au passage (pg/pd) — c'est ce qui manque à toute marche
+     qui a l'air fausse. Le bras part toujours à l'opposé de la jambe du même
+     côté, et le corps rebondit une fois par pas, pas deux. */
+  const F=bouge?(Math.floor(pas*2)%16):-1;
+  const AN={
+    /* le corps monte à chaque appui, redescend au passage */
+    corps:[0,0,-1,-1,0,0,0,0, 0,0,-1,-1,0,0,0,0],
+    /* les jambes : contact, appui, poussée, passage */
+    jg:[ 4, 3, 1,-1,-3,-4,-4,-3, -1, 1, 3, 4, 4, 3, 1,-1],
+    jd:[-3,-1, 1, 3, 4, 4, 3, 1, -1,-3,-4,-4,-3,-1, 1, 3],
+    /* le genou qui se lève : seulement pendant le passage de la jambe */
+    pg:[ 0, 0, 0, 1, 2, 2, 1, 0,  0, 0, 0, 0, 0, 0, 0, 0],
+    pd:[ 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 1, 2, 2, 1, 0],
+    /* les bras, à l'opposé des jambes du même côté */
+    bg:[-3,-1, 1, 3, 4, 4, 3, 1, -1,-3,-4,-4,-3,-1, 1, 3],
+    bd:[ 4, 3, 1,-1,-3,-4,-4,-3, -1, 1, 3, 4, 4, 3, 1,-1],
+    /* le rebond : une fois par appui */
+    reb:[0,0,0,1,1,0,0,0, 0,0,0,1,1,0,0,0]};
   const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
   const Y=bouge?AN.corps[F]:souffle;
   const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
@@ -4324,7 +4340,7 @@ function dessiner(){
    personne au lieu de 114 traits.
    Pendant un geste (pioche, hache, cueillette) on redessine comme avant :
    ce sont des mouvements continus, pas des poses, et ça ne dure qu'un instant. */
-const PASM=6;                         /* six images pour un cycle de marche */
+const PASM=16;                        /* seize images pour un cycle de marche */
 const CASE_L=64, CASE_H=80;           /* la boîte d'une pose */
 const POSES=new Map();                /* une planche par apparence rencontrée */
 const clePose=(ap)=>{
@@ -4352,7 +4368,7 @@ function poseDe(ap,dir,i){
   const g=c.getContext('2d');
   g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const sauve=GESTE;GESTE={t:0};
-  sprite(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)*(6.2832/PASM):0,i>0);
+  sprite(g,CASE_L/2,CASE_H-10,ap,dir,i?(i-1)/2:0,i>0);
   GESTE=sauve;
   L[i]=c;
   return c;
@@ -4360,7 +4376,7 @@ function poseDe(ap,dir,i){
 /* le personnage à l'écran : une recopie si aucun geste, sinon l'ancien dessin */
 function personne(g,x,y,ap,dir,pas,marche){
   if(GESTE&&GESTE.t>0){sprite(g,x,y,ap,dir,pas,marche);return;}
-  const i=marche?1+(Math.floor(pas/(6.2832/PASM))%PASM):0;
+  const i=marche?1+(Math.floor(pas*2)%PASM):0;   /* la même horloge que le dessin */
   const c=poseDe(ap,dir||'bas',i);
   g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10),CASE_L,CASE_H);
 }
