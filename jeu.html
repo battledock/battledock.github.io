@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0442';
+  var MA_VERSION='2026-09-14-0529';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2692,6 +2693,58 @@ const ZOOM=2;                     /* ne sert plus que de repli */
 let SOL=null;
 
 const alea=s=>{const v=Math.sin(s*127.1)*43758.5453;return v-Math.floor(v);};
+/* --- les ponts, gravés une fois ---
+   AVANT : 78 traits redessinés à chaque image, et un tablier de 66 points de
+   haut — non pas par goût, mais parce que le pont était peint PAR-DESSUS le
+   joueur : plus étroit, sa tête dépassait la rambarde et il semblait dans l'eau.
+   MAINTENANT : le tablier et la rambarde nord sont gravés dans le sol (donc
+   derrière le joueur), la rambarde sud dans le calque qui passe devant lui.
+   Le pont peut redevenir un pont : 26 points. */
+const BOIS_PONT={sombre:'#3d2a17',fonce:'#5b3f21',bas:'#6b4a28',moyen:'#7d5934',
+                 clair:'#96703f',haut:'#a5764a'};
+function graverPontsDansSol(g){
+  const H=PONT_DEMI, L=PONT_LARGE;
+  PONTS.forEach(py=>{
+    const cx=Math.round(rivX(py)), cy=py;
+    const R=(a,b,w,h,col)=>{g.fillStyle=col;
+      g.fillRect(cx+a,cy+b,Math.max(1,w|0),Math.max(1,h|0));};
+    [-H+4,H-8].forEach(dy=>{                        /* les piliers dans l'eau */
+      R(-L+5,dy,3,7,BOIS_PONT.sombre);R(L-8,dy,3,7,BOIS_PONT.sombre);
+    });
+    g.fillStyle='rgba(12,34,48,.30)';               /* l'ombre sur l'eau */
+    g.fillRect(cx-L,cy-H+3,L*2,H*2);
+    R(-L,-H,L*2,H*2,BOIS_PONT.bas);                 /* le tablier */
+    for(let i=0;i<H*2-1;i+=3){
+      R(-L+1,-H+i,L*2-2,2,(i%6)?BOIS_PONT.clair:BOIS_PONT.haut);
+      R(-L+1,-H+i+2,L*2-2,1,BOIS_PONT.fonce);
+    }
+    R(-L,-H,2,H*2,BOIS_PONT.fonce);                 /* les longerons */
+    R(L-2,-H,2,H*2,BOIS_PONT.fonce);
+    R(-L-1,-H-3,L*2+2,2,BOIS_PONT.fonce);           /* la rambarde nord */
+    R(-L-1,-H-3,L*2+2,1,BOIS_PONT.clair);
+    for(let x=-L;x<=L-2;x+=9)R(x,-H-6,2,5,BOIS_PONT.moyen);
+    R(-L-2,-H-7,3,8,BOIS_PONT.sombre);R(L-1,-H-7,3,8,BOIS_PONT.sombre);
+    R(-L-4,-H+2,4,H*2-4,BOIS_PONT.moyen);           /* les accès sur les berges */
+    R(-L-4,-H+2,4,1,BOIS_PONT.clair);
+    R(L,-H+2,4,H*2-4,BOIS_PONT.moyen);
+    R(L,-H+2,4,1,BOIS_PONT.clair);
+  });
+}
+/* la rambarde sud : elle passe DEVANT le joueur */
+function graverRambardesSud(g){
+  const H=PONT_DEMI, L=PONT_LARGE;
+  PONTS.forEach(py=>{
+    const cx=Math.round(rivX(py)), cy=py;
+    const R=(a,b,w,h,col)=>{g.fillStyle=col;
+      g.fillRect(cx+a,cy+b,Math.max(1,w|0),Math.max(1,h|0));};
+    R(-L-1,H,L*2+2,2,BOIS_PONT.fonce);
+    R(-L-1,H,L*2+2,1,BOIS_PONT.clair);
+    for(let x=-L;x<=L-2;x+=9)R(x,H-3,2,5,BOIS_PONT.moyen);
+    R(-L-2,H-4,3,8,BOIS_PONT.sombre);R(L-1,H-4,3,8,BOIS_PONT.sombre);
+    R(-L-2,H-4,3,1,BOIS_PONT.moyen);R(L-1,H-4,3,1,BOIS_PONT.moyen);
+  });
+}
+
 function construireSol(){
   /* ================= LE SOL =================
      Tout est gravé UNE FOIS sur un calque de la taille du monde, puis
@@ -2753,33 +2806,52 @@ function construireSol(){
     g.fillRect(x,y-1,1,1);g.fillRect(x-1,y,1,1);g.fillRect(x+1,y,1,1);
   }
 
-  /* la rivière : berges, eau, reflets, cailloux du gué */
+  /* --- LA RIVIÈRE, gravée en aplats ---
+     Quatre bandes franches : le chenal sombre au milieu, de plus en plus clair
+     vers les bords. Des reflets FIXES, posés une fois. Plus aucun bruit par
+     pixel, et plus rien à recalculer à l'écran. */
+  const EAU=['#2a5f7d','#357291','#4189a8','#55a0bd'], VIF='#7fc4dd', ECUME='#dff4ff';
   for(let y=0;y<MONDE;y++){
     const cx=rivX(y), gue=surGue(y);
-    for(let dx=-RIV_LARGE-4;dx<=RIV_LARGE+4;dx++){
-      const x=Math.round(cx+dx);
-      if(x<0||x>=MONDE)continue;
-      const d=Math.abs(dx);
-      if(d>RIV_LARGE){                            /* la berge : terre et galets */
-        g.fillStyle=(y+x)%7?'#b9a37a':'#a8926a';
-        g.fillRect(x,y,1,1);
-      }else if(d>RIV_LARGE-3){                    /* l'eau peu profonde, au bord */
-        g.fillStyle=gue?'#8fb9c9':'#6fa8bd';
-        g.fillRect(x,y,1,1);
-      }else{
-        const v=alea(x*0.7+y*1.3);
-        g.fillStyle=gue?'#77aec2':(v<.12?'#2f6f8f':(v<.6?'#3a83a4':'#4a97b8'));
-        g.fillRect(x,y,1,1);
-      }
+    /* la berge : terre, galets épars, frange d'herbe mouillée */
+    for(let dx=-RIV_LARGE-6;dx<=RIV_LARGE+6;dx++){
+      const a=Math.abs(dx);if(a<=RIV_LARGE)continue;
+      const x=Math.round(cx+dx);if(x<0||x>=MONDE)continue;
+      const v=alea(x*0.7+y*1.3);
+      g.fillStyle=a>RIV_LARGE+4?(v<.4?'#7d8c58':'#889d5e')
+                : (v<.14?'#96805c':(v<.5?'#b9a37a':'#a8926a'));
+      g.fillRect(x,y,1,1);
+      if(v<0.03&&a<RIV_LARGE+4){g.fillStyle='#8b939a';g.fillRect(x,y,2,2);}
     }
-    /* les reflets : de fines bandes claires */
-    if(y%9===0){
-      const l=4+Math.round(alea(y)*7);
-      const x=Math.round(cx+(alea(y*3)-.5)*RIV_LARGE);
-      g.fillStyle='rgba(226,244,250,.35)';
-      g.fillRect(x,y,l,1);
+    /* le lit */
+    for(let dx=-RIV_LARGE;dx<=RIV_LARGE;dx++){
+      const x=Math.round(cx+dx), a=Math.abs(dx);
+      if(x<0||x>=MONDE)continue;
+      let col;
+      if(gue)col=a>RIV_LARGE-4?'#9ec6d4':'#83b7c9';
+      else if(a>RIV_LARGE-2)col=EAU[3];
+      else if(a>RIV_LARGE-5)col=EAU[2];
+      else if(a>RIV_LARGE-9)col=EAU[1];
+      else col=EAU[0];
+      g.fillStyle=col;g.fillRect(x,y,1,1);
+    }
+    if(gue)continue;
+    /* les reflets, posés une fois */
+    if(alea(y*0.37)<0.055){
+      const lg=5+Math.round(alea(y*1.7)*6);
+      const x=Math.round(cx+(alea(y*2.9)-.5)*RIV_LARGE*1.3);
+      g.fillStyle=VIF;g.fillRect(x,y,lg,1);
+      g.fillStyle=ECUME;g.fillRect(x+1,y+1,Math.max(2,lg-3),1);
+    }
+    /* l'écume contre la berge, là où l'eau frotte */
+    if(alea(y*11.3)<0.14){
+      const cote=alea(y*13.7)<.5?-1:1;
+      g.fillStyle=ECUME;g.fillRect(Math.round(cx+cote*(RIV_LARGE-1)),y,2,1);
     }
   }
+  /* --- LES PONTS, gravés dans le sol : tablier et rambarde nord --- */
+  graverPontsDansSol(g);
+
   /* 6. LES FLEURS, EN MASSIFS.
      On découpe le monde en mailles de 28 points. Le bruit doux dit si la
      maille est fleurie ; si elle l'est, une à trois fleurs y poussent,
@@ -2839,14 +2911,14 @@ const PONTS=[149,421];                           /* deux ponts de planches */
 /* Le personnage fait 40 px de haut : si le pont est plus court que lui,
    son corps dépasse par-dessus la rambarde et on croit qu'il est dans l'eau.
    Le tablier fait donc 62 px du nord au sud. */
-const PONT_DEMI=33;
+const PONT_DEMI=13;   /* le tablier fait 26 points du nord au sud */
 function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
 /* le tablier suit la rivière : on est dessus si on est dans sa largeur */
 /* Le pont, vu par les collisions : un couloir de planches entre deux
    barrières pleines. On n'y entre que par l'est ou par l'ouest. */
 const PONT_LARGE=RIV_LARGE+11;                 /* demi-longueur du tablier, d'une berge à l'autre */
 const PONT_PASSAGE=9;                          /* demi-largeur du couloir où l'on marche */
-const PONT_CENTRE=17;                          /* on marche au sud du tablier : la tête reste dessus */
+const PONT_CENTRE=0;                           /* on marche au milieu : les rambardes encadrent */
 function surTablier(x,y){
   return PONTS.some(py=>Math.abs(y-(py+PONT_CENTRE))<=PONT_PASSAGE&&
     Math.abs(x-rivX(py))<PONT_LARGE);
@@ -2855,7 +2927,7 @@ function contreRambarde(x,y){
   return PONTS.some(py=>{
     if(Math.abs(x-rivX(py))>PONT_LARGE+4)return false;
     const d=Math.abs(y-(py+PONT_CENTRE));
-    return d>PONT_PASSAGE&&d<=PONT_DEMI+14;    /* la barrière, des deux côtés */
+    return d>PONT_PASSAGE&&d<=PONT_DEMI+8;     /* la barrière, des deux côtés */
   });
 }
 const surGue=surPont;                            /* on ne traverse que par les ponts */
@@ -3281,6 +3353,7 @@ function construireLisiere(){
     g.drawImage(P,BARRIERE-9,y,12,20);                      /* ouest */
     g.drawImage(P,MONDE-BARRIERE-3,y,12,20);                /* est */
   }
+  graverRambardesSud(gs);
   LISIERE_SUD=sud;
   return c;
 }
@@ -3498,7 +3571,6 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
         g.restore();
       }
     }
-    else if(o.t==='pont')dessinerPont(g,x,y);
     else if(o.t==='forge')dessinerForge(g,x,y,true);
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
@@ -3710,7 +3782,6 @@ function dessiner(){
   const py=Math.round((joueur.y-camY)*ECH)/ECH;
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
 
-  if(QUALITE>=0.5)refletsRiviere(ctx,camX,camY);
   flechesVersLesAutres(camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
