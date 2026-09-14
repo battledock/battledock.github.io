@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1617';
+  var MA_VERSION='2026-09-14-1622';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1307,6 +1308,82 @@ function dessinerJoy(dt){
   jg.restore();
 }
 
+const ETINCELLES=[];
+function choc(x,y,force){
+  for(let i=0;i<Math.round(4+force*8);i++)
+    ETINCELLES.push({x,y,vx:(Math.random()-.5)*90*force,vy:(Math.random()-.5)*90*force,
+      t:0.32+Math.random()*0.22,c:Math.random()<.5?'#ffd77a':'#ff9d45'});
+}
+function majAutos(dt,t){
+  autos.forEach(a=>{
+    if(!enCours){a.vx*=0.9;a.vy*=0.9;a.x+=a.vx*dt;a.y+=a.vy*dt;return;}
+    if(a.moi){
+      const d=Math.hypot(joyX,joyY);
+      if(d>0.08&&!fini){
+        a.vx+=joyX/d*260*dt*Math.min(1,d);
+        a.vy+=joyY/d*260*dt*Math.min(1,d);
+      }
+    }else if(!fini&&a.pilote==='auto'){
+      /* les autres visent l'auto la plus proche : elles cherchent le choc */
+      let cible=null,dm=1e9;
+      autos.forEach(b=>{if(b===a)return;const d=Math.hypot(b.x-a.x,b.y-a.y);
+        if(d<dm){dm=d;cible=b;}});
+      if(cible){
+        const d=Math.max(1,dm);
+        const zig=Math.sin(t*2+a.i)*0.5;
+        a.vx+=((cible.x-a.x)/d+zig*0.4)*190*dt;
+        a.vy+=((cible.y-a.y)/d-zig*0.4)*190*dt;
+      }
+    }
+    /* le frottement : une auto tamponneuse glisse, elle ne freine pas net */
+    a.vx*=0.985;a.vy*=0.985;
+    const v=Math.hypot(a.vx,a.vy);
+    if(v>186){a.vx*=186/v;a.vy*=186/v;}
+    a.x+=a.vx*dt;a.y+=a.vy*dt;
+    if(v>6)a.ang=Math.atan2(a.vy,a.vx);
+    a.secousse=Math.max(0,a.secousse-dt*4);
+    /* la barrière renvoie */
+    const m=BORD+30;
+    if(a.x<m){a.x=m;a.vx=Math.abs(a.vx)*0.72;choc(a.x-8,a.y,0.5);}
+    if(a.x>L-m){a.x=L-m;a.vx=-Math.abs(a.vx)*0.72;choc(a.x+8,a.y,0.5);}
+    if(a.y<m){a.y=m;a.vy=Math.abs(a.vy)*0.72;choc(a.x,a.y-8,0.5);}
+    if(a.y>H-m){a.y=H-m;a.vy=-Math.abs(a.vy)*0.72;choc(a.x,a.y+8,0.5);}
+    /* l'îlot central : on rebondit dessus comme sur la barrière */
+    const ex=(a.x-ILOT.x)/(ILOT.rx+30), ey=(a.y-ILOT.y)/(ILOT.ry+30);
+    const dd=ex*ex+ey*ey;
+    if(dd<1&&dd>0.0001){
+      const k=1/Math.sqrt(dd);
+      a.x=ILOT.x+ex*(ILOT.rx+30)*k;a.y=ILOT.y+ey*(ILOT.ry+30)*k;
+      const nx=ex*k,ny=ey*k, pr=a.vx*nx+a.vy*ny;
+      if(pr<0){a.vx-=2*pr*nx*0.78;a.vy-=2*pr*ny*0.78;choc(a.x,a.y,0.5);}
+    }
+  });
+  /* les chocs entre autos : un vrai rebond, et le point va au plus rapide */
+  for(let i=0;i<autos.length;i++)for(let j=i+1;j<autos.length;j++){
+    const a=autos[i],b=autos[j];
+    const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+    if(d>54||d<0.01)continue;
+    const nx=dx/d,ny=dy/d;
+    const chev=54-d;
+    a.x-=nx*chev/2;a.y-=ny*chev/2;b.x+=nx*chev/2;b.y+=ny*chev/2;
+    const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+    if(rel>0)continue;
+    const imp=-rel*0.92;
+    a.vx-=nx*imp;a.vy-=ny*imp;b.vx+=nx*imp;b.vy+=ny*imp;
+    const force=Math.min(1,Math.abs(rel)/150);
+    if(force>0.12){
+      /* on ne compte rien : le choc se voit et se sent, ça suffit */
+      a.secousse=b.secousse=force;
+      choc((a.x+b.x)/2,(a.y+b.y)/2,force);
+      if(a.moi||b.moi){try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}}
+    }
+  }
+  for(let i=ETINCELLES.length-1;i>=0;i--){
+    const p=ETINCELLES[i];
+    p.t-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=0.92;p.vy*=0.92;
+    if(p.t<=0)ETINCELLES.splice(i,1);
+  }
+}
 function taille(){
   DPR=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   const r=$('scene').getBoundingClientRect();
