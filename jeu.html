@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1206';
+  var MA_VERSION='2026-09-14-1209';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4706,13 +4707,20 @@ function majPerf(ms){
     n=(t-quand<700)?n+1:1;quand=t;
     if(n>=3){n=0;basculerPerf();}
   };
-  /* le joystick appelle preventDefault sur touchstart : les événements
-     pointer ne naissent donc jamais. On écoute le toucher directement,
-     en capture, pour passer avant lui. */
+  /* Le joystick appelle preventDefault sur touchstart : les événements
+     pointer ne naissent donc jamais. On écoute le toucher directement.
+     ATTENTION : sur téléphone, un toucher peut aussi produire un mousedown
+     de compatibilité — sans garde, chaque touche comptait DEUX fois et le
+     compteur s'allumait puis s'éteignait aussitôt. */
+  let dernierToucher=0;
   addEventListener('touchstart',(ev)=>{
+    dernierToucher=Date.now();
     const t=ev.touches&&ev.touches[0];if(t)touche(t.clientY);
   },{capture:true,passive:true});
-  addEventListener('mousedown',(ev)=>touche(ev.clientY),true);
+  addEventListener('mousedown',(ev)=>{
+    if(Date.now()-dernierToucher<900)return;      /* c'est l'écho du toucher */
+    touche(ev.clientY);
+  },true);
 })();
 
 function mesurer(ms){
