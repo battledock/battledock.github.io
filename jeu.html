@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-0611';
+  var MA_VERSION='2026-09-14-0621';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2119,105 +2120,83 @@ function dessinerMine(g,x,y){
   g.globalAlpha=1;
 }
 
-function dessinerCasino(g,x,y){
-  const R=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h);};
-  const P=(pts,c)=>{g.fillStyle=c;g.beginPath();
-    g.moveTo(x+pts[0][0],y+pts[0][1]);
-    for(let i=1;i<pts.length;i++)g.lineTo(x+pts[i][0],y+pts[i][1]);
-    g.closePath();g.fill();};
-  const t=Date.now()/1000;
-  const cli=(d)=>((t+d)%1.1)<0.55;
-
-  /* le halo au sol, qui respire */
-  g.save();
-  g.globalAlpha=.10+Math.sin(t*1.6)*0.03;
-  g.fillStyle='#f0cf7d';
-  g.beginPath();g.ellipse(x,y-4,108,28,0,0,7);g.fill();
-  g.restore();
-  g.fillStyle=VERTS.ombre;
-  g.beginPath();g.ellipse(x+5,y-2,84,16,0,0,7);g.fill();
-
-  const HT=-118;                                  /* le haut du corps central */
-
-  /* ---- les deux ailes, en retrait ---- */
-  const aile=(cx,sens)=>{
-    R(cx-22,HT+34,44,-HT-36,'#6f767d');           /* le mur, plus sombre */
-    R(cx-22,HT+34,44,3,'#8b939a');
-    R(cx-22,-6,44,4,'#5f666c');                   /* soubassement */
-    /* le toit de l'aile */
-    P([[cx-25,HT+26],[cx+25,HT+26],[cx+25+sens*5,HT+34],[cx-25+sens*5,HT+34]],'#8b939a');
-    R(cx-25,HT+34,50,3,'#5f666c');
-    /* deux fenêtres par aile */
-    [[HT+48,0.3],[HT+76,1.1]].forEach(([b,d2])=>{
-      R(cx-11,b,22,18,'#565c63');
-      R(cx-9,b+2,18,14,cli(d2)?'#e8c46a':'#7d6a3a');
-      R(cx-9,b+2,18,3,cli(d2)?'#f6dc9a':'#8a7544');
-      R(cx-1,b+2,2,14,'#474d54');
-    });
+/* --- le casino : une maison de jeu en bois, gravée ---
+   AVANT : 100 lignes redessinées à chaque image, dont cinq polygones.
+   MAINTENANT : gravé en trois morceaux — le corps, les lumières allumées,
+   les lumières éteintes. Le clignotement revient à changer de calque. */
+const BOIS_C={bois:'#7d5934',boisC:'#96703f',boisH:'#a5764a',boisO:'#5b3f21',boisS:'#3d2a17',
+              or:'#c9a24a',orC:'#f0cf7d',tuile:'#a83a3a',tuileC:'#c94a4a',tuileS:'#7d2828'};
+const CASINO_L=96, CASINO_H=104;
+let CALQUE_CASINO=null;
+function graverLeCasino(){
+  const W=CASINO_L+40, H=CASINO_H+40, cx=W/2, sol=H-16, HT=sol-CASINO_H;
+  const P=BOIS_C;
+  const toile=(f)=>{
+    const c=document.createElement('canvas');
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    c.width=W*D;c.height=H*D;
+    const g=c.getContext('2d');
+    g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+    f({g,R:(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));},
+       T:(pts,col)=>{g.fillStyle=col;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+         for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath();g.fill();}});
+    return c;
   };
-  aile(-62,-1);
-  aile(62,1);
-
-  /* ---- le corps central, en avant ---- */
-  R(-38,HT+12,76,-HT-14,'#8b939a');
-  R(-38,HT+12,76,3,'#a2a9b0');
-  R(-38,-6,76,4,'#6f767d');
-
-  /* l'entablement et le fronton triangulaire */
-  R(-44,HT+4,88,9,'#a2a9b0');
-  R(-44,HT+4,88,2,'#b7bec4');
-  P([[-46,HT+4],[0,HT-24],[46,HT+4]],'#a2a9b0');
-  P([[-36,HT+2],[0,HT-18],[36,HT+2]],'#8b939a');
-  P([[-30,HT+1],[0,HT-15],[30,HT+1]],'#c9a24a');
-  P([[-24,HT],[0,HT-11],[24,HT]],'#8b939a');
-  /* l'oculus doré au centre du fronton */
-  g.fillStyle=cli(0.3)?'#ffd27a':'#a98a3a';
-  g.beginPath();g.arc(x,y+HT-6,5,0,7);g.fill();
-  g.fillStyle='#5f666c';
-  g.beginPath();g.arc(x,y+HT-6,2,0,7);g.fill();
-
-  /* l'enseigne, sur l'entablement */
-  R(-40,HT+14,80,20,'#3a2418');
-  R(-40,HT+14,80,3,'#5b3f21');
+  const FEN=[[-26,HT+40],[26,HT+40],[-26,HT+70],[26,HT+70]];
+  const corps=toile(({R,T,g})=>{
+    g.fillStyle=VERTS.ombre;
+    g.beginPath();g.ellipse(cx+3,sol+2,CASINO_L*0.46,11,0,0,7);g.fill();
+    R(cx-42,HT+26,84,sol-HT-26,P.bois);                  /* le corps, en bois */
+    for(let y=HT+26;y<sol;y+=4)R(cx-42,y,84,1,P.boisO);  /* les planches */
+    R(cx-42,HT+26,84,3,P.boisH);
+    R(cx-42,sol-5,84,5,P.boisS);
+    R(cx-42,HT+26,3,sol-HT-26,P.boisC);                  /* les montants d'angle */
+    R(cx+39,HT+26,3,sol-HT-26,P.boisO);
+    T([[cx-50,HT+26],[cx,HT-6],[cx+50,HT+26]],P.tuile);  /* le toit */
+    T([[cx-44,HT+26],[cx,HT+2],[cx+44,HT+26]],P.tuileC);
+    R(cx-50,HT+26,100,4,P.tuileS);
+    R(cx-3,HT-8,6,10,P.boisS);                           /* l'épi de faîtage */
+    R(cx-5,HT-12,10,5,P.or);
+    FEN.forEach(([a,b])=>{
+      R(cx+a-11,b,22,18,P.boisS);
+      R(cx+a-9,b+2,18,14,'#5b4a2a');
+      R(cx+a-13,b,3,18,P.boisC);R(cx+a+11,b,3,18,P.boisC);   /* les volets */
+    });
+    R(cx-12,sol-40,24,34,P.boisS);                       /* la porte à deux battants */
+    R(cx-10,sol-38,10,32,P.boisC);R(cx+1,sol-38,10,32,P.boisC);
+    R(cx-1,sol-38,2,32,P.boisS);
+    R(cx-30,HT+8,60,16,P.boisS);                         /* l'enseigne suspendue */
+    R(cx-30,HT+8,60,2,P.or);
+    g.fillStyle=P.orC;g.font='700 11px Georgia,serif';g.textAlign='center';
+    g.fillText('CASINO',cx,HT+20);g.textAlign='left';
+    R(cx-34,sol-8,72,3,P.boisO);                         /* le perron */
+    R(cx-38,sol-5,80,4,P.boisS);
+  });
+  const lum=(on)=>toile(({R})=>{
+    FEN.forEach(([a,b])=>{
+      R(cx+a-9,b+2,18,14,on?'#e8c46a':'#5b4a2a');
+      R(cx+a-9,b+2,18,3,on?'#f6dc9a':'#6b5a35');
+    });
+    [-34,34].forEach(a=>{                                /* les lanternes rouges */
+      R(cx+a-4,HT+30,8,10,on?'#d14a3a':'#7d2b22');
+      R(cx+a-4,HT+30,8,3,on?'#f07a5a':'#8a3a2a');
+      R(cx+a-1,HT+26,2,4,P.boisS);
+    });
+    for(let i=-28;i<=28;i+=8)R(cx+i,HT+22,3,2,on?'#fff3cd':'#8a6a2a');
+  });
+  CALQUE_CASINO={corps,on:lum(true),off:lum(false),W,H,sol};
+}
+function dessinerCasino(g,x,y){
+  if(!CALQUE_CASINO)graverLeCasino();
+  const C=CALQUE_CASINO, t=Date.now()/1000;
+  /* le halo au sol, la seule chose qu'on recalcule */
+  g.save();g.globalAlpha=.10+Math.sin(t*1.6)*0.03;
   g.fillStyle='#f0cf7d';
-  g.font='700 14px Georgia,serif';g.textAlign='center';
-  g.fillText('CASINO',x,y+HT+29);
-  g.textAlign='left';
-  for(let i=-34;i<=34;i+=10)R(i,HT+16,3,3,cli(i*0.13)?'#fff3cd':'#8a6a2a');
-
-  /* ---- les quatre colonnes ---- */
-  [-30,-12,6,24].forEach((a,i)=>{
-    R(a,HT+40,10,-HT-46,'#b7bec4');
-    R(a,HT+40,3,-HT-46,'#d0d6db');                /* la face éclairée */
-    R(a+7,HT+40,3,-HT-46,'#98a0a7');              /* et la face d'ombre */
-    R(a-2,HT+36,14,5,'#c9d0d6');                  /* le chapiteau */
-    R(a-2,-10,14,5,'#a2a9b0');                    /* la base */
-  });
-
-  /* ---- la porte, entre les colonnes du milieu ---- */
-  R(-9,-46,22,44,'#3a2418');
-  R(-7,-44,18,42,'#c9a24a');
-  R(-7,-44,4,42,'#e0b860');
-  R(-7,-44,18,3,'#e0b860');
-  R(3,-26,3,3,'#7d5f22');
-
-  /* le tapis rouge qui descend les marches */
-  P([[-14,-2],[16,-2],[22,6],[-20,6]],'#b93327');
-  P([[-14,-2],[16,-2],[16,0],[-14,0]],'#d14a3a');
-
-  /* les marches, sur toute la largeur du corps */
-  R(-40,-4,84,3,'#a2a9b0');
-  R(-46,-1,96,3,'#8b939a');
-
-  /* les deux vasques de flamme, en bas des marches */
-  [-56,52].forEach((a,i)=>{
-    R(a,-16,10,14,'#6f767d');
-    R(a,-16,3,14,'#8b939a');
-    R(a-2,-20,14,5,'#8b939a');
-    const h=cli(i*0.5)?6:4;
-    R(a+2,-20-h,6,h,'#e8802c');
-    R(a+3,-21-h,4,3,'#ffc65a');
-  });
+  g.beginPath();g.ellipse(x,y-4,CASINO_L*0.9,26,0,0,7);g.fill();
+  g.restore();
+  const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
+  g.drawImage(C.corps,ox,oy,C.W,C.H);
+  g.drawImage(((t+0.3)%1.1)<0.55?C.on:C.off,ox,oy,C.W,C.H);
 }
 
 /* --- un pont de planches, posé en travers de la rivière --- */
@@ -3493,9 +3472,8 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   if(e.casino){
     const dx=Math.abs(x-e.casino[0]), dy=y-e.casino[1];
-    if(dx<90&&dy>-56&&dy<10)return true;
-    /* les deux vasques, de part et d'autre des marches */
-    if(dx>48&&dx<66&&dy>-20&&dy<4)return true;
+    /* le mur, sauf la porte à deux battants au milieu */
+    if(dx<44&&dy>-52&&dy<4&&!(dx<12&&dy>-8))return true;
   }
   for(const o of autourDe(x,y)){
     const t=TAILLES[o.t];if(!t)continue;
@@ -3746,7 +3724,7 @@ async function descendreDeLigne(){
 const CAMP_FIXE  =[330,300];                    /* le campement, au centre */
 const COFFRE_FIXE=[352,212];                    /* à 91 du camp */
 const FORGE_FIXE =[222,368];                    /* à 18 de la berge */
-const CASINO_FIXE=[452,196];                    /* au nord-est */
+const CASINO_FIXE=[496,122];                    /* en haut à droite, adossé à la forêt */
 const MINE_FIXE  =[516,470];                    /* la carrière, au sud-est */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
