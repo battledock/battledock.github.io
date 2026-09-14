@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1202';
+  var MA_VERSION='2026-09-14-1206';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3121,10 +3122,9 @@ function construireSol(){
       P(x,y,F.coeur);
     }
   }
-  return c;
-
   /* les chemins de terre, gravés par-dessus l'herbe et les berges */
   graverChemins(g);
+  return c;
 }
 
 /* ================= ce qui pousse sur la carte ================= */
@@ -4700,12 +4700,19 @@ function majPerf(ms){
 /* trois touches rapides sur le bandeau du haut */
 (function(){
   let n=0,quand=0;
-  addEventListener('pointerdown',(ev)=>{
-    if(ev.clientY>110)return;
+  const touche=(y)=>{
+    if(y>150)return;                    /* seulement le haut de l'écran */
     const t=Date.now();
-    n=(t-quand<600)?n+1:1;quand=t;
+    n=(t-quand<700)?n+1:1;quand=t;
     if(n>=3){n=0;basculerPerf();}
-  },true);
+  };
+  /* le joystick appelle preventDefault sur touchstart : les événements
+     pointer ne naissent donc jamais. On écoute le toucher directement,
+     en capture, pour passer avant lui. */
+  addEventListener('touchstart',(ev)=>{
+    const t=ev.touches&&ev.touches[0];if(t)touche(t.clientY);
+  },{capture:true,passive:true});
+  addEventListener('mousedown',(ev)=>touche(ev.clientY),true);
 })();
 
 function mesurer(ms){
