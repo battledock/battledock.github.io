@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-14-1357';
+  var MA_VERSION='2026-09-14-1358';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2209,6 +2210,11 @@ function dessinerMine(g,x,y){
    et ramenée à vingt couleurs, et le texte dessous. Le tout est gravé une
    fois — dès que la photo est chargée — puis recopié. */
 const PANNEAU_FIXE=[836,300];
+/* Un bâtiment ne se fait JAMAIS déblayer par le dégagement d'un autre.
+   Le panneau se faisait effacer par la clairière du camp : il tombait
+   pile dans son rayon. */
+const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp',
+                 'panneau','souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
 const PHOTO_PANNEAU=document.createElement('img');
@@ -3557,22 +3563,22 @@ function semerDecor(){
   /* on dégage autour de l'entrepôt, mais jamais un autre bâtiment :
      le casino est à 124 points de lui, il se faisait effacer */
   const BATIS=['casino','mine','forge','coffre','pont','comptoir','camp','panneau'];
-  DECOR=DECOR.filter(o=>o.t==='fleurs'||BATIS.includes(o.t)||
+  DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
   DECOR.push({t:'panneau',x:PANNEAU_FIXE[0],y:PANNEAU_FIXE[1],gr:0});
   e.mine=MINE_FIXE;
-  DECOR=DECOR.filter(o=>Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
+  DECOR=DECOR.filter(o=>BATI(o.t)||Math.hypot(o.x-e.mine[0],o.y-e.mine[1])>96||o.t==='fleurs');invaliderGrille();
   DECOR.push({t:'mine',x:e.mine[0],y:e.mine[1],gr:0});
 
   /* le campement : au même endroit pour tous, lui aussi */
   e.camp=CAMP_FIXE;
-  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+  DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-(e.camp[0]+23))<70&&Math.abs(o.y-e.camp[1])<60));invaliderGrille();
   /* La forge : un vrai bâtiment, au bord de l'eau. Elle remplace le petit
      four et l'établi qu'on posait par terre au camp. */
   e.forge=FORGE_FIXE;
-  DECOR=DECOR.filter(o=>o.t==='fleurs'||
+  DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.forge[0])<88&&Math.abs(o.y-e.forge[1])<78));invaliderGrille();
   DECOR.push({t:'forge',x:e.forge[0],y:e.forge[1],gr:0});
 
