@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2153';
+  var MA_VERSION='2026-09-15-2202';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7471,29 +7472,71 @@ function majAutres(dt){
 }
 
 /* une flèche au bord de l'écran, avec le pseudo et la distance */
+/* ================= LES AUTRES, HORS DE L'ÉCRAN =================
+   LE MÉDAILLON : sa tête dans un jeton, avec son vrai visage, son chapeau et
+   sa veste — on reconnaît qui c'est avant de lire le nom. L'anneau autour se
+   remplit d'autant plus qu'il est proche, et une pointe donne la direction.
+   La couleur dit la distance : vert tout près, bleu à portée, or au loin. */
+const TETES=new Map();
+function teteDe(a){
+  const cle=clePose(a.ap||{})+'|'+(a.pseudo||'');
+  const vue=TETES.get(cle);
+  if(vue)return vue;
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  const W=22,H2=22;
+  const c=document.createElement('canvas');
+  c.width=W*D;c.height=H2*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const sauve=GESTE;GESTE={t:0};
+  /* le sol du personnage tombe sous la vignette : il ne reste que la tête */
+  try{sprite(g,W/2,H2+28,Object.assign({},DEF_AP,a.ap||{}),'bas',0,false);}catch(x){}
+  GESTE=sauve;
+  /* on ne garde pas cent têtes en mémoire */
+  if(TETES.size>24)TETES.clear();
+  TETES.set(cle,c);
+  return c;
+}
 function flechesVersLesAutres(camX,camY){
   for(const [,a] of AUTRES){
     const x=a.x-camX, y=a.y-camY;
     if(x>-30&&y>-60&&x<VW+30&&y<VH+30)continue;   /* il est déjà à l'écran */
-    const cx=VW/2, cy=VH/2;
     const dx=a.x-joueur.x, dy=a.y-joueur.y, d=Math.hypot(dx,dy);
     if(!d)continue;
-    const marge=26;
+    const cx=VW/2, cy=VH/2, marge=18;
     const k=Math.min((VW/2-marge)/Math.abs(dx||1e-6),(VH/2-marge)/Math.abs(dy||1e-6));
-    const fx=cx+dx*k, fy=cy+dy*k, ang=Math.atan2(dy,dx);
+    const ang=Math.atan2(dy,dx);
+    const r=11;
+    const px=Math.max(r+3,Math.min(VW-r-3,cx+dx*k));
+    const py=Math.max(r+3,Math.min(VH-r-3,cy+dy*k));
+    const proche=d<260, loin=d>600;
+    const teinte=proche?'#9fd67a':(loin?'#c9a24a':'#7fd8e8');
+    /* l'anneau : plein quand il est tout près, un filet quand il est loin */
+    const part=Math.max(0.08,1-d/1000);
+    ctx.beginPath();ctx.arc(px,py,r+2.5,0,7);
+    ctx.strokeStyle='rgba(12,20,12,.5)';ctx.lineWidth=3;ctx.stroke();
+    ctx.beginPath();ctx.arc(px,py,r+2.5,-Math.PI/2,-Math.PI/2+part*6.283);
+    ctx.strokeStyle=teinte;ctx.lineWidth=2;ctx.stroke();
+    /* sa tête, découpée en rond */
     ctx.save();
-    ctx.globalAlpha=.9;
-    ctx.translate(fx,fy);
-    ctx.rotate(ang);
-    ctx.fillStyle='rgba(12,20,12,.55)';
-    ctx.beginPath();ctx.moveTo(9,0);ctx.lineTo(-5,-7);ctx.lineTo(-5,7);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#7fd8e8';
-    ctx.beginPath();ctx.moveTo(7,0);ctx.lineTo(-4,-5.5);ctx.lineTo(-4,5.5);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.arc(px,py,r,0,7);ctx.clip();
+    ctx.fillStyle='#3f5340';ctx.fillRect(px-r,py-r,r*2,r*2);
+    try{ctx.drawImage(teteDe(a),px-11,py-9,22,22);}catch(x){}
     ctx.restore();
-    ctx.font='700 7px ui-monospace,monospace';ctx.textAlign='center';
-    const t=a.pseudo+' · '+Math.round(d)+' m';
-    ctx.fillStyle='rgba(12,20,12,.6)';ctx.fillText(t,fx+1,fy-11);
-    ctx.fillStyle='#dff6fa';ctx.fillText(t,fx,fy-12);
+    /* la pointe, qui donne la direction */
+    ctx.save();ctx.translate(px,py);ctx.rotate(ang);
+    ctx.fillStyle='rgba(12,20,12,.55)';
+    ctx.beginPath();ctx.moveTo(r+8.5,0);ctx.lineTo(r+0.5,-4.6);ctx.lineTo(r+0.5,4.6);
+    ctx.closePath();ctx.fill();
+    ctx.fillStyle=teinte;
+    ctx.beginPath();ctx.moveTo(r+7,0);ctx.lineTo(r+1.5,-3.4);ctx.lineTo(r+1.5,3.4);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+    /* le nom, sous le jeton, en lettres de livre */
+    ctx.font='400 7px Georgia,serif';ctx.textAlign='center';
+    const ny=(py+r+9>VH-2)?(py-r-4):(py+r+9);
+    ctx.fillStyle='rgba(12,20,12,.7)';ctx.fillText(a.pseudo||'',px+1,ny+1);
+    ctx.fillStyle='#f2e8d0';ctx.fillText(a.pseudo||'',px,ny);
     ctx.textAlign='left';
   }
 }
