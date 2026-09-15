@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2032';
+  var MA_VERSION='2026-09-15-2123';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1315,6 +1316,21 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
      qui a l'air fausse. Le bras part toujours à l'opposé de la jambe du même
      côté, et le corps rebondit une fois par pas, pas deux. */
   const F=bouge?(Math.floor(pas*2)%16):-1;
+  /* LA COURSE, SEIZE TEMPS ELLE AUSSI.
+     Ce n'est pas une marche accélérée : la hanche balaie 6 points au lieu de
+     4, le genou se lève deux fois plus haut, et surtout il y a SIX images de
+     suspension sur seize — les deux pieds en l'air, deux fois par cycle.
+     Sans ce temps de vol, on patine. Le corps monte au vol et retombe à
+     l'appui, ce qui donne le poids. */
+  const COURSE={
+    jg:[6, 6, 5, 2, 0, -2, -5, -6, -6, -6, -5, -2, 0, 2, 5, 6],
+    jd:[-6, -6, -5, -2, 0, 2, 5, 6, 6, 6, 5, 2, 0, -2, -5, -6],
+    pg:[0, 0, 0, 2, 2, 2, 0, 0, 0, 1, 2, 4, 5, 4, 2, 1],
+    pd:[0, 1, 2, 4, 5, 4, 2, 1, 0, 0, 0, 2, 2, 2, 0, 0],
+    bg:[-3, -3, -2, -1, 0, 1, 2, 3, 3, 3, 2, 1, 0, -1, -2, -3],
+    bd:[3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1, 0, 1, 2, 3],
+    corps:[1, 1, 1, -1, -2, -1, 1, 1, 1, 1, 1, -1, -2, -1, 1, 1],
+    reb:[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0]};
   const AN={
     /* Cette table ne vient plus de mon jugement mais d'une FORMULE :
          hanche(u) = A·cos(2πu)        la jambe balaie symétriquement
@@ -1330,12 +1346,14 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     bd:[-1,-1,0,1,1,2,2,2,2,2,2,1,1,0,-1,-1],
     corps:[0,0,-1,-1,-1,-1,-1,0,0,0,-1,-1,-1,-1,-1,0],
     reb:[0,0,1,1,1,1,1,0,0,0,1,1,1,1,1,0]};
+  const COURT=!!(p&&p.court);
+  const TAB=COURT?COURSE:AN;
   const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
-  const Y=bouge?AN.corps[F]:souffle;
-  const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
-  const jgL=bouge?AN.pg[F]:0, jdL=bouge?AN.pd[F]:0;
-  const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
-  const reb=bouge?AN.reb[F]:0;
+  const Y=bouge?TAB.corps[F]:souffle;
+  const jgP=bouge?TAB.jg[F]:0, jdP=bouge?TAB.jd[F]:0;
+  const jgL=bouge?TAB.pg[F]:0, jdL=bouge?TAB.pd[F]:0;
+  const bgP=bouge?TAB.bg[F]:0, bdP=bouge?TAB.bd[F]:0;
+  const reb=bouge?TAB.reb[F]:0;
   const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
   const MANCHE_AR={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
                    'gilet':0,'t-shirt':4,'débardeur':0}[HAUTS[p.haut]||'veste'];
@@ -5674,7 +5692,7 @@ function dessiner(){
   nettoyerBulles();
   /* les acteurs : moi et les autres, chacun à sa profondeur */
   const acteurs=[{y:joueur.y,
-    f:()=>personne(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche)}];
+    f:()=>personne(ctx,px,py,e.ap,joueur.dir,joueur.pas,!!joueur.marche,court)}];
   for(const [,a] of AUTRES){
     const ax=a.x-camX, ay=a.y-camY;
     if(ax<-40||ay<-70||ax>VW+40||ay>VH+40)continue;
@@ -5762,8 +5780,11 @@ function cosmetiqueDe(ap){
   if(!ap||!ap.cos)return null;
   return COSMETIQUES.find(c=>c.id===ap.cos)||null;
 }
-function personne(g,x,y,ap,dir,pas,marche){
+function personne(g,x,y,ap,dir,pas,marche,enCourse){
   const C=cosmetiqueDe(ap);
+  /* la course a ses propres poses : on les range sous une autre clé, sinon
+     elles écraseraient celles de la marche */
+  if(enCourse)ap=Object.assign({},ap,{court:1});
   const tc=Date.now()/1000;
   if(C&&C.id==='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
   if(GESTE&&GESTE.t>0)sprite(g,x,y,ap,dir,pas,marche);
@@ -5777,16 +5798,23 @@ function personne(g,x,y,ap,dir,pas,marche){
 }
 
 /* ================= déplacement ================= */
-const VITESSE=112;                 /* pixels de jeu par seconde, à fond */
+const VITESSE=112;                 /* pixels de jeu par seconde, en marchant */
+const VITESSE_COURSE=186;          /* joystick poussé à fond : on court */
 let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
+let court=false;                  /* l'allure du moment */
 let bloqueBord=false;
+let dernierAppui=-1;
 
 function majJoueur(dt){
   const n=Math.hypot(joyX,joyY);
   const pousse=Math.min(1,n);
   /* 1. on accélère et on freine au lieu de sauter d'un état à l'autre */
-  const cibleX=n>0.16?(joyX/n)*VITESSE*pousse:0;
-  const cibleY=n>0.16?(joyY/n)*VITESSE*pousse:0;
+  /* Au-delà de 88 % de course sur le joystick, on court : la vitesse ET
+     l'animation changent. En dessous, on marche comme avant. */
+  court=pousse>0.88;
+  const allure=court?VITESSE_COURSE:VITESSE;
+  const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
+  const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
   const k=Math.min(1,dt*(n>0.16?11:16));       /* le freinage est plus vif que la relance */
   vx+=(cibleX-vx)*k;
   vy+=(cibleY-vy)*k;
@@ -5795,6 +5823,20 @@ function majJoueur(dt){
     const [dx,dy]=degager(joueur.x,joueur.y);
     joueur.x=dx;joueur.y=dy;
   }
+  /* LA POUSSIÈRE DE COURSE : elle ne part qu'aux deux APPUIS du cycle,
+     jamais pendant le vol — c'est ce détail qui donne le poids. */
+  if(court&&joueur.marche){
+    const F=Math.floor(joueur.pas*2)%16;
+    if((F===0||F===8)&&F!==dernierAppui){
+      dernierAppui=F;
+      for(let i=0;i<4;i++){
+        PARTS.push({x:joueur.x+(Math.random()-.5)*5,y:joueur.y,
+          vx:(Math.random()-.5)*26-vx*0.09,vy:-8-Math.random()*14,
+          vie:.45+Math.random()*.25,taille:2,rot:0,vrot:0,
+          c:i%2?'#b8a482':'#c9b894',rebondi:false});
+      }
+    }
+  }else dernierAppui=-1;
   const v=Math.hypot(vx,vy);
   if(v>1.2){
     /* on essaie chaque axe séparément : on glisse le long des obstacles */
@@ -7049,12 +7091,16 @@ function majAutres(dt){
       const v=Math.min(d,Math.max(95,d*9)*dt);   /* il glisse vite vers sa vraie place */
       a.x+=dx/d*v;a.y+=dy/d*v;
       a.pas+=v*0.34;a.marche=true;
+      /* on devine leur allure à leur vitesse réelle : inutile d'ajouter un
+         champ au réseau pour ça */
+      const vSec=v/Math.max(dt,0.001);
+      a.court=vSec>150;
       a.dir=a.dirEnvoyee||a.dir||'bas';
       if(!a.dirEnvoyee&&d>3){
         if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
         else a.dir=dy>0?'bas':'haut';
       }
-    }else{a.marche=false;a.pas=0;}
+    }else{a.marche=false;a.pas=0;a.court=false;}
     if(now-(a.recu||0)>400){a.vx=0;a.vy=0;}   /* plus de nouvelles : on ne devine plus */
     if(a.gesteT>0)a.gesteT=Math.max(0,a.gesteT-dt*2.3);
   }
@@ -7095,7 +7141,8 @@ function dessinerUnAutre(g,a,camX,camY){
   GESTE=a.gesteT>0
     ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
     :{t:0};
-  personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche);
+  /* les autres joueurs : on les voit courir dès que leur vitesse le dit */
+  personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
   GESTE=sauve;
   g.font='700 7px ui-monospace,monospace';g.textAlign='center';
   g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,y-49);
