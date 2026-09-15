@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1747';
+  var MA_VERSION='2026-09-15-1753';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -191,6 +192,33 @@ body{overflow:hidden}
 #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
 #haut .pet{font:400 8.5px Georgia,serif;font-style:italic;color:rgba(253,251,244,.62);
   text-shadow:0 1px 6px rgba(0,0,0,.9)}
+
+/* ---- LE TABLEAU DU VILLAGE : le tutoriel ---- */
+.tuto{background:#f3e9cd}
+.tuTete{display:flex;align-items:flex-end;gap:12px;padding:14px 16px 12px;
+  background:linear-gradient(180deg,#5b4426,#4a3620);box-shadow:0 3px 0 rgba(40,28,14,.5)}
+.tuTete canvas{width:52px;height:66px;image-rendering:pixelated;margin-bottom:-4px}
+.tuTete .t b{display:block;font:400 20px Georgia,serif;color:#f6ecd2}
+.tuTete .t i{display:block;font:400 9px Georgia,serif;font-style:italic;
+  color:rgba(246,236,210,.66);margin-top:2px}
+.tuPuces{display:flex;gap:5px;justify-content:center;padding:11px 0 4px}
+.tuPuce{width:7px;height:7px;border-radius:50%;background:rgba(120,96,56,.28);
+  transition:transform .2s,background .2s}
+.tuPuce.on{background:#5b4426;transform:scale(1.3)}
+.tuCorps{padding:6px 18px 14px}
+.tuCorps h3{font:400 21px Georgia,serif;color:#2b2418;margin-bottom:4px}
+.tuCorps .sous{font:400 9.5px Georgia,serif;font-style:italic;
+  color:rgba(51,41,27,.55);letter-spacing:1.2px;margin-bottom:12px}
+.tuCorps p{font:400 12.5px/1.75 Georgia,serif;color:#463a28;margin-bottom:9px}
+.tuCorps b{font-weight:400;color:#8a5a1e}
+.tuImage{width:100%;height:112px;border-radius:12px;margin:4px 0 12px;display:block;
+  image-rendering:pixelated;background:#93a869}
+.tuPied{position:sticky;bottom:0;display:flex;gap:9px;padding:10px 16px calc(16px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(243,233,205,0),#efe4c6 30%)}
+.tuPied button{border:0;border-radius:12px;padding:13px;font:400 14px Georgia,serif;
+  letter-spacing:1.2px}
+.tuPasser{flex:0 0 104px;background:rgba(51,41,27,.09);color:#5b4426}
+.tuSuite{flex:1;background:#33291b;color:#f0cf7d}
 
 /* ---- L'ÉCHOPPE ---- */
 .echoppe{background:#f1e7cd}
@@ -2963,8 +2991,10 @@ function dessinerLaFontaine(g,x,y){
 /* ---- les décors de la place : arbres en pot, bancs, panneau ---- */
 const CALQUES_DECO={};
 function graverDeco(t){
-  const W=t==='bancP'?42:(t==='panneauV'?32:36), H=t==='bancP'?26:(t==='panneauV'?40:52);
-  const cx=W/2, sol=H-6;
+  /* L'arbre en pot montait à 53 points au-dessus du sol alors que son calque
+     n'en faisait que 52 : sa cime était coupée net. */
+  const W=t==='bancP'?42:(t==='panneauV'?32:40), H=t==='bancP'?26:(t==='panneauV'?46:64);
+  const cx=W/2, sol=H-8;
   const c=document.createElement('canvas');
   const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   c.width=W*D;c.height=H*D;
@@ -3149,6 +3179,197 @@ function dessinerLaVie(g,camX,camY){
       lueurNuit(g,cx+dx+camX,cy+dy-28+camY,22,'rgba(255,200,110,§)');
     });
   }
+}
+
+
+/* ================= LE TABLEAU DU VILLAGE =================
+   L'écriteau plat devient un vrai tableau d'affichage : deux montants, un
+   auvent, du liège et trois affiches punaisées, plus une lanterne. On voit
+   de loin qu'il y a quelque chose à lire — et en s'approchant, la plaque du
+   bas propose « Lire ». */
+let CALQUE_TABLEAU=null;
+
+function graverLeTableau(){
+  const W=64,H=88,x=W/2,sol=H-10;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const T=0;
+  const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect((x+dx)|0,(sol+dy)|0,Math.max(1,w),Math.max(1,h));};
+  const BO={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#8a6238',h:'#a5764a',t:'#c09a6a'};
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(x+1,sol+2,20,4,0,0,7);g.fill();
+  /* LE TABLEAU REFAIT : deux montants, un auvent, du liège, des affiches
+     punaisées et une lanterne. On voit qu'il y a quelque chose à lire. */
+  R(-18,-12,5,12,BO.o);R(13,-12,5,12,BO.o);            /* les pieds */
+  R(-20,-52,5,42,BO.p);R(15,-52,5,42,BO.p);            /* les montants */
+  R(-20,-52,2,42,BO.h);R(15,-52,2,42,BO.h);
+  R(-22,-56,44,5,BO.o);                                 /* la traverse haute */
+  R(-24,-60,48,5,BO.c);R(-24,-60,48,2,BO.t);            /* l'auvent */
+  for(let i=0;i<48;i+=6)R(-24+i,-55,3,2,'#6b4a28');
+  R(-17,-50,34,38,'#8a6a44');                           /* le panneau de liège */
+  R(-17,-50,34,2,'#a3835a');
+  for(let i=0;i<40;i++){                                /* le grain du liège */
+    const px=-16+alea(i*1.7)*32, py=-48+alea(i*2.9)*34;
+    R(px,py,2,1,alea(i)<0.5?'#7d5f3c':'#96744c');
+  }
+  /* trois affiches punaisées, légèrement de travers */
+  const affiche=(dx,dy,w,h,col,ang)=>{
+    g.save();g.translate(x+dx,sol+dy);g.rotate(ang);
+    g.fillStyle='rgba(20,14,8,.25)';g.fillRect(-w/2+1,-h/2+1,w,h);
+    g.fillStyle=col;g.fillRect(-w/2,-h/2,w,h);
+    g.fillStyle='rgba(255,255,255,.35)';g.fillRect(-w/2,-h/2,w,1);
+    g.fillStyle='rgba(60,45,25,.45)';
+    for(let k=0;k<3;k++)g.fillRect(-w/2+2,-h/2+3+k*3,w-5,1);
+    g.fillStyle='#b93327';g.fillRect(-1,-h/2-1,2,2);    /* la punaise */
+    g.restore();
+  };
+  affiche(-7,-38,15,12,'#f2e6c8',-0.08);
+  affiche(7,-33,13,11,'#e8dcc0',0.1);
+  affiche(-4,-22,17,10,'#f6efdc',0.03);
+  /* la lanterne accrochée au coin */
+  R(17,-58,1,5,'#3d4248');
+  R(14,-53,7,7,'#c9a24a');R(14,-53,7,2,'#e8cf8a');
+  const br=(Math.sin(T*2.5)+1)/2;
+  R(15,-51,5,4,'rgba(255,210,122,'+(0.7+br*0.3).toFixed(2)+')');
+  const dg=g.createRadialGradient(x+17,sol-50,1,x+17,sol-50,22);
+  dg.addColorStop(0,'rgba(255,200,110,'+(0.16+br*0.06).toFixed(2)+')');
+  dg.addColorStop(1,'rgba(255,200,110,0)');
+  g.fillStyle=dg;g.fillRect(x-5,sol-72,44,44);
+  CALQUE_TABLEAU={toile:c,W,H,sol};
+}
+function dessinerLeTableau(g,x,y){
+  if(!CALQUE_TABLEAU)graverLeTableau();
+  const C=CALQUE_TABLEAU;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  if(typeof lampesAllumees==='function'&&lampesAllumees())
+    lueurNuit(g,x+8,y-50,22,'rgba(255,200,110,§)');
+}
+
+/* ---- le tutoriel, cinq pages ---- */
+const PAGES=[
+  {titre:'Bienvenue au port',sous:'CE QUE TU FAIS ICI',
+   txt:['Tu es un <b>récolteur</b>. La rive ouest est pleine d’arbres, de rochers, '+
+        'de buissons et d’herbes : tout se ramasse, tout se vend.',
+        'La rive est, c’est le village : le <b>comptoir</b> où l’on vend, '+
+        'l’<b>échoppe</b> où l’on achète, et la place au milieu.'],
+   img:(g,w,h)=>{
+     g.fillStyle='#889d5e';g.fillRect(0,0,w,h);
+     for(let y=0;y<h;y+=2)for(let x=(y/2)%2?0:2;x<w;x+=4){g.fillStyle='#8fa464';g.fillRect(x,y,2,2);}
+     g.fillStyle='#3a7794';g.fillRect(w*0.46,0,w*0.08,h);
+     for(let i=0;i<7;i++){g.fillStyle='#2f6b34';
+       g.beginPath();g.arc(w*0.1+i*w*0.05,h*0.3+((i%3)*h*0.2),7,0,7);g.fill();}
+     g.fillStyle='#b56448';g.fillRect(w*0.62,h*0.2,w*0.3,h*0.18);
+     g.fillStyle='#8f979e';g.beginPath();g.ellipse(w*0.72,h*0.62,22,13,0,0,7);g.fill();
+     g.fillStyle='#4a8fae';g.beginPath();g.ellipse(w*0.72,h*0.6,7,4,0,0,7);g.fill();
+   }},
+  {titre:'Récolter',sous:'LE GESTE DE BASE',
+   txt:['Approche-toi d’un arbre ou d’un rocher : la <b>grande plaque du bas</b> '+
+        'te dit ce que tu peux faire. Touche-la, et recommence jusqu’à ce que ça tombe.',
+        'Chaque objet ramassé pèse dans ton sac. Quand il est plein, il faut aller vendre.'],
+   img:(g,w,h)=>{
+     g.fillStyle='#889d5e';g.fillRect(0,0,w,h);
+     g.fillStyle='#6b4a28';g.fillRect(w*0.3,h*0.35,10,h*0.4);
+     g.fillStyle='#2f6b34';g.beginPath();g.arc(w*0.32,h*0.32,26,0,7);g.fill();
+     g.fillStyle='#3d7d3f';g.beginPath();g.arc(w*0.28,h*0.26,18,0,7);g.fill();
+     g.fillStyle='rgba(253,251,244,.95)';g.fillRect(w*0.55,h*0.62,w*0.38,h*0.2);
+     g.fillStyle='#33291b';g.font='italic 13px Georgia,serif';
+     g.fillText('Couper',w*0.59,h*0.76);
+   }},
+  {titre:'Vendre au comptoir',sous:'CE QUI TE FAIT VIVRE',
+   txt:['Au nord du village, le <b>comptoir</b> rachète tout ce que tu ramènes. '+
+        'Chaque ligne se décoche : tu gardes ce que tu veux.',
+        'Le prix dépend de la rareté — une gemme vaut quarante bois.'],
+   img:(g,w,h)=>{
+     g.fillStyle='#f3e9cd';g.fillRect(0,0,w,h);
+     g.fillStyle='#5b4426';g.fillRect(0,0,w,h*0.26);
+     g.fillStyle='#f0cf7d';g.font='16px Georgia,serif';g.fillText('12,40 €',w*0.68,h*0.19);
+     for(let i=0;i<3;i++){
+       g.fillStyle='rgba(120,96,56,.2)';g.fillRect(w*0.06,h*0.38+i*h*0.2,w*0.88,1);
+       g.fillStyle='#8a6238';g.fillRect(w*0.08,h*0.42+i*h*0.2,14,10);
+       g.fillStyle='#5b7d3a';g.fillRect(w*0.78,h*0.42+i*h*0.2,w*0.14,8);
+     }
+   }},
+  {titre:'Acheter à l’échoppe',sous:'POUR ALLER PLUS LOIN',
+   txt:['À l’est, l’<b>échoppe</b> vend un sac plus grand, de meilleurs outils, '+
+        'et de quoi s’habiller — que les autres joueurs verront sur toi.',
+        'Chaque cran coûte plus cher que le précédent. Le premier s’achète en une '+
+        'partie ; le dernier se mérite.'],
+   img:(g,w,h)=>{
+     g.fillStyle='#f1e7cd';g.fillRect(0,0,w,h);
+     g.fillStyle='#33452f';g.fillRect(0,0,w,h*0.26);
+     g.fillStyle='#cfe8b2';g.font='15px Georgia,serif';g.fillText('L’échoppe',w*0.08,h*0.18);
+     [0,1].forEach(i=>{
+       g.fillStyle='#fbf5e2';g.fillRect(w*0.06+i*w*0.48,h*0.34,w*0.42,h*0.56);
+       g.fillStyle='#93a869';g.fillRect(w*0.08+i*w*0.48,h*0.38,w*0.38,h*0.34);
+       g.fillStyle=i?'#8a4fa8':'#3f7d9c';g.fillRect(w*0.08+i*w*0.48,h*0.38,w*0.16,7);
+     });
+   }},
+  {titre:'Le classement',sous:'CE QUI SE COMPTE',
+   txt:['Le premier est celui qui a <b>le plus récolté</b> — un objet ramassé, '+
+        'un point, quel qu’il soit.',
+        'Tu y retrouves aussi qui est en ligne, et à quelle distance on est du premier.'],
+   img:(g,w,h)=>{
+     g.fillStyle='#f6efdc';g.fillRect(0,0,w,h);
+     ['Dopio','Eliasse','Mathieu'].forEach((n,i)=>{
+       g.fillStyle=i?'rgba(120,96,56,.1)':'rgba(201,162,74,.22)';
+       g.fillRect(w*0.05,h*0.14+i*h*0.28,w*0.9,h*0.22);
+       g.fillStyle='#2b2418';g.font='14px Georgia,serif';
+       g.fillText(n,w*0.14,h*0.29+i*h*0.28);
+       g.fillStyle='#8a6a2a';g.font='15px Georgia,serif';
+       g.fillText([405,401,39][i],w*0.78,h*0.29+i*h*0.28);
+     });
+   }}
+];
+let pageTuto=0;
+function ouvrirLeTuto(){
+  pageTuto=0;
+  $('page2Fond').className='sacFond clairS tuto';
+  majTuto();
+  $('page2').classList.add('on');
+  try{localStorage.setItem('bdl.tuto.vu','1');}catch(x){}
+}
+function majTuto(){
+  const P=PAGES[pageTuto];
+  $('page2Fond').innerHTML=
+   '<div class="tuTete"><canvas id="tuAubergiste"></canvas>'+
+     '<span class="t"><b>Le tableau du village</b><i>CE QU’IL FAUT SAVOIR</i></span></div>'+
+   '<div class="tuPuces">'+PAGES.map((_,i)=>
+     '<span class="tuPuce'+(i===pageTuto?' on':'')+'"></span>').join('')+'</div>'+
+   '<div class="tuCorps"><h3>'+P.titre+'</h3><div class="sous">'+P.sous+'</div>'+
+     '<canvas class="tuImage" id="tuImg"></canvas>'+
+     P.txt.map(t=>'<p>'+t+'</p>').join('')+'</div>'+
+   '<div class="tuPied">'+
+     '<button class="tuPasser" id="tu-fermer">Fermer</button>'+
+     '<button class="tuSuite" id="tu-suite">'+
+       (pageTuto===PAGES.length-1?'C’est parti':'Continuer')+'</button>'+
+   '</div>';
+  /* le commis du tableau */
+  const a=$('tuAubergiste');
+  if(a){
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    a.width=52*D;a.height=66*D;
+    const g2=a.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnabled=false;
+    const av=GESTE;GESTE={t:0};
+    sprite(g2,26,58,Object.assign({},DEF_AP,{veste:6,cheveux:5,chapeau:5}),'bas',0,false);
+    GESTE=av;
+  }
+  /* l'image de la page */
+  const c=$('tuImg');
+  if(c){
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    const w=c.clientWidth||320, h=112;
+    c.width=w*D;c.height=h*D;
+    const g2=c.getContext('2d');g2.setTransform(D,0,0,D,0,0);g2.imageSmoothingEnabled=false;
+    try{P.img(g2,w,h);}catch(x){}
+  }
+  $('tu-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('tu-suite').onclick=()=>{
+    if(pageTuto===PAGES.length-1){fermeA=Date.now();$('page2').classList.remove('on');return;}
+    pageTuto++;vibrer(20);majTuto();
+  };
 }
 
 /* ================= L'ÉCHOPPE =================
@@ -3446,12 +3667,16 @@ function graverLeComptoir(){
     caisse(cx-COMPT_L/2+6,sol-22);caisse(cx-COMPT_L/2+22,sol-22);
     /* L'ENSEIGNE, remontée SUR LE BANDEAU DU TOIT : plus rien ne la mange.
        Avant, elle descendait sur les briques et la porte passait dessus. */
-    R(cx-44,basToit-8,88,16,B.boisS);
-    R(cx-44,basToit-8,88,2,B.boisC);
-    R(cx-44,basToit+6,88,2,'#2a1c12');
-    R(cx-46,basToit-10,4,20,B.boisO);                /* les deux montants */
-    R(cx+42,basToit-10,4,20,B.boisO);
-    g.fillStyle='#f0cf7d';g.font='700 12px Georgia,serif';g.textAlign='center';
+    /* LA PLAQUE : elle s'ajuste à la largeur du mot, au lieu que le mot
+       dépasse de la plaque comme avant. */
+    g.font='700 12px Georgia,serif';
+    const larg=Math.ceil(g.measureText('COMPTOIR').width)+22;
+    R(cx-larg/2,basToit-8,larg,16,B.boisS);
+    R(cx-larg/2,basToit-8,larg,2,B.boisC);
+    R(cx-larg/2,basToit+6,larg,2,'#2a1c12');
+    R(cx-larg/2-4,basToit-10,4,20,B.boisO);          /* les deux montants */
+    R(cx+larg/2,basToit-10,4,20,B.boisO);
+    g.fillStyle='#f0cf7d';g.textAlign='center';
     g.fillText('COMPTOIR',cx,basToit+4);g.textAlign='left';
   });
   const lum=(on)=>toile(({R})=>{
@@ -4957,7 +5182,7 @@ function bloque(x,y){
     const dx=Math.abs(x-d.x), dy=y-d.y;
     if(d.t==='arbrePot'&&dx<10&&dy>-14&&dy<5)return true;
     if(d.t==='bancP'&&dx<20&&dy>-10&&dy<5)return true;
-    if(d.t==='panneauV'&&dx<8&&dy>-12&&dy<4)return true;
+    if(d.t==='panneauV'&&dx<22&&dy>-14&&dy<4)return true;
   }
   for(const b of HAMEAU){
     const dx=Math.abs(x-b.x), dy=y-b.y;
@@ -5024,7 +5249,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
        pied soit sorti de l'écran. On leur laisse donc large. */
     const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:
       (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
-      (o.t==='fontaine'?104:(o.t==='arbrePot'?52:(o.t==='echoppe'?132:0)))))))));
+      (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
+      (o.t==='panneauV'?88:0))))))))));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -5123,7 +5349,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
     else if(o.t==='echoppe')dessinerLEchoppe(g,x,y);
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
-    else if(o.t==='arbrePot'||o.t==='bancP'||o.t==='panneauV')dessinerDeco(g,o.t,x,y);
+    else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
+    else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
     else if(o.t==='maison'||o.t==='taverne'||o.t==='atelier'||o.t==='puits'){
       dessinerHameau(g,o.t,o.teinte,x,y);
       if(o.t==='atelier')lueurNuit(g,x,y-16,34,'rgba(255,140,50,§)');
@@ -6782,7 +7009,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -6868,6 +7095,10 @@ function majAction(){
   b.onclick=agir;                     /* une cible : c'est elle qu'on vise */
   if(o.t==='echoppe'){
     b.innerHTML='Entrer<small>L’ÉCHOPPE · ACHETER</small>';
+    b.classList.add('on');return;
+  }
+  if(o.t==='panneauV'){
+    b.innerHTML='Lire<small>LE TABLEAU DU VILLAGE</small>';
     b.classList.add('on');return;
   }
   if(o.t==='coffre'){
@@ -6960,6 +7191,7 @@ function agir(){
     return;
   }
   if(o.t==='fete'){location.href='fete.html';return;}
+  if(o.t==='panneauV'){ouvrirLeTuto();return;}
   if(o.t==='echoppe'){ouvrirLEchoppe();return;}
   if(o.t==='comptoir'){ouvrirLeComptoir();return;}
   if(o.t==='forge'){location.href='forge.html';return;}
@@ -8624,6 +8856,14 @@ setInterval(()=>{sauver();monterEnLigne(true);},4000);   /* on signale sa prése
 /* les réglages se lisent en dernier : tout le jeu est déclaré à ce moment,
    donc plus rien ne peut être touché avant sa création. */
 lireReglages();
+/* Le tutoriel s'ouvre tout seul à la première partie — et reste consultable
+   à tout moment au tableau du village, y compris pour les anciens joueurs. */
+setTimeout(()=>{
+  try{
+    if(localStorage.getItem('bdl.tuto.vu'))return;
+    if(typeof ouvrirLeTuto==='function')ouvrirLeTuto();
+  }catch(x){}
+},1400);
 </script>
 </body>
 </html>
