@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1441';
+  var MA_VERSION='2026-09-15-1723';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6798,6 +6799,16 @@ addEventListener('pointerdown',(ev)=>{
 function actionDeSecours(){
   const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*((OBJETS[k]||{}).poids||1),0);
   const max=e.sacMax||60;
+  /* SUR LA RIVE OUEST — celle de la récolte — on ne propose JAMAIS le sac :
+     le joueur y vise des arbres et des rochers, et une grande cible « Le sac »
+     qui apparaît entre deux gestes lui vole son geste suivant. On ne garde
+     que l'avertissement du sac plein, qui lui, est utile. */
+  const enRecolte=joueur.x<rivX(joueur.y);
+  if(enRecolte){
+    if(charge>=max*0.92)
+      return {mot:'Le sac est plein',sous:'traverse le gué et va vendre',f:()=>ouvrirSac()};
+    return null;
+  }
   if(nonLus>0)
     return {mot:'Répondre',sous:nonLus+' message'+(nonLus>1?'s':'')+' non lu'+(nonLus>1?'s':''),
             f:()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();}};
