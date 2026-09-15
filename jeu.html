@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0755';
+  var MA_VERSION='2026-09-15-0757';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4429,9 +4430,10 @@ e.casino=null;e.camp=null;e.coffre=null;e.comptoir=null;
    portent des points de l'ancien barème : on les remet à zéro une seule
    fois, la première fois qu'on ouvre cette version. */
 try{
-  if(localStorage.getItem('bdl.score.v2')!=='fait'){
-    e.score=0;e.recolte=0;
-    localStorage.setItem('bdl.score.v2','fait');
+  /* le score repart de la récolte : c'est elle qui compte désormais */
+  if(localStorage.getItem('bdl.score.v3')!=='fait'){
+    e.score=e.recolte||0;
+    localStorage.setItem('bdl.score.v3','fait');
   }
 }catch(x){}
 /* Chacun a sa hache, sa pioche et son épée — y compris les parties déjà
@@ -6037,10 +6039,14 @@ function actionDeSecours(){
   return null;
 }
 
-/* ce que vaut une récolte, au prix du comptoir */
-const valeurDe=(type,nb)=>(PRIX_COMPTOIR[type]||1)*(nb||0);
+/* LE CLASSEMENT SUIT LA RÉCOLTE, tout simplement : un objet ramassé vaut un
+   point, quel qu'il soit. Celui qui a le plus récolté est premier — c'est la
+   seule règle qui se comprenne sans explication, et celle que le classement
+   affichait déjà à côté du score.
+   (Avant : des points par geste, puis la valeur marchande. Les deux
+   donnaient un classement qui contredisait le nombre affiché.) */
 function marquer(type,nb){
-  e.score=(e.score||0)+valeurDe(type,nb);
+  e.score=(e.score||0)+(nb||0);
 }
 
 /* le trait qui se remplit au bas de la plaque, à mesure des coups */
