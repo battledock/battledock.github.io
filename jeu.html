@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2129';
+  var MA_VERSION='2026-09-15-2148';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3246,6 +3247,332 @@ function dessinerLaVie(g,camX,camY){
 }
 
 
+
+/* ================= LE SON =================
+   Tout est synthétisé : pas un fichier à télécharger. Chaque son traverse la
+   même « pièce » — une réverbération courte et un filtre qui arrondit les
+   aigus — pour qu'il paraisse dans le monde plutôt que collé à l'oreille.
+   Trois volumes séparés, parce qu'un geste revient des centaines de fois et
+   qu'une vente arrive trois fois par session. */
+const V={gestes:.50,moments:.55,amb:.26,rev:.34};
+let SON_PRET=false;
+let ac=null,SEC=null,REV=null,REVG=null;
+
+function A(){
+  if(ac)return ac;
+  ac=new (window.AudioContext||window.webkitAudioContext)();
+  /* ---------- LA PIÈCE ----------
+     Tout passe par là : un filtre qui arrondit les aigus, une réverbération
+     courte, et un compresteur très doux pour que rien ne pique. */
+  const sortie=ac.createDynamicsCompressor();
+  sortie.threshold.value=-18;sortie.knee.value=26;sortie.ratio.value=2.6;
+  sortie.attack.value=0.006;sortie.release.value=0.22;
+  sortie.connect(ac.destination);
+  SEC=ac.createBiquadFilter();
+  SEC.type='lowpass';SEC.frequency.value=5200;SEC.Q.value=0.4;
+  SEC.connect(sortie);
+  /* la réverbération : une impulsion fabriquée, deux secondes, douce */
+  const n=Math.floor(ac.sampleRate*1.7);
+  const b=ac.createBuffer(2,n,ac.sampleRate);
+  for(let c=0;c<2;c++){
+    const d=b.getChannelData(c);
+    for(let i=0;i<n;i++){
+      const t=i/n;
+      d[i]=(Math.random()*2-1)*Math.pow(1-t,3.1)*(i<ac.sampleRate*0.012?t*80:1);
+    }
+  }
+  REV=ac.createConvolver();REV.buffer=b;
+  const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=260;
+  REVG=ac.createGain();REVG.gain.value=V.rev;
+  REV.connect(hp);hp.connect(REVG);REVG.connect(sortie);
+  return ac;
+}
+/* chaque son se branche sur la pièce, avec sa part de réverbération */
+function vers(n,part){
+  n.connect(SEC);
+  const g=A().createGain();g.gain.value=(part===undefined?0.5:part);
+  n.connect(g);g.connect(REV);
+}
+let BRUIT=null;
+function bruit(){
+  if(BRUIT)return BRUIT;
+  const c=A(), n=c.sampleRate*2;
+  const b=c.createBuffer(1,n,c.sampleRate);
+  const d=b.getChannelData(0);
+  /* du bruit ROSE, pas blanc : le blanc siffle, le rose est celui de la
+     nature — vent, eau, feuilles */
+  let b0=0,b1=0,b2=0;
+  for(let i=0;i<n;i++){
+    const w=Math.random()*2-1;
+    b0=0.99765*b0+w*0.0990460;
+    b1=0.96300*b1+w*0.2965164;
+    b2=0.57000*b2+w*1.0526913;
+    d[i]=(b0+b1+b2+w*0.1848)*0.16;
+  }
+  return BRUIT=b;
+}
+function env(g,t,mont,tenue,chute,vol){
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0001,vol),t+mont);
+  g.gain.setValueAtTime(Math.max(0.0001,vol),t+mont+tenue);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+mont+tenue+chute);
+}
+function souffle(t,duree,f0,f1,q,vol,type,part){
+  const c=A(), s=c.createBufferSource();
+  s.buffer=bruit();s.loop=true;
+  s.playbackRate.value=0.8+Math.random()*0.4;
+  const f=c.createBiquadFilter();
+  f.type=type||'bandpass';f.Q.value=q;
+  f.frequency.setValueAtTime(f0,t);
+  f.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+duree);
+  const g=c.createGain();
+  env(g,t,Math.max(0.006,duree*0.12),duree*0.18,duree*0.8,vol);
+  s.connect(f);f.connect(g);vers(g,part);
+  s.start(t);s.stop(t+duree+0.3);
+}
+function note(t,freq,duree,vol,forme,glisse,part){
+  const c=A(), o=c.createOscillator(), g=c.createGain();
+  o.type=forme||'sine';
+  o.frequency.setValueAtTime(freq,t);
+  if(glisse)o.frequency.exponentialRampToValueAtTime(Math.max(30,glisse),t+duree);
+  env(g,t,Math.max(0.01,duree*0.2),duree*0.1,duree*0.85,vol);
+  o.connect(g);vers(g,part);
+  o.start(t);o.stop(t+duree+0.2);
+}
+const hasard=(a,b)=>a+Math.random()*(b-a);
+
+/* ================= LES OISEAUX =================
+   Une syllabe de chant, c'est une GLISSADE de fréquence en quelques
+   centièmes de seconde, avec une harmonique au-dessus et un vibrato léger.
+   Une note tenue ne ressemble à rien d'un oiseau — c'était mon erreur. */
+function syllabe(t,f0,f1,duree,vol,vib){
+  const c=A();
+  const o=c.createOscillator(), g=c.createGain();
+  o.type='sine';
+  o.frequency.setValueAtTime(f0,t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(200,f1),t+duree);
+  /* le vibrato : c'est lui qui donne le grain vivant */
+  if(vib){
+    const lo=c.createOscillator(), lg=c.createGain();
+    lo.frequency.value=hasard(38,70);lg.gain.value=f0*0.035;
+    lo.connect(lg);lg.connect(o.frequency);
+    lo.start(t);lo.stop(t+duree+0.05);
+  }
+  env(g,t,duree*0.25,duree*0.2,duree*0.6,vol);
+  o.connect(g);vers(g,0.75);
+  o.start(t);o.stop(t+duree+0.2);
+  /* l'harmonique, deux fois plus haut et bien plus faible */
+  const o2=c.createOscillator(), g2=c.createGain();
+  o2.type='sine';
+  o2.frequency.setValueAtTime(f0*2,t);
+  o2.frequency.exponentialRampToValueAtTime(Math.max(400,f1*2),t+duree);
+  env(g2,t,duree*0.3,duree*0.15,duree*0.6,vol*0.22);
+  o2.connect(g2);vers(g2,0.8);
+  o2.start(t);o2.stop(t+duree+0.2);
+}
+const OISEAUX={
+  mesange:{nom:'La mésange',mot:'deux notes claires, répétées trois fois',
+    f:(t,v)=>{const f=hasard(3000,3400);
+      for(let i=0;i<3;i++){
+        syllabe(t+i*0.30,f,f*0.99,0.075,0.055*v,false);
+        syllabe(t+i*0.30+0.12,f*0.72,f*0.70,0.10,0.05*v,false);
+      }}},
+  merle:{nom:'Le merle',mot:'une phrase flûtée, jamais deux fois pareille',
+    f:(t,v)=>{let d=0;
+      for(let i=0;i<hasard(4,7)|0;i++){
+        const f0=hasard(1400,2400);
+        syllabe(t+d,f0,f0*hasard(0.7,1.45),hasard(0.08,0.17),0.05*v,true);
+        d+=hasard(0.11,0.22);
+      }}},
+  pinson:{nom:'Le pinson',mot:'une cascade qui descend et finit en fioriture',
+    f:(t,v)=>{let f=hasard(3600,4200), d=0;
+      for(let i=0;i<7;i++){
+        syllabe(t+d,f,f*0.9,0.05,0.045*v,false);
+        f*=0.93;d+=0.055;
+      }
+      syllabe(t+d+0.04,hasard(2200,2600),hasard(3400,3800),0.14,0.05*v,true);}},
+  mouette:{nom:'La mouette',mot:'un cri qui monte et se casse — on est au port',
+    f:(t,v)=>{
+      for(let i=0;i<hasard(2,4)|0;i++){
+        const f0=hasard(900,1200);
+        syllabe(t+i*0.42,f0,f0*1.6,0.10,0.05*v,true);
+        syllabe(t+i*0.42+0.11,f0*1.5,f0*0.85,0.22,0.045*v,true);
+      }}}
+};
+
+/* ================= LES GESTES ================= */
+const SONS={
+  hache:{nom:'La hache dans le bois',mot:'un choc mat, un tronc qui résonne',
+    f:(t)=>{const v=V.gestes;
+      /* l'impact : bruit rose très court et sourd */
+      souffle(t,0.055,620,180,1.1,0.16*v,'bandpass',0.35);
+      /* le corps du tronc : deux fréquences basses proches, qui battent */
+      const f=hasard(88,104);
+      note(t,f,0.34,0.12*v,'sine',f*0.72,0.6);
+      note(t+0.004,f*1.48,0.22,0.05*v,'sine',f*1.1,0.6);
+      /* un éclat de fibre, discret */
+      souffle(t+0.012,0.07,1600,900,1.8,0.035*v,'bandpass',0.5);}},
+  pioche:{nom:'La pioche sur la pierre',mot:'sec et minéral, sans piquer',
+    f:(t)=>{const v=V.gestes;
+      souffle(t,0.035,2100,1100,2.4,0.13*v,'bandpass',0.4);
+      const f=hasard(300,380);
+      note(t,f,0.10,0.07*v,'triangle',f*0.6,0.5);
+      souffle(t+0.02,0.16,520,220,1.0,0.05*v,'bandpass',0.6);}},
+  cueille:{nom:'La cueillette',mot:'un froissement de feuilles',
+    f:(t)=>{const v=V.gestes;
+      souffle(t,0.19,hasard(1500,2100),700,0.8,0.07*v,'bandpass',0.45);}},
+  arbre:{nom:'L’arbre qui tombe',mot:'les fibres cèdent, puis le souffle',
+    f:(t)=>{const v=V.gestes;
+      for(let i=0;i<8;i++){
+        const d=i*hasard(0.05,0.085);
+        souffle(t+d,0.045,hasard(500,1100),320,1.9,0.07*v,'bandpass',0.55);
+      }
+      note(t+0.42,68,0.9,0.12*v,'sine',34,0.8);
+      souffle(t+0.46,0.7,420,110,0.6,0.09*v,'lowpass',0.8);
+      souffle(t+0.5,0.55,1500,600,0.7,0.045*v,'bandpass',0.7);}},
+  tamis:{nom:'Le tamis',mot:'le gravier roule, puis l’eau s’égoutte',
+    f:(t)=>{const v=V.gestes;
+      for(let i=0;i<5;i++)
+        souffle(t+i*0.115,0.13,hasard(900,1500),600,0.9,0.055*v,'bandpass',0.5);
+      for(let i=0;i<8;i++){
+        const f=hasard(700,1400);
+        note(t+0.55+i*0.055,f,0.07,0.03*v,'sine',f*1.6,0.75);
+      }}},
+  ambre:{nom:'L’ambre qui coule',mot:'doux, presque une goutte',
+    f:(t)=>{const v=V.gestes;
+      note(t,720,0.3,0.06*v,'sine',760,0.8);
+      note(t+0.07,1080,0.26,0.035*v,'sine',1120,0.8);}},
+  pas:{nom:'Un pas sur les galets',mot:'à peine audible, un sur deux',
+    f:(t)=>{const v=V.gestes;
+      souffle(t,0.03,hasard(900,1500),600,1.6,0.03*v,'bandpass',0.3);}}
+};
+const MOMENTS={
+  vente:{nom:'La vente au comptoir',mot:'des pièces sur le bois, trois notes',
+    f:(t)=>{const v=V.moments;
+      [523.25,659.25,783.99].forEach((f,i)=>note(t+i*0.10,f,0.5,0.075*v,'sine',null,0.7));
+      for(let i=0;i<9;i++){
+        const f=hasard(1800,3000);
+        note(t+0.06+i*hasard(0.03,0.07),f,0.10,0.028*v,'sine',f*0.8,0.65);
+      }}},
+  achat:{nom:'Un achat à l’échoppe',mot:'une note pleine, comme une cloche loin',
+    f:(t)=>{const v=V.moments;
+      note(t,392,0.9,0.085*v,'sine',null,0.85);
+      note(t+0.01,588,0.7,0.035*v,'sine',null,0.85);
+      note(t+0.02,784,0.5,0.018*v,'sine',null,0.85);}},
+  pepite:{nom:'Une pépite',mot:'cristallin et court',
+    f:(t)=>{const v=V.moments;
+      note(t,1318,0.22,0.05*v,'sine',null,0.8);
+      note(t+0.06,1975,0.3,0.03*v,'sine',null,0.85);}},
+  plein:{nom:'Le sac est plein',mot:'deux notes qui descendent, sans agresser',
+    f:(t)=>{const v=V.moments;
+      note(t,349,0.3,0.06*v,'sine',null,0.6);
+      note(t+0.16,262,0.5,0.055*v,'sine',null,0.7);}}
+};
+const AMB={
+  riviere:{nom:'La rivière',mot:'un clapot qui respire',
+    f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
+      const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=520;f.Q.value=0.5;
+      const g=c.createGain();g.gain.value=0.05*V.amb;
+      const l=c.createOscillator();l.frequency.value=0.14;
+      const lg=c.createGain();lg.gain.value=0.02*V.amb;
+      l.connect(lg);lg.connect(g.gain);
+      s.connect(f);f.connect(g);vers(g,0.4);s.start();l.start();
+      return[s,l];}},
+  fontaine:{nom:'La fontaine',mot:'des gouttes éparses, pas un robinet',
+    f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
+      const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1400;f.Q.value=1.1;
+      const g=c.createGain();g.gain.value=0.028*V.amb;
+      s.connect(f);f.connect(g);vers(g,0.6);s.start();
+      const t=setInterval(()=>{
+        if(Math.random()>0.6)return;
+        const n=A().currentTime, fr=hasard(900,1700);
+        note(n,fr,0.09,0.022*V.amb,'sine',fr*1.5,0.8);
+      },230);
+      return[s,{stop:()=>clearInterval(t)}];}},
+  oiseaux:{nom:'Les oiseaux, le jour',mot:'quatre espèces, très espacées',
+    f:(c)=>{const noms=Object.keys(OISEAUX);
+      const t=setInterval(()=>{
+        if(Math.random()>0.4)return;
+        const k=noms[Math.floor(Math.random()*(noms.length-1))];   /* pas la mouette */
+        OISEAUX[k].f(c.currentTime+0.02,V.amb);
+      },1600);
+      return[{stop:()=>clearInterval(t)}];}},
+  grillons:{nom:'Les grillons, la nuit',mot:'un tapis régulier, très bas',
+    f:(c)=>{const t=setInterval(()=>{
+        const n=c.currentTime;
+        for(let i=0;i<3;i++)souffle(n+i*0.055,0.022,hasard(3600,4200),3400,9,0.014*V.amb,'bandpass',0.5);
+      },430);
+      return[{stop:()=>clearInterval(t)}];}},
+  vent:{nom:'Le vent dans les arbres',mot:'il monte et redescend lentement',
+    f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
+      const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=380;
+      const g=c.createGain();g.gain.value=0.03*V.amb;
+      const l=c.createOscillator();l.frequency.value=0.06;
+      const lg=c.createGain();lg.gain.value=0.018*V.amb;
+      l.connect(lg);lg.connect(g.gain);
+      s.connect(f);f.connect(g);vers(g,0.5);s.start();l.start();
+      return[s,l];}}
+};
+
+/* on n'ouvre le son qu'au PREMIER TOUCHER : les navigateurs refusent avant,
+   et ouvrir trop tôt laisse un contexte muet pour toute la partie */
+function reveillerLeSon(){
+  if(SON_PRET)return;
+  try{
+    const c=A();
+    if(c.state==='suspended')c.resume();
+    SON_PRET=true;
+    ambiancer();
+  }catch(x){}
+}
+/* le volume suit les réglages du joueur */
+function appliquerLeSon(){
+  if(typeof REG==='undefined')return;
+  const m=(REG.sons===false)?0:1;
+  V.gestes=.50*m;V.moments=.55*m;V.amb=.26*m;
+  if(!m)couperLAmbiance();
+  else if(SON_PRET)ambiancer();
+}
+/* --- l'ambiance : elle suit l'endroit et l'heure --- */
+let AMB_EN_COURS={};
+function couperLAmbiance(){
+  Object.values(AMB_EN_COURS).forEach(l=>l.forEach(n=>{try{n.stop();}catch(x){}}));
+  AMB_EN_COURS={};
+}
+function poserAmbiance(cle,oui){
+  if(oui&&!AMB_EN_COURS[cle]){try{AMB_EN_COURS[cle]=AMB[cle].f(A());}catch(x){}}
+  else if(!oui&&AMB_EN_COURS[cle]){
+    AMB_EN_COURS[cle].forEach(n=>{try{n.stop();}catch(x){}});
+    delete AMB_EN_COURS[cle];
+  }
+}
+function ambiancer(){
+  if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false))return;
+  const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
+  poserAmbiance('vent',true);
+  poserAmbiance('oiseaux',!nuit);
+  poserAmbiance('grillons',nuit);
+  /* l'eau et la fontaine ne s'entendent que si l'on est près */
+  const dEau=Math.abs(joueur.x-rivX(joueur.y));
+  poserAmbiance('riviere',dEau<120);
+  poserAmbiance('fontaine',
+    Math.hypot(joueur.x-PLACE.x,joueur.y-PLACE.y)<140);
+}
+/* deux sons identiques ne partent jamais dans la même image */
+let dernierSon={};
+function jouer(cle,groupe){
+  if(!SON_PRET)return;
+  if(typeof REG!=='undefined'&&REG.sons===false)return;
+  const now=Date.now();
+  if(now-(dernierSon[cle]||0)<40)return;
+  dernierSon[cle]=now;
+  const t=A().currentTime+0.01;
+  try{
+    if(groupe==='moment'&&MOMENTS[cle])MOMENTS[cle].f(t);
+    else if(SONS[cle])SONS[cle].f(t);
+  }catch(x){}
+}
+
 /* ================= LE TABLEAU DU VILLAGE =================
    L'écriteau plat devient un vrai tableau d'affichage : deux montants, un
    auvent, du liège et trois affiches punaisées, plus une lanterne. On voit
@@ -5501,7 +5828,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 const CLE='bdl.pix.v2';
 /* les réglages : vibrations, finesse du dessin, avis. Déclarés ici, avant
    tout le reste, parce que le jeu peut vibrer dès les premières images. */
-var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true};
+var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true, sons:true};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
        outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
        casses:[],coffre:null,casino:null,camp:null,
@@ -5819,6 +6146,7 @@ let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
 let court=false;                  /* l'allure du moment */
 let bloqueBord=false;
 let dernierAppui=-1;
+let dernierAmbiance=0;
 
 function majJoueur(dt){
   const n=Math.hypot(joyX,joyY);
@@ -5843,10 +6171,17 @@ function majJoueur(dt){
   }
   /* LA POUSSIÈRE DE COURSE : elle ne part qu'aux deux APPUIS du cycle,
      jamais pendant le vol — c'est ce détail qui donne le poids. */
+  /* l'ambiance se recale deux fois par seconde : l'eau quand on s'en
+     approche, les oiseaux ou les grillons selon l'heure */
+  if(SON_PRET&&Date.now()-dernierAmbiance>500){
+    dernierAmbiance=Date.now();
+    try{ambiancer();}catch(x){}
+  }
   if(court&&joueur.marche){
     const F=Math.floor(joueur.pas*2)%16;
     if((F===0||F===8)&&F!==dernierAppui){
       dernierAppui=F;
+      jouer('pas');
       for(let i=0;i<4;i++){
         PARTS.push({x:joueur.x+(Math.random()-.5)*5,y:joueur.y,
           vx:(Math.random()-.5)*26-vx*0.09,vy:-8-Math.random()*14,
@@ -5937,6 +6272,7 @@ const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.
                     ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
+addEventListener('pointerdown',reveillerLeSon,{once:false});
 const surUnBouton=(cible)=>!!(cible&&cible.closest&&cible.closest('#barre,button,#action,#hublot,#pan,#sacPage,#page2,#porte,#bandeau,#repond'));
 const zoneMarche=(x,y,cible)=>!pageOuverte()&&!surUnBouton(cible);
 
@@ -7505,6 +7841,12 @@ function majGeste(dt){
   /* l'impact tombe aux deux tiers du geste, après l'élan */
   if(avant>0.42&&GESTE.t<=0.42){
     const o=GESTE.cible;
+    /* chaque geste a son son, au moment de l'impact */
+    if(GESTE.type==='hache')jouer('hache');
+    else if(GESTE.type==='cueille')jouer('cueille');
+    else if(GESTE.type==='gouge')jouer('ambre');
+    else if(GESTE.type==='tamis')jouer('tamis');
+    else jouer('pioche');
     if(GESTE.type==='gouge'&&o&&DECOR.includes(o))return saignerLAmbre(o);
     if(GESTE.type==='tamis')return finirLeLavage();
     if(o&&DECOR.includes(o)&&o.t==='buisson')return cueillir(o);
@@ -7665,6 +8007,7 @@ function finirLeLavage(){
   secouer(0.3);
   if(pris>0){
     e.recolte=(e.recolte||0)+pris;marquer('pepite',pris);
+    jouer('pepite','moment');
     texteVolant(joueur.x,joueur.y-34,(deux?'+2 pépites !':'+1 pépite'),
       deux?'#ffd27a':'#c4ccd2');
     vibrer(deux?[12,30,26]:24);
@@ -7800,6 +8143,7 @@ function couper(o){
   const coupsHache=Math.min(HACHE_COUPS[Math.min(e.nivHache||0,HACHE_COUPS.length-1)],
                             e.outils.hacheFer?3:99);
   if(o.coups>=coupsHache){
+    jouer('arbre');
     /* il ne bascule pas : il cède, et le bois vole en morceaux */
     secouer(1.2);ARRET=0.07;
     vibrer([14,40,26]);
@@ -7957,6 +8301,7 @@ const charge=()=>Object.entries(e.sac).reduce((a,[k,n])=>a+n*((OBJETS[k]||{poids
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
 const sacPlein=()=>charge()>=chargeMax();
 function prevenirSacPlein(o){
+  jouer('plein','moment');
   texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-28,'Sac plein','#e08a8a');
   texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-40,'change-le au casino','#d8c9a8');
   vibrer([8,50,8]);
@@ -8346,6 +8691,7 @@ function echEquipement(c){
     if(a.k==='pied')e.nivPied=n+1;
     sauver();envoyerSauvegarde(true);
     majHaut();majPastille();majAction();
+    jouer('achat','moment');
     echBulle(a.nom+' : '+a.val[n+1]+' '+a.unite);
     vibrer(24);echMaj();
   });
@@ -8585,6 +8931,7 @@ async function cptVendre(){
   VENTE={};
   sauver();majHaut();majPastille();
   if(gagne){
+    jouer('vente','moment');
     cptPluie(gagne);
     const sc=$('cptSceau');
     if(sc){sc.classList.remove('on');void sc.offsetWidth;sc.classList.add('on');
@@ -8628,6 +8975,7 @@ function lireReglages(){
   appliquerReglages();
 }
 function appliquerReglages(){
+  try{if(typeof appliquerLeSon==='function')appliquerLeSon();}catch(x){}
   try{localStorage.setItem('bdl.reglages',JSON.stringify(REG));}catch(x){}
   /* La finesse : « auto » laisse le jeu s'ajuster, les autres la figent.
      On vérifie que QUALITE existe déjà : cette fonction tourne aussi au
@@ -8667,6 +9015,11 @@ function ouvrirReglages(){
    '<div class="rabatC"><span class="tC"><b>Réglages</b>'+
      '<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
    '<div class="corpsC">'+
+     ligne('Les sons',
+       'Les gestes, la vente, et l’ambiance : l’eau, le vent, les oiseaux le '+
+       'jour, les grillons la nuit. Tout est fabriqué par le téléphone, rien '+
+       'n’est téléchargé.',
+       bouton('sons',true,'Écouter')+bouton('sons',false,'Silence'))+
      (vibreurDispo()
        ? ligne('Faire vibrer le téléphone',
            'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
