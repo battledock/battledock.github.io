@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0908';
+  var MA_VERSION='2026-09-15-0911';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -172,16 +173,17 @@ body{overflow:hidden}
   text-shadow:0 1px 6px rgba(0,0,0,.9)}
 
 /* ---- les réglages ---- */
-.regL{padding:13px 2px;border-bottom:1px solid rgba(120,96,56,.16)}
-.regL b{display:block;font:400 15px Georgia,serif;color:#33291b;margin-bottom:2px}
-.regL span{display:block;font:400 10px/1.5 system-ui;color:rgba(51,41,27,.6);
-  margin-bottom:9px}
+.regL{padding:15px 2px;border-bottom:1px solid rgba(120,96,56,.16)}
+.regL b{display:block;font:400 16px Georgia,serif;color:#2b2418;margin-bottom:3px}
+.regL span{display:block;font:400 10.5px/1.5 system-ui;color:#8a7c5e;margin-bottom:10px}
 .regR{display:flex;gap:7px}
-.regB{flex:1;padding:10px 4px;border-radius:11px;border:1px solid rgba(120,96,56,.3);
-  background:#f6efdc;font:400 12px Georgia,serif;color:#5b4426;letter-spacing:.6px}
-.regB.on{background:#33291b;border-color:#33291b;color:#f0cf7d}
-.regFin{padding:14px 2px 2px;font:400 10px/1.6 Georgia,serif;font-style:italic;
-  color:rgba(51,41,27,.5)}
+.regB{flex:1;min-height:46px;padding:11px 4px;border-radius:12px;
+  border:1px solid rgba(120,96,56,.28);background:#fbf6e6;
+  font:400 13px Georgia,serif;color:#5b4426;letter-spacing:.6px}
+.regB.on{background:#33291b;border-color:#33291b;color:#f0cf7d;
+  box-shadow:0 2px 8px rgba(51,41,27,.25)}
+.regFin{padding:16px 2px 6px;font:400 10px/1.6 Georgia,serif;font-style:italic;
+  color:#a8987a;text-align:center}
 .regFin b{font-style:normal;color:rgba(51,41,27,.7)}
 
 /* ---- la page du comptoir ---- */
@@ -6784,30 +6786,40 @@ function vibrer(m){
   vibrer(m);
 }
 function ouvrirReglages(){
+  /* La page se dessine comme le SAC — même toile claire, même rabat, même
+     bande du bas. Avant, elle passait par la page sombre : mes titres étaient
+     écrits en brun foncé sur fond brun foncé, donc invisibles. */
   const bouton=(cle,val,texte)=>
     '<button class="regB'+(REG[cle]===val?' on':'')+'" data-reg="'+cle+'" data-val="'+val+'">'+
     texte+'</button>';
-  ouvrirPage('Réglages','CE QUI SE SENT',
-    '<div class="regL"><b>Les vibrations</b>'+
-      '<span>le petit choc sous le doigt quand on frappe ou qu’on récolte</span>'+
-      '<div class="regR">'+bouton('vibre',true,'Oui')+bouton('vibre',false,'Non')+'</div></div>'+
-    '<div class="regL"><b>La finesse du dessin</b>'+
-      '<span>en « auto », le jeu s’allège tout seul s’il rame</span>'+
-      '<div class="regR">'+bouton('finesse','auto','Auto')+
-        bouton('finesse','haute','Tout')+bouton('finesse','basse','Allégé')+'</div></div>'+
-    '<div class="regL"><b>Les avis</b>'+
-      '<span>les mots que je laisse en haut de l’écran quand quelque chose change</span>'+
-      '<div class="regR">'+bouton('avis',true,'Oui')+bouton('avis',false,'Non')+'</div></div>'+
-    '<div class="regFin">Battle Dock · version <b id="regVer">—</b><br>'+
-      'les réglages restent sur ce téléphone</div>',
-    true);
-  const v=$('regVer');
-  if(v)v.textContent=(typeof VERSION!=='undefined'&&VERSION)?VERSION:'du jour';
-  document.querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
+  const ligne=(titre,mot,corps)=>
+    '<div class="regL"><b>'+titre+'</b><span>'+mot+'</span><div class="regR">'+corps+'</div></div>';
+  $('page2Fond').className='sacFond clairS';
+  $('page2Fond').innerHTML=
+   '<div class="rabatC">'+
+     '<span class="tC"><b>Réglages</b><i>CE QUI SE SENT</i></span>'+
+   '</div>'+
+   '<div class="corpsC">'+
+     ligne('Les vibrations',
+       'le petit choc sous le doigt quand on frappe ou qu’on récolte',
+       bouton('vibre',true,'Oui')+bouton('vibre',false,'Non'))+
+     ligne('La finesse du dessin',
+       'en « auto », le jeu s’allège tout seul s’il rame',
+       bouton('finesse','auto','Auto')+bouton('finesse','haute','Tout')+
+       bouton('finesse','basse','Allégé'))+
+     ligne('Les avis',
+       'les mots que je laisse en haut de l’écran quand quelque chose change',
+       bouton('avis',true,'Oui')+bouton('avis',false,'Non'))+
+     '<div class="regFin">Battle Dock · les réglages restent sur ce téléphone</div>'+
+   '</div>'+
+   '<button class="bandeC" id="reg-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('reg-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('page2Fond').querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:val);
     appliquerReglages();vibrer(8);ouvrirReglages();
   });
+  $('page2').classList.add('on');
 }
 
 /* ================= bâtir ================= */
