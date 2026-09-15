@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1438';
+  var MA_VERSION='2026-09-15-1441';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4909,10 +4910,14 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
-  /* l'échoppe : plein, sauf les marches devant la porte */
+  /* L'ÉCHOPPE : elle fait 170 de large sur 132 de haut, mon emprise n'en
+     couvrait que 104 sur 54 — on passait donc à travers la façade. Le corps
+     du bâtiment est plein ; on ne laisse libres que les marches, devant la
+     porte, pour pouvoir s'y tenir. */
   {
     const dx=x-ECHOPPE_FIXE[0], dy=y-ECHOPPE_FIXE[1];
-    if(Math.abs(dx)<52&&dy>-52&&dy<2&&!(Math.abs(dx)<14&&dy>-14))return true;
+    const surLesMarches=(Math.abs(dx)<20&&dy>-10&&dy<10);
+    if(Math.abs(dx)<74&&dy>-46&&dy<4&&!surLesMarches)return true;
   }
   /* la fontaine et les décors de la place */
   {
@@ -6750,7 +6755,8 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  for(const o of DECOR)if((o.t==='casino'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')&&autour.indexOf(o)<0)autour.push(o);
+  const LARGES=['casino','forge','comptoir','fete','echoppe'];
+  for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
@@ -6762,12 +6768,12 @@ function cible(){
     if(o.tombe)continue;
     /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
        sinon les portes des extrémités restent hors de portée */
-    const demi=o.t==='comptoir'?118:0;
+    const demi=o.t==='comptoir'?118:(o.t==='echoppe'?72:0);
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
-    const portee=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')?66:48;  /* on les voit de plus loin */
+    const portee=(LARGES.includes(o.t)||o.t==='mine')?66:48;  /* on les voit de plus loin */
     /* un bâtiment passe avant un brin d'herbe : on ne rate pas sa porte */
-    const prio=(o.t==='casino'||o.t==='mine'||o.t==='forge'||o.t==='comptoir'||o.t==='fete')?0.45:1;
+    const prio=(LARGES.includes(o.t)||o.t==='mine')?0.45:1;
     const dd=d*prio;
     if(d<portee&&dd<d0){d0=dd;res=o;continue;}
   }
