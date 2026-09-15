@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1811';
+  var MA_VERSION='2026-09-15-2010';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6058,17 +6059,20 @@ async function lireLeSolde(){
 const enEuros=(c)=>((c||0)/100).toFixed(2).replace('.',',')+' €';
 
 /* ---- le bandeau du haut se met à jour quand les chiffres bougent ---- */
-let hVu={sac:-1,argent:-1,jetons:-1};
+let hVu={max:-1,sac:-1,argent:-1,jetons:-1};
 function majHaut(){
   const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
   const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*((OBJETS[k]||{}).poids||1),0);
   const max=e.sacMax||60;
 
-  if(charge!==hVu.sac){
+  /* On surveille la CHARGE *et* la taille du sac : en n'écoutant que la
+     charge, un sac amélioré de 60 à 90 laissait « 0/60 » à l'écran tant
+     qu'on n'avait rien ramassé. */
+  if(charge!==hVu.sac||max!==hVu.max){
     s.textContent=charge+'/'+max;
     if(hVu.sac>=0){s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');}
-    hVu.sac=charge;
+    hVu.sac=charge;hVu.max=max;
   }
   if((e.euros||0)!==hVu.argent){
     a.textContent=enEuros(e.euros);
@@ -7293,7 +7297,9 @@ function majGeste(dt){
       poussiere(o.x,o.y,6);
       secouer(0.6);ARRET=0.055;                      /* l'image se fige un instant */
       vibrer(35);
-      if(o.coups>=3){
+      /* les crans de pioche achetés à l'échoppe comptent enfin :
+         3 coups, puis 2, puis 1. */
+      if(o.coups>=PIOCHE_COUPS[Math.min(e.nivPioche||0,PIOCHE_COUPS.length-1)]){
         eclats(o.x,o.y-10,24,null,1.6);
         poussiere(o.x,o.y,14);
         secouer(1.3);ARRET=0.085;
@@ -7331,7 +7337,7 @@ function miner(o){
   secouer(0.65);ARRET=0.06;
   vibrer(39);
   const DUR={fer:7,cuivre:6,charbon:5};
-  const aFaire=Math.max(2,DUR[o.t]-(e.outils.piocheFer?3:0));
+  const aFaire=Math.max(2,DUR[o.t]-(e.outils.piocheFer?3:0)-(e.nivPioche||0));
   if(o.coups>=aFaire){
     for(let i=0;i<20;i++){
       const a=Math.random()*6.283, v=(60+Math.random()*120);
@@ -7570,7 +7576,10 @@ function couper(o){
   }
   secouer(0.5);ARRET=0.05;
   vibrer(35);
-  if(o.coups>=(e.outils.hacheFer?3:5)){
+  /* pareil pour la hache : 5 coups, puis 3, puis 2 */
+  const coupsHache=Math.min(HACHE_COUPS[Math.min(e.nivHache||0,HACHE_COUPS.length-1)],
+                            e.outils.hacheFer?3:99);
+  if(o.coups>=coupsHache){
     /* il ne bascule pas : il cède, et le bois vole en morceaux */
     secouer(1.2);ARRET=0.07;
     vibrer([14,40,26]);
@@ -8105,7 +8114,8 @@ function echEquipement(c){
     if(a.k==='sac'){e.nivSac=n+1;e.sacMax=SAC_PALIERS[n+1];}
     if(a.k==='pioche')e.nivPioche=n+1;
     if(a.k==='hache')e.nivHache=n+1;
-    sauver();envoyerSauvegarde(true);majHaut();
+    sauver();envoyerSauvegarde(true);
+    majHaut();majPastille();majAction();
     echBulle(a.nom+' : '+a.val[n+1]+' '+a.unite);
     vibrer(24);echMaj();
   });
@@ -8133,7 +8143,7 @@ function echMetier(c){
     b.textContent='…';
     if(!await echPayer(M.prix))return;
     e.metiers[M.id]=true;
-    sauver();envoyerSauvegarde(true);
+    sauver();envoyerSauvegarde(true);majHaut();majAction();
     echBulle(M.nom+' · à toi de t’en servir');
     vibrer(24);echMaj();
   });
