@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2235';
+  var MA_VERSION='2026-09-15-2237';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3489,17 +3490,33 @@ const AMB={
       l.connect(lg);lg.connect(g.gain);
       s.connect(f);f.connect(g);vers(g,0.4);s.start();l.start();
       return[s,l];}},
-  fontaine:{nom:'La fontaine',mot:'des gouttes éparses, pas un robinet',
-    f:(c)=>{const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
-      const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1400;f.Q.value=1.1;
-      const g=c.createGain();g.gain.value=0.028*V.amb;
-      s.connect(f);f.connect(g);vers(g,0.6);s.start();
-      const t=setInterval(()=>{
-        if(Math.random()>0.6)return;
-        const n=A().currentTime, fr=hasard(900,1700);
-        note(n,fr,0.09,0.022*V.amb,'sine',fr*1.5,0.8);
-      },230);
-      return[s,{stop:()=>clearInterval(t)}];}},
+  fontaine:{nom:'La fontaine',mot:'une nappe d’eau, très peu de gouttes',
+    f:(c)=>{
+      /* MA VERSION PRÉCÉDENTE ÉTAIT INSUPPORTABLE : une goutte toutes les
+         230 ms, toujours au même rythme, dans les aigus. Un robinet qui
+         fuit, pas une fontaine.
+         Maintenant : une nappe d'eau continue et sourde, et des gouttes
+         RARES (une toutes les deux à cinq secondes), basses, jamais
+         régulières, et bien plus faibles que la nappe. */
+      const s=c.createBufferSource();s.buffer=bruit();s.loop=true;
+      const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=760;f.Q.value=0.45;
+      const f2=c.createBiquadFilter();f2.type='lowpass';f2.frequency.value=1600;
+      const g=c.createGain();g.gain.value=0.030*V.amb;
+      /* la nappe respire lentement, comme un vrai jet */
+      const l=c.createOscillator();l.frequency.value=0.11;
+      const lg=c.createGain();lg.gain.value=0.009*V.amb;
+      l.connect(lg);lg.connect(g.gain);
+      s.connect(f);f.connect(f2);f2.connect(g);vers(g,0.45);
+      s.start();l.start();
+      let minuteur=0;
+      const goutte=()=>{
+        const n=A().currentTime+0.02;
+        const fr=hasard(520,900);            /* bien plus bas qu'avant */
+        note(n,fr,0.16,0.012*V.amb,'sine',fr*1.25,0.85);
+        minuteur=setTimeout(goutte,hasard(2000,5200));
+      };
+      minuteur=setTimeout(goutte,hasard(1200,3000));
+      return[s,l,{stop:()=>clearTimeout(minuteur)}];}},
   oiseaux:{nom:'Les oiseaux, le jour',mot:'quatre espèces, très espacées',
     f:(c)=>{const noms=Object.keys(OISEAUX);
       const t=setInterval(()=>{
