@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0923';
+  var MA_VERSION='2026-09-15-0935';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6796,6 +6797,14 @@ function appliquerReglages(){
   }catch(x){}
 }
 /* toutes les vibrations passent par ici : un seul endroit à couper */
+/* Le vibreur n'existe pas partout : Chrome et Edge sur Android savent le
+   faire, Safari sur iPhone n'a jamais eu cette fonction — dans AUCUN
+   navigateur, puisqu'ils utilisent tous WebKit. Firefox l'a retirée. Inutile
+   donc de proposer un réglage qui ne fera jamais rien : on le dit. */
+const VIBREUR=(function(){
+  try{return typeof navigator!=='undefined'&&typeof navigator.vibrate==='function';}
+  catch(x){return false;}
+})();
 function vibrer(m){
   /* Le seul endroit du jeu qui touche au vibreur. (Ma réécriture automatique
      avait remplacé le contenu par un appel à vibrer() lui-même : le jeu se
@@ -6815,10 +6824,18 @@ function ouvrirReglages(){
    '<div class="rabatC"><span class="tC"><b>Réglages</b>'+
      '<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
    '<div class="corpsC">'+
-     ligne('Faire vibrer le téléphone',
-       'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
-       'coupes un arbre ou ramasses quelque chose.',
-       bouton('vibre',true,'Vibrer')+bouton('vibre',false,'Silencieux'))+
+     (VIBREUR
+       ? ligne('Faire vibrer le téléphone',
+           'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
+           'coupes un arbre ou ramasses quelque chose. Si tu ne sens rien, '+
+           'vérifie le retour tactile dans les réglages de ton téléphone.',
+           bouton('vibre',true,'Vibrer')+bouton('vibre',false,'Silencieux'))
+       : '<div class="regL"><b>Faire vibrer le téléphone</b>'+
+         '<span>Ton navigateur ne sait pas commander le vibreur. C’est le cas '+
+         'de tous les navigateurs sur iPhone, et de Firefox. Sur Chrome pour '+
+         'Android, ça marche.</span>'+
+         '<div class="regR"><button class="regB" disabled '+
+         'style="opacity:.45">Impossible ici</button></div></div>')+
      ligne('Secouer l’écran aux impacts',
        'L’image tremble une demi-seconde quand ta pioche touche. Coupe-le si '+
        'ça te gêne les yeux.',
