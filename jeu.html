@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2202';
+  var MA_VERSION='2026-09-15-2235';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -202,6 +203,18 @@ body{overflow:hidden}
 #haut .gd.flash{animation:lueurHaut 1.1s ease-out}
 #haut .pt{font:400 8.5px Georgia,serif;font-style:italic;color:rgba(253,251,244,.78);
   letter-spacing:.6px;text-shadow:0 1px 6px rgba(0,0,0,.9)}
+#haut .jauge{display:block;width:62px;height:3px;margin:5px 0 3px;border-radius:2px;
+  background:rgba(255,255,255,.20);overflow:hidden}
+#haut .jauge i{display:block;height:100%;width:0;border-radius:2px;background:#cfe8b2;
+  transition:width .3s ease,background .3s ease}
+/* LE SAC QUI SE REMPLIT : à partir de 85 %, la bordure de l'écran se teinte.
+   Avant, on ne savait qu'on était plein qu'en frappant dans le vide. */
+#bordSac{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;
+  transition:opacity .45s ease;
+  box-shadow:inset 0 0 44px 12px rgba(201,120,60,.55)}
+#bordSac.on{opacity:1}
+#bordSac.plein{animation:bat 2.2s ease-in-out infinite}
+@keyframes bat{0%,100%{opacity:.75}50%{opacity:1}}
 #haut .fil{width:26px;height:1px;margin:4px 0 3px;
   background:linear-gradient(90deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
 #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
@@ -1019,15 +1032,11 @@ body.clavier #bandeau{padding-bottom:9px}
 <body>
 <canvas id="cv"></canvas>
 <canvas id="joy" width="132" height="132"></canvas>
-<div id="avis">
-  <button class="x" id="avis-x">✕</button>
-  <div class="t">UN MOT</div>
-  <div class="m">Mise à jour conséquente cette nuit, assez tard. Là le jeu va vraiment
-    avoir des bâtiments utiles et une boucle de gameplay. Patience&nbsp;:)</div>
-</div>
+<div id="bordSac"></div>
 <div id="haut">
   <span class="col">
-    <span class="pt">le sac</span><span class="gd" id="hSac">0/60</span><span class="fil"></span>
+    <span class="pt">le sac</span><span class="gd" id="hSac">0/60</span>
+    <span class="jauge"><i id="hJauge"></i></span>
   </span>
   <span class="sep"></span>
   <span class="col d">
@@ -6626,6 +6635,18 @@ function majHaut(){
   /* On surveille la CHARGE *et* la taille du sac : en n'écoutant que la
      charge, un sac amélioré de 60 à 90 laissait « 0/60 » à l'écran tant
      qu'on n'avait rien ramassé. */
+  /* la jauge et la bordure : elles préviennent AVANT que le sac soit plein */
+  const part=Math.max(0,Math.min(1,charge/Math.max(1,max)));
+  const jau=$('hJauge'), bord=$('bordSac');
+  if(jau){
+    jau.style.width=Math.round(part*100)+'%';
+    jau.style.background=part>=1?'#e08a5a':(part>=0.85?'#e8b06a':
+      (part>=0.6?'#d8d49a':'#cfe8b2'));
+  }
+  if(bord){
+    bord.classList.toggle('on',part>=0.85);
+    bord.classList.toggle('plein',part>=1);
+  }
   if(charge!==hVu.sac||max!==hVu.max){
     s.textContent=charge+'/'+max;
     if(hVu.sac>=0){s.classList.remove('flash');void s.offsetWidth;s.classList.add('flash');}
