@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0850';
+  var MA_VERSION='2026-09-15-0908';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4584,7 +4585,8 @@ let largeurVue=window.innerWidth;
 addEventListener('resize',()=>{
   if(window.innerWidth===largeurVue&&bandeauOuvert())return;   /* c'est le clavier */
   largeurVue=window.innerWidth;
-  videCache();taille();
+  videCache();
+taille();
 });
 
 /* Le bandeau se cale juste au-dessus du clavier, et la barre du bas s'efface
@@ -4990,7 +4992,6 @@ function ouvrirLook(){
 }
 $('b-look').onclick=ouvrirLook;
 $('b-reglages').onclick=ouvrirReglages;
-lireReglages();
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('b-parler').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
@@ -6769,9 +6770,13 @@ function lireReglages(){
 }
 function appliquerReglages(){
   try{localStorage.setItem('bdl.reglages',JSON.stringify(REG));}catch(x){}
-  /* la finesse : « auto » laisse le jeu s'ajuster, les autres la figent */
-  if(REG.finesse==='haute')QUALITE=1;
-  else if(REG.finesse==='basse')QUALITE=0.5;
+  /* La finesse : « auto » laisse le jeu s'ajuster, les autres la figent.
+     On vérifie que QUALITE existe déjà : cette fonction tourne aussi au
+     démarrage, avant que le reste du jeu ne soit déclaré. */
+  try{
+    if(REG.finesse==='haute')QUALITE=1;
+    else if(REG.finesse==='basse')QUALITE=0.5;
+  }catch(x){}
 }
 /* toutes les vibrations passent par ici : un seul endroit à couper */
 function vibrer(m){
@@ -7308,6 +7313,10 @@ let t0=performance.now();
   dessinerJoy(dt);
 })(t0);
 setInterval(()=>{sauver();monterEnLigne(true);},4000);   /* on signale sa présence même immobile */
+
+/* les réglages se lisent en dernier : tout le jeu est déclaré à ce moment,
+   donc plus rien ne peut être touché avant sa création. */
+lireReglages();
 </script>
 </body>
 </html>
