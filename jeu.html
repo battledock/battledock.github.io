@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1203';
+  var MA_VERSION='2026-09-15-1258';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2512,7 +2513,8 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','souche','gravats'].includes(t);
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV',
+                 'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
 const PHOTO_PANNEAU=document.createElement('img');
@@ -2566,14 +2568,26 @@ function dessinerPanneau(g,x,y){
    Deux groupes de maisons séparés par un pré, reliés par un sentier. Chaque
    bâtiment est gravé UNE fois — corps, lumières allumées, lumières éteintes —
    puis recopié. Les lampes suivent l'heure du serveur, comme le comptoir. */
-const HAMEAU=[
-  {t:'taverne', x:860, y:250},
-  {t:'atelier', x:700, y:380},
-  {t:'maison',  x:900, y:310, teinte:0},
-  {t:'maison',  x:830, y:330, teinte:1},
-  {t:'maison',  x:680, y:470, teinte:2},
-  {t:'maison',  x:790, y:460, teinte:3},
-  {t:'puits',   x:800, y:390}
+/* Les maisons, la taverne, l'atelier et le puits sont retirés : il ne reste
+   que le comptoir, et une PLACETTE pavée avec sa fontaine. Leur code de
+   dessin reste en place, il suffira de remettre des lignes ici. */
+const HAMEAU=[];
+
+/* ================= LA PLACETTE =================
+   Une place pavée en cercles concentriques, la fontaine aux dauphins au
+   centre, quatre arbres taillés en pot, deux bancs de pierre et le panneau du
+   village. Les pavés sont gravés dans le SOL, comme les chemins : ils ne
+   coûtent rien à l'écran. La fontaine a son calque, et seule l'eau se
+   redessine — une vingtaine de traits par image. */
+const PLACE={x:800, y:330, r:92};
+const DECOS=[
+  {t:'arbrePot', x:PLACE.x-64, y:PLACE.y-34},
+  {t:'arbrePot', x:PLACE.x+64, y:PLACE.y-34},
+  {t:'arbrePot', x:PLACE.x-64, y:PLACE.y+40},
+  {t:'arbrePot', x:PLACE.x+64, y:PLACE.y+40},
+  {t:'bancP',    x:PLACE.x-42, y:PLACE.y+56},
+  {t:'bancP',    x:PLACE.x+42, y:PLACE.y+56},
+  {t:'panneauV', x:PLACE.x-84, y:PLACE.y+6}
 ];
 /* quatre volets, quatre toits : c'est ce qui distingue les maisons entre elles */
 const TEINTES=[
@@ -2775,6 +2789,130 @@ function dessinerHameau(g,t,teinte,x,y){
   /* l'atelier garde son feu allumé, les maisons suivent l'heure */
   const on=(t==='atelier')?true:lampesAllumees();
   g.drawImage(on?C.on:C.off,ox,oy,C.W,C.H);
+}
+
+
+/* ================= LA FONTAINE AUX DAUPHINS =================
+   La pierre est gravée une fois ; seule l'EAU se redessine — deux becs de
+   bronze qui crachent en arc, un jet au sommet, et les rides du bassin.
+   Une vingtaine de traits par image, pas davantage. */
+let CALQUE_FONTAINE=null;
+function graverLaFontaine(){
+  const W=90, H=104, cx=W/2, sol=H-16;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+  const EAU={o:'#2e5f7a',s:'#3a7794',p:'#4a8fae',c:'#63a8c4',h:'#8fc9dd'};
+  /* l'ombre portée */
+  g.fillStyle='rgba(20,34,18,.30)';
+  g.beginPath();g.ellipse(cx+3,sol+4,36,14,0,0,7);g.fill();
+  /* le bassin : trois couches de pierre, puis l'eau */
+  const ell=(dy,rx,ry,col)=>{g.fillStyle=col;g.beginPath();
+    g.ellipse(cx,sol+dy,Math.max(0,rx),Math.max(0,ry),0,0,7);g.fill();};
+  ell(0,34,19,PI.s);
+  ell(-2,34,19,PI.c);
+  ell(-3,33,18,PI.h);
+  ell(-3,27,15,EAU.s);
+  ell(-4,26,14,EAU.p);
+  /* les pierres de la margelle, une par une */
+  for(let i=0;i<20;i++){
+    const a=i/20*Math.PI*2;
+    R(cx+Math.cos(a)*33-2,sol+Math.sin(a)*18-3,5,4,i%2?PI.p:PI.c);
+    R(cx+Math.cos(a)*33-2,sol+Math.sin(a)*18-3,5,1,PI.t);
+  }
+  /* le socle mouluré et le fût */
+  R(cx-11,sol-30,22,6,PI.c);R(cx-11,sol-30,22,2,PI.t);
+  R(cx-7,sol-26,14,24,PI.p);R(cx-7,sol-26,5,24,PI.h);
+  R(cx-9,sol-6,18,5,PI.c);R(cx-9,sol-6,18,1,PI.t);
+  /* deux becs de bronze, en croix */
+  [-1,1].forEach(s2=>{
+    R(cx+s2*7,sol-28,s2>0?8:-8,5,'#a5763a');
+    R(cx+s2*7,sol-28,s2>0?8:-8,2,'#c9a24a');
+    R(cx+s2*15,sol-27,s2>0?4:-4,4,'#8a5c28');
+    R(cx+s2*15,sol-26,s2>0?2:-2,2,'#5b3f21');
+  });
+  /* la vasque haute */
+  ell(-38,15,6,PI.c);
+  ell(-40,14,5,PI.h);
+  ell(-41,11,4,EAU.p);
+  R(cx-3,sol-54,6,14,PI.p);R(cx-3,sol-54,2,14,PI.h);
+  R(cx-5,sol-57,10,4,PI.t);R(cx-5,sol-57,10,1,'#d2d8dd');
+  CALQUE_FONTAINE={toile:c,W,H,sol};
+}
+/* l'eau, redessinée à chaque image */
+function dessinerLaFontaine(g,x,y){
+  if(!CALQUE_FONTAINE)graverLaFontaine();
+  const C=CALQUE_FONTAINE;
+  const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
+  g.drawImage(C.toile,ox,oy,C.W,C.H);
+  const t=Date.now()/1000;
+  const R=(dx,dy,w,h,col)=>{g.fillStyle=col;
+    g.fillRect(Math.round(x+dx),Math.round(y+dy),w,h);};
+  /* le jet du sommet : il monte et retombe */
+  for(let i=0;i<8;i++){
+    const p=((t*1.2+i/8)%1);
+    R((i%2?1:-1)*p*4-1,-57-Math.sin(p*Math.PI)*16,2,2,p<0.5?'#cfeaf4':'#8fc9dd');
+  }
+  /* les deux arcs des becs, qui retombent dans le bassin */
+  for(const s2 of [-1,1])for(let i=0;i<6;i++){
+    const p=((t*1.1+i/6)%1);
+    R(s2*(17+p*13),-27+p*p*24,2,2,p<0.5?'#cfeaf4':'#8fc9dd');
+  }
+  /* les rides du bassin */
+  for(let i=0;i<3;i++){
+    const r=((t*0.5+i/3)%1);
+    g.strokeStyle='rgba(207,234,244,'+(0.45*(1-r)).toFixed(2)+')';
+    g.lineWidth=1;g.beginPath();
+    g.ellipse(x,y-4,Math.max(0,13*r),Math.max(0,8*r),0,0,7);g.stroke();
+  }
+}
+
+/* ---- les décors de la place : arbres en pot, bancs, panneau ---- */
+const CALQUES_DECO={};
+function graverDeco(t){
+  const W=t==='bancP'?42:(t==='panneauV'?32:36), H=t==='bancP'?26:(t==='panneauV'?40:52);
+  const cx=W/2, sol=H-6;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  g.fillStyle='rgba(20,34,18,.28)';
+  g.beginPath();g.ellipse(cx+1,sol+2,W*0.34,5,0,0,7);g.fill();
+  if(t==='arbrePot'){
+    R(cx-9,sol-12,18,12,'#a3543a');R(cx-9,sol-12,18,3,'#b56448');
+    R(cx-10,sol-14,20,3,'#8f4630');
+    for(let k=0;k<18;k+=5)R(cx-9+k,sol-12,1,12,'#8f4630');
+    R(cx-2,sol-26,4,14,'#5b3f21');R(cx-2,sol-26,1,14,'#7d5934');
+    g.fillStyle='#2f6b34';g.beginPath();g.arc(cx,sol-36,12,0,7);g.fill();
+    g.fillStyle='#3d7d3f';g.beginPath();g.arc(cx-3,sol-39,9,0,7);g.fill();
+    g.fillStyle='#4f9147';g.beginPath();g.arc(cx-5,sol-41,5,0,7);g.fill();
+    g.fillStyle='#255a2b';g.beginPath();g.arc(cx+6,sol-32,5,0,7);g.fill();
+  }else if(t==='bancP'){
+    R(cx-19,sol-9,38,7,'#7d5934');R(cx-19,sol-9,38,2,'#a5764a');
+    for(let k=0;k<38;k+=9)R(cx-19+k,sol-9,1,7,'#5b3f21');
+    R(cx-16,sol-2,5,8,'#7e868d');R(cx+11,sol-2,5,8,'#7e868d');
+    R(cx-16,sol-2,5,1,'#a4acb3');R(cx+11,sol-2,5,1,'#a4acb3');
+  }else{
+    R(cx-2,sol-22,4,22,'#5b3f21');R(cx-2,sol-22,1,22,'#7d5934');
+    R(cx-14,sol-34,28,14,'#7d5934');R(cx-14,sol-34,28,2,'#a5764a');
+    R(cx-15,sol-36,30,3,'#5b3f21');
+    R(cx-11,sol-30,22,6,'#3d2a17');
+    R(cx-9,sol-28,18,2,'#c9a24a');
+  }
+  CALQUES_DECO[t]={toile:c,W,H,sol};
+}
+function dessinerDeco(g,t,x,y){
+  if(!CALQUES_DECO[t])graverDeco(t);
+  const C=CALQUES_DECO[t];
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
 }
 
 /* --- le comptoir : le long entrepôt du quai, gravé ---
@@ -3850,9 +3988,10 @@ function calculerChemins(){
      les deux amorces vers les gués */
   /* le hameau : du comptoir à la taverne, puis le sentier qui descend vers
      l'atelier en passant par le puits, et les deux amorces vers les gués */
-  const taverne=[860,250], atelier=[700,380], puits=[800,390];
-  ROUTES=[[COMPTOIR_FIXE,taverne],[taverne,puits],[puits,atelier],
-          [puits,pontS],[COMPTOIR_FIXE,pontN],[atelier,CAMP_FIXE]]
+  /* quatre chemins convergent vers la place : c'est un carrefour avant
+     d'être un décor */
+  const centre=[PLACE.x,PLACE.y];
+  ROUTES=[[COMPTOIR_FIXE,centre],[centre,pontN],[centre,pontS],[centre,CAMP_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
@@ -3867,6 +4006,29 @@ function calculerChemins(){
    virait au violet et faisait une traînée sale. Des tons plus chauds, plus
    proches les uns des autres, et beaucoup moins de variation. */
 const TERRE_CH=['#9c8560','#a89068','#8e7854','#b09a72','#7d6a4a'];
+/* LES PAVÉS DE LA PLACE, posés en cercles concentriques */
+function graverLesPaves(g){
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
+  for(let ray=PLACE.r-6;ray>8;ray-=7){
+    const nb=Math.max(10,Math.round(ray*0.66));
+    for(let i=0;i<nb;i++){
+      const a=i/nb*Math.PI*2+ray*0.09;
+      const px=PLACE.x+Math.cos(a)*ray, py=PLACE.y+Math.sin(a)*ray*0.72;
+      const t=Math.floor(alea(px*0.7+py*1.3)*4);
+      R(px-3,py-2,6,4,[PI.p,PI.c,PI.s,PI.p][t]);
+      R(px-3,py-2,6,1,PI.h);
+      R(px+2,py-2,1,4,PI.o);
+    }
+  }
+  /* la bordure claire, un rang de pierres taillées */
+  for(let i=0;i<150;i++){
+    const a=i/150*Math.PI*2;
+    const px=PLACE.x+Math.cos(a)*PLACE.r, py=PLACE.y+Math.sin(a)*PLACE.r*0.72;
+    R(px-3,py-2,6,4,PI.t);R(px-3,py-2,6,1,'#d2d8dd');
+  }
+}
+
 function graverChemins(g){
   if(!ROUTES.length)calculerChemins();
   ROUTES.forEach((route,nr)=>route.forEach(([x,y],i)=>{
@@ -3898,6 +4060,7 @@ function graverChemins(g){
       g.fillRect(x+(alea(x)<0.5?-larg:larg)-1,y,2,1);
     }
   }));
+  graverLesPaves(g);         /* la place, par-dessus les chemins */
 }
 /* ce qui tombe sur un sentier est déblayé : on dégage le passage */
 function deblayerChemins(){
@@ -4125,7 +4288,13 @@ function semerDecor(){
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
 
-  /* LE HAMEAU : deux groupes de maisons séparés par un pré */
+  /* LA PLACETTE : la fontaine au centre, les décors autour */
+  DECOR=DECOR.filter(o=>BATI(o.t)||
+    Math.hypot(o.x-PLACE.x,(o.y-PLACE.y)/0.72)>PLACE.r+6);
+  DECOR.push({t:'fontaine',x:PLACE.x,y:PLACE.y,gr:0});
+  DECOS.forEach(d=>DECOR.push({t:d.t,x:d.x,y:d.y,gr:0}));
+  invaliderGrille();
+
   HAMEAU.forEach(b=>{
     DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
       Math.hypot(o.x-b.x,o.y-b.y)>(b.t==='puits'?26:52));
@@ -4310,7 +4479,17 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
-  /* le hameau : chaque bâtiment est plein, le puits se contourne */
+  /* la fontaine et les décors de la place */
+  {
+    const dx=x-PLACE.x, dy=y-PLACE.y;
+    if(Math.abs(dx)<34&&dy>-30&&dy<14)return true;          /* le bassin */
+  }
+  for(const d of DECOS){
+    const dx=Math.abs(x-d.x), dy=y-d.y;
+    if(d.t==='arbrePot'&&dx<10&&dy>-14&&dy<5)return true;
+    if(d.t==='bancP'&&dx<20&&dy>-10&&dy<5)return true;
+    if(d.t==='panneauV'&&dx<8&&dy>-12&&dy<4)return true;
+  }
   for(const b of HAMEAU){
     const dx=Math.abs(x-b.x), dy=y-b.y;
     if(b.t==='puits'){if(dx<15&&dy>-12&&dy<6)return true;continue;}
@@ -4375,7 +4554,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
     const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:
-      (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:0))))));
+      (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
+      (o.t==='fontaine'?104:(o.t==='arbrePot'?52:0))))))));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -4472,6 +4652,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
+    else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
+    else if(o.t==='arbrePot'||o.t==='bancP'||o.t==='panneauV')dessinerDeco(g,o.t,x,y);
     else if(o.t==='maison'||o.t==='taverne'||o.t==='atelier'||o.t==='puits'){
       dessinerHameau(g,o.t,o.teinte,x,y);
       if(o.t==='atelier')lueurNuit(g,x,y-16,34,'rgba(255,140,50,§)');
@@ -5723,7 +5905,8 @@ async function chargerLaCarte(){
     /* le panneau vient de la carte du serveur : on retire celui qu'on avait posé
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
-                  'maison','taverne','atelier','puits','souche','gravats'];
+                  'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
+                  'panneauV','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
