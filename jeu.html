@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0757';
+  var MA_VERSION='2026-09-15-0807';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -380,7 +381,18 @@ body.clavier #bandeau{padding-bottom:9px}
    radial-gradient(circle at 40% 78%,rgba(196,178,138,.15),transparent 26%)}
 .rabatC{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;
   padding:14px 14px 13px;background:#f3ebd6;border-bottom:1px solid #e0d3b2}
-.xC{width:32px;height:32px;border-radius:50%;flex:0 0 auto;background:#eadfc2;
+/* LA BANDE DU BAS : on referme là où le pouce est déjà posé, sur une cible
+   qui fait toute la largeur — au lieu de viser une croix de dix pixels dans
+   un coin qu'on n'atteint qu'en changeant de main. */
+.bandeC{position:sticky;bottom:0;z-index:4;width:100%;border:0;
+  padding:15px 18px calc(17px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,#f2e9d0,#ece1c4);
+  border-top:1px solid rgba(120,96,56,.22);
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.bandeC span{font:400 13px Georgia,serif;color:#5b4426;letter-spacing:2px}
+.bandeC u{display:block;width:26px;height:2px;background:rgba(91,68,38,.42)}
+.bandeC:active{background:#e6dbba}
+.xC{display:none;width:32px;height:32px;border-radius:50%;flex:0 0 auto;background:#eadfc2;
   border:1px solid #d4c39e;color:#8a7c5e;font:600 13px system-ui;
   display:flex;align-items:center;justify-content:center}
 .tC{flex:1;min-width:0}
@@ -6607,7 +6619,6 @@ function ouvrirSac(){
   $('sacFond').className='sacFond clairS';
   $('sacFond').innerHTML=
    '<div class="rabatC">'+
-     '<button class="xC" id="sac-x">✕</button>'+
      '<span class="tC"><b>Ton sac</b>'+
        '<i>SAC DE TOILE · '+nbObjets()+' OBJET'+(nbObjets()>1?'S':'')+'</i></span>'+
      '<span class="chC"><b>'+charge()+'<small>/'+chargeMax()+'</small></b>'+
@@ -6626,8 +6637,9 @@ function ouvrirSac(){
         '<span class="txC"><b>'+o.nom+'</b><span>'+o.d+'</span></span>'+
         (o.outil?'':'<button id="sac-jeter">Jeter</button>')+
         '</div>':'')+
-   '</div>';
-  $('sac-x').onclick=()=>{fermeA=Date.now();$('sacPage').classList.remove('on');};
+   '</div>'+
+   '<button class="bandeC" id="sac-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('sac-fermer').onclick=()=>{fermeA=Date.now();$('sacPage').classList.remove('on');};
   $('sacFond').querySelectorAll('[data-obj]').forEach(b=>b.onclick=()=>{choisi=b.dataset.obj;ouvrirSac();});
   const j=$('sac-jeter');
   if(j)j.onclick=()=>{
@@ -6643,11 +6655,12 @@ function ouvrirSac(){
 function ouvrirPage(titre,sous,corps,clair){
   $('page2Fond').className='sacFond'+(clair?' clair':'');
   $('page2Fond').innerHTML=
-   '<div class="rabat"><button class="sacX" id="p2-x">✕</button>'+
+   '<div class="rabat">'+
      '<span><span class="sacT">'+titre+'</span><span class="sacS">'+sous+'</span></span>'+
      '<span class="boucle"></span></div>'+
-   '<div class="sacCorps" style="padding-top:14px">'+corps+'</div>';
-  $('p2-x').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+   '<div class="sacCorps" style="padding-top:14px">'+corps+'</div>'+
+   '<button class="bandeC" id="p2-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('p2-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2').classList.add('on');
 }
 
