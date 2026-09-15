@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1414';
+  var MA_VERSION='2026-09-15-1420';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2995,6 +2996,153 @@ function dessinerDeco(g,t,x,y){
 }
 
 
+
+/* ================= LE VILLAGE, REMPLI =================
+   Deux natures de décor :
+     · LE FIXE — bancs, lampadaires, jardinières, potager, charrette, panneau,
+       tonneaux — est gravé dans le sol comme les pavés : coût nul à l'écran.
+     · LE VIVANT — le linge qui ondule, la guirlande, les villageois, le chien,
+       les mouettes, le chat — se redessine, mais ne coûte qu'une poignée de
+       traits, et c'est lui qui fait le village.
+*/
+const MOB=[];   /* rempli à la gravure, sert aux collisions */
+function graverLeVillage(g){
+  const cx=PLACE.x, cy=PLACE.y;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const BO={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#8a6238',h:'#a5764a',t:'#c09a6a'};
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+  MOB.length=0;
+  /* les bancs, tournés vers la fontaine */
+  [[-52,26],[52,26],[-52,-18],[52,-18]].forEach(([dx,dy])=>{
+    R(cx+dx-14,cy+dy-5,28,6,BO.p);R(cx+dx-14,cy+dy-5,28,2,BO.h);
+    R(cx+dx-12,cy+dy+1,4,6,PI.p);R(cx+dx+8,cy+dy+1,4,6,PI.p);
+    MOB.push({x:cx+dx,y:cy+dy,l:16,h:8});
+  });
+  /* l'abreuvoir */
+  R(cx-96,cy+18,30,9,PI.s);R(cx-96,cy+16,30,3,PI.c);R(cx-93,cy+18,24,5,'#3a7794');
+  MOB.push({x:cx-81,y:cy+22,l:16,h:8});
+  /* la charrette à bras */
+  R(cx+80,cy-4,26,10,BO.c);R(cx+80,cy-6,26,3,BO.t);
+  g.strokeStyle=BO.o;g.lineWidth=2;
+  g.beginPath();g.arc(cx+86,cy+8,6,0,7);g.stroke();
+  g.beginPath();g.arc(cx+100,cy+8,6,0,7);g.stroke();
+  R(cx+104,cy-2,12,2,BO.o);
+  MOB.push({x:cx+93,y:cy+2,l:16,h:10});
+  /* les tonneaux */
+  [[-80,-30],[74,34],[-30,54]].forEach(([dx,dy])=>{
+    R(cx+dx-7,cy+dy-14,14,14,BO.p);R(cx+dx-7,cy+dy-14,14,2,BO.t);
+    R(cx+dx-8,cy+dy-11,16,2,'#4d545c');R(cx+dx-8,cy+dy-4,16,2,'#4d545c');
+    MOB.push({x:cx+dx,y:cy+dy,l:9,h:9});
+  });
+  /* les quatre lampadaires */
+  [[-62,-38],[62,-38],[-62,44],[62,44]].forEach(([dx,dy])=>{
+    R(cx+dx-1,cy+dy-26,3,26,'#3d4248');
+    R(cx+dx-4,cy+dy-32,9,7,'#4d545c');
+    R(cx+dx-3,cy+dy-31,7,5,'#8a7544');
+    R(cx+dx-5,cy+dy-34,11,3,'#3d4248');
+    MOB.push({x:cx+dx,y:cy+dy,l:5,h:6,lampe:true});
+  });
+  /* le panneau directionnel */
+  R(cx-108,cy-30,3,26,BO.o);
+  [[-6,'#8a6238'],[4,'#7d5934']].forEach(([dy,col],i)=>{
+    R(cx-118-i*2,cy-30+dy,22,7,col);R(cx-118-i*2,cy-30+dy,22,1,BO.t);
+    R(cx-114-i*2,cy-28+dy,13,3,'#c9a24a');
+  });
+  MOB.push({x:cx-107,y:cy-6,l:6,h:8});
+  /* les arbres en pot */
+  [[-40,-40],[40,-40],[-40,48],[40,48]].forEach(([dx,dy])=>{
+    R(cx+dx-8,cy+dy-10,16,10,'#a3543a');R(cx+dx-8,cy+dy-12,16,3,'#8f4630');
+    R(cx+dx-2,cy+dy-24,4,14,BO.o);
+    g.fillStyle='#2f6b34';g.beginPath();g.arc(cx+dx,cy+dy-34,11,0,7);g.fill();
+    g.fillStyle='#3d7d3f';g.beginPath();g.arc(cx+dx-3,cy+dy-37,8,0,7);g.fill();
+    g.fillStyle='#4f9147';g.beginPath();g.arc(cx+dx-5,cy+dy-39,4,0,7);g.fill();
+    MOB.push({x:cx+dx,y:cy+dy,l:10,h:8});
+  });
+  /* les jardinières */
+  for(let i=0;i<10;i++){
+    const a=i/10*Math.PI*2+0.3;
+    const px=cx+Math.cos(a)*84, py=cy+Math.sin(a)*84*0.72;
+    R(px-7,py-5,14,7,'#a3543a');R(px-7,py-6,14,2,'#b56448');
+    for(let k=0;k<4;k++){
+      R(px-5+k*3,py-9,1,4,'#5f7a3c');
+      R(px-6+k*3,py-11,3,3,['#d9584f','#e8cf4e','#6285c9','#f2efe4'][(i+k)%4]);
+    }
+    MOB.push({x:px,y:py,l:8,h:6});
+  }
+  /* le potager clôturé */
+  for(let x=0;x<44;x+=6)R(cx-118+x,cy+38,2,8,BO.p);
+  R(cx-118,cy+38,44,2,BO.c);
+  for(let r=0;r<3;r++)for(let k=0;k<7;k++){
+    R(cx-114+k*6,cy+44+r*7,4,4,'#4f9147');
+    R(cx-113+k*6,cy+45+r*7,2,2,'#6bb05a');
+  }
+  MOB.push({x:cx-96,y:cy+66,l:24,h:16});
+  /* les deux poteaux du linge */
+  R(cx-122,cy-14,2,22,BO.p);R(cx-78,cy-14,2,22,BO.p);
+}
+
+/* ---- ce qui bouge, redessiné à chaque image ---- */
+function dessinerLaVie(g,camX,camY){
+  const cx=PLACE.x-camX, cy=PLACE.y-camY;
+  const T=Date.now()/1000;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  /* la guirlande de fanions */
+  for(let i=0;i<=22;i++){
+    const p=i/22;
+    const x=cx-92+184*p;
+    const y=cy-56+Math.sin(p*Math.PI)*16+Math.sin(T*1.6+p*6)*1.2;
+    R(x,y,2,1,'#6b5230');
+    if(i%2===0){
+      const col=['#a8524a','#c9a24a','#4a7d8c','#f2e6c8'][(i/2)%4];
+      for(let k=0;k<5;k++)R(x,y+2+k,5-k,1,col);
+    }
+  }
+  /* le linge qui sèche */
+  for(let i=0;i<=18;i++){
+    const p=i/18;
+    R(cx-122+p*44,cy-14+Math.sin(p*Math.PI)*5,2,1,'#8a7c5e');
+  }
+  [[-116,'#e8dcc0',9],[-104,'#6285c9',11],[-92,'#d9584f',8]].forEach(([dx,col,h2])=>{
+    const on=Math.sin(T*2.2+dx)*1.4;
+    for(let k=0;k<h2;k++)R(cx+dx+on*(k/h2),cy-11+k,8,1,col);
+    R(cx+dx-1,cy-13,2,2,'#5f666c');
+  });
+  /* les habitants */
+  const bonhomme=(x,y,veste,regard)=>{
+    R(x-3,y-14,6,7,veste);
+    R(x-3,y-7,2,7,'#3a4358');R(x+1,y-7,2,7,'#3a4358');
+    R(x-3,y-20,6,6,'#e8c49a');R(x-4,y-21,8,3,'#4a3220');
+    R(x-3+regard,y-18,1,1,'#2a2118');
+  };
+  bonhomme(cx-48,cy+22,'#8a5a4a',1);
+  bonhomme(cx-40,cy+23,'#4f7d5c',-1);
+  const marche=cx+Math.sin(T*0.5)*40;
+  bonhomme(marche,cy+44,'#5a6b8f',1);
+  const chien=marche+12+Math.sin(T*0.5+0.6)*4;
+  R(chien-5,cy+40,10,5,'#8a6238');R(chien+4,cy+38,4,4,'#8a6238');
+  R(chien-6,cy+38,2,3,'#8a6238');
+  R(chien-4,cy+45,2,3,'#6b4a28');R(chien+2,cy+45,2,3,'#6b4a28');
+  bonhomme(cx+74,cy+4,'#c2a04a',-1);
+  /* les mouettes */
+  for(let i=0;i<3;i++){
+    const a=T*0.6+i*2.1;
+    const mx=cx+Math.cos(a)*70, my=cy-52+Math.sin(a*1.3)*8;
+    const aile=Math.sin(T*7+i)>0?1:0;
+    R(mx-2,my,5,2,'#f2efe4');
+    R(mx-4,my-1+aile,3,1,'#c9c9c9');R(mx+2,my-1+aile,3,1,'#c9c9c9');
+  }
+  /* le chat */
+  R(cx+92,cy+10,9,4,'#6b5230');R(cx+100,cy+8,3,3,'#6b5230');
+  R(cx+90,cy+12,3,2,'#6b5230');
+  /* les lampadaires allumés, la nuit */
+  if(typeof lampesAllumees==='function'&&lampesAllumees()){
+    [[-62,-38],[62,-38],[-62,44],[62,44]].forEach(([dx,dy])=>{
+      R(cx+dx-3,cy+dy-31,7,5,'#ffd27a');
+      lueurNuit(g,cx+dx+camX,cy+dy-28+camY,22,'rgba(255,200,110,§)');
+    });
+  }
+}
+
 /* ================= L'ÉCHOPPE =================
    Près du gué sud : c'est là qu'on débarque en revenant de la récolte, le sac
    plein. On passe devant elle AVANT la place. */
@@ -4334,6 +4482,7 @@ function graverChemins(g){
     }
   }));
   graverLesPaves(g);         /* la place, par-dessus les chemins */
+  graverLeVillage(g);        /* les bancs, les arbres, les lampadaires */
 }
 /* ce qui tombe sur un sentier est déblayé : on dégage le passage */
 function deblayerChemins(){
@@ -4760,6 +4909,10 @@ function bloque(x,y){
   {
     const dx=x-ECHOPPE_FIXE[0], dy=y-ECHOPPE_FIXE[1];
     if(Math.abs(dx)<52&&dy>-52&&dy<2&&!(Math.abs(dx)<14&&dy>-14))return true;
+  }
+  /* le mobilier du village : bancs, tonneaux, arbres en pot, jardinières */
+  for(const m of MOB){
+    if(Math.abs(x-m.x)<m.l&&y>m.y-m.h&&y<m.y+4)return true;
   }
   /* la fontaine et les décors de la place */
   {
@@ -5188,6 +5341,10 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
 
   flechesVersLesAutres(camX,camY);
+  /* le village vivant : le linge, les fanions, les habitants, les mouettes.
+     Seulement quand on est à portée de la place — inutile ailleurs. */
+  if(Math.abs(joueur.x-PLACE.x)<300&&Math.abs(joueur.y-PLACE.y)<240)
+    dessinerLaVie(ctx,camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
