@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2025';
+  var MA_VERSION='2026-09-15-2032';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -208,15 +209,18 @@ body{overflow:hidden}
 .vgT{width:100%;height:56px;display:block;image-rendering:pixelated}
 .ch .vg span{display:block;text-align:center;font:400 9px Georgia,serif;color:#5b4426;
   margin-top:3px;padding:0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tourneV{position:absolute;top:44%;transform:translateY(-50%);z-index:4;
-  width:44px;height:44px;border-radius:50%;border:0;background:rgba(18,24,16,.42);
-  color:rgba(253,251,244,.9);font:400 18px Georgia,serif}
-.tourneV.g{left:14px} .tourneV.d{right:14px}
-#vg-vue{position:absolute;left:0;right:0;top:calc(44% + 32px);text-align:center;z-index:4;
+.tourneV{position:absolute;top:26%;transform:translateY(-50%);z-index:4;
+  width:42px;height:42px;border-radius:50%;border:0;background:rgba(18,24,16,.42);
+  color:rgba(253,251,244,.92);font:400 18px Georgia,serif}
+.tourneV.g{left:12px} .tourneV.d{right:12px}
+/* le nom de la vue se pose SOUS le personnage, au ras de la feuille */
+#vg-vue{position:absolute;left:0;right:0;top:calc(52% - 26px);text-align:center;z-index:4;
   font:400 8px Georgia,serif;font-style:italic;letter-spacing:2px;
-  color:rgba(253,251,244,.72);text-shadow:0 1px 8px rgba(0,0,0,.8)}
-.nuitV{position:absolute;right:14px;top:14px;z-index:5;width:38px;height:38px;
-  border-radius:50%;border:0;background:rgba(18,24,16,.55);color:#f2ecd8;font-size:16px}
+  color:rgba(253,251,244,.85);text-shadow:0 1px 8px rgba(0,0,0,.9)}
+/* le soleil passe À GAUCHE de « au hasard », il le recouvrait */
+.nuitV{position:absolute;right:104px;top:calc(11px + env(safe-area-inset-top));z-index:6;
+  width:36px;height:36px;border-radius:50%;border:0;background:rgba(255,253,248,.92);
+  color:#5f6b58;font-size:15px;box-shadow:0 4px 12px rgba(20,40,15,.25)}
 
 /* ---- LE TABLEAU DU VILLAGE : le tutoriel ---- */
 .tuto{background:#f3e9cd}
@@ -964,9 +968,11 @@ body.clavier #bandeau{padding-bottom:9px}
 @keyframes m{from{opacity:0;transform:scale(1.04)}}
 
 /* la scène : le personnage en grand, dans la moitié haute */
-.scene{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top));height:48%;
-  display:flex;align-items:center;justify-content:center}
-.scene canvas{image-rendering:pixelated;display:block}
+.scene{position:absolute;left:0;right:0;top:0;height:52%;overflow:hidden}
+/* La toile REMPLIT la scène. Avant, elle gardait ses 180×240 d'origine et se
+   retrouvait étirée au milieu d'un aplat vert : d'où le cadre flottant et les
+   fleurs géantes. */
+.scene canvas{image-rendering:pixelated;display:block;width:100%;height:100%}
 .deVous{position:absolute;top:calc(12px + env(safe-area-inset-top));right:14px;
   padding:9px 13px;border-radius:12px;background:rgba(255,253,248,.92);
   font:600 11px system-ui;color:#2f5a38;box-shadow:0 4px 12px rgba(20,40,15,.25)}
@@ -5971,9 +5977,16 @@ const VUES=['bas','droite','haut','gauche'];
 const NOM_VUE={bas:'DE FACE',droite:'DE PROFIL',haut:'DE DOS',gauche:'DE PROFIL'};
 function dessinerApercu(){
   const c=$('vg-c');if(!c)return;
+  /* on taille la toile sur la place réellement disponible, une fois */
+  const r=c.getBoundingClientRect();
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  if(r.width&&Math.abs(c.width-r.width*D)>2){
+    c.width=Math.round(r.width*D);c.height=Math.round(r.height*D);
+  }
   const g=c.getContext('2d');
   g.imageSmoothingEnabled=false;
-  const Z=4, L=Math.round(c.width/Z), H2=Math.round(c.height/Z);
+  /* 96 points de haut de décor : le personnage en fait 48 */
+  const Z=c.height/96, L=Math.round(c.width/Z), H2=96;
   g.setTransform(Z,0,0,Z,0,0);
   g.clearRect(0,0,L,H2);
   const T=(Date.now()-LOOK.t0)/1000;
@@ -6110,7 +6123,7 @@ function ouvrirLook(){
   LOOK.ap=Object.assign({},DEF_AP,e.ap||{});
   LOOK.t0=Date.now();LOOK.dir='bas';LOOK.marche=true;
   $('feuille').innerHTML=
-   '<div class="scene"><canvas id="vg-c" width="180" height="240"></canvas></div>'+
+   '<div class="scene"><canvas id="vg-c"></canvas></div>'+
    '<button class="tourneV g" id="vg-g">‹</button>'+
    '<button class="tourneV d" id="vg-d">›</button>'+
    '<div id="vg-vue">DE FACE</div>'+
