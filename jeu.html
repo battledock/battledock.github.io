@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0636';
+  var MA_VERSION='2026-09-15-0639';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4430,7 +4431,14 @@ if(!e.outils)e.outils={};
 e.outils.pioche=true;e.outils.hache=true;
 if(typeof e.epee!=='number')e.epee=0;
 e.coffreOuvert=true;
-if(!e.id){                                  /* un identifiant qui ne bouge plus */
+/* LE FANTÔME « SANS NOM » : au premier chargement, le jeu se fabriquait un
+   identifiant provisoire et montait EN LIGNE avec, avant même d'avoir lu la
+   session. Une demi-seconde plus tard il recevait le vrai identifiant du
+   compte — mais la ligne provisoire restait, avec le pseudo « sans nom ».
+   Maintenant on ne publie rien tant que l'identifiant n'est pas celui du
+   compte, et on efface l'ancienne ligne au moment de la bascule. */
+let idDeCompte=false;
+if(!e.id){                                  /* un identifiant provisoire */
   e.id='j'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 }
 const sauver=()=>{
@@ -4446,6 +4454,7 @@ const sbEntetes={'apikey':CLE_SB,'Authorization':'Bearer '+CLE_SB,
 let enVol=false, dernierEnvoi=0;
 
 async function monterEnLigne(force){
+  if(!idDeCompte)return;          /* tant qu'on n'a pas le compte, on reste invisible */
   if(enVol)return;
   const now=Date.now();
   if(!force&&now-dernierEnvoi<2500)return;
@@ -7033,7 +7042,14 @@ async function ouvrirPorte(){
     $('p-ok').onclick=()=>{location.href='index.html';};
     return;
   }
+  /* on passe à l'identifiant du compte, et on efface la ligne provisoire */
+  const ancien=e.id;
   e.id=session.user.id;
+  idDeCompte=true;
+  if(ancien&&ancien!==e.id&&ancien[0]==='j'){
+    try{await fetch(URL_SB+'/rest/v1/joueurs?id=eq.'+encodeURIComponent(ancien),
+      {method:'DELETE',headers:sbEntetes});}catch(x){}
+  }
   const m=session.user.user_metadata||{};
   let nom=m.nom||m.pseudo||'';
   if(!nom){try{nom=localStorage.getItem('bdl.nom')||'';}catch(x){}}
