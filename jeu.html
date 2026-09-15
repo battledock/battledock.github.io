@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2010';
+  var MA_VERSION='2026-09-15-2014';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6731,7 +6732,12 @@ async function appelRPC(nom,corps){
 function adopterSac(d){
   if(!d||d.erreur||!d.sac)return false;
   e.sac=d.sac;
-  if(d.max)e.sacMax=d.max;
+  /* on prend la plus grande des deux : le serveur ne doit jamais rétrécir
+     un sac qu'on a payé */
+  const paye=(typeof e.nivSac==='number'&&e.nivSac>0)
+    ? SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)] : 0;
+  if(d.max)e.sacMax=Math.max(d.max,paye,e.sacMax||0);
+  else if(paye)e.sacMax=Math.max(paye,e.sacMax||0);
   sauver();majPastille();
   return true;
 }
@@ -8111,7 +8117,13 @@ function echEquipement(c){
     if(n>=a.prix.length)return;
     b.textContent='…';
     if(!await echPayer(a.prix[n]))return;
-    if(a.k==='sac'){e.nivSac=n+1;e.sacMax=SAC_PALIERS[n+1];}
+    if(a.k==='sac'){
+      e.nivSac=n+1;e.sacMax=SAC_PALIERS[n+1];
+      /* LE SERVEUR TIENT SA PROPRE TAILLE DE SAC, dans la table des sacs.
+         Sans cet appel, il renvoyait 60 au premier échange et écrasait le
+         sac qu'on venait de payer. */
+      await appelRPC('agrandir_sac',{p_joueur:e.id,p_max:e.sacMax});
+    }
     if(a.k==='pioche')e.nivPioche=n+1;
     if(a.k==='hache')e.nivHache=n+1;
     sauver();envoyerSauvegarde(true);
