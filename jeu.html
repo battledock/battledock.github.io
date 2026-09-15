@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1741';
+  var MA_VERSION='2026-09-15-1747';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,8 @@
   });
 })();
 </script>
+
+
 
 
 
@@ -4462,35 +4464,55 @@ function graverLesPaves(g){
 
 function graverChemins(g){
   if(!ROUTES.length)calculerChemins();
-  ROUTES.forEach((route,nr)=>route.forEach(([x,y],i)=>{
-    /* les routes qui partent de la place sont larges ; les amorces vers les
-       gués le sont un peu moins */
-    const base=nr<2?7:6;                      /* plus étroit : un sentier, pas une route */
-    const larg=base+Math.round(alea(x*0.11+y*0.07));
-    for(let dy=-larg;dy<=larg;dy++)for(let dx=-larg;dx<=larg;dx++){
-      const d=Math.hypot(dx,dy);if(d>larg)continue;
-      const px=x+dx,py=y+dy;
-      if(px<0||py<0||px>=MONDE_L||py>=MONDE_H)continue;
-      if(Math.abs(px-rivX(py))<RIV_LARGE+2)continue;      /* jamais dans l'eau */
-      /* le bord s'effrange sur un seul cran, et la terre reste unie au centre :
-         c'est le tacheté qui faisait sale */
-      if(d>larg-1&&alea(px*0.7+py*1.3)<0.55)continue;
-      if(d>larg-2&&alea(px*1.7+py*0.9)<0.22)continue;
-      const t=alea(px*0.31+py*0.19);
-      g.fillStyle=d<larg*0.55?TERRE_CH[1]:(t<0.35?TERRE_CH[2]:TERRE_CH[0]);
-      g.fillRect(px,py,1,1);
-    }
-    /* les deux ornières creusées par les charrettes, avec leur fond plus sombre */
-    if(i%3===0){
-      const e=Math.round(larg*0.42);
-      g.fillStyle=TERRE_CH[4];g.fillRect(x-e,y,2,1);g.fillRect(x+e-1,y,2,1);
-    }
-    /* quelques cailloux, au bord de la route */
-    if(alea(x*3.1+y*5.7)<0.025){
-      g.fillStyle='#8e8377';
-      g.fillRect(x+(alea(x)<0.5?-larg:larg)-1,y,2,1);
-    }
-  }));
+  /* ================= LES CHEMINS DE GALETS =================
+     Un lit de terre, puis des palets de pierre posés en rangs qui suivent la
+     courbe : serrés au centre, plus épars sur les bords, avec leur lumière en
+     haut et leur ombre à droite. Deux fois plus large qu'avant.
+     Et le chemin s'arrête AU BOUT du tablier des ponts : avant, il montait
+     sur les planches ou s'interrompait dans le vide. */
+  const GRIS=['#8f979e','#7e868d','#a4acb3','#6f767c','#bcc4ca'];
+  const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<20&&Math.abs(x-rivX(py))<34);
+  ROUTES.forEach((route,nr)=>{
+    const larg=nr<2?11:10;
+    /* le lit de terre */
+    route.forEach(([x,y])=>{
+      if(surUnPont(x,y))return;
+      for(let dy=-larg;dy<=larg;dy++)for(let dx=-larg;dx<=larg;dx++){
+        const d2=Math.hypot(dx,dy);if(d2>larg)continue;
+        if(d2>larg-2&&alea((x+dx)*0.7+(y+dy)*1.3)<0.45)continue;
+        const t=alea((x+dx)*0.31+(y+dy)*0.19);
+        g.fillStyle=t<0.4?'#8e7854':'#9c8560';
+        g.fillRect((x+dx)|0,(y+dy)|0,1,1);
+      }
+    });
+    /* les galets, un rang sur deux */
+    route.forEach(([x,y],i)=>{
+      if(i%2||surUnPont(x,y))return;
+      for(let k=-2;k<=2;k++){
+        const dx=k*4.2+((i/2)%2?2:0), dy=Math.abs(k)*0.6;
+        const t=Math.floor(alea(x*1.7+k*3.1)*5);
+        const w=3+Math.round(alea(x+k)*1.4);
+        g.fillStyle=GRIS[t];g.fillRect((x+dx-w/2)|0,(y+dy-1.5)|0,w,3);
+        g.fillStyle='#c4ccd2';g.fillRect((x+dx-w/2)|0,(y+dy-1.5)|0,w,1);
+        g.fillStyle='#5f666c';g.fillRect((x+dx+w/2-1)|0,(y+dy-1.5)|0,1,3);
+      }
+      /* quelques galets isolés, qui s'échappent du chemin */
+      if(alea(x*2.3)<0.3){
+        const s2=alea(x)<0.5?-1:1;
+        g.fillStyle=GRIS[Math.floor(alea(x*7)*5)];
+        g.fillRect((x+s2*(12+alea(x*5)*3))|0,y|0,3,3);
+      }
+    });
+  });
+  /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
+  PONTS.forEach(py=>{
+    const px=rivX(py);
+    [-1,1].forEach(s2=>{
+      g.fillStyle='#a4acb3';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,26);
+      g.fillStyle='#d2d8dd';g.fillRect((px+s2*30-2)|0,(py-13)|0,5,2);
+      g.fillStyle='#8f979e';g.fillRect((px+s2*35-2)|0,(py-11)|0,4,22);
+    });
+  });
   graverLesPaves(g);         /* la place, par-dessus les chemins */
 }
 /* ce qui tombe sur un sentier est déblayé : on dégage le passage */
@@ -5934,6 +5956,7 @@ function dessinerMini(){
   g.fill();
 }
 
+
 /* ================= petites fonctions d'aisance ================= */
 const doux    =t=>t*t*(3-2*t);                 /* départ et arrivée adoucis */
 const sortRap =t=>1-Math.pow(1-t,3);           /* part vite, finit lentement */
@@ -5952,17 +5975,9 @@ let QUALITE=1;                 /* 1 = tout, 0.5 = allégé, 0 = l'essentiel */
 let msMoyen=16, imagesLentes=0, imagesRapides=0;
 
 
-/* l'avis du jour : montré une fois, puis retenu */
-(function(){
-  const CLE='bdl.avis.2026-09-14';
-  if(typeof REG!=='undefined'&&REG.avis===false)return;   /* le joueur n'en veut pas */
-  if(localStorage.getItem(CLE))return;
-  const a=$('avis');if(!a)return;
-  setTimeout(()=>a.classList.add('on'),900);
-  const fermer=()=>{a.classList.remove('on');localStorage.setItem(CLE,'lu');};
-  $('avis-x').onclick=fermer;
-  a.onclick=fermer;
-})();
+/* Le bandeau d'avis a été retiré : la mise à jour dont il parlait est faite,
+   et le panneau du village le remplacera. */
+
 
 /* ================= LE JOUR ET LA NUIT =================
    L'heure vient du SERVEUR : tout le monde a le même ciel, quelle que soit
