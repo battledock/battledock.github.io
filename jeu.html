@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2148';
+  var MA_VERSION='2026-09-15-2153';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3529,9 +3530,17 @@ function reveillerLeSon(){
 function appliquerLeSon(){
   if(typeof REG==='undefined')return;
   const m=(REG.sons===false)?0:1;
-  V.gestes=.50*m;V.moments=.55*m;V.amb=.26*m;
-  if(!m)couperLAmbiance();
-  else if(SON_PRET)ambiancer();
+  /* muet, bas, moyen, fort */
+  const K=[0,.45,1,1.7];
+  const k=(cle)=>K[Math.max(0,Math.min(3,REG[cle]===undefined?2:REG[cle]|0))];
+  V.gestes =.50*m*k('sGestes');
+  V.moments=.55*m*k('sMoments');
+  V.amb    =.26*m*k('sAmb');
+  V.rev    =.34*[0,.15,.34,.6][Math.max(0,Math.min(3,REG.sRev===undefined?2:REG.sRev|0))]/.34;
+  try{if(REVG)REVG.gain.value=V.rev;}catch(x){}
+  /* l'ambiance se rejoue au nouveau volume */
+  couperLAmbiance();
+  if(m&&V.amb>0&&SON_PRET)ambiancer();
 }
 /* --- l'ambiance : elle suit l'endroit et l'heure --- */
 let AMB_EN_COURS={};
@@ -5828,7 +5837,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 const CLE='bdl.pix.v2';
 /* les réglages : vibrations, finesse du dessin, avis. Déclarés ici, avant
    tout le reste, parce que le jeu peut vibrer dès les premières images. */
-var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true, sons:true};
+var REG={vibre:true, secousses:true, ciel:'heure', finesse:'auto', avis:true,
+         sons:true, sGestes:2, sMoments:2, sAmb:2, sRev:2};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
        outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
        casses:[],coffre:null,casino:null,camp:null,
@@ -9007,6 +9017,12 @@ function ouvrirReglages(){
   const bouton=(cle,val,texte)=>
     '<button class="regB'+(REG[cle]===val?' on':'')+'" data-reg="'+cle+'" data-val="'+val+'">'+
     texte+'</button>';
+  /* quatre crans plutôt qu'un curseur : au pouce, on vise mal une glissière,
+     et personne n'a besoin de 100 valeurs de volume */
+  const NIVEAUX=['muet','bas','moyen','fort'];
+  const niveau=(cle)=>NIVEAUX.map((n,i)=>
+    '<button class="regB'+((REG[cle]|0)===i?' on':'')+'" data-reg="'+cle+
+    '" data-val="'+i+'">'+n+'</button>').join('');
   const ligne=(titre,mot,corps)=>
     '<div class="regL"><b>'+titre+'</b><span>'+mot+'</span><div class="regR">'+corps+'</div></div>';
   /* les textes disent ce que le réglage FAIT, pas ce qu'il est */
@@ -9016,10 +9032,26 @@ function ouvrirReglages(){
      '<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
    '<div class="corpsC">'+
      ligne('Les sons',
-       'Les gestes, la vente, et l’ambiance : l’eau, le vent, les oiseaux le '+
-       'jour, les grillons la nuit. Tout est fabriqué par le téléphone, rien '+
-       'n’est téléchargé.',
+       'Tout est fabriqué par le téléphone, rien n’est téléchargé.',
        bouton('sons',true,'Écouter')+bouton('sons',false,'Silence'))+
+     (REG.sons!==false?(
+       ligne('Les gestes',
+         'La hache, la pioche, la cueillette. C’est ce qu’on entend le plus : '+
+         'baisse-le si ça fatigue.',
+         niveau('sGestes'))+
+       ligne('Les moments',
+         'La vente au comptoir, un achat à l’échoppe, une pépite qui sort du '+
+         'tamis.',
+         niveau('sMoments'))+
+       ligne('L’ambiance',
+         'L’eau quand tu en approches, le vent, les oiseaux le jour, les '+
+         'grillons la nuit.',
+         niveau('sAmb'))+
+       ligne('La réverbération',
+         'La « pièce » dans laquelle tout résonne. Au minimum, les sons sont '+
+         'secs et proches ; au maximum, on est dehors, au large.',
+         niveau('sRev'))
+     ):'')+
      (vibreurDispo()
        ? ligne('Faire vibrer le téléphone',
            'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
@@ -9063,8 +9095,14 @@ function ouvrirReglages(){
   $('reg-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
   $('page2Fond').querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
     const val=b.dataset.val;
-    REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:val);
+    REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
+      (/^\d+$/.test(val)?+val:val));
     appliquerReglages();vibrer(20);ouvrirReglages();
+    /* on FAIT ENTENDRE ce qu'on règle : sinon on choisit à l'aveugle */
+    const q=b.dataset.reg;
+    if(q==='sGestes')jouer('hache');
+    else if(q==='sMoments')jouer('pepite','moment');
+    else if(q==='sRev')jouer('achat','moment');
   });
   /* L'ESSAI : une vibration franche, et on affiche ce que le navigateur
      répond. C'est la seule façon de savoir si le silence vient du jeu, du
