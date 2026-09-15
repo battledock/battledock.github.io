@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-1420';
+  var MA_VERSION='2026-09-15-1438';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2659,7 +2660,7 @@ const HAMEAU=[];
    village. Les pavés sont gravés dans le SOL, comme les chemins : ils ne
    coûtent rien à l'écran. La fontaine a son calque, et seule l'eau se
    redessine — une vingtaine de traits par image. */
-const PLACE={x:900, y:330, r:92};
+const PLACE={x:876, y:330, r:92};
 const DECOS=[
   {t:'arbrePot', x:PLACE.x-64, y:PLACE.y-34},
   {t:'arbrePot', x:PLACE.x+64, y:PLACE.y-34},
@@ -3146,7 +3147,11 @@ function dessinerLaVie(g,camX,camY){
 /* ================= L'ÉCHOPPE =================
    Près du gué sud : c'est là qu'on débarque en revenant de la récolte, le sac
    plein. On passe devant elle AVANT la place. */
-const ECHOPPE_FIXE=[684,506];
+/* À l'est de la fontaine : elle prolonge le village vers l'est sans le
+   serrer. Il a fallu élargir encore la rive de 60 points — à 1200, elle
+   n'aurait eu que 13 points de marge avec les pavés, soit le « collé » qu'on
+   venait de corriger. */
+const ECHOPPE_FIXE=[1104,336];
 let CALQUE_ECHOPPE=null;
 function graverLEchoppe(){
   const L=170,Ht=132;
@@ -4076,7 +4081,7 @@ function dessinerSouche(g,x,y,gr,neuf){
    l'échoppe chevauchait les pavés de 62 points. On donne 200 points de plus
    à l'est — la rive ouest et ses 237 objets ne bougent pas d'un pixel, la
    rivière suit la même courbe. */
-const MONDE_L=1200;               // largeur, en pixels de jeu
+const MONDE_L=1260;               // largeur, en pixels de jeu
 const MONDE_H=600;                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
@@ -4412,7 +4417,7 @@ function calculerChemins(){
      d'être un décor */
   const centre=[PLACE.x,PLACE.y];
   ROUTES=[[COMPTOIR_FIXE,centre],[centre,pontN],[centre,pontS],[centre,CAMP_FIXE],
-          [centre,ECHOPPE_FIXE],[ECHOPPE_FIXE,pontS]]
+          [centre,ECHOPPE_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
@@ -4482,7 +4487,6 @@ function graverChemins(g){
     }
   }));
   graverLesPaves(g);         /* la place, par-dessus les chemins */
-  graverLeVillage(g);        /* les bancs, les arbres, les lampadaires */
 }
 /* ce qui tombe sur un sentier est déblayé : on dégage le passage */
 function deblayerChemins(){
@@ -4910,10 +4914,6 @@ function bloque(x,y){
     const dx=x-ECHOPPE_FIXE[0], dy=y-ECHOPPE_FIXE[1];
     if(Math.abs(dx)<52&&dy>-52&&dy<2&&!(Math.abs(dx)<14&&dy>-14))return true;
   }
-  /* le mobilier du village : bancs, tonneaux, arbres en pot, jardinières */
-  for(const m of MOB){
-    if(Math.abs(x-m.x)<m.l&&y>m.y-m.h&&y<m.y+4)return true;
-  }
   /* la fontaine et les décors de la place */
   {
     const dx=x-PLACE.x, dy=y-PLACE.y;
@@ -5240,10 +5240,10 @@ async function descendreDeLigne(){
 /* La rive est est rangée en PLACE : le camp au milieu, les cinq autres tout
    autour à peu près à égale distance, et des routes en étoile. Le comptoir
    reste en haut, centré, comme un fronton. */
-const CAMP_FIXE  =[1080,300];                    /* le campement, au centre */
+const CAMP_FIXE  =[1140,500];                    /* le campement, au centre */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
-const COMPTOIR_FIXE=[880,134];                  /* le long entrepôt, en haut, centré */
+const COMPTOIR_FIXE=[862,134];                  /* le long entrepôt, en haut, centré */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 const MINE_FIXE  =[770,494];                    /* plein sud, au bout de la place */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
@@ -5341,10 +5341,6 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
 
   flechesVersLesAutres(camX,camY);
-  /* le village vivant : le linge, les fanions, les habitants, les mouettes.
-     Seulement quand on est à portée de la place — inutile ailleurs. */
-  if(Math.abs(joueur.x-PLACE.x)<300&&Math.abs(joueur.y-PLACE.y)<240)
-    dessinerLaVie(ctx,camX,camY);
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
