@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-2123';
+  var MA_VERSION='2026-09-15-2127';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3614,6 +3615,7 @@ function dessinerLEchoppe(g,x,y){
 const SAC_PALIERS=[60,90,120,160,200];
 const SAC_PRIX=[1000,2500,6000,14000];
 const PIOCHE_COUPS=[3,2,1], PIOCHE_PRIX=[4000,12000];
+const PIED_PRIX=[1500,3500,7000,15000];   /* les quatre crans de souliers */
 const HACHE_COUPS=[5,3,2],  HACHE_PRIX=[3000,9000];
 const METIERS=[
   {id:'gouge', nom:'La gouge', prix:2500,
@@ -5798,8 +5800,15 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
 }
 
 /* ================= déplacement ================= */
-const VITESSE=112;                 /* pixels de jeu par seconde, en marchant */
-const VITESSE_COURSE=186;          /* joystick poussé à fond : on court */
+/* ================= L'ALLURE S'ACHÈTE =================
+   La vitesse de base reste celle d'avant. Chaque cran de souliers acheté à
+   l'échoppe rapproche de la vraie course : 112 → 130 → 152 → 172 → 190.
+   L'ANIMATION de course n'apparaît qu'à partir de 150 — en dessous, des
+   jambes de coureur sur une vitesse de marcheur donneraient du patinage. */
+const PAS_VITESSE=[112,130,152,172,190];
+const VITESSE=PAS_VITESSE[0];
+const SEUIL_COURSE=150;            /* la foulée ne s'ouvre qu'au-delà */
+const vitesseDuJoueur=()=>PAS_VITESSE[Math.min(e.nivPied||0,PAS_VITESSE.length-1)];
 let vx=0, vy=0;                   /* vitesse actuelle, pour l'inertie */
 let court=false;                  /* l'allure du moment */
 let bloqueBord=false;
@@ -5811,8 +5820,11 @@ function majJoueur(dt){
   /* 1. on accélère et on freine au lieu de sauter d'un état à l'autre */
   /* Au-delà de 88 % de course sur le joystick, on court : la vitesse ET
      l'animation changent. En dessous, on marche comme avant. */
-  court=pousse>0.88;
-  const allure=court?VITESSE_COURSE:VITESSE;
+  const max=vitesseDuJoueur();
+  const aFond=pousse>0.88;
+  const allure=aFond?max:VITESSE;
+  /* on ne COURT, au sens de l'animation, qu'au-delà du seuil */
+  court=aFond&&max>=SEUIL_COURSE;
   const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
   const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
   const k=Math.min(1,dt*(n>0.16?11:16));       /* le freinage est plus vif que la relance */
@@ -6746,7 +6758,7 @@ function ambiance(g){
    part sur le serveur. On peut changer de téléphone, vider son
    navigateur : la partie est retrouvée. */
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses','epee',
-  'nivSac','nivPioche','nivHache','metiers','cos',
+  'nivSac','nivPioche','nivHache','nivPied','metiers','cos',
                 'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false;
 
@@ -8281,14 +8293,17 @@ function echMaj(){
 }
 /* ---- rayon 1 : le sac et les deux outils ---- */
 function echEquipement(c){
-  const niv={sac:e.nivSac||0, pioche:e.nivPioche||0, hache:e.nivHache||0};
+  const niv={sac:e.nivSac||0, pioche:e.nivPioche||0, hache:e.nivHache||0,
+             pied:e.nivPied||0};
   const A=[
     {k:'sac', nom:'Le sac', mot:'ce que tu peux porter', unite:'de charge',
      val:SAC_PALIERS, prix:SAC_PRIX},
     {k:'pioche', nom:'La pioche', mot:'les coups pour casser un rocher', unite:'coups',
      val:PIOCHE_COUPS, prix:PIOCHE_PRIX},
     {k:'hache', nom:'La hache', mot:'les coups pour abattre un arbre', unite:'coups',
-     val:HACHE_COUPS, prix:HACHE_PRIX}
+     val:HACHE_COUPS, prix:HACHE_PRIX},
+    {k:'pied', nom:'Les souliers', mot:'ce que tu parcours en une seconde',
+     unite:'de pas', val:PAS_VITESSE, prix:PIED_PRIX}
   ];
   c.innerHTML=A.map(a=>{
     const n=niv[a.k], max=n>=a.prix.length, prix=max?0:a.prix[n];
@@ -8322,6 +8337,7 @@ function echEquipement(c){
     }
     if(a.k==='pioche')e.nivPioche=n+1;
     if(a.k==='hache')e.nivHache=n+1;
+    if(a.k==='pied')e.nivPied=n+1;
     sauver();envoyerSauvegarde(true);
     majHaut();majPastille();majAction();
     echBulle(a.nom+' : '+a.val[n+1]+' '+a.unite);
