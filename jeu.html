@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0812';
+  var MA_VERSION='2026-09-15-0847';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -167,6 +168,19 @@ body{overflow:hidden}
 #haut .col.d .fil{background:linear-gradient(270deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
 #haut .pet{font:400 8.5px Georgia,serif;font-style:italic;color:rgba(253,251,244,.62);
   text-shadow:0 1px 6px rgba(0,0,0,.9)}
+
+/* ---- les réglages ---- */
+.regL{padding:13px 2px;border-bottom:1px solid rgba(120,96,56,.16)}
+.regL b{display:block;font:400 15px Georgia,serif;color:#33291b;margin-bottom:2px}
+.regL span{display:block;font:400 10px/1.5 system-ui;color:rgba(51,41,27,.6);
+  margin-bottom:9px}
+.regR{display:flex;gap:7px}
+.regB{flex:1;padding:10px 4px;border-radius:11px;border:1px solid rgba(120,96,56,.3);
+  background:#f6efdc;font:400 12px Georgia,serif;color:#5b4426;letter-spacing:.6px}
+.regB.on{background:#33291b;border-color:#33291b;color:#f0cf7d}
+.regFin{padding:14px 2px 2px;font:400 10px/1.6 Georgia,serif;font-style:italic;
+  color:rgba(51,41,27,.5)}
+.regFin b{font-style:normal;color:rgba(51,41,27,.7)}
 
 /* ---- la page du comptoir ---- */
 .listeVente{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
@@ -830,7 +844,18 @@ body.clavier #bandeau{padding-bottom:9px}
     <span class="b">PARLER</span>
     <span class="pastille" id="parler-nb">0</span>
   </button>
-<button class="latte parch" id="b-class">
+<button class="latte" id="b-reglages">
+    <svg viewBox="0 0 20 18" width="30">
+      <circle cx="10" cy="9" r="4.2" fill="none" stroke="#c9c2ae" stroke-width="2"/>
+      <circle cx="10" cy="9" r="1.5" fill="#c9c2ae"/>
+      <rect x="9" y="0.5" width="2" height="3" fill="#c9c2ae"/>
+      <rect x="9" y="14.5" width="2" height="3" fill="#c9c2ae"/>
+      <rect x="0.5" y="8" width="3" height="2" fill="#c9c2ae"/>
+      <rect x="16.5" y="8" width="3" height="2" fill="#c9c2ae"/>
+      <rect x="3" y="2.6" width="2" height="2.6" fill="#a5a08d" transform="rotate(-45 4 3.9)"/>
+      <rect x="15" y="12.8" width="2" height="2.6" fill="#a5a08d" transform="rotate(-45 16 14.1)"/>
+    </svg><span class="b">RÉGLAGES</span></button>
+  <button class="latte parch" id="b-class">
     <svg viewBox="0 0 24 20" width="30">
       <rect x="2" y="2.6" width="20" height="14.8" rx="1.4" fill="#f6efdc" stroke="#b9a77f" stroke-width=".7"/>
       <circle cx="5.6" cy="6.4" r="1.5" fill="#f0cf7d" stroke="#a8791f" stroke-width=".4"/>
@@ -4782,7 +4807,7 @@ function prendre(x,y){
   if(y>limite)y=limite;
   J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
   joyX=joyY=0;
-  try{navigator.vibrate&&navigator.vibrate(8);}catch(x2){}   /* un petit clic sous le doigt */
+  vibrer(8);   /* un petit clic sous le doigt */
 }
 function tirer(x,y){
   const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
@@ -4960,6 +4985,8 @@ function ouvrirLook(){
   $('pan').classList.add('on');
 }
 $('b-look').onclick=ouvrirLook;
+$('b-reglages').onclick=ouvrirReglages;
+lireReglages();
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('b-parler').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
@@ -5194,6 +5221,7 @@ let msMoyen=16, imagesLentes=0, imagesRapides=0;
 /* l'avis du jour : montré une fois, puis retenu */
 (function(){
   const CLE='bdl.avis.2026-09-14';
+  if(typeof REG!=='undefined'&&REG.avis===false)return;   /* le joueur n'en veut pas */
   if(localStorage.getItem(CLE))return;
   const a=$('avis');if(!a)return;
   setTimeout(()=>a.classList.add('on'),900);
@@ -5320,7 +5348,7 @@ function basculerPerf(){
     ctx.fillRect=ctx.__vraiFill;ctx.drawImage=ctx.__vraiCopie;
     ctx.__vraiFill=null;ctx.__vraiCopie=null;
   }
-  try{navigator.vibrate&&navigator.vibrate(14);}catch(x){}
+  vibrer(14);
 }
 function majPerf(ms){
   if(!PERF.on)return;
@@ -6144,7 +6172,7 @@ function agir(){
       eclats(o.x,o.y-6,10,'#8a6238',0.9);
       texteVolant(o.x,o.y-20,'le coffre se referme','#c6b38a');
     },2600);
-    try{navigator.vibrate&&navigator.vibrate([10,40,20]);}catch(x){}
+    vibrer([10,40,20]);
     ouvrirPage('Le coffre','TU L’AS OUVERT',
       '<div class="recette"><span class="ic" style="width:42px;height:42px;border-radius:10px;background:#241a12;'+
       'border:1px solid #6b5136;display:flex;align-items:center;justify-content:center;flex:0 0 auto">'+
@@ -6183,7 +6211,7 @@ function agir(){
          type:aLaMain?'cueille':(o.t==='arbre'?'hache':'pioche')};
   joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
             :(o.y>joueur.y?'bas':'haut');
-  try{navigator.vibrate&&navigator.vibrate(10);}catch(x){}
+  vibrer(10);
 }
 function majGeste(dt){
   if(GESTE.t<=0)return;
@@ -6201,12 +6229,12 @@ function majGeste(dt){
       eclats(o.x,o.y-12,9,null,1);
       poussiere(o.x,o.y,6);
       secouer(0.6);ARRET=0.055;                      /* l'image se fige un instant */
-      try{navigator.vibrate&&navigator.vibrate(16);}catch(x){}
+      vibrer(16);
       if(o.coups>=3){
         eclats(o.x,o.y-10,24,null,1.6);
         poussiere(o.x,o.y,14);
         secouer(1.3);ARRET=0.085;
-        try{navigator.vibrate&&navigator.vibrate([12,30,26]);}catch(x){}
+        vibrer([12,30,26]);
         const q=2+Math.floor(Math.random()*2);
         const pris=ajouter('pierre',q);
         e.recolte=(e.recolte||0)+pris;marquer('pierre',pris);
@@ -6238,7 +6266,7 @@ function miner(o){
   }
   poussiere(o.x,o.y,6);
   secouer(0.65);ARRET=0.06;
-  try{navigator.vibrate&&navigator.vibrate(18);}catch(x){}
+  vibrer(18);
   const DUR={fer:7,cuivre:6,charbon:5};
   const aFaire=Math.max(2,DUR[o.t]-(e.outils.piocheFer?3:0));
   if(o.coups>=aFaire){
@@ -6251,7 +6279,7 @@ function miner(o){
     }
     poussiere(o.x,o.y,16);
     secouer(1.4);ARRET=0.09;
-    try{navigator.vibrate&&navigator.vibrate([12,30,26]);}catch(x){}
+    vibrer([12,30,26]);
     const q=R.q[0]+Math.floor(Math.random()*(R.q[1]-R.q[0]+1));
     const pris=ajouter(o.t,q);
     const cailloux=ajouter('pierre',1);
@@ -6298,7 +6326,7 @@ function recolterResine(o){
   texteVolant(o.x,o.y-30,'+'+pris+' résine','#f7cf7d');
   texteVolant(o.x,o.y-42,'+7 pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'resine'),i*80);
-  try{navigator.vibrate&&navigator.vibrate([10,26,16]);}catch(x){}
+  vibrer([10,26,16]);
   sauver();monterEnLigne(true);
 }
 
@@ -6339,7 +6367,7 @@ function ramasser(o){
   }
   texteVolant(o.x,o.y-36,'+'+R.pts+' pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,o.t),i*80);
-  try{navigator.vibrate&&navigator.vibrate(9);}catch(x){}
+  vibrer(9);
   sauver();monterEnLigne(true);
 }
 
@@ -6377,7 +6405,7 @@ function cueillir(o){
     setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'fibre'),160);
   }else texteVolant(o.x,o.y-38,'+2 pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'baies'),i*90);
-  try{navigator.vibrate&&navigator.vibrate(10);}catch(x){}
+  vibrer(10);
   sauver();monterEnLigne(true);
 }
 
@@ -6402,11 +6430,11 @@ function couper(o){
       c:['#4a944a','#3d7d3f','#2f6b34'][i%3],rebondi:true});
   }
   secouer(0.5);ARRET=0.05;
-  try{navigator.vibrate&&navigator.vibrate(16);}catch(x){}
+  vibrer(16);
   if(o.coups>=(e.outils.hacheFer?3:5)){
     /* il ne bascule pas : il cède, et le bois vole en morceaux */
     secouer(1.2);ARRET=0.07;
-    try{navigator.vibrate&&navigator.vibrate([14,40,26]);}catch(x){}
+    vibrer([14,40,26]);
     /* de gros éclats de tronc qui retombent au sol */
     for(let i=0;i<16;i++){
       const a=Math.random()*6.283;
@@ -6563,7 +6591,7 @@ const sacPlein=()=>charge()>=chargeMax();
 function prevenirSacPlein(o){
   texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-28,'Sac plein','#e08a8a');
   texteVolant(o?o.x:joueur.x,(o?o.y:joueur.y)-40,'change-le au casino','#d8c9a8');
-  try{navigator.vibrate&&navigator.vibrate([8,50,8]);}catch(x){}
+  vibrer([8,50,8]);
 }
 function ajouter(k,n){
   if(!OBJETS[k]||!(n>0))return 0;            /* un objet inconnu ne casse rien */
@@ -6716,9 +6744,60 @@ async function vendreAuComptoir(types){
     sauver();majHaut();majPastille();
     const c=cible();
     if(c)texteVolant(c.x,c.y-54,'+'+(gagne/100).toFixed(2).replace('.',',')+' €','#ffd77a');
-    try{navigator.vibrate&&navigator.vibrate([10,30,16]);}catch(x){}
+    vibrer([10,30,16]);
   }
   ouvrirLeComptoir();
+}
+
+
+/* ================= LES RÉGLAGES =================
+   Trois choses seulement, celles qui se sentent vraiment : les vibrations,
+   la finesse du dessin, et le rappel des avis. Chacune est retenue sur le
+   téléphone, et relue au démarrage. */
+const REG={vibre:true, finesse:'auto', avis:true};
+function lireReglages(){
+  try{
+    const d=JSON.parse(localStorage.getItem('bdl.reglages')||'{}');
+    Object.assign(REG,d);
+  }catch(x){}
+  appliquerReglages();
+}
+function appliquerReglages(){
+  try{localStorage.setItem('bdl.reglages',JSON.stringify(REG));}catch(x){}
+  /* la finesse : « auto » laisse le jeu s'ajuster, les autres la figent */
+  if(REG.finesse==='haute')QUALITE=1;
+  else if(REG.finesse==='basse')QUALITE=0.5;
+}
+/* toutes les vibrations passent par ici : un seul endroit à couper */
+function vibrer(m){
+  if(!REG.vibre)return;
+  vibrer(m);
+}
+function ouvrirReglages(){
+  const bouton=(cle,val,texte)=>
+    '<button class="regB'+(REG[cle]===val?' on':'')+'" data-reg="'+cle+'" data-val="'+val+'">'+
+    texte+'</button>';
+  ouvrirPage('Réglages','CE QUI SE SENT',
+    '<div class="regL"><b>Les vibrations</b>'+
+      '<span>le petit choc sous le doigt quand on frappe ou qu’on récolte</span>'+
+      '<div class="regR">'+bouton('vibre',true,'Oui')+bouton('vibre',false,'Non')+'</div></div>'+
+    '<div class="regL"><b>La finesse du dessin</b>'+
+      '<span>en « auto », le jeu s’allège tout seul s’il rame</span>'+
+      '<div class="regR">'+bouton('finesse','auto','Auto')+
+        bouton('finesse','haute','Tout')+bouton('finesse','basse','Allégé')+'</div></div>'+
+    '<div class="regL"><b>Les avis</b>'+
+      '<span>les mots que je laisse en haut de l’écran quand quelque chose change</span>'+
+      '<div class="regR">'+bouton('avis',true,'Oui')+bouton('avis',false,'Non')+'</div></div>'+
+    '<div class="regFin">Battle Dock · version <b id="regVer">—</b><br>'+
+      'les réglages restent sur ce téléphone</div>',
+    true);
+  const v=$('regVer');
+  if(v)v.textContent=(document.querySelector('meta[name="version"]')||{}).content||'du jour';
+  document.querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
+    const val=b.dataset.val;
+    REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:val);
+    appliquerReglages();vibrer(8);ouvrirReglages();
+  });
 }
 
 /* ================= bâtir ================= */
@@ -6763,7 +6842,7 @@ function ouvrirFour(){
       eclats(c.x,c.y-14,14,'#ff9d45',1.2);
       secouer(0.4);
     }
-    try{navigator.vibrate&&navigator.vibrate([12,34,20]);}catch(x){}
+    vibrer([12,34,20]);
     return ouvrirPage('Le four','FOURNÉE TERMINÉE',
       '<div class="gagne2">'+quoi+'</div>'+
       '<div class="vide2">Le métal est dans ton sac.</div>',false);
@@ -6786,7 +6865,7 @@ function ouvrirFour(){
     appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout}).then(d=>adopterSac(d));
     e.four={recette:f.id,fin:Date.now()+f.duree*1000};
     sauver();majPastille();monterEnLigne(true);
-    try{navigator.vibrate&&navigator.vibrate([10,30,18]);}catch(x){}
+    vibrer([10,30,18]);
     ouvrirFour();
   });
 }
@@ -6830,7 +6909,7 @@ function ouvrirEtabli(){
     sauver();majPastille();monterEnLigne(true);
     const c=cible();
     if(c){texteVolant(c.x,c.y-34,f.nom+' !','#ffe08a');eclats(c.x,c.y-14,16,'#c9a24a',1.3);secouer(0.5);}
-    try{navigator.vibrate&&navigator.vibrate([14,40,26]);}catch(x){}
+    vibrer([14,40,26]);
     ouvrirEtabli();
   });
 }
@@ -6849,7 +6928,7 @@ function direQuelqueChose(txt){
   nonLus=0;
   try{CANAL&&CANAL.send({type:'broadcast',event:'dit',
     payload:{id:e.id,n:e.pseudo||'survivant',txt}});}catch(x){}
-  try{navigator.vibrate&&navigator.vibrate(8);}catch(x){}
+  vibrer(8);
 }
 
 /* la bulle au-dessus de la tête */
@@ -7017,7 +7096,7 @@ function dicter(){
     ecoute=r;
     if(m)m.classList.add('ecoute');
     const o=$('onde');if(o)o.classList.add('on');
-    try{navigator.vibrate&&navigator.vibrate(12);}catch(x){}
+    vibrer(12);
   };
   r.onresult=(ev)=>{
     let interim='';
