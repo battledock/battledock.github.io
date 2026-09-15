@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0935';
+  var MA_VERSION='2026-09-15-0937';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4823,7 +4824,7 @@ function prendre(x,y){
   if(y>limite)y=limite;
   J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
   joyX=joyY=0;
-  vibrer(8);   /* un petit clic sous le doigt */
+  vibrer(20);   /* un petit clic sous le doigt */
 }
 function tirer(x,y){
   const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
@@ -5364,7 +5365,7 @@ function basculerPerf(){
     ctx.fillRect=ctx.__vraiFill;ctx.drawImage=ctx.__vraiCopie;
     ctx.__vraiFill=null;ctx.__vraiCopie=null;
   }
-  vibrer(14);
+  vibrer(30);
 }
 function majPerf(ms){
   if(!PERF.on)return;
@@ -6234,7 +6235,7 @@ function agir(){
          type:aLaMain?'cueille':(o.t==='arbre'?'hache':'pioche')};
   joueur.dir=Math.abs(o.x-joueur.x)>Math.abs(o.y-joueur.y)?(o.x>joueur.x?'droite':'gauche')
             :(o.y>joueur.y?'bas':'haut');
-  vibrer(10);
+  vibrer(22);
 }
 function majGeste(dt){
   if(GESTE.t<=0)return;
@@ -6252,7 +6253,7 @@ function majGeste(dt){
       eclats(o.x,o.y-12,9,null,1);
       poussiere(o.x,o.y,6);
       secouer(0.6);ARRET=0.055;                      /* l'image se fige un instant */
-      vibrer(16);
+      vibrer(35);
       if(o.coups>=3){
         eclats(o.x,o.y-10,24,null,1.6);
         poussiere(o.x,o.y,14);
@@ -6289,7 +6290,7 @@ function miner(o){
   }
   poussiere(o.x,o.y,6);
   secouer(0.65);ARRET=0.06;
-  vibrer(18);
+  vibrer(39);
   const DUR={fer:7,cuivre:6,charbon:5};
   const aFaire=Math.max(2,DUR[o.t]-(e.outils.piocheFer?3:0));
   if(o.coups>=aFaire){
@@ -6390,7 +6391,7 @@ function ramasser(o){
   }
   texteVolant(o.x,o.y-36,'+'+R.pts+' pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,o.t),i*80);
-  vibrer(9);
+  vibrer(20);
   sauver();monterEnLigne(true);
 }
 
@@ -6428,7 +6429,7 @@ function cueillir(o){
     setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'fibre'),160);
   }else texteVolant(o.x,o.y-38,'+2 pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'baies'),i*90);
-  vibrer(10);
+  vibrer(22);
   sauver();monterEnLigne(true);
 }
 
@@ -6453,7 +6454,7 @@ function couper(o){
       c:['#4a944a','#3d7d3f','#2f6b34'][i%3],rebondi:true});
   }
   secouer(0.5);ARRET=0.05;
-  vibrer(16);
+  vibrer(35);
   if(o.coups>=(e.outils.hacheFer?3:5)){
     /* il ne bascule pas : il cède, et le bois vole en morceaux */
     secouer(1.2);ARRET=0.07;
@@ -6801,16 +6802,18 @@ function appliquerReglages(){
    faire, Safari sur iPhone n'a jamais eu cette fonction — dans AUCUN
    navigateur, puisqu'ils utilisent tous WebKit. Firefox l'a retirée. Inutile
    donc de proposer un réglage qui ne fera jamais rien : on le dit. */
-const VIBREUR=(function(){
+function vibreurDispo(){
   try{return typeof navigator!=='undefined'&&typeof navigator.vibrate==='function';}
   catch(x){return false;}
-})();
+}
+const VIBREUR=vibreurDispo();
 function vibrer(m){
-  /* Le seul endroit du jeu qui touche au vibreur. (Ma réécriture automatique
-     avait remplacé le contenu par un appel à vibrer() lui-même : le jeu se
-     figeait dès la première vibration.) */
-  if(typeof REG==='undefined'||!REG.vibre)return;
-  try{navigator.vibrate&&navigator.vibrate(m);}catch(x){}
+  /* Le seul endroit du jeu qui touche au vibreur. Il renvoie ce que le
+     navigateur répond : false veut dire « appel refusé » — page pas encore
+     touchée, ou retour tactile coupé dans le téléphone. */
+  if(typeof REG==='undefined'||!REG.vibre)return null;
+  if(!vibreurDispo())return null;
+  try{return navigator.vibrate(m);}catch(x){return null;}
 }
 function ouvrirReglages(){
   const bouton=(cle,val,texte)=>
@@ -6824,12 +6827,13 @@ function ouvrirReglages(){
    '<div class="rabatC"><span class="tC"><b>Réglages</b>'+
      '<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
    '<div class="corpsC">'+
-     (VIBREUR
+     (vibreurDispo()
        ? ligne('Faire vibrer le téléphone',
            'Un petit coup dans la main à chaque fois que tu frappes un rocher, '+
            'coupes un arbre ou ramasses quelque chose. Si tu ne sens rien, '+
            'vérifie le retour tactile dans les réglages de ton téléphone.',
-           bouton('vibre',true,'Vibrer')+bouton('vibre',false,'Silencieux'))
+           bouton('vibre',true,'Vibrer')+bouton('vibre',false,'Silencieux')+
+           '<button class="regB" id="reg-essai">Essayer</button>')
        : '<div class="regL"><b>Faire vibrer le téléphone</b>'+
          '<span>Ton navigateur ne sait pas commander le vibreur. C’est le cas '+
          'de tous les navigateurs sur iPhone, et de Firefox. Sur Chrome pour '+
@@ -6867,8 +6871,21 @@ function ouvrirReglages(){
   $('page2Fond').querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:val);
-    appliquerReglages();vibrer(8);ouvrirReglages();
+    appliquerReglages();vibrer(20);ouvrirReglages();
   });
+  /* L'ESSAI : une vibration franche, et on affiche ce que le navigateur
+     répond. C'est la seule façon de savoir si le silence vient du jeu, du
+     navigateur ou des réglages du téléphone. */
+  const essai=$('reg-essai');
+  if(essai)essai.onclick=()=>{
+    if(!REG.vibre){essai.textContent='mets « Vibrer » d’abord';
+      setTimeout(()=>{essai.textContent='Essayer';},2500);return;}
+    let rep=null;
+    try{rep=navigator.vibrate([120,60,120]);}catch(x){}
+    essai.textContent=(rep===false)?'refusé par le téléphone'
+      :(rep===true?'envoyé — tu as senti ?':'impossible ici');
+    setTimeout(()=>{essai.textContent='Essayer';},3500);
+  };
   const raz=$('reg-raz');
   if(raz)raz.onclick=()=>{
     if(raz.dataset.sur!=='1'){
@@ -7010,7 +7027,7 @@ function direQuelqueChose(txt){
   nonLus=0;
   try{CANAL&&CANAL.send({type:'broadcast',event:'dit',
     payload:{id:e.id,n:e.pseudo||'survivant',txt}});}catch(x){}
-  vibrer(8);
+  vibrer(20);
 }
 
 /* la bulle au-dessus de la tête */
@@ -7178,7 +7195,7 @@ function dicter(){
     ecoute=r;
     if(m)m.classList.add('ecoute');
     const o=$('onde');if(o)o.classList.add('on');
-    vibrer(12);
+    vibrer(26);
   };
   r.onresult=(ev)=>{
     let interim='';
