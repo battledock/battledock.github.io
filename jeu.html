@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0847';
+  var MA_VERSION='2026-09-15-0850';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4444,6 +4445,9 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
 
 /* ================= état, gardé sur l'appareil et en ligne ================= */
 const CLE='bdl.pix.v2';
+/* les réglages : vibrations, finesse du dessin, avis. Déclarés ici, avant
+   tout le reste, parce que le jeu peut vibrer dès les premières images. */
+var REG={vibre:true, finesse:'auto', avis:true};
 let e={x:0,y:0,ap:Object.assign({},DEF_AP),pseudo:'',id:'',sac:{},score:0,recolte:0,
        outils:{pioche:true,hache:true},epee:0,coffreOuvert:true,
        casses:[],coffre:null,casino:null,camp:null,
@@ -6754,7 +6758,8 @@ async function vendreAuComptoir(types){
    Trois choses seulement, celles qui se sentent vraiment : les vibrations,
    la finesse du dessin, et le rappel des avis. Chacune est retenue sur le
    téléphone, et relue au démarrage. */
-const REG={vibre:true, finesse:'auto', avis:true};
+/* REG est déclaré tout en haut du script (avec var, qui remonte) : le jeu
+   vibre parfois AVANT d'arriver ici, et un const aurait planté. */
 function lireReglages(){
   try{
     const d=JSON.parse(localStorage.getItem('bdl.reglages')||'{}');
@@ -6770,7 +6775,7 @@ function appliquerReglages(){
 }
 /* toutes les vibrations passent par ici : un seul endroit à couper */
 function vibrer(m){
-  if(!REG.vibre)return;
+  if(typeof REG==='undefined'||!REG.vibre)return;
   vibrer(m);
 }
 function ouvrirReglages(){
@@ -6792,7 +6797,7 @@ function ouvrirReglages(){
       'les réglages restent sur ce téléphone</div>',
     true);
   const v=$('regVer');
-  if(v)v.textContent=(document.querySelector('meta[name="version"]')||{}).content||'du jour';
+  if(v)v.textContent=(typeof VERSION!=='undefined'&&VERSION)?VERSION:'du jour';
   document.querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:val);
