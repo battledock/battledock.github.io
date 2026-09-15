@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-15-0748';
+  var MA_VERSION='2026-09-15-0753';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6025,6 +6026,12 @@ function actionDeSecours(){
   return null;
 }
 
+/* ce que vaut une récolte, au prix du comptoir */
+const valeurDe=(type,nb)=>(PRIX_COMPTOIR[type]||1)*(nb||0);
+function marquer(type,nb){
+  e.score=(e.score||0)+valeurDe(type,nb);
+}
+
 /* le trait qui se remplit au bas de la plaque, à mesure des coups */
 const jaugeAction=(p)=>'<span class="jaugeAction"><u style="width:'+
   Math.round(Math.max(0,Math.min(1,p))*100)+'%"></u></span>';
@@ -6182,8 +6189,7 @@ function majGeste(dt){
         try{navigator.vibrate&&navigator.vibrate([12,30,26]);}catch(x){}
         const q=2+Math.floor(Math.random()*2);
         const pris=ajouter('pierre',q);
-        e.recolte=(e.recolte||0)+pris;
-        e.score=(e.score||0)+5;
+        e.recolte=(e.recolte||0)+pris;marquer('pierre',pris);
         noterCasse(o.x+','+o.y);signalerLeMonde(o,'rocher',o.t);
         DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
         DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
@@ -6230,7 +6236,7 @@ function miner(o){
     const pris=ajouter(o.t,q);
     const cailloux=ajouter('pierre',1);
     e.recolte=(e.recolte||0)+pris+cailloux;
-    e.score=(e.score||0)+R.pts;
+    marquer(o.t,pris);marquer('pierre',cailloux);
     noterCasse('m'+o.x+','+o.y);signalerLeMonde(o,'minerai',o.t);
     DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
     DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
@@ -6268,7 +6274,7 @@ function recolterResine(o){
   secouer(0.3);
   const q=1+Math.floor(Math.random()*2);
   const pris=ajouter('resine',q);
-  e.recolte=(e.recolte||0)+pris;e.score=(e.score||0)+7;
+  e.recolte=(e.recolte||0)+pris;marquer('resine',pris);
   texteVolant(o.x,o.y-30,'+'+pris+' résine','#f7cf7d');
   texteVolant(o.x,o.y-42,'+7 pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'resine'),i*80);
@@ -6300,7 +6306,7 @@ function ramasser(o){
   secouer(0.18);
   const q=R.q[0]+Math.floor(Math.random()*(R.q[1]-R.q[0]+1));
   const pris=ajouter(o.t,q);
-  e.recolte=(e.recolte||0)+pris;e.score=(e.score||0)+R.pts;
+  e.recolte=(e.recolte||0)+pris;marquer(o.t,pris);
   texteVolant(o.x,o.y-24,'+'+pris+' '+R.nom,'#e8dcc0');
   if(R.aussi){                                 /* certaines plantes donnent deux choses */
     const [k,n]=R.aussi;
@@ -6340,7 +6346,7 @@ function cueillir(o){
   secouer(0.22);
   const q=2+Math.floor(Math.random()*2);
   const pris=ajouter('baies',q);
-  e.recolte=(e.recolte||0)+pris;e.score=(e.score||0)+2;
+  e.recolte=(e.recolte||0)+pris;marquer('baies',pris);
   texteVolant(o.x,o.y-26,'+'+pris+' baies','#e8919a');
   /* en tirant sur les branches, on arrache souvent de la fibre */
   const fib=fibreBuisson?ajouter('fibre',1):0;
@@ -6408,7 +6414,7 @@ function couper(o){
     const q=3+Math.floor(Math.random()*3);
     const pris=ajouter('bois',q);
     const fib=ajouter('fibre',1);
-    e.recolte=(e.recolte||0)+pris+fib;e.score=(e.score||0)+8;
+    e.recolte=(e.recolte||0)+pris+fib;marquer('bois',pris);marquer('fibre',fib);
     noterCasse('a'+o.x+','+o.y);signalerLeMonde(o,'arbre','arbre');
     texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
     texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
@@ -6633,6 +6639,17 @@ function ouvrirPage(titre,sous,corps,clair){
    Les prix viennent du serveur (la fonction `cours`), en centimes. On vend
    une pile entière d'un coup : le serveur retire du sac et crédite l'argent,
    c'est lui qui fait foi. */
+/* ================= LE SCORE =================
+   AVANT : des points par geste — 8 pour un arbre, 2 pour des baies, et
+   surtout 12 et 20 pour fabriquer et construire, qui ne rapportaient aucune
+   ressource. On pouvait donc être premier en ayant moins récolté que le
+   deuxième, et personne ne comprenait pourquoi. Pire : depuis qu'on a retiré
+   la forge et le bâtir, ces 20 points n'existaient même plus.
+
+   MAINTENANT : le score est la VALEUR de tout ce que tu as récolté, au prix
+   du comptoir, en centimes. Une gemme vaut 120, un bois 3. C'est le même
+   barème que la vente, donc il se lit tout seul : « ce que ma récolte vaut ».
+   Et il suit la récolte, forcément. */
 const PRIX_COMPTOIR={lingotFer:52,lingotCuivre:34,gemme:120,or:70,argent:36,
   fer:14,cuivre:8,charbon:9,brique:11,resine:10,pierre:5,champignons:4,plumes:4,
   bois:3,herbes:3,fibre:2,baies:2,argile:2,roseaux:2};
@@ -6717,7 +6734,7 @@ function ouvrirFour(){
     Object.entries(f.rend).forEach(([k,n])=>
       appelRPC('livrer',{p_joueur:e.id,p_type:k,p_nb:n}).then(d=>adopterSac(d)));
     const quoi=Object.entries(f.rend).map(([k,n])=>n+' '+OBJETS[k].nom.toLowerCase()).join(', ');
-    e.score=(e.score||0)+12;
+    /* fabriquer ne donne plus de points : la valeur vient de la récolte */
     e.four=null;sauver();majPastille();monterEnLigne(true);
     const c=cible();
     if(c&&c.t==='four'){
@@ -6788,7 +6805,7 @@ function ouvrirEtabli(){
       if(f.id==='grandSac')appelRPC('agrandir_sac',{p_joueur:e.id,p_max:110}).then(adopterSac);
     });
     f.faire();
-    e.score=(e.score||0)+20;
+    /* construire ne donne plus de points non plus */
     sauver();majPastille();monterEnLigne(true);
     const c=cible();
     if(c){texteVolant(c.x,c.y-34,f.nom+' !','#ffe08a');eclats(c.x,c.y-14,16,'#c9a24a',1.3);secouer(0.5);}
