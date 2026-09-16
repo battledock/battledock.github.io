@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1014';
+  var MA_VERSION='2026-09-16-1015';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3866,7 +3867,8 @@ function majTuto(){
 const VOIE2_Y=728;                 /* la voie de service */
 const VOIE2_X0=812;                /* son butoir, à l'ouest */
 const ENTREPOT_FIXE=[880,652];
-const FRET_PERIODE=15, FRET_SEJOUR=8;
+/* deux minutes trente à quai, un quart d'heure entre deux passages */
+const FRET_PERIODE=15, FRET_SEJOUR=2.5;
 /* les noms qu'attend etatDuFret, repris de l'aperçu */
 const PERIODE=FRET_PERIODE, SEJOUR=FRET_SEJOUR, ARRIVEE=0;
 function butoirDeService(g,x,y){
@@ -3932,10 +3934,13 @@ function wagonFret(g,x,y,ouvert,restant){
   g.fillText('BD-4417',x-28,y-11);
 }
 function etatDuFret(m){
+  /* l'entrée et la sortie durent vingt secondes chacune ; le reste, il est à
+     quai — deux minutes trente en tout. */
+  const ENTREE=1/3;
   const dans=((m-ARRIVEE)%PERIODE+PERIODE)%PERIODE;
-  if(dans<0.6)return {q:'entre',p:dans/0.6};
-  if(dans<SEJOUR)return {q:'a quai',p:(dans-0.6)/(SEJOUR-0.6),reste:SEJOUR-dans};
-  if(dans<SEJOUR+0.6)return {q:'part',p:(dans-SEJOUR)/0.6};
+  if(dans<ENTREE)return {q:'entre',p:dans/ENTREE};
+  if(dans<SEJOUR)return {q:'a quai',p:(dans-ENTREE)/(SEJOUR-ENTREE),reste:SEJOUR-dans};
+  if(dans<SEJOUR+ENTREE)return {q:'part',p:(dans-SEJOUR)/ENTREE};
   return {q:'absent',p:0,prochain:PERIODE-dans};
 }
 
