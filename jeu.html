@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-0533';
+  var MA_VERSION='2026-09-16-0540';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3635,7 +3636,7 @@ function ambiancer(){
   if(!SON_PRET||(typeof REG!=='undefined'&&REG.sons===false))return;
   const nuit=(typeof lampesAllumees==='function')&&lampesAllumees();
   poserAmbiance('vent',true);
-  poserAmbiance('oiseaux',!nuit);
+  poserAmbiance('oiseaux',false);   /* retirés : trop présents à la longue */
   poserAmbiance('grillons',nuit);
   /* l'eau et la fontaine ne s'entendent que si l'on est près */
   const dEau=Math.abs(joueur.x-rivX(joueur.y));
@@ -4129,6 +4130,10 @@ function graverLaGare(){
 }
 /* la halle, puis ce qui bouge : le TGV et la caténaire */
 function dessinerLaGare(g,x,y){
+  /* R n'existait pas ici : les portes et les voyageurs du quai plantaient le
+     jeu dès que le train s'arrêtait. */
+  const R=(px,py,w,h,col)=>{g.fillStyle=col;
+    g.fillRect(Math.round(px),Math.round(py),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   if(!CALQUE_GARE)graverLaGare();
   const C=CALQUE_GARE;
   const ox=Math.round(x-C.W/2), oy=Math.round(y-C.sol);
@@ -4149,9 +4154,44 @@ function dessinerLaGare(g,x,y){
   g.lineWidth=1.1;
   g.beginPath();g.moveTo(cx,sol-50);
   g.lineTo(cx+Math.cos(aM)*6.4,sol-50+Math.sin(aM)*6.4);g.stroke();
-  /* le TGV qui passe, toutes les vingt secondes */
-  const c2=(T*30)%900;
-  if(c2<560)dessinerTGV(g,x+180-c2,sol+4,c2,300);
+  /* ---- LE TGV : il ARRIVE, il STATIONNE, il repart ----
+     Un train qui ne fait que passer ne donne jamais envie de monter. Le cycle
+     dure une minute et demie : vingt secondes d'entrée en gare, quarante à
+     quai, vingt de départ, et le reste sans train. */
+  const CYCLE=110, t2=(Date.now()/1000)%CYCLE;
+  const ARRET=-40;                     /* la position à quai, nez sur le repère */
+  let px2=null, av=0, quai=false;
+  if(t2<20){                           /* il entre, en ralentissant */
+    const q=t2/20, frein=1-Math.pow(1-q,2.2);
+    px2=260-(260-ARRET)*frein;
+    av=(1-q)*40;
+  }else if(t2<60){                     /* il stationne */
+    px2=ARRET;av=0;quai=true;
+  }else if(t2<80){                     /* il repart, en accélérant */
+    const q=(t2-60)/20;
+    px2=ARRET-Math.pow(q,2.1)*620;
+    av=q*60;
+  }
+  if(px2!==null){
+    dessinerTGV(g,x+px2,sol+4,av*8,300);
+    /* à l'arrêt : les portes s'ouvrent, et des voyageurs descendent */
+    if(quai){
+      const ouvert=Math.min(1,(t2-21)/2);
+      for(let k=0;k<4;k++){
+        const dx=x+px2+101+k*67+53;
+        R(dx,sol-30,Math.round(10*ouvert),21,'#151a20');
+        R(dx,sol-30,Math.round(10*ouvert),3,'#2f3338');
+      }
+      /* deux silhouettes sur le quai, qui s'éloignent */
+      const s2=Math.min(1,(t2-24)/8);
+      [0,1].forEach(i=>{
+        const gx=x+px2+150+i*80-s2*18;
+        R(gx,sol-18,6,10,i?'#4f7d5c':'#8a5a4a');
+        R(gx,sol-24,6,6,'#e8c49a');
+        R(gx-1,sol-25,8,3,'#4a3220');
+      });
+    }
+  }
   /* les lanternes de la halle, la nuit */
   if(typeof lampesAllumees==='function'&&lampesAllumees()){
     [-60,0,60].forEach(dx=>lueurNuit(g,x+dx,sol-60,26,'rgba(255,200,110,§)'));
@@ -5617,6 +5657,30 @@ function graverLaVoie(g){
   /* les deux rails, avec leur arête brillante */
   R(0,VOIE_Y-5,MONDE_L,3,'#8f979e');R(0,VOIE_Y-5,MONDE_L,1,'#d2d8dd');
   R(0,VOIE_Y+3,MONDE_L,3,'#8f979e');R(0,VOIE_Y+3,MONDE_L,1,'#d2d8dd');
+  /* LE HEURTOIR : la voie ne s'arrête pas dans le vide. À chaque bout, un
+     butoir de traverses avec sa plaque rouge et blanche, et le rail qui se
+     relève. */
+  const heurtoir=(x,sens)=>{
+    /* le massif de traverses */
+    for(let k=0;k<4;k++){
+      R(x+sens*(k*5),VOIE_Y-9-k,7,19+k*2,k%2?'#5b4a38':'#6b5a45');
+      R(x+sens*(k*5),VOIE_Y-9-k,7,2,'#7d6a52');
+    }
+    /* les rails qui se relèvent */
+    R(x+sens*2,VOIE_Y-8,Math.abs(sens*16),3,'#8f979e');
+    R(x+sens*2,VOIE_Y+1,Math.abs(sens*16),3,'#8f979e');
+    /* le tampon */
+    R(x+sens*20,VOIE_Y-12,6,26,'#4d545c');
+    R(x+sens*20,VOIE_Y-12,6,3,'#6f767c');
+    /* la plaque rouge et blanche, en biais */
+    R(x+sens*24,VOIE_Y-26,4,16,'#6b5a45');
+    for(let k=0;k<5;k++)
+      R(x+sens*20,VOIE_Y-30+k*3,14,3,k%2?'#d94b3a':'#f2efe4');
+    R(x+sens*20,VOIE_Y-31,14,2,'#3d4248');
+  };
+  heurtoir(6,1);                       /* à l'ouest */
+  heurtoir(MONDE_L-26,-1);             /* à l'est */
+
   /* les poteaux de caténaire, tous les 90 points */
   for(let x=40;x<MONDE_L;x+=90){
     R(x,VOIE_Y-72,4,52,'#4d545c');
