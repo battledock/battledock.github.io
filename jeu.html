@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1027';
+  var MA_VERSION='2026-09-16-1032';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3966,13 +3967,16 @@ function positionDuFret(){
   if(E.q==='part')return {x:quai+Math.pow(E.p,2)*420,ouvert:0,etat:E};
   return null;
 }
-function dessinerLeFret(g){
+function dessinerLeFret(g,camX,camY){
+  /* Il était dessiné aux coordonnées du MONDE, pas de l'écran : le train
+     existait bien, mais toujours hors champ. */
   const F=positionDuFret();
   if(!F)return;
-  const y=VOIE2_Y+4;
-  wagonFret(g,F.x,y,F.ouvert,12);
-  wagonFret(g,F.x+70,y,F.ouvert,12);
-  locoFret(g,F.x+142,y,1);
+  const x=F.x-(camX||0), y=VOIE2_Y+4-(camY||0);
+  if(x<-400||x>VW+400)return;
+  wagonFret(g,x,y,F.ouvert,12);
+  wagonFret(g,x+70,y,F.ouvert,12);
+  locoFret(g,x+142,y,1);
 }
 
 /* ---- LE DÉCHARGEMENT ----
@@ -7145,7 +7149,7 @@ function dessiner(){
 
   flechesVersLesAutres(camX,camY);
   /* le fret, dès qu'on approche du sud */
-  if(joueur.y>VOIE_Y-260){try{dessinerLeFret(ctx);}catch(x){}}
+  if(joueur.y>VOIE_Y-320){try{dessinerLeFret(ctx,camX,camY);}catch(x){}}
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
