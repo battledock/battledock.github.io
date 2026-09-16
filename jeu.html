@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-2023';
+  var MA_VERSION='2026-09-16-2026';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7351,6 +7352,32 @@ function dessinerLEntrepot(g,x,y){
   }
 }
 
+/* LE BORD EST : une lisière d'arbres et de broussailles qui ferme la carte à
+   y=600 de ce côté, comme avant l'arrivée du chemin de fer. */
+function graverLaLisiereEst(g){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+  for(let x=0;x<MONDE_L;x+=4){
+    if(x<rivX(600)+30)continue;
+    const h=26+alea(x*0.7)*22;
+    /* la masse sombre du sous-bois */
+    R(x,604,4,MONDE_H-604,'#2f4a2a');
+    R(x,600,4,h*0.5,'#3a5c33');
+    /* les cimes, en festons */
+    g.fillStyle=alea(x*1.3)>0.5?'#3d7d3f':'#2f6b34';
+    g.beginPath();g.arc(x+2,600+alea(x*2.1)*6,7+alea(x*3.3)*5,0,7);g.fill();
+    g.fillStyle='#4a944a';
+    g.beginPath();g.arc(x,596+alea(x*1.7)*5,5,0,7);g.fill();
+  }
+  /* la palissade devant, comme au pourtour */
+  for(let x=0;x<MONDE_L;x+=7){
+    if(x<rivX(600)+30)continue;
+    R(x,592,6,12,'#8a6238');
+    R(x,592,6,2,'#a5764a');
+    R(x+6,592,1,12,'#5b3f21');
+  }
+  R(0,590,MONDE_L,2,'#7d5934');
+}
+
 function graverLesPaves(g){
   const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
@@ -7424,7 +7451,7 @@ function graverChemins(g){
       g.fillStyle='#8f979e';g.fillRect((px+s2*35-2)|0,(py-11)|0,4,22);
     });
   });
-  graverLaVoie(g);           /* le remblai et les rails, au sud */
+  graverLaLisiereEst(g);     /* le bord est s'arrête à 600 */
   graverLesPaves(g);         /* la place, par-dessus les chemins */
 }
 /* ce qui tombe sur un sentier est déblayé : on dégage le passage */
@@ -7668,7 +7695,6 @@ function semerDecor(){
   /* L'ENTREPÔT, entre la place et la voie de service */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-ENTREPOT_FIXE[0])<110&&Math.abs(o.y-ENTREPOT_FIXE[1])<110));
-  DECOR.push({t:'entrepot',x:ENTREPOT_FIXE[0],y:ENTREPOT_FIXE[1],gr:0});
   /* LE CARREAU DE MINE, au sud-ouest, sur la rive de la récolte */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-CARREAU_FIXE[0])<130&&o.y>CARREAU_FIXE[1]-130&&o.y<CARREAU_FIXE[1]+40));
@@ -7865,15 +7891,14 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
+  /* LE BORD EST : la carte ne descend plus qu'à 600 de ce côté. À l'ouest
+     elle garde ses 790, pour la mine et la taillerie. */
+  if(x>rivX(y)+40&&y>600)return true;
   /* LA COLLINE DU TUNNEL : elle est en relief, on ne la traverse pas —
      sauf la galerie, qui est noire et ne mène nulle part à pied. */
   /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
      quai et le bas de la carte restent libres. Ma première emprise couvrait
      tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
-  {
-    const dansLaColline=(x>VOIE_X1-96)&&(y>VOIE_Y-150)&&(y<VOIE_Y-24);
-    if(dansLaColline)return true;
-  }
   /* LA TAILLERIE : le corps est plein, le devant de la porte reste libre */
   {
     /* Elle est dessinée jusqu'à dy=-118 (toit de lauzes, pignon, cheminée)
@@ -7897,8 +7922,8 @@ function bloque(x,y){
        l'infini. */
     if(dx>56&&dx<130&&dy>-58&&dy<6)return true;
   }
-  /* L'ENTREPÔT : plein, sauf devant sa porte */
-  {
+  /* L'ENTREPÔT : retiré avec les voies */
+  if(false){
     /* Le bâtiment MONTE jusqu'à dy=-92 (toit, lanterne de faîtage, auvent) :
        mon emprise s'arrêtait à -62, donc on marchait par-dessus le toit et on
        traversait la façade. Elle couvre maintenant toute la hauteur dessinée.
@@ -7914,11 +7939,8 @@ function bloque(x,y){
     if(dx>-112&&dx<124&&dy>-98&&dy<0)return true;
   }
   /* LA VOIE DE SERVICE : on ne marche pas dessus */
-  if(Math.abs(y-VOIE2_Y)<11&&x>VOIE2_X0-30&&x<VOIE_X1)return true;
   /* LA VOIE FERRÉE : on ne marche pas sur les rails, sauf au passage à
      niveau qui prolonge le chemin descendu de la place. */
-  if(Math.abs(y-VOIE_Y)<12&&x>VOIE_X0-24&&x<VOIE_X1+30
-     &&Math.abs(x-GARE_FIXE[0])>34)return true;
   /* L'ÉCHOPPE : elle fait 170 de large sur 132 de haut, mon emprise n'en
      couvrait que 104 sur 54 — on passait donc à travers la façade. Le corps
      du bâtiment est plein ; on ne laisse libres que les marches, devant la
@@ -8368,7 +8390,6 @@ function dessiner(){
 
   flechesVersLesAutres(camX,camY);
   /* le fret, dès qu'on approche du sud */
-  if(joueur.y>VOIE_Y-320){try{dessinerLeFret(ctx,camX,camY);}catch(x){}}
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
@@ -10071,12 +10092,12 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  const LARGES=['casino','forge','comptoir','fete','echoppe','entrepot','mine2','taillerie'];
+  const LARGES=['casino','forge','comptoir','fete','echoppe','mine2','taillerie'];
   for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','entrepot','mine2','ecriteau','taillerie'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -10160,18 +10181,6 @@ function majAction(){
   };
   /* LE DÉCHARGEMENT passe avant tout : il n'est possible que huit minutes
      par quart d'heure, on ne veut pas le manquer. */
-  if(caissePortee&&prèsDeLEntrepot()&&GESTE.t<=0){
-    b.innerHTML='Déposer<small>ENTREPÔT · '+enEuros(PRIX_CAISSE)+' LA CAISSE</small>';
-    b.classList.add('on');b.onclick=deposerLaCaisse;return;
-  }
-  if(caissePortee&&GESTE.t<=0){
-    b.innerHTML='Porte-la à l’entrepôt<small>IL EST AU SUD DE LA PLACE</small>';
-    b.classList.add('on');b.onclick=null;return;
-  }
-  if(!caissePortee&&prèsDuWagon()&&GESTE.t<=0){
-    b.innerHTML='Prendre une caisse<small>WAGON BD-4417 · DÉCHARGEMENT</small>';
-    b.classList.add('on');b.onclick=prendreUneCaisse;return;
-  }
   /* au bord de l'eau, le tamis passe avant tout le reste : c'est le seul
      endroit où il sert */
   if(typeof peutLaver==='function'&&peutLaver()&&GESTE.t<=0){
@@ -10203,16 +10212,6 @@ function majAction(){
     b.classList.add('on');
     if(!MINE_OUVERTE)b.onclick=null;
     return;
-  }
-  if(o.t==='entrepot'){
-    /* sans caisse dans les bras, il n'y a rien à y faire : on le dit, au lieu
-       de laisser la plaque proposer « Ramasser » sur un bâtiment. */
-    const F=positionDuFret();
-    const aQuai=F&&F.etat.q==='a quai';
-    b.innerHTML=(aQuai?'Va chercher une caisse':'L’entrepôt')+
-      '<small>'+(aQuai?'LE FRET EST À QUAI · 0,40 € LA CAISSE'
-                      :'LE FRET PASSE À L’HEURE, :15, :30 ET :45')+'</small>';
-    b.classList.add('on');b.onclick=null;return;
   }
   if(o.t==='souche'&&ambrePret(o)){
     b.innerHTML='Saigner<small>LA SOUCHE · AMBRE</small>';
