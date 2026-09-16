@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1018';
+  var MA_VERSION='2026-09-16-1027';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3866,8 +3867,8 @@ function majTuto(){
    :45, et reste huit minutes. Chaque joueur voit donc le même train au même
    moment, sans rien à synchroniser. */
 const VOIE2_Y=728;                 /* la voie de service */
-const VOIE2_X0=624;                /* son butoir, bien à l'ouest */
-const ENTREPOT_FIXE=[756,638];
+const VOIE2_X0=716;                /* son butoir, tout à gauche */
+const ENTREPOT_FIXE=[852,626];
 /* deux minutes trente à quai, un quart d'heure entre deux passages */
 const FRET_PERIODE=15, FRET_SEJOUR=2.5;
 /* les noms qu'attend etatDuFret, repris de l'aperçu */
@@ -4501,11 +4502,11 @@ const ECHOPPE_FIXE=[1104,336];
    Elle va maintenant d'un BUTOIR visible, à l'est de la rivière, jusqu'au
    TUNNEL qui perce la colline du bord est. */
 const VOIE_Y=680;                 /* l'axe des rails */
-const VOIE_X0=744;                /* le heurtoir, à l'ouest */
+const VOIE_X0=1020;                /* le heurtoir de la ligne, à l'ouest */
 /* MONDE_L est déclaré plus bas : on écrit la valeur, comme pour les autres
    repères fixes de la carte. */
-const VOIE_X1=1144;               /* la bouche du tunnel, à l'est */
-const GARE_FIXE=[980,668];        /* la halle, dans l'axe de l'échoppe */
+const VOIE_X1=1372;               /* la bouche du tunnel, à l'est */
+const GARE_FIXE=[1204,668];       /* la halle, à droite */
 let CALQUE_ECHOPPE=null;
 function graverLEchoppe(){
   const L=170,Ht=132;
@@ -5467,7 +5468,10 @@ function dessinerSouche(g,x,y,gr,neuf){
    l'échoppe chevauchait les pavés de 62 points. On donne 200 points de plus
    à l'est — la rive ouest et ses 237 objets ne bougent pas d'un pixel, la
    rivière suit la même courbe. */
-const MONDE_L=1260;               // largeur, en pixels de jeu
+/* La carte gagne 160 points à l'est pour séparer les deux pôles du sud :
+   À GAUCHE l'entrepôt et sa voie de service, À DROITE la gare et sa ligne.
+   Entre les deux, du vide — c'est lui qui rend les deux lisibles. */
+const MONDE_L=1500;               // largeur, en pixels de jeu
 /* La carte gagne 160 points au sud pour accueillir la VOIE FERRÉE : elle
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
@@ -5998,7 +6002,11 @@ function graverLaVoie(g){
    porte coulissante, et le cadre au sol où l'on empile les caisses. */
 let CALQUE_ENTREPOT=null;
 function graverLEntrepot(){
-  const W=140,H2=110,cx=W/2,sol=H2-8;
+  /* UN VRAI ENTREPÔT, maintenant qu'il a la place : 200 de large au lieu de
+     140, un quai de chargement surélevé avec ses marches, TROIS portes dont
+     deux ouvertes, une verrière en bandeau, un auvent de tôle sur potences,
+     et une grue de quai. */
+  const W=230,H2=150,cx=W/2,sol=H2-10;
   const c=document.createElement('canvas');
   const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   c.width=W*D;c.height=H2*D;
@@ -6006,45 +6014,156 @@ function graverLEntrepot(){
   g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
     Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  const BO={s:'#3d2a17',o:'#5b3f21',p:'#7d5934',c:'#8a6238',h:'#a5764a',t:'#c09a6a'};
+  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
   g.fillStyle='rgba(30,50,24,.26)';
-  g.beginPath();g.ellipse(cx+2,sol+3,58,12,0,0,7);g.fill();
-  /* le corps, en bardage vertical */
-  R(cx-52,sol-44,104,42,'#7d5934');
-  for(let x=0;x<104;x+=8){R(cx-52+x,sol-44,1,42,'#5b3f21');R(cx-51+x,sol-44,3,42,'#8a6238');}
-  R(cx-52,sol-44,104,3,'#a5764a');
-  R(cx-52,sol-3,104,3,'#3d2a17');
-  /* le toit de tôle ondulée, débordant */
-  for(let r=0;r<4;r++){
-    const y=sol-46-r*4, ret=r*3;
-    R(cx-58+ret,y,116-ret*2,5,r%2?'#5a626a':'#6f767c');
-    R(cx-58+ret,y,116-ret*2,1,'#8f979e');
-    for(let x=0;x<116-ret*2;x+=5)R(cx-58+ret+x,y,1,5,'#4d545c');
+  g.beginPath();g.ellipse(cx+3,sol+4,100,15,0,0,7);g.fill();
+
+  /* ---- LE SOUBASSEMENT DE BRIQUE ---- */
+  for(let y=0;y<16;y+=4){
+    const dec=(y/4)%2?5:0;
+    for(let x=-96;x<96;x+=11)
+      R(cx+x+dec,sol-16+y,10,3,((x+y)%3?'#8f4c38':'#a15a44'));
   }
-  /* la grande porte coulissante, ouverte sur le noir */
-  R(cx-24,sol-38,48,35,'#241a12');
-  R(cx-22,sol-34,18,31,'#4a3728');
-  for(let k=0;k<3;k++)R(cx-20+k*7,sol-28+k*2,6,8,'#6b4a28');
-  R(cx+2,sol-34,20,31,'#3a2a1e');
-  R(cx-32,sol-40,64,2,'#4d545c');        /* le rail de la porte */
-  /* l'enseigne */
-  R(cx-28,sol-54,56,10,'#2a1c12');R(cx-28,sol-54,56,1,'#c09a6a');
-  g.font='700 6px Georgia,serif';g.fillStyle='#e8cf8a';g.textAlign='center';
-  g.fillText('ENTREPÔT',cx,sol-47);g.textAlign='left';
-  /* une lanterne au-dessus de la porte */
-  R(cx-3,sol-44,6,5,'#c9a24a');R(cx-2,sol-43,4,3,'#ffd27a');
-  /* des caisses et un diable, dehors */
-  R(cx+36,sol-14,13,12,'#8a6238');R(cx+36,sol-14,13,2,'#c09a6a');
-  R(cx+38,sol-24,11,10,'#7d5934');R(cx+38,sol-24,11,2,'#a5764a');
-  R(cx-50,sol-16,3,14,'#4d545c');R(cx-46,sol-16,3,14,'#4d545c');
-  R(cx-50,sol-4,10,3,'#3d4248');
+  R(cx-96,sol-18,192,3,'#7d4030');
+
+  /* ---- LE CORPS, en bardage vertical ---- */
+  R(cx-96,sol-62,192,46,BO.p);
+  for(let x=0;x<192;x+=8){
+    R(cx-96+x,sol-62,1,46,BO.o);
+    R(cx-95+x,sol-62,3,46,BO.c);
+  }
+  /* la verrière en bandeau, tout en haut : la lumière d'un entrepôt */
+  for(let x=0;x<192;x+=14){
+    R(cx-96+x+2,sol-60,11,9,'#3f4a44');
+    R(cx-96+x+2,sol-60,11,3,'#6f8496');
+    R(cx-96+x+7,sol-60,1,9,BO.o);
+  }
+  R(cx-96,sol-62,192,3,BO.h);
+  R(cx-96,sol-50,192,2,BO.o);
+
+  /* ---- LE TOIT : deux pans de tôle, avec sa lanterne de faîtage ---- */
+  for(let r=0;r<5;r++){
+    const y=sol-64-r*4, ret=r*4;
+    R(cx-104+ret,y,208-ret*2,5,r%2?'#5a626a':'#6f767c');
+    R(cx-104+ret,y,208-ret*2,1,'#8f979e');
+    for(let x=0;x<208-ret*2;x+=5)R(cx-104+ret+x,y,1,5,'#4d545c');
+  }
+  R(cx-30,sol-92,60,8,'#4d545c');
+  R(cx-30,sol-92,60,2,'#7e868d');
+  for(let x=0;x<60;x+=8)R(cx-30+x,sol-90,4,5,'#2f3338');
+
+  /* ---- LE QUAI DE CHARGEMENT, surélevé ---- */
+  R(cx-104,sol-16,208,12,PI.c);
+  R(cx-104,sol-16,208,3,PI.t);
+  R(cx-104,sol-6,208,3,PI.o);
+  for(let x=0;x<208;x+=13)R(cx-104+x,sol-16,1,12,PI.s);
+  /* les marches, au bout du quai */
+  [[-104,-1],[104,1]].forEach(([dx,sens])=>{
+    for(let k=0;k<3;k++)
+      R(cx+dx+sens*k*5-(sens>0?0:5),sol-12+k*4,6,4,k%2?PI.p:PI.c);
+  });
+  /* la bande jaune du bord */
+  R(cx-104,sol-5,208,1,'#c9a24a');
+
+  /* ---- TROIS PORTES ---- */
+  const porte=(dx,ouvert)=>{
+    R(cx+dx-26,sol-56,52,40,'#241a12');
+    R(cx+dx-28,sol-58,56,3,'#4d545c');        /* le rail */
+    if(ouvert){
+      /* on voit dedans : des piles, dans la pénombre */
+      R(cx+dx-24,sol-54,48,38,'#2a1f16');
+      for(let i=0;i<4;i++){
+        const bx=cx+dx-22+i*12;
+        R(bx,sol-40-((i*5)%10),10,12,'#4a3728');
+        R(bx,sol-40-((i*5)%10),10,2,'#6b4a28');
+      }
+      /* la porte, repliée sur le côté */
+      R(cx+dx+20,sol-56,8,40,BO.c);
+      for(let k=0;k<40;k+=5)R(cx+dx+20,sol-56+k,8,1,BO.o);
+    }else{
+      R(cx+dx-26,sol-56,52,40,BO.c);
+      for(let k=0;k<52;k+=6){
+        R(cx+dx-26+k,sol-56,1,40,BO.o);
+        R(cx+dx-25+k,sol-56,3,40,BO.p);
+      }
+      R(cx+dx-26,sol-56,52,3,BO.h);
+      R(cx+dx-4,sol-38,8,3,'#4d545c');        /* la poignée */
+      /* les ferrures en croix */
+      g.strokeStyle='#4d545c';g.lineWidth=1.4;
+      g.beginPath();g.moveTo(cx+dx-24,sol-54);g.lineTo(cx+dx+24,sol-18);g.stroke();
+      g.beginPath();g.moveTo(cx+dx+24,sol-54);g.lineTo(cx+dx-24,sol-18);g.stroke();
+    }
+  };
+  porte(-62,true);
+  porte(0,true);
+  porte(62,false);
+
+  /* ---- L'AUVENT DE TÔLE, sur ses potences ---- */
+  R(cx-108,sol-70,216,4,'#4d545c');
+  R(cx-108,sol-70,216,1,'#7e868d');
+  for(let x=0;x<216;x+=6)R(cx-108+x,sol-66,3,3,'#3d4248');
+  [-92,-30,30,92].forEach(dx=>{
+    g.strokeStyle='#4d545c';g.lineWidth=2;
+    g.beginPath();g.moveTo(cx+dx,sol-66);g.lineTo(cx+dx,sol-52);g.stroke();
+    g.beginPath();g.moveTo(cx+dx,sol-66);g.lineTo(cx+dx+12,sol-58);g.stroke();
+  });
+
+  /* ---- L'ENSEIGNE ---- */
+  R(cx-46,sol-84,92,13,'#2a1c12');
+  R(cx-46,sol-84,92,1,BO.t);
+  g.font='700 8px Georgia,serif';g.fillStyle='#e8cf8a';g.textAlign='center';
+  g.fillText('ENTREPÔT',cx,sol-74.5);g.textAlign='left';
+  /* deux lanternes de part et d'autre */
+  [-58,58].forEach(dx=>{
+    R(cx+dx,sol-78,2,6,'#3d4248');
+    R(cx+dx-4,sol-72,10,7,'#4d545c');
+    R(cx+dx-3,sol-70,8,4,'#ffd27a');
+  });
+
+  /* ---- LA GRUE DE QUAI ---- */
+  const gx=cx+120;
+  R(gx-6,sol-6,14,6,'#3d4248');
+  R(gx-2,sol-56,5,50,'#4d545c');
+  R(gx-2,sol-56,2,50,'#7e868d');
+  R(gx-22,sol-60,44,5,'#4d545c');
+  R(gx-22,sol-60,44,2,'#7e868d');
+  g.strokeStyle='#3d4248';g.lineWidth=1.4;
+  g.beginPath();g.moveTo(gx-20,sol-58);g.lineTo(gx,sol-48);g.stroke();
+  g.beginPath();g.moveTo(gx+20,sol-58);g.lineTo(gx,sol-48);g.stroke();
+  /* le câble et le crochet */
+  g.strokeStyle='#8a7c5e';g.lineWidth=1;
+  g.beginPath();g.moveTo(gx-18,sol-58);g.lineTo(gx-18,sol-34);g.stroke();
+  R(gx-21,sol-34,7,5,'#6b5a45');
+  R(gx-20,sol-30,5,3,'#4d545c');
+
+  /* ---- CE QUI TRAÎNE SUR LE QUAI ---- */
+  /* des caisses empilées */
+  for(let i=0;i<3;i++)for(let k=0;k<3-i;k++){
+    const bx=cx-96+k*13+i*6, by=sol-18-i*10;
+    R(bx,by-10,12,10,BO.c);R(bx,by-10,12,2,BO.t);
+    R(bx,by-5,12,1,BO.o);
+  }
+  /* des tonneaux */
+  [cx-40,cx-26].forEach((bx,i)=>{
+    R(bx,sol-32-i,12,15,BO.p);R(bx,sol-32-i,12,2,BO.t);
+    R(bx-1,sol-29-i,14,2,'#4d545c');R(bx-1,sol-21-i,14,2,'#4d545c');
+  });
+  /* un diable et une palette */
+  R(cx+34,sol-30,3,14,'#4d545c');R(cx+39,sol-30,3,14,'#4d545c');
+  R(cx+34,sol-18,10,3,'#3d4248');
+  R(cx+50,sol-20,20,4,BO.p);R(cx+50,sol-20,20,1,BO.t);
+  for(let k=0;k<20;k+=5)R(cx+50+k,sol-16,3,2,BO.o);
+
   CALQUE_ENTREPOT={toile:c,W,H:H2,sol};
 }
 function dessinerLEntrepot(g,x,y){
   if(!CALQUE_ENTREPOT)graverLEntrepot();
   const C=CALQUE_ENTREPOT;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
-  if(typeof lampesAllumees==='function'&&lampesAllumees())
-    lueurNuit(g,x,y-46,22,'rgba(255,200,110,§)');
+  if(typeof lampesAllumees==='function'&&lampesAllumees()){
+    [-58,58].forEach(dx=>lueurNuit(g,x+dx,y-70,24,'rgba(255,200,110,§)'));
+  }
 }
 
 function graverLesPaves(g){
@@ -6564,8 +6683,10 @@ function bloque(x,y){
   }
   /* L'ENTREPÔT : plein, sauf devant sa porte */
   {
+    /* le corps du bâtiment est plein ; le QUAI, devant, se traverse — c'est
+       là qu'on marche avec les caisses. */
     const dx=x-ENTREPOT_FIXE[0], dy=y-ENTREPOT_FIXE[1];
-    if(Math.abs(dx)<56&&dy>-48&&dy<=0&&!(Math.abs(dx)<22&&dy>-6))return true;
+    if(Math.abs(dx)<100&&dy>-62&&dy<-14)return true;
   }
   /* LA VOIE DE SERVICE : on ne marche pas dessus */
   if(Math.abs(y-VOIE2_Y)<11&&x>VOIE2_X0-30&&x<VOIE_X1)return true;
