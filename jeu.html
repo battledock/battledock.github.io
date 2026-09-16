@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-0540';
+  var MA_VERSION='2026-09-16-0544';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4159,36 +4160,46 @@ function dessinerLaGare(g,x,y){
      dure une minute et demie : vingt secondes d'entrée en gare, quarante à
      quai, vingt de départ, et le reste sans train. */
   const CYCLE=110, t2=(Date.now()/1000)%CYCLE;
-  const ARRET=-40;                     /* la position à quai, nez sur le repère */
+  /* LES ROUES SE POSENT SUR LE RAIL. Le train se dessinait à partir du sol de
+     la halle (y=668) alors que les rails sont à 680 : il roulait huit points
+     au-dessus du vide. On part donc de la voie, pas du bâtiment. */
+  const RAIL=VOIE_Y+4;
+  /* À QUAI : les voitures doivent se trouver DEVANT la halle, pas le nez
+     dessus. La motrice s'arrête donc bien à gauche, et ce sont les portes
+     qui tombent en face du quai. */
+  const ARRET=-262;
   let px2=null, av=0, quai=false;
-  if(t2<20){                           /* il entre, en ralentissant */
+  if(t2<20){                           /* il sort du tunnel et freine */
     const q=t2/20, frein=1-Math.pow(1-q,2.2);
-    px2=260-(260-ARRET)*frein;
+    px2=300-(300-ARRET)*frein;
     av=(1-q)*40;
-  }else if(t2<60){                     /* il stationne */
+  }else if(t2<60){                     /* il stationne le long du quai */
     px2=ARRET;av=0;quai=true;
-  }else if(t2<80){                     /* il repart, en accélérant */
+  }else if(t2<80){
+    /* IL REPART PAR OÙ IL EST VENU : vers l'est, dans le tunnel. Il partait
+       vers l'ouest, c'est-à-dire droit dans le heurtoir de fin de voie. */
     const q=(t2-60)/20;
-    px2=ARRET-Math.pow(q,2.1)*620;
+    px2=ARRET+Math.pow(q,2.1)*760;
     av=q*60;
   }
   if(px2!==null){
-    dessinerTGV(g,x+px2,sol+4,av*8,300);
+    dessinerTGV(g,x+px2,RAIL,av*8,300);
     /* à l'arrêt : les portes s'ouvrent, et des voyageurs descendent */
     if(quai){
       const ouvert=Math.min(1,(t2-21)/2);
       for(let k=0;k<4;k++){
-        const dx=x+px2+101+k*67+53;
-        R(dx,sol-30,Math.round(10*ouvert),21,'#151a20');
-        R(dx,sol-30,Math.round(10*ouvert),3,'#2f3338');
+        const dx=x+px2+101+k*67+48;
+        R(dx,RAIL-34,Math.round(10*ouvert),21,'#151a20');
+        R(dx,RAIL-34,Math.round(10*ouvert),3,'#2f3338');
       }
       /* deux silhouettes sur le quai, qui s'éloignent */
       const s2=Math.min(1,(t2-24)/8);
       [0,1].forEach(i=>{
-        const gx=x+px2+150+i*80-s2*18;
-        R(gx,sol-18,6,10,i?'#4f7d5c':'#8a5a4a');
-        R(gx,sol-24,6,6,'#e8c49a');
-        R(gx-1,sol-25,8,3,'#4a3220');
+        const gx=x-40+i*70;
+        const gy=sol-2-s2*10;           /* ils remontent du quai vers la halle */
+        R(gx,gy-18,6,10,i?'#4f7d5c':'#8a5a4a');
+        R(gx,gy-24,6,6,'#e8c49a');
+        R(gx-1,gy-25,8,3,'#4a3220');
       });
     }
   }
@@ -5678,8 +5689,57 @@ function graverLaVoie(g){
       R(x+sens*20,VOIE_Y-30+k*3,14,3,k%2?'#d94b3a':'#f2efe4');
     R(x+sens*20,VOIE_Y-31,14,2,'#3d4248');
   };
-  heurtoir(6,1);                       /* à l'ouest */
-  heurtoir(MONDE_L-26,-1);             /* à l'est */
+  heurtoir(6,1);                       /* à l'ouest : la voie s'arrête */
+
+  /* LE TUNNEL, à l'est : la voie doit VENIR de quelque part. Une tête de
+     pont en pierre appareillée, une voûte noire, et le remblai qui monte de
+     part et d'autre — c'est de là que sort le train. */
+  {
+    const tx=MONDE_L-120;
+    /* le talus qui monte au-dessus de la voûte */
+    for(let i=0;i<70;i++){
+      const px=tx+18+i*1.5;
+      const h=Math.min(74,14+i*1.8);
+      R(px,VOIE_Y-h,3,h+22,i%3?'#6f8a55':'#7d9660');
+      R(px,VOIE_Y-h,3,3,'#8fa464');
+    }
+    /* la tête de pont */
+    for(let y=0;y<78;y+=6){
+      const dec=(y/6)%2?6:0;
+      for(let px=tx;px<tx+56;px+=13)
+        R(px+dec,VOIE_Y-70+y,12,5,((px+y)%3?'#8f979e':'#a4acb3'));
+    }
+    /* la corniche */
+    R(tx-4,VOIE_Y-74,64,6,'#7e868d');
+    R(tx-4,VOIE_Y-74,64,2,'#bcc4ca');
+    /* LA VOÛTE : un demi-cercle noir, avec son claveau et son ombre */
+    g.fillStyle='#0d1014';
+    g.beginPath();
+    g.moveTo(tx+2,VOIE_Y+14);
+    g.lineTo(tx+2,VOIE_Y-24);
+    g.quadraticCurveTo(tx+26,VOIE_Y-58,tx+50,VOIE_Y-24);
+    g.lineTo(tx+50,VOIE_Y+14);
+    g.closePath();g.fill();
+    /* l'encadrement de pierre claire */
+    g.strokeStyle='#bcc4ca';g.lineWidth=3;
+    g.beginPath();
+    g.moveTo(tx+2,VOIE_Y+14);
+    g.lineTo(tx+2,VOIE_Y-24);
+    g.quadraticCurveTo(tx+26,VOIE_Y-58,tx+50,VOIE_Y-24);
+    g.lineTo(tx+50,VOIE_Y+14);
+    g.stroke();
+    /* le claveau, au sommet */
+    R(tx+22,VOIE_Y-56,9,9,'#c4ccd2');
+    R(tx+22,VOIE_Y-56,9,2,'#e0e6ea');
+    /* la voie qui s'enfonce dans le noir */
+    R(tx+6,VOIE_Y-5,44,3,'#4a5158');
+    R(tx+6,VOIE_Y+3,44,3,'#4a5158');
+    /* un feu de signalisation, au pied */
+    R(tx-14,VOIE_Y-34,3,30,'#3d4248');
+    R(tx-18,VOIE_Y-44,11,12,'#2a2f34');
+    R(tx-16,VOIE_Y-42,7,3,'#d94b3a');
+    R(tx-16,VOIE_Y-37,7,3,'#3f7d4a');
+  }
 
   /* les poteaux de caténaire, tous les 90 points */
   for(let x=40;x<MONDE_L;x+=90){
