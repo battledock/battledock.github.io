@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1038';
+  var MA_VERSION='2026-09-16-1056';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -330,6 +331,16 @@ body{overflow:hidden}
   font:400 15px Georgia,serif;opacity:0;pointer-events:none;z-index:9;
   box-shadow:0 8px 24px rgba(0,0,0,.4)}
 #gaBulle.on{animation:echPop 1.4s ease forwards}
+
+/* ---- LA GALERIE DE MINE ---- */
+.galerie{background:#14100c;position:relative}
+#gaCv{display:block;width:100%;height:calc(100vh - 150px);image-rendering:pixelated}
+.gaHaut{position:absolute;left:0;right:0;top:calc(14px + env(safe-area-inset-top));
+  text-align:center;z-index:3;pointer-events:none}
+.gaHaut b{display:block;font:400 19px Georgia,serif;color:#e8dcc0;
+  text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.gaHaut i{display:block;font:400 8px Georgia,serif;font-style:italic;letter-spacing:1.8px;
+  color:rgba(232,220,192,.72);margin-top:4px;text-shadow:0 1px 8px rgba(0,0,0,.9)}
 
 /* ---- L'ÉCHOPPE ---- */
 .echoppe{background:#f1e7cd}
@@ -2768,7 +2779,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -3862,6 +3873,354 @@ function majTuto(){
 }
 
 
+/* ================= LA MINE =================
+   Le carreau : un chevalement dont la poulie tourne, la recette, la machine
+   qui fume, le terril et son wagonnet. La charpente est gravee une fois ;
+   seuls la poulie, la fumee et le wagonnet se redessinent. */
+let CALQUE_MINE=null;
+function graverLaMine(){
+  const VW=260,VH=190;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=VW*D;c.height=VH*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const T=0, nuit=false;
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+  const sol=VH*0.76, cx=VW*0.44;
+  /* pas d'herbe : le sol du jeu est dessous. On garde la terre remuée. */
+  g.fillStyle='#7d6a52';
+  g.beginPath();g.ellipse(cx,sol+10,VW*0.52,VH*0.20,0,0,7);g.fill();
+  for(let i=0;i<500;i++){
+    const a=alea(i*1.7)*6.283, r2=Math.sqrt(alea(i*2.9))*1;
+    const x=cx+Math.cos(a)*VW*0.5*r2, y=sol+10+Math.sin(a)*VH*0.19*r2;
+    R(x,y,2,2,alea(i*3.3)<0.5?'#8e7854':'#6b5a45');
+  }
+  /* LE TERRIL : un cône de déblais, derrière */
+  g.fillStyle='#5f5347';
+  g.beginPath();g.moveTo(VW*0.72,sol);g.lineTo(VW*0.86,sol-56);g.lineTo(VW*1.02,sol);
+  g.closePath();g.fill();
+  g.fillStyle='#6f6154';
+  g.beginPath();g.moveTo(VW*0.78,sol);g.lineTo(VW*0.86,sol-54);g.lineTo(VW*0.92,sol);
+  g.closePath();g.fill();
+  for(let i=0;i<120;i++){
+    const t=alea(i*1.3), x=VW*0.73+alea(i*2.1)*VW*0.27, y=sol-t*52*alea(i*3.7);
+    R(x,y,2,2,i%3?'#4f463c':'#7a6d5f');
+  }
+  /* LE CHEVALEMENT : quatre montants, la poulie qui tourne, le câble */
+  const hx=cx, hy=sol-96;
+  g.strokeStyle='#4a3a2a';g.lineWidth=3;
+  [[-22,0],[22,0]].forEach(([dx])=>{
+    g.beginPath();g.moveTo(hx+dx,sol);g.lineTo(hx+dx*0.35,hy+16);g.stroke();
+  });
+  g.lineWidth=2;
+  /* les contreventements en croix */
+  for(let k=0;k<4;k++){
+    const y1=sol-k*22, y2=sol-(k+1)*22;
+    const e1=22-k*4.5, e2=22-(k+1)*4.5;
+    g.beginPath();g.moveTo(hx-e1,y1);g.lineTo(hx+e2,y2);g.stroke();
+    g.beginPath();g.moveTo(hx+e1,y1);g.lineTo(hx-e2,y2);g.stroke();
+    g.beginPath();g.moveTo(hx-e2,y2);g.lineTo(hx+e2,y2);g.stroke();
+  }
+  /* les deux jambes de force, en arrière */
+  g.lineWidth=3;
+  g.beginPath();g.moveTo(hx+30,sol);g.lineTo(hx+6,hy+18);g.stroke();
+  g.beginPath();g.moveTo(hx+46,sol);g.lineTo(hx+10,hy+22);g.stroke();
+  /* LA POULIE, qui tourne vraiment */
+  R(hx-9,hy+8,18,5,'#3d4248');
+  g.fillStyle='#2f3338';g.beginPath();g.arc(hx,hy+2,11,0,7);g.fill();
+  g.fillStyle='#4d545c';g.beginPath();g.arc(hx,hy+2,9,0,7);g.fill();
+  g.strokeStyle='#8a939a';g.lineWidth=1.4;
+  for(let k=0;k<6;k++){
+    const a=T*1.6+k*1.047;
+    g.beginPath();g.moveTo(hx,hy+2);
+    g.lineTo(hx+Math.cos(a)*7.5,hy+2+Math.sin(a)*7.5);g.stroke();
+  }
+  g.fillStyle='#8a939a';g.beginPath();g.arc(hx,hy+2,2,0,7);g.fill();
+  /* le câble, qui descend dans le puits */
+  g.strokeStyle='#6b737a';g.lineWidth=1.2;
+  g.beginPath();g.moveTo(hx-8,hy+4);g.lineTo(hx-8,sol-6);g.stroke();
+  g.beginPath();g.moveTo(hx+8,hy+4);
+  g.lineTo(hx+34,sol-30);g.stroke();
+  /* LA RECETTE : la bouche du puits, encadrée de madriers */
+  R(cx-26,sol-16,52,18,'#2a2118');
+  R(cx-28,sol-20,56,5,'#5b4a38');
+  R(cx-28,sol-20,56,2,'#7d6a52');
+  R(cx-30,sol-16,5,20,'#4a3a2a');R(cx+25,sol-16,5,20,'#4a3a2a');
+  R(cx-22,sol-13,44,13,'#14100c');            /* le noir du puits */
+  for(let i=0;i<5;i++)R(cx-20+i*9,sol-13,2,13,'#241c14');
+  /* LA MACHINE : un petit bâtiment de brique, sa cheminée qui fume */
+  const mx=VW*0.16;
+  for(let y=0;y<34;y+=4){
+    const d=(y/4)%2?5:0;
+    for(let x=-30;x<30;x+=11)R(mx+x+d,sol-34+y,10,3,((x+y)%3?'#8f4c38':'#a15a44'));
+  }
+  R(mx-32,sol-38,64,5,'#5b2a1e');
+  R(mx-32,sol-38,64,2,'#7d4030');
+  R(mx-10,sol-20,20,20,'#241a12');
+  R(mx-8,sol-18,7,18,'#4a3728');
+  R(mx+16,sol-60,9,24,'#8f4c38');
+  R(mx+15,sol-62,11,3,'#a15a44');
+  for(let i=0;i<7;i++){
+    const p=((T*0.4+i/7)%1);
+    g.fillStyle='rgba(206,200,190,'+((1-p)*0.28).toFixed(2)+')';
+    g.beginPath();g.arc(mx+20-p*20,sol-64-p*30,3+p*9,0,7);g.fill();
+  }
+  /* LA VOIE ÉTROITE et son wagonnet, qui va au terril */
+  R(cx+18,sol+4,VW*0.5,3,'#6b5a45');
+  for(let x=0;x<VW*0.5;x+=7)R(cx+18+x,sol+2,4,7,'#5b4a38');
+  R(cx+18,sol+3,VW*0.5,1,'#8f979e');
+  R(cx+18,sol+8,VW*0.5,1,'#8f979e');
+  const wx=cx+40+((T*14)%(VW*0.42));
+  R(wx-10,sol-8,20,10,'#4d545c');
+  R(wx-10,sol-8,20,2,'#6f767c');
+  R(wx-8,sol-11,16,3,'#2a2118');
+  for(let i=0;i<3;i++)R(wx-6+i*5,sol-13,4,3,'#2a2118');
+  [-6,6].forEach(dx=>{
+    g.fillStyle='#16191c';g.beginPath();g.arc(wx+dx,sol+3,3,0,7);g.fill();
+  });
+  /* des poutres et des caisses qui traînent */
+  R(cx-64,sol-6,26,5,'#6b5a45');R(cx-64,sol-6,26,1,'#8a7660');
+  R(cx-58,sol-12,10,7,'#7d5934');R(cx-58,sol-12,10,2,'#a5764a');
+  /* la pancarte */
+  R(cx-72,sol-30,3,26,'#5b4a38');
+  R(cx-86,sol-42,32,14,'#2a2118');R(cx-86,sol-42,32,1,'#7d6a52');
+  g.font='700 6px Georgia,serif';g.fillStyle='#c9a24a';g.textAlign='center';
+  g.fillText('LA MINE',cx-70,sol-33);g.textAlign='left';
+  /* deux lanternes, allumées la nuit */
+  [[-34,-22],[34,-22]].forEach(([dx,dy])=>{
+    R(cx+dx,sol+dy,2,18,'#3d4248');
+    R(cx+dx-3,sol+dy-6,8,7,'#4d545c');
+    R(cx+dx-2,sol+dy-5,6,4,nuit?'#ffd27a':'#6b5f4a');
+  });
+  CALQUE_MINE={toile:c,W:VW,H:VH,sol};
+}
+/* le carreau : la charpente est gravée, la poulie et la fumée bougent */
+function dessinerLaMine(g,x,y){
+  if(!CALQUE_MINE)graverLaMine();
+  const C=CALQUE_MINE;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  const T=Date.now()/1000, sol=y, cx=x;
+  const R=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(px),Math.round(py),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  /* LA POULIE, qui tourne */
+  const hy=sol-96;
+  g.fillStyle='#2f3338';g.beginPath();g.arc(cx,hy+2,11,0,7);g.fill();
+  g.fillStyle='#4d545c';g.beginPath();g.arc(cx,hy+2,9,0,7);g.fill();
+  g.strokeStyle='#8a939a';g.lineWidth=1.4;
+  for(let k=0;k<6;k++){
+    const a=T*1.6+k*1.047;
+    g.beginPath();g.moveTo(cx,hy+2);
+    g.lineTo(cx+Math.cos(a)*7.5,hy+2+Math.sin(a)*7.5);g.stroke();
+  }
+  g.fillStyle='#8a939a';g.beginPath();g.arc(cx,hy+2,2,0,7);g.fill();
+  /* LA FUMÉE de la machine */
+  const mx=cx-96;
+  for(let i=0;i<7;i++){
+    const p=((T*0.4+i/7)%1);
+    g.fillStyle='rgba(206,200,190,'+((1-p)*0.28).toFixed(2)+')';
+    g.beginPath();g.arc(mx+20-p*20,sol-64-p*30,3+p*9,0,7);g.fill();
+  }
+  /* LE WAGONNET qui va vider sa benne au terril */
+  const wx=cx+40+((T*14)%110);
+  R(wx-10,sol-8,20,10,'#4d545c');
+  R(wx-10,sol-8,20,2,'#6f767c');
+  R(wx-8,sol-11,16,3,'#2a2118');
+  for(let i=0;i<3;i++)R(wx-6+i*5,sol-13,4,3,'#2a2118');
+  [-6,6].forEach(dx=>{
+    g.fillStyle='#16191c';g.beginPath();g.arc(wx+dx,sol+3,3,0,7);g.fill();
+  });
+  /* les lanternes du carreau, la nuit */
+  if(typeof lampesAllumees==='function'&&lampesAllumees()){
+    [-34,34].forEach(dx=>{
+      R(cx+dx-2,sol-28,6,4,'#ffd27a');
+      lueurNuit(g,cx+dx,sol-25,26,'rgba(255,200,110,§)');
+    });
+  }
+}
+
+
+
+/* ---- LA GALERIE : une page, comme l'intérieur du comptoir ----
+   On ne voit que ce que la lampe éclaire. Quatre filons ; chacun demande
+   trois coups de pioche, puis se régénère en quelques minutes. La lanterne
+   du vestiaire double le rayon de vue — le premier cosmétique qui serve. */
+const FILONS=[
+  {id:'charbon', nom:'Charbon', x:0.16, y:-34, col:'#3a3a42', rend:'charbon'},
+  {id:'cuivre',  nom:'Cuivre',  x:0.38, y:-28, col:'#a0653a', rend:'cuivre'},
+  {id:'fer',     nom:'Fer',     x:0.62, y:-38, col:'#9aa2a8', rend:'fer'},
+  {id:'gemme',   nom:'Gemme',   x:0.84, y:-24, col:'#7fd8e8', rend:'gemme'}
+];
+const FILON_REPOUSSE=180000;          /* trois minutes pour qu'un filon revienne */
+let ETAT_FILONS={}, filonVise=null, galerieBoucle=0;
+function ouvrirLaGalerie(){
+  $('page2Fond').className='sacFond galerie';
+  $('page2Fond').innerHTML=
+    '<canvas id="gaCv"></canvas>'+
+    '<div class="gaHaut"><b>La galerie</b><i id="gaMot">TOUCHE UN FILON POUR LE CREUSER</i></div>'+
+    '<button class="bandeC" id="ga-sortir"><u></u><span>REMONTER</span><u></u></button>';
+  $('ga-sortir').onclick=()=>{
+    try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(galerieBoucle);}catch(x){}
+    fermeA=Date.now();$('page2').classList.remove('on');
+  };
+  $('page2').classList.add('on');
+  const c=$('gaCv');
+  c.onclick=(ev)=>viserUnFilon(ev,c);
+  animerLaGalerie();
+}
+function aLaLanterne(){return e.ap&&e.ap.cos==='lanterne';}
+function filonPret(f){
+  const q=ETAT_FILONS[f.id];
+  return !q||Date.now()-q>FILON_REPOUSSE;
+}
+function viserUnFilon(ev,c){
+  const r=c.getBoundingClientRect();
+  const L2=240, ech=r.width/L2;
+  const x=(ev.clientX-r.left)/ech, y=(ev.clientY-r.top)/ech;
+  const sol=(r.height/ech)*0.78;
+  let vu=null;
+  FILONS.forEach(f=>{
+    const fx=f.x*L2, fy=sol+f.y;
+    if(Math.hypot(fx-x,fy-y)<22)vu=f;
+  });
+  if(!vu)return;
+  if(!filonPret(vu)){
+    $('gaMot').textContent='CE FILON EST ÉPUISÉ · IL REVIENDRA';
+    return;
+  }
+  if(!e.outils.pioche){
+    $('gaMot').textContent='IL TE FAUT UNE PIOCHE';
+    return;
+  }
+  /* trois coups, comme dehors */
+  vu.coups=(vu.coups||0)+1;
+  jouer('pioche');vibrer(24);
+  const aFaire=Math.max(1,PIOCHE_COUPS[Math.min(e.nivPioche||0,PIOCHE_COUPS.length-1)]);
+  if(vu.coups<aFaire){
+    $('gaMot').textContent='ENCORE '+(aFaire-vu.coups)+' COUP'+(aFaire-vu.coups>1?'S':'');
+    return;
+  }
+  vu.coups=0;ETAT_FILONS[vu.id]=Date.now();
+  const q=1+Math.floor(Math.random()*(vu.id==='gemme'?1:2));
+  const pris=ajouter(vu.rend,q);
+  if(pris>0){
+    e.recolte=(e.recolte||0)+pris;marquer(vu.rend,pris);
+    jouer('pepite','moment');vibrer([12,30,20]);
+    $('gaMot').textContent='+'+pris+' '+vu.nom.toUpperCase();
+    sauver();majHaut();majPastille();
+  }else $('gaMot').textContent='TON SAC EST PLEIN';
+}
+function animerLaGalerie(){
+  try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(galerieBoucle);}catch(x){}
+  const tic=()=>{
+    const c=$('gaCv');
+    if(!c||!$('page2').classList.contains('on'))return;
+    const r=c.getBoundingClientRect();
+    const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+    if(Math.abs(c.width-r.width*D)>2){c.width=r.width*D;c.height=r.height*D;}
+    const g=c.getContext('2d');
+    const ech=c.width/240;
+    g.setTransform(ech,0,0,ech,0,0);g.imageSmoothingEnabled=false;
+    dessinerLaGalerie(g,240,c.height/ech);
+    galerieBoucle=requestAnimationFrame(tic);
+  };
+  tic();
+}
+
+function dessinerLaGalerie(g,VW,VH){
+  const T=Date.now()/1000;
+  const avecLampe=aLaLanterne();
+  const al=(n)=>alea(n);
+  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+  const sol=VH*0.78;
+  /* la roche : trois tons, plus sombre vers le haut */
+  g.fillStyle='#2b2620';g.fillRect(0,0,VW,VH);
+  for(let y=0;y<VH;y+=3)for(let x=(y/3)%2?0:3;x<VW;x+=6){
+    const t=al(x*0.7+y*1.3);
+    g.fillStyle=t<0.4?'#332d26':(t<0.8?'#3a332b':'#443c33');
+    g.fillRect(x,y,6,3);
+  }
+  /* le sol de la galerie, plus clair et jonché */
+  R(0,sol,VW,VH-sol,'#4a4138');
+  for(let i=0;i<260;i++){
+    const x=al(i*1.7)*VW, y=sol+al(i*2.9)*(VH-sol);
+    R(x,y,2,2,i%3?'#5a5046':'#3a332b');
+  }
+  /* LES BOISAGES : des cadres de bois, réguliers, qui donnent la profondeur */
+  for(let k=0;k<6;k++){
+    const bx=18+k*42;
+    R(bx,sol-52,6,52,'#6b5a45');R(bx,sol-52,2,52,'#8a7660');
+    R(bx+30,sol-52,6,52,'#6b5a45');R(bx+30,sol-52,2,52,'#8a7660');
+    R(bx-2,sol-58,40,7,'#5b4a38');R(bx-2,sol-58,40,2,'#7d6a52');
+    /* les jambettes */
+    R(bx+4,sol-52,4,4,'#5b4a38');R(bx+28,sol-52,4,4,'#5b4a38');
+  }
+  /* LA VOIE ÉTROITE, au sol */
+  R(0,sol+8,VW,2,'#8f979e');R(0,sol+14,VW,2,'#8f979e');
+  for(let x=0;x<VW;x+=9)R(x,sol+6,5,11,'#5b4a38');
+  /* LES VEINES : ce qu'on vient chercher */
+  const veines=[[36,-34,'#3a3a42','charbon'],[92,-28,'#a0653a','cuivre'],
+                [150,-38,'#9aa2a8','fer'],[196,-24,'#7fd8e8','gemme']];
+  veines.forEach(([vx,vy,col,nom])=>{
+    /* la roche autour, éclatée */
+    for(let i=0;i<7;i++){
+      const a=al(vx+i)*6.283, r2=4+al(i*2.3)*7;
+      R(vx+Math.cos(a)*r2,sol+vy+Math.sin(a)*r2*0.7,3,3,'#403830');
+    }
+    /* le filon */
+    for(let i=0;i<5;i++){
+      const dx=-6+i*3+al(vx*i)*2, dy=-3+al(i*1.7)*7;
+      R(vx+dx,sol+vy+dy,4,4,col);
+      R(vx+dx,sol+vy+dy,4,1,'rgba(255,255,255,.35)');
+    }
+    /* la gemme brille toute seule */
+    if(nom==='gemme'){
+      const br=(Math.sin(T*2.2)+1)/2;
+      const d=g.createRadialGradient(vx,sol+vy,1,vx,sol+vy,16);
+      d.addColorStop(0,'rgba(127,216,232,'+(0.18+br*0.14).toFixed(2)+')');
+      d.addColorStop(1,'rgba(127,216,232,0)');
+      g.fillStyle=d;g.fillRect(vx-16,sol+vy-16,32,32);
+    }
+  });
+  /* un wagonnet abandonné, et des étais tombés */
+  R(120,sol-6,22,11,'#4d545c');
+  R(120,sol-6,22,2,'#6f767c');
+  R(122,sol-9,18,3,'#2a2118');
+  [126,138].forEach(wx=>{g.fillStyle='#16191c';
+    g.beginPath();g.arc(wx,sol+6,3.4,0,7);g.fill();});
+  R(64,sol-2,20,4,'#6b5a45');
+  /* L'EAU QUI SUINTE : des gouttes qui tombent du plafond */
+  for(let i=0;i<5;i++){
+    const gx=30+i*44;
+    const p=((T*0.7+i*0.31)%1);
+    R(gx,sol-58+p*52,1,3,'rgba(150,190,210,'+(0.5*(1-p)).toFixed(2)+')');
+    if(p>0.9)R(gx-2,sol,5,1,'rgba(150,190,210,.35)');
+  }
+  /* des flaques, au sol */
+  [48,132,200].forEach(fx=>{
+    g.fillStyle='rgba(90,120,140,.25)';
+    g.beginPath();g.ellipse(fx,sol+3,11,3,0,0,7);g.fill();
+  });
+  /* le personnage */
+  const px=VW*0.5, py=sol+2;
+  GESTE={t:0};
+  sprite(g,px,py,DEF_AP,'droite',0,false);
+  /* ---- LE NOIR : on ne voit que ce que la lampe éclaire ---- */
+  const r=avecLampe?78:44;
+  const d=g.createRadialGradient(px,py-16,r*0.25,px,py-16,r);
+  d.addColorStop(0,'rgba(0,0,0,0)');
+  d.addColorStop(0.55,'rgba(6,8,10,.45)');
+  d.addColorStop(1,'rgba(4,5,7,.94)');
+  g.fillStyle=d;g.fillRect(0,0,VW,VH);
+  /* la lanterne accrochée, si on l'a */
+  if(avecLampe){
+    const bal=Math.sin(T*2.4)*1.4;
+    R(px+7,py-26,1,5,'#5f666c');
+    R(px+5+bal*0.3,py-21,5,7,'#8a6238');
+    R(px+6+bal*0.3,py-19,3,4,'#ffd27a');
+  }
+}
+
 /* ================= LA VOIE DE SERVICE ET LE FRET =================
    La ligne du haut est celle du TGV, qui ne fait que passer. En dessous, une
    voie en cul-de-sac qui part par un aiguillage et se termine sur un butoir,
@@ -3872,6 +4231,7 @@ function majTuto(){
 const VOIE2_Y=728;                 /* la voie de service */
 const VOIE2_X0=716;                /* son butoir, tout à gauche */
 const ENTREPOT_FIXE=[852,626];
+const CARREAU_FIXE=[228,660];     /* le carreau de mine, au sud-ouest */
 /* cinq minutes à quai, un quart d'heure entre deux passages */
 const FRET_PERIODE=15, FRET_SEJOUR=5;
 /* les noms qu'attend etatDuFret, repris de l'aperçu */
@@ -6492,7 +6852,7 @@ function semerDecor(){
   /* NOUVEAU : rien ne se pose sur un lieu ni devant sa porte. La zone est
      plus profonde au sud du bâtiment : c'est par là qu'on entre. */
   const LIEUX_FIXES=[[CAMP_FIXE,34],[COFFRE_FIXE,20],[FORGE_FIXE,30],
-                     [CASINO_FIXE,36],[MINE_FIXE,32]];
+                     [CASINO_FIXE,36],[CARREAU_FIXE,32]];
   /* la largeur réellement dessinée, par famille : c'est elle qui décide
      de la distance à l'eau, pas la position du pied */
   const DEMI={arbre:28,buisson:19,rocher:20,champignons:15,herbes:14,
@@ -6649,6 +7009,10 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-ENTREPOT_FIXE[0])<110&&Math.abs(o.y-ENTREPOT_FIXE[1])<110));
   DECOR.push({t:'entrepot',x:ENTREPOT_FIXE[0],y:ENTREPOT_FIXE[1],gr:0});
+  /* LE CARREAU DE MINE, au sud-ouest, sur la rive de la récolte */
+  DECOR=DECOR.filter(o=>BATI(o.t)||
+    !(Math.abs(o.x-CARREAU_FIXE[0])<130&&o.y>CARREAU_FIXE[1]-130&&o.y<CARREAU_FIXE[1]+40));
+  DECOR.push({t:'mine2',x:CARREAU_FIXE[0],y:CARREAU_FIXE[1],gr:0});
   DECOS.forEach(d=>DECOR.push({t:d.t,x:d.x,y:d.y,gr:0}));
   invaliderGrille();
 
@@ -6845,6 +7209,14 @@ function bloque(x,y){
     const dansLaColline=(x>VOIE_X1-96)&&(y>VOIE_Y-150)&&(y<VOIE_Y-24);
     if(dansLaColline)return true;
   }
+  /* LE CARREAU : la machine, le chevalement et le terril sont pleins ; le
+     devant du puits reste libre, c'est là qu'on se tient. */
+  {
+    const dx=x-CARREAU_FIXE[0], dy=y-CARREAU_FIXE[1];
+    if(dx>-124&&dx<-58&&dy>-44&&dy<4)return true;       /* la machine */
+    if(Math.abs(dx)<32&&dy>-22&&dy<-6)return true;      /* la recette */
+    if(dx>60&&dy>-60&&dy<6)return true;                 /* le terril */
+  }
   /* L'ENTREPÔT : plein, sauf devant sa porte */
   {
     /* le corps du bâtiment est plein ; le QUAI, devant, se traverse — c'est
@@ -6953,7 +7325,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:
       (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
       (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
-      (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:0))))))))))));
+      (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:
+      (o.t==='mine2'?150:0)))))))))))));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -7050,6 +7423,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
+    else if(o.t==='mine2')dessinerLaMine(g,x,y);
     else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLEchoppe(g,x,y);
@@ -7212,7 +7586,6 @@ const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
 const COMPTOIR_FIXE=[862,134];                  /* le long entrepôt, en haut, centré */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
-const MINE_FIXE  =[770,494];                    /* plein sud, au bout de la place */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
 const dansLaCarte=(v,max)=>typeof v==='number'&&v>BORD&&v<max-BORD;
@@ -8006,7 +8379,7 @@ function graverMini(T){
      C'est ce qui manquait le plus : sans eux, on lit le terrain mais on ne
      sait pas où aller. Chacun a sa couleur, une ombre portée et un liseré. */
   const REPERES=[[CAMP_FIXE,'#e8dcc0'],[FORGE_FIXE,'#c17a3c'],[CASINO_FIXE,'#c9a24a'],
-                 [MINE_FIXE,'#8b939a'],[COFFRE_FIXE,'#f0cf7d']];
+                 [CARREAU_FIXE,'#8b939a'],[COFFRE_FIXE,'#f0cf7d']];
   REPERES.forEach(([L,col])=>{
     const x=px(L[0]), y=py(L[1]);
     g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x-6,y-6,12,12);
@@ -8506,7 +8879,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','souche','gravats'];
+                  'panneauV','echoppe','gare','entrepot','mine2','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -8948,12 +9321,12 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  const LARGES=['casino','forge','comptoir','fete','echoppe','gare','entrepot'];
+  const LARGES=['casino','forge','comptoir','fete','echoppe','gare','entrepot','mine2'];
   for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','gare','entrepot'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','gare','entrepot','mine2'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -8962,7 +9335,7 @@ function cible(){
     /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
        sinon les portes des extrémités restent hors de portée */
     const demi=o.t==='comptoir'?118:(o.t==='echoppe'?72:
-                (o.t==='gare'?120:(o.t==='entrepot'?54:0)));
+                (o.t==='gare'?120:(o.t==='entrepot'?54:(o.t==='mine2'?80:0))));
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
     const portee=(LARGES.includes(o.t)||o.t==='mine')?66:48;  /* on les voit de plus loin */
@@ -9068,6 +9441,10 @@ function majAction(){
   }
   if(o.t==='gare'){
     b.innerHTML='Entrer<small>LA GARE · PRENDRE UN BILLET</small>';
+    b.classList.add('on');return;
+  }
+  if(o.t==='mine2'){
+    b.innerHTML='Descendre<small>LA MINE · LE PUITS</small>';
     b.classList.add('on');return;
   }
   if(o.t==='entrepot'){
@@ -9176,6 +9553,7 @@ function agir(){
   if(o.t==='fete'){location.href='fete.html';return;}
   if(o.t==='panneauV'){ouvrirLeTuto();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
+  if(o.t==='mine2'){ouvrirLaGalerie();return;}
   if(o.t==='gare'){ouvrirLaGare();return;}
   if(o.t==='echoppe'){ouvrirLEchoppe();return;}
   if(o.t==='comptoir'){ouvrirLeComptoir();return;}
