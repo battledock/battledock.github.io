@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1139';
+  var MA_VERSION='2026-09-16-1611';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7393,7 +7394,7 @@ function semerDecor(){
   }
 
   /* les rochers déjà cassés ne repoussent pas */
-  const casses=new Set((e.casses||[]).map(c=>/^[a-z]/.test(c)?c:'r'+c));
+  const casses=casseEncore();
   DECOR=DECOR.filter(o=>!(o.t==='rocher'&&casses.has('r'+o.x+','+o.y)));invaliderGrille();
   DECOR=DECOR.filter(o=>!(['fer','cuivre','charbon'].includes(o.t)&&casses.has('m'+o.x+','+o.y)));invaliderGrille();
   DECOR=DECOR.filter(o=>{
@@ -8285,6 +8286,7 @@ function majJoueur(dt){
      jamais pendant le vol — c'est ce détail qui donne le poids. */
   /* l'ambiance se recale deux fois par seconde : l'eau quand on s'en
      approche, les oiseaux ou les grillons selon l'heure */
+  try{fairePousser();}catch(x){}
   if(SON_PRET&&Date.now()-dernierAmbiance>500){
     dernierAmbiance=Date.now();
     try{ambiancer();}catch(x){}
@@ -9224,7 +9226,7 @@ function ambiance(g){
    part sur le serveur. On peut changer de téléphone, vider son
    navigateur : la partie est retrouvée. */
 const A_GARDER=['sac','jetons','euros','outils','sacMax','score','recolte','casses','epee',
-  'nivSac','nivPioche','nivHache','nivPied','metiers','cos',
+  'nivSac','nivPioche','nivHache','nivPied','metiers','cos','aRepousser',
                 'four','habitCasino','ap','pseudo','x','y','coffreOuvert'];
 let derniereSauv=0, sauvEnVol=false, sauvSale=false;
 
@@ -9293,16 +9295,79 @@ e.coffreOuvert=true;
    Ce que l'un casse ou cueille disparaît chez tous les autres.
    Le direct passe par le canal, la base garde la trace pour ceux
    qui arrivent après. */
+/* LA CARTE SE REFERME PENDANT QU'ON JOUE : toutes les vingt secondes, on
+   regarde ce dont le délai est écoulé et on le remet en place. */
+let dernierePousse=0;
+function fairePousser(){
+  if(Date.now()-dernierePousse<20000)return;
+  dernierePousse=Date.now();
+  let change=false;
+  /* les souches redeviennent des arbres */
+  for(let i=DECOR.length-1;i>=0;i--){
+    const o=DECOR[i];
+    if(o.t!=='souche'||!o.neuf)continue;
+    if(Date.now()-o.neuf<REPOUSSE_ARBRE)continue;
+    DECOR.splice(i,1);
+    poserDansLeDecor({t:'arbre',x:o.x,y:o.y,gr:0,coups:0,neuf:Date.now()});
+    change=true;
+  }
+  /* les rochers et les filons reviennent là où ils étaient */
+  const dehors=casseEncore();
+  const dedans=new Set(DECOR.map(o=>o.t+o.x+','+o.y));
+  (e.aRepousser||[]).slice().forEach((p,k)=>{
+    const cle=({rocher:'r',fer:'m',cuivre:'m',charbon:'m'}[p.t]||'c')+p.x+','+p.y;
+    if(dehors.has(cle))return;                     /* pas encore l'heure */
+    if(!dedans.has(p.t+p.x+','+p.y))
+      poserDansLeDecor({t:p.t,x:p.x,y:p.y,gr:p.gr||0,coups:0,neuf:Date.now()});
+    e.aRepousser=e.aRepousser.filter(q=>q!==p);
+    change=true;
+  });
+  if(change){invaliderGrille();sauver();}
+}
+
 const CUEILLI=new Map();                        /* clé → heure de la cueillette */
 const REPOUSSE={cueillette:210000, buisson:240000, resine:180000};
 
 /* On note ce qui a été cassé — une seule fois chacun.
    Sans ça, la liste grossissait à chaque récolte et partait
    en entier sur le serveur à chaque sauvegarde. */
+/* UN QUART D'HEURE POUR LES ARBRES, UNE HEURE POUR LA PIERRE.
+   On retient désormais QUAND chaque chose a été abattue — « r120,340@1738…
+   » — au lieu du seul fait. Les vieilles entrées sans heure datent d'avant :
+   on les considère comme expirées, donc la carte se referme d'elle-même. */
+const REPOUSSE_ARBRE=15*60000;
+const REPOUSSE_PIERRE=60*60000;
+function delaiDeRepousse(cle){
+  return cle[0]==='a'?REPOUSSE_ARBRE:REPOUSSE_PIERRE;
+}
 function noterCasse(cle){
   if(!e.casses)e.casses=[];
-  if(e.casses.indexOf(cle)<0)e.casses.push(cle);
+  /* on remplace l'entrée précédente du même endroit */
+  e.casses=e.casses.filter(c=>String(c).split('@')[0]!==cle);
+  e.casses.push(cle+'@'+Date.now());
   if(e.casses.length>900)e.casses.splice(0,e.casses.length-900);
+}
+/* ce qui est encore abattu à cette seconde */
+function casseEncore(){
+  const vivants=[], dehors=new Set();
+  (e.casses||[]).forEach(c=>{
+    const [cle,quand]=String(c).split('@');
+    const t=+quand;
+    if(!quand||isNaN(t))return;                  /* une vieille entrée : repoussé */
+    if(Date.now()-t>=delaiDeRepousse(cle))return; /* le délai est passé */
+    vivants.push(c);dehors.add(cle);
+  });
+  if(vivants.length!==(e.casses||[]).length)e.casses=vivants;
+  return dehors;
+}
+/* on garde l'endroit ET le type : sans ça, on saurait qu'un rocher a été
+   cassé, mais pas quoi remettre à sa place. */
+function noterARepousser(o){
+  if(!['rocher','fer','cuivre','charbon'].includes(o.t))return;
+  if(!e.aRepousser)e.aRepousser=[];
+  if(!e.aRepousser.some(p=>p.t===o.t&&p.x===o.x&&p.y===o.y))
+    e.aRepousser.push({t:o.t,x:o.x,y:o.y,gr:o.gr||0});
+  if(e.aRepousser.length>400)e.aRepousser.splice(0,e.aRepousser.length-400);
 }
 function cleDe(o){
   if(o.cle)return o.cle;                        /* la clé de la carte du serveur */
@@ -10084,7 +10149,8 @@ function majGeste(dt){
         const q=2+Math.floor(Math.random()*2);
         const pris=ajouter('pierre',q);
         e.recolte=(e.recolte||0)+pris;marquer('pierre',pris);
-        noterCasse(o.x+','+o.y);signalerLeMonde(o,'rocher',o.t);
+        noterCasse('r'+o.x+','+o.y);noterARepousser(o);
+        signalerLeMonde(o,'rocher',o.t);
         DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
         DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
         texteVolant(o.x,o.y-22,'+'+pris+' pierre','#cfd6db');
@@ -10131,7 +10197,8 @@ function miner(o){
     const cailloux=ajouter('pierre',1);
     e.recolte=(e.recolte||0)+pris+cailloux;
     marquer(o.t,pris);marquer('pierre',cailloux);
-    noterCasse('m'+o.x+','+o.y);signalerLeMonde(o,'minerai',o.t);
+    noterCasse('m'+o.x+','+o.y);noterARepousser(o);
+    signalerLeMonde(o,'minerai',o.t);
     DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
     DECOR.push({t:'gravats',x:o.x,y:o.y,gr:0,neuf:Date.now()});
     DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
