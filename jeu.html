@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-0552';
+  var MA_VERSION='2026-09-16-1014';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -2761,7 +2762,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -3852,6 +3853,161 @@ function majTuto(){
     if(pageTuto===PAGES.length-1){fermeA=Date.now();$('page2').classList.remove('on');return;}
     pageTuto++;vibrer(20);majTuto();
   };
+}
+
+
+/* ================= LA VOIE DE SERVICE ET LE FRET =================
+   La ligne du haut est celle du TGV, qui ne fait que passer. En dessous, une
+   voie en cul-de-sac qui part par un aiguillage et se termine sur un butoir,
+   devant l'entrepôt.
+   L'horaire est celui du SERVEUR : le fret arrive à l'heure pile, :15, :30 et
+   :45, et reste huit minutes. Chaque joueur voit donc le même train au même
+   moment, sans rien à synchroniser. */
+const VOIE2_Y=728;                 /* la voie de service */
+const VOIE2_X0=812;                /* son butoir, à l'ouest */
+const ENTREPOT_FIXE=[880,652];
+const FRET_PERIODE=15, FRET_SEJOUR=8;
+/* les noms qu'attend etatDuFret, repris de l'aperçu */
+const PERIODE=FRET_PERIODE, SEJOUR=FRET_SEJOUR, ARRIVEE=0;
+function butoirDeService(g,x,y){
+  const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect((x+dx)|0,(y+dy)|0,Math.max(1,w),Math.max(1,h));};
+  for(let k=0;k<4;k++){R(k*4,-7-k,6,15+k*2,k%2?'#5b4a38':'#6b5a45');R(k*4,-7-k,6,2,'#7d6a52');}
+  R(2,-6,13,2,'#8f979e');R(2,2,13,2,'#8f979e');
+  R(16,-9,5,19,'#4d545c');R(16,-9,5,2,'#6f767c');
+  R(19,-20,3,12,'#6b5a45');
+  for(let k=0;k<4;k++)R(16,-23+k*3,11,3,k%2?'#d94b3a':'#f2efe4');
+}
+function locoFret(g,x,y,sens){
+  const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect((x+dx*sens)|0,(y+dy)|0,Math.max(1,w),Math.max(1,h));};
+  /* le capot long à l'avant */
+  R(-30,-20,34,14,'#7d3b2a');
+  R(-30,-20,34,3,'#9c4f3a');
+  R(-30,-8,34,3,'#5b2a1e');
+  for(let k=0;k<34;k+=6)R(-30+k,-20,1,14,'#6b3122');
+  /* la cabine, en retrait et plus haute */
+  R(4,-30,20,24,'#7d3b2a');
+  R(4,-30,20,3,'#9c4f3a');
+  R(2,-33,24,4,'#5b2a1e');
+  R(7,-27,14,10,'#151a20');
+  R(7,-27,14,3,'#4a6070');
+  /* le mécanicien */
+  R(10,-24,5,6,'#e8c49a');
+  R(9,-26,7,3,'#3a4148');
+  /* la bande jaune de sécurité */
+  R(-30,-6,54,3,'#c9a24a');
+  /* le châssis et les bogies */
+  R(-32,-5,58,4,'#2f3338');
+  [-20,14].forEach(dx=>{
+    R(dx-8,-2,16,5,'#3a4148');
+    [-4,4].forEach(w=>{
+      g.fillStyle='#16191c';g.beginPath();g.arc(x+(dx+w)*sens,y+4,4,0,7);g.fill();
+      g.fillStyle='#2f3338';g.beginPath();g.arc(x+(dx+w)*sens,y+4,2.2,0,7);g.fill();
+    });
+  });
+  /* le phare et la cheminée */
+  R(-33,-16,3,4,'#fff6d8');
+  R(-14,-24,6,5,'#3a2420');
+}
+function wagonFret(g,x,y,ouvert,restant){
+  const R=(dx,dy,w,h,c)=>{g.fillStyle=c;g.fillRect((x+dx)|0,(y+dy)|0,Math.max(1,w),Math.max(1,h));};
+  R(-32,-26,64,21,'#4a5560');
+  R(-32,-26,64,3,'#6a7682');
+  R(-32,-8,64,3,'#2f3338');
+  for(let k=0;k<64;k+=9)R(-32+k,-26,2,21,'#3f4a54');
+  const o=Math.round(22*ouvert);
+  R(-12,-24,24,17,'#3a4148');
+  R(-12,-24,24-o,17,'#5f6b76');
+  R(-12,-24,24-o,2,'#7f8c99');
+  if(o>4){
+    R(-12+(24-o),-22,o-2,14,'#241a12');
+    for(let i=0;i<Math.min(3,restant);i++)
+      R(-10+(24-o)+i*5,-19+(i%2)*3,5,7,'#8a6238');
+  }
+  [-20,20].forEach(dx=>{
+    R(dx-7,-5,14,4,'#3a4148');
+    [-4,4].forEach(w=>{g.fillStyle='#16191c';
+      g.beginPath();g.arc(x+dx+w,y+2,3.4,0,7);g.fill();});
+  });
+  g.font='700 4.5px ui-monospace,monospace';g.fillStyle='#9aa6b0';
+  g.fillText('BD-4417',x-28,y-11);
+}
+function etatDuFret(m){
+  const dans=((m-ARRIVEE)%PERIODE+PERIODE)%PERIODE;
+  if(dans<0.6)return {q:'entre',p:dans/0.6};
+  if(dans<SEJOUR)return {q:'a quai',p:(dans-0.6)/(SEJOUR-0.6),reste:SEJOUR-dans};
+  if(dans<SEJOUR+0.6)return {q:'part',p:(dans-SEJOUR)/0.6};
+  return {q:'absent',p:0,prochain:PERIODE-dans};
+}
+
+/* où se trouve le fret en ce moment, en points de jeu */
+function minuteDuFret(){
+  /* l'heure du serveur d'abord — c'est elle qui met tout le monde d'accord.
+     Si elle tarde ou manque, on prend celle du téléphone : mieux vaut un
+     train qui passe à quelques secondes près que pas de train du tout. */
+  const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
+  if(mi!==null)return mi;
+  const d=new Date();
+  return d.getHours()*60+d.getMinutes()+d.getSeconds()/60;
+}
+function positionDuFret(){
+  const mi=minuteDuFret();
+  if(mi===null)return null;
+  const E=etatDuFret(mi);
+  const quai=VOIE2_X0+96;
+  if(E.q==='entre')return {x:1400-(1400-quai)*(1-Math.pow(1-E.p,2.4)),ouvert:0,etat:E};
+  if(E.q==='a quai')return {x:quai,ouvert:Math.min(1,E.p*8),etat:E};
+  if(E.q==='part')return {x:quai+Math.pow(E.p,2)*420,ouvert:0,etat:E};
+  return null;
+}
+function dessinerLeFret(g){
+  const F=positionDuFret();
+  if(!F)return;
+  const y=VOIE2_Y+4;
+  wagonFret(g,F.x,y,F.ouvert,12);
+  wagonFret(g,F.x+70,y,F.ouvert,12);
+  locoFret(g,F.x+142,y,1);
+}
+
+/* ---- LE DÉCHARGEMENT ----
+   Le seul travail salarié du jeu : pas de hasard, pas de récolte, un tarif
+   fixe à la caisse — et seulement quand le fret est là. */
+const PRIX_CAISSE=40;
+let caissePortee=false;
+function prèsDuWagon(){
+  const F=positionDuFret();
+  if(!F||F.etat.q!=='a quai')return false;
+  return Math.abs(joueur.x-(F.x+35))<90&&Math.abs(joueur.y-VOIE2_Y)<44;
+}
+const prèsDeLEntrepot=()=>
+  Math.hypot(joueur.x-ENTREPOT_FIXE[0],joueur.y-ENTREPOT_FIXE[1]-14)<40;
+
+function prendreUneCaisse(){
+  if(caissePortee||!prèsDuWagon())return;
+  caissePortee=true;
+  GESTE={t:1,cible:null,impact:false,type:'cueille'};
+  jouer('cueille');vibrer(18);majAction();
+}
+async function deposerLaCaisse(){
+  if(!caissePortee||!prèsDeLEntrepot())return;
+  caissePortee=false;
+  GESTE={t:1,cible:null,impact:false,type:'cueille'};
+  /* LE SERVEUR PAIE : le salaire ne se décide pas dans le navigateur */
+  const d=await appelRPC('decharger',{p_joueur:e.id});
+  if(d&&typeof d.euros==='number'){
+    e.euros=d.euros;sauver();majHaut();
+    texteVolant(joueur.x,joueur.y-34,'+'+enEuros(PRIX_CAISSE),'#cfe0f2');
+    jouer('vente','moment');vibrer([12,26,18]);
+  }else texteVolant(joueur.x,joueur.y-34,'le contremaître refuse','#e8a06a');
+  majAction();
+}
+/* la caisse qu'on porte, dessinée devant la poitrine */
+function dessinerLaCaisse(g,x,y,marche,pas){
+  const b=marche?Math.sin(pas*4)*0.8:0;
+  const cy=y-20+b;
+  g.fillStyle='#8a6238';g.fillRect(Math.round(x-7),Math.round(cy-9),14,11);
+  g.fillStyle='#c09a6a';g.fillRect(Math.round(x-7),Math.round(cy-9),14,2);
+  g.fillStyle='#5b3f21';g.fillRect(Math.round(x-7),Math.round(cy-4),14,1);
+  g.fillStyle='#e8dcc0';g.fillRect(Math.round(x-3),Math.round(cy-7),6,3);
 }
 
 /* ================= LA GARE DU VILLAGE =================
@@ -5310,7 +5466,7 @@ const MONDE_L=1260;               // largeur, en pixels de jeu
    traverse tout l'écran et sort des deux côtés, avec son remblai, et elle
    ferme le monde par le bas — qui s'arrêtait jusqu'ici sur une lisière sans
    raison. Rien d'autre ne bouge. */
-const MONDE_H=760;                // hauteur
+const MONDE_H=790;                // hauteur
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* ================= LA MÊME VUE POUR TOUT LE MONDE =================
    Avant, l'échelle était fixe (×2) : un petit écran de 2020 voyait 160 points
@@ -5714,6 +5870,30 @@ function graverLaVoie(g){
   };
   heurtoir(VOIE_X0,1);                 /* à l'ouest : la voie s'arrête là */
 
+  /* ---- LA VOIE DE SERVICE : elle quitte la principale par un aiguillage et
+     meurt sur un butoir, devant l'entrepôt ---- */
+  {
+    const x0=VOIE2_X0-20, x1=VOIE_X1-10, larg=x1-x0;
+    R(x0,VOIE2_Y-16,larg,32,'#9c8d78');
+    R(x0,VOIE2_Y-16,larg,3,'#b0a08a');
+    R(x0,VOIE2_Y+13,larg,3,'#7d6f5c');
+    for(let i=0;i<900;i++){
+      const x=x0+alea(i*2.3)*larg, y=VOIE2_Y-13+alea(i*3.7)*26;
+      R(x,y,2,2,['#8e8377','#a0958a','#7a6f63'][i%3]);
+    }
+    for(let x=x0+4;x<x1;x+=9){R(x,VOIE2_Y-6,6,13,'#6b5a45');R(x,VOIE2_Y-6,6,2,'#7d6a52');}
+    R(x0,VOIE2_Y-4,larg,3,'#8f979e');R(x0,VOIE2_Y-4,larg,1,'#d2d8dd');
+    R(x0,VOIE2_Y+4,larg,3,'#8f979e');R(x0,VOIE2_Y+4,larg,1,'#d2d8dd');
+    butoirDeService(g,VOIE2_X0-16,VOIE2_Y);
+    /* L'AIGUILLAGE : la courbe qui relie les deux voies */
+    g.strokeStyle='#9aa2a8';g.lineWidth=3;
+    g.beginPath();g.moveTo(VOIE_X1-20,VOIE_Y+5);
+    g.quadraticCurveTo(VOIE_X1-60,VOIE_Y+26,x1-16,VOIE2_Y-4);g.stroke();
+    g.strokeStyle='#6f767c';g.lineWidth=1;
+    g.beginPath();g.moveTo(VOIE_X1-20,VOIE_Y+9);
+    g.quadraticCurveTo(VOIE_X1-58,VOIE_Y+30,x1-16,VOIE2_Y+4);g.stroke();
+  }
+
   /* ---- LA COLLINE ET SON TUNNEL, à l'est ----
      Mon tunnel poussait tout seul dans l'herbe plate : une tête de pont
      posée là, sans raison d'être. Un tunnel perce quelque chose. On dessine
@@ -5806,6 +5986,59 @@ function graverLaVoie(g){
     R(x-2,VOIE_Y-76,18,4,'#4d545c');
     R(x-3,VOIE_Y-20,10,4,'#3d4248');
   }
+}
+
+/* L'ENTREPÔT : une halle de bois à bardage vertical, toit de tôle, grande
+   porte coulissante, et le cadre au sol où l'on empile les caisses. */
+let CALQUE_ENTREPOT=null;
+function graverLEntrepot(){
+  const W=140,H2=110,cx=W/2,sol=H2-8;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H2*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(cx+2,sol+3,58,12,0,0,7);g.fill();
+  /* le corps, en bardage vertical */
+  R(cx-52,sol-44,104,42,'#7d5934');
+  for(let x=0;x<104;x+=8){R(cx-52+x,sol-44,1,42,'#5b3f21');R(cx-51+x,sol-44,3,42,'#8a6238');}
+  R(cx-52,sol-44,104,3,'#a5764a');
+  R(cx-52,sol-3,104,3,'#3d2a17');
+  /* le toit de tôle ondulée, débordant */
+  for(let r=0;r<4;r++){
+    const y=sol-46-r*4, ret=r*3;
+    R(cx-58+ret,y,116-ret*2,5,r%2?'#5a626a':'#6f767c');
+    R(cx-58+ret,y,116-ret*2,1,'#8f979e');
+    for(let x=0;x<116-ret*2;x+=5)R(cx-58+ret+x,y,1,5,'#4d545c');
+  }
+  /* la grande porte coulissante, ouverte sur le noir */
+  R(cx-24,sol-38,48,35,'#241a12');
+  R(cx-22,sol-34,18,31,'#4a3728');
+  for(let k=0;k<3;k++)R(cx-20+k*7,sol-28+k*2,6,8,'#6b4a28');
+  R(cx+2,sol-34,20,31,'#3a2a1e');
+  R(cx-32,sol-40,64,2,'#4d545c');        /* le rail de la porte */
+  /* l'enseigne */
+  R(cx-28,sol-54,56,10,'#2a1c12');R(cx-28,sol-54,56,1,'#c09a6a');
+  g.font='700 6px Georgia,serif';g.fillStyle='#e8cf8a';g.textAlign='center';
+  g.fillText('ENTREPÔT',cx,sol-47);g.textAlign='left';
+  /* une lanterne au-dessus de la porte */
+  R(cx-3,sol-44,6,5,'#c9a24a');R(cx-2,sol-43,4,3,'#ffd27a');
+  /* des caisses et un diable, dehors */
+  R(cx+36,sol-14,13,12,'#8a6238');R(cx+36,sol-14,13,2,'#c09a6a');
+  R(cx+38,sol-24,11,10,'#7d5934');R(cx+38,sol-24,11,2,'#a5764a');
+  R(cx-50,sol-16,3,14,'#4d545c');R(cx-46,sol-16,3,14,'#4d545c');
+  R(cx-50,sol-4,10,3,'#3d4248');
+  CALQUE_ENTREPOT={toile:c,W,H:H2,sol};
+}
+function dessinerLEntrepot(g,x,y){
+  if(!CALQUE_ENTREPOT)graverLEntrepot();
+  const C=CALQUE_ENTREPOT;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  if(typeof lampesAllumees==='function'&&lampesAllumees())
+    lueurNuit(g,x,y-46,22,'rgba(255,200,110,§)');
 }
 
 function graverLesPaves(g){
@@ -6123,6 +6356,10 @@ function semerDecor(){
     !(Math.abs(o.x-GARE_FIXE[0])<170&&o.y>GARE_FIXE[1]-150&&o.y<MONDE_H));
   DECOR=DECOR.filter(o=>BATI(o.t)||Math.abs(o.y-VOIE_Y)>30);   /* rien sur la voie */
   DECOR.push({t:'gare',x:GARE_FIXE[0],y:GARE_FIXE[1],gr:0});
+  /* L'ENTREPÔT, entre la place et la voie de service */
+  DECOR=DECOR.filter(o=>BATI(o.t)||
+    !(Math.abs(o.x-ENTREPOT_FIXE[0])<110&&Math.abs(o.y-ENTREPOT_FIXE[1])<110));
+  DECOR.push({t:'entrepot',x:ENTREPOT_FIXE[0],y:ENTREPOT_FIXE[1],gr:0});
   DECOS.forEach(d=>DECOR.push({t:d.t,x:d.x,y:d.y,gr:0}));
   invaliderGrille();
 
@@ -6319,6 +6556,13 @@ function bloque(x,y){
     const dansLaColline=(x>VOIE_X1-96)&&(y>VOIE_Y-150)&&(y<VOIE_Y-24);
     if(dansLaColline)return true;
   }
+  /* L'ENTREPÔT : plein, sauf devant sa porte */
+  {
+    const dx=x-ENTREPOT_FIXE[0], dy=y-ENTREPOT_FIXE[1];
+    if(Math.abs(dx)<56&&dy>-48&&dy<=0&&!(Math.abs(dx)<22&&dy>-6))return true;
+  }
+  /* LA VOIE DE SERVICE : on ne marche pas dessus */
+  if(Math.abs(y-VOIE2_Y)<11&&x>VOIE2_X0-30&&x<VOIE_X1)return true;
   /* LA VOIE FERRÉE : on ne marche pas sur les rails, sauf au passage à
      niveau qui prolonge le chemin descendu de la place. */
   if(Math.abs(y-VOIE_Y)<12&&x>VOIE_X0-24&&x<VOIE_X1+30
@@ -6418,7 +6662,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:
       (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
       (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
-      (o.t==='panneauV'?88:(o.t==='gare'?150:0)))))))))));
+      (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:0))))))))))));
     if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -6515,6 +6759,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='four')dessinerFour(g,x,y,0,!!(e.four&&Date.now()<e.four.fin));
     else if(o.t==='etabli')dessinerEtabli(g,x,y);
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
+    else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLEchoppe(g,x,y);
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
@@ -6772,6 +7017,8 @@ function dessiner(){
   /* le décor et le joueur sont mêlés : ce qui est plus bas passe devant */
 
   flechesVersLesAutres(camX,camY);
+  /* le fret, dès qu'on approche du sud */
+  if(joueur.y>VOIE_Y-260){try{dessinerLeFret(ctx);}catch(x){}}
   if(QUALITE>=0.5)dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages */
   if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
   ambiance(ctx);                          /* une lueur douce vers le centre */
@@ -6881,6 +7128,8 @@ function personne(g,x,y,ap,dir,pas,marche,enCourse){
   }
   /* la pièce portée, par-dessus la pose gravée */
   if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc);}catch(err){}}
+  /* la caisse, par-dessus tout : c'est elle qu'on voit d'abord */
+  if(ap===e.ap&&caissePortee)dessinerLaCaisse(g,x,y,marche,pas);
 }
 
 /* ================= déplacement ================= */
@@ -6907,7 +7156,8 @@ function majJoueur(dt){
      l'animation changent. En dessous, on marche comme avant. */
   const max=vitesseDuJoueur();
   const aFond=pousse>0.88;
-  const allure=aFond?max:VITESSE;
+  /* une caisse sur les bras : on va moins vite, c'est tout l'arbitrage */
+  const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1);
   /* on ne COURT, au sens de l'animation, qu'au-delà du seuil */
   court=aFond&&max>=SEUIL_COURSE;
   const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
@@ -7965,7 +8215,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','souche','gravats'];
+                  'panneauV','echoppe','gare','entrepot','souche','gravats'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -8407,12 +8657,12 @@ function cible(){
   let d0=48,res=null;
   /* les bâtiments sont larges : on élargit la fouille pour eux */
   const autour=autourDe(joueur.x,joueur.y);
-  const LARGES=['casino','forge','comptoir','fete','echoppe','gare'];
+  const LARGES=['casino','forge','comptoir','fete','echoppe','gare','entrepot'];
   for(const o of DECOR)if(LARGES.includes(o.t)&&autour.indexOf(o)<0)autour.push(o);
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','gare'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','gare','entrepot'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -8420,7 +8670,8 @@ function cible(){
     if(o.tombe)continue;
     /* pour un bâtiment large, on mesure la distance au MUR, pas au centre :
        sinon les portes des extrémités restent hors de portée */
-    const demi=o.t==='comptoir'?118:(o.t==='echoppe'?72:(o.t==='gare'?120:0));
+    const demi=o.t==='comptoir'?118:(o.t==='echoppe'?72:
+                (o.t==='gare'?120:(o.t==='entrepot'?54:0)));
     const ecart=Math.max(0,Math.abs(o.x-joueur.x)-demi);
     const d=Math.hypot(ecart,joueur.y-o.y+6);
     const portee=(LARGES.includes(o.t)||o.t==='mine')?66:48;  /* on les voit de plus loin */
@@ -8493,6 +8744,20 @@ function majAction(){
     b.innerHTML=S.mot+'<small>'+S.sous+'</small>';
     b.classList.add('on');b.onclick=S.f;
   };
+  /* LE DÉCHARGEMENT passe avant tout : il n'est possible que huit minutes
+     par quart d'heure, on ne veut pas le manquer. */
+  if(caissePortee&&prèsDeLEntrepot()&&GESTE.t<=0){
+    b.innerHTML='Déposer<small>ENTREPÔT · '+enEuros(PRIX_CAISSE)+' LA CAISSE</small>';
+    b.classList.add('on');b.onclick=deposerLaCaisse;return;
+  }
+  if(caissePortee&&GESTE.t<=0){
+    b.innerHTML='Porte-la à l’entrepôt<small>IL EST AU SUD DE LA PLACE</small>';
+    b.classList.add('on');b.onclick=null;return;
+  }
+  if(!caissePortee&&prèsDuWagon()&&GESTE.t<=0){
+    b.innerHTML='Prendre une caisse<small>WAGON BD-4417 · DÉCHARGEMENT</small>';
+    b.classList.add('on');b.onclick=prendreUneCaisse;return;
+  }
   /* au bord de l'eau, le tamis passe avant tout le reste : c'est le seul
      endroit où il sert */
   if(typeof peutLaver==='function'&&peutLaver()&&GESTE.t<=0){
