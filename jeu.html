@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-0544';
+  var MA_VERSION='2026-09-16-0552';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -278,13 +279,16 @@ body{overflow:hidden}
   background:linear-gradient(180deg,#3d4148,#2f3338);box-shadow:0 3px 0 rgba(20,24,28,.5)}
 .gaTete canvas{width:52px;height:66px;image-rendering:pixelated;margin-bottom:-4px}
 .gaTete .t{flex:1;min-width:0}
-.gaTete .t b{display:block;font:400 20px Georgia,serif;color:#f6ecd2}
+.gaTete .t b{display:block;font:400 20px Georgia,serif;color:#f6ecd2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gaTete .t i{display:block;font:400 9px Georgia,serif;font-style:italic;
   color:rgba(246,236,210,.66);margin-top:2px}
 .gaTete .h{text-align:right;padding-bottom:4px}
 .gaTete .h u{display:block;font:400 7.5px Georgia,serif;font-style:italic;
   text-decoration:none;color:rgba(200,214,230,.7);letter-spacing:1.4px}
-.gaTete .h b{display:block;font:400 22px ui-monospace,monospace;color:#cfe0f2}
+.gaTete .h{flex:none;max-width:40%}
+.gaTete .h b{display:block;font:400 22px ui-monospace,monospace;color:#cfe0f2;
+  white-space:nowrap}
 .gaPan{margin:11px 12px;border-radius:12px;background:#22262b;overflow:hidden;
   border:1px solid #3a4148}
 .gaLig{display:flex;align-items:center;gap:9px;padding:12px}
@@ -4145,8 +4149,8 @@ function dessinerLaGare(g,x,y){
   const cx=x;
   const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
   const now=new Date();
-  const hh=(mi===null)?now.getHours():Math.floor(mi/60);
-  const mm=(mi===null)?now.getMinutes():(mi%60);
+  const hh=(mi===null)?now.getHours():Math.floor(mi/60)%24;
+  const mm=(mi===null)?now.getMinutes():Math.floor(mi)%60;
   const aH=((hh%12)+mm/60)/12*6.283-1.5708;
   const aM=mm/60*6.283-1.5708;
   g.strokeStyle='#2a2f34';g.lineWidth=1.4;
@@ -4229,8 +4233,8 @@ function ouvrirLaGare(){
 function prochainDepart(min){
   const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
   const now=new Date();
-  const h=(mi===null)?now.getHours():Math.floor(mi/60);
-  const m=(mi===null)?now.getMinutes():(mi%60);
+  const h=(mi===null)?now.getHours():Math.floor(mi/60)%24;
+  const m=(mi===null)?now.getMinutes():Math.floor(mi)%60;
   const q=(Math.floor(m/15)+1)*15+min%15;
   return String((h+Math.floor(q/60))%24).padStart(2,'0')+':'+String(q%60).padStart(2,'0');
 }
@@ -4261,9 +4265,12 @@ function majGuichet(){
   /* l'heure et les portraits */
   const mi=(typeof minuteDuJour==='function')?minuteDuJour():null;
   const now=new Date();
+  /* minuteDuJour() renvoie des minutes À VIRGULE : sans l'arrondi, l'horloge
+     affichait « 07:46.066566666 » et faisait exploser l'en-tête. */
   $('gaH').textContent=(mi===null
     ? String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0')
-    : String(Math.floor(mi/60)).padStart(2,'0')+':'+String(mi%60).padStart(2,'0'));
+    : String(Math.floor(mi/60)%24).padStart(2,'0')+':'+
+      String(Math.floor(mi)%60).padStart(2,'0'));
   const av=GESTE;GESTE={t:0};
   const D2=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   const chef=$('gaChef');
@@ -4326,7 +4333,16 @@ async function prendreLeBillet(){
    n'aurait eu que 13 points de marge avec les pavés, soit le « collé » qu'on
    venait de corriger. */
 const ECHOPPE_FIXE=[1104,336];
+/* LA VOIE NE TRAVERSE PLUS TOUT LE MONDE.
+   Elle allait d'un bord à l'autre, donc elle franchissait la rivière sans
+   pont, et son heurtoir se perdait dans la forêt à x=6 — invisible.
+   Elle va maintenant d'un BUTOIR visible, à l'est de la rivière, jusqu'au
+   TUNNEL qui perce la colline du bord est. */
 const VOIE_Y=680;                 /* l'axe des rails */
+const VOIE_X0=744;                /* le heurtoir, à l'ouest */
+/* MONDE_L est déclaré plus bas : on écrit la valeur, comme pour les autres
+   repères fixes de la carte. */
+const VOIE_X1=1144;               /* la bouche du tunnel, à l'est */
 const GARE_FIXE=[980,668];        /* la halle, dans l'axe de l'échoppe */
 let CALQUE_ECHOPPE=null;
 function graverLEchoppe(){
@@ -5650,24 +5666,31 @@ const TERRE_CH=['#9c8560','#a89068','#8e7854','#b09a72','#7d6a4a'];
    monde. */
 function graverLaVoie(g){
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+  const L0=VOIE_X0-18, L1=VOIE_X1+30, LARG=L1-L0;
   /* le talus, plus clair sur le dessus */
-  R(0,VOIE_Y-20,MONDE_L,40,'#9c8d78');
-  R(0,VOIE_Y-20,MONDE_L,3,'#b0a08a');
-  R(0,VOIE_Y+17,MONDE_L,3,'#7d6f5c');
+  R(L0,VOIE_Y-20,LARG,40,'#9c8d78');
+  R(L0,VOIE_Y-20,LARG,3,'#b0a08a');
+  R(L0,VOIE_Y+17,LARG,3,'#7d6f5c');
+  /* les deux bouts du remblai s'évasent dans l'herbe */
+  for(let i=0;i<18;i++){
+    R(L0-i,VOIE_Y-20+i,1,40-i*2,'#9c8d78');
+    R(L1+i,VOIE_Y-20+i,1,40-i*2,'#9c8d78');
+  }
   /* le ballast, en cailloux */
-  for(let i=0;i<2600;i++){
-    const x=alea(i*1.7)*MONDE_L, y=VOIE_Y-16+alea(i*2.9)*32;
+  for(let i=0;i<1600;i++){
+    const x=L0+alea(i*1.7)*LARG, y=VOIE_Y-16+alea(i*2.9)*32;
     const t=Math.floor(alea(i*3.3)*3);
     R(x,y,2,2,['#8e8377','#a0958a','#7a6f63'][t]);
   }
   /* les traverses */
-  for(let x=0;x<MONDE_L;x+=9){
+  for(let x=VOIE_X0-10;x<VOIE_X1+22;x+=9){
     R(x,VOIE_Y-7,6,15,'#6b5a45');
     R(x,VOIE_Y-7,6,2,'#7d6a52');
   }
-  /* les deux rails, avec leur arête brillante */
-  R(0,VOIE_Y-5,MONDE_L,3,'#8f979e');R(0,VOIE_Y-5,MONDE_L,1,'#d2d8dd');
-  R(0,VOIE_Y+3,MONDE_L,3,'#8f979e');R(0,VOIE_Y+3,MONDE_L,1,'#d2d8dd');
+  /* les deux rails */
+  const RL=VOIE_X0-8, RW=VOIE_X1+26-RL;
+  R(RL,VOIE_Y-5,RW,3,'#8f979e');R(RL,VOIE_Y-5,RW,1,'#d2d8dd');
+  R(RL,VOIE_Y+3,RW,3,'#8f979e');R(RL,VOIE_Y+3,RW,1,'#d2d8dd');
   /* LE HEURTOIR : la voie ne s'arrête pas dans le vide. À chaque bout, un
      butoir de traverses avec sa plaque rouge et blanche, et le rail qui se
      relève. */
@@ -5689,60 +5712,95 @@ function graverLaVoie(g){
       R(x+sens*20,VOIE_Y-30+k*3,14,3,k%2?'#d94b3a':'#f2efe4');
     R(x+sens*20,VOIE_Y-31,14,2,'#3d4248');
   };
-  heurtoir(6,1);                       /* à l'ouest : la voie s'arrête */
+  heurtoir(VOIE_X0,1);                 /* à l'ouest : la voie s'arrête là */
 
-  /* LE TUNNEL, à l'est : la voie doit VENIR de quelque part. Une tête de
-     pont en pierre appareillée, une voûte noire, et le remblai qui monte de
-     part et d'autre — c'est de là que sort le train. */
+  /* ---- LA COLLINE ET SON TUNNEL, à l'est ----
+     Mon tunnel poussait tout seul dans l'herbe plate : une tête de pont
+     posée là, sans raison d'être. Un tunnel perce quelque chose. On dessine
+     donc d'abord LE RELIEF — une colline boisée qui occupe tout le bord est
+     et monte progressivement — puis on l'ouvre. */
   {
-    const tx=MONDE_L-120;
-    /* le talus qui monte au-dessus de la voûte */
-    for(let i=0;i<70;i++){
-      const px=tx+18+i*1.5;
-      const h=Math.min(74,14+i*1.8);
-      R(px,VOIE_Y-h,3,h+22,i%3?'#6f8a55':'#7d9660');
-      R(px,VOIE_Y-h,3,3,'#8fa464');
+    const tx=VOIE_X1;                       /* la bouche */
+    const pied=tx-96;                       /* là où la colline commence */
+    /* le flanc : il monte de rien à toute la hauteur, en pente douce */
+    for(let x=pied;x<MONDE_L;x++){
+      const t=Math.min(1,(x-pied)/150);
+      const h=Math.round(Math.pow(t,0.7)*150);
+      if(h<2)continue;
+      /* la terre sous l'herbe */
+      R(x,VOIE_Y-h,1,h+70,'#6b5a45');
+      /* l'herbe du dessus, plus claire au sommet */
+      const ht=Math.max(3,Math.round(h*0.22));
+      R(x,VOIE_Y-h,1,ht,t>0.75?'#7d9660':'#6f8a55');
+      R(x,VOIE_Y-h,1,2,'#8fa464');
+      /* des touffes, pour que la pente ne soit pas lisse */
+      if(alea(x*1.7)<0.10)R(x-1,VOIE_Y-h-3,3,4,'#5f7a4a');
     }
-    /* la tête de pont */
-    for(let y=0;y<78;y+=6){
+    /* quelques arbres sur la crête */
+    for(let i=0;i<7;i++){
+      const x=pied+34+i*26+alea(i*3.1)*8;
+      if(x>MONDE_L-8)continue;
+      const t=Math.min(1,(x-pied)/150);
+      const h=Math.round(Math.pow(t,0.7)*150);
+      const cy=VOIE_Y-h-6;
+      R(x-1,cy,3,9,'#4f3520');
+      g.fillStyle='#2f6b34';g.beginPath();g.arc(x,cy-6,9,0,7);g.fill();
+      g.fillStyle='#3d7d3f';g.beginPath();g.arc(x-3,cy-9,6,0,7);g.fill();
+    }
+    /* ---- LA BOUCHE : elle est CREUSÉE dans le flanc ---- */
+    /* l'ombre portée du renfoncement */
+    g.fillStyle='rgba(20,26,20,.35)';
+    g.beginPath();
+    g.moveTo(tx-6,VOIE_Y+18);g.lineTo(tx-6,VOIE_Y-28);
+    g.quadraticCurveTo(tx+26,VOIE_Y-66,tx+58,VOIE_Y-28);
+    g.lineTo(tx+58,VOIE_Y+18);g.closePath();g.fill();
+    /* la tête de pont, en pierre appareillée, encastrée dans la terre */
+    for(let y=0;y<62;y+=6){
       const dec=(y/6)%2?6:0;
-      for(let px=tx;px<tx+56;px+=13)
-        R(px+dec,VOIE_Y-70+y,12,5,((px+y)%3?'#8f979e':'#a4acb3'));
+      for(let px=tx-8;px<tx+62;px+=13){
+        /* on ne pose la pierre que sur le pourtour de la voûte */
+        const dx=px+dec-(tx+26), dy=(VOIE_Y-56+y)-(VOIE_Y-24);
+        if(Math.abs(dx)<26&&dy<0&&(dx*dx)/(28*28)+(dy*dy)/(34*34)<1)continue;
+        R(px+dec,VOIE_Y-56+y,12,5,((px+y)%3?'#8f979e':'#a4acb3'));
+      }
     }
-    /* la corniche */
-    R(tx-4,VOIE_Y-74,64,6,'#7e868d');
-    R(tx-4,VOIE_Y-74,64,2,'#bcc4ca');
-    /* LA VOÛTE : un demi-cercle noir, avec son claveau et son ombre */
-    g.fillStyle='#0d1014';
+    /* la corniche qui souligne le portail */
+    R(tx-12,VOIE_Y-60,80,6,'#7e868d');
+    R(tx-12,VOIE_Y-60,80,2,'#bcc4ca');
+    R(tx-14,VOIE_Y-54,84,3,'#6f767c');
+    /* le noir de la galerie */
+    g.fillStyle='#0b0e12';
     g.beginPath();
-    g.moveTo(tx+2,VOIE_Y+14);
-    g.lineTo(tx+2,VOIE_Y-24);
-    g.quadraticCurveTo(tx+26,VOIE_Y-58,tx+50,VOIE_Y-24);
-    g.lineTo(tx+50,VOIE_Y+14);
-    g.closePath();g.fill();
-    /* l'encadrement de pierre claire */
-    g.strokeStyle='#bcc4ca';g.lineWidth=3;
-    g.beginPath();
-    g.moveTo(tx+2,VOIE_Y+14);
-    g.lineTo(tx+2,VOIE_Y-24);
-    g.quadraticCurveTo(tx+26,VOIE_Y-58,tx+50,VOIE_Y-24);
-    g.lineTo(tx+50,VOIE_Y+14);
-    g.stroke();
-    /* le claveau, au sommet */
-    R(tx+22,VOIE_Y-56,9,9,'#c4ccd2');
-    R(tx+22,VOIE_Y-56,9,2,'#e0e6ea');
-    /* la voie qui s'enfonce dans le noir */
-    R(tx+6,VOIE_Y-5,44,3,'#4a5158');
-    R(tx+6,VOIE_Y+3,44,3,'#4a5158');
-    /* un feu de signalisation, au pied */
-    R(tx-14,VOIE_Y-34,3,30,'#3d4248');
-    R(tx-18,VOIE_Y-44,11,12,'#2a2f34');
-    R(tx-16,VOIE_Y-42,7,3,'#d94b3a');
-    R(tx-16,VOIE_Y-37,7,3,'#3f7d4a');
+    g.moveTo(tx,VOIE_Y+16);g.lineTo(tx,VOIE_Y-24);
+    g.quadraticCurveTo(tx+26,VOIE_Y-58,tx+52,VOIE_Y-24);
+    g.lineTo(tx+52,VOIE_Y+16);g.closePath();g.fill();
+    /* les claveaux de la voûte, en éventail */
+    for(let i=0;i<=10;i++){
+      const a=Math.PI*(0.05+0.90*i/10);
+      const cx2=tx+26, cy2=VOIE_Y-24;
+      const px=cx2-Math.cos(a)*29, py=cy2-Math.sin(a)*33;
+      R(px-3,py-3,7,7,i===5?'#c4ccd2':'#a4acb3');
+      R(px-3,py-3,7,2,'#d2d8dd');
+    }
+    /* les piédroits */
+    R(tx-4,VOIE_Y-26,5,44,'#a4acb3');
+    R(tx+51,VOIE_Y-26,5,44,'#a4acb3');
+    R(tx-4,VOIE_Y-26,5,2,'#d2d8dd');
+    R(tx+51,VOIE_Y-26,5,2,'#d2d8dd');
+    /* la voie qui s'enfonce et s'éteint dans le noir */
+    R(tx+4,VOIE_Y-5,46,3,'#4a5158');
+    R(tx+4,VOIE_Y+3,46,3,'#4a5158');
+    R(tx+22,VOIE_Y-6,28,12,'#1a2026');
+    /* le feu de signalisation, au pied du portail */
+    R(tx-24,VOIE_Y-38,3,34,'#3d4248');
+    R(tx-29,VOIE_Y-50,12,14,'#2a2f34');
+    R(tx-29,VOIE_Y-50,12,2,'#4d545c');
+    R(tx-27,VOIE_Y-48,8,4,'#d94b3a');
+    R(tx-27,VOIE_Y-42,8,4,'#2f3338');
   }
 
   /* les poteaux de caténaire, tous les 90 points */
-  for(let x=40;x<MONDE_L;x+=90){
+  for(let x=VOIE_X0+30;x<VOIE_X1-40;x+=90){
     R(x,VOIE_Y-72,4,52,'#4d545c');
     R(x,VOIE_Y-72,2,52,'#6f767c');
     R(x-2,VOIE_Y-76,18,4,'#4d545c');
@@ -6252,9 +6310,19 @@ function bloque(x,y){
   /* le casino occupe un vrai terrain : on ne passe pas derrière */
   /* le comptoir est un vrai bâtiment : on ne passe pas au travers, ni derrière.
      Seules les trois portes de chargement laissent entrer. */
+  /* LA COLLINE DU TUNNEL : elle est en relief, on ne la traverse pas —
+     sauf la galerie, qui est noire et ne mène nulle part à pied. */
+  /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
+     quai et le bas de la carte restent libres. Ma première emprise couvrait
+     tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
+  {
+    const dansLaColline=(x>VOIE_X1-96)&&(y>VOIE_Y-150)&&(y<VOIE_Y-24);
+    if(dansLaColline)return true;
+  }
   /* LA VOIE FERRÉE : on ne marche pas sur les rails, sauf au passage à
      niveau qui prolonge le chemin descendu de la place. */
-  if(Math.abs(y-VOIE_Y)<12&&Math.abs(x-GARE_FIXE[0])>34)return true;
+  if(Math.abs(y-VOIE_Y)<12&&x>VOIE_X0-24&&x<VOIE_X1+30
+     &&Math.abs(x-GARE_FIXE[0])>34)return true;
   /* LA HALLE : les colonnes et le guichet sont pleins ; le quai, lui, se
      traverse — c'est une gare ouverte. */
   {
