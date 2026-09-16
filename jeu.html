@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-1015';
+  var MA_VERSION='2026-09-16-1018';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3865,8 +3866,8 @@ function majTuto(){
    :45, et reste huit minutes. Chaque joueur voit donc le même train au même
    moment, sans rien à synchroniser. */
 const VOIE2_Y=728;                 /* la voie de service */
-const VOIE2_X0=812;                /* son butoir, à l'ouest */
-const ENTREPOT_FIXE=[880,652];
+const VOIE2_X0=624;                /* son butoir, bien à l'ouest */
+const ENTREPOT_FIXE=[756,638];
 /* deux minutes trente à quai, un quart d'heure entre deux passages */
 const FRET_PERIODE=15, FRET_SEJOUR=2.5;
 /* les noms qu'attend etatDuFret, repris de l'aperçu */
@@ -3958,7 +3959,7 @@ function positionDuFret(){
   const mi=minuteDuFret();
   if(mi===null)return null;
   const E=etatDuFret(mi);
-  const quai=VOIE2_X0+96;
+  const quai=VOIE2_X0+188;   /* le premier wagon devant l'entrepôt */
   if(E.q==='entre')return {x:1400-(1400-quai)*(1-Math.pow(1-E.p,2.4)),ouvert:0,etat:E};
   if(E.q==='a quai')return {x:quai,ouvert:Math.min(1,E.p*8),etat:E};
   if(E.q==='part')return {x:quai+Math.pow(E.p,2)*420,ouvert:0,etat:E};
@@ -8784,6 +8785,16 @@ function majAction(){
     b.innerHTML='Entrer<small>LA GARE · PRENDRE UN BILLET</small>';
     b.classList.add('on');return;
   }
+  if(o.t==='entrepot'){
+    /* sans caisse dans les bras, il n'y a rien à y faire : on le dit, au lieu
+       de laisser la plaque proposer « Ramasser » sur un bâtiment. */
+    const F=positionDuFret();
+    const aQuai=F&&F.etat.q==='a quai';
+    b.innerHTML=(aQuai?'Va chercher une caisse':'L’entrepôt')+
+      '<small>'+(aQuai?'LE FRET EST À QUAI · 0,40 € LA CAISSE'
+                      :'LE FRET PASSE À L’HEURE, :15, :30 ET :45')+'</small>';
+    b.classList.add('on');b.onclick=null;return;
+  }
   if(o.t==='souche'&&ambrePret(o)){
     b.innerHTML='Saigner<small>LA SOUCHE · AMBRE</small>';
     b.classList.add('on');return;
@@ -8879,6 +8890,7 @@ function agir(){
   }
   if(o.t==='fete'){location.href='fete.html';return;}
   if(o.t==='panneauV'){ouvrirLeTuto();return;}
+  if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
   if(o.t==='gare'){ouvrirLaGare();return;}
   if(o.t==='echoppe'){ouvrirLEchoppe();return;}
   if(o.t==='comptoir'){ouvrirLeComptoir();return;}
