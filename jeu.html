@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-0845';
+  var MA_VERSION='2026-09-17-0849';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -5171,6 +5172,31 @@ function dessinerLeFret(g,camX,camY){
   locoFret(g,x+142,y,1);
 }
 
+/* ---- S'ASSEOIR SUR UN BANC ---- */
+function bancProche(){
+  let vu=null,best=1e9;
+  for(const o of DECOR){
+    if(o.t!=='bancP')continue;
+    const d=Math.hypot(o.x-joueur.x,(o.y-joueur.y)*1.5);
+    if(d<34&&d<best){best=d;vu=o;}
+  }
+  return vu;
+}
+function sAsseoir(o){
+  if(!o)return;
+  ASSIS=o;
+  joueur.x=o.x;joueur.y=o.y-7;      /* dessiné avant le banc : il passe devant */
+  joueur.dir='bas';joueur.marche=false;joueur.pas=0;
+  joyX=0;joyY=0;
+  vibrer(16);jouer('cueille');
+  majAction();
+}
+function seLever(){
+  if(!ASSIS)return;
+  joueur.y=ASSIS.y+16;              /* on se relève devant le banc */
+  ASSIS=null;vibrer(12);majAction();
+}
+
 /* ---- LE DÉCHARGEMENT ----
    Le seul travail salarié du jeu : pas de hasard, pas de récolte, un tarif
    fixe à la caisse — et seulement quand le fret est là. */
@@ -8491,7 +8517,41 @@ function cosmetiqueDe(ap){
   if(!ap||!ap.cos)return null;
   return COSMETIQUES.find(c=>c.id===ap.cos)||null;
 }
+/* LA POSE ASSISE : on reprend la pose debout, mais on coupe les jambes à
+   mi-mollet et on redescend le buste. Les jambes repliées sont dessinées à
+   part, en avant du banc. C'est la seule pose du jeu qui ne vient pas de la
+   planche : elle se fabrique à la volée, sur la pose de face. */
+function assis(g,x,y,ap){
+  const C=cosmetiqueDe(ap);
+  const tc=Date.now()/1000;
+  const souffle=Math.sin(tc*1.5)*0.5;
+  if(C&&C.id==='cape'){try{C.dessin(g,x,y-4,tc);}catch(err){}}
+  const c=poseDe(ap,'bas',0);
+  g.save();
+  /* le buste : on ne garde que le haut de la pose */
+  g.beginPath();
+  g.rect(Math.round(x-CASE_L/2),Math.round(y-CASE_H+10+souffle),CASE_L,CASE_H-16);
+  g.clip();
+  g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10+souffle),CASE_L,CASE_H);
+  g.restore();
+  /* LES JAMBES REPLIÉES : les cuisses à plat, les mollets qui tombent */
+  const P=PALETTES;
+  const p=Object.assign({},DEF_AP,ap||{});
+  const pant=P.pantalon[p.pantalon]||P.pantalon[0];
+  const pantO=teint(pant,-18);
+  const chau=P.chaussures[p.chaussures]||P.chaussures[0];
+  const R=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(px),Math.round(py),
+    Math.max(1,w),Math.max(1,h));};
+  [-3,2].forEach((dx,k)=>{
+    R(x+dx-1,y-9+souffle,5,4,k?pantO:pant);      /* la cuisse, à plat */
+    R(x+dx,y-5+souffle,4,6,pantO);               /* le mollet, qui pend */
+    R(x+dx-1,y+1+souffle,5,3,chau);              /* le pied */
+  });
+  if(C&&C.id!=='cape'){try{C.dessin(g,x,y-4,tc);}catch(err){}}
+}
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
+  /* assis sur un banc */
+  if(ap===e.ap&&ASSIS){assis(g,x,y,ap);return;}
   const C=cosmetiqueDe(ap);
   /* la course a ses propres poses : on les range sous une autre clé, sinon
      elles écraseraient celles de la marche */
@@ -8535,6 +8595,11 @@ function majJoueur(dt){
   const max=vitesseDuJoueur();
   const aFond=pousse>0.88;
   /* une caisse sur les bras : on va moins vite, c'est tout l'arbitrage */
+  /* assis, on ne marche pas : le premier mouvement relève le joueur */
+  if(ASSIS){
+    if(Math.hypot(joyX,joyY)>0.25)seLever();
+    else{joueur.marche=false;joueur.pas=0;}
+  }
   const allure=(aFond?max:VITESSE)*(caissePortee?0.72:1);
   /* on ne COURT, au sens de l'animation, qu'au-delà du seuil */
   court=aFond&&max>=SEUIL_COURSE;
@@ -9753,6 +9818,10 @@ async function appelRPC(nom,corps){
     return await r.json();
   }catch(x){return null;}
 }
+/* S'ASSEOIR : le joueur se pose sur un banc, dos au dossier. Il est dessiné
+   AVANT le banc (donc son bas passe derrière l'assise) et ses jambes se
+   replient : c'est ce qui fait qu'on est dessus et non devant. */
+let ASSIS=null;
 let RATTRAPAGE_SAC=false;
 /* quand le serveur et le jeu divergent, c'est le SAC DU JEU qui gagne : le
    joueur a vu les objets entrer, on ne les lui reprend pas. */
@@ -10243,6 +10312,17 @@ function majAction(){
     b.innerHTML=S.mot+'<small>'+S.sous+'</small>';
     b.classList.add('on');b.onclick=S.f;
   };
+  if(ASSIS){
+    b.innerHTML='Se lever<small>TU ES ASSIS</small>';
+    b.classList.add('on');b.onclick=seLever;return;
+  }
+  {
+    const banc=bancProche();
+    if(banc){
+      b.innerHTML='S’asseoir<small>UN BANC DE LA PLACE</small>';
+      b.classList.add('on');b.onclick=()=>sAsseoir(banc);return;
+    }
+  }
   /* LE DÉCHARGEMENT passe avant tout : il n'est possible que huit minutes
      par quart d'heure, on ne veut pas le manquer. */
   /* au bord de l'eau, le tamis passe avant tout le reste : c'est le seul
