@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1252';
+  var MA_VERSION='2026-09-17-1255';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7525,8 +7526,11 @@ function graverChemins(g){
        sombres sur les côtés, et une bordure de pierres dressées. Chaque
        pierre reçoit dix traits : ombre portée, corps, bombé, arête claire,
        ombre à droite, éclats d'usure, et parfois de la mousse. */
+    /* les points de route sont espacés de 5 : on les prend TOUS, comme
+       l'aperçu qui posait une pierre tous les 5 points. En sauter un sur
+       deux divisait la densité par deux — c'est ce qui changeait tout. */
     route.forEach(([x,y],i)=>{
-      if(i%2||surUnPont(x,y))return;
+      if(surUnPont(x,y))return;
       for(let k=-larg+2;k<larg-2;k+=4){
         const dec=((k+larg)/4)%2?2.5:0;
         const px=x+dec, py=y+k;
@@ -7539,10 +7543,16 @@ function graverChemins(g){
         g.restore();
       }
       /* LA BORDURE : des pierres dressées, et l'herbe rase qui la longe */
+      if(i%2)return;                       /* la bordure, tous les 10 points */
       [-1,1].forEach(sg=>{
         const y0=y+sg*larg-(sg>0?6:0);
-        if(i%4)return;
         pierreDuSol(g,x,y0,10,6,MOSA_BORD,x*1.7+sg*13,false);
+        /* l'herbe rase qui la longe, comme dans l'aperçu */
+        for(let dx=0;dx<10;dx+=3){
+          if(alea((x+dx)*1.9+sg)<0.5)continue;
+          g.fillStyle='#6f8a48';
+          g.fillRect((x+dx)|0,(y0+(sg>0?6:-3))|0,1,3);
+        }
       });
       /* quelques galets isolés, qui s'échappent du chemin */
       if(alea(x*2.3)<0.3){
