@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1102';
+  var MA_VERSION='2026-09-17-1111';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7057,9 +7058,11 @@ function calculerChemins(){
           [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
-  ROUTES.forEach(r=>r.forEach(([x,y])=>{
+  ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
     const gx=Math.round(x/PAS_CH),gy=Math.round(y/PAS_CH);
-    for(let a=-2;a<=2;a++)for(let b=-2;b<=2;b++){
+    /* la grande route dégage aussi large qu'elle est dessinée */
+    const e=nr<2?Math.ceil(PONT_DEMI/PAS_CH)+1:2;
+    for(let a=-e;a<=e;a++)for(let b=-e;b<=e;b++){
       const k=(gy+b)*N_CH+(gx+a);
       if(k>=0&&k<N_CH*N_CH)SURCHEMIN[k]=1;
     }
@@ -7466,9 +7469,12 @@ function graverChemins(g){
      Et le chemin s'arrête AU BOUT du tablier des ponts : avant, il montait
      sur les planches ou s'interrompait dans le vide. */
   const GRIS=['#8f979e','#7e868d','#a4acb3','#6f767c','#bcc4ca'];
-  const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<20&&Math.abs(x-rivX(py))<34);
+  const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<PONT_DEMI+6&&Math.abs(x-rivX(py))<40);
   ROUTES.forEach((route,nr)=>{
-    const larg=nr<2?11:10;
+    /* LA GRANDE ROUTE (les deux premières) a la LARGEUR DU TABLIER : on
+       sort du pont sans que la voie se rétrécisse sous les pieds. Les
+       chemins qui desservent les lieux restent plus étroits. */
+    const larg=nr<2?PONT_DEMI:10;
     /* le lit de terre */
     route.forEach(([x,y])=>{
       if(surUnPont(x,y))return;
