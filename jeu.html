@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1124';
+  var MA_VERSION='2026-09-17-1220';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7473,6 +7474,9 @@ function graverChemins(g){
      Et le chemin s'arrête AU BOUT du tablier des ponts : avant, il montait
      sur les planches ou s'interrompait dans le vide. */
   const GRIS=['#8f979e','#7e868d','#a4acb3','#6f767c','#bcc4ca'];
+  /* les six teintes des pavés — volontairement proches : c'est le liseré et
+     le joint qui font le motif, pas le contraste des pierres */
+  const PAVES=['#9d9583','#a79f8d','#948c7a','#b0a896','#8b8371','#a49c8a'];
   const surUnPont=(x,y)=>PONTS.some(py=>Math.abs(y-py)<PONT_DEMI+6&&Math.abs(x-rivX(py))<40);
   ROUTES.forEach((route,nr)=>{
     /* LA GRANDE ROUTE (les deux premières) a la LARGEUR DU TABLIER : on
@@ -7482,18 +7486,20 @@ function graverChemins(g){
     /* PLUS DE LIT DE TERRE : les galets sont posés à même l'herbe. La bande
        ocre qui débordait sous eux élargissait la route d'un côté et la
        salissait de l'autre. */
-    /* LES GALETS — LE CODE EXACT DE L'APERÇU.
-       J'avais réécrit une variante (rangs décalés, centre éclairci, bords
-       effilochés) : ce n'est pas ce qui avait été validé. Ici, c'est la
-       boucle de l'aperçu, mot pour mot — un galet de 3 sur 2 tous les trois
-       points, une teinte sur cinq, un liseré clair, et un trou sur quatre. */
+    /* LES PAVÉS DE VILLE — le chemin n° 3 de l'aperçu, repris tel quel.
+       De petits pavés carrés serrés, en rangs décalés d'un demi-pavé, six
+       teintes proches, la lumière en haut et l'ombre à droite de chacun. */
     route.forEach(([x,y],i)=>{
       if(i%3||surUnPont(x,y))return;
-      for(let k=-larg+2;k<=larg-2;k+=3){
-        if(alea(x*0.9+k*1.7)<0.28)continue;
-        const t=Math.floor(alea(x*0.41+k*1.07)*5);
-        g.fillStyle=GRIS[t];g.fillRect(x|0,(y+k)|0,3,2);
-        g.fillStyle='rgba(232,236,240,.35)';g.fillRect(x|0,(y+k)|0,3,1);
+      for(let k=-larg;k<larg;k+=6){
+        const dec=((k+larg)/6)%2?5:0;
+        const t=Math.floor(alea((x+dec)*0.41+k*1.07)*6);
+        g.fillStyle=PAVES[t];
+        g.fillRect((x+dec)|0,(y+k)|0,9,5);
+        g.fillStyle='rgba(236,230,214,.45)';
+        g.fillRect((x+dec)|0,(y+k)|0,9,1);
+        g.fillStyle='rgba(70,64,54,.4)';
+        g.fillRect((x+dec+8)|0,(y+k)|0,1,5);
       }
       /* quelques galets isolés, qui s'échappent du chemin */
       if(alea(x*2.3)<0.3){
