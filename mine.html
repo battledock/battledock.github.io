@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1929';
+  var MA_VERSION='2026-09-17-1933';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -114,6 +115,11 @@
     color:#f0dfb0;font:700 10px system-ui;letter-spacing:1.2px;
     box-shadow:0 7px 24px rgba(0,0,0,.65)}
   #frapper:active{transform:scale(.94)}
+  #sacB{position:fixed;left:calc(16px + env(safe-area-inset-left));
+    bottom:calc(92px + env(safe-area-inset-bottom));z-index:5;
+    padding:13px 18px;border-radius:13px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(20,17,13,.8);color:#cfc2a4;font:700 9px system-ui;letter-spacing:1px;
+    backdrop-filter:blur(7px)}
   #sortir{position:fixed;left:calc(16px + env(safe-area-inset-left));
     bottom:calc(30px + env(safe-area-inset-bottom));z-index:5;
     padding:13px 18px;border-radius:13px;border:1px solid rgba(255,255,255,.14);
@@ -125,6 +131,108 @@
   #voile.parti{opacity:0;pointer-events:none}
   #voile b{font:400 22px Georgia,serif;color:#f0e2bc}
   #voile i{font:400 11px Georgia,serif;font-style:italic;color:rgba(240,226,188,.5)}
+
+  /* ===== LE SAC DU VILLAGE, tel quel =====
+     Le joueur doit retrouver EXACTEMENT le même sac que dans le jeu : mêmes
+     cases, mêmes icônes, même fiche. Le style et le code viennent de
+     jeu.html sans retouche. */
+.echCrans{display:flex;gap:4px;padding:0 13px 10px}
+.echCran{flex:1;height:7px;border-radius:4px;background:rgba(120,96,56,.16)}
+.echCran.fait{background:#8aa85e}
+.echCran.suivant{background:rgba(138,168,94,.35);box-shadow:0 0 0 1px rgba(91,125,58,.5) inset}
+/* ---- le classement : une page de manuscrit ---- */
+.sacFond.manuscrit{background:#f7f1df;position:relative;overflow:hidden;padding:0}
+.sacFond.manuscrit::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;z-index:1;
+  background:
+   radial-gradient(circle at 16% 20%,rgba(196,178,138,.18),transparent 26%),
+   radial-gradient(circle at 84% 44%,rgba(196,178,138,.14),transparent 24%),
+   radial-gradient(circle at 34% 80%,rgba(196,178,138,.16),transparent 26%);
+  animation:grainP 13s ease-in-out infinite alternate}
+.sacFond.manuscrit::after{content:'';position:absolute;inset:-40% -60%;pointer-events:none;z-index:1;
+  background:linear-gradient(102deg,transparent 43%,rgba(255,255,255,.5) 50%,transparent 57%);
+  animation:lueurP 9s ease-in-out infinite}
+/* ---- le sac, en clair ---- */
+.sacFond.clairS{background:#f7f1df;padding:0;position:absolute;inset:0;overflow-y:auto;display:block}
+.sacFond.clairS::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.45;
+  background:
+   radial-gradient(circle at 18% 14%,rgba(196,178,138,.16),transparent 26%),
+   radial-gradient(circle at 82% 40%,rgba(196,178,138,.13),transparent 24%),
+   radial-gradient(circle at 40% 78%,rgba(196,178,138,.15),transparent 26%)}
+.rabatC{position:sticky;top:0;z-index:3;display:flex;align-items:center;gap:12px;
+  padding:14px 14px 13px;background:#f3ebd6;border-bottom:1px solid #e0d3b2}
+/* LA BANDE DU BAS : on referme là où le pouce est déjà posé, sur une cible
+   qui fait toute la largeur — au lieu de viser une croix de dix pixels dans
+   un coin qu'on n'atteint qu'en changeant de main. */
+.bandeC{position:sticky;bottom:0;z-index:4;width:100%;border:0;
+  padding:15px 18px calc(17px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,#f2e9d0,#ece1c4);
+  border-top:1px solid rgba(120,96,56,.22);
+  display:flex;align-items:center;justify-content:center;gap:10px}
+.bandeC span{font:400 13px Georgia,serif;color:#5b4426;letter-spacing:2px}
+.bandeC u{display:block;width:26px;height:2px;background:rgba(91,68,38,.42)}
+.bandeC:active{background:#e6dbba}
+.tC b{display:block;font:400 19px Georgia,serif;color:#2b2418;line-height:1.15}
+.tC i{display:block;font:600 8px system-ui;letter-spacing:1.6px;color:#a1957a;
+  margin-top:3px;font-style:normal}
+.chC{flex:0 0 auto;text-align:right}
+.chC b{display:block;font:400 19px Georgia,serif;color:#2b2418;line-height:1}
+.chC b small{font-size:11px;color:#a1957a}
+.barC{display:block;width:72px;height:5px;border-radius:3px;background:#e3d7b8;
+  overflow:hidden;margin-top:6px}
+.barC i{display:block;height:100%;border-radius:3px;transform-origin:left;
+  animation:remplirS .9s cubic-bezier(.2,.8,.3,1) both}
+.corpsC{position:relative;z-index:2;padding:14px 13px calc(26px + env(safe-area-inset-bottom))}
+.titC{font:700 8px system-ui;letter-spacing:1.8px;color:#a1957a;margin:2px 0 10px}
+.grilleC{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kaseC{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;padding:0}
+.cadreC{position:relative;width:100%;aspect-ratio:1;border-radius:11px;
+  background:#fdf8e9;border:1px solid #ddd0ad;box-shadow:0 2px 0 #e2d5b4;
+  display:flex;align-items:center;justify-content:center;transition:transform .08s}
+.kaseC:active .cadreC{transform:translateY(2px);box-shadow:none}
+.kaseC.on .cadreC{border:2px solid #c9a24a;background:#fffaea;
+  box-shadow:0 2px 0 #ddc98f,0 0 0 3px rgba(201,162,74,.18)}
+.cadreC svg{image-rendering:pixelated;display:block}
+.cadreC em{position:absolute;right:-4px;top:-5px;min-width:21px;height:21px;border-radius:11px;
+  background:#3d2a17;color:#f0cf7d;font:700 10.5px system-ui;font-style:normal;
+  display:flex;align-items:center;justify-content:center;padding:0 6px;
+  border:2px solid #f7f1df}
+.nomC{font:600 9.5px system-ui;color:#6b5c3f;text-align:center;line-height:1.2;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kaseC.on .nomC{color:#2b2418}
+.outilsC{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.outilC{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;
+  background:#fdf8e9;border:1px solid #ddd0ad;box-shadow:0 2px 0 #e2d5b4}
+.outilC:active{transform:translateY(2px);box-shadow:none}
+.outilC.on{border:2px solid #c9a24a;background:#fffaea}
+.outilC svg{image-rendering:pixelated;flex:0 0 auto}
+.outilC b{font:600 11.5px system-ui;color:#3d2a17}
+.lameC{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding:11px 13px;
+  border-radius:11px;background:linear-gradient(180deg,#fdf8e9,#f6efdc);
+  border:1px solid #ddd0ad;border-left:3px solid #8a7c5e}
+.lameC .icC{background:#f3ebd6}
+.ficheC{display:flex;align-items:center;gap:11px;margin-top:16px;padding:12px 13px;
+  border-radius:11px;background:#fdf8e9;border:1px solid #ddd0ad;border-left:3px solid #c9a24a}
+.icC{width:40px;height:40px;border-radius:9px;flex:0 0 auto;background:#f3ebd6;
+  border:1px solid #e0d3b2;display:flex;align-items:center;justify-content:center}
+.icC svg{image-rendering:pixelated}
+.txC{flex:1;min-width:0}
+.txC b{display:block;font:400 15px Georgia,serif;color:#2b2418}
+.txC span{font:400 10.5px/1.45 system-ui;color:#8a7c5e}
+.ficheC #sac-jeter{flex:0 0 auto;padding:9px 14px;border-radius:10px;border:1px solid #c9a98f;
+  background:#f0e4c8;color:#7d5934;font:600 11px system-ui}
+.ficheC #sac-jeter:active{transform:translateY(1px)}
+.videC{font:italic 400 12px/1.7 Georgia,serif;color:#9a8a63;text-align:center;padding:30px 14px}
+/* ---- la page du sac : une toile ouverte ---- */
+#sacPage{position:fixed;inset:0;z-index:22;display:none}
+#sacPage.on{display:block}
+.sacFond{position:absolute;inset:0;background:#33291f;display:flex;flex-direction:column;
+  animation:sm .24s cubic-bezier(.2,.85,.3,1)}
+.sacFond::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+  repeating-linear-gradient(38deg,rgba(255,220,170,.035) 0 2px,transparent 2px 7px),
+  repeating-linear-gradient(-38deg,rgba(0,0,0,.06) 0 2px,transparent 2px 7px),
+  radial-gradient(120% 70% at 50% -10%,rgba(255,214,150,.12),transparent)}
+  #sacPage{position:fixed;inset:0;z-index:30;display:none}
+  #sacPage.on{display:block}
 </style>
 </head>
 <body>
@@ -134,7 +242,9 @@
 <div id="sacJ"><u>SAC</u><b id="charge">0/60</b></div>
 <div id="mot"></div>
 <button id="frapper">FRAPPER</button>
+<button id="sacB">SAC</button>
 <button id="sortir">REMONTER</button>
+<div id="sacPage"><div class="sacFond" id="sacFond"></div></div>
 <div id="voile"><b>La mine</b><i>ON DESCEND…</i></div>
 <script>
 const PALETTES={
@@ -1344,6 +1454,180 @@ function majSac(){
     e.sac[k]+'</b></span>').join('');
   $('charge').textContent=charge()+'/'+(e.sacMax||60);
 }
+/* ================= LE SAC ================= */
+const OBJETS={
+ bois:   {nom:'Bois',   d:'Coupé sur les arbres. Sert à bâtir et à nourrir le feu.', poids:1},
+ pierre: {nom:'Pierre', d:'Ramassée au pied des rochers. Solide, et lourde.',        poids:2},
+ fibre:  {nom:'Fibre',  d:'Arrachée aux buissons et aux herbes. De quoi lier et tresser.',poids:1},
+ baies:  {nom:'Baies',  d:'Cueillies dans les buissons. Ça se mange.',               poids:1},
+ argile: {nom:'Argile', d:'Grattée sur les berges. Poterie et briques.',              poids:2},
+ roseaux:{nom:'Roseaux',d:'Coupés au bord de l’eau. Cordes, paniers, toitures.',      poids:1},
+ champignons:{nom:'Champignons',d:'À l’ombre des arbres. Ça se mange, et ça se vend.',poids:1},
+ herbes: {nom:'Herbes', d:'Cueillies en clairière. Soins et teintures.',              poids:1},
+ plumes: {nom:'Plumes', d:'Tombées au pied des arbres. Flèches et literie.',          poids:1},
+ fer:    {nom:'Fer',    d:'Extrait des filons sombres. La base des bons outils.',    poids:3},
+ cuivre: {nom:'Cuivre', d:'Veines vertes dans la roche. Malléable.',                 poids:3},
+ charbon:{nom:'Charbon',d:'Roche noire et cassante. De quoi chauffer un four.',      poids:2},
+ resine: {nom:'Résine', d:'Récoltée en entaillant un arbre. Colle et torches.',      poids:1},
+ argent: {nom:'Argent', d:'Remonté de la mine, vers le neuvième niveau.',            poids:2},
+ or:     {nom:'Or',     d:'Remonté du fond de la mine. Le guichet en donne 70.',     poids:2},
+ gemme:  {nom:'Gemme',  d:'Le trésor des derniers niveaux. Rien ne vaut plus cher.', poids:1},
+ lingotFer:{nom:'Lingot de fer',   d:'Sorti du four. De quoi forger du solide.', poids:2},
+ lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',     poids:2},
+ brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
+ torche: {nom:'Torche', d:'Résine et bois. Éclaire la nuit.',                     poids:1},
+ pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
+ hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
+};
+const ICONES={
+ bois:'<rect x="4" y="2" width="8" height="11" fill="#8a6238"/><rect x="4" y="2" width="8" height="2" fill="#a5764a"/>'+
+      '<rect x="4" y="2" width="2" height="11" fill="#a5764a"/><rect x="9" y="4" width="1" height="9" fill="#6b4a28"/>'+
+      '<rect x="4" y="12" width="8" height="1" fill="#5b3f21"/>',
+ pierre:'<rect x="3" y="7" width="11" height="6" fill="#7b8288"/><rect x="5" y="4" width="8" height="4" fill="#8b939a"/>'+
+      '<rect x="7" y="3" width="4" height="2" fill="#a2a9b0"/><rect x="3" y="11" width="11" height="2" fill="#5f666c"/>'+
+      '<rect x="6" y="5" width="2" height="1" fill="#b7bec4"/>',
+ fibre:'<rect x="6" y="3" width="4" height="10" fill="#a8b06a"/><rect x="6" y="3" width="2" height="10" fill="#c2c983"/>'+
+      '<rect x="4" y="6" width="2" height="6" fill="#98a05e"/><rect x="10" y="5" width="2" height="7" fill="#98a05e"/>'+
+      '<rect x="6" y="12" width="4" height="1" fill="#7d8449"/>',
+pioche:'<rect x="7" y="4" width="2" height="9" fill="#8a6238"/><rect x="7" y="4" width="1" height="9" fill="#a5764a"/>'+
+      '<rect x="3" y="2" width="10" height="2" fill="#7b8288"/><rect x="3" y="2" width="10" height="1" fill="#a2a9b0"/>'+
+      '<rect x="2" y="3" width="2" height="2" fill="#5f666c"/><rect x="12" y="3" width="2" height="2" fill="#5f666c"/>',
+hache:'<rect x="7" y="3" width="2" height="10" fill="#8a6238"/><rect x="7" y="3" width="1" height="10" fill="#a5764a"/>'+
+      '<rect x="8" y="2" width="5" height="6" fill="#7b8288"/><rect x="8" y="2" width="5" height="1" fill="#a2a9b0"/>'+
+      '<rect x="12" y="3" width="2" height="4" fill="#c0c7cd"/><rect x="6" y="2" width="2" height="5" fill="#5f666c"/>',
+argile:'<rect x="1" y="8" width="14" height="5" fill="#9c4a32"/><rect x="1" y="8" width="14" height="2" fill="#bb5e42"/>'+
+      '<rect x="3" y="5" width="10" height="3" fill="#ab553a"/><rect x="3" y="5" width="10" height="1" fill="#c76b4c"/>'+
+      '<rect x="6" y="3" width="5" height="2" fill="#bb5e42"/><rect x="4" y="9" width="4" height="1" fill="#7d3826"/>',
+ roseaux:'<rect x="3" y="4" width="2" height="10" fill="#5e8a47"/><rect x="7" y="2" width="2" height="12" fill="#5e8a47"/>'+
+      '<rect x="11" y="5" width="2" height="9" fill="#5e8a47"/><rect x="3" y="4" width="1" height="10" fill="#7db35d"/>'+
+      '<rect x="6" y="0" width="4" height="4" fill="#8a6238"/><rect x="6" y="0" width="4" height="1" fill="#a5764a"/>',
+ champignons:'<rect x="6" y="8" width="3" height="6" fill="#e8dcc0"/><rect x="2" y="3" width="11" height="5" fill="#a83a3a"/>'+
+      '<rect x="2" y="3" width="11" height="2" fill="#c94a4a"/><rect x="4" y="1" width="7" height="2" fill="#c94a4a"/>'+
+      '<rect x="5" y="4" width="2" height="2" fill="#f2efe4"/><rect x="9" y="3" width="2" height="2" fill="#f2efe4"/>',
+ herbes:'<rect x="3" y="5" width="2" height="9" fill="#4a944a"/><rect x="7" y="2" width="2" height="12" fill="#4a944a"/>'+
+      '<rect x="11" y="6" width="2" height="8" fill="#4a944a"/>'+
+      '<rect x="5" y="0" width="3" height="3" fill="#c98fe0"/><rect x="10" y="3" width="3" height="3" fill="#c98fe0"/>',
+ plumes:'<rect x="7" y="1" width="2" height="13" fill="#d8d2c2"/><rect x="3" y="2" width="4" height="9" fill="#f2efe4"/>'+
+      '<rect x="9" y="2" width="4" height="9" fill="#c9c2b0"/>',
+fer:'<rect x="2" y="6" width="12" height="8" fill="#4e4a48"/><rect x="2" y="6" width="12" height="2" fill="#6b6562"/>'+
+      '<rect x="4" y="3" width="8" height="4" fill="#5c5754"/><rect x="5" y="8" width="4" height="2" fill="#b06a3a"/>'+
+      '<rect x="9" y="5" width="3" height="2" fill="#d4884c"/>',
+ cuivre:'<rect x="2" y="6" width="12" height="8" fill="#6f7480"/><rect x="2" y="6" width="12" height="2" fill="#8e94a0"/>'+
+      '<rect x="4" y="3" width="8" height="4" fill="#7d838f"/><rect x="5" y="8" width="4" height="2" fill="#3f9e7a"/>'+
+      '<rect x="9" y="5" width="3" height="2" fill="#6fd8a8"/>',
+ charbon:'<rect x="2" y="5" width="12" height="9" fill="#2e2c30"/><rect x="4" y="2" width="8" height="4" fill="#3a373c"/>'+
+      '<rect x="5" y="7" width="3" height="3" fill="#6d6a74"/><rect x="10" y="9" width="2" height="2" fill="#a7a3b0"/>',
+ resine:'<rect x="4" y="3" width="8" height="9" fill="#e8a94a"/><rect x="4" y="3" width="8" height="2" fill="#f7cf7d"/>'+
+      '<rect x="6" y="5" width="2" height="5" fill="#f7cf7d"/><rect x="5" y="12" width="6" height="2" fill="#c98a2c"/>',
+lingotFer:'<rect x="1" y="7" width="14" height="6" fill="#8a8f96"/><rect x="1" y="7" width="14" height="2" fill="#b7bec4"/>'+
+      '<rect x="3" y="4" width="10" height="3" fill="#a2a9b0"/><rect x="3" y="4" width="10" height="1" fill="#d0d6db"/>',
+ lingotCuivre:'<rect x="1" y="7" width="14" height="6" fill="#b06a3a"/><rect x="1" y="7" width="14" height="2" fill="#d4884c"/>'+
+      '<rect x="3" y="4" width="10" height="3" fill="#c47a44"/><rect x="3" y="4" width="10" height="1" fill="#e8a05c"/>',
+ brique:'<rect x="2" y="5" width="12" height="4" fill="#a8563c"/><rect x="2" y="5" width="12" height="1" fill="#c46b4c"/>'+
+      '<rect x="2" y="10" width="12" height="4" fill="#96492f"/><rect x="2" y="10" width="12" height="1" fill="#b25c3e"/>',
+ argent:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/>'+
+   '<rect x="5" y="5" width="6" height="4" fill="#c3ccd4"/><rect x="6" y="6" width="3" height="2" fill="#eef3f7"/>',
+ or:'<rect x="3" y="8" width="10" height="5" rx="1" fill="#6f767d"/>'+
+   '<rect x="5" y="5" width="6" height="4" fill="#d9a63f"/><rect x="6" y="6" width="3" height="2" fill="#ffe9a8"/>',
+ gemme:'<path d="M8 2 L13 7 L8 14 L3 7z" fill="#6fd8e0"/><path d="M8 2 L13 7 L8 7z" fill="#b6f2f7"/>'+
+   '<path d="M3 7 L8 7 L8 14z" fill="#3fa8b8"/>',
+ torche:'<rect x="7" y="5" width="2" height="9" fill="#8a6238"/><rect x="5" y="2" width="6" height="4" fill="#e8802c"/>'+
+      '<rect x="6" y="0" width="4" height="3" fill="#ffc65a"/>',
+ piocheFer:'<rect x="7" y="4" width="2" height="10" fill="#8a6238"/><rect x="3" y="2" width="10" height="2" fill="#b7bec4"/>'+
+      '<rect x="2" y="3" width="2" height="2" fill="#8a8f96"/><rect x="12" y="3" width="2" height="2" fill="#8a8f96"/>',
+ hacheFer:'<rect x="7" y="3" width="2" height="11" fill="#8a6238"/><rect x="8" y="2" width="5" height="6" fill="#b7bec4"/>'+
+      '<rect x="12" y="3" width="2" height="4" fill="#e0e6ea"/>',
+ grandSac:'<rect x="3" y="5" width="10" height="9" fill="#6b4a28"/><rect x="3" y="5" width="10" height="2" fill="#8a6238"/>'+
+      '<rect x="5" y="2" width="6" height="3" fill="#5b3f21"/><rect x="7" y="8" width="2" height="3" fill="#c9a24a"/>',
+ baies:'<rect x="4" y="7" width="4" height="4" fill="#c94a4a"/><rect x="4" y="7" width="2" height="2" fill="#e2604a"/>'+
+      '<rect x="8" y="9" width="4" height="4" fill="#a83a3a"/><rect x="8" y="9" width="2" height="2" fill="#c94a4a"/>'+
+      '<rect x="6" y="4" width="4" height="3" fill="#5e8a47"/><rect x="7" y="3" width="2" height="2" fill="#7db35d"/>'
+};
+const CHARGE_MAX=60;
+const chargeMax=()=>e.sacMax||CHARGE_MAX;
+const combien=k=>e.sac[k]||0;
+const nbObjets=()=>Object.values(e.sac||{}).reduce((a,n)=>a+n,0);
+let choisi=null, fermeA=0;
+function ouvrirSac(){
+  const cles=Object.keys(OBJETS);
+  if(!choisi)choisi=cles.find(k=>combien(k)>0)||null;
+  const part=Math.min(100,Math.round(charge()/chargeMax()*100));
+  const teinte=part>90?'#c0392b':part>70?'#c98f3a':'#6f9153';
+
+  const kase=(k)=>{
+    const n=combien(k);
+    if(!n)return '';
+    return '<button class="kaseC'+(k===choisi?' on':'')+'" data-obj="'+k+'">'+
+      '<span class="cadreC"><svg viewBox="0 0 16 16" width="30">'+ICONES[k]+'</svg>'+
+      '<em>'+n+'</em></span>'+
+      '<span class="nomC">'+OBJETS[k].nom+'</span></button>';
+  };
+  const pleines=cles.map(kase).filter(Boolean);
+  const outils=['pioche','hache','piocheFer','hacheFer'].filter(k=>e.outils[k]);
+  const o=choisi&&(combien(choisi)||e.outils[choisi])?OBJETS[choisi]:null;
+
+  const LAMES=[['Épée de bois',4,'#a5764a','#7d5934'],['Épée de fer',8,'#c0c7cd','#8b939a'],
+    ['Épée de cuivre',14,'#5fc79c','#3f9e7a'],['Épée d’argent',22,'#eef3f7','#c3ccd4'],
+    ['Épée d’or',34,'#ffe9a8','#d9a63f'],['Lame de gemme',52,'#b6f2f7','#3fa8b8']];
+  const L2=LAMES[Math.min(LAMES.length-1,e.epee||0)];
+  const lame='<div class="lameC">'+
+    '<span class="icC"><svg viewBox="0 0 16 16" width="26">'+
+      '<rect x="7" y="9" width="2" height="6" fill="#6b4a28"/>'+
+      '<rect x="5" y="8" width="6" height="2" fill="#c9a24a"/>'+
+      '<rect x="7" y="1" width="2" height="8" fill="'+L2[2]+'"/>'+
+      '<rect x="7" y="1" width="1" height="8" fill="'+L2[3]+'"/></svg></span>'+
+    '<span class="txC"><b>'+L2[0]+'</b><span>'+L2[1]+' dégâts par coup · à la ceinture</span></span></div>';
+  $('sacFond').className='sacFond clairS';
+  $('sacFond').innerHTML=
+   '<div class="rabatC">'+
+     '<span class="tC"><b>Ton sac</b>'+
+       '<i>SAC DE TOILE · '+nbObjets()+' OBJET'+(nbObjets()>1?'S':'')+'</i></span>'+
+     '<span class="chC"><b>'+charge()+'<small>/'+chargeMax()+'</small></b>'+
+       '<span class="barC"><i style="width:'+part+'%;background:'+teinte+'"></i></span></span>'+
+   '</div>'+
+   '<div class="corpsC">'+
+     lame+
+     (pleines.length?'<div class="titC">RESSOURCES</div><div class="grilleC">'+pleines.join('')+'</div>'
+       :'<div class="videC">Ton sac est vide.<br>Va récolter du bois, de la pierre, des baies…</div>')+
+     (outils.length?'<div class="titC">OUTILS</div><div class="outilsC">'+outils.map(k=>
+       '<button class="outilC'+(k===choisi?' on':'')+'" data-obj="'+k+'">'+
+       '<svg viewBox="0 0 16 16" width="24">'+ICONES[k]+'</svg>'+
+       '<b>'+OBJETS[k].nom+'</b></button>').join('')+'</div>':'')+
+     (o?'<div class="ficheC">'+
+        '<span class="icC"><svg viewBox="0 0 16 16" width="26">'+ICONES[choisi]+'</svg></span>'+
+        '<span class="txC"><b>'+o.nom+'</b><span>'+o.d+'</span></span>'+
+        (o.outil?'':'<button id="sac-jeter">Jeter</button>')+
+        '</div>':'')+
+   '</div>'+
+   '<button class="bandeC" id="sac-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('sac-fermer').onclick=()=>{fermeA=Date.now();$('sacPage').classList.remove('on');};
+  $('sacFond').querySelectorAll('[data-obj]').forEach(b=>b.onclick=()=>{choisi=b.dataset.obj;ouvrirSac();});
+  const j=$('sac-jeter');
+  if(j)j.onclick=()=>{
+    e.sac[choisi]=Math.max(0,combien(choisi)-1);
+    if(!combien(choisi))choisi=null;
+    sauver();majPastille();ouvrirSac();
+  };
+  $('sacPage').classList.add('on');
+}
+/* dans la mine, jeter un objet doit aussi le retirer du serveur : on renvoie
+   simplement le sac tel qu'il est après le geste. */
+function sauver(){ecrireLocal();pousserLeSac();}
+function majPastille(){majSac();}
+let dernierPoussage=0;
+async function pousserLeSac(){
+  if(!e.id)return;
+  if(Date.now()-dernierPoussage<800)return;
+  dernierPoussage=Date.now();
+  try{
+    await fetch(URL_SB+'/rest/v1/sacs',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
+      body:JSON.stringify([{joueur:e.id,contenu:e.sac||{},
+        charge_max:chargeMax(),maj:new Date().toISOString()}])});
+  }catch(x){}
+}
+$('sacB').onclick=()=>ouvrirSac();
+
 /* ================= LA BOUCLE ================= */
 let t0=performance.now();
 function boucle(t){
