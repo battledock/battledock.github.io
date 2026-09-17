@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-0737';
+  var MA_VERSION='2026-09-17-0748';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -9750,6 +9751,19 @@ async function appelRPC(nom,corps){
   }catch(x){return null;}
 }
 let RATTRAPAGE_SAC=false;
+/* quand le serveur et le jeu divergent, c'est le SAC DU JEU qui gagne : le
+   joueur a vu les objets entrer, on ne les lui reprend pas. */
+let dernierRattrapage=0;
+async function rattraperLeSac(){
+  if(Date.now()-dernierRattrapage<1500)return;
+  dernierRattrapage=Date.now();
+  try{
+    await fetch(URL_SB+'/rest/v1/sacs',{method:'POST',
+      headers:Object.assign({},sbEntetes,{Prefer:'resolution=merge-duplicates'}),
+      body:JSON.stringify([{joueur:e.id,contenu:e.sac||{},
+        charge_max:chargeMax(),maj:new Date().toISOString()}])});
+  }catch(x){}
+}
 /* le sac tel que le serveur le connaît */
 function adopterSac(d){
   if(!d||d.erreur||!d.sac)return false;
@@ -9798,7 +9812,14 @@ function signalerLeMonde(o,genre,quoi){
     payload:{cle,genre,quand:Date.now()}});}catch(x){}
   (async()=>{
     const d=await appelRPC('recolter',{p_joueur:e.id,p_cle:cle,p_genre:quoi||genre});
-    if(d&&d.sac)adopterSac(d);
+    /* LE SERVEUR PEUT REFUSER (déjà récolté, pas encore repoussé). Dans ce
+       cas son sac ne contient pas ce qu'on vient de ramasser : l'adopter
+       ferait BAISSER le compteur sous les yeux du joueur. On ne l'adopte
+       donc que s'il a bien pris la récolte en compte. */
+    if(d&&d.erreur&&d.erreur!=='sac plein'){
+      /* on garde ce que le jeu a compté, et on le dit au serveur */
+      rattraperLeSac();
+    }else if(d&&d.sac)adopterSac(d);
     else{
       /* le serveur n'a rien à dire pour ce genre : on garde la trace du monde */
       try{
