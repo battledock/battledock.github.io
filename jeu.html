@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-0728';
+  var MA_VERSION='2026-09-17-0733';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -9747,6 +9748,7 @@ async function appelRPC(nom,corps){
     return await r.json();
   }catch(x){return null;}
 }
+let RATTRAPAGE_SAC=false;
 /* le sac tel que le serveur le connaît */
 function adopterSac(d){
   if(!d||d.erreur||!d.sac)return false;
@@ -9757,6 +9759,17 @@ function adopterSac(d){
     ? SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)] : 0;
   if(d.max)e.sacMax=Math.max(d.max,paye,e.sacMax||0);
   else if(paye)e.sacMax=Math.max(paye,e.sacMax||0);
+  /* SI LE SERVEUR A OUBLIÉ L'AGRANDISSEMENT, ON LE LUI RAPPELLE.
+     Un seul appel raté à l'achat, et il continue de rogner chaque récolte à
+     l'ancienne taille : le joueur voit son sac monter puis retomber. On
+     rattrape ici, sans rien lui demander. */
+  if(paye&&d.max&&d.max<paye&&!RATTRAPAGE_SAC){
+    RATTRAPAGE_SAC=true;
+    appelRPC('agrandir_sac',{p_joueur:e.id,p_max:paye}).then(q=>{
+      RATTRAPAGE_SAC=false;
+      if(q&&q.sac)adopterSac(q);
+    }).catch(()=>{RATTRAPAGE_SAC=false;});
+  }
   sauver();majPastille();
   return true;
 }
