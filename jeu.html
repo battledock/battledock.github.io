@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1116';
+  var MA_VERSION='2026-09-17-1118';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7488,27 +7489,18 @@ function graverChemins(g){
         g.fillRect((x+dx)|0,(y+dy)|0,1,1);
       }
     });
-    /* LES GALETS, SUR TOUTE LA LARGEUR.
-       Avant, ils ne couvraient que cinq rangs — dix-sept points — au milieu
-       d'une route qui en fait soixante : les bords restaient en terre nue et
-       la voie semblait étroite. On pave maintenant d'un bord à l'autre, en
-       s'éclaircissant vers le centre, comme dans l'aperçu. */
+    /* LES GALETS — LE CODE EXACT DE L'APERÇU.
+       J'avais réécrit une variante (rangs décalés, centre éclairci, bords
+       effilochés) : ce n'est pas ce qui avait été validé. Ici, c'est la
+       boucle de l'aperçu, mot pour mot — un galet de 3 sur 2 tous les trois
+       points, une teinte sur cinq, un liseré clair, et un trou sur quatre. */
     route.forEach(([x,y],i)=>{
-      if(i%2||surUnPont(x,y))return;
-      const n=Math.floor(larg/3.4);
-      for(let k=-n;k<=n;k++){
-        const dx=k*3.4+((i/2)%2?1.7:0), dy=Math.abs(k)*0.16;
-        const q=Math.abs(k)/n;                      /* 0 au centre, 1 au bord */
-        if(q>0.9&&alea(x*0.9+k*1.3)<0.5)continue;   /* le bord s'effiloche */
-        if(alea(x*1.1+k*2.7)<0.14)continue;         /* quelques trous de terre */
-        const t=Math.floor(alea(x*1.7+k*3.1)*5);
-        const w=3+Math.round(alea(x+k)*1.4);
-        /* la pierre du centre est plus claire : la voie se lit de loin */
-        g.fillStyle=q<0.45?'#a4acb3':GRIS[t];
-        g.fillRect((x+dx-w/2)|0,(y+dy-1.5)|0,w,3);
-        g.fillStyle=q<0.45?'#cdd4da':'#c4ccd2';
-        g.fillRect((x+dx-w/2)|0,(y+dy-1.5)|0,w,1);
-        g.fillStyle='#5f666c';g.fillRect((x+dx+w/2-1)|0,(y+dy-1.5)|0,1,3);
+      if(i%3||surUnPont(x,y))return;
+      for(let k=-larg+2;k<=larg-2;k+=3){
+        if(alea(x*0.9+k*1.7)<0.28)continue;
+        const t=Math.floor(alea(x*0.41+k*1.07)*5);
+        g.fillStyle=GRIS[t];g.fillRect(x|0,(y+k)|0,3,2);
+        g.fillStyle='rgba(232,236,240,.35)';g.fillRect(x|0,(y+k)|0,3,1);
       }
       /* quelques galets isolés, qui s'échappent du chemin */
       if(alea(x*2.3)<0.3){
