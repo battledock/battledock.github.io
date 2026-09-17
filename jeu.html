@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1834';
+  var MA_VERSION='2026-09-17-1843';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -11976,6 +11977,15 @@ function ouvrirReglages(){
    '<div class="rabatC"><span class="tC"><b>Réglages</b>'+
      '<i>ILS S’APPLIQUENT TOUT DE SUITE</i></span></div>'+
    '<div class="corpsC">'+
+     /* EN PREMIER : c'est ce qu'on vient chercher quand le jeu semble figé.
+        Ajouté à l'écran d'accueil, un navigateur garde la page en mémoire et
+        peut servir une vieille version pendant des jours. Ce bouton efface
+        tout ce qui est gardé et rappelle la page depuis le serveur. */
+     '<div class="regL"><b>Mettre à jour le jeu</b>'+
+       '<span>Ta version : <b style="display:inline">'+(window.MA_VERSION||'?')+'</b>'+
+       '<i id="reg-quoi" style="display:block;font-style:normal;margin-top:3px"></i></span>'+
+       '<div class="regR"><button class="regB on" id="reg-maj">Chercher et recharger</button></div>'+
+     '</div>'+
      ligne('Les sons',
        'Tout est fabriqué par le téléphone, rien n’est téléchargé.',
        bouton('sons',true,'Écouter')+bouton('sons',false,'Silence'))+
@@ -12038,6 +12048,45 @@ function ouvrirReglages(){
    '</div>'+
    '<button class="bandeC" id="reg-fermer"><u></u><span>REFERMER</span><u></u></button>';
   $('reg-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  /* ---- METTRE À JOUR ---- */
+  (function(){
+    const b=$('reg-maj'), quoi=$('reg-quoi');
+    if(!b)return;
+    /* on dit tout de suite s'il y a du neuf */
+    fetch('version.json?t='+Date.now(),{cache:'no-store'})
+      .then(r2=>r2.json())
+      .then(d=>{
+        if(!quoi)return;
+        if(d&&d.v&&d.v!==window.MA_VERSION)
+          quoi.innerHTML='Une version plus récente existe : <b style="display:inline">'+d.v+'</b>';
+        else quoi.textContent='Tu as déjà la dernière version.';
+      })
+      .catch(()=>{if(quoi)quoi.textContent='';});
+    b.onclick=async()=>{
+      b.textContent='Nettoyage…';b.disabled=true;
+      /* 1 · les caches du navigateur, s'il en a */
+      try{
+        if(window.caches&&caches.keys){
+          const cles=await caches.keys();
+          await Promise.all(cles.map(k=>caches.delete(k)));
+        }
+      }catch(x){}
+      /* 2 · les travailleurs de service, qui servent parfois l'ancienne page */
+      try{
+        if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations){
+          const rs=await navigator.serviceWorker.getRegistrations();
+          await Promise.all(rs.map(r2=>r2.unregister()));
+        }
+      }catch(x){}
+      /* 3 · notre propre mémoire de version, pour ne pas croire qu'on est à jour */
+      try{sessionStorage.removeItem('bdl.version.vue');}catch(x){}
+      /* 4 · on rappelle la page avec une adresse que le cache ne connaît pas.
+             La partie reste : elle est dans localStorage, qu'on ne touche pas. */
+      b.textContent='Rechargement…';
+      const u=location.pathname.split('?')[0]+'?maj='+Date.now();
+      setTimeout(()=>{location.replace(u);},220);
+    };
+  })();
   $('page2Fond').querySelectorAll('[data-reg]').forEach(b=>b.onclick=()=>{
     const val=b.dataset.val;
     REG[b.dataset.reg]=(val==='true')?true:(val==='false'?false:
