@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-2001';
+  var MA_VERSION='2026-09-17-2034';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -9088,9 +9088,19 @@ function majJoueur(dt){
   court=aFond&&max>=SEUIL_COURSE;
   const cibleX=n>0.16?(joyX/n)*allure*pousse:0;
   const cibleY=n>0.16?(joyY/n)*allure*pousse:0;
-  const k=Math.min(1,dt*(n>0.16?11:16));       /* le freinage est plus vif que la relance */
+  /* L'ACCÉLÉRATION NE DOIT PAS DÉPENDRE DU RYTHME DES IMAGES.
+     « dt × 11 » avance d'autant plus vite que l'image est longue : à 30
+     images par seconde on atteignait la vitesse de pointe deux fois plus
+     tôt qu'à 60, donc on parcourait 8 % de plus. La forme exponentielle
+     donne exactement le même résultat quel que soit le découpage. */
+  const k=1-Math.exp(-(n>0.16?11:16)*dt);
+  /* On avance avec la vitesse MOYENNE du pas, pas avec celle d'arrivée :
+     sinon une image longue fait parcourir toute sa durée à la vitesse de
+     fin, et le personnage part plus vite quand le téléphone rame. */
+  const vx0=vx, vy0=vy;
   vx+=(cibleX-vx)*k;
   vy+=(cibleY-vy)*k;
+  const vxMoy=(vx0+vx)/2, vyMoy=(vy0+vy)/2;
 
   if(SOL&&bloque(joueur.x,joueur.y)){          /* jamais coincé pour de bon */
     const [dx,dy]=degager(joueur.x,joueur.y);
@@ -9121,7 +9131,7 @@ function majJoueur(dt){
   const v=Math.hypot(vx,vy);
   if(v>1.2){
     /* on essaie chaque axe séparément : on glisse le long des obstacles */
-    const nx=joueur.x+vx*dt, ny=joueur.y+vy*dt;
+    const nx=joueur.x+vxMoy*dt, ny=joueur.y+vyMoy*dt;
     let ax=joueur.x, ay=joueur.y;
     if(!bloque(nx,joueur.y))ax=nx;
     if(!bloque(ax,ny))ay=ny;
@@ -9234,11 +9244,19 @@ addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLef
   z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){joyX=k[0];joyY=k[1];}});
 addEventListener('keyup',()=>{joyX=joyY=0;});
 
+/* LE JOYSTICK effaçait TOUT SON ÉCRAN à chaque image, même invisible : un
+   nettoyage plein écran soixante fois par seconde pour ne rien dessiner.
+   On ne l'efface plus que s'il y avait quelque chose dessus. */
+let joySale=false;
 function dessinerJoy(dt){
   /* il s'efface doucement quand on lâche */
   if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
+  if(J.vie<=0){
+    if(joySale){jg.clearRect(0,0,window.innerWidth,window.innerHeight);joySale=false;}
+    return;
+  }
   jg.clearRect(0,0,window.innerWidth,window.innerHeight);
-  if(J.vie<=0)return;
+  joySale=true;
   jg.save();
   jg.globalAlpha=J.vie;
   /* la couronne */
@@ -9533,7 +9551,9 @@ async function lireLeSolde(){
 const enEuros=(c)=>((c||0)/100).toFixed(2).replace('.',',')+' €';
 
 /* ---- le bandeau du haut se met à jour quand les chiffres bougent ---- */
-let hVu={max:-1,sac:-1,argent:-1,jetons:-1};
+let hVu={max:-1,sac:-1,argent:-1,jetons:-1,part:-1,alerte:null,plein:null};
+/* les témoins du bouton « parler », pour ne pas réécrire sa pastille */
+let dernierParler=0; const parlerVu={proche:null,nb:-1};
 function majHaut(){
   const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
@@ -9545,15 +9565,20 @@ function majHaut(){
      qu'on n'avait rien ramassé. */
   /* la jauge et la bordure : elles préviennent AVANT que le sac soit plein */
   const part=Math.max(0,Math.min(1,charge/Math.max(1,max)));
+  /* on n'écrit dans la page que si la valeur a bougé : régler un style
+     identique coûte quand même une mise en page au navigateur. */
   const jau=$('hJauge'), bord=$('bordSac');
-  if(jau){
-    jau.style.width=Math.round(part*100)+'%';
+  const pc=Math.round(part*100);
+  if(jau&&pc!==hVu.part){
+    hVu.part=pc;
+    jau.style.width=pc+'%';
     jau.style.background=part>=1?'#e08a5a':(part>=0.85?'#e8b06a':
       (part>=0.6?'#d8d49a':'#cfe8b2'));
   }
   if(bord){
-    bord.classList.toggle('on',part>=0.85);
-    bord.classList.toggle('plein',part>=1);
+    const alerte=part>=0.85, plein=part>=1;
+    if(alerte!==hVu.alerte){hVu.alerte=alerte;bord.classList.toggle('on',alerte);}
+    if(plein!==hVu.plein){hVu.plein=plein;bord.classList.toggle('plein',plein);}
   }
   if(charge!==hVu.sac||max!==hVu.max){
     s.textContent=charge+'/'+max;
@@ -10786,8 +10811,34 @@ function marquer(type,nb){
 const jaugeAction=(p)=>'<span class="jaugeAction"><u style="width:'+
   Math.round(Math.max(0,Math.min(1,p))*100)+'%"></u></span>';
 
+/* LA PLAQUE D'ACTION est recalculée soixante fois par seconde, et elle
+   réécrivait son HTML à chaque fois : le navigateur refaisait sa mise en page
+   et sa peinture pour rien — ce sont les à-coups qu'on ressent en marchant.
+   Plutôt que de retoucher les vingt-et-une écritures dispersées dans la
+   fonction, on lui donne un bouton FEINT : il retient ce qu'on lui écrit et
+   ne touche à la vraie page que lorsque le texte change. */
+let plaqueVue=null, plaqueOn=null, plaqueClic=null, plaqueVrai=null;
+const plaqueFeinte={
+  set innerHTML(v){
+    if(v===plaqueVue)return;
+    plaqueVue=v;plaqueVrai.innerHTML=v;
+  },
+  get innerHTML(){return plaqueVue;},
+  set onclick(f){plaqueClic=f;plaqueVrai.onclick=f;},
+  get onclick(){return plaqueClic;},
+  classList:{
+    add(c){if(c==='on'&&plaqueOn!==true){plaqueOn=true;plaqueVrai.classList.add('on');}
+           else if(c!=='on')plaqueVrai.classList.add(c);},
+    remove(c){if(c==='on'&&plaqueOn!==false){plaqueOn=false;plaqueVrai.classList.remove('on');}
+              else if(c!=='on')plaqueVrai.classList.remove(c);},
+    toggle(c,v){if(c==='on'){if(plaqueOn!==!!v){plaqueOn=!!v;plaqueVrai.classList.toggle('on',!!v);}}
+                else plaqueVrai.classList.toggle(c,v);},
+    contains(c){return plaqueVrai.classList.contains(c);}
+  }
+};
 function majAction(){
-  const b=$('action');
+  plaqueVrai=$('action');
+  const b=plaqueFeinte;
   /* pas de cible à portée : on propose la chose la plus utile du moment */
   const secours=()=>{
     const S=(typeof actionDeSecours==='function')?actionDeSecours():null;
@@ -12771,12 +12822,24 @@ let t0=performance.now();
   if(t-dernierSolde>20000)lireLHeure();          /* on recale l'heure de temps en temps */
   if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
   if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
-  const bp=$('b-parler');
-  if(bp){
-    const proche=[...AUTRES.values()].some(a=>Math.hypot(a.x-joueur.x,a.y-joueur.y)<120);
-    bp.classList.toggle('qqn',proche);
-    const nb=$('parler-nb');
-    if(nb){nb.textContent=nonLus;nb.classList.toggle('on',nonLus>0);}
+  /* le bouton « parler » : on ne recopiait pas seulement la liste des autres
+     joueurs à chaque image, on réécrivait aussi la pastille. Cinq fois par
+     seconde suffisent, et on n'écrit que si ça change. */
+  if(t-dernierParler>200){
+    dernierParler=t;
+    const bp=$('b-parler');
+    if(bp){
+      let proche=false;
+      AUTRES.forEach(a=>{
+        if(!proche&&Math.hypot(a.x-joueur.x,a.y-joueur.y)<120)proche=true;
+      });
+      if(proche!==parlerVu.proche){parlerVu.proche=proche;bp.classList.toggle('qqn',proche);}
+      const nb=$('parler-nb');
+      if(nb&&nonLus!==parlerVu.nb){
+        parlerVu.nb=nonLus;
+        nb.textContent=nonLus;nb.classList.toggle('on',nonLus>0);
+      }
+    }
   }
   if(FIL.length&&Date.now()-(majFil.quand||0)>5000){majFil.quand=Date.now();majFil();}
   const maintenant=Date.now();
