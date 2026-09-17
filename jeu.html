@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1954';
+  var MA_VERSION='2026-09-17-2001';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1187,6 +1188,51 @@ body.clavier #bandeau{padding-bottom:9px}
   border-top:1px solid var(--filet);background:var(--carte)}
 .ok{flex:1;border-radius:14px;padding:14px;background:var(--vert);color:#fdfbf4;font:600 14.5px system-ui}
 .annul{border-radius:14px;padding:14px 16px;background:#f0ede2;color:var(--doux);font:600 13px system-ui}
+
+/* ===== LA FORGE ===== */
+.choixF{display:flex;gap:7px;margin-bottom:12px}
+.recF{flex:1;padding:10px 4px;border-radius:12px;border:1px solid #d6cbb0;
+  background:#fbf6e8;display:flex;flex-direction:column;align-items:center;gap:3px}
+.recF.on{border-color:#8a6238;background:#f2e6cc;box-shadow:0 2px 0 #d6c39a inset}
+.recF b{font:400 10px Georgia,serif;color:#3f3627;text-align:center;line-height:1.2}
+.recF span{font:400 8px Georgia,serif;font-style:italic;color:#8a7c5e}
+.icF{display:block;height:28px}
+.detF p{font:400 11px/1.55 Georgia,serif;color:#5f5645;margin-bottom:10px}
+.ligF{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7px 0;border-top:1px solid rgba(120,104,74,.16)}
+.ligF>span:first-child{font:400 9px Georgia,serif;font-style:italic;color:#8a7c5e;
+  letter-spacing:.4px}
+.ligF b{font:400 13px Georgia,serif;color:#3f3627}
+.coutsF{display:flex;gap:9px}
+.coutF{display:flex;align-items:center;gap:3px;font:400 13px Georgia,serif;color:#3f3627}
+.coutF i{font:400 9px Georgia,serif;font-style:italic;color:#8a7c5e}
+.coutF.manque{color:#b4472f}
+.coutF.manque i{color:#c07a63}
+.nbF{display:flex;align-items:center;gap:9px;padding:10px 0}
+.nbF button{width:38px;height:38px;border-radius:12px;border:1px solid #d6cbb0;
+  background:#fbf6e8;font:400 19px Georgia,serif;color:#3f3627}
+.nbF b{font:400 19px Georgia,serif;color:#3f3627;min-width:22px;text-align:center}
+.nbF span{font:400 9px Georgia,serif;font-style:italic;color:#8a7c5e;flex:1}
+.gros{width:100%;padding:15px;border-radius:13px;border:0;margin-top:6px;
+  background:linear-gradient(180deg,#7d5934,#5b3f21);color:#f4e6c0;
+  font:400 15px Georgia,serif;box-shadow:0 3px 0 rgba(60,40,20,.4)}
+.gros.eteint{background:#d8cfba;color:#93886f;box-shadow:none}
+.fourF{text-align:center;padding:14px 0}
+.fourF b{display:block;font:400 19px Georgia,serif;color:#3f3627;margin:10px 0 5px}
+.fourF span{display:block;font:400 11px Georgia,serif;color:#6f6552}
+.fourF .pretF{color:#6f8f3a;font-size:14px;margin-top:3px}
+.barF{display:block;height:5px;border-radius:3px;background:rgba(120,104,74,.18);
+  margin:11px 24px 0;overflow:hidden}
+.barF i{display:block;height:100%;border-radius:3px;
+  background:linear-gradient(90deg,#d9803a,#e8b43a)}
+.flamF{height:52px;position:relative}
+.flamF i{position:absolute;left:50%;bottom:0;border-radius:50% 50% 42% 42%;
+  transform:translateX(-50%);animation:flF 1.1s ease-in-out infinite alternate}
+.flamF i:nth-child(1){width:34px;height:44px;background:#d25a28;opacity:.85}
+.flamF i:nth-child(2){width:22px;height:33px;background:#f0a03a;animation-delay:.18s}
+.flamF i:nth-child(3){width:11px;height:19px;background:#ffe08c;animation-delay:.36s}
+@keyframes flF{from{transform:translateX(-50%) scaleY(.88)}
+               to{transform:translateX(-50%) scaleY(1.07)}}
 </style>
 </head>
 <body>
@@ -5084,7 +5130,7 @@ const CARREAU_FIXE=[1196,152];    /* le carreau de mine, à l'est */
 const MINE_OUVERTE=true;
 const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
 const TAILLERIE_FIXE=[1210,498];  /* la forge, en bas à droite */  /* le forgeron, sous la mine */
-const TAILLERIE_OUVERTE=false;    /* il n'ouvre pas encore non plus */
+const TAILLERIE_OUVERTE=true;     /* la forge fond le minerai */
 const POTEAU_FIXE=[792,398];      /* le poteau indicateur, au sud de la place */
 /* chaque bras pointe vers un lieu : le jeu calcule l'angle et la distance */
 const DIRECTIONS=()=>[
@@ -5394,6 +5440,140 @@ function seLever(){
   joueur.y=ASSIS.y+16;              /* on se relève devant le banc */
   ASSIS=null;vibrer(12);majAction();
 }
+
+/* ================= LA FORGE =================
+   On y dépose du minerai et du charbon, ça fond pendant un temps réel, puis
+   on vient chercher ses lingots. La fournée vit SUR LE SERVEUR : elle cuit
+   même quand le jeu est fermé, et on la retrouve d'un téléphone à l'autre. */
+const RECETTES=[
+  {id:'lingotCuivre',nom:'Lingot de cuivre',cout:{cuivre:4,charbon:1},
+   rend:'1 lingot',sec:180,
+   d:'Quatre cuivres et un charbon. Le lingot vaut plus que ce qu’il coûte, '+
+     'et il servira à forger.'},
+  {id:'lingotFer',nom:'Lingot de fer',cout:{fer:4,charbon:2},
+   rend:'1 lingot',sec:300,
+   d:'Quatre fers et deux charbons. Le fer demande plus de feu que le cuivre.'},
+  {id:'brique',nom:'Briques',cout:{argile:3,charbon:1},
+   rend:'2 briques',sec:120,
+   d:'De l’argile cuite au four. Elle servira à bâtir.'}
+];
+let FOURNEE_VUE=null, forgeNb=1, forgeChoix='lingotCuivre';
+const enTemps=(s2)=>{
+  s2=Math.max(0,Math.round(s2));
+  const m=Math.floor(s2/60), r2=s2%60;
+  return m?(m+' min'+(r2?' '+r2+' s':'')):(r2+' s');
+};
+async function lireLaFournee(){
+  if(!e.id)return null;
+  const d=await appelRPC('ma_fournee',{p_joueur:e.id});
+  FOURNEE_VUE=(d&&!d.vide)?d:null;
+  return FOURNEE_VUE;
+}
+function ouvrirLaForge(){
+  dessinerLaForge();
+  lireLaFournee().then(()=>{if($('page2').classList.contains('on'))dessinerLaForge();});
+  $('page2').classList.add('on');
+}
+function dessinerLaForge(){
+  const fo=FOURNEE_VUE;
+  const R2=RECETTES.find(r2=>r2.id===forgeChoix)||RECETTES[0];
+  /* de quoi dispose-t-on ? */
+  const assez=(r2,n)=>Object.keys(r2.cout).every(k=>combien(k)>=r2.cout[k]*n);
+  const maxPossible=(r2)=>{
+    let n=0;while(n<10&&assez(r2,n+1))n++;return n;
+  };
+  const dispo=maxPossible(R2);
+  if(forgeNb>Math.max(1,dispo))forgeNb=Math.max(1,dispo);
+  const cout=(r2,n)=>Object.entries(r2.cout).map(([k,v])=>
+    '<span class="coutF'+(combien(k)>=v*n?'':' manque')+'">'+
+    '<svg viewBox="0 0 16 16" width="17">'+(ICONES[k]||'')+'</svg>'+
+    (v*n)+'<i>/'+combien(k)+'</i></span>').join('');
+  let corps;
+  if(fo){
+    /* UNE FOURNÉE EST AU FEU */
+    const rf=RECETTES.find(r2=>r2.id===fo.recette)||{nom:fo.recette,sec:180};
+    const total=rf.sec*fo.nombre;
+    const part=Math.max(0,Math.min(1,1-fo.reste/Math.max(1,total)));
+    corps=
+      '<div class="fourF">'+
+        '<div class="flamF"><i></i><i></i><i></i></div>'+
+        '<b>'+rf.nom+(fo.nombre>1?' ×'+fo.nombre:'')+'</b>'+
+        (fo.reste>0
+          ?'<span>Encore '+enTemps(fo.reste)+' au feu.</span>'+
+           '<span class="barF"><i style="width:'+Math.round(part*100)+'%"></i></span>'
+          :'<span class="pretF">C’est prêt.</span>')+
+        (fo.reste>0?'':'<button class="gros" id="f-retirer">Retirer du feu</button>')+
+      '</div>';
+  }else{
+    /* ON CHOISIT UNE RECETTE */
+    corps=
+      '<div class="choixF">'+RECETTES.map(r2=>
+        '<button class="recF'+(r2.id===forgeChoix?' on':'')+'" data-rec="'+r2.id+'">'+
+          '<span class="icF"><svg viewBox="0 0 16 16" width="26">'+
+            (ICONES[r2.id]||ICONES.pierre||'')+'</svg></span>'+
+          '<b>'+r2.nom+'</b><span>'+enTemps(r2.sec)+'</span>'+
+        '</button>').join('')+'</div>'+
+      '<div class="detF">'+
+        '<p>'+R2.d+'</p>'+
+        '<div class="ligF"><span>Il faut</span><span class="coutsF">'+cout(R2,forgeNb)+'</span></div>'+
+        '<div class="ligF"><span>Tu obtiens</span><b>'+R2.rend+
+          (forgeNb>1?' ×'+forgeNb:'')+'</b></div>'+
+        '<div class="ligF"><span>Au feu</span><b>'+enTemps(R2.sec*forgeNb)+'</b></div>'+
+        '<div class="nbF"><button id="f-moins">−</button><b>'+forgeNb+'</b>'+
+          '<button id="f-plus">+</button>'+
+          '<span>'+(dispo?('tu peux en faire '+dispo):'il te manque du minerai')+'</span></div>'+
+        '<button class="gros'+(dispo?'':' eteint')+'" id="f-forger">'+
+          (dispo?'Mettre au feu':'Il te manque du minerai')+'</button>'+
+      '</div>';
+  }
+  $('page2Fond').className='sacFond clairS';
+  $('page2Fond').innerHTML=
+   '<div class="rabatC"><span class="tC"><b>La forge</b>'+
+     '<i>'+(fo?'UNE FOURNÉE EST AU FEU':'DÉPOSE TON MINERAI')+'</i></span></div>'+
+   '<div class="corpsC">'+corps+'</div>'+
+   '<button class="bandeC" id="f-fermer"><u></u><span>REFERMER</span><u></u></button>';
+  $('f-fermer').onclick=()=>{fermeA=Date.now();$('page2').classList.remove('on');};
+  $('page2Fond').querySelectorAll('[data-rec]').forEach(b=>b.onclick=()=>{
+    forgeChoix=b.dataset.rec;forgeNb=1;dessinerLaForge();
+  });
+  const m=$('f-moins'), pl=$('f-plus');
+  if(m)m.onclick=()=>{forgeNb=Math.max(1,forgeNb-1);dessinerLaForge();};
+  if(pl)pl.onclick=()=>{forgeNb=Math.min(10,Math.max(1,dispo),forgeNb+1);dessinerLaForge();};
+  const fg=$('f-forger');
+  if(fg)fg.onclick=async()=>{
+    if(!dispo)return;
+    fg.disabled=true;fg.textContent='On allume le feu…';
+    const d=await appelRPC('forger',{p_joueur:e.id,p_recette:forgeChoix,p_nombre:forgeNb});
+    if(d&&d.sac){
+      adopterSac(d);
+      FOURNEE_VUE={recette:d.recette,nombre:d.nombre,reste:d.reste};
+      jouer('achat');vibrer(24);
+      dessinerLaForge();
+    }else{
+      fg.disabled=false;
+      fg.textContent=(d&&d.erreur)?d.erreur:'La forge n’a pas répondu';
+    }
+  };
+  const rt=$('f-retirer');
+  if(rt)rt.onclick=async()=>{
+    rt.disabled=true;rt.textContent='On sort les lingots…';
+    const d=await appelRPC('retirer_fournee',{p_joueur:e.id});
+    if(d&&d.sac){
+      adopterSac(d);FOURNEE_VUE=null;
+      jouer('pepite');vibrer(30);
+      dessinerLaForge();
+    }else{
+      rt.disabled=false;
+      rt.textContent=(d&&d.erreur==='sac plein')?'Ton sac est plein':'Réessaie';
+    }
+  };
+}
+/* on garde un œil sur la fournée, pour que la plaque le dise */
+setInterval(()=>{
+  if(!e.id||!TAILLERIE_OUVERTE)return;
+  if(FOURNEE_VUE&&FOURNEE_VUE.reste>0)FOURNEE_VUE.reste-=5;
+  else if(!FOURNEE_VUE)return;
+},5000);
 
 /* ---- LE DÉCHARGEMENT ----
    Le seul travail salarié du jeu : pas de hasard, pas de récolte, un tarif
@@ -7243,10 +7423,11 @@ function calculerChemins(){
      le village jusqu'à la barrière. Les lieux s'y raccordent. */
   /* plus de chemin vers le sud : il descendait sous la place sans mener à
      rien de visible. */
-  ROUTES=[[pont,centre],[centre,boutDeRoute],
+  /* la grande route s'arrête à la place : au-delà, elle traversait l'est
+     sans mener à rien. */
+  ROUTES=[[pont,centre],
           [COMPTOIR_FIXE,centre],[centre,ECHOPPE_FIXE],
-          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE],
-          [TAILLERIE_FIXE,CARREAU_FIXE]]   /* de la mine à la forge, directement */
+          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
@@ -8302,6 +8483,26 @@ function poserDansLeDecor(o){
   invaliderGrille();
   return o;
 }
+/* la taille réelle d'un bâtiment, prise sur son calque */
+const MARGES_VUES={};
+function margesDe(t){
+  if(MARGES_VUES[t])return MARGES_VUES[t];
+  let C=null;
+  try{
+    if(t==='taillerie'){if(!CALQUE_TAILLERIE)graverLaTaillerie();C=CALQUE_TAILLERIE;}
+    else if(t==='echoppe'){if(!CALQUE_ECHOPPE)graverLEchoppe();C=CALQUE_ECHOPPE;}
+    else if(t==='mine2'){if(!CALQUE_MINE)graverLaMine();C=CALQUE_MINE;}
+    else if(t==='comptoir'){if(!CALQUE_COMPTOIR)graverLeComptoir();C=CALQUE_COMPTOIR;}
+    else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
+  }catch(x){}
+  /* une marge de sécurité de 20 : le dessin anime parfois hors du calque
+     (fumée, étincelles, lueur) */
+  const m=C?{demi:C.W/2+20,haut:C.sol+20}
+           :{demi:60,haut:(t==='casino'?230:(t==='fete'?200:(t==='fontaine'?104:
+             (t==='arbrePot'?64:(t==='panneauV'?88:(t==='ecriteau'?44:
+             (t==='poteau'?70:80)))))))};
+  MARGES_VUES[t]=m;return m;
+}
 function premierVisible(yMin){
   let a=0,b=DECOR.length;
   while(a<b){const m=(a+b)>>1;if(DECOR[m].y<yMin)a=m+1;else b=m;}
@@ -8317,7 +8518,9 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
   const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
   /* on remonte assez haut pour attraper les bâtiments dont le toit descend
      encore dans l'écran alors que leur pied est sorti par le haut */
-  const yHaut=camY-360, yBas=camY+VH2+40;
+  /* on remonte au-delà du plus haut bâtiment : sinon son pied sort de la
+     fenêtre de tri avant que son toit ait quitté l'écran. */
+  const yHaut=camY-420, yBas=camY+VH2+40;
   const debut=premierVisible(yHaut);
   for(let i=debut;i<DECOR.length;i++){
     const o=DECOR[i];
@@ -8330,18 +8533,17 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     const x=o.x-camX, y=o.y-camY;
     /* Les bâtiments sont hauts : leur toit se voit bien après que leur
        pied soit sorti de l'écran. On leur laisse donc large. */
-    const haut=(o.t==='casino')?230:(o.t==='comptoir'?260:(o.t==='fete'?200:(o.t==='mine'?150:
-      (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
-      (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
-      (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:
-      (o.t==='mine2'?130:(o.t==='ecriteau'?44:(o.t==='poteau'?70:(o.t==='taillerie'?160:0))))))))))))))));
+    /* LES MARGES SONT MESURÉES SUR LE CALQUE, plus écrites à la main.
+       Une table de chiffres se désynchronise du dessin dès qu'on retouche un
+       bâtiment — c'est ce qui faisait disparaître la boutique et la forge en
+       bord d'écran. Le calque, lui, connaît sa vraie taille. */
+    const M=margesDe(o.t);
+    const haut=M.haut;
     /* LA MARGE HORIZONTALE doit suivre la VRAIE largeur du bâtiment. Le
        comptoir déborde de 145 de chaque côté de son ancrage, mais on le
        coupait à 120 : il disparaissait d'un coup alors qu'un bout était
        encore à l'écran. C'était ça, le « pop ». */
-    /* chaque bâtiment a la marge de SON dessin, mesurée sur son calque */
-    const demiL=(o.t==='comptoir')?150:((o.t==='casino'||o.t==='fete')?130:
-      (o.t==='taillerie'?100:(o.t==='echoppe'?95:(o.t==='mine2'?85:60))));
+    const demiL=M.demi;
     if(x<-demiL||y<-50-haut||x>VW2+demiL||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -10613,9 +10815,13 @@ function majAction(){
     b.classList.add('on');return;
   }
   if(o.t==='taillerie'){
-    b.innerHTML=(TAILLERIE_OUVERTE?'Entrer à la forge':'La forge est fermée')+
-      '<small>'+(TAILLERIE_OUVERTE?'FONDRE LE MINERAI EN LINGOTS'
-                                   :'OUVERTURE PROCHAINE')+'</small>';
+    const fo=FOURNEE_VUE;
+    const mot=!TAILLERIE_OUVERTE?'OUVERTURE PROCHAINE'
+      :(fo&&fo.reste>0?('AU FEU · '+enTemps(fo.reste))
+      :(fo&&fo.reste<=0?'TES LINGOTS SONT PRÊTS':'FONDRE LE MINERAI EN LINGOTS'));
+    b.innerHTML=(TAILLERIE_OUVERTE?(fo&&fo.reste<=0?'Retirer du feu':'Entrer à la forge')
+                                  :'La forge est fermée')+
+      '<small>'+mot+'</small>';
     b.classList.add('on');
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
@@ -10724,7 +10930,7 @@ function agir(){
   if(o.t==='fete'){location.href='fete.html';return;}
   if(o.t==='panneauV'){ouvrirLeTuto();return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
-  if(o.t==='taillerie')return;
+  if(o.t==='taillerie'){ouvrirLaForge();return;}
   if(o.t==='ecriteau')return;
   if(o.t==='mine2'){
     /* LA MINE EST UNE PAGE À PART : on sauvegarde avant de partir, pour que
