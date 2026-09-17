@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1408';
+  var MA_VERSION='2026-09-17-1718';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -8131,7 +8132,9 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
   const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
   let iG=0;
   const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
-  const yHaut=camY-300, yBas=camY+VH2+40;
+  /* on remonte assez haut pour attraper les bâtiments dont le toit descend
+     encore dans l'écran alors que leur pied est sorti par le haut */
+  const yHaut=camY-360, yBas=camY+VH2+40;
   const debut=premierVisible(yHaut);
   for(let i=debut;i<DECOR.length;i++){
     const o=DECOR[i];
@@ -8149,7 +8152,13 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
       (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:
       (o.t==='mine2'?150:(o.t==='ecriteau'?44:(o.t==='poteau'?70:(o.t==='taillerie'?150:0))))))))))))))));
-    if(x<-120||y<-50-haut||x>VW2+120||y>VH2+30)continue;
+    /* LA MARGE HORIZONTALE doit suivre la VRAIE largeur du bâtiment. Le
+       comptoir déborde de 145 de chaque côté de son ancrage, mais on le
+       coupait à 120 : il disparaissait d'un coup alors qu'un bout était
+       encore à l'écran. C'était ça, le « pop ». */
+    const demiL=(o.t==='comptoir')?150:((o.t==='casino'||o.t==='fete')?130:
+      ((o.t==='mine2'||o.t==='taillerie'||o.t==='echoppe')?110:60));
+    if(x<-demiL||y<-50-haut||x>VW2+demiL||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
         let dx=0;
@@ -8409,7 +8418,7 @@ async function descendreDeLigne(){
 const CAMP_FIXE  =[840,472];                     /* le campement, au sud de la place */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
-const COMPTOIR_FIXE=[940,146];                  /* le long entrepôt, en haut, centré */
+const COMPTOIR_FIXE=[812,150];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
