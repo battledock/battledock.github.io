@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-0733';
+  var MA_VERSION='2026-09-17-0737';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -8984,7 +8985,7 @@ let hVu={max:-1,sac:-1,argent:-1,jetons:-1};
 function majHaut(){
   const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
-  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*((OBJETS[k]||{}).poids||1),0);
+  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*1  /* le sac compte les OBJETS, plus leur poids */,0);
   const max=e.sacMax||60;
 
   /* On surveille la CHARGE *et* la taille du sac : en n'écoutant que la
@@ -10173,7 +10174,7 @@ addEventListener('pointerdown',(ev)=>{
    la chose la plus utile de l'instant. Sac plein, on va vendre. Un message
    non lu, on répond. Sinon, on ouvre le sac. */
 function actionDeSecours(){
-  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*((OBJETS[k]||{}).poids||1),0);
+  const charge=Object.entries(e.sac||{}).reduce((t,[k,n])=>t+n*1  /* le sac compte les OBJETS, plus leur poids */,0);
   const max=e.sacMax||60;
   /* SUR LA RIVE OUEST — celle de la récolte — on ne propose JAMAIS le sac :
      le joueur y vise des arbres et des rochers, et une grande cible « Le sac »
@@ -10834,7 +10835,10 @@ if(!e.outils)e.outils={};
 if(e.coffreOuvert&&e.outils.pioche&&!e.outils.hache)e.outils.hache=true;
 if(!e.casses)e.casses=[];
 const combien=k=>e.sac[k]||0;
-const charge=()=>Object.entries(e.sac).reduce((a,[k,n])=>a+n*((OBJETS[k]||{poids:1}).poids),0);
+/* LE SAC SE COMPTE EN OBJETS : 60 places, c'est 60 choses, quelles qu'elles
+   soient. Avant, chaque ressource avait son poids — un fer en valait trois —
+   et on n'atteignait jamais le chiffre affiché. */
+const charge=()=>Object.values(e.sac).reduce((a,n)=>a+n,0);
 const nbObjets=()=>Object.values(e.sac).filter(n=>n>0).length;
 const sacPlein=()=>charge()>=chargeMax();
 function prevenirSacPlein(o){
@@ -10846,7 +10850,7 @@ function prevenirSacPlein(o){
 function ajouter(k,n){
   if(!OBJETS[k]||!(n>0))return 0;            /* un objet inconnu ne casse rien */
   const place=chargeMax()-charge();
-  const q=Math.max(0,Math.min(n,Math.floor(place/(OBJETS[k].poids||1))));
+  const q=Math.max(0,Math.min(n,Math.floor(place/1)));   /* une place par objet */
   if(q>0){e.sac[k]=combien(k)+q;sauver();majPastille();}
   return q;
 }
@@ -11410,7 +11414,7 @@ function cptMaj(){
   });
   const total=ks.reduce((t,k)=>t+PRIX_COMPTOIR[k]*combien(k),0);
   const nb=ks.reduce((t,k)=>t+combien(k),0);
-  const pd=ks.reduce((t,k)=>t+combien(k)*((OBJETS[k]||{}).poids||1),0);
+  const pd=ks.reduce((t,k)=>t+combien(k)*1,0);
   $('cptCombien').textContent=nb+' objet'+(nb>1?'s':'')+' sur le comptoir';
   $('cptPoids').textContent=pd+' de charge rendue';
   $('cptTotal').textContent=cptSou(total);
