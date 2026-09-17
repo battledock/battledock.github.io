@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-16-2037';
+  var MA_VERSION='2026-09-17-0728';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -9584,6 +9585,31 @@ function fairePousser(){
   if(change){invaliderGrille();sauver();}
 }
 
+/* CE QUE DONNE CHAQUE CHOSE — la même table que le serveur.
+   Le jeu tirait au hasard (3 à 5 bois) là où le serveur donne un montant
+   fixe (4). Sa réponse arrivant après coup, elle écrasait le sac et le
+   chiffre BAISSAIT sous les yeux du joueur. Une seule table, donc, et plus
+   aucun hasard sur les quantités. */
+const BUTIN={
+  arbre:{bois:4,fibre:1}, rocher:{pierre:3},
+  fer:{fer:2}, cuivre:{cuivre:2}, charbon:{charbon:2},
+  buisson:{baies:2,fibre:1}, argile:{argile:2}, roseaux:{roseaux:2},
+  champignons:{champignons:2}, herbes:{herbes:2,fibre:1},
+  plumes:{plumes:2}, resine:{resine:2}
+};
+/* on ajoute au sac exactement ce que le serveur ajoutera */
+function encaisser(genre,x,y,nom,col){
+  const b=BUTIN[genre]||{};
+  let total=0, detail=[];
+  for(const k in b){
+    const n=ajouter(k,b[k]);
+    if(n>0){total+=n;marquer(k,n);detail.push('+'+n+' '+k);}
+  }
+  e.recolte=(e.recolte||0)+total;
+  if(total>0&&nom)texteVolant(x,y-24,detail.join('  '),col||'#e8dcc0');
+  return total;
+}
+
 const CUEILLI=new Map();                        /* clé → heure de la cueillette */
 const REPOUSSE={cueillette:210000, buisson:240000, resine:180000};
 
@@ -10378,9 +10404,7 @@ function majGeste(dt){
         poussiere(o.x,o.y,14);
         secouer(1.3);ARRET=0.085;
         vibrer([12,30,26]);
-        const q=2+Math.floor(Math.random()*2);
-        const pris=ajouter('pierre',q);
-        e.recolte=(e.recolte||0)+pris;marquer('pierre',pris);
+        const pris=encaisser('rocher',o.x,o.y);
         noterCasse('r'+o.x+','+o.y);noterARepousser(o);
         signalerLeMonde(o,'rocher',o.t);
         DECOR.splice(DECOR.indexOf(o),1);invaliderGrille();
@@ -10424,10 +10448,8 @@ function miner(o){
     poussiere(o.x,o.y,16);
     secouer(1.4);ARRET=0.09;
     vibrer([12,30,26]);
-    const q=R.q[0]+Math.floor(Math.random()*(R.q[1]-R.q[0]+1));
-    const pris=ajouter(o.t,q);
-    const cailloux=ajouter('pierre',1);
-    e.recolte=(e.recolte||0)+pris+cailloux;
+    const pris=encaisser(o.t,o.x,o.y);
+    const cailloux=0;
     marquer(o.t,pris);marquer('pierre',cailloux);
     noterCasse('m'+o.x+','+o.y);noterARepousser(o);
     signalerLeMonde(o,'minerai',o.t);
@@ -10574,10 +10596,7 @@ function ramasser(o){
       c:Math.random()<.6?R.col[0]:R.col[1],rebondi:!R.vole});
   }
   secouer(0.18);
-  const q=R.q[0]+Math.floor(Math.random()*(R.q[1]-R.q[0]+1));
-  const pris=ajouter(o.t,q);
-  e.recolte=(e.recolte||0)+pris;marquer(o.t,pris);
-  texteVolant(o.x,o.y-24,'+'+pris+' '+R.nom,'#e8dcc0');
+  const pris=encaisser(o.t,o.x,o.y,R.nom);
   if(R.aussi){                                 /* certaines plantes donnent deux choses */
     const [k,n]=R.aussi;
     const p2=ajouter(k,n);
@@ -10596,7 +10615,6 @@ function ramasser(o){
 /* ---- cueillir un buisson : rien ne casse, ça remue et ça donne ---- */
 function cueillir(o){
   signalerLeMonde(o,'buisson','buisson');
-  const fibreBuisson=Math.random()<0.5?1:0;    /* une chance sur deux d'arracher de la fibre */
   o.cueilli=Date.now();o.frappe=Date.now();o.secoue=1;
   /* les baies sautent du buisson */
   for(let i=0;i<9;i++){
@@ -10614,16 +10632,10 @@ function cueillir(o){
       c:Math.random()<.5?'#4a944a':'#3d7d3f',rebondi:false});
   }
   secouer(0.22);
-  const q=2+Math.floor(Math.random()*2);
-  const pris=ajouter('baies',q);
-  e.recolte=(e.recolte||0)+pris;marquer('baies',pris);
-  texteVolant(o.x,o.y-26,'+'+pris+' baies','#e8919a');
-  /* en tirant sur les branches, on arrache souvent de la fibre */
-  const fib=fibreBuisson?ajouter('fibre',1):0;
-  if(fib){
-    e.recolte+=fib;
-    texteVolant(o.x,o.y-38,'+1 fibre','#c2c983');
-    texteVolant(o.x,o.y-50,'+2 pts','#a9c96a');
+  const pris=encaisser('buisson',o.x,o.y,'baies','#e8919a');
+  /* la fibre vient maintenant avec les baies, dans le même compte */
+  const fib=0;
+  if(false){
     setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'fibre'),160);
   }else texteVolant(o.x,o.y-38,'+2 pts','#a9c96a');
   for(let i=0;i<pris;i++)setTimeout(()=>volVersSac(VW*ECH/2,VH*ECH/2,'baies'),i*90);
@@ -10685,10 +10697,8 @@ function couper(o){
       DECOR.push({t:'souche',x:o.x,y:o.y,gr:0,neuf:Date.now()});
       DECOR.sort((a,b)=>a.y-b.y);invaliderGrille();
     }
-    const q=3+Math.floor(Math.random()*3);
-    const pris=ajouter('bois',q);
-    const fib=ajouter('fibre',1);
-    e.recolte=(e.recolte||0)+pris+fib;marquer('bois',pris);marquer('fibre',fib);
+    const pris=encaisser('arbre',o.x,o.y);
+    const fib=0;
     noterCasse('a'+o.x+','+o.y);signalerLeMonde(o,'arbre','arbre');
     texteVolant(o.x,o.y-26,'+'+pris+' bois','#d9b98a');
     texteVolant(o.x,o.y-38,'+8 pts','#a9c96a');
