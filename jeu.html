@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1829';
+  var MA_VERSION='2026-09-17-1834';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4675,10 +4676,12 @@ function dessinerLaMine(g,x,y){
    trois coups de pioche, puis se régénère en quelques minutes. La lanterne
    du vestiaire double le rayon de vue — le premier cosmétique qui serve. */
 const FILONS=[
-  {id:'charbon', nom:'Charbon', x:130, y:-34, col:'#3a3a42', rend:'charbon'},
-  {id:'cuivre',  nom:'Cuivre',  x:262, y:-28, col:'#a0653a', rend:'cuivre'},
-  {id:'fer',     nom:'Fer',     x:394, y:-38, col:'#9aa2a8', rend:'fer'},
-  {id:'gemme',   nom:'Gemme',   x:540, y:-24, col:'#7fd8e8', rend:'gemme'}
+  {id:'charbon', nom:'Charbon', x:240,  y:-30, col:'#3a3a42', rend:'charbon'},
+  {id:'cuivre',  nom:'Cuivre',  x:470,  y:-70, col:'#a0653a', rend:'cuivre'},
+  {id:'charbon2',nom:'Charbon', x:740,  y:-26, col:'#3a3a42', rend:'charbon'},
+  {id:'fer',     nom:'Fer',     x:880,  y:-34, col:'#9aa2a8', rend:'fer'},
+  {id:'fer2',    nom:'Fer',     x:1080, y:-78, col:'#9aa2a8', rend:'fer'},
+  {id:'gemme',   nom:'Gemme',   x:1300, y:-40, col:'#7fd8e8', rend:'gemme'}
 ];
 const FILON_REPOUSSE=180000;          /* trois minutes pour qu'un filon revienne */
 let ETAT_FILONS={}, filonVise=null, galerieBoucle=0;
@@ -4688,8 +4691,27 @@ let ETAT_FILONS={}, filonVise=null, galerieBoucle=0;
    portée, et il ne se passait rien. La galerie est maintenant un vrai
    couloir de 620 points qu'on parcourt, la caméra suit, et on creuse le
    filon devant lequel on se tient. */
-const GAL_L=620;
-const gal={x:60,dir:'droite',pas:0,marche:false,jx:0};
+/* LA GALERIE : un vrai lieu, pas un couloir. 1400 de long sur 320 de haut,
+   avec une salle centrale, deux embranchements, un lac souterrain et un
+   campement de mineurs. On s'y déplace au joystick, dans les deux sens. */
+const GAL_L=1400, GAL_H=320;
+const gal={x:80,y:250,dir:'droite',pas:0,marche:false,jx:0,jy:0};
+/* LES SALLES : chacune a son sol, sa hauteur de plafond et son ambiance */
+const GAL_SALLES=[
+  {x0:0,   x1:300, h:64,  nom:'l’entrée'},
+  {x0:300, x1:620, h:112, nom:'la grande salle'},
+  {x0:620, x1:900, h:70,  nom:'la galerie basse'},
+  {x0:900, x1:1160,h:120, nom:'le lac'},
+  {x0:1160,x1:1400,h:80,  nom:'le fond'}
+];
+const salleDe=(x)=>GAL_SALLES.find(s=>x>=s.x0&&x<s.x1)||GAL_SALLES[0];
+/* ce qui meuble la galerie */
+const GAL_DECO=[
+  {t:'campement',x:180},{t:'wagon',x:340},{t:'pilier',x:430},{t:'pilier',x:520},
+  {t:'treuil',x:560},{t:'eboulis',x:700},{t:'etai',x:780},{t:'wagon',x:840},
+  {t:'lac',x:1030},{t:'ponton',x:960},{t:'champignons',x:1100},
+  {t:'autel',x:1250},{t:'eboulis',x:1330}
+];
 /* le convoi roule-t-il ? et où en sont ses roues quand il s'arrête */
 let FRET_ROULE=false, FRET_ANGLE=0;
 function ouvrirLaGalerie(){
@@ -4707,23 +4729,25 @@ function ouvrirLaGalerie(){
   $('ga-creuser').onclick=()=>creuserIci();
   $('page2').classList.add('on');
   const c=$('gaCv');
-  /* LE JOYSTICK : on glisse le doigt sur la galerie pour avancer */
+  /* LE JOYSTICK, dans les deux sens : on pose le doigt où l'on veut sur la
+     galerie et on tire. Le repère apparaît là où le doigt s'est posé, comme
+     dehors — c'est le même geste, on ne réapprend rien. */
   let tp=null;
-  c.ontouchstart=(ev)=>{tp=ev.touches[0].clientX;};
-  c.ontouchmove=(ev)=>{
-    if(tp===null)return;
-    const dx=ev.touches[0].clientX-tp;
-    gal.jx=Math.max(-1,Math.min(1,dx/46));
+  const prendre=(x,y)=>{tp={x,y};gal.joyVu={x,y,dx:0,dy:0};};
+  const tirer=(x,y)=>{
+    if(!tp)return;
+    const dx=x-tp.x, dy=y-tp.y, d=Math.hypot(dx,dy);
+    const m=Math.min(1,d/46);
+    gal.jx=d?dx/d*m:0;gal.jy=d?dy/d*m:0;
+    gal.joyVu={x:tp.x,y:tp.y,dx:gal.jx,dy:gal.jy};
   };
-  c.ontouchend=()=>{tp=null;gal.jx=0;};
-  /* et à la souris, pour l'ordinateur */
-  let sp=null;
-  c.onpointerdown=(ev)=>{if(ev.pointerType!=='touch')sp=ev.clientX;};
-  c.onpointermove=(ev)=>{
-    if(sp===null||ev.pointerType==='touch')return;
-    gal.jx=Math.max(-1,Math.min(1,(ev.clientX-sp)/46));
-  };
-  c.onpointerup=()=>{sp=null;gal.jx=0;};
+  const lacher=()=>{tp=null;gal.jx=0;gal.jy=0;gal.joyVu=null;};
+  c.ontouchstart=(ev)=>{const t=ev.touches[0];prendre(t.clientX,t.clientY);};
+  c.ontouchmove=(ev)=>{const t=ev.touches[0];tirer(t.clientX,t.clientY);};
+  c.ontouchend=lacher;
+  c.onpointerdown=(ev)=>{if(ev.pointerType!=='touch')prendre(ev.clientX,ev.clientY);};
+  c.onpointermove=(ev)=>{if(ev.pointerType!=='touch')tirer(ev.clientX,ev.clientY);};
+  c.onpointerup=(ev)=>{if(ev.pointerType!=='touch')lacher();};
   animerLaGalerie();
 }
 /* le filon devant lequel on se tient */
@@ -4779,113 +4803,275 @@ function animerLaGalerie(){
   tic();
 }
 
+/* le sol et le plafond de la galerie, à une abscisse donnée */
+function galSol(x){return GAL_H-40;}
+function galPlafond(x){
+  const s=salleDe(x);
+  /* la voûte s'arrondit aux jonctions entre deux salles */
+  const p=galSol(x)-s.h;
+  const i=GAL_SALLES.indexOf(s);
+  const prev=GAL_SALLES[i-1], next=GAL_SALLES[i+1];
+  if(prev&&x-s.x0<40){
+    const q=(x-s.x0)/40;
+    return galSol(x)-(prev.h+(s.h-prev.h)*(q*q*(3-2*q)));
+  }
+  if(next&&s.x1-x<40){
+    const q=(s.x1-x)/40;
+    return galSol(x)-(next.h+(s.h-next.h)*(q*q*(3-2*q)));
+  }
+  return p;
+}
+function galBloque(x,y){
+  if(x<24||x>GAL_L-24)return true;
+  if(y>galSol(x)-2||y<galPlafond(x)+16)return true;
+  /* le lac : on n'y entre pas */
+  if(x>986&&x<1090&&y>galSol(x)-14)return true;
+  return false;
+}
 function dessinerLaGalerie(g,VW,VH){
   const T=Date.now()/1000;
   const avecLampe=aLaLanterne();
   const al=(n)=>alea(n);
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
-  const sol=VH*0.78;
-  /* ON AVANCE : le joystick pousse le joueur, la caméra le suit */
+  /* ON SE DÉPLACE au joystick, dans les deux sens */
   const dt=1/60;
-  if(Math.abs(gal.jx)>0.12){
-    gal.x=Math.max(30,Math.min(GAL_L-30,gal.x+gal.jx*96*dt));
-    gal.pas+=Math.abs(gal.jx)*96*dt*0.22;
-    gal.marche=true;gal.dir=gal.jx>0?'droite':'gauche';
+  const d=Math.hypot(gal.jx,gal.jy);
+  if(d>0.12){
+    const v=104*Math.min(1,d);
+    const nx=gal.x+gal.jx/d*v*dt, ny=gal.y+gal.jy/d*v*dt;
+    if(!galBloque(nx,gal.y))gal.x=nx;
+    if(!galBloque(gal.x,ny))gal.y=ny;
+    gal.pas+=v*dt*0.22;gal.marche=true;
+    if(Math.abs(gal.jx)>Math.abs(gal.jy))gal.dir=gal.jx>0?'droite':'gauche';
+    else gal.dir=gal.jy>0?'bas':'haut';
   }else gal.marche=false;
   const camX=Math.max(0,Math.min(GAL_L-VW,gal.x-VW/2));
-  /* la roche */
-  g.fillStyle='#2b2620';g.fillRect(0,0,VW,VH);
+  const camY=Math.max(0,Math.min(GAL_H-VH,gal.y-VH*0.62));
+  /* ---- LA ROCHE ---- */
+  g.fillStyle='#241f1a';g.fillRect(0,0,VW,VH);
   for(let y=0;y<VH;y+=3)for(let x=(y/3)%2?0:3;x<VW;x+=6){
-    const t=al((x+camX)*0.7+y*1.3);
-    g.fillStyle=t<0.4?'#332d26':(t<0.8?'#3a332b':'#443c33');
+    const t=al((x+camX)*0.7+(y+camY)*1.3);
+    g.fillStyle=t<0.4?'#2f2922':(t<0.8?'#382f27':'#41372d');
     g.fillRect(x,y,6,3);
   }
-  R(0,sol,VW,VH-sol,'#4a4138');
-  for(let i=0;i<300;i++){
-    const wx=al(i*1.7)*GAL_L;
-    const x=wx-camX;
+  /* ---- LE VIDE DE LA GALERIE : on creuse la roche ---- */
+  for(let sx=0;sx<VW;sx++){
+    const wx=sx+camX;
+    if(wx<0||wx>GAL_L)continue;
+    const haut=galPlafond(wx)-camY, bas=galSol(wx)-camY;
+    /* l'air de la galerie */
+    const dg=g.createLinearGradient(0,haut,0,bas);
+    dg.addColorStop(0,'#14110e');dg.addColorStop(1,'#1d1913');
+    g.fillStyle=dg;g.fillRect(sx,haut,1,bas-haut);
+    /* la lèvre du plafond, éclairée */
+    R(sx,haut,1,2,'#4a3f33');
+    R(sx,haut+2,1,1,'rgba(120,104,84,.4)');
+    /* le sol */
+    R(sx,bas,1,VH-bas,'#3f382f');
+    R(sx,bas,1,2,'#524a3e');
+  }
+  /* les cailloux du sol */
+  for(let i=0;i<400;i++){
+    const wx=al(i*1.7)*GAL_L, x=wx-camX;
     if(x<-4||x>VW+4)continue;
-    R(x,sol+al(i*2.9)*(VH-sol),2,2,i%3?'#5a5046':'#3a332b');
+    const y=galSol(wx)-camY+2+al(i*2.9)*22;
+    R(x,y,2,2,i%3?'#4c443a':'#332d26');
   }
-  /* LES BOISAGES, tous les 70 points : ils donnent la profondeur */
-  for(let k=0;k*70<GAL_L;k++){
-    const bx=20+k*70-camX;
-    if(bx<-40||bx>VW+40)continue;
-    R(bx,sol-52,6,52,'#6b5a45');R(bx,sol-52,2,52,'#8a7660');
-    R(bx+40,sol-52,6,52,'#6b5a45');R(bx+40,sol-52,2,52,'#8a7660');
-    R(bx-3,sol-58,52,7,'#5b4a38');R(bx-3,sol-58,52,2,'#7d6a52');
+  /* ---- LES BOISAGES ---- */
+  for(let k=0;k*84<GAL_L;k++){
+    const wx=40+k*84, bx=wx-camX;
+    if(bx<-50||bx>VW+50)continue;
+    const haut=galPlafond(wx)-camY, bas=galSol(wx)-camY;
+    R(bx,haut+2,6,bas-haut-2,'#6b5a45');R(bx,haut+2,2,bas-haut-2,'#8a7660');
+    R(bx+44,haut+2,6,bas-haut-2,'#6b5a45');R(bx+44,haut+2,2,bas-haut-2,'#8a7660');
+    R(bx-3,haut,56,7,'#5b4a38');R(bx-3,haut,56,2,'#7d6a52');
   }
-  /* LES RAILS, au sol, sur toute la longueur */
-  for(let x=-camX%9;x<VW;x+=9)R(x,sol+6,7,3,'#6b5a45');
-  [0,7].forEach(dy=>R(0,sol+8+dy,VW,2,'#8f979e'));
-  /* LES FILONS */
+  /* ---- LES RAILS, qui courent au sol ---- */
+  for(let sx=-camX%9;sx<VW;sx+=9){
+    const wx=sx+camX;
+    R(sx,galSol(wx)-camY+8,7,3,'#6b5a45');
+  }
+  [0,7].forEach(dy=>{
+    for(let sx=0;sx<VW;sx++){
+      const wx=sx+camX;
+      R(sx,galSol(wx)-camY+10+dy,1,2,'#8f979e');
+    }
+  });
+  /* ---- CE QUI MEUBLE LA GALERIE ---- */
+  GAL_DECO.forEach(o=>{
+    const x=o.x-camX;
+    if(x<-90||x>VW+90)return;
+    const bas=galSol(o.x)-camY, haut=galPlafond(o.x)-camY;
+    if(o.t==='campement'){
+      /* UN CAMPEMENT DE MINEURS : un feu, deux caisses, une bâche */
+      const fx=x, fy=bas-4;
+      for(let k=0;k<9;k++){
+        const a=k/9*6.283;
+        R(fx+Math.cos(a)*15-3,fy+Math.sin(a)*6-2,6,4,al(k)>0.5?'#5f574a':'#4a4238');
+      }
+      [[-7,0],[-3,-3],[2,-6]].forEach(([dx,dy],k)=>{
+        g.save();g.translate(fx+dx,fy+dy);g.rotate(k*0.7-0.4);
+        R(0,0,13,4,'#6b4a28');R(0,0,13,1,'#8a6238');g.restore();
+      });
+      const v=0.8+Math.sin(T*6)*0.2;
+      [['rgba(210,90,40,',11,15],['rgba(255,160,50,',7,11],['rgba(255,230,140,',4,7]]
+      .forEach(([c,w,h])=>{
+        g.fillStyle=c+(0.75*v).toFixed(2)+')';
+        g.beginPath();g.moveTo(fx-w,fy-2);
+        g.quadraticCurveTo(fx-w*0.4,fy-h*v,fx+Math.sin(T*3)*2,fy-h*1.4*v);
+        g.quadraticCurveTo(fx+w*0.4,fy-h*v,fx+w,fy-2);g.closePath();g.fill();
+      });
+      for(let i=0;i<6;i++){
+        const p=((T*0.9+i/6)%1);
+        R(fx+Math.sin(p*7+i)*7,fy-14-p*26,1,1,'rgba(255,170,70,'+(0.7*(1-p)).toFixed(2)+')');
+      }
+      R(x+26,bas-14,16,14,'#8a6238');R(x+26,bas-14,16,2,'#c09a6a');
+      R(x+44,bas-11,13,11,'#7d5934');
+      /* la bâche tendue */
+      R(x-30,bas-42,2,42,'#6b5a45');R(x+16,bas-46,2,46,'#6b5a45');
+      g.fillStyle='#8a7048';
+      g.beginPath();g.moveTo(x-30,bas-42);g.lineTo(x+18,bas-46);
+      g.lineTo(x+18,bas-38);g.lineTo(x-30,bas-34);g.closePath();g.fill();
+    }else if(o.t==='wagon'){
+      R(x-13,bas-14,26,11,'#4d545c');
+      R(x-13,bas-14,26,2,'#6f767c');
+      R(x-10,bas-19,20,5,'#2a2118');
+      for(let i=0;i<4;i++)R(x-8+i*5,bas-22,4,4,i%2?'#3a3a42':'#2a2a2e');
+      [[-7],[7]].forEach(([dx])=>{g.fillStyle='#16191c';
+        g.beginPath();g.arc(x+dx,bas-2,4,0,7);g.fill();});
+    }else if(o.t==='pilier'){
+      /* UN PILIER DE ROCHE laissé pour tenir le plafond */
+      for(let y=haut;y<bas;y+=7){
+        const w=20+Math.sin((y-haut)*0.08)*4;
+        R(x-w/2,y,w,7,al(y*1.3)>0.5?'#4a4138':'#554b40');
+        R(x-w/2,y,w,1,'#6a5f50');
+      }
+      R(x-14,haut,28,5,'#5f5546');
+      R(x-13,bas-4,26,5,'#5f5546');
+    }else if(o.t==='treuil'){
+      /* UN TREUIL, pour remonter les bennes */
+      R(x-18,haut+4,4,26,'#6b5a45');R(x+14,haut+4,4,26,'#6b5a45');
+      R(x-20,haut+28,40,5,'#5b4a38');
+      g.fillStyle='#4d545c';g.beginPath();g.arc(x,haut+34,9,0,7);g.fill();
+      g.strokeStyle='#8a939a';g.lineWidth=1.2;
+      for(let k=0;k<6;k++){
+        const a=T*0.8+k*1.047;
+        g.beginPath();g.moveTo(x,haut+34);
+        g.lineTo(x+Math.cos(a)*7,haut+34+Math.sin(a)*7);g.stroke();
+      }
+      g.strokeStyle='#8a7660';g.lineWidth=1;
+      g.beginPath();g.moveTo(x,haut+42);g.lineTo(x,bas-18);g.stroke();
+      R(x-8,bas-18,16,13,'#6b4a28');R(x-8,bas-18,16,2,'#8a6238');
+    }else if(o.t==='eboulis'){
+      for(let i=0;i<22;i++){
+        const px=x-30+al(i*1.9)*60, py=bas-2-al(i*2.7)*26;
+        const w=5+al(i*3.3)*6;
+        g.save();g.translate(px,py);g.rotate((al(i*4.1)-0.5)*0.6);
+        R(0,0,w,w*0.7,['#5f5546','#6b6152','#534a3e'][i%3]);
+        R(0,0,w,1,'#7a6f5e');
+        g.restore();
+      }
+    }else if(o.t==='etai'){
+      g.save();g.translate(x,bas-2);g.rotate(-0.3);
+      R(0,-34,5,34,'#6b5a45');R(0,-34,2,34,'#8a7660');
+      g.restore();
+      R(x+14,bas-6,22,5,'#6b5a45');
+    }else if(o.t==='lac'){
+      /* LE LAC SOUTERRAIN : de l'eau noire qui reflète la lampe */
+      const l0=986-camX, l1=1090-camX;
+      const dg=g.createLinearGradient(0,bas-12,0,bas+18);
+      dg.addColorStop(0,'#1b3a48');dg.addColorStop(1,'#0f2530');
+      g.fillStyle=dg;g.fillRect(l0,bas-12,l1-l0,30);
+      for(let k=0;k<7;k++){
+        const q=((T*0.3+k/7)%1);
+        g.strokeStyle='rgba(140,190,210,'+(0.16*(1-q)).toFixed(2)+')';g.lineWidth=1;
+        g.beginPath();g.ellipse((l0+l1)/2,bas-2,6+q*48,2+q*10,0,0,7);g.stroke();
+      }
+      /* les stalactites qui gouttent au-dessus */
+      for(let k=0;k<6;k++){
+        const sx=l0+12+k*16;
+        g.fillStyle='#5f5546';
+        g.beginPath();g.moveTo(sx-3,haut+2);g.lineTo(sx,haut+16+al(k)*10);
+        g.lineTo(sx+3,haut+2);g.closePath();g.fill();
+        const p=((T*0.6+k*0.3)%1);
+        R(sx,haut+18+p*(bas-haut-24),1,3,'rgba(150,190,210,'+(0.5*(1-p)).toFixed(2)+')');
+      }
+    }else if(o.t==='ponton'){
+      for(let k=0;k<7;k++)R(x+k*7,bas-4,6,4,k%2?'#7d5934':'#8a6238');
+      R(x,bas,2,10,'#5b3f21');R(x+40,bas,2,10,'#5b3f21');
+    }else if(o.t==='champignons'){
+      /* DES CHAMPIGNONS LUMINEUX : la seule lumière du fond */
+      for(let i=0;i<9;i++){
+        const px=x-24+al(i*1.9)*48, py=bas-2-al(i*2.7)*8;
+        const br=0.5+Math.sin(T*1.4+i)*0.25;
+        R(px,py-7,2,7,'#6f8a7c');
+        g.fillStyle='rgba(126,214,180,'+br.toFixed(2)+')';
+        g.beginPath();g.ellipse(px+1,py-9,5,3.4,0,0,7);g.fill();
+        const d2=g.createRadialGradient(px+1,py-9,1,px+1,py-9,20);
+        d2.addColorStop(0,'rgba(126,214,180,'+(0.22*br).toFixed(2)+')');
+        d2.addColorStop(1,'rgba(126,214,180,0)');
+        g.fillStyle=d2;g.fillRect(px-19,py-29,40,40);
+      }
+    }else{
+      /* L'AUTEL DU FOND : de vieilles pierres dressées */
+      [[-22,0],[0,-6],[22,0]].forEach(([dx,dy],k)=>{
+        for(let y=0;y<26+dy;y+=6)
+          R(x+dx-7,bas-26-dy+y,14,6,al(k*3+y)>0.5?'#5f5546':'#6b6152');
+        R(x+dx-8,bas-30-dy,16,5,'#7a6f5e');
+      });
+      const br=0.4+Math.sin(T*1.1)*0.2;
+      g.fillStyle='rgba(201,162,74,'+br.toFixed(2)+')';
+      g.beginPath();g.arc(x,bas-38,4,0,7);g.fill();
+    }
+  });
+  /* ---- LES FILONS ---- */
   FILONS.forEach(f=>{
-    const vx=f.x-camX, vy=f.y;
+    const vx=f.x-camX;
     if(vx<-40||vx>VW+40)return;
+    const bas=galSol(f.x)-camY;
+    const vy=bas+f.y;
     const pret=filonPret(f);
-    /* la veine dans la roche */
-    for(let i=0;i<5;i++){
-      const dx=-6+i*3+al(f.x*i)*2, dy=-3+al(i*1.7)*7;
-      R(vx+dx,sol+vy+dy,4,4,pret?f.col:'#4a4138');
-      if(pret)R(vx+dx,sol+vy+dy,4,1,'rgba(255,255,255,.35)');
+    for(let i=0;i<6;i++){
+      const dx=-8+i*3+al(f.x*i)*2, dy=-4+al(i*1.7)*9;
+      R(vx+dx,vy+dy,4,4,pret?f.col:'#3f382f');
+      if(pret)R(vx+dx,vy+dy,4,1,'rgba(255,255,255,.38)');
     }
-    /* la gemme brille toute seule */
-    if(f.id==='gemme'&&pret){
+    if(f.rend==='gemme'&&pret){
       const br=(Math.sin(T*2.2)+1)/2;
-      const d=g.createRadialGradient(vx,sol+vy,1,vx,sol+vy,18);
-      d.addColorStop(0,'rgba(127,216,232,'+(0.20+br*0.16).toFixed(2)+')');
-      d.addColorStop(1,'rgba(127,216,232,0)');
-      g.fillStyle=d;g.fillRect(vx-18,sol+vy-18,36,36);
+      const d2=g.createRadialGradient(vx,vy,1,vx,vy,20);
+      d2.addColorStop(0,'rgba(127,216,232,'+(0.22+br*0.16).toFixed(2)+')');
+      d2.addColorStop(1,'rgba(127,216,232,0)');
+      g.fillStyle=d2;g.fillRect(vx-20,vy-20,40,40);
     }
-    /* LE REPÈRE : une marque au sol sous chaque filon, visible de loin.
-       Sans elle, on ne sait pas où aller dans le noir. */
-    g.fillStyle=pret?'rgba(232,207,138,.30)':'rgba(120,112,98,.22)';
-    g.beginPath();g.ellipse(vx,sol+10,13,4,0,0,7);g.fill();
+    /* la marque au sol, pour le repérer de loin */
+    g.fillStyle=pret?'rgba(232,207,138,.28)':'rgba(120,112,98,.2)';
+    g.beginPath();g.ellipse(vx,bas-2,13,4,0,0,7);g.fill();
   });
-  /* un wagonnet abandonné, et un étai tombé */
-  [[180,'wagon'],[330,'etai']].forEach(([wx,t])=>{
-    const x=wx-camX;
-    if(x<-30||x>VW+30)return;
-    if(t==='wagon'){
-      R(x,sol-6,22,11,'#4d545c');R(x,sol-6,22,2,'#6f767c');
-      R(x+2,sol-9,18,3,'#2a2118');
-      [x+6,x+18].forEach(rx=>{g.fillStyle='#16191c';
-        g.beginPath();g.arc(rx,sol+6,3.4,0,7);g.fill();});
-    }else R(x,sol-2,20,4,'#6b5a45');
-  });
-  /* l'eau qui suinte */
-  for(let i=0;i<7;i++){
-    const wx=40+i*84, x=wx-camX;
-    if(x<-4||x>VW+4)continue;
-    const p=((T*0.7+i*0.31)%1);
-    R(x,sol-58+p*52,1,3,'rgba(150,190,210,'+(0.5*(1-p)).toFixed(2)+')');
-  }
-  /* LE PERSONNAGE, à sa place dans la galerie */
-  const px=gal.x-camX, py=sol+2;
+  /* ---- LE PERSONNAGE ---- */
+  const px=gal.x-camX, py=gal.y-camY;
   GESTE={t:0};
-  /* le coup de pioche */
+  g.fillStyle='rgba(10,10,8,.4)';
+  g.beginPath();g.ellipse(px,py+1,7,3,0,0,7);g.fill();
   if(gal.frappe&&Date.now()-gal.frappe<300){
     const q=(Date.now()-gal.frappe)/300;
     g.save();g.translate(px,py);g.rotate(Math.sin(q*3.14)*0.24);g.translate(-px,-py);
     sprite(g,px,py,DEF_AP,gal.dir,gal.pas,false);
     g.restore();
   }else sprite(g,px,py,DEF_AP,gal.dir,gal.pas,gal.marche);
-  /* ---- LE NOIR : on ne voit que ce que la lampe éclaire ---- */
-  const r=avecLampe?96:62;
-  const d=g.createRadialGradient(px,py-16,r*0.3,px,py-16,r);
-  d.addColorStop(0,'rgba(0,0,0,0)');
-  d.addColorStop(0.55,'rgba(6,8,10,.42)');
-  d.addColorStop(1,'rgba(4,5,7,.93)');
-  g.fillStyle=d;g.fillRect(0,0,VW,VH);
-  /* la lanterne accrochée, si on l'a */
+  /* ---- LE NOIR ---- */
+  const r=avecLampe?112:74;
+  const dn=g.createRadialGradient(px,py-16,r*0.3,px,py-16,r);
+  dn.addColorStop(0,'rgba(0,0,0,0)');
+  dn.addColorStop(0.55,'rgba(6,8,10,.40)');
+  dn.addColorStop(1,'rgba(4,5,7,.93)');
+  g.fillStyle=dn;g.fillRect(0,0,VW,VH);
   if(avecLampe){
     const bal=Math.sin(T*2.4)*1.4;
     R(px+7,py-26,1,5,'#5f666c');
     R(px+5+bal*0.3,py-21,5,7,'#8a6238');
     R(px+6+bal*0.3,py-19,3,4,'#ffd27a');
   }
-  /* LA FLÈCHE : quand un filon est hors de vue, on montre sa direction */
-  const proche=filonDevant();
+  /* ---- LES REPÈRES ---- */
   FILONS.forEach(f=>{
     if(!filonPret(f))return;
     const vx=f.x-camX;
@@ -4895,17 +5081,32 @@ function dessinerLaGalerie(g,VW,VH){
     const br=0.4+Math.sin(T*3)*0.2;
     g.fillStyle='rgba(232,207,138,'+br.toFixed(2)+')';
     g.beginPath();
-    g.moveTo(fx+cote*7,sol-30);g.lineTo(fx-cote*4,sol-36);g.lineTo(fx-cote*4,sol-24);
-    g.closePath();g.fill();
+    g.moveTo(fx+cote*7,VH*0.5);g.lineTo(fx-cote*4,VH*0.5-6);
+    g.lineTo(fx-cote*4,VH*0.5+6);g.closePath();g.fill();
   });
-  /* LE BOUTON : il dit ce qu'on peut faire ici */
+  const proche=filonDevant();
   const bt=$('ga-quoi');
   if(bt)bt.textContent=proche
     ?(filonPret(proche)?('CREUSER · '+proche.nom.toUpperCase()):'FILON ÉPUISÉ')
     :'AVANCE VERS UN FILON';
-  /* la progression dans la galerie, en haut */
+  /* le nom de la salle, et la progression */
+  const mot=$('gaMot');
+  if(mot&&!gal.frappe)mot.textContent=salleDe(gal.x).nom.toUpperCase();
   R(0,0,VW,3,'rgba(0,0,0,.4)');
   R(0,0,VW*(gal.x/GAL_L),3,'rgba(232,207,138,.5)');
+  /* LE REPÈRE DU JOYSTICK, là où le doigt s'est posé */
+  if(gal.joyVu){
+    const c2=$('gaCv');
+    if(c2){
+      const r2=c2.getBoundingClientRect(), ech=r2.width/VW;
+      const jx=(gal.joyVu.x-r2.left)/ech, jy=(gal.joyVu.y-r2.top)/ech;
+      g.beginPath();g.arc(jx,jy,17,0,7);
+      g.fillStyle='rgba(18,20,16,.22)';g.fill();
+      g.strokeStyle='rgba(253,251,244,.3)';g.lineWidth=1;g.stroke();
+      g.beginPath();g.arc(jx+gal.joyVu.dx*13,jy+gal.joyVu.dy*13,7,0,7);
+      g.fillStyle='rgba(253,251,244,.7)';g.fill();
+    }
+  }
 }
 
 /* ================= LA VOIE DE SERVICE ET LE FRET =================
@@ -7840,7 +8041,6 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-CARREAU_FIXE[0])<130&&o.y>CARREAU_FIXE[1]-130&&o.y<CARREAU_FIXE[1]+40));
   DECOR.push({t:'mine2',x:CARREAU_FIXE[0],y:CARREAU_FIXE[1],gr:0});
-  DECOR.push({t:'ecriteau',x:PANNEAU_MINE[0],y:PANNEAU_MINE[1],gr:0});
   /* LA TAILLERIE, entre la mine et la rivière */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-TAILLERIE_FIXE[0])<140&&o.y>TAILLERIE_FIXE[1]-150&&o.y<TAILLERIE_FIXE[1]+40));
@@ -8048,15 +8248,20 @@ function bloque(x,y){
     if(dx>-114&&dx<80&&dy>-124&&dy<0)return true;
   }
   /* l'écriteau planté devant la mine */
-  if(Math.abs(x-PANNEAU_MINE[0])<9&&y>PANNEAU_MINE[1]-14&&y<PANNEAU_MINE[1]+4)return true;
   /* LA MINE : seul le BÂTIMENT est plein. L'emprise décrivait encore
      l'ancien carreau — machine, recette et terril — qui n'existent plus :
      elle bloquait de larges zones vides et laissait traverser la maison.
      Le devant reste libre sur une bande, c'est là qu'on se tient pour
      descendre. */
   {
+    /* TOUS LES MURS SONT PLEINS, y compris le rocher derrière. Seule
+       l'entrée de la galerie, en bas au milieu, laisse passer — et encore :
+       on s'y tient devant, on ne la traverse pas. */
     const dx=x-CARREAU_FIXE[0], dy=y-CARREAU_FIXE[1];
-    if(Math.abs(dx)<48&&dy>-46&&dy<-3)return true;
+    /* le bâtiment : murs, toit et pignon */
+    if(Math.abs(dx)<50&&dy>-72&&dy<0)return true;
+    /* le rocher qui l'enveloppe, derrière */
+    if(Math.hypot(dx/64,(dy+6)/42)<1&&dy<-4)return true;
   }
   /* L'ENTREPÔT : retiré avec les voies */
   if(false){
