@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1220';
+  var MA_VERSION='2026-09-17-1252';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7465,6 +7466,34 @@ function graverLesPaves(g){
   }
 }
 
+/* UNE PIERRE DU SOL : dix traits chacune. C'est ce qui distingue un pavage
+   travaillé d'un aplat de rectangles — l'ombre dans le joint, le bombé du
+   dessus, l'arête qui accroche la lumière, et l'usure. */
+function pierreDuSol(g,x,y,w,h,pal,graine,arrondi){
+  const t=Math.floor(alea(graine*0.41)*pal.length);
+  g.fillStyle='rgba(48,44,38,.42)';
+  if(arrondi){g.beginPath();g.ellipse(x+w/2+1,y+h/2+1,w/2,h/2,0,0,7);g.fill();}
+  else g.fillRect(x+1,y+1,w,h);
+  g.fillStyle=pal[t];
+  if(arrondi){g.beginPath();g.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,7);g.fill();}
+  else g.fillRect(x,y,w,h);
+  g.fillStyle='rgba(255,250,238,.17)';
+  if(arrondi){g.beginPath();g.ellipse(x+w/2,y+h/2,w*0.3,h*0.3,0,0,7);g.fill();}
+  else g.fillRect(x+1,y+1,w-2,h-2);
+  g.fillStyle='rgba(252,246,232,.55)';g.fillRect(x,y,w-1,1);
+  g.fillStyle='rgba(248,242,228,.30)';g.fillRect(x,y,1,h-1);
+  g.fillStyle='rgba(58,52,44,.34)';
+  g.fillRect(x+w-1,y+1,1,h-1);g.fillRect(x+1,y+h-1,w-1,1);
+  for(let i=0;i<3;i++){
+    if(alea(graine*7.3+i)<0.55)continue;
+    g.fillStyle=alea(graine+i)>0.5?'rgba(255,252,244,.22)':'rgba(60,54,46,.20)';
+    g.fillRect(x+1+alea(graine*2.1+i)*(w-3),y+1+alea(graine*3.7+i)*(h-3),1,1);
+  }
+  if(alea(graine*5.9)>0.86){
+    g.fillStyle='rgba(106,138,72,.55)';
+    g.fillRect(x+alea(graine)*w*0.6,y+h-1,2,2);
+  }
+}
 function graverChemins(g){
   if(!ROUTES.length)calculerChemins();
   /* ================= LES CHEMINS DE GALETS =================
@@ -7474,6 +7503,11 @@ function graverChemins(g){
      Et le chemin s'arrête AU BOUT du tablier des ponts : avant, il montait
      sur les planches ou s'interrompait dans le vide. */
   const GRIS=['#8f979e','#7e868d','#a4acb3','#6f767c','#bcc4ca'];
+  /* les palettes de la mosaïque */
+  const MOSA_FOND  =['#9a9284','#a6a092','#8e8678','#b2aa9c'];
+  const MOSA_CLAIR =['#d0c8b6','#d8d0be','#c6beac'];
+  const MOSA_SOMBRE=['#6f675a','#7a7264','#645c50'];
+  const MOSA_BORD  =['#8f8778','#9a9182','#847c6e','#a49b8c'];
   /* les six teintes des pavés — volontairement proches : c'est le liseré et
      le joint qui font le motif, pas le contraste des pierres */
   const PAVES=['#9d9583','#a79f8d','#948c7a','#b0a896','#8b8371','#a49c8a'];
@@ -7486,21 +7520,30 @@ function graverChemins(g){
     /* PLUS DE LIT DE TERRE : les galets sont posés à même l'herbe. La bande
        ocre qui débordait sous eux élargissait la route d'un côté et la
        salissait de l'autre. */
-    /* LES PAVÉS DE VILLE — le chemin n° 3 de l'aperçu, repris tel quel.
-       De petits pavés carrés serrés, en rangs décalés d'un demi-pavé, six
-       teintes proches, la lumière en haut et l'ombre à droite de chacun. */
+    /* LA MOSAÏQUE DU VILLAGE — le chemin IV de l'aperçu, repris tel quel.
+       Un fond de cailloutis, un motif en losanges au centre, deux bandes
+       sombres sur les côtés, et une bordure de pierres dressées. Chaque
+       pierre reçoit dix traits : ombre portée, corps, bombé, arête claire,
+       ombre à droite, éclats d'usure, et parfois de la mousse. */
     route.forEach(([x,y],i)=>{
-      if(i%3||surUnPont(x,y))return;
-      for(let k=-larg;k<larg;k+=6){
-        const dec=((k+larg)/6)%2?5:0;
-        const t=Math.floor(alea((x+dec)*0.41+k*1.07)*6);
-        g.fillStyle=PAVES[t];
-        g.fillRect((x+dec)|0,(y+k)|0,9,5);
-        g.fillStyle='rgba(236,230,214,.45)';
-        g.fillRect((x+dec)|0,(y+k)|0,9,1);
-        g.fillStyle='rgba(70,64,54,.4)';
-        g.fillRect((x+dec+8)|0,(y+k)|0,1,5);
+      if(i%2||surUnPont(x,y))return;
+      for(let k=-larg+2;k<larg-2;k+=4){
+        const dec=((k+larg)/4)%2?2.5:0;
+        const px=x+dec, py=y+k;
+        const u=(px*0.5+k*0.9), v=(px*0.5-k*0.9);
+        const dans=((Math.floor(u/9)+Math.floor(v/9))%2===0)&&Math.abs(k)<larg*0.63;
+        const bord=Math.abs(Math.abs(k)-(larg-8))<3;
+        const pal=bord?MOSA_SOMBRE:(dans?MOSA_CLAIR:MOSA_FOND);
+        g.save();g.translate(px,py);g.rotate((alea(px*2.1+k)-0.5)*0.3);
+        pierreDuSol(g,-2,-2,4,4,pal,px*0.41+k*1.07,true);
+        g.restore();
       }
+      /* LA BORDURE : des pierres dressées, et l'herbe rase qui la longe */
+      [-1,1].forEach(sg=>{
+        const y0=y+sg*larg-(sg>0?6:0);
+        if(i%4)return;
+        pierreDuSol(g,x,y0,10,6,MOSA_BORD,x*1.7+sg*13,false);
+      });
       /* quelques galets isolés, qui s'échappent du chemin */
       if(alea(x*2.3)<0.3){
         const s2=alea(x)<0.5?-1:1;
