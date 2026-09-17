@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-0849';
+  var MA_VERSION='2026-09-17-0851';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -5185,7 +5186,10 @@ function bancProche(){
 function sAsseoir(o){
   if(!o)return;
   ASSIS=o;
-  joueur.x=o.x;joueur.y=o.y-7;      /* dessiné avant le banc : il passe devant */
+  /* L'ASSISE du banc tombe neuf points au-dessus de son ancrage. On s'y pose,
+     et on est dessiné APRÈS le banc : le dossier passe derrière le dos, les
+     jambes devant l'assise. */
+  joueur.x=o.x;joueur.y=o.y+3;
   joueur.dir='bas';joueur.marche=false;joueur.pas=0;
   joyX=0;joyY=0;
   vibrer(16);jouer('cueille');
@@ -8517,41 +8521,51 @@ function cosmetiqueDe(ap){
   if(!ap||!ap.cos)return null;
   return COSMETIQUES.find(c=>c.id===ap.cos)||null;
 }
-/* LA POSE ASSISE : on reprend la pose debout, mais on coupe les jambes à
-   mi-mollet et on redescend le buste. Les jambes repliées sont dessinées à
-   part, en avant du banc. C'est la seule pose du jeu qui ne vient pas de la
-   planche : elle se fabrique à la volée, sur la pose de face. */
+/* LA POSE ASSISE.
+   Mon premier essai plaçait le joueur DERRIÈRE le banc : il restait debout,
+   les pieds au sol, à côté de l'assise. Il faut deux choses pour qu'on y
+   croie : que les HANCHES tombent sur l'assise, et que les jambes se replient
+   vers l'avant. On dessine donc le buste descendu d'un cran, coupé au niveau
+   du siège, puis les cuisses à plat et les mollets qui pendent devant. */
 function assis(g,x,y,ap){
   const C=cosmetiqueDe(ap);
   const tc=Date.now()/1000;
   const souffle=Math.sin(tc*1.5)*0.5;
-  if(C&&C.id==='cape'){try{C.dessin(g,x,y-4,tc);}catch(err){}}
+  /* y est la ligne d'ASSISE : c'est là que tombent les hanches */
+  const hanche=y+souffle;
+  if(C&&C.id==='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
+  /* LE BUSTE : la pose de face, descendue, et coupée au ras du siège */
   const c=poseDe(ap,'bas',0);
   g.save();
-  /* le buste : on ne garde que le haut de la pose */
   g.beginPath();
-  g.rect(Math.round(x-CASE_L/2),Math.round(y-CASE_H+10+souffle),CASE_L,CASE_H-16);
+  g.rect(Math.round(x-CASE_L/2),Math.round(hanche-CASE_H+16),CASE_L,CASE_H-16);
   g.clip();
-  g.drawImage(c,Math.round(x-CASE_L/2),Math.round(y-CASE_H+10+souffle),CASE_L,CASE_H);
+  g.drawImage(c,Math.round(x-CASE_L/2),Math.round(hanche-CASE_H+14),CASE_L,CASE_H);
   g.restore();
-  /* LES JAMBES REPLIÉES : les cuisses à plat, les mollets qui tombent */
+  /* LES JAMBES REPLIÉES, devant le banc */
   const P=PALETTES;
   const p=Object.assign({},DEF_AP,ap||{});
   const pant=P.pantalon[p.pantalon]||P.pantalon[0];
-  const pantO=teint(pant,-18);
+  const pantO=teint(pant,-18), pantC=teint(pant,12);
   const chau=P.chaussures[p.chaussures]||P.chaussures[0];
+  const chauC=teint(chau,18);
   const R=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(px),Math.round(py),
     Math.max(1,w),Math.max(1,h));};
-  [-3,2].forEach((dx,k)=>{
-    R(x+dx-1,y-9+souffle,5,4,k?pantO:pant);      /* la cuisse, à plat */
-    R(x+dx,y-5+souffle,4,6,pantO);               /* le mollet, qui pend */
-    R(x+dx-1,y+1+souffle,5,3,chau);              /* le pied */
+  [-5,1].forEach((dx,k)=>{
+    /* la cuisse, à plat sur l'assise */
+    R(x+dx,hanche-1,6,5,k?pantO:pant);
+    R(x+dx,hanche-1,6,1,pantC);
+    /* le mollet, qui tombe devant */
+    R(x+dx+1,hanche+4,4,7,pantO);
+    /* le pied, posé au sol */
+    R(x+dx,hanche+11,6,3,chau);
+    R(x+dx,hanche+11,6,1,chauC);
   });
-  if(C&&C.id!=='cape'){try{C.dessin(g,x,y-4,tc);}catch(err){}}
+  if(C&&C.id!=='cape'){try{C.dessin(g,x,hanche+8,tc);}catch(err){}}
 }
 function personne(g,x,y,ap,dir,pas,marche,enCourse){
   /* assis sur un banc */
-  if(ap===e.ap&&ASSIS){assis(g,x,y,ap);return;}
+  if(ap===e.ap&&ASSIS){assis(g,x,ASSIS.y-9,ap);return;}
   const C=cosmetiqueDe(ap);
   /* la course a ses propres poses : on les range sous une autre clé, sinon
      elles écraseraient celles de la marche */
