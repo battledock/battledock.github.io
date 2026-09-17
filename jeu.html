@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1946';
+  var MA_VERSION='2026-09-17-1954';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4323,233 +4324,185 @@ async function arriver(dest){
    brut. Fermée pour l'instant, comme la mine. */
 let CALQUE_TAILLERIE=null;
 function graverLaTaillerie(){
-  const VW=250,VH=190;
+  /* LA FORGE, à l'échelle du village.
+     L'ancienne taillerie faisait 250 de large avec sa roue à aiguiser et son
+     bassin : un atelier de carrier. Ici c'est une forge : un corps de pierre
+     bas, une grande cheminée qui tire, l'ouverture rougeoyante du foyer et
+     l'enclume dehors, sous l'auvent. */
+  const VW=176,VH=156;
   const c=document.createElement('canvas');
   const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   c.width=VW*D;c.height=VH*D;
   const g=c.getContext('2d');
   g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
-  const T=0;
-  /* LA TAILLERIE, reprise : mon premier essai était une boîte de pierre avec
-     une roue collée à côté. Ce qui manque à un atelier, c'est de la MATIÈRE
-     (des pierres toutes différentes, des chaînages d'angle, un socle), de la
-     HAUTEUR (un pignon, une cheminée, une verrière de toit) et des TRACES de
-     travail (le bassin, les billes de pierre brute, la poussière blanche). */
-  const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
-  const sol=VH*0.82, cx=VW*0.52;
-  const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
-  /* pas d'herbe : le sol du jeu est dessous */
-  /* LA POUSSIÈRE BLANCHE du chantier, tout autour */
-  for(let i=0;i<180;i++){
-    const a=alea(i*1.7)*6.283, r2=Math.sqrt(alea(i*2.9));
-    const x=cx+Math.cos(a)*84*r2, y=sol+4+Math.sin(a)*22*r2;
-    R(x,y,2,2,alea(i*3.3)<0.5?'#c8c4b4':'#b8b2a0');
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
+  const sol=VH-16, cx=VW/2;
+  const PIERRE=['#9a9182','#a49b8c','#8f8778','#b0a795'];
+  const pierre=(x,y,w,h,graine)=>{
+    const t=Math.floor(alea(graine*0.41)*PIERRE.length);
+    R(x+1,y+1,w,h,'rgba(48,44,38,.34)');
+    R(x,y,w,h,PIERRE[t]);
+    R(x+1,y+1,w-2,h-2,'rgba(255,250,238,.13)');
+    R(x,y,w-1,1,'rgba(252,246,232,.48)');
+    R(x+w-1,y+1,1,h-1,'rgba(58,52,44,.3)');
+  };
+  /* l'ombre au sol */
+  g.fillStyle='rgba(40,38,30,.24)';
+  g.beginPath();g.ellipse(cx+5,sol+4,74,13,0,0,7);g.fill();
+  /* ---- LE CORPS DE PIERRE ---- */
+  for(let y=0;y<48;y+=7){
+    const dec=(y/7)%2?9:0;
+    for(let x=-54;x<54;x+=19)pierre(cx+x+dec,sol-48+y,18,6,x*0.7+y*1.3);
   }
-  g.fillStyle='rgba(30,50,24,.26)';
-  g.beginPath();g.ellipse(cx+3,sol+4,74,14,0,0,7);g.fill();
-
-  /* ---- LE SOCLE : de gros blocs, plus sombres ---- */
-  for(let x=-64;x<64;x+=16)R(cx+x,sol-10,15,10,(x/16)%2?PI.o:PI.s);
-  R(cx-64,sol-12,128,3,PI.p);
-
-  /* ---- LE MUR : chaque pierre a SON ton, et il y a des chaînages ---- */
-  for(let y=0;y<46;y+=6){
-    const dec=(y/6)%2?8:0;
-    for(let x=-62;x<62;x+=17){
-      const t=Math.floor(alea(x*0.7+y*1.9)*4);
-      R(cx+x+dec,sol-58+y,16,5,[PI.p,PI.c,PI.s,PI.h][t]);
-      R(cx+x+dec,sol-58+y,16,1,PI.t);          /* le joint clair du dessus */
-      R(cx+x+dec+15,sol-58+y,1,5,PI.o);
+  /* ---- LA GRANDE CHEMINÉE, à gauche : c'est elle qu'on reconnaît ---- */
+  const chx=cx-48;
+  for(let y=0;y<76;y+=7){
+    const dec=(y/7)%2?6:0;
+    for(let x=-15;x<15;x+=13)pierre(chx+x+dec,sol-76+y,12,6,x*1.7+y*0.9+7);
+  }
+  /* le couronnement, plus large */
+  R(chx-19,sol-84,38,8,'#8f8778');
+  R(chx-19,sol-84,38,2,'#b0a795');
+  R(chx-16,sol-88,32,5,'#9a9182');
+  /* la suie, au bord */
+  for(let i=0;i<10;i++)R(chx-14+alea(i*1.7)*28,sol-88+alea(i*2.3)*4,3,2,'rgba(28,24,20,.5)');
+  /* ---- LE TOIT : tuiles à deux pans, courtes ---- */
+  for(let r=0;r<4;r++){
+    const w=62-r*8;
+    for(let x=-w;x<w;x+=6){
+      R(cx+x+6,sol-54-r*5,6,5,((x/6+r)%2)?'#a4553a':'#b56448');
+      R(cx+x+6,sol-54-r*5,6,1,'#c9765a');
     }
   }
-  /* les chaînages d'angle, en pierres plus grandes et plus claires */
-  [-62,56].forEach(dx=>{
-    for(let y=0;y<46;y+=8){
-      R(cx+dx,sol-58+y,8,7,(y/8)%2?PI.h:PI.t);
-      R(cx+dx,sol-58+y,8,1,'#d2d8dd');
-      R(cx+dx,sol-52+y,8,1,PI.o);
-    }
-  });
-
-  /* ---- LE PIGNON : un mur qui monte en triangle, avec sa verrière ---- */
-  for(let k=0;k<7;k++){
-    const larg=54-k*7;
-    for(let x=-larg;x<larg;x+=15){
-      const t=Math.floor(alea(x+k*3.1)*3);
-      R(cx+x,sol-64-k*6,14,5,[PI.c,PI.p,PI.h][t]);
-      R(cx+x,sol-64-k*6,14,1,PI.t);
-    }
-  }
-  /* l'oculus du pignon, où l'on voit la lumière de l'atelier */
-  g.fillStyle='#2a2f34';g.beginPath();g.arc(cx,sol-84,9,0,7);g.fill();
-  g.fillStyle='#e8cf8a';g.beginPath();g.arc(cx,sol-84,7,0,7);g.fill();
-  g.fillStyle='#2a2f34';
-  R(cx-7,sol-85,14,2,'#2a2f34');R(cx-1,sol-91,2,14,'#2a2f34');
-
-  /* ---- LE TOIT DE LAUZES, en écailles, sur deux pans ---- */
-  for(let k=0;k<8;k++){
-    const y=sol-62-k*6, ret=k*6;
-    for(let x=cx-76+ret;x<cx+76-ret;x+=8){
-      const t=Math.floor(alea(x*0.3+k)*3);
-      R(x,y,8,7,[ '#5f666c','#6f767c','#545b61' ][t]);
-      R(x,y,8,1,'#8f979e');
-      R(x+7,y,1,7,'#4a5158');
-    }
-  }
-  /* la faîtière et la cheminée qui fume */
-  R(cx-16,sol-110,32,5,'#4a5158');
-  R(cx-16,sol-110,32,2,'#8f979e');
-  R(cx+22,sol-112,12,22,PI.c);
-  for(let y=0;y<22;y+=5)R(cx+22,sol-112+y,12,1,PI.o);
-  R(cx+20,sol-115,16,4,PI.h);
-  for(let i=0;i<7;i++){
-    const p=((T*0.45+i/7)%1);
-    g.fillStyle='rgba(212,208,200,'+((1-p)*0.26).toFixed(2)+')';
-    g.beginPath();g.arc(cx+28-p*18,sol-118-p*26,3+p*8,0,7);g.fill();
-  }
-
-  /* ---- L'AUVENT DE TRAVAIL, sur ses poteaux ---- */
-  R(cx-78,sol-40,30,4,'#5b4a38');
-  R(cx-78,sol-40,30,1,'#7d6a52');
-  for(let x=0;x<30;x+=5)R(cx-78+x,sol-36,3,3,'#4a3a2a');
-  R(cx-78,sol-38,3,36,'#6b5a45');
-  R(cx-52,sol-38,3,36,'#6b5a45');
-
-  /* ---- LA ROUE À AIGUISER, sous l'auvent ---- */
-  const rx=cx-63, ry=sol-20;
-  /* le bâti */
-  R(rx-16,sol-6,32,5,'#5b4a38');
-  R(rx-16,sol-6,32,1,'#7d6a52');
-  R(rx-14,sol-18,4,13,'#6b5a45');R(rx+10,sol-18,4,13,'#6b5a45');
-  /* le bassin d'eau, sous la meule */
-  R(rx-11,sol-11,22,6,'#4d545c');
-  R(rx-9,sol-10,18,4,'#3a6f86');
-  R(rx-9,sol-10,18,1,'#6fa8c0');
-  /* la meule : une vraie pierre, avec son grain */
-  g.fillStyle='#6b6258';g.beginPath();g.arc(rx,ry,15,0,7);g.fill();
-  g.fillStyle='#837a6e';g.beginPath();g.arc(rx,ry,13,0,7);g.fill();
-  for(let i=0;i<22;i++){
-    const a=alea(i*2.7)*6.283, r3=alea(i*1.3)*12;
-    R(rx+Math.cos(a)*r3,ry+Math.sin(a)*r3,2,2,alea(i)<0.5?'#726a5f':'#958c7f');
-  }
-  g.fillStyle='#4a4238';g.beginPath();g.arc(rx,ry,4,0,7);g.fill();
-  g.strokeStyle='#5b4a38';g.lineWidth=1.4;
-  for(let k=0;k<6;k++){
-    const a=T*2.2+k*1.047;
-    g.beginPath();g.moveTo(rx,ry);g.lineTo(rx+Math.cos(a)*11,ry+Math.sin(a)*11);g.stroke();
-  }
-  /* la manivelle */
-  const ma=T*2.2;
-  R(rx+Math.cos(ma)*9-1,ry+Math.sin(ma)*9-1,3,3,'#4d545c');
-  /* la courroie, qui monte à la poulie du mur */
-  g.strokeStyle='#3d3228';g.lineWidth=2;
-  g.beginPath();g.moveTo(rx-4,ry-14);g.lineTo(cx-34,sol-48);g.stroke();
-  g.beginPath();g.moveTo(rx+4,ry-13);g.lineTo(cx-28,sol-47);g.stroke();
-  g.fillStyle='#3d4248';g.beginPath();g.arc(cx-31,sol-50,6,0,7);g.fill();
-  g.fillStyle='#6f767c';g.beginPath();g.arc(cx-31,sol-50,3.4,0,7);g.fill();
-  /* LES ÉTINCELLES, qui retombent en arc */
-  for(let i=0;i<9;i++){
-    const p=((T*2.6+i/9)%1);
-    const sx=rx+10+p*20, sy=ry-6+p*p*22;
-    R(sx,sy,1,1,p<0.4?'#fff0c0':(p<0.75?'#ffc65a':'#e8802a'));
-  }
-
-  /* ---- LA PORTE, en plein cintre ---- */
-  R(cx+10,sol-44,30,42,'#241a12');
-  g.fillStyle='#241a12';
-  g.beginPath();g.arc(cx+25,sol-44,15,Math.PI,0);g.fill();
+  R(cx-30,sol-74,72,3,'#c9765a');
+  /* ---- LE FOYER : une grande ouverture en plein cintre, qui rougeoie ---- */
+  g.fillStyle='#1a120c';
+  g.beginPath();
+  g.moveTo(cx+4,sol);g.lineTo(cx+4,sol-22);
+  g.quadraticCurveTo(cx+22,sol-40,cx+40,sol-22);
+  g.lineTo(cx+40,sol);g.closePath();g.fill();
   /* les claveaux de l'arc */
-  for(let i=0;i<=8;i++){
-    const a=Math.PI*(0.04+0.92*i/8);
-    const px=cx+25-Math.cos(a)*17, py=sol-44-Math.sin(a)*17;
-    R(px-3,py-3,7,7,i===4?PI.t:PI.h);
-    R(px-3,py-3,7,2,'#d2d8dd');
+  for(let i=0;i<=7;i++){
+    const a=Math.PI*(0.06+0.88*i/7);
+    pierre(cx+22-Math.cos(a)*21-4,sol-22-Math.sin(a)*21-4,9,8,i*3.3+11);
   }
-  R(cx+12,sol-40,12,38,'#4a3728');
-  for(let y=0;y<38;y+=6)R(cx+12,sol-40+y,12,1,'#3a2a1e');
-  R(cx+26,sol-40,12,38,'#3a2a1e');
-  R(cx+21,sol-24,3,3,'#c9a24a');
-  /* la lanterne au-dessus de la porte */
-  R(cx+24,sol-64,2,6,'#3d4248');
-  R(cx+20,sol-58,10,8,'#4d545c');
-  R(cx+21,sol-56,8,5,'#ffd27a');
-
-  /* ---- L'ENSEIGNE : une gemme taillée, en relief ---- */
-  R(cx-44,sol-78,40,14,'#2a2118');
-  R(cx-44,sol-78,40,1,PI.t);
-  R(cx-40,sol-74,7,7,'#2fae6a');
-  R(cx-40,sol-74,7,2,'#7fe8b0');
-  g.font='700 6px Georgia,serif';g.fillStyle='#e8dcc0';g.textAlign='left';
-  g.fillText('LE FORGERON',cx-30,sol-68.5);
-
-  /* ---- CE QUI TRAÎNE : les billes de pierre brute et les gravats ---- */
-  for(let i=0;i<4;i++){
-    const bx=cx+46+i*11, by=sol-4-((i%2)*7);
-    R(bx,by-9,10,9,'#6b6258');
-    R(bx,by-9,10,2,'#837a6e');
-    R(bx+2,by-6,4,3,i%2?'#5f7d86':'#b58a3a');
+  /* LE LIT DE BRAISES, au fond : c'est gravé, la lueur vivante vient après */
+  R(cx+10,sol-14,28,12,'#4a1e10');
+  for(let i=0;i<16;i++){
+    const bx=cx+11+alea(i*1.9)*25, by=sol-13+alea(i*2.7)*9;
+    R(bx,by,3,2,alea(i)>0.5?'#8a2f14':'#b5451f');
   }
-  for(let i=0;i<18;i++){
-    const gx=cx+40+alea(i*1.7)*34, gy=sol+2+alea(i*2.3)*8;
-    R(gx,gy,3,3,i%5?'#9aa2a8':'#7fd8e8');
+  /* ---- L'ENCLUME, dehors, sous l'auvent ---- */
+  const ex=cx-52, ey=sol-2;
+  /* le billot */
+  R(ex-11,ey-11,22,11,'#5b3f21');
+  R(ex-11,ey-11,22,2,'#7d5934');
+  for(let k=0;k<22;k+=5)R(ex-11+k,ey-11,1,11,'#4a3320');
+  /* le corps de l'enclume */
+  R(ex-9,ey-19,18,4,'#3d4248');
+  R(ex-6,ey-16,12,3,'#4d545c');
+  R(ex-11,ey-24,22,6,'#5f666c');
+  R(ex-11,ey-24,22,2,'#8a939a');
+  /* la corne, en pointe */
+  g.fillStyle='#5f666c';
+  g.beginPath();
+  g.moveTo(ex+11,ey-24);g.lineTo(ex+21,ey-21);g.lineTo(ex+11,ey-18);
+  g.closePath();g.fill();
+  g.fillStyle='#8a939a';
+  g.beginPath();
+  g.moveTo(ex+11,ey-24);g.lineTo(ex+21,ey-21);g.lineTo(ex+15,ey-21);
+  g.closePath();g.fill();
+  /* ---- L'AUVENT au-dessus de l'enclume ---- */
+  R(ex-20,sol-46,4,44,'#6b4a28');
+  R(ex+16,sol-46,4,44,'#6b4a28');
+  for(let x=-24;x<26;x+=6){
+    R(ex+x,sol-52,6,5,((x/6)%2)?'#96703f':'#8a6238');
+    R(ex+x,sol-52,6,1,'#a5764a');
   }
-  /* un seau et une brouette */
-  R(cx-96,sol-8,10,8,'#5b4a38');R(cx-96,sol-9,10,2,'#7d6a52');
-  R(cx-84,sol-12,18,6,'#6b5a45');
-  g.fillStyle='#3d4248';g.beginPath();g.arc(cx-80,sol-3,4,0,7);g.fill();
-
-  /* ---- L'ÉCRITEAU : elle n'ouvre pas encore ---- */
-  const ex=cx-110;
-  R(ex-1,sol-26,4,26,'#5b3f21');
-  R(ex-8,sol-3,7,4,PI.c);R(ex+3,sol-4,7,5,PI.s);
-  g.save();g.translate(ex,sol-33);g.rotate(-0.05);
-  R(-23,-11,46,21,'#6b4a28');
-  R(-23,-11,46,2,'#8a6238');
-  R(-23,8,46,2,'#4a3320');
-  for(let k=0;k<46;k+=8){R(-23+k,-1,4,5,'#c0503c');R(-19+k,-1,4,5,'#f2efe4');}
-  R(-19,-8,2,2,'#9aa2a8');R(17,-8,2,2,'#9aa2a8');
-  g.font='700 6px Georgia,serif';g.textAlign='center';
-  g.fillStyle='#2a1c12';g.fillText('FERMÉE',0,-4);
-  g.font='400 4.5px Georgia,serif';g.fillStyle='#e8dcc0';
-  g.fillText('OUVERTURE PROCHAINE',0,6.5);
-  g.textAlign='left';g.restore();
-
+  R(ex-26,sol-54,54,3,'#5b3f21');
+  /* ---- CE QUI TRAÎNE : le baquet de trempe, les barres, le charbon ---- */
+  R(cx+50,sol-13,20,13,'#6b4a28');
+  R(cx+50,sol-13,20,2,'#8a6238');
+  R(cx+52,sol-11,16,4,'#3f7f9e');
+  R(cx+52,sol-11,16,1,'#5f9fbe');
+  for(let k=0;k<5;k++)R(cx-76+k*4,sol-3-k,4,4,k%2?'#2a2a2e':'#3a3a40');
+  [[-70,-14],[-66,-18]].forEach(([dx,dy],k)=>{
+    g.save();g.translate(cx+dx,sol+dy);g.rotate(k?0.3:-0.2);
+    R(0,0,22,3,'#7c848a');R(0,0,22,1,'#b4bcc2');
+    g.restore();
+  });
+  /* ---- L'ENSEIGNE : un fer à cheval, ce qu'on comprend sans lire ---- */
+  R(cx+18,sol-70,3,14,'#4a3a26');
+  g.strokeStyle='#8f979e';g.lineWidth=3;
+  g.beginPath();g.arc(cx+30,sol-60,8,Math.PI*0.15,Math.PI*0.85,true);g.stroke();
+  g.strokeStyle='#c2cad0';g.lineWidth=1.2;
+  g.beginPath();g.arc(cx+30,sol-60,8,Math.PI*0.2,Math.PI*0.8,true);g.stroke();
+  R(cx+16,sol-70,28,3,'#5b4a38');
+  /* ---- LA FENÊTRE de l'atelier ---- */
+  R(cx-22,sol-40,20,15,'#2b2f36');
+  R(cx-22,sol-40,20,4,'#5c7185');
+  for(let k=0;k<3;k++)R(cx-22+k*7,sol-40,2,15,'#7d7568');
   CALQUE_TAILLERIE={toile:c,W:VW,H:VH,sol};
 }
 /* la taillerie : la pierre est gravée ; la meule, les étincelles et la fumée
    se redessinent. */
 function dessinerLaTaillerie(g,x,y){
+  /* Ce qui vit dans la forge : le feu du foyer, la fumée de la cheminée, et
+     l'étincelle de l'enclume quand le forgeron frappe. */
   if(!CALQUE_TAILLERIE)graverLaTaillerie();
   const C=CALQUE_TAILLERIE;
   g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
-  const T=Date.now()/1000, sol=y, cx=x;
+  const T=Date.now()/1000;
   const R=(px,py,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(px),Math.round(py),
     Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
-  /* LA MEULE qui tourne, et sa manivelle */
-  const rx=cx-63, ry=sol-20;
-  g.strokeStyle='#5b4a38';g.lineWidth=1.4;
-  for(let k=0;k<6;k++){
-    const a=T*2.2+k*1.047;
-    g.beginPath();g.moveTo(rx,ry);g.lineTo(rx+Math.cos(a)*11,ry+Math.sin(a)*11);g.stroke();
-  }
-  const ma=T*2.2;
-  R(rx+Math.cos(ma)*9-1,ry+Math.sin(ma)*9-1,3,3,'#4d545c');
-  /* LES ÉTINCELLES, qui retombent en arc */
-  for(let i=0;i<9;i++){
-    const p=((T*2.6+i/9)%1);
-    R(rx+10+p*20,ry-6+p*p*22,1,1,p<0.4?'#fff0c0':(p<0.75?'#ffc65a':'#e8802a'));
+  /* LE FOYER, qui respire */
+  const v=0.72+Math.sin(T*3.1)*0.18+Math.sin(T*7.3)*0.10;
+  const fx=x+22, fy=y-8;
+  const d2=g.createRadialGradient(fx,fy,2,fx,fy,30);
+  d2.addColorStop(0,'rgba(255,150,60,'+(0.5*v).toFixed(2)+')');
+  d2.addColorStop(0.5,'rgba(220,90,30,'+(0.22*v).toFixed(2)+')');
+  d2.addColorStop(1,'rgba(200,70,20,0)');
+  g.fillStyle=d2;g.fillRect(fx-30,fy-30,60,60);
+  /* les flammes du lit de braises */
+  [['rgba(210,90,40,',9,12],['rgba(255,160,50,',6,9],['rgba(255,230,140,',3,5]]
+  .forEach(([c,w,h])=>{
+    g.fillStyle=c+(0.7*v).toFixed(2)+')';
+    g.beginPath();
+    g.moveTo(fx-w,fy+3);
+    g.quadraticCurveTo(fx-w*0.4,fy-h*v,fx+Math.sin(T*4)*2,fy-h*1.5*v);
+    g.quadraticCurveTo(fx+w*0.4,fy-h*v,fx+w,fy+3);
+    g.closePath();g.fill();
+  });
+  /* les braises qui montent */
+  for(let i=0;i<5;i++){
+    const p=((T*1.1+i/5)%1);
+    R(fx+Math.sin(p*8+i)*7,fy-10-p*26,1,1,
+      'rgba(255,170,70,'+(0.8*(1-p)).toFixed(2)+')');
   }
   /* LA FUMÉE de la cheminée */
+  const chx=x-48;
   for(let i=0;i<7;i++){
-    const p=((T*0.45+i/7)%1);
-    g.fillStyle='rgba(212,208,200,'+((1-p)*0.26).toFixed(2)+')';
-    g.beginPath();g.arc(cx+28-p*18,sol-118-p*26,3+p*8,0,7);g.fill();
+    const p=((T*0.3+i/7)%1);
+    g.fillStyle='rgba(188,182,172,'+((1-p)*0.26).toFixed(2)+')';
+    g.beginPath();g.arc(chx+4-p*14,y-92-p*34,3+p*11,0,7);g.fill();
   }
-  /* la lanterne et l'oculus, la nuit */
-  if(typeof lampesAllumees==='function'&&lampesAllumees()){
-    lueurNuit(g,cx+25,sol-54,22,'rgba(255,200,110,§)');
-    lueurNuit(g,cx,sol-84,20,'rgba(255,214,140,§)');
+  /* L'ENCLUME : un coup toutes les deux secondes, avec ses étincelles */
+  const cycle=(T*0.5)%1;
+  if(cycle<0.10){
+    const q=cycle/0.10;
+    const ex=x-52, ey=y-26;
+    g.fillStyle='rgba(255,236,190,'+(0.6*(1-q)).toFixed(2)+')';
+    g.beginPath();g.arc(ex,ey,4+q*9,0,7);g.fill();
+    for(let i=0;i<7;i++){
+      const a=-2.4+alea(i*3.1)*2.2;
+      const r2=6+q*22;
+      R(ex+Math.cos(a)*r2,ey+Math.sin(a)*r2+q*q*10,2,2,
+        'rgba(255,196,90,'+(0.8*(1-q)).toFixed(2)+')');
+    }
   }
+  /* la lueur du foyer sur le sol, la nuit */
+  if(typeof lampesAllumees==='function'&&lampesAllumees())
+    lueurNuit(g,fx,fy+6,44,'rgba(255,140,60,§)');
 }
 
 
@@ -5130,7 +5083,7 @@ const CARREAU_FIXE=[1196,152];    /* le carreau de mine, à l'est */
 /* LA MINE EST OUVERTE : on descend dans la galerie. */
 const MINE_OUVERTE=true;
 const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
-const TAILLERIE_FIXE=[1170,432];  /* le forgeron, sous la mine */
+const TAILLERIE_FIXE=[1210,498];  /* la forge, en bas à droite */  /* le forgeron, sous la mine */
 const TAILLERIE_OUVERTE=false;    /* il n'ouvre pas encore non plus */
 const POTEAU_FIXE=[792,398];      /* le poteau indicateur, au sud de la place */
 /* chaque bras pointe vers un lieu : le jeu calcule l'angle et la distance */
@@ -7292,7 +7245,8 @@ function calculerChemins(){
      rien de visible. */
   ROUTES=[[pont,centre],[centre,boutDeRoute],
           [COMPTOIR_FIXE,centre],[centre,ECHOPPE_FIXE],
-          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE]]
+          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE],
+          [TAILLERIE_FIXE,CARREAU_FIXE]]   /* de la mine à la forge, directement */
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
@@ -8244,15 +8198,14 @@ function bloque(x,y){
   /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
      quai et le bas de la carte restent libres. Ma première emprise couvrait
      tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
-  /* LA TAILLERIE : le corps est plein, le devant de la porte reste libre */
+  /* LA FORGE : le corps de pierre et la cheminée sont pleins. Le devant du
+     foyer et l'enclume restent libres — c'est là qu'on se tient pour
+     travailler. */
   {
-    /* Elle est dessinée jusqu'à dy=-118 (toit de lauzes, pignon, cheminée)
-       et mon emprise s'arrêtait à -60 : plus de la moitié de la façade se
-       traversait. Elle couvre maintenant toute la hauteur. */
+    /* les bornes viennent du TEST, qui les lit sur le dessin lui-même :
+       dx -76→52, dy -88→4. L'auvent et l'enclume en font partie. */
     const dx=x-TAILLERIE_FIXE[0], dy=y-TAILLERIE_FIXE[1];
-    /* le dessin va de dx=-110 (l'écriteau et la brouette) à dx=+76, et monte
-       à dy=-118. */
-    if(dx>-114&&dx<80&&dy>-124&&dy<0)return true;
+    if(dx>-78&&dx<54&&dy>-90&&dy<-2)return true;
   }
   /* l'écriteau planté devant la mine */
   /* LA MINE : seul le BÂTIMENT est plein. L'emprise décrivait encore
@@ -8381,14 +8334,14 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
       (o.t==='taverne'?120:(o.t==='atelier'?110:(o.t==='maison'?100:
       (o.t==='fontaine'?104:(o.t==='arbrePot'?64:(o.t==='echoppe'?132:
       (o.t==='panneauV'?88:(o.t==='gare'?150:(o.t==='entrepot'?110:
-      (o.t==='mine2'?130:(o.t==='ecriteau'?44:(o.t==='poteau'?70:(o.t==='taillerie'?150:0))))))))))))))));
+      (o.t==='mine2'?130:(o.t==='ecriteau'?44:(o.t==='poteau'?70:(o.t==='taillerie'?160:0))))))))))))))));
     /* LA MARGE HORIZONTALE doit suivre la VRAIE largeur du bâtiment. Le
        comptoir déborde de 145 de chaque côté de son ancrage, mais on le
        coupait à 120 : il disparaissait d'un coup alors qu'un bout était
        encore à l'écran. C'était ça, le « pop ». */
     /* chaque bâtiment a la marge de SON dessin, mesurée sur son calque */
     const demiL=(o.t==='comptoir')?150:((o.t==='casino'||o.t==='fete')?130:
-      (o.t==='taillerie'?130:(o.t==='echoppe'?95:(o.t==='mine2'?85:60))));
+      (o.t==='taillerie'?100:(o.t==='echoppe'?95:(o.t==='mine2'?85:60))));
     if(x<-demiL||y<-50-haut||x>VW2+demiL||y>VH2+30)continue;
     if(o.t==='arbre'){
       {
@@ -10660,8 +10613,9 @@ function majAction(){
     b.classList.add('on');return;
   }
   if(o.t==='taillerie'){
-    b.innerHTML=(TAILLERIE_OUVERTE?'Entrer':'Le forgeron est fermé')+
-      '<small>'+(TAILLERIE_OUVERTE?'LE FORGERON':'OUVERTURE PROCHAINE')+'</small>';
+    b.innerHTML=(TAILLERIE_OUVERTE?'Entrer à la forge':'La forge est fermée')+
+      '<small>'+(TAILLERIE_OUVERTE?'FONDRE LE MINERAI EN LINGOTS'
+                                   :'OUVERTURE PROCHAINE')+'</small>';
     b.classList.add('on');
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
