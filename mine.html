@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1933';
+  var MA_VERSION='2026-09-17-1946';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1178,7 +1179,10 @@ function tirerMinerai(){
   return 'pierre';
 }
 let rochers=[],butins=[],poussieres=[],ECH=4,VW=0,VH=0,T=0,joyX=0,joyY=0,mot=0;
-const P={x:L/2,y:H-70,dir:'haut',pas:0,marche:false,frappe:0,recul:0};
+const P={x:L/2,y:H-70,dir:'haut',pas:0,marche:false,recul:0};
+/* GESTE existe déjà : il est déclaré avec le sprite, et c'est lui qui anime
+   la pioche. Le redéclarer ferait planter la page entière. */
+GESTE={t:0,cible:null,impact:false,type:'pioche'};
 function creerLaMine(){
   hasard=GRAINE;rochers=[];
   const amas=14;
@@ -1341,50 +1345,8 @@ function dessinerRocher(g,o,x,y){
     g.beginPath();g.arc(cx,cy,r*0.7+choc*8,0,7);g.fill();
   }
 }
-/* ================= LA PIOCHE ================= */
-function dessinerPioche(g,px,py){
-  if(!P.frappe)return;
-  const q=(Date.now()-P.frappe)/440;
-  if(q>1){P.frappe=0;return;}
-  let bal;
-  if(q<0.42){const u=q/0.42;bal=-0.6+(-2.3+0.6)*Math.pow(u,0.7);}
-  else if(q<0.55){const u=(q-0.42)/0.13;bal=-2.3+(0.3+2.3)*Math.pow(u,1.7);}
-  else{const u=(q-0.55)/0.45;bal=0.3+(-0.6-0.3)*(u<0.5?2*u*u:1-Math.pow(-2*u+2,2)/2);}
-  const dir={droite:0,bas:1.5708,gauche:3.1416,haut:-1.5708}[P.dir];
-  const L2=19, POINTE=12, aTip=Math.atan2(POINTE,L2+2);
-  g.save();
-  g.translate(px,py-17);
-  g.rotate(dir-aTip+bal);
-  g.scale(0.92,0.92);
-  g.fillStyle='#6b4a28';g.fillRect(-3,-2,L2+3,4);
-  g.fillStyle='#8a6238';g.fillRect(-3,-2,L2+3,1.3);
-  g.fillStyle='#4f3520';g.fillRect(-3,1,L2+3,1);
-  g.fillStyle='#3d2a17';g.fillRect(-4,-3,7,6);
-  g.save();g.translate(L2,0);
-  g.fillStyle='#4d545c';g.fillRect(-3,-5,7,10);
-  g.fillStyle='#8f979e';g.fillRect(-3,-5,7,1.4);
-  g.fillStyle='#7c848a';
-  g.beginPath();
-  g.moveTo(-2,2);g.quadraticCurveTo(2,8,3.4,12.6);
-  g.lineTo(1.2,13);g.quadraticCurveTo(-1,7.6,-4,3);
-  g.closePath();g.fill();
-  g.fillStyle='#c6ced4';
-  g.beginPath();
-  g.moveTo(-2,2);g.quadraticCurveTo(2,8,3.4,12.6);
-  g.lineTo(2.4,12.5);g.quadraticCurveTo(0.6,7.8,-2.8,2.6);
-  g.closePath();g.fill();
-  g.fillStyle='#7c848a';
-  g.beginPath();
-  g.moveTo(-2,-2);g.quadraticCurveTo(1,-7,2.4,-11);
-  g.lineTo(0.4,-11.4);g.quadraticCurveTo(-1.6,-7,-4,-3);
-  g.closePath();g.fill();
-  g.fillStyle='#b4bcc2';
-  g.beginPath();
-  g.moveTo(-2,-2);g.quadraticCurveTo(1,-7,2.4,-11);
-  g.lineTo(1.4,-10.8);g.quadraticCurveTo(-0.4,-6.8,-3,-2.6);
-  g.closePath();g.fill();
-  g.restore();g.restore();
-}
+/* La pioche est dans le sprite du personnage, comme au village : il n'y a
+   rien à dessiner ici. */
 /* ================= FRAPPER ================= */
 function viser(){
   const d={droite:[1,0],gauche:[-1,0],bas:[0,1],haut:[0,-1]}[P.dir];
@@ -1397,22 +1359,53 @@ function viser(){
   return vu;
 }
 let occupe=false;
+/* LE GESTE EST CELUI DU VILLAGE.
+   La pioche n'est pas dessinée à part : elle fait partie du personnage, et
+   c'est GESTE qui l'anime — exactement comme dans jeu.html. Le geste dure de
+   1 à 0, et le fer touche la roche à 0,42. */
 function frapper(){
-  if(P.frappe&&Date.now()-P.frappe<380)return;
-  P.frappe=Date.now();
+  if(GESTE.t>0)return;
   const o=viser();
-  setTimeout(()=>{
+  GESTE={t:1,cible:o,impact:false,type:'pioche'};
+  if(o)P.dir=Math.abs(o.x-P.x)>Math.abs(o.y-P.y)?(o.x>P.x?'droite':'gauche')
+                                                :(o.y>P.y?'bas':'haut');
+  try{navigator.vibrate&&navigator.vibrate(22);}catch(x){}
+}
+function majGeste(dt){
+  if(GESTE.t<=0)return;
+  const avant=GESTE.t;
+  GESTE.t=Math.max(0,GESTE.t-dt*2.3);
+  /* L'IMPACT, aux deux tiers du geste — le même instant qu'au village */
+  if(avant>0.42&&GESTE.t<=0.42){
+    const o=GESTE.cible;
+    jouerCoup();
+    try{navigator.vibrate&&navigator.vibrate(35);}catch(x){}
     if(!o||rochers.indexOf(o)<0)return;
     o.pv--;o.choc=Date.now();P.recul=Date.now();
     const M=MINERAIS[o.t];
-    for(let k=0;k<8;k++){
+    for(let k=0;k<9;k++){
       const a=Math.random()*6.283;
-      poussieres.push({x:o.x,y:o.y,vx:Math.cos(a)*(20+Math.random()*50),
-        vy:Math.sin(a)*(14+Math.random()*34)-24,t:0,
+      poussieres.push({x:o.x,y:o.y-10,vx:Math.cos(a)*(22+Math.random()*52),
+        vy:Math.sin(a)*(16+Math.random()*34)-28,t:0,
         col:Math.random()>0.5?M.col:'#6a6052'});
     }
     if(o.pv<=0)casser(o);
-  },190);
+  }
+}
+/* un coup sec, fabriqué par le téléphone */
+let AUDIO=null;
+function jouerCoup(){
+  try{
+    if(!AUDIO)AUDIO=new (window.AudioContext||window.webkitAudioContext)();
+    const t=AUDIO.currentTime;
+    const o=AUDIO.createOscillator(), g2=AUDIO.createGain();
+    o.type='square';o.frequency.setValueAtTime(190,t);
+    o.frequency.exponentialRampToValueAtTime(62,t+0.08);
+    g2.gain.setValueAtTime(0.05,t);
+    g2.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+    o.connect(g2);g2.connect(AUDIO.destination);
+    o.start(t);o.stop(t+0.13);
+  }catch(x){}
 }
 async function casser(o){
   const M=MINERAIS[o.t];
@@ -1634,7 +1627,8 @@ function boucle(t){
   const dt=Math.min(.05,(t-t0)/1000);t0=t;T+=dt;
   if(!SOL)graverLeSol();
   const g=ctx;
-  const enFrappe=P.frappe&&Date.now()-P.frappe<300;
+  majGeste(dt);
+  const enFrappe=GESTE.t>0.42;
   const d=Math.hypot(joyX,joyY);
   if(d>0.14&&!enFrappe){
     const v=72*Math.min(1,d);
@@ -1677,11 +1671,10 @@ function boucle(t){
     const px=P.x-camX, py=P.y-camY;
     const recul=P.recul?Math.max(0,1-(Date.now()-P.recul)/150):0;
     const d2={droite:[-1,0],gauche:[1,0],bas:[0,-1],haut:[0,1]}[P.dir];
-    GESTE={t:0};
     g.fillStyle='rgba(8,6,4,.34)';
     g.beginPath();g.ellipse(px,py+1,7.5,3,0,0,7);g.fill();
-    sprite(g,px+d2[0]*recul*2,py+d2[1]*recul*2,e.ap||DEF_AP,P.dir,P.pas,P.marche);
-    dessinerPioche(g,px+d2[0]*recul*2,py+d2[1]*recul*2);
+    sprite(g,px+d2[0]*recul*2,py+d2[1]*recul*2,e.ap||DEF_AP,P.dir,P.pas,
+      P.marche&&GESTE.t<=0);
   }});
   objets.sort((a,b)=>a.y-b.y).forEach(o=>o.f());
   poussieres.forEach(p=>{
