@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1823';
+  var MA_VERSION='2026-09-17-1829';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -4674,72 +4675,93 @@ function dessinerLaMine(g,x,y){
    trois coups de pioche, puis se régénère en quelques minutes. La lanterne
    du vestiaire double le rayon de vue — le premier cosmétique qui serve. */
 const FILONS=[
-  {id:'charbon', nom:'Charbon', x:0.16, y:-34, col:'#3a3a42', rend:'charbon'},
-  {id:'cuivre',  nom:'Cuivre',  x:0.38, y:-28, col:'#a0653a', rend:'cuivre'},
-  {id:'fer',     nom:'Fer',     x:0.62, y:-38, col:'#9aa2a8', rend:'fer'},
-  {id:'gemme',   nom:'Gemme',   x:0.84, y:-24, col:'#7fd8e8', rend:'gemme'}
+  {id:'charbon', nom:'Charbon', x:130, y:-34, col:'#3a3a42', rend:'charbon'},
+  {id:'cuivre',  nom:'Cuivre',  x:262, y:-28, col:'#a0653a', rend:'cuivre'},
+  {id:'fer',     nom:'Fer',     x:394, y:-38, col:'#9aa2a8', rend:'fer'},
+  {id:'gemme',   nom:'Gemme',   x:540, y:-24, col:'#7fd8e8', rend:'gemme'}
 ];
 const FILON_REPOUSSE=180000;          /* trois minutes pour qu'un filon revienne */
 let ETAT_FILONS={}, filonVise=null, galerieBoucle=0;
+/* ON MARCHE DANS LA GALERIE.
+   Avant, le joueur était planté au milieu de l'écran et sa lampe n'éclairait
+   que 44 points autour de lui : les filons étaient dans le noir, hors de
+   portée, et il ne se passait rien. La galerie est maintenant un vrai
+   couloir de 620 points qu'on parcourt, la caméra suit, et on creuse le
+   filon devant lequel on se tient. */
+const GAL_L=620;
+const gal={x:60,dir:'droite',pas:0,marche:false,jx:0};
 /* le convoi roule-t-il ? et où en sont ses roues quand il s'arrête */
 let FRET_ROULE=false, FRET_ANGLE=0;
 function ouvrirLaGalerie(){
+  gal.x=60;gal.dir='droite';gal.pas=0;gal.marche=false;gal.jx=0;
   $('page2Fond').className='sacFond galerie';
   $('page2Fond').innerHTML=
     '<canvas id="gaCv"></canvas>'+
-    '<div class="gaHaut"><b>La galerie</b><i id="gaMot">TOUCHE UN FILON POUR LE CREUSER</i></div>'+
+    '<div class="gaHaut"><b>La galerie</b><i id="gaMot">GLISSE POUR AVANCER · CREUSE LES FILONS</i></div>'+
+    '<button class="bandeC" id="ga-creuser"><u></u><span id="ga-quoi">CREUSER</span><u></u></button>'+
     '<button class="bandeC" id="ga-sortir"><u></u><span>REMONTER</span><u></u></button>';
   $('ga-sortir').onclick=()=>{
     try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(galerieBoucle);}catch(x){}
     fermeA=Date.now();$('page2').classList.remove('on');
   };
+  $('ga-creuser').onclick=()=>creuserIci();
   $('page2').classList.add('on');
   const c=$('gaCv');
-  c.onclick=(ev)=>viserUnFilon(ev,c);
+  /* LE JOYSTICK : on glisse le doigt sur la galerie pour avancer */
+  let tp=null;
+  c.ontouchstart=(ev)=>{tp=ev.touches[0].clientX;};
+  c.ontouchmove=(ev)=>{
+    if(tp===null)return;
+    const dx=ev.touches[0].clientX-tp;
+    gal.jx=Math.max(-1,Math.min(1,dx/46));
+  };
+  c.ontouchend=()=>{tp=null;gal.jx=0;};
+  /* et à la souris, pour l'ordinateur */
+  let sp=null;
+  c.onpointerdown=(ev)=>{if(ev.pointerType!=='touch')sp=ev.clientX;};
+  c.onpointermove=(ev)=>{
+    if(sp===null||ev.pointerType==='touch')return;
+    gal.jx=Math.max(-1,Math.min(1,(ev.clientX-sp)/46));
+  };
+  c.onpointerup=()=>{sp=null;gal.jx=0;};
   animerLaGalerie();
+}
+/* le filon devant lequel on se tient */
+function filonDevant(){
+  let vu=null,best=1e9;
+  FILONS.forEach(f=>{
+    const d=Math.abs(f.x-gal.x);
+    if(d<40&&d<best){best=d;vu=f;}
+  });
+  return vu;
+}
+function creuserIci(){
+  const vu=filonDevant();
+  if(!vu){$('gaMot').textContent='AVANCE JUSQU’À UN FILON';return;}
+  if(!filonPret(vu)){$('gaMot').textContent='CE FILON EST ÉPUISÉ · IL REVIENDRA';return;}
+  if(!e.outils.pioche){$('gaMot').textContent='IL TE FAUT UNE PIOCHE';return;}
+  vu.coups=(vu.coups||0)+1;
+  jouer('pioche');vibrer(24);
+  gal.frappe=Date.now();
+  const aFaire=Math.max(1,PIOCHE_COUPS[Math.min(e.nivPioche||0,PIOCHE_COUPS.length-1)]);
+  if(vu.coups<aFaire){
+    $('gaMot').textContent='ENCORE '+(aFaire-vu.coups)+' COUP'+(aFaire-vu.coups>1?'S':'');
+    return;
+  }
+  vu.coups=0;
+  ETAT_FILONS[vu.id]=Date.now();
+  const pris=encaisser(vu.rend==='gemme'?'gemme':vu.rend,0,0);
+  $('gaMot').textContent=pris>0?('+'+pris+' '+vu.nom.toUpperCase()):'TON SAC EST PLEIN';
+  jouer('pepite');
 }
 function aLaLanterne(){return e.ap&&e.ap.cos==='lanterne';}
 function filonPret(f){
   const q=ETAT_FILONS[f.id];
   return !q||Date.now()-q>FILON_REPOUSSE;
 }
-function viserUnFilon(ev,c){
-  const r=c.getBoundingClientRect();
-  const L2=240, ech=r.width/L2;
-  const x=(ev.clientX-r.left)/ech, y=(ev.clientY-r.top)/ech;
-  const sol=(r.height/ech)*0.78;
-  let vu=null;
-  FILONS.forEach(f=>{
-    const fx=f.x*L2, fy=sol+f.y;
-    if(Math.hypot(fx-x,fy-y)<22)vu=f;
-  });
-  if(!vu)return;
-  if(!filonPret(vu)){
-    $('gaMot').textContent='CE FILON EST ÉPUISÉ · IL REVIENDRA';
-    return;
-  }
-  if(!e.outils.pioche){
-    $('gaMot').textContent='IL TE FAUT UNE PIOCHE';
-    return;
-  }
-  /* trois coups, comme dehors */
-  vu.coups=(vu.coups||0)+1;
-  jouer('pioche');vibrer(24);
-  const aFaire=Math.max(1,PIOCHE_COUPS[Math.min(e.nivPioche||0,PIOCHE_COUPS.length-1)]);
-  if(vu.coups<aFaire){
-    $('gaMot').textContent='ENCORE '+(aFaire-vu.coups)+' COUP'+(aFaire-vu.coups>1?'S':'');
-    return;
-  }
-  vu.coups=0;ETAT_FILONS[vu.id]=Date.now();
-  const q=1+Math.floor(Math.random()*(vu.id==='gemme'?1:2));
-  const pris=ajouter(vu.rend,q);
-  if(pris>0){
-    e.recolte=(e.recolte||0)+pris;marquer(vu.rend,pris);
-    jouer('pepite','moment');vibrer([12,30,20]);
-    $('gaMot').textContent='+'+pris+' '+vu.nom.toUpperCase();
-    sauver();majHaut();majPastille();
-  }else $('gaMot').textContent='TON SAC EST PLEIN';
-}
+/* on peut aussi toucher directement un filon : ça revient à creuser celui
+   devant lequel on se tient, une fois qu'on l'a rejoint. */
+function viserUnFilon(){ creuserIci(); }
 function animerLaGalerie(){
   try{if(typeof cancelAnimationFrame==='function')cancelAnimationFrame(galerieBoucle);}catch(x){}
   const tic=()=>{
@@ -4763,84 +4785,97 @@ function dessinerLaGalerie(g,VW,VH){
   const al=(n)=>alea(n);
   const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w),Math.max(1,h));};
   const sol=VH*0.78;
-  /* la roche : trois tons, plus sombre vers le haut */
+  /* ON AVANCE : le joystick pousse le joueur, la caméra le suit */
+  const dt=1/60;
+  if(Math.abs(gal.jx)>0.12){
+    gal.x=Math.max(30,Math.min(GAL_L-30,gal.x+gal.jx*96*dt));
+    gal.pas+=Math.abs(gal.jx)*96*dt*0.22;
+    gal.marche=true;gal.dir=gal.jx>0?'droite':'gauche';
+  }else gal.marche=false;
+  const camX=Math.max(0,Math.min(GAL_L-VW,gal.x-VW/2));
+  /* la roche */
   g.fillStyle='#2b2620';g.fillRect(0,0,VW,VH);
   for(let y=0;y<VH;y+=3)for(let x=(y/3)%2?0:3;x<VW;x+=6){
-    const t=al(x*0.7+y*1.3);
+    const t=al((x+camX)*0.7+y*1.3);
     g.fillStyle=t<0.4?'#332d26':(t<0.8?'#3a332b':'#443c33');
     g.fillRect(x,y,6,3);
   }
-  /* le sol de la galerie, plus clair et jonché */
   R(0,sol,VW,VH-sol,'#4a4138');
-  for(let i=0;i<260;i++){
-    const x=al(i*1.7)*VW, y=sol+al(i*2.9)*(VH-sol);
-    R(x,y,2,2,i%3?'#5a5046':'#3a332b');
+  for(let i=0;i<300;i++){
+    const wx=al(i*1.7)*GAL_L;
+    const x=wx-camX;
+    if(x<-4||x>VW+4)continue;
+    R(x,sol+al(i*2.9)*(VH-sol),2,2,i%3?'#5a5046':'#3a332b');
   }
-  /* LES BOISAGES : des cadres de bois, réguliers, qui donnent la profondeur */
-  for(let k=0;k<6;k++){
-    const bx=18+k*42;
+  /* LES BOISAGES, tous les 70 points : ils donnent la profondeur */
+  for(let k=0;k*70<GAL_L;k++){
+    const bx=20+k*70-camX;
+    if(bx<-40||bx>VW+40)continue;
     R(bx,sol-52,6,52,'#6b5a45');R(bx,sol-52,2,52,'#8a7660');
-    R(bx+30,sol-52,6,52,'#6b5a45');R(bx+30,sol-52,2,52,'#8a7660');
-    R(bx-2,sol-58,40,7,'#5b4a38');R(bx-2,sol-58,40,2,'#7d6a52');
-    /* les jambettes */
-    R(bx+4,sol-52,4,4,'#5b4a38');R(bx+28,sol-52,4,4,'#5b4a38');
+    R(bx+40,sol-52,6,52,'#6b5a45');R(bx+40,sol-52,2,52,'#8a7660');
+    R(bx-3,sol-58,52,7,'#5b4a38');R(bx-3,sol-58,52,2,'#7d6a52');
   }
-  /* LA VOIE ÉTROITE, au sol */
-  R(0,sol+8,VW,2,'#8f979e');R(0,sol+14,VW,2,'#8f979e');
-  for(let x=0;x<VW;x+=9)R(x,sol+6,5,11,'#5b4a38');
-  /* LES VEINES : ce qu'on vient chercher */
-  const veines=[[36,-34,'#3a3a42','charbon'],[92,-28,'#a0653a','cuivre'],
-                [150,-38,'#9aa2a8','fer'],[196,-24,'#7fd8e8','gemme']];
-  veines.forEach(([vx,vy,col,nom])=>{
-    /* la roche autour, éclatée */
-    for(let i=0;i<7;i++){
-      const a=al(vx+i)*6.283, r2=4+al(i*2.3)*7;
-      R(vx+Math.cos(a)*r2,sol+vy+Math.sin(a)*r2*0.7,3,3,'#403830');
-    }
-    /* le filon */
+  /* LES RAILS, au sol, sur toute la longueur */
+  for(let x=-camX%9;x<VW;x+=9)R(x,sol+6,7,3,'#6b5a45');
+  [0,7].forEach(dy=>R(0,sol+8+dy,VW,2,'#8f979e'));
+  /* LES FILONS */
+  FILONS.forEach(f=>{
+    const vx=f.x-camX, vy=f.y;
+    if(vx<-40||vx>VW+40)return;
+    const pret=filonPret(f);
+    /* la veine dans la roche */
     for(let i=0;i<5;i++){
-      const dx=-6+i*3+al(vx*i)*2, dy=-3+al(i*1.7)*7;
-      R(vx+dx,sol+vy+dy,4,4,col);
-      R(vx+dx,sol+vy+dy,4,1,'rgba(255,255,255,.35)');
+      const dx=-6+i*3+al(f.x*i)*2, dy=-3+al(i*1.7)*7;
+      R(vx+dx,sol+vy+dy,4,4,pret?f.col:'#4a4138');
+      if(pret)R(vx+dx,sol+vy+dy,4,1,'rgba(255,255,255,.35)');
     }
     /* la gemme brille toute seule */
-    if(nom==='gemme'){
+    if(f.id==='gemme'&&pret){
       const br=(Math.sin(T*2.2)+1)/2;
-      const d=g.createRadialGradient(vx,sol+vy,1,vx,sol+vy,16);
-      d.addColorStop(0,'rgba(127,216,232,'+(0.18+br*0.14).toFixed(2)+')');
+      const d=g.createRadialGradient(vx,sol+vy,1,vx,sol+vy,18);
+      d.addColorStop(0,'rgba(127,216,232,'+(0.20+br*0.16).toFixed(2)+')');
       d.addColorStop(1,'rgba(127,216,232,0)');
-      g.fillStyle=d;g.fillRect(vx-16,sol+vy-16,32,32);
+      g.fillStyle=d;g.fillRect(vx-18,sol+vy-18,36,36);
     }
+    /* LE REPÈRE : une marque au sol sous chaque filon, visible de loin.
+       Sans elle, on ne sait pas où aller dans le noir. */
+    g.fillStyle=pret?'rgba(232,207,138,.30)':'rgba(120,112,98,.22)';
+    g.beginPath();g.ellipse(vx,sol+10,13,4,0,0,7);g.fill();
   });
-  /* un wagonnet abandonné, et des étais tombés */
-  R(120,sol-6,22,11,'#4d545c');
-  R(120,sol-6,22,2,'#6f767c');
-  R(122,sol-9,18,3,'#2a2118');
-  [126,138].forEach(wx=>{g.fillStyle='#16191c';
-    g.beginPath();g.arc(wx,sol+6,3.4,0,7);g.fill();});
-  R(64,sol-2,20,4,'#6b5a45');
-  /* L'EAU QUI SUINTE : des gouttes qui tombent du plafond */
-  for(let i=0;i<5;i++){
-    const gx=30+i*44;
+  /* un wagonnet abandonné, et un étai tombé */
+  [[180,'wagon'],[330,'etai']].forEach(([wx,t])=>{
+    const x=wx-camX;
+    if(x<-30||x>VW+30)return;
+    if(t==='wagon'){
+      R(x,sol-6,22,11,'#4d545c');R(x,sol-6,22,2,'#6f767c');
+      R(x+2,sol-9,18,3,'#2a2118');
+      [x+6,x+18].forEach(rx=>{g.fillStyle='#16191c';
+        g.beginPath();g.arc(rx,sol+6,3.4,0,7);g.fill();});
+    }else R(x,sol-2,20,4,'#6b5a45');
+  });
+  /* l'eau qui suinte */
+  for(let i=0;i<7;i++){
+    const wx=40+i*84, x=wx-camX;
+    if(x<-4||x>VW+4)continue;
     const p=((T*0.7+i*0.31)%1);
-    R(gx,sol-58+p*52,1,3,'rgba(150,190,210,'+(0.5*(1-p)).toFixed(2)+')');
-    if(p>0.9)R(gx-2,sol,5,1,'rgba(150,190,210,.35)');
+    R(x,sol-58+p*52,1,3,'rgba(150,190,210,'+(0.5*(1-p)).toFixed(2)+')');
   }
-  /* des flaques, au sol */
-  [48,132,200].forEach(fx=>{
-    g.fillStyle='rgba(90,120,140,.25)';
-    g.beginPath();g.ellipse(fx,sol+3,11,3,0,0,7);g.fill();
-  });
-  /* le personnage */
-  const px=VW*0.5, py=sol+2;
+  /* LE PERSONNAGE, à sa place dans la galerie */
+  const px=gal.x-camX, py=sol+2;
   GESTE={t:0};
-  sprite(g,px,py,DEF_AP,'droite',0,false);
+  /* le coup de pioche */
+  if(gal.frappe&&Date.now()-gal.frappe<300){
+    const q=(Date.now()-gal.frappe)/300;
+    g.save();g.translate(px,py);g.rotate(Math.sin(q*3.14)*0.24);g.translate(-px,-py);
+    sprite(g,px,py,DEF_AP,gal.dir,gal.pas,false);
+    g.restore();
+  }else sprite(g,px,py,DEF_AP,gal.dir,gal.pas,gal.marche);
   /* ---- LE NOIR : on ne voit que ce que la lampe éclaire ---- */
-  const r=avecLampe?78:44;
-  const d=g.createRadialGradient(px,py-16,r*0.25,px,py-16,r);
+  const r=avecLampe?96:62;
+  const d=g.createRadialGradient(px,py-16,r*0.3,px,py-16,r);
   d.addColorStop(0,'rgba(0,0,0,0)');
-  d.addColorStop(0.55,'rgba(6,8,10,.45)');
-  d.addColorStop(1,'rgba(4,5,7,.94)');
+  d.addColorStop(0.55,'rgba(6,8,10,.42)');
+  d.addColorStop(1,'rgba(4,5,7,.93)');
   g.fillStyle=d;g.fillRect(0,0,VW,VH);
   /* la lanterne accrochée, si on l'a */
   if(avecLampe){
@@ -4849,6 +4884,28 @@ function dessinerLaGalerie(g,VW,VH){
     R(px+5+bal*0.3,py-21,5,7,'#8a6238');
     R(px+6+bal*0.3,py-19,3,4,'#ffd27a');
   }
+  /* LA FLÈCHE : quand un filon est hors de vue, on montre sa direction */
+  const proche=filonDevant();
+  FILONS.forEach(f=>{
+    if(!filonPret(f))return;
+    const vx=f.x-camX;
+    if(vx>-10&&vx<VW+10)return;
+    const cote=vx<0?-1:1;
+    const fx=cote<0?14:VW-14;
+    const br=0.4+Math.sin(T*3)*0.2;
+    g.fillStyle='rgba(232,207,138,'+br.toFixed(2)+')';
+    g.beginPath();
+    g.moveTo(fx+cote*7,sol-30);g.lineTo(fx-cote*4,sol-36);g.lineTo(fx-cote*4,sol-24);
+    g.closePath();g.fill();
+  });
+  /* LE BOUTON : il dit ce qu'on peut faire ici */
+  const bt=$('ga-quoi');
+  if(bt)bt.textContent=proche
+    ?(filonPret(proche)?('CREUSER · '+proche.nom.toUpperCase()):'FILON ÉPUISÉ')
+    :'AVANCE VERS UN FILON';
+  /* la progression dans la galerie, en haut */
+  R(0,0,VW,3,'rgba(0,0,0,.4)');
+  R(0,0,VW*(gal.x/GAL_L),3,'rgba(232,207,138,.5)');
 }
 
 /* ================= LA VOIE DE SERVICE ET LE FRET =================
@@ -7992,16 +8049,14 @@ function bloque(x,y){
   }
   /* l'écriteau planté devant la mine */
   if(Math.abs(x-PANNEAU_MINE[0])<9&&y>PANNEAU_MINE[1]-14&&y<PANNEAU_MINE[1]+4)return true;
-  /* LE CARREAU : la machine, le chevalement et le terril sont pleins ; le
-     devant du puits reste libre, c'est là qu'on se tient. */
+  /* LA MINE : seul le BÂTIMENT est plein. L'emprise décrivait encore
+     l'ancien carreau — machine, recette et terril — qui n'existent plus :
+     elle bloquait de larges zones vides et laissait traverser la maison.
+     Le devant reste libre sur une bande, c'est là qu'on se tient pour
+     descendre. */
   {
     const dx=x-CARREAU_FIXE[0], dy=y-CARREAU_FIXE[1];
-    if(dx>-124&&dx<-58&&dy>-44&&dy<4)return true;       /* la machine */
-    if(Math.abs(dx)<32&&dy>-22&&dy<-6)return true;      /* la recette */
-    /* LE TERRIL : « dx>60 » sans borne à droite bloquait TOUTE la carte à
-       l'est — l'entrepôt et la gare compris. Il fait 70 points de large, pas
-       l'infini. */
-    if(dx>56&&dx<130&&dy>-58&&dy<6)return true;
+    if(Math.abs(dx)<48&&dy>-46&&dy<-3)return true;
   }
   /* L'ENTREPÔT : retiré avec les voies */
   if(false){
@@ -9724,7 +9779,7 @@ function fairePousser(){
    aucun hasard sur les quantités. */
 const BUTIN={
   arbre:{bois:4,fibre:1}, rocher:{pierre:3},
-  fer:{fer:2}, cuivre:{cuivre:2}, charbon:{charbon:2},
+  fer:{fer:2}, cuivre:{cuivre:2}, charbon:{charbon:2}, gemme:{gemme:1},
   buisson:{baies:2,fibre:1}, argile:{argile:2}, roseaux:{roseaux:2},
   champignons:{champignons:2}, herbes:{herbes:2,fibre:1},
   plumes:{plumes:2}, resine:{resine:2}
