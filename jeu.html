@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-17-1053';
+  var MA_VERSION='2026-09-17-1102';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6939,11 +6940,15 @@ const RIV_LARGE=13;                              /* demi-largeur de l'eau */
 const rivX=(y)=>550+y*0.16+Math.sin(y/90)*22;   /* +400 : la rive ouest respire */
 /* Un pont se pose là où la rivière coule droit : sinon le tablier
    se déforme pour suivre l'eau, et c'est laid. */
-const PONTS=[149,421];                           /* deux ponts de planches */
+/* UN SEUL PONT, au milieu de la rivière, et large : c'est le passage entre
+   la forêt et le village, il doit se voir de loin et se traverser à deux. */
+const PONTS=[300];
 /* Le personnage fait 40 px de haut : si le pont est plus court que lui,
    son corps dépasse par-dessus la rambarde et on croit qu'il est dans l'eau.
    Le tablier fait donc 62 px du nord au sud. */
-const PONT_DEMI=13;   /* le tablier fait 26 points du nord au sud */
+/* LE GRAND PONT : 60 points du nord au sud, plus du double d'avant. On s'y
+   croise, et il se voit depuis la place. */
+const PONT_DEMI=30;
 function surPont(y){return PONTS.some(py=>Math.abs(y-py)<PONT_DEMI);}
 /* le tablier suit la rivière : on est dessus si on est dans sa largeur */
 /* Le pont, vu par les collisions : un couloir de planches entre deux
@@ -7034,8 +7039,9 @@ function tracerChemin(a,b){
   return route.reverse();
 }
 function calculerChemins(){
-  const pontN=[Math.round(rivX(PONTS[0])),PONTS[0]];
-  const pontS=[Math.round(rivX(PONTS[1])),PONTS[1]];
+  /* un seul pont, au milieu : c'est de lui que part la grande route */
+  const pont=[Math.round(rivX(PONTS[0])),PONTS[0]];
+  const boutDeRoute=[MONDE_L-BARRIERE-6,PONTS[0]];
   /* en étoile depuis la place, plus les deux amorces vers les gués */
   /* il ne reste que trois lieux : le camp, le coffre et le comptoir, plus
      les deux amorces vers les gués */
@@ -7044,8 +7050,11 @@ function calculerChemins(){
   /* quatre chemins convergent vers la place : c'est un carrefour avant
      d'être un décor */
   const centre=[PLACE.x,PLACE.y];
-  ROUTES=[[COMPTOIR_FIXE,centre],[centre,pontN],[centre,pontS],[centre,CAMP_FIXE],
-          [centre,ECHOPPE_FIXE]]
+  /* LA GRANDE ROUTE : du pont, elle file droit vers l'est et traverse tout
+     le village jusqu'à la barrière. Les lieux s'y raccordent. */
+  ROUTES=[[pont,centre],[centre,boutDeRoute],
+          [COMPTOIR_FIXE,centre],[centre,CAMP_FIXE],[centre,ECHOPPE_FIXE],
+          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach(r=>r.forEach(([x,y])=>{
