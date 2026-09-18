@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1345';
+  var MA_VERSION='2026-09-18-1354';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -7422,9 +7423,10 @@ function dessinerLaForge(){
   if(fg)fg.onclick=async()=>{
     if(!dispo)return;
     fg.disabled=true;fg.textContent='On allume le feu…';
+    SAC_PEUT_BAISSER=Date.now();   /* on fond : le minerai quitte le sac */
     const d=await appelRPC('forger',{p_joueur:e.id,p_recette:forgeChoix,p_nombre:forgeNb});
     if(d&&d.sac){
-      adopterSac(d);
+      adopterSac(d,++numAppelSac);
       FOURNEE_VUE={recette:d.recette,nombre:d.nombre,reste:d.reste};
       jouer('achat');vibrer(24);
       dessinerLaForge();
@@ -7439,7 +7441,7 @@ function dessinerLaForge(){
     rt.disabled=true;rt.textContent='On sort les lingots…';
     const d=await appelRPC('retirer_fournee',{p_joueur:e.id});
     if(d&&d.sac){
-      adopterSac(d);FOURNEE_VUE=null;
+      adopterSac(d,++numAppelSac);FOURNEE_VUE=null;
       arreterLeBattement();
       jouer('pepite');vibrer(30);
       dessinerLaForge();
@@ -12683,10 +12685,60 @@ async function rattraperLeSac(){
         charge_max:chargeMax(),maj:new Date().toISOString()}])});
   }catch(x){}
 }
+/* ================= LE SAC NE DOIT JAMAIS SE VIDER =================
+   LE DÉFAUT : chaque réponse du serveur écrasait le sac, quel que soit son
+   ordre d'arrivée. À cinq joueurs, les appels partent en parallèle et les
+   réponses se croisent : une vieille réponse arrivée en retard remettait le
+   sac dans son état d'AVANT la récolte. Et si le serveur répondait un sac
+   vide — ligne absente, écriture ratée — le joueur perdait tout.
+
+   TROIS GARDES, désormais :
+   1. chaque appel porte un NUMÉRO ; une réponse plus vieille que la
+      dernière appliquée est jetée ;
+   2. un sac serveur VIDE alors que le jeu en a un plein n'est jamais
+      adopté : c'est le jeu qui a raison, et on le dit au serveur ;
+   3. hors vente, achat ou fonte, le sac ne peut pas RÉTRÉCIR d'un coup :
+      on garde le plus grand compte de chaque objet. */
+let numAppelSac=0, numSacApplique=0;
+let SAC_PEUT_BAISSER=0;     /* horodatage : une dépense vient d'être faite */
+function laDepenseEstLegitime(){
+  /* une vente, un achat ou une fonte autorisent le sac à baisser, pendant
+     dix secondes — le temps que la réponse revienne. */
+  return Date.now()-SAC_PEUT_BAISSER<10000;
+}
+function totalDuSac(sac){
+  return Object.values(sac||{}).reduce((t,n)=>t+(n||0),0);
+}
 /* le sac tel que le serveur le connaît */
-function adopterSac(d){
+function adopterSac(d,num){
   if(!d||d.erreur||!d.sac)return false;
-  e.sac=d.sac;
+  /* 1 · une réponse en retard ne doit pas défaire une réponse récente */
+  if(typeof num==='number'){
+    if(num<numSacApplique)return false;
+    numSacApplique=num;
+  }
+  const avant=e.sac||{};
+  const arrive=d.sac||{};
+  /* 2 · un sac vide face à un sac plein : on ne l'adopte pas */
+  if(totalDuSac(arrive)===0&&totalDuSac(avant)>0&&!laDepenseEstLegitime()){
+    rattraperLeSac();
+    return false;
+  }
+  /* 3 · hors dépense, on garde le plus grand compte de chaque objet */
+  if(!laDepenseEstLegitime()){
+    let manque=false;
+    const garde=Object.assign({},arrive);
+    Object.keys(avant).forEach(k=>{
+      if((avant[k]||0)>(arrive[k]||0)){garde[k]=avant[k];manque=true;}
+    });
+    if(manque){
+      e.sac=garde;
+      rattraperLeSac();       /* on remet le serveur d'accord avec le jeu */
+      sauver();
+      return true;
+    }
+  }
+  e.sac=arrive;
   /* on prend la plus grande des deux : le serveur ne doit jamais rétrécir
      un sac qu'on a payé */
   const paye=(typeof e.nivSac==='number'&&e.nivSac>0)
@@ -12701,7 +12753,7 @@ function adopterSac(d){
     RATTRAPAGE_SAC=true;
     appelRPC('agrandir_sac',{p_joueur:e.id,p_max:paye}).then(q=>{
       RATTRAPAGE_SAC=false;
-      if(q&&q.sac)adopterSac(q);
+      if(q&&q.sac)adopterSac(q,++numAppelSac);
     }).catch(()=>{RATTRAPAGE_SAC=false;});
   }
   sauver();majPastille();
@@ -12720,7 +12772,8 @@ async function lireEpee(){
 async function lireSacServeur(){
   if(!e.id)return;
   lireEpee();
-  adopterSac(await appelRPC('lire_sac',{p_joueur:e.id}));
+  const num=++numAppelSac;
+  adopterSac(await appelRPC('lire_sac',{p_joueur:e.id}),num);
 }
 
 /* Quand on récolte, c'est le serveur qui tranche : il vérifie que la
@@ -12730,6 +12783,7 @@ function signalerLeMonde(o,genre,quoi){
   try{CANAL&&CANAL.send({type:'broadcast',event:'monde',
     payload:{cle,genre,quand:Date.now()}});}catch(x){}
   (async()=>{
+    const num=++numAppelSac;
     const d=await appelRPC('recolter',{p_joueur:e.id,p_cle:cle,p_genre:quoi||genre});
     /* LE SERVEUR PEUT REFUSER (déjà récolté, pas encore repoussé). Dans ce
        cas son sac ne contient pas ce qu'on vient de ramasser : l'adopter
@@ -12738,7 +12792,7 @@ function signalerLeMonde(o,genre,quoi){
     if(d&&d.erreur&&d.erreur!=='sac plein'){
       /* on garde ce que le jeu a compté, et on le dit au serveur */
       rattraperLeSac();
-    }else if(d&&d.sac)adopterSac(d);
+    }else if(d&&d.sac)adopterSac(d,num);
     else{
       /* le serveur n'a rien à dire pour ce genre : on garde la trace du monde */
       try{
@@ -12812,15 +12866,34 @@ function ouvrirCanal(){
       preparerMonde();appliquerLeMonde();} });
   CANAL.subscribe(st=>{if(st==='SUBSCRIBED'){bipPosition(true);chargerLeMonde();}});
 }
+/* L'APPARENCE NE CHANGE JAMAIS EN COURS DE PARTIE, mais elle partait DIX
+   FOIS PAR SECONDE : 218 caractères × 10 × 5 joueurs, soit 11 ko par seconde
+   sur le canal, pour rien. Elle ne part plus qu'au premier bip et toutes les
+   dix secondes — les autres gardent celle qu'ils connaissent. */
+let dernierePanoplie=0, dernierMotBip=0, dernierEtatBip=null;
 function bipPosition(force){
   if(!CANAL||!e.id)return;
   const now=Date.now();
   if(!force&&now-dernierBip<100)return;           /* 10 fois par seconde */
   dernierBip=now;
-  CANAL.send({type:'broadcast',event:'pos',payload:{
-    id:e.id,n:e.pseudo||'survivant',ap:e.ap,
-    x:Math.round(joueur.x),y:Math.round(joueur.y),d:joueur.dir,
-    g:(GESTE.t>0?(GESTE.type||'pioche'):null)}});
+  /* IMMOBILE, ON SE TAIT : un joueur arrêté envoyait quand même dix paquets
+     par seconde. On ne parle que si la position, la direction ou le geste
+     ont changé — et une fois toutes les deux secondes pour dire qu'on est
+     encore là. */
+  const x2=Math.round(joueur.x), y2=Math.round(joueur.y);
+  const ge=(GESTE.t>0?(GESTE.type||'pioche'):null);
+  const bouge=!dernierEtatBip||dernierEtatBip.x!==x2||dernierEtatBip.y!==y2||
+              dernierEtatBip.d!==joueur.dir||dernierEtatBip.g!==ge;
+  if(!force&&!bouge&&now-dernierMotBip<2000)return;
+  dernierMotBip=now;
+  dernierEtatBip={x:x2,y:y2,d:joueur.dir,g:ge};
+  const avecAp=force||(now-dernierePanoplie>10000);
+  if(avecAp)dernierePanoplie=now;
+  const p={id:e.id,
+    x:x2,y:y2,d:joueur.dir,g:ge};
+  /* le nom et l'apparence : seulement de loin en loin */
+  if(avecAp){p.n=e.pseudo||'survivant';p.ap=e.ap;}
+  CANAL.send({type:'broadcast',event:'pos',payload:p});
 }
 
 let AUTRES=new Map();
@@ -14395,6 +14468,7 @@ function cptCommis(){
 }
 function cptSou(c){return (c/100).toFixed(2).replace('.',',')+' €';}
 function cptMaj(){
+  SAC_PEUT_BAISSER=Date.now();   /* une vente : le sac a le droit de baisser */
   const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_COMPTOIR[k])
     .sort((a,b)=>PRIX_COMPTOIR[b]*e.sac[b]-PRIX_COMPTOIR[a]*e.sac[a]);
   const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
@@ -14474,7 +14548,7 @@ async function cptVendre(){
     if(!d2||d2.erreur)continue;
     gagne+=d2.gain||0;
     if(typeof d2.euros==='number')e.euros=d2.euros;
-    await appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}}).then(r=>adopterSac(r));
+    await (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}})).then(r=>adopterSac(r,++numAppelSac));
   }
   VENTE={};
   sauver();majHaut();majPastille();
@@ -14497,7 +14571,7 @@ async function vendreAuComptoir(types){
     if(!d||d.erreur)continue;
     gagne+=d.gain||0;
     if(typeof d.euros==='number')e.euros=d.euros;
-    await appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}}).then(r=>adopterSac(r));
+    await (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}})).then(r=>adopterSac(r,++numAppelSac));
   }
   if(gagne){
     sauver();majHaut();majPastille();
@@ -14748,7 +14822,7 @@ function ouvrirFour(){
     const f=FONTES.find(x=>x.id===e.four.recette);
     Object.entries(f.rend).forEach(([k,n])=>ajouter(k,n));
     Object.entries(f.rend).forEach(([k,n])=>
-      appelRPC('livrer',{p_joueur:e.id,p_type:k,p_nb:n}).then(d=>adopterSac(d)));
+      (SAC_PEUT_BAISSER=Date.now(),appelRPC('livrer',{p_joueur:e.id,p_type:k,p_nb:n})).then(d=>adopterSac(d,++numAppelSac)));
     const quoi=Object.entries(f.rend).map(([k,n])=>n+' '+OBJETS[k].nom.toLowerCase()).join(', ');
     /* fabriquer ne donne plus de points : la valeur vient de la récolte */
     e.four=null;sauver();majPastille();monterEnLigne(true);
@@ -14778,7 +14852,7 @@ function ouvrirFour(){
     const f=FONTES.find(x=>x.id===b.dataset.fondre);
     if(!assez(f.cout))return;
     Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
-    appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout}).then(d=>adopterSac(d));
+    (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout})).then(d=>adopterSac(d,++numAppelSac));
     e.four={recette:f.id,fin:Date.now()+f.duree*1000};
     sauver();majPastille();monterEnLigne(true);
     vibrer([10,30,18]);
@@ -14816,8 +14890,8 @@ function ouvrirEtabli(){
     const f=FORGES.find(x=>x.id===b.dataset.forger);
     if(!assez(f.cout)||f.fait())return;
     Object.entries(f.cout).forEach(([k,n])=>{e.sac[k]=combien(k)-n;});
-    appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout}).then(d=>{
-      adopterSac(d);
+    (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:f.cout})).then(d=>{
+      adopterSac(d,++numAppelSac);
       if(f.id==='grandSac')appelRPC('agrandir_sac',{p_joueur:e.id,p_max:110}).then(adopterSac);
     });
     f.faire();
