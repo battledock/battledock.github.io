@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1354';
+  var MA_VERSION='2026-09-18-1358';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -14540,16 +14541,23 @@ async function cptVendre(){
   if(!prevu)return;
   const v=$('cptVendre');
   v.textContent='…';v.classList.add('rien');
+  /* UN SEUL APPEL PAR LIGNE, et c'est le serveur qui compte. Deux appels
+     séparés — payer puis retirer — laissaient la porte ouverte : le premier
+     payait sans regarder le sac. */
+  if(venteEnCours)return;
+  venteEnCours=true;
   let gagne=0;
   for(const k of ks){
     const n=combien(k);
     if(!n)continue;
-    const d2=await appelRPC('echanger',{p_joueur:e.id,p_type:k,p_nb:n});
+    SAC_PEUT_BAISSER=Date.now();
+    const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k,p_nb:n});
     if(!d2||d2.erreur)continue;
     gagne+=d2.gain||0;
     if(typeof d2.euros==='number')e.euros=d2.euros;
-    await (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}})).then(r=>adopterSac(r,++numAppelSac));
+    if(d2.sac)adopterSac({sac:d2.sac},++numAppelSac);
   }
+  venteEnCours=false;
   VENTE={};
   sauver();majHaut();majPastille();
   if(gagne){
@@ -14562,17 +14570,31 @@ async function cptVendre(){
   }
   cptMaj();
 }
+/* LA VENTE EN UN SEUL APPEL.
+   Avant, le jeu faisait DEUX appels : « echanger » payait, puis
+   « retirer_du_sac » retirait. Le premier ne regardait même pas le sac : il
+   payait ce que le jeu lui annonçait. Un appel répété — un doigt qui
+   insiste, un réseau qui rejoue la requête — payait autant de fois sans rien
+   coûter. C'est de là que venaient les fortunes en pierres.
+   Désormais le SERVEUR lit le sac, prend ce qui s'y trouve vraiment, le
+   retire et paie, dans la même transaction. Le jeu ne fait que recopier. */
+let venteEnCours=false;
 async function vendreAuComptoir(types){
+  if(venteEnCours)return;          /* deux doigts ne vendent pas deux fois */
+  venteEnCours=true;
   let gagne=0;
   for(const k of types){
     const n=(e.sac||{})[k]||0;
     if(!n||!PRIX_COMPTOIR[k])continue;
-    const d=await appelRPC('echanger',{p_joueur:e.id,p_type:k,p_nb:n});
+    SAC_PEUT_BAISSER=Date.now();
+    const d=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k,p_nb:n});
     if(!d||d.erreur)continue;
     gagne+=d.gain||0;
     if(typeof d.euros==='number')e.euros=d.euros;
-    await (SAC_PEUT_BAISSER=Date.now(),appelRPC('retirer_du_sac',{p_joueur:e.id,p_cout:{[k]:n}})).then(r=>adopterSac(r,++numAppelSac));
+    /* le sac revient avec la réponse : plus de second appel à désynchroniser */
+    if(d.sac)adopterSac({sac:d.sac},++numAppelSac);
   }
+  venteEnCours=false;
   if(gagne){
     sauver();majHaut();majPastille();
     const c=cible();
