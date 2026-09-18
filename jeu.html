@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1434';
+  var MA_VERSION='2026-09-18-1438';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -13466,6 +13467,10 @@ function agir(){
   }
   if(o.t==='fete'){location.href='fete.html';return;}
   if(o.t==='panneauV'){ouvrirLeTuto();return;}
+  /* L'ENTRÉE DU MÉTRO ne se touche pas : ni geste, ni pioche, ni rien.
+     La plaque le disait déjà, mais un clic venu d'ailleurs — un doigt qui
+     traîne, une plaque pas encore recalculée — passait au travers. */
+  if(o.t==='metro')return;
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
   if(o.t==='taillerie'){ouvrirLaForge();return;}
   if(o.t==='ecriteau')return;
@@ -13494,6 +13499,7 @@ function agir(){
     location.href='casino.html';                 /* on entre dans la salle */
     return;
   }
+  if(o.t==='metro')return;                       /* jamais de geste dessus */
   if((o.t==='rocher'||['fer','cuivre','charbon'].includes(o.t))&&!e.outils.pioche)return;
   if(o.t==='arbre'&&!e.outils.hache)return;
   /* un arbre dont la résine a coulé : on la recueille, et il reste debout */
@@ -15328,6 +15334,11 @@ async function ouvrirPorte(){
   etape(3);
   await lireSacServeur();       /* le sac vient du serveur */
   lireMesCosmetiques();         /* et ce qu'on porte aussi */
+  /* ON ENVOIE D'ABORD, ON RELIT ENSUITE.
+     Le serveur reprend les niveaux annoncés par l'appareil la première fois
+     qu'il les voit. Relire avant d'envoyer, c'est se faire répondre « zéro »
+     et effacer ce qu'on avait payé. */
+  try{await envoyerSauvegarde(true);}catch(x){}
   lireMesNiveaux();             /* et les niveaux qu'on a vraiment payés */
   etape(4);
   await chargerLaCarte();       /* et la carte aussi */
