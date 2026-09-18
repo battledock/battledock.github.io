@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0815';
+  var MA_VERSION='2026-09-18-0831';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -969,6 +970,41 @@ body.clavier #bandeau{padding-bottom:9px}
 #action .jaugeAction{position:absolute;left:14px;right:14px;bottom:6px;height:2px;
   background:rgba(90,72,44,.18);border-radius:2px;overflow:hidden}
 #action .jaugeAction u{display:block;height:100%;background:#8a6a2a}
+/* ===== LA RENCONTRE : le bandeau qui apparaît quand on croise quelqu'un.
+   Il fallait descendre dans un menu pour parler ou saluer : personne ne le
+   faisait. Les deux gestes sont maintenant sous le pouce, et le bandeau
+   disparaît dès qu'on s'éloigne. ===== */
+#rencontre{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));
+  z-index:30;display:flex;align-items:center;gap:7px;
+  padding:7px 9px;border-radius:14px;
+  background:linear-gradient(180deg,rgba(38,48,32,.93),rgba(26,34,22,.95));
+  border:1px solid rgba(159,214,122,.34);
+  box-shadow:0 7px 22px rgba(0,0,0,.5);backdrop-filter:blur(8px);
+  opacity:0;transform:translateY(10px);pointer-events:none;
+  transition:opacity .2s,transform .2s}
+#rencontre.on{opacity:1;transform:none;pointer-events:auto}
+.quiR{flex:1;font:400 13px Georgia,serif;color:#eaf6dc;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rencontre button{border:0;border-radius:11px;padding:10px 13px;
+  background:rgba(159,214,122,.16);color:#eaf6dc;font:400 13px Georgia,serif;
+  display:flex;align-items:center;gap:6px}
+#rencontre button:active{transform:scale(.95)}
+/* LA ROUE D'ÉMOTES */
+#roue{position:fixed;inset:0;z-index:40;display:none;
+  background:rgba(10,14,8,.5);backdrop-filter:blur(3px)}
+#roue.on{display:block}
+.roueF{position:absolute;left:10px;right:10px;
+  bottom:calc(84px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:repeat(5,1fr);gap:7px;
+  padding:12px;border-radius:16px;
+  background:linear-gradient(180deg,rgba(38,48,32,.96),rgba(24,32,20,.97));
+  border:1px solid rgba(159,214,122,.3);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+.roueF button{border:0;border-radius:12px;padding:11px 2px;
+  background:rgba(159,214,122,.13);color:#eaf6dc;
+  display:flex;flex-direction:column;align-items:center;gap:4px}
+.roueF button:active{transform:scale(.93);background:rgba(159,214,122,.28)}
+.roueF button i{font-style:normal;font-size:17px;line-height:1}
+.roueF button b{font:400 8px Georgia,serif;color:#cfe0c2}
 /* LE BOUTON DU RESTE */
 #b-plus{pointer-events:auto;position:relative;width:56px;height:56px;border-radius:14px;
   background:rgba(18,24,16,.78);border:1px solid rgba(253,251,244,.20);
@@ -1377,6 +1413,15 @@ body.clavier #bandeau{padding-bottom:9px}
     </svg><span class="b">CLASSEMENT</span>
     <i class="clou g"></i><i class="clou d"></i></button>
   </div>
+  <div id="rencontre">
+    <span class="quiR" id="quiR">—</span>
+    <button id="r-parler"><svg viewBox="0 0 20 20" width="17">
+      <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
+      <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
+      <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg>Parler</button>
+    <button id="r-emote">☺ Émote</button>
+  </div>
+  <div id="roue"><div class="roueF" id="roueF"></div></div>
   <button id="action"></button>
   <button id="b-plus" aria-label="Le reste"><span class="pts">⋯</span>
     <em class="pastille" id="plus-nb">0</em></button>
@@ -1594,21 +1639,6 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
      qui a l'air fausse. Le bras part toujours à l'opposé de la jambe du même
      côté, et le corps rebondit une fois par pas, pas deux. */
   const F=bouge?(Math.floor(pas*2)%16):-1;
-  /* LA COURSE, SEIZE TEMPS ELLE AUSSI.
-     Ce n'est pas une marche accélérée : la hanche balaie 6 points au lieu de
-     4, le genou se lève deux fois plus haut, et surtout il y a SIX images de
-     suspension sur seize — les deux pieds en l'air, deux fois par cycle.
-     Sans ce temps de vol, on patine. Le corps monte au vol et retombe à
-     l'appui, ce qui donne le poids. */
-  const COURSE={
-    jg:[6, 6, 5, 2, 0, -2, -5, -6, -6, -6, -5, -2, 0, 2, 5, 6],
-    jd:[-6, -6, -5, -2, 0, 2, 5, 6, 6, 6, 5, 2, 0, -2, -5, -6],
-    pg:[0, 0, 0, 2, 2, 2, 0, 0, 0, 1, 2, 4, 5, 4, 2, 1],
-    pd:[0, 1, 2, 4, 5, 4, 2, 1, 0, 0, 0, 2, 2, 2, 0, 0],
-    bg:[-3, -3, -2, -1, 0, 1, 2, 3, 3, 3, 2, 1, 0, -1, -2, -3],
-    bd:[3, 3, 2, 1, 0, -1, -2, -3, -3, -3, -2, -1, 0, 1, 2, 3],
-    corps:[1, 1, 1, -1, -2, -1, 1, 1, 1, 1, 1, -1, -2, -1, 1, 1],
-    reb:[0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0]};
   const AN={
     /* Cette table ne vient plus de mon jugement mais d'une FORMULE :
          hanche(u) = A·cos(2πu)        la jambe balaie symétriquement
@@ -1624,14 +1654,12 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     bd:[-1,-1,0,1,1,2,2,2,2,2,2,1,1,0,-1,-1],
     corps:[0,0,-1,-1,-1,-1,-1,0,0,0,-1,-1,-1,-1,-1,0],
     reb:[0,0,1,1,1,1,1,0,0,0,1,1,1,1,1,0]};
-  const COURT=!!(p&&p.court);
-  const TAB=COURT?COURSE:AN;
   const souffle=bouge?0:((Date.now()/1400|0)%3===0?1:0);
-  const Y=bouge?TAB.corps[F]:souffle;
-  const jgP=bouge?TAB.jg[F]:0, jdP=bouge?TAB.jd[F]:0;
-  const jgL=bouge?TAB.pg[F]:0, jdL=bouge?TAB.pd[F]:0;
-  const bgP=bouge?TAB.bg[F]:0, bdP=bouge?TAB.bd[F]:0;
-  const reb=bouge?TAB.reb[F]:0;
+  let Y=bouge?AN.corps[F]:souffle;
+  const jgP=bouge?AN.jg[F]:0, jdP=bouge?AN.jd[F]:0;
+  const jgL=bouge?AN.pg[F]:0, jdL=bouge?AN.pd[F]:0;
+  const bgP=bouge?AN.bg[F]:0, bdP=bouge?AN.bd[F]:0;
+  const reb=bouge?AN.reb[F]:0;
   const prof=dir==='haut', cote=dir==='gauche'||dir==='droite';
   const MANCHE_AR={'veste':11,'chemise':11,'pull':11,'manteau':11,'tunique':9,
                    'gilet':0,'t-shirt':4,'débardeur':0}[HAUTS[p.haut]||'veste'];
@@ -1650,6 +1678,17 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   const fr=(typeof GESTE!=='undefined'&&GESTE.t>0)?GESTE.t:0;
   const typeGeste=(typeof GESTE!=='undefined'&&GESTE.type)||'pioche';
   let phase=0, arc=0, penche=0, tasse=0;
+  /* LES ÉMOTES SONT DES GESTES DU CORPS, pas des dessins posés par-dessus.
+     J'avais d'abord ajouté des bras et des jambes peints à la main : le
+     personnage se retrouvait avec deux paires de mains, et rien ne suivait
+     sa tenue ni sa carnation. Une émote règle maintenant les MÊMES
+     variables que la pioche — l'angle du bras, l'inclinaison, le tassement —
+     et c'est le corps existant qui bouge.
+     « em » vaut le nom de l'émote, et « eq » va de 0 à 1 sur sa durée. */
+  const em=(typeof typeGeste==='string'&&typeGeste.slice(0,3)==='em:')
+    ?typeGeste.slice(3):null;
+  const eq=em?(1-fr):0;
+  let emBrasA=null, emBrasB=null, emSaut=0, emTourne=0, emJambes=null;
   if(fr>0&&typeGeste==='cueille'){
     /* la cueillette : on se penche, le bras part vers le buisson, on se relève */
     if(fr>0.55){const t=(1-fr)/0.45;penche=doux(t)*2.6;tasse=doux(t)*1.6;arc=1.1*doux(t);phase=1;}
@@ -1671,6 +1710,84 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
        arrière — c'est le seul geste qui se répète pendant toute sa durée. */
     const sec=Math.sin((1-fr)*Math.PI*6);
     penche=3.2;tasse=2.6;arc=sec*0.3;phase=2;
+  }else if(em){
+    /* l'entrée et la sortie en douceur : rien ne démarre d'un coup */
+    const vie=Math.min(1,Math.min(eq,1-eq)*7);
+    const bat=(GESTE.tt||0);           /* le temps écoulé, en secondes */
+    if(em==='coucou'){
+      /* le bras se lève, puis c'est LE POIGNET qui fait le coucou */
+      const lev=Math.min(1,eq*4)*vie;
+      arc=-2.0*lev;
+      emBrasA={haut:lev, remue:Math.sin(bat*11)*0.5*lev};
+      penche=-0.5*lev;phase=2;
+    }else if(em==='danse'){
+      const b2=bat*6.6;
+      emSaut=Math.abs(Math.sin(b2))*4*vie;
+      emTourne=Math.sin(b2)*0.16*vie;
+      arc=-1.6+Math.sin(b2)*0.6;
+      emBrasA={haut:vie, remue:Math.sin(b2)*0.7};
+      emBrasB={haut:vie, remue:Math.sin(b2+3.14)*0.7};
+      emJambes={ecart:Math.sin(b2)*2.4*vie};
+      phase=2;
+    }else if(em==='rire'){
+      /* L'inclinaison seule s'arrondit au pixel : le corps semblait figé.
+         Les ÉPAULES secouent maintenant, et la main sur le ventre suit. */
+      const sec=Math.sin(bat*11);
+      penche=(2.2+Math.abs(sec)*1.1)*vie;
+      tasse=(1.2+Math.abs(sec)*0.8)*vie;
+      arc=0.9;
+      emBrasA={ventre:true, secousse:sec*vie};
+      emSaut=sec*1.2*vie;
+      phase=2;
+    }else if(em==='saluer'){
+      /* le buste s'incline ET le bras vient sur le cœur en chemin : sans ce
+         second mouvement, l'émote se résume à deux pixels d'inclinaison. */
+      const p2=eq<0.45?(eq/0.45):(eq<0.7?1:1-(eq-0.7)/0.3);
+      penche=4.2*p2*vie;tasse=1.4*p2*vie;
+      arc=0.7-p2*0.5;
+      emBrasA={coeur:true, montee:p2};
+      phase=2;
+    }else if(em==='applaudir'){
+      const b2=(bat*5)%1;
+      arc=-0.4;
+      emBrasA={mains:Math.abs(Math.cos(b2*3.14159))*vie};
+      penche=0.6*vie;
+      phase=2;
+    }else if(em==='assis'){
+      const d2=Math.min(1,eq*5)*(1-Math.max(0,(eq-0.9)/0.1));
+      tasse=4.4*d2;penche=0.8*d2;
+      arc=0.8;
+      emBrasA={appui:d2};
+      emJambes={assis:d2};
+      phase=2;
+    }else if(em==='coeur'){
+      /* les mains en corbeille respirent : elles montent et descendent
+         doucement, sinon la pose est figée. */
+      const r3=Math.sin(bat*2.4)*0.5+0.5;
+      arc=-0.9;
+      emBrasA={corbeille:vie, hauteur:r3};
+      emBrasB={corbeille:vie, hauteur:r3};
+      penche=(-0.4-r3*0.5)*vie;
+      tasse=r3*0.6*vie;
+      phase=2;
+    }else if(em==='montrer'){
+      const t2=Math.min(1,eq*4)*vie;
+      arc=-1.5708*t2;                   /* le bras à l'horizontale */
+      emBrasA={tendu:t2};
+      phase=2;
+    }else{
+      /* oui et non : seule la tête bouge */
+      /* la tête tourne ou hoche — et les épaules suivent, sinon le corps a
+         l'air décapité. */
+      const b3=Math.sin(bat*9)*vie;
+      emTourne=(em==='non')?b3*0.13:0;
+      emSaut=(em==='oui')?b3*1.4:0;
+      arc=0.4;
+      emBrasA={repos:true, remueBas:b3};
+      penche=(em==='oui')?b3*0.6:0;
+      tasse=(em==='oui')?Math.abs(b3)*0.5:0;
+      phase=0;
+    }
   }else if(fr>0){
     if(fr>0.58){const t=(1-fr)/0.42;arc=-1.45*doux(t);penche=-doux(t)*1.6;tasse=doux(t)*1.2;phase=1;}
     else if(fr>0.42){const t=(0.58-fr)/0.16;arc=-1.45+entreRap(t)*2.75;penche=-1.6+t*4.4;tasse=1.2-t*2.4;phase=2;}
@@ -1678,6 +1795,15 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
   }
 
   R(-6,1,12,2,'rgba(40,60,28,.42)');
+  /* LE SAUT ET L'INCLINAISON de l'émote portent sur tout le personnage :
+     on déplace le repère une seule fois, et le corps entier suit. */
+  let emRepere=false;
+  if(em&&(emSaut||emTourne)){
+    g.save();emRepere=true;
+    g.translate(x,y);
+    if(emTourne)g.rotate(emTourne);
+    g.translate(-x,-y-emSaut);
+  }
 
   /* sac */
   if(sacC!=='aucun'&&prof){                     /* de dos : le sac, bien posé entre les épaules */
@@ -1742,12 +1868,35 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(basT==='treillis'){R(cx+ec,-JH+5,4,1,teint(col,-22));R(cx+1+ec,-JH+6,2,2,teint(col,14));}
     pied(cx-1+ec,-JH+h,avance?botte:teint(botte,-14));
   };
+  /* LES JAMBES SUIVENT L'ÉMOTE.
+     Je calculais « emJambes » sans jamais m'en servir : « s'asseoir » ne
+     faisait que tasser le buste, jambes tendues debout, et la danse ne
+     remuait que le haut du corps. */
+  let ecJ=0, plieJ=0, assisJ=0;
+  if(em&&emJambes){
+    if(emJambes.ecart!==undefined)ecJ=emJambes.ecart;
+    if(emJambes.assis!==undefined){assisJ=emJambes.assis;plieJ=Math.round(assisJ*5);}
+  }
   if(cote){
-    jambeProfil(jdP*0.9-1,jdL,pantO,teint(chau,-14));
-    jambeProfil(jgP*0.9-1,jgL,pant,chau);
+    if(assisJ>0){
+      /* assis : les cuisses partent en avant, les mollets descendent */
+      const av=Math.round(assisJ*7)*(dir==='gauche'?-1:1);
+      jambeProfil(av-1,Math.round(assisJ*6),pantO,teint(chau,-14));
+      jambeProfil(av+1,Math.round(assisJ*5),pant,chau);
+    }else{
+      jambeProfil(jdP*0.9-1+Math.round(ecJ),jdL,pantO,teint(chau,-14));
+      jambeProfil(jgP*0.9-1-Math.round(ecJ),jgL,pant,chau);
+    }
   }else{
-    if(jgP>=jdP){jambeFace(1,jdP,pantO,teint(chau,-14));jambeFace(-5,jgP,pant,chau);}
-    else{jambeFace(-5,jgP,pant,chau);jambeFace(1,jdP,pantO,teint(chau,-14));}
+    if(assisJ>0){
+      /* de face : les genoux remontent vers nous, les jambes raccourcissent */
+      jambeFace(1,Math.round(assisJ*3),pantO,teint(chau,-14));
+      jambeFace(-5,Math.round(assisJ*3),pant,chau);
+    }else{
+      const e2=Math.round(ecJ);
+      if(jgP>=jdP){jambeFace(1+e2,jdP,pantO,teint(chau,-14));jambeFace(-5-e2,jgP,pant,chau);}
+      else{jambeFace(-5-e2,jgP,pant,chau);jambeFace(1+e2,jdP,pantO,teint(chau,-14));}
+    }
   }
 
   /* jupe : un trapèze par-dessus le haut des jambes */
@@ -1903,9 +2052,52 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
       mB=[-3, yEp+4+av*7-h3];
       angO=0;
     }
+    /* LES ÉMOTES REPLACENT LES MÊMES MAINS.
+       On ne dessine pas de bras en plus : on donne aux deux mains du geste
+       une position différente, et tout le reste — l'épaule, le coude, la
+       manche, la carnation — suit comme pour la pioche. */
+    if(em){
+      const sens=cote?(dir==='gauche'?-1:1):1;
+      const yE=yEp;
+      if(emBrasA&&emBrasA.haut!==undefined){
+        /* le bras levé : la main part en l'air, du côté du regard */
+        const h3=emBrasA.haut;
+        mA=[sens*(4+h3*5)+(emBrasA.remue||0)*sens*3,
+            yE+3-h3*16+(emBrasA.remue||0)*2];
+        mB=emBrasB&&emBrasB.haut!==undefined
+          ?[-sens*(4+emBrasB.haut*5)+(emBrasB.remue||0)*sens*3,
+            yE+3-emBrasB.haut*16+(emBrasB.remue||0)*2]
+          :[-sens*4, yE+9];
+      }else if(emBrasA&&emBrasA.ventre){
+        const sc=(emBrasA.secousse||0)*2.2;
+        mA=[sens*3+sc, yE+9+Math.abs(sc)*0.6];
+        mB=[-sens*3+sc*0.6, yE+8-Math.abs(sc)*0.5];
+      }else if(emBrasA&&emBrasA.coeur){
+        const m2=emBrasA.montee||0;
+        mA=[sens*(3-m2*2.4), yE+8-m2*5];
+        mB=[-sens*(4-m2), yE+9+m2*1.4];
+      }else if(emBrasA&&emBrasA.mains!==undefined){
+        /* les deux mains se rejoignent devant la poitrine */
+        const ec=1+emBrasA.mains*4;
+        mA=[sens*ec, yE+5];mB=[-sens*ec, yE+5];
+      }else if(emBrasA&&emBrasA.appui!==undefined){
+        mA=[sens*5, yE+11];mB=[-sens*6, yE+10];
+      }else if(emBrasA&&emBrasA.corbeille!==undefined){
+        const h4=(emBrasA.hauteur||0)*2.4;
+        mA=[sens*2.5, yE+2-h4];mB=[-sens*2.5, yE+2-h4];
+      }else if(emBrasA&&emBrasA.tendu!==undefined){
+        const t2=emBrasA.tendu;
+        mA=[sens*(3+t2*10), yE+4];mB=[-sens*3, yE+9];
+      }else{
+        const r4=(emBrasA&&emBrasA.remueBas)||0;
+        mA=[sens*3+r4*1.4, yE+9+r4*0.8];
+        mB=[-sens*3+r4*1.4, yE+9-r4*0.8];
+      }
+    }
     const cD=coude(epD,mA,true), cG=coude(epG,mB,false);
     const brasC=MANCHE>6?veste:peau, brasT=MANCHE>6?vesteT:peauO;
     const poserOutil=()=>{
+      if(em)return;                       /* une émote ne tient rien */
       if(typeGeste==='cueille')return;
       g.save();
       g.translate(x+mA[0],y+mA[1]);
@@ -2330,6 +2522,7 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
     if(boucle!=='aucune')R(s>0?-4:3,YT+7,1,2,boucle==='perle'?'#f2efe4':'#c9a24a');
     if(marque==='fard')R(dx-1,YT+8,3,1,'#c9707a');
   }
+  if(emRepere)g.restore();
 }
 
 /* ================= le décor, en pixels de jeu =================
@@ -5692,6 +5885,166 @@ setInterval(()=>{
   if(FOURNEE_VUE&&FOURNEE_VUE.reste>0)FOURNEE_VUE.reste-=5;
   else if(!FOURNEE_VUE)return;
 },5000);
+
+
+/* ================= LES ÉMOTES =================
+   Ce bloc ne DESSINE rien : il règle l'état du geste, et c'est le sprite du
+   personnage — son corps, ses bras, sa tenue, sa carnation — qui joue
+   l'émote. Ma première version peignait des bras et des jambes par-dessus :
+   le personnage se retrouvait avec deux paires de mains, et rien ne suivait
+   son apparence.
+   Il se copie tel quel dans le jeu : il ne dépend que de GESTE. */
+const EMOTES=[
+  {id:'coucou',   nom:'Coucou',    duree:2.0, ic:'✋'},
+  {id:'danse',    nom:'Danser',    duree:3.4, ic:'♪'},
+  {id:'rire',     nom:'Rire',      duree:2.2, ic:'!'},
+  {id:'saluer',   nom:'Saluer',    duree:1.9, ic:'⌒'},
+  {id:'applaudir',nom:'Applaudir', duree:2.2, ic:'✷'},
+  {id:'assis',    nom:'S’asseoir', duree:5.0, ic:'▁'},
+  {id:'coeur',    nom:'Cœur',      duree:2.4, ic:'♥'},
+  {id:'non',      nom:'Non',       duree:1.7, ic:'✕'},
+  {id:'oui',      nom:'Oui',       duree:1.7, ic:'✓'},
+  {id:'montrer',  nom:'Montrer',   duree:2.1, ic:'→'}
+];
+const EMOTE_DE=(id)=>EMOTES.find(x=>x.id===id);
+function lancerEmote(id){
+  const E=EMOTE_DE(id);if(!E)return;
+  /* on emprunte le geste : « t » descend de 1 à 0, « tt » compte les
+     secondes pour les émotes qui battent la mesure. */
+  GESTE={t:1,cible:null,impact:false,type:'em:'+id,tt:0,duree:E.duree};
+}
+function majEmote(dt){
+  if(!GESTE||GESTE.t<=0)return;
+  if(!GESTE.type||GESTE.type.slice(0,3)!=='em:')return;
+  GESTE.tt=(GESTE.tt||0)+dt;
+  GESTE.t=Math.max(0,1-GESTE.tt/(GESTE.duree||2));
+  if(GESTE.t<=0)GESTE={t:0,cible:null,impact:false,type:'pioche'};
+}
+const enEmote=()=>!!(GESTE&&GESTE.t>0&&GESTE.type&&GESTE.type.slice(0,3)==='em:');
+/* CE QUI S'AJOUTE AUTOUR : des notes, des cœurs, un signe. Jamais un membre.
+   On l'appelle APRÈS le sprite, avec la même position. */
+function ornementEmote(g,x,y,dir){
+  if(!enEmote())return;
+  const id=GESTE.type.slice(3), t=GESTE.tt||0;
+  const q=1-GESTE.t;
+  const vie=Math.min(1,Math.min(q,1-q)*7);
+  const sg=(dir==='gauche')?-1:1;
+  if(id==='danse'){
+    for(let k=0;k<3;k++){
+      const p=((t*0.8+k/3)%1);
+      g.globalAlpha=(1-p)*vie*0.9;
+      g.fillStyle='#f6ecd2';g.font='bold 9px Georgia,serif';
+      g.fillText('♪',x+sg*11+Math.sin(p*7+k)*5,y-42-p*20);
+      g.globalAlpha=1;
+    }
+  }else if(id==='rire'){
+    for(let k=0;k<3;k++){
+      const p=((t*1.3+k/3)%1);
+      g.globalAlpha=(1-p)*vie;
+      g.fillStyle='#f6ecd2';g.font='italic bold 8px Georgia,serif';
+      g.fillText('ha',x+sg*(9+p*10),y-36-p*16);
+      g.globalAlpha=1;
+    }
+  }else if(id==='coeur'){
+    for(let k=0;k<3;k++){
+      const p=((t*0.55+k/3)%1);
+      const cx=x+Math.sin(p*5+k*2)*6, cy=y-34-p*24;
+      const r2=3+(1-p)*2.2;
+      g.globalAlpha=(1-p)*vie;
+      g.fillStyle=['#e8919a','#e0707f','#f0a8b2'][k%3];
+      g.beginPath();
+      g.arc(cx-r2*0.45,cy-r2*0.3,r2*0.55,3.14159,0);
+      g.arc(cx+r2*0.45,cy-r2*0.3,r2*0.55,3.14159,0);
+      g.lineTo(cx+r2*0.95,cy-r2*0.05);
+      g.lineTo(cx,cy+r2*0.95);
+      g.lineTo(cx-r2*0.95,cy-r2*0.05);
+      g.closePath();g.fill();
+      g.globalAlpha=1;
+    }
+  }else if(id==='non'||id==='oui'){
+    g.globalAlpha=vie*0.9;
+    g.fillStyle=id==='non'?'#e8919a':'#9fd67a';
+    g.font='bold 11px Georgia,serif';g.textAlign='center';
+    g.fillText(id==='non'?'✕':'✓',x,y-46);
+    g.textAlign='left';g.globalAlpha=1;
+  }else if(id==='applaudir'){
+    /* l'éclat au moment où les mains se touchent */
+    const b2=(t*5)%1;
+    if(Math.abs(Math.cos(b2*3.14159))<0.18){
+      g.globalAlpha=vie*0.75;
+      g.strokeStyle='#f6ecd2';g.lineWidth=1.1;
+      for(let k=0;k<5;k++){
+        const a=k*1.25+0.4;
+        g.beginPath();
+        g.moveTo(x+Math.cos(a)*5,y-20+Math.sin(a)*5);
+        g.lineTo(x+Math.cos(a)*9,y-20+Math.sin(a)*9);g.stroke();
+      }
+      g.globalAlpha=1;
+    }
+  }else if(id==='coucou'){
+    const b2=Math.abs(Math.sin(t*11));
+    g.globalAlpha=vie*0.45*b2;
+    g.strokeStyle='#f6ecd2';g.lineWidth=1.1;
+    for(let k=1;k<=2;k++){
+      g.beginPath();
+      g.arc(x+sg*11,y-38,4+k*3.4,-1.1+(sg>0?0:3.14),0.5+(sg>0?0:3.14));
+      g.stroke();
+    }
+    g.globalAlpha=1;
+  }else if(id==='montrer'){
+    for(let k=0;k<2;k++){
+      const p=((t*1.2+k/2)%1);
+      g.globalAlpha=(1-p)*vie*0.8;
+      g.fillStyle='#f6ecd2';
+      const fx=x+sg*(16+p*16), fy=y-22;
+      g.beginPath();
+      g.moveTo(fx+sg*4,fy);
+      g.lineTo(fx-sg*2,fy-3.4);
+      g.lineTo(fx-sg*2,fy+3.4);
+      g.closePath();g.fill();
+      g.globalAlpha=1;
+    }
+  }
+}
+
+
+/* ================= LA RENCONTRE =================
+   Quand quelqu'un est à portée de voix, un bandeau apparaît au-dessus du
+   bouton d'action : son nom, « Parler », et la roue d'émotes. Rien à aller
+   chercher dans un menu. */
+function majLaRencontre(){
+  const b=$('rencontre');if(!b)return;
+  const gens=gensAPortee();
+  const on=gens.length>0&&!pageOuverte();
+  const qui=on?(gens.length>1?(gens[0].nom+' et '+(gens.length-1)+' autre'+
+    (gens.length>2?'s':'')):gens[0].nom):null;
+  if(on!==rencontreVue.on){rencontreVue.on=on;b.classList.toggle('on',on);}
+  if(qui!==rencontreVue.qui){
+    rencontreVue.qui=qui;
+    const q=$('quiR');
+    if(q&&qui)q.textContent=qui+' est là';
+  }
+  /* on ne garde pas la roue ouverte si tout le monde s'en va */
+  if(!on&&$('roue').classList.contains('on'))fermerLaRoue();
+}
+function ouvrirLaRoue(){
+  const r2=$('roue');if(!r2)return;
+  $('roueF').innerHTML=EMOTES.map(E=>
+    '<button data-em="'+E.id+'"><i>'+E.ic+'</i><b>'+E.nom+'</b></button>').join('');
+  $('roueF').querySelectorAll('[data-em]').forEach(x=>x.onclick=()=>{
+    faireLEmote(x.dataset.em);fermerLaRoue();
+  });
+  r2.classList.add('on');
+}
+function fermerLaRoue(){
+  const r2=$('roue');if(r2)r2.classList.remove('on');
+}
+function faireLEmote(id){
+  lancerEmote(id);
+  vibrer(14);
+  /* les autres la voient : elle voyage par le même canal que les gestes */
+  monterEnLigne(true);
+}
 
 /* ================= LES VOCAUX DE PROXIMITÉ =================
    On parle à QUELQU'UN qui est là, maintenant. Le vocal ne dort jamais dans
@@ -9833,6 +10186,11 @@ $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('b-parler').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
 $('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
+$('r-parler').onclick=()=>{fermerLaRoue();ouvrirLeVocal();};
+$('r-emote').onclick=()=>{
+  if($('roue').classList.contains('on'))fermerLaRoue();else ouvrirLaRoue();
+};
+$('roue').onclick=(ev)=>{if(ev.target&&ev.target.id==='roue')fermerLaRoue();};
 if($('saisie')){
   $('saisie').addEventListener('input',()=>{
     const r=$('resteC');
@@ -9883,6 +10241,7 @@ const enEuros=(c)=>((c||0)/100).toFixed(2).replace('.',',')+' €';
 let hVu={max:-1,sac:-1,argent:-1,jetons:-1,part:-1,alerte:null,plein:null};
 /* les témoins du bouton « parler », pour ne pas réécrire sa pastille */
 let dernierParler=0; const parlerVu={proche:null,nb:-1};
+let dernierRencontre=0; const rencontreVue={qui:null,on:null};
 function majHaut(){
   const s=$('hSac'), a=$('hArgent'), j=$('hJetons');
   if(!s)return;
@@ -10874,7 +11233,10 @@ function majAutres(dt){
       }
     }else{a.marche=false;a.pas=0;a.court=false;}
     if(now-(a.recu||0)>400){a.vx=0;a.vy=0;}   /* plus de nouvelles : on ne devine plus */
-    if(a.gesteT>0)a.gesteT=Math.max(0,a.gesteT-dt*2.3);
+    if(a.gesteT>0){
+      const E2=EMOTE_DE(String(a.geste||'').slice(3));
+      a.gesteT=Math.max(0,a.gesteT-dt*(E2?(1/E2.duree):2.3));
+    }
   }
 }
 
@@ -10953,7 +11315,13 @@ function dessinerUnAutre(g,a,camX,camY){
   const x=Math.round(a.x-camX), y=Math.round(a.y-camY);
   const sauve=GESTE;
   GESTE=a.gesteT>0
-    ?{t:a.gesteT,type:a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')}
+    ?{t:a.gesteT,
+      /* une émote voyage comme un geste : « em:coucou » passe tel quel, et
+         « tt » est reconstitué depuis le temps restant. */
+      type:(String(a.geste||'').slice(0,3)==='em:')?a.geste
+           :(a.geste==='hache'?'hache':(a.geste==='cueille'?'cueille':'pioche')),
+      tt:(1-a.gesteT)*((EMOTE_DE(String(a.geste||'').slice(3))||{duree:2}).duree),
+      duree:(EMOTE_DE(String(a.geste||'').slice(3))||{duree:2}).duree}
     :{t:0};
   /* les autres joueurs : on les voit courir dès que leur vitesse le dit */
   personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
@@ -13139,7 +13507,7 @@ let t0=performance.now();
   /* micro-arrêt à l'impact : tout se fige un instant, ça donne du poids */
   if(ARRET>0){ARRET-=dt;}
   else{
-    majJoueur(dt);majGeste(dt);
+    majJoueur(dt);majGeste(dt);majEmote(dt);
   }
   majVent(dt);
   if(QUALITE>=0.5)majNuages(dt);
@@ -13151,6 +13519,11 @@ let t0=performance.now();
   if(t-dernierSolde>20000)lireLHeure();          /* on recale l'heure de temps en temps */
   if(t-dernierMini>200){dernierMini=t;majHaut();}   /* le bandeau du haut */
   if(t-dernierSolde>20000){dernierSolde=t;lireLeSolde();}   /* le solde, toutes les 20 s */
+  /* LA RENCONTRE : cinq fois par seconde suffisent */
+  if(t-dernierRencontre>200){
+    dernierRencontre=t;
+    majLaRencontre();
+  }
   /* le bouton « parler » : on ne recopiait pas seulement la liste des autres
      joueurs à chaque image, on réécrivait aussi la pastille. Cinq fois par
      seconde suffisent, et on n'écrit que si ça change. */
