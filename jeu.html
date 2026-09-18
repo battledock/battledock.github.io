@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1517';
+  var MA_VERSION='2026-09-18-1523';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -1500,9 +1501,7 @@ body.clavier #bandeau{padding-bottom:9px}
       <path d="M10 2 a3 3 0 0 1 3 3 v4 a3 3 0 0 1 -6 0 v-4 a3 3 0 0 1 3 -3z" fill="currentColor"/>
       <path d="M4 9 a6 6 0 0 0 12 0" fill="none" stroke="currentColor" stroke-width="1.8"/>
       <rect x="9" y="15" width="2" height="3" fill="currentColor"/></svg></button>
-    <button id="r-emote">☺</button>
   </div>
-  <div id="roue"><div class="roueF" id="roueF"></div></div>
   <button id="action"></button>
   <button id="b-plus" aria-label="Le reste"><span class="pts">⋯</span>
     <em class="pastille" id="plus-nb">0</em></button>
@@ -7500,32 +7499,12 @@ setInterval(()=>{
    le personnage se retrouvait avec deux paires de mains, et rien ne suivait
    son apparence.
    Il se copie tel quel dans le jeu : il ne dépend que de GESTE. */
-const EMOTES=[
-  {id:'coucou',   nom:'Coucou',    duree:2.0, ic:'✋'},
-  {id:'danse',    nom:'Danser',    duree:3.4, ic:'♪'},
-  {id:'rire',     nom:'Rire',      duree:2.2, ic:'!'},
-  {id:'saluer',   nom:'Saluer',    duree:1.9, ic:'⌒'},
-  {id:'applaudir',nom:'Applaudir', duree:2.2, ic:'✷'},
-  {id:'assis',    nom:'S’asseoir', duree:5.0, ic:'▁'},
-  {id:'coeur',    nom:'Cœur',      duree:2.4, ic:'♥'},
-  {id:'non',      nom:'Non',       duree:1.7, ic:'✕'},
-  {id:'oui',      nom:'Oui',       duree:1.7, ic:'✓'},
-  {id:'montrer',  nom:'Montrer',   duree:2.1, ic:'→'}
-];
-const EMOTE_DE=(id)=>EMOTES.find(x=>x.id===id);
-function lancerEmote(id){
-  const E=EMOTE_DE(id);if(!E)return;
-  /* on emprunte le geste : « t » descend de 1 à 0, « tt » compte les
-     secondes pour les émotes qui battent la mesure. */
-  GESTE={t:1,pourMoi:true,cible:null,impact:false,type:'em:'+id,tt:0,duree:E.duree};
-}
-function majEmote(dt){
-  if(!GESTE||GESTE.t<=0)return;
-  if(!GESTE.type||GESTE.type.slice(0,3)!=='em:')return;
-  GESTE.tt=(GESTE.tt||0)+dt;
-  GESTE.t=Math.max(0,1-GESTE.tt/(GESTE.duree||2));
-  if(GESTE.t<=0)GESTE={t:0,cible:null,impact:false,type:'pioche'};
-}
+/* LES ÉMOTES SONT RETIRÉES du jeu. Le geste des autres joueurs peut encore
+   porter une valeur « em:… » venue d'une version précédente : on la traite
+   comme un geste ordinaire plutôt que de planter. */
+const EMOTE_DE=()=>null;
+
+
 const enEmote=()=>!!(GESTE&&GESTE.t>0&&GESTE.type&&GESTE.type.slice(0,3)==='em:');
 /* CE QUI S'AJOUTE AUTOUR : des notes, des cœurs, un signe. Jamais un membre.
    On l'appelle APRÈS le sprite, avec la même position. */
@@ -7631,26 +7610,10 @@ function majLaRencontre(){
     if(q&&qui)q.textContent=qui+' est là';
   }
   /* on ne garde pas la roue ouverte si tout le monde s'en va */
-  if(!on&&$('roue').classList.contains('on'))fermerLaRoue();
 }
-function ouvrirLaRoue(){
-  const r2=$('roue');if(!r2)return;
-  $('roueF').innerHTML=EMOTES.map(E=>
-    '<button data-em="'+E.id+'"><i>'+E.ic+'</i><b>'+E.nom+'</b></button>').join('');
-  $('roueF').querySelectorAll('[data-em]').forEach(x=>x.onclick=()=>{
-    faireLEmote(x.dataset.em);fermerLaRoue();
-  });
-  r2.classList.add('on');
-}
-function fermerLaRoue(){
-  const r2=$('roue');if(r2)r2.classList.remove('on');
-}
-function faireLEmote(id){
-  lancerEmote(id);
-  vibrer(14);
-  /* les autres la voient : elle voyage par le même canal que les gestes */
-  monterEnLigne(true);
-}
+
+
+
 
 /* ================= LES VOCAUX DE PROXIMITÉ =================
    On parle à QUELQU'UN qui est là, maintenant. Le vocal ne dort jamais dans
@@ -10483,9 +10446,13 @@ function semerDecor(){
   /* L'ENTRÉE DU MÉTRO, contre le comptoir, côté place */
   /* ENTRE LA RIVIÈRE ET LE COMPTOIR, à mi-distance, et remonté :
      la bande fait 151 de large à cette hauteur, le métro 86. */
-  DECOR.push({t:'metro',x:672,y:COMPTOIR_FIXE[1]-2,gr:0});
+  /* AU MILIEU DE LA RIVE ET DU COMPTOIR. L'eau va jusqu'à x=608 et la rive
+     commence vers 614 : le vrai milieu avec le comptoir (747) est à 680, pas
+     à 672. Et il monte un peu — son sommet passe à y=48, juste sous la
+     barrière du nord. */
+  DECOR.push({t:'metro',x:680,y:COMPTOIR_FIXE[1]-10,gr:0});
   DECOR=DECOR.filter(o=>o.t==='metro'||
-    !(Math.abs(o.x-672)<56&&Math.abs(o.y-(COMPTOIR_FIXE[1]-2))<48));
+    !(Math.abs(o.x-680)<56&&Math.abs(o.y-(COMPTOIR_FIXE[1]-10))<48));
   /* rien ne pousse devant le front nord */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(o.x>COMPTOIR2_FIXE[0]-120&&o.x<BOUTIQUE_FIXE[0]+100&&
@@ -11950,12 +11917,8 @@ $('b-reglages').onclick=ouvrirReglages;
 $('b-sac').onclick=()=>ouvrirSac();
 /* le tiroir a disparu : les cinq entrées tiennent dans la barre. */
 $('vocal').onclick=()=>{fermerBandeau();ouvrirLeVocal();};
-$('r-ecrire').onclick=()=>{fermerLaRoue();if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
-$('r-parler').onclick=()=>{fermerLaRoue();ouvrirLeVocal();};
-$('r-emote').onclick=()=>{
-  if($('roue').classList.contains('on'))fermerLaRoue();else ouvrirLaRoue();
-};
-$('roue').onclick=(ev)=>{if(ev.target&&ev.target.id==='roue')fermerLaRoue();};
+$('r-ecrire').onclick=()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();};
+$('r-parler').onclick=()=>{ouvrirLeVocal();};
 if($('saisie')){
   $('saisie').addEventListener('input',()=>{
     const r=$('resteC');
@@ -15491,7 +15454,7 @@ let t0=performance.now();
   /* micro-arrêt à l'impact : tout se fige un instant, ça donne du poids */
   if(ARRET>0){ARRET-=dt;}
   else{
-    majJoueur(dt);majGeste(dt);majEmote(dt);
+    majJoueur(dt);majGeste(dt);
   }
   majVent(dt);
   if(QUALITE>=0.5)majNuages(dt);
