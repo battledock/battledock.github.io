@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1523';
+  var MA_VERSION='2026-09-18-1733';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1030,22 +1030,6 @@ body.clavier #bandeau{padding-bottom:9px}
 /* LA ROUE VIT DANS LE BANDEAU DU BAS, qui est en « pointer-events:none »
    pour laisser passer les doigts sur la carte. Elle héritait donc de ça :
    les boutons s'affichaient, et aucun clic ne les atteignait. */
-#roue{position:fixed;inset:0;z-index:40;display:none;pointer-events:none;
-  background:rgba(10,14,8,.5);backdrop-filter:blur(3px)}
-#roue.on{display:block;pointer-events:auto}
-.roueF,.roueF button{pointer-events:auto}
-.roueF{position:absolute;left:10px;right:10px;
-  bottom:calc(84px + env(safe-area-inset-bottom));
-  display:grid;grid-template-columns:repeat(5,1fr);gap:7px;
-  padding:12px;border-radius:16px;
-  background:linear-gradient(180deg,rgba(38,48,32,.96),rgba(24,32,20,.97));
-  border:1px solid rgba(159,214,122,.3);box-shadow:0 10px 30px rgba(0,0,0,.6)}
-.roueF button{border:0;border-radius:12px;padding:11px 2px;
-  background:rgba(159,214,122,.13);color:#eaf6dc;
-  display:flex;flex-direction:column;align-items:center;gap:4px}
-.roueF button:active{transform:scale(.93);background:rgba(159,214,122,.28)}
-.roueF button i{font-style:normal;font-size:17px;line-height:1}
-.roueF button b{font:400 8px Georgia,serif;color:#cfe0c2}
 
 /* ===== LA BOÎTE AUX BILLETS ===== */
 .pFeuille{position:absolute;left:10px;right:10px;top:6%;
@@ -1765,8 +1749,7 @@ function sprite(g,x,y,ap0,dir,pas,bouge){
      variables que la pioche — l'angle du bras, l'inclinaison, le tassement —
      et c'est le corps existant qui bouge.
      « em » vaut le nom de l'émote, et « eq » va de 0 à 1 sur sa durée. */
-  const em=(typeof typeGeste==='string'&&typeGeste.slice(0,3)==='em:')
-    ?typeGeste.slice(3):null;
+  const em=null;                       /* les émotes sont retirées */
   const eq=em?(1-fr):0;
   let emBrasA=null, emBrasB=null, emSaut=0, emTourne=0, emJambes=null;
   if(fr>0&&typeGeste==='cueille'){
@@ -7505,7 +7488,7 @@ setInterval(()=>{
 const EMOTE_DE=()=>null;
 
 
-const enEmote=()=>!!(GESTE&&GESTE.t>0&&GESTE.type&&GESTE.type.slice(0,3)==='em:');
+const enEmote=()=>false;                         /* plus aucune émote, même venue d'ailleurs */
 /* CE QUI S'AJOUTE AUTOUR : des notes, des cœurs, un signe. Jamais un membre.
    On l'appelle APRÈS le sprite, avec la même position. */
 function ornementEmote(g,x,y,dir){
@@ -10450,9 +10433,11 @@ function semerDecor(){
      commence vers 614 : le vrai milieu avec le comptoir (747) est à 680, pas
      à 672. Et il monte un peu — son sommet passe à y=48, juste sous la
      barrière du nord. */
-  DECOR.push({t:'metro',x:680,y:COMPTOIR_FIXE[1]-10,gr:0});
+  /* CORRIGÉ : le mur du comptoir commence à 787 (880-93), pas à 747. La rive
+     commence vers 614 : le vrai milieu est à 700. Remonté de 6 points. */
+  DECOR.push({t:'metro',x:700,y:COMPTOIR_FIXE[1]-16,gr:0});
   DECOR=DECOR.filter(o=>o.t==='metro'||
-    !(Math.abs(o.x-680)<56&&Math.abs(o.y-(COMPTOIR_FIXE[1]-10))<48));
+    !(Math.abs(o.x-700)<56&&Math.abs(o.y-(COMPTOIR_FIXE[1]-16))<48));
   /* rien ne pousse devant le front nord */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(o.x>COMPTOIR2_FIXE[0]-120&&o.x<BOUTIQUE_FIXE[0]+100&&
@@ -13135,7 +13120,8 @@ function flechesVersLesAutres(camX,camY){
 function dessinerUnAutre(g,a,camX,camY){
   const x=Math.round(a.x-camX), y=Math.round(a.y-camY);
   const sauve=GESTE;
-  GESTE=a.gesteT>0
+  /* une émote venue d'une ancienne version n'est plus jouée : immobile */
+  GESTE=(a.gesteT>0&&String(a.geste||'').slice(0,3)!=='em:')
     ?{t:a.gesteT,
       /* une émote voyage comme un geste : « em:coucou » passe tel quel, et
          « tt » est reconstitué depuis le temps restant. */
