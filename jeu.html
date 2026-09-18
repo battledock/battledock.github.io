@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2209';
+  var MA_VERSION='2026-09-18-2221';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -9559,11 +9559,7 @@ function construireSolExtramar(){
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
   const A=(i)=>alea(i*1.37+0.5);
   /* la colline derrière les maisons : garrigue et toits lointains */
-  R(0,0,MONDE_L,70,'#8a9a5a');
-  for(let i=0;i<260;i++)R(A(i)*MONDE_L,A(i+500)*60,6+A(i+900)*8,3+A(i+1300)*4,
-    ['#6f8448','#7d8f4f','#96a466','#5f7640'][i%4]);
-  for(let i=0;i<34;i++){const x=A(i+2000)*MONDE_L,y=8+A(i+2100)*30;
-    R(x,y,18,6,'#c96a3f');R(x,y+6,18,6,['#e8c9a0','#e6a58c','#f0d78a'][i%3]);R(x,y,18,1,'#a85039');}
+  R(0,0,MONDE_L,160,'#b8a888');
   /* LE QUAI : dalles de calcaire blond, de tailles inégales */
   const pierre=['#e2d2ab','#d9c7a0','#e8d9b6','#d3c097','#dccba5'];
   R(0,70,MONDE_L,MONDE_H-70,'#d9c7a0');
@@ -9578,6 +9574,7 @@ function construireSolExtramar(){
       x+=w;
     }
   }
+  graverLesToitsDuFond(g,MONDE_L,160);
   /* LE BASSIN : turquoise sur les bords, bleu profond au large */
   for(let y=XP.quaiY;y<MONDE_H;y++){
     const k=(y-XP.quaiY)/(MONDE_H-XP.quaiY);
@@ -9637,11 +9634,294 @@ function construireSolExtramar(){
   return c;
 }
 
+/* ================= EXTRAMAR, À LA HAUTEUR DU VILLAGE =================
+   Même grammaire que les bâtiments du village : vue de trois quarts, le
+   toit qu'on voit d'en haut, des matières (enduit, pierre, tuile canal,
+   bois, fer), des devantures pleines de choses. */
+const TU_M={o:'#6e2c16',s:'#8f3f20',p:'#ad542c',c:'#c26a3a',h:'#d8844e',faite:'#e59a62'};
+const ENDUITS=[
+  {o:'#8c6636',s:'#b58646',p:'#d2a45c',c:'#dfb672',h:'#ebca8e',nom:'ocre'},
+  {o:'#8e5242',s:'#b8705a',p:'#d08a72',c:'#dca088',h:'#e8b8a2',nom:'saumon'},
+  {o:'#8e7e60',s:'#bba986',p:'#d6c6a0',c:'#e3d6b6',h:'#efe6cc',nom:'crème'},
+  {o:'#80442a',s:'#a05836',p:'#ba6e46',c:'#c8845a',h:'#d89c74',nom:'ocre rouge'}];
+const PI_X={o:'#7d6a4a',s:'#9e8a64',p:'#bba57c',c:'#cdb88e',h:'#dfcca4',e:'#ebdcb8'};
+function toitCanal(R,cx,bas,larg,haut){
+  const rangs=Math.round(haut/4);
+  for(let rg=rangs-1;rg>=0;rg--){
+    const t=rg/rangs, y=bas-rg*4, retrait=Math.round(t*12);
+    const x0=cx-larg/2-8+retrait, l2=larg+16-retrait*2;
+    for(let x=x0;x<x0+l2;x+=5){
+      const q=((x*7+rg*13)>>0)%5;
+      R(x,y,5,5,[TU_M.p,TU_M.c,TU_M.s,TU_M.p,TU_M.c][q]);
+      R(x+1,y,3,1,rg>rangs*0.55?TU_M.h:TU_M.c);                 /* le dos de la tuile */
+      R(x+4,y,1,5,TU_M.o);                                       /* le creux entre deux */
+    }
+    R(x0,y+4,l2,1,TU_M.o);
+    if(rg===rangs-1){R(x0-2,y-4,l2+4,5,TU_M.o);R(x0-2,y-4,l2+4,2,TU_M.faite);}
+  }
+}
+function enduit(R,x0,y0,w,h,E,graine){
+  R(x0,y0,w,h,E.p);
+  for(let i=0;i<w*h/7;i++){
+    const x=x0+alea(i*1.37+graine)*w, y=y0+alea(i*2.11+graine*3)*h;
+    R(x,y,1,1,[E.c,E.s,E.c,E.h][i%4]);
+  }
+  /* les coulures sous les appuis, les taches d'humidité en bas */
+  for(let i=0;i<6;i++)R(x0+alea(i+graine)*w,y0+h-10-alea(i*3+graine)*6,3+alea(i*7)*6,8,'rgba(90,60,30,.10)');
+}
+function chaine(R,x,y0,h,cote){
+  /* la chaîne d'angle : des pierres de taille alternées */
+  for(let y=y0,k=0;y<y0+h;y+=6,k++){
+    const w=k%2?7:10, xx=cote<0?x:x-w;
+    R(xx,y,w,5,PI_X.c);R(xx,y,w,1,PI_X.e);R(xx,y+5,w,1,PI_X.o);
+    R(cote<0?xx+w-1:xx,y,1,5,PI_X.s);
+  }
+}
+function fenetreM(R,g,x,y,E,V,etat){
+  /* l'encadrement de pierre, la vitre, les persiennes, l'appui */
+  R(x-3,y-4,19,26,PI_X.c);R(x-3,y-4,19,2,PI_X.e);R(x-3,y-4,2,26,PI_X.h);
+  R(x,y,13,20,'#26303a');
+  R(x+1,y+1,5,18,'#3a4a58');R(x+7,y+1,5,18,'#3a4a58');R(x+6,y,1,20,'#1a2028');
+  g.fillStyle='rgba(220,235,245,.22)';g.beginPath();g.moveTo(x+1,y+14);g.lineTo(x+6,y+2);g.lineTo(x+9,y+2);g.lineTo(x+4,y+14);g.fill();
+  if(etat==='ferme'){
+    R(x,y,13,20,V.p);for(let s=1;s<20;s+=2)R(x,y+s,13,1,V.o);R(x+6,y,1,20,V.o);R(x,y,13,1,V.h);
+  }else{
+    [[x-7,6],[x+14,6]].forEach(([vx,w])=>{R(vx,y,w,20,V.p);for(let s=1;s<20;s+=2)R(vx,y+s,w,1,V.o);
+      R(vx,y,w,1,V.h);R(vx+(vx<x?w-1:0),y,1,20,V.o);});
+  }
+  R(x-4,y+20,21,3,PI_X.c);R(x-4,y+20,21,1,PI_X.e);R(x-3,y+23,19,1,'rgba(40,25,10,.3)');
+}
+function balconM(R,x,y,w){
+  R(x,y,w,3,PI_X.p);R(x,y,w,1,PI_X.e);R(x+1,y+3,w-2,2,'rgba(40,25,10,.35)');
+  R(x,y-11,w,1,'#1f2224');R(x,y-1,w,1,'#1f2224');
+  for(let k=0;k<w;k+=3)R(x+k,y-11,1,11,'#2a2e30');
+  for(let k=1;k<w-2;k+=6){R(x+k,y-7,3,1,'#2a2e30');R(x+k+1,y-8,1,3,'#2a2e30');}
+}
+const VOLETS=[{o:'#3f5a48',p:'#5f8a6c',h:'#7fa88a'},{o:'#35506a',p:'#4f7898',h:'#7aa0bc'},
+  {o:'#5a5a42',p:'#8a8a64',h:'#aaaa84'},{o:'#3a5a5a',p:'#5a8484',h:'#80a8a8'}];
+function graverImmeuble(v){
+  const W=172,Ht=176,cx=W/2,sol=Ht-8;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const E=ENDUITS[v%4], V=VOLETS[(v*3+1)%4];
+  const BL=138, x0=cx-BL/2, rez=40, etage=34, murH=rez+etage*2+8, basToit=sol-murH;
+  g.fillStyle='rgba(40,30,18,.26)';g.beginPath();g.ellipse(cx+4,sol+3,BL*0.55,8,0,0,7);g.fill();
+  /* le toit de tuiles canal, vu d'en haut, ses cheminées */
+  toitCanal(R,cx,basToit,BL,30);
+  [[x0+22,-24],[x0+BL-30,-18]].forEach(([x,dy])=>{R(x,basToit+dy-10,9,12,PI_X.p);R(x,basToit+dy-10,9,2,PI_X.e);
+    R(x-1,basToit+dy-12,11,3,PI_X.s);R(x+2,basToit+dy-14,2,3,'#6e2c16');R(x+5,basToit+dy-14,2,3,'#6e2c16');});
+  /* la génoise : trois rangs de tuiles en bout, sous la toiture */
+  for(let r=0;r<3;r++){const y=basToit+3+r*3,ret=r*2;
+    for(let x=x0-4+ret;x<x0+BL+4-ret;x+=4){R(x,y,3,3,r%2?TU_M.s:TU_M.c);R(x,y,3,1,TU_M.h);}}
+  /* les murs */
+  enduit(R,x0,basToit+12,BL,murH-12,E,v*17+3);
+  R(x0,basToit+12,BL,3,'rgba(40,20,10,.28)');                    /* l'ombre sous la génoise */
+  chaine(R,x0,basToit+12,murH-rez-12,-1);chaine(R,x0+BL,basToit+12,murH-rez-12,1);
+  /* les deux étages */
+  for(let n=0;n<2;n++){
+    const yF=basToit+20+n*etage;
+    R(x0,yF+etage-6,BL,4,PI_X.c);R(x0,yF+etage-6,BL,1,PI_X.e);R(x0,yF+etage-2,BL,1,'rgba(40,25,10,.25)');  /* le bandeau */
+    for(let k=0;k<4;k++){
+      const fx=x0+16+k*31;
+      const ferme=alea(v*9+n*4+k)<0.25;
+      fenetreM(R,g,fx,yF,E,V,ferme?'ferme':'ouvert');
+      /* la vie aux fenêtres : pots, linge */
+      if(!ferme&&n===1&&(k+v)%3===0)for(let f=0;f<12;f+=4){R(fx+f,yF+18,4,4,'#a55a3a');R(fx+f,yF+15,4,3,['#6fbf5a','#d9576b','#e8c06a'][f/4]);}
+    }
+    if(n===0){balconM(R,x0+10,yF+23,BL-20);}                     /* le balcon filant du premier */
+    if(n===1&&v%2===0){                                           /* du linge qui sèche entre deux fenêtres */
+      g.strokeStyle='rgba(60,60,60,.6)';g.lineWidth=.5;g.beginPath();g.moveTo(x0+34,yF+6);g.lineTo(x0+72,yF+6);g.stroke();
+      [['#f2efe4',38],['#6a9ad0',48],['#d9576b',58]].forEach(([col,lx])=>{R(x0+lx,yF+6,7,9,col);R(x0+lx,yF+6,7,1,'rgba(0,0,0,.15)');});
+    }
+  }
+  /* LE REZ-DE-CHAUSSÉE : pierre de taille et devanture */
+  const yR=sol-rez;
+  for(let y=yR;y<sol;y+=6){const d=((y-yR)/6)%2?10:0;R(x0,y,BL,6,PI_X.p);R(x0,y,BL,1,PI_X.h);
+    for(let x=x0+d;x<x0+BL;x+=20)R(x,y,1,6,PI_X.s);}
+  R(x0-2,yR-2,BL+4,3,PI_X.c);R(x0-2,yR-2,BL+4,1,PI_X.e);
+  const sorte=['bar','savon','santons','porte'][v%4];
+  const bois={o:'#3a2616',p:'#5a3a20',c:'#7a5230',h:'#9a6a40'};
+  const devanture=(peinture,mot)=>{
+    R(x0+8,yR+4,BL-16,rez-6,peinture.o);R(x0+10,yR+6,BL-20,rez-10,peinture.p);R(x0+10,yR+6,BL-20,1,peinture.h);
+    /* l'enseigne peinte, lettres d'or */
+    R(x0+12,yR+7,BL-24,9,peinture.o);R(x0+13,yR+8,BL-26,7,peinture.c);
+    g.font='700 7px Georgia,serif';g.textAlign='center';g.fillStyle='#f0cf7d';g.fillText(mot,cx,yR+14,BL-34);g.textAlign='left';
+    /* deux vitrines, la porte au milieu */
+    [x0+14,x0+BL-58].forEach(vx=>{R(vx,yR+18,44,rez-22,'#1c242c');R(vx+1,yR+19,42,rez-24,'#2e3a44');
+      g.fillStyle='rgba(220,235,245,.18)';g.beginPath();g.moveTo(vx+4,yR+rez-6);g.lineTo(vx+16,yR+20);g.lineTo(vx+22,yR+20);g.lineTo(vx+10,yR+rez-6);g.fill();});
+    R(cx-9,yR+18,18,rez-18,peinture.o);R(cx-8,yR+19,16,rez-19,'#2e3a44');R(cx,yR+19,1,rez-19,peinture.o);
+    R(cx+4,yR+30,2,2,'#e8c06a');
+  };
+  if(sorte==='bar'){
+    devanture({o:'#1e3a2c',p:'#2c5440',c:'#346448',h:'#4a7a5c'},'BAR DE LA MARINE');
+    /* dans la vitrine : le zinc, les bouteilles */
+    [x0+14,x0+BL-58].forEach(vx=>{R(vx+2,yR+rez-12,40,3,'#b9c1c7');
+      for(let k=0;k<9;k++)R(vx+4+k*4,yR+22+(k%2)*2,2,6,['#3a7a4a','#c9a24a','#8a2a2a','#e8e0c0'][k%4]);});
+    /* le store banne, rayé, vu de trois quarts */
+    for(let r=0;r<4;r++)for(let k=0;k<BL-4;k+=8){R(x0+2+k,yR-4+r*3,4,3,r<2?'#c0392b':'#a93226');R(x0+6+k,yR-4+r*3,4,3,r<2?'#f4f0e4':'#dcd6c6');}
+    for(let k=0;k<BL-4;k+=8){R(x0+2+k,yR+8,4,2,'#c0392b');R(x0+6+k,yR+8,4,2,'#f4f0e4');}
+    R(x0+2,yR+10,BL-4,1,'rgba(40,20,10,.35)');
+  }else if(sorte==='savon'){
+    devanture({o:'#2a3a5a',p:'#3a5078',c:'#46608a',h:'#6a84ac'},'SAVONNERIE');
+    /* les pyramides de savons de Marseille, vert olive et crème */
+    [x0+14,x0+BL-58].forEach(vx=>{for(let r=0;r<3;r++)for(let k=0;k<5-r;k++){
+      const sx=vx+6+k*7+r*3.5, sy=yR+rez-12-r*6;R(sx,sy,6,5,(k+r)%2?'#8a9a4a':'#e8dcae');R(sx,sy,6,1,'rgba(255,255,255,.35)');}});
+  }else if(sorte==='santons'){
+    devanture({o:'#5a2a2a',p:'#7a3a36',c:'#8a4640',h:'#a8605a'},'SANTONS');
+    /* les petites figurines, alignées sur les gradins */
+    [x0+14,x0+BL-58].forEach(vx=>{for(let r=0;r<2;r++){R(vx+2,yR+rez-10-r*9,40,2,'#8a6238');
+      for(let k=0;k<6;k++){const sx=vx+5+k*6,sy=yR+rez-17-r*9;R(sx,sy,3,6,['#c0392b','#2d6fb0','#e8c06a','#3f8a4a','#f2efe4'][(k+r)%5]);R(sx,sy-2,3,2,'#e0b48a');}}});
+  }else{
+    /* la porte cochère, cintrée, ses clous et son heurtoir */
+    R(cx-18,yR+2,36,rez-2,PI_X.c);R(cx-18,yR+2,36,1,PI_X.e);
+    g.fillStyle=bois.o;g.beginPath();g.moveTo(cx-14,sol);g.lineTo(cx-14,yR+18);g.arc(cx,yR+18,14,Math.PI,0);g.lineTo(cx+14,sol);g.fill();
+    g.fillStyle=bois.p;g.beginPath();g.moveTo(cx-12,sol);g.lineTo(cx-12,yR+18);g.arc(cx,yR+18,12,Math.PI,0);g.lineTo(cx+12,sol);g.fill();
+    R(cx,yR+6,1,rez-6,bois.o);for(let y=yR+14;y<sol;y+=6)for(let x=cx-10;x<cx+11;x+=5)R(x,y,1,1,'#c9a24a');
+    R(cx-4,yR+26,3,3,'#c9a24a');R(cx+2,yR+26,3,3,'#c9a24a');
+    [x0+16,x0+BL-40].forEach(vx=>{R(vx,yR+10,24,20,PI_X.c);R(vx+2,yR+12,20,16,'#26303a');for(let k=3;k<20;k+=4)R(vx+2+k,yR+12,1,16,'#1f2224');});
+  }
+  R(x0+BL-6,basToit+12,2,murH-12,'#8a867a');R(x0+BL-7,basToit+12,1,murH-12,'#b9b4a2');   /* la descente d'eau */
+  /* LA NUIT : les fenêtres allumées et la devanture */
+  const n2=document.createElement('canvas');n2.width=W*D;n2.height=Ht*D;
+  const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+  h2.fillStyle='rgba(16,20,44,.42)';h2.fillRect(x0-8,basToit-30,BL+16,murH+34);   /* le voile ne déborde pas du toit */
+  [[x0+22,-24],[x0+BL-30,-18]].forEach(([x,dy])=>h2.fillRect(x-1,basToit+dy-14,11,dy+16));
+  for(let n=0;n<2;n++){const yF=basToit+20+n*etage;
+    for(let k=0;k<4;k++){if(alea(v*9+n*4+k)<0.25||alea(v*5+n*7+k*3)<0.4)continue;
+      const fx=x0+16+k*31;h2.fillStyle='#ffd98a';h2.fillRect(fx+1,yF+1,11,18);h2.fillStyle='#fff0c0';h2.fillRect(fx+2,yF+2,4,7);
+      h2.fillStyle='rgba(120,70,20,.5)';h2.fillRect(fx+6,yF,1,20);}}
+  if(sorte!=='porte'){h2.fillStyle='#ffcf7a';[x0+15,x0+BL-57].forEach(vx=>h2.fillRect(vx,yR+19,42,rez-24));
+    const l=h2.createRadialGradient(cx,sol,4,cx,sol,60);l.addColorStop(0,'rgba(255,200,110,.45)');l.addColorStop(1,'rgba(255,200,110,0)');
+    h2.fillStyle=l;h2.fillRect(cx-60,sol-60,120,68);}
+  return {toile:c,W,H:Ht,sol,nuit:n2};
+}
+
+/* LA BONNE MÈRE, EN MAJESTÉ : un éperon de calcaire qui monte derrière le
+   quai, ses pins, l'escalier taillé dans la roche ; au sommet, le fort et la
+   basilique rayée, vus de trois quarts, et la Vierge dorée. */
+function graverLaGarde(){
+  const W=190,Ht=196,cx=W/2,sol=Ht-4;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const CAL={o:'#8a7a5c',s:'#aa9a78',p:'#c4b48e',c:'#d6c8a2',h:'#e6dab8',e:'#f2ead0'};
+  /* 1 · L'ÉPERON : le plateau (vu d'en haut) et la falaise (vue de face) */
+  const plat=142, pied=sol-4;
+  const bord=(x)=>{const u=(x-cx)/(W*0.5);return Math.round(plat+Math.pow(Math.abs(u),2.2)*30+Math.sin(x/9)*2);};
+  for(let x=14;x<W-14;x++){
+    const b=bord(x);
+    /* la falaise : strates horizontales, fissures verticales */
+    for(let y=b;y<pied;y++){
+      const strate=Math.floor((y-b)/5), lum=((x+strate*7)%13<2)?CAL.o:(((y-b)%5===0)?CAL.s:((x*3+y)%11<3?CAL.c:CAL.p));
+      R(x,y,1,1,lum);
+    }
+    R(x,b,1,2,CAL.e);                                           /* l'arête qui prend la lumière */
+    /* le plateau de garrigue, au-dessus de l'arête */
+    for(let y=Math.max(0,b-22);y<b;y++)R(x,y,1,1,((x*7+y*3)%9<3)?'#8a9a56':((x+y)%5?'#7a8c4a':'#6a7c40'));
+  }
+  /* l'ombre portée sur la droite de l'éperon */
+  g.fillStyle='rgba(60,45,25,.22)';g.beginPath();g.moveTo(cx+30,plat+6);g.lineTo(W-14,plat+30);g.lineTo(W-14,pied);g.lineTo(cx+50,pied);g.fill();
+  /* des touffes et des pins parasols accrochés à la roche */
+  const pin=(x,y,r)=>{R(x-1,y,2,6,'#5b3f21');
+    g.fillStyle='#2f5b34';g.beginPath();g.ellipse(x,y-2,r,r*0.45,0,0,7);g.fill();
+    g.fillStyle='#4a7d42';g.beginPath();g.ellipse(x-1,y-3,r*0.7,r*0.3,0,0,7);g.fill();
+    g.fillStyle='#6a9a58';g.fillRect(x-r*0.4,y-4,r*0.5,1);};
+  [[26,158,8],[164,156,9],[44,176,7],[148,178,7],[60,138,6],[130,136,7]].forEach(([x,y,r])=>pin(x,y,r));
+  for(let i=0;i<30;i++){const x=16+alea(i*4.7)*(W-32),y=plat+10+alea(i*2.9)*(pied-plat-14);
+    if(Math.abs(x-cx)<18)continue;R(x,y,3,2,i%2?'#6a7c40':'#7a8c4a');}
+  /* 2 · L'ESCALIER taillé dans la roche, en lacets, avec sa rampe */
+  const lacets=[[cx-12,pied],[cx+16,pied-16],[cx-14,pied-32],[cx+12,plat+4]];
+  for(let i=0;i<lacets.length-1;i++){
+    const [xa,ya]=lacets[i],[xb,yb]=lacets[i+1];
+    for(let k=0;k<=12;k++){const x=xa+(xb-xa)*k/12, y=ya+(yb-ya)*k/12;
+      R(x-5,y-2,11,3,CAL.h);R(x-5,y-2,11,1,CAL.e);R(x-5,y+1,11,1,CAL.o);}
+    g.strokeStyle='#3b3a36';g.lineWidth=.7;g.beginPath();g.moveTo(xa+6,ya-6);g.lineTo(xb+6,yb-6);g.stroke();
+  }
+  /* 3 · LE FORT, sur le plateau : ses murs et ses créneaux, de trois quarts */
+  const fy=plat-4;
+  R(cx-52,fy-14,104,16,CAL.p);R(cx-52,fy-14,104,2,CAL.e);
+  for(let x=cx-52;x<cx+52;x+=8){R(x,fy-18,5,4,CAL.c);R(x,fy-18,5,1,CAL.e);}
+  for(let y=fy-12;y<fy+2;y+=4)R(cx-52,y,104,1,'rgba(90,70,40,.22)');
+  R(cx-52,fy+2,104,2,'rgba(40,30,15,.3)');
+  /* 4 · LA BASILIQUE : la nef rayée blanc et vert, son toit, ses coupoles */
+  const by=fy-16;
+  const raye=(x,y,w,h)=>{for(let j=0;j<h;j++)R(x,y+j,w,1,(Math.floor(j/3)%2)?'#7e9282':'#f4efe2');
+    R(x,y,1,h,'rgba(255,255,255,.35)');R(x+w-1,y,1,h,'rgba(0,0,0,.18)');};
+  /* le toit de la nef, vu d'en haut (pierre grise) */
+  R(cx-34,by-30,68,8,'#9aa296');R(cx-34,by-30,68,1,'#c4cabe');for(let x=cx-34;x<cx+34;x+=4)R(x,by-29,1,7,'#7e867a');
+  raye(cx-34,by-22,68,22);
+  for(let k=0;k<5;k++){const x=cx-28+k*13;R(x,by-17,6,11,'#2e3a44');g.fillStyle='#2e3a44';g.beginPath();g.arc(x+3,by-17,3,Math.PI,0);g.fill();}
+  R(cx-6,by-14,12,14,'#3a2a1c');g.fillStyle='#3a2a1c';g.beginPath();g.arc(cx,by-14,6,Math.PI,0);g.fill();
+  /* les deux coupoles, avec leurs côtes */
+  [[-22,7],[22,7]].forEach(([dx,r])=>{const x=cx+dx,y=by-30;
+    g.fillStyle='#c4c0b0';g.beginPath();g.arc(x,y,r,Math.PI,0);g.fill();
+    g.fillStyle='#e6e2d2';g.beginPath();g.arc(x-1,y-1,r-2,Math.PI,Math.PI*1.6);g.fill();
+    for(let a=0;a<3;a++)R(x-r+2+a*(r-1),y-r+3,1,r-3,'#9a9688');
+    R(x-1,y-r-3,2,3,'#e8c06a');});
+  /* 5 · LE CLOCHER : tour carrée rayée, baies, socle, et la Vierge */
+  const tx=cx, tb=by-22;
+  raye(tx-9,tb-36,18,36);
+  R(tx-10,tb-37,20,2,'#6f7d70');R(tx-10,tb-21,20,2,'#6f7d70');
+  R(tx-6,tb-33,5,9,'#2e3a44');R(tx+1,tb-33,5,9,'#2e3a44');
+  g.fillStyle='#2e3a44';g.beginPath();g.arc(tx-3.5,tb-33,2.5,Math.PI,0);g.fill();g.beginPath();g.arc(tx+3.5,tb-33,2.5,Math.PI,0);g.fill();
+  R(tx-4,tb-17,8,8,'#e8e2d0');R(tx-3,tb-16,6,6,'#2e3a44');R(tx,tb-16,1,6,'#e8e2d0');R(tx-3,tb-13,6,1,'#e8e2d0');  /* l'horloge */
+  R(tx-6,tb-43,12,6,'#d6d0be');R(tx-6,tb-43,12,1,'#f2ecdc');R(tx-5,tb-46,10,3,'#bdb7a5');   /* le socle */
+  /* LA VIERGE À L'ENFANT, toute d'or */
+  const vy=tb-46;
+  R(tx-3,vy-16,6,16,'#c8902a');R(tx-2,vy-16,3,16,'#e8b84a');R(tx-2,vy-20,4,4,'#e8b84a');R(tx-1,vy-20,2,2,'#fff0b8');
+  R(tx-5,vy-12,3,4,'#d8a03a');R(tx-6,vy-14,3,3,'#e8b84a');                               /* l'Enfant, sur le bras */
+  R(tx,vy-15,1,12,'#fff4c8');
+  const n2=document.createElement('canvas');n2.width=W*D;n2.height=Ht*D;
+  const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+  h2.fillStyle='rgba(14,18,42,.5)';for(let x=14;x<W-14;x++){const b=bord(x)-24;h2.fillRect(x,b,1,Ht-b);}
+  const l=h2.createRadialGradient(tx,tb-20,4,tx,tb-20,56);l.addColorStop(0,'rgba(255,238,196,.42)');l.addColorStop(1,'rgba(255,238,196,0)');
+  h2.fillStyle=l;h2.fillRect(tx-56,tb-76,112,112);
+  h2.fillStyle='rgba(255,246,222,.35)';h2.fillRect(cx-34,by-22,68,22);h2.fillRect(tx-9,tb-36,18,36);
+  h2.fillStyle='#ffe07a';h2.fillRect(tx-3,vy-16,6,16);h2.fillRect(tx-2,vy-20,4,4);h2.fillRect(tx-6,vy-14,4,6);
+  const hv=h2.createRadialGradient(tx,vy-10,1,tx,vy-10,14);hv.addColorStop(0,'rgba(255,220,120,.8)');hv.addColorStop(1,'rgba(255,220,120,0)');
+  h2.fillStyle=hv;h2.fillRect(tx-14,vy-24,28,28);
+  for(let i=0;i<lacets.length;i++){h2.fillStyle='#ffd98a';h2.fillRect(lacets[i][0]+8,lacets[i][1]-10,2,2);}
+  return {toile:c,W,H:Ht,sol,nuit:n2};
+}
+
+/* LE PANIER, DERRIÈRE : des rangs de toits qui montent vers le fond, de
+   plus en plus pâles — la ville qui continue au-delà du quai */
+function graverLesToitsDuFond(g,largeur,hauteur){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  for(let rang=0;rang<7;rang++){
+    const yb=10+rang*20, voile=0.42-rang*0.06;
+    let x=-((rang*37)%50);
+    while(x<largeur){
+      const w=30+Math.floor(alea(x*0.13+rang*7)*34), h=10+Math.floor(alea(x*0.29+rang)*8);
+      const E=ENDUITS[Math.floor(alea(x+rang*3)*4)];
+      R(x,yb,w,h+6,E.s);R(x,yb,w,1,E.c);
+      for(let k=4;k<w-4;k+=8)R(x+k,yb+4,3,4,'#3a3430');
+      /* le toit, vu d'en haut */
+      for(let r=0;r<3;r++){R(x-2+r,yb-4-r*3,w+4-r*2,4,r%2?TU_M.s:TU_M.p);
+        for(let k=0;k<w+4-r*2;k+=4)R(x-2+r+k+3,yb-4-r*3,1,4,TU_M.o);}
+      R(x-1,yb-12,w+2,2,TU_M.faite);
+      if(alea(x*3+rang)<.35){R(x+w-10,yb-18,4,6,E.p);R(x+w-11,yb-19,6,2,E.o);}
+      g.fillStyle='rgba(190,200,210,'+Math.max(0,voile).toFixed(2)+')';g.fillRect(x-2,yb-18,w+4,h+24);
+      x+=w+2+Math.floor(alea(x+rang*11)*6);
+    }
+  }
+}
+
 /* ---------------- LES OBJETS : gravés une fois, par variante ---------------- */
 const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
+  if(t==='x_maison'||t==='x_ndg'){
+    XCAL[cle]=t==='x_maison'?graverImmeuble(v||0):graverLaGarde();
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
   const T={x_ferry:[96,56],x_caboteur:[250,120],x_docks:[150,96],x_pile:[44,34],x_roue:[180,210],x_kiosque:[44,68],x_fontaine:[54,46],x_metroM:[96,100],x_platane:[84,108],x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
@@ -10363,7 +10643,7 @@ function semerDecorExtramar(){
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
   /* les immeubles du quai, en rang ; au milieu, la rue ouvre sur la Bonne Mère */
   for(let k=0;k<9;k++){
-    if(k===4){P('x_ndg',70+k*150,XP.maisonsY,{col:[88,24]});continue;}
+    if(k===4){P('x_ndg',70+k*150,XP.maisonsY+8,{col:[80,14]});continue;}
     P('x_maison',70+k*150,XP.maisonsY,{v:k,col:[64,24]});
   }
   /* les terrasses, devant les cafés */
