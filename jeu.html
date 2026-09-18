@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-0946';
+  var MA_VERSION='2026-09-18-0952';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -5379,13 +5380,20 @@ const TAILLERIE_FIXE=[1210,498];  /* la forge, en bas à droite */
    Une halte, pas une gare — 168 de large, moins que la forge. La VOIE passe
    derrière elle et sort de la carte ; elle coupe le chemin de la mine, d'où
    le passage à niveau. */
-const HALTE_FIXE=[1250,330];
+/* LA HALTE MONTE EN LISIÈRE NORD.
+   Elle était en plein milieu de la carte, et sa voie la coupait en deux à
+   mi-hauteur : on la traversait sans arrêt. Elle longe maintenant le bord
+   nord — la voie file dans la lisière, ne croise plus aucun chemin, et on ne
+   la rencontre que si on y va. */
+const HALTE_FIXE=[1010,150];
 const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
 /* « VOIE_Y » existait déjà — c'est l'axe des rails de la page du voyage.
    Celle-ci est la voie posée SUR LA CARTE, d'où le nom distinct. */
-const RAIL_Y=250;                 /* la hauteur de la voie sur la carte */
-const RAIL_X0=1000;               /* elle commence là et file vers l'est */
-const PASSAGE_X=1095;             /* le passage à niveau, sur le chemin de la mine */  /* le forgeron, sous la mine */
+const RAIL_Y=78;                  /* la voie, en lisière nord */
+const RAIL_X0=620;                /* elle traverse tout le nord, d'ouest en est */
+/* LE PASSAGE À NIVEAU se met là où l'on traverse VRAIMENT : à l'est de la
+   halte, le seul endroit dégagé des deux côtés de la voie. */
+const PASSAGE_X=1100;  /* le forgeron, sous la mine */
 const TAILLERIE_OUVERTE=true;     /* la forge fond le minerai */
 const POTEAU_FIXE=[792,398];      /* le poteau indicateur, au sud de la place */
 /* chaque bras pointe vers un lieu : le jeu calcule l'angle et la distance */
@@ -9402,9 +9410,13 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
   const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
   /* on remonte assez haut pour attraper les bâtiments dont le toit descend
      encore dans l'écran alors que leur pied est sorti par le haut */
-  /* on remonte au-delà du plus haut bâtiment : sinon son pied sort de la
-     fenêtre de tri avant que son toit ait quitté l'écran. */
-  const yHaut=camY-420, yBas=camY+VH2+40;
+  /* LA FENÊTRE DE TRI DOIT DÉBORDER DES DEUX CÔTÉS.
+     En haut, on remonte au-delà du plus haut bâtiment. En bas, « +40 » ne
+     suffisait pas : un bâtiment s'ancre à son PIED mais dessine jusqu'à 140
+     points plus haut. Quand la caméra était en haut de la carte, le pied de
+     la forge (y=498) tombait hors de la fenêtre alors que son toit était
+     encore à l'écran — et elle disparaissait d'un coup. */
+  const yHaut=camY-420, yBas=camY+VH2+220;
   const debut=premierVisible(yHaut);
   for(let i=debut;i<DECOR.length;i++){
     const o=DECOR[i];
