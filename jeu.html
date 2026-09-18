@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1308';
+  var MA_VERSION='2026-09-18-1320';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3174,7 +3175,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage','tilleul','lanterneP','boutique',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','tilleul','lanterneP','boutique',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -5391,14 +5392,16 @@ const ENTREPOT_FIXE=[852,626];
    centre pour la grand-place. La rivière coupe la bande en deux : la mine et
    le comptoir restent sur la rive ouest, le reste à l'est. */
 const SUD=505;                    /* la ligne des façades */
-const CARREAU_FIXE=[190,SUD];     /* la mine, tout à l'ouest de la ligne */
+/* LA MINE ET LE FORGERON passent sous la place, à droite : ce sont les deux
+   lieux de travail, et ils se répondent — on extrait ici, on forge à côté. */
+const CARREAU_FIXE=[990,SUD];
 /* LA MINE EST OUVERTE : on descend dans la galerie. */
 const MINE_OUVERTE=true;
 const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
 /* LA FORGE laisse le coin sud-est à la halte et se décale vers l'ouest :
    les deux ne tenaient pas ensemble dans l'angle. Elle reste au sud, entre
    le camp et la halte. */
-const TAILLERIE_FIXE=[1032,SUD];
+const TAILLERIE_FIXE=[1240,SUD];
 /* LA HALTE, tout à l'est : c'est de là qu'on prend le train.
    Une halte, pas une gare — 168 de large, moins que la forge. La VOIE passe
    derrière elle et sort de la carte ; elle coupe le chemin de la mine, d'où
@@ -6075,7 +6078,9 @@ function graverLeComptoirNeuf(){
   CALQUE_COMPTOIR2={toile:c,W,H:Ht,sol};
 }
 function graverLaBoutiqueNeuve(){
-  const W=190, Ht=186, cx=W/2, sol=Ht-16;
+  /* LA BOUTIQUE PERD SON ÉTAGE : un seul niveau, le toit posé juste au-dessus
+     de la devanture. Elle s'aligne ainsi sur la hauteur du comptoir. */
+  const W=190, Ht=140, cx=W/2, sol=Ht-16;
   const c=document.createElement('canvas');
   const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
   c.width=W*D;c.height=Ht*D;
@@ -6083,59 +6088,22 @@ function graverLaBoutiqueNeuve(){
   g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const {R,briques,toit,enseigne,porte,caisse,tonneau}=outilsFront(g);
   const BL=150;
-  const basToit=sol-116;
+  const basToit=sol-70;
   g.fillStyle='rgba(30,50,24,.26)';
   g.beginPath();g.ellipse(cx+4,sol+4,BL*0.54,12,0,0,7);g.fill();
   toit(cx,basToit,BL,22);
   R(cx-BL/2-12,basToit+3,BL+24,4,PI_F.o);
-  /* L'ÉTAGE, en brique */
-  briques(cx-BL/2,basToit+6,BL,40);
+  /* PLUS D'ÉTAGE : sous le toit, un simple bandeau de brique qui porte
+     l'enseigne, et c'est tout. */
+  briques(cx-BL/2,basToit+6,BL,14);
   R(cx-BL/2,basToit+6,BL,3,BR_F.h);
-  /* les pilastres de l'étage */
-  [-BL/2,-BL/6,BL/6,BL/2-8].forEach(dx=>{
-    R(cx+dx,basToit+6,8,40,PI_F.p);
-    R(cx+dx,basToit+6,2,40,PI_F.h);
-  });
-  /* LES TROIS FENÊTRES de l'étage, à croisée, avec appui et volets */
-  [-44,0,44].forEach((dx,i)=>{
-    const fy=basToit+16;
-    /* l'encadrement de pierre */
-    R(cx+dx-14,fy-2,28,26,PI_F.p);
-    R(cx+dx-14,fy-2,28,2,PI_F.h);
-    R(cx+dx+12,fy-2,2,26,PI_F.o);
-    /* le linteau */
-    R(cx+dx-16,fy-6,32,5,B_F.boisO);
-    R(cx+dx-16,fy-6,32,2,B_F.boisC);
-    /* la vitre, à croisée */
-    R(cx+dx-11,fy+1,22,20,'#2b2f36');
-    R(cx+dx-11,fy+1,22,7,'#5c7185');
-    R(cx+dx-1,fy+1,2,20,B_F.boisO);
-    R(cx+dx-11,fy+10,22,2,B_F.boisO);
-    R(cx+dx+7,fy+1,2,20,'rgba(230,226,214,.3)');
-    /* l'appui de pierre */
-    R(cx+dx-16,fy+21,32,4,PI_F.c);
-    R(cx+dx-16,fy+21,32,1.4,PI_F.e);
-    /* les volets, ouverts contre le mur */
-    [-1,1].forEach(s=>{
-      if(i===1&&s<0)return;                 /* un volet fermé, pour la vie */
-      R(cx+dx+s*17-2,fy-1,5,24,'#6f8a48');
-      R(cx+dx+s*17-2,fy-1,5,2,'#86a45e');
-      for(let k=2;k<22;k+=4)R(cx+dx+s*17-2,fy-1+k,5,1.4,'#55703a');
-    });
-    if(i===1){
-      /* le volet fermé, sur la moitié gauche */
-      R(cx+dx-11,fy+1,11,20,'#6f8a48');
-      for(let k=0;k<20;k+=4)R(cx+dx-11,fy+1+k,11,1.4,'#55703a');
-      R(cx+dx-11,fy+1,11,2,'#86a45e');
-    }
-  });
   /* LE BANDEAU de pierre entre l'étage et le rez */
-  R(cx-BL/2-3,basToit+46,BL+6,6,PI_F.c);
-  R(cx-BL/2-3,basToit+46,BL+6,2,PI_F.e);
-  R(cx-BL/2-3,basToit+52,BL+6,1.4,PI_F.o);
+  R(cx-BL/2-3,basToit+20,BL+6,6,PI_F.c);
+  R(cx-BL/2-3,basToit+20,BL+6,2,PI_F.e);
+  R(cx-BL/2-3,basToit+26,BL+6,1.4,PI_F.o);
   /* LE REZ : une devanture de bois, pas de la brique — c'est ce qui fait
      la boutique. Des pilastres de bois portent l'entablement. */
-  R(cx-BL/2,basToit+52,BL,sol-basToit-60,'#2e241c');
+  R(cx-BL/2,basToit+26,BL,sol-basToit-60,'#2e241c');
   /* le lambris du bas */
   R(cx-BL/2,sol-24,BL,16,B_F.boisO);
   for(let k=0;k<BL;k+=8)R(cx-BL/2+k,sol-24,1.4,16,B_F.boisS);
@@ -6143,53 +6111,53 @@ function graverLaBoutiqueNeuve(){
   /* LES DEUX VITRINES, à petits carreaux, en saillie */
   [-44,44].forEach(dx=>{
     /* le cadre de bois, mouluré */
-    R(cx+dx-26,basToit+56,52,44,B_F.boisO);
-    R(cx+dx-26,basToit+56,52,3,B_F.boisH);
-    R(cx+dx-24,basToit+59,48,38,'#3a4750');
+    R(cx+dx-26,basToit+30,52,44,B_F.boisO);
+    R(cx+dx-26,basToit+30,52,3,B_F.boisH);
+    R(cx+dx-24,basToit+33,48,38,'#3a4750');
     /* les petits carreaux : trois par quatre */
-    for(let i2=1;i2<4;i2++)R(cx+dx-24+i2*12,basToit+59,2,38,B_F.boisO);
-    for(let j=1;j<4;j++)R(cx+dx-24,basToit+59+j*10,48,2,B_F.boisO);
+    for(let i2=1;i2<4;i2++)R(cx+dx-24+i2*12,basToit+33,2,38,B_F.boisO);
+    for(let j=1;j<4;j++)R(cx+dx-24,basToit+33+j*10,48,2,B_F.boisO);
     /* le reflet, en biais */
     g.fillStyle='rgba(230,240,246,.16)';
     g.beginPath();
-    g.moveTo(cx+dx-22,basToit+95);g.lineTo(cx+dx-6,basToit+61);
-    g.lineTo(cx+dx+4,basToit+61);g.lineTo(cx+dx-12,basToit+95);
+    g.moveTo(cx+dx-22,basToit+69);g.lineTo(cx+dx-6,basToit+35);
+    g.lineTo(cx+dx+4,basToit+35);g.lineTo(cx+dx-12,basToit+69);
     g.closePath();g.fill();
     /* CE QU'ON VOIT DEDANS : des étagères chargées */
-    R(cx+dx-22,basToit+74,44,2,B_F.boisO);
-    R(cx+dx-22,basToit+88,44,2,B_F.boisO);
+    R(cx+dx-22,basToit+22,44,2,B_F.boisO);
+    R(cx+dx-22,basToit+62,44,2,B_F.boisO);
     /* rangée du haut : des pots */
     for(let k=0;k<4;k++){
       const px=cx+dx-18+k*11;
-      R(px,basToit+66,7,8,['#a3543a','#7d9455','#8b939a','#c9a24a'][k]);
-      R(px,basToit+66,7,2,'#d8c49a');
-      R(px-1,basToit+64,9,2,B_F.boisO);
+      R(px,basToit+40,7,8,['#a3543a','#7d9455','#8b939a','#c9a24a'][k]);
+      R(px,basToit+40,7,2,'#d8c49a');
+      R(px-1,basToit+38,9,2,B_F.boisO);
     }
     /* rangée du bas : des rouleaux de tissu et des paniers */
     for(let k=0;k<3;k++){
       const px=cx+dx-18+k*14;
-      R(px,basToit+78,10,10,['#8fa9c4','#d8a8a0','#c9a24a'][k]);
-      R(px,basToit+78,10,2,'rgba(255,255,255,.2)');
-      R(px+3,basToit+78,2,10,'rgba(0,0,0,.14)');
+      R(px,basToit+52,10,10,['#8fa9c4','#d8a8a0','#c9a24a'][k]);
+      R(px,basToit+52,10,2,'rgba(255,255,255,.2)');
+      R(px+3,basToit+52,2,10,'rgba(0,0,0,.14)');
     }
     /* l'appui de pierre, en saillie */
-    R(cx+dx-28,basToit+100,56,5,PI_F.c);
-    R(cx+dx-28,basToit+100,56,1.6,PI_F.e);
-    R(cx+dx-26,basToit+105,52,3,PI_F.o);
+    R(cx+dx-28,basToit+74,56,5,PI_F.c);
+    R(cx+dx-28,basToit+74,56,1.6,PI_F.e);
+    R(cx+dx-26,basToit+79,52,3,PI_F.o);
     /* les consoles sous l'appui */
     [-22,16].forEach(px=>{
-      g.save();g.translate(cx+dx+px,basToit+105);g.rotate(0.5);
+      g.save();g.translate(cx+dx+px,basToit+79);g.rotate(0.5);
       R(0,0,3,10,B_F.boisO);g.restore();
     });
   });
   /* LES PILASTRES DE BOIS entre les vitrines et aux angles */
   [-BL/2+2,-16,10,BL/2-10].forEach(dx=>{
-    R(cx+dx,basToit+52,8,sol-basToit-60,B_F.bois);
-    R(cx+dx,basToit+52,2.4,sol-basToit-60,B_F.boisH);
-    R(cx+dx+6,basToit+52,2,sol-basToit-60,B_F.boisS);
+    R(cx+dx,basToit+26,8,sol-basToit-60,B_F.bois);
+    R(cx+dx,basToit+26,2.4,sol-basToit-60,B_F.boisH);
+    R(cx+dx+6,basToit+26,2,sol-basToit-60,B_F.boisS);
     /* le chapiteau et la base */
-    R(cx+dx-2,basToit+52,12,5,B_F.boisO);
-    R(cx+dx-2,basToit+52,12,1.6,B_F.boisC);
+    R(cx+dx-2,basToit+26,12,5,B_F.boisO);
+    R(cx+dx-2,basToit+26,12,1.6,B_F.boisC);
     R(cx+dx-2,sol-13,12,5,B_F.boisO);
   });
   /* LA PORTE de la boutique, vitrée en haut */
@@ -6218,12 +6186,12 @@ function graverLaBoutiqueNeuve(){
   /* L'AUVENT DE TUILES sur toute la devanture, avec sa dentelle */
   for(let k=-BL/2-4;k<BL/2+4;k+=6){
     const q=(k*7)%4;
-    R(cx+k,basToit+44,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
-    R(cx+k,basToit+44,6,1,TU_F.h);
-    R(cx+k+5,basToit+44,1,5,TU_F.o);
+    R(cx+k,basToit+18,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+    R(cx+k,basToit+18,6,1,TU_F.h);
+    R(cx+k+5,basToit+18,1,5,TU_F.o);
   }
-  R(cx-BL/2-6,basToit+48,BL+12,2,TU_F.o);
-  for(let k=-BL/2-4;k<BL/2+4;k+=7)R(cx+k,basToit+50,4,3,B_F.boisO);
+  R(cx-BL/2-6,basToit+22,BL+12,2,TU_F.o);
+  for(let k=-BL/2-4;k<BL/2+4;k+=7)R(cx+k,basToit+24,4,3,B_F.boisO);
   /* LA CHEMINÉE */
   briques(cx+BL/4,basToit-22,12,20);
   R(cx+BL/4-2,basToit-26,16,5,PI_F.c);
@@ -6492,6 +6460,437 @@ function dessinerLePassage(g,x,y){
   g.strokeStyle='#b4472f';g.lineWidth=1.2;
   g.beginPath();g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
   g.restore();
+}
+
+
+/* ================= LE CARREAU DE MINE ET LE FORGERON =================
+   Repris de l'aperçu sans retouche : le chevalement à molette, la galerie
+   boisée, le wagonnet ; le foyer qui respire et le marteau sur l'enclume. */
+const ROC=['#8f8778','#9a9182','#847c6e','#a49b8c'];
+let CALQUE_CARREAU=null, CALQUE_FORGERON=null;
+const TSud=()=>Date.now()/1000;
+const nuitSud=()=>(typeof lampesAllumees==='function')&&lampesAllumees();
+function outilsSud(g){
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));};
+  return {R,
+    briques:(x0,y0,larg,haut)=>{
+      for(let y=0;y<haut;y+=4){
+        const dec=(y/4)%2?4:0;
+        for(let x=0;x<larg;x+=9){
+          const t=((x+y*3)*7)%4;
+          R(x0+x+dec,y0+y,8,3,[BR_F.p,BR_F.c,BR_F.s,BR_F.p][t]);
+          R(x0+x+dec,y0+y,8,1,BR_F.h);
+        }
+      }
+    },
+    toit:(cx,bas,larg,haut)=>{
+      const rangs=Math.round(haut/4);
+      for(let rg=rangs-1;rg>=0;rg--){
+        const t=rg/rangs, y=bas-rg*4, retrait=Math.round(t*14);
+        const x0=cx-larg/2-12+retrait, l2=larg+24-retrait*2;
+        for(let x=x0;x<x0+l2;x+=6){
+          const q=(x*7+rg*13)%4;
+          R(x,y,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+          R(x,y,6,1,rg>rangs*0.6?TU_F.h:TU_F.c);
+          R(x+5,y,1,5,TU_F.o);
+        }
+        R(x0,y+4,l2,1,TU_F.o);
+        if(rg===rangs-1){R(x0-2,y-4,l2+4,5,TU_F.o);R(x0-2,y-4,l2+4,2,TU_F.faite);}
+      }
+    },
+    pierre:(x,y,w,h,gr)=>{
+      const t=Math.floor(alea(gr*0.41)*ROC.length);
+      R(x+1,y+1,w,h,'rgba(48,44,38,.34)');
+      R(x,y,w,h,ROC[t]);
+      R(x+1,y+1,w-2,h-2,'rgba(255,250,238,.13)');
+      R(x,y,w-1,1,'rgba(252,246,232,.48)');
+      R(x+w-1,y+1,1,h-1,'rgba(58,52,44,.3)');
+    },
+    enseigne:(cx,hy,larg,mot,taille)=>{
+      R(cx-larg/2,hy-9,larg,18,B_F.boisS);
+      R(cx-larg/2,hy-9,larg,2,B_F.boisC);
+      R(cx-larg/2,hy+7,larg,2,'#2a1c12');
+      R(cx-larg/2+2,hy-7,larg-4,1,'rgba(240,207,125,.25)');
+      R(cx-larg/2-4,hy-11,4,22,B_F.boisO);
+      R(cx+larg/2,hy-11,4,22,B_F.boisO);
+      g.font='700 '+(taille||12)+'px Georgia,serif';
+      g.fillStyle='#f0cf7d';g.textAlign='center';
+      g.fillText(mot,cx,hy+5,larg-18);
+      g.textAlign='left';
+    }};
+}
+function graverLeCarreau(){
+  const W=230, Ht=200, cx=W/2, sol=Ht-16;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const {R,briques,pierre,enseigne,toit}=outilsSud(g);
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(cx+4,sol+4,96,14,0,0,7);g.fill();
+  /* LE TERRIL, derrière à droite : le tas de déblais */
+  g.fillStyle='#6f675a';
+  g.beginPath();g.moveTo(cx+38,sol-2);g.lineTo(cx+72,sol-46);
+  g.lineTo(cx+104,sol-2);g.closePath();g.fill();
+  g.fillStyle='#7a7264';
+  g.beginPath();g.moveTo(cx+46,sol-2);g.lineTo(cx+72,sol-42);
+  g.lineTo(cx+90,sol-2);g.closePath();g.fill();
+  for(let i=0;i<70;i++){
+    const t=alea(i*3.1), u=alea(i*1.7);
+    const x=cx+44+u*56, y=sol-4-t*(38-Math.abs(u-0.5)*46);
+    if(y>sol-2)continue;
+    R(x,y,2,2,t<0.4?'#5f5a50':(t<0.75?'#6f675a':'#847c6e'));
+  }
+  /* LE MUR DE ROCHE : la colline entaillée, en assises irrégulières.
+     Elle monte plus haut au centre, s'effrite sur les bords, et porte des
+     touffes d'herbe dans ses fissures. */
+  for(let yy=0;yy<74;yy+=7){
+    const dec=(yy/7)%2?9:0;
+    for(let k=-96;k<52;k+=18){
+      /* la roche s'abaisse vers les bords : on saute les pierres du haut */
+      const h=74-Math.abs(k+22)*0.34;
+      if(yy>h)continue;
+      pierre(cx+k+dec,sol-78+yy,17,6,k*0.7+yy*1.3);
+    }
+  }
+  /* les fissures et les éboulis au pied */
+  for(let k=0;k<26;k++){
+    const t=alea(k*3.7), u=alea(k*1.9);
+    R(cx-92+u*140,sol-76+t*66,2,3,'rgba(48,44,38,.4)');
+  }
+  for(let k=0;k<22;k++){
+    const t=alea(k*5.1), u=alea(k*2.3);
+    const px=cx-88+u*140, py=sol-6-t*8;
+    pierre(px,py,4+t*4,3+t*3,k*7.1);
+  }
+  /* des touffes d'herbe dans les fissures */
+  for(let k=0;k<14;k++){
+    const u=alea(k*4.3), t=alea(k*2.7);
+    const px=cx-90+u*140, py=sol-70+t*54;
+    for(let j=0;j<3;j++)R(px+j*2,py-3-alea(k+j)*3,1,4,j%2?'#6f8a48':'#7d9455');
+  }
+  /* LES ÉTAIS DE BOIS plantés contre la roche, de part et d'autre */
+  [-76,-64,44].forEach((dx,i)=>{
+    g.save();g.translate(cx+dx,sol-2);g.rotate(i===2?-0.14:0.12);
+    R(0,-46,6,46,B_F.boisO);R(0,-46,2,46,B_F.bois);
+    R(-2,-48,10,4,B_F.boisS);
+    g.restore();
+  });
+  /* UNE ÉCHELLE appuyée à la roche */
+  g.save();g.translate(cx-86,sol-2);g.rotate(0.16);
+  R(0,-56,3,56,B_F.bois);R(9,-56,3,56,B_F.bois);
+  for(let k=0;k<8;k++)R(0,-52+k*7,12,2.4,B_F.boisO);
+  g.restore();
+  /* DES CAISSES et un tonneau au pied de la roche */
+  const caisse=(px,py)=>{R(px,py,14,11,B_F.bois);R(px,py,14,2,B_F.boisH);
+    R(px,py+5,14,2,B_F.boisO);R(px+6,py,2,11,B_F.boisO);};
+  caisse(cx-72,sol-15);caisse(cx-56,sol-15);caisse(cx-64,sol-26);
+  for(let k=0;k<5;k++)R(cx+34+k*3,sol-18,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+  R(cx+33,sol-15,17,2.4,'#4a4a52');
+  R(cx+33,sol-7,17,2.4,'#4a4a52');
+  /* UN TAS DE MINERAI trié, devant */
+  for(let k=0;k<16;k++){
+    const t=alea(k*6.1), u=alea(k*3.3);
+    const px=cx-104+u*26, py=sol-4-t*10;
+    g.fillStyle=t<0.3?'#b06a3a':(t<0.6?'#8f8778':'#7a7264');
+    g.beginPath();g.arc(px,py,2.4+t*1.6,0,7);g.fill();
+    g.fillStyle='rgba(255,250,238,.2)';
+    g.beginPath();g.arc(px-0.8,py-0.8,1,0,7);g.fill();
+  }
+  /* LES OUTILS appuyés : deux pioches et une pelle */
+  [[-40,-0.3],[-33,0.22]].forEach(([dx,a])=>{
+    g.save();g.translate(cx+dx,sol-2);g.rotate(a);
+    R(0,-40,3,40,B_F.bois);
+    g.fillStyle='#4a4f54';
+    g.beginPath();g.moveTo(-9,-42);g.quadraticCurveTo(1.5,-48,12,-42);
+    g.lineTo(12,-40);g.quadraticCurveTo(1.5,-45,-9,-40);g.closePath();g.fill();
+    g.restore();
+  });
+  /* LA GALERIE : une bouche boisée, en plein cintre */
+  g.fillStyle='#17120c';
+  g.beginPath();
+  g.moveTo(cx-30,sol-2);g.lineTo(cx-30,sol-34);
+  g.quadraticCurveTo(cx-8,sol-56,cx+14,sol-34);
+  g.lineTo(cx+14,sol-2);g.closePath();g.fill();
+  /* LE CADRE DE BOIS de l'entrée : deux montants et un chapeau */
+  R(cx-36,sol-38,7,36,B_F.boisO);R(cx-36,sol-38,2.4,36,B_F.bois);
+  R(cx+13,sol-38,7,36,B_F.boisO);R(cx+13,sol-38,2.4,36,B_F.bois);
+  R(cx-39,sol-44,62,7,B_F.bois);
+  R(cx-39,sol-44,62,2.4,B_F.boisH);
+  R(cx-39,sol-37,62,2,B_F.boisS);
+  /* les cadres successifs qu'on devine dans la galerie */
+  [[-24,-30,0.55],[-18,-26,0.35],[-13,-22,0.2]].forEach(([dx,dy,a])=>{
+    g.globalAlpha=a;
+    R(cx+dx,sol-2+dy+4,4,-dy-6,B_F.boisO);
+    R(cx-dx-14,sol-2+dy+4,4,-dy-6,B_F.boisO);
+    R(cx+dx,sol+dy+2,-2*dx-10,3,B_F.boisO);
+    g.globalAlpha=1;
+  });
+  /* LES RAILS qui sortent de la galerie */
+  for(let x=cx-14;x<cx+70;x+=9){
+    R(x,sol-4,7,3,B_F.boisO);R(x,sol-4,7,1,B_F.bois);
+  }
+  [-2,4].forEach(dy=>{
+    R(cx-16,sol-6+dy,88,1.6,PI_F.c);
+    R(cx-16,sol-6+dy,88,0.8,PI_F.e);
+  });
+  /* LE CHEVALEMENT : quatre jambes de bois, la molette au sommet */
+  const H2=sol-92;
+  [[-34,-14],[34,14]].forEach(([bx,tx])=>{
+    g.save();
+    g.translate(cx+bx,sol-2);
+    g.rotate(Math.atan2(-(sol-2-H2),(cx+tx)-(cx+bx))+Math.PI/2);
+    R(0,0,7,Math.hypot((cx+tx)-(cx+bx),sol-2-H2),B_F.boisO);
+    R(0,0,2.4,Math.hypot((cx+tx)-(cx+bx),sol-2-H2),B_F.bois);
+    g.restore();
+  });
+  /* les traverses du chevalement */
+  [0.28,0.55,0.8].forEach(q=>{
+    const y=sol-2-(sol-2-H2)*q;
+    const dx=34-(34-14)*q;
+    R(cx-dx,y,dx*2,5,B_F.boisO);
+    R(cx-dx,y,dx*2,1.6,B_F.bois);
+    /* les croisillons */
+    g.strokeStyle=B_F.boisS;g.lineWidth=2.4;
+    g.beginPath();g.moveTo(cx-dx,y);g.lineTo(cx+dx,y-24);
+    g.moveTo(cx+dx,y);g.lineTo(cx-dx,y-24);g.stroke();
+  });
+  /* la plateforme du sommet */
+  R(cx-20,H2-4,40,6,B_F.bois);
+  R(cx-20,H2-4,40,2,B_F.boisH);
+  CALQUE_CARREAU={toile:c,W,H:Ht,sol,H2};
+}
+function dessinerLeCarreau(g,x,y){
+  if(!CALQUE_CARREAU)graverLeCarreau();
+  g.drawImage(CALQUE_CARREAU.toile,Math.round(x-CALQUE_CARREAU.W/2),Math.round(y-CALQUE_CARREAU.sol),CALQUE_CARREAU.W,CALQUE_CARREAU.H);
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+  const hy=-(CALQUE_CARREAU.sol-CALQUE_CARREAU.H2)-16;
+  /* LA MOLETTE : c'est elle qui fait vivre le carreau */
+  g.save();g.translate(x,y+hy);
+  g.fillStyle=PI_F.s;g.beginPath();g.arc(0,0,16,0,7);g.fill();
+  g.fillStyle=PI_F.p;g.beginPath();g.arc(0,0,14,0,7);g.fill();
+  g.fillStyle='#3d4248';g.beginPath();g.arc(0,0,11,0,7);g.fill();
+  g.rotate(TSud()*0.8);
+  g.strokeStyle=PI_F.h;g.lineWidth=2.2;
+  for(let k=0;k<6;k++){
+    const a=k/6*Math.PI;
+    g.beginPath();g.moveTo(Math.cos(a)*12,Math.sin(a)*12);
+    g.lineTo(-Math.cos(a)*12,-Math.sin(a)*12);g.stroke();
+  }
+  g.restore();
+  g.fillStyle=PI_F.e;g.beginPath();g.arc(x,y+hy,3.4,0,7);g.fill();
+  /* LE CÂBLE, qui descend dans la galerie */
+  g.strokeStyle='#4a4a52';g.lineWidth=1.4;
+  g.beginPath();g.moveTo(x-13,y+hy);g.lineTo(x-13,y-30);g.stroke();
+  g.beginPath();g.moveTo(x+13,y+hy);
+  g.lineTo(x+13,y-52+Math.sin(TSud()*0.6)*6);g.stroke();
+  /* la benne qui monte et descend */
+  const by=y-52+Math.sin(TSud()*0.6)*6;
+  R(+7,by-y,13,12,B_F.boisO);
+  R(+7,by-y,13,2.4,B_F.bois);
+  R(+7,by-y+5,13,1.6,'#4a4a52');
+  /* LE WAGONNET, qui va et vient sur les rails */
+  const wx=42+Math.sin(TSud()*0.42)*34;
+  R(wx-11,-20,24,13,'#5f666c');
+  R(wx-11,-20,24,2.4,PI_F.h);
+  R(wx-9,-18,20,4,'#3a3f44');
+  /* le minerai dedans */
+  for(let k=0;k<5;k++){
+    const t=alea(k*7.3);
+    g.fillStyle=t<0.4?'#7a7264':(t<0.7?'#8f8778':'#b06a3a');
+    g.beginPath();g.arc(x+wx-7+k*4,y-21,2.2,0,7);g.fill();
+  }
+  [[-6],[7]].forEach(([dx])=>{
+    g.fillStyle='#3a3f44';g.beginPath();g.arc(x+wx+dx,y-6,3.4,0,7);g.fill();
+    g.fillStyle=PI_F.p;g.beginPath();g.arc(x+wx+dx,y-6,1.6,0,7);g.fill();
+  });
+  /* LA LUEUR de la galerie, et la lampe accrochée au cadre */
+  if(nuitSud()){
+    R(-2,-36,4,3,'#ffd27a');
+    const d=g.createRadialGradient(x,y-34,3,x,y-34,46);
+    d.addColorStop(0,'rgba(255,200,110,.3)');d.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=d;g.fillRect(x-46,y-80,92,92);
+    /* la lampe du chevalement */
+    const d2=g.createRadialGradient(x,y+hy+18,3,x,y+hy+18,40);
+    d2.addColorStop(0,'rgba(255,210,130,.26)');d2.addColorStop(1,'rgba(255,210,130,0)');
+    g.fillStyle=d2;g.fillRect(x-40,y+hy-22,80,80);
+  }else{
+    /* de jour, on devine une lampe dans le noir */
+    R(-2,-30,3,3,'#e8b43a');
+  }
+  /* L'ENSEIGNE, sur le cadre */
+  const {enseigne}=outilsSud(g);
+  g.save();g.translate(x,y);
+  enseigne(0,-64,96,'LA MINE',12);
+  g.restore();
+}
+function graverLeForgeron(){
+  const W=220, Ht=190, cx=W/2, sol=Ht-16;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=Ht*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const {R,briques,pierre,toit,enseigne}=outilsSud(g);
+  const FL=150, basToit=sol-86;
+  g.fillStyle='rgba(30,50,24,.26)';
+  g.beginPath();g.ellipse(cx+4,sol+4,92,13,0,0,7);g.fill();
+  /* LE TOIT */
+  toit(cx-16,basToit,FL,24);
+  R(cx-16-FL/2-14,basToit+3,FL+28,4,PI_F.o);
+  /* LE MUR : pierre en bas, brique en haut — une forge, ça chauffe */
+  for(let k=-FL/2;k<FL/2;k+=20)pierre(cx-16+k,sol-24,19,22,k*0.7);
+  briques(cx-16-FL/2,basToit+6,FL,sol-basToit-30);
+  R(cx-16-FL/2,basToit+6,FL,3,BR_F.h);
+  /* LA GRANDE OUVERTURE du fournil, en plein cintre : on voit le foyer */
+  g.fillStyle='#17120c';
+  g.beginPath();
+  g.moveTo(cx-48,sol-2);g.lineTo(cx-48,sol-40);
+  g.quadraticCurveTo(cx-24,sol-64,cx,sol-40);
+  g.lineTo(cx,sol-2);g.closePath();g.fill();
+  for(let k=0;k<=9;k++){
+    const a=Math.PI*(0.05+0.9*k/9);
+    pierre(cx-24-Math.cos(a)*26-5,sol-40-Math.sin(a)*26-5,11,10,k*3.7);
+  }
+  /* LE FOYER, dans l'ouverture : les charbons et la hotte */
+  R(cx-42,sol-22,36,20,'#2a2018');
+  R(cx-40,sol-14,32,12,'#3a2c20');
+  R(cx-44,sol-26,40,5,PI_F.s);
+  R(cx-44,sol-26,40,1.6,PI_F.h);
+  /* la hotte de la cheminée, en tôle */
+  g.fillStyle='#3d4248';
+  g.beginPath();g.moveTo(cx-48,sol-42);g.lineTo(cx-38,sol-58);
+  g.lineTo(cx-10,sol-58);g.lineTo(cx,sol-42);g.closePath();g.fill();
+  g.fillStyle='#4d545c';
+  g.beginPath();g.moveTo(cx-46,sol-44);g.lineTo(cx-37,sol-56);
+  g.lineTo(cx-11,sol-56);g.lineTo(cx-2,sol-44);g.closePath();g.fill();
+  /* LE SOUFFLET, à gauche du foyer */
+  g.fillStyle=B_F.boisO;
+  g.beginPath();g.moveTo(cx-62,sol-30);g.lineTo(cx-44,sol-24);
+  g.lineTo(cx-44,sol-12);g.lineTo(cx-62,sol-18);g.closePath();g.fill();
+  g.fillStyle=B_F.bois;
+  g.beginPath();g.moveTo(cx-60,sol-29);g.lineTo(cx-46,sol-24);
+  g.lineTo(cx-46,sol-20);g.lineTo(cx-60,sol-24);g.closePath();g.fill();
+  R(cx-66,sol-26,6,4,'#4a4a52');
+  R(cx-70,sol-38,4,16,B_F.boisO);   /* le bras du soufflet */
+  /* L'AUVENT SUR POTEAUX, devant : c'est là qu'est l'enclume */
+  [[cx+22,sol-2],[cx+78,sol-2]].forEach(([px,py])=>{
+    R(px-3,py-52,7,52,B_F.boisO);
+    R(px-3,py-52,2.4,52,B_F.bois);
+    R(px-6,py-3,13,4,PI_F.s);
+    g.save();g.translate(px+2,py-50);g.rotate(0.7);
+    R(0,0,3,16,B_F.boisS);g.restore();
+  });
+  R(cx+14,sol-56,74,6,B_F.boisO);
+  R(cx+14,sol-56,74,2,B_F.boisH);
+  for(let k=cx+12;k<cx+92;k+=6){
+    const q=(k*7)%4;
+    R(k,sol-62,6,5,q===0?TU_F.p:(q===1?TU_F.c:(q===2?TU_F.s:TU_F.p)));
+    R(k,sol-62,6,1,TU_F.h);
+    R(k+5,sol-62,1,5,TU_F.o);
+  }
+  /* L'ENCLUME, sur son billot */
+  const ex=cx+52, ey=sol-4;
+  for(let k=0;k<5;k++)R(ex-11+k*5,ey-16,5,16,k%2?B_F.boisO:B_F.bois);
+  R(ex-12,ey-18,26,3,B_F.boisH);
+  g.fillStyle='#3a3f44';
+  g.beginPath();
+  g.moveTo(ex-13,ey-24);g.lineTo(ex+13,ey-24);g.lineTo(ex+9,ey-20);
+  g.lineTo(ex-9,ey-20);g.closePath();g.fill();
+  R(ex-5,ey-20,10,4,'#4a4f54');
+  g.fillStyle='#3a3f44';
+  g.beginPath();g.moveTo(ex+11,ey-27);g.lineTo(ex+24,ey-24);
+  g.lineTo(ex+11,ey-21);g.closePath();g.fill();
+  R(ex-13,ey-27,26,4,'#4a4f54');
+  R(ex-13,ey-27,26,1.4,'#6f767c');
+  /* LE BAQUET de trempe, et les fers en attente */
+  for(let k=0;k<5;k++)R(cx+88+k*3,sol-16,3,16,k===0||k===4?B_F.boisO:B_F.bois);
+  R(cx+87,sol-13,17,2.4,'#4a4a52');
+  R(cx+87,sol-6,17,2.4,'#4a4a52');
+  R(cx+89,sol-16,13,3,'#2f5f72');
+  /* le râtelier d'outils contre le mur */
+  R(cx-16-FL/2+6,sol-46,4,30,B_F.boisO);
+  R(cx-16-FL/2+26,sol-46,4,30,B_F.boisO);
+  R(cx-16-FL/2+4,sol-46,28,4,B_F.bois);
+  [0,1,2].forEach(k=>{
+    const px=cx-16-FL/2+10+k*7;
+    R(px,sol-42,2.4,18,'#4a4f54');
+    R(px-2,sol-24,6,5,'#3a3f44');
+  });
+  /* LA CHEMINÉE de brique, haute */
+  briques(cx-38,basToit-34,16,32);
+  R(cx-40,basToit-38,20,5,PI_F.c);
+  R(cx-40,basToit-38,20,1.6,PI_F.e);
+  /* L'ENSEIGNE : un fer à cheval sur planche */
+  enseigne(cx-16,basToit-22,110,'LE FORGERON',11);
+  CALQUE_FORGERON={toile:c,W,H:Ht,sol};
+}
+function dessinerLeForgeron(g,x,y){
+  if(!CALQUE_FORGERON)graverLeForgeron();
+  g.drawImage(CALQUE_FORGERON.toile,Math.round(x-CALQUE_FORGERON.W/2),Math.round(y-CALQUE_FORGERON.sol),CALQUE_FORGERON.W,CALQUE_FORGERON.H);
+  const cx=x-110+CALQUE_FORGERON.W/2;
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x+a),Math.round(y+b),w,h);};
+  /* LE FEU QUI RESPIRE, dans le foyer */
+  const souffle=0.6+Math.sin(TSud()*1.6)*0.28+Math.sin(TSud()*4.3)*0.12;
+  for(let k=0;k<9;k++){
+    const t=alea(k*3.7+Math.floor(TSud()*4)*0.1);
+    const fx=-40+k*4, fy=-20-t*8*souffle;
+    g.fillStyle=t<0.3?'#ffe9a0':(t<0.6?'#ff9a3c':'#e8502c');
+    g.fillRect(Math.round(x+fx),Math.round(y+fy),3,Math.round(3+t*5*souffle));
+  }
+  /* la braise, en dessous */
+  R(-40,-16,32,5,'#c9421c');
+  R(-38,-15,28,3,'#ff7a2c');
+  /* LA LUEUR du foyer, qui bat */
+  const d=g.createRadialGradient(x-24,y-22,4,x-24,y-22,74*souffle+28);
+  d.addColorStop(0,'rgba(255,150,60,'+(0.34*souffle+0.12).toFixed(2)+')');
+  d.addColorStop(0.5,'rgba(255,110,40,'+(0.14*souffle).toFixed(2)+')');
+  d.addColorStop(1,'rgba(255,90,30,0)');
+  g.fillStyle=d;g.fillRect(x-124,y-124,200,160);
+  /* LES ÉTINCELLES, qui montent de la hotte */
+  for(let k=0;k<7;k++){
+    const p=((TSud()*0.7+k/7)%1);
+    g.globalAlpha=(1-p)*0.8;
+    g.fillStyle=p<0.4?'#ffe9a0':'#ff9a3c';
+    g.fillRect(Math.round(x-26+Math.sin(p*9+k)*7),Math.round(y-58-p*40),2,2);
+    g.globalAlpha=1;
+  }
+  /* LA FUMÉE de la cheminée */
+  for(let i=0;i<4;i++){
+    const p=((TSud()*0.24+i/4)%1);
+    g.fillStyle='rgba(120,114,106,'+((1-p)*0.24).toFixed(2)+')';
+    g.beginPath();g.arc(x-30-p*12,y-128-p*28,2+p*9,0,7);g.fill();
+  }
+  /* LE MARTEAU qui frappe l'enclume, et l'éclat à chaque coup */
+  const bat=(TSud()*1.4)%1;
+  const ex=52, ey=-4;
+  const ang=bat<0.45?(-1.1+bat*2.4):(0.2-(bat-0.45)*0.36);
+  g.save();
+  g.translate(x+ex-14,y+ey-30);
+  g.rotate(ang);
+  g.fillStyle=B_F.bois;g.fillRect(0,-2,18,4);
+  g.fillStyle='#3a3f44';g.fillRect(16,-5,9,10);
+  g.fillStyle='#5f666c';g.fillRect(16,-5,9,3);
+  g.restore();
+  if(bat>0.42&&bat<0.5){
+    for(let k=0;k<6;k++){
+      const a=k/6*6.283;
+      g.fillStyle='#ffe9a0';
+      g.fillRect(Math.round(x+ex-2+Math.cos(a)*(6+bat*30)),
+                 Math.round(y+ey-26+Math.sin(a)*(4+bat*16)),2,2);
+    }
+    const d2=g.createRadialGradient(x+ex,y+ey-26,2,x+ex,y+ey-26,30);
+    d2.addColorStop(0,'rgba(255,230,160,.5)');d2.addColorStop(1,'rgba(255,230,160,0)');
+    g.fillStyle=d2;g.fillRect(x+ex-30,y+ey-56,60,60);
+  }
+  /* LE FER ROUGE posé sur l'enclume */
+  R(ex-8,ey-26,14,3,bat<0.5?'#ff7a2c':'#e8502c');
+  if(nuitSud()){
+    const d3=g.createRadialGradient(x+ex,y+ey-26,3,x+ex,y+ey-26,40);
+    d3.addColorStop(0,'rgba(255,140,60,.26)');d3.addColorStop(1,'rgba(255,140,60,0)');
+    g.fillStyle=d3;g.fillRect(x+ex-40,y+ey-66,80,80);
+  }
 }
 
 /* ================= LA FORGE =================
@@ -7459,7 +7858,7 @@ function dessinerLaGare(g,x,y){
   /* LES ROUES SE POSENT SUR LE RAIL. Le train se dessinait à partir du sol de
      la halle (y=668) alors que les rails sont à 680 : il roulait huit points
      au-dessus du vide. On part donc de la voie, pas du bâtiment. */
-  const RAIL=RAIL_Y+4;
+  const RAIL=VOIE_Y+4;
   /* À QUAI : les voitures doivent se trouver DEVANT la halle, pas le nez
      dessus. La motrice s'arrête donc bien à gauche, et ce sont les portes
      qui tombent en face du quai. */
@@ -8969,7 +9368,7 @@ function calculerChemins(){
           [bordDeLaPlace(ECHOPPE_FIXE),ECHOPPE_FIXE],
           [bordDeLaPlace(TAILLERIE_FIXE),TAILLERIE_FIXE],
           [bordDeLaPlace(CARREAU_FIXE),CARREAU_FIXE],
-          [bordDeLaPlace(HALTE_FIXE),HALTE_FIXE]]
+          ]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
@@ -9442,38 +9841,8 @@ function graverChemins(g){
      L'herbe va d'un bâtiment à l'autre. Les ROUTES restent calculées — elles
      servent au dégagement du passage et à la carte — mais rien n'est posé au
      sol : ni sable, ni galets, ni bordure. */
-  /* ================= LA VOIE ET LE QUAI =================
-     Gravés dans le sol, aux coordonnées du MONDE : le grain ne bouge pas
-     quand on marche. La voie part de l'est du village et sort de la carte. */
-  for(let x=RAIL_X0;x<MONDE_L;x+=6)for(let k=-9;k<9;k+=3){
-    const t=alea(x*1.7+k*3.1);
-    g.fillStyle=t<0.4?'#6f675a':(t<0.75?'#7a7264':'#645c50');
-    g.fillRect(x,RAIL_Y+k,6,3);
-  }
-  for(let x=RAIL_X0;x<MONDE_L;x+=11){
-    g.fillStyle='#5b4a38';g.fillRect(x,RAIL_Y-7,8,15);
-    g.fillStyle='#7d6a52';g.fillRect(x,RAIL_Y-7,8,2);
-  }
-  [-4,4].forEach(dy=>{
-    g.fillStyle='#8f979e';g.fillRect(RAIL_X0,RAIL_Y+dy,MONDE_L-RAIL_X0,2);
-    g.fillStyle='#c2cad0';g.fillRect(RAIL_X0,RAIL_Y+dy,MONDE_L-RAIL_X0,1);
-  });
-  /* LE PASSAGE À NIVEAU : le chemin traverse, planches entre les rails */
-  for(let x=PASSAGE_X-22;x<PASSAGE_X+22;x+=5)for(let k=-10;k<10;k+=5){
-    g.fillStyle=((x/5+k)%2)?'#8a7660':'#7d6a52';
-    g.fillRect(x,RAIL_Y+k,5,5);
-  }
-  [-4,4].forEach(dy=>{
-    g.fillStyle='#c2cad0';g.fillRect(PASSAGE_X-22,RAIL_Y+dy,44,1);
-  });
-  /* LE QUAI : entre la voie et la halte, c'est là qu'on attend */
-  for(let x=HALTE_FIXE[0]-96;x<HALTE_FIXE[0]+96;x+=4)
-    for(let y=RAIL_Y+12;y<RAIL_Y+30;y+=4){
-      const t2=alea(x*0.7+y*1.3);
-      g.fillStyle=t2<0.4?'#b4ab9a':(t2<0.75?'#bfb6a4':'#a89f8e');
-      g.fillRect(x,y,4,4);
-    }
-  g.fillStyle='#8f8778';g.fillRect(HALTE_FIXE[0]-96,RAIL_Y+10,192,2);
+  /* PLUS DE VOIE NI DE HALTE : le train quitte le village. La place et les
+     bâtiments reprennent tout le terrain. */
   /* LE SEUIL DES PONTS : deux dalles qui raccordent le chemin au tablier */
   PONTS.forEach(py=>{
     const px=rivX(py);
@@ -9734,7 +10103,6 @@ function semerDecor(){
     !(Math.abs(o.x-CARREAU_FIXE[0])<130&&o.y>CARREAU_FIXE[1]-130&&o.y<CARREAU_FIXE[1]+40));
   DECOR.push({t:'mine2',x:CARREAU_FIXE[0],y:CARREAU_FIXE[1],gr:0});
   /* LA HALTE, tout à l'est, et son passage à niveau sur le chemin de la mine */
-  DECOR.push({t:'halte',x:HALTE_FIXE[0],y:HALTE_FIXE[1],gr:0});
   /* ================= CE QUI GARNIT LA GRAND-PLACE =================
      La fontaine au centre, quatre tilleuls aux angles, quatre bancs tournés
      vers elle, et huit lanternes qui l'éclairent la nuit. */
@@ -9750,14 +10118,7 @@ function semerDecor(){
    [PLACE.x-130,PL_N()+24],[PLACE.x+130,PL_N()+24],
    [PLACE.x-130,PL_S()-16],[PLACE.x+130,PL_S()-16]].forEach(([x,y],i)=>
     DECOR.push({t:'lanterneP',x,y,gr:i}));
-  DECOR.push({t:'passage',x:PASSAGE_X,y:RAIL_Y,gr:0});
   /* rien ne pousse sur la voie ni sur le quai */
-  DECOR=DECOR.filter(o=>{
-    if(o.t==='halte'||o.t==='passage')return true;
-    if(Math.abs(o.y-RAIL_Y)<16&&o.x>RAIL_X0-20)return false;
-    if(Math.abs(o.x-HALTE_FIXE[0])<104&&o.y>HALTE_FIXE[1]-72&&o.y<HALTE_FIXE[1]+24)return false;
-    return true;
-  });
   /* LA TAILLERIE, entre la mine et la rivière */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(Math.abs(o.x-TAILLERIE_FIXE[0])<140&&o.y>TAILLERIE_FIXE[1]-150&&o.y<TAILLERIE_FIXE[1]+40));
@@ -9954,12 +10315,6 @@ function bloque(x,y){
   /* La colline est un RELIEF : on la contourne au-dessus de la voie, mais le
      quai et le bas de la carte restent libres. Ma première emprise couvrait
      tout ce qui était au sud de y=530, donc le quai de la gare lui-même. */
-  /* LA HALTE : le bâtiment est plein, le quai devant reste libre — c'est là
-     qu'on attend le train. */
-  {
-    const dx=x-HALTE_FIXE[0], dy=y-HALTE_FIXE[1];
-    if(Math.abs(dx)<48&&dy>-56&&dy<-2)return true;
-  }
   /* LA FORGE : le corps de pierre et la cheminée sont pleins. Le devant du
      foyer et l'enclume restent libres — c'est là qu'on se tient pour
      travailler. */
@@ -10070,10 +10425,9 @@ function margesDe(t){
   if(MARGES_VUES[t])return MARGES_VUES[t];
   let C=null;
   try{
-    if(t==='taillerie'){if(!CALQUE_TAILLERIE)graverLaTaillerie();C=CALQUE_TAILLERIE;}
+    if(t==='taillerie'){if(!CALQUE_FORGERON)graverLeForgeron();C=CALQUE_FORGERON;}
     /* l'échoppe se dessine maintenant avec le calque de la boutique */
-    else if(t==='mine2'){if(!CALQUE_MINE)graverLaMine();C=CALQUE_MINE;}
-    else if(t==='halte'){if(!CALQUE_HALTE)graverLaHalte();C=CALQUE_HALTE;}
+    else if(t==='mine2'){if(!CALQUE_CARREAU)graverLeCarreau();C=CALQUE_CARREAU;}
     else if(t==='comptoir'){if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();C=CALQUE_COMPTOIR2;}
     else if(t==='echoppe'){if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();C=CALQUE_BOUTIQUE;}
     else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
@@ -10238,9 +10592,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='casino'){dessinerCasino(g,x,y);lueurNuit(g,x,y-24,46,'rgba(255,200,110,§)');}
     else if(o.t==='poteau')dessinerLePoteau(g,x,y);
     else if(o.t==='ecriteau')dessinerLEcriteau(g,x,y);
-    else if(o.t==='taillerie')dessinerLaTaillerie(g,x,y);
-    else if(o.t==='mine2')dessinerLaMine(g,x,y);
-    else if(o.t==='halte')dessinerLaHalte(g,x,y);
+    else if(o.t==='taillerie')dessinerLeForgeron(g,x,y);
+    else if(o.t==='mine2')dessinerLeCarreau(g,x,y);
 
     else if(o.t==='tilleul')dessinerLeTilleul(g,x,y,o.gr||0);
     else if(o.t==='lanterneP')dessinerLaLanterneP(g,x,y,o.gr||0);
@@ -10402,7 +10755,7 @@ async function descendreDeLigne(){
 /* La rive est est rangée en PLACE : le camp au milieu, les cinq autres tout
    autour à peu près à égale distance, et des routes en étoile. Le comptoir
    reste en haut, centré, comme un fronton. */
-const CAMP_FIXE  =[886,SUD];                     /* le campement, sur la ligne du sud */
+const CAMP_FIXE  =[760,SUD];                     /* le campement, sur la ligne du sud */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
 /* L'ANCIEN COMPTOIR EST REMPLACÉ par celui du front nord : sa constante
@@ -11866,7 +12219,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage','tilleul','lanterneP','boutique'];
+                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','tilleul','lanterneP','boutique'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -12358,7 +12711,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','halte'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -12497,12 +12850,6 @@ function majAction(){
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
   }
-  if(o.t==='halte'){
-    /* LA HALTE : on y prend le train pour la ville. */
-    b.innerHTML='Prendre le train<small>DÉPART TOUTES LES DIX MINUTES</small>';
-    b.classList.add('on');
-    return;
-  }
   if(o.t==='mine2'||o.t==='ecriteau'){
     b.innerHTML=(MINE_OUVERTE?'Descendre dans la mine':'La mine est fermée')+
       '<small>'+(MINE_OUVERTE?'ROCHERS, MINERAIS ET DIAMANTS'
@@ -12609,12 +12956,6 @@ function agir(){
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
   if(o.t==='taillerie'){ouvrirLaForge();return;}
   if(o.t==='ecriteau')return;
-  if(o.t==='halte'){
-    /* LE VOYAGE : on réutilise le chargement du TGV, déjà en place. */
-    try{sauver();}catch(x){}
-    partirEnVoyage({nom:'LA VILLE'});
-    return;
-  }
   if(o.t==='mine2'){
     /* LA MINE EST UNE PAGE À PART : on sauvegarde avant de partir, pour que
        le sac emporté soit bien celui qu'on avait sous les yeux. */
