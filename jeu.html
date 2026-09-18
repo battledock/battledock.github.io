@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1002';
+  var MA_VERSION='2026-09-18-1148';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3165,7 +3166,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','halte','passage','tilleul','lanterneP',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -3233,14 +3234,15 @@ const HAMEAU=[];
    redessine — une vingtaine de traits par image. */
 /* LA PLACE AU MILIEU DE LA RIVE EST : entre la rivière (592) et le bord
    (1760), à mi-hauteur. Tout le reste s'organise autour d'elle. */
-const PLACE={x:940, y:300, r:92};
+/* LA GRAND-PLACE : un rectangle au centre de la moitié est, dallé, avec sa
+   fontaine au milieu. « r » reste pour le code qui s'en sert encore. */
+const PLACE={x:960, y:230, w:560, h:240, r:92};
+const PL_N=()=>PLACE.y-PLACE.h/2, PL_S=()=>PLACE.y+PLACE.h/2;
+const PL_O=()=>PLACE.x-PLACE.w/2, PL_E=()=>PLACE.x+PLACE.w/2;
+/* LA GARNITURE DE LA PLACE est posée plus bas, avec la fontaine, les
+   tilleuls, les bancs et les lanternes : les anciens pots serrés autour
+   d'une placette de 92 n'ont plus de sens sur un rectangle de 560. */
 const DECOS=[
-  {t:'arbrePot', x:PLACE.x-64, y:PLACE.y-34},
-  {t:'arbrePot', x:PLACE.x+64, y:PLACE.y-34},
-  {t:'arbrePot', x:PLACE.x-64, y:PLACE.y+40},
-  {t:'arbrePot', x:PLACE.x+64, y:PLACE.y+40},
-  {t:'bancP',    x:PLACE.x-42, y:PLACE.y+56},
-  {t:'bancP',    x:PLACE.x+42, y:PLACE.y+56},
   /* le tableau passe à l'EST de la place : à l'ouest, l'échoppe désormais
      resserrée le masquait, et c'est elle qu'on visait à sa place. */
   {t:'panneauV', x:PLACE.x+84, y:PLACE.y+6}
@@ -5373,14 +5375,20 @@ function dessinerLaGalerie(g,VW,VH){
 const VOIE2_Y=728;                 /* la voie de service */
 const VOIE2_X0=716;                /* son butoir, tout à gauche */
 const ENTREPOT_FIXE=[852,626];
-const CARREAU_FIXE=[1196,152];    /* le carreau de mine, à l'est */
+/* ================= TOUT DESCEND EN BAS =================
+   Les bâtiments formaient une couronne autour du village ; ils s'alignent
+   maintenant sur une SEULE LIGNE au sud, d'ouest en est, et libèrent tout le
+   centre pour la grand-place. La rivière coupe la bande en deux : la mine et
+   le comptoir restent sur la rive ouest, le reste à l'est. */
+const SUD=505;                    /* la ligne des façades */
+const CARREAU_FIXE=[190,SUD];     /* la mine, tout à l'ouest de la ligne */
 /* LA MINE EST OUVERTE : on descend dans la galerie. */
 const MINE_OUVERTE=true;
 const PANNEAU_MINE=[1268,166];    /* l'écriteau planté devant le puits */
 /* LA FORGE laisse le coin sud-est à la halte et se décale vers l'ouest :
    les deux ne tenaient pas ensemble dans l'angle. Elle reste au sud, entre
    le camp et la halte. */
-const TAILLERIE_FIXE=[1080,498];
+const TAILLERIE_FIXE=[1032,SUD];
 /* LA HALTE, tout à l'est : c'est de là qu'on prend le train.
    Une halte, pas une gare — 168 de large, moins que la forge. La VOIE passe
    derrière elle et sort de la carte ; elle coupe le chemin de la mine, d'où
@@ -5390,7 +5398,7 @@ const TAILLERIE_FIXE=[1080,498];
    mi-hauteur : on la traversait sans arrêt. Elle longe maintenant le bord
    nord — la voie file dans la lisière, ne croise plus aucun chemin, et on ne
    la rencontre que si on y va. */
-const HALTE_FIXE=[1255,505];
+const HALTE_FIXE=[1252,SUD];
 const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
 /* « VOIE_Y » existait déjà — c'est l'axe des rails de la page du voyage.
    Celle-ci est la voie posée SUR LA CARTE, d'où le nom distinct. */
@@ -5399,12 +5407,15 @@ const HALTE_L=168;                /* sa largeur, à l'échelle de la forge */
    halte, qui montent l'une jusqu'à y=358, l'autre jusqu'à 401 : les rails
    ressortaient au travers des façades. Elle passe maintenant au-dessus des
    deux — c'est-à-dire derrière elles, comme une vraie voie de gare. */
-const RAIL_Y=336;                 /* derrière la forge et la halte */
+/* LA VOIE passe DERRIÈRE la forge, qui monte jusqu'à y=365 : à 372 elle la
+   traversait. Elle se glisse entre la place (qui descend à 350) et les
+   bâtiments — il n'y a que 15 points, mais ils suffisent. */
+const RAIL_Y=358;
 const RAIL_X0=1000;               /* elle part de l'est du village et sort */
 /* LE PASSAGE À NIVEAU se met là où l'on traverse VRAIMENT : à l'est de la
    halte, le seul endroit dégagé des deux côtés de la voie. */
 /* le passage à niveau, sur le trajet de la place vers la halte */
-const PASSAGE_X=1160;  /* le forgeron, sous la mine */
+const PASSAGE_X=1160;   /* le passage à niveau */  /* le forgeron, sous la mine */
 const TAILLERIE_OUVERTE=true;     /* la forge fond le minerai */
 const POTEAU_FIXE=[792,398];      /* le poteau indicateur, au sud de la place */
 /* chaque bras pointe vers un lieu : le jeu calcule l'angle et la distance */
@@ -5716,6 +5727,143 @@ function seLever(){
   ASSIS=null;vibrer(12);majAction();
 }
 
+
+
+/* ================= CE QUI GARNIT LA GRAND-PLACE =================
+   Le tilleul dans sa grille de fonte, et la lanterne à flamme. Tous deux
+   gravés une fois ; seules les parties vivantes bougent — le balancement du
+   feuillage, la flamme, les halos. */
+let CALQUE_TILLEUL=null;
+function graverLeTilleul(){
+  const W=60,H=96,cx=W/2,sol=H-10;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  g.fillStyle='rgba(20,34,18,.26)';
+  g.beginPath();g.ellipse(cx+3,sol+2,20,7,0,0,7);g.fill();
+  /* LA GRILLE DE FONTE, au ras du sol */
+  for(let k=-16;k<16;k+=4){
+    R(cx+k,sol-5,3,10,'#4d545c');
+    R(cx+k,sol-5,3,1,'#7a848c');
+  }
+  R(cx-18,sol-6,36,2,'#5f666c');R(cx-18,sol+4,36,2,'#5f666c');
+  R(cx-18,sol-6,2,12,'#5f666c');R(cx+16,sol-6,2,12,'#5f666c');
+  /* LE TRONC, évasé au pied */
+  R(cx-4,sol-40,9,36,'#6b4a28');
+  R(cx-4,sol-40,3,36,'#8a6238');
+  R(cx-6,sol-8,13,5,'#5b3f21');
+  for(let k=0;k<6;k++){
+    if(alea(k*3.1)<0.5)continue;
+    R(cx-3+alea(k)*7,sol-36+k*5,1,4,'#5b3f21');
+  }
+  CALQUE_TILLEUL={toile:c,W,H,sol};
+}
+function dessinerLeTilleul(g,x,y,gr){
+  if(!CALQUE_TILLEUL)graverLeTilleul();
+  const C=CALQUE_TILLEUL;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  const T=Date.now()/1000;
+  const bal=Math.sin(T*0.9+gr*7)*1.4;
+  /* LA COURONNE : quatre masses, dessinées vivantes pour qu'elles respirent */
+  [[0,-56,22,'#2f6b34'],[-11,-50,16,'#3d7d3f'],[11,-52,15,'#356f38'],
+   [-4,-64,14,'#4f9147']].forEach(([dx,dy,r,c])=>{
+    g.fillStyle=c;
+    g.beginPath();g.ellipse(x+dx+bal,y+dy,r,r*0.82,0,0,7);g.fill();
+  });
+  g.fillStyle='rgba(180,214,130,.3)';
+  g.beginPath();g.ellipse(x-7+bal,y-66,11,6,0,0,7);g.fill();
+  /* quelques feuilles qui tombent */
+  for(let k=0;k<3;k++){
+    const p=((T*0.3+k/3+gr)%1);
+    g.globalAlpha=(1-p)*0.55;
+    g.fillStyle='#5d8a42';
+    g.fillRect(Math.round(x+Math.sin(p*7+k)*14),Math.round(y-48+p*44),2,2);
+    g.globalAlpha=1;
+  }
+  /* LES LUMIGNONS dans les branches, la nuit */
+  const C2=cielDuMoment();
+  if(C2&&C2.lampes>0.05){
+    for(let k=0;k<12;k++){
+      const a=k/12*6.283;
+      const gx=x+Math.cos(a)*(16+alea(k)*6)+bal;
+      const gy=y-56+Math.sin(a)*13;
+      const cl=['#ffd27a','#ffb4a0','#c4e8f0'][k%3];
+      const br=0.5+Math.sin(T*2.4+k*1.7)*0.4;
+      g.globalAlpha=C2.lampes*br;
+      g.fillStyle=cl;g.fillRect(Math.round(gx),Math.round(gy),2,2);
+      g.globalAlpha=1;
+    }
+  }
+}
+/* LA LANTERNE DE LA PLACE : le mât, la flamme qui vacille, le halo, et
+   surtout le CÔNE AU SOL — c'est lui qui fait la place éclairée. */
+let CALQUE_LANTERNE=null;
+function graverLaLanterne(){
+  const W=26,H=56,cx=W/2,sol=H-6;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),
+    Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
+  g.fillStyle='rgba(20,34,18,.26)';
+  g.beginPath();g.ellipse(cx+2,sol+2,8,3,0,0,7);g.fill();
+  R(cx-2,sol-34,5,34,'#4d545c');
+  R(cx-2,sol-34,1.6,34,'#7a848c');
+  R(cx-4,sol-1,10,3,'#5f666c');
+  R(cx-7,sol-44,15,11,'#3d4248');
+  R(cx-9,sol-47,19,3,'#4d545c');
+  CALQUE_LANTERNE={toile:c,W,H,sol};
+}
+function dessinerLaLanterneP(g,x,y,i){
+  if(!CALQUE_LANTERNE)graverLaLanterne();
+  const C=CALQUE_LANTERNE;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  const T=Date.now()/1000;
+  const C2=cielDuMoment();
+  const allume=C2?C2.lampes:0;
+  const R=(a,b,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(a),Math.round(b),w,h);};
+  if(allume<0.05){R(x-5,y-42,11,8,'#c8c2ae');return;}
+  /* LA FLAMME, qui vacille à son propre rythme */
+  const vac=0.82+Math.sin(T*3.1+i*2.3)*0.12+Math.sin(T*7.7+i)*0.06;
+  R(x-5,y-42,11,8,'#ffd27a');
+  R(x-4,y-41,9,6,'#fff0c4');
+  lueurNuit(g,x+1,y-38,20,'rgba(255,224,150,§)');
+  lueurNuit(g,x+1,y-38,62,'rgba(255,196,110,§)');
+  /* les papillons de nuit */
+  for(let k=0;k<3;k++){
+    const a=T*1.6+k*2.1+i;
+    const rr=7+Math.sin(T*2.3+k)*4;
+    g.globalAlpha=allume*0.7;
+    R(x+1+Math.cos(a)*rr,y-38+Math.sin(a*1.3)*rr*0.6,1,1,'#f0e2bc');
+    g.globalAlpha=1;
+  }
+}
+/* LE CÔNE AU SOL : posé AVANT les objets, sinon il les recouvre. */
+function conesDeLaPlace(g,camX,camY,VW2){
+  const C=cielDuMoment();
+  if(!C||C.lampes<0.05)return;
+  const T=Date.now()/1000;
+  DECOR.forEach(o=>{
+    if(o.t!=='lanterneP')return;
+    const x=o.x-camX, y=o.y-camY;
+    if(x<-80||x>(VW2||400)+80)return;
+    const vac=0.82+Math.sin(T*3.1+o.gr*2.3)*0.12;
+    g.save();g.globalAlpha=C.lampes*vac*0.5;
+    const d=g.createRadialGradient(x+1,y+2,3,x+1,y+2,52);
+    d.addColorStop(0,'rgba(255,214,140,.55)');
+    d.addColorStop(0.5,'rgba(255,190,100,.2)');
+    d.addColorStop(1,'rgba(255,180,90,0)');
+    g.fillStyle=d;
+    g.beginPath();g.ellipse(x+1,y+2,52,23,0,0,7);g.fill();
+    g.restore();
+  });
+}
 
 /* ================= LA HALTE =================
    Le bâtiment est gravé une fois ; seules l'horloge et la lanterne bougent.
@@ -6993,7 +7141,7 @@ async function prendreLeBillet(){
    serrer. Il a fallu élargir encore la rive de 60 points — à 1200, elle
    n'aurait eu que 13 points de marge avec les pavés, soit le « collé » qu'on
    venait de corriger. */
-const ECHOPPE_FIXE=[750,462];   /* la boutique, au sud-ouest de la place */
+const ECHOPPE_FIXE=[748,SUD];   /* la boutique, au sud-ouest de la place */
 /* LA VOIE NE TRAVERSE PLUS TOUT LE MONDE.
    Elle allait d'un bord à l'autre, donc elle franchissait la rivière sans
    pont, et son heurtoir se perdait dans la forêt à x=6 — invisible.
@@ -8324,9 +8472,20 @@ function calculerChemins(){
      rien de visible. */
   /* la grande route s'arrête à la place : au-delà, elle traversait l'est
      sans mener à rien. */
-  ROUTES=[[pont,centre],
-          [COMPTOIR_FIXE,centre],[centre,ECHOPPE_FIXE],
-          [centre,TAILLERIE_FIXE],[centre,CARREAU_FIXE]]
+  /* LES CHEMINS PARTENT DU BORD DE LA PLACE, plus de son centre : depuis
+     qu'une fontaine y trône, un départ au centre partait de l'intérieur du
+     bassin — et le passage s'y trouvait bloqué. */
+  const bordDeLaPlace=(vers)=>{
+    const dx=vers[0]-PLACE.x, dy=vers[1]-PLACE.y;
+    const q=Math.max(Math.abs(dx)/(PLACE.w/2+8),Math.abs(dy)/(PLACE.h/2+8));
+    return q>0?[PLACE.x+dx/q,PLACE.y+dy/q]:[PLACE.x,PL_S()+8];
+  };
+  ROUTES=[[pont,bordDeLaPlace(pont)],
+          [COMPTOIR_FIXE,bordDeLaPlace(COMPTOIR_FIXE)],
+          [bordDeLaPlace(ECHOPPE_FIXE),ECHOPPE_FIXE],
+          [bordDeLaPlace(TAILLERIE_FIXE),TAILLERIE_FIXE],
+          [bordDeLaPlace(CARREAU_FIXE),CARREAU_FIXE],
+          [bordDeLaPlace(HALTE_FIXE),HALTE_FIXE]]
     .map(([a,b])=>tracerChemin(a,b));
   SURCHEMIN=new Uint8Array(N_CH*N_CH);
   ROUTES.forEach((r,nr)=>r.forEach(([x,y])=>{
@@ -8710,25 +8869,43 @@ function graverLaLisiereEst(g){
 }
 
 function graverLesPaves(g){
+  /* LA GRAND-PLACE EN GRANDES DALLES.
+     Les anneaux de l'ancienne place ronde ne se lisaient pas sur un
+     rectangle. On pose donc de grandes dalles de 18 × 12 à joints décalés :
+     chacune a son ombre, son bombé, son arête claire et son usure. */
   const PI={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,w,h);};
-  for(let ray=PLACE.r-6;ray>8;ray-=7){
-    const nb=Math.max(10,Math.round(ray*0.66));
-    for(let i=0;i<nb;i++){
-      const a=i/nb*Math.PI*2+ray*0.09;
-      const px=PLACE.x+Math.cos(a)*ray, py=PLACE.y+Math.sin(a)*ray*0.72;
-      const t=Math.floor(alea(px*0.7+py*1.3)*4);
-      R(px-3,py-2,6,4,[PI.p,PI.c,PI.s,PI.p][t]);
-      R(px-3,py-2,6,1,PI.h);
-      R(px+2,py-2,1,4,PI.o);
+  for(let y=PL_N()+6;y<PL_S();y+=12){
+    const dec=(Math.floor((y-PL_N())/12)%2)?9:0;
+    for(let x=PL_O()+dec;x<PL_E();x+=18){
+      const gr=alea(x*0.41+y*1.07);
+      const w=Math.min(18,PL_E()-x), h=Math.min(12,PL_S()-y+6);
+      if(w<6||h<5)continue;
+      R(x+1,y-5,w,h,'rgba(40,46,50,.34)');
+      R(x,y-6,w,h,gr<0.3?PI.s:(gr<0.6?PI.p:PI.c));
+      R(x+1,y-5,w-2,h-2,'rgba(255,255,255,.05)');
+      R(x,y-6,w-1,1,PI.h);
+      R(x,y-6,1,h-1,'rgba(200,210,216,.4)');
+      R(x+w-1,y-5,1,h-1,PI.o);
+      if(gr>0.88){R(x,y-6,w,h,PI.t);R(x,y-6,w-1,1,'#d2d8dd');}
+      for(let k=0;k<2;k++){
+        if(alea(x*3.1+y*5.9+k)<0.7)continue;
+        R(x+2+alea(x+k)*(w-5),y-6+alea(y+k)*(h-2),2,2,'rgba(70,78,84,.3)');
+      }
     }
   }
-  /* la bordure claire, un rang de pierres taillées */
-  for(let i=0;i<150;i++){
-    const a=i/150*Math.PI*2;
-    const px=PLACE.x+Math.cos(a)*PLACE.r, py=PLACE.y+Math.sin(a)*PLACE.r*0.72;
-    R(px-3,py-2,6,4,PI.t);R(px-3,py-2,6,1,'#d2d8dd');
-  }
+  /* LA BORDURE : un rang de pierres claires, tout autour */
+  const clair=(px,py)=>{R(px-3,py-2,6,4,PI.t);R(px-3,py-2,6,1,'#d2d8dd');};
+  for(let x=PL_O();x<PL_E();x+=6){clair(x,PL_N());clair(x,PL_S());}
+  for(let y=PL_N();y<PL_S();y+=4){clair(PL_O(),y);clair(PL_E(),y);}
+  /* LES QUATRE ENTRÉES : la bordure s'interrompt au milieu de chaque côté */
+  const pave=(px,py)=>{
+    const t=Math.floor(alea(px*0.7+py*1.3)*4);
+    R(px-3,py-2,6,4,[PI.p,PI.c,PI.s,PI.p][t]);
+    R(px-3,py-2,6,1,PI.h);R(px+2,py-2,1,4,PI.o);
+  };
+  for(let x=PLACE.x-34;x<PLACE.x+34;x+=6){pave(x,PL_N());pave(x,PL_S());}
+  for(let y=PLACE.y-34;y<PLACE.y+34;y+=4){pave(PL_O(),y);pave(PL_E(),y);}
 }
 
 /* UNE PIERRE DU SOL : dix traits chacune. C'est ce qui distingue un pavage
@@ -9052,8 +9229,7 @@ function semerDecor(){
 
   /* LA PLACETTE : la fontaine au centre, les décors autour */
   DECOR=DECOR.filter(o=>BATI(o.t)||
-    Math.hypot(o.x-PLACE.x,(o.y-PLACE.y)/0.72)>PLACE.r+6);
-  DECOR.push({t:'fontaine',x:PLACE.x,y:PLACE.y,gr:0});
+    !(o.x>PL_O()-10&&o.x<PL_E()+10&&o.y>PL_N()-10&&o.y<PL_S()+10));
   /* L'ÉCHOPPE, près du gué sud */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     Math.hypot(o.x-ECHOPPE_FIXE[0],o.y-ECHOPPE_FIXE[1])>78);
@@ -9071,6 +9247,21 @@ function semerDecor(){
   DECOR.push({t:'mine2',x:CARREAU_FIXE[0],y:CARREAU_FIXE[1],gr:0});
   /* LA HALTE, tout à l'est, et son passage à niveau sur le chemin de la mine */
   DECOR.push({t:'halte',x:HALTE_FIXE[0],y:HALTE_FIXE[1],gr:0});
+  /* ================= CE QUI GARNIT LA GRAND-PLACE =================
+     La fontaine au centre, quatre tilleuls aux angles, quatre bancs tournés
+     vers elle, et huit lanternes qui l'éclairent la nuit. */
+  DECOR.push({t:'fontaine',x:PLACE.x,y:PLACE.y,gr:0});
+  [[PL_O()+66,PL_N()+40],[PL_E()-66,PL_N()+40],
+   [PL_O()+66,PL_S()-32],[PL_E()-66,PL_S()-32]].forEach(([x,y],i)=>
+    DECOR.push({t:'tilleul',x,y,gr:i*0.27}));
+  [[PLACE.x-150,PLACE.y-58],[PLACE.x+150,PLACE.y-58],
+   [PLACE.x-150,PLACE.y+64],[PLACE.x+150,PLACE.y+64]].forEach(([x,y])=>
+    DECOR.push({t:'bancP',x,y,gr:0}));
+  [[PL_O()+30,PL_N()+24],[PL_E()-30,PL_N()+24],
+   [PL_O()+30,PL_S()-16],[PL_E()-30,PL_S()-16],
+   [PLACE.x-130,PL_N()+24],[PLACE.x+130,PL_N()+24],
+   [PLACE.x-130,PL_S()-16],[PLACE.x+130,PL_S()-16]].forEach(([x,y],i)=>
+    DECOR.push({t:'lanterneP',x,y,gr:i}));
   DECOR.push({t:'passage',x:PASSAGE_X,y:RAIL_Y,gr:0});
   /* rien ne pousse sur la voie ni sur le quai */
   DECOR=DECOR.filter(o=>{
@@ -9416,6 +9607,9 @@ function premierVisible(yMin){
    ils passaient sous les rochers même quand ils étaient devant. */
 function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
   if(PERF.on)PERF.objets=0;
+  /* LES CÔNES DE LUMIÈRE des lanternes, posés AVANT tout le reste : ils
+     éclairent le pavé. Dessinés après, ils recouvriraient les objets. */
+  conesDeLaPlace(g,camX,camY,VW2);
   const gens=acteurs.slice().sort((a,b)=>a.y-b.y);
   let iG=0;
   const poserGens=(jusqua)=>{while(iG<gens.length&&gens[iG].y<=jusqua)gens[iG++].f();};
@@ -9558,6 +9752,8 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='taillerie')dessinerLaTaillerie(g,x,y);
     else if(o.t==='mine2')dessinerLaMine(g,x,y);
     else if(o.t==='halte')dessinerLaHalte(g,x,y);
+    else if(o.t==='tilleul')dessinerLeTilleul(g,x,y,o.gr||0);
+    else if(o.t==='lanterneP')dessinerLaLanterneP(g,x,y,o.gr||0);
     else if(o.t==='passage')dessinerLePassage(g,x,y);
     else if(o.t==='entrepot')dessinerLEntrepot(g,x,y);
     else if(o.t==='gare')dessinerLaGare(g,x,y);
@@ -9716,10 +9912,10 @@ async function descendreDeLigne(){
 /* La rive est est rangée en PLACE : le camp au milieu, les cinq autres tout
    autour à peu près à égale distance, et des routes en étoile. Le comptoir
    reste en haut, centré, comme un fronton. */
-const CAMP_FIXE  =[950,482];                     /* le campement, au sud-est de la place */
+const CAMP_FIXE  =[886,SUD];                     /* le campement, sur la ligne du sud */
 const COFFRE_FIXE=[890,392];                    /* au sud-est de la place */
 const FORGE_FIXE =[662,318];                    /* à l'ouest, vers la rivière */
-const COMPTOIR_FIXE=[812,150];                  /* le long entrepôt, en haut à gauche */
+const COMPTOIR_FIXE=[420,SUD];                  /* le long entrepôt, en haut à gauche */
 const CASINO_FIXE  =[912,246];                  /* au nord-est, dégagé de l'entrepôt */
 /* La carte a rétréci : un joueur enregistré au-delà des nouvelles limites
    serait coincé hors du monde. On le ramène au camp. */
@@ -11176,7 +11372,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage'];
+                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','halte','passage','tilleul','lanterneP'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
