@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1430';
+  var MA_VERSION='2026-09-18-1434';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -6563,13 +6564,18 @@ const ilYA=(iso)=>{
   return 'il y a '+Math.round(s2/86400)+' j';
 };
 function ouvrirLaBoite(){
-  const p=$('page2');
-  p.classList.add('on');
+  /* ON N'ÉCRIT PAS DANS « page2 » : il contient « page2Fond », dont toutes
+     les autres pages se servent. En y écrivant, la boîte le SUPPRIMAIT — et
+     le comptoir, le sac et l'échoppe plantaient ensuite, jusqu'au prochain
+     démarrage. On écrit donc dans le fond, comme les autres. */
+  $('page2Fond').className='sacFond clairS billets';
+  $('page2').classList.add('on');
   dessinerLaBoite();
   chargerLesBillets().then(dessinerLaBoite);
 }
 function dessinerLaBoite(){
-  const p=$('page2');
+  const p=$('page2Fond');
+  if(!p)return;
   const GENRES=[['idee','Une idée'],['bug','Un bug'],['autre','Autre']];
   const ETIQ={ouvert:['en attente','#8a7c5e'],vu:['lu','#4a7a8c'],
               fait:['fait','#4f7a38'],refuse:['non retenu','#a06048']};
@@ -6627,7 +6633,10 @@ function dessinerLaBoite(){
     }
   };
   const f=$('bFermer');
-  if(f)f.onclick=()=>{$('page2').classList.remove('on');};
+  if(f)f.onclick=()=>{
+    $('page2').classList.remove('on');
+    $('page2Fond').innerHTML='';        /* on rend le fond propre à la suivante */
+  };
 }
 /* LA BOÎTE, sur la place : un coffre de bois sur pied, à fente et à toit */
 let CALQUE_BOITE=null;
