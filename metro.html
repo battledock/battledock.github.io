@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Battle Dock — Le métro</title>
+<style>
+:root{--or:#e8c06a;--nuit:#0c0e14;--creme:#f2efe4;--bleu:#1d3f8f}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--nuit);color:var(--creme);
+  font:400 15px Georgia,serif;overflow:hidden;-webkit-user-select:none;user-select:none}
+#scene{display:block;width:100%;max-width:560px;margin:0 auto;image-rendering:pixelated;
+  padding-top:env(safe-area-inset-top)}
+#bas{max-width:560px;margin:0 auto;padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.surT{font:700 10px ui-monospace,monospace;letter-spacing:2px;color:var(--or)}
+h1{font:400 24px Georgia,serif;margin:4px 0 14px}
+/* LE PLAN DE LIGNE : comme sur les murs des vieilles stations */
+#plan{background:#f4f1e6;color:#1b1b1b;border-radius:10px;padding:14px 16px 12px;
+  border:3px solid #1b1b1b;box-shadow:0 4px 0 rgba(0,0,0,.4)}
+#plan .ligneT{display:flex;align-items:center;gap:8px;font:700 12px ui-monospace,monospace;margin-bottom:12px}
+#plan .num{width:24px;height:24px;border-radius:50%;background:var(--or);color:#1b1b1b;border:2px solid #1b1b1b;
+  display:flex;align-items:center;justify-content:center;font:700 13px ui-monospace,monospace}
+#trace{position:relative;padding-left:22px}
+#trace::before{content:'';position:absolute;left:8px;top:10px;bottom:10px;width:6px;background:var(--or);
+  border:2px solid #1b1b1b;border-radius:3px}
+.arret{position:relative;display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;
+  padding:9px 8px;margin-left:-8px;font:inherit;color:#1b1b1b;text-align:left;border-radius:8px;opacity:1}
+.arret:disabled{color:#1b1b1b}
+.arret::before{content:'';position:absolute;left:-11px;width:12px;height:12px;border-radius:50%;
+  background:#fff;border:3px solid #1b1b1b}
+.arret.ici::before{background:#1b1b1b;box-shadow:0 0 0 3px var(--or)}
+.arret b{font:700 16px Georgia,serif;color:#1b1b1b}
+.arret span span{font:400 11px ui-monospace,monospace;color:#6a6658}
+.arret.choisi{background:rgba(232,192,106,.35)}
+.arret.ferme{opacity:.42}
+.boutons{display:flex;gap:10px;margin-top:14px}
+.boutons button{flex:1;border:0;border-radius:12px;padding:14px 8px;font:700 14px Georgia,serif}
+#partir{background:var(--or);color:#2a1d0c;box-shadow:0 3px 0 #8a6a2a}
+#partir:disabled{opacity:.45}
+#remonter{background:#2a2f3c;color:var(--creme);box-shadow:0 3px 0 #141821}
+#mot{min-height:18px;margin-top:10px;font:400 12px ui-monospace,monospace;color:#b8b3a2;text-align:center}
+#voile{position:fixed;inset:0;background:#000;pointer-events:none;opacity:1;transition:opacity .45s}
+#voile.parti{opacity:0}
+</style>
+</head>
+<body>
+<canvas id="scene" width="192" height="144"></canvas>
+<div id="bas">
+  <div class="surT">MÉTRO · LIGNE 1</div>
+  <h1 id="nomStation">Station Village</h1>
+  <div id="plan">
+    <div class="ligneT"><span class="num">1</span>VILLAGE ⇄ PORT</div>
+    <div id="trace"></div>
+  </div>
+  <div class="boutons">
+    <button id="remonter">↑ Remonter</button>
+    <button id="partir" disabled>Choisis un arrêt</button>
+  </div>
+  <div id="mot"></div>
+</div>
+<div id="voile"></div>
+<script>
+/* =====================================================================
+   LE MÉTRO — première station : le quai du Village.
+   On est DEBOUT sur le quai, face aux voies : de l'autre côté, la voûte
+   carrelée de blanc, la plaque émaillée, les affiches. Rien ne part en
+   Realtime ici : le métro ne coûte rien.
+   ===================================================================== */
+const $=id=>document.getElementById(id);
+
+/* LES STATIONS. Ajouter une station = ajouter une ligne ici, et son quai. */
+const STATIONS=[
+  {id:'village',nom:'Village',sous:'la place, la fontaine',ouvert:true,sortie:'jeu.html'},
+  {id:'port',nom:'Port',sous:'les docks, les grues',ouvert:true,sortie:null},
+];
+const ICI=STATIONS[0];
+let choix=null;
+
+/* ---------- une petite police de 3×5, pour les plaques ---------- */
+const POLICE={
+A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',
+E:'111100110100111',F:'111100110100100',G:'011100101101011',H:'101101111101101',
+I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',
+M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',
+Q:'010101101110011',R:'110101110101101',S:'011100010001110',T:'111010010010010',
+U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',
+Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111',
+'2':'110001010100111','3':'110001010001110','4':'101101111001001','5':'111100110001110',
+'-':'000000111000000','>':'100010001010100',' ':'000000000000000'};
+function ecrire(g,txt,x,y,coul){
+  g.fillStyle=coul;
+  [...txt.toUpperCase()].forEach((ch,i)=>{
+    const m=POLICE[ch]||POLICE[' '];
+    for(let k=0;k<15;k++)if(m[k]==='1')g.fillRect(x+i*4+(k%3),y+Math.floor(k/3),1,1);
+  });
+}
+const largeur=t=>t.length*4-1;
+
+/* ---------- le décor fixe, gravé une seule fois ---------- */
+const W=192,H=144;
+const VOUTE_BAS=98;           /* là où le mur rencontre la fosse des voies */
+function hauteurVoute(x){
+  /* une voûte en anse de panier : plate au milieu, qui plonge vers les bords */
+  const u=(x-W/2)/(W*0.62);
+  return 10+Math.round((1-Math.sqrt(Math.max(0,1-u*u)))*70);
+}
+let FOND=null;
+function graverLeQuai(){
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  g.fillStyle='#07080c';g.fillRect(0,0,W,H);
+
+  /* LE CARRELAGE BLANC BISEAUTÉ : briquettes de 6×3, joints décalés */
+  for(let x=0;x<W;x++){
+    const haut=hauteurVoute(x);
+    for(let y=haut;y<VOUTE_BAS;y++){
+      const rang=Math.floor((y-haut)/3);
+      const dx=(x+(rang%2?3:0))%6, dy=(y-haut)%3;
+      let col='#e9e6db';
+      if(dy===0||dx===0)col='#bdb8a8';                /* le joint */
+      else if(dy===1&&dx<=2)col='#f8f6ee';            /* le reflet du biseau */
+      else if(dy===2)col='#dcd8ca';                   /* l'ombre sous la brique */
+      g.fillStyle=col;g.fillRect(x,y,1,1);
+    }
+    /* la voûte s'assombrit vers le haut : l'éclairage vient des globes */
+    const ombre=Math.max(0,(40-haut)/40);
+    if(haut<VOUTE_BAS){
+      const grd=g.createLinearGradient(0,haut,0,haut+26);
+      grd.addColorStop(0,'rgba(10,12,20,.55)');grd.addColorStop(1,'rgba(10,12,20,0)');
+      g.fillStyle=grd;g.fillRect(x,haut,1,26);
+    }
+    void ombre;
+  }
+  /* la bordure de la voûte : un liseré sombre */
+  for(let x=0;x<W;x++){g.fillStyle='#3b3a36';g.fillRect(x,hauteurVoute(x)-1,1,1);}
+
+  /* LA FRISE : un bandeau de carreaux ocre et vert bouteille, comme autrefois */
+  for(let x=0;x<W;x++){
+    if(hauteurVoute(x)>60)continue;
+    g.fillStyle=(Math.floor(x/4)%2)?'#b0873a':'#2f5b3e';g.fillRect(x,62,1,3);
+    g.fillStyle='#8a6a2a';g.fillRect(x,61,1,1);g.fillRect(x,65,1,1);
+  }
+  /* LE SOUBASSEMENT : carreaux plus sombres, en bas du mur */
+  for(let x=0;x<W;x++){
+    const h0=Math.max(hauteurVoute(x),84);
+    for(let y=h0;y<VOUTE_BAS;y++){
+      const dx=x%8,dy=(y-84)%7;
+      g.fillStyle=(dx===0||dy===0)?'#4c5a4a':'#6f8266';g.fillRect(x,y,1,1);
+    }
+  }
+
+  /* LES AFFICHES, dans leurs cadres de bois */
+  affiche(g,26,34,34,24,'port');
+  affiche(g,132,34,34,24,'jeu');
+
+  /* LA PLAQUE ÉMAILLÉE : bleu profond, liseré blanc, lettres blanches */
+  const nom=ICI.nom.toUpperCase(), lw=largeur(nom)+12, px=Math.round(W/2-lw/2), py=40;
+  g.fillStyle='#0f1f4a';g.fillRect(px-1,py-1,lw+2,13);
+  g.fillStyle='#1d3f8f';g.fillRect(px,py,lw,11);
+  g.fillStyle='#e9e6db';g.fillRect(px+1,py+1,lw-2,1);g.fillRect(px+1,py+9,lw-2,1);
+  g.fillRect(px+1,py+1,1,9);g.fillRect(px+lw-2,py+1,1,9);
+  ecrire(g,nom,px+6,py+3,'#ffffff');
+  /* ses deux vis */
+  g.fillStyle='#7f8aa8';g.fillRect(px+3,py+5,1,1);g.fillRect(px+lw-4,py+5,1,1);
+
+  /* LES BOUCHES DU TUNNEL, aux deux bouts : le noir s'épaissit */
+  [[0,1],[W,-1]].forEach(([x0,s])=>{
+    const grd=g.createLinearGradient(x0,0,x0+s*38,0);
+    grd.addColorStop(0,'rgba(4,5,8,.95)');grd.addColorStop(1,'rgba(4,5,8,0)');
+    g.fillStyle=grd;g.fillRect(s>0?0:W-38,0,38,H-26);
+  });
+
+  /* LA FOSSE DES VOIES */
+  g.fillStyle='#15161b';g.fillRect(0,VOUTE_BAS,W,22);
+  for(let i=0;i<260;i++){                          /* le ballast */
+    const x=(i*37)%W, y=VOUTE_BAS+4+((i*13)%16);
+    g.fillStyle=['#26272d','#1c1d22','#302f33'][i%3];g.fillRect(x,y,1,1);
+  }
+  for(let x=2;x<W;x+=9){g.fillStyle='#2b2019';g.fillRect(x,VOUTE_BAS+9,5,9);}  /* les traverses */
+  /* les deux rails, qui accrochent la lumière */
+  [VOUTE_BAS+8,VOUTE_BAS+16].forEach(y=>{
+    g.fillStyle='#3a3b42';g.fillRect(0,y,W,2);
+    g.fillStyle='#9aa0ad';g.fillRect(0,y,W,1);
+  });
+
+  /* LE QUAI, au premier plan */
+  const Q=VOUTE_BAS+22;
+  g.fillStyle='#6b6a66';g.fillRect(0,Q,W,H-Q);
+  for(let x=0;x<W;x++)for(let y=Q;y<H;y++){
+    const dx=x%12,dy=(y-Q)%8;
+    if(dx===0||dy===0){g.fillStyle='#57564f';g.fillRect(x,y,1,1);}
+  }
+  g.fillStyle='#8f8d86';g.fillRect(0,Q,W,1);                 /* l'arête du quai */
+  g.fillStyle='#d8b43a';g.fillRect(0,Q+3,W,3);               /* la ligne jaune */
+  for(let x=1;x<W;x+=3){g.fillStyle='#b0902a';g.fillRect(x,Q+4,1,1);}
+  const grd=g.createLinearGradient(0,Q,0,H);
+  grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(1,'rgba(0,0,0,.35)');
+  g.fillStyle=grd;g.fillRect(0,Q,W,H-Q);
+  FOND=c;
+}
+function affiche(g,x,y,w,h,sorte){
+  g.fillStyle='#4a3420';g.fillRect(x-2,y-2,w+4,h+4);
+  g.fillStyle='#6b4a2c';g.fillRect(x-1,y-1,w+2,h+2);
+  if(sorte==='port'){
+    /* LE PORT : ciel du soir, la mer, une grue et un cargo */
+    for(let j=0;j<h;j++){g.fillStyle=j<12?(j<6?'#f0a860':'#f6c77e'):'#2c6e9e';g.fillRect(x,y+j,w,1);}
+    g.fillStyle='#7ab3d6';for(let i=0;i<w;i+=5)g.fillRect(x+i,y+15+(i%3),2,1);
+    g.fillStyle='#2a1d18';g.fillRect(x+5,y+3,2,10);g.fillRect(x+5,y+3,11,2);g.fillRect(x+14,y+5,1,4);
+    g.fillStyle='#8c2f2a';g.fillRect(x+16,y+10,14,3);g.fillStyle='#e9e6db';g.fillRect(x+25,y+8,3,2);
+    ecrire(g,'PORT',x+w/2-7,y+h-6,'#ffffff');
+  }else{
+    /* L'AFFICHE DU JEU : deux épées croisées sur fond rouge */
+    g.fillStyle='#8c2f2a';g.fillRect(x,y,w,h);
+    g.fillStyle='#b8453c';g.fillRect(x,y,w,2);
+    g.fillStyle='#e9e6db';
+    for(let i=0;i<11;i++){g.fillRect(x+11+i,y+3+i,1,1);g.fillRect(x+22-i,y+3+i,1,1);}
+    g.fillStyle='#e8c06a';g.fillRect(x+10,y+13,3,1);g.fillRect(x+21,y+13,3,1);
+    ecrire(g,'BATTLE',x+w/2-11,y+h-8,'#ffffff');
+  }
+  /* un coin décollé */
+  g.fillStyle='rgba(255,255,255,.35)';g.fillRect(x+w-3,y,3,1);g.fillRect(x+w-2,y+1,2,1);
+}
+
+/* ---------- ce qui vit : les globes, le panneau, la poussière ---------- */
+const GLOBES=[40,152];          /* le panneau des rames tient le milieu */
+const POUSSIERE=Array.from({length:18},(_,i)=>({x:(i*53)%W,y:20+(i*29)%70,v:0.02+(i%5)*0.01}));
+function dessiner(t){
+  const g=$('scene').getContext('2d');
+  g.imageSmoothingEnabled=false;
+  g.drawImage(FOND,0,0);
+  /* LES GLOBES : suspendus à la voûte, avec leur halo */
+  GLOBES.forEach((x,i)=>{
+    const top=hauteurVoute(x), y=top+14;
+    const vacille=(i===2&&Math.sin(t/140)>0.93)?0.35:1;   /* le dernier grésille */
+    g.fillStyle='#2a2a2a';g.fillRect(x,top,1,y-top-2);
+    const halo=g.createRadialGradient(x+.5,y+2,1,x+.5,y+2,30);
+    halo.addColorStop(0,'rgba(255,226,160,'+(.30*vacille)+')');halo.addColorStop(1,'rgba(255,226,160,0)');
+    g.fillStyle=halo;g.fillRect(x-30,y-28,61,60);
+    g.fillStyle='#3a3a3a';g.fillRect(x-1,y-2,3,1);
+    g.fillStyle=vacille<1?'#b8a47a':'#fff4d2';g.fillRect(x-2,y-1,5,4);g.fillRect(x-1,y+3,3,1);
+    g.fillStyle='#ffffff';g.fillRect(x-1,y,1,1);
+  });
+  /* LE PANNEAU DES PROCHAINES RAMES, accroché sous la voûte */
+  const bx=W/2-22, by=hauteurVoute(W/2)+6;
+  g.fillStyle='#2a2a2a';g.fillRect(bx+6,by-6,1,6);g.fillRect(bx+37,by-6,1,6);
+  g.fillStyle='#111';g.fillRect(bx,by,44,11);
+  g.fillStyle='#333';g.fillRect(bx,by,44,1);
+  const cligne=Math.floor(t/600)%2;
+  ecrire(g,'PORT',bx+3,by+3,'#ffb640');
+  ecrire(g,cligne?'2 MN':'   ',bx+24,by+3,'#ffb640');
+  /* la poussière qui flotte dans la lumière */
+  POUSSIERE.forEach(p=>{
+    p.y-=p.v;p.x+=Math.sin((t/900)+p.y)*0.05;
+    if(p.y<12){p.y=90;p.x=(p.x+37)%W;}
+    g.fillStyle='rgba(255,240,200,.35)';g.fillRect(Math.round(p.x),Math.round(p.y),1,1);
+  });
+  requestAnimationFrame(dessiner);
+}
+
+/* ---------- le plan de ligne ---------- */
+function dessinerLePlan(){
+  $('trace').innerHTML=STATIONS.map(s=>{
+    const ici=s.id===ICI.id;
+    return '<button class="arret'+(ici?' ici':'')+(choix===s.id?' choisi':'')+(s.ouvert?'':' ferme')+
+      '" data-s="'+s.id+'"'+(ici?' disabled':'')+'><span style="flex:1"><b>'+s.nom+'</b><br>'+
+      '<span>'+(ici?'VOUS ÊTES ICI':s.sous)+'</span></span>'+(ici?'':'<span>→</span>')+'</button>';
+  }).join('');
+  $('trace').querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{
+    const s=STATIONS.find(x=>x.id===b.dataset.s);
+    if(!s||!s.ouvert)return;
+    choix=s.id;dessinerLePlan();
+    $('partir').disabled=false;$('partir').textContent='Prendre la rame → '+s.nom;
+    if(navigator.vibrate)try{navigator.vibrate(8);}catch(x){}
+  });
+}
+$('partir').onclick=()=>{
+  /* le trajet est la prochaine étape : on le dit honnêtement */
+  $('mot').textContent='La rame pour le Port arrive bientôt : le trajet se construit.';
+};
+$('remonter').onclick=()=>{
+  $('voile').classList.remove('parti');
+  setTimeout(()=>{location.href=ICI.sortie;},450);
+};
+
+graverLeQuai();
+dessinerLePlan();
+requestAnimationFrame(dessiner);
+requestAnimationFrame(()=>$('voile').classList.add('parti'));
+</script>
+</body>
+</html>
