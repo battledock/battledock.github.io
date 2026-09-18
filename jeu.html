@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2128';
+  var MA_VERSION='2026-09-18-2139';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -9599,7 +9599,7 @@ const XCAL={};
 function graverX(t,v){
   const cle=t+(v||0);
   if(XCAL[cle])return XCAL[cle];
-  const T={x_maison:[134,128],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
+  const T={x_maison:[134,150],x_ndg:[176,160],x_voilier:[64,100],x_terrasse:[60,46],x_pin:[74,84],x_palmier:[44,74],x_etal:[80,60],x_caisses:[28,24],
            x_filets:[34,16],x_bitte:[12,14],x_barque:[62,34],x_cargo:[250,128],x_grue:[80,120],
            x_phare:[30,96]}[t]||[40,40];
   const W=T[0],H=T[1],cx=W/2,sol=H-6;
@@ -9610,39 +9610,218 @@ function graverX(t,v){
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)));};
   const ombre=(rx,ry)=>{g.fillStyle='rgba(60,40,20,.22)';g.beginPath();g.ellipse(cx+1,sol+1,rx,ry,0,0,7);g.fill();};
 
+  /* =================== LE VIEUX-PORT ===================
+     Les immeubles marseillais : cinq niveaux, persiennes, balcons de fer,
+     génoise et tuiles canal ; un café ou une boutique au rez-de-chaussée.
+     La nuit, une toile à part allume certaines fenêtres. */
   if(t==='x_maison'){
-    const facades=['#e8c9a0','#e6a58c','#f0d78a','#e9e1cf'], volets=['#3f7a5a','#3a6ea5','#3f7a5a','#6a8fb0'];
-    const F=facades[v%4], V=volets[v%4];
-    const L=120, x0=cx-L/2, haut=88;
-    ombre(62,4);
+    const facades=['#e6b97c','#e3a383','#ecdcbc','#d99b86','#f0e4c8','#d7a067'];
+    const volets =['#6f8f7a','#4f7fa8','#7d8f6a','#5d7f96','#8a9a8a','#4f7a64'];
+    const F=facades[v%6], V=volets[(v*5+1)%6];
+    const L=124, x0=cx-L/2, rdc=26, et=20, niv=4, haut=rdc+niv*et+6;
+    const ALE=(i)=>alea(i*3.7+v*19.3);
+    ombre(64,4);
     R(x0,sol-haut,L,haut,F);
-    for(let i=0;i<40;i++)R(x0+alea(i+v*50)*L,sol-haut+alea(i+v*90)*haut,2,1,'rgba(120,80,40,.12)');   /* l'enduit usé */
-    R(x0,sol-4,L,4,'#b9a37a');                                                          /* le soubassement */
-    /* le toit de tuiles rondes, vu de face */
-    for(let r=0;r<4;r++){const y=sol-haut-14+r*3;R(x0-4+r*0,y,L+8,3,r%2?'#b5552f':'#c96a3f');
-      for(let k=0;k<L+8;k+=4)R(x0-4+k,y+2,1,1,'#8f3f22');}
-    R(x0-5,sol-haut-2,L+10,2,'#8f3f22');
-    /* deux étages de fenêtres à volets */
-    for(let et=0;et<2;et++){
-      const y=sol-haut+12+et*28;
+    /* l'enduit : des taches, des coulures sous les appuis */
+    for(let i=0;i<70;i++)R(x0+ALE(i)*L,sol-haut+ALE(i+99)*haut,1+ALE(i+7)*3,1,'rgba(120,80,40,.10)');
+    for(let i=0;i<40;i++)R(x0+ALE(i+300)*L,sol-haut+ALE(i+400)*haut,1,1,'rgba(255,255,255,.14)');
+    R(x0,sol-haut,3,haut,'rgba(255,255,255,.10)');R(x0+L-3,sol-haut,3,haut,'rgba(0,0,0,.10)');
+    /* la génoise, les tuiles canal et deux mitrons */
+    for(let r=0;r<3;r++)R(x0-2+r,sol-haut-2-r*2,L+4-r*2,2,r%2?'#c9b48a':'#e8d9b6');
+    R(x0-4,sol-haut-12,L+8,6,'#c2663a');
+    for(let k=0;k<L+8;k+=3)R(x0-4+k,sol-haut-12,2,6,k%6?'#b5552f':'#d0764a');
+    R(x0-4,sol-haut-13,L+8,1,'#8f3f22');
+    [[18,0],[L-26,1]].forEach(([dx])=>{R(x0+dx,sol-haut-20,6,8,'#b9a37a');R(x0+dx-1,sol-haut-21,8,2,'#8f3f22');});
+    /* les étages : hautes fenêtres à persiennes */
+    const persienne=(x,y,ferme)=>{
+      R(x,y,11,15,'#2f3336');R(x+1,y+1,9,13,'#4e5b62');R(x+1,y+1,9,1,'#8fa3ab');R(x+5,y+1,1,13,'#2f3336');
+      if(ferme){R(x,y,11,15,V);for(let s=1;s<15;s+=2)R(x,y+s,11,1,'rgba(0,0,0,.16)');R(x+5,y,1,15,'rgba(0,0,0,.25)');}
+      else{R(x-4,y,4,15,V);R(x+11,y,4,15,V);
+        for(let s=1;s<15;s+=2){R(x-4,y+s,4,1,'rgba(0,0,0,.16)');R(x+11,y+s,4,1,'rgba(0,0,0,.16)');}}
+      R(x-1,y+15,13,2,'#efe6d2');R(x-1,y+17,13,1,'rgba(0,0,0,.12)');                 /* l'appui de pierre */
+      R(x-1,y-2,13,2,'rgba(255,255,255,.18)');                                         /* le linteau */
+    };
+    for(let n=0;n<niv;n++){
+      const y=sol-rdc-(n+1)*et+2;
+      R(x0,y+et-2,L,1,'rgba(255,255,255,.22)');                                       /* le bandeau d'étage */
       for(let k=0;k<4;k++){
-        const x=x0+10+k*28;
-        R(x,y,10,16,'#3b3a36');R(x+1,y+1,8,14,'#5d6a70');R(x+1,y+1,8,1,'#8fa3ab');
-        R(x-5,y,5,16,V);R(x+10,y,5,16,V);
-        for(let s=2;s<16;s+=3){R(x-5,y+s,5,1,'rgba(0,0,0,.18)');R(x+10,y+s,5,1,'rgba(0,0,0,.18)');}
-        R(x-2,y+16,14,2,'#d9c7a0');
-        if(et===0&&(k+v)%3===0){for(let f=0;f<12;f+=3)R(x-1+f,y+14,2,2,['#d9576b','#e8c06a','#6fbf5a'][(f+k)%3]);}  /* des pots de fleurs */
+        const x=x0+11+k*29;
+        persienne(x,y,ALE(n*7+k)<.22);
+        /* du linge au premier, des pots au deuxième */
+        if(n===1&&k===(v%4)){for(let f=0;f<12;f+=4)R(x+f,y+15,3,4,['#f2efe4','#d9576b','#6a9ad0'][f/4]);}
+        if(n===2&&(k+v)%3===0){for(let f=0;f<12;f+=3)R(x-1+f,y+13,2,2,['#d9576b','#e8c06a','#6fbf5a'][(f+k)%3]);}
       }
-      if(et===0){R(x0+6,y+18,L-12,1,'#3b3a36');for(let k=0;k<L-12;k+=3)R(x0+6+k,y+18,1,5,'#3b3a36');}  /* le balcon */
+      /* le balcon filant du premier, en fer forgé */
+      if(n===0){R(x0+5,y+15,L-10,1,'#2a2c2e');for(let k=0;k<L-10;k+=3)R(x0+5+k,y+15,1,5,'#2a2c2e');
+        R(x0+5,y+19,L-10,1,'#2a2c2e');R(x0+5,y+20,L-10,1,'rgba(0,0,0,.18)');}
+      /* deux petits balcons au troisième */
+      if(n===2){[1,2].forEach(k=>{const x=x0+11+k*29;R(x-3,y+15,17,1,'#2a2c2e');
+        for(let s=0;s<17;s+=2)R(x-3+s,y+15,1,4,'#2a2c2e');});}
     }
-    /* le rez-de-chaussée : une porte en arc, et une boutique à auvent rayé */
-    R(cx-7,sol-24,14,20,'#5b3f21');R(cx-6,sol-23,12,19,'#7d5934');R(cx-5,sol-26,10,3,'#5b3f21');
-    R(cx+3,sol-14,1,1,'#e8c06a');
-    const aw=v%2?'#c0392b':'#2d6fb0';
-    R(x0+8,sol-26,34,4,aw);for(let k=0;k<34;k+=6)R(x0+8+k,sol-26,3,4,'#f2efe4');
-    R(x0+10,sol-22,30,18,'#3b3a36');R(x0+11,sol-21,28,16,'#6d7d84');
-    R(x0+L-38,sol-22,26,18,'#3b3a36');R(x0+L-37,sol-21,24,16,'#6d7d84');
-    R(x0+L-3,sol-haut+4,2,haut-8,'#9a8f7a');                                           /* la descente d'eau */
+    /* le rez-de-chaussée : pierre de taille, et sa boutique */
+    R(x0,sol-rdc,L,rdc,'#d8c8a2');
+    for(let y=sol-rdc;y<sol;y+=6)R(x0,y,L,1,'rgba(120,90,50,.18)');
+    R(x0,sol-rdc,L,2,'#efe3c4');
+    const sorte=v%3;                       /* 0 café · 1 boutique · 2 porte cochère */
+    const store=['#b5382c','#2d6fb0','#2f6b4a','#c98f2a'][v%4];
+    if(sorte===0||sorte===1){
+      R(x0+8,sol-rdc+4,L-16,rdc-4,'#2a2622');R(x0+10,sol-rdc+6,L-20,rdc-8,'#4a5a60');
+      for(let k=0;k<L-20;k+=16)R(x0+10+k,sol-rdc+6,1,rdc-8,'#2a2622');
+      R(x0+10,sol-rdc+6,L-20,2,'rgba(255,255,255,.2)');
+      /* le store banne, rayé, qui déborde sur le quai */
+      for(let k=0;k<L-8;k+=6){R(x0+4+k,sol-rdc-1,3,6,store);R(x0+7+k,sol-rdc-1,3,6,'#f2efe4');}
+      for(let k=0;k<L-8;k+=6)R(x0+4+k,sol-rdc+5,3,2,store);
+      /* l'enseigne */
+      R(cx-18,sol-rdc-7,36,6,'#1f2a22');R(cx-17,sol-rdc-6,34,4,sorte?'#2a3b30':'#3a2a20');
+      for(let k=0;k<26;k+=3)R(cx-13+k,sol-rdc-5,2,2,'#e8c06a');
+    }else{
+      /* la porte cochère en plein cintre */
+      R(cx-10,sol-22,20,22,'#5b3f21');R(cx-8,sol-26,16,4,'#5b3f21');R(cx-9,sol-21,18,21,'#7d5934');
+      R(cx,sol-21,1,21,'#5b3f21');R(cx-11,sol-27,22,2,'#efe3c4');
+      R(x0+10,sol-20,24,14,'#2f3336');R(x0+11,sol-19,22,12,'#4e5b62');
+      R(x0+L-34,sol-20,24,14,'#2f3336');R(x0+L-33,sol-19,22,12,'#4e5b62');
+    }
+    R(x0+L-4,sol-haut+2,2,haut-4,'#9a8f7a');                                          /* la descente d'eau */
+    /* LA NUIT : certaines fenêtres s'allument, la boutique aussi */
+    const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+    const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+    h2.fillStyle='rgba(18,22,48,.45)';h2.fillRect(x0-5,sol-haut-22,L+10,haut+22);   /* la façade dans la nuit */
+    for(let n=0;n<niv;n++){
+      const y=sol-rdc-(n+1)*et+2;
+      for(let k=0;k<4;k++){
+        if(ALE(n*7+k)<.22||ALE(n*13+k+50)<.45)continue;
+        const x=x0+11+k*29;
+        h2.fillStyle='#ffd98a';h2.fillRect(x+1,y+1,9,13);
+        h2.fillStyle='#ffecb8';h2.fillRect(x+2,y+2,3,5);
+        h2.fillStyle='rgba(120,70,20,.35)';h2.fillRect(x+5,y+1,1,13);
+      }
+    }
+    if(sorte!==2){h2.fillStyle='#ffcf7a';h2.fillRect(x0+10,sol-rdc+6,L-20,rdc-8);
+      h2.fillStyle='rgba(90,50,20,.45)';for(let k=0;k<L-20;k+=16)h2.fillRect(x0+10+k,sol-rdc+6,1,rdc-8);}
+    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
+  /* LA BONNE MÈRE : la colline de la Garde qui monte derrière le quai, la
+     basilique rayée sur son fort, et la Vierge dorée tout en haut. */
+  else if(t==='x_ndg'){
+    const ALE=(i)=>alea(i*5.1+77);
+    /* le ciel, dans l'ouverture de la rue */
+    for(let y=0;y<110;y++){const k=Math.min(1,y/90);
+      g.fillStyle='rgb('+Math.round(150+k*60)+','+Math.round(196+k*34)+','+Math.round(228+k*10)+')';g.fillRect(0,y,W,1);}
+    /* les collines de Marseilleveyre, au loin */
+    for(let x=0;x<W;x++){const t2=Math.round(70+Math.sin(x/19)*6+Math.sin(x/7)*2);R(x,t2,1,110-t2,'#a9b6bf');}
+    R(20,14,26,4,'rgba(255,255,255,.7)');R(28,11,14,3,'rgba(255,255,255,.7)');R(W-58,22,30,3,'rgba(255,255,255,.6)');
+    /* la colline : un dôme de garrigue et de calcaire */
+    for(let x=0;x<W;x++){
+      const u=(x-cx)/(W*0.55), top=Math.round(98+Math.pow(Math.abs(u),1.6)*46);
+      for(let y=top;y<sol;y++){
+        const rocher=ALE(x*0.13+Math.floor(y/5))<.16;
+        g.fillStyle=rocher?(y%3?'#d9cfb5':'#c9bd9e'):(ALE(x+y*0.7)<.5?'#7d8f4f':'#6f8448');
+        g.fillRect(x,y,1,1);
+      }
+    }
+    /* les pins et les maisons accrochées à la pente */
+    for(let i=0;i<22;i++){const x=6+ALE(i)*(W-12),y=112+ALE(i+30)*30;
+      if(Math.abs(x-cx)<44)continue;
+      g.fillStyle=['#2f5b34','#3d6b3a','#27502c'][i%3];g.beginPath();g.ellipse(x,y,6,3,0,0,7);g.fill();}
+    for(let i=0;i<16;i++){const x=8+ALE(i+60)*(W-26),y=120+ALE(i+90)*22;
+      if(Math.abs(x+6-cx)<40)continue;
+      R(x,y,12,8,['#e6b97c','#ecdcbc','#e3a383'][i%3]);R(x-1,y-2,14,3,'#c2663a');
+      R(x+3,y+3,2,3,'#3b3a36');R(x+7,y+3,2,3,'#3b3a36');}
+    /* le fort, sous la basilique */
+    const bx=cx, by=106;
+    R(bx-40,by-2,80,14,'#cdbf9f');for(let k=0;k<80;k+=6)R(bx-40+k,by-5,4,3,'#cdbf9f');
+    R(bx-40,by-2,80,1,'#e8dcc0');for(let y=by;y<by+12;y+=4)R(bx-40,y,80,1,'rgba(90,70,40,.2)');
+    /* la basilique : pierre blanche et bandes vertes */
+    const raye=(x,y,w,h)=>{for(let j=0;j<h;j++)R(x,y+j,w,1,(Math.floor(j/2)%2)?'#8e9c8c':'#f1ece0');};
+    raye(bx-30,by-20,60,18);                                                        /* la nef */
+    R(bx-30,by-21,60,2,'#6f7d70');
+    g.fillStyle='#b8b09a';g.beginPath();g.arc(bx-16,by-21,7,Math.PI,0);g.fill();    /* les coupoles */
+    g.beginPath();g.arc(bx+16,by-21,7,Math.PI,0);g.fill();
+    g.fillStyle='#e8dcc0';g.beginPath();g.arc(bx-16,by-22,5,Math.PI,0);g.fill();g.beginPath();g.arc(bx+16,by-22,5,Math.PI,0);g.fill();
+    for(let k=0;k<5;k++)R(bx-26+k*12,by-14,4,7,'#3b4a52');                        /* les baies */
+    raye(bx-8,by-46,16,26);                                                          /* le clocher */
+    R(bx-9,by-47,18,2,'#6f7d70');R(bx-5,by-42,4,7,'#3b4a52');R(bx+1,by-42,4,7,'#3b4a52');
+    R(bx-6,by-31,12,5,'#3b4a52');R(bx-6,by-31,12,1,'#6f7d70');
+    R(bx-4,by-52,8,5,'#b8b09a');                                                     /* le socle */
+    /* LA VIERGE DORÉE, qui garde le port */
+    R(bx-2,by-63,4,11,'#d9a63f');R(bx-3,by-58,6,5,'#e8c06a');R(bx-1,by-66,2,3,'#f4d98a');
+    R(bx-1,by-62,1,8,'#fff0b8');
+    R(bx-5,by-60,2,1,'#d9a63f');                                                     /* l'Enfant, sur son bras */
+    /* la rue qui monte : des marches, entre deux coins d'immeubles */
+    for(let k=0;k<6;k++){const y=sol-6-k*4, w=64-k*6;R(cx-w/2,y,w,4,k%2?'#d9c7a0':'#e2d2ab');R(cx-w/2,y,w,1,'#efe3c4');}
+    R(0,sol-60,14,60,'#e3a383');R(W-14,sol-60,14,60,'#ecdcbc');
+    R(12,sol-60,2,60,'rgba(0,0,0,.15)');R(W-14,sol-60,2,60,'rgba(0,0,0,.1)');
+    /* LA NUIT : la basilique éclairée, la Vierge qui brille */
+    const n2=document.createElement('canvas');n2.width=W*D;n2.height=H*D;
+    const h2=n2.getContext('2d');h2.setTransform(D,0,0,D,0,0);
+    /* le ciel de nuit, étoilé, et la colline qui s'assombrit */
+    for(let x=0;x<W;x++){
+      const t2=Math.round(70+Math.sin(x/19)*6+Math.sin(x/7)*2);
+      for(let y=0;y<t2;y++){const k=y/t2;h2.fillStyle='rgb('+Math.round(14+k*20)+','+Math.round(20+k*24)+','+Math.round(48+k*30)+')';h2.fillRect(x,y,1,1);}
+      h2.fillStyle='#2e3848';h2.fillRect(x,t2,1,110-t2);
+    }
+    for(let i=0;i<30;i++){h2.fillStyle=i%5?'rgba(200,210,240,.7)':'#fff6d8';h2.fillRect(ALE(i+500)*W,ALE(i+600)*62,1,1);}
+    h2.fillStyle='rgba(12,16,40,.5)';h2.fillRect(0,96,W,sol-96);
+    const lum=h2.createRadialGradient(bx,by-30,4,bx,by-30,64);
+    lum.addColorStop(0,'rgba(255,236,190,.55)');lum.addColorStop(1,'rgba(255,236,190,0)');
+    h2.fillStyle=lum;h2.fillRect(bx-64,by-94,128,128);
+    h2.fillStyle='rgba(255,246,220,.22)';h2.fillRect(bx-30,by-20,60,18);h2.fillRect(bx-8,by-46,16,26);
+    h2.fillStyle='#ffe07a';h2.fillRect(bx-2,by-63,4,11);h2.fillRect(bx-3,by-58,6,5);
+    for(let i=0;i<16;i++){const x=8+ALE(i+60)*(W-26),y=120+ALE(i+90)*22;
+      if(Math.abs(x+6-cx)<40)continue;
+      if(ALE(i+200)<.6){h2.fillStyle='#ffd98a';h2.fillRect(x+3,y+3,2,3);h2.fillRect(x+7,y+3,2,3);}}
+    XCAL[cle]={toile:c,W,H,sol,nuit:n2};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
+  /* LE VOILIER À QUAI : coque blanche, liseré, grand mât et haubans. Côte à
+     côte le long des pontons, ils font la forêt de mâts du Vieux-Port. */
+  else if(t==='x_voilier'){
+    const liser=['#1f3f6f','#2d6fb0','#b5382c','#2f6b4a','#1b1b1b'][v%5];
+    const coque=v%7===3?'#1f3f6f':'#f4f2ea';
+    const mat=cx-4, haut=64+(v%4)*6;
+    /* le reflet */
+    g.fillStyle='rgba(255,255,255,.10)';g.fillRect(cx-24,sol+1,48,3);
+    g.fillStyle='rgba(10,40,60,.30)';g.beginPath();g.ellipse(cx,sol+2,27,3,0,0,7);g.fill();
+    /* la coque : tableau à gauche, étrave à droite */
+    g.fillStyle=coque;g.beginPath();
+    g.moveTo(cx-24,sol-9);g.lineTo(cx+28,sol-11);g.quadraticCurveTo(cx+22,sol-1,cx+12,sol);
+    g.lineTo(cx-20,sol);g.lineTo(cx-24,sol-9);g.closePath();g.fill();
+    R(cx-23,sol-6,48,2,liser);R(cx-22,sol-2,40,1,'rgba(0,0,0,.18)');
+    R(cx-24,sol-10,51,1,'#b9b4a2');                                                  /* le liston */
+    R(cx-20,sol-12,40,2,'#a97f52');                                                  /* le pont en teck */
+    R(cx-14,sol-16,18,4,'#f4f2ea');R(cx-12,sol-15,3,2,'#3b4a52');R(cx-6,sol-15,3,2,'#3b4a52');  /* le rouf */
+    /* le mât, la bôme et la voile ferlée sous sa housse */
+    R(mat,sol-12-haut,2,haut,'#c9c9c4');R(mat,sol-12-haut,1,haut,'#efefea');
+    R(mat-22,sol-24,24,2,'#9a9a94');
+    R(mat-21,sol-27,22,3,v%2?'#2d5f8f':'#1f3f6f');R(mat-21,sol-27,22,1,'rgba(255,255,255,.25)');
+    /* les haubans : étai, pataras */
+    g.strokeStyle='rgba(60,60,60,.55)';g.lineWidth=.5;g.beginPath();
+    g.moveTo(mat+1,sol-12-haut);g.lineTo(cx+27,sol-11);
+    g.moveTo(mat+1,sol-12-haut);g.lineTo(cx-23,sol-10);g.stroke();
+    R(mat-1,sol-14-haut,4,1,'#1b1b1b');R(mat+1,sol-17-haut,1,3,'#1b1b1b');            /* la girouette */
+    if(v%3===0){R(cx-25,sol-17,1,6,'#6b6b66');R(cx-29,sol-17,4,1,'#1f3f8f');R(cx-29,sol-16,4,1,'#f2efe4');R(cx-29,sol-15,4,1,'#c0392b');}
+    XCAL[cle]={toile:c,W,H,sol,haut};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
+  }
+  /* LA TERRASSE DE CAFÉ : deux guéridons, des chaises, un grand parasol */
+  else if(t==='x_terrasse'){
+    const toile=['#f2efe4','#c0392b','#2d6fb0','#e8c06a'][v%4];
+    ombre(26,4);
+    [[cx-14,sol-2],[cx+14,sol]].forEach(([x,y])=>{
+      R(x-6,y-9,12,3,'#efeae0');R(x-6,y-9,12,1,'#ffffff');R(x-1,y-6,2,6,'#3b3a36');R(x-3,y-1,6,1,'#3b3a36');
+      R(x-10,y-7,3,6,'#8a6238');R(x-10,y-9,3,2,'#a5764a');R(x+7,y-7,3,6,'#8a6238');R(x+7,y-9,3,2,'#a5764a');
+      R(x-2,y-11,2,2,'#e8c06a');R(x+1,y-11,2,2,'#f2efe4');                          /* un pastis, un café */
+    });
+    R(cx-1,sol-34,2,32,'#6b6b66');
+    for(let r=0;r<6;r++){const w=12+r*8;R(cx-w/2,sol-40+r,w,1,r%2?toile:'#f2efe4');}
+    R(cx-26,sol-34,52,2,toile);for(let k=0;k<52;k+=4)R(cx-26+k,sol-32,2,2,toile);
+    XCAL[cle]={toile:c,W,H,sol};
+    if(!CALQUES_DECO[t])CALQUES_DECO[t]=XCAL[cle];
+    return XCAL[cle];
   }
   else if(t==='x_pin'){
     ombre(26,5);
@@ -9743,9 +9922,20 @@ function dessinerX(g,o,x,y){
   const C=graverX(o.t,o.v);
   let dy=0;
   /* ce qui flotte se balance doucement */
-  if(o.t==='x_barque')dy=Math.round(Math.sin(Date.now()/900+o.x*0.05)*1.2);
+  if(o.t==='x_barque'||o.t==='x_voilier')dy=Math.round(Math.sin(Date.now()/900+o.x*0.05+o.y*0.11)*1.2);
   if(o.t==='x_cargo')dy=Math.round(Math.sin(Date.now()/2400)*0.6);
-  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol+dy),C.W,C.H);
+  const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
+  if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
+  g.drawImage(C.toile,X0,Y0,C.W,C.H);
+  /* LA NUIT : les fenêtres, la basilique éclairée */
+  const CN=C.nuit?cielDuMoment():null;
+  if(CN&&CN.lampes>0.05){g.globalAlpha=Math.min(1,CN.lampes);g.drawImage(C.nuit,X0,Y0,C.W,C.H);g.globalAlpha=1;}
+  if(o.flip)g.restore();
+  if(o.t==='x_voilier'&&C.haut){                               /* le feu de tête de mât */
+    const CL=cielDuMoment();
+    if(CL&&CL.lampes>0.2){g.fillStyle='rgba(255,250,235,'+Math.min(1,CL.lampes)+')';
+      g.fillRect(Math.round(x)+(o.flip?3:-4),Y0+C.sol-13-C.haut,2,2);}
+  }
   if(o.t==='x_phare'){                                          /* le feu tourne */
     const a=Date.now()/1000;const i=(Math.sin(a*1.6)+1)/2;
     const h=g.createRadialGradient(x,y-C.sol+17,1,x,y-C.sol+17,34);
@@ -9771,11 +9961,25 @@ function scintillerLaMer(g,camX,camY){
 function semerDecorExtramar(){
   DECOR=[];
   const P=(t,x,y,o)=>DECOR.push(Object.assign({t,x,y,gr:0},o||{}));
-  /* les façades, en rang */
-  for(let k=0;k<9;k++)P('x_maison',70+k*150,XP.maisonsY,{v:k,col:[64,24]});
+  /* les immeubles du quai, en rang ; au milieu, la rue ouvre sur la Bonne Mère */
+  for(let k=0;k<9;k++){
+    if(k===4){P('x_ndg',70+k*150,XP.maisonsY,{col:[88,24]});continue;}
+    P('x_maison',70+k*150,XP.maisonsY,{v:k,col:[64,24]});
+  }
+  /* les terrasses, devant les cafés */
+  [0,3,6].forEach(k=>P('x_terrasse',70+k*150+(k===3?-24:0),XP.maisonsY+34,{v:k,col:[20,6]}));
   /* des pins et des palmiers entre elles, devant */
-  [[145,'x_pin'],[445,'x_palmier'],[745,'x_pin'],[1045,'x_palmier'],[1195,'x_pin']]
+  [[145,'x_pin'],[445,'x_palmier'],[1045,'x_palmier'],[1195,'x_pin']]
     .forEach(([x,t])=>P(t,x,XP.maisonsY+22,{col:[5,4]}));
+  /* LA FORÊT DE MÂTS : des voiliers serrés de part et d'autre des pontons,
+     l'étrave tournée vers les planches */
+  let nv=0;
+  XP.pontons.forEach(px=>{
+    for(let y=XP.quaiY+24;y<=XP.pontonFin-6;y+=16){
+      P('x_voilier',px-XP.pontonL-27,y,{v:(nv++)*7%11});
+      P('x_voilier',px+XP.pontonL+27,y+8,{v:(nv++)*7%11,flip:true});
+    }
+  });
   /* la bouche du métro, sur le quai ouest */
   P('metro',XP.metro[0],XP.metro[1],{col:[38,14]});
   /* le marché aux poissons, au centre du quai */
@@ -9796,7 +10000,7 @@ function semerDecorExtramar(){
   P('x_filets',395,326);P('x_filets',840,328);P('x_filets',60,360,{col:[14,4]});
   P('x_caisses',655,328,{col:[13,6]});
   /* les barques, à couple des pontons */
-  [[330,420,0],[392,448,1],[590,410,2],[652,452,3],[850,432,1],[912,410,0],[500,530,2],[760,560,3]]
+  [[250,410,0],[240,480,1],[300,552,2],[470,520,3],[560,572,1],[720,520,0],[800,576,2],[1000,588,3]]
     .forEach(([x,y,v])=>P('x_barque',x,y,{v}));
   /* le cargo contre la jetée, sa grue, et le phare au bout */
   P('x_cargo',1070,540,{v:0});
@@ -11634,7 +11838,8 @@ function dessiner(){
      Un pixel du jeu vaut ECH pixels d'écran : on peut donc glisser par pas de 1/ECH,
      ce qui donne un défilement continu au lieu de sauts d'un pixel entier. */
   const camXf=Math.max(0,Math.min(MONDE_L-VW,joueur.x-VW/2));
-  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH/2));
+  /* à Extramar, la vue regarde un peu plus vers le nord : la Bonne Mère */
+  const camYf=Math.max(0,Math.min(MONDE_H-VH,joueur.y-VH*(CARTE==='extramar'?0.62:0.5)));
   const camX=Math.floor(camXf), camY=Math.floor(camYf);
   const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
   const fy=Math.round((camYf-camY)*ECH)/ECH;
