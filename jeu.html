@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2125';
+  var MA_VERSION='2026-09-18-2128';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -13837,7 +13837,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro','x_etal'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -14144,6 +14144,11 @@ function majAction(){
     if(!TAILLERIE_OUVERTE)b.onclick=null;
     return;
   }
+  if(o.t==='x_etal'){
+    b.innerHTML='Vendre ta pêche<small>LA POISSONNERIE D’EXTRAMAR</small>';
+    b.classList.add('on');
+    return;
+  }
   if(o.t==='metro'){
     /* LA LIGNE 1 EST OUVERTE : on descend sur le quai */
     b.innerHTML='Descendre dans le métro<small>LIGNE 1 · VILLAGE ⇄ EXTRAMAR</small>';
@@ -14274,6 +14279,7 @@ function agir(){
     setTimeout(()=>{location.href=CARTE==='extramar'?'metro.html?station=port':'metro.html';},120);
     return;
   }
+  if(o.t==='x_etal'){ouvrirLeComptoir(MODE_POISSON);return;}
   if(o.t==='entrepot')return;          /* on n'y ramasse rien : c'est un bâtiment */
   if(o.t==='taillerie'){ouvrirLaForge();return;}
   if(o.t==='ecriteau')return;
@@ -15343,15 +15349,26 @@ function dessinerVignette(cv2,C){
    cire tombe. */
 let VENTE={};                 /* combien de chaque objet on met sur le comptoir */
 
-function ouvrirLeComptoir(){
+/* LE COMPTOIR SERT AUSSI DE POISSONNERIE, À EXTRAMAR : même registre,
+   autre marchand, autres prix — et c'est toujours le serveur qui paie. */
+const MODE_COMPTOIR={nom:'Le comptoir',mot:'« Fais voir ce que tu as ramené. »',
+  prix:PRIX_COMPTOIR,rpc:'vendre_au_comptoir',ap:{veste:2,cheveux:1,chapeau:0},
+  vide:'<div class="cptVide">Ton sac est vide.<br>Traverse le gué : tout pousse sur l’autre rive.</div>'};
+const PRIX_POISSON={sardine:5,rouget:10,dorade:18,loup:40,poulpe:120};   /* le serveur a les mêmes */
+const MODE_POISSON={nom:'La poissonnerie',mot:'« Montre-moi ta pêche, petit. »',
+  prix:PRIX_POISSON,rpc:'vendre_poisson',ap:{veste:0,cheveux:3,chapeau:1},
+  vide:'<div class="cptVide">Pas un poisson dans ton sac.<br>Va lancer ta ligne au bout des pontons.</div>'};
+let CPT=MODE_COMPTOIR;
+function ouvrirLeComptoir(mode){
+  CPT=mode||MODE_COMPTOIR;
   VENTE={};
   $('page2Fond').className='sacFond clairS registre';
   $('page2Fond').innerHTML=
    '<canvas id="cptGrain" class="cptGrain"></canvas>'+
    '<div class="cptTete">'+
      '<canvas id="cptCommis"></canvas>'+
-     '<span class="t"><b>Le comptoir</b>'+
-       '<i>« Fais voir ce que tu as ramené. »</i></span>'+
+     '<span class="t"><b>'+CPT.nom+'</b>'+
+       '<i>'+CPT.mot+'</i></span>'+
      '<span class="plaque"><u>TON ARGENT</u><b id="cptArgent">—</b></span>'+
    '</div>'+
    '<div class="cptFeston"></div>'+
@@ -15394,14 +15411,14 @@ function cptCommis(){
   c.width=56*D;c.height=70*D;
   const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const avant=GESTE;GESTE={t:0};
-  sprite(g,28,62,Object.assign({},DEF_AP,{veste:2,cheveux:1,chapeau:0}),'bas',0,false);
+  sprite(g,28,62,Object.assign({},DEF_AP,CPT.ap),'bas',0,false);
   GESTE=avant;
 }
 function cptSou(c){return (c/100).toFixed(2).replace('.',',')+' €';}
 function cptMaj(){
   SAC_PEUT_BAISSER=Date.now();   /* une vente : le sac a le droit de baisser */
-  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_COMPTOIR[k])
-    .sort((a,b)=>PRIX_COMPTOIR[b]*e.sac[b]-PRIX_COMPTOIR[a]*e.sac[a]);
+  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&CPT.prix[k])
+    .sort((a,b)=>CPT.prix[b]*e.sac[b]-CPT.prix[a]*e.sac[a]);
   const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
   $('cptCorps').innerHTML= ks.length? ks.map(k=>{
     const n=combien(k);
@@ -15409,12 +15426,11 @@ function cptMaj(){
       '<span class="cptCoche">✓</span>'+
       '<svg viewBox="0 0 16 16" width="30">'+(ICONES[k]||'')+'</svg>'+
       '<span class="cptNm"><b>'+(OBJETS[k]?OBJETS[k].nom:k)+'</b>'+
-        '<i>'+cptSou(PRIX_COMPTOIR[k])+' pièce · '+e.sac[k]+' dans le sac</i></span>'+
+        '<i>'+cptSou(CPT.prix[k])+' pièce · '+e.sac[k]+' dans le sac</i></span>'+
       '<span class="cptQt"><button data-m="-1">−</button><span>'+n+'</span>'+
         '<button data-m="1">+</button></span>'+
-      '<span class="cptPr">'+cptSou(PRIX_COMPTOIR[k]*n)+'</span></div>';
-  }).join('') : '<div class="cptVide">Ton sac est vide.<br>'+
-      'Traverse le gué : tout pousse sur l’autre rive.</div>';
+      '<span class="cptPr">'+cptSou(CPT.prix[k]*n)+'</span></div>';
+  }).join('') : CPT.vide;
   $('cptCorps').querySelectorAll('.cptLg').forEach(el=>{
     const k=el.dataset.k;if(!k)return;
     el.onclick=(ev)=>{
@@ -15424,10 +15440,10 @@ function cptMaj(){
       vibrer(20);cptMaj();
     };
   });
-  const total=ks.reduce((t,k)=>t+PRIX_COMPTOIR[k]*combien(k),0);
+  const total=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
   const nb=ks.reduce((t,k)=>t+combien(k),0);
   const pd=ks.reduce((t,k)=>t+combien(k)*1,0);
-  $('cptCombien').textContent=nb+' objet'+(nb>1?'s':'')+' sur le comptoir';
+  $('cptCombien').textContent=CPT===MODE_POISSON?(nb+' poisson'+(nb>1?'s':'')+' sur l’étal'):(nb+' objet'+(nb>1?'s':'')+' sur le comptoir');
   $('cptPoids').textContent=pd+' de charge rendue';
   $('cptTotal').textContent=cptSou(total);
   $('cptArgent').textContent=enEuros(e.euros||0);
@@ -15465,9 +15481,9 @@ async function cptVendre(){
   /* La vente passe par le SERVEUR : c'est lui qui tient l'argent et le sac.
      Ma première version créditait en local — le serveur aurait refusé et
      l'argent serait reparti à la prochaine sauvegarde. */
-  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&PRIX_COMPTOIR[k]);
+  const ks=Object.keys(e.sac||{}).filter(k=>e.sac[k]>0&&CPT.prix[k]);
   const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
-  const prevu=ks.reduce((t,k)=>t+PRIX_COMPTOIR[k]*combien(k),0);
+  const prevu=ks.reduce((t,k)=>t+CPT.prix[k]*combien(k),0);
   if(!prevu)return;
   /* LA GARDE D'ABORD : c'est ici que se jouait la vente en boucle. Chaque
      appui relisait « e.sac », inchangé tant que la réponse n'était pas
@@ -15481,10 +15497,10 @@ async function cptVendre(){
     const n=combien(k);
     if(!n)continue;
     SAC_PEUT_BAISSER=Date.now();
-    const d2=await appelRPC('vendre_au_comptoir',{p_joueur:e.id,p_type:k,p_nb:n});
+    const d2=await appelRPC(CPT.rpc,{p_joueur:e.id,p_type:k,p_nb:n});
     if(d2&&d2.erreur==='plafond'){
       /* LE FILET A PARLÉ : on ne laisse pas le joueur devant un bouton muet. */
-      auFil('Le comptoir','Le marchand refuse : tu lui as déjà vendu plus que '+
+      auFil(CPT.nom,'Le marchand refuse : tu lui as déjà vendu plus que '+
         'tes récoltes ne le permettent.',false,'#e8b43a');
       break;
     }
