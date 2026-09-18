@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1406';
+  var MA_VERSION='2026-09-18-1417';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -14592,13 +14593,13 @@ async function cptVendre(){
   const combien=(k)=>(k in VENTE)?VENTE[k]:e.sac[k];
   const prevu=ks.reduce((t,k)=>t+PRIX_COMPTOIR[k]*combien(k),0);
   if(!prevu)return;
-  const v=$('cptVendre');
-  v.textContent='…';v.classList.add('rien');
-  /* UN SEUL APPEL PAR LIGNE, et c'est le serveur qui compte. Deux appels
-     séparés — payer puis retirer — laissaient la porte ouverte : le premier
-     payait sans regarder le sac. */
+  /* LA GARDE D'ABORD : c'est ici que se jouait la vente en boucle. Chaque
+     appui relisait « e.sac », inchangé tant que la réponse n'était pas
+     revenue — et repayait la totalité. Un doigt qui tapote suffisait. */
   if(venteEnCours)return;
   venteEnCours=true;
+  const v=$('cptVendre');
+  v.textContent='…';v.classList.add('rien');
   let gagne=0;
   for(const k of ks){
     const n=combien(k);
