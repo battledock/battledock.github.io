@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1403';
+  var MA_VERSION='2026-09-18-1406';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -14250,6 +14251,16 @@ function echBulle(txt){
    y écrire ce qu'on voulait. Au démarrage, on demande au serveur ce qu'on a
    vraiment acheté, et on retire tout le reste. */
 let PIECES_PRISES=[];
+async function lireMesNiveaux(){
+  if(!e.id)return;
+  const d=await appelRPC('mes_ameliorations',{p_joueur:e.id});
+  if(!d||d.erreur)return;
+  /* LE SERVEUR FAIT FOI : on ne garde que les niveaux qu'il a vendus. */
+  e.nivSac=d.sac||0;e.nivPioche=d.pioche||0;
+  e.nivHache=d.hache||0;e.nivPied=d.pied||0;
+  e.sacMax=e.nivSac>0?SAC_PALIERS[Math.min(e.nivSac,SAC_PALIERS.length-1)]:60;
+  sauver();majHaut();
+}
 async function lireMesCosmetiques(){
   if(!e.id)return;
   const d=await appelRPC('mes_cosmetiques',{p_joueur:e.id});
@@ -14324,17 +14335,23 @@ function echEquipement(c){
     const n=niv[a.k];
     if(n>=a.prix.length)return;
     b.textContent='…';
-    if(!await echPayer(a.prix[n]))return;
-    if(a.k==='sac'){
-      e.nivSac=n+1;e.sacMax=SAC_PALIERS[n+1];
-      /* LE SERVEUR TIENT SA PROPRE TAILLE DE SAC, dans la table des sacs.
-         Sans cet appel, il renvoyait 60 au premier échange et écrasait le
-         sac qu'on venait de payer. */
-      await appelRPC('agrandir_sac',{p_joueur:e.id,p_max:e.sacMax});
+    /* L'AMÉLIORATION S'ACHÈTE AU SERVEUR. Avant, le jeu débitait puis
+       montait le niveau tout seul, et ce niveau vivait dans la sauvegarde :
+       de l'argent volé achetait de vrais niveaux, et remettre le compte
+       d'aplomb ne servait à rien puisque l'appareil les réenvoyait. */
+    const d=await appelRPC('acheter_amelioration',{p_joueur:e.id,p_clef:a.k});
+    if(!d||d.erreur){
+      echBulle(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer'
+               :(d&&d.erreur==='au maximum'?'C’est déjà au maximum'
+                                          :'Le marchand n’a pas pu'));
+      if(d&&typeof d.euros==='number')e.euros=d.euros;
+      echMaj();return;
     }
-    if(a.k==='pioche')e.nivPioche=n+1;
-    if(a.k==='hache')e.nivHache=n+1;
-    if(a.k==='pied')e.nivPied=n+1;
+    if(typeof d.euros==='number')e.euros=d.euros;
+    if(a.k==='sac'){e.nivSac=d.niveau;e.sacMax=SAC_PALIERS[Math.min(d.niveau,SAC_PALIERS.length-1)];}
+    if(a.k==='pioche')e.nivPioche=d.niveau;
+    if(a.k==='hache')e.nivHache=d.niveau;
+    if(a.k==='pied')e.nivPied=d.niveau;
     sauver();envoyerSauvegarde(true);
     majHaut();majPastille();majAction();
     jouer('achat','moment');
@@ -15257,6 +15274,7 @@ async function ouvrirPorte(){
   etape(3);
   await lireSacServeur();       /* le sac vient du serveur */
   lireMesCosmetiques();         /* et ce qu'on porte aussi */
+  lireMesNiveaux();             /* et les niveaux qu'on a vraiment payés */
   etape(4);
   await chargerLaCarte();       /* et la carte aussi */
     /* on retrouve sa partie, d'où qu'on vienne */
