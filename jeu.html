@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1503';
+  var MA_VERSION='2026-09-18-1509';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -11145,6 +11146,7 @@ async function monterEnLigne(force){
   try{
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
       body:JSON.stringify({id:e.id,pseudo:e.pseudo||'sans nom',apparence:e.ap,
+        ap_v:empreinteAp(e.ap),
         x:Math.round(joueur.x),y:Math.round(joueur.y),dir:joueur.dir,
         geste:(GESTE.t>0?(GESTE.type||'pioche'):null),lieu:'terrain',
         score:e.score||0,recolte:e.recolte||0,
@@ -12918,6 +12920,32 @@ function signalerLeMonde(o,genre,quoi){
    part 10 fois par seconde et arrive chez les autres en quelques
    dizaines de millisecondes. La base ne sert plus qu'à retrouver
    ceux qui étaient déjà là quand on arrive. */
+/* ================= L'APPARENCE NE VOYAGE QU'UNE FOIS =================
+   Elle pèse plus de la moitié d'une ligne — 222 octets sur 418 — et elle ne
+   change qu'à l'échoppe. Les lectures régulières ne portent donc qu'un petit
+   NUMÉRO, et on ne va chercher l'apparence complète que lorsqu'on tombe sur
+   un numéro qu'on ne connaît pas. */
+const APPARENCES=new Map();        /* id du joueur → son apparence */
+function empreinteAp(ap){
+  const t=JSON.stringify(ap||{});
+  let h=0;
+  for(let i=0;i<t.length;i++)h=((h<<5)-h+t.charCodeAt(i))|0;
+  return Math.abs(h)%100000;
+}
+async function chercherLesApparences(ids){
+  if(!ids.length)return;
+  try{
+    const r=await fetch(URL_SB+'/rest/v1/joueurs?select=id,apparence,ap_v&id=in.('+
+      ids.map(encodeURIComponent).join(',')+')',{headers:sbEntetes});
+    const d=await r.json();
+    if(!Array.isArray(d))return;
+    d.forEach(j=>{
+      APPARENCES.set(j.id,{ap:j.apparence||{},v:j.ap_v||0});
+      const a=AUTRES.get(j.id);
+      if(a)a.ap=j.apparence||{};
+    });
+  }catch(x){}
+}
 let CANAL=null, dernierBip=0;
 function ouvrirCanal(){
   if(CANAL||!e.id||!SB_PRET||!sb)return;
@@ -12976,14 +13004,17 @@ async function ecouterLesAutres(){
   try{
     /* on prend les 40 dernières lignes, et on juge la fraîcheur les unes
        par rapport aux autres : l'horloge du téléphone peut être décalée. */
+    /* PLUS D'APPARENCE ICI : seulement son numéro. 196 octets par joueur
+       au lieu de 418. */
     const r=await fetch(URL_SB+'/rest/v1/joueurs'+
-      '?select=id,pseudo,apparence,x,y,dir,geste,lieu,maj&order=maj.desc&limit=40',
+      '?select=id,pseudo,x,y,dir,geste,lieu,maj,ap_v&order=maj.desc&limit=40',
       {headers:sbEntetes});
     const d=await r.json();
     if(!Array.isArray(d)||!d.length)return;
     const tMax=Math.max(...d.map(j=>new Date(j.maj).getTime()));
     const FRAIS=60000;                              /* une minute de tolérance */
     const vus=new Set();
+    const aChercher=[];
     d.forEach(j=>{
       if(j.id===e.id)return;
       if(tMax-new Date(j.maj).getTime()>FRAIS)return;   /* trop vieux : il est parti */
@@ -13007,7 +13038,11 @@ async function ecouterLesAutres(){
       a.recu=now2;
       a.id=j.id;a.cx=j.x;a.cy=j.y;
       a.dirEnvoyee=j.dir||a.dirEnvoyee;
-      a.ap=j.apparence||{};
+      /* l'apparence vient du magasin ; si son numéro a changé — le joueur
+         est passé à l'échoppe — on ira la rechercher juste après. */
+      const connue=APPARENCES.get(j.id);
+      if(!connue||connue.v!==(j.ap_v||0))aChercher.push(j.id);
+      a.ap=(connue&&connue.ap)||a.ap||{};
       a.pseudo=j.pseudo||'survivant';
       if(j.geste&&j.geste!==a.geste)a.gesteT=1;
       a.geste=j.geste;
@@ -13015,6 +13050,8 @@ async function ecouterLesAutres(){
       AUTRES.set(j.id,a);
     });
     for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>12000)AUTRES.delete(id);
+    /* une seule requête pour tous ceux dont l'apparence nous manque */
+    if(aChercher.length)chercherLesApparences(aChercher);
   }catch(x){}
 }
 
