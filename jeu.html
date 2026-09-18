@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2116';
+  var MA_VERSION='2026-09-18-2120';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -271,7 +271,16 @@
 
 
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<style>html{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}#rencontre{display:none!important}   /* le bandeau de rencontre est retiré */
+</style>
+<script>/* PAS DE ZOOM : ni pincer, ni double-tap, ni Ctrl + molette. Safari iOS ignore
+   user-scalable=no : il faut aussi couper ses gestes à la main. */
+(function(){var non=function(e){e.preventDefault();};
+['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,non,{passive:false});});
+document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault();},{passive:false});
+window.addEventListener('wheel',function(e){if(e.ctrlKey)e.preventDefault();},{passive:false});
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&['+','-','=','0'].indexOf(e.key)>=0)e.preventDefault();});})();</script>
 <meta name="theme-color" content="#72a154">
 <title>Battle Dock</title>
 <style>
@@ -1486,7 +1495,18 @@ body.clavier #bandeau{padding-bottom:9px}
 </div>
 <div id="barre">
   <div id="tiroir">
-  <button id="b-sac" style="display:none"></button>
+<button class="latte" id="b-sac">
+    <svg viewBox="0 0 20 18" width="30">
+      <rect x="6" y="0" width="8" height="2" fill="#4a3220"/>
+      <rect x="5" y="2" width="2" height="3" fill="#4a3220"/><rect x="13" y="2" width="2" height="3" fill="#4a3220"/>
+      <rect x="2" y="5" width="16" height="12" fill="#6b4a28"/>
+      <rect x="2" y="5" width="16" height="2" fill="#8a6238"/>
+      <rect x="2" y="5" width="2" height="12" fill="#8a6238"/>
+      <rect x="16" y="7" width="2" height="10" fill="#4f3520"/>
+      <rect x="2" y="9" width="16" height="2" fill="#4f3520"/>
+      <rect x="8" y="9" width="4" height="4" fill="#c9a24a"/><rect x="8" y="9" width="4" height="1" fill="#e8c06a"/>
+    </svg><span class="b">SAC</span>
+    <i class="clou g"></i><i class="clou d"></i><em class="pastille" id="sac-nb">0</em></button>
 
 <button class="latte" id="b-look">
     <svg viewBox="0 0 20 18" width="30">
@@ -7634,6 +7654,10 @@ function ornementEmote(g,x,y,dir){
    chercher dans un menu. */
 function majLaRencontre(){
   const b=$('rencontre');if(!b)return;
+  /* LE BANDEAU DE RENCONTRE EST RETIRÉ : il restait collé en bas dès qu'un
+     joueur était en ligne. On parle aux autres par la pastille « en ligne ». */
+  if(rencontreVue.on!==false){rencontreVue.on=false;b.classList.remove('on');}
+  return;
   const gens=gensAPortee();
   const on=gens.length>0&&!pageOuverte();
   const qui=on?(gens.length>1?(gens[0].nom+' et '+(gens.length-1)+' autre'+
