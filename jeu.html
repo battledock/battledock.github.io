@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1749';
+  var MA_VERSION='2026-09-18-1752';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -653,6 +653,8 @@ body{overflow:hidden}
 #enLigne .carte{width:100%;max-width:460px;max-height:78vh;overflow:auto;
   background:#1d2a1b;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));
   color:#f2efe4;font:400 14px Georgia,serif;box-shadow:0 -6px 24px rgba(0,0,0,.5)}
+#enLigne #fermerL{float:right;border:0;width:34px;height:34px;border-radius:50%;
+  background:#3a4a36;color:#f2efe4;font:700 16px ui-monospace,monospace;margin:-4px -4px 0 8px}
 #enLigne .titL{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#9fd67a;margin:4px 0 10px}
 #enLigne .ligneJ{display:flex;align-items:center;gap:10px;width:100%;border:0;background:rgba(255,255,255,.06);
   border-radius:12px;padding:8px 10px;margin-bottom:6px;color:inherit;font:inherit;text-align:left}
@@ -11639,7 +11641,8 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
 
 /* on n'accepte le doigt que dans la moitié gauche : la droite reste libre */
 const pageOuverte=()=>$('pan').classList.contains('on')||$('sacPage').classList.contains('on')
-                    ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti');
+                    ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
+                    ||$('enLigne').classList.contains('on');   /* la liste en ligne bloquait le tap de fermeture */
 /* le joystick se prend n'importe où sur la carte, des deux côtés.
    On ne l'ignore que si le doigt touche un bouton de l'interface. */
 addEventListener('pointerdown',reveillerLeSon,{once:false});
@@ -13085,7 +13088,7 @@ function imageTete(p){
 function dessinerListeL(){
   ficheOuverte=null;
   const c=$('carteL');
-  let h='<div class="titL">EN LIGNE · '+EN_LIGNE.length+'</div>';
+  let h=BOUTON_FERMER_L+'<div class="titL">EN LIGNE · '+EN_LIGNE.length+'</div>';
   if(!EN_LIGNE.length)h+='<div class="videL">Personne d’autre pour l’instant.</div>';
   h+=EN_LIGNE.map(p=>'<button class="ligneJ" data-j="'+echapperT(p.id)+'">'+
     '<img src="'+imageTete(p)+'" alt=""><span style="flex:1"><b>'+echapperT(p.pseudo||'survivant')+'</b>'+
@@ -13093,6 +13096,7 @@ function dessinerListeL(){
     ((FILS_PRIVES.get(p.id)||[]).some(m=>m.nonLu)?'<span style="color:#e8a7ff">●</span>':'')+
     '</button>').join('');
   c.innerHTML=h;
+  $('fermerL').onclick=fermerL;
   c.querySelectorAll('[data-j]').forEach(x=>x.onclick=()=>ouvrirFicheJoueur(x.dataset.j));
 }
 function ouvrirListeL(){
@@ -13101,6 +13105,7 @@ function ouvrirListeL(){
   if(attente)ouvrirFicheJoueur(attente[0]);else dessinerListeL();
   $('enLigne').classList.add('on');
 }
+const BOUTON_FERMER_L='<button id="fermerL" aria-label="Fermer">✕</button>';
 function fermerL(){$('enLigne').classList.remove('on');ficheOuverte=null;}
 function ouvrirFicheJoueur(id){
   const p=EN_LIGNE.find(x=>x.id===id);
@@ -13118,7 +13123,7 @@ function ouvrirFicheJoueur(id){
   ficheOuverte=id;
   const fil=FILS_PRIVES.get(id)||[];
   fil.forEach(m=>m.nonLu=false);
-  c.innerHTML='<div class="ligneJ" style="background:none;padding:0">'+
+  c.innerHTML=BOUTON_FERMER_L+'<div class="ligneJ" style="background:none;padding:0">'+
       '<img src="'+imageTete(p)+'" alt=""><span style="flex:1"><b>'+echapperT(p.pseudo||'survivant')+'</b>'+
       '<span>🟢 '+echapperT(p.lieu||'en ligne')+' · '+depuisQuand(p.depuis)+'</span></span></div>'+
     '<div class="actionsF"><button id="fVocal">🎙 Vocal</button>'+
@@ -13132,6 +13137,7 @@ function ouvrirFicheJoueur(id){
   const ff=$('filF');ff.scrollTop=ff.scrollHeight;
   $('saisieF').value=brouillon;
   $('fRetour').onclick=dessinerListeL;
+  $('fermerL').onclick=fermerL;
   $('fVocal').onclick=()=>{fermerL();vocalPour=id;ouvrirLeVocal();};
   const envoi=()=>{
     const t=$('saisieF').value.trim();if(!t)return;
