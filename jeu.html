@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-2108';
+  var MA_VERSION='2026-09-18-2116';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1027,6 +1027,8 @@ body.clavier #bandeau{padding-bottom:9px}
   padding:0 12px calc(14px + env(safe-area-inset-bottom));
   pointer-events:none;background:none}
 /* LA GRANDE CIBLE */
+#action.mord{animation:mordA .25s ease-in-out infinite alternate;background:#e8c06a!important;color:#2a1d0c!important}
+@keyframes mordA{from{transform:scale(1)}to{transform:scale(1.06)}}
 #action{pointer-events:auto;flex:1;position:relative;border:0;border-radius:14px;
   padding:13px 16px 12px;text-align:left;
   background:linear-gradient(180deg,rgba(253,251,244,.96),rgba(236,229,209,.96));
@@ -11643,6 +11645,7 @@ function dessiner(){
      il marche devant elles, sa tête ne disparaît plus dedans */
   if(LISIERE)ctx.drawImage(LISIERE,camX,camY,lw,lh,0,0,lw,lh);
   dessinerDecor(ctx,camX,camY,VW,VH,acteurs);
+  if(CARTE==='extramar')dessinerLaPeche(ctx,camX,camY);
   /* les bulles par-dessus tout : un mot ne doit jamais passer sous un caillou */
   dessinerBulles(ctx,camX,camY,px,py);
   dessinerParts(ctx,camX,camY);
@@ -13904,6 +13907,151 @@ const plaqueFeinte={
     contains(c){return plaqueVrai.classList.contains(c);}
   }
 };
+/* ================= LA PÊCHE, À EXTRAMAR =================
+   Depuis le bord du quai ou le bout d'un ponton : on lance la ligne, le
+   bouchon flotte, et quand ça mord il faut FERRER à temps. Le poisson est
+   tiré par le serveur (pecher), qui tient aussi le rythme : une prise
+   toutes les quatre secondes, pas plus. */
+const NOMS_POISSON={sardine:'sardine',rouget:'rouget',dorade:'dorade',loup:'loup',poulpe:'poulpe'};
+let PECHE=null;           /* {etat:'lance'|'attend'|'mord'|'ferre', t0, mordA, bx, by, px, py, cote} */
+function lieuDePeche(){
+  if(CARTE!=='extramar')return null;
+  const x=joueur.x,y=joueur.y;
+  /* au bout d'un ponton : le bouchon tombe devant, dans l'axe */
+  for(const px of XP.pontons){
+    if(Math.abs(x-px)<XP.pontonL&&y>XP.pontonFin-46&&y<XP.pontonFin)
+      return {bx:px+(joueur.dir==='gauche'?-30:(joueur.dir==='droite'?30:0)),by:XP.pontonFin+22};
+  }
+  /* au bord du quai, au-dessus du bassin, loin des pontons */
+  if(y>XP.quaiY-26&&y<XP.quaiY+2&&x>XP.bassinO+14&&x<XP.bassinE-14&&
+     !XP.pontons.some(px=>Math.abs(x-px)<24))
+    return {bx:x,by:XP.quaiY+30};
+  return null;
+}
+function lancerLaLigne(){
+  const L=lieuDePeche();
+  if(!L||PECHE)return;
+  PECHE={etat:'lance',t0:performance.now(),bx:L.bx,by:L.by,px:joueur.x,py:joueur.y,
+    cote:joueur.dir==='gauche'?-1:1};
+  /* on attend entre deux et six secondes que ça morde */
+  PECHE.mordA=PECHE.t0+600+2000+Math.random()*4000;
+  jouer('cueille');vibrer(8);
+  majAction();
+}
+function annulerLaPeche(mot){
+  if(!PECHE)return;
+  if(mot)texteVolant(joueur.x,joueur.y-34,mot,'#b9c7d0');
+  PECHE=null;majAction();
+}
+async function ferrer(){
+  if(!PECHE)return;
+  if(PECHE.etat!=='mord'){annulerLaPeche('trop tôt : il a filé');return;}
+  PECHE.etat='ferre';majAction();
+  vibrer([10,30,14]);
+  const num=++numAppelSac;
+  const d=await appelRPC('pecher',{p_joueur:e.id});
+  const bx=PECHE?PECHE.bx:joueur.x, by=PECHE?PECHE.by:joueur.y;
+  PECHE=null;
+  if(!d||d.erreur){
+    const m=!d?'la ligne a cassé':(d.erreur==='sac plein'?'ton sac est plein':
+      (d.erreur==='trop tot'?'patience…':'rien au bout'));
+    texteVolant(joueur.x,joueur.y-34,m,'#e8a06a');
+    majAction();return;
+  }
+  adopterSac(d,num);
+  e.sac=d.sac;sauver();
+  eclaboussure(bx,by);
+  texteVolant(joueur.x,joueur.y-40,'+1 '+(NOMS_POISSON[d.poisson]||d.poisson),
+    d.poisson==='poulpe'?'#e8a7ff':(d.poisson==='loup'?'#9fdfb8':'#cfe0f2'));
+  jouer('achat','moment');
+  if(typeof majHaut==='function')majHaut();
+  majAction();
+}
+function eclaboussure(x,y){
+  for(let i=0;i<10;i++){
+    const a=-Math.PI/2+(Math.random()-.5)*2.2;
+    PARTS.push({x,y,vx:Math.cos(a)*38,vy:Math.sin(a)*46,vie:.45+Math.random()*.3,
+      taille:2,rot:0,vrot:0,c:'rgba(220,240,250,.85)',rebondi:true});
+  }
+}
+function tempsDeLaPeche(t){
+  if(!PECHE)return;
+  /* on bouge : la ligne se relève */
+  if(Math.hypot(joueur.x-PECHE.px,joueur.y-PECHE.py)>5){annulerLaPeche('ligne relevée');return;}
+  if(PECHE.etat==='lance'&&t-PECHE.t0>600){PECHE.etat='attend';majAction();}
+  if(PECHE.etat==='attend'&&t>=PECHE.mordA){
+    PECHE.etat='mord';PECHE.mordT=t;vibrer([30,40,30]);eclaboussure(PECHE.bx,PECHE.by);majAction();
+  }
+  /* il ne reste accroché qu'une seconde */
+  if(PECHE.etat==='mord'&&t-PECHE.mordT>1000)annulerLaPeche('il s’est décroché');
+}
+function dessinerLaPeche(g,camX,camY){
+  if(!PECHE)return;
+  const t=performance.now();
+  tempsDeLaPeche(t);
+  if(!PECHE)return;
+  const c=PECHE.cote;
+  /* la canne : du poing au scion */
+  const hx=joueur.x+c*5-camX, hy=joueur.y-14-camY;
+  const sx=joueur.x+c*17-camX, sy=joueur.y-34-camY;
+  g.strokeStyle='#6b4a28';g.lineWidth=1.4;
+  g.beginPath();g.moveTo(hx,hy);g.lineTo(sx,sy);g.stroke();
+  g.strokeStyle='#a5764a';g.lineWidth=.7;
+  g.beginPath();g.moveTo(hx+c*6,hy-10);g.lineTo(sx,sy);g.stroke();
+  /* le bouchon : il vole, il flotte, il plonge */
+  let bx=PECHE.bx-camX, by=PECHE.by-camY;
+  if(PECHE.etat==='lance'){
+    const k=Math.min(1,(t-PECHE.t0)/600);
+    bx=sx+(bx-sx)*k;by=sy+(by-sy)*k-Math.sin(k*Math.PI)*22;
+  }else if(PECHE.etat==='attend'){
+    by+=Math.sin(t/260)*.8;
+    /* de petites touches, pour faire monter la tension */
+    if(PECHE.mordA-t<900&&Math.sin(t/60)>.6)by+=1;
+  }else if(PECHE.etat==='mord'){
+    by+=2+Math.sin(t/40)*1.5;
+  }
+  /* la ligne, qui pend un peu */
+  g.strokeStyle='rgba(240,240,240,.75)';g.lineWidth=.5;
+  g.beginPath();g.moveTo(sx,sy);
+  g.quadraticCurveTo((sx+bx)/2,Math.max(sy,by)+(PECHE.etat==='lance'?0:6),bx,by);g.stroke();
+  /* les ronds dans l'eau */
+  if(PECHE.etat!=='lance'){
+    const r=(t/500)%1;
+    g.strokeStyle='rgba(230,245,250,'+(.5*(1-r))+')';g.lineWidth=.6;
+    g.beginPath();g.ellipse(bx,by+2,3+r*(PECHE.etat==='mord'?10:6),1.2+r*2,0,0,Math.PI*2);g.stroke();
+  }
+  /* le bouchon rouge et blanc */
+  if(PECHE.etat!=='mord'||Math.sin(t/50)>-.2){
+    g.fillStyle='#f2efe4';g.fillRect(Math.round(bx)-1,Math.round(by)-3,3,2);
+    g.fillStyle='#d0402f';g.fillRect(Math.round(bx)-1,Math.round(by)-1,3,2);
+  }
+  /* ÇA MORD ! */
+  if(PECHE.etat==='mord'){
+    g.font='700 8px ui-monospace,monospace';g.textAlign='center';
+    g.fillStyle='rgba(10,16,10,.6)';g.fillText('ÇA MORD !',bx+1,by-9);
+    g.fillStyle='#ffd76a';g.fillText('ÇA MORD !',bx,by-10);
+  }
+}
+/* le bouton d'action, selon l'état de la ligne */
+function actionDePeche(b){
+  if(CARTE!=='extramar')return false;
+  if(PECHE){
+    const E=PECHE.etat;
+    b.innerHTML=E==='mord'?'FERRER !<small>VITE, ÇA MORD</small>'
+      :E==='ferre'?'…<small>ON REMONTE LA LIGNE</small>'
+      :'Attendre…<small>LE BOUCHON FLOTTE · BOUGER RELÈVE LA LIGNE</small>';
+    b.classList.add('on');b.classList.toggle('mord',E==='mord');
+    b.onclick=E==='ferre'?null:ferrer;
+    return true;
+  }
+  b.classList.remove('mord');
+  if(lieuDePeche()&&GESTE.t<=0){
+    b.innerHTML='Pêcher<small>LANCER LA LIGNE</small>';
+    b.classList.add('on');b.onclick=lancerLaLigne;return true;
+  }
+  return false;
+}
+
 function majAction(){
   plaqueVrai=$('action');
   const b=plaqueFeinte;
@@ -13938,6 +14086,8 @@ function majAction(){
     b.innerHTML='Laver<small>'+ARGILE_PAR_LAVAGE+' ARGILES · AU TAMIS</small>';
     b.classList.add('on');b.onclick=laverLArgile;return;
   }
+  /* À EXTRAMAR, la ligne de pêche passe avant le reste */
+  if(actionDePeche(b))return;
   const pres=(typeof presentProche==='function')?presentProche():null;
   if(pres&&GESTE.t<=0){
     b.innerHTML=echapperT(pres.pseudo)+'<small>EN LIGNE · LUI PARLER</small>';
@@ -14520,10 +14670,30 @@ const OBJETS={
  lingotCuivre:{nom:'Lingot de cuivre',d:'Sorti du four. Souple et brillant.',     poids:2},
  brique: {nom:'Brique', d:'Argile cuite. Pour bâtir en dur.',                     poids:2},
  torche: {nom:'Torche', d:'Résine et bois. Éclaire la nuit.',                     poids:1},
+ sardine:{nom:'Sardine',d:'Pêchée à Extramar. La plus commune du bassin.',          poids:1},
+ rouget: {nom:'Rouget', d:'Pêché à Extramar. Rouge vif, apprécié au marché.',       poids:1},
+ dorade: {nom:'Dorade', d:'Pêchée à Extramar. Un bandeau d’or entre les yeux.',     poids:1},
+ loup:   {nom:'Loup',   d:'Pêché à Extramar. Rare, et le marché le paie bien.',     poids:1},
+ poulpe: {nom:'Poulpe', d:'Pêché à Extramar. Il n’en sort presque jamais.',         poids:1},
  pioche: {nom:'Pioche', d:'Pour les rochers. Trois coups et la pierre cède.',        poids:0,outil:1},
  hache:  {nom:'Hache',  d:'Pour les arbres. Cinq coups, et il tombe.',               poids:0,outil:1}
 };
 const ICONES={
+ sardine:'<rect x="2" y="7" width="10" height="3" fill="#9fb3c4"/><rect x="2" y="7" width="10" height="1" fill="#c9d6e0"/>'+
+      '<rect x="12" y="6" width="2" height="5" fill="#8499aa"/><rect x="4" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ rouget:'<rect x="2" y="6" width="10" height="4" fill="#d0553f"/><rect x="2" y="6" width="10" height="1" fill="#e8806a"/>'+
+      '<rect x="12" y="5" width="2" height="6" fill="#b04030"/><rect x="6" y="5" width="3" height="1" fill="#b04030"/>'+
+      '<rect x="4" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ dorade:'<rect x="2" y="5" width="10" height="6" fill="#a9b4ba"/><rect x="2" y="5" width="10" height="1" fill="#cfd6da"/>'+
+      '<rect x="3" y="7" width="3" height="1" fill="#e0b43a"/><rect x="12" y="4" width="2" height="8" fill="#8c979d"/>'+
+      '<rect x="3" y="8" width="1" height="1" fill="#1b1b1b"/>',
+ loup:'<rect x="1" y="6" width="12" height="4" fill="#7d8b96"/><rect x="1" y="6" width="12" height="1" fill="#4f5b64"/>'+
+      '<rect x="13" y="5" width="2" height="6" fill="#5f6b74"/><rect x="5" y="5" width="4" height="1" fill="#4f5b64"/>'+
+      '<rect x="3" y="7" width="1" height="1" fill="#1b1b1b"/>',
+ poulpe:'<rect x="5" y="2" width="6" height="6" fill="#c0607a"/><rect x="5" y="2" width="6" height="1" fill="#e08aa0"/>'+
+      '<rect x="4" y="8" width="1" height="5" fill="#a84d66"/><rect x="6" y="8" width="1" height="6" fill="#a84d66"/>'+
+      '<rect x="9" y="8" width="1" height="6" fill="#a84d66"/><rect x="11" y="8" width="1" height="5" fill="#a84d66"/>'+
+      '<rect x="6" y="4" width="1" height="1" fill="#1b1b1b"/><rect x="9" y="4" width="1" height="1" fill="#1b1b1b"/>',
  bois:'<rect x="4" y="2" width="8" height="11" fill="#8a6238"/><rect x="4" y="2" width="8" height="2" fill="#a5764a"/>'+
       '<rect x="4" y="2" width="2" height="11" fill="#a5764a"/><rect x="9" y="4" width="1" height="9" fill="#6b4a28"/>'+
       '<rect x="4" y="12" width="8" height="1" fill="#5b3f21"/>',
