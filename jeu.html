@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1358';
+  var MA_VERSION='2026-09-18-1403';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -14243,6 +14244,29 @@ function echBulle(txt){
   b.textContent=txt;b.classList.remove('on');void b.offsetWidth;b.classList.add('on');
 }
 /* on paie : le serveur décide */
+
+/* ================= CE QU'ON PORTE VIENT DU SERVEUR =================
+   La liste des pièces possédées ne vient plus de la sauvegarde — on pouvait
+   y écrire ce qu'on voulait. Au démarrage, on demande au serveur ce qu'on a
+   vraiment acheté, et on retire tout le reste. */
+let PIECES_PRISES=[];
+async function lireMesCosmetiques(){
+  if(!e.id)return;
+  const d=await appelRPC('mes_cosmetiques',{p_joueur:e.id});
+  if(!d||d.erreur)return;
+  const miennes=Array.isArray(d.miennes)?d.miennes:[];
+  PIECES_PRISES=Array.isArray(d.prises)?d.prises:[];
+  /* on ne garde que ce que le serveur reconnaît */
+  const neuf={};
+  miennes.forEach(p=>{neuf[p]=true;});
+  e.cos=neuf;
+  if(e.ap&&e.ap.cos&&!neuf[e.ap.cos]){
+    e.ap.cos=null;                 /* on portait une pièce qu'on n'a pas */
+    monterEnLigne(true);
+  }
+  sauver();
+}
+
 async function echPayer(cents){
   const d=await appelRPC('depenser',{p_joueur:e.id,p_cents:cents});
   if(!d||d.erreur){
@@ -14378,7 +14402,19 @@ function echVestiaire(c){
     el.onclick=async()=>{
       if(!e.cos[C.id]){
         if((e.euros||0)<C.prix){echBulle('Il te manque '+enEuros(C.prix-(e.euros||0)));return;}
-        if(!await echPayer(C.prix))return;
+        /* L'ACHAT SE FAIT AU SERVEUR : c'est lui qui connaît le prix, qui
+           débite, qui inscrit la possession et qui garde la règle des pièces
+           uniques. Le jeu ne fait plus que recopier sa réponse. */
+        const d=await appelRPC('acheter_cosmetique',{p_joueur:e.id,p_piece:C.id});
+        if(!d||d.erreur){
+          echBulle(d&&d.erreur==='deja portee'
+            ?'Quelqu’un la porte déjà · une seule existe'
+            :(d&&d.erreur==='pas_assez'?'Il te manque de quoi payer'
+                                       :'Le marchand n’a pas pu'));
+          if(d&&typeof d.euros==='number')e.euros=d.euros;
+          echMaj();return;
+        }
+        if(typeof d.euros==='number')e.euros=d.euros;
         e.cos[C.id]=true;e.ap.cos=C.id;
         echBulle(C.nom+' · les autres la verront');
       }else e.ap.cos=(e.ap.cos===C.id)?null:C.id;
@@ -15220,6 +15256,7 @@ async function ouvrirPorte(){
   await recupererSauvegarde();
   etape(3);
   await lireSacServeur();       /* le sac vient du serveur */
+  lireMesCosmetiques();         /* et ce qu'on porte aussi */
   etape(4);
   await chargerLaCarte();       /* et la carte aussi */
     /* on retrouve sa partie, d'où qu'on vienne */
