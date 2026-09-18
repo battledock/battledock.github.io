@@ -10,7 +10,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1733';
+  var MA_VERSION='2026-09-18-1745';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -1361,7 +1361,19 @@ async function direOuJeSuis(lieu){
 
 let AUTRES=new Map(), derniereEcoute=0, dernierEnvoi=0;
 let CANAL=null, dernierBip=0;
+/* EN LIGNE : on se signale une fois, avec le lieu. Les autres nous voient
+   assis sur un banc du village ; aucune position ne part. */
+let PRESENCE=null;
+function ouvrirPresence(){
+  if(PRESENCE||!e.id||!SB_PRET||!sb)return;
+  const t=JSON.stringify(e.ap||{});let h=0;
+  for(let i=0;i<t.length;i++)h=((h<<5)-h+t.charCodeAt(i))|0;
+  PRESENCE=sb.channel('en_ligne',{config:{presence:{key:e.id}}});
+  PRESENCE.subscribe(st=>{if(st==='SUBSCRIBED'){try{PRESENCE.track({id:e.id,
+    pseudo:e.pseudo||'sans nom',ap_v:Math.abs(h)%100000,lieu:'au casino',depuis:Date.now()});}catch(x){}}});
+}
 function ouvrirCanal(){
+  ouvrirPresence();
   if(CANAL||!e.id||!SB_PRET||!sb)return;
   CANAL=sb.channel('casino',{config:{broadcast:{self:false}}});
   CANAL.on('broadcast',{event:'pos'},({payload:p})=>{
@@ -1380,6 +1392,7 @@ function ouvrirCanal(){
   CANAL.subscribe(st=>{if(st==='SUBSCRIBED')bipPosition(true);});
 }
 function bipPosition(force){
+  return;                 /* plus de positions : on ne voit plus les autres */
   if(!CANAL||!e.id)return;
   const now=Date.now();
   if(!force&&now-dernierBip<100)return;
@@ -1391,6 +1404,7 @@ function bipPosition(force){
   }catch(x){}
 }
 async function ecouterLesAutres(){
+  return;                 /* plus de lecture des autres */
   if(!e.id)return;
   try{
     const r=await fetch(URL_SB+'/rest/v1/joueurs'+

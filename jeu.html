@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1733';
+  var MA_VERSION='2026-09-18-1745';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -642,6 +642,34 @@ body{overflow:hidden}
 .toutVendre small{display:block;font:600 11px ui-monospace,monospace;
   color:rgba(246,236,210,.8);margin-top:3px}
 #joy{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#pastilleL{position:fixed;right:12px;top:calc(140px + env(safe-area-inset-top));z-index:5;
+  border:0;border-radius:14px;padding:6px 11px;background:rgba(18,26,16,.72);color:#f2efe4;
+  font:700 11px ui-monospace,monospace;box-shadow:0 3px 10px rgba(0,0,0,.35);display:none}
+#pastilleL.on{display:block}
+#pastilleL i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6fdc6a;
+  margin-right:6px;box-shadow:0 0 6px #6fdc6a}
+#enLigne{position:fixed;inset:0;z-index:30;display:none;background:rgba(8,12,8,.55)}
+#enLigne.on{display:flex;align-items:flex-end;justify-content:center}
+#enLigne .carte{width:100%;max-width:460px;max-height:78vh;overflow:auto;
+  background:#1d2a1b;border-radius:18px 18px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+  color:#f2efe4;font:400 14px Georgia,serif;box-shadow:0 -6px 24px rgba(0,0,0,.5)}
+#enLigne .titL{font:700 10px ui-monospace,monospace;letter-spacing:1.5px;color:#9fd67a;margin:4px 0 10px}
+#enLigne .ligneJ{display:flex;align-items:center;gap:10px;width:100%;border:0;background:rgba(255,255,255,.06);
+  border-radius:12px;padding:8px 10px;margin-bottom:6px;color:inherit;font:inherit;text-align:left}
+#enLigne .ligneJ img{width:36px;height:36px;image-rendering:pixelated;border-radius:50%;background:#6f9e52}
+#enLigne .ligneJ b{display:block;font-size:15px}
+#enLigne .ligneJ span span{font:400 11px ui-monospace,monospace;color:#b9c7b0}
+#enLigne .actionsF{display:flex;gap:8px;margin:12px 0}
+#enLigne .actionsF button,#enLigne .envoyerF{flex:1;border:0;border-radius:12px;padding:12px 6px;
+  background:#e8c06a;color:#2a1d0c;font:700 13px Georgia,serif;box-shadow:0 3px 0 #8a6a2a}
+#enLigne .actionsF button.gris{background:#3a4a36;color:#f2efe4;box-shadow:0 3px 0 #1a2418}
+#enLigne .filF{max-height:34vh;overflow:auto;margin:8px 0}
+#enLigne .mpF{padding:6px 10px;border-radius:10px;margin:4px 0;background:rgba(255,255,255,.07);max-width:85%;
+  width:fit-content}
+#enLigne .mpF.moi{margin-left:auto;background:rgba(159,223,184,.18)}
+#enLigne .zoneF{display:flex;gap:8px}
+#enLigne .zoneF input{flex:3;min-width:0;border:0;border-radius:12px;padding:12px;font:400 16px Georgia,serif}
+#enLigne .videL{color:#b9c7b0;padding:10px 0}
 #hublot{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:4;
   width:120px;height:120px;border-radius:50%;padding:5px;
   background:conic-gradient(#e8c06a,#8a6a2a,#f0cf7d,#7d5f26,#e8c06a,#8a6a2a,#f0cf7d);
@@ -1398,6 +1426,8 @@ body.clavier #bandeau{padding-bottom:9px}
     <div id="voyMot">—</div></div>
 </div>
 <div id="bordSac"></div>
+<button id="pastilleL"><i></i><span id="nbL">0</span> en ligne</button>
+<div id="enLigne"><div class="carte" id="carteL"></div></div>
 <div id="haut">
   <span class="col">
     <span class="pt">le sac</span><span class="gd" id="hSac">0/60</span>
@@ -7608,10 +7638,8 @@ let enTrainDeParler=null, vocalPour=null, mesVocaux=[], lecteurVocal=null;
 let dernierRegardVocaux=0;
 function gensAPortee(){
   const l=[];
-  AUTRES.forEach(a=>{
-    const d=Math.hypot(a.x-joueur.x,a.y-joueur.y);
-    if(d<PORTEE_VOIX)l.push({id:a.id,nom:a.pseudo||'sans nom',d});
-  });
+  /* plus de portée de voix : on parle à n'importe quel joueur en ligne */
+  AUTRES.forEach(a=>l.push({id:a.id,nom:a.pseudo||'sans nom',d:0,lieu:a.lieu||'en ligne'}));
   return l.sort((a,b)=>a.d-b.d);
 }
 async function regarderMesVocaux(force){
@@ -7664,12 +7692,11 @@ function dessinerLeVocal(){
   }
   /* À QUI PARLER */
   if(!gens.length){
-    corps+='<div class="videV">Personne à portée de voix.<br>'+
-      'Approche-toi de quelqu’un pour lui parler.</div>';
+    corps+='<div class="videV">Personne d’autre en ligne.</div>';
   }else{
     corps+='<div class="titV">À QUI</div><div class="quiV">'+
       gens.map(x=>'<button class="persV'+(x.id===vocalPour?' on':'')+'" '+
-        'data-qui="'+x.id+'"><b>'+x.nom+'</b><span>'+Math.round(x.d)+' pas</span></button>').join('')+
+        'data-qui="'+x.id+'"><b>'+x.nom+'</b><span>'+(x.lieu||'en ligne')+'</span>'+'</button>').join('')+
       '</div>'+
       '<canvas id="ondeV"></canvas>'+
       '<button class="parlerV" id="b-enreg"><i></i><span id="motV">'+
@@ -11094,7 +11121,7 @@ async function monterEnLigne(force){
   const now=Date.now();
   /* LA TABLE PORTE MAINTENANT LE MOUVEMENT : on y écrit un peu plus
      souvent qu'avant. Une écriture ne compte pas comme message temps réel. */
-  if(!force&&now-dernierEnvoi<2000)return;
+  if(!force&&now-dernierEnvoi<30000)return;   /* plus de mouvement à partager */
   dernierEnvoi=now;enVol=true;
   try{
     await fetch(URL_SB+'/rest/v1/joueurs',{method:'POST',headers:sbEntetes,
@@ -12897,6 +12924,7 @@ async function chercherLesApparences(ids){
 }
 let CANAL=null, dernierBip=0;
 function ouvrirCanal(){
+  ouvrirPresence();
   if(CANAL||!e.id||!SB_PRET||!sb)return;
   CANAL=sb.channel('terrain',{config:{broadcast:{self:false}}});
   /* ================= PLUS DE POSITIONS EN TEMPS RÉEL =================
@@ -12948,61 +12976,212 @@ function bipPosition(){ /* le canal ne porte plus les positions */ }
 let AUTRES=new Map();
 let derniereEcoute=0, envoiRapide=0;
 
-async function ecouterLesAutres(){
-  if(!e.id)return;
-  try{
-    /* on prend les 40 dernières lignes, et on juge la fraîcheur les unes
-       par rapport aux autres : l'horloge du téléphone peut être décalée. */
-    /* PLUS D'APPARENCE ICI : seulement son numéro. 196 octets par joueur
-       au lieu de 418. */
-    const r=await fetch(URL_SB+'/rest/v1/joueurs'+
-      '?select=id,pseudo,x,y,dir,geste,lieu,maj,ap_v&order=maj.desc&limit=40',
-      {headers:sbEntetes});
-    const d=await r.json();
-    if(!Array.isArray(d)||!d.length)return;
-    const tMax=Math.max(...d.map(j=>new Date(j.maj).getTime()));
-    const FRAIS=60000;                              /* une minute de tolérance */
-    const vus=new Set();
-    const aChercher=[];
-    d.forEach(j=>{
-      if(j.id===e.id)return;
-      if(tMax-new Date(j.maj).getTime()>FRAIS)return;   /* trop vieux : il est parti */
-      if(j.lieu==='casino')return;                      /* il est à l'intérieur */
-      vus.add(j.id);
-      const a=AUTRES.get(j.id)||{x:j.x,y:j.y,pas:0,marche:false,gesteT:0};
-      /* ON DEVINE SA VITESSE entre deux lectures. La table ne donne que des
-         positions ; sans vitesse, l'autre sauterait d'un point à l'autre
-         toutes les deux secondes au lieu de marcher. */
-      const now2=Date.now();
-      if(a.cx!==undefined&&a.recu){
-        const ecoule=Math.max(0.3,Math.min(4,(now2-a.recu)/1000));
-        const nvx=(j.x-a.cx)/ecoule, nvy=(j.y-a.cy)/ecoule;
-        a.vx=(a.vx||0)*0.35+nvx*0.65;
-        a.vy=(a.vy||0)*0.35+nvy*0.65;
-        const v=Math.hypot(a.vx,a.vy);
-        if(v>150){const k=150/v;a.vx*=k;a.vy*=k;}
-        /* s'il n'a pas bougé d'une lecture à l'autre, il est arrêté */
-        if(Math.hypot(j.x-a.cx,j.y-a.cy)<3){a.vx=0;a.vy=0;}
-      }
-      a.recu=now2;
-      a.id=j.id;a.cx=j.x;a.cy=j.y;
-      a.dirEnvoyee=j.dir||a.dirEnvoyee;
-      /* l'apparence vient du magasin ; si son numéro a changé — le joueur
-         est passé à l'échoppe — on ira la rechercher juste après. */
-      const connue=APPARENCES.get(j.id);
-      if(!connue||connue.v!==(j.ap_v||0))aChercher.push(j.id);
-      a.ap=(connue&&connue.ap)||a.ap||{};
-      a.pseudo=j.pseudo||'survivant';
-      if(j.geste&&j.geste!==a.geste)a.gesteT=1;
-      a.geste=j.geste;
-      a.vu=Date.now();
-      AUTRES.set(j.id,a);
-    });
-    for(const [id,a] of AUTRES)if(!vus.has(id)&&Date.now()-a.vu>12000)AUTRES.delete(id);
-    /* une seule requête pour tous ceux dont l'apparence nous manque */
-    if(aChercher.length)chercherLesApparences(aChercher);
-  }catch(x){}
+/* ================= LES BANCS DU VILLAGE =================
+   On ne voit plus les autres MARCHER : chaque joueur en ligne est ASSIS sur
+   un banc de la place, immobile. La Presence de Supabase dit qui est là :
+   un message quand il arrive, un quand il part (ou change de coin), et rien
+   entre les deux. Les messages privés passent par la boîte de chacun :
+   un message envoyé = un reçu, quel que soit le nombre de connectés. */
+let PRESENCE=null, MA_BOITE=null, EN_LIGNE=[], PLACES_ASSISES=new Map();
+const DEPUIS=Date.now();
+let monCoin='';
+const FILS_PRIVES=new Map();              /* id -> [{moi,txt,quand,nonLu}] */
+let ficheOuverte=null, DERNIER_PRIVE=null;
+function ecouterLesAutres(){}             /* plus de lecture de table */
+function placesDesBancs(){
+  const l=[];
+  DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
+    .forEach(o=>{l.push([o.x-9,o.y]);l.push([o.x+9,o.y]);});
+  return l;
 }
+function coinDuJoueur(){
+  try{return joueur.x<rivX(joueur.y)?'en forêt':'au village';}catch(x){return 'au village';}
+}
+function maPresence(){
+  return {id:e.id,pseudo:e.pseudo||'sans nom',ap_v:empreinteAp(e.ap),
+    lieu:monCoin||coinDuJoueur(),depuis:DEPUIS};
+}
+function ouvrirPresence(){
+  if(PRESENCE||!e.id||!SB_PRET||!sb)return;
+  monCoin=coinDuJoueur();
+  PRESENCE=sb.channel('en_ligne',{config:{presence:{key:e.id}}});
+  PRESENCE.on('presence',{event:'sync'},asseoirLesPresents);
+  PRESENCE.subscribe(st=>{if(st==='SUBSCRIBED'){try{PRESENCE.track(maPresence());}catch(x){}}});
+  MA_BOITE=sb.channel('moi:'+e.id);
+  MA_BOITE.on('broadcast',{event:'mp'},({payload:p})=>recevoirPrive(p));
+  MA_BOITE.subscribe();
+  majPastilleL();
+}
+/* le coin ne part que s'il CHANGE : jamais sur un minuteur */
+setInterval(()=>{
+  if(!PRESENCE||!e.id)return;
+  const c=coinDuJoueur();
+  if(c!==monCoin){monCoin=c;try{PRESENCE.track(maPresence());}catch(x){}}
+  /* un joueur arrivé avant que les bancs existent attend encore sa place */
+  if(EN_LIGNE.some(p=>!PLACES_ASSISES.has(p.id)))asseoirLesPresents();
+},3000);
+function asseoirLesPresents(){
+  if(!PRESENCE)return;
+  const st=PRESENCE.presenceState()||{};
+  const gens=[];
+  Object.values(st).forEach(arr=>{
+    const p=arr&&arr[arr.length-1];
+    if(p&&p.id&&p.id!==e.id&&!gens.some(g2=>g2.id===p.id))gens.push(p);
+  });
+  gens.sort((a,b)=>(a.depuis||0)-(b.depuis||0));
+  EN_LIGNE=gens;
+  const places=placesDesBancs();
+  for(const id of [...PLACES_ASSISES.keys()])
+    if(!gens.some(g2=>g2.id===id))PLACES_ASSISES.delete(id);
+  const prises=new Set(PLACES_ASSISES.values());
+  gens.forEach(p=>{
+    if(PLACES_ASSISES.has(p.id))return;
+    const k=places.findIndex((_,i)=>!prises.has(i));
+    if(k>=0){PLACES_ASSISES.set(p.id,k);prises.add(k);}
+  });
+  const vus=new Set(), aChercher=[];
+  gens.forEach(p=>{
+    const k=PLACES_ASSISES.get(p.id);
+    if(k===undefined||!places[k])return;
+    const [x,yb]=places[k];
+    const a=AUTRES.get(p.id)||{};
+    Object.assign(a,{id:p.id,x,y:yb+3,hanche:yb-7,assis:true,dir:'bas',pas:0,
+      marche:false,court:false,gesteT:0,geste:null,
+      pseudo:p.pseudo||'survivant',lieu:p.lieu||'',depuis:p.depuis||Date.now(),vu:Date.now()});
+    const connue=APPARENCES.get(p.id);
+    if(!connue||connue.v!==(p.ap_v||0))aChercher.push(p.id);
+    a.ap=(connue&&connue.ap)||a.ap||{};
+    AUTRES.set(p.id,a);vus.add(p.id);
+  });
+  for(const id of [...AUTRES.keys()])if(!vus.has(id))AUTRES.delete(id);
+  if(aChercher.length)chercherLesApparences(aChercher);
+  majPastilleL();
+  if($('enLigne').classList.contains('on')){
+    if(!ficheOuverte)dessinerListeL();else ouvrirFicheJoueur(ficheOuverte);
+  }
+}
+function majPastilleL(){
+  const b=$('pastilleL');if(!b)return;
+  $('nbL').textContent=EN_LIGNE.length;
+  b.classList.toggle('on',!!e.id);
+}
+function depuisQuand(t){
+  const m=Math.max(0,Math.round((Date.now()-(t||Date.now()))/60000));
+  return m<1?'à l’instant':(m<60?'depuis '+m+' min':'depuis '+Math.floor(m/60)+' h');
+}
+function imageTete(p){
+  try{
+    const a=AUTRES.get(p.id)||{ap:(APPARENCES.get(p.id)||{}).ap||{},pseudo:p.pseudo};
+    return teteDe(a).toDataURL();
+  }catch(x){return '';}
+}
+function dessinerListeL(){
+  ficheOuverte=null;
+  const c=$('carteL');
+  let h='<div class="titL">EN LIGNE · '+EN_LIGNE.length+'</div>';
+  if(!EN_LIGNE.length)h+='<div class="videL">Personne d’autre pour l’instant.</div>';
+  h+=EN_LIGNE.map(p=>'<button class="ligneJ" data-j="'+echapperT(p.id)+'">'+
+    '<img src="'+imageTete(p)+'" alt=""><span style="flex:1"><b>'+echapperT(p.pseudo||'survivant')+'</b>'+
+    '<span>'+echapperT(p.lieu||'en ligne')+' · '+depuisQuand(p.depuis)+'</span></span>'+
+    ((FILS_PRIVES.get(p.id)||[]).some(m=>m.nonLu)?'<span style="color:#e8a7ff">●</span>':'')+
+    '</button>').join('');
+  c.innerHTML=h;
+  c.querySelectorAll('[data-j]').forEach(x=>x.onclick=()=>ouvrirFicheJoueur(x.dataset.j));
+}
+function ouvrirListeL(){
+  /* un message privé en attente : on ouvre directement sa conversation */
+  const attente=[...FILS_PRIVES.entries()].find(([id,f])=>f.some(m=>m.nonLu)&&EN_LIGNE.some(p=>p.id===id));
+  if(attente)ouvrirFicheJoueur(attente[0]);else dessinerListeL();
+  $('enLigne').classList.add('on');
+}
+function fermerL(){$('enLigne').classList.remove('on');ficheOuverte=null;}
+function ouvrirFicheJoueur(id){
+  const p=EN_LIGNE.find(x=>x.id===id);
+  const c=$('carteL');
+  $('enLigne').classList.add('on');
+  if(!p){
+    ficheOuverte=null;
+    c.innerHTML='<div class="videL">Il vient de se déconnecter.</div>'+
+      '<div class="actionsF"><button class="gris" id="fRetour">← Liste</button></div>';
+    $('fRetour').onclick=dessinerListeL;
+    return;
+  }
+  /* on garde ce qui est en train d'être tapé si la fiche se redessine */
+  const brouillon=(ficheOuverte===id&&$('saisieF'))?$('saisieF').value:'';
+  ficheOuverte=id;
+  const fil=FILS_PRIVES.get(id)||[];
+  fil.forEach(m=>m.nonLu=false);
+  c.innerHTML='<div class="ligneJ" style="background:none;padding:0">'+
+      '<img src="'+imageTete(p)+'" alt=""><span style="flex:1"><b>'+echapperT(p.pseudo||'survivant')+'</b>'+
+      '<span>🟢 '+echapperT(p.lieu||'en ligne')+' · '+depuisQuand(p.depuis)+'</span></span></div>'+
+    '<div class="actionsF"><button id="fVocal">🎙 Vocal</button>'+
+      '<button class="gris" id="fRetour">← Liste</button></div>'+
+    '<div class="titL">MESSAGES PRIVÉS</div>'+
+    '<div class="filF" id="filF">'+(fil.length?fil.map(m=>
+      '<div class="mpF'+(m.moi?' moi':'')+'">'+echapperT(m.txt)+'</div>').join(''):
+      '<div class="videL">Écris-lui : lui seul le verra.</div>')+'</div>'+
+    '<div class="zoneF"><input id="saisieF" maxlength="200" placeholder="Ton message…">'+
+      '<button class="envoyerF" id="fEnvoyer">Envoyer</button></div>';
+  const ff=$('filF');ff.scrollTop=ff.scrollHeight;
+  $('saisieF').value=brouillon;
+  $('fRetour').onclick=dessinerListeL;
+  $('fVocal').onclick=()=>{fermerL();vocalPour=id;ouvrirLeVocal();};
+  const envoi=()=>{
+    const t=$('saisieF').value.trim();if(!t)return;
+    $('saisieF').value='';envoyerPrive(id,t);
+    setTimeout(()=>{if($('saisieF'))$('saisieF').focus();},30);
+  };
+  $('fEnvoyer').onclick=envoi;
+  $('saisieF').onkeydown=(ev)=>{ev.stopPropagation();if(ev.key==='Enter')envoi();};
+  majPastilleNonLus();
+}
+function envoyerPrive(id,txt){
+  txt=String(txt).slice(0,200);
+  const fil=FILS_PRIVES.get(id)||[];
+  fil.push({moi:true,txt,quand:Date.now()});FILS_PRIVES.set(id,fil);
+  if(ficheOuverte===id)ouvrirFicheJoueur(id);
+  /* on n'ouvre PAS la boîte de l'autre : sans abonnement, l'envoi part par
+     l'API REST — un seul message, reçu par lui seul. */
+  try{
+    const ch=sb.channel('moi:'+id);
+    Promise.resolve(ch.send({type:'broadcast',event:'mp',
+      payload:{de:e.id,n:e.pseudo||'sans nom',txt}}))
+      .catch(()=>{}).finally(()=>{try{sb.removeChannel(ch);}catch(x){}});
+  }catch(x){}
+  vibrer(10);
+}
+function recevoirPrive(p){
+  if(!p||!p.de||p.de===e.id)return;
+  const txt=String(p.txt||'').slice(0,200);
+  const fil=FILS_PRIVES.get(p.de)||[];
+  fil.push({moi:false,txt,quand:Date.now(),nonLu:ficheOuverte!==p.de});
+  if(fil.length>60)fil.shift();
+  FILS_PRIVES.set(p.de,fil);
+  if(ficheOuverte===p.de)ouvrirFicheJoueur(p.de);
+  else{
+    auFil('🔒 '+String(p.n||'quelqu’un').slice(0,18),txt,false,'#e8a7ff');
+    nonLus=Math.max(0,nonLus-1);          /* le privé se lit dans sa fiche */
+    DERNIER_PRIVE=p.de;
+  }
+  majPastilleNonLus();
+  vibrer(18);
+}
+function majPastilleNonLus(){
+  const n=[...FILS_PRIVES.values()].reduce((t,f)=>t+f.filter(m=>m.nonLu).length,0);
+  const b=$('pastilleL');if(b)b.style.outline=n?'2px solid #e8a7ff':'';
+}
+/* le joueur assis le plus proche, pour le bouton d'action */
+function presentProche(){
+  let vu=null,best=1e9;
+  for(const [,a] of AUTRES){
+    if(!a.assis)continue;
+    const d=Math.hypot(a.x-joueur.x,(a.y-joueur.y)*1.5);
+    if(d<26&&d<best){best=d;vu=a;}
+  }
+  return vu;
+}
+if($('pastilleL'))$('pastilleL').onclick=ouvrirListeL;
+if($('enLigne'))$('enLigne').onclick=(ev)=>{if(ev.target===$('enLigne'))fermerL();};
 
 function majAutres(dt){
   const now=Date.now();
@@ -13073,6 +13252,7 @@ function teteDe(a){
   return c;
 }
 function flechesVersLesAutres(camX,camY){
+  return;                              /* ils sont sur les bancs : pas de flèches */
   for(const [,a] of AUTRES){
     const x=a.x-camX, y=a.y-camY;
     if(x>-30&&y>-60&&x<VW+30&&y<VH+30)continue;   /* il est déjà à l'écran */
@@ -13131,11 +13311,16 @@ function dessinerUnAutre(g,a,camX,camY){
       duree:(EMOTE_DE(String(a.geste||'').slice(3))||{duree:2}).duree}
     :{t:0};
   /* les autres joueurs : on les voit courir dès que leur vitesse le dit */
-  personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
+  let yNom=y-50;
+  if(a.assis){
+    const h=Math.round(a.hanche-camY);
+    assis(g,x,h,Object.assign({},DEF_AP,a.ap));
+    yNom=h-46;
+  }else personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
   GESTE=sauve;
   g.font='700 7px ui-monospace,monospace';g.textAlign='center';
-  g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,y-49);
-  g.fillStyle='#f2efe4';g.fillText(a.pseudo,x,y-50);
+  g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,yNom+1);
+  g.fillStyle='#f2efe4';g.fillText(a.pseudo,x,yNom);
   g.textAlign='left';
 }
 /* les bulles passent par-dessus tout le reste */
@@ -13292,6 +13477,9 @@ function actionDeSecours(){
      et il ne réagit pas au doigt. */
   if(charge>=max)
     return {mot:'Sac plein',sous:'vide-le au comptoir',f:null};
+  const prive=[...FILS_PRIVES.entries()].find(([,f])=>f.some(m=>m.nonLu));
+  if(prive)
+    return {mot:'Répondre',sous:'message privé',f:()=>ouvrirFicheJoueur(prive[0])};
   if(nonLus>0)
     return {mot:'Répondre',sous:nonLus+' message'+(nonLus>1?'s':'')+' non lu'+(nonLus>1?'s':''),
             f:()=>{if(bandeauOuvert())fermerBandeau();else ouvrirBandeau();}};
@@ -13370,6 +13558,11 @@ function majAction(){
   if(typeof peutLaver==='function'&&peutLaver()&&GESTE.t<=0){
     b.innerHTML='Laver<small>'+ARGILE_PAR_LAVAGE+' ARGILES · AU TAMIS</small>';
     b.classList.add('on');b.onclick=laverLArgile;return;
+  }
+  const pres=(typeof presentProche==='function')?presentProche():null;
+  if(pres&&GESTE.t<=0){
+    b.innerHTML=echapperT(pres.pseudo)+'<small>EN LIGNE · LUI PARLER</small>';
+    b.classList.add('on');b.onclick=()=>ouvrirFicheJoueur(pres.id);return;
   }
   const o=cible();
   if(!o||GESTE.t>0){secours();return;}
@@ -15478,7 +15671,6 @@ let t0=performance.now();
   /* ON LIT LA TABLE TOUTES LES DEUX SECONDES.
      C'était toutes les huit, parce que le canal portait le direct. Sans lui,
      c'est cette lecture qui fait avancer les autres : elle doit suivre. */
-  if(maintenant-derniereEcoute>2000){derniereEcoute=maintenant;ecouterLesAutres();}
   envoyerSauvegarde();                            /* la partie, sur le serveur */
   ouvrirCanal();
   bipPosition();                                  /* le direct, 10 fois par seconde */
