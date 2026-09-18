@@ -11,7 +11,7 @@
    la version publiée : si elle a changé, on recharge une seule fois avec une
    adresse neuve — c'est la seule façon de percer le cache d'un raccourci. */
 (function(){
-  var MA_VERSION='2026-09-18-1335';
+  var MA_VERSION='2026-09-18-1345';
   var cle='bdl.version.vue';
   function verifier(){
     fetch('version.json?t='+Date.now(),{cache:'no-store'})
@@ -38,6 +38,7 @@
   });
 })();
 </script>
+
 
 
 
@@ -3223,7 +3224,7 @@ const PANNEAU_FIXE=[836,300];
    Le panneau se faisait effacer par la clairière du camp : il tombait
    pile dans son rayon. */
 const BATI=(t)=>['casino','mine','forge','coffre','pont','comptoir','camp','panneau','fete',
-                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','tilleul','lanterneP','boutique','boite',
+                 'maison','taverne','atelier','puits','fontaine','arbrePot','bancP','panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','tilleul','lanterneP','boutique','boite','metro',
                  'souche','gravats'].includes(t);
 /* on passe par createElement plutôt que new Image() : le navigateur s'en
    moque, mais mon banc d'essai peut alors charger la page et la tester */
@@ -6364,6 +6365,151 @@ function fumeeFront(g,x,y,d){
   }
 }
 
+
+
+/* ================= L'ENTRÉE DU MÉTRO =================
+   À côté du comptoir : deux mâts de fonte verte, une arche, un écusson
+   émaillé et deux lanternes en bulbe. L'escalier descend dans le noir. */
+const PI_M={o:'#5f666c',s:'#6f767c',p:'#7e868d',c:'#8f979e',h:'#a4acb3',t:'#bcc4ca'};
+const VERT_M={o:'#22402c',s:'#2f5a3c',p:'#3f7550',c:'#54916a',h:'#78b18c'};
+function lueurMetro(g,x,y,r,col,a){
+  const d=g.createRadialGradient(x,y,2,x,y,r);
+  d.addColorStop(0,col+(a||0.3)+')');
+  d.addColorStop(1,col+'0)');
+  g.fillStyle=d;g.fillRect(x-r,y-r,r*2,r*2);
+}
+function escalierMetro(g,x,y,larg){
+  const R=(gg,a,b,w,h,col)=>{gg.fillStyle=col;
+    gg.fillRect(a|0,b|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const L2=larg||34;
+  /* la trémie : le trou dans le pavé, avec sa margelle */
+  R(g,x-L2/2-4,y-30,L2+8,32,PI_M.o);
+  R(g,x-L2/2-3,y-29,L2+6,30,'#1b1a18');
+  /* les marches, de plus en plus sombres */
+  for(let k=0;k<7;k++){
+    const q=k/7;
+    const w=L2-q*6;
+    const ty=y-4-k*4;
+    const t=Math.round(90-q*74);
+    R(g,x-w/2,ty,w,3,'rgb('+(t+18)+','+(t+20)+','+(t+22)+')');
+    R(g,x-w/2,ty,w,1,'rgb('+(t+40)+','+(t+42)+','+(t+44)+')');
+  }
+  /* le noir du fond */
+  R(g,x-L2/2+3,y-30,L2-6,6,'#0d0d0f');
+  /* les joues de l'escalier, en pierre */
+  [-1,1].forEach(s=>{
+    for(let k=0;k<7;k++){
+      const t=Math.floor(alea(k*3.1+s)*3);
+      R(g,x+s*(L2/2+1)-(s>0?0:3),y-6-k*4,4,5,[PI_M.p,PI_M.c,PI_M.s][t]);
+      R(g,x+s*(L2/2+1)-(s>0?0:3),y-6-k*4,4,1,PI_M.h);
+    }
+  });
+}
+
+let CALQUE_METRO=null;
+function graverLeMetro(){
+  const W=86,H=104,cx=W/2,sol=H-10;
+  const c=document.createElement('canvas');
+  const D=Math.max(1,Math.min(3,Math.floor(window.devicePixelRatio||1)));
+  c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');
+  g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  /* on grave la partie qui ne bouge pas : la pierre, la fonte, l'écusson.
+     Les lanternes et la lumière sont dessinées vivantes par-dessus. */
+  dessinerLeMetroDedans(g,cx,sol,false);
+  CALQUE_METRO={toile:c,W,H,sol};
+}
+function dessinerLeMetroDedans(g,x,y,vivant){
+  /* « R » prend la toile en premier, comme dans l'aperçu d'où vient ce
+     dessin : on la redéclare ici pour que le corps marche tel quel. */
+  const R=(gg,a,b,w,h,col)=>{gg.fillStyle=col;
+    gg.fillRect(a|0,b|0,Math.max(1,w|0),Math.max(1,h|0));};
+  const nuitSud=()=>vivant&&lampesAllumees();
+
+
+   escalierMetro(g,x,y,34);
+   /* les deux mâts de fonte, à bulbe */
+   [-1,1].forEach(s=>{
+     const bx=x+s*26;
+     /* le socle */
+     R(g,bx-5,y-6,11,7,PI_M.c);
+     R(g,bx-5,y-6,11,1.6,PI_M.t);
+     /* le fût, renflé au milieu */
+     for(let k=0;k<44;k+=4){
+       const w=6+Math.sin(k/44*3.14159)*2.4;
+       R(g,bx-w/2,y-6-k,w,4,(k/4)%2?VERT_M.p:VERT_M.s);
+       R(g,bx-w/2,y-6-k,1.6,4,VERT_M.h);
+     }
+     /* PLUS DE VOLUTES EN BIAIS : ce sont elles qui faisaient les deux barres
+        bizarres — deux tiges qui partaient du fût vers l'extérieur sans rien
+        porter. Le fût monte droit jusqu'à sa lanterne. */
+     /* LA LANTERNE EN BULBE */
+     const on=nuitSud();
+     g.fillStyle=VERT_M.s;
+     g.beginPath();g.ellipse(bx,y-54,7,5,0,0,7);g.fill();
+     g.fillStyle=on?'#ff9a3c':'#c8a06a';
+     g.beginPath();g.ellipse(bx,y-61,6.4,8,0,0,7);g.fill();
+     g.fillStyle=on?'#ffd27a':'#d8b48a';
+     g.beginPath();g.ellipse(bx-1.6,y-63,3,4,0,0,7);g.fill();
+     g.fillStyle=VERT_M.p;
+     g.beginPath();g.ellipse(bx,y-70,3,2.4,0,0,7);g.fill();
+     if(on)lueurMetro(g,bx,y-61,44,'rgba(255,170,80,.',0.34);
+   });
+   /* L'ARCHE entre les deux mâts */
+   g.strokeStyle=VERT_M.s;g.lineWidth=5;
+   g.beginPath();
+   g.moveTo(x-26,y-44);g.quadraticCurveTo(x,y-66,x+26,y-44);g.stroke();
+   g.strokeStyle=VERT_M.p;g.lineWidth=2.6;
+   g.beginPath();
+   g.moveTo(x-26,y-44);g.quadraticCurveTo(x,y-66,x+26,y-44);g.stroke();
+   g.strokeStyle=VERT_M.h;g.lineWidth=1;
+   g.beginPath();
+   g.moveTo(x-26,y-45.6);g.quadraticCurveTo(x,y-67.6,x+26,y-45.6);g.stroke();
+   /* L'ÉCUSSON, suspendu à l'arche */
+   R(g,x-19,y-58,38,15,VERT_M.s);
+   R(g,x-17,y-56,34,11,'#f2efe4');
+   R(g,x-19,y-58,38,1.6,VERT_M.h);
+   g.font='700 7px Georgia,serif';
+   g.fillStyle=VERT_M.o;g.textAlign='center';
+   g.fillText('MÉTRO',x,y-48,31);
+   g.textAlign='left';
+   /* les volutes sous l'écusson */
+   [-1,1].forEach(s=>{
+     g.strokeStyle=VERT_M.p;g.lineWidth=1.6;
+     g.beginPath();
+     g.moveTo(x+s*19,y-50);
+     g.quadraticCurveTo(x+s*25,y-48,x+s*23,y-42);
+     g.stroke();
+   });
+   /* PLUS DE MAINS COURANTES : les deux barres en biais accrochaient l'œil
+      et se battaient avec les volutes des mâts. L'escalier garde ses joues
+      de pierre, et c'est la fonte verte qui encadre, seule. */
+   if(nuitSud()){
+     lueurMetro(g,x,y-10,30,'rgba(255,210,140,.',0.28);
+     R(g,x-12,y-12,24,3,'rgba(255,214,150,.4)');
+   }
+ 
+}
+function dessinerLeMetro(g,x,y){
+  if(!CALQUE_METRO)graverLeMetro();
+  const C=CALQUE_METRO;
+  g.drawImage(C.toile,Math.round(x-C.W/2),Math.round(y-C.sol),C.W,C.H);
+  /* LES LANTERNES, vivantes : elles s'allument avec le soir */
+  if(lampesAllumees()){
+    [-1,1].forEach(s=>{
+      const bx=Math.round(x)+s*26;
+      g.fillStyle='#ff9a3c';
+      g.beginPath();g.ellipse(bx,y-61,6.4,8,0,0,7);g.fill();
+      g.fillStyle='#ffd27a';
+      g.beginPath();g.ellipse(bx-1.6,y-63,3,4,0,0,7);g.fill();
+      lueurNuit(g,bx,y-61,46,'rgba(255,170,80,§)');
+    });
+    /* la lumière qui remonte de l'escalier */
+    lueurNuit(g,x,y-10,32,'rgba(255,210,140,§)');
+    g.fillStyle='rgba(255,214,150,.4)';
+    g.fillRect(Math.round(x)-12,Math.round(y)-12,24,3);
+  }
+}
 
 /* ================= LA BOÎTE AUX BILLETS =================
    Une boîte plantée sur la place : chacun y laisse ce qu'il voudrait voir,
@@ -10296,6 +10442,10 @@ function semerDecor(){
   DECOR=DECOR.filter(o=>BATI(o.t)||o.t==='fleurs'||
     !(Math.abs(o.x-e.comptoir[0])<150&&Math.abs(o.y-e.comptoir[1])<90));invaliderGrille();
   DECOR.push({t:'comptoir',x:e.comptoir[0],y:e.comptoir[1],gr:0});
+  /* L'ENTRÉE DU MÉTRO, contre le comptoir, côté place */
+  /* À GAUCHE DU COMPTOIR : entre lui et la boutique il ne reste que 2 de
+     large, mais son flanc ouest donne sur l'angle de la place. */
+  DECOR.push({t:'metro',x:COMPTOIR_FIXE[0]-178,y:COMPTOIR_FIXE[1]+30,gr:0});
   /* rien ne pousse devant le front nord */
   DECOR=DECOR.filter(o=>BATI(o.t)||
     !(o.x>COMPTOIR2_FIXE[0]-120&&o.x<BOUTIQUE_FIXE[0]+100&&
@@ -10650,6 +10800,7 @@ function margesDe(t){
     else if(t==='mine2'){if(!CALQUE_CARREAU)graverLeCarreau();C=CALQUE_CARREAU;}
     else if(t==='comptoir'){if(!CALQUE_COMPTOIR2)graverLeComptoirNeuf();C=CALQUE_COMPTOIR2;}
     else if(t==='echoppe'){if(!CALQUE_BOUTIQUE)graverLaBoutiqueNeuve();C=CALQUE_BOUTIQUE;}
+    else if(t==='metro'){if(!CALQUE_METRO)graverLeMetro();C=CALQUE_METRO;}
     else if(CALQUES_DECO[t])C=CALQUES_DECO[t];
   }catch(x){}
   /* une marge de sécurité de 20 : le dessin anime parfois hors du calque
@@ -10822,6 +10973,7 @@ function dessinerDecor(g,camX,camY,VW2,VH2,acteurs){
     else if(o.t==='gare')dessinerLaGare(g,x,y);
     else if(o.t==='echoppe')dessinerLaBoutique(g,x,y);
     else if(o.t==='boite')dessinerLaBoite2(g,x,y);
+    else if(o.t==='metro')dessinerLeMetro(g,x,y);
     else if(o.t==='fontaine')dessinerLaFontaine(g,x,y);
     else if(o.t==='panneauV')dessinerLeTableau(g,x,y);
     else if(o.t==='arbrePot'||o.t==='bancP')dessinerDeco(g,o.t,x,y);
@@ -12442,7 +12594,7 @@ async function chargerLaCarte(){
        en attendant, sinon il y en aurait deux. */
     const garder=['pont','casino','mine','forge','coffre','comptoir','panneau','fete',
                   'maison','taverne','atelier','puits','fontaine','arbrePot','bancP',
-                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','tilleul','lanterneP','boutique','boite'];
+                  'panneauV','echoppe','gare','entrepot','mine2','ecriteau','poteau','taillerie','souche','gravats','tilleul','lanterneP','boutique','boite','metro'];
     DECOR=DECOR.filter(o=>garder.includes(o.t));invaliderGrille();
     d.forEach(m=>{
       if(m.genre==='panneau'||m.genre==='comptoir')return;   /* retirés du jeu */
@@ -12934,7 +13086,7 @@ function cible(){
   for(const o of autour){
     const cueillable=['argile','roseaux','champignons','herbes','plumes'].includes(o.t);
     const minerai=['fer','cuivre','charbon'].includes(o.t);
-    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite'].includes(o.t);
+    const batiment=['casino','mine','forge','comptoir','fete','echoppe','panneauV','mine2','ecriteau','taillerie','boite','metro'].includes(o.t);
     if(o.t!=='rocher'&&o.t!=='coffre'&&o.t!=='arbre'&&o.t!=='buisson'
        &&!batiment&&!o.bati&&!cueillable&&!minerai)continue;
     if(cueillable&&o.cueilli&&Date.now()-o.cueilli<210000)continue;
@@ -13071,6 +13223,13 @@ function majAction(){
       '<small>'+mot+'</small>';
     b.classList.add('on');
     if(!TAILLERIE_OUVERTE)b.onclick=null;
+    return;
+  }
+  if(o.t==='metro'){
+    /* LA LIGNE N'EST PAS ENCORE OUVERTE : mieux vaut le dire que laisser
+       le joueur buter sur une entrée muette. */
+    b.innerHTML='La ligne n’est pas ouverte<small>OUVERTURE PROCHAINE</small>';
+    b.classList.add('on');
     return;
   }
   if(o.t==='boite'){
